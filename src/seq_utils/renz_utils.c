@@ -158,6 +158,10 @@ int hash_seq4 ( char *seq, int *hash_values, int seq_len) {
 
 /* given a sequence seq, return an array of hash values */
 /* note we assume hash_len = 4 */
+/* We skip '*' (padding characters) when computing the hash such that the
+ * Index into hash_values is correct, but the length of the match in seq may
+ * not always be 4 characters.
+ */
 
 #define hash_len 4
 
@@ -177,6 +181,44 @@ int hash_seq4 ( char *seq, int *hash_values, int seq_len) {
 	uword = ( uword <<2 ) | hash4_lookup[(unsigned int)seq[j]];
 	hash_values[i] = uword;
     }
+    return 0;
+}
+
+/*
+ * A pad-aware version of hash_seq4. It works mainly, but has problems when
+ * the sequence starts with pads. Do not use for now...
+ */
+int hash_seq4_padded ( char *seq, int *hash_values, int seq_len) {
+    int i,j,k;
+    unsigned char uword;
+
+    /* Initial word */
+    for (i=0,j=0,uword=0;i<hash_len && j < seq_len;j++) {
+	if (seq[j] == '*')
+	    continue;
+	uword = ( uword <<2 ) | hash4_lookup[(unsigned int)seq[j]];
+	i++;
+    }
+    if (j >= seq_len)
+	return -1;
+
+    /* Subsequent words */
+    i = 0;
+    hash_values[0] = uword;
+    printf("hash_values[%d] = %x\n", i, uword);
+    k = seq_len - hash_len + 1;
+
+    for (i = 1; i < seq_len && seq[i] == '*'; i++)
+	;
+    
+    for (; j < seq_len; i++, j++) {
+	while (seq[j] == '*' && j < seq_len) j++;
+	while (seq[i] == '*') hash_values[i++] = 0;
+	uword = ( uword <<2 ) | hash4_lookup[(unsigned int)seq[j]];
+	hash_values[i] = uword;
+	printf("hash_values[%d] = %x\n", i, uword);
+    }
+
     return 0;
 }
 
@@ -315,8 +357,9 @@ int dna_string_search (
 
 	    for (j=0;j<ncw;j++) {
 
-		if ( iubc_word_match ( seq,pw,seq_len,word,word_len ) ) {
-
+		if ( iubc_word_match_padded ( seq,pw,seq_len,
+					      word,word_len ) ) {
+		    
 		    if ( n_matches < max_matches ) {
 
 			seq1_match[n_matches] = pw + 1;
