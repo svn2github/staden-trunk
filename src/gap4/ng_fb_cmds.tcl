@@ -261,11 +261,12 @@ proc DB_Load { file } {
 	#draw the contig selector if it does not already exist
 	if {[check_database -io $io] == 0} {
 	    set cs_win [keylget gap_defs CONTIG_SEL.WIN]
-	    if {![winfo exists $cs_win]} {
+	    global do_csel
+	    if {![winfo exists $cs_win] && $do_csel} {
 		ContigSelector $io
 	    } else {
 		ContigInitReg $io
-	       raise $cs_win
+		catch {raise $cs_win}
 	    }
 	}
 
