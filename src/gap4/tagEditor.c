@@ -266,9 +266,15 @@ int invokeTagEditor(EdStruct *xx, tag_id id, int seq, int pos, int length,
 	return -1;
     te->xx = xx;
     pname = Tk_PathName(EDTKWIN(xx->ed));
-    sprintf(te->window,  "%s.tag%d",         pname, id);
-    sprintf(te->array,   "%s.tag%d.data",    pname, id);
-    sprintf(te->command, "%s.tag%d.command", pname, id);
+    if (tag) {
+	sprintf(te->window,  "%s.tag%d%p",         pname, id, tag);
+	sprintf(te->array,   "%s.tag%d%p.data",    pname, id, tag);
+	sprintf(te->command, "%s.tag%d%p.command", pname, id, tag);
+    } else {
+	sprintf(te->window,  "%s.tag%d",         pname, id);
+	sprintf(te->array,   "%s.tag%d.data",    pname, id);
+	sprintf(te->command, "%s.tag%d.command", pname, id);
+    }
     te->id = id;
     te->status = 0;
     te->pos = pos;
