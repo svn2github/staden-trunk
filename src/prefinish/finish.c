@@ -341,7 +341,8 @@ static int tcl_finish_cmd(ClientData clientData, Tcl_Interp *interp,
     if (NULL == (fin = finish_new()))
 	return TCL_ERROR;
 
-    printf("Initialising prefinish version %s\n", FINISH_VERSION);
+    if (fin->opts.debug[FIN_DEBUG])
+	printf("Initialising prefinish version %s\n", FINISH_VERSION);
 
     /* Add a new command to handle finish methods */
     fin->command_token =
@@ -372,11 +373,13 @@ static int tcl_finish_obj_cmd(ClientData clientData, Tcl_Interp *interp,
     static char *finishCmds[] = {
 	"configure",		"classify",		"find_problems",
 	"implement_solutions",	"delete",		"dump_problems",
+	"version",
 	(char *)NULL
     };
     enum finishCmds {
 	FIN_CONFIGURE,		FIN_CLASSIFY,		FIN_FIND_PROBLEMS,
-	FIN_IMPLEMENT_SOLUTIONS,FIN_DELETE,		FIN_DUMP_PROBLEMS
+	FIN_IMPLEMENT_SOLUTIONS,FIN_DELETE,		FIN_DUMP_PROBLEMS,
+	FIN_VERSION
     };
 
     if (objc < 2) {
@@ -390,6 +393,9 @@ static int tcl_finish_obj_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     switch ((enum finishCmds)index) {
+    case FIN_VERSION:
+	Tcl_SetResult(interp, FINISH_VERSION, TCL_STATIC);
+	
     case FIN_CONFIGURE:
 	if (fin->opts.debug[FIN_DEBUG])
 	    puts("Finish configure");

@@ -206,6 +206,9 @@ proc usage {} {
     puts "
    -h                   Print this help
 
+   -v or
+   -version		Returns prefinish version string (first arg)
+
    -ends                Only solve problems on contig ends
 
    -internal            Solve all problems (default)
@@ -242,6 +245,13 @@ proc usage {} {
 
 # -----------------------------------------------------------------------------
 # Main entry point
+
+if {[string length [lindex $argv 0]] >= 2 && \
+	[string match [lindex $argv 0]* "-version"]} {
+    finish .f
+    puts [.f version]
+    exit
+}
 
 set add_tags ""
 set dump_problems 0
