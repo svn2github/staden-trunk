@@ -4164,6 +4164,11 @@ static void spanning_template_stats(EdStruct *xx[2], int overlapLength,
 
 	check_template_length_overlap(DBI_io(*xx), t,
 				      c1, c2, overlapLength);
+
+	/* Spanning, but not between both c1 and c2 */
+	if (!t->computed_length)
+	    continue;
+
 	if (t->consistency)
 	    tbad++;
 	else
