@@ -17,7 +17,7 @@ distcommon:
 	-cp LICENCE $(DIST)/doc
 	-cp README $(DIST)/doc
 	-cp gkb547_gml.pdf $(DIST)/doc
-	-cp scripting_manual/*.ps.gz $(DIST)/doc
+	-cp scripting_manual/*.pdf $(DIST)/doc
 	-cp emboss.txt $(DIST)/doc
 	-cp *.gif $(DIST)/doc
 
@@ -25,27 +25,23 @@ distcommon:
 
 distwindows: distcommon
 	-cp windows/*.html $(DIST)/doc
-	-cp *_windows.pdf $(DIST)/doc
 	-cp manual/*_windows.index $(DIST)/doc/manual
 	-cp manual/*_windows_*.html $(DIST)/doc/manual
-	-cp manual/*_windows*.pdf $(DIST)/doc
-#	-cp manual/*_windows_*.ps.gz $(DIST)/doc/manual
-	-cp manual/*.unix.gif $(DIST)/doc/manual
-	-cp manual/*.unix.gif.html $(DIST)/doc/manual
+	-cp manual/manual_windows.pdf $(DIST)/doc
+	-cp manual/mini_windows.pdf $(DIST)/doc
+	-cp manual/*.unix.png $(DIST)/doc/manual
+	-cp manual/*.unix.png.html $(DIST)/doc/manual
 
 
 
 distunix: distcommon
-	-cp manual_unix.pdf $(DIST)/doc
 	-cp unix/*.html $(DIST)/doc
-#	-cp install.PS $(DIST)/doc
-#	-cp install.txt $(DIST)/doc
-	-cp manual/*_unix*.pdf $(DIST)/doc
-#	-cp manual/*_unix*.ps.g z$(DIST)/doc
 	-cp manual/*_unix.index $(DIST)/doc/manual
 	-cp manual/*_unix_*.html $(DIST)/doc/manual
-	-cp manual/*.unix.*.html $(DIST)/doc/manual
-	-cp manual/*.unix.gif $(DIST)/doc/manual
+	-cp manual/manual_unix.pdf $(DIST)/doc
+	-cp manual/mini_unix.pdf $(DIST)/doc
+	-cp manual/*.unix.png $(DIST)/doc/manual
+	-cp manual/*.unix.png.html $(DIST)/doc/manual
 
 distsrc:
 	-mkdir -p $(DISTSRC)/doc/manual
@@ -54,7 +50,7 @@ distsrc:
 	-cp -R manual/i \
 	       manual/Makefile \
 	       manual/*.texi \
-	       manual/*.gif \
+	       manual/*.png \
 	       manual/*.m4 \
 	       manual/README \
 	       manual/dependencies \
