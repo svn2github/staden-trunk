@@ -134,6 +134,8 @@ typedef struct {
 
     PS_OPTIONS		ps_options;
     PS_TRACE		ps_trace;
+
+    int trace_scale;		/* Height in trace coordinates. zero => auto */
 } DNATrace;
 
 /* Flags */

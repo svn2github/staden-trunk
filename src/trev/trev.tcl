@@ -6,6 +6,29 @@
 # for a disclaimer of all warranties.
 #
 
+proc usage {} {
+    puts stderr "Usage: trev \[options\] file ...\n"
+    puts stderr "Valid options are:"
+    puts stderr "    -abi/-alf/-ctf         Specify input format (def. any)"
+    puts stderr "    -exp/-pln/-ztr/-any    ... \" ..."
+    puts stderr "    -write_scf             Allow writing back to SCF, ZTR, CTF"
+    puts stderr "    -editscf               Synonym for -write_scf"
+    puts stderr "    -xmag scale            X magnification (def. 150)"
+    puts stderr "    -ymag scale            Y magnification (def. 10)"
+    puts stderr "    -trace_scale           Set max-trace-value (def. 0 => auto)"
+    puts stderr "    -fofn fn               Load files from \"fn\""
+    puts stderr "    -pregap_mode           Used from old pregap"
+    puts stderr "    -restrict              Used from pregap4"
+    puts stderr "    --                     Force end of argument list"
+
+    exit 1
+}
+
+if {[lindex $argv 0] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1]
+    == "--help"} {
+    usage
+}
+
 set VERSION "1.9"
 
 if {[catch tkinit]} {
@@ -731,7 +754,7 @@ proc ymag_proc {w v} {
 }
 
 ##############################################################################
-proc CreateTrevWin {xmag ymag pregap_mode block_scf edit} {
+proc CreateTrevWin {xmag ymag pregap_mode block_scf edit trace_scale} {
     global trev_menu trev_defs VERSION
     keylset trev_defs MENU.FRAME .menu
     set mf [keylget trev_defs MENU.FRAME]
@@ -766,7 +789,7 @@ proc CreateTrevWin {xmag ymag pregap_mode block_scf edit} {
     SetEditFlag 0
 
     frame $f.trace
-    CreateTraceWin [keylget trev_defs TRACE.WIN] $xmag $ymag
+    CreateTraceWin [keylget trev_defs TRACE.WIN] $xmag $ymag $trace_scale
     pack $f.trace -side top -fill both -expand yes
     pack $f -fill both -expand yes
 
@@ -820,7 +843,7 @@ proc CreatePrevNext {{pregap_mode 0}} {
 }
 
 ###########################################################################
-proc CreateTraceWin { trace xmag ymag} {
+proc CreateTraceWin { trace xmag ymag trace_scale} {
     global trev_defs tdisp
 
     dnatrace $trace.t \
@@ -831,7 +854,8 @@ proc CreateTraceWin { trace xmag ymag} {
 	-showedits $tdisp(e) \
 	-showtrace $tdisp(t) \
 	-showconf $tdisp(c) \
-	-showends 0
+	-showends 0 \
+	-trace_scale $trace_scale
     focus $trace.t
 
     scrollbar $trace.s -command "$trace.t xview" -orient horizontal
@@ -844,7 +868,7 @@ proc CreateTraceWin { trace xmag ymag} {
 
     frame $trace.ymag
     label $trace.ymag.l -text "Y"
-    scale $trace.ymag.s -from 10 -to 100 -showvalue 0 -command \
+    scale $trace.ymag.s -from 10 -to 500 -showvalue 0 -command \
 	    "ymag_proc $trace.t"
     $trace.ymag.s set $ymag
 
@@ -1442,28 +1466,18 @@ load_package tk_utils
 tk_utils_init
 load_package trev
 
-proc usage {name} {
-    puts -nonewline "usage: $name "
-    puts {[-{ABI,ALF,CTF,EXP,SCF,PLN,ZTR,Any}] [-edits value] [-editscf]}
-    puts {       [-xmag value] [-ymag value] [-pregap_mode] {tracefilename}}
-    exit
-}
-
 InitGlobals
 set xmag 150
 set ymag 10
 set filename ""
 set informat Any
 set file_list ""
+set trace_scale 0
 
 # Parse command line arguments
 while {$argc >= 1} {
     set arg [string tolower [lindex $argv 0]]
-    if {$arg == "-edits"} {
-	set e [lindex $argv 1]
-        incr argc -1
-	set argv [lrange $argv 1 end]
-    } elseif {$arg == "-pregap_mode"} {
+    if {$arg == "-pregap_mode"} {
 	set pregap_mode 1
 	set tdisp(e) 0
 	set block_scf 0
@@ -1480,6 +1494,10 @@ while {$argc >= 1} {
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-ymag"} {
 	set ymag [lindex $argv 1]
+        incr argc -1
+	set argv [lrange $argv 1 end]
+    } elseif {$arg == "-trace_scale"} {
+	set trace_scale [lindex $argv 1]
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-write_scf"} {
@@ -1501,6 +1519,12 @@ while {$argc >= 1} {
 	    lappend file_list $line
 	}
 	close $fd
+    } elseif {$arg == "--"} {
+	incr argc -1
+	set argv [lrange $argv 1 end]
+	break;
+    } elseif {[string match "-*" $arg]} {
+	usage
     } else {
         break
     }
@@ -1516,7 +1540,7 @@ foreach f $file_list {
     set file_status($f) 1
 }
 
-CreateTrevWin $xmag $ymag $pregap_mode $block_scf $edit
+CreateTrevWin $xmag $ymag $pregap_mode $block_scf $edit $trace_scale
 
 if {$file_count > 0} {
     NextFile $informat

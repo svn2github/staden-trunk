@@ -98,6 +98,8 @@ static Tk_ConfigSpec configSpecs[] = {
     Tk_Offset(DNATrace, scale_x), 0, NULL},
     {TK_CONFIG_DOUBLE, "-conf_scale", "confScale", "ConfScale", "1.00",
     Tk_Offset(DNATrace, scale_conf), 0, NULL},
+    {TK_CONFIG_INT, "-trace_scale", "traceScale", "traceScale", "0",
+    Tk_Offset(DNATrace, trace_scale), 0, NULL},
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL,
 	 0, 0, NULL},
 };
@@ -194,6 +196,7 @@ static int TraceCmd(ClientData clientData, Tcl_Interp *interp,
     tracePtr->scale_x = 1.58;
     tracePtr->scale_y = 1.0;
     tracePtr->scale_conf = 1.0;
+    tracePtr->trace_scale = 0;
     tracePtr->xScrollCmd = NULL;
     tracePtr->old_scroll_mode = 0;
     tracePtr->flags = 0;

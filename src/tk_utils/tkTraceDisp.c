@@ -351,7 +351,7 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 
     if (t->read->maxTraceVal) {
 	yscale = (double)(t->scale_y * (height-1)) /
-	    (double)t->read->maxTraceVal;
+	    (double)(t->trace_scale ? t->trace_scale : t->read->maxTraceVal);
     } else {
 	yscale = 0;
     }
@@ -501,9 +501,9 @@ int trace_get_pos(DNATrace *t, int ind) {
 
     avg = (t->read->basePos[t->read->NBases-1] - t->read->basePos[0]) /
       (double)t->read->NBases;
-    if (ind < 1) {
+    if (ind < 0) {
 	/* Interpolate backwards */
-	return trace_get_pos(t, 1) + (ind-1)*avg;
+	return trace_get_pos(t, 0) + ind*avg;
     }
 
     if (ind >= t->Ned) {
