@@ -10,6 +10,47 @@
 #include "tkTraceIO.h"
 #include "mutlib.h"
 
+/* FIXME: move to io_lib as it's used in convert_trace too */
+static void rescale_heights(Read *r, int min_marker) {
+    double marker = 0;
+    int i, j, max, mtv = 0;
+    TRACE *tx[4];
+
+    tx[0] = r->traceA;
+    tx[1] = r->traceC;
+    tx[2] = r->traceG;
+    tx[3] = r->traceT;
+
+    for (i = 0; i < r->NPoints; i++) {
+	for (max = j = 0; j < 4; j++)
+	    if (max < tx[j][i])
+		max = tx[j][i];
+	if (!marker) {
+	    marker = max;
+	} else {
+	    if (max >= marker) {
+		/* attack */
+		marker += (max - marker) / 20.0;
+	    } else {
+		/* decay */
+		marker -= (marker - max) / 10.0;
+	    }
+	}
+	if (marker < min_marker)
+	    marker = min_marker;
+
+	for (j = 0; j < 4; j++) {
+	    double new = tx[j][i] * 2000.0/marker;
+	    tx[j][i] = new > 32767 ? 32767 : new;
+	    if (mtv < tx[j][i])
+		mtv = tx[j][i];
+	}
+
+    }
+
+    r->maxTraceVal = mtv;
+}
+
 static Read *diff_readings(EdStruct *xx,
 			   Read *r1, int seq1, int off1,
 			   Read *r2, int seq2, int off2,
@@ -17,6 +58,7 @@ static Read *diff_readings(EdStruct *xx,
     int start1, end1, start2, end2, start, end;
     Read *r;
     tracediff_t td;
+    Read *norm1 = NULL, *norm2 = NULL;
 
     /* One consensus trace works well, but not two. */
     if (!seq1 && !seq2)
@@ -129,10 +171,17 @@ static Read *diff_readings(EdStruct *xx,
 
     /* Initialise Mark's trace diff code */
     TraceDiffInit(&td);
-    if( xx->compare_trace_yscale )
-    	TraceDiffSetParameter( &td, TRACEDIFF_PARAMETER_YSCALE, 1.0 );
-    TraceDiffSetReference(&td, r2, MUTLIB_STRAND_FORWARD, start2, end2);
-    TraceDiffSetInput(&td, r1, MUTLIB_STRAND_FORWARD, start1, end1);
+    if (xx->compare_trace_yscale) {
+	norm1 = read_dup(r1, NULL);
+	norm2 = read_dup(r2, NULL);
+	rescale_heights(norm1, 200);
+	rescale_heights(norm2, 200);
+	TraceDiffSetReference(&td, norm2, MUTLIB_STRAND_FORWARD, start2, end2);
+	TraceDiffSetInput(&td, norm1, MUTLIB_STRAND_FORWARD, start1, end1);
+    } else {
+	TraceDiffSetReference(&td, r1, MUTLIB_STRAND_FORWARD, start2, end2);
+	TraceDiffSetInput(&td, r2, MUTLIB_STRAND_FORWARD, start1, end1);
+    }
 
     /* Do the difference without analysis of the results */
     TraceDiffExecute(&td, TRACEDIFF_ALGORITHM_DEFAULT_DIFFERENCE_ONLY);
@@ -154,6 +203,11 @@ static Read *diff_readings(EdStruct *xx,
 	/* diff_reset_zero(r); */
     }
     TraceDiffDestroy(&td);
+
+    if (norm1)
+	read_deallocate(norm1);
+    if (norm2)
+	read_deallocate(norm2);
 
     return r;
 }
