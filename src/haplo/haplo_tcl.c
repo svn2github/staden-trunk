@@ -295,7 +295,8 @@ static int haplo_consensus_cmd(Tcl_Interp *interp,
     char **rargv;
     int rargc;
     int *templates;
-    char *cons, *qual_str;
+    char *cons;
+    unsigned char *qual_str;
     float *qual;
     Tcl_Obj *res, *obj[2];
 
@@ -329,7 +330,7 @@ static int haplo_consensus_cmd(Tcl_Interp *interp,
 	qual_str[i] = (unsigned char)qual[i];
     }
     obj[0] = Tcl_NewStringObj(cons, clen);
-    obj[1] = Tcl_NewStringObj(qual_str, clen);
+    obj[1] = Tcl_NewStringObj((char *)qual_str, clen);
     res = Tcl_NewListObj(2, obj);
     Tcl_SetObjResult(interp, res);
 
