@@ -17,6 +17,11 @@
 #define GET_GEL_INFO	4
 #define DEL_GEL_INFO	5 /* not implemented */
 #define GET_GEL_LEN	6
+#define SEQ_INS		7
+#define SEQ_DEL		8
+#define CONS_INS	9
+#define CONS_DEL	10
+#define IF_FLUSH	11
 
 /* quality codes */
 #define R_GOOD_GOOD_EQ	'a'
@@ -65,6 +70,7 @@ typedef struct _gel_info_t {
     int as_double;
     int next_right;
     int start;
+    int unclipped_len;
 } gel_info_t;
 
 typedef struct _contig_info_t {
@@ -73,10 +79,40 @@ typedef struct _contig_info_t {
     int leftgel;
 } contig_info_t;
 
+typedef struct _seq_ins_t {
+    int gel;
+    int position;
+    int length;
+    char *bases;
+} seq_ins_t;
+
+typedef struct _seq_del_t {
+    int gel;
+    int position;
+    int length;
+} seq_del_t;
+
+typedef struct _cons_ins_t {
+    int contig;
+    int position;
+    int length;
+    char *bases;
+} cons_ins_t;
+
+typedef struct _cons_del_t {
+    int contig;
+    int position;
+    int length;
+} cons_del_t;
+
 typedef union _info_arg_t {
     gel_seq_t	  gel_seq;
     gel_info_t	  gel_info;
     contig_info_t contig_info;
+    seq_ins_t	  seq_ins;
+    seq_del_t	  seq_del;
+    cons_ins_t	  cons_ins;
+    cons_del_t	  cons_del;
 } info_arg_t;
 
 

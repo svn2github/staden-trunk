@@ -550,6 +550,7 @@ int virtual_info_func(int job, void *mydata, info_arg_t *theirdata) {
 	    if (vr->vseq) {
 		/*printf("GET_INFO virtual seq %d/%d\n", vr->rnum,
 		  gel_info->gel);*/
+		gel_info->unclipped_len= vr->vseq->r.length;
 		gel_info->length       = vr->vseq->r.end - vr->vseq->r.start - 1;
 		gel_info->complemented = vr->vseq->r.sense;
 		gel_info->position     = vr->position;
@@ -563,6 +564,7 @@ int virtual_info_func(int job, void *mydata, info_arg_t *theirdata) {
 		/*printf("GET_INFO real seq %d/%d\n", vr->rnum, gel_info->gel);*/
 
 		gel_info->length       = r.end - r.start - 1;
+		gel_info->unclipped_len= r.length;
 		gel_info->complemented = r.sense;
 		gel_info->position     = r.position;
 		gel_info->as_double    = r.chemistry & GAP_CHEM_TERMINATOR;

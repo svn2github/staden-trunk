@@ -557,6 +557,7 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	    register int gelo = _DBI_order(db)[gel];
 
 	    gel_info->length       = _DB_Length(db, gelo);
+	    gel_info->unclipped_len= _DB_Length2(db, gelo);
 	    gel_info->complemented = _DB_Comp  (db, gelo) == COMPLEMENTED;
 	    gel_info->position     = _DB_RelPos(db, gelo);
 	    gel_info->as_double    = _DB_Flags (db, gelo) & DB_FLAG_TERMINATOR;

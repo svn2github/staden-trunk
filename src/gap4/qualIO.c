@@ -86,12 +86,13 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 
 	    gel_read(io, gel_info->gel, r);
 
-	    gel_info->length       = r.end - r.start - 1;
 	    gel_info->complemented = r.sense;
 	    gel_info->position     = r.position;
 	    gel_info->next_right   = r.right;
 	    gel_info->as_double	   = r.chemistry & GAP_CHEM_TERMINATOR;
 	    gel_info->start	   = r.start;
+	    gel_info->length       = r.end - r.start - 1;
+	    gel_info->unclipped_len= r.length;
 	    /*
 	    gel_info->as_double	   =
 		((r.chemistry & GAP_CHEM_TERMINATOR) == GAP_CHEM_TERMINATOR) &&
@@ -108,6 +109,52 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 	{
 	    return find_max_gel_len(io, 0, 0);
 	}
+
+    case SEQ_INS:
+	{
+	    /* Horribly inefficient at the moment! */
+	    seq_ins_t *seq_ins = &theirdata->seq_ins;
+	    int i;
+	    int pos = seq_ins->position;
+	    char *base = seq_ins->bases;
+	    
+	    for (i = 0; i < seq_ins->length; i++) {
+		io_insert_base(io, seq_ins->gel, pos++, *base++);
+	    }
+	    return 0;
+	}
+
+    case SEQ_DEL:
+	{
+	    /* Horribly inefficient at the moment! */
+	    seq_del_t *seq_del = &theirdata->seq_del;
+	    int i;
+	    int pos = seq_del->position;
+	    
+	    for (i = 0; i < seq_del->length; i++) {
+		io_delete_base(io, seq_del->gel, pos);
+	    }
+	    return 0;
+	}
+
+    case CONS_INS:
+	{
+	    cons_ins_t *cons_ins = &theirdata->cons_ins;
+	    /* Only allows insertion of pads */
+	    printf("PADCON contig %d at %d+%d\n",
+		   cons_ins->contig, cons_ins->position,
+		   cons_ins->length);
+	    pad_consensus(io, cons_ins->contig, cons_ins->position,
+			  cons_ins->length);
+	    return 0;
+	}
+
+    case IF_FLUSH:
+	{
+	    flush2t(io);
+	    return 0;
+	}
+
     default:
 	verror(ERR_FATAL, "database_info", "Unknown job number (%d)", job);
 	return -1;
