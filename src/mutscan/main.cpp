@@ -63,6 +63,7 @@ void PrintUsage( mutscan_t& ms )
     "[-q]                     = Quiet mode                           (default=off)\n"
     "[-u<peakdrop-threshold>] = Upper peak drop threshold percentage (default=%0.2f)\n"
     "[-w<search-window-size>] = Peak search window size in bases     (default=%0.2f)\n"
+    "[-p]                     = Proximity filter threshold...        (default=7)\n",
     "[-z]                     = Enter debugging loop and wait...     (default=off)\n",
      ms.Parameter[MUTSCAN_PARAMETER_ALIGNFAIL_THRESHOLD],
      ms.Parameter[MUTSCAN_PARAMETER_HETSNR_THRESHOLD],
@@ -74,7 +75,134 @@ void PrintUsage( mutscan_t& ms )
     std::fflush( stdout );
 }
 
+// Filter clusters of tags too close to the end of MCOV
+void filter_tags ( mutscan_t& ms, int nTags, int threshold ) {
+    int *scores_a, *scores;
+    int cov_start = 0, cov_end = 0;
+    const int win_len = 5;
 
+    // Get coverage range
+    for( int i=0; i<nTags; i++ ) {
+        mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+        assert(pTag);
+
+	if (std::strcmp(pTag->Type,"MCOV") == 0) {
+	    cov_start = pTag->Position[0];
+	    cov_end   = pTag->Position[1];
+	    break;
+	}
+    }
+    printf("Cov=%d..%d\n", cov_start, cov_end);
+
+
+    /*
+     * Allocate an array indexed from -win_len to cov_end+win_len.
+     * Each tag gets a peak of width 2*win_len+1 centred on it and is
+     * accumulated in this array.
+     */
+    scores_a = new int[win_len*2+cov_end+1];
+    scores = &scores_a[win_len];
+    memset(scores_a, 0, (win_len*2+cov_end) *sizeof(*scores_a));
+
+    // Convolve tag peaks
+    for (int i=0; i < nTags; i++) {
+	mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+	int pos = pTag->Position[0];
+
+	scores[pos] += win_len+1;
+	for (int j=1; j<=win_len; j++) {
+	    scores[pos+j] += win_len+1 - j;
+	    scores[pos-j] += win_len+1 - j;
+	}
+    }
+
+    // Filter tags
+    for (int i=0; i < nTags; i++) {
+	mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+	int pos = pTag->Position[0];
+
+	if (std::strcmp(pTag->Type,"MCOV") == 0)
+	    continue;
+
+	if (scores[pos] >= threshold) {
+	    pTag->Type[3] = '?';
+	}
+    }
+    
+    delete [] scores_a;
+
+#if 0
+    int last = 0;
+    int cost = 0, highest_cost = 0;
+    int range_start = 0, range_end = 0;
+    for ( int i=0; i<nTags; i++) {
+        mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+
+	cost += 4;
+	if (i != range_start)
+	    cost -= pTag->Position[0] - last;
+	printf("Tag %d at %d, cost = %d\n", i, pTag->Position[0], cost);
+	if (highest_cost <= cost) {
+	    highest_cost = cost;
+	    range_end = i;
+	}
+	
+	if ((cost < highest_cost-10 || cost < 0) && highest_cost > 10) {
+	    printf("    Tag %d..%d highest_cost=%d\n",
+		   range_start, range_end, highest_cost);
+	    i = range_end;
+	    range_start = i+1;
+	    highest_cost = cost = 0;
+	}
+	last = pTag->Position[0];
+    }
+    if (highest_cost > 10) {
+	printf("    Tag %d..%d highest_cost=%d\n",
+	       range_start, range_end, highest_cost);
+    }
+#endif
+
+#if 0
+    // Adjust left end
+    int cost = -5, last = cov_start;
+    puts("==Left==");
+    for( int i=0; i<nTags; i++ ) {
+        mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+        assert(pTag);
+	if (std::strcmp(pTag->Type,"MCOV") == 0)
+	    continue;
+
+	cost += pTag->Position[0] - last;
+	printf("Tag at %d cost=%d\n", pTag->Position[0], cost);
+	if (cost <= 0) {
+	    printf("Reject tag at %d\n", pTag->Position[0]);
+	    *pTag->Type = 0;
+	    cost -= 1;
+	}
+	last = pTag->Position[0];
+    }
+
+    // Adjust right end
+    cost = -5;
+    last = cov_end;
+    puts("==Right==");
+    for( int i=nTags-1; i>=0; i-- ) {
+        mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
+        assert(pTag);
+	if (std::strcmp(pTag->Type,"MCOV") == 0)
+	    continue;
+
+	cost += last - pTag->Position[0];
+	printf("Tag at %d cost=%d\n", pTag->Position[0], cost);
+	if (cost <= 0) {
+	    printf("Reject tag at %d\n", pTag->Position[0]);
+	    *pTag->Type = 0;
+	    cost -= 2;
+	}
+	last = pTag->Position[0];
+    }
+#endif
+}
 
 //-----------
 // Tracediff
@@ -106,6 +234,7 @@ int main( int argc, char* argv[] )
     double          nPeakDropThresholdUpper   = -1.0;
     double          nPeakDropThresholdLower   = -1.0;
     double          nHeterozygoteSNRThreshold = -1.0;
+    int 	    proximityThreshold = 7;
     MutScanInit( &ms );
 
 
@@ -199,6 +328,12 @@ int main( int argc, char* argv[] )
                 case 'w':
                     // Search window size
                     nSearchWindowSize = std::atof( pBuffer );
+                    break;
+
+
+                case 't':
+                    // proximity threshold
+                    proximityThreshold = std::atoi( pBuffer );
                     break;
 
 
@@ -464,7 +599,8 @@ int main( int argc, char* argv[] )
                 exp_put_str( pExpFile, EFLT_QR, pBuffer, std::strlen(pBuffer) );
             }
 
-
+	    // Filter clusters of tags too close to the end of MCOV
+	    filter_tags( ms, nTags, proximityThreshold );
 
             // Output results
             for( int i=0; i<nTags; i++ )
@@ -472,6 +608,10 @@ int main( int argc, char* argv[] )
                 // Write mutation tags to experiment file & stdout
                 mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
                 assert(pTag);
+
+		if (!*pTag->Type)
+		  continue;
+
                 bool bCoverageTag = std::strcmp(pTag->Type,"MCOV") == 0;
                 char sc = (pTag->Strand==MUTLIB_STRAND_FORWARD) ? '+' : '-';
                 if( bCoverageTag )
