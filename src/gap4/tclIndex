@@ -4,6 +4,8 @@
 #
 # Remember to set your auto_path variable correctly to use this file.
 #
+set auto_index(acd2tag::parse) [list source [file join $dir acd2tag.tcl]]
+
 set auto_index(AlterRelationships) [list source [file join $dir alter_rel.tcl]]
 
 set auto_index(DirectAssembly) [list source [file join $dir assemble_direct.tcl]]
