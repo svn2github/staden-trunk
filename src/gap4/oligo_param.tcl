@@ -54,7 +54,7 @@ proc oligo_param {f search_ahead search_back read_length} {
 # from the oligo code.
 #
 proc oligo_paramok {t search_ahead search_back read_length} {
-    global $search_ahead $search_back $read_length
+    global $search_ahead $search_back $read_length gap_defs
 
     # Get and check for validity our parameters
     if {[set search_ahead_val [entrybox_get $t.e1]] == ""} {
@@ -74,6 +74,9 @@ proc oligo_paramok {t search_ahead search_back read_length} {
     set $search_back  $search_back_val
     set $read_length  $read_length_val
 
+    keylset gap_defs SELECT_OLIGOS.SEARCH_AHEAD $search_ahead_val
+    keylset gap_defs SELECT_OLIGOS.SEARCH_BACK  $search_back_val
+    keylset gap_defs SELECT_OLIGOS.READ_LENGTH  $read_length_val
 }
 
 # Returns the primer_defs Tcl global from the PRIMER keyed list.
@@ -445,10 +448,16 @@ proc select_oligo_params { f } {
 	-width 5 \
 	-type {CheckIntRange 1 100}
 
+    yes_no $f.gc_clamp \
+    	    -title "GC Clamp" \
+	    -orient horizontal \
+	    -bd 0 \
+	    -default $pdefs(gc_clamp)
+
     pack $f.gc.label -side left 
     pack $f.gc.max $f.gc.opt $f.gc.min -side right 
 
-    pack $f.tm $f.length $f.gc -fill x
+    pack $f.tm $f.length $f.gc $f.gc_clamp -fill x
 
     if {[winfo class $f] == "Toplevel"} {
 	frame $f.but -bd 2 -relief raised
@@ -477,6 +486,8 @@ proc select_oligo_params_OK_Pressed {p} {
     set pdefs(min_gc) [entrybox_get $p.gc.min]
     set pdefs(opt_gc) [entrybox_get $p.gc.opt]
     set pdefs(max_gc) [entrybox_get $p.gc.max]
+
+    set pdefs(gc_clamp) [yes_no_get $p.gc_clamp]
 
     set_primer_defs [array get pdefs]    
 }
