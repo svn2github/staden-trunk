@@ -684,7 +684,7 @@ void process_rawdata_note(GapIO *io) {
      * Purify flags this xmalloc as a memory leak. However see the linux
      * manpage on putenv() for a good description of the different putenv()
      * standards.
-     * The code below is corrupt and backwards compatible with older putenv()
+     * The code below is corect and backwards compatible with older putenv()
      * semantics. (It is better to leak a few bytes occasionally instead of
      * corrupting the environment.)
      */
@@ -710,13 +710,13 @@ void process_rawdata_note(GapIO *io) {
     while(note) {
 	note_read(io, note, n);
 	if (n.type == itype && n.annotation) {
-	    char rawd[1024], *p;
+	    char *rawd, *p;
 	    char *buf;
 
-	    TextRead(io, n.annotation, rawd, 1024);
+	    if (!(rawd = TextAllocRead(io, n.annotation)))
+		break;
 
 	    /* Sanitise things, incase of any errors */
-	    rawd[1023] = 0;
 	    for (p = rawd; *p; p++) {
 		if (*p == '\n' || *p == '\r') {
 		    *p = 0;
@@ -724,14 +724,18 @@ void process_rawdata_note(GapIO *io) {
 		}
 		if (!(isalnum(*p) || ispunct(*p) || isspace(*p))) {
 		    verror(ERR_WARN, "rawdata_note", "Malformed RAWD note");
+		    xfree(rawd);
 		    return;
 		}
 	    }
-	    if (NULL == (buf = xmalloc(strlen(rawd) + 100)))
+	    if (NULL == (buf = xmalloc(strlen(rawd) + 100))) {
+		xfree(rawd);
 		break;
+	    }
 
 	    sprintf(buf, "RAWDATA=%s", rawd);
 	    putenv(buf);
+	    xfree(rawd);
 	}
 	note = n.next;
     }
