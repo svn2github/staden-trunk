@@ -4,6 +4,7 @@
 #include "misc.h"
 #include "finish.h"
 #include "finish_utils.h"
+#include "finish_hash.h"
 #include "tagUtils.h"
 
 int finish_next_expt_id(int reset) {
@@ -433,3 +434,102 @@ int template_is_dup(finish_t *fin, int *templates_picked,
     return dup;
 }
 
+
+/*
+ * secondary_primer_match
+ *
+ * Identifies whether there is a high scoring match with a particular primer
+ * elsewhere in a set of files, within the entire database sequence, or
+ * within just a section of sequence.
+ *
+ * This uses fin->extern_seq buffer when check_external is set to true.
+ * If check_contig is zero then do not compare against the consensus.
+ * If check_contig >0 then compare against region of that contig (between
+ * contig_start and contig_end).
+ * If check_contig <0 then compare against all contigs in the database.
+ *
+ * If skip_self is set then the self_match (finding your own match in
+ * the consensus) is ignored.
+ *
+ * Arguments:
+ *	fin			'Finish' object
+ *	check_contig		Contig to check against (0 => none, -1 => all)
+ *	check_start		Start position in check_contig
+ *	check_end		End position in check_contig
+ *	self_match		Whether to ignore the self-match (true if so)
+ *	self_strand		Which strand is self_match relevant to
+ *	check_external		Should we check the external file list?
+ *	prim			The primer to find matches to.
+ *
+ * Returns:
+ * 	0	for no match (other than self)
+ *	>=0	for match
+ */
+double secondary_primer_match(finish_t *fin,
+			      int check_contig,
+			      int check_start,
+			      int check_end,
+			      int self_match,
+			      int self_strand,
+			      int check_external,
+			      char *prim) {
+    size_t primer_len;
+    char primer[100];
+    double sc = 0;
+
+    /* Take copy of primer */
+    strncpy(primer, prim, 100);
+    primer[99] = 0;
+    primer_len = strlen(primer);
+
+    if (check_contig < 0 && fin->all_cons_h) {
+	/* All contigs */
+	if (fin->opts.debug[EXPERIMENT_VPWALK] > 1)
+	    printf("Check allcons self=%d strand %d\n",
+		   self_match, self_strand);
+	sc = hash_compare_primer(fin->all_cons_h, primer, primer_len,
+				 fin->opts.pwalk_max_match,
+				 self_match, self_strand);
+    } else if (check_contig > 0) {
+	/* Specific contig */
+	if (check_contig != fin->contig) {
+	    printf("Trying to check against the wrong 'specific contig'\n");
+	    return 0;
+	}
+
+	if (check_start < 0)
+	    check_start = 0;
+	if (check_end >= io_clength(fin->io, check_contig)) {
+	    check_end = io_clength(fin->io, check_contig)-1;
+	}
+	if (fin->opts.debug[EXPERIMENT_VPWALK] > 1)
+	    printf("Check cons %d..%d self=%d strand %d\n",
+		   check_start, check_end, self_match, self_strand);
+	sc = compare_primer(fin->cons + check_start,
+			    check_end - check_start + 1,
+			    primer, primer_len,
+			    fin->opts.pwalk_max_match,
+			    self_match, self_strand);
+    }
+    /* else no contig check */
+
+    /* Compare against external sequences */
+    if (check_external && fin->external_seq) {
+	double vsc;
+	if (fin->opts.debug[EXPERIMENT_VPWALK] > 1)
+	    printf("Check extern self=%d strand %d\n", 0, 0);
+	vsc = hash_compare_primer(fin->external_seq_h, primer, primer_len,
+				  fin->opts.pwalk_max_match, 0, 0);
+	if (vsc > sc)
+	    sc = vsc;
+    }
+
+#if !defined(USE_OSP)
+    /* Use primer3 matching too */
+    /* FIXME: to do. Cannot do this yet as it doesn't check its own sequence
+     * and we cannot get it to skip 1 hit (self match).
+     */
+#endif
+
+    return sc;
+}

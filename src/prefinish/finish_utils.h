@@ -131,4 +131,44 @@ int template_is_dup(finish_t *fin, int *templates_picked,
 		    int num_picked,
 		    int template);
 
+
+/*
+ * secondary_primer_match
+ *
+ * Identifies whether there is a high scoring match with a particular primer
+ * elsewhere in a set of files, within the entire database sequence, or
+ * within just a section of sequence.
+ *
+ * This uses fin->extern_seq buffer when check_external is set to true.
+ * If check_contig is zero then do not compare against the consensus.
+ * If check_contig >0 then compare against region of that contig (between
+ * contig_start and contig_end).
+ * If check_contig <0 then compare against all contigs in the database.
+ *
+ * If skip_self is set then the self_match (finding your own match in
+ * the consensus) is ignored.
+ *
+ * Arguments:
+ *	fin			'Finish' object
+ *	check_contig		Contig to check against (0 => none, -1 => all)
+ *	check_start		Start position in check_contig
+ *	check_end		End position in check_contig
+ *	self_match		Whether to ignore the self-match (true if so)
+ *	self_strand		Which strand is self_match relevant to
+ *	check_external		Should we check the external file list?
+ *	prim			The primer to find matches to.
+ *
+ * Returns:
+ * 	0	for no match (other than self)
+ *	>=0	for match
+ */
+double secondary_primer_match(finish_t *fin,
+			      int check_contig,
+			      int check_start,
+			      int check_end,
+			      int self_match,
+			      int self_strand,
+			      int check_external,
+			      char *prim);
+
 #endif /* _FINISH_UTILS_H */
