@@ -427,7 +427,7 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	xx->qual_bg[i] = xx->ed->qual_bg[i]->pixel;
     for (i=0; i<4; i++)
 	xx->edit_bg[i] = xx->ed->edit_bg[i]->pixel;
-    for (i=0; i<5; i++)
+    for (i=0; i<6; i++)
 	xx->tmpl_bg[i] = xx->ed->tmpl_bg[i]->pixel;
     xx->qual_below = xx->ed->qual_below->pixel;
     xx->diff_bg = xx->ed->diff_bg->pixel;

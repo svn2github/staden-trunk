@@ -119,6 +119,9 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_COLOR,
 	 "-tmplcolour4","tmplColour4",	"Background",	"lightblue",
 	 offset(tmpl_bg[4]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-tmplcolour5","tmplColour5",	"Background",	"lightblue",
+	 offset(tmpl_bg[5]),		0, NULL},
     {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
@@ -192,7 +195,7 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
 	ed->qual_bg[i] = NULL;
     for (i = 0; i < 4; i++)
 	ed->edit_bg[i] = NULL;
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < 6; i++)
 	ed->tmpl_bg[i] = NULL;
     ed->qual_below = NULL;
     ed->diff_bg    = NULL;

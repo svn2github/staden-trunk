@@ -17,7 +17,7 @@ typedef struct {
     XColor *qual_below;
     XColor *diff_bg;
     XColor *edit_bg[4];
-    XColor *tmpl_bg[5];
+    XColor *tmpl_bg[6];
     char *xScrollCmd;
     char *yScrollCmd;
     char *highlight_cmd;

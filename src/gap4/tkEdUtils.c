@@ -703,7 +703,10 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 			   (TEMP_FLAG_GUESSED_END |
 			    TEMP_FLAG_GUESSED_START)) {
 		    nsplodge[DB_GELNOLEN+1].sh |= sh_bg;
-		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[4];
+		    if (DBI(xx)->templates[tnum]->flags & TEMP_FLAG_SPANNING)
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[5];
+		    else
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[4];
 		}
 	    }
 	}
