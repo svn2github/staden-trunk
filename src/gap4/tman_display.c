@@ -205,7 +205,7 @@ DisplayContext *manageTrace(EdStruct *xx,
      * If we're the bottom half of a join editor, combine traces with the
      * top half.
      */
-    if (inJoinMode(xx) && xx->link && xx == xx->link->xx[1]) {
+    if (inJoinMode(xx) && xx->link && xx == xx->link->xx[1] && !small_seq) {
 	edpath = Tk_PathName(EDTKWIN(xx->link->xx[0]->ed));
     } else {
 	edpath = Tk_PathName(EDTKWIN(xx->ed));
