@@ -6,6 +6,7 @@
 #include "IO.h"
 #include "vseqs.h"
 #include "text_output.h"
+#include "misc.h"
 
 /*
  * new_vcontig
@@ -363,8 +364,16 @@ void link_vrseq(vcontig_t *vc, vrseq_t *vrseq, int position) {
 	for (j = 0; j < qdist.n_items; j++) {
 	    int i_start, i_end;
 	    double q, q_inc;
-	    i_start = len * qdist.p_start[j]/100.0;
-	    i_end   = len * qdist.p_end[j]  /100.0;
+	    /*
+	     * FIXME: A "Total Hack"(TM) incoming...
+	     *
+	     * For fragments of sequence (eg where we know it goes into
+	     * vector) we do not want to apply the quality distribution
+	     * squashed down into len bases. Hence we have a minimum length
+	     * of 400 to apply it to.
+	     */
+	    i_start = MAX(400,len) * qdist.p_start[j]/100.0;
+	    i_end   = MAX(400,len) * qdist.p_end[j]  /100.0;
 
 	    if (i_start >= i_end)
 		continue;
@@ -373,7 +382,7 @@ void link_vrseq(vcontig_t *vc, vrseq_t *vrseq, int position) {
 	    q_inc   = (qdist.q_end[j] - qdist.q_start[j]) /
 		(double)(i_end - i_start);
 	    
-	    for (i = i_start; i < i_end; i++) {
+	    for (i = i_start; i < i_end && i < len; i++) {
 		vrseq->vseq->conf[i] = q;
 		q += q_inc;
 	    }
