@@ -144,6 +144,7 @@ int actf_lock(int read_only, char *file, char *version,int new) {
 	     */
 	    if (i == numu_lock_files && lockf(fd, F_TEST, 0) == 0) {
 		vmessage("WARNING! Database has lock file, but is no longer in use.\n");
+		log_file(NULL, "Overriding lock file");
 		if (!read_only)
 		    vmessage("WARNING! Taking ownership of lock.\n");
 		locked = 0;

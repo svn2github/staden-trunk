@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <sys/types.h>
 #include <time.h>
+#include <pwd.h>
 #include <tcl.h>
 
 #include "misc.h"
@@ -1284,6 +1285,18 @@ GapIO *open_db(char *project, char *version, int *status, int create,
     (void)gap_construct_file(project, file_list[0], version, db_fn);
     strcat(db_fn, ".log");
     
+    {
+	char log_buf[256], *user;
+	struct passwd *pw;
+	pw = getpwuid(getuid());
+	user = pw ? pw->pw_name : "unknown";
+	sprintf(log_buf, "opening r%c... by %s(%d)",
+		read_only ? 'o' : 'w',
+		user, getuid());
+	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
+		 log_buf);
+    }
+
     if (0 != (err = (actf_lock(read_only, project, version, create)))) {
 	if (err != 5 && err != 3) {
 	    *status = ERROR;
@@ -1293,13 +1306,6 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	    read_only = 1;
 	    *status = IO_READ_ONLY;
 	}
-    }
-
-    {
-	char log_buf[100];
-	sprintf(log_buf, "opening r%c...", read_only ? 'o' : 'w');
-	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
-		 log_buf);
     }
 
     /* Create a database if requested */
