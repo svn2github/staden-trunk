@@ -1,0 +1,5 @@
+set_menu gap_menu
+add_command {View.SNP candidates} 8 10 {CandidateSNPs \$io}
+
+set_def CANDIDATE_SNPS.WIN .snps
+set_def CANDIDATE_SNPS.foo bar
