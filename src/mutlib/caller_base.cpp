@@ -46,7 +46,7 @@ void BaseCaller::MakeCall( Trace& Tr, SimpleMatrix<int>& Peak, int nPos, int nAm
 
     // Initialisation
     Init();
-    m_nPosition[2] = nPos;
+    // m_nPosition[2] = nPos; jkb 25/06/2003. What should this be?
 
 
     // Search for peaks and load them in
