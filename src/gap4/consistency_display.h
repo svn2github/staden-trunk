@@ -5,12 +5,13 @@
 #include "io-reg.h"
 
 /* configure array for what to display on the consistency display */
-#define NUM_CONS_CONFIGS 5
+#define NUM_CONS_CONFIGS 6
 #define CONS_RULER       0
 #define CONS_TICKS       1
 #define CONFIDENCE       2
 #define READING_COV      3
 #define READPAIR_COV     4
+#define CONSISTENCY      5
 
 typedef struct {
     Tcl_Interp *interp;

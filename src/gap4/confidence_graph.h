@@ -1,6 +1,9 @@
 #ifndef _CONFIDENCE_GRAPH_H
 #define _CONFIDENCE_GRAPH_H
 
+#define CONFIDENCE_GRAPH_QUALITY 0
+#define CONFIDENCE_GRAPH_DISCREP 1
+
 typedef struct {
     Tcl_Interp *interp;
     float **qual;
@@ -14,10 +17,12 @@ typedef struct {
     int cons_id;
     int linewidth;
     char colour[30];
+    int mode;
     ruler_s *ruler;
 } obj_confidence_graph;
 
 int confidence_graph_reg(GapIO *io, Tcl_Interp *interp, char *frame,char 
-			 *win_quality, int cons_id, ruler_s *ruler);
+			 *win_quality, int cons_id, ruler_s *ruler,
+			 int mode /* QUALITY or DISCREP */);
 
 #endif

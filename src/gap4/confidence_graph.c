@@ -123,6 +123,7 @@ int calc_confidence(GapIO *io,
 		    int contig,
 		    int start,
 		    int end,
+		    int mode,
 		    float *qual, /* out */
 		    float *min,  /* out */
 		    float *max)  /* out */
@@ -136,7 +137,9 @@ int calc_confidence(GapIO *io,
         return -1;
 
     calc_consensus(contig, start, end,
-		   CON_SUM, con, NULL, qual, NULL,
+		   CON_SUM, con, NULL,
+		   mode == CONFIDENCE_GRAPH_DISCREP ? NULL : qual,
+		   mode == CONFIDENCE_GRAPH_DISCREP ? qual : NULL,
 		   consensus_cutoff, quality_cutoff,
 		   database_info, (void *)io);
     
@@ -304,8 +307,8 @@ static int update_obj_confidence_graph(GapIO *io,
     conf->t_max = -FLT_MIN;
     conf->t_min = FLT_MAX;
 
-    ret = calc_confidence(io, c->contigs[i], start, end, conf->qual[i], 
-			&conf->min[i], &conf->max[i]);
+    ret = calc_confidence(io, c->contigs[i], start, end, conf->mode,
+			  conf->qual[i], &conf->min[i], &conf->max[i]);
 
     /* find total min and max over all contigs */
     for (i = 0; i < c->num_contigs; i++) {
@@ -410,7 +413,10 @@ static void confidence_callback(GapIO *io, int contig, void *fdata,
     switch(jdata->job) {
     case REG_QUERY_NAME:
 	{
-	    sprintf(jdata->name.line, "Confidence graph");
+	    sprintf(jdata->name.line, 
+		    (conf->mode == CONFIDENCE_GRAPH_DISCREP)
+		    ? "Discrepancy graph"
+		    : "Confidence graph");
 	    return;
 	}
     case REG_COMPLEMENT:
@@ -605,7 +611,8 @@ int confidence_graph_reg(GapIO *io,
 			 char *frame,
 			 char *conf_win,
 			 int cons_id,
-			 ruler_s *ruler) 
+			 ruler_s *ruler,
+			 int mode) 
 {
     obj_confidence_graph *conf;
     obj_consistency_disp *c;
@@ -645,6 +652,7 @@ int confidence_graph_reg(GapIO *io,
     conf->t_max = -FLT_MIN;
     conf->t_min = FLT_MAX;
     conf->ruler = ruler;
+    conf->mode = mode;
     
     for (i = 0; i < c->num_contigs; i++) {
 
@@ -665,8 +673,8 @@ int confidence_graph_reg(GapIO *io,
 	conf->max[i] = -FLT_MIN;
 	conf->min[i] = FLT_MAX;
 
-        calc_confidence(io, c->contigs[i], start, end, conf->qual[i], 
-			&conf->min[i], &conf->max[i]);
+        calc_confidence(io, c->contigs[i], start, end, conf->mode,
+			conf->qual[i], &conf->min[i], &conf->max[i]);
 	/* find total min and max over all contigs */
         if (conf->t_max < conf->max[i]) {
 #ifdef DEBUG

@@ -4485,7 +4485,41 @@ tcl_confidence_graph(ClientData clientData,
 
     vTcl_SetResult(interp, "%d",
 		   confidence_graph_reg(args.io, interp, args.frame,
-					args.conf_win, args.id, ruler));
+					args.conf_win, args.id, ruler,
+					CONFIDENCE_GRAPH_QUALITY));
+    return TCL_OK;
+}
+
+int
+tcl_discrepancy_graph(ClientData clientData,
+		      Tcl_Interp *interp,
+		      int argc,
+		      char *argv[])
+{
+    confidence_arg args;
+    ruler_s *ruler;
+
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(confidence_arg, io)},
+	{"-id",     ARG_INT, 1, NULL, offsetof(confidence_arg, id)},
+	{"-frame",  ARG_STR, 1, NULL, offsetof(confidence_arg, frame)},
+	{"-window", ARG_STR, 1, NULL, offsetof(confidence_arg, conf_win)},
+	{"-win_ruler", ARG_STR, 1, NULL, offsetof(confidence_arg, r_win)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    vfuncheader("discrepancy graph");
+
+    if (-1 == gap_parse_args(a, &args, argc, argv))
+	return TCL_ERROR;
+
+    ruler = ruler_struct(interp, gap_defs, "CONFIDENCE_GRAPH", 1);
+    sprintf(ruler->window, "%s", args.r_win);
+
+    vTcl_SetResult(interp, "%d",
+		   confidence_graph_reg(args.io, interp, args.frame,
+					args.conf_win, args.id, ruler,
+					CONFIDENCE_GRAPH_DISCREP));
     return TCL_OK;
 }
 
@@ -5199,6 +5233,8 @@ NewGap_Init(Tcl_Interp *interp) {
 			 tcl_load_genetic_code, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "confidence_graph",
 		      tcl_confidence_graph, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "discrepancy_graph",
+		      tcl_discrepancy_graph, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "reading_coverage",
 		      tcl_reading_coverage, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "readpair_coverage",

@@ -124,7 +124,8 @@ add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
 add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
 add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
 add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
-add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io}
+add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io 0}
+add_command	{View.Discrepancy graph}	 8 10 {ConfidenceGraph \$io 1}
 add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
@@ -158,6 +159,7 @@ if { $tcl_platform(platform) != "windows" } {
     add_command	{Lists.Print}			12 6 {PrintListDialog}
 }
 add_separator	{Lists.S1}
+add_command	{Lists.Highlight readings list}	 8 10 {InputSelectReadingList \$io}
 add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
 add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
 add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
@@ -552,7 +554,9 @@ add_command {File.Exit} 	1 0 {ConsistencyStartShutdown $io $t}
 add_check {View.Ruler ticks} 	1 0 {config$t.ticks} \
 	{DisplayConsistencyRulerTicks $io $t \[set $t.cons_id\] $t.hscroll}
 add_command {View.Confidence graph} 	1 0 \
-	{CreateConfidenceGraph $io \[set $t.cons_id\] $t}
+	{CreateConfidenceGraph $io 0 \[set $t.cons_id\] $t}
+add_command {View.Discrepancy graph} 	1 0 \
+	{CreateConfidenceGraph $io 1 \[set $t.cons_id\] $t}
 add_command {View.Reading coverage histogram} 	1 0 \
 	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
 add_command {View.Readpair coverage histogram} 	1 0 \
