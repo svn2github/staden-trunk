@@ -8,6 +8,7 @@ dist:
 	-cp -R vectors $(DIST)/tables
 	-cp *.wts $(DIST)/tables
 	-cp *.bitmap $(DIST)/tables
+	-cp *.gif $(DIST)/tables
 	-cp README $(DIST)/tables
 	-cp GTAGDB $(DIST)/tables
 	-cp NOTEDB $(DIST)/tables
