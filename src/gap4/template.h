@@ -120,7 +120,7 @@ typedef struct {
 /*
  * The direction of a template. 0 for +ve, 1 for -ve, -1 for unknown
  */
-#define TEMP_DIRECTION(t) (((t)->consistency && TEMP_CONSIST_STRAND) ? -1 \
+#define TEMP_DIRECTION(t) (((t)->consistency & TEMP_CONSIST_STRAND) ? -1 \
  : (t)->direction)
 
 /*
