@@ -934,6 +934,7 @@ void check_template_length_overlap(GapIO *io, template_c *t,
     int c2_start, c2_end;
     int f1, f2;
     int both_guessed = TEMP_FLAG_GUESSED_START | TEMP_FLAG_GUESSED_END;
+    int length;
     
     if (!(t->flags & TEMP_FLAG_SPANNING)) {
 	t->computed_length = 0;
@@ -946,7 +947,6 @@ void check_template_length_overlap(GapIO *io, template_c *t,
     c1_start = t->start;
     c1_end = t->end;
     f1 = t->flags;
-    int length;
 	
     get_template_positions(io, t, c2);
     c2_start = t->start + offset;
