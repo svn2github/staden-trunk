@@ -27,7 +27,7 @@ set search_setup(consdiscrepancy)	"0 0 0 value"
 set search_setup(tag)			"0 0 1"
 set search_setup(difference)		"0 0 0"
 
-proc create_search_win {w com {dir 0}} {
+proc create_search_win {w com {dir 0} {raise 1}} {
      global NGTag gap_defs search_setup
 
     # Remembered from previous uses of this search window.
@@ -57,13 +57,17 @@ proc create_search_win {w com {dir 0}} {
 		$df.backward invoke
 	    }
 	}
-	raise $w
+	if {$raise} {
+	    raise $w
+	}
 	do_search $w $com
 	return
     }
 
     if {[winfo exists $w]} {
-	raise $w
+	if {$raise} {
+	    raise $w
+	}
 	return
     }
     catch {unset $w.File}; # Just incase
