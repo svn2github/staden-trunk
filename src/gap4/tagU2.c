@@ -107,7 +107,7 @@ tag_id get_free_tag(GapIO *io)
 	free_id = Nannotations(io)+1;
 	io_init_annotations(io,free_id);
     }
-    
+
     return free_id;
 }
 
@@ -392,6 +392,55 @@ void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
 	return;
     }
 
+
+#if 0
+    /*
+     * Tag is in depadded sequence. Convert to a padded coordinate.
+     */
+    if (unpadded_tags && gel > 0) {
+	GReadings r;
+
+	printf("=== gel %d start %d ===\n", gel, start);
+	gel_read(io, gel, r);
+	if (r.sequence) {
+	    char *seq;
+	    int new_start = start, new_end = end;
+	    int i, pads = 0;
+
+	    int st  = r.sense == 0 ? 1          : r.length;
+	    int en  = r.sense == 0 ? r.length+1 : 0;
+	    int dir = r.sense == 0 ? 1          : -1;
+
+	    seq = TextAllocRead(io, r.sequence);
+	    for (i = st; i != en; i+=dir) {
+		int j = r.sense ? r.length+1-i : i;
+		if (seq[i-1] == '*') {
+		    pads++;
+		}
+		if (gel == 290)
+		    printf("%d %d %c\n", i, j, seq[i-1], pads);
+		if (j-pads == start) {
+		    if (gel == 290)
+			printf("start %d -> %d\n", start, start+pads);
+		    new_start = start + pads;
+		}
+		if (j-pads == end) {
+		    if (gel == 290)
+			printf("end %d -> %d\n", end, end+pads);
+		    new_end = end + pads;
+		}
+	    }
+
+	    printf("Gel %d, pos %d..%d becomes %d..%d\n",
+		   gel, start, end, new_start, new_end);
+	    start = new_start;
+	    end = new_end;
+	    xfree(seq);
+	}
+    }
+#endif
+
+
 #if 0
     /*
      * This is broken anyway (should be r.length), and nothing seems to use
@@ -410,10 +459,11 @@ void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
     /* sanity checks */
     if (start < 1 || end > abs(gellen))
 	verror(ERR_WARN, "create_tag_for_gel",
-	      "Tag overlaps gel reading ends - not entered");
+	      "Tag %s overlaps gel reading (#%d) ends (1..%d) - not entered",
+	       tag, gel, abs(gellen));
     else if (start > end)
 	verror(ERR_WARN, "create_tag_for_gel",
-	       "Tag has negative length!");
+	       "Tag %s has negative length, for gel %d!", tag, gel);
     else {
 	if (cache)
 	    insert_new_tag2(io, (tag_id)gel,
