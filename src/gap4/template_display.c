@@ -2789,15 +2789,6 @@ DrawReadingTags(Tcl_Interp *interp,                                    /* in */
 
     } /* end for */
 
-    /* check that TagArray type and colour been allocated */
-    if (type == NULL) {
-
-	verror(ERR_WARN, "ReadingTags",
-	       "tag type not in tag database");
-	return;
-
-    } /* end if */
-
     sprintf(cmd, "%s create rectangle %d %d %d %d "
 	    "-fill %s -tag %s -width %d -outline %s\n",
 	    win_name, x1, y, x2, y, colour, type, line_width, colour);

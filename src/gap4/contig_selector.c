@@ -573,14 +573,6 @@ DrawCSTags(Tcl_Interp *interp,                                       /* in */
 
     } /* end for */
 
-    /* check that TagArray type and colour been allocated */
-    if (type == NULL) {
-
-	verror(ERR_WARN, "CalcTags",
-	       "tag type not in tag database");
-	return;
-
-    } /* end if */
 
     sprintf(cmd, "%s create rectangle %d %d %d %d "
 	    "-fill %s -tags %s -width %d -outline %s\n",
