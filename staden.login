@@ -63,21 +63,16 @@ setenv GTAGDB   "GTAGDB:${HOME}/GTAGDB:${STADTABL}/GTAGDB"
 
 #
 # Find manual pages
+# If MANPATH is not set then we have to get the default one somehow so
+# we can append to it.
 #
-if ( $?MANPATH ) then
-    setenv MANPATH "${STADENROOT}/man:${MANPATH}"
-else
-    setenv MANPATH ${STADENROOT}/man:/usr/man:/usr/local/man:/usr/share/man:/usr/X11R6/man:/usr/share/catman
+if (! $?MANPATH) then
+    # Use the manpath program if available
+    if ( -x /usr/bin/manpath ) then
+        setenv MANPATH `/usr/bin/manpath`
+    else
+        setenv MANPATH "/usr/man:/usr/local/man:/usr/share/catman:/usr/share/man"
+    endif
 endif
-
-#
-# Sequence databases
-#
-
-#If you wish to use the embl indices you need to remove the # from the
-#beginning of the next line
-#source $STADTABL/libraries.config.csh
-
-#If you wish to use the srs indices you need to source SRS/etc/prep_srs where 
-#SRS is the path to your installation of srs.
-#source /pubseq/pubseq/srs5/srs/etc/prep_srs
+# Finally append our own manual path
+setenv MANPATH ${MANPATH}:${STADENROOT}/man

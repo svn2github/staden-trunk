@@ -13,14 +13,20 @@
 #
 #echo 'Setting up the Staden software environment...'
 
-STADENROOT_2002=$STADENROOT
-export STADENROOT_2002
+STADENROOT_2003=$STADENROOT
+export STADENROOT_2003
 
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux/macosx.
 #
 MACHINE=`uname -sr | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*/alpha/;s/Linux.*/linux/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
 export MACHINE
+
+if [ "`uname -sm`" = "Linux ia64" ]
+then
+    MACHINE=linux-ia64
+fi
+
 
 #
 # The Digital Unix version is compiled on Digital Unix V4.0. This causes
@@ -77,25 +83,25 @@ GTAGDB="GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB";	export GTAGDB
 
 #
 # Find manual pages
-# Linux uses /etc/man.config for listing search paths, but you cannot extend
-# this - only replace it.
+# If MANPATH is not set then we have to get the default one somehow so
+# we can append to it.
 #
-if [ "$MACHINE" = "linux" -a "$MANPATH" = "" -a -e /etc/man.config ]
+if [ "$MANPATH" = "" ]
 then
-defman=`sed -n 's/^MANPATH[ 	][ 	]*//p' /etc/man.config |tr '\012' :`
-MANPATH=$STADENROOT/man:$defman
-else
-MANPATH=$STADENROOT/man:${MANPATH-/usr/man:/usr/local/man:/usr/share/catman};
+    # Use the manpath program if available
+    if [ -x /usr/bin/manpath ]
+    then
+        MANPATH=`/usr/bin/manpath`
+    else
+        # Otherwise guess, based on system type
+        if [ "$MACHINE" = "alpha" ]
+	then
+	    MANPATH=/usr/share/%L/man:/usr/dt/share/man:/usr/local/man
+	else
+	    MANPATH=/usr/man:/usr/local/man:/usr/share/catman:/usr/share/man
+	fi
+    fi
+    export MANPATH
 fi
-export MANPATH
-
-#
-# Sequence databases
-#
-#If you wish to use the embl indices you need to remove the # from the
-#beginning of the next line
-#. $STADTABL/libraries.config.sh
-
-#If you wish to use the srs indices you need to source SRS/etc/prep_srs.sh 
-#where SRS is the path to your installation of srs.
-#. /pubseq/pubseq/srs5/srs/etc/prep_srs.sh
+# Finally add our own component in
+MANPATH=$MANPATH:$STADENROOT/man
