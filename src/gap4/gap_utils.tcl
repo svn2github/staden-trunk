@@ -29,17 +29,18 @@ proc r_length { io r_num } {
 ##############################################################################
 #returns the name of the left most gel of a contig given a contig number
 proc left_gel { io contig_num } {
-    set c [io_read_contig $io $contig_num]
-    set r_num [keylget c left]
-    set r [io_read_reading $io $r_num]
-    return [io_read_text $io [keylget r name]]
+    #set c [io_read_contig $io $contig_num]
+    #set r_num [keylget c left]
+
+    # Use chain_left now as this doesn't do any disk IO.
+    set r_num [db_info chain_left $io =$contig_num]
+    return [io_read_reading_name $io $r_num]
 }
 
 ##############################################################################
 #returns the reading name from the reading number
 proc r_name {io r_num} {
-    set r [io_read_reading $io $r_num]
-    return [io_read_text $io [keylget r name]]
+    return [io_read_reading_name $io $r_num]
 }
 
 ##############################################################################
