@@ -8,7 +8,7 @@
 # Startup gap4 with this script. The backslash here fools tcl into thinking
 # the next line is a comment, thus enabling the script to be both bourne shell
 # and tcl compatible. \
-exec stash -f "$0" ${@+"$@"} || exit 1
+exec stash "$0" ${@+"$@"} || exit 1
 
 proc open_database {name} {
     if {[set dot [string last . $name]] == -1} {
