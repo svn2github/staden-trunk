@@ -139,6 +139,8 @@ void BaseCaller::MakeCall( Trace& Tr, SimpleMatrix<int>& Peak, int nPos, int nAm
     if( N <= 0.0 )
         N = 1.0;
     m_nPeakRatio  = S / N;
-    m_nConfidence = 20.0 * std::log10( m_nPeakRatio );
+    m_nConfidence = m_nPeakRatio
+      ? 20.0 * std::log10( m_nPeakRatio )
+      : 0;
 }
 

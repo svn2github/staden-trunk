@@ -320,7 +320,9 @@ double NumericArray<T>::Mean() const
    double acc = 0.0;
    for( int n=m_nLowerLimit; n<=m_nUpperLimit; n++ )
       acc += m_pArray[n];
-   return acc / (m_nUpperLimit-m_nLowerLimit+1);
+   return (m_nUpperLimit-m_nLowerLimit+1)
+     ? acc / (m_nUpperLimit-m_nLowerLimit+1)
+     : 0;
 }
 
 
