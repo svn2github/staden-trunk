@@ -4777,6 +4777,7 @@ tcl_save_contig_order(ClientData clientData,
     return TCL_OK;
 }
 
+#if 0
 int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 		     int objc, Tcl_Obj *CONST objv[])
 {
@@ -4794,6 +4795,7 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 
     return TCL_OK;
 }
+#endif
 
 
 /* set up tcl commands which call C procedures */
@@ -5176,8 +5178,10 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "save_contig_order", tcl_save_contig_order,
 		      (ClientData) NULL,
 		      NULL);
+#if 0
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
 			 (ClientData) NULL, NULL);
+#endif
 
     return TCL_OK;
 
