@@ -2017,8 +2017,12 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			/* tmp = (double)qhighest[5][k] / qcount[5][k] *
 			   dependent_table[MIN(qcount[5][k],10)]; */
 			
+			/* tmp = (double)phred_table[qhighest[5][k]] +
+			   (qcount[5][k] - 1) * DEPEND_ADD; */
+
 			tmp = (double)phred_table[qhighest[5][k]] +
-			    (qcount[5][k] - 1) * DEPEND_ADD;
+			    dependent_table[MIN(qcount[5][k],10)];
+
 			prob = 1 - pow(10.0, -tmp / 10.0);
 			
 			bayesian[0][nevents] = prob / 4;
@@ -2037,8 +2041,12 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			    /* tmp = (double)qhighest[j][k] / qcount[j][k] *
 			       dependent_table[MIN(qcount[j][k],10)]; */
 			    
+			    /* tmp = (double)phred_table[qhighest[j][k]] +
+			       (qcount[j][k] - 1) * DEPEND_ADD; */
+
 			    tmp = (double)phred_table[qhighest[j][k]] +
-				(qcount[j][k] - 1) * DEPEND_ADD;
+				dependent_table[MIN(qcount[j][k],10)];
+
 			    prob = 1 - pow(10.0, -tmp / 10.0);
 			    
 			    bayesian[0][nevents] = (1 - prob) / 3;
