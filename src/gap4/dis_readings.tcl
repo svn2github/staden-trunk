@@ -36,9 +36,17 @@ proc DisReadingsDialog { io f cs} {
 		      [list $b1] [list $b2] [list $b3]]
 
     ###########################################################################
+    # Whether to duplicate tags
+    xyn $f.constags \
+	-label "Duplicate consensus tags?" \
+	-orient horiz \
+	-default [keylget gap_defs DIS_READINGS.DUPCONSTAGS.VALUE]
+
+
+    ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-        -ok_command "OK_Pressed_DisReading $io $f $cs $f.infile $f.id $f.sel_task"\
+        -ok_command "OK_Pressed_DisReading $io $f $cs $f.infile $f.id $f.sel_task $f.constags"\
 	-cancel_command "destroy $f" \
 	-help_command "show_help gap4 {Disassemble}" \
 	-bd 2 \
@@ -48,15 +56,19 @@ proc DisReadingsDialog { io f cs} {
     pack $f.infile -fill x
     pack $f.id -fill x
     pack $f.sel_task -fill x
+    # still sometimes duplicates tags when requested not to, so option
+    # is disabled for now.
+    # pack $f.constags -fill x
     pack $f.ok_cancel -fill x
 
 }
 
-proc OK_Pressed_DisReading { io f cs infile id sel_task } {
+proc OK_Pressed_DisReading { io f cs infile id sel_task constags } {
     global gap_defs
 
     set iopt [expr {[radiolist_get $sel_task]-1}]
-
+    set dup_tags [$constags get]
+    
     #special case for a single reading
     if {[lorf_in_get $infile] == 3} {
 	set list [contig_id_gel $id]
@@ -73,7 +85,11 @@ proc OK_Pressed_DisReading { io f cs infile id sel_task } {
 	# Someone's too busy to shutdown?
 	return
     }
-    set result [disassemble_readings -io $io -readings $list -move $iopt]
+    set result [disassemble_readings \
+		    -io $io \
+		    -readings $list \
+		    -move $iopt \
+		    -duplicate_tags $dup_tags]
     #if database is empty, destroy contig selector and set menus back to
     #as if opened new database
     if {[db_info num_contigs $io] == 0} {
@@ -117,9 +133,16 @@ proc DisEditorReadingsDialog { io list f } {
 			  [list $b1] [list $b2] [list $b3]]
 
     ###########################################################################
+    # Whether to duplicate tags
+    xyn $f.constags \
+	-label "Duplicate consensus tags?" \
+	-orient horiz \
+	-default [keylget gap_defs DIS_READINGS.DUPCONSTAGS.VALUE]
+
+    ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-        -ok_command "OK_Pressed_EdDisReading $io {$list} $f $f.sel_task"\
+        -ok_command "OK_Pressed_EdDisReading $io {$list} $f $f.sel_task $f.constags"\
 	-cancel_command "destroy $f" \
 	-help_command "show_help gap4 {Disassemble}" \
 	-bd 2 \
@@ -127,14 +150,18 @@ proc DisEditorReadingsDialog { io list f } {
     ###########################################################################
 
     pack $f.sel_task -fill x
+    # still sometimes duplicates tags when requested not to, so option
+    # is disabled for now.
+    # pack $f.constags -fill x; 
     pack $f.ok_cancel -fill x
 
 }
 
-proc OK_Pressed_EdDisReading { io list f sel_task } {
+proc OK_Pressed_EdDisReading { io list f sel_task constags } {
     global gap_defs
 
     set iopt [expr {[radiolist_get $sel_task]-1}]
+    set dup_tags [$constags get]
  
     #convert reading numbers into reading names
     set list [eval get_read_names -io $io $list]
@@ -145,7 +172,11 @@ proc OK_Pressed_EdDisReading { io list f sel_task } {
 	# Someone's too busy to shutdown?
 	return
     }
-    set result [disassemble_readings -io $io -readings $list -move $iopt]
+    set result [disassemble_readings \
+		    -io $io \
+		    -readings $list \
+		    -move $iopt \
+		    -duplicate_tags $dup_tags]
     if { [string compare $result "OK"] == 0} {
 
 	#if database is empty, destroy contig selector and set menus back to

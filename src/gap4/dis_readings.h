@@ -32,8 +32,13 @@ int remove_contig_holes(GapIO *io, int cnum);
  *
  * Ie if we remove A & B (overlapping) from one contig and C from another
  * then we create two new contigs containing A & B in one and C in the other.
+ *
+ * When creating new contigs, we have the option of copying over any
+ * overlapping consensus tags to the new contigs. This choice only refers to
+ * consensus tags; reading tags are always copied.
  */
-int disassemble_readings(GapIO *io, int *rnums, int nreads, int move);
+int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
+			 int duplicate_tags);
 
 /**
  * Deletes an entire contig icluding all the readings, annotations, notes, etc

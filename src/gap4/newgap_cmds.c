@@ -2263,6 +2263,9 @@ DisReadings(ClientData clientData,
 	{"-io",	     ARG_IO ,  1, NULL, offsetof(dis_reading_arg, io)},
 	{"-readings",ARG_STR,  1, NULL, offsetof(dis_reading_arg, list)},
 	{"-move",    ARG_INT,  1, "1",  offsetof(dis_reading_arg, move)},
+	{"-duplicate_tags",
+	             ARG_INT,  1, "1",  offsetof(dis_reading_arg,
+						 duplicate_tags)},
 	{NULL,	     0,	       0, NULL, 0}
     };
 
@@ -2299,7 +2302,8 @@ DisReadings(ClientData clientData,
     }
     num_reads = j;
 
-    if (disassemble_readings(args.io, rnums, num_reads, args.move) < 0) {
+    if (disassemble_readings(args.io, rnums, num_reads, args.move,
+			     args.duplicate_tags) < 0) {
 	verror(ERR_WARN, "Disassemble readings",
 	       "Failure in Disassemble Readings");
 	return TCL_OK;

@@ -109,6 +109,7 @@ typedef struct {
     GapIO *io;
     char *list;
     int move;
+    int duplicate_tags;
 } dis_reading_arg;
 
 typedef struct {

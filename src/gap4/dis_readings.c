@@ -22,7 +22,7 @@ static void unlink_reading(GapIO *io, int rnum, int cnum, int *rnum_changed) {
 	rl = arrp(GReadings, io->reading, r->left-1);
 	rl->right = r->right;
 	io_rnbr(io, r->left) = r->right;
-	rnum_changed[r->left] = 1;
+	rnum_changed[r->left] = -1;
     } else {
 	io_clnbr(io, cnum) = io_rnbr(io, rnum);
     }
@@ -31,7 +31,7 @@ static void unlink_reading(GapIO *io, int rnum, int cnum, int *rnum_changed) {
 	rr = arrp(GReadings, io->reading, r->right-1);
 	rr->left = r->left;
 	io_lnbr(io, r->right) = r->left;
-	rnum_changed[io_rnbr(io, rnum)] = 1;
+	rnum_changed[io_rnbr(io, rnum)] = -1;
     } else {
 	io_crnbr(io, cnum) = io_lnbr(io, rnum);
     }
@@ -61,7 +61,7 @@ static void remove_and_swap_reading(GapIO *io, int rnum, int *rnum2cnum,
 	 */
 	rmov = arrp(GReadings, io->reading, rnum-1);
 	rdel = arrp(GReadings, io->reading, NumReadings(io)-1);
-	rnum_changed[rnum] = 1;
+	rnum_changed[rnum] = -1;
 
 	cnum = rnum2cnum[NumReadings(io)];
 	rnum2cnum[NumReadings(io)] = rnum2cnum[rnum];
@@ -70,7 +70,7 @@ static void remove_and_swap_reading(GapIO *io, int rnum, int *rnum2cnum,
 	if (rmov->left) {
 	    GReadings *rl = arrp(GReadings, io->reading, rmov->left-1);
 	    rl->right = rnum;
-	    rnum_changed[rmov->left] = 1;
+	    rnum_changed[rmov->left] = -1;
 	} else {
 	    io_clnbr(io, cnum) = rnum;
 	}
@@ -78,7 +78,7 @@ static void remove_and_swap_reading(GapIO *io, int rnum, int *rnum2cnum,
 	if (rmov->right) {
 	    GReadings *rr = arrp(GReadings, io->reading, rmov->right-1);
 	    rr->left = rnum;
-	    rnum_changed[rmov->right] = 1;
+	    rnum_changed[rmov->right] = -1;
 	} else {
 	    io_crnbr(io, cnum) = rnum;
 	}
@@ -167,6 +167,68 @@ static int rsort_int(const void *pi1, const void *pi2) {
     return i2 - i1;
 }
 
+/**
+ * Copies all annotations from contig cfrom to contig cto where a reading
+ * in cto exists. cto may have holes, so we skip copying annotations in these
+ * holes. Annotations overlapping a hole are copied (without clipping).
+ * The expectation is that all of these inconsistencies (holes, clipped
+ * annotations, etc) will be resolved by a call to remove_contig_holes().
+ */
+static void copy_consensus_annotations(GapIO *io, int cfrom, int cto) {
+    GContigs cf, ct;
+    GAnnotations a, last;
+    int anno, lastnum;
+    int rnum;
+
+    /* Find start of annotation list. Bail out early if none exist */
+    contig_read(io, cfrom, cf);
+    contig_read(io, cto,   ct);
+    if (!(anno = cf.annotations))
+	return;
+    tag_read(io, anno, a);
+
+    /*
+     * Walk along reading list in cto. For each reading, scan from
+     * current 'anno' to beyond the end of this reading to see whether or
+     * not this annotation overlaps (and hence requires copying).
+     */
+    lastnum = 0;
+    for (rnum = io_clnbr(io, cto); rnum; rnum = io_rnbr(io, rnum)) {
+	int start = io_relpos(io, rnum);
+	int end = start + ABS(io_length(io, rnum))-1;
+
+	while (anno && a.position <= end) {
+	    if (a.position + a.length >= start) {
+		int newanno;
+		newanno = get_free_tag(io);
+		if (lastnum) {
+		    last.next = newanno;
+		    tag_write(io, lastnum, last);
+		} else {
+		    ct.annotations = newanno;
+		    contig_write(io, cto, ct);
+		}
+		lastnum = newanno;
+		tag_read(io, lastnum, last);
+		last.position = a.position;
+		last.length = a.length;
+		last.type = a.type;
+		if (a.annotation) {
+		    char *comment = get_comment(io, a.annotation);
+		    last.annotation = put_comment(io, comment);
+		    xfree(comment);
+		}
+	    }
+	    anno = a.next;
+	    if (anno)
+		tag_read(io, anno, a);
+	}
+    }
+
+    if (lastnum)
+	tag_write(io, lastnum, last);
+}
+
 
 /**
  * Removes a set of readings from either the contig or the database.
@@ -178,15 +240,20 @@ static int rsort_int(const void *pi1, const void *pi2) {
  * Ie if we remove A & B (overlapping) from one contig and C from another
  * then we create two new contigs containing A & B in one and C in the other.
  *
+ * When creating new contigs, we have the option of copying over any
+ * overlapping consensus tags to the new contigs. This choice only refers to
+ * consensus tags; reading tags are always copied.
+ *
  * move == 0   => remove
  * move == 1   => split to new single-read contigs
  * move == 2   => move to new still-joined contigs
  */
-int disassemble_readings(GapIO *io, int *rnums, int nreads, int move)
+int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
+			 int duplicate_tags)
 {
     int i;
     int *rnum2cnum = NULL;
-    int *rnum_changed = NULL;
+    int *rnum_changed = NULL; /* 0 for unchanged, new cnum for changed */
     int *new_cnum = NULL;
     int cn, rn;
 
@@ -275,7 +342,8 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move)
 
 	    /* Move reading to the contig */
 	    move_read_to_contig(io, rnum, cnum);
-	    rnum_changed[rnum] = 1;
+
+	    rnum_changed[rnum] = cnum;
 	}
     }
 
@@ -293,6 +361,22 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move)
 	contig_write(io, i, c);
     }
 
+
+    /* Copy consensus annotations */
+    for (i = 1; i <= NumReadings(io); i++) {
+	int j;
+	if (rnum_changed[i] <= 0)
+	    continue;
+
+	/* New contig detected, so copy over the annotations */
+	if (duplicate_tags)
+	    copy_consensus_annotations(io, rnum2cnum[i], rnum_changed[i]);
+	
+	/* Prevent copy of annotations for other reads in this new contig */
+	for (j = i+1; j <= NumReadings(io); j++)
+	    if (rnum_changed[j] == rnum_changed[i])
+		rnum_changed[j] = -1;
+    }
 
     /* Delete contigs that have entirely vanished */
     delete_empty_contigs(io);
@@ -361,8 +445,10 @@ int remove_contig_holes(GapIO *io, int cnum) {
     int furthest;
     int cstart;
     int shift;
+    int first_loop = 1;
     GContigs c;
     GReadings r;
+    int rm_contig, rm_left, rm_right;
     
     if (contig_read(io, cnum, c))
 	return -1;
@@ -381,10 +467,8 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	    
 	    /* First read in contig => clip & shift consensus tags */
 	    if (cstart) {
-		if (r.position != 1)
-		    vmessage("Gap at start, shifting by %d bases\n", shift);
 		shift = r.position - 1;
-		if (shift) {
+		if (shift && first_loop) {
 		    /*
 		     * This may be further sped up. Shifting tags may be
 		     * slow (it writes back the results to disk), and if
@@ -402,8 +486,6 @@ int remove_contig_holes(GapIO *io, int cnum) {
 
 	    /* If there's a gap - start a new contig */
 	    if (!cstart && r.position > furthest) {
-		vmessage("Hole from %d to %d, breaking contig\n",
-			 furthest, r.position);
 		new_contig = 1;
 		break;
 	    }
@@ -422,9 +504,19 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	    cstart = 0;
 	}
 
-	/* Last read => remove any annotations off contig end */
-	if (furthest < c.length)
-	    c.annotations = rmanno(io, c.annotations, furthest+1, c.length);
+	/*
+	 * Last read => remove any annotations off contig end.
+	 * Cannot do this here as we need to do the "if (new_contig)" and
+	 * split_contig_tags() code below first, so we just record the 
+	 * fact the tags should be removed.
+	 */
+	if (furthest < c.length) {
+	    rm_left = furthest+1;
+	    rm_right = c.length+1;
+	    rm_contig = cnum;
+	} else {
+	    rm_contig = 0;
+	}
 
 	/* Update contig size etc */
 	c.length = furthest;
@@ -457,6 +549,16 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	    io_lnbr(io, rnum) = 0;
 	    gel_write(io, rnum, r);
 	}
+
+	/* Now perform the tag removal, if detected as necessary earlier */
+	if (rm_contig) {
+	    GContigs ct;
+	    contig_read(io, rm_contig, ct);
+	    ct.annotations = rmanno(io, ct.annotations, rm_left, rm_right);
+	    contig_write(io, rm_contig, ct);
+	}
+
+	first_loop = 0;
     } while (new_contig);
 
     return 0;
@@ -504,7 +606,7 @@ int delete_contig(GapIO *io, int contig) {
 	reads[nreads++] = rnum;
 
     /* Remove them all */
-    ret = disassemble_readings(io, reads, nreads, 0);
+    ret = disassemble_readings(io, reads, nreads, 0, 0);
 
     xfree(reads);
 
