@@ -1,0 +1,134 @@
+#!/bin/sh
+#\
+exec stash "$0" ${@+"$@"} || exit 1
+
+#
+# This script converts an EMBL file read from argv or stdin and writes
+# an experiment file to stdout.
+#
+# The way this is done is by creating a temporary gap4 database,
+# assembling the EMBL file, and then extracting the reading (to
+# another temporary file), printing it up, and finally tidying up
+# the whole temporary mess.
+#
+# FAR from clean, but it works and allows us to use things like
+# exp2caf with EMBL files.
+#
+
+load_package tk_utils
+load_package gap
+
+# CLI parsing
+if {[lindex $argv 0] == "-h"} {
+    puts {embl2exp [-template name] [-id name] [-debug] [embl_file]}
+    exit 1
+}
+
+set tname ""
+set id ""
+set debug 0
+while {[string match "-*" [lindex $argv 0]]} {
+    if {[lindex $argv 0] == "-template"} {
+	set tname [lindex $argv 1]
+	set argv [lrange $argv 2 end]
+    } elseif {[lindex $argv 0] == "-id"} {
+	set id [lindex $argv 1]
+	set argv [lrange $argv 2 end]
+    } elseif {[lindex $argv 0] == "-debug"} {
+	set debug 1
+	set argv [lrange $argv 1 end]
+    } elseif {[lindex $argv 0] == "-"} {
+	set argv [lrange $argv 1 end]
+	break
+    } else {
+	puts stderr "Unknown option: [lindex $argv 0]"
+	exit 1
+    }
+}
+
+# Allocate a temporary directory for working in.
+set tmp_dir [tmpnam]
+file mkdir $tmp_dir
+if {$debug} {
+    puts stderr "Tmp dir = $tmp_dir"
+}
+
+
+# Get EMBL file name
+# We copy this to a tmp file as even if the file exists the assembly
+# algorithm may not be able to read it due to pathetically short filename
+# limit bugs.
+set embl_fn [file join $tmp_dir seq.embl]
+set fd [open $embl_fn w]
+if {[llength $argv] == 0} {
+    puts $fd [read stdin]
+} else {
+    set in [open [lindex $argv 0] r]
+    puts $fd [read $in]
+    close $in
+}
+close $fd
+
+
+# Create the gap4 database
+set db_fn [file join $tmp_dir DB]
+set io [open_db -name $db_fn -version 0 -access rw -create 1]
+
+
+# Assemble the EMBL file
+capture {set result [assemble_shotgun -io $io -files $embl_fn]} out
+if {$debug} {
+    puts stderr "=== assemble_shotgun ===\n$out\n"
+}
+
+
+# Extract the reading again
+capture {extract_readings \
+	     -io $io \
+	     -readings \#1 \
+	     -directory $tmp_dir \
+	     -format 1} out
+if {$debug} {
+    puts stderr "=== extract_readings ===\n$out\n"
+}
+
+
+# Print the extracted sequence to stdout, editing as required
+set fd [open $tmp_dir/fofn r]
+set fname [string trim [read $fd] " \t\n"]
+close $fd
+set fd [open $tmp_dir/$fname r]
+while {[gets $fd line] != -1} {
+    # Remove junk from end of TN line
+    if {[string match "TN   *" $line]} {
+	if {$tname != ""} {
+	    set line "TN   $tname"
+	} else {
+	    regexp {(^TN   [^ ]*)} $line _ tn
+	    set line $tn
+	}
+    }
+
+    if {[string match "ID   *" $line]} {
+	if {$id != ""} {
+	    set line "ID   $id"
+	}
+    }
+
+    if {[string match "AV   *" $line]} {
+	# No quality needed
+	continue
+    }
+
+    puts $line
+}
+close $fd
+
+
+# Tidy up
+close_db -io $io
+if {!$debug} {
+    file delete -force $tmp_dir
+}
+
+exit
