@@ -88,6 +88,7 @@ typedef struct {
 #define TEMP_CONSIST_PRIMER	(1<<1)
 #define TEMP_CONSIST_STRAND	(1<<2)
 #define TEMP_CONSIST_UNKNOWN	(1<<3)
+#define TEMP_CONSIST_INTERDIST  (1<<4)
 
 
 /*
@@ -114,6 +115,7 @@ typedef struct {
 #define TEMP_OFLAG_CVEC		  2 /* also clip cosmid vector */
 #define TEMP_OFLAG_IGNORE_PTYPE	  4 /* whether primer-type (any) is accurate */
 #define TEMP_OFLAG_IGNORE_PTYPE34 8 /* whether primer-type 3/4 is accurate */
+#define TEMP_OFLAG_INTERDIST     16 /* compute inter-contig dists */
 
 #define UNKNOWN_POS -999999
 
@@ -159,5 +161,16 @@ void check_template_length_overlap(GapIO *io, template_c *t,
  */
 int template_covered(GapIO *io, template_c *t, int c,
 		     int range_start, int range_end);
+
+/*
+ * Modifies OFLAG for all templates.
+ * 'set' and 'clr' are bit patterns made up from the TEMP_OFLAGS_* values.
+ * Each flag is set via  flag = (flag &~ clr) | set.
+ *
+ * So to set a flag pass clr as 0 and to clr a flag pass set as 0. Passing
+ * both allows combinations of setting and clearing in one operation.
+ */
+void template_check_set_flags(GapIO *io, template_c **tarr,
+			      int set, int clr);
 
 #endif /* _TEMPLATE_H */

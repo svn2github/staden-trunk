@@ -213,6 +213,24 @@ void uninit_template_checks(GapIO *io, template_c **template_check) {
     xfree(template_check);
 }
 
+/*
+ * Modifies OFLAG for all templates.
+ * 'set' and 'clr' are bit patterns made up from the TEMP_OFLAGS_* values.
+ * Each flag is set via  flag = (flag &~ clr) | set.
+ *
+ * So to set a flag pass clr as 0 and to clr a flag pass set as 0. Passing
+ * both allows combinations of setting and clearing in one operation.
+ */
+void template_check_set_flags(GapIO *io, template_c **tarr,
+			      int set, int clr) {
+    int i;
+
+    for (i = 1; i <= Ntemplates(io); i++) {
+	if (tarr[i])
+	    tarr[i]->oflags = (tarr[i]->oflags & ~clr) | set;
+    }
+}
+
 
 /*
  * Check the primer and sense (whether complemented) information
@@ -903,7 +921,8 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
     if (t->computed_length > te.insert_length_max * template_size_tolerance)
 	t->consistency |= TEMP_CONSIST_DIST;
 
-    if (!(t->flags & TEMP_FLAG_SPANNING))
+    if (!(t->flags & TEMP_FLAG_SPANNING) ||
+	(t->oflags & TEMP_OFLAG_INTERDIST) == 0)
 	return;
 
     c1 = 0;
@@ -954,11 +973,11 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 	t->computed_length = length;
 
 	if (length > te.insert_length_max * template_size_tolerance) {
-	    t->consistency |= TEMP_CONSIST_DIST;
+	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
 	if (overlap > 0 &&
 	    length < te.insert_length_min / template_size_tolerance) {
-	    t->consistency |= TEMP_CONSIST_DIST;
+	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
     }
 }
@@ -983,6 +1002,8 @@ void check_template_length_overlap(GapIO *io, template_c *t,
 	return;
     }
 
+    if ((t->oflags & TEMP_OFLAG_INTERDIST) == 0)
+	return;
 
     /* Compute positions in each contig, adjusting for offset in c2 */
     get_template_positions(io, t, c1);
@@ -1022,7 +1043,7 @@ void check_template_length_overlap(GapIO *io, template_c *t,
 	t->computed_length = length;
 	if (length > te.insert_length_max * template_size_tolerance ||
 	    length < te.insert_length_min / template_size_tolerance) {
-	    t->consistency |= TEMP_CONSIST_DIST;
+	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
     }
 
@@ -1053,6 +1074,10 @@ void score_template(GapIO *io, template_c *t) {
 
     if (t->consistency & TEMP_CONSIST_PRIMER) {
 	t->score *= 0.7;
+    }
+
+    if (t->consistency & TEMP_CONSIST_INTERDIST) {
+	t->score *= 0.9;
     }
 
     if (t->consistency & TEMP_CONSIST_DIST) {
