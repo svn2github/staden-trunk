@@ -1,3 +1,169 @@
+2004-04-23  James Bonfield  <jkb>
+
+	* src/gap4/newgap_cmds.c:
+	Added a -quality option to the quality_clip_reads option.
+
+	* src/gap4/contig_editor.tcl:
+	New template colour definition (-tmplcolour5) to match the
+	spanning template status.
+
+	* src/gap4/copy_db.c:
+	Added a copy_read_name() function. This now handles duplicate
+	readings by renaming them.
+
+2004-04-23  jkbonfield  <jkbonfield>
+
+	* src/gap4/notes.c:
+	(10:38:24) Fixed a 1024 byte limitation on the RAWD note. 
+
+2004-04-21  jkbonfield  <jkbonfield>
+
+	* src/gap4/configure.tcl:
+	(13:28:28) Renamed the term 'template size strictness' to 'template
+	size tolerance' to reflect the fact that larger numbers mean less
+	strict. 
+
+	* src/gap4/gap.tcl:
+	(13:28:40) Renamed the term 'template size strictness' to 'template
+	size tolerance' to reflect the fact that larger numbers mean less
+	strict. 
+
+	* src/gap4/gap_globals.c,
+	* src/gap4/gap_globals.h,
+	* src/gap4/tclIndex,
+	* src/gap4/template.c:
+	(13:28:41) Renamed the term 'template size strictness' to 'template
+	size tolerance' to reflect the fact that larger numbers mean less
+	strict. 
+
+	* src/gap4/template_display.tcl:
+	(13:28:42) Renamed the term 'template size strictness' to 'template
+	size tolerance' to reflect the fact that larger numbers mean less
+	strict. 
+
+	* tables/gaprc_menu_full:
+	(13:29:51) Renamed the term 'template size strictness' to 'template
+	size tolerance' to reflect the fact that larger numbers mean less
+	strict. 
+
+	* tables/gaprc:
+	(13:30:25) Added TEMPLATE_TOLERANCE as a configuration parameter so
+	that users may adjust the default from 1.0. 
+
+	* tables/gaprc:
+	(13:54:03) Changed the primer3 Tm settings back to their previous
+	ranges. These are probably inappropriate for the PCR dialogue, but
+	I'll tackle that later (with a different set of parameters
+	perhaps). 
+
+2004-04-20  jkbonfield  <jkbonfield>
+
+	* src/gap4/clip.c:
+	(16:23:35) Updated the quality_clip_ends function to output using
+	vmessage() instead of printf. 
+
+	* tables/gaprc:
+	(17:01:05) Added editor colour for spanning template 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/edStructs.h:
+	(17:03:27) Added a new colour code and status for templates in the
+	editor. "Spanning" templates now have the status "O" ("O"ther
+	contig). Templates that are spanning and have only one end-read
+	present are shown with a pink block. Currently spanning templates
+	where both-ends are present and correct are still shown in the "Ok"
+	colour, although the text code still lists "O". 
+
+	* src/gap4/edUtils2.c:
+	(17:03:28) Added a new colour code and status for templates in the
+	editor. "Spanning" templates now have the status "O" ("O"ther
+	contig). Templates that are spanning and have only one end-read
+	present are shown with a pink block. Currently spanning templates
+	where both-ends are present and correct are still shown in the "Ok"
+	colour, although the text code still lists "O". 
+
+	* src/gap4/edInterface.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c,
+	* src/gap4/tkEditor.h:
+	(17:03:29) Added a new colour code and status for templates in the
+	editor. "Spanning" templates now have the status "O" ("O"ther
+	contig). Templates that are spanning and have only one end-read
+	present are shown with a pink block. Currently spanning templates
+	where both-ends are present and correct are still shown in the "Ok"
+	colour, although the text code still lists "O". 
+
+2004-04-19  jkbonfield  <jkbonfield>
+
+	* src/mk/alpha.mk:
+	(11:24:56) Added F77_DEP so that gap4sh compiles. 
+
+	* tables/checked.gif,
+	* tables/unchecked.gif:
+	(12:58:00) Added missing image files for the PCR primer picking
+	code. 
+
+	* src/gap4/pcr_primers.tcl:
+	(12:58:26) Moved location of checked/unchecked gif images to
+	$STADTABL. 
+
+	* tables/Makefile:
+	(12:59:20) Added *.gif to the list of extensions to copy using make
+	dist. 
+
+2004-04-16  jkbonfield  <jkbonfield>
+
+	* src/gap4/restriction_enzymes.c:
+	(16:15:34) The correct fragment size is now listed between mouse
+	clicks in the plot. 
+
+	* src/gap4/stop_codon.c:
+	(16:16:22) Stop codons are now spotted when they contain pads
+	within the codon. The reading frame no longer changes due to pads
+	either. 
+
+	* src/seq_utils/dna_utils.c,
+	* src/seq_utils/dna_utils.h:
+	(16:17:12) Added iubc_word_match_padded() for use with the depadded
+	stop codon plot. 
+
+	* src/seq_utils/renz_utils.c:
+	(16:18:27) Added hash_seq4_padded() to hash on word length 4 in
+	data containing pads. This was created for the gap4 stop-codon plot
+	updates and it pretty much works OK, but in the end I decided not
+	to use it. 
+
+	* src/tk_utils/restriction_enzyme_map.c:
+	(16:19:11) Added an unpadded_cut_site parameter to PlotStickMap.
+	Required by the gap4 restriction enzyme plot changes. 
+
+	* src/tk_utils/restriction_enzyme_map.h:
+	(16:19:27) Added an unpadded_cut_site parameter to PlotStickMap.
+	Required by the gap4 restriction enzyme plot changes. 
+
+	* src/tk_utils/tkSheet_common.c,
+	* src/tk_utils/tkSheet_struct.h:
+	(16:21:22) Added a 'grid' member of the sheet widget to control
+	whether Tk_SetGrid should be used. This allows us to only specify
+	one widget to be controlling the grid within a toplevel (which is
+	supposedly required by Tk, despite the fact that we've used 2
+	within the contig editor for ages). 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/tkEditor.c:
+	(16:24:00) Disabled "gridding" (resizing in steps quantised to the
+	font size) within the editor and adjusted the Any-Configure event
+	handler.
+	
+	This means that the editor can now display half a character, or
+	that the vertical scrollbar grows/shrinks to fit in an exact number
+	of characters.
+	
+	However it does cure some horrible resizing bugs when running on
+	RedHat9 using metacity (I believe the problem is with metacity, not
+	redhat9 or gap4) and generally resizing has been buggy for a long
+	while. Hopefully this produces fewer problems than it solves. 
+
 2004-04-14  James Bonfield  <jkb>
 
 	* src/gap4/dis_readings.c (disassemble_readings): 
