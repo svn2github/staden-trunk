@@ -2254,14 +2254,15 @@ DisReadings(ClientData clientData,
 	    int argc,
 	    char *argv[])
 {
-    char *name1 = NULL;
     char *name2 = NULL;
     dis_reading_arg args;
+    char **reads = NULL;
+    int *rnums, i, j;
+    int num_reads;
     cli_args a[] = {
-	{"-io",	     ARG_INT,  1, NULL, offsetof(dis_reading_arg, handle)},
+	{"-io",	     ARG_IO ,  1, NULL, offsetof(dis_reading_arg, io)},
 	{"-readings",ARG_STR,  1, NULL, offsetof(dis_reading_arg, list)},
-	{"-all",     ARG_INT,  1, "1",  offsetof(dis_reading_arg, iall)},
-	{"-remove",  ARG_INT,  1, "1",  offsetof(dis_reading_arg, iopt)},
+	{"-move",    ARG_INT,  1, "1",  offsetof(dis_reading_arg, move)},
 	{NULL,	     0,	       0, NULL, 0}
     };
 
@@ -2272,27 +2273,41 @@ DisReadings(ClientData clientData,
     if (-1 == gap_parse_args(a, &args, argc, argv))
 	return TCL_ERROR;
 
-    name1 = get_default_string(interp, gap_defs,
-			       vw("DIS_READINGS.REMMODE.BUTTON.%d",
-				  2-args.iall));
     name2 = get_default_string(interp, gap_defs,
 			       vw("DIS_READINGS.SELTASK.BUTTON.%d",
-				  2-args.iopt));
+				  args.move+1));
 
-    if (name1 && name2) {
+    if (name2) {
         Tcl_DString input_params;
         Tcl_DStringInit(&input_params);
-	vTcl_DStringAppend(&input_params, "%s\nRemove %s\n%s\n",
-			   args.list, name1, name2);
+	vTcl_DStringAppend(&input_params, "%s\n%s\n",
+			   args.list, name2);
 	vfuncparams("%s", Tcl_DStringValue(&input_params));
 	Tcl_DStringFree(&input_params);
     }
 
-    if (disassemble_readings(args.handle, args.list,
-			     2-args.iall, 2-args.iopt) < 0) {
-	verror(ERR_WARN, "Disassemble readings", "Failure in Disassemble Readings");
+    if (Tcl_SplitList(interp, args.list, &num_reads, &reads) != TCL_OK)
+	return TCL_ERROR;
+
+    if (NULL == (rnums = (int *)xmalloc(num_reads * sizeof(int))))
+	return TCL_ERROR;
+
+    for (i = j = 0; i < num_reads; i++) {
+	rnums[j] = get_gel_num(args.io, reads[i], GGN_ID);
+	if (rnums[j])
+	    j++;
+    }
+    num_reads = j;
+
+    if (disassemble_readings(args.io, rnums, num_reads, args.move) < 0) {
+	verror(ERR_WARN, "Disassemble readings",
+	       "Failure in Disassemble Readings");
 	return TCL_OK;
     }
+    Tcl_Free((char *)reads);
+    xfree(rnums);
+
+    db_check(args.io);
 
     return TCL_OK;
 } /* end DisReadings */
@@ -2833,55 +2848,45 @@ CheckDatabase(ClientData clientData,
 }
 
 int
-ShiftReadings(ClientData clientData,
-	      Tcl_Interp *interp,
-	      int argc,
-	      char *argv[])
+tcl_remove_contig_holes(ClientData clientData,
+			Tcl_Interp *interp,
+			int argc,
+			char *argv[])
 {
-    shift_gels_arg args;
-    int num_reads;
-    int *readings;
-    int num_dist;
-    char **distances;
-    int i;
+    list2_arg args;
+    int rargc, i;
+    contig_list_t *rargv;
 
     cli_args a[] = {
-	{"-io",	      ARG_IO,  1, NULL, offsetof(shift_gels_arg, io)},
-	{"-readings", ARG_STR, 1, NULL, offsetof(shift_gels_arg, readings)},
-	{"-distances",ARG_STR, 1, NULL, offsetof(shift_gels_arg, distances)},
+	{"-io",	      ARG_IO,  1, NULL, offsetof(list2_arg, io)},
+	{"-contigs",  ARG_STR, 1, NULL, offsetof(list2_arg, inlist)},
 	{NULL,	  0,	   0, NULL, 0}
     };
 
     if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
-    vfuncheader("shift readings");
+    vfuncheader("remove_contig_holes");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
 	return TCL_ERROR;
 
-    active_list_readings(args.io, args.readings, &num_reads, &readings);
-    if (num_reads == 0) {
-	if (readings) xfree(readings);
-	return TCL_OK;
-    }
-    if (Tcl_SplitList(interp, args.distances, &num_dist, &distances) != TCL_OK)
-    {
-	xfree(readings);
-	return TCL_ERROR;
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    /*
+     * NB this may create, and shuffle contig numbers, so we convert to
+     * left-most reading number instead, and swap back to contig number
+     * before each call of remove_contig_holes().
+     */
+    for (i = 0; i < rargc; i++) {
+	rargv[i].contig = io_clnbr(args.io, rargv[i].contig);
     }
 
-    if (num_reads != num_dist) {
-	xfree(readings);
-	Tcl_Free((char *)distances);
-	return TCL_ERROR;
+    for (i = 0; i < rargc; i++) {
+	int cnum = rnumtocnum(args.io, rargv[i].contig);
+	remove_contig_holes(args.io, cnum);
     }
 
-    for (i = 0; i < num_reads; i++) {
-	shift_readings(args.io, readings[i], atoi(distances[i]));
-    }
-
-    xfree(readings);
-    Tcl_Free((char *)distances);
+    xfree(rargv);
     return TCL_OK;
 }
 
@@ -4956,7 +4961,7 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "check_database", CheckDatabase,
 		      (ClientData) NULL,
 		      (Tcl_CmdDeleteProc *) NULL);
-    Tcl_CreateCommand(interp, "shift_readings", ShiftReadings,
+    Tcl_CreateCommand(interp, "remove_contig_holes", tcl_remove_contig_holes,
 		      (ClientData) NULL,
 		      (Tcl_CmdDeleteProc *) NULL);
     Tcl_CreateCommand(interp, "delete_contig", DeleteContig,

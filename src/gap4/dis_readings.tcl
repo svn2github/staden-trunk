@@ -20,37 +20,25 @@ proc DisReadingsDialog { io f cs} {
 	 {contig_id_configure $f.id -state disabled}\
 	 {contig_id_configure $f.id -state normal}" -bd 2 -relief groove
 
-    ###########################################################################
-    keylset rm REMMODE [keylget gap_defs DIS_READINGS.REMMODE]
-    set b1 [keylget rm REMMODE.BUTTON.1]
-    set b2 [keylget rm REMMODE.BUTTON.2]
-
-    radiolist $f.rem_mode \
-	    -title [keylget rm REMMODE.NAME] \
-	    -bd 2 \
-	    -relief groove \
-	    -default [keylget rm REMMODE.VALUE] \
-	    -buttons [format { {%s} {%s} } \
-	    [list $b1] [list $b2] ]
 
     ###########################################################################
     keylset st SELTASK [keylget gap_defs DIS_READINGS.SELTASK]
     set b1 [keylget st SELTASK.BUTTON.1]
     set b2 [keylget st SELTASK.BUTTON.2]
+    set b3 [keylget st SELTASK.BUTTON.3]
 
     radiolist $f.sel_task \
 	    -title [keylget st SELTASK.NAME] \
 	    -bd 2 \
 	    -relief groove \
 	    -default [keylget st SELTASK.VALUE] \
-	    -buttons [format { {%s} {%s} } \
-	    [list $b1] [list $b2] ]
+	-buttons [format { {%s} {%s} {%s}} \
+		      [list $b1] [list $b2] [list $b3]]
 
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-        -ok_command "OK_Pressed_DisReading $io $f $cs $f.infile $f.id $f.sel_task \
-	$f.rem_mode"\
+        -ok_command "OK_Pressed_DisReading $io $f $cs $f.infile $f.id $f.sel_task"\
 	-cancel_command "destroy $f" \
 	-help_command "show_help gap4 {Disassemble}" \
 	-bd 2 \
@@ -59,18 +47,16 @@ proc DisReadingsDialog { io f cs} {
 
     pack $f.infile -fill x
     pack $f.id -fill x
-    pack $f.rem_mode -fill x
     pack $f.sel_task -fill x
     pack $f.ok_cancel -fill x
 
 }
 
-proc OK_Pressed_DisReading { io f cs infile id sel_task rem_mode } {
+proc OK_Pressed_DisReading { io f cs infile id sel_task } {
     global gap_defs
 
-    set iopt [radiolist_get $sel_task]
-    set iall [radiolist_get $rem_mode]
- 
+    set iopt [expr {[radiolist_get $sel_task]-1}]
+
     #special case for a single reading
     if {[lorf_in_get $infile] == 3} {
 	set list [contig_id_gel $id]
@@ -87,8 +73,7 @@ proc OK_Pressed_DisReading { io f cs infile id sel_task rem_mode } {
 	# Someone's too busy to shutdown?
 	return
     }
-    set result [disassemble_readings -io $io -readings $list \
-	    -all [expr 2-$iall] -remove [expr 2-$iopt]]
+    set result [disassemble_readings -io $io -readings $list -move $iopt]
     #if database is empty, destroy contig selector and set menus back to
     #as if opened new database
     if {[db_info num_contigs $io] == 0} {
@@ -116,54 +101,40 @@ proc DisEditorReadingsDialog { io list f } {
     if {[modal $f] == ""} return
     wm title $f "Disassemble readings"
     
-    ###########################################################################
-    keylset rm REMMODE [keylget gap_defs DIS_READINGS.REMMODE]
-    set b1 [keylget rm REMMODE.BUTTON.1]
-    set b2 [keylget rm REMMODE.BUTTON.2]
-
-    radiolist $f.rem_mode \
-	    -title [keylget rm REMMODE.NAME] \
-	    -bd 2 \
-	    -relief groove \
-	    -default [keylget rm REMMODE.VALUE] \
-	    -buttons [format { {%s} {%s} } \
-	    [list $b1] [list $b2] ]
 
     ###########################################################################
     keylset st SELTASK [keylget gap_defs DIS_READINGS.SELTASK]
     set b1 [keylget st SELTASK.BUTTON.1]
     set b2 [keylget st SELTASK.BUTTON.2]
+    set b3 [keylget st SELTASK.BUTTON.3]
 
     radiolist $f.sel_task \
 	    -title [keylget st SELTASK.NAME] \
 	    -bd 2 \
 	    -relief groove \
 	    -default [keylget st SELTASK.VALUE] \
-	    -buttons [format { {%s} {%s} } \
-	    [list $b1] [list $b2] ]
+	    -buttons [format { {%s} {%s} {%s} } \
+			  [list $b1] [list $b2] [list $b3]]
 
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-        -ok_command "OK_Pressed_EdDisReading $io {$list} $f $f.sel_task \
-		$f.rem_mode"\
+        -ok_command "OK_Pressed_EdDisReading $io {$list} $f $f.sel_task"\
 	-cancel_command "destroy $f" \
 	-help_command "show_help gap4 {Disassemble}" \
 	-bd 2 \
 	-relief groove
     ###########################################################################
 
-    pack $f.rem_mode -fill x
     pack $f.sel_task -fill x
     pack $f.ok_cancel -fill x
 
 }
 
-proc OK_Pressed_EdDisReading { io list f sel_task rem_mode } {
+proc OK_Pressed_EdDisReading { io list f sel_task } {
     global gap_defs
 
-    set iopt [radiolist_get $sel_task]
-    set iall [radiolist_get $rem_mode]
+    set iopt [expr {[radiolist_get $sel_task]-1}]
  
     #convert reading numbers into reading names
     set list [eval get_read_names -io $io $list]
@@ -174,8 +145,7 @@ proc OK_Pressed_EdDisReading { io list f sel_task rem_mode } {
 	# Someone's too busy to shutdown?
 	return
     }
-    set result [disassemble_readings -io $io -readings $list \
-	    -all [expr 2-$iall] -remove [expr 2-$iopt]]
+    set result [disassemble_readings -io $io -readings $list -move $iopt]
     if { [string compare $result "OK"] == 0} {
 
 	#if database is empty, destroy contig selector and set menus back to
