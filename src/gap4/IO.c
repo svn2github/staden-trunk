@@ -1288,10 +1288,12 @@ GapIO *open_db(char *project, char *version, int *status, int create,
     /* Check if database is available for read-write */
     if (!read_only) {
 	sprintf(db_fn, "%s.%s", project, version);
-	if (access(db_fn, R_OK | W_OK) != 0)
+	errno = 0;
+	if (access(db_fn, R_OK | W_OK) != 0 && errno == EACCES)
 	    read_only = 1;
 	sprintf(db_fn, "%s.%s.aux", project, version);
-	if (access(db_fn, R_OK | W_OK) != 0)
+	errno = 0;
+	if (access(db_fn, R_OK | W_OK) != 0 && errno == EACCES)
 	    read_only = 1;
 
 	if (read_only)
