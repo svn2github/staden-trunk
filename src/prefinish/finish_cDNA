@@ -15,7 +15,10 @@ proc finishing_rules {bits} {
     # Problem 3: No bottom strand
     set p3 [expr {($bits & 0x0008) == 0}]
 
-    return [expr {$p0 | ($p1<<1) | ($p2<<2) | ($p3<<3)}]
+    # Problem 4: Low quality
+    set p4 [expr {($bits & 0x0010) == 0}]
+
+    return [expr {$p0 | ($p1<<1) | ($p2<<2) | ($p3<<3) | ($p4<<4)}]
 }
 
 proc find_solutions_0 {base_bits problem_bits} {
@@ -63,6 +66,11 @@ proc find_solutions_1 {base_bits problem_bits} {
 	set strand 2;
     }
 
+    #Problem 4: Low confidence
+    if {[expr {$problem_bits & 0x10}]} {
+	set type [expr {$type|0x04}]
+    }
+
     #Problem 2: Double stranded
 #    if {[expr {$problem_bits&0x04}]} {
 #        set type [expr {$type|0x04}]
@@ -92,6 +100,7 @@ set class_bits {
     {1 contig_right_end}
     {2 strand_top}
     {3 strand_bottom}
+    {4 confidence_ge 30}
 }
 
 proc global_params {f} {
@@ -148,10 +157,10 @@ proc global_params {f} {
         -reseq_length 400 \
         -long_cost 2.0 \
         -pwalk_length 400 \
-        -pscores {0.5 0.5 0.55} \
-        -mscores {10.0 10.0 0.1} \
+        -mscores {10.0 10.0 0.1 0.1 0.1} \
         -pwalk_prob_mask 3 \
-        -prob_mandatory 3
+        -prob_mandatory 3 \
+	-svec_as_cvec 1
 }
 
 
@@ -165,6 +174,7 @@ proc process_contig {io f &opt cnum start end class_bits} {
     puts "### CONTIG ID $contig  (=$cnum [left_gel $io $cnum]) ###"
 
     # Reconfigure the finish object to work on this specific contig
+    global_params $f
     $f configure \
 	-io $io \
 	-contig "{$contig $start $end}"
@@ -178,6 +188,8 @@ proc process_contig {io f &opt cnum start end class_bits} {
     global_params $f
 
     # Identify problems and solutions from bit-classifications
+    # Score low confidence poorly in pass 1 as extending is the most important
+    $f configure -pscores {0.5 0.5 0.3 0.3 0.1}
     $f find_problems \
         -problem_command finishing_rules \
         -solution_command find_solutions_0 \
@@ -200,6 +212,8 @@ proc process_contig {io f &opt cnum start end class_bits} {
     global_params $f
 
     # Identify problems and solutions from bit-classifications
+    # Boost scores for low confidence bases in 2nd pass
+    $f configure -pscores {0.5 0.5 0.3 0.3 0.75}
     $f find_problems \
         -problem_command finishing_rules \
         -solution_command find_solutions_1 \
