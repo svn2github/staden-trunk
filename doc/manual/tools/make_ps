@@ -13,7 +13,8 @@
 
 # Location of imagic conversion program
 #$convert = '/usr/local/bin/convert';
-$convert = '/usr/X11R6/bin/convert';
+#$convert = '/usr/X11R6/bin/convert';
+$convert = '/usr/bin/convert';
 
 # Default density
 $default_density = '120';
