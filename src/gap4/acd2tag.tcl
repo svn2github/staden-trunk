@@ -192,7 +192,7 @@ proc convert_acd {code varname} {
     # Replace $(name) with $vars(name)
     set nul [binary format c 0]
     while {[regexp {\$\(([^)]*)\)} $code dummy name]} {
-	regsub {\$\(([^)]*)\)} $code "\$vars($nul\\1$nul)" code
+	regsub {\$\(([^)]*)\)} $code "\$vars($nul\${namespace}::\\1$nul)" code
     }
 
     # Lowercase variable names in expressions. We've surrounded them with
@@ -219,7 +219,11 @@ proc convert_acd {code varname} {
     regsub -all {[&|]} $code {&&} code
 
     # Quote literals after ==, !=, ? :, < and > operators.
+#    regsub -all {([^:][=?:<> ] *)([a-zA-Z_][a-zA-Z_0-9]*)} $code {\1"\2"} code
     regsub -all {([=?:<> ] *)([a-zA-Z_][a-zA-Z_0-9]*)} $code {\1"\2"} code
+    # Unfortunately a::foo?x:y becomes a::"foo"?"x":"y", so remove quotes
+    # again after ::
+    regsub -all {::"([^"]*)"} $code {::\1} code
 
     # Switch statements - recognised by a single =
     # Replace with a series of ?: operators.
@@ -479,6 +483,22 @@ proc default_string {dname prefix} {
     set data($prefix.default)     ""
 }
 
+proc default_label {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) $prefix
+    set data($prefix.default)     ""
+    set data($prefix.width)       30
+    set data($prefix.labelpos)    "w"
+}
+
+proc default_text {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) ""
+    set data($prefix.labelpos)    "n"
+    set data($prefix.default)     ""
+    set data($prefix.geometry)    40x5
+}
+
 proc default_bool {dname prefix} {
     upvar $dname data
     set data($prefix.default)     0
@@ -513,12 +533,12 @@ proc generate_value_trace {dname name {default ""}} {
 
     regsub -all {%W} $data($name$default.depend) $name data($name$default.depend)
 
-    append cstr "    set vars($name.orig) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name.orig) \$vars(\${namespace}::$name)\n"
 
-    append cstr "    set vars($name.expr) [list $data($name$default)]\n"
-    foreach var $data($name$default.depend) {
+    append cstr "    set vars(\${namespace}::$name.expr) \"[quote_str $data($name$default)]\"\n"
+    foreach var [lsort -unique $data($name$default.depend)] {
         append cstr "    trace variable vars($var) w \
-	       \"::acd2tag::reset_value \$varsp $name\"\n"
+	       \"::acd2tag::reset_value \$varsp \${namespace}::$name\"\n"
     }
     return 1
 }
@@ -532,10 +552,10 @@ proc generate_name_trace {dname name {default ""}} {
         return
     }
 
-    append cstr "    set vars($name.info.expr) [list $data($name$default)]\n"
+    append cstr "    set vars(\${namespace}::$name.info.expr) \"[quote_str $data($name$default)]\"\n"
     foreach var $data($name$default.depend) {
         append cstr "    trace variable vars($var) w \
-	       \"::acd2tag::reset_name \$varsp $name\"\n"
+	       \"::acd2tag::reset_name \$varsp \${namespace}::$name\"\n"
     }
 }
 
@@ -550,9 +570,9 @@ proc generate_var_trace {dname name} {
 
     regsub -all {%W} $data($name.depend) $name data($name.depend)
 
-    append cstr "    set vars($name.orig) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name.orig) \$vars($name)\n"
 
-    append cstr "    set vars($name.expr) [list $data($name.default)]\n"
+    append cstr "    set vars(\${namespace}::$name.expr) \"[quote_str $data($name.default)]\"\n"
     foreach var $data($name.depend) {
         append cstr "    trace variable vars($var) w \
 	       \"::acd2tag::reset_value \$varsp $name\"\n"
@@ -571,12 +591,12 @@ proc generate_list_trace {dname name procname {default ""}} {
 
     regsub -all {%W} $data($name$default.depend) $name data($name$default.depend)
 
-    append cstr "    set vars($name.orig) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name.orig) \$vars($name)\n"
 
-    append cstr "    set vars($name.expr) [list $data($name$default)]\n"
+    append cstr "    set vars(\${namespace}::$name.expr) \"[quote_str $data($name$default)]\"\n"
     foreach var $data($name$default.depend) {
         append cstr "    trace variable vars($var) w \
-	       \"$procname \$varsp $name\"\n"
+	       \"$procname \$varsp \${namespace}::$name\"\n"
     }
     return 1
 }
@@ -613,17 +633,73 @@ proc generate_acdtag {dname name args} {
     append cstr "option add *e_$name*Entryfield.width 30\n"
     append cstr "option add *e_$name*Combobox.width 27\n\n"
 
+    append cstr "\n"
+    append cstr "variable last_selection 0\n"
+    append cstr "proc page_raise {book} {\n"
+    append cstr "    variable last_selection\n"
+    append cstr "    set last_selection \[\$book view\]\n"
+    append cstr "}\n"
+    append cstr "\n"
+
     append cstr "proc create_dialogue \{w varsp\} \{\n"
     append cstr "    upvar \$varsp vars\n"
     append cstr "    variable arguments\n"
     append cstr "    set vars(acdtag) $name\n"
     append cstr "    label \$w._title -text [list $data($name.information)]\n"
     append cstr "    pack \$w._title -side top -fill both\n"
+    append cstr "    set namespace \"\"\n"
+    append cstr "\n"
+    append cstr "    if {!\[info exists vars(namespaces)\]} {\n"
+    append cstr "        set vars(namespaces) {}\n"
+    append cstr "    }\n"
+    append cstr "    set ns \$vars(namespaces)\n"
+    append cstr "    if {\$ns == {}} {\n"
+    append cstr "	set ns \[list {}\]\n"
+    append cstr "    } else {\n"
+    append cstr "	iwidgets::tabnotebook \$w.ns_book -tabpos n -padx 10 -equaltabs 0\n"
+    append cstr "	pack \$w.ns_book -side top -fill both -expand 1\n"
+    append cstr "	set book(ns_book) \$w\n"
+    append cstr "    }\n"
+    append cstr "\n"
+    append cstr "    foreach namespace \$ns \{\n"
+    append cstr "	if {\$namespace != {}} {\n"
+    append cstr "	    lappend wlist \$w\n"
+    append cstr "	    if {\[info exists vars(\${namespace}::TABNAME)\]} {\n"
+    append cstr "		set tabname \$vars(\${namespace}::TABNAME)\n"
+    append cstr "	    } else {\n"
+    append cstr "		set tabname \$namespace\n"
+    append cstr "	    }\n"
+    append cstr "	    set page \[\$w.ns_book add -label \$tabname -command \"\[namespace current\]::page_raise \$w.ns_book\"\]\n"
+    append cstr "	    lappend wlist \$w\n"
+    append cstr "	    set w \$page\n"
+    append cstr "	}\n"
+    append cstr "\n"
+
     return 1
 }
 
 proc generate_end {dname} {
     variable cstr
+    append cstr "	set w \[lindex \$wlist end\]\n"
+    append cstr "	set wlist \[lreplace \$wlist end end\]\n"
+    append cstr "	if {\$namespace != {}} {\n"
+    append cstr "	    set w \[lindex \$wlist end\]\n"
+    append cstr "	    set wlist \[lreplace \$wlist end end\]\n"
+    append cstr "	}\n"
+    append cstr "    \}\n"
+    append cstr "\n"
+    append cstr "    if {\$vars(namespaces) != {}} {\n"
+    append cstr "	variable last_selection\n"
+    append cstr "\n"
+    append cstr "	if {\$last_selection >= 0} {\n"
+    append cstr "	    if {\[catch {\$w.ns_book view \$last_selection}\]} {\n"
+    append cstr "               \$w.ns_book view 0\n"
+    append cstr "           }\n"
+    append cstr "	} else {\n"
+    append cstr "	    \$w.ns_book view 0\n"
+    append cstr "	}\n"
+    append cstr "	acd2tag::resizebook \$w.ns_book\n"
+    append cstr "    }\n"
     append cstr "\}\n"
     return 1
 }
@@ -633,12 +709,12 @@ proc generate_integer {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    if {!\[info exists vars($name)\]} {
-        set vars($name) [expand data $name default]
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
     }\n"
     append cstr "    iwidgets::entryfield \$w.$name \\
 \t-validate integer \\
-\t-textvariable \${varsp}($name) \\
+\t-textvariable \${varsp}(\${namespace}::$name) \\
 \t-labeltext [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
@@ -646,15 +722,15 @@ proc generate_integer {dname name args} {
 #    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
-	append cstr "    set vars($name.minimum) [expand data $name minimum]\n"
+	append cstr "    set vars(\${namespace}::$name.minimum) [expand data $name minimum]\n"
         generate_value_trace data $name.minimum
     }
     if {[info exists data($name.maximum)]} {
-	append cstr "    set vars($name.maximum) [expand data $name maximum]\n"
+	append cstr "    set vars(\${namespace}::$name.maximum) [expand data $name maximum]\n"
 	generate_value_trace data $name.maximum
     }
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
 
     generate_name_trace data $name .information
@@ -673,11 +749,11 @@ proc generate_float {dname name args} {
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
     append cstr "    if {!\[info exists vars($name)\]} {
-        set vars($name) [expand data $name default]
+        set vars(\${namespace}::$name) [expand data $name default]
     }\n"
     append cstr "    iwidgets::entryfield \$w.$name \\
 \t-validate real \\
-\t-textvariable \${varsp}($name) \\
+\t-textvariable \${varsp}(\${namespace}::$name) \\
 \t-labeltext [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
@@ -685,15 +761,15 @@ proc generate_float {dname name args} {
 #    append cstr "    \[\$w.$name component label\] configure -anchor w -width $max_len\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
     if {[info exists data($name.minimum)]} {
-	append cstr "    set vars($name.minimum) [expand data $name minimum]\n"
+	append cstr "    set vars(\${namespace}::$name.minimum) [expand data $name minimum]\n"
 	generate_value_trace data $name.minimum
     }
     if {[info exists data($name.maximum)]} {
-	append cstr "    set vars($name.maximum) [expand data $name maximum]\n"
+	append cstr "    set vars(\${namespace}::$name.maximum) [expand data $name maximum]\n"
 	generate_value_trace data $name.maximum
     }
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
 
     generate_name_trace data $name .information
@@ -706,20 +782,72 @@ proc generate_string {dname name args} {
     upvar $dname data
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    if {!\[info exists vars($name)\]} {
-        set vars($name) [expand data $name default]
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
     }\n"
     append cstr "    iwidgets::entryfield \$w.$name \\
-\t-textvariable \${varsp}($name) \\
+\t-textvariable \${varsp}(\${namespace}::$name) \\
 \t-labeltext [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
     generate_value_trace data $name .default
     generate_name_trace data $name .information
+    return 1
+}
+
+proc generate_label {dname name args} {
+    variable cstr
+    upvar $dname data
+    append cstr "\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
+    }\n"
+    append cstr "    frame \$w.$name -bd 0 -class LabelPair\n"
+    append cstr "    label \$w.$name.left\\
+\t-text [expand data $name information]\\
+\t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    label \$w.$name.right \\
+\t-anchor [expand data $name labelpos] \\
+\t-width [expand data $name width] \\
+\t-textvariable \${varsp}(\${namespace}::$name) \\
+\t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
+    append cstr "    pack \$w.$name.left -side left\n"
+    append cstr "    pack \$w.$name.right -side right -fill both\n"
+    append cstr "    pack \$w.$name -side top -fill both\n"
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    generate_name_trace data $name .information
+    generate_value_trace data $name .default
+    return 1
+}
+
+proc generate_text {dname name args} {
+    variable cstr
+    upvar $dname data
+    append cstr "\n"
+    append cstr "    lappend arguments $name\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
+    }\n"
+    append cstr "    iwidgets::scrolledtext \$w.$name \\
+\t-labeltext [expand data $name information] \\
+\t-labelpos [expand data $name labelpos]\\
+\t-vscrollmode dynamic \\
+\t-hscrollmode dynamic \\
+\t-wrap none \\
+\t-visibleitems [expand data $name geometry]\n"
+    append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
+                         [expr {$data($name.required)=="Y"?1:0}]\n"
+    append cstr "    \$w.$name insert end \$vars(\${namespace}::$name)\n"
+    generate_value_trace data $name .default
+    append cstr "    trace variable vars(\${namespace}::$name) w \"::acd2tag::reset_text \$varsp  \${namespace}::$name\"\n"
+    generate_name_trace data $name .information
+    append cstr "    \$w.$name configure -state \[lindex {disabled normal} [expand data $name needed 1]\]\n" 
     return 1
 }
 
@@ -763,7 +891,7 @@ proc generate_list_multi {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    set vars($name) [expand data $name default]\n"
+    append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
     append cstr "    iwidgets::scrolledlistbox \$w.$name \\
 \t-exportselection 0\\
 \t-labeltext [expand data $name header] \\
@@ -774,20 +902,20 @@ proc generate_list_multi {dname name args} {
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [list_expand data $name mapping1 mapping2]
-    append cstr "    set vars($name.mapping1) [list [array get mapping1]]\n"
-    append cstr "    set vars($name.mapping2) [list [array get mapping2]]\n"
+    append cstr "    set vars(\${namespace}::$name.mapping1) [list [array get mapping1]]\n"
+    append cstr "    set vars(\${namespace}::$name.mapping2) [list [array get mapping2]]\n"
     append cstr "    eval \$w.$name insert end $l\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
-    append cstr "    set vars($name.delimiter) [list $data($name.delimiter)]\n"
+    append cstr "    set vars(\${namespace}::$name.delimiter) [list $data($name.delimiter)]\n"
 
     append cstr "    trace variable vars($name) w \
     \"::acd2tag::list_multi_changed \$varsp $name\"\n"
-    append cstr "    set vars($name) [expand data $name default]\n"
+    append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
 
     generate_name_trace data $name .information
-    append cstr "    set vars($name._type) list_multi\n"
+    append cstr "    set vars(\${namespace}::$name._type) list_multi\n"
     generate_value_trace data $name .default 
     return 0
 }
@@ -804,33 +932,33 @@ proc generate_list {dname name args} {
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
     append cstr "    iwidgets::combobox \$w.$name\\
-\t-textvariable \${varsp}($name.name)\\
+\t-textvariable \${varsp}(\${namespace}::$name.name)\\
 \t-labeltext [expand data $name information]\n"
     set l [list_expand data $name mapping1 mapping2]
     append cstr "    trace variable vars($name.name) w \
 	   \"::acd2tag::list_changed \$varsp $name\"\n"
     append cstr "    eval \$w.$name insert list end $l\n"
-    append cstr "    set vars($name.mapping1) [list [array get mapping1]]\n"
-    append cstr "    set vars($name.mapping2) [list [array get mapping2]]\n"
+    append cstr "    set vars(\${namespace}::$name.mapping1) [list [array get mapping1]]\n"
+    append cstr "    set vars(\${namespace}::$name.mapping2) [list [array get mapping2]]\n"
     append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
     append cstr "    \$w.$name delete entry 0 end\n"
-    append cstr "    array set tmpmap \$vars($name.mapping2)\n"
+    append cstr "    array set tmpmap \$vars(\${namespace}::$name.mapping2)\n"
 
-    append cstr "    if {!\[info exists vars($name)\]} {\n"
-    append cstr "        set vars($name) [expand data $name default]\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {\n"
+    append cstr "        set vars(\${namespace}::$name) [expand data $name default]\n"
     append cstr "    }\n"
 
     append cstr "    set def [expand data $name default]\n"
     append cstr "    catch {set def \$tmpmap(\$def)}\n"
-    append cstr "    set vars($name) \$def\n"
+    append cstr "    set vars(\${namespace}::$name) \$def\n"
     append cstr "    \$w.$name insert entry end \$def\n"
     append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -fill both\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
-    append cstr "    set vars($name.delimiter) [list $data($name.delimiter)]\n"
+    append cstr "    set vars(\${namespace}::$name.delimiter) [list $data($name.delimiter)]\n"
     generate_name_trace data $name .information
     generate_list_trace data $name ::acd2tag::reset_list .default 
     return 1
@@ -864,19 +992,19 @@ proc generate_selection_multi {dname name args} {
     append cstr "    pack \$w.$name -side top -fill both -expand 1\n"
     set l [selection_expand data $name]
     append cstr "    eval \$w.$name insert end $l\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
 
-    append cstr "    trace variable vars($name) w \
+    append cstr "    trace variable vars(\${namespace}::$name) w \
     \"::acd2tag::select_multi_changed \$varsp $name\"\n"
-    append cstr "    if {!\[info exists vars($name)\]} {\n"
-    append cstr "        set vars($name) [expand data $name default]\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {\n"
+    append cstr "        set vars(\${namespace}::$name) [expand data $name default]\n"
     append cstr "    }\n"
-    append cstr "    set vars($name) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name) \$vars(\${namespace}::$name)\n"
 
     generate_name_trace data $name .information
-    append cstr "    set vars($name._type) selection_multi\n"
+    append cstr "    set vars(\${namespace}::$name._type) selection_multi\n"
     generate_value_trace data $name .default 
     return 0
 }
@@ -898,29 +1026,29 @@ proc generate_selection {dname name args} {
 	append cstr "   pack \$w.${name}_label -side top -fill both\n"
 	foreach item $l {
 	    append cstr "   radiobutton \$w.${name}_$count\\
-\t-variable \${varsp}($name)\\
+\t-variable \${varsp}(\${namespace}::$name)\\
 \t-text [list $item] -value [list $item]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
             append cstr "    pack \$w.${name}_$count -side top -anchor w\n"
             incr count
 	}
     } else {
-        append cstr "    if {!\[info exists vars($name)\]} {
-        set vars($name) [expand data $name default]
+        append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
     }\n"
 	append cstr "    iwidgets::combobox \$w.$name\\
-\t-textvariable \${varsp}($name)\\
+\t-textvariable \${varsp}(\${namespace}::$name)\\
 \t-labeltext [expand data $name information]\n"
         set l [selection_expand data $name]
         append cstr "    eval \$w.$name insert list end $l\n"
         append cstr "    grid \[\$w.$name component entry\] -sticky nse\n"
-        append cstr "    set vars($name) \$vars($name)\n"
+        append cstr "    set vars(\${namespace}::$name) \$vars(\${namespace}::$name)\n"
         append cstr "    \$w.$name configure \\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
         append cstr "    pack \$w.$name -side top -fill both\n"
     }
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
     generate_name_trace data $name .information
     generate_list_trace data $name ::acd2tag::reset_select .default 
@@ -940,16 +1068,16 @@ proc generate_boolean {dname name args} {
 
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
-    append cstr "    if {!\[info exists vars($name)\]} {
-        set vars($name) [expand data $name default]
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
     }\n"
     append cstr "    checkbutton \$w.$name \\
 \t-text [expand data $name information]\\
-\t-variable \${varsp}($name)\\
+\t-variable \${varsp}(\${namespace}::$name)\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -anchor w\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
     generate_name_trace data $name .information
     generate_value_trace data $name .default
@@ -977,19 +1105,19 @@ proc generate_radio {dname name args} {
     }
     append cstr "\n"
     append cstr "    lappend arguments [expand data $name store]\n"
-    append cstr "    if {!\[info exists vars([expand data $name store])\] || \$vars([expand data $name store]) == {}} {\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::[expand data $name store])\] || \$vars(\${namespace}::[expand data $name store]) == {}} {\n"
     append cstr "        if {[expand data $name default] != {}} {\n"
-    append cstr "            set vars([expand data $name store]) [expand data $name default]\n"
+    append cstr "            set vars(\${namespace}::[expand data $name store]) [expand data $name default]\n"
     append cstr "        }\n"
     append cstr "    }\n"
     append cstr "    radiobutton \$w.$name \\
-\t-variable \${varsp}([expand data $name store])\\
+\t-variable \${varsp}(\${namespace}::[expand data $name store])\\
 \t-value $val\\
 \t-text [expand data $name information]\\
 \t-state \[lindex {disabled normal} [expand data $name needed 1]\]\n"
     append cstr "    pack \$w.$name -side top -anchor w\n"
-    append cstr "    set vars($name.path) \$w.$name\n"
-    append cstr "    set vars($name.required) \
+    append cstr "    set vars(\${namespace}::$name.path) \$w.$name\n"
+    append cstr "    set vars(\${namespace}::$name.required) \
                          [expr {$data($name.required)=="Y"?1:0}]\n"
     generate_name_trace data $name .information
     generate_value_trace data $name .default
@@ -1000,7 +1128,7 @@ proc generate_var {dname name args} {
     variable cstr
     upvar $dname data
     append cstr "\n"
-    append cstr "    set vars($name) [expand data $name default]\n"
+    append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
     generate_var_trace data $name
     return 1
 }
@@ -1040,7 +1168,7 @@ proc generate_section {dname name args} {
 	        set f [iwidgets::labeledframe .$name]
 	        regsub "^\.$name" [$f childsite] {} childsite
 	        destroy $f
-	        append cstr "    iwidgets::labeledframe \$w.$name \\
+	        append cstr "    iwidgets::labeledframe \$w.$name\\
 \t-labeltext [expand data $name information]\n"
 	        append cstr "    pack \$w.$name -side $data($name.side) -fill both -expand 1\n"
 	        append cstr "    lappend wlist \$w\n"
@@ -1093,6 +1221,14 @@ proc generate_pass1 {aname {prefix {}} {max_len 0}} {
     return $max_len
 }
 
+# Escapes all square brackets, quotes and dollars in a string except for
+# ${namespace}
+proc quote_str {str} {
+    regsub -all {[]\"$[]} $str {\\&} str
+    regsub -all {\\\${namespace}} $str {${namespace}} str
+    return $str
+}
+
 proc generate_pass2 {aname {prefix {}} {level 0}} {
     variable cstr
     variable page_depth
@@ -1104,15 +1240,15 @@ proc generate_pass2 {aname {prefix {}} {level 0}} {
 	regsub -all "$i\." $wargs "" wargs
 	set type [string tolower $data($i)]
         if {[eval generate_$type data $i $wargs] == 1} {
-	    append cstr "    set vars($i._type) $data($i)\n"
+	    append cstr "    set vars(\${namespace}::$i._type) $data($i)\n"
 	}
 	# "needed" dependency on another variable
 	if {[info exists data($i.needed.depend)]} {
 	    foreach var $data($i.needed.depend) {
-		append cstr "    set vars($i.needed_expr) \
-			[list "\[::acd2tag::convert_bool $data($i.needed)\]"]\n"
+		set qstr [quote_str "\[::acd2tag::convert_bool $data($i.needed)\]"]
+		append cstr "    set vars(\${namespace}::$i.needed_expr) \"$qstr\"\n"
 		append cstr "    trace variable vars($var) w \
-			\"::acd2tag::reset_needed \$varsp $i\"\n"
+			\"::acd2tag::reset_needed \$varsp \${namespace}::$i\"\n"
 	    }
 	}
 	if {[info exists data(ORDER:$prefix$i)]} {
@@ -1159,6 +1295,10 @@ proc resizebook {book} {
     incr total_wid [$ts cget -start]
     set maxwidth $total_wid
 
+    # compute tabheight
+    array set metrics [font metrics $font]
+    set th [expr {$metrics(-linespace)+2*[$ts cget -pady]+[$ts cget -margin]+9}]
+
     # As an alternative to using bbox:
     # set ts [$book component tabset]
     # set ntabs [expr {[$ts index end]+1}]
@@ -1169,13 +1309,14 @@ proc resizebook {book} {
     # set maxwidth [expr {int(ceil($ntabs * ($_labelWidth + $angleOffset) + $angleOffset + 4))}]
 
     foreach page [$book childsite] {
-        set height [expr {$bd+[winfo reqheight [$book component tabset]]}]
+        #set height [expr {$bd+[winfo reqheight [$book component tabset]]}]
+        set height [expr {$bd+$th}]
         foreach w [winfo children $page] {
 	    if {[winfo class $w] == "Tabnotebook"} {
 	        resizebook $w
 	    }
             set height [expr {$height+[winfo reqheight $w]}]
-	    #puts $w:[winfo reqwidth $w]:[winfo class $w]
+	    #puts $w:[winfo reqwidth $w]:[winfo class $w]:[winfo height $w]:[winfo reqheight $w]
 	    if {$maxwidth < [winfo reqwidth $w]} {
 	        set maxwidth [winfo reqwidth $w]
 	    }
@@ -1198,7 +1339,7 @@ proc resizebook {book} {
 proc reset_value {varsp vname args} {
     upvar $varsp vars
     if {$vars($vname) == $vars($vname.orig)} {
-	eval set vars($vname) $vars($vname.expr)
+	set vars($vname) [subst $vars($vname.expr)]
 	set vars($vname.orig) $vars($vname)
     }
 }
@@ -1247,19 +1388,36 @@ proc reset_needed {varsp vname args} {
 proc reset_name {varsp vname args} {
     upvar $varsp vars
     set t [subst $vars($vname.info.expr)]
-    if {[catch {$vars($vname.path) configure -labeltext $t} err1]} {
-	if {[catch {$vars($vname.path) configure -label $t} err2]} {
-	    if {[catch {$vars($vname.path) configure -text $t} err3]} {
-		puts "$vars, $vname"
-		puts "Failed to configure $vname.path -labeltext $t"
-		puts "    1. $err1"
-		puts "    2. $err2"
-		puts "    3. $err3"
+    if {[winfo class $vars($vname.path)] == "LabelPair"} {
+	catch {$vars($vname.path).left configure -text $t} err
+    } else {
+	if {[catch {$vars($vname.path) configure -labeltext $t} err1]} {
+	    if {[catch {$vars($vname.path) configure -label $t} err2]} {
+		if {[catch {$vars($vname.path) configure -text $t} err3]} {
+		    puts "$vars, $vname"
+		    puts "Failed to configure $vname.path -labeltext $t"
+		    puts "    1. $err1"
+		    puts "    2. $err2"
+		    puts "    3. $err3"
+		}
 	    }
 	}
     }
 }
 
+
+# A text window section has been changed
+proc reset_text {varsp vname args} {
+    upvar $varsp vars
+    $vars($vname.path) delete 1.0 end
+    $vars($vname.path) insert end $vars($vname)
+}
+
+# A text window has been modified
+proc text_changed {varsp vname args} {
+    upvar $varsp vars
+    set vars($vname) [$vars($vname.path) get 1.0 end]
+}
 
 # A 'list' selection has been modified
 proc list_changed {varsp vname args} {
@@ -1359,17 +1517,36 @@ proc get_values {nspace varsp} {
     upvar $varsp vars
     upvar ${nspace}::arguments arguments
 
-    array set vals {}
-    array set done ""
-    foreach arg $arguments {
-	if {[info exists done($arg)]} {
-	    continue
+    set val ""
+    set ns $vars(namespaces)
+    if {$ns == ""} {set ns {""}}
+    foreach n $ns {
+	if {$n != ""} {
+	    append val "NAMESPACE=$n\n"
 	}
-	set vals($arg) $vars($arg)
-	set done($arg) 1
-    }
+	catch {unset done}
+	array set vals {}
+	array set done ""
+	if {[info exists vars(${n}::TABNAME)]} {
+	    append val "TABNAME=$vars(${n}::TABNAME)\n"
+	}
+	foreach arg $arguments {
+	    # Text windows do not automatically update the value upon edit,
+	    # so do so now.
+	    if {[info exists vars(${n}::$arg._type)] &&
+		$vars(${n}::$arg._type) == "text"} {
+		text_changed vars ${n}::$arg
+	    }
+	    if {[info exists done($arg)]} {
+		continue
+	    }
+	    set vals($arg) $vars(${n}::$arg)
+	    set done($arg) 1
+	}
 
-    return [array2str [array get vals]]
+	append val [array2str [array get vals]]
+    }
+    return $val
 }
 
 #-----------------------------------------------------------------------------
@@ -1394,10 +1571,15 @@ proc escape {str} {
 # Replaces a "key=value" list (separated with newlines) with an array returned
 # in [array get] syntax.
 proc str2array {str} {
-    array set a {}
+    array set a {namespaces ""}
+    set namespace ""
     foreach line [split $str "\n"] {
 	regexp {([^=]*)=(.*)} $line _ key value
-	set a([unescape $key]) [unescape $value]
+	if {$key == "NAMESPACE"} {
+	    set namespace $value
+	    lappend a(namespaces) $value
+	}
+	set a(${namespace}::[::acd2tag::unescape $key]) [::acd2tag::unescape $value]
     }
 
     return [array get a]
