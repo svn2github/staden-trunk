@@ -329,6 +329,9 @@ void getTagSplodge(EdStruct *xx, int seq, int pos, int width, XawSheetInk *ink)
     int i;
     tagStruct *t;
     int npos,tpos;
+    
+    if (!xx->tag_list)
+	return; /* happens when GTAGDB is set wrongly */
 
     if (xx->reveal_cutoffs) {
 	int length = DB_Length(xx,seq);
