@@ -21,6 +21,7 @@
 #include "vlen.h"
 #include "FtoC.h"
 #include "ruler_tick.h"
+#include "os.h"
 
 /*
  *---------------------------------------------------------------------------
@@ -1609,11 +1610,11 @@ SetReadingPosLen(int whole_reading,                                    /* in */
 /*                             CalcTotalContigLen                            */
 /*****************************************************************************/
 /* return the total length of all the contigs in a database */
-int
+int64_t
 CalcTotalContigLen(GapIO *io)                                          /* in */
 {
     int i;
-    int total_len = 0;
+    int64_t total_len = 0;
 
     for (i = 1; i <= NumContigs(io); i++){
 	total_len = total_len + ABS(io_clength(io, i));
@@ -1627,12 +1628,12 @@ CalcTotalContigLen(GapIO *io)                                          /* in */
 /*                             CalcLongContig                                */
 /*****************************************************************************/
 /* find the contig number of the longest contig in the database */
-int
+int64_t
 CalcLongContig(GapIO *io)                                              /* in */
 {
-    int i, len;
+    int i;
     int contig_num = 0;
-    int longest = 0;
+    int64_t len, longest = 0;
 
     for (i = 1; i <= NumContigs(io); i++){
 	len = ABS(io_clength(io, i));
@@ -1650,12 +1651,12 @@ CalcLongContig(GapIO *io)                                              /* in */
 /*                             CalcTotalReadingLen                           */
 /*****************************************************************************/
 /* return the total length of all the readings in a database */
-int
+int64_t
 CalcTotalReadingLen (GapIO *io,                                        /* in */
 		     int ngels)                                        /* in */
 {
     int i;
-    int total_len = 0;
+    int64_t total_len = 0;
 
     /* for each reading in the database */
     for (i = 1; i <= ngels; i++) {

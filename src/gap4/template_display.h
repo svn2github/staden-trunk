@@ -134,21 +134,21 @@ void CalcTags(GapIO *io, int max_len, int item_num, int tag_db_count,
 /*                             CalcTotalContigLen                            */
 /*****************************************************************************/
 /* return the total length of all the contigs in a database */
-int
+int64_t
 CalcTotalContigLen(GapIO *io);                                         /* in */
 
 /*****************************************************************************/
 /*                             CalcTotalReadingLen                           */
 /*****************************************************************************/
 /* return the total length of all the readings in a database */
-int
+int64_t
 CalcTotalReadingLen (GapIO *io, int ngels); 
 
 /*****************************************************************************/
 /*                             CalcLongContig                                */
 /*****************************************************************************/
 /* return the contig num of the longest contig in the database */
-int
+int64_t
 CalcLongContig(GapIO *io);                                             /* in */
 
 /*****************************************************************************/
