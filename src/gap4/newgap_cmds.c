@@ -370,13 +370,13 @@ int db_info(ClientData clientData,
     }
 
     if (strcmp(argv[1], "t_contig_length") == 0) {
-	vTcl_SetResult(interp, "%d", CalcTotalContigLen(io));
+	vTcl_SetResult(interp, "%"PRId64, CalcTotalContigLen(io));
 
 	return TCL_OK;
     }
 
     if (strcmp(argv[1], "t_read_length") == 0) {
-	vTcl_SetResult(interp, "%d", CalcTotalReadingLen(io, NumReadings(io)));
+	vTcl_SetResult(interp, "%"PRId64, CalcTotalReadingLen(io, NumReadings(io)));
 	return TCL_OK;
     }
 
@@ -409,7 +409,7 @@ int db_info(ClientData clientData,
     }
 
     if (strcmp(argv[1], "longest_contig") == 0) {
-	vTcl_SetResult(interp, "%d", CalcLongContig(io));
+	vTcl_SetResult(interp, "%"PRId64, CalcLongContig(io));
 	return TCL_OK;
     }
 
