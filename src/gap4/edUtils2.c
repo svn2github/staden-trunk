@@ -917,6 +917,42 @@ char *DBgetName(DBInfo *db, int seq)
 
 
 /*
+ * Get the template name for sequence 'seq'.
+ * Static storage, so non-reentrant.
+ */
+char *DBgetTemplateName(DBInfo *db, int seq)
+{
+    char *rname = DBgetName(db, seq);
+    char tname[DB_NAMELEN+1];
+    static char name[NAMELEN+1];
+    int i;
+    GReadings r;
+    GTemplates t;
+    
+    /* Read template name */
+    i = _DB_Number(db, seq);
+    if (i <= 0) {
+	return rname;
+    }
+    gel_read(_DBI_io(db), i, r);
+    if (!r.template) {
+	strcpy(tname, "(unknown)");
+    } else {
+	template_read(_DBI_io(db), r.template, t);
+	if (!t.name) {
+	    strcpy(tname, "(unknown)");
+	} else {
+	    TextRead(_DBI_io(db), t.name, tname, DB_NAMELEN);
+	    tname[DB_NAMELEN] = 0;
+	}
+    }
+
+    /* Combine template name with gel number */
+    sprintf(name, "%.*s %-*s", DB_GELNOLEN, rname, DB_NAMELEN, tname);
+    return name;
+}
+
+/*
  * Get part of a sequence from its `pos' base for `width' bases
  * Bases number from 0?
  */

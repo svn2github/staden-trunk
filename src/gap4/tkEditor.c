@@ -498,6 +498,24 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    edSetRulerMode(ed->xx, val);
 	}
 
+    } else if ('s' == *argv[1] && strcmp(argv[1], "show_template_names") == 0) {
+	int val;
+
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " show_template_names ?value?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 3) {
+	    Tcl_GetInt(interp, argv[2], &val);
+	    if (-1 == val)
+		val = edGetTemplateNameMode(ed->xx) ^ 1;
+	    edSetTemplateNameMode(ed->xx, val);
+	}
+	vTcl_SetResult(interp, "%d", edGetTemplateNameMode(ed->xx));
+
     } else if ('s' == *argv[1] && strcmp(argv[1], "superedit") == 0) {
 	int s_argc;
 	char **s_argv;
@@ -911,6 +929,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	deleteAnnotation(ed->xx, t);
 
     } else if ('c' == *argv[1] && strcmp(argv[1], "create_anno") == 0) {
+	char *res;
+
 	if (get_licence_type() == LICENCE_VIEWER)
 	    goto fail;
 
@@ -921,16 +941,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    goto fail;
 	}
 
+	Tcl_ResetResult(interp);
 	if (argc == 5) {
 	    /* Create a predefined tag at the current position */
 	    saveAnnotation(ed->xx, argv[2], argv[3], atoi(argv[4]));
 	} else {
 	    /* Invoke tag editor */
-	    createAnnotation(ed->xx);
+	    if (NULL != (res = createAnnotation(ed->xx)))
+		Tcl_SetResult(interp, res, TCL_VOLATILE);
 	}
 
     } else if ('e' == *argv[1] && strcmp(argv[1], "edit_anno") == 0) {
 	tagStruct *t = NULL;
+	char *res;
 
 	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -942,7 +965,9 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	if (argc == 3)
 	    sscanf(argv[2], "%p", &t);
 
-	editAnnotation(ed->xx, t);
+	Tcl_ResetResult(interp);
+	if (NULL != (res = editAnnotation(ed->xx, t)))
+	    Tcl_SetResult(interp, res, TCL_VOLATILE);
 
     } else if ('g' == *argv[1] && strcmp(argv[1], "get_anno") == 0) {
 	tagStruct *t = NULL;

@@ -304,6 +304,7 @@ typedef struct _EdStruct {
     int consensus_mode;		/* Current consensus algorithm */
     int lines_per_seq;		/* (Height-1) of mini-traces */
     int diff_trace_size;	/* 0 == auto, N == from cursor +- N bases */
+    int template_names;		/* 1 == template names instead of read names */
 } EdStruct;
 
 

@@ -298,6 +298,7 @@ extern void DBcalcDiscrepancies(EdStruct *xx,int pos, int width, float *qual);
 extern char *DBgetSeq(DBInfo *db, int seq);
 extern tagStruct *DBgetTags (DBInfo *db, int seq);
 extern char *DBgetName(DBInfo *db, int seq);
+extern char *DBgetTemplateName(DBInfo *db, int seq);
 extern void DBgetSequence(EdStruct *xx, int seq, int pos, int width, char *str);
 extern int initialiseDB/* FORIO */(
 		 EdStruct *xx,
@@ -420,6 +421,8 @@ extern void redisplayDBSequences(DBInfo *db, int names_only);
 extern int edSetRevealCutoffs(EdStruct *xx, int reveal);
 extern int edSetInsertMode(EdStruct *xx, int insert);
 extern int edSetSuperedit(EdStruct *xx, int superedit);
+extern int edSetTemplateNameMode(EdStruct *xx, int value);
+extern int edGetTemplateNameMode(EdStruct *xx);
 extern int edGetGelNumber(EdStruct *xx, int x, int y);
 extern char *edGetGelName(EdStruct *xx, int number);
 extern dstring_t *edGetGelNamesToRight(EdStruct *xx, int number);
