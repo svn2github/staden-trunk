@@ -311,9 +311,11 @@ finish .f \
     -external_seq $vector \
     -use_avg_insert 0 \
     -reseq_cost 1.2 \
-    -reseq_length 400 \
+    -reseq_length 500 \
+    -reseq_nsolutions 4 \
     -long_cost 2.0 \
     -long_length 700 \
+    -long_nsolutions 4 \
     -vpwalk_cost 2.0 \
     -cpwalk_cost 8.0 \
     -pwalk_search_dist 100 \
@@ -324,6 +326,7 @@ finish .f \
     -pwalk_offset1 130 \
     -pwalk_offset2 55 \
     -pwalk_length 400 \
+    -pwalk_nsolutions 1 \
     -pwalk_seq_gap 55 \
     -pwalk_consistent_only 0 \
     -pwalk_max_err 0.02 \

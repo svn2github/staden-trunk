@@ -346,6 +346,7 @@ experiments_t *experiment_reverse(finish_t *fin, int pos,
 	exp[nexp-1].r.chemistry = chem;
 
 	exp[nexp-1].type = EXPERIMENT_REVERSE;
+	exp[nexp-1].nsolutions = fin->opts.reseq_nsolutions;
 	exp[nexp-1].score = 0;
 	exp[nexp-1].cost = cost;
 	exp[nexp-1].log_func = log_reverse;

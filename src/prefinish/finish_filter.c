@@ -2,6 +2,8 @@
 #include "dust.h"
 #include "finish.h"
 #include "finish_filter.h"
+#include "xalloc.h"
+#include "dna_utils.h"
 
 /*
  *      n
@@ -21,59 +23,6 @@
  *  CGT B
  * ACGT N
  */
-
-/*
- * Given a combination of A, C, G or T, all of which are 0 for not present
- * and 1 for present, this returns an ambiguity code.
- */
-static char bases2ambiguity(int A, int C, int G, int T) {
-    return "nTGKCYSBAWRDMHVN"[((A&1)<<3)+((C&1)<<2)+((G&1)<<1)+((T&1)<<0)];
-}
-
-/*
- * Given an ambiguity code, this stores in the A, C, G and T pointers either
- * 0 or 1 indicating if this code contains that element. Unknown codes
- * are treated as N.
- */
-static void ambiguity2bases(char ambig, int *A, int *C, int *G, int *T) {
-    char *codes = "nTGKCYSBAWRDMHVN", *cp;
-    int ind = (cp = strchr(codes, ambig)) ? cp - codes : 0;
-
-    *A = (ind>>3) & 1;
-    *C = (ind>>2) & 1;
-    *G = (ind>>1) & 1;
-    *T = (ind>>0) & 1;
-}
-
-/*
- * As base2ambiguity, but this time 'bits' encodes A, C, G or T (as bit 3, 2,
- * 1 and 0 respectively)
- */
-static char basebit2ambiguity(int bits) {
-    return "nTGKCYSBAWRDMHVN"[bits];
-}
-
-/*
- * As ambiguity2bases, except we return a bit-pattern instead of 4 values.
- */
-static int ambiguity2basebit(char ambig) {
-    char *codes = "nTGKCYSBAWRDMHVN", *cp;
-    return  (cp = strchr(codes, ambig)) ? cp - codes : 0;
-}
-
-/*
- * Given nucleotides (possibly ambiguity codes themselves) we return
- * the IUB ambiguity codes.
- *
- * Logically speaking, this is equivalent to
- *    return basebit2ambiguity(ambiguity2basebit(b1) | ambiguity2basebit(b2));
- */
-static char ambiguity_code(char b1, char b2) {
-    char *codes = "nTGKCYSBAWRDMHVN", *cp;
-    int i1 = (cp = strchr(codes, b1)) ? cp - codes : 15;
-    int i2 = (cp = strchr(codes, b2)) ? cp - codes : 15;
-    return codes[i1 | i2];
-}
 
 /*
  * Construct a key and a mask (allbits = 1) from a sequence.

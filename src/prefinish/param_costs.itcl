@@ -17,6 +17,9 @@ class ParamCosts {
 	variable reseq_length 400
 	variable pwalk_length 400
 	variable long_length  700
+	variable reseq_nsolutions 4
+	variable long_nsolutions  4
+	variable pwalk_nsolutions 4
 
 	# Used by hierarchy book
 	method display {w}
@@ -28,12 +31,15 @@ class ParamCosts {
 
 	set config { 
 	    reseq_cost		"Resequence cost"
-	    long_length		"Long-read experiment length"
 	    vpwalk_cost		"Template primer-walk cost"
 	    cpwalk_cost		"Chromosomal primer-walk cost"
-	    reseq_length	"Resequence experiment length"
 	    long_cost		"Long-read cost"
+	    reseq_length	"Resequence experiment length"
 	    pwalk_length	"Primer-walk experiment length"
+	    long_length		"Long-read experiment length"
+	    reseq_nsolutions	"Number of sequences to resequence"
+	    long_nsolutions	"Number of sequences to resequence"
+	    pwalk_nsolutions	"Number of primers to pick"
 	}
 
 	foreach {var text} $config {

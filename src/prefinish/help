@@ -127,9 +127,17 @@
 	This is the expected length of a sequence; used in the "resequence"
 	solution type.
 
+-reseq_nsolutions integer
+	This is the number of resequence experiments to perform for
+	each problem found.
+
 -long_length integer
 	This is the expected length of a long gel sequence; used in the "long
 	reading" solution type.
+
+-long_nsolutions integer
+	This is the number of long-read experiments to perform for
+	each problem found.
 
 -pwalk_search_dist integer
 	False matches for primers (on sequencing vector inserts, rather than
@@ -158,6 +166,17 @@
 	rather an optimisation method to speed up processing (so that if OSP
 	picks 20 primers we do not compute the overall experiment scores for
 	all combination of templates x 20 primers).
+
+-pwalk_length integer
+	This is the expected length of a sequence obtained by
+	primer-walking.
+
+-pwalk_ntemplates integer
+	This is the number of ntemplates to pick for each primer chosen.
+
+-pwalk_nsolutions integer
+	This is the number of primers to implement primer-walk
+	experiments for. Not to be confused with the number of templates.
 
 -pwalk_offset1 integer
 	Given a problem at base X, these define where abouts we will pick a

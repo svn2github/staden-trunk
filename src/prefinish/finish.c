@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.20"
+#define FINISH_VERSION "1.21"
 
 #include <tcl.h>
 #include <limits.h>
@@ -86,7 +86,9 @@ static finish_t *finish_new(void) {
     fin->opts.dust_level	= 18;
     fin->opts.min_extension	= 50;
     fin->opts.reseq_length	= 400;
+    fin->opts.reseq_nsolutions	= 4;
     fin->opts.long_length       = 700;
+    fin->opts.long_nsolutions	= 4;
     fin->opts.pwalk_search_dist = 500;
     fin->opts.pwalk_max_match   = 8;
     fin->opts.pwalk_osp_score   = 16;
@@ -95,6 +97,7 @@ static finish_t *finish_new(void) {
     fin->opts.pwalk_offset1     = 80;
     fin->opts.pwalk_offset2     = 10;
     fin->opts.pwalk_length      = 400;
+    fin->opts.pwalk_nsolutions  = 400;
     fin->opts.pwalk_seq_gap     = 20;
     fin->opts.pwalk_consistent_only = 0;
     fin->opts.pwalk_max_err     = 0.02;
@@ -701,10 +704,14 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.dust_level)},
 	{"-min_extension",       ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.min_extension)},
-	{"-reseq_length",       ARG_INT,   1, NULL,
+	{"-reseq_length",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.reseq_length)},
+	{"-reseq_nsolutions",  ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.reseq_nsolutions)},
 	{"-long_length",       ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.long_length)},
+	{"-long_nsolutions",   ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.long_nsolutions)},
 	{"-pwalk_search_dist", ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.pwalk_search_dist)},
 	{"-pwalk_max_match",   ARG_DBL, 1, NULL,
@@ -721,6 +728,8 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.pwalk_offset2)},
 	{"-pwalk_length",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.pwalk_length)},
+	{"-pwalk_nsolutions",  ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.pwalk_nsolutions)},
 	{"-pwalk_seq_gap",     ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.pwalk_seq_gap)},
 	{"-pwalk_consistent_only", ARG_INT,   1, NULL,

@@ -1108,7 +1108,8 @@ void implement_solutions(Tcl_Interp *interp, finish_t *fin) {
     int i;
     experiments_t *exp;
     int nexp;
-    int found_soln;
+    int found_soln, soln_type;
+    int exp_ind;
 
     /* Step through contig identifying problems */
     for (i = 0; i < fin->length; i++) {
@@ -1151,15 +1152,51 @@ void implement_solutions(Tcl_Interp *interp, finish_t *fin) {
 	 */
 	score_experiments(interp, fin, fin->io, exp, nexp, fin->vc,
 			  extending);
+
+	/*
+	 * We find the best solution, and that will inform us how many
+	 * implementations of that solution are required (eg 3 x reseqs).
+	 * For each implementation we may have multiple members of a group,
+	 * eg for each primer we may chose 4 different templates.
+	 *
+	 * Hence group_num and nsolutions are independent and not to be
+	 * confused.
+	 */
 	found_soln = 0;
-	if (exp[0].score > fin->opts.min_score) {
-	    int grp, grpn = 0, e;
+	soln_type = exp[0].type;
+	for (exp_ind = 0;
+	     exp_ind < nexp && found_soln < exp[0].nsolutions;
+	     exp_ind++) {
+	    int grp, grpn, e, found;
 	    double max_score;
-	    grp = exp[0].group_id;
-	    max_score = exp[0].score;
-	    fin->count[exp[0].type]++;
-	    for (e = 0; grpn < exp[0].group_num && e < nexp; e++) {
-		if (exp[e].group_id == grp &&
+
+	    /* All nsolutions should be the same type */
+	    if (exp[exp_ind].type != soln_type)
+		continue;
+
+	    /* And above the min score */
+	    if (exp[exp_ind].score < fin->opts.min_score) {
+		if (fin->opts.debug[FIN_DEBUG_SCORE])
+		    printf("Skipping experiment(s) with score below threshold."
+			   " %f < %f\n", exp[exp_ind].score,
+			   fin->opts.min_score);
+		/* Sorted, so we'll never a better one */
+		break;
+	    }
+
+	    grpn = 0;
+	    grp = exp[exp_ind].group_id;
+	    max_score = exp[exp_ind].score;
+	    fin->count[exp[exp_ind].type]++;
+
+	    /* Find all the group members for this solution... */
+	    found = 0;
+	    for (e = 0; e < nexp; e++) {
+		if (exp[e].group_id != grp)
+		    continue;
+
+		/* ... but only add the best 'group_num' members */
+		if (grpn < exp[exp_ind].group_num &&
 		    exp[e].score > 0 &&
 		    exp[e].score / max_score >= fin->opts.max_score_drop &&
 		    exp[e].t_score >= fin->opts.min_template_score) {
@@ -1169,13 +1206,19 @@ void implement_solutions(Tcl_Interp *interp, finish_t *fin) {
 				   fin->solution_bits,
 				   &exp[e], fin->vc);
 		    grpn++;
-		    found_soln = 1;
+		    found=1;
 		}
+
+		/*
+		 * Mark this group item as type 0 to prevent picking this
+		 * group again when looking for the next solution of the
+		 * same type.
+		 */
+		exp[e].type = 0;
 	    }
-	} else if (exp[0].score > 0) {
-	    if (fin->opts.debug[FIN_DEBUG_SCORE])
-		printf("Skipping experiment(s) with score below threshold."
-		       " %f < %f\n", exp[0].score, fin->opts.min_score);
+
+	    if (found)
+		found_soln++;
 	}
 
 	if (!found_soln) {

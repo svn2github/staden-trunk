@@ -58,9 +58,11 @@ typedef struct {
 
     /* Options for resequencing */
     int	   reseq_length;	/* Expected length of normal resequencing */
+    int    reseq_nsolutions;	/* Number of re-sequences to pick */
 
     /* Options for long gel readings */
     int    long_length;		/* Expected length of long reading */
+    int    long_nsolutions;	/* Number of long reads to pick */
 
     /* Options for primer walking */
     int    pwalk_search_dist;	/* Extra dist +/- temp for primer mismatches */
@@ -71,6 +73,7 @@ typedef struct {
     int    pwalk_offset1;	/* Location offset from problem base to find */
     int    pwalk_offset2;	/*   primers within. offset1 > offset2 */
     int    pwalk_length;	/* Expected reading length */
+    int    pwalk_nsolutions;	/* Number of primers to use */
     int    pwalk_seq_gap;	/* Gap between primer and base calling */
     int    pwalk_consistent_only; /* Only use known consistent templates */
     double pwalk_max_err;	/* Maximum prob of error in oligo sequence */
@@ -178,6 +181,7 @@ typedef struct experiments {
     int group_id;
     int group_num;
     int type;
+    int nsolutions;	/* How many solutions of this type we desire */
     double t_score;	/* Template score */
     int t_dir;		/* Template direction */
     void (*log_func)(FILE *fp, finish_t *f, struct experiments *e, int contig,

@@ -75,9 +75,9 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 
 	/* Check conditions */
 	gel_read(fin->io, rnum, r);
-	if (STRAND(r) == GAP_STRAND_FORWARD && dir == 2)
+	if (r.sense == 0 && dir == 2)
 	    continue;
-	if (STRAND(r) == GAP_STRAND_REVERSE && dir == 1)
+	if (r.sense == 1 && dir == 1)
 	    continue;
 
 	/* Skip specific templates */
@@ -139,7 +139,12 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 	exp[nexp-1].r.template = r.template;
 	exp[nexp-1].r.chemistry = chem;
 
-	exp[nexp-1].type = islong ? EXPERIMENT_LONG : EXPERIMENT_RESEQ;
+	exp[nexp-1].type = islong
+	    ? EXPERIMENT_LONG
+	    : EXPERIMENT_RESEQ;
+	exp[nexp-1].nsolutions = islong
+	    ? fin->opts.reseq_nsolutions
+	    : fin->opts.long_nsolutions;
 	exp[nexp-1].score = 0;
 	exp[nexp-1].cost = cost;
 	exp[nexp-1].log_func = islong ? log_long : log_reseq;

@@ -599,6 +599,7 @@ experiments_t *generate_chr_exp(finish_t *fin, experiment_walk_t *prim,
 
 	/* Generic component */
 	exp[nexp-1].type = EXPERIMENT_CPWALK;
+	exp[nexp-1].nsolutions = fin->opts.pwalk_nsolutions;
 	exp[nexp-1].score = 0;
 	exp[nexp-1].cost = fin->cost[EXPERIMENT_CPWALK];
 	exp[nexp-1].expt_id = finish_next_expt_id(0);
@@ -899,6 +900,7 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 
 		/* Generic component */
 		exp[nexp-1].type = EXPERIMENT_VPWALK;
+		exp[nexp-1].nsolutions = fin->opts.pwalk_nsolutions;
 		exp[nexp-1].score = 0;
 		exp[nexp-1].cost = fin->cost[EXPERIMENT_VPWALK] * cost_mult;
 		exp[nexp-1].expt_id = finish_next_expt_id(0);
