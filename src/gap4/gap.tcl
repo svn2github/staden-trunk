@@ -428,7 +428,7 @@ set logging [keylget gap_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
 
-set GAP_VERSION 4.8b2
+set GAP_VERSION 4.8b3
 
 switch $licence(type) {
     f		{}

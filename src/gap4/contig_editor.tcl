@@ -414,11 +414,11 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     # now fixes the resize problem and it seems that we no longer need this
     # change anyway.
     #
-    # bind $w <Any-Configure> {
-    #	if {[winfo toplevel %W] == "%W"} {
-    #	    after 1000 {if {[winfo exists %W]} {wm geometry %W {}}}
-    #	}
-    # }
+     bind $w <Any-Configure> {
+    	if {[winfo toplevel %W] == "%W"} {
+    	    after 1000 {if {[winfo exists %W]} {wm geometry %W {}}}
+    	}
+     }
 
     SetDefaultTags CONTIG_EDITOR.TAGS $editor
     wm protocol $w WM_DELETE_WINDOW \

@@ -309,14 +309,24 @@ void link_vrseq(vcontig_t *vc, vrseq_t *vrseq, int position) {
 
 	vrseq->vseq->seq = (char *)xmalloc(len+1);
 	if (pos > 0 && pos + len <= io_clength(vc->io, vc->contig)) {
-	    memcpy(vrseq->vseq->seq, &vc->cons[pos-1], len);
+	    for (i = 0; i < len; i++) {
+		if (vc->cons[pos-1+i] != '-' &&
+		    vc->cons[pos-1+i] != 'N')
+		    vrseq->vseq->seq[i] = vc->cons[pos-1+i];
+		else
+		    vrseq->vseq->seq[i] = 'A';
+	    }
 	} else {
 	    for (i = 0; i < len; i++) {
 		if (pos+i <= 0 ||
-		    pos+i > io_clength(vc->io, vc->contig))
+		    pos+i > io_clength(vc->io, vc->contig)) {
 		    vrseq->vseq->seq[i] = 'A'; /* Make something up! */
-		else
+		} else {
 		    vrseq->vseq->seq[i] = vc->cons[pos+i-1];
+		    if (vrseq->vseq->seq[i] == '-' ||
+			vrseq->vseq->seq[i] == 'N')
+			vrseq->vseq->seq[i] = 'A'; /* made up! */
+		}
 	    }
 	}
     }
