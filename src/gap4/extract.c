@@ -271,72 +271,16 @@ int output_vector(GapIO *io, Exp_info *e, int gel, int glen) {
 }
 
 /*
- * This picks a sequence name for the anchor in the AP record. Our reading
- * list may be a subset of a full contig so we should not just pick the left
- * neighbour.
- *
- * When leftmost == 0
- *   Searches through the reading_array to check if rnum is in it. If so,
- *   return this, otherwise chain left repeating the task.
- *   If we get to the end of the contig without finding a sequence in
- *   reading_array we return 0 to indicate a new contig should be created.
- *
- * With leftmost != 0
- *   Work as with leftmost == 0, but keep searching to see if we can find
- *   another anchor sequence nearer to the contig start. Return the left most
- *   anchor, otherwise return 0. (Ie when extracting an entire contig all
- *   sequences will be anchored to the first sequence in the contig.)
- *
- * NOTE: This is hideously inefficient, essentially making extract readings
- * O(N^2) complexity. We could sort the reading_array to get O(Nlog(N)).
- * Usually though reading_array is sorted in contig order due to the way the
- * user constructs it, so we can exploit (but not assume) this for a more
- * optimal search pattern.
+ * Temporary structure for sorting readings into contig and position.
  */
-static int next_AP_left(GapIO *io,
-			int num_readings,
-			char **reading_array,
-			int reading_index,
-			int rnum,
-			int leftmost) {
-    GReadings r;
-    int i;
+typedef struct {
+    GapIO *io;
     char *name;
-    int leftmost_rnum = 0;
-    int found_rnum;
-
-    /* Chain left looking for a sequence in reading_array */
-    while (rnum) {
-	gel_read(io, rnum, r);
-	name = io_rname(io, rnum);
-	found_rnum = 0;
-	for (i = reading_index; i >= 0; i--) {
-	    if (strcmp(reading_array[i], name) == 0) {
-		found_rnum = rnum;
-		break;
-	    }
-	}
-	for (i = num_readings-1; i > reading_index; i--) {
-	    if (strcmp(reading_array[i], name) == 0) {
-		found_rnum = rnum;
-		break;
-	    }
-	}
-
-	if (found_rnum) {
-	    if (!leftmost)
-		return rnum;
-	    leftmost_rnum = rnum;
-	}
-
-	rnum = r.left;
-    }
-
-    if (leftmost)
-	return leftmost_rnum;
-
-    return 0;
-}
+    int rnum;
+    int contig;
+    int position;
+    int anchor;
+} sort_struct;
 
 /*
  * Creates an experiment file from a given reading number
@@ -356,9 +300,8 @@ static int next_AP_left(GapIO *io,
  *
  * returns 0 for success, -1 for failure.
  */
-static int create_exp_file(GapIO *io, int gel, char *name, int format,
-			   int num_readings, char **reading_array,
-			   int reading_index) {
+static int create_exp_file(GapIO *io, char *name, int format,
+			   sort_struct *readinfo) {
     char *buf = NULL;
     GReadings r;
     GTemplates t;
@@ -372,7 +315,9 @@ static int create_exp_file(GapIO *io, int gel, char *name, int format,
     char *seq = NULL;
     int retcode = -1;
     int buf_size;
-
+    int gel;
+    
+    gel = readinfo->rnum;
     gel_read(io, gel, r);
 
     /* The largest thing in buf is opos array */
@@ -527,22 +472,16 @@ static int create_exp_file(GapIO *io, int gel, char *name, int format,
 	    /* Sense */
 	    err |= exp_put_int(e, EFLT_SE, &r.sense);
 	} else if (format == 2 || format == 3) {
-	    int left = r.left;
-	    int leftmost = (format == 3);
+	    int left = readinfo->anchor;
 
-	    /* AP line for directed assembly */
-	    if (left) {
-		left = next_AP_left(io, num_readings, reading_array,
-				    reading_index, r.left, leftmost);
-		if (left) 
-		    sprintf(buf, "%s %c %d -1",
-			    get_read_name(io, left),
-			    "+-"[r.sense],
-			    r.position - io_relpos(io, left));
-	    }
-	    if (!left) {
+	    if (left) 
+		sprintf(buf, "%s %c %d -1",
+			get_read_name(io, left),
+			"+-"[r.sense],
+			r.position - io_relpos(io, left));
+	    else
 		sprintf(buf, "*new* %c", "+-"[r.sense]);
-	    }
+
 	    err |= exp_put_str(e, EFLT_AP, buf, strlen(buf));
 
 	    if (r.right == 0) {
@@ -596,13 +535,6 @@ static int create_exp_file(GapIO *io, int gel, char *name, int format,
     return retcode;
 }
 
-typedef struct {
-    GapIO *io;
-    char *name;
-    int contig;
-    int position;
-} sort_struct;
-
 static int sort_readings_callback(const void *v1, const void *v2) {
     const sort_struct *s1 = (const sort_struct *)v1;
     const sort_struct *s2 = (const sort_struct *)v2;
@@ -623,26 +555,31 @@ static int sort_readings_callback(const void *v1, const void *v2) {
  * Returns 0 for success,
  *        -1 for failure.
  */
-static int sort_readings(GapIO *io,
-			  int num_readings,
-			  char **reading_array)
+static sort_struct *sort_readings(GapIO *io,
+				  int num_readings,
+				  char **reading_array,
+				  int leftmost)
 {
     sort_struct *sortme;
     int i;
+    int anchor;
+    int curr_contig = 0;
 
     sortme = (sort_struct *)xmalloc(num_readings * sizeof(*sortme));
     if (NULL == sortme)
-	return -1;
+	return NULL;
 
     for (i = 0; i < num_readings; i++) {
 	int gel = get_gel_num(io, reading_array[i], GGN_ID);
 	if (gel) {
 	    sortme[i].io = io;
+	    sortme[i].rnum = gel;
 	    sortme[i].position = io_relpos(io, gel);
 	    sortme[i].contig = rnumtocnum(io, gel);
 	    sortme[i].name = reading_array[i];
 	} else {
 	    sortme[i].io = io;
+	    sortme[i].rnum = 0;
 	    sortme[i].position = 0;
 	    sortme[i].contig = 0;
 	    sortme[i].name = reading_array[i];
@@ -651,12 +588,19 @@ static int sort_readings(GapIO *io,
 
     qsort(sortme, num_readings, sizeof(*sortme), sort_readings_callback);
 
-    for (i = 0; i < num_readings; i++) {
-	reading_array[i] = sortme[i].name;
+    for (anchor = i = 0; i < num_readings; i++) {
+	if (curr_contig != sortme[i].contig) {
+	    sortme[i].anchor = 0;
+	    curr_contig = sortme[i].contig;
+	    anchor = sortme[i].rnum;
+	} else {
+	    sortme[i].anchor = anchor;
+	    if (!leftmost)
+		anchor = sortme[i].rnum;
+	}
     }
 
-    xfree(sortme);
-    return 0;
+    return sortme;
 }
 
 /*
@@ -677,12 +621,13 @@ int extract_readings(GapIO *io,
     int i;
     int gel;
     FILE *fp;
+    sort_struct *sorted_reads;
     
     /*
      * Sort readings into contig position so that they can be correctly
      * pieced together again by the likes of directed assembly.
      */
-    sort_readings(io, num_readings, reading_array);
+    sorted_reads = sort_readings(io, num_readings, reading_array, format==3);
 
     /* check for directory existance, and create if needed */
     if (-1 == stat(dir, &statbuf)) {
@@ -713,8 +658,7 @@ int extract_readings(GapIO *io,
 	    sprintf(path, "%s/%s", dir, tmp);
 	    fprintf(fp, "%s\n", tmp);
 	    vmessage("Creating experiment file %s\n", path);
-	    if (-1 == create_exp_file(io, gel, path, format,
-				      num_readings, reading_array, i)) {
+	    if (-1 == create_exp_file(io, path, format, &sorted_reads[i])){
 		verror(ERR_WARN, "extract_readings",
 		       "Writing experiment file %s failed.",
 		       reading_array[i]);
@@ -727,6 +671,8 @@ int extract_readings(GapIO *io,
 
 	UpdateTextOutput();
     }
+
+    xfree(sorted_reads);
 
     fclose(fp);
     return 0;
