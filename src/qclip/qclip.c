@@ -264,7 +264,7 @@ int main(int argc, char **argv) {
 
     /* Defaults */
     p.min = 0;
-    p.max = 10000;
+    p.max = 10000000;
     p.min_len = 0;
     p.verbose = 0;
     p.use_conf = 1;
