@@ -49,6 +49,7 @@
  * I take the easy approach and hard-code all formats to be enabled
  */
 #ifdef HAVE_CONFIG_H
+#include "config.h"
 #define IOLIB_ABI
 #define IOLIB_SCF
 #define IOLIB_ALF
