@@ -391,6 +391,30 @@ static int align(EdStruct *xx0, int pos0, int len0,
 	xx0->link->lockOffset = xx1->displayPos - xx0->displayPos;
     }
 
+    /* Clip right end */
+    {
+	int pos0 = 0, pos1 = 0;
+	int *s = S;
+
+	while (pos0 < len0 && pos1 < len1) {
+	    if (*s < 0) {
+		pos0 -= *s;
+	    } else if (*s > 0) {
+		pos0 += *s;
+	    } else {
+		pos0++;
+		pos1++;
+	    }
+
+	    s++;
+	}
+
+	if (*s < 0)
+	    len0 += *s;
+	else if (*s > 0)
+	    len1 -= *s;
+    }
+
     /* Display the alignment. */
     {
 	char *exp0, *exp1;
