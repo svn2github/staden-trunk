@@ -1,3 +1,237 @@
+2004-10-21  jkbonfield  <jkbonfield>
+
+	* doc/manual/Makefile:
+	(08:57:38) *** empty log message *** 
+
+	* doc/manual/assembly-t.texi,
+	* doc/manual/calc_consensus-t.texi,
+	* doc/manual/clip-t.texi,
+	* doc/manual/configure-t.texi:
+	(09:00:25) Various doc updates 
+
+	* doc/manual/consistency_display-t.texi,
+	* doc/manual/contig_editor-t.texi,
+	* doc/manual/contig_selector-t.texi,
+	* doc/manual/dependencies,
+	* doc/manual/disassembly-t.texi,
+	* doc/manual/fij-t.texi,
+	* doc/manual/gap4-t.texi,
+	* doc/manual/gap4_intro-t.texi,
+	* doc/manual/lists-t.texi,
+	* doc/manual/manpages-t.texi:
+	(09:00:26) Various doc updates 
+
+	* doc/manual/2nd_highest_confidence.unix.gif,
+	* doc/manual/NBase_clip.unix.gif,
+	* doc/manual/assembly.directed.unix.gif,
+	* doc/manual/calc_consensus.normal.unix.gif,
+	* doc/manual/contig_editor.taged.unix.gif,
+	* doc/manual/contig_editor.tagmacro.unix.gif,
+	* doc/manual/contig_list_box.unix.gif,
+	* doc/manual/disassembly.unix.gif,
+	* doc/manual/discrepancy_graph.unix.gif,
+	* doc/manual/fij.dialogue.unix.gif,
+	* doc/manual/quality_clip_ends.unix.gif,
+	* doc/manual/template_status.unix.gif:
+	(09:13:11) *** empty log message *** 
+
+	* doc/manual/man/man1/convert_trace.1,
+	* doc/manual/man/man1/eba.1,
+	* doc/manual/man/man1/extract_seq.1,
+	* doc/manual/man/man1/find_renz.1,
+	* doc/manual/man/man1/get_comment.1,
+	* doc/manual/man/man1/get_scf_field.1,
+	* doc/manual/man/man1/init_exp.1,
+	* doc/manual/man/man1/makeSCF.1:
+	(09:13:38) *** empty log message *** 
+
+	* src/gap4/edInterface.c:
+	(09:15:53) Minor comment updates 
+
+	* src/gap4/gap.tcl:
+	(09:16:42) Adjust global colour scheme when multiple gap4s are in
+	use at the same time on the same display. 
+
+	* src/hetins/hetins.c:
+	(09:35:32) Protect against lack of QR values in experiment files. 
+
+	* src/scripts/fasta2exp:
+	(09:36:16) *** empty log message *** 
+
+	* tables/gaprc:
+	(09:40:50) Added BACKGROUNDS def. 
+
+	* src/gap4/trace_display.tcl
+	Added mouse-wheel support.
+	Increased number of rows allowed from 5 to 6.
+
+2004-10-20  jkbonfield  <jkbonfield>
+
+	* src/abi/getABIfield.c:
+	(11:10:28) Added a line-separator control. 
+
+	* src/gap4/searchUtils.c:
+	(13:18:45) Added the ability to find tags with confidence 0 or 100
+	in the "edit" search. 
+
+	* doc/manual/tools/texi2man.pl:
+	(13:24:30) Corrected SEE ALSO expansion to find _fxref() instead of
+	@fxref{}. 
+
+2004-10-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/convert_trace.c:
+	(15:38:18) Added a "-subtract <amount>" option to allow removal of
+	a specific DC offset. 
+
+2004-10-13  jkbonfield  <jkbonfield>
+
+	* src/gap4/acd2tag.tcl:
+	(09:14:49) "variable:" records are now read and written to the tag. 
+
+2004-10-12  jkbonfield  <jkbonfield>
+
+	* src/gap4/newgap_cmds.c:
+	(14:15:12) Changed the default value for -ignore_vec on
+	assemble_direct as it appears that I had the backwards compatible
+	behaviour backwards. 
+
+2004-10-11  jkbonfield  <jkbonfield>
+
+	* src/gap4/tman_interface.c:
+	(16:45:37) In guess_references we now look for best quality
+	"differing" traces against either strand, rather than only
+	top-strand. This helps with hets when maybe top & bottom strand
+	both get difference base calls. 
+
+2004-10-08  jkbonfield  <jkbonfield>
+
+	* src/gap4/contig_editor.tcl:
+	(14:47:16) Added a "show read-pair traces" option to the editor.
+	This controls whether the opposite strand trace for this template
+	should be automatically shown when invoking the trace display.
+	
+	Also, for contig_editor.tcl only, added mousewheel support. 
+
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/tkEditor.c,
+	* src/gap4/tman_interface.c:
+	(14:47:34) Added a "show read-pair traces" option to the editor.
+	This controls whether the opposite strand trace for this template
+	should be automatically shown when invoking the trace display.
+	
+	Also, for contig_editor.tcl only, added mousewheel support. 
+
+	* src/io_lib/progs/convert_trace.c:
+	(14:49:06) Fixed a divide-by-zero error in the normalisation code. 
+
+	* src/tk_utils/text_output.c:
+	(14:49:46) Better handling of verror/vmessage usage when Tk hasn't
+	been initialised. 
+
+	* tables/gaprc:
+	(14:50:11) Added mousewheel support. 
+
+	* tables/gaprc_menu_full:
+	(14:50:38) Added "Show Read-pair Traces" to the editor settings
+	menu. 
+
+2004-10-07  jkbonfield  <jkbonfield>
+
+	* src/mutlib/trace.cpp:
+	(16:16:01) Downscale to +/-16384 when differencing traces (instead
+	of the previous 32768) as not all displays cope correctly with
+	trace samples > 32768. 
+
+	* src/mutlib/align.cpp,
+	* src/mutlib/mutscan.cpp,
+	* src/mutlib/mutscan_analysis.cpp,
+	* src/mutlib/mutscan_preprocess.cpp,
+	* src/mutlib/sp_align_lib.cpp,
+	* src/mutlib/tracealign.cpp:
+	(16:17:16) Removal of debugging information. 
+
+	* src/gap4/tman_diff.c:
+	(16:20:19) Changed the Y-scale algorithm to use the normalization
+	code from convert_trace. This works much better. 
+
+	* src/gap4/tman_interface.c:
+	(16:21:20) If auto-diff is enabled but no negative references have
+	been found, we now automatically pick the best discrepant template
+	and use that instead. 
+
+	* src/gap4/trace_display.tcl:
+	(16:21:51) Shortened the "title" attached to difference traces. 
+
+	* tables/gaprc:
+	(16:24:21) Added CONTIG_EDITOR.NAMES_XPOS option to control the
+	default scrollbar position in the editor sequence names display. 
+
+	* src/gap4/edUtils2.c:
+	(17:16:41) sort_seq_by_template() is now a stable sort. Call
+	sort_seq_by_strand prior to calling by template so that sequences
+	within a template are now always listed in +/- strand order. 
+
+2004-10-05  jkbonfield  <jkbonfield>
+
+	* src/gap4/contig_editor.tcl:
+	(16:10:54) Allow the default editor-names X scrollbar position to
+	be set in the gaprc file. 
+
+	* src/gap4/edUtils2.c:
+	(16:14:02) The reference sequence is now forced to be top whenever
+	the sequences are grouped by anything other than position. (For now
+	this cannot be done with group-by-position as this HAS to be sorted
+	by position for searches to work correctly.) 
+
+	* src/gap4/tman_interface.c:
+	(16:15:16) When auto-diff is enabled but no references have been
+	set, gap4 now still always brings up the top and bottom strand
+	sequences instead of reverting back to only the trace you
+	requested. 
+
+	* src/gap4/trace_display.tcl:
+	(16:16:07) When the editor names panel is showing template names
+	instead of reading names, the trace display now does the same. 
+
+2004-10-01  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/convert_trace.c:
+	(10:56:07) Rewrote rescale_heights (the "-normalise" option) using
+	an amplitude tracker with an attack & delay model. This seems to
+	work well at adjusting for both gradual amplitude variations and
+	for downscaling huge dye-blobs. 
+
+2004-09-30  jkbonfield  <jkbonfield>
+
+	* Version:
+	(13:52:30) *** empty log message *** 
+
+	* ChangeLog:
+	(14:03:44) *** empty log message *** 
+
+	* src/gap4/gap.tcl:
+	(14:43:59) Change directory now (via some naughty internal hacking)
+	clears the filebrowsers "last rememembered directory". 
+
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/readpair.c,
+	* src/gap4/template.c:
+	(16:17:44) Fixed displaying/listing of template sizes for the
+	"<---- .... ---->" case. Previously these could be considered as
+	consistent is the ABS(end-start) value was correct, but we now take
+	notice of t->direction for working out end-start vs start-end
+	instead of using ABS(). 
+
+2004-09-29  jkbonfield  <jkbonfield>
+
+	* src/gap4/allelic_discreps.h:
+	(10:35:38) *** empty log message *** 
+
+	* src/gap4/f2c.h:
+	(10:38:54) *** empty log message *** 
+
 2004-09-28  jkbonfield  <jkbonfield>
 
 	* src/gap4/acd2tag.tcl:
@@ -1101,7 +1335,6 @@
 	* src/gap4/qualIO.h:
 	(16:10:02) New functions for producing distributions of phred
 	scores for bases that match and mismatch the consensus sequence.
-	illed by signal 2. 
 
 	* src/gap4/qual.tcl,
 	* src/gap4/tclIndex:
@@ -1119,7 +1352,7 @@
 	tag etc. 
 
 	* src/gap4/find_oligo.c:
-	(12:01:27) Matches displayed in the editor are not automatically
+	(12:01:27) Matches displayed in the editor are now automatically
 	selected, for faster tagging.
 	
 	The search by tags mode now also matches in padded sequence. 
