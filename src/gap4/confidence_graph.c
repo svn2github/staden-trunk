@@ -62,31 +62,45 @@ void plot_confidence(Tcl_Interp *interp,
      * Set to 10000 for paranoia!
      */
     char cmd[10000], *tmpp;
-    int start, end, len;
-
-    start = 0; end = 100;
-    if (seq_len < 100)
-        end = seq_len-1;
 
     if (strcmp(get_default_string(interp, gap_defs, 
 				  "CONFIDENCE_GRAPH.PLOT_TYPE"), "line")==0) { 
-	while (start  < seq_len-1) {
+	for (i = 0; i < seq_len-1; ) {
+	    int components;
+	    int len;
+
 	    len = sprintf(cmd, "%s create line ", c_win);
 	    tmpp = cmd + len;
 
-	    for (i = start; i < end; i++) {
+	    /* We use max 100 segments to a poly-line */
+	    components = 0;
+	    while (components < 100 && i < seq_len-1) {
+		int i2;
+
+		/* See if this is a run of the same value: from i..i2 */
+		for (i2 = i+1; i2 < seq_len-1 && qual[i] == qual[i2]; i2++)
+		    ;
+		i2--;
+
+		/* The strait bit... */
+		if (i2 != i) {
+		    len = sprintf(tmpp, "%d %f %d %f ",
+				  i+offset, max - qual[i] + min, 
+				  i2+offset, max - qual[i] + min);
+		    tmpp += len;
+		    components++;
+		}
+
+		/* The angled line from qual[i2] to qual[i2+1] */
 		len = sprintf(tmpp, "%d %f %d %f ",
-			      i+offset, max - qual[i] + min, 
-			      i+1+offset, max - qual[i+1] + min);
+			      i2+offset, max - qual[i2] + min, 
+			      i2+1+offset, max - qual[i2+1] + min);
 		tmpp += len;
+		components++;
+		i = i2+1;
 	    }
 
 	    sprintf(tmpp, "-fill %s -width %d", colour, width);
-	    
-	    start += 100;
-	    end += 100;
-	    if (end > seq_len-1)
-		end = seq_len-1;
 	    
 	    Tcl_Eval(interp, cmd);
 	}
