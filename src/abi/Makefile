@@ -3,7 +3,8 @@
 #
 
 PROGS = $(O)/getABISampleName $(O)/getABIcomment $(O)/getABIdate \
-	$(O)/getABIstring $(O)/getABIhex $(O)/getABIraw $(O)/getABIfloat
+	$(O)/getABIstring $(O)/getABIhex $(O)/getABIraw $(O)/getABIfloat \
+	$(O)/getABIfield
 
 SRCROOT=..
 include $(SRCROOT)/mk/global.mk
@@ -15,6 +16,7 @@ ABIBIN=$(O)
 OBJSSN = $(ABIBIN)/getABISampleName.o
 OBJSD  = $(ABIBIN)/getABIdate.o
 OBJSHX = $(ABIBIN)/getABIhex.o
+OBJSFI = $(ABIBIN)/getABIfield.o
 OBJSRW = $(ABIBIN)/getABIraw.o
 OBJSST = $(ABIBIN)/getABIstring.o
 OBJSC  = $(ABIBIN)/getABIcomment.o
@@ -38,6 +40,9 @@ $(O)/getABIstring: $(OBJSST)
 
 $(O)/getABIhex: $(OBJSHX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSHX) $(LIBS) $(LIBSC)
+
+$(O)/getABIfield: $(OBJSFI)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSFI) $(LIBS) $(LIBSC)
 
 $(O)/getABIraw: $(OBJSRW)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSRW) $(LIBS) $(LIBSC)
