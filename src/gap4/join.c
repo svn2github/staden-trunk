@@ -173,14 +173,14 @@ int align_contigs (OVERLAP *overlap) {
 
 	destroy_alignment_params (params);
 	if (!ierr) return 1;
+	destroy_alignment_params (params);
 	return ierr;
-    } else {
-	verror(ERR_WARN, "align_contigs",
-	       "Too large for practical use of dynamic programming");
-	return -1;
     }
+	
+    verror(ERR_WARN, "align_contigs",
+	   "Too large for practical use of dynamic programming");
     destroy_alignment_params (params);
-    return 0;
+    return -1;
 }
 
 #if 0
