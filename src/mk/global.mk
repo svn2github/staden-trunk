@@ -126,13 +126,13 @@ ITCLBIN		= $(STADLIB)/$(O)
 ITKBIN		= $(STADLIB)/$(O)
 TTBIN		=
 XSRC		= 
-TCLSRC		= $(SRCROOT)/tcl8.4.0/generic
-TKSRC		= $(SRCROOT)/tk8.4.0/generic
+TCLVERS		= 8.4
+TKVERS		= 8.4
+TCLSRC		= $(SRCROOT)/tcl8.4.6/generic
+TKSRC		= $(SRCROOT)/tk8.4.6/generic
 ITCLSRC		= $(SRCROOT)/incrTcl-3.3cvs/itcl/generic
 ITKSRC		= $(SRCROOT)/incrTcl-3.3cvs/itk/generic
 TTSRC		=
-TCLVERS		= 8.4
-TKVERS		= 8.4
 ITCLVERS	= 3.3
 ITKVERS		= 3.3
 
@@ -389,21 +389,25 @@ $(MUTBIN)/%.a: $(MUTSRC)/%.cpp
 	cd $(MUTBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
 
 
+# Automatically make $(MACHINE)-binaries output directories
+$(O):
+	mkdir $(O)
+
 #
 # Files requiring simple C and FORTRAN compilation ($(SRC)/thing.c -> thing.o)
 # in the local directory.
 # 
 # 7/1/99 johnt - added abstractions to support Visual C++, and mkdef command
 # to build Windows DEF files
-$(O)/%.o:	%.c
+$(O)/%.o:	%.c $(O)
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.f
+$(O)/%.o:	%.f $(O)
 	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.cpp
+$(O)/%.o:	%.cpp $(O)
 	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
 
 
@@ -414,17 +418,17 @@ $(O)/%.o:	%.cpp
 # the files, yet still force compilation of all files (eg due to important
 # header file changes or compile flags).
 #
-$(O)/%.o:	$(REMOTESRC)/%.c
+$(O)/%.o:	$(REMOTESRC)/%.c $(O)
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
 
-$(O)/%.o:	$(REMOTESRC)/%.f
+$(O)/%.o:	$(REMOTESRC)/%.f $(O)
 	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
 
-$(O)/%.o:	$(REMOTESRC)/%.cpp
+$(O)/%.o:	$(REMOTESRC)/%.cpp $(O)
 	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
 
 
