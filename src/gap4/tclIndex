@@ -79,6 +79,7 @@ set auto_index(DoubleStrand) [list source [file join $dir dstrand.tcl]]
 set auto_index(create_search_win) [list source [file join $dir editor_search.tcl]]
 
 set auto_index(EnterTags) [list source [file join $dir enter_tags.tcl]]
+set auto_index(reformat_tag_file) [list source [file join $dir enter_tags.tcl]]
 
 set auto_index(ExtractReadingsDialog) [list source [file join $dir extract.tcl]]
 

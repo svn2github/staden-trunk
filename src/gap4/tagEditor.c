@@ -8,6 +8,7 @@
 #include "undo.h"
 #include "gap_globals.h"
 #include "select.h"
+#include "tkEditor.h"
 
 typedef struct {
     int status;		/* 0 = editing, 1 = saved, 2 = quit */
@@ -52,7 +53,6 @@ static void TagEdSave(Tcl_Interp *interp, TagEd *te) {
 	return;
     }
 
-    openUndo(DBI(xx));
     U_adjust_cursor(xx, 0);
 
     if (te->tag) {
@@ -95,8 +95,6 @@ static void TagEdSave(Tcl_Interp *interp, TagEd *te) {
 
     redisplaySequences(xx, 1);
     DBsetFlags(xx, te->seq, DB_Flags(xx, te->seq) | DB_FLAG_TAG_MODIFIED);
-
-    closeUndo(xx, DBI(xx));
 }
 
 /* Saves a point (one base) annotation */
@@ -160,7 +158,7 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
     TagEd *te = (TagEd *)clientData;
 
-    if (argc != 2) {
+    if (argc < 2) {
         Tcl_AppendResult(interp, "wrong # args: should be \"",
                          argv[0], " option\"",
                          (char *) NULL);
@@ -170,8 +168,55 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
     if (strcmp(argv[1], "quit") == 0) {
 	TagEdDestroy(interp, te);
 
-    } else if (strcmp(argv[1], "save") == 0) {
+    } else if (strcmp(argv[1], "save") == 0 ||
+	       strcmp(argv[1], "move") == 0 ||
+	       strcmp(argv[1], "copy") == 0) {
 	char *p;
+	EdStruct *xx = te->xx;
+
+	openUndo(DBI(xx));
+
+	/* Actually more like a move to */
+	if (strcmp(argv[1], "move") == 0 || strcmp(argv[1], "copy") == 0) {
+	    int seq, pos, len;
+	    Tcl_CmdInfo info;
+	    EdStruct *xx2;
+
+	    if (0 == Tcl_GetCommandInfo(interp, argv[2], &info)) {
+		bell();
+		return TCL_ERROR;
+	    }
+	    xx2 = ((Editor *)info.clientData)->xx;
+
+	    /* Find the new selection */
+	    if (! getSelection(xx2, &seq, &pos, &len, NULL)) len = 0;
+	    if (!len) {
+		seq = xx2->cursorSeq;
+		pos = xx2->cursorPos + DB_Start(xx2, seq);
+		len = 1;
+		if (pos > DB_Length2(xx2, seq)) {
+		    bell();
+		    return TCL_ERROR;
+		}
+	    }
+
+	    /* Remove the existing tag */
+	    if (strcmp(argv[1], "move") == 0 && te->tag) {
+		int tmp = xx->cursorSeq;
+		U_adjust_cursor(xx, 0);
+		xx->cursorSeq = te->seq;
+		deleteAnnotation(xx, te->tag);
+		te->tag = NULL;
+		xx->cursorSeq = tmp;
+	    }
+
+	    /* And update the location for the new tag */
+	    te->tag = NULL;
+	    te->xx = xx2;
+	    te->seq = seq;
+	    te->pos = pos;
+	    te->len = len;
+	}
 
 	p = Tcl_GetVar2(interp, te->array, "type", TCL_GLOBAL_ONLY);
 	if (p)
@@ -191,8 +236,16 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
 	else
 	    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
 
+	if (xx != te->xx) {
+	    printf("create undo in second contig\n");
+	    openUndo(DBI(te->xx));
+	}
 	TagEdSave(interp, te);
 	TagEdDestroy(interp, te);
+	if (xx != te->xx)
+	    closeUndo(te->xx, DBI(te->xx));
+
+	closeUndo(xx, DBI(xx));
     }
 
     return TCL_OK;

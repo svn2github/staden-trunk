@@ -932,6 +932,22 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	editAnnotation(ed->xx, t);
 
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_anno") == 0) {
+	tagStruct *t = NULL;
+
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_anno tagptr\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 3)
+	    sscanf(argv[2], "%p", &t);
+
+	force_comment(DBI_io(ed->xx), t);
+	Tcl_SetResult(interp, t->newcomment, TCL_VOLATILE);
+
     } else if ('l' == *argv[1] && strcmp(argv[1], "list_anno") == 0) {
 	dstring_t *ds;
 

@@ -43,6 +43,12 @@ proc create_tag_editor {w c data} {
     } else {
 	button $w.bar.save   -text " Save " \
 	 -command "tag_editor_save [list $c] $data \[$v.t get 1.0 end-1chars\]"
+	button $w.bar.move -text " Move " \
+	    -command "tag_editor_moveorcopy move \
+                      [list $c] $data \[$v.t get 1.0 end-1chars\]"
+	button $w.bar.copy -text " Copy " \
+	    -command "tag_editor_moveorcopy copy \
+                      [list $c] $data \[$v.t get 1.0 end-1chars\]"
     }
 
     if {$d(type) == "NONE"} {
@@ -88,6 +94,8 @@ proc create_tag_editor {w c data} {
  
     if {$read_only && ![info exists d(macro)]} {
 	$w.bar.save configure -state disabled
+	$w.bar.move configure -state disabled
+	$w.bar.copy configure -state disabled
 	$w.bar.type configure -state disabled
 	$w.bar.strand configure -state disabled
 	$v.t configure -state disabled
@@ -98,6 +106,10 @@ proc create_tag_editor {w c data} {
     pack $w.bar.cancel -side left
     if {$licence(type) != "v" || [info exists d(macro)]} {
 	pack $w.bar.save -side left
+    }
+    if {$licence(type) != "v" && ![info exists d(macro)]} {
+	pack $w.bar.move -side left
+	pack $w.bar.copy -side left
     }
     if {[info exists d(macro)]} {
 	pack $w.bar.delete -side left
@@ -227,6 +239,23 @@ proc tag_editor_save {com data anno} {
     eval $com save
 }
 
+proc tag_editor_moveorcopy {method com data anno} {
+    upvar #0 $data d
+
+    set owner [selection own]
+    if {$owner == ""} {
+	bell
+	return
+    }
+    if {[winfo class $owner] != "Editor"} {
+	bell
+	return
+    }
+
+    set d(anno) $anno
+    eval $com $method $owner
+}
+
 proc tag_editor_strand {strand} {
     return [lindex {"----->" "<-----" "<---->"} $strand]
 }
@@ -311,6 +340,24 @@ proc tag_macro_invoke {ed key} {
     }
 
     $ed create_anno [set ${d}(type)] [set ${d}(anno)] [set ${d}(strand)]
+}
+
+# Called by control-F* keys. Copies the tag under the cursor to the associated
+# macro.
+proc tag_macro_copy {ed key} {
+    set d ed_macro_$key
+    global $d
+    set w $ed.macro_$key
+
+    # only top-most tag.
+    set tag [lindex [$ed list_anno] 0]
+    foreach {ptr type st len} $tag {}
+    set ${d}(type)    $type
+    set ${d}(anno)    [$ed get_anno $ptr]
+    set ${d}(strand)  0
+    set ${d}(default) 0
+    set ${d}(set)     1
+    set ${d}(macro)   1
 }
 
 # Loads macro defintions from the gap_defs (and hence from .gaprc)
