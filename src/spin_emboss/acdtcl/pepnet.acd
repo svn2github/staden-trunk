@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - pepnet}
     label $w._title -text {Displays proteins as a helical net}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(pepnet._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -69,7 +70,7 @@ proc create_dialogue {} {
     set vars(amphipathic) [subst 0]
     set vars(amphipathic.path) $w.amphipathic
     set vars(amphipathic.required)  0
-    set vars(amphipathic._type) bool
+    set vars(amphipathic._type) toggle
 
     lappend arguments squares
     iwidgets::entryfield $w.squares \
@@ -107,17 +108,6 @@ proc create_dialogue {} {
     set vars(octags.required)  0
     set vars(octags._type) string
 
-    lappend arguments data
-    checkbutton $w.data \
-	-text [subst {Display as data}]\
-	-variable [namespace current]::vars(data)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.data -side top -anchor w
-    set vars(data) [subst 1]
-    set vars(data.path) $w.data
-    set vars(data.required)  0
-    set vars(data._type) bool
-
     lappend arguments graph
     iwidgets::combobox $w.graph\
 	-textvariable [namespace current]::vars(graph)\
@@ -125,15 +115,13 @@ proc create_dialogue {} {
     eval $w.graph insert list end [list_graph_types]
     grid [$w.graph component entry] -sticky nse
     $w.graph delete entry 0 end
-    $w.graph insert entry end [subst xwindows]
+    $w.graph insert entry end [subst data]
     $w.graph configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.graph -side top -fill both
     set vars(graph.path) $w.graph
     set vars(graph.required)  0
     set vars(graph._type) graph
-    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

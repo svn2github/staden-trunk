@@ -21,133 +21,97 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - emma}
     label $w._title -text {Multiple alignment program - interface to ClustalW program}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(emma._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments inseqs
-    set vars(inseqs)       [get_active_seq_id 0]
-    if {$vars(inseqs) == -1} {set vars(inseqs) [get_active_seq_id 0]}
-    set vars(inseqs.name)  [seq_info $vars(inseqs) name]
-    sequence_changed [namespace current] inseqs
-    set vars(inseqs.type) [subst gapany]
-    seq_id $w.inseqs \
-	-textvariable [namespace current]::vars(inseqs.name)\
-	-start_value $vars(inseqs.begin)\
-	-end_value $vars(inseqs.end)\
-	-to [seq_info $vars(inseqs) length]\
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst gapany]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] inseqs $w.inseqs}"
-    set vars(inseqs) [subst {}]
-    pack $w.inseqs -side top -fill both
-    set vars(inseqs.path) $w.inseqs
-    set vars(inseqs.required)  1
-    trace variable vars(inseqs.name) w  "::EMBOSS::sequence_changed [namespace current] inseqs"
-    set vars(inseqs._type) seqall
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    lappend arguments onlydend
+    checkbutton $w.onlydend \
+	-text [subst {Only produce dendrogram file}]\
+	-variable [namespace current]::vars(onlydend)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.onlydend -side top -anchor w
+    set vars(onlydend) [subst N]
+    set vars(onlydend.path) $w.onlydend
+    set vars(onlydend.required)  0
+    set vars(onlydend._type) toggle
+
+    lappend arguments dend
+    checkbutton $w.dend \
+	-text [subst {Do alignment using an old dendrogram}]\
+	-variable [namespace current]::vars(dend)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.dend -side top -anchor w
+    set vars(dend) [subst N]
+    set vars(dend.path) $w.dend
+    set vars(dend.required)  0
+    set vars(dend._type) toggle
+
+    lappend arguments dendfile
+    xentry $w.dendfile \
+	-label [subst {Name of old dendrogram file}]\
+	-textvariable [namespace current]::vars(dendfile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.dendfile delete 0 end
+    $w.dendfile insert end [subst {}]
+    pack $w.dendfile -side top -fill both
+    set vars(dendfile.path) $w.dendfile
+    set vars(dendfile.required)  0
+    set vars(dendfile._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
-    iwidgets::labeledframe $w.dendsection \
-	-labeltext [subst {dendsection Section}]
-    pack $w.dendsection -side top -fill both
+    iwidgets::labeledframe $w.slowalignsection \
+	-labeltext [subst {Slow align options}]
+    pack $w.slowalignsection -side top -fill both
     lappend wlist $w
-    append w .dendsection.childsite
+    append w .slowalignsection.childsite
 
-    lappend arguments onlydend
-    checkbutton $w.onlydend \
-	-text [subst {only produce dendrogram file}]\
-	-variable [namespace current]::vars(onlydend)\
+    lappend arguments slow
+    checkbutton $w.slow \
+	-text [subst {Do you want to carry out slow or fast pairwise alignment}]\
+	-variable [namespace current]::vars(slow)\
 	-state [lindex {disabled normal} [subst 1]]
-    pack $w.onlydend -side top -anchor w
-    set vars(onlydend) [subst 0]
-    set vars(onlydend.path) $w.onlydend
-    set vars(onlydend.required)  0
-    set vars(onlydend._type) bool
-
-    lappend arguments dend
-    checkbutton $w.dend \
-	-text [subst {select if you want to do alignment using an old dendrogram}]\
-	-variable [namespace current]::vars(dend)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.dend -side top -anchor w
-    set vars(dend) [subst 0]
-    set vars(dend.path) $w.dend
-    set vars(dend.required)  0
-    set vars(dend._type) bool
-
-    lappend arguments dendfile
-    iwidgets::entryfield $w.dendfile \
-	-textvariable [namespace current]::vars(dendfile) \
-	-labeltext [subst {name of old dendrogram file}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.dendfile component entry] -sticky nse
-    set vars(dendfile) [subst NULL]
-    pack $w.dendfile -side top -fill both
-    set vars(dendfile.path) $w.dendfile
-    set vars(dendfile.required)  0
-    set vars(dendfile._type) string
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    lappend arguments insist
-    checkbutton $w.insist \
-	-text [subst {Insist that the sequence type is changed to protein}]\
-	-variable [namespace current]::vars(insist)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.insist -side top -anchor w
-    set vars(insist) [subst 0]
-    set vars(insist.path) $w.insist
-    set vars(insist.required)  0
-    set vars(insist._type) bool
-
-    iwidgets::labeledframe $w.slowsection \
-	-labeltext [subst {slowsection Section}]
-    pack $w.slowsection -side top -fill both
-    lappend wlist $w
-    append w .slowsection.childsite
-
-    lappend arguments slowfast
-    iwidgets::combobox $w.slowfast\
-	-textvariable [namespace current]::vars(slowfast.name)\
-	-labeltext [subst {Please select one}]
-    trace variable vars(slowfast.name) w  "::EMBOSS::list_changed [namespace current] slowfast"
-    eval $w.slowfast insert list end slow fast
-    set vars(slowfast.mapping1) {slow s fast f}
-    set vars(slowfast.mapping2) {f fast s slow}
-    grid [$w.slowfast component entry] -sticky nse
-    $w.slowfast delete entry 0 end
-    array set tmpmap $vars(slowfast.mapping2)
-    set def [subst s]
-    catch {set def $tmpmap($def)}
-    set vars(slowfast) $def
-    $w.slowfast insert entry end $def
-    $w.slowfast configure \
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.slowfast -side top -fill both
-    set vars(slowfast.path) $w.slowfast
-    set vars(slowfast.required)  0
-    set vars(slowfast.delimiter) ,
-    set vars(slowfast._type) list
-
-    set vars(slow) [subst {[expr {($vars(slowfast) != "f")}]}]
-    set vars(slow.orig) $vars(slow)
-    set vars(slow.expr) {[expr {($vars(slowfast) != "f")}]}
-    trace variable vars(slowfast) w  "::EMBOSS::reset_value [namespace current] slow"
-    set vars(slow._type) var
+    pack $w.slow -side top -anchor w
+    set vars(slow) [subst Y]
+    set vars(slow.path) $w.slow
+    set vars(slow.required)  0
+    set vars(slow._type) toggle
 
     lappend arguments pwgapc
     iwidgets::entryfield $w.pwgapc \
@@ -180,27 +144,11 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    iwidgets::labeledframe $w.protsection \
-	-labeltext [subst {protsection Section}]
-    pack $w.protsection -side top -fill both
+    iwidgets::labeledframe $w.protalignsection \
+	-labeltext [subst {Protein align options}]
+    pack $w.protalignsection -side top -fill both
     lappend wlist $w
-    append w .protsection.childsite
-
-    lappend arguments prot
-    checkbutton $w.prot \
-	-text [subst {Do not change this value}]\
-	-variable [namespace current]::vars(prot)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.prot -side top -anchor w
-    set vars(prot) [subst {[expr {($vars(insist) ? (!$vars(inseqs.protein)):$vars(inseqs.protein))}]}]
-    set vars(prot.path) $w.prot
-    set vars(prot.required)  0
-    set vars(prot.orig) $vars(prot)
-    set vars(prot.expr) {[expr {($vars(insist) ? (!$vars(inseqs.protein)):$vars(inseqs.protein))}]}
-    trace variable vars(insist) w  "::EMBOSS::reset_value [namespace current] prot"
-    trace variable vars(inseqs.protein) w  "::EMBOSS::reset_value [namespace current] prot"
-    trace variable vars(inseqs.protein) w  "::EMBOSS::reset_value [namespace current] prot"
-    set vars(prot._type) bool
+    append w .protalignsection.childsite
 
     lappend arguments pwmatrix
     iwidgets::combobox $w.pwmatrix\
@@ -255,25 +203,26 @@ proc create_dialogue {} {
     set vars(usermatrix._type) var
 
     lappend arguments pairwisedata
-    iwidgets::entryfield $w.pairwisedata \
+    xentry $w.pairwisedata \
+	-label [subst {Filename of user pairwise matrix}]\
 	-textvariable [namespace current]::vars(pairwisedata) \
-	-labeltext [subst {Filename of user pairwise matrix}]\
+	-checkcommand ::EMBOSS::check_infile\
 	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.pairwisedata component entry] -sticky nse
-    set vars(pairwisedata) [subst NULL]
+    $w.pairwisedata delete 0 end
+    $w.pairwisedata insert end [subst {}]
     pack $w.pairwisedata -side top -fill both
     set vars(pairwisedata.path) $w.pairwisedata
     set vars(pairwisedata.required)  0
-    set vars(pairwisedata._type) string
+    set vars(pairwisedata._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    iwidgets::labeledframe $w.fastsection \
-	-labeltext [subst {fastsection Section}]
-    pack $w.fastsection -side top -fill both
+    iwidgets::labeledframe $w.fastalignsection \
+	-labeltext [subst {Fast align options}]
+    pack $w.fastalignsection -side top -fill both
     lappend wlist $w
-    append w .fastsection.childsite
+    append w .fastalignsection.childsite
 
     lappend arguments ktup
     iwidgets::entryfield $w.ktup \
@@ -282,15 +231,15 @@ proc create_dialogue {} {
 	-labeltext [subst {Fast pairwise alignment: similarity scores: K-Tuple size}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.ktup component entry] -sticky nse
-    set vars(ktup) [subst {[expr {($vars(prot)?1:2)}]}]
+    set vars(ktup) [subst {[expr {($vars(acdprotein)?1:2)}]}]
     pack $w.ktup -side top -fill both
     set vars(ktup.minimum) [subst 0]
     set vars(ktup.maximum) [subst 4]
     set vars(ktup.path) $w.ktup
     set vars(ktup.required)  0
     set vars(ktup.orig) $vars(ktup)
-    set vars(ktup.expr) {[expr {($vars(prot)?1:2)}]}
-    trace variable vars(prot) w  "::EMBOSS::reset_value [namespace current] ktup"
+    set vars(ktup.expr) {[expr {($vars(acdprotein)?1:2)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] ktup"
     set vars(ktup._type) integer
 
     lappend arguments gapw
@@ -300,14 +249,14 @@ proc create_dialogue {} {
 	-labeltext [subst {Fast pairwise alignment: similarity scores: gap penalty}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.gapw component entry] -sticky nse
-    set vars(gapw) [subst {[expr {($vars(prot)?3:5)}]}]
+    set vars(gapw) [subst {[expr {($vars(acdprotein)?3:5)}]}]
     pack $w.gapw -side top -fill both
     set vars(gapw.minimum) [subst 0]
     set vars(gapw.path) $w.gapw
     set vars(gapw.required)  0
     set vars(gapw.orig) $vars(gapw)
-    set vars(gapw.expr) {[expr {($vars(prot)?3:5)}]}
-    trace variable vars(prot) w  "::EMBOSS::reset_value [namespace current] gapw"
+    set vars(gapw.expr) {[expr {($vars(acdprotein)?3:5)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] gapw"
     set vars(gapw._type) integer
 
     lappend arguments topdiags
@@ -317,14 +266,14 @@ proc create_dialogue {} {
 	-labeltext [subst {Fast pairwise alignment: similarity scores: number of diagonals to be considered}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.topdiags component entry] -sticky nse
-    set vars(topdiags) [subst {[expr {($vars(prot)?5:4)}]}]
+    set vars(topdiags) [subst {[expr {($vars(acdprotein)?5:4)}]}]
     pack $w.topdiags -side top -fill both
     set vars(topdiags.minimum) [subst 0]
     set vars(topdiags.path) $w.topdiags
     set vars(topdiags.required)  0
     set vars(topdiags.orig) $vars(topdiags)
-    set vars(topdiags.expr) {[expr {($vars(prot)?5:4)}]}
-    trace variable vars(prot) w  "::EMBOSS::reset_value [namespace current] topdiags"
+    set vars(topdiags.expr) {[expr {($vars(acdprotein)?5:4)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] topdiags"
     set vars(topdiags._type) integer
 
     lappend arguments window
@@ -334,14 +283,14 @@ proc create_dialogue {} {
 	-labeltext [subst {Fast pairwise alignment: similarity scores: diagonal window size}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.window component entry] -sticky nse
-    set vars(window) [subst {[expr {($vars(prot)?5:4)}]}]
+    set vars(window) [subst {[expr {($vars(acdprotein)?5:4)}]}]
     pack $w.window -side top -fill both
     set vars(window.minimum) [subst 0]
     set vars(window.path) $w.window
     set vars(window.required)  0
     set vars(window.orig) $vars(window)
-    set vars(window.expr) {[expr {($vars(prot)?5:4)}]}
-    trace variable vars(prot) w  "::EMBOSS::reset_value [namespace current] window"
+    set vars(window.expr) {[expr {($vars(acdprotein)?5:4)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] window"
     set vars(window._type) integer
 
     lappend arguments nopercent
@@ -350,16 +299,16 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(nopercent)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.nopercent -side top -anchor w
-    set vars(nopercent) [subst 0]
+    set vars(nopercent) [subst N]
     set vars(nopercent.path) $w.nopercent
     set vars(nopercent.required)  0
-    set vars(nopercent._type) bool
+    set vars(nopercent._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     iwidgets::labeledframe $w.matrixsection \
-	-labeltext [subst {matrixsection Section}]
+	-labeltext [subst {Matrix options}]
     pack $w.matrixsection -side top -fill both
     lappend wlist $w
     append w .matrixsection.childsite
@@ -416,32 +365,33 @@ proc create_dialogue {} {
     set vars(dnamatrix.delimiter) ,
     set vars(dnamatrix._type) list
 
-    set vars(umamatrix) [subst {([expr {($vars(dnamatrix) == "own")}] ? True : False)}]
+    set vars(umamatrix) [subst {[expr {($vars(dnamatrix) == "own")}]}]
     set vars(umamatrix.orig) $vars(umamatrix)
-    set vars(umamatrix.expr) {([expr {($vars(dnamatrix) == "own")}] ? True : False)}
+    set vars(umamatrix.expr) {[expr {($vars(dnamatrix) == "own")}]}
     trace variable vars(dnamatrix) w  "::EMBOSS::reset_value [namespace current] umamatrix"
     set vars(umamatrix._type) var
 
     lappend arguments mamatrix
-    iwidgets::entryfield $w.mamatrix \
+    xentry $w.mamatrix \
+	-label [subst {Filename of user multiple alignment matrix}]\
 	-textvariable [namespace current]::vars(mamatrix) \
-	-labeltext [subst {Filename of user multiple alignment matrix}]\
+	-checkcommand ::EMBOSS::check_infile\
 	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.mamatrix component entry] -sticky nse
-    set vars(mamatrix) [subst NULL]
+    $w.mamatrix delete 0 end
+    $w.mamatrix insert end [subst {}]
     pack $w.mamatrix -side top -fill both
     set vars(mamatrix.path) $w.mamatrix
     set vars(mamatrix.required)  0
-    set vars(mamatrix._type) string
+    set vars(mamatrix._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    iwidgets::labeledframe $w.gapsection \
-	-labeltext [subst {gapsection Section}]
-    pack $w.gapsection -side top -fill both
+    iwidgets::labeledframe $w.gapoptions \
+	-labeltext [subst {Gap options}]
+    pack $w.gapoptions -side top -fill both
     lappend wlist $w
-    append w .gapsection.childsite
+    append w .gapoptions.childsite
 
     lappend arguments gapc
     iwidgets::entryfield $w.gapc \
@@ -477,10 +427,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(endgaps)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.endgaps -side top -anchor w
-    set vars(endgaps) [subst 1]
+    set vars(endgaps) [subst Y]
     set vars(endgaps.path) $w.endgaps
     set vars(endgaps.required)  0
-    set vars(endgaps._type) bool
+    set vars(endgaps._type) boolean
 
     lappend arguments gapdist
     iwidgets::entryfield $w.gapdist \
@@ -502,10 +452,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(norgap)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.norgap -side top -anchor w
-    set vars(norgap) [subst 0]
+    set vars(norgap) [subst N]
     set vars(norgap.path) $w.norgap
     set vars(norgap.required)  0
-    set vars(norgap._type) bool
+    set vars(norgap._type) boolean
 
     lappend arguments hgapres
     iwidgets::entryfield $w.hgapres \
@@ -525,10 +475,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(nohgap)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.nohgap -side top -anchor w
-    set vars(nohgap) [subst 0]
+    set vars(nohgap) [subst N]
     set vars(nohgap.path) $w.nohgap
     set vars(nohgap.required)  0
-    set vars(nohgap._type) bool
+    set vars(nohgap._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
@@ -552,13 +502,13 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outseq
     iwidgets::labeledframe $w.outseq \
-	-labeltext [subst {The sequence alignment output filename}]
+	-labeltext [subst Filename]
     pack $w.outseq -side top -fill both
     lappend wlist $w
     set w [$w.outseq childsite]
@@ -590,7 +540,7 @@ proc create_dialogue {} {
 
     lappend arguments dendoutfile
     xentry $w.dendoutfile \
-	-label [subst {The dendogram output filename}]\
+	-label [subst {Dendogram output filename}]\
 	-textvariable [namespace current]::vars(dendoutfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]

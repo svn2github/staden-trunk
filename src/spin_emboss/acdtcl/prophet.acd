@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - prophet}
     label $w._title -text {Gapped alignment for profiles}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(prophet._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -52,14 +53,6 @@ proc create_dialogue {} {
     trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
     set vars(sequence._type) seqall
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
     lappend arguments infile
     xentry $w.infile \
 	-label [subst {Profile or matrix file}]\
@@ -73,6 +66,14 @@ proc create_dialogue {} {
     set vars(infile.required)  1
     set vars(infile._type) infile
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments gapopen
     iwidgets::entryfield $w.gapopen \
 	-validate real \
@@ -83,7 +84,7 @@ proc create_dialogue {} {
     set vars(gapopen) [subst 1.0]
     pack $w.gapopen -side top -fill both
     set vars(gapopen.path) $w.gapopen
-    set vars(gapopen.required)  1
+    set vars(gapopen.required)  0
     set vars(gapopen._type) float
 
     lappend arguments gapextend
@@ -96,14 +97,14 @@ proc create_dialogue {} {
     set vars(gapextend) [subst 1.0]
     pack $w.gapextend -side top -fill both
     set vars(gapextend.path) $w.gapextend
-    set vars(gapextend.required)  1
+    set vars(gapextend.required)  0
     set vars(gapextend._type) float
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,42 +21,43 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - palindrome}
     label $w._title -text {Looks for inverted repeats in a nucleotide sequence}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(palindrome._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments insequence
-    set vars(insequence)       [get_active_seq_id 0]
-    if {$vars(insequence) == -1} {set vars(insequence) [get_active_seq_id 0]}
-    set vars(insequence.name)  [seq_info $vars(insequence) name]
-    sequence_changed [namespace current] insequence
-    set vars(insequence.type) [subst nucleotide]
-    seq_id $w.insequence \
-	-textvariable [namespace current]::vars(insequence.name)\
-	-start_value $vars(insequence.begin)\
-	-end_value $vars(insequence.end)\
-	-to [seq_info $vars(insequence) length]\
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst nucleotide]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] insequence $w.insequence}"
-    set vars(insequence) [subst {}]
-    pack $w.insequence -side top -fill both
-    set vars(insequence.path) $w.insequence
-    set vars(insequence.required)  1
-    trace variable vars(insequence.name) w  "::EMBOSS::sequence_changed [namespace current] insequence"
-    set vars(insequence._type) seqall
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -70,12 +71,12 @@ proc create_dialogue {} {
     set vars(minpallen) [subst 10]
     pack $w.minpallen -side top -fill both
     set vars(minpallen.minimum) [subst 1]
-    set vars(minpallen.maximum) [subst {[expr {($vars(insequence.length)/2)}]}]
+    set vars(minpallen.maximum) [subst {[expr {($vars(sequence.length)/2)}]}]
     set vars(minpallen.maximum.orig) $vars(minpallen.maximum)
-    set vars(minpallen.maximum.expr) {[expr {($vars(insequence.length)/2)}]}
-    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] minpallen.maximum"
+    set vars(minpallen.maximum.expr) {[expr {($vars(sequence.length)/2)}]}
+    trace variable vars(sequence.length) w  "::EMBOSS::reset_value [namespace current] minpallen.maximum"
     set vars(minpallen.path) $w.minpallen
-    set vars(minpallen.required)  1
+    set vars(minpallen.required)  0
     set vars(minpallen._type) integer
 
     lappend arguments maxpallen
@@ -91,12 +92,12 @@ proc create_dialogue {} {
     set vars(maxpallen.minimum.orig) $vars(maxpallen.minimum)
     set vars(maxpallen.minimum.expr) {[expr {$vars(minpallen)}]}
     trace variable vars(minpallen) w  "::EMBOSS::reset_value [namespace current] maxpallen.minimum"
-    set vars(maxpallen.maximum) [subst {[expr {($vars(insequence.length)/2)}]}]
+    set vars(maxpallen.maximum) [subst {[expr {($vars(sequence.length)/2)}]}]
     set vars(maxpallen.maximum.orig) $vars(maxpallen.maximum)
-    set vars(maxpallen.maximum.expr) {[expr {($vars(insequence.length)/2)}]}
-    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] maxpallen.maximum"
+    set vars(maxpallen.maximum.expr) {[expr {($vars(sequence.length)/2)}]}
+    trace variable vars(sequence.length) w  "::EMBOSS::reset_value [namespace current] maxpallen.maximum"
     set vars(maxpallen.path) $w.maxpallen
-    set vars(maxpallen.required)  1
+    set vars(maxpallen.required)  0
     set vars(maxpallen._type) integer
 
     lappend arguments gaplimit
@@ -109,12 +110,12 @@ proc create_dialogue {} {
     set vars(gaplimit) [subst 100]
     pack $w.gaplimit -side top -fill both
     set vars(gaplimit.minimum) [subst 0]
-    set vars(gaplimit.maximum) [subst {[expr {$vars(insequence.length)}]}]
+    set vars(gaplimit.maximum) [subst {[expr {$vars(sequence.length)}]}]
     set vars(gaplimit.maximum.orig) $vars(gaplimit.maximum)
-    set vars(gaplimit.maximum.expr) {[expr {$vars(insequence.length)}]}
-    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] gaplimit.maximum"
+    set vars(gaplimit.maximum.expr) {[expr {$vars(sequence.length)}]}
+    trace variable vars(sequence.length) w  "::EMBOSS::reset_value [namespace current] gaplimit.maximum"
     set vars(gaplimit.path) $w.gaplimit
-    set vars(gaplimit.required)  1
+    set vars(gaplimit.required)  0
     set vars(gaplimit._type) integer
 
     lappend arguments nummismatches
@@ -128,14 +129,14 @@ proc create_dialogue {} {
     pack $w.nummismatches -side top -fill both
     set vars(nummismatches.minimum) [subst 0]
     set vars(nummismatches.path) $w.nummismatches
-    set vars(nummismatches.required)  1
+    set vars(nummismatches.required)  0
     set vars(nummismatches._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -158,10 +159,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(overlap)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.overlap -side top -anchor w
-    set vars(overlap) [subst 1]
+    set vars(overlap) [subst Y]
     set vars(overlap.path) $w.overlap
-    set vars(overlap.required)  1
-    set vars(overlap._type) bool
+    set vars(overlap.required)  0
+    set vars(overlap._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

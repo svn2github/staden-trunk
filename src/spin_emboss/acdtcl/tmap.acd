@@ -21,43 +21,44 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - tmap}
     label $w._title -text {Displays membrane spanning regions}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(tmap._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments msf
-    set vars(msf)       [get_active_seq_id 0]
-    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 0]}
-    set vars(msf.name)  [seq_info $vars(msf) name]
-    sequence_changed [namespace current] msf
-    set vars(msf.type) [subst gapprotein]
-    seq_id $w.msf \
-	-textvariable [namespace current]::vars(msf.name)\
-	-start_value $vars(msf.begin)\
-	-end_value $vars(msf.end)\
-	-to [seq_info $vars(msf) length]\
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 0]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst gapprotein]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
-    set vars(msf) [subst {}]
-    pack $w.msf -side top -fill both
-    set vars(msf.path) $w.msf
-    set vars(msf.required)  1
-    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
-   set vars(msf.totweight) [subst 0]
-    set vars(msf._type) seqset
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+   set vars(sequences.totweight) [subst 0]
+    set vars(sequences._type) seqset
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -78,16 +79,16 @@ proc create_dialogue {} {
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output filename}]\
+	-label [subst {Report output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
     $w.outfile delete 0 end
-    $w.outfile insert end [subst tmap.res]
+    $w.outfile insert end [subst report0.out]
     pack $w.outfile -side top -fill both
     set vars(outfile.path) $w.outfile
     set vars(outfile.required)  0
-    set vars(outfile._type) outfile
+    set vars(outfile._type) report
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

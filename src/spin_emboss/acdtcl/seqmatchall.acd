@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - seqmatchall}
     label $w._title -text {Does an all-against-all comparison of a set of sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(seqmatchall._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -57,7 +58,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -72,29 +73,29 @@ proc create_dialogue {} {
     pack $w.wordsize -side top -fill both
     set vars(wordsize.minimum) [subst 2]
     set vars(wordsize.path) $w.wordsize
-    set vars(wordsize.required)  1
+    set vars(wordsize.required)  0
     set vars(wordsize._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output filename}]\
+	-label [subst {Alignment output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
     $w.outfile delete 0 end
-    $w.outfile insert end [subst seqmatchall0.out]
+    $w.outfile insert end [subst align0.out]
     pack $w.outfile -side top -fill both
     set vars(outfile.path) $w.outfile
     set vars(outfile.required)  1
-    set vars(outfile._type) outfile
+    set vars(outfile._type) align
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

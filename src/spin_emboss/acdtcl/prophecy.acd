@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - prophecy}
     label $w._title -text {Creates matrices/profiles from multiple alignments}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(prophecy._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -53,14 +54,6 @@ proc create_dialogue {} {
    set vars(sequence.totweight) [subst 0]
     set vars(sequence._type) seqset
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
     lappend arguments type
     iwidgets::combobox $w.type\
 	-textvariable [namespace current]::vars(type.name)\
@@ -80,9 +73,39 @@ proc create_dialogue {} {
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.type -side top -fill both
     set vars(type.path) $w.type
-    set vars(type.required)  1
+    set vars(type.required)  0
     set vars(type.delimiter) ,
     set vars(type._type) list
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst {[expr {$vars(acdprotein)}]}]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Scoring matrix}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.protein.orig) $vars(datafile.protein)
+    set vars(datafile.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}
+    trace variable vars(type) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrixf
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments name
     iwidgets::entryfield $w.name \
@@ -93,35 +116,21 @@ proc create_dialogue {} {
     set vars(name) [subst mymatrix]
     pack $w.name -side top -fill both
     set vars(name.path) $w.name
-    set vars(name.required)  1
+    set vars(name.required)  0
     set vars(name._type) string
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+    iwidgets::labeledframe $w.profiletypesection \
+	-labeltext [subst {Profile type specific options}]
+    pack $w.profiletypesection -side top -fill both
     lappend wlist $w
-    set w $page
-
-    set vars(dogap) [subst {[expr {($vars(type) != "f")}]}]
-    set vars(dogap.orig) $vars(dogap)
-    set vars(dogap.expr) {[expr {($vars(type) != "f")}]}
-    trace variable vars(type) w  "::EMBOSS::reset_value [namespace current] dogap"
-    set vars(dogap._type) var
-
-    iwidgets::labeledframe $w.typesection \
-	-labeltext [subst {typesection Section}]
-    pack $w.typesection -side top -fill both
-    lappend wlist $w
-    append w .typesection.childsite
+    append w .profiletypesection.childsite
 
     lappend arguments threshold
     iwidgets::entryfield $w.threshold \
 	-validate integer \
 	-textvariable [namespace current]::vars(threshold) \
 	-labeltext [subst {Enter threshold reporting percentage}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="F")}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.threshold component entry] -sticky nse
     set vars(threshold) [subst 75]
     pack $w.threshold -side top -fill both
@@ -130,71 +139,41 @@ proc create_dialogue {} {
     set vars(threshold.path) $w.threshold
     set vars(threshold.required)  0
     set vars(threshold._type) integer
-    set vars(threshold.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="F")}]]}
-    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] threshold"
-
-    lappend arguments datafile
-    set vars(datafile.protein) [subst {[expr {$vars(sequence.protein)}]}]
-    iwidgets::combobox $w.datafile\
-	-textvariable [namespace current]::vars(datafile)\
-	-labeltext [subst {Scoring matrix}]
-    eval $w.datafile insert list end [list_matrices p]
-    grid [$w.datafile component entry] -sticky nse
-    $w.datafile delete entry 0 end
-    $w.datafile insert entry end [subst {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}]
-    $w.datafile configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)!="F")}]}]]]
-    pack $w.datafile -side top -fill both
-    set vars(datafile.path) $w.datafile
-    set vars(datafile.required)  0
-    set vars(datafile.protein.orig) $vars(datafile.protein)
-    set vars(datafile.protein.expr) {[expr {$vars(sequence.protein)}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
-    set vars(datafile.orig) $vars(datafile)
-    set vars(datafile.expr) {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}
-    trace variable vars(type) w  "::EMBOSS::reset_value [namespace current] datafile"
-    set vars(datafile._type) matrixf
-    set vars(datafile.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)!="F")}]]}
-    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] datafile"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    iwidgets::labeledframe $w.dogapsection \
-	-labeltext [subst {dogapsection Section}]
-    pack $w.dogapsection -side top -fill both
+    iwidgets::labeledframe $w.gapsection \
+	-labeltext [subst {Gap options}]
+    pack $w.gapsection -side top -fill both
     lappend wlist $w
-    append w .dogapsection.childsite
+    append w .gapsection.childsite
 
     lappend arguments open
     iwidgets::entryfield $w.open \
 	-validate real \
 	-textvariable [namespace current]::vars(open) \
 	-labeltext [subst {Gap opening penalty}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(dogap)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.open component entry] -sticky nse
     set vars(open) [subst 3.0]
     pack $w.open -side top -fill both
     set vars(open.path) $w.open
     set vars(open.required)  0
     set vars(open._type) float
-    set vars(open.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(dogap)}]]}
-    trace variable vars(dogap) w  "::EMBOSS::reset_needed [namespace current] open"
 
     lappend arguments extension
     iwidgets::entryfield $w.extension \
 	-validate real \
 	-textvariable [namespace current]::vars(extension) \
 	-labeltext [subst {Gap extension penalty}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(dogap)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.extension component entry] -sticky nse
     set vars(extension) [subst 0.3]
     pack $w.extension -side top -fill both
     set vars(extension.path) $w.extension
     set vars(extension.required)  0
     set vars(extension._type) float
-    set vars(extension.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(dogap)}]]}
-    trace variable vars(dogap) w  "::EMBOSS::reset_needed [namespace current] extension"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
@@ -203,22 +182,22 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments outf
-    xentry $w.outf \
+    lappend arguments outfile
+    xentry $w.outfile \
 	-label [subst {Output filename}]\
-	-textvariable [namespace current]::vars(outf) \
+	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.outf delete 0 end
-    $w.outf insert end [subst prophecy0.out]
-    pack $w.outf -side top -fill both
-    set vars(outf.path) $w.outf
-    set vars(outf.required)  1
-    set vars(outf._type) outfile
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst prophecy0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

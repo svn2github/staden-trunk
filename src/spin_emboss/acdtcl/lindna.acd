@@ -21,7 +21,286 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - lindna}
     label $w._title -text {Draws linear maps of DNA constructs}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(lindna._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infile
+    xentry $w.infile \
+	-label [subst {Input file containing mapping data}]\
+	-textvariable [namespace current]::vars(infile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.infile delete 0 end
+    $w.infile insert end [subst inputfile]
+    pack $w.infile -side top -fill both
+    set vars(infile.path) $w.infile
+    set vars(infile.required)  1
+    set vars(infile._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments maxgroups
+    iwidgets::entryfield $w.maxgroups \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxgroups) \
+	-labeltext [subst {Maximum number of groups}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxgroups component entry] -sticky nse
+    set vars(maxgroups) [subst 20]
+    pack $w.maxgroups -side top -fill both
+    set vars(maxgroups.minimum) [subst 1]
+    set vars(maxgroups.path) $w.maxgroups
+    set vars(maxgroups.required)  0
+    set vars(maxgroups._type) integer
+
+    lappend arguments maxlabels
+    iwidgets::entryfield $w.maxlabels \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxlabels) \
+	-labeltext [subst {Maximum number of labels}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxlabels component entry] -sticky nse
+    set vars(maxlabels) [subst 10000]
+    pack $w.maxlabels -side top -fill both
+    set vars(maxlabels.minimum) [subst 1]
+    set vars(maxlabels.path) $w.maxlabels
+    set vars(maxlabels.required)  0
+    set vars(maxlabels._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments ruler
+    checkbutton $w.ruler \
+	-text [subst {Draw a ruler}]\
+	-variable [namespace current]::vars(ruler)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ruler -side top -anchor w
+    set vars(ruler) [subst Y]
+    set vars(ruler.path) $w.ruler
+    set vars(ruler.required)  0
+    set vars(ruler._type) boolean
+
+    lappend arguments blocktype
+    iwidgets::combobox $w.blocktype\
+	-textvariable [namespace current]::vars(blocktype.name)\
+	-labeltext [subst {Type of blocks}]
+    trace variable vars(blocktype.name) w  "::EMBOSS::list_changed [namespace current] blocktype"
+    eval $w.blocktype insert list end {{Open blocks}} {{Filled blocks}} {{Black border}}
+    set vars(blocktype.mapping1) {{Open blocks} Open {Filled blocks} Filled {Black border} Outline}
+    set vars(blocktype.mapping2) {Outline {Black border} Filled {Filled blocks} Open {Open blocks}}
+    grid [$w.blocktype component entry] -sticky nse
+    $w.blocktype delete entry 0 end
+    array set tmpmap $vars(blocktype.mapping2)
+    set def [subst Filled]
+    catch {set def $tmpmap($def)}
+    set vars(blocktype) $def
+    $w.blocktype insert entry end $def
+    $w.blocktype configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.blocktype -side top -fill both
+    set vars(blocktype.path) $w.blocktype
+    set vars(blocktype.required)  0
+    set vars(blocktype.delimiter) {;}
+    set vars(blocktype._type) list
+
+    lappend arguments intersymbol
+    iwidgets::combobox $w.intersymbol\
+	-textvariable [namespace current]::vars(intersymbol)\
+	-labeltext [subst {Type of junctions between blocks}]
+    eval $w.intersymbol insert list end Straight Up Down No
+    grid [$w.intersymbol component entry] -sticky nse
+    $w.intersymbol delete entry 0 end
+    $w.intersymbol insert entry end [subst Straight]
+    $w.intersymbol configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.intersymbol -side top -fill both
+    set vars(intersymbol.path) $w.intersymbol
+    set vars(intersymbol.required)  0
+    set vars(intersymbol._type) selection
+
+    lappend arguments intercolour
+    iwidgets::entryfield $w.intercolour \
+	-validate integer \
+	-textvariable [namespace current]::vars(intercolour) \
+	-labeltext [subst {Colour of junctions between blocks (enter a colour number)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.intercolour component entry] -sticky nse
+    set vars(intercolour) [subst 1]
+    pack $w.intercolour -side top -fill both
+    set vars(intercolour.minimum) [subst 0]
+    set vars(intercolour.maximum) [subst 15]
+    set vars(intercolour.path) $w.intercolour
+    set vars(intercolour.required)  0
+    set vars(intercolour._type) integer
+
+    lappend arguments interticks
+    checkbutton $w.interticks \
+	-text [subst {Horizontal junctions between ticks}]\
+	-variable [namespace current]::vars(interticks)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.interticks -side top -anchor w
+    set vars(interticks) [subst N]
+    set vars(interticks.path) $w.interticks
+    set vars(interticks.required)  0
+    set vars(interticks._type) boolean
+
+    lappend arguments gapsize
+    iwidgets::entryfield $w.gapsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(gapsize) \
+	-labeltext [subst {Interval between ticks in the ruler}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapsize component entry] -sticky nse
+    set vars(gapsize) [subst 500]
+    pack $w.gapsize -side top -fill both
+    set vars(gapsize.minimum) [subst 0]
+    set vars(gapsize.path) $w.gapsize
+    set vars(gapsize.required)  0
+    set vars(gapsize._type) integer
+
+    lappend arguments ticklines
+    checkbutton $w.ticklines \
+	-text [subst {Vertical lines at the ruler's ticks}]\
+	-variable [namespace current]::vars(ticklines)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ticklines -side top -anchor w
+    set vars(ticklines) [subst N]
+    set vars(ticklines.path) $w.ticklines
+    set vars(ticklines.required)  0
+    set vars(ticklines._type) boolean
+
+    lappend arguments textheight
+    iwidgets::entryfield $w.textheight \
+	-validate real \
+	-textvariable [namespace current]::vars(textheight) \
+	-labeltext [subst {Height of text multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.textheight component entry] -sticky nse
+    set vars(textheight) [subst 1.0]
+    pack $w.textheight -side top -fill both
+    set vars(textheight.minimum) [subst 0.0]
+    set vars(textheight.path) $w.textheight
+    set vars(textheight.required)  0
+    set vars(textheight._type) float
+
+    lappend arguments textlength
+    iwidgets::entryfield $w.textlength \
+	-validate real \
+	-textvariable [namespace current]::vars(textlength) \
+	-labeltext [subst {Length of text multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.textlength component entry] -sticky nse
+    set vars(textlength) [subst 1.0]
+    pack $w.textlength -side top -fill both
+    set vars(textlength.minimum) [subst 0.0]
+    set vars(textlength.path) $w.textlength
+    set vars(textlength.required)  0
+    set vars(textlength._type) float
+
+    lappend arguments margin
+    iwidgets::entryfield $w.margin \
+	-validate real \
+	-textvariable [namespace current]::vars(margin) \
+	-labeltext [subst {Width of left margin multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.margin component entry] -sticky nse
+    set vars(margin) [subst 1.0]
+    pack $w.margin -side top -fill both
+    set vars(margin.minimum) [subst 0.0]
+    set vars(margin.path) $w.margin
+    set vars(margin.required)  0
+    set vars(margin._type) float
+
+    lappend arguments tickheight
+    iwidgets::entryfield $w.tickheight \
+	-validate real \
+	-textvariable [namespace current]::vars(tickheight) \
+	-labeltext [subst {Height of ticks multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.tickheight component entry] -sticky nse
+    set vars(tickheight) [subst 1.0]
+    pack $w.tickheight -side top -fill both
+    set vars(tickheight.minimum) [subst 0.0]
+    set vars(tickheight.path) $w.tickheight
+    set vars(tickheight.required)  0
+    set vars(tickheight._type) float
+
+    lappend arguments blockheight
+    iwidgets::entryfield $w.blockheight \
+	-validate real \
+	-textvariable [namespace current]::vars(blockheight) \
+	-labeltext [subst {Height of blocks multilpier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.blockheight component entry] -sticky nse
+    set vars(blockheight) [subst 1]
+    pack $w.blockheight -side top -fill both
+    set vars(blockheight.minimum) [subst 0.0]
+    set vars(blockheight.path) $w.blockheight
+    set vars(blockheight.required)  0
+    set vars(blockheight._type) float
+
+    lappend arguments rangeheight
+    iwidgets::entryfield $w.rangeheight \
+	-validate real \
+	-textvariable [namespace current]::vars(rangeheight) \
+	-labeltext [subst {Height of range ends multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.rangeheight component entry] -sticky nse
+    set vars(rangeheight) [subst 1.0]
+    pack $w.rangeheight -side top -fill both
+    set vars(rangeheight.minimum) [subst 0.0]
+    set vars(rangeheight.path) $w.rangeheight
+    set vars(rangeheight.required)  0
+    set vars(rangeheight._type) float
+
+    lappend arguments gapgroup
+    iwidgets::entryfield $w.gapgroup \
+	-validate real \
+	-textvariable [namespace current]::vars(gapgroup) \
+	-labeltext [subst {Space between groups mutliplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapgroup component entry] -sticky nse
+    set vars(gapgroup) [subst 1.0]
+    pack $w.gapgroup -side top -fill both
+    set vars(gapgroup.minimum) [subst 0.0]
+    set vars(gapgroup.path) $w.gapgroup
+    set vars(gapgroup.required)  0
+    set vars(gapgroup._type) float
+
+    lappend arguments postext
+    iwidgets::entryfield $w.postext \
+	-validate real \
+	-textvariable [namespace current]::vars(postext) \
+	-labeltext [subst {Space between text and ticks, blocks, and ranges multiplier}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.postext component entry] -sticky nse
+    set vars(postext) [subst 1.0]
+    pack $w.postext -side top -fill both
+    set vars(postext.minimum) [subst 0.0]
+    set vars(postext.path) $w.postext
+    set vars(postext.required)  0
+    set vars(postext._type) float
 
     lappend arguments graphout
     iwidgets::combobox $w.graphout\
@@ -35,220 +314,18 @@ proc create_dialogue {} {
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.graphout -side top -fill both
     set vars(graphout.path) $w.graphout
-    set vars(graphout.required)  1
+    set vars(graphout.required)  0
     set vars(graphout._type) graph
 
-    lappend arguments inputfile
-    xentry $w.inputfile \
-	-label [subst {input file containing mapping data}]\
-	-textvariable [namespace current]::vars(inputfile) \
-	-checkcommand ::EMBOSS::check_infile\
-	-state [lindex {disabled normal} [subst 1]]
-    $w.inputfile delete 0 end
-    $w.inputfile insert end [subst inputfile]
-    pack $w.inputfile -side top -fill both
-    set vars(inputfile.path) $w.inputfile
-    set vars(inputfile.required)  1
-    set vars(inputfile._type) infile
-
-    lappend arguments ruler
-    iwidgets::entryfield $w.ruler \
-	-textvariable [namespace current]::vars(ruler) \
-	-labeltext [subst {do you want a ruler (Y or N)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.ruler component entry] -sticky nse
-    set vars(ruler) [subst Y]
-    pack $w.ruler -side top -fill both
-    set vars(ruler.path) $w.ruler
-    set vars(ruler.required)  1
-    set vars(ruler._type) string
-
-    lappend arguments blocktype
-    iwidgets::entryfield $w.blocktype \
-	-textvariable [namespace current]::vars(blocktype) \
-	-labeltext [subst {type of blocks (enter Open, Filled, or Outline)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.blocktype component entry] -sticky nse
-    set vars(blocktype) [subst Filled]
-    pack $w.blocktype -side top -fill both
-    set vars(blocktype.path) $w.blocktype
-    set vars(blocktype.required)  1
-    set vars(blocktype._type) string
-
-    lappend arguments intersymbol
-    iwidgets::entryfield $w.intersymbol \
-	-textvariable [namespace current]::vars(intersymbol) \
-	-labeltext [subst {type of junctions between blocks (enter Straight, Up, Down, or No)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.intersymbol component entry] -sticky nse
-    set vars(intersymbol) [subst Straight]
-    pack $w.intersymbol -side top -fill both
-    set vars(intersymbol.path) $w.intersymbol
-    set vars(intersymbol.required)  0
-    set vars(intersymbol._type) string
-
-    lappend arguments intercolor
-    iwidgets::entryfield $w.intercolor \
-	-validate integer \
-	-textvariable [namespace current]::vars(intercolor) \
-	-labeltext [subst {color of junctions between blocks (enter a color number)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.intercolor component entry] -sticky nse
-    set vars(intercolor) [subst 1]
-    pack $w.intercolor -side top -fill both
-    set vars(intercolor.minimum) [subst 0]
-    set vars(intercolor.maximum) [subst 15]
-    set vars(intercolor.path) $w.intercolor
-    set vars(intercolor.required)  0
-    set vars(intercolor._type) integer
-
-    lappend arguments interticks
-    iwidgets::entryfield $w.interticks \
-	-textvariable [namespace current]::vars(interticks) \
-	-labeltext [subst {do you want horizontal junctions between ticks (Y or N)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.interticks component entry] -sticky nse
-    set vars(interticks) [subst N]
-    pack $w.interticks -side top -fill both
-    set vars(interticks.path) $w.interticks
-    set vars(interticks.required)  0
-    set vars(interticks._type) string
-
-    lappend arguments gapsize
-    iwidgets::entryfield $w.gapsize \
-	-validate integer \
-	-textvariable [namespace current]::vars(gapsize) \
-	-labeltext [subst {interval between ticks in the ruler (enter an integer)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.gapsize component entry] -sticky nse
-    set vars(gapsize) [subst 500]
-    pack $w.gapsize -side top -fill both
-    set vars(gapsize.minimum) [subst 0]
-    set vars(gapsize.path) $w.gapsize
-    set vars(gapsize.required)  0
-    set vars(gapsize._type) integer
-
-    lappend arguments ticklines
-    iwidgets::entryfield $w.ticklines \
-	-textvariable [namespace current]::vars(ticklines) \
-	-labeltext [subst {do you want vertical lines at the ruler's ticks (Y or N)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.ticklines component entry] -sticky nse
-    set vars(ticklines) [subst N]
-    pack $w.ticklines -side top -fill both
-    set vars(ticklines.path) $w.ticklines
-    set vars(ticklines.required)  0
-    set vars(ticklines._type) string
-
-    lappend arguments textheight
-    iwidgets::entryfield $w.textheight \
-	-validate real \
-	-textvariable [namespace current]::vars(textheight) \
-	-labeltext [subst {height of text (enter a number to multiply the default height)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.textheight component entry] -sticky nse
-    set vars(textheight) [subst 1]
-    pack $w.textheight -side top -fill both
-    set vars(textheight.path) $w.textheight
-    set vars(textheight.required)  0
-    set vars(textheight._type) float
-
-    lappend arguments textlength
-    iwidgets::entryfield $w.textlength \
-	-validate real \
-	-textvariable [namespace current]::vars(textlength) \
-	-labeltext [subst {length of text (enter a number to multiply the default length)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.textlength component entry] -sticky nse
-    set vars(textlength) [subst 1]
-    pack $w.textlength -side top -fill both
-    set vars(textlength.path) $w.textlength
-    set vars(textlength.required)  0
-    set vars(textlength._type) float
-
-    lappend arguments margin
-    iwidgets::entryfield $w.margin \
-	-validate real \
-	-textvariable [namespace current]::vars(margin) \
-	-labeltext [subst {width of left margin (enter a number to multiply the default width)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.margin component entry] -sticky nse
-    set vars(margin) [subst 1]
-    pack $w.margin -side top -fill both
-    set vars(margin.minimum) [subst 0]
-    set vars(margin.path) $w.margin
-    set vars(margin.required)  0
-    set vars(margin._type) float
-
-    lappend arguments tickheight
-    iwidgets::entryfield $w.tickheight \
-	-validate real \
-	-textvariable [namespace current]::vars(tickheight) \
-	-labeltext [subst {height of ticks (enter a number to multiply the default height)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.tickheight component entry] -sticky nse
-    set vars(tickheight) [subst 1]
-    pack $w.tickheight -side top -fill both
-    set vars(tickheight.path) $w.tickheight
-    set vars(tickheight.required)  0
-    set vars(tickheight._type) float
-
-    lappend arguments blockheight
-    iwidgets::entryfield $w.blockheight \
-	-validate real \
-	-textvariable [namespace current]::vars(blockheight) \
-	-labeltext [subst {height of blocks (enter a number to multiply the default height)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.blockheight component entry] -sticky nse
-    set vars(blockheight) [subst 1]
-    pack $w.blockheight -side top -fill both
-    set vars(blockheight.path) $w.blockheight
-    set vars(blockheight.required)  0
-    set vars(blockheight._type) float
-
-    lappend arguments rangeheight
-    iwidgets::entryfield $w.rangeheight \
-	-validate real \
-	-textvariable [namespace current]::vars(rangeheight) \
-	-labeltext [subst {height of range ends (enter a number to multiply the default height)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.rangeheight component entry] -sticky nse
-    set vars(rangeheight) [subst 1]
-    pack $w.rangeheight -side top -fill both
-    set vars(rangeheight.path) $w.rangeheight
-    set vars(rangeheight.required)  0
-    set vars(rangeheight._type) float
-
-    lappend arguments gapgroup
-    iwidgets::entryfield $w.gapgroup \
-	-validate real \
-	-textvariable [namespace current]::vars(gapgroup) \
-	-labeltext [subst {space between groups (enter a number to multiply the default space)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.gapgroup component entry] -sticky nse
-    set vars(gapgroup) [subst 1]
-    pack $w.gapgroup -side top -fill both
-    set vars(gapgroup.path) $w.gapgroup
-    set vars(gapgroup.required)  0
-    set vars(gapgroup._type) float
-
-    lappend arguments postext
-    iwidgets::entryfield $w.postext \
-	-validate real \
-	-textvariable [namespace current]::vars(postext) \
-	-labeltext [subst {space between text and ticks, blocks, and ranges (enter a number to multiply the default space)}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.postext component entry] -sticky nse
-    set vars(postext) [subst 1]
-    pack $w.postext -side top -fill both
-    set vars(postext.path) $w.postext
-    set vars(postext.required)  0
-    set vars(postext._type) float
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/lindna.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

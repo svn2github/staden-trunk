@@ -21,21 +21,22 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - codcmp}
     label $w._title -text {Codon usage table comparison}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(codcmp._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
     lappend arguments first
     iwidgets::combobox $w.first\
 	-textvariable [namespace current]::vars(first)\
-	-labeltext [subst {First codon usage file}]
+	-labeltext [subst {Codon usage table}]
     eval $w.first insert list end [list_codon_tables]
     grid [$w.first component entry] -sticky nse
     $w.first delete entry 0 end
@@ -50,7 +51,7 @@ proc create_dialogue {} {
     lappend arguments second
     iwidgets::combobox $w.second\
 	-textvariable [namespace current]::vars(second)\
-	-labeltext [subst {Second codon usage file}]
+	-labeltext [subst {Codon usage table}]
     eval $w.second insert list end [list_codon_tables]
     grid [$w.second component entry] -sticky nse
     $w.second delete entry 0 end
@@ -66,7 +67,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

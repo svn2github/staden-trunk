@@ -21,67 +21,60 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - merger}
     label $w._title -text {Merge two overlapping nucleic acid sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(merger._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments seqa
-    set vars(seqa)       [get_active_seq_id 0]
-    if {$vars(seqa) == -1} {set vars(seqa) [get_active_seq_id 0]}
-    set vars(seqa.name)  [seq_info $vars(seqa) name]
-    sequence_changed [namespace current] seqa
-    set vars(seqa.type) [subst DNA]
-    seq_id $w.seqa \
-	-textvariable [namespace current]::vars(seqa.name)\
-	-start_value $vars(seqa.begin)\
-	-end_value $vars(seqa.end)\
-	-to [seq_info $vars(seqa) length]\
+    lappend arguments asequence
+    set vars(asequence)       [get_active_seq_id 0]
+    if {$vars(asequence) == -1} {set vars(asequence) [get_active_seq_id 0]}
+    set vars(asequence.name)  [seq_info $vars(asequence) name]
+    sequence_changed [namespace current] asequence
+    set vars(asequence.type) [subst DNA]
+    seq_id $w.asequence \
+	-textvariable [namespace current]::vars(asequence.name)\
+	-start_value $vars(asequence.begin)\
+	-end_value $vars(asequence.end)\
+	-to [seq_info $vars(asequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqa $w.seqa}"
-    set vars(seqa) [subst {}]
-    pack $w.seqa -side top -fill both
-    set vars(seqa.path) $w.seqa
-    set vars(seqa.required)  1
-    trace variable vars(seqa.name) w  "::EMBOSS::sequence_changed [namespace current] seqa"
-    set vars(seqa._type) sequence
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] asequence $w.asequence}"
+    set vars(asequence) [subst {}]
+    pack $w.asequence -side top -fill both
+    set vars(asequence.path) $w.asequence
+    set vars(asequence.required)  1
+    trace variable vars(asequence.name) w  "::EMBOSS::sequence_changed [namespace current] asequence"
+    set vars(asequence._type) sequence
 
-    lappend arguments seqb
-    set vars(seqb)       [get_active_seq_id 1]
-    if {$vars(seqb) == -1} {set vars(seqb) [get_active_seq_id 0]}
-    set vars(seqb.name)  [seq_info $vars(seqb) name]
-    sequence_changed [namespace current] seqb
-    set vars(seqb.type) [subst DNA]
-    seq_id $w.seqb \
-	-textvariable [namespace current]::vars(seqb.name)\
-	-start_value $vars(seqb.begin)\
-	-end_value $vars(seqb.end)\
-	-to [seq_info $vars(seqb) length]\
+    lappend arguments bsequence
+    set vars(bsequence)       [get_active_seq_id 1]
+    if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
+    set vars(bsequence.name)  [seq_info $vars(bsequence) name]
+    sequence_changed [namespace current] bsequence
+    set vars(bsequence.type) [subst DNA]
+    seq_id $w.bsequence \
+	-textvariable [namespace current]::vars(bsequence.name)\
+	-start_value $vars(bsequence.begin)\
+	-end_value $vars(bsequence.end)\
+	-to [seq_info $vars(bsequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqb $w.seqb}"
-    set vars(seqb) [subst {}]
-    pack $w.seqb -side top -fill both
-    set vars(seqb.path) $w.seqb
-    set vars(seqb.required)  1
-    trace variable vars(seqb.name) w  "::EMBOSS::sequence_changed [namespace current] seqb"
-    set vars(seqb._type) sequence
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] bsequence $w.bsequence}"
+    set vars(bsequence) [subst {}]
+    pack $w.bsequence -side top -fill both
+    set vars(bsequence.path) $w.bsequence
+    set vars(bsequence.required)  1
+    trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
+    set vars(bsequence._type) sequence
 
     lappend arguments datafile
-    set vars(datafile.protein) [subst {[expr {$vars(seqa.protein)}]}]
+    set vars(datafile.protein) [subst {[expr {$vars(acdprotein)}]}]
     iwidgets::combobox $w.datafile\
 	-textvariable [namespace current]::vars(datafile)\
 	-labeltext [subst {Matrix file}]
@@ -95,12 +88,20 @@ proc create_dialogue {} {
     set vars(datafile.path) $w.datafile
     set vars(datafile.required)  0
     set vars(datafile.protein.orig) $vars(datafile.protein)
-    set vars(datafile.protein.expr) {[expr {$vars(seqa.protein)}]}
-    trace variable vars(seqa.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
     set vars(datafile.orig) $vars(datafile)
     set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
     trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
     set vars(datafile._type) matrixf
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments gapopen
     iwidgets::entryfield $w.gapopen \
@@ -136,7 +137,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -174,7 +175,7 @@ proc create_dialogue {} {
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output alignment and explanation}]\
+	-label [subst {Alignment output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]

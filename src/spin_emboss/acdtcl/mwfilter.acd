@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - mwfilter}
     label $w._title -text {Filter noisy molwts from mass spec output}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(mwfilter._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -45,11 +46,24 @@ proc create_dialogue {} {
     set vars(infile.required)  1
     set vars(infile._type) infile
 
+    lappend arguments datafile
+    xentry $w.datafile \
+	-label [subst {Data file of noisy molecular weights}]\
+	-textvariable [namespace current]::vars(datafile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.datafile delete 0 end
+    $w.datafile insert end [subst Emwfilter.dat]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile._type) datafile
+
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -57,14 +71,22 @@ proc create_dialogue {} {
     iwidgets::entryfield $w.tolerance \
 	-validate real \
 	-textvariable [namespace current]::vars(tolerance) \
-	-labeltext [subst {ppm tolerance}]\
+	-labeltext [subst {Ppm tolerance}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.tolerance component entry] -sticky nse
     set vars(tolerance) [subst 50.0]
     pack $w.tolerance -side top -fill both
     set vars(tolerance.path) $w.tolerance
-    set vars(tolerance.required)  1
+    set vars(tolerance.required)  0
     set vars(tolerance._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments showdel
     checkbutton $w.showdel \
@@ -72,36 +94,16 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(showdel)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.showdel -side top -anchor w
-    set vars(showdel) [subst 0]
+    set vars(showdel) [subst N]
     set vars(showdel.path) $w.showdel
     set vars(showdel.required)  0
-    set vars(showdel._type) bool
+    set vars(showdel._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments datafile
-    iwidgets::entryfield $w.datafile \
-	-textvariable [namespace current]::vars(datafile) \
-	-labeltext [subst {Data file of noisy molecular weights}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.datafile component entry] -sticky nse
-    set vars(datafile) [subst Emwfilter.dat]
-    pack $w.datafile -side top -fill both
-    set vars(datafile.path) $w.datafile
-    set vars(datafile.required)  0
-    set vars(datafile._type) string
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

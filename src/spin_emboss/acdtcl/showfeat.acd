@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - showfeat}
     label $w._title -text {Show features of a sequence.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(showfeat._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -111,7 +112,7 @@ proc create_dialogue {} {
     lappend arguments sort
     iwidgets::combobox $w.sort\
 	-textvariable [namespace current]::vars(sort.name)\
-	-labeltext [subst {Sort features by ...}]
+	-labeltext [subst {Sort features by Type, Start or Source, Nosort (don't sort - use input order) or join coding regions together and leave other features in the input order}]
     trace variable vars(sort.name) w  "::EMBOSS::list_changed [namespace current] sort"
     eval $w.sort insert list end {{Sort by Source}} {{Sort by Start position}} {{Sort by Type}} {{No sorting done}} {{Join coding regions together}}
     set vars(sort.mapping1) {{Sort by Source} source {Join coding regions together} join {No sorting done} nosort {Sort by Type} type {Sort by Start position} start}
@@ -131,16 +132,36 @@ proc create_dialogue {} {
     set vars(sort.delimiter) ,
     set vars(sort._type) list
 
+    lappend arguments annotation
+    iwidgets::entryfield $w.annotation \
+	-textvariable [namespace current]::vars(annotation) \
+	-labeltext [subst {Regions to mark (eg: 4-57 promoter region 78-94 first exon)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.annotation component entry] -sticky nse
+    set vars(annotation) [subst {}]
+    pack $w.annotation -side top -fill both
+    set vars(annotation.path) $w.annotation
+    set vars(annotation.required)  0
+    set vars(annotation._type) range
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments html
     checkbutton $w.html \
 	-text [subst {Use HTML formatting}]\
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     lappend arguments id
     checkbutton $w.id \
@@ -148,10 +169,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(id)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.id -side top -anchor w
-    set vars(id) [subst 1]
+    set vars(id) [subst Y]
     set vars(id.path) $w.id
     set vars(id.required)  0
-    set vars(id._type) bool
+    set vars(id._type) boolean
 
     lappend arguments description
     checkbutton $w.description \
@@ -159,10 +180,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(description)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.description -side top -anchor w
-    set vars(description) [subst 1]
+    set vars(description) [subst Y]
     set vars(description.path) $w.description
     set vars(description.required)  0
-    set vars(description._type) bool
+    set vars(description._type) boolean
 
     lappend arguments scale
     checkbutton $w.scale \
@@ -170,10 +191,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(scale)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.scale -side top -anchor w
-    set vars(scale) [subst 1]
+    set vars(scale) [subst Y]
     set vars(scale.path) $w.scale
     set vars(scale.required)  0
-    set vars(scale._type) bool
+    set vars(scale._type) boolean
 
     lappend arguments width
     iwidgets::entryfield $w.width \
@@ -195,10 +216,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(collapse)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.collapse -side top -anchor w
-    set vars(collapse) [subst 0]
+    set vars(collapse) [subst N]
     set vars(collapse.path) $w.collapse
     set vars(collapse.required)  0
-    set vars(collapse._type) bool
+    set vars(collapse._type) boolean
 
     lappend arguments forward
     checkbutton $w.forward \
@@ -206,10 +227,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(forward)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.forward -side top -anchor w
-    set vars(forward) [subst 1]
+    set vars(forward) [subst Y]
     set vars(forward.path) $w.forward
     set vars(forward.required)  0
-    set vars(forward._type) bool
+    set vars(forward._type) boolean
 
     lappend arguments reverse
     checkbutton $w.reverse \
@@ -217,10 +238,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(reverse)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.reverse -side top -anchor w
-    set vars(reverse) [subst 1]
+    set vars(reverse) [subst Y]
     set vars(reverse.path) $w.reverse
     set vars(reverse.required)  0
-    set vars(reverse._type) bool
+    set vars(reverse._type) boolean
 
     lappend arguments unknown
     checkbutton $w.unknown \
@@ -228,10 +249,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(unknown)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.unknown -side top -anchor w
-    set vars(unknown) [subst 1]
+    set vars(unknown) [subst Y]
     set vars(unknown.path) $w.unknown
     set vars(unknown.required)  0
-    set vars(unknown._type) bool
+    set vars(unknown._type) boolean
 
     lappend arguments strand
     checkbutton $w.strand \
@@ -239,10 +260,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(strand)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.strand -side top -anchor w
-    set vars(strand) [subst 0]
+    set vars(strand) [subst N]
     set vars(strand.path) $w.strand
     set vars(strand.required)  0
-    set vars(strand._type) bool
+    set vars(strand._type) boolean
 
     lappend arguments source
     checkbutton $w.source \
@@ -250,10 +271,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(source)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.source -side top -anchor w
-    set vars(source) [subst 0]
+    set vars(source) [subst N]
     set vars(source.path) $w.source
     set vars(source.required)  0
-    set vars(source._type) bool
+    set vars(source._type) boolean
 
     lappend arguments position
     checkbutton $w.position \
@@ -261,10 +282,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(position)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.position -side top -anchor w
-    set vars(position) [subst 0]
+    set vars(position) [subst N]
     set vars(position.path) $w.position
     set vars(position.required)  0
-    set vars(position._type) bool
+    set vars(position._type) boolean
 
     lappend arguments type
     checkbutton $w.type \
@@ -272,10 +293,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(type)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.type -side top -anchor w
-    set vars(type) [subst 1]
+    set vars(type) [subst Y]
     set vars(type.path) $w.type
     set vars(type.required)  0
-    set vars(type._type) bool
+    set vars(type._type) boolean
 
     lappend arguments tags
     checkbutton $w.tags \
@@ -283,10 +304,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(tags)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.tags -side top -anchor w
-    set vars(tags) [subst 0]
+    set vars(tags) [subst N]
     set vars(tags.path) $w.tags
     set vars(tags.required)  0
-    set vars(tags._type) bool
+    set vars(tags._type) boolean
 
     lappend arguments values
     checkbutton $w.values \
@@ -294,22 +315,33 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(values)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.values -side top -anchor w
-    set vars(values) [subst 1]
+    set vars(values) [subst Y]
     set vars(values.path) $w.values
     set vars(values.required)  0
-    set vars(values._type) bool
+    set vars(values._type) boolean
+
+    lappend arguments stricttags
+    checkbutton $w.stricttags \
+	-text [subst {Only display the matching tags}]\
+	-variable [namespace current]::vars(stricttags)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.stricttags -side top -anchor w
+    set vars(stricttags) [subst N]
+    set vars(stricttags.path) $w.stricttags
+    set vars(stricttags.required)  0
+    set vars(stricttags._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output feature details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]

@@ -21,7 +21,17 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - ajbad}
     label $w._title -text {Test file for ACD parsing}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(ajbad._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
 
     lappend arguments typea
     iwidgets::entryfield $w.typea \
@@ -35,79 +45,51 @@ proc create_dialogue {} {
     set vars(typea.required)  0
     set vars(typea._type) string
 
-    lappend arguments seqa
-    set vars(seqa)       [get_active_seq_id 0]
-    if {$vars(seqa) == -1} {set vars(seqa) [get_active_seq_id 0]}
-    set vars(seqa.name)  [seq_info $vars(seqa) name]
-    sequence_changed [namespace current] seqa
-    set vars(seqa.type) [subst {[expr {$vars(typea)}]}]
-    seq_id $w.seqa \
-	-textvariable [namespace current]::vars(seqa.name)\
-	-start_value $vars(seqa.begin)\
-	-end_value $vars(seqa.end)\
-	-to [seq_info $vars(seqa) length]\
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst {[expr {$vars(typea)}]}]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqa $w.seqa}"
-    set vars(seqa) [subst {}]
-    pack $w.seqa -side top -fill both
-    set vars(seqa.path) $w.seqa
-    set vars(seqa.required)  0
-    trace variable vars(seqa.name) w  "::EMBOSS::sequence_changed [namespace current] seqa"
-    set vars(seqa.type.orig) $vars(seqa.type)
-    set vars(seqa.type.expr) {[expr {$vars(typea)}]}
-    trace variable vars(typea) w  "::EMBOSS::reset_value [namespace current] seqa.type"
-    set vars(seqa._type) sequence
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  0
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence.type.orig) $vars(sequence.type)
+    set vars(sequence.type.expr) {[expr {$vars(typea)}]}
+    trace variable vars(typea) w  "::EMBOSS::reset_value [namespace current] sequence.type"
+    set vars(sequence._type) sequence
 
-    lappend arguments typeb
-    iwidgets::entryfield $w.typeb \
-	-textvariable [namespace current]::vars(typeb) \
-	-labeltext [subst typeb]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.typeb component entry] -sticky nse
-    set vars(typeb) [subst {[expr {$vars(seqa.type)}]}]
-    pack $w.typeb -side top -fill both
-    set vars(typeb.path) $w.typeb
-    set vars(typeb.required)  0
-    set vars(typeb.orig) $vars(typeb)
-    set vars(typeb.expr) {[expr {$vars(seqa.type)}]}
-    trace variable vars(seqa.type) w  "::EMBOSS::reset_value [namespace current] typeb"
-    set vars(typeb._type) string
-
-    lappend arguments seqb
-    set vars(seqb)       [get_active_seq_id 1]
-    if {$vars(seqb) == -1} {set vars(seqb) [get_active_seq_id 0]}
-    set vars(seqb.name)  [seq_info $vars(seqb) name]
-    sequence_changed [namespace current] seqb
-    set vars(seqb.type) [subst {[expr {$vars(seqa.type)}]}]
-    seq_id $w.seqb \
-	-textvariable [namespace current]::vars(seqb.name)\
-	-start_value $vars(seqb.begin)\
-	-end_value $vars(seqb.end)\
-	-to [seq_info $vars(seqb) length]\
+    lappend arguments bsequence
+    set vars(bsequence)       [get_active_seq_id 1]
+    if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
+    set vars(bsequence.name)  [seq_info $vars(bsequence) name]
+    sequence_changed [namespace current] bsequence
+    set vars(bsequence.type) [subst {[expr {$vars(seqa.type)}]}]
+    seq_id $w.bsequence \
+	-textvariable [namespace current]::vars(bsequence.name)\
+	-start_value $vars(bsequence.begin)\
+	-end_value $vars(bsequence.end)\
+	-to [seq_info $vars(bsequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqb $w.seqb}"
-    set vars(seqb) [subst {}]
-    pack $w.seqb -side top -fill both
-    set vars(seqb.path) $w.seqb
-    set vars(seqb.required)  0
-    trace variable vars(seqb.name) w  "::EMBOSS::sequence_changed [namespace current] seqb"
-    set vars(seqb.type.orig) $vars(seqb.type)
-    set vars(seqb.type.expr) {[expr {$vars(seqa.type)}]}
-    trace variable vars(seqa.type) w  "::EMBOSS::reset_value [namespace current] seqb.type"
-    set vars(seqb._type) sequence
-
-    lappend arguments out
-    xentry $w.out \
-	-label [subst {Output filename}]\
-	-textvariable [namespace current]::vars(out) \
-	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [subst 1]]
-    $w.out delete 0 end
-    $w.out insert end [subst ajbad0.out]
-    pack $w.out -side top -fill both
-    set vars(out.path) $w.out
-    set vars(out.required)  0
-    set vars(out._type) outfile
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] bsequence $w.bsequence}"
+    set vars(bsequence) [subst {}]
+    pack $w.bsequence -side top -fill both
+    set vars(bsequence.path) $w.bsequence
+    set vars(bsequence.required)  0
+    trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
+    set vars(bsequence.type.orig) $vars(bsequence.type)
+    set vars(bsequence.type.expr) {[expr {$vars(seqa.type)}]}
+    trace variable vars(seqa.type) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
+    set vars(bsequence._type) sequence
 
     lappend arguments cod
     iwidgets::combobox $w.cod\
@@ -124,6 +106,29 @@ proc create_dialogue {} {
     set vars(cod.required)  0
     set vars(cod._type) codon
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments typeb
+    iwidgets::entryfield $w.typeb \
+	-textvariable [namespace current]::vars(typeb) \
+	-labeltext [subst {Second type}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.typeb component entry] -sticky nse
+    set vars(typeb) [subst {[expr {$vars(seqa.type)}]}]
+    pack $w.typeb -side top -fill both
+    set vars(typeb.path) $w.typeb
+    set vars(typeb.required)  0
+    set vars(typeb.orig) $vars(typeb)
+    set vars(typeb.expr) {[expr {$vars(seqa.type)}]}
+    trace variable vars(seqa.type) w  "::EMBOSS::reset_value [namespace current] typeb"
+    set vars(typeb._type) string
+
     lappend arguments date
     iwidgets::entryfield $w.date \
 	-textvariable [namespace current]::vars(date) \
@@ -133,14 +138,22 @@ proc create_dialogue {} {
     set vars(date) [subst 00/00/00]
     pack $w.date -side top -fill both
     set vars(date.path) $w.date
-    set vars(date.required)  1
+    set vars(date.required)  0
     set vars(date._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments a
     iwidgets::entryfield $w.a \
 	-validate integer \
 	-textvariable [namespace current]::vars(a) \
-	-labeltext [subst a]\
+	-labeltext [subst {First number}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.a component entry] -sticky nse
     set vars(a) [subst 0]
@@ -148,26 +161,26 @@ proc create_dialogue {} {
     set vars(a.minimum) [subst 0]
     set vars(a.path) $w.a
     set vars(a.required)  0
-    set vars(a._type) int
+    set vars(a._type) integer
 
     lappend arguments b
     iwidgets::entryfield $w.b \
 	-validate integer \
 	-textvariable [namespace current]::vars(b) \
-	-labeltext [subst b]\
+	-labeltext [subst {Second number}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.b component entry] -sticky nse
     set vars(b) [subst 15]
     pack $w.b -side top -fill both
     set vars(b.path) $w.b
     set vars(b.required)  0
-    set vars(b._type) int
+    set vars(b._type) integer
 
     lappend arguments c
     iwidgets::entryfield $w.c \
 	-validate real \
 	-textvariable [namespace current]::vars(c) \
-	-labeltext [subst c]\
+	-labeltext [subst {Third number}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.c component entry] -sticky nse
     set vars(c) [subst 1.6]
@@ -178,30 +191,36 @@ proc create_dialogue {} {
     set vars(c.required)  0
     set vars(c._type) float
 
-    lappend arguments frames
-    iwidgets::scrolledlistbox $w.frames \
-	-exportselection 0\
-	-labeltext [subst {Select Frames To Translate}] \
-	-hscrollmode dynamic\
-	-vscrollmode dynamic\
-	-selectmode extended\
-	-selectioncommand "::EMBOSS::listbox_selected [namespace current] frames"\
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    pack $w.frames -side top -fill both -expand 1
-    set vars(frames.mapping1) {R2 5 F2 2 None 0 R3 6 F3 3 R1 4 F1 1}
-    set vars(frames.mapping2) {4 R1 0 None 5 R2 1 F1 6 R3 2 F2 3 F3}
-    eval $w.frames insert end None F1 F2 F3 R1 R2 R3
-    set vars(frames.path) $w.frames
-    set vars(frames.required)  1
-    set vars(frames.delimiter) ,
-    trace variable vars(frames) w  "::EMBOSS::list_multi_changed [namespace current] frames"
-    set vars(frames) [subst 1,2,3,4,5,6]
-    set vars(frames._type) list_multi
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst ajbad0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/ajbad.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

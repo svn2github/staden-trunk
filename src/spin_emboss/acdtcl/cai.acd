@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - cai}
     label $w._title -text {CAI codon adaptation index}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(cai._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -52,18 +53,10 @@ proc create_dialogue {} {
     trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
     set vars(seqall._type) seqall
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
     lappend arguments cfile
     iwidgets::combobox $w.cfile\
 	-textvariable [namespace current]::vars(cfile)\
-	-labeltext [subst {Codon usage file}]
+	-labeltext [subst {Codon usage table}]
     eval $w.cfile insert list end [list_codon_tables]
     grid [$w.cfile component entry] -sticky nse
     $w.cfile delete entry 0 end
@@ -72,14 +65,14 @@ proc create_dialogue {} {
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.cfile -side top -fill both
     set vars(cfile.path) $w.cfile
-    set vars(cfile.required)  1
+    set vars(cfile.required)  0
     set vars(cfile._type) codon
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - wordmatch}
     label $w._title -text {Finds all exact matches of a given size between 2 sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(wordmatch._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -57,7 +58,7 @@ proc create_dialogue {} {
     if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
     set vars(bsequence.name)  [seq_info $vars(bsequence) name]
     sequence_changed [namespace current] bsequence
-    set vars(bsequence.type) [subst {[expr {($vars(asequence.protein) ? "stopprotein" : "nucleotide")}]}]
+    set vars(bsequence.type) [subst {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}]
     seq_id $w.bsequence \
 	-textvariable [namespace current]::vars(bsequence.name)\
 	-start_value $vars(bsequence.begin)\
@@ -71,15 +72,15 @@ proc create_dialogue {} {
     set vars(bsequence.required)  1
     trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
     set vars(bsequence.type.orig) $vars(bsequence.type)
-    set vars(bsequence.type.expr) {[expr {($vars(asequence.protein) ? "stopprotein" : "nucleotide")}]}
-    trace variable vars(asequence.protein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
+    set vars(bsequence.type.expr) {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
     set vars(bsequence._type) sequence
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -94,14 +95,14 @@ proc create_dialogue {} {
     pack $w.wordsize -side top -fill both
     set vars(wordsize.minimum) [subst 2]
     set vars(wordsize.path) $w.wordsize
-    set vars(wordsize.required)  1
+    set vars(wordsize.required)  0
     set vars(wordsize._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -118,31 +119,31 @@ proc create_dialogue {} {
     set vars(outfile.required)  1
     set vars(outfile._type) align
 
-    lappend arguments afeatout
-    xentry $w.afeatout \
-	-label [subst {feature file for output aseq}]\
-	-textvariable [namespace current]::vars(afeatout) \
+    lappend arguments aoutfeat
+    xentry $w.aoutfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(aoutfeat) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.afeatout delete 0 end
-    $w.afeatout insert end [subst feature1.out]
-    pack $w.afeatout -side top -fill both
-    set vars(afeatout.path) $w.afeatout
-    set vars(afeatout.required)  0
-    set vars(afeatout._type) featout
+    $w.aoutfeat delete 0 end
+    $w.aoutfeat insert end [subst feature1.out]
+    pack $w.aoutfeat -side top -fill both
+    set vars(aoutfeat.path) $w.aoutfeat
+    set vars(aoutfeat.required)  1
+    set vars(aoutfeat._type) featout
 
-    lappend arguments bfeatout
-    xentry $w.bfeatout \
-	-label [subst {feature file for output bseq}]\
-	-textvariable [namespace current]::vars(bfeatout) \
+    lappend arguments boutfeat
+    xentry $w.boutfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(boutfeat) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.bfeatout delete 0 end
-    $w.bfeatout insert end [subst feature2.out]
-    pack $w.bfeatout -side top -fill both
-    set vars(bfeatout.path) $w.bfeatout
-    set vars(bfeatout.required)  0
-    set vars(bfeatout._type) featout
+    $w.boutfeat delete 0 end
+    $w.boutfeat insert end [subst feature2.out]
+    pack $w.boutfeat -side top -fill both
+    set vars(boutfeat.path) $w.boutfeat
+    set vars(boutfeat.required)  1
+    set vars(boutfeat._type) featout
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

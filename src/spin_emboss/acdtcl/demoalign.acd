@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - demoalign}
     label $w._title -text {Reads a sequence set, writes an alignment file}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(demoalign._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -37,7 +38,7 @@ proc create_dialogue {} {
     if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
     set vars(sequence.name)  [seq_info $vars(sequence) name]
     sequence_changed [namespace current] sequence
-    set vars(sequence.type) [subst any]
+    set vars(sequence.type) [subst gapany]
     seq_id $w.sequence \
 	-textvariable [namespace current]::vars(sequence.name)\
 	-start_value $vars(sequence.begin)\
@@ -53,11 +54,74 @@ proc create_dialogue {} {
    set vars(sequence.totweight) [subst 0]
     set vars(sequence._type) seqset
 
+    lappend arguments floatmatrix
+    set vars(floatmatrix.protein) [subst {[expr {$vars(acdprotein)}]}]
+    iwidgets::combobox $w.floatmatrix\
+	-textvariable [namespace current]::vars(floatmatrix)\
+	-labeltext [subst {Matrix file}]
+    eval $w.floatmatrix insert list end [list_matrices p]
+    grid [$w.floatmatrix component entry] -sticky nse
+    $w.floatmatrix delete entry 0 end
+    $w.floatmatrix insert entry end [subst {[expr {$vars(floatmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.floatmatrix configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.floatmatrix -side top -fill both
+    set vars(floatmatrix.path) $w.floatmatrix
+    set vars(floatmatrix.required)  0
+    set vars(floatmatrix.protein.orig) $vars(floatmatrix.protein)
+    set vars(floatmatrix.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] floatmatrix.protein"
+    set vars(floatmatrix.orig) $vars(floatmatrix)
+    set vars(floatmatrix.expr) {[expr {$vars(floatmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(floatmatrix.protein) w  "::EMBOSS::reset_value [namespace current] floatmatrix"
+    set vars(floatmatrix._type) matrixf
+
+    lappend arguments intmatrix
+    set vars(intmatrix.protein) [subst {[expr {$vars(acdprotein)}]}]
+    iwidgets::combobox $w.intmatrix\
+	-textvariable [namespace current]::vars(intmatrix)\
+	-labeltext [subst {Matrix file}]
+    eval $w.intmatrix insert list end [list_matrices p]
+    grid [$w.intmatrix component entry] -sticky nse
+    $w.intmatrix delete entry 0 end
+    $w.intmatrix insert entry end [subst {[expr {$vars(intmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.intmatrix configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.intmatrix -side top -fill both
+    set vars(intmatrix.path) $w.intmatrix
+    set vars(intmatrix.required)  0
+    set vars(intmatrix.protein.orig) $vars(intmatrix.protein)
+    set vars(intmatrix.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] intmatrix.protein"
+    set vars(intmatrix.orig) $vars(intmatrix)
+    set vars(intmatrix.expr) {[expr {$vars(intmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(intmatrix.protein) w  "::EMBOSS::reset_value [namespace current] intmatrix"
+    set vars(intmatrix._type) matrix
+
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments dofloat
+    checkbutton $w.dofloat \
+	-text [subst {Use floating point matrix}]\
+	-variable [namespace current]::vars(dofloat)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.dofloat -side top -anchor w
+    set vars(dofloat) [subst 0]
+    set vars(dofloat.path) $w.dofloat
+    set vars(dofloat.required)  0
+    set vars(dofloat._type) boolean
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -73,69 +137,6 @@ proc create_dialogue {} {
     set vars(outfile.path) $w.outfile
     set vars(outfile.required)  1
     set vars(outfile._type) align
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments floatmatrix
-    set vars(floatmatrix.protein) [subst {[expr {$vars(sequence.protein)}]}]
-    iwidgets::combobox $w.floatmatrix\
-	-textvariable [namespace current]::vars(floatmatrix)\
-	-labeltext [subst {Matrix file}]
-    eval $w.floatmatrix insert list end [list_matrices p]
-    grid [$w.floatmatrix component entry] -sticky nse
-    $w.floatmatrix delete entry 0 end
-    $w.floatmatrix insert entry end [subst {[expr {$vars(floatmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}]
-    $w.floatmatrix configure \
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.floatmatrix -side top -fill both
-    set vars(floatmatrix.path) $w.floatmatrix
-    set vars(floatmatrix.required)  0
-    set vars(floatmatrix.protein.orig) $vars(floatmatrix.protein)
-    set vars(floatmatrix.protein.expr) {[expr {$vars(sequence.protein)}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] floatmatrix.protein"
-    set vars(floatmatrix.orig) $vars(floatmatrix)
-    set vars(floatmatrix.expr) {[expr {$vars(floatmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
-    trace variable vars(floatmatrix.protein) w  "::EMBOSS::reset_value [namespace current] floatmatrix"
-    set vars(floatmatrix._type) matrixf
-
-    lappend arguments intmatrix
-    set vars(intmatrix.protein) [subst {[expr {$vars(sequence.protein)}]}]
-    iwidgets::combobox $w.intmatrix\
-	-textvariable [namespace current]::vars(intmatrix)\
-	-labeltext [subst {Matrix file}]
-    eval $w.intmatrix insert list end [list_matrices p]
-    grid [$w.intmatrix component entry] -sticky nse
-    $w.intmatrix delete entry 0 end
-    $w.intmatrix insert entry end [subst {[expr {$vars(intmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}]
-    $w.intmatrix configure \
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.intmatrix -side top -fill both
-    set vars(intmatrix.path) $w.intmatrix
-    set vars(intmatrix.required)  0
-    set vars(intmatrix.protein.orig) $vars(intmatrix.protein)
-    set vars(intmatrix.protein.expr) {[expr {$vars(sequence.protein)}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] intmatrix.protein"
-    set vars(intmatrix.orig) $vars(intmatrix)
-    set vars(intmatrix.expr) {[expr {$vars(intmatrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
-    trace variable vars(intmatrix.protein) w  "::EMBOSS::reset_value [namespace current] intmatrix"
-    set vars(intmatrix._type) matrix
-
-    lappend arguments dofloat
-    checkbutton $w.dofloat \
-	-text [subst {Use floating point matrix}]\
-	-variable [namespace current]::vars(dofloat)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.dofloat -side top -anchor w
-    set vars(dofloat) [subst 0]
-    set vars(dofloat.path) $w.dofloat
-    set vars(dofloat.required)  0
-    set vars(dofloat._type) bool
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

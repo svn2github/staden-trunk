@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - vectorstrip}
     label $w._title -text {Strips out DNA between a pair of vector sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(vectorstrip._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -52,16 +53,8 @@ proc create_dialogue {} {
     trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
     set vars(sequence._type) seqall
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
     iwidgets::labeledframe $w.vectorfilesection \
-	-labeltext [subst {vectorfilesection Section}]
+	-labeltext [subst {Vector input options}]
     pack $w.vectorfilesection -side top -fill both
     lappend wlist $w
     append w .vectorfilesection.childsite
@@ -72,28 +65,34 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(vectorfile)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.vectorfile -side top -anchor w
-    set vars(vectorfile) [subst 1]
+    set vars(vectorfile) [subst Y]
     set vars(vectorfile.path) $w.vectorfile
     set vars(vectorfile.required)  1
-    set vars(vectorfile._type) bool
+    set vars(vectorfile._type) toggle
 
-    lappend arguments vectors
-    xentry $w.vectors \
+    lappend arguments vectorsfile
+    xentry $w.vectorsfile \
 	-label [subst {Name of vectorfile}]\
-	-textvariable [namespace current]::vars(vectors) \
+	-textvariable [namespace current]::vars(vectorsfile) \
 	-checkcommand ::EMBOSS::check_infile\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(vectorfile)?"Y":"N")}]}]]]
-    $w.vectors delete 0 end
-    $w.vectors insert end [subst {}]
-    pack $w.vectors -side top -fill both
-    set vars(vectors.path) $w.vectors
-    set vars(vectors.required)  0
-    set vars(vectors._type) infile
-    set vars(vectors.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(vectorfile)?"Y":"N")}]]}
-    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] vectors"
+	-state [lindex {disabled normal} [subst 1]]
+    $w.vectorsfile delete 0 end
+    $w.vectorsfile insert end [subst {}]
+    pack $w.vectorsfile -side top -fill both
+    set vars(vectorsfile.path) $w.vectorsfile
+    set vars(vectorsfile.required)  0
+    set vars(vectorsfile._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments mismatch
     iwidgets::entryfield $w.mismatch \
@@ -105,7 +104,7 @@ proc create_dialogue {} {
     set vars(mismatch) [subst 10]
     pack $w.mismatch -side top -fill both
     set vars(mismatch.path) $w.mismatch
-    set vars(mismatch.required)  1
+    set vars(mismatch.required)  0
     set vars(mismatch._type) integer
 
     lappend arguments besthits
@@ -114,67 +113,55 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(besthits)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.besthits -side top -anchor w
-    set vars(besthits) [subst 1]
+    set vars(besthits) [subst Y]
     set vars(besthits.path) $w.besthits
-    set vars(besthits.required)  1
-    set vars(besthits._type) bool
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
+    set vars(besthits.required)  0
+    set vars(besthits._type) boolean
 
     lappend arguments linkera
     iwidgets::entryfield $w.linkera \
 	-textvariable [namespace current]::vars(linkera) \
-	-labeltext [subst {5' sequence}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(vectorfile))}]}]]]
+	-labeltext [subst {The 5' sequence}]\
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.linkera component entry] -sticky nse
     set vars(linkera) [subst {}]
     pack $w.linkera -side top -fill both
     set vars(linkera.path) $w.linkera
     set vars(linkera.required)  0
     set vars(linkera._type) string
-    set vars(linkera.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(vectorfile))}]]}
-    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] linkera"
 
     lappend arguments linkerb
     iwidgets::entryfield $w.linkerb \
 	-textvariable [namespace current]::vars(linkerb) \
-	-labeltext [subst {3' sequence}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(vectorfile))}]}]]]
+	-labeltext [subst {The 3' sequence}]\
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.linkerb component entry] -sticky nse
     set vars(linkerb) [subst {}]
     pack $w.linkerb -side top -fill both
     set vars(linkerb.path) $w.linkerb
     set vars(linkerb.required)  0
     set vars(linkerb._type) string
-    set vars(linkerb.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(vectorfile))}]]}
-    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] linkerb"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments outf
-    xentry $w.outf \
+    lappend arguments outfile
+    xentry $w.outfile \
 	-label [subst {Output filename}]\
-	-textvariable [namespace current]::vars(outf) \
+	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.outf delete 0 end
-    $w.outf insert end [subst vectorstrip0.out]
-    pack $w.outf -side top -fill both
-    set vars(outf.path) $w.outf
-    set vars(outf.required)  1
-    set vars(outf._type) outfile
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst vectorstrip0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
 
     lappend arguments outseq
     iwidgets::labeledframe $w.outseq \

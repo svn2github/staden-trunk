@@ -21,69 +21,41 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - plotcon}
     label $w._title -text {Plots the quality of conservation of a sequence alignment}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(plotcon._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments msf
-    set vars(msf)       [get_active_seq_id 0]
-    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 0]}
-    set vars(msf.name)  [seq_info $vars(msf) name]
-    sequence_changed [namespace current] msf
-    set vars(msf.type) [subst gapany]
-    seq_id $w.msf \
-	-textvariable [namespace current]::vars(msf.name)\
-	-start_value $vars(msf.begin)\
-	-end_value $vars(msf.end)\
-	-to [seq_info $vars(msf) length]\
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 0]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst gapany]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
-    set vars(msf) [subst {}]
-    pack $w.msf -side top -fill both
-    set vars(msf.path) $w.msf
-    set vars(msf.required)  1
-    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
-   set vars(msf.totweight) [subst 0]
-    set vars(msf._type) seqset
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments winsize
-    iwidgets::entryfield $w.winsize \
-	-validate integer \
-	-textvariable [namespace current]::vars(winsize) \
-	-labeltext [subst {Window size}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.winsize component entry] -sticky nse
-    set vars(winsize) [subst 4]
-    pack $w.winsize -side top -fill both
-    set vars(winsize.path) $w.winsize
-    set vars(winsize.required)  1
-    set vars(winsize._type) integer
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+   set vars(sequences.totweight) [subst 0]
+    set vars(sequences._type) seqset
 
     lappend arguments scorefile
-    set vars(scorefile.protein) [subst {[expr {$vars(msf.protein)}]}]
+    set vars(scorefile.protein) [subst {[expr {$vars(acdprotein)}]}]
     iwidgets::combobox $w.scorefile\
 	-textvariable [namespace current]::vars(scorefile)\
 	-labeltext [subst {Comparison matrix file}]
@@ -97,8 +69,8 @@ proc create_dialogue {} {
     set vars(scorefile.path) $w.scorefile
     set vars(scorefile.required)  0
     set vars(scorefile.protein.orig) $vars(scorefile.protein)
-    set vars(scorefile.protein.expr) {[expr {$vars(msf.protein)}]}
-    trace variable vars(msf.protein) w  "::EMBOSS::reset_value [namespace current] scorefile.protein"
+    set vars(scorefile.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] scorefile.protein"
     set vars(scorefile.orig) $vars(scorefile)
     set vars(scorefile.expr) {[expr {$vars(scorefile.protein)?"EBLOSUM62":"EDNAMAT"}]}
     trace variable vars(scorefile.protein) w  "::EMBOSS::reset_value [namespace current] scorefile"
@@ -108,20 +80,30 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments data
-    checkbutton $w.data \
-	-text [subst {Display as data}]\
-	-variable [namespace current]::vars(data)\
+    lappend arguments winsize
+    iwidgets::entryfield $w.winsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(winsize) \
+	-labeltext [subst {Window size}]\
 	-state [lindex {disabled normal} [subst 1]]
-    pack $w.data -side top -anchor w
-    set vars(data) [subst 1]
-    set vars(data.path) $w.data
-    set vars(data.required)  0
-    set vars(data._type) bool
+    grid [$w.winsize component entry] -sticky nse
+    set vars(winsize) [subst 4]
+    pack $w.winsize -side top -fill both
+    set vars(winsize.path) $w.winsize
+    set vars(winsize.required)  0
+    set vars(winsize._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments graph
     iwidgets::combobox $w.graph\
@@ -132,28 +114,11 @@ proc create_dialogue {} {
     $w.graph delete entry 0 end
     $w.graph insert entry end [subst data]
     $w.graph configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.graph -side top -fill both
     set vars(graph.path) $w.graph
     set vars(graph.required)  0
     set vars(graph._type) xygraph
-    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
-
-    lappend arguments outfile
-    xentry $w.outfile \
-	-label [subst {Display as data}]\
-	-textvariable [namespace current]::vars(outfile) \
-	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(data)}]}]]]
-    $w.outfile delete 0 end
-    $w.outfile insert end [subst plotcon0.out]
-    pack $w.outfile -side top -fill both
-    set vars(outfile.path) $w.outfile
-    set vars(outfile.required)  0
-    set vars(outfile._type) outfile
-    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(data)}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] outfile"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - redata}
     label $w._title -text {Search REBASE for enzyme name, references, suppliers etc.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(redata._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -48,7 +49,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -58,10 +59,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(isoschizomers)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.isoschizomers -side top -anchor w
-    set vars(isoschizomers) [subst 1]
+    set vars(isoschizomers) [subst Y]
     set vars(isoschizomers.path) $w.isoschizomers
     set vars(isoschizomers.required)  0
-    set vars(isoschizomers._type) bool
+    set vars(isoschizomers._type) boolean
 
     lappend arguments references
     checkbutton $w.references \
@@ -69,10 +70,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(references)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.references -side top -anchor w
-    set vars(references) [subst 1]
+    set vars(references) [subst Y]
     set vars(references.path) $w.references
     set vars(references.required)  0
-    set vars(references._type) bool
+    set vars(references._type) boolean
 
     lappend arguments suppliers
     checkbutton $w.suppliers \
@@ -80,10 +81,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(suppliers)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.suppliers -side top -anchor w
-    set vars(suppliers) [subst 1]
+    set vars(suppliers) [subst Y]
     set vars(suppliers.path) $w.suppliers
     set vars(suppliers.required)  0
-    set vars(suppliers._type) bool
+    set vars(suppliers._type) boolean
 
     lappend arguments outfile
     xentry $w.outfile \

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - eprimer3}
     label $w._title -text {Picks PCR primers and hybridization oligos}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(eprimer3._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -52,57 +53,29 @@ proc create_dialogue {} {
     trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
     set vars(sequence._type) seqall
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
-
-    iwidgets::tabnotebook $w.book_2 -tabpos n -padx 10 -equaltabs 0
-    pack $w.book_2 -side top -fill both
-    set book(book_2) $w
-    set page [$w.book_2 add \
-	-label [subst {Program Options}]]
-    $w.book_2 view [subst {Program Options}]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments explainflag
-    checkbutton $w.explainflag \
-	-text [subst {Explain flag}]\
-	-variable [namespace current]::vars(explainflag)\
+    lappend arguments primer
+    checkbutton $w.primer \
+	-text [subst {Pick PCR primer(s)}]\
+	-variable [namespace current]::vars(primer)\
 	-state [lindex {disabled normal} [subst 1]]
-    pack $w.explainflag -side top -anchor w
-    set vars(explainflag) [subst 0]
-    set vars(explainflag.path) $w.explainflag
-    set vars(explainflag.required)  0
-    set vars(explainflag._type) bool
-
-    lappend arguments fileflag
-    checkbutton $w.fileflag \
-	-text [subst {Create results files for each sequence}]\
-	-variable [namespace current]::vars(fileflag)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.fileflag -side top -anchor w
-    set vars(fileflag) [subst 0]
-    set vars(fileflag.path) $w.fileflag
-    set vars(fileflag.required)  0
-    set vars(fileflag._type) bool
+    pack $w.primer -side top -anchor w
+    set vars(primer) [subst Y]
+    set vars(primer.path) $w.primer
+    set vars(primer.required)  0
+    set vars(primer._type) toggle
 
     lappend arguments task
     iwidgets::combobox $w.task\
 	-textvariable [namespace current]::vars(task.name)\
 	-labeltext [subst {Select task}]
     trace variable vars(task.name) w  "::EMBOSS::list_changed [namespace current] task"
-    eval $w.task insert list end {{Pick PCR primers}} {{Pick PCR primers and hybridization probe}} {{Pick forward primer only}} {{Pick reverse primer only}} {{Pick hybridization probe only}}
-    set vars(task.mapping1) {{Pick reverse primer only} 3 {Pick hybridization probe only} 4 {Pick forward primer only} 2 {Pick PCR primers and hybridization probe} 1 {Pick PCR primers} 0}
-    set vars(task.mapping2) {4 {Pick hybridization probe only} 0 {Pick PCR primers} 1 {Pick PCR primers and hybridization probe} 2 {Pick forward primer only} 3 {Pick reverse primer only}}
+    eval $w.task insert list end {{Pick PCR primers}} {{Pick forward primer only}} {{Pick reverse primer only}} {{No primers needed}}
+    set vars(task.mapping1) {{No primers needed} 4 {Pick reverse primer only} 3 {Pick forward primer only} 2 {Pick PCR primers} 1}
+    set vars(task.mapping2) {4 {No primers needed} 1 {Pick PCR primers} 2 {Pick forward primer only} 3 {Pick reverse primer only}}
     grid [$w.task component entry] -sticky nse
     $w.task delete entry 0 end
     array set tmpmap $vars(task.mapping2)
-    set def [subst 0]
+    set def [subst 1]
     catch {set def $tmpmap($def)}
     set vars(task) $def
     $w.task insert entry end $def
@@ -113,6 +86,57 @@ proc create_dialogue {} {
     set vars(task.required)  0
     set vars(task.delimiter) ,
     set vars(task._type) list
+
+    lappend arguments hybridprobe
+    checkbutton $w.hybridprobe \
+	-text [subst {Pick hybridization probe}]\
+	-variable [namespace current]::vars(hybridprobe)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.hybridprobe -side top -anchor w
+    set vars(hybridprobe) [subst N]
+    set vars(hybridprobe.path) $w.hybridprobe
+    set vars(hybridprobe.required)  0
+    set vars(hybridprobe._type) toggle
+
+    lappend arguments oligomishyblibraryfile
+    xentry $w.oligomishyblibraryfile \
+	-label [subst {Internal oligo mishybridizing library}]\
+	-textvariable [namespace current]::vars(oligomishyblibraryfile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.oligomishyblibraryfile delete 0 end
+    $w.oligomishyblibraryfile insert end [subst {}]
+    pack $w.oligomishyblibraryfile -side top -fill both
+    set vars(oligomishyblibraryfile.path) $w.oligomishyblibraryfile
+    set vars(oligomishyblibraryfile.required)  0
+    set vars(oligomishyblibraryfile._type) infile
+
+    lappend arguments mispriminglibraryfile
+    xentry $w.mispriminglibraryfile \
+	-label [subst {Mispriming library}]\
+	-textvariable [namespace current]::vars(mispriminglibraryfile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.mispriminglibraryfile delete 0 end
+    $w.mispriminglibraryfile insert end [subst {}]
+    pack $w.mispriminglibraryfile -side top -fill both
+    set vars(mispriminglibraryfile.path) $w.mispriminglibraryfile
+    set vars(mispriminglibraryfile.required)  0
+    set vars(mispriminglibraryfile._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
+
+    iwidgets::labeledframe $w.programsection \
+	-labeltext [subst {Program options}]
+    pack $w.programsection -side top -fill both
+    lappend wlist $w
+    append w .programsection.childsite
 
     lappend arguments numreturn
     iwidgets::entryfield $w.numreturn \
@@ -128,26 +152,14 @@ proc create_dialogue {} {
     set vars(numreturn.required)  0
     set vars(numreturn._type) integer
 
-    lappend arguments firstbaseindex
-    iwidgets::entryfield $w.firstbaseindex \
-	-validate integer \
-	-textvariable [namespace current]::vars(firstbaseindex) \
-	-labeltext [subst {First base index}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.firstbaseindex component entry] -sticky nse
-    set vars(firstbaseindex) [subst 1]
-    pack $w.firstbaseindex -side top -fill both
-    set vars(firstbaseindex.path) $w.firstbaseindex
-    set vars(firstbaseindex.required)  0
-    set vars(firstbaseindex._type) integer
-
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    set page [$w.book_2 add \
-	-label [subst {Sequence options}]]
+    iwidgets::labeledframe $w.seqoptsection \
+	-labeltext [subst {Sequence options}]
+    pack $w.seqoptsection -side top -fill both
     lappend wlist $w
-    set w $page
+    append w .seqoptsection.childsite
 
     lappend arguments includedregion
     iwidgets::entryfield $w.includedregion \
@@ -212,62 +224,11 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    set page [$w.book_2 add \
-	-label [subst {Primer Details}]]
+    iwidgets::labeledframe $w.primersection \
+	-labeltext [subst {Primer options}]
+    pack $w.primersection -side top -fill both
     lappend wlist $w
-    set w $page
-
-    lappend arguments pickanyway
-    checkbutton $w.pickanyway \
-	-text [subst {Pick anyway}]\
-	-variable [namespace current]::vars(pickanyway)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.pickanyway -side top -anchor w
-    set vars(pickanyway) [subst 0]
-    set vars(pickanyway.path) $w.pickanyway
-    set vars(pickanyway.required)  0
-    set vars(pickanyway._type) bool
-
-    lappend arguments mispriminglibrary
-    xentry $w.mispriminglibrary \
-	-label [subst {Mispriming library}]\
-	-textvariable [namespace current]::vars(mispriminglibrary) \
-	-checkcommand ::EMBOSS::check_infile\
-	-state [lindex {disabled normal} [subst 1]]
-    $w.mispriminglibrary delete 0 end
-    $w.mispriminglibrary insert end [subst {}]
-    pack $w.mispriminglibrary -side top -fill both
-    set vars(mispriminglibrary.path) $w.mispriminglibrary
-    set vars(mispriminglibrary.required)  0
-    set vars(mispriminglibrary._type) infile
-
-    lappend arguments maxmispriming
-    iwidgets::entryfield $w.maxmispriming \
-	-validate real \
-	-textvariable [namespace current]::vars(maxmispriming) \
-	-labeltext [subst {Primer maximum mispriming}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.maxmispriming component entry] -sticky nse
-    set vars(maxmispriming) [subst 12.00]
-    pack $w.maxmispriming -side top -fill both
-    set vars(maxmispriming.maximum) [subst 9999.99]
-    set vars(maxmispriming.path) $w.maxmispriming
-    set vars(maxmispriming.required)  0
-    set vars(maxmispriming._type) float
-
-    lappend arguments pairmaxmispriming
-    iwidgets::entryfield $w.pairmaxmispriming \
-	-validate real \
-	-textvariable [namespace current]::vars(pairmaxmispriming) \
-	-labeltext [subst {Primer pair maximum mispriming}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.pairmaxmispriming component entry] -sticky nse
-    set vars(pairmaxmispriming) [subst 24.00]
-    pack $w.pairmaxmispriming -side top -fill both
-    set vars(pairmaxmispriming.maximum) [subst 9999.99]
-    set vars(pairmaxmispriming.path) $w.pairmaxmispriming
-    set vars(pairmaxmispriming.required)  0
-    set vars(pairmaxmispriming._type) float
+    append w .primersection.childsite
 
     lappend arguments gcclamp
     iwidgets::entryfield $w.gcclamp \
@@ -454,53 +415,6 @@ proc create_dialogue {} {
     set vars(dnaconc.required)  0
     set vars(dnaconc._type) float
 
-    lappend arguments numnsaccepted
-    iwidgets::entryfield $w.numnsaccepted \
-	-validate integer \
-	-textvariable [namespace current]::vars(numnsaccepted) \
-	-labeltext [subst {Maximum Ns accepted in a primer}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.numnsaccepted component entry] -sticky nse
-    set vars(numnsaccepted) [subst 0]
-    pack $w.numnsaccepted -side top -fill both
-    set vars(numnsaccepted.minimum) [subst 0]
-    set vars(numnsaccepted.path) $w.numnsaccepted
-    set vars(numnsaccepted.required)  0
-    set vars(numnsaccepted._type) integer
-
-    lappend arguments selfany
-    iwidgets::entryfield $w.selfany \
-	-validate real \
-	-textvariable [namespace current]::vars(selfany) \
-	-labeltext [subst {Maximum self complementarity}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.selfany component entry] -sticky nse
-    set vars(selfany) [subst 8.00]
-    pack $w.selfany -side top -fill both
-    set vars(selfany.minimum) [subst 0.00]
-    set vars(selfany.maximum) [subst 9999.99]
-    set vars(selfany.path) $w.selfany
-    set vars(selfany.required)  0
-    set vars(selfany._type) float
-
-    lappend arguments selfend
-    iwidgets::entryfield $w.selfend \
-	-validate real \
-	-textvariable [namespace current]::vars(selfend) \
-	-labeltext [subst {Maximum 3' self complementarity}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.selfend component entry] -sticky nse
-    set vars(selfend) [subst 3.00]
-    pack $w.selfend -side top -fill both
-    set vars(selfend.minimum) [subst 0.00]
-    set vars(selfend.maximum) [subst {[expr {$vars(selfany)}]}]
-    set vars(selfend.maximum.orig) $vars(selfend.maximum)
-    set vars(selfend.maximum.expr) {[expr {$vars(selfany)}]}
-    trace variable vars(selfany) w  "::EMBOSS::reset_value [namespace current] selfend.maximum"
-    set vars(selfend.path) $w.selfend
-    set vars(selfend.required)  0
-    set vars(selfend._type) float
-
     lappend arguments maxpolyx
     iwidgets::entryfield $w.maxpolyx \
 	-validate integer \
@@ -518,10 +432,11 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    set page [$w.book_2 add \
-	-label [subst {Product details}]]
+    iwidgets::labeledframe $w.productsection \
+	-labeltext [subst {Product options}]
+    pack $w.productsection -side top -fill both
     lappend wlist $w
-    set w $page
+    append w .productsection.childsite
 
     lappend arguments productosize
     iwidgets::entryfield $w.productosize \
@@ -595,32 +510,11 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    set page [$w.book_2 add \
-	-label [subst {Primer Penalty Weights}]]
+    iwidgets::labeledframe $w.oligosinput \
+	-labeltext [subst {Internal oligo input}]
+    pack $w.oligosinput -side top -fill both
     lappend wlist $w
-    set w $page
-
-    lappend arguments maxendstability
-    iwidgets::entryfield $w.maxendstability \
-	-validate real \
-	-textvariable [namespace current]::vars(maxendstability) \
-	-labeltext [subst {Maximum 3' end stability}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.maxendstability component entry] -sticky nse
-    set vars(maxendstability) [subst 9.0]
-    pack $w.maxendstability -side top -fill both
-    set vars(maxendstability.maximum) [subst 999.9999]
-    set vars(maxendstability.path) $w.maxendstability
-    set vars(maxendstability.required)  0
-    set vars(maxendstability._type) float
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_2 add \
-	-label [subst {Internal Oligo Input}]]
-    lappend wlist $w
-    set w $page
+    append w .oligosinput.childsite
 
     lappend arguments oligoexcludedregion
     iwidgets::entryfield $w.oligoexcludedregion \
@@ -649,10 +543,11 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
-    set page [$w.book_2 add \
-	-label [subst {Internal Oligo Details}]]
+    iwidgets::labeledframe $w.oligosection \
+	-labeltext [subst {Internal oligo options}]
+    pack $w.oligosection -side top -fill both
     lappend wlist $w
-    set w $page
+    append w .oligosection.childsite
 
     lappend arguments oligoosize
     iwidgets::entryfield $w.oligoosize \
@@ -858,19 +753,6 @@ proc create_dialogue {} {
     set vars(oligomaxpolyx.required)  0
     set vars(oligomaxpolyx._type) integer
 
-    lappend arguments oligomishyblibrary
-    xentry $w.oligomishyblibrary \
-	-label [subst {Internal oligo mishybridizing library}]\
-	-textvariable [namespace current]::vars(oligomishyblibrary) \
-	-checkcommand ::EMBOSS::check_infile\
-	-state [lindex {disabled normal} [subst 1]]
-    $w.oligomishyblibrary delete 0 end
-    $w.oligomishyblibrary insert end [subst {}]
-    pack $w.oligomishyblibrary -side top -fill both
-    set vars(oligomishyblibrary.path) $w.oligomishyblibrary
-    set vars(oligomishyblibrary.required)  0
-    set vars(oligomishyblibrary._type) infile
-
     lappend arguments oligomaxmishyb
     iwidgets::entryfield $w.oligomaxmishyb \
 	-validate real \
@@ -892,7 +774,159 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments explainflag
+    checkbutton $w.explainflag \
+	-text [subst {Explain flag}]\
+	-variable [namespace current]::vars(explainflag)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.explainflag -side top -anchor w
+    set vars(explainflag) [subst N]
+    set vars(explainflag.path) $w.explainflag
+    set vars(explainflag.required)  0
+    set vars(explainflag._type) boolean
+
+    lappend arguments fileflag
+    checkbutton $w.fileflag \
+	-text [subst {Create results files for each sequence}]\
+	-variable [namespace current]::vars(fileflag)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.fileflag -side top -anchor w
+    set vars(fileflag) [subst N]
+    set vars(fileflag.path) $w.fileflag
+    set vars(fileflag.required)  0
+    set vars(fileflag._type) boolean
+
+    lappend arguments firstbaseindex
+    iwidgets::entryfield $w.firstbaseindex \
+	-validate integer \
+	-textvariable [namespace current]::vars(firstbaseindex) \
+	-labeltext [subst {First base index}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.firstbaseindex component entry] -sticky nse
+    set vars(firstbaseindex) [subst 1]
+    pack $w.firstbaseindex -side top -fill both
+    set vars(firstbaseindex.path) $w.firstbaseindex
+    set vars(firstbaseindex.required)  0
+    set vars(firstbaseindex._type) integer
+
+    lappend arguments pickanyway
+    checkbutton $w.pickanyway \
+	-text [subst {Pick anyway}]\
+	-variable [namespace current]::vars(pickanyway)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.pickanyway -side top -anchor w
+    set vars(pickanyway) [subst N]
+    set vars(pickanyway.path) $w.pickanyway
+    set vars(pickanyway.required)  0
+    set vars(pickanyway._type) boolean
+
+    lappend arguments maxmispriming
+    iwidgets::entryfield $w.maxmispriming \
+	-validate real \
+	-textvariable [namespace current]::vars(maxmispriming) \
+	-labeltext [subst {Primer maximum mispriming}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxmispriming component entry] -sticky nse
+    set vars(maxmispriming) [subst 12.00]
+    pack $w.maxmispriming -side top -fill both
+    set vars(maxmispriming.maximum) [subst 9999.99]
+    set vars(maxmispriming.path) $w.maxmispriming
+    set vars(maxmispriming.required)  0
+    set vars(maxmispriming._type) float
+
+    lappend arguments pairmaxmispriming
+    iwidgets::entryfield $w.pairmaxmispriming \
+	-validate real \
+	-textvariable [namespace current]::vars(pairmaxmispriming) \
+	-labeltext [subst {Primer pair maximum mispriming}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pairmaxmispriming component entry] -sticky nse
+    set vars(pairmaxmispriming) [subst 24.00]
+    pack $w.pairmaxmispriming -side top -fill both
+    set vars(pairmaxmispriming.maximum) [subst 9999.99]
+    set vars(pairmaxmispriming.path) $w.pairmaxmispriming
+    set vars(pairmaxmispriming.required)  0
+    set vars(pairmaxmispriming._type) float
+
+    lappend arguments numnsaccepted
+    iwidgets::entryfield $w.numnsaccepted \
+	-validate integer \
+	-textvariable [namespace current]::vars(numnsaccepted) \
+	-labeltext [subst {Maximum Ns accepted in a primer}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.numnsaccepted component entry] -sticky nse
+    set vars(numnsaccepted) [subst 0]
+    pack $w.numnsaccepted -side top -fill both
+    set vars(numnsaccepted.minimum) [subst 0]
+    set vars(numnsaccepted.path) $w.numnsaccepted
+    set vars(numnsaccepted.required)  0
+    set vars(numnsaccepted._type) integer
+
+    lappend arguments selfany
+    iwidgets::entryfield $w.selfany \
+	-validate real \
+	-textvariable [namespace current]::vars(selfany) \
+	-labeltext [subst {Maximum self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.selfany component entry] -sticky nse
+    set vars(selfany) [subst 8.00]
+    pack $w.selfany -side top -fill both
+    set vars(selfany.minimum) [subst 0.00]
+    set vars(selfany.maximum) [subst 9999.99]
+    set vars(selfany.path) $w.selfany
+    set vars(selfany.required)  0
+    set vars(selfany._type) float
+
+    lappend arguments selfend
+    iwidgets::entryfield $w.selfend \
+	-validate real \
+	-textvariable [namespace current]::vars(selfend) \
+	-labeltext [subst {Maximum 3' self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.selfend component entry] -sticky nse
+    set vars(selfend) [subst 3.00]
+    pack $w.selfend -side top -fill both
+    set vars(selfend.minimum) [subst 0.00]
+    set vars(selfend.maximum) [subst {[expr {$vars(selfany)}]}]
+    set vars(selfend.maximum.orig) $vars(selfend.maximum)
+    set vars(selfend.maximum.expr) {[expr {$vars(selfany)}]}
+    trace variable vars(selfany) w  "::EMBOSS::reset_value [namespace current] selfend.maximum"
+    set vars(selfend.path) $w.selfend
+    set vars(selfend.required)  0
+    set vars(selfend._type) float
+
+    iwidgets::labeledframe $w.primerweights \
+	-labeltext [subst {Primer penalty weights}]
+    pack $w.primerweights -side top -fill both
+    lappend wlist $w
+    append w .primerweights.childsite
+
+    lappend arguments maxendstability
+    iwidgets::entryfield $w.maxendstability \
+	-validate real \
+	-textvariable [namespace current]::vars(maxendstability) \
+	-labeltext [subst {Maximum 3' end stability}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxendstability component entry] -sticky nse
+    set vars(maxendstability) [subst 9.0]
+    pack $w.maxendstability -side top -fill both
+    set vars(maxendstability.maximum) [subst 999.9999]
+    set vars(maxendstability.path) $w.maxendstability
+    set vars(maxendstability.required)  0
+    set vars(maxendstability._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -918,7 +952,6 @@ proc create_dialogue {} {
     pack $w._okcancelhelp -side bottom -fill x
 
     ::EMBOSS::resizebook $book(book_1).book_1
-    ::EMBOSS::resizebook $book(book_2).book_2
 }
 
 

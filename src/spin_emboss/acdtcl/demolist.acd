@@ -21,25 +21,40 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - demolist}
     label $w._title -text {demonstration of the list functions}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(demolist._type) application
 
-    lappend arguments gff
-    xentry $w.gff \
-	-label [subst {gff file to be read in}]\
-	-textvariable [namespace current]::vars(gff) \
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infile
+    xentry $w.infile \
+	-label [subst {Gff file to be read in}]\
+	-textvariable [namespace current]::vars(infile) \
 	-checkcommand ::EMBOSS::check_infile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.gff delete 0 end
-    $w.gff insert end [subst {}]
-    pack $w.gff -side top -fill both
-    set vars(gff.path) $w.gff
-    set vars(gff.required)  1
-    set vars(gff._type) infile
+    $w.infile delete 0 end
+    $w.infile insert end [subst {}]
+    pack $w.infile -side top -fill both
+    set vars(infile.path) $w.infile
+    set vars(infile.required)  1
+    set vars(infile._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/demolist.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - seealso}
     label $w._title -text {Finds programs sharing group names}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(seealso._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -48,7 +49,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Advanced section}]]
     lappend wlist $w
     set w $page
 
@@ -58,10 +59,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(emboss)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.emboss -side top -anchor w
-    set vars(emboss) [subst 1]
+    set vars(emboss) [subst Y]
     set vars(emboss.path) $w.emboss
     set vars(emboss.required)  0
-    set vars(emboss._type) bool
+    set vars(emboss._type) boolean
 
     lappend arguments embassy
     checkbutton $w.embassy \
@@ -69,10 +70,18 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(embassy)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.embassy -side top -anchor w
-    set vars(embassy) [subst 1]
+    set vars(embassy) [subst Y]
     set vars(embassy.path) $w.embassy
     set vars(embassy.required)  0
-    set vars(embassy._type) bool
+    set vars(embassy._type) boolean
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments explode
     checkbutton $w.explode \
@@ -80,22 +89,22 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(explode)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.explode -side top -anchor w
-    set vars(explode) [subst 0]
+    set vars(explode) [subst N]
     set vars(explode.path) $w.explode
     set vars(explode.required)  0
-    set vars(explode._type) bool
+    set vars(explode._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output program details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -107,7 +116,7 @@ proc create_dialogue {} {
     set vars(outfile._type) outfile
 
     iwidgets::labeledframe $w.htmlsection \
-	-labeltext [subst {htmlsection Section}]
+	-labeltext [subst {Html section}]
     pack $w.htmlsection -side top -fill both
     lappend wlist $w
     append w .htmlsection.childsite
@@ -118,10 +127,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) toggle
 
     lappend arguments prelink
     iwidgets::entryfield $w.prelink \
@@ -156,10 +165,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(groups)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.groups -side top -anchor w
-    set vars(groups) [subst 0]
+    set vars(groups) [subst N]
     set vars(groups.path) $w.groups
     set vars(groups.required)  0
-    set vars(groups._type) bool
+    set vars(groups._type) boolean
 
     lappend arguments colon
     checkbutton $w.colon \
@@ -167,10 +176,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(colon)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.colon -side top -anchor w
-    set vars(colon) [subst 0]
+    set vars(colon) [subst N]
     set vars(colon.path) $w.colon
     set vars(colon.required)  0
-    set vars(colon._type) bool
+    set vars(colon._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,43 +21,44 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - distmat}
     label $w._title -text {Creates a distance matrix from multiple alignments}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(distmat._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments msf
-    set vars(msf)       [get_active_seq_id 0]
-    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 0]}
-    set vars(msf.name)  [seq_info $vars(msf) name]
-    sequence_changed [namespace current] msf
-    set vars(msf.type) [subst gapany]
-    seq_id $w.msf \
-	-textvariable [namespace current]::vars(msf.name)\
-	-start_value $vars(msf.begin)\
-	-end_value $vars(msf.end)\
-	-to [seq_info $vars(msf) length]\
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst gapany]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
-    set vars(msf) [subst {}]
-    pack $w.msf -side top -fill both
-    set vars(msf.path) $w.msf
-    set vars(msf.required)  1
-    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
-   set vars(msf.totweight) [subst 0]
-    set vars(msf._type) seqset
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+   set vars(sequence.totweight) [subst 0]
+    set vars(sequence._type) seqset
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -77,14 +78,12 @@ proc create_dialogue {} {
     set vars(nucmethod) $def
     $w.nucmethod insert entry end $def
     $w.nucmethod configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(msf.protein))}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.nucmethod -side top -fill both
     set vars(nucmethod.path) $w.nucmethod
     set vars(nucmethod.required)  0
     set vars(nucmethod.delimiter) {;}
     set vars(nucmethod._type) list
-    set vars(nucmethod.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(msf.protein))}]]}
-    trace variable vars(msf.protein) w  "::EMBOSS::reset_needed [namespace current] nucmethod"
 
     lappend arguments protmethod
     iwidgets::combobox $w.protmethod\
@@ -102,25 +101,31 @@ proc create_dialogue {} {
     set vars(protmethod) $def
     $w.protmethod insert entry end $def
     $w.protmethod configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(msf.protein)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.protmethod -side top -fill both
     set vars(protmethod.path) $w.protmethod
     set vars(protmethod.required)  0
     set vars(protmethod.delimiter) {;}
     set vars(protmethod._type) list
-    set vars(protmethod.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(msf.protein)}]]}
-    trace variable vars(msf.protein) w  "::EMBOSS::reset_needed [namespace current] protmethod"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments ambiguous
     checkbutton $w.ambiguous \
-	-text [subst {Use the abiguous codes in the calculation.}]\
+	-text [subst {Use the ambiguous codes in the calculation.}]\
 	-variable [namespace current]::vars(ambiguous)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.ambiguous -side top -anchor w
-    set vars(ambiguous) [subst 0]
+    set vars(ambiguous) [subst N]
     set vars(ambiguous.path) $w.ambiguous
     set vars(ambiguous.required)  0
-    set vars(ambiguous._type) bool
+    set vars(ambiguous._type) boolean
 
     lappend arguments gapweight
     iwidgets::entryfield $w.gapweight \
@@ -139,7 +144,7 @@ proc create_dialogue {} {
     iwidgets::entryfield $w.position \
 	-validate integer \
 	-textvariable [namespace current]::vars(position) \
-	-labeltext [subst {Base position to analyse.}]\
+	-labeltext [subst {Base position to analyse}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.position component entry] -sticky nse
     set vars(position) [subst 123]
@@ -150,20 +155,20 @@ proc create_dialogue {} {
 
     lappend arguments calculatea
     checkbutton $w.calculatea \
-	-text [subst {Calculate the a-parameter}]\
+	-text [subst {Calculate the nucleotide Jin-Nei parameter 'a'}]\
 	-variable [namespace current]::vars(calculatea)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.calculatea -side top -anchor w
-    set vars(calculatea) [subst 0]
+    set vars(calculatea) [subst N]
     set vars(calculatea.path) $w.calculatea
     set vars(calculatea.required)  0
-    set vars(calculatea._type) bool
+    set vars(calculatea._type) boolean
 
     lappend arguments parametera
     iwidgets::entryfield $w.parametera \
 	-validate real \
 	-textvariable [namespace current]::vars(parametera) \
-	-labeltext [subst a-parameter]\
+	-labeltext [subst {Nucleotide Jin-Nei parameter 'a'}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.parametera component entry] -sticky nse
     set vars(parametera) [subst 1.0]
@@ -176,22 +181,22 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments outf
-    xentry $w.outf \
-	-label [subst {Enter a name for the distance matrix}]\
-	-textvariable [namespace current]::vars(outf) \
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.outf delete 0 end
-    $w.outf insert end [subst distmat0.out]
-    pack $w.outf -side top -fill both
-    set vars(outf.path) $w.outf
-    set vars(outf.required)  1
-    set vars(outf._type) outfile
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst distmat0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

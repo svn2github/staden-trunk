@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - extractseq}
     label $w._title -text {Extract regions from a sequence}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(extractseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -69,7 +70,7 @@ proc create_dialogue {} {
     set vars(regions) [subst {[expr {$vars(sequence.begin)}]-[expr {$vars(sequence.end)}]}]
     pack $w.regions -side top -fill both
     set vars(regions.path) $w.regions
-    set vars(regions.required)  1
+    set vars(regions.required)  0
     set vars(regions.orig) $vars(regions)
     set vars(regions.expr) {[expr {$vars(sequence.begin)}]-[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.begin) w  "::EMBOSS::reset_value [namespace current] regions"
@@ -80,7 +81,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -90,16 +91,16 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(separate)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.separate -side top -anchor w
-    set vars(separate) [subst 0]
+    set vars(separate) [subst N]
     set vars(separate.path) $w.separate
     set vars(separate.required)  0
-    set vars(separate._type) bool
+    set vars(separate._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,20 +21,17 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - demofeatures}
     label $w._title -text {demonstration of the feature functions}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(demofeatures._type) application
 
-    lappend arguments featout
-    xentry $w.featout \
-	-label [subst {feature file for output}]\
-	-textvariable [namespace current]::vars(featout) \
-	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [subst 1]]
-    $w.featout delete 0 end
-    $w.featout insert end [subst gff:demofeatures.gff]
-    pack $w.featout -side top -fill both
-    set vars(featout.path) $w.featout
-    set vars(featout.required)  1
-    set vars(featout._type) featout
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    $w.book_1 view [subst {Advanced section}]
+    lappend wlist $w
+    set w $page
 
     lappend arguments typesort
     checkbutton $w.typesort \
@@ -42,10 +39,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(typesort)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.typesort -side top -anchor w
-    set vars(typesort) [subst 0]
+    set vars(typesort) [subst N]
     set vars(typesort.path) $w.typesort
     set vars(typesort.required)  0
-    set vars(typesort._type) bool
+    set vars(typesort._type) boolean
 
     lappend arguments startsort
     checkbutton $w.startsort \
@@ -53,37 +50,41 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(startsort)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.startsort -side top -anchor w
-    set vars(startsort) [subst 0]
+    set vars(startsort) [subst N]
     set vars(startsort.path) $w.startsort
     set vars(startsort.required)  0
-    set vars(startsort._type) bool
+    set vars(startsort._type) boolean
 
-    lappend arguments dictionary
-    checkbutton $w.dictionary \
-	-text [subst {Read in the Gff Dictionary}]\
-	-variable [namespace current]::vars(dictionary)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.dictionary -side top -anchor w
-    set vars(dictionary) [subst 1]
-    set vars(dictionary.path) $w.dictionary
-    set vars(dictionary.required)  0
-    set vars(dictionary._type) bool
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
 
-    lappend arguments tracedict
-    checkbutton $w.tracedict \
-	-text [subst {Dump out the Dictionary at the end}]\
-	-variable [namespace current]::vars(tracedict)\
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfeat
+    xentry $w.outfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(outfeat) \
+	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    pack $w.tracedict -side top -anchor w
-    set vars(tracedict) [subst 1]
-    set vars(tracedict.path) $w.tracedict
-    set vars(tracedict.required)  0
-    set vars(tracedict._type) bool
+    $w.outfeat delete 0 end
+    $w.outfeat insert end [subst gff:demofeatures.gff]
+    pack $w.outfeat -side top -fill both
+    set vars(outfeat.path) $w.outfeat
+    set vars(outfeat.required)  1
+    set vars(outfeat._type) featout
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/demofeatures.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - splitter}
     label $w._title -text {Split a sequence into (overlapping) smaller sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(splitter._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -92,22 +93,30 @@ proc create_dialogue {} {
     set vars(overlap.required)  0
     set vars(overlap._type) integer
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments addoverlap
     checkbutton $w.addoverlap \
 	-text [subst {Add overlap to size}]\
 	-variable [namespace current]::vars(addoverlap)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.addoverlap -side top -anchor w
-    set vars(addoverlap) [subst 0]
+    set vars(addoverlap) [subst N]
     set vars(addoverlap.path) $w.addoverlap
     set vars(addoverlap.required)  0
-    set vars(addoverlap._type) bool
+    set vars(addoverlap._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - infoalign}
     label $w._title -text {Information on a multiple sequence alignment}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(infoalign._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -53,28 +54,8 @@ proc create_dialogue {} {
    set vars(sequence.totweight) [subst 0]
     set vars(sequence._type) seqset
 
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments refseq
-    iwidgets::entryfield $w.refseq \
-	-textvariable [namespace current]::vars(refseq) \
-	-labeltext [subst {The number or the name of the reference sequence}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.refseq component entry] -sticky nse
-    set vars(refseq) [subst 0]
-    pack $w.refseq -side top -fill both
-    set vars(refseq.path) $w.refseq
-    set vars(refseq.required)  0
-    set vars(refseq._type) string
-
     lappend arguments matrix
-    set vars(matrix.protein) [subst {[expr {$vars(sequence.protein)}]}]
+    set vars(matrix.protein) [subst {[expr {$vars(acdprotein)}]}]
     iwidgets::combobox $w.matrix\
 	-textvariable [namespace current]::vars(matrix)\
 	-labeltext [subst {Similarity scoring Matrix file}]
@@ -88,12 +69,32 @@ proc create_dialogue {} {
     set vars(matrix.path) $w.matrix
     set vars(matrix.required)  0
     set vars(matrix.protein.orig) $vars(matrix.protein)
-    set vars(matrix.protein.expr) {[expr {$vars(sequence.protein)}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] matrix.protein"
+    set vars(matrix.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] matrix.protein"
     set vars(matrix.orig) $vars(matrix)
     set vars(matrix.expr) {[expr {$vars(matrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
     trace variable vars(matrix.protein) w  "::EMBOSS::reset_value [namespace current] matrix"
     set vars(matrix._type) matrix
+
+    lappend arguments refseq
+    iwidgets::entryfield $w.refseq \
+	-textvariable [namespace current]::vars(refseq) \
+	-labeltext [subst {The number or the name of the reference sequence}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.refseq component entry] -sticky nse
+    set vars(refseq) [subst 0]
+    pack $w.refseq -side top -fill both
+    set vars(refseq.path) $w.refseq
+    set vars(refseq.required)  0
+    set vars(refseq._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments plurality
     iwidgets::entryfield $w.plurality \
@@ -129,13 +130,13 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output sequence details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -152,10 +153,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     lappend arguments only
     checkbutton $w.only \
@@ -163,10 +164,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(only)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.only -side top -anchor w
-    set vars(only) [subst 0]
+    set vars(only) [subst N]
     set vars(only.path) $w.only
     set vars(only.required)  0
-    set vars(only._type) bool
+    set vars(only._type) boolean
 
     lappend arguments heading
     checkbutton $w.heading \
@@ -180,7 +181,7 @@ proc create_dialogue {} {
     set vars(heading.orig) $vars(heading)
     set vars(heading.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] heading"
-    set vars(heading._type) bool
+    set vars(heading._type) boolean
 
     lappend arguments usa
     checkbutton $w.usa \
@@ -194,7 +195,7 @@ proc create_dialogue {} {
     set vars(usa.orig) $vars(usa)
     set vars(usa.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] usa"
-    set vars(usa._type) bool
+    set vars(usa._type) boolean
 
     lappend arguments name
     checkbutton $w.name \
@@ -208,7 +209,7 @@ proc create_dialogue {} {
     set vars(name.orig) $vars(name)
     set vars(name.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] name"
-    set vars(name._type) bool
+    set vars(name._type) boolean
 
     lappend arguments seqlength
     checkbutton $w.seqlength \
@@ -222,7 +223,7 @@ proc create_dialogue {} {
     set vars(seqlength.orig) $vars(seqlength)
     set vars(seqlength.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] seqlength"
-    set vars(seqlength._type) bool
+    set vars(seqlength._type) boolean
 
     lappend arguments alignlength
     checkbutton $w.alignlength \
@@ -236,7 +237,7 @@ proc create_dialogue {} {
     set vars(alignlength.orig) $vars(alignlength)
     set vars(alignlength.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] alignlength"
-    set vars(alignlength._type) bool
+    set vars(alignlength._type) boolean
 
     lappend arguments gaps
     checkbutton $w.gaps \
@@ -250,7 +251,7 @@ proc create_dialogue {} {
     set vars(gaps.orig) $vars(gaps)
     set vars(gaps.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] gaps"
-    set vars(gaps._type) bool
+    set vars(gaps._type) boolean
 
     lappend arguments gapcount
     checkbutton $w.gapcount \
@@ -264,7 +265,7 @@ proc create_dialogue {} {
     set vars(gapcount.orig) $vars(gapcount)
     set vars(gapcount.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] gapcount"
-    set vars(gapcount._type) bool
+    set vars(gapcount._type) boolean
 
     lappend arguments idcount
     checkbutton $w.idcount \
@@ -278,7 +279,7 @@ proc create_dialogue {} {
     set vars(idcount.orig) $vars(idcount)
     set vars(idcount.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] idcount"
-    set vars(idcount._type) bool
+    set vars(idcount._type) boolean
 
     lappend arguments simcount
     checkbutton $w.simcount \
@@ -292,7 +293,7 @@ proc create_dialogue {} {
     set vars(simcount.orig) $vars(simcount)
     set vars(simcount.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] simcount"
-    set vars(simcount._type) bool
+    set vars(simcount._type) boolean
 
     lappend arguments diffcount
     checkbutton $w.diffcount \
@@ -306,7 +307,7 @@ proc create_dialogue {} {
     set vars(diffcount.orig) $vars(diffcount)
     set vars(diffcount.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] diffcount"
-    set vars(diffcount._type) bool
+    set vars(diffcount._type) boolean
 
     lappend arguments change
     checkbutton $w.change \
@@ -320,7 +321,21 @@ proc create_dialogue {} {
     set vars(change.orig) $vars(change)
     set vars(change.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] change"
-    set vars(change._type) bool
+    set vars(change._type) boolean
+
+    lappend arguments weight
+    checkbutton $w.weight \
+	-text [subst {Display 'weight' column}]\
+	-variable [namespace current]::vars(weight)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.weight -side top -anchor w
+    set vars(weight) [subst {[expr {(!$vars(only))}]}]
+    set vars(weight.path) $w.weight
+    set vars(weight.required)  0
+    set vars(weight.orig) $vars(weight)
+    set vars(weight.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] weight"
+    set vars(weight._type) boolean
 
     lappend arguments description
     checkbutton $w.description \
@@ -334,7 +349,7 @@ proc create_dialogue {} {
     set vars(description.orig) $vars(description)
     set vars(description.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] description"
-    set vars(description._type) bool
+    set vars(description._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - cpgplot}
     label $w._title -text {Plot CpG rich areas}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(cpgplot._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -75,7 +76,7 @@ proc create_dialogue {} {
     set vars(window.maximum.expr) {[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] window.maximum"
     set vars(window.path) $w.window
-    set vars(window.required)  1
+    set vars(window.required)  0
     set vars(window._type) integer
 
     lappend arguments shift
@@ -93,7 +94,7 @@ proc create_dialogue {} {
     set vars(shift.maximum.expr) {[expr {$vars(window)}]}
     trace variable vars(window) w  "::EMBOSS::reset_value [namespace current] shift.maximum"
     set vars(shift.path) $w.shift
-    set vars(shift.required)  1
+    set vars(shift.required)  0
     set vars(shift._type) integer
 
     lappend arguments minlen
@@ -111,7 +112,7 @@ proc create_dialogue {} {
     set vars(minlen.maximum.expr) {[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] minlen.maximum"
     set vars(minlen.path) $w.minlen
-    set vars(minlen.required)  1
+    set vars(minlen.required)  0
     set vars(minlen._type) integer
 
     lappend arguments minoe
@@ -126,7 +127,7 @@ proc create_dialogue {} {
     set vars(minoe.minimum) [subst 0.]
     set vars(minoe.maximum) [subst 10.]
     set vars(minoe.path) $w.minoe
-    set vars(minoe.required)  1
+    set vars(minoe.required)  0
     set vars(minoe._type) float
 
     lappend arguments minpc
@@ -141,14 +142,14 @@ proc create_dialogue {} {
     set vars(minpc.minimum) [subst 0.]
     set vars(minpc.maximum) [subst 100.]
     set vars(minpc.path) $w.minpc
-    set vars(minpc.required)  1
+    set vars(minpc.required)  0
     set vars(minpc._type) float
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -186,10 +187,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(obsexp)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.obsexp -side top -anchor w
-    set vars(obsexp) [subst 1]
+    set vars(obsexp) [subst Y]
     set vars(obsexp.path) $w.obsexp
     set vars(obsexp.required)  0
-    set vars(obsexp._type) bool
+    set vars(obsexp._type) boolean
 
     lappend arguments cg
     checkbutton $w.cg \
@@ -197,10 +198,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(cg)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.cg -side top -anchor w
-    set vars(cg) [subst 1]
+    set vars(cg) [subst Y]
     set vars(cg.path) $w.cg
     set vars(cg.required)  0
-    set vars(cg._type) bool
+    set vars(cg._type) boolean
 
     lappend arguments pc
     checkbutton $w.pc \
@@ -208,23 +209,23 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(pc)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.pc -side top -anchor w
-    set vars(pc) [subst 1]
+    set vars(pc) [subst Y]
     set vars(pc.path) $w.pc
     set vars(pc.required)  0
-    set vars(pc._type) bool
+    set vars(pc._type) boolean
 
-    lappend arguments featout
-    xentry $w.featout \
-	-label [subst {feature file for output}]\
-	-textvariable [namespace current]::vars(featout) \
+    lappend arguments outfeat
+    xentry $w.outfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(outfeat) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.featout delete 0 end
-    $w.featout insert end [subst feature1.out]
-    pack $w.featout -side top -fill both
-    set vars(featout.path) $w.featout
-    set vars(featout.required)  0
-    set vars(featout._type) featout
+    $w.outfeat delete 0 end
+    $w.outfeat insert end [subst feature1.out]
+    pack $w.outfeat -side top -fill both
+    set vars(outfeat.path) $w.outfeat
+    set vars(outfeat.required)  1
+    set vars(outfeat._type) featout
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

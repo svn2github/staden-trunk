@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - extractfeat}
     label $w._title -text {Extract features from a sequence}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(extractfeat._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -177,7 +178,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -187,10 +188,33 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(join)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.join -side top -anchor w
-    set vars(join) [subst 0]
+    set vars(join) [subst N]
     set vars(join.path) $w.join
     set vars(join.required)  0
-    set vars(join._type) bool
+    set vars(join._type) boolean
+
+    lappend arguments featinname
+    checkbutton $w.featinname \
+	-text [subst {Append type of feature to output sequence name}]\
+	-variable [namespace current]::vars(featinname)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.featinname -side top -anchor w
+    set vars(featinname) [subst N]
+    set vars(featinname.path) $w.featinname
+    set vars(featinname.required)  0
+    set vars(featinname._type) boolean
+
+    lappend arguments describe
+    iwidgets::entryfield $w.describe \
+	-textvariable [namespace current]::vars(describe) \
+	-labeltext [subst {Feature tag names to add to the description}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.describe component entry] -sticky nse
+    set vars(describe) [subst {}]
+    pack $w.describe -side top -fill both
+    set vars(describe.path) $w.describe
+    set vars(describe.required)  0
+    set vars(describe._type) string
 
     lappend arguments outseq
     iwidgets::labeledframe $w.outseq \

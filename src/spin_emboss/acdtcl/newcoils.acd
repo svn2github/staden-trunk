@@ -1,0 +1,202 @@
+package require Iwidgets
+namespace eval ::EMBOSS::newcoils {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_newcoils*Xentry.entry.width 30
+option add *e_newcoils*Entryfield.width 30
+option add *e_newcoils*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) newcoils
+    set w [xtoplevel .e_newcoils -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - newcoils}
+    label $w._title -text {Predicts coils protein secondary structure}
+    pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
+    set vars(newcoils._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst PureProtein]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    lappend arguments datafile
+    xentry $w.datafile \
+	-label [subst {Weight and matrix file}]\
+	-textvariable [namespace current]::vars(datafile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.datafile delete 0 end
+    $w.datafile insert end [subst Enewcoils.mat]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile._type) datafile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Window size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 21]
+    pack $w.window -side top -fill both
+    set vars(window.minimum) [subst 1]
+    set vars(window.maximum) [subst {[expr {$vars(sequence.end)}]}]
+    set vars(window.maximum.orig) $vars(window.maximum)
+    set vars(window.maximum.expr) {[expr {$vars(sequence.end)}]}
+    trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] window.maximum"
+    set vars(window.path) $w.window
+    set vars(window.required)  0
+    set vars(window._type) integer
+
+    lappend arguments weighted
+    iwidgets::entryfield $w.weighted \
+	-validate integer \
+	-textvariable [namespace current]::vars(weighted) \
+	-labeltext [subst {Weighted value}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.weighted component entry] -sticky nse
+    set vars(weighted) [subst 0]
+    pack $w.weighted -side top -fill both
+    set vars(weighted.minimum) [subst 0]
+    set vars(weighted.path) $w.weighted
+    set vars(weighted.required)  0
+    set vars(weighted._type) integer
+
+    lappend arguments verb
+    iwidgets::entryfield $w.verb \
+	-validate integer \
+	-textvariable [namespace current]::vars(verb) \
+	-labeltext [subst {Verb - matrix file}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.verb component entry] -sticky nse
+    set vars(verb) [subst 0]
+    pack $w.verb -side top -fill both
+    set vars(verb.minimum) [subst 0]
+    set vars(verb.path) $w.verb
+    set vars(verb.required)  0
+    set vars(verb._type) integer
+
+    lappend arguments mode
+    iwidgets::entryfield $w.mode \
+	-validate integer \
+	-textvariable [namespace current]::vars(mode) \
+	-labeltext [subst {Display Mode}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mode component entry] -sticky nse
+    set vars(mode) [subst 0]
+    pack $w.mode -side top -fill both
+    set vars(mode.minimum) [subst 0]
+    set vars(mode.maximum) [subst 2]
+    set vars(mode.path) $w.mode
+    set vars(mode.required)  0
+    set vars(mode._type) integer
+
+    lappend arguments minseg
+    iwidgets::entryfield $w.minseg \
+	-validate integer \
+	-textvariable [namespace current]::vars(minseg) \
+	-labeltext [subst {Minimum number of seqments}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minseg component entry] -sticky nse
+    set vars(minseg) [subst 1]
+    pack $w.minseg -side top -fill both
+    set vars(minseg.minimum) [subst 0]
+    set vars(minseg.maximum) [subst 10]
+    set vars(minseg.path) $w.minseg
+    set vars(minseg.required)  0
+    set vars(minseg._type) integer
+
+    lappend arguments minp
+    iwidgets::entryfield $w.minp \
+	-validate real \
+	-textvariable [namespace current]::vars(minp) \
+	-labeltext [subst {Minimum p}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minp component entry] -sticky nse
+    set vars(minp) [subst 0.50]
+    pack $w.minp -side top -fill both
+    set vars(minp.minimum) [subst 0.]
+    set vars(minp.maximum) [subst 100.]
+    set vars(minp.path) $w.minp
+    set vars(minp.required)  0
+    set vars(minp._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst newcoils0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/newcoils.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

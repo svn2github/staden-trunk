@@ -21,55 +21,56 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - primersearch}
     label $w._title -text {Searches DNA sequences for matches with primer pairs}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(primersearch._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments sequences
-    set vars(sequences)       [get_active_seq_id 0]
-    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
-    set vars(sequences.name)  [seq_info $vars(sequences) name]
-    sequence_changed [namespace current] sequences
-    set vars(sequences.type) [subst dna]
-    seq_id $w.sequences \
-	-textvariable [namespace current]::vars(sequences.name)\
-	-start_value $vars(sequences.begin)\
-	-end_value $vars(sequences.end)\
-	-to [seq_info $vars(sequences) length]\
+    lappend arguments seqall
+    set vars(seqall)       [get_active_seq_id 0]
+    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 0]}
+    set vars(seqall.name)  [seq_info $vars(seqall) name]
+    sequence_changed [namespace current] seqall
+    set vars(seqall.type) [subst dna]
+    seq_id $w.seqall \
+	-textvariable [namespace current]::vars(seqall.name)\
+	-start_value $vars(seqall.begin)\
+	-end_value $vars(seqall.end)\
+	-to [seq_info $vars(seqall) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
-    set vars(sequences) [subst {}]
-    pack $w.sequences -side top -fill both
-    set vars(sequences.path) $w.sequences
-    set vars(sequences.required)  1
-    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
-    set vars(sequences._type) seqall
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
+    set vars(seqall) [subst {}]
+    pack $w.seqall -side top -fill both
+    set vars(seqall.path) $w.seqall
+    set vars(seqall.required)  1
+    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
+    set vars(seqall._type) seqall
 
-    lappend arguments primers
-    xentry $w.primers \
+    lappend arguments primersfile
+    xentry $w.primersfile \
 	-label [subst {Primer file}]\
-	-textvariable [namespace current]::vars(primers) \
+	-textvariable [namespace current]::vars(primersfile) \
 	-checkcommand ::EMBOSS::check_infile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.primers delete 0 end
-    $w.primers insert end [subst {}]
-    pack $w.primers -side top -fill both
-    set vars(primers.path) $w.primers
-    set vars(primers.required)  1
-    set vars(primers._type) infile
+    $w.primersfile delete 0 end
+    $w.primersfile insert end [subst {}]
+    pack $w.primersfile -side top -fill both
+    set vars(primersfile.path) $w.primersfile
+    set vars(primersfile.required)  1
+    set vars(primersfile._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -90,22 +91,22 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments out
-    xentry $w.out \
+    lappend arguments outfile
+    xentry $w.outfile \
 	-label [subst {Output filename}]\
-	-textvariable [namespace current]::vars(out) \
+	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.out delete 0 end
-    $w.out insert end [subst primersearch0.out]
-    pack $w.out -side top -fill both
-    set vars(out.path) $w.out
-    set vars(out.required)  1
-    set vars(out._type) outfile
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst primersearch0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - tfm}
     label $w._title -text {Displays a program's help documentation manual}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(tfm._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -48,13 +49,13 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output program details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -71,10 +72,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     lappend arguments more
     checkbutton $w.more \
@@ -88,7 +89,7 @@ proc create_dialogue {} {
     set vars(more.orig) $vars(more)
     set vars(more.expr) {[expr {(!$vars(html))}]}
     trace variable vars(html) w  "::EMBOSS::reset_value [namespace current] more"
-    set vars(more._type) bool
+    set vars(more._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

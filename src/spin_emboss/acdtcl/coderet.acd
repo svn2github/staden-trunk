@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - coderet}
     label $w._title -text {Extract CDS, mRNA and translations from feature tables}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(coderet._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Advanced section}]]
     lappend wlist $w
     set w $page
 
@@ -66,10 +67,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(cds)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.cds -side top -anchor w
-    set vars(cds) [subst 1]
+    set vars(cds) [subst Y]
     set vars(cds.path) $w.cds
     set vars(cds.required)  0
-    set vars(cds._type) bool
+    set vars(cds._type) boolean
 
     lappend arguments mrna
     checkbutton $w.mrna \
@@ -77,10 +78,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(mrna)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.mrna -side top -anchor w
-    set vars(mrna) [subst 1]
+    set vars(mrna) [subst Y]
     set vars(mrna.path) $w.mrna
     set vars(mrna.required)  0
-    set vars(mrna._type) bool
+    set vars(mrna._type) boolean
 
     lappend arguments translation
     checkbutton $w.translation \
@@ -88,27 +89,27 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(translation)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.translation -side top -anchor w
-    set vars(translation) [subst 1]
+    set vars(translation) [subst Y]
     set vars(translation.path) $w.translation
     set vars(translation.required)  0
-    set vars(translation._type) bool
+    set vars(translation._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments seqout
-    iwidgets::labeledframe $w.seqout \
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
 	-labeltext [subst {Sequence output filename}]
-    pack $w.seqout -side top -fill both
+    pack $w.outseq -side top -fill both
     lappend wlist $w
-    set w [$w.seqout childsite]
+    set w [$w.outseq childsite]
     iwidgets::combobox $w.format\
-	-textvariable [namespace current]::vars(seqout.format)\
+	-textvariable [namespace current]::vars(outseq.format)\
 	-labeltext {File format}
     eval $w.format insert list end [list_file_formats]
     grid [$w.format component entry] -sticky nse
@@ -116,22 +117,22 @@ proc create_dialogue {} {
     $w.format insert entry end fasta
     $w.format configure \
 	-state [lindex {disabled normal} [subst 1]]
-    set vars(seqout.format.path) $w.format
+    set vars(outseq.format.path) $w.format
     pack $w.format -side top -fill both
     xentry $w.name \
 	-label {Filename}\
-	-textvariable [namespace current]::vars(seqout) \
+	-textvariable [namespace current]::vars(outseq) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    set vars(seqout.name.path) $w.name
+    set vars(outseq.name.path) $w.name
     pack $w.name -side top -fill both
     $w.name delete 0 end
     $w.name insert end [subst sequence0.out]
-    set vars(seqout.path) $w.seqout
-    set vars(seqout.required)  1
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
-    set vars(seqout._type) seqout
+    set vars(outseq._type) seqout
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

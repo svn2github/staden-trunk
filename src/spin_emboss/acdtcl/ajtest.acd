@@ -21,7 +21,17 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - ajtest}
     label $w._title -text {Test file for ACD parsing}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(ajtest._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
 
     lappend arguments sequence
     set vars(sequence)       [get_active_seq_id 0]
@@ -43,31 +53,115 @@ proc create_dialogue {} {
     trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
     set vars(sequence._type) seqall
 
-    lappend arguments seqset
-    set vars(seqset)       [get_active_seq_id 1]
-    if {$vars(seqset) == -1} {set vars(seqset) [get_active_seq_id 0]}
-    set vars(seqset.name)  [seq_info $vars(seqset) name]
-    sequence_changed [namespace current] seqset
-    set vars(seqset.type) [subst any]
-    seq_id $w.seqset \
-	-textvariable [namespace current]::vars(seqset.name)\
-	-start_value $vars(seqset.begin)\
-	-end_value $vars(seqset.end)\
-	-to [seq_info $vars(seqset) length]\
+    lappend arguments bsequence
+    set vars(bsequence)       [get_active_seq_id 1]
+    if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
+    set vars(bsequence.name)  [seq_info $vars(bsequence) name]
+    sequence_changed [namespace current] bsequence
+    set vars(bsequence.type) [subst any]
+    seq_id $w.bsequence \
+	-textvariable [namespace current]::vars(bsequence.name)\
+	-start_value $vars(bsequence.begin)\
+	-end_value $vars(bsequence.end)\
+	-to [seq_info $vars(bsequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqset $w.seqset}"
-    set vars(seqset) [subst {}]
-    pack $w.seqset -side top -fill both
-    set vars(seqset.path) $w.seqset
-    set vars(seqset.required)  1
-    trace variable vars(seqset.name) w  "::EMBOSS::sequence_changed [namespace current] seqset"
-   set vars(seqset.totweight) [subst 0]
-    set vars(seqset._type) seqset
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] bsequence $w.bsequence}"
+    set vars(bsequence) [subst {}]
+    pack $w.bsequence -side top -fill both
+    set vars(bsequence.path) $w.bsequence
+    set vars(bsequence.required)  1
+    trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
+   set vars(bsequence.totweight) [subst 0]
+    set vars(bsequence._type) seqset
+
+    lappend arguments directory
+    xentry $w.directory \
+	-label [subst {Temporary directory}]\
+	-textvariable [namespace current]::vars(directory) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.directory delete 0 end
+    $w.directory insert end [subst /tmp]
+    pack $w.directory -side top -fill both
+    set vars(directory.path) $w.directory
+    set vars(directory.required)  0
+    set vars(directory._type) directory
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst ajtest0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence1.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  0
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+
+    lappend arguments outfeat
+    xentry $w.outfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(outfeat) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfeat delete 0 end
+    $w.outfeat insert end [subst feature2.out]
+    pack $w.outfeat -side top -fill both
+    set vars(outfeat.path) $w.outfeat
+    set vars(outfeat.required)  0
+    set vars(outfeat._type) featout
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/ajtest.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

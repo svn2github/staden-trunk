@@ -21,43 +21,66 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - prettyplot}
     label $w._title -text {Displays aligned sequences, with colouring and boxing}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(prettyplot._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments msf
-    set vars(msf)       [get_active_seq_id 0]
-    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 0]}
-    set vars(msf.name)  [seq_info $vars(msf) name]
-    sequence_changed [namespace current] msf
-    set vars(msf.type) [subst gapany]
-    seq_id $w.msf \
-	-textvariable [namespace current]::vars(msf.name)\
-	-start_value $vars(msf.begin)\
-	-end_value $vars(msf.end)\
-	-to [seq_info $vars(msf) length]\
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 0]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst gapany]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
-    set vars(msf) [subst {}]
-    pack $w.msf -side top -fill both
-    set vars(msf.path) $w.msf
-    set vars(msf.required)  1
-    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
-   set vars(msf.totweight) [subst 0]
-    set vars(msf._type) seqset
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+   set vars(sequences.totweight) [subst 0]
+    set vars(sequences._type) seqset
+
+    lappend arguments matrixfile
+    set vars(matrixfile.protein) [subst {[expr {$vars(acdprotein)}]}]
+    iwidgets::combobox $w.matrixfile\
+	-textvariable [namespace current]::vars(matrixfile)\
+	-labeltext [subst {Matrix file}]
+    eval $w.matrixfile insert list end [list_matrices p]
+    grid [$w.matrixfile component entry] -sticky nse
+    $w.matrixfile delete entry 0 end
+    $w.matrixfile insert entry end [subst {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.matrixfile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.matrixfile -side top -fill both
+    set vars(matrixfile.path) $w.matrixfile
+    set vars(matrixfile.required)  0
+    set vars(matrixfile.protein.orig) $vars(matrixfile.protein)
+    set vars(matrixfile.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] matrixfile.protein"
+    set vars(matrixfile.orig) $vars(matrixfile)
+    set vars(matrixfile.expr) {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(matrixfile.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile"
+    set vars(matrixfile._type) matrix
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -101,10 +124,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(ccolours)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.ccolours -side top -anchor w
-    set vars(ccolours) [subst 1]
+    set vars(ccolours) [subst Y]
     set vars(ccolours.path) $w.ccolours
     set vars(ccolours.required)  0
-    set vars(ccolours._type) bool
+    set vars(ccolours._type) boolean
 
     lappend arguments cidentity
     iwidgets::entryfield $w.cidentity \
@@ -148,10 +171,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(docolour)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.docolour -side top -anchor w
-    set vars(docolour) [subst 0]
+    set vars(docolour) [subst N]
     set vars(docolour.path) $w.docolour
     set vars(docolour.required)  0
-    set vars(docolour._type) bool
+    set vars(docolour._type) boolean
 
     lappend arguments title
     checkbutton $w.title \
@@ -159,15 +182,15 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(title)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.title -side top -anchor w
-    set vars(title) [subst 1]
+    set vars(title) [subst Y]
     set vars(title.path) $w.title
     set vars(title.required)  0
-    set vars(title._type) bool
+    set vars(title._type) boolean
 
     lappend arguments shade
     iwidgets::entryfield $w.shade \
 	-textvariable [namespace current]::vars(shade) \
-	-labeltext [subst shading]\
+	-labeltext [subst Shading]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.shade component entry] -sticky nse
     set vars(shade) [subst {}]
@@ -208,10 +231,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(box)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.box -side top -anchor w
-    set vars(box) [subst 1]
+    set vars(box) [subst Y]
     set vars(box.path) $w.box
     set vars(box.required)  0
-    set vars(box._type) bool
+    set vars(box._type) boolean
 
     lappend arguments boxcol
     checkbutton $w.boxcol \
@@ -219,10 +242,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(boxcol)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.boxcol -side top -anchor w
-    set vars(boxcol) [subst 0]
+    set vars(boxcol) [subst N]
     set vars(boxcol.path) $w.boxcol
     set vars(boxcol.required)  0
-    set vars(boxcol._type) bool
+    set vars(boxcol._type) boolean
 
     lappend arguments boxcolval
     iwidgets::entryfield $w.boxcolval \
@@ -242,10 +265,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(name)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.name -side top -anchor w
-    set vars(name) [subst 1]
+    set vars(name) [subst Y]
     set vars(name.path) $w.name
     set vars(name.required)  0
-    set vars(name._type) bool
+    set vars(name._type) boolean
 
     lappend arguments maxnamelen
     iwidgets::entryfield $w.maxnamelen \
@@ -266,10 +289,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(number)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.number -side top -anchor w
-    set vars(number) [subst 1]
+    set vars(number) [subst Y]
     set vars(number.path) $w.number
     set vars(number.required)  0
-    set vars(number._type) bool
+    set vars(number._type) boolean
 
     lappend arguments listoptions
     checkbutton $w.listoptions \
@@ -277,10 +300,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(listoptions)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.listoptions -side top -anchor w
-    set vars(listoptions) [subst 1]
+    set vars(listoptions) [subst Y]
     set vars(listoptions.path) $w.listoptions
     set vars(listoptions.required)  0
-    set vars(listoptions._type) bool
+    set vars(listoptions._type) boolean
 
     lappend arguments plurality
     iwidgets::entryfield $w.plurality \
@@ -289,17 +312,17 @@ proc create_dialogue {} {
 	-labeltext [subst {Plurality check value (totweight/2)}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.plurality component entry] -sticky nse
-    set vars(plurality) [subst {[expr {( $vars(msf.totweight) / 2)}]}]
+    set vars(plurality) [subst {[expr {( $vars(sequences.totweight) / 2)}]}]
     pack $w.plurality -side top -fill both
     set vars(plurality.path) $w.plurality
     set vars(plurality.required)  0
     set vars(plurality.orig) $vars(plurality)
-    set vars(plurality.expr) {[expr {( $vars(msf.totweight) / 2)}]}
-    trace variable vars(msf.totweight) w  "::EMBOSS::reset_value [namespace current] plurality"
+    set vars(plurality.expr) {[expr {( $vars(sequences.totweight) / 2)}]}
+    trace variable vars(sequences.totweight) w  "::EMBOSS::reset_value [namespace current] plurality"
     set vars(plurality._type) float
 
     iwidgets::labeledframe $w.consensussection \
-	-labeltext [subst {consensus Section}]
+	-labeltext [subst {Consensus section}]
     pack $w.consensussection -side top -fill both
     lappend wlist $w
     append w .consensussection.childsite
@@ -310,10 +333,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(consensus)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.consensus -side top -anchor w
-    set vars(consensus) [subst 0]
+    set vars(consensus) [subst N]
     set vars(consensus.path) $w.consensus
     set vars(consensus.required)  0
-    set vars(consensus._type) bool
+    set vars(consensus._type) boolean
 
     lappend arguments collision
     checkbutton $w.collision \
@@ -321,10 +344,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(collision)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.collision -side top -anchor w
-    set vars(collision) [subst 1]
+    set vars(collision) [subst Y]
     set vars(collision.path) $w.collision
     set vars(collision.required)  0
-    set vars(collision._type) bool
+    set vars(collision._type) boolean
 
     lappend arguments alternative
     iwidgets::entryfield $w.alternative \
@@ -340,28 +363,6 @@ proc create_dialogue {} {
     set vars(alternative.path) $w.alternative
     set vars(alternative.required)  0
     set vars(alternative._type) integer
-
-    lappend arguments matrixfile
-    set vars(matrixfile.protein) [subst {[expr {$vars(msf.protein)}]}]
-    iwidgets::combobox $w.matrixfile\
-	-textvariable [namespace current]::vars(matrixfile)\
-	-labeltext [subst {Matrix file}]
-    eval $w.matrixfile insert list end [list_matrices p]
-    grid [$w.matrixfile component entry] -sticky nse
-    $w.matrixfile delete entry 0 end
-    $w.matrixfile insert entry end [subst {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
-    $w.matrixfile configure \
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.matrixfile -side top -fill both
-    set vars(matrixfile.path) $w.matrixfile
-    set vars(matrixfile.required)  0
-    set vars(matrixfile.protein.orig) $vars(matrixfile.protein)
-    set vars(matrixfile.protein.expr) {[expr {$vars(msf.protein)}]}
-    trace variable vars(msf.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile.protein"
-    set vars(matrixfile.orig) $vars(matrixfile)
-    set vars(matrixfile.expr) {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}
-    trace variable vars(matrixfile.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile"
-    set vars(matrixfile._type) matrix
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
@@ -385,29 +386,18 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(portrait)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.portrait -side top -anchor w
-    set vars(portrait) [subst 0]
+    set vars(portrait) [subst N]
     set vars(portrait.path) $w.portrait
     set vars(portrait.required)  0
-    set vars(portrait._type) bool
+    set vars(portrait._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
-
-    lappend arguments data
-    checkbutton $w.data \
-	-text [subst boolean]\
-	-variable [namespace current]::vars(data)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.data -side top -anchor w
-    set vars(data) [subst 0]
-    set vars(data.path) $w.data
-    set vars(data.required)  0
-    set vars(data._type) bool
 
     lappend arguments graph
     iwidgets::combobox $w.graph\
@@ -416,15 +406,13 @@ proc create_dialogue {} {
     eval $w.graph insert list end [list_graph_types]
     grid [$w.graph component entry] -sticky nse
     $w.graph delete entry 0 end
-    $w.graph insert entry end [subst xwindows]
+    $w.graph insert entry end [subst data]
     $w.graph configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.graph -side top -fill both
     set vars(graph.path) $w.graph
     set vars(graph.required)  0
     set vars(graph._type) graph
-    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - cutseq}
     label $w._title -text {Removes a specified section from a sequence.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(cutseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -78,7 +79,7 @@ proc create_dialogue {} {
     set vars(from.maximum.expr) {[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] from.maximum"
     set vars(from.path) $w.from
-    set vars(from.required)  1
+    set vars(from.required)  0
     set vars(from.orig) $vars(from)
     set vars(from.expr) {[expr {$vars(sequence.begin)}]}
     trace variable vars(sequence.begin) w  "::EMBOSS::reset_value [namespace current] from"
@@ -102,7 +103,7 @@ proc create_dialogue {} {
     set vars(to.maximum.expr) {[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] to.maximum"
     set vars(to.path) $w.to
-    set vars(to.required)  1
+    set vars(to.required)  0
     set vars(to.orig) $vars(to)
     set vars(to.expr) {[expr {$vars(sequence.end)}]}
     trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] to"
@@ -112,7 +113,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

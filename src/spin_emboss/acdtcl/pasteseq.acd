@@ -21,65 +21,66 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - pasteseq}
     label $w._title -text {Insert one sequence into another}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(pasteseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments sequence
-    set vars(sequence)       [get_active_seq_id 0]
-    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
-    set vars(sequence.name)  [seq_info $vars(sequence) name]
-    sequence_changed [namespace current] sequence
-    set vars(sequence.type) [subst any]
-    seq_id $w.sequence \
-	-textvariable [namespace current]::vars(sequence.name)\
-	-start_value $vars(sequence.begin)\
-	-end_value $vars(sequence.end)\
-	-to [seq_info $vars(sequence) length]\
+    lappend arguments asequence
+    set vars(asequence)       [get_active_seq_id 0]
+    if {$vars(asequence) == -1} {set vars(asequence) [get_active_seq_id 0]}
+    set vars(asequence.name)  [seq_info $vars(asequence) name]
+    sequence_changed [namespace current] asequence
+    set vars(asequence.type) [subst any]
+    seq_id $w.asequence \
+	-textvariable [namespace current]::vars(asequence.name)\
+	-start_value $vars(asequence.begin)\
+	-end_value $vars(asequence.end)\
+	-to [seq_info $vars(asequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
-    set vars(sequence) [subst {}]
-    pack $w.sequence -side top -fill both
-    set vars(sequence.path) $w.sequence
-    set vars(sequence.required)  1
-    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
-    set vars(sequence._type) sequence
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] asequence $w.asequence}"
+    set vars(asequence) [subst {}]
+    pack $w.asequence -side top -fill both
+    set vars(asequence.path) $w.asequence
+    set vars(asequence.required)  1
+    trace variable vars(asequence.name) w  "::EMBOSS::sequence_changed [namespace current] asequence"
+    set vars(asequence._type) sequence
 
-    lappend arguments insseq
-    set vars(insseq)       [get_active_seq_id 1]
-    if {$vars(insseq) == -1} {set vars(insseq) [get_active_seq_id 0]}
-    set vars(insseq.name)  [seq_info $vars(insseq) name]
-    sequence_changed [namespace current] insseq
-    set vars(insseq.type) [subst {[expr {($vars(sequence.protein) ? "stopprotein" : "nucleotide")}]}]
-    seq_id $w.insseq \
-	-textvariable [namespace current]::vars(insseq.name)\
-	-start_value $vars(insseq.begin)\
-	-end_value $vars(insseq.end)\
-	-to [seq_info $vars(insseq) length]\
+    lappend arguments bsequence
+    set vars(bsequence)       [get_active_seq_id 1]
+    if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
+    set vars(bsequence.name)  [seq_info $vars(bsequence) name]
+    sequence_changed [namespace current] bsequence
+    set vars(bsequence.type) [subst {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}]
+    seq_id $w.bsequence \
+	-textvariable [namespace current]::vars(bsequence.name)\
+	-start_value $vars(bsequence.begin)\
+	-end_value $vars(bsequence.end)\
+	-to [seq_info $vars(bsequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] insseq $w.insseq}"
-    set vars(insseq) [subst {}]
-    pack $w.insseq -side top -fill both
-    set vars(insseq.path) $w.insseq
-    set vars(insseq.required)  1
-    trace variable vars(insseq.name) w  "::EMBOSS::sequence_changed [namespace current] insseq"
-    set vars(insseq.type.orig) $vars(insseq.type)
-    set vars(insseq.type.expr) {[expr {($vars(sequence.protein) ? "stopprotein" : "nucleotide")}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] insseq.type"
-    set vars(insseq._type) sequence
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] bsequence $w.bsequence}"
+    set vars(bsequence) [subst {}]
+    pack $w.bsequence -side top -fill both
+    set vars(bsequence.path) $w.bsequence
+    set vars(bsequence.required)  1
+    trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
+    set vars(bsequence.type.orig) $vars(bsequence.type)
+    set vars(bsequence.type.expr) {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
+    set vars(bsequence._type) sequence
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -90,25 +91,25 @@ proc create_dialogue {} {
 	-labeltext [subst {Position to insert after}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.pos component entry] -sticky nse
-    set vars(pos) [subst {[expr {$vars(sequence.end)}]}]
+    set vars(pos) [subst {[expr {$vars(asequence.end)}]}]
     pack $w.pos -side top -fill both
     set vars(pos.minimum) [subst 0]
-    set vars(pos.maximum) [subst {[expr {$vars(sequence.end)}]}]
+    set vars(pos.maximum) [subst {[expr {$vars(asequence.end)}]}]
     set vars(pos.maximum.orig) $vars(pos.maximum)
-    set vars(pos.maximum.expr) {[expr {$vars(sequence.end)}]}
-    trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] pos.maximum"
+    set vars(pos.maximum.expr) {[expr {$vars(asequence.end)}]}
+    trace variable vars(asequence.end) w  "::EMBOSS::reset_value [namespace current] pos.maximum"
     set vars(pos.path) $w.pos
-    set vars(pos.required)  1
+    set vars(pos.required)  0
     set vars(pos.orig) $vars(pos)
-    set vars(pos.expr) {[expr {$vars(sequence.end)}]}
-    trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] pos"
+    set vars(pos.expr) {[expr {$vars(asequence.end)}]}
+    trace variable vars(asequence.end) w  "::EMBOSS::reset_value [namespace current] pos"
     set vars(pos._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - maskseq}
     label $w._title -text {Mask off regions of a sequence.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(maskseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -69,14 +70,48 @@ proc create_dialogue {} {
     set vars(regions) [subst {}]
     pack $w.regions -side top -fill both
     set vars(regions.path) $w.regions
-    set vars(regions.required)  1
+    set vars(regions.required)  0
     set vars(regions._type) range
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments tolower
+    checkbutton $w.tolower \
+	-text [subst {Change masked region to lower-case}]\
+	-variable [namespace current]::vars(tolower)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.tolower -side top -anchor w
+    set vars(tolower) [subst N]
+    set vars(tolower.path) $w.tolower
+    set vars(tolower.required)  0
+    set vars(tolower._type) toggle
+
+    lappend arguments maskchar
+    iwidgets::entryfield $w.maskchar \
+	-textvariable [namespace current]::vars(maskchar) \
+	-labeltext [subst {Character to mask with}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maskchar component entry] -sticky nse
+    set vars(maskchar) [subst {[expr {($vars(acdprotein)?"X":"N")}]}]
+    pack $w.maskchar -side top -fill both
+    set vars(maskchar.path) $w.maskchar
+    set vars(maskchar.required)  0
+    set vars(maskchar.orig) $vars(maskchar)
+    set vars(maskchar.expr) {[expr {($vars(acdprotein)?"X":"N")}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] maskchar"
+    set vars(maskchar._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -111,21 +146,6 @@ proc create_dialogue {} {
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
     set vars(outseq._type) seqout
-
-    lappend arguments maskchar
-    iwidgets::entryfield $w.maskchar \
-	-textvariable [namespace current]::vars(maskchar) \
-	-labeltext [subst {Character to mask with}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.maskchar component entry] -sticky nse
-    set vars(maskchar) [subst {[expr {($vars(sequence.protein)?"X":"N")}]}]
-    pack $w.maskchar -side top -fill both
-    set vars(maskchar.path) $w.maskchar
-    set vars(maskchar.required)  0
-    set vars(maskchar.orig) $vars(maskchar)
-    set vars(maskchar.expr) {[expr {($vars(sequence.protein)?"X":"N")}]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] maskchar"
-    set vars(maskchar._type) string
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,7 +21,17 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - corbatest}
     label $w._title -text {Test of EMBL corba retrieval}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(corbatest._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
 
     lappend arguments entry
     iwidgets::entryfield $w.entry \
@@ -35,6 +45,14 @@ proc create_dialogue {} {
     set vars(entry.required)  1
     set vars(entry._type) string
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments outfile
     xentry $w.outfile \
 	-label [subst {Output filename}]\
@@ -47,11 +65,16 @@ proc create_dialogue {} {
     set vars(outfile.path) $w.outfile
     set vars(outfile.required)  1
     set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/corbatest.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

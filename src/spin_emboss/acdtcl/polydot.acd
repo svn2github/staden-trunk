@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - polydot}
     label $w._title -text {Displays all-against-all dotplots of a set of sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(polydot._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -57,7 +58,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -72,68 +73,16 @@ proc create_dialogue {} {
     pack $w.wordsize -side top -fill both
     set vars(wordsize.minimum) [subst 2]
     set vars(wordsize.path) $w.wordsize
-    set vars(wordsize.required)  1
+    set vars(wordsize.required)  0
     set vars(wordsize._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
-
-    iwidgets::labeledframe $w.datasection \
-	-labeltext [subst {data Section}]
-    pack $w.datasection -side top -fill both
-    lappend wlist $w
-    append w .datasection.childsite
-
-    lappend arguments data
-    checkbutton $w.data \
-	-text [subst {Display as data}]\
-	-variable [namespace current]::vars(data)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.data -side top -anchor w
-    set vars(data) [subst 1]
-    set vars(data.path) $w.data
-    set vars(data.required)  0
-    set vars(data._type) bool
-
-    lappend arguments graph
-    iwidgets::combobox $w.graph\
-	-textvariable [namespace current]::vars(graph)\
-	-labeltext [subst {Graphics output format}]
-    eval $w.graph insert list end [list_graph_types]
-    grid [$w.graph component entry] -sticky nse
-    $w.graph delete entry 0 end
-    $w.graph insert entry end [subst xwindows]
-    $w.graph configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
-    pack $w.graph -side top -fill both
-    set vars(graph.path) $w.graph
-    set vars(graph.required)  0
-    set vars(graph._type) graph
-    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
-
-    lappend arguments outfile
-    xentry $w.outfile \
-	-label [subst {Output filename}]\
-	-textvariable [namespace current]::vars(outfile) \
-	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(data)}]}]]]
-    $w.outfile delete 0 end
-    $w.outfile insert end [subst polydot0.out]
-    pack $w.outfile -side top -fill both
-    set vars(outfile.path) $w.outfile
-    set vars(outfile.required)  0
-    set vars(outfile._type) outfile
-    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(data)}]]}
-    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] outfile"
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
 
     lappend arguments gap
     iwidgets::entryfield $w.gap \
@@ -155,10 +104,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(boxit)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.boxit -side top -anchor w
-    set vars(boxit) [subst 1]
+    set vars(boxit) [subst Y]
     set vars(boxit.path) $w.boxit
     set vars(boxit.required)  0
-    set vars(boxit._type) bool
+    set vars(boxit._type) boolean
 
     lappend arguments dumpfeat
     checkbutton $w.dumpfeat \
@@ -166,34 +115,38 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(dumpfeat)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.dumpfeat -side top -anchor w
-    set vars(dumpfeat) [subst 0]
+    set vars(dumpfeat) [subst N]
     set vars(dumpfeat.path) $w.dumpfeat
     set vars(dumpfeat.required)  0
-    set vars(dumpfeat._type) bool
+    set vars(dumpfeat._type) toggle
 
-    lappend arguments format
-    iwidgets::entryfield $w.format \
-	-textvariable [namespace current]::vars(format) \
-	-labeltext [subst {format to Dump out as}]\
+    lappend arguments outfeat
+    xentry $w.outfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(outfeat) \
+	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.format component entry] -sticky nse
-    set vars(format) [subst gff]
-    pack $w.format -side top -fill both
-    set vars(format.path) $w.format
-    set vars(format.required)  0
-    set vars(format._type) string
+    $w.outfeat delete 0 end
+    $w.outfeat insert end [subst feature0.out]
+    pack $w.outfeat -side top -fill both
+    set vars(outfeat.path) $w.outfeat
+    set vars(outfeat.required)  0
+    set vars(outfeat._type) featout
 
-    lappend arguments ext
-    iwidgets::entryfield $w.ext \
-	-textvariable [namespace current]::vars(ext) \
-	-labeltext [subst {Extension for feature file}]\
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
 	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.ext component entry] -sticky nse
-    set vars(ext) [subst gff]
-    pack $w.ext -side top -fill both
-    set vars(ext.path) $w.ext
-    set vars(ext.required)  0
-    set vars(ext._type) string
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) graph
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - embossdata}
     label $w._title -text {Finds or fetches the data files read in by the EMBOSS programs}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(embossdata._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    $w.book_1 view [subst {advanced Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -41,7 +42,7 @@ proc create_dialogue {} {
     set vars(showall) [subst 0]
     set vars(showall.path) $w.showall
     set vars(showall.required)  0
-    set vars(showall._type) bool
+    set vars(showall._type) toggle
 
     lappend arguments fetch
     checkbutton $w.fetch \
@@ -52,21 +53,27 @@ proc create_dialogue {} {
     set vars(fetch) [subst 0]
     set vars(fetch.path) $w.fetch
     set vars(fetch.required)  0
-    set vars(fetch._type) bool
+    set vars(fetch._type) boolean
 
     lappend arguments filename
     iwidgets::entryfield $w.filename \
 	-textvariable [namespace current]::vars(filename) \
 	-labeltext [subst {File to fetch or search for}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(fetch)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.filename component entry] -sticky nse
     set vars(filename) [subst {}]
     pack $w.filename -side top -fill both
     set vars(filename.path) $w.filename
     set vars(filename.required)  0
     set vars(filename._type) string
-    set vars(filename.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(fetch)}]]}
-    trace variable vars(fetch) w  "::EMBOSS::reset_needed [namespace current] filename"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments reject
     iwidgets::scrolledlistbox $w.reject \
@@ -89,22 +96,22 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments outf
-    xentry $w.outf \
-	-label [subst {Results file name}]\
-	-textvariable [namespace current]::vars(outf) \
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.outf delete 0 end
-    $w.outf insert end [subst stdout]
-    pack $w.outf -side top -fill both
-    set vars(outf.path) $w.outf
-    set vars(outf.required)  0
-    set vars(outf._type) outfile
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst stdout]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - msbar}
     label $w._title -text {Mutate sequence beyond all recognition}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(msbar._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -52,11 +53,31 @@ proc create_dialogue {} {
     trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
     set vars(sequence._type) seqall
 
+    lappend arguments othersequence
+    set vars(othersequence)       [get_active_seq_id 1]
+    if {$vars(othersequence) == -1} {set vars(othersequence) [get_active_seq_id 0]}
+    set vars(othersequence.name)  [seq_info $vars(othersequence) name]
+    sequence_changed [namespace current] othersequence
+    set vars(othersequence.type) [subst any]
+    seq_id $w.othersequence \
+	-textvariable [namespace current]::vars(othersequence.name)\
+	-start_value $vars(othersequence.begin)\
+	-end_value $vars(othersequence.end)\
+	-to [seq_info $vars(othersequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] othersequence $w.othersequence}"
+    set vars(othersequence) [subst asis:N]
+    pack $w.othersequence -side top -fill both
+    set vars(othersequence.path) $w.othersequence
+    set vars(othersequence.required)  0
+    trace variable vars(othersequence.name) w  "::EMBOSS::sequence_changed [namespace current] othersequence"
+    set vars(othersequence._type) seqall
+
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -71,7 +92,7 @@ proc create_dialogue {} {
     pack $w.count -side top -fill both
     set vars(count.minimum) [subst 0]
     set vars(count.path) $w.count
-    set vars(count.required)  1
+    set vars(count.required)  0
     set vars(count._type) integer
 
     lappend arguments point
@@ -88,7 +109,7 @@ proc create_dialogue {} {
     set vars(point.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
     eval $w.point insert end None {{Any of the following}} Insertions Deletions Changes Duplications Moves
     set vars(point.path) $w.point
-    set vars(point.required)  1
+    set vars(point.required)  0
     set vars(point.delimiter) {;}
     trace variable vars(point) w  "::EMBOSS::list_multi_changed [namespace current] point"
     set vars(point) [subst 0]
@@ -108,30 +129,11 @@ proc create_dialogue {} {
     set vars(block.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
     eval $w.block insert end None {{Any of the following}} Insertions Deletions Changes Duplications Moves
     set vars(block.path) $w.block
-    set vars(block.required)  1
+    set vars(block.required)  0
     set vars(block.delimiter) {;}
     trace variable vars(block) w  "::EMBOSS::list_multi_changed [namespace current] block"
     set vars(block) [subst 0]
     set vars(block._type) list_multi
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments inframe
-    checkbutton $w.inframe \
-	-text [subst {Do 'codon' and 'block' operations in frame}]\
-	-variable [namespace current]::vars(inframe)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.inframe -side top -anchor w
-    set vars(inframe) [subst 0]
-    set vars(inframe.path) $w.inframe
-    set vars(inframe.required)  0
-    set vars(inframe._type) bool
 
     lappend arguments codon
     iwidgets::scrolledlistbox $w.codon \
@@ -141,7 +143,7 @@ proc create_dialogue {} {
 	-vscrollmode dynamic\
 	-selectmode extended\
 	-selectioncommand "::EMBOSS::listbox_selected [namespace current] codon"\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(sequence.protein)?"N":"Y")}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.codon -side top -fill both -expand 1
     set vars(codon.mapping1) {None 0 Changes 4 Moves 6 Insertions 2 Duplications 5 Deletions 3 {Any of the following} 1}
     set vars(codon.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
@@ -152,8 +154,33 @@ proc create_dialogue {} {
     trace variable vars(codon) w  "::EMBOSS::list_multi_changed [namespace current] codon"
     set vars(codon) [subst 0]
     set vars(codon._type) list_multi
-    set vars(codon.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(sequence.protein)?"N":"Y")}]]}
-    trace variable vars(sequence.protein) w  "::EMBOSS::reset_needed [namespace current] codon"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Additional section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments inframe
+    checkbutton $w.inframe \
+	-text [subst {Do 'codon' and 'block' operations in frame}]\
+	-variable [namespace current]::vars(inframe)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.inframe -side top -anchor w
+    set vars(inframe) [subst N]
+    set vars(inframe.path) $w.inframe
+    set vars(inframe.required)  0
+    set vars(inframe._type) boolean
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments minimum
     iwidgets::entryfield $w.minimum \
@@ -190,7 +217,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,36 +21,37 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - emowse}
     label $w._title -text {Protein identification by mass spectrometry}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(emowse._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments sequences
-    set vars(sequences)       [get_active_seq_id 0]
-    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
-    set vars(sequences.name)  [seq_info $vars(sequences) name]
-    sequence_changed [namespace current] sequences
-    set vars(sequences.type) [subst protein]
-    seq_id $w.sequences \
-	-textvariable [namespace current]::vars(sequences.name)\
-	-start_value $vars(sequences.begin)\
-	-end_value $vars(sequences.end)\
-	-to [seq_info $vars(sequences) length]\
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst protein]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
-    set vars(sequences) [subst {}]
-    pack $w.sequences -side top -fill both
-    set vars(sequences.path) $w.sequences
-    set vars(sequences.required)  1
-    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
-    set vars(sequences._type) seqall
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
 
     lappend arguments infile
     xentry $w.infile \
@@ -65,11 +66,37 @@ proc create_dialogue {} {
     set vars(infile.required)  1
     set vars(infile._type) infile
 
+    lappend arguments aadata
+    xentry $w.aadata \
+	-label [subst {Amino acid data file}]\
+	-textvariable [namespace current]::vars(aadata) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.aadata delete 0 end
+    $w.aadata insert end [subst Eamino.dat]
+    pack $w.aadata -side top -fill both
+    set vars(aadata.path) $w.aadata
+    set vars(aadata.required)  0
+    set vars(aadata._type) datafile
+
+    lappend arguments frequencies
+    xentry $w.frequencies \
+	-label [subst {Frequencies file}]\
+	-textvariable [namespace current]::vars(frequencies) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.frequencies delete 0 end
+    $w.frequencies insert end [subst Efreqs.dat]
+    pack $w.frequencies -side top -fill both
+    set vars(frequencies.path) $w.frequencies
+    set vars(frequencies.required)  0
+    set vars(frequencies._type) datafile
+
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -83,14 +110,14 @@ proc create_dialogue {} {
     set vars(weight) [subst 0]
     pack $w.weight -side top -fill both
     set vars(weight.path) $w.weight
-    set vars(weight.required)  1
+    set vars(weight.required)  0
     set vars(weight._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Advanced section}]]
     lappend wlist $w
     set w $page
 
@@ -117,18 +144,6 @@ proc create_dialogue {} {
     set vars(enzyme.delimiter) ,
     set vars(enzyme._type) list
 
-    lappend arguments aadata
-    iwidgets::entryfield $w.aadata \
-	-textvariable [namespace current]::vars(aadata) \
-	-labeltext [subst {Amino acid data file}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.aadata component entry] -sticky nse
-    set vars(aadata) [subst Eamino.dat]
-    pack $w.aadata -side top -fill both
-    set vars(aadata.path) $w.aadata
-    set vars(aadata.required)  0
-    set vars(aadata._type) string
-
     lappend arguments pcrange
     iwidgets::entryfield $w.pcrange \
 	-validate integer \
@@ -144,23 +159,11 @@ proc create_dialogue {} {
     set vars(pcrange.required)  0
     set vars(pcrange._type) integer
 
-    lappend arguments frequencies
-    iwidgets::entryfield $w.frequencies \
-	-textvariable [namespace current]::vars(frequencies) \
-	-labeltext [subst {Frequencies file}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.frequencies component entry] -sticky nse
-    set vars(frequencies) [subst Efreqs.dat]
-    pack $w.frequencies -side top -fill both
-    set vars(frequencies.path) $w.frequencies
-    set vars(frequencies.required)  0
-    set vars(frequencies._type) string
-
     lappend arguments tolerance
     iwidgets::entryfield $w.tolerance \
 	-validate real \
 	-textvariable [namespace current]::vars(tolerance) \
-	-labeltext [subst tolerance]\
+	-labeltext [subst Tolerance]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.tolerance component entry] -sticky nse
     set vars(tolerance) [subst 0.1]
@@ -190,7 +193,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

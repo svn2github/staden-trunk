@@ -21,29 +21,30 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - tfextract}
     label $w._title -text {Extract data from TRANSFAC}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(tfextract._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments inf
-    xentry $w.inf \
+    lappend arguments infile
+    xentry $w.infile \
 	-label [subst {Full pathname of transfac SITE.DAT}]\
-	-textvariable [namespace current]::vars(inf) \
+	-textvariable [namespace current]::vars(infile) \
 	-checkcommand ::EMBOSS::check_infile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.inf delete 0 end
-    $w.inf insert end [subst {}]
-    pack $w.inf -side top -fill both
-    set vars(inf.path) $w.inf
-    set vars(inf.required)  1
-    set vars(inf._type) infile
+    $w.infile delete 0 end
+    $w.infile insert end [subst {}]
+    pack $w.infile -side top -fill both
+    set vars(infile.path) $w.infile
+    set vars(infile.required)  1
+    set vars(infile._type) infile
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

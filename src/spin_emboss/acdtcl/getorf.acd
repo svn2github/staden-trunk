@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - getorf}
     label $w._title -text {Finds and extracts open reading frames (ORFs)}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(getorf._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -96,6 +97,19 @@ proc create_dialogue {} {
     set vars(minsize.required)  0
     set vars(minsize._type) integer
 
+    lappend arguments maxsize
+    iwidgets::entryfield $w.maxsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxsize) \
+	-labeltext [subst {Maximum nucleotide size of ORF to report}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxsize component entry] -sticky nse
+    set vars(maxsize) [subst 1000000]
+    pack $w.maxsize -side top -fill both
+    set vars(maxsize.path) $w.maxsize
+    set vars(maxsize.required)  0
+    set vars(maxsize._type) integer
+
     lappend arguments find
     iwidgets::combobox $w.find\
 	-textvariable [namespace current]::vars(find.name)\
@@ -119,16 +133,24 @@ proc create_dialogue {} {
     set vars(find.delimiter) {;}
     set vars(find._type) list
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments methionine
     checkbutton $w.methionine \
 	-text [subst {Change initial START codons to Methionine}]\
 	-variable [namespace current]::vars(methionine)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.methionine -side top -anchor w
-    set vars(methionine) [subst 1]
+    set vars(methionine) [subst Y]
     set vars(methionine.path) $w.methionine
     set vars(methionine.required)  0
-    set vars(methionine._type) bool
+    set vars(methionine._type) boolean
 
     lappend arguments circular
     checkbutton $w.circular \
@@ -136,10 +158,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(circular)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.circular -side top -anchor w
-    set vars(circular) [subst 0]
+    set vars(circular) [subst N]
     set vars(circular.path) $w.circular
     set vars(circular.required)  0
-    set vars(circular._type) bool
+    set vars(circular._type) boolean
 
     lappend arguments reverse
     checkbutton $w.reverse \
@@ -147,10 +169,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(reverse)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.reverse -side top -anchor w
-    set vars(reverse) [subst 1]
+    set vars(reverse) [subst Y]
     set vars(reverse.path) $w.reverse
     set vars(reverse.required)  0
-    set vars(reverse._type) bool
+    set vars(reverse._type) boolean
 
     lappend arguments flanking
     iwidgets::entryfield $w.flanking \
@@ -169,7 +191,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

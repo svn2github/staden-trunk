@@ -21,54 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - newseq}
     label $w._title -text {Type in a short new sequence.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(newseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
-    $w.book_1 view [subst {output Section}]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments outseq
-    iwidgets::labeledframe $w.outseq \
-	-labeltext [subst {Sequence output filename}]
-    pack $w.outseq -side top -fill both
-    lappend wlist $w
-    set w [$w.outseq childsite]
-    iwidgets::combobox $w.format\
-	-textvariable [namespace current]::vars(outseq.format)\
-	-labeltext {File format}
-    eval $w.format insert list end [list_file_formats]
-    grid [$w.format component entry] -sticky nse
-    $w.format delete entry 0 end
-    $w.format insert entry end fasta
-    $w.format configure \
-	-state [lindex {disabled normal} [subst 1]]
-    set vars(outseq.format.path) $w.format
-    pack $w.format -side top -fill both
-    xentry $w.name \
-	-label {Filename}\
-	-textvariable [namespace current]::vars(outseq) \
-	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [subst 1]]
-    set vars(outseq.name.path) $w.name
-    pack $w.name -side top -fill both
-    $w.name delete 0 end
-    $w.name insert end [subst sequence0.out]
-    set vars(outseq.path) $w.outseq
-    set vars(outseq.required)  1
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-    set vars(outseq._type) seqout
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
+    $w.book_1 view [subst {Required section}]
     lappend wlist $w
     set w $page
 
@@ -123,7 +84,47 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
     lappend wlist $w
     set w $page
 

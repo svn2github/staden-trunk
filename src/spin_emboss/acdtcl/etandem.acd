@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - etandem}
     label $w._title -text {Looks for tandem repeats in a nucleotide sequence}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(etandem._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -71,7 +72,7 @@ proc create_dialogue {} {
     pack $w.minrepeat -side top -fill both
     set vars(minrepeat.minimum) [subst 2]
     set vars(minrepeat.path) $w.minrepeat
-    set vars(minrepeat.required)  1
+    set vars(minrepeat.required)  0
     set vars(minrepeat._type) integer
 
     lappend arguments maxrepeat
@@ -88,7 +89,7 @@ proc create_dialogue {} {
     set vars(maxrepeat.minimum.expr) {[expr {$vars(minrepeat)}]}
     trace variable vars(minrepeat) w  "::EMBOSS::reset_value [namespace current] maxrepeat.minimum"
     set vars(maxrepeat.path) $w.maxrepeat
-    set vars(maxrepeat.required)  1
+    set vars(maxrepeat.required)  0
     set vars(maxrepeat.orig) $vars(maxrepeat)
     set vars(maxrepeat.expr) {[expr {$vars(minrepeat)}]}
     trace variable vars(minrepeat) w  "::EMBOSS::reset_value [namespace current] maxrepeat"
@@ -98,7 +99,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Advanced section}]]
     lappend wlist $w
     set w $page
 
@@ -124,7 +125,7 @@ proc create_dialogue {} {
     set vars(mismatch) [subst 0]
     set vars(mismatch.path) $w.mismatch
     set vars(mismatch.required)  0
-    set vars(mismatch._type) bool
+    set vars(mismatch._type) boolean
 
     lappend arguments uniform
     checkbutton $w.uniform \
@@ -135,13 +136,13 @@ proc create_dialogue {} {
     set vars(uniform) [subst 0]
     set vars(uniform.path) $w.uniform
     set vars(uniform.required)  0
-    set vars(uniform._type) bool
+    set vars(uniform._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - pepcoil}
     label $w._title -text {Predicts coiled coil regions}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(pepcoil._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -72,14 +73,14 @@ proc create_dialogue {} {
     set vars(window.minimum) [subst 7]
     set vars(window.maximum) [subst 28]
     set vars(window.path) $w.window
-    set vars(window.required)  1
+    set vars(window.required)  0
     set vars(window._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -89,10 +90,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(coil)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.coil -side top -anchor w
-    set vars(coil) [subst 1]
+    set vars(coil) [subst Y]
     set vars(coil.path) $w.coil
     set vars(coil.required)  0
-    set vars(coil._type) bool
+    set vars(coil._type) boolean
 
     lappend arguments frame
     checkbutton $w.frame \
@@ -106,7 +107,7 @@ proc create_dialogue {} {
     set vars(frame.orig) $vars(frame)
     set vars(frame.expr) {[expr {$vars(coil)}]}
     trace variable vars(coil) w  "::EMBOSS::reset_value [namespace current] frame"
-    set vars(frame._type) bool
+    set vars(frame._type) boolean
 
     lappend arguments other
     checkbutton $w.other \
@@ -114,10 +115,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(other)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.other -side top -anchor w
-    set vars(other) [subst 1]
+    set vars(other) [subst Y]
     set vars(other.path) $w.other
     set vars(other.required)  0
-    set vars(other._type) bool
+    set vars(other._type) boolean
 
     lappend arguments outfile
     xentry $w.outfile \

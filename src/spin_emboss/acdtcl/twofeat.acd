@@ -1,0 +1,452 @@
+package require Iwidgets
+namespace eval ::EMBOSS::twofeat {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_twofeat*Xentry.entry.width 30
+option add *e_twofeat*Entryfield.width 30
+option add *e_twofeat*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) twofeat
+    set w [xtoplevel .e_twofeat -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - twofeat}
+    label $w._title -text {Finds neighbouring pairs of features in sequences}
+    pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
+    set vars(twofeat._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    iwidgets::labeledframe $w.afeaturesection \
+	-labeltext [subst {First feature options}]
+    pack $w.afeaturesection -side top -fill both
+    lappend wlist $w
+    append w .afeaturesection.childsite
+
+    lappend arguments asource
+    iwidgets::entryfield $w.asource \
+	-textvariable [namespace current]::vars(asource) \
+	-labeltext [subst {Source of first feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.asource component entry] -sticky nse
+    set vars(asource) [subst *]
+    pack $w.asource -side top -fill both
+    set vars(asource.path) $w.asource
+    set vars(asource.required)  0
+    set vars(asource._type) string
+
+    lappend arguments atype
+    iwidgets::entryfield $w.atype \
+	-textvariable [namespace current]::vars(atype) \
+	-labeltext [subst {Type of first feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.atype component entry] -sticky nse
+    set vars(atype) [subst *]
+    pack $w.atype -side top -fill both
+    set vars(atype.path) $w.atype
+    set vars(atype.required)  0
+    set vars(atype._type) string
+
+    lappend arguments asense
+    iwidgets::combobox $w.asense\
+	-textvariable [namespace current]::vars(asense.name)\
+	-labeltext [subst {Sense of first feature}]
+    trace variable vars(asense.name) w  "::EMBOSS::list_changed [namespace current] asense"
+    eval $w.asense insert list end {{Any sense}} {{Forward sense}} {{Reverse sense}}
+    set vars(asense.mapping1) {{Reverse sense} - {Any sense} 0 {Forward sense} +}
+    set vars(asense.mapping2) {0 {Any sense} - {Reverse sense} + {Forward sense}}
+    grid [$w.asense component entry] -sticky nse
+    $w.asense delete entry 0 end
+    array set tmpmap $vars(asense.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(asense) $def
+    $w.asense insert entry end $def
+    $w.asense configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.asense -side top -fill both
+    set vars(asense.path) $w.asense
+    set vars(asense.required)  0
+    set vars(asense.delimiter) ,
+    set vars(asense._type) list
+
+    lappend arguments aminscore
+    iwidgets::entryfield $w.aminscore \
+	-validate real \
+	-textvariable [namespace current]::vars(aminscore) \
+	-labeltext [subst {Minimum score of first feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.aminscore component entry] -sticky nse
+    set vars(aminscore) [subst 0.0]
+    pack $w.aminscore -side top -fill both
+    set vars(aminscore.path) $w.aminscore
+    set vars(aminscore.required)  0
+    set vars(aminscore._type) float
+
+    lappend arguments amaxscore
+    iwidgets::entryfield $w.amaxscore \
+	-validate real \
+	-textvariable [namespace current]::vars(amaxscore) \
+	-labeltext [subst {Maximum score of first feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.amaxscore component entry] -sticky nse
+    set vars(amaxscore) [subst 0.0]
+    pack $w.amaxscore -side top -fill both
+    set vars(amaxscore.path) $w.amaxscore
+    set vars(amaxscore.required)  0
+    set vars(amaxscore._type) float
+
+    lappend arguments atag
+    iwidgets::entryfield $w.atag \
+	-textvariable [namespace current]::vars(atag) \
+	-labeltext [subst {Tag of first feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.atag component entry] -sticky nse
+    set vars(atag) [subst *]
+    pack $w.atag -side top -fill both
+    set vars(atag.path) $w.atag
+    set vars(atag.required)  0
+    set vars(atag._type) string
+
+    lappend arguments avalue
+    iwidgets::entryfield $w.avalue \
+	-textvariable [namespace current]::vars(avalue) \
+	-labeltext [subst {Value of first feature's tags}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.avalue component entry] -sticky nse
+    set vars(avalue) [subst *]
+    pack $w.avalue -side top -fill both
+    set vars(avalue.path) $w.avalue
+    set vars(avalue.required)  0
+    set vars(avalue._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    iwidgets::labeledframe $w.bfeaturesection \
+	-labeltext [subst {Second feature options}]
+    pack $w.bfeaturesection -side top -fill both
+    lappend wlist $w
+    append w .bfeaturesection.childsite
+
+    lappend arguments bsource
+    iwidgets::entryfield $w.bsource \
+	-textvariable [namespace current]::vars(bsource) \
+	-labeltext [subst {Source of second feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bsource component entry] -sticky nse
+    set vars(bsource) [subst *]
+    pack $w.bsource -side top -fill both
+    set vars(bsource.path) $w.bsource
+    set vars(bsource.required)  0
+    set vars(bsource._type) string
+
+    lappend arguments btype
+    iwidgets::entryfield $w.btype \
+	-textvariable [namespace current]::vars(btype) \
+	-labeltext [subst {Type of second feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.btype component entry] -sticky nse
+    set vars(btype) [subst *]
+    pack $w.btype -side top -fill both
+    set vars(btype.path) $w.btype
+    set vars(btype.required)  0
+    set vars(btype._type) string
+
+    lappend arguments bsense
+    iwidgets::combobox $w.bsense\
+	-textvariable [namespace current]::vars(bsense.name)\
+	-labeltext [subst {Sense of second feature}]
+    trace variable vars(bsense.name) w  "::EMBOSS::list_changed [namespace current] bsense"
+    eval $w.bsense insert list end {{Any sense}} {{Forward sense}} {{Reverse sense}}
+    set vars(bsense.mapping1) {{Reverse sense} - {Any sense} 0 {Forward sense} +}
+    set vars(bsense.mapping2) {0 {Any sense} - {Reverse sense} + {Forward sense}}
+    grid [$w.bsense component entry] -sticky nse
+    $w.bsense delete entry 0 end
+    array set tmpmap $vars(bsense.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(bsense) $def
+    $w.bsense insert entry end $def
+    $w.bsense configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.bsense -side top -fill both
+    set vars(bsense.path) $w.bsense
+    set vars(bsense.required)  0
+    set vars(bsense.delimiter) ,
+    set vars(bsense._type) list
+
+    lappend arguments bminscore
+    iwidgets::entryfield $w.bminscore \
+	-validate real \
+	-textvariable [namespace current]::vars(bminscore) \
+	-labeltext [subst {Minimum score of second feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bminscore component entry] -sticky nse
+    set vars(bminscore) [subst 0.0]
+    pack $w.bminscore -side top -fill both
+    set vars(bminscore.path) $w.bminscore
+    set vars(bminscore.required)  0
+    set vars(bminscore._type) float
+
+    lappend arguments bmaxscore
+    iwidgets::entryfield $w.bmaxscore \
+	-validate real \
+	-textvariable [namespace current]::vars(bmaxscore) \
+	-labeltext [subst {Maximum score of second feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bmaxscore component entry] -sticky nse
+    set vars(bmaxscore) [subst 0.0]
+    pack $w.bmaxscore -side top -fill both
+    set vars(bmaxscore.path) $w.bmaxscore
+    set vars(bmaxscore.required)  0
+    set vars(bmaxscore._type) float
+
+    lappend arguments btag
+    iwidgets::entryfield $w.btag \
+	-textvariable [namespace current]::vars(btag) \
+	-labeltext [subst {Tag of second feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.btag component entry] -sticky nse
+    set vars(btag) [subst *]
+    pack $w.btag -side top -fill both
+    set vars(btag.path) $w.btag
+    set vars(btag.required)  0
+    set vars(btag._type) string
+
+    lappend arguments bvalue
+    iwidgets::entryfield $w.bvalue \
+	-textvariable [namespace current]::vars(bvalue) \
+	-labeltext [subst {Value of second feature's tags}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bvalue component entry] -sticky nse
+    set vars(bvalue) [subst *]
+    pack $w.bvalue -side top -fill both
+    set vars(bvalue.path) $w.bvalue
+    set vars(bvalue.required)  0
+    set vars(bvalue._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    iwidgets::labeledframe $w.featurerelationsection \
+	-labeltext [subst {Feature relation options}]
+    pack $w.featurerelationsection -side top -fill both
+    lappend wlist $w
+    append w .featurerelationsection.childsite
+
+    lappend arguments overlap
+    iwidgets::combobox $w.overlap\
+	-textvariable [namespace current]::vars(overlap.name)\
+	-labeltext [subst {Specify overlap}]
+    trace variable vars(overlap.name) w  "::EMBOSS::list_changed [namespace current] overlap"
+    eval $w.overlap insert list end Any {{Overlap required}} {{No overlaps are allowed}} {{Overlap required but not within}} {{A must be all within B}} {{B must be all within A}}
+    set vars(overlap.mapping1) {Any A {Overlap required but not within} NW {No overlaps are allowed} NO {Overlap required} O {B must be all within A} BW {A must be all within B} AW}
+    set vars(overlap.mapping2) {AW {A must be all within B} BW {B must be all within A} NW {Overlap required but not within} NO {No overlaps are allowed} A Any O {Overlap required}}
+    grid [$w.overlap component entry] -sticky nse
+    $w.overlap delete entry 0 end
+    array set tmpmap $vars(overlap.mapping2)
+    set def [subst A]
+    catch {set def $tmpmap($def)}
+    set vars(overlap) $def
+    $w.overlap insert entry end $def
+    $w.overlap configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.overlap -side top -fill both
+    set vars(overlap.path) $w.overlap
+    set vars(overlap.required)  0
+    set vars(overlap.delimiter) ,
+    set vars(overlap._type) list
+
+    lappend arguments minrange
+    iwidgets::entryfield $w.minrange \
+	-validate integer \
+	-textvariable [namespace current]::vars(minrange) \
+	-labeltext [subst {The minimum distance between the features}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minrange component entry] -sticky nse
+    set vars(minrange) [subst 0]
+    pack $w.minrange -side top -fill both
+    set vars(minrange.path) $w.minrange
+    set vars(minrange.required)  0
+    set vars(minrange._type) integer
+
+    lappend arguments maxrange
+    iwidgets::entryfield $w.maxrange \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxrange) \
+	-labeltext [subst {The maximum distance between the features}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxrange component entry] -sticky nse
+    set vars(maxrange) [subst 0]
+    pack $w.maxrange -side top -fill both
+    set vars(maxrange.path) $w.maxrange
+    set vars(maxrange.required)  0
+    set vars(maxrange._type) integer
+
+    lappend arguments rangetype
+    iwidgets::combobox $w.rangetype\
+	-textvariable [namespace current]::vars(rangetype.name)\
+	-labeltext [subst {Specify position}]
+    trace variable vars(rangetype.name) w  "::EMBOSS::list_changed [namespace current] rangetype"
+    eval $w.rangetype insert list end {{From nearest ends}} {{From left ends}} {{From right ends}} {{From furthest ends}}
+    set vars(rangetype.mapping1) {{From right ends} R {From nearest ends} N {From left ends} L {From furthest ends} F}
+    set vars(rangetype.mapping2) {L {From left ends} F {From furthest ends} R {From right ends} N {From nearest ends}}
+    grid [$w.rangetype component entry] -sticky nse
+    $w.rangetype delete entry 0 end
+    array set tmpmap $vars(rangetype.mapping2)
+    set def [subst N]
+    catch {set def $tmpmap($def)}
+    set vars(rangetype) $def
+    $w.rangetype insert entry end $def
+    $w.rangetype configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.rangetype -side top -fill both
+    set vars(rangetype.path) $w.rangetype
+    set vars(rangetype.required)  0
+    set vars(rangetype.delimiter) ,
+    set vars(rangetype._type) list
+
+    lappend arguments sense
+    iwidgets::combobox $w.sense\
+	-textvariable [namespace current]::vars(sense.name)\
+	-labeltext [subst {Specify sense}]
+    trace variable vars(sense.name) w  "::EMBOSS::list_changed [namespace current] sense"
+    eval $w.sense insert list end {{Any sense}} {{Same sense}} {{Opposite sense}}
+    set vars(sense.mapping1) {{Same sense} S {Opposite sense} O {Any sense} A}
+    set vars(sense.mapping2) {A {Any sense} O {Opposite sense} S {Same sense}}
+    grid [$w.sense component entry] -sticky nse
+    $w.sense delete entry 0 end
+    array set tmpmap $vars(sense.mapping2)
+    set def [subst A]
+    catch {set def $tmpmap($def)}
+    set vars(sense) $def
+    $w.sense insert entry end $def
+    $w.sense configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sense -side top -fill both
+    set vars(sense.path) $w.sense
+    set vars(sense.required)  0
+    set vars(sense.delimiter) ,
+    set vars(sense._type) list
+
+    lappend arguments order
+    iwidgets::combobox $w.order\
+	-textvariable [namespace current]::vars(order.name)\
+	-labeltext [subst {Specify order}]
+    trace variable vars(order.name) w  "::EMBOSS::list_changed [namespace current] order"
+    eval $w.order insert list end Any {{Feature A then feature B}} {{Feature B then feature A}}
+    set vars(order.mapping1) {Any A {Feature B then feature A} BA {Feature A then feature B} AB}
+    set vars(order.mapping2) {A Any BA {Feature B then feature A} AB {Feature A then feature B}}
+    grid [$w.order component entry] -sticky nse
+    $w.order delete entry 0 end
+    array set tmpmap $vars(order.mapping2)
+    set def [subst A]
+    catch {set def $tmpmap($def)}
+    set vars(order) $def
+    $w.order insert entry end $def
+    $w.order configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.order -side top -fill both
+    set vars(order.path) $w.order
+    set vars(order.required)  0
+    set vars(order.delimiter) ,
+    set vars(order._type) list
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments twoout
+    checkbutton $w.twoout \
+	-text [subst {Do you want the two features written out individually}]\
+	-variable [namespace current]::vars(twoout)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.twoout -side top -anchor w
+    set vars(twoout) [subst N]
+    set vars(twoout.path) $w.twoout
+    set vars(twoout.required)  0
+    set vars(twoout._type) toggle
+
+    lappend arguments typeout
+    iwidgets::entryfield $w.typeout \
+	-textvariable [namespace current]::vars(typeout) \
+	-labeltext [subst {Name of the output new feature}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.typeout component entry] -sticky nse
+    set vars(typeout) [subst misc_feature]
+    pack $w.typeout -side top -fill both
+    set vars(typeout.path) $w.typeout
+    set vars(typeout.required)  0
+    set vars(typeout._type) string
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Report output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst report0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) report
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/twofeat.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - showdb}
     label $w._title -text {Displays information on the currently available databases}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(showdb._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -48,7 +49,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -58,10 +59,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     lappend arguments protein
     checkbutton $w.protein \
@@ -69,10 +70,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(protein)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.protein -side top -anchor w
-    set vars(protein) [subst 1]
+    set vars(protein) [subst Y]
     set vars(protein.path) $w.protein
     set vars(protein.required)  0
-    set vars(protein._type) bool
+    set vars(protein._type) boolean
 
     lappend arguments nucleic
     checkbutton $w.nucleic \
@@ -80,10 +81,40 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(nucleic)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.nucleic -side top -anchor w
-    set vars(nucleic) [subst 1]
+    set vars(nucleic) [subst Y]
     set vars(nucleic.path) $w.nucleic
     set vars(nucleic.required)  0
-    set vars(nucleic._type) bool
+    set vars(nucleic._type) boolean
+
+    lappend arguments fields
+    checkbutton $w.fields \
+	-text [subst {Display 'fields' column}]\
+	-variable [namespace current]::vars(fields)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.fields -side top -anchor w
+    set vars(fields) [subst N]
+    set vars(fields.path) $w.fields
+    set vars(fields.required)  0
+    set vars(fields._type) boolean
+
+    lappend arguments release
+    checkbutton $w.release \
+	-text [subst {Display 'release' column}]\
+	-variable [namespace current]::vars(release)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.release -side top -anchor w
+    set vars(release) [subst N]
+    set vars(release.path) $w.release
+    set vars(release.required)  0
+    set vars(release._type) boolean
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
 
     lappend arguments only
     checkbutton $w.only \
@@ -91,10 +122,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(only)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.only -side top -anchor w
-    set vars(only) [subst 0]
+    set vars(only) [subst N]
     set vars(only.path) $w.only
     set vars(only.required)  0
-    set vars(only._type) bool
+    set vars(only._type) boolean
 
     lappend arguments heading
     checkbutton $w.heading \
@@ -108,7 +139,7 @@ proc create_dialogue {} {
     set vars(heading.orig) $vars(heading)
     set vars(heading.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] heading"
-    set vars(heading._type) bool
+    set vars(heading._type) boolean
 
     lappend arguments type
     checkbutton $w.type \
@@ -122,7 +153,7 @@ proc create_dialogue {} {
     set vars(type.orig) $vars(type)
     set vars(type.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] type"
-    set vars(type._type) bool
+    set vars(type._type) boolean
 
     lappend arguments id
     checkbutton $w.id \
@@ -136,7 +167,7 @@ proc create_dialogue {} {
     set vars(id.orig) $vars(id)
     set vars(id.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] id"
-    set vars(id._type) bool
+    set vars(id._type) boolean
 
     lappend arguments query
     checkbutton $w.query \
@@ -150,7 +181,7 @@ proc create_dialogue {} {
     set vars(query.orig) $vars(query)
     set vars(query.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] query"
-    set vars(query._type) bool
+    set vars(query._type) boolean
 
     lappend arguments all
     checkbutton $w.all \
@@ -164,7 +195,7 @@ proc create_dialogue {} {
     set vars(all.orig) $vars(all)
     set vars(all.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] all"
-    set vars(all._type) bool
+    set vars(all._type) boolean
 
     lappend arguments comment
     checkbutton $w.comment \
@@ -178,30 +209,19 @@ proc create_dialogue {} {
     set vars(comment.orig) $vars(comment)
     set vars(comment.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] comment"
-    set vars(comment._type) bool
-
-    lappend arguments release
-    checkbutton $w.release \
-	-text [subst {Display 'release' column}]\
-	-variable [namespace current]::vars(release)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.release -side top -anchor w
-    set vars(release) [subst 0]
-    set vars(release.path) $w.release
-    set vars(release.required)  0
-    set vars(release._type) bool
+    set vars(comment._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output database details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - primers}
     label $w._title -text {Simple version of primer3 to pick PCR primers}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(primers._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -71,14 +72,6 @@ proc create_dialogue {} {
     set vars(target.path) $w.target
     set vars(target.required)  0
     set vars(target._type) range
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced section}]]
-    lappend wlist $w
-    set w $page
 
     lappend arguments minsize
     iwidgets::entryfield $w.minsize \
@@ -129,7 +122,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -139,10 +132,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(explainflag)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.explainflag -side top -anchor w
-    set vars(explainflag) [subst 0]
+    set vars(explainflag) [subst N]
     set vars(explainflag.path) $w.explainflag
     set vars(explainflag.required)  0
-    set vars(explainflag._type) bool
+    set vars(explainflag._type) boolean
 
     lappend arguments numreturn
     iwidgets::entryfield $w.numreturn \

@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - infoseq}
     label $w._title -text {Displays some simple information about sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(infoseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -37,7 +38,7 @@ proc create_dialogue {} {
     if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
     set vars(sequence.name)  [seq_info $vars(sequence) name]
     sequence_changed [namespace current] sequence
-    set vars(sequence.type) [subst any]
+    set vars(sequence.type) [subst gapany]
     seq_id $w.sequence \
 	-textvariable [namespace current]::vars(sequence.name)\
 	-start_value $vars(sequence.begin)\
@@ -56,13 +57,13 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output sequence details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -79,10 +80,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     lappend arguments only
     checkbutton $w.only \
@@ -90,10 +91,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(only)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.only -side top -anchor w
-    set vars(only) [subst 0]
+    set vars(only) [subst N]
     set vars(only.path) $w.only
     set vars(only.required)  0
-    set vars(only._type) bool
+    set vars(only._type) boolean
 
     lappend arguments heading
     checkbutton $w.heading \
@@ -107,7 +108,7 @@ proc create_dialogue {} {
     set vars(heading.orig) $vars(heading)
     set vars(heading.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] heading"
-    set vars(heading._type) bool
+    set vars(heading._type) boolean
 
     lappend arguments usa
     checkbutton $w.usa \
@@ -121,7 +122,7 @@ proc create_dialogue {} {
     set vars(usa.orig) $vars(usa)
     set vars(usa.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] usa"
-    set vars(usa._type) bool
+    set vars(usa._type) boolean
 
     lappend arguments name
     checkbutton $w.name \
@@ -135,7 +136,7 @@ proc create_dialogue {} {
     set vars(name.orig) $vars(name)
     set vars(name.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] name"
-    set vars(name._type) bool
+    set vars(name._type) boolean
 
     lappend arguments accession
     checkbutton $w.accession \
@@ -149,7 +150,7 @@ proc create_dialogue {} {
     set vars(accession.orig) $vars(accession)
     set vars(accession.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] accession"
-    set vars(accession._type) bool
+    set vars(accession._type) boolean
 
     lappend arguments gi
     checkbutton $w.gi \
@@ -157,10 +158,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(gi)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.gi -side top -anchor w
-    set vars(gi) [subst 0]
+    set vars(gi) [subst N]
     set vars(gi.path) $w.gi
     set vars(gi.required)  0
-    set vars(gi._type) bool
+    set vars(gi._type) boolean
 
     lappend arguments version
     checkbutton $w.version \
@@ -168,10 +169,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(version)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.version -side top -anchor w
-    set vars(version) [subst 0]
+    set vars(version) [subst N]
     set vars(version.path) $w.version
     set vars(version.required)  0
-    set vars(version._type) bool
+    set vars(version._type) boolean
 
     lappend arguments type
     checkbutton $w.type \
@@ -185,7 +186,7 @@ proc create_dialogue {} {
     set vars(type.orig) $vars(type)
     set vars(type.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] type"
-    set vars(type._type) bool
+    set vars(type._type) boolean
 
     lappend arguments length
     checkbutton $w.length \
@@ -199,7 +200,7 @@ proc create_dialogue {} {
     set vars(length.orig) $vars(length)
     set vars(length.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] length"
-    set vars(length._type) bool
+    set vars(length._type) boolean
 
     lappend arguments pgc
     checkbutton $w.pgc \
@@ -213,7 +214,7 @@ proc create_dialogue {} {
     set vars(pgc.orig) $vars(pgc)
     set vars(pgc.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] pgc"
-    set vars(pgc._type) bool
+    set vars(pgc._type) boolean
 
     lappend arguments description
     checkbutton $w.description \
@@ -227,7 +228,7 @@ proc create_dialogue {} {
     set vars(description.orig) $vars(description)
     set vars(description.expr) {[expr {(!$vars(only))}]}
     trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] description"
-    set vars(description._type) bool
+    set vars(description._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

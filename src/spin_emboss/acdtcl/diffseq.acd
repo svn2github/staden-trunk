@@ -19,16 +19,17 @@ proc create_dialogue {} {
 "if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
     fix_maxsize $w
     wm title $w {EMBOSS - diffseq}
-    label $w._title -text {Find differences (SNPs) between nearly identical sequences}
+    label $w._title -text {Find differences between nearly identical sequences}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(diffseq._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -57,7 +58,7 @@ proc create_dialogue {} {
     if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
     set vars(bsequence.name)  [seq_info $vars(bsequence) name]
     sequence_changed [namespace current] bsequence
-    set vars(bsequence.type) [subst {[expr {($vars(asequence.protein) ? "stopprotein" : "nucleotide")}]}]
+    set vars(bsequence.type) [subst {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}]
     seq_id $w.bsequence \
 	-textvariable [namespace current]::vars(bsequence.name)\
 	-start_value $vars(bsequence.begin)\
@@ -71,15 +72,15 @@ proc create_dialogue {} {
     set vars(bsequence.required)  1
     trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
     set vars(bsequence.type.orig) $vars(bsequence.type)
-    set vars(bsequence.type.expr) {[expr {($vars(asequence.protein) ? "stopprotein" : "nucleotide")}]}
-    trace variable vars(asequence.protein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
+    set vars(bsequence.type.expr) {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
     set vars(bsequence._type) sequence
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -94,20 +95,20 @@ proc create_dialogue {} {
     pack $w.wordsize -side top -fill both
     set vars(wordsize.minimum) [subst 2]
     set vars(wordsize.path) $w.wordsize
-    set vars(wordsize.required)  1
+    set vars(wordsize.required)  0
     set vars(wordsize._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output report file}]\
+	-label [subst {Report output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -118,37 +119,37 @@ proc create_dialogue {} {
     set vars(outfile.required)  1
     set vars(outfile._type) report
 
-    lappend arguments afeatout
-    xentry $w.afeatout \
-	-label [subst {Feature file for output asequence}]\
-	-textvariable [namespace current]::vars(afeatout) \
+    lappend arguments aoutfeat
+    xentry $w.aoutfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(aoutfeat) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.afeatout delete 0 end
-    $w.afeatout insert end [subst {[expr {$vars(asequence.name)}].diffgff}]
-    pack $w.afeatout -side top -fill both
-    set vars(afeatout.path) $w.afeatout
-    set vars(afeatout.required)  0
-    set vars(afeatout.orig) $vars(afeatout)
-    set vars(afeatout.expr) {[expr {$vars(asequence.name)}].diffgff}
-    trace variable vars(asequence.name) w  "::EMBOSS::reset_value [namespace current] afeatout"
-    set vars(afeatout._type) featout
+    $w.aoutfeat delete 0 end
+    $w.aoutfeat insert end [subst {[expr {$vars(asequence.name)}].diffgff}]
+    pack $w.aoutfeat -side top -fill both
+    set vars(aoutfeat.path) $w.aoutfeat
+    set vars(aoutfeat.required)  1
+    set vars(aoutfeat.orig) $vars(aoutfeat)
+    set vars(aoutfeat.expr) {[expr {$vars(asequence.name)}].diffgff}
+    trace variable vars(asequence.name) w  "::EMBOSS::reset_value [namespace current] aoutfeat"
+    set vars(aoutfeat._type) featout
 
-    lappend arguments bfeatout
-    xentry $w.bfeatout \
-	-label [subst {Feature file for output bsequence}]\
-	-textvariable [namespace current]::vars(bfeatout) \
+    lappend arguments boutfeat
+    xentry $w.boutfeat \
+	-label [subst {Feature output filename}]\
+	-textvariable [namespace current]::vars(boutfeat) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
-    $w.bfeatout delete 0 end
-    $w.bfeatout insert end [subst {[expr {$vars(bsequence.name)}].diffgff}]
-    pack $w.bfeatout -side top -fill both
-    set vars(bfeatout.path) $w.bfeatout
-    set vars(bfeatout.required)  0
-    set vars(bfeatout.orig) $vars(bfeatout)
-    set vars(bfeatout.expr) {[expr {$vars(bsequence.name)}].diffgff}
-    trace variable vars(bsequence.name) w  "::EMBOSS::reset_value [namespace current] bfeatout"
-    set vars(bfeatout._type) featout
+    $w.boutfeat delete 0 end
+    $w.boutfeat insert end [subst {[expr {$vars(bsequence.name)}].diffgff}]
+    pack $w.boutfeat -side top -fill both
+    set vars(boutfeat.path) $w.boutfeat
+    set vars(boutfeat.required)  1
+    set vars(boutfeat.orig) $vars(boutfeat)
+    set vars(boutfeat.expr) {[expr {$vars(bsequence.name)}].diffgff}
+    trace variable vars(bsequence.name) w  "::EMBOSS::reset_value [namespace current] boutfeat"
+    set vars(boutfeat._type) featout
 
     lappend arguments columns
     checkbutton $w.columns \
@@ -156,10 +157,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(columns)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.columns -side top -anchor w
-    set vars(columns) [subst 0]
+    set vars(columns) [subst N]
     set vars(columns.path) $w.columns
     set vars(columns.required)  0
-    set vars(columns._type) bool
+    set vars(columns._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

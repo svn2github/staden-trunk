@@ -21,7 +21,17 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - histogramtest}
     label $w._title -text {test of graphics}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(histogramtest._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
+    lappend wlist $w
+    set w $page
 
     lappend arguments sets
     iwidgets::entryfield $w.sets \
@@ -78,7 +88,7 @@ proc create_dialogue {} {
     iwidgets::entryfield $w.xstart \
 	-validate integer \
 	-textvariable [namespace current]::vars(xstart) \
-	-labeltext [subst {start value for x axis}]\
+	-labeltext [subst {Start value for x axis}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.xstart component entry] -sticky nse
     set vars(xstart) [subst 0]
@@ -91,7 +101,7 @@ proc create_dialogue {} {
     iwidgets::entryfield $w.xend \
 	-validate integer \
 	-textvariable [namespace current]::vars(xend) \
-	-labeltext [subst {end value for x axis}]\
+	-labeltext [subst {End value for x axis}]\
 	-state [lindex {disabled normal} [subst 1]]
     grid [$w.xend component entry] -sticky nse
     set vars(xend) [subst {[expr {($vars(xstart)+$vars(points))}]}]
@@ -108,6 +118,14 @@ proc create_dialogue {} {
     trace variable vars(points) w  "::EMBOSS::reset_value [namespace current] xend"
     set vars(xend._type) integer
 
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
+    lappend wlist $w
+    set w $page
+
     lappend arguments graph
     iwidgets::combobox $w.graph\
 	-textvariable [namespace current]::vars(graph)\
@@ -120,13 +138,18 @@ proc create_dialogue {} {
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.graph -side top -fill both
     set vars(graph.path) $w.graph
-    set vars(graph.required)  1
+    set vars(graph.required)  0
     set vars(graph._type) xygraph
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
     okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
 	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
 	-cancel_command "destroy $w" \
 	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/histogramtest.html}
     pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
 }
 
 

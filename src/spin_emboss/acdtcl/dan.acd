@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - dan}
     label $w._title -text {Calculates DNA RNA/DNA melting temperature}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(dan._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -72,7 +73,7 @@ proc create_dialogue {} {
     set vars(windowsize.minimum) [subst 1]
     set vars(windowsize.maximum) [subst 100]
     set vars(windowsize.path) $w.windowsize
-    set vars(windowsize.required)  1
+    set vars(windowsize.required)  0
     set vars(windowsize._type) integer
 
     lappend arguments shiftincrement
@@ -90,7 +91,7 @@ proc create_dialogue {} {
     set vars(shiftincrement.maximum.expr) {[expr {$vars(windowsize)}]}
     trace variable vars(windowsize) w  "::EMBOSS::reset_value [namespace current] shiftincrement.maximum"
     set vars(shiftincrement.path) $w.shiftincrement
-    set vars(shiftincrement.required)  1
+    set vars(shiftincrement.required)  0
     set vars(shiftincrement._type) integer
 
     lappend arguments dnaconc
@@ -105,7 +106,7 @@ proc create_dialogue {} {
     set vars(dnaconc.minimum) [subst 1.]
     set vars(dnaconc.maximum) [subst 100000.]
     set vars(dnaconc.path) $w.dnaconc
-    set vars(dnaconc.required)  1
+    set vars(dnaconc.required)  0
     set vars(dnaconc._type) float
 
     lappend arguments saltconc
@@ -120,30 +121,19 @@ proc create_dialogue {} {
     set vars(saltconc.minimum) [subst 1.]
     set vars(saltconc.maximum) [subst 1000.]
     set vars(saltconc.path) $w.saltconc
-    set vars(saltconc.required)  1
+    set vars(saltconc.required)  0
     set vars(saltconc._type) float
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
-    lappend arguments rna
-    checkbutton $w.rna \
-	-text [subst {Use RNA data values}]\
-	-variable [namespace current]::vars(rna)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.rna -side top -anchor w
-    set vars(rna) [subst 0]
-    set vars(rna.path) $w.rna
-    set vars(rna.required)  0
-    set vars(rna._type) bool
-
     iwidgets::labeledframe $w.productsection \
-	-labeltext [subst {productsection Section}]
+	-labeltext [subst {Product options}]
     pack $w.productsection -side top -fill both
     lappend wlist $w
     append w .productsection.childsite
@@ -157,14 +147,14 @@ proc create_dialogue {} {
     set vars(product) [subst 0]
     set vars(product.path) $w.product
     set vars(product.required)  0
-    set vars(product._type) bool
+    set vars(product._type) toggle
 
     lappend arguments formamide
     iwidgets::entryfield $w.formamide \
 	-validate real \
 	-textvariable [namespace current]::vars(formamide) \
 	-labeltext [subst {Enter percentage of formamide}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(product)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.formamide component entry] -sticky nse
     set vars(formamide) [subst 0.]
     pack $w.formamide -side top -fill both
@@ -173,15 +163,13 @@ proc create_dialogue {} {
     set vars(formamide.path) $w.formamide
     set vars(formamide.required)  0
     set vars(formamide._type) float
-    set vars(formamide.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(product)}]]}
-    trace variable vars(product) w  "::EMBOSS::reset_needed [namespace current] formamide"
 
     lappend arguments mismatch
     iwidgets::entryfield $w.mismatch \
 	-validate real \
 	-textvariable [namespace current]::vars(mismatch) \
 	-labeltext [subst {Enter percent mismatch}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(product)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.mismatch component entry] -sticky nse
     set vars(mismatch) [subst 0.]
     pack $w.mismatch -side top -fill both
@@ -190,15 +178,13 @@ proc create_dialogue {} {
     set vars(mismatch.path) $w.mismatch
     set vars(mismatch.required)  0
     set vars(mismatch._type) float
-    set vars(mismatch.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(product)}]]}
-    trace variable vars(product) w  "::EMBOSS::reset_needed [namespace current] mismatch"
 
     lappend arguments prodlen
     iwidgets::entryfield $w.prodlen \
 	-validate integer \
 	-textvariable [namespace current]::vars(prodlen) \
 	-labeltext [subst {Enter the product length}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(product)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.prodlen component entry] -sticky nse
     set vars(prodlen) [subst {[expr {$vars(windowsize)}]}]
     pack $w.prodlen -side top -fill both
@@ -212,14 +198,12 @@ proc create_dialogue {} {
     set vars(prodlen.expr) {[expr {$vars(windowsize)}]}
     trace variable vars(windowsize) w  "::EMBOSS::reset_value [namespace current] prodlen"
     set vars(prodlen._type) integer
-    set vars(prodlen.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(product)}]]}
-    trace variable vars(product) w  "::EMBOSS::reset_needed [namespace current] prodlen"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     iwidgets::labeledframe $w.thermosection \
-	-labeltext [subst {thermosection Section}]
+	-labeltext [subst {Thermodynamic options}]
     pack $w.thermosection -side top -fill both
     lappend wlist $w
     append w .thermosection.childsite
@@ -233,7 +217,7 @@ proc create_dialogue {} {
     set vars(thermo) [subst 0]
     set vars(thermo.path) $w.thermo
     set vars(thermo.required)  0
-    set vars(thermo._type) bool
+    set vars(thermo._type) toggle
 
     lappend arguments temperature
     iwidgets::entryfield $w.temperature \
@@ -257,7 +241,26 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Advanced section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments rna
+    checkbutton $w.rna \
+	-text [subst {Use RNA data values}]\
+	-variable [namespace current]::vars(rna)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.rna -side top -anchor w
+    set vars(rna) [subst 0]
+    set vars(rna.path) $w.rna
+    set vars(rna.required)  0
+    set vars(rna._type) boolean
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -270,14 +273,14 @@ proc create_dialogue {} {
     set vars(plot) [subst 0]
     set vars(plot.path) $w.plot
     set vars(plot.required)  0
-    set vars(plot._type) bool
+    set vars(plot._type) toggle
 
     lappend arguments mintemp
     iwidgets::entryfield $w.mintemp \
 	-validate real \
 	-textvariable [namespace current]::vars(mintemp) \
 	-labeltext [subst {Enter minimum temperature}]\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(plot)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     grid [$w.mintemp component entry] -sticky nse
     set vars(mintemp) [subst 55.]
     pack $w.mintemp -side top -fill both
@@ -286,8 +289,6 @@ proc create_dialogue {} {
     set vars(mintemp.path) $w.mintemp
     set vars(mintemp.required)  0
     set vars(mintemp._type) float
-    set vars(mintemp.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(plot)}]]}
-    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] mintemp"
 
     lappend arguments graph
     iwidgets::combobox $w.graph\
@@ -298,28 +299,24 @@ proc create_dialogue {} {
     $w.graph delete entry 0 end
     $w.graph insert entry end [subst data]
     $w.graph configure \
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(plot)}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     pack $w.graph -side top -fill both
     set vars(graph.path) $w.graph
     set vars(graph.required)  0
     set vars(graph._type) xygraph
-    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(plot)}]]}
-    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] graph"
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output data file}]\
+	-label [subst {Report output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
-	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(plot))}]}]]]
+	-state [lindex {disabled normal} [subst 1]]
     $w.outfile delete 0 end
     $w.outfile insert end [subst report0.out]
     pack $w.outfile -side top -fill both
     set vars(outfile.path) $w.outfile
     set vars(outfile.required)  0
     set vars(outfile._type) report
-    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(plot))}]]}
-    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] outfile"
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

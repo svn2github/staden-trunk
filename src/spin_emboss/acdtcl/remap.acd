@@ -21,14 +21,15 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - remap}
     label $w._title -text {Display a sequence with restriction cut sites, translation etc..}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(remap._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
@@ -56,7 +57,7 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {required Section}]]
+	-label [subst {Required section}]]
     lappend wlist $w
     set w $page
 
@@ -69,7 +70,7 @@ proc create_dialogue {} {
     set vars(enzymes) [subst all]
     pack $w.enzymes -side top -fill both
     set vars(enzymes.path) $w.enzymes
-    set vars(enzymes.required)  1
+    set vars(enzymes.required)  0
     set vars(enzymes._type) string
 
     lappend arguments sitelen
@@ -84,14 +85,14 @@ proc create_dialogue {} {
     set vars(sitelen.minimum) [subst 2]
     set vars(sitelen.maximum) [subst 20]
     set vars(sitelen.path) $w.sitelen
-    set vars(sitelen.required)  1
+    set vars(sitelen.required)  0
     set vars(sitelen._type) integer
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
+	-label [subst {Additional section}]]
     lappend wlist $w
     set w $page
 
@@ -134,10 +135,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(single)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.single -side top -anchor w
-    set vars(single) [subst 0]
+    set vars(single) [subst N]
     set vars(single.path) $w.single
     set vars(single.required)  0
-    set vars(single._type) bool
+    set vars(single._type) boolean
 
     lappend arguments blunt
     checkbutton $w.blunt \
@@ -145,10 +146,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(blunt)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.blunt -side top -anchor w
-    set vars(blunt) [subst 1]
+    set vars(blunt) [subst Y]
     set vars(blunt.path) $w.blunt
     set vars(blunt.required)  0
-    set vars(blunt._type) bool
+    set vars(blunt._type) boolean
 
     lappend arguments sticky
     checkbutton $w.sticky \
@@ -156,10 +157,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(sticky)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.sticky -side top -anchor w
-    set vars(sticky) [subst 1]
+    set vars(sticky) [subst Y]
     set vars(sticky.path) $w.sticky
     set vars(sticky.required)  0
-    set vars(sticky._type) bool
+    set vars(sticky._type) boolean
 
     lappend arguments ambiguity
     checkbutton $w.ambiguity \
@@ -167,10 +168,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(ambiguity)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.ambiguity -side top -anchor w
-    set vars(ambiguity) [subst 1]
+    set vars(ambiguity) [subst Y]
     set vars(ambiguity.path) $w.ambiguity
     set vars(ambiguity.required)  0
-    set vars(ambiguity._type) bool
+    set vars(ambiguity._type) boolean
 
     lappend arguments plasmid
     checkbutton $w.plasmid \
@@ -178,10 +179,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(plasmid)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.plasmid -side top -anchor w
-    set vars(plasmid) [subst 0]
+    set vars(plasmid) [subst N]
     set vars(plasmid.path) $w.plasmid
     set vars(plasmid.required)  0
-    set vars(plasmid._type) bool
+    set vars(plasmid._type) boolean
 
     lappend arguments commercial
     checkbutton $w.commercial \
@@ -189,15 +190,15 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(commercial)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.commercial -side top -anchor w
-    set vars(commercial) [subst 1]
+    set vars(commercial) [subst Y]
     set vars(commercial.path) $w.commercial
     set vars(commercial.required)  0
-    set vars(commercial._type) bool
+    set vars(commercial._type) boolean
 
     lappend arguments table
     iwidgets::combobox $w.table\
 	-textvariable [namespace current]::vars(table.name)\
-	-labeltext [subst {Code to use}]
+	-labeltext [subst {Genetic code to use}]
     trace variable vars(table.name) w  "::EMBOSS::list_changed [namespace current] table"
     eval $w.table insert list end Standard {{Standard (with alternative initiation codons)}} {{Vertebrate Mitochondrial}} {{Yeast Mitochondrial}} {{Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma}} {{Invertebrate Mitochondrial}} {{Ciliate Macronuclear and Dasycladacean}} {{Echinoderm Mitochondrial}} {{Euplotid Nuclear}} Bacterial {{Alternative Yeast Nuclear}} {{Ascidian Mitochondrial}} {{Flatworm Mitochondrial}} {{Blepharisma Macronuclear}} {{Chlorophycean Mitochondrial}} {{Trematode Mitochondrial}} {{Scenedesmus obliquus}} {{Thraustochytrium Mitochondrial}}
     set vars(table.mapping1) {{Invertebrate Mitochondrial} 5 {Flatworm Mitochondrial} 14 Standard 0 {Vertebrate Mitochondrial} 2 {Trematode Mitochondrial} 21 {Standard (with alternative initiation codons)} 1 {Thraustochytrium Mitochondrial} 23 {Chlorophycean Mitochondrial} 16 {Blepharisma Macronuclear} 15 {Ciliate Macronuclear and Dasycladacean} 6 Bacterial 11 {Alternative Yeast Nuclear} 12 {Euplotid Nuclear} 10 {Ascidian Mitochondrial} 13 {Scenedesmus obliquus} 22 {Yeast Mitochondrial} 3 {Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma} 4 {Echinoderm Mitochondrial} 9}
@@ -217,17 +218,37 @@ proc create_dialogue {} {
     set vars(table.delimiter) {;}
     set vars(table._type) list
 
+    lappend arguments frame
+    iwidgets::scrolledlistbox $w.frame \
+	-exportselection 0\
+	-labeltext [subst {Translation frames}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::listbox_selected [namespace current] frame"\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.frame -side top -fill both -expand 1
+    set vars(frame.mapping1) {-3 -3 1 1 {Reverse three frames} R -1 -1 2 2 {All six frames} 6 -2 -2 {Forward three frames} F 3 3}
+    set vars(frame.mapping2) {-3 -3 1 1 6 {All six frames} R {Reverse three frames} -1 -1 F {Forward three frames} 2 2 -2 -2 3 3}
+    eval $w.frame insert end 1 2 3 {{Forward three frames}} -1 -2 -3 {{Reverse three frames}} {{All six frames}}
+    set vars(frame.path) $w.frame
+    set vars(frame.required)  0
+    set vars(frame.delimiter) ,
+    trace variable vars(frame) w  "::EMBOSS::list_multi_changed [namespace current] frame"
+    set vars(frame) [subst 6]
+    set vars(frame._type) list_multi
+
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
     lappend arguments outfile
     xentry $w.outfile \
-	-label [subst {Output sequence details to a file}]\
+	-label [subst {Output filename}]\
 	-textvariable [namespace current]::vars(outfile) \
 	-checkcommand ::EMBOSS::check_outfile\
 	-state [lindex {disabled normal} [subst 1]]
@@ -244,10 +265,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(cutlist)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.cutlist -side top -anchor w
-    set vars(cutlist) [subst 1]
+    set vars(cutlist) [subst Y]
     set vars(cutlist.path) $w.cutlist
     set vars(cutlist.required)  0
-    set vars(cutlist._type) bool
+    set vars(cutlist._type) boolean
 
     lappend arguments flatreformat
     checkbutton $w.flatreformat \
@@ -255,10 +276,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(flatreformat)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.flatreformat -side top -anchor w
-    set vars(flatreformat) [subst 0]
+    set vars(flatreformat) [subst N]
     set vars(flatreformat.path) $w.flatreformat
     set vars(flatreformat.required)  0
-    set vars(flatreformat._type) bool
+    set vars(flatreformat._type) boolean
 
     lappend arguments limit
     checkbutton $w.limit \
@@ -266,21 +287,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(limit)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.limit -side top -anchor w
-    set vars(limit) [subst 1]
+    set vars(limit) [subst Y]
     set vars(limit.path) $w.limit
     set vars(limit.required)  0
-    set vars(limit._type) bool
-
-    lappend arguments preferred
-    checkbutton $w.preferred \
-	-text [subst {Report preferred isoschizomers}]\
-	-variable [namespace current]::vars(preferred)\
-	-state [lindex {disabled normal} [subst 1]]
-    pack $w.preferred -side top -anchor w
-    set vars(preferred) [subst 0]
-    set vars(preferred.path) $w.preferred
-    set vars(preferred.required)  0
-    set vars(preferred._type) bool
+    set vars(limit._type) boolean
 
     lappend arguments translation
     checkbutton $w.translation \
@@ -288,10 +298,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(translation)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.translation -side top -anchor w
-    set vars(translation) [subst 1]
+    set vars(translation) [subst Y]
     set vars(translation.path) $w.translation
     set vars(translation.required)  0
-    set vars(translation._type) bool
+    set vars(translation._type) boolean
 
     lappend arguments reverse
     checkbutton $w.reverse \
@@ -299,10 +309,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(reverse)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.reverse -side top -anchor w
-    set vars(reverse) [subst 1]
+    set vars(reverse) [subst Y]
     set vars(reverse.path) $w.reverse
     set vars(reverse.required)  0
-    set vars(reverse._type) bool
+    set vars(reverse._type) boolean
 
     lappend arguments orfminsize
     iwidgets::entryfield $w.orfminsize \
@@ -348,10 +358,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(threeletter)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.threeletter -side top -anchor w
-    set vars(threeletter) [subst 0]
+    set vars(threeletter) [subst N]
     set vars(threeletter.path) $w.threeletter
     set vars(threeletter.required)  0
-    set vars(threeletter._type) bool
+    set vars(threeletter._type) boolean
 
     lappend arguments number
     checkbutton $w.number \
@@ -359,10 +369,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(number)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.number -side top -anchor w
-    set vars(number) [subst 0]
+    set vars(number) [subst N]
     set vars(number.path) $w.number
     set vars(number.required)  0
-    set vars(number._type) bool
+    set vars(number._type) boolean
 
     lappend arguments width
     iwidgets::entryfield $w.width \
@@ -412,10 +422,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(name)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.name -side top -anchor w
-    set vars(name) [subst 1]
+    set vars(name) [subst Y]
     set vars(name.path) $w.name
     set vars(name.required)  0
-    set vars(name._type) bool
+    set vars(name._type) boolean
 
     lappend arguments description
     checkbutton $w.description \
@@ -423,10 +433,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(description)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.description -side top -anchor w
-    set vars(description) [subst 1]
+    set vars(description) [subst Y]
     set vars(description.path) $w.description
     set vars(description.required)  0
-    set vars(description._type) bool
+    set vars(description._type) boolean
 
     lappend arguments offset
     iwidgets::entryfield $w.offset \
@@ -447,10 +457,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(html)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.html -side top -anchor w
-    set vars(html) [subst 0]
+    set vars(html) [subst N]
     set vars(html.path) $w.html
     set vars(html.required)  0
-    set vars(html._type) bool
+    set vars(html._type) boolean
 
     set w [lindex $wlist end]
     set wlist [lreplace $wlist end end]

@@ -21,114 +21,63 @@ proc create_dialogue {} {
     wm title $w {EMBOSS - needle}
     label $w._title -text {Needleman-Wunsch global alignment.}
     pack $w._title -side top -fill both
+    ::EMBOSS::init_dialogue [namespace current]
     set vars(needle._type) application
 
     iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
     pack $w.book_1 -side top -fill both
     set book(book_1) $w
     set page [$w.book_1 add \
-	-label [subst {input Section}]]
-    $w.book_1 view [subst {input Section}]
+	-label [subst {Input section}]]
+    $w.book_1 view [subst {Input section}]
     lappend wlist $w
     set w $page
 
-    lappend arguments sequencea
-    set vars(sequencea)       [get_active_seq_id 0]
-    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 0]}
-    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
-    sequence_changed [namespace current] sequencea
-    set vars(sequencea.type) [subst any]
-    seq_id $w.sequencea \
-	-textvariable [namespace current]::vars(sequencea.name)\
-	-start_value $vars(sequencea.begin)\
-	-end_value $vars(sequencea.end)\
-	-to [seq_info $vars(sequencea) length]\
+    lappend arguments asequence
+    set vars(asequence)       [get_active_seq_id 0]
+    if {$vars(asequence) == -1} {set vars(asequence) [get_active_seq_id 0]}
+    set vars(asequence.name)  [seq_info $vars(asequence) name]
+    sequence_changed [namespace current] asequence
+    set vars(asequence.type) [subst any]
+    seq_id $w.asequence \
+	-textvariable [namespace current]::vars(asequence.name)\
+	-start_value $vars(asequence.begin)\
+	-end_value $vars(asequence.end)\
+	-to [seq_info $vars(asequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
-    set vars(sequencea) [subst {}]
-    pack $w.sequencea -side top -fill both
-    set vars(sequencea.path) $w.sequencea
-    set vars(sequencea.required)  1
-    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
-    set vars(sequencea._type) sequence
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] asequence $w.asequence}"
+    set vars(asequence) [subst {}]
+    pack $w.asequence -side top -fill both
+    set vars(asequence.path) $w.asequence
+    set vars(asequence.required)  1
+    trace variable vars(asequence.name) w  "::EMBOSS::sequence_changed [namespace current] asequence"
+    set vars(asequence._type) sequence
 
-    lappend arguments seqall
-    set vars(seqall)       [get_active_seq_id 1]
-    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 0]}
-    set vars(seqall.name)  [seq_info $vars(seqall) name]
-    sequence_changed [namespace current] seqall
-    set vars(seqall.type) [subst {[expr {($vars(sequencea.protein) ? "stopprotein" : "nucleotide")}]}]
-    seq_id $w.seqall \
-	-textvariable [namespace current]::vars(seqall.name)\
-	-start_value $vars(seqall.begin)\
-	-end_value $vars(seqall.end)\
-	-to [seq_info $vars(seqall) length]\
+    lappend arguments bsequence
+    set vars(bsequence)       [get_active_seq_id 1]
+    if {$vars(bsequence) == -1} {set vars(bsequence) [get_active_seq_id 0]}
+    set vars(bsequence.name)  [seq_info $vars(bsequence) name]
+    sequence_changed [namespace current] bsequence
+    set vars(bsequence.type) [subst {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}]
+    seq_id $w.bsequence \
+	-textvariable [namespace current]::vars(bsequence.name)\
+	-start_value $vars(bsequence.begin)\
+	-end_value $vars(bsequence.end)\
+	-to [seq_info $vars(bsequence) length]\
 	-browse_cmd seq_browser\
-	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
-    set vars(seqall) [subst {}]
-    pack $w.seqall -side top -fill both
-    set vars(seqall.path) $w.seqall
-    set vars(seqall.required)  1
-    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
-    set vars(seqall.type.orig) $vars(seqall.type)
-    set vars(seqall.type.expr) {[expr {($vars(sequencea.protein) ? "stopprotein" : "nucleotide")}]}
-    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] seqall.type"
-    set vars(seqall._type) seqall
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {required Section}]]
-    lappend wlist $w
-    set w $page
-
-    lappend arguments gapopen
-    iwidgets::entryfield $w.gapopen \
-	-validate real \
-	-textvariable [namespace current]::vars(gapopen) \
-	-labeltext [subst {Gap opening penalty}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.gapopen component entry] -sticky nse
-    set vars(gapopen) [subst {[expr {($vars(sequencea.protein)? 10.0 : 10.0 )}]}]
-    pack $w.gapopen -side top -fill both
-    set vars(gapopen.minimum) [subst 1.]
-    set vars(gapopen.maximum) [subst 100.]
-    set vars(gapopen.path) $w.gapopen
-    set vars(gapopen.required)  1
-    set vars(gapopen.orig) $vars(gapopen)
-    set vars(gapopen.expr) {[expr {($vars(sequencea.protein)? 10.0 : 10.0 )}]}
-    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gapopen"
-    set vars(gapopen._type) float
-
-    lappend arguments gapextend
-    iwidgets::entryfield $w.gapextend \
-	-validate real \
-	-textvariable [namespace current]::vars(gapextend) \
-	-labeltext [subst {Gap extension penalty}]\
-	-state [lindex {disabled normal} [subst 1]]
-    grid [$w.gapextend component entry] -sticky nse
-    set vars(gapextend) [subst {[expr {($vars(sequencea.protein)? 0.5 : 0.5 )}]}]
-    pack $w.gapextend -side top -fill both
-    set vars(gapextend.minimum) [subst 0.0]
-    set vars(gapextend.maximum) [subst 10.]
-    set vars(gapextend.path) $w.gapextend
-    set vars(gapextend.required)  1
-    set vars(gapextend.orig) $vars(gapextend)
-    set vars(gapextend.expr) {[expr {($vars(sequencea.protein)? 0.5 : 0.5 )}]}
-    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gapextend"
-    set vars(gapextend._type) float
-
-    set w [lindex $wlist end]
-    set wlist [lreplace $wlist end end]
-
-    set page [$w.book_1 add \
-	-label [subst {advanced Section}]]
-    lappend wlist $w
-    set w $page
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] bsequence $w.bsequence}"
+    set vars(bsequence) [subst {}]
+    pack $w.bsequence -side top -fill both
+    set vars(bsequence.path) $w.bsequence
+    set vars(bsequence.required)  1
+    trace variable vars(bsequence.name) w  "::EMBOSS::sequence_changed [namespace current] bsequence"
+    set vars(bsequence.type.orig) $vars(bsequence.type)
+    set vars(bsequence.type.expr) {[expr {($vars(acdprotein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] bsequence.type"
+    set vars(bsequence._type) seqall
 
     lappend arguments datafile
-    set vars(datafile.protein) [subst {[expr {$vars(sequencea.protein)}]}]
+    set vars(datafile.protein) [subst {[expr {$vars(acdprotein)}]}]
     iwidgets::combobox $w.datafile\
 	-textvariable [namespace current]::vars(datafile)\
 	-labeltext [subst {Matrix file}]
@@ -142,8 +91,8 @@ proc create_dialogue {} {
     set vars(datafile.path) $w.datafile
     set vars(datafile.required)  0
     set vars(datafile.protein.orig) $vars(datafile.protein)
-    set vars(datafile.protein.expr) {[expr {$vars(sequencea.protein)}]}
-    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.protein.expr) {[expr {$vars(acdprotein)}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
     set vars(datafile.orig) $vars(datafile)
     set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
     trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
@@ -153,7 +102,51 @@ proc create_dialogue {} {
     set wlist [lreplace $wlist end end]
 
     set page [$w.book_1 add \
-	-label [subst {output Section}]]
+	-label [subst {Required section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments gapopen
+    iwidgets::entryfield $w.gapopen \
+	-validate real \
+	-textvariable [namespace current]::vars(gapopen) \
+	-labeltext [subst {Gap opening penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapopen component entry] -sticky nse
+    set vars(gapopen) [subst {[expr {($vars(acdprotein)? 10.0 : 10.0 )}]}]
+    pack $w.gapopen -side top -fill both
+    set vars(gapopen.minimum) [subst 1.]
+    set vars(gapopen.maximum) [subst 100.]
+    set vars(gapopen.path) $w.gapopen
+    set vars(gapopen.required)  0
+    set vars(gapopen.orig) $vars(gapopen)
+    set vars(gapopen.expr) {[expr {($vars(acdprotein)? 10.0 : 10.0 )}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] gapopen"
+    set vars(gapopen._type) float
+
+    lappend arguments gapextend
+    iwidgets::entryfield $w.gapextend \
+	-validate real \
+	-textvariable [namespace current]::vars(gapextend) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapextend component entry] -sticky nse
+    set vars(gapextend) [subst {[expr {($vars(acdprotein)? 0.5 : 0.5 )}]}]
+    pack $w.gapextend -side top -fill both
+    set vars(gapextend.minimum) [subst 0.0]
+    set vars(gapextend.maximum) [subst 10.]
+    set vars(gapextend.path) $w.gapextend
+    set vars(gapextend.required)  0
+    set vars(gapextend.orig) $vars(gapextend)
+    set vars(gapextend.expr) {[expr {($vars(acdprotein)? 0.5 : 0.5 )}]}
+    trace variable vars(acdprotein) w  "::EMBOSS::reset_value [namespace current] gapextend"
+    set vars(gapextend._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {Output section}]]
     lappend wlist $w
     set w $page
 
@@ -163,10 +156,10 @@ proc create_dialogue {} {
 	-variable [namespace current]::vars(brief)\
 	-state [lindex {disabled normal} [subst 1]]
     pack $w.brief -side top -anchor w
-    set vars(brief) [subst 1]
+    set vars(brief) [subst Y]
     set vars(brief.path) $w.brief
     set vars(brief.required)  0
-    set vars(brief._type) bool
+    set vars(brief._type) boolean
 
     lappend arguments outfile
     xentry $w.outfile \
