@@ -22,6 +22,10 @@ GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
 	      -Wstrict-prototypes
 CFLAGS	+= $(GCCWARNINGS)
 
+# For large file support (off_t by default is only 32-bit)
+CFLAGS += -D_FILE_OFFSET_BITS=64
+CXXFLAGS += -D_FILE_OFFSET_BITS=64
+
 #CXXFLAGS += -I$(SRCROOT)/stlport/linux
 
 # X is installed in /usr/X11R6
