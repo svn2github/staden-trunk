@@ -6,7 +6,7 @@
 /* DEFINES += -DLITTLE_ENDIAN */
 
 # Use g77 for compiling our fortran
-F77	 = g77-3.2
+F77	 = g77
 # Ewe:
 F77_DEP  = -lg2c
 LIBSF	= $(F77_DEP)
@@ -15,8 +15,8 @@ LIBSF	= $(F77_DEP)
 
 # Complain about everything sensible, but not the stylistic complaints
 # introduced by -Wall
-CC = gcc-3.2
-CXX = g++-3.2
+CC = gcc
+CXX = g++
 COPT += -Wuninitialized 
 GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
 	      -Wstrict-prototypes
