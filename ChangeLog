@@ -1,4 +1,22 @@
-2004-05-11  jkbonfield  <jkbonfield>
+2004-05-11  James Bonfield  <jkb>
+
+	* tables/gaprc:
+	Set the default Sequence Search percentage match to be 100% (was
+	75%).
+
+	* src/trev/trev.tcl:
+	Version 1.8b1.
+	Use trace "orig_format" command instead of "format" for working
+	out if the trace is experiment file or not. This corrects a bug
+	caused by the io_lib change of 2004-01-13 whereby EXP files were
+	considered to be in the format of the trace file they referenced
+	by trev and hence could not be saved to.
+
+	* src/tk_utils/xyesno.tcl:
+	Improving packing layout.
+	
+	* src/tk_utils/tkTrace.c:
+	Added an "orig_format" widget command.
 
 	* src/gap4/configure.tcl,
 	* src/gap4/gap.tcl,
@@ -12,12 +30,9 @@
 	consider them to be valid. (Both are in template.c already, but
 	previously only controlled programatically.) 
 
-	* src/gap4/template.c:
-	(08:43:10) Corrected OFLAG flags so that they are proper
-	bit-patterns rather than 'overlapping' each other causing bugs. 
-
+	* src/gap4/template.c,
 	* src/gap4/template.h:
-	(08:43:11) Corrected OFLAG flags so that they are proper
+	(08:43:10) Corrected OFLAG flags so that they are proper
 	bit-patterns rather than 'overlapping' each other causing bugs. 
 
 	* tables/gaprc:
