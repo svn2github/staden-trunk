@@ -313,6 +313,8 @@ add_command	{Settings.Status Line.Remove all}		1 0\
 add_cascade	{Settings.Trace Display}	1 0
 add_check	{Settings.Trace Display.Auto-display Traces}	1 0 \
 	{$w.DisplayTraces} {$e autodisplay_traces}
+add_check	{Settings.Trace Display.Show Read-pair Traces}	1 0 \
+	{$w.ReadPairTraces} {$e read_pair_traces}
 add_check	{Settings.Trace Display.Auto-diff Traces}	1 0 \
 	{$w.DiffTraces} {$e autodiff_traces}
 add_check	{Settings.Trace Display.Y scale differences} 1 0 \
