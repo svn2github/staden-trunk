@@ -1060,6 +1060,13 @@ int io_write_seq(GapIO *io,	/*  */
     r.length = *length;
     r.start = *start;
     r.end = *end;
+    r.sequence_length = r.end - r.start -1;
+
+    if (r.sense == GAP_SENSE_REVERSE) {
+	io_length(io, N) = -r.sequence_length;
+    } else {
+	io_length(io, N) = r.sequence_length;
+    }
 
     if (r.sequence==0) r.sequence = allocate(io,GT_Text);
     err = TextWrite(io,r.sequence,seq,*length);
