@@ -46,15 +46,17 @@ proc DeleteConfidenceGraph {io c_win conf_win cons_id} {
 
 ##############################################################################
 #user interface dialog box for confidence values graph
-proc ConfidenceGraph { io discrepancy } {
+proc ConfidenceGraph { io mode } {
     global gap_defs
 
-    set f [keylget gap_defs CONFIDENCE_GRAPH.WIN]$discrepancy
+    set f [keylget gap_defs CONFIDENCE_GRAPH.WIN]$mode
     if {[xtoplevel $f -resizable 0] == ""} return
-    if {$discrepancy} {
-	wm title $f "discrepancy graph"
-    } else {
+    if {$mode == "conf"} {
 	wm title $f "confidence graph"
+    } elseif {$mode == "second"} {
+	wm title $f "2nd-highest confidence graph"
+    } else {
+	wm title $f "discrepancy graph"
     }
 
     contig_id $f.id \
@@ -70,7 +72,7 @@ proc ConfidenceGraph { io discrepancy } {
     ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "ConfGraph_OK_Pressed $io $discrepancy $f $f.id $f.infile" \
+	    -ok_command "ConfGraph_OK_Pressed $io $mode $f $f.id $f.infile" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Consistency-Confidence}" \
 	    -bd 2 \
@@ -81,7 +83,7 @@ proc ConfidenceGraph { io discrepancy } {
 
 ##############################################################################
 #stand alone quality display
-proc ConfGraph_OK_Pressed { io discrepancy f id infile} {
+proc ConfGraph_OK_Pressed { io mode f id infile} {
     
     set contig_list ""
     if {[lorf_in_get $infile] == 4} {
@@ -113,7 +115,7 @@ proc ConfGraph_OK_Pressed { io discrepancy f id infile} {
     # stop windows from hiding the plot
     destroy $f
 
-    CreateNewConfidenceGraph $io $discrepancy $contig_list
+    CreateNewConfidenceGraph $io $mode $contig_list
 
 }
 
@@ -154,18 +156,18 @@ proc SetConfidenceBindings { io c_win conf_win} {
 
 ##############################################################################
 #called from main gap4 menu. Create new display
-proc CreateNewConfidenceGraph {io discrepancy contig_list} {
+proc CreateNewConfidenceGraph {io mode contig_list} {
     global gap_defs 
 
     set result [CreateConsistencyDisplay $io $contig_list]
     set c_win [keylget result cons_win]
     set cons_id [keylget result cons_id]
 
-    CreateConfidenceGraph $io $discrepancy $cons_id $c_win
+    CreateConfidenceGraph $io $mode $cons_id $c_win
 }
 
 ##############################################################################
-proc CreateConfidenceGraph {io discrepancy cons_id c_win} {
+proc CreateConfidenceGraph {io mode cons_id c_win} {
     global gap_defs $c_win.row
 
     set orig_height [winfo height $c_win]
@@ -215,13 +217,17 @@ proc CreateConfidenceGraph {io discrepancy cons_id c_win} {
     update_geom $c_win $conf_win
 
     #register quality graph and do first display
-    if {$discrepancy} {
-	set $conf_win.conf_id \
-	    [discrepancy_graph -io $io -frame $c_win -window $conf_win -id $cons_id -win_ruler $c_win.vruler$id]
+    if {$mode == "conf"} {
+	set cmd confidence_graph
+    } elseif {$mode == "second"} {
+	set cmd second_confidence_graph
     } else {
-	set $conf_win.conf_id \
-	    [confidence_graph -io $io -frame $c_win -window $conf_win -id $cons_id -win_ruler $c_win.vruler$id]
+	set cmd discrepancy_graph
     }
+
+    set $conf_win.conf_id [$cmd -io $io -frame $c_win -window $conf_win \
+			       -id $cons_id -win_ruler $c_win.vruler$id]
+    
     if {[set $conf_win.conf_id] == -1} {
 	verror ERR_WARN "Gap4" "Too many windows"
 

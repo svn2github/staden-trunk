@@ -2,7 +2,8 @@
 #define _CONFIDENCE_GRAPH_H
 
 #define CONFIDENCE_GRAPH_QUALITY 0
-#define CONFIDENCE_GRAPH_DISCREP 1
+#define CONFIDENCE_GRAPH_SECOND  1
+#define CONFIDENCE_GRAPH_DISCREP 2
 
 typedef struct {
     Tcl_Interp *interp;
