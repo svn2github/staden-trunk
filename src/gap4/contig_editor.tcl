@@ -451,6 +451,7 @@ proc update_tag_menus {name1 name2 op} {
     regexp {(.*)\.[^.]*\.[^.]*$} $name1 _ e
 
     set menu $e.buttons.commands.menu.commands.edit_tag
+    $menu configure -tearoff 0
     $menu delete 0 end
     foreach tag [set $name1] {
 	foreach {ptr type st len} $tag {}
@@ -461,6 +462,7 @@ proc update_tag_menus {name1 name2 op} {
     }
 
     set menu $e.buttons.commands.menu.commands.delete_tag
+    $menu configure -tearoff 0
     $menu delete 0 end
     foreach tag [set $name1] {
 	foreach {ptr type st len} $tag {}
