@@ -1580,9 +1580,11 @@ proc ednames_menu {w x y X Y} {
 	set rnum [$w get_read_number $seq_num]
 
 	if {[llength $tseqs] != 0} {
+	    # Goto menu
 	    $w.m add cascade -label "Goto..." -menu $w.m.goto
 	    menu $w.m.goto
 	    set this_contig [$e get_contig_num]
+	    set diff_contig_count 0
 	    foreach {seq dummy_cnum pos} $tseqs {
 		# Recalculate cnum. When joining contigs a contig may get
 		# renumbered. It may or may not be this contig. If it is not
@@ -1598,11 +1600,29 @@ proc ednames_menu {w x y X Y} {
 		}
 		if {$cnum != $this_contig} {
 		    set cname " (Contig [left_gel [$e io] $cnum] @ $pos)"
+		    incr diff_contig_count
 		} else {
 		    set cname " @ $pos"
 		}
 		$w.m.goto add command -label "Goto $seq$cname" \
 		    -command "ed_goto_seq $e $seq $cnum"
+	    }
+
+	    # Join to menu
+	    if {$diff_contig_count > 0} {
+		$w.m add cascade -label "Join to..." -menu $w.m.jointo
+		menu $w.m.jointo
+		foreach {seq dummy_cnum pos} $tseqs {
+		    set cnum [db_info get_contig_num [$e io] $seq]
+		    if {$cnum == -1 || $cnum == $this_contig} {
+			continue
+		    }
+		    $w.m.jointo add command \
+			-command "ed_jointo_seq $e $cnum $seq \
+                                      [$w get_contig_number] \
+                                      [lindex $name 1]" \
+			-label "Join to $seq ([left_gel [$e io] $cnum] @ $pos)"
+		}
 	    }
 	}
 
@@ -1661,6 +1681,16 @@ proc ednames_menu {w x y X Y} {
 # Function to jump to a specific sequence in the editor.
 proc ed_goto_seq {e name cnum} {
     edit_contig -io [$e io] -contig =$cnum -reading $name -reuse 1
+}
+
+# Function to invoke join editor between a specific pair of sequences.
+proc ed_jointo_seq {e cnum1 name1 cnum2 name2} {
+    join_contig \
+	-io [$e io] \
+	-contig1 =$cnum1 \
+	-reading1 $name1 \
+	-contig2 =$cnum2 \
+	-reading2 $name2 
 }
 
 # Dialogue for setting a reference sequence
