@@ -29,7 +29,7 @@ static int **nt_matrix;
 /* Globals */
 float consensus_cutoff = 0;
 int quality_cutoff = -1;
-int chem_as_double = 1;
+int chem_as_double = 0;
 /* char *gap_defs = NULL; */
 Tcl_Obj *gap_defs = NULL;
 static Tcl_Obj *defs_name;
