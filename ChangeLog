@@ -1,3 +1,10 @@
+2004-04-14  James Bonfield  <jkb>
+
+	* src/gap4/dis_readings.c (disassemble_readings): 
+	Removed a database corruption caused when a reading is removed
+	from the database (not just moved) and then no subsequent write of
+	the main GT_Database record is performed.
+
 2004-04-13  jkbonfield  <jkb>
 
 	* src/g/g-files.c:
