@@ -904,7 +904,7 @@ static void score_experiments(Tcl_Interp *interp,
 	}
 
 	/* Penalise for sequences overlapping over virtual sequences */
-	if (virtual_count) {
+	if (virtual_count && fin->opts.penalise_overlaps) {
 	    exp[i].score *= MIN(1, 3.0*(1.0-(double)virtual_count/len));
 	    printf("Penalty from other virtual seqs (%d of %d bases)"
 		   " => Score = %f\n",
@@ -1148,6 +1148,9 @@ int analyse_templates(finish_t *fin) {
 	for (i = 0; i <= Ntemplates(fin->io); i++) {
 	    if (fin->tarr[i]) {
 		fin->tarr[i]->oflags |= TEMP_OFLAG_CVEC;
+		if (fin->opts.chk_template_stat == 0)
+		    fin->tarr[i]->oflags |= TEMP_OFLAG_IGNORE_PTYPE;
+		fin->tarr[i]->min_vector_len = fin->opts.min_vector_len;
 		if (!fin->opts.use_avg_insert) {
 		    fin->tarr[i]->oflags |= TEMP_OFLAG_MINMAX_SIZE;
 		}
