@@ -100,8 +100,12 @@ proc load_help_system {dir} {
 
     if {$version == "tcl-external"} {
         uplevel #0 "source {$dir/help_ext.tcl}"
-    } elseif {$version == "netscape"} {
+    } elseif {$version == "netscape" || \
+	      $version == "mozilla" || \
+	      $version == "konqueror"} {
         uplevel #0 "source {$dir/help_netscape.tcl}"
+    } elseif {$version == "galeon"} {
+	uplevel #0 "source {$dir/help_galeon.tcl}"
     } elseif {$version == "windows"} {
 	# 7/1/99 johnt - added windows support
         uplevel #0 "source {$dir/help_windows.tcl}"
