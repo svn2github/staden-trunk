@@ -738,7 +738,7 @@ StringMatch(GapIO *io,                                                 /* in */
 	    int cutoff_data)					       /* in */
 {
     int n_matches = 0;
-    int i, j, c;
+    int i, j, k, c;
     int mis_match;
     int seq_len;
     int orig;
@@ -778,6 +778,13 @@ StringMatch(GapIO *io,                                                 /* in */
 		    seq_len = strlen(cons_array[i]);
 		} else {
 		    gel_read(io, rn, r);
+
+		    /* Basic bounds checking to optimise */
+		    if (r.position > contig_array[i].end)
+			break;
+		    if (r.position + r.sequence_length < contig_array[i].start)
+			goto next; /* Sorry! */
+
 		    seq_alloc = (char *)TextAllocRead(io, r.sequence);
 		    if (cutoff_data) {
 			seq = seq_alloc;
@@ -805,7 +812,7 @@ StringMatch(GapIO *io,                                                 /* in */
 		n_matches += res;
 		max_imatches -= res;
 
-		for (j = orig; j < n_matches; j++) {
+		for (j = k = orig; j < n_matches; j++) {
 		    int padded_len;
 
 		    c1[j] = contig_array[i].contig;
@@ -829,19 +836,52 @@ StringMatch(GapIO *io,                                                 /* in */
 			    pos1[j] += r.position-1;
 			}
 		    }
-		    pos2[j] = pos1[j];
-		    /* length[j] = stringlen; */
 		    length[j] = padded_len;
 
-		    sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
-		    sprintf(title, "Match found with contig %d "
-			    "in the %c sense",
-			    io_clnbr(io, ABS(c2[j])),
-			    c2[j] > 0 ? '+' : '-');
+		    /* Adjust for searching in a sub-range of the contig */
+		    if (rn == 0)
+			pos1[j] += contig_array[i].start-1;
+		    pos2[j] = pos1[j];
 
-		    list_alignment(string, cons_match, "oligo", name1, 1,
-				   pos1[j], title);
+		    /*
+		     * The searching above may find hits outside of
+		     * contig_array[i].start and contig_array[i].end.
+		     *
+		     * This happens if we search sequences and the
+		     * sequence overlaps the desired range, but has a
+		     * hit outside of the desired range.
+		     *
+		     * Rather than complicate the above code, we post
+		     * filter these false hits here.
+		     */
+		    if (pos1[j] >= contig_array[i].start &&
+			pos1[j] <= contig_array[i].end) {
+			sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
+			sprintf(title, "Match found with contig %d read #%d "
+				"in the %c sense",
+				io_clnbr(io, ABS(c2[j])), rn, 
+				c2[j] > 0 ? '+' : '-');
+
+			list_alignment(string, cons_match, "oligo", name1, 1,
+				       pos1[j], title);
+			
+			/*
+			 * Copy it from *[j] to *[k].
+			 * This code REALLY needs to be using structs!
+			 * This is foul.
+			 */
+			pos1  [k] = pos1  [j];
+			pos2  [k] = pos2  [j];
+			c1    [k] = c1    [j];
+			c2    [k] = c2    [j];
+			length[k] = length[j];
+			score [k] = score [j];
+			k++;
+		    }
 		}
+
+		n_matches -= j-k;
+		max_imatches += j-k;
 
 		if (seq_alloc)
 		    xfree(seq_alloc);
@@ -849,6 +889,7 @@ StringMatch(GapIO *io,                                                 /* in */
 		if (too_many)
 		    break;
 
+	    next:
 		if (consensus_only) {
 		    rn = 0;
 		} else {
