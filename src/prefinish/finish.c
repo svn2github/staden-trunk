@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.21c"
+#define FINISH_VERSION "1.22"
 
 #include <tcl.h>
 #include <limits.h>
