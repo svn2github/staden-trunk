@@ -370,20 +370,6 @@ int io_mod_extension(GapIO *io,     /*  */
  *************************************************************/
 
 
-f_proc_ret readrn_(f_int *HANDLE, f_int *NGELS, f_int *NCONTS)
-/*
- * Read ngels and ncontigs
- */
-{
-    GapIO *io;
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    *NGELS  = NumReadings(io);
-    *NCONTS = NumContigs(io);
-    
-    f_proc_return();
-}
-
 f_proc_ret writrn_(f_int *HANDLE, f_int *NGELS, f_int *NCONTS)
 /*
  * Write ngels and ncontigs
@@ -402,37 +388,6 @@ f_proc_ret writrn_(f_int *HANDLE, f_int *NGELS, f_int *NCONTS)
 }
 
 
-
-
-f_proc_ret readg_(f_int *HANDLE, f_int *N, f_int *RELPG, f_int *LNGTHG, f_int *LNBR, f_int *RNBR)
-/*
- * Read a gel line
- */
-{
-    GapIO *io;
-    int err;
-    GReadings r;
-    int l;
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    if (*N>Nreadings(io)) {
-	(void)gaperr_set(GAPERR_NOT_FOUND);
-	GAP_ERROR_FATAL("invalid reading %d", *N);
-    }
-
-    /* read record */
-    err = gel_read(io, *N, r);
-
-    /* update */
-    *LNBR = r.left;
-    *RNBR = r.right;
-    *RELPG = r.position;
-    l = r.end - r.start - 1;
-    *LNGTHG = (r.sense==GAP_SENSE_REVERSE)?-l:l;
-
-    f_proc_return();
-
-}
 
 f_proc_ret writeg_(f_int *HANDLE, f_int *N, f_int *RELPG, f_int *LNGTHG, f_int *LNBR, f_int *RNBR)
 /*
@@ -462,33 +417,6 @@ f_proc_ret writeg_(f_int *HANDLE, f_int *N, f_int *RELPG, f_int *LNGTHG, f_int *
     f_proc_return();
 
 }
-
-f_proc_ret readc_(f_int *HANDLE, f_int *N, f_int *LNGTHC, f_int *LGEL, f_int *RGEL)
-/*
- * Read a contig line
- */
-{
-    GapIO *io;
-    int err;
-    GContigs r;
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    if (*N>NumContigs(io)) {
-	(void)gaperr_set(GAPERR_NOT_FOUND);
-	GAP_ERROR_FATAL("invalid contig %d", *N);
-    }
-
-    /* read record */
-    err = GT_Read(io,arr(GCardinal,io->contigs,*N-1),&r,sizeof(r),GT_Contigs);
-
-    /* update */
-    *LGEL = r.left;
-    *RGEL = r.right;
-    *LNGTHC = r.length;
-
-    f_proc_return();
-}
-
 
 
 f_proc_ret writec_(f_int *HANDLE, f_int *N, f_int *LNGTHC, f_int *LGEL, f_int *RGEL)
@@ -593,40 +521,6 @@ f_proc_ret writtg_(f_int *HANDLE, f_int *N, f_int *LPOS, f_int *LLEN, f_int *LCO
 }
 
 
-
-f_proc_ret readcc_(f_int *HANDLE, f_int *N, f_int *ICNT, f_int *NEXT, char *NOTE, f_implicit NOTE_l)
-/*
- * Read a comment record
- */
-{
-    GapIO *io;
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-
-    /*
-     * TODO
-     */
-    verror(ERR_FATAL, "readcc", "not implemented");
-    
-    f_proc_return();
-}
-
-
-f_proc_ret writcc_(f_int *HANDLE, f_int *N, f_int *ICNT, f_int *NEXT, char *NOTE, f_implicit NOTE_l)
-/*
- * Write a comment record
- */
-{
-    GapIO *io;
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    /*
-     * TODO
-     */
-    verror(ERR_FATAL, "writecc", "not implemented");
-    
-    f_proc_return();
-}
 
 
 
@@ -804,66 +698,4 @@ int swap_read(GapIO *io, int M, int N) {
     /* write array */
     err = ArrayDelay(io, io->db.readings, io->db.Nreadings, io->readings);
     return err;
-}
-
-
-f_proc_ret swapnm_(f_int *HANDLE, f_int *N, f_int *M)
-{
-    GapIO *io;
-
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-    swap_read(io, *M, *N);
-    f_proc_return();
-}
-
-f_proc_ret movnm_(f_int *HANDLE, f_int *N, f_int *M)
-/*
- * Part swap, part move N to M.
- *
- * This is mainly a move from N to M, but it still has to swap the entries
- * in the stored (and memory) reading record number array. A straight copy
- * into this array does not work. Why?
- */
-{
-    GapIO *io;
-    int err = 0;
-    GCardinal temp;
-    int nnote;
-
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    if (*N>Nreadings(io)) err |= io_init_reading(io,*N);
-    if (*M>Nreadings(io)) err |= io_init_reading(io,*M);
-    if (err)
-	GAP_ERROR_FATAL("io_init_reading (swap %d %d)", *N, *M);
-
-#if GAP_CACHE!=0
-    /* Copy name elements */
-    io_wname(io, *M, io_rname(io, *N));
-#endif
-
-    /* Swap reading record numbers in io->db.readings stored array */
-    temp = arr(GCardinal,io->readings,*N-1);
-    arr(GCardinal,io->readings,*N-1) = arr(GCardinal,io->readings,*M-1);
-    arr(GCardinal,io->readings,*M-1) = temp;
-
-
-#if GAP_CACHE!=0
-    /* Copy cached GReadings structure */
-    arr(GReadings, io->reading, *M-1) = arr(GReadings, io->reading, *N-1);
-#endif
-
-    /* Notes have two-way linked lists, so we update the link back */
-    nnote = arr(GReadings, io->reading, *M-1).notes;
-    if (nnote) {
-	GNotes n;
-	note_read(io, nnote, n);
-	n.prev = *M;
-	note_write(io, nnote, n);
-    }
-
-    /* write array */
-    err = ArrayDelay(io, io->db.readings, io->db.Nreadings, io->readings);
-
-    f_proc_return();
 }

@@ -275,39 +275,14 @@ extern f_proc_ret flus2t_(f_int *HANDLE);
  * Flush a database file
  */
 
-extern f_proc_ret readr0_(f_int *HANDLE, f_int *IMSIZ, f_int *IASIZ, f_int *MXG, f_int *IDA);
-/*
- * Read first record
- */
-
-extern f_proc_ret writr0_(f_int *HANDLE, f_int *IMSIZ, f_int *IASIZ, f_int *MXG, f_int *IDA);
-/*
- * Write first record
- */
-
-extern f_proc_ret readrn_(f_int *HANDLE, f_int *NGELS, f_int *NCONTS);
-/*
- * Read ngels and ncontigs
- */
-
 extern f_proc_ret writrn_(f_int *HANDLE, f_int *NGELS, f_int *NCONTS);
 /*
  * Write ngels and ncontigs
  */
 
-extern f_proc_ret readg_(f_int *HANDLE, f_int *N, f_int *RELPG, f_int *LNGTHG, f_int *LNBR, f_int *RNBR);
-/*
- * Read a gel line
- */
-
 extern f_proc_ret writeg_(f_int *HANDLE, f_int *N, f_int *RELPG, f_int *LNGTHG, f_int *LNBR, f_int *RNBR);
 /*
  * Write a gel line
- */
-
-extern f_proc_ret readc_(f_int *HANDLE, f_int *N, f_int *LNGTHC, f_int *LGEL, f_int *RGEL);
-/*
- * Write a contig line
  */
 
 extern f_proc_ret writec_(f_int *HANDLE, f_int *N, f_int *LNGTHC, f_int *LGEL, f_int *RGEL);
@@ -323,16 +298,6 @@ extern f_proc_ret readtg_(f_int *HANDLE, f_int *N, f_int *LPOS, f_int *LLEN, f_i
 extern f_proc_ret writtg_(f_int *HANDLE, f_int *N, f_int *LPOS, f_int *LLEN, f_int *LCOM, f_int *LTYPE, f_int *NEXT, f_int *SENSE);
 /*
  * Write a tag record
- */
-
-extern f_proc_ret readcc_(f_int *HANDLE, f_int *N, f_int *ICNT, f_int *NEXT, char *NOTE, f_implicit NOTE_l);
-/*
- * Read a comment record
- */
-
-extern f_proc_ret writcc_(f_int *HANDLE, f_int *N, f_int *ICNT, f_int *NEXT, char *NOTE, f_implicit NOTE_l);
-/*
- * Write a comment record
  */
 
 extern f_proc_ret readn_(f_int *HANDLE, f_int *N, char *NAME, f_implicit NAME_l);
