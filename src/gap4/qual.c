@@ -1833,6 +1833,14 @@ static void process_frags_5(seq_frag *frag, int *num_frags, int from, int to,
  *
  * Pads are treated as a fifth base type, but only when a column contains a
  * pad.
+ *
+ * If 2 consensus sequences are specified then the consensus is computed on
+ * each strand independently. The confidence values are then written to qual1
+ * and (if non-null) qual2.
+ *
+ * If 1 consensus sequence is give, but 2 quality arrays exist then the
+ * second quality array is filled out to contain consensus discrepancy
+ * values.
  */
 static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			  int start, char *con1, float *qual1,
@@ -2060,11 +2068,12 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 		}
 	    }
 	    
-	    /* Compute denominator, used to normalise bayesian probability */
 	    qnorm = 0;
 	    highest_product = 0;
 	    highest_type = 5;
 	    if (nevents) {    
+		/* Compute denominator, used to normalise bayesian
+		   probability */
 		for (j = 0; j < nbase_types; j++) {
 		    product = 1;
 		    for (k = 0; k < nevents; k++) {
@@ -2105,6 +2114,56 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 		*conp = '-';
 		if (qualp)
 		    *qualp = 0;
+	    }
+
+	    if (nevents && !con2 && qual2) {
+		int l;
+		double first=-1;
+		double second=0;
+
+		/*
+		 * Loop through all base types 'l' only picking events
+		 * where the called sequence matches this base type
+		 * (bayesian[l][event] >= 0.25).
+		 * Then compute what the consensus confidence would be
+		 * from that base type alone.
+		 */
+		for (l = 0; l < nbase_types; l++) {
+		    double prod_l = 0; 
+
+		    qnorm = 0;
+		    highest_product = 0;
+		    highest_type = 5;
+
+		    for (j = 0; j < nbase_types; j++) {
+			product = 1;
+			for (k = 0; k < nevents; k++) {
+			    /* Only deal with bases of type 'l' */
+			    if (bayesian[l][k] < 0.25)
+				continue;
+			    product *= bayesian[j][k];
+			}
+			qnorm += product;
+
+			if (j == l)
+			    prod_l = product;
+		    }
+
+		    prob = qnorm ? prod_l / qnorm : 0;
+		    err = prob < 1.0 ? -10.0 * log10(1-prob) : 99;
+
+		    if (err >= first) {
+			second = first;
+			first  = err;
+		    } else if (err > second) {
+			second = err;
+		    }
+		}
+
+		/* Discrepancy = second most likely base confidence */
+		qual2[i-start] = MIN(second, 99.4);
+	    } else if (!con2 && qual2) {
+		qual2[i-start] = 0;
 	    }
 	}
     }
