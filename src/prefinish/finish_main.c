@@ -373,128 +373,159 @@ experiments_t *generate_experiments(finish_t *fin, int solution_ind,
     int solution = fin->solution_bits[solution_ind];
     int pos = fin->start + solution_ind;
     int lowest_cend = INT_MAX;
+    int first_try;
 
     *extending = 0;
 
-    for (i = 0; i < 16; i++) {
-	exp_tmp = NULL;
+    /*
+     * Our preferred solution is to walk leftwards from the end
+     * of a region requiring the bottom strand and walk rightwards
+     * from the start of a region requiring the top strand.
+     * However sometimes this simply isn't possible (if it implies
+     * placing a primer off the end of the contig for example).
+     *
+     * So if the first try does not find any solutions then we
+     * try from the less optimal end to see if this produces any
+     * results instead.
+     */
+    for (first_try = 1; first_try >= 0; first_try--) {
+	for (i = 0; i < 16; i++) {
+	    exp_tmp = NULL;
+	    
+	    if (solution & (1<<i)) {
+		int sol_start, sol_end;
+		int strand = (solution >> 16) & 0xff;
+		int chem   = (solution >> 24) & 0xff;
 
-	if (solution & (1<<i)) {
-	    int sol_start, sol_end;
-	    int strand = (solution >> 16) & 0xff;
-	    int chem   = (solution >> 24) & 0xff;
-
-	    /*
-	     * Identify the extents over which this solution also extends.
-	     * This may be useful for careful placement of experiments.
-	     *
-	     * Special case for contig start and end - make sure we do not
-	     * drift too far from the end; for walking experiments.
-	     */
-	    if (fin->prob_bits[solution_ind] & 3) {
-		/* extend left or right end */
-		sol_start = solution_ind;
-		sol_end   = solution_ind;
-		*extending = 1;
-	    } else {
-		for (sol_start = solution_ind;
-		     sol_start > 0 && fin->solution_bits[sol_start-1] & (1<<i);
-		     sol_start--)
-		    ;
-		for (sol_end = solution_ind;
-		     sol_end < fin->length-1 &&
-			 fin->solution_bits[sol_end+1] & (1<<i);
-		     sol_end++)
-		    ;
-	    }
-
-	    sol_start += fin->start;
-	    sol_end += fin->start;
-
-	    if (strand == 2)
-		pos = sol_end;
-	    else if (strand == 1)
-		pos = sol_start;
-	    /* else pos stay as left base */
-
-	    /*
-	     * If we're near the right end and the end needs extending then
-	     * we should also set extending to be true to ensure that we
-	     * score extending experiments correctly.
-	     */
-	    if ((fin->prob_bits[fin->end - fin->start] & 3) &&
-		io_clength(fin->io, fin->contig) - sol_end < 500 &&
-		*extending != 1) {
-		*extending = 2;
-	    } else if ((fin->prob_bits[0] & 3) &&
-		       sol_start - 1 < 500 &&
-		       *extending != 1) {
-		*extending = 2;
-	    }
-
-	    if (fin->opts.debug[FIN_DEBUG_SCORE])
-		printf("Solution %d strand %d chem %d (prob %d, bits %d) "
-		       "at pos %d: covers %d..%d, extending=%d\n",
-		       i, strand, chem, fin->prob_bits[solution_ind],
-		       fin->base_bits[solution_ind], pos, sol_start, sol_end,
-		       *extending);
-	    if (sol_end < lowest_cend)
-		lowest_cend = sol_end;
-
-	    switch (i) {
-	    case 0:
-		/* Do nothing */
-		exp_tmp = NULL;
-		break;
-	    case 1:
-		/* Resequence */
-		exp_tmp = experiment_reseq(fin, pos, chem, strand, &nexp_tmp,
-					   0 /* normal */);
-		break;
-	    case 2:
-		/* Primer walk off sequencing vector */
-		exp_tmp = experiment_walk(fin, pos, chem, strand,
-					  sol_start, sol_end, &nexp_tmp,
-					  EXPERIMENT_VPWALK);
-		break;
-	    case 3:
-		/* Long-gel */
-		exp_tmp = experiment_reseq(fin, pos, chem, strand, &nexp_tmp,
-					   1 /* long */);
-		break;
-	    case 4:
-		/* PCR */
-		fprintf(stderr, "PCR - not implemented yet\n");
-		exp_tmp = NULL;
-		break;
-	    case 5:
-		/* Primer walk off BAC, YAC, PAC or real chromosome */
-		exp_tmp = experiment_walk(fin, pos, chem, strand,
-					  sol_start, sol_end, &nexp_tmp,
-					  EXPERIMENT_CPWALK);
-		break;
-	    case 6:
-		/* Reverse sequence (or fwd if reverse present) */
-		exp_tmp = experiment_reverse(fin, pos, chem, strand,
-					     sol_start, sol_end, &nexp_tmp);
-		break;
-	    default:
-		/* Unknown */
-		printf("Unknown experiment bit %d (0x%x)\n", i, 1<<i);
-		exp_tmp = NULL;
-	    }
-	}
-	
-	if (exp_tmp) {
-	    int j;
-	    for (j = 0; j < nexp_tmp; j++) {
-		exp = xrealloc(exp, ++nexp * sizeof(*exp));
-		/* WORKSHOP
-		 * 4 byte padding between exp_tmp[j].log_func and .data.
+		/*
+		 * Identify the extents over which this solution also extends.
+		 * This may be useful for careful placement of experiments.
+		 *
+		 * Special case for contig start and end - make sure we do not
+		 * drift too far from the end; for walking experiments.
 		 */
-		exp[nexp-1] = exp_tmp[j];
+		if (fin->prob_bits[solution_ind] & 3) {
+		    /* extend left or right end */
+		    sol_start = solution_ind;
+		    sol_end   = solution_ind;
+		    *extending = 1;
+		} else {
+		    for (sol_start = solution_ind;
+			 sol_start > 0 &&
+			     fin->solution_bits[sol_start-1] & (1<<i);
+			 sol_start--)
+			;
+		    for (sol_end = solution_ind;
+			 sol_end < fin->length-1 &&
+			     fin->solution_bits[sol_end+1] & (1<<i);
+		     sol_end++)
+			;
+		}
+		
+		sol_start += fin->start;
+		sol_end += fin->start;
+		
+		if (first_try) {
+		    if (strand == 2)
+			pos = sol_end;
+		    else if (strand == 1)
+			pos = sol_start;
+		    /* else pos stay as left base */
+		} else {
+		    if (strand == 2 && sol_start != sol_end)
+			pos = sol_start;
+		    else if (strand == 1 && sol_start != sol_end)
+			pos = sol_end;
+		    else
+			continue;
+		}
+
+		/*
+		 * If we're near the right end and the end needs extending then
+		 * we should also set extending to be true to ensure that we
+		 * score extending experiments correctly.
+		 */
+		if ((fin->prob_bits[fin->end - fin->start] & 3) &&
+		    io_clength(fin->io, fin->contig) - sol_end < 500 &&
+		    *extending != 1) {
+		    *extending = 2;
+		} else if ((fin->prob_bits[0] & 3) &&
+			   sol_start - 1 < 500 &&
+			   *extending != 1) {
+		    *extending = 2;
+		}
+
+		if (fin->opts.debug[FIN_DEBUG_SCORE])
+		    printf("Solution %d strand %d chem %d (prob %d, bits %d) "
+			   "at pos %d: covers %d..%d, extending=%d\n",
+			   i, strand, chem, fin->prob_bits[solution_ind],
+			   fin->base_bits[solution_ind], pos, sol_start,
+			   sol_end, *extending);
+		if (sol_end < lowest_cend)
+		    lowest_cend = sol_end;
+
+		switch (i) {
+		case 0:
+		    /* Do nothing */
+		    exp_tmp = NULL;
+		    break;
+		case 1:
+		    /* Resequence */
+		    exp_tmp = experiment_reseq(fin, pos, chem, strand,
+					       &nexp_tmp, 0 /* normal */);
+		    break;
+		case 2:
+		    /* Primer walk off sequencing vector */
+		    exp_tmp = experiment_walk(fin, pos, chem, strand,
+					      sol_start, sol_end, &nexp_tmp,
+					      EXPERIMENT_VPWALK);
+		    break;
+		case 3:
+		    /* Long-gel */
+		    exp_tmp = experiment_reseq(fin, pos, chem, strand,
+					       &nexp_tmp, 1 /* long */);
+		    break;
+		case 4:
+		    /* PCR */
+		    fprintf(stderr, "PCR - not implemented yet\n");
+		    exp_tmp = NULL;
+		    break;
+		case 5:
+		    /* Primer walk off BAC, YAC, PAC or real chromosome */
+		    exp_tmp = experiment_walk(fin, pos, chem, strand,
+					      sol_start, sol_end, &nexp_tmp,
+					      EXPERIMENT_CPWALK);
+		    break;
+		case 6:
+		    /* Reverse sequence (or fwd if reverse present) */
+		    exp_tmp = experiment_reverse(fin, pos, chem, strand,
+						 sol_start, sol_end,
+						 &nexp_tmp);
+		    break;
+		default:
+		    /* Unknown */
+		    printf("Unknown experiment bit %d (0x%x)\n", i, 1<<i);
+		    exp_tmp = NULL;
+		}
 	    }
-	    xfree(exp_tmp);
+	
+	    if (exp_tmp) {
+		int j;
+		for (j = 0; j < nexp_tmp; j++) {
+		    exp = xrealloc(exp, ++nexp * sizeof(*exp));
+		    /* WORKSHOP
+		     * 4 byte padding between exp_tmp[j].log_func and .data.
+		     */
+		    exp[nexp-1] = exp_tmp[j];
+		}
+		xfree(exp_tmp);
+
+		/*
+		 * Whether first or second try; we have potential solutions
+		 * so stop looking.
+		 */
+		break;
+	    }
 	}
     }
 
