@@ -367,17 +367,17 @@ add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
 add_cascade	{Settings.Group Readings}		1 0
 add_radio       {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
 	0 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Strand}   1 0 {$w.GroupBy}\
+add_radio       {Settings.Group Readings.By Strand}     1 0 {$w.GroupBy}\
 	2 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Name}   1 0 {$w.GroupBy}\
+add_radio       {Settings.Group Readings.By Name}       1 0 {$w.GroupBy}\
 	4 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Number}   1 0 {$w.GroupBy}\
+add_radio       {Settings.Group Readings.By Number}     1 0 {$w.GroupBy}\
 	5 {$e set_grouping \[set $w.GroupBy\]}
 add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
 	1 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Clone}   1 0 {$w.GroupBy}\
+add_radio       {Settings.Group Readings.By Clone}      1 0 {$w.GroupBy}\
 	3 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Grouping}   1 0 {$w.GroupBy}\
+add_radio       {Settings.Group Readings.By Set}        1 0 {$w.GroupBy}\
 	6 {$e set_grouping \[set $w.GroupBy\]}
 
 add_separator	{Settings.S1}
