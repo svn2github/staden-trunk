@@ -311,6 +311,7 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
 	-tmplcolour2 [keylget gap_defs CONTIG_EDITOR.TEMP_PRIM_COLOUR] \
 	-tmplcolour3 [keylget gap_defs CONTIG_EDITOR.TEMP_OTHER_COLOUR] \
 	-tmplcolour4 [keylget gap_defs CONTIG_EDITOR.TEMP_END_COLOUR] \
+	-tmplcolour5 [keylget gap_defs CONTIG_EDITOR.TEMP_ENDSPAN_COLOUR] \
 	-max_height  $max_height \
 	-bg [tk::Darken [. cget -bg] 115]
 
