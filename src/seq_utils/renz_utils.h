@@ -20,9 +20,10 @@ typedef struct r_enz {
 /* for each cut */
 typedef struct r_match {
 
-    unsigned short enz_name;            /* position of enzyme in R_Enz array */
+    unsigned short enz_name;         /* position of enzyme in R_Enz array */
     unsigned char enz_seq;           /* refers to particular recognition seq */
-    int cut_pos;                                    /* cut position in bases */
+    int cut_pos;                     /* cut position in bases */
+    int padded_cut_pos;		     /* cut position in padded seq */
 
 } R_Match;
 

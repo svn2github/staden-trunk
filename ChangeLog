@@ -1,4 +1,110 @@
+2003-07-14  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/tk_utils/tkTraceDisp.c:
+	Added code to display signed values from trace files.
+
+2003-07-10  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/tk_utils/restriction_enzyme_map.c (plot_renz_matches):
+	Corrected plotting to use padded_cut_site instead of cut_site.
+
+	* src/seq_utils/renz_utils.h, src/gap4/restriction_enzymes.c:
+	Added a 'padded_cut_site' element to the R_Match structure. This
+	is used by gap4's restriction enzyme displays to store the padded
+	positions, which are needed for plotting and cursor control. The
+	original unpadded value is left in R_Match->cut_site and hence the
+	text outputs of fragment sizes and positions are correct.
+
+2003-07-07  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/io_lib/abi/seqIOABI.c:
+	Added support for reading phred-style confidence values from the
+	ABI file.
+
+2003-07-03  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish_filter.[ch], src/prefinish/finish.[ch],
+	src/prefinish/finish_walk.c, src/prefinish/finish_main.c: 
+	Added the filter_words algorithm into prefinish so that poly-A,
+	GT-rich, etc can be filtered on. These are now also defined
+	classification types and we check for different characters other
+	than '#' in the finish_walk algorithms too.
+	
+2003-07-02  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/stops/stops.c:
+	Output now includes the sequence preceeding the stop.
+	Can now specify a directory name instead of files and the code
+	iterates through the directory looking for SCF, ZTR and ABI files.
+
+	* src/gap4/contig_selector.c (DrawCSTags):
+	Fixed a buffer overflow in creating the canvas item 'tag' list.
+
+2003-07-01  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/template.c:
+	check_template_position() was resetting the consistency value to
+	zero, which overwrites the CONSIST_STRAND flags. Deleted this.
+
+2003-07-01  Rodger Staden  <rs@mrc-lmb.cam.ac.uk>
+
+	* src/qclip/qclip.c (main):
+	Set the maximum right hand quality clip to 10 million, as it was
+	only 10K meaning reference/consensus sequences could be truncated.
+
+2003-06-27  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/edUtils2.c (DBgetTags): 
+	Call DBgetSeq from DBgetTags to ensure the sequence info has been
+	loaded; specifically sequence length. This is needed as DBgetTags
+	does tag validity checking. Normally the sequence is loaded before
+	the tags, but at startup the other way around can now occur due to
+	the new multi-tag-under-cursor changes.
+	
+	* src/gap4/tman_interface.c (save_trace_images):
+	Corrected mutation report generation when the mini-traces are shown.
+
+2003-06-26  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/tman_diff.c (diff_readings):
+	When a trace isn't there to diff against, we now create a blank
+	Read instead of returning NULL. This fixes a bug of missing
+	difference traces causing the mutation report to fail.
+
+	* src/tk_utils/tkTrace.c (drawable_to_png):
+	Better error handling. If png_create_write_struct failed it
+	crashed trying to free png_ptr.
+
+	* src/gap4/edMutations.c (sort_mutations):
+	Remove buffer overflow. (Index using 1-N on an array alloc of N.)
+
+	* src/gap4/searchUtils.c (edDoSearch):
+	Searching could miss hits (eg tags, and probably many other
+	things) when Group Readings by Templates was enabled.
+
+2003-06-25  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/edUtils2.c (showCursor, onScreen):
+	Scrolling down sequences when the Y-depth was too high would
+	position the cursor on a sequence underneath the consensus line
+	without Y scrolling the editor window properly.
+
+	* src/gap4/contig_selector.tcl (EditCSTagDetails),
+	src/gap4/contig_selector.c (DrawCSTags):
+	New function with a binding "Edit contig at tag pos" menu. Right
+	clicking in a tag in the contig selector now allows the editor to
+	be brought up at that position.
+
 2003-06-24  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/contig_editor.tcl:
+	Set -tearoffs 0 on cascading edit tag and delete tag menus.
+
+	* distrib/unix-S1_1b/tables/gaprc:
+	Adjusted a few defaults to match the Sanger defaults (where
+	appropriate globally). We still need to maintain a sanger diff
+	though for definite-local changes (such as huge fonts and
+	'hotpink' highlight colours).
 
 	* src/stops/stops.c:
 	Tweak the default parameters to use a longer window length and

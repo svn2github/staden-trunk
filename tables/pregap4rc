@@ -195,7 +195,7 @@ module uncalled_clip {
 set enabled 0
 #set offset 70
 #set min_extent 0
-#set max_extent 9999
+#set max_extent 999999
 #set right_win_length 100
 #set right_num_uncalled 5
 #set left_win_length 100
@@ -210,7 +210,7 @@ set conf_val 15
 set window_length 50
 #set offset 70
 #set min_extent 0
-#set max_extent 9999
+#set max_extent 999999
 #set right_win_length 100
 #set right_num_uncalled 5
 #set left_win_length 100

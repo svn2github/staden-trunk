@@ -138,7 +138,7 @@ plot_renz_matches(Tcl_Interp *interp,
 	
 		offset = (item * tick->ht) + yoffset;
 		/* cut_site = match[i].cut_pos; */
-		cut_site = ruler->start - 1 + match[i].cut_pos;
+		cut_site = ruler->start - 1 + match[i].padded_cut_pos;
 
 		PlotStickMap(interp, re_win, cut_site, 0, offset, 
 			     tick->ht, tick->line_width, tick->colour, item,

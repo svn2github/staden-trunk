@@ -936,14 +936,16 @@ FindMatches(R_Enz *r_enzyme,                                          /* in */
 		 * displaying 
 		 */
 		if (matches[k] + r_enzyme[i].cut_site[j] == sequence_len) {
-		    (*match)[cnt].cut_pos = sequence_len;
+		    (*match)[cnt].padded_cut_pos =
+			(*match)[cnt].cut_pos = sequence_len;
 		} else {
 		    /*
 		    (*match)[cnt].cut_pos = (matches[k] + 
 				      r_enzyme[i].cut_site[j])%sequence_len;
 				      */
-		    (*match)[cnt].cut_pos = matches[k] + 
-				      r_enzyme[i].cut_site[j];
+		    (*match)[cnt].padded_cut_pos =
+			(*match)[cnt].cut_pos =
+			    matches[k] + r_enzyme[i].cut_site[j];
 		}
 		   
 		cnt++;
