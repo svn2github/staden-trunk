@@ -224,10 +224,10 @@ proc RaiseAndMoveContig {io tbl w} {
     set pos [$tbl cellcget [$tbl curselection],1 -text]
 
     if {[db_info get_read_num $io $ctg] <= 0} {
+        bell
         tk_messageBox -message "Contig identifier not found! Is this the correct file for this database?" \
             -type ok \
             -parent $w   
-        bell
         return
     }    
     set ed [edit_contig -io $io -contig $ctg -pos $pos -reuse 1 -nojoin 1]
