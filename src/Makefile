@@ -34,6 +34,7 @@ DIRS =	Misc\
 	screen_seq\
 	qclip\
 	polyA_clip\
+	stops\
 	pregap4\
 	make_weights\
 	find_renz\
