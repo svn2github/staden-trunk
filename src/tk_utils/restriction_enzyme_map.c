@@ -55,6 +55,7 @@ void renz_shutdown(R_Enz *r_enzyme,
 void
 PlotStickMap(Tcl_Interp *interp,
 	     char *win_name,
+	     int unpadded_cut_site,
 	     int cut_site,
 	     int xoffset,
 	     int yoffset,
@@ -75,7 +76,7 @@ PlotStickMap(Tcl_Interp *interp,
     sprintf(cmd,"%s create line %d %d %d %d -fill %s -width %d "
 	    "-tag {S renz re_%d pos_%d}",
 	    win_name, xcut+xoffset, yoffset, xcut+xoffset, 
-	    yoffset + tick_ht, colour, tick_wd, index, cut_site);
+	    yoffset + tick_ht, colour, tick_wd, index, unpadded_cut_site);
     Tcl_Eval(interp, cmd);
 }
 
@@ -140,7 +141,9 @@ plot_renz_matches(Tcl_Interp *interp,
 		/* cut_site = match[i].cut_pos; */
 		cut_site = ruler->start - 1 + match[i].padded_cut_pos;
 
-		PlotStickMap(interp, re_win, cut_site, 0, offset, 
+		PlotStickMap(interp, re_win,
+			     ruler->start - 1 + match[i].cut_pos, cut_site,
+			     0, offset, 
 			     tick->ht, tick->line_width, tick->colour, item,
 			     ruler->start, ruler->end);
 	    }

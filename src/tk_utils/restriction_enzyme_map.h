@@ -14,6 +14,7 @@ void renz_shutdown(R_Enz *r_enzyme,
 void
 PlotStickMap(Tcl_Interp *interp,
 	     char *win_name,
+	     int unpadded_cut_site,
 	     int cut_site,
 	     int xoffset,
 	     int yoffset,
