@@ -66,6 +66,8 @@ int tcl_mkdir(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+#if 0
+/* Old string based version. This also doesn't take a list as the input */
 int tcl_dir_or_file(ClientData clientData, Tcl_Interp *interp,
 		    int argc,  char **argv) {
     Tcl_DString files;
@@ -76,7 +78,7 @@ int tcl_dir_or_file(ClientData clientData, Tcl_Interp *interp,
 
     if (argc < 2) {
 	Tcl_SetResult(interp,
-		      "wrong # args: should be \"tcl_dir_or_file "
+		      "wrong # args: should be \"dir_or_file "
 		      "filename ...\"\n", TCL_STATIC);
 	return TCL_ERROR;
     }
@@ -100,6 +102,55 @@ int tcl_dir_or_file(ClientData clientData, Tcl_Interp *interp,
     Tcl_DStringFree(&files);
 
     Tcl_DStringResult(interp, &result);
+
+    return TCL_OK;
+}
+#endif
+
+/*
+ * Takes a Tcl List of filenames as input and checks each to see whether it
+ * is a directory or not.
+ *
+ * Returns:
+ *    A Tcl List of two elements: a list of directories and a list of
+ *    non-directories (typically regular files).
+ */
+int tcl_dir_or_file(ClientData clientData, Tcl_Interp *interp,
+		    int objc,  Tcl_Obj *CONST objv[]) {
+    int i;
+    struct stat st;
+    int listc;
+    Tcl_Obj **listv, *dlist, *flist, *reslist;
+
+    if (objc != 2) {
+	Tcl_SetResult(interp,
+		      "wrong # args: should be \"dir_or_file "
+		      "file_list\"\n", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    /* Split list */
+    if (Tcl_ListObjGetElements(interp, objv[1], &listc, &listv) != TCL_OK) {
+	return TCL_ERROR;
+    }
+
+    dlist = Tcl_NewObj();
+    flist = Tcl_NewObj();
+    reslist = Tcl_NewObj();
+
+    Tcl_ListObjAppendElement(interp, reslist, dlist);
+    Tcl_ListObjAppendElement(interp, reslist, flist);
+
+    for (i=0; i < listc; i++) {
+	if (stat(Tcl_GetStringFromObj(listv[i], NULL), &st) != -1) {
+	    if (S_ISDIR(st.st_mode))
+		Tcl_ListObjAppendElement(interp, dlist, listv[i]);
+	    else
+		Tcl_ListObjAppendElement(interp, flist, listv[i]);
+	}
+    }
+
+    Tcl_SetObjResult(interp, reslist);
 
     return TCL_OK;
 }
@@ -128,8 +179,12 @@ int Tk_utils_Misc_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "mkdir", tcl_mkdir,
 		      (ClientData) NULL, NULL);
 
+    /*
     Tcl_CreateCommand(interp, "dir_or_file", tcl_dir_or_file,
 		      (ClientData)NULL, NULL);
+    */
+    Tcl_CreateObjCommand(interp, "dir_or_file", tcl_dir_or_file,
+			 (ClientData)NULL, NULL);
 
     Tcl_CreateCommand(interp, "trace_type", tcl_trace_type,
 		      (ClientData)NULL, NULL);
