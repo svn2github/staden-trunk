@@ -32,6 +32,6 @@
 
 #define is_filtered(c) ((c) == '#' || ((c) >=  FILTER_POLYA && (c) <= FILTER_POLYY))
 
-void finish_filter(finish_t *fin);
+void finish_filter(finish_t *fin, char *seq, int len);
 
 #endif /*_FINISH_FILTER_H*/
