@@ -76,9 +76,9 @@ proc JoinContig {io} {
 	-help_command "show_help gap4 {Editor-Joining}"
 
     #initialise current frame
-    SetCurFrame $t $t.id1
-    bind [entrybox_path $t.id1.ent] <<select>> "SetCurFrame $t $t.id1"
-    bind [entrybox_path $t.id2.ent] <<select>> "SetCurFrame $t $t.id2"
+    SetCurFrame $t [list $t.id1 $t.id2]
+    bind [entrybox_path $t.id1.ent] <<select>> "SetCurFrame $t {$t.id1 $t.id2}"
+    bind [entrybox_path $t.id2.ent] <<select>> "SetCurFrame $t {$t.id2 $t.id1}"
     pack $t.id1 $t.id2 -side top -fill both
     pack $t.but -side bottom -fill both
 }
