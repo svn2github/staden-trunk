@@ -211,7 +211,7 @@ proc ContigComparator { io } {
     #HACK - cp_id is never used
     update idletasks
 
-    tkwait visibility $csv_win
+    catch {tkwait visibility $csv_win}
 
     set cp_id [display_contig_comparator -io $io \
 	    -window $csp_win -win_vertical $csv_win -id [set $f.cs_id]]
