@@ -59,11 +59,12 @@ dist: distmsg distunix distwindows distmacosx
 
 
 distcommon:
-	-mkdir $(DIST)
+	-mkdir -p $(DIST)
 	cp Version $(DIST)
 	cd tables; $(MAKE) $(SUBFLAGS) dist
 	cd userdata; $(MAKE) $(SUBFLAGS) dist
 	cd demo; $(MAKE) $(SUBFLAGS) dist
+	cd lib; $(MAKE) $(SUBFLAGS) distcommon
 
 
 distunix: distcommon
@@ -73,27 +74,31 @@ distunix: distcommon
 
 	cd course; $(MAKE) $(SUBFLAGS) distunix
 	cd doc; $(MAKE) $(SUBFLAGS) distunix
-	cd lib; $(MAKE) $(SUBFLAGS) distunix
 	#cd man; $(MAKE) $(SUBFLAGS) distunix
+	-mkdir -p $(DIST)/lib/linux-binaries
 	cd src; $(MAKE) $(SUBFLAGS) distunix
 
 	#-----------------------------------------------------
 	# This is inefficient as it install the lib Tcl files multiple times,
 	# but we can live with that as it provides simplicity.
 	#-----------------------------------------------------
-	-mkdir $(DIST)/alpha-bin
-	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=alpha install
+#	-mkdir $(DIST)/alpha-bin
+#	-mkdir -p $(DIST)/lib/alpha-bin
+#	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=alpha install
 	#-----------------------------------------------------
 	-mkdir $(DIST)/linux-bin
 	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=linux install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/solaris-bin
+#	-mkdir -p $(DIST)/lib/solaris-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=solaris install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/sgi-bin
+#	-mkdir -p $(DIST)/lib/sgi-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=sgi install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/macosx-bin
+#	-mkdir -p $(DIST)/lib/macosx-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=macosx install
 
 
@@ -105,7 +110,6 @@ distmacosx: distcommon
 
 	cd course; $(MAKE) $(SUBFLAGS) distunix
 	cd doc; $(MAKE) $(SUBFLAGS) distunix
-	cd lib; $(MAKE) $(SUBFLAGS) distmacosx
 	cd man; $(MAKE) $(SUBFLAGS) distunix
 	cd src; $(MAKE) $(SUBFLAGS) distunix
 
@@ -119,7 +123,6 @@ distwindows: distcommon
 	-mkdir $(DIST)/windows-bin
 	cd course; $(MAKE) $(SUBFLAGS) distwindows
 	cd doc; $(MAKE) $(SUBFLAGS) distwindows
-	cd lib; $(MAKE) $(SUBFLAGS) distwindows
 	cd src; $(MAKE) $(SUBFLAGS) distwindows
 
 #
