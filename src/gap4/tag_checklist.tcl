@@ -173,7 +173,6 @@ proc tag_checklist {path array args} {
 
     set mode [$l cget -selectmode]
     if {$mode == "extended" || $mode == "extended2" || $mode == "multiple"} {
-	puts foo
 	# Add select all and deselect all messages.
 	frame $path.buttons
 	button $path.buttons.select_all \
