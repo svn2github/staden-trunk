@@ -688,7 +688,7 @@ static void guess_references(EdStruct *xx, int seqtop, int seqbot, int pos,
 			     int *seqlist, int *rtop, int *rbot) {
     int i, j, count;
     int seq_5, pos_5, seq_pos;
-    char seq_base;
+    char seq_base1, seq_base2;
     int best_conf_match = 5, best_conf_mismatch = 5;
     int mismatch_seq_top = 0, mismatch_seq_bot = 0;
     read_template_pair *tlist; /* templates in seqlist[] */
@@ -696,7 +696,10 @@ static void guess_references(EdStruct *xx, int seqtop, int seqbot, int pos,
     /* The base call for the query sequence */
     DBgetSeq(DBI(xx), seqtop);
     seq_pos = pos - DB_RelPos(xx, seqtop) + DB_Start(xx, seqtop);
-    seq_base = DB_Seq(xx, seqtop)[seq_pos];
+    seq_base1 = DB_Seq(xx, seqtop)[seq_pos];
+    DBgetSeq(DBI(xx), seqbot);
+    seq_pos = pos - DB_RelPos(xx, seqbot) + DB_Start(xx, seqbot);
+    seq_base2 = DB_Seq(xx, seqbot)[seq_pos];
 
     /* Identify which traces are close & good quality, store in tlist[] */
     for (i = 0; seqlist[i]; i++)
@@ -769,11 +772,15 @@ static void guess_references(EdStruct *xx, int seqtop, int seqbot, int pos,
 	for (; i < j; i++) {
 	    tlist[i].conf = score;
 
-	    if (best_conf_match <= score && tlist[i].base == seq_base) {
+	    if (best_conf_match <= score &&
+		(tlist[i].base == seq_base1 ||
+		 tlist[i].base == seq_base2)) {
 		best_conf_match = score;
 		
 	    }
-	    if (best_conf_mismatch <= score && tlist[i].base != seq_base) {
+	    if (best_conf_mismatch <= score && 
+		(tlist[i].base != seq_base1 ||
+		 tlist[i].base != seq_base2)) {
 		best_conf_mismatch = score;
 		if (tlist[i].strand == UNCOMPLEMENTED)
 		    mismatch_seq_top = tlist[i].read;
