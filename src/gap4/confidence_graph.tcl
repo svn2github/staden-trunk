@@ -225,8 +225,43 @@ proc CreateConfidenceGraph {io mode cons_id c_win} {
 	set cmd discrepancy_graph
     }
 
-    set $conf_win.conf_id [$cmd -io $io -frame $c_win -window $conf_win \
-			       -id $cons_id -win_ruler $c_win.vruler$id]
+    switch $mode {
+	"conf" {
+	    set $conf_win.conf_id [confidence_graph \
+				       -io $io \
+				       -frame $c_win \
+				       -window $conf_win \
+				       -id $cons_id \
+				       -win_ruler $c_win.vruler$id]
+	}
+	"second" {
+	    set $conf_win.conf_id [second_confidence_graph \
+				       -io $io \
+				       -frame $c_win \
+				       -window $conf_win \
+				       -id $cons_id \
+				       -win_ruler $c_win.vruler$id]
+	}
+	"discrep" {
+	    set $conf_win.conf_id [discrepancy_graph \
+				       -io $io \
+				       -frame $c_win \
+				       -window $conf_win \
+				       -id $cons_id \
+				       -win_ruler $c_win.vruler$id \
+				       -two_alleles 0]
+	}
+	"discrep2" {
+	    set $conf_win.conf_id [discrepancy_graph \
+				       -io $io \
+				       -frame $c_win \
+				       -window $conf_win \
+				       -id $cons_id \
+				       -win_ruler $c_win.vruler$id \
+				       -two_alleles 1]
+	}
+    }
+
     
     if {[set $conf_win.conf_id] == -1} {
 	verror ERR_WARN "Gap4" "Too many windows"

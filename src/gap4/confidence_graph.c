@@ -152,7 +152,8 @@ int calc_confidence(GapIO *io,
     if (!con)
         return -1;
 
-    if (mode == CONFIDENCE_GRAPH_DISCREP) {
+    if (mode == CONFIDENCE_GRAPH_DISCREP ||
+	mode == CONFIDENCE_GRAPH_DISCREP2) {
 	float *qual1 = (float *)xmalloc((end - start + 1) * sizeof(float));
 	float *qual2 = (float *)xmalloc((end - start + 1) * sizeof(float));
 	int i;
@@ -161,8 +162,9 @@ int calc_confidence(GapIO *io,
 			   consensus_cutoff, quality_cutoff,
 			   database_info, (void *)io);
 	for (i = 0; i < end-start+1; i++) {
-	    /* qual[i] = MIN(500, (qual1[i] + log(MAX(.00001, 1-qual2[i]/3))*-500)/2);  */
-	    qual[i] = qual1[i] * qual2[i];
+	    qual[i] = mode == CONFIDENCE_GRAPH_DISCREP
+		? qual1[i]
+		: qual1[i] * qual2[i];
 	}
 	xfree(qual1);
 	xfree(qual2);
@@ -446,12 +448,11 @@ static void confidence_callback(GapIO *io, int contig, void *fdata,
     switch(jdata->job) {
     case REG_QUERY_NAME:
 	{
-	    sprintf(jdata->name.line, 
-		    (conf->mode == CONFIDENCE_GRAPH_QUALITY)
-		    ? "Confidence graph"
-		    : (conf->mode == CONFIDENCE_GRAPH_DISCREP
-		       ? "Discrepancy graph"
-		       : "2nd confidence graph"));
+	    char *name[] = {"Quality graph",
+			    "2nd confidence graph",
+			    "Discrepancy graph",
+			    "Diploid graph"};
+	    sprintf(jdata->name.line, name[conf->mode]);
 	    return;
 	}
     case REG_COMPLEMENT:
