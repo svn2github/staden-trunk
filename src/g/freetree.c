@@ -209,8 +209,9 @@ static free_tree_n *tree_find_len(free_tree *tr, int len) {
     /* Do we know the largest block? */
     if (tr->largest) {
 	if (len <= tr->largest->len) {
+	    free_tree_n *ret = tr->largest;
 	    tr->largest = NULL;
-	    return tr->rover = tr->largest;
+	    return tr->rover = ret;
 	} else {
 	    goto quick;
 	}
