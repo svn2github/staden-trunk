@@ -897,6 +897,12 @@ int dojoin(GapIO *io, int lnconl, int lnconr, int relx) {
         
     /* Delete old contig (lnconr) */
     gl_l = io_clnbr(io, lnconl);
+    /* unlink so that io_delete_contig does not renumber, incase we're
+     * deleting the last contig */
+    contig_read(io, lnconr, c);
+    io_clnbr(io, lnconr) = io_crnbr(io, lnconr) = 0;
+    c.left = c.right = 0;
+    contig_write(io, lnconr, c);
     io_delete_contig(io, lnconr);
     lnconl = rnumtocnum(io, gl_l);
 
