@@ -1,3 +1,149 @@
+2004-05-11  jkbonfield  <jkbonfield>
+
+	* src/gap4/configure.tcl,
+	* src/gap4/gap.tcl,
+	* src/gap4/gap_globals.c,
+	* src/gap4/gap_globals.h,
+	* src/gap4/tclIndex:
+	(08:42:13) More template check parameters are now exposed to the
+	user via the Configure menu. Specifically this includes what data
+	we filter out as possibly incorrect (prime type; all or just
+	custom) and the minimum length of vector SVEC tags before we
+	consider them to be valid. (Both are in template.c already, but
+	previously only controlled programatically.) 
+
+	* src/gap4/template.c:
+	(08:43:10) Corrected OFLAG flags so that they are proper
+	bit-patterns rather than 'overlapping' each other causing bugs. 
+
+	* src/gap4/template.h:
+	(08:43:11) Corrected OFLAG flags so that they are proper
+	bit-patterns rather than 'overlapping' each other causing bugs. 
+
+	* tables/gaprc:
+	(08:44:28) Added default definitions for the new template status
+	checking options. 
+
+	* tables/gaprc_menu_full:
+	(08:44:54) Renamed the template size tolerance function to
+	something more appropriate. 
+
+	* src/gap4/contig_editor.tcl:
+	(08:46:23) Added a "Join to..." menu to the editor names panel.
+	This brings up a join editor between the current sequence and the
+	one linked to (provided they are in different contigs). 
+
+	* staden.login,
+	* staden.profile:
+	(10:24:56) Updated the MANPATH handling to use the "manpath"
+	command where available for finding the default. 
+
+	* src/gap4/find_oligo.c:
+	(12:28:00) SF Bug #914027. The sequence search now honours the
+	start/end ranges. 
+
+2004-05-07  jkbonfield  <jkbonfield>
+
+	* src/Makefile:
+	(13:10:58) xrelink target to do the same as relink, in case relink
+	is overloaded elsewhere. 
+
+	* src/gap4/contig_editor.tcl:
+	(13:12:36) Reenabled the Any-Configure binding once more. It
+	probably breaks resizing in some cases, but without it twm was
+	giving zero sized windows.
+	
+	One day... one day, I'll finally get around to rewriting this mess! 
+
+	* src/gap4/gap.tcl:
+	(13:13:29) Improved usage messages and error messages when DISPLAY
+	not set.
+	
+	Updated version to 4.10b2 
+
+	* src/gap4/template.c,
+	* src/gap4/template.h:
+	(13:16:55) Added a minimum length of vector (min_vector_len) to
+	consider as valid, in order to ignore a few base pairs erroneously
+	tagged at the end of sequences due to random matches. (This is a
+	bug in vector clipping programs, but it happens often.)
+	
+	Added a TEMP_OFLAG_IGNORE_PTYPE flag so that the primer type
+	information can be completely ignored when trying to work out
+	template positions. Instead it relies purely on the location of
+	sequences and vector tags. This is to work around databases with
+	incorrectly entered data. 
+
+	* src/mk/global.mk:
+	(13:18:45) Edited TEXTUTILS_LIB definition to have TEXTUTILS_LIB_E
+	at the end, rather than second to end. 
+
+	* src/prefinish/finish_filter.c:
+	(14:44:53) Renamed key_t to fkey_t to avoid conflicts under MinGW. 
+
+	* src/prefinish/finish_hash.c:
+	(15:24:19) Reduced the spamminess of the best oligo match output by
+	only printing up failed ones. 
+
+	* src/prefinish/finish_long.c:
+	(15:25:56) Added extra min_vector_len parameter into
+	finish_clip_svec call. 
+
+	* src/prefinish/finish_main.c:
+	(15:28:20) Check for the new -penalise_overlaps option.
+	
+	Set TEMP_OFLAG_IGNORE_PTYPE flag the template struct before
+	checking for validity if -chk_template_stat == 0. Pass over the
+	-min_vector_len parameter too. 
+
+	* src/prefinish/finish_sanger.tcl:
+	(15:29:13) Extended the -ends only mode to give scores for
+	improving low quality, even though it still only tries to extend
+	contigs. Added a -regexp_templates 1 option to switch back to the
+	previous default mechanism. 
+
+	* src/prefinish/finish_utils.c:
+	(15:30:23) Make use of the -min_vector_len option in the
+	find_cloning_cector and finish_svec_clip functions. 
+
+	* src/prefinish/finish_utils.h:
+	(15:30:39) Make use of the -min_vector_len option in the
+	find_cloning_cector and finish_svec_clip functions. 
+
+	* src/prefinish/finish_walk.c:
+	(15:35:06) Decreased the impact of primer3 scores on the
+	'cost_mult' parameter. It's now *= 1+score/50 instead of *=
+	1+score/20.
+	
+	When -chk_template_stat == 0 we now set the template ranges to be
+	the observed location of vector +/- 1Kb.
+	
+	"Solution not adjoining problem end" is now multiplicative in cost
+	rather than additive.
+	
+	Tweaks for start location of where to search for primers when we're
+	trying to solve a + strand problem from the right end (ie the left
+	end failed) and where start != end. We back up from the requested
+	pos by half a read length. 
+
+	* src/scripts/embl2exp:
+	(16:25:26) New script: a quick hack to convert EMBL to EXP by using
+	a gap4 database as an intermediate format. 
+
+2004-04-28  jkbonfield  <jkbonfield>
+
+	* src/seq_utils/search_utils.c:
+	(09:21:45) Fixed a 'read past buffer end' bug in pstrstr and
+	pstrstr_inexact, leading to possible crashes, but more likely to
+	false matches being reported.
+	
+	The problem occured when 'text' ended in a pad. 
+
+2004-04-26  James Bonfield  <jkb>
+
+	* src/gap4/gap.tcl:
+	Update version to 4.10b2
+
 2004-04-23  James Bonfield  <jkb>
 
 	* src/gap4/newgap_cmds.c:
@@ -19,28 +165,12 @@
 2004-04-21  jkbonfield  <jkbonfield>
 
 	* src/gap4/configure.tcl:
-	(13:28:28) Renamed the term 'template size strictness' to 'template
-	size tolerance' to reflect the fact that larger numbers mean less
-	strict. 
-
 	* src/gap4/gap.tcl:
-	(13:28:40) Renamed the term 'template size strictness' to 'template
-	size tolerance' to reflect the fact that larger numbers mean less
-	strict. 
-
 	* src/gap4/gap_globals.c,
 	* src/gap4/gap_globals.h,
 	* src/gap4/tclIndex,
 	* src/gap4/template.c:
-	(13:28:41) Renamed the term 'template size strictness' to 'template
-	size tolerance' to reflect the fact that larger numbers mean less
-	strict. 
-
 	* src/gap4/template_display.tcl:
-	(13:28:42) Renamed the term 'template size strictness' to 'template
-	size tolerance' to reflect the fact that larger numbers mean less
-	strict. 
-
 	* tables/gaprc_menu_full:
 	(13:29:51) Renamed the term 'template size strictness' to 'template
 	size tolerance' to reflect the fact that larger numbers mean less
