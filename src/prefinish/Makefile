@@ -86,8 +86,9 @@ install:
 
 distsrc: distsrc_dirs
 	-cp -R *.[ch] *.tcl *.itcl *.itk help args.template Makefile \
-	    dependencies CHEMISTRY METHODS prefinish rules \
-	    config.prefinish $(DIRNAME)
+	    dependencies CHEMISTRY METHODS prefinish rules tclIndex \
+	    config.prefinish finish_sanger finish_cDNA finish_cDNA_ends_only \
+	    $(DIRNAME)
 
 DEPEND_OBJ = $(OBJS)
 
