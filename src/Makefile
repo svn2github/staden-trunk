@@ -87,6 +87,7 @@ xrelink:
 depend:
 	$(MAKE) $(FLAGS) JOB=depend
 
+# Installs newly built executables into $STADENROOT/$(MACHINE)-bin
 install:
 	$(MAKE) $(FLAGS) JOB=install
 
@@ -94,92 +95,22 @@ install:
 .PHONY: distcommon distwindows distunix
 
 
-# Distribute just enough source to allow third party extensions to build.
-# In other words, the header files and perhaps the free bits (like io_lib).
-distcommon:
-	-mkdir $(DIST)/src
+# Full source is available now, so we no longer need to copy any of this
+# when building a binary distribution.
 
-	-cp -R Makefile $(DIST)/src
-
-	-mkdir $(DIST)/src/Misc
-	-cp -R Misc/*.h $(DIST)/src/Misc/
-
-#	-mkdir $(DIST)/src/composition
-#	cd composition;\
-#	cp -R Makefile *.[ch] *.tcl dependencies $(DIST)/src/composition;\
-#	cp -R *.html *.topic *.index $(DIST)/src/composition;\
-#	cp -R compositionrc tclIndex $(DIST)/src/composition;
-#	cd ..
-
-	-mkdir $(DIST)/src/g
-	-cp -R g/*.h $(DIST)/src/g
-
-	-mkdir $(DIST)/src/gap4
-	-cp -R gap4/*.h $(DIST)/src/gap4
-	-cp -R gap4/*.h $(DIST)/src/gap4
-
-#	FIXME: It's downloadable from our ftpsite anyway.
-#
-#	-mkdir $(DIST)/src/io_lib
-#	-cp -R io_lib/*.h $(DIST)/src/io_lib
-
-	-mkdir $(DIST)/src/lib
-
-	-mkdir $(DIST)/src/mk
-	-cp -R mk/*.mk mk/README $(DIST)/src/mk
-
-	-mkdir $(DIST)/src/scripts
-	cd scripts;\
-	cp Makefile assemble4 bzip_trace bzip2_trace    $(DIST)/src/scripts;\
-	cp embl2exp fasta2exp fasta-split gzip_trace    $(DIST)/src/scripts;\
-	cp make_fasta splitseq_da staden2exp		$(DIST)/src/scripts;\
-	cd ..
-
-	-mkdir $(DIST)/src/seq_utils
-	-cp -R seq_utils/*.h $(DIST)/src/seq_utils
-
-	-mkdir $(DIST)/src/text_utils
-	-cp -R text_utils/*.h $(DIST)/src/text_utils
-
-	-mkdir $(DIST)/src/tk_utils
-	-cp -R tk_utils/*.h $(DIST)/src/tk_utils
-
-#	Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
-	-mkdir $(DIST)/src/tcl8.4.6
-	-mkdir $(DIST)/src/tcl8.4.6/generic
-	-cp -R tcl8.4.0/generic/tcl*.h $(DIST)/src/tcl8.4.6/generic
-	-mkdir $(DIST)/src/tk8.4.6
-	-mkdir $(DIST)/src/tk8.4.6/generic
-	-mkdir $(DIST)/src/tk8.4.6/compat
-	-cp -R tk8.4.6/generic/tk*.h $(DIST)/src/tk8.4.6/generic
-	-cp -R tk8.4.6/compat/*.h $(DIST)/src/tk8.4.6/compat
+# Make install does most of the work, but this doesn't install the third
+# party libraries. So we'll do that here. NOTE: this only installs the
+# binary components. The tcl/itcl files are already in the ../lib directory
+# and will be copied over separately. This is because in some cases they will
+# have been manually hacked/bug fixed.
+distunix:
+	-cp -R lib/$(MACHINE)-binaries/libpng* $(DIST)/lib/$(MACHINE)-binaries
+	-cp -R lib/$(MACHINE)-binaries/libtcl* $(DIST)/lib/$(MACHINE)-binaries
+	-cp -R lib/$(MACHINE)-binaries/libtk* $(DIST)/lib/$(MACHINE)-binaries
+	-cp -R lib/$(MACHINE)-binaries/libitcl* $(DIST)/lib/$(MACHINE)-binaries
 
 
-
-distunix: distcommon
-	-mkdir $(DIST)/src/composition/alpha-binaries
-	-mkdir $(DIST)/src/composition/linux-binaries
-	-mkdir $(DIST)/src/composition/sgi-binaries
-	-mkdir $(DIST)/src/composition/solaris-binaries
-	-mkdir $(DIST)/src/composition/install
-	-mkdir $(DIST)/src/lib/alpha-binaries
-	-mkdir $(DIST)/src/lib/linux-binaries
-	-mkdir $(DIST)/src/lib/sgi-binaries
-	-mkdir $(DIST)/src/lib/solaris-binaries
-
-#	 Biolims - for Solaris only
-	-cp -R lib/solaris-binaries/libbiolimsio.so $(DIST)/lib/solaris-binaries
-	-cp -R lib/solaris-binaries/libbiolimsgap.so $(DIST)/lib/solaris-binaries
-
-#	 Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
-	-mkdir $(DIST)/src/tcl8.4.6/unix
-	-cp -R tcl8.4.6/unix/*.h $(DIST)/src/tcl8.4.6/unix
-	-mkdir $(DIST)/src/tk8.4.6/unix
-	-cp -R tk8.4.6/unix/*.h $(DIST)/src/tk8.4.6/unix
-
-
-
-distwindows: distcommon
+distwindows:
 	-mkdir $(DIST)/src/composition/windows-binaries
 	-cp windows/run/Release/sprun.exe $(DIST)
 	-cp trev/trev.bat $(DIST)/windows-bin
@@ -188,10 +119,6 @@ distwindows: distcommon
 	-cp pregap4/pregap4.bat $(DIST)/windows-bin
 	-cp ../windows-bin/*.exe $(DIST)/windows-bin
 	-cp scripts/splitseq_da $(DIST)/windows-bin
-	-mkdir $(DIST)/src/tcl8.4.6/win
-	-cp -R tcl8.4.6/win/*.h $(DIST)/src/tcl8.4.6/win
-	-mkdir $(DIST)/src/tk8.4.6/win
-	-cp -R tk8.4.6/win/*.h $(DIST)/src/tk8.4.6/win
 
 
 
@@ -208,26 +135,26 @@ distsrc:
 	cp -R Makefile $(DISTSRC)/src
 	$(MAKE) $(FLAGS) JOB=distsrc
 #	 A few bits of Tcl that are needed for compilation
-	-mkdir $(DISTSRC)/src/tcl8.4.6
-	-mkdir $(DISTSRC)/src/tcl8.4.6/generic
-	-cp -R tcl8.4.6/generic/tcl*.h $(DISTSRC)/src/tcl8.4.6/generic/
-	-mkdir $(DISTSRC)/src/tcl8.4.6/unix
-	-cp -R tcl8.4.6/unix/tclAppInit.c $(DISTSRC)/src/tcl8.4.6/unix
+#	-mkdir $(DISTSRC)/src/tcl8.4.6
+#	-mkdir $(DISTSRC)/src/tcl8.4.6/generic
+#	-cp -R tcl8.4.6/generic/tcl*.h $(DISTSRC)/src/tcl8.4.6/generic/
+#	-mkdir $(DISTSRC)/src/tcl8.4.6/unix
+#	-cp -R tcl8.4.6/unix/tclAppInit.c $(DISTSRC)/src/tcl8.4.6/unix
 #	 A few bits of Tk that are needed for compilation
-	-mkdir $(DISTSRC)/src/tk8.4.6
-	-mkdir $(DISTSRC)/src/tk8.4.6/generic
-	-mkdir $(DISTSRC)/src/tk8.4.6/unix
-	-mkdir $(DISTSRC)/src/tk8.4.6/compat
-	-cp -R tk8.4.6/generic/tk*.h $(DISTSRC)/src/tk8.4.6/generic/
-	-cp -R tk8.4.6/unix/tkUnixPort.h $(DISTSRC)/src/tk8.4.6/unix
-	-cp -R tk8.4.6/compat/*.h $(DISTSRC)/src/tk8.4.6/compat
+#	-mkdir $(DISTSRC)/src/tk8.4.6
+#	-mkdir $(DISTSRC)/src/tk8.4.6/generic
+#	-mkdir $(DISTSRC)/src/tk8.4.6/unix
+#	-mkdir $(DISTSRC)/src/tk8.4.6/compat
+#	-cp -R tk8.4.6/generic/tk*.h $(DISTSRC)/src/tk8.4.6/generic/
+#	-cp -R tk8.4.6/unix/tkUnixPort.h $(DISTSRC)/src/tk8.4.6/unix
+#	-cp -R tk8.4.6/compat/*.h $(DISTSRC)/src/tk8.4.6/compat
 #	 Some itcl stuff
-	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
-	-cp -R incrTcl-3.3cvs/itcl/generic/*.h \
-	       $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
-	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
-	-cp -R incrTcl-3.3cvs/itk/generic/*.h \
-	       $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
+#	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
+#	-cp -R incrTcl-3.3cvs/itcl/generic/*.h \
+#	       $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
+#	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
+#	-cp -R incrTcl-3.3cvs/itk/generic/*.h \
+#	       $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
 #	 Dummy licence code
 	-cp -R licence $(DISTSRC)/src/licence
 #	# STLPort
