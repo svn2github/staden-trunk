@@ -237,6 +237,9 @@ proc SetDefaults {dirname filename defname args} {
 	    if {$i != "" && [file exists $i]} {
 	        uplevel #0 [list source $i]
             }
+	    if {$i != "" && [file exists $i].local} {
+	        uplevel #0 [list source $i].local
+            }
         }
     }
 
