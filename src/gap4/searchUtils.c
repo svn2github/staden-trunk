@@ -1856,6 +1856,15 @@ static int findPrevDiscrepancy (EdStruct *xx, int value)
 int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 {
     int found = 0;
+    int group_templates = xx->group_templates;
+
+    /*
+     * The "Group templates" option causes sequencesInRegion to return
+     * sequences out of positional order. The searching is optimised to assume
+     * positional order, so we temporarily disable this while looking for
+     * matches.
+     */
+    xx->group_templates = 0;
 
     if (forwards) {
 	if (strcmp(type, "name") == 0)
@@ -1949,6 +1958,8 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 	else if (strcmp(type, "discrepancy") == 0)
 	    found = findPrevDiscrepancy(xx, atoi(value));
     }
+
+    xx->group_templates = group_templates;
 
     return found;
 }
