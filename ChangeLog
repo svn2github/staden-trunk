@@ -1,0 +1,197 @@
+2003-06-06  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish.c: set to version 1.19
+
+	* src/prefinish/finish.tcl:
+	Changed the optimisation on solving low consensus confidence
+	problems; we now always check both strands. Slower, but better in
+	some cases (and never worse).
+
+	* src/prefinish/finish_main.c:
+	Fixed setting classify bit CONTIG_LEFT_END and CONTIG_RIGHT_END so
+	that the 'problem' is cleared when a sequence extends the contig.
+
+	Added code to correctly score sequences that extend the contig (if
+	extending is required) even though the problem being solved may
+	not be the contig-extend problem.
+
+	Added a +50% score bonus to any experiment that also solves all
+	mandatory problems +/- 100 bases around the sequence. This gives
+	an encouragement to not leave tiny problems which require another
+	experiment.
+
+	* src/prefinish/finish_walk.c:
+	Rewrote the near_low_complexity() function. We are now allowed to
+	use primers that are near a low complexity sequence provided the
+	sequence extends though it and into at least opts.pwalk_seq_gap
+	bases of non-low-complexity sequence.
+
+	* src/gap4/contig_editor.tcl:
+	Changed F11/F12 and Shift-F11/F12 to edit/delete tag for faster
+	tag work.
+
+	* src/gap4/editor_search.tcl, tables/gaprc:
+	Remember the editor Search window settings as the default for new
+	editors, so that we do not need to keep changing the dialogue.
+
+	* src/gap4/list_contigs.tcl (ListContigsRepopulate): 
+	Reset the yview after processing a REG_LENGTH or REG_JOIN_TO event
+	so that the contig list stays scrolled to the same point.
+
+2003-06-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tables/gaprc:
+	Added PRIMER.max_end_stability (=9) definition and adjusted the
+	PRIMER.self_any definition from 4 to 5.
+
+	* src/gap4/primlib.[ch]:
+	Added max_end_stability as a configurable option to send to
+	Primer3.
+
+	* src/prefinish/finish.c, src/prefinish/finish.tcl,
+	src/prefinish/param_primer3.itcl:
+	Added support for specifying self_any, self_end, gc_clamp,
+	max_poly_x, and max_end_stability primer3 options to the prefinish
+	code and we now set these values in the example finish.tcl file.
+
+2003-06-03  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/list_contigs.tcl (InitListContigs,
+	ListContigsSelectPressBindng):
+	Added a binding to update the global contig-identifier (and hence
+	update open dialogue boxes) when clicking on a contig in the List
+	Contigs box.
+
+2003-05-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/dbcheck.c (check_readings):
+	We now check that all sequence contains printable characters. This
+	is an attempt to spot the source of the nul characters appearing
+	in some sequences, although check database is now some 25% slower.
+
+	* src/tk_utils/container.c (container_scroll_x, container_scroll_y): 
+	Added a check for when get_container returns NULL (which it was
+	doing due to being called incorrectly via the name-clash listed
+	below).
+	
+	* src/gap4/contig_selector.tcl:
+	* src/gap4/template_display.tcl:
+	* src/gap4/gap_canvas_box.tcl:
+	* src/gap4/gap_restriction_enzymes.tcl:
+	* src/gap4/quality_plot.tcl:
+	* src/gap4/stop_codon.tcl:
+	* src/gap4/consistency_display.tcl:
+	* src/gap4/confidence_graph.tcl:
+	* src/gap4/reading_coverage.tcl:
+	* src/gap4/readpair_coverage.tcl:
+	* src/gap4/strand_coverage.tcl:
+	Renamed scroll_x to gc_scroll_x, scroll_y to gc_scroll_y and
+	get_next_row to c_get_next_row.
+	This is to avoid name clashes with Kathryn's new spin2 container
+	code in tk_utils (it seemed easier to rename the bits that I
+	vaguely understand!).
+
+2003-05-29  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/oligo.c (edSelectOligoGenerate):
+	src/gap4/primlib.c (primlib_choose): 
+	Fixed error handling when no primers are found; to solve a memory
+	corruption and a crash.
+
+	* tables/gaprc:
+	Adjusted primer3 settings for self_any, opt_length, gc_clamp and
+	max_poly_x.
+
+	* src/gap4/primlib.[ch]:
+	Added gc_clamp and max_poly_x, as a cofigurable parameter.
+	Corrected parsing in primlib_str2args such that when the last
+	parameter has a 1-character value it is still
+	processed. (Previously it was just silently skipped.)
+
+	* src/tk_utils/tkTraceIO.c (trace_init_pos): 
+	Corrected the generation of blank trace arrays for EXP or PLN
+	format sequences. We allocate the correct size traceA/C/G/T arrays
+	and zero them. Without this change double clicking on a sequence
+	in the editor whose trace is listed as an Experiment File that
+	does not contain a LN line would cause a crash.
+
+	* trace_display.tcl (trace_add): 
+	Allow EXP files to be used for traces so that we can view traces
+	via the LN/LT redirection.
+
+	* src/gap4/edInterface.c (edSetCursor): 
+	Corrected setting of xx->cursorSeq when the Y scrollbar is in use
+	and the user clicks on the consensus. (This now means that all
+	traces can be brought up again in such situations by double
+	clicking on the consensus.)
+
+	* src/gap4/tkEdUtils.c (positionCursor): 
+	Due to switching the sequence to be at the bottom of the trace
+	instead of the top the editing cursor in the editor was invisible
+	(underneath the first line of trace) when embedded traces were in
+	use. Now fixed
+
+2003-05-27  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/rules/extend_left.rule,
+	src/prefinish/rules/extend_right.rule:
+	In the GUI prefinish configurator, we set the default strand for
+	left and right contig extensions to be bottom and top
+	respectively. Previously these were back to front resulting in
+	pointless experiments!
+
+	* src/gap4/tag_checklist.tcl (TagDialog_default):
+	The "As Default" command now saves to the users .gaprc file too.
+
+	* src/gap4/tag_checklist.tcl (tag_checklist):
+	Select All and Clear All buttons are back (and where missing due
+	to a typo).
+	
+
+2003-05-23  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/newgap_cmds.c (tcl_save_contig_order),
+	  src/gap4/list_contigs.tcl (ListContigsSave):
+	Added a save_contig_order Tcl/C command to write a new contig
+	order (for all contigs). The "List Contigs" window now has a Save
+	button which uses this to save the currently sorted order.
+
+	* src/gap4/oligo.c (display_oligo_details):
+	Added code to print the oligo details to the editor information
+	line as well as to the Text Output window.
+
+	* src/gap4/oligo_param.tcl (seloli_doit): Delete the code to blank the
+	status line when bringing up the first primer after a manual (in
+	editor) primer search.
+
+2003-05-22  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish_hash.c (hash_compare_primer): 
+	Fix 'end' argument passed to false_priming. For bottom strand
+	primers it was mixing up 5' and 3' ends and adding weight to the
+	wrong one. Also minor debugging output changes.
+
+	* src/prefinish/finish_walk.c: Changed the cost multiplier for
+	primer secondary matches to be 1+pscore/100 instead of
+	1+pscore/20, as the score doesn't seem to have a significant
+	impact.
+
+	* src/prefinish/tooltips.tcl (popup): Check for existance of a
+	tooltip window and destroy it first if it exists. This fixes Tk
+	errors (caused by rapid generation of events?).
+
+2003-05-20  James Bonfield  <jkb@sanger.ac.uk>
+
+	* lib/tk/text.tcl (::tk::TextScanDrag): Allow 1 pixel of movement
+	before switching to scan mode and setting mouseMoved flag. The
+	mouseMoved flag disables pasting, and hence forceful middle
+	clickig sometimes failed to paste.
+
+2003-05-19  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/join.c (align, alignOverlap): 
+	Alignments now depad the sequence before using Rodger's alignment
+	code. To deal with repadding I used the old code and converted the
+	output from Rodger's algorithm to be compatible with the Myers and
+	Miller style of output.
+	Also fixed a display shift after aligning.

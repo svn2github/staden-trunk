@@ -71,3 +71,6 @@ done
 # symlinks in CVS.
 ln -s doc/manual
 ln -s doc/manual/man
+cd doc/scripting_manual
+ln -s ../manual/tools .
+
