@@ -6,7 +6,7 @@
 # for a disclaimer of all warranties.
 #
 
-set VERSION "1.8b1"
+set VERSION "1.8"
 
 if {[catch tkinit]} {
     package require Tk
@@ -128,7 +128,7 @@ proc LoadFile { filename informat pregap_mode} {
 	menu_state_set trev_menu 2 [keylget trev_defs MENU.FRAME]
 	menu_state_set trev_menu -64 [keylget trev_defs MENU.FRAME]
 	#enable save menus
-	if {[CheckSaveFormat [$trace format]]} {
+	if {[CheckSaveFormat [$trace orig_format]]} {
 	    #Can save - eg an experiment file
 	    menu_state_set trev_menu 4 [keylget trev_defs MENU.FRAME]
 	} else {
