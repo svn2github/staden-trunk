@@ -6,6 +6,8 @@
 #include "traceType.h"
 #include "seqIOABI.h"
 
+#define MAX(a,b) ((a)>(b)?(a):(b))
+
 struct opts {
     char *name;
     char *fofn;
@@ -15,6 +17,7 @@ struct opts {
     int out_format;
     int scale;
     int sub_background;
+    int subtract;
     int normalise;
     int min_normalise;
     int compress_mode;
@@ -139,7 +142,6 @@ void trace_freq(TRACE *data, int ndata) {
     int i, bg;
     bg = find_bg(data, ndata);
 
-#define MAX(a,b) ((a)>(b)?(a):(b))
     for (i = 0; i < ndata; i++) {
 	data[i] = MAX(data[i] - bg, 0);
     }
@@ -300,6 +302,16 @@ int convert(FILE *infp, FILE *outfp, char *infname, char *outfname,
 	return 1;
     }
 
+    if (opts->subtract) {
+	int i;
+	for (i = 0; i < r->NPoints; i++) {
+	    r->traceA[i] = MAX(0, r->traceA[i] - opts->subtract);
+	    r->traceC[i] = MAX(0, r->traceC[i] - opts->subtract);
+	    r->traceG[i] = MAX(0, r->traceG[i] - opts->subtract);
+	    r->traceT[i] = MAX(0, r->traceT[i] - opts->subtract);
+	}
+    }
+
     if (opts->sub_background) { 
 	/*
 	trace_freq(r->traceA, r->NPoints);	
@@ -357,7 +369,8 @@ void usage(void) {
     puts("\t-passed fofn              Output fofn of passed names");  
     puts("\t-failed fofn              Output fofn of failed names");  
     puts("\t-name id                  ID line for experiment file output");
-    puts("\t-subtract_background      Subtracts the trace background");
+    puts("\t-subtract_background      Auto-subtracts the trace background");
+    puts("\t-subtract amount          Subtracts a specified background amount");
     puts("\t-normalise                Normalises peak heights");
     puts("\t-min_normalise            Minimum trace amp for normalising");
     puts("\t-scale range              Downscales peaks to 0-range");
@@ -374,6 +387,7 @@ int main(int argc, char **argv) {
     opts.out_format = TT_ZTR;
     opts.scale = 0;
     opts.sub_background = 0;
+    opts.subtract = 0;
     opts.normalise = 0;
     opts.min_normalise = 100;
     opts.name = NULL;
@@ -405,6 +419,10 @@ int main(int argc, char **argv) {
 
 	} else if (strcmp(*argv, "-subtract_background") == 0) {
 	    opts.sub_background = 1;
+
+	} else if (strcmp(*argv, "-subtract") == 0) {
+	    opts.subtract = atoi(*++argv);
+	    argc--;
 
 	} else if (strcmp(*argv, "-normalise") == 0) {
 	    opts.normalise = 1;
