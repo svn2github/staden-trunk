@@ -1,0 +1,30 @@
+@cindex trace_dump: man page
+@unnumberedsec NAME
+
+trace_dump --- lists in a textual form the contents of a trace file.
+
+@unnumberedsec SYNOPSIS
+
+@code{trace_dump} @i{file}
+
+@unnumberedsec DESCRIPTION
+
+@code{trace_dump} extracts the contents of a trace file and lists it
+in textual format. It is primarily a debugging tool for use with
+io_lib, but can serve as a useful way to query the contents of a trace
+file outside of graphical programs such as Trev. The @i{file} may be of
+any supported trace format (and so this tool replaces the older
+@code{scf_dump} program).
+
+Each portion of the trace file is listed in its own block. The block
+names output are ``[Trace]'' (containing general information such as
+the number of samples), ``[Bases]'', ``[A_Trace]'', ``[C_Trace]'',
+``[G_Trace]'', ``[T_Trace]'' and ``[Info]'' (containing the free text
+comments).
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Scf, scf(4), formats)
+_fxref(Formats-Ztr, ztr(4), formats)
+@code{Read}(4)
+

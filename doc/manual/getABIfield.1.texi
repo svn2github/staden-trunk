@@ -1,0 +1,105 @@
+@cindex getABIfield: man page
+@unnumberedsec NAME
+
+getABIfield --- extract arbitrary components from an ABI file
+
+@unnumberedsec SYNOPSIS
+
+@code{getABIfield} [@code{OPTIONS}] @i{filename} [@code{Field-ID} [
+@code{Count}]] ...
+
+@unnumberedsec DESCRIPTION
+
+The @code{getABIfield} command extracts specified blocks from an ABI
+file and displays them in a variety of formats. The ABI file may be
+considered as a directory structure with files (data blocks) contained
+within it. Supply just the ABI filename as an argument will give a
+listing of the blocks.
+
+To extract specific data one or more ``name count'' pairs need to be
+specified.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-a}
+    Dump all blocks.
+
+@item @code{-D} @i{separator}
+    Sets the output field separator for elements within a date and
+    time format. Dates default to ``yyyy/mm/dd'' format and times default
+    to ``hh:mm:ss.xx''.
+
+@item @code{-F} @i{separator}
+    Sets the output field separator to be a specified character.
+    This defaults to space.
+
+@item @code{-f} @i{format}
+    Reformat the data to a specific style. By default the data is
+    listed in the format specified within the ABI file.
+    @i{format} should be chosen of @code{1}(1-byte integer),
+    @code{4}(2-byte integer), @code{5}(4-byte integer),
+    @code{7}(4-byte real), @code{8}(8-byte real), @code{10}(date),
+    @code{11}(time), @code{18}(Pascal-string), @code{19}(C-string).
+
+@item @code{-h}
+    Displays data in hex format. By default the output format will be
+    chosen based on the data type (eg string, integer, floating
+    point).
+
+@item @code{-I} @i{fofn}
+    Instead of reading the single file specified on the argument list
+    this reads a list of filenames from @i{fofn}. If @i{fofn} is ``-''
+    then the file of filenames is read from 'stdin'.
+
+@item @code{-L} @i{separator}
+    Sets the line separator between multiple blocks listed within a
+    single file. Defaults to newline.
+
+@item @code{-l}
+    Sets the output field separator to be a newline.
+
+    Query mode. Here no output is displayed, but it simply returns true
+    or false depending on whether any of requested comments were found.
+
+@item @code{-r}
+    Displays data in raw byte format.
+    
+@item @code{-t}
+    Enable tagged output format. Each name/count pair are listed on a
+    single line in the format ``filename name count data...''.
+@end table
+
+@unnumberedsec EXAMPLES
+
+To extract the run dates in a tagged format for all the ab1 files in
+the current working directory:
+
+@example
+ls *.ab1 | getABIfield -t -I - RUND
+@end example
+
+To see the order of the processed data channels (e.g. ``GATC'') on a
+single file:
+
+@example
+getABIfield 3150.ab1 FWO_
+@end example
+
+To see the processed trace data for the first channel (e.g. ``G'')
+with one sample point per line:
+
+@example
+getABIfield -l 3150.ab1 DATA 9
+@end example
+
+To obtain the version numbers of the various trace processing steps:
+
+@example
+getABIfield -t 3150.ab1 SVER 1 SVER 2 SVER 3
+@end example
+
+@unnumberedsec SEE ALSO
+
+_fxref(Man-get_comment, get_comment(1), get_comment.1)
+_fxref(Formats-Scf, scf(4), formats)
