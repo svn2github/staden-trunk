@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2003/01/wi">
+  <Product Id="FFFFFFFF-FF01-4001-BFEA-0008028F89FB" Name="Trev" Language="2057" Version="1.5.0b1" Manufacturer="MRC/WTSI">
+    <Package Description="Trev Installer" Compressed="yes"/>
+    <Media Id="1" Cabinet="Data1.cab" EmbedCab="yes" CompressionLevel="high"/>
+    <?include trev_files.wxi ?>
+    <?include ui.wxi ?>
+  </Product>
+</Wix>

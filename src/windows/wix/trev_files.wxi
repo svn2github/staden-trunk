@@ -1,0 +1,523 @@
+<?xml version="1.0"?>
+<Include>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramMenuFolder" Name="PMFolder">
+        <Directory Id="StadenMenuFolder" Name="Trev"/>
+      </Directory>
+    <Component Guid="41012C97-0000-4000-A0D2-0008028F89FB" Id="IDdir-1">
+      <File Id="IDLICENCE.rtf-2" Name="LICENCE.rtf" LongName="LICENCE.rtf" DiskId="1" src="c:/jkb/Software/Trev/LICENCE.rtf"/>
+      <File Id="IDLICENCE.txt-3" Name="LICENCE.txt" LongName="LICENCE.txt" DiskId="1" src="c:/jkb/Software/Trev/LICENCE.txt"/>
+      <File Id="IDVersion-4" Name="Version" LongName="Version" DiskId="1" src="c:/jkb/Software/Trev/Version"/>
+      <CreateFolder/>
+    </Component>
+    <Directory Id="IDdoc-5" Name="doc" LongName="doc">
+      <Directory Id="IDi-6" Name="i" LongName="i">
+        <Component Guid="41012C97-0001-4000-9620-0008028F89FB" Id="IDdir-7">
+          <File Id="IDnav_brief.gif-8" Name="NAV_BR~1.GIF" LongName="nav_brief.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_brief.gif"/>
+          <File Id="IDnav_down.gif-9" Name="nav_down.gif" LongName="nav_down.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_down.gif"/>
+          <File Id="IDnav_first.gif-10" Name="NAV_FI~1.GIF" LongName="nav_first.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_first.gif"/>
+          <File Id="IDnav_full.gif-11" Name="nav_full.gif" LongName="nav_full.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_full.gif"/>
+          <File Id="IDnav_home.gif-12" Name="nav_home.gif" LongName="nav_home.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_home.gif"/>
+          <File Id="IDnav_last.gif-13" Name="nav_last.gif" LongName="nav_last.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_last.gif"/>
+          <File Id="IDnav_next.gif-14" Name="nav_next.gif" LongName="nav_next.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_next.gif"/>
+          <File Id="IDnav_prev.gif-15" Name="nav_prev.gif" LongName="nav_prev.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_prev.gif"/>
+          <File Id="IDnav_top.gif-16" Name="nav_top.gif" LongName="nav_top.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_top.gif"/>
+          <File Id="IDnav_up.gif-17" Name="nav_up.gif" LongName="nav_up.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/i/nav_up.gif"/>
+          <CreateFolder/>
+        </Component>
+        <Directory Id="IDCVS-18" Name="CVS" LongName="CVS">
+          <Component Guid="41012C97-0002-4000-969A-0008028F89FB" Id="IDdir-19">
+            <File Id="IDEntries-20" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/doc/i/CVS/Entries"/>
+            <File Id="IDRepository-21" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/doc/i/CVS/Repository"/>
+            <File Id="IDRoot-22" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/doc/i/CVS/Root"/>
+            <CreateFolder/>
+          </Component>
+        </Directory>
+      </Directory>
+      <Directory Id="IDmanual-23" Name="manual" LongName="manual">
+        <Component Guid="41012C97-0003-4000-B29E-0008028F89FB" Id="IDdir-24">
+          <File Id="IDtrev_conf_trace.small.unix.gif-25" Name="TREV_C~1.GIF" LongName="trev_conf_trace.small.unix.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_conf_trace.small.unix.gif"/>
+          <File Id="IDtrev_conf_trace.unix.gif-26" Name="TREV_C~2.GIF" LongName="trev_conf_trace.unix.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_conf_trace.unix.gif"/>
+          <File Id="IDtrev_conf_trace.unix.gif.html-27" Name="TREV_C~1.HTM" LongName="trev_conf_trace.unix.gif.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_conf_trace.unix.gif.html"/>
+          <File Id="IDtrev_pic.unix.gif-28" Name="TREV_P~1.GIF" LongName="trev_pic.unix.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_pic.unix.gif"/>
+          <File Id="IDtrev_unix.index-29" Name="TREV_U~1.IND" LongName="trev_unix.index" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix.index"/>
+          <File Id="IDtrev_unix_1.html-30" Name="TREV_U~1.HTM" LongName="trev_unix_1.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_1.html"/>
+          <File Id="IDtrev_unix_10.html-31" Name="TREV_U~2.HTM" LongName="trev_unix_10.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_10.html"/>
+          <File Id="IDtrev_unix_11.html-32" Name="TREV_U~3.HTM" LongName="trev_unix_11.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_11.html"/>
+          <File Id="IDtrev_unix_2.html-33" Name="TREV_U~4.HTM" LongName="trev_unix_2.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_2.html"/>
+          <File Id="IDtrev_unix_3.html-34" Name="TRED57~1.HTM" LongName="trev_unix_3.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_3.html"/>
+          <File Id="IDtrev_unix_4.html-35" Name="TRE167~1.HTM" LongName="trev_unix_4.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_4.html"/>
+          <File Id="IDtrev_unix_5.html-36" Name="TRE567~1.HTM" LongName="trev_unix_5.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_5.html"/>
+          <File Id="IDtrev_unix_6.html-37" Name="TRE967~1.HTM" LongName="trev_unix_6.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_6.html"/>
+          <File Id="IDtrev_unix_7.html-38" Name="TRED67~1.HTM" LongName="trev_unix_7.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_7.html"/>
+          <File Id="IDtrev_unix_8.html-39" Name="TRE177~1.HTM" LongName="trev_unix_8.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_8.html"/>
+          <File Id="IDtrev_unix_9.html-40" Name="TRE577~1.HTM" LongName="trev_unix_9.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_9.html"/>
+          <File Id="IDtrev_unix_toc.html-41" Name="TR5BC0~1.HTM" LongName="trev_unix_toc.html" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/trev_unix_toc.html"/>
+          <CreateFolder/>
+        </Component>
+        <Directory Id="IDi-42" Name="i" LongName="i">
+          <Component Guid="41012C97-0004-4000-BD0E-0008028F89FB" Id="IDdir-43">
+            <File Id="IDnav_brief.gif-44" Name="NAV_BR~1.GIF" LongName="nav_brief.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_brief.gif"/>
+            <File Id="IDnav_down.gif-45" Name="nav_down.gif" LongName="nav_down.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_down.gif"/>
+            <File Id="IDnav_first.gif-46" Name="NAV_FI~1.GIF" LongName="nav_first.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_first.gif"/>
+            <File Id="IDnav_full.gif-47" Name="nav_full.gif" LongName="nav_full.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_full.gif"/>
+            <File Id="IDnav_home.gif-48" Name="nav_home.gif" LongName="nav_home.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_home.gif"/>
+            <File Id="IDnav_last.gif-49" Name="nav_last.gif" LongName="nav_last.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_last.gif"/>
+            <File Id="IDnav_next.gif-50" Name="nav_next.gif" LongName="nav_next.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_next.gif"/>
+            <File Id="IDnav_prev.gif-51" Name="nav_prev.gif" LongName="nav_prev.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_prev.gif"/>
+            <File Id="IDnav_top.gif-52" Name="nav_top.gif" LongName="nav_top.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_top.gif"/>
+            <File Id="IDnav_up.gif-53" Name="nav_up.gif" LongName="nav_up.gif" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/nav_up.gif"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-54" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-0005-4000-9CDC-0008028F89FB" Id="IDdir-55">
+              <File Id="IDEntries-56" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/CVS/Entries"/>
+              <File Id="IDRepository-57" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/CVS/Repository"/>
+              <File Id="IDRoot-58" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/doc/manual/i/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+    </Directory>
+    <Directory Id="IDlib-59" Name="lib" LongName="lib">
+      <Directory Id="IDtcl-60" Name="tcl" LongName="tcl">
+        <Component Guid="41012C97-0006-4000-9492-0008028F89FB" Id="IDdir-61">
+          <File Id="IDauto.tcl-62" Name="auto.tcl" LongName="auto.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/auto.tcl"/>
+          <File Id="IDhistory.tcl-63" Name="history.tcl" LongName="history.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/history.tcl"/>
+          <File Id="IDinit.tcl-64" Name="init.tcl" LongName="init.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/init.tcl"/>
+          <File Id="IDinit.tcl.02.10.02-65" Name="INITTC~1.02" LongName="init.tcl.02.10.02" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/init.tcl.02.10.02"/>
+          <File Id="IDinit.tcl.orig-66" Name="INITTC~1.ORI" LongName="init.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/init.tcl.orig"/>
+          <File Id="IDldAix-67" Name="ldAix" LongName="ldAix" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/ldAix"/>
+          <File Id="IDldAout.tcl-68" Name="ldAout.tcl" LongName="ldAout.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/ldAout.tcl"/>
+          <File Id="IDlicense.terms-69" Name="LICENS~1.TER" LongName="license.terms" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/license.terms"/>
+          <File Id="IDpackage.tcl-70" Name="package.tcl" LongName="package.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/package.tcl"/>
+          <File Id="IDparray.tcl-71" Name="parray.tcl" LongName="parray.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/parray.tcl"/>
+          <File Id="IDsafe.tcl-72" Name="safe.tcl" LongName="safe.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/safe.tcl"/>
+          <File Id="IDtclAppInit.c-73" Name="TCLAPP~1.C" LongName="tclAppInit.c" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tclAppInit.c"/>
+          <File Id="IDtclIndex-74" Name="tclIndex" LongName="tclIndex" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tclIndex"/>
+          <File Id="IDword.tcl-75" Name="word.tcl" LongName="word.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/word.tcl"/>
+          <CreateFolder/>
+        </Component>
+        <Directory Id="IDCVS-76" Name="CVS" LongName="CVS">
+          <Component Guid="41012C97-0007-4000-8094-0008028F89FB" Id="IDdir-77">
+            <File Id="IDEntries-78" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/CVS/Entries"/>
+            <File Id="IDRepository-79" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/CVS/Repository"/>
+            <File Id="IDRoot-80" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/CVS/Root"/>
+            <CreateFolder/>
+          </Component>
+        </Directory>
+        <Directory Id="IDencoding-81" Name="encoding" LongName="encoding">
+          <Component Guid="41012C97-0008-4000-9104-0008028F89FB" Id="IDdir-82">
+            <File Id="IDascii.enc-83" Name="ascii.enc" LongName="ascii.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/ascii.enc"/>
+            <File Id="IDbig5.enc-84" Name="big5.enc" LongName="big5.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/big5.enc"/>
+            <File Id="IDcp1250.enc-85" Name="cp1250.enc" LongName="cp1250.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1250.enc"/>
+            <File Id="IDcp1251.enc-86" Name="cp1251.enc" LongName="cp1251.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1251.enc"/>
+            <File Id="IDcp1252.enc-87" Name="cp1252.enc" LongName="cp1252.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1252.enc"/>
+            <File Id="IDcp1253.enc-88" Name="cp1253.enc" LongName="cp1253.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1253.enc"/>
+            <File Id="IDcp1254.enc-89" Name="cp1254.enc" LongName="cp1254.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1254.enc"/>
+            <File Id="IDcp1255.enc-90" Name="cp1255.enc" LongName="cp1255.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1255.enc"/>
+            <File Id="IDcp1256.enc-91" Name="cp1256.enc" LongName="cp1256.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1256.enc"/>
+            <File Id="IDcp1257.enc-92" Name="cp1257.enc" LongName="cp1257.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1257.enc"/>
+            <File Id="IDcp1258.enc-93" Name="cp1258.enc" LongName="cp1258.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp1258.enc"/>
+            <File Id="IDcp437.enc-94" Name="cp437.enc" LongName="cp437.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp437.enc"/>
+            <File Id="IDcp737.enc-95" Name="cp737.enc" LongName="cp737.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp737.enc"/>
+            <File Id="IDcp775.enc-96" Name="cp775.enc" LongName="cp775.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp775.enc"/>
+            <File Id="IDcp850.enc-97" Name="cp850.enc" LongName="cp850.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp850.enc"/>
+            <File Id="IDcp852.enc-98" Name="cp852.enc" LongName="cp852.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp852.enc"/>
+            <File Id="IDcp855.enc-99" Name="cp855.enc" LongName="cp855.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp855.enc"/>
+            <File Id="IDcp857.enc-100" Name="cp857.enc" LongName="cp857.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp857.enc"/>
+            <File Id="IDcp860.enc-101" Name="cp860.enc" LongName="cp860.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp860.enc"/>
+            <File Id="IDcp861.enc-102" Name="cp861.enc" LongName="cp861.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp861.enc"/>
+            <File Id="IDcp862.enc-103" Name="cp862.enc" LongName="cp862.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp862.enc"/>
+            <File Id="IDcp863.enc-104" Name="cp863.enc" LongName="cp863.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp863.enc"/>
+            <File Id="IDcp864.enc-105" Name="cp864.enc" LongName="cp864.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp864.enc"/>
+            <File Id="IDcp865.enc-106" Name="cp865.enc" LongName="cp865.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp865.enc"/>
+            <File Id="IDcp866.enc-107" Name="cp866.enc" LongName="cp866.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp866.enc"/>
+            <File Id="IDcp869.enc-108" Name="cp869.enc" LongName="cp869.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp869.enc"/>
+            <File Id="IDcp874.enc-109" Name="cp874.enc" LongName="cp874.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp874.enc"/>
+            <File Id="IDcp932.enc-110" Name="cp932.enc" LongName="cp932.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp932.enc"/>
+            <File Id="IDcp936.enc-111" Name="cp936.enc" LongName="cp936.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp936.enc"/>
+            <File Id="IDcp949.enc-112" Name="cp949.enc" LongName="cp949.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp949.enc"/>
+            <File Id="IDcp950.enc-113" Name="cp950.enc" LongName="cp950.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/cp950.enc"/>
+            <File Id="IDdingbats.enc-114" Name="dingbats.enc" LongName="dingbats.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/dingbats.enc"/>
+            <File Id="IDebcdic.enc-115" Name="ebcdic.enc" LongName="ebcdic.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/ebcdic.enc"/>
+            <File Id="IDeuc-cn.enc-116" Name="euc-cn.enc" LongName="euc-cn.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/euc-cn.enc"/>
+            <File Id="IDeuc-jp.enc-117" Name="euc-jp.enc" LongName="euc-jp.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/euc-jp.enc"/>
+            <File Id="IDeuc-kr.enc-118" Name="euc-kr.enc" LongName="euc-kr.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/euc-kr.enc"/>
+            <File Id="IDgb12345.enc-119" Name="gb12345.enc" LongName="gb12345.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/gb12345.enc"/>
+            <File Id="IDgb1988.enc-120" Name="gb1988.enc" LongName="gb1988.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/gb1988.enc"/>
+            <File Id="IDgb2312.enc-121" Name="gb2312.enc" LongName="gb2312.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/gb2312.enc"/>
+            <File Id="IDiso2022-jp.enc-122" Name="ISO202~1.ENC" LongName="iso2022-jp.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso2022-jp.enc"/>
+            <File Id="IDiso2022-kr.enc-123" Name="ISO202~2.ENC" LongName="iso2022-kr.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso2022-kr.enc"/>
+            <File Id="IDiso2022.enc-124" Name="iso2022.enc" LongName="iso2022.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso2022.enc"/>
+            <File Id="IDiso8859-1.enc-125" Name="ISO885~1.ENC" LongName="iso8859-1.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-1.enc"/>
+            <File Id="IDiso8859-10.enc-126" Name="ISO885~2.ENC" LongName="iso8859-10.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-10.enc"/>
+            <File Id="IDiso8859-13.enc-127" Name="ISO885~3.ENC" LongName="iso8859-13.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-13.enc"/>
+            <File Id="IDiso8859-14.enc-128" Name="ISO885~4.ENC" LongName="iso8859-14.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-14.enc"/>
+            <File Id="IDiso8859-15.enc-129" Name="ISBA5B~1.ENC" LongName="iso8859-15.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-15.enc"/>
+            <File Id="IDiso8859-16.enc-130" Name="ISBA57~1.ENC" LongName="iso8859-16.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-16.enc"/>
+            <File Id="IDiso8859-2.enc-131" Name="ISA060~1.ENC" LongName="iso8859-2.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-2.enc"/>
+            <File Id="IDiso8859-3.enc-132" Name="ISA460~1.ENC" LongName="iso8859-3.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-3.enc"/>
+            <File Id="IDiso8859-4.enc-133" Name="ISA860~1.ENC" LongName="iso8859-4.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-4.enc"/>
+            <File Id="IDiso8859-5.enc-134" Name="ISAC60~1.ENC" LongName="iso8859-5.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-5.enc"/>
+            <File Id="IDiso8859-6.enc-135" Name="ISA070~1.ENC" LongName="iso8859-6.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-6.enc"/>
+            <File Id="IDiso8859-7.enc-136" Name="ISA470~1.ENC" LongName="iso8859-7.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-7.enc"/>
+            <File Id="IDiso8859-8.enc-137" Name="ISA870~1.ENC" LongName="iso8859-8.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-8.enc"/>
+            <File Id="IDiso8859-9.enc-138" Name="ISAC70~1.ENC" LongName="iso8859-9.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/iso8859-9.enc"/>
+            <File Id="IDjis0201.enc-139" Name="jis0201.enc" LongName="jis0201.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/jis0201.enc"/>
+            <File Id="IDjis0208.enc-140" Name="jis0208.enc" LongName="jis0208.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/jis0208.enc"/>
+            <File Id="IDjis0212.enc-141" Name="jis0212.enc" LongName="jis0212.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/jis0212.enc"/>
+            <File Id="IDkoi8-r.enc-142" Name="koi8-r.enc" LongName="koi8-r.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/koi8-r.enc"/>
+            <File Id="IDkoi8-u.enc-143" Name="koi8-u.enc" LongName="koi8-u.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/koi8-u.enc"/>
+            <File Id="IDksc5601.enc-144" Name="ksc5601.enc" LongName="ksc5601.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/ksc5601.enc"/>
+            <File Id="IDmacCentEuro.enc-145" Name="MACCEN~1.ENC" LongName="macCentEuro.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macCentEuro.enc"/>
+            <File Id="IDmacCroatian.enc-146" Name="MACCRO~1.ENC" LongName="macCroatian.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macCroatian.enc"/>
+            <File Id="IDmacCyrillic.enc-147" Name="MACCYR~1.ENC" LongName="macCyrillic.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macCyrillic.enc"/>
+            <File Id="IDmacDingbats.enc-148" Name="MACDIN~1.ENC" LongName="macDingbats.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macDingbats.enc"/>
+            <File Id="IDmacGreek.enc-149" Name="macGreek.enc" LongName="macGreek.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macGreek.enc"/>
+            <File Id="IDmacIceland.enc-150" Name="MACICE~1.ENC" LongName="macIceland.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macIceland.enc"/>
+            <File Id="IDmacJapan.enc-151" Name="macJapan.enc" LongName="macJapan.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macJapan.enc"/>
+            <File Id="IDmacRoman.enc-152" Name="macRoman.enc" LongName="macRoman.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macRoman.enc"/>
+            <File Id="IDmacRomania.enc-153" Name="MACROM~1.ENC" LongName="macRomania.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macRomania.enc"/>
+            <File Id="IDmacThai.enc-154" Name="macThai.enc" LongName="macThai.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macThai.enc"/>
+            <File Id="IDmacTurkish.enc-155" Name="MACTUR~1.ENC" LongName="macTurkish.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macTurkish.enc"/>
+            <File Id="IDmacUkraine.enc-156" Name="MACUKR~1.ENC" LongName="macUkraine.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/macUkraine.enc"/>
+            <File Id="IDshiftjis.enc-157" Name="shiftjis.enc" LongName="shiftjis.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/shiftjis.enc"/>
+            <File Id="IDsymbol.enc-158" Name="symbol.enc" LongName="symbol.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/symbol.enc"/>
+            <File Id="IDtis-620.enc-159" Name="tis-620.enc" LongName="tis-620.enc" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/tis-620.enc"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-160" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-0009-4000-ACE8-0008028F89FB" Id="IDdir-161">
+              <File Id="IDEntries-162" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/CVS/Entries"/>
+              <File Id="IDRepository-163" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/CVS/Repository"/>
+              <File Id="IDRoot-164" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/encoding/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDhttp1.0-165" Name="http1.0" LongName="http1.0">
+          <Component Guid="41012C97-000A-4000-98AA-0008028F89FB" Id="IDdir-166">
+            <File Id="IDhttp.tcl-167" Name="http.tcl" LongName="http.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http1.0/http.tcl"/>
+            <File Id="IDpkgIndex.tcl-168" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http1.0/pkgIndex.tcl"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-169" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-000B-4000-8A78-0008028F89FB" Id="IDdir-170">
+              <File Id="IDEntries-171" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http1.0/CVS/Entries"/>
+              <File Id="IDRepository-172" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http1.0/CVS/Repository"/>
+              <File Id="IDRoot-173" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http1.0/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDhttp2.4-174" Name="http2.4" LongName="http2.4">
+          <Component Guid="41012C97-000C-4000-AB92-0008028F89FB" Id="IDdir-175">
+            <File Id="IDhttp.tcl-176" Name="http.tcl" LongName="http.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http2.4/http.tcl"/>
+            <File Id="IDpkgIndex.tcl-177" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http2.4/pkgIndex.tcl"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-178" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-000D-4000-BE1C-0008028F89FB" Id="IDdir-179">
+              <File Id="IDEntries-180" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http2.4/CVS/Entries"/>
+              <File Id="IDRepository-181" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http2.4/CVS/Repository"/>
+              <File Id="IDRoot-182" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/http2.4/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDmsgcat1.3-183" Name="msgcat1.3" LongName="msgcat1.3">
+          <Component Guid="41012C97-000E-4000-9B84-0008028F89FB" Id="IDdir-184">
+            <File Id="IDmsgcat.tcl-185" Name="msgcat.tcl" LongName="msgcat.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/msgcat1.3/msgcat.tcl"/>
+            <File Id="IDpkgIndex.tcl-186" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/msgcat1.3/pkgIndex.tcl"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-187" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-000F-4000-A004-0008028F89FB" Id="IDdir-188">
+              <File Id="IDEntries-189" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/msgcat1.3/CVS/Entries"/>
+              <File Id="IDRepository-190" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/msgcat1.3/CVS/Repository"/>
+              <File Id="IDRoot-191" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/msgcat1.3/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDopt0.4-192" Name="opt0.4" LongName="opt0.4">
+          <Component Guid="41012C97-0010-4000-BC60-0008028F89FB" Id="IDdir-193">
+            <File Id="IDoptparse.tcl-194" Name="optparse.tcl" LongName="optparse.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/opt0.4/optparse.tcl"/>
+            <File Id="IDpkgIndex.tcl-195" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/opt0.4/pkgIndex.tcl"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-196" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-0011-4000-AF5C-0008028F89FB" Id="IDdir-197">
+              <File Id="IDEntries-198" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/opt0.4/CVS/Entries"/>
+              <File Id="IDRepository-199" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/opt0.4/CVS/Repository"/>
+              <File Id="IDRoot-200" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/opt0.4/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDtcltest2.2-201" Name="tcltest2.2" LongName="tcltest2.2">
+          <Component Guid="41012C97-0012-4000-B50C-0008028F89FB" Id="IDdir-202">
+            <File Id="IDpkgIndex.tcl-203" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tcltest2.2/pkgIndex.tcl"/>
+            <File Id="IDtcltest.tcl-204" Name="tcltest.tcl" LongName="tcltest.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tcltest2.2/tcltest.tcl"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-205" Name="CVS" LongName="CVS">
+            <Component Guid="41012C97-0013-4000-AA7E-0008028F89FB" Id="IDdir-206">
+              <File Id="IDEntries-207" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tcltest2.2/CVS/Entries"/>
+              <File Id="IDRepository-208" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tcltest2.2/CVS/Repository"/>
+              <File Id="IDRoot-209" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tcl/tcltest2.2/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="IDtk-210" Name="tk" LongName="tk">
+        <Component Guid="41012C97-0014-4000-98DC-0008028F89FB" Id="IDdir-211">
+          <File Id="IDbgerror.tcl-212" Name="bgerror.tcl" LongName="bgerror.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/bgerror.tcl"/>
+          <File Id="IDbutton.tcl-213" Name="button.tcl" LongName="button.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/button.tcl"/>
+          <File Id="IDchoosedir.tcl-214" Name="CHOOSE~1.TCL" LongName="choosedir.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/choosedir.tcl"/>
+          <File Id="IDclrpick.tcl-215" Name="clrpick.tcl" LongName="clrpick.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/clrpick.tcl"/>
+          <File Id="IDcomdlg.tcl-216" Name="comdlg.tcl" LongName="comdlg.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/comdlg.tcl"/>
+          <File Id="IDconsole.tcl-217" Name="console.tcl" LongName="console.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/console.tcl"/>
+          <File Id="IDdialog.tcl-218" Name="dialog.tcl" LongName="dialog.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/dialog.tcl"/>
+          <File Id="IDentry.tcl-219" Name="entry.tcl" LongName="entry.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/entry.tcl"/>
+          <File Id="IDfocus.tcl-220" Name="focus.tcl" LongName="focus.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/focus.tcl"/>
+          <File Id="IDlicense.terms-221" Name="LICENS~1.TER" LongName="license.terms" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/license.terms"/>
+          <File Id="IDlistbox.tcl-222" Name="listbox.tcl" LongName="listbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/listbox.tcl"/>
+          <File Id="IDlistbox.tcl.orig-223" Name="LISTBO~1.ORI" LongName="listbox.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/listbox.tcl.orig"/>
+          <File Id="IDmenu.tcl-224" Name="menu.tcl" LongName="menu.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/menu.tcl"/>
+          <File Id="IDmkpsenc.tcl-225" Name="mkpsenc.tcl" LongName="mkpsenc.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/mkpsenc.tcl"/>
+          <File Id="IDmsgbox.tcl-226" Name="msgbox.tcl" LongName="msgbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgbox.tcl"/>
+          <File Id="IDobsolete.tcl-227" Name="obsolete.tcl" LongName="obsolete.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/obsolete.tcl"/>
+          <File Id="IDoptMenu.tcl-228" Name="optMenu.tcl" LongName="optMenu.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/optMenu.tcl"/>
+          <File Id="IDpalette.tcl-229" Name="palette.tcl" LongName="palette.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/palette.tcl"/>
+          <File Id="IDpalette.tcl.orig-230" Name="PALETT~1.ORI" LongName="palette.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/palette.tcl.orig"/>
+          <File Id="IDpanedwindow.tcl-231" Name="PANEDW~1.TCL" LongName="panedwindow.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/panedwindow.tcl"/>
+          <File Id="IDpkgIndex.tcl-232" Name="pkgIndex.tcl" LongName="pkgIndex.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/pkgIndex.tcl"/>
+          <File Id="IDpkgIndex.tcl.orig-233" Name="PKGIND~1.ORI" LongName="pkgIndex.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/pkgIndex.tcl.orig"/>
+          <File Id="IDprolog.ps-234" Name="prolog.ps" LongName="prolog.ps" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/prolog.ps"/>
+          <File Id="IDsafetk.tcl-235" Name="safetk.tcl" LongName="safetk.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/safetk.tcl"/>
+          <File Id="IDscale.tcl-236" Name="scale.tcl" LongName="scale.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/scale.tcl"/>
+          <File Id="IDscrlbar.tcl-237" Name="scrlbar.tcl" LongName="scrlbar.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/scrlbar.tcl"/>
+          <File Id="IDscrlbar.tcl.orig-238" Name="SCRLBA~1.ORI" LongName="scrlbar.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/scrlbar.tcl.orig"/>
+          <File Id="IDspinbox.tcl-239" Name="spinbox.tcl" LongName="spinbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/spinbox.tcl"/>
+          <File Id="IDtclIndex-240" Name="tclIndex" LongName="tclIndex" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tclIndex"/>
+          <File Id="IDtearoff.tcl-241" Name="tearoff.tcl" LongName="tearoff.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tearoff.tcl"/>
+          <File Id="IDtearoff.tcl.orig-242" Name="TEAROF~1.ORI" LongName="tearoff.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tearoff.tcl.orig"/>
+          <File Id="IDtext.tcl-243" Name="text.tcl" LongName="text.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/text.tcl"/>
+          <File Id="IDtk.tcl-244" Name="tk.tcl" LongName="tk.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tk.tcl"/>
+          <File Id="IDtkAppInit.c-245" Name="TKAPPI~1.C" LongName="tkAppInit.c" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tkAppInit.c"/>
+          <File Id="IDtkfbox.tcl-246" Name="tkfbox.tcl" LongName="tkfbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tkfbox.tcl"/>
+          <File Id="IDtkfbox.tcl.orig-247" Name="TKFBOX~1.ORI" LongName="tkfbox.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/tkfbox.tcl.orig"/>
+          <File Id="IDunsupported.tcl-248" Name="UNSUPP~1.TCL" LongName="unsupported.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/unsupported.tcl"/>
+          <File Id="IDxmfbox.tcl-249" Name="xmfbox.tcl" LongName="xmfbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/xmfbox.tcl"/>
+          <File Id="IDxmfbox.tcl.orig-250" Name="XMFBOX~1.ORI" LongName="xmfbox.tcl.orig" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/xmfbox.tcl.orig"/>
+          <CreateFolder/>
+        </Component>
+        <Directory Id="IDCVS-251" Name="CVS" LongName="CVS">
+          <Component Guid="41012C98-0015-4000-B390-0008028F89FB" Id="IDdir-252">
+            <File Id="IDEntries-253" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/CVS/Entries"/>
+            <File Id="IDRepository-254" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/CVS/Repository"/>
+            <File Id="IDRoot-255" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/CVS/Root"/>
+            <CreateFolder/>
+          </Component>
+        </Directory>
+        <Directory Id="IDimages-256" Name="images" LongName="images">
+          <Component Guid="41012C98-0016-4000-B174-0008028F89FB" Id="IDdir-257">
+            <File Id="IDlogo.eps-258" Name="logo.eps" LongName="logo.eps" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/logo.eps"/>
+            <File Id="IDlogo100.gif-259" Name="logo100.gif" LongName="logo100.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/logo100.gif"/>
+            <File Id="IDlogo64.gif-260" Name="logo64.gif" LongName="logo64.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/logo64.gif"/>
+            <File Id="IDlogoLarge.gif-261" Name="LOGOLA~1.GIF" LongName="logoLarge.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/logoLarge.gif"/>
+            <File Id="IDlogoMed.gif-262" Name="logoMed.gif" LongName="logoMed.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/logoMed.gif"/>
+            <File Id="IDpwrdLogo.eps-263" Name="pwrdLogo.eps" LongName="pwrdLogo.eps" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo.eps"/>
+            <File Id="IDpwrdLogo100.gif-264" Name="PWRDLO~1.GIF" LongName="pwrdLogo100.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo100.gif"/>
+            <File Id="IDpwrdLogo150.gif-265" Name="PWRDLO~2.GIF" LongName="pwrdLogo150.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo150.gif"/>
+            <File Id="IDpwrdLogo175.gif-266" Name="PWRDLO~3.GIF" LongName="pwrdLogo175.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo175.gif"/>
+            <File Id="IDpwrdLogo200.gif-267" Name="PWRDLO~4.GIF" LongName="pwrdLogo200.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo200.gif"/>
+            <File Id="IDpwrdLogo75.gif-268" Name="PW0792~1.GIF" LongName="pwrdLogo75.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/pwrdLogo75.gif"/>
+            <File Id="IDREADME-269" Name="README" LongName="README" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/README"/>
+            <File Id="IDtai-ku.gif-270" Name="tai-ku.gif" LongName="tai-ku.gif" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/tai-ku.gif"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-271" Name="CVS" LongName="CVS">
+            <Component Guid="41012C98-0017-4000-A9B2-0008028F89FB" Id="IDdir-272">
+              <File Id="IDEntries-273" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/CVS/Entries"/>
+              <File Id="IDRepository-274" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/CVS/Repository"/>
+              <File Id="IDRoot-275" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/images/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+        <Directory Id="IDmsgs-276" Name="msgs" LongName="msgs">
+          <Component Guid="41012C98-0018-4000-A13C-0008028F89FB" Id="IDdir-277">
+            <File Id="IDcs.msg-278" Name="cs.msg" LongName="cs.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/cs.msg"/>
+            <File Id="IDde.msg-279" Name="de.msg" LongName="de.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/de.msg"/>
+            <File Id="IDel.msg-280" Name="el.msg" LongName="el.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/el.msg"/>
+            <File Id="IDen.msg-281" Name="en.msg" LongName="en.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/en.msg"/>
+            <File Id="IDen_gb.msg-282" Name="en_gb.msg" LongName="en_gb.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/en_gb.msg"/>
+            <File Id="IDes.msg-283" Name="es.msg" LongName="es.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/es.msg"/>
+            <File Id="IDfr.msg-284" Name="fr.msg" LongName="fr.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/fr.msg"/>
+            <File Id="IDit.msg-285" Name="it.msg" LongName="it.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/it.msg"/>
+            <File Id="IDnl.msg-286" Name="nl.msg" LongName="nl.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/nl.msg"/>
+            <File Id="IDru.msg-287" Name="ru.msg" LongName="ru.msg" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/ru.msg"/>
+            <CreateFolder/>
+          </Component>
+          <Directory Id="IDCVS-288" Name="CVS" LongName="CVS">
+            <Component Guid="41012C98-0019-4000-9EA8-0008028F89FB" Id="IDdir-289">
+              <File Id="IDEntries-290" Name="Entries" LongName="Entries" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/CVS/Entries"/>
+              <File Id="IDRepository-291" Name="REPOSI~1" LongName="Repository" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/CVS/Repository"/>
+              <File Id="IDRoot-292" Name="Root" LongName="Root" DiskId="1" src="c:/jkb/Software/Trev/lib/tk/msgs/CVS/Root"/>
+              <CreateFolder/>
+            </Component>
+          </Directory>
+        </Directory>
+      </Directory>
+      <Directory Id="IDtk_utils-293" Name="tk_utils" LongName="tk_utils">
+        <Component Guid="41012C98-001A-4000-863A-0008028F89FB" Id="IDdir-294">
+          <File Id="IDassert.tcl-295" Name="assert.tcl" LongName="assert.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/assert.tcl"/>
+          <File Id="IDbiolimsbox.tcl-296" Name="BIOLIM~1.TCL" LongName="biolimsbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/biolimsbox.tcl"/>
+          <File Id="IDbuttonbox.tcl-297" Name="BUTTON~1.TCL" LongName="buttonbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/buttonbox.tcl"/>
+          <File Id="IDcanvas_box.tcl-298" Name="CANVAS~1.TCL" LongName="canvas_box.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/canvas_box.tcl"/>
+          <File Id="IDcheckbutton.tcl-299" Name="CHECKB~1.TCL" LongName="checkbutton.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/checkbutton.tcl"/>
+          <File Id="IDcolour_selector_box.tcl-300" Name="COLOUR~1.TCL" LongName="colour_selector_box.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/colour_selector_box.tcl"/>
+          <File Id="IDconfig.tcl-301" Name="config.tcl" LongName="config.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/config.tcl"/>
+          <File Id="IDcontainer.tcl-302" Name="CONTAI~1.TCL" LongName="container.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/container.tcl"/>
+          <File Id="IDelement_canvas.tcl-303" Name="ELEMEN~1.TCL" LongName="element_canvas.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/element_canvas.tcl"/>
+          <File Id="IDentrybox.tcl-304" Name="entrybox.tcl" LongName="entrybox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/entrybox.tcl"/>
+          <File Id="IDexp_file.tcl-305" Name="exp_file.tcl" LongName="exp_file.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/exp_file.tcl"/>
+          <File Id="IDfilebrowser.tcl-306" Name="FILEBR~1.TCL" LongName="filebrowser.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/filebrowser.tcl"/>
+          <File Id="IDfile_checking.tcl-307" Name="FILE_C~1.TCL" LongName="file_checking.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/file_checking.tcl"/>
+          <File Id="IDgrid.tcl-308" Name="grid.tcl" LongName="grid.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/grid.tcl"/>
+          <File Id="IDhelp.tcl-309" Name="help.tcl" LongName="help.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help.tcl"/>
+          <File Id="IDhelp_choose.tcl-310" Name="HELP_C~1.TCL" LongName="help_choose.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_choose.tcl"/>
+          <File Id="IDhelp_ext.tcl-311" Name="help_ext.tcl" LongName="help_ext.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_ext.tcl"/>
+          <File Id="IDhelp_int.tcl-312" Name="help_int.tcl" LongName="help_int.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_int.tcl"/>
+          <File Id="IDhelp_macosx.tcl-313" Name="HELP_M~1.TCL" LongName="help_macosx.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_macosx.tcl"/>
+          <File Id="IDhelp_netscape.tcl-314" Name="HELP_N~1.TCL" LongName="help_netscape.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_netscape.tcl"/>
+          <File Id="IDhelp_windows.tcl-315" Name="HELP_W~1.TCL" LongName="help_windows.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/help_windows.tcl"/>
+          <File Id="IDhtml_library.tcl-316" Name="HTML_L~1.TCL" LongName="html_library.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/html_library.tcl"/>
+          <File Id="IDimages.tcl-317" Name="images.tcl" LongName="images.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/images.tcl"/>
+          <File Id="IDinit.tcl-318" Name="init.tcl" LongName="init.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/init.tcl"/>
+          <File Id="IDlicence.tcl-319" Name="licence.tcl" LongName="licence.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/licence.tcl"/>
+          <File Id="IDlist_or_file.tcl-320" Name="LIST_O~1.TCL" LongName="list_or_file.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/list_or_file.tcl"/>
+          <File Id="IDmenu.tcl-321" Name="menu.tcl" LongName="menu.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/menu.tcl"/>
+          <File Id="IDmessagebox.tcl-322" Name="MESSAG~1.TCL" LongName="messagebox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/messagebox.tcl"/>
+          <File Id="IDradiobutton.tcl-323" Name="RADIOB~1.TCL" LongName="radiobutton.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/radiobutton.tcl"/>
+          <File Id="IDrepeater.tcl-324" Name="repeater.tcl" LongName="repeater.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/repeater.tcl"/>
+          <File Id="IDrestriction_enzyme_map.tcl-325" Name="RESTRI~1.TCL" LongName="restriction_enzyme_map.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/restriction_enzyme_map.tcl"/>
+          <File Id="IDr_enzyme_box.tcl-326" Name="R_ENZY~1.TCL" LongName="r_enzyme_box.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/r_enzyme_box.tcl"/>
+          <File Id="IDscalebox.tcl-327" Name="scalebox.tcl" LongName="scalebox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/scalebox.tcl"/>
+          <File Id="IDscale_range.tcl-328" Name="SCALE_~1.TCL" LongName="scale_range.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/scale_range.tcl"/>
+          <File Id="IDsearch.tcl-329" Name="search.tcl" LongName="search.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/search.tcl"/>
+          <File Id="IDtclIndex-330" Name="tclIndex" LongName="tclIndex" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/tclIndex"/>
+          <File Id="IDtext_output.tcl-331" Name="TEXT_O~1.TCL" LongName="text_output.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/text_output.tcl"/>
+          <File Id="IDuser_defaults.tcl-332" Name="USER_D~1.TCL" LongName="user_defaults.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/user_defaults.tcl"/>
+          <File Id="IDutils.tcl-333" Name="utils.tcl" LongName="utils.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/utils.tcl"/>
+          <File Id="IDwidget.tcl-334" Name="widget.tcl" LongName="widget.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/widget.tcl"/>
+          <File Id="IDxentry.tcl-335" Name="xentry.tcl" LongName="xentry.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xentry.tcl"/>
+          <File Id="IDxfilebrowser.tcl-336" Name="XFILEB~1.TCL" LongName="xfilebrowser.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xfilebrowser.tcl"/>
+          <File Id="IDxget_fname.tcl-337" Name="XGET_F~1.TCL" LongName="xget_fname.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xget_fname.tcl"/>
+          <File Id="IDxlabel.tcl-338" Name="xlabel.tcl" LongName="xlabel.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xlabel.tcl"/>
+          <File Id="IDxlistnotebook.tcl-339" Name="XLISTN~1.TCL" LongName="xlistnotebook.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xlistnotebook.tcl"/>
+          <File Id="IDxmclistbox.tcl-340" Name="XMCLIS~1.TCL" LongName="xmclistbox.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xmclistbox.tcl"/>
+          <File Id="IDxmenubutton.tcl-341" Name="XMENUB~1.TCL" LongName="xmenubutton.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xmenubutton.tcl"/>
+          <File Id="IDxtoplevel.tcl-342" Name="XTOPLE~1.TCL" LongName="xtoplevel.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xtoplevel.tcl"/>
+          <File Id="IDxyesno.tcl-343" Name="xyesno.tcl" LongName="xyesno.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/xyesno.tcl"/>
+          <File Id="IDyesno.tcl-344" Name="yesno.tcl" LongName="yesno.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/tk_utils/yesno.tcl"/>
+          <CreateFolder/>
+        </Component>
+      </Directory>
+      <Directory Id="IDtrev-345" Name="trev" LongName="trev">
+        <Component Guid="41012C98-001B-4000-90F8-0008028F89FB" Id="IDdir-346">
+          <File Id="IDtrev.tcl-347" Name="trev.tcl" LongName="trev.tcl" DiskId="1" src="c:/jkb/Software/Trev/lib/trev/trev.tcl"/>
+          <CreateFolder/>
+        </Component>
+      </Directory>
+      <Directory Id="IDwindows-binaries-348" Name="WINDOW~1" LongName="windows-binaries">
+        <Component Guid="41012C98-001C-4000-8584-0008028F89FB" Id="IDdir-349">
+          <File Id="IDmisc.dll-350" Name="misc.dll" LongName="misc.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/misc.dll"/>
+          <File Id="IDpng12.dll-351" Name="png12.dll" LongName="png12.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/png12.dll"/>
+          <File Id="IDread.dll-352" Name="read.dll" LongName="read.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/read.dll"/>
+          <File Id="IDtcl84.dll-353" Name="tcl84.dll" LongName="tcl84.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/tcl84.dll"/>
+          <File Id="IDtext_utils.dll-354" Name="TEXT_U~1.DLL" LongName="text_utils.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/text_utils.dll"/>
+          <File Id="IDtk84.dll-355" Name="tk84.dll" LongName="tk84.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/tk84.dll"/>
+          <File Id="IDtk_utils.dll-356" Name="tk_utils.dll" LongName="tk_utils.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/tk_utils.dll"/>
+          <File Id="IDzlib1.dll-357" Name="zlib1.dll" LongName="zlib1.dll" DiskId="1" src="c:/jkb/Software/Trev/lib/windows-binaries/zlib1.dll"/>
+          <CreateFolder/>
+        </Component>
+      </Directory>
+    </Directory>
+    <Directory Id="IDtables-358" Name="tables" LongName="tables">
+      <Component Guid="41012C98-001D-4000-929E-0008028F89FB" Id="IDdir-359">
+        <File Id="IDhelp_config-360" Name="HELP_C~1" LongName="help_config" DiskId="1" src="c:/jkb/Software/Trev/tables/help_config"/>
+        <File Id="IDshlib.conf-361" Name="SHLIB~1.CON" LongName="shlib.conf" DiskId="1" src="c:/jkb/Software/Trev/tables/shlib.conf"/>
+        <File Id="IDtk_utilsrc-362" Name="TK_UTI~1" LongName="tk_utilsrc" DiskId="1" src="c:/jkb/Software/Trev/tables/tk_utilsrc"/>
+        <File Id="IDtrevrc-363" Name="trevrc" LongName="trevrc" DiskId="1" src="c:/jkb/Software/Trev/tables/trevrc"/>
+        <CreateFolder/>
+      </Component>
+    </Directory>
+    <Directory Id="IDwindows-bin-364" Name="WINDOW~1" LongName="windows-bin">
+      <Component Guid="41012C98-001E-4000-A720-0008028F89FB" Id="IDdir-365">
+        <File Id="IDstash.exe-366" Name="stash.exe" LongName="stash.exe" DiskId="1" src="c:/jkb/Software/Trev/windows-bin/stash.exe"/>
+        <File Id="IDwish.exe-368" Name="wish.exe" LongName="wish.exe" DiskId="1" src="c:/jkb/Software/Trev/windows-bin/wish.exe"/>
+        <CreateFolder/>
+      </Component>
+      <Component Guid="41012C98-001E-4000-A720-0008028F89FB" Id="IDdir-367">
+        <File Id="IDtrev.exe-367" Name="trev.exe" LongName="trev.exe" DiskId="1" src="c:/jkb/Software/Trev/windows-bin/trev.exe">
+          <Shortcut Id="Shortcut-trev.exe" Directory="StadenMenuFolder" Name="Trev" Target="[#IDtrev.exe-367]" Show="minimized"/>
+        </File>
+	<ProgId Id="ABI_file" Description="ABI trace file" Advertise="yes">
+	  <Extension Id="ab1" ContentType="binary/raw">
+	    <Verb Id="open" Command="Open" Argument="&quot;%1&quot;"/>
+	  </Extension>
+	</ProgId>
+	<ProgId Id="ZTR_file" Description="ZTR compressed trace file" Advertise="yes">
+	  <Extension Id="ztr" ContentType="binary/raw">
+	    <Verb Id="open" Command="Open" Argument="&quot;%1&quot;"/>
+	  </Extension>
+	</ProgId>
+	<ProgId Id="CTF_file" Description="CTF trace file" Advertise="yes">
+	  <Extension Id="ctf" ContentType="binary/raw">
+	    <Verb Id="open" Command="Open" Argument="&quot;%1&quot;"/>
+	  </Extension>
+	</ProgId>
+      </Component>
+    </Directory>
+    </Directory>
+    <Feature Id="main" Title="Staden Package" Level="1">
+      <ComponentRef Id="IDdir-1"/>
+      <ComponentRef Id="IDdir-7"/>
+      <ComponentRef Id="IDdir-19"/>
+      <ComponentRef Id="IDdir-24"/>
+      <ComponentRef Id="IDdir-43"/>
+      <ComponentRef Id="IDdir-55"/>
+      <ComponentRef Id="IDdir-61"/>
+      <ComponentRef Id="IDdir-77"/>
+      <ComponentRef Id="IDdir-82"/>
+      <ComponentRef Id="IDdir-161"/>
+      <ComponentRef Id="IDdir-166"/>
+      <ComponentRef Id="IDdir-170"/>
+      <ComponentRef Id="IDdir-175"/>
+      <ComponentRef Id="IDdir-179"/>
+      <ComponentRef Id="IDdir-184"/>
+      <ComponentRef Id="IDdir-188"/>
+      <ComponentRef Id="IDdir-193"/>
+      <ComponentRef Id="IDdir-197"/>
+      <ComponentRef Id="IDdir-202"/>
+      <ComponentRef Id="IDdir-206"/>
+      <ComponentRef Id="IDdir-211"/>
+      <ComponentRef Id="IDdir-252"/>
+      <ComponentRef Id="IDdir-257"/>
+      <ComponentRef Id="IDdir-272"/>
+      <ComponentRef Id="IDdir-277"/>
+      <ComponentRef Id="IDdir-289"/>
+      <ComponentRef Id="IDdir-294"/>
+      <ComponentRef Id="IDdir-346"/>
+      <ComponentRef Id="IDdir-349"/>
+      <ComponentRef Id="IDdir-359"/>
+      <ComponentRef Id="IDdir-365"/>
+      <ComponentRef Id="IDdir-367"/>
+    </Feature>
+</Include>
