@@ -46,10 +46,9 @@ do { \
  * Returns 0 for success
  *        -1 for length;
  */
-int swritf_(char *sbuf, char *fmt, ...)
+int swritfv(char *sbuf, char *fmt, va_list ap)
 {
     char *cp, c;
-    va_list ap;
     long l;
     int i;
     float f;
@@ -57,7 +56,12 @@ int swritf_(char *sbuf, char *fmt, ...)
     int abort = 0;
     char format[100];
 
-    va_start(ap, fmt);
+#if defined(NEED_VA_COPY)
+    va_list ap_local;
+    va_copy(ap_local, ap);
+    #define ap ap_local
+#endif
+
     buf = sbuf;
 
     for(cp = fmt; !abort && *cp; cp++) {
@@ -181,9 +185,9 @@ int swritf_(char *sbuf, char *fmt, ...)
 		break;
 	    }
 
+#ifndef NDEBUG
 	    default:
 		/* wchar_t types of 'C' and 'S' aren't supported */
-#ifndef NDEBUG
 		printf("Unknown arg is %c\n", *cp);
 #endif
 	    }
@@ -201,6 +205,62 @@ int swritf_(char *sbuf, char *fmt, ...)
 
     va_end(ap);
     return 0;
+}
+
+/*
+ * A series of identical interfaces to swritfv above. This is what the fortran
+ * code calls. Care has been taken to never call the same function with either
+ * a different number of arguments or different types of arguments as this is
+ * not supported in fortran (despite the fact that we know it works just
+ * fine). This isn't strictly necessary, but it removes a lot of compiler
+ * warnings.
+ */
+int swrt0_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt1_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt2_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt2b_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt3_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt3b_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt4_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
+}
+
+int swrt5_(char *sbuf, char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    return swritfv(sbuf, fmt, args);
 }
 
 /*
