@@ -168,6 +168,39 @@ int getABIIndexEntryLW(FILE *fp, off_t indexO,
     return indexO+(entryNum*IndexEntryLength);
 }
 
+/*
+ * From the ABI results file connected to `fp' whose index starts
+ * at byte offset `indexO', return in `val' the `sw'th short word
+ * from the `count'th entry labelled `label'.
+ * The result is 0 for failure, or index offset for success.
+ */
+int getABIIndexEntrySW(FILE *fp, off_t indexO,
+		       uint_4 label, uint_4 count, int sw,
+		       uint_2 *val) {
+    off_t entryNum=-1;
+    int i;
+    uint_4 entryLabel, entryLw1;
+    
+    do {
+	entryNum++;
+
+	if (fseek(fp, header_fudge+indexO+(entryNum*IndexEntryLength), 0) != 0)
+	    return 0;
+
+	if (!be_read_int_4(fp, &entryLabel))
+	    return 0;
+
+	if (!be_read_int_4(fp, &entryLw1))
+	    return 0;
+    } while (!(entryLabel == label && entryLw1 == count));
+    
+    for(i=4; i<=sw; i++)
+	if (!be_read_int_2(fp, val))
+	    return 0;
+    
+    return indexO+(entryNum*IndexEntryLength);
+}
+
 
 /*
  * Gets the offset of the ABI index.
@@ -197,8 +230,13 @@ int getABIIndexOffset(FILE *fp, uint_4 *indexO) {
 /*
  * Get an "ABI String". These strings are either pointed to by the index
  * offset, or held in the offset itself when the string is <= 4 characters.
- * The first byte of the string determines its length.
- * 'string' is a buffer 256 characters long.
+ * The "type" of the index entry is either 0x12 (a pascal string in which
+ * case the first byte of the string determines its length) or a 0x02 (a
+ * C-style string with length coming from the abi index).
+ *
+ * "string" will be max 256 bytes for the pascal string, but is of unknown
+ * (and hence potentially buggy) length for C-strings. For now we live with
+ * it as this entire file needs rewriting from scratch anyway.
  *
  * Returns -1 for failure, string length for success.
  */
@@ -206,6 +244,11 @@ int getABIString(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
 		 char *string) {
     uint_4 off;
     uint_4 len;
+    uint_2 type;
+    
+    off = getABIIndexEntrySW(fp, indexO, label, count, 4, &type);
+    if (!off)
+	return -1;
 
     if (off = getABIIndexEntryLW(fp, indexO, label, count, 4, &len)) {
 	uint_1 len2;
@@ -220,8 +263,12 @@ int getABIString(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
 	    getABIIndexEntryLW(fp, indexO, label, count, 5, &off);
 
 	/* Read length byte */
-	fseek(fp, header_fudge + off, 0);
-	be_read_int_1(fp, &len2);
+	if (type == 0x12) {
+	    fseek(fp, header_fudge + off, 0);
+	    be_read_int_1(fp, &len2);
+	} else {
+	    len2 = len;
+	}
 
 	/* Read data (max 255 bytes) */
 	fread(string, len2, 1, fp);
