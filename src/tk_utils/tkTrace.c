@@ -1162,7 +1162,7 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		       index+1, base, conf, pow(10, -conf/10.0));
 
     } else {
-	Tcl_AppendResult(interp, "unknown option \"", argv[0], "\".", NULL);
+	Tcl_AppendResult(interp, "unknown option \"", argv[1], "\".", NULL);
 	result = TCL_ERROR;
     }
 
