@@ -1,72 +1,84 @@
 This manual describes the sequence handling and analysis software
 developed at the Medical Research Council Laboratory of Molecular
 Biology, Cambridge, UK, which has come to be known as the Staden
-Package. Besides the current group, a number of people have made
-important contributions to earlier versions of the package, notably Tim
-Gleeson and Simon Dear; and others, including David
-Judge and several past and present workers at the Sanger Centre, have 
-helped with comments and suggestions. John Taylor made everything work
-on Windows9X/NT.
+Package.
 
-The focus of the group since 1990 has been to produce improved methods for 
-processing the data for large scale sequencing projects,
+The vast bulk of work on the package was done at LMB within Rodger
+Staden's group, which over time has consisted of Tim Gleeson, Simon
+Dear, James Bonfield, Kathryn Beal, Mark Jordan and Yaping
+Cheng. Besides the group members a number of people have made
+important contributions; most notably including David Judge and John
+Taylor for feedback / tutorials and developing the Windows release
+respectively.
+
+Since mid-2003 the group in LMB no longer exists. The package became
+``open source'' and moved onto SourceForge in early 2004. The only
+active maintainer (James Bonfield) now works at the Wellcome Trust
+Sanger Institute. The new package homepage may be found at
+_uref(http://staden.sourceforge.net/) and the SourceForge project page
+is at _uref(https://sourceforge.net/projects/staden/).
+
+The focus of the development since 1990 has been to produce improved
+methods for processing the data for large scale sequencing projects,
 and this is reflected in the scope of the package: the most advanced
-components (trev, prefinish, pregap4 and gap4) are those used in that area.
-Nevertheless the package also contains a program (spin) for the analysis
-and comparison of finished sequences. The latter also provides a
-graphical user interface to EMBOSS.
+components (trev, prefinish, pregap4 and gap4) are those used in that
+area.  Nevertheless the package also contains a program (spin) for the
+analysis and comparison of finished sequences. The latter also
+provides a graphical user interface to EMBOSS.
 
+Since the LMB group disbanded it has become necessary to reduce the
+scope of further development, so active work is primarily being
+directed to the Gap4 program.
 
-Gap4 performs sequence assembly, contig ordering based on read pair data, 
-contig joining based on sequence comparisons, assembly checking, repeat
-searching, experiment suggestion, read pair analysis and contig
-editing. It has graphical views of contigs,
-templates, readings and traces which all scroll in register. Contig
-editor searches and experiment suggestion routines use confidence
-values to calculate the confidence of the consensus sequence and hence
-identify only places requiring visual trace inspection or extra
-data. The result is extremely rapid finishing and a consensus of known accuracy.
+Gap4 performs sequence assembly, contig ordering based on read pair
+data, contig joining based on sequence comparisons, assembly checking,
+repeat searching, experiment suggestion, read pair analysis and contig
+editing. It has graphical views of contigs, templates, readings and
+traces which all scroll in register. Contig editor searches and
+experiment suggestion routines use confidence values to calculate the
+confidence of the consensus sequence and hence identify only places
+requiring visual trace inspection or extra data. The result is
+extremely rapid finishing and a consensus of known accuracy.
 
 Pregap4 provides a graphical user interface to set up the processing
 required to prepare trace data for assembly or analysis. It also
 automates these processes. The possible processes which can be set up
-and automated include trace format
-conversion, quality analysis, vector clipping, contaminant screening,
-repeat searching and mutation detection.
+and automated include trace format conversion, quality analysis,
+vector clipping, contaminant screening, repeat searching and mutation
+detection.
 
-Trev is a rapid and flexible viewer and editor for ABI, ALF, SCF and ZTR 
-trace files. 
+Trev is a rapid and flexible viewer and editor for ABI, ALF, SCF and
+ZTR trace files.
 
-Prefinish analyses partially completed sequence assemblies and suggests the
-most efficient set of experiments to help finish the project.
+Prefinish analyses partially completed sequence assemblies and
+suggests the most efficient set of experiments to help finish the
+project.
 
-Tracediff and hetscan automatically locate mutations by comparing trace 
-data against reference traces. They annotate the mutations found ready for 
-viewing in gap4.
-
-
-Spin analyses nucleotide sequences to find genes, restriction sites, motifs,
-etc. It can perform translations, find open reading frames, count codons,
-etc. Many results are presented graphically and a sliding sequence
-window is linked to the graphics cursor.
-Spin also compares pairs of sequences in many ways.
-It has very rapid dot matrix analysis, global and
-local alignment algorithms, plus a
-sliding sequence window linked to the graphical plots. It can compare
-nucleic acid against nucleic acid,
-protein against protein, and protein against nucleic acid.
+Tracediff and hetscan automatically locate mutations by comparing
+trace data against reference traces. They annotate the mutations found
+ready for viewing in gap4.
 
 
-The manual describes, in turn, each of the main programs in the package:
-gap4, and then pregap4 and its associated programs such as trev, and then spin.
-This is followed by a description of the
-graphical user interface, the ZTR,
-SCF and Experiment file formats used by our software, UNIX manpages for
-several of the smaller programs, and finally a list of papers published about
-the software.
+Spin analyses nucleotide sequences to find genes, restriction sites,
+motifs, etc. It can perform translations, find open reading frames,
+count codons, etc. Many results are presented graphically and a
+sliding sequence window is linked to the graphics cursor.  Spin also
+compares pairs of sequences in many ways.  It has very rapid dot
+matrix analysis, global and local alignment algorithms, plus a sliding
+sequence window linked to the graphical plots. It can compare nucleic
+acid against nucleic acid, protein against protein, and protein
+against nucleic acid.
+
+
+The manual describes, in turn, each of the main programs in the
+package: gap4, and then pregap4 and its associated programs such as
+trev, and then spin.  This is followed by a description of the
+graphical user interface, the ZTR, SCF and Experiment file formats
+used by our software, UNIX manpages for several of the smaller
+programs, and finally a list of papers published about the software.
 The description for each of the programs includes an introductory
 section which is intended to be sufficient to enable people to start
-using them, although in order to get the most from the programs, and to
-find the most efficient ways of using them we recommend that the whole
-manual is read once. The mini-manual is made up from the introductory
-sections for each of the main programs.
+using them, although in order to get the most from the programs, and
+to find the most efficient ways of using them we recommend that the
+whole manual is read once. The mini-manual is made up from the
+introductory sections for each of the main programs.
