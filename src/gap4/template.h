@@ -112,7 +112,8 @@ typedef struct {
 #define TEMP_OFLAG_NONE		  0
 #define TEMP_OFLAG_MINMAX_SIZE	  1 /* min/max insert size instead of avg */
 #define TEMP_OFLAG_CVEC		  2 /* also clip cosmid vector */
-#define TEMP_OFLAG_IGNORE_PTYPE	  3 /* whether primer-type is accurate */
+#define TEMP_OFLAG_IGNORE_PTYPE	  4 /* whether primer-type (any) is accurate */
+#define TEMP_OFLAG_IGNORE_PTYPE34 8 /* whether primer-type 3/4 is accurate */
 
 #define UNKNOWN_POS -999999
 

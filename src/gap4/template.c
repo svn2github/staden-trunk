@@ -81,7 +81,8 @@ static template_c *new_template_c(void) {
 
     t->consistency = TEMP_CONSIST_OK;
     t->score = 1; /* perfect score */
-    t->min_vector_len = 0;
+    t->min_vector_len = min_vector_len; /* Global default */
+    t->oflags = template_check_flags;   /* Global default */
     if (NULL == (t->gel_cont = new_list())) {
 	free_template_c(t);
 	return NULL;
@@ -283,6 +284,12 @@ static void check_template_strand(GapIO *io, template_c *t) {
 	    sense = r.sense == GAP_SENSE_ORIGINAL ? 0 : 1;
 	    strand = (PRIMER_TYPE_GUESS(r) == GAP_PRIMER_FORWARD ||
 		      PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR) ? 0 : 1;
+
+	    /* Skip checks if TEMP_OFLAG_IGNORE_PTYPE34 is set */
+	    if (t->oflags & TEMP_OFLAG_IGNORE_PTYPE34 &&
+		(PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR ||
+		 PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTREV))
+		continue;
 	    
 	    if (sense == strand)
 		dir_plus++;
@@ -293,7 +300,8 @@ static void check_template_strand(GapIO *io, template_c *t) {
 	}
 
 	if (dir_plus && dir_minus)
-	    t->consistency |= TEMP_CONSIST_STRAND;
+	    if ((t->oflags & TEMP_OFLAG_IGNORE_PTYPE) == 0)
+		t->consistency |= TEMP_CONSIST_STRAND;
 
 	if (first_contig) {
 	    if (dir_plus > dir_minus)
@@ -491,6 +499,10 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	         ? GAP_PRIMER_CUSTFOR
 	         : GAP_PRIMER_CUSTREV)
 	    : PRIMER_TYPE_GUESS(r);
+
+	if ((t->oflags & TEMP_OFLAG_IGNORE_PTYPE34) &&
+	    (ptype == GAP_PRIMER_CUSTFOR || ptype == GAP_PRIMER_CUSTREV))
+	    ptype = GAP_PRIMER_UNKNOWN;
 
 	/*
 	 * Get estimated start and end coordinates for this template.
