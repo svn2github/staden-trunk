@@ -349,6 +349,21 @@ add_radio	{Settings.Consensus algorithm.Weighted base frequencies} 1 0 \
 add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
 	{$w.ConsensusAlgorithm} 2 {editor_change_consensus_algorithm $e $w}
 
+# Group Readings
+add_cascade	{Settings.Group Readings}		1 0
+add_radio       {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
+	0 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Strand}   1 0 {$w.GroupBy}\
+	2 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Name}   1 0 {$w.GroupBy}\
+	4 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Number}   1 0 {$w.GroupBy}\
+	5 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
+	1 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Clone}   1 0 {$w.GroupBy}\
+	3 {$e set_grouping \[set $w.GroupBy\]}
+
 add_separator	{Settings.S1}
 add_check	{Settings.Highlight Disagreements}	1 0 {$w.Disagreements}\
 	{set_differences_mode $e $w toggle}
@@ -367,8 +382,6 @@ add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
 	{$e auto_save}
 #add_check	{Settings.3 Character Amino Acids}	1 0 {$w.AminoMode} \
 #	{$e translation_mode \[lindex {1 3} \[set $w.AminoMode\]\]}
-add_check       {Settings.Group Readings by Templates}  1 0 {$w.TemplateGroup}\
-	{$e set_grouping}
 add_check	{Settings.Show reading quality}		1 0 {$w.ShowQuality} \
 	{$e show_quality \[set $w.ShowQuality\]}
 add_check	{Settings.Show consensus quality}	1 0 {$w.ShowCQuality} \
