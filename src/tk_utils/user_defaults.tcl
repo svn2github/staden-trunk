@@ -118,7 +118,6 @@ proc simple_load_package {name} {
 	set ldir $dir
 	set adir $dir
 	set bdir $ldir/$env(MACHINE)-binaries/
-	puts x
     } else {
 	set tdir $env(STADTABL)
 	set ldir $env(STADLIB)
