@@ -253,7 +253,7 @@ proc itemBind {io canvas x y} {
     set c_list [GetContigNum $canvas current]
     #do not toggle contig selection where selecting contigs with the "move"
     #mouse button
-    set h_list [UpdateContigListNoToggle $io $c_list]
+    UpdateContigListNoToggle $io $c_list
     UpdateContigId $io $canvas current
 
     #SelectSingleContig $io $canvas
@@ -649,21 +649,35 @@ proc ClearContigSelection { io csh_win} {
 
 ##############################################################################
 proc DrawSelection { io csh_win h_list } {
-    global gap_defs
+    global gap_defs ${csh_win}.Selected
 
-    # Clear the current list
-    foreach c [CreateAllContigList $io] {
-	set c_num [db_info get_contig_num $io [lindex $c 0]]
-	$csh_win itemconfig hl_$c_num \
-		    -width [keylget gap_defs "CONTIG_SEL.LINE_WIDTH"]
+    if {![info exists ${csh_win}.Selected]} {
+	array set ${csh_win}.Selected {}
     }
 
-    # Draw any new items
+    # Turn the list into a hash for fast lookup
+    array set items ""
+    foreach i $h_list {
+	set items($i) 1
+    }
+
+    # Unselect any items in Selected but not in h_list
+    set fine_width [keylget gap_defs "CONTIG_SEL.LINE_WIDTH"]
+    foreach c [array names ${csh_win}.Selected] {
+	if {![info exists items($c)]} {
+	    set c_num [db_info get_contig_num $io $c]
+	    $csh_win itemconfig hl_$c_num -width $fine_width
+	    unset ${csh_win}.Selected($c)
+	}
+    }
+
+    # Select any items in h_list but not in Selected
+    set bold_width [keylget gap_defs "CONTIG_SEL.LINE_BOLD"]
     foreach c $h_list {
-	set c_num [db_info get_contig_num $io [lindex $c 0]]
-	if {[lindex $c 1] == 1} {
-	    $csh_win itemconfig hl_$c_num \
-		    -width [keylget gap_defs "CONTIG_SEL.LINE_BOLD"]
+	if {![info exists ${csh_win}.Selected($c)]} {
+	    set c_num [db_info get_contig_num $io $c]
+	    $csh_win itemconfig hl_$c_num -width $bold_width
+	    set ${csh_win}.Selected($c) 1
 	}
     }
 }
@@ -673,8 +687,6 @@ proc DrawSelection { io csh_win h_list } {
 #HACK not implemented yet - should be called from DrawSelection
 proc HighlightListContig {csh_win item highlight} {
 
-    puts "item $item"
-    puts "tags [$csh_win gettags $item]"
     set f [winfo parent $csh_win]
     set t $f.l
 
@@ -685,7 +697,6 @@ proc HighlightListContig {csh_win item highlight} {
 	    $t.list selection set $index
 	}
     }
-    puts "index $index"
 
 }
 
@@ -694,7 +705,7 @@ proc HighlightListContig {csh_win item highlight} {
 proc SelectSingleContig {io csh_win } {
 
     lappend c_list [GetContigNum $csh_win current]
-    set h_list [UpdateContigList $io $c_list]
+    UpdateContigList $io $c_list
     UpdateContigId $io $csh_win current
 }
 
@@ -725,12 +736,15 @@ proc SelectContigs {f csh_win io } {
 	    }
 	}
     }
+
     set order_list [lsort -integer -increasing $order_list]
+
+    global $csh_win.Cnum
     foreach i $order_list {
-	set obj [$csh_win find withtag c_$i]
-	lappend c_list [GetContigNum $csh_win $obj]
+	lappend c_list [GetContigNum $csh_win [set ${csh_win}.Cnum($i)]]
     }    
-    set h_list [UpdateContigList $io $c_list]
+
+    UpdateContigList $io $c_list
 }
 
 
@@ -771,7 +785,7 @@ proc EditCSTagDetails { io canvas current } {
 
     set t_num 0
     set r_num 0
-    puts tags=[$canvas gettags $current]
+
     foreach tag [$canvas gettags $current] {
 	if {[string match t_* $tag]} {
 	    set t_num [string trim $tag t_]
@@ -1119,6 +1133,8 @@ proc CSStartShutdown {io f} {
     set csh_win $f[keylget gap_defs CONTIG_SEL.WIN]
     set trace_cmd "ContigSelector_ContigsList $io $csh_win"
     catch {trace vdelete NGList(contigs) w [list $trace_cmd]}
+    global $csh_win.Selected
+    catch {unset ${csh_win}.Selected}
 
     if {[info exists $f.cs_id]} {
 	result_quit -io $io -id [set $f.cs_id]
@@ -1182,11 +1198,7 @@ proc ContigSelector_ContigsList {io csh_win name1 name2 op} {
 
     if {![winfo exists $csh_win]} return
 
-    set l {}
-    foreach item $NGList(contigs) {
-	lappend l [list $item 1]
-    }
-    DrawSelection $io $csh_win $l
+    DrawSelection $io $csh_win $NGList(contigs)
 }
 
 ##############################################################################

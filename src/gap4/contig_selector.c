@@ -201,35 +201,43 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
     for (i = 0; i < NumContigs(io); i++){
 	if (arr(GCardinal, io->contig_order, i) > 0) {
 	    int clen = io_clength(io, arr(GCardinal, io->contig_order, i));
-		if (strcmp(direction, "horizontal")==0){
-		    x1 = x2;
-		    x2 = clen + x2;
-		    /*
-		       printf("i %d num %d length %d x1 %d x2 %d \n",
-		       i, arr(GCardinal, io->contig_order, i), clen,
-		       x1, x2);
-		       */
-		    /* contig line */
-		    sprintf(cmd,"%s create line %d %d %d %d "
-			    "-fill %s -width %d "
-			    "-tags {contig c_%d num_%d hl_%d S}\n",
-			    win_name, x1, offset, x2, offset,
-			    colour, width, i+1,
-			    arr(GCardinal, io->contig_order, i),
-			    arr(GCardinal, io->contig_order, i));
-		} else if (strcmp(direction, "vertical")==0){
-		    y1 = y2;
-		    y2 = clen + y2;
-		    sprintf(cmd,"%s create line %d %d %d %d "
-			    "-fill %s -width %d "
-			    "-tags {contig c_%d num_%d hl_%d S}\n",
-			    win_name, offset, y1, offset, y2,
-			    colour, width, i+1,
-			    arr(GCardinal, io->contig_order, i),
-			    arr(GCardinal, io->contig_order, i));
-		}
+	    if (strcmp(direction, "horizontal")==0){
+		x1 = x2;
+		x2 = clen + x2;
+		/*
+		  printf("i %d num %d length %d x1 %d x2 %d \n",
+		  i, arr(GCardinal, io->contig_order, i), clen,
+		  x1, x2);
+		*/
+		/* contig line */
+		sprintf(cmd,"%s create line %d %d %d %d "
+			"-fill %s -width %d "
+			"-tags {contig c_%d num_%d hl_%d S}\n",
+			win_name, x1, offset, x2, offset,
+			colour, width, i+1,
+			arr(GCardinal, io->contig_order, i),
+			arr(GCardinal, io->contig_order, i));
+	    } else if (strcmp(direction, "vertical")==0){
+		y1 = y2;
+		y2 = clen + y2;
+		sprintf(cmd,"%s create line %d %d %d %d "
+			"-fill %s -width %d "
+			"-tags {contig c_%d num_%d hl_%d S}\n",
+			win_name, offset, y1, offset, y2,
+			colour, width, i+1,
+			arr(GCardinal, io->contig_order, i),
+			arr(GCardinal, io->contig_order, i));
+	    }
 	    Tcl_Eval(interp, cmd);
-	    /* printf("%s \n", cmd); */
+
+	    /* Store canvas item number in an array containing contig no. */
+	    {
+		char aname[1024], aele[50];
+		sprintf(aname, "%s.Cnum", win_name);
+		sprintf(aele, "%d", i+1);
+		Tcl_SetVar2(interp, aname, aele, Tcl_GetStringResult(interp),
+			    TCL_GLOBAL_ONLY);
+	    }
 
 	    /* tick at end of line */
 	    if (strcmp(direction, "horizontal")==0){
