@@ -131,59 +131,36 @@ _changequote([[,]])
 @c ---------------------------------------------------------------------------
 @c picture macro
 @c
-@c Adds a picture to the document. For tex it loads a PostScript file. For
-@c html it loads a gif file.
+@c Adds a picture to the document. For texi2dvi it uses postscript. For PDF
+@c it uses a PDF picture. For html it loads a png file.
 @c
-@c argument 1: a filename prefix. .ps and .gif are added to the prefix
+@c argument 1: a filename prefix. .ps, .pdf and .png are added to the prefix
 @c             as required.
 @c ---------------------------------------------------------------------------
-_define([[_picture]],[[_ifdef([[_unix]],[[_ifdef([[_tex]],[[@tex
-@sp 1
-@epsfbox{[[$*]].unix.ps}
-@end tex]])
+_define([[_picture]],[[_ifdef([[_tex]],[[@image{[[$*]].unix}]])
 _ifdef([[_html]],[[
 @ifhtml
 <p>
-<img src="[[$*]].unix.gif" alt="[picture]">
-@end ifhtml]])]],[[_ifdef([[_tex]],[[@tex
-@sp 1
-@epsfbox{[[$*]].unix.ps}
-@end tex]])
-_ifdef([[_html]],[[
-@ifhtml
-<p>
-<img src="[[$*]].unix.gif" alt="[picture]">
-@end ifhtml]])]])]])
+<img src="[[$*]].unix.png" alt="[picture]">
+@end ifhtml]])]])
 
 @c ---------------------------------------------------------------------------
 @c lpicture macro
 @c
 @c Adds a large picture to the document. In tex this is the same as the
-@c picture macro. For html it displays a small gif file with a link to the
+@c picture macro. For html it displays a small png file with a link to the
 @c full size one.
 @c
-@c argument 1: a filename prefix. .ps, .gif, .small.gif and .gif.html are
+@c argument 1: a filename prefix. .pdf, .png, .small.png and .png.html are
 @c             added to the prefix as required.
 @c ---------------------------------------------------------------------------
-_define([[_lpicture]],[[_ifdef([[_unix]],[[_ifdef([[_tex]],[[@tex
-@sp 1
-@epsfbox{[[$*]].unix.ps}
-@end tex]])
+_define([[_lpicture]],[[_ifdef([[_tex]],[[@image{[[$*]].unix}]])
 _ifdef([[_html]],[[
 @ifhtml
 <p>
-<a href="[[$*]].unix.gif.html"><img src="[[$*]].small.unix.gif" alt="[picture]"></a>
+<a href="[[$*]].unix.png.html"><img src="[[$*]].small.unix.png" alt="[picture]"></a>
 <br><font size="-1">(Click for full size image)<font size="+0"><br>
-@end ifhtml]])]],[[_ifdef([[_tex]],[[@tex
-@sp 1
-@epsfbox{[[$*]].unix.ps}
-@end tex]])
-_ifdef([[_html]],[[
-@ifhtml
-<p>
-<a href="[[$*]].unix.gif.html"><img src="[[$*]].small.unix.gif" alt="[picture]"></a>
-<br><font size="-1">(Click for full size image)<font size="+0"><br>
-@end ifhtml]])]])]])
+@end ifhtml]])]])
 
 @c ---------------------------------------------------------------------------
 @c @nm4{}

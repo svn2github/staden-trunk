@@ -36,19 +36,19 @@ M4=m4
 # documents designed for passing into TeX or texi2html. The changes are
 # minimal and relate to cross-referencing and page-splitting.
 #
-%_unix.texinfo:	%.texi
+%_unix.texinfo:	%.texi header.m4
 	$(M4) -Uunix -D_unix -D_tex < $< > $@
 	./tools/update-nodes $@
 
-%_unix.htmlinfo:	%.texi
+%_unix.htmlinfo:	%.texi header.m4
 	$(M4) -Uunix -D_unix -D_html < $< > $@
 	./tools/update-nodes $@
 
-%_windows.texinfo:	%.texi
+%_windows.texinfo:	%.texi header.m4
 	$(M4) -Uunix -D_windows -D_tex < $< > $@
 	./tools/update-nodes $@
 
-%_windows.htmlinfo:	%.texi
+%_windows.htmlinfo:	%.texi header.m4
 	$(M4) -Uunix -D_windows -D_html < $< > $@
 	./tools/update-nodes $@
 
@@ -65,10 +65,14 @@ M4=m4
 %.ps:	%.dvi
 	dvips -t a4 -Ppdf -o $@ $<
 
+%.pdf:	%.texinfo
+	texi2pdf $<
+
 # PDF generation. I've never really had a great deal of luck with getting
 # good fonts out of ps2pdf, but it's worth a try.
-%.pdf:	%.ps
-	ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
+#%.pdf:	%.ps
+#	ps2pdf -dEncodeColorImages=false $<
+#	ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
 
 # Converts an A4 formatted .texi file into a US-letter formatted file.
 %_us.texinfo: %.texinfo
@@ -103,9 +107,15 @@ man/man4/ztr.4: ztr-t.texi
 gifs:
 	./tools/make_gif_html
 
+pngs:
+	./tools/make_png_html
+
 # PostScript versions of the gif images.
 %.ps: %.gif
 	./tools/make_ps $<
+
+%.pdf: %.png
+	./tools/make_pdf $<
 
 
 # The mini manuals need to have the xrefs removed. Internal references are
@@ -198,21 +208,21 @@ backup::
 #-----------------------------------------------------------------------------
 # The main make targets.
 
-unix: manual_unix xref_unix contents_unix mini_unix man gifs
-windows: manual_windows xref_windows contents_windows mini_windows man gifs
+unix: manual_unix xref_unix contents_unix mini_unix man pngs
+windows: manual_windows xref_windows contents_windows mini_windows man pngs
 
-unix_us: manual_unix_us.ps mini_unix_us.ps
-windows_us: manual_windows_us.ps mini_windows_us.ps
+unix_us: manual_unix_us.pdf mini_unix_us.pdf
+windows_us: manual_windows_us.pdf mini_windows_us.pdf
 
-mini_unix: mini_unix.ps mini_unix_toc.html
+mini_unix: mini_unix.pdf mini_unix_toc.html
 	./tools/edit_mini_contents.pl unix < mini_unix_toc.html > tmp.html
 	mv tmp.html mini_unix_toc.html
 
-mini_windows: mini_windows.ps mini_windows_toc.html
+mini_windows: mini_windows.pdf mini_windows_toc.html
 	./tools/edit_mini_contents.pl windows < mini_windows_toc.html > tmp.html
 	mv tmp.html mini_windows_toc.html
 
-manual_unix:	manual_unix.dvi manual_unix.ps manual_unix_html
+manual_unix:	 manual_unix.pdf manual_unix_html
 manual_unix_html: \
 	interface_unix_toc.html \
 	gap4_unix_toc.html \
@@ -226,7 +236,7 @@ manual_unix_html: \
 	pregap4_unix_toc.html \
 	mutations_unix_toc.html
 
-manual_windows:	manual_windows.dvi manual_windows.ps manual_windows_html
+manual_windows:	manual_windows.pdf manual_windows_html
 manual_windows_html: \
 	interface_windows_toc.html \
 	gap4_windows_toc.html \
@@ -250,14 +260,14 @@ man:	man/man1/makeSCF.1 man/man1/eba.1 man/man1/makeSCF.1 \
 
 # For distributions
 gzip:
-	gzip < mini_windows.ps > mini_windows.ps.gz
-	gzip < mini_windows_us.ps > mini_windows_us.ps.gz
-	gzip < mini_unix.ps > mini_unix.ps.gz
-	gzip < mini_unix_us.ps > mini_unix_us.ps.gz
-	gzip < manual_windows.ps > manual_windows.ps.gz
-	gzip < manual_windows_us.ps > manual_windows_us.ps.gz
-	gzip < manual_unix.ps > manual_unix.ps.gz
-	gzip < manual_unix_us.ps > manual_unix_us.ps.gz
+	-gzip < mini_windows.ps > mini_windows.ps.gz
+	-gzip < mini_windows_us.ps > mini_windows_us.ps.gz
+	-gzip < mini_unix.ps > mini_unix.ps.gz
+	-gzip < mini_unix_us.ps > mini_unix_us.ps.gz
+	-gzip < manual_windows.ps > manual_windows.ps.gz
+	-gzip < manual_windows_us.ps > manual_windows_us.ps.gz
+	-gzip < manual_unix.ps > manual_unix.ps.gz
+	-gzip < manual_unix_us.ps > manual_unix_us.ps.gz
 
 clean:
 	-rm *.aux *.cp *.fn *.ky *.log *.pg *.toc *.tp *.vr *.cps *.fns *.pgs *.vrs
@@ -269,7 +279,7 @@ spotless:	clean
 	-rm master_index.html master_contents.html master_brief.html
 	-rm manual_unix.ps manual_windows.ps mini_unix.ps mini_windows.ps
 	-rm man/man1/* man/man4/*
-	-rm *.ps
+	-rm *.ps *.pdf
 
 depend:
 	./tools/make_dependencies > dependencies
