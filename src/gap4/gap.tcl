@@ -424,11 +424,12 @@ set create 0
 set access "rw"
 set read_only 0
 set do_check_db [keylget gap_defs CHECKDB_AT_STARTUP]
+set do_csel     [keylget gap_defs CONTIG_SEL.DISPLAY_AT_STARTUP]
 set logging [keylget gap_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
 
-set GAP_VERSION 4.8b4
+set GAP_VERSION "4.9 test 1"
 
 switch $licence(type) {
     f		{}
@@ -484,6 +485,12 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 
     } elseif {$arg == "-no_exec_notes"} {
 	set exec_notes 0
+
+    } elseif {$arg == "-no_csel"} {
+	set do_csel 0
+
+    } elseif {$arg == "-csel"} {
+	set do_csel 1
 
     } elseif {$arg == "-exec_notes"} {
 	set exec_notes 1
@@ -584,10 +591,14 @@ if {$io > 0} {
     if {[db_info num_contigs $io] > 0} {
 	if {$do_check_db == 1 || ($do_check_db == -1 && !$read_only)} {
 	    if {[check_database -io $io] == 0} {
-	        ContigSelector $io
+		if {$do_csel} {
+		    ContigSelector $io
+		}
 	    }
 	} else {
-	    ContigSelector $io
+	    if {$do_csel} {
+		ContigSelector $io
+	    }
 	}
 	ActivateMenu_Open
 	InitContigGlobals $io

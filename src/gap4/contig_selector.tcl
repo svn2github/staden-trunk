@@ -1335,7 +1335,9 @@ proc ContigSelector { io } {
 
 #HACK - to check
 proc ContigInitReg { io } {
-    if {[db_info num_contigs $io] > 0} {
+    global do_csel
+
+    if {[db_info num_contigs $io] > 0 && $do_csel} {
 	ContigSelector $io
     }
 }
