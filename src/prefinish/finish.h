@@ -68,6 +68,10 @@ typedef struct {
     int    long_length;		/* Expected length of long reading */
     int    long_nsolutions;	/* Number of long reads to pick */
 
+    /* Options for PCR between contigs */
+    int    pcr_offset1;		/* Offset from contig ends for where to pick */
+    int    pcr_offset2;         /*   primers. offset1 > offset2 */
+
     /* Options for primer walking */
     int    pwalk_search_dist;	/* Extra dist +/- temp for primer mismatches */
     double pwalk_max_match;	/* Uniqueness %age. Above this => reject */

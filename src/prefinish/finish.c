@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.27"
+#define FINISH_VERSION "1.28"
 
 #include <tcl.h>
 #include <limits.h>
@@ -15,6 +15,7 @@
 #include "finish_long.h"
 #include "finish_walk.h"
 #include "finish_filter.h"
+#include "finish_pcr.h"
 #include "vseqs.h"
 #include "template.h"
 #include "list_proc.h"
@@ -54,6 +55,9 @@ static int tcl_dump_problems(finish_t *fin, Tcl_Interp *interp,
 static int tcl_implement_solutions(finish_t *fin, Tcl_Interp *interp,
 				   int objc, Tcl_Obj *CONST objv[]);
 
+static int tcl_pick_pcr_primers(finish_t *fin, Tcl_Interp *interp,
+				int objc, Tcl_Obj *CONST objv[]);
+
 static void tcl_finish_delete(ClientData clientdata);
 
 static con_bits_t *parse_con_bits(Tcl_Interp *interp, char *str, int *nbits);
@@ -92,6 +96,8 @@ static finish_t *finish_new(void) {
     fin->opts.reseq_nsolutions	= 4;
     fin->opts.long_length       = 700;
     fin->opts.long_nsolutions	= 4;
+    fin->opts.pcr_offset1 	= 200;
+    fin->opts.pcr_offset2	= 40;
     fin->opts.pwalk_search_dist = 500;
     fin->opts.pwalk_max_match   = 8;
     fin->opts.pwalk_osp_score   = 16;
@@ -377,13 +383,13 @@ static int tcl_finish_obj_cmd(ClientData clientData, Tcl_Interp *interp,
     static char *finishCmds[] = {
 	"configure",		"classify",		"find_problems",
 	"implement_solutions",	"delete",		"dump_problems",
-	"version",
+	"version",		"pick_pcr_primers",
 	(char *)NULL
     };
     enum finishCmds {
 	FIN_CONFIGURE,		FIN_CLASSIFY,		FIN_FIND_PROBLEMS,
 	FIN_IMPLEMENT_SOLUTIONS,FIN_DELETE,		FIN_DUMP_PROBLEMS,
-	FIN_VERSION
+	FIN_VERSION,		FIN_PCR
     };
 
     if (objc < 2) {
@@ -425,6 +431,11 @@ static int tcl_finish_obj_cmd(ClientData clientData, Tcl_Interp *interp,
 	    puts("Finish dump problems");
 	return tcl_dump_problems(fin, interp, objc - 1, objv + 1);
 
+    case FIN_PCR:
+	if (fin->opts.debug[FIN_DEBUG])
+	    puts("Pick PCR primers");
+	return tcl_pick_pcr_primers(fin, interp, objc - 1, objv + 1);
+	
     case FIN_DELETE:
 	if (objc != 2) {
 	    Tcl_WrongNumArgs(interp, 2, objv, "finish delete");
@@ -575,7 +586,6 @@ static int configure_skip_templates(finish_t *fin,
     } else { /* if (fin->opts.regexp_templates) */
 	while (fgets(line, 1024, fp)) {
 	    char *cp;
-	    int len;
 	    
 	    if ((cp = strchr(line, '\n')))
 		*cp = 0;
@@ -638,44 +648,6 @@ static int skip_fake_templates(finish_t *fin) {
 
     return TCL_OK;
 }
-
-#if 0
-static void finish_filter(finish_t *fin) {
-    int i, clen;
-
-    if (fin->opts.debug[FIN_DEBUG_DUST])
-	puts("Filtering using dust...");
-
-    clen = io_clength(fin->io, fin->contig);
-    if (NULL == (fin->filtered = (char *)xmalloc(clen)))
-	return;
-
-    /* Filter using Dust */
-    memcpy(fin->filtered, fin->cons, clen);
-    set_dust_level(fin->opts.dust_level);
-    dust(clen, fin->filtered);
-
-    /* Look for low complexity data with 32 of the end, if so extend to ends */
-    for (i = 0; i < clen && i < 32; i++) {
-	if (fin->filtered[i] == 'N') {
-	    for (i = 0; i < 32 && i < clen; i++)
-		fin->filtered[i] = 'N';
-	    break;
-	}
-    }
-
-    for (i = 0; clen-1-i >= 0 && i < 32; i++) {
-	if (fin->filtered[clen-1-i] == 'N') {
-	    for (i = 0; clen-1-i >= 0 && i < 32; i++)
-		fin->filtered[clen-1-i] = 'N';
-	    break;
-	}
-    }
-
-    if (fin->opts.debug[FIN_DEBUG_DUST] > 1)
-	printf("%.*s\n", clen, fin->filtered);
-}
-#endif
 
 /*
  * Called from tcl_finish_configure to read a sequence from a file and
@@ -770,6 +742,10 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.long_length)},
 	{"-long_nsolutions",   ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.long_nsolutions)},
+	{"-pcr_offset1",       ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.pcr_offset1)},
+	{"-pcr_offset2",       ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.pcr_offset2)},
 	{"-pwalk_search_dist", ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.pwalk_search_dist)},
 	{"-pwalk_max_match",   ARG_DBL, 1, NULL,
@@ -1033,8 +1009,6 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	xfree(eseq);
     }
 
-    printf("skip_tmp = '%s'\n", fin->args.skip_template_file);
-
     if (fin->args.avail_template_file) {
 	if (TCL_OK != configure_skip_templates(fin, interp,
 					       fin->args.avail_template_file,
@@ -1131,7 +1105,7 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 * Low complexity filtering using the Dust algorithm.
 	 */
 	if (!fin->opts.no_consensus && !fin->opts.no_filter)
-	    finish_filter(fin);
+	    finish_filter(fin, NULL, 0);
 
 	/* Initialise our count of how many times each template is used */
 	if (fin->template_used)
@@ -1514,6 +1488,52 @@ static int tcl_dump_problems(finish_t *fin, Tcl_Interp *interp,
     /* Set the result and return */
     Tcl_SetObjResult(interp, lobj);
     Tcl_DecrRefCount(lobj);
+
+    return TCL_OK;
+}
+
+
+typedef struct {
+    GapIO *io;
+    char *contigs;
+    char *primer_defs;
+    char *prefinish;
+} pp_arg;
+
+/*
+ * tcl_pick_pcr_primers() - the Tcl interface to the pick_pcr_primers()
+ * function.
+ *
+ * Returns a Tcl list of the primers chosen.
+ */
+static int tcl_pick_pcr_primers(finish_t *fin, Tcl_Interp *interp,
+				int objc, Tcl_Obj *CONST objv[]) {
+    pp_arg args;
+    cli_args a[] = {
+	{"-contigs",  ARG_STR, 1, NULL, offsetof(pp_arg, contigs)},
+	{"-p_args",   ARG_STR, 1, "",   offsetof(pp_arg, primer_defs)},
+	{NULL,      0,       0, NULL, 0}
+    };
+    int rargc;
+    contig_list_t *rargv;
+    dstring_t *ds;
+
+    vfuncheader("pick PCR primers");
+
+    /* parse CLI */
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(fin->io, args.contigs, &rargc, &rargv);
+    
+    /* do it */
+    ds = finish_pcr_primers(fin, args.primer_defs, rargv, rargc);
+    if (ds) {
+	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	dstring_destroy(ds);
+    } else {
+	Tcl_ResetResult(interp);
+    }
 
     return TCL_OK;
 }

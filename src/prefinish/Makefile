@@ -28,6 +28,7 @@ OBJS=\
 	$(FINBIN)/finish_walk.o \
 	$(FINBIN)/finish_reverse.o \
 	$(FINBIN)/finish_filter.o \
+	$(FINBIN)/finish_pcr.o \
 	$(FINBIN)/dust.o
 
 FIN_DEP=\
@@ -85,7 +86,7 @@ install:
 
 distsrc: distsrc_dirs
 	-cp -R *.[ch] *.tcl *.itcl *.itk help args.template Makefile \
-	    dependencies CHEMISTRY METHODS README prefinish rules \
+	    dependencies CHEMISTRY METHODS prefinish rules \
 	    config.prefinish $(DIRNAME)
 
 DEPEND_OBJ = $(OBJS)
