@@ -24,7 +24,7 @@
 #include <mutlib.h>         // For mutation library
 #include <pathutil.h>       // For MakeFullPath()
 #include <stringlist.hpp>   // For StringList
-
+#include <string.h>	    // Needed for Solaris C++ compiler?
 
 
 
