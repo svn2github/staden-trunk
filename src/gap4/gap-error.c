@@ -71,8 +71,8 @@ void error_sig(int sig) {
 	verror(ERR_FATAL, "signal_handler",
 	       "This is probably a bug.");
 	verror(ERR_FATAL, "signal_handler",
-	       "Please email all bug reports to "
-	       "syshelp@sanger.ac.uk.");
+	       "Please report all bug reports at "
+	       "https://sourceforge.net/projects/staden/");
 	/*
 	 * Force crash.
 	 */
