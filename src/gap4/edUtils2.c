@@ -2838,13 +2838,16 @@ void edInvokeTrace(EdStruct *xx) {
 		  0 /* full */);
     } else {
 	int *seqList;
-	int i, j, tmpcmp, tmpdiff;
+	int i, j, tmpcmp, tmpdiff, tmprp;
 
         seqList = sequencesInRegion(xx,xx->cursorPos,1);
 	tmpcmp  = xx->compare_trace;
 	tmpdiff = xx->diff_traces;
+	tmprp   = xx->read_pair_traces;
+
 	xx->compare_trace = -1;
 	xx->diff_traces = 0;
+	xx->read_pair_traces = 0;
 
 	/* copy list */
 	for (i=0; seqList[i]; i++);
@@ -2876,6 +2879,7 @@ void edInvokeTrace(EdStruct *xx) {
 	xfree(slist);
 	xx->compare_trace = tmpcmp;
 	xx->diff_traces = tmpdiff;
+	xx->read_pair_traces = tmprp;
     }
 }
 
