@@ -4150,14 +4150,15 @@ tcl_quality_clip_ends(ClientData clientData,
 		      int argc,
 		      char *argv[])
 {
-    list2_arg args;
+    qclip_arg args;
     contig_list_t *contig_array = NULL;
     int num_contigs;
     int i;
 
     cli_args a[] = {
-	{"-io",	     ARG_IO,  1, NULL, offsetof(list2_arg, io)},
-	{"-contigs", ARG_STR, 1, NULL, offsetof(list2_arg, inlist)},
+	{"-io",	     ARG_IO,  1, NULL, offsetof(qclip_arg, io)},
+	{"-contigs", ARG_STR, 1, NULL, offsetof(qclip_arg, contig)},
+	{"-quality", ARG_INT, 1, "15", offsetof(qclip_arg, quality)},
 	{NULL,	  0,	   0, NULL, 0}
     };
 
@@ -4168,9 +4169,9 @@ tcl_quality_clip_ends(ClientData clientData,
     if (-1 == gap_parse_args(a, &args, argc, argv))
 	return TCL_ERROR;
 
-    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+    active_list_contigs(args.io, args.contig, &num_contigs, &contig_array);
     for (i = 0; i < num_contigs; i++) {
-	quality_clip_ends(args.io, contig_array[i].contig, 15);
+	quality_clip_ends(args.io, contig_array[i].contig, args.quality);
     }
 
     xfree(contig_array);
