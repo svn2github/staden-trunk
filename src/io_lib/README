@@ -1,4 +1,4 @@
-			    IO_LIB VERSION 1.8.11
+			    IO_LIB VERSION 1.8.12
 			    =====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -6,12 +6,12 @@ purpose trace file (and Experiment File) reading interface. The programmer
 simply calls the (eg) read_reading to create a "Read" C structure with the
 data loaded into memory. It has been compiled and tested on:
 
-Solaris 2.6
-Compaq Tru64 Unix 4.0E (formerly Digital Unix)
-RedHat Linux 7.1
+Compaq Tru64 Unix 5.1B (formerly Digital Unix)
+RedHat Linux 9.0
 
 In addition to the above, the code has previously (but not tested with this
-release) been compiled and used on a Mac and MS Windows NT.
+release) been compiled and used on MacOS X, Solaris, Irix and MS
+Windows NT.
 
 The directories below here contain the io_lib code. These support the
 following file formats:
@@ -56,20 +56,6 @@ This will build the sources.
 
 The default installation location is /usr/local/bin and /usr/local/lib. These
 can be changed with the --prefix option to "configure".
-
-
-
-Mailing list
-------------
-
-A mailing list allowing discussion of io_lib has been set up. To subscribe
-send a message to listmanager@mrc-lmb.cam.ac.uk with "subscribe iolib-list" in 
-the body of the mail.
-To post messages send mail to iolib-list@mrc-lmb.cam.ac.uk.
-
-The list is unmoderated, so if you value a high signal to noise ratio (ie no
-SPAM) then please do not post the list mail address to a newsgroup or WWW
-page.
 
 
 History

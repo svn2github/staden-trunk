@@ -1,3 +1,46 @@
+Version 1.8.12
+
+* The ABI format code now reads the confidence values from KB (via
+  PCON field).
+
+* New program: trace_dump. Like scf_dump, but deals with generic input
+  formats.
+
+* Slightly more sensible average spacing calculation in the ABI
+  reading code. It's still not perfect, but is only used when the real
+  spacing value is negative or zero.
+
+* Disabled the base-reordering fix for ABI files. We believe the bug
+  causing this no longer exists.
+
+* Expriment file format: added FT (EMBL feature table) and LF
+  (LiGation; a combination of LI and LE) records.
+
+* Experiment files: strip out digits from the sequence we read
+  (for better support of EMBL files).
+
+* Experiment files: fixed a potential buffer overrun in the conversion
+  of binary confidence values to ascii values.
+
+* Minor improvements to portability (INT_MAX vs MAXINT2) and removal
+  of some compilation warnings.
+
+* Extract_seq now accepts a -fofn argument.
+
+* New functions: read_update_base_positions() and
+  read_udpate_confidence_values() to replace read_update_opos().
+  These apply an edit buffer to the sequence details and are used (for
+  example) within Trev for saving edits back to a trace file.
+
+* Better error handling in fcompress_file().
+
+* New specifiers in RAWDATA. Added a generic URL format (eg
+  "URL=http://some/where/trace=%s") implemented via use of wget. There
+  is also an ARC= format to make use of the Sanger Trace Archive,
+  although currently this will not work externally.
+
+* Zero memory used in read_alloc(). Fixes to read_dup().
+
 Version 1.8.11
 
 * Rewrote the background subtraction in convert_trace to deal with each
