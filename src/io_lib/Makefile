@@ -3,7 +3,7 @@
 #
 
 LIBS	= read
-PROGS	= include/.links $(LIBS) progs
+PROGS	= $(LIBS) progs
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=..
@@ -89,7 +89,7 @@ endif
 
 RLIBS += $(MISC_LIB)
 
-$(LIBS): $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+$(LIBS): include/.links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX):	$(OBJS) $(DEF_FILE)
@@ -113,6 +113,7 @@ DEPEND_OBJ = $(OBJS)
 include dependencies
 
 .PHONY:	progs
+.PRECIOUS: include/.links
 include/.links:
 	cd include; \
 	for i in abi alf ctf exp_file plain read scf utils ztr;	\
