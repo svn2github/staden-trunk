@@ -110,5 +110,12 @@ int pad_consensus(GapIO *io, int contig, int pos, int npads);
  */
 int io_delete_contig(GapIO *io, int contig_num);
 
+/*
+ * Deletes a single base from a gel reading ensuring that tags are shifted
+ * and/or extended appropriately.
+ *
+ * Returns 0 for success, -1 for error.
+ */
+int io_delete_base(GapIO *io, int gel, int pos);
 
 #endif /*_IO2_H_*/

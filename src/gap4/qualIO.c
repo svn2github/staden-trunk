@@ -11,6 +11,7 @@
 
 #include "gap_globals.h"
 #include "IO.h"
+#include "IO2.h"
 #include "qual.h"
 #include "qualP.h"
 #include "misc.h"

@@ -7,6 +7,7 @@
 #include "qual.h"
 #include "dna_utils.h"
 #include "tagUtils.h"
+#include "dis_readings.h"
 
 /*
  * Perform quality clipping on an individual contig.
