@@ -34,10 +34,11 @@ typedef struct {
     int direction;
 
     /*
-     * These two are initialised when the template_c structure is created.
+     * These are initialised when the template_c structure is created.
      */
     list_t *gel_cont;   /* list of gel+contig pairs */
     int num;		/* template number */
+    int min_vector_len; /* minimum length of SVEC tag to consider as valid */
 
     /*
      * See the TEMP_CONSIST_* #defines lower down.
@@ -101,6 +102,8 @@ typedef struct {
 #define TEMP_FLAG_DONE_POSITIONS  (1<<5)
 #define TEMP_FLAG_SPANNING	  (1<<6)
 #define TEMP_FLAG_EXPECTED	  (1<<7)
+#define TEMP_FLAG_VEC_START	  (1<<8)
+#define TEMP_FLAG_VEC_END	  (1<<9)
 
 
 /*
@@ -109,6 +112,7 @@ typedef struct {
 #define TEMP_OFLAG_NONE		  0
 #define TEMP_OFLAG_MINMAX_SIZE	  1 /* min/max insert size instead of avg */
 #define TEMP_OFLAG_CVEC		  2 /* also clip cosmid vector */
+#define TEMP_OFLAG_IGNORE_PTYPE	  3 /* whether primer-type is accurate */
 
 #define UNKNOWN_POS -999999
 

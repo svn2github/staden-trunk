@@ -81,6 +81,7 @@ static template_c *new_template_c(void) {
 
     t->consistency = TEMP_CONSIST_OK;
     t->score = 1; /* perfect score */
+    t->min_vector_len = 0;
     if (NULL == (t->gel_cont = new_list())) {
 	free_template_c(t);
 	return NULL;
@@ -329,7 +330,8 @@ static void check_template_strand(GapIO *io, template_c *t) {
  */
 static void get_template_tag(GapIO *io, int gel, int primer,
 			     int *start_p, int *end_p, GReadings *r,
-			     int *tag_start, int *tag_end, int use_cvec) {
+			     int *tag_start, int *tag_end, int use_cvec,
+			     int min_vector_len) {
     GAnnotations *a;
     char *types[] = {"SVEC", "CVEC"};
     int start = UNKNOWN_POS;
@@ -344,7 +346,10 @@ static void get_template_tag(GapIO *io, int gel, int primer,
     *tag_start = 0;
     *tag_end = 0;
 
-    while (a && a != (GAnnotations *)-1) {
+    for (; a && a != (GAnnotations *)-1; a = vtagget(io, 0, ntypes, types)) {
+	if (a->length < min_vector_len)
+	    continue;
+
 	cosmid_end = 0;
 	if (ntypes == 2 && a->type == str2type("CVEC")) {
 	    /* Cosmid tag, treat as bound to nearest end */
@@ -373,6 +378,7 @@ static void get_template_tag(GapIO *io, int gel, int primer,
 		    (r->sense
 		     ? r->length - 1 - (a->length + a->position - 1)
 		     : a->length + a->position - 1);
+
 	    } /* else primer is unknown */
 	    
 	} else if (a->position + a->length == r->length + 1 ||
@@ -395,10 +401,9 @@ static void get_template_tag(GapIO *io, int gel, int primer,
 		    (r->sense
 		     ? r->length - 1 - a->position
 		     : a->position);
+
 	    } /* else primer is unknown */
 	}
-
-	a = vtagget(io, 0, ntypes, types);
     }
 
     /*
@@ -460,6 +465,8 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
      * Scan through gel+cont list looking for gels on this contig.
      */
     for (item = head(t->gel_cont); item; item = item->next) {
+	int ptype;
+
 	gc = (gel_cont_t *)(item->data);
 
 	if (gc->contig != contig)
@@ -475,14 +482,25 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    temp_max = r.position + r.sequence_length - 1;
 	
 	/*
+	 * If TEMP_OFLAG_IGNORE_PTYPE is set then we determine the primer
+	 * type purely based on the orientation of the sequence. Ie we trust
+	 * the assembly over the primer type information.
+	 */
+	ptype = (t->oflags & TEMP_OFLAG_IGNORE_PTYPE)
+	    ? (r.sense == GAP_SENSE_ORIGINAL
+	         ? GAP_PRIMER_CUSTFOR
+	         : GAP_PRIMER_CUSTREV)
+	    : PRIMER_TYPE_GUESS(r);
+
+	/*
 	 * Get estimated start and end coordinates for this template.
 	 */
-	get_template_tag(io, gc->read, PRIMER_TYPE_GUESS(r), &st, &end, &r,
+	get_template_tag(io, gc->read, ptype, &st, &end, &r,
 			 &tag_start, &tag_end,
-			 t->oflags & TEMP_OFLAG_CVEC);
-	
+			 t->oflags & TEMP_OFLAG_CVEC, t->min_vector_len);
+
 	/* Check primer type, and derive start/end accordingly */
-	switch (PRIMER_TYPE_GUESS(r)) {
+	switch (ptype) {
 	case GAP_PRIMER_FORWARD:
 	    orient = r.sense == GAP_SENSE_ORIGINAL ? 1 : -1;
 	    found_for = 1;
@@ -494,6 +512,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 			    t->consistency |= TEMP_CONSIST_PRIMER;
 		    
 			temp_start = MIN(temp_start, st);
+			t->flags |= TEMP_FLAG_VEC_START;
 		    }
 		} else {
 		    temp_start = st;
@@ -515,6 +534,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 		    /* FIXME: Not strictly true, but good enough? */
 		    found_rev = 1;
 		    temp_end = end;
+		    t->flags |= TEMP_FLAG_VEC_END;
 		}
 	    }
 	    break;
@@ -535,6 +555,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    if (temp_end == UNKNOWN_POS && tag_end) {
 		found_rev = 1; /* FIXME: Not strictly true, but good enough? */
 		temp_end = end;
+		t->flags |= TEMP_FLAG_VEC_END;
 	    }
 	    break;
 	    
@@ -552,6 +573,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 		    }
 		} else {
 		    temp_end = end;
+		    t->flags |= TEMP_FLAG_VEC_END;
 		}
 	    } else {
 		temp_end = (temp_end == UNKNOWN_POS)
@@ -569,6 +591,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 		    /* FIXME: Not strictly true, but good enough? */
 		    found_for = 1;
 		    temp_start = st;
+		    t->flags |= TEMP_FLAG_VEC_START;
 		}
 	    }
 	    break;
@@ -589,6 +612,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    if (temp_start == UNKNOWN_POS && tag_start) {
 		found_for = 1; /* FIXME: Not strictly true, but good enough? */
 		temp_start = st;
+		t->flags |= TEMP_FLAG_VEC_START;
 	    }
 	    break;
 
@@ -596,10 +620,12 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    if (temp_end == UNKNOWN_POS && tag_end) {
 		found_rev = 1; /* FIXME: Not strictly true, but good enough? */
 		temp_end = end;
+		t->flags |= TEMP_FLAG_VEC_END;
 	    }
 	    if (temp_start == UNKNOWN_POS && tag_start) {
 		found_for = 1; /* FIXME: Not strictly true, but good enough? */
 		temp_start = st;
+		t->flags |= TEMP_FLAG_VEC_START;
 	    }
 	    t->consistency |= TEMP_CONSIST_UNKNOWN;
 	}
