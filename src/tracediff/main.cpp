@@ -470,12 +470,12 @@ int main( int argc, char* argv[] )
                 mutlib_tag_t* pTag = TraceDiffGetTag( &td, i );
                 assert(pTag);
                 char c = (pTag->Strand==MUTLIB_STRAND_FORWARD) ? '+' : '-';
-                std::sprintf( pBuffer, "%s %c %d..%d\n%s", pTag->Type, c, pTag->Position,
-                              pTag->Position, pTag->Comment );
+                std::sprintf( pBuffer, "%s %c %d..%d\n%s", pTag->Type, c, *pTag->Position,
+                              *pTag->Position, pTag->Comment );
                 exp_put_str(pExpFile, EFLT_TG, pBuffer, std::strlen(pBuffer) );
                 if( !bQuiet )
                 {
-                    std::fprintf( stdout, "%s %5d %s\n", pTag->Type, pTag->Position, pTag->Comment );
+                    std::fprintf( stdout, "%s %5d %s\n", pTag->Type, *pTag->Position, pTag->Comment );
                     std::fflush( stdout );
                 }
             }
