@@ -190,8 +190,6 @@ int Alignment::Execute( algorithm_t a )
 
 
    // Adjust alignment parameters
-   printf("align with penalty %d,%d\n",
-	  m_nGapPenaltyBegin, m_nGapPenaltyExtend);
    sp::set_align_params( m_pParams, m_nBand, m_nGapPenaltyBegin, m_nGapPenaltyExtend,
                         SP_ALIGNMENT_RETURN_SEQ, 0, 0, m_nPadSymbol, m_nPadSymbol,
                         0, 0, a, 8, 0, m_nEdgeScore, 0.0, m_oMatrix.Raw() );

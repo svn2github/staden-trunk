@@ -3056,10 +3056,6 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
      }
       }
 
-   printf("Best coord = %d at (%d,%d) of %d at (%d,%d)\n",
-	  best_max, best_max_row, best_max_col, 
-	  -1, max_row, max_col);
-
    /*
    printf("row %d max_col %d first_row %d band_left %d max_row %d\n",row,max_col,first_row,band_left,max_row);
    */
