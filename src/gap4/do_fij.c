@@ -24,18 +24,18 @@ void buffij(int left_gel1, int seq2_start, int left_gel2, int seq1_start,
 	    int len_align, double percent_mismatch);
 
 int do_it_fij ( char seq[], int seq_len,
-	       int word_len, int min_overlap,
-	       double max_percent_mismatch, int compare_mode,
-	       int band, int gap_open, int gap_extend, double max_prob, int min_match,
-	       Contig_parms *contig_list, int number_of_contigs) {
+		int word_len, int min_overlap,
+		double max_percent_mismatch, int compare_mode,
+		int band, int gap_open, int gap_extend, double max_prob,
+		int min_match, int max_alignment,
+		Contig_parms *contig_list, int number_of_contigs) {
 
     int ret, i, j, longest_diagonal;
     int max_contig;
     int seq1_len, seq2_len, contig1_num, contig2_num;
     double percent_mismatch;
-    static char buf[80],name1[10],name2[10];
+    static char buf[1024],name1[10],name2[10];
     int max_seq;
-
     int seq1_start_f, seq2_start_f, seq1_start_r, seq1_end_r, seq2_start_r;
     double comp[5];
     int max_matches;
@@ -43,9 +43,7 @@ int do_it_fij ( char seq[], int seq_len,
     int  *depad_to_pad1, *depad_to_pad2;
     int edge_mode, job, seq1_start, seq2_start;
     int compare_method;
-
     Hash *h;
-    
     OVERLAP	*overlap;
     ALIGN_PARAMS *params;
 
@@ -230,9 +228,13 @@ int do_it_fij ( char seq[], int seq_len,
 				    contig_list[contig1_num].contig_left_gel);
 			    sprintf(name2,"%d",
 				    contig_list[contig2_num].contig_left_gel);
-			    sprintf(buf," Possible join between contig %d in the + sense and contig %d",
+			    sprintf(buf,
+				    " Possible join between contig %d "
+				    "in the + sense and contig %d\n"
+				    " Length %d",
 				    contig_list[contig1_num].contig_left_gel,
-				    contig_list[contig2_num].contig_left_gel);
+				    contig_list[contig2_num].contig_left_gel,
+				    overlap->length);
 			    
 			    /* Oops.  The initial coordinates in list_alignment are
 			       padded, but then the alignment is depadded.  Hopefully
@@ -240,10 +242,17 @@ int do_it_fij ( char seq[], int seq_len,
 
 			    overlap->seq1_out[overlap->right+1] = '\0';
 			    overlap->seq2_out[overlap->right+1] = '\0';
-			    ret = list_alignment(&overlap->seq1_out[overlap->left],
-						 &overlap->seq2_out[overlap->left],
-						 name1,name2,seq1_start_f,seq2_start_f,buf);
-			
+
+			    if (overlap->length <= max_alignment) {
+				ret = list_alignment(&overlap->seq1_out[overlap->left],
+						     &overlap->seq2_out[overlap->left],
+						     name1,name2,seq1_start_f,seq2_start_f,buf);
+			    } else {
+				vmessage("%s\n", buf);
+				vmessage(" Percentage mismatch %5.1f\n\n",
+					 percent_mismatch);
+			    }
+
 			    buffij(
 				   contig_list[contig1_num].contig_left_gel,seq2_start_f,
 				   contig_list[contig2_num].contig_left_gel,seq1_start_f,
@@ -340,14 +349,24 @@ int do_it_fij ( char seq[], int seq_len,
 				    contig_list[contig1_num].contig_left_gel);
 			    sprintf(name2,"%d",
 				    contig_list[contig2_num].contig_left_gel);
-			    sprintf(buf," Possible join between contig %d in the - sense and contig %d",
+			    sprintf(buf," Possible join between contig %d "
+				    "in the - sense and contig %d\n"
+				    " Length %d",
 				    contig_list[contig1_num].contig_left_gel,
-				    contig_list[contig2_num].contig_left_gel);
+				    contig_list[contig2_num].contig_left_gel,
+				    overlap->length);
 			    overlap->seq1_out[overlap->right+1] = '\0';
 			    overlap->seq2_out[overlap->right+1] = '\0';
-			    ret = list_alignment(&overlap->seq1_out[overlap->left],
-						 &overlap->seq2_out[overlap->left],
-						 name1,name2,seq1_start_r,seq2_start_r,buf);
+
+			    if (overlap->length <= max_alignment) {
+				ret = list_alignment(&overlap->seq1_out[overlap->left],
+						     &overlap->seq2_out[overlap->left],
+						     name1,name2,seq1_start_r,seq2_start_r,buf);
+			    } else {
+				vmessage("%s\n", buf);
+				vmessage(" Percentage mismatch %5.1f\n\n",
+					 percent_mismatch);
+			    }
 			
 			    buffij(
 				   -contig_list[contig1_num].contig_left_gel,seq2_start_r,
@@ -361,6 +380,7 @@ int do_it_fij ( char seq[], int seq_len,
 	}
 	if ( compare_mode == COMPARE_SINGLE ) break;
     }
+
     xfree(depad_seq1);
     xfree(depad_seq2);
     xfree(depad_to_pad1);

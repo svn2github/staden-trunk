@@ -310,6 +310,7 @@ fij(GapIO *io,
     double min_conf,
     int use_conf,
     int use_hidden,
+    int max_alignment,
     int num_contigs,
     contig_list_t *contig_array)
 {
@@ -402,10 +403,10 @@ fij(GapIO *io,
     }
 
     if ( ret = do_it_fij ( consensus, consensus_length,
-		 word_len,
-		 min_overlap, max_percent_mismatch, compare_mode,
-		 band, gap_open, gap_extend, max_prob, min_match,
-		 contig_list, number_of_contigs ) ) {
+			   word_len,
+			   min_overlap, max_percent_mismatch, compare_mode,
+			   band, gap_open, gap_extend, max_prob, min_match,
+			   max_alignment, contig_list, number_of_contigs ) ) {
 
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);

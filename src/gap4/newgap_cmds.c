@@ -1929,6 +1929,7 @@ FindInternalJoins(ClientData clientData,
 	{"-contigs",	  ARG_STR,  1, NULL,      offsetof(fij_arg, inlist)},
 	{"-use_conf",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_conf)},
 	{"-use_hidden",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_hidden)},
+	{"-max_display",  ARG_INT,  1, "0",       offsetof(fij_arg, max_display)},
 	{NULL,		  0,	    0, NULL,      0}
     };
 
@@ -2010,7 +2011,8 @@ FindInternalJoins(ClientData clientData,
     if (fij(io, mask, mode, args.min_overlap, (double)args.max_mis,
 	    args.word_len, (double)args.max_prob, args.min_match, args.band,
 	    args.win_size, args.dash, args.min_conf, args.use_conf,
-	    args.use_hidden, num_contigs, contig_array) < 0 ) {
+	    args.use_hidden, args.max_display,
+	    num_contigs, contig_array) < 0 ) {
 	verror(ERR_WARN, "Find internal joins", "Failure in Find Internal Joins");
 	SetActiveTags("");
 	return TCL_OK;

@@ -187,6 +187,13 @@ proc FIJDialog { f io } {
     pack $f.hidden.options -side top -anchor w
      
     ###########################################################################
+    # alignment displays
+    entrybox $f.align_length \
+	-title "Maximum alignment length to list (bp)" \
+	-default [keylget gap_defs FIJ.MAX_ALIGNMENT] \
+	-type "CheckIntRange 0 10000000"
+
+    ###########################################################################
     #select mode
     SetDefaultTags FIJ.TAGS
 
@@ -222,7 +229,7 @@ proc FIJDialog { f io } {
 	    $f.match.blocks $f.match.min_overlap $f.match.word_length\
 	    $f.match.f.min_match $f.match.f.use_band $f.match.s.max_diag\
 	    $f.match.s.band_size $f.match.max_mis \
-	    $f.sc $f.hidden.yn $f.sel_mode.rl $f.ops" \
+	    $f.sc $f.hidden.yn $f.sel_mode.rl $f.ops $f.align_length" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {FIJ-Dialogue}" \
 	    -bd 2 \
@@ -233,6 +240,7 @@ proc FIJDialog { f io } {
     pack $f.sel_task -fill x
     pack $f.sc -fill x
     pack $f.sel_mode -fill x
+    pack $f.align_length -fill x
     pack $f.hidden -fill x
     pack $f.match -fill x
     pack $f.ok_cancel -fill x
@@ -242,7 +250,7 @@ proc FIJDialog { f io } {
 ###########################################################################
 proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 		    min_match use_band max_diag band_size max_mis sc \
-		    yn sel_mode hidden_ops} {
+		    yn sel_mode hidden_ops align_length} {
     
     global CurContig
     global LREG
@@ -294,6 +302,7 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
     set word_length [lindex {? 8 4} [radiolist_get $word_length]]
     
     set max_prob [entrybox_get $max_diag]
+    set max_align_length [entrybox_get $align_length]
 
     if {[radiolist_get $blocks] == 1} {
         # Quick method
@@ -334,6 +343,7 @@ proc FIJ_OK_Pressed { f io infile sel_task blocks min_overlap word_length \
 	    -use_conf $use_conf \
 	    -use_hidden $use_hidden \
 	    -tag_types $active_tags \
+	    -max_display $max_align_length \
 	    -contigs $list
     ClearBusy
 }

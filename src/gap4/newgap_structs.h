@@ -132,6 +132,7 @@ typedef struct {
     int min_conf;
     int use_conf;
     int use_hidden;
+    int max_display;
     char *tag_list;
     char *inlist;
 } fij_arg;
