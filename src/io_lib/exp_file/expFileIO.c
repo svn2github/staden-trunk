@@ -144,7 +144,8 @@ char eflt_feature_ids[MAXIMUM_EFLTS][MAXIMUM_EFLT_LENGTH+1] = {
     "GD", /* 51 Gap4 database file */
     "WL", /* 52 wildtype trace left clip point */
     "WR", /* 53 wildtype trace right clip point */
-    "FT"  /* 54 EMBL format feature table */
+    "FT", /* 54 EMBL format feature table */
+    "LF"  /* 55 LiGation: an amalgamation of LI and LE */
 };
 
 

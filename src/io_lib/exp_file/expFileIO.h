@@ -123,6 +123,7 @@ extern char eflt_feature_ids[MAXIMUM_EFLTS][MAXIMUM_EFLT_LENGTH+1];
 #define EFLT_WL 52
 #define EFLT_WR 53
 #define EFLT_FT 54
+#define EFLT_LG 54
 
 
 /*************************************************************************************/
