@@ -1480,6 +1480,8 @@ int initialiseDB(/* FORIO */
     if (xx->DBi->templates)
 	uninit_template_checks(DBI_io(xx), xx->DBi->templates);
     xx->DBi->templates = init_template_checks(DBI_io(xx), 1, &cnum, 1);
+    template_check_set_flags(DBI_io(xx), xx->DBi->templates,
+			     TEMP_OFLAG_INTERDIST, 0);
     /* xx->DBi->templates = init_template_checks(DBI_io(xx), 0, NULL, 0);*/
     check_all_templates(DBI_io(xx), xx->DBi->templates);
 
