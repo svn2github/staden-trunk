@@ -30,3 +30,11 @@ int average_conf(Read *r);
  * Rescales eba scores to phred-style scores.
  */
 void rescale_scores(Read *r, int table);
+
+/*
+ * Applies a simple filter to the trace data, producing new traces.
+ * Equivalent to 1st-order differentiation followed by fitting a +-1 square
+ * wave of width 11.
+ */
+void filter_trace(Read *r);
+
