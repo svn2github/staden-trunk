@@ -137,6 +137,23 @@ int repeat_search (
     int n_matches,seq2_len,max_matches,nres;
     char *seq2,sense;
     Hash *h;
+    char *depadded_seq;
+    int depadded_len;
+    int *depad_to_pad;
+    int i;
+
+    /* Depad sequence */
+    if (NULL == (depad_to_pad = (int *)xmalloc(sizeof(int) * seq1_len)))
+	return -1;
+    if (NULL == (depadded_seq = (char *)xmalloc(seq1_len+1))) {
+	xfree(depad_to_pad);
+	return -1;
+    }
+    copy_seq(depadded_seq, seq1, seq1_len);
+    depadded_len = seq1_len;
+    depad_seq(depadded_seq, &depadded_len, depad_to_pad);
+    seq1 = depadded_seq;
+    seq1_len = depadded_len;
 
     max_matches = max_mat;
     seq2_len = seq1_len;
@@ -145,6 +162,8 @@ int repeat_search (
     if ( init_hash8n ( seq1_len, seq2_len, 
 		      8, max_mat, min_match, 1, &h )) {
 	free_hash8n(h);
+	xfree(depadded_seq);
+	xfree(depad_to_pad);
 	return -2;
     }
 	
@@ -153,12 +172,16 @@ int repeat_search (
 
     if ( hash_seqn ( h, 1)) {
 	verror(ERR_WARN, "hash_seqn", "sequence too short");
+	xfree(depadded_seq);
+	xfree(depad_to_pad);
 	return -1;
     }
     (void) store_hashn ( h );
 
     if ( ! (seq2 = (char *) xmalloc ( sizeof(char)*(seq1_len) ))) {
 	free_hash8n ( h );
+	xfree(depadded_seq);
+	xfree(depad_to_pad);
 	return -1;
     }
     
@@ -175,6 +198,8 @@ int repeat_search (
 	    verror(ERR_WARN, "hash_seqn", "sequence too short");
 	    free_hash8n ( h );
 	    if (seq2) xfree(seq2);
+	    xfree(depadded_seq);
+	    xfree(depad_to_pad);
 	    return -1;
 	}
 	sense = 'f';
@@ -193,6 +218,8 @@ int repeat_search (
 	    verror(ERR_WARN, "hash_seqn", "sequence too short");
 	    free_hash8n ( h );
 	    if (seq2) xfree(seq2);
+	    xfree(depadded_seq);
+	    xfree(depad_to_pad);
 	    return -1;
 	}
 
@@ -201,7 +228,23 @@ int repeat_search (
 	*num_r_matches = n_matches;
 	n_matches += nres;
     }
+
+    /* Remap depadded hits to padded positions */
+    for (i = 0; i < n_matches; i++) {
+	int p1, p2, p1_end;
+	p1 = depad_to_pad[(*seq1_match)[i]];
+	p2 = depad_to_pad[(*seq2_match)[i]];
+	p1_end = depad_to_pad[(*seq1_match)[i]+(*len_match)[i]-1];
+
+	(*seq1_match)[i] = p1;
+	(*seq2_match)[i] = p2;
+	(*len_match) [i] = p1_end - p1 + 1;
+    }
+
     free_hash8n ( h );
     if (seq2) xfree(seq2);
+    xfree(depadded_seq);
+    xfree(depad_to_pad);
+
     return n_matches;
 }
