@@ -262,7 +262,7 @@ set contig ""
 set all_contigs 1
 set where internal
 set tag_types {AMBG OLIG PRIM MASK CVEC}
-set pwalk_ntemplates 3
+set pwalk_ntemplates 2
 set method 0x04; # primer-walking
 set min_contig_len 2000
 
