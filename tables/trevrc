@@ -29,7 +29,7 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Open Biolims}              1 16 {OpenBiolims}
 }
 add_command	{File.Save}			 4  4 \
-	{SaveFile 0 \[[keylget trev_defs TRACE.WIN].t format\]}
+	{SaveFile 0 \[[keylget trev_defs TRACE.WIN].t orig_format\]}
 add_cascade	{File.Save As}			 8 16
 add_command	{File.Save As.CTF}		 8 16 {SaveFile 1 CTF}
 add_command	{File.Save As.SCF}		 8 16 {SaveFile 1 SCF}
