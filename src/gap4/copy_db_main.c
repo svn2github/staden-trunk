@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "copy_db.h"
 #include "misc.h"
 #include "licence.h"
+#include "gap-create.h"
 
 static void usage(void) {
-    fprintf(stderr, "copy_db [-v] [-f] source ... destination\n");
+    fprintf(stderr, "copy_db [-v] [-f] [-b 32/64] source ... destination\n");
     exit(1);
 }
 
@@ -15,6 +17,8 @@ int main(int argc, char **argv) {
     char *pf, *pt, *to;
     GapIO *iof, *iot;
     int status, verbose = 0;
+    int bitsize = G_32BIT;
+    int c;
 
     extern int gap_fatal_errors;
     extern int maxdb;
@@ -23,21 +27,40 @@ int main(int argc, char **argv) {
 
     maxdb = 20000;
 
-    for (;argc > 1 && *argv[1] == '-'; argv++, argc--) {
-	if (strcmp(argv[1], "-v") == 0)
+    while ((c = getopt(argc, argv, "vfb:")) != -1) {
+	switch (c) {
+	case 'v':
 	    verbose = 1;
-	else if (strcmp(argv[1], "-f") == 0)
+	    break;
+
+	case 'f':
 	    gap_fatal_errors = 0;
-	else
+	    break;
+
+	case 'b':
+	    bitsize = atoi(optarg);
+	    if (bitsize != 32 && bitsize != 64)
+		usage();
+	    else
+		bitsize = (bitsize == 32) ? G_32BIT : G_64BIT;
+	    break;
+
+	default:
 	    usage();
+	}
     }
 
-    if (argc < 3) {
+    if (argc - optind < 2) {
 	usage();
     }
 
     to = argv[argc-1];
-    pt = strrchr(to, '.'); pt[2] = 0;
+    pt = strrchr(to, '.');
+    if (NULL == pt) {
+	fprintf(stderr, "Malformed database name. Should be \"PROJ.V\"\n");
+	return 2;
+    }
+    pt[2] = 0;
 
     if (file_exists(to)) {
 	char ans, buf[100];
@@ -55,19 +78,17 @@ int main(int argc, char **argv) {
 	remove(buf);
     }
 
-    if (NULL == pt) {
-	fprintf(stderr, "Malformed database name. Should be \"PROJ.V\"\n");
-	return 2;
-    }
     *pt = 0;
+    set_db_bitsize(bitsize);
     if (NULL == (iot = open_db(to, pt+1, &status, 1, 0))) {
 	fprintf(stderr, "Couldn't create database\n");
 	return 5;
     }
 
-    for (; argc >= 3; argc--, argv++) {
-	pf = strrchr(argv[1], '.'); pf[2] = 0;
-	if (strcmp(argv[1], to) == 0) {
+    for (; optind < argc-1; optind++) {
+	char *fn = argv[optind];
+	pf = strrchr(fn, '.'); pf[2] = 0;
+	if (strcmp(fn, to) == 0) {
 	    fprintf(stderr, "copy_db: %s and %s are identical (not copied).\n",
 		    to, to);
 	    return 7;
@@ -82,9 +103,9 @@ int main(int argc, char **argv) {
 	
 	if (verbose)
 	    printf("Copying database %s.%s to database %s.%s\n",
-		   argv[1], pf+1, to, pt+1);
+		   fn, pf+1, to, pt+1);
 
-	if (NULL == (iof = open_db(argv[1], pf+1, &status, 0, 1))) {
+	if (NULL == (iof = open_db(fn, pf+1, &status, 0, 1))) {
 	    fprintf(stderr, "Couldn't read database\n");
 	    return 4;
 	}
