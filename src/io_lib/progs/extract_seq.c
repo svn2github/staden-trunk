@@ -131,6 +131,7 @@ int main(int argc, char **argv) {
     int clip_cosmid = 0;
     int fasta_out = 0;
     int ret = 0;
+    char *fofn = NULL;
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	if (strcmp(*argv, "-r") == 0) {
@@ -151,6 +152,10 @@ int main(int argc, char **argv) {
 	    clip_cosmid = 1;
 	} else if (strcasecmp(*argv, "-fasta_out") == 0) {
 	    fasta_out = 1;
+	} else if (strcmp(*argv, "-fofn") == 0) {
+	    fofn = *++argv;
+	    argc--;
+	    from_stdin = 0;
         } else if (strcasecmp(*argv, "-output") == 0) {
 	    if (NULL == (outfp = fopen(*++argv, "wb"))) {
 		perror(*argv);
@@ -168,6 +173,32 @@ int main(int argc, char **argv) {
     read_experiment_redirect(redirect);
 
     if (!from_stdin) {
+	if (fofn) {
+	    FILE *fofn_fp;
+	    char line[8192];
+
+	    if (strcmp(fofn, "stdin") == 0)
+		fofn_fp = stdin;
+	    else
+		fofn_fp = fopen(fofn, "r");
+
+	    if (fofn_fp) {
+		while (fgets(line, 8192, fofn_fp) != NULL) {
+		    char *cp;
+		    if (cp = strchr(line, '\n'))
+			*cp = 0;
+		    if (NULL == (infp = open_trace_file(line, NULL))) {
+			perror(line);
+			ret = 1;
+		    } else {
+			ret |= do_trans(infp, line, outfp, format, good_only,
+					clip_cosmid, fasta_out);
+			fclose(infp);
+		    }
+		}
+		fclose(fofn_fp);
+	    }
+	}
 	for (;argc > 0; argc--, argv++) {
 	    if (NULL == (infp = open_trace_file(*argv, NULL))) {
 		perror(*argv);
