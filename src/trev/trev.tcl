@@ -6,7 +6,7 @@
 # for a disclaimer of all warranties.
 #
 
-set VERSION "1.8"
+set VERSION "1.9"
 
 if {[catch tkinit]} {
     package require Tk
