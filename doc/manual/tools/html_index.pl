@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 # jkb 12/12/95
 # Usage: html_index.pl DOCUMENT_toc.html

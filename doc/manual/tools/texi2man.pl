@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl -w
+#!/usr/bin/perl -w
 
 # jkb 05/12/95
 # Converts our man pages written in TexInfo to troff man format. The texinfo
