@@ -711,7 +711,11 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	    }
 	}
 
-	name = DBgetName(DBI(xx), seqList[k]);
+	if (xx->template_names) {
+	    name = DBgetTemplateName(DBI(xx), seqList[k]);
+	} else {
+	    name = DBgetName(DBI(xx), seqList[k]);
+	}
 
 	/* Indicate whether notes are present */
 	buf[0] = tk_redisplaySeqNotes(xx, seqList[k],&nsplodge[0]);
