@@ -30,8 +30,10 @@ distcommon:
 
 
 distunix: distcommon
-	cp -R alpha-binaries $(DIST)/lib
-	cp -R linux-binaries $(DIST)/lib
+	mkdir $(DIST)/lib/alpha-binaries
+	cp -R alpha-binaries/* $(DIST)/lib/alpha-binaries
+	mkdir $(DIST)/lib/linux-binaries
+	cp -R linux-binaries/* $(DIST)/lib/linux-binaries
 #	cp -R ../lib.third/sgi-binaries $(DIST)/lib
 #	cp -R ../lib.third/solaris-binaries $(DIST)/lib
 #	cp -R ../lib.third/macosx-binaries $(DIST)/lib
