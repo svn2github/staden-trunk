@@ -105,9 +105,7 @@ set class_bits {
 
 proc global_params {f} {
     $f configure \
-        -external_seq_file {} \
         -dust_level 18 \
-        -skip_template_file skip_templates \
         -find_dup_templates 1 \
         -use_avg_insert 0 \
         -min_template_score 0 \
@@ -118,7 +116,7 @@ proc global_params {f} {
         -pwalk_search_dist 100 \
         -pwalk_max_match 10 \
         -pwalk_noligos 4 \
-        -pwalk_ntemplates 4 \
+        -pwalk_ntemplates 2 \
         -pwalk_offset1 130 \
         -pwalk_offset2 60 \
         -pwalk_seq_gap 60 \
@@ -354,7 +352,7 @@ if {![catch {set fd [open vector]}]} {
 
 cd [file dir [lindex $argv 0]]
 foreach {dbname dbvers} [split [file tail [lindex $argv 0]] .] {}
-if {$opt(-add_tags) != ""} {
+if {$opt(-add_tags)} {
     set io [open_db -name $dbname -version $dbvers -access rw]
 } else {
     set io [open_db -name $dbname -version $dbvers -access r]
@@ -377,6 +375,7 @@ finish .f \
     -io $io \
     -check_contigs $clist \
     -output_file $dbname.$dbvers.experiments \
+    -skip_template_file skip_templates \
     -debug0 $opt(-debug) \
     -debug1 $opt(-debug) \
     -debug2 $opt(-debug) \
