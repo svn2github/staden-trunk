@@ -649,16 +649,18 @@ Read *fread_abi(FILE *fp) {
 	}
 
 	/* Get the spacing.. it's a float but don't worry yet */
+	fspacing = 0;
 	if (-1 != getABIint4(fp, indexO, SpacingEntryLabel, 1,
 			     (uint_4 *)&spacing, 1)) {
 	    fspacing = int_to_float(spacing);
 	    sprintf(line, "SPAC=%-6.2f\n", fspacing);
 	    strcat(comment, line);
-	} else {
+	}
+	if (fspacing <= 0) {
 	    if (read->NBases)
 		fspacing = (float) read->NPoints / (float) read->NBases;
 	    else
-		fspacing = 0;
+		fspacing = 1;
 	}
 
 	
@@ -797,13 +799,19 @@ Read *fread_abi(FILE *fp) {
     /*************************************************************
      * Check base positions are in order
      *************************************************************/
+#if 0
+    /*
+     * Disable for now as the original ABI bug this is meant to fix shouldn't 
+     * happen any more, and this has the effect of reordering bases where there
+     * are compressions (which is wrong to do).
+     */
     if (sections & READ_SAMPLES) {
 	float pos;
 	int start;
 
 	for (i = 1; i < read->NBases; ) {
 	    if (read->basePos[i] < read->basePos[i-1]) {
-		fprintf(stderr,"fread_abi(): Base positions are not in order. Fixing\n");
+		fprintf(stderr,"fread_abi(): Base positions are not in order. Fixing (%d=%d, %d=%d)\n", i-1, read->basePos[i-1], i, read->basePos[i]);
 
 		/* pass 1 - find end of region */
 		start = i - 1;
@@ -831,6 +839,7 @@ Read *fread_abi(FILE *fp) {
 	    }
 	}
     }
+#endif
 
     
     /* SUCCESS */
