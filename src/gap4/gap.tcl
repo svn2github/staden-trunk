@@ -482,6 +482,7 @@ proc MoveWinUnder {w u {force 0}} {
     return $fit
 }
 
+
 ##############################################################################
 #                                  main program                              #
 ##############################################################################
@@ -498,10 +499,29 @@ if {$argc >= 2 && [lindex $argv 0] == "-menu_file"} {
 
 source $env(STADTABL)/shlib.conf
 load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
-
 load_package tk_utils
 tk_utils_init
 load_package gap
+
+if {[tk appname Gap4] != "Gap4"} {
+    set app [tk appname]
+    # Multiple gap4s - recolour!
+    set gnum 2
+    foreach col [keylget gap_defs BACKGROUNDS] {
+	set "colours(Gap4 #$gnum)" $col
+	incr gnum
+    }
+    keylset tk_utils_defs FOREGROUND black
+    if {[info exists colours($app)]} {
+	keylset tk_utils_defs BACKGROUND $colours($app)
+    } else {
+	keylset tk_utils_defs BACKGROUND $col
+    }
+    unset col
+    unset gnum
+    unset colours
+}
+
 
 if {$licence(type) == "d"} {
     LicenceSplash Gap4 3
@@ -529,9 +549,8 @@ switch $licence(type) {
     default	{append GAP_VERSION " (DEMO)"}
 }
 
-wm title . "GAP v$GAP_VERSION"
-wm iconname . "GAP v$GAP_VERSION"
-tk appname Gap4
+wm title . "[tk appname] v$GAP_VERSION"
+wm iconname . "[tk appname] v$GAP_VERSION"
 
 while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     set arg [lindex $argv 0];
