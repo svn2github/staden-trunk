@@ -1438,5 +1438,21 @@ static void squid(EdStruct *xx, int pos, int len, int sense)
 }
 #endif
 
+/*
+ * Creates a temporary annotation view, much like the suggest primers and the
+ * pick pcr primer functions.
+ * It bypasses the undo mechanism and will not be saved.
+ *
+ * NB: Currently this ignores many of the arguments.
+ */
+void createTmpAnnotation(EdStruct *xx, int seq, int pos, int len,
+			 char *type, char *text, int strand)
+{
+    tagStruct *tag;
+    tag = findTagPos(xx, seq, pos);
+    if (xx->tmp_tag)
+	destroy_temporary_tag(xx);
+    create_temporary_tag(xx, pos, len, strand);
+}
 
 

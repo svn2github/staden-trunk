@@ -963,6 +963,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    dstring_destroy(ds);
 	}
 
+    } else if ('c' == *argv[1] && strcmp(argv[1], "create_tmp_anno") == 0) {
+	if (argc != 8) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " create_anno seq pos len type text strand\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	/* Create a predefined tag at the current position */
+	createTmpAnnotation(ed->xx,
+			    atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+			    argv[5], argv[6], atoi(argv[7]));
+
     } else if ('s' == *argv[1] && strcmp(argv[1], "save") == 0) {
 	if (get_licence_type() == LICENCE_VIEWER)
 	    goto fail;
