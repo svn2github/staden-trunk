@@ -8,7 +8,8 @@
 #COPT	+= -Olimit 1000
 #CFLAGS	+= -std1 -verbose -trapuv #-ieee_with_inexact
 #CFLAGS  += -msg_enable level3
-CC = gcc
+CC = /nfs/team71/psg/dgm/sys/alpha/bin/gcc-3.2
+CXX= /nfs/team71/psg/dgm/sys/alpha/bin/g++-3.2
 GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
 	      -Wstrict-prototypes
 CFLAGS	+= $(GCCWARNINGS) -gcoff
