@@ -850,7 +850,7 @@ EDIT_PAIR *create_edit_pair(int size) {
 }
 
 int set_band_blocks(int seq1_len, int seq2_len) {
-    return MAX(30,(MIN(seq1_len,seq2_len)*0.35));
+    return MIN(5000, MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
 }
 
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
