@@ -1567,6 +1567,7 @@ int edSetBriefTag(EdStruct *xx, int seq, tagStruct *t, char *format) {
 
 
 	case 'c': /* Comment */
+	    force_comment(DBI_io(xx), t);
 	    add_string(status_buf, &j, l1, l2,
 		       t->newcomment ? t->newcomment : "(no comment)");
 	    break;
