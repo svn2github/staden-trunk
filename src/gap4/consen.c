@@ -1784,7 +1784,7 @@ int write_consensus (GapIO *io, FILE *fp,
 		     int max_contigs,
 		     int gel_anno, int truncate, int gel_notes,
 		     int num_contigs, contig_list_t *contig_array,
-		     int nopads) {
+		     int nopads, int name_format) {
 
 #define STADEN_FORMAT 1
 #define FASTA_FORMAT 2
@@ -1828,10 +1828,26 @@ int write_consensus (GapIO *io, FILE *fp,
 
 	} else if ( output_format == FASTA_FORMAT ) {
 	    char title[1024], *entry_name_ptr;
+	    char tname[DB_NAMELEN+1];
 
 	    sprintf(title, "%s.%d",
 		    io_name(io), contig_numbers[contig_index]);
-	    entry_name_ptr = io_rname(io, contig_numbers[contig_index]);
+	    if (name_format == CONS_NAME_LREADING) {
+		entry_name_ptr = io_rname(io, contig_numbers[contig_index]);
+	    } else /* if (name_format == CONS_NAME_LTEMPLATE) */ { 
+		GReadings r;
+		GTemplates t;
+
+		gel_read(io, contig_numbers[contig_index], r);
+		if (r.template) {
+		    template_read(io, r.template, t);
+		    TextRead(io, t.name, tname, DB_NAMELEN);
+		    tname[DB_NAMELEN] = 0;
+		    entry_name_ptr = tname;
+		} else {
+		    entry_name_ptr = "?";
+		}
+	    }
 	    if ( fasta_fmt_output (fp, 
 				   &seq[contig_ends[contig_index]+20], 
 				   contig_ends[contig_index+1] - 
@@ -1891,7 +1907,7 @@ int make_consensus_files ( int task_mask, int output_format, int gel_anno,
 			  int *consensus_len, int max_read_length, 
 			  int max_consensus, Hidden_params p, float percd,
 			  int num_contigs, contig_list_t *contig_array,
-			  int nopads)
+			  int nopads, int name_format)
 
 {
 
@@ -1921,7 +1937,8 @@ int make_consensus_files ( int task_mask, int output_format, int gel_anno,
     success = write_consensus (io, fp, output_format, 
 			       consensus, quality, consensus_length,
 			       max_contigs, gel_anno, truncate, gel_notes,
-			       num_contigs, contig_array, nopads);
+			       num_contigs, contig_array, nopads,
+			       name_format);
     free ( contig_list );
     *consensus_len = consensus_length;
     return success;
@@ -2039,7 +2056,8 @@ consensus_dialog (GapIO *io,
 		  char *out_file,
 		  int num_contigs,
 		  contig_list_t *contig_array,
-		  int nopads) 
+		  int nopads,
+		  int name_format) 
 {
     int task_mask;
     int database_size, c_nconts;
@@ -2119,17 +2137,18 @@ consensus_dialog (GapIO *io,
 
     /* FIXME - file handling errors to be checked for */
     success = make_consensus_files ( task_mask, output_format,
-				    gel_anno, truncate, gel_notes,
-				    fp, io,
-				    seq1, qual,
-				    database_size,
-				    c_nconts,
-				    &consensus_length,
-				    max_read_length,
-				    c_maxseq,
-				    p, c_percd,
-				    num_contigs, contig_array,
-				    nopads);
+				     gel_anno, truncate, gel_notes,
+				     fp, io,
+				     seq1, qual,
+				     database_size,
+				     c_nconts,
+				     &consensus_length,
+				     max_read_length,
+				     c_maxseq,
+				     p, c_percd,
+				     num_contigs, contig_array,
+				     nopads,
+				     name_format);
 
     if (0 != success)
 	verror(ERR_WARN, "consensus_dialog",

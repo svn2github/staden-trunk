@@ -26,6 +26,9 @@
 #define RIGHT_END 1
 #define LEFT_END 2
 
+#define CONS_NAME_LREADING 1
+#define CONS_NAME_LTEMPLATE 2
+
 /*****************************************************************************
  * Typedefs & structures
  ****************************************************************************/
@@ -168,7 +171,8 @@ consensus_dialog (GapIO *io,
 		  char *out_file,
 		  int num_contigs,
 		  contig_list_t *contig_array,
-		  int nopads); 
+		  int nopads,
+		  int name_format); 
 
 char *unattached_reads(GapIO *io);
 
@@ -211,7 +215,7 @@ int make_consensus_files ( int task_mask, int output_format, int gel_anno,
 			  int *consensus_len, int max_read_length, 
 			  int max_consensus, Hidden_params p, float percd,
 			  int num_contigs, contig_list_t *contig_array,
-			  int nopads);
+			  int nopads, int name_format);
 
 /* 
  * read through the consensus and find the ends of the contigs.

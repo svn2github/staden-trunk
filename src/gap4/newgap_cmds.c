@@ -3185,6 +3185,7 @@ Consensus(ClientData clientData,
 	{"-strip_pads",	ARG_INT, 1, "1",   offsetof(consensus_arg, nopads)},
 	{"-min_conf",   ARG_INT, 1, "8",   offsetof(consensus_arg, min_conf)},
 	{"-use_conf",	ARG_INT, 1, "1",   offsetof(consensus_arg, use_conf)},
+	{"-name_format",ARG_INT, 1, "1",   offsetof(consensus_arg, name_format)},
 	{NULL,	        0,	 0, NULL,  0}
     };
 
@@ -3232,7 +3233,8 @@ Consensus(ClientData clientData,
 			       args.use_conf, args.min_conf,
 			       args.win_size, args.dash,
 			       args.out_file, num_contigs,
-			       contig_array, args.nopads)) {
+			       contig_array, args.nopads,
+			       args.name_format)) {
 	verror(ERR_WARN, "consensus_ouput",
 	       "failed to calculate or write file");
     }

@@ -80,6 +80,12 @@ proc NormalDialog { io } {
 	    -relief groove -bd 2 -orient horizontal\
 	    -default [keylget gap_defs CONSENSUS.READ_NOTES]
 
+    radiolist $f.template \
+	-title "Name consensus by" \
+	-default [keylget gap_defs CONSENSUS.NAME_BY] \
+	-orient horizontal \
+	-buttons {{{left-most reading}} {{left-most template}}}
+
     ###########################################################################
     #format
 
@@ -120,7 +126,8 @@ proc NormalDialog { io } {
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
 	    -ok_command "Normal_OK_Pressed $f $io $f.infile $f.id \
-	    $f.sel_mask.rl $f.pads $f.notes $f.annos $f.format.main $f.output" \
+	    $f.sel_mask.rl $f.pads $f.notes $f.template $f.annos \
+	    $f.format.main $f.output" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Con-Normal}" \
 	    -bd 2 \
@@ -130,6 +137,7 @@ proc NormalDialog { io } {
     pack $f.id -fill x
     pack $f.sel_mask -fill x
     pack $f.pads -fill x
+    pack $f.template -fill x
     pack $f.format -fill x
     pack $f.annos -fill x
     pack $f.notes -fill x
@@ -138,7 +146,7 @@ proc NormalDialog { io } {
 
 }
 
-proc Normal_OK_Pressed {f io infile id sel_mask strippads notes annos format output} {
+proc Normal_OK_Pressed {f io infile id sel_mask strippads notes template annos format output} {
     global gap_defs
 
     set gel_anno 0; #no gel annotations with expt file
@@ -200,7 +208,8 @@ proc Normal_OK_Pressed {f io infile id sel_mask strippads notes annos format out
 	    -notes $note_val \
 	    -outfile $out_file \
 	    -tag_types $active_tags \
-	    -strip_pads $strip
+	    -strip_pads $strip \
+	    -name_format [radiolist_get $template]
     ClearBusy
     destroy $f
 }

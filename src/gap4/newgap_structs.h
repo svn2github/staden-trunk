@@ -208,6 +208,7 @@ typedef struct {
     int nopads;
     int min_conf;
     int use_conf;
+    int name_format;
 } consensus_arg;
  
 typedef struct {
