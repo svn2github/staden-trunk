@@ -36,6 +36,7 @@ typedef struct {
     int cvec_left;		/* Is their cosmid at the start? */
     int cvec_right;		/* Is their cosmid at the end? */
     int *template_dup;		/* Linked-list (as array) of dup. templates */
+    int *virtual;		/* Number of virtual seqs at this pos? */
 } depth_t;
 
 
@@ -116,13 +117,16 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
     for (i = 0; i < num_frags; i++) {
 	vrseq_t *vr;
 	GReadings r;
+	int virtual;
 
 	vr = vrseq_index2ptr(d->vc, frag[i].num);
 	
 	if (vr->vseq) {
 	    r = vr->vseq->r;
+	    virtual = 1;
 	} else {
 	    gel_read(io, frag[i].num, r);
+	    virtual = 0;
 	}
 
 	/* Also store template numbers here for counting below */
@@ -134,6 +138,9 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 	    int bitval = d->bits[j];
 	    con_bits_t *cbits, *cend = &d->con_bits[d->nbits];
 	    int contig_len = io_clength(io, contig);
+
+	    if (d->virtual)
+		d->virtual[j] += virtual;
 
 	    for (cbits = d->con_bits; cbits != cend; cbits++) {
 		switch(cbits->type) {
@@ -267,6 +274,7 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 unsigned int *classify_bases(finish_t *fin,
 			     int start,
 			     int end,
+			     int **virtual,
 			     int (*info_func)(int        job,
 					      void       *mydata,
 					      info_arg_t *theirdata),
@@ -293,6 +301,13 @@ unsigned int *classify_bases(finish_t *fin,
     d.cvec_left = fin->cvec_left;
     d.cvec_right = fin->cvec_right;
     d.template_dup = fin->template_dup;
+    if (virtual) {
+	*virtual = d.virtual = (int *)xcalloc(len, sizeof(int));
+	if (!d.virtual)
+	    return NULL;
+    } else {
+	d.virtual = NULL;
+    }
 
     if (NULL == (d.bits = (unsigned int *)xcalloc(len, sizeof(*d.bits))))
 	return NULL;
@@ -361,10 +376,12 @@ experiments_t *generate_experiments(finish_t *fin, int solution_ind,
 	     * score extending experiments correctly.
 	     */
 	    if ((fin->prob_bits[fin->end - fin->start] & 3) &&
-		io_clength(fin->io, fin->contig) - sol_end < 500) {
+		io_clength(fin->io, fin->contig) - sol_end < 500 &&
+		*extending != 1) {
 		*extending = 2;
 	    } else if ((fin->prob_bits[0] & 3) &&
-		       sol_start - 1 < 500) {
+		       sol_start - 1 < 500 &&
+		       *extending != 1) {
 		*extending = 2;
 	    }
 
@@ -469,6 +486,8 @@ static void score_experiments(Tcl_Interp *interp,
     int new_cvec_left = fin->cvec_left, new_cvec_right = fin->cvec_right;
     int tmp_cvec_left, tmp_cvec_right;
     int shift, nearby_probs;
+    int *virtual;
+    int virtual_count=0;
     
     for (i = 0; i < nexp; i++)
 	exp[i].score = 666;
@@ -545,7 +564,7 @@ static void score_experiments(Tcl_Interp *interp,
 		return;
 	    memcpy(probs1, &fin->prob_bits[pos-fin->start], len * sizeof(int));
 	} else {
-	    bits = classify_bases(fin, pos, pos + len,
+	    bits = classify_bases(fin, pos, pos + len, NULL,
 				  virtual_info_func, vc);
 
 	    probs1 = finishing_rules(interp, fin, pos-fin->start,
@@ -595,7 +614,7 @@ static void score_experiments(Tcl_Interp *interp,
 	
 	fin->cvec_left = new_cvec_left;
 	fin->cvec_right = new_cvec_right;
-	bits = classify_bases(fin, pos, pos + len,
+	bits = classify_bases(fin, pos, pos + len, &virtual,
 			      virtual_info_func, vc);
 	fin->cvec_left = tmp_cvec_left;
 	fin->cvec_right = tmp_cvec_right;
@@ -646,6 +665,13 @@ static void score_experiments(Tcl_Interp *interp,
 	    }
 	}
 
+	/* Count the number of bases already covered by a virtual sequence */
+	for (virtual_count = j = 0; j < len; j++) {
+	    if (virtual[j] > 1)
+		virtual_count++;
+	}
+
+	xfree(virtual);
 	xfree(probs1);
 	xfree(probs2);
 
@@ -752,6 +778,14 @@ static void score_experiments(Tcl_Interp *interp,
 		   "Score=%f\n", exp[i].score);
 	}
 
+	/* Penalise for sequences overlapping over virtual sequences */
+	if (virtual_count) {
+	    exp[i].score *= MIN(1, 3.0*(1.0-(double)virtual_count/len));
+	    printf("Penalty from other virtual seqs (%d of %d bases)"
+		   " => Score = %f\n",
+		   virtual_count, len, exp[i].score);
+	}
+
 	del_vrseq(vc, vrseq);
 
 #if 0
@@ -855,7 +889,7 @@ static void add_experiment(Tcl_Interp *interp,
     /* Compute new classification with this sequence in place */
     bits = classify_bases(fin, best_exp->r.position,
 			  best_exp->r.position + best_exp->r.sequence_length,
-			  virtual_info_func, vc);
+			  NULL, virtual_info_func, vc);
 
     /* Recompute problems */
     probs = finishing_rules(interp, fin, pos-fin->start, fin->prob_script,

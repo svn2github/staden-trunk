@@ -1122,7 +1122,7 @@ static int tcl_classify_bases(finish_t *fin, Tcl_Interp *interp,
     fin->classify = con_bits;
     fin->nclassify = bitsc;
 
-    fin->base_bits = classify_bases(fin, fin->start, fin->end,
+    fin->base_bits = classify_bases(fin, fin->start, fin->end, NULL,
 				    database_info, (void *)(fin->io));
 
     if (NULL == fin->base_bits)

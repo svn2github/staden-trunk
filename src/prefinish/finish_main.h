@@ -4,6 +4,7 @@
 unsigned int *classify_bases(finish_t *fin,
 			     int start,
 			     int end,
+			     int **virtual,
 			     int (*info_func)(int        job,
 					      void       *mydata,
 					      info_arg_t *theirdata),
