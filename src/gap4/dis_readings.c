@@ -456,6 +456,16 @@ int remove_contig_holes(GapIO *io, int cnum) {
     if (contig_read(io, cnum, c))
 	return -1;
 
+    /*
+     * Firstly remove any annotations overhanging the left and right ends.
+     * This can happen when we remove a reading at the very start or end of
+     * contig.
+     */
+    if (c.annotations)
+	c.annotations = rmanno(io, c.annotations, -INT_MAX, 0);
+    if (c.annotations)
+	c.annotations = rmanno(io, c.annotations, c.length+1, INT_MAX);
+
     do {
 	new_contig = 0;
 	
