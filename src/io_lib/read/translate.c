@@ -760,9 +760,10 @@ Read *exp2read(Exp_info *e, char *fn) {
 		memset(r->prob_T, 0, slen * sizeof(r->prob_T[0]));
 	    }
 	}
+
+	r->format = TT_EXP;
     }
 
-    r->format = TT_EXP;
     r->orig_trace = e;
     r->orig_trace_format = TT_EXP;
     r->orig_trace_free = (void (*)(void *))exp_destroy_info;
