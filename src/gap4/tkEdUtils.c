@@ -831,16 +831,17 @@ static void tk_redisplaySeqDiffs(EdStruct *xx, XawSheetInk *splodge,
 	if (xx->showDifferences&4) {
 	    int j;
 	    for (j=0; j<width; j++)
-		if (seq[j]==xx->displayedConsensus[j] ||
-		    (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual))
+		if (seq[j]==xx->displayedConsensus[j])
 		    seq[j]='.';
+		else if (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual)
+		    seq[j]=':';
 	} else {
 	    int j;
 	    for (j=0; j<width; j++)
-		if (tolower(seq[j]) == 
-		    tolower(xx->displayedConsensus[j]) ||
-		    (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual))
+		if (tolower(seq[j]) == tolower(xx->displayedConsensus[j]))
 		    seq[j]='.';
+		else if (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual)
+		    seq[j]=':';
 	}
 
     } else if (xx->showDifferences&4) {
@@ -1047,6 +1048,10 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	    
 	    DBgetSequence(xx, seqList[k], pos-DB_RelPos(xx,seqList[k]),
 			  width, seq_str);
+	    /* FIXME: temporary hack */
+	    if (xx->group && xx->group[seqList[k]]) {
+		*seq_str = '0'+xx->group[seqList[k]];
+	    }
 	    ptr = seq_str;
 	}
 
@@ -1631,7 +1636,7 @@ void status_strand(EdStruct *xx, int pos, int width,
 
     calc_quality(0, pos, pos + width - 1, qual,
 		 xx->con_cut, xx->qual_cut,
-		 contEd_info, (void *)DBI(xx));
+		 contEd_info, (void *)xx);
 
     for (j = 0; j < width; j++) {
 	splodge[j].sh = sh_default;
