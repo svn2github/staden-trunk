@@ -128,4 +128,7 @@ void cache_delete_read_name(GapIO *io, int number);
  */
 int template_name_to_number(GapIO *io, char *tname);
 
+void update_rnumtocnum(GapIO *io, int gel, int contig);
+void invalidate_rnumtocnum(GapIO *io, int disable);
+
 #endif /* _IO_UTILS_H */

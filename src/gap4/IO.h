@@ -100,6 +100,9 @@ typedef struct {
     Bitmap updaterecs;		/* bitmap of updated records */
     Bitmap tounlock;		/* bitmap of records to unlock at next flush */
 
+    Array rnum2cnum;		/* Mapping of reading no. to contig no. */
+    int cached_rnum2cnum;	/* Boolean: whether rnum2cnum is to be used */
+
     Array contig_cursor;	/* array (NumContigs) of cursor_t lists */
 } GapIO;
 

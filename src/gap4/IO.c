@@ -604,6 +604,8 @@ int io_deallocate_reading(GapIO *io, int N) {
 	err += deallocate(io, r.name);
     }
 
+    update_rnumtocnum(io, N, 0);
+
     if (r.trace_name)
 	err += deallocate(io, r.trace_name);
 
@@ -671,6 +673,7 @@ int io_init_reading(GapIO *io,	/*  */
 #if GAP_CACHE!=0
 	    memset(arrp(GReadings, io->reading, i-1), 0, sizeof(r));
 #endif
+	    update_rnumtocnum(io, i, 0); /* initialise to unknown contig */
 	}
 	NumReadings(io) = N;
 
@@ -1605,6 +1608,12 @@ GapIO *open_db(char *project, char *version, int *status, int create,
     Tcl_InitHashTable(&io->rname_hash, TCL_STRING_KEYS);
     Tcl_InitHashTable(&io->tname_hash, TCL_STRING_KEYS);
 #endif
+
+    /* Intialise reading no. to contig no. mapping to zero (unknown) */
+    io->rnum2cnum = ArrayCreate(sizeof(int), NumReadings(io));
+    io->cached_rnum2cnum = 1;
+    for (i = 0; i < NumReadings(io); i++)
+	arr(int, io->rnum2cnum, i) = 0;
 
     if (NULL == io->reading) {
 	*status = ERROR;

@@ -176,6 +176,14 @@ int chain_left(GapIO *io, int gel) {
     char *visited;
     int l;
 
+    /*
+     * Optimise: if we have the contig number cached in rnum2cnum then
+     * we can shortcut this by jumping straight to the first reading number.
+     */
+    if (io->cached_rnum2cnum && (l = arr(int, io->rnum2cnum, gel-1))) {
+	return io_clnbr(io, l);
+    }
+
     if (NULL == (visited = (char *)xcalloc(NumReadings(io)+1, 1)))
 	return -1;
 
@@ -206,19 +214,54 @@ int chain_left(GapIO *io, int gel) {
  *    -1 for failure, otherwise the contig number
  */
 int rnumtocnum(GapIO *io, int gel) {
-    int i;
-    
+    int i, lgel, cnum;
+
+    if (io->cached_rnum2cnum) {
+	cnum = arr(int, io->rnum2cnum, gel-1);
+	if (cnum) {
+	    return cnum;
+	}
+    }
+
     /* First chain left */
-    if (-1 == (gel = chain_left(io, gel)))
+    if (-1 == (lgel = chain_left(io, gel)))
 	return -1;
 
     /* Then search for the contig with this left neighbour */
-    for (i = 1; i <= NumContigs(io); i++) {
-	if (io_clnbr(io, i) == gel)
-	    return i;
+    for (cnum = 1; cnum <= NumContigs(io); cnum++) {
+	if (io_clnbr(io, cnum) == lgel) {
+	    if (io->cached_rnum2cnum) {
+		/* Now cache details for this entire contig */
+		for (i = lgel; i; i = io_rnbr(io, i))
+		    arr(int, io->rnum2cnum, i-1) = cnum;
+	    }
+	    return cnum;
+	}
     }
 
     return -1;
+}
+
+/*
+ * Updates the reading number to contig number cache.
+ * Specify contig as zero to remove this reading from the cache.
+ */
+void update_rnumtocnum(GapIO *io, int gel, int contig) {
+    ArrayRef(io->rnum2cnum, gel-1);
+    arr(int, io->rnum2cnum, gel-1) = contig;
+}
+
+/*
+ * Invalidates the entire reading number to contig number cache.
+ */
+void invalidate_rnumtocnum(GapIO *io, int disable) {
+    int i, nr = NumReadings(io);
+
+    ArrayRef(io->rnum2cnum, nr-1);
+    for (i = 1; i <= nr; i++) {
+	arr(int, io->rnum2cnum, i-1) = 0;
+    }
+    io->cached_rnum2cnum = !disable;
 }
 
 
