@@ -9,15 +9,25 @@
 FastInt W128[128][128] = {{0},{0}};
 char base_val[128] = {0};
 
-static FastInt (*align_arr[])() = {align_ss,   align_sv,   NULL, align_ss2};
-static void (*display_arr[])()  = {display_ss, display_sv, NULL, display_ss2};
-static void (*expand_arr[])()   = {expand,     expand_6,   NULL, expand};
+static FastInt (*align_arr[])() = {align_ss,  
+				   align_sv,
+				   balign_sv,
+				   align_ss2};
+static void (*display_arr[])()  = {display_ss,
+				   display_sv,
+				   display_sv,
+				   display_ss2};
+static void (*expand_arr[])()   = {expand,
+				   expand_6,
+				   expand_6,
+				   expand};
 
 /*
  * Initialise 128x128 weight matrix from our score matrix
  */
-void init_W128(int **matrix,
-	       char *order, int unknown) {
+void init_align_mat(int **matrix,
+		    char *order, int unknown,
+		    FastInt W128[][128]) {
     int i, j, i_end;
     unsigned char ci, cj;
 
@@ -43,11 +53,22 @@ void init_W128(int **matrix,
 	base_val[i] = 5;
     
     base_val['A'] = 0;
+    base_val['a'] = 0;
     base_val['C'] = 1;
+    base_val['c'] = 1;
     base_val['G'] = 2;
+    base_val['g'] = 2;
     base_val['T'] = 3;
+    base_val['t'] = 3;
+    base_val['U'] = 3;
+    base_val['u'] = 3;
     base_val['*'] = 4;
     /* base_val['-'] = 5; the default */
+}
+
+void init_W128(int **matrix,
+	       char *order, int unknown) {
+    init_align_mat(matrix, order, unknown, W128);
 }
 
 /*
@@ -71,10 +92,10 @@ void init_W128(int **matrix,
  *   -1 for error
  *   >0 for success (value returned is score)
  */
-int calign(void *seq1, void *seq2, int len1, int len2,
-	   void *rseq1, void *rseq2, int *rlen1, int *rlen2,
-	   int low_band, int high_band, int gap_open, int gap_extend,
-	   int job, int is_protein, align_int *res) {
+int calignm(void *seq1, void *seq2, int len1, int len2,
+	    void *rseq1, void *rseq2, int *rlen1, int *rlen2,
+	    int low_band, int high_band, int gap_open, int gap_extend,
+	    int job, int is_protein, align_int *res, FastInt W[][128]) {
 
     /* int full = low_band == 0 && high_band == 0; */
     int retval = -1;
@@ -97,7 +118,7 @@ int calign(void *seq1, void *seq2, int len1, int len2,
     }
 
     retval = align_arr[ajob](seq1, seq2, (FastInt)len1, (FastInt)len2,
-			     (FastInt)low_band, (FastInt)high_band, W128,
+			     (FastInt)low_band, (FastInt)high_band, W,
 			     (FastInt)gap_open, (FastInt)gap_extend,
 			     (FastInt *)results,
 			     /* End gaps */
@@ -120,6 +141,18 @@ int calign(void *seq1, void *seq2, int len1, int len2,
 	free (results);
 
     return retval;
+}
+
+/*
+ * As above, but hardcoded to use W128
+ */
+int calign(void *seq1, void *seq2, int len1, int len2,
+	   void *rseq1, void *rseq2, int *rlen1, int *rlen2,
+	   int low_band, int high_band, int gap_open, int gap_extend,
+	   int job, int is_protein, align_int *res) {
+    return calignm(seq1, seq2, len1, len2, rseq1, rseq2, rlen1, rlen2,
+		   low_band, high_band, gap_open, gap_extend,
+		   job, is_protein, res, W128);
 }
 
 /*

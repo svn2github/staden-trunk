@@ -20,7 +20,7 @@ typedef FastInt align_int;
 #define ALIGN_J_MASK    0x0F
 #define ALIGN_J_SS	0
 #define ALIGN_J_SV	1
-#define ALIGN_J_VV	2
+#define ALIGN_J_BSV	2
 #define ALIGN_J_SSH	3
 
 /* How to expand the sequence up */
@@ -68,7 +68,12 @@ extern FastInt align_ss2(char *A, char *B, FastInt M, FastInt N,
 			FastInt s1, FastInt s2, FastInt e1, FastInt e2);
 
 extern FastInt align_sv(char *A, FastInt (*B)[6], FastInt M,
-			FastInt low, FastInt up, FastInt N,
+			FastInt N, FastInt low, FastInt up,
+			FastInt W[][128], FastInt G, FastInt H, FastInt *S,
+			FastInt s1, FastInt s2, FastInt e1, FastInt e2);
+
+extern FastInt balign_sv(char *A, FastInt (*B)[6], FastInt M,
+			FastInt N, FastInt low, FastInt up,
 			FastInt W[][128], FastInt G, FastInt H, FastInt *S,
 			FastInt s1, FastInt s2, FastInt e1, FastInt e2);
 
