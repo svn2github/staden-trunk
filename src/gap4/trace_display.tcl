@@ -864,7 +864,7 @@ proc trace_save_layout {} {
 }
 
 proc trace_flash {w {ind 5} {wid 20}} {
-place $w -relx 0.5 -y 40 -anchor n
+    place $w -relx 0.5 -y 0 -anchor n
     for {set t 0} {$t < $ind} {incr t} {
 	after 30
 	if {[catch {$w configure -width $wid} err]} {
