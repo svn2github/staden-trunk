@@ -590,6 +590,35 @@ int check_readings(GapIO *io, f_int *relpg, f_int *lngthg, f_int *lnbr,
     return status;
 }
 
+/*
+ * Checks that the rnum2cnum cache is valid. As it can do so, this code also
+ * initialises the cache too.
+ */
+int check_rnum2cnum(GapIO *io) {
+    int nc;
+    int rnum, cnum;
+    int status = 0;
+
+    ArrayRef(io->rnum2cnum, NumReadings(io)-1);
+    nc = NumContigs(io);
+    for (cnum = 1; cnum <= nc; cnum++) {
+	for (rnum = io_clnbr(io, cnum); rnum; rnum = io_rnbr(io, rnum)) {
+	    int cnum2 = arr(int, io->rnum2cnum, rnum-1);
+	    if (cnum2 && cnum2 != cnum) {
+		vmessage("Gel %d: Cached contig number (%d) does not agree "
+			 "with chain-left (%d); fixing\n",
+			 rnum, cnum2, cnum);
+		status++;
+	    }
+
+	    /* Fix it! */
+	    arr(int, io->rnum2cnum, rnum-1) = cnum;
+	}
+    }
+
+    return status;
+}
+
 int check_annotations(GapIO *io, int *tag_used, int *minor) {
     GAnnotations a;
     int t;
@@ -885,6 +914,7 @@ int db_check_common(GapIO *io, int dbsize, int ngels, int nconts,
 			    gel_used, tag_used, note_used, &minor);
     status += check_readings(io, relpg, lngthg, lnbr, rnbr,
 			     gel_used, tag_used, note_used, &minor);
+    status += check_rnum2cnum(io);
     status += check_annotations(io, tag_used, &minor);
     status += check_templates(io, &minor);
     status += check_vectors(io, &minor);
