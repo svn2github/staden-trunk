@@ -35,7 +35,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	-command "destroy $t"
 
     button $t.buttons.save \
-    	-text Save \
+    	-text "Save order" \
 	-command "ListContigsSave $io $t.list"
 
     button $t.buttons.copy \
