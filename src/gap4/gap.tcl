@@ -372,8 +372,7 @@ proc ChangeDirectory2 { dir} {
     } else {
 	vfuncheader "Change Directory"
 	vmessage "Changing directory to [pwd]"
-	global .__tk_filedialog
-	catch {set .__tk_filedialog(selectPath) [pwd]}
+	catch {unset ::tk::dialog::file::__tk_filedialog(selectPath)}
     }
 }
 
