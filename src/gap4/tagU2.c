@@ -47,6 +47,8 @@
 #include "dbcheck.h"
 #include "active_tags.h"
 #include "FtoC.h"
+#include "qualIO.h"
+#include "gap_globals.h"
 
 
 /*
@@ -429,6 +431,33 @@ void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
 	    end = new_end;
 	    xfree(seq);
 	}
+    } else if (unpadded_tags) {
+	/* Unpadded position, but in the contig */
+	char *cons;
+	int i, pads;
+	int clen = io_clength(io, -gel);
+	int new_start = start, new_end = end;
+
+	if (!(cons = (char *)xmalloc(clen+1)))
+	    return;
+	calc_consensus(-gel, 1, clen, CON_SUM, cons, NULL, NULL, NULL,
+		       consensus_cutoff, quality_cutoff,
+		       database_info, (void *)io);
+
+	for (pads = 0, i = 1; i <= clen; i++) {
+	    if (cons[i-1] == '*') {
+		pads++;
+		continue;
+	    }
+	    if (i-pads == start)
+		new_start = start + pads;
+	    if (i-pads == end)
+		new_end = end + pads;
+	}
+	start = new_start;
+	end = new_end;
+
+	xfree(cons);
     }
 
 
