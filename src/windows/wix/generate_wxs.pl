@@ -4,7 +4,45 @@ use strict;
 use Cwd;
 use Win32;
 
-my %shortcuts = ('trev.exe' => 'Trev');
+my %shortcuts = ('trev.exe' => 'Trev',
+		 'pregap4.exe' => 'Pregap4',
+		 'gap.exe' => 'Gap4',
+		 'spin.exe' => 'Spin',
+		 'sprun.exe' => 'Console'
+		);
+
+my %extensions = ('trev.exe'    => {'ztr'   => ['ZTR trace file',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				    'ab1'   => ['AB1 trace file',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				    'exp'   => ['Gap4 Experiment file',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				    'ctf'   => ['CTF trace file',
+						'&quot;%1&quot;',
+						'application/octet-stream']
+				   },
+		  'gap.exe'     => {'aux'   => ['Gap4 Database',
+						'&quot;%1&quot;',
+						'application/octet-stream'],
+				   },
+		  'spin.exe'    => {'fasta' => ['Fasta sequence file',
+						'&quot;%1&quot;',
+						'text/plain'],
+				    'embl'  => ['EMBL sequence file',
+						'&quot;%1&quot;',
+						'text/plain'],
+				    'seq'   => ['Sequence file',
+						'&quot;%1&quot;',
+						'text/plain'],
+				   },
+		  'pregap4.exe' => {'pg4'   => ['Pregap4 configuration file',
+						'-config &quot;%1&quot;',
+						'text/plain']
+				   }
+		 );
 
 # Component IDs that we need to turn into features.
 my @components;
@@ -14,7 +52,8 @@ my @components;
     sub nextid {
         my ($name) = @_;
         $globalid++;
-        return "ID$name-$globalid";
+	$name =~ tr/a-zA-Z0-9_/_/c;
+        return "ID${name}_$globalid";
    }
 }
 
@@ -57,18 +96,56 @@ sub printdir {
 	    if ($firstfile) {
 		my $id = nextid("dir");
 		print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
-		$firstfile = 0;
 		push(@components, $id);
 	    }
 	    my $id = nextid($_);
   	    my $long = "$_";
 	    my $short = Win32::GetShortPathName($long);
+
+	    # File associations must be done in their own Components
+	    if (exists($extensions{$long})) {
+ 	        if (!$firstfile) {
+		    print "$sp</Component>\n";
+ 	        }
+		my $id = nextid("dir");
+		print "$sp<Component Guid=\"", guidgen(), "\" Id=\"$id\">\n";
+		push(@components, $id);
+	    }
+	    $firstfile = 0;
+
 	    if (exists($shortcuts{$long})) {
-	        print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\">\n";
-		print "$sp    <Shortcut Id=\"Shortcut-$long\" Directory=\"StadenMenuFolder\" Name=\"$shortcuts{$long}\" Target=\"[#$id]\" Show=\"minimized\"/>\n";
+		if ($long ne $short) {
+	            print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\">\n";
+		} else {
+	            print "$sp  <File Id=\"$id\" Name=\"$short\" DiskId=\"1\" src=\"$cwd/$long\">\n";
+		}
+		if ($shortcuts{$long} eq 'Console') {
+		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"StadenMenuFolder\" Name=\"$shortcuts{$long}\" Target=\"[#$id]\" Show=\"minimized\" Arguments=\"-console\"/>\n";
+		} else {
+		    print "$sp    <Shortcut Id=\"Shortcut_$long\" Directory=\"StadenMenuFolder\" Name=\"$shortcuts{$long}\" Target=\"[#$id]\" Show=\"minimized\"/>\n";
+		}
 	        print "$sp  </File>\n";
 	    } else {
-	        print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\"/>\n";
+		if ($long ne $short) {
+		    print "$sp  <File Id=\"$id\" Name=\"$short\" LongName=\"$long\" DiskId=\"1\" src=\"$cwd/$long\"/>\n";
+		} else {
+		    print "$sp  <File Id=\"$id\" Name=\"$short\" DiskId=\"1\" src=\"$cwd/$long\"/>\n";
+		}
+	    }
+
+	    # Add ProgId blocks for file associations
+	    if (exists($extensions{$long})) {
+		foreach my $ext (keys %{$extensions{$long}}) {
+		    my @a = @{$extensions{$long}{$ext}};
+		    print "$sp  <ProgId Id=\"${ext}file\" Description=\"$a[0]\" Advertise=\"yes\">\n";
+		    print "$sp    <Extension Id=\"$ext\" ContentType=\"$a[2]\">\n";
+		    print "$sp      <Verb Id=\"Open\" Command=\"Open\" Argument=\"$a[1]\"/>\n";
+		    print "$sp    </Extension>\n";
+		    print "$sp  </ProgId>\n";
+		}
+
+		print "$sp</Component>\n";
+		$firstfile = 1;
 	    }
 	}
     }
@@ -84,7 +161,11 @@ sub printdir {
 	    my $id = nextid($_);
   	    my $long = "$_";
 	    my $short = Win32::GetShortPathName($long);
-	    print "$sp<Directory Id=\"$id\" Name=\"$short\" LongName=\"$long\">\n";
+	    if ($long ne $short) {
+		print "$sp<Directory Id=\"$id\" Name=\"$short\" LongName=\"$long\">\n";
+	    } else {
+		print "$sp<Directory Id=\"$id\" Name=\"$short\">\n";
+	    }
 	    my $lastdir = getcwd();
 	    chdir($_);
 	    printdir($indent+1);
@@ -111,7 +192,7 @@ printheader();
 chdir($ARGV[0]);
 print "    <Directory Id=\"TARGETDIR\" Name=\"SourceDir\">\n";
 print "      <Directory Id=\"ProgramMenuFolder\" Name=\"PMFolder\">\n";
-print "        <Directory Id=\"StadenMenuFolder\" Name=\"Trev\"/>\n";
+print "        <Directory Id=\"StadenMenuFolder\" Name=\"Staden~1\" LongName=\"Staden Package\"/>\n";
 print "      </Directory>\n";
 printdir(2);
 print "    </Directory>\n";
