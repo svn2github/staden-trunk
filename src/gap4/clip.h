@@ -5,6 +5,7 @@
 #include "io_utils.h"
 
 void quality_clip(GapIO *io, int num_contigs, contig_list_t *cl, int qual_avg);
+void N_clip(GapIO *io, int num_contigs, contig_list_t *cl);
 void difference_clip(GapIO *io, int num_contigs, contig_list_t *cl,
 		     int add_tags);
 
