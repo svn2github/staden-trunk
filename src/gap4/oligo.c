@@ -431,6 +431,7 @@ static char *generate_oligo_comment(EdStruct *xx, int oligo, char *tname)
     char s[200];
     char seq[100];
     char *c;
+    double tm, gc, qual;
 
     int pos,len;
 #ifdef VERBOSENESS
@@ -439,12 +440,15 @@ static char *generate_oligo_comment(EdStruct *xx, int oligo, char *tname)
 
     pos = xx->sel_oli->state->primers[oligo].start;
     len = xx->sel_oli->state->primers[oligo].length;
+    tm  = xx->sel_oli->state->primers[oligo].temp;
+    gc  = xx->sel_oli->state->primers[oligo].gc_content;
+    qual= xx->sel_oli->state->primers[oligo].quality;
     strncpy(seq,&xx->sel_oli->consensus[pos],len);
     seq[len]='\0';
 
     
-    sprintf(s,"serial#=\ntemplate=%s\nsequence=%s\nflags=\n",
-	    tname, seq);
+    sprintf(s,"template=%s\nsequence=%s\nTm=%f\nGC%%=%f\nquality=%f\n",
+	    tname, seq, tm, gc, qual);
 
 #ifdef VERBOSENESS
     if (verbose_debug) messagef("(%s)\n",s);
