@@ -581,14 +581,17 @@ int deallocate(GapIO *io, int rec) {
 }
 
 
-/*
+/**
  * Deallocates a reading. Note that this doesn't care which reading is
  * being deallocated - it just frees the space. Other parts of the program
  * require that the reading numbers be consecutive. These other parts deal
  * with making sure that this is so!
  *
- * This also removes notes, but at present does not yet remove tags.
- * (see RMGTAG calls in legacy.f)
+ * This neither deletes notes or tags. See delete_note_list() and
+ * remove_gel_tags() for this functionality.
+ *
+ * Returns 0 for success
+ *         non-zero for error (1)
  */
 int io_deallocate_reading(GapIO *io, int N) {
     GReadings r;
@@ -1061,6 +1064,7 @@ int io_write_seq(GapIO *io,	/*  */
     r.length = *length;
     r.start = *start;
     r.end = *end;
+
     r.sequence_length = r.end - r.start -1;
 
     if (r.sense == GAP_SENSE_REVERSE) {
