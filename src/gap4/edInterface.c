@@ -1892,8 +1892,13 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 			}
 			*buf = 0;
 
-			if (tstat & TEMP_CONSIST_DIST)
-			    strcat(buf, "D");
+			if (tstat & TEMP_CONSIST_DIST) {
+			    if ((tc->start > tc->end && tc->direction == 0) ||
+				(tc->start < tc->end && tc->direction == 1))
+				strcat(buf, "D");
+			    else
+				strcat(buf, "d");
+			}
 			if (tstat & TEMP_CONSIST_PRIMER)
 			    strcat(buf, "P");
 			if (tstat & TEMP_CONSIST_STRAND)
@@ -1902,6 +1907,8 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 			    strcat(buf, "?");
 			if (guessed)
 			    strcat(buf, "E");
+			if (tstat & TEMP_CONSIST_INTERDIST)
+				strcat(buf, "I");
 			if (spanned)
 			    strcat(buf, "O");
 			if (!tstat && !guessed)
