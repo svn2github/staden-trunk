@@ -131,8 +131,6 @@ int actf_lock(int read_only, char *file, char *version,int new) {
 	     */
 	    int i;
 	    for (i = 0; i < numu_lock_files; i++) {
-		printf("fname='%s', lock='%s'\n",
-		       fname, lock_files[i].pathname);
 		if (strcmp(lock_files[i].pathname, fname) == 0) {
 		    break;
 		}
