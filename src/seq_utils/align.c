@@ -11,7 +11,7 @@ char base_val[128] = {0};
 
 static FastInt (*align_arr[])() = {align_ss,  
 				   align_sv,
-				   balign_sv,
+				   /*balign_sv*/NULL,
 				   align_ss2};
 static void (*display_arr[])()  = {display_ss,
 				   display_sv,
