@@ -1,9 +1,22 @@
+#define TRACE_ARCHIVE
+#define USE_WGET
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <limits.h>
+#ifdef TRACE_ARCHIVE
+#  include <sys/socket.h>
+#  include <netinet/in.h>
+#  include <netdb.h>
+#  include <sys/time.h>
+#  include <errno.h>
+#endif
+#ifdef USE_WGET
+#  include <sys/wait.h>
+#endif
 #ifndef PATH_MAX
 #  define PATH_MAX 1024
 #endif
@@ -195,6 +208,149 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
     return NULL;
 }
 
+#ifdef TRACE_ARCHIVE
+/*
+ * Searches for file in the ensembl trace archive pointed to by arcname.
+ * If it finds it, it copies it out and returns a file pointer to the
+ * temporary file, otherwise we return NULL.
+ *
+ * Arcname has the form address:port, eg "titan/22100"
+ *
+ * Returns FILE pointer if found
+ *         NULL if not.
+ */
+#define RDBUFSZ 8192
+FILE *find_file_archive(char *file, char *arcname) {
+    char server[1024], *cp;
+    int port;
+    struct hostent *host;
+    struct sockaddr_in saddr;
+    int s = 0;
+    char msg[1024];
+    ssize_t msg_len;
+    char buf[RDBUFSZ];
+    char *fname;
+    FILE *fpout;
+    int block_count;
+
+    /* Split arc name into server and port */
+    if (!(cp = strchr(arcname, '/')))
+	return NULL;
+    strncpy(server, arcname, 1023);
+    server[MIN(1023,cp-arcname)] = 0;
+    port = atoi(cp+1);
+
+    /* Make and connect socket */
+    if (NULL == (host = gethostbyname(server))) {
+	perror("gethostbyname()");
+	return NULL;
+    }
+    saddr.sin_port = htons(port);
+    saddr.sin_family = host->h_addrtype;
+    memcpy(&saddr.sin_addr,host->h_addr_list[0], host->h_length);
+    if ((s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) == -1) {
+	perror("socket()");
+	return NULL;
+    }
+    if (connect(s, (struct sockaddr *)&saddr, sizeof(saddr)) == -1) {
+	perror("connect()");
+	return NULL;
+    }
+
+    /* The minimal message to send down is "--scf tracename" */
+    sprintf(msg, "--scf %.*s\n", 1000, file);
+    msg_len = strlen(msg);
+    if (send(s, msg, msg_len, 0) != msg_len) {
+	/*
+	 * partial request sent, but requests are short so if this
+	 * happens it's unlikely we'll cure it by sending multiple
+	 * fragments.
+	 */
+	/* close(s); */
+	return NULL;
+    }
+
+    /*
+     * Create a temporary file, open it, and unlink it so that on a crash
+     * or close disk space is freed.
+     */
+    fname = tempnam(NULL, NULL);
+    if (NULL == (fpout = fopen(fname, "wb+"))) {
+	remove(fname);
+	free(fname);
+	fclose(fpout);
+	close(s);
+	return NULL;
+    }
+    remove(fname);
+    free(fname);
+
+    /*
+     * Read the data back, in multiple blocks if necessary and write it
+     * to our temporary file. We use a blocking read with a low timeout to
+     * prevent locking up the application indefinitely.
+     */
+    {
+	struct timeval tv = {0, 10000};
+	setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv, sizeof(tv));
+    }
+    errno = 0;
+    block_count = 200;
+    while ((msg_len = read(s, buf, RDBUFSZ)) > 0 ||
+	   (errno == EWOULDBLOCK && --block_count)) {
+	errno = 0;
+	if (msg_len > 0)
+	    fwrite(buf, 1, msg_len, fpout);
+    }
+    close(s);
+
+    if (!block_count) {
+	fclose(fpout);
+	return NULL;
+    }
+
+    rewind(fpout);
+
+    return fpout;
+}
+#endif
+
+#ifdef USE_WGET
+FILE *find_file_url(char *file, char *url) {
+    char buf[8192], *cp;
+    FILE *fp;
+    int pid;
+    int maxlen = 8190 - strlen(file);
+    char *fname = tempnam(NULL, NULL);
+    int status;
+
+    /* Expand %s for the trace name */
+    for (cp = buf; *url && cp - buf < maxlen; url++) {
+	if (*url == '%' && *(url+1) == 's') {
+	    url++;
+	    cp += strlen(strcpy(cp, file));
+	} else {
+	    *cp++ = *url;
+	}
+    }
+    *cp++ = 0;
+
+    /* Execute wget */
+    if ((pid = fork())) {
+	waitpid(pid, &status, 0);
+    } else {
+	execlp("wget", "wget", "-q", "-O", fname, buf, NULL);
+    }
+
+    /* Return a filepointer to the result (if it exists) */
+    fp = !status ? fopen(fname, "rb+") : NULL;
+    remove(fname);
+    free(fname);
+
+    return fp;
+}
+#endif
+
 /*
  * Searches for file in the directory 'dirname'. If it finds it, it opens
  * it. This also searches for compressed versions of the file in dirname
@@ -279,6 +435,20 @@ FILE *open_trace_file(char *file, char *relative_to) {
 		free(newsearch);
 		return fp;
 	    }
+#ifdef TRACE_ARCHIVE
+	} else if (0 == strncmp(ele, "ARC=", 4)) {
+	    if (fp = find_file_archive(file, ele+4)) {
+		free(newsearch);
+		return fp;
+	    }
+#endif
+#ifdef USE_WGET
+	} else if (0 == strncmp(ele, "URL=", 4)) {
+	    if (fp = find_file_url(file, ele+4)) {
+		free(newsearch);
+		return fp;
+	    }
+#endif
 	} else {
 	    if (fp = find_file_dir(file, ele)) {
 		free(newsearch);
@@ -290,9 +460,4 @@ FILE *open_trace_file(char *file, char *relative_to) {
     free(newsearch);
 
     return NULL;
-}
-
-int find_trace_file(void) {
-    puts("Called find_trace_file");
-    return 0;
 }
