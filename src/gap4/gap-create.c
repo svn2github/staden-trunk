@@ -66,6 +66,7 @@ extern DLL_IMPORT int errno;
 #include "FtoC.h"
 
 int maxdb = 8000;
+static int bitsize = G_32BIT;
 
 static int create_new_files(char *fn, size_t s, GCardinal max_rec)
 /*
@@ -78,6 +79,23 @@ static int create_new_files(char *fn, size_t s, GCardinal max_rec)
     int fd;
     AuxHeader auxheader;
     GCardinal i;
+    int (*(*low_level_vector))(int fd, void *x, int num);
+    int endian = 1;
+
+    /*
+     * Determine the default vectors for creating a database.
+     * This is temporary as from here on the g-library will auto-sense when
+     * it opens the database files.
+     */
+    if ( *(char *)&endian ) {
+	low_level_vector = (bitsize == G_64BIT)
+	    ? low_level_vectors_swapped64
+	    : low_level_vectors_swapped32;
+    } else {
+	low_level_vector = (bitsize == G_64BIT)
+	    ? low_level_vectors64
+	    : low_level_vectors32;
+    }
 
     /* check file name isn't too long */
     if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(auxfn) ) return gerr_set(GERR_NAME_TOO_LONG);
@@ -108,6 +126,7 @@ static int create_new_files(char *fn, size_t s, GCardinal max_rec)
     auxheader.spare1 = (GFlags) 0;
     auxheader.free_time = G_YEAR_DOT;
     for (i=G_Number(auxheader.spare)-1;i>=0;i--) auxheader.spare[i]=0;
+    auxheader.format = bitsize;
 
     /* write(fd,&auxheader,sizeof(auxheader)); */
     (void) (low_level_vector[GOP_WRITE_AUX_HEADER])(fd,&auxheader,1);
@@ -314,13 +333,6 @@ int gap_new_db(char *project,char *version,int read_only)
 
 
     /*
-     * Initialise
-     */
-    (void) set_low_level_vector();
-
-
-
-    /*
      * create empty db
      */
     if ( err = gap_create_db(project,version) ) {
@@ -435,4 +447,8 @@ f_proc_ret cpdb_(char *base, char *from_, char *to_,
     cpdb(base, from, to);
 
     f_proc_return();
+}
+
+void set_db_bitsize(int bs) {
+    bitsize = bs;
 }

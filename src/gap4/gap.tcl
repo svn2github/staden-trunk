@@ -17,13 +17,14 @@ proc gap4_usage {} {
 Usage: gap4 [options] [DATABASE_NAME.V]
 Options:
     -ro                Read-only
-    -maxseq            Initial maximum total consensus length
-    -maxdb             Initial maximum number of contigs + readings
+    -maxseq N          Initial maximum total consensus length
+    -maxdb N           Initial maximum number of contigs + readings
     -(no_)check        (Do not) run Check Database upon DB open
     -(no_)exec_notes   (Do not) execute OPEN/CLOS notes upon database open
     -(no_)rawdata_note (Do not) use RAWD note instead of RAWDATA env. variable
     -(no_)csel         (Do not) start up the contig selector upon db open
     -display           X Display to use
+    -bitsize N         Specifies the aux file bitsize for new databases (32/64)
     -sync              Use synchronous mode for display server (debugging)
     --                 End of argument list
     }
@@ -606,6 +607,16 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     } elseif {$arg == "-rawdata_note"} {
 	set rawdata_note 1
 
+    } elseif {$arg == "-bitsize"} {
+	if {$argc > 1} {
+            set argv [lrange $argv 1 $argc]
+            incr argc -1
+	    set bitsize [lindex $argv 0]
+	    set_db_bitsize $bitsize
+	} else {
+	    gap4_usage
+	}
+
     } elseif {$arg == "-h" || $arg == "-help" || $arg == "--help"} {
 	gap4_usage
     } else {
@@ -747,3 +758,4 @@ catch EventHandler
 #destroy .splash
 raise .
 focus -force .
+ 

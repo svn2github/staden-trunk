@@ -26,6 +26,8 @@ extern int gap_new_db(char *project,char *version, int read_only);
 
 extern int cpdb(char *base, char *from, char *to);
 
+void set_db_bitsize(int bitsize);
+
 extern int maxdb;
 
 #endif /*_GAP_CREATE_H_*/

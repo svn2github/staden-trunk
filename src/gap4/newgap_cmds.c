@@ -4976,6 +4976,24 @@ int tcl_allelic_discreps(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int tcl_set_db_bitsize(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[])
+{
+    int bitsize;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+                       "\"%s bitsize\"\n",
+                       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &bitsize);
+    set_db_bitsize(bitsize == 64 ? G_64BIT : G_32BIT);
+
+    return TCL_OK;
+}
+
 
 #if 0
 int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
@@ -5388,6 +5406,8 @@ NewGap_Init(Tcl_Interp *interp) {
 		      NULL);
     Tcl_CreateObjCommand(interp, "allelic_discreps",
 			 tcl_allelic_discreps, (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "set_db_bitsize",
+			 tcl_set_db_bitsize, (ClientData)NULL, NULL);
     
 #if 0
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
