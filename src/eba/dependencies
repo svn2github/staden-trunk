@@ -1,11 +1,11 @@
 
 # DO NOT DELETE
-$O/conf.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/os.h
-$O/conf.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
-$O/conf.o: $(SRCROOT)/io_lib/include/scf.h
 $O/conf.o: $(SRCROOT)/Misc/xalloc.h
+$O/conf.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/os.h
+$O/conf.o: $(SRCROOT)/io_lib/include/array.h
 $O/conf.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/Misc/misc.h
-$O/conf.o: $(SRCROOT)/io_lib/include/translate.h
+$O/conf.o: $(SRCROOT)/io_lib/include/scf.h
+$O/conf.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/qual.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/os.h
 $O/qual.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/qual.o: $(SRCROOT)/io_lib/include/open_trace_file.h

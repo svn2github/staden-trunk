@@ -1,2 +1,3 @@
 
 # DO NOT DELETE
+$O/check_licence.o: licence.h

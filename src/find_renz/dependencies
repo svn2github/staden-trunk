@@ -1,7 +1,7 @@
 
 # DO NOT DELETE
-$O/find_renz.o: $(SRCROOT)/Misc/getfile.h $(SRCROOT)/seq_utils/dna_utils.h
-$O/find_renz.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
-$O/find_renz.o: $(SRCROOT)/seq_utils/genetic_code.h
-$O/find_renz.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/seq_utils/sequence_formats.h
-$O/find_renz.o: $(SRCROOT)/Misc/xalloc.h
+$O/find_renz.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/Misc/getfile.h
+$O/find_renz.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/find_renz.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/Misc/misc.h
+$O/find_renz.o: $(SRCROOT)/Misc/os.h
+$O/find_renz.o: $(SRCROOT)/seq_utils/renz_utils.h

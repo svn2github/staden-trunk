@@ -1,0 +1,91 @@
+
+# DO NOT DELETE
+$O/abi/seqIOABI.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/Misc/misc.h
+$O/abi/seqIOABI.o: abi/seqIOABI.h $(SRCROOT)/Misc/os.h
+$O/abi/seqIOABI.o: include/compress.h include/abi.h abi/fpoint.h utils/mach-io.h
+$O/abi/seqIOABI.o: include/expFileIO.h include/array.h
+$O/abi/seqIOABI.o: read/Read.h include/scf.h read/translate.h
+$O/alf/seqIOALF.o: $(SRCROOT)/Misc/os.h include/scf.h read/translate.h
+$O/alf/seqIOALF.o: read/Read.h
+$O/alf/seqIOALF.o: include/compress.h utils/mach-io.h $(SRCROOT)/Misc/xalloc.h
+$O/alf/seqIOALF.o: include/expFileIO.h include/array.h
+$O/ctf/ctfCompress.o: include/scf.h
+$O/ctf/ctfCompress.o: read/Read.h $(SRCROOT)/Misc/os.h
+$O/ctf/ctfCompress.o: include/array.h
+$O/ctf/ctfCompress.o: read/translate.h
+$O/ctf/ctfCompress.o: include/expFileIO.h include/compress.h
+$O/ctf/seqIOCTF.o: include/compress.h include/seqIOCTF.h
+$O/ctf/seqIOCTF.o: read/Read.h $(SRCROOT)/Misc/os.h include/scf.h
+$O/ctf/seqIOCTF.o: include/abi.h utils/mach-io.h $(SRCROOT)/Misc/xalloc.h
+$O/ctf/seqIOCTF.o: read/translate.h include/expFileIO.h include/array.h
+$O/exp_file/expFileIO.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/exp_file/expFileIO.o: $(SRCROOT)/Misc/misc.h
+$O/exp_file/expFileIO.o: include/expFileIO.h include/array.h
+$O/plain/seqIOPlain.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/plain/seqIOPlain.o: $(SRCROOT)/Misc/xalloc.h include/plain.h
+$O/plain/seqIOPlain.o: include/compress.h include/traceType.h
+$O/plain/seqIOPlain.o: include/expFileIO.h include/array.h
+$O/plain/seqIOPlain.o: read/Read.h include/scf.h read/translate.h
+$O/read/Read.o: $(SRCROOT)/Misc/os.h include/scf.h
+$O/read/Read.o: $(SRCROOT)/Misc/xalloc.h include/traceType.h
+$O/read/Read.o: $(SRCROOT)/Misc/misc.h
+$O/read/Read.o: include/compress.h include/abi.h
+$O/read/Read.o: read/Read.h
+$O/read/Read.o: include/alf.h include/plain.h include/ztr.h include/seqIOCTF.h
+$O/read/Read.o: include/open_trace_file.h
+$O/read/Read.o: read/translate.h include/expFileIO.h include/array.h
+$O/read/scf_extras.o: $(SRCROOT)/Misc/xalloc.h include/scf.h include/expFileIO.h
+$O/read/scf_extras.o: $(SRCROOT)/Misc/os.h
+$O/read/scf_extras.o: read/Read.h
+$O/read/scf_extras.o: $(SRCROOT)/Misc/misc.h
+$O/read/scf_extras.o: include/compress.h
+$O/read/scf_extras.o: include/array.h include/traceType.h
+$O/read/scf_extras.o: read/translate.h include/open_trace_file.h
+$O/read/translate.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/read/translate.o: $(SRCROOT)/Misc/xalloc.h
+$O/read/translate.o: include/compress.h
+$O/read/translate.o: include/scf.h read/Read.h
+$O/read/translate.o: include/open_trace_file.h
+$O/read/translate.o: include/traceType.h
+$O/read/translate.o: read/translate.h include/expFileIO.h include/array.h
+$O/scf/misc_scf.o: utils/mach-io.h $(SRCROOT)/Misc/xalloc.h
+$O/scf/misc_scf.o: include/scf.h $(SRCROOT)/Misc/os.h
+$O/scf/read_scf.o: include/scf.h $(SRCROOT)/Misc/os.h
+$O/scf/read_scf.o: include/array.h
+$O/scf/read_scf.o: read/Read.h read/translate.h include/expFileIO.h
+$O/scf/read_scf.o: utils/mach-io.h $(SRCROOT)/Misc/xalloc.h include/compress.h
+$O/scf/write_scf.o: $(SRCROOT)/Misc/os.h utils/mach-io.h $(SRCROOT)/Misc/xalloc.h
+$O/scf/write_scf.o: include/scf.h
+$O/utils/compress.o: $(SRCROOT)/Misc/os.h
+$O/utils/compress.o: include/compress.h
+$O/utils/find.o: $(SRCROOT)/Misc/misc.h
+$O/utils/find.o: $(SRCROOT)/Misc/xalloc.h
+$O/utils/find.o: $(SRCROOT)/Misc/os.h
+$O/utils/mach-io.o: utils/mach-io.h $(SRCROOT)/Misc/os.h
+$O/utils/open_trace_file.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/utils/open_trace_file.o: include/open_trace_file.h $(SRCROOT)/Misc/misc.h
+$O/utils/open_trace_file.o: utils/tar_format.h include/compress.h
+$O/utils/read_alloc.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/utils/read_alloc.o: $(SRCROOT)/Misc/xalloc.h read/Read.h
+$O/utils/read_alloc.o: include/array.h include/compress.h
+$O/utils/read_alloc.o: include/scf.h read/translate.h include/expFileIO.h
+$O/utils/traceType.o: $(SRCROOT)/Misc/os.h include/scf.h read/translate.h
+$O/utils/traceType.o: read/Read.h
+$O/utils/traceType.o: include/compress.h include/open_trace_file.h
+$O/utils/traceType.o: include/expFileIO.h include/array.h
+$O/utils/traceType.o: include/traceType.h
+$O/ztr/compression.o: $(SRCROOT)/Misc/os.h
+$O/ztr/compression.o: include/compress.h $(SRCROOT)/Misc/xalloc.h
+$O/ztr/compression.o: include/zlib.h include/zconf.h
+$O/ztr/compression.o: read/translate.h include/expFileIO.h include/array.h
+$O/ztr/compression.o: ztr/compression.h include/ztr.h read/Read.h include/scf.h
+$O/ztr/ztr.o: include/scf.h read/translate.h
+$O/ztr/ztr.o: $(SRCROOT)/Misc/xalloc.h read/Read.h $(SRCROOT)/Misc/os.h
+$O/ztr/ztr.o: include/compress.h include/ztr.h ztr/compression.h include/zlib.h
+$O/ztr/ztr.o: include/expFileIO.h include/array.h
+$O/ztr/ztr.o: include/zconf.h
+$O/ztr/ztr_translate.o: include/scf.h read/translate.h
+$O/ztr/ztr_translate.o: include/compress.h include/ztr.h
+$O/ztr/ztr_translate.o: read/Read.h $(SRCROOT)/Misc/os.h
+$O/ztr/ztr_translate.o: $(SRCROOT)/Misc/xalloc.h
+$O/ztr/ztr_translate.o: include/expFileIO.h include/array.h

@@ -3,6 +3,9 @@
 $O/getABISampleName.o: $(SRCROOT)/io_lib/include/seqIOABI.h $(SRCROOT)/io_lib/include/os.h
 $O/getABIcomment.o: $(SRCROOT)/io_lib/include/seqIOABI.h $(SRCROOT)/io_lib/include/os.h
 $O/getABIdate.o: $(SRCROOT)/io_lib/include/mach-io.h $(SRCROOT)/io_lib/include/os.h
+$O/getABIfloat.o: $(SRCROOT)/io_lib/include/mach-io.h
+$O/getABIfloat.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/io_lib/include/fpoint.h
+$O/getABIfloat.o: $(SRCROOT)/io_lib/include/seqIOABI.h
 $O/getABIhex.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/io_lib/include/mach-io.h
 $O/getABIhex.o: $(SRCROOT)/io_lib/include/seqIOABI.h
 $O/getABIraw.o: $(SRCROOT)/io_lib/include/mach-io.h

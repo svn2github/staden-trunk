@@ -1,10 +1,10 @@
 
 # DO NOT DELETE
+$O/polyA_clip.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/polyA_clip.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/polyA_clip.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/os.h
 $O/polyA_clip.o: $(SRCROOT)/tk_utils/licence.h $(SRCROOT)/Misc/misc.h
-$O/polyA_clip.o: seqInfo.h $(SRCROOT)/Misc/array.h
-$O/polyA_clip.o: $(SRCROOT)/Misc/xerror.h
+$O/polyA_clip.o: seqInfo.h
 $O/seqInfo.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/os.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/scf_extras.h

@@ -1,206 +1,213 @@
 
 # DO NOT DELETE
-$O/align.o: align.hpp sp_alignment_structs.h sp_alignment.h
-$O/align.o: matrix.hpp
-$O/basecall.o: basecall.hpp
-$O/caller.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/caller.o: $(SRCROOT)/io_lib/include/array.h
-$O/caller.o: $(SRCROOT)/io_lib/include/compress.h
-$O/caller.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/caller.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/caller.o: $(SRCROOT)/Misc/xalloc.h
+$O/align.o: ./align.hpp ./sp_alignment_structs.h ./sp_alignment.h
+$O/align.o: ./matrix.hpp
+$O/basecall.o: ./basecall.hpp
+$O/caller.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/caller.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/caller.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/caller.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/caller.o: ./caller.hpp ./matrix.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
 $O/caller.o: $(SRCROOT)/Misc/os.h
-$O/caller.o: caller.hpp matrix.hpp trace.hpp staden.h $(SRCROOT)/Misc/misc.h
-$O/caller_base.o: $(SRCROOT)/Misc/misc.h
+$O/caller.o: $(SRCROOT)/io_lib/include/compress.h
 $O/caller_base.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/caller_base.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/caller_base.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/caller_base.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
-$O/caller_base.o: $(SRCROOT)/io_lib/include/compress.h caller.hpp
+$O/caller_base.o: ./caller.hpp
+$O/caller_base.o: ./dnatable.hpp ./caller_base.hpp ./matrix.hpp ./trace.hpp
+$O/caller_base.o: ./staden.h $(SRCROOT)/Misc/misc.h
+$O/caller_base.o: $(SRCROOT)/io_lib/include/compress.h
 $O/caller_base.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/caller_base.o: dnatable.hpp caller_base.hpp matrix.hpp trace.hpp staden.h
 $O/caller_level.o: $(SRCROOT)/Misc/misc.h
 $O/caller_level.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/caller_level.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/caller_level.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/caller_level.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
-$O/caller_level.o: $(SRCROOT)/io_lib/include/compress.h caller.hpp
+$O/caller_level.o: ./caller.hpp ./matrix.hpp
+$O/caller_level.o: ./dnatable.hpp ./caller_level.hpp ./trace.hpp ./staden.h
+$O/caller_level.o: $(SRCROOT)/io_lib/include/compress.h
 $O/caller_level.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/caller_level.o: dnatable.hpp caller_level.hpp trace.hpp staden.h
-$O/caller_level.o: matrix.hpp
-$O/caller_snr.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/caller_snr.o: $(SRCROOT)/io_lib/include/array.h
-$O/caller_snr.o: $(SRCROOT)/io_lib/include/compress.h caller.hpp matrix.hpp
-$O/caller_snr.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/caller_snr.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/caller_snr.o: $(SRCROOT)/Misc/xalloc.h
+$O/caller_snr.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/caller_snr.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/caller_snr.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/caller_snr.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/caller_snr.o: ./caller_snr.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
+$O/caller_snr.o: ./matrix.hpp
 $O/caller_snr.o: $(SRCROOT)/Misc/os.h
-$O/caller_snr.o: caller_snr.hpp trace.hpp staden.h $(SRCROOT)/Misc/misc.h
-$O/dnatable.o: dnatable.hpp
-$O/mutationtag.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/mutationtag.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
-$O/mutationtag.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
-$O/mutationtag.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
-$O/mutationtag.o: $(SRCROOT)/io_lib/include/compress.h
-$O/mutationtag.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutationtag.o: listitem.hpp
-$O/mutationtag.o: mutationtag.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
+$O/caller_snr.o: $(SRCROOT)/io_lib/include/compress.h ./caller.hpp
+$O/dnatable.o: ./dnatable.hpp
+$O/mutationtag.o: $(SRCROOT)/Misc/xalloc.h
+$O/mutationtag.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/mutationtag.o: $(SRCROOT)/io_lib/include/array.h
+$O/mutationtag.o: $(SRCROOT)/io_lib/include/compress.h ./listitem.hpp
+$O/mutationtag.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
+$O/mutationtag.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutationtag.o: ./mutationtag.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
+$O/mutationtag.o: $(SRCROOT)/Misc/os.h
+$O/mutationtag_utils.o: $(SRCROOT)/Misc/misc.h
 $O/mutationtag_utils.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutationtag_utils.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutationtag_utils.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutationtag_utils.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutationtag_utils.o: ./list.hpp ./array.hpp ./mutationtag.hpp ./listitem.hpp
+$O/mutationtag_utils.o: ./mutationtag_utils.hpp ./mutlib.h ./staden.h
 $O/mutationtag_utils.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutationtag_utils.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutationtag_utils.o: list.hpp array.hpp mutationtag.hpp listitem.hpp
-$O/mutationtag_utils.o: mutationtag_utils.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/mutscan.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
-$O/mutscan.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/mutscan.o: $(SRCROOT)/io_lib/include/array.h
-$O/mutscan.o: $(SRCROOT)/io_lib/include/compress.h mutscan.hpp mutlib.h
-$O/mutscan.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/mutscan.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/mutscan.o: $(SRCROOT)/Misc/xalloc.h
-$O/mutscan.o: matrix.hpp trace.hpp staden.h
-$O/mutscan.o: array.hpp mutationtag.hpp listitem.hpp mutscan_preprocess.hpp
-$O/mutscan.o: list.hpp align.hpp sp_alignment_structs.h sp_alignment.h
-$O/mutscan.o: mutscan_analysis.hpp
-$O/mutscan.o: mutscan_parameters.hpp parameter.hpp mutationtag_utils.hpp
+$O/mutscan.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/mutscan.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/mutscan.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/mutscan.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan.o: ./list.hpp ./align.hpp ./sp_alignment_structs.h ./sp_alignment.h
+$O/mutscan.o: ./listitem.hpp ./mutscan_preprocess.hpp ./mutscan_analysis.hpp
+$O/mutscan.o: ./matrix.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
+$O/mutscan.o: ./mutationtag_utils.hpp ./array.hpp ./mutationtag.hpp
+$O/mutscan.o: ./mutlib.h ./mutscan_parameters.hpp ./parameter.hpp
+$O/mutscan.o: $(SRCROOT)/Misc/os.h
+$O/mutscan.o: $(SRCROOT)/io_lib/include/compress.h ./mutscan.hpp
 $O/mutscan_analysis.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutscan_analysis.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutscan_analysis.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutscan_analysis.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan_analysis.o: ./array.hpp ./list.hpp ./mutationtag.hpp ./listitem.hpp
+$O/mutscan_analysis.o: ./caller.hpp ./caller_level.hpp ./mutscan_analysis.hpp
+$O/mutscan_analysis.o: ./dnatable.hpp ./caller_base.hpp ./matrix.hpp ./trace.hpp
+$O/mutscan_analysis.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
+$O/mutscan_analysis.o: ./mutscan_preprocess.hpp
 $O/mutscan_analysis.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutscan_analysis.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutscan_analysis.o: array.hpp list.hpp mutationtag.hpp listitem.hpp
-$O/mutscan_analysis.o: caller.hpp caller_level.hpp mutscan_analysis.hpp
-$O/mutscan_analysis.o: dnatable.hpp caller_base.hpp matrix.hpp trace.hpp
-$O/mutscan_analysis.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/mutscan_analysis.o: mutscan_preprocess.hpp
 $O/mutscan_helper.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutscan_helper.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutscan_helper.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutscan_helper.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan_helper.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/mutscan_helper.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutscan_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutscan_helper.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
+$O/mutscan_parameters.o: $(SRCROOT)/Misc/misc.h
 $O/mutscan_parameters.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutscan_parameters.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutscan_parameters.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutscan_parameters.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan_parameters.o: ./mutscan_parameters.hpp ./mutlib.h ./staden.h
+$O/mutscan_parameters.o: ./parameter.hpp
 $O/mutscan_parameters.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutscan_parameters.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutscan_parameters.o: mutscan_parameters.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/mutscan_parameters.o: parameter.hpp
+$O/mutscan_preprocess.o: $(SRCROOT)/Misc/misc.h
 $O/mutscan_preprocess.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutscan_preprocess.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutscan_preprocess.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutscan_preprocess.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan_preprocess.o: ./array.hpp ./matrix.hpp ./trace.hpp
+$O/mutscan_preprocess.o: ./mutscan_preprocess.hpp ./mutlib.h ./staden.h
 $O/mutscan_preprocess.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutscan_preprocess.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutscan_preprocess.o: array.hpp matrix.hpp trace.hpp
-$O/mutscan_preprocess.o: mutscan_preprocess.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
 $O/mutscan_validate.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/mutscan_validate.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/mutscan_validate.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/mutscan_validate.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/mutscan_validate.o: ./mutscan_parameters.hpp ./parameter.hpp
+$O/mutscan_validate.o: ./validate.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/mutscan_validate.o: $(SRCROOT)/io_lib/include/compress.h
 $O/mutscan_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/mutscan_validate.o: mutscan_parameters.hpp parameter.hpp
-$O/mutscan_validate.o: validate.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
 $O/muttag.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/muttag.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/muttag.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/muttag.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/muttag.o: ./muttag.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/muttag.o: $(SRCROOT)/Misc/os.h
-$O/muttag.o: $(SRCROOT)/io_lib/include/compress.h listitem.hpp
-$O/muttag.o: muttag.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/peakcall.o: peakcall.hpp listitem.hpp
-$O/read_matrix.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h read_matrix.h
+$O/muttag.o: $(SRCROOT)/io_lib/include/compress.h ./listitem.hpp
+$O/peakcall.o: ./peakcall.hpp ./listitem.hpp
 $O/read_matrix.o: $(SRCROOT)/Misc/misc.h
+$O/read_matrix.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/read_matrix.o: read_matrix.h
+$O/sp_align_lib.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/sp_align_lib.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/sp_align_lib.o: $(SRCROOT)/io_lib/include/array.h
-$O/sp_align_lib.o: $(SRCROOT)/io_lib/include/compress.h sp_alignment_structs.h
+$O/sp_align_lib.o: $(SRCROOT)/io_lib/include/compress.h ./sp_alignment_structs.h
 $O/sp_align_lib.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/sp_align_lib.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/sp_align_lib.o: $(SRCROOT)/Misc/os.h staden.h $(SRCROOT)/Misc/misc.h
-$O/sp_align_lib.o: $(SRCROOT)/Misc/xalloc.h
-$O/sp_align_lib.o: sp_alignment.h sp_align_lib.h read_matrix.h
+$O/sp_align_lib.o: ./sp_alignment.h ./sp_align_lib.h read_matrix.h
+$O/sp_align_lib.o: $(SRCROOT)/Misc/os.h ./staden.h
 $O/sp_alignment.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
 $O/sp_alignment.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/sp_alignment.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/sp_alignment.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/sp_alignment.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
-$O/sp_alignment.o: staden.h
+$O/sp_alignment.o: ./sp_alignment.h read_matrix.h
+$O/sp_alignment.o: ./sp_alignment_structs.h ./sp_align_lib.h ./sp_hash_lib.h
+$O/sp_alignment.o: ./staden.h
 $O/sp_alignment.o: $(SRCROOT)/io_lib/include/compress.h
-$O/sp_alignment.o: sp_alignment.h read_matrix.h
-$O/sp_alignment.o: sp_alignment_structs.h sp_align_lib.h sp_hash_lib.h
 $O/sp_hash_lib.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/sp_hash_lib.o: $(SRCROOT)/io_lib/include/array.h
-$O/sp_hash_lib.o: $(SRCROOT)/io_lib/include/compress.h sp_alignment_structs.h
+$O/sp_hash_lib.o: $(SRCROOT)/io_lib/include/compress.h ./sp_alignment_structs.h
 $O/sp_hash_lib.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/sp_hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/sp_hash_lib.o: staden.h $(SRCROOT)/Misc/misc.h
+$O/sp_hash_lib.o: ./sp_hash_lib.h ./sp_alignment.h ./sp_align_lib.h
+$O/sp_hash_lib.o: ./staden.h $(SRCROOT)/Misc/misc.h
 $O/sp_hash_lib.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/sp_hash_lib.o: sp_hash_lib.h sp_alignment.h sp_align_lib.h
+$O/sp_matrix.o: ./sp_matrix.h $(SRCROOT)/Misc/misc.h
 $O/sp_matrix.o: $(SRCROOT)/Misc/xalloc.h
 $O/sp_matrix.o: $(SRCROOT)/Misc/os.h
-$O/sp_matrix.o: sp_matrix.h $(SRCROOT)/Misc/misc.h
-$O/stringlist.o: stringlist.hpp
-$O/tagarray.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/tagarray.o: $(SRCROOT)/io_lib/include/array.h
-$O/tagarray.o: $(SRCROOT)/io_lib/include/compress.h list.hpp muttag.hpp listitem.hpp
-$O/tagarray.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/tagarray.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/tagarray.o: $(SRCROOT)/Misc/xalloc.h
+$O/stringlist.o: ./stringlist.hpp
+$O/tagarray.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/tagarray.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/tagarray.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/tagarray.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tagarray.o: ./muttag.hpp ./listitem.hpp
+$O/tagarray.o: ./tagarray.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/tagarray.o: $(SRCROOT)/Misc/os.h
-$O/tagarray.o: tagarray.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/trace.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
-$O/trace.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
-$O/trace.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
-$O/trace.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tagarray.o: $(SRCROOT)/io_lib/include/compress.h ./list.hpp
+$O/trace.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/trace.o: $(SRCROOT)/io_lib/include/array.h
+$O/trace.o: $(SRCROOT)/io_lib/include/compress.h ./array.hpp ./trace.hpp
+$O/trace.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
+$O/trace.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
+$O/trace.o: ./staden.h $(SRCROOT)/Misc/misc.h
+$O/trace.o: $(SRCROOT)/Misc/xalloc.h
 $O/trace.o: $(SRCROOT)/Misc/os.h
-$O/trace.o: $(SRCROOT)/io_lib/include/compress.h array.hpp
-$O/trace.o: staden.h $(SRCROOT)/Misc/misc.h
-$O/trace.o: trace.hpp
-$O/tracealign.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
-$O/tracealign.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/tracealign.o: $(SRCROOT)/io_lib/include/array.h
-$O/tracealign.o: $(SRCROOT)/io_lib/include/compress.h muttag.hpp mutlib.h listitem.hpp
-$O/tracealign.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/tracealign.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/tracealign.o: $(SRCROOT)/Misc/xalloc.h
-$O/tracealign.o: matrix.hpp trace.hpp staden.h
-$O/tracealign.o: list.hpp align.hpp sp_alignment_structs.h sp_alignment.h
-$O/tracealign.o: peakcall.hpp tagarray.hpp tracealign.hpp array.hpp
-$O/tracealign.o: tracealign_cache.hpp tracealign_preprocess.hpp
+$O/tracealign.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/tracealign.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/tracealign.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/tracealign.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracealign.o: ./list.hpp ./align.hpp ./sp_alignment_structs.h
+$O/tracealign.o: ./matrix.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracealign.o: ./mutlib.h ./listitem.hpp ./peakcall.hpp ./tagarray.hpp
+$O/tracealign.o: ./sp_alignment.h
+$O/tracealign.o: ./tracealign.hpp ./array.hpp ./tracealign_cache.hpp
+$O/tracealign.o: ./tracealign_preprocess.hpp
+$O/tracealign.o: $(SRCROOT)/Misc/os.h
+$O/tracealign.o: $(SRCROOT)/io_lib/include/compress.h ./muttag.hpp
+$O/tracealign_cache.o: $(SRCROOT)/Misc/misc.h
 $O/tracealign_cache.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracealign_cache.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracealign_cache.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/tracealign_cache.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracealign_cache.o: ./array.hpp
+$O/tracealign_cache.o: ./tracealign_cache.hpp ./matrix.hpp
+$O/tracealign_cache.o: ./tracealign_preprocess.hpp ./trace.hpp ./staden.h
 $O/tracealign_cache.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracealign_cache.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracealign_cache.o: array.hpp
-$O/tracealign_cache.o: trace.hpp staden.h $(SRCROOT)/Misc/misc.h
-$O/tracealign_cache.o: tracealign_cache.hpp matrix.hpp tracealign_preprocess.hpp
 $O/tracealign_helper.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracealign_helper.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracealign_helper.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/tracealign_helper.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracealign_helper.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracealign_helper.o: ./trace.hpp ./tracealign_cache.hpp ./matrix.hpp
+$O/tracealign_helper.o: ./tracealign_preprocess.hpp ./array.hpp
 $O/tracealign_helper.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracealign_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracealign_helper.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/tracealign_helper.o: trace.hpp tracealign_cache.hpp matrix.hpp
-$O/tracealign_helper.o: tracealign_preprocess.hpp array.hpp
 $O/tracealign_interpolate.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/Read.h
 $O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/array.h
-$O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/compress.h align.hpp
+$O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/compress.h ./align.hpp
 $O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tracealign_interpolate.o: $(SRCROOT)/io_lib/include/translate.h
+$O/tracealign_interpolate.o: ./array.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracealign_interpolate.o: ./matrix.hpp
+$O/tracealign_interpolate.o: ./sp_alignment_structs.h ./sp_alignment.h
 $O/tracealign_interpolate.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracealign_interpolate.o: array.hpp trace.hpp staden.h $(SRCROOT)/Misc/misc.h
-$O/tracealign_interpolate.o: sp_alignment_structs.h sp_alignment.h matrix.hpp
+$O/tracealign_preprocess.o: $(SRCROOT)/Misc/misc.h
 $O/tracealign_preprocess.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/Read.h
 $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
@@ -208,71 +215,71 @@ $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/array.h
 $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tracealign_preprocess.o: $(SRCROOT)/io_lib/include/translate.h
+$O/tracealign_preprocess.o: ./array.hpp ./basecall.hpp
+$O/tracealign_preprocess.o: ./tracealign_preprocess.hpp ./trace.hpp ./staden.h
 $O/tracealign_preprocess.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracealign_preprocess.o: array.hpp basecall.hpp tracealign_preprocess.hpp
-$O/tracealign_preprocess.o: trace.hpp staden.h $(SRCROOT)/Misc/misc.h
 $O/tracealign_validate.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracealign_validate.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracealign_validate.o: $(SRCROOT)/io_lib/include/array.h
 $O/tracealign_validate.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracealign_validate.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tracealign_validate.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracealign_validate.o: ./validate.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/tracealign_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracealign_validate.o: validate.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/tracediff.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/tracediff.o: $(SRCROOT)/io_lib/include/array.h
-$O/tracediff.o: $(SRCROOT)/io_lib/include/compress.h muttag.hpp mutlib.h listitem.hpp
-$O/tracediff.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/tracediff.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/tracediff.o: $(SRCROOT)/Misc/xalloc.h
+$O/tracediff.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/tracediff.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
+$O/tracediff.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/tracediff.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracediff.o: ./array.hpp ./align.hpp ./sp_alignment_structs.h
+$O/tracediff.o: ./list.hpp ./trace.hpp ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracediff.o: ./mutlib.h ./listitem.hpp ./tagarray.hpp ./tracealign.hpp
+$O/tracediff.o: ./sp_alignment.h ./matrix.hpp ./tracediff.hpp
+$O/tracediff.o: ./tracediff_parameters.hpp ./parameter.hpp
 $O/tracediff.o: $(SRCROOT)/Misc/os.h
-$O/tracediff.o: list.hpp trace.hpp staden.h $(SRCROOT)/Misc/misc.h
-$O/tracediff.o: sp_alignment_structs.h sp_alignment.h matrix.hpp tracediff.hpp
-$O/tracediff.o: tagarray.hpp tracealign.hpp array.hpp align.hpp
-$O/tracediff.o: tracediff_parameters.hpp parameter.hpp
+$O/tracediff.o: $(SRCROOT)/io_lib/include/compress.h ./muttag.hpp
 $O/tracediff_helper.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracediff_helper.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracediff_helper.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/tracediff_helper.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracediff_helper.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracediff_helper.o: ./muttag.hpp ./listitem.hpp
+$O/tracediff_helper.o: ./sp_alignment_structs.h ./sp_alignment.h ./matrix.hpp
+$O/tracediff_helper.o: ./trace.hpp ./tracealign.hpp ./array.hpp ./align.hpp
 $O/tracediff_helper.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracediff_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracediff_helper.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/tracediff_helper.o: muttag.hpp listitem.hpp
-$O/tracediff_helper.o: sp_alignment_structs.h sp_alignment.h matrix.hpp
-$O/tracediff_helper.o: trace.hpp tracealign.hpp array.hpp align.hpp
 $O/tracediff_mutations.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/array.h
-$O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/compress.h list.hpp array.hpp
+$O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/compress.h ./list.hpp ./array.hpp
 $O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tracediff_mutations.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracediff_mutations.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
+$O/tracediff_mutations.o: ./trace.hpp ./muttag.hpp ./listitem.hpp ./peakcall.hpp
+$O/tracediff_mutations.o: ./tracediff_parameters.hpp ./parameter.hpp
 $O/tracediff_mutations.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracediff_mutations.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
-$O/tracediff_mutations.o: trace.hpp muttag.hpp listitem.hpp peakcall.hpp
-$O/tracediff_mutations.o: tracediff_parameters.hpp parameter.hpp
 $O/tracediff_parameters.o: $(SRCROOT)/Misc/misc.h
 $O/tracediff_parameters.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/Read.h
 $O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/array.h
-$O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/compress.h parameter.hpp
+$O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/compress.h ./parameter.hpp
 $O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tracediff_parameters.o: $(SRCROOT)/io_lib/include/translate.h
+$O/tracediff_parameters.o: ./tracediff_parameters.hpp ./mutlib.h ./staden.h
 $O/tracediff_parameters.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracediff_parameters.o: tracediff_parameters.hpp mutlib.h staden.h
 $O/tracediff_validate.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tracediff_validate.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tracediff_validate.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
 $O/tracediff_validate.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/Read.h
+$O/tracediff_validate.o: ./tracediff_parameters.hpp ./parameter.hpp
+$O/tracediff_validate.o: ./validate.hpp ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/tracediff_validate.o: $(SRCROOT)/io_lib/include/compress.h
 $O/tracediff_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-$O/tracediff_validate.o: tracediff_parameters.hpp parameter.hpp
-$O/tracediff_validate.o: validate.hpp mutlib.h staden.h $(SRCROOT)/Misc/misc.h
 $O/validate.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/validate.o: $(SRCROOT)/io_lib/include/array.h
 $O/validate.o: $(SRCROOT)/io_lib/include/compress.h
 $O/validate.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/validate.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
+$O/validate.o: ./mutlib.h ./staden.h $(SRCROOT)/Misc/misc.h
 $O/validate.o: $(SRCROOT)/Misc/xalloc.h
 $O/validate.o: $(SRCROOT)/Misc/os.h
-$O/validate.o: mutlib.h staden.h $(SRCROOT)/Misc/misc.h
