@@ -34,7 +34,13 @@ int main(int argc, char **argv) {
     }
 
     while(fread(&blk, sizeof(blk), 1, fp) == 1) {
-	if (!blk.header.name[0])
+	/*
+	 * If a directory is too large to fit in the name (>100) but short
+	 * enough to fit in the prefix the name field will be empty, this is
+	 * not the cas for ordinary files where the name field is always
+	 * non-empty
+	 */
+	if (!blk.header.name[0] && !blk.header.prefix[0])
 	    break;
 
         /* get size of member, rounded to a multiple of TBLOCK */
@@ -50,7 +56,7 @@ int main(int argc, char **argv) {
 	     */
             if (LongLink == 0) {
                 (void) strncpy(member, blk.header.prefix, 155);
-	        if (strlen(blk.header.prefix) > 0)
+	        if (strlen(blk.header.prefix) > 0 && blk.header.name[0])
 		    (void) strcat(member, "/");
     	        (void) strncat(member, blk.header.name, 100);
             }
