@@ -113,8 +113,10 @@ proc global_params {f} {
         -max_score_drop 0.2 \
         -mandatory_ratio 0.4 \
         -min_extension 50 \
+	-chk_template_stat 0 \
+	-min_vector_len 15 \
         -pwalk_search_dist 100 \
-        -pwalk_max_match 10 \
+        -pwalk_max_match 12.1 \
         -pwalk_noligos 4 \
         -pwalk_ntemplates 2 \
         -pwalk_offset1 130 \

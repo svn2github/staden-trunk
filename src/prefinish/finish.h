@@ -59,6 +59,10 @@ typedef struct {
     int    no_consensus;	/* Optimisation: do not calculate consensus */
     int    no_filter;		/* Optimisation: no low-complexity filter */
     int    regexp_templates;	/* How to match -skip/avail_templates */
+    int    penalise_overlaps;   /* Whether to reject virt.seqs on vert.seqs */
+    int    reject_fake_templates; /* Seqs with no trace => do not pick from */
+    int    chk_template_stat;	/* Check for consistency, default yes */
+    int    min_vector_len;      /* Minimum length of *VEC tags to be real */
 
     /* Options for resequencing */
     int	   reseq_length;	/* Expected length of normal resequencing */

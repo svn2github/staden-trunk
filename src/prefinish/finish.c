@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.28"
+#define FINISH_VERSION "1.30"
 
 #include <tcl.h>
 #include <limits.h>
@@ -92,6 +92,10 @@ static finish_t *finish_new(void) {
     fin->opts.no_consensus	= 0;
     fin->opts.no_filter		= 0;
     fin->opts.regexp_templates  = 0;
+    fin->opts.penalise_overlaps = 1;
+    fin->opts.reject_fake_templates = 1;
+    fin->opts.chk_template_stat = 1;
+    fin->opts.min_vector_len	= 10;
     fin->opts.reseq_length	= 400;
     fin->opts.reseq_nsolutions	= 4;
     fin->opts.long_length       = 700;
@@ -503,7 +507,7 @@ static int configure_skip_templates(finish_t *fin,
 	     * the regexp compiler from breaking.
 	     */
 #define REGBLOCKS 80
-	    while (fgets(line, 1024, fp) && ++r_exp_elements < REGBLOCKS) {
+	    while (++r_exp_elements < REGBLOCKS && fgets(line, 1024, fp)) {
 		char *cp;
 		int len;
 		
@@ -540,8 +544,8 @@ static int configure_skip_templates(finish_t *fin,
 		    sprintf(r_exp, "%s", line);
 		}
 	    }
-	    
-	    /* Compiler our up-to-80-element expression */
+
+	    /* Compile our up-to-80-element expression */
 	    if (r_exp) {
 		char *comp;
 		if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
@@ -623,7 +627,7 @@ static int skip_fake_templates(finish_t *fin) {
     int i;
     GReadings r;
 
-    if (fin->fake_searched)
+    if (fin->fake_searched || fin->opts.reject_fake_templates == 0)
 	return TCL_OK;
 
     if (!fin->template_skip) {
@@ -734,6 +738,14 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.no_filter)},
 	{"-regexp_templates",  ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.regexp_templates)},
+	{"-penalise_overlaps", ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.penalise_overlaps)},
+	{"-reject_fake_templates",  ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.reject_fake_templates)},
+	{"-chk_template_stat", ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.chk_template_stat)},
+	{"-min_vector_len", ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.min_vector_len)},
 	{"-reseq_length",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.reseq_length)},
 	{"-reseq_nsolutions",  ARG_INT,   1, NULL,
@@ -1118,7 +1130,8 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	/* Check for cloning (cosmid, bac, etc) vector at contig ends */
 	find_cloning_vector(fin->io, fin->contig,
 			    &fin->cvec_left, &fin->cvec_right,
-			    fin->opts.svec_as_cvec);
+			    fin->opts.svec_as_cvec,
+			    fin->opts.min_vector_len);
 
 	if (contigs)
 	    xfree(contigs);
