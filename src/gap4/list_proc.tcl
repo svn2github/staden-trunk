@@ -45,7 +45,7 @@ proc ListGet {name} {
 
 #############################################################################
 # List file IO
-proc ListLoad {file name} {
+proc ListLoad {file name {tag {}}} {
     global NGList NGLists
 
     if {[catch {set f [open "$file"]}]} {
@@ -64,6 +64,10 @@ proc ListLoad {file name} {
 	SetReadingList $list
     } else {
 	ListCreate $name $list
+	if {$tag != ""} {
+	    global NGListTag
+	    set NGListTag($name) $tag
+	}
     }
 
     return $list
@@ -400,8 +404,15 @@ proc ListEditUpdate {t name args} {
 
     $t delete 1.0 end
     if {$NGListTag($name) != ""} {
-	foreach i $NGList($name) {
-	    $t insert end "$i" $NGListTag($name) "\n"
+	if {$NGListTag($name) == "SEQID"} {
+	    foreach i $NGList($name) {
+		regexp {([[:space:]]*)([^[:space:]]*)(.*)} $i _ l m r
+		$t insert end $l "" $m $NGListTag($name) "$r\n" ""
+	    }
+	} else {
+	    foreach i $NGList($name) {
+		$t insert end "$i" $NGListTag($name) "\n"
+	    }
 	}
     } else {
 	foreach i $NGList($name) {
@@ -685,7 +696,7 @@ proc PrintListDialog {} {
 #
 # Load a list from a file
 # 
-proc LoadList2 {t file name} {
+proc LoadList2 {t file name {tag {}}} {
     if {"$file" == ""} {
 	bell
 	return
@@ -695,7 +706,7 @@ proc LoadList2 {t file name} {
     if {$name != "readings"} {
 	if {![ListWritable $name]} return
     }
-    ListLoad $file $name
+    ListLoad $file $name $tag
     destroy $t
     ListEdit $name
 }
@@ -709,15 +720,17 @@ proc LoadListDialog {} {
 
     getFname $t.file [keylget gap_defs LOAD_LIST.FILENAME] load
     getLname $t.list [keylget gap_defs LOAD_LIST.LISTNAME] load
+    xyn $t.seqid -label "Reading list?"
 
     okcancelhelp $t.ok \
         -ok_command "LoadList2 $t \[entrybox_get $t.file.entry\] \
-		               \[entrybox_get $t.list.entry\]" \
+		               \[entrybox_get $t.list.entry\] \
+			       \[lindex {{} SEQID} \[$t.seqid get\]\]" \
         -cancel_command "destroy $t" \
 	-help_command "show_help gap4 {List-Commands}" \
         -bd 2 -relief groove
 
-    pack $t.file $t.list $t.ok -side top -fill both
+    pack $t.file $t.list $t.seqid $t.ok -side top -fill both
 } 
 
 #
