@@ -1,3 +1,589 @@
+2004-10-27  jkbonfield  <jkbonfield>
+
+	* src/spin_emboss/acd2tcl.tcl:
+	(09:31:16) Updated to work with the latest ACD specification used
+	in Emboss 2.9.0. This meant adding toggle and directory types. 
+
+	* src/spin_emboss/create_emboss_files.tcl:
+	(09:32:35) Updated to look for ACDs in share instead of share/data
+	(change meaning it works with emboss 2.9.0). 
+
+	* src/spin_emboss/emboss_utils.tcl,
+	* src/spin_emboss/tclIndex:
+	(09:33:44) Added an init_dialogue function and other bits to cope
+	with the new implicit "acdprotein" variable. Now works with emboss
+	2.9.0. 
+
+	* tables/emboss_menu:
+	(09:35:58) Regenerated from emboss 2.9.0. 
+
+        * gaprc:
+	(10:46:29) Improved the choice of background colours. Thanks Nancy!
+
+2004-10-26  jkbonfield  <jkbonfield>
+
+	* doc/Makefile:
+	(10:20:04) Tidyup of distrib building. 
+
+	* doc/manual/Makefile:
+	(10:21:55) *** empty log message *** 
+
+	* doc/manual/manual.texi,
+	* doc/manual/mini_manual.texi:
+	(10:23:06) Moved contents pages to start of output. 
+
+	* doc/manual/tools/update-nodes:
+	(10:23:33) Use relative pathnames instead of an absolute DOCDIR. 
+
+	* src/Makefile:
+	(10:23:56) Updated distrib building. 
+
+	* src/pregap4/templates.tcl:
+	(10:24:54) Disabled the filebrowser memory of last directory for
+	the add naming scheme / config template. 
+
+	* src/spin/tkSeqedUtils.c:
+	(10:25:33) Include <tk.h> so that the Tk xlib is picked up on
+	Windows. 
+
+	* src/gap4/f2c.h:
+	(10:32:31) Added min/max defs (so that legacy_f2c.c works) 
+
+	* src/mk/alpha.mk:
+	(10:35:47) Removed -lfor as it's no longer needed with our new
+	f2c.c hacks. 
+
+	* src/trev/trev.tcl:
+	(13:55:34) Set version to 1.9 
+
+	* src/pregap4/gui.tcl:
+	(13:57:29) Updated version to 1.5 
+
+	* src/gap4/gap.tcl:
+	(13:57:50) Updated version to 4.10 
+
+2004-10-25  jkbonfield  <jkbonfield>
+
+	* src/gap4/edUtils2.c:
+	(11:03:36) Temporarily disable the "show read pair traces" option
+	when bringing up all traces on the consensus (to avoid duplicates
+	appearing in the trace display). 
+
+	* tables/gaprc:
+	(11:16:20) Minor defaults adjustments. 
+
+	* doc/manual/2nd_highest_confidence.unix.png,
+	* doc/manual/assembly.CAP3.unix.png,
+	* doc/manual/assembly.cap2.unix.png,
+	* doc/manual/assembly.directed.unix.png,
+	* doc/manual/assembly.fak2.unix.png,
+	* doc/manual/assembly.new.unix.png,
+	* doc/manual/assembly.one.unix.png,
+	* doc/manual/assembly.screen.unix.png,
+	* doc/manual/assembly.shot.unix.png,
+	* doc/manual/assembly.single.unix.png,
+	* doc/manual/break_contig.unix.png,
+	* doc/manual/calc_consensus.extended.unix.png,
+	* doc/manual/calc_consensus.normal.unix.png,
+	* doc/manual/calc_consensus.quality.unix.png:
+	(11:22:32) Replaced all GIFs with PNGs. 
+
+	* doc/manual/NBase_clip.unix.png,
+	* doc/manual/c_order_lb.unix.png,
+	* doc/manual/c_order_t1.small.unix.png,
+	* doc/manual/c_order_t1.unix.png,
+	* doc/manual/c_order_t2.small.unix.png,
+	* doc/manual/c_order_t2.unix.png,
+	* doc/manual/calc_consensus.unfinished.unix.png,
+	* doc/manual/check_ass.unix.png,
+	* doc/manual/comparator.small.unix.png,
+	* doc/manual/comparator.unix.png,
+	* doc/manual/conf_values_p.small.unix.png,
+	* doc/manual/conf_values_p.unix.png,
+	* doc/manual/configure.colour.unix.png,
+	* doc/manual/consistency_p.small.unix.png,
+	* doc/manual/consistency_p.unix.png,
+	* doc/manual/contig_editor.join.small.unix.png,
+	* doc/manual/contig_editor.join.unix.png,
+	* doc/manual/contig_editor.screen.small.unix.png,
+	* doc/manual/contig_editor.screen.unix.png,
+	* doc/manual/contig_editor.search.unix.png,
+	* doc/manual/contig_editor.taged.unix.png,
+	* doc/manual/contig_editor.tagmacro.unix.png,
+	* doc/manual/contig_editor.tagsel.unix.png,
+	* doc/manual/contig_editor.traces.compact.small.unix.png,
+	* doc/manual/contig_editor.traces.compact.unix.png,
+	* doc/manual/contig_editor.traces.small.unix.png,
+	* doc/manual/contig_editor.traces.unix.png,
+	* doc/manual/contig_editor_grey_scale.small.unix.png,
+	* doc/manual/contig_editor_grey_scale.unix.png,
+	* doc/manual/contig_list_box.unix.png,
+	* doc/manual/contig_navigation_browse.unix.png,
+	* doc/manual/contig_navigation_table.unix.png,
+	* doc/manual/contig_selector.unix.png,
+	* doc/manual/copy_reads.dialogue.unix.png,
+	* doc/manual/difference_clip.unix.png,
+	* doc/manual/disassembly.unix.png,
+	* doc/manual/discrepancy_graph.unix.png,
+	* doc/manual/doctor_db.main.unix.png,
+	* doc/manual/doctor_db.structures.unix.png,
+	* doc/manual/exp_suggest.comp.unix.png,
+	* doc/manual/exp_suggest.double.unix.png,
+	* doc/manual/exp_suggest.long.unix.png,
+	* doc/manual/exp_suggest.primers.unix.png,
+	* doc/manual/extract.unix.png,
+	* doc/manual/fij.dialogue.unix.png,
+	* doc/manual/filebrowser.unix.png,
+	* doc/manual/find_oligo_pic.unix.png,
+	* doc/manual/interface.buttons.unix.png,
+	* doc/manual/interface.colour.unix.png,
+	* doc/manual/interface.entry.unix.png,
+	* doc/manual/interface.fonts.unix.png,
+	* doc/manual/interface.menus.unix.png,
+	* doc/manual/interface.output.small.unix.png,
+	* doc/manual/interface.output.unix.png,
+	* doc/manual/interface.tag.unix.png,
+	* doc/manual/mut_contig_editor5.small.unix.png,
+	* doc/manual/mut_contig_editor5.unix.png,
+	* doc/manual/mut_contig_editor_dis5.small.unix.png,
+	* doc/manual/mut_contig_editor_dis5.unix.png,
+	* doc/manual/mut_mutscan_adaptive_noise_threshold.unix.png,
+	* doc/manual/mut_mutscan_peak_alignment_threshold.unix.png,
+	* doc/manual/mut_mutscan_peak_drop_threshold.unix.png,
+	* doc/manual/mut_pregap4.unix.png,
+	* doc/manual/mut_template_all.small.unix.png,
+	* doc/manual/mut_template_all.unix.png,
+	* doc/manual/mut_template_reads.small.unix.png,
+	* doc/manual/mut_template_reads.unix.png,
+	* doc/manual/mut_template_reads_single.small.unix.png,
+	* doc/manual/mut_template_reads_single.unix.png,
+	* doc/manual/mut_traces_het.small.unix.png,
+	* doc/manual/mut_traces_het.unix.png,
+	* doc/manual/mut_traces_point.small.unix.png,
+	* doc/manual/mut_traces_point.unix.png,
+	* doc/manual/mut_traces_positive.small.unix.png,
+	* doc/manual/mut_traces_positive.unix.png,
+	* doc/manual/notes.editor.unix.png,
+	* doc/manual/notes.selector.unix.png,
+	* doc/manual/phrap.assembly.unix.png,
+	* doc/manual/pregap4_compact.unix.png,
+	* doc/manual/pregap4_component.unix.png,
+	* doc/manual/pregap4_config.unix.png,
+	* doc/manual/pregap4_edit_exp.unix.png,
+	* doc/manual/pregap4_files.unix.png,
+	* doc/manual/pregap4_overview.unix.png,
+	* doc/manual/pregap4_overview2.unix.png,
+	* doc/manual/pregap4_select.unix.png,
+	* doc/manual/pregap4_separate.unix.png,
+	* doc/manual/pregap4_simpledb.unix.png,
+	* doc/manual/pregap4_textwin.unix.png,
+	* doc/manual/primer_pos_plot.small.unix.png,
+	* doc/manual/primer_pos_plot.unix.png,
+	* doc/manual/primer_pos_seq_display.small.unix.png,
+	* doc/manual/primer_pos_seq_display.unix.png,
+	* doc/manual/primer_pos_text.unix.png,
+	* doc/manual/quality_clip.unix.png,
+	* doc/manual/quality_clip_ends.unix.png,
+	* doc/manual/read_coverage_d.unix.png,
+	* doc/manual/read_coverage_p.small.unix.png,
+	* doc/manual/read_coverage_p.unix.png,
+	* doc/manual/read_pairs.unix.png,
+	* doc/manual/readpair_coverage_p.small.unix.png,
+	* doc/manual/readpair_coverage_p.unix.png,
+	* doc/manual/repeats.unix.png,
+	* doc/manual/restrict_enzymes.small.unix.png,
+	* doc/manual/restrict_enzymes.unix.png,
+	* doc/manual/results.1.unix.png,
+	* doc/manual/set_genetic_code.unix.png,
+	* doc/manual/show_rel.unix.png,
+	* doc/manual/spin_align_p.small.unix.png,
+	* doc/manual/spin_align_p.unix.png,
+	* doc/manual/spin_align_seq.unix.png,
+	* doc/manual/spin_alignment_symbols.unix.png,
+	* doc/manual/spin_author_d.unix.png,
+	* doc/manual/spin_author_p.small.unix.png,
+	* doc/manual/spin_author_p.unix.png,
+	* doc/manual/spin_base_bias_d.unix.png,
+	* doc/manual/spin_base_bias_p.small.unix.png,
+	* doc/manual/spin_base_bias_p.unix.png,
+	* doc/manual/spin_codon_usage.small.unix.png,
+	* doc/manual/spin_codon_usage.unix.png,
+	* doc/manual/spin_codon_usage_aaonly.small.unix.png,
+	* doc/manual/spin_codon_usage_aaonly.unix.png,
+	* doc/manual/spin_codon_usage_dial.unix.png,
+	* doc/manual/spin_count_codons_d.unix.png,
+	* doc/manual/spin_count_codons_t.small.unix.png,
+	* doc/manual/spin_count_codons_t.unix.png,
+	* doc/manual/spin_diagonals.unix.png,
+	* doc/manual/spin_dot_plot.small.unix.png,
+	* doc/manual/spin_dot_plot.unix.png,
+	* doc/manual/spin_find_orf_d.unix.png,
+	* doc/manual/spin_local_align.unix.png,
+	* doc/manual/spin_local_p1.small.unix.png:
+	(11:22:33) Replaced all GIFs with PNGs. 
+
+	* doc/manual/spin_local_p1.unix.png,
+	* doc/manual/spin_local_p2.small.unix.png,
+	* doc/manual/spin_local_p2.unix.png,
+	* doc/manual/spin_match_words.unix.png,
+	* doc/manual/spin_personal_search.unix.png,
+	* doc/manual/spin_plot.small.unix.png,
+	* doc/manual/spin_plot.unix.png,
+	* doc/manual/spin_plot_base_comp_d.unix.png,
+	* doc/manual/spin_plot_base_comp_p.small.unix.png,
+	* doc/manual/spin_plot_base_comp_p.unix.png,
+	* doc/manual/spin_plot_drag1.small.unix.png,
+	* doc/manual/spin_plot_drag1.unix.png,
+	* doc/manual/spin_plot_drag2.small.unix.png,
+	* doc/manual/spin_plot_drag2.unix.png,
+	* doc/manual/spin_plot_drag3.small.unix.png,
+	* doc/manual/spin_plot_drag3.unix.png,
+	* doc/manual/spin_plot_p.small.unix.png,
+	* doc/manual/spin_plot_p.unix.png,
+	* doc/manual/spin_restrict_enzymes_d.unix.png,
+	* doc/manual/spin_restrict_enzymes_p.small.unix.png,
+	* doc/manual/spin_restrict_enzymes_p.unix.png,
+	* doc/manual/spin_restrict_enzymes_p1.small.unix.png,
+	* doc/manual/spin_restrict_enzymes_p1.unix.png,
+	* doc/manual/spin_results_manager_d.unix.png,
+	* doc/manual/spin_results_manager_d2.small.unix.png,
+	* doc/manual/spin_results_manager_d2.unix.png,
+	* doc/manual/spin_save_sequence_d.unix.png,
+	* doc/manual/spin_seq_display.small.unix.png,
+	* doc/manual/spin_seq_display.unix.png,
+	* doc/manual/spin_seq_manager.unix.png,
+	* doc/manual/spin_sequence_display_d.unix.png,
+	* doc/manual/spin_sequence_display_save_d.unix.png,
+	* doc/manual/spin_sequence_display_t.small.unix.png,
+	* doc/manual/spin_sequence_display_t.unix.png,
+	* doc/manual/spin_similar_spans.unix.png,
+	* doc/manual/spin_simple_search.unix.png,
+	* doc/manual/spin_splice.small.unix.png,
+	* doc/manual/spin_splice.unix.png,
+	* doc/manual/spin_start_d.unix.png,
+	* doc/manual/spin_start_p.small.unix.png,
+	* doc/manual/spin_start_p.unix.png,
+	* doc/manual/spin_stops_d.unix.png:
+	(11:22:34) Replaced all GIFs with PNGs. 
+
+	* doc/manual/spin_stops_p.small.unix.png,
+	* doc/manual/spin_stops_p.unix.png,
+	* doc/manual/spin_stops_p2.small.unix.png,
+	* doc/manual/spin_stops_p2.unix.png,
+	* doc/manual/spin_string_search_d.unix.png,
+	* doc/manual/spin_string_search_p.small.unix.png,
+	* doc/manual/spin_string_search_p.unix.png,
+	* doc/manual/spin_translate_d.unix.png,
+	* doc/manual/spin_translate_t.small.unix.png,
+	* doc/manual/spin_translate_t.unix.png,
+	* doc/manual/spin_trna_p.small.unix.png,
+	* doc/manual/spin_trna_p.unix.png,
+	* doc/manual/spin_trna_t.small.unix.png,
+	* doc/manual/spin_trna_t.unix.png,
+	* doc/manual/spin_weight_matrix.small.unix.png,
+	* doc/manual/spin_weight_matrix.unix.png,
+	* doc/manual/spin_weight_matrix_dial.unix.png,
+	* doc/manual/stops.small.unix.png,
+	* doc/manual/stops.unix.png,
+	* doc/manual/strand_coverage_d.unix.png,
+	* doc/manual/strand_coverage_p1.small.unix.png,
+	* doc/manual/strand_coverage_p1.unix.png,
+	* doc/manual/strand_coverage_p2.small.unix.png,
+	* doc/manual/strand_coverage_p2.unix.png,
+	* doc/manual/suggest_probes.main.unix.png,
+	* doc/manual/suggest_probes.select.unix.png,
+	* doc/manual/template.dialogue.unix.png,
+	* doc/manual/template.display.small.unix.png,
+	* doc/manual/template.display.unix.png,
+	* doc/manual/template.quality.small.unix.png,
+	* doc/manual/template.quality.unix.png,
+	* doc/manual/template.restriction.small.unix.png,
+	* doc/manual/template.restriction.unix.png,
+	* doc/manual/template_status.unix.png,
+	* doc/manual/trace_print_menu.small.unix.png,
+	* doc/manual/trace_print_menu.unix.png,
+	* doc/manual/trace_print_page_dialogue.unix.png,
+	* doc/manual/trace_print_trace1.unix.png,
+	* doc/manual/trace_print_trace_dialogue.unix.png,
+	* doc/manual/trev_conf_trace.small.unix.png,
+	* doc/manual/trev_conf_trace.unix.png,
+	* doc/manual/trev_pic.unix.png:
+	(11:22:35) Replaced all GIFs with PNGs. 
+
+	* doc/manual/Attic/2nd_highest_confidence.unix.gif,
+	* doc/manual/Attic/assembly.CAP3.unix.gif,
+	* doc/manual/Attic/assembly.cap2.unix.gif,
+	* doc/manual/Attic/assembly.directed.unix.gif,
+	* doc/manual/Attic/assembly.fak2.unix.gif,
+	* doc/manual/Attic/assembly.new.unix.gif,
+	* doc/manual/Attic/assembly.one.unix.gif,
+	* doc/manual/Attic/assembly.screen.unix.gif:
+	(11:25:11) Replaced GIFs with PNGs. 
+
+	* doc/manual/Attic/assembly.shot.unix.gif,
+	* doc/manual/Attic/assembly.single.unix.gif,
+	* doc/manual/Attic/break_contig.unix.gif,
+	* doc/manual/Attic/c_order_lb.unix.gif,
+	* doc/manual/Attic/c_order_t1.small.unix.gif,
+	* doc/manual/Attic/c_order_t1.unix.gif,
+	* doc/manual/Attic/c_order_t2.small.unix.gif,
+	* doc/manual/Attic/c_order_t2.unix.gif,
+	* doc/manual/Attic/calc_consensus.extended.unix.gif,
+	* doc/manual/Attic/calc_consensus.normal.unix.gif,
+	* doc/manual/Attic/calc_consensus.quality.unix.gif,
+	* doc/manual/Attic/calc_consensus.unfinished.unix.gif,
+	* doc/manual/Attic/check_ass.unix.gif,
+	* doc/manual/Attic/comparator.small.unix.gif,
+	* doc/manual/Attic/comparator.unix.gif,
+	* doc/manual/Attic/conf_values_p.small.unix.gif,
+	* doc/manual/Attic/conf_values_p.unix.gif,
+	* doc/manual/Attic/configure.colour.unix.gif,
+	* doc/manual/Attic/consistency_p.small.unix.gif,
+	* doc/manual/Attic/consistency_p.unix.gif,
+	* doc/manual/Attic/contig_editor.join.small.unix.gif,
+	* doc/manual/Attic/contig_editor.join.unix.gif,
+	* doc/manual/Attic/contig_editor.screen.small.unix.gif,
+	* doc/manual/Attic/contig_editor.screen.unix.gif,
+	* doc/manual/Attic/contig_editor.search.unix.gif,
+	* doc/manual/Attic/contig_editor.taged.unix.gif,
+	* doc/manual/Attic/contig_editor.tagmacro.unix.gif,
+	* doc/manual/Attic/contig_editor.tagsel.unix.gif,
+	* doc/manual/Attic/contig_editor.traces.compact.small.unix.gif,
+	* doc/manual/Attic/contig_editor.traces.compact.unix.gif,
+	* doc/manual/Attic/contig_editor.traces.small.unix.gif,
+	* doc/manual/Attic/contig_editor.traces.unix.gif,
+	* doc/manual/Attic/contig_editor_grey_scale.small.unix.gif,
+	* doc/manual/Attic/contig_editor_grey_scale.unix.gif,
+	* doc/manual/Attic/contig_list_box.unix.gif,
+	* doc/manual/Attic/contig_navigation_browse.unix.gif,
+	* doc/manual/Attic/contig_navigation_table.unix.gif,
+	* doc/manual/Attic/contig_selector.unix.gif,
+	* doc/manual/Attic/copy_reads.dialogue.unix.gif,
+	* doc/manual/Attic/difference_clip.unix.gif,
+	* doc/manual/Attic/disassembly.unix.gif,
+	* doc/manual/Attic/discrepancy_graph.unix.gif,
+	* doc/manual/Attic/doctor_db.main.unix.gif,
+	* doc/manual/Attic/doctor_db.structures.unix.gif,
+	* doc/manual/Attic/exp_suggest.comp.unix.gif,
+	* doc/manual/Attic/exp_suggest.double.unix.gif,
+	* doc/manual/Attic/exp_suggest.long.unix.gif,
+	* doc/manual/Attic/exp_suggest.primers.unix.gif,
+	* doc/manual/Attic/extract.unix.gif,
+	* doc/manual/Attic/fij.dialogue.unix.gif,
+	* doc/manual/Attic/filebrowser.unix.gif,
+	* doc/manual/Attic/find_oligo_pic.unix.gif,
+	* doc/manual/Attic/interface.buttons.unix.gif,
+	* doc/manual/Attic/interface.colour.unix.gif,
+	* doc/manual/Attic/interface.entry.unix.gif,
+	* doc/manual/Attic/interface.fonts.unix.gif,
+	* doc/manual/Attic/interface.menus.unix.gif,
+	* doc/manual/Attic/interface.output.small.unix.gif,
+	* doc/manual/Attic/interface.output.unix.gif,
+	* doc/manual/Attic/interface.tag.unix.gif:
+	(11:25:12) Replaced GIFs with PNGs. 
+
+	* doc/manual/Attic/NBase_clip.unix.gif,
+	* doc/manual/Attic/mut_contig_editor5.small.unix.gif,
+	* doc/manual/Attic/mut_contig_editor5.unix.gif,
+	* doc/manual/Attic/mut_contig_editor_dis5.small.unix.gif,
+	* doc/manual/Attic/mut_contig_editor_dis5.unix.gif,
+	* doc/manual/Attic/mut_mutscan_adaptive_noise_threshold.unix.gif,
+	* doc/manual/Attic/mut_mutscan_peak_alignment_threshold.unix.gif,
+	* doc/manual/Attic/mut_mutscan_peak_drop_threshold.unix.gif,
+	* doc/manual/Attic/mut_pregap4.unix.gif,
+	* doc/manual/Attic/mut_template_all.small.unix.gif,
+	* doc/manual/Attic/mut_template_all.unix.gif,
+	* doc/manual/Attic/mut_template_reads.small.unix.gif,
+	* doc/manual/Attic/mut_template_reads.unix.gif,
+	* doc/manual/Attic/mut_template_reads_single.small.unix.gif,
+	* doc/manual/Attic/mut_template_reads_single.unix.gif,
+	* doc/manual/Attic/mut_traces_het.small.unix.gif,
+	* doc/manual/Attic/mut_traces_het.unix.gif,
+	* doc/manual/Attic/mut_traces_point.small.unix.gif,
+	* doc/manual/Attic/mut_traces_point.unix.gif,
+	* doc/manual/Attic/mut_traces_positive.small.unix.gif,
+	* doc/manual/Attic/mut_traces_positive.unix.gif,
+	* doc/manual/Attic/notes.editor.unix.gif,
+	* doc/manual/Attic/notes.selector.unix.gif,
+	* doc/manual/Attic/phrap.assembly.unix.gif,
+	* doc/manual/Attic/pregap4_compact.unix.gif,
+	* doc/manual/Attic/pregap4_component.unix.gif,
+	* doc/manual/Attic/pregap4_config.unix.gif,
+	* doc/manual/Attic/pregap4_edit_exp.unix.gif,
+	* doc/manual/Attic/pregap4_files.unix.gif,
+	* doc/manual/Attic/pregap4_overview.unix.gif,
+	* doc/manual/Attic/pregap4_overview2.unix.gif,
+	* doc/manual/Attic/pregap4_select.unix.gif,
+	* doc/manual/Attic/pregap4_separate.unix.gif,
+	* doc/manual/Attic/pregap4_simpledb.unix.gif,
+	* doc/manual/Attic/pregap4_textwin.unix.gif,
+	* doc/manual/Attic/primer_pos_plot.small.unix.gif,
+	* doc/manual/Attic/primer_pos_plot.unix.gif,
+	* doc/manual/Attic/primer_pos_seq_display.small.unix.gif,
+	* doc/manual/Attic/primer_pos_seq_display.unix.gif,
+	* doc/manual/Attic/primer_pos_text.unix.gif,
+	* doc/manual/Attic/quality_clip_ends.unix.gif:
+	(11:25:13) Replaced GIFs with PNGs. 
+
+	* doc/manual/Attic/quality_clip.unix.gif,
+	* doc/manual/Attic/read_coverage_d.unix.gif,
+	* doc/manual/Attic/read_coverage_p.small.unix.gif,
+	* doc/manual/Attic/read_coverage_p.unix.gif,
+	* doc/manual/Attic/read_pairs.unix.gif,
+	* doc/manual/Attic/readpair_coverage_p.small.unix.gif,
+	* doc/manual/Attic/readpair_coverage_p.unix.gif,
+	* doc/manual/Attic/repeats.unix.gif,
+	* doc/manual/Attic/restrict_enzymes.small.unix.gif,
+	* doc/manual/Attic/restrict_enzymes.unix.gif,
+	* doc/manual/Attic/results.1.unix.gif,
+	* doc/manual/Attic/set_genetic_code.unix.gif,
+	* doc/manual/Attic/show_rel.unix.gif,
+	* doc/manual/Attic/spin_align_p.small.unix.gif,
+	* doc/manual/Attic/spin_align_p.unix.gif,
+	* doc/manual/Attic/spin_align_seq.unix.gif,
+	* doc/manual/Attic/spin_alignment_symbols.gif,
+	* doc/manual/Attic/spin_alignment_symbols.unix.gif,
+	* doc/manual/Attic/spin_author_d.unix.gif,
+	* doc/manual/Attic/spin_author_p.small.unix.gif,
+	* doc/manual/Attic/spin_author_p.unix.gif,
+	* doc/manual/Attic/spin_base_bias_d.unix.gif,
+	* doc/manual/Attic/spin_base_bias_p.small.unix.gif,
+	* doc/manual/Attic/spin_base_bias_p.unix.gif,
+	* doc/manual/Attic/spin_codon_usage.small.unix.gif,
+	* doc/manual/Attic/spin_codon_usage.unix.gif,
+	* doc/manual/Attic/spin_codon_usage_aaonly.small.unix.gif,
+	* doc/manual/Attic/spin_codon_usage_aaonly.unix.gif,
+	* doc/manual/Attic/spin_codon_usage_dial.unix.gif,
+	* doc/manual/Attic/spin_count_codons_d.unix.gif,
+	* doc/manual/Attic/spin_count_codons_t.small.unix.gif,
+	* doc/manual/Attic/spin_count_codons_t.unix.gif,
+	* doc/manual/Attic/spin_diagonals.unix.gif,
+	* doc/manual/Attic/spin_dot_plot.small.unix.gif,
+	* doc/manual/Attic/spin_dot_plot.unix.gif,
+	* doc/manual/Attic/spin_find_orf_d.unix.gif,
+	* doc/manual/Attic/spin_local_align.unix.gif,
+	* doc/manual/Attic/spin_local_p1.small.unix.gif,
+	* doc/manual/Attic/spin_local_p1.unix.gif,
+	* doc/manual/Attic/spin_local_p2.small.unix.gif,
+	* doc/manual/Attic/spin_local_p2.unix.gif,
+	* doc/manual/Attic/spin_match_words.unix.gif,
+	* doc/manual/Attic/spin_personal_search.unix.gif,
+	* doc/manual/Attic/spin_plot_base_comp_d.unix.gif,
+	* doc/manual/Attic/spin_plot_base_comp_p.small.unix.gif,
+	* doc/manual/Attic/spin_plot_base_comp_p.unix.gif,
+	* doc/manual/Attic/spin_plot_drag1.small.unix.gif,
+	* doc/manual/Attic/spin_plot_drag1.unix.gif,
+	* doc/manual/Attic/spin_plot_drag2.small.unix.gif,
+	* doc/manual/Attic/spin_plot_drag2.unix.gif,
+	* doc/manual/Attic/spin_plot_drag3.small.unix.gif,
+	* doc/manual/Attic/spin_plot_drag3.unix.gif,
+	* doc/manual/Attic/spin_plot_p.small.unix.gif,
+	* doc/manual/Attic/spin_plot_p.unix.gif:
+	(11:25:14) Replaced GIFs with PNGs. 
+
+	* doc/manual/Attic/spin_plot.small.unix.gif,
+	* doc/manual/Attic/spin_plot.unix.gif,
+	* doc/manual/Attic/spin_restrict_enzymes_d.unix.gif,
+	* doc/manual/Attic/spin_restrict_enzymes_p.small.unix.gif,
+	* doc/manual/Attic/spin_restrict_enzymes_p.unix.gif,
+	* doc/manual/Attic/spin_restrict_enzymes_p1.small.unix.gif,
+	* doc/manual/Attic/spin_restrict_enzymes_p1.unix.gif,
+	* doc/manual/Attic/spin_results_manager_d.unix.gif,
+	* doc/manual/Attic/spin_results_manager_d2.small.unix.gif,
+	* doc/manual/Attic/spin_results_manager_d2.unix.gif,
+	* doc/manual/Attic/spin_save_sequence_d.gif,
+	* doc/manual/Attic/spin_save_sequence_d.unix.gif,
+	* doc/manual/Attic/spin_seq_display.small.unix.gif,
+	* doc/manual/Attic/spin_seq_display.unix.gif,
+	* doc/manual/Attic/spin_seq_manager.unix.gif,
+	* doc/manual/Attic/spin_sequence_display_d.unix.gif,
+	* doc/manual/Attic/spin_sequence_display_save_d.unix.gif,
+	* doc/manual/Attic/spin_sequence_display_t.small.unix.gif,
+	* doc/manual/Attic/spin_sequence_display_t.unix.gif,
+	* doc/manual/Attic/spin_similar_spans.unix.gif,
+	* doc/manual/Attic/spin_simple_search.unix.gif,
+	* doc/manual/Attic/spin_splice.small.unix.gif,
+	* doc/manual/Attic/spin_splice.unix.gif,
+	* doc/manual/Attic/spin_start_d.unix.gif,
+	* doc/manual/Attic/spin_start_p.small.unix.gif,
+	* doc/manual/Attic/spin_start_p.unix.gif,
+	* doc/manual/Attic/spin_stops_d.unix.gif,
+	* doc/manual/Attic/spin_stops_p.small.unix.gif,
+	* doc/manual/Attic/spin_stops_p.unix.gif,
+	* doc/manual/Attic/spin_stops_p2.small.unix.gif,
+	* doc/manual/Attic/spin_stops_p2.unix.gif,
+	* doc/manual/Attic/spin_string_search_d.unix.gif,
+	* doc/manual/Attic/spin_string_search_p.small.unix.gif,
+	* doc/manual/Attic/spin_string_search_p.unix.gif,
+	* doc/manual/Attic/spin_translate_d.gif,
+	* doc/manual/Attic/spin_translate_d.unix.gif,
+	* doc/manual/Attic/spin_translate_t.small.unix.gif,
+	* doc/manual/Attic/spin_translate_t.unix.gif,
+	* doc/manual/Attic/spin_trna_p.small.unix.gif,
+	* doc/manual/Attic/spin_trna_p.unix.gif,
+	* doc/manual/Attic/spin_trna_t.small.unix.gif,
+	* doc/manual/Attic/spin_trna_t.unix.gif,
+	* doc/manual/Attic/spin_weight_matrix.small.unix.gif,
+	* doc/manual/Attic/spin_weight_matrix.unix.gif,
+	* doc/manual/Attic/spin_weight_matrix_dial.unix.gif,
+	* doc/manual/Attic/stops.small.unix.gif,
+	* doc/manual/Attic/stops.unix.gif,
+	* doc/manual/Attic/strand_coverage_d.unix.gif,
+	* doc/manual/Attic/strand_coverage_p1.small.unix.gif,
+	* doc/manual/Attic/strand_coverage_p1.unix.gif,
+	* doc/manual/Attic/strand_coverage_p2.small.unix.gif,
+	* doc/manual/Attic/strand_coverage_p2.unix.gif,
+	* doc/manual/Attic/suggest_probes.main.unix.gif,
+	* doc/manual/Attic/suggest_probes.select.unix.gif:
+	(11:25:15) Replaced GIFs with PNGs. 
+
+	* doc/manual/Attic/template.dialogue.unix.gif,
+	* doc/manual/Attic/template.display.small.unix.gif,
+	* doc/manual/Attic/template.display.unix.gif,
+	* doc/manual/Attic/template.quality.small.unix.gif,
+	* doc/manual/Attic/template.quality.unix.gif,
+	* doc/manual/Attic/template.restriction.small.unix.gif,
+	* doc/manual/Attic/template.restriction.unix.gif,
+	* doc/manual/Attic/template_status.unix.gif,
+	* doc/manual/Attic/trace_print_menu.small.unix.gif,
+	* doc/manual/Attic/trace_print_menu.unix.gif,
+	* doc/manual/Attic/trace_print_page_dialogue.unix.gif,
+	* doc/manual/Attic/trace_print_trace1.unix.gif,
+	* doc/manual/Attic/trace_print_trace_dialogue.unix.gif,
+	* doc/manual/Attic/trev_conf_trace.small.unix.gif,
+	* doc/manual/Attic/trev_conf_trace.unix.gif,
+	* doc/manual/Attic/trev_pic.unix.gif:
+	(11:25:16) Replaced GIFs with PNGs. 
+
+	* doc/manual/tools/make_dependencies,
+	* doc/manual/tools/make_pdf,
+	* doc/manual/tools/make_png_html:
+	(11:30:53) Switched from gif to png and ps to pdf for embedded
+	images. 
+
+	* doc/manual/dependencies,
+	* doc/manual/header.m4:
+	(11:32:02) Switched to using png/pdf instead of gif/ps for embedded
+	images. 
+
+	* doc/manual/Makefile:
+	(11:32:32) Switched to using png/pdf instead of gif/ps for embedded
+	images. 
+
+	* doc/manual/getABIfield.1.texi,
+	* doc/manual/trace_dump.1.texi:
+	(11:35:13) First draft of new manual pages 
+
+	* doc/manual/tools/merge_indexes.pl:
+	(14:45:04) Updated version number for manual page output 
+
+	* doc/manual/preface-t.texi:
+	(15:06:51) Updated to describe the demise of the LMB group and the
+	move to sourceforge. 
+
+	* doc/scripting_manual/Makefile:
+	(15:39:12) Changed to generate pdf instead of PostScript. 
+
 2004-10-21  jkbonfield  <jkbonfield>
 
 	* doc/manual/Makefile:
