@@ -306,6 +306,7 @@ int tcl_quit_displays(ClientData clientData, Tcl_Interp *interp,
     int ret = 1, handle, i;
     GapIO *io;
     reg_quit rq;
+    int cnum;
 
     if (argc != 3) {
 	Tcl_SetResult(interp, "wrong # args:\n", TCL_STATIC);
@@ -317,16 +318,20 @@ int tcl_quit_displays(ClientData clientData, Tcl_Interp *interp,
 
     rq.job = REG_QUIT;
     rq.lock = REG_LOCK_WRITE;
+    cnum = 0;
     for (i=0; i<=NumContigs(io); i++) {
 	contig_notify(io, i, (reg_data *)&rq);
 	if (!(rq.lock & REG_LOCK_WRITE)) {
 	    ret = 0;
+	    cnum = i;
 	}
     }
 
     if (!ret) {
 	verror(ERR_WARN, argv[2], "Database busy");
 	verror(ERR_WARN, argv[2], "Please shut down editing displays");
+	if (cnum)
+	    busy_dialog(io, cnum);
     }
 
     vTcl_SetResult(interp, "%d", ret);
