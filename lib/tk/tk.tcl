@@ -3,7 +3,7 @@
 # Initialization script normally executed in the interpreter for each
 # Tk-based application.  Arranges class bindings for widgets.
 #
-# RCS: @(#) $Id: tk.tcl,v 1.1.1.1 2003-06-09 11:25:56 jkb Exp $
+# RCS: @(#) $Id: tk.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
 #
 # Copyright (c) 1992-1994 The Regents of the University of California.
 # Copyright (c) 1994-1996 Sun Microsystems, Inc.
@@ -79,7 +79,11 @@ proc ::tk::PlaceWindow {w {place ""} {anchor ""}} {
     wm withdraw $w
     update idletasks
     set checkBounds 1
-    if {[string equal -len [string length $place] $place "pointer"]} {
+    if {[string equal $place ""]} {
+	set x [expr {([winfo screenwidth $w]-[winfo reqwidth $w])/2}]
+	set y [expr {([winfo screenheight $w]-[winfo reqheight $w])/2}]
+	set checkBounds 0
+    } elseif {[string equal -len [string length $place] $place "pointer"]} {
 	## place at POINTER (centered if $anchor == center)
 	if {[string equal -len [string length $anchor] $anchor "center"]} {
 	    set x [expr {[winfo pointerx $w]-[winfo reqwidth $w]/2}]
@@ -350,18 +354,12 @@ switch [tk windowingsystem] {
 	# that is returned when the user presses <Shift-Tab>.  In order for
 	# tab traversal to work, we have to add these keysyms to the 
 	# PrevWindow event.
-	# The info exists is necessary, because tcl_platform(os) doesn't
-	# exist in safe interpreters.
-	if {[info exists tcl_platform(os)]} {
-	    switch $tcl_platform(os) {
-		"IRIX"  -
-		"Linux" { event add <<PrevWindow>> <ISO_Left_Tab> }
-		"HP-UX" {
-		    # This seems to be correct on *some* HP systems.
-		    catch { event add <<PrevWindow>> <hpBackTab> }
-		}
-	    }
-	}
+	# We use catch just in case the keysym isn't recognized.
+	# This is needed for XFree86 systems
+	catch { event add <<PrevWindow>> <ISO_Left_Tab> }
+	# This seems to be correct on *some* HP systems.
+	catch { event add <<PrevWindow>> <hpBackTab> }
+
 	trace variable ::tk_strictMotif w ::tk::EventMotifBindings
 	set ::tk_strictMotif $::tk_strictMotif
     }
@@ -448,13 +446,14 @@ proc ::tk::CancelRepeat {} {
 
 # ::tk::TabToWindow --
 # This procedure moves the focus to the given widget.  If the widget
-# is an entry, it selects the entire contents of the widget.
+# is an entry or a spinbox, it selects the entire contents of the widget.
 #
 # Arguments:
 # w - Window to which focus should be set.
 
 proc ::tk::TabToWindow {w} {
-    if {[string equal [winfo class $w] Entry]} {
+    if {[string equal [winfo class $w] Entry] \
+	    || [string equal [winfo class $w] Spinbox]} {
 	$w selection range 0 end
 	$w icursor end
     }

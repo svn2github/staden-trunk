@@ -3,7 +3,7 @@
 # This file defines the default bindings for Tk text widgets and provides
 # procedures that help in implementing the bindings.
 #
-# RCS: @(#) $Id: text.tcl,v 1.1.1.1 2003-06-09 11:25:56 jkb Exp $
+# RCS: @(#) $Id: text.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
 #
 # Copyright (c) 1992-1994 The Regents of the University of California.
 # Copyright (c) 1994-1997 Sun Microsystems, Inc.
@@ -458,8 +458,24 @@ set ::tk::Priv(prevPos) {}
 # someone could use the "event generate" command to produce one
 # on other platforms.
 
-bind Text <MouseWheel> {
-    %W yview scroll [expr {- (%D / 120) * 4}] units
+if {[string equal [tk windowingsystem] "classic"]
+	|| [string equal [tk windowingsystem] "aqua"]} {
+    bind Text <MouseWheel> {
+        %W yview scroll [expr {- (%D)}] units
+    }
+    bind Text <Option-MouseWheel> {
+        %W yview scroll [expr {-10 * (%D)}] units
+    }
+    bind Text <Shift-MouseWheel> {
+        %W xview scroll [expr {- (%D)}] units
+    }
+    bind Text <Shift-Option-MouseWheel> {
+        %W xview scroll [expr {-10 * (%D)}] units
+    }
+} else {
+    bind Text <MouseWheel> {
+        %W yview scroll [expr {- (%D / 120) * 4}] units
+    }
 }
 
 if {[string equal "x11" [tk windowingsystem]]} {

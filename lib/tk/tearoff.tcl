@@ -2,7 +2,7 @@
 #
 # This file contains procedures that implement tear-off menus.
 #
-# RCS: @(#) $Id: tearoff.tcl,v 1.1.1.1 2003-06-09 11:25:56 jkb Exp $
+# RCS: @(#) $Id: tearoff.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
 #
 # Copyright (c) 1994 The Regents of the University of California.
 # Copyright (c) 1994-1997 Sun Microsystems, Inc.
@@ -73,12 +73,6 @@ proc ::tk::TearOffMenu {w {x 0} {y 0}} {
 	    }
 	}
     }
-
-#    global tcl_platform
-#    if {$tcl_platform(platform) == "unix"} {
-#	wm transient $menu $parent
-#    }
-    wm resizable $menu 0 0 
 
     $menu post $x $y
 

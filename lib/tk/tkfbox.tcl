@@ -11,7 +11,7 @@
 #	files by clicking on the file icons or by entering a filename
 #	in the "Filename:" entry.
 #
-# RCS: @(#) $Id: tkfbox.tcl,v 1.1.1.1 2003-06-09 11:25:56 jkb Exp $
+# RCS: @(#) $Id: tkfbox.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
 #
 # Copyright (c) 1994-1998 Sun Microsystems, Inc.
 #
@@ -218,9 +218,9 @@ proc ::tk::IconList_Create {w} {
 
     frame $w
     set data(sbar)   [scrollbar $w.sbar -orient horizontal \
-	-highlightthickness 0 -takefocus 0]
+	    -highlightthickness 0 -takefocus 0]
     set data(canvas) [canvas $w.canvas -bd 2 -relief sunken \
-	-width 400 -height 120 -takefocus 1]
+	    -width 400 -height 120 -takefocus 1]
     pack $data(sbar) -side bottom -fill x -padx 2
     pack $data(canvas) -expand yes -fill both
 
@@ -238,6 +238,12 @@ proc ::tk::IconList_Create {w} {
     set data(noScroll) 1
     set data(selection) {}
     set data(index,anchor) ""
+    set fg [option get $data(canvas) foreground Foreground]
+    if {$fg eq ""} {
+	set data(fill) black
+    } else {
+	set data(fill) $fg
+    }
 
     # Creates the event bindings.
     #
@@ -342,7 +348,7 @@ proc ::tk::IconList_Add {w image items} {
 	set iTag [$data(canvas) create image 0 0 -image $image -anchor nw \
 		-tags [list icon $data(numItems) item$data(numItems)]]
 	set tTag [$data(canvas) create text  0 0 -text  $text  -anchor nw \
-		-font $data(font) \
+		-font $data(font) -fill $data(fill) \
 		-tags [list text $data(numItems) item$data(numItems)]]
 	set rTag [$data(canvas) create rect  0 0 0 0 -fill "" -outline "" \
 		-tags [list rect $data(numItems) item$data(numItems)]]
@@ -767,7 +773,7 @@ proc ::tk::IconList_Reset {w} {
 
 namespace eval ::tk::dialog {}
 namespace eval ::tk::dialog::file {
-    namespace import ::tk::msgcat::*
+    namespace import -force ::tk::msgcat::*
 }
 
 # ::tk::dialog::file:: --
@@ -812,11 +818,11 @@ proc ::tk::dialog::file:: {type args} {
 	set data(upBtn) $w.f1.up
 	set data(icons) $w.icons
 	set data(ent) $w.f2.ent
-	set data(typeMenuLab) $w.f3.lab
-	set data(typeMenuBtn) $w.f3.menu
+	set data(typeMenuLab) $w.f2.lab
+	set data(typeMenuBtn) $w.f2.menu
 	set data(typeMenu) $data(typeMenuBtn).m
 	set data(okBtn) $w.f2.ok
-	set data(cancelBtn) $w.f3.cancel
+	set data(cancelBtn) $w.f2.cancel
 	::tk::dialog::file::SetSelectMode $w $data(-multiple)
     }
 
@@ -1024,17 +1030,14 @@ static char updir_bits[] = {
     #
     if { [string equal $class TkFDialog] } {
 	if { $data(-multiple) } {
-	    set fNameCaption "[mc {File &names:}]"
+	    set fNameCaption [mc "File &names:"]
 	} else {
-	    set fNameCaption "[mc {File &name:}]"
+	    set fNameCaption [mc "File &name:"]
 	}
 	set fTypeCaption [mc "Files of &type:"]
-	set fCaptionWidth [::tk::mcmaxamp $fNameCaption $fTypeCaption]
-	set fCaptionWidth [expr {$fCaptionWidth<14?14:$fCaptionWidth}]
 	set iconListCommand [list ::tk::dialog::file::OkCmd $w]
     } else {
 	set fNameCaption [mc "&Selection:"]
-	set fCaptionWidth [string length $fNameCaption]
 	set iconListCommand [list ::tk::dialog::file::chooseDir::DblClick $w]
     }
     set data(icons) [::tk::IconList $w.icons \
@@ -1043,20 +1046,17 @@ static char updir_bits[] = {
     bind $data(icons) <<ListboxSelect>> \
 	    [list ::tk::dialog::file::ListBrowse $w]
 
-    # f2: the frame with the OK button and the "file name" field
+    # f2: the frame with the OK button, cancel button, "file name" field
+    #     and file types field.
     #
     set f2 [frame $w.f2 -bd 0]
-    bind [::tk::AmpWidget label $f2.lab -text $fNameCaption -anchor e -width $fCaptionWidth \
-	    -pady 0] <<AltUnderlined>> [list focus $f2.ent]
+    bind [::tk::AmpWidget label $f2.lab -text $fNameCaption -anchor e -pady 0]\
+	    <<AltUnderlined>> [list focus $f2.ent]
     set data(ent) [entry $f2.ent]
 
     # The font to use for the icons. The default Canvas font on Unix
     # is just deviant.
     set ::tk::$w.icons(font) [$data(ent) cget -font]
-
-    # f3: the frame with the cancel button and the file types field
-    #
-    set f3 [frame $w.f3 -bd 0]
 
     # Make the file types bits only if this is a File Dialog
     if { [string equal $class TkFDialog] } {
@@ -1065,50 +1065,47 @@ static char updir_bits[] = {
 	# grayed-out text on monochrome displays. Therefore, we have to
 	# use a button widget to emulate a label widget (by setting its
 	# bindtags)
-	
-	set data(typeMenuLab) [::tk::AmpWidget button $f3.lab -text $fTypeCaption \
-		-anchor e -width $fCaptionWidth \
-		-bd [$f2.lab cget -bd] \
+
+	set data(typeMenuLab) [::tk::AmpWidget button $f2.lab2 \
+		-text $fTypeCaption  -anchor e  -bd [$f2.lab cget -bd] \
 		-highlightthickness [$f2.lab cget -highlightthickness] \
 		-relief [$f2.lab cget -relief] \
 		-padx [$f2.lab cget -padx] \
 		-pady [$f2.lab cget -pady]]
 	bindtags $data(typeMenuLab) [list $data(typeMenuLab) Label \
 		[winfo toplevel $data(typeMenuLab)] all]
-	set data(typeMenuBtn) [menubutton $f3.menu -indicatoron 1 \
-		-menu $f3.menu.m]
+	set data(typeMenuBtn) [menubutton $f2.menu -indicatoron 1 \
+		-menu $f2.menu.m]
 	set data(typeMenu) [menu $data(typeMenuBtn).m -tearoff 0]
 	$data(typeMenuBtn) config -takefocus 1 -highlightthickness 2 \
 		-relief raised -bd 2 -anchor w
-        bind $data(typeMenuLab) <<AltUnderlined>> [list focus \
-	    $data(typeMenuBtn)]
+        bind $data(typeMenuLab) <<AltUnderlined>> [list \
+		focus $data(typeMenuBtn)]
     }
 
     # the okBtn is created after the typeMenu so that the keyboard traversal
     # is in the right order
-	set maxWidth [::tk::mcmaxamp &OK &Cancel]
-	set maxWidth [expr {$maxWidth<6?6:$maxWidth}]
-    set data(okBtn)     [::tk::AmpWidget button $f2.ok     -text "[mc "&OK"]" \
-	-width $maxWidth -default active -pady 3]
-    set data(cancelBtn) [::tk::AmpWidget button $f3.cancel -text "[mc "&Cancel"]" \
-	-width $maxWidth -default normal -pady 3]
+    set data(okBtn)     [::tk::AmpWidget button $f2.ok \
+	    -text "[mc "&OK"]"     -default active -pady 3]
+    set data(cancelBtn) [::tk::AmpWidget button $f2.cancel \
+	    -text "[mc "&Cancel"]" -default normal -pady 3]
 
-    # pack the widgets in f2 and f3
+    # grid the widgets in f2
     #
-    pack $data(okBtn) -side right -padx 4 -anchor e
-    pack $f2.lab -side left -padx 4
-    pack $f2.ent -expand yes -fill x -padx 2 -pady 0
-    
-    pack $data(cancelBtn) -side right -padx 4 -anchor w
+    grid $f2.lab $f2.ent $data(okBtn) -padx 4 -sticky ew
+    grid configure $f2.ent -padx 2
     if { [string equal $class TkFDialog] } {
-	pack $data(typeMenuLab) -side left -padx 4
-	pack $data(typeMenuBtn) -expand yes -fill x -side right
+	grid $data(typeMenuLab) $data(typeMenuBtn) $data(cancelBtn) \
+		-padx 4 -sticky ew
+	grid configure $data(typeMenuBtn) -padx 0
+    } else {
+	grid x x $data(cancelBtn) -padx 4 -sticky ew
     }
+    grid columnconfigure $f2 1 -weight 1
 
     # Pack all the frames together. We are done with widget construction.
     #
     pack $f1 -side top -fill x -pady 4
-    pack $f3 -side bottom -fill x
     pack $f2 -side bottom -fill x
     pack $data(icons) -expand yes -fill both -padx 4 -pady 1
 
@@ -1203,8 +1200,7 @@ proc ::tk::dialog::file::Update {w} {
 	return
     }
     set class [winfo class $w]
-    if { [string compare $class TkFDialog] && \
-	    [string compare $class TkChooseDir] } {
+    if {($class ne "TkFDialog") && ($class ne "TkChooseDir")} {
 	return
     }
 
@@ -1233,9 +1229,8 @@ rSASvJTGhnhcV3EJlo3kh53ltF5nAhQAOw==}]
 	# should have been checked before ::tk::dialog::file::Update is called, so
 	# we normally won't come to here. Anyways, give an error and abort
 	# action.
-	tk_messageBox -type ok -parent $w -message \
-	    "[mc "Cannot change to the directory \"%1\$s\".\nPermission denied." $data(selectPath)]"\
-	    -icon warning
+	tk_messageBox -type ok -parent $w -icon warning -message \
+	    [mc "Cannot change to the directory \"%1\$s\".\nPermission denied." $data(selectPath)]
 	cd $appPWD
 	return
     }
@@ -1248,47 +1243,33 @@ rSASvJTGhnhcV3EJlo3kh53ltF5nAhQAOw==}]
     $data(ent) config -cursor watch
     $w         config -cursor watch
     update idletasks
-    
+
     ::tk::IconList_DeleteAll $data(icons)
 
     # Make the dir list
     #
-    set completeFileList [lsort -dictionary -unique [glob -nocomplain .* *]]
+    set dirs [lsort -dictionary -unique \
+		     [glob -tails -directory . -type d -nocomplain .* *]]
     set dirList {}
-    foreach f $completeFileList {
-	if {[string equal $f .]} {
+    foreach d $dirs {
+	if {$d eq "." || $d eq ".."} {
 	    continue
 	}
-	if {[string equal $f ..]} {
-	    continue
-	}
-	if {[file isdir ./$f]} {
-	    lappend dirList $f
-	}
+	lappend dirList $d
     }
     ::tk::IconList_Add $data(icons) $folder $dirList
-    if { [string equal $class TkFDialog] } {
-	# Make the file list if this is a File Dialog
+
+    if {$class eq "TkFDialog"} {
+	# Make the file list if this is a File Dialog, selecting all
+	# but 'd'irectory type files.
 	#
+	set cmd [list glob -tails -directory . -type {f b c l p s} -nocomplain]
 	if {[string equal $data(filter) *]} {
-	    set files $completeFileList
+	    lappend cmd .* *
 	} else {
-	    set files {}
-	    foreach f $completeFileList {
-		foreach pat $data(filter) {
-		    if { [string match $pat $f] } {
-			lappend files $f
-			break
-		    }
-		}
-	    }
+	    eval [list lappend cmd] $data(filter)
 	}
-	set fileList {}
-	foreach f $files {
-	    if {![file isdir ./$f]} {
-		lappend fileList $f
-	    }
-	}
+	set fileList [lsort -dictionary -unique [eval $cmd]]
 	::tk::IconList_Add $data(icons) $file $fileList
     }
 
@@ -1318,18 +1299,8 @@ rSASvJTGhnhcV3EJlo3kh53ltF5nAhQAOw==}]
 	#
 	if {[string equal $data(type) open]} {
 	    ::tk::SetAmpText $data(okBtn) [mc "&Open"]
-	    set maxWidth [::tk::mcmaxamp [mc "&Open"]]
-	    if {$maxWidth>[$data(okBtn) cget -width]} {
-		    $data(okBtn) config -width $maxWidth
-		    $data(cancelBtn) config -width $maxWidth
-	    }
 	} else {
 	    ::tk::SetAmpText $data(okBtn) [mc "&Save"]
-	    set maxWidth [::tk::mcmaxamp [mc "&Save"]]
-	    if {$maxWidth>[$data(okBtn) cget -width]} {
-		    $data(okBtn) config -width $maxWidth
-		    $data(cancelBtn) config -width $maxWidth
-	    }
 	}
     }
 
@@ -1543,10 +1514,17 @@ proc ::tk::dialog::file::ActivateEnt {w} {
 	# names as a true list, watching out for a single file with a
 	# space in the name.  Thus we query the IconList directly.
 
+	set selIcos [::tk::IconList_Curselection $data(icons)]
 	set data(selectFile) ""
-	foreach item [::tk::IconList_Curselection $data(icons)] {
-	    ::tk::dialog::file::VerifyFileName $w \
+	if {[llength $selIcos] == 0 && $text ne ""} {
+	    # This assumes the user typed something in without selecting
+	    # files - so assume they only type in a single filename.
+	    ::tk::dialog::file::VerifyFileName $w $text
+	} else {
+	    foreach item $selIcos {
+		::tk::dialog::file::VerifyFileName $w \
 		    [::tk::IconList_Get $data(icons) $item]
+	    }
 	}
     } else {
 	::tk::dialog::file::VerifyFileName $w $text

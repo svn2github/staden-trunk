@@ -9,8 +9,8 @@
 # Copyright (c) 1998-2000 by Ajuba Solutions.
 # All rights reserved.
 # 
-# RCS: @(#) $Id: bgerror.tcl,v 1.1.1.1 2003-06-09 11:25:55 jkb Exp $
-# $Id: bgerror.tcl,v 1.1.1.1 2003-06-09 11:25:55 jkb Exp $
+# RCS: @(#) $Id: bgerror.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
+# $Id: bgerror.tcl,v 1.2 2004-06-30 14:29:29 jkbonfield Exp $
 
 namespace eval ::tk {
     namespace eval dialog {
@@ -140,7 +140,10 @@ proc ::tk::dialog::error::bgerror err {
     wm iconname .bgerrorDialog ErrorDialog
     wm protocol .bgerrorDialog WM_DELETE_WINDOW { }
 
-    if {($tcl_platform(platform) eq "macintosh") 
+    if {$tcl_platform(platform) eq "windows"} {
+	wm attributes .bgerrorDialog -topmost 1
+    }
+    if {($tcl_platform(platform) eq "macintosh")
             || ([tk windowingsystem] eq "aqua")} {
 	::tk::unsupported::MacWindowStyle style .bgerrorDialog dBoxProc
     }
