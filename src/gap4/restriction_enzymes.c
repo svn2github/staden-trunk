@@ -876,7 +876,8 @@ template_display_renz(Tcl_Interp *interp,
 
 		    cut_site = r->c_match[c].match[i].padded_cut_pos;
 		    /* colour = SetREnzColour(r->num_enzymes, item); */
-		    PlotStickMap(interp, r->window, cut_site, offset, 
+		    PlotStickMap(interp, r->window,
+				 cut_site, cut_site, offset, 
 				 r->yoffset, r->tick->ht, r->tick->line_width, 
 				 r->tick->colour, 
 				 item,
@@ -1030,7 +1031,7 @@ display_renz(Tcl_Interp *interp,
 		offset = (item * r->tick->ht) + r->yoffset;
 		cut_site = r->start - 1 + r->c_match.match[i].padded_cut_pos;
 
-		PlotStickMap(interp, r->window, cut_site, 0, offset, 
+		PlotStickMap(interp, r->window, cut_site, cut_site, 0, offset, 
 			     r->tick->ht, r->tick->line_width, r->tick->colour, 
 			     item, 1, contig_len);
 	    }
