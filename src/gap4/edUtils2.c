@@ -855,7 +855,7 @@ char *DBgetName(DBInfo *db, int seq)
     i = _DB_Number(db, seq);
     readn_(handle_io(_DBI_io(db)), &i, buf, DB_NAMELEN); /* FORIO */
     buf[DB_NAMELEN]='\0';
-    sprintf(_DB_Name(db, seq),"%*d %-*s",
+    sprintf(_DB_Name(db, seq),"%+*d %-*s",
 	    DB_GELNOLEN,
 	    (_DB_Comp(db, seq) == COMPLEMENTED)
 	      ? -_DB_Number(db, seq)
