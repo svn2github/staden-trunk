@@ -634,7 +634,8 @@ experiments_t *generate_chr_exp(finish_t *fin, experiment_walk_t *prim,
 experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 			      int nprimers, int primer_dir,
 			      experiments_t *exp, int *nexp_p,
-			      int prob_start, int prob_end, int chem) {
+			      int prob_start, int prob_end,
+			      int prob_end_orig, int chem) {
     int i, j;
     int nexp = *nexp_p;
     int templates_picked[20];
@@ -900,12 +901,16 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		 * so that we position the experiment such that the bases
 		 * solving the problem(s) have the highest confidence.
 		 */
-		#if 0
-		if (primer_dir == 1)
-		    cost_mult += 0.0001 * (prob_start - s_start);
-		else
-		    cost_mult += 0.0001 * (s_end - prob_end);
-		#endif
+		{
+		    int dist = MIN(s_start - prob_start,
+				   prob_end_orig - s_end);
+		    if (dist > 0) {
+			if (fin->opts.debug[EXPERIMENT_VPWALK] > 1)
+			    printf("Solution not adjoining problem end => "
+				   "Adjust cost by %f\n", 0.2 + 0.001*dist);
+			cost_mult += 0.2 + 0.001*dist;
+		    }
+		}
 		
 		/* GReading component */
 		exp[nexp-1].r.position = s_start;
@@ -1004,6 +1009,7 @@ experiments_t *experiment_walk(finish_t *fin, int pos, int chem, int dir,
     int nprimers;
     experiment_walk_t *prim;
     int dir_ind[2], dir_loop;
+    int prob_end_orig;
 
     printf(">>> PROBLEM AT %d - PRIMER WALK <<<\n", pos);
 
@@ -1027,6 +1033,7 @@ experiments_t *experiment_walk(finish_t *fin, int pos, int chem, int dir,
 	    break;
 
 	case 2: /* - strand */
+	    prob_end_orig = prob_end;
 	    if (prob_end > pos + fin->opts.pwalk_length - fin->opts.pwalk_offset1)
 		prob_end = pos + fin->opts.pwalk_length - fin->opts.pwalk_offset1;
 
@@ -1074,7 +1081,7 @@ experiments_t *experiment_walk(finish_t *fin, int pos, int chem, int dir,
 		if (etype == EXPERIMENT_VPWALK) {
 		    exp = find_templates(fin, prim, nprimers, primer_dir,
 					 exp, &new_nexp, prob_start, prob_end,
-					 chem);
+					 prob_end_orig, chem);
 		} else {
 		    exp = generate_chr_exp(fin, prim, nprimers, primer_dir,
 					   exp, &new_nexp, chem);
