@@ -17,6 +17,7 @@ typedef struct block_match_ {
     int length;
     int best_score;
     int prev_block;
+    int next_block;
 } Block_Match;
 
 typedef struct diag_match_ {

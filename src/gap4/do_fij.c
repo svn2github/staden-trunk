@@ -305,7 +305,7 @@ int do_it_fij ( char seq[], int seq_len,
 			continue;
 		    }
 
-
+		    
 		    /*printf("%d %d\n",contig_list[contig1_num].contig_left_gel,contig_list[contig2_num].contig_left_gel);*/
 
 		    if ( compare_method == 17 ) {
