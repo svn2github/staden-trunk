@@ -19,13 +19,8 @@ export STADENROOT_2003
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux/macosx.
 #
-MACHINE=`uname -sr | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*/alpha/;s/Linux.*/linux/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
+MACHINE=`uname -srm | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*alpha/alpha/;s/Linux.*i.86/linux/;s/Linux.*ia64/linux-ia64/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
 export MACHINE
-
-if [ "`uname -sm`" = "Linux ia64" ]
-then
-    MACHINE=linux-ia64
-fi
 
 
 #
