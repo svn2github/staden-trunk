@@ -2350,14 +2350,16 @@ static void process_discrep(seq_frag *frag, int *num_frags, int from, int to,
 			    continue;
 			product *= bayesian[k][j];
 		    }
-		    qnorm += product;
-
-		    if (j == l)
+		    if (j == l) {
 			prod_l = product;
+		    } else {
+			qnorm += product;
+		    }
 		}
 
-		prob = qnorm ? prod_l / qnorm : 0;
-		err = prob < 1.0 ? -10.0 * log10(1-prob) : 200;
+		prob = (qnorm + prod_l) ? qnorm / (qnorm + prod_l) : 1;
+		err = prob ? -10.0 * log10(prob) : 1000;
+		if (err > 1000) err = 1000;
 
 		if (err >= first) {
 		    second = first;
