@@ -2,6 +2,8 @@
 #include <errno.h>
 #include <math.h>
 #include "ztr.h"
+#include "compression.h"
+#include "xalloc.h"
 
 static char *format2str(int format) {
     static char unk[100];
@@ -71,7 +73,7 @@ static int explode_chunk(ztr_chunk_t *chunk) {
     int new_len;
 
     while (chunk->dlength > 0 && chunk->data[0] != ZTR_FORM_RAW) {
-	double ent = entropy(chunk->data, chunk->dlength);
+	double ent = entropy((unsigned char *)chunk->data, chunk->dlength);
 
 	switch (chunk->data[0]) {
 	case ZTR_FORM_RLE:
@@ -119,7 +121,7 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 
 	printf("    format %8s => %6d to %6d, entropy %8.1f to %8.1f\n",
 	       format2str(chunk->data[0]), chunk->dlength, new_len,
-	       ent, entropy(new_data, new_len));
+	       ent, entropy((unsigned char *)new_data, new_len));
 
 	chunk->dlength = new_len;
 	xfree(chunk->data);
