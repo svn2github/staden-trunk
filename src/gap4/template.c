@@ -466,7 +466,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    orient = r.sense == GAP_SENSE_ORIGINAL ? 1 : -1;
 	    found_for = 1;
 	    if (check_universal_primers) {
-		if (temp_start != UNKNOWN_POS) {
+		if (temp_start != UNKNOWN_POS && tag_start) {
 		    if (st != UNKNOWN_POS) {
 			/* Already exists - are they near each other? */
 			if (ABS(temp_start - st) > standard_primer_tol)
@@ -504,10 +504,10 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    if (temp_start != UNKNOWN_POS && st != UNKNOWN_POS) {
 		/* Already exists - is custom leftwards of univeral? */
 		if (r.sense == GAP_SENSE_ORIGINAL) {
-		    if (st < temp_start)
+		    if (st + standard_primer_tol < temp_start)
 			t->consistency |= TEMP_CONSIST_PRIMER;
 		} else {
-		    if (st > temp_start)
+		    if (st - standard_primer_tol > temp_start)
 			t->consistency |= TEMP_CONSIST_PRIMER;
 		}
 	    }
@@ -521,7 +521,7 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    orient = r.sense == GAP_SENSE_REVERSE ? 1 : -1;
 	    found_rev = 1;
 	    if (check_universal_primers) {
-		if (temp_end != UNKNOWN_POS) {
+		if (temp_end != UNKNOWN_POS && tag_end) {
 		    if (end != UNKNOWN_POS) {
 			/* Already exists - are they near each other? */
 			if (ABS(temp_end - end) > standard_primer_tol)
@@ -558,10 +558,10 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	    if (temp_end != UNKNOWN_POS && end != UNKNOWN_POS) {
 		/* Already exists - is custom rightwards of universal? */
 		if (r.sense == GAP_SENSE_REVERSE) {
-		    if (end > temp_end)
+		    if (end - standard_primer_tol > temp_end)
 			t->consistency |= TEMP_CONSIST_PRIMER;
 		} else {
-		    if (end < temp_end)
+		    if (end + standard_primer_tol < temp_end)
 			t->consistency |= TEMP_CONSIST_PRIMER;
 		}
 	    }
@@ -810,7 +810,6 @@ static void check_template_length(GapIO *io, template_c *t) {
     int distf, distr, c1;
     GReadings r;
     GTemplates te;
-    int start, end;
     
     template_read(io, t->num, te);
 
