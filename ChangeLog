@@ -1,7 +1,25 @@
+2003-06-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/contigEditor.c, src/gap4/contig_editor.tcl,
+	src/gap4/oligo.c, src/gap4/tagEditor.c, src/gap4/tagU1.c,
+	src/gap4/tagUtils.h, src/gap4/tkEditor.c, tables/gaprc_menu_full:
+	The Edit Tag and Delete tag editor commands are now cascading
+	menus containing the list of all tags underneath the editing
+	cursor. These lists are updated even if the menus have been torn
+	off and after undo, etc.
+
+2003-06-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tables/gaprc_menu_full, tables/gaprc,
+	src/gap4/contig_editor.tcl:
+	Added an option to the Edit Modes menu to turn off fast tag
+	deletion using F12 as this could be considered a dangerous option
+	to allow by default.
+
 2003-06-06  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/prefinish/finish.c: set to version 1.19
-
+\
 	* src/prefinish/finish.tcl:
 	Changed the optimisation on solving low consensus confidence
 	problems; we now always check both strands. Slower, but better in
