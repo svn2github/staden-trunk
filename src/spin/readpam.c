@@ -50,7 +50,7 @@ void
 identity_prot_matrix (int ***matrix)
 {
     int i, j;
-    int *p = protein_lookup;
+    int *p = get_protein_lookup();
 
     for (i = 0; i < char_set_size; i++) {
 	for (j = 0; j < char_set_size; j++) {
