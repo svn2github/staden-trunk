@@ -323,17 +323,18 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	if (argc == 2) {
 	    /* query */
-	    vTcl_SetResult(interp, "%d %d", 0, 1); /* FIXME */
-	} else if (argc == 3) {
-	    /* old syntax */
-	    if (Tcl_GetInt(interp, argv[2], &offset) != TCL_OK) {
-                goto fail;
-	    }
-	    setNamePos(en->xx, offset);
+	    vTcl_SetResult(interp, "%d", en->xx->names_xpos);
 	} else {
-	    /* new syntax */
-            type = Tk_GetScrollInfo(interp, argc, argv, &fraction, &count);
-            switch (type) {
+	    if (argc == 3) {
+		/* old syntax */
+		if (Tcl_GetInt(interp, argv[2], &offset) != TCL_OK) {
+		    goto fail;
+		}
+		setNamePos(en->xx, offset);
+	    } else {
+		/* new syntax */
+		type = Tk_GetScrollInfo(interp, argc, argv, &fraction, &count);
+		switch (type) {
                 case TK_SCROLL_ERROR:
                     goto fail;
                 case TK_SCROLL_MOVETO:
@@ -344,16 +345,17 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
                 case TK_SCROLL_UNITS:
 		    offset = en->xx->names_xpos + count;
                     break;
-            }
-	    if (offset < 0)
-		offset = 0;
-	    if (offset + (en->sw.columns - (DB_GELNOLEN + 1)) > DB_NAMELEN)
-		offset = DB_NAMELEN - (en->sw.columns - (DB_GELNOLEN + 1));
-	    setNamePos(en->xx, offset);
+		}
+		if (offset < 0)
+		    offset = 0;
+		if (offset + (en->sw.columns - (DB_GELNOLEN + 1)) > DB_NAMELEN)
+		    offset = DB_NAMELEN - (en->sw.columns - (DB_GELNOLEN + 1));
+		setNamePos(en->xx, offset);
+	    }
+	    
+	    /* Update X scrollbar */
+	    ed_set_nslider_pos(en->xx, en->xx->names_xpos);
 	}
-
-	/* Update X scrollbar */
-	ed_set_nslider_pos(en->xx, en->xx->names_xpos);
 
     } else {
 	Tcl_AppendResult(interp, "bad option \"", argv[1], "\": must be FIXME",
