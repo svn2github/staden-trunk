@@ -288,10 +288,12 @@ static void contig_notify_common(GapIO *io, int contig, reg_data *jdata,
     int i, j, k, n;
     int *uids;
     signed int send_to_zero;
+    int orig_contig;
 
     send_to_zero = (contig > 0);
     if (contig < 0)
 	contig = -contig;
+    orig_contig = contig;
 
     if (contig == 0) {
 	reg_buffer_start rs;
@@ -355,7 +357,7 @@ static void contig_notify_common(GapIO *io, int contig, reg_data *jdata,
 
 	    /* Send the notification request itself */
 	    if (r[i].flags & jdata->job && r[i].id != except_id)
-		r[i].func(io, contig, r[i].fdata, jdata);
+		r[i].func(io, orig_contig, r[i].fdata, jdata);
 	}
 
 	xfree(uids);
