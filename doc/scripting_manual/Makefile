@@ -52,10 +52,10 @@ M4=m4
 %.ps:	%.dvi
 	dvips -t a4 -Ppdf -o $@ $<
 
-# PDF generation. I've never really had a great deal of luck with getting
-# good fonts out of ps2pdf, but it's worth a try.
-%.pdf:	%.ps
-	ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
+# PDF generation - directly from the texinfo file.
+%.pdf:	%.texinfo
+	texi2pdf $<
+
 
 # Converts an A4 formatted .texi file into a US-letter formatted file.
 %_us.texinfo: %.texinfo
@@ -70,34 +70,6 @@ M4=m4
 # html page at a specific point).
 %_toc.html:	%.htmlinfo
 	../manual/tools/texi2html -menu -verbose -split_chapter -index_chars $<
-
-# Man pages - taken from the .texi files directly (NB: may need m4 expansion,
-# but this is not yet applied.)
-man/man1/%.1:	%.1.texi
-	../manual/tools/texi2man.pl $< > $@
-
-man/man4/ExperimentFile.4: exp-t.texi
-	../manual/tools/texi2man.pl $< > $@
-
-man/man4/scf.4: scf-t.texi
-	../manual/tools/texi2man.pl $< > $@
-
-man/man4/ztr.4: ztr-t.texi
-	../manual/tools/texi2man.pl $< > $@
-
-# For any large pictures (_lpicure() macro) we create an html page containing
-# the full-size picture to link from the small picture embedded in the page.
-gifs:
-	../manual/tools/make_gif_html
-
-# PostScript versions of the gif images.
-%.ps: %.gif
-	../manual/tools/make_ps $<
-
-# Help within the programs is HTML based. Given a topic the appropriate URL
-# is obtained by looking it up in the .index file.
-%.index:	%_toc.html
-	../manual/tools/html_index.pl $<
 
 #-----------------------------------------------------------------------------
 # The main make targets.
@@ -116,4 +88,4 @@ depend:
 
 include dependencies
 
-start: scripting.texinfo scripting.dvi scripting.ps scripting_toc.html
+start: scripting.texinfo scripting.pdf scripting_toc.html
