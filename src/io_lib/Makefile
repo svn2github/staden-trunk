@@ -3,7 +3,7 @@
 #
 
 LIBS	= read
-PROGS	= $(LIBS) progs
+PROGS	= include/.links $(LIBS) progs
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=..
@@ -121,7 +121,7 @@ include/.links:
 	done
 	touch include/.links
 
-progs: include/.links
+progs:
 	cd $@ && $(MAKE)
 
 #clean:
