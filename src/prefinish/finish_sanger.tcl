@@ -37,7 +37,14 @@ proc finishing_rules_ends {bits} {
     # Problem 3: low sequence or low template coverage
     set p3	[expr {!($bits & 0x0004) || !($bits & 0x0008)}]
 
-    return [expr {$p1 | ($p2<<1) | ($p3<<2)}]
+    set p4	0
+
+    # Problem 5: low consensus confidence
+    set p5	[expr {!($bits & 0x0010)}]
+
+    set p6	0
+
+    return [expr {$p1 | ($p2<<1) | ($p3<<2) | ($p4<<3) | ($p5<<4) | ($p6<<5)}]
 }
 
 #
@@ -148,11 +155,9 @@ proc find_solutions_sanger1_ends {base_bits problem_bits} {
 	set strand 1
     }
 
-    # Problem 3: low template/sequence coverage
-    # Skip for now as we're only doing contig ends
-#    if {[expr {$problem_bits&0x04}]} {
-#	# Primer walk, any strand
-#    }
+    # Skip other problems for now as we're only doing contig ends.
+    # We have other problems classified simply to adjust the scores when
+    # deciding which contig-extension reading to use.
 
     return [expr $type | ($strand << 16) | ($chem << 24)]
 }
@@ -398,7 +403,7 @@ set consensus_mode 2
 # 1	Has data on bottom strand
 # 2	Covered by 2 or more sequences (no effect in this example due to bit 3)
 # 3	Covered by 2 or more templates
-# 4	Consensus confidence is 15 or more
+# 4	Consensus confidence is 30 or more
 # 5	Is a BigDye or ET terminator sequence
 # 6	Is a non-BigDye/ET terminator sequence
 # 7	Is a dye-primer sequence
@@ -482,7 +487,7 @@ finish .f \
     -min_score 6.0 \
     -avail_template_file avail_templates \
     -skip_template_file skip_templates \
-    -pscores {0.5 0.5 0.8 0.8 1.5 0.01} \
+    -pscores {0.2 0.2 0.8 0.8 1.5 0.01} \
     -mscores {10 10 0.8 0.8 1.5 0.01} \
     -dust_level 14 \
     -min_extension 50 \
@@ -500,6 +505,7 @@ finish .f \
     -primer_max_poly_x 4 \
     -primer_max_end_stability 9 \
     -output_file $dbname.$dbvers.experiments \
+    -regexp_templates 1 \
     -debug0 2 \
     -debug1 2 \
     -debug2 2 \
