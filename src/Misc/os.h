@@ -15,6 +15,26 @@
 #define _OS_H_
 
 #include <limits.h>
+#include <inttypes.h>
+
+
+/*
+ *-----------------------------------------------------------------------------
+ * <inttypes.h> definitions, incase they're not present
+ *-----------------------------------------------------------------------------
+ */
+#ifndef PRId64
+#define __PRI64__ "l"
+#define PRId64 __PRI64__ "d"
+#define PRId32 "d"
+#define PRId16 "d"
+#define PRId8  "d"
+#define PRIu64 __PRI64__ "u"
+#define PRIu32 "u"
+#define PRIu16 "u"
+#define PRIu8  "u"
+#endif
+
 
 /*
  *-----------------------------------------------------------------------------
@@ -142,6 +162,9 @@ typedef int mode_t;
  * Typedefs for data sizes. Note there's umpteen versions of typedefs here
  * due to old code being supported. The ones that should be used everywhere
  * are {u,}int[124].
+ *
+ * C9X defines its own versions of these in inttypes.h so new code should
+ * ideally be using the (for example) int32_t style of types.
  *-----------------------------------------------------------------------------
  */
 
@@ -166,6 +189,8 @@ typedef unsigned short	uint2;
 typedef signed int	int4;
 typedef unsigned int	uint4;
 
+typedef int64_t		int8;
+typedef uint64_t	uint8;
 
 /*
  * Backwards compatibility
@@ -210,6 +235,7 @@ typedef int4 int_fl;		/* f_implicit */
  *-----------------------------------------------------------------------------
  */
 
+#define MAXINT8 (9223372036854775807LL)
 #define MAXINT4 (INT_MAX)
 #define MAXINT2 (SHRT_MAX)
 
@@ -224,27 +250,6 @@ typedef int4 int_fl;		/* f_implicit */
 #define True 1
 
 
-#ifdef OLD_SWAP
-/* See below for reasons not to revert back. We ought to remove these. */
-
-/* copy INT4 from src to dst byteswapping on the way */
-#define swap_int4(src, dst) \
-    do {\
-	((char *)&(dst))[0] = ((char *) &(src))[3];\
-	((char *)&(dst))[1] = ((char *) &(src))[2];\
-        ((char *)&(dst))[2] = ((char *) &(src))[1];\
-        ((char *)&(dst))[3] = ((char *) &(src))[0];\
-    } while (0)
-
-/* copy INT2 from src to dst byteswapping on the way */
-#define swap_int2(src, dst) \
-    do {\
-        ((char *) &(dst))[0] = ((char *) &(src))[1];\
-        ((char *) &(dst))[1] = ((char *) &(src))[0];\
-    } while (0)
-
-#else
-
 /*
  * Our new swap runs at the same speed on Ultrix, but substantially faster
  * (300% for swap_int4, ~50% for swap_int2) on an Alpha (due to the lack of
@@ -253,22 +258,16 @@ typedef int4 int_fl;		/* f_implicit */
  * They also have the ability to swap in situ (src == dst). Newer code now
  * relies on this so don't change back!
  */
-#define swap_int4(src, dst) \
-    dst = ((src & 0x000000ff) << 24) + \
-          ((src & 0x0000ff00) <<  8) + \
-          ((src & 0x00ff0000) >>  8) + \
-          ((src & 0xff000000) >> 24)
+#define iswap_int8(x) \
+    (((x & 0x00000000000000ffLL) << 56) + \
+     ((x & 0x000000000000ff00LL) << 40) + \
+     ((x & 0x0000000000ff0000LL) << 24) + \
+     ((x & 0x00000000ff000000LL) <<  8) + \
+     ((x & 0x000000ff00000000LL) >>  8) + \
+     ((x & 0x0000ff0000000000LL) >> 24) + \
+     ((x & 0x00ff000000000000LL) >> 40) + \
+     ((x & 0xff00000000000000LL) >> 56))
 
-#define swap_int2(src, dst) \
-    dst = ((src & 0x00ff) << 8) + \
-          ((src & 0xff00) >> 8)
-#endif
-
-
-/*
- * Slightly updated swap_int? routines that return results rather than
- * swapping from source to destination.
- */
 #define iswap_int4(x) \
     (((x & 0x000000ff) << 24) + \
      ((x & 0x0000ff00) <<  8) + \
@@ -278,6 +277,29 @@ typedef int4 int_fl;		/* f_implicit */
 #define iswap_int2(x) \
     (((x & 0x00ff) << 8) + \
      ((x & 0xff00) >> 8))
+
+#define swap_int8(src, dst) ((dst) = iswap_int8(src))
+#define swap_int4(src, dst) ((dst) = iswap_int4(src))
+#define swap_int2(src, dst) ((dst) = iswap_int2(src))
+
+
+/*
+ * Linux systems may use byteswap.h to get assembly versions of byte-swap
+ * on intel systems. This can be as trivial as the bswap opcode, which works
+ * out at over 2-times faster than iswap_int4 above.
+ */
+#if 0
+#if defined(__linux__)
+#    include <byteswap.h>
+#    undef iswap_int8
+#    undef iswap_int4
+#    undef iswap_int2
+#    define iswap_int8 bswap_64
+#    define iswap_int4 bswap_32
+#    define iswap_int2 bswap_16
+#endif
+#endif
+
 
 /*
  * Macros to specify that data read in is of a particular endianness.
@@ -290,20 +312,24 @@ typedef int4 int_fl;		/* f_implicit */
  * trivial.
  */
 #ifdef SP_BIG_ENDIAN
+#define be_int8(x) (x)
 #define be_int4(x) (x)
 #define be_int2(x) (x)
 #define be_int1(x) (x)
 
+#define le_int8(x) iswap_int8((x))
 #define le_int4(x) iswap_int4((x))
 #define le_int2(x) iswap_int2((x))
 #define le_int1(x) (x)
 #endif
 
 #ifdef SP_LITTLE_ENDIAN
+#define be_int8(x) iswap_int8((x))
 #define be_int4(x) iswap_int4((x))
 #define be_int2(x) iswap_int2((x))
 #define be_int1(x) (x)
 
+#define le_int8(x) (x)
 #define le_int4(x) (x)
 #define le_int2(x) (x)
 #define le_int1(x) (x)
