@@ -398,6 +398,7 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
     }
     xx->ed = (Editor *)cmdinfo.clientData;
     xx->ed->xx = xx;
+    xx->displayWidth = xx->ed->sw.columns;
 
     if (0 == Tcl_GetCommandInfo(interp, ptr, &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Names structure!");
@@ -570,6 +571,7 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
     }
     xx[0]->ed = (Editor *)cmdinfo.clientData;
     xx[0]->ed->xx = xx[0];
+    xx[0]->displayWidth = xx[0]->ed->sw.columns;
 
     if (0 == Tcl_GetCommandInfo(interp, ptr, &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Names structure!");
@@ -610,6 +612,7 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
     }
     xx[1]->ed = (Editor *)cmdinfo.clientData;
     xx[1]->ed->xx = xx[1];
+    xx[1]->displayWidth = xx[1]->ed->sw.columns;
 
     if (0 == Tcl_GetCommandInfo(interp, ptr, &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Names structure!");
