@@ -43,3 +43,8 @@
 /* Version number of package */
 #undef VERSION
 
+/* Tell the code this is an autoconf build instead of via the Staden
+   Makefile setup */
+#define USING_AUTOCONF
+
+
