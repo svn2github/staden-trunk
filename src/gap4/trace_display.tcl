@@ -558,8 +558,8 @@ proc new_trace_create2 {w e title allow_diff} {
 	-bg 	        [keylget dt BACKGROUND] \
 	-xmag	        [expr double([keylget dt XMAG])/100] \
 	-width		[set $w.Trace_width] \
-	-height 	$remaining_height
-
+	-height 	$remaining_height \
+	-line_width     [keylget gap_defs TRACE_DISPLAY.LINE_WIDTH]
     if {$allow_diff} {
 	recurse_trace_bind $tf_r
     }
