@@ -128,7 +128,7 @@ tcl-build: $(TCL_SRC)/.built-$(O)
 $(TCL_SRC)/.built-$(O): $(TCL_SRC)/.unpacked
 	-(cd $(TCL_SRC)/unix; $(MAKE) distclean)
 	cd $(TCL_SRC)/unix; \
-	./configure --enable-shared; \
+	./configure --enable-shared --enable-64bit; \
 	make
 	touch $@
 
