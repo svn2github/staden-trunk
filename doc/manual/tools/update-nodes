@@ -1,2 +1,2 @@
 #!/bin/sh
-emacs -batch $1 -l tools/update-nodes.el
+emacs -batch $1 -l $0.el
