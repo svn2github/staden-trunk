@@ -286,6 +286,7 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	else
 	    num = en->xx->cursorSeq;
 
+	Tcl_ResetResult(interp);
 	if (NULL != (name = edGetGelName(en->xx, num))) {
 	    Tcl_AppendResult(interp, name, NULL);
 	} /* otherwise return a blank */
