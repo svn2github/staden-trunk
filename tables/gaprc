@@ -465,9 +465,9 @@ set_def GLOBAL.READING		$defs_rn
 #-----------------------------------------------------------------------------
 # The Primer3 defaults
 #-----------------------------------------------------------------------------
-set_def PRIMER.min_tm 58
-set_def PRIMER.opt_tm 60
-set_def PRIMER.max_tm 65
+set_def PRIMER.min_tm 50
+set_def PRIMER.opt_tm 55
+set_def PRIMER.max_tm 60
 set_def PRIMER.min_gc 20
 set_def PRIMER.opt_gc 50
 set_def PRIMER.max_gc 80
