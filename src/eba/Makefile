@@ -12,12 +12,12 @@ INCLUDES_E += $(IOLIB_INC)
 
 EBASRC=$(O)
 
-OBJS	= $(EBASRC)/qual.o $(EBASRC)/conf.o
+EBAOBJS	= $(EBASRC)/qual.o $(EBASRC)/conf.o
 
-$(O)/eba: $(OBJS)
-	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(OBJS) $(IOLIB_LIB) $(MISC_LIB) $(LIBSC)
+$(O)/eba: $(EBAOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(EBAOBJS) $(IOLIB_LIB) $(MISC_LIB) $(LIBSC)
 
-DEPEND_OBJ = $(OBJS)
+DEPEND_OBJ = $(EBAOBJS) $(SNROBJS)
 
 include dependencies
 

@@ -1,5 +1,6 @@
 #include "Read.h"
 #include "misc.h"
+#include "conf.h"
 
 #define WINDOW_SIZE 15
 
@@ -107,6 +108,110 @@ static int eba2phred[] = {
     /*100 */ 43
 };
 
+static int ebanew2phred[] = {
+    /* 0: */ 5,
+    /* 1: */ 6,
+    /* 2: */ 6,
+    /* 3: */ 7,
+    /* 4: */ 7,
+    /* 5: */ 7,
+    /* 6: */ 7,
+    /* 7: */ 7,
+    /* 8: */ 7,
+    /* 9: */ 7,
+    /* 10: */ 7,
+    /* 11: */ 7,
+    /* 12: */ 7,
+    /* 13: */ 7,
+    /* 14: */ 7,
+    /* 15: */ 8,
+    /* 16: */ 8,
+    /* 17: */ 8,
+    /* 18: */ 8,
+    /* 19: */ 8,
+    /* 20: */ 8,
+    /* 21: */ 8,
+    /* 22: */ 8,
+    /* 23: */ 8,
+    /* 24: */ 8,
+    /* 25: */ 8,
+    /* 26: */ 8,
+    /* 27: */ 8,
+    /* 28: */ 9,
+    /* 29: */ 9,
+    /* 30: */ 9,
+    /* 31: */ 9,
+    /* 32: */ 9,
+    /* 33: */ 9,
+    /* 34: */ 9,
+    /* 35: */ 9,
+    /* 36: */ 9,
+    /* 37: */ 9,
+    /* 38: */ 10,
+    /* 39: */ 10,
+    /* 40: */ 10,
+    /* 41: */ 10,
+    /* 42: */ 10,
+    /* 43: */ 10,
+    /* 44: */ 10,
+    /* 45: */ 10,
+    /* 46: */ 11,
+    /* 47: */ 11,
+    /* 48: */ 11,
+    /* 49: */ 11,
+    /* 50: */ 11,
+    /* 51: */ 11,
+    /* 52: */ 12,
+    /* 53: */ 12,
+    /* 54: */ 12,
+    /* 55: */ 12,
+    /* 56: */ 12,
+    /* 57: */ 13,
+    /* 58: */ 13,
+    /* 59: */ 12,
+    /* 60: */ 13,
+    /* 61: */ 13,
+    /* 62: */ 13,
+    /* 63: */ 13,
+    /* 64: */ 14,
+    /* 65: */ 14,
+    /* 66: */ 14,
+    /* 67: */ 14,
+    /* 68: */ 15,
+    /* 69: */ 15,
+    /* 70: */ 15,
+    /* 71: */ 16,
+    /* 72: */ 16,
+    /* 73: */ 16,
+    /* 74: */ 16,
+    /* 75: */ 17,
+    /* 76: */ 17,
+    /* 77: */ 18,
+    /* 78: */ 18,
+    /* 79: */ 19,
+    /* 80: */ 19,
+    /* 81: */ 20,
+    /* 82: */ 21,
+    /* 83: */ 21,
+    /* 84: */ 21,
+    /* 85: */ 21,
+    /* 86: */ 22,
+    /* 87: */ 23,
+    /* 88: */ 23,
+    /* 89: */ 24,
+    /* 90: */ 25,
+    /* 91: */ 25,
+    /* 92: */ 26,
+    /* 93: */ 27,
+    /* 94: */ 29,
+    /* 95: */ 31,
+    /* 96: */ 32,
+    /* 97: */ 35,
+    /* 98: */ 36,
+    /* 99: */ 36,
+    /*100: */ 36
+};
+
 static int get_conf(Read *r, int i) { 
     int conf; 
  
@@ -171,13 +276,13 @@ static void set_conf(Read *r, int i, int val) {
 /*
  * Rescales eba scores to phred-style scores.
  */
-void rescale_scores(Read *r) {
+void rescale_scores(Read *r, int table) {
     int i;
     for (i = 0; i < r->NBases; i++) {
 	int conf = get_conf(r, i);
 	if (conf < 0) conf = 0;
 	if (conf > 100) conf = 100;
-	set_conf(r, i, eba2phred[conf]);
+	set_conf(r, i, table == 0 ? eba2phred[conf] : ebanew2phred[conf]);
     }
 }
 
@@ -192,7 +297,7 @@ void rescale_scores(Read *r) {
  * by other max area
  */
 
-float get_area(TRACE *trace, int startp, int endp)
+float get_area(TRACE *trace, int startp, int endp, int offset)
 {
     int i;
     float sum=1.0e-10;
@@ -200,15 +305,15 @@ float get_area(TRACE *trace, int startp, int endp)
     for (i=startp; i<endp; i++)
 	sum += trace[i];
   
-    return(sum);
+    return(sum + offset);
 }
 
-float max_area(TRACE *tx, TRACE *ty, TRACE *tz , int stp, int endp)
+float max_area(TRACE *tx, TRACE *ty, TRACE *tz , int stp, int endp, int offset)
 {
     float x,y,z;
-    x = get_area(tx,stp,endp);
-    y = get_area(ty,stp,endp);
-    z = get_area(tz,stp,endp);
+    x = get_area(tx,stp,endp,offset);
+    y = get_area(ty,stp,endp,offset);
+    z = get_area(tz,stp,endp,offset);
     
     if (x > y) {
 	if (z > x) {
@@ -229,7 +334,7 @@ float max_area(TRACE *tx, TRACE *ty, TRACE *tz , int stp, int endp)
  * Like get_area, but we use just a 5-wide peak and apply a raised
  * cosine profile to work our which samples have the highest significance.
  */
-float get_cosa(TRACE *trace, int pos)
+float get_cosa(TRACE *trace, int pos, int offset)
 {
     int i;
     float sum=1.0e-10;
@@ -242,15 +347,15 @@ float get_cosa(TRACE *trace, int pos)
 	sum += rcos[i]*trace[pos-i];
     }
 
-    return(sum);
+    return(sum + offset);
 }
 
-float max_cosa(TRACE *tx, TRACE *ty, TRACE *tz, int pos)
+float max_cosa(TRACE *tx, TRACE *ty, TRACE *tz, int pos, int offset)
 {
     float x,y,z;
-    x = get_cosa(tx,pos);
-    y = get_cosa(ty,pos);
-    z = get_cosa(tz,pos);
+    x = get_cosa(tx,pos,offset);
+    y = get_cosa(ty,pos,offset);
+    z = get_cosa(tz,pos,offset);
     
     if (x > y) {
 	if (z > x) {
@@ -440,7 +545,7 @@ int average_conf(Read *r) {
 }
 
 
-void calc_conf_values(Read *r, int phred_scale, int cosa) {
+void calc_conf_values(Read *r, int phred_scale, int cosa, int offset) {
     int i;
     int pos,start_pos,end_pos;
 
@@ -473,41 +578,49 @@ void calc_conf_values(Read *r, int phred_scale, int cosa) {
 	case 'A':
 	case 'a':
 	    (r->prob_A)[i] = cosa
-		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceT, pos)/
-				get_cosa(r->traceA, pos)))
+		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceT, pos,
+					 offset)/
+				get_cosa(r->traceA, pos, offset)))
 		: probFromQual((max_area(r->traceC, r->traceG, r->traceT,
-					 start_pos, end_pos) /
-				get_area(r->traceA, start_pos, end_pos)));
+					 start_pos, end_pos, offset) /
+				get_area(r->traceA, start_pos, end_pos,
+					 offset)));
 	    break;
 
 	case 'C':
 	case 'c':
 	    (r->prob_C)[i] = cosa
-		? probFromQual((max_cosa(r->traceA, r->traceG, r->traceT, pos)/
-				get_cosa(r->traceC, pos)))
+		? probFromQual((max_cosa(r->traceA, r->traceG, r->traceT, pos,
+					 offset)/
+				get_cosa(r->traceC, pos, offset)))
 		: probFromQual((max_area(r->traceA, r->traceG, r->traceT,
-					 start_pos, end_pos) /
-				get_area(r->traceC, start_pos, end_pos)));
+					 start_pos, end_pos, offset) /
+				get_area(r->traceC, start_pos, end_pos,
+					 offset)));
 	    break;
 	    
 	case 'G':
 	case 'g':
 	    (r->prob_G)[i] = cosa
-		? probFromQual((max_cosa(r->traceC, r->traceA, r->traceT, pos)/
-				get_cosa(r->traceG, pos)))
+		? probFromQual((max_cosa(r->traceC, r->traceA, r->traceT, pos,
+					 offset)/
+				get_cosa(r->traceG, pos, offset)))
 		: probFromQual((max_area(r->traceC, r->traceA, r->traceT,
-					 start_pos, end_pos) /
-				get_area(r->traceG, start_pos, end_pos)));
+					 start_pos, end_pos, offset) /
+				get_area(r->traceG, start_pos, end_pos,
+					 offset)));
 	    break;
 
 	case 'T':
 	case 't':
 	    (r->prob_T)[i] = cosa
-		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceA, pos)/
-				get_cosa(r->traceT, pos)))
+		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceA, pos,
+					 offset)/
+				get_cosa(r->traceT, pos, offset)))
 		: probFromQual((max_area(r->traceC, r->traceG, r->traceA,
-					 start_pos, end_pos) /
-				get_area(r->traceT, start_pos, end_pos)));
+					 start_pos, end_pos, offset) /
+				get_area(r->traceT, start_pos, end_pos,
+					 offset)));
 	    break;
 
 	default:

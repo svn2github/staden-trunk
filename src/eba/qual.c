@@ -15,8 +15,8 @@
  * and writing.
  */
 static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
-		 int phred_scale, int avg_qual,
-		 int filtered, int non_filtered) {
+		 int phred_scale, int avg_qual, int filtered,
+		 int non_filtered, int offset, int dump) {
     Read *r, *rf;
 
     if (NULL == (r = fread_reading(infp, fn, in_f))) {
@@ -26,21 +26,21 @@ static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
 
     if (filtered) {
 	rf = read_dup(r, "?");
-	calc_conf_values(rf, phred_scale, avg_qual, 1);
+	calc_conf_values(rf, phred_scale, 1, offset);
 	if (phred_scale) {
-	    rescale_scores(rf);
+	    rescale_scores(rf, 1);
 	}
     }
-    if (non_filtered)
-	calc_conf_values(r, phred_scale, avg_qual, 0);
+    if (non_filtered) {
+	calc_conf_values(r, phred_scale, 0, offset);
 
-    /* Average confidence values */
-    if (avg_qual)
-	average_conf(r);
+	/* Average confidence values */
+	if (avg_qual)
+	    average_conf(r);
 
-    /* Move to phred scale. Only tuned on non-filtered non-'cosa' values */
-    if (phred_scale) {
-	rescale_scores(r);
+	if (phred_scale) {
+	    rescale_scores(r, 0);
+	}
     }
 
     /* Merge filtered and non-filtered, or just copy filtered confidences */
@@ -93,24 +93,88 @@ static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
     if (r->format == TT_CTF || r->format == TT_ZTR)
 	out_f = r->format;
 
-    if (-1 == (fwrite_reading(outfp, r, out_f))) {
-	fprintf(stderr, "Couldn't write reading file\n");
-	read_deallocate(r);
-	return 1;
+    if (dump) {
+	int i, count = 20;
+	switch(dump) {
+	case 2:
+	    printf(">%s\n", fn);
+	    break;
+	case 3:
+	    printf("BaseQuality : %s\n", fn);
+	    break;
+	}
+
+	for (i = 0; i < r->NBases; i++) {
+	    char conf;
+	    switch(r->base[i]) {
+	    case 'A': case 'a':
+		conf = r->prob_A[i];
+		break;
+	    case 'C': case 'c':
+		conf = r->prob_C[i];
+		break;
+	    case 'G': case 'g':
+		conf = r->prob_G[i];
+		break;
+	    case 'T': case 't':
+		conf = r->prob_T[i];
+		break;
+	    default:
+		conf = 0;
+	    }
+	    if (dump == 1) {
+		putchar(conf);
+	    } else {
+		if (dump == 4)
+		    printf("%d%c", i, r->base[i]);
+		printf("%d%c", conf, --count == 0 ? '\n' : ' ');
+		if (!count)
+		    count = 20;
+	    }
+	}
+
+	if (count != 20)
+	    putchar('\n');
+
+	if (dump == 3)
+	    putchar('\n');
+
+    } else {
+	if (-1 == (fwrite_reading(outfp, r, out_f))) {
+	    fprintf(stderr, "Couldn't write reading file\n");
+	    read_deallocate(r);
+	    return 1;
+	}
+
+	ftruncate(fileno(outfp), ftell(outfp));
     }
 
-    ftruncate(fileno(outfp), ftell(outfp));
     read_deallocate(r);
 
     return 0;
 }
 
 static void usage(void) {
-    fprintf(stderr, "Usage: eba [trace_file]\n");
+    fprintf(stderr, "Usage: eba [options] [trace_file]\n");
+    fprintf(stderr, "   -phred_scale                Use phred log scale\n");
+    fprintf(stderr, "   -old_scale                  Use S/N ratios\n");
+    fprintf(stderr, "   -average 0/1                Whether to avg non-filtered results\n");
+    fprintf(stderr, "   -non_filtered 0/1           Compute S/N on non-filtered traces\n");
+    fprintf(stderr, "   -filtered 0/1               Compute S/N on filtered traces\n");
+    fprintf(stderr, "   -offset value               Add value to denominator in S/N calc.\n");
+    fprintf(stderr, "   -dump raw/fasta/caf         Output quality to stdout instead of new trace.\n");
+    fprintf(stderr, "\n  eg. eba -phred_scale -non_filtered 1 -average 1 -filtered 1 -offset 50 a.scf\n");
 
     exit(1);
 }
 
+/*
+ * Experimentation on /nfs/repository/p444/dJ1050E16/ (approx 2000 sequences
+ * forming a finished 90Kb contig) show that combining averaged non_filtered
+ * (ie old eba) with filtered (new eba) gives the best amount of
+ * discrepancy between good and bad base calls. Compared to phred this seems
+ * to discriminate better for poor data and not so well on very good data.
+ */
 int main(int argc, char **argv) {
     FILE *ifp = stdin;
     FILE *ofp = stdout;
@@ -121,6 +185,8 @@ int main(int argc, char **argv) {
     int avg_qual = 1;
     int filtered = 0;
     int non_filtered = 1;
+    int offset = 10;
+    int dump = 0;
 
     while (a < argc) {
 	if (strcmp(argv[a], "-phred_scale") == 0)
@@ -133,7 +199,24 @@ int main(int argc, char **argv) {
 	    non_filtered = atoi(argv[++a]);
 	else if (strcmp(argv[a], "-filtered") == 0)
 	    filtered = atoi(argv[++a]);
-	else
+	else if (strcmp(argv[a], "-offset") == 0)
+	    offset = atoi(argv[++a]);
+	else if (strcmp(argv[a], "-dump") == 0) {
+	    ++a;
+	    if (strcmp(argv[a], "raw") == 0)
+		dump = 1;
+	    else if (strcmp(argv[a], "fasta") == 0)
+		dump = 2;
+	    else if (strcmp(argv[a], "caf") == 0)
+		dump = 3;
+	    else if (strcmp(argv[a], "debug") == 0)
+		dump = 4;
+	    else
+		usage();
+	}
+	else if (strcmp(argv[a], "-h") == 0)
+	    usage();
+	else 
 	    break;
 	a++;
     }
@@ -158,5 +241,5 @@ int main(int argc, char **argv) {
     }
 
     return do_it(ifp, ofp, in_type, out_type, fn, phred_scale,
-		 avg_qual, filtered, non_filtered);
+		 avg_qual, filtered, non_filtered, offset, dump);
 }
