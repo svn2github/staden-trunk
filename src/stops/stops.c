@@ -6,6 +6,8 @@
 #include "Read.h"
 #include "misc.h"
 
+void do_nothing(void) {}
+
 /* johnt 1/6/99 must explicitly import globals from DLLs with Visual C++*/
 #ifdef _MSC_VER
 #  define DLL_IMPORT __declspec(dllimport)
@@ -67,9 +69,9 @@ int scan_right(char *name, params *p, int *peaks, int start_pos,
     int total_l = 0, total_r = 0;
     double best_val = 0;
     int peakpos[10];
-    double peakval[10];
+    double peakval[11];
     int npp;
-    double costab[100], area;
+    double costab[200], area;
 
     /* Check boundary cases */
     if (len < p->window_len)
@@ -118,33 +120,43 @@ int scan_right(char *name, params *p, int *peaks, int start_pos,
 
 	/* Mark current highest value */
 	if (ratio > p->threshold && best_val < ratio) {
-	    int j;
-	    double avg_local = 0;
-	    double avg_long = 0;
-
 	    /*
 	     * First check whether over a longer range the peaks increase
 	     * again. If so it's probably a poor stretch (poly-X perhaps)
 	     * and not a real 'stop'.
 	     */
-	    for (j = start_pos; j < start_pos+win_len2; j++)
-		avg_local += peaks[j];
+	    if (level == 0) {
+		int j = 0;
+		double avg_local = 0;
+		double avg_long = 0;
 
-	    for (avg_long = avg_local; j < start_pos+200 && j < len; j++)
-		avg_long += peaks[j];
+		for (j = start_pos; j < start_pos+win_len2; j++)
+		    avg_local += peaks[j];
 
-	    if (avg_long/(j-start_pos) < 1.2*avg_local/win_len2 ||
-		avg_long/(j-start_pos) < (p->signal_val/2) * highest) {
+		for (avg_long = 0; j < start_pos+200 && j < len; j++)
+		    avg_long += peaks[j];
+
+		do_nothing();
+		if ((avg_long/(j-(start_pos+win_len2))
+		        < 1.2*avg_local/win_len2) ||
+		    (avg_long/(j-(start_pos+win_len2))
+		        < (p->signal_val/200.0) * highest)) {
+		    best_val = ratio;
+		    peakpos[npp] = start_pos;
+		    peakval[npp] = ratio;
+		} else {
+		    if (p->verbose)
+			printf("Skipped peak at %d due to later peak "
+			       "increases %5.2f -> %5.2f, high=%d\n",
+			       start_pos,
+			       avg_local/win_len2,
+			       avg_long/(j-(start_pos+win_len2)),
+			       highest);
+		}
+	    } else {
 		best_val = ratio;
 		peakpos[npp] = start_pos;
 		peakval[npp] = ratio;
-	    } else {
-		printf("Skipped peak at %d due to later peak increases "
-		       "%f -> %f, high=%d\n",
-		       start_pos,
-		       avg_local/win_len2,
-		       avg_long/(j-start_pos),
-		       highest);
 	    }
 	}
 
@@ -166,7 +178,7 @@ int scan_right(char *name, params *p, int *peaks, int start_pos,
 
     if (level == 0) {
 	for (i = 0; i < npp; i++) {
-	    int newwin = 0.6 * p->window_len;
+	    int newwin = 0.3 * p->window_len;
 	    int oldwin = p->window_len;
 	    int refinedpos;
 
@@ -264,12 +276,12 @@ static int find_stops(Read *r, params *p) {
 static void usage(void) {
     fprintf(stderr,
 	    "Usage: stops [-v]\n"
-	    "             [-w window_len(30)]\n"
+	    "             [-w window_len(50)]\n"
 	    "             [-s signal_strength(5)]\n"
 	    "             [-t threshold(3.0)]\n"
 	    "             file ...\n");
     fprintf(stderr,
-	    "  ( Eg. stops -v -w 50 -t 2.5 *SCF )\n");
+	    "  ( Eg. stops -w 100 -t 4.0 *SCF )\n");
     exit(1);
 }
 
