@@ -1028,11 +1028,14 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	    first = 0;
 	}
 	strcat(job, "}");
-	sprintf(buf, "{id %d} {seq %d} {pos %d} {abspos %d} {job %s}",
+	sprintf(buf, "{id %d} {seq %d} {pos %d} {abspos %d} {refs %d} "
+		"{sent_by %d} {job %s}",
 		jdata->cursor_notify.cursor->id,
 		jdata->cursor_notify.cursor->seq,
 		jdata->cursor_notify.cursor->pos,
 		jdata->cursor_notify.cursor->abspos,
+		jdata->cursor_notify.cursor->refs,
+		jdata->cursor_notify.cursor->sent_by,
 		job);
 	Tcl_DStringAppend(&ds, buf, -1);
 	break;
