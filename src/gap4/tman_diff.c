@@ -68,8 +68,14 @@ static Read *diff_readings(EdStruct *xx,
     end   = MAX(end, 1);
     start = MIN(start, DB_Length(xx, 0));
     end   = MIN(end, DB_Length(xx, 0));
-    if (end <= start)
-	return NULL;
+    if (end <= start) {
+	/*
+	 * No overlap, but return a blank Read structure so that the
+	 * trace display plots all traces correctly and lines up in 2x3 or 4x3
+	 * column-x-row modes.
+	 */
+	return read_allocate(0, 0);
+    }
 
     /* Now we convert these to positions in the full-length editor sequences */
     start1 = start - (DB_RelPos(xx, seq1)-1) + DB_Start(xx, seq1);
