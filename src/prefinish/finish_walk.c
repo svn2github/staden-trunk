@@ -300,7 +300,9 @@ static experiment_walk_t *find_primers(finish_t *fin,
 		fin->orig_prob_bits[i] & fin->opts.pwalk_prob_mask)
 		unpadded_cons[j] = '-';
 	    else
-		unpadded_cons[j] = fin->cons[i];
+		unpadded_cons[j] = fin->filtered[i] == '#'
+		    ? '-'
+		    : fin->cons[i];
 	    unpadded_qual[j] = fin->orig_qual[i];
 	    mapping[j] = i;
 	    j++;
