@@ -8,7 +8,7 @@ distcommon:
 	cp -R itcl3.3 $(DIST)/lib
 	cp -R itk3.3 $(DIST)/lib
 	cp -R iwidgets $(DIST)/lib
-	cp -r tablelist2.0 $(DIST)/lib
+	cp -r tablelist3.4 $(DIST)/lib
 	-rm -r $(DIST)/lib/iwidgets/demos
 	-rm -r $(DIST)/lib/tk/demos
 	-rm -r $(DIST)/lib/tk/orig
@@ -30,9 +30,9 @@ distcommon:
 
 
 distunix: distcommon
-	mkdir $(DIST)/lib/alpha-binaries
+	-mkdir $(DIST)/lib/alpha-binaries
 	cp -R alpha-binaries/* $(DIST)/lib/alpha-binaries
-	mkdir $(DIST)/lib/linux-binaries
+	-mkdir $(DIST)/lib/linux-binaries
 	cp -R linux-binaries/* $(DIST)/lib/linux-binaries
 #	cp -R ../lib.third/sgi-binaries $(DIST)/lib
 #	cp -R ../lib.third/solaris-binaries $(DIST)/lib
