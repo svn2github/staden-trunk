@@ -1,12 +1,16 @@
 
 proc ViewNavigationData {io} {
-
-    global gap_defs
     
     set w .nav
+    global gap_defs $w.Count
+
     if {[xtoplevel $w] == ""} return
     wm title $w "Contig Navigation File"
-    
+
+    if {![info exists $w.Count]} {
+        set $w.Count 0
+    }
+
     xget_fname $w.navfile \
         -text "Navigation file" \
         -type text \
@@ -25,8 +29,11 @@ proc ViewNavigationData {io} {
 
 proc OpenNavFile { io w } {
 
-    global $w.File $w.Auto $w.Edwin
-    
+    global $w.Count
+    set t .navtable[set $w.Count]
+    incr $w.Count
+    global $t.File $t.Auto $t.Edwin 
+
     set fname [$w.navfile get2]
     if {$fname == ""} {
         bell
@@ -40,22 +47,23 @@ proc OpenNavFile { io w } {
         return
     }
     
-    set $w.File [split [read $fd] "\n"]
+    set $t.File [split [read $fd] "\n"]
     
     close $fd
-    
-    CreateTableList $io $w
-     
+
+    CreateTableList $io $t
+    destroy $w
+
+    vfuncheader "Contig Navigation"
 }
 
-proc CreateTableList { io w } {
+proc CreateTableList { io t } {
     package require Tablelist
     
-    global gap_defs $w.File $w.Auto $w.Edwin 
+    global gap_defs $t.File $t.Auto $t.Edwin
 
-    set $w.Auto 1
+    set $t.Auto 1 
 
-    set t .navtable
     if {[xtoplevel $t] == ""} return
     wm title $t "Navigate Regions"
     
@@ -76,7 +84,7 @@ proc CreateTableList { io w } {
     $tbl columnconfigure 1 -sortmode integer
     
     
-    foreach row [set $w.File] {        
+    foreach row [set $t.File] {        
         if {[regexp {^([^ ]*) +([^ ]*) *([^\x0]*)(\x0)?} $row dummy cid pos comm hit] == 0} {
             continue
         }
@@ -89,7 +97,7 @@ proc CreateTableList { io w } {
     }
 
     set body [$tbl bodypath]
-    bind $body <Double-1> [list RaiseAndMoveContig $io $tbl $w]
+    bind $body <Double-1> [list RaiseAndMoveContig $io $tbl $t]
 
     scrollbar $t.f.yscroll -command "$tbl yview"
     pack $t.f.yscroll -side right -fill both
@@ -98,14 +106,14 @@ proc CreateTableList { io w } {
     frame $t.b
     pack $t.b -side bottom -expand yes -fill both -padx 5
     
-    button $t.b.save -text "Save"    -command "SaveTable $w $tbl"
+    button $t.b.save -text "Save"    -command "SaveTable $t $tbl"
     button $t.b.close -text "Close"  -command "destroy $t"
     button $t.b.help -text "Help"    -command "show_help gap4 {Contig Navigation}"
-    button $t.b.reset -text "Reset"  -command "ResetTable $tbl $w"
-    button $t.b.prev -text "  <<-  " -command "PrevProblem $io $tbl $w" 
-    button $t.b.next -text "  ->>  " -command "NextProblem $io $tbl $w" 
+    button $t.b.reset -text "Reset"  -command "ResetTable $tbl $t"
+    button $t.b.prev -text "  <<-  " -command "PrevProblem $io $tbl $t" 
+    button $t.b.next -text "  ->>  " -command "NextProblem $io $tbl $t" 
     checkbutton $t.b.auto -text "auto-close editors" \
-        -variable $w.Auto -offvalue 0 -onvalue 1
+        -variable $t.Auto -offvalue 0 -onvalue 1
         
     pack $t.b.reset -side left  -padx 10
     pack $t.b.prev -side left
@@ -153,6 +161,13 @@ proc SaveTable { w tbl } {
 }
 
 proc PrevProblem { io tbl w } {
+    global $w.Edwin
+    
+    if {[$tbl curselection] == ""} {
+        $tbl selection set 0        
+        RaiseAndMoveContig $io $tbl $w
+        return
+    }    
     set sel [$tbl curselection] 
     set pn [expr {$sel-1}]
     if {[expr {$pn < 0}]} {
@@ -166,6 +181,14 @@ proc PrevProblem { io tbl w } {
 }
 
 proc NextProblem { io tbl w } {
+    global $w.Edwin 
+    
+    
+    if {[$tbl curselection] == ""} {
+        $tbl selection set 0         
+        RaiseAndMoveContig $io $tbl $w
+        return
+    }
     set sel [$tbl curselection]
     set pn [expr {$sel+1}]
     if {[expr {$pn == [$tbl size]}]} {
@@ -195,13 +218,20 @@ proc ResetTable { tbl w } {
 proc RaiseAndMoveContig {io tbl w} {
     
     global gap_defs $w.Edwin $w.Auto 
-
+    
     set sel [$tbl curselection]
     set ctg [$tbl cellcget [$tbl curselection],0 -text]
     set pos [$tbl cellcget [$tbl curselection],1 -text]
-    
-    set ed [edit_contig -io $io -contig $ctg -pos $pos -reuse 1 -nojoin 1]
 
+    if {[db_info get_read_num $io $ctg] <= 0} {
+        tk_messageBox -message "Contig identifier not found! Is this the correct file for this database?" \
+            -type ok \
+            -parent $w   
+        bell
+        return
+    }    
+    set ed [edit_contig -io $io -contig $ctg -pos $pos -reuse 1 -nojoin 1]
+    
     if {[expr {[set $w.Auto] == 1}]} {
         if {[info exists $w.Edwin] && [expr {[set $w.Edwin] != $ed}]} {
             catch { destroy [winfo toplevel [set $w.Edwin]] }
