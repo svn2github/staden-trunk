@@ -121,3 +121,5 @@ proc load_help_system {dir} {
 	load_help_system $dir
     }
 }
+
+load_help_system $env(STADENROOT)/lib/tk_utils

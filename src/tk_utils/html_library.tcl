@@ -1407,30 +1407,3 @@ proc HMcgiMap {data} {
 		return $data
 	}
 }
-
-# There is a bug in the tcl library focus routines that prevents focus
-# from every reaching an un-viewable window.  Use our *own*
-# version of the library routine, until the bug is fixed, make sure we
-# over-ride the library version, and not the otherway around
-
-auto_load tkFocusOK
-proc tkFocusOK w {
-    set code [catch {$w cget -takefocus} value]
-    if {($code == 0) && ($value != "")} {
-    if {$value == 0} {
-        return 0
-    } elseif {$value == 1} {
-        return 1
-    } else {
-        set value [uplevel #0 $value $w]
-        if {$value != ""} {
-        return $value
-        }
-    }
-    }
-    set code [catch {$w cget -state} value]
-    if {($code == 0) && ($value == "disabled")} {
-    return 0
-    }
-    regexp Key|Focus "[bind $w] [bind [winfo class $w]]"
-}
