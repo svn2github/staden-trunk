@@ -44,17 +44,18 @@ set trace_confidence [keylget gap_defs TRACE_DISPLAY.SHOW_CONFIDENCE]
 proc trace_add {w file e title} {
     global trace_columns
 
-    set ttype [trace_type $file]
-    if {$ttype == "PLN"} {
-        error ""
-    }
-
     if {[catch {set t [new_trace_create2 $w $e $title 1]} err]} {
 	puts $err
     }
 
     if {[catch {$t.trace load $file}] == 1} {
 	# Trace not found, or corrupted
+	destroy $t
+	error ""
+    }
+
+    set format [$t.trace format]
+    if {$format == "PLN" || $format == "EXP"} {
 	destroy $t
 	error ""
     }
@@ -462,7 +463,7 @@ proc new_trace_create2 {w e title allow_diff} {
         set tf_r $w.traces.c.f.${tname}_r[set $w.Incr]
 	set $w.HasConf($tf_r) 0
     } else {
-        regexp { *(-?[0-9]*) *(.*)} $title dummy tit_num tit_name
+        regexp { *([-+]?[0-9]*) *(.*)} $title dummy tit_num tit_name
 	regsub {\#} $tit_num {} tmp
 	set rrr [io_read_reading [$e io] [expr abs($tmp)]]
         set t_primer_type [lindex {?? uf ur cf cr} [keylget rrr primer]]
