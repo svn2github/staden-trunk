@@ -25,7 +25,7 @@ if {![info exists .cedit.SE_fast_delete_anno]} {
 }
 
 # Remember last location the user scrolled the names display to
-set ednames_scrollpos 0
+set ednames_scrollpos [keylget gap_defs CONTIG_EDITOR.NAMES_XPOS]
 
 #-----------------------------------------------------------------------------
 # User dialogue for starting up the editors
