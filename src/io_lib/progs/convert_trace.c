@@ -274,9 +274,9 @@ void rescale_heights(Read *r, int min_marker) {
 		/* decay */
 		marker -= (marker - max) / 10.0;
 	    }
-	    if (marker < min_marker)
-		marker = min_marker;
 	}
+	if (marker < min_marker)
+	    marker = min_marker;
 
 	for (j = 0; j < 4; j++) {
 	    double new = tx[j][i] * 2000.0/marker;
