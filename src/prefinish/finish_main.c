@@ -1165,14 +1165,17 @@ int analyse_templates(finish_t *fin) {
 		if (fin->tarr[i]->flags & TEMP_FLAG_SPANNING) {
 		    get_template_positions(fin->io, fin->tarr[i], fin->contig);
 		}
-		printf("Template %c%d, span %d, pos=%d-%d, %d-%d %d-%d len %d\n",
+		printf("Template %c%d, span %d, pos=%d-%d, %d-%d %d-%d len %d consist 0x%x flags 0x%x score %f\n",
 		       "?+-"[fin->tarr[i]->direction+1],
 		       i,
 		       (fin->tarr[i]->flags & TEMP_FLAG_SPANNING) ? 1 : 0,
 		       fin->tarr[i]->start, fin->tarr[i]->end,
 		       fin->tarr[i]->start2, fin->tarr[i]->end2,
 		       fin->tarr[i]->min, fin->tarr[i]->max,
-		       fin->tarr[i]->computed_length);
+		       fin->tarr[i]->computed_length,
+		       fin->tarr[i]->consistency,
+		       fin->tarr[i]->flags,
+		       fin->tarr[i]->score);
 	    }
 	}
 
