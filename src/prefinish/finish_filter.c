@@ -26,15 +26,18 @@
  * ACGT N
  */
 
+typedef int fkey_t;
+
 /*
  * Construct a key and a mask (allbits = 1) from a sequence.
- * If sequence is longer than Number_of_bits(key_t)/4 then the start of the
+ * If sequence is longer than Number_of_bits(fkey_t)/4 then the start of the
  * key will be clipped.
  *
  * Seq can contain the standard ambiguity codes.
  */
-static key_t construct_key(char *seq, key_t *mask, int *keylen, int *keyjmp) {
-    key_t k = 0, m = 0;
+static fkey_t construct_key(char *seq, fkey_t *mask, int *keylen, int *keyjmp)
+{
+    fkey_t k = 0, m = 0;
     int seqlen = strlen(seq), i;
     int jumplen;
     char seq2[201];
@@ -70,11 +73,11 @@ static key_t construct_key(char *seq, key_t *mask, int *keylen, int *keyjmp) {
 static int filter_words(char *seq, char *filt, size_t len, char *rep,
 			int minsize, int maxdrop, char filter_char) {
     size_t i;
-    key_t word = 0;
+    fkey_t word = 0;
     int score = -1, maxscore;
     size_t start = 0, end = 0;
     int last_match_end = 0;
-    key_t key, keymask;
+    fkey_t key, keymask;
     int keyjump, keylen;
     int pads = 0;
 
@@ -92,7 +95,7 @@ static int filter_words(char *seq, char *filt, size_t len, char *rep,
 	word = ((word << 4) | ambiguity2basebit(seq[i])) & keymask;
 	real_match = 0;
 	if (word & key) {
-	    key_t word2 = word & key, km = keymask;
+	    fkey_t word2 = word & key, km = keymask;
 
 	    /* May not be a real match if not all 4-bit values also match */
 	    real_match=1;
