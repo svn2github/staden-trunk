@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.21"
+#define FINISH_VERSION "1.21c"
 
 #include <tcl.h>
 #include <limits.h>
@@ -140,6 +140,7 @@ static finish_t *finish_new(void) {
     fin->right_extent = 0;
     fin->template_used = NULL;
     fin->template_skip = NULL;
+    fin->fake_searched = 0;
     fin->skip_tags = NULL;
     fin->nskip_tags = 0;
     fin->external_seq = NULL;
@@ -341,8 +342,8 @@ static int tcl_finish_cmd(ClientData clientData, Tcl_Interp *interp,
     if (NULL == (fin = finish_new()))
 	return TCL_ERROR;
 
-    if (fin->opts.debug[FIN_DEBUG])
-	printf("Initialising prefinish version %s\n", FINISH_VERSION);
+    printf("Initialising prefinish version %s\n", FINISH_VERSION);
+    fflush(stdout);
 
     /* Add a new command to handle finish methods */
     fin->command_token =
@@ -591,6 +592,44 @@ static int configure_skip_templates(finish_t *fin,
     }
 #endif
     fclose(fp);
+
+    return TCL_OK;
+}
+
+/*
+ * Scans through all readings looking for obviously fake experiments.
+ * Ideally we would be rigorous, looking for ultra-long sequences, ones with
+ * all the same confidence, etc. But for now we use the simple measure of
+ * looking for anything without a trace file.
+ *
+ * Having found a fake reading, we mark its template as 'skipped'.
+ */
+static int skip_fake_templates(finish_t *fin) {
+    int i;
+    GReadings r;
+
+    if (fin->fake_searched)
+	return TCL_OK;
+
+    if (!fin->template_skip) {
+	fin->template_skip = (int *)xcalloc(Ntemplates(fin->io)+1,
+					    sizeof(int));
+	if (!fin->template_skip)
+	    return TCL_ERROR;
+    }
+
+    for (i = 1; i <= NumReadings(fin->io); i++) {
+	gel_read(fin->io, i, r);
+	if (!r.trace_name) {
+	    if (fin->opts.debug[FIN_DEBUG]) {
+		printf("Skipping template %d due to no trace for seq %s\n",
+		       r.template, io_rname(fin->io, i));
+	    }
+	    fin->template_skip[r.template] = 1;
+	}
+    }
+
+    fin->fake_searched = 1;
 
     return TCL_OK;
 }
@@ -994,6 +1033,12 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 					       1))
 	    return TCL_ERROR;
     }
+
+
+    /* Filter out fake-looking templates (consensus imports, etc) */
+    if (TCL_OK != skip_fake_templates(fin))
+	return TCL_ERROR;
+
 
     if (fin->args.output_file) {
 	if (fin->out_fp)

@@ -152,7 +152,7 @@ proc find_solutions_sanger1_ends {base_bits problem_bits} {
     # Skip for now as we're only doing contig ends
     if {[expr {$problem_bits&0x04}]} {
 	# Primer walk, any strand
-	set type [expr {$type|$method}]
+	set type 0
     }
 
     return [expr $type | ($strand << 16) | ($chem << 24)]
@@ -204,41 +204,41 @@ proc dump_problem {io fin fd cnum} {
 proc usage {} {
     puts "finish_sanger.tcl \[options\] DATABASE.V"
     puts "
-   -h                   Print this help
+   --h                   Print this help
 
-   -v or
-   -version		Returns prefinish version string (first arg)
+   --v or
+   --version             Returns prefinish version string (first arg)
 
-   -ends                Only solve problems on contig ends
+   --ends                Only solve problems on contig ends
 
-   -internal            Solve all problems (default)
+   --internal            Solve all problems (default)
 
-   -filter_tag type     Add another tag type to filter out seq for primers.
-                        This defaults to AMBG OLIG PRIM MASK CVEC.
+   --filter_tag type     Add another tag type to filter out seq for primers.
+                         This defaults to AMBG OLIG PRIM MASK CVEC.
 
-   -add_tags type       Adds tags of 'type' to database to mark primers chosen.
-                        Defaults to \"\" (no tags to add).
+   --add_tags type       Adds tags of 'type' to database to mark primers chosen.
+                         Defaults to \"\" (no tags to add).
 
-   -dump_problems fn    Dumps out the problem information to a file 'fn'
+   --dump_problems fn    Dumps out the problem information to a file 'fn'
 
-   -skip_solutions 0/1  Whether to implement solutions. Typically used in
-                        conjunction with -dump_problems.
+   --skip_solutions      requests not to implement solutions. Typically used in
+                         conjunction with --dump_problems.
 
-   -contig(s) list      Specifies a list of contig identifiers to pick
-                        experiments for.
+   --contig(s) list      Specifies a list of contig identifiers to pick
+                         experiments for.
 
-   -from pos            These specify the start and end position for picking
-   -to   pos            experiments. Only applies when -contig is used with a
-                        single contig identifier.
+   --from pos            These specify the start and end position for picking
+   --to   pos            experiments. Only applies when --contig is used with a
+                         single contig identifier.
 
-   -min_contig_len sz   Requests finishing on all contigs >= sz bases long.
-                        Defaults to 2Kb. Is ignored if -contig(s) is used.
+   --min_contig_len sz   Requests finishing on all contigs >= sz bases long.
+                         Defaults to 2Kb. Is ignored if --contig(s) is used.
 
-   -pwalk_ntemplates    Specifies how the maximum number of templates to use
-                        for each primer in primer-walk experiments.
+   --pwalk_ntemplates    Specifies how the maximum number of templates to use
+                         for each primer in primer-walk experiments.
 
-   -method method       \"method\" is one of walk or reseq. Specifies which
-                        experiment type to use."
+   --method method       \"method\" is one of walk or reseq. Specifies which
+                         experiment type to use."
 
     exit 0
 }
@@ -247,8 +247,9 @@ proc usage {} {
 # Main entry point
 
 if {[string length [lindex $argv 0]] >= 2 && \
-	[string match [lindex $argv 0]* "-version"]} {
-    finish .f
+	([string match [lindex $argv 0]* "-version"] || \
+	 [string match [lindex $argv 0]* "--version"])} {
+    capture {finish .f}
     puts [.f version]
     exit
 }
@@ -264,6 +265,7 @@ set where internal
 set tag_types {AMBG OLIG PRIM MASK CVEC}
 set pwalk_ntemplates 4
 set method 0x04; # primer-walking
+set min_contig_len 2000
 
 puts "*** Prefinish args: $argv"
 
@@ -272,12 +274,17 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     set argv [lrange $argv 1 $argc]
     incr argc -1;
 
-    if {$arg == "-help" || $arg == "-h" || $arg == "--help"} {
-	usage
-    }
-
     if {$arg == "--"} {
 	break;
+    }
+
+    # Turn --arg into -arg
+    if {[string match "--*" $arg]} {
+	set arg [string range $arg 1 end]
+    }
+
+    if {$arg == "-help" || $arg == "-h"} {
+	usage
 
     } elseif {$arg == "-internal"} {
 	set where internal
@@ -339,6 +346,11 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 	set argv [lrange $argv 1 $argc]
 	incr argc -1;
 
+    } elseif {$arg == "-min_contig_len"} {
+	set min_contig_len [lindex $argv 0]
+	set argv [lrange $argv 1 $argc]
+	incr argc -1;
+
     } elseif {$arg == "-pwalk_ntemplates"} {
 	set pwalk_ntemplates [lindex $argv 0]
 	set argv [lrange $argv 1 $argc]
@@ -379,7 +391,6 @@ if {$add_tags != ""} {
 set consensus_cutoff 0.02
 set quality_cutoff 1
 set consensus_mode 2
-set min_contig_len 2000
 
 #
 # Base classification bits used for this example:

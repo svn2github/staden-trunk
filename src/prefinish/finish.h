@@ -137,6 +137,7 @@ typedef struct {
     int                right_extent;	/* Max right posn in vc, >= len-1 */
     int		      *template_used;	/* How many times we use each temp. */ 
     int		      *template_skip;	/* Skip these templates */
+    int		       fake_searched;	/* Have we looked for fake templates?*/
     int		       count[10];	/* Count of each experiment type */
     float	       cost[10];	/* Cost of each experiment type */
     float 	       pscore[32];	/* Score for each problem type */
