@@ -736,13 +736,25 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		 * tarr[i]->start/end assume using the minimum insert size
 		 * tarr[i]->start2/end2 assumed the max insert size.
 		 */
-		t_start1 = MIN(fin->tarr[i]->start, fin->tarr[i]->end);
-		t_end1 = MAX(fin->tarr[i]->start, fin->tarr[i]->end);
-		t_start2 = MIN(fin->tarr[i]->start2, fin->tarr[i]->end2);
-		t_end2 = MAX(fin->tarr[i]->start2, fin->tarr[i]->end2);
+		if (!fin->tarr[i]->consistency) {
+		    t_start1 = MIN(fin->tarr[i]->start, fin->tarr[i]->end);
+		    t_end1 = MAX(fin->tarr[i]->start, fin->tarr[i]->end);
+		    t_start2 = MIN(fin->tarr[i]->start2, fin->tarr[i]->end2);
+		    t_end2 = MAX(fin->tarr[i]->start2, fin->tarr[i]->end2);
 
-		t_start = MIN(t_start1, t_start2);
-		t_end   = MAX(t_end1,   t_end2);
+		    t_start = MIN(t_start1, t_start2);
+		    t_end   = MAX(t_end1,   t_end2);
+		} else {
+		    /*
+		     * Start/end are unreliable for inconsistent templates.
+		     * min/max isn't correct, but should catch problems it
+		     * causes later with our insistence that primers have to
+		     * be covered by a read on that template when using
+		     * inconsistent templates.
+		     */
+		    t_start1 = t_start2 = t_start = fin->tarr[i]->min;
+		    t_end1   = t_end2   = t_end   = fin->tarr[i]->max;
+		}
 
 		/* Does the template cover the problem region? */
 		if (t_start > prob_end || t_end < prob_start)
@@ -837,9 +849,6 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		    cost_mult *= 1+pscore / 100;
 		}
 
-		/* Create experiment */
-		exp = xrealloc(exp, ++nexp * sizeof(*exp));
-
 		/*
 		 * Compute how much of this reading is valid in this
 		 * template. We have two start-end ranges. One for the
@@ -848,11 +857,24 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		 * of maximum to minimum so that we'd rather pick readings
 		 * on templates entirely fitting in the minimum size.
 		 */
-		s_start = exp[nexp-1].r.position = primer_dir == 1
+		s_start = primer_dir == 1
 		    ? primer_pos_end   + fin->opts.pwalk_seq_gap
 		    : primer_pos_start - fin->opts.pwalk_seq_gap
 		    - fin->opts.pwalk_length;
 		s_end = s_start + fin->opts.pwalk_length - 1;
+
+		/*
+		 * Check that the experiment overlaps the problem and isn't
+		 * simply solving something different.
+		 */
+		if (s_start > prob_end || s_end < prob_start) {
+		    printf("Experiment rejected as it does not overlap "
+			   "the problem area\n");
+		    continue;
+		}
+
+		/* Create experiment */
+		exp = xrealloc(exp, ++nexp * sizeof(*exp));
 
 		/*
 		 * Compute new expected length.
