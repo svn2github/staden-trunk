@@ -75,7 +75,7 @@ $(O)/read_conf_dist: $(RCOBJS)
 install:
 	-mkdir $(INSTALLLIB)/prefinish
 	cp *.tcl *.itcl *.itk help args.template tclIndex $(INSTALLLIB)/prefinish
-	cp CHEMISTRY METHODS README config.prefinish $(INSTALLLIB)/prefinish
+	cp config.prefinish $(INSTALLLIB)/prefinish
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
 	cp prefinish $(INSTALLBIN)
 	-mkdir $(INSTALLLIB)/prefinish/rules

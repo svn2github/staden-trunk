@@ -186,3 +186,66 @@ Tue 03 Jun 10:26:47 2003 [1576679] > Deregister id=2 cnum=0:
 Tue 03 Jun 10:26:47 2003 [1576679] close database
 Tue 03 Jun 10:26:47 2003 [1576679] closing...
 Tue 03 Jun 10:26:47 2003 [1576679] ...closed
+Mon 16 Jun 15:28:16 2003 [913893] opening rw...
+Mon 16 Jun 15:28:16 2003 [913893] ...opened
+Mon 16 Jun 15:28:17 2003 [913893] check database
+Mon 16 Jun 15:28:17 2003 [913893] > Register id=1
+Mon 16 Jun 15:28:17 2003 [913893] Database information
+Mon 16 Jun 15:28:20 2003 [913893] template display
+Mon 16 Jun 15:28:20 2003 [913893] > Register id=2
+Mon 16 Jun 15:28:22 2003 [913893] > Deregister id=2 cnum=2: Template display
+Mon 16 Jun 15:28:23 2003 [913893] edit contig
+Mon 16 Jun 15:28:23 2003 [913893] > Register id=3
+Mon 16 Jun 15:29:09 2003 [913893] > Deregister id=3 cnum=3: Contig editor @ 59
+Mon 16 Jun 15:29:11 2003 [913893] > Deregister id=1 cnum=1: Contig selector
+Mon 16 Jun 15:29:11 2003 [913893] close database
+Mon 16 Jun 15:29:11 2003 [913893] closing...
+Mon 16 Jun 15:29:11 2003 [913893] ...closed
+Mon 16 Jun 15:30:08 2003 [913718] opening rw...
+Mon 16 Jun 15:30:08 2003 [913718] ...opened
+Mon 16 Jun 15:30:09 2003 [913718] check database
+Mon 16 Jun 15:30:09 2003 [913718] > Register id=1
+Mon 16 Jun 15:30:09 2003 [913718] Database information
+Mon 16 Jun 15:30:12 2003 [913718] edit contig
+Mon 16 Jun 15:30:12 2003 [913718] > Register id=2
+Mon 16 Jun 15:30:32 2003 [913718] > Deregister id=2 cnum=2: Contig editor @ 2
+Mon 16 Jun 15:30:34 2003 [913718] > Deregister id=1 cnum=1: Contig selector
+Mon 16 Jun 15:30:34 2003 [913718] close database
+Mon 16 Jun 15:30:34 2003 [913718] closing...
+Mon 16 Jun 15:30:34 2003 [913718] ...closed
+Mon 23 Jun 17:20:37 2003 [1329500] opening rw...
+Mon 23 Jun 17:20:37 2003 [1329500] ...opened
+Mon 23 Jun 17:20:37 2003 [1329500] check database
+Mon 23 Jun 17:20:37 2003 [1329500] > Register id=1
+Mon 23 Jun 17:20:37 2003 [1329500] Database information
+Mon 23 Jun 17:20:40 2003 [1329500] edit contig
+Mon 23 Jun 17:20:40 2003 [1329500] > Register id=2
+Mon 23 Jun 17:20:56 2003 [1329500] > Deregister id=2 cnum=2: Contig editor @ 2
+Mon 23 Jun 17:20:58 2003 [1329500] > Deregister id=1 cnum=1: Contig selector
+Mon 23 Jun 17:20:58 2003 [1329500] close database
+Mon 23 Jun 17:20:58 2003 [1329500] closing...
+Mon 23 Jun 17:20:58 2003 [1329500] ...closed
+Mon 23 Jun 17:21:05 2003 [1329357] opening rw...
+Mon 23 Jun 17:21:05 2003 [1329357] ...opened
+Mon 23 Jun 17:21:06 2003 [1329357] check database
+Mon 23 Jun 17:21:06 2003 [1329357] > Register id=1
+Mon 23 Jun 17:21:06 2003 [1329357] Database information
+Mon 23 Jun 17:21:09 2003 [1329357] edit contig
+Mon 23 Jun 17:21:09 2003 [1329357] > Register id=2
+Mon 23 Jun 17:21:19 2003 [1329357] > Deregister id=2 cnum=2: Contig editor @ 2
+Mon 23 Jun 17:21:21 2003 [1329357] > Deregister id=1 cnum=1: Contig selector
+Mon 23 Jun 17:21:21 2003 [1329357] close database
+Mon 23 Jun 17:21:21 2003 [1329357] closing...
+Mon 23 Jun 17:21:21 2003 [1329357] ...closed
+Mon 23 Jun 17:21:23 2003 [1329522] opening rw...
+Mon 23 Jun 17:21:23 2003 [1329522] ...opened
+Mon 23 Jun 17:21:23 2003 [1329522] check database
+Mon 23 Jun 17:21:23 2003 [1329522] > Register id=1
+Mon 23 Jun 17:21:24 2003 [1329522] Database information
+Mon 23 Jun 17:21:27 2003 [1329522] edit contig
+Mon 23 Jun 17:21:27 2003 [1329522] > Register id=2
+Mon 23 Jun 17:21:36 2003 [1329522] > Deregister id=2 cnum=2: Contig editor @ 2
+Mon 23 Jun 17:21:37 2003 [1329522] > Deregister id=1 cnum=1: Contig selector
+Mon 23 Jun 17:21:37 2003 [1329522] close database
+Mon 23 Jun 17:21:37 2003 [1329522] closing...
+Mon 23 Jun 17:21:37 2003 [1329522] ...closed

@@ -28,4 +28,4 @@ install:
 	cp *.tcl tclIndex $(INSTALLLIB)/spin2_emboss
 	cp create_emboss_files $(INSTALLBIN)
 	-mkdir $(INSTALLLIB)/spin2_emboss/acdtcl
-	cp acdtcl/* $(INSTALLLIB)/spin2_emboss/acdtcl
+	-cp acdtcl/* $(INSTALLLIB)/spin2_emboss/acdtcl

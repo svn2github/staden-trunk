@@ -60,7 +60,7 @@ dist: distmsg distunix distwindows distmacosx
 
 distcommon:
 	-mkdir $(DIST)
-	cp Version-* $(DIST)
+	cp Version $(DIST)
 	cd tables; $(MAKE) $(SUBFLAGS) dist
 	cd userdata; $(MAKE) $(SUBFLAGS) dist
 	cd demo; $(MAKE) $(SUBFLAGS) dist
@@ -84,8 +84,8 @@ distunix: distcommon
 	-mkdir $(DIST)/alpha-bin
 	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=alpha install
 	#-----------------------------------------------------
-#	-mkdir $(DIST)/linux-bin
-#	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=linux install
+	-mkdir $(DIST)/linux-bin
+	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=linux install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/solaris-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=solaris install
@@ -127,7 +127,7 @@ distwindows: distcommon
 #
 distviewercommon:
 	-mkdir $(DISTV)
-	-cp $(DIST)/Version-* $(DISTV)
+	-cp $(DIST)/Version $(DISTV)
 
 	-mkdir $(DISTV)/lib
 	-cp -R $(DIST)/lib/gap       $(DISTV)/lib

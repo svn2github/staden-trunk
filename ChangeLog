@@ -1,9 +1,56 @@
+2003-06-24  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/stops/stops.c:
+	Tweak the default parameters to use a longer window length and
+	fixed a bug in identifying stops to skip.
+
+	* src/prefinish/add_stops.tcl:
+	New script to parse the 'stops' program output and add gap4 STOP
+	tags.
+
+2003-06-20  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish_walk.c(find_primers):
+	When generating consensus for primer3 we now check the
+	dust-filtering so as not to pick primers from low complexity
+	sequence. These were filtered out later, but it's faster to prefilter.
+	
+	* src/prefinish/dust.c, src/prefinish/finish.tcl:
+	Tweaks the dust window from 64 to 48 and adjusted the dust score
+	accordingly.
+
+	* src/prefinish/finish.c, src/prefinish/finish_main.[ch]:
+	Added code to keep track of when a 'virtual sequence' overlaps
+	another virtual sequence. If more than 2/3rds of it does then we
+	start applying a penalty. This is designed to filter out the cases
+	where repeating a primer-walk just a few bases further along
+	solves a few more bases.
+
+	* src/gap4/contig_editor.tcl
+	Reenabled the "after 1000" Any-Configure binding for the editor as
+	it seemed to necessary to prevent flickering on the Neon systems.
+
 2003-06-19  James Bonfield  <jkb@sanger.ac.uk>
 
-	* src/gap4/clip.c, src/gap4/clip.tcl, src/gap4/newgap_cmds.c,
+	* src/gap4/vseqs.c(link_vrseq): 
+	For creation of new virtual sequences from the consensus we now
+	change consensus '-' characters into 'A'. This is with the
+	assumption that the new sequence will not be undetermined at that
+	point (but obviously it may not be A). The reason for this is to
+	fix the consensus confidence, otherwise it'd remain at 1 (like all
+	'-'s).
+
+	* src/stops/*:
+	First version of the 'stop' detector. At present it just outputs the 
+	info to stdout. 
+
+	* src/gap4/clip.[ch], src/gap4/clip.tcl, src/gap4/newgap_cmds.c,
 	src/gap4/tclIndex, tables/gaprc, tables/gaprc_menu_full:
 	Added a clip sequence by %age of non-ACGT (labelled N-clip). This
 	solves a phrap alignment bug.
+
+	* src/gap4/tag_editor.tcl:
+	Fixed a bug with loading tag macros from .gaprc.
 
 2003-06-16  James Bonfield  <jkb@sanger.ac.uk>
 
@@ -221,7 +268,7 @@
 	* lib/tk/text.tcl (::tk::TextScanDrag): Allow 1 pixel of movement
 	before switching to scan mode and setting mouseMoved flag. The
 	mouseMoved flag disables pasting, and hence forceful middle
-	clickig sometimes failed to paste.
+	clicking sometimes failed to paste.
 
 2003-05-19  James Bonfield  <jkb@sanger.ac.uk>
 

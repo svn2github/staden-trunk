@@ -3,12 +3,12 @@
 distcommon:
 	-mkdir $(DIST)/lib
 	# Third party libraries
-	cp -R ../lib.third/tcl $(DIST)/lib
-	cp -R ../lib.third/tk $(DIST)/lib
-	cp -R ../lib.third/itcl3.3 $(DIST)/lib
-	cp -R ../lib.third/itk3.3 $(DIST)/lib
-	cp -R ../lib.third/iwidgets $(DIST)/lib
-	cp -r ../lib.third/tablelist2.0 $(DIST)/lib
+	cp -R tcl $(DIST)/lib
+	cp -R tk $(DIST)/lib
+	cp -R itcl3.3 $(DIST)/lib
+	cp -R itk3.3 $(DIST)/lib
+	cp -R iwidgets $(DIST)/lib
+	cp -r tablelist2.0 $(DIST)/lib
 	-rm -r $(DIST)/lib/iwidgets/demos
 	-rm -r $(DIST)/lib/tk/demos
 	-rm -r $(DIST)/lib/tk/orig
@@ -30,8 +30,8 @@ distcommon:
 
 
 distunix: distcommon
-	cp -R ../lib.third/alpha-binaries $(DIST)/lib
-#	cp -R ../lib.third/linux-binaries $(DIST)/lib
+	cp -R alpha-binaries $(DIST)/lib
+	cp -R linux-binaries $(DIST)/lib
 #	cp -R ../lib.third/sgi-binaries $(DIST)/lib
 #	cp -R ../lib.third/solaris-binaries $(DIST)/lib
 #	cp -R ../lib.third/macosx-binaries $(DIST)/lib

@@ -63,6 +63,10 @@ else
     fi
     export LD_LIBRARY_PATH
 fi
+
+export TCL_LIBRARY=$STADLIB/tcl
+export TK_LIBRARY=$STADLIB/tk
+
 #
 # files for gap4
 #
