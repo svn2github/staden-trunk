@@ -55,6 +55,7 @@
 #define SPACLabel         LABEL("SPAC")
 #define SVERLabel         LABEL("SVER")
 #define MODLLabel         LABEL("MODL")
+#define BaseConfLabel	  LABEL("PCON")
 
 
 /*

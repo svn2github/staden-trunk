@@ -373,6 +373,7 @@ Read *fread_abi(FILE *fp) {
     uint_4 signalO;
     int no_bases = 0;
     int sections = read_sections(0);
+    uint_1 *conf;
 
     uint_4 fwo_;     /* base -> lane mapping */
     uint_4 indexO;   /* File offset where the index is */
@@ -481,6 +482,11 @@ Read *fread_abi(FILE *fp) {
     if (no_bases || !(sections & READ_BASES))
 	goto skip_bases;
 
+    /* Read in base confidence values */
+    if (!(conf = (uint_1 *)xcalloc(sizeof(*conf), read->NBases)))
+	goto bail_out;
+    getABIint1(fp, indexO, BaseConfLabel, 1, conf, read->NBases);
+
     /* Read in the bases */
     if (!(getABIIndexEntryLW(fp, (off_t)indexO, BaseEntryLabel, 1, 5, &baseO)
 	  && (fseek(fp, header_fudge + (off_t)baseO, 0) == 0) ))
@@ -493,14 +499,51 @@ Read *fread_abi(FILE *fp) {
 	    goto bail_out;
 
 	read->base[i] = (ch == 'N') ? '-' : (char)ch;
-	read->prob_A[i] = 0;
-	read->prob_C[i] = 0;
-	read->prob_G[i] = 0;
-	read->prob_T[i] = 0;
+	switch(read->base[i]) {
+	case 'A':
+	case 'a':
+	    read->prob_A[i] = conf[i];
+	    read->prob_C[i] = 0;
+	    read->prob_G[i] = 0;
+	    read->prob_T[i] = 0;
+	    break;
+
+	case 'C':
+	case 'c':
+	    read->prob_A[i] = 0;
+	    read->prob_C[i] = conf[i];
+	    read->prob_G[i] = 0;
+	    read->prob_T[i] = 0;
+	    break;
+
+	case 'G':
+	case 'g':
+	    read->prob_A[i] = 0;
+	    read->prob_C[i] = 0;
+	    read->prob_G[i] = conf[i];
+	    read->prob_T[i] = 0;
+	    break;
+
+	case 'T':
+	case 't':
+	    read->prob_A[i] = 0;
+	    read->prob_C[i] = 0;
+	    read->prob_G[i] = 0;
+	    read->prob_T[i] = conf[i];
+	    break;
+
+	default:
+	    read->prob_A[i] = 0;
+	    read->prob_C[i] = 0;
+	    read->prob_G[i] = 0;
+	    read->prob_T[i] = 0;
+	    break;
+	} 
     }
     read->base[i] = 0;
+    xfree(conf);
     
-    
+   
     /* Read in the base positions */
     if (-1 == getABIint2(fp, indexO, BasePosEntryLabel, 1, read->basePos,
 			 read->NBases))
