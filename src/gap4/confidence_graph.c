@@ -56,9 +56,11 @@ void plot_confidence(Tcl_Interp *interp,
 {
     int i;
     /*
-     * "%d %f %d %f" (see below) is at most 10+1+>8+1+10+1+>8+1 chars => 40.
-     * (>8 as 8 for 0.xxxx, more for 10.xxxx. Guess at max 100.xxx = 44 chars)
-     * Therefore, cmd needs to be at least 100*44 long.
+     * "%d %.20f %d %.20f" (see below) is at most 10+1+>24+1+10+1+>24+1 chars
+     * => 72.
+     * (>24 as 14 for 255.xxxx, more for 1000.xxxx.
+     *  Guess at max 100.xxx* = 72 chars)
+     * Therefore, cmd needs to be at least 100*72 long.
      * Set to 10000 for paranoia!
      */
     char cmd[10000], *tmpp;
@@ -84,7 +86,7 @@ void plot_confidence(Tcl_Interp *interp,
 
 		/* The strait bit... */
 		if (i2 != i) {
-		    len = sprintf(tmpp, "%d %f %d %f ",
+		    len = sprintf(tmpp, "%d %.20f %d %.20f ",
 				  i+offset, max - qual[i] + min, 
 				  i2+offset, max - qual[i] + min);
 		    tmpp += len;
@@ -92,7 +94,7 @@ void plot_confidence(Tcl_Interp *interp,
 		}
 
 		/* The angled line from qual[i2] to qual[i2+1] */
-		len = sprintf(tmpp, "%d %f %d %f ",
+		len = sprintf(tmpp, "%d %.20f %d %.20f ",
 			      i2+offset, max - qual[i2] + min, 
 			      i2+1+offset, max - qual[i2+1] + min);
 		tmpp += len;
@@ -106,7 +108,7 @@ void plot_confidence(Tcl_Interp *interp,
 	}
     } else {
 	for (i = 0; i < seq_len-1; i++) {
-	    sprintf(cmd, "%s create line %d %f %d %f -fill %s -width %d -capstyle round", 
+	    sprintf(cmd, "%s create line %d %.20f %d %.20f -fill %s -width %d -capstyle round", 
 		    c_win, i+offset, max - qual[i] + min, i+1+offset, 
 		    max - qual[i] + min, colour, width);
 	    
@@ -121,7 +123,7 @@ void plot_confidence(Tcl_Interp *interp,
 		c_win, i+offset, max - qual[i] + min, i+1+offset, 
 		max - qual[i+1] + min, colour, width);
       */
-        sprintf(cmd, "%s create line %d %f %d %f -fill %s -width %d -capstyle round", 
+        sprintf(cmd, "%s create line %d %.20f %d %.20f -fill %s -width %d -capstyle round", 
 		c_win, i+offset, max - qual[i] + min, i+1+offset, 
 		max - qual[i] + min, colour, width);
 

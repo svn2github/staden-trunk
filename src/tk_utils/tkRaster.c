@@ -1799,7 +1799,7 @@ static void DisplayRaster(ClientData clientData)
 	      (RasterPtr->wx1 - RasterPtr->wx_start)/ world_length,
 	      world_length);
 #endif
-       sprintf(args, " %f %f",
+       sprintf(args, " %.20f %.20f",
 	       (RasterPtr->wx0 - RasterPtr->wx_start) / world_length,
 	       (RasterPtr->wx1 - RasterPtr->wx_start) / world_length);
 
@@ -1827,7 +1827,7 @@ static void DisplayRaster(ClientData clientData)
 	      (RasterPtr->wy1- RasterPtr->wy_start) / world_height,
 	      world_height);
 #endif
-       sprintf(args, " %f %f",
+       sprintf(args, " %.20f %.20f",
 	       (RasterPtr->wy0 - RasterPtr->wy_start) / world_height,
 	       (RasterPtr->wy1 - RasterPtr->wy_start) / world_height);
 

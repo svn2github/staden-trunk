@@ -117,7 +117,7 @@ void ed_set_slider_pos(EdStruct *xx, int pos) {
     pos -= xx->extent_left;
 
     /* total width start end */
-    sprintf(buf, " %g %g",
+    sprintf(buf, " %.20f %.20f",
 	    pos / (double)total,
 	    (pos + len) / (double)total);
 
@@ -224,7 +224,7 @@ void ed_set_yslider_pos(EdStruct *xx, int pos) {
     pos -= xx->extent_left - 1;
 
     /* total width start end */
-    sprintf(buf, " %g %g",
+    sprintf(buf, " %.20f %.20f",
 	    (xx->displayYPos*xx->lines_per_seq) / (double)xx->totalHeight,
 	    (xx->displayYPos*xx->lines_per_seq + xx->displayHeight) /
 	    (double)xx->totalHeight);
@@ -254,7 +254,7 @@ void ed_set_nslider_pos(EdStruct *xx, int pos) {
 	fract1 = pos / (double)DB_NAMELEN;
 	fract2 = (pos + en->sw.columns - (DB_GELNOLEN + 2)) /
 	    (double)DB_NAMELEN;
-	sprintf(buf, " %f %f", fract1, fract2);
+	sprintf(buf, " %.20f %.20f", fract1, fract2);
 	if (Tcl_VarEval(EDINTERP(en), en->xScrollCmd, buf, NULL) != TCL_OK) {
 	    printf("Error in editor names scroll: %s\n", EDINTERP(en)->result);
 	}

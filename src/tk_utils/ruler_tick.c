@@ -169,7 +169,7 @@ PlotTicks(Tcl_Interp *interp,
 #endif
     for (i = 0; i < numTicks; i++) {
 	int height = (i % 5 == 4) ? ruler->tick.t.ht : ruler->tick.t.ht / 2;
-	sprintf(cmd, "%s create line %f %d %f %d "
+	sprintf(cmd, "%s create line %.20f %d %.20f %d "
 		"-fill %s -width %d -tag tick\n",
 		ruler->window,
 		x+offset, yoffset, x+offset, yoffset + height,
@@ -182,7 +182,7 @@ PlotTicks(Tcl_Interp *interp,
 	Tcl_Eval(interp, cmd);
 
 	if (i % 5 == 4) {
-	    sprintf(cmd, "%s create text %f %d -text %g -tag tick\n",
+	    sprintf(cmd, "%s create text %.20f %d -text %g -tag tick\n",
 		    ruler->window, x+offset, yoffset+ruler->tick.offset, x);
 #ifdef DEBUG
 	    printf("%s\n", cmd);
@@ -215,7 +215,7 @@ static void PlotTicks_v(Tcl_Interp *interp,
     for (i = 0; i < numTicks; i++) {
 	int height = (i % 5 == 4) ? ruler->tick.t.ht : ruler->tick.t.ht / 2;
 
-	sprintf(cmd, "%s create line %d %f %d %f "
+	sprintf(cmd, "%s create line %d %.20f %d %.20f "
 		"-fill %s -width %d -tag tick\n",
 		ruler->window,
 		ruler->offset, tick_y, ruler->offset-height, tick_y,
@@ -228,7 +228,7 @@ static void PlotTicks_v(Tcl_Interp *interp,
 	Tcl_Eval(interp, cmd);
 
 	if (i % 5 == 4) {
-	    sprintf(cmd, "%s create text %d %f -text %g -tag tick\n",
+	    sprintf(cmd, "%s create text %d %.20f -text %g -tag tick\n",
 		    ruler->window, ruler->tick.offset, tick_y, y);
 #ifdef DEBUG
 	    printf("%s\n", cmd);
@@ -273,12 +273,12 @@ static void PlotTicks_c(Tcl_Interp *interp,
     x3 = circle_x - ((radius-height) * cos(theta));
     y3 = circle_y - ((radius-height) * sin(theta));
 
-    sprintf(cmd, "%s create line %f %f %f %f "
+    sprintf(cmd, "%s create line %.20f %.20f %.20f %.20f "
 	    "-fill %s -width %d -tag tick\n",
 	    ruler->window, x1, y1, x2, y2, ruler->tick.t.colour,
 	    ruler->tick.t.line_width);
     Tcl_Eval(interp, cmd);
-    sprintf(cmd, "%s create text %f %f -text %.3g -tag tick\n",
+    sprintf(cmd, "%s create text %.20f %.20f -text %.3g -tag tick\n",
 	    ruler->window, x3, y3, (double)wx1);
     Tcl_Eval(interp, cmd);
 
@@ -303,7 +303,7 @@ static void PlotTicks_c(Tcl_Interp *interp,
 
 	x3 = circle_x - ((radius-height) * cos(theta));
 	y3 = circle_y - ((radius-height) * sin(theta));
-	sprintf(cmd, "%s create line %f %f %f %f "
+	sprintf(cmd, "%s create line %.20f %.20f %.20f %.20f "
 		"-fill %s -width %d -tag tick\n",
 		ruler->window,
 		x1, y1, x2, y2,
@@ -316,7 +316,7 @@ static void PlotTicks_c(Tcl_Interp *interp,
 	Tcl_Eval(interp, cmd);
 
 	if (i % 5 == 4) {
-	    sprintf(cmd, "%s create text %f %f -text %.3g -tag tick\n",
+	    sprintf(cmd, "%s create text %.20f %.20f -text %.3g -tag tick\n",
 		    ruler->window, x3, y3, text);
 #ifdef DEBUG
 	    printf("%s\n", cmd);

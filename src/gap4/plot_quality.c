@@ -126,8 +126,8 @@ plot_quality(char *seq,
             glevel(current, Y0, YP1, YP2, YM1, YM2, &yfrom, &yto);
 	    xto = i /* - 1 */;
 
-	    sprintf(cmd,"plot_rec %s %d %f %d %f "
-		    "%f %f %f %f %f %f %f",
+	    sprintf(cmd,"plot_rec %s %d %.20f %d %.20f "
+		    "%.20f %.20f %.20f %.20f %.20f %.20f %.20f",
 		    q_name, xfrom, yfrom, xto, yto,
 		    Y0, YP1, YP2, YM1, YM2,
 		    ymin, ymax);
@@ -143,8 +143,8 @@ plot_quality(char *seq,
     /* we have reached the end so finish off last rectangle */
     glevel(current, Y0, YP1, YP2, YM1, YM2, &yfrom, &yto);
     xto = i;
-    sprintf(cmd,"plot_rec %s %d %f %d %f "
-            "%f %f %f %f %f %f %f",
+    sprintf(cmd,"plot_rec %s %d %.20f %d %.20f "
+            "%.20f %.20f %.20f %.20f %.20f %.20f %.20f",
             q_name, xfrom, yfrom, xto, yto,
             Y0, YP1, YP2, YM1, YM2,
             ymin, ymax);

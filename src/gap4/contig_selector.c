@@ -1159,7 +1159,7 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 			      cs->cursor.colour, cs->cursor.width, *cy, wy,
 			      cs->win_list, cs->num_wins);
 
-		sprintf(cmd, "DrawCanvasCursorX1 %s %s %f %s %d\n",
+		sprintf(cmd, "DrawCanvasCursorX1 %s %s %.20f %s %d\n",
 			cs->frame, cs->hori, cx1, cs->cursor.colour,
 			cs->cursor.width);
 		if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))

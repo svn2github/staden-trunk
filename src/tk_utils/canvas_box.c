@@ -16,7 +16,7 @@ void
 printCanvas(CanvasPtr *c)
 {
 
-    printf("wd %d ht %d x %d y %d ax %f ay %f bx %f by %f\n",
+    printf("wd %d ht %d x %d y %d ax %.20f ay %.20f bx %.20f by %.20f\n",
 	   c->width, c->height, c->x, c->y, c->ax, c->ay, c->bx, c->by);
 
 }
@@ -50,6 +50,7 @@ initCanvas(Tcl_Interp *interp,
     canvas->bx = 0;
     canvas->by = 0;
 #ifdef DEBUG
+    printf("--\nINIT\n");
     printCanvas(canvas);
 #endif
 }
@@ -92,7 +93,7 @@ WorldToCanvas(CanvasPtr *canvas,
 
     printf("WorldToCanvas %f %f ay %f by %f\n", wy, *cy, canvas->ay, canvas->by);
 
-    printf("WorldToCanvas wx %f cx %d ax %f bx %f %f\n", 
+    printf("WorldToCanvas wx %f cx %f ax %f bx %f %f\n", 
 	   wx, *cx, canvas->ax, canvas->bx, (wx * canvas->ax) + canvas->bx);
 #endif
 }
@@ -156,9 +157,10 @@ scrollRegion(Tcl_Interp *interp,
 	    y1 = 0;
 	    y2 = 0;
 	}
-	sprintf(cmd, "%s configure -scrollregion \"%f %f %f %f\"", 
+	sprintf(cmd, "%s configure -scrollregion \"%.20f %.20f %.20f %.20f\"", 
 		win_list[i]->window, x1, y1, x2, y2);
 #ifdef DEBUG
+	printf("--\n");
 	printf("scroll region %s\n", cmd);
 #endif
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
@@ -209,34 +211,34 @@ scaleCanvas(Tcl_Interp *interp,
 	if (win_list[i]->scroll == 'x') {
 	    if (current->x1 == c_x1 && current->x2 == c_x2) {
 		/* do nothing */
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 
 	    } else if (x_origin == 0.0 && sf_x == 1.0) {
 		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
 			canvas->x, 0);
 	    } else {
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, x_origin, 0.0, sf_x, 1.0);
 	    }
 	} else if (win_list[i]->scroll == 'y') {
 	    if (current->y1 == c_y1 && current->y2 == c_y2) {
 		/* do nothing */
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 	    } else if (y_origin == 0.0 && sf_y == 1.0) {
 		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
 			0, canvas->y);
 	    } else {
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, y_origin, 1.0, sf_y);
 	    }
 	} else if (win_list[i]->scroll == 'n') {
-	    sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+	    sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 		    win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 	} else {
 	    if (current->x1 == c_x1 && current->x2 == c_x2 && current->y1 == c_y1 && current->y2 == c_y2) {
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 	    } else if (x_origin == 0.0 && sf_x == 1.0 && y_origin == 0.0 && sf_y == 1.0){ 
 		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
@@ -244,12 +246,12 @@ scaleCanvas(Tcl_Interp *interp,
 		if (TCL_ERROR == Tcl_Eval(interp, cmd))
 		    verror(ERR_WARN, "moveCanvas", "%s\n", interp->result);
 	    } else {
-		sprintf(cmd, "%s scale %s %f %f %f %f \n", 
+		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, x_origin, y_origin, sf_x, sf_y);
 	    }
 	}
 #ifdef DEBUG
-	printf("SCALE %s\n", cmd);
+	printf("--\nSCALE %s\n", cmd);
 	printCanvas(canvas);
 #endif
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
@@ -962,7 +964,7 @@ void draw_single_ruler(Tcl_Interp *interp,
     /* remove current ruler before drawing the new ruler */
     Tcl_VarEval(interp, ruler->window, " delete all", NULL);
 
-    sprintf(cmd, "%s create line %f %d %f %d -fill %s -width %d",
+    sprintf(cmd, "%s create line %.20f %d %.20f %d -fill %s -width %d",
 	    ruler->window, start, ruler->offset, end,
 	    ruler->offset, ruler->colour, ruler->line_width);
     
@@ -986,7 +988,7 @@ void draw_single_ruler_vertical(Tcl_Interp *interp,
     /* remove current ruler before drawing the new ruler */
     Tcl_VarEval(interp, ruler->window, " delete all", NULL);
 
-    sprintf(cmd, "%s create line %d %f %d %f -fill %s -width %d",
+    sprintf(cmd, "%s create line %d %.20f %d %.20f -fill %s -width %d",
 	    ruler->window, ruler->offset, start, ruler->offset,
 	    end, ruler->colour, ruler->line_width);
 
@@ -1007,7 +1009,7 @@ int canvasx(Tcl_Interp *interp,
 {
   char cmd[1024];
 
-  sprintf(cmd, "%s canvasx %f", window, val);
+  sprintf(cmd, "%s canvasx %.20f", window, val);
   Tcl_Eval(interp, cmd);
   return (atoi(interp->result));
 }
@@ -1018,7 +1020,7 @@ int canvasy(Tcl_Interp *interp,
 {
   char cmd[1024];
 
-  sprintf(cmd, "%s canvasy %f", window, val);
+  sprintf(cmd, "%s canvasy %.20f", window, val);
   Tcl_Eval(interp, cmd);
   return (atoi(interp->result));
 }

@@ -77,7 +77,7 @@ int canvas_cursor_show(Tcl_Interp *interp, GapIO *io,
     /* Compute xview fraction and scroll */
     fract = (double)(x1 - world->total->x1) /
 	(world->total->x2 - world->total->x1);
-    sprintf(cmd, "moveto %f", fract);
+    sprintf(cmd, "moveto %.20f", fract);
     canvasScrollX(interp, win_list[0]->window, win_list, num_wins,
 		  world->visible, canvas, cmd);
 
@@ -150,7 +150,7 @@ int canvas_cursor_move(Tcl_Interp *interp,
 
 	    WorldToCanvas(canvas, (double)(apos + offset), 0,
 			  &cx, &cy);
-	    sprintf(cmd, "canvas_cursor_move %d %d %s %d %d %f",
+	    sprintf(cmd, "canvas_cursor_move %d %d %s %d %d %.20f",
 		    *handle_io(io), cnum, win_list[i]->window,
 		    cursor->id, reg_id, cx);
 

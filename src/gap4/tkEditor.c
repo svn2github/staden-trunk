@@ -333,7 +333,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    /* Query */
 	    f1 = offset / d_extent;
 	    f2 = (offset + ed->xx->displayWidth) / d_extent;
-	    sprintf(buf, "%g %g", f1, f2);
+	    sprintf(buf, "%.20f %.20f", f1, f2);
 	    Tcl_SetResult(interp, buf, TCL_VOLATILE);
 	    scroll = 0;
 
@@ -1640,7 +1640,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	vTcl_SetResult(interp, "%d", DBI_contigNum(ed->xx));
  
     } else if ('j' == *argv[1] && strcmp(argv[1], "join_percentage") == 0) {
-	char buf[10];
+	char buf[100];
 	int overlapLength, wingeCount;
 	float perc = -1.0;
 	int tgood, tbad;
@@ -1659,7 +1659,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		perc = (float)(100 * wingeCount) / (float)overlapLength;
 	}
 
-	sprintf(buf, "%f %d %d", perc, tgood, tbad);
+	sprintf(buf, "%.20f %d %d", perc, tgood, tbad);
 	Tcl_AppendResult(interp, buf, NULL);
 
     } else if ('j' == *argv[1] && strcmp(argv[1], "join_align") == 0) {

@@ -102,21 +102,21 @@ void canvas_scale_result(Tcl_Interp *interp,
 
     if (result_id != -1) {
 	/* must scale cursor aswell */
-	sprintf(cmd, "%s scale cursor %f %f %f %f \n", 
+	sprintf(cmd, "%s scale cursor %.20f %.20f %.20f %.20f \n", 
 		e->win, x_origin, y_origin, sf_x, sf_y);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
 	    verror(ERR_WARN, "canvas_scale_result", "%s\n", interp->result);
 
 	/* must scale ruler ticks aswell */
-	sprintf(cmd, "%s scale tick %f %f %f %f \n", 
+	sprintf(cmd, "%s scale tick %.20f %.20f %.20f %.20f \n", 
 		e->win, x_origin, y_origin, sf_x, sf_y);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
 	    verror(ERR_WARN, "canvas_scale_result", "%s\n", interp->result);
 
-	sprintf(cmd, "%s scale id%d %f %f %f %f \n", 
+	sprintf(cmd, "%s scale id%d %.20f %.20f %.20f %.20f \n", 
 		e->win, result->result_id, x_origin, y_origin, sf_x, sf_y);
     } else {
-	sprintf(cmd, "%s scale all %f %f %f %f \n", 
+	sprintf(cmd, "%s scale all %.20f %.20f %.20f %.20f \n", 
 		e->win, x_origin, y_origin, sf_x, sf_y);	
     }
 #ifdef DEBUG
@@ -137,9 +137,9 @@ void canvas_move(Tcl_Interp *interp,
     char cmd[1024];
 
     if (result_id == -1) {
-	sprintf(cmd, "%s move all %f %f", e->win, x_amount, y_amount);
+	sprintf(cmd, "%s move all %.20f %.20f", e->win, x_amount, y_amount);
     } else {
-	sprintf(cmd, "%s move id%d %f %f", e->win, result_id, 
+	sprintf(cmd, "%s move id%d %.20f %.20f", e->win, result_id, 
 		x_amount, y_amount);
     }
 
@@ -510,7 +510,7 @@ void create_canv_dot(Tcl_Interp *interp,
 
 		if (orientation & HORIZONTAL) {
 		    if (result->configure[i]->y_direction == '+') {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, graph->p_arrays[i].p_array[j].x,
 				graph->dim.y1 - graph->p_arrays[i].p_array[j].y + graph->dim.y0, 
@@ -518,7 +518,7 @@ void create_canv_dot(Tcl_Interp *interp,
 				graph->dim.y1 - graph->p_arrays[i].p_array[j].y + graph->dim.y0,
 				result->line_width, result->colour, tags, i, j);
 		    } else {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, graph->p_arrays[i].p_array[j].x,
 				graph->p_arrays[i].p_array[j].y, 
@@ -534,7 +534,7 @@ void create_canv_dot(Tcl_Interp *interp,
 		}
 		if (orientation & VERTICAL) {
 		    if (result->configure[i]->x_direction == '+') {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, 
 				graph->p_arrays[i].p_array[j].y,
@@ -543,7 +543,7 @@ void create_canv_dot(Tcl_Interp *interp,
 				graph->dim.x1 - graph->p_arrays[i].p_array[j].x + graph->dim.x0,
 				result->line_width, result->colour, tags, i, j);
 		    } else {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, 
 				graph->p_arrays[i].p_array[j].y, 
@@ -582,7 +582,7 @@ void create_canv_line(Tcl_Interp *interp,
 
 		if (orientation & HORIZONTAL) {
 		    if (result->configure[i]->y_direction == '+') {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, graph->d_arrays[i].d_array[j].x0,
 				graph->dim.y1 - graph->d_arrays[i].d_array[j].y0 + graph->dim.y0, 
@@ -590,7 +590,7 @@ void create_canv_line(Tcl_Interp *interp,
 				graph->dim.y1 - graph->d_arrays[i].d_array[j].y1 + graph->dim.y0,
 				result->line_width, result->colour, tags, i, j);
 		    } else {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, graph->d_arrays[i].d_array[j].x0,
 				graph->d_arrays[i].d_array[j].y0, 
@@ -606,7 +606,7 @@ void create_canv_line(Tcl_Interp *interp,
 		}
 		if (orientation & VERTICAL) {
 		    if (result->configure[i]->x_direction == '+') {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, 
 				graph->d_arrays[i].d_array[j].y0,
@@ -615,7 +615,7 @@ void create_canv_line(Tcl_Interp *interp,
 				graph->dim.x1 - graph->d_arrays[i].d_array[j].x1 + graph->dim.x0,
 				result->line_width, result->colour, tags, i, j);
 		    } else {
-			sprintf(cmd,"%s create line %f %f %f %f -width %d -fill %s "
+			sprintf(cmd,"%s create line %.20f %.20f %.20f %.20f -width %d -fill %s "
 				"-tag {%s S d%d.%d}",
 				e_win, 
 				graph->d_arrays[i].d_array[j].y0, 
@@ -657,7 +657,7 @@ void draw_canvas_crosshair(Tcl_Interp *interp,
 
 	pixel_to_world(column->pixel, cx, 0, &wx, &dummy);
 
-	sprintf(cmd, "draw_canvas_crosshairX %s %s %d %f\n", e->c->win, e->win, cx, wx);
+	sprintf(cmd, "draw_canvas_crosshairX %s %s %d %.20f\n", e->c->win, e->win, cx, wx);
 
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
 	    verror(ERR_WARN, "draw_canvas_crosshairX", "%s\n", interp->result);
@@ -669,7 +669,7 @@ void draw_canvas_crosshair(Tcl_Interp *interp,
 	    verror(ERR_WARN, "draw_canvas_crosshairY1", "%s\n", interp->result);
 	cy = atoi(interp->result);
 	pixel_to_world(e->pixel, 0, cy, &dummy, &wy);	
-	sprintf(cmd, "draw_canvas_crosshairY %s %s %d %f\n", e->c->win, e->win, cy, invert_wy(e, wy));
+	sprintf(cmd, "draw_canvas_crosshairY %s %s %d %.20f\n", e->c->win, e->win, cy, invert_wy(e, wy));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
 	    verror(ERR_WARN, "draw_canvas_crossshairY2", "%s\n", interp->result);
     }
