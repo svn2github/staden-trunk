@@ -2432,6 +2432,14 @@ for {set i 1} {$i <= 10} {incr i} {
     bind EdNames <F$i> "tag_macro_invoke \[edname_to_editor %W\] F$i; \
                        \[edname_to_editor %W\] select clear; \
                        break"
+    # If XF86_Switch_VT_1 (etc) keysyms exist then they are likely to be
+    # replacing Shift-F1. This seems to be the default in some newer
+    # XFree86 installations
+    catch {
+	bind Editor <XF86_Switch_VT_$i> "tag_macro_create %W F$i;break"
+	bind EdNames <XF86_Switch_VT_$i> \
+	    "tag_macro_create \[edname_to_editor %W\] F$i;break"
+    }
     lappend ed_macro_keys F$i
 }
 bind Editor <F11> "%W select clear; %W edit_anno"
