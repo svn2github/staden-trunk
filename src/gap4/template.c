@@ -929,58 +929,74 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
  * not span c1 and c2 then it is set to zero.
  */
 void check_template_length_overlap(GapIO *io, template_c *t,
-				   int c1, int c2, int overlap) {
-    item_t *item;
-    int distf, distr;
-    GReadings r;
+				   int c1, int c2, int offset) {
+    int c1_start, c1_end;
+    int c2_start, c2_end;
+    int f1, f2;
+    int both_guessed = TEMP_FLAG_GUESSED_START | TEMP_FLAG_GUESSED_END;
     
     if (!(t->flags & TEMP_FLAG_SPANNING)) {
 	t->computed_length = 0;
 	return;
     }
 
-    distf = distr = 0;
 
-    /* Distance from right end of 1st contig */
-    for (item = head(t->gel_cont); item; item = item->next) {
-	gel_cont_t *gc = (gel_cont_t *)item->data;
-	int tmp;
+    /* Compute positions in each contig, adjusting for offset in c2 */
+    get_template_positions(io, t, c1);
+    c1_start = t->start;
+    c1_end = t->end;
+    f1 = t->flags;
+    int length;
+	
+    get_template_positions(io, t, c2);
+    c2_start = t->start + offset;
+    c2_end = t->end + offset;
+    f2 = t->flags;
 
-	if (gc->contig != c1)
-	    continue;
+    t->consistency = 0; /* Mark as valid, until we determine otherwise */
 
-	gel_read(io, gc->read, r);
-	if ((tmp = io_clength(io, gc->contig) - r.position + 1) > distf)
-	    distf = tmp;
+    /* Check if it's spanning at all... */
+    if ((f1 & both_guessed) == both_guessed ||
+	(f2 & both_guessed) == both_guessed) {
+	t->computed_length = 0;
+	return;
+    }
+	
+    /* Check length */
+    length = -1;
+    if (!(f1 & TEMP_FLAG_GUESSED_START) &&
+	!(f2 & TEMP_FLAG_GUESSED_END)) {
+	length = ABS(c2_end - c1_start);
+    } else if (!(f1 & TEMP_FLAG_GUESSED_END) &&
+	       !(f2 & TEMP_FLAG_GUESSED_START)) {
+	length = ABS(c1_end - c2_start);
     }
 
-    /* Distance from left end of 2nd contig */ 
-    for (item = head(t->gel_cont); item; item = item->next) {
-	gel_cont_t *gc = (gel_cont_t *)item->data;
-	int tmp;
-
-	if (gc->contig != c2)
-	    continue;
-
-	gel_read(io, gc->read, r);
-	if ((tmp = r.position + r.sequence_length - 1) > distr)
-	    distr = tmp;
-    }
-
-    t->consistency &= ~TEMP_CONSIST_DIST;
-    if (distf && distr) {
-	int length = distf + distr - overlap;
+    /* Check validity of length */
+    if (length != -1) {
 	GTemplates te;
 
 	template_read(io, t->num, te);
 	t->computed_length = length;
-
 	if (length > te.insert_length_max ||
 	    length < te.insert_length_min) {
 	    t->consistency |= TEMP_CONSIST_DIST;
 	}
-    } else {
-	t->computed_length = 0;
+    }
+
+    /*
+     * If we have fwd reads in both contigs, or rev reads in both contigs,
+     * then the 'primer positions' should align.
+     */
+    if (!(f1 & TEMP_FLAG_GUESSED_START) &&
+	!(f2 & TEMP_FLAG_GUESSED_START)) {
+	if (ABS(c1_start - c2_start) > standard_primer_tol)
+	    t->consistency |= TEMP_CONSIST_PRIMER;
+    }
+    if (!(f1 & TEMP_FLAG_GUESSED_END) &&
+	!(f2 & TEMP_FLAG_GUESSED_END)) {
+	if (ABS(c1_end - c2_end) > standard_primer_tol)
+	    t->consistency |= TEMP_CONSIST_PRIMER;
     }
 }
 
