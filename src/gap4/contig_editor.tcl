@@ -1214,6 +1214,20 @@ proc editor_dellist_template {n tseqs} {
     editor_dellist_read $n $names
 }
 
+proc editor_clearlist {n} {
+    global $n.List
+    if {[info exist $n.List]} {
+	catch {
+	    foreach name [ListGet [set $n.List]] {
+		$n highlight 0 =$name
+	    }
+	}
+	ListClear [set $n.List]
+    } else {
+	ListClear readings
+    }
+}
+
 proc copy_name {n x y} {
     # Get reading name
     if {[set num [$n get_number $x $y]] != "" && "$num" != 0} {
@@ -1557,6 +1571,9 @@ proc ednames_menu {w x y X Y} {
 	    $w.m add command -label "Remove reading" \
 		-command "$e hide_read $seq_num"
 	}
+	$w.m add separator
+	$w.m add command -label "Clear selection" \
+	    -command "editor_clearlist [editor_to_edname $e]"
     }
 
     tk_popup $w.m [expr $X-20] [expr $Y-10]
