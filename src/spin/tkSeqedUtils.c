@@ -1,3 +1,4 @@
+#include <tk.h>
 #include <X11/Xlib.h>
 
 #include "tkSeqed.h"
