@@ -2482,6 +2482,7 @@ C   CALC POSN IN THIS GEL TO EDIT
      +   LNGTHG(LLINO) = SIGN(MAXGEL,LNGTHG(LLINO))
 C   INSBAS TAKES CARE OF OVERFLOW OF READ IN ITS OWN WAY
       DO 61 I=1,NC
+C        WRITE(*,*)'INSERT TO ',LLINO,' AT ',K
         CALL INSBAS(IDEVR,LLINO,K,PAD)
  61   CONTINUE
 C   WRITE NEW LINE
@@ -2494,21 +2495,25 @@ C   LAST GEL?
       IF(LLINO.EQ.0)GO TO 70
 C   DOES IT HAVE DATA IN REGION?
 C   IE DO RELPG  AND RELPG+LNGTHG-1 LIE EITHER SIDE OF POSN?
-      IF(RELPG(LLINO).GT.POSN)GO TO 70
+      IF(RELPG(LLINO).GE.POSN)GO TO 70
+C      WRITE(*,*)LLINO,RELPG(LLINO),POSN
       X=RELPG(LLINO)+ABS(LNGTHG(LLINO))-1
       IF(X.LT.POSN)GO TO 65
 C  WITHIN
       GO TO 40
 70    CONTINUE
+C      WRITE(*,*)'NOW MOVING'
 C   INSERTS FINISHED SO NEED TO INCREMENT ALL THOSE GELS TO RIGHT
       LLINO=LNBR(LINCON)
 75    CONTINUE
-      IF(RELPG(LLINO).GT.POSN)GO TO 80
+      IF(RELPG(LLINO).GE.POSN)GO TO 80
 76    CONTINUE
+C      WRITE(*,*)'SKIPPING ',LLINO
       LLINO=RNBR(LLINO)
       IF(LLINO.EQ.0)GO TO 90
       GO TO 75
 80    CONTINUE
+C      WRITE(*,*)'ADDING TO ',LLINO
       RELPG(LLINO)=RELPG(LLINO)+NC
 C   WRITE NEW LINE
       CALL WRITEG(IDEVR,LLINO,RELPG(LLINO),LNGTHG(LLINO),
@@ -3077,150 +3082,6 @@ C   LENGTH OF STRING NUMBER
       SUBROUTINE BUSYF()
 C      WRITE(*,*)'BUSY'
       END
-      SUBROUTINE REMGBC(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +GEL,MAXGEL,IDEVR,IOK,ARRAY,IALL,IOPT)
-C      SUBROUTINE REMGBC(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-C     +KBIN,KBOUT,GEL,MAXGEL,IDEVR,IDEV2,FILNAM,
-C     +IHELPS,IHELPE,HELPF,IDEVH,IOK,ARRAY)
-      INTEGER RELPG(IDBSIZ),LNGTHG(IDBSIZ),LNBR(IDBSIZ),RNBR(IDBSIZ)
-      CHARACTER GEL(MAXGEL),NAMARC*40
-      INTEGER REMME,GCLIN,CHAINL,GNREAD
-      INTEGER ARRAY(MAXGEL)
-      CHARACTER INFOD*100
-      LOGICAL CRUCAL
-      EXTERNAL GCLIN,CHAINL,NAMENO,GNREAD,CRUCAL
-      CALL DBCHEK(IDEVR,RELPG,LNGTHG,LNBR,RNBR,5,IDBSIZ,
-     +NGELS,NCONTS,IOK)
-      IF (IOK.GT.1) RETURN
-C
-C IALL = 1 all reads, = 2 non-crucial only
-C IOPT = 1 remove, = 2 move
-C
-C assumes db is logically consistent
-C
-C here we start a new contig with the selected readings
-C
-      IF (IOPT.EQ.2) THEN
- 40     CONTINUE
-C
-C use list of names
-C
-          IOK = GNREAD(NAMARC)
-          IF(IOK.EQ.1) GO TO 200
-          IF(IOK.NE.0) GO TO 40
-          REMME = NAMENO(NAMARC,NGELS,IDEVR)
-          IF (REMME.EQ.0) THEN
-             WRITE(INFOD,1000)NAMARC
- 1000        FORMAT('Reading name not found: ', A)
-             CALL ERROMF(INFOD)
-             GO TO 40
-          END IF
-          I = CHAINL(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
-     +    IDBSIZ,REMME)
-          ICONT = GCLIN(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,I)
-          IF(ICONT.EQ.0) THEN
-            CALL ERROMF('No contig line for this reading')
-            IOK = 1
-            GO TO 200
-          END IF
-C
-C special case: read is already a single contig (do nothing)
-C
-        IF ((LNBR(REMME).EQ.0).AND.(RNBR(REMME).EQ.0)) GO TO 40
-        IF (IALL.EQ.2) THEN
-          IF(CRUCAL(RELPG,LNGTHG,LNBR,RNBR,IDBSIZ,
-     +    REMME,LNBR(ICONT),ARRAY,MAXGEL,3)) GO TO 40
-        END IF
-        CALL UNLNKR(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +  REMME,ICONT,IDEVR,IDUM1,IDUM2,1,IOK)
-        IF (IOK.EQ.0) THEN
-           CALL MOVENC(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
-     +          IDBSIZ,IDEVR,REMME,IOK)
-           GO TO 40
-        END IF
-        CALL ERROMF('Escape from REMGBC')
- 200    CONTINUE
-        CALL DBCHEK(IDEVR,RELPG,LNGTHG,LNBR,RNBR,5,IDBSIZ,
-     +  NGELS,NCONTS,IOK)
-        IF (IOK.GT.1) RETURN
-        RETURN
-C
-C here we remove reads from the database
-C
-      ELSE IF(IOPT.EQ.1) THEN
- 30     CONTINUE
-C
-C use list of names
-C
-          IOK = GNREAD(NAMARC)
-          IF(IOK.EQ.1) GO TO 100
-          IF(IOK.NE.0) GO TO 30
-          REMME = NAMENO(NAMARC,NGELS,IDEVR)
-          IF (REMME.EQ.0) THEN
-             WRITE(INFOD,1000)NAMARC
-             CALL ERROMF(INFOD)
-             GO TO 30
-          END IF
-          I = CHAINL(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
-     +    IDBSIZ,REMME)
-          ICONT = GCLIN(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,I)
-          IF(ICONT.EQ.0) THEN
-            CALL ERROMF('No contig line for this reading')
-            IOK = 1
-            GO TO 100
-          END IF
-C
-C allow test for being crucial
-C
-        IF (IALL.EQ.2) THEN
-          IF(CRUCAL(RELPG,LNGTHG,LNBR,RNBR,IDBSIZ,
-     +    REMME,LNBR(ICONT),ARRAY,MAXGEL,3)) GO TO 30
-        END IF
-C
-C special case: read is already a single contig so dont unlink
-C but must reduce number of contigs which is normally handled
-C by remcnl in unlnkr
-C
-        IREDC = 0
-        IF ((LNBR(REMME).NE.0).OR.(RNBR(REMME).NE.0)) THEN
-          IREDC = 1
-          CALL UNLNKR(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +    REMME,ICONT,IDEVR,IDUM1,IDUM2,1,IOK)
-          IF (IOK.NE.0) THEN
-            CALL ERROMF('Escape from REMGBC')
-            CALL DBCHEK(IDEVR,RELPG,LNGTHG,LNBR,RNBR,5,IDBSIZ,
-     +      NGELS,NCONTS,IOK)
-            IF (IOK.GT.1) RETURN
-            RETURN
-          END IF
-        END IF
-        IFROM = NGELS
-        CALL RMGTAG(IDEVR, REMME, 0, 0)
-        CALL DELGEL(IDEVR, REMME)
-        IF(REMME.NE.IFROM) THEN
-          WRITE(INFOD,1001)IFROM,REMME
- 1001     FORMAT('Renumbering reading',I8,' to',I8)
-          CALL INFO(INFOD)
-          CALL MOVGEL(RELPG,LNGTHG,LNBR,RNBR,NGELS,
-     +    NCONTS,IDBSIZ,GEL,IFROM,REMME,IDEVR,MAXGEL)
-        END IF
-        IF (IREDC.EQ.0) THEN
-C
-C remove contig line icont
-C
-C          WRITE(*,*)'REMOVING CONTIG LINE',ICONT
-          CALL REMCNL(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +    ICONT,IDEVR)
-        END IF
-        NGELS = NGELS - 1
-        CALL WRITRN(IDEVR,NGELS,NCONTS)
-        GO TO 30
- 100    CONTINUE
-        CALL DBCHEK(IDEVR,RELPG,LNGTHG,LNBR,RNBR,5,IDBSIZ,
-     +  NGELS,NCONTS,IOK)
-        IF (IOK.GT.1) RETURN
-      END IF
-      END
       SUBROUTINE BREAKC(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
      +IDBSIZ,IDEVR,IR,IOK)
 C   AUTHOR: RODGER STADEN
@@ -3654,93 +3515,6 @@ C   Do neighbours
       END IF
 C      CALL MOVTAG(FROM,TO)
       END
-      LOGICAL FUNCTION CRUCAL(RELPG,LNGTHG,LNBR,RNBR,IDBSIZ,
-     +REMME,LLINO,ARRAY,MAXGEL,JOB)
-      INTEGER RELPG(IDBSIZ),LNGTHG(IDBSIZ),LNBR(IDBSIZ),RNBR(IDBSIZ)
-      INTEGER REMME,ARRAY(MAXGEL),FIRST,PLUS,RREG
-      INTEGER CHNRP1
-      LOGICAL FANDL
-      EXTERNAL CHNRP1,FANDL
-      PARAMETER (PLUS = 2, MINUS = 3)
-C
-C Routine to see if a reading is crucial. It is crucial if
-C a. it is not completely covered by data on both strands job=3
-C b. it is not completely covered by data on the plus strand job=2
-C c. it is not completely covered by data on the minus strand job=3
-C
-C we test by filling an array of length=readlength with 1's then
-C multiplying each element covered by data on the plus strand by 2
-C and each lement on the minus strand by 3. Then if any element is
-C not zero given the test mod(array(i),6) we know the read is crucial.
-C note only for job=3 is contiguity assured (others could be touching)
-C
-      CRUCAL = .TRUE.
-      CALL FILLI(ARRAY,ABS(LNGTHG(REMME)),1)
-      IRNO = CHNRP1(RELPG,LNGTHG,LNBR,RNBR,IDBSIZ,LLINO,
-     +RELPG(REMME))
-      IF (IRNO.EQ.0) THEN
-        CALL ERROMF('Scream 1: error in crucal')
-        RETURN
-      END IF
-      RREG = RELPG(REMME) + ABS(LNGTHG(REMME)) - 1
- 10   CONTINUE
-C
-C get the first and last useful data positions for this reading
-C
-C      WRITE(*,*)'IRNO',IRNO
-      IF(FANDL(RELPG(IRNO),LNGTHG(IRNO),RELPG(REMME),
-     +RELPG(REMME)+ABS(LNGTHG(REMME))-1,FIRST,LAST)) THEN
-C        WRITE(*,*)'FIRST,LAST',FIRST,LAST
-        IF(IRNO.NE.REMME) THEN
-          LO = LAST - FIRST + 1
-          IF(LNGTHG(IRNO).GT.0) THEN
-            CALL MULTI(ARRAY(RELPG(IRNO)+FIRST-RELPG(REMME)),LO,PLUS)
-          ELSE
-            CALL MULTI(ARRAY(RELPG(IRNO)+FIRST-RELPG(REMME)),LO,MINUS)
-          END IF
-        END IF
-      END IF
-      IRNO = RNBR(IRNO)
-      IF(IRNO.GT.0) THEN
-        IF (RELPG(IRNO).LE.RREG) GO TO 10
-      END IF
-C      WRITE(*,*)'END OF FIRST LOOP',IRNO
-C
-C all relevant readings processed. Is the reading covered
-C
-      IF (JOB.EQ.1) THEN
-C
-C want plus strand covered
-C
-        J = PLUS
-        DO 20 I=1,ABS(LNGTHG(REMME))
-          IF (MOD(ARRAY(I),J).NE.0) RETURN
- 20     CONTINUE
-        CRUCAL = .FALSE.
-      ELSE IF (JOB.EQ.2) THEN
-C
-C want minus strand covered
-C
-        J = MINUS
-        DO 30 I=1,ABS(LNGTHG(REMME))
-          IF (MOD(ARRAY(I),J).NE.0) RETURN
- 30     CONTINUE
-        CRUCAL = .FALSE.
-      ELSE IF (JOB.EQ.3) THEN
-C
-C want plus and minus strand covered
-C
-        J = PLUS * MINUS
-C        WRITE(*,*)(ARRAY(K),K=1,ABS(LNGTHG(REMME)))
-        DO 40 I=1,ABS(LNGTHG(REMME))
-          IF (MOD(ARRAY(I),J).NE.0) RETURN
- 40     CONTINUE
-        CRUCAL = .FALSE.
-C        WRITE(*,*)CRUCAL
-      ELSE
-        CALL ERROMF('Scream 2: in crucal')
-      END IF
-      END
       LOGICAL FUNCTION FANDL(RELPG,LNGTHG,LREG,RREG,FIRST,LAST)
       INTEGER RELPG,RREG,FIRST
 C
@@ -3813,28 +3587,6 @@ C
       CALL WRITRN(IDEVR,NGELS,NCONTS)
       IOK = 0
       END
-C      SUBROUTINE REMCNL(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-C     +REMME,IDEVR)
-C      INTEGER RELPG(IDBSIZ),LNGTHG(IDBSIZ),LNBR(IDBSIZ),RNBR(IDBSIZ)
-C      INTEGER REMME
-C Routine to remove a contig line from a db
-C Loop deals with case of remove top contig
-
-C We also remove all annotations associated with this contig.
-C      CALL RMCTAG(IDEVR, IDBSIZ-REMME, 0, 0)
-C Move down all lines from above
-C      DO 10 I = REMME,IDBSIZ-NCONTS+1,-1
-C        RELPG(I) = RELPG(I-1)
-C        LNGTHG(I) = LNGTHG(I-1)
-C        LNBR(I) = LNBR(I-1)
-C        RNBR(I) = RNBR(I-1)
-C        CALL GETCTG(IDEVR, IDBSIZ-(I-1), IANNO)
-C        CALL PUTCTG(IDEVR, IDBSIZ-I, IANNO)
-C        CALL WRITEC(IDEVR,IDBSIZ-I,RELPG(I),LNBR(I),RNBR(I))
-C10    CONTINUE
-C      NCONTS = NCONTS - 1
-C      CALL WRITRN(IDEVR,NGELS,NCONTS)
-C      END
       INTEGER FUNCTION NEXTCL(IDBSIZ,NGELS,NCONTS)
 C
 C return next free contig line or zero if full
@@ -3842,82 +3594,6 @@ C
       NEXTCL = 0
       I = IDBSIZ - NCONTS - 1
       IF (I.GT.NGELS) NEXTCL = I
-      END
-      SUBROUTINE REMCON(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +ICONT,GEL,LLINO,IDEVR,MAXGEL,TEMP)
-C   AUTHOR: RODGER STADEN
-      INTEGER RELPG(IDBSIZ),TEMP(IDBSIZ)
-      INTEGER LNGTHG(IDBSIZ),LNBR(IDBSIZ),RNBR(IDBSIZ)
-      CHARACTER GEL(MAXGEL)
-C
-C problem is to remove a contig. Strategy is to find all its read numbers
-C and store them in temp. Then go thru and replace them by reads from the
-C end of the list of reads. An earlier version tried to chain thru but
-C ran into complications about replacing reads by reads they pointed to!
-C
-      DO 10 I=1,IDBSIZ
-        TEMP(I) = 0
- 10     CONTINUE
-C
-      NDEL = 0
-      I = LLINO
- 20   CONTINUE
-      TEMP(I) = 1
-      NDEL = NDEL + 1
-      IF (RNBR(I).NE.0) THEN
-        I = RNBR(I)
-        GO TO 20
-      END IF
-C
-C now in temp all the reads in the contig are 1, the rest of temp is zero
-C let i be the read to move and j the last read left in the list of reads
-C so if temp(i) is 1 and temp(j) is zero move read j to i and set j = j - 1
-C then deal with the next i.
-C if temp(i) is 1 and temp(j) is also 1 simply set j = j - 1 and try to move
-C that one
-C we stop when weve gone so far along the list that the next read to
-C delete is equal to the number of reads left in the list
-C
-C what are the difficult cases? 
-C 1. only one contig
-C 2. all reads to right of llino are are near the end of the list of reads
-C
-C
-C Firstly we remove all tags and sequence (etc)
-C
-      DO 40 I = 1,NGELS
-         IF (TEMP(I).EQ.1) THEN
-            CALL RMGTAG(IDEVR, I, 0, 0)
-            CALL DELGEL(IDEVR, I)
-         ENDIF
- 40   CONTINUE
-C
-C And secondly shift the readings down.
-C
-      I = 1
-      J = NGELS
- 30   CONTINUE
-      IF (TEMP(I).EQ.1) THEN
-         IF (TEMP(J).EQ.0) THEN
-C            WRITE(KBOUT,*)'MOVE ',J,' TO ',I
-            CALL MOVGEL(RELPG,LNGTHG,LNBR,RNBR,J,NCONTS,IDBSIZ,
-     +           GEL,J,I,IDEVR,MAXGEL)
-            J = J - 1
-         ELSE
-            J = J - 1
-            IF (I.LT.J) GO TO 30
-         END IF
-      END IF
-      IF (I.LT.J) THEN
-         I = I + 1
-         GO TO 30
-      END IF
-C
-C fix up number of reads and the contig record
-C
-      NGELS = NGELS - NDEL
-      CALL REMCNL(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
-     +     ICONT,IDEVR)
       END
       SUBROUTINE FMTDB(SEQ1,IDIM,ISW,ISE,LINLEN,IDEV)
 C   NOTE SAME AS FMTSEP!
@@ -4095,24 +3771,6 @@ C  FUNCTION TO FIND FIRST OCCURRENCE OF CHAR IN STRING
 10    CONTINUE
       INDEXA = 0
       END
-      SUBROUTINE FILLC(SEQ,IDIM,CH)
-C   AUTHOR: RODGER STADEN
-      CHARACTER SEQ(IDIM),CH
-      DO 10 I=1,IDIM
-        SEQ(I) = CH
-10    CONTINUE
-      RETURN
-      END
-C   FILLI
-      SUBROUTINE FILLI(SEQ,IDIM,CH)
-C   AUTHOR: RODGER STADEN
-      INTEGER SEQ(IDIM),CH
-      DO 10 I=1,IDIM
-        SEQ(I) = CH
-10    CONTINUE
-      RETURN
-      END
-
 C     SQCOPY
 C   SEQUENCE COPYING PROGRAM
       SUBROUTINE SQCOPY(SEQNCE,COMSEQ,IDIM)
@@ -4182,17 +3840,4 @@ C   FIRST MOVE THIS ELEMENT? IF SO SET POINTER TO ITS INITIAL POSITION
 C   DECREMENT BACK THRU LIST WITH THIS ELEMENT
       IF(I.GT.1)I=I-1
       GO TO 20
-      END
-      INTEGER FUNCTION NOTRL(TEXT,ITEXT,WORD)
-C   AUTHOR: RODGER STADEN
-C   LOOKS RIGHT TO LEFT THRU TEXT FOR FIRST ELEMENT THAT IS NOT WORD
-C   RETURNS ELEMENT NUMBER OR ZERO IF ALL ELEMENTS ARE WORD
-      CHARACTER TEXT*(*),WORD
-      DO 1 I=ITEXT,1,-1
-        IF(TEXT(I:I).NE.WORD)THEN
-          NOTRL=I
-          RETURN
-        END IF
-1     CONTINUE
-      NOTRL = 0 
       END
