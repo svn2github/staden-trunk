@@ -978,6 +978,13 @@ CalcContigOffsets(GapIO *io,
 					      1)))
 	return -1;
 
+    /*
+     * This is how we could turn on checking of inter-contig distances
+     * between sequences.
+     *
+     * template_check_set_flags(io, *tarr, TEMP_OFLAG_INTERDIST, 0);
+     */
+
     check_all_templates(io, *tarr);
 
     if (NULL == (*t_changes = (template_d *)xmalloc((Ntemplates(io)+1) *
