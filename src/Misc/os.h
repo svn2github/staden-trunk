@@ -83,6 +83,13 @@ typedef int mode_t;
 #endif
 
 /*
+ * Linux on AMD64 also needs to use va_copy()
+ */
+#if defined(__linux__) && defined(__amd64__)
+#  define NEED_VA_COPY
+#endif
+
+/*
  * DEC Alpha's running Digital UNIX
  */
 #if defined(__alpha)
