@@ -102,8 +102,8 @@ extern void writeTagList(EdStruct *xx, int seq);
 extern void destroyTagList(tagStruct *s);
 extern void destroyFreeTagList(void);
 
-extern void createAnnotation(EdStruct *xx);
-extern void editAnnotation(EdStruct *xx, tagStruct *t);
+extern char *createAnnotation(EdStruct *xx);
+extern char *editAnnotation(EdStruct *xx, tagStruct *t);
 extern void deleteAnnotation(EdStruct *xx, tagStruct *t);
 extern dstring_t *listAnnotation(EdStruct *xx);
 
@@ -124,9 +124,9 @@ extern void dump_tags(EdStruct *xx, int seq);
 extern comment_id put_comment(GapIO *io, char *c);
 extern int read_tag(GapIO *io, tag_id n, tagRecord *t);
 extern int saveAnnotation(EdStruct *xx, char *type, char *anno, int strand);
-extern int invokeTagEditor(EdStruct *xx, int tagid, int seq, int pos,
-			   int length, int sense, char *comment, char *type_id,
-			   tagStruct *tag);
+extern char *invokeTagEditor(EdStruct *xx, int tagid, int seq, int pos,
+			     int length, int sense, char *comment,
+			     char *type_id, tagStruct *tag);
 extern int write_tag(GapIO *io, tag_id n, tagRecord t);
 extern tag_id get_free_tag(GapIO *io);
 extern void delete_tag_rec(GapIO *io, tag_id t);

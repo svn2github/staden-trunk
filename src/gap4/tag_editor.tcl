@@ -70,10 +70,11 @@ proc create_tag_editor {w c data} {
 	set long_type $NGTag($tid,tagtype)
     } else {
 	# Unknown tag type - Make one up
+	set tid $NGTag(num_tags)
 	set long_type $d(type)
-	set NGTag($NGTag(num_tags),tagtype) $type
-	set NGTag($NGTag(num_tags),tagid) $type
-	set NGTag($NGTag(num_tags),comment) ""
+	set NGTag($tid,tagtype) $type
+	set NGTag($tid,tagid) $type
+	set NGTag($tid,comment) ""
 	incr NGTag(num_tags)
     }
 
@@ -257,18 +258,17 @@ proc tag_editor_set_type {button w textwin data typeid} {
 	pack forget $w.disp
 	catch {destroy $w.gui.f}
 	pack [frame $w.gui.f] -fill both -expand 1
-	if {[info commands ::tag_gui::$NGTag($typeid,tagid)::create_dialogue] == {}} {
-	    set code [acd2tag::parse $NGTag($typeid,comment) ::tag_gui::$type]
-	    catch {set fd [open /tmp/debug.out w]
-		puts $fd $code
-		close $fd}
+	set tid $NGTag($typeid,tagid)
+	if {[info commands ::tag_gui::${tid}::create_dialogue] == {}} {
+	    set code [acd2tag::parse $NGTag($typeid,comment) ::tag_gui::$tid]
+	    catch {set fd [open /tmp/debug.out w]; puts $fd $code; close $fd}
 	    eval $code
 	}
 	set d(namespace) ::$w.GUI
 	catch {array set $d(namespace) [::acd2tag::str2array $d(anno)]} err
 	#set d(namespace) ::tag_gui::${type}::$w
 	set $w.GUI $d(namespace)
-	::tag_gui::${type}::create_dialogue $w.gui.f $d(namespace)
+	::tag_gui::${tid}::create_dialogue $w.gui.f $d(namespace)
 	pack $w.gui -side bottom -fill both -expand 1
     } else {
 	catch {destroy $w.gui.f}
@@ -388,7 +388,7 @@ proc tag_macro_callback {win data command} {
 # Invokes a macro - ie adds a tag to the current cursor position
 proc tag_macro_invoke {ed key} {
     set d ed_macro_$key
-    global $d
+    global $d gap_defs
 
     if {![info exists $d] || [set ${d}(set)] == 0} {
 	bell
@@ -396,6 +396,9 @@ proc tag_macro_invoke {ed key} {
     }
 
     $ed create_anno [set ${d}(type)] [set ${d}(anno)] [set ${d}(strand)]
+    if {[keylget gap_defs CONTIG_EDITOR.MACRO_AUTOEDIT]} {
+	$ed edit_anno
+    }
 }
 
 # Called by control-F* keys. Copies the tag under the cursor to the associated

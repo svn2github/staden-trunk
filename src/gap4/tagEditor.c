@@ -254,16 +254,19 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
 
 /*
  * Brings up a tag editor.
+ * 
+ * Returns the pathname of the tag editor window or NULL for failure.
  */
-int invokeTagEditor(EdStruct *xx, tag_id id, int seq, int pos, int length,
-		    int sense, char *comment, char *type_id, tagStruct *tag) {
+char *invokeTagEditor(EdStruct *xx, tag_id id, int seq, int pos, int length,
+		      int sense, char *comment, char *type_id, tagStruct *tag)
+{
     Tcl_Interp *interp = EDINTERP(xx->ed);
     char buf[2], *pname;
     TagEd *te;
 
     /* Setup our TagEd structure */
     if (NULL == (te = xmalloc(sizeof(TagEd))))
-	return -1;
+	return NULL;
     te->xx = xx;
     pname = Tk_PathName(EDTKWIN(xx->ed));
     if (tag) {
@@ -302,6 +305,6 @@ int invokeTagEditor(EdStruct *xx, tag_id id, int seq, int pos, int length,
 
     Tcl_CreateCommand(interp, te->command, TagEdCommand, (ClientData)te, NULL);
 
-    return 0;
+    return te->window;
 }
 

@@ -1006,7 +1006,7 @@ void tagDeleteBases(EdStruct *xx, int seq, int cursor_pos, int num_bases)
  *
  *************************************************************/
 
-void createAnnotation(EdStruct *xx)
+char *createAnnotation(EdStruct *xx)
 {
     int seq,start,length;
     tagStruct *t;
@@ -1014,7 +1014,7 @@ void createAnnotation(EdStruct *xx)
     
     if (!(DBI_flags(xx) & DB_ACCESS_UPDATE)) {
 	verror(ERR_WARN, "contig_editor", "Editor is in read-only mode");
-	return;
+	return NULL;
     }
 
     if (! getSelection(xx, &seq, &start, &length, &t) || length == 0) {
@@ -1024,7 +1024,7 @@ void createAnnotation(EdStruct *xx)
 	length = 1;
 	if (start > DB_Length2(xx, seq)) {
 	    bell();
-	    return;
+	    return NULL;
 	}
     }
     
@@ -1032,9 +1032,9 @@ void createAnnotation(EdStruct *xx)
     id--;
 
     /* And invoke the editor */
-    invokeTagEditor(xx, id, seq, start, length, 0 /* sense */,
-		    "", "NONE",
-		    NULL /* tagStruct for this tag */);
+    return invokeTagEditor(xx, id, seq, start, length, 0 /* sense */,
+			   "", "NONE",
+			   NULL /* tagStruct for this tag */);
 }
 
 
@@ -1147,7 +1147,7 @@ dstring_t *listAnnotation(EdStruct *xx) {
 
     
 /* Edit annotation 't', or the one under the cursor if 't' is null */
-void editAnnotation(EdStruct *xx, tagStruct *t)
+char *editAnnotation(EdStruct *xx, tagStruct *t)
 {
     int seq,start,length;
 
@@ -1168,17 +1168,17 @@ void editAnnotation(EdStruct *xx, tagStruct *t)
 	    (void) getSelection(xx, &seq, &start, &length, &t);
 	}
     }
-    if (t==NULL) return;
+    if (t==NULL) return NULL;
     
     /*
      * Find current comment
      */
     force_comment(DBI_io(xx), t);
 
-    invokeTagEditor(xx, t->original_tag_id, seq, t->tagrec.position,
-		    t->tagrec.length,
-		    normaliseSense(xx, seq, t->tagrec.sense),
-		    t->newcomment, t->tagrec.type.c, t);
+    return invokeTagEditor(xx, t->original_tag_id, seq, t->tagrec.position,
+			   t->tagrec.length,
+			   normaliseSense(xx, seq, t->tagrec.sense),
+			   t->newcomment, t->tagrec.type.c, t);
 }
 
 
