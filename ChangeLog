@@ -1,3 +1,12 @@
+2005-03-30  James Bonfield  <jkb>
+
+	TAG CODEBASE with rel-1-6-0b2
+
+2005-03-29  James Bonfield  <jkbonfield>
+
+	* Added NEWS file with summary of user-visible updates in a
+	friendlier fashion.
+
 2005-03-29  jkbonfield  <jkbonfield>
 
 	* src/Makefile.thirdparty:

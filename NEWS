@@ -1,0 +1,76 @@
+29 March 2005
+=============
+
+Internal Sanger test version rel-1-6-0b2
+
+Gap4
+----
+
+* Added 64-bit filesize support, meaning that Gap4 databases can now
+  be larger than 2Gb in file size. Specify "-bitsize 64" to force
+  64-bit mode, otherwise databases will still be created in the old
+  32-bit format. Copy_db has a -b flag to change bitsize when copying
+  databases so this aids in migration.
+
+* A new experimental option "SNP candidates" (in the main view
+  menu). Primarily designed for pulling apart the two alleles from
+  mixed shotguns, it also has uses for exploring and sometimes
+  resolving collapsed repeats. User feedback at this stage is most
+  welcome.
+
+* The consistency plots now distinguish between the old "discrepancy
+  plot" (now named diploid discrepancy plot) and a new discrepancy
+  plot that takes does not have the "two alleles only in 50/50 ratios"
+  detector. This makes it more suitable for finding potential
+  collapsed repeats.
+
+* The contig editor now has the notion of "sets". A set is basically a
+  sub-group of a contig, which is useful for exploring the outcome
+  within a conti of pulling apart a collapsed repeat without actually
+  doing it. The editor is automatically invoked in this manner by the
+  SNP candidates output. This is largely experimental, but there are a
+  number of potential ways to improve interaction. Ideas on a postcard
+  please!
+
+* Lots of speedups (primarily for the huge 64-bit databases):
+  - Drawing of some consistency graphs;
+  - Experiment file reading on large files (1000 fold on a 1Mb sequence);
+  - Dealing with lists of contigs (eg "all contigs") is now O(N)
+    complexity instead of O(N^2) (On databases with 50K contigs and
+    2.6million reads this has changed some operations that would take
+    hours to taking a couple of seconds);
+  - (De)selecting contigs in the contig selector is now much much
+    faster.
+
+* Added auto-scrolling in the editor when dragging out selections
+  wider than the screen width.
+
+* Highlight disagreements in dots mode now uses ":" for bases that
+  disagree but are below the quality threshold.
+
+* Stop codon plot bug fixes. Removed the 10000 stop codons found
+  limit; fixed stop codons at the ends of contig being drawn
+  incorrectly (if beyond 'depadded' contig length).
+
+* Fixed minor display bugs in various plots caused by rounding errors.
+  This includes both the X coordinate for the consistency plots when
+  multiple contigs are being shown at high zoom levels, and improved
+  calculation of the second highest confidence value.
+
+Misc
+----
+
+* Major speed up of readingl arge experiment files. On a 1Mb sequence
+  with AV, ON and SQ lines the new code is 1000 times faster (tested
+  on an Alpha)!
+
+* Fixed pascal-style text string reading on AB1 files. This showed up
+  as in the information section of trev (for example) where "730"
+  instead of "3730" was listed as a model number.
+
+-----------------------------------------------------------------------------
+Older
+=====
+
+No "news" listed here, so you'll need to read the release notes or
+change logs for older updates.
