@@ -126,7 +126,7 @@ void trace_draw_confidence(DNATrace *t, Display *d, Pixmap p,
  */
 static void trace_draw2(DNATrace *t, TRACE *tr, Display *d, Pixmap p, int max,
 			GC gc, int x0, int xn, int yoff, int height, double ys,
-			int off) {
+			int off, int sign) {
     int i, h = height-1, o;
     XPoint *xp, *xp2;
 
@@ -140,7 +140,11 @@ static void trace_draw2(DNATrace *t, TRACE *tr, Display *d, Pixmap p, int max,
 	h -= h*(double)off/t->read->maxTraceVal;
     for (i = 0; i < xn; i++, tr++) {
 	xp[i].x = (int)((x0 + i) * t->scale_x) - o;
-	xp[i].y = h - ys * (*tr-off) + yoff;
+	if (sign) {
+	    xp[i].y = h - ys * ((int_2)*tr-off) + yoff;
+	} else {
+	    xp[i].y = h - ys * (*tr-off) + yoff;
+	}
     }
 
     for (i = 0; i < xn; i++)
@@ -357,16 +361,16 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 		      x0, xn, height, yscale, t->read->baseline);
 #else
     trace_draw2(t, &t->read->traceA[x0], d, p, m,
-		t->Agc, x0, xn, yoff, height, yscale, t->read->baseline);
+		t->Agc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
 
     trace_draw2(t, &t->read->traceC[x0], d, p, m,
-		t->Cgc, x0, xn, yoff, height, yscale, t->read->baseline);
+		t->Cgc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
 
     trace_draw2(t, &t->read->traceG[x0], d, p, m,
-		t->Ggc, x0, xn, yoff, height, yscale, t->read->baseline);
+		t->Ggc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
 
     trace_draw2(t, &t->read->traceT[x0], d, p, m,
-		t->Tgc, x0, xn, yoff, height, yscale, t->read->baseline);
+		t->Tgc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
 #endif
 
     if (t->show_edits == 0) {
