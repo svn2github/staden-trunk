@@ -530,7 +530,7 @@ static GTimeStamp next_edtime(GFile *gfile)
 
     edtime = gfile->header.last_time;
     edtime++;
-    if (edtime<=0) {
+    if (edtime==0) {
 	/*
 	 * Panic! Time stamps are about to wrap around
 	 */
