@@ -142,8 +142,10 @@ proc select_oligos {ed} {
 	-menu $t.tname.choice.menu
     menu $t.tname.choice.menu -tearoff 0
 
-    # The bottom buttons "next, accept, cancel"
+    # The bottom buttons "prev,next, accept, cancel"
     frame $t.bot -bd 2 -relief groove
+    button $t.bot.prev   -text "Prev"   -command "seloli_next   $ed $t prev" \
+       	-state disabled
     button $t.bot.next   -text "Next"   -command "seloli_next   $ed $t" \
        	-state disabled
     button $t.bot.accept -text "Accept" -command "seloli_accept $ed $t" \
@@ -157,7 +159,7 @@ proc select_oligos {ed} {
 	-side left
     pack $t.tname.name -side left -fill both
     pack $t.tname.choice -side right
-    pack $t.bot.next $t.bot.accept $t.bot.cancel -side left
+    pack $t.bot.prev $t.bot.next $t.bot.accept $t.bot.cancel -side left
     pack $t.bot.help -side right
 
     pack $t.top $t.tname $t.bot -side top -fill both
@@ -185,6 +187,7 @@ proc seloli_doit {ed t} {
 	                           [get_primer_defs]] > 0} {
         seloli_next $ed $t
 
+       	$t.bot.prev configure -state normal
        	$t.bot.next configure -state normal
        	$t.bot.accept configure -state normal
 	# editor_set_status_line $ed ""
@@ -212,8 +215,8 @@ proc seloli_set_menu {t list} {
     $m add command -label "<None>" -command "seloli_set_tname $t {}"
 }
 
-proc seloli_next {ed t} {
-    set l [$ed select_oligo next]
+proc seloli_next {ed t {mode next}} {
+    set l [$ed select_oligo $mode]
 
     if {"$l" != ""} {
         seloli_set_menu $t [lrange $l 1 end]

@@ -38,6 +38,7 @@ int edSelectOligoGenerate(EdStruct *xx, int sense, int bkwd_width,
  * calling routine.
  */
 char *edSelectOligoNext(EdStruct *xx);
+char *edSelectOligoPrev(EdStruct *xx);
 
 /*
  * Select the current oligo.

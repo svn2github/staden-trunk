@@ -1211,6 +1211,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	/*
 	 * select_oligos generate sense fwd back avg_readlen
 	 * select_oligos next
+	 * select_oligos prev
 	 * select_oligos accept template
 	 * select_oligos quit
 	 *
@@ -1225,6 +1226,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 						      argv[7]  /* p3_def */));
 	} else if (argc == 3 && strcmp(argv[2], "next") == 0) {
 	    char *ret = edSelectOligoNext(ed->xx);
+
+	    if (ret) {
+		Tcl_SetResult(interp, ret, TCL_DYNAMIC);
+	    }
+	} else if (argc == 3 && strcmp(argv[2], "prev") == 0) {
+	    char *ret = edSelectOligoPrev(ed->xx);
 
 	    if (ret) {
 		Tcl_SetResult(interp, ret, TCL_DYNAMIC);

@@ -922,20 +922,11 @@ int edSelectOligoGenerate(EdStruct *xx, int sense, int bkwd_width,
  * The string returned is malloced and so is expected to be freed by the
  * calling routine.
  */
-char *edSelectOligoNext(EdStruct *xx)
-{
+char *edSelectOligoSwitch(EdStruct *xx) {
     char *ret;
     int *templateList;
-    int i = xx->sel_oli->curr_oligo, sense = xx->sel_oli->sense;
-
-    if (xx->editorState == StateDown)
-	return NULL;
-
-    if (i+1 >= xx->sel_oli->state->nprimers) {
-	return NULL;
-    } else {
-	i = ++xx->sel_oli->curr_oligo;
-    }
+    int sense = xx->sel_oli->sense;
+    int i = xx->sel_oli->curr_oligo;
 
     /*
      * Print out information on oligos
@@ -994,6 +985,34 @@ char *edSelectOligoNext(EdStruct *xx)
     xfree(templateList);
 
     return ret;
+}
+
+char *edSelectOligoNext(EdStruct *xx)
+{
+    if (xx->editorState == StateDown)
+	return NULL;
+
+    if (xx->sel_oli->curr_oligo+1 >= xx->sel_oli->state->nprimers) {
+	return NULL;
+    } else {
+	++xx->sel_oli->curr_oligo;
+    }
+
+    return edSelectOligoSwitch(xx);
+}
+
+char *edSelectOligoPrev(EdStruct *xx)
+{
+    if (xx->editorState == StateDown)
+	return NULL;
+
+    if (xx->sel_oli->curr_oligo == 0) {
+	return NULL;
+    } else {
+	--xx->sel_oli->curr_oligo;
+    }
+
+    return edSelectOligoSwitch(xx);
 }
 
 
