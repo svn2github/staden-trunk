@@ -9,6 +9,52 @@
 # for the ::haplo functions. The "new" method takes "-arg val" parameter list
 # and automatically sets them so that data(-arg)==val.
 
+# The core data structure is passed by reference to the methods ($d typically,
+# accessed via $data). It contains the following elements:
+#
+# -io 			GapIO handle
+# -contig		Contig identifier
+#  cnum			Contig number (computed from -contig)
+# -lreg			Leftmost base (0 for all)
+# -rreg			Rightmost base (0 for all)
+# -fastmode		Fast mode param and also checkbox variable
+
+# -discrep_cutoff 	Discrepancy cutoff
+# -min_base_qual	Minimum base confidence when computing discrepancies
+# -snp_cutoff		Minimum SNP score after adjustments (pad, polyX, etc)?
+# -two_alleles		Boolean: whether to adjust snp scores for diploid orgs.
+
+# -minscore		Minimum score acceptable during cluster merges
+# -twopass		Boolean: whether to add zero-cost edges and recompute
+#			during clustering algorithm
+
+# snps			Tcl list of the form:
+#			{SNP_pos SNP_score template template ...} ...
+#			where template is {t_number t_score base confidence}
+# snp_status		Tcl list with one item per SNP indicating SNP status
+#			(unknown, low quality, high quality, etc)
+
+# toplevel		Tk widget pathname for the toplevel window
+# canvas		Tk widget pathname for the main canvas
+# disp_bases		Boolean: whether to display bases
+# disp_depth		Boolean: whether to display template depths
+# disp_position		Boolean: whether to display SNP positions
+# disp_ruler		Boolean: whether to display vertical ruler
+# disp_score		Boolean: whether to display SNP score
+# disp_selected		Boolean: whether to display SNP checkboxes
+# disp_sets		Boolean: whether to display clustered sets
+# disp_sets_check	Tk pathname of set checkboxes
+
+# ruler_scale		Scale from bases to pixels for the Y ruler
+# ruleritem,<X>		Y Coord for ruler items for SNP <X> (0 onwards)
+# rulerx		Position of rightmost X coordinate for ruler plot
+# selected,<X>		Boolean: whether SNP <X> is selected
+# regid			io-reg ID for this plot
+# cursor_id		ID for the cursor used by this plot
+# cursoritem_<X>	Canvas item id for the cursor with ID <X>
+# cursorapos_<X>	Absolute position of cursor <X>
+# status_line		Textvariable for the status line at the window bottom
+
 namespace eval haplo {
     variable counter 0
 
@@ -31,6 +77,9 @@ namespace eval haplo {
 	foreach {a b} $args {
 	    set ${data}($a) $b
 	}
+	set ${data}(cnum) [db_info get_contig_num \
+			       [set ${data}(-io)] \
+			       [set ${data}(-contig)]]
 	
 	return $data
     }
@@ -98,7 +147,7 @@ proc haplo::create_display {d} {
     variable ycoord
 
     set f [toplevel]
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
 
     set data(toplevel) $f
 
@@ -210,7 +259,10 @@ proc haplo::create_display {d} {
 
     # Coordinates/widths, xcoord(ruler) is an absolute X coordinate.
     # position and onwards are all relative widths for that display type.
-    set ycoord(plot)      50
+    # Ycoords start with 0 being the first base in the contig and negative
+    # values therefore being above the ruler graphics.
+    set ycoord(heading)  -50
+    set ycoord(setchk)   -11
     set xcoord(plot)      20
     set xcoord(depth)     80
     set xcoord(ruler)     80
@@ -219,8 +271,8 @@ proc haplo::create_display {d} {
     set xcoord(bases)    140
     set xcoord(bases+)    25
     set xcoord(selected)  50
-    set xcoord(sets)   200
-    set xcoord(sets+)   20
+    set xcoord(sets)     200
+    set xcoord(sets+)     20
     set xcoord(width)    430
 
     # scroll-wheel
@@ -269,6 +321,12 @@ proc haplo::create_display {d} {
 			 -flags {REQUIRED LENGTH JOIN_TO DELETE COMPLEMENT \
 				 CURSOR_NOTIFY}]
 
+    # Add a shared cursor
+    set data(cursor_id) [create_cursor \
+			     -io $data(-io) \
+			     -cnum $contig \
+			     -sent_by $data(regid)]
+
     return $f
 }
 
@@ -276,7 +334,6 @@ proc haplo::reg_callback {d id type args} {
     if {[catch {
 
     upvar $d data
-    variable ycoord
     switch $id {
 	"QUERY_NAME" {
 	    return "Candidate SNPs plot"
@@ -302,32 +359,64 @@ proc haplo::reg_callback {d id type args} {
 	}
 
 	"CURSOR_NOTIFY" {
-	    puts "CURSOR_NOTIFY $id $type $args"
 	    set pos  [keylget args pos]
 	    set seq  [keylget args seq]
 	    set apos [keylget args abspos]
 	    set job  [keylget args job]
 	    set cid  [keylget args id]
-	    set cpos [expr {$apos * $data(ruler_scale) + $ycoord(plot)}]
-	    if {![info exists data(cursor_$cid)]} {
-		set cnum [db_info get_contig_num $data(-io) $data(-contig)]
-		set data(cursor_$cid) $cid
-		set data(cursoritem_$cid) \
-		    [$data(canvas) create line 0 $cpos 50 $cpos \
-			 -width 2 -fill blue]
-		$data(canvas) bind $data(cursoritem_$cid) <<move-drag>> \
-		    "haplo::cursor_move $d $cid %y"
-	    } else {
-		if {[lsearch $job INCREMENT] != -1} {
-		    cursor_ref -io $io -cnum -id $data(cursor_$cid) -ref 1
-		}
-		if {[lsearch $job DECREMENT] != -1} {
-		    cursor_ref -io $io -cnum -id $data(cursor_$cid) -ref -1
-		}
+	    set refs [keylget args refs]
+	    set sent_by [keylget args sent_by]
+	    set cpos $apos
+
+	    if {!$data(disp_ruler)} {
+		break;
 	    }
 
-	    if {[lsearch $job MOVE] != -1} {
-		$data(canvas) coords $data(cursoritem_$cid) 0 $cpos 50 $cpos
+	    # DECREMENT is notified before refs is decremented, so we work
+	    # out here the ref count after the event will have been processed.
+	    if {[lsearch $job DECREMENT] != -1} {incr refs -1}
+
+	    # It's possible we may be drawing cursors before the
+	    # display has been created. In this case ruler_scale is
+	    # undefined, but our cursor will be auto-scaled once the
+	    # ruler is drawn.
+	    if {[info exists data(ruler_scale)]} {
+		set cpos [expr {$apos * $data(ruler_scale)}]
+	    }
+
+	    # We don't show the cursor when the reference count is 0 or
+	    # the reference count is 1 and it is "our" cursor.
+	    if {![info exists data(regid)] || \
+		    ($data(regid) != $sent_by && $refs >= 1) || \
+		    $refs >= 2} {
+		set visible 1
+	    } else {
+		set visible 0
+	    }
+
+	    set data(cursorapos_$cid) $apos
+
+	    # Create, display, move, or destroy the cursor line as
+	    # appropriate.
+	    if {[info exists data(cursoritem_$cid)]} {
+		if {!$visible} {
+		    $data(canvas) delete $data(cursoritem_$cid)
+		    unset data(cursoritem_$cid)
+		} else {
+		    if {[lsearch $job MOVE] != -1} {
+			$data(canvas) coords $data(cursoritem_$cid) \
+			    0 $cpos $data(rulerx) $cpos
+			$data(canvas) raise $data(cursoritem_$cid)
+		    }
+		}
+	    } else {
+		if {$visible} {
+		    set data(cursoritem_$cid) \
+		    [$data(canvas) create line 0 $cpos $data(rulerx) $cpos \
+			 -width 2 -fill blue -tags cursor]
+		    $data(canvas) bind $data(cursoritem_$cid) <<move-drag>> \
+			"haplo::cursor_move $d $cid %y"
+		}
 	    }
 	}
     }
@@ -339,25 +428,32 @@ proc haplo::reg_callback {d id type args} {
     return ""
 }
 
+# Notifies the request to move a cursor. This does not actually update
+# the displayed cursor. Instead it uses contig_notify to notify all users of
+# the cursor (including us) which triggers a redraw.
 proc haplo::cursor_move {d cid y} {
     upvar $d data
-    variable ycoord
 
-    set cnum [db_info get_contig_num $data(-io) $data(-contig)]
     set cpos [$data(canvas) canvasy $y]
-    set apos [expr {int(($cpos-$ycoord(plot)) / $data(ruler_scale))}]
-    puts "Moving cursor $cid to $y / $cpos / $apos"
+    set apos [expr {int($cpos / $data(ruler_scale))}]
     keylset l id $cid seq -1 pos -1 abspos $apos sent_by $data(regid) job MOVE
-    contig_notify -io $data(-io) -cnum $cnum -type CURSOR_NOTIFY -args "$l"
+    contig_notify \
+	-io $data(-io) \
+	-cnum $data(cnum) \
+	-type CURSOR_NOTIFY \
+	-args $l
 }
 
+# Destroys the window and tidies up any contig and cursor registrations
 proc haplo::shutdown {d} {
     upvar $d data
 
     set w $data(toplevel)
     bind $w <Destroy> {}
     catch {contig_deregister -io $data(-io) -id $data(regid)}
+    delete_cursor -io $data(-io) -cnum $data(cnum) -id $data(cursor_id)
     destroy $w
+    unset data
 }
 
 proc haplo::select_snps {d filter} {
@@ -414,7 +510,7 @@ proc haplo::display {d} {
 
     set f $data(toplevel)
     set w $data(canvas)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
 
     set io $data(-io)
     set snps $data(snps)
@@ -436,7 +532,8 @@ proc haplo::display {d} {
 	    } else {
 		set h $heading
 	    }
-	    $w create text $xpos 0 -anchor nw -text $h -font $headingfont
+	    $w create text $xpos $ycoord(heading) \
+		-anchor nw -text $h -font $headingfont
 	    incr xpos $xcoord($type)
 	}
     }
@@ -451,12 +548,13 @@ proc haplo::display {d} {
 	}
 	if {$type == "ruler"} {set xrul2 $xpos}
     }
+    display_cursors $d
 
 
     # Heading underline. Do now that we know the plot width
     set x2 $xpos
     array set fnt [font metrics $headingfont]
-    set ypos [expr {$fnt(-linespace)+1}]
+    set ypos [expr {$ycoord(heading) + $fnt(-linespace)+1}]
     $w create line 0 $ypos $x2 $ypos -width 2
 
     # boundary box for text
@@ -493,9 +591,10 @@ proc haplo::display {d} {
     set bbox [$w bbox ruler]
     if {$bbox != ""} {
 	set rulerh [expr {[lindex $bbox 3]-[lindex $bbox 1]}]
-	set rulery [lindex $bbox 1]
+	set rulery 0
 	set scale [expr {double($texth)/$rulerh}]
 	$w scale ruler 0 $rulery 1 $scale
+	$w scale cursor 0 $rulery 1 $scale
 	set data(ruler_scale) $scale
 
 	# Draw the connecting lines from ruler to text plots
@@ -528,20 +627,19 @@ proc haplo::display {d} {
 proc haplo::display_depth {d xpos} {
     upvar $d data
     variable xcoord
-    variable ycoord
 
     set depth [haplo tdepth -io $data(-io) -contig $data(-contig)]
     set max [lindex $depth 0]; puts depth=$max
     set max [expr {int(($max+9)/10) * 10}]
     set xscale [expr {($xcoord(depth)-20) / double($max)}]
     set w $data(canvas)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
     set c [io_read_contig $data(-io) $contig]
     set clen [keylget c length]
 
     # Grey dividers in incremements of 10
-    set y1 $ycoord(plot)
-    set y2 [expr {$ycoord(plot)+$clen}]
+    set y1 0
+    set y2 $clen
     for {set d 0} {$d <= $max} {incr d 10} {
 	set x [expr {$xpos+$xcoord(depth)-20-$d*$xscale}]
 	$w create line $x $y1 $x $y2 -tags ruler -fill grey66
@@ -558,10 +656,10 @@ proc haplo::display_depth {d xpos} {
     $w create text $x $y2 -text $max -anchor s
 
     # The plot itself
-    set coords [list [expr {$xpos+$xcoord(depth)-20}] $ycoord(plot)]
+    set coords [list [expr {$xpos+$xcoord(depth)-20}] 0]
     foreach {st en d} [lrange $depth 1 end] {
-	incr st $ycoord(plot)
-	incr en $ycoord(plot)
+	incr st 0
+	incr en 0
 	set x [expr {$xpos+$xcoord(depth)-20-$d*$xscale}]
 
 	lappend coords $x $en
@@ -575,28 +673,27 @@ proc haplo::display_depth {d xpos} {
 proc haplo::display_ruler {d xpos} {
     upvar $d data
     variable xcoord
-    variable ycoord
     variable textfont
 
     set snps $data(snps)
     set w $data(canvas)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
     set c [io_read_contig $data(-io) $contig]
     set clen [keylget c length]
 
-    # consensus ruler with SNP lines
-    $w create line $xpos $ycoord(plot) \
-	           $xpos [expr {$ycoord(plot)+$clen}] -tags ruler
+    # consensus ruler with SNP line
+    $w create line $xpos 0 $xpos $clen -tags ruler
+    set data(rulerx) [expr {$xpos+10}]
 
     set num 0
     array set fnt [font metrics $textfont]
     foreach snp $snps {
-	set pos [expr {[lindex $snp 0]+$ycoord(plot)}]
+	set pos [lindex $snp 0]
 	set data(ruleritem,$num) [$w create line \
 				      [expr {$xpos-10}] $pos \
 				      [expr {$xpos+10}] $pos \
 	                              -tags "ruler snp_$num snpx_$num"]
-	set data(ypos,$num) [expr {$fnt(-linespace)*1.5*$num + $ycoord(plot)}]
+	set data(ypos,$num) [expr {$fnt(-linespace)*1.5*$num}]
 
 	# # fake text to keep scales working
 	# $w create text 0 $data(ypos,$num) -tags textcoord
@@ -611,19 +708,17 @@ proc haplo::display_position {d xpos} {
     upvar $d data
     variable textfont
     variable xcoord
-    variable ycoord
 
     set snps $data(snps)
     set w $data(canvas)
 
     set num 0
     foreach snp $snps {
-	set i [$w create text $xpos $data(ypos,$num) \
-		   -text "[lindex $snp 0]" \
-		   -font $textfont \
-		   -anchor w \
-		   -tags "textcoord snp_$num"]
-	set data(positem,$num) $i
+	$w create text $xpos $data(ypos,$num) \
+	    -text "[lindex $snp 0]" \
+	    -font $textfont \
+	    -anchor w \
+	    -tags "textcoord snp_$num"
 
 	incr num
     }
@@ -635,7 +730,6 @@ proc haplo::display_score {d xpos} {
     upvar $d data
     variable textfont
     variable xcoord
-    variable ycoord
 
     set snps $data(snps)
     set w $data(canvas)
@@ -652,11 +746,10 @@ proc haplo::display_score {d xpos} {
 	}
         entry $w.score_$num -width 5
 	$w.score_$num insert end [format "%5.2f" [lindex $snp 1]]
-	set i [$w create window $xpos $data(ypos,$num) \
-		   -window $w.score_$num \
-		   -anchor w \
-		   -tags "textcoord snp_$num"]
-	set data(positem,$num) $i
+	$w create window $xpos $data(ypos,$num) \
+	    -window $w.score_$num \
+	    -anchor w \
+	    -tags "textcoord snp_$num"
 
 	incr num
     }
@@ -669,7 +762,6 @@ proc haplo::display_bases {d xpos} {
     variable textfont
     variable boldfont
     variable xcoord
-    variable ycoord
 
     set snps $data(snps)
     set w $data(canvas)
@@ -711,7 +803,6 @@ proc haplo::display_selected {d xpos} {
     upvar $d data
     variable textfont
     variable xcoord
-    variable ycoord
 
     set snps $data(snps)
     set w $data(canvas)
@@ -732,13 +823,12 @@ proc haplo::display_sets {d xpos} {
     variable textfont
     variable boldfont
     variable xcoord
-    variable ycoord
 
     puts [info level [info level]]
 
     set io $data(-io)
     set snps $data(snps)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
     set sets $data(cons)
     set w $data(canvas)
 
@@ -792,7 +882,7 @@ proc haplo::display_sets {d xpos} {
 
     # Set checkbuttons
     set setnum 0
-    set y [expr {$ycoord(plot)-11}]
+    set y $ycoord(setchk)
     foreach g $sets {
 	set x [expr {$xpos + $setnum*$xcoord(sets+)-4}]
 	catch {checkbutton $w.set_$setnum -padx 0 -pady 0 \
@@ -806,6 +896,21 @@ proc haplo::display_sets {d xpos} {
     return [expr {$setnum * $xcoord(sets+)}]
 }
 
+# Redraw cursors
+proc haplo::display_cursors {d} {
+    upvar $d data
+
+    $data(canvas) delete cursor
+    foreach x [array names data -glob cursoritem_*] {
+	regexp {.*_(.*)} $x _ cid
+	set cpos $data(cursorapos_$cid)
+	set data(cursoritem_$cid) \
+	    [$data(canvas) create line 0 $cpos $data(rulerx) $cpos \
+		-tags cursor -width 2 -fill blue]
+	$data(canvas) bind $data(cursoritem_$cid) <<move-drag>> \
+	    "haplo::cursor_move $d $cid %y"
+    }
+}
 
 # -----------------------------------------------------------------------------
 # Display callbacks
@@ -927,7 +1032,7 @@ proc haplo::compute_set_cons {d} {
     upvar $d data
 
     set snps $data(snps)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
     set gdata {}
     set tot [llength $data(sets)]
     set n 0
@@ -1217,7 +1322,7 @@ proc haplo::ClusterSNP {d} {
 
     set io $data(-io)
     set snps $data(snps)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
 
     set data(status_line) "Filtering SNPs"
     update idletasks
@@ -1341,7 +1446,7 @@ proc haplo::MoveContigs {d} {
     upvar $d data
 
     set io $data(-io)
-    set contig [db_info get_contig_num $data(-io) $data(-contig)]
+    set contig $data(cnum)
     set rsets $data(rsets)
 
 #    if {![quit_displays $io "Split contigs"]} {
