@@ -106,10 +106,9 @@ typedef struct {
 } readpair_arg;
 
 typedef struct {
-    int handle;
+    GapIO *io;
     char *list;
-    int iall;
-    int iopt;
+    int move;
 } dis_reading_arg;
 
 typedef struct {
@@ -169,12 +168,6 @@ typedef struct {
     GapIO *io;
     char *contig;
 } delete_contig_arg;
- 
-typedef struct {
-    GapIO *io;
-    char *readings;
-    char *distances;
-} shift_gels_arg;
  
 typedef struct {
     GapIO *io;
