@@ -1,4 +1,4 @@
-font create tooltip_font    -family Helvetica -size -12
+catch {font create tooltip_font    -family Helvetica -size -12}
 
 namespace eval ::tooltip {
     variable after_id ""
