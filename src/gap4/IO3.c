@@ -758,6 +758,8 @@ int swap_read(GapIO *io, int M, int N) {
     GCardinal temp;
     GReadings r;
     char name[DB_NAMELEN+1];
+    int nnoteM;
+    int nnoteN;
 
     if (N>Nreadings(io)) err |= io_init_reading(io,N);
     if (M>Nreadings(io)) err |= io_init_reading(io,M);
@@ -770,6 +772,22 @@ int swap_read(GapIO *io, int M, int N) {
     io_wname(io, N, io_rname(io, M));
     io_wname(io, M, name);
 #endif
+
+    /* Notes have two-way linked lists, so we update the link back */
+    nnoteM = arr(GReadings, io->reading, M-1).notes;
+    nnoteN = arr(GReadings, io->reading, N-1).notes;
+    if (nnoteM) {
+	GNotes n;
+	note_read(io, nnoteM, n);
+	n.prev = N;
+	note_write(io, nnoteM, n);
+    }
+    if (nnoteN) {
+	GNotes n;
+	note_read(io, nnoteN, n);
+	n.prev = M;
+	note_write(io, nnoteN, n);
+    }
 
     /* swap record array elements */
     temp = arr(GCardinal,io->readings,N-1);
