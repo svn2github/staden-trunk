@@ -73,6 +73,19 @@ typedef int mode_t;
 
 
 /*
+ * Microsoft Windows running MinGW
+ */
+#if defined(__MINGW32__)
+#define SP_LITTLE_ENDIAN
+#define mkdir(filename,mode) mkdir((filename))
+#define NOPIPE
+#define NOLOCKF
+#define NO_STRPTIME
+#define sysconf(x) 512
+#define ftruncate(fd,len) _chsize(fd,len)
+#endif
+
+/*
  * Linux on Intel platforms
  */
 #if defined(__linux__)

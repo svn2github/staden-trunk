@@ -66,6 +66,7 @@
  * to the xerr_set routine.
  */
 extern char *gerrors[];
-#define gerr_set(e) ((e)?xerr_set((e), gerrors[(e)]):0)
+/* #define gerr_set(e) ((e)?xerr_set((e), gerrors[(e)]):0) */
+int gerr_set(int errcode);
 
 #endif /*_G_ERROR_H_*/

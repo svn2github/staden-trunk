@@ -1,5 +1,7 @@
+#if !(defined(_MSC_VER) || defined(__MINGW32__))
 #define TRACE_ARCHIVE
 #define USE_WGET
+#endif
 
 #include <stdlib.h>
 #include <stdio.h>

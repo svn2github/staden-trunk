@@ -21,6 +21,9 @@ int myusleep(unsigned int useconds) {
     Sleep(mseconds);
     return 0;
 #else
+#ifdef __MINGW32__
+    /* I do not know how to do this under mingw yet */
+#else
     struct timeval tv;
 
     tv.tv_sec  = useconds / 1000000;
@@ -30,6 +33,7 @@ int myusleep(unsigned int useconds) {
 	return -1;
     else
 	return 0;
+#endif
 #endif
 }
 

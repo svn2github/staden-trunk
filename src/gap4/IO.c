@@ -1365,6 +1365,7 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	return NULL;
     }
 
+#if !defined(__MINGW32__) && !defined(_MSC_VER)
     /* Start logging */
     {
 	char log_buf[256], *user;
@@ -1380,6 +1381,7 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
 		 log_buf);
     }
+#endif
 
     /*
      * Connect client

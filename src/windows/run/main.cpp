@@ -1,3 +1,20 @@
+ 
+/*
+ * This program is designed to be compiled and put in to
+ * $STADENROOT/windows-bin.
+ *
+ * It sets up the environment and then runs wish.exe on lib/PROG/PROG.tcl
+ * where PROG is the name of this executable (copy it around to the various
+ * names it has to stand for). This means that it can be used from both a
+ * cmd32.exe (DOS) environment, the start menu or in a file association
+ * without requiring any arguments. (It helps to give a feel more similar to
+ * the unix systems too.)
+ *
+ * With the -console argument it instead invokes a command shell with the
+ * environment set up. This allows for scripting and manual use of the command
+ * line tools (vector_clip, extract_seq, convert_trace, etc...).
+ */
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,75 +22,20 @@
 #include <errno.h>
 #include <direct.h>
 #include <string.h>
+#include <ctype.h>
 #include <windows.h>
-
-
 
 // Buffers
 const int MAXARG = 10;
 const int MAXARGLEN = 1024;
 static char argv[MAXARG][MAXARGLEN];
 
-
 // Other data
 HINSTANCE g_hInstance = 0;
 
-
-
-#ifdef RUNTIME_FONT_INSTALL
-
-// Fonts
-typedef struct
-{
-    int  yn;
-    char FaceName[LF_FACESIZE];
-
-}FONTINFO;
-
-
-
 //-------------------
-// Font Installation
+// Parser for WinMain
 //-------------------
-
-int CALLBACK EnumFontProc( ENUMLOGFONTEX* lpelfe, NEWTEXTMETRICEX* lpntme, DWORD FontType, LPARAM lParam )
-{
-    FONTINFO* fi;
-    if( FontType & TRUETYPE_FONTTYPE )
-    {
-        fi = (FONTINFO*) lParam;
-        if( strcmp((const char*)lpelfe->elfFullName,fi->FaceName) == 0 )
-        {
-            fi->yn = 1;
-            return 0;
-        }
-    }
-    return 1;
-}
-
-bool IsFontInstalled( const char* pFaceName )
-{
-    assert(pFaceName);
-    assert(strlen(pFaceName)<LF_FACESIZE);
-    LOGFONT  lf;
-    FONTINFO fi;
-    fi.yn = 0;
-    strcpy( fi.FaceName, pFaceName );
-    lf.lfCharSet        = DEFAULT_CHARSET;
-    lf.lfPitchAndFamily = 0;
-    strcpy( lf.lfFaceName, pFaceName );
-    EnumFontFamiliesEx( GetDC(0), &lf, (FONTENUMPROC)EnumFontProc, (LPARAM)&fi, 0 );
-    return fi.yn ? true : false;
-}
-
-#endif /* RUNTIME_FONT_INSTALL */
-
-
-
-
-//--------
-// Parser
-//--------
 
 unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
 {
@@ -86,9 +48,9 @@ unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
    unsigned int n      = 1;
    unsigned int nState = STATE_INIT_ARGUMENTS;
 
-
-
    // Command Line Parser State Machine
+
+   pBuffer[0] = 0;
    while(1)
    {
       switch( nState )
@@ -103,8 +65,6 @@ unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
             break;
 
 
-
-
          case STATE_CONSUME_WHITESPACE:
             // Eat through unwanted whitespace
             while( isspace(c=*pCmdLine++) );
@@ -113,19 +73,17 @@ unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
             break;
 
 
-
-
          case STATE_SCAN_CHARS:
             // Scan characters for whitespace/quotes
             c = *pCmdLine++;
             pBuffer[i++] = c;
-            if( isspace(c) )
+            if( isspace(c) ) {
                nState = STATE_ADD_ARGUMENT;
+	       i--;
+	    }
             else if( c == '"' )
                nState = STATE_SCAN_QUOTED_CHARS;
             break;
-
-
 
 
          case STATE_SCAN_QUOTED_CHARS:
@@ -137,19 +95,17 @@ unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
             break;
 
 
-
-
          case STATE_ADD_ARGUMENT:
             // Add another argument to argv[]
-            pBuffer[i] = 0;
-            strcpy( argv[n++], pBuffer );
+	    if (i) {
+                pBuffer[i] = 0;
+                strcpy( argv[n++], pBuffer );
+	    }
             nState = STATE_CONSUME_WHITESPACE;
             pBuffer[0] = 0;
             i = 0;
             break;
       }
-
-
 
       // Exit test
       if( !c )
@@ -158,8 +114,6 @@ unsigned int ParseCommandLine( char* pCmdLine, char argv[MAXARG][MAXARGLEN] )
             break;
          nState = STATE_ADD_ARGUMENT;
       }
-
-
    }
    return n;
 }
@@ -182,23 +136,31 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     char  our_cmd[MAX_PATH];
     char  console[MAX_PATH];
     char  unix_rootdir[MAX_PATH];
+    char  basename[MAX_PATH];
+    char  arg1[MAX_PATH];
 
-
-
-
-    // Get the Staden Package directory
+    // Get the location of the executable name
     if( !::GetModuleFileName(0,rootdir,MAX_PATH) )
     {
         ::MessageBox(0,"Unable to get Staden Package directory!", "SPRUN.EXE Message", MB_OK );
         return -3;
     }
-    _strlwr( rootdir );
-    p = strstr( rootdir, "\\sprun.exe" );
-   *p = 0;
+    _strlwr( rootdir ); // lowercase
 
+    // Lop off the .exe and the windows-bin to get the Staden Package
+    // root directory.
+    n = strlen(rootdir)-1;
+    while (n && rootdir[n] != '\\')
+    	n--;
+    strcpy(basename, &rootdir[n+1]);
+    if (p = strstr(basename, ".exe"))
+	*p = 0;
+    if (n) n--;
+    while (n && rootdir[n] != '\\')
+    	n--;
+    rootdir[n] = 0;
 
-
-   // Create a copy of root directory in unix format
+   // Create a copy of root directory in unix format (fwd slashes)
    strcpy( unix_rootdir, rootdir );
    p = unix_rootdir;
    while( *p )
@@ -207,25 +169,6 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
         *p = '/';
       p++;
    }
-
-
-
-#ifdef RUNTIME_FONT_INSTALL
-    /* Install the pregap font if it isn't already installed */
-    if( IsFontInstalled("Pregap") == false )
-    {
-        //MessageBox(0,"Installing pregap.ttf","Debug",MB_OK);
-        strcpy( buffer, rootdir );
-        strcat( buffer, "\\windows-bin\\pregap.ttf" );
-        ::GetShortPathName( buffer, buffer, MAX_PATH );
-        _strlwr( buffer );
-        if( !AddFontResource(buffer) )
-            ::MessageBox(0,"Warning: Failed to install font pregap.ttf.","SPRUN.EXE Message", MB_OK );
-        else
-            ::SendMessage( HWND_BROADCAST, WM_FONTCHANGE, 0, 0 );
-    }
-#endif
-
 
 
     // Add Staden Package environment variables to current environment
@@ -262,8 +205,7 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     strcat( our_cmd, "\\windows-bin\\wish.exe" );
 
 
-
-	// Get command console
+    // Get command console
     p = getenv( "COMSPEC" );
     if(!p)
     {
@@ -282,24 +224,27 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     // Construct suitable argp array for execve
     k = 1;
     n = 1;
-    while( n<argc )
-    {
-        // -c option runs the console with the staden environment intact
-        // on windows NT platforms only. Command.com on win9x is crippled
-        // in that it ignores the environment given to execve()
-        if( (argv[n][0]=='-') && (argv[n][1]=='c') && !argv[n][2] )
-            strcpy( our_cmd, console );
-        else
-        {
-            argp[n] = &argv[n][0];
-            k++;
-        }
-        n++;
+    // -console option runs the console with the staden environment intact
+    // on windows NT platforms only. Command.com on win9x is crippled
+    // in that it ignores the environment given to execve()
+    if (n < argc && strcmp(argv[n], "-console") == 0) {
+	strcpy(our_cmd, console);
+	n++;
     }
-    argp[k] = 0;
-    assert(k<(MAXARG+1));
+    if (strcmp(basename, "sprun") == 0) {
+	// Just wish by itself
+        argp[1] = 0;
+    } else {
+	// Otherwise start with a tcl file based on argv[0] and append
+	// all other arguments
+        sprintf(arg1, "\"%s\\lib\\%s\\%s.tcl\"", rootdir, basename, basename);
+	argp[k++] = arg1;
 
-
+        while( n<argc )
+            argp[k++] = &argv[n++][0];
+        argp[k] = 0;
+        assert(k<(MAXARG+1));
+    }
 
     // Assemble argv[0], we must put quotes around this
     strcpy( buffer, "\"" );
@@ -307,7 +252,10 @@ int Main( int argc, char argv[MAXARG][MAXARGLEN] )
     strcat( buffer, "\"" );
     argp[0] = buffer;
 
-
+    for (n = 0; argp[n]; n++) {
+	printf("'%s' ", argp[n]);
+    }
+    printf("\n");
 
     // Execute the program
     status = _execve( our_cmd, argp, _environ );
@@ -331,12 +279,8 @@ int WINAPI WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLin
    // Global variable initialisation
    g_hInstance = hInstance;
 
-
-
    // Process the command line arguments
    int argc = ParseCommandLine( lpCmdLine, argv );
-
-
 
    // Call user entry point
    return Main( argc, argv );

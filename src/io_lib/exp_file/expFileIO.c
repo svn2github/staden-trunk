@@ -553,7 +553,7 @@ Exp_info *exp_fread_info(FILE *fp)
     
     e = exp_create_info();
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     /* 6/1/99 johnt - need to ensure text mode to translate \r\n to \n */
     _setmode(fileno(fp),_O_TEXT);
 #endif

@@ -56,7 +56,7 @@
 
 /*
  * Microsoft Visual C++
- * Windows 95 / NT
+ * Windows
  */
 #if defined(_MSC_VER)
 #define popen _popen
@@ -66,8 +66,18 @@ typedef int mode_t;
 #define sysconf(x) 512
 #define SP_LITTLE_ENDIAN
 #define NOPIPE
+#define NOLOCKF
 #define NOSTRCASECMP
 #define NO_STRPTIME
+#endif
+
+/*
+ * Microsoft Windows running MinGW
+ */
+#if defined(__MINGW32__)
+#define SP_LITTLE_ENDIAN
+#define mkdir(filename,mode) mkdir((filename))
+#define ftruncate(fd,len) _chsize(fd,len)
 #endif
 
 /*
@@ -112,6 +122,7 @@ typedef int mode_t;
 #if defined(__APPLE__)
 #define SP_BIG_ENDIAN
 #define NO_STRPTIME
+#define NOLOCKF
 #endif
 
 /*

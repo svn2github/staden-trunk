@@ -46,3 +46,11 @@ char *gerrors[] = {
     "item not found in free-tree",
     "overlap within free-tree"
 };
+
+int gerr_set(int errcode) {
+    if (errcode)
+	return xerr_set(errcode, gerrors[errcode]);
+    else
+	return 0;
+}
+

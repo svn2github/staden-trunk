@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <float.h>
 #include <math.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "misc.h"
 #include "array_arith.h"
 #include "splice_search.h"
 #include "dna_utils.h"
 #include "getfile.h"
-
-#include <errno.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 
 /* 7/1/99 johnt - need to explicitly import globals from dlls in Visual C++ */
 #ifdef _MSC_VER

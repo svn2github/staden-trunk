@@ -1,155 +1,55 @@
-# Makefile for compiling with GNU make under Windows using Microsoft Visual C++
-
 #
-# Debugging On/Off
-#
-
-#_DEBUG=1
-
-
-#
-# Override Inherited flags
-#
-DEFINES += /D_WINDOWS
-TCLVERS  = 84
-TKVERS   = 84
-ITCLVERS = 33
-ITKVERS  = 33
-
-
-ifdef _DEBUG
-DEBUG_SUFFIX   = d
-SHLIB_OPTDEBUG = $(SHLIB_DEBUG)
-CLDOPTDEBUG    = $(CLDDEBUG)
-COPTDEBUG      = $(CDEBUG)
-FOPTDEBUG      = $(FDEBUG)
-else
-DEBUG_SUFFIX   =
-SHLIB_OPTDEBUG = $(SHLIB_OPT)
-CLDOPTDEBUG    = $(CLDOPT)
-COPTDEBUG      = $(COPT)
-FOPTDEBUG      = $(FOPT)
-DEFINES       += /DNDEBUG=1
-endif
-
-
-#
-# Directories
-#
-TCLBIN    = $(SRCROOT)/src/windows/windows-binaries
-TKBIN     = $(SRCROOT)/src/windows/windows-binaries
-MATH_LIB =
-X_LIB    =
-XSRC     = $(SRCROOT)/tk8.4.0/xlib
-XAW_LIB  =
-TKWININC = $(SRCROOT)/tk8.4.0/win
-
-
-#
-# Compiling
-#
-MAKE = make
-ABSOFT_PATH = e:/absoft
-
-
-#TKINCDIR must come before ...windows\include so we get the TK version of some X include files !
-INCLUDES_E  += $(TK_INC) -I$(TKWININC) -I$(SRCROOT)/windows/include
-
-RC        = rc.exe
-CC        = cl.exe /nologo
-CXX       = $(CC)
-CLD_PROG  = link.exe /MAP
-CXXLD_PROG=$(CLD_PROG)
-FLD       = $(CLD)
-CDEBUG    = /D_DEBUG /MD$(DEBUG_SUFFIX) /Zi /Od /W3
-COPT      = /MD$(DEBUG_SUFFIX) /Ox /O2
-CXXFLAGS += /GX /TP
-FDEBUG    =
-FFLAGS    = -f -N15 -K
-MKDEFC    = $(SRCROOT)/windows/mkdef/release/mkdef -c
-RM        = rm
-NO_SRS    = 1
-COBJFLAG  = /Fo
-LDEXEFLAG = /OUT:
-
-
-#
-# Library Exports
-#
-# Unfortunately, we need one definition for each DLL since during a build
-# they have dependencies on each other.
-#
-G_DLL         = /DBUILDING_G_DLL
-MISC_DLL      = /DBUILDING_MISC_DLL
-TK_UTILS_DLL  = /DBUILDING_TK_UTILS_DLL
-SEQ_UTILS_DLL = /DBUILDING_SEQ_UTILS_DLL
-
-
-#
-# Linking, always used dynamic CRT. /NODEFAULTLIB forces symbols in static
-# libraries to be searched for in the dynamic CRT instead of libc.lib which
-# is the default.
-#
-CRTLIBS       = /NODEFAULTLIB:libc.lib msvcrt$(DEBUG_SUFFIX).lib
-LINK_PATHFLAG = /LIBPATH:
-
-
-#
-# Linking a dynamic library
-#
-SHLIB_LD        = link.exe
-SHLIB_LDXX      = $(SHLIB_LD)
-SHLIB_LDFLAGS   = /MAP /DLL $(SHLIB_OPTDEBUG) $(CRTLIBS) $(LINK_PATHFLAG)$(SRCROOT)/windows/windows-binaries $(LINK_PATHFLAG)$(L) /DEF:$*.def gdi32.lib user32.lib comdlg32.lib advapi32.lib wsock32.lib
-SHLIB_LDXXFLAGS = $(SHLIB_LDFLAGS)
-SHLIB_PREFIX    =
-SHLIB_SUFFIX    = .dll
-SHLIB_SONAME    =
-SHLIB_OUTFLAG   = /OUT:
-SHLIB_OPT       =
-SHLIB_DEBUG     = /DEBUG
-SHLIB_CFLAGS    =
-SHLIB_CXXFLAGS  =
-
-
-#
-# Linking an executable
+# Defines for a windows machine running MinGW
+# GNU make 3.64 or newer must be used on this system.
 #
 
-LINK_LIBFLAG  =
-LIB_EXT       = .lib
-REPESTACK     = /STACK:0x200000
-CLDDEBUG      = /DEBUG
-CLDOPT        = $(CRTLIBS) /MACHINE:IX86
-CLDFLAGS_S   += $(LINK_PATHFLAG)$(SRCROOT)/windows/windows-binaries
-EXE_SUFFIX    = .exe
-EXTRA_LIBS    = user32.lib gdi32.lib comdlg32.lib advapi32.lib wsock32.lib
-F77_DEP       = ntf77.lib
+/* DEFINES += -DLITTLE_ENDIAN */
 
+# Use g77 for compiling our fortran
+F77	 = g77
+# Ewe:
+F77_DEP  = -lg2c
+LIBSF	= $(F77_DEP)
+# Jura
+# F77_DEP	 = /usr/lib/gcc-lib/i386-glibc21-linux/egcs-2.91.66/libg2c.a
 
-# WinStash Icon
-#RESFILE      = $(O)/resource.res
-#SUBSYSTEMWIN = /SUBSYSTEM:windows $(RESFILE)
-SUBSYSTEMWIN = /SUBSYSTEM:windows
+# Complain about everything sensible, but not the stylistic complaints
+# introduced by -Wall
+CC = gcc
+CXX = g++
+COPT += -Wuninitialized 
+GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
+	      -Wstrict-prototypes
+CFLAGS	+= $(GCCWARNINGS)
 
+CFLAGS += -I$(SRCROOT)/windows/include -I$(TKSRC)/../win
 
-#Options for Console EXE mode - use setargv.obj to get wildcard expansion
-SUBSYSTEMCONSOLE = /SUBSYSTEM:console setargv.obj
+#CXXFLAGS += -I$(SRCROOT)/stlport/linux
 
+XSRC=$(TKSRC)/../xlib
 
+ZLIB_LIB     = $(ZLIB_LIB_S) $(LINK_LIBFLAG)zlib1$(LIB_EXT) $(ZLIB_LIB_E)
+TCLVERS		= 84
+TKVERS		= 84
+X_LIB=		-lgdi32
 
-# Supplies missing XWindows calls needed by windows
-TKUTILS_EXTRAS = $(TKUTILSBIN)/tkWinX.o
+#CLDFLAGS_E	+= -shared
+#FLDFLAGS_E	+= -shared
 
+TKUTILS_EXTRAS=$(TKUTILSBIN)/tkWinX.o
 
-#$(RESFILE): resource.rc
-#   $(RC) /fo $(RESFILE) resource.rc
+# Dynamic linking
+#SHLIB_CFLAGS		= -fpic
+# pic with g77 generates opcodes unknown by the 386 assembler. Odd
+# It doesn't appear to be needed (but at a speed cost?).
+#SHLIB_FFLAGS		= -fpic
+SHLIB_LD		= $(CC)
+SHLIB_LDFLAGS		= --enable-auto-import -L$(L) $(SHLIB_STRIP) -shared -lcomdlg32 -o
+SHLIB_PREFIX		= 
+SHLIB_SUFFIX		= .dll
+SHLIB_SEARCH_FLAGS	=
+SHLIB_SONAME		=
+#EXTRA_LIBS		+= -ldl
 
-
-CLEANCOMMAND=-$(RM) $(O)/*.o $(O)/*.a $(O)/*.map $(O)/*.def $(O)/*.exp $(O)/*.lib $(O)/*.ilk $(O)/*.pdb $(O)/*.exe
-CLEANLIBSCOMMAND=-rm -f $(PROGLIBS:.dll=.*)
-
-#
-# Macros to require, and build windows module definition file
-#
-DEF_FILE = $(L)/$(SHLIB_PREFIX)$(LIBS).def
-MKDEFL    = $(SRCROOT)/windows/mkdef/release/mkdef -l
+SHLIB_LDXX		= $(CXX)
+SHLIB_LDXXFLAGS		= $(SHLIB_LDFLAGS)

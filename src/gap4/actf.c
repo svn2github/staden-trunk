@@ -232,10 +232,14 @@ int actf_lock(int read_only, char *file, char *version,int new) {
     lockf(fd, F_LOCK, 0);
 #endif
 
+#if defined(__MINGW32__)
+   strcpy(hostname, "unknown");
+#else
     /* Write the hostname and process id to it */
     if (SOCKET_ERROR == gethostname(hostname, 1023))
         strcpy(hostname, "unknown");
     hostname[1023] = 0;
+#endif
     sprintf(db_path, "%s %d\n", hostname, (int)getpid());
     write(fd, db_path, strlen(db_path));
 

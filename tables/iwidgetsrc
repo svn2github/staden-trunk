@@ -1,7 +1,9 @@
 set tcl_pkgPath ""
 if {"$tcl_platform(platform)" == "windows"} {
-  load_package itcl33
-  load_package itk33
+  package require Itcl
+  package require Itk
+#  load_package itcl33
+#  load_package itk33
 } else {
   load_package itcl3.3
   load_package itk3.3

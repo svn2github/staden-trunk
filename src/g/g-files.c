@@ -360,7 +360,7 @@ void g_close_file(GFile *g)
 }
 
 /* 6/1/99 johnt - Don't have fcntl with Visual C++ */
-#if !defined(_MSC_VER) && !defined(__APPLE__)
+#if !defined(_MSC_VER) && !defined(__APPLE__) && !defined(__MINGW32__)
 int g_sync_aux_on(GFile *gfile)
 /*
  * Force a flush of all prior data and then all subsequent data is to be

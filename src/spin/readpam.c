@@ -50,10 +50,11 @@ void
 identity_prot_matrix (int ***matrix)
 {
     int i, j;
+    int *p = protein_lookup;
 
     for (i = 0; i < char_set_size; i++) {
 	for (j = 0; j < char_set_size; j++) {
-	    if ((i == j) && (i != protein_lookup['X']) && (i != protein_lookup['*']) && (i != protein_lookup['-']))
+	    if ((i == j) && (i != p['X']) && (i != p['*']) && (i != p['-']))
 		(*matrix)[i][j] = 1;
 	    else
 		(*matrix)[i][j] = 0;

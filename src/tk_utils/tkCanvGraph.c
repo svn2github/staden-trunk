@@ -7,6 +7,33 @@
 #include "tclCanvGraph.h"
 #include "matrix.h"
 
+#ifdef __MINGW32__
+extern int		TkPixelParseProc _ANSI_ARGS_((
+			    ClientData clientData, Tcl_Interp *interp,
+			    Tk_Window tkwin, CONST char *value, char *widgRec,
+			    int offset));
+extern char *		TkPixelPrintProc _ANSI_ARGS_((
+			    ClientData clientData, Tk_Window tkwin,
+			    char *widgRec, int offset,
+			    Tcl_FreeProc **freeProcPtr));
+extern int		Tk_CanvasTagsParseProc _ANSI_ARGS_((
+				ClientData clientData, Tcl_Interp * interp, 
+				Tk_Window tkwin, CONST char * value, 
+				char * widgRec, int offset));
+extern char *		Tk_CanvasTagsPrintProc _ANSI_ARGS_((
+				ClientData clientData, Tk_Window tkwin, 
+				char * widgRec, int offset, 
+				Tcl_FreeProc ** freeProcPtr));
+extern int		TkOrientParseProc _ANSI_ARGS_((
+			    ClientData clientData, Tcl_Interp *interp,
+			    Tk_Window tkwin, CONST char *value,
+			    char *widgRec, int offset));
+extern char *		TkOrientPrintProc _ANSI_ARGS_((
+			    ClientData clientData, Tk_Window tkwin,
+			    char *widgRec, int offset,
+			    Tcl_FreeProc **freeProcPtr));
+#endif
+
 /* HACK - put somewhere else */
 #define ROUND(x)   ((x) < 0.0 ? ceil((x) - 0.5) : floor((x) + 0.5))
 

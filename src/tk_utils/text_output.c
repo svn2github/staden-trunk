@@ -122,8 +122,12 @@ void log_file(char *fn, char *message) {
 	return;
 
     if (!hname_done) {
+#ifdef _WIN32
+	sprintf(hname,"?");
+#else
 	if (gethostname(hname, 256))
 	    sprintf(hname, "?");
+#endif
 	hname_done = 1;
     }
 
