@@ -25,8 +25,9 @@ proc acd_dir {} {
     set out [read $fd]
     close $fd
     foreach line [split $out "\n"] {
-	if {[regexp {^([^\#].*?) *Exists$} $line dummy dir]} {
-	    set acd [file dirname $dir]/acd
+	if {[regexp {^([^\#].*?)/data/? *Exists$} $line dummy dir]} {
+	    puts dir=$dir
+	    set acd [file dirname $dir]/../share/EMBOSS/acd
 	    if {![file exists $acd/wossname.acd]} {
 		continue
 	    }
