@@ -551,7 +551,8 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	    do {
 	        contig_info->leftgel = gel;
 		gel = (_DBI_gelCount(db) == gel) ? 0 : gel + 1;
-	    } while (_DB_Flags(db, contig_info->leftgel) & DB_FLAG_INVIS);
+	    } while (_DB_Flags(db, _DBI_order(db)[contig_info->leftgel])
+		     & DB_FLAG_INVIS);
 
 	    return 0;
 	}
@@ -575,7 +576,7 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	        gel_info->next_right
 		    = (_DBI_gelCount(db) == gel) ? 0 : gel + 1;
 		gel = gel_info->next_right;
-	    } while (_DB_Flags(db, gel) & DB_FLAG_INVIS);
+	    } while (_DB_Flags(db, _DBI_order(db)[gel]) & DB_FLAG_INVIS);
 	    return 0;
 	}
     case DEL_GEL_INFO:
