@@ -1,3 +1,5 @@
+/* Copyright Genome Research Limited (GRL). All rights reserved */
+
 #ifndef _FINISH_FILTER_H
 #define _FINISH_FILTER_H
 

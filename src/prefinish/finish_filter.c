@@ -1,3 +1,5 @@
+/* Copyright Genome Research Limited (GRL). All rights reserved */
+
 #include <stdio.h>
 #include "dust.h"
 #include "finish.h"
