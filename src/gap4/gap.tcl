@@ -7,8 +7,46 @@
 # for a disclaimer of all warranties.
 #
 
-if {[catch tkinit]} {
-    package require Tk
+
+# tkinit strips off -h from argv and produces help messages. We'd rather handle
+# this ourselves before it goes that far.
+
+proc gap4_usage {} {
+    verror ERR_FATAL "Gap4" {Usage: gap4 [-ro] [-maxseq <number>] [-maxdb <number>] [-skip_notes] [NAME.V]}
+    verror ERR_FATAL "Gap4" {
+Usage: gap4 [options] [DATABASE_NAME.V]
+Options:
+    -ro                Read-only
+    -maxseq            Initial maximum total consensus length
+    -maxdb             Initial maximum number of contigs + readings
+    -(no_)check        (Do not) run Check Database upon DB open
+    -(no_)exec_notes   (Do not) execute OPEN/CLOS notes upon database open
+    -(no_)rawdata_note (Do not) use RAWD note instead of RAWDATA env. variable
+    -(no_)csel         (Do not) start up the contig selector upon db open
+    -display           X Display to use
+    -sync              Use synchronous mode for display server (debugging)
+    --                 End of argument list
+    }
+    exit
+}
+
+if {[lindex $argv 0] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1] == "--help"} {
+    gap4_usage
+}
+
+if {[catch tkinit err]} {
+    if {[string match "*connect to display*" $err] == 1} {
+	puts stderr "Can't open display: $env(DISPLAY)"
+	exit 1
+    }
+    if {[catch {package require Tk} err]} {
+	if {[string match "*connect to display*" $err] == 1} {
+	    puts stderr "Can't open display: $env(DISPLAY)"
+	} else {
+	    puts stderr $err
+	}
+	exit 1
+    }
 }
 catch {console hide}
 wm withdraw .
@@ -484,7 +522,7 @@ set logging [keylget gap_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
 
-set GAP_VERSION "4.10b1"
+set GAP_VERSION "4.10b2"
 
 switch $licence(type) {
     f		{}
@@ -495,13 +533,6 @@ switch $licence(type) {
 wm title . "GAP v$GAP_VERSION"
 wm iconname . "GAP v$GAP_VERSION"
 tk appname Gap4
-
-proc gap4_usage {} {
-#   puts {Usage: gap4 [-ro] [-maxseq <number>] [-maxdb <number>] [-skip_notes] [NAME.V]}
-#   6/1/99 johnt - use verror so we get a message with Windows NT
-    verror ERR_FATAL "Gap4" {Usage: gap4 [-ro] [-maxseq <number>] [-maxdb <number>] [-skip_notes] [NAME.V]}
-    exit
-}
 
 while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     set arg [lindex $argv 0];
@@ -532,7 +563,7 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 	    gap4_usage
 	}
 
-    } elseif {$arg == "-nocheck"} {
+    } elseif {$arg == "-nocheck" || $arg == "-no_check"} {
 	set do_check_db 0
 
     } elseif {$arg == "-check"} {
@@ -541,14 +572,14 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     } elseif {$arg == "-no_exec_notes"} {
 	set exec_notes 0
 
+    } elseif {$arg == "-exec_notes"} {
+	set exec_notes 1
+
     } elseif {$arg == "-no_csel"} {
 	set do_csel 0
 
     } elseif {$arg == "-csel"} {
 	set do_csel 1
-
-    } elseif {$arg == "-exec_notes"} {
-	set exec_notes 1
 
     } elseif {$arg == "-no_rawdata_note"} {
 	set rawdata_note 0
@@ -556,9 +587,9 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
     } elseif {$arg == "-rawdata_note"} {
 	set rawdata_note 1
 
+    } elseif {$arg == "-h" || $arg == "-help" || $arg == "--help"} {
+	gap4_usage
     } else {
-#	puts "ERROR: Invalid argument \"$arg\""
-#	6/1/99 johnt - use verror so message is shown with Windows NT
 	verror ERR_WARN "Gap4" "ERROR: Invalid argument \"$arg\""
 	gap4_usage
     }
