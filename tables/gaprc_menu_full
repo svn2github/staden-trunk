@@ -128,6 +128,7 @@ add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
 add_command	{View.List Confidence}	 	 8 10 {ListConfidence \$io}
+add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
 
 add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}
 add_command	{Options.Set maxseq/maxdb}	1 2 {SetMaxseq \$io}
@@ -180,6 +181,9 @@ add_command	{Assembly.Screen only} \
 			8 10 {AutoAssemble \$io 2} e
 add_command	{Assembly.Assemble independently} \
 			12 22 {AutoAssemble \$io 6} e
+
+
+
 
 add_command	{Help.Contents}		1 0 {show_help gap4 Contents}
 add_command	{Help.Introduction}	1 0 {show_help gap4 Gap4-Introduction}
