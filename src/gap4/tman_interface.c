@@ -687,7 +687,7 @@ static int read_template_sort(const void *p1, const void *p2) {
 static void guess_references(EdStruct *xx, int seqtop, int seqbot, int pos,
 			     int *seqlist, int *rtop, int *rbot) {
     int i, j, count;
-    int seq_5, pos_5, seq_pos;
+    int seq_pos;
     char seq_base1, seq_base2;
     int best_conf_match = 5, best_conf_mismatch = 5;
     int mismatch_seq_top = 0, mismatch_seq_bot = 0;
