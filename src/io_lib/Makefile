@@ -12,7 +12,23 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 CFLAGS += $(SHLIB_CFLAGS) -Iinclude
 #COPTDEBUG=-O -g3
 
+%/$(O)/.dir:
+	-mkdir $(@D)
+	touch $@
+
+dirs:	read/$(O)/.dir \
+	utils/$(O)/.dir \
+	abi/$(O)/.dir \
+	alf/$(O)/.dir \
+	ctf/$(O)/.dir \
+	exp_file/$(O)/.dir \
+	plain/$(O)/.dir \
+	progs/$(O)/.dir \
+	scf/$(O)/.dir \
+	ztr/$(O)/.dir
+
 %.o:	../%.c
+	-mkdir $(@D)
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
@@ -92,7 +108,7 @@ RLIBS += $(MISC_LIB)
 $(LIBS): include/.links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
-$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX):	$(OBJS) $(DEF_FILE)
+$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): dirs $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(RLIBS)
 
 # Rule used when $(DEF_FILE) defined - currently only for windows
