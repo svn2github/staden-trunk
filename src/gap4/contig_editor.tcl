@@ -2398,6 +2398,46 @@ proc editor_mouse_wheel {e dist speed} {
     $e yview scroll $dist units
 }
 
+# Auto-scrolling when dragging selections to outside the editor window.
+proc editor_select_scroll {e x} {
+    global $e.AutoScroll
+    set wid [winfo width $e]
+    set dist 0
+    if {$x < 0} {
+	set dist [expr {$x / 10}]
+    } elseif {$x > $wid} {
+	set dist [expr {($x-$wid)/10}]
+    }
+
+    if {$dist} {
+	if {![info exists $e.AutoScroll]} {
+	    set $e.AutoScroll $dist
+	    editor_autoscroll $e
+	} else {
+	    set $e.AutoScroll $dist
+	}
+    } else {
+	catch {unset $e.AutoScroll}
+    }
+}
+
+proc editor_autoscroll {e} {
+    global $e.AutoScroll $e.AutoScrollEvent
+    if {[catch {scroll_editor $e scroll [set $e.AutoScroll] units}] == 0} {
+	if {[set $e.AutoScroll] > 0} {
+	    $e select adjust [lindex [$e configure -width] end]
+	} else {
+	    $e select adjust 0
+	}
+	set $e.AutoScrollEvent [after 50 "editor_autoscroll $e"]
+    }
+}
+
+proc editor_autoscroll_cancel {e} {
+    global $e.AutoScrollEvent
+    catch {after cancel [set $e.AutoScrollEvent]; unset $e.AutoScrollEvent}
+}
+
 #
 # Add bindings
 #
@@ -2427,7 +2467,9 @@ bind Editor <<menu>>		{
     %W cursor_set @%x @%y
     popup_editor_menu %W %x %y
 }
-bind Editor <<select-drag>>	{%W select adjust @%x}
+bind Editor <<select-drag>>	{%W select adjust @%x;
+				 editor_select_scroll %W %x}
+bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind Editor <<move>>		{
     %W cursor_set @%x @%y
     %W update_brief_base
