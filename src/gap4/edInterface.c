@@ -1510,7 +1510,7 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * %D	Tag direction (----->/<-----/<---->, Raw: 0/1/2)
  * %t	Tag type (always 4 characters)
  * %l	Tag length
- * %n	Tag number (0 if unknown)
+ * %#	Tag number (0 if unknown)
  * %c	Tag comment
  *
  * Additionally, some formats (p, l, n and c) can be specified as
@@ -1617,6 +1617,7 @@ int edSetBriefTag(EdStruct *xx, int seq, tagStruct *t, char *format) {
  * %c	Reading freetext comment
  * %P	Primer (unknown/forward universal/reverse universal/forward custom/
  *              reverse custom,  Raw: 0/1/2/3/4)
+ * %t   Trace name
  * %Tn	Template name (Raw: template number)
  * %T#	Template number
  * %Tv	Template vector (Raw: template vector number)
