@@ -63,7 +63,7 @@ void PrintUsage( mutscan_t& ms )
     "[-q]                     = Quiet mode                           (default=off)\n"
     "[-u<peakdrop-threshold>] = Upper peak drop threshold percentage (default=%0.2f)\n"
     "[-w<search-window-size>] = Peak search window size in bases     (default=%0.2f)\n"
-    "[-p]                     = Proximity filter threshold...        (default=7)\n",
+    "[-p]                     = Proximity filter threshold...        (default=7)\n"
     "[-z]                     = Enter debugging loop and wait...     (default=off)\n",
      ms.Parameter[MUTSCAN_PARAMETER_ALIGNFAIL_THRESHOLD],
      ms.Parameter[MUTSCAN_PARAMETER_HETSNR_THRESHOLD],
