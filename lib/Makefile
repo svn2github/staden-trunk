@@ -112,7 +112,7 @@ distsrc:
 	cp -R itcl3.3 $(DISTSRC)/lib
 	cp -R itk3.3 $(DISTSRC)/lib
 	cp -R iwidgets $(DISTSRC)/lib
-	cp -r tablelist2.0 $(DISTSRC)/lib
+	cp -r tablelist3.4 $(DISTSRC)/lib
 	-rm -r $(DISTSRC)/lib/iwidgets/demos
 	-rm -r $(DISTSRC)/lib/tk/demos
 	-rm -r $(DISTSRC)/lib/tk/orig
