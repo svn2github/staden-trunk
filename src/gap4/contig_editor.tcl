@@ -547,6 +547,7 @@ proc init_editor_states {w e dbptr} {
     $e set_trace_lock [keylget gap_defs CONTIG_EDITOR.TRACE_LOCK]
     $e set_unpadded_ruler [set $w.ShowUnpadded]
     $e set_consensus_mode [set $w.ConsensusAlgorithm]
+    $e set_disagreement_cutoff [keylget gap_defs CONTIG_EDITOR.DISAGREE_QUAL]
     for {set i 0} {$i <= 6} {incr i} {
         if {[set $w.Status$i]} {$e status add $i}
     }
@@ -895,6 +896,32 @@ proc set_differences_mode {e w type} {
 	$e show_differences $mode
 	set $w.Disagreements 1
     }
+}
+
+proc set_differences_quality {e} {
+    set t $e.qual_diff
+    if {[xtoplevel $t -resizable 0] == ""} {return}
+    wm title $t "Set differences quality"
+
+    set start [$e set_disagreement_cutoff];
+
+    scalebox $t.qual \
+	-title "Quality" \
+	-orient horizontal \
+	-from 0 \
+	-to 100 \
+	-width 5 \
+	-default [$e set_disagreement_cutoff] \
+	-type CheckInt \
+	-command "$e set_disagreement_cutoff"
+    $t.qual.scale configure -length 150
+
+    okcancelhelp $t.ok \
+	-ok_command "keylset gap_defs CONTIG_EDITOR.DISAGREE_QUAL \[$e set_disagreement_cutoff\]; destroy $t" \
+	-cancel_command "$e set_disagreement_cutoff $start; destroy $t" \
+        -help_command "show_help gap4 {Editor-Differences QUality}"
+
+    pack $t.qual $t.ok -side top -fill both
 }
 
 proc editor_disassembly {list io top} {
@@ -2102,6 +2129,7 @@ proc save_editor_settings {e w} {
 	$C.DISAGREEMENTS \
 	$C.DISAGREE_MODE \
 	$C.DISAGREE_CASE \
+	$C.DISAGREE_QUAL \
 	$C.COMPARE_STRANDS \
 	$C.AUTO_DISPLAY_TRACES \
 	$C.AUTO_DIFF_TRACES \

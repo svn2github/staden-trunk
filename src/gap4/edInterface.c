@@ -1130,6 +1130,19 @@ void edSetQCutoff(EdStruct *xx, int value) {
 
 
 /*
+ * Set highlight disagreements quality cutoff
+ */
+void edSetDifferenceQuality(EdStruct *xx, int value) {
+    if (xx->editorState == StateDown)
+	return;
+
+    xx->diff_qual = value;
+    xx->refresh_flags |= ED_DISP_SEQS;
+    redisplaySequences(xx, 0);
+}
+
+
+/*
  * Set or clear the locking of join editors. Value of 1 means they are locked.
  * 0 means unlock.
  */

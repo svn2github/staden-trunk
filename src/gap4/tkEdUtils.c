@@ -803,21 +803,30 @@ static void tk_redisplaySeqEdits(EdStruct *xx, XawSheetInk *splodge,
  * Colouration for highlight disagreements
  */
 static void tk_redisplaySeqDiffs(EdStruct *xx, XawSheetInk *splodge,
-				 char *seq, int pos, int width) {
+				 char *seq, int pos, int width,
+				 int seqn) {
     int j;
+    int1 *conf;
+    int cstart;
+
+    /* Get confidence */
+    cstart = pos - DB_RelPos(xx, seqn) + DB_Start(xx, seqn);
+    conf = DB_Conf(xx, seqn);
 
     if ((xx->showDifferences&3) == 1) {
 	/* By dots */
 	if (xx->showDifferences&4) {
 	    int j;
 	    for (j=0; j<width; j++)
-		if (seq[j]==xx->displayedConsensus[j])
+		if (seq[j]==xx->displayedConsensus[j] ||
+		    (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual))
 		    seq[j]='.';
 	} else {
 	    int j;
 	    for (j=0; j<width; j++)
 		if (tolower(seq[j]) == 
-		    tolower(xx->displayedConsensus[j]))
+		    tolower(xx->displayedConsensus[j]) ||
+		    (seq[j] != ' ' && conf[cstart + j] < xx->diff_qual))
 		    seq[j]='.';
 	}
 
@@ -825,7 +834,8 @@ static void tk_redisplaySeqDiffs(EdStruct *xx, XawSheetInk *splodge,
 	/* By background */
 	for (j = 0; j < width; j++) {
 	    if (seq[j] != xx->displayedConsensus[j] &&
-		seq[j] != ' ') {
+		seq[j] != ' ' &&
+		conf[cstart + j] >= xx->diff_qual) {
 		if ((xx->showDifferences&3) == 3) {
 		    splodge[j].sh |= sh_bg;
 		    splodge[j].bg = xx->diff_bg;
@@ -841,7 +851,8 @@ static void tk_redisplaySeqDiffs(EdStruct *xx, XawSheetInk *splodge,
 	for (j = 0; j < width; j++) {
 	    if (tolower(seq[j]) !=
 		tolower(xx->displayedConsensus[j]) &&
-		seq[j] != ' ') {
+		seq[j] != ' ' &&
+		conf[cstart + j] >= xx->diff_qual) {
 		if ((xx->showDifferences&3) == 3) {
 		    splodge[j].sh |= sh_bg;
 		    splodge[j].bg = xx->diff_bg;
@@ -1037,7 +1048,7 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	
 	/* Colour diffs if required */
 	if (seqList[k] != 0 && xx->showDifferences) {
-	    tk_redisplaySeqDiffs(xx, splodge, ptr, pos, width);
+	    tk_redisplaySeqDiffs(xx, splodge, ptr, pos, width, seqList[k]);
 	}
 	
 	/* Remove cutoff tags displayed when not in 'reveal cutoffs' mode. */

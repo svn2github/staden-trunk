@@ -280,6 +280,7 @@ typedef struct _EdStruct {
     int compare_trace_match;	/* Con trace: use only matching traces? */
     int compare_trace_select;	/* Con trace: ignore selected trace? */
     int diff_bg;		/* Colour for show_differences colour mode */
+    int diff_qual;		/* Min quality for differences to be shown */
     int compare_trace_algorithm;/* Trace diff: whether to use ABS() */
     int compare_trace_yscale;	/* Trace diff: do we scale in Y? */
     editor_sort_t group_mode;	/* Sorting for seqs: template, name, strand..*/

@@ -1481,6 +1481,25 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    edSetQCutoff(ed->xx, cutoff);
 	}
 
+    } else if ('s' == *argv[1] && strcmp(argv[1], "set_disagreement_cutoff") == 0) {
+	int cutoff;
+
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " set_disagreement_cutoff ?value?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 2) {
+	    char buf[10];
+	    sprintf(buf, "%d", ed->xx->diff_qual);
+	    Tcl_AppendResult(interp, buf, NULL);
+	} else {
+	    Tcl_GetInt(interp, argv[2], &cutoff);
+	    edSetDifferenceQuality(ed->xx, cutoff);
+	}
+
     } else if ('s' == *argv[1] && strcmp(argv[1], "set_consensus_mode") == 0) {
 	int mode;
 

@@ -321,6 +321,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->status_depth = 0;
     xx->lines_per_seq = 1;
     xx->diff_trace_size = 0;
+    xx->diff_qual = 0;
 
     /* Set all tags to be displayed by default */
     if (NULL == (xx->tag_list = (int *)xmalloc(tag_db_count * sizeof(int))))

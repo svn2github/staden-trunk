@@ -380,6 +380,8 @@ add_radio	{Settings.    By background colour}	1 0 {$w.DisagreeMode} \
 	3 {set_differences_mode $e $w mode}
 add_check	{Settings.    Case sensitive}		1 0 {$w.DisagreeCase} \
 	{set_differences_mode $e $w mode}
+add_command	{Settings.Set quality threshold}	1 0 \
+	{set_differences_quality $e}
 add_separator	{Settings.S2}
 add_check	{Settings.Compare Strands}		1 0 \
 	{$w.CompareStrands} {$e compare_strands} e

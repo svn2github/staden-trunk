@@ -424,6 +424,7 @@ extern int edGetStatusNumber(EdStruct *xx, int x, int y);
 extern void edSetCMode(EdStruct *xx, int value);
 extern void edSetCCutoff(EdStruct *xx, int value);
 extern void edSetQCutoff(EdStruct *xx, int value);
+extern void edSetDifferenceQuality(EdStruct *xx, int value);
 extern int edSetJoinLock(EdStruct *xx, int value);
 extern void edJoin(EdStruct *xx);
 extern void edJoinAlign(EdStruct *xx);
