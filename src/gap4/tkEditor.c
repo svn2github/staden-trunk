@@ -201,6 +201,12 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
     ed->highlight_cmd = NULL;
     ed->max_height = 0;
     ed->xx = NULL;
+    /*
+     * Ideally we want gridding enabled so that "half characters" are not
+     * visible, but with causes major headaches with metacity (the default
+     * gnome2 window manager).
+     */
+    ed->grid = 0;
 
 
     /*
