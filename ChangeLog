@@ -1,3 +1,31 @@
+2004-11-08  jkbonfield  <jkbonfield>
+
+	* staden.login,
+	* staden.profile:
+	(17:55:25) Added IA64 support for MACHINE. 
+
+	* src/Misc/Makefile:
+	(17:56:22) Automatically create the lib/$MACHINE-binaries
+	directory. 
+
+	* src/mk/global.mk:
+	(17:56:23) Automatically create the lib/$MACHINE-binaries
+	directory. 
+
+	* src/seq_utils/dna_utils.c,
+	* src/seq_utils/dna_utils.h:
+	(17:57:52) Added a get_protein_lookup() method to avoid direct
+	access to the protein_lookup global. This resolves gcc -O2
+	compilation woes using mingw on MS Windows. 
+
+	* src/spin/readpam.c:
+	(17:58:32) Now uses get_protein_lookup() instead of accessing the
+	global protein_lookup variable. 
+
+	* src/windows/run/Makefile:
+	(17:59:09) Added -mwindows to gcc line; this prevents the DOS box
+	from appearing at start up. 
+
 2004-11-01  jkbonfield  <jkbonfield>
 
 	* Makefile:
