@@ -8,6 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "gap_globals.h"
 #include "IO.h"
@@ -246,4 +247,125 @@ int list_confidence(int *freqs, int length)
     vmessage("\n");
     
     return 0;
+}
+
+
+
+/*
+ * Adds to match_freqs and mismatch_freqs (indexed by confidence from 0 to 255
+ * inclusive) based on the number of bases which agree or disagree with the
+ * consensus.
+ *
+ * The buffers are not initialised to zero; this is expected to be done by the
+ * caller (if desired).
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int get_base_confidences(GapIO *io, int contig,
+			 int *match_freqs, int *mismatch_freqs) {
+    int rnum;
+    int pos;
+    char *con;
+
+    /* Get the consensus along with the confidence values */
+    con = (char *)xmalloc((io_clength(io, contig)+1) * sizeof(*con));
+    if (!con)
+	return -1;
+
+    calc_consensus(contig, 1, io_clength(io, contig), CON_SUM,
+		   con, NULL, NULL, NULL,
+		   consensus_cutoff, quality_cutoff,
+		   database_info, (void *)io);
+
+
+    /* Loop through all sequences in this contig */
+    for (rnum = io_clnbr(io, contig); rnum; rnum = io_rnbr(io, rnum)) {
+	int len, start, end;
+	char *seq;
+	int1 *conf;
+
+	/* get sequence, confidence, etc */
+	if (-1 == io_aread_seq(io, rnum, &len, &start, &end,
+			       &seq, &conf, NULL, 0))
+	    continue;
+
+
+	for (pos = start; pos < end-1; pos++) {
+	    if (tolower(seq[pos]) ==
+		tolower(con[pos - start + io_relpos(io, rnum) - 1]))
+		match_freqs[conf[pos]]++;
+	    else
+		mismatch_freqs[conf[pos]]++;
+	}
+
+	xfree(seq);
+	xfree(conf);
+    }
+
+    xfree(con);
+
+    return 0;
+}
+
+
+/*
+ * Produces a textual report of the match and mismatch frequencies
+ * Returns the total "problem" score.
+ */
+double list_base_confidence(int *matfreqs, int *misfreqs)
+{
+    int max = 0, i;
+    double var_denominator = 0, var_numerator = 0;
+
+    /*
+     * Weighted variance, skipping confidences outside of valid ranges.
+     * There's very little real probabilistic background to any of this,
+     * so I do not want to actually state it as a "variance" figure in the
+     * output. It is simply a convenient single figure which has the property
+     * of increasing as more discrepant bases appear.
+     */
+    for (i = 3; i < 100; i++) {
+	int t = matfreqs[i] + misfreqs[i];
+	double expected = t * pow(10.0, -i/10.0);
+	double ratio;
+
+	if (!t)
+	    continue;
+
+	/* Plus 1 to correct for small sample sizes giving excessive ratios */
+	ratio =  misfreqs[i] > expected
+	    ? (misfreqs[i]+1) / (expected+1)
+	    : (expected+1) / (misfreqs[i]+1);
+
+	var_denominator += t;
+	var_numerator += t * (ratio - 1) * (ratio - 1);
+    }
+    vmessage("Total bases considered : %d\n", (int)var_denominator);
+    vmessage("Problem score          : %f\n",
+	     var_numerator / var_denominator);
+    vmessage("\n");
+
+    /* Headings */
+    vmessage("Conf.        Match        Mismatch           Expected      Over-\n");
+    vmessage("value         freq            freq               freq  representation\n");
+    vmessage("---------------------------------------------------------------------\n");
+
+    /* Find the highest used confidence value */
+    for (i = 0; i < 256; i++) {
+	if (matfreqs[i] || misfreqs[i])
+	    max = i;
+    }
+
+    /* Dump out the frequencies */
+    for (i = 0; i <= max; i++) {
+	int tot = matfreqs[i] + misfreqs[i];
+	double expected = tot * pow(10.0, -i/10.0);
+
+	vmessage("%3d\t%10d\t%10d\t%13.2f\t%7.2f\n",
+		 i, matfreqs[i], misfreqs[i],
+		 expected, expected ? (double)misfreqs[i] / expected : 0);
+    }
+
+    return var_numerator / var_denominator;
 }
