@@ -338,12 +338,12 @@ finish .f \
     -prob_mandatory 7 \
     -max_score_drop 0.2 \
     -min_template_score 0.4 \
-    -min_score 0.6 \
+    -min_score 6.0 \
     -avail_template_file avail_templates \
     -skip_template_file skip_templates \
-    -pscores {0.5 0.5 1 0.8 0.7 0.01} \
-    -mscores {10 10 1 0.8 0.7 0.01} \
-    -dust_level 18 \
+    -pscores {0.5 0.5 0.8 0.8 1.5 0.01} \
+    -mscores {10 10 0.8 0.8 1.5 0.01} \
+    -dust_level 14 \
     -min_extension 50 \
     -primer_min_tm 50 \
     -primer_max_tm 56 \

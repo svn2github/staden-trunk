@@ -8,8 +8,8 @@
 #define FALSE  0
 
 static int word = 3; 
-static int window = 64; 
-static int window2 = 32; 
+static int window = 48; 
+static int window2 = 24; 
 static int level = 20;
 
 static int mv, iv, jv;
