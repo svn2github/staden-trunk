@@ -726,7 +726,9 @@ StringMatch(GapIO *io,                                                 /* in */
 	    int *length,                                              /* out */
 	    int *c1,                                                  /* out */
 	    int *c2,                                                  /* out */
-	    int max_matches)                                           /* in */
+	    int max_matches,                                           /* in */
+	    int consensus_only,                                        /* in */
+	    int cutoff_data)					       /* in */
 {
     int n_matches = 0;
     int i, j, c;
@@ -739,6 +741,7 @@ StringMatch(GapIO *io,                                                 /* in */
     char name1[10];
     int max_imatches = max_matches;
     int max_len = 0;
+    size_t stringlen = strlen(string);
 
     for (i = 0; i < num_contigs; i++) {
 	seq_len = strlen(cons_array[i]);
@@ -753,52 +756,98 @@ StringMatch(GapIO *io,                                                 /* in */
 
     /* complement string */
     for (c = 0; c < 2; c++) {
+	int rn = 0;
 	if (c == 1)
-	    complement_seq(string, strlen(string));
+	    complement_seq(string, stringlen);
+
 	for (i = 0; i < num_contigs; i++) {
-	    seq_len = strlen(cons_array[i]);
-	    orig = n_matches;
-	    res = inexact_pad_match(cons_array[i], seq_len, string,
-				    strlen(string), mis_match,
-				    &pos1[n_matches], &score[n_matches],
-				    max_imatches);
-	    if (res == -2)
-		return -1;
+	    char *seq_alloc;
 
-	    if (res < 0) {
-		verror(ERR_WARN, "find_oligos", "Too many matches");
-		too_many = 1;
-		res = max_imatches;
-	    }
-	    n_matches += res;
-	    max_imatches -= res;
-
-	    for (j = orig; j < n_matches; j++) {
-		c1[j] = contig_array[i].contig;
-		if (c == 0) {
-		    c2[j] = contig_array[i].contig;
+	    /*
+	     * Consensus first time through loop.
+	     * Sequences in that contig on subsequent loops.
+	     */
+	    do {
+		char *seq;
+		GReadings r;
+		
+		seq_alloc = NULL;
+		if (rn == 0) {
+		    seq = cons_array[i];
+		    seq_len = strlen(cons_array[i]);
 		} else {
-		    c2[j] = -contig_array[i].contig;
+		    gel_read(io, rn, r);
+		    seq_alloc = (char *)TextAllocRead(io, r.sequence);
+		    if (cutoff_data) {
+			seq = seq_alloc;
+			seq_len = r.length;
+		    } else {
+			seq = seq_alloc + r.start;
+			seq_alloc[r.end-1] = 0;
+			seq_len = r.sequence_length;
+		    }
 		}
-		pos2[j] = pos1[j];
-		length[j] = strlen(string);
 
-		/*
-		 * remove pads such that the final length of cons_match is
-		 * of length length[j]
-		 */
-		strcpy(cons_match, &cons_array[i][pos1[j]-1]);
-		depad_seq_len(cons_match, length[j]);
+		orig = n_matches;
+		res = inexact_pad_match(seq, seq_len, string,
+					stringlen, mis_match,
+					&pos1[n_matches], &score[n_matches],
+					max_imatches);
+		if (res == -2)
+		    return -1;
 
-		sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
-		sprintf(title, "Match found with contig %d "
-			"in the %c sense",
-			io_clnbr(io, ABS(c2[j])),
-			c2[j] > 0 ? '+' : '-');
+		if (res < 0) {
+		    verror(ERR_WARN, "find_oligos", "Too many matches");
+		    too_many = 1;
+		    res = max_imatches;
+		}
+		n_matches += res;
+		max_imatches -= res;
 
-		list_alignment(string, cons_match, "oligo", name1, 1,
-			       pos1[j], title);
-	    }
+		for (j = orig; j < n_matches; j++) {
+		    c1[j] = contig_array[i].contig;
+		    if (c == 0) {
+			c2[j] = contig_array[i].contig;
+		    } else {
+			c2[j] = -contig_array[i].contig;
+		    }
+
+		    /*
+		     * remove pads such that the final length of cons_match is
+		     * of length length[j]
+		     */
+		    strcpy(cons_match, &seq[pos1[j]-1]);
+		    depad_seq_len(cons_match, stringlen);
+
+		    if (rn)
+			pos1[j] += r.position;
+		    pos2[j] = pos1[j];
+		    length[j] = stringlen;
+
+		    sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
+		    sprintf(title, "Match found with contig %d "
+			    "in the %c sense",
+			    io_clnbr(io, ABS(c2[j])),
+			    c2[j] > 0 ? '+' : '-');
+
+		    list_alignment(string, cons_match, "oligo", name1, 1,
+				   pos1[j], title);
+		}
+
+		if (seq_alloc)
+		    xfree(seq_alloc);
+
+		if (too_many)
+		    break;
+
+		if (consensus_only) {
+		    rn = 0;
+		} else {
+		    rn = rn
+			? io_rnbr(io, rn)
+			: io_clnbr(io, contig_array[i].contig);
+		}
+	    } while(rn);
 
 	    if (too_many)
 		break;
@@ -818,7 +867,9 @@ find_oligos(GapIO *io,
 	    int num_contigs,
 	    contig_list_t *contig_array,
 	    float mis_match,
-	    char *string)
+	    char *string,
+	    int consensus_only,
+	    int in_cutoff)
 {
     int i;
     int *pos1 = NULL;
@@ -881,7 +932,8 @@ find_oligos(GapIO *io,
     if (string && *string) {
 	n_matches = StringMatch(io, num_contigs, contig_array,
 				cons_array, string, mis_match, pos1, pos2,
-				score, length, c1, c2, max_matches);
+				score, length, c1, c2, max_matches,
+				consensus_only, in_cutoff);
 	if (-1 == RegFindOligo(io, SEQUENCE, pos1, pos2, score, length, c1,
 			       c2, n_matches))
 	    goto error;

@@ -407,6 +407,8 @@ typedef struct {
     float mis_match;
     char *tag_list;
     char *seq;
+    int   consensus_only;
+    int   cutoffs;
 } oligo_arg;
 
 typedef struct {

@@ -2118,7 +2118,7 @@ int MainAssembly(ClientData clientData, Tcl_Interp *interp,
     aa_arg args;
     int option;
     int entry;
-    int mode = (int)clientData;
+    long mode = (long)clientData;
     Tcl_DString input_params;
     char *name1;
     char *name2;
@@ -3784,6 +3784,9 @@ FindOligo(ClientData clientData,
 	{"-min_pmatch",	ARG_FLOAT,1, "75.", offsetof(oligo_arg, mis_match)},
 	{"-tag_types",	ARG_STR,  1, "",    offsetof(oligo_arg, tag_list)},
 	{"-seq",	ARG_STR,  1, "",    offsetof(oligo_arg, seq)},
+	{"-consensus_only",
+	                ARG_INT,  1, "0",   offsetof(oligo_arg, consensus_only)},
+	{"-cutoffs",    ARG_INT,  1, "0",   offsetof(oligo_arg, cutoffs)},
 	{NULL,		0,	  0, NULL,  0}
     };
 
@@ -3830,7 +3833,8 @@ FindOligo(ClientData clientData,
     }
 
     if (-1 == find_oligos(args.io, num_contigs, contig_array,
-			  args.mis_match, args.seq))
+			  args.mis_match, args.seq,
+			  args.consensus_only, args.cutoffs))
 	verror(ERR_FATAL, "find oligos", "out of memory");
 
     SetActiveTags("");
@@ -4764,6 +4768,24 @@ tcl_save_contig_order(ClientData clientData,
     return TCL_OK;
 }
 
+int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
+		     int objc, Tcl_Obj *CONST objv[])
+{
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, "*",  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    shuffle_contigs_io(args.io);
+
+    return TCL_OK;
+}
+
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -5145,6 +5167,8 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "save_contig_order", tcl_save_contig_order,
 		      (ClientData) NULL,
 		      NULL);
+    Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
+			 (ClientData) NULL, NULL);
 
     return TCL_OK;
 

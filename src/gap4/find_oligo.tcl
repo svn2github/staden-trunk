@@ -57,6 +57,18 @@ proc FindOligos { io } {
 	    -default [keylget ms MATCHSEQ.VALUE] \
 	    -type CheckString
 
+    radiolist $f.cons_or_seq \
+	-orient horizontal \
+	-title "Where to search" \
+	-buttons {Consensus Sequences} \
+	-default [keylget gap_defs FINDOLIGO.CONSONLY.VALUE]
+
+    radiolist $f.hidden_data \
+	-orient horizontal \
+	-title "Use hidden data" \
+	-buttons {No Yes} \
+	-default [keylget gap_defs FINDOLIGO.CUTOFFS.VALUE]
+
     radiolist $f.sel_mode.l.rl \
 	    -title [keylget sm SELMODE.NAME] \
 	    -orient vertical\
@@ -80,7 +92,8 @@ proc FindOligos { io } {
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
 	    -ok_command "FindOligo_OK_Pressed $io $f $f.infile $f.id \
-	    		 $f.sel_mode.l.rl $f.mis_match $f.sel_mode.r.seq" \
+	    		 $f.sel_mode.l.rl $f.mis_match $f.sel_mode.r.seq \
+			 $f.cons_or_seq $f.hidden_data" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Find Oligos}" \
 	    -bd 2 \
@@ -90,12 +103,14 @@ proc FindOligos { io } {
     
     pack $f.infile -side top -fill both
     pack $f.id -side top -fill both
+    pack $f.cons_or_seq -side top -fill both
+    pack $f.hidden_data -side top -fill both
     pack $f.mis_match -side top -fill both
     pack $f.sel_mode -side top -fill both
     pack $f.ok_cancel -side top -fill both
 }
 
-proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq} {
+proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hidden} {
     global CurContig
     global NGRec
     global LREG
@@ -147,6 +162,8 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq} {
 
 
     set mis_match [scalebox_get $mis_match]
+    set use_hidden [expr {[radiolist_get $hidden]-1}]
+    set cons_only [expr {[radiolist_get $cons_or_seq]==1?1:0}]
 
     destroy $f
 
@@ -158,7 +175,9 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq} {
             -min_pmatch $mis_match] \
 	    -contigs $list \
 	    -seq $sequence \
-	    -tag_types $active_tags
+	    -tag_types $active_tags \
+    	    -consensus_only $cons_only \
+    	    -cutoffs $use_hidden
     ClearBusy
 }
 
