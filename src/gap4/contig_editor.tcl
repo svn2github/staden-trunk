@@ -630,7 +630,7 @@ proc init_editor_states {w e dbptr} {
 	   $w.GroupBy $w.ShowEdits $w.Disagreements $w.CompareStrands \
 	   $w.ShowCQuality $w.DisagreeMode $w.ShowUnpadded \
 	   $w.ConsensusAlgorithm _$dbptr.StoreUndo $w.DisplayTraces \
-	   $w.DiffTraces $w.DisplayMiniTraces
+	   $w.DiffTraces $w.ReadPairTraces $w.DisplayMiniTraces
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3 $w.Status4 \
 	   $w.Status5 $w.Status6 $w.Status7
     global $w.LREG $w.RREG $w.TemplateNames
@@ -641,6 +641,7 @@ proc init_editor_states {w e dbptr} {
     $e show_mini_traces [set $w.DisplayMiniTraces]
     if {[set $w.AutoSave] && !$read_only}      {$e auto_save}
     if {[set $w.DiffTraces]}    {$e autodiff_traces}
+    if {[set $w.ReadPairTraces]}    {$e read_pair_traces}
     set _$dbptr.StoreUndo [$e store_undo]
     if {[$e number_of_views] == 1} {
 	if {[$e join_mode]} {
@@ -788,7 +789,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
     global $w.ShowCQuality $w.DisagreeCase $w.TemplateNames
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
     global $w.Status4 $w.Status5 $w.Status6 $w.Status7
-    global $w.ShowUnpadded $w.DiffTraces $w.DisplayMiniTraces
+    global $w.ShowUnpadded $w.DiffTraces $w.ReadPairTraces $w.DisplayMiniTraces
     global licence
 
     set $w.Disagreements  [keylget gap_defs CONTIG_EDITOR.DISAGREEMENTS]
@@ -799,6 +800,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
     set $w.DisplayMiniTraces \
 	                  [keylget gap_defs CONTIG_EDITOR.DISPLAY_MINI_TRACES]
     set $w.DiffTraces     [keylget gap_defs CONTIG_EDITOR.AUTO_DIFF_TRACES]
+    set $w.ReadPairTraces [keylget gap_defs CONTIG_EDITOR.READ_PAIR_TRACES]
     set $w.AutoSave       [keylget gap_defs CONTIG_EDITOR.AUTO_SAVE]
     set $w.Status0	  [keylget gap_defs CONTIG_EDITOR.STATUS_STRAND]
     set $w.Status1	  [keylget gap_defs CONTIG_EDITOR.STATUS_FRAME1P]
@@ -2274,7 +2276,7 @@ proc save_editor_settings {e w} {
     global $w.ShowCQuality $w.DisagreeCase $w.TemplateNames
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
     global $w.Status4 $w.Status5 $w.Status6 $w.Status7
-    global $w.ShowUnpadded $w.DiffTraces $w.DisplayMiniTraces
+    global $w.ShowUnpadded $w.DiffTraces $w.ReadPairTraces $w.DisplayMiniTraces
 
     # Update the in-memory definitions so that subsequent editors keep these
     # settings.
@@ -2286,6 +2288,7 @@ proc save_editor_settings {e w} {
     keylset gap_defs $C.AUTO_DISPLAY_TRACES    [set $w.DisplayTraces]
     keylset gap_defs $C.DISPLAY_MINI_TRACES    [set $w.DisplayMiniTraces]
     keylset gap_defs $C.AUTO_DIFF_TRACES       [set $w.DiffTraces]
+    keylset gap_defs $C.READ_PAIR_TRACES       [set $w.ReadPairTraces]
     keylset gap_defs $C.AUTO_SAVE              [set $w.AutoSave]
     keylset gap_defs $C.STATUS_STRAND          [set $w.Status0]
     keylset gap_defs $C.STATUS_FRAME1P         [set $w.Status1]
@@ -2327,6 +2330,7 @@ proc save_editor_settings {e w} {
 	$C.COMPARE_STRANDS \
 	$C.AUTO_DISPLAY_TRACES \
 	$C.AUTO_DIFF_TRACES \
+	$C.READ_PAIR_TRACES \
 	$C.AUTO_SAVE \
 	$C.STATUS_STRAND \
 	$C.STATUS_FRAME1P \
@@ -2368,6 +2372,30 @@ proc set_mini_traces {ed val} {
      global $w.DisplayMiniTraces
      set $w.DisplayMiniTraces $val
      $ed show_mini_traces $val
+}
+
+# Mousewheel callback
+proc editor_mouse_wheel {e dist speed} {
+    global gap_defs
+    switch $speed {
+	"slow" {
+	    set step 1
+	}
+	"fast" {
+	    set step 20
+	}
+	default {
+	    set step [keylget gap_defs CONTIG_EDITOR.MOUSEWHEEL_SPEED]
+	}
+    }
+
+    if {$dist > 0} {
+	set dist $step
+    } elseif {$dist < 0} {
+	set dist -$step
+    }
+
+    $e yview scroll $dist units
 }
 
 #
@@ -2578,6 +2606,17 @@ catch {bind Editor <Key-Home>	{%W read_start}}
 catch {bind Editor <Key-End>	{%W read_end}}
 catch {bind Editor <Control-Key-Begin>	{%W read_start2}}
 catch {bind Editor <Control-Key-End>	{%W read_end2}}
+
+# Mouse wheel support
+bind Editor <MouseWheel> {editor_mouse_wheel %W %D normal}
+if {[tk windowingsystem] eq "x11"} {
+    bind Editor <Shift-4>   {editor_mouse_wheel %W -200 slow}
+    bind Editor <4>         {editor_mouse_wheel %W -200 normal}
+    bind Editor <Control-4> {editor_mouse_wheel %W -200 fast}
+    bind Editor <Shift-5>   {editor_mouse_wheel %W +200 slow}
+    bind Editor <5>         {editor_mouse_wheel %W +200 normal}
+    bind Editor <Control-5> {editor_mouse_wheel %W +200 fast}
+}
 
 # Tag macros
 set ed_macro_keys ""

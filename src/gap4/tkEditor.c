@@ -1181,6 +1181,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	else
 	    Tcl_GetInt(EDINTERP(ed), argv[2], &ed->xx->diff_traces);
 
+    } else if ('r' == *argv[1] && strcmp(argv[1], "read_pair_traces") == 0) {
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " read_pair_traces ?value?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 2)
+	    ed->xx->read_pair_traces ^= 1;
+	else
+	    Tcl_GetInt(EDINTERP(ed), argv[2], &ed->xx->read_pair_traces);
+
     } else if ('d' == *argv[1] && strcmp(argv[1], "dump_contig") == 0) {
 	int left, right, llength, nwidth;
 

@@ -828,6 +828,11 @@ static tman_dc *seq2edc(int seq) {
  * Called when the user has selected to automatically perform trace
  * differencing on their reference traces (both the wildtype/negative control
  * and optionally a positive control).
+ * This may also be called in a limited mode where we wish to observe the
+ * fwd/rev traces for a template, but not to automatically show
+ * references and differences. The code looks at xx->diff_traces to determine
+ * which mode to use.
+ *
  * 'contig_pos' is a contig position rather than a sequence position.
  *
  * 'dcs' is a 2 dimensional array of Display Context pointers. If non-null it
@@ -875,21 +880,24 @@ int auto_diff(EdStruct *xx, int seq, int contig_pos) {
     /* Find positive and negative controls */
     ref_pos_top = ref_pos_bot = 0;
     ref_neg_top = ref_neg_bot = 0;
-    if (top_seq) {
-	auto_diff_references(xx, top_seq, seqlist, &ref_pos_top, &ref_neg_top);
-    }
-    if (bot_seq) {
-	auto_diff_references(xx, bot_seq, seqlist, &ref_pos_bot, &ref_neg_bot);
-    }
+    if (xx->diff_traces) {
+	if (top_seq) {
+	    auto_diff_references(xx, top_seq, seqlist, &ref_pos_top, &ref_neg_top);
+	}
+	if (bot_seq) {
+	    auto_diff_references(xx, bot_seq, seqlist, &ref_pos_bot, &ref_neg_bot);
+	}
 
-    /* If negative references do not exist, pick something good look instead */
-    if (!ref_neg_top && !ref_neg_bot)
-	guess_references(xx, top_seq, bot_seq, contig_pos, seqlist, 
-			 &ref_neg_top, &ref_neg_bot);
+	/* If negative references do not exist, pick something good look instead */
+	if (!ref_neg_top && !ref_neg_bot)
+	    guess_references(xx, top_seq, bot_seq, contig_pos, seqlist, 
+			     &ref_neg_top, &ref_neg_bot);
+    }
 
 
     /* No references found - revert to just top/bot sequence */
-    if (!ref_pos_top && !ref_pos_bot && !ref_neg_top &&	!ref_neg_bot) {
+    if (!xx->diff_traces ||
+	(!ref_pos_top && !ref_pos_bot && !ref_neg_top && !ref_neg_bot)) {
 	if (top_seq) {
 	    pos = contig_pos - DB_RelPos(xx, top_seq) + 1;
 	    showTrace(xx, top_seq, pos, xx->fontWidth * 2, 1, 0);

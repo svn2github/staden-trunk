@@ -286,6 +286,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->compare_strands = 0;
     xx->display_traces = 0;
     xx->diff_traces = 0;
+    xx->read_pair_traces = 0;
     xx->auto_save = 0;
     xx->link = NULL;
     xx->editorState = StateDown;
@@ -2778,7 +2779,7 @@ DisplayContext *showTrace(EdStruct *xx, int seq, int pos, int baseSpacing,
     if (!mini_trace) {
 	int skip = 0;
 
-	if (!differencing && xx->diff_traces) {
+	if (!differencing && (xx->diff_traces || xx->read_pair_traces)) {
 	    if (0 == auto_diff(xx, seq, positionInContig(xx, seq, pos)))
 		return NULL;
 	    else

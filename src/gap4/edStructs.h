@@ -276,6 +276,7 @@ typedef struct _EdStruct {
     signed int refresh_seq;	/* Optimisation for redisplaying */
     int refresh_pos;		/* Optimisation for redisplaying */
     int diff_traces;		/* Whether to auto-difference traces */
+    int read_pair_traces;	/* Whether to show read-pairs of traces */
     signed int compare_trace;	/* Seq number to diff traces with */
     int compare_trace_match;	/* Con trace: use only matching traces? */
     int compare_trace_select;	/* Con trace: ignore selected trace? */
