@@ -1285,20 +1285,17 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 
     *status = OK;
 
-    /* Start logging */
-    (void)gap_construct_file(project, file_list[0], version, db_fn);
-    strcat(db_fn, ".log");
-    
-    {
-	char log_buf[256], *user;
-	struct passwd *pw;
-	pw = getpwuid(getuid());
-	user = pw ? pw->pw_name : "unknown";
-	sprintf(log_buf, "opening r%c... by %s(%d)",
-		read_only ? 'o' : 'w',
-		user, getuid());
-	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
-		 log_buf);
+    /* Check if database is available for read-write */
+    if (!read_only) {
+	sprintf(db_fn, "%s.%s", project, version);
+	if (access(db_fn, R_OK | W_OK) != 0)
+	    read_only = 1;
+	sprintf(db_fn, "%s.%s.aux", project, version);
+	if (access(db_fn, R_OK | W_OK) != 0)
+	    read_only = 1;
+
+	if (read_only)
+	    *status = IO_READ_ONLY;
     }
 
     if (0 != (err = (actf_lock(read_only, project, version, create)))) {
@@ -1364,6 +1361,22 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	GAP_ERROR("cannot open database");
 	*status = NO_FILE;
 	return NULL;
+    }
+
+    /* Start logging */
+    {
+	char log_buf[256], *user;
+	struct passwd *pw;
+	pw = getpwuid(getuid());
+	user = pw ? pw->pw_name : "unknown";
+	sprintf(log_buf, "opening r%c... by %s(%d)",
+		read_only ? 'o' : 'w',
+		user, getuid());
+
+	(void)gap_construct_file(project, file_list[0], version, db_fn);
+	strcat(db_fn, ".log");
+	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
+		 log_buf);
     }
 
     /*
