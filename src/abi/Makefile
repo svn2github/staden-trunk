@@ -3,7 +3,7 @@
 #
 
 PROGS = $(O)/getABISampleName $(O)/getABIcomment $(O)/getABIdate \
-	$(O)/getABIstring $(O)/getABIhex $(O)/getABIraw
+	$(O)/getABIstring $(O)/getABIhex $(O)/getABIraw $(O)/getABIfloat
 
 SRCROOT=..
 include $(SRCROOT)/mk/global.mk
@@ -18,6 +18,7 @@ OBJSHX = $(ABIBIN)/getABIhex.o
 OBJSRW = $(ABIBIN)/getABIraw.o
 OBJSST = $(ABIBIN)/getABIstring.o
 OBJSC  = $(ABIBIN)/getABIcomment.o
+OBJSF  = $(ABIBIN)/getABIfloat.o
 
 LIBS=\
 	$(IOLIB_LIB) \
@@ -41,7 +42,10 @@ $(O)/getABIhex: $(OBJSHX)
 $(O)/getABIraw: $(OBJSRW)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSRW) $(LIBS) $(LIBSC)
 
-DEPEND_OBJ = $(OBJSSN) $(OBJSST) $(OBJSHX) $(OBJSRW) $(OBJSD) $(OBJSC)
+$(O)/getABIfloat: $(OBJSF)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSF) $(LIBS) $(LIBSC)
+
+DEPEND_OBJ = $(OBJSSN) $(OBJSST) $(OBJSHX) $(OBJSRW) $(OBJSD) $(OBJSC) $(OBJSF)
 
 include dependencies
 
