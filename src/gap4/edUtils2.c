@@ -142,6 +142,24 @@ int move_editor(int id, int seq, int pos) {
 }
 
 
+int editor_select_region(int id, int seq, int pos, int len) {
+    EdStruct *xx = &edstate[id];
+    int i;
+
+    for (i = 1; i <= DBI_gelCount(xx); i++) {
+	if (DB_Number(xx, i) == seq) {
+	    seq = i;
+	    break;
+	}
+    }
+
+    /* Display the selection */
+    _select_region(xx, seq, pos, len);
+
+    return 0;
+}
+
+
 /*
  * Get the next free EdStruct
  */

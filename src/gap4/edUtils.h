@@ -443,6 +443,7 @@ void status_strand(EdStruct *xx, int pos, int width,
 
 void front_editor(EdStruct *xx);
 int move_editor(int id, int seq, int pos);
+int editor_select_region(int id, int seq, int pos, int len);
 int editor_available(int contig, int nojoin);
 EdStruct *editor_id_to_edstruct(int id);
 
@@ -534,6 +535,7 @@ int alignOverlap(EdStruct *xx[2]);
  * Creates a selection spanning the length of the tag underneath the cursor
  */
 void _select_tag(EdStruct *xx, int seq, tagStruct *t);
+void _select_region(EdStruct *xx, int seq, int pos, int len);
 
 /*
  * -- from tkEdUtils.c --
