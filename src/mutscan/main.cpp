@@ -112,6 +112,9 @@ int main( int argc, char* argv[] )
 
     try
     {
+        // Request traces to be used in preference to experiment files
+        read_experiment_redirect(0);
+
         // Quick check of input
         if( argc < 2 )
         {
