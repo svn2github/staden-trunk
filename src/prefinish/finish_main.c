@@ -686,12 +686,21 @@ static void score_experiments(Tcl_Interp *interp,
 	 */
 	memcpy(old_cons, &fin->cons[pos-1], len+1);
 	memcpy(old_qual, &fin->qual[pos-1], (len+1)*sizeof(float));
-	calc_consensus(fin->contig, pos, pos + len, CON_SUM,
-		       &fin->cons[pos-1], NULL,
-		       &fin->qual[pos-1], NULL,
-		       gap4_global_get_consensus_cutoff(),
-		       gap4_global_get_quality_cutoff(),
-		       virtual_info_func, (void *)vc);
+	if (fin->opts.no_consensus) {
+	    /* Fake consensus */
+	    int i;
+	    memset(&fin->cons[pos-1], 'A', len);
+	    for (i = pos-1; i < pos+len; i++) {
+		fin->qual[i] = 1.0;
+	    }
+	} else {
+	    calc_consensus(fin->contig, pos, pos + len, CON_SUM,
+			   &fin->cons[pos-1], NULL,
+			   &fin->qual[pos-1], NULL,
+			   gap4_global_get_consensus_cutoff(),
+			   gap4_global_get_quality_cutoff(),
+			   virtual_info_func, (void *)vc);
+	}
 
 	/*
 	 * Classify, but not counting the end-extension types if we
@@ -724,7 +733,10 @@ static void score_experiments(Tcl_Interp *interp,
 	    if (!probs1[j] && !probs2[j])
 		continue; /* a trivial optimisation */
 
-	    err = pow(10, vrseq->vseq->conf[j+shift] / -10.0);
+	    if (vrseq->vseq->conf)
+		err = pow(10, vrseq->vseq->conf[j+shift] / -10.0);
+	    else
+		err = 0;
 	    /* err = pow(10, fin->qual[pos-1+j] / -10.0); */
 
 	    for (biti = 0, bit = 1; biti < 32; bit *= 2, biti++) {
@@ -975,12 +987,21 @@ static void add_experiment(Tcl_Interp *interp,
 	fin->vc->cons = fin->cons;
     }
 
-    calc_consensus(fin->contig, pos, pos + len, CON_SUM,
-		   &fin->cons[pos-1], NULL,
-		   &fin->qual[pos-1], NULL,
-		   gap4_global_get_consensus_cutoff(),
-		   gap4_global_get_quality_cutoff(),
-		   virtual_info_func, (void *)vc);
+    if (fin->opts.no_consensus) {
+	/* Fake consensus */
+	int i;
+	memset(&fin->cons[pos-1], 'A', len);
+	for (i = pos-1; i < pos+len; i++) {
+	    fin->qual[i] = 1.0;
+	}
+    } else {
+	calc_consensus(fin->contig, pos, pos + len, CON_SUM,
+		       &fin->cons[pos-1], NULL,
+		       &fin->qual[pos-1], NULL,
+		       gap4_global_get_consensus_cutoff(),
+		       gap4_global_get_quality_cutoff(),
+		       virtual_info_func, (void *)vc);
+    }
 
     /* Compute new classification with this sequence in place */
     bits = classify_bases(fin, best_exp->r.position,

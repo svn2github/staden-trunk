@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.26"
+#define FINISH_VERSION "1.27"
 
 #include <tcl.h>
 #include <limits.h>
@@ -27,7 +27,6 @@
 /*#define NO_TCL_REGEXP
   #define SYSV_REGEX*/
 #include "reg_exp.h"
-#define REGEXP_TEMPLATES
 
 /*
  * ---------------------------------------------------------------------------
@@ -86,6 +85,9 @@ static finish_t *finish_new(void) {
     fin->opts.dust_level	= 18;
     fin->opts.min_extension	= 50;
     fin->opts.svec_as_cvec	= 0;
+    fin->opts.no_consensus	= 0;
+    fin->opts.no_filter		= 0;
+    fin->opts.regexp_templates  = 0;
     fin->opts.reseq_length	= 400;
     fin->opts.reseq_nsolutions	= 4;
     fin->opts.long_length       = 700;
@@ -478,120 +480,122 @@ static int configure_skip_templates(finish_t *fin,
 	}
     }
     
-#ifdef REGEXP_TEMPLATES
-    do {
-	r_exp_elements = 0;
-	r_exp_len = 0;
-	if (r_exp)
-	    *r_exp = 0;
-	/*
-	 * Combine lines together in exp|exp|exp|... format for up to
-	 * 80 expressions in a row. More than this and we run the risk of
-	 * the regexp compiler from breaking.
-	 */
+    if (fin->opts.regexp_templates) {
+	do {
+	    r_exp_elements = 0;
+	    r_exp_len = 0;
+	    if (r_exp)
+		*r_exp = 0;
+	    /*
+	     * Combine lines together in exp|exp|exp|... format for up to
+	     * 80 expressions in a row. More than this and we run the risk of
+	     * the regexp compiler from breaking.
+	     */
 #define REGBLOCKS 80
-	while (fgets(line, 1024, fp) && ++r_exp_elements < REGBLOCKS) {
+	    while (fgets(line, 1024, fp) && ++r_exp_elements < REGBLOCKS) {
+		char *cp;
+		int len;
+		
+		if ((cp = strchr(line, '\n')))
+		    *cp = 0;
+		
+		if (*line == 0)
+		    continue;
+		
+		/* (Re)allocate and initialise r_exp, our regular expression */
+		len = strlen(line);
+		r_exp_len += len + 3;
+		if (r_exp_len > r_exp_alen) {
+		    char *r_exp_new;
+		    r_exp_alen = r_exp_len * 2 + 1;
+		    
+		    if (NULL == (r_exp_new = xrealloc(r_exp, r_exp_alen))) {
+			verror(ERR_WARN, "finish_init",
+			       "Not enough memory to build regexp");
+			xfree(r_exp);
+			return TCL_ERROR;
+		    }
+		    if (!r_exp) {
+			*r_exp_new = 0;
+		    }
+		    r_exp = r_exp_new;
+		}
+		
+		/* Add "|line" to regexp */
+		if (*r_exp) {
+		    char *ptr = r_exp + strlen(r_exp);
+		    sprintf(ptr, "|%s", line);
+		} else {
+		    sprintf(r_exp, "%s", line);
+		}
+	    }
+	    
+	    /* Compiler our up-to-80-element expression */
+	    if (r_exp) {
+		char *comp;
+		if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
+		    printf("Compiling regexp...\n");
+		if (NULL == (comp = REGCMP(interp, r_exp))) {
+		    if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
+			printf("Failed!\n");
+		    verror(ERR_WARN, "finish_init",
+			   "Could not compile regexp '%s'", r_exp);
+		} else {
+		    int i;
+		    if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
+			printf("Done\n");
+		    /* Iterate around all templates matching this expression */
+		    for (i = 1; i <= Ntemplates(fin->io); i++) {
+			char *tname;
+			
+			if (fin->template_skip[i] == skip)
+			    /* Already matched in a previous block.. */
+			    continue;
+			
+			if (!(tname = get_template_name(fin->io, i)))
+			    continue;
+			
+			if (REGEX(interp, tname, comp)) {
+			    if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
+				printf("%sing template '%s'\n",
+				       skip ? "Skipp" : "Us", tname);
+			    fin->template_skip[i] = skip;
+			}
+		    }
+		    
+		    REGFREE(interp, comp);
+		}
+	    }
+	} while (r_exp_elements == REGBLOCKS);
+	xfree(r_exp);
+	
+	if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
+	    printf("Regexp matching done\n");
+
+    } else { /* if (fin->opts.regexp_templates) */
+	while (fgets(line, 1024, fp)) {
 	    char *cp;
 	    int len;
 	    
 	    if ((cp = strchr(line, '\n')))
 		*cp = 0;
-
+	    
 	    if (*line == 0)
 		continue;
 	    
-	    /* (Re)allocate and initialise r_exp, our regular expression */
-	    len = strlen(line);
-	    r_exp_len += len + 3;
-	    if (r_exp_len > r_exp_alen) {
-		char *r_exp_new;
-		r_exp_alen = r_exp_len * 2 + 1;
-		
-		if (NULL == (r_exp_new = xrealloc(r_exp, r_exp_alen))) {
+	    {
+		int tnum;
+		if ((tnum = template_name_to_number(fin->io, line))) {
+		    fin->template_skip[tnum] = skip;
+		/* } else {
 		    verror(ERR_WARN, "finish_init",
-			   "Not enough memory to build regexp");
-		    xfree(r_exp);
-		    return TCL_ERROR;
+			   "Template '%s' not found in database", line);
+		*/
 		}
-		if (!r_exp) {
-		    *r_exp_new = 0;
-		}
-		r_exp = r_exp_new;
-	    }
-	    
-	    /* Add "|line" to regexp */
-	    if (*r_exp) {
-		char *ptr = r_exp + strlen(r_exp);
-		sprintf(ptr, "|%s", line);
-	    } else {
-		sprintf(r_exp, "%s", line);
-	    }
-	}
-    
-	/* Compiler our up-to-80-element expression */
-	if (r_exp) {
-	    char *comp;
-	    if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
-		printf("Compiling regexp...\n");
-	    if (NULL == (comp = REGCMP(interp, r_exp))) {
-		if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
-		    printf("Failed!\n");
-		verror(ERR_WARN, "finish_init",
-		       "Could not compile regexp '%s'", r_exp);
-	    } else {
-		int i;
-		if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
-		    printf("Done\n");
-		/* Iterate around all templates matching this expression */
-		for (i = 1; i <= Ntemplates(fin->io); i++) {
-		    char *tname;
-
-		    if (fin->template_skip[i] == skip)
-			/* Already matched in a previous block.. */
-			continue;
-
-		    if (!(tname = get_template_name(fin->io, i)))
-			continue;
-
-		    if (REGEX(interp, tname, comp)) {
-			if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
-			    printf("%sing template '%s'\n",
-				   skip ? "Skipp" : "Us", tname);
-			fin->template_skip[i] = skip;
-		    }
-		}
-	    
-		REGFREE(interp, comp);
-	    }
-	}
-    } while (r_exp_elements == REGBLOCKS);
-    xfree(r_exp);
-
-    if (fin->opts.debug[FIN_DEBUG_REGEXP] > 0)
-	printf("Regexp matching done\n");
-
-#else /* ifdef REGEXP_TEMPLATES */
-    while (fgets(line, 1024, fp)) {
-	char *cp;
-	int len;
-	    
-	if ((cp = strchr(line, '\n')))
-	    *cp = 0;
-
-	if (*line == 0)
-	    continue;
-	    
-	{
-	    int tnum;
-	    if (!(tnum = template_name_to_number(fin->io, line))) {
-		verror(ERR_WARN, "finish_init",
-		       "Template '%s' not found in database", line);
-	    } else {
-		fin->template_skip[tnum] = skip;
 	    }
 	}
     }
-#endif
+
     fclose(fp);
 
     return TCL_OK;
@@ -752,6 +756,12 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.min_extension)},
 	{"-svec_as_cvec",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.svec_as_cvec)},
+	{"-no_consensus",      ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.no_consensus)},
+	{"-no_filter",         ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.no_filter)},
+	{"-regexp_templates",  ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.regexp_templates)},
 	{"-reseq_length",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.reseq_length)},
 	{"-reseq_nsolutions",  ARG_INT,   1, NULL,
@@ -887,7 +897,7 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
     }
     
     /* Contigs to check primers against - hash them */
-    if (fin->args.ccontigs && *fin->args.ccontigs) {
+    if (!fin->opts.no_consensus && fin->args.ccontigs && *fin->args.ccontigs) {
 	int num_check_contigs;
 	contig_list_t *check_contigs = NULL;
 	Contig_parms *clist;
@@ -1023,6 +1033,8 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	xfree(eseq);
     }
 
+    printf("skip_tmp = '%s'\n", fin->args.skip_template_file);
+
     if (fin->args.avail_template_file) {
 	if (TCL_OK != configure_skip_templates(fin, interp,
 					       fin->args.avail_template_file,
@@ -1097,19 +1109,29 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	fin->left_extent = 0;
 	fin->right_extent = io_clength(fin->io, fin->contig)-1;
 
-	calc_consensus(fin->contig, 1, io_clength(fin->io, fin->contig),
-		       CON_SUM, fin->cons, NULL, fin->qual, NULL,
-		       gap4_global_get_consensus_cutoff(),
-		       gap4_global_get_quality_cutoff(),
-		       database_info, (void *)(fin->io));
-	fin->vc->cons = fin->cons;
+	if (fin->opts.no_consensus) {
+	    /* Fake consensus */
+	    int i, i_end = io_clength(fin->io, fin->contig);
+	    memset(fin->cons, 'A', i_end);
+	    for (i = 0; i < i_end; i++) {
+		fin->qual[i] = 1.0;
+	    }
+	} else {
+	    calc_consensus(fin->contig, 1, io_clength(fin->io, fin->contig),
+			   CON_SUM, fin->cons, NULL, fin->qual, NULL,
+			   gap4_global_get_consensus_cutoff(),
+			   gap4_global_get_quality_cutoff(),
+			   database_info, (void *)(fin->io));
+	    fin->vc->cons = fin->cons;
+	}
 	memcpy(fin->orig_qual, fin->qual, io_clength(fin->io, fin->contig)
 	       * sizeof(fin->orig_qual[0]));
 
 	/*
 	 * Low complexity filtering using the Dust algorithm.
 	 */
-	finish_filter(fin);
+	if (!fin->opts.no_consensus && !fin->opts.no_filter)
+	    finish_filter(fin);
 
 	/* Initialise our count of how many times each template is used */
 	if (fin->template_used)

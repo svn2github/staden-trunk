@@ -56,6 +56,9 @@ typedef struct {
     int    dust_level;		/* Dust low-complex filter threshold */
     int    min_extension;	/* Minimum contig extension to be worthwhile */
     int    svec_as_cvec;	/* Treat SVEC as clone ends; useful for ESTs */
+    int    no_consensus;	/* Optimisation: do not calculate consensus */
+    int    no_filter;		/* Optimisation: no low-complexity filter */
+    int    regexp_templates;	/* How to match -skip/avail_templates */
 
     /* Options for resequencing */
     int	   reseq_length;	/* Expected length of normal resequencing */
