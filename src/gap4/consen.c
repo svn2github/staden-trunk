@@ -1527,28 +1527,19 @@ char *set_fasta_table(void) {
 
     int i;
     char *fasta_base_table;
+    char *codes = "ACGTRYMWSKDHVBDEFI";
+    int codes_l = strlen(codes);
+
     if ( NULL == (fasta_base_table = (char *) malloc ( 257 * sizeof ( char ) )))
 	return NULL;
 
     for (i=0;i<256;i++) fasta_base_table[i] = 'n';
 
-    fasta_base_table['a'] = 'a';
-    fasta_base_table['c'] = 'c';
-    fasta_base_table['g'] = 'g';
-    fasta_base_table['t'] = 't';
-    fasta_base_table['A'] = 'a';
-    fasta_base_table['C'] = 'c';
-    fasta_base_table['G'] = 'g';
-    fasta_base_table['T'] = 't';
-
-    fasta_base_table['d'] = 'd';
-    fasta_base_table['e'] = 'e';
-    fasta_base_table['f'] = 'f';
-    fasta_base_table['i'] = 'i';
-    fasta_base_table['D'] = 'd';
-    fasta_base_table['E'] = 'e';
-    fasta_base_table['F'] = 'f';
-    fasta_base_table['I'] = 'i';
+    for (i = 0; i < codes_l; i++) {
+	int lower = tolower(codes[i]);
+	fasta_base_table[codes[i]] = lower;
+	fasta_base_table[lower] = lower;
+    }
 
     fasta_base_table['*'] = '*';
 
