@@ -145,7 +145,7 @@ char eflt_feature_ids[MAXIMUM_EFLTS][MAXIMUM_EFLT_LENGTH+1] = {
     "WL", /* 52 wildtype trace left clip point */
     "WR", /* 53 wildtype trace right clip point */
     "FT", /* 54 EMBL format feature table */
-    "LF"  /* 55 LiGation: an amalgamation of LI and LE */
+    "LG"  /* 55 LiGation: an amalgamation of LI and LE */
 };
 
 
