@@ -79,6 +79,8 @@ renz_info(char *window,
     calc_consensus(contig, lreg, rreg, CON_SUM, sequence, 
 		   NULL, NULL, NULL, consensus_cutoff, quality_cutoff, 
 		   database_info, io);
+    depad_seq(sequence, &sequence_len, NULL);
+
     if (print_opt == 0) {
 	start_message();
 	if (0 == PrintEnzymeByEnzyme(r_enzyme, match, 
@@ -199,11 +201,13 @@ template_renz_replot(Tcl_Interp *interp,
 	/* Reposition matches back into the padded data */
 	for (j = 0; j < total_matches; j++) {
 	    if (match[j].cut_pos >= sequence_len) {
-		match[j].cut_pos = depad_to_pad[sequence_len-1] +
+		match[j].padded_cut_pos = depad_to_pad[sequence_len-1] +
 		    match[j].cut_pos - sequence_len + 1;
 	    } else if (match[j].cut_pos >= 0) {
-		match[j].cut_pos = depad_to_pad[match[j].cut_pos];
-	    } /* else cut_pos is -ve, but we need to do nothing */
+		match[j].padded_cut_pos = depad_to_pad[match[j].cut_pos];
+	    } else {
+		match[j].padded_cut_pos = match[j].cut_pos;
+	    }
 	}
 
 
@@ -576,12 +580,15 @@ renz_replot(Tcl_Interp *interp,
     /* Reposition matches back into the padded data */
     for (i = 0; i < total_matches; i++) {
 	if (match[i].cut_pos >= sequence_len) {
-	    match[i].cut_pos = depad_to_pad[sequence_len-1] +
+	    match[i].padded_cut_pos = depad_to_pad[sequence_len-1] +
 		match[i].cut_pos - sequence_len + 1;
 	} else if (match[i].cut_pos >= 0) {
-	    match[i].cut_pos = depad_to_pad[match[i].cut_pos];
-	} /* else cut_pos is -ve, but we need to do nothing */
+	    match[i].padded_cut_pos = depad_to_pad[match[i].cut_pos];
+	} else {
+	    match[i].padded_cut_pos = match[i].cut_pos;
+	}
 	match[i].cut_pos = match[i].cut_pos - (r->start - start);
+	match[i].padded_cut_pos = match[i].padded_cut_pos - (r->start - start);
     }
 
     r->c_match.match = match;
@@ -867,7 +874,7 @@ template_display_renz(Tcl_Interp *interp,
 		    
 		    offset = contig_offset[r->c_match[c].contig].offset;
 
-		    cut_site = r->c_match[c].match[i].cut_pos;
+		    cut_site = r->c_match[c].match[i].padded_cut_pos;
 		    /* colour = SetREnzColour(r->num_enzymes, item); */
 		    PlotStickMap(interp, r->window, cut_site, offset, 
 				 r->yoffset, r->tick->ht, r->tick->line_width, 
@@ -1021,7 +1028,7 @@ display_renz(Tcl_Interp *interp,
 	    if (item == r->c_match.match[i].enz_name) {
 	
 		offset = (item * r->tick->ht) + r->yoffset;
-		cut_site = r->start - 1 + r->c_match.match[i].cut_pos;
+		cut_site = r->start - 1 + r->c_match.match[i].padded_cut_pos;
 
 		PlotStickMap(interp, r->window, cut_site, 0, offset, 
 			     r->tick->ht, r->tick->line_width, r->tick->colour, 
@@ -1232,17 +1239,18 @@ Create_REnz_Tags(GapIO *io,
 		    if (r->c_match.match[i].enz_seq == j) {
 #ifdef DEBUG
 			printf("cut_pos %d cut_site %d seq %s\n", 
-			       r->c_match.match[i].cut_pos,
+			       r->c_match.match[i].padded_cut_pos,
 			       r->r_enzyme[item].cut_site[j],
 			       r->r_enzyme[item].seq[j]);
 #endif
-			start = (r->start - 1 + r->c_match.match[i].cut_pos) - 
+			start = (r->start - 1 +
+				 r->c_match.match[i].padded_cut_pos) - 
 			    r->r_enzyme[item].cut_site[j];
 			seq_len = strlen(r->r_enzyme[item].seq[j]);
 			/* 
 			   if (r->r_enzyme[item].cut_site[j] < 0) { 
 			   length = seq_len -  r->r_enzyme[item].cut_site[j];
-			   start = r->c_match[i].cut_pos;
+			   start = r->c_match[i].padded_cut_pos;
 			   } else if(r->r_enzyme[item].cut_site[j]>= seq_len) {
 			   length = r->r_enzyme[item].cut_site[j];
 			   } else {
