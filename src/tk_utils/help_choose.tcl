@@ -116,11 +116,16 @@ proc load_help_system {dir} {
     } else {
 	# Auto
 	global errorCode
-	catch {exec netscape -version}
+	catch {exec mozilla -version}
 	if {$errorCode == "NONE"} {
-	    keylset tk_utils_defs HELP_PROGRAM netscape
+	    keylset tk_utils_defs HELP_PROGRAM mozilla
 	} else {
-	    keylset tk_utils_defs HELP_PROGRAM tcl-internal
+	    catch {exec netscape -version}
+	    if {$errorCode == "NONE"} {
+		keylset tk_utils_defs HELP_PROGRAM netscape
+	    } else {
+		keylset tk_utils_defs HELP_PROGRAM tcl-internal
+	    }
 	}
 	load_help_system $dir
     }
