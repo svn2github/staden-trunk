@@ -1,0 +1,1048 @@
+			    Finishing code - Usage
+			    ======================
+
+For proper usage you will need to read and understand most of the
+documentation below. However there is a demonstration script which just
+performs vector-walking experiments. This is called finish.tcl. There is
+also another script which updates a Gap4 database to include the additional
+sequencing chemistry information which is required by the new gap4. The
+example script is called sanger_names.tcl; it assumes reading names adhere to
+the Sanger naming convention. The script will need editing to use your local
+conventions.
+
+sanger_names.tcl
+----------------
+
+Usage:
+    cp DB.0 DB.F
+    cp DB.0.aux DB.F.aux
+    ./sanger_names.tcl DB.F
+
+Note that it is strongly advisable to take a copy of your database (DB.0 in
+this case) and edit the copy.
+
+You may need to edit the sanger_names.tcl if you're not using that naming
+scheme. The values to store in the r.chemistry field are (from
+gap-dbstruct.h):
+
+/* GReadings.chemistry */
+/*	Bit 0 is 1 for terminator, 0 for primer */
+#define GAP_CHEM_TERMINATOR	(1<<0)
+/*	Bits 1 to 4 inclusive are the type (any one of, not bit pattern) */
+#define GAP_CHEM_TYPE_MASK	(15<<1)
+#define GAP_CHEM_TYPE_UNKNOWN	(0<<1)
+#define GAP_CHEM_TYPE_ABI_RHOD	(1<<1)
+#define GAP_CHEM_TYPE_ABI_DRHOD	(2<<1)
+#define GAP_CHEM_TYPE_BIGDYE	(3<<1)
+#define GAP_CHEM_TYPE_ET	(4<<1)
+#define GAP_CHEM_TYPE_LICOR	(5<<1)
+
+
+finish.tcl
+-------------
+
+Usage:
+
+    ./finish.tcl DB.F
+
+Where DB.F is the database and version. The database must have been updated to 
+include the additonal chemistry information.
+
+It will produce LOTS of output. You probably want to redirect this to a
+file. Eg:
+
+    ./finish.tcl DB.V > DB.V.fin
+
+Most of this output is debugging for myself at present, but a few lines are
+useful. Fortunately These can be "grep"ped out as follows.
+
+    egrep '^(>>>|###|===|$)' DB.V.fin
+
+
+			Finishing code - Tcl interface
+			==============================
+
+Creating the finish object
+--------------------------
+
+Usage:	finish objname ?option value ...?
+
+Returns: objname (if successful)
+
+This produces a new finishing object. A new command will be registered with
+the name "objname" and all subsequent interaction with the
+object is via methods on that command (in much the same way as Tk widgets
+work). To delete the object either call the "delete" method or destroy the
+command (with rename objname {}).
+
+See the configure method below for a full list of options and their meanings.
+
+Configure method
+----------------
+
+Usage: objname configure ?option value? ...
+
+This configures one or more settings on the finish object. Note that some of
+these will be mandatory; for example it is not possible to produce experiments 
+without first indicating the contig to analyse.
+
+-io io_handle
+	This specifies a Gap4 io handle.
+	At present (due to a weakness in the argument parsing) it may be
+	necessary to respecify this even when changing existing options.
+
+-contig identifer
+	Specifies the contig to finish. The identifier may also be given as
+	the identifier plus start and end positions.
+
+-check_contigs contig_list
+	A list of contig identifiers to compare primer sequences against. This
+	will only be used when searching for "chromosomal" primers. It is
+	optional.
+
+-external_seq dna_sequence
+	This supplies further sequence to screen against for all primers (both 
+	chromosomal and subclone walks). Typically it will be used to supply
+	the vector sequence. The format of dna_sequence should be just the raw 
+	dna letters, either in upper or lower case. This is optional.
+
+-available_template_file filename
+	The filename should contain a list of template regular expression,
+	with one expression per line. The regexps are not anchored to either
+	end, so to match templates _starting_ with xb63 use "^xb63", otherwise 
+	a template named bx63a2 will also match.
+	Any templates listed in here will be considered as suitable for
+	use with experiments (primer walks, etc). Anything not listed is
+	rejected. If no -available_template_file is listed then all templates
+	are considered as suitable for use.
+
+-skip_template_file filename
+        Like the available_template_file this contains a list of regular
+	expressions. However any match found here will reject this template.
+	Note that this is performed after available templates (the order does
+	make a difference).
+	If no skip_template_file is specified then no changes are made (ie all 
+	templates used unless -available_template_file is specified).
+
+-use_avg_insert 0/1
+	When estimating the template size due to no read-pair information,
+	assume that the template insert size is the average of the specified
+	maximum and minimum values (1). Specifing as 0 will be cautious and
+	assume the minimum size.
+
+-prob_mandatory bit_pattern
+	This is a mask for the problem types. Problems that are left after
+	applying this mask are considered as important problems which need to
+	be solved.
+
+-mandatory_ratio fraction
+	The number of mandatory problems spanned by a particular candidate
+	experiment are counted before and after implementing that experiment .
+	If the experiment does not solve more than mandatory_ratio problems
+	(probs_after / probs_before) then the experiment will be rejected.
+
+-max_score_drop fraction
+	When picking multiple experiments within the same experiment group
+	(such as using difference templates for the same primer) each
+	experiment will have its own score. Max_score_drop indicates how much
+	worse a score may be than the best one before we reject it. This
+	implies that if we already have a good score then we may allow other
+	experiments with nearly as good scores, but not very poor
+	experiments. However if a low score experiment is all that is
+	available then we may still consider it as a suitable experiment.
+
+	The exact definition is current_score / maximum_score must be >=
+	max_score_drop (in the range of 0 to 1).
+
+-min_score float
+	Only accept experiments with a final score of > min_score. This may be
+	used to reject experiments which have only marginal improvements (such
+	as solving one low-confidence single base).  If multiple rounds or
+	multiple passes of experiment suggestion are being used then min_score
+	could be varied so that the initial pass is more stringent. This
+	compensates for the case at the ends of contigs where a very minor
+	problem (and solution) may exist. We could initially ignore this
+	solution in the hope that a sequence extending another contig will
+	cause a join and solve this problem.
+
+-min_template_score float
+	Each template is assigned a score. Any experiment using a template
+	with a score less than min_template_score will be rejected.
+
+-find_dup_templates int
+	Whether to search for duplicate templates by identifying matching
+	template start and end positions. To disable this specify zero as the
+	integer argument. Otherwise the argument indicates a tolerance with
+	1 stating an exact match, 2 being +/- 1 base, 3 being +/- 2 bases, etc.
+
+-dust_level int
+	Specifies the cutoff value applied to the DUST low-complexity
+	filtering algorithm. Defaults to 18. Higher values filter less and
+	lower values filter more. The low-complexity searching is used to
+	place experiments so that they do not start too close to such regions
+	(in order to aid joining).
+
+-pscores {float float float ...}
+	Used to control the scores calculated for fixing problems. Experiments 
+	are rated by how much they lower the problem-score divided by the
+	experiment cost. Different problem types can be given different
+	scores, with higher scores indicating more serious problems. The first 
+	two problem types listed MUST be for extending the contig to the left
+	and right, with other problem types being as returned by the
+	problem_command script.
+
+-mscores {float float float ...}
+	As per pscores, except these values are used when summing the
+	mandatory problem statistics. It's probably best to set these to
+	the same as the pscores, unless you wish to weight a specific problem
+	type as being more important, but without biasing the existing scoring
+	system.
+
+-min_extension int
+	The minimum contig extension to consider as worthwhile. Extensions
+	shorter than this get 10% of the extension bonus. The logic is that
+	sequences that extend by only a short amount should be considered as
+	"worthy" based on what else they solve, while sequences that extend
+	by a longer amount can stand on their own merit.
+
+-reseq_length integer
+	This is the expected length of a sequence; used in the "resequence"
+	solution type.
+
+-long_length integer
+	This is the expected length of a long gel sequence; used in the "long
+	reading" solution type.
+
+-pwalk_search_dist integer
+	False matches for primers (on sequencing vector inserts, rather than
+	top-level BAC/YAC clones) are searched for within the known (or
+	maximum) consensus range covered by that template. The
+	pwalk_search_dist value is added to both ends of this range to
+	compensate for any inaccuracies in the ranges specified for template
+	insert sizes.
+
+-pwalk_max_match score
+	A match between the primer and another sequence (consensus, vector,
+	etc) that has an identity above this score will cause this primer to
+	be rejected. The score is accumulated from scores for each base that
+	match weighted by the position, so that 3' matches score
+	higher. Currently this uses scores of 1.2, 1.0, 1.0, 1.0, 0.9, 0.8 and
+	0.7 for the first 3' end 7 bases, and 0.5 for each subsequent base
+	(going towards the 5' end).
+
+-pwalk_osp_score float
+	Primers returned by OSP must have OSP-scores <= this value. Note that
+	low OSP scores are better than high ones.
+
+-pwalk_noligos integer
+	How many of the best OSP scores should be include for further
+	testing. This is not how many we will output in the experiments, but
+	rather an optimisation method to speed up processing (so that if OSP
+	picks 20 primers we do not compute the overall experiment scores for
+	all combination of templates x 20 primers).
+
+-pwalk_offset1 integer
+-pwalk_offset2 integer
+	Given a problem at base X, these define where abouts we will pick a
+	primer: between X - pwalk_offset1 and X - pwalk_offset2. Both values
+	should be positive with offset1 being larger than offset2.
+
+-pwalk_seq_gap integer
+	Having picked a primer, this specifies how many bases are between the
+	end of the primer and the first reliably called base in the sequence
+	trace. This includes the distance between the primer and a low
+	complexity region, so even if the "problem" is far enough away we may
+	not pick a primer than is close to a tandem repeat as this will make
+	the assembly process tricky.
+
+-pwalk_consistent_only 0/1
+	If we fail to find a consistent template for a particular primer this
+	indicates whether we should attempt to use an inconsistent
+	template. Inconsist templates are where two or more sequences from
+	that template are present, but with conflicts. (Also see
+	-min_template_score.) Setting pwalk_consistent_only to 1 will disable
+	use of inconsistent templates.
+
+	For consistent templates we will allow primers to be used in regions
+	where that template has not yet been sequenced (as we know the
+	sequence from the consensus). This is not the case for inconsistent
+	templates regardless of this setting.
+
+	The cost of an experiment is scaled up by the inverse of its template
+	score, so where possible consistent templates will always be used in
+	preference to inconsistent ones.
+
+-pwalk_end_dist integer
+	Two parameters are used for deciding which consensus bases are
+	suitable for using within a primer; the confidence of each base, and
+	the overall consensus error rate for the entire primer (see below).
+	However for extending contigs we may wish to relax our criteria
+	slightly so that we may select primers in poor data in preference to
+	high quality primers that are likely to extend by too few bases.
+
+-pwalk_max_err float
+-pwalk_max_err2 float
+	The consensus confidence values allow us to predict the probability of 
+	a sequencing error in the short stretch picked for the primer. This
+	parameter specifies the maximum allowable error rate, so it may be
+	used to force primers to be picked only from good quality regions.
+	When near the end of contigs (within pwalk_end_dist) we use a weaker
+	criteria (pwalk_max_err2), otherwise the stronger pwalk_max_err
+	is used.
+
+-pwalk_min_qual integer
+-pwalk_min_qual2 integer
+	This specifies the minimum consensus quality value (phred-scores) for
+	each individual base in a primer. Use with -pwalk_max_err these two
+	parameters allow you to specifying both base-by-base and average
+	qualities for the sequences used in primers. When near the end of
+	contigs, we use a weaker criteria (pwalk_min_qual2), otherwise we
+	use pwalk_min_qual.
+
+-pwalk_prob_mask bit_pattern
+	A bit-mask applied against the problem types for each base. Any base
+	which, after masking, still has problems listed will not be used for
+	designing a primer. The default -pwalk_prob_mask value is 0 (implying
+	that no problems should be masked). This is a general mechanism which
+	allows, for example, avoidance of picking primers in single-template
+	regions or as an alternative to the -pwalk_min_qual parameter.
+
+-pwalk_use_template integer
+	This indicates how many times we are allowed to pick primers from the
+	same template in any single finishing run. Using a template too many
+	times does not completely reject it, but it lowers the score (see
+	below).
+
+-pwalk_use_template_score float
+	For any experiments that use a template more than pwalk_use_template
+	times, the score for that experiment is multipled by this
+	value. Specifying pwalk_use_template_score as zero will force the
+	-pwalk_use_template value to be absolute.
+
+-pwalk_dup_template_cost float
+	For templates identified as being duplicated (see -find_dup_templates) 
+	this controls the multiplicative factor for the cost (equivalent to
+	dividing the score).
+
+-pwalk_tag_cons integer
+	When set to 1, PRIMer tags will be added to the consensus. Otherwise
+	primer tags are added to a suitable reading at that point. Sometimes
+	this will be a reading on the correct template, but this may not
+	always be possible. (In extreme cases the tag may not even be the
+	correct length, but the comments within it are still correct.)
+
+-pwalk_tag_type type
+	Selects the tag type returned from primer walking experiments.
+
+
+At present the primer-picking algorithm is the same as used in the rest of
+Gap4; namely the OSP program (Hillier and Green). This can be configured by
+adjusting the gap_defs global variable, which is a TclX keyed
+list. Specifially the OSP sublist of gap_defs. This may be modified by adding
+the follow (the default values) to your .gaprc and editing them accordingly.
+
+set_def OSP.prod_len_low                0
+set_def OSP.prod_len_high               200
+set_def OSP.prod_gc_low                 0.40
+set_def OSP.prod_gc_high                0.55
+set_def OSP.prod_tm_low                 70.0
+set_def OSP.prod_tm_high                90.0
+
+set_def OSP.min_prim_len                17
+set_def OSP.max_prim_len                23
+set_def OSP.prim_gc_low                 0.30
+set_def OSP.prim_gc_high                0.70
+set_def OSP.prim_tm_low                 50
+set_def OSP.prim_tm_high                55
+
+set_def OSP.self3_hmlg_cut              8
+set_def OSP.selfI_hmlg_cut              14
+set_def OSP.pp3_hmlg_cut                8
+set_def OSP.ppI_hmlg_cut                14
+set_def OSP.primprod3_hmlg_cut          0
+set_def OSP.primprodI_hmlg_cut          0
+set_def OSP.primother3_hmlg_cut         0.0
+set_def OSP.primotherI_hmlg_cut         0.0
+set_def OSP.delta_tm_cut                2.0
+set_def OSP.end_nucs                    S
+
+set_def OSP.wt_prod_len                 0
+set_def OSP.wt_prod_gc                  0
+set_def OSP.wt_prod_tm                  0
+set_def OSP.wt_prim_s_len               0
+set_def OSP.wt_prim_a_len               0
+set_def OSP.wt_prim_s_gc                0
+set_def OSP.wt_prim_a_gc                0
+set_def OSP.wt_prim_s_tm                0
+set_def OSP.wt_prim_a_tm                0
+set_def OSP.wt_self3_hmlg_cut           2
+set_def OSP.wt_selfI_hmlg_cut           1
+set_def OSP.wt_pp3_hmlg_cut             2
+set_def OSP.wt_ppI_hmlg_cut             1
+set_def OSP.wt_primprod3_hmlg_cut       0
+set_def OSP.wt_primprodI_hmlg_cut       0
+set_def OSP.wt_primother3_hmlg_cut      0
+set_def OSP.wt_primotherI_hmlg_cut      0
+set_def OSP.wt_delta_tm_cut             0
+set_def OSP.AT_score                    2
+set_def OSP.CG_score                    4
+set_def OSP.wt_ambig                    avg
+
+For further information on the meaning of these values please consult the OSP
+documentation.
+
+
+Classify method
+---------------
+
+Usage: objname classify -bits <classification pattern>
+
+This analyses the contig specified in finish_init. It uses the
+classfication pattern to produce a bit-pattern per consensus
+base. These "class_bits" are stored in the finish object itself. This
+function needs to be called before the find_problems method.
+
+The format of the classification pattern is a tcl list of one or more
+classification statements. Each classification statement is a tcl list 
+of a bit number, a classification type, and an optional argument. For
+example:
+
+-bits {
+    {0 strand_top}
+    {1 strand_bottom}
+    {2 template_depth_gt 2}
+    {2 chemistry 7}
+    {3 chemistry 1}
+    {3 chemistry 3}
+}
+
+All bits start off as zero. When a classification type is evaluated to 
+be true then the appropriate bit is set. Thus in the above example bit 
+3 would be set then either chemistry is 1 OR chemistry is 3.
+
+The classification types are evaluated at each consensus base. Each type will
+evaluate to 1 or 0, which means that the result can be stored in a single
+(specified) bit. The valid types are:
+
+strand_top
+	Has data on the + strand
+
+strand_bottom
+	Has data on the - strand
+
+sequence_depth_gt value
+	Has > 'value' sequences
+
+template_depth_gt value
+	Has > 'value' unique templates
+
+confidence_gt value
+	Has consensus confidence > 'value'.
+
+chemistry value
+	Has at least one sequence when a chemistry of 'value'.
+
+contig_left_end
+	True only for the first base in the contig.
+
+contig_right_end
+	True only for the last base in the contig.
+
+You may use bit values between 0 and 31 inclusive.
+
+
+find_problems method
+--------------------
+
+Usage: objname find_problems
+	-problem_command <tcl procedure name>
+	-solution_command <tcl procedure name>
+       
+This finds problems and solutions for a classified (see above) finish
+object.
+
+For each base in the consensus the problem_command will be called. For each
+base where the problem_command returns a non-zero value the solution_command
+procedures will be called. (Hence it is not possible to design solutions for
+all-bits-zero problem classifications.) The Tcl prototype for problem_command
+is:
+
+proc func_name {class_bits} {
+     # Analyse class_bits to produce problem_bits
+     return $problem_bits
+}
+
+The prototype for the solution_command is:
+
+proc func_name {class_bits problem_bits} {
+     # Analyse problem_bits and class_bits to produce solution_bits
+     return $solution_bits
+}
+
+[We recommend that you look at the supplied examples.]
+
+Any problem bit that is set as 1 will indicate the presence of that
+particular problem types. With a couple of exceptions (see below), the
+problem bit meanings can be anything just as long as they match up
+with the assumed meanings used in computing solution_bits. Both
+problem_bits and solution_bits are 32-bit entities.
+
+Problem bit 0 should always be used for "extend left end of contig".
+Problem bit 1 should always be used for "extend right end of contig".
+
+If these are not needed then these bits should be left as zero.
+
+
+Solution_bits are used to indicate the suitability of a particular
+experiment type. These experiment types have predefined values, and
+hence predefined bit numbers. They are as follows:
+
+Bits 0-15	 Solution type (bit pattern):
+		 0x01(bit 0)	 None (skip)
+		 0x02(bit 1)	 Resequence
+		 0x04(bit 2)	 Vector primer walk
+		 0x08(bit 3)	 Long gel
+		 0x10(bit 4)	 PCR
+		 0x20(bit 5)	 Chromosomal primer walk
+
+Bits 16-23	 Strand. One of the following values:
+		 0	 	Either
+		 1	 	Top
+		 2	 	Bottom
+
+Bits 24-31	 Chemistry. One of the following values
+		 (from gap-dbstruct.h):
+		 x/y  => 	primer/terminator
+		 0/1     	Any
+		 2/3	 	Rhodamine
+		 4/5	 	dRhodamine
+		 6/7	 	Big Dye
+		 8/9	 	ET
+		 10/11	 	Licor
+
+The type component is a bit pattern and so several types may be
+suggested. The Strand and Chemistry components are simply a choice of
+one value. So it is not possible to suggest both Big Dye terminator
+and Big Dye primer as a recommended solution.
+
+A solution type of 0 indicates that no solution is available. Note that this
+is different to solution type of 0x01 (bit 0) which indicates a solution
+exists, but we should skip this for now. This difference allows multi-pass
+solution suggestion whereby we may find solutions for the most serious
+problems first and then find solutions for the remaining problems, thus
+ensuring that we pick the optimal solutions for the more serious problems.
+
+The result of this function is stored internally within the finish
+object.
+
+
+implement_solutions method
+--------------------------
+
+Usage: obj_name implement_solutions
+	-problem_command <tcl procedure name>		[optional]
+	-solution_command <tcl procedure name>		[optional]
+
+This analyses the solutions contained within the finish object to
+determine potential implementations (experiments) of each solution
+type. All implementations of each solution type are considered, scored, ranked
+and then the best implementation(s) of the best solution type will be picked
+(if possible).
+
+As part of the scoring process the problem_command and
+solution_command callbacks may be called in order to determine the
+effect of performing that particular experiment. If no problem_command 
+and solution_command is specified then the same functions given to the 
+last find_problems method will be used.
+
+When scoring an experiment, each problem bit solved will be accumulated to
+compute the final score. The score is then divided by the 'cost' of that
+experiment (the cost may be considered as a weight, and so it does not need to
+be the real cost). This score may then be modified by factors such as template
+overuse and the amount of additional sequence generated on this template (a
+very minor factor included only to distinguish otherwise identicial
+scores). Scores that are too low in value, or are too much lower than the best 
+score in this 'group' (see max_score_drop option) will be rejected.
+
+For optimisation purposes the implement_solutions algorithm detects where the
+same solution bit pattern has been chosen for a consecutive run of consensus
+bases. If a solution is searched for, but not found, in the first base of this
+region then the rest of the region will be skipped. If the region is larger
+than 'reseq_length' then only reseq_length bases will be skipped, rather than
+the entire region. This greatly speeds up processing. At present a database
+consisting of approx 160Kb of consensus was analysed to produce 55 experiment
+groups in around 7 minutes (on a Dec Alpha PW433au).
+
+
+
+
+				 C functions
+				 ===========
+
+Primer walking
+--------------
+
+experiment_walk
+
+	This is the top-level function for picking primer-walking
+	experiments. It takes the same prototype as all main experiment
+	picking functions. (TODO: see above...)
+
+	It's main outline is:
+
+	Foreach suitable strand (+, - or both)
+	    Pick search range for choosing primer
+	    Repeat
+	        Find primers in range.		- find_primers()
+	        Foreach primer			- find_templates()
+	            Pick templates
+		Increase primer search range
+	    Until looped X times (currently 8)
+
+find_primers
+
+	Produce unpadded sequence and quality
+	Analyse using OSP				 - osp_analyse()
+	Adjust OSP scores for chance of sequencing error - primer_error()
+	Reject primers in mandatory-resolve regions
+	Search for primer similarity with neighbouring sequence - score_match()
+	       (Reject when too high, adjust scores otherwise)
+
+find_templates
+	
+	(Uses template size and positional information computed earlier from
+	template.c)
+
+	1:Foreach primer
+	    Start a new experiment group
+	    2:Foreach "round" in 1st, 2nd
+		3:Foreach template in contig
+		    If template does not cover problem region, continue 3.
+		    If template is inconsistent
+		        If 1st round, continue 3.
+			If primer not "covered" by a real sequence on this
+			   template then continue 3 - template_covered().
+			Double experiment cost.
+		    Increase cost proportional to chance of the template not
+		        covering the primer     - template_exists_chance()
+		    Compute expected start and end of template
+		    Compute expected start and end of experiment
+					        - finish_avg_length()
+		    Produce experiment
+
+Long readings
+-------------
+
+experiment_long
+
+	Foreach sequence covering problem region
+	    Check acceptance of strand
+	    If template is inconsistent; double cost
+	    Compute expected sequence length
+	    Produce experiment
+
+=============================================================================
+
+Scripting the finish tool
+-------------------------
+
+1)
+
+As an outline we need to perform the following tasks:
+
+    Initialise Gap4
+
+    Open up a database
+
+    Initialise finish
+
+    Loop through contigs
+
+	Set finish to use this contig
+
+	Classify the bases
+
+	Identify problems and solutions
+
+	Implement solutions
+
+    (End of loop)
+
+    Close database
+
+    Exit
+
+
+At the tcl level this can be written using procedures for each of these
+steps.
+
+-----------------------------------------------------------------------------
+#!/bin/sh
+#\
+exec stash -f "$0" ${@+"$@"} || exit 1
+
+# Add procedure definitions here...
+
+# Main entry
+load_gap4
+set io [open_database $argv]
+set fin [initialise_finish $io]
+set clist [select_contigs $io]
+foreach contig $clist {
+    $fin configure -io $io -contig $clist
+    classify $fin
+    find_probs $fin
+    implement_solutions $fin    
+}
+$fin delete
+close_db -io $io
+exit
+-----------------------------------------------------------------------------
+
+The above is a script which should be invoked as "script_name DATABASE.V"
+(such as ./finish BG119H8.1).
+
+The first couple of lines indicates that we should use bourne shell to start
+the script. The #\ line and the line following it are taken to be a comment by
+tcl (stash) as backslash at the end of a line is a line-continuation
+marker. For bourne shell only the #\ line is a comment and so /bin/sh will
+execute the "exec stash" line. What this does is to restart the script under
+the control of the stash interpreter. This is just a simple way of making
+stash scripts executable without needing to know the full path of the
+interpreter.
+
+Then comes the tcl proper. This is just a series of procedures which we now
+need to write (and place where the script states "Add procedure definitions
+here...").
+
+
+2)
+
+proc load_gap4 {} {
+    global consensus_cutoff quality_cutoff consensus_mode
+
+    load_package gap
+    set consensus_cutoff 0.02
+    set quality_cutoff 1
+    set consensus_mode 2
+}
+
+The above loads the Gap4 library into stash, which includes the necessary
+functions for gap4 database manipulation and the finishing tools. We also
+define the consensus parameters here as this will effect how the finishing
+tools work. You may want to modify those values. Note that consensus_mode 2 is 
+assuming phred-style confidence values (consensus_mode 0 will just use
+base-type frequencies).
+
+proc open_database {argv} {
+    foreach {dbname dbvers} [split [lindex $argv 0] .] {}
+    return [open_db -name $dbname -version $dbvers -access r]
+}
+
+This takes the first argument specified on the command line, splits it into a
+database name and version number, and then opens it returning the open file
+handle.
+
+
+3)
+
+proc initialise_finish {io} {
+    set vector ""
+    if {![catch {set fd [open vector]}]} {
+        set vector [read $fd]
+        regsub -all "\[#>\]\[^\n\]*\n" $vector {} vector
+        regsub -all {[^ACGTNacgtn]} $vector {} vector
+        close $fd
+    }
+
+    finish .f \
+        -io $io \
+	-pwalk_length 400 \
+	-external_seq $vector
+
+    return .f
+}
+
+This creates a new "finish" object and returns its name (".f"). All subsequent
+interaction with the finishing tools needs this object name. The arguments
+following "finish .f" are the configuration options. There are many more of
+these available; the above are just a couple of examples. Please see the
+documentation for a full list.
+
+In the above example we load a file called "vector". From this we strip any
+fasta headers and any non ACGTN characters. (The case does not matter.) This
+is passed in as an external sequence to check candidate primers against.
+
+If you are going to be priming directly off the BAC, YAC (or similar) clone
+then you will also need to configure the -check_contigs option here. This
+should be a list of the contig identifiers whose consensus you also wish to
+screen against. The simplest method is to use the CreateAllContigList
+function. Eg:
+	  ...
+	  -check_contigs [CreateAllContigList $io]
+
+4)
+proc select_contigs {io} {
+    set clist ""
+    set db [io_read_database $io]
+    set ncontigs [keylget db num_contigs]
+    for {set cnum 1} {$cnum <= $ncontigs} {incr cnum} {
+        set c [io_read_contig $io $cnum]
+	if {[keylget c length] < 3000} {
+	    continue
+        }
+        lappend clist [left_gel $io $cnum]
+    }
+
+    return $clist
+}
+
+The above returns a Tcl list of all contig identifiers greater than 3000 base
+pairs. The 3000 here is just an example - the finishing software will work on
+smaller contigs if desired.
+
+
+5)
+
+proc classify {fin} {
+    #
+    # Base classification bits used for this example:
+    #
+    # 0     Has data on top strand
+    # 1     Has data on bottom strand
+    # 2     Covered by 3 or more sequences
+    # 3     Covered by 2 or more templates
+    # 4     Consensus confidence is 15 or more
+    # 5     Is a BigDye terminator sequence
+    # 6     Is a non-BigDye terminator sequence
+    # 7     Is a dye-primer sequence
+    # 8     At contig left end
+    # 9     At contig right end
+    set bits {
+        {0 strand_top}
+        {1 strand_bottom}
+        {2 sequence_depth_gt 2}
+        {3 template_depth_gt 1}
+        {4 confidence_gt 29}
+        {5 chemistry 7}
+        {6 chemistry 1}
+        {6 chemistry 3}
+        {6 chemistry 5}
+        {6 chemistry 9}
+        {6 chemistry 11}
+        {7 chemistry 0}
+        {7 chemistry 2}
+        {7 chemistry 4}
+        {7 chemistry 6}
+        {7 chemistry 8}
+        {7 chemistry 10}
+        {8 contig_left_end}
+        {9 contig_right_end}
+    }
+    $fin classify -bits $bits
+}
+
+This procedure simply calls the "classify" method with a series of bit
+patterns.
+
+
+6)
+
+proc find_probs {fin} {
+    # Identify problems and solution types
+    $fin find_problems \
+        -problem_command  prob_rules \
+	-solution_command solu_rules \
+	-tag_types {OLIG PRIM MASK CVEC}
+}
+
+This procedure simply calls the find_problems method. The tag types listed
+here indicate tagged areas of sequence and consensus base where problems
+should be ignored. This method calls two new procedures which we also need to
+define; prob_rules and solu_rules.
+
+The first of these (prob_rules) takes a bit pattern, as specified in classify, 
+and turns this into a bit pattern of problems.
+
+proc prob_rules {bits} {
+    # Problem 1: contig left end
+    set p1	[expr {($bits & 0x0100)>0}]
+
+    # Problem 2: contig right end
+    set p2	[expr {($bits & 0x0200)>0}]
+
+    # Problem 3: low sequence or low template coverage
+    set p3	[expr {!($bits & 0x0004) || !($bits & 0x0008)}]
+
+    # Problem 4: no BigDye terminator sequences
+    set p4	[expr {!($bits & 0x0020)}]
+
+    # Problem 5: low consensus confidence
+    set p5	[expr {!($bits & 0x0010)}]
+
+    return [expr {$p1 | ($p2<<1) | ($p3<<2) | ($p4<<3) | ($p5<<4)}]
+}
+
+We define 5 simple problem types. Note that not all of our classification
+bits are used here; we have not yet used the strand information (bits 0 and
+1).
+
+The return from this function is simply a new bit pattern consisting of 1 bit
+per problem type. This bit pattern will be passed into the solution command as 
+follows:
+
+proc solu_rules {class_bits prob_bits} {
+    # Optimisation - no problems => no solutions required
+    if {$prob_bits == 0} {return 0}
+
+    set type 0;   # None
+    set chem 7;   # BD term
+    set strand 0; # Any
+
+    # Problem 1: left contig end
+    if {[expr {$prob_bits&0x01}]} {
+	# Primer walk, bot strand.
+	set type [expr {$type|0x04}]
+	set strand 2
+    }
+
+    # Problem 2: right contig end
+    if {[expr {$prob_bits&0x02}]} {
+	# Primer walk, top strand.
+	set type [expr {$type|0x04}]
+	set strand 1
+    }
+
+    # Problem 3: low template/sequence coverage
+    if {[expr {$prob_bits&0x04}]} {
+	# Primer walk, any strand
+	set type [expr {$type|0x04}]
+    }
+
+    # Problem 4: no BigDye terminator sequences
+    if {[expr {$prob_bits&0x08}]} {
+	# Primer walk, any strand
+	set type [expr {$type|0x04}]
+    }
+
+    if {[expr {$prob_bits&0x10}]} {
+	if {[expr {!($class_bits&0x0001)}]} {
+	    # No top strand
+	    # Primer walk, top strand
+	    set type [expr {$type|0x04}]
+	    set strand 1
+	} elseif {[expr {!($class_bits&0x0002)}]} {
+	    # No bot strand
+	    # Primer walk, bot strand
+	    set type [expr {$type|0x04}]
+	    set strand 2
+	} else {
+	    # Primer walk, any strand
+	    set type [expr {$type|0x04}]
+	    set strand 0
+	}
+    }
+
+    return [expr $type | ($strand << 16) | ($chem << 24)]
+}
+
+The above looks complicated, but it basically boils down to matching problem
+bits and classification bits to produce new solution-type bits (stored in
+"type"), solution strand and solution chemistry. Take the first section as an
+example:
+
+    # Problem 1: left contig end
+    if {[expr {$prob_bits&0x01}]} {
+	# Primer walk, bot strand.
+	set type [expr {$type|0x04}]
+	set strand 2
+    }
+
+prob_bits&0x1 will be true when problem 1 is present, which in turn was
+calculated as "class_bits & 0x100". 0x100 is the 8th bit (counting from 0)
+which corresponds to "{8 contig_left_end}" in the original classification
+bit patterns.
+
+The suggested solution for this is 0x04; a vector primer walk. We also force
+this to be on strand 2 (bottom strand), which is just an optimisation so that
+the program doesn't need to search for solutions in both directions. (At the
+start of the solu_rules function we defined strand to be 0, indicating that it 
+should normally search both strands for solutions.)
+
+Each "if" statement ORs on new bit(s) to the type variable, indicating one or
+more possible solution types to be investigated for this consensus position.
+The final return from the function is therefore a bit-pattern of solution
+types, a suggested strand (top, bottom or both) and a suggested sequencing
+chemistry (which in our case we've set to BigDye terminators).
+
+7)
+
+proc implement_solutions {fin} {
+    $fin implement_solutions -tag_types {OLIG PRIM MASK CVEC}
+}
+
+This is a very simple procedure - it just calls the implement_solutions method 
+(once again screening out problems in a set of tag types). Internally this
+will identify all the suggested solution-types found by the find_problems
+method and will generate a series of "solution implementations". For example a 
+solution-type may indicate that a primer walk on the bottom strand is
+desirable. The implementations will consist of numerous combinations of
+different primers (at different positions) using different templates. Each
+implementation will be scored and then the best implementation(s) of this
+solution-type will be chosen. This is repeated along the entire consensus.
+
+
+8) multi-pass
+
+Due to the greedy-algorithm used in implement_solutions for designing
+experiments the best experiment locally may not be globally optimal. One
+simple way of improving this is to use multiple passes. This involves having
+one prob_rules function but two solu_rules functions. The most serious
+problems will be fixed in the first pass, followed by all other problems in
+the second pass. A general layout would be:
+
+proc find_probs {fin level} {
+    # Identify problems and solution types
+    $fin find_problems \
+        -problem_command  prob_rules \
+	-solution_command solu_rules$level \
+	-tag_types {OLIG PRIM MASK CVEC}
+}
+
+The top-level code would now do:
+
+foreach contig $clist {
+    $fin configure -io $io -contig $clist
+    classify $fin
+    find_probs $fin 1
+    implement_solutions $fin    
+    find_probs $fin 2
+    implement_solutions $fin    
+}
+
+We need to rewrite the solu_rules function as solu_rules1 and solu_rules2
+functions. Here we still need to respond with solution types to all of the
+problem types (this helps to speed up processing, otherwise the code will
+repeatedly try to solve the same "unsolvable" problems), but the
+solution-types in the first pass may be of type 0x1 (do nothing).
+
+For example a modification to solu_rules (now renamed to solu_rules1) would
+be:
+
+    # Problem 5: do nothing
+    if {[expr {$problem_bits&0x10}]} {
+	# Do nothing
+	set type [expr {$type|0x01}]
+    }
+
+The new solu_rules2 function should then contain the real code for problem
+type 5.
+
+
+9) tags
+
+The implement_solution function returns a list of tags in a format suitable
+for passing in to the add_tags command. For example:
+
+set tags [$fin implement_solutions]
+add_tags -io $io -tags $tags

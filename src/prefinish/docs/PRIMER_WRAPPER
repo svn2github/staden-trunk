@@ -1,0 +1,153 @@
+				   Overview
+				   ========
+
+These functions define a common interface to either the OSP or Primer3 tools
+for picking primers. (The actual implementations are in osp_wrap.c and
+p3_wrap.c.)
+
+All communication to the primer picking library requires a primlib_state
+structure. This is returned from a primlib_create() call and is destroyed by
+primlib_destroy().
+
+Once this has been created, parameters for picking primers are specified using 
+primlib_set_args() and obtaining the primers themselves is done via
+primlib_choose().
+
+
+			      External Functions
+			      ==================
+
+primlib_create
+--------------
+
+primlib_state *primlib_create(void)
+
+Allocates and initialises a new primlib_state structure. This should
+be freed by calling primlib_destroy().
+
+The primlib_state structure can be considered as containing:
+
+typedef struct {
+    /* private */
+    /* ... */
+
+    /* public */
+    int nprimers;
+    primer_rec *primers;
+} primlib_state;
+
+
+primlib_destroy
+---------------
+
+void primlib_destroy(primlib_state *state)
+
+Deallocates a primlib_state structure previously allocated from a
+primlib_create() call.
+
+
+primlib_set_args
+----------------
+
+void primlib_set_args(primlib_state *state, primlib_args *args)
+	
+This copies values from primlib_args into the primlib_state structure.
+Only values in primlib_args that are non zero are copied over, with everything
+else being left as the defaults.
+
+All arguments are double, but some will be converted to int or short
+during the copy. This does mean that you cannot set a parameter to zero, but
+an arbitrarily small value (eg 1e-8) will typically suffice.
+
+The values in primer_state that may be set are:
+
+    double min_tm;      /* Minimum, maximum and optimum temperature */
+    double max_tm;
+    double opt_tm;
+
+    double max_gc;      /* GC Content - as a percentage */
+    double min_gc;
+    double opt_gc;
+    
+    double min_len;     /* Length, in bases (coverted to int) */
+    double max_len;
+    double opt_len;
+
+    double max_end_stability;
+
+    double salt_conc;
+    double dna_conc;
+
+    double self_any;	/* Self annealing */
+    double self_end;
+
+
+primlib_choose
+--------------
+
+int primlib_choose(primlib_state *state, char *seq)
+
+Searches through a sequence picking primers as defined by the parameters set
+in primlib_state.
+
+This returns 0 for success,
+            -1 for failure.
+
+Upon success the primlib_state structure will contain the primers returned in
+the nprimers and primers (type primer_rec *) array. primer_rec has the
+following structure:
+
+typedef struct primrec {
+  /* The oligo melting temperature calculated for this primer */
+  double temp;
+
+  /* The 0-based index of the leftmost base of the primer. */
+  int    start;
+
+  /* Length of the oligo. */
+  char   length;
+
+  /* Self complementarity as local alignment * 100. */
+  short  self_any;
+
+  /* Self complementarity at 3' end * 100. */
+  short  self_end;
+
+  /* Part of the objective function due to this primer. */
+  double quality;
+
+  /* GC content */
+  double gc_content;
+
+  /*
+   * -------------------------
+   * Parameters below are only available in the primer3 implementation
+   * -------------------------
+   */
+
+  /* Penalty for distance from "ideal" position as specified by
+   * inside_penalty and outside_penalty.
+   */
+  double position_penalty; 
+
+  /* Delta G of disription of 5 3' bases. */
+  double end_stability;
+
+  /* Minimum quality score of bases included. */   
+  int    seq_quality;
+
+  /* 0 if this primer does not overlap any target, 1 if it does */
+  char   target;
+
+  /* 0 if does not overlap any excluded region, 1 if it does */
+  char   excl;
+
+  /* Number of Ns in the oligo. */
+  char   num_ns;
+
+  /* Non-0 if the position penalty is infinite. */
+  char   position_penalty_infinite; 
+                   
+  /* Non-0 if the oligo must be used even if it is illegal. */
+  char   must_use;
+} primer_rec;

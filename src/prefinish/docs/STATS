@@ -1,0 +1,41 @@
+Computed from the last 1000 projects at Sanger (date 7th Mar to 18th Nov). Not 
+all were parsed correctly, so numbers below add up to < 1000.
+
+Mouse
+=====
+432     clones
+ 34.037 reactions
+ 21.553 oligos
+  7.176 contigs before
+  4.889 contigs after
+134.775 probs before
+115.773 probs after
+
+Zebrafish
+=========
+533     clones
+ 91.064 reactions
+ 39.212 oligos
+  7.265 contigs before
+  3.422 contigs after
+186.443 probs before
+ 96.529 probs after
+
+
+Good projects:
+Zebrafish 04-FEB-03 zC59N3 77 26 6 101 1 0
+Zebrafish 24-JAN-03 zC284M7 139 55 13 262 1 44
+Zebrafish 22-NOV-02 zC139G14 314 81 12 450 1 68
+Zebrafish 20-NOV-02 zK14A13 167 51 11 239 1 30
+
+Worst projects:
+Zebrafish 17-FEB-03 zC188M3 108 35 9 149 19 1747
+Mouse 09-DEC-02 bM77M17 25 12 6 147 34 1510
+
+Questionable assemblies possibly cause these?
+
+Highest number of contigs/probs:
+Mouse 03-MAR-03 bN114E18 218 74 41 2287 10 382
+Zebrafish 17-JAN-03 zK68E16 256 145 24 716 13 574
+Mouse 16-JAN-03 bM186F3 119 78 24 408 10 183
+Mouse 27-NOV-02 bM160O12 128 48 24 437 14 483

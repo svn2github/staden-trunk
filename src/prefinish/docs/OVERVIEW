@@ -1,0 +1,77 @@
+				Prefinish tool
+				==============
+
+The Gap4 prefinish tool automatically chooses finishing experiments in order
+to solve as many problems as possible prior to passing the final database on
+to a human finisher. When coupled to an automatic trace processing and
+assembly tool, such as pregap4, and an automatic interface with the local
+primer ordering tools (not included here), prefinish will remove much of the
+tedious work of finishing.
+
+Whilst this is still work in progress, the existing implementation is already
+in mainstream use at the Sanger Centre and automatically chooses finishing
+experiments for several BAC clones per day.
+
+Strategy
+--------
+
+1. Identify and classify each consensus base
+
+	In this step the user assigns the sort attributes they wish to
+	collate, such as sequence depth, template depth, consensus confidence, 
+	single/double stranded, contig extension, and so on.
+
+2. Determination of problems
+
+	By using the classification from step 1 problems are specified by
+	patterns of classifications. In some case the classifications
+	themselves have a direct mapping to problem (eg template_depth is
+	1). In other cases more complex problem types may be determined (eg
+	single stranded and not sequenced with two or more chemistries).
+
+	It is expected that each site may wish to modify these problem rules
+	to suit local goals, but the default rules supplied fit the Bermuda
+	meeting finishing criteria.
+
+3. Database of solution types
+
+	Given a problem type and optionally base classifications (ie the
+	information gathered in steps 1 and 2) we can assign one or more
+	possible types of solution. Here we independently assign the ranges of 
+	chemistries, type of experiment (primer walk, long read, resequence
+	etc), and suitable strands on which to perform the experiments.
+
+	This step contains the main logic of the program and so there are a
+	great number of parameters which may be tuned to control its
+	behaviour. These include weighting of problems, cost of solutions, the 
+	number of primers to search, the number of templates to use for each
+	solution, the quality of sequence in which primers may be picked,
+	minimum template and solution scores, sequence lengths, and much more.
+
+4. Solution implementation
+
+	Next given an identification of all of the problems detected and the
+	possible solution types to each problem the program now implements
+	dummy versions of these experiments in order to determine the most
+	suitable set of experiments for solving as many problems as possible.
+
+	The output from this stage should then be passed on to either your
+	finishing teams or an automated system for requesting experiments.
+
+5. Assembly of results
+
+	Once the experiments have been performed, they can be entered into the 
+	database either with normal shotgun assembly or by using the Directed
+	Assembly option.
+
+These five steps combine to be a single "round" of finishing. Each round may
+use different configurations.
+
+
+Results
+-------
+
+Current results from the Sanger Centre suggest that approximately half the
+number of "problems" are solved per round and the number of separate contigs
+is also typically halved. However clearly these results depend greatly on the
+configuration parameters used.

@@ -1,0 +1,105 @@
+			      The prefinish GUI
+			      =================
+
+This is the first draft of the prefinish GUI. It also contains a bug fix to
+the prefinish command line tool.
+
+Environment
+===========
+
+Before you start you'll need to make sure your environment is set up in order
+for these tools to work. Specifically:
+
+0. Assuming bash or a modern sh. If you use (t)csh, just type "bash" to start
+up bash and then these commands should work.
+
+1. Make sure STADENROOT and other variables are set correctly:
+
+(for example)
+export STADENROOT=~pubseq/share/distrib/staden_allunix_2002.0
+. $STADENROOT/staden.profile
+
+
+2. Make sure Tcl/Tk knows where it's libraries are:
+
+export TCL_LIBRARY=$STADLIB/tcl
+export TK_LIBRARY=$STADLIB/tk
+
+
+Creating a configuration
+========================
+
+At present the system works in two parts. The GUI and the command line
+script. The GUI is used to generate the script.
+The usage is:
+
+prefinish [-config config_file]
+
+There's an example configuration in this directory, so try:
+
+prefinish -config config.prefinish
+
+It takes a little while to generate the GUI components after loading, so
+wait for the 'watch' cursor to go away.
+
+You can add and remove various sections. At the moment the Add menu is the
+same as the buttons at the bottom of the window. It works much like pregap4;
+as you click on names in the left panel the right hand panel updates to show
+configurable parameters. See the METHODS file for a full description of what
+these parameters mean.
+
+The rules (termed "problems" in older documentation) included with the example 
+file are a reasonable default set, tallying (more or less) with the Sanger
+Institute rules. The experiments chosen with this configuration will all be
+primer walking, although obviously others types may be requested. Note that
+the "Double stranded" rule has no experiment type associated with it. This is
+deliberate as we do not wish to "solve" problems caused by the disobedience of 
+that rule, but we do wish to factor it into our weightings when chosing other
+experiments. The three passes would probably work just as well with two or one 
+pass, but it is in attempt to make sure that the most serious problems are
+resolved first.
+
+All passes are run through sequentially within a single run of prefinish. They 
+should not be considered as multiple rounds of experiments in which the
+results from previous rounds will be assembled first (this code has yet to be
+written).
+
+Once you've got the system configured, save the configuration and then use
+"Generate CLI App" in the File menu. An example output is included, named
+"cli_run". This generates a separate program which is akin to the old
+finish.tcl from previous distributions.
+
+
+Running it
+==========
+
+You cannot run prefinish from the GUI. You have to use the generated command
+line tool. This will obviously be rectified in time, but this is just a test
+release.
+
+To run the generated command line tool, named "cli_run" in our example, use:
+
+cli_run [options...] DBNAME.VERSION
+
+Eg
+
+cli_run DEMO.0 | tee DEMO.0.output
+cli_run -debug 2 DEMO.0 > DEMO.0.full_output
+
+This will also create a DBNAME.VERSION.experiments file containing just the
+list of suggested experiments. Be warned that running it multiple times will
+overwrite the old experiments file.
+
+
+GUI To Do
+=========
+
+It's far from complete, so the obvious todo list so far is:
+
+*	Add drag and drop support for moving rules and passes around.
+
+*	Better error checking.
+
+*	Allow running prefinish from within the GUI.
+
+*	Integrate with Gap4

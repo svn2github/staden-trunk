@@ -1,0 +1,105 @@
+Example output:
+
+=== EXPERIMENT 4/3: pos -170-230
+=== Score: 26.017600
+=== Chemistry 17
+=== Template name XbA36K22-14a08
+=== Template score 0.900000
+=== Template direction - (1)
+=== Type Vector Primer walk
+=== Primer sequence AGTCCTCTAGGTACACGAGTT
+=== Primer position 290..310
+=== Primer 2ndary=7.900000
+=== Primer score=1.727319, direction '-'
+
+In detail:
+
+=== EXPERIMENT 4/3: pos -170-230
+
+This is experiment 4 in group 3. Experiments sharing the same primer get
+grouped together, so you'll find batches of EXPERIMENT lines using the same
+group number but different experiment numbers. The numbers are high as it's
+indicating how many have been investigated. Eg:
+
+=== EXPERIMENT 219/200: pos 73447-73847
+=== EXPERIMENT 221/200: pos 73447-73847
+=== EXPERIMENT 220/200: pos 73447-73847
+
+The position is the expected position of good quality clipped sequence in the
+new contig. Negative values simply indicate that the contig will be extended
+to the left.
+
+=== Score: 26.017600
+
+Overall experiment score. The higher the better. Units are meaningless as it's 
+derived from all the various weights and scores applied elsewhere.
+
+=== Chemistry 17
+
+The chemistry code as used by gap4:
+
+0	unknown		primer
+1	unknown		terminator
+2	ABI rhodamine	primer
+3	ABI rhodamine 	terminator
+4	ABI dRhodamine 	primer
+5	ABI dRhodamine 	terminator
+6	ABI BigDye v2 	primer
+7	ABI BigDye v2 	terminator
+8	Energy transfer	primer
+9	Energy transfer	terminator
+10	Licor 		primer
+11	Licor 		terminator
+12	MegaBACE ET 	primer
+13	MegaBACE ET 	terminator
+14	ABI BigDye v1 	primer
+15	ABI BigDye v1 	terminator
+16	ABI BigDye v3 	primer
+17	ABI BigDye v3 	terminator
+
+=== Template name XbA36K22-14a08
+
+Template name
+
+=== Template score 0.900000
+
+Template score. 1 is perfect (forward and reverse reading pairs confirming the 
+expected template insert size, and all sequences accounted for).
+
+=== Template direction - (1)
+
+Can be "+" or "-". This just indicates if the forward reading is complemented
+(-) or not (+).
+
+=== Type Vector Primer walk
+
+Experiment type chosen. After this comes the various experiment specific
+details.
+
+=== Primer sequence AGTCCTCTAGGTACACGAGTT
+=== Primer position 290..310
+
+Sequence of primer and position in the consensus.
+
+=== Primer 2ndary=7.900000
+
+Secondary match score computed from looking at other bits of sequence, vector, 
+and any external screening databases (repeats and the like) - we want this
+low. It weights sub-matches that extend to the 3' end higher as these have a
+chance of initiating extension. Every base of match adds 0.5 to this score,
+but the consecutive 3' end bases add 1.2, 1.0, 1.0, 1.0, 0.9, 0.8 and 0.7
+respectively (ie additional weighting for the first 7 bases). These numbers
+are mostly guess work, but also based on conversations with local users.
+
+=== Primer score=1.727319, direction '-'
+
+Mostly based on the primer3 objective function, but also with a very small
+adjustment to take into account the chance of the primer being wrong due to an 
+error in the consensus. (The adjustment is simply to promote use of primers in 
+better quality regions when otherwise there is little to chose between choice
+of primers.)
+
+Primer3's scores are such that lower values are good.
+
+
+

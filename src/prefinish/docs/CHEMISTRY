@@ -1,0 +1,37 @@
+Type bits   |	Meaning
+------------+-----------------
+ 0 0 0 0    |  Unknown
+ 0 0 0 1    |  ABI Rhodamine
+ 0 0 1 0    |  ABI dRhodamine
+ 0 0 1 1    |  BigDye
+ 0 1 0 0    |  Energy Transfer
+ 0 1 0 1    |  LiCor Acyclo term
+ 0 1 1 0    |  Reserved
+ 0 1 1 1    |  Reserved
+ 1 0 0 0    |  Reserved
+ 1 0 0 1    |  Reserved
+ 1 0 1 0    |  Reserved
+ 1 0 1 1    |  Reserved
+ 1 1 0 0    |  Reserved
+ 1 1 0 1    |  Reserved
+ 1 1 1 0    |  Reserved
+ 1 1 1 1    |  Reserved
+
+Primer =0   |           | Sanger |
+Term   =1   |  Type     |  Code  | Name
+------------+-----------+--------+-------------------------------
+	0   |  0 0 0 0  |  -     |  Unknown primer
+	0   |  0 0 0 1  |  p     |  ABI rhodamine primer
+	0   |  0 0 1 0  |  -     |  ?
+	0   |  0 0 1 1  |  b     |  BigDye primer
+	0   |  0 1 0 0  |  m     |  Megabace ET primer
+	0   |  0 1 0 1  |  l	 |  doesn't exist? (LiCor)
+
+	1   |  0 0 0 0  |  -     |  Unknown terminator
+	1   |  0 0 0 1  |  t     |  ABI rhodamine terminator
+	1   |  0 0 1 0  |  d     |  ABI dRhodamine terminator
+	1   |  0 0 1 1  |  c     |  BigDye terminator
+	1   |  0 1 0 0  |  n f   |  ABI or Megabce ET terminator
+	1   |  0 1 0 1  |  l	 |  LiCor Acyclo terminator
+
+	(All other bit patterns are reserved)
