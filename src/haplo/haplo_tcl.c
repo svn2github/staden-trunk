@@ -376,10 +376,8 @@ static int haplo_tdepth_cmd(Tcl_Interp *interp,
     end = rargv[0].end;
     last = tdepth[0];
     for (j = 0, i = 1; i < end-start+1; i++) {
-	// printf("DEPTH %d %d (%d)\n", i, tdepth[i], last);
 	if (tdepth[i] != last) {
 	    dstring_appendf(ds, "%d %d %d ", j+start, i+start, last);
-	    printf("DEPTH %d..%d %d\n", j+start, i+start, last);
 	    j = i;
 	    last = tdepth[i];
 	}
