@@ -13,8 +13,8 @@
 #
 #echo 'Setting up the Staden software environment...'
 
-STADENROOT_2003=$STADENROOT
-export STADENROOT_2003
+STADENROOT_1_5=$STADENROOT
+export STADENROOT_1_5
 
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux/macosx.
