@@ -491,6 +491,7 @@ static int create_new_oligo_tag(EdStruct *xx, int oligo, int pos, int len,
 			generate_oligo_comment(xx, oligo, template_name),
 			tag,
 			normaliseSense(xx,seq,(sense==BACKWARDS)));
+    U_adjust_cursor(xx, 0);
     closeUndo(xx, DBI(xx));
 
     return 0;

@@ -861,17 +861,22 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
     } else if ('d' == *argv[1] && strcmp(argv[1], "delete_anno") == 0) {
+	tagStruct *t = NULL;
+
 	if (get_licence_type() == LICENCE_VIEWER)
 	    goto fail;
 
-	if (argc != 2) {
+	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " delete_anno\"",
+			     argv[0], " delete_anno ?tagptr?\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	deleteAnnotation(ed->xx);
+	if (argc == 3)
+	    sscanf(argv[2], "%p", &t);
+
+	deleteAnnotation(ed->xx, t);
 
     } else if ('c' == *argv[1] && strcmp(argv[1], "create_anno") == 0) {
 	if (get_licence_type() == LICENCE_VIEWER)
@@ -893,14 +898,34 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
     } else if ('e' == *argv[1] && strcmp(argv[1], "edit_anno") == 0) {
-	if (argc != 2) {
+	tagStruct *t = NULL;
+
+	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " edit_anno\"",
+			     argv[0], " edit_anno ?tagptr?\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	editAnnotation(ed->xx);
+	if (argc == 3)
+	    sscanf(argv[2], "%p", &t);
+
+	editAnnotation(ed->xx, t);
+
+    } else if ('l' == *argv[1] && strcmp(argv[1], "list_anno") == 0) {
+	dstring_t *ds;
+
+	if (argc != 2) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " list_anno\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (NULL != (ds = listAnnotation(ed->xx))) {
+	    Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	    dstring_destroy(ds);
+	}
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "save") == 0) {
 	if (get_licence_type() == LICENCE_VIEWER)

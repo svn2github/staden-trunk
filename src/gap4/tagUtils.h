@@ -27,6 +27,7 @@
 #include "fortran.h"
 #include "fort.h"
 #include "array.h"
+#include "dstring.h"
 
 struct anno_list_t {
     GCardinal anno;
@@ -102,8 +103,9 @@ extern void destroyTagList(tagStruct *s);
 extern void destroyFreeTagList(void);
 
 extern void createAnnotation(EdStruct *xx);
-extern void editAnnotation(EdStruct *xx);
-extern void deleteAnnotation(EdStruct *xx);
+extern void editAnnotation(EdStruct *xx, tagStruct *t);
+extern void deleteAnnotation(EdStruct *xx, tagStruct *t);
+extern dstring_t *listAnnotation(EdStruct *xx);
 
 extern void getTagSplodge(EdStruct *xx, int seq, int pos, int width, XawSheetInk *ink);
 

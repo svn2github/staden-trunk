@@ -19,6 +19,11 @@ option add *EdNames.font $f
 option add *diff_label.l.font $f
 unset f
 
+if {![info exists .cedit.SE_fast_delete_anno]} {
+    set .cedit.SE_fast_delete_anno \
+	[keylget gap_defs CONTIG_EDITOR.SE_FAST_DELETE_ANNOTATION]
+}
+
 #-----------------------------------------------------------------------------
 # User dialogue for starting up the editors
 #-----------------------------------------------------------------------------
@@ -431,7 +436,39 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     bindtags $editor "$editor allfocus Editor all"
     bindtags $names  "$names allfocus EdNames all"
 
+    # Put a trace on variable NAMED ${editor}(tags) and use this to update
+    # tag menus.
+    global $editor.Tags
+    trace variable $editor.Tags w update_tag_menus
+
     return "$editor $names"
+}
+
+# Updates the commands menu Edit Tags and Delete Tags cascades so that the
+# tags under the current cursor are listed.
+proc update_tag_menus {name1 name2 op} {
+    global $name1
+    regexp {(.*)\.[^.]*\.[^.]*$} $name1 _ e
+
+    set menu $e.buttons.commands.menu.commands.edit_tag
+    $menu delete 0 end
+    foreach tag [set $name1] {
+	foreach {ptr type st len} $tag {}
+	set end [expr {$st+$len-1}]
+	$menu add command \
+	    -label "$type $st-$end" \
+	    -command "$e.seqs edit_anno $ptr"
+    }
+
+    set menu $e.buttons.commands.menu.commands.delete_tag
+    $menu delete 0 end
+    foreach tag [set $name1] {
+	foreach {ptr type st len} $tag {}
+	set end [expr {$st+$len-1}]
+	$menu add command \
+	    -label "$type $st-$end" \
+	    -command "$e.seqs delete_anno $ptr"
+    }
 }
 
 # Adds a 'diff' bar between a couple of editors. Assumes at least one editor
@@ -1968,8 +2005,10 @@ bind Editor <Key-KP_Enter>	{%W update_brief_base -mode2}
 bind Editor <Control-1>		{popup_editor_menu %W %x %y}
 #bind Editor <<menu>>		"[bind Editor <<select>>]
 #				 popup_editor_menu %W %x %y"
-bind Editor <<menu>>		{%W cursor_set @%x @%y
-				 popup_editor_menu %W %x %y}
+bind Editor <<menu>>		{
+    %W cursor_set @%x @%y
+    popup_editor_menu %W %x %y
+}
 bind Editor <<select-drag>>	{%W select adjust @%x}
 bind Editor <<move>>		{
     %W cursor_set @%x @%y
@@ -2159,17 +2198,24 @@ for {set i 1} {$i <= 12} {incr i} {
     lappend ed_macro_keys F$i
 }
 bind Editor <F11> "%W select clear; %W edit_anno"
-bind Editor <F12> "%W select clear; %W delete_anno"
 bind Editor <Shift-Key-F11> {
     if {[%W cursor_set @%x @%y] == 0} {
 	%W select clear
 	%W edit_anno
     }
 }
-bind Editor <Shift-Key-F12> {
-    if {[%W cursor_set @%x @%y] == 0} {
+bind Editor <F12> {
+    if {[set .cedit.SE_fast_delete_anno]} {
 	%W select clear
 	%W delete_anno
+    }
+}
+bind Editor <Shift-Key-F12> {
+    if {[set .cedit.SE_fast_delete_anno]} {
+	if {[%W cursor_set @%x @%y] == 0} {
+	    %W select clear
+	    %W delete_anno
+	}
     }
 }
 

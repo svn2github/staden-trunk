@@ -227,7 +227,7 @@ tagStruct *newTag()
     t->newcommentlen = 0;
     t->flags = TAG_UNCHANGED;
     t->next = NULL;
-    
+
     return t;
 }
 
@@ -783,6 +783,12 @@ int U_create_annotation(EdStruct *xx, int seq, int pos, int length, char *type, 
     
     seq_flags = old_seq_flags | DB_FLAG_TAG_MODIFIED;
     _create_annotation(xx,seq,pos,length,type,comment,tag,sense,seq_flags);
+
+    /*
+     * Reset seqeunce cursor, to force CURSOR_NOTIFY and a refresh of the
+     * editor tag menus (a hack!).
+     */
+    U_adjust_cursor(xx, 0);
     
     return 0;
 }
@@ -955,7 +961,11 @@ void tagDeleteBases(EdStruct *xx, int seq, int cursor_pos, int num_bases)
 	    U_adjust_length_annotation(xx, seq, t, this_len);
 	} else if (this_pos <= end && this_end <= end) {
 	    /* case 4 - annotation totally deleted */
+	    openUndo(DBI(xx));
+	    U_adjust_cursor(xx, 0);
 	    U_delete_annotation(xx, seq, last_t);
+	    U_adjust_cursor(xx, 0);
+	    closeUndo(xx, DBI(xx));
 	    /* YUK! */
 	    t = last_t;
 	} else if (this_pos <= end /*&& this_end > end*/) {
@@ -1046,30 +1056,35 @@ tagStruct *findPreviousTag(EdStruct *xx, int seq, tagStruct *tag)
 
 
 
-void deleteAnnotation(EdStruct *xx)
+void deleteAnnotation(EdStruct *xx, tagStruct *t)
 /*
  * A rather brutal delete
  */
 {
     int seq,start,length;
-    tagStruct *t, *tag;
+    tagStruct *tag;
     
     if (!(DBI_flags(xx) & DB_ACCESS_UPDATE)) {
 	verror(ERR_WARN, "contig_editor", "Editor is in read-only mode");
 	return;
     }
 
-    if (! getSelection(xx, &seq, &start, &length, &t)) {
-	/* default selection is current cursor position */
+    if (t) {
 	seq = xx->cursorSeq;
-	start = xx->cursorPos + DB_Start(xx, seq);
-	t = NULL;
-    }
-    if (t==NULL) {
-        t = findTag(xx,seq,start);
-        _select_tag(xx,seq,t);
-        (void) getSelection(xx, &seq, &start, &length, &t);
-	if (t==NULL) return;
+	_select_tag(xx,seq,t);
+    } else {
+	if (! getSelection(xx, &seq, &start, &length, &t)) {
+	    /* default selection is current cursor position */
+	    seq = xx->cursorSeq;
+	    start = xx->cursorPos + DB_Start(xx, seq);
+	    t = NULL;
+	}
+	if (t==NULL) {
+	    t = findTag(xx,seq,start);
+	    _select_tag(xx,seq,t);
+	    (void) getSelection(xx, &seq, &start, &length, &t);
+	    if (t==NULL) return;
+	}
     }
 
     /* We've now got the tag details, so clear selection */
@@ -1079,34 +1094,76 @@ void deleteAnnotation(EdStruct *xx)
     tag = findPreviousTag(xx,seq,t);
     
     openUndo(DBI(xx));
+    U_adjust_cursor(xx, 0);
     U_delete_annotation(xx,seq,tag);
+    U_adjust_cursor(xx, 0);
     closeUndo(xx, DBI(xx));
     
-    /* YUK! */
+    /* Force a redisplay */
     redisplaySequences(xx, 1);
 }
 
 
 
+/*
+ * Returns a list of all tag ids under the current cursor position.
+ * The list consists of zero or more curly brace enclosed lists of
+ * tagStruct pointer, tag type, position, length.
+ *
+ * The returned value is
+ *    NULL for failure
+ *    ndstring_t * for success.
+ */
+dstring_t *listAnnotation(EdStruct *xx) {
+    int seq,pos;
+    tagStruct *t;
+    int npos;
+    dstring_t *ds = dstring_create(NULL);
 
+    seq = xx->cursorSeq;
+    pos = xx->cursorPos + DB_Start(xx, seq);
+    
+    npos = normalisePos2(xx, seq, pos, 1/*character*/);
+    
+    t = (tagStruct *) DBgetTags(DBI(xx),seq);
+    while (t != NULL) {
+	if (t->tagrec.position <= npos &&
+	    t->tagrec.position + t->tagrec.length > npos &&
+	    xx->tag_list[idToIndex(t->tagrec.type.c)]) {
+	    dstring_appendf(ds, "{%p %.4s %d %d} ",
+			    t,
+			    t->tagrec.type.c,
+			    t->tagrec.position,
+			    t->tagrec.length);
+	}
+	t = t->next;
+    }
 
+    return ds;
+}
 
-void editAnnotation(EdStruct *xx)
+    
+/* Edit annotation 't', or the one under the cursor if 't' is null */
+void editAnnotation(EdStruct *xx, tagStruct *t)
 {
     int seq,start,length;
-    tagStruct *t;
-    
-    if (! getSelection(xx, &seq, &start, &length, &t)) {
-	/* default selection is current cursor position */
+
+    if (t) {
 	seq = xx->cursorSeq;
-	start = xx->cursorPos + DB_Start(xx, seq);
-        t = findTag(xx,seq,start);
-        _select_tag(xx,seq,t);
-        (void) getSelection(xx, &seq, &start, &length, &t);
-    } else if (t==NULL) {
-        t = findTag(xx,seq,start);
-        _select_tag(xx,seq,t);
-        (void) getSelection(xx, &seq, &start, &length, &t);
+	_select_tag(xx,seq,t);
+    } else {
+	if (! getSelection(xx, &seq, &start, &length, &t)) {
+	    /* default selection is current cursor position */
+	    seq = xx->cursorSeq;
+	    start = xx->cursorPos + DB_Start(xx, seq);
+	    t = findTag(xx,seq,start);
+	    _select_tag(xx,seq,t);
+	    (void) getSelection(xx, &seq, &start, &length, &t);
+	} else if (t==NULL) {
+	    t = findTag(xx,seq,start);
+	    _select_tag(xx,seq,t);
+	    (void) getSelection(xx, &seq, &start, &length, &t);
+	}
     }
     if (t==NULL) return;
     

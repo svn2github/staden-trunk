@@ -227,6 +227,9 @@ add_radio	{Edit Modes.Edit by base type}		1 0 \
 add_radio	{Edit Modes.Edit by confidence}		1 0 \
 	{$w.SE_edit_mode} 1 	{editor_set_superedit $e $w}
 add_separator	{Edit Modes.S2}
+add_check	{Edit Modes.Allow F12 for fast tag deletion}	1 0 \
+	{.cedit.SE_fast_delete_anno} {}
+add_separator	{Edit Modes.S3}
 add_command	{Edit Modes.Mode set 1}			1 0 \
 	{editor_set_superedit_set $e $w 1}
 add_command	{Edit Modes.Mode set 2}			1 0 \
@@ -239,8 +242,10 @@ add_command	{Commands.Search}			1 0 \
 	{create_search_win $e.search {$e search}}
 add_separator	{Commands.S1}
 add_command	{Commands.Create Tag}		3 2 {$e create_anno}
-add_command	{Commands.Edit Tag}		1 0 {$e select clear; $e edit_anno}
-add_command	{Commands.Delete Tag}		3 2 {$e select clear; $e delete_anno}
+#add_command	{Commands.Edit Tag}		1 0 {$e select clear; $e edit_anno}
+#add_command	{Commands.Delete Tag}		3 2 {$e select clear; $e delete_anno}
+add_cascade	{Commands.Edit Tag}		1 0
+add_cascade	{Commands.Delete Tag}		3 2
 add_separator	{Commands.S2}
 add_command	{Commands.Save Contig}		3 2 {$e save}
 add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}

@@ -53,6 +53,7 @@ static void TagEdSave(Tcl_Interp *interp, TagEd *te) {
     }
 
     openUndo(DBI(xx));
+    U_adjust_cursor(xx, 0);
 
     if (te->tag) {
 	/* Update an existing tag */
@@ -89,8 +90,8 @@ static void TagEdSave(Tcl_Interp *interp, TagEd *te) {
 	    xx->select_tag = DBgetTags(DBI(xx), te->seq);
 	else
 	    xx->select_tag = tag->next;
-	    
     }
+    U_adjust_cursor(xx, 0);
 
     redisplaySequences(xx, 1);
     DBsetFlags(xx, te->seq, DB_Flags(xx, te->seq) | DB_FLAG_TAG_MODIFIED);
@@ -134,9 +135,11 @@ int saveAnnotation(EdStruct *xx, char *type, char *anno, int strand) {
     
     ncomment = (char *)TAG_MALLOC(strlen(anno)+1);
     strcpy(ncomment, anno);
+    U_adjust_cursor(xx, 0);
     U_create_annotation(xx, seq, pos, len, type,
 			ncomment, tag,
 			normaliseSense(xx, seq, strand));
+    U_adjust_cursor(xx, 0);
 
     if (tag == NULL)
 	xx->select_tag = DBgetTags(DBI(xx), seq);

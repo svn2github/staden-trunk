@@ -301,6 +301,8 @@ void db_callback_tk(void *xxv, int type, int seq, int pos, void *pointer) {
     case DBCALL_CURSOR_NOTIFY:
 	{
 	    reg_cursor_notify cn;
+	    dstring_t *ds;
+	    char var[1024];
 
 	    /*
 	     * Update cursor structure using a (seq,pos) pair.
@@ -321,6 +323,15 @@ void db_callback_tk(void *xxv, int type, int seq, int pos, void *pointer) {
 	    cn.cursor = xx->cursor;
 	    cn.job = REG_CURSOR_NOTIFY;
 	    contig_notify(DBI_io(xx), DBI_contigNum(xx), (reg_data *)&cn);
+
+	    /* Update the Tcl 'tags under cursor' variable. */
+	    ds = listAnnotation(xx);
+	    sprintf(var, "%s.Tags", Tk_PathName(EDTKWIN(xx->ed)));
+	    Tcl_SetVar(EDINTERP(xx->ed),
+		       var,
+		       dstring_str(ds),
+		       TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
+	    dstring_destroy(ds);
 	}
 
 	break;
