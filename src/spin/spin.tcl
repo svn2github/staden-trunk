@@ -271,9 +271,9 @@ load_package spin
 
 
 if {$licence(type) == "f"} {
-   set SPIN_VERSION 1.2b1
+   set SPIN_VERSION 1.3
 } else {
-   set SPIN_VERSION "1.2b1 DEMO"
+   set SPIN_VERSION "1.3 DEMO"
 }
 wm title . "SPIN v$SPIN_VERSION"
 wm iconname . "SPIN v$SPIN_VERSION"
