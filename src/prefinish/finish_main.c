@@ -1003,7 +1003,11 @@ int analyse_templates(finish_t *fin) {
 
     /* Analyse all existing templates */
     if (!fin->tarr) {
-	fin->tarr = init_template_checks(fin->io, 1, &fin->contig, 0);
+	/*
+	 * Pick templates for contigs we are interested in, and then flesh
+	 * out this info for all contigs using only 'connected' templates.
+	 */
+	fin->tarr = init_template_checks(fin->io, 1, &fin->contig, 1);
 	if (!fin->tarr)
 	    return -1;
 
@@ -1018,11 +1022,20 @@ int analyse_templates(finish_t *fin) {
 
 	check_all_templates(fin->io, fin->tarr);
 
+
 	for (i = 0; i <= Ntemplates(fin->io); i++) {
 	    if (fin->tarr[i]) {
 		if (fin->tarr[i]->flags & TEMP_FLAG_SPANNING) {
 		    get_template_positions(fin->io, fin->tarr[i], fin->contig);
 		}
+		printf("Template %c%d, span %d, pos=%d-%d, %d-%d %d-%d len %d\n",
+		       "?+-"[fin->tarr[i]->direction+1],
+		       i,
+		       (fin->tarr[i]->flags & TEMP_FLAG_SPANNING) ? 1 : 0,
+		       fin->tarr[i]->start, fin->tarr[i]->end,
+		       fin->tarr[i]->start2, fin->tarr[i]->end2,
+		       fin->tarr[i]->min, fin->tarr[i]->max,
+		       fin->tarr[i]->computed_length);
 	    }
 	}
 
