@@ -7,7 +7,7 @@
 #include "xalloc.h"
 #include "copy_db.h"
 #include "text_output.h"
-
+#include "misc.h"
 
 /*
  * A bunch of useful defines to tidy up the following function.
@@ -92,6 +92,61 @@ do { \
 
 
 /*
+ * Copies the reading name for sequence rnum from DB iof to DB iot. Normally
+ * the name is the same, but it may be "unknown.%d" or "oldname#%d" if the
+ * sequence name is duplicated.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int copy_read_name(GapIO *iof, GapIO *iot, int rnum, int start_r,
+		   GReadings *rf, GReadings *rt, int *num_unknowns) {
+    char buf[DB_NAMELEN+1];
+
+    /* Find the name we are going to use */
+    if (rf->name) {
+	TextRead(iof, rf->name, buf, DB_NAMELEN);
+
+	/* If it's already in iot, generate a new name */
+	if (get_gel_num(iot, buf, GGN_NAME) != -1) {
+	    int iter = 1;
+	    size_t l = strlen(buf);
+	    char new_name[DB_NAMELEN+1];
+
+	    do {
+		char num[10];
+		sprintf(num, "#%d", iter++);
+		sprintf(new_name, "%.*s%s",
+			(int)(MIN(l, DB_NAMELEN-strlen(num))),
+			buf, num);
+	    } while (get_gel_num(iot, new_name, GGN_NAME) != -1);
+	    
+	    printf("Fixed duplicate reading %s, given new name %s\n",
+		    buf, new_name);
+
+	    strcpy(buf, new_name);
+	}
+    } else {
+	/* Name does not exist, so make one up */
+	do {
+	    sprintf(buf, "unknown.%d", (*num_unknowns)++);
+	} while (get_gel_num(iot, buf, GGN_NAME) != -1);
+
+	printf("Fixed unknown reading name for #%d (now %s)\n",
+	       rnum, buf);
+    }
+
+    /* Allocate and copy it */
+    if (-1 == (rt->name = allocate(iot, GT_Text)))
+	return -1;
+
+    TextWrite(iot, rt->name, buf, DB_NAMELEN+1);
+    io_wname(iot, rnum + start_r, buf);
+
+    return 0;
+}
+
+/*
  * Copies database pointed to by 'iof' to the database pointed to by 'iot'.
  *
  * If 'verbose' is set then a running summary of its actions is displayed.
@@ -144,7 +199,7 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 	goto error;
 
     for (i=1; i<=NumReadings(iof); i++) {
-	char t_type[5], name[DB_NAMELEN+1];
+	char t_type[5];
 
 	VERB_NUM(i);
 	if (gel_read(iof, i, r) && errs) goto error;
@@ -177,15 +232,8 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 		  r.length, sizeof(int1));
 	COPY_DATA(iof, iot, r.orig_positions, rt.orig_positions, opos,
 		  r.length, sizeof(int2));
-	COPY_STR(iof, iot, r.name,       rt.name,       name,   DB_NAMELEN+1);
-	if (rt.name == 0) {
-	    /* No name! Invent one */
-	    char buf[DB_NAMELEN+1];
-	    sprintf(buf, "unknown.%d", num_unknowns++);
-	    printf("Fixed name for reading %d (\"%s\")\n", i, buf);
-	    rt.name = allocate(iot, GT_Text);
-	    TextWrite(iot, rt.name, buf, DB_NAMELEN+1);
-	}
+	if (copy_read_name(iof, iot, i, start_r, &r, &rt, &num_unknowns) == -1)
+	    goto error;
 	COPY_ALLOC_STR(iof, iot, r.trace_name, rt.trace_name);
 	COPY_STR(iof, iot, r.trace_type, rt.trace_type, t_type, 5);
 
