@@ -1,0 +1,347 @@
+#
+# Usual options.
+#
+itk::usual Hangeditor {
+    keep -background -borderwidth -foreground -highlightcolor \
+	-highlightthickness -labelfont -selectbackground \
+	-selectborderwidth -selectforeground \
+	-textbackground -textfont
+}
+
+# -------------------------------------------------
+# hangeditor class
+# -------------------------------------------------
+
+itcl::class Hangeditor {
+
+    inherit itk::Widget
+    
+    constructor {args} {}
+    
+    itk_option define -seqid seqid Seqid 0
+
+    public method get_hang_parameter {} @get_hang_para
+    public method sequence_hang {} @edit_sequence_hang
+    public method init_end_editor {seq_id}
+    private method PopupMenu {args}
+    private method sfEnter {type}
+    private method sfLeave {type}
+    private method fillHang {}
+    private method trimHang {}
+    private method RedisplayHangeditor {type info}
+    
+    variable font courier
+    variable seq_id 0
+    variable p 0      ;#the position for fragment left hang
+    variable pp 0     ;#the position for fragment right hang 
+    variable ppp 0    ;#the position for sequence right hang 
+    variable sl_len 0 ;#the length of the sequence site_1
+    variable sr_len 0 ;#the length of the sequence site_2
+    variable fl_len 0 ;#the length of the fragment left_end
+    variable fr_len 0 ;#the length of the fragment right_end
+    variable f_width 7
+}
+
+# ------------------------------------------------
+# Provide a lowercase access method for the class.
+# ------------------------------------------------
+
+proc ::hangeditor {pathName args} {
+    uplevel ::Hangeditor $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+
+itcl::body Hangeditor::constructor {args} {
+
+    itk_component add canvas {
+	canvas $itk_component(hull).canvas \
+		-relief sunken \
+		-borderwidth 2 \
+		-width 500 \
+		-height 70 
+    }
+    pack $itk_component(canvas) -expand yes -fill both
+
+    #
+    #Create pop-up menu with two command entries;
+    #
+    itk_component add menu {
+	menu $itk_component(hull).menu -tearoff no
+    }
+    $itk_component(menu) add command -label "Fill" \
+	    -command [code $this fillHang]
+    $itk_component(menu) add command -label "Trim" \
+	    -command [code $this trimHang]
+
+    #
+    # Initialize the widget based on the command line options.
+    #
+    eval itk_initialize $args
+
+    set f_width [font measure $font 0]
+    set seq_id $itk_option(-seqid)
+    init_end_editor $seq_id 
+    foreach t {sl fl fr sr} {
+	$itk_component(canvas) bind $t <Any-Enter> [code $this sfEnter $t]
+	$itk_component(canvas) bind $t <Any-Leave> [code $this sfLeave $t]
+    }
+}
+
+# ------------------------------------------------------------------
+#                            OPTIONS
+# ------------------------------------------------------------------
+#---------------------------------------------------
+# OPTION: -seqid
+#
+# Set unique ID  for sequuence to be edited
+#------------------------------------------------------
+itcl::configbody Hangeditor::seqid { }
+
+
+# ------------------------------------------------------------------
+#                            METHODS
+# ------------------------------------------------------------------
+# ----------------------------------------------------
+# METHOD: trimHang
+#
+# To trim the hang for giving sequence or fragment.
+# ----------------------------------------------------
+itcl::body Hangeditor::trimHang {} {
+    
+    set t [$itk_component(canvas) find withtag current] 
+    set tg [$itk_component(canvas) gettags $t]
+
+    foreach t $tg {
+	if {$t == "sl" || $t == "sr" || $t == "fl" || $t == "fr"} {
+	    set info [sequence_hang trim $seq_id $t] 
+	    #RedisplayHangeditor $t $info
+	}
+    }
+}
+# ------------------------------------------------------
+# METHOD: fillHang
+#
+# To trim the hang for giving sequence or fragment.
+# ------------------------------------------------------
+itcl::body Hangeditor::fillHang {} {
+
+    set t [$itk_component(canvas) find withtag current]   
+    set tg [$itk_component(canvas) gettags $t]
+    foreach t $tg {
+	if {$t == "sl" || $t == "sr" || $t == "fl" || $t == "fr"} {
+	    set info [sequence_hang fill $seq_id $t] 
+	    #RedisplayHangeditor $t $info
+	}
+    }
+}
+
+# -------------------------------------------------------
+# METHOD: RedisplayHangeditor
+#
+# Redisplay the hang of the sequence(fragment) after editing.
+# -------------------------------------------------------
+itcl::body Hangeditor::RedisplayHangeditor {type info} {
+    
+    set sf [lindex $info 0]
+    set sfc [lindex $info 1]
+
+    if {$type == "sl"} {
+	set sl_len 0
+	$itk_component(canvas) delete $type
+	$itk_component(canvas) create text 20 20 -text $sf\
+	    -anchor nw -font $font -tags sl
+	$itk_component(canvas) create text 20 40 -text $sfc\
+	    -anchor nw -font $font -tags sl
+    }
+    
+    if {$type == "fl"} {
+	set fl_len 0
+	$itk_component(canvas) delete $type
+	$itk_component(canvas) create text $p 20 -text $sf\
+	    -anchor nw -font $font -tags fl
+	$itk_component(canvas) create text $p 40 -text $sfc\
+	    -anchor nw -font $font -tags fl
+    }
+    
+    if {$type == "fr"} {
+	set fr_len 0
+	$itk_component(canvas) delete $type
+	$itk_component(canvas) create text $pp 20 -text $sf\
+	    -anchor nw -font $font -tags fr
+	$itk_component(canvas) create text $pp 40 -text $sfc\
+	    -anchor nw -font $font -tags fr
+    }
+    
+    if {$type == "sr"} {
+	set sr_len 0
+	$itk_component(canvas) delete $type
+	$itk_component(canvas) create text $ppp 20 -text $sf\
+	    -anchor nw -font $font -tags sr
+	$itk_component(canvas) create text $ppp 40 -text $sfc\
+	    -anchor nw -font $font -tags sr
+    }    
+}
+# ----------------------------------------------------
+# METHOD: sfEnter
+# 
+# Binding.
+# ----------------------------------------------------
+itcl::body Hangeditor::sfEnter {t} {
+    $itk_component(canvas) itemconfig $t -fill blue 
+}
+# -----------------------------------------------------
+# METHOD: sfLeave
+#
+# Binding.
+# -----------------------------------------------------
+itcl::body Hangeditor::sfLeave {t} {
+    $itk_component(canvas) itemconfig $t -fill black
+}
+
+# ------------------------------------------------------------
+# METHOD: PopupMenu
+# Posts the pop-up menu $w.menu at the given screen position 
+# if the cursor over the end of the sequence or fragment. 
+# Before posting the menu, the procedure enables/disables its 
+# fill command, depending upon whether the end is 5'(3') or not.
+# -------------------------------------------------------------
+itcl::body Hangeditor::PopupMenu {t x y} {
+
+    $itk_component(menu) entryconfigure 1 -state normal
+    $itk_component(menu) entryconfigure 2 -state normal
+    
+    if {$t == "sl"} {
+	if {$sl_len == 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	    $itk_component(menu) entryconfigure 2 -state disabled
+	}
+	if {$sl_len > 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	}
+    }
+    if {$t == "fl"} {
+	if {$fl_len == 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	    $itk_component(menu) entryconfigure 2 -state disabled
+	}
+	if {$fl_len < 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	}
+    }
+    if {$t == "fr"} {
+	if {$fr_len == 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	    $itk_component(menu) entryconfigure 2 -state disabled
+	}
+	if {$fr_len > 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	}
+    }
+    if {$t == "sr"} {
+	if {$sr_len == 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	    $itk_component(menu) entryconfigure 2 -state disabled
+	}
+	if {$sr_len < 0} {
+	    $itk_component(menu) entryconfigure 1 -state disabled
+	}
+    }    
+    tk_popup $itk_component(menu) $x [expr $y + 6]
+    after idle "$itk_component(canvas) itemconfig $t -fill blue"
+}
+# -----------------------------------------------------------------
+# METHOD: init
+#
+# Initialise the hang editor.
+# ------------------------------------------------------------------
+itcl::body Hangeditor::init_end_editor {seq_id} {
+    
+    set hang_info [get_hang_parameter $seq_id]
+
+    set seq_l [lindex $hang_info 0]
+    set seq_lc [lindex $hang_info 1]
+    set sl_len [lindex $hang_info 2]
+    #puts "l=$seq_l lc=$seq_lc  sl_len=$sl_len"
+    set seq_r [lindex $hang_info 3]
+    set seq_rc [lindex $hang_info 4]
+    set sr_len [lindex $hang_info 5]
+    #puts "r=$seq_r rc=$seq_rc  sr_len=$sr_len"
+    set fra_l [lindex $hang_info 6]
+    set fra_lc [lindex $hang_info 7]
+    set fl_len [lindex $hang_info 8]
+    #puts "fra_l=$fra_l  fra_lc=$fra_lc fl_len=$fl_len "
+    set fra_r [lindex $hang_info 9]
+    set fra_rc [lindex $hang_info 10]
+    set fr_len [lindex $hang_info 11]
+    #puts "fra_r=$fra_r fra_rc=$fra_rc  fr_len=$fr_len" 
+    set sll [string length $seq_l]
+    set slc [string length $seq_lc]  
+    expr {($sll > $slc) ? [set p11 $sll] : [set p11 $slc]}
+    
+    $itk_component(canvas) delete all
+    
+    $itk_component(canvas) create text 20 20 -text $seq_l\
+	    -anchor nw -font $font -tags sl
+    ###########################
+    expr {($fl_len >= 0) ? [set p1 [expr $p11 + 2]] : [set p1 [expr $p11 + abs($fl_len) + 2]]}
+
+    set p [expr 20 + {$p1*$f_width}]
+   
+    $itk_component(canvas) create text $p 20 -text $fra_l\
+	    -anchor nw -font $font -tags fl
+    ###########################
+    set pp1 [string length $fra_l]
+    set pp [expr $p + {$pp1*$f_width}]
+  
+    $itk_component(canvas) create text $pp 20 -text $fra_r\
+	    -anchor nw -font $font -tags fr
+    ###########################
+    set fll [string length $fra_r]
+    set flc [string length $fra_rc]
+ 
+    expr {($fll > $flc) ? [set ppp11 $fll] : [set ppp11 $flc]}    
+    expr {($sr_len >= 0) ? [set ppp1 [expr $ppp11+ 2]] : [set ppp1 [expr $ppp11 + abs($sr_len) + 2]]}
+    set ppp [expr $pp + {$ppp1*$f_width}]
+   
+    $itk_component(canvas) create text $ppp 20 -text $seq_r\
+	    -anchor nw -font $font -tags sr
+
+    ############################
+    $itk_component(canvas) create text 20 40 -text $seq_lc\
+	    -anchor nw -font $font -tags sl
+    ############################
+    expr {($fl_len <= 0) ? [set p1 [expr $p11+ 2]] : [set p1 [expr $p11 + abs($fl_len) + 2]]}
+    set pc [expr 20 + {$p1*$f_width}]
+
+    $itk_component(canvas) create text $pc 40 -text $fra_lc\
+	    -anchor nw -font $font -tags fl
+    ############################
+    $itk_component(canvas) create text $pp 40 -text $fra_rc\
+	    -anchor nw -font $font -tags fr
+    #############################
+
+    expr {($sr_len <= 0) ? [set ppp1 [expr $ppp11 + 2]] : [set ppp1 [expr $ppp11 + abs($sr_len) + 2]]}
+    set pppc [expr $pp + {$ppp1*$f_width}]
+    $itk_component(canvas) create text $pppc 40 -text $seq_rc\
+	    -anchor nw -font $font -tags sr
+
+    set wh [expr $pppc + {[string length $seq_rc]*$f_width} + 20] 
+    $itk_component(canvas) configure -width $wh
+
+    foreach t {sl fl fr sr} {
+	$itk_component(canvas) bind $t <3> [code $this PopupMenu $t %X %Y] 
+    }
+}
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,601 @@
+#
+# Usual options.
+#
+itk::usual Featureeditor {
+    keep -background -borderwidth -foreground -highlightcolor \
+	-highlightthickness -labelfont -selectbackground \
+	-selectborderwidth -selectforeground \
+	-textbackground -textfont
+}
+
+# -------------------------------------------------
+# featureeditor class
+# -------------------------------------------------
+
+itcl::class Featureeditor {
+
+    inherit itk::Widget
+    
+    constructor {args} {}
+
+    public method feature_editor {} @ft_editor
+    public method check_value_format {} @check_format
+    public method create_copy {} @made_copy
+    public method get_ft_list {} @get_ft
+    public method get_fseq_num {} @get_num
+
+    public method delete {}
+    public method create {}
+    public method save {}
+    public method check {}
+    public method quit {}
+
+    private method init_seq_identifier {}
+    private method init_keyword {}
+    private method init_qualifier {}
+    private method add_comment {}
+    private method add_complement {}
+    private method use_selection {}    
+    private method seq_changed {}
+    private method seq_changed_redisplay {}
+    private method ft_redisplay {id}
+    private method _clear {}
+    private method _apply {}
+    private method _change {}
+    
+    private variable seq_id ""
+    private variable seq
+    private variable edit
+    private variable apply_mode 0 ;# 0:change; 1:create    
+}
+
+# ------------------------------------------------
+# Provide a lowercase access method for the class.
+# ------------------------------------------------
+
+proc ::featureeditor {pathName args} {
+    uplevel ::Featureeditor $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+
+itcl::body Featureeditor::constructor {args} {
+
+    itk_component add seq {
+	iwidgets::labeledframe $itk_component(hull).seq 
+    } {
+	usual
+    }
+    pack $itk_component(seq) -expand yes -fill both -padx 2 -pady 2
+    set seq [$itk_component(seq) childsite]
+
+    iwidgets::combobox $seq.cb \
+	    -labeltext "Seq identifier:" \
+	    -labelpos w \
+	    -completion false \
+	    -grab global \
+	    -selectioncommand [code $this seq_changed]
+    pack $seq.cb -fill x -padx 2 -pady 2
+    
+    frame $seq.fl
+    pack $seq.fl -fill both -expand yes -padx 2 -pady 2
+
+    tablelist::tablelist $seq.tl \
+	    -columns {10 "Keyword"
+                      20 "Location"
+                      36 "Qualifier"} \
+            -labelcommand tablelist::sortByColumn \
+	    -xscrollcommand [list $seq.hsb set] \
+	    -yscrollcommand [list $seq.vsb set] \
+	    -selectbackground navy -selectforeground white \
+	    -height 6 -width 61 -stretch all \
+	    -selectmode single \
+	    -exportselection 0 
+	    
+    scrollbar $seq.hsb -orient horizontal -command [list $seq.tl xview]
+    scrollbar $seq.vsb -orient vertical   -command [list $seq.tl yview]
+    grid columnconfig $seq.fl 0 -weight 0 -minsize 0
+    grid rowconfig $seq.fl 0 -weight 0 -minsize 0
+    grid $seq.tl -in $seq.fl -row 0 -column 0 -sticky nsew 
+    grid $seq.hsb -in $seq.fl -row 1 -column 0 -sticky ew
+    grid $seq.vsb -in $seq.fl -row 0 -column 1 -sticky ns
+
+    bind [$seq.tl bodypath] <Button-1> "after idle [code $this _change]"
+     
+##########################################################
+    itk_component add edit {
+	iwidgets::labeledframe $itk_component(hull).edit
+    } {
+	usual
+    }
+    pack $itk_component(edit) -expand yes -fill both -padx 2 -pady 2
+    set edit [$itk_component(edit) childsite]
+    
+    iwidgets::combobox $edit.key -labeltext "Keyword:" \
+	    -labelpos w \
+	    -completion false \
+	    -grab global \
+	    -editable false
+    pack $edit.key -fill x  -padx 2 -pady 2
+   
+    iwidgets::entryfield $edit.loc -labeltext "Location:" 
+    pack $edit.loc -fill x  -padx 2 -pady 2
+
+    frame $edit.fb
+    pack $edit.fb -fill both -expand yes
+    button $edit.fb.comp -text "Complement" \
+	    -command [code $this add_complement]
+    pack $edit.fb.comp -side left -expand yes
+    button $edit.fb.sel -text "Use selection" \
+	-command [code $this use_selection]
+    pack $edit.fb.sel -side left -expand yes
+    
+    iwidgets::combobox $edit.qua -labeltext "Qualifier:" \
+	    -labelpos w \
+	    -completion false \
+	    -grab global \
+	    -editable false \
+	    -selectioncommand [code $this add_comment]
+
+    pack $edit.qua -fill x -padx 2 -pady 2
+    iwidgets::Labeledwidget::alignlabels $edit.key $edit.loc $edit.qua 
+
+    iwidgets::scrolledtext $edit.com -labeltext "Comments:" \
+	    -wrap none \
+	    -labelpos nw \
+	    -vscrollmode dynamic -hscrollmode dynamic \
+	    -height 96
+	    #-width 60 
+    pack $edit.com -fill both -expand yes -padx 2 -pady 2
+
+    frame $edit.fb1
+    pack $edit.fb1 -fill both -expand yes -padx 2 -pady 2
+    button $edit.fb1.clear -text "Clear" \
+	    -command [code $this _clear]
+    pack $edit.fb1.clear -side left -expand yes
+    button $edit.fb1.apply -text "Apply" -command [code $this _apply]
+    pack $edit.fb1.apply -side left -expand yes
+    
+    #
+    # Initialize the widget based on the command line options.
+    #
+    eval itk_initialize $args
+
+    init_seq_identifier   
+    init_keyword 
+    init_qualifier
+ 
+    $itk_component(seq).childsite.cb configure -editable false
+    set seq_id [$seq.cb get]
+}
+
+# ------------------------------------------------------------------
+#                            OPTIONS
+# ------------------------------------------------------------------
+#---------------------------------------------------
+# OPTION: -seqid
+#
+# Set unique ID  for sequuence to be edited
+#------------------------------------------------------
+#itcl::configbody Featureeditor::seqid { }
+
+
+# ------------------------------------------------------------------
+#                            METHODS
+# ------------------------------------------------------------------
+
+# 
+# Specifies an initialization seq_name to be displayed 
+# in Seq identifier.
+# 
+itcl::body Featureeditor::init_seq_identifier {} {
+
+    set iden [get_sequences_iden]
+    
+    $seq.cb delete list 0 end
+    $seq.cb delete entry 0 end
+    $seq.cb insert entry end [lindex $iden 0]
+    foreach id $iden {
+	$seq.cb insert list end $id
+    }
+    seq_changed
+}
+#
+# Register and fill out the feature table when a sequence has 
+# been selected.
+#
+itcl::body Featureeditor::seq_changed {} {
+  
+    set seq_pre $seq_id
+    seq_changed_redisplay
+
+    #check if the changes of the current sequence have been saved before selecting
+    if {$seq_pre != ""} {
+	set info [feature_editor check $seq_pre]
+	if {$info  == 1} {
+	    set answer [tk_messageBox -icon question -type yesno \
+		    -title "Change sequence" \
+		    -message "The previous sequence has been changed, save changes ?"]
+	    case $answer {
+		no { feature_editor back $seq_pre } 
+		yes { feature_editor save $seq_pre }
+	    }
+	}
+    }
+}
+
+itcl::body Featureeditor::seq_changed_redisplay {} {
+    
+    set seq_id [$seq.cb get]
+    set seq_num [create_copy $seq_id]
+    ft_redisplay $seq_num 
+}
+
+#
+# Redisplay feature table after editing.
+#
+itcl::body Featureeditor::ft_redisplay { seq_num } {
+
+    set ft_list [get_ft_list $seq_num]
+    $seq.tl delete 0 end
+    foreach items $ft_list {
+	$seq.tl insert end $items
+    }  
+}
+#
+# To initialization feature table key word.  
+# 
+itcl::body Featureeditor::init_keyword {} {
+
+    set key [get_keyword]
+    
+    $edit.key delete list 0 end
+    $edit.key delete entry 0 end
+    #$edit.key insert entry end [lindex $key 0]
+    foreach id $key {
+	$edit.key insert list end $id
+    }
+}
+#
+# To initialization feature table qualifier.
+#
+itcl::body Featureeditor::init_qualifier {} {
+    
+    set qua [get_qualifier]
+    
+    $edit.qua delete list 0 end
+    $edit.qua delete entry 0 end
+    #$qua_path insert entry end [lindex $qua 0]
+    foreach id $qua {
+	$edit.qua insert list end $id
+    }
+}
+
+#
+# Display qualifier name in comment area after selecting a qualifier.
+#
+itcl::body Featureeditor::add_comment {} {
+
+    set qua [$edit.qua get]
+
+    if {$qua != ""} {
+	set quote [check_value_format $qua]
+	if {$quote == 0} {
+	    set quaf [format "%s%s%s" "/" $qua "=\"\"\n"]
+	} 
+	if {$quote == 1} {
+	    set quaf [format "%s%s%s" "/" $qua "=\n"]
+	}
+	if {$quote == 2} {
+	    set quaf [format "%s%s%s" "/" $qua "\n"]
+	}
+	$edit.com insert end $quaf 
+    }
+}
+
+#
+# Clear editing area
+#
+itcl::body Featureeditor::_clear {} { 
+
+    $edit.key configure -editable true
+    $edit.key delete entry 0 end
+    $edit.key configure -editable false
+    $edit.loc delete 0 end
+    $edit.qua configure -editable true
+    $edit.qua delete entry 0 end
+    $edit.qua configure -editable false
+    $edit.com delete 1.0 end
+}
+
+#
+# To creat new entry and modify selected entry. 
+#
+itcl::body Featureeditor::_apply {} {
+
+    set seq_id [$seq.cb get]
+    set entry_id [$seq.tl curselection]
+
+    if {$entry_id == "" && $apply_mode == 0} {
+	tk_messageBox -icon error -type ok  \
+		-message "The entry has not been selected!"
+	return 0
+    }
+
+    set kw [$edit.key get]    
+    set lc [$edit.loc get]   
+    if {$lc == ""} {
+	tk_messageBox -icon error -type ok  \
+		-message "current location is empty"
+	    return 0
+    }
+    
+    #
+    #check feature location before apply
+    #
+    set info [feature_editor location $seq_id $lc]
+    if {[lindex $info 0] == -1} {
+	tk_messageBox -icon error -type ok  \
+		-message "can't parse current location"
+	    return 0
+    }
+    if {[lindex $info 0] == -2} {
+	tk_messageBox -icon error -type ok  \
+		-message "Current location out of range."
+	    return 0
+    }
+    if {[lindex $info 0] == 0} {
+	$edit.loc delete 0 end
+	$edit.loc insert 0 [lindex $info 1]
+    }
+    if {[lindex $info 0] == 2} {
+	set loc [format "%s%s%s" "join(" [lindex $info 1] ")"]
+	$edit.loc delete 0 end
+	$edit.loc insert 0 $loc
+    }
+
+    set ql [$edit.com get 1.0 end]
+    #
+    #check feature qualifier before save it
+    #
+    if {$ql != ""} {
+	set info [feature_editor qualifier $ql]
+
+	set name [lindex $info 1]
+	if {[lindex $info 0] == 1} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		qualifier \/$name is invalid."
+	    return 0
+	}
+	if {[lindex $info 0] == 2} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		qualifier \/$name expect a equal."
+	    return 0
+	}
+	if {[lindex $info 0] == 3} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		          qualifier \/$name expect a quote \
+			  at the start of the comment."
+	    return 0
+	}
+	if {[lindex $info 0] == 4} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		          qualifier \/$name expect a quote \
+			  at the end of the comment."
+	    return 0
+	}
+	if {[lindex $info 0] == 5} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		          qualifier \/$name has an unexpected \
+			  quote at the start of the comment."
+	    return 0
+	}
+	if {[lindex $info 0] == 6} {
+	    tk_messageBox -icon error -type ok  \
+		-message "can't parse current comments, \
+		          qualifier \/$name has an unexpected \
+			  quote at the end of the comment."
+	    return 0
+	}
+    }
+  
+    set entry_id [feature_editor apply $apply_mode $seq_id $entry_id $kw $lc $ql]
+    
+    if {$entry_id >= 0} {
+	set apply_mode 0
+	set seq_num [get_fseq_num $seq_id]
+	ft_redisplay $seq_num
+	$seq.tl selection set $entry_id
+    } else {
+	tk_messageBox -icon error -type ok  \
+		-message "save"
+	return 0
+    }
+}
+
+#
+# Fill out editing area
+#
+itcl::body Featureeditor::_change {} { 
+ 
+    set cur_sel [$seq.tl curselection]
+    if {$cur_sel == ""} {
+	bell
+	return 
+    }
+    set sel_ft [$seq.tl get $cur_sel]    
+   
+    #fill 
+    set key [lindex $sel_ft 0]
+    $edit.key configure -editable true
+    $edit.key delete entry 0 end
+    $edit.key insert entry end $key
+    $edit.key configure -editable false
+
+    set loc [lindex $sel_ft 1]
+    $edit.loc delete 0 end
+    $edit.loc insert end $loc
+
+    set qua [lindex $sel_ft 2]
+    set qual [split $qua "/"]
+      
+    $edit.com delete 1.0 end
+    foreach q $qual {
+	if {$q != ""} {
+	    if {[regexp {=} $q]} {
+		set qf [format "%s%s" "/" $q]
+		$edit.com insert end $qf
+	    } else {
+		$edit.com delete "insert lineend" "insert lineend +1 char"
+		$edit.com insert end "/"
+		$edit.com insert end $q
+	    }
+	    $edit.com insert end \n
+	}	
+    }  
+}
+
+#
+#
+#
+itcl::body Featureeditor::use_selection {} {
+
+    set seq_id [$seq.cb get]
+    set sel [get_editor_selection $seq_id]
+    
+    if {$sel == 0} {
+	bell 
+	return 
+    } else {
+	set first [lindex $sel 0]
+	set last [lindex $sel 1]
+	set loc [format "%s%s%s" $first ".." $last] 
+	set current_loc [$edit.loc get]
+	if {$current_loc != ""} {
+	    if { [string range $current_loc 0 3] == "join"} {
+		set l [string length $current_loc]
+		set l [expr $l - 2]
+		set current_loc [string range $current_loc 5 $l]
+	    }
+	    set loc [format "%s%s%s%s%s" "join(" $current_loc "\," $loc ")"]
+	}
+	$edit.loc delete 0 end
+	$edit.loc insert 0 $loc
+    }
+}
+
+#
+# This method check current location format and add "complement"
+# at the beginning of the location.
+#
+itcl::body Featureeditor::add_complement {} {
+
+    set loc [$edit.loc get]
+    if {$loc == ""} {
+	bell
+	return
+    }
+    set seq_id [$seq.cb get]
+    set info [feature_editor location $seq_id $loc]
+    
+    if {[lindex $info 0] == 0} {
+	set loc [format "%s%s%s" "complement(" [lindex $info 1] ")"]
+	$edit.loc delete 0 end
+	$edit.loc insert 0 $loc
+    }
+    if {[lindex $info 0] == 1} {
+	$edit.loc delete 0 end
+	$edit.loc insert 0 [lindex $info 1]
+    }
+    if {[lindex $info 0] == 2} {
+	set loc [format "%s%s%s" "complement(join(" [lindex $info 1] "))"]
+	$edit.loc delete 0 end
+	$edit.loc insert 0 $loc
+    }
+   
+    if {[lindex $info 0] == -1} {
+	tk_messageBox -icon error -type ok  \
+		-message "can't parse current location"
+	    return 0
+    }
+    
+    if {[lindex $info 0] == -2} {
+	tk_messageBox -icon error -type ok  \
+		-message "current location is out of range"
+	    return 0
+    }
+}
+#
+# delete an entry from current sequence
+#
+itcl::body Featureeditor::delete {} { 
+
+    set seq_id [$seq.cb get]
+    set seq_num [get_fseq_num $seq_id]
+    set entry_id [$seq.tl curselection]
+    if {$entry_id == ""} {
+	bell
+	tk_messageBox -icon error -type ok  \
+		-message "No selection has been made."
+	return 0
+    }   
+    set d [feature_editor delete $seq_id $entry_id]
+    if {$d >= 0} { ;#d:the entry_id will be highlighted
+        
+	ft_redisplay $seq_num
+	$seq.tl selection set $d
+	_change
+    } else {
+	
+	ft_redisplay $seq_num
+	_clear
+    }
+}
+#
+# create a new feature for current sequence
+#
+itcl::body Featureeditor::create {} { 
+
+    set apply_mode 1
+    _clear   
+}
+#
+# save sequence from feature_editor_list to SPIN list and disk
+#
+itcl::body Featureeditor::save {} { 
+    
+    set seq_id [$seq.cb get]
+    set info [feature_editor save $seq_id]
+
+    if {$info  == -1} {
+	tk_messageBox -icon error -type ok  \
+		-message "save"
+	    return 0
+    }
+}
+
+#
+# check changes in feature_editor whether or not be saved
+#
+itcl::body Featureeditor::check {} { 
+
+    set seq_id [$seq.cb get]
+    return [feature_editor check $seq_id]  
+}
+
+#
+# exit from feature_editor 
+#
+itcl::body Featureeditor::quit {} { 
+
+    feature_editor quit]
+}
+
+

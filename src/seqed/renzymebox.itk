@@ -1,0 +1,269 @@
+#
+# Usual options.
+#
+itk::usual Renzymebox {
+    keep -background -borderwidth -cursor -foreground -highlightcolor \
+	-highlightthickness -insertbackground -insertborderwidth \
+	-insertofftime -insertontime -insertwidth -labelfont -popupcursor \
+	-selectbackground -selectborderwidth -selectforeground \
+	-textbackground -textfont
+}
+
+# -----------------------------------------------------------------------------
+# renzymebox class
+# -----------------------------------------------------------------------------
+
+itcl::class Renzymebox {
+
+    inherit itk::Widget
+    
+    constructor {args} {}
+
+    public method get {}
+    public method get_name {}
+    public method open_renz {filename} @get_renz
+    public method save_renz_info {filename selected} @save_renz
+    private method _save_selection {p}
+    private method _open_renz_file {}
+    private method _open_personal {}
+
+}
+
+# ------------------------------------------------
+# Provide a lowercase access method for the class.
+# ------------------------------------------------
+
+proc ::renzymebox {pathName args} {
+    uplevel ::Renzymebox $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+
+itcl::body Renzymebox::constructor {args} {
+
+    itk_component add enzymeres {
+	iwidgets::tabnotebook $itk_component(hull).enzymeres \
+		-tabpos n \
+		-angle 15 \
+		-margin 6 \
+		-width 550 \
+		-height 250 	
+    }
+    pack $itk_component(enzymeres) -expand yes -fill both 
+    
+    foreach {p n} {all "All restriction enzyme" personal "Personal restriction enzyme"} {
+	set tb($p) [$itk_component(enzymeres) add -label $n \
+		-command [code $this _open_renz_file]]
+	tablelist::tablelist $tb($p).tl \
+	    -columns {10 "Enzyme"   
+                      28 "Recognition sequence/cut site"
+                      10 "Prototype"   
+	              6  "Supplier_codes"                  
+                      10 "EFS"}\
+            -labelcommand tablelist::sortByColumn \
+	    -xscrollcommand [list $tb($p).hsb set] \
+	    -yscrollcommand [list $tb($p).vsb set] \
+	    -selectbackground navy -selectforeground white \
+	    -height 15 -width 95 -stretch all \
+	    -selectmode extended \
+	    -exportselection 0
+	   
+	foreach col {1 3} {
+	    $tb($p).tl columnconfigure $col -background beige
+	}
+	$tb($p).tl columnconfigure 4 -sortmode real
+	scrollbar $tb($p).vsb -orient vertical   -command [list $tb($p).tl yview]
+	scrollbar $tb($p).hsb -orient horizontal -command [list $tb($p).tl xview]
+
+	frame $tb($p).fm
+	checkedgetfname $tb($p).fm.f \
+		-labeltext "Output filename" -type save
+	$tb($p).fm.f configure -width 35 
+	frame $tb($p).fm.se -bd 2 -relief raised -height 30 -width 2   
+	button $tb($p).fm.sa -text "Save" -width 3 \
+		-command [code $this _save_selection $p]
+	pack $tb($p).fm.f $tb($p).fm.se $tb($p).fm.sa \
+		-side left -expand 1
+	if {$p == "personal"} {
+	    frame $tb($p).lo
+	    #checkedgetfname $tb($p).lo.f -labeltext "Input filename   " -type load
+	    getfname $tb($p).lo.f -labeltext "Input filename   " 
+	    $tb($p).lo.f configure -width 35 
+	    frame $tb($p).lo.se -bd 2 -relief raised -height 30 -width 2   
+	    button $tb($p).lo.sa -text "Open" -width 3 \
+		    -command [code $this _open_personal]
+	    pack $tb($p).lo.f $tb($p).lo.se $tb($p).lo.sa \
+		    -side left -expand 1   	    
+	}	
+	grid $tb($p).tl -row 0 -column 0 -sticky news
+	grid $tb($p).vsb -row 0 -column 1 -sticky ns
+	grid $tb($p).hsb -row 1 -column 0 -sticky ew
+	if {$p == "personal"} {
+	    grid $tb($p).lo -row 2 -column 0 -sticky ew \
+		    -columnspan 2 -pady 2 -padx 2
+	}
+	grid $tb($p).fm -row 3 -column 0 -sticky ew \
+		-columnspan 2 -pady 2 -padx 2
+	grid rowconfigure    $tb($p) 0 -weight 1
+	grid columnconfigure $tb($p) 0 -weight 1
+    }
+    
+    $itk_component(enzymeres) select 0
+    
+    eval itk_initialize $args
+
+}
+
+# ------------------------------------------------------------------
+#                            OPTIONS
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+#                            METHODS
+# ------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# METHOD: _open_renz_file
+#
+# Fill the tablelist with the contents of the file exist in tables.
+# ------------------------------------------------------------------
+itcl::body Renzymebox::_open_renz_file {} {
+
+    set enzy_info ""
+    set ind [$itk_component(enzymeres) index select]
+    set selected_child [$itk_component(enzymeres) childsite $ind]
+   
+    if {$ind == 0} {
+	set enzy_info [open_renz "\$STADTABL/renzyme_bairoch"]
+	#set enzy_info [open_renz "/home/yc/seqed/src/rr"]
+    }
+    if {$ind == 1} {
+	set pers_file [$selected_child.lo.f get]
+	if {$pers_file != ""} {
+	    set enzy_info [open_renz $pers_file]
+	}
+    }
+    $selected_child.tl delete 0 end
+    foreach items $enzy_info {
+	$selected_child.tl insert end $items
+    }
+}
+
+
+# ------------------------------------------------------------------
+# METHOD: _open_personal
+#
+# Fill the tablelist with the contents of the file entered by user.
+# ------------------------------------------------------------------
+itcl::body Renzymebox::_open_personal {} {
+
+    set enzy_info ""
+    set ind [$itk_component(enzymeres) index select]
+    set selected_child [$itk_component(enzymeres) childsite $ind]
+    set pers_file [$selected_child.lo.f get]
+ 
+    if {$pers_file != ""} {	
+	set enzy_info [open_renz $pers_file]
+	$selected_child.tl delete 0 end
+	if {$enzy_info != ""} {
+	    foreach items $enzy_info {
+		$selected_child.tl insert end $items
+	    }
+	} else {
+	    tk_messageBox -icon error -type ok \
+		    -title "Restriction enzyme file" \
+		    -message "You have not entered a standard EMBL format enzyme file"
+	    raise [winfo toplevel $itk_component(hull)]
+	}   
+    } else {
+	$selected_child.tl delete 0 end
+    }
+}
+
+# --------------------------------------------------------------------
+# METHOD: _save_selection
+#
+# Save as the record(s) are selected in the currently page into file.
+# --------------------------------------------------------------------
+itcl::body Renzymebox::_save_selection {p} {
+
+    set ind [$itk_component(enzymeres) index select]
+    set selected_child [$itk_component(enzymeres) childsite $ind]
+    
+    set selected_item [get]
+    set filename [$selected_child.fm.f get]
+    if {$filename != ""} {
+	if {$selected_item != ""} {
+	    save_renz_info $filename $selected_item
+	    raise [winfo toplevel $itk_component(hull)]
+	} else {
+	    tk_messageBox -icon error -type ok \
+		    -title "Save restriction enzyme file" \
+		    -message "No selection has been Made"
+	    raise [winfo toplevel $itk_component(hull)]
+	}
+    } else {
+	$selected_child.fm.f.entry delete 0 end
+	raise [winfo toplevel $itk_component(hull)]
+    }
+}
+
+# ----------------------------------------------------------------
+# METHOD: get
+#
+# Returns a list containing all of the items are selected in the 
+# currently selected page.
+# -----------------------------------------------------------------
+itcl::body Renzymebox::get {} {
+
+    set page ""
+    set selected_index [[$itk_component(enzymeres) component tabset] index select]   
+    set selected_child [$itk_component(enzymeres) childsite $selected_index]
+   
+    set row_all ""
+    set cur_sel [$selected_child.tl curselection]
+    set num_sel [llength $cur_sel]
+    if {$num_sel == 0} {
+	bell
+	return ""
+    }
+    for {set i 0} {$i < $num_sel} {incr i} {
+	set row_sel [lindex $cur_sel $i]
+	set row_single [$selected_child.tl get $row_sel]
+	set row_single \{$row_single\}
+	set row_all [concat $row_all $row_single]
+    }
+    return $row_all   
+}
+
+# -----------------------------------------------------------------
+# METHOD: get_name
+#
+# Returns a list containing all of the items's name selected in the 
+# currently selected page.
+# ------------------------------------------------------------------
+itcl::body Renzymebox::get_name {} {
+    
+    set page ""
+    set selected_index [[$itk_component(enzymeres) component tabset] index select]
+    set selected_child [$itk_component(enzymeres) childsite $selected_index]
+    
+    set name_all ""
+    set cur_sel [$selected_child.tl curselection]
+    set num_sel [llength $cur_sel]
+    if {$num_sel == 0} {
+	bell
+	return ""
+    }
+    for {set i 0} {$i < $num_sel} {incr i} {
+	set row_sel [lindex $cur_sel $i]
+	set row_single [$selected_child.tl get $row_sel]
+	set name [lindex $row_single 0]
+	set name_all [concat $name_all $name]
+    }
+    return $name_all   
+
+}

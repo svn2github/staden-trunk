@@ -1,0 +1,202 @@
+# --------------------------------------------------------------------------
+# checkedgetfname class 
+# --------------------------------------------------------------------------
+itk::usual Checkedgetfname {
+    keep -background -borderwidth -cursor -foreground -highlightcolor \
+	 -highlightthickness -insertbackground -insertborderwidth \
+	 -insertofftime -insertontime -insertwidth -labelfont \
+	 -selectbackground -selectborderwidth -selectforeground \
+	 -textbackground -textfont 
+}
+#source fileorlist.itcl
+catch {fileorlist}; #force autoload
+itcl::class Checkedgetfname {
+
+    inherit Fileorlist
+
+    constructor {args} {}
+
+    itk_option define -labeltext labeltext Labeltext ""
+    itk_option define -type type Type ""
+    itk_option define -width width Width 40
+    itk_option define -command command Command ""
+    itk_option define -argument argument Argument ""
+
+    public method read_file {filename} @read_file_info    
+    private method _file_selection {}
+    public method get {}  
+}
+
+proc ::checkedgetfname {pathName args} {
+    uplevel ::Checkedgetfname $pathName $args
+}
+
+# --------------------------------------------------------------------------
+#                        CONSTRUCTOR
+# --------------------------------------------------------------------------
+itcl::body Checkedgetfname::constructor {args} {
+  
+    itk_component add entry {
+	iwidgets::entryfield $itk_component(hull).entry \
+		-labelpos w \
+		-sticky nse         
+    }
+    pack $itk_component(entry) -fill both -side left
+
+    itk_component add browse {
+	button $itk_component(hull).browse \
+		-text Browse \
+	        -command [code $this _file_selection]
+    }
+    pack $itk_component(browse) -fill both -side right
+
+    eval itk_initialize $args
+}
+
+# --------------------------------------------------------------------------
+# OPTION: -labeltext
+#
+# Specifies the label text for entry component.
+# --------------------------------------------------------------------------
+itcl::configbody Checkedgetfname::labeltext {
+
+    $itk_component(entry) configure -labeltext $itk_option(-labeltext)  
+}
+
+# --------------------------------------------------------------------------
+# OPTION: -width
+#
+# Specifies the number of chars in entrycomponent.
+# --------------------------------------------------------------------------
+itcl::configbody Checkedgetfname::width {
+
+    $itk_component(entry) configure -width $itk_option(-width)  
+}
+
+# --------------------------------------------------------------------------
+# OPTION: -type
+#
+# Specifies the mode of the file I/O. The choice may have one of the following: 
+#  load 
+#  load_optional 
+#  load_optional_default 
+#  openmulti
+#  save 
+#  save_optional 
+# --------------------------------------------------------------------------
+itcl::configbody Checkedgetfname::type {}
+
+# --------------------------------------------------------------------------
+# OPTION: -command
+#
+# Specifies a Tcl command to be executed upon detection of a Return
+# key press event.
+# --------------------------------------------------------------------------
+itcl::configbody Checkedgetfname::command {
+    
+    $itk_component(entry) configure -command $itk_option(-command)
+}
+ 
+# --------------------------------------------------------------------------
+# OPTION: -argument
+#
+# --------------------------------------------------------------------------
+itcl::configbody Checkedgetfname::argument {}
+
+# --------------------------------------------------------------------------
+# PRIVATE METHOD: _file_selection
+#
+# Invoked when browser pressed.
+# --------------------------------------------------------------------------
+itcl::body Checkedgetfname::_file_selection {} {
+
+    set type $itk_option(-type)
+    set filelist ""
+    set file ""
+    
+    if {$type == "load" || $type == "load_optional" || $type == "load_option_default"} {
+	set file [tk_getOpenFile -parent $itk_component(hull)]
+    } elseif {$type == "save_optional" || $type == "save"} {
+	set file [tk_getSaveFile -parent $itk_component(hull)]
+    } elseif {$type == "openmulti"} {
+	set filelist [tk_getOpenFile -multiple 65000 -parent $itk_component(hull)]
+	set fcount [llength $filelist]
+	if {$fcount == 1} {
+	    set file [lindex $filelist 0]
+	} else {
+	    set file ""
+	}
+    }
+
+    if {$file != "" || $filelist == ""} {
+	if [string match [pwd]* $file] {
+	    set name [string range $file [expr [string length [pwd]]+1] end]
+	} else {
+	    set name $file
+	} 
+    } else {
+	set baselist "#List_"
+	for { set count 0 } { [check_list_exist "$baselist$count"] } { incr count } {
+		
+	}
+	set name "$baselist$count"      
+	list_create  $name $filelist
+    }
+    #
+    #  in case the user select one of the existing file and press "OK" want to overwrite, 
+    #  the parent window doesn't appear on the top of others, is this the BUG in tk_command?.
+    #    
+    if {$type == "save" || $type == "save_optional"} {
+	raise [winfo toplevel $itk_component(hull)]
+    }
+    #
+    #if user has pressed cancel don't want to remove name from entrybox
+    #
+    if {$name != ""} {
+	$itk_component(entry) delete 0 end
+	$itk_component(entry) insert 0 $name
+	$itk_component(entry) xview [string last / $name]
+    }   
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: get
+#
+# Check validation and return the content of the entry component
+# --------------------------------------------------------------------------
+itcl::body Checkedgetfname::get {} {
+    
+    set type $itk_option(-type)   
+    set file [expandpath [$itk_component(entry) get]]
+   
+    if {$type == "load" || $type == "openmulti"} {
+	set response [check_input $file]	
+    } elseif {$type == "load_optional"} {
+	set response [check_input_optional $file]
+    } elseif {$type == "load_optional_default"} {
+	set response [check_input_optional_default $file]
+    } elseif {$type == "save_optional"} {
+	set response [check_output_optional $file]
+    } else {
+ 	set response [check_output $file]
+    }
+    if {!$response} {
+	raise $itk_component(hull)
+	focus $itk_component(entry).lwchildsite.entry
+	#focus $itk_component(entry)
+	$itk_component(entry) icursor end
+	return ""
+    }     
+    return $file 
+}
+
+
+
+
+
+
+
+
+
+
+

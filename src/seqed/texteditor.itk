@@ -1,0 +1,1805 @@
+#
+# Usual options.
+#
+itk::usual Texteditor {
+    keep -background -cursor
+}
+
+# --------------------------------------------------------------------
+# sequence display class
+# --------------------------------------------------------------------
+
+image create photo groupOpen -file $env(STADLIB)/seqed/group_open.gif
+image create photo groupClose -file $env(STADLIB)/seqed/group_close.gif
+image create photo seqIcon -file $env(STADLIB)/seqed/seq.gif
+
+itcl::class Texteditor {
+
+    inherit itk::Widget
+
+    constructor {args} {}
+
+    itk_option define -editorid editorid Editorid 0
+    itk_option define -font font Font {courier -18}
+    itk_option define -cursorpos cursorpos CursorPos 1
+    itk_option define -height height Height 446
+    itk_option define -width width Width 800
+
+    itk_option define -showfeature showFeature ShowFeature 0   ;#
+    itk_option define -renzymemap renzymeMap RenzymeMap " "    ;#
+    itk_option define -translation translation Translation " " ;# 
+    #
+    #The following options are defined for interface between 
+    #class texteditor and it's application
+    #
+    itk_option define -signaltextB1Move signaltextB1Move SignaltextB1Move ""
+    itk_option define -signaltextUndo signaltextUndo SignaltextUndo ""
+
+    public method get_editor_buffer {} @get_buffer_info
+    public method get_sequence_info {ed_id} @get_seq_info
+    public method get_seq {ed_id} @get_sequence
+    public method get_num {ed_id} @get_num_seq
+    public method get_bnum {start end} @get_base_num
+    public method sequence_redisplay {args} @seq_redisplay 
+    public method exe_string_search {direction strand sa per string ed_id}\
+	    @exec_string_search
+    public method get_feats {ed_id seq_id start end} @get_feature
+    public method key_found {ed_id key} @feat_key_found
+    public method qual_found {ed_id qual} @feat_qual_found
+    public method get_trans {ed_id seq_id start end strand} @get_translation
+    public method renzyme_search_matches {ed_id sel seq_id start end} \
+	    @renzyme_search
+
+    ################OK##########
+    public method get_undo_info {ed_id} @get_undo
+    public method Undo {}
+    public method cut {}
+    public method copy {}
+    public method paste {}
+    public method clear {}
+    public method string_search {args}
+    public method replace_yes {args}
+    public method replace_no {}
+    public method check {ed_id}
+    public method quit {ed_id}
+    public method save {ed_id}
+    public method back {ed_id}
+    public method move_icursor {iposx iposy}
+    public method text_draw_selection {x y}
+    public method show_feature {}
+    public method renzyme_search {}
+    public method translate {}
+    public method name_search {name}
+    public method keyword_search {key}    
+    public method qualifier_search {qual}
+    public method update_display {}
+    
+    private method display_icursor {p}
+    private method textB1Press {x y}
+    private method ShiftB1Press {x y}
+    private method textInsert {char sym} 
+    private method textPaste {x y}
+    private method textB1Move {x y}  
+    private method textBs {}
+    private method textRt {}
+    private method keyLeft {}
+    private method keyRight {}
+    private method keyUp {}
+    private method keyDown {}	
+    private method status_enter {}
+    private method status_leave {}
+    private method canvasfocus {w x y}   
+    private method scroll_set {args}
+    private method win_resize {}           ;#resize editor window
+    private method subwin_resize {}        ;#resize child display window 
+    private method sequence_xview {args}
+    private method seq_name_yview {args}
+    private method subwin_yview {id args}
+    private method create_child_windows {}
+    private method set_editor_bindings {}
+    private method position_icursor {pos}
+    private method current_cursor_pos {}
+    private method update_highlight {}
+    
+    ################OK##########
+    
+    private method highlight_matching {}
+    private method enter_uparr {Fpos Rpos}
+    private method leave_uparr {}
+    private method enter_downarr {Fpos Rpos}
+    private method leave_downarr {}
+
+    private method create_seqname_tree {seq_info}
+    private method update_ruler {}
+    private method update_sequence {}
+    private method redisplay_editor {}
+    private method update_subwin {}
+    private method draw_renzyme_sites {id}
+    private method draw_translations {id}
+    private method draw_features {id}
+    private method draw {ulVar info}
+    private method draw_visualise {ulVar display_info}
+    private method toggle {}
+
+    variable editor             ;#the array to store componentes in the editor
+    variable ed_id 0            ;#the editor identifier	  
+    variable font ""            ;#the font to use in editor
+    variable bground ""         ;#the background to use in editor 
+    variable seq_width 20       ;#window width for display sequence(in character)
+    variable name_Pwidth 20     ;#window width for display name(in pixel)
+    variable seq_Pwidth 20      ;#window width for display sequence(in pixel)
+    variable font_width 1       ;#character width(in pixel)
+    variable line_space 10
+    variable pos 0              ;#current screen display start postion     
+    variable epos 80            ;#current screen display end postion
+    variable cursorX 0
+    variable cursorY 0       
+    variable image_off 15       ;#in name_pane window the length for display imige
+    variable childY 0           ;#the row number of the child window
+    variable num_children 5     ;#the numbers of item to be displaied in the child window
+    variable child_height 10    ;#the height of the child window (in pixel)
+    variable seq_info ""        ;#string include the sequences and it's name
+    variable num_sequences 0    ;#the numbers of sequence in the editor
+    variable seq_len 1          ;#max length of sequence in the editor
+    variable seq ""             ;#string include all the sequence in the editor
+    
+    variable match ""
+    variable match_id 0         ;#counter for string search 
+    variable replace_id 0       ;#counter for string not be replaced
+    variable replaced 0         ;#boolean describing whether or not start replace.
+ 
+    variable num_key_found 0    ;#counter for feature key word search
+    variable num_qual_found 0   ;#counter for feature qualifier search
+    variable group_state "open" ;#group status;
+    variable subwin_state 0     ;#1: open; 0:close
+
+    variable group_info ""
+    variable icon "groupOpen"
+
+    variable selection ""
+    variable max_cursor_move 0
+    variable sel_start 0
+    variable sel_end 0
+    variable sel_end_pre 0
+    variable sel_first 0
+    variable sel_last 0
+}
+
+#
+# Provide a lowercase access method for the class.
+# 
+proc ::texteditor {pathName args} {
+    uplevel ::Texteditor $pathName $args
+}
+
+# ------------------------------------------------------------
+# Constructor
+# ------------------------------------------------------------
+
+itcl::body Texteditor::constructor {args} {
+    
+    #
+    # Initialize the widget based on the command line options.
+    # to get argument for displaying (eg:font, width, etc)
+    #
+    eval itk_initialize $args
+
+    #
+    # Create the frame for displaying ruler 
+    #
+    itk_component add ruler {
+	frame $itk_component(hull).ruler
+    }
+    pack $itk_component(ruler) -fill x ;#-pady 10 
+    label $itk_component(ruler).r -relief flat -bd 0 \
+	-font $font\
+	-foreground blue -anchor nw 
+    label $itk_component(ruler).n -relief flat -bd 0 \
+	-font $font \
+	-foreground blue -anchor nw 
+    pack $itk_component(ruler).n $itk_component(ruler).r -side left
+    
+    #
+    # Create the panedwindow for displaying sequence and its name 
+    # 
+    itk_component add pw {
+	iwidgets::panedwindow $itk_component(hull).pw \
+	    -orient vertical \
+	    -width $itk_option(-width)
+    } 
+    pack $itk_component(pw) -side top -expand yes -fill both
+    
+    #
+    # Add the panes
+    #
+    foreach p {name sequence} {
+	$itk_component(pw) add $p \
+		-margin 8 \
+		-minimum 60 ;#fixme: the width depends on small window
+	set cs($p) [$itk_component(pw) childsite $p]
+    }
+    $itk_component(pw) fraction 20 80
+
+    set editor(sequence) $cs(sequence).sequence
+    set editor(hscrb_seq) $cs(sequence).hscrb
+    set editor(vscrb) $cs(sequence).vscrb 
+    set editor(name) $cs(name).name
+    set editor(hscrbn) $cs(name).hscrbn  
+    #
+    # Create the canvas which displays sequence name.
+    #
+    canvas $editor(name) -xscrollcommand "$editor(hscrbn) set"\
+	    -yscrollcommand "$editor(vscrb) set"
+    scrollbar $editor(hscrbn) -orient horizontal \
+	    -command "$editor(name) xview" 
+    grid $editor(name) -row 0 -column 0 -sticky news
+    grid $editor(hscrbn) -row 1 -column 0 -sticky ew
+    grid columnconfig $cs(name) 0 -weight 1 -minsize 0
+    grid rowconfig $cs(name) 0 -weight 1 -minsize 0
+
+    #
+    # Create the canvas which displays sequence.
+    #
+    canvas $editor(sequence) -xscrollcommand [code $this scroll_set] \
+	    -yscrollcommand "$editor(vscrb) set" \
+	    -selectbackground green \
+            -insertbackground red \
+	    -insertofftime 0 \
+	    -bd 0 \
+ 	    -insertwidth 2 
+    scrollbar $editor(hscrb_seq) -orient horizontal \
+	    -command [code $this sequence_xview] 
+    scrollbar $editor(vscrb) -orient vertical \
+	    -command [code $this seq_name_yview] 
+    grid $editor(vscrb) -row 0 -column 0 -sticky ns
+    grid $editor(sequence) -row 0 -column 1 -sticky nsew 
+    grid $editor(hscrb_seq) -row 1 -column 1 -sticky ew
+    grid columnconfig $cs(sequence) 1 -weight 1 -minsize 0
+    grid rowconfig $cs(sequence) 0 -weight 1 -minsize 0 
+   
+    #
+    # Create the label which displays information of the sequence over the mouse.
+    #
+    itk_component add status {
+	label $itk_component(hull).status \
+		-relief sunken -height 1 -bd 1 -anchor w 
+    }
+    pack $itk_component(status) -fill x -side bottom
+    #
+    # initialise variables to use in the editor
+    #
+    set ed_id $itk_option(-editorid)
+    set num_sequences [get_num $ed_id]
+    set seq_len [get_seq_max_len $ed_id]
+    set pos [expr $itk_option(-cursorpos) - 1]
+    set seq_info [get_sequence_info $ed_id]
+    create_seqname_tree $seq_info
+    set seq [get_seq $ed_id]
+    set font_width [font measure $font 0]
+    set line_space [expr [font metrics $font -linespace] + 1]
+    set child_height [expr $line_space*$num_children]
+    #set seq_width [expr round (ceil ($itk_option(-width)*0.8)/ $font_width) - 3]
+    redisplay_editor
+
+    set bground [$editor(sequence) cget -background]
+    if {$num_sequences == 1} {
+	grid forget $editor(vscrb)
+    } 
+    set_editor_bindings
+    create_child_windows
+}
+
+# ------------------------------------------------------------------
+#                             OPTIONS
+# ------------------------------------------------------------------
+#---------------------------------------------------
+# OPTION: -editorid
+#
+# Set unique ID  for sequence editor
+#------------------------------------------------------
+itcl::configbody Texteditor::editorid { }
+
+#------------------------------------------------------
+# OPTION: -font
+#
+# Set display font for sequence editor
+#------------------------------------------------------
+itcl::configbody Texteditor::font { 
+
+    set font $itk_option(-font)
+}
+
+#------------------------------------------------------
+# OPTION: -cursorpos
+#
+# Set inseration cursor position when a sequence editor 
+# is created.
+#------------------------------------------------------
+itcl::configbody Texteditor::cursorpos { }
+
+#------------------------------------------------------
+# OPTION: -height
+#
+# Set the overall height of the sequence editor window.
+#------------------------------------------------------
+itcl::configbody Texteditor::height { }
+
+#------------------------------------------------------
+# OPTION: -width
+#
+# Set the overall width of the sequence editor window.
+#------------------------------------------------------
+itcl::configbody Texteditor::width { }
+
+#------------------------------------------------------
+# OPTION: -showfeature
+#
+# boolean describing whether or not display feature
+# in the editor child window.
+#------------------------------------------------------
+itcl::configbody Texteditor::showfeature { }
+
+#------------------------------------------------------
+# OPTION: -renzymemap
+#
+# boolean describing whether or not to do renzyme search 
+# and display cutters in the editor child window.
+#------------------------------------------------------
+itcl::configbody Texteditor::renzymemap { }
+
+#------------------------------------------------------
+# OPTION: -translation
+#
+# boolean describing whether or not to do translate 
+# and display result in the editor child window.
+#------------------------------------------------------
+itcl::configbody Texteditor::translation { }
+
+#------------------------------------------------------
+# OPTION: -signaltextB1Move
+#
+# This option is used to communicate with application. 
+# to re_configure the state of the application's EDIT
+# menu button after doing selection.
+#------------------------------------------------------
+itcl::configbody Texteditor::signaltextB1Move { }
+#------------------------------------------------------
+
+#------------------------------------------------------
+# OPTION: -signaltextUndo
+# 
+# To re_configure the state of the application's UNDO
+# button after doing selection.
+#------------------------------------------------------
+itcl::configbody Texteditor::signaltextUndo { }
+
+# ------------------------------------------------------------------
+#                            METHODS
+# ------------------------------------------------------------------
+# -----------------------------------------------------
+# METHOD:win_resize
+#
+# Calculate the widths of the canvas in which display
+# name and sequence. 
+# -----------------------------------------------------
+itcl::body Texteditor::win_resize { } {
+
+    #
+    # get new widthes of the displaying window
+    #
+    set seq_Pwidth [winfo width $editor(sequence)]
+    set name_Pwidth [winfo width $editor(name)]
+    set ww [$editor(vscrb_child_seq1) cget -width] ;#width of the the child window scrollbar
+    set seq_width [expr round (ceil ([expr $seq_Pwidth - 2*$ww]/$font_width))]
+    set epos [expr ($pos + $seq_width)]
+    if {$epos > $seq_len} {
+	set epos $seq_len
+    }    
+    subwin_resize
+    update_display
+    scroll_set  
+}
+# ------------------------------------------------------
+# METHOD:
+#
+# To resize subwin when editor window has been resized.
+# ------------------------------------------------------
+itcl::body Texteditor::subwin_resize {} {
+
+    for {set i 1} {$i <= $num_sequences} {incr i} {
+	$editor(sequence) itemconfigure child(seq$i) \
+		-width $seq_Pwidth
+	$editor(name) itemconfigure child_name($i) \
+		-width [expr $name_Pwidth - $image_off]
+    }
+}
+
+# -------------------------------------------------------
+# METHOD: scroll_set index
+#
+# To set the range of the sequence that is visible in 
+# the editor.
+# -------------------------------------------------------
+itcl::body Texteditor::scroll_set {args} {
+  
+    set left [expr double($pos)/$seq_len]   
+    set right [expr $left + (double ($seq_width )/$seq_len)]
+    $editor(hscrb_seq) set $left $right 
+}
+
+# -------------------------------------------------------
+# METHOD: xview index
+#
+# To query and change the horizontal position of the 
+# information displayed in the canvas's window.
+# -------------------------------------------------------
+itcl::body Texteditor::sequence_xview {args} {
+
+    if {[llength $args] == 2} {
+	set num [expr ($seq_len *[lindex $args 1] ) ]	
+	set number [expr $num - $pos]
+    } elseif {[llength $args] == 3} {
+	set number [lindex $args 1]
+    }
+    set number [expr round($number)]
+    if {[expr $number + $pos] > $seq_len} {
+	set number [expr $seq_len - $pos]
+    }
+    set start [expr $pos + $number]
+    if {$start < 1} {set start 0}
+    if {$start > [expr ($seq_len - $seq_width)]} { 
+	set start [expr ($seq_len - $seq_width)]
+    }
+   
+    set pos $start
+    set epos [expr ($pos + $seq_width)]
+    update_display
+    scroll_set
+    update_highlight
+}
+
+itcl::body Texteditor::update_highlight {} {
+
+    $editor(sequence) configure -selectbackground green	
+    if {[$editor(sequence) select item] != {}} {
+	
+	if {$sel_first > $pos && $sel_last < $epos} {
+	    set sel_start [expr $sel_first - $pos]
+	    set sel_end [expr $sel_last - $pos]
+	    $editor(sequence) select from text($cursorY) $sel_start
+	    $editor(sequence) select to text($cursorY) $sel_end
+	} elseif {$sel_first <= $pos  && $sel_last < $epos } {
+	    #puts 777777777
+	    set sel_end [expr $sel_last - $pos]
+	    #puts "sel_end =$sel_end"
+	    if {$sel_end < 0} {
+		$editor(sequence) configure -selectbackground $bground
+	    } 
+	  
+	    $editor(sequence) select from text($cursorY) 0
+	    $editor(sequence) select to text($cursorY) $sel_end
+	} elseif {$sel_first > $pos && $sel_last >= $epos} {
+	    #puts 666666666
+	    set sel_start [expr $sel_first - $pos]
+	    if {$sel_first > $epos} {
+		$editor(sequence) configure -selectbackground $bground
+            }
+	    $editor(sequence) select from text($cursorY) $sel_start
+	    $editor(sequence) select to text($cursorY) $seq_width
+	} elseif {$sel_first <= $pos && $sel_last > $epos} {
+	    #puts 888888
+	    $editor(sequence) select from text($cursorY) 0
+	    $editor(sequence) select to text($cursorY) $seq_width
+	}
+    }
+}
+
+
+# ----------------------------------------------------
+# METHOD:  yview
+#
+# ----------------------------------------------------
+itcl::body Texteditor::seq_name_yview {args} {
+
+    eval $editor(sequence) yview $args
+    eval $editor(name) yview $args
+}
+
+# -----------------------------------------------------
+# METHOD:  subwin_yview
+# -----------------------------------------------------
+itcl::body Texteditor::subwin_yview {id args} {
+
+    eval $editor(child_seq$id) yview $args
+    eval $editor(child_name$id) yview $args 
+}
+
+# ------------------------------------------------------
+# METHOD: update_ruler
+# ------------------------------------------------------
+itcl::body Texteditor::update_ruler {} {
+   
+    set b [get_bnum $pos $epos]
+    $itk_component(ruler).r configure -text $b \
+	    -width $seq_width
+    set ww [winfo width $itk_component(ruler)]
+    set name_width [expr ($ww - $seq_Pwidth)/$font_width]
+
+    if {$num_sequences != 1} {
+	$itk_component(ruler).n configure -text " Name:" \
+	    -width [expr $name_width]
+    } else {
+	$itk_component(ruler).n configure -text " Name:" \
+	    -width [expr $name_width - 1] ;#FIXME
+    }
+}
+
+itcl::body Texteditor::update_sequence {} {
+
+    set seq [get_seq $ed_id]
+    #
+    #the length of the sequence may be changed
+    #
+    set seq_len [string length [lindex $seq 0]]
+    set i 0
+    foreach s $seq {
+	set str [string range $s $pos $epos]
+	$editor(sequence) itemconfigure text($i) -text $str
+	incr i
+    }  
+}
+
+#---------------------------------------------------------
+#
+# To redisplay editor contents when edit, move scroll bar, 
+# move icursor, search function, etc happend. 
+#---------------------------------------------------------
+itcl::body Texteditor::update_display {} {
+
+    update_ruler
+    update_sequence
+    update_subwin
+  
+    #Fixme: if editing then call following function, it can save time
+    eval $itk_option(-signaltextUndo);#Fixme
+}
+# ----------------------------------------------------------
+# METHOD:current_cursor_pos
+#
+# This method to get cursorY of current inseration position.
+# ----------------------------------------------------------
+itcl::body Texteditor::current_cursor_pos {} {
+    
+    set cursorY [expr {[$editor(sequence) find withtag current]}]
+    set t [lindex [$editor(sequence) gettags $cursorY] 0]
+    set cursorY [string trim $t text()]
+}
+
+# ----------------------------------------------------------
+#
+# This method is bound to the <Enter> event.
+# ----------------------------------------------------------
+itcl::body Texteditor::status_enter {} {
+
+    set id [expr {[$editor(sequence) find withtag current]}] 
+    set t [lindex [$editor(sequence) gettags $id] 0]
+    set index [string trim $t text()]  ; #0 for cons sequence
+    set len [string length [lindex $seq $index]]
+    set seq_name [lindex [lindex $seq_info $index] 0]
+
+    $itk_component(status) configure \
+	-text "Name: \"$seq_name\"  Length: \"$len\""   
+}
+
+# -----------------------------------------------------------
+# METHOD:  status_leave
+#
+# This method is bound to the <Leave> event.
+# -----------------------------------------------------------
+itcl::body Texteditor::status_leave {} {
+
+   $itk_component(status) configure -text " "
+}
+
+# ------------------------------------------------------------
+# METHOD: textB1Press
+# 
+# This method is bound to the <1> event. It resets the 
+# insertion cursor.
+# ------------------------------------------------------------
+itcl::body Texteditor::textB1Press {x y} {
+
+    focus $editor(sequence)
+    $editor(sequence) focus current
+    set t [$editor(sequence) find withtag current]
+    $editor(sequence) icursor $t [expr $x/$font_width]    
+    #
+    # Get current cursor Y position
+    #
+    current_cursor_pos 
+    #
+    #to notify relevant widget
+    #
+    set ip [expr $pos + [expr $x/$font_width] + 1]
+    
+    set top_win [winfo toplevel $itk_component(hull)]
+    
+    if {$cursorY != 0} { ;# if cons, don't to notify
+	sequence_redisplay icursor_move $ed_id $cursorY $ip $top_win
+    } 
+    $editor(sequence) select from current @$x,$y
+    set selection ""
+    set sel_start [expr $x/$font_width]
+    set sel_first [expr $sel_start + $pos]
+    set max_cursor_move $seq_width
+
+}
+# -------------------------------------------------------------
+# METHOD: shiftB1Press
+# 
+# This method is bound to the <Shift-1> event. It highlights 
+# the area between the selections.
+# -------------------------------------------------------------
+itcl::body Texteditor::ShiftB1Press {x y} {
+    
+    focus $editor(sequence)
+    $editor(sequence) focus current
+    set t [$editor(sequence) find withtag current]
+    $editor(sequence) icursor $t [expr $x/$font_width]
+    $editor(sequence) configure -selectbackground green
+
+    set sel_end [expr $x/$font_width - 1]
+    set sel_last [expr $sel_end + $pos]
+    set top_win [winfo toplevel $itk_component(hull)]
+
+    sequence_redisplay select $ed_id $cursorY $sel_first $sel_last $top_win
+}
+
+itcl::body Texteditor::text_draw_selection {first last} {
+
+    set sel_first [expr $first - 1]
+    set sel_last [expr $last - 1]
+    #puts "text_draw_selection: first=$sel_first last=$sel_last"
+    if {$sel_first < $pos || $sel_first > $epos} {
+	set pos $sel_first
+	set epos [expr $pos + $epos]
+	set sel_start [expr $sel_first - $pos]
+	set sel_end [expr $sel_last - $pos]
+	update_display
+	scroll_set
+    } else {
+	set sel_start [expr $sel_first - $pos]
+	set sel_end [expr $sel_last - $pos]	
+    }
+    $editor(sequence) focus text($cursorY)
+    if {$sel_first >= $pos && $sel_last <= $epos} {
+	$editor(sequence) select from text($cursorY) $sel_start
+	$editor(sequence) select to text($cursorY) $sel_end
+	#puts 111111111111111
+    } elseif {$sel_first <= $pos && $sel_last < $epos} {
+	$editor(sequence) select from text($cursorY) 0
+	$editor(sequence) select to text($cursorY) $sel_end
+	#puts 222222222222222
+    } elseif {$sel_first >= $pos && $sel_last < $epos} {
+	#puts 333333333333333333
+	##set sel_start [expr $sel_first - $pos]
+	$editor(sequence) select from text($cursorY) $sel_start
+	$editor(sequence) select to text($cursorY) $seq_width
+    } elseif {($sel_first <= $pos && $sel_last >= $epos) || \
+		  ($sel_first >$epos) } {
+	#puts 444444444444444
+	$editor(sequence) select from text($cursorY) 0 
+	$editor(sequence) select to text($cursorY) $seq_width
+    }
+    set selection [string range [lindex $seq 1] $sel_first $sel_last]
+    #puts "sel=$selection"
+    if {$selection != ""} {
+	eval $itk_option(-signaltextB1Move)
+    }
+}
+# ------------------------------------------------------------------
+# METHOD:textB1Move 
+#
+# This method is bound to the <B1 Motion> event. It mades the selection.
+# ------------------------------------------------------------------
+itcl::body Texteditor::textB1Move {x y} {
+
+    set sel_end [expr $x/$font_width]
+
+    expr {($sel_end > 0 && $sel_end > $seq_width) ? [set ic $seq_width] : [set ic $sel_end]}
+    #if {$sel_end > 0} {
+	#sequence_redisplay icursor_move $ed_id $cursorY [expr $ic + 1 + $pos]
+    #}FIXME: need it?
+    if {$sel_end <= $max_cursor_move} {
+	set sel_last [expr $sel_end + $pos - 1]
+    }
+    if {$sel_end > $max_cursor_move && $sel_end > $sel_end_pre } {
+	set pos [expr $pos + 1]
+	set epos [expr $epos + 1]
+	set sel_last $epos
+	update_display
+	scroll_set
+	$editor(sequence) focus current
+	expr {($sel_start > 0) ? [set sel_start [expr $sel_start - 1]] : []}
+	$editor(sequence) select from text($cursorY) $sel_start
+	set sel_end_pre $sel_end
+    }
+    if {$sel_end > $max_cursor_move && $sel_end < $sel_end_pre} {
+	set sel_last $epos
+	set sel_end_pre $sel_end
+    }
+    if {$sel_end < 0 && $pos > 0 && $epos > $seq_width} {
+	set pos [expr $pos - 1]
+	set epos [expr $epos - 1]
+	set sel_last $pos
+	update_display
+	scroll_set
+	$editor(sequence) focus current
+	$editor(sequence) select from text($cursorY) 0
+    }
+    $editor(sequence) select to text($cursorY) [expr $sel_end - 1]
+    set selection [string range [lindex $seq 1] $sel_first $sel_last]    
+    #
+    #to send signal of 'textB1Move' outside.
+    #
+    if {$selection != ""} {
+	eval $itk_option(-signaltextB1Move)
+    }
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay select $ed_id $cursorY $sel_first $sel_last $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:textInsert
+# 
+# This method is bound to the <KeyPress> event.  
+# ------------------------------------------------------------------
+itcl::body Texteditor::textInsert {char sym} {
+
+   
+    if {[regexp {[ACGTRYMKSWBDHVNacgtrymkswbdhvn-]} $char]} {
+	catch {$editor(sequence) dchars text($cursorY) insert}
+	$editor(sequence) insert text($cursorY) insert $char
+	#
+	#Update sequence and notify
+	#
+	set cursorX [expr {[$editor(sequence) index text($cursorY) insert]}]
+	set ipos [expr $pos + $cursorX]
+	set top_win [winfo toplevel $itk_component(hull)]
+	sequence_redisplay insert $ed_id $cursorY $ipos $char $top_win
+    } 
+}
+# ------------------------------------------------------------------
+# METHOD:textPaste 
+#
+# This method is bound to the <2> event. It copies the selection to the
+# mouse position.
+# The difference between textPaste and psate is paste position, 
+# the former's position comes from <Button-1>, and the later comes
+# from <Button-2>, inseration cursor.
+# ------------------------------------------------------------------
+itcl::body Texteditor::textPaste {x y} {
+    
+    #current_cursor_pos;#fixme:need work out cursorY by y in multicase
+    set cb [get_editor_buffer]
+    if {$cb == 0} {;#editor buffer is empty
+	bell
+	return
+    }
+    set ipos [expr $pos + [expr $x/$font_width] + 1]
+    #
+    #update sequence and notify
+    #
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay paste $ed_id $cursorY $ipos $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:textBs
+#
+# This method is bound to the <BackSpace> event. It deletes the character 
+# just before the cursor
+# ------------------------------------------------------------------
+itcl::body Texteditor::textBs {} {
+
+    set cursorX [expr {[$editor(sequence) index text($cursorY) insert] - 1}]
+    if {$cursorX >= 0} {$editor(sequence) dchar text($cursorY) $cursorX}
+    if {$cursorX == -1} {
+	bell
+	focus $editor(sequence)
+	$editor(sequence) icursor text($cursorY) 0
+	$editor(sequence) select from text($cursorY) 0
+	return
+    }
+    set dpos [expr $pos + $cursorX]
+    if {$dpos > $seq_len} {
+	bell
+	return
+    }
+    set seq_string [lindex $seq $cursorY]
+    set screen_string [string range $seq_string $pos $epos]
+    set c [string index $screen_string $cursorX]
+  
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay delete $ed_id $cursorY $dpos $c $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD: Cut
+#
+# This method moves a selection from the document and save it to the 
+# editor clipboard.
+# ------------------------------------------------------------------
+
+itcl::body Texteditor::cut {} {
+
+    if {$selection == ""} {
+       	bell
+	return	
+    }
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay cut $ed_id $cursorY $sel_first $selection $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD: Copy
+#
+# This method saves a selection to the editor clipboard. (no Undo)
+# ------------------------------------------------------------------
+itcl::body Texteditor::copy {} {
+
+    if {$selection == ""} {
+       	bell
+	return	
+    }
+    #
+    # Why cursorY and pos needed?, because have to get FT
+    #
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay copy $ed_id $cursorY $sel_first $selection $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD: Paste
+#
+# This method copies from the editor buffer to the active sequence.
+# ------------------------------------------------------------------
+itcl::body Texteditor::paste {} {
+    
+    set cb [get_editor_buffer]
+    if {$cb == 0} {;#editor buffer is empty
+	bell
+	return
+    }
+    set cursorX [expr {[$editor(sequence) index text($cursorY) insert]}]
+    #
+    #update sequence and notify
+    #
+    set ipos [expr $pos + $cursorX + 1]
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay paste $ed_id $cursorY $ipos $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:Clear
+#
+# This method removes a selection from sequence and without copying 
+# to the editor clipboard.
+# ------------------------------------------------------------------
+itcl::body Texteditor::clear {} {
+
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay delete $ed_id $cursorY $sel_first $selection $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD: Check
+#
+# This method to check whether the changes have been saved or not.
+# ------------------------------------------------------------------
+itcl::body Texteditor::check {ed_id} {
+ 
+   sequence_redisplay check $ed_id 
+}
+
+# ------------------------------------------------------------------
+# METHOD: Save
+#
+# This method to save the changes of the editor.
+# ------------------------------------------------------------------
+itcl::body Texteditor::save {ed_id} {
+ 
+   sequence_redisplay save $ed_id 
+}
+
+# ------------------------------------------------------------------
+# METHOD: Back
+#
+# This method to get the orignal contents of the sequences.
+# ------------------------------------------------------------------
+itcl::body Texteditor::back {ed_id} {
+ 
+   sequence_redisplay back $ed_id 
+}
+
+# ------------------------------------------------------------------
+# METHOD: Quit
+#
+# This method to exit an editor window.
+# ------------------------------------------------------------------
+itcl::body Texteditor::quit {ed_id} {
+
+   set top_win [winfo toplevel $itk_component(hull)] 
+   sequence_redisplay quit $ed_id $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:textRt
+#
+# This method is bound to the <Return> event.
+# ------------------------------------------------------------------
+itcl::body Texteditor::textRt {} {
+
+    bell 
+}
+
+# ------------------------------------------------------------------
+# METHOD:keyLeft
+#
+# This method is bound to the <Key-Left> event.
+# ------------------------------------------------------------------
+itcl::body Texteditor::keyLeft {} {
+
+    $editor(sequence) select clear
+    set cursorX [$editor(sequence) index text($cursorY) insert]
+    if {$cursorX == 0 && $pos == 0} {
+	bell
+	return
+    } 
+    #
+    #to notify relevant widget
+    #
+    set ip [expr $pos + $cursorX]
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $ip $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:keyRight
+#
+# This method is bound to the <Key-Right> event.
+# ------------------------------------------------------------------
+itcl::body Texteditor::keyRight {} {
+	
+    $editor(sequence) select clear
+    #current_cursor_pos    
+    set cursorX [expr {[$editor(sequence) index text($cursorY) insert] + 1}]  
+    #
+    #to notify relevant widget
+    #
+    set ip [expr $pos + $cursorX + 1]
+    set len [string length [lindex $seq $cursorY]]
+    if {$ip > $len} {
+	bell
+	return
+    }
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $ip $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:keyUp
+#
+# This method is bound to the <Key-Up> event. FIXME
+# ------------------------------------------------------------------
+itcl::body Texteditor::keyUp {} {
+
+     if {$num_sequences == 1} {
+	bell
+	return
+    } else {
+	set cursorX [expr {[$editor(sequence) index text($cursorY) insert]}]
+	set cursorY [expr $cursorY - 1]
+	if {$cursorY < 0} { 
+	    bell
+	    set cursorY 0 
+	}
+	position_icursor $cursorX
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD:keyDown
+#
+# This method is bound to the <Key-Down> event. FIXME
+# ------------------------------------------------------------------
+itcl::body Texteditor::keyDown {} {
+
+    if {$num_sequences == 1} {
+	bell
+	return
+    } else {
+	set cursorX [expr {[$editor(sequence) index text($cursorY) insert]}]
+	incr cursorY
+	set n [expr [llength $seq_info] - 1]
+	if {$cursorY > $n} {
+	    bell
+	    set cursorY $n
+	    return
+	}
+	position_icursor $cursorX
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD:Undo
+#
+# This method is invoked by Undo.
+# ------------------------------------------------------------------
+itcl::body Texteditor::Undo {} {
+
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay undo $ed_id $top_win
+}
+
+# ------------------------------------------------------------------
+# METHOD:string_search
+#
+# To do string search.
+# ------------------------------------------------------------------
+itcl::body Texteditor::string_search {direction strand algorithm per string} {
+ 
+    set match [exe_string_search $direction $strand $algorithm $per $string $ed_id]
+    if {$match == ""} {
+	bell
+	return
+    }    
+    if {$match_id >= [llength $match]} {
+	bell
+	set match_id 0
+	set pos 0
+	set epos [expr $pos + $seq_width]
+	return
+    }  
+    if {$match_id == 0 && $pos != 0} {
+	foreach m $match {
+	    if { [lindex $m 1] < $pos && [lindex $m 0] == $cursorY} {
+		incr match_id
+	    }
+	}
+    }
+    set cursorY [lindex [lindex $match $match_id] 0]
+    set match_pos [lindex [lindex $match $match_id] 1]
+    set match_score [lindex [lindex $match $match_id] 2]
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $match_pos $top_win
+
+    #FIXME: how to display match_score???
+    set l [string length $string]
+    $editor(sequence) select from text($cursorY) [expr $match_pos - $pos - 1]
+    $editor(sequence) select to text($cursorY) [expr $match_pos - $pos + $l - 2]
+    incr match_id  
+}
+
+# ------------------------------------------------------------------
+# METHOD:replace_yes
+#
+# This method is invoked by replace method.
+# ------------------------------------------------------------------
+itcl::body Texteditor::replace_yes {replace with} {
+
+    set match [exe_string_search 0 0 1 100.0 $replace $ed_id]
+    
+    if {$match == ""} {
+	bell
+	return
+    }
+    if {$replace_id >= [llength $match]} {
+	bell
+	set replace_id 0
+	return
+    }
+    if {$replaced == 1} {
+	set seq_id [lindex [lindex $match $replace_id ] 0]
+	set match_pos [lindex [lindex $match $replace_id] 1]
+	set top_win [winfo toplevel $itk_component(hull)]
+	sequence_redisplay replace $ed_id $seq_id [expr $match_pos - 1] $replace $with $top_win
+	# to get matching string after replacing
+	set match [exe_string_search 0 0 1 100.0 $replace $ed_id]
+    }
+   
+    if { [llength $match] == 0} {
+	bell
+	return 
+    }
+    highlight_matching
+    set replaced 1 
+}
+
+# ------------------------------------------------------------------
+# METHOD:replace_no
+#
+# This method is invoked by replace method.
+# ------------------------------------------------------------------
+itcl::body Texteditor::replace_no {} {
+
+    incr replace_id
+    if {$replace_id >= [llength $match]} {
+	bell
+	set replace_id 0
+	return
+    }
+    highlight_matching
+    set replaced 1
+}
+
+# ------------------------------------------------------------------
+# METHOD:highlight_matching
+#
+# This method is invoked by replace method.
+# ------------------------------------------------------------------
+itcl::body Texteditor::highlight_matching {} {
+
+    set cursorY [lindex [lindex $match $match_id] 0]
+    set match_pos [lindex [lindex $match $match_id] 1]
+    set match_score [lindex [lindex $match $match_id] 2]
+    
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $match_pos $top_win
+    $editor(sequence) select from text($cursorY) [expr $match_pos - $pos -1]
+    $editor(sequence) select to text($cursorY) [expr $match_pos - $pos + $match_score - 2]
+}
+
+# ------------------------------------------------------------------
+# METHOD:name_search
+#
+# This method to do name search and hightlight the name that has been 
+# found.
+# ------------------------------------------------------------------
+itcl::body Texteditor::name_search {entry} {
+
+    set i 0
+    foreach n $seq_info {
+	if {![string compare [lindex $n 0] $entry]} {
+	    $editor(sequence) select from text($i) 0
+	    $editor(sequence) select to text($i) 0
+	    
+	}
+	incr i
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD:key_search
+#
+# This method to do feature key word search and hightlight the first 
+# base corresponding the key word which has been found.
+# ------------------------------------------------------------------
+itcl::body Texteditor::keyword_search {key} {
+
+    if {$key == ""} {
+	bell
+	return
+    }
+    set key_f [key_found $ed_id $key]
+    if {$num_key_found >= [llength $key_f]} {
+	bell
+	set num_key_found 0
+	set pos 0
+	set epos [expr $pos + $seq_width]
+	return
+    }
+    if {$num_key_found == 0 && $pos != 0} {
+	foreach k $key_f {
+	    if { [lindex $k 1] < $pos && [lindex $k 0] == $cursorY} {
+		incr num_key_found
+	    }
+	}
+    }
+    set cursorY [lindex [lindex $key_f $num_key_found] 0]
+    set key_pos [lindex [lindex $key_f $num_key_found] 1]
+ 
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $key_pos $top_win
+    $editor(sequence) select from text($cursorY) [expr $key_pos - $pos - 1]
+    $editor(sequence) select to text($cursorY) [expr $key_pos - $pos - 1]
+    
+    incr num_key_found
+}
+# ------------------------------------------------------------------
+# METHOD:qual_search
+#
+# This method to do feature qualifier search and hightlight the first base 
+# has corresponding the qualifier which has been found..
+# ------------------------------------------------------------------
+itcl::body Texteditor::qualifier_search {qual} {
+   
+    if {$qual == ""} {
+	bell
+	return
+    }
+	
+    set qual_f [qual_found $ed_id $qual]
+    if {[expr $num_qual_found + 1] > [llength $qual_f]} {
+	bell
+	set num_qual_found 0
+	set pos 0
+	set epos [expr $pos + $seq_width]
+	return
+    }
+    if {$num_qual_found == 0 && $pos != 0} {
+	foreach q $qual_f {
+	    if { [lindex $q 1] < $pos && [lindex $q 0] == $cursorY} {
+		incr num_qual_found
+	    }
+	}
+    }
+    set cursorY [lindex [lindex $qual_f $num_qual_found] 0]
+    set key_pos [lindex [lindex $qual_f $num_qual_found] 1]
+    set top_win [winfo toplevel $itk_component(hull)]
+    sequence_redisplay icursor_move $ed_id $cursorY $key_pos $top_win
+    $editor(sequence) select from text($cursorY) [expr $key_pos - $pos - 1]
+    $editor(sequence) select to text($cursorY) [expr $key_pos - $pos - 1]
+    
+    incr num_qual_found
+}
+# ------------------------------------------------------------------
+# METHOD:renzyme_search
+#
+# This method to do renzyme search and plot cut site.
+# ------------------------------------------------------------------
+itcl::body Texteditor::renzyme_search {} {
+
+    if {$itk_option(-renzymemap) != " "} {
+	set subwin_state 1
+    } else {
+	if {![regexp {1} $itk_option(-translation)] \
+		&& $itk_option(-showfeature) == 0} {
+	    set subwin_state 0
+	}
+    }
+    redisplay_editor
+}
+# ------------------------------------------------------------------
+# METHOD:show_feature
+#
+# This method to display feature in the child window corresponding
+# select sequence.
+# ------------------------------------------------------------------
+itcl::body Texteditor::show_feature {} {
+  
+    if {$itk_option(-showfeature) == 1} {
+	set subwin_state 1
+	
+    } else {
+	if {![regexp {1} $itk_option(-translation)] && $itk_option(-renzymemap) == " "} {
+	    set subwin_state 0
+	}
+    }
+    redisplay_editor   
+}
+# ------------------------------------------------------------------
+# METHOD:translate
+#
+# This method to .
+# ------------------------------------------------------------------
+itcl::body Texteditor::translate {} {
+ 
+    if {[regexp {1} $itk_option(-translation)]} {
+	set subwin_state 1
+    } else {
+	if {$itk_option(-showfeature) == 0 && $itk_option(-renzymemap) == " "} {
+	    set subwin_state 0
+	}
+    } 
+    redisplay_editor 
+}
+# ------------------------------------------------------------------
+#
+# Bind to <Enter> event for displaying information of th cut sites.
+# ------------------------------------------------------------------
+itcl::body Texteditor::enter_uparr {f r} {
+    
+    set pf [expr $f + $pos]
+    set pr [expr $r + $pos]
+    $itk_component(status) configure \
+	-text "Cut position: $pr, $pf"
+} 
+# ------------------------------------------------------------------
+#
+# Bind to <Leave> event for displaying information of th cut sites.
+# ------------------------------------------------------------------
+itcl::body Texteditor::leave_uparr {} {
+   
+    $itk_component(status) configure \
+	-text " "
+} 
+# ------------------------------------------------------------------
+#
+# Bind to <Enter> event for displaying information of th cut sites.
+# ------------------------------------------------------------------
+itcl::body Texteditor::enter_downarr {f r} {
+    
+    set pf [expr $f + $pos]
+    if {$r == 0} {
+	$itk_component(status) configure \
+		-text "Cut position: $pf"
+    } else {
+	set pr [expr $r + $pos]
+	$itk_component(status) configure \
+		-text "Cut position: $pf, $pr"
+    }
+} 
+# ------------------------------------------------------------------
+#
+# Bind to <Leave> event for displaying information of th cut sites.
+# ------------------------------------------------------------------
+itcl::body Texteditor::leave_downarr {} {
+   
+    $itk_component(status) configure \
+	-text " "
+} 
+# ------------------------------------------------------------------
+#
+# To draw the cut sites in child window. Forwar strand draw as black
+# arrar and reverse strand red.
+# ------------------------------------------------------------------
+itcl::body Texteditor::draw_renzyme_sites {id} {
+
+    set cutter 0
+    set hf [expr $font_width/2 - 1]
+    set hl [expr $line_space/2 - 1]
+
+    set matches [renzyme_search_matches $ed_id $itk_option(-renzymemap) $id $pos $epos ]
+    if {$matches != ""} {   
+	foreach m $matches { 
+	    if [regexp {[a-z]} $m] {
+		$editor(child_name$id) create text 8 [expr $childY*$line_space+1] \
+			-anchor nw -font $font -text $m -fill black
+		incr childY
+	    } elseif [regexp {[0-9]} $m] {
+		set f [lindex $m 0]
+		set r [lindex $m 1]
+		set posx [expr $f*$font_width]	
+		$editor(child_seq$id) create line \
+			0 [expr $childY*$line_space] [expr $epos*$font_width] [expr $childY*$line_space] \
+			-fill black
+		$editor(child_seq$id) create poly \
+		    [expr $posx-$hf] [expr ($childY-1)*$line_space+1] \
+		    [expr $posx+$hf] [expr ($childY-1)*$line_space+1] \
+		    $posx [expr $childY*$line_space-$hl] \
+		    -fill black \
+		    -tags downarr($cutter)
+		$editor(child_seq$id) bind downarr($cutter) <Enter> [code $this enter_downarr $f $r]
+		$editor(child_seq$id) bind downarr($cutter) <Leave> [code $this leave_downarr]
+		incr cutter
+		if {$r != 0} {
+		    set posx [expr $r*$font_width]
+		    $editor(child_seq$id) create poly \
+			$posx [expr ($childY - 1)*$line_space + $hl] \
+			[expr $posx + $hf] [expr ($childY-0)*$line_space - 1] \
+			[expr $posx - $hf] [expr ($childY-0)*$line_space - 1] \
+			-fill red \
+			-tags uparr($cutter)
+		    $editor(child_seq$id) bind uparr($cutter) <Enter> [code $this enter_uparr $f $r]
+		    $editor(child_seq$id) bind uparr($cutter) <Leave> [code $this leave_uparr]
+		    incr cutter
+		}
+	    }
+		    
+	}
+    }
+}
+# ------------------------------------------------------------------
+#
+# To display translation in the child window
+# ------------------------------------------------------------------
+itcl::body Texteditor::draw_translations {id} {
+
+    set trans [get_trans $ed_id $id $pos $epos $itk_option(-translation)]
+    if {$trans != ""} {   
+	foreach {fnum tran} $trans {
+	    $editor(child_name$id) create text 0 [expr $childY*$line_space+1] \
+		    -anchor nw -font $font -text $fnum -fill black
+	    $editor(child_seq$id) create text 0 [expr $childY*$line_space] \
+		    -text $tran \
+		    -anchor nw -fill black -font $font
+	    incr childY
+	}
+    }
+}
+# ------------------------------------------------------------------
+#
+# To display features in the child window
+# ------------------------------------------------------------------
+itcl::body Texteditor::draw_features {id} {
+
+    set feats [get_feats $ed_id $id $pos [expr $epos+1] ]
+    if {$feats != ""} {  
+	foreach {ename col gene feat} $feats {
+	    $editor(child_name$id) create text 0 [expr $childY*$line_space+1] \
+		    -anchor nw -font $font -text $gene \
+		    -tags fltext -fill $col
+	    
+	    foreach pair_pos $feat {
+		set ll [lindex $pair_pos 0]
+		set rr [lindex $pair_pos 1]
+		if { $ll != $rr} {
+		    set l [expr $ll*$font_width] 
+			set r [expr $rr*$font_width]
+		    $editor(child_seq$id) create \
+			rectangle [expr $l+2] [expr $childY*$line_space+2] \
+			[expr $r+$font_width] [expr $childY*$line_space+$line_space - 2] \
+			-fill $col -outline $col 
+		    if {$ename == "CDS"} {
+			set prot [lindex $pair_pos 2]
+			$editor(child_seq$id) create text $l [expr $childY*$line_space] \
+			    -anchor nw -font $font -text $prot \
+			    -tags ttext -fill black  
+		    } else {		   		    
+			$editor(child_seq$id) create \
+			    text [expr ($r-$l)/2 + $l] [expr $childY*$line_space] \
+			    -text $ename \
+			    -anchor nw -fill black -font $font 
+		    }
+		}   
+	    }
+	    incr childY 
+	}
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD:update_subwin
+#
+# This method to update the display in the child window.
+# ------------------------------------------------------------------
+itcl::body Texteditor::update_subwin {} {
+   
+    if {$subwin_state == 1} {
+	set num_sequences [get_num $ed_id]
+	for {set i 1} {$i <= $num_sequences} {incr i} {
+	    $editor(child_seq$i) delete all
+	    $editor(child_name$i) delete all
+	    set childY 0
+	    if {$itk_option(-renzymemap) != " "} {
+		draw_renzyme_sites $i
+	    }
+	    if {[regexp {1} $itk_option(-translation)]} {
+		draw_translations $i
+	    }
+	    if {$itk_option(-showfeature) == 1} {
+		draw_features $i   
+	    }
+
+	    set bb [$editor(child_seq$i) bbox all]
+	    set x [lindex $bb 2]
+	    if {$x == ""} {set x 1}
+	    set y [lindex $bb 3]
+	    if {$y == ""} {set y 1}
+	    $editor(child_seq$i) configure \
+		    -scrollregion "0 0 $x $y"
+	    $editor(child_name$i) configure \
+		    -scrollregion [$editor(child_name$i) bbox all]
+	}
+    }
+}
+
+  #                                |-->group2_seq1
+  # group0_group-->group1_consensus|
+  #                                |-->group3_seq2
+
+itcl::body Texteditor::create_seqname_tree {seq_info} {
+
+    set group [Group ::#auto_group]       ;# set "::group0_group"
+    set top_member [lindex $seq_info 0]   ;# get consensus name & seq
+    set top [Group ::#auto_$top_member]   ;# set "::group1_group
+    $group add $top
+
+    set other_members [lrange $seq_info 1 end] ;# get other members in this group
+    foreach om $other_members {
+	set s [Group ::#auto_$om]
+	$top add $s
+    }
+    set group_info $top
+}
+
+#------------------------------------------------------------------
+#
+# To redisplay editor when toggle, show translation, draw renzyme map 
+# show features, etc. 
+#------------------------------------------------------------------
+itcl::body Texteditor::redisplay_editor {} {
+    
+    set oldcursor [$editor(sequence) cget -cursor]
+    $editor(name) configure -cursor watch
+    $editor(sequence) configure -cursor watch
+    $editor(name) delete all
+    $editor(sequence) delete all
+    set ul(x) 0
+    set ul(y) 0
+    
+    if {$num_sequences != 1} {
+	set cursorY 0
+	expr {($group_state == "open")?[set icon groupOpen]:[set icon groupClose]}
+	set image_off 35 ;#[expr $image_off + $image_width]
+	draw ul $group_info
+    }
+    if {$num_sequences == 1} {
+	set icon seqIcon
+	foreach child [$group_info contents] {
+	    set cursorY 1
+	    draw ul $child
+	}
+    }
+    set bbox [$editor(name) bbox all]    
+    $editor(name) configure -cursor $oldcursor -scrollregion $bbox
+    set bbox [$editor(sequence) bbox all]
+    $editor(sequence) configure -cursor $oldcursor -scrollregion $bbox
+    
+    #resize
+    set hh [$editor(sequence) cget -scrollregion]
+    set h [expr [lindex $hh 3] + 40 + $line_space]
+    ;#just display two sequences if there are more than two sequences in editor
+    set height [expr 2*($line_space*[expr $num_children + 1]) + 40 + $line_space] 
+    if {$h > $height} {
+	$itk_component(pw) configure -height $height
+    } else {
+	$itk_component(pw) configure -height $h
+    }
+    update_subwin
+}
+
+# ------------------------------------------------------------------
+#
+# To display sequence and its name in the editor window.
+# ------------------------------------------------------------------
+itcl::body Texteditor::draw {ulVar display} {
+
+    upvar $ulVar ul
+    
+    #
+    #display parent first
+    #
+    draw_visualise ul $display
+    set image_width [image width groupOpen]
+    
+    #
+    # start to display children
+    #
+    if {$group_state == "open"} {
+	if {$icon == "groupOpen"} {
+	    set ul(x) [expr $ul(x) + $image_width]
+	}
+	#change icon to sequence icon
+	set icon seqIcon
+	foreach child [$display contents] {
+	    draw ul $child
+	}
+    }
+}
+# ------------------------------------------------------------------
+#
+# To 
+# ------------------------------------------------------------------   
+itcl::body Texteditor::draw_visualise {ulVar display_info} {
+
+    upvar $ulVar ul
+    set image_width [image width groupOpen]
+    #
+    #display name's window
+    #
+    regsub {::[a-zA-Z]*[0-9]*_} [lindex $display_info 0] {} name
+    if {$name != "CONSENSUS" && $num_sequences != 1} {
+	set x1 [expr $ul(x)- $image_width/2]
+	set y1 [expr $ul(y) - 2]
+	set x2 $ul(x)
+	set y2 [expr $ul(y) + 10]
+	set id [$editor(name) create line \
+		$x1 $y1 $x1 $y2 $x2 $y2 \
+		-fill black]
+	$editor(name) lower $id 
+    }
+    $editor(name) create image $ul(x) $ul(y) -image $icon \
+	    -anchor nw -tags $icon
+    $editor(name) bind $icon <Double-ButtonPress-1> [code $this toggle];
+    set nameX [expr $ul(x) + [image width $icon] + $font_width]
+    $editor(name) create text $nameX $ul(y) -text $name \
+	    -anchor nw -font $font -tags name($cursorY)
+    #
+    #display sequence's window
+    #
+    set sequence [lindex $display_info 1]
+    if {$sequence == ""} {bell}
+    set epos [expr $pos + $seq_width]
+    set str [string range $sequence $pos $epos]
+    $editor(sequence) create text 1 $ul(y) -text $str \
+	    -anchor nw -font $font -tags text($cursorY)
+    #
+    #point to next display
+    #
+    set ul(y) [expr $ul(y) + $line_space]
+
+    if {$subwin_state == 1 && $cursorY > 0} {
+	#draw link line in name's window
+	if {$ul(y) > $child_height} {
+	    set x1 [expr $ul(x)- $image_width/2]
+	    set y1 [expr $ul(y) - $child_height - $line_space - $font_width]
+	    set y2 [expr $ul(y) - $font_width]
+	    set id [$editor(name) create line \
+			$x1 $y1 $x1 $y2 -fill black]
+	    #$editor(name) lower $id
+	}
+	#
+	#display name child's window
+	#
+	$editor(name) create window $nameX $ul(y) \
+		-anchor nw -height $child_height \
+		-width [expr $name_Pwidth - $image_off] \
+		-tags child_name($cursorY) \
+		-window $itk_component(child_name$cursorY)
+	#
+	#display sequence child's window
+	#
+	$editor(sequence) create window 1 $ul(y) \
+		-anchor nw -height $child_height \
+		-width $seq_Pwidth \
+		-tags child(seq$cursorY) \
+		-window $itk_component(child_seq$cursorY)
+	
+	set ul(y) [expr $ul(y) + $child_height];# points to next display 
+    }
+    incr cursorY
+}
+
+#------------------------------------------------------------------ 
+# Between expand and collapse.
+#------------------------------------------------------------------
+itcl::body Texteditor::toggle {} {
+
+    expr {($group_state == "open") ? \
+	    [set group_state "closed"] : [set group_state "open"]}
+    redisplay_editor
+}
+
+#------------------------------------------------------------------ 
+# Mock an icorsor
+#------------------------------------------------------------------
+itcl::body Texteditor::display_icursor {p} {
+
+    $editor(sequence) delete icur
+    if {$num_sequences == 1} {
+	set py 0 ;#for single sequence
+    } elseif {$subwin_state == 1 && $cursorY > 1} {
+	set yy [expr $cursorY - 1]
+	set py [expr $cursorY*$line_space + $yy*$child_height]
+    } else { 
+	set py [expr $cursorY*$line_space]
+    }
+    set px [expr $p*$font_width]
+    $editor(sequence) create line $px $py $px [expr $py+$line_space] \
+		-fill green -width 2 -tags icur   
+}
+#-------------------------------------------------------------
+# This method is called from C, to redisplay inseration cursor.
+#-------------------------------------------------------------
+itcl::body Texteditor::move_icursor {iposx iposy} {
+
+    set cursorY $iposy
+    if {$iposx >= $pos && $iposx <= $epos} {
+	set p [expr $iposx - $pos]
+    } else {
+	set pos $iposx ;#key_left need set pos like this, don't change back
+	set epos [expr ($pos + $seq_width)]
+	set p 0
+    }
+    update_display
+    scroll_set
+    focus $editor(sequence)
+    $editor(sequence) select clear
+    $editor(sequence) focus text($cursorY) 
+    catch {$editor(sequence) icursor text($cursorY) $p}
+    display_icursor $p    
+}
+#-------------------------------------------------------------
+# This method to redisplay inseration cursor after editing.
+#-------------------------------------------------------------
+itcl::body Texteditor::position_icursor {pos} {
+
+    focus $editor(sequence)
+    $editor(sequence) select clear
+    
+    $editor(sequence) focus text($cursorY)
+    $editor(sequence) icursor text($cursorY) $pos
+    display_icursor $pos
+}
+# -----------------------------------------------------------
+# METHOD: create_child_windows
+#
+# This method to create windows for displaying features, etc.  
+# Rather than pack them directly in the hull, wait utill later 
+# and make them canvas window items.
+# -----------------------------------------------------------
+
+itcl::body Texteditor::create_child_windows { } {
+
+    for {set i 1} {$i <= $num_sequences} {incr i} {
+	itk_component add child_seq$i {
+	    frame $itk_component(pw).child_seq$i -borderwidth 1 -relief sunken
+	}
+	set editor(child_seq$i) $itk_component(child_seq$i).dis
+	set editor(vscrb_child_seq$i) $itk_component(child_seq$i).vscrb 
+	canvas $editor(child_seq$i) -xscrollcommand [code $this scroll_set] \
+		-yscrollcommand "$editor(vscrb_child_seq$i) set" 
+		
+	scrollbar $editor(vscrb_child_seq$i) -orient vertical \
+		-command [code $this subwin_yview $i] \
+		-width 10 
+		
+	grid columnconfig $itk_component(pw).child_seq$i 0 -weight 1 -minsize 0
+	grid rowconfig $itk_component(pw).child_seq$i 0 -weight 1 -minsize 0
+	grid $editor(child_seq$i) -in $itk_component(pw).child_seq$i \
+		-row 0 -column 0 -sticky nsew 
+	grid $editor(vscrb_child_seq$i) -in $itk_component(pw).child_seq$i \
+		-row 0 -column 1 -sticky ns
+    }    
+    for {set i 1} {$i <= $num_sequences} {incr i} {
+	itk_component add child_name$i {
+	  canvas $itk_component(pw).child_name$i \
+		  -xscrollcommand "$editor(hscrbn) set" \
+		  -yscrollcommand "$editor(vscrb_child_seq$i) set"\
+		  -borderwidth 1 -relief sunken 
+	}
+	set editor(child_name$i) $itk_component(child_name$i)
+    }
+}
+
+# -----------------------------------------------------------
+# METHOD: set_editor_bindings
+#
+# -----------------------------------------------------------
+itcl::body Texteditor::set_editor_bindings { } {
+    
+    #
+    # Bind to the configure event which will be used to resize the windows.
+    #
+    #bind $editor(sequence) <Map> [code $this win_resize]
+    bind $editor(sequence) <Configure> [code $this win_resize]
+    #bind $editor(name) <Map> [code $this win_resize]
+    bind $editor(name) <Configure> [code $this win_resize]
+       
+    #
+    # Following bindings have been defined to support editing 
+    #    
+    for {set i 0} {$i <= $num_sequences} {incr i} {
+    	$editor(sequence) bind text($i) <Enter> [code $this status_enter]
+	$editor(sequence) bind text($i) <Leave> [code $this status_leave] 
+        $editor(sequence) bind text($i) <1> [code $this textB1Press %x %y]
+	$editor(sequence) bind text($i) <Shift-Button-1> [code $this ShiftB1Press %x %y]
+	#$editor(sequence) bind text($i) <1> [code $this canvasfocus %W %x %y]
+	$editor(sequence) bind text($i) <2> [code $this textPaste %x %y]
+    	$editor(sequence) bind text($i) <B1-Motion> [code $this textB1Move %x %y]
+	$editor(sequence) bind text($i) <KeyPress> [code $this textInsert %A %K]
+    	$editor(sequence) bind text($i) <Delete> [code $this cut]
+    	$editor(sequence) bind text($i) <BackSpace> [code $this textBs]
+	$editor(sequence) bind text($i) <Return> [code $this textRt]
+	
+	$editor(sequence) bind text($i) <Key-Left> [code $this keyLeft]
+	$editor(sequence) bind text($i) <Key-Right> [code $this keyRight]
+	$editor(sequence) bind text($i) <Key-Up> [code $this keyUp]
+	$editor(sequence) bind text($i) <Key-Down> [code $this keyDown]
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+

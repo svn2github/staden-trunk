@@ -1,0 +1,148 @@
+# -----------------------------------------------------------------------------
+# dataentry class
+# -----------------------------------------------------------------------------
+
+#
+# Usual options.
+#
+itk::usual Dataentry {
+    keep -background -borderwidth -cursor -foreground -highlightcolor \
+	 -highlightthickness -insertbackground -insertborderwidth \
+	 -insertofftime -insertontime -insertwidth -labelfont \
+	 -selectbackground -selectborderwidth -selectforeground \
+	 -textbackground -textfont
+}
+
+#
+# Default resources.
+#
+option add *Dataentry.textBackground white widgetDefault
+
+itcl::class Dataentry {
+    inherit iwidgets::Entryfield
+    
+    constructor {args} {}
+
+    itk_option define -type type Type ""
+    itk_option define -range range Range ""
+    itk_option define -default default Default 0
+    itk_option define -labeltext labeltext Labeltext ""
+    
+    private method _checkentry {}
+}
+
+# ------------------------------------------------
+# Provide a lowercase access method for the class.
+# ------------------------------------------------
+proc ::dataentry {pathName args} {
+    uplevel ::Dataentry $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+itcl::body Dataentry::constructor {args} {
+    #
+    # Our -labeltext may be include "range", so I am going to remove
+    # them and redefine our own
+    #
+    itk_option remove iwidgets::Labeledwidget::labeltext
+
+    eval itk_initialize $args
+
+    $itk_component(entry) delete 0 end
+    if {$itk_option(-default) != 0} {
+	$itk_component(entry) insert 0  $itk_option(-default)
+    }
+
+    bind $itk_component(entry) <Any-Leave> [code $this _checkentry]
+}
+
+# ------------------------------------------------------------------
+# OPTION: -labeltext
+#
+# Specify .
+# ------------------------------------------------------------------
+itcl::configbody Dataentry::labeltext {
+
+    $itk_component(label) configure -text $itk_option(-labeltext)
+    #_positionLabel
+}
+
+# ------------------------------------------------------------------
+# OPTION: -type
+#
+# Specifies the label text.
+# ------------------------------------------------------------------
+itcl::configbody Dataentry::type {}
+
+# ------------------------------------------------------------------
+# OPTION: -range
+
+# Set min and max values for dataentry.
+# ------------------------------------------------------------------
+itcl::configbody Dataentry::range {
+
+    if {$itk_option(-range) != ""} {
+	if {[llength $itk_option(-range)] != 2} {
+	    tk_messageBox -icon error -type ok  \
+		-message "wrong #args: should be\
+		    \"$itk_component(hull) -range {min max}\ "
+	    return 0
+    	}
+
+    	set min [lindex $itk_option(-range) 0]
+    	set max [lindex $itk_option(-range) 1]
+
+    	if {![regexp {^[-+]?[0-9]*\.?[0-9]*([0-9]\.?[eE][-+]?[0-9]*)+$} $min] 
+	&& ![regexp {^[-+]?[0-9]*\.?[0-9]+$} $min]} {
+	    tk_messageBox -icon error -type ok  \
+		-message "bad range option \"$min\": minmum value must be\
+		    an integer(or real)"
+	    return 0
+    	}
+    	if {![regexp {^[-+]?[0-9]*\.?[0-9]*([0-9]\.?[eE][-+]?[0-9]*)+$} $max]
+	&& ![regexp {^-?[0-9]*\.?[0-9]+$} $max]} {
+	    tk_messageBox -icon error -type ok  \
+		-message "bad range option \"$max\": maxmum value must be\
+		    an integer(or real)"
+	    return 0
+    	}
+    	if {$min > $max} {
+	    tk_messageBox -icon error -type ok  \
+		-message "bad option starting range \"$min\": must be less\
+		    than ending: \"$max\""
+	    return 0
+    	}
+	if {$itk_option(-labeltext) != ""} {
+	    set text $itk_option(-labeltext)
+	}
+	$itk_component(label) configure -text "$text ($min to $max)"
+	#_positionLabel	
+    }
+}
+
+
+# ------------------------------------------------------------------
+# METHOD: _checkentry
+#
+# Bindings used to check boundary when <Any-Leave>.
+# ------------------------------------------------------------------
+itcl::body Dataentry::_checkentry {} {
+
+    if {$itk_option(-range) != "" && [llength $itk_option(-range)] == 2} {
+    	set min [lindex $itk_option(-range) 0]
+    	set max [lindex $itk_option(-range) 1]
+	set value [$itk_component(entry) get]
+	
+	if { $value > $max || $value < $min} {
+	    $itk_component(entry) configure -background mistyrose  
+	    bell
+	} else {
+	    $itk_component(entry) configure -background white
+	}
+    }
+}
+
+
+

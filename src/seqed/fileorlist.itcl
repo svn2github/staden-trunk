@@ -1,0 +1,526 @@
+# --------------------------------------------------------------------------
+# fileorlist class 
+# --------------------------------------------------------------------------
+itcl::class Fileorlist {
+
+    inherit itk::Widget
+
+    constructor {args} {}
+
+    proc get_list {}
+    proc get_special_list {}
+    proc list_create {name list}
+
+    public method check_open_file {args}
+    public method check_save_file {args}
+    public method check_input {args}
+    public method check_input_optional {args}
+    public method check_input_optional_default {args}
+    public method check_output {args}
+    public method check_output_optional {args}
+    public method file_exists {args}
+    public method file_readable {args}
+    public method file_writable {args}
+    public method overwrite {args}
+    public method check_list_exist {args}
+    public method delete_file {args}
+
+    public method check_valid {args} 
+    public method check_special {args} 
+    public method check_exist {args} 
+    public method check_alexist {args} 
+    public method check_valid_special_exists {args} 
+    public method check_valid_exist {args} 
+    public method check_valid_alexist {args}
+
+    public method _list_listbox {}
+    public method _list_browser_ok {path list}
+}
+
+#
+# Provide a lowercase access method for the class.
+# 
+proc ::fileorlist {pathName args} {
+    uplevel ::Fileorlist $pathName $args
+}
+
+# --------------------------------------------------------------------------
+#                        CONSTRUCTOR
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::constructor {args} {
+  
+    # Initialize the widget based on the command line options.
+    eval itk_initialize $args
+
+}
+
+# --------------------------------------------------------------------------
+#                            PROCEDURE
+# --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# PROCEDURE: get_list
+#
+# Return the variable NGlists. 
+#--------------------------------------------------------------------------
+itcl::body Fileorlist::get_list {} {
+    
+    global NGList NGLists NGSpecial
+    
+    return $NGLists
+}
+
+# --------------------------------------------------------------------------
+# PROCEDURE: get_special_list
+#
+# Return the Special list NGSpecial.
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::get_special_list {} {
+    
+    global NGList NGLists NGSpecial
+    
+    return $NGSpecial
+}
+
+# --------------------------------------------------------------------------
+#                            METHODS
+# --------------------------------------------------------------------------
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_list_exist
+#
+# Check the list to be read exists.
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_list_exist {listname} {
+
+    set ng_lists [get_list] 
+    set ng_special [get_special_list]
+    if {[lsearch $ng_lists $listname] == -1} {
+	    return 0
+    }
+    return 1   
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: list_create
+#
+# Create a list into NGLists. 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::list_create {name list} {
+
+    global NGList NGLists NGListTag
+    set ng_lists [get_list]   
+    set ng_special [get_special_list]
+
+    if {[lsearch $ng_lists $name] == -1 } {
+	lappend NGLists $name
+    }
+    set NGList($name) $list
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_input
+#
+# 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_input {filename } {
+
+    set response [check_open_file $filename]
+    return $response
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_input_optional
+#
+# 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_input_optional {filename } {
+
+   if {$filename != ""} {
+        set response [check_open_file $filename]
+    } else {
+	set response 1
+    }
+    return $response
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_input_optional_default
+#
+# 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_input_optional_default {default filename } {
+
+    if {$filename != $default} {
+        set response [check_open_file $filename]
+    } else {
+	set response 1
+    }
+    return $response   
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_output
+#
+# 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_output {filename } {
+
+    set response [check_save_file "$filename"]
+    if {$response && [file exists "$filename"]} {
+	delete_file $filename
+    }
+    return $response
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_output_optional
+#
+# 
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_output_optional {filename } {
+
+    if {$filename == ""} {
+	return 1;
+    }
+    set response [check_save_file "$filename"]
+    if {$response && [file exists "$filename"]} {
+	delete_file $filename
+    }
+    return $response
+
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_open_file
+#
+# check the filename to be loaded already exists and is readable by user
+# return 0 for failure
+# return 1 for success
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_open_file {filename } {
+
+    if { [file_exists $filename] && [file_readable $filename] } {
+	    return 1
+    }
+    #unable to load file
+    return 0
+    
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: check_save_file
+#
+# check the filename to be saved already exists and is writable by user
+# return 0 for failure
+# return 1 for success
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::check_save_file {filename } {
+
+    #result = no if file exists and user does not wish to overwrite
+    #result = yes if file exists and user does wish to overwrite
+    #result = cancel if cancel
+
+    set result [overwrite "$filename"]
+
+    case $result {
+	0 {return 0}
+	1 {if {![file_writable $filename]} {return 0}}
+	2 {return 0}
+	3 {
+	    if {[catch {set fd [open $filename w]} err]} {
+		tk_messageBox \
+		    -icon error \
+		    -type ok \
+		    -title "error" \
+		    -message "$err"
+		return 0
+	    } else {
+		close $fd
+		file delete $filename
+	    }
+	}
+    }
+    return 1
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: file_exists
+#
+# check input file exists
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::file_exists {filename } {
+
+    set stem [file tail $filename]
+
+    if {$stem == ""} {
+	tk_messageBox -icon error -type ok -title "File does not exist" \
+		-message "No filename has been entered"
+	return 0
+    }
+
+    if {![file exists $filename]} {
+	tk_messageBox -icon error -type ok -title "File does not exist" \
+		-message "$filename cannot be opened. \
+	Please check the filename and directory"
+	return 0
+    }
+    return 1
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: file_readable
+#
+# check the user has permission to read the file
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::file_readable {filename } {
+
+     if {[file readable $filename] == 0} {
+	tk_messageBox -icon error -type ok -title "Permission denied" \
+		-message "You do not have permission to read $filename"
+	return 0
+    }
+    #do have permission
+    return 1
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: file_writeable
+#
+# check the user has permission to write the file
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::file_writable {filename } {
+    
+    if {[file writable $filename] == 0} {
+	tk_messageBox -icon error -type ok -title "Permission denied" \
+		-message "You do not have permission to write to $filename"
+	return 0
+    }
+    #do have permission
+    return 1
+    
+}
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: overwrite
+#
+# check to see if file already exists
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::overwrite {filename } {
+
+#return 0 if file exists and user does not wish to overwrite
+#return 1 if file exists and user does wish to overwrite
+#return 0 if Cancel
+#return 3 if file does not exist
+
+    set stem [file tail $filename]
+
+    if {$stem == ""} {
+	tk_messageBox -icon error -type ok -title "File does not exist" \
+		-message "No filename has been entered"
+	return 0
+    }
+
+    if {[file exists $filename]} {
+	return [lsearch {no yes cancel} [tk_messageBox -icon warning \
+		-type yesnocancel \
+		-default no -title "File Exists" \
+		-message "Do you wish to overwrite $filename"]]
+    }
+    
+    #file does not already exist
+    return 3
+}
+
+# --------------------------------------------------------------------------
+# PUBLIC METHOD: delete_file
+#
+# Deletes a file with error checking
+# --------------------------------------------------------------------------
+itcl::body Fileorlist::delete_file {filename} {
+    
+    catch {file delete $filename} e
+    if {$e != ""} {
+	tk_messageBox -icon error -type ok -title "Delete file" \
+		-message $e
+    }
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD _list_listbox 
+#
+# ------------------------------------------------------------------
+itcl::body Fileorlist::_list_listbox {} {
+
+    set t .listlistbox
+   
+    set top_level [winfo toplevel $itk_component(hull)]  
+    wm protocol $top_level WM_DELETE_WINDOW "destroy $t; destroy $top_level"
+
+    if {[xtoplevel $t] == ""} return
+    wm title $t "List browser"
+    iwidgets::scrolledlistbox $t.list \
+		    -vscrollmode dynamic \
+		    -hscrollmode dynamic \
+		    -selectmode single \
+		    -exportselection 0 
+    pack $t.list -fill both -padx 4 -pady 4
+
+    frame $t.separator -bd 2 -relief sunken -height 2
+    pack $t.separator -fill x 
+
+    iwidgets::buttonbox $t.ok    
+    $t.ok add ok -text OK -command [code $this _list_browser_ok $t $t.list]
+    $t.ok add cancel -text Cancel -command "destroy $t"
+    pack $t.ok -expand yes -fill both -padx 1 -pady 1
+
+    set type $itk_option(-type)
+    set ng_lists [get_list]   
+    set ng_special [get_special_list]
+
+    foreach i $ng_lists {
+	if {$type == "read" || [lsearch $ng_special $i] == -1} {
+	    $t.list insert  end $i	    
+	}
+    }
+    set oldFocus [focus]
+    grab set $t
+    focus $t
+    tkwait variable button
+    grab release $t
+    destroy $t
+    focus $oldFocus
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: _list_browser_ok
+#
+# Invoked when listbox OK pressed
+# ------------------------------------------------------------------
+itcl::body Fileorlist::_list_browser_ok {path list} {
+
+    if {[$list curselection] != ""} {
+	set listname [$list get [$list curselection]]
+	$itk_component(entry) delete 0 end
+	$itk_component(entry) insert 0 $listname
+	destroy $path
+    } else {
+	bell
+    }
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_valid
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_valid {name} {
+
+     if {"$name" == ""} {
+	tk_messageBox -icon error -type ok -title "No list name" \
+		-message "You have not entered a list name"
+	return 0
+    }
+    return 1
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_special
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_special {name} {
+
+    set ng_lists [get_list]   
+    set ng_special [get_special_list]
+
+    if {[lsearch $ng_special $name] != -1 } {
+	    tk_messageBox -icon error -type ok -title "Special list" \
+		    -message "This list cannot be deleted"
+	    return 0
+    }
+    return 1    
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_valid_special_exists
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_valid_special_exists {name} {
+
+    if {[check_valid $name] && [check_special $name] && [check_exist $name]} {
+	return 1
+    }
+    return 0
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_exist
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_exist {name} {
+
+    set ng_lists [get_list]   
+    set ng_special [get_special_list]
+
+    if {[lsearch $ng_lists $name] == -1 } {
+	    tk_messageBox -icon error -type ok -title "No such list" \
+		    -message "This list does not exist"
+	    return 0
+    }
+    return 1    
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_valid_exist
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_valid_exist {name} {
+
+    if {[check_valid $name] && [check_exist $name]} {
+	return 1
+    }
+    return 0
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_alexist
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_alexist {name} {
+
+    set ng_lists [get_list]
+    set ng_special [get_special_list]
+
+    if {[lsearch $ng_special $name] != -1 } {
+	tk_messageBox -icon error -type ok -title "Special list" \
+		-message "This list cannot be replaced"
+	return 0
+    } elseif { [lsearch $ng_lists $name] != -1 } {
+	set answer [tk_messageBox -icon question -type yesno \
+		-title "List exists" -message "List already exists. Replace?"]
+	case $answer {
+	    no {return 0} 
+	    yes {return 1}
+	}
+    }
+    return 1
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: check_valid_alexist
+#
+# Invoked before return a list name 
+# ------------------------------------------------------------------
+itcl::body Fileorlist::check_valid_alexist {name} {
+
+    if {[check_valid $name] && [check_alexist $name]} {
+	return 1
+    }
+    return 0
+}
+
+

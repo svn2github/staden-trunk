@@ -1,0 +1,89 @@
+# ----------------------------------------------------------------------
+#   Group base class
+# ----------------------------------------------------------------------
+#
+# ======================================================================
+
+class Group {
+    public variable name ""
+    public variable value ""
+    public variable sort ""
+    private variable lastSort ""
+    private variable parent ""
+    private variable children ""
+
+    public variable crtime -1
+
+    constructor {args} {
+        eval configure $args
+    }
+    destructor {
+        clear
+    }
+    public method ctime {}
+    public method add {obj}
+    public method clear {}
+    private method parent {pobj}
+    public method back {}
+    public method contents {}
+    private method reorder {}
+}
+
+body Group::add {obj} {
+    $obj parent $this
+    lappend children $obj
+    set lastSort ""
+}
+
+body Group::clear {} {
+    if {$children != ""} {
+        eval delete object $children
+    }
+    set children {}
+}
+
+body Group::parent {pobj} {
+    set parent $pobj
+}
+
+body Group::back {} {
+    return $parent
+}
+
+body Group::contents {} {
+#    reorder
+    return $children
+}
+
+body Group::reorder {} {
+    if {$sort != $lastSort} {
+        set children [lsort -command $sort $children]
+    }
+    set lastSort $sort
+}
+
+configbody Group::sort {
+    reorder
+}
+
+body Group::ctime {} {
+    set curdate [exec date] 
+    set curtime [lindex $curdate 3]
+
+    regsub -all {:} $curtime {} timestr
+    set crtime $timestr
+    puts " crtime = $crtime"
+    return $crtime
+}
+
+
+
+
+
+
+
+
+
+
+
+
