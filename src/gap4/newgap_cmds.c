@@ -2396,7 +2396,7 @@ FindRepeats(ClientData clientData,
 	return TCL_OK;
     }
 
-    mask = *args.tag_list ? 1 : 0;
+    mask = *args.tag_list ? 3 : 0;
 
     /* create inputs parameters */
     Tcl_DStringInit(&input_params);
