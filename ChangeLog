@@ -1,6 +1,91 @@
-2004-02-13  James Bonfield  <jkb>
+2004-02-24  James Bonfield <jkbonfield>
 
-	* Removed email addrs in this file (for anti-spam reasons).
+	* src/gap4/gap-error.c:
+	(09:33:43) Changed bug email addr to sourceforge url 
+
+	* src/gap4/clip.c,
+	* src/gap4/clip.h,
+	* src/gap4/clip.tcl,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/tclIndex:
+	(16:18:04) Added a "quality clip contig ends" function to trim back
+	low quality data off the end of contigs. The purpose is to correct
+	for phrap assemblies where clipping is typically done based on
+	disagreements, and disagreements at the very end when depth=1 do
+	not happen. This leads to 'rubbish' being at the contig end,
+	devaluing the FIJ with "hidden data" turned off. 
+
+	* tables/gaprc,
+	* tables/gaprc_menu_full:
+	(16:18:05) Added a "quality clip contig ends" function to trim back
+	low quality data off the end of contigs. The purpose is to correct
+	for phrap assemblies where clipping is typically done based on
+	disagreements, and disagreements at the very end when depth=1 do
+	not happen. This leads to 'rubbish' being at the contig end,
+	devaluing the FIJ with "hidden data" turned off. 
+
+	* src/gap4/trace_display.tcl:
+	(16:19:07) Allow trace display linewidth to be a configurable
+	parameter. 
+
+2004-02-20  James Bonfield <jkbonfield>
+
+	* src/prefinish/finish_long.c:
+	(16:58:43) Fixed swapped reseq_nsolutions and long_nsolutions
+	parameters. 
+
+2004-02-19  James Bonfield <jkbonfield>
+
+	* src/io_lib/exp_file/expFileIO.c:
+	(12:13:52) Fixed typo in LG qualifier (was LF). 
+
+	* src/io_lib/exp_file/expFileIO.h:
+	(13:48:59) More type fixes; EFLT_LG was given the same number as
+	_FT. Now diff. 
+
+2004-02-18  James Bonfield <jkbonfield>
+
+	* src/gap4/edUtils2.c:
+	(10:23:31) Fixed a bug in the handling of DB_FLAG_INVIS and
+	sequences being out of order due to clip-point adjustment. Hidden
+	readings could be used for the consensus and unhidden would be
+	skipped. It now uses _DBI_order() to resolve this. 
+
+	* src/gap4/gap.tcl:
+	(11:18:54) Updated version number. 
+
+	* src/tk_utils/Makefile:
+	(11:25:06) Added an explicit "." to the ln commands as SGIs do not
+	allow for default to the current directory. 
+
+	* src/text_utils/Makefile:
+	(11:25:59) Added an explicit "." to the ln commands as SGIs do not
+	allow for default to the current directory. 
+
+	* src/tracediff/Makefile:
+	(11:50:09) Added an explicit "." to the ln commands as SGIs do not
+	allow for default to the current directory. 
+
+2004-02-16  James Bonfield <jkbonfield>
+
+	* src/prefinish/finish_filter.c,
+	* src/prefinish/finish_filter.h:
+	(15:32:40) Added GRL copyright notice 
+
+	* src/prefinish/finish_filter.c,
+	* src/prefinish/finish_filter.h:
+	(15:32:42) Added GRL copyright notice 
+
+2004-02-13  James Bonfield <jkbonfield>
+
+	* ChangeLog:
+	(09:18:33) Latest changelog summary, plus removal of email
+	addresses. 
+
+	* src/mk/global.mk:
+	(09:22:54) Added TK_LIB to TEXTUTILS_LIB definition as on some
+	systems the linker refuses to allow unresolved (but unused)
+	symbols. 
 
 2004-02-12  James Bonfield  <jkb>
 
