@@ -1513,6 +1513,35 @@ void _select_tag(EdStruct *xx, int seq, tagStruct *t) {
 
 
 /*
+ * Creates a selection spanning the a specific sequence region
+ */
+void _select_region(EdStruct *xx, int seq, int pos, int length) {
+    /* Undisplay an old selection */
+    if (xx->select_made)
+	redisplaySelection(xx);
+    else
+        xx->select_made = 1;
+
+    xx->select_seq = seq;
+    xx->select_start_pos = pos;
+    xx->select_end_pos = pos + length;
+    xx->select_tag = NULL;
+
+    Tk_OwnSelection(EDTKWIN(xx->ed), XA_PRIMARY, EdSelectionLost,
+		    (ClientData)xx);
+    /*
+     * FIXME:
+     * ED_DISP_SELECTION should be all we need to update, but at present
+     * this does not seem to be redrawing properly.
+     * ED_DISP_ALL is an easy workaround for now.
+     */
+    xx->refresh_flags |= ED_DISP_ALL;
+
+    redisplaySelection(xx);
+}
+
+
+/*
  * Adjusts the current selection when an insert is performed. (We either move
  * the selection or extend it's length.)
  */
