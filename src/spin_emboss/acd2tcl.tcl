@@ -527,6 +527,11 @@ proc default_infile {dname prefix} {
     set data($prefix.information) "Input filename"
 }
 
+proc default_directory {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Input directory"
+}
+
 proc default_seqoutall {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Filename"
@@ -627,6 +632,12 @@ proc default_boolean {dname prefix} {
     set data($prefix.information) {boolean}
 }
 
+proc default_toggle {dname prefix} {
+    upvar $dname data
+    set data($prefix.default)     0
+    set data($prefix.information) {toggle}
+}
+
 #-----------------------------------------------------------------------------
 # Code generation for each specific ACD type. These have a one-to-one mapping
 # with standard widgets or mega-widgets.
@@ -684,6 +695,7 @@ proc generate_application {dname name args} {
     append cstr "    wm title \$w {EMBOSS - $data(appl)}\n"
     append cstr "    label \$w._title -text [list $data($name.documentation)]\n"
     append cstr "    pack \$w._title -side top -fill both\n"
+    append cstr "    ::EMBOSS::init_dialogue \[namespace current\]\n"
     return 1
 }
 
@@ -1312,6 +1324,14 @@ proc generate_filelist {dname name args} {
     return 1
 }
 
+proc generate_directory {dname name args} {
+    global cstr
+    upvar $dname data
+
+    uplevel generate_infile [list $dname] [list $name] $args
+    return 1
+}
+
 proc generate_infile {dname name args} {
     global cstr
     upvar $dname data
@@ -1423,6 +1443,11 @@ proc generate_boolean {dname name args} {
 }
 
 proc generate_bool {dname name args} {
+    uplevel generate_boolean [list $dname] [list $name] $args
+    return 1
+}
+
+proc generate_toggle {dname name args} {
     uplevel generate_boolean [list $dname] [list $name] $args
     return 1
 }
