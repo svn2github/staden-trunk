@@ -1507,6 +1507,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	char buf[10];
 	int overlapLength, wingeCount;
 	float perc = -1.0;
+	int tgood, tbad;
 
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -1516,12 +1517,13 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	if (ed->xx->link) {
-	    countDisagreements(ed->xx->link->xx, &overlapLength, &wingeCount);
+	    countDisagreements(ed->xx->link->xx, &overlapLength, &wingeCount,
+			       &tgood, &tbad);
 	    if (overlapLength > 0)
 		perc = (float)(100 * wingeCount) / (float)overlapLength;
 	}
 
-	sprintf(buf, "%f", perc);
+	sprintf(buf, "%f %d %d", perc, tgood, tbad);
 	Tcl_AppendResult(interp, buf, NULL);
 
     } else if ('j' == *argv[1] && strcmp(argv[1], "join_align") == 0) {

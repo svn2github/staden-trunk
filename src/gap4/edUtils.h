@@ -394,8 +394,8 @@ extern int edCursorRight(EdStruct *xx);
 extern int edCursorLeft(EdStruct *xx);
 extern int edCursorDown(EdStruct *xx);
 extern int edCursorUp(EdStruct *xx);
-extern void countDisagreements(EdStruct *xx[2],
-			       int *overlapLength, int *wingeCount);
+extern void countDisagreements(EdStruct *xx[2], int *overlapLength,
+			       int *wingeCount, int *ptgood, int *ptbad);
 extern int posToIndex(EdStruct *xx, int pos);
 extern int posToSeq(EdStruct *xx, int pos);
 extern int seqToIndex(EdStruct *xx, int seq);

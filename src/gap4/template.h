@@ -140,6 +140,9 @@ int last_template_base(GapIO *io, template_c *t, int g);
 void check_all_templates(GapIO *io, template_c **template_check);
 void remove_single_templates(GapIO *io, template_c **template_check);
 void contig_spanning_templates(GapIO *io, template_c **template_check);
+void check_template_length(GapIO *io, template_c *t, int overlap);
+void check_template_length_overlap(GapIO *io, template_c *t,
+				   int c1, int c2, int overlap);
 
 /*
  * Checks whether any of the sequences on template 't' for contig 'c' are 

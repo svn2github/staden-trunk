@@ -4140,15 +4140,53 @@ int set_reference_seq(EdStruct *xx, int seq, int refseq,
  *---------------------------------------------------------------------------
  */
 
-void countDisagreements(EdStruct *xx[2], int *overlapLength, int *wingeCount)
+/**
+ * Counts the number of good and bad spanning templates based on their
+ * lengths. Inconsistencies due to orientation are "sort of" worked out,
+ * but only if they are inconsistent internally.
+ */
+static void spanning_template_stats(EdStruct *xx[2], int overlapLength,
+				    int *ptgood, int *ptbad) {
+    int i;
+    int tgood = 0, tbad = 0;
+    int c1, c2;
+    int numt = Ntemplates(DBI_io(*xx));
+    int offset = editorLockedPos(xx, 1/*force recalculation*/);
+
+    c1 = offset < 0 ? DBI_contigNum(xx[0]) : DBI_contigNum(xx[1]);
+    c2 = offset < 0 ? DBI_contigNum(xx[1]) : DBI_contigNum(xx[0]);
+
+    for (i = 1; i <= numt; i++) {
+	template_c *t = DBI(*xx)->templates[i];
+
+	if (!t || !(t->flags & TEMP_FLAG_SPANNING))
+	    continue;
+
+	check_template_length_overlap(DBI_io(*xx), t,
+				      c1, c2, overlapLength);
+	if (t->consistency)
+	    tbad++;
+	else
+	    tgood++;
+    }
+
+    *ptgood = tgood;
+    *ptbad = tbad;
+}
+
+void countDisagreements(EdStruct *xx[2], int *overlapLength, int *wingeCount,
+			int *ptgood, int *ptbad)
 {
     int left0,right0;
-    int left1/*,right1*/;
+    int left1;
     int length0,length1;
     int offset = editorLockedPos(xx, 1/*force recalculation*/);
     int i;
     char *ol0,*ol1;
     
+    *ptgood = 0;
+    *ptbad = 0;
+
     if (offset < 0) {
 	left0 = 1-offset;
 	left1 = 1;
@@ -4158,17 +4196,9 @@ void countDisagreements(EdStruct *xx[2], int *overlapLength, int *wingeCount)
     }
     length0 = DB_Length(xx[0],0);
     length1 = DB_Length(xx[1],0);
-    if (offset+length0 < length1) {
-	right0 = length0;
-	/*
-	  right1 = length0-offset;
-	  */
-    } else {
-	right0 = length1-offset;
-	/*
-	  right1 = length1;
-	  */
-    }
+    right0 = (offset+length0 < length1)
+	? length0
+	: length1-offset;
     *overlapLength = right0 - left0+1;
     *wingeCount  = 0;
     
@@ -4181,6 +4211,8 @@ void countDisagreements(EdStruct *xx[2], int *overlapLength, int *wingeCount)
 	xfree(ol0);
 	xfree(ol1);
     }
+
+    spanning_template_stats(xx, *overlapLength, ptgood, ptbad);
 }
 
 

@@ -783,6 +783,9 @@ static void check_template_position(GapIO *io, template_c *t) {
 /*
  * Given a template this checks for a valid length based on the start/end,
  * min/max and for spanning templates distance from contig ends.
+ * The overlap parameter is positive when the contig sequences overlap
+ * and negative when they do not. If you do not know any overlap information
+ * specify this as zero.
  *
  * The start/end values filled up will be wrong for inconsistent templates.
  * Eg        fwd              rev
@@ -796,7 +799,9 @@ static void check_template_position(GapIO *io, template_c *t) {
  *
  * Also, if we have multiple contigs, compute the distance from the ends.
  *
- * eg:        --fwd-->                           <--rev--
+ * eg:                       overlap size (-ve in this eg)
+ *                              |<-->|
+ *            --fwd-->          |    |           <--rev--
  *     -------------------------      ---------------------------
  *            |                                         |
  *            |<----------- template size ------------->|
@@ -805,7 +810,7 @@ static void check_template_position(GapIO *io, template_c *t) {
  * misassemble, based on the assumption that the contigs should be joined if
  * there is a real overlap.
  */
-static void check_template_length(GapIO *io, template_c *t) {
+void check_template_length(GapIO *io, template_c *t, int overlap) {
     item_t *item;
     int distf, distr, c1;
     GReadings r;
@@ -883,15 +888,75 @@ static void check_template_length(GapIO *io, template_c *t) {
 
     if (distf && distr) {
 	int length;
-	length = distf + distr;
+	length = distf + distr - overlap;
 
 	t->computed_length = length;
 
 	if (length > te.insert_length_max) {
 	    t->consistency |= TEMP_CONSIST_DIST;
 	}
+	if (overlap > 0 && length < te.insert_length_max) {
+	    t->consistency |= TEMP_CONSIST_DIST;
+	}
     }
+}
+
+/*
+ * As check_template_length, but taking into account a specific ordering
+ * of two contigs (c1 left, c2 right) and an expected overlap size.
+ */
+void check_template_length_overlap(GapIO *io, template_c *t,
+				   int c1, int c2, int overlap) {
+    item_t *item;
+    int distf, distr;
+    GReadings r;
     
+    if (!(t->flags & TEMP_FLAG_SPANNING))
+	return;
+
+    distf = distr = 0;
+
+    /* Distance from right end of 1st contig */
+    for (item = head(t->gel_cont); item; item = item->next) {
+	gel_cont_t *gc = (gel_cont_t *)item->data;
+	int tmp;
+
+	if (gc->contig != c1)
+	    continue;
+
+	gel_read(io, gc->read, r);
+	if ((tmp = io_clength(io, gc->contig) - r.position + 1) > distf)
+	    distf = tmp;
+    }
+
+    /* Distance from left end of 2nd contig */ 
+    for (item = head(t->gel_cont); item; item = item->next) {
+	gel_cont_t *gc = (gel_cont_t *)item->data;
+	int tmp;
+
+	if (gc->contig != c2)
+	    continue;
+
+	gel_read(io, gc->read, r);
+	if ((tmp = r.position + r.sequence_length - 1) > distr)
+	    distr = tmp;
+    }
+
+    t->consistency &= ~TEMP_CONSIST_DIST;
+    if (distf && distr) {
+	int length = distf + distr - overlap;
+	GTemplates te;
+
+	template_read(io, t->num, te);
+	t->computed_length = length;
+
+	if (length > te.insert_length_max ||
+	    length < te.insert_length_min) {
+	    t->consistency |= TEMP_CONSIST_DIST;
+	}
+    } else {
+	t->computed_length = 0;
+    }
 }
 
 /*
@@ -948,7 +1013,7 @@ int check_template_c(GapIO *io, template_c *t) {
     t->consistency = 0;
     check_template_strand(io, t);
     check_template_position(io, t);
-    check_template_length(io, t);
+    check_template_length(io, t, 0);
     score_template(io, t);
 
     return t->consistency;

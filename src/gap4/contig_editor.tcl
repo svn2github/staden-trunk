@@ -778,18 +778,27 @@ proc editor_quit {top ed e object} {
     ListCreate2 disassemble $list SEQID
 
     if {[$e join_mode]} {
-	set perc [$e join_percentage]
+	foreach {perc tgood tbad} [$e join_percentage] break
+	set nt [expr {$tgood+$tbad}]
+	set message "$nt spanning template[expr {$nt==1?{}:{s}}]\n"
+	if {$nt} {
+	    append message "of which $tgood [expr {$tgood==1?{is}:{are}}] good\n"
+	    append message "and $tbad [expr {$tbad==1?{is}:{are}}] bad.\n\n"
+	} else {
+	    append message "\n"
+	}
+	    
 	if {$perc == -1} {
 	    set ret [tk_messageBox \
 		    -icon warning \
-		    -message "Contigs do not overlap." \
+		    -message "${message}Contigs do not overlap." \
 		    -title "Quit Editor" \
 		    -type okcancel \
 		    -parent $top]
         } else {
 	    set ret [tk_messageBox \
 		    -icon question \
-		    -message "[format "Percentage Mismatch: %5.2f%%\nMake join?" $perc]" \
+		    -message "[format "${message}Percentage Mismatch: %5.2f%%\nMake join?" $perc]" \
 		    -title "Quit Editor" \
 		    -type yesnocancel \
 		    -parent $top]
@@ -1527,6 +1536,7 @@ proc ednames_menu {w x y X Y} {
 	$w.m add command -label "List notes" \
 	    -command "NoteSelector [$e io] reading #$rnum"
 
+	$w.m add separator
 	if {!$refseq} {
 	    $w.m add command -label "Set as reference sequence" \
 		-command "ednames_menu_refseq $e $seq_num"
@@ -1534,7 +1544,6 @@ proc ednames_menu {w x y X Y} {
 	    $w.m add command -label "Clear as reference sequence" \
 		-command "$e set_reference_seq $seq_num"
 	}
-	# $w.m add separator
 	if {!$reftrace} {
 	    $w.m add command -label "Set as reference trace" \
 		-command "ednames_menu_reftrace $e $seq_num"
