@@ -167,23 +167,68 @@ plot_quality(Tcl_Interp *interp,
 }
 
 /*
- * Lists the quality to the output window
+ * Prints up 'seq' in blocks of 10, 60 per line. Eg:
+ *
+ *         110        120        130        140        150        160
+ *    eeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee
+ *
+ *         170        180        190        200        210
+ *  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeee
+ *
+ * Start/End refer to the displayed coordinates counting from 1.
+ * 'seq' starts from element zero and extends for end-start+1 items.
+ *
+ * linelen has a max of 999.
  */
-static void quality_list(GapIO *io, char *qual, int contig, int length) {
-    f_int l;
-    f_int start = 1;
-    f_int end;
-    f_int linlen = 60;
-    f_int kbout = 0;
+static void fmtdb(char *seq, int start, int end, int linelen) {
+    int len = end-start+1;
+    int i, j, x, ind;
+    char line[1000], *linep;
 
+    for (x = 0, ind = start; x < len; x += linelen, ind += linelen) {
+	vmessage("\n");
+
+	/* Numbers */
+	linep = line;
+	*linep++ = ' ';
+	for (i=10*(int)((ind-1)/10), j = 0; i<end-9 && j<linelen; i+=10, j+=10) {
+	    linep += sprintf(linep, "%11d", i+10);
+	}
+	*linep++ = 0;
+	vmessage("%s\n", line);
+
+	/* Sequence */
+	linep = line;
+	*linep++ = ' ';
+	*linep++ = ' ';
+	for (i=10*(int)((ind-1)/10)+1, j = 0; i<=end && j<linelen; i++, j++) {
+	    if (i<start || i>end)
+		*linep++ = ' ';
+	    else
+		*linep++ = seq[i-start];
+
+	    if (i % 10 == 0)
+		*linep++ = ' ';
+	}
+	*linep++ = 0;
+	vmessage("%s\n", line);
+    }
+}
+
+/*
+ * Lists the quality to the output window
+ * Start/End coordinates count from 1 as the first base and relate to the
+ * displayed coordinates. The length of 'qual' will be end-start+1 and counts
+ * from base 0 (ie not base 'start').
+ */
+static void quality_list(GapIO *io, char *qual, int contig,
+			 int start, int end) {
     vfuncheader("quality listing");
-    l = length;
-    end = length;
     
     vmessage("Contig %s (#%d)\n", 
 	     get_contig_name(io, contig),
 	     io_clnbr(io, contig));
-    fmtdb_(qual, &l, &start, &end, &linlen, &kbout, l);
+    fmtdb(qual, start, end, 60);
     vmessage("\n");
 
 }
@@ -478,7 +523,8 @@ static void template_quality_callback(GapIO *io, int contig, void *fdata,
 		int i;
 		for (i = 0; i < q->num_contigs; i++) {
 		    quality_list(io, q->quality[i].qual, q->quality[i].contig,
-				 q->quality[i].length);
+				 q->quality[i].start,
+				 q->quality[i].end);
 		}
 		break;
 	    }
@@ -791,7 +837,8 @@ static void quality_callback(GapIO *io, int contig, void *fdata,
 		break;
 	    case 1: /* List Quality */
 		quality_list(io, q->quality.qual, q->quality.contig,
-				 q->quality.length);
+				 q->quality.start,
+				 q->quality.end);
 		break;
 	    case 2: /* Remove */
 		quality_shutdown(io, q);
