@@ -29,7 +29,8 @@ extern consen_info *all_consensus(GapIO *io, float percd);
 extern void free_all_consensus(consen_info *ci);
 
 extern char *assemble_direct(GapIO *io, int display, double max_mism,
-			     char *inlist, int do_alignments, int enter_all);
+			     char *inlist, int do_alignments, int enter_all,
+			     int ignore_vec);
 
 extern align_info *assemble_align(GapIO *io, SeqInfo *si, consen_info *ci,
 				  int contig, int *pos, int dir, int tol,

@@ -23,8 +23,16 @@ proc DirectAssembly {io} {
     checkbutton $t.display.c \
 	-text [keylget d NAME] \
     	-variable $t.Display_alignments
-
+    pack $t.display.c -side left
     set $t.Display_alignments [keylget d VALUE]
+
+    set d [keylget gap_defs DIRECT_ASSEMBLY.IGNORE_VEC]
+    frame $t.ignore_vec -bd 2 -relief groove
+    checkbutton $t.ignore_vec.c \
+	-text [keylget d NAME] \
+    	-variable $t.Ignore_vec
+    pack $t.ignore_vec.c -side left
+    set $t.Ignore_vec [keylget d VALUE]
 
     set mm [keylget gap_defs DIRECT_ASSEMBLY.MAXMIS]
     scalebox $t.mism \
@@ -56,17 +64,17 @@ proc DirectAssembly {io} {
     okcancelhelp $t.ok \
 	-ok_command "DirectAssembly2 $io $t $t.infile $t.outfile \
 		         $t.mism \[set $t.Display_alignments\] \
-			 $t.failure_mode" \
+			 $t.failure_mode \[set $t.Ignore_vec\]" \
 	-cancel_command "destroy $t; catch {unset $t.Display_alignments}" \
 	-help_command "show_help gap4 {Assembly-Directed}" \
 	-bd 2 -relief groove
 
-    pack $t.display -side top -fill both
-    pack $t.display.c -side left
+    pack $t.display $t.ignore_vec -side top -fill both
     pack $t.mism $t.infile $t.outfile $t.failure_mode $t.ok -side top -fill x
 }
 
-proc DirectAssembly2 {io t infile outfile mism_w display failure_mode} {
+proc DirectAssembly2 {io t infile outfile mism_w display failure_mode
+		      ignore_vec} {
     global gap_defs
 
     #special case for a single file name
@@ -95,7 +103,8 @@ proc DirectAssembly2 {io t infile outfile mism_w display failure_mode} {
 	-files $lin \
 	-max_pmismatch $mism \
 	-output_mode $display \
-	-enter_failures [expr [radiolist_get $failure_mode]-1]]
+	-enter_failures [expr [radiolist_get $failure_mode]-1] \
+	-ignore_vec $ignore_vec]
     ClearBusy
 
     if {[lorf_out_get $outfile] == 2} {

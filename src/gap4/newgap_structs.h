@@ -364,6 +364,7 @@ typedef struct {
     float mism;
     int align;
     int enter_failures;
+    int ignore_vec;
 } ass_direct_arg;
 
 typedef struct {

@@ -3501,6 +3501,8 @@ tcl_assemble_direct(ClientData clientData, Tcl_Interp *interp,
 	{"-align",       ARG_INT,  1, "1",  offsetof(ass_direct_arg, align)},
 	{"-enter_failures",ARG_INT, 1, "0", offsetof(ass_direct_arg,
 						     enter_failures)},
+	{"-ignore_vec",  ARG_INT,  1, "0",  offsetof(ass_direct_arg,
+						     ignore_vec)},
 	{NULL,	     0,	       0, NULL, 0}
     };
 
@@ -3526,7 +3528,8 @@ tcl_assemble_direct(ClientData clientData, Tcl_Interp *interp,
     Tcl_DStringFree(&input_params);
 
     res = assemble_direct(args.io, args.display, (double)args.mism,
-			  args.inlist, args.align, args.enter_failures);
+			  args.inlist, args.align, args.enter_failures,
+			  args.ignore_vec);
     vTcl_SetResult(interp, "%s", res ? res : "");
     xfree(res);
 

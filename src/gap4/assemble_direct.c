@@ -1163,7 +1163,8 @@ align_info *assemble_align(GapIO *io, SeqInfo *si, consen_info *ci,
 
 
 char *assemble_direct(GapIO *io, int display, double max_mism,
-		      char *inlist, int do_alignments, int enter_all) {
+		      char *inlist, int do_alignments, int enter_all,
+		      int ignore_vec) {
     consen_info *ci = NULL;
     SeqInfo *si;
     int ierr;
@@ -1197,7 +1198,7 @@ char *assemble_direct(GapIO *io, int display, double max_mism,
 	 * for other data sources though, unless explicit QL/QR values have
 	 * been used.
 	 */
-	if (NULL == (si = read_sequence_details(file, 1))) {
+	if (NULL == (si = read_sequence_details(file, ignore_vec))) {
 	    verror(ERR_WARN, "directed_assembly", "couldn't read '%s'", file);
 	    add_to_dlist(dl, file);
 	    vmessage("  failed\n");
