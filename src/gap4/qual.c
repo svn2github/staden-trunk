@@ -121,6 +121,16 @@ struct qual_data {
     float cons_cutoff;
 };
 
+typedef struct {
+    int (*qual)[2]; /* base type (0-5) and base conf */
+    int start;
+    int end;
+    int gel;
+    int dir;
+    int chem;
+    int template;
+} seq_frag;
+
 static signed int clookup[256];
 static int clookup_old[256];
 static int vlookup_old[256];
@@ -149,10 +159,26 @@ static int calc_contig_info_phred(int contig, int start, int end,
 				  char *con, float *qual,
 				  char *con2, float *qual2,
 				  float cons_cutoff, int qual_cutoff,
+				  void (*process_frags)(seq_frag *frag,
+							int   *num_frags,
+							int    from,
+							int    to,
+							int    start,
+							char  *con1,
+							float *qual1,
+							char  *con2,
+							float *qual2,
+							float  cons_cutoff,
+							int    qual_cutoff),
 				  int (*info_func)(int         job,
 						   void       *mydata,
 						   info_arg_t *theirdata),
 				  void *info_data);
+
+static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
+			  int start, char *con1, float *qual1,
+			  char *con2, float *qual2,
+			  float cons_cutoff, int qual_cutoff);
 
 /* ----- functions ----- */
 
@@ -950,6 +976,7 @@ int calc_consensus(int   contig,
 	if (-1 ==calc_contig_info_phred(contig, start, end,
 					con, qual, con2, qual2,
 					cons_cutoff, qual_cutoff_tmp,
+					process_frags,
 					info_func, info_data)) {
 	    return -1;
 	}
@@ -1120,14 +1147,6 @@ double depth_scale[11] = {
     /* 10 */ 5.00
 };
 
-typedef struct {
-    int (*qual)[2];
-    int start;
-    int end;
-    int gel;
-    int dir;
-    int chem;
-} seq_frag;
 
 /*
  * A lookup table to adjust phred quality values, based on observed vs
@@ -2150,7 +2169,7 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 		    }
 
 		    prob = qnorm ? prod_l / qnorm : 0;
-		    err = prob < 1.0 ? -10.0 * log10(1-prob) : 99;
+		    err = prob < 1.0 ? -10.0 * log10(1-prob) : 200;
 
 		    if (err >= first) {
 			second = first;
@@ -2161,12 +2180,208 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 		}
 
 		/* Discrepancy = second most likely base confidence */
-		qual2[i-start] = MIN(second, 99.4);
+		qual2[i-start] = MIN(second, 199);
 	    } else if (!con2 && qual2) {
 		qual2[i-start] = 0;
 	    }
 	}
     }
+    
+    fflush(stdout);
+    *num_frags = nf;
+}
+
+/*
+ * Stirling's formula with a 1/12n correction applied to improve accuracy.
+ * This seems to hold remarkably true for both low and high numbers too.
+ */
+double lnfact(double n) {
+    /* Or Gosper's formula... 
+     * return (n*ln(n) - n + ln(2*M_PI*n + M_PI/3) / 2); 
+     */
+    return ((n+0.5)*log(n) - n + log(2*M_PI)/2) + log(1 + 1/(12.0*n));
+	/* + log(1 + 1/(288.0*n*n)); */
+}
+
+/*
+ * The binomical coefficient (n,k) for n trials with k successes where
+ * prob(success) = p.
+ *                               k      n-k
+ * P (k|n) = n! / (k! (n-k)!)   p  (1-p)
+ *  p
+ *
+ * The coefficient we are returning here is the n! / (k! (n-k)!) bit.
+ * We compute it using ln(n!) and then exp() the result back to avoid
+ * excessively large numbers.
+ */
+double bincoef(int n, double k) {
+    return exp(lnfact(n) - lnfact(k) - lnfact(n-k));
+}
+
+/*
+ * Given p == 0.5 the binomial expansion simplifies a bit, so we have
+ * a dedicated function for this.
+ */
+double binprobhalf(int n, double k) {
+    return bincoef(n, k) * pow(0.5, n);
+}
+
+/*
+ * This builds up discrepancy information in qual1 and qual2.
+ * We use an algorithm like process_frags(), except every reading is
+ * treated as independent.
+ *
+ * In qual1 we store the score for the second highest confidence base (with
+ * all 4 base types being computed using only sequences that match that base
+ * type - ie no discrepancies are involved).
+ *
+ * In qual2 we store a binomial coefficient computed by assuming we have a
+ * population of 2 alleles with 50/50 ratio.
+ */
+static void process_discrep(seq_frag *frag, int *num_frags, int from, int to,
+			    int start, char *con1, float *qual1,
+			    char *con2, float *qual2,
+			    float cons_cutoff, int qual_cutoff)
+{
+    int i, j, k, nevents;
+    int nf = *num_frags;
+    int qual, type;
+    int highest_type;
+    double highest_product;
+    double prob, err, qnorm, product;
+    double (*bayesian)[5] = NULL;
+    int nbase_types;
+    int count[6];
+
+    /* Worst case is one row in bayesian[] per fragment */
+    bayesian = (double (*)[5])xcalloc(*num_frags, sizeof(double)*5);
+
+    for (i = from; i < to; i++) {
+	/* Initialise total/count arrays */
+	memset(count, 0, 6 * sizeof(int));
+	nevents = 0;
+	    
+	for (j = 0; j < nf; j++) {
+	    /* Type: A=0, C=1, G=2, T=3, *=4, -=5 */
+	    type = frag[j].qual[frag[j].start][0];
+	    if (type == -1)
+		type = 5;
+
+	    /*
+	     * qual == 1 implies less likely to be the called base!
+	     * We map this to 2, as this is undesirable (but was the
+	     * default input value for a while)
+	     *
+	     * qual == 0 implies "ignore this base". We do this by changing
+	     * the type to dash, to force even spread of probability.
+	     * Otherwise we'd actually be negatively weighting this base
+	     * type.
+	     */
+	    qual = frag[j].qual[frag[j].start][1];
+	    if (qual == 1)
+		qual = 2;
+	    else if (qual == 0)
+		type = 5;
+
+	    if (qual >= qual_cutoff) {
+		/* Add to bayesian array. Skip if it's "-" */
+		prob = 1 - pow(10.0, -qual / 10.0);
+		if (type != 5) {
+		    for (k = 0; k < 5; k++) {
+			bayesian[nevents][k] = (1 - prob) / 4;
+		    }
+		    bayesian[nevents][type] = prob;
+		    count[type]++;
+		    nevents++;
+		}
+	    }
+		
+	    if (++frag[j].start >= frag[j].end) {
+		xfree(frag[j].qual);
+		memmove(&frag[j], &frag[j+1], (nf-j-1) * sizeof(*frag));
+		nf--; j--;
+	    }
+	}
+	    
+	if (nevents && qual2) {
+	    int l;
+	    double first=-1;
+	    double second=0;
+	    int first_count = 0;
+	    int second_count = 0;
+
+	    /*
+	     * Loop through all base types 'l' only picking events
+	     * where the called sequence matches this base type
+	     * (bayesian[event][l] >= 0.25).
+	     * Then compute what the consensus confidence would be
+	     * from that base type alone.
+	     */
+	    nbase_types = 5; /* = 4;   FIXME: ignore indels for now */
+	    for (l = 0; l < nbase_types; l++) {
+		double prod_l = 0; 
+
+		qnorm = 0;
+		highest_product = 0;
+		highest_type = 5;
+
+		for (j = 0; j < nbase_types; j++) {
+		    product = 1;
+		    for (k = 0; k < nevents; k++) {
+			/* Only deal with bases of type 'l' */
+			if (bayesian[k][l] < 0.25)
+			    continue;
+			product *= bayesian[k][j];
+		    }
+		    qnorm += product;
+
+		    if (j == l)
+			prod_l = product;
+		}
+
+		prob = qnorm ? prod_l / qnorm : 0;
+		err = prob < 1.0 ? -10.0 * log10(1-prob) : 200;
+
+		if (err >= first) {
+		    second = first;
+		    second_count = first_count;
+		    first  = err;
+		    first_count = count[l];
+		} else if (err > second) {
+		    second = err;
+		    second_count = count[l];
+		}
+	    }
+
+	    /* Qual1 = second highest consensus confidence */
+	    if (qual1)
+		qual1[i-start] = second;
+
+
+	    /* Qual2 = a measure of how close we are to the 50/50 ratio */
+	    if (qual2 && first_count && second_count) {
+		/*
+		 * Max of 10 deep to avoid oversampling and becoming
+		 * too dependent on the 'optimal' 50% ratio.
+		 * The reason is that we may not achieve 50% ratio even
+		 * with a huge sample depth due to systematic sequencing
+		 * errors.
+		 */
+		double cnt = first_count + second_count;
+		double snd = second_count;
+		if (cnt > 10) {
+		    snd *= 10/cnt;
+		    cnt = 10;
+		}
+
+		qual2[i-start] = binprobhalf(cnt, snd) * cnt;
+	    } else if (qual2) {
+		qual2[i-start] = 0;
+	    }
+	}
+    }
+
+    xfree(bayesian);
     
     fflush(stdout);
     *num_frags = nf;
@@ -2775,6 +2990,17 @@ static int calc_contig_info_phred(int contig, int start, int end,
 				  char *con, float *qual,
 				  char *con2, float *qual2,
 				  float cons_cutoff, int qual_cutoff,
+				  void (*process_frags)(seq_frag *frag,
+							int *num_frags,
+							int from,
+							int to,
+							int start,
+							char *con1,
+							float *qual1,
+							char *con2,
+							float *qual2,
+							float cons_cutoff,
+							int qual_cutoff),
 				  int (*info_func)(int         job,
 						   void       *mydata,
 						   info_arg_t *theirdata),
@@ -2865,6 +3091,7 @@ static int calc_contig_info_phred(int contig, int start, int end,
 	frag[num_frags].gel = info.gel_info.gel;
 	frag[num_frags].dir = info.gel_info.complemented;
 	frag[num_frags].chem = info.gel_info.as_double ? 1 : 0;
+	frag[num_frags].template = info.gel_info.template;
 	num_frags++;
 
 	fetch_next:
@@ -3014,3 +3241,31 @@ static void process_frags_old(seq_frag *frag, int *num_frags, int from, int to,
 #endif
 
 
+
+int calc_discrepancies(int   contig,
+		       int   start,
+		       int   end,
+		       float *qual1,
+		       float *qual2,
+		       float cons_cutoff,
+		       int   qual_cutoff,
+		       int (*info_func)(int        job,
+					void       *mydata,
+					info_arg_t *theirdata),
+		       void *info_data)
+{
+    init_clookup();
+
+    qual_cutoff_tmp = (qual_cutoff == QUAL_DEFAULT)
+	? qual_cutoff_def : qual_cutoff;
+
+    if (-1 ==calc_contig_info_phred(contig, start, end,
+				    NULL, qual1, NULL, qual2,
+				    cons_cutoff, qual_cutoff_tmp,
+				    process_discrep,
+				    info_func, info_data)) {
+	return -1;
+    }
+
+    return 0;
+}

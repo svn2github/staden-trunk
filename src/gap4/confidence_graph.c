@@ -136,12 +136,28 @@ int calc_confidence(GapIO *io,
     if (!con)
         return -1;
 
-    calc_consensus(contig, start, end,
-		   CON_SUM, con, NULL,
-		   mode == CONFIDENCE_GRAPH_DISCREP ? NULL : qual,
-		   mode == CONFIDENCE_GRAPH_DISCREP ? qual : NULL,
-		   consensus_cutoff, quality_cutoff,
-		   database_info, (void *)io);
+    if (mode == CONFIDENCE_GRAPH_DISCREP) {
+	float *qual1 = (float *)xmalloc((end - start + 1) * sizeof(float));
+	float *qual2 = (float *)xmalloc((end - start + 1) * sizeof(float));
+	int i;
+
+	calc_discrepancies(contig, start, end, qual1, qual2,
+			   consensus_cutoff, quality_cutoff,
+			   database_info, (void *)io);
+	for (i = 0; i < end-start+1; i++) {
+	    /* qual[i] = MIN(500, (qual1[i] + log(MAX(.00001, 1-qual2[i]/3))*-500)/2);  */
+	    qual[i] = qual1[i] * qual2[i];
+	}
+	xfree(qual1);
+	xfree(qual2);
+    } else {
+	calc_consensus(contig, start, end,
+		       CON_SUM, con, NULL,
+		       mode == CONFIDENCE_GRAPH_SECOND ? NULL : qual,
+		       mode == CONFIDENCE_GRAPH_SECOND ? qual : NULL,
+		       consensus_cutoff, quality_cutoff,
+		       database_info, (void *)io);
+    }
     
     for (i = 0; i < end - start + 1; i++) {
         if (qual[i] > *max)
@@ -153,6 +169,7 @@ int calc_confidence(GapIO *io,
         printf("%d %f\n", i, qual[i]);
 #endif
     }
+
     /* always set minimum to 0.0 */
     *min = 0.0;
     xfree(con);
@@ -414,9 +431,11 @@ static void confidence_callback(GapIO *io, int contig, void *fdata,
     case REG_QUERY_NAME:
 	{
 	    sprintf(jdata->name.line, 
-		    (conf->mode == CONFIDENCE_GRAPH_DISCREP)
-		    ? "Discrepancy graph"
-		    : "Confidence graph");
+		    (conf->mode == CONFIDENCE_GRAPH_QUALITY)
+		    ? "Confidence graph"
+		    : (conf->mode == CONFIDENCE_GRAPH_DISCREP
+		       ? "Discrepancy graph"
+		       : "2nd confidence graph"));
 	    return;
 	}
     case REG_COMPLEMENT:

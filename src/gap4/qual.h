@@ -71,6 +71,7 @@ typedef struct _gel_info_t {
     int next_right;
     int start;
     int unclipped_len;
+    int template;
 } gel_info_t;
 
 typedef struct _contig_info_t {
@@ -165,5 +166,17 @@ int database_info(int job, void *mydata, info_arg_t *theirdata);
 int set_qual_cutoff(int new);
 
 int query_qual_cutoff(void);
+
+int calc_discrepancies(int   contig,
+		       int   start,
+		       int   end,
+		       float *qual1,
+		       float *qual2,
+		       float cons_cutoff,
+		       int   qual_cutoff,
+		       int (*info_func)(int        job,
+					void       *mydata,
+					info_arg_t *theirdata),
+		       void *info_data);
 
 #endif /* _QUAL_H */

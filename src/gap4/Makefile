@@ -137,7 +137,8 @@ GAPFUNCS = \
 	$(GAP4BIN)/strand_coverage.o\
 	$(GAP4BIN)/find_fragments.o\
 	$(GAP4BIN)/vseqs.o\
-	$(GAP4BIN)/$(GAP4_LEGACY)
+	$(GAP4BIN)/$(GAP4_LEGACY)\
+	$(GAP4BIN)/allelic_discreps.o
 
 #	$(GAP4BIN)/shuffle_pads.o
 
