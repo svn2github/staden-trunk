@@ -680,9 +680,9 @@ proc generate_acdtag {dname name args} {
 
 proc generate_end {dname} {
     variable cstr
-    append cstr "	set w \[lindex \$wlist end\]\n"
-    append cstr "	set wlist \[lreplace \$wlist end end\]\n"
     append cstr "	if {\$namespace != {}} {\n"
+    append cstr "	    set w \[lindex \$wlist end\]\n"
+    append cstr "	    set wlist \[lreplace \$wlist end end\]\n"
     append cstr "	    set w \[lindex \$wlist end\]\n"
     append cstr "	    set wlist \[lreplace \$wlist end end\]\n"
     append cstr "	}\n"
@@ -1128,7 +1128,11 @@ proc generate_var {dname name args} {
     variable cstr
     upvar $dname data
     append cstr "\n"
-    append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
+    append cstr "    lappend arguments $name\n"
+    append cstr "    if {!\[info exists vars(\${namespace}::$name)\]} {
+        set vars(\${namespace}::$name) [expand data $name default]
+    }\n"
+#    append cstr "    set vars(\${namespace}::$name) [expand data $name default]\n"
     generate_var_trace data $name
     return 1
 }
