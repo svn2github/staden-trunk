@@ -614,6 +614,8 @@ set_def FIJ.SELMODE.BUTTON.3		"Mask active tags"
 
 set_def FIJ.LINEWIDTH			2
 
+set_def FIJ.MAX_ALIGNMENT		4000
+
 # Alignmode 1 = quick, 2 = sensitive (slower) 
 set_def FIJ.ALIGN_MODE          1 
  
