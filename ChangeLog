@@ -1,3 +1,23 @@
+2003-12-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/gap.tcl:
+	(16:54:09) Version incr. 
+
+	* src/gap4/tagU2.c:
+	(16:55:33) Improved error reporting of tag input. 
+
+	* src/mutlib/array.hpp,
+	* src/mutlib/caller_base.cpp:
+	(16:56:27) Floating point error checking: divide by zero and
+	log(0). 
+
+	* src/prefinish/finish_cDNA:
+	(16:58:28) Remove checking of template consistency. 
+
+	* src/tracediff/main.cpp:
+	(16:59:15) Disable experiment file redirection so that the base
+	positions are valid. 
+
 2003-12-08  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/gap4/contig_editor.tcl,
