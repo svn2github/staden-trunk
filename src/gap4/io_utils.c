@@ -410,20 +410,20 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
     }
 
     /* Translate reading names to reading numbers */
-    for (n=NumReadings(io), i=1; count < listArgc && i<=n; i++) {
-	char *name;
-
-	name = get_read_name(io, i);
-	for (j=0; j<listArgc; j++) {
-	    if (strncmp(listArgv[j], name, DB_NAMELEN) == 0) {
-		(*rargv)[j].contig = i;
+    for (j = 0; j < listArgc; j++) {
+	if (0 == (*rargv)[j].contig) {
+	    int rnum = read_name_to_number(io, listArgv[j]);
+	    if (rnum) {
+		(*rargv)[j].contig = rnum;
 		count++;
-		/* break; */
 	    }
 	}
     }
 
-    /* Handle case when we've failed to find some */
+    /*
+     * Handle case when we've failed to find some; we just shuffle down to
+     * fill any holes in the rargv structure.
+     */
     if (count != listArgc) {
 	for (i=j=0; j<listArgc; j++) {
 	    if ((*rargv)[j].contig != 0) {
