@@ -109,6 +109,9 @@ int get_subclone_info(GapIO *io,
     int err;
     GTemplates t;
 
+    if (!subclone_id)
+	return 0;
+
     if ( ! (clone&&l_clone>0 ||
 	    cvector&&l_cvector>0 ||
 	    subclone&&l_subclone>0 ||
@@ -207,6 +210,9 @@ int get_read_info(GapIO *io,
 	*subclone_id = r.template;
     if (length)
 	*length = r.length;
+
+    if (!r.template)
+	return 0;
 
     /* template */
     (void) get_subclone_info(io,
@@ -744,49 +750,51 @@ int readrd(f_int *HANDLE, int gel, char *type, char *trace,
 
 
 
-
-
-
-f_proc_ret swapnm_(f_int *HANDLE, f_int *N, f_int *M)
 /*
- * swap N and M
+ * swap readings N and M
  */
-{
-    GapIO *io;
+int swap_read(GapIO *io, int M, int N) {
     int err = 0;
     GCardinal temp;
     GReadings r;
     char name[DB_NAMELEN+1];
 
-    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
-
-    if (*N>Nreadings(io)) err |= io_init_reading(io,*N);
-    if (*M>Nreadings(io)) err |= io_init_reading(io,*M);
+    if (N>Nreadings(io)) err |= io_init_reading(io,N);
+    if (M>Nreadings(io)) err |= io_init_reading(io,M);
     if (err)
-	GAP_ERROR_FATAL("io_init_reading (swap %d %d)", *N, *M);
+	GAP_ERROR_FATAL("io_init_reading (swap %d %d)", N, M);
 
 #if GAP_CACHE!=0
     /* swap name elements */
-    strcpy(name, io_rname(io, *N));
-    io_wname(io, *N, io_rname(io, *M));
-    io_wname(io, *M, name);
+    strcpy(name, io_rname(io, N));
+    io_wname(io, N, io_rname(io, M));
+    io_wname(io, M, name);
 #endif
 
     /* swap record array elements */
-    temp = arr(GCardinal,io->readings,*N-1);
-    arr(GCardinal,io->readings,*N-1) = arr(GCardinal,io->readings,*M-1);
-    arr(GCardinal,io->readings,*M-1) = temp;
+    temp = arr(GCardinal,io->readings,N-1);
+    arr(GCardinal,io->readings,N-1) = arr(GCardinal,io->readings,M-1);
+    arr(GCardinal,io->readings,M-1) = temp;
 
 #if GAP_CACHE!=0
     /* swap structure array elements */
-    r = arr(GReadings, io->reading, *N-1);
-    arr(GReadings, io->reading, *N-1) = arr(GReadings, io->reading, *M-1);
-    arr(GReadings, io->reading, *M-1) = r;
+    r = arr(GReadings, io->reading, N-1);
+    arr(GReadings, io->reading, N-1) = arr(GReadings, io->reading, M-1);
+    arr(GReadings, io->reading, M-1) = r;
 #endif
 
     /* write array */
     err = ArrayDelay(io, io->db.readings, io->db.Nreadings, io->readings);
+    return err;
+}
 
+
+f_proc_ret swapnm_(f_int *HANDLE, f_int *N, f_int *M)
+{
+    GapIO *io;
+
+    if ( (io = io_handle(HANDLE)) == NULL) f_proc_return();
+    swap_read(io, *M, *N);
     f_proc_return();
 }
 
