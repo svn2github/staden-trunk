@@ -1,7 +1,6 @@
 #include "Read.h"
 #include "misc.h"
 
-#define AVERAGE_QUAL
 #define WINDOW_SIZE 15
 
 static int eba2phred[] = {
@@ -172,7 +171,7 @@ static void set_conf(Read *r, int i, int val) {
 /*
  * Rescales eba scores to phred-style scores.
  */
-static void rescale_scores(Read *r) {
+void rescale_scores(Read *r) {
     int i;
     for (i = 0; i < r->NBases; i++) {
 	int conf = get_conf(r, i);
@@ -226,124 +225,132 @@ float max_area(TRACE *tx, TRACE *ty, TRACE *tz , int stp, int endp)
     }
 }
 
+/*
+ * Like get_area, but we use just a 5-wide peak and apply a raised
+ * cosine profile to work our which samples have the highest significance.
+ */
+float get_cosa(TRACE *trace, int pos)
+{
+    int i;
+    float sum=1.0e-10;
+    /* raised cosine of N*pi/5 where N<-1..4 */
+    double rcos[5] = {1.000, .9045, .6545, .3455, .0955};
+    
+    sum += trace[pos];
+    for (i = 1; i < 5; i++) {
+	sum += rcos[i]*trace[pos+i];
+	sum += rcos[i]*trace[pos-i];
+    }
+
+    return(sum);
+}
+
+float max_cosa(TRACE *tx, TRACE *ty, TRACE *tz, int pos)
+{
+    float x,y,z;
+    x = get_cosa(tx,pos);
+    y = get_cosa(ty,pos);
+    z = get_cosa(tz,pos);
+    
+    if (x > y) {
+	if (z > x) {
+	    return (z);
+	} else {
+	    return (x);
+	}
+    } else {
+	if (z > y) {
+	    return (z);
+	} else {
+	    return (y);
+	}
+    }
+}
+
 char probFromQual(float qual)
 {
     return (char)(100.0*(1.0 - min(qual,1.0)));
 }
 
-void calc_conf_values(Read *r, int phred_scale) {
-    int i;
-    int pos,start_pos,end_pos;
 
-#ifdef AVERAGE_QUAL
-    char *conf_buf, val;
+/*
+ * Applies a simple filter to the trace data, producing new traces.
+ * Equivalent to 1st-order differentiation followed by fitting a +-1 square
+ * wave of width 11.
+ */
+void filter_trace(Read *r) {
+    int *tmp, i, j;
+    
+    tmp = (int *)calloc(r->NPoints, sizeof(int));
+    for (j = 0; j < 4; j++) {
+	TRACE *t;
+	switch (j) {
+	case 0:
+	    t = r->traceA;
+	    break;
+	case 1:
+	    t = r->traceC;
+	    break;
+	case 2:
+	    t = r->traceG;
+	    break;
+	case 3:
+	    t = r->traceT;
+	    break;
+	}
+
+	for (i = 5; i < r->NPoints-5; i++)
+	    tmp[i] = -t[i-5] + 2*t[i] - t[i+5];
+	for (i = 5; i < r->NPoints-5; i++)
+	    t[i] = tmp[i] > 0 ? tmp[i] : 0;
+    }
+    xfree(tmp);
+}
+
+
+/*
+ * Averages the confidence arrays in r over a window of length
+ * WINDOW_SIZE (#define at top).
+ */
+int average_conf(Read *r) {
+    char val, *conf_buf;
     double total;
+    int i;
     
+    /* Create a temp. copy of the confidence values */
     if (NULL == (conf_buf = (char *)xcalloc(r->NBases, 1))) {
-	return;
+	return -1;
     }
-#endif
 
-    /*
-     * Set confidence values for first and last bases to zero to simplify
-     * the loop. We reset them later on so it's not too vital.
-     */
-    
-    (r->prob_A)[0] = (r->prob_C)[0] = (r->prob_G)[0] = (r->prob_T)[0] = 0;
-    if (r->NBases > 1)  {
-	i = r->NBases - 1;
-	(r->prob_A)[i] = (r->prob_C)[i] = (r->prob_G)[i] = (r->prob_T)[i] = 0;
-    }
-    
-    
-    for (i = 1; i < r->NBases-1; i++) {
-
-	/* Clear the probability arrays */
-	(r->prob_A)[i] = (r->prob_C)[i] =
-	    (r->prob_G)[i] = (r->prob_T)[i] = 0;
-	pos = (r->basePos)[i];
-	start_pos = (r->basePos)[i]-((r->basePos)[i] - (r->basePos[i-1])) /2;
-	end_pos   = (r->basePos)[i]+((r->basePos)[i+1] - (r->basePos[i])) /2;
-
-	switch ((r->base)[i]) {
-	case 'A':
-	case 'a':
-#ifdef AVERAGE_QUAL
-	    conf_buf[i] =
-#else
-	    (r->prob_A)[i] =
-#endif
-		probFromQual((max_area(r->traceC, r->traceG, r->traceT,
-				       start_pos, end_pos) /
-			      get_area(r->traceA, start_pos, end_pos)));
+    for (i = 0; i < r->NBases; i++) {
+	switch((r->base)[i]) {
+	case 'A': case 'a':
+	    conf_buf[i] = r->prob_A[i];
 	    break;
 
-	case 'C':
-	case 'c':
-#ifdef AVERAGE_QUAL
-	    conf_buf[i] =
-#else
-	    (r->prob_C)[i] =
-#endif
-		probFromQual((max_area(r->traceA, r->traceG, r->traceT,
-				       start_pos, end_pos) /
-			      get_area(r->traceC, start_pos, end_pos)));
-	    break;
-	    
-	case 'G':
-	case 'g':
-#ifdef AVERAGE_QUAL
-	    conf_buf[i] =
-#else
-	    (r->prob_G)[i] =
-#endif
-		probFromQual((max_area(r->traceC, r->traceA, r->traceT,
-				       start_pos, end_pos) /
-			      get_area(r->traceG, start_pos, end_pos)));
+	case 'C': case 'c':
+	    conf_buf[i] = r->prob_C[i];
 	    break;
 
-	case 'T':
-	case 't':
-#ifdef AVERAGE_QUAL
-	    conf_buf[i] =
-#else
-	    (r->prob_T)[i] =
-#endif
-		probFromQual((max_area(r->traceC, r->traceG, r->traceA,
-				       start_pos, end_pos) /
-			      get_area(r->traceT, start_pos, end_pos)));
+	case 'G': case 'g':
+	    conf_buf[i] = r->prob_G[i];
+	    break;
+
+	case 'T': case 't':
+	    conf_buf[i] = r->prob_T[i];
 	    break;
 
 	default:
-	    break;
+	    conf_buf[i] = 0;
 	}
     }
 
-    if (r->NBases > 1) {
-#ifdef AVERAGE_QUAL
-	conf_buf[0] = conf_buf[1];
-	conf_buf[r->NBases-1] = conf_buf[r->NBases-2];
-#else
-	(r->prob_A)[0] = (r->prob_A)[1];
-	(r->prob_C)[0] = (r->prob_C)[1];
-	(r->prob_G)[0] = (r->prob_G)[1];
-	(r->prob_T)[0] = (r->prob_T)[1];
-
-	(r->prob_A)[r->NBases-1] = (r->prob_A)[r->NBases-2];
-	(r->prob_C)[r->NBases-1] = (r->prob_C)[r->NBases-2];
-	(r->prob_G)[r->NBases-1] = (r->prob_G)[r->NBases-2];
-	(r->prob_T)[r->NBases-1] = (r->prob_T)[r->NBases-2];
-#endif
-    }
-
-    /* Average confidence values */
-#ifdef AVERAGE_QUAL
     /*
      * Calculate average over a specified window size.
      * For the ends of the array we cheat and copy the nearest average.
      * It's easy to do and this is only temporary anyway.
      */
-    
+	
     /* Initialise total */
     total = 0;
     for (i = 0; i < WINDOW_SIZE && i < r->NBases; i++) {
@@ -357,12 +364,12 @@ void calc_conf_values(Read *r, int phred_scale) {
 	case 'a':
 	    (r->prob_A)[i] = total / WINDOW_SIZE;
 	    break;
-
+		
 	case 'C':
 	case 'c':
 	    (r->prob_C)[i] = total / WINDOW_SIZE;
 	    break;
-
+		
 	case 'G':
 	case 'g':
 	    (r->prob_G)[i] = total / WINDOW_SIZE;
@@ -373,7 +380,8 @@ void calc_conf_values(Read *r, int phred_scale) {
 	    (r->prob_T)[i] = total / WINDOW_SIZE;
 	    break;
 	}
-	total += conf_buf[i + WINDOW_SIZE/2+1] - conf_buf[i - WINDOW_SIZE/2];
+	total += conf_buf[i + WINDOW_SIZE/2+1]
+	    - conf_buf[i - WINDOW_SIZE/2];
     }
 
     /* do left end - extend from first done */
@@ -403,7 +411,7 @@ void calc_conf_values(Read *r, int phred_scale) {
     
 
     /* do right end - extend from last done */
-    i = r->NBases - WINDOW_SIZE/2 >= 0 ? r->NBases - WINDOW_SIZE/2 : 0;
+    i = r->NBases - WINDOW_SIZE/2 - 2 >= 0 ? r->NBases - WINDOW_SIZE/2 - 2: 0;
     val = conf_buf[i];
     for (; i < r->NBases; i++) {
 	switch ((r->base)[i]) {
@@ -427,10 +435,96 @@ void calc_conf_values(Read *r, int phred_scale) {
     }
     
     xfree(conf_buf);
-#endif
 
-    if (phred_scale) {
-	rescale_scores(r);
+    return 0;
+}
+
+
+void calc_conf_values(Read *r, int phred_scale, int cosa) {
+    int i;
+    int pos,start_pos,end_pos;
+
+    /*
+     * Set confidence values for first and last bases to zero to simplify
+     * the loop. We reset them later on so it's not too vital.
+     */
+    
+    (r->prob_A)[0] = (r->prob_C)[0] = (r->prob_G)[0] = (r->prob_T)[0] = 0;
+    if (r->NBases > 1)  {
+	i = r->NBases - 1;
+	(r->prob_A)[i] = (r->prob_C)[i] = (r->prob_G)[i] = (r->prob_T)[i] = 0;
+    }
+    
+    
+    for (i = 1; i < r->NBases-1; i++) {
+
+	/* Clear the probability arrays */
+	(r->prob_A)[i] = (r->prob_C)[i] =
+	    (r->prob_G)[i] = (r->prob_T)[i] = 0;
+	pos = (r->basePos)[i];
+
+	if (pos >= r->NPoints-5 || pos < 5)
+	    continue;
+
+	start_pos = (r->basePos)[i]-((r->basePos)[i] - (r->basePos[i-1])) /2;
+	end_pos   = (r->basePos)[i]+((r->basePos)[i+1] - (r->basePos[i])) /2;
+
+	switch ((r->base)[i]) {
+	case 'A':
+	case 'a':
+	    (r->prob_A)[i] = cosa
+		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceT, pos)/
+				get_cosa(r->traceA, pos)))
+		: probFromQual((max_area(r->traceC, r->traceG, r->traceT,
+					 start_pos, end_pos) /
+				get_area(r->traceA, start_pos, end_pos)));
+	    break;
+
+	case 'C':
+	case 'c':
+	    (r->prob_C)[i] = cosa
+		? probFromQual((max_cosa(r->traceA, r->traceG, r->traceT, pos)/
+				get_cosa(r->traceC, pos)))
+		: probFromQual((max_area(r->traceA, r->traceG, r->traceT,
+					 start_pos, end_pos) /
+				get_area(r->traceC, start_pos, end_pos)));
+	    break;
+	    
+	case 'G':
+	case 'g':
+	    (r->prob_G)[i] = cosa
+		? probFromQual((max_cosa(r->traceC, r->traceA, r->traceT, pos)/
+				get_cosa(r->traceG, pos)))
+		: probFromQual((max_area(r->traceC, r->traceA, r->traceT,
+					 start_pos, end_pos) /
+				get_area(r->traceG, start_pos, end_pos)));
+	    break;
+
+	case 'T':
+	case 't':
+	    (r->prob_T)[i] = cosa
+		? probFromQual((max_cosa(r->traceC, r->traceG, r->traceA, pos)/
+				get_cosa(r->traceT, pos)))
+		: probFromQual((max_area(r->traceC, r->traceG, r->traceA,
+					 start_pos, end_pos) /
+				get_area(r->traceT, start_pos, end_pos)));
+	    break;
+
+	default:
+	    break;
+	}
+    }
+
+    if (r->NBases > 1) {
+	(r->prob_A)[0] = (r->prob_A)[1];
+	(r->prob_C)[0] = (r->prob_C)[1];
+	(r->prob_G)[0] = (r->prob_G)[1];
+	(r->prob_T)[0] = (r->prob_T)[1];
+
+	(r->prob_A)[r->NBases-1] = (r->prob_A)[r->NBases-2];
+	(r->prob_C)[r->NBases-1] = (r->prob_C)[r->NBases-2];
+	(r->prob_G)[r->NBases-1] = (r->prob_G)[r->NBases-2];
+	(r->prob_T)[r->NBases-1] = (r->prob_T)[r->NBases-2];
     }
 
     return;
