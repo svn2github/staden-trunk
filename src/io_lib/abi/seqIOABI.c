@@ -658,7 +658,8 @@ Read *fread_abi(FILE *fp) {
 	}
 	if (fspacing <= 0) {
 	    if (read->NBases)
-		fspacing = (float) read->NPoints / (float) read->NBases;
+		fspacing = (float) read->basePos[read->NBases-1]
+		    / (float) read->NBases;
 	    else
 		fspacing = 1;
 	}
