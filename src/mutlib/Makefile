@@ -91,7 +91,7 @@ DEPEND_OBJ = $(OBJS)
 distsrc: distsrc_dirs
 	-cp -R *.[ch] *.[ch]pp Makefile dependencies $(DIRNAME)
 	mkdir $(DIRNAME)/docs
-	cp docs/* $(DIRNAME)/docs
+	cp docs/*.txt docs/*.doc $(DIRNAME)/docs
 
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)

@@ -206,13 +206,6 @@ distsrc:
 	-mkdir $(DISTSRC)/src/lib/solaris-binaries
 	cp -R mk/*.mk mk/README $(DISTSRC)/src/mk
 	cp -R Makefile $(DISTSRC)/src
-	mkdir $(DISTSRC)/src/ftp
-	cp -R ftp/tcl8.4.6-src.tar.gz \
-	      ftp/tk8.4.6-src.tar.gz \
-	      ftp/cvs-itcl3.1.0.tar.gz \
-	      ftp/zlib.tar.gz \
-	      ftp/libpng-1.2.5.tar.bz2 \
-	      $(DISTSRC)/src/ftp
 	$(MAKE) $(FLAGS) JOB=distsrc
 #	 A few bits of Tcl that are needed for compilation
 	-mkdir $(DISTSRC)/src/tcl8.4.6
@@ -236,7 +229,7 @@ distsrc:
 	-cp -R incrTcl-3.3cvs/itk/generic/*.h \
 	       $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
 #	 Dummy licence code
-	-cp -R licence/distrib $(DISTSRC)/src/licence
+	-cp -R licence $(DISTSRC)/src/licence
 #	# STLPort
 #	-mkdir $(DISTSRC)/src/stlport
 #	-cp -R stlport/alpha $(DISTSRC)/src/stlport

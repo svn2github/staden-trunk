@@ -113,8 +113,8 @@ endif
 	ln -s ../licence/md52.c .
 	ln -s ../licence/md52.h .
 	ln -s ../licence/valid_seq.c .
-	ln -s ../tcl8.4.0/unix/tclAppInit.c .
-	ln -s ../tk8.4.0/winMain.c .
+	ln -s ../tcl8.4.6/unix/tclAppInit.c .
+	ln -s ../tk8.4.6/winMain.c .
 	touch .links
 	$(MAKE) $(MFLAGS)
 

@@ -39,7 +39,7 @@ distunix: distcommon
 #	cp -R ../lib.third/macosx-binaries $(DIST)/lib
 
 distmacosx: distcommon
-	cp -R ../lib.third/macosx-binaries $(DIST)/lib
+	cp -R macosx-binaries $(DIST)/lib
 
 distwindows: distcommon
 	-mkdir $(DIST)/lib/gap
@@ -107,12 +107,12 @@ distsrc:
 	cp Makefile $(DISTSRC)/lib
 
 	@# Third party libraries of tcl code.
-	cp -R ../lib.third/tcl $(DISTSRC)/lib
-	cp -R ../lib.third/tk $(DISTSRC)/lib
-	cp -R ../lib.third/itcl3.3 $(DISTSRC)/lib
-	cp -R ../lib.third/itk3.3 $(DISTSRC)/lib
-	cp -R ../lib.third/iwidgets $(DISTSRC)/lib
-	cp -r ../lib.third/tablelist2.0 $(DISTSRC)/lib
+	cp -R tcl $(DISTSRC)/lib
+	cp -R tk $(DISTSRC)/lib
+	cp -R itcl3.3 $(DISTSRC)/lib
+	cp -R itk3.3 $(DISTSRC)/lib
+	cp -R iwidgets $(DISTSRC)/lib
+	cp -r tablelist2.0 $(DISTSRC)/lib
 	-rm -r $(DISTSRC)/lib/iwidgets/demos
 	-rm -r $(DISTSRC)/lib/tk/demos
 	-rm -r $(DISTSRC)/lib/tk/orig
