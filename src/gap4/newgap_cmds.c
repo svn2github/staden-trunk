@@ -396,6 +396,41 @@ int db_info(ClientData clientData,
 	return TCL_OK;
     }
 
+    if (strcmp(argv[1], "get_contig_nums") == 0) {
+	int inArgc, outArgc;
+	char **inArgv = NULL;
+	contig_list_t *outArgv = NULL;
+	Tcl_Obj *lobj, *iobj;
+	int i;
+
+	/* A list version of the above function */
+	if (argc != 4) {
+	    goto db_error;
+	}
+
+	if (Tcl_SplitList(interp, argv[3], &inArgc, &inArgv) != TCL_OK)
+	    return TCL_ERROR;
+
+	if (-1 == lget_contig_num(io, inArgc, inArgv, &outArgc, &outArgv))
+	    return TCL_ERROR;
+
+	Tcl_Free((char *)inArgv);
+	
+	if (NULL == (lobj = Tcl_NewListObj(0, NULL)))
+	    return TCL_ERROR;
+	Tcl_IncrRefCount(lobj);
+
+	for (i = 0; i < outArgc; i++) {
+	    iobj = Tcl_NewIntObj(outArgv[i].contig);
+	    Tcl_ListObjAppendElement(interp, lobj, iobj);
+	}
+	xfree(outArgv);
+
+	Tcl_SetObjResult(interp, lobj);
+	Tcl_DecrRefCount(lobj);
+	return TCL_OK;
+    }
+
     if (strcmp(argv[1], "chain_left") == 0) {
 	int i;
 
