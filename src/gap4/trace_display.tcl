@@ -629,10 +629,10 @@ proc new_trace_create2 {w e title allow_diff} {
         place $tf_r.name -relx 0
         raise $tf_r.name
 	frame $tf_r.trace.flash \
-	    -height [expr $trace_height] \
+	    -height [expr {$trace_height-52}] \
 	    -width 0 \
-	    -bg white
-#	    -bg [keylget tk_utils_defs TRACE.COLOUR_CURSOR]
+            -bg [keylget tk_utils_defs TRACE.COLOUR_CURSOR]
+
         raise $tf_r.trace.flash
     }
 
@@ -865,7 +865,7 @@ proc trace_save_layout {} {
 }
 
 proc trace_flash {w {ind 5} {wid 20}} {
-    place $w -relx 0.5 -y 0 -anchor n
+    place $w -relx 0.505 -y 0 -anchor n
     for {set t 0} {$t < $ind} {incr t} {
 	after 30
 	if {[catch {$w configure -width $wid} err]} {
