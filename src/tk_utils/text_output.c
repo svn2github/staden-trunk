@@ -53,7 +53,7 @@ static int win_init = 0;
 static int stdout_scroll = 1, stderr_scroll = 1;
 static int header_outputted = 0;
 static FILE *stdout_fp = NULL, *stderr_fp = NULL;
-static Tcl_Interp *_interp;
+static Tcl_Interp *_interp = NULL;
 static int noisy = 1;
 
 static int info_win;
@@ -91,7 +91,7 @@ void end_message(char *parent)
     }
 
     /* display message box */
-    if (parent) {
+    if (parent && _interp) {
 	Tcl_VarEval(_interp, "messagebox ", parent, " ", merged, NULL);
     }
     info_win = 0;
@@ -208,18 +208,22 @@ static void tout_update_stream(int fd, char *buf, int header, char *tag) {
     }
 
     /* Add to the text widget */
-    Tcl_SetVar(_interp, "TEMP", buf, 0);
+    if (win_init) {
+	Tcl_SetVar(_interp, "TEMP", buf, 0);
 
-    Tcl_VarEval(_interp, win, " insert end ", "\"$TEMP\" ", tag_list, NULL);
+	Tcl_VarEval(_interp, win, " insert end ", "\"$TEMP\" ",
+		    tag_list, NULL);
 
-    if (fd == 1 ? stdout_scroll : stderr_scroll) {
-	/* scroll to bottom of output window */
-	Tcl_VarEval(_interp, win, " see end", NULL);
+	if (fd == 1 ? stdout_scroll : stderr_scroll) {
+	    /* scroll to bottom of output window */
+	    Tcl_VarEval(_interp, win, " see end", NULL);
+	}
     }
 }
 
 void bell(void) {
-    Tcl_GlobalEval(_interp, "bell");
+    if (_interp)
+	Tcl_GlobalEval(_interp, "bell");
 }
 
 void funcparams(char *params) {
@@ -803,7 +807,7 @@ void verror(int priority, char *name, char *fmt, ...) {
     static time_t last_time = 0;
 
     /* To improve error reporting */
-    if (priority == ERR_FATAL && t - last_time > 10)
+    if (priority == ERR_FATAL && t - last_time > 10 && _interp)
 	dump_tcl_stack();
     last_time = t;
 
