@@ -135,8 +135,7 @@ char *pstrstr(char *text, char *pattern) {
 	if (*patt_p == 0)
 	    return text;
 
-	text++;
-    } while (*text);
+    } while (*text && *++text);
 
     return NULL;
 }
@@ -188,8 +187,7 @@ char *pstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis) {
 	    return text;
 	}
 
-	text++;
-    } while (*text);
+    } while (*text && *++text);
 
     return NULL;
 }
