@@ -52,11 +52,11 @@ sub convert_line {
     s/\@var{([^}]*)}/\\fI$1\\fP/g;
 
     # See also commands, typically as cross references.
-    if (/\@fxref{/) {
+    if (/_fxref\(/) {
 	if ($see_also) {
-	    s/\@fxref{[^,]*,[ \t\n]*(([^(]*)([^,]*)),[^}]*}/\\fB$2\\fR$3/g;
+	    s/_fxref\([^,]*,[ \t\n]*(([^(]*)([^,]*)),[^)]*\)/\\fB$2\\fR$3/g;
 	} else {
-	    s/\@fxref{[^,]*,[ \t\n]*([^,]*),[^}]*}/See Section $1./g;
+	    s/_fxref\([^,]*,[ \t\n]*([^,]*),[^)]*\)/See Section $1./g;
 	}
     }
 
