@@ -108,6 +108,7 @@ distunix:
 	-cp -R lib/$(MACHINE)-binaries/libtcl* $(DIST)/lib/$(MACHINE)-binaries
 	-cp -R lib/$(MACHINE)-binaries/libtk* $(DIST)/lib/$(MACHINE)-binaries
 	-cp -R lib/$(MACHINE)-binaries/libitcl* $(DIST)/lib/$(MACHINE)-binaries
+	-cp -R lib/$(MACHINE)-binaries/libitk* $(DIST)/lib/$(MACHINE)-binaries
 
 
 distwindows:
@@ -132,7 +133,7 @@ distsrc:
 	-mkdir $(DISTSRC)/src/lib/sgi-binaries
 	-mkdir $(DISTSRC)/src/lib/solaris-binaries
 	cp -R mk/*.mk mk/README $(DISTSRC)/src/mk
-	cp -R Makefile $(DISTSRC)/src
+	cp -R Makefile Makefile.thirdparty $(DISTSRC)/src
 	$(MAKE) $(FLAGS) JOB=distsrc
 #	 A few bits of Tcl that are needed for compilation
 #	-mkdir $(DISTSRC)/src/tcl8.4.6
