@@ -1097,7 +1097,21 @@ void complement_contig_tags(GapIO *io, int contig) {
  * to move the annotations too.
  * For annotations that overlap the two contigs we duplicate and adjust the
  * lengths.
+ *
  * The new contigs used to overlap between POSL and POSR.
+ * Ie POSL is the position of the left end of cont2
+ *    POSR is the position of the right end of cont1
+ * Hence if cont1 and cont2 do not overlap POSL > POSR (eg from disassembly)
+ *
+ * The logic here is quite tricky as we need to take into account tags that
+ * are entirely in left contig, right contig, both contigs, or neither contig,
+ * plus all the partial combinations requiring clipping. The implementation
+ * is to firstly duplicate if a tag is shared, and then clip left and/or
+ * right ends as required.
+ *
+ * HINT: If you want to change this, draw out all the cases of tag positions
+ * on paper, with base numbers assigned, to work out the exact numbering
+ * (removing out-by-one errors) for both +ve and -ve overlap sizes.
  */
 void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
     GContigs c1, c2;
@@ -1115,36 +1129,17 @@ void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
      * scan annotation list in c1.
      * (assume c2 has blank list - it's just been created we hope).
      */
-    ln = c1.annotations;
-
-    do {
+    for (ln = c1.annotations; ln; ln = l.next) {
 	/* read tag */
 	tag_read(io, ln, l);
 
-	/* entirely within contig 2 */
-	if (l.position >= posr) {
-	    l.position -= posl-1;
-	    tag_write(io, ln, l);
-
-	    if (!lastrn) {
-		c2.annotations = ln;
-		contig_write(io, cont2, c2);
-	    } else {
-		lastr.next = ln;
-		tag_write(io, lastrn, lastr);
-	    }
-	    
-	    lastrn = ln;
-	    memcpy(&lastr, &l, sizeof(lastr));
-	}
-
-	/* within both contigs */
-	else if (l.position + l.length > posl) {
-	    /* get new tag */
+	/* is tag in both contigs? If so, duplicate it */
+	if (l.position <= posr && l.position + l.length-1 >= posl) {
+	    /* Get a new tag */
 	    rn = get_free_tag(io);
-	    
-	    /* copy the annotation */
 	    tag_read(io, rn, r);
+
+	    /* Copy the annotation */
 	    if (l.annotation) {
 		char *tbuf = TextAllocRead(io, l.annotation);
 		if (tbuf) {
@@ -1164,7 +1159,7 @@ void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
 		r.position = 1;
 	    r.length = l.position + l.length - posl - (r.position-1);
 	    r.next = 0;
-	    
+
 	    /* save new tag */
 	    tag_write(io, rn, r);
 	    if (!lastrn) {
@@ -1176,7 +1171,7 @@ void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
 	    }
 	    lastrn = rn;
 	    memcpy(&lastr, &r, sizeof(lastr));
-	    
+
 	    if (l.position + l.length > posr) {
 		/* truncate length of existing tag */
 		l.length = posr - l.position + 1;
@@ -1186,16 +1181,46 @@ void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
 	    end = ln;
 	}
 
-	/* entirely within contig one */
-	else {
-	    /* tag is still on left contig list - do nothing */
+	/* Is tag in neither contig */
+	else if (l.position > posr && l.position + l.length-1 < posl) {
+	    delete_tag_rec(io, ln);
+	    continue;
+	}
+
+	/* Only contig2 => shift it down; may need to clip */
+	else if (l.position > posr && l.position + l.length-1 >= posl) {
+	    l.position -= posl-1;
+	    if (l.position < 1) {
+		l.length -= (1-l.position);
+		l.position = 1;
+	    }
+	    tag_write(io, ln, l);
+
+	    if (!lastrn) {
+		c2.annotations = ln;
+		contig_write(io, cont2, c2);
+	    } else {
+		lastr.next = ln;
+		tag_write(io, lastrn, lastr);
+	    }
+	    
+	    lastrn = ln;
+	    memcpy(&lastr, &l, sizeof(lastr));
+	}
+
+	/* Only in contig1; may need to clip */
+	else if (l.position + l.length-1 < posl) {
+	    if (l.position + l.length-1 > posr) {
+		l.length -= (l.position + l.length-1)-posr;
+		tag_write(io, ln, l);
+	    }
 	    end = ln;
 	}
-	
-	/* fetch next */
-	ln = l.next;
 
-    } while (ln);
+	else {
+	    printf("Tag %d is WHERE?\n", ln);
+	}
+    }
 
     /* snip left hand contigs annotation list */
     if (end) {
