@@ -7,7 +7,7 @@
 # Lib tcl files. Point to src.
 cd lib
 ln -s ../src/copy_reads
-ln -s ../src/gap4
+ln -s ../src/gap4 gap
 ln -s ../src/prefinish
 ln -s ../src/pregap4
 ln -s ../src/seqed

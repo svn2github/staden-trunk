@@ -119,6 +119,7 @@ INCLUDES	= $(INCLUDES_S) -I. -I$(MISCSRC) $(INCLUDES_E)
 # which yields to unreliable results: what if a new release of the OS happens
 # to add a 'fort.h' file or something similar in there? Similarly for XBIN.
 XBIN		=
+STADLIB		= ../../lib
 TCLBIN		= $(STADLIB)/$(O)
 TKBIN		= $(STADLIB)/$(O)
 ITCLBIN		= $(STADLIB)/$(O)

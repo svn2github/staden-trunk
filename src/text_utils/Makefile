@@ -3,7 +3,7 @@
 #
 
 LIBS = text_utils
-PROGS= .links $(LIBS)
+PROGS= $(LIBS)
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=..
@@ -30,7 +30,7 @@ OBJS = \
 #
 # Main dependency
 #
-$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+$(LIBS) : .links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
@@ -39,15 +39,16 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 	$(MKDEFL) $@ $(OBJS)
 
+.PRECIOUS:	.links
 .links:
-	ln -s ../tk_utils/boxes.h
-	ln -s ../tk_utils/licence.h
-	ln -s ../tk_utils/check_licence.c
-	ln -s ../tk_utils/licence_utils.c
-	ln -s ../tk_utils/licence_utils.h
-	ln -s ../tk_utils/md52.c
-	ln -s ../tk_utils/md52.h
-	ln -s ../tk_utils/valid_seq.c
+	ln -s ../licence/boxes.h
+	ln -s ../licence/licence.h
+	ln -s ../licence/check_licence.c
+	ln -s ../licence/licence_utils.c
+	ln -s ../licence/licence_utils.h
+	ln -s ../licence/md52.c
+	ln -s ../licence/md52.h
+	ln -s ../licence/valid_seq.c
 	touch .links
 	$(MAKE) $(MFLAGS)
 

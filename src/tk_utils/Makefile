@@ -4,9 +4,9 @@
 
 LIBS = tk_utils
 ifneq ($(MACHINE),windows)
-PROGS= .links $(LIBS) $(O)/stash
+PROGS= $(LIBS) $(O)/stash
 else
-PROGS= .links $(LIBS)
+PROGS= $(LIBS)
 endif
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
@@ -68,7 +68,7 @@ OBJS = \
 #
 # Main dependency
 #
-$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+$(LIBS) : .links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 TKU_LIBS = \
@@ -103,15 +103,17 @@ $(TKUTILSBIN)/stash: $(STASH_OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMWIN) $(STASH_OBJS) $(STASH_LIBS) $(LIBSC)
 endif
 
+.PRECIOUS:	.links
 .links:
-	ln -s ../tk_utils/boxes.h
-	ln -s ../tk_utils/licence.h
-	ln -s ../tk_utils/check_licence.c
-	ln -s ../tk_utils/licence_utils.c
-	ln -s ../tk_utils/licence_utils.h
-	ln -s ../tk_utils/md52.c
-	ln -s ../tk_utils/md52.h
-	ln -s ../tk_utils/valid_seq.c
+	ln -s ../licence/boxes.h
+	ln -s ../licence/licence.h
+	ln -s ../licence/check_licence.c
+	ln -s ../licence/licence_utils.c
+	ln -s ../licence/licence_utils.h
+	ln -s ../licence/md52.c
+	ln -s ../licence/md52.h
+	ln -s ../licence/valid_seq.c
+	ln -s ../tcl8.4.0/unix/tclAppInit.c
 	ln -s ../tk8.4.0/winMain.c
 	touch .links
 	$(MAKE) $(MFLAGS)

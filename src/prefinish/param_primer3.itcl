@@ -21,12 +21,11 @@ class ParamPrimer3 {
 	variable primer_max_gc			70
 	variable primer_salt_conc		50
 	variable primer_dna_conc		50
-	variable primer_max_end_stability	100
+	variable primer_max_end_stability	9
 	variable primer_self_any		5
 	variable primer_self_end		3
 	variable primer_gc_clamp		1
 	variable primer_max_poly_x		5
-	variable primer_max_end_stability	9
     }
 
     public {
@@ -55,7 +54,6 @@ class ParamPrimer3 {
 	    primer_self_end		"Self-end score"
 	    primer_gc_clamp		"Whether to require G/C at 3' end"
 	    primer_max_poly_x		"Maximum homopolymer length"
-	    primer_max_end_stability	"Maximum stability of the last 5 bases"
 	}
 
 	foreach {var text} $config {
