@@ -396,7 +396,7 @@ proc build_gui {w} {
 
     init_modules
 
-    wm title . "Pregap4 version 1.4b1"
+    wm title . "Pregap4 version 1.5"
     wm protocol . WM_DELETE_WINDOW exit
 
     menu_panel $w
