@@ -18,6 +18,7 @@
 #include "xalloc.h"
 #include "misc.h"
 #include "actf.h"
+#include "text_output.h"
 
 /* static error messages for use in actf_() */
 static char *actferrlist[] = {
