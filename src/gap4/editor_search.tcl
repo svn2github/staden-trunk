@@ -273,6 +273,7 @@ proc do_search {w com args} {
     global $w.Type
     global $w.Tag
     global $w.Strand
+    global $w.LastTagWindow
     global .cedit.Defaults
 
     set dir	[set $w.Direction]
@@ -319,6 +320,16 @@ proc do_search {w com args} {
 	set r 1
     } else {
 	set r [eval $com $dir $strand $type]
+    }
+
+    if {[keylget gap_defs CONTIG_EDITOR.SEARCH.AUTO_EDIT_TAG] &&
+	$type == "anno" && $r != 0} {
+	if {[info exists $w.LastTagWindow] &&
+	    [winfo exist [set $w.LastTagWindow]]} {
+	    catch {destroy [set $w.LastTagWindow]}
+	}
+	set $w.LastTagWindow [[lindex $com 0] edit_anno]
+	after idle "focus [lindex $com 0]"
     }
 
     if {$r == 0} {bell}
