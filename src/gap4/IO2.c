@@ -618,6 +618,18 @@ f_proc_ret stikit_(f_int *HANDLE,
 
     
     /*
+     * io_write_seq now updates io_length(), which breaks things as
+     * r.sense hasn't been set yet (this is done by writeg_().
+     * So we now have to manually do this first.
+     */
+    {
+	GReadings r;
+	gel_read(io, *NGEL, r);
+	r.sense = *LENGTH < 0 ? 1 : 0;
+	gel_write(io, *NGEL, r);
+    }
+
+    /*
      * write sequence to file
      */
     if (io_write_seq(io,(int)*NGEL,&length,&start,&end,seq,conf,opos)) {
