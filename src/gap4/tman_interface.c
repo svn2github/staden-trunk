@@ -753,9 +753,18 @@ int auto_diff(EdStruct *xx, int seq, int contig_pos) {
 	auto_diff_references(xx, bot_seq, seqlist, &ref_pos_bot, &ref_neg_bot);
     }
 
-    /* No references found - revert to single trace display */
-    if (!ref_pos_top && !ref_pos_bot && !ref_neg_top &&	!ref_neg_bot)
-	return -1;
+    /* No references found - revert to just top/bot sequence */
+    if (!ref_pos_top && !ref_pos_bot && !ref_neg_top &&	!ref_neg_bot) {
+	if (top_seq) {
+	    pos = contig_pos - DB_RelPos(xx, top_seq) + 1;
+	    showTrace(xx, top_seq, pos, xx->fontWidth * 2, 1, 0);
+	}
+	if (bot_seq) {
+	    pos = contig_pos - DB_RelPos(xx, bot_seq) + 1;
+	    showTrace(xx, bot_seq, pos, xx->fontWidth * 2, 1, 0);
+	}
+	return 0;
+    }
 
     columns = 0;
     if (top_seq && ref_neg_top) columns++;
