@@ -25,6 +25,7 @@ DIRS =	Misc\
 	primer3/src\
 	gap4\
 	prefinish\
+	haplo\
 	eba\
 	init_exp\
 	get_scf_field\
