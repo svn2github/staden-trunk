@@ -643,15 +643,18 @@ if {$argc == 1} {
     gap4_usage
 }
 
-set consensus_mode [keylget gap_defs CONSENSUS_MODE]
-set consensus_cutoff [keylget gap_defs CONSENSUS_CUTOFF]
-set quality_cutoff [keylget gap_defs QUALITY_CUTOFF]
-set chem_as_double [keylget gap_defs CHEM_AS_DOUBLE]
-set consensus_iub [keylget gap_defs CONSENSUS_IUB]
+set consensus_mode          [keylget gap_defs CONSENSUS_MODE]
+set consensus_cutoff        [keylget gap_defs CONSENSUS_CUTOFF]
+set quality_cutoff          [keylget gap_defs QUALITY_CUTOFF]
+set chem_as_double          [keylget gap_defs CHEM_AS_DOUBLE]
+set consensus_iub           [keylget gap_defs CONSENSUS_IUB]
 set template_size_tolerance [keylget gap_defs TEMPLATE_TOLERANCE]
-set align_open_cost [keylget gap_defs ALIGNMENT.OPEN.COST]
-set align_extend_cost [keylget gap_defs ALIGNMENT.EXTEND.COST]
-load_alignment_matrix [keylget gap_defs ALIGNMENT.MATRIX_FILE]
+set min_vector_len          [keylget gap_defs MIN_VECTOR_LENGTH]
+set align_open_cost         [keylget gap_defs ALIGNMENT.OPEN.COST]
+set align_extend_cost       [keylget gap_defs ALIGNMENT.EXTEND.COST]
+load_alignment_matrix       [keylget gap_defs ALIGNMENT.MATRIX_FILE]
+set ignore_all_ptype        [keylget gap_defs IGNORE_ALL_PTYPE]
+set ignore_custom_ptype     [keylget gap_defs IGNORE_CUSTOM_PTYPE]
 if {[catch {load_genetic_code -filename [keylget gap_defs GENETIC_CODE]} err]} {
     verror ERR_WARNING load_genetic_code $err
 }

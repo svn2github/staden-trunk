@@ -65,7 +65,8 @@ extern int exec_notes;			/* "exec_notes" - see notes.c */
 extern int rawdata_note;		/* "rawdata_note" - see notes.c */
 
 extern double template_size_tolerance;  /* "template_size_tolerance" */
-
+extern int    min_vector_len;		/* Minimum length of SVEC tag */
+extern int    template_check_flags;	/* TEMP_OFLAG_* for template.c */
 
 #define CONSENSUS_MODE_FREQ	  0
 #define CONSENSUS_MODE_WEIGHTED	  1 	/* as FREQ, determined by qual_cut >= 0 */

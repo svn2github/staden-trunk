@@ -41,6 +41,8 @@ int exec_notes = 0;
 int rawdata_note = 0;
 int gopenval = 8;
 int gextendval = 1;
+int min_vector_len = 0;
+int template_check_flags = 0;
 double template_size_tolerance = 1;
 
 static char *gap_defs_trace(ClientData cd, Tcl_Interp *interp,
@@ -228,6 +230,14 @@ int init_globals(Tcl_Interp *interp) {
     Tcl_LinkVar(interp, "template_size_tolerance", 
 		(char *)&template_size_tolerance,
 		TCL_LINK_DOUBLE);
+
+    /* min_vector_len */
+    Tcl_LinkVar(interp, "min_vector_len", (char *)&min_vector_len,
+		TCL_LINK_INT);
+
+    /* template_check_flags */
+    Tcl_LinkVar(interp, "template_check_flags", (char *)&template_check_flags,
+		TCL_LINK_INT);
 
 
     return TCL_OK;

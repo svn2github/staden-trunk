@@ -453,42 +453,79 @@ proc AppendRawDataNote {io path} {
     WriteRawDataNote $io $nn $rawdata
 }
 
-proc SetTemplateSizeTolerance {} {
-    global template_size_tolerance
+proc SetTemplateStatusConfig {} {
+    global template_size_tolerance min_vector_len
+    global ignore_all_ptype ignore_custom_ptype
 
     set w .template_size_tolerance
 
     if {[xtoplevel $w -resizable 0] == ""} return
-    wm title $w "Template Size Tolerance"
+    wm title $w "Template Status Configurations"
+
+    xentry $w.vector \
+	-label "Minimum valid vector tag length" \
+	-default $min_vector_len
 
     xentry $w.size \
-	-label "Limits scale factor" \
+	-label "Size limit scale factor" \
 	-default $template_size_tolerance
 
+    xyn $w.ignore_all_ptype \
+	-label "Ignore all primer-type values" \
+	-default $ignore_all_ptype \
+
+    xyn $w.ignore_custom_ptype \
+	-label "Ignore custom primer-type values" \
+	-default $ignore_custom_ptype \
+
     okcancelhelp $w.ok \
-	-ok_command "SetTemplateSizeTolerance2 $w 0" \
-	-perm_command "SetTemplateSizeTolerance2 $w 1" \
+	-ok_command "SetTemplateStatusConfig2 $w 0" \
+	-perm_command "SetTemplateStatusConfig2 $w 1" \
 	-cancel_command "destroy $w" \
 	-help_command "show_help gap4 FIXME"
-    
-    pack $w.size $w.ok -side top -fill both
+
+    pack $w.size $w.vector -side top -fill both
+    pack $w.ignore_all_ptype $w.ignore_custom_ptype -side top -fill both -expand 1
+    pack $w.ok -side top -fill both
 }
 
-proc SetTemplateSizeTolerance2 {w perm} {
-    global template_size_tolerance gap_defs env
-    
+proc SetTemplateStatusConfig2 {w perm} {
+    global template_size_tolerance min_vector_len gap_defs env
+    global ignore_all_ptype ignore_custom_ptype
+   
     set new [$w.size get]
     if {$new <= 0} {
 	bell
 	return
     }
+
+    set veclen [$w.vector get]
+    if {$veclen < 0} {
+	bell
+	return
+    }
+
+    set ignore_all_ptype    [$w.ignore_all_ptype get]
+    set ignore_custom_ptype [$w.ignore_custom_ptype get]
+
     destroy $w
 
     set template_size_tolerance $new
+    set min_vector_len $veclen
 
-    keylset gap_defs TEMPLATE_TOLERANCE $template_size_tolerance
+    keylset gap_defs TEMPLATE_TOLERANCE  $template_size_tolerance
+    keylset gap_defs MIN_VECTOR_LENGTH   $min_vector_len
+    keylget gap_defs IGNORE_ALL_PTYPE    $ignore_all_ptype
+    keylget gap_defs IGNORE_CUSTOM_PTYPE $ignore_custom_ptype
+
+    global template_check_flags
+    set template_check_flags \
+	[expr {$ignore_all_ptype*4 + $ignore_custom_ptype*8}]
 
     if {$perm} {
 	update_defs gap_defs $env(HOME)/.gaprc TEMPLATE_TOLERANCE
+	update_defs gap_defs $env(HOME)/.gaprc MIN_VECTOR_LENGTH
+	update_defs gap_defs $env(HOME)/.gaprc IGNORE_ALL_PTYPE
+	update_defs gap_defs $env(HOME)/.gaprc IGNORE_CUSTOM_PTYPE
     }
 }
