@@ -117,8 +117,11 @@ proc contig_id {path args} {
 		-width $db_namelen \
 		-command "contig_id_callback2 [list $command]"
     }
-    eval contig_id_configure $path $arglist
+    eval contig_id_configure $path -exportselection 0 $arglist
     
+    [entrybox_path $path.ent] selection range 0 end
+    focus [entrybox_path $path.ent]
+
     if {$range} {
 	#bindings
 	bind $path.ent.entry <Return> "contig_id_callback $io $path; $command"

@@ -181,9 +181,11 @@ proc create_search_win {w com {dir 0}} {
     # Options: values
     frame $of
     entrybox $of.val1 \
-	    -title "Value:" -relief sunken -command "do_search $w \"$com\""
+	 -title "Value:" -relief sunken -command "do_search $w \"$com\"" \
+	 -exportselection 0
     entrybox $of.val2 \
-	    -title "Value:" -relief sunken -command "do_search $w \"$com\""
+	 -title "Value:" -relief sunken -command "do_search $w \"$com\"" \
+	 -exportselection 0
     
 
     # Options: strand selector - only needed for sequence search
@@ -461,6 +463,10 @@ proc search_setup {w name} {
     if {$val2_name != ""} {
         $label2_win configure -text $val2_name
     }
+
+    [entrybox_path $val1_win] selection range 0 end
+    [entrybox_path $val2_win] selection range 0 end
+    focus [entrybox_path $val1_win]
 
     $w.option_frame configure -height 1
 }
