@@ -396,6 +396,10 @@ $(O)/.dir:
 	-mkdir $(O)
 	touch $(O)/.dir
 
+$(L)/.dir:
+	-mkdir $(L)
+	touch $(L)/.dir
+
 #
 # Files requiring simple C and FORTRAN compilation ($(SRC)/thing.c -> thing.o)
 # in the local directory.
