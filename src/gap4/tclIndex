@@ -33,6 +33,7 @@ set auto_index(SetGeneticCode) [list source [file join $dir configure.tcl]]
 set auto_index(SetAlignmentScores) [list source [file join $dir configure.tcl]]
 set auto_index(SetRawData) [list source [file join $dir configure.tcl]]
 set auto_index(FindRawDataNote) [list source [file join $dir configure.tcl]]
+set auto_index(SetTemplateSizeStrictness) [list source [file join $dir configure.tcl]]
 
 set auto_index(NormalDialog) [list source [file join $dir consen.tcl]]
 set auto_index(ExtendedDialog) [list source [file join $dir consen.tcl]]
@@ -151,6 +152,7 @@ set auto_index(NoteSelector) [list source [file join $dir notes.tcl]]
 
 set auto_index(get_primer_defs) [list source [file join $dir oligo_param.tcl]] 
 set auto_index(select_oligos) [list source [file join $dir oligo_param.tcl]]
+set auto_index(select_oligo_params) [list source [file join $dir oligo_param.tcl]]
 set auto_index(SuggestPrimers) [list source [file join $dir oligo_param.tcl]]
 
 set auto_index(Preassemble) [list source [file join $dir preass.tcl]]
@@ -210,6 +212,8 @@ set auto_index(tag_checklist_list) [list source [file join $dir tag_checklist.tc
 set auto_index(tag_checklist_tidy) [list source [file join $dir tag_checklist.tcl]]
 set auto_index(InitTagVar) [list source [file join $dir tag_checklist.tcl]]
 set auto_index(InitTagArray) [list source [file join $dir tag_checklist.tcl]]
+
+set auto_index(::pcr_primers::GUI) [list source [file join $dir pcr_primers.tcl]]
 
 set auto_index(HighlightReadingList) [list source [file join $dir template_display.tcl]]
 set auto_index(CreateTemplateDisplay) [list source [file join $dir template_display.tcl]]

@@ -10,18 +10,20 @@ int init_globals(Tcl_Interp *interp);
 
 
 /* Gap4 global variable accessor functions */
-int   gap4_global_get_quality_cutoff( void );
-void  gap4_global_set_quality_cutoff( int qc );
-float gap4_global_get_consensus_cutoff( void );
-void  gap4_global_set_consensus_cutoff( float cc );
-int   gap4_global_get_consensus_mode( void );
-void  gap4_global_set_consensus_mode( int cm );
-int   gap4_global_get_maxseq( void );
-void  gap4_global_set_maxseq( int ms );
-int   gap4_global_get_gopenval( void );
-void  gap4_global_set_gopenval( int ov );
-int   gap4_global_get_gextendval( void );
-void  gap4_global_set_gextendval( int ev );
+int    gap4_global_get_quality_cutoff( void );
+void   gap4_global_set_quality_cutoff( int qc );
+float  gap4_global_get_consensus_cutoff( void );
+void   gap4_global_set_consensus_cutoff( float cc );
+int    gap4_global_get_consensus_mode( void );
+void   gap4_global_set_consensus_mode( int cm );
+int    gap4_global_get_maxseq( void );
+void   gap4_global_set_maxseq( int ms );
+int    gap4_global_get_gopenval( void );
+void   gap4_global_set_gopenval( int ov );
+int    gap4_global_get_gextendval( void );
+void   gap4_global_set_gextendval( int ev );
+double gap4_global_get_template_size_strictness( void );
+void   gap4_global_set_template_size_strictness( double ts );
 
 
 
@@ -61,6 +63,8 @@ extern int consensus_iub;		/* "consensus_iub" -  see qual.c */
 					/* "gap_fatal_errors" - see gap-error.c */
 extern int exec_notes;			/* "exec_notes" - see notes.c */
 extern int rawdata_note;		/* "rawdata_note" - see notes.c */
+
+extern double template_size_strictness; /* "template_size_strictness" */
 
 
 #define CONSENSUS_MODE_FREQ	  0

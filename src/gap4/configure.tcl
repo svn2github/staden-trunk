@@ -452,3 +452,36 @@ proc AppendRawDataNote {io path} {
 
     WriteRawDataNote $io $nn $rawdata
 }
+
+proc SetTemplateSizeStrictness {} {
+    global template_size_strictness
+
+    set w .template_size_strictness
+
+    if {[xtoplevel $w -resizable 0] == ""} return
+    wm title $w "Template Size Strictness"
+
+    xentry $w.size \
+	-label "Limits scale factor" \
+	-default $template_size_strictness
+
+    okcancelhelp $w.ok \
+	-ok_command "SetTemplateSizeStrictness2 $w" \
+	-cancel_command "destroy $w" \
+	-help_command "show_help gap4 FIXME"
+    
+    pack $w.size $w.ok -side top -fill both
+}
+
+proc SetTemplateSizeStrictness2 {w} {
+    global template_size_strictness
+    
+    set new [$w.size get]
+    if {$new <= 0} {
+	bell
+	return
+    }
+
+    destroy $w
+    set template_size_strictness $new
+}

@@ -3,6 +3,7 @@
 #include "IO.h"
 #include "template.h"
 #include "tagUtils.h"
+#include "gap_globals.h"
 
 /*
  * Lookup tables to calculate the primer and strand values. We have two
@@ -762,11 +763,13 @@ static void check_template_position(GapIO *io, template_c *t) {
 	 * Check the primer size is within range.
 	 */
 	template_read(io, t->num, te);
-	if ((ABS(t->end - t->start) < te.insert_length_min) ||
-	    (ABS(t->end - t->start) > te.insert_length_max))
+	if ((ABS(t->end - t->start) <
+	         te.insert_length_min / template_size_strictness) ||
+	    (ABS(t->end - t->start) >
+	         te.insert_length_max * template_size_strictness))
 	    t->consistency |= TEMP_CONSIST_DIST;
 	
-	if (t->max - t->min > te.insert_length_max)
+	if (t->max - t->min > te.insert_length_max * template_size_strictness)
 	    t->consistency |= TEMP_CONSIST_DIST;
 	
 	/*
@@ -859,7 +862,7 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
     }
     t->computed_length = ABS(MAX(t->end, t->end2) - MIN(t->start, t->start2));
 
-    if (t->computed_length > te.insert_length_max)
+    if (t->computed_length > te.insert_length_max * template_size_strictness)
 	t->consistency |= TEMP_CONSIST_DIST;
 
     if (!(t->flags & TEMP_FLAG_SPANNING))
@@ -912,10 +915,11 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 
 	t->computed_length = length;
 
-	if (length > te.insert_length_max) {
+	if (length > te.insert_length_max * template_size_strictness) {
 	    t->consistency |= TEMP_CONSIST_DIST;
 	}
-	if (overlap > 0 && length < te.insert_length_max) {
+	if (overlap > 0 &&
+	    length < te.insert_length_min / template_size_strictness) {
 	    t->consistency |= TEMP_CONSIST_DIST;
 	}
     }
@@ -978,8 +982,8 @@ void check_template_length_overlap(GapIO *io, template_c *t,
 
 	template_read(io, t->num, te);
 	t->computed_length = length;
-	if (length > te.insert_length_max ||
-	    length < te.insert_length_min) {
+	if (length > te.insert_length_max * template_size_strictness ||
+	    length < te.insert_length_min / template_size_strictness) {
 	    t->consistency |= TEMP_CONSIST_DIST;
 	}
     }
