@@ -143,8 +143,8 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 	    ? EXPERIMENT_LONG
 	    : EXPERIMENT_RESEQ;
 	exp[nexp-1].nsolutions = islong
-	    ? fin->opts.reseq_nsolutions
-	    : fin->opts.long_nsolutions;
+	    ? fin->opts.long_nsolutions
+	    : fin->opts.reseq_nsolutions;
 	exp[nexp-1].score = 0;
 	exp[nexp-1].cost = cost;
 	exp[nexp-1].log_func = islong ? log_long : log_reseq;
