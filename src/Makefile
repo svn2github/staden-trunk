@@ -80,6 +80,10 @@ relink:
 	-rm -f lib/$(O)/so_locations
 	$(MAKE) $(FLAGS) JOB=relink
 
+xrelink:
+	-rm -f lib/$(O)/so_locations
+	$(MAKE) $(FLAGS) JOB=relink
+
 depend:
 	$(MAKE) $(FLAGS) JOB=depend
 
