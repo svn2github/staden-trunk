@@ -1003,7 +1003,7 @@ static void sort_mutations(EdStruct *xx, mutation_t ***muts,
 
     reflen = DB_Length(xx, DBI(xx)->reference_seq);
 
-    processed = (int *)xcalloc(DBI_gelCount(xx), sizeof(int));
+    processed = (int *)xcalloc(DBI_gelCount(xx)+1, sizeof(int));
     if (!processed)
 	return;
 
