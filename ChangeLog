@@ -1,4 +1,472 @@
-2004-11-09  James Bonfield  <jkb@sanger.ac.uk>
+2005-03-29  jkbonfield  <jkbonfield>
+
+	* src/Makefile.thirdparty:
+	(09:01:02) Added 64-bit support for linux builds. 
+
+	* src/haplo/haplo.tcl:
+	(09:03:43) More UI tweaks: "add fake" button; cursor colouring. 
+
+	* src/haplo/haplo_cons.c,
+	* src/haplo/haplo_tcl.c:
+	(09:04:25) Removal of debugging output. 
+
+	* tables/gaprc_menu_full:
+	(09:05:17) Renamed group "by grouping" to "by set". 
+
+	* tables/haplorc:
+	(09:05:46) Added cursor colourings. 
+
+2005-03-23  jkbonfield  <jkbonfield>
+
+	* src/gap4/tk-io-reg.c:
+	(15:25:49) Added refs and sent_by fields of cursor structure to the
+	tcl keyed list copy on CURSOR_NOTIFY events. 
+
+	* src/haplo/haplo_cons.c:
+	(15:27:10) Fixed the template depth calculation. 
+
+	* src/haplo/haplo.tcl:
+	(15:28:12) Improved documentation. The plot now starts from zero
+	for the contig ruler, with negative Y coordinates being the
+	headings. Improved 'cursor' control. 
+
+2005-03-22  jkbonfield  <jkbonfield>
+
+	* src/haplo/Makefile,
+	* src/haplo/haplo.h,
+	* src/haplo/haplo.tcl:
+	* src/haplo/haplo_cons.c,
+	* src/haplo/haplo_snps.c,
+	* src/haplo/haplo_split.c,
+	* src/haplo/haplo_tcl.c:
+	(15:16:51) First draft of haplotype/repeat splitting interface. 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/contigEditor.h,
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edCommands.c,
+	* src/gap4/edInterface.c,
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c:
+	(15:23:23) Added the notion of "sets" to the editor structures and
+	GUI. This basically i a way of grouping readings into distinct sets
+	and a way of showing only one set at a time in the editor.
+	
+	The plan is for sets to become more widely used, for breaking
+	contigs apart, etc. 
+
+	* src/gap4/allelic_discreps.c:
+	(15:31:20) Probably last version and to be deprecated - just
+	changed for some debugging / logging output. 
+
+	* src/gap4/check_assembly.c,
+	* src/gap4/fij.c,
+	* src/gap4/find_oligo.c,
+	* src/gap4/find_repeats.c:
+	(16:11:39) Updated to change for the new argument syntax of
+	edit_contig(). 
+
+	* src/gap4/confidence_graph.c,
+	* src/gap4/confidence_graph.h,
+	* src/gap4/confidence_graph.tcl:
+	(16:18:34) Renamed the existing discrepancy plot to be a "diploid
+	descrepancy" plot and added a new discrepancy plot that excludes
+	the code to check if the frequency matches an expected 50/50 ratio. 
+
+	* src/Makefile:
+	(16:56:11) Added haplo subdirectory. 
+
+	* src/gap4/io-reg.c:
+	(17:17:13) It's scary to notice oddities with the low-level contig
+	registration scheme after all these years. The contig_notify system
+	when given contig 0 as a placeholder meaning "all contigs" now
+	sends over the correct contig number when calling the callback
+	functions rather than zero. 
+
+	* src/gap4/newgap_cmds.c:
+	* src/gap4/newgap_structs.h:
+	(17:19:18) Addition of a contig_lock_write tcl interface. Also
+	updated the discrepancy plot arguments (-two_alleles). 
+
+	* src/gap4/qual.c:
+	(17:22:09) In process_discrep the confidence values are now
+	computed in a marginally different way (same maths, but more
+	robust). Computing "number close to 1" and then doing 1-that gives
+	precision problems, but computing the 1-value directly yields more
+	accurate results. Consequently the confidence scores can be much
+	higher without data precisison truncation. 
+
+	* src/gap4/searchUtils.c:
+	(17:23:16) Changed calls to calc_quality due to contEd_info
+	prototype change. 
+
+	* src/gap4/tk-io-reg.c:
+	* src/gap4/tk-io-reg.h:
+	(17:24:17) Added REG_LENGTH support and cursor locking calls for
+	the tcl interface to io-reg. 
+
+	* src/gap4/vseqs.c:
+	(17:26:03) Took out the limit of only being able to remove virtual
+	sequences from a virtual contig. We can now populate it with real
+	sequences and remove real sequences that we do not wish to be in
+	the computed consensus (for example). Also removed some debugging
+	output. 
+
+	* src/mutscan/main.cpp:
+	(17:28:04) Fixed usage output. 
+
+	* src/pregap4/pregap4,
+	* src/spin/spin,
+	* src/trev/trev:
+	(17:29:02) Added MACHINE support for linux-ia64. 
+
+	* src/tk_utils/tkTrace.c:
+	* src/tk_utils/tkTrace.h:
+	* src/tk_utils/tkTraceDisp.c,
+	* src/trev/trev.tcl:
+	(17:30:42) Added support for a -trace_scale option in trev (and
+	report usage too). In the widget this overrides the auto-scaling to
+	maxTraceVal. 
+
+	* src/tk_utils/user_defaults.tcl:
+	(17:31:20) Removal of debugging output. 
+
+	* tables/gaprc:
+	* tables/gaprc_menu_full:
+	(17:32:22) *** empty log message *** 
+
+	* tables/haplorc:
+	(17:32:51) First version of the config for the haplo gap4 package. 
+
+2005-03-18  jkbonfield  <jkbonfield>
+
+	* src/gap4/copy_db.c:
+	(16:24:56) Added code to fix the min..max size of templates (if min
+	> max). 
+
+	* src/gap4/tkEdUtils.c:
+	(16:31:52) Highlight disagreements by dots now uses ":" to display
+	bases that differ but are below the quality threshold. 
+
+2005-03-02  jkbonfield  <jkbonfield>
+
+	* src/gap4/tman_display.c:
+	(11:54:27) Fixed "embedded traces" in the Join Editor. 
+
+2005-02-21  jkbonfield  <jkbonfield>
+
+	* src/gap4/newgap_cmds.c:
+	(16:49:43) Changed mask variable sent to find_repeats so that
+	masking repeats actually does something. 
+
+2005-02-09  jkbonfield  <jkbonfield>
+
+	* src/io_lib/abi/seqIOABI.c:
+	(10:08:03) Added getABIIndexEntrySW and modified getABIString to
+	correctly determine the string type (pascal vs C-string). This
+	means MODL numbers now come out as 3730 instead of 730 (for
+	example). 
+
+2005-02-04  jkbonfield  <jkbonfield>
+
+	* src/gap4/join.c:
+	(14:21:47) Fixed a bug in the reading to contig number caching
+	caused by joining the last contig in the database to another. 
+
+	* src/gap4/seqInfo.c:
+	(14:25:00) Removed a memory leak and a potential free of an
+	undefined pointer. 
+
+2005-01-21  jkbonfield  <jkbonfield>
+
+	* src/tk_utils/sheet.c:
+	(12:31:04) Fixed bug #1105931.
+	
+	Initialise the sw->window to zero in sheet_create. This means that
+	starting the join editor on the default (ie "next") match for Find
+	Internal Joins on the demo/gap/DEMO.0 database does not crash on
+	Windows.
+	
+	I do not know why the lack of initialisation was so data specific
+	and OS specific. Valgrind reports no problems on linux and in
+	theory this is correct (as sw->window shouldn't be accessed until
+	after it's been initialised for real, due to Tk_IsMapped calls
+	elsewhere). 
+
+	* src/gap4/contig_editor.tcl:
+	(15:06:31) Added auto-scrolling when dragging out a selection
+	beyond the boundaries of the editor text widget. 
+
+2005-01-20  jkbonfield  <jkbonfield>
+
+	* src/gap4/qual.c:
+	(10:25:32) Fixed bug #1104453. We now fill out the qual2
+	"2nd-highest confidence" array when using the base frequencies or
+	weighted base frequencies algorithms. 
+
+	* src/gap4/contigEditor.c:
+	(11:40:32) Fixed bug #1104446.
+	
+	When the user configures the contig editor width to be different to
+	the default the display was drawn at the default width until the
+	next resize event. 
+
+2004-12-06  jkbonfield  <jkbonfield>
+
+	* src/Misc/vlen.c:
+	(17:25:45) Moved va_list variable into the #ifdef block so that the
+	variable is only declared when used. 
+
+	* src/gap4/consen.c:
+	(17:31:54) Addec ctype.h include for prototypes. 
+
+	* src/gap4/extract.c:
+	(17:35:34) Removal of unused variables. 
+
+	* src/gap4/gap_utils.tcl:
+	(17:37:03) Optimisations of obtaining reading names and getting the
+	left most reading (quicker now to convert to contig number and read
+	left-most rather than chain left). 
+
+	* src/gap4/oligo.h:
+	(17:39:09) Added createTmpAnnotation prototype. 
+
+	* src/gap4/tman_interface.c:
+	(17:41:18) Removal of unused variables. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(17:41:58) Corrected minor compiler warnings. 
+
+	* src/mk/linux.mk:
+	(17:43:47) Added -D_FILE_OFFSET_BITS=64 to enable 64-bit file
+	offset support. 
+
+	* src/prefinish/finish_pcr.c:
+	(17:45:08) Used %"PRId64" instead of %ld for printf of
+	(casted)strlen result. This is the official C9X syntax. 
+
+	* src/prefinish/tooltips.tcl:
+	(17:51:44) Temporary fix - catch{} the tooltip_font creation as the
+	contig editor may also have created this font. 
+
+	* src/tk_utils/tkSheet_common.c:
+	(17:53:05) Cancel the idle call of the SheetDisplay function when
+	destroying a sheet widget. This fixed a race condition triggerable
+	by scripts (but apparently not in gap4 itself) whereby SheetDisplay
+	could get called on a destroyed sheet. 
+
+	* tables/config.prefinish:
+	(17:53:50) An improved "prefinish" GUI config. 
+
+	* src/gap4/IO.c,
+	* src/gap4/IO.h,
+	* src/gap4/io_utils.c,
+	* src/gap4/io_utils.h:
+	(17:55:18) Added a cache of reading-number to contig-number
+	conversions. The rnumtocnum and chain_left functions now use this
+	in prefernce to taking a brute-force approach. There are also
+	functions for update_rnumtocnum and invalidate_rnumtocnum to ensure
+	this information does not become inconsistent. 
+
+	* src/gap4/IO2.c,
+	* src/gap4/IO3.c,
+	* src/gap4/assemble_direct.c,
+	* src/gap4/dis_readings.c,
+	* src/gap4/join.c:
+	* src/gap4/preass.c:
+	(17:56:26) Added calls to update_rnumtocnum and
+	invalidate_rnumtocnum to make sure the new cache of reading numbers
+	to contig numbers is kept in sync. 
+
+	* src/gap4/list_proc.tcl:
+	(17:56:50) A major rewrite of UpdateContigList; it is now
+	substantially faster. 
+
+	* src/gap4/newgap_cmds.c:
+	(17:57:50) Added a get_contig_nums sub-method to the db_info
+	command (in addition to the existing get_contig_num call). Some of
+	the other db_info methods now return 64-bit results. 
+
+	* src/gap4/template_display.c,
+	* src/gap4/template_display.h:
+	(17:58:16) CalcTotalReadingLen, CalcTotalContigLen and
+	CalcLongContig now all return 64-bit data types. 
+
+	* src/gap4/dbcheck.c:
+	(17:59:34) We now check the rnumtocnum cache in memory matches the
+	GContigs and GReadings structures. This checking code also
+	auto-corrects any problems it finds (in addition to complaining
+	about them). 
+
+	* src/gap4/gap.tcl:
+	(18:00:21) Use Tcl wide() cast to display 64-bit integers (now
+	returned from db_info). 
+
+	* src/gap4/contig_selector.c,
+	* src/gap4/contig_selector.tcl:
+	(18:02:22) Tags added to canvas items are now also stored in a hash
+	(indexed by contig number). This provides a substantially faster
+	way to lookup canvas items for a specific contig number. (The
+	canvas findtag methods appear to be O(N^2) complexity for N canvas
+	items.) 
+
+	* src/gap4/auto_assemble.c:
+	(18:08:55) Added calls to update_rnumtocnum and
+	invalidate_rnumtocnum to make sure the new cache of reading numbers
+	to contig numbers is kept in sync. 
+
+2004-11-30  jkbonfield  <jkbonfield>
+
+	* src/gap4/IO2.c:
+	(14:58:36) Replaced memcpy with memmove in io_delete_contig.
+	Somehow it used to work anyway, but was presumably
+	compiler/C-library dependant. 
+
+	* src/gap4/join.c:
+	(14:59:40) Removed a redundant call to destroy_alignment_params
+	which was causing memory to be freed twice and giving malloc
+	problems. 
+
+2004-11-29  jkbonfield  <jkbonfield>
+
+	* src/gap4/io_utils.c:
+	(09:24:16) Massive speedup of lget_contig_num changing it from
+	O(N^2) to O(N) in complexity. The offending double-loop sped up by
+	100,000 times when run on 50000 contigs from 2.6million reads. 
+
+	* src/gap4/newgap_cmds.c:
+	(09:25:32) Used PRId64 for printf type in db_info so that functions
+	returning int64_t get passed back to Tcl correctly. 
+
+2004-11-26  jkbonfield  <jkbonfield>
+
+	* src/g/Makefile,
+	* src/g/dependencies,
+	* src/g/freetree-io.h,
+	* src/g/freetree.c,
+	* src/g/freetree.h,
+	* src/g/g-db.c:
+	(09:49:40) Added support for 64-bit offsets in AUX files. This
+	means that Gap4 databases can be larger than 2Gb. Support for
+	32-bit is still maintained for backwards compatibility.
+	
+	The main heart of this is to redefine the GImage data type to be an
+	8-byte integer and to split the functions in g-io pointed to by
+	low_level_vectors into 32-bit and 64-bit versions. 
+
+	* src/g/g-debug.c,
+	* src/g/g-error.c,
+	* src/g/g-error.h,
+	* src/g/g-filedefs.h,
+	* src/g/g-files.c,
+	* src/g/g-io.c,
+	* src/g/g-io.h,
+	* src/g/g-os.h,
+	* src/g/g-request.c,
+	* src/g/g-struct.c,
+	* src/g/g-struct.h:
+	(09:49:41) Added support for 64-bit offsets in AUX files. This
+	means that Gap4 databases can be larger than 2Gb. Support for
+	32-bit is still maintained for backwards compatibility.
+	
+	The main heart of this is to redefine the GImage data type to be an
+	8-byte integer and to split the functions in g-io pointed to by
+	low_level_vectors into 32-bit and 64-bit versions. 
+
+	* src/Misc/os.h:
+	(09:56:17) Added int8 type and corresponding swapping functions.
+	Also added printf macros, if missing, (for %ld, %d, %lld, etc) as
+	defined by C9X. 
+
+	* src/gap4/copy_db_main.c:
+	(09:57:34) Added a -b option to define the output database bitsize
+	(for the aux file). Also rewrote the argument parsing to use
+	getopt() instead. 
+
+	* src/gap4/f2c.c,
+	* src/gap4/legacy.f:
+	(09:59:06) Split the swritf function into a series of swrt1, swrt2,
+	etc functions. Each of these are identical interfaces to the same
+	underlying function, but from fortran we make sure to never call
+	the same function with a different number or different type of
+	arguments (as fortran technically doesn't support varargs). This
+	removes the compiler warnings from g77. 
+
+	* src/gap4/gap-create.c,
+	* src/gap4/gap-create.h,
+	* src/gap4/gap.tcl,
+	* src/gap4/newgap_cmds.c:
+	(10:00:27) Added support for 64-bit aux files. 
+
+	* src/mutlib/array.hpp:
+	(10:02:59) Worked around a problem (a real bug perhaps? or maybe
+	just a compiler oddity) when compiling with gcc 3.4.
+	
+	If template A contains protected members and template B derives
+	itself from template A, then we cannot directly access the
+	protected members of A within B. Instead we need to explicitly
+	specify the template search path or use this->member. 
+
+2004-11-18  jkbonfield  <jkbonfield>
+
+	* src/gap4/enter_tags.tcl:
+	(11:28:50) Fixed typo causing Tcl error in Enter Tags. 
+
+	* src/gap4/tagU2.c:
+	(11:29:38) Consensus tags now honour the unpadded_tags switch. 
+
+2004-11-16  jkbonfield  <jkbonfield>
+
+	* src/io_lib/exp_file/expFileIO.c:
+	(12:10:16) Major speed up of reading large experiment files. Tested
+	on a 1Mb sequence with AV, ON and SQ lines the new code is 1000
+	times faster on the Alpha.
+	
+	Primarily the difference comes from removing O(N^2) complexities by
+	removing strcat & strlen type of operations. 
+
+	* src/gap4/confidence_graph.c:
+	(14:23:26) Major speed improvements in plot_confidence() for qual
+	arrays that contain runs of the same value. In this case we
+	collapse the items into a single horizontal ruler. On test projects
+	this seemed to give 10-20 fold speedups of plotting and subsequent
+	canvas operations. 
+
+	* src/gap4/confidence_graph.c,
+	* src/gap4/consistency_canvas_box.c,
+	* src/gap4/contig_selector.c:
+	* src/gap4/gap_canvas_box.c,
+	* src/gap4/plot_quality.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c:
+	* src/tk_utils/canvas_box.c,
+	* src/tk_utils/element_canvas.c,
+	* src/tk_utils/ruler_tick.c,
+	* src/tk_utils/tkRaster.c:
+	(15:41:58) In lots of places we sprintf to command strings to pass
+	over to Tcl. Those involved with scale factors (eg scaling down
+	10Mb to 600 pixels) often up with as .000???, so the default %f
+	format loses precision. These have been changed to %.20f (and the
+	buffer sizes checked to make sure they cope).
+	
+	This corrects a bug with displayed positions in the gap4
+	consistency plots not matching those shown in the contig editor,
+	and probably many other similar bugs too. 
+
+	* src/gap4/stop_codon.c:
+	* src/spin/nip_stop_codon.c:
+	(17:10:55) Removed the limitations on the maximum number (was
+	10000) of stop codons found. 
+
+	* src/gap4/stop_codon.c:
+	(17:34:26) Fixed a bug with all stop codons beyond the unpadded
+	length being "modulo"d back to the start of the contig. Stops at
+	the end now appear correctly. 
+
+2004-11-09  James Bonfield  <jkbonfield>
 
 	TAG CODEBASE with rel-1-5-3
 
@@ -1462,7 +1930,7 @@
 	new plots were brought up. Caused due to the CONTIG_REG
 	notification triggering a CURSOR_NOTIFY event using the editor
 	internal sequence number instead of the external reading number. 
-2004-05-11  James Bonfield  <jkb>
+2004-05-11  James Bonfield  <jkbonfield>
 
 	* tables/gaprc:
 	Set the default Sequence Search percentage match to be 100% (was
@@ -1618,12 +2086,12 @@
 	
 	The problem occured when 'text' ended in a pad. 
 
-2004-04-26  James Bonfield  <jkb>
+2004-04-26  James Bonfield  <jkbonfield>
 
 	* src/gap4/gap.tcl:
 	Update version to 4.10b2
 
-2004-04-23  James Bonfield  <jkb>
+2004-04-23  James Bonfield  <jkbonfield>
 
 	* src/gap4/newgap_cmds.c:
 	Added a -quality option to the quality_clip_reads option.
@@ -1773,14 +2241,14 @@
 	redhat9 or gap4) and generally resizing has been buggy for a long
 	while. Hopefully this produces fewer problems than it solves. 
 
-2004-04-14  James Bonfield  <jkb>
+2004-04-14  James Bonfield  <jkbonfield>
 
 	* src/gap4/dis_readings.c (disassemble_readings): 
 	Removed a database corruption caused when a reading is removed
 	from the database (not just moved) and then no subsequent write of
 	the main GT_Database record is performed.
 
-2004-04-13  jkbonfield  <jkb>
+2004-04-13  jkbonfield  <jkbonfield>
 
 	* src/g/g-files.c:
 	(10:32:26) Updated comments regarding MMAP speed tests 
@@ -1899,7 +2367,7 @@
 	(11:07:19) Added more options for the web browser to use for online
 	help. Konqueror, mozilla and galeon are now supported. 
 
-2004-04-08  jkbonfield  <jkb>
+2004-04-08  jkbonfield  <jkbonfield>
 
 	* src/gap4/ng_fb_cmds.tcl:
 	(10:17:11) Honour the no_csel command line option when opening new
@@ -1953,7 +2421,7 @@
 	_cross() implementations. This avoids the need for makeinfo and
 	hence also avoids problems with no .txt copies of images. 
 
-2004-04-06  jkbonfield  <jkb>
+2004-04-06  jkbonfield  <jkbonfield>
 
 	* src/gap4/oligo.c,
 	* src/gap4/tkEditor.c:
@@ -1973,7 +2441,7 @@
 	
 	Added primlib_choose_pcr function. 
 
-2004-03-30  jkbonfield  <jkb>
+2004-03-30  jkbonfield  <jkbonfield>
 
 	* src/gap4/consen.c:
 	(08:56:23) Allow ambiguity codes to be written to FASTA files. Not
@@ -1998,7 +2466,7 @@
 	(09:11:50) Added _select_region function (which should have been
 	checked in with the last round of editor updates). 
 
-2004-03-22  jkbonfield  <jkb>
+2004-03-22  jkbonfield  <jkbonfield>
 
 	* src/tk_utils/html_library.tcl:
 	(11:25:37) Removed the focus hack which broke when tk was updated
@@ -2016,7 +2484,7 @@
 	* ChangeLog:
 	(11:35:15) *** empty log message *** 
 
-2004-03-15  jkbonfield  <jkb>
+2004-03-15  jkbonfield  <jkbonfield>
 
 	* src/gap4/newgap_cmds.c:
 	(16:08:01) Added tcl interface to the list_base_confidence command. 
@@ -2033,7 +2501,7 @@
 	* tables/gaprc_menu_full:
 	(16:12:40) Added List Base Confidences to view menu. 
 
-2004-03-12  jkbonfield  <jkb>
+2004-03-12  jkbonfield  <jkbonfield>
 
 	* src/gap4/edUtils.h,
 	* src/gap4/edUtils2.c:
@@ -2047,13 +2515,13 @@
 	
 	The search by tags mode now also matches in padded sequence. 
 
-2004-03-11  jkbonfield  <jkb>
+2004-03-11  jkbonfield  <jkbonfield>
 
 	* src/gap4/find_oligo.c:
 	(11:57:05) Fixed a buffer overflow (and general inefficiency) in
 	calling the depadding code. 
 
-2004-03-10  jkbonfield  <jkb>
+2004-03-10  jkbonfield  <jkbonfield>
 
 	* src/gap4/qual.c:
 	(14:07:34) Added a consensus consistency quality array (in qual2)
@@ -2093,7 +2561,7 @@
 	(14:16:48) Renamed "save" to "save order" to avoid confusion with
 	saving the list itself to disk. 
 
-2004-03-05  jkbonfield  <jkb>
+2004-03-05  jkbonfield  <jkbonfield>
 
 	* tables/gaprc,
 	* tables/gaprc_menu_full:
@@ -2110,7 +2578,7 @@
 	(12:42:20) Added a new option to allow the highlight disagreements
 	mode to be filtered by base quality. 
 
-2004-03-04  jkbonfield  <jkb>
+2004-03-04  jkbonfield  <jkbonfield>
 
 	* src/prefinish/finish.c,
 	* src/prefinish/finish.h,
@@ -2379,11 +2847,11 @@
 	systems the linker refuses to allow unresolved (but unused)
 	symbols. 
 
-2004-02-12  James Bonfield  <jkb>
+2004-02-12  James Bonfield  <jkbonfield>
 
 	TAG CODEBASE with rel-1-4
 
-2004-02-12  James Bonfield  <jkb>
+2004-02-12  James Bonfield  <jkbonfield>
 
 	* src/gap4/edStructs.h,
 	* src/gap4/edUtils.h,
@@ -2428,17 +2896,17 @@
 	* src/text_utils/dependencies:
 	(10:32:01) Updated dependency files (from gmake depend)
 
-2004-02-09  James Bonfield  <jkb>
+2004-02-09  James Bonfield  <jkbonfield>
 
 	* src/io_lib/exp_file/expFileIO.c,
 	* src/io_lib/exp_file/expFileIO.h:
 	(14:39:52) Added LG (LiGation) to experiment file definition. 
 
-2004-02-05  James Bonfield  <jkb>
+2004-02-05  James Bonfield  <jkbonfield>
 
 	* gap4_production link updated (Sanger specific)
 
-2004-02-03  James Bonfield  <jkb>
+2004-02-03  James Bonfield  <jkbonfield>
 
 	* src/gap4/IO2.c,
 	* src/gap4/enter_tags.tcl,
@@ -2456,7 +2924,7 @@
 	* src/copy_reads/copy_reads.c:
 	(09:58:11) Updated call of create_tag_for_gel. 
 
-2004-01-27  James Bonfield  <jkb>
+2004-01-27  James Bonfield  <jkbonfield>
 
 	* src/gap4/dis_readings.c:
 	(10:17:09) Remove duplicates from fofn before disassembling as they
@@ -2467,14 +2935,14 @@
 	function so that disassemble readings and break contig have more
 	visible error conditions. 
 
-2004-01-22  James Bonfield  <jkb>
+2004-01-22  James Bonfield  <jkbonfield>
 
 	* src/gap4/qual.c:
 	(11:52:46) Changed the dependent_table[] to increment by 7
 	initially instead of 8 so that the scores mirror the old version
 	more closely. 
 
-2004-01-21  James Bonfield  <jkb>
+2004-01-21  James Bonfield  <jkbonfield>
 
 	* src/gap4/actf.c:
 	(10:18:07) Commented out previous change to do with lockf on the
@@ -2511,7 +2979,7 @@
 	(10:29:14) Updated make install and added the ends_only config
 	script. 
 
-2004-01-14  James Bonfield  <jkb>
+2004-01-14  James Bonfield  <jkbonfield>
 
 	* src/tk_utils/user_defaults.tcl:
 	(14:52:29) When loading up *rc files, source *rc.local too if it
@@ -2536,7 +3004,7 @@
 	* src/seqed/texteditor.itk:
 	(15:51:07) Missing files added 
 
-2004-01-13  James Bonfield  <jkb>
+2004-01-13  James Bonfield  <jkbonfield>
 
 	* src/gap4/gap.tcl:
 	Gap4 version "4.9 test 3"
@@ -2546,7 +3014,7 @@
 	* src/gap4/trace_display.tcl:
 	(09:22:51) Fixed trace flash for trace display. 
 
-2004-01-13  James Bonfield  <jkb>
+2004-01-13  James Bonfield  <jkbonfield>
 
 	* src/io_lib/read/translate.c:
 	(17:02:00) In read2exp only set the file format to be TT_EXP when
@@ -2596,7 +3064,7 @@
 	* src/gap4/gap_nav.tcl:
 	(11:17:20) fixed bell before raising dialog. 
 
-2004-01-12  James Bonfield  <jkb>
+2004-01-12  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish_main.c:
 	(10:35:03) Added a two-pass method to generate_experiments. Pick
@@ -2656,13 +3124,13 @@
 	(15:53:06) Fixed next/previous bug and added error checks on
 	contigs not found. 
 
-2004-01-09  James Bonfield  <jkb>
+2004-01-09  James Bonfield  <jkbonfield>
 
 	* lib/Makefile:
 	* lib/tablelist3.4/**
 	(14:42:07) Upgraded tablelist to v3.4 
 
-2003-12-18  James Bonfield  <jkb>
+2003-12-18  James Bonfield  <jkbonfield>
 
 	* src/tk_utils/text_output.c:
 	(16:13:56) Include hostname in the log_file output 
@@ -2670,12 +3138,12 @@
 	* src/gap4/dis_readings.c:
 	(16:14:28) Fixed more tag corruptions from disassemble readings. 
 
-2003-12-16 James Bonfield <jkb>
+2003-12-16 James Bonfield <jkbonfield>
 
 	TAG CODEBASE with rel-1-3
 	Gap4 version "4.9 test 2"
 	
-2003-12-16  James Bonfield  <jkb>
+2003-12-16  James Bonfield  <jkbonfield>
 
 	* src/gap4/gap.tcl:
 	(16:54:09) Version incr. 
@@ -2695,7 +3163,7 @@
 	(16:59:15) Disable experiment file redirection so that the base
 	positions are valid. 
 
-2003-12-08  James Bonfield  <jkb>
+2003-12-08  James Bonfield  <jkbonfield>
 
 	* src/gap4/contig_editor.tcl,
 	* src/gap4/edStructs.h,
@@ -2736,12 +3204,12 @@
 	* src/prefinish/finish_cDNA:
 	(12:13:38) Min template score is now 0.1 (instead of 0.3). 
 
-2003-12-01 James Bonfield <jkb>
+2003-12-01 James Bonfield <jkbonfield>
 
 	TAG CODEBASE with rel-1-2
 	Gap4 version "4.9 test 1"
 	
-2003-12-01 James Bonfield <jkb>
+2003-12-01 James Bonfield <jkbonfield>
 
 	* src/gap4/IO.h,
 	* src/gap4/IO3.c:
@@ -2783,7 +3251,7 @@
 	* src/gap4/template_display.h:
 	(15:30:14) Moved update_reading_list function to edInterface.c 
 
-2003-11-26 James Bonfield <jkb>
+2003-11-26 James Bonfield <jkbonfield>
 
 	* src/gap4/break_contig.c,
 	* src/gap4/dis_readings.c,
@@ -3073,7 +3541,7 @@
 	Added hyperlinks to the disassemble and 'set active list' lists
 	created from the editor. 
 
-2003-10-16  James Bonfield  <jkb>
+2003-10-16  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish.[ch], src/prefinish/finish_utils.[ch]:
 	Added an svec_as_cvec flag to allow SVEC tags to be treated as the
@@ -3124,7 +3592,7 @@
 	Fixed default value of pwalk_nsolutions from 400 (a cut and paste
 	error) to 1. Luckily finish.tcl specified this explicitly. 
 
-2003-08-07  James Bonfield  <jkb>
+2003-08-07  James Bonfield  <jkbonfield>
 
 	* src/seq_utils/dna_utils.c:
 	Used (unsigned char) cast instead of (unsigned) for index to
@@ -3136,7 +3604,7 @@
 	Remember the search ahead/back and seq length parameters for the
 	duration of the gap4 session.
 
-2003-08-06  James Bonfield  <jkb>
+2003-08-06  James Bonfield  <jkbonfield>
 
 	* src/io_lib/abi/seqIOABI.c:
 	Prevent the SPAC (average spacing) in abi files from being
@@ -3144,7 +3612,7 @@
 	Also disabled the base reordering code as I believe this is not
 	the correct thing to do.
 
-2003-08-05  James Bonfield  <jkb>
+2003-08-05  James Bonfield  <jkbonfield>
 
 	* lib/prefinish/finish.[ch]: 
 	We now search for fake templates (func skip_fake_templates) based
@@ -3164,7 +3632,7 @@
 	message to the X server and hence gives very slow lag for remote
 	connections.
 
-2003-08-04  James Bonfield  <jkb>
+2003-08-04  James Bonfield  <jkbonfield>
 
 	* src/io_lib/utils/compress.c: 
 	Check for errors in fcompress_file. If the file created was fopened
@@ -3172,11 +3640,11 @@
 	fcompress_file will fail as the process cannot read back the file
 	it wrote.
 
-2003-07-30  James Bonfield  <jkb>
+2003-07-30  James Bonfield  <jkbonfield>
 
 	* gap4_production link updated.
 
-2003-07-23  James Bonfield  <jkb>
+2003-07-23  James Bonfield  <jkbonfield>
 
 	* src/stops/stops.c: Fixed a bug in peak height clipping in the
 	first 50 or so bases are all just noise (no signal). We now fill
@@ -3188,7 +3656,7 @@
 	preventing artificially good results when looking at very low
 	scores.
 
-2003-07-17  James Bonfield  <jkb>
+2003-07-17  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish.c, src/prefinish/finish.tcl:
 	Added -reseq_nsolutions, -long_nsolutions and -pwalk_nsolutions
@@ -3206,7 +3674,7 @@
 	resequencing experiments as it doesn't matter if it's fwd or
 	reverse sequence, just that it heads in the right direction.
 
-2003-07-16  James Bonfield  <jkb>
+2003-07-16  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish_main.c (score_experiments):
 	Improved the score of experiments that have large groups. Eg more
@@ -3222,16 +3690,16 @@
 	left and right clip points, as this breaks copying data with
 	extract readings. FIXME: this should be made optional.
 
-2003-07-15  James Bonfield  <jkb>
+2003-07-15  James Bonfield  <jkbonfield>
 
 	* src/gap4/gap.tcl: Gap4 now 8.4b4.
 
-2003-07-14  James Bonfield  <jkb>
+2003-07-14  James Bonfield  <jkbonfield>
 
 	* src/tk_utils/tkTraceDisp.c:
 	Added code to display signed values from trace files.
 
-2003-07-10  James Bonfield  <jkb>
+2003-07-10  James Bonfield  <jkbonfield>
 
 	* src/tk_utils/restriction_enzyme_map.c (plot_renz_matches):
 	Corrected plotting to use padded_cut_site instead of cut_site.
@@ -3243,13 +3711,13 @@
 	original unpadded value is left in R_Match->cut_site and hence the
 	text outputs of fragment sizes and positions are correct.
 
-2003-07-07  James Bonfield  <jkb>
+2003-07-07  James Bonfield  <jkbonfield>
 
 	* src/io_lib/abi/seqIOABI.c:
 	Added support for reading phred-style confidence values from the
 	ABI file.
 
-2003-07-03  James Bonfield  <jkb>
+2003-07-03  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish_filter.[ch], src/prefinish/finish.[ch],
 	src/prefinish/finish_walk.c, src/prefinish/finish_main.c: 
@@ -3258,7 +3726,7 @@
 	classification types and we check for different characters other
 	than '#' in the finish_walk algorithms too.
 	
-2003-07-02  James Bonfield  <jkb>
+2003-07-02  James Bonfield  <jkbonfield>
 
 	* src/stops/stops.c:
 	Output now includes the sequence preceeding the stop.
@@ -3268,7 +3736,7 @@
 	* src/gap4/contig_selector.c (DrawCSTags):
 	Fixed a buffer overflow in creating the canvas item 'tag' list.
 
-2003-07-01  James Bonfield  <jkb>
+2003-07-01  James Bonfield  <jkbonfield>
 
 	* src/gap4/template.c:
 	check_template_position() was resetting the consistency value to
@@ -3280,7 +3748,7 @@
 	Set the maximum right hand quality clip to 10 million, as it was
 	only 10K meaning reference/consensus sequences could be truncated.
 
-2003-06-27  James Bonfield  <jkb>
+2003-06-27  James Bonfield  <jkbonfield>
 
 	* src/gap4/edUtils2.c (DBgetTags): 
 	Call DBgetSeq from DBgetTags to ensure the sequence info has been
@@ -3292,7 +3760,7 @@
 	* src/gap4/tman_interface.c (save_trace_images):
 	Corrected mutation report generation when the mini-traces are shown.
 
-2003-06-26  James Bonfield  <jkb>
+2003-06-26  James Bonfield  <jkbonfield>
 
 	* src/gap4/tman_diff.c (diff_readings):
 	When a trace isn't there to diff against, we now create a blank
@@ -3310,7 +3778,7 @@
 	Searching could miss hits (eg tags, and probably many other
 	things) when Group Readings by Templates was enabled.
 
-2003-06-25  James Bonfield  <jkb>
+2003-06-25  James Bonfield  <jkbonfield>
 
 	* src/gap4/edUtils2.c (showCursor, onScreen):
 	Scrolling down sequences when the Y-depth was too high would
@@ -3323,7 +3791,7 @@
 	clicking in a tag in the contig selector now allows the editor to
 	be brought up at that position.
 
-2003-06-24  James Bonfield  <jkb>
+2003-06-24  James Bonfield  <jkbonfield>
 
 	* src/gap4/contig_editor.tcl:
 	Set -tearoffs 0 on cascading edit tag and delete tag menus.
@@ -3342,7 +3810,7 @@
 	New script to parse the 'stops' program output and add gap4 STOP
 	tags.
 
-2003-06-20  James Bonfield  <jkb>
+2003-06-20  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish_walk.c(find_primers):
 	When generating consensus for primer3 we now check the
@@ -3364,7 +3832,7 @@
 	Reenabled the "after 1000" Any-Configure binding for the editor as
 	it seemed to necessary to prevent flickering on the Neon systems.
 
-2003-06-19  James Bonfield  <jkb>
+2003-06-19  James Bonfield  <jkbonfield>
 
 	* src/gap4/vseqs.c(link_vrseq): 
 	For creation of new virtual sequences from the consensus we now
@@ -3386,7 +3854,7 @@
 	* src/gap4/tag_editor.tcl:
 	Fixed a bug with loading tag macros from .gaprc.
 
-2003-06-16  James Bonfield  <jkb>
+2003-06-16  James Bonfield  <jkbonfield>
 
 	* src/gap4/trace_display.tcl (trace_flash): 
 	Replace the trace-flash window to cover the whole height of the
@@ -3397,7 +3865,7 @@
 	Added 'break' to F1-F10 bindings so that the global keyboard menu
 	traversal bindings do trigger.
 
-2003-06-11  James Bonfield  <jkb>
+2003-06-11  James Bonfield  <jkbonfield>
 
 	* src/gap4/contigEditor.c, src/gap4/contig_editor.tcl,
 	src/gap4/oligo.c, src/gap4/tagEditor.c, src/gap4/tagU1.c,
@@ -3407,7 +3875,7 @@
 	cursor. These lists are updated even if the menus have been torn
 	off and after undo, etc.
 
-2003-06-09  James Bonfield  <jkb>
+2003-06-09  James Bonfield  <jkbonfield>
 
 	* tables/gaprc_menu_full, tables/gaprc,
 	src/gap4/contig_editor.tcl:
@@ -3415,7 +3883,7 @@
 	deletion using F12 as this could be considered a dangerous option
 	to allow by default.
 
-2003-06-06  James Bonfield  <jkb>
+2003-06-06  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish.c: set to version 1.19
 
@@ -3455,7 +3923,7 @@
 	Reset the yview after processing a REG_LENGTH or REG_JOIN_TO event
 	so that the contig list stays scrolled to the same point.
 
-2003-06-04  James Bonfield  <jkb>
+2003-06-04  James Bonfield  <jkbonfield>
 
 	* tables/gaprc:
 	Added PRIMER.max_end_stability (=9) definition and adjusted the
@@ -3471,7 +3939,7 @@
 	max_poly_x, and max_end_stability primer3 options to the prefinish
 	code and we now set these values in the example finish.tcl file.
 
-2003-06-03  James Bonfield  <jkb>
+2003-06-03  James Bonfield  <jkbonfield>
 
 	* src/gap4/list_contigs.tcl (InitListContigs,
 	ListContigsSelectPressBindng):
@@ -3479,7 +3947,7 @@
 	update open dialogue boxes) when clicking on a contig in the List
 	Contigs box.
 
-2003-05-30  James Bonfield  <jkb>
+2003-05-30  James Bonfield  <jkbonfield>
 
 	* src/gap4/dbcheck.c (check_readings):
 	We now check that all sequence contains printable characters. This
@@ -3508,7 +3976,7 @@
 	code in tk_utils (it seemed easier to rename the bits that I
 	vaguely understand!).
 
-2003-05-29  James Bonfield  <jkb>
+2003-05-29  James Bonfield  <jkbonfield>
 
 	* src/gap4/oligo.c (edSelectOligoGenerate):
 	src/gap4/primlib.c (primlib_choose): 
@@ -3548,7 +4016,7 @@
 	(underneath the first line of trace) when embedded traces were in
 	use. Now fixed
 
-2003-05-27  James Bonfield  <jkb>
+2003-05-27  James Bonfield  <jkbonfield>
 
 	* src/prefinish/rules/extend_left.rule,
 	src/prefinish/rules/extend_right.rule:
@@ -3565,7 +4033,7 @@
 	to a typo).
 	
 
-2003-05-23  James Bonfield  <jkb>
+2003-05-23  James Bonfield  <jkbonfield>
 
 	* src/gap4/newgap_cmds.c (tcl_save_contig_order),
 	  src/gap4/list_contigs.tcl (ListContigsSave):
@@ -3581,7 +4049,7 @@
 	status line when bringing up the first primer after a manual (in
 	editor) primer search.
 
-2003-05-22  James Bonfield  <jkb>
+2003-05-22  James Bonfield  <jkbonfield>
 
 	* src/prefinish/finish_hash.c (hash_compare_primer): 
 	Fix 'end' argument passed to false_priming. For bottom strand
@@ -3597,14 +4065,14 @@
 	tooltip window and destroy it first if it exists. This fixes Tk
 	errors (caused by rapid generation of events?).
 
-2003-05-20  James Bonfield  <jkb>
+2003-05-20  James Bonfield  <jkbonfield>
 
 	* lib/tk/text.tcl (::tk::TextScanDrag): Allow 1 pixel of movement
 	before switching to scan mode and setting mouseMoved flag. The
 	mouseMoved flag disables pasting, and hence forceful middle
 	clicking sometimes failed to paste.
 
-2003-05-19  James Bonfield  <jkb>
+2003-05-19  James Bonfield  <jkbonfield>
 
 	* src/gap4/join.c (align, alignOverlap): 
 	Alignments now depad the sequence before using Rodger's alignment
