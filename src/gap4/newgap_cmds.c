@@ -4622,6 +4622,7 @@ tcl_discrepancy_graph(ClientData clientData,
 	{"-frame",  ARG_STR, 1, NULL, offsetof(confidence_arg, frame)},
 	{"-window", ARG_STR, 1, NULL, offsetof(confidence_arg, conf_win)},
 	{"-win_ruler", ARG_STR, 1, NULL, offsetof(confidence_arg, r_win)},
+	{"-two_alleles", ARG_INT, 1, "0", offsetof(confidence_arg, two_alleles)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -4636,7 +4637,9 @@ tcl_discrepancy_graph(ClientData clientData,
     vTcl_SetResult(interp, "%d",
 		   confidence_graph_reg(args.io, interp, args.frame,
 					args.conf_win, args.id, ruler,
-					CONFIDENCE_GRAPH_DISCREP));
+					args.two_alleles 
+					? CONFIDENCE_GRAPH_DISCREP2
+					: CONFIDENCE_GRAPH_DISCREP));
     return TCL_OK;
 }
 
@@ -5200,6 +5203,9 @@ NewGap_Init(Tcl_Interp *interp) {
 		      (ClientData) NULL,
 		      NULL);
     Tcl_CreateCommand(interp, "cursor_ref", tk_cursor_ref,
+		      (ClientData) NULL,
+		      NULL);
+    Tcl_CreateCommand(interp, "contig_lock_write", tk_contig_lock_write,
 		      (ClientData) NULL,
 		      NULL);
     Tcl_CreateCommand(interp, "query_cursor", tk_query_cursor,

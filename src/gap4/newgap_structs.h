@@ -541,6 +541,7 @@ typedef struct {
     char *frame;
     char *conf_win;
     char *r_win;
+    int two_alleles;
 } confidence_arg;
 
 typedef struct {
