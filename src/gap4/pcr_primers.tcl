@@ -12,12 +12,14 @@ package require tablelist
 load_package prefinish
 
 namespace eval pcr_primers {
+    global env
+
     variable checkedImg
     variable uncheckedImg
     variable instance 0
 
-    set checkedImg [image create photo -file checked.gif]
-    set uncheckedImg [image create photo -file unchecked.gif]
+    set checkedImg [image create photo -file $env(STADTABL)/checked.gif]
+    set uncheckedImg [image create photo -file $env(STADTABL)/unchecked.gif]
 }
 
 # -----------------------------------------------------------------------------
