@@ -161,6 +161,13 @@ template_c **init_template_checks(GapIO *io, int num_contigs,
 		return NULL;
 	}
 
+	/*
+	 * Note that by initialising the requested contigs first, and 
+	 * any connected contigs afterwards, we make sure that the
+	 * first contig in the t->gel_cont structure is the first one in the
+	 * specified contig_array. This has (correct) implications for the 
+	 * t->direction computed. See the check_template_strand() function.
+	 */
 	if (connected) {
 	    int i, j;
 
@@ -219,9 +226,10 @@ void uninit_template_checks(GapIO *io, template_c **template_check) {
  */
 static void check_template_strand(GapIO *io, template_c *t) {
     item_t *item, *at;
-    int dir, contig;
+    int contig;
     gel_cont_t *gc;
     GReadings r;
+    int first_contig;
     
     at = head(t->gel_cont);
 
@@ -232,20 +240,30 @@ static void check_template_strand(GapIO *io, template_c *t) {
      *
      * When finished, if we've spotted some on another contig then start
      * again.
+     *
+     * With readings spanning multiple contigs this will iterate around
+     * multiple times. The template direction returned is from the first
+     * contig observed. Note that when init_template_checks() is called with
+     * a single contig and including connected contigs then the single contig
+     * requested is always the first in the list, hence this is the one from
+     * which the direction is computed.
      */
+    first_contig = 1;
     while (at) {
+	int dir_plus = 0;
+	int dir_minus = 0;
 	item = at;
 	at = NULL;
-	dir = -1;
 	contig = 0;
 
 	/*
 	 * Foreach reading in list
-	 *     If this is the first reading, compute overall direction of
-	 *       template.
-	 *     Otherwise verify reading with known template direction.
+	 *     Compute overall direction of the template from this one read.
+	 *     Accumulate direction counts in dir_plus and dir_minus
 	 *     Negate the contig number for this read/contig pair to
 	 *       signify that it's been checked.
+	 * Set direction based on dir_plus/dir_minus
+	 * if dir_plus and dir_minus are both non zero => strand inconsistency
 	 */
 	for (; item; item = item->next) {
 	    int sense, strand;
@@ -264,25 +282,27 @@ static void check_template_strand(GapIO *io, template_c *t) {
 	    strand = (PRIMER_TYPE_GUESS(r) == GAP_PRIMER_FORWARD ||
 		      PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR) ? 0 : 1;
 	    
-	    if (-1 == dir) {
-		if (sense == strand)
-		    dir = 0;
-		else
-		    dir = 1;
-	    } else {
-		/*
-		 * or if we're feeling sick:
-		 * "if (dir - ABS(r.sense - r.strand))"
-		 */
-		if ((sense == strand && dir == 1) ||
-		    (sense != strand && dir == 0))
-		    t->consistency |= TEMP_CONSIST_STRAND;
-	    }
+	    if (sense == strand)
+		dir_plus++;
+	    else
+		dir_minus++;
 
 	    gc->contig = -gc->contig;
 	}
 
-	t->direction = dir;
+	if (dir_plus && dir_minus)
+	    t->consistency |= TEMP_CONSIST_STRAND;
+
+	if (first_contig) {
+	    if (dir_plus > dir_minus)
+		t->direction = 0;
+	    else if (dir_plus < dir_minus)
+		t->direction = 1;
+	    else
+		t->direction = -1;
+
+	    first_contig = 0;
+	}
     }
 
     /*
