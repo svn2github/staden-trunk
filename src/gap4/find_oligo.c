@@ -692,11 +692,11 @@ int inexact_pad_match(char *seq,
 }
 
 /* depad seq until it is of seq_len */
-void depad_seq_len(char *str, int seq_len)
+void depad_seq_len(char *strto, char *strfrom, int seq_len)
 {
     int len = 0;
-    char *a = str;
-    char *b = str;
+    char *a = strto;
+    char *b = strfrom;
 
     while (len < seq_len) {
 	if (*b != '*') {
@@ -740,15 +740,9 @@ StringMatch(GapIO *io,                                                 /* in */
     char title[1024];
     char name1[10];
     int max_imatches = max_matches;
-    int max_len = 0;
     size_t stringlen = strlen(string);
 
-    for (i = 0; i < num_contigs; i++) {
-	seq_len = strlen(cons_array[i]);
-	if (seq_len > max_len)
-	    max_len = seq_len;
-    }
-    if (NULL == (cons_match = (char *)xmalloc((max_len + 1) * sizeof(char ))))
+    if (NULL == (cons_match = (char *)xmalloc(stringlen + 1)))
 	return -1;
 
     /* convert percentage mis-matches into number of mis matches */
@@ -816,8 +810,7 @@ StringMatch(GapIO *io,                                                 /* in */
 		     * remove pads such that the final length of cons_match is
 		     * of length length[j]
 		     */
-		    strcpy(cons_match, &seq[pos1[j]-1]);
-		    depad_seq_len(cons_match, stringlen);
+		    depad_seq_len(cons_match, &seq[pos1[j]-1], stringlen);
 
 		    if (rn) {
 			if (cutoff_data) {
