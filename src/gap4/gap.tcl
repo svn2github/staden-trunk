@@ -405,6 +405,46 @@ proc CreateMain { } {
 }
 #end CreateMain
 
+# Moves window "w" to be under window "u" (where possible).
+# If force is true then it will make sure that w is under u even if this
+# means moving u up a bit to make some room.
+#
+# Returns whether or not there is room without resorting to force.
+proc MoveWinUnder {w u {force 0}} {
+    set fit 1
+
+    set w [winfo toplevel $w]
+    set u [winfo toplevel $u]
+
+    # Geometry specifies where the top-left corner of the window is
+    regexp {(.*)x(.*)[-+](.*)[-+](.*)} [wm geometry $u] _ xs ys x1 y1
+    
+    # "winfo y" returns the coordinate of the top-left corner of the window
+    # as available to the application (ie minus the wm title bar and menus)
+    set dy [expr {[winfo y $u]-$y1}]
+    set dx [expr {[winfo x $u]-$x1}]
+    
+    set x2 [expr {$x1+$xs+$dx}]
+    set y2 [expr {$y1+$ys+$dy}]
+
+    if {[expr {[winfo height $w]+$y2}] > [winfo vrootheight $w]} {
+	set fit 0
+    }
+
+    if {$fit || $force} {
+	wm geometry $w +$x1+$y2
+    } elseif {$force} {
+	# calculate y pos of $w if it is put at the bottom of the screen
+	set ypos [expr {[winfo vrootheight $w]-[winfo height $w]}]
+	# Now work out the new ypos of $u
+	set y1 [expr {$ypos-$ys-$dy}]
+	wm geometry $u +$x1+$y1
+	return MoveWinUnder $w $u 1
+    }
+
+    return $fit
+}
+
 ##############################################################################
 #                                  main program                              #
 ##############################################################################
@@ -542,7 +582,7 @@ if {$argc == 1} {
     set origtype $licence(type)
     set io [open_db -name $db_name -version $version_num -access $access \
 	    -create $create] 
-    
+
     if {"$io" == ""} {
 #	puts "ERROR: Couldn't open the database '$db_name.$version_num' - exiting."
 #	6/1/99 johnt - use verror so message is shown with Windows NT
@@ -608,11 +648,13 @@ if {$io > 0} {
 	    if {[check_database -io $io] == 0} {
 		if {$do_csel} {
 		    ContigSelector $io
+		    MoveWinUnder . [keylget gap_defs CONTIG_SEL.WIN]
 		}
 	    }
 	} else {
 	    if {$do_csel} {
 		ContigSelector $io
+		MoveWinUnder . [keylget gap_defs CONTIG_SEL.WIN]
 	    }
 	}
 	ActivateMenu_Open
