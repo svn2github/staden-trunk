@@ -747,6 +747,25 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
     }
 }
 
+/*
+ * calculate the consensus discrepancy figures for position `pos' in contig,
+ * for `width' characters
+ */
+void DBcalcDiscrepancies(EdStruct *xx,int pos, int width, float *qual)
+{
+    int tmp_mode;
+    char *str = xmalloc(width);
+
+    tmp_mode = xx->consensus_mode;
+    consensus_mode = CONSENSUS_MODE_CONFIDENCE;
+    calc_consensus(0, pos, pos + width - 1, CON_SUM,
+		   str, NULL, NULL, qual,
+		   xx->con_cut, 0,
+		   contEd_info,
+		   (void *)DBI(xx));
+    consensus_mode = tmp_mode;
+    xfree(str);
+}
 
 
 /*

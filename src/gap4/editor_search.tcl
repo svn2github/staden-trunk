@@ -10,21 +10,22 @@
 # Brings up a search window
 #
 # search_setup array contains use_text use_strand use_tag value1_name value2_name
-set search_setup(position)	"0 0 0 {padded position}"
-set search_setup(uposition)	"0 0 0 {unpadded position}"
-set search_setup(problem)	"0 0 0"
-set search_setup(anno)		"0 0 0 string"
-set search_setup(sequence)	"0 1 0 sequence {num. mismatches}"
-set search_setup(quality)	"0 0 0"
-set search_setup(consquality)	"0 0 0 value"
-set search_setup(file)		"1 0 0 filename"
-set search_setup(name)		"0 0 0 name"
-set search_setup(edit)		"0 0 0"
-set search_setup(verifyand)	"0 0 0"
-set search_setup(verifyor)	"0 0 0"
-set search_setup(discrepancy)	"0 0 0 value"
-set search_setup(tag)		"0 0 1"
-set search_setup(difference)	"0 0 0"
+set search_setup(position)		"0 0 0 {padded position}"
+set search_setup(uposition)		"0 0 0 {unpadded position}"
+set search_setup(problem)		"0 0 0"
+set search_setup(anno)			"0 0 0 string"
+set search_setup(sequence)		"0 1 0 sequence {num. mismatches}"
+set search_setup(quality)		"0 0 0"
+set search_setup(consquality)		"0 0 0 value"
+set search_setup(file)			"1 0 0 filename"
+set search_setup(name)			"0 0 0 name"
+set search_setup(edit)			"0 0 0"
+set search_setup(verifyand)		"0 0 0"
+set search_setup(verifyor)		"0 0 0"
+set search_setup(discrepancy)		"0 0 0 value"
+set search_setup(consdiscrepancy)	"0 0 0 value"
+set search_setup(tag)			"0 0 1"
+set search_setup(difference)		"0 0 0"
 
 proc create_search_win {w com {dir 0}} {
      global NGTag gap_defs search_setup
@@ -159,6 +160,9 @@ proc create_search_win {w com {dir 0}} {
     radiobutton $tf.r.discrepancies -text "discrepancies" -variable $w.Type \
 	-relief flat -command "search_setup $w discrepancy" \
 	-value discrepancy
+    radiobutton $tf.r.consdiscrep -text "Consensus discrepancies" -variable $w.Type \
+	-relief flat -command "search_setup $w consdiscrepancy" \
+	-value consdiscrepancy
 
     pack $tf.label -side top
     pack $tf.l -side left
@@ -166,7 +170,7 @@ proc create_search_win {w com {dir 0}} {
     pack $tf.l.position $tf.l.problem $tf.l.anno $tf.l.sequence $tf.l.quality \
 	$tf.l.conqual $tf.l.file -anchor w
     pack $tf.r.uposition $tf.r.name $tf.r.edit $tf.r.verifyand $tf.r.verifyor \
-	$tf.r.tag $tf.r.discrepancies -anchor w
+	$tf.r.tag $tf.r.discrepancies $tf.r.consdiscrep -anchor w
 
     # For join editor only
     if {[$e join_mode]} {
@@ -289,7 +293,8 @@ proc do_search {w com args} {
 	    || $type == "anno" \
 	    || $type == "name" \
 	    || $type == "consquality" \
-	    || $type == "discrepancy"} {
+	    || $type == "discrepancy"
+	    || $type == "consdiscrepancy"} {
         set r [eval $com $dir $strand $type [list $value1]]
     } elseif {$type == "uposition"} {
 	set r [eval $com $dir $strand position [list u$value1]]

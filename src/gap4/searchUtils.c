@@ -1653,6 +1653,82 @@ static int findPrevConsQual (EdStruct *xx, int value)
 
 
 /*
+ * Search forward from the cursor position until a the consensus discrepancy
+ * value is >= a particular threshold
+ * The cursor is positioned on the problem base, if found.
+ */
+static int findNextConsDiscrep (EdStruct *xx, int value)
+{
+    int spos = positionInContig(xx,xx->cursorSeq,xx->cursorPos)+1;
+    int epos = DB_Length(xx,0);
+    float buffer2[SEARCH_CHUNKS+1];
+    int i,j,width;
+    float fval = value + 0.5;
+    
+    if (spos < 1)
+	spos = 1;
+
+    for (i=spos; i<= epos; i+=SEARCH_CHUNKS) {
+	width = min(epos-i+1,SEARCH_CHUNKS);
+	DBcalcDiscrepancies (xx,i,width, buffer2);
+
+	for (j=0; j<width; j++) {
+	    if (buffer2[j] >= fval) {
+		setCursorPosSeq(xx, i+j, 0);
+		edSetBriefSeqBase(xx, -1, -1, 1);
+		REDISPLAY(xx);
+
+		if (xx->display_traces)
+		    tman_problem_traces(xx, i+j);
+
+		return 1;
+	    }
+	}
+    }
+
+    return 0;
+}
+
+
+/*
+ * Search backward from the cursor position until a the consensus discrepancy
+ * value is >= a particular threshold
+ * The cursor is positioned on the problem base, if found.
+ */
+static int findPrevConsDiscrep (EdStruct *xx, int value)
+{
+    int spos = positionInContig(xx,xx->cursorSeq,xx->cursorPos)-1;
+    int epos = 1;
+    float buffer2[SEARCH_CHUNKS+1];
+    int i,width;
+    int j;
+    float fval = value + 0.5;
+    
+    if (spos > DB_Length(xx, 0))
+	spos = DB_Length(xx, 0);
+
+    for (i=spos; i>= epos; i-=SEARCH_CHUNKS) {
+	width = min(i-epos+1,SEARCH_CHUNKS);
+	DBcalcDiscrepancies (xx,i-width+1,width, buffer2);
+
+	for (j=width-1; j>=0; j--) {
+	    if (buffer2[j] >= fval) {
+		setCursorPosSeq(xx, i-width+1+j, 0);
+		edSetBriefSeqBase(xx, -1, -1, 1);
+		REDISPLAY(xx);
+
+		if (xx->display_traces)
+		    tman_problem_traces(xx, i-width+1+j);
+
+		return 1;
+	    }
+	}
+    }
+    return 0;
+}
+
+
+/*
  * Search forward from the cursor position until we find a place with
  * two or more bases with a quality > 'value' that are not the same base type.
  */
@@ -1911,6 +1987,9 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 
 	else if (strcmp(type, "discrepancy") == 0)
 	    found = findNextDiscrepancy(xx, atoi(value));
+
+	else if (strcmp(type, "consdiscrepancy") == 0)
+	    found = findNextConsDiscrep(xx, atoi(value));
     } else {
 	/* backwards */
 	if (strcmp(type, "name") == 0)
@@ -1957,6 +2036,9 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 
 	else if (strcmp(type, "discrepancy") == 0)
 	    found = findPrevDiscrepancy(xx, atoi(value));
+
+	else if (strcmp(type, "consdiscrepancy") == 0)
+	    found = findPrevConsDiscrep(xx, atoi(value));
     }
 
     xx->group_mode = group_mode;

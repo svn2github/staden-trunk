@@ -292,6 +292,7 @@ extern void calculateConsensusLength(EdStruct *xx);
 extern int contEd_info(int job, void *mydata, info_arg_t *theirdata);
 extern void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 			     float *qual, int mode);
+extern void DBcalcDiscrepancies(EdStruct *xx,int pos, int width, float *qual);
 extern char *DBgetSeq(DBInfo *db, int seq);
 extern tagStruct *DBgetTags (DBInfo *db, int seq);
 extern char *DBgetName(DBInfo *db, int seq);
