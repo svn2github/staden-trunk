@@ -19,15 +19,23 @@
 proc create_tag_editor {w c data} {
     upvar #0 $data d
     global NGTag gap_defs default_tag_type licence read_only
- 
+
     if {[xtoplevel $w] == ""} { return }
     # wm minsize $w 280 100
- 
+    wm protocol $w WM_DELETE_WINDOW "$c quit"
+    bind $w <Destroy> "if {\"%W\" == \"$w\"} {tag_editor_destroy %W}"
+
     if {![info exists default_tag_type]} {
 	set default_tag_type COMM
     }
 
+    # Buttons at the top
     frame $w.bar
+
+    # A GUI frame for gui based tags
+    frame $w.gui
+
+    # Scrollable text panel
     set v $w.disp
     frame $v
     frame $v.b
@@ -37,12 +45,12 @@ proc create_tag_editor {w c data} {
 
     if {[info exists d(macro)]} {
 	button $w.bar.save   -text " Save Macro" \
-	 -command "tag_editor_save [list $c] $data \[$v.t get 1.0 end-1chars\]"
+	 -command "tag_editor_save [list $c] $data $w"
 	button $w.bar.delete   -text " Delete Macro" \
 	 -command "tag_macro_delete $w $data"
     } else {
 	button $w.bar.save   -text " Save " \
-	 -command "tag_editor_save [list $c] $data \[$v.t get 1.0 end-1chars\]"
+	 -command "tag_editor_save [list $c] $data $w"
 	button $w.bar.move -text " Move " \
 	    -command "tag_editor_moveorcopy move \
                       [list $c] $data \[$v.t get 1.0 end-1chars\]"
@@ -72,7 +80,7 @@ proc create_tag_editor {w c data} {
     button $w.bar.type -text "Type:$long_type" \
 	-command "tag_editor_select_type $w.bar.type $type \
 		  {show_help gap4 Editor-Annotations} \
-		  {tag_editor_set_type $w.bar.type $v.t $data}"
+		  {tag_editor_set_type $w.bar.type $w $v.t $data}"
 
     button $w.bar.strand -text [tag_editor_strand $d(strand)] \
 	-command "tag_editor_set_strand $w.bar.strand $data"
@@ -85,7 +93,7 @@ proc create_tag_editor {w c data} {
 	-xscrollcommand "$v.b.sx set" -bd 2 -relief sunken
 
     if {$d(type) == "NONE"} {
-	tag_editor_set_type $w.bar.type $v.t $data \
+	tag_editor_set_type $w.bar.type $w $v.t $data \
 	    [tag_type2id $default_tag_type]
     } else {
         $v.t insert 1.0 $d(anno)
@@ -119,7 +127,6 @@ proc create_tag_editor {w c data} {
     pack $w.bar.help -side right
  
     # A scrolled view of data
-    pack $v -side bottom -fill both -expand 1
     pack $v.b -side bottom -fill both
     pack $v.t -fill both -side left -expand 1
     pack $v.sy -side right -fill y 
@@ -132,6 +139,9 @@ proc create_tag_editor {w c data} {
     update idletasks
     pack propagate $v.b.fudge 0
     $v.b.fudge configure -width [winfo width $v.sy] -height [winfo width $v.sy]
+
+    # Pack the appropriate dialogue component; text frame or gui
+    tag_editor_set_type $w.bar.type $w $v.t $data $tid
 }
 
 proc on_screen {win x y w h} {
@@ -158,6 +168,14 @@ proc on_screen {win x y w h} {
     if {$y < 0} {set y 0}
 
     wm geometry $win ${w}x$h+$x+$y
+}
+
+proc tag_editor_destroy {w} {
+    # Destroy the GUI details array so that variable traces are removed and
+    # so that we have no old values being used the next time we open this
+    # dialogue.
+    global ::$w.GUI
+    catch {unset ::$w.GUI}
 }
 
 proc tag_editor_select_type {button type help command} {
@@ -213,17 +231,61 @@ proc tag_editor_select_type {button type help command} {
 #
 # Updates the tag type in 'data' and changes the menu name too
 #
-proc tag_editor_set_type {button textwin data typeid} {
+proc tag_editor_set_type {button w textwin data typeid} {
     upvar #0 $data d
     global default_tag_type NGTag
 
     set type $NGTag($typeid,tagtype)
     $button configure -text "Type:$type"
 
+    if {$NGTag($typeid,tagid) != $d(type)} {
+	# Changing tag types:
+	# Find out if the previous tag type was a GUI tag, if not reset to
+	# defaults
+	foreach t [array names NGTag] {
+	    if {[regexp {(.*),tagid} $t _ id] == 0} continue
+	    if {$NGTag($id,tagid) != $d(type)} continue
+	    if {[string match {#!acdtag:*} $NGTag($id,comment)] == 0} {
+		set d(default) 1
+		set d(anno) $NGTag($typeid,comment)
+	    }
+	    break
+	}
+    }
+
+    if {[string match {#!acdtag:*} $NGTag($typeid,comment)]} {
+	pack forget $w.disp
+	catch {destroy $w.gui.f}
+	pack [frame $w.gui.f] -fill both -expand 1
+	if {[info commands ::tag_gui::$NGTag($typeid,tagid)::create_dialogue] == {}} {
+	    set code [acd2tag::parse $NGTag($typeid,comment) ::tag_gui::$type]
+	    catch {set fd [open /tmp/debug.out w]
+		puts $fd $code
+		close $fd}
+	    eval $code
+	}
+	set d(namespace) ::$w.GUI
+	catch {array set $d(namespace) [::acd2tag::str2array $d(anno)]} err
+	#set d(namespace) ::tag_gui::${type}::$w
+	set $w.GUI $d(namespace)
+	::tag_gui::${type}::create_dialogue $w.gui.f $d(namespace)
+	pack $w.gui -side bottom -fill both -expand 1
+    } else {
+	catch {destroy $w.gui.f}
+	pack forget $w.gui
+	pack $w.disp -side bottom -fill both -expand 1
+	$textwin delete 1.0 end
+	$textwin insert 1.0 $d(anno)
+    }
+
     if {$d(default) == 1} {
-	set d(anno) $NGTag($typeid,comment)
-        $textwin delete 1.0 end
-        $textwin insert 1.0 $d(anno)
+	if {[string match {#!acdtag:*} $NGTag($typeid,comment)]} {
+	    set d(anno) ""
+	} else {
+	    set d(anno) $NGTag($typeid,comment)
+	    $textwin delete 1.0 end
+	    $textwin insert 1.0 $d(anno)
+	}
     }
     set default_tag_type $NGTag($typeid,tagid)
     set d(type) $default_tag_type
@@ -232,8 +294,16 @@ proc tag_editor_set_type {button textwin data typeid} {
 #
 # Saves a tag (which exits the editor).
 #
-proc tag_editor_save {com data anno} {
+proc tag_editor_save {com data w} {
+    global NGTag
     upvar #0 $data d
+
+    set typeid [tag_type2id $d(type)]
+    if {[string match {#!acdtag:*} $NGTag($typeid,comment)]} {
+	set anno [::acd2tag::get_values ::tag_gui::$d(type) $d(namespace)]
+    } else {
+	set anno [$w.disp.t get 1.0 end-1chars]
+    }
 
     set d(anno) $anno
     eval $com save
@@ -311,6 +381,7 @@ proc tag_macro_callback {win data command} {
     } else {
 	set d(set) 1
     }
+
     destroy $win
 }
 
@@ -356,7 +427,7 @@ proc tag_macro_load {} {
 	}
 	if {$macro == ""} continue
 	global ed_macro_$key
-	# Expand \n and \\ back - study this carefull if it needs fixing.
+	# Expand \n and \\ back - study this carefully if it needs fixing.
 	set macro [string map "\\\\\\\\ \\\\ \\\\n \\n" $macro]
 	array set ed_macro_$key $macro
 	array set ed_macro_$key {set 1}
