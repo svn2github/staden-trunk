@@ -619,7 +619,6 @@ int extract_readings(GapIO *io,
     char path[1024], *tmp;
     struct stat statbuf;
     int i;
-    int gel;
     FILE *fp;
     sort_struct *sorted_reads;
     
