@@ -1881,28 +1881,27 @@ int linesOnScreen (EdStruct *xx, int pos, int width)
 /*
  * Sorts a list of sequences so that sequences with the same template
  * are next to each other.
- *
- * The algorithm is as follows:
- * Foreach sequence in list, numbered i
- *     Find a 'later' sequence, numbered j, with the same template
- *     Swap i+1 with j
+ * We use bubble sort here, despite inefficiencies, as it is a nice and
+ * easy "stable" sort. This allows us to firstly sort by strand so that
+ * the sequences within a template are always shown in +/- order.
  */
 static void sort_seq_by_template(EdStruct *xx, int *list, int count) {
-    int i, j, k, t;
+    int i, swaps;
     
-    for (i = 0; i < count; i++) {
-	k = DBI_DB(xx)[list[i]].template;
-	for (j = i+1; j < count; j++) {
-	    /* If same template ... */
-	    if (DBI_DB(xx)[list[j]].template == k) {
-		/* ... then swap with i+1 and inc. i */
-		t = list[i+1];
-		list[i+1] = list[j];
-		list[j] = t;
-		i++;
+    /* Trivial bubble sort */
+    do {
+	swaps = 0;
+	for (i = 0; i < count-1; i++) {
+	    if (DBI_DB(xx)[list[i]].template < DBI_DB(xx)[list[i+1]].template)
+	    {
+		int t;
+		t = list[i];
+		list[i] = list[i+1];
+		list[i+1] = t;
+		swaps = 1;
 	    }
 	}
-    }
+    } while (swaps);
 }
 
 
@@ -2046,6 +2045,7 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
 	break; /* Starting point */
 
     case TEMPLATE:
+	sort_seq_by_strand(xx, list, count);
 	sort_seq_by_template(xx, list, count);
 	break;
 
