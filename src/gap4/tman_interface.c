@@ -80,6 +80,7 @@ tman_dc *find_edc(DisplayContext *dc) {
     return (i == MAXCONTEXTS) ? NULL : &edc[i];
 }
 
+
 /*
  * Brings up a trace window.
  * Will highlight the appropriate reading.
@@ -659,6 +660,134 @@ static void auto_diff_references(EdStruct *xx, int seq, int *seqlist,
     *minus = closest_seq_m;
 }
 
+
+/*
+ * Attempts to guess positive and negative references by looking for good
+ * quality traces that agree and disagree with the specified sequence 'seq'.
+ * The sequences chosen will match the same strand as 'seq'.
+ * We only pick new references if the passed in 'plus' and 'minus' sequence
+ * numbers are zero.
+ *
+ * Returns: new plus/minus sequences, or zero if that type is not found.
+ */
+typedef struct {
+    int read;
+    int template;
+    int conf;
+    char base;
+    int strand;
+} read_template_pair;
+
+static int read_template_sort(const void *p1, const void *p2) {
+    const read_template_pair *rt1 = (read_template_pair *)p1;
+    const read_template_pair *rt2 = (read_template_pair *)p2;
+    return rt1->template - rt2->template;
+}
+
+static void guess_references(EdStruct *xx, int seqtop, int seqbot, int pos,
+			     int *seqlist, int *rtop, int *rbot) {
+    int i, j, count;
+    int seq_5, pos_5, seq_pos;
+    char seq_base;
+    int best_conf_match = 5, best_conf_mismatch = 5;
+    int mismatch_seq_top = 0, mismatch_seq_bot = 0;
+    read_template_pair *tlist; /* templates in seqlist[] */
+
+    /* The base call for the query sequence */
+    DBgetSeq(DBI(xx), seqtop);
+    seq_pos = pos - DB_RelPos(xx, seqtop) + DB_Start(xx, seqtop);
+    seq_base = DB_Seq(xx, seqtop)[seq_pos];
+
+    /* Identify which traces are close & good quality, store in tlist[] */
+    for (i = 0; seqlist[i]; i++)
+	;
+    tlist = xcalloc(i, sizeof(*tlist));
+    for (i = count = 0; seqlist[i]; i++) {
+	int j = seqlist[i];
+	char base;
+	int conf;
+
+	if (j == seqtop || j == seqbot)
+	    continue;
+
+	/* Determine if this is a better pos/neg base */
+	DBgetSeq(DBI(xx), j);
+	seq_pos = pos - DB_RelPos(xx, j) + DB_Start(xx, j);
+	if (seq_pos < DB_Start(xx, j) || seq_pos+2 > DB_End(xx, j))
+	    continue;
+	base = DB_Seq(xx, j)[seq_pos];
+	conf = DB_Conf(xx, j)[seq_pos];
+
+	tlist[count].read = j;
+	tlist[count].template = DBI_DB(xx)[j].template;
+	tlist[count].base = base;
+	tlist[count].conf = conf;
+	tlist[count].strand = DB_Comp(xx, j);
+	count++;
+    }
+
+    /* Resort list */
+    qsort(tlist, count, sizeof(*tlist), read_template_sort);
+    
+    /* Remove duplicates where a template occurs more than one per strand */
+    for (i = 0; i < count; i++) {
+	for (j = i+1; j < count && tlist[j].template==tlist[i].template; j++) {
+	    if (tlist[j].strand == tlist[i].strand) {
+		/* duplicates on one strand */
+		if (tlist[j].conf > tlist[i].conf) {
+		    tlist[i].conf = 0;
+		} else {
+		    tlist[j].conf = 0;
+		}
+	    }
+	}
+    }
+
+    /* Remove cases where the basecalls on top/bot strand disagree */
+    for (i = 0; i < count; i++) {
+	if (tlist[i].conf == 0)
+	    continue;
+	for (j = i+1; j < count && tlist[j].template==tlist[i].template; j++) {
+	    if (tlist[j].conf == 0)
+		continue;
+
+	    if (tlist[i].base != tlist[j].base) {
+		tlist[i].conf = 0;
+		tlist[j].conf = 0;
+	    }
+	}
+    }
+
+    /* Now combine +/- strand scores together & pick best scores */
+    for (i = 0; i < count; i++) {
+	int score = tlist[i].conf;
+	if (score == 0)
+	    continue;
+	for (j = i+1; j < count && tlist[j].template==tlist[i].template; j++) {
+	    score += tlist[j].conf;
+	}
+	for (; i < j; i++) {
+	    tlist[i].conf = score;
+
+	    if (best_conf_match <= score && tlist[i].base == seq_base) {
+		best_conf_match = score;
+		
+	    }
+	    if (best_conf_mismatch <= score && tlist[i].base != seq_base) {
+		best_conf_mismatch = score;
+		if (tlist[i].strand == UNCOMPLEMENTED)
+		    mismatch_seq_top = tlist[i].read;
+		else
+		    mismatch_seq_bot = tlist[i].read;
+	    }
+	}
+	i--;
+    }
+
+    *rtop = mismatch_seq_top;
+    *rbot = mismatch_seq_bot;
+}
+
 static void trace_columns(EdStruct *xx, int cols) {
     char *edpath;
     Tcl_Interp *interp = EDINTERP(xx->ed);
@@ -752,6 +881,12 @@ int auto_diff(EdStruct *xx, int seq, int contig_pos) {
     if (bot_seq) {
 	auto_diff_references(xx, bot_seq, seqlist, &ref_pos_bot, &ref_neg_bot);
     }
+
+    /* If negative references do not exist, pick something good look instead */
+    if (!ref_neg_top && !ref_neg_bot)
+	guess_references(xx, top_seq, bot_seq, contig_pos, seqlist, 
+			 &ref_neg_top, &ref_neg_bot);
+
 
     /* No references found - revert to just top/bot sequence */
     if (!ref_pos_top && !ref_pos_bot && !ref_neg_top &&	!ref_neg_bot) {
