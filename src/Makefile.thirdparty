@@ -6,20 +6,18 @@
 all:	zlib png tcl tk itcl iwidgets
 
 # Where to obtain distributions from:
+WGET=wget
 
 # For remote via SourceForge
-SFMIRROR=http://heanet.dl.sourceforge.net/sourceforge
-WGET=wget
-WGET_DEST=
+#SFMIRROR=http://heanet.dl.sourceforge.net/sourceforge
 
 # For local copies.
-#SFMIRROR=$(HOME)/share/src/ftp
-#WGET=cp
-#WGET_DEST=.
+SFMIRROR=http://intweb/LocalUsers/jkb/sf
 
 #-----------------------------------------------------------------------------
 # generic
-L=../lib/$(MACHINE)-binaries
+L=lib/$(MACHINE)-binaries
+O=$(MACHINE)
 $(L)/.dir:
 	-mkdir $(L)
 	touch $(L)/.dir
@@ -37,13 +35,14 @@ zlib: zlib-build zlib-install
 
 zlib-install: libdir $(L)/.zlib
 
-$(L)/.zlib: $(ZLIB_SRC)/.built
+$(L)/.zlib: $(ZLIB_SRC)/.built-$(O)
 	cp $(ZLIB_SRC)/libz.a $(L)
 	touch $@
 
-zlib-build: $(ZLIB_SRC)/.built
+zlib-build: $(ZLIB_SRC)/.built-$(O)
 
-$(ZLIB_SRC)/.built: $(ZLIB_SRC)/.unpacked
+$(ZLIB_SRC)/.built-$(O): $(ZLIB_SRC)/.unpacked
+	-(cd $(ZLIB_SRC); $(MAKE) distclean)
 	cd $(ZLIB_SRC); \
 	./configure; \
 	make
@@ -55,7 +54,7 @@ $(ZLIB_SRC)/.unpacked: $(ZLIB_SRC).tar.gz
 	touch $@
 
 $(ZLIB_SRC).tar.gz:
-	$(WGET) $(SFMIRROR)/libpng/$(ZLIB_SRC).tar.gz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/libpng/$(ZLIB_SRC).tar.gz
 
 #-----------------------------------------------------------------------------
 # PNG
@@ -64,22 +63,22 @@ PNG_SRC=libpng-$(PNG_VERS)
 
 # Make a guess at the appropriate makefile script
 ifeq ($(MACHINE),linux)
-PNGMAKE=linux
+PN$(MAKE)=linux
 endif
 ifeq ($(MACHINE),alpha)
-PNGMAKE=dec
+PN$(MAKE)=dec
 endif
 ifeq ($(MACHINE),solaris)
-PNGMAKE=solaris
+PN$(MAKE)=solaris
 endif
 ifeq ($(MACHINE),macosx)
-PNGMAKE=freebsd
+PN$(MAKE)=freebsd
 endif
 ifeq ($(MACHINE),windows)
-PNGMAKE=gcc
+PN$(MAKE)=gcc
 endif
-ifeq ($(PNGMAKE),)
-PNGMAKE=gcc
+ifeq ($(PN$(MAKE)),)
+PN$(MAKE)=gcc
 endif
 
 .PHONY: png png-install png-build
@@ -88,15 +87,16 @@ png: png-build png-install
 
 png-install: libdir $(L)/.png
 
-$(L)/.png: $(PNG_SRC)/.built
+$(L)/.png: $(PNG_SRC)/.built-$(O)
 	cp -R $(PNG_SRC)/libpng12.so* $(L)
 	touch $@
 
-png-build: $(PNG_SRC)/.built
+png-build: $(PNG_SRC)/.built-$(O)
 
-$(PNG_SRC)/.built: $(PNG_SRC)/.unpacked
+$(PNG_SRC)/.built-$(O): $(PNG_SRC)/.unpacked
+	-(cd $(PNG_SRC); make -f scripts/makefile.$(PN$(MAKE)) clean)
 	cd $(PNG_SRC); \
-	make -f scripts/makefile.$(PNGMAKE) ZLIBINC=../$(ZLIB_SRC) ZLIBLIB=../$(ZLIB_SRC)
+	make -f scripts/makefile.$(PN$(MAKE)) ZLIBINC=../$(ZLIB_SRC) ZLIBLIB=../$(ZLIB_SRC)
 	touch $@
 
 $(PNG_SRC)/.unpacked: $(PNG_SRC).tar.gz
@@ -105,7 +105,7 @@ $(PNG_SRC)/.unpacked: $(PNG_SRC).tar.gz
 	touch $@
 
 $(PNG_SRC).tar.gz:
-	$(WGET) $(SFMIRROR)/libpng/$(PNG_SRC).tar.gz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/libpng/$(PNG_SRC).tar.gz
 
 
 #-----------------------------------------------------------------------------
@@ -119,13 +119,14 @@ tcl: tcl-build tcl-install
 
 tcl-install: libdir $(L)/.tcl
 
-$(L)/.tcl: $(TCL_SRC)/.built
+$(L)/.tcl: $(TCL_SRC)/.built-$(O)
 	cp $(TCL_SRC)/unix/libtcl8.4.so $(L)
 	touch $@
 
-tcl-build: $(TCL_SRC)/.built
+tcl-build: $(TCL_SRC)/.built-$(O)
 
-$(TCL_SRC)/.built: $(TCL_SRC)/.unpacked
+$(TCL_SRC)/.built-$(O): $(TCL_SRC)/.unpacked
+	-(cd $(TCL_SRC)/unix; $(MAKE) distclean)
 	cd $(TCL_SRC)/unix; \
 	./configure --enable-shared; \
 	make
@@ -137,7 +138,7 @@ $(TCL_SRC)/.unpacked: $(TCL_SRC)-src.tar.gz
 	touch $@
 
 $(TCL_SRC)-src.tar.gz:
-	$(WGET) $(SFMIRROR)/tcl/$(TCL_SRC)-src.tar.gz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/tcl/$(TCL_SRC)-src.tar.gz
 
 
 
@@ -152,13 +153,14 @@ tk: tk-build tk-install
 
 tk-install: libdir $(L)/.tk
 
-$(L)/.tk: $(TK_SRC)/.built
+$(L)/.tk: $(TK_SRC)/.built-$(O)
 	cp $(TK_SRC)/unix/libtk8.4.so $(L)
 	touch $@
 
-tk-build: $(TK_SRC)/.built
+tk-build: $(TK_SRC)/.built-$(O)
 
-$(TK_SRC)/.built: $(TK_SRC)/.unpacked
+$(TK_SRC)/.built-$(O): $(TK_SRC)/.unpacked
+	-(cd $(TK_SRC)/unix; $(MAKE) distclean)
 	cd $(TK_SRC)/unix; \
 	./configure --enable-shared; \
 	make
@@ -170,7 +172,7 @@ $(TK_SRC)/.unpacked: $(TK_SRC)-src.tar.gz
 	touch $@
 
 $(TK_SRC)-src.tar.gz:
-	$(WGET) $(SFMIRROR)/tcl/$(TK_SRC)-src.tar.gz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/tcl/$(TK_SRC)-src.tar.gz
 
 
 #-----------------------------------------------------------------------------
@@ -184,13 +186,14 @@ itcl: itcl-build itcl-install
 
 itcl-install: libdir $(L)/.itcl
 
-$(L)/.itcl: $(ITCL_SRC)/.built
+$(L)/.itcl: $(ITCL_SRC)/.built-$(O)
 	cp $(ITCL_SRC)/*/*.so $(L)
 	touch $@
 
-itcl-build: $(ITCL_SRC)/.built
+itcl-build: $(ITCL_SRC)/.built-$(O)
 
-$(ITCL_SRC)/.built: $(ITCL_SRC)/.unpacked
+$(ITCL_SRC)/.built-$(O): $(ITCL_SRC)/.unpacked
+	-(cd $(ITCL_SRC); $(MAKE) distclean)
 	cd $(ITCL_SRC); \
 	./configure --enable-shared; \
 	make
@@ -202,7 +205,7 @@ $(ITCL_SRC)/.unpacked: $(ITCL_SRC)_src.tgz
 	touch $@
 
 $(ITCL_SRC)_src.tgz:
-	$(WGET) $(SFMIRROR)/incrtcl/$(ITCL_SRC)_src.tgz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/incrtcl/$(ITCL_SRC)_src.tgz
 
 
 #-----------------------------------------------------------------------------
@@ -219,15 +222,16 @@ iwidgets-install: libdir $(L)/.iwidgets
 $(L)/.iwidgets: $(IWIDGETS_SRC)/.built
 	cd $(IWIDGETS_SRC); \
 	make install-libraries
-	-rm ../lib/iwidgets
-	mv ../lib/$(IWIDGETS_SRC) ../lib/iwidgets
+	-rm lib/iwidgets
+	mv lib/$(IWIDGETS_SRC) lib/iwidgets
 	touch $@
 
 iwidgets-build: $(IWIDGETS_SRC)/.built
 
 $(IWIDGETS_SRC)/.built: $(IWIDGETS_SRC)/.unpacked
+	-(cd $(IWIDGETS_SRC); $(MAKE) distclean)
 	cd $(IWIDGETS_SRC); \
-	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=../..; \
+	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=..; \
 	make
 	touch $@
 
@@ -237,4 +241,4 @@ $(IWIDGETS_SRC)/.unpacked: $(IWIDGETS_SRC).tar.gz
 	touch $@
 
 $(IWIDGETS_SRC).tar.gz:
-	$(WGET) $(SFMIRROR)/incrtcl/$(IWIDGETS_SRC).tar.gz $(WGET_DEST)
+	$(WGET) $(SFMIRROR)/incrtcl/$(IWIDGETS_SRC).tar.gz
