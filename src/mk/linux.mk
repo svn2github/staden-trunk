@@ -26,14 +26,18 @@ CFLAGS	+= $(GCCWARNINGS)
 
 # X is installed in /usr/X11R6
 XBIN	= /usr/X11R6/lib
+# For AMD64 based systems use XBIN=/usr/X11R6/lib64
 
 #CLDFLAGS_E	+= -shared
 #FLDFLAGS_E	+= -shared
 
 # Dynamic linking
+# For AMD64 based systems try -fPIC instead.
 SHLIB_CFLAGS		= -fpic
+
 # pic with g77 generates opcodes unknown by the 386 assembler. Odd
 # It doesn't appear to be needed (but at a speed cost?).
+# For AMD64 based systems try -fPIC instead.
 #SHLIB_FFLAGS		= -fpic
 SHLIB_LD		= cc
 SHLIB_LDFLAGS		= -L$(L) $(SHLIB_STRIP) -shared -o
