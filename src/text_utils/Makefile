@@ -41,14 +41,14 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 
 .PRECIOUS:	.links
 .links:
-	ln -s ../licence/boxes.h
-	ln -s ../licence/licence.h
-	ln -s ../licence/check_licence.c
-	ln -s ../licence/licence_utils.c
-	ln -s ../licence/licence_utils.h
-	ln -s ../licence/md52.c
-	ln -s ../licence/md52.h
-	ln -s ../licence/valid_seq.c
+	ln -s ../licence/boxes.h .
+	ln -s ../licence/licence.h .
+	ln -s ../licence/check_licence.c .
+	ln -s ../licence/licence_utils.c .
+	ln -s ../licence/licence_utils.h .
+	ln -s ../licence/md52.c .
+	ln -s ../licence/md52.h .
+	ln -s ../licence/valid_seq.c .
 	touch .links
 	$(MAKE) $(MFLAGS)
 

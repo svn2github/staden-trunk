@@ -105,16 +105,16 @@ endif
 
 .PRECIOUS:	.links
 .links:
-	ln -s ../licence/boxes.h
-	ln -s ../licence/licence.h
-	ln -s ../licence/check_licence.c
-	ln -s ../licence/licence_utils.c
-	ln -s ../licence/licence_utils.h
-	ln -s ../licence/md52.c
-	ln -s ../licence/md52.h
-	ln -s ../licence/valid_seq.c
-	ln -s ../tcl8.4.0/unix/tclAppInit.c
-	ln -s ../tk8.4.0/winMain.c
+	ln -s ../licence/boxes.h .
+	ln -s ../licence/licence.h .
+	ln -s ../licence/check_licence.c .
+	ln -s ../licence/licence_utils.c .
+	ln -s ../licence/licence_utils.h .
+	ln -s ../licence/md52.c .
+	ln -s ../licence/md52.h .
+	ln -s ../licence/valid_seq.c .
+	ln -s ../tcl8.4.0/unix/tclAppInit.c .
+	ln -s ../tk8.4.0/winMain.c .
 	touch .links
 	$(MAKE) $(MFLAGS)
 
