@@ -656,12 +656,18 @@ Read *fread_abi(FILE *fp) {
 	    sprintf(line, "SPAC=%-6.2f\n", fspacing);
 	    strcat(comment, line);
 	}
+	/* Correction for when spacing is negative. Why does this happen? */
 	if (fspacing <= 0) {
-	    if (read->NBases)
-		fspacing = (float) read->basePos[read->NBases-1]
-		    / (float) read->NBases;
-	    else
+	    if (read->NBases > 1) {
+		if (sections & READ_BASES)
+		    fspacing = (float)(read->basePos[read->NBases-1] -
+				       read->basePos[0])
+			/ (float) (read->NBases-1);
+		else
+		    fspacing = (float) read->NPoints / (float) read->NBases;
+	    } else {
 		fspacing = 1;
+	    }
 	}
 
 	
