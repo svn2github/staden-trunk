@@ -191,6 +191,7 @@ typedef struct {
     int since_auto_save;
     int store_undo;		/* 1 => store undo info */
     signed int registration_id;
+    int open_undo_count;
 
     /* Reference sequence */
     int reference_seq;		/* 0 for none. Otherwise a seq id */

@@ -220,6 +220,9 @@ void openUndo(DBInfo *db)
  * Start recording undo for next command
  */
 {
+    if (++_DBI_open_undo_count(db) > 1)
+	return;
+
     if (!_DBI_store_undo(db)) {
 	/* Do not store undo info, but mark edits as having been made */
 	_DBI_edits_made(db)++;
@@ -238,7 +241,7 @@ void openUndo(DBInfo *db)
 
     _DBI_edits_made(db)++;
 
-    /* unsure this is null */
+    /* ensure this is null */
     _DBI_undo_lists(db)[_DBI_last_undo(db)] = NULL;
     
 }
@@ -249,6 +252,9 @@ void closeUndo(EdStruct *xx, DBInfo *db)
  * Start recording undo for next command
  */
 {
+    if (--_DBI_open_undo_count(db) != 0)
+	return;
+
     if (!_DBI_store_undo(db))
 	return;
 

@@ -183,6 +183,7 @@
 #define DBI_edits_made(X)	((X)->DBi->edits_made)
 #define DBI_since_auto_save(X)	((X)->DBi->since_auto_save)
 #define DBI_store_undo(X)	((X)->DBi->store_undo)
+#define DBI_open_undo_count(X)	((X)->DBi->open_undo_count)
 #define DBI_registration_id(X)	((X)->DBi->registration_id)
 
 #define _DBI_DB(DBi)         ((DBi)->DB)
@@ -202,6 +203,7 @@
 #define _DBI_edits_made(DBi)		((DBi)->edits_made)
 #define _DBI_since_auto_save(DBi)	((DBi)->since_auto_save)
 #define _DBI_store_undo(DBi)		((DBi)->store_undo)
+#define _DBI_open_undo_count(DBi)	((DBi)->open_undo_count)
 #define _DBI_registration_id(DBi)	((DBi)->registration_id)
 
 /****************/

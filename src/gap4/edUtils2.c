@@ -245,6 +245,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
 	xx->DBi->edits_made = 0;
 	xx->DBi->since_auto_save = 0;
 	xx->DBi->store_undo = 1;
+	xx->DBi->open_undo_count = 0;
 	xx->DBi->registration_id = 0;
 	xx->DBi->reference_seq = 0;
 	xx->DBi->templates = NULL;
