@@ -435,9 +435,9 @@ proc new_trace_create2 {w e title allow_diff} {
 	if {$type == "="} {
 	    set type ""
 	    set t1 C
-	    set title "Difference between Consenus and trace #$t2"
+	    set title "Difference between Consenus and trace [r_name [$e io] $t2]"
 	} else {
-	    set title "Difference between trace #$t1 and trace #$t2"
+	    set title "Difference between trace [r_name [$e io] $t1] and trace [r_name [$e io] $t2]"
 	}
 	set tit_num "$type$t1/#$t2"
 	set tname trace${t1}_${t2}
@@ -448,9 +448,9 @@ proc new_trace_create2 {w e title allow_diff} {
 	    set tname ${tmp}#$copy
 	}
 	if {$t1 == "C"} {
-	    set tit_name "consensus/[r_name [$e io] $t2]"
+	    set tit_name "consensus/#$t2"
 	} else {
-	    set tit_name "[r_name [$e io] $t1]/[r_name [$e io] $t2]"
+	    set tit_name ""
 	}
 	set info_state disabled
         set tf_r $w.traces.c.f.${tname}_r[set $w.Incr]
@@ -634,7 +634,10 @@ proc new_trace_create2 {w e title allow_diff} {
     append $w.after_id [after idle "trace_reconfigure $w $w.traces.c $w.traces.s $tf_r"] " "
 
     if {[keylget gap_defs TRACE_DISPLAY.FULL_NAME]} {
-        label $tf_r.name -text "$tit_num / $tit_name"
+	if {$tit_name != ""} {
+	    set tit_name " / $tit_name"
+	}
+	label $tf_r.name -text "$tit_num$tit_name"
         place $tf_r.name -relx 0
         raise $tf_r.name
 	frame $tf_r.trace.flash \
