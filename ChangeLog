@@ -1,3 +1,105 @@
+2003-08-07  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/seq_utils/dna_utils.c:
+	Used (unsigned char) cast instead of (unsigned) for index to
+	complementary base etc, otherwise it will cast to unsigned int and
+	use a massive offset (4 billion or so) for 'negative' characters.
+
+	* src/gap4/oligo_param.tcl (select_oligos):
+	Made GC Clamp parameter configurable.
+	Remember the search ahead/back and seq length parameters for the
+	duration of the gap4 session.
+
+2003-08-06  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/io_lib/abi/seqIOABI.c:
+	Prevent the SPAC (average spacing) in abi files from being
+	negative. How does this happen?
+	Also disabled the base reordering code as I believe this is not
+	the correct thing to do.
+
+2003-08-05  James Bonfield  <jkb@sanger.ac.uk>
+
+	* lib/prefinish/finish.[ch]: 
+	We now search for fake templates (func skip_fake_templates) based
+	on looking for sequences without trace files. This is in addition
+	to the usual skip_templates file and provides an easy automatic
+	way of filtering out imported consensus sequences and the like.
+
+	* src/g/freetree.c (tree_find_len):
+	When we have a tr->largest block long enough to hold the requested
+	length, we were returning NULL (due to broken code ordering)
+	instead of returning the block. This causes the database to
+	unnecessarily grow!
+
+	* src/ftp/tk8.4.0/unix/tkUnixFont.c (Tk_DrawChars):
+	Reverted the (my) patch to query the window size for optimising
+	text printing, as the XGetGeometry call requires a round-trip
+	message to the X server and hence gives very slow lag for remote
+	connections.
+
+2003-08-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/io_lib/utils/compress.c: 
+	Check for errors in fcompress_file. If the file created was fopened
+	using wb and not wb+ and fwrite_reading is used, then
+	fcompress_file will fail as the process cannot read back the file
+	it wrote.
+
+2003-07-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap4_production link updated.
+
+2003-07-23  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/stops/stops.c: Fixed a bug in peak height clipping in the
+	first 50 or so bases are all just noise (no signal). We now fill
+	out peaks with non-clipped data and do height clipping after
+	finding the best average region.
+
+	* src/stops/stops.c: Added a baseline parameter to add a fixed
+	amount to all peaks. This 'small sample correction' is used for
+	preventing artificially good results when looking at very low
+	scores.
+
+2003-07-17  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish.c, src/prefinish/finish.tcl:
+	Added -reseq_nsolutions, -long_nsolutions and -pwalk_nsolutions
+	as configuration parameters.
+
+	* src/prefinish/finish_main.c: (implement_solutions):
+	Added a notion of a result type having a desired number of
+	solutions to use. This is distinct from the number of items in a
+	group. Eg we may want to pick 2 primers, and use 3 templates for
+	each. The main purpose for this though is for picking more than 1
+	resequence experiment for each problem.
+
+	* src/prefinish/finish_long.c (experiment_reseq):
+	Fixed a bug in the use of strand vs sense. We now check sense for
+	resequencing experiments as it doesn't matter if it's fwd or
+	reverse sequence, just that it heads in the right direction.
+
+2003-07-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish_main.c (score_experiments):
+	Improved the score of experiments that have large groups. Eg more
+	templates for a primer-walk are better than one.
+
+	* src/gap4/extract.c (extract_readings): 
+	The sort_readings function now returns an allocated structure
+	holding the anchor read. This is used for replacing next_AP_left,
+	which was VERY slow compared to the new method.
+
+	* src/gap4/assemble_direct.c (assemble_direct):
+	Directed assembly now ignores SL/SR lines when working out the
+	left and right clip points, as this breaks copying data with
+	extract readings. FIXME: this should be made optional.
+
+2003-07-15  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/gap.tcl: Gap4 now 8.4b4.
+
 2003-07-14  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/tk_utils/tkTraceDisp.c:
