@@ -2190,11 +2190,11 @@ catch {bind Editor <Control-Key-End>	{%W read_end2}}
 
 # Tag macros
 set ed_macro_keys ""
-for {set i 1} {$i <= 12} {incr i} {
-    bind Editor <Shift-Key-F$i> "tag_macro_create %W F$i"
-    bind Editor <F$i> "tag_macro_invoke %W F$i"
-    bind EdNames <Shift-Key-F$i> "tag_macro_create \[edname_to_editor %W\] F$i"
-    bind EdNames <F$i> "tag_macro_invoke \[edname_to_editor %W\] F$i"
+for {set i 1} {$i <= 10} {incr i} {
+    bind Editor <Shift-Key-F$i> "tag_macro_create %W F$i;break"
+    bind Editor <F$i> "tag_macro_invoke %W F$i;break"
+    bind EdNames <Shift-Key-F$i> "tag_macro_create \[edname_to_editor %W\] F$i;break"
+    bind EdNames <F$i> "tag_macro_invoke \[edname_to_editor %W\] F$i;break"
     lappend ed_macro_keys F$i
 }
 bind Editor <F11> "%W select clear; %W edit_anno"
