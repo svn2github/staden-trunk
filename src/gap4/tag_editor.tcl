@@ -277,21 +277,6 @@ proc tag_editor_set_strand {w data} {
     $w configure -text [tag_editor_strand $d(strand)]
 }
 
-proc add_tag_menus {mpath command} {
-    global NGTag gap_defs
-
-    for {set i 0; set j 1} {$i < $NGTag(num_tags)} {incr i; incr j} {
-        $mpath add command \
-	    -label "$NGTag($i,tagid): $NGTag($i,tagtype)" \
- 	    -command "$command $NGTag($i,tagid)"
-	if {$j >= [keylget gap_defs MAX_MENU_ITEMS]} {
-	    $mpath add cascade -label "More..." -menu $mpath.more
-	    set mpath [menu $mpath.more -tearoff 0]
-	    set j 0
-	}
-    }
-}
-
 #
 # Brings up the tag creation dialogue, which is used to define a tag macro
 #
