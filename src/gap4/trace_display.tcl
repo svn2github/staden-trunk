@@ -574,7 +574,7 @@ proc new_trace_create2 {w e title allow_diff} {
     if {$allow_diff} {
 	recurse_trace_bind $tf_r
     }
-    bind $tf_r <<menu>> "tk_popup $tf_r.m %X %Y"
+    bind $tf_r.trace <<menu>> "tk_popup $tf_r.m %X %Y"
 
     if {$tcl_platform(platform) == "unix"} {
 	scrollbar $tf_r.scroll \
