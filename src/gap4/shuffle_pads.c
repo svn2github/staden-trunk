@@ -1,3 +1,5 @@
+/* Copyright Genome Research Limited (GRL). All rights reserved */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>

@@ -1,3 +1,4 @@
+# Copyright Genome Research Limited (GRL). All rights reserved
 
 proc ViewNavigationData {io} {
     
