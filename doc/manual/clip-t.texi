@@ -1,6 +1,7 @@
 @menu
 * Clip-Difference::             Difference clipping
 * Clip-Quality::                Quality clipping
+* Clip-NBases:			N-Base clipping
 @end menu
 
 @cindex Clipping within Gap4
@@ -87,3 +88,37 @@ We have observed that when using confidence values expressed as
 it is sometimes better not to clip using the confidence values, but to
 use the difference clipping method 
 (_fpref(Clip-Difference, Difference Clipping, clip)).
+
+_split()
+@node Clip-NBases
+@subsection N-Base Clipping
+@cindex Clipping by N bases
+@cindex N-base clipping
+
+The purpose of this function is to remove runs of @code{N}s or @code{-}s
+from the ends of sequences. Other bases may be interspersed in a run of
+dashes and the run will still be clipped, provided there are a
+sufficient number of non-A/C/G/T base calls. The exact algorithm for
+determining where a 'run' will stop is as follows:
+
+@enumerate
+@item
+Set score to zero
+
+@item
+For each base call add 1 for @code{N} or @code{-}, -1 for @code{A},
+@code{C}, @code{G} or @code{T}, zero for anything else.
+
+@item
+Terminate when the score < -10.
+
+@item
+Set the clip point at the highest score observed.
+@end enumerate
+
+Generally this will have no effect (when on good data). It can never
+'grow' a sequence (by extending the cutoffs into the good data). It will
+never form a hole in a contig by clipping all sequences in a region (as
+it will extend the data from both ends of the hole to join it back
+together again).
+

@@ -454,6 +454,15 @@ confidence", make sure that the quality cutoff is zero or higher, otherwise
 the frequency consensus algorithm will be used instead.
 
 @sp 1
+@cindex Allow F12 for fast tag deletion: contig editor
+@cindex Contig Editor: Allow F12 for fast tag deletion
+@item Allow F12 for fast tag deletion
+        F12 and Shift-F12 may be use to delete the tag underneath the
+        contig editor cursor (F12) or the mouse pointer
+        (Shift-F12). Initially these are disabled to prevent accidental
+        deletions.
+
+@sp 1
 @cindex Edit mode sets: contig editor
 @cindex Mode sets: contig editor
 @cindex Contig Editor: mode sets
@@ -602,6 +611,13 @@ delete *     Consensus   both     any                 Delete column
 delete -     Consensus   both     Del dash in con     Delete column
 delete any   Consensus   both     Del any in cons     Delete column
 Ctrl d       Consensus   both     Del dash/any        Delete column
+Shift F1-10  Read/Cons   both     any                 Create tag macro
+F1 to F10    Read/Cons   both     any                 Use tag macro
+F11          Read/Cons   both     any                 Edit tag under cursor
+Shift F11    Read/Cons   both     any                 Edit tag under pointer
+F12          Read/Cons   both     Fast tag deletion   Delete tag under cursor
+Shift F12    Read/Cons   both     Fast tag deletion   Del. tag under pointer
+
 @end example
 
 _split()
@@ -697,13 +713,17 @@ exit the tag editor and create the annotation. To abandon editing
 without creating the annotation use the "Cancel" button.
 
 To edit an existing annotation, position the editing cursor
-within a annotation and select "Edit Tag" from the commands menu. Once
-again the tag editor will be invoked and operates as before. Here
-"Save" will save the edited changes and "Cancel" will abandon
+within a annotation and select "Edit Tag" from the commands menu. This
+will be a cascading menu, typically showing one tag. If multiple tags
+coincide at the same sequence position you will be able to chose which
+tag to edit. Once again the tag editor will be invoked and operates as
+before. Here "Save" will save the edited changes and "Cancel" will abandon
 changes.
 
 Removing a annotation involves positioning the editing cursor within
-an annotation and selecting "Delete Tag" from the commands menu.  
+an annotation and selecting "Delete Tag" from the commands menu. As with
+"Edit Tag" this is a cascading menu to allow you to chose which tag at a
+specific point to delete.
 
 As usual, "undo" can be used to undo any of these annotation creations,
 edits and removals.
@@ -712,6 +732,27 @@ The Control-Q key sequence may be used to toggle the displaying of tags.
 Pressing it once will prevent all tags from being displayed in the editor.
 This is sometimes useful to see any colouring information underneath the tag.
 Pressing Control-Q once more will redisplay them.
+
+For rapid annotating a series of 10 macros may be programmed. Press
+Shift and a function key between F1 and F10 to bring up the macro
+editor. This look much like the normal tag editor except that @b{Save}
+is replaced with @b{Save Macro} and saving does not actually create a
+tag on the sequence. To use the macro, highlight the bases you wish and
+press the function key corresponding to that macro - F1 to F10. For a
+single base pair tag you do not need to underline a region as the tag
+will automatically cover the base underneath the editing cursor. To
+remember these permanently use the "Save Macros" option in the
+"Settings" menu.
+
+You may find that some function keys are already programmed to do other
+things (such as raise or lower windows), depending on the windowing
+environment in use. If this is the case either modify the configuration
+of your windowing system or simply use another macro key.
+
+For rapid editing and deleting the F11 and F12 keys may be used. These
+edit and delete the top-most tag underneath the editing cursor. If you
+wish to edit or delete the tag underneath the mouse cursor instead (and
+hence save a mouse click) use Shift F11 and Shift F12 for edit and delete.
 
 _split()
 @node Editor-Searching
@@ -1206,8 +1247,9 @@ _split()
 
 The purpose of this menu is to configure the operation of the contig
 editor, including the consensus calculation, the active tags and the
-status lines. Settings can be saved using the "Save settings" button.
-Settings for the following options can be changed.
+status lines. Settings can be saved using the "Save settings" button,
+but this does not save any tag macros. These may be saved using the
+"Save Macros" option. Settings for the following options can be changed.
 
 @ifset tex
 @itemize @bullet
@@ -1735,7 +1777,8 @@ done by toggling the direction arrows ("----->" or "<------").
 Press the "Find Oligos" button to find all suitable oligos
 (see the "Parameters" subsection below for further information on
 controlling this procedure). Information for the closest suitable oligo to
-the cursor position is given in the output text window. In the
+the cursor position is given in the output text window and at the bottom
+of the editor in the information line. In the
 contig editor the position of the oligo is marked by a temporary
 tag on the consensus. The window is recentered if the oligo is
 off the screen.
