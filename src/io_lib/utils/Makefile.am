@@ -24,6 +24,7 @@ libutils_la_SOURCES = \
 
 INCLUDES = \
 	-I${top_srcdir} \
+	-I${top_srcdir}/include \
 	-I${top_srcdir}/read \
 	-I${top_srcdir}/alf \
 	-I${top_srcdir}/abi \
@@ -38,7 +39,6 @@ EXTRA_DIST = README
 
 pkginclude_HEADERS = \
 	array.h \
-	calc_crc.h \
 	compress.h \
 	error.h \
 	mach-io.h \

@@ -1,6 +1,7 @@
-# Makefile.in generated automatically by automake 1.4a from Makefile.am
+# Makefile.in generated automatically by automake 1.5 from Makefile.am.
 
-# Copyright (C) 1994, 1995-9, 2000 Free Software Foundation, Inc.
+# Copyright 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001
+# Free Software Foundation, Inc.
 # This Makefile.in is free software; the Free Software Foundation
 # gives unlimited permission to copy and/or distribute it,
 # with or without modifications, as long as this notice is preserved.
@@ -9,6 +10,8 @@
 # but WITHOUT ANY WARRANTY, to the extent permitted by law; without
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
+
+@SET_MAKE@
 
 SHELL = @SHELL@
 
@@ -30,11 +33,9 @@ infodir = @infodir@
 mandir = @mandir@
 includedir = @includedir@
 oldincludedir = /usr/include
-
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
-
 top_builddir = ..
 
 ACLOCAL = @ACLOCAL@
@@ -46,40 +47,38 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
-INSTALL_STRIP_FLAG =
+INSTALL_HEADER = $(INSTALL_DATA)
 transform = @program_transform_name@
-
 NORMAL_INSTALL = :
 PRE_INSTALL = :
 POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-
-@SET_MAKE@
 host_alias = @host_alias@
 host_triplet = @host@
-AMDEP = @AMDEP@
 AMTAR = @AMTAR@
 AS = @AS@
 AWK = @AWK@
 CC = @CC@
-CPP = @CPP@
-CXX = @CXX@
-CXXCPP = @CXXCPP@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+ECHO = @ECHO@
+EXEEXT = @EXEEXT@
+INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LIBM = @LIBM@
 LIBTOOL = @LIBTOOL@
 LIBZ = @LIBZ@
 LN_S = @LN_S@
-MAKEINFO = @MAKEINFO@
 OBJDUMP = @OBJDUMP@
+OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
 RANLIB = @RANLIB@
+STRIP = @STRIP@
 VERSION = @VERSION@
+am__include = @am__include@
+am__quote = @am__quote@
 install_sh = @install_sh@
-
 
 bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment
 
@@ -108,6 +107,7 @@ scf_update_LDADD = $(top_builddir)/read/libread.la
 
 INCLUDES = \
 	-I${top_srcdir} \
+	-I${top_srcdir}/include \
 	-I${top_srcdir}/read \
 	-I${top_srcdir}/alf \
 	-I${top_srcdir}/abi \
@@ -120,117 +120,76 @@ INCLUDES = \
 
 subdir = progs
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
-CONFIG_HEADER = ../config.h
-CONFIG_CLEAN_FILES = 
-PROGRAMS =  $(bin_PROGRAMS)
+CONFIG_HEADER = $(top_builddir)/config.h
+CONFIG_CLEAN_FILES =
+bin_PROGRAMS = convert_trace$(EXEEXT) makeSCF$(EXEEXT) \
+	extract_seq$(EXEEXT) index_tar$(EXEEXT) scf_dump$(EXEEXT) \
+	scf_info$(EXEEXT) scf_update$(EXEEXT) get_comment$(EXEEXT)
+PROGRAMS = $(bin_PROGRAMS)
 
+am_convert_trace_OBJECTS = convert_trace.$(OBJEXT)
+convert_trace_OBJECTS = $(am_convert_trace_OBJECTS)
+convert_trace_DEPENDENCIES = $(top_builddir)/read/libread.la
+convert_trace_LDFLAGS =
+am_extract_seq_OBJECTS = extract_seq.$(OBJEXT)
+extract_seq_OBJECTS = $(am_extract_seq_OBJECTS)
+extract_seq_DEPENDENCIES = $(top_builddir)/read/libread.la
+extract_seq_LDFLAGS =
+am_get_comment_OBJECTS = get_comment.$(OBJEXT)
+get_comment_OBJECTS = $(am_get_comment_OBJECTS)
+get_comment_DEPENDENCIES = $(top_builddir)/read/libread.la
+get_comment_LDFLAGS =
+am_index_tar_OBJECTS = index_tar.$(OBJEXT)
+index_tar_OBJECTS = $(am_index_tar_OBJECTS)
+index_tar_LDADD = $(LDADD)
+index_tar_DEPENDENCIES =
+index_tar_LDFLAGS =
+am_makeSCF_OBJECTS = makeSCF.$(OBJEXT)
+makeSCF_OBJECTS = $(am_makeSCF_OBJECTS)
+makeSCF_DEPENDENCIES = $(top_builddir)/read/libread.la
+makeSCF_LDFLAGS =
+am_scf_dump_OBJECTS = scf_dump.$(OBJEXT)
+scf_dump_OBJECTS = $(am_scf_dump_OBJECTS)
+scf_dump_DEPENDENCIES = $(top_builddir)/read/libread.la
+scf_dump_LDFLAGS =
+am_scf_info_OBJECTS = scf_info.$(OBJEXT)
+scf_info_OBJECTS = $(am_scf_info_OBJECTS)
+scf_info_DEPENDENCIES = $(top_builddir)/read/libread.la
+scf_info_LDFLAGS =
+am_scf_update_OBJECTS = scf_update.$(OBJEXT)
+scf_update_OBJECTS = $(am_scf_update_OBJECTS)
+scf_update_DEPENDENCIES = $(top_builddir)/read/libread.la
+scf_update_LDFLAGS =
 
-DEFS = @DEFS@ -I. -I$(srcdir) -I..
+DEFS = @DEFS@
+DEFAULT_INCLUDES =  -I. -I$(srcdir) -I$(top_builddir)
 CPPFLAGS = @CPPFLAGS@
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@
-am_convert_trace_OBJECTS =  convert_trace.o
-convert_trace_OBJECTS =  $(am_convert_trace_OBJECTS)
-convert_trace_DEPENDENCIES =  $(top_builddir)/read/libread.la
-convert_trace_LDFLAGS = 
-am_extract_seq_OBJECTS =  extract_seq.o
-extract_seq_OBJECTS =  $(am_extract_seq_OBJECTS)
-extract_seq_DEPENDENCIES =  $(top_builddir)/read/libread.la
-extract_seq_LDFLAGS = 
-am_get_comment_OBJECTS =  get_comment.o
-get_comment_OBJECTS =  $(am_get_comment_OBJECTS)
-get_comment_DEPENDENCIES =  $(top_builddir)/read/libread.la
-get_comment_LDFLAGS = 
-am_index_tar_OBJECTS =  index_tar.o
-index_tar_OBJECTS =  $(am_index_tar_OBJECTS)
-index_tar_LDADD = $(LDADD)
-index_tar_DEPENDENCIES = 
-index_tar_LDFLAGS = 
-am_makeSCF_OBJECTS =  makeSCF.o
-makeSCF_OBJECTS =  $(am_makeSCF_OBJECTS)
-makeSCF_DEPENDENCIES =  $(top_builddir)/read/libread.la
-makeSCF_LDFLAGS = 
-am_scf_dump_OBJECTS =  scf_dump.o
-scf_dump_OBJECTS =  $(am_scf_dump_OBJECTS)
-scf_dump_DEPENDENCIES =  $(top_builddir)/read/libread.la
-scf_dump_LDFLAGS = 
-am_scf_info_OBJECTS =  scf_info.o
-scf_info_OBJECTS =  $(am_scf_info_OBJECTS)
-scf_info_DEPENDENCIES =  $(top_builddir)/read/libread.la
-scf_info_LDFLAGS = 
-am_scf_update_OBJECTS =  scf_update.o
-scf_update_OBJECTS =  $(am_scf_update_OBJECTS)
-scf_update_DEPENDENCIES =  $(top_builddir)/read/libread.la
-scf_update_LDFLAGS = 
-COMPILE = $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-CFLAGS = @CFLAGS@
-CCLD = $(CC)
-LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-DIST_SOURCES =  $(convert_trace_SOURCES) $(extract_seq_SOURCES) \
-$(get_comment_SOURCES) $(index_tar_SOURCES) $(makeSCF_SOURCES) \
-$(scf_dump_SOURCES) $(scf_info_SOURCES) $(scf_update_SOURCES)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
-DEP_FILES =  @AMDEP@ $(DEPDIR)/convert_trace.Po $(DEPDIR)/extract_seq.Po \
-$(DEPDIR)/get_comment.Po $(DEPDIR)/index_tar.Po $(DEPDIR)/makeSCF.Po \
-$(DEPDIR)/scf_dump.Po $(DEPDIR)/scf_info.Po $(DEPDIR)/scf_update.Po
-DIST_COMMON =  Makefile.am Makefile.in
-
-
-DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-
-GZIP_ENV = --best
+@AMDEP_TRUE@DEP_FILES = $(DEPDIR)/convert_trace.Po \
+@AMDEP_TRUE@	$(DEPDIR)/extract_seq.Po $(DEPDIR)/get_comment.Po \
+@AMDEP_TRUE@	$(DEPDIR)/index_tar.Po $(DEPDIR)/makeSCF.Po \
+@AMDEP_TRUE@	$(DEPDIR)/scf_dump.Po $(DEPDIR)/scf_info.Po \
+@AMDEP_TRUE@	$(DEPDIR)/scf_update.Po
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+LTCOMPILE = $(LIBTOOL) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) \
+	$(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(LIBTOOL) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+CFLAGS = @CFLAGS@
+DIST_SOURCES = $(convert_trace_SOURCES) $(extract_seq_SOURCES) \
+	$(get_comment_SOURCES) $(index_tar_SOURCES) $(makeSCF_SOURCES) \
+	$(scf_dump_SOURCES) $(scf_info_SOURCES) $(scf_update_SOURCES)
+DIST_COMMON = Makefile.am Makefile.in
 SOURCES = $(convert_trace_SOURCES) $(extract_seq_SOURCES) $(get_comment_SOURCES) $(index_tar_SOURCES) $(makeSCF_SOURCES) $(scf_dump_SOURCES) $(scf_info_SOURCES) $(scf_update_SOURCES)
-OBJECTS = $(am_convert_trace_OBJECTS) $(am_extract_seq_OBJECTS) $(am_get_comment_OBJECTS) $(am_index_tar_OBJECTS) $(am_makeSCF_OBJECTS) $(am_scf_dump_OBJECTS) $(am_scf_info_OBJECTS) $(am_scf_update_OBJECTS)
 
-all: all-redirect
+all: all-am
+
 .SUFFIXES:
-.SUFFIXES: .c .lo .o
-$(srcdir)/Makefile.in: Makefile.am $(top_srcdir)/configure.in $(ACLOCAL_M4) 
-	cd $(top_srcdir) && $(AUTOMAKE) --gnu progs/Makefile
-
-Makefile: $(srcdir)/Makefile.in  $(top_builddir)/config.status
-	cd $(top_builddir) \
-	  && CONFIG_FILES=$(subdir)/$@ CONFIG_HEADERS= $(SHELL) ./config.status
-
-
-mostlyclean-binPROGRAMS:
-
-clean-binPROGRAMS:
-	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-
-distclean-binPROGRAMS:
-
-maintainer-clean-binPROGRAMS:
-
-install-binPROGRAMS: $(bin_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	$(mkinstalldirs) $(DESTDIR)$(bindir)
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  if test -f $$p; then \
-	    f="`echo $$p|sed -e 's/$(EXEEXT)$$//' -e '$(transform)' -e 's/$$/$(EXEEXT)/'`"; \
-	    echo " $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/$$f"; \
-	    $(LIBTOOL)  --mode=install $(INSTALL_PROGRAM) $(INSTALL_STRIP_FLAG) $$p $(DESTDIR)$(bindir)/$$f; \
-	  else :; fi; \
-	done
-
-uninstall-binPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(bin_PROGRAMS)'; for p in $$list; do \
-	  f="`echo $$p|sed -e 's/$(EXEEXT)$$//' -e '$(transform)' -e 's/$$/$(EXEEXT)/'`"; \
-	  echo " rm -f $(DESTDIR)$(bindir)/$$f"; \
-	  rm -f $(DESTDIR)$(bindir)/$$f; \
-	done
-
-mostlyclean-compile:
-	-rm -f *.o core *.core
-
-clean-compile:
-
-distclean-compile:
-	-rm -f *.tab.c
-
-maintainer-clean-compile:
+.SUFFIXES: .c .lo .o .obj
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -239,40 +198,100 @@ clean-libtool:
 	-rm -rf .libs _libs
 
 distclean-libtool:
+	-rm -f libtool
+$(srcdir)/Makefile.in:  Makefile.am  $(top_srcdir)/configure.in $(ACLOCAL_M4)
+	cd $(top_srcdir) && \
+	  $(AUTOMAKE) --gnu  progs/Makefile
+Makefile:  $(srcdir)/Makefile.in  $(top_builddir)/config.status
+	cd $(top_builddir) && \
+	  CONFIG_HEADERS= CONFIG_LINKS= \
+	  CONFIG_FILES=$(subdir)/$@ $(SHELL) ./config.status
+install-binPROGRAMS: $(bin_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  if test -f $$p \
+	     || test -f $$p1 \
+	  ; then \
+	    f=`echo $$p1|sed '$(transform);s/$$/$(EXEEXT)/'`; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$f"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(INSTALL_PROGRAM) $$p $(DESTDIR)$(bindir)/$$f; \
+	  else :; fi; \
+	done
 
-maintainer-clean-libtool:
+uninstall-binPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(bin_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  echo " rm -f $(DESTDIR)$(bindir)/$$f"; \
+	  rm -f $(DESTDIR)$(bindir)/$$f; \
+	done
 
-convert_trace: $(convert_trace_OBJECTS) $(convert_trace_DEPENDENCIES)
-	@rm -f convert_trace
+clean-binPROGRAMS:
+	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+convert_trace$(EXEEXT): $(convert_trace_OBJECTS) $(convert_trace_DEPENDENCIES) 
+	@rm -f convert_trace$(EXEEXT)
 	$(LINK) $(convert_trace_LDFLAGS) $(convert_trace_OBJECTS) $(convert_trace_LDADD) $(LIBS)
-
-extract_seq: $(extract_seq_OBJECTS) $(extract_seq_DEPENDENCIES)
-	@rm -f extract_seq
+extract_seq$(EXEEXT): $(extract_seq_OBJECTS) $(extract_seq_DEPENDENCIES) 
+	@rm -f extract_seq$(EXEEXT)
 	$(LINK) $(extract_seq_LDFLAGS) $(extract_seq_OBJECTS) $(extract_seq_LDADD) $(LIBS)
-
-get_comment: $(get_comment_OBJECTS) $(get_comment_DEPENDENCIES)
-	@rm -f get_comment
+get_comment$(EXEEXT): $(get_comment_OBJECTS) $(get_comment_DEPENDENCIES) 
+	@rm -f get_comment$(EXEEXT)
 	$(LINK) $(get_comment_LDFLAGS) $(get_comment_OBJECTS) $(get_comment_LDADD) $(LIBS)
-
-index_tar: $(index_tar_OBJECTS) $(index_tar_DEPENDENCIES)
-	@rm -f index_tar
+index_tar$(EXEEXT): $(index_tar_OBJECTS) $(index_tar_DEPENDENCIES) 
+	@rm -f index_tar$(EXEEXT)
 	$(LINK) $(index_tar_LDFLAGS) $(index_tar_OBJECTS) $(index_tar_LDADD) $(LIBS)
-
-makeSCF: $(makeSCF_OBJECTS) $(makeSCF_DEPENDENCIES)
-	@rm -f makeSCF
+makeSCF$(EXEEXT): $(makeSCF_OBJECTS) $(makeSCF_DEPENDENCIES) 
+	@rm -f makeSCF$(EXEEXT)
 	$(LINK) $(makeSCF_LDFLAGS) $(makeSCF_OBJECTS) $(makeSCF_LDADD) $(LIBS)
-
-scf_dump: $(scf_dump_OBJECTS) $(scf_dump_DEPENDENCIES)
-	@rm -f scf_dump
+scf_dump$(EXEEXT): $(scf_dump_OBJECTS) $(scf_dump_DEPENDENCIES) 
+	@rm -f scf_dump$(EXEEXT)
 	$(LINK) $(scf_dump_LDFLAGS) $(scf_dump_OBJECTS) $(scf_dump_LDADD) $(LIBS)
-
-scf_info: $(scf_info_OBJECTS) $(scf_info_DEPENDENCIES)
-	@rm -f scf_info
+scf_info$(EXEEXT): $(scf_info_OBJECTS) $(scf_info_DEPENDENCIES) 
+	@rm -f scf_info$(EXEEXT)
 	$(LINK) $(scf_info_LDFLAGS) $(scf_info_OBJECTS) $(scf_info_LDADD) $(LIBS)
-
-scf_update: $(scf_update_OBJECTS) $(scf_update_DEPENDENCIES)
-	@rm -f scf_update
+scf_update$(EXEEXT): $(scf_update_OBJECTS) $(scf_update_DEPENDENCIES) 
+	@rm -f scf_update$(EXEEXT)
 	$(LINK) $(scf_update_LDFLAGS) $(scf_update_OBJECTS) $(scf_update_LDADD) $(LIBS)
+
+mostlyclean-compile:
+	-rm -f *.$(OBJEXT) core *.core
+
+distclean-compile:
+	-rm -f *.tab.c
+
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/convert_trace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/extract_seq.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/get_comment.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/index_tar.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/makeSCF.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/scf_dump.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/scf_info.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@$(DEPDIR)/scf_update.Po@am__quote@
+
+distclean-depend:
+	-rm -rf $(DEPDIR)
+
+.c.o:
+@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c `test -f $< || echo '$(srcdir)/'`$<
+
+.c.obj:
+@AMDEP_TRUE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(COMPILE) -c `cygpath -w $<`
+
+.c.lo:
+@AMDEP_TRUE@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
+@AMDEP_TRUE@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+	$(LTCOMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
+CCDEPMODE = @CCDEPMODE@
+uninstall-info-am:
 
 tags: TAGS
 
@@ -298,53 +317,26 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	test -z "$(ETAGS_ARGS)$$unique$(LISP)$$tags" \
 	  || etags $(ETAGS_ARGS) $$tags  $$unique $(LISP)
 
-mostlyclean-tags:
-
-clean-tags:
+GTAGS:
+	here=`CDPATH=: && cd $(top_builddir) && pwd` \
+	  && cd $(top_srcdir) \
+	  && gtags -i $(GTAGS_ARGS) $$here
 
 distclean-tags:
-	-rm -f TAGS ID
+	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH
 
-maintainer-clean-tags:
+DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 
-@AMDEP@include $(DEPDIR)/convert_trace.Po
-@AMDEP@include $(DEPDIR)/extract_seq.Po
-@AMDEP@include $(DEPDIR)/get_comment.Po
-@AMDEP@include $(DEPDIR)/index_tar.Po
-@AMDEP@include $(DEPDIR)/makeSCF.Po
-@AMDEP@include $(DEPDIR)/scf_dump.Po
-@AMDEP@include $(DEPDIR)/scf_info.Po
-@AMDEP@include $(DEPDIR)/scf_update.Po
-
-mostlyclean-depend:
-
-clean-depend:
-
-distclean-depend:
-	-rm -rf $(DEPDIR)
-
-maintainer-clean-depend:
-
-@AMDEP@CCDEPMODE = @CCDEPMODE@
-
-.c.o:
-@AMDEP@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(COMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
-
-.c.lo:
-@AMDEP@	source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
-@AMDEP@	depfile='$(DEPDIR)/$*.Plo' tmpdepfile='$(DEPDIR)/$*.TPlo' @AMDEPBACKSLASH@
-@AMDEP@	$(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-	$(LTCOMPILE) -c -o $@ `test -f $< || echo '$(srcdir)/'`$<
-
-
-distdir = $(top_builddir)/$(PACKAGE)-$(VERSION)/$(subdir)
+top_distdir = ..
+distdir = $(top_distdir)/$(PACKAGE)-$(VERSION)
 
 distdir: $(DISTFILES)
 	@for file in $(DISTFILES); do \
-	  d=$(srcdir); \
+	  if test -f $$file; then d=.; else d=$(srcdir); fi; \
+	  dir=`echo "$$file" | sed -e 's,/[^/]*$$,,'`; \
+	  if test "$$dir" != "$$file" && test "$$dir" != "."; then \
+	    $(mkinstalldirs) "$(distdir)/$$dir"; \
+	  fi; \
 	  if test -d $$d/$$file; then \
 	    cp -pR $$d/$$file $(distdir) \
 	    || exit 1; \
@@ -354,83 +346,85 @@ distdir: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
-info-am:
-info: info-am
-dvi-am:
-dvi: dvi-am
 check-am: all-am
 check: check-am
-installcheck-am:
-installcheck: installcheck-am
-install-exec-am: install-binPROGRAMS
-install-exec: install-exec-am
+all-am: Makefile $(PROGRAMS)
 
-install-data-am:
+installdirs:
+	$(mkinstalldirs) $(DESTDIR)$(bindir)
+
+install: install-am
+install-exec: install-exec-am
 install-data: install-data-am
+uninstall: uninstall-am
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
-install: install-am
-uninstall-am: uninstall-binPROGRAMS
-uninstall: uninstall-am
-all-am: Makefile $(PROGRAMS)
-all-redirect: all-am
+
+installcheck: installcheck-am
 install-strip:
-	$(MAKE) $(AM_MAKEFLAGS) INSTALL_STRIP_FLAG=-s install
-installdirs:
-	$(mkinstalldirs)  $(DESTDIR)$(bindir)
-
-
+	$(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
+	  `test -z '$(STRIP)' || \
+	    echo "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'"` install
 mostlyclean-generic:
 
 clean-generic:
 
 distclean-generic:
-	-rm -f Makefile $(CONFIG_CLEAN_FILES)
-	-rm -f config.cache config.log stamp-h stamp-h[0-9]*
+	-rm -f Makefile $(CONFIG_CLEAN_FILES) stamp-h stamp-h[0-9]*
 
 maintainer-clean-generic:
-	-rm -f Makefile.in
-mostlyclean-am:  mostlyclean-binPROGRAMS mostlyclean-compile \
-		mostlyclean-libtool mostlyclean-tags mostlyclean-depend \
-		mostlyclean-generic
-
-mostlyclean: mostlyclean-am
-
-clean-am:  clean-binPROGRAMS clean-compile clean-libtool clean-tags \
-		clean-depend clean-generic mostlyclean-am
-
+	@echo "This command is intended for maintainers to use"
+	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-distclean-am:  distclean-binPROGRAMS distclean-compile distclean-libtool \
-		distclean-tags distclean-depend distclean-generic \
-		clean-am
-	-rm -f libtool
+clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
 
 distclean: distclean-am
 
-maintainer-clean-am:  maintainer-clean-binPROGRAMS \
-		maintainer-clean-compile maintainer-clean-libtool \
-		maintainer-clean-tags maintainer-clean-depend \
-		maintainer-clean-generic distclean-am
-	@echo "This command is intended for maintainers to use;"
-	@echo "it deletes files that may require special tools to rebuild."
+distclean-am: clean-am distclean-compile distclean-depend \
+	distclean-generic distclean-libtool distclean-tags
+
+dvi: dvi-am
+
+dvi-am:
+
+info: info-am
+
+info-am:
+
+install-data-am:
+
+install-exec-am: install-binPROGRAMS
+
+install-info: install-info-am
+
+install-man:
+
+installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 
-.PHONY: mostlyclean-binPROGRAMS distclean-binPROGRAMS clean-binPROGRAMS \
-maintainer-clean-binPROGRAMS uninstall-binPROGRAMS install-binPROGRAMS \
-mostlyclean-compile distclean-compile clean-compile \
-maintainer-clean-compile mostlyclean-libtool distclean-libtool \
-clean-libtool maintainer-clean-libtool tags mostlyclean-tags \
-distclean-tags clean-tags maintainer-clean-tags mostlyclean-depend \
-distclean-depend clean-depend maintainer-clean-depend distdir info-am \
-info dvi-am dvi check check-am installcheck-am installcheck \
-install-exec-am install-exec install-data-am install-data install-am \
-install uninstall-am uninstall all-redirect all-am all install-strip \
-installdirs mostlyclean-generic distclean-generic clean-generic \
-maintainer-clean-generic clean mostlyclean distclean maintainer-clean
+maintainer-clean-am: distclean-am maintainer-clean-generic
 
+mostlyclean: mostlyclean-am
+
+mostlyclean-am: mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool
+
+uninstall-am: uninstall-binPROGRAMS uninstall-info-am
+
+.PHONY: GTAGS all all-am check check-am clean clean-binPROGRAMS \
+	clean-generic clean-libtool distclean distclean-compile \
+	distclean-depend distclean-generic distclean-libtool \
+	distclean-tags distdir dvi dvi-am info info-am install \
+	install-am install-binPROGRAMS install-data install-data-am \
+	install-exec install-exec-am install-info install-info-am \
+	install-man install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool tags uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-info-am
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

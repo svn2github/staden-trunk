@@ -8,6 +8,7 @@ libscf_la_SOURCES = \
 
 INCLUDES = \
 	-I${top_srcdir} \
+	-I${top_srcdir}/include \
 	-I${top_srcdir}/read \
 	-I${top_srcdir}/alf \
 	-I${top_srcdir}/abi \
