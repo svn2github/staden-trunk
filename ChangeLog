@@ -1,3 +1,346 @@
+2004-04-13  jkbonfield  <jkb>
+
+	* src/g/g-files.c:
+	(10:32:26) Updated comments regarding MMAP speed tests 
+
+	* src/mutlib/Makefile:
+	(10:42:55) CFLAGS vs CXXFLAGS name 
+
+	* src/mutscan/main.cpp:
+	(10:43:29) Include <string.h> for Solaris C++ 
+
+	* src/prefinish/finish_cDNA:
+	(10:44:44) Changed default filtering options 
+
+	* src/prefinish/finish_sanger.tcl:
+	(10:47:19) Change to reflect local sanger ntemplates used (3 to 2). 
+
+	* src/scripts/assemble4:
+	(10:48:52) Remove -f in "stash -f" 
+
+	* src/gap4/configure.tcl:
+	(10:55:28) Added a template strictness option. This controls how
+	far outside the min-max template size a template can be before
+	being flagged as inconsistent 
+
+	* src/gap4/gap_globals.c,
+	* src/gap4/gap_globals.h,
+	* src/gap4/tclIndex,
+	* src/gap4/template.c:
+	(10:55:29) Added a template strictness option. This controls how
+	far outside the min-max template size a template can be before
+	being flagged as inconsistent 
+
+	* tables/gaprc_menu_full:
+	(10:56:18) Menu items for the new template strictness function and
+	the gap4 PCR interface. 
+
+	* tables/gaprc:
+	(10:57:31) Added definitions for gap4 PCR interface, changed the
+	default primer picking parameters, added the colour for the
+	"ends-not-present" template staus in the editor, and the 'do not
+	show inconsistent templates' template display option. 
+
+	* src/gap4/template_display.c,
+	* src/gap4/template_display.h,
+	* src/gap4/template_display.tcl:
+	(10:58:55) Added an option to turn off display of inconsistent
+	templates. 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edInterface.c,
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c,
+	* src/gap4/tkEditor.h:
+	(11:00:54) A new template status code (E) and colour have been
+	added. This shows when a template is consistent, but one or both
+	"end sequences" are not present and so the position has not been
+	experimentally verified. 
+
+	* src/gap4/editor_search.tcl:
+	(11:01:35) Made raising of the search window option. The new
+	bindings in contig_editor.tcl no longer raise the window when page
+	up/down is used. 
+
+	* src/gap4/vseqs.c:
+	(11:02:25) Initialise the GReadings structures and vseq_t
+	structures. (Bug fix for uninitialised data.) 
+
+	* src/prefinish/finish_long.c:
+	(11:02:34) Initialise the GReadings structures and vseq_t
+	structures. (Bug fix for uninitialised data.) 
+
+	* src/prefinish/finish_reverse.c:
+	(11:02:35) Initialise the GReadings structures and vseq_t
+	structures. (Bug fix for uninitialised data.) 
+
+	* src/gap4/pcr_primers.tcl:
+	(11:03:24) Gap4 GUI to the prefinish code to pick PCR primers
+	between contig ends. Preliminary version. 
+
+	* src/prefinish/Makefile,
+	* src/prefinish/finish.c,
+	* src/prefinish/finish.h,
+	* src/prefinish/finish_pcr.c,
+	* src/prefinish/finish_pcr.h:
+	(11:04:32) Added interface to using primer3 for PCR picking;
+	initially just between contig ends. 
+
+	* src/prefinish/finish_filter.c,
+	* src/prefinish/finish_filter.h:
+	(11:05:18) Generalised the filter functions to work on any sequence
+	rather than hand-coded members of the finish_t structure. Used by
+	the new PCR picking code. 
+
+	* src/prefinish/finish_utils.c,
+	* src/prefinish/finish_utils.h,
+	* src/prefinish/finish_walk.c:
+	(11:05:45) Moved score_match2() from finish_walk.c to
+	finish_utils.c and renamed to secondary_primer_match(). 
+
+	* tables/NOTEDB:
+	(11:06:28) Created a new note type FAKE. This is used in the
+	prefinishing system to mark sequences that should not contribute to
+	strand analysis (eg consensus sequences). 
+
+	* src/prefinish/finish_main.c:
+	(11:06:29) Created a new note type FAKE. This is used in the
+	prefinishing system to mark sequences that should not contribute to
+	strand analysis (eg consensus sequences). 
+
+	* src/tk_utils/help_choose.tcl,
+	* src/tk_utils/help_galeon.tcl,
+	* src/tk_utils/help_netscape.tcl:
+	(11:07:19) Added more options for the web browser to use for online
+	help. Konqueror, mozilla and galeon are now supported. 
+
+2004-04-08  jkbonfield  <jkb>
+
+	* src/gap4/ng_fb_cmds.tcl:
+	(10:17:11) Honour the no_csel command line option when opening new
+	databases via File->Open 
+
+	* src/gap4/gap.tcl:
+	(10:31:48) The default position for the main window when starting
+	up gap4 with a database specified on the command line is now
+	underneath the contig selector window. 
+
+	* src/mk/linux.mk:
+	(10:34:08) Changed gcc/g++/g77 names to exclude the version number
+	(suggestion by Joe Burks). 
+
+	* src/Misc/misc.h:
+	(10:42:22) Surround getopt prototype with ifdef _MSC_VER. (Joe
+	Burks) 
+
+	* mklinks:
+	(10:48:11) Added link in scripting_manual to ../manual/tools. Added
+	explicit "." as the destination for ln as SGI ln does not accept
+	this as a default. 
+
+	* doc/manual/tools/make_ps:
+	(10:53:32) Changed the default location of 'convert' program. We
+	still specify the full path to avoid confusion with the staden
+	package 'convert' tool. (idea from Joe Burks) 
+
+	* doc/manual/tools/edit_mini_contents.pl:
+	(10:54:14) Changed default location of perl to /usr/bin/perl (idea
+	from Joe Burks) 
+
+	* doc/manual/tools/html_index.pl,
+	* doc/manual/tools/merge_indexes.pl,
+	* doc/manual/tools/remove_xrefs.pl,
+	* doc/manual/tools/texi2html,
+	* doc/manual/tools/texi2man.pl,
+	* doc/manual/tools/xref_update.pl:
+	(10:54:15) Changed default location of perl to /usr/bin/perl (idea
+	from Joe Burks) 
+
+	* course/texi/Makefile:
+	(14:35:25) Changed @tick{} and @cross{} macros for m4 _tick() and
+	_cross() implementations. This avoids the need for makeinfo and
+	hence also avoids problems with no .txt copies of images. 
+
+	* course/texi/course.texi,
+	* course/texi/exercise1.texi,
+	* course/texi/header.m4:
+	(14:35:26) Changed @tick{} and @cross{} macros for m4 _tick() and
+	_cross() implementations. This avoids the need for makeinfo and
+	hence also avoids problems with no .txt copies of images. 
+
+2004-04-06  jkbonfield  <jkb>
+
+	* src/gap4/oligo.c,
+	* src/gap4/tkEditor.c:
+	(11:30:47) Added a createTmpAnnotation function and a
+	create_tmp_anno editor subcommand to utilise it. This is used for
+	displaying fake annotations (eg it was previously done via C-only
+	in the "suggest primers" option of the contig editor). 
+
+	* src/gap4/oligo_param.tcl:
+	(11:33:18) Cosmetic changes to the "edit oligo parameters"
+	dialogue. 
+
+	* src/gap4/primlib.c,
+	* src/gap4/primlib.h:
+	(11:35:05) Added "num_return" as a configurable (from tcl) primlib
+	parameter.
+	
+	Added primlib_choose_pcr function. 
+
+2004-03-30  jkbonfield  <jkb>
+
+	* src/gap4/consen.c:
+	(08:56:23) Allow ambiguity codes to be written to FASTA files. Not
+	technically correct according to the original fasta spec, but no
+	one seems to care about that these days. 
+
+	* src/gap4/actf.c:
+	(09:07:24) Moved a declaration to the start of a block (as it was
+	an accidental C++ism). 
+
+	* src/gap4/find_oligo.c:
+	(09:08:28) Moved inexact_pad_match function to earlier in file to
+	avoid missing prototype complaints. 
+
+	* src/gap4/gap_utils.tcl:
+	(09:09:15) Cosmetic formatting change. 
+
+	* src/gap4/template.c:
+	(09:10:03) Moved "int length" to start of block to avoid C++ism. 
+
+	* src/gap4/tkEdUtils.c:
+	(09:11:50) Added _select_region function (which should have been
+	checked in with the last round of editor updates). 
+
+2004-03-22  jkbonfield  <jkb>
+
+	* src/tk_utils/html_library.tcl:
+	(11:25:37) Removed the focus hack which broke when tk was updated
+	to 8.4 (it gave rise to an infinite recursion). 
+
+	* src/tk_utils/help_choose.tcl,
+	* src/tk_utils/tclIndex:
+	(11:26:33) Changed how the help mechanism is chosen. 
+
+	* src/pregap4/gui.tcl,
+	* src/trev/trev.tcl:
+	(11:27:53) Removed the 'beta' component of the program version
+	number. 
+
+	* ChangeLog:
+	(11:35:15) *** empty log message *** 
+
+2004-03-15  jkbonfield  <jkb>
+
+	* src/gap4/newgap_cmds.c:
+	(16:08:01) Added tcl interface to the list_base_confidence command. 
+
+	* src/gap4/qualIO.c,
+	* src/gap4/qualIO.h:
+	(16:10:02) New functions for producing distributions of phred
+	scores for bases that match and mismatch the consensus sequence.
+	illed by signal 2. 
+
+	* src/gap4/qual.tcl,
+	* src/gap4/tclIndex:
+	(16:10:40) Tcl dialogue for the list base confidence command 
+
+	* tables/gaprc_menu_full:
+	(16:12:40) Added List Base Confidences to view menu. 
+
+2004-03-12  jkbonfield  <jkb>
+
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c:
+	(12:00:13) Added an interface to editor_select_region. This marks
+	(underlines) a selection, for visual view and for use with create
+	tag etc. 
+
+	* src/gap4/find_oligo.c:
+	(12:01:27) Matches displayed in the editor are not automatically
+	selected, for faster tagging.
+	
+	The search by tags mode now also matches in padded sequence. 
+
+2004-03-11  jkbonfield  <jkb>
+
+	* src/gap4/find_oligo.c:
+	(11:57:05) Fixed a buffer overflow (and general inefficiency) in
+	calling the depadding code. 
+
+2004-03-10  jkbonfield  <jkb>
+
+	* src/gap4/qual.c:
+	(14:07:34) Added a consensus consistency quality array (in qual2)
+	for the bayesian consensus algorithm. This is designed to indicate
+	likely alignment conflicts. 
+
+	* src/gap4/confidence_graph.c,
+	* src/gap4/confidence_graph.h,
+	* src/gap4/confidence_graph.tcl,
+	* tables/gaprc_menu_full:
+	(14:09:59) Added consensus discrepancy as a plot type in the
+	"consistency display". This uses the new discrepancy part of the
+	consensus algorithm. 
+
+	* src/gap4/consistency_display.h:
+	(14:10:56) Added consensus discrepancy as a plot type in the
+	"consistency display". This uses the new discrepancy part of the
+	consensus algorithm. 
+
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/editor_search.tcl,
+	* src/gap4/searchUtils.c,
+	* tables/gaprc:
+	(14:12:48) New editor search mode: search by consensus discrepancy 
+
+	* src/gap4/newgap_cmds.c:
+	(14:13:25) Added consensus discrepancy as a plot type in the
+	"consistency display". This uses the new discrepancy part of the
+	consensus algorithm. 
+
+	* src/gap4/tclIndex:
+	(14:14:49) Exported InputSelectReadingList and added "Highlight
+	reading list" on to the main Lists menu. 
+
+	* src/gap4/list_contigs.tcl:
+	(14:16:48) Renamed "save" to "save order" to avoid confusion with
+	saving the list itself to disk. 
+
+2004-03-05  jkbonfield  <jkb>
+
+	* tables/gaprc,
+	* tables/gaprc_menu_full:
+	(12:42:02) Added a new option to allow the highlight disagreements
+	mode to be filtered by base quality. 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edInterface.c,
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c:
+	(12:42:20) Added a new option to allow the highlight disagreements
+	mode to be filtered by base quality. 
+
+2004-03-04  jkbonfield  <jkb>
+
+	* src/prefinish/finish.c,
+	* src/prefinish/finish.h,
+	* src/prefinish/finish_main.c:
+	(16:33:39) Added -no_filter and -no_consensus options for
+	optimising picking of only resequences (where dust and consensus is
+	not needed).
+	
+	Also moved the regexp #ifdef for processing the skip_templates and
+	avail_templates files to be a run-time option (-regexp_templates). 
+
 2004-03-03  jkbonfield  <jkbonfield>
 
 	* src/gap4/IO.c:
