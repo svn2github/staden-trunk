@@ -26,6 +26,7 @@ typedef struct {
     int verbose;
     int signal_val;	/* average signal strength */
     int window_len;	/* over this window length */
+    int baseline;	/* base value to add to all peaks */
     double threshold;
 } params;
 
@@ -33,6 +34,9 @@ typedef struct {
 /*
  * Scans through a quality buffer finding the highest average block of length
  * window_len.
+ *
+ * Based on the highest average value, we then rescan the peaks making sure
+ * no peaks are more than double the average from the highest window.
  */
 static int find_highest_peak(params *p, int *peaks, int len, int *avg_height) {
     int i, total, best_total, best_pos;
@@ -60,6 +64,12 @@ static int find_highest_peak(params *p, int *peaks, int len, int *avg_height) {
 
     if (avg_height)
 	*avg_height = best_total / (double)p->window_len + 0.5;
+
+    /* Scan through again capping peaks at 2*avg_height */
+    for (i = 0; i < len; i++) {
+	if (peaks[i] >= 2* *avg_height)
+	    peaks[i] = 2* *avg_height;
+    }
 
     return best_pos+1;
 }
@@ -213,12 +223,9 @@ int scan_right(char *name, params *p, int *peaks, char *seq, int start_pos,
  * The buffer returned should be freed using xfree().
  * Returns NULL on failure.
  */
-int *create_peaks(Read *r) {
+int *create_peaks(params *p, Read *r) {
     int i;
     int *peaks;
-    int tot = 0;
-
-#define CAP_WIN 50
 
     if (!(peaks = (int *)xcalloc(r->NBases, sizeof(int))))
 	return NULL;
@@ -236,20 +243,7 @@ int *create_peaks(Read *r) {
 	if (peak < r->traceT[bpos])
 	    peak = r->traceT[bpos];
 
-	/* Cap any abnormally high peaks so as not to bias drop search */
-	if (i < CAP_WIN) {
-	    tot += peak;
-	} else {
-	    if (peak*CAP_WIN > tot*2) {
-		/*printf("Capping peak %d from %d to %d\n",
-		       i, peak, tot*2/CAP_WIN);
-		*/
-		peak = tot*2/CAP_WIN;
-	    }
-	    tot = tot - peaks[i-CAP_WIN] + peak;
-	}
-
-	peaks[i] = peak;
+	peaks[i] = peak + p->baseline;
     }
 
     return peaks;
@@ -265,7 +259,7 @@ static int find_stops(Read *r, params *p) {
     int *peaks;
     int pos, maxheight;
 
-    if (NULL == (peaks = create_peaks(r)))
+    if (NULL == (peaks = create_peaks(p, r)))
 	return -1;
 
     pos = find_highest_peak(p, peaks, r->NBases, &maxheight);
@@ -285,6 +279,7 @@ static void usage(void) {
 	    "             [-w window_len(50)]\n"
 	    "             [-s signal_strength(5)]\n"
 	    "             [-t threshold(3.0)]\n"
+	    "             [-b baseline(10)]\n"
 	    "             file ...\n");
     fprintf(stderr,
 	    "  ( Eg. stops -w 100 -t 4.0 *SCF )\n");
@@ -347,8 +342,9 @@ int main(int argc, char **argv) {
     p.signal_val = 5;
     p.window_len = 50;
     p.threshold = 3.0;
+    p.baseline = 10;
 
-    while ((c = getopt(argc, argv, "vw:s:t:")) != -1) {
+    while ((c = getopt(argc, argv, "vw:s:t:b:")) != -1) {
 	switch (c) {
 	case 'v':
 	    p.verbose = 1;
@@ -360,6 +356,10 @@ int main(int argc, char **argv) {
 
 	case 'w':
 	    p.window_len = atoi(optarg);
+	    break;
+
+	case 'b':
+	    p.baseline = atoi(optarg);
 	    break;
 
 	case 't':
