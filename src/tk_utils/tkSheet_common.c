@@ -53,6 +53,7 @@ Tk_Window SheetCmdCommon(Tcl_Interp *interp, Tk_Window main,
     sw->extension = NULL;
     sw->extensionData = NULL;
     sw->divider = 0;
+    sw->grid = 0;
 #ifdef COUNT_REDRAW_REQUESTS
     sw->count = 0;
 #endif
@@ -100,8 +101,9 @@ int SheetConfigureCommon(Tcl_Interp *interp, tkSheet *sw,
 		       sw->sw.height_in_pixels);
     Tk_SetInternalBorder(sw->sw.tkwin, sw->sw.border_width);
 
-    Tk_SetGrid(sw->sw.tkwin, sw->sw.columns, sw->sw.rows,
-	       sw->sw.font_width, sw->sw.fm.linespace);
+    if (sw->grid)
+	Tk_SetGrid(sw->sw.tkwin, sw->sw.columns, sw->sw.rows,
+		   sw->sw.font_width, sw->sw.fm.linespace);
 
 
     /*
@@ -202,9 +204,11 @@ void sheet_set_display_height(tkSheet *tsw, int height) {
 
     Tk_GeometryRequest(tsw->sw.tkwin, tsw->sw.width_in_pixels, new_height);
     Tk_SetInternalBorder(tsw->sw.tkwin, tsw->sw.border_width);
-    Tk_UnsetGrid(tsw->sw.tkwin);
-    Tk_SetGrid(tsw->sw.tkwin, tsw->sw.columns, height,
-	       tsw->sw.font_width, tsw->sw.fm.linespace);
+    if (tsw->grid) {
+	Tk_UnsetGrid(tsw->sw.tkwin);
+	Tk_SetGrid(tsw->sw.tkwin, tsw->sw.columns, height,
+		   tsw->sw.font_width, tsw->sw.fm.linespace);
+    }
     
     /*
      * We need to resize here anyway (although not display) as the code that

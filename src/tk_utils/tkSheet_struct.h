@@ -33,3 +33,6 @@
 
     /* The location of a divider bar, or 0 if none */
     int divider;
+
+    /* Whether this is the internal widget to 'grid' the wm on */
+    int grid;
