@@ -236,8 +236,14 @@ char *ztr_encode_positions(Read *r, int *nbytes, char **mdata, int *mdbytes) {
 
     bytes = (char *)xmalloc(r->NBases * 4 + 4);
     for (j = 4, i = 0; i < r->NBases; i++) {
-	bytes[j++] = (r->basePos[i] >> 24) & 0xff;
-	bytes[j++] = (r->basePos[i] >> 16) & 0xff;
+	/*
+	 * First 2 bytes are zero as currently r->basePos is 16-bit.
+	 *
+	 * bytes[j++] = (r->basePos[i] >> 24) & 0xff;
+	 * bytes[j++] = (r->basePos[i] >> 16) & 0xff;
+	 */
+	bytes[j++] = 0;
+	bytes[j++] = 0;
 	bytes[j++] = (r->basePos[i] >>  8) & 0xff;
 	bytes[j++] = (r->basePos[i] >>  0) & 0xff;
     }
