@@ -1,3 +1,543 @@
+2004-09-28  jkbonfield  <jkbonfield>
+
+	* src/gap4/acd2tag.tcl:
+	(16:28:27) Added "namespaces" into tags. These get converted into
+	multiple tabs so that the tag contents can be duplicated up to
+	produce subtags within a single tag.
+	
+	Added text and label data types. 
+
+	* src/gap4/allelic_discreps.c:
+	(16:29:31) Main allelic_discreps function now returns a tcl list
+	instead of just spewing to stdout. 
+
+	* src/gap4/contig_editor.tcl:
+	(16:32:17) Editor sequence-name panel now remembers the X scrollbar
+	position between contig editor uses (within a single session).
+	
+	Experimental "tag popup" system. Currently only suitable for the
+	inhouse ExoSeq project and so disabled in the default gaprc.
+	
+	"Show template names" option to toggle whether reading names or
+	template names are shown in the left name panel.
+	
+	The "Join to" function now attempts to automatically complement a
+	contig if required (based on read-pair primer types). 
+
+	* src/gap4/edInterface.c:
+	(16:32:46) Addition of edSetTemplateNameMode/edGetTemplateNameMode
+	functions. 
+
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c:
+	(16:34:30) Code for toggling the sequence-name and template-name
+	shown in the left names panel. 
+
+	* src/gap4/tkEditor.c:
+	(16:34:31) Code for toggling the sequence-name and template-name
+	shown in the left names panel. 
+
+	* src/gap4/editor_search.tcl:
+	(16:35:32) Use of CONTIG_EDITOR.SEARCH.AUTO_EDIT_TAG to determine
+	whether a tag search automatically brings up the tag editor to view
+	it. 
+
+	* src/gap4/gap.tcl:
+	(16:36:02) 4.10b4 
+
+	* src/gap4/newgap_cmds.c:
+	(16:36:27) allelic_discreps now returns a Tcl list to the caller
+	containing the results. 
+
+	* src/gap4/tagEditor.c,
+	* src/gap4/tagU1.c,
+	* src/gap4/tagUtils.h,
+	* src/gap4/tag_editor.tcl:
+	(16:39:26) The edit/create annotation code now returns (from C to
+	Tcl) the Tk pathname of the newly created window.
+	
+	CONTIG_EDITOR.MACRO_AUTOEDIT used to determine whether the tag
+	editor should be launched after creation of a tag via a macro.
+	
+	Bug fix to the GUI tag creation code (tag name vs typeid issues). 
+
+	* src/gap4/tkEdNames.c:
+	(16:40:34) The xview method now returns the current slider position
+	when no arguments are given. 
+
+	* src/gap4/tkEdUtils.c:
+	(16:41:30) Added xx->template_names check to determine whether to
+	view sequence or template names. 
+
+	* tables/gaprc,
+	* tables/gaprc_menu_full:
+	(16:46:09) Various toggles (STRAND_COVERAGE.PROBLEM.VALUE,
+	CONTIG_EDITOR.LIST_CONFIDENCE.ONLY_NUM_ERRS) plus new menus/options
+	for new features ("show template names" in editor, tag popups for
+	ExoSeq project). 
+
+	* tables/shlib.conf:
+	(16:46:24) Added linux-ia64 support. 
+
+2004-09-01  jkbonfield  <jkbonfield>
+
+	* src/gap4/extract.c:
+	(15:43:51) Fixed a bug where the filenames extracted did not match
+	the contents of the file. An extract followed by a directed
+	assembly did not reveal problems as the filenames are irrelevant -
+	the contents of the filenames were all present still (but in wrong
+	files). 
+
+2004-08-17  jkbonfield  <jkbonfield>
+
+	* src/Misc/parse_db.c:
+	(13:27:50) Allow backslashes for escaping quotes (and obviously
+	therefore also backslashes themselves). 
+
+	* src/gap4/acd2tag.tcl,
+	* src/gap4/tag_editor.tcl:
+	(13:34:36) Added "gui tags". This uses a hacked copy of the emboss
+	acd->tcl conversion code, but specifically it is designed for
+	generating gui frames instead of entire top-level windows.
+	
+	Any tag type with a default-text starting in "#!acdtag:" is
+	considered to be in an ACD-like syntax and the default text then
+	describes the format instead of the tag text contents. 
+
+	* src/gap4/tclIndex:
+	(13:35:16) Added acd2tag::parse lookup 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/ztr_dump.c:
+	(13:37:17) Added a ztr_dump program. 
+
+	* src/mk/global.mk:
+	(13:38:02) Fixed the auto-directory making target. 
+
+2004-08-12  jkbonfield  <jkbonfield>
+
+	* src/abi/Makefile,
+	* src/abi/getABIfield.c:
+	(16:31:14) Complete rewrite of the ABI file reading code so that it
+	can now load directly from in-memory structures.
+	
+	This is within getABIfield.c which is now a general purpose abi
+	dump and so replaces all the other getABI* programs. 
+
+2004-08-05  jkbonfield  <jkbonfield>
+
+	* src/gap4/contig_order.tcl:
+	(09:20:00) Added missing file for "Order Contigs" code. 
+
+	* src/io_lib/progs/index_tar.c:
+	(09:32:05) Fix bug submitted by Steve Leonard. If a directory is
+	too large to fit in the name (>100) but short enough to fit in the
+	prefix the name field will be empty, this is not the cas for
+	ordinary files where the name field is always non-empty. 
+
+2004-07-27  jkbonfield  <jkbonfield>
+
+	* src/mk/global.mk:
+	(10:28:13) Binary output directories are now automatically made. 
+
+2004-07-26  jkbonfield  <jkbonfield>
+
+	* src/eba/Makefile,
+	* src/eba/conf.c,
+	* src/eba/conf.h,
+	* src/eba/qual.c:
+	(10:45:20) Calibration & make setup changes. 
+
+	* README.build:
+	(14:21:46) Added MinGW windows build instructions. 
+
+	* src/Misc/os.h,
+	* src/Misc/usleep.c:
+	* src/g/g-error.c,
+	* src/g/g-error.h,
+	* src/g/g-files.c:
+	* src/gap4/IO.c,
+	* src/gap4/actf.c:
+	* src/io_lib/exp_file/expFileIO.c:
+	* src/io_lib/include/os.h:
+	* src/io_lib/utils/open_trace_file.c:
+	* src/mk/windows.mk:
+	* src/spin/readpam.c,
+	* src/spin/splice_search.c:
+	* src/tk_utils/text_output.c,
+	* src/tk_utils/tkCanvGraph.c:
+	* src/windows/run/Makefile,
+	* src/windows/run/main.cpp:
+	* tables/iwidgetsrc:
+	(14:30:10) MinGW port 
+
+2004-07-23  jkbonfield  <jkbonfield>
+
+	* src/gap4/oligo.c,
+	* src/gap4/oligo.h,
+	* src/gap4/oligo_param.tcl,
+	* src/gap4/tkEditor.c:
+	(10:53:51) Added a "prev" button to the contig editor's "select
+	primer" interface. 
+
+2004-07-16  jkbonfield  <jkbonfield>
+
+	* src/Misc/vlen.c:
+	(10:39:25) Added a va_copy call in vflen for systems where va_list
+	is a pointer. The NEED_VA_COPY define comes from the system
+	specific bits of os.h 
+
+	* src/Misc/os.h:
+	(10:41:28) Define NEED_VA_COPY macro for amd64 systems. (see vlen.c
+	for its use) 
+
+2004-07-15  jkbonfield  <jkbonfield>
+
+	* doc/manual/tools/update-nodes:
+	(11:38:51) From Gintautas Grigelionis.
+	
+	Updated the search path for the update-nodes.el script. (uses
+	$STADENROOT/manual.) 
+
+	* src/mk/linux.mk:
+	(13:02:38) Added comments for alternative options needed on AMD64
+	systems. 
+
+	* src/primer3/src/Makefile:
+	(13:04:17) Added SHLIB_CFLAGS to the primer3 library building code. 
+
+2004-07-05  jkbonfield  <jkbonfield>
+
+	* src/prefinish/finish_main.c:
+	(11:37:13) more diagnostic output on templates: score, consistency,
+	flags. 
+
+	* src/prefinish/finish.c:
+	(11:38:22) When -no_consensus is true we now still set
+	fin->vc->cons. This means that link_vrseq will no longer complain.
+	
+	Updated version to 1.31 
+
+2004-06-30  jkbonfield  <jkbonfield>
+
+	* lib/tk/bgerror.tcl,
+	* lib/tk/button.tcl,
+	* lib/tk/choosedir.tcl,
+	* lib/tk/clrpick.tcl,
+	* lib/tk/comdlg.tcl,
+	* lib/tk/console.tcl,
+	* lib/tk/dialog.tcl,
+	* lib/tk/entry.tcl,
+	* lib/tk/focus.tcl,
+	* lib/tk/listbox.tcl,
+	* lib/tk/listbox.tcl.orig,
+	* lib/tk/menu.tcl,
+	* lib/tk/mkpsenc.tcl,
+	* lib/tk/msgbox.tcl,
+	* lib/tk/obsolete.tcl,
+	* lib/tk/optMenu.tcl,
+	* lib/tk/palette.tcl,
+	* lib/tk/palette.tcl.orig,
+	* lib/tk/panedwindow.tcl,
+	* lib/tk/safetk.tcl,
+	* lib/tk/scale.tcl,
+	* lib/tk/scrlbar.tcl,
+	* lib/tk/spinbox.tcl,
+	* lib/tk/tearoff.tcl,
+	* lib/tk/Attic/tearoff.tcl.orig,
+	* lib/tk/text.tcl,
+	* lib/tk/tk.tcl,
+	* lib/tk/tkfbox.tcl,
+	* lib/tk/tkfbox.tcl.orig,
+	* lib/tk/unsupported.tcl,
+	* lib/tk/xmfbox.tcl,
+	* lib/tk/xmfbox.tcl.orig:
+	(14:29:29) Updated to use Tk8.4.6.
+	
+	Reapplied local patches to listbox.tcl, palette.tcl, tkfbox.tcl and
+	xmfbox.tcl. Local patch to tearoff.tcl is no longer needed (it made
+	it into the core dist.) 
+
+	* lib/tk/images/README,
+	* lib/tk/msgs/fr.msg,
+	* lib/tk/msgs/nl.msg:
+	(14:29:45) Updated to use Tk8.4.6.
+	
+	Reapplied local patches to listbox.tcl, palette.tcl, tkfbox.tcl and
+	xmfbox.tcl. Local patch to tearoff.tcl is no longer needed (it made
+	it into the core dist.) 
+
+2004-06-29  jkbonfield  <jkbonfield>
+
+	* src/gap4/gap_hash.c:
+	(12:56:51) Find Repeats now depads the sequence first. (Func
+	repeat_search) 
+
+2004-06-24  jkbonfield  <jkbonfield>
+
+	* src/gap4/gap_nav.tcl:
+	(14:12:56) Fixed the Save button. 
+
+	* src/gap4/dis_readings.c:
+	(15:56:06) Improved text output to indicate both left and right
+	contig ends where known while splitting. 
+
+	* src/gap4/break_contig.c:
+	(15:56:07) Improved text output to indicate both left and right
+	contig ends where known while splitting. 
+
+	* src/gap4/tag_editor.tcl,
+	* src/gap4/tclIndex:
+	(16:13:34) Removed the add_tag_menus function. 
+
+	* src/gap4/contig_editor.tcl:
+	(16:16:31) The editor 'edit tag' and 'delete tag' sub-menus now
+	auto-cascade when there are too many tags visible at one point. 
+
+2004-06-23  jkbonfield  <jkbonfield>
+
+	* src/gap4/template.c,
+	* src/gap4/template.h:
+	(10:12:01) Added TEMP_CONSIST_INTERDIST as a type of error
+	indicating that the size constraint on a template has been broken
+	when we attempt to butt contigs against one another (working on the
+	assumption that any valid overlap would have been made already).
+	The TEMP_OFLAG_INTERDIST flag can be set to enable this search to
+	be made (which is off by default; previously it was enabled and
+	produced CONSIST_DIST errors).
+	
+	Added template_check_set_flags() function to ease setting a flag
+	for all templates in the template_c array. 
+
+	* src/gap4/edUtils2.c:
+	(10:14:35) Added TEMP_OFLAG_INTERDIST flag to template_c structs.
+	Necessitated by the change in template.c in order to keep behaviour
+	in edUtils2.c the same as the previous revision. 
+
+	* src/gap4/template_display.c:
+	(10:17:02) Added comment about using TEMP_OFLAG_INTERDIST. It's not
+	enabled here, but this means it has an operation different to the
+	previous version (as template.c has changed, not this file). 
+
+	* src/gap4/edInterface.c:
+	(10:18:06) Splitted the template status code "D" into "D" and "d".
+	Uppercase indicates impossible distance issues (ie negative size)
+	and lowercase indicates less severe out of range sizes. 
+
+2004-06-22  jkbonfield  <jkbonfield>
+
+	* src/gap4/join.c:
+	(09:04:17) Check for the alignment buffer introducing more pads
+	than the sequence length dictates there should be. This was causing
+	read-past-end of buffer (depad_to_pad[]) in some rare cases and
+	hence causing the join editor align button to hang or crash. 
+
+	* src/gap4/join.c:
+	(09:28:05) Join editor "Align" button output now trims the right
+	hand alignment edge (for runs of pads) in addition to left end. 
+
+2004-06-16  jkbonfield  <jkbonfield>
+
+	* src/gap4/io-reg.c:
+	(13:46:57) Improved debug info to log file. 
+
+	* src/gap4/confidence_graph.h,
+	* src/gap4/confidence_graph.tcl,
+	* src/gap4/newgap_cmds.c:
+	(13:48:45) Added new graph types and added the allelic_discreps Tcl
+	binding (meant to be in last update, but missed). 
+
+2004-06-15  jkbonfield  <jkbonfield>
+
+	* src/eba/Makefile,
+	* src/eba/conf.c,
+	* src/eba/conf.h,
+	* src/eba/qual.c:
+	(08:28:55) Added secondary phred-scale lookup table from
+	callibration of new confidence assignment mode. 
+
+	* src/gap4/contig_selector.tcl:
+	(15:56:41) Added a catch around a visibility wait as in some cases
+	it errors. Unknown why! 
+
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/qualIO.c,
+	* src/gap4/vseqs.c:
+	(15:58:53) Added template to the gel_info query. 
+
+	* src/gap4/gap_nav.tcl:
+	(16:00:06) Added a visual cue of the contig length and the match
+	position within that contig. 
+
+	* src/gap4/Makefile,
+	* src/gap4/allelic_discreps.c,
+	* src/gap4/confidence_graph.c,
+	* src/gap4/qual.c,
+	* src/gap4/qual.h:
+	(16:08:27) New discrepancy calculations and plots computed via
+	calc_consensus and calc_discrepancies. The second-highest
+	confidence may be returned from calc_consensus() if cons2 is passed
+	as NULL but qual2 is not. This is plotted via the 2nd-highest
+	confidence graph.
+	
+	A new function calc_discrepancies(), based on calc_consensus,
+	computes the second highest confidence value at each base position
+	along with an estimation of how likely it is that we have two
+	haplotypes fitting a 50/50 ratio.
+	
+	The allelic_discreps function (currently exported to Tcl, but with
+	no user interface) uses calc_discrepancies to attempt to pull apart
+	an assembly mixed from two haplotypes. 
+
+	* src/gap4/Makefile:
+	(16:40:37) Rewrote all calls to the FORTRAN WRITE() call from
+	legacy.f as SWRITF() instead. This is our own function (in f2c.c)
+	designed to act much like a printf style command. The purpose of
+	this is to allow f2c generated code (legacy_f2c.c) to work without
+	needing any of the fortran run-time library and hence make building
+	on platforms without a fortran compiler substantially easier to do. 
+
+	* src/gap4/f2c.c,
+	* src/gap4/legacy.f,
+	* src/gap4/legacy_f2c.c:
+	(16:40:38) Rewrote all calls to the FORTRAN WRITE() call from
+	legacy.f as SWRITF() instead. This is our own function (in f2c.c)
+	designed to act much like a printf style command. The purpose of
+	this is to allow f2c generated code (legacy_f2c.c) to work without
+	needing any of the fortran run-time library and hence make building
+	on platforms without a fortran compiler substantially easier to do. 
+
+	* src/gap4/quality_plot.c:
+	(16:42:58) Replaced fmtdb_ in fortran with a local fmtdb, to avoid
+	requirements of fortran WRITE() call. 
+
+	* src/gap4/tagEditor.c:
+	(16:43:50) Add tag pointer into Tk window pathname. It's a hack,
+	but it means that multiple tags with tagid 0 (newly created ones)
+	can be edited without clashes. 
+
+	* src/tk_utils/tkTrace.c:
+	(16:44:35) Fixed error message for TraceCmd. 
+
+	* tables/gaprc_menu_full:
+	(16:46:44) Added new consistency/confidence graph menu items. 
+
+	* tables/trevrc:
+	(16:47:36) Use trace "orig_format" instead of "format" widget
+	command when determining type to save under. This means that we can
+	edit and save back to experiment files once more (ie fixes a bug). 
+
+2004-06-14  jkbonfield  <jkbonfield>
+
+	* src/gap4/do_fij.c:
+	(16:19:00) Improved the cryptic warning messages output by FIJ. 
+
+2004-06-09  jkbonfield  <jkbonfield>
+
+	* src/eba/conf.c,
+	* src/eba/qual.c:
+	(17:30:48) Added various command line options to turn on/off
+	averaging and to turn on a "filtered" method of calling confidence
+	values. Enabling both this and the old method takes the minimum of
+	either in a "pessimistic" approach. 
+
+2004-06-02  jkbonfield  <jkbonfield>
+
+	* tables/gaprc:
+	(14:11:52) Added gui component/defaults for "ignore svec clips" in
+	directed assembly. 
+
+	* src/gap4/assemble_direct.c:
+	(14:15:25) Added an "ignore svec (SL/SR) clips" option to directed
+	assembly. The default behaviour (not ignore) is how the 2003 staden
+	package worked, but not 1.4 and 1.4.1. 
+
+	* src/gap4/assemble_direct.h,
+	* src/gap4/assemble_direct.tcl,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	(14:15:29) Added an "ignore svec (SL/SR) clips" option to directed
+	assembly. The default behaviour (not ignore) is how the 2003 staden
+	package worked, but not 1.4 and 1.4.1. 
+
+2004-06-01  jkbonfield  <jkbonfield>
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/Makefile.am,
+	* src/io_lib/Makefile.in,
+	* src/io_lib/README,
+	* src/io_lib/config.guess,
+	* src/io_lib/config.h.in,
+	* src/io_lib/config.sub,
+	* src/io_lib/configure,
+	* src/io_lib/configure.in,
+	* src/io_lib/depcomp,
+	* src/io_lib/install-sh,
+	* src/io_lib/ltmain.sh,
+	* src/io_lib/missing,
+	* src/io_lib/mkinstalldirs:
+	(08:54:43) Updated notes to claim this is version 1.8.12 and
+	rebuilt all the automake/autoconf/libtool generated files. 
+
+	* src/io_lib/abi/Makefile.in,
+	* src/io_lib/alf/Makefile.in:
+	(08:54:50) Updated notes to claim this is version 1.8.12 and
+	rebuilt all the automake/autoconf/libtool generated files. 
+
+	* src/io_lib/ctf/Makefile.in,
+	* src/io_lib/exp_file/Makefile.in,
+	* src/io_lib/plain/Makefile.in,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/Makefile.in,
+	* src/io_lib/read/Makefile.in,
+	* src/io_lib/scf/Makefile.in,
+	* src/io_lib/utils/Makefile.in,
+	* src/io_lib/ztr/Makefile.in:
+	(08:54:51) Updated notes to claim this is version 1.8.12 and
+	rebuilt all the automake/autoconf/libtool generated files. 
+
+2004-05-24  jkbonfield  <jkbonfield>
+
+	* src/gap4/oligo.c:
+	(08:42:47) Improved information added to oligo tags: now has Tm,
+	GC, quality. 
+
+	* src/gap4/edInterface.c:
+	(08:53:13) Add force_comment call to edSetBriefTag(), meaning that
+	tag searches now update the information line correctly. 
+
+2004-05-21  jkbonfield  <jkbonfield>
+
+	* src/gap4/contig_editor.tcl:
+	(15:54:14) Added keybindings to use XF86_Switch_VT_1 in addition to
+	Shift-Key-F1 (and so on) as this appears to be how the newer
+	XFree86 default xmodmap is configured.
+	
+	Unfortunately XF86_Switch_VT_1 is only in XFree86's keysymdb,
+	meaning that using a linux xserver and a (for example) digital unix
+	client will still work as Gap4 on digital unix cannot bind to an
+	unknown keysym. 
+
+2004-05-13  jkbonfield  <jkbonfield>
+
+	* src/io_lib/abi/seqIOABI.c:
+	(16:14:10) Improved spacing fix. 
+
+2004-05-12  jkbonfield  <jkbonfield>
+
+	* src/io_lib/abi/seqIOABI.c:
+	(08:27:40) Applied change suggested by Saul A. Kravitz. The
+	fallback fspacing is now calculated over the range that basecalls
+	exist rather than the total length of trace. 
+
+	* src/gap4/contigEditor.c:
+	(13:35:43) Fixed incorrect repositioning of the editor window when
+	new plots were brought up. Caused due to the CONTIG_REG
+	notification triggering a CURSOR_NOTIFY event using the editor
+	internal sequence number instead of the external reading number. 
 2004-05-11  James Bonfield  <jkb>
 
 	* tables/gaprc:
