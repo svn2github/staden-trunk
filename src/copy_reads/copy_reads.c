@@ -413,7 +413,8 @@ int copy_reads(Tcl_Interp *interp,
 
 	    values2tag(tag_str, tag_name, si->start+1, si->end-1, 
 		       reading.strand, comment);
-	    create_tag_for_gel(io_from, i, si->length, tag_str, NULL, 0, NULL);
+	    create_tag_for_gel(io_from, i, si->length, tag_str, NULL, 0, NULL,
+			       0);
     
 
 	    /* need to reset pos_to when it becomes -ve */
