@@ -1,29 +1,55 @@
-To build the source tree, you need to have Tcl, Tk, IncrTcl, iWidgets, Zlib
-and libPNG installed.
+Windows build 1st July 2004
+===========================
 
-The distributions we use are held in the ftp subdirectory of the source
-distribution. (Newer versions may exist, but we have not tested these.)
-In a few cases we have tweaked things here and there (bug fixes and the like), 
-but we have always submitted back bug fixes so future releases of these
-third-party libraries should not require any local tweaks.
+* Install mingw (3.1.0), msys (1.0.10).
+Put these somewhere without a space in their path. Ie not "/program
+files/mingw". This causes problems for some tools (eg windres). It's
+not critical however (see below).
 
-If you do not already have these libraries install then unpack and install
-them following the instructions included with each library. If you're just
-recompiling the Staden Package source note that it's probably just easiest to
-grab a binary release and avoid needing to rebuild the third party
-libraries. (The binary Staden Package releases contain prebuilt copies of
-these.) The unpacked tcl, tk (etc) directories included in the src directory
-contain just the few files needed to build the staden package source; mostly
-header files.
+* Install zlib (1.2.1)
+Unpack this in $STADENROOT/src when doing the compile and leave it
+there. It is needed by other parts of the staden package.
 
-Compilers:
----------
+* Install libpng (1.2.5)
+Again, unpack this in $STADENROOT/src. You'll need to edit the
+scripts/makefile.cygwin to specify where the zlib include and library
+is. png also expects zlib to be -lz where as for windows it is
+-lzlib1. Edit accordingly.
+We're only interested in shared libraries so "make -f
+scripts/makefile.cygwin all-shared" will suffice (after editing).
+Once built, copy the cygpng12.dll to
+STADENROOT/lib/windows-binaries/png12.dll.
 
-You'll need C, C++ and Fortran compilers. Any ANSI C compiler should do;
-they're generally pretty reliable. C++ can be trickier. Microsoft Visual C++
-works (not sure which version though). GNU g++ also works, but make sure you
-use 3.2.1 or later as the STL has problems with older releases. The Fortran
-code is limited to one file in the gap4 directory. An F2C converted copy is
-also in the same directory, but building this also requires building the
-libf2c libraries. This is a workable alternative (to using, say, g77), but is
-in itself quite a bit of work.
+* Install tcl (8.4.6) and tk (8.4.6).
+Other versions probably work, but these are the ones I tested it with.
+
+When compiling tcl/tk put them in the STADENROOT/src directory and
+rename to tcl8.4/ and tk8.4/. Use "cd win; ./configure
+--enable-shared; make". I had problems with windres failing as it
+doesn't like to run from a directory containing a space (see above),
+but copying it elsewhere cures that.
+
+* Install the prebuilt binaries of itcl/itk (itcl-3.3b1_win32.zip from
+sourceforge). Copy the lib directory contents (itcl3.3 and itk3.3) to
+$STADENROOT/lib.
+
+* Install iwidgets-4.0.1 (from the same sourceforge page as incrtcl
+above) in lib.
+
+* Install WiX somewhere (needs light & candle executables)
+
+* Edit STADENROOT/mk/global.mk to update the versions of the various
+third party libraries so that the compilation environment knows where
+the proper include search path should be. (Ie for zlib, linpng, tcl, tk).
+
+* Make STADENROOT/src/lib/windows-binaries.
+
+* Put in STADENROOT/src/lib/windows-binaries your libzlib1.dll,
+libtcl8.4.6.dll and libtk8.4.6.dll
+
+* Make :)
+
+* cd STADENROOT/src/windows/wix and make the .msi file
+  (Optionally install perl too if you want to regenerate the .wxs files.)
+
+
