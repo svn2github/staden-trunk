@@ -124,8 +124,9 @@ add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
 add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
 add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
 add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
-add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io 0}
-add_command	{View.Discrepancy graph}	 8 10 {ConfidenceGraph \$io 1}
+add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
+add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io second}
+add_command	{View.Discrepancy graph}	 8 10 {ConfidenceGraph \$io discrep}
 add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
@@ -561,9 +562,11 @@ add_command {File.Exit} 	1 0 {ConsistencyStartShutdown $io $t}
 add_check {View.Ruler ticks} 	1 0 {config$t.ticks} \
 	{DisplayConsistencyRulerTicks $io $t \[set $t.cons_id\] $t.hscroll}
 add_command {View.Confidence graph} 	1 0 \
-	{CreateConfidenceGraph $io 0 \[set $t.cons_id\] $t}
+	{CreateConfidenceGraph $io conf \[set $t.cons_id\] $t}
+add_command {View.2nd-Highest Confidence} 	1 0 \
+	{CreateConfidenceGraph $io second \[set $t.cons_id\] $t}
 add_command {View.Discrepancy graph} 	1 0 \
-	{CreateConfidenceGraph $io 1 \[set $t.cons_id\] $t}
+	{CreateConfidenceGraph $io discrep \[set $t.cons_id\] $t}
 add_command {View.Reading coverage histogram} 	1 0 \
 	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
 add_command {View.Readpair coverage histogram} 	1 0 \
