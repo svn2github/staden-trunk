@@ -15,18 +15,20 @@
 # -io 			GapIO handle
 # -contig		Contig identifier
 #  cnum			Contig number (computed from -contig)
+#  clen			Contig length
 # -lreg			Leftmost base (0 for all)
 # -rreg			Rightmost base (0 for all)
-# -fastmode		Fast mode param and also checkbox variable
 
 # -discrep_cutoff 	Discrepancy cutoff
 # -min_base_qual	Minimum base confidence when computing discrepancies
 # -snp_cutoff		Minimum SNP score after adjustments (pad, polyX, etc)?
 # -two_alleles		Boolean: whether to adjust snp scores for diploid orgs.
 
-# -minscore		Minimum score acceptable during cluster merges
+# -min_score		Minimum score acceptable during cluster merges
 # -twopass		Boolean: whether to add zero-cost edges and recompute
 #			during clustering algorithm
+# -fastmode		Boolean: fast mode param and also checkbox variable
+# -addfake		Boolean: whether fake-* seqs are added when splitting
 
 # snps			Tcl list of the form:
 #			{SNP_pos SNP_score template template ...} ...
@@ -44,6 +46,7 @@
 # disp_selected		Boolean: whether to display SNP checkboxes
 # disp_sets		Boolean: whether to display clustered sets
 # disp_sets_check	Tk pathname of set checkboxes
+# move_button		Tk pathname of the split-to-contigs button.
 
 # ruler_scale		Scale from bases to pixels for the Y ruler
 # ruleritem,<X>		Y Coord for ruler items for SNP <X> (0 onwards)
@@ -73,6 +76,7 @@ namespace eval haplo {
 	set ${data}(-minscore)       0
 	set ${data}(-twopass)        0
 	set ${data}(-fastmode)       0
+	set ${data}(-addfake)        1
 
 	foreach {a b} $args {
 	    set ${data}($a) $b
@@ -80,6 +84,8 @@ namespace eval haplo {
 	set ${data}(cnum) [db_info get_contig_num \
 			       [set ${data}(-io)] \
 			       [set ${data}(-contig)]]
+	set c [io_read_contig [set ${data}(-io)] [set ${data}(cnum)]]
+	set ${data}(clen) [keylget c length]
 	
 	return $data
     }
@@ -207,8 +213,26 @@ proc haplo::create_display {d} {
     button $w.cluster \
 	-text "Cluster by SNPs" \
 	-command [list [namespace current]::ClusterSNP $d]
+
     pack $w.minscore $w.twopass $w.fast -side left -padx 10
     pack $w.cluster -side right
+
+    # Splitting parameters
+    set w [frame $f.control3 -bd 2 -relief raised]
+    grid $w -sticky nsew -columnspan 2
+
+    checkbutton $w.fake \
+	-text "Add fake consensus" \
+	-variable ${d}(-addfake)
+
+    button $w.split \
+	-text "Split sets to contigs" \
+	-command [list [namespace current]::MoveContigs $d] \
+	-state disabled
+
+    set data(move_button) $w.split
+    pack $w.fake -side left -padx 10
+    pack $w.split -side right
 
     # Option buttons for data to display
     set w [frame $f.options -bd 2 -relief raised]
@@ -229,7 +253,7 @@ proc haplo::create_display {d} {
     checkbutton $w.sets     -variable ${d}(disp_sets)     -text Sets \
 	-command "haplo::redisplay $d" -state disabled
 
-    set data(disp_depth)      0
+    set data(disp_depth)      1
     set data(disp_ruler)      1
     set data(disp_selected)   1
     set data(disp_position)   1
@@ -300,15 +324,12 @@ proc haplo::create_display {d} {
 	$f.filter -sticky ew -padx 10
 
     frame $f.buttons
-    button $f.buttons.move \
-	-text "Make contigs from selected sets" \
-	-command [list [namespace current]::MoveContigs $d]
     button $f.buttons.cancel \
 	-text Cancel \
 	-command "haplo::shutdown $d"
 
     grid $f.buttons -sticky nsew -columnspan 2
-    grid $f.buttons.move $f.buttons.cancel -sticky ew -padx 10
+    grid $f.buttons.cancel -sticky ew -padx 10
 
     wm protocol $data(toplevel) WM_DELETE_WINDOW "haplo::shutdown $d"
 
@@ -355,6 +376,7 @@ proc haplo::reg_callback {d id type args} {
 	    set data(disp_sets) 0
 	    unset data(rsets)
 	    $data(disp_sets_check) configure -state disabled
+	    $data(move_button) configure -state disabled
 	    redisplay $d 0
 	}
 
@@ -404,16 +426,24 @@ proc haplo::reg_callback {d id type args} {
 		    unset data(cursoritem_$cid)
 		} else {
 		    if {[lsearch $job MOVE] != -1} {
-			$data(canvas) coords $data(cursoritem_$cid) \
-			    0 $cpos $data(rulerx) $cpos
-			$data(canvas) raise $data(cursoritem_$cid)
+			if {[info exists data(rulerx)]} {
+			    $data(canvas) coords $data(cursoritem_$cid) \
+				0 $cpos $data(rulerx) $cpos
+			    $data(canvas) raise $data(cursoritem_$cid)
+			}
 		    }
 		}
 	    } else {
 		if {$visible} {
+		    global haplo_defs
+		    if {![info exists data(rulerx)]} {
+			set data(rulerx) 10
+		    }
+		    set col [lindex [keylget haplo_defs CURSOR_COLOURS] \
+				 [expr {$cid%5}]]
 		    set data(cursoritem_$cid) \
 		    [$data(canvas) create line 0 $cpos $data(rulerx) $cpos \
-			 -width 2 -fill blue -tags cursor]
+			 -width 2 -fill $col -tags cursor]
 		    $data(canvas) bind $data(cursoritem_$cid) <<move-drag>> \
 			"haplo::cursor_move $d $cid %y"
 		}
@@ -436,7 +466,9 @@ proc haplo::cursor_move {d cid y} {
 
     set cpos [$data(canvas) canvasy $y]
     set apos [expr {int($cpos / $data(ruler_scale))}]
-    keylset l id $cid seq -1 pos -1 abspos $apos sent_by $data(regid) job MOVE
+    if {$apos < 1} {set apos 1}
+    if {$apos > $data(clen)} {set apos $data(clen)}
+    keylset l id $cid seq -1 pos -1 abspos $apos sent_by 0 job MOVE
     contig_notify \
 	-io $data(-io) \
 	-cnum $data(cnum) \
@@ -511,13 +543,10 @@ proc haplo::display {d} {
     set f $data(toplevel)
     set w $data(canvas)
     set contig $data(cnum)
+    set clen $data(clen)
 
     set io $data(-io)
     set snps $data(snps)
-
-    set c [io_read_contig $io $contig]
-    set clen [keylget c length]
-
     set nsnps [llength $snps]
 
     set headingfont {helvetica 12 bold}
@@ -634,8 +663,7 @@ proc haplo::display_depth {d xpos} {
     set xscale [expr {($xcoord(depth)-20) / double($max)}]
     set w $data(canvas)
     set contig $data(cnum)
-    set c [io_read_contig $data(-io) $contig]
-    set clen [keylget c length]
+    set clen $data(clen)
 
     # Grey dividers in incremements of 10
     set y1 0
@@ -678,8 +706,7 @@ proc haplo::display_ruler {d xpos} {
     set snps $data(snps)
     set w $data(canvas)
     set contig $data(cnum)
-    set c [io_read_contig $data(-io) $contig]
-    set clen [keylget c length]
+    set clen $data(clen)
 
     # consensus ruler with SNP line
     $w create line $xpos 0 $xpos $clen -tags ruler
@@ -694,9 +721,6 @@ proc haplo::display_ruler {d xpos} {
 				      [expr {$xpos+10}] $pos \
 	                              -tags "ruler snp_$num snpx_$num"]
 	set data(ypos,$num) [expr {$fnt(-linespace)*1.5*$num}]
-
-	# # fake text to keep scales working
-	# $w create text 0 $data(ypos,$num) -tags textcoord
 
 	incr num
     }
@@ -823,6 +847,7 @@ proc haplo::display_sets {d xpos} {
     variable textfont
     variable boldfont
     variable xcoord
+    variable ycoord
 
     puts [info level [info level]]
 
@@ -899,14 +924,16 @@ proc haplo::display_sets {d xpos} {
 # Redraw cursors
 proc haplo::display_cursors {d} {
     upvar $d data
+    global haplo_defs
 
     $data(canvas) delete cursor
     foreach x [array names data -glob cursoritem_*] {
 	regexp {.*_(.*)} $x _ cid
 	set cpos $data(cursorapos_$cid)
+	set col [lindex [keylget haplo_defs CURSOR_COLOURS] [expr {$cid%5}]]
 	set data(cursoritem_$cid) \
 	    [$data(canvas) create line 0 $cpos $data(rulerx) $cpos \
-		-tags cursor -width 2 -fill blue]
+		 -tags cursor -width 2 -fill $col]
 	$data(canvas) bind $data(cursoritem_$cid) <<move-drag>> \
 	    "haplo::cursor_move $d $cid %y"
     }
@@ -1362,6 +1389,7 @@ proc haplo::ClusterSNP {d} {
 
     set data(disp_sets) 1
     $data(disp_sets_check) configure -state normal
+    $data(move_button) configure -state normal
     set data(status_line) "Redisplaying"
     update idletasks
     redisplay $d
@@ -1449,19 +1477,34 @@ proc haplo::MoveContigs {d} {
     set contig $data(cnum)
     set rsets $data(rsets)
 
-#    if {![quit_displays $io "Split contigs"]} {
-#	return
-#    }
-    puts "contig_lock_write -io $io -cnum $contig"
+    # Abort if no sets selected
+    set ng 0
+    set count 0
+    foreach x $rsets {
+	if {$data(set_selected,$ng)} {
+	    incr count
+	}
+	incr ng
+    }
+    if {$count == 0} {
+	bell
+	return
+    }
+
+
+    # Take global grab
     if {[contig_lock_write -io $io -cnum $contig] != 0} {
 	bell
 	return
     }
 
     SetBusy
-    # A fake sequence to ensure that the "remainder" is held together.
+
+    # Add a fake sequence to ensure that the "remainder" is held together.
     set ng 0
-    add_fake $io $contig fake-$ng
+    if {$data(-addfake)} {
+	add_fake $io $contig fake-$ng
+    }
 
     foreach reads $rsets {
 	if {!$data(set_selected,$ng)} {
@@ -1469,8 +1512,10 @@ proc haplo::MoveContigs {d} {
 	    continue
 	}
 	incr ng
-	add_fake $io $contig fake-$ng
-	set reads [linsert $reads 0 fake-$ng]
+	if {$data(-addfake)} {
+	    add_fake $io $contig fake-$ng
+	    set reads [linsert $reads 0 fake-$ng]
+	}
 	disassemble_readings -io $io -readings $reads -move 2 -duplicate_tags 0
     }
     templates2readings $io 0 {}
