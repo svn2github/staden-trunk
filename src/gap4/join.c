@@ -106,8 +106,7 @@ int align_contigs (OVERLAP *overlap) {
 
 	ierr = affine_align(overlap,params);
 	destroy_alignment_params (params);
-	if (!ierr) return 1; /* ie if ierr 0 success */
-	return ierr;
+	return ierr; /* Correct or failure */
     }
 
     max_seq = MAX(overlap->seq1_len,overlap->seq2_len);
@@ -153,7 +152,7 @@ int align_contigs (OVERLAP *overlap) {
 	if(overlap->percent > OK_MATCH ||
 	   longest_diagonal >= TOO_LONG_FOR_2ND_TRY) {
 	    destroy_alignment_params (params);
-	    return 1;
+	    return 0;
 	}
     }
     /* if block alignment fails, try straight dynamic programming */
@@ -172,7 +171,6 @@ int align_contigs (OVERLAP *overlap) {
 	ierr = affine_align(overlap,params);
 
 	destroy_alignment_params (params);
-	if (!ierr) return 1;
 	destroy_alignment_params (params);
 	return ierr;
     }
@@ -355,7 +353,7 @@ static int align(EdStruct *xx0, int pos0, int len0,
     if (NULL == (overlap = create_overlap())) return -1;
     init_overlap (overlap, ol0, ol1, len0, len1);
 
-    if(1 > (ierr =  align_contigs (overlap))) {
+    if(-1 == (ierr =  align_contigs (overlap))) {
 	xfree(ol0);
 	xfree(ol1);
 	destroy_overlap(overlap);
@@ -440,8 +438,12 @@ static int align(EdStruct *xx0, int pos0, int len0,
 		depad_pos1 += *S;
 	    }
 
+	    if (depad_pos0 >= len0 || depad_pos1 >= len1)
+		break;
+
 	    curr_pad0 = depad_to_pad0[depad_pos0]-off0;
 	    curr_pad1 = depad_to_pad1[depad_pos1]-off1;
+
 	    extra_pads = (curr_pad1 - last_pad1) - (curr_pad0 - last_pad0);
 
 	    if (extra_pads < 0) { /* Add to seq 0 */
