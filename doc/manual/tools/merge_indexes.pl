@@ -17,7 +17,7 @@ $curr_file = "";
 $TODAY = &pretty_date;			# like "20 September 1993"
 $http_prefix = "..";
 $http_prefix2 = "$http_prefix/manual";
-$package_version = "version-2003.0beta1";
+$package_version = "version 1.5 (2004)";
 
 open(TOCL, "> master_${os}_contents.html")
 	|| die "Couldn't create master_${os}_contents.html";
