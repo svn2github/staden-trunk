@@ -141,6 +141,7 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     sw->background = bg;
     sw->cursor_row = sw->cursor_column = -1;
     sw->display_cursor = 1;
+    sw->window = 0;
 
     sheet_resize(sw, 0, 0);
 
