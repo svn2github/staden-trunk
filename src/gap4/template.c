@@ -715,7 +715,6 @@ static void check_template_position(GapIO *io, template_c *t) {
     GTemplates te;
     int contig = 0, tmp;
 
-    t->consistency = 0;
     new_contig_l = head(t->gel_cont);
 
     /*
@@ -732,6 +731,12 @@ static void check_template_position(GapIO *io, template_c *t) {
 	tmp = t->consistency;
 	get_template_positions(io, t, gc->contig);
 	t->consistency |= tmp;
+
+	/*
+	 * FIXME: fill out an array indexed by contig containing start, end
+	 * direction, etc, so we can work out the NxN analysis of the maximum
+	 * expected contig overlap for spanning templates.
+	 */
 
 	/*
 	 * Check the primer size is within range.
@@ -775,6 +780,120 @@ static void check_template_position(GapIO *io, template_c *t) {
     t->flags |= TEMP_FLAG_CHECKED_DIST;
 }
 
+/*
+ * Given a template this checks for a valid length based on the start/end,
+ * min/max and for spanning templates distance from contig ends.
+ *
+ * The start/end values filled up will be wrong for inconsistent templates.
+ * Eg        fwd              rev
+ *         ------>          ------->
+ *         ^                ^      ^
+ *       start/            end    max
+ *       min
+ *
+ * The min/max values here make more sense though. So the computed size will
+ * be the max of the two.
+ *
+ * Also, if we have multiple contigs, compute the distance from the ends.
+ *
+ * eg:        --fwd-->                           <--rev--
+ *     -------------------------      ---------------------------
+ *            |                                         |
+ *            |<----------- template size ------------->|
+ *
+ * This allows us to mark a template as inconsistent, due to probable
+ * misassemble, based on the assumption that the contigs should be joined if
+ * there is a real overlap.
+ */
+static void check_template_length(GapIO *io, template_c *t) {
+    item_t *item;
+    int distf, distr, c1;
+    GReadings r;
+    GTemplates te;
+    int start, end;
+    
+    template_read(io, t->num, te);
+
+    if (t->start < t->end) {
+	if (t->start > t->min)
+	    t->start = t->min;
+	if (t->start2 > t->min)
+	    t->start2 = t->min;
+	if (t->end < t->max)
+	    t->end = t->max;
+	if (t->end2 < t->max)
+	    t->end2 = t->max;
+    } else {
+	if (t->start < t->max)
+	    t->start = t->max;
+	if (t->start2 < t->max)
+	    t->start2 = t->max;
+	if (t->end > t->min)
+	    t->end = t->min;
+	if (t->end2 > t->min)
+	    t->end2 = t->min;
+    }
+    t->computed_length = ABS(MAX(t->end, t->end2) - MIN(t->start, t->start2));
+
+    if (t->computed_length > te.insert_length_max)
+	t->consistency |= TEMP_CONSIST_DIST;
+
+    if (!(t->flags & TEMP_FLAG_SPANNING))
+	return;
+
+    c1 = 0;
+    distf = distr = 0;
+
+    /*
+     * Find first contig.
+     * The compare this against each successive contig.
+     */
+    for (item = head(t->gel_cont); item; item = item->next) {
+	gel_cont_t *gc = (gel_cont_t *)item->data;
+	int tmp_distf, tmp_distr;
+
+	if (!c1)
+	    c1 = gc->contig;
+	else if (gc->contig == c1)
+	    continue;
+
+	gel_read(io, gc->read, r);
+
+	switch(PRIMER_TYPE(r)) {
+	case GAP_PRIMER_UNKNOWN:
+	    continue;
+
+	case GAP_PRIMER_FORWARD:
+	case GAP_PRIMER_CUSTFOR:
+	    /* Distance forward to 'end' of contig */
+	    tmp_distf = r.sense
+		? r.position + r.sequence_length - 1
+		: io_clength(io, gc->contig) - r.position + 1;
+	    distf = MAX(distf, tmp_distf);
+	    break;
+
+	case GAP_PRIMER_REVERSE:
+	case GAP_PRIMER_CUSTREV:
+	    /* Distance backwards to 'start' of contig */
+	    tmp_distr = r.sense
+		? r.position + r.sequence_length - 1
+		: io_clength(io, gc->contig) - r.position + 1;
+	    distr = MAX(distr, tmp_distr);
+	}
+    }
+
+    if (distf && distr) {
+	int length;
+	length = distf + distr;
+
+	t->computed_length = length;
+
+	if (length > te.insert_length_max) {
+	    t->consistency |= TEMP_CONSIST_DIST;
+	}
+    }
+    
+}
 
 /*
  * Computes a template score based on consistency, flags and size.
@@ -801,6 +920,9 @@ void score_template(GapIO *io, template_c *t) {
 	    scale = (double)te.insert_length_max/size;
 	else
 	    scale = 1;
+	if (t->computed_length > te.insert_length_max)
+	    scale = MIN(scale,
+			(double)te.insert_length_max/t->computed_length);
 
 	/* _too_ far apart, probably naming error instead */
 	if (scale < 0.5)
@@ -824,8 +946,10 @@ void score_template(GapIO *io, template_c *t) {
  * Returns the new consistency value (-1 for error).
  */
 int check_template_c(GapIO *io, template_c *t) {
+    t->consistency = 0;
     check_template_strand(io, t);
     check_template_position(io, t);
+    check_template_length(io, t);
     score_template(io, t);
 
     return t->consistency;

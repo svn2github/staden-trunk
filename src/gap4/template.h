@@ -66,6 +66,9 @@ typedef struct {
      * to zero for all flags.
      */
     int oflags;		/* option flags - see TEMP_OFLAG_* defines */
+
+    /* Computed length based on templates spanning contigs. */
+    int computed_length;
 } template_c;
 
 
