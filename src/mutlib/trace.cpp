@@ -1025,7 +1025,7 @@ Trace* Trace::Subtract( Trace& t )
     // (eg Beckman) generate traces with the full 16-bit resolution.
     double nScale = 1.0;
     int    nMax   = t.Max() >= Max() ? t.Max() : Max();
-    if( nMax > 32767 )
+    if( nMax >= 16384 )
     {
         nScale = 0.5;
         nMax   = nMax / 2;
