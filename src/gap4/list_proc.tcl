@@ -923,33 +923,79 @@ proc InitListTrace { } {
 proc UpdateContigList { io list } {
     global c_list NGList NGListTag
 
-    set h_list ""    
+    set c_list $NGList(contigs)
+
+    #convert "contigs" list into an array indexed by contig number and
+    #containing the position of that contig in the list
+    array set cnums {}
+    set pos 0
+    foreach item $c_list {
+	set cnums([db_info get_contig_num $io $item]) $pos
+	incr pos
+    }
+
+    #search and toggle contig numbers in our array
+    foreach item $list {
+        if {[info exists cnums($item)]} {
+	    unset cnums($item)
+        } else {
+	    incr pos
+	    set cnums($item) -$pos
+        }
+    }
+
+    # Reverse X(a)=b => X(b)=a
+    array set rev {}
+    foreach i [array names cnums] {
+	set rev($cnums($i)) $i
+    }
+
+    # Reconstruct c_list
+    set n_list {}
+    foreach i [array names rev] {
+	set n $rev($i)
+	if {$i < 0} {
+	    lappend n_list [left_gel $io $rev($i)]
+	} else {
+	    lappend n_list [lindex $c_list $i]
+	}
+    }
+
+    ListCreate2 contigs $n_list $NGListTag(contigs)
+}
+
+proc UpdateContigListOld { io list } {
+    global c_list NGList NGListTag
+
+    set h_list ""
     set n_list ""
     set c_list $NGList(contigs)
 
     #convert contig list to numbers
     foreach item $c_list {
-	lappend n_list [db_info get_contig_num $io $item]
+        lappend n_list [db_info get_contig_num $io $item]
     }
-    #search and toggle 
+    #search and toggle
     foreach item $list {
-	set pos [lsearch $n_list $item]
-	set name [left_gel $io $item]
-	if {$pos == -1} {
-	    #not found item in list therefore add it
-	    lappend n_list $item
-	    lappend c_list $name
-	    lappend h_list "$name 1"
-	} else {
-	    #if find item, remove it from the list
-	    set n_list [lreplace $n_list $pos $pos]
-	    set c_list [lreplace $c_list $pos $pos]
-	    lappend h_list "$name 0"
-	}
+        set pos [lsearch $n_list $item]
+        set name [left_gel $io $item]
+        if {$pos == -1} {
+            #not found item in list therefore add it
+            lappend n_list $item
+            lappend c_list $name
+            lappend h_list "$name 1"
+        } else {
+            #if find item, remove it from the list
+            set n_list [lreplace $n_list $pos $pos]
+            set c_list [lreplace $c_list $pos $pos]
+            lappend h_list "$name 0"
+        }
     }
     ListCreate2 contigs $c_list $NGListTag(contigs)
     return $h_list
 }
+
+
 #takes a list of contigs numbers created from the contig selector. Returns a 
 #list of contig names and toggle values (0 to unhighlight, 1 to highlight)
 proc UpdateContigListNoToggle { io list } {
