@@ -470,6 +470,15 @@ proc new_trace_create2 {w e title allow_diff} {
         set t_chemistry [lindex {p t} [keylget rrr chemistry]]
 	set tit_num "#$tit_num"
         set title "Reading $tit_name ($tit_num)"
+	if {[$e show_template_names]} {
+	    if {[set tnum [keylget rrr template]] != 0} {
+		set t [io_read_template [$e io] $tnum]
+		if {[keylget t name]} {
+		    set tit_name [io_read_text [$e io] [keylget t name]]
+		    set title "Template $tit_name, $title"
+		}
+	    }
+	}
         set tname "trace$tit_num"
 	append tit_num " $t_primer_type $t_chemistry"
 	set info_state normal
