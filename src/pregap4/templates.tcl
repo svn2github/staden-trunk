@@ -30,6 +30,14 @@ proc add_template_gui {is_name_scheme} {
 	wm title $w "Include config component"
     }
 
+    # Remember existing selectPath for filebrowser as we do not want it
+    # switching to the naming_schemes or templates directory.
+    if {[info exists ::tk::dialog::file::__tk_filedialog(selectPath)]} {
+	set old_path $::tk::dialog::file::__tk_filedialog(selectPath)
+    } else {
+	set old_path ""
+    }
+
     if {$is_name_scheme} {
 	get_fname $w.file \
 		-text "Naming scheme file name" \
@@ -52,16 +60,32 @@ proc add_template_gui {is_name_scheme} {
 	-default 1
 
     okcancelhelp $w.ok \
-	-ok_command "add_template_gui2 $w $w.file \[$w.save get\]" \
-	-cancel_command "destroy $w" \
+	-ok_command "add_template_gui2 $w $w.file \[$w.save get\] [list $old_path]" \
+	-cancel_command "add_template_cancel $w [list $old_path]" \
 	-help_command "show_help pregap4 $help" \
 	-bd 2 -relief groove
 
     pack $w.file $w.save $w.ok -side top -fill both
 }
 
-proc add_template_gui2 {w file save} {
+proc add_template_cancel {w old_path} {
+    if {$old_path == ""} {
+	catch {unset ::tk::dialog::file::__tk_filedialog(selectPath)}
+    } else {
+	set ::tk::dialog::file::__tk_filedialog(selectPath) $old_path
+    }
+    
+    destroy $w
+}
+
+proc add_template_gui2 {w file save old_path} {
     if {[set file [$w.file get]] == ""} { bell; return }
+
+    if {$old_path == ""} {
+	catch {unset ::tk::dialog::file::__tk_filedialog(selectPath)}
+    } else {
+	set ::tk::dialog::file::__tk_filedialog(selectPath) $old_path
+    }
 
     vfuncheader "Insert Configuration Component"
     add_template $file $save
