@@ -1,4 +1,3 @@
-/*  Last edited: Jan  7 10:35 2004 (mng) */
 #include <tk.h>
 
 #include "io-reg.h"
@@ -406,16 +405,30 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 
     sprintf(dbptr, "%p", (void *)DBI(xx));
 
-    if (TCL_OK != Tcl_VarEval(interp, "create_editor ",
-			      edname = next_editor(interp), /* toplevel name */
-			      " 0",                /* editor subname */
-			      " 0 ",               /* is not a join editor */
-			      rev, " ",            /* reveal cutoffs */
-			      ccut, " ", qcut, " ",
-			      dbptr, " ",
-			      "{", sets, "}",
-			      NULL)) {
-	fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+    if (sets) {
+	if (TCL_OK != Tcl_VarEval(interp, "create_editor ",
+				  edname = next_editor(interp),
+				                   /* toplevel name */
+				  " 0",            /* editor subname */
+				  " 0 ",           /* is not a join editor */
+				  rev, " ",        /* reveal cutoffs */
+				  ccut, " ", qcut, " ",
+				  dbptr, " ",
+				  "{", sets, "}",
+				  NULL)) {
+	    fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+	}
+    } else {
+	if (TCL_OK != Tcl_VarEval(interp, "create_editor ",
+				  edname = next_editor(interp),
+				  " 0",
+				  " 0 ",
+				  rev, " ",
+				  ccut, " ", qcut, " ",
+				  dbptr, " ",
+				  NULL)) {
+	    fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
+	}
     }
 
     ptr = strchr(interp->result, ' ');
@@ -450,7 +463,8 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	return TCL_ERROR;
     }
 
-    add_sets(interp, io, xx, sets);
+    if (sets)
+	add_sets(interp, io, xx, sets);
     xx->cursor->sent_by = DBI_registration_id(xx);
 
     xx->con_cut = con_cut;
