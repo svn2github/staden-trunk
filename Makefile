@@ -83,23 +83,21 @@ distunix: distcommon
 	# but we can live with that as it provides simplicity.
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/alpha-bin
-#	-mkdir -p $(DIST)/lib/alpha-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=alpha install
 	#-----------------------------------------------------
 	-mkdir $(DIST)/linux-bin
 	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=linux install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/solaris-bin
-#	-mkdir -p $(DIST)/lib/solaris-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=solaris install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/sgi-bin
-#	-mkdir -p $(DIST)/lib/sgi-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=sgi install
 	#-----------------------------------------------------
 #	-mkdir $(DIST)/macosx-bin
-#	-mkdir -p $(DIST)/lib/macosx-bin
 #	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=macosx install
+	# Tidy up CVS files accidentally copied over
+	(cd $(DIST); find . -name CVS -exec rm -rf {} \;)
 
 
 distmacosx: distcommon
