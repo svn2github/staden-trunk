@@ -81,17 +81,20 @@ proc create_popup {w title} {
 #when you have two frames and you wish to differentiate between them by,
 #say clicking in one
 proc SetCurFrame {s frame} {
-    global $s.frame
-    
-    #puts "SetCurFrame $s $frame"
+    global $s.frame $s.frame_index
+    set $s.frame_index 0
     set $s.frame $frame
 }
 
 proc GetCurFrame {s} {
-    global $s.frame
+    global $s.frame $s.frame_index
 
-    #puts "GetCurFrame $s [set $s.frame]"
-    return [set $s.frame]
+    set f [lindex [set $s.frame] [set $s.frame_index]]
+    incr $s.frame_index
+    if {[set $s.frame_index] >= [llength [set $s.frame]]} {
+	set $s.frame_index 0
+    }
+    return $f
 }
 
 ##############################################################################
