@@ -632,7 +632,7 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		/* Marginally increase cost for higher scoring OSP results */
 		cost_mult *= 1+prim[j].score / 1000.0;
 #else
-		cost_mult *= 1+prim[j].score / 20;
+		cost_mult *= 1+prim[j].score / 50;
 #endif
 
 		/* Increase cost for long homopolymers */
@@ -661,8 +661,28 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		     * be covered by a read on that template when using
 		     * inconsistent templates.
 		     */
-		    t_start1 = t_start2 = t_start = fin->tarr[i]->min;
-		    t_end1   = t_end2   = t_end   = fin->tarr[i]->max;
+		    t_start = fin->tarr[i]->min;
+		    t_end   = fin->tarr[i]->max;
+
+		    /*
+		     * If chk_template_stat is disabled then we modify the
+		     * min/max observed ranges by 1K if we have not seen
+		     * vector at these ends.
+		     *
+		     * This is to allow contig extension experiments to work
+		     * for inconsistent templates.
+		     */
+		    if (fin->opts.chk_template_stat == 0) {
+			if (!(fin->tarr[i]->flags & TEMP_FLAG_VEC_START)) {
+			    t_start -= 1000;
+			}
+			if (!(fin->tarr[i]->flags & TEMP_FLAG_VEC_END)) {
+			    t_end += 1000;
+			}
+		    }
+
+		    t_start1 = t_start2 = t_start;
+		    t_end1   = t_end2   = t_end;
 		}
 
 		/* Does the template cover the problem region? */
@@ -813,11 +833,13 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		{
 		    int dist = MIN(s_start - prob_start,
 				   prob_end_orig - s_end);
+		    printf("prob=%d..%d s=%d..%d\n",
+			   prob_start, prob_end_orig, s_start, s_end);
 		    if (dist > 0) {
 			if (fin->opts.debug[EXPERIMENT_VPWALK] > 1)
 			    printf("Solution not adjoining problem end => "
-				   "Adjust cost by %f\n", 0.2 + 0.001*dist);
-			cost_mult += 0.2 + 0.001*dist;
+				   "Adjust cost by %f\n", 1.2 + 0.001*dist);
+			cost_mult *= 1.2 + 0.001*dist;
 		    }
 		}
 		
@@ -918,9 +940,10 @@ experiments_t *experiment_walk(finish_t *fin, int pos, int chem, int dir,
     int nprimers;
     experiment_walk_t *prim;
     int dir_ind[2], dir_loop;
-    int prob_end_orig;
+    int prob_end_orig = prob_end;
 
-    printf(">>> PROBLEM AT %d - PRIMER WALK <<<\n", pos);
+    printf(">>> PROBLEM AT %d (%d..%d) - PRIMER WALK <<<\n", pos,
+	   prob_start, prob_end);
 
     /* Loop: dir_loop = 1 (dir==1), 2 (dir==2) or 1 and 2 (dir == 0) */
     dir_ind[0] = dir ? dir : 1;
@@ -939,12 +962,25 @@ experiments_t *experiment_walk(finish_t *fin, int pos, int chem, int dir,
 	case 1: /* + strand */
 	    primer_pos_start = pos - fin->opts.pwalk_offset1;
 	    primer_pos_end = pos - fin->opts.pwalk_offset2;
+
+	    /*
+	     * If we're trying to solve + strand, but the obvious end
+	     * (left end) of the problem region could not be solved then
+	     * we get called again with pos == prob_end (instead of
+	     * == prob_start). In that case we set the start coordinate
+	     * differently.
+	     */
+	    if (pos == prob_end && pos != prob_start) {
+		primer_pos_start -= fin->opts.pwalk_length/2;
+		primer_pos_end -= fin->opts.pwalk_length/2;
+	    }
 	    break;
 
 	case 2: /* - strand */
-	    prob_end_orig = prob_end;
-	    if (prob_end > pos + fin->opts.pwalk_length - fin->opts.pwalk_offset1)
-		prob_end = pos + fin->opts.pwalk_length - fin->opts.pwalk_offset1;
+	    if (prob_end > pos + fin->opts.pwalk_length
+		- fin->opts.pwalk_offset1)
+		prob_end = pos + fin->opts.pwalk_length
+		    - fin->opts.pwalk_offset1;
 
 	    primer_pos_start = prob_end + fin->opts.pwalk_offset2;
 	    primer_pos_end   = prob_end + fin->opts.pwalk_offset1;
