@@ -32,6 +32,7 @@ set auto_index(::EMBOSS::check_outfile) [list source [file join $dir emboss_util
 set auto_index(::EMBOSS::seq_updates) [list source [file join $dir emboss_utils.tcl]]
 set auto_index(::EMBOSS::plot_emboss1) [list source [file join $dir emboss_utils.tcl]]
 set auto_index(::EMBOSS::destroy_dialogue) [list source [file join $dir emboss_utils.tcl]]
+set auto_index(::EMBOSS::init_dialogue) [list source [file join $dir emboss_utils.tcl]]
 set auto_index(::EMBOSS::run_dialogue) [list source [file join $dir emboss_utils.tcl]]
 set auto_index(Xget_fname) [list source [file join $dir xget_fname.tcl]]
 set auto_index(xget_fname) [list source [file join $dir xget_fname.tcl]]

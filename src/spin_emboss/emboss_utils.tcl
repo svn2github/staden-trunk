@@ -167,6 +167,7 @@ proc sequence_changed {nspace name args} {
 	set vars($name.end)     [seq_info $vars($name) end]
 	set vars($name.length)  [expr {$vars($name.end)-$vars($name.begin)+1}]
 	set vars($name.protein) [expr {[seq_info $vars($name) type]==1?0:1}]
+	set vars(acdprotein)    $vars($name.protein)
 	set vars($name.nucleotide) [expr {[seq_info $vars($name) type]==1?1:0}]
     }
 }
@@ -397,12 +398,12 @@ proc plot_emboss1 {vname} {
 	#puts "File=$f,line='$line'"
 
 	set graphical 0
-	if {[string match "##graphic" $line]} {
+	if {[string match -nocase "##graphic" $line]} {
 	    ##graphic file
 	    plot_emboss_graphic $program $fd
 	    close $fd
 	    set graphical 1
-	} elseif {[string match "##*2d plot*" $line]} {
+	} elseif {[string match -nocase "##*2d plot*" $line]} {
 	    ##2d plot / multi 2d plot / overlay 2d plot
 	    close $fd
 	    set graphical 1
@@ -470,6 +471,15 @@ proc destroy_dialogue {nspace} {
 	unset vars
 	unset arguments
     }
+}
+
+#
+# Called when a dialogue is created. Here we setup global variables expected
+# by the ACD code.
+# Currently the only one known is $(acdprotein).
+proc init_dialogue {nspace} {
+    upvar ${nspace}::vars vars
+    set vars(acdprotein) 0
 }
 
 #
