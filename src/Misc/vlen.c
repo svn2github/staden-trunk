@@ -48,7 +48,6 @@ int vflen(char *fmt, va_list ap)
 {
     int len = 0;
     char *cp, c;
-    va_list ap_local;
     long l;
     int i;
     double d; 
@@ -64,6 +63,7 @@ int vflen(char *fmt, va_list ap)
      * I have seen needing this so far was Linux on AMD64.
      */
 #if defined(NEED_VA_COPY)
+    va_list ap_local;
     va_copy(ap_local, ap);
     #define ap ap_local
 #endif
