@@ -214,11 +214,13 @@ void *find_oligo_obj_func2(int job,
 	    llino = 0;
 	    pos   = obj->pos1;
 
-	    if ((id = editor_available(cnum, 1)) != -1) {
-		move_editor(id, llino, pos);
-	    } else {
+	    if ((id = editor_available(cnum, 1)) == -1) {
 		edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
 			    consensus_cutoff, quality_cutoff, 0);
+	    }
+	    if ((id = editor_available(cnum, 1)) != -1) {
+		move_editor(id, llino, pos);
+		editor_select_region(id, llino, pos, obj->length);
 	    }
 	    break;
 	}
@@ -497,7 +499,7 @@ TagMatch(GapIO *io,                                                    /* in */
 	 int num_contigs,                                              /* in */
 	 contig_list_t *contig_array,                                  /* in */
 	 char **cons_array,                                            /* in */
-	 float mis_match,                                              /* in */
+	 float mis_fmatch,                                             /* in */
 	 int *pos1,                                                   /* out */
 	 int *pos2,                                                   /* out */
 	 int *score,                                                  /* out */
@@ -512,10 +514,10 @@ TagMatch(GapIO *io,                                                    /* in */
     char *cons_match;
     int *match;
     int *scores;
+    int mis_match;
     GAnnotations *annotation;
     int i, k, l, c;
     int n_matches = 0;
-    int min_match;
     int seq_len;
     int cnt = 0;
     char title[1024];
@@ -545,8 +547,8 @@ TagMatch(GapIO *io,                                                    /* in */
 				    annotation->position,
 				    annotation->length);
 
-	    /* convert percentage mis matches into min matches */
-	    min_match = (int) ((strlen(string) * mis_match / 100) + 0.5);
+	    /* convert percentage mis-matches into number of mis matches */
+	    mis_match = strlen(string) - (ceil(strlen(string) * mis_fmatch / 100.));
 
 	    /* complement string */
 	    for (c = 0; c < 2; c++) {
@@ -556,13 +558,13 @@ TagMatch(GapIO *io,                                                    /* in */
 		/* loop through list of contigs looking for string */
 		for (k = 0; k < num_contigs; k++) {
 		    seq_len = strlen(cons_array[k]);
-		    n_matches = inexact_match(cons_array[k], seq_len,
-					      string,
-					      strlen(string),
-					      min_match,
-					      match,
-					      scores,
-					      max_imatches);
+		    n_matches = inexact_pad_match(cons_array[k], seq_len,
+						  string,
+						  strlen(string),
+						  mis_match,
+						  match,
+						  scores,
+						  max_imatches);
 		    if (n_matches == -1) {
 			verror(ERR_WARN, "find_oligos", "Too many matches");
 			n_matches = max_imatches;
@@ -691,8 +693,11 @@ int inexact_pad_match(char *seq,
     return n_matches;
 }
 
-/* depad seq until it is of seq_len */
-void depad_seq_len(char *strto, char *strfrom, int seq_len)
+/*
+ * depad seq until it is of seq_len.
+ * Returns the original padded length.
+ */
+int depad_seq_len(char *strto, char *strfrom, int seq_len)
 {
     int len = 0;
     char *a = strto;
@@ -707,6 +712,8 @@ void depad_seq_len(char *strto, char *strfrom, int seq_len)
 	}
     }
     *a = '\0';
+
+    return b-strfrom;
 }
 
 /*
@@ -799,6 +806,8 @@ StringMatch(GapIO *io,                                                 /* in */
 		max_imatches -= res;
 
 		for (j = orig; j < n_matches; j++) {
+		    int padded_len;
+
 		    c1[j] = contig_array[i].contig;
 		    if (c == 0) {
 			c2[j] = contig_array[i].contig;
@@ -810,7 +819,8 @@ StringMatch(GapIO *io,                                                 /* in */
 		     * remove pads such that the final length of cons_match is
 		     * of length length[j]
 		     */
-		    depad_seq_len(cons_match, &seq[pos1[j]-1], stringlen);
+		    padded_len =
+			depad_seq_len(cons_match, &seq[pos1[j]-1], stringlen);
 
 		    if (rn) {
 			if (cutoff_data) {
@@ -820,7 +830,8 @@ StringMatch(GapIO *io,                                                 /* in */
 			}
 		    }
 		    pos2[j] = pos1[j];
-		    length[j] = stringlen;
+		    /* length[j] = stringlen; */
+		    length[j] = padded_len;
 
 		    sprintf(name1, "%d", io_clnbr(io, ABS(c1[j])));
 		    sprintf(title, "Match found with contig %d "
