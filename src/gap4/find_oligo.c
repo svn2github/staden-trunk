@@ -820,7 +820,7 @@ StringMatch(GapIO *io,                                                 /* in */
 		    depad_seq_len(cons_match, stringlen);
 
 		    if (rn)
-			pos1[j] += r.position;
+			pos1[j] += r.position-1;
 		    pos2[j] = pos1[j];
 		    length[j] = stringlen;
 
