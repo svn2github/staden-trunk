@@ -311,7 +311,7 @@ int word_match( char *seq, int seq_pos, int seq_len, char *word, int word_len) {
 /************************************************************/
 int iubc_word_match( char *seq, int seq_pos, int seq_len, char *word, int word_len) {
 
-/* Does word in iubc codes match seq at seq_pos */
+/* Does word in iubc codes match seq STARTING at seq_pos */
 
     register int i,j;
 
@@ -320,6 +320,28 @@ int iubc_word_match( char *seq, int seq_pos, int seq_len, char *word, int word_l
 	 iubc_match [ iubc_lookup [ (unsigned) word[j] ] ]
 	    [ iubc_lookup [ (unsigned) seq[i] ] ];
 	 i++,j++);
+
+    return ( j == word_len ) ? 1 : 0;
+}
+
+
+int iubc_word_match_padded( char *seq, int seq_pos, int seq_len, char *word, int word_len) {
+
+/* Does word in iubc codes match seq STARTING at seq_pos */
+
+    register int i,j;
+
+    /* Allow for pads in seq, but not the word we are searching */
+    for ( i = seq_pos, j = 0; i < seq_len && j < word_len; i++) {
+	if (seq[i] == '*')
+	    continue;
+
+	if (!iubc_match [ iubc_lookup [ (unsigned) word[j] ] ]
+	    [ iubc_lookup [ (unsigned) seq[i] ] ])
+	    break;
+
+	j++;
+    }
 
     return ( j == word_len ) ? 1 : 0;
 }
@@ -546,7 +568,7 @@ int best_inexact_match(char *seq, int seq_len, char *string, int string_len,
 
 
 char complement_base (char base) {
-    return complementary_base[(unsigned)base];
+    return complementary_base[(unsigned char)base];
 }
 
 void complement_seq ( char *seq, int seq_len ) {
@@ -556,13 +578,13 @@ void complement_seq ( char *seq, int seq_len ) {
 
     middle = seq_len/2;
     for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
-	temp = complementary_base [ (unsigned) seq[i] ];
-	seq[i] = complementary_base [ (unsigned) seq[j] ];
+	temp = complementary_base [ (unsigned char) seq[i] ];
+	seq[i] = complementary_base [ (unsigned char) seq[j] ];
 	seq[j] = temp;
     }
 
     if ( seq_len % 2 )
-      seq[middle] = complementary_base [ (unsigned) seq[middle] ];
+      seq[middle] = complementary_base [ (unsigned char) seq[middle] ];
 }
 
 /************************************************************/
@@ -587,7 +609,7 @@ void complement_dna(char *seq, int seq_len) {
     register int i;
 
     for ( i=0; i<seq_len; i++ ) {
-	seq[i] = complementary_base[ (unsigned) seq[i] ];
+	seq[i] = complementary_base[ (unsigned char) seq[i] ];
     }
 }
 

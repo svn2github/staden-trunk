@@ -107,6 +107,13 @@ void set_iubc_lookup(void);
 int iubc_word_match( char *seq, int seq_pos, int seq_len, char *word,
 		    int word_len);
 
+/*
+ * Does word in iubc codes match seq at seq_pos, allowing for seq to be
+ * padded (but not word).
+ */
+int iubc_word_match_padded( char *seq, int seq_pos, int seq_len, char *word,
+			    int word_len);
+
 SEQ_UTILS_EXPORT int protein_lookup[256];
 
 /*
