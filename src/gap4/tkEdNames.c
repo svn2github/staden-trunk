@@ -211,6 +211,9 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	if (-1 != y) {
 	    if (x != 0) {
 		edSelectRead(en->xx, y, mode);
+
+		vTcl_SetResult(interp, "%d",
+			       (DB_Flags(en->xx, y) & DB_FLAG_SELECTED) ?1:0);
 	    } else {
 		if (y)
 		    select_note(DBI_io(en->xx), GT_Readings,
@@ -220,7 +223,6 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 				DBI_contigNum(en->xx));
 	    }
 	}
-
 
     } else if ('g' == *argv[1] && strcmp(argv[1], "get_number") == 0) {
 	int x, y, num;
@@ -290,6 +292,30 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	if (NULL != (name = edGetGelName(en->xx, num))) {
 	    Tcl_AppendResult(interp, name, NULL);
 	} /* otherwise return a blank */
+
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_names_to_right") == 0) {
+	int num;
+	dstring_t *ds = NULL;
+
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_name ?gel_number?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 3)
+	    Tcl_GetInt(interp, argv[2], &num);
+	else
+	    num = en->xx->cursorSeq;
+
+	if (NULL != (ds = edGetGelNamesToRight(en->xx, num))) {
+	    Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	    dstring_destroy(ds);
+	} else {
+	    /* otherwise return a blank */
+	    Tcl_ResetResult(interp);
+	}
 
     } else if ('x' == *argv[1] && strcmp(argv[1], "xview") == 0) {
 	int offset, count, type;
