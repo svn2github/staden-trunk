@@ -19,6 +19,10 @@ int break_contig(GapIO *io, int rnum) {
     if (!(reads = (int *)xmalloc((NumReadings(io)+1) * sizeof(int))))
 	return -1;
 
+    vmessage("Breaking contig %s at reading %s\n",
+	     io_rname(io, chain_left(io, rnum)),
+	     io_rname(io, rnum));
+
     /* Produce reading list */
     for (nreads = 0; rnum; rnum = io_rnbr(io, rnum)) {
 	reads[nreads++] = rnum;

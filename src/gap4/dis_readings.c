@@ -353,7 +353,7 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 		io_crnbr(io, cnum) = 0;
 		io_clength(io, cnum) = 0;
 		new_cnum[rnum2cnum[rnum]] = cnum;
-		vmessage("New contig created with left reading %s\n",
+		vmessage("New contig created containing reading %s\n",
 			 io_rname(io, rnum));
 	    }
 
@@ -555,11 +555,12 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	if (new_contig) {
 	    int left_cnum = cnum;
 
+	    vmessage("Breaking contig %s at reading %s\n",
+		     io_rname(io, io_clnbr(io, cnum)),
+		     io_rname(io, rnum));
+
 	    if (-1 == io_init_contig(io, cnum = NumContigs(io)+1))
 		return -1;
-
-	    vmessage("New contig created with left reading %s\n",
-		     io_rname(io, rnum));
 
 	    split_contig_tags(io, left_cnum, cnum, r.position, furthest);
 
