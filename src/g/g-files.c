@@ -169,6 +169,11 @@ GFile *g_open_file(char *fn, int read_only)
 	if ( !read_only || (gfile->fdaux = open(fnaux,O_RDONLY|O_BINARY)) == -1 )
 	    ABORT(GERR_OPENING_FILE);
 
+#if 0
+    /*
+     * WARNING: See warning in gap4/actf.c for why this is a problem and
+     * has been commented out.
+     */
     if (lockf(gfile->fd, F_TEST, 0)) {
 	fprintf(stderr, "*** File %s is locked (inuse) by another process\n",
 		fn);
@@ -180,6 +185,7 @@ GFile *g_open_file(char *fn, int read_only)
     if (!read_only) {
 	lockf(gfile->fd, F_LOCK, 0);
     }
+#endif
 
 
 #ifdef USE_MMAP
