@@ -26,6 +26,7 @@ set_def ALIGNMENT.MATRIX_FILE	$env(STADTABL)/nuc_matrix
 set_def MENU_LEVEL		b
 set_def GENETIC_CODE_DIR	$env(STADTABL)/gcodes
 set_def GENETIC_CODE		$env(STADTABL)/gcodes/code_1
+set_def TEMPLATE_TOLERANCE      1.0
 
 
 #-----------------------------------------------------------------------------
