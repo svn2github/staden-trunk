@@ -9,10 +9,10 @@ all:	zlib png tcl tk itcl iwidgets
 WGET=wget
 
 # For remote via SourceForge
-#SFMIRROR=http://heanet.dl.sourceforge.net/sourceforge
+SFMIRROR=http://heanet.dl.sourceforge.net/sourceforge
 
 # For local copies.
-SFMIRROR=http://intweb/LocalUsers/jkb/sf
+#SFMIRROR=http://intweb/LocalUsers/jkb/sf
 
 #-----------------------------------------------------------------------------
 # generic
@@ -177,8 +177,8 @@ $(TK_SRC)-src.tar.gz:
 
 #-----------------------------------------------------------------------------
 # Incr Tcl
-ITCL_VERS=3.2.1
-ITCL_SRC=itcl$(ITCL_VERS)
+ITCL_VERS=3.3cvs
+ITCL_SRC=itcl-$(ITCL_VERS)
 
 .PHONY: itcl itcl-install itcl-build
 
@@ -195,18 +195,15 @@ itcl-build: $(ITCL_SRC)/.built-$(O)
 $(ITCL_SRC)/.built-$(O): $(ITCL_SRC)/.unpacked
 	-(cd $(ITCL_SRC); $(MAKE) distclean)
 	cd $(ITCL_SRC); \
-	./configure --enable-shared; \
+	sh ./configure --enable-shared; \
 	make
 	touch $@
 
-$(ITCL_SRC)/.unpacked: $(ITCL_SRC)_src.tgz
-	gzip -cd $< | tar xf -
-	ln -s $(ITCL_SRC) itcl
+$(ITCL_SRC)/.unpacked:
+	echo "/1 :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/incrtcl A" > .cvspass; \
+	CVS_PASSFILE=.cvspass cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/incrtcl co -D 2003-12-23 incrTcl
+	mv incrTcl $(ITCL_SRC)
 	touch $@
-
-$(ITCL_SRC)_src.tgz:
-	$(WGET) $(SFMIRROR)/incrtcl/$(ITCL_SRC)_src.tgz
-
 
 #-----------------------------------------------------------------------------
 # Iwidgets
@@ -220,10 +217,10 @@ iwidgets: iwidgets-build iwidgets-install
 iwidgets-install: libdir $(L)/.iwidgets
 
 $(L)/.iwidgets: $(IWIDGETS_SRC)/.built
-	cd $(IWIDGETS_SRC); \
-	make install-libraries
-	-rm lib/iwidgets
-	mv lib/$(IWIDGETS_SRC) lib/iwidgets
+#	cd $(IWIDGETS_SRC); \
+#	make install-libraries
+#	-rm lib/iwidgets
+#	mv lib/$(IWIDGETS_SRC) lib/iwidgets
 	touch $@
 
 iwidgets-build: $(IWIDGETS_SRC)/.built
@@ -231,7 +228,7 @@ iwidgets-build: $(IWIDGETS_SRC)/.built
 $(IWIDGETS_SRC)/.built: $(IWIDGETS_SRC)/.unpacked
 	-(cd $(IWIDGETS_SRC); $(MAKE) distclean)
 	cd $(IWIDGETS_SRC); \
-	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=..; \
+	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=../..; \
 	make
 	touch $@
 
