@@ -48,10 +48,25 @@ int vflen(char *fmt, va_list ap)
 {
     int len = 0;
     char *cp, c;
-
+    va_list ap_local;
     long l;
     int i;
     double d; 
+
+    /*
+     * This code modifies 'ap', but we do not know if va_list is a structure
+     * or a pointer to an array so we do not know if it is a local variable
+     * or not.
+     * C99 gets around this by defining va_copy() to make copies of ap, but
+     * this does not exist on all systems.
+     * For now, I just assume that when va_list is a pointer the system also
+     * provides a va_copy macro to work around this problem. The only system
+     * I have seen needing this so far was Linux on AMD64.
+     */
+#if defined(NEED_VA_COPY)
+    va_copy(ap_local, ap);
+    #define ap ap_local
+#endif
 
     for(cp = fmt; *cp; cp++) {
 	switch(*cp) {
