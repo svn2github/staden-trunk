@@ -766,7 +766,7 @@ proc editor_quit {top ed e object} {
 
     set list [$e get_hidden_reads]
     set list [eval get_read_names -io [$e io] $list]
-    ListCreate2 disassemble $list
+    ListCreate2 disassemble $list SEQID
 
     if {[$e join_mode]} {
 	set perc [$e join_percentage]
@@ -1117,7 +1117,7 @@ proc editor_setlist2 {t l_var l_name} {
 
     set $l_var $l_name
     if {![ListExists2 $l_name]} {
-        ListCreate2 $l_name {}
+        ListCreate2 $l_name {} SEQID
     }
     ListEdit $l_name
     destroy $t
