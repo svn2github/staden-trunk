@@ -1,0 +1,45 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+/* Define as __inline if that's what the C compiler calls it.  */
+#undef inline
+
+/* Define to `int' if <sys/types.h> doesn't define.  */
+#undef mode_t
+
+/* Define if you have the ANSI C header files.  */
+#undef STDC_HEADERS
+
+/* Define if your processor stores words with the most significant
+   byte first (like Motorola and SPARC, unlike Intel and VAX).  */
+#undef WORDS_BIGENDIAN
+
+/* Define if zlib is installed */
+#undef HAVE_ZLIB
+
+/* The number of bytes in a int.  */
+#undef SIZEOF_INT
+
+/* The number of bytes in a long.  */
+#undef SIZEOF_LONG
+
+/* The number of bytes in a short.  */
+#undef SIZEOF_SHORT
+
+/* Define if you have the strdup function.  */
+#undef HAVE_STRDUP
+
+/* Define if you have the <fcntl.h> header file.  */
+#undef HAVE_FCNTL_H
+
+/* Define if you have the <limits.h> header file.  */
+#undef HAVE_LIMITS_H
+
+/* Define if you have the <unistd.h> header file.  */
+#undef HAVE_UNISTD_H
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+
