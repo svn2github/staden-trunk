@@ -9,7 +9,7 @@ SRCROOT=..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 
-CFLAGS += $(SHLIB_CXXFLAGS) $(MISC_DLL)
+CXXFLAGS += $(SHLIB_CXXFLAGS) $(MISC_DLL)
 
 INCLUDES_E += $(MUT_INC) $(SEQUTILS_INC)
 
