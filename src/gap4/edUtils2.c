@@ -323,7 +323,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->show_edits = 0;
     for (i=0; i<4; i++)
 	xx->edit_bg[i] = 0;
-    for (i=0; i<4; i++)
+    for (i=0; i<5; i++)
 	xx->tmpl_bg[i] = 0;
     xx->names_xpos = 0;
     xx->default_conf_r = 100;

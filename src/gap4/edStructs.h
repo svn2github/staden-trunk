@@ -286,7 +286,7 @@ typedef struct _EdStruct {
     editor_sort_t group_mode;	/* Sorting for seqs: template, name, strand..*/
     int show_edits;		/* Do we highlight edits? */
     int edit_bg[4];		/* Colours for edit types */
-    int tmpl_bg[4];		/* Colours for edit types */
+    int tmpl_bg[5];		/* Colours for template statuses */
     cursor_t *cursor;		/* Cursor structure */
     int names_xpos;		/* X position of names display */
     int default_conf_r;		/* Confidence for replace bases, -1 for old */

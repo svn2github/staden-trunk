@@ -310,6 +310,7 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
 	-tmplcolour1 [keylget gap_defs CONTIG_EDITOR.TEMP_STRAND_COLOUR] \
 	-tmplcolour2 [keylget gap_defs CONTIG_EDITOR.TEMP_PRIM_COLOUR] \
 	-tmplcolour3 [keylget gap_defs CONTIG_EDITOR.TEMP_OTHER_COLOUR] \
+	-tmplcolour4 [keylget gap_defs CONTIG_EDITOR.TEMP_END_COLOUR] \
 	-max_height  $max_height \
 	-bg [tk::Darken [. cget -bg] 115]
 
@@ -2375,9 +2376,9 @@ bind EdNames <Shift-Motion>	{;}
 bind EdNames <Control-Key-h>	{[edname_to_editor %W] hide_read}
 
 # 'Named key' bindings. Use catch incase they do not exist on all systems.
-catch {bind Editor <Key-Next>	{create_search_win %W.search "%W search" 1}}
-catch {bind Editor <Key-Prior>	{create_search_win %W.search "%W search" -1}}
-catch {bind Editor <Key-Find>	{create_search_win %W.search "%W search" 1}}
+catch {bind Editor <Key-Next>	{create_search_win %W.search "%W search"  1 0}}
+catch {bind Editor <Key-Prior>	{create_search_win %W.search "%W search" -1 0}}
+catch {bind Editor <Key-Find>	{create_search_win %W.search "%W search"  1 0}}
 catch {bind Editor <Key-Begin>	{%W read_start}}
 catch {bind Editor <Key-Home>	{%W read_start}}
 catch {bind Editor <Key-End>	{%W read_end}}

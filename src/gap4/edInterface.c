@@ -1877,10 +1877,12 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 
 		case 'c':
 		    {
-			int tstat;
+			int tstat, guessed;
 			char buf[10];
 
 			tstat = tc ? tc->consistency : TEMP_CONSIST_UNKNOWN;
+			guessed = tc->flags & (TEMP_FLAG_GUESSED_START |
+					       TEMP_FLAG_GUESSED_END);
 
 			if (raw) {
 			    add_number(status_buf, &j, l1, l2, tstat);
@@ -1896,7 +1898,9 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 			    strcat(buf, "S");
 			if (tstat & TEMP_CONSIST_UNKNOWN)
 			    strcat(buf, "?");
-			if (!tstat)
+			if (guessed)
+			    strcat(buf, "E");
+			if (!tstat && !guessed)
 			    strcat(buf, "ok");
 			add_string(status_buf, &j, l1, l2, buf);
 		    }
@@ -2739,4 +2743,3 @@ void edNextDifference(EdStruct *xx, int fwd) {
     if (con2)
 	xfree(con2);
 }
-

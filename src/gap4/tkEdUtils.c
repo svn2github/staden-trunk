@@ -681,23 +681,29 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	 */
 	{
 	    int tnum = DBI(xx)->DB[seqList[k]].template;
-	    if (DBI(xx)->templates[tnum] &&
-		DBI(xx)->templates[tnum]->consistency) {
-		nsplodge[DB_GELNOLEN+1].sh |= sh_bg;
-		switch (DBI(xx)->templates[tnum]->consistency) {
-		case TEMP_CONSIST_DIST:
-		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[0];
-		    break;
-		case TEMP_CONSIST_STRAND:
-		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[1];
-		    break;
-		case TEMP_CONSIST_PRIMER:
-		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[2];
-		    break;
-		default:
-		    /* Multiple problems */
-		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[3];
-		    break;
+	    if (DBI(xx)->templates[tnum]) {
+		if (DBI(xx)->templates[tnum]->consistency) {
+		    nsplodge[DB_GELNOLEN+1].sh |= sh_bg;
+		    switch (DBI(xx)->templates[tnum]->consistency) {
+		    case TEMP_CONSIST_DIST:
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[0];
+			break;
+		    case TEMP_CONSIST_STRAND:
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[1];
+			break;
+		    case TEMP_CONSIST_PRIMER:
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[2];
+			break;
+		    default:
+			/* Multiple problems */
+			nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[3];
+			break;
+		    }
+		} else if (DBI(xx)->templates[tnum]->flags &
+			   (TEMP_FLAG_GUESSED_END |
+			    TEMP_FLAG_GUESSED_START)) {
+		    nsplodge[DB_GELNOLEN+1].sh |= sh_bg;
+		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[4];
 		}
 	    }
 	}
