@@ -245,7 +245,8 @@ man:	man/man1/makeSCF.1 man/man1/eba.1 man/man1/makeSCF.1 \
 	man/man4/ExperimentFile.4 \
 	man/man1/extract_seq.1 man/man1/copy_db.1 \
 	man/man4/ztr.4 man/man1/convert_trace.1 \
-	man/man1/find_renz.1 man/man1/get_comment.1
+	man/man1/find_renz.1 man/man1/get_comment.1 \
+	man/man1/getABIfield.1 man/man1/trace_dump.1
 
 # For distributions
 gzip:
