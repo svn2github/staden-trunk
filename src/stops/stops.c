@@ -2,6 +2,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <math.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <string.h>
 
 #include "Read.h"
 #include "misc.h"
@@ -61,7 +65,7 @@ static int find_highest_peak(params *p, int *peaks, int len, int *avg_height) {
 }
 
 #define PI 3.1415926535897932
-int scan_right(char *name, params *p, int *peaks, int start_pos,
+int scan_right(char *name, params *p, int *peaks, char *seq, int start_pos,
 	       int highest, int len, int level) {
     int i;
     int lowest_total;
@@ -188,15 +192,16 @@ int scan_right(char *name, params *p, int *peaks, int start_pos,
 	     */
 	    p->window_len = newwin;
 	    refinedpos = scan_right(name, p, peaks,
+				    seq,
 				    peakpos[i]-oldwin/2,
 				    highest, peakpos[i]+oldwin/2, 1);
 	    p->window_len = oldwin;
 	    if (!refinedpos)
 		refinedpos = peakpos[i];
-
-	    printf("%s Peak %d at %d / %d height %f\n",
-		   name, i, refinedpos+1, peakpos[i]+1, peakval[i]);
-
+	    printf("%s Peak %d at %d / %d height %f %.*s\n",
+		   name, i, refinedpos+1, peakpos[i]+1, peakval[i],
+		   peakpos[i]-MAX(0,peakpos[i]-20),
+		   &seq[MAX(0,peakpos[i]-20)]);
 	}
     }
 
@@ -266,7 +271,8 @@ static int find_stops(Read *r, params *p) {
     pos = find_highest_peak(p, peaks, r->NBases, &maxheight);
     if (p->verbose)
 	printf("max height (avg over winlen) = %d\n", maxheight);
-    pos = scan_right(r->trace_name, p, peaks, pos, maxheight, r->NBases, 0);
+    pos = scan_right(r->trace_name, p, peaks, r->base, pos,
+		     maxheight, r->NBases, 0);
 
     xfree(peaks);
 
@@ -284,6 +290,53 @@ static void usage(void) {
 	    "  ( Eg. stops -w 100 -t 4.0 *SCF )\n");
     exit(1);
 }
+
+int do_file(params *p, char *fn) {
+    Read *r;
+    int ret_val;
+
+    if (p->verbose)
+	printf("Processing %s\n", fn);
+
+    if (!(r = read_reading(fn, TT_ANY))) {
+	fprintf(stderr, "Couldn't read '%s'\n", fn);
+	return -1;
+    }
+
+    ret_val = find_stops(r, p);
+    read_deallocate(r);
+    
+    return ret_val >= 0 ? 0 : -1;
+}
+
+int do_directory(params *p, char *fn) {
+    DIR *dir;
+    struct dirent *ent;
+    int retval = 0;
+    
+    if (NULL == (dir = opendir(fn)))
+	return -1;
+
+    while (ent = readdir(dir)) {
+	/* ent->d_namelen is unportable */
+	size_t namlen = strlen(ent->d_name);
+	/* Only process files ending in known extensions */
+	if (strcasecmp(&ent->d_name[namlen-3], "SCF") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "scf") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "ZTR") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "ztr") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "ABI") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "abi") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "AB1") == 0 ||
+	    strcasecmp(&ent->d_name[namlen-3], "ab1") == 0) {
+	    retval |= do_file(p, ent->d_name);
+	}
+    }
+    closedir(dir);
+
+    return retval;
+}
+	
 
 int main(int argc, char **argv) {
     int c, i, ret = 0;
@@ -323,21 +376,18 @@ int main(int argc, char **argv) {
 
     for (i = optind; i < argc; i++) {
 	int ret_val;
-	Read *r;
+	struct stat sb;
 
-	if (p.verbose)
-	    printf("Processing %s\n", argv[i]);
-
-	if (!(r = read_reading(argv[i], TT_ANY))) {
-	    fprintf(stderr, "Couldn't read '%s'\n", argv[i]);
+	if (-1 == stat(argv[i], &sb)) {
+	    perror(argv[i]);
 	    continue;
 	}
 
-	ret_val = find_stops(r, &p);
-	if (ret_val >= 0)
-	    ret_val = 0;
-
-	read_deallocate(r);
+	if (S_ISDIR(sb.st_mode)) {
+	    ret_val = do_directory(&p, argv[i]);
+	} else {
+	    ret_val = do_file(&p, argv[i]);
+	}
 
 	ret |= ret_val;
     }
