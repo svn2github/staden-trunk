@@ -337,6 +337,8 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 	for (i = 0; i < nreads; i++) {
 	    remove_and_swap_reading(io, rnums[i], rnum2cnum, rnum_changed);
 	}
+	/* Update global GDatabase record to update num_readings */
+	GT_Write(io,GR_Database,&io->db,sizeof(io->db),GT_Database);
     } else {
 	/* split into single-read contigs or move as a whole to new contig */
 	for (i = 0; i < nreads; i++) {
