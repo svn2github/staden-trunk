@@ -1,3 +1,171 @@
+2004-03-03  jkbonfield  <jkbonfield>
+
+	* src/gap4/IO.c:
+	(14:54:03) Recent fix to open_db broke creation of new databases.
+	Now check that the failure code from access() is EACCES and not
+	ENOENT. 
+
+	* src/mutlib/Makefile,
+	* src/mutlib/align.cpp,
+	* src/mutlib/array.hpp,
+	* src/mutlib/caller.cpp,
+	* src/mutlib/list.hpp,
+	* src/mutlib/matrix.hpp,
+	* src/mutlib/mutationtag.cpp,
+	* src/mutlib/mutscan.cpp,
+	* src/mutlib/mutscan_analysis.cpp,
+	* src/mutlib/mutscan_helper.cpp,
+	* src/mutlib/mutscan_preprocess.cpp,
+	* src/mutlib/muttag.cpp,
+	* src/mutlib/parameter.hpp,
+	* src/mutlib/sp_align_lib.cpp,
+	* src/mutlib/sp_matrix.cpp,
+	* src/mutlib/stringlist.cpp,
+	* src/mutlib/trace.cpp,
+	* src/mutlib/trace.hpp,
+	* src/mutlib/tracealign.cpp,
+	* src/mutlib/tracealign_helper.cpp,
+	* src/mutlib/tracediff.cpp:
+	(17:02:25) Updates to work with "Compaq C++ V6.5-035".
+	Specifically: Use <locale> instead of <cctype> for toupper. Use
+	assert(pointer != NULL) instead of assert(pointer). 
+
+	* src/mutscan/Makefile:
+	(17:03:09) Added Tk to link line. 
+
+	* src/mutscan/main.cpp,
+	* src/mutscan/stringlist.cpp:
+	(17:04:03) Use assert(pointer != NULL) instead of assert(pointer)
+	to remove warnings from the Compaq C++ V6.5-035 compiler. 
+
+	* src/tracediff/main.cpp:
+	(17:04:24) Use assert(pointer != NULL) instead of assert(pointer)
+	to remove warnings from the Compaq C++ V6.5-035 compiler. 
+
+	* src/io_lib/ztr/ztr_translate.c:
+	(17:45:52) Treat Read->basePos as 16-bit, which means hard-coding
+	the first two bytes in ztr_encode_positions for each pos as zero. 
+
+	* src/Misc/dstring.c:
+	(17:46:48) "int" vs "size_t" so we can check the -1 return code
+	from dstring_find(). 
+
+	* src/g/g-request.c:
+	(17:47:42) Remove compiler warning by using appropriate signness
+	check in next_edtime(). 
+
+	* src/gap4/IO2.h,
+	* src/gap4/qualIO.c:
+	(17:48:26) Corrected missing prototypes. 
+
+	* src/gap4/clip.c:
+	(17:48:54) Corrected missing prototypes. 
+
+	* src/gap4/contig_selector.c,
+	* src/gap4/template_display.c:
+	(17:51:04) The check for a tag type being known when picking the
+	colour to draw (wrongly) always succeeded, but it chose the default
+	colour anyway. Now the check has been removed, as the default
+	colour is an appropriate method. (ie just a compiler warning
+	removal.) 
+
+	* src/gap4/gap.tcl:
+	(17:51:33) Version incr. 
+
+	* src/gap4/io_utils.h:
+	(17:52:35) Prevent compiler warnings caused by the gel_read macro
+	always returning 0 (success), but being used in an "if
+	(gel_read...)" context. Added a check for gelnum > 0 in order to
+	provide a valid return code for the macro. 
+
+	* src/gap4/join.c:
+	(17:53:25) Fixed memory leak (not calling destroy_alignment_params)
+	and reordered code slightly to remove an inconsequential compiler
+	warning. 
+
+	* src/mk/alpha.mk:
+	(17:54:07) Changed default compilers to the Compaq cc/cxx/f77. 
+
+	* src/tk_utils/tkTrace.c:
+	(17:55:41) Use system installed png.h instead of local hack. 
+
+	* src/tk_utils/Attic/png.h:
+	(17:56:28) Removed to allow system version to be picked up. 
+
+2004-03-02  jkbonfield  <jkbonfield>
+
+	* src/gap4/IO.c:
+	(17:26:01) Fix log files. Do not generate when the DB does not
+	exist. Works better in read-only directories. 
+
+2004-03-01  jkbonfield  <jkbonfield>
+
+	* src/tk_utils/help_choose.tcl,
+	* src/tk_utils/html_library.tcl:
+	(10:30:28) The help_choose mechanism was broken due to having all
+	the help_* files listed in the tclIndex. tcl-internal now also
+	works too (removed the tkFocusOK function which was causing a
+	auto-load loop as the official one is now ::tk::FocusOK; I do not
+	think we needed the modified version anyway). 
+
+	* src/tk_utils/tclIndex:
+	(10:30:29) The help_choose mechanism was broken due to having all
+	the help_* files listed in the tclIndex. tcl-internal now also
+	works too (removed the tkFocusOK function which was causing a
+	auto-load loop as the official one is now ::tk::FocusOK; I do not
+	think we needed the modified version anyway). 
+
+2004-02-27  jkbonfield  <jkbonfield>
+
+	* src/g/g-files.c:
+	(16:56:01) On the first database write after a flush Gap4 will
+	check the global time stamp in the Aux header to make sure that the
+	disk copy matches it's own cached in-mory copy.
+	
+	The rationale behind this is that users still manually remove the
+	BUSY file because "they know best". They then act all suprised when
+	their database becomes corrupt. Our alternative here is to check
+	the master time-stamp in the Aux header and to simply abort Gap4
+	(losing all unsaved edits) if it has been changed external to this
+	process.
+	
+	This still leaves room for race conditions (multiple people editing
+	simultaenously), but it covers the more common case of a gap4
+	session left open for ages and then going back to it later. 
+
+	* src/g/g-files.h,
+	* src/g/g-request.c,
+	* src/g/g-struct.c,
+	* src/g/g-struct.h:
+	(16:56:02) On the first database write after a flush Gap4 will
+	check the global time stamp in the Aux header to make sure that the
+	disk copy matches it's own cached in-mory copy.
+	
+	The rationale behind this is that users still manually remove the
+	BUSY file because "they know best". They then act all suprised when
+	their database becomes corrupt. Our alternative here is to check
+	the master time-stamp in the Aux header and to simply abort Gap4
+	(losing all unsaved edits) if it has been changed external to this
+	process.
+	
+	This still leaves room for race conditions (multiple people editing
+	simultaenously), but it covers the more common case of a gap4
+	session left open for ages and then going back to it later. 
+
+	* src/g/g-files.c:
+	(16:57:45) Removed debugging message. 
+
+2004-02-26  James Bonfield  <jkbonfield>
+
+	* src/gap4/fij.tcl,
+	* src/gap4/fij.c,
+	* src/gap4/fij.h,
+	* src/gap4/do_fij.c,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	Added an option to control the maximum alignment length displayed
+	from find internal joins (in the text output window).
+
 2004-02-24  James Bonfield <jkbonfield>
 
 	* src/gap4/gap-error.c:
