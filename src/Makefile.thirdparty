@@ -195,7 +195,7 @@ itcl-build: $(ITCL_SRC)/.built-$(O)
 $(ITCL_SRC)/.built-$(O): $(ITCL_SRC)/.unpacked
 	-(cd $(ITCL_SRC); $(MAKE) distclean)
 	cd $(ITCL_SRC); \
-	sh ./configure --enable-shared; \
+	sh ./configure --enable-shared --with-itcl=`pwd`/itcl; \
 	make
 	touch $@
 
@@ -228,6 +228,7 @@ iwidgets-build: $(IWIDGETS_SRC)/.built
 $(IWIDGETS_SRC)/.built: $(IWIDGETS_SRC)/.unpacked
 	-(cd $(IWIDGETS_SRC); $(MAKE) distclean)
 	cd $(IWIDGETS_SRC); \
+	touch ../$(ITCL_SRC)/config/mkinstalldirs; \
 	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=../..; \
 	make
 	touch $@
