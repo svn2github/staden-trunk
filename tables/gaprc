@@ -27,6 +27,9 @@ set_def MENU_LEVEL		b
 set_def GENETIC_CODE_DIR	$env(STADTABL)/gcodes
 set_def GENETIC_CODE		$env(STADTABL)/gcodes/code_1
 set_def TEMPLATE_TOLERANCE      1.0
+set_def MIN_VECTOR_LENGTH	0
+set_def IGNORE_ALL_PTYPE	0
+set_def IGNORE_CUSTOM_PTYPE	0
 
 
 #-----------------------------------------------------------------------------
