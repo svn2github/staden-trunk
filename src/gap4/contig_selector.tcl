@@ -761,6 +761,43 @@ proc PrintCSTagDetails { io canvas current } {
 }
 
 ##############################################################################
+#Edit the contig at the location of a tag
+proc EditCSTagDetails { io canvas current } {
+    set c_num [GetContigNum $canvas $current]
+    if {$c_num == 0} {
+        bell;
+        return
+    }
+
+    set t_num 0
+    set r_num 0
+    puts tags=[$canvas gettags $current]
+    foreach tag [$canvas gettags $current] {
+	if {[string match t_* $tag]} {
+	    set t_num [string trim $tag t_]
+	}
+	if {[string match rnum_* $tag]} {
+	    set r_num [string trim $tag rnum_]
+	}
+    }
+    set a [io_read_annotation $io $t_num]
+
+    set t_pos [keylget a position]
+    if {$r_num != 0} {
+	set r [io_read_reading $io $r_num]
+	if {[keylget r sense] == 0} {
+	    set t_pos [expr {[keylget r position]+$t_pos-[keylget r start]-1}]
+	} else {
+	    set t_pos [expr {[keylget r position]+[keylget r length]-
+			     ($t_pos + [keylget a length]-1) -
+			     [keylget r start]}]
+	}
+    }
+    
+    edit_contig -io $io -contig [left_gel $io $c_num] -pos $t_pos
+}
+
+##############################################################################
 #update the contig identifier box from the current contig in the contig
 #selector
 proc UpdateContigId { io cs_h current } {
@@ -778,6 +815,9 @@ proc PopUpCSTagMenu {io canvas current X Y} {
     $canvas.m add command -label information \
 	    -command "destroy $canvas.m; \
 	    PrintCSTagDetails $io $canvas $current"
+    $canvas.m add command -label "Edit contig at tag" \
+	    -command "destroy $canvas.m; \
+	    EditCSTagDetails $io $canvas $current"
     tk_popup $canvas.m [expr $X-20] [expr $Y-10]
 
 }

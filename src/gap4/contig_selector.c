@@ -546,15 +546,16 @@ DrawCSTags(Tcl_Interp *interp,                                       /* in */
 	   int offset,
 	   char *win_name,
 	   int width,
-	   int contig_num)
+	   int contig_num,
+	   int read_num)
 {
-    char type[30];
+    char type[100];
     char *colour = tag_db[0].bg_colour;
     char cmd[1024], str[5];
     int k;                                                       /* counter */
 
-    sprintf(type, "{tag %s t_%d num_%d}",
-	    type2str(annotation->type,str), tag_num, contig_num);
+    sprintf(type, "{tag %s t_%d num_%d rnum_%d}",
+	    type2str(annotation->type,str), tag_num, contig_num, read_num);
 
     /* find tag colour in tag_db */
     for (k = 0; k < tag_db_count; k++){
@@ -704,7 +705,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 		if (x2 >= x1) {
 		    DrawCSTags(interp, x1, x2, tag_num, annotation,
 			       cs->tag.offset,
-			       cs->hori, cs->tag.width, c_num);
+			       cs->hori, cs->tag.width, c_num, r_num);
 		}
 		annotation = get_tag_num(io, 0, num_tags, tag_types, &tag_num);
 	    } /* end while */
@@ -721,7 +722,7 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
 	    CalcXCoords(tag_pos, annotation->length, &x1, &x2);
 
 	    DrawCSTags(interp, x1, x2, tag_num, annotation, cs->tag.offset+20,
-		       cs->hori, cs->tag.width, c_num);
+		       cs->hori, cs->tag.width, c_num, 0);
 	    annotation = get_tag_num(io, 0, num_tags, tag_types, &tag_num);
 
 	} /* end while */
