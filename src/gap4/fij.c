@@ -127,14 +127,14 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 		     obj->pos2 >= io_clength(fij->io, ABS(obj->c2))) ? 1 : 0;
 
 	    edit_contig(GetInterp(), fij->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, reveal);
+			consensus_cutoff, quality_cutoff, reveal, NULL);
 
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(fij->io, cnum);
 	    pos   = obj->pos2;
 
 	    edit_contig(GetInterp(), fij->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, reveal);
+			consensus_cutoff, quality_cutoff, reveal, NULL);
 	    break;
 	}
 

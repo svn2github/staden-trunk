@@ -417,7 +417,8 @@ void *checkass_obj_func(int job, void *jdata, obj_checkass *obj,
 		move_editor(id, llino, pos);
 	    } else {
 		edit_contig(GetInterp(), ca->io, cnum, llino, pos,
-			    consensus_cutoff, quality_cutoff, ca->cutoffs);
+			    consensus_cutoff, quality_cutoff, ca->cutoffs, 
+			    NULL);
 	    }
 	    break;
 	}

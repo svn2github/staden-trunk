@@ -120,14 +120,14 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	    pos   = obj->pos1;
 
 	    edit_contig(GetInterp(), repeat->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0);
+			consensus_cutoff, quality_cutoff, 0, NULL);
 
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(repeat->io, cnum);
 	    pos   = obj->pos2;
 
 	    edit_contig(GetInterp(), repeat->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0);
+			consensus_cutoff, quality_cutoff, 0, NULL);
 	    break;
 	}
 
@@ -446,7 +446,6 @@ find_repeats(GapIO *io,
 			  consensus_cutoff ) ) {
 	goto bail_out;
     }
-
 
     ret =  repeat_search (
 			      mode, min_match, &sav4, &sav2, &sav5, max_matches,

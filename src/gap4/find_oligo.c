@@ -129,14 +129,14 @@ void *find_oligo_obj_func1(int job,
 	    pos   = obj->pos1;
 
 	    edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0);
+			consensus_cutoff, quality_cutoff, 0, NULL);
 
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(find_oligo->io, cnum);
 	    pos   = obj->pos2;
 
 	    edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0);
+			consensus_cutoff, quality_cutoff, 0, NULL);
 	    break;
 	}
 
@@ -216,7 +216,7 @@ void *find_oligo_obj_func2(int job,
 
 	    if ((id = editor_available(cnum, 1)) == -1) {
 		edit_contig(GetInterp(), find_oligo->io, cnum, llino, pos,
-			    consensus_cutoff, quality_cutoff, 0);
+			    consensus_cutoff, quality_cutoff, 0, NULL);
 	    }
 	    if ((id = editor_available(cnum, 1)) != -1) {
 		move_editor(id, llino, pos);
