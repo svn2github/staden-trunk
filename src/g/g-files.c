@@ -27,6 +27,15 @@
  * exist yet).
  * The results were small (10%) when the data is cached, but in the more
  * normal case (no cached data) the speed difference is negligible.
+ *
+ * Tested on linux on a LARGE (EIMER1: approx 900Mb) it was taking
+ * 8mins real time to open and 25secs CPU time without MMAP
+ * and 4.5mins/12sec with MMAP.
+ *
+ * This test database was largely fragmented though. After a copy_db the times
+ * changed to 1m50s/18s w/o MMAP, ~2min/13s with MMAP.
+ * Hence it seems the MMAP benefit is better solved by using copy_db to
+ * "defrag" the database.
  */
 #ifdef USE_MMAP
 #include <sys/mman.h>
@@ -193,7 +202,7 @@ GFile *g_open_file(char *fn, int read_only)
 
 	stat(fn, &sb);
 	gfile->fdmap = (char *)mmap(NULL, sb.st_size, PROT_READ,
-				    MAP_FILE | MAP_FIXED | MAP_SHARED,
+				    MAP_FILE | /* MAP_FIXED | */ MAP_SHARED,
 				    gfile->fd, 0);
     }
 #endif
