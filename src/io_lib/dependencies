@@ -57,7 +57,7 @@ $O/scf/read_scf.o: utils/mach-io.h $(SRCROOT)/Misc/xalloc.h include/compress.h
 $O/scf/write_scf.o: $(SRCROOT)/Misc/os.h utils/mach-io.h $(SRCROOT)/Misc/xalloc.h
 $O/scf/write_scf.o: include/scf.h
 $O/utils/compress.o: $(SRCROOT)/Misc/os.h
-$O/utils/compress.o: include/compress.h
+$O/utils/compress.o: include/compress.h include/zlib.h include/zconf.h
 $O/utils/find.o: $(SRCROOT)/Misc/misc.h
 $O/utils/find.o: $(SRCROOT)/Misc/xalloc.h
 $O/utils/find.o: $(SRCROOT)/Misc/os.h

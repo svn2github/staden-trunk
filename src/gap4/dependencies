@@ -6,13 +6,13 @@ $O/IO.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-filedefs
 $O/IO.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/IO.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/IO.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h tagDefs.h
-$O/IO.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/IO.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/IO.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/IO.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/IO.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/IO.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/IO.o: $(SRCROOT)/tk_utils/licence.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/g/g-error.h gap-if.h $(SRCROOT)/g/g-os.h
 $O/IO.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
 $O/IO.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
-$O/IO.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/IO.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/IO.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/IO.o: fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/IO.o: gap-dbstruct.h gap-create.h gap-io.h gap-error.h IO.h io_handle.h
@@ -26,13 +26,13 @@ $O/IO2.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/IO2.o: $(SRCROOT)/io_lib/include/scf_extras.h $(SRCROOT)/Misc/FtoC.h contig_selector.h
 $O/IO2.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/IO2.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/IO2.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/IO2.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/IO2.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/IO2.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/IO2.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/IO2.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/IO2.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h
 $O/IO2.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
 $O/IO2.o: IO.h
-$O/IO2.o: fort.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/IO2.o: fort.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/IO2.o: IO2.h tagUtils.h edStructs.h $(SRCROOT)/Misc/xalloc.h
 $O/IO2.o: primlib.h
 $O/IO2.o: cs-object.h $(SRCROOT)/tk_utils/canvas_box.h clones.h
@@ -43,14 +43,14 @@ $O/IO2.o: tagDefs.h fortran.h $(SRCROOT)/Misc/misc.h gap-create.h
 $O/IO2.o: template.h list.h undo.h edUtils.h qual.h tman_display.h
 $O/IO3.o: $(SRCROOT)/Misc/dstring.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/IO3.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/IO3.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/IO3.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/IO3.o: $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/IO3.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/IO3.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/IO3.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/IO3.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/IO3.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/IO3.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/IO3.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/IO3.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/IO3.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/IO3.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
 $O/IO3.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/IO3.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
@@ -63,21 +63,21 @@ $O/IO3.o: io-reg.h
 $O/IO3.o: io_handle.h io_utils.h
 $O/IO3.o: template.h list.h undo.h tagUtils.h tagDefs.h fortran.h
 $O/actf.o: $(SRCROOT)/Misc/misc.h actf.h $(SRCROOT)/tk_utils/text_output.h
-$O/actf.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/actf.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h $(SRCROOT)/Misc/xalloc.h
-$O/actf.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/actf.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/actf.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h $(SRCROOT)/Misc/xalloc.h
+$O/actf.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/actf.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/actf.o: fort.h $(SRCROOT)/Misc/os.h
 $O/actf.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
 $O/actf.o: io_utils.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/active_tags.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/active_tags.o: $(SRCROOT)/Misc/dstring.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
-$O/active_tags.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/active_tags.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/active_tags.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/active_tags.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/active_tags.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/active_tags.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h contigEditor.h
-$O/active_tags.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tk8.4.0/generic/tkDecls.h fort.h
+$O/active_tags.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h contigEditor.h
+$O/active_tags.o: $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tk8.4.6/generic/tkDecls.h fort.h
 $O/active_tags.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h
 $O/active_tags.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/active_tags.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
@@ -86,12 +86,23 @@ $O/active_tags.o: list_proc.h io_utils.h
 $O/active_tags.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/active_tags.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/active_tags.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/active_tags.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/active_tags.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/active_tags.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/active_tags.o: edStructs.h $(SRCROOT)/Misc/xalloc.h tkEditor.h
 $O/active_tags.o: tagdb.h
 $O/active_tags.o: tkEdNames.h io-reg.h
 $O/active_tags.o: undo.h edUtils.h qual.h tagUtils.h tagDefs.h fortran.h
+$O/allelic_discreps.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
+$O/allelic_discreps.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
+$O/allelic_discreps.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/allelic_discreps.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/allelic_discreps.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/allelic_discreps.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/allelic_discreps.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
+$O/allelic_discreps.o: qual.h gap_globals.h
+$O/allelic_discreps.o: IO.h
+$O/allelic_discreps.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
+$O/allelic_discreps.o: template.h list.h allelic_discreps.h $(SRCROOT)/Misc/dstring.h
 $O/alter_rel.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/alter_rel.o: $(SRCROOT)/Misc/xalloc.h gap-error.h fort.h
 $O/alter_rel.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
@@ -99,10 +110,10 @@ $O/alter_rel.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace
 $O/alter_rel.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/alter_rel.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h qual.h
 $O/alter_rel.o: $(SRCROOT)/primer3/src/primer3.h
-$O/alter_rel.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/alter_rel.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/alter_rel.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/alter_rel.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/alter_rel.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/alter_rel.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/alter_rel.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/alter_rel.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/alter_rel.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h
 $O/alter_rel.o: $(SRCROOT)/tk_utils/sheet.h
 $O/alter_rel.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h primlib.h
@@ -113,7 +124,7 @@ $O/alter_rel.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/alter_rel.o: alter_rel.h $(SRCROOT)/Misc/misc.h
 $O/alter_rel.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/alter_rel.o: tagDefs.h fortran.h dis_readings.h
-$O/alter_rel.o: tagUtils.h edStructs.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/alter_rel.o: tagUtils.h edStructs.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/alter_rel.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/assemble_direct.o: $(SRCROOT)/Misc/bitmap.h
 $O/assemble_direct.o: $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
@@ -127,15 +138,15 @@ $O/assemble_direct.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edU
 $O/assemble_direct.o: $(SRCROOT)/primer3/src/primer3.h
 $O/assemble_direct.o: $(SRCROOT)/seq_utils/align_lib_old.h seqInfo.h
 $O/assemble_direct.o: $(SRCROOT)/seq_utils/dna_utils.h clones.h notes.h dis_readings.h
-$O/assemble_direct.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/assemble_direct.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/assemble_direct.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/assemble_direct.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/assemble_direct.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/assemble_direct.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/assemble_direct.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/assemble_direct.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/assemble_direct.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/assemble_direct.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tk_utils/text_output.h IO2.h
 $O/assemble_direct.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/assemble_direct.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/assemble_direct.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/assemble_direct.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/assemble_direct.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/assemble_direct.o: primlib.h
 $O/assemble_direct.o: assemble_direct.h $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/misc.h
@@ -146,9 +157,9 @@ $O/assemble_direct.o: tagUtils.h edStructs.h fort.h tkEditor.h
 $O/assemble_direct.o: tkEdNames.h io-reg.h
 $O/auto_assemble.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/auto_assemble.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/auto_assemble.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/auto_assemble.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h
-$O/auto_assemble.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/auto_assemble.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/auto_assemble.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h
+$O/auto_assemble.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/auto_assemble.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/auto_assemble.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/auto_assemble.o: list_proc.h
@@ -156,10 +167,10 @@ $O/auto_assemble.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(S
 $O/auto_assemble.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h fort.h complement.h
 $O/auto_assemble.o: io_utils.h IO.h $(SRCROOT)/g/g-defs.h
 $O/break_contig.o: $(SRCROOT)/Misc/array.h
-$O/break_contig.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/break_contig.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/break_contig.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/break_contig.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
 $O/break_contig.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
-$O/break_contig.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/break_contig.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/break_contig.o: io-reg.h
 $O/break_contig.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/break_contig.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
@@ -168,14 +179,14 @@ $O/break_contig.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/break_contig.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/bubbl3.o: $(SRCROOT)/Misc/os.h
 $O/check_assembly.o: $(SRCROOT)/Misc/array.h
-$O/check_assembly.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/check_assembly.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/check_assembly.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/check_assembly.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/check_assembly.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h
 $O/check_assembly.o: $(SRCROOT)/primer3/src/primer3.h
 $O/check_assembly.o: $(SRCROOT)/seq_utils/align_lib_old.h contig_selector.h
-$O/check_assembly.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/check_assembly.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/check_assembly.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/check_assembly.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/check_assembly.o: $(SRCROOT)/tk_utils/canvas_box.h contigEditor.h
 $O/check_assembly.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/check_assembly.o: $(SRCROOT)/tk_utils/sheet.h
@@ -184,9 +195,9 @@ $O/check_assembly.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tclXk
 $O/check_assembly.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h primlib.h
 $O/check_assembly.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/check_assembly.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
-$O/check_assembly.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/check_assembly.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/check_assembly.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
-$O/check_assembly.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/check_assembly.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/check_assembly.o: qual.h $(SRCROOT)/seq_utils/align.h
 $O/check_assembly.o: io-reg.h
 $O/check_assembly.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
@@ -199,22 +210,22 @@ $O/check_assembly.o: tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h
 $O/check_assembly.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/clip.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/clip.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
-$O/clip.o: $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
+$O/clip.o: $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h dis_readings.h
 $O/clip.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/tk_utils/tcl_utils.h clip.h IO.h $(SRCROOT)/g/g-defs.h
 $O/clip.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h io_handle.h
 $O/clip.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/clip.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/clip.o: $(SRCROOT)/seq_utils/dna_utils.h tagUtils.h edStructs.h fort.h tkEditor.h
-$O/clip.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/clip.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/clip.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/clip.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/clip.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/clip.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/clip.o: $(SRCROOT)/tk_utils/sheet.h
 $O/clip.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
 $O/clip.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/clip.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/clip.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h
 $O/clip.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h qual.h
-$O/clip.o: gap_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/clip.o: gap_globals.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/clip.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/clip.o: edUtils.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/clip.o: io_utils.h
@@ -223,31 +234,31 @@ $O/clones.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-erro
 $O/clones.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/compress.h
 $O/clones.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h qual.h
 $O/clones.o: $(SRCROOT)/primer3/src/primer3.h
-$O/clones.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/clones.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/clones.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/clones.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/clones.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/clones.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/clones.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/clones.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/clones.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h tagUtils.h
+$O/clones.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h tagUtils.h
 $O/clones.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/clones.o: seqInfo.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/clones.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/clones.o: gap-defaults.h IO.h $(SRCROOT)/g/g-defs.h
 $O/clones.o: primlib.h
-$O/clones.o: clones.h notes.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/clones.o: clones.h notes.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/clones.o: edStructs.h $(SRCROOT)/Misc/xalloc.h fort.h tkEditor.h
 $O/clones.o: io_handle.h io_utils.h
 $O/clones.o: tkEdNames.h io-reg.h
 $O/clones.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/complement.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/complement.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/complement.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/complement.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/complement.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/complement.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/complement.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/complement.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/complement.o: $(SRCROOT)/tk_utils/cli_arg.h io-reg.h
-$O/complement.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/complement.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h IO.h
+$O/complement.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/complement.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h IO.h
 $O/complement.o: $(SRCROOT)/tk_utils/tcl_utils.h fort.h
 $O/complement.o: complement.h gap_cli_arg.h
 $O/complement.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
@@ -257,15 +268,15 @@ $O/complement.o: list_proc.h
 $O/confidence_graph.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/confidence_graph.o: $(SRCROOT)/Misc/xalloc.h confidence_graph.h
 $O/confidence_graph.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/confidence_graph.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/confidence_graph.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/confidence_graph.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/confidence_graph.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/confidence_graph.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/confidence_graph.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/confidence_graph.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/text_output.h
 $O/confidence_graph.o: io-reg.h
 $O/confidence_graph.o: IO.h
 $O/confidence_graph.o: gap_canvas_box.h newgap_cmds.h list.h
-$O/confidence_graph.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/confidence_graph.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/confidence_graph.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/confidence_graph.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/confidence_graph.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/confidence_graph.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/confidence_graph.o: consen.h qual.h consistency_display.h ruler_display.h
@@ -274,18 +285,18 @@ $O/confidence_graph.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/
 $O/consen.o: $(SRCROOT)/Misc/FtoC.h $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/Misc/misc.h
 $O/consen.o: $(SRCROOT)/Misc/xalloc.h edUtils.h qual.h edStructs.h tkEditor.h
 $O/consen.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/consen.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/consen.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/consen.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/consen.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/consen.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h tagDefs.h
 $O/consen.o: $(SRCROOT)/primer3/src/primer3.h
-$O/consen.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h fort.h
-$O/consen.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/consen.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h fort.h
+$O/consen.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/consen.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h consen.h
 $O/consen.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/consen.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/consen.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
-$O/consen.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/consen.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/consen.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/consen.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/consen.o: primlib.h
 $O/consen.o: io_utils.h IO.h
@@ -298,9 +309,9 @@ $O/consistency_canvas_box.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/consistency_canvas_box.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/consistency_canvas_box.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/consistency_canvas_box.o: $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
-$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io-reg.h
+$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/consistency_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io-reg.h
 $O/consistency_canvas_box.o: gap-dbstruct.h
 $O/consistency_canvas_box.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/consistency_canvas_box.o: consistency_display.h
@@ -309,12 +320,12 @@ $O/consistency_canvas_box.o: io_handle.h io_utils.h
 $O/consistency_display.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/consistency_display.o: $(SRCROOT)/Misc/xalloc.h io-reg.h
 $O/consistency_display.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/consistency_display.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h
-$O/consistency_display.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/consistency_display.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/consistency_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h
+$O/consistency_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/consistency_display.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/consistency_display.o: $(SRCROOT)/tk_utils/canvas_box.h
-$O/consistency_display.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/consistency_display.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/consistency_display.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/consistency_display.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/consistency_display.o: $(SRCROOT)/Misc/os.h
 $O/consistency_display.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/consistency_display.o: consistency_display.h $(SRCROOT)/tk_utils/tcl_utils.h
@@ -329,10 +340,10 @@ $O/contigEditor.o: $(SRCROOT)/Misc/xalloc.h fort.h tkEditor.h
 $O/contigEditor.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/contigEditor.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/contigEditor.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/contigEditor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/contigEditor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/contigEditor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/contigEditor.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/contigEditor.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/contigEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/contigEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/contigEditor.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/contigEditor.o: $(SRCROOT)/tk_utils/cli_arg.h contigEditor.h $(SRCROOT)/Misc/locks.h
 $O/contigEditor.o: $(SRCROOT)/tk_utils/tclXkeylist.h select.h tman_interface.h
 $O/contigEditor.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
@@ -340,7 +351,7 @@ $O/contigEditor.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSh
 $O/contigEditor.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/contigEditor.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/contigEditor.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/contigEditor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h io-reg.h
+$O/contigEditor.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h io-reg.h
 $O/contigEditor.o: $(SRCROOT)/tk_utils/tcl_utils.h edStructs.h
 $O/contigEditor.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/contigEditor.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
@@ -352,9 +363,9 @@ $O/contig_order.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/contig_order.o: $(SRCROOT)/Misc/xerror.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/contig_order.o: $(SRCROOT)/g/g-filedefs.h io_handle.h io_utils.h
 $O/contig_order.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
-$O/contig_order.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/contig_order.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h QueueInterface.h
-$O/contig_order.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/contig_order.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/contig_order.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h QueueInterface.h
+$O/contig_order.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/contig_order.o: template.h
 $O/contig_order.o: SeqQueueTypes.h $(SRCROOT)/Misc/array.h
 $O/contig_order.o: list.h io-reg.h
@@ -364,10 +375,10 @@ $O/contig_selector.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Mi
 $O/contig_selector.o: $(SRCROOT)/g/g-filedefs.h io_handle.h io_utils.h
 $O/contig_selector.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/contig_selector.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/contig_selector.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/contig_selector.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/contig_selector.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h IO.h $(SRCROOT)/g/g-defs.h
-$O/contig_selector.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h IO.h $(SRCROOT)/g/g-defs.h
+$O/contig_selector.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/contig_selector.o: $(SRCROOT)/tk_utils/cli_arg.h tagdb.h $(SRCROOT)/tk_utils/text_output.h
 $O/contig_selector.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/contig_selector.o: $(SRCROOT)/tk_utils/tcl_utils.h contig_selector.h complement.h
@@ -376,7 +387,7 @@ $O/contig_selector.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/t
 $O/contig_selector.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/contig_selector.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/contig_selector.o: $(SRCROOT)/primer3/src/dpal.h template.h
-$O/contig_selector.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/contig_selector.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/contig_selector.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/contig_selector.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/contig_selector.o: active_tags.h template_display.h hash.h ruler_display.h
@@ -390,37 +401,37 @@ $O/copy_db.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/copy_db.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/copy_db.o: $(SRCROOT)/Misc/os.h IO.h $(SRCROOT)/g/g-defs.h
 $O/copy_db.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/copy_db.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/copy_db.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/copy_db.o: copy_db.h $(SRCROOT)/tk_utils/text_output.h
+$O/copy_db.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/copy_db.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/copy_db.o: copy_db.h $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/Misc/misc.h
 $O/copy_db.o: io_handle.h io_utils.h $(SRCROOT)/Misc/xalloc.h
 $O/copy_db_main.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/copy_db_main.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/copy_db_main.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/copy_db_main.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/copy_db_main.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/copy_db_main.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
-$O/copy_db_main.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/copy_db_main.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
 $O/copy_db_main.o: $(SRCROOT)/tk_utils/licence.h
 $O/copy_db_main.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/copy_db_main.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/copy_db_main.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/copy_db_main.o: copy_db.h IO.h
 $O/cs-object.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/cs-object.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/cs-object.o: $(SRCROOT)/g/g-filedefs.h io_handle.h io_utils.h
-$O/cs-object.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/cs-object.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h IO.h $(SRCROOT)/g/g-defs.h
+$O/cs-object.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/cs-object.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h IO.h $(SRCROOT)/g/g-defs.h
 $O/cs-object.o: $(SRCROOT)/tk_utils/canvas_box.h tk-io-reg.h
 $O/cs-object.o: $(SRCROOT)/tk_utils/text_output.h contig_selector.h
-$O/cs-object.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h list.h
-$O/cs-object.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/cs-object.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h
+$O/cs-object.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/cs-object.o: $(SRCROOT)/Misc/xalloc.h cs-object.h
 $O/cs-object.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/cs-object.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
 $O/cs-object.o: io-reg.h
-$O/cs-object.o: newgap_cmds.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/cs-object.o: newgap_cmds.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/dbcheck.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/dbcheck.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/dbcheck.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/dbcheck.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/dbcheck.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/dbcheck.o: $(SRCROOT)/tk_utils/text_output.h
 $O/dbcheck.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/dbcheck.o: fortran.h fort.h $(SRCROOT)/Misc/os.h io_utils.h
@@ -435,14 +446,14 @@ $O/dis_readings.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/inclu
 $O/dis_readings.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/dis_readings.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h
 $O/dis_readings.o: $(SRCROOT)/primer3/src/primer3.h
-$O/dis_readings.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/dis_readings.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/dis_readings.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/dis_readings.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/dis_readings.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/dis_readings.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/dis_readings.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/dis_readings.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/dis_readings.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/dis_readings.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/dis_readings.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/dis_readings.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/dis_readings.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/dis_readings.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/dis_readings.o: IO2.h fort.h list_proc.h
@@ -456,22 +467,22 @@ $O/do_fij.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.
 $O/do_fij.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/do_fij.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/do_fij.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/do_fij.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/do_fij.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/do_fij.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/do_fij.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/do_fij.o: fij.h io_utils.h IO.h $(SRCROOT)/g/g-defs.h
 $O/do_fij.o: io_handle.h consen.h hash_lib.h $(SRCROOT)/seq_utils/align_lib.h
 $O/dstrand.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
-$O/dstrand.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/dstrand.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/dstrand.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/dstrand.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/dstrand.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/dstrand.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
 $O/dstrand.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/seq_utils/align_lib_old.h
-$O/dstrand.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/dstrand.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/dstrand.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/dstrand.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/dstrand.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/dstrand.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/dstrand.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/dstrand.o: $(SRCROOT)/Misc/array.h
 $O/dstrand.o: dstrand.h $(SRCROOT)/Misc/FtoC.h IO2.h
 $O/dstrand.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
@@ -481,21 +492,21 @@ $O/dstrand.o: io_utils.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/dstrand.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/dstrand.o: tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/dstrand.o: tkEdNames.h io-reg.h
-$O/dstrand.o: tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/dstrand.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edCommands.o: $(SRCROOT)/Misc/xalloc.h fort.h io_utils.h
 $O/edCommands.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/edCommands.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/edCommands.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/edCommands.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/misc.h
 $O/edCommands.o: $(SRCROOT)/seq_utils/align_lib_old.h select.h tman_interface.h
-$O/edCommands.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/edCommands.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/edCommands.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/edCommands.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/edCommands.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/edCommands.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/edCommands.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/edCommands.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edCommands.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/edCommands.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/edCommands.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/edCommands.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/edCommands.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/edCommands.o: edUtils.h qual.h $(SRCROOT)/Misc/os.h edStructs.h
 $O/edCommands.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/edCommands.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
@@ -511,9 +522,9 @@ $O/edExtend.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/edExtend.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/edExtend.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/edExtend.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
-$O/edExtend.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/edExtend.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/edExtend.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/edExtend.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/edExtend.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/edExtend.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/edExtend.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h contigEditor.h
 $O/edExtend.o: $(SRCROOT)/tk_utils/sheet.h
 $O/edExtend.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -523,7 +534,7 @@ $O/edExtend.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/edExtend.o: edUtils.h qual.h $(SRCROOT)/Misc/os.h
 $O/edExtend.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/edExtend.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
-$O/edExtend.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/edExtend.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edExtend.o: io_utils.h
 $O/edExtend.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/edExtend.o: select.h extend.h
@@ -531,20 +542,20 @@ $O/edExtend.o: tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/edInterface.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/edInterface.o: $(SRCROOT)/Misc/bitmap.h
 $O/edInterface.o: $(SRCROOT)/Misc/xalloc.h
-$O/edInterface.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/edInterface.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/edInterface.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/edInterface.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/edInterface.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/edInterface.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/edInterface.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/edInterface.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edInterface.o: $(SRCROOT)/tk_utils/canvas_box.h hash.h
 $O/edInterface.o: $(SRCROOT)/tk_utils/cli_arg.h contigEditor.h extend.h active_tags.h
 $O/edInterface.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/edInterface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/edInterface.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/edInterface.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/edInterface.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/edInterface.o: edUtils.h qual.h edStructs.h
 $O/edInterface.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/edInterface.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/edInterface.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/edInterface.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h $(SRCROOT)/Misc/os.h
 $O/edInterface.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/edInterface.o: fort.h io_utils.h IO.h $(SRCROOT)/g/g-defs.h
@@ -560,14 +571,14 @@ $O/edMutations.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-
 $O/edMutations.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/edMutations.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/edMutations.o: $(SRCROOT)/seq_utils/genetic_code.h tman_interface.h
-$O/edMutations.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/edMutations.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/edMutations.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h edUtils.h qual.h
+$O/edMutations.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/edMutations.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/edMutations.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h edUtils.h qual.h
 $O/edMutations.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/edMutations.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/edMutations.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/edMutations.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/edMutations.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/edMutations.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/edMutations.o: parse_ft.h
 $O/edMutations.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/edMutations.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
@@ -575,7 +586,7 @@ $O/edMutations.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/edMutations.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/edMutations.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/edMutations.o: tkEdNames.h io-reg.h
-$O/edMutations.o: tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/edMutations.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edMutations.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/edMutations.o: undo.h tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h
 $O/edUtils2.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-if.h $(SRCROOT)/g/g-struct.h
@@ -585,9 +596,9 @@ $O/edUtils2.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/edUtils2.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/edUtils2.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/edUtils2.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
-$O/edUtils2.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/edUtils2.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/edUtils2.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/edUtils2.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/edUtils2.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/edUtils2.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/edUtils2.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h contigEditor.h
 $O/edUtils2.o: $(SRCROOT)/tk_utils/sheet.h
 $O/edUtils2.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -595,7 +606,7 @@ $O/edUtils2.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/edUtils2.o: qual.h $(SRCROOT)/Misc/os.h gap-dbstruct.h
 $O/edUtils2.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/edUtils2.o: IO2.h active_tags.h tagdb.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
-$O/edUtils2.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/edUtils2.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/edUtils2.o: io_utils.h
 $O/edUtils2.o: notes.h
 $O/edUtils2.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
@@ -608,16 +619,16 @@ $O/extract.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/extract.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/extract.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
 $O/extract.o: $(SRCROOT)/primer3/src/primer3.h
-$O/extract.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/extract.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/extract.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/extract.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/extract.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/extract.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/extract.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h
 $O/extract.o: $(SRCROOT)/tk_utils/sheet.h
 $O/extract.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h primlib.h
 $O/extract.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/extract.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/extract.o: IO.h
-$O/extract.o: edStructs.h $(SRCROOT)/Misc/xalloc.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/extract.o: edStructs.h $(SRCROOT)/Misc/xalloc.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/extract.o: extract.h $(SRCROOT)/tk_utils/text_output.h notes.h
 $O/extract.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/extract.o: io_handle.h io_utils.h fort.h $(SRCROOT)/Misc/FtoC.h edUtils.h qual.h
@@ -632,9 +643,9 @@ $O/fij.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/fij.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/fij.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/fij.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/fij.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/fij.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/fij.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/fij.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/fij.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/fij.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/fij.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/fij.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/fij.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h primlib.h
@@ -642,7 +653,7 @@ $O/fij.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCRO
 $O/fij.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/fij.o: IO.h
 $O/fij.o: newgap_cmds.h list.h
-$O/fij.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h io_utils.h
+$O/fij.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h io_utils.h
 $O/fij.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/fij.o: consen.h hash_lib.h $(SRCROOT)/seq_utils/align_lib.h io-reg.h
 $O/fij.o: contigEditor.h edStructs.h $(SRCROOT)/Misc/xalloc.h tkEditor.h
@@ -650,9 +661,9 @@ $O/fij.o: contig_selector.h cs-object.h $(SRCROOT)/tk_utils/canvas_box.h
 $O/fij.o: io_handle.h fort.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h fij.h
 $O/fij.o: template.h undo.h edUtils.h qual.h tagUtils.h tagDefs.h fortran.h
 $O/find_fragments.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/find_fragments.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/find_fragments.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/find_fragments.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/find_fragments.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/find_fragments.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/find_fragments.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/find_fragments.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/find_fragments.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/find_fragments.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
@@ -662,11 +673,11 @@ $O/find_fragments.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(
 $O/find_oligo.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/find_oligo.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/find_oligo.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
-$O/find_oligo.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/find_oligo.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/find_oligo.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/find_oligo.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/find_oligo.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tagdb.h
-$O/find_oligo.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/find_oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tagdb.h
+$O/find_oligo.o: $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/find_oligo.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/find_oligo.o: $(SRCROOT)/tk_utils/tclXkeylist.h template_display.h hash.h
 $O/find_oligo.o: $(SRCROOT)/tk_utils/text_output.h complement.h
@@ -676,7 +687,7 @@ $O/find_oligo.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/find_oligo.o: tagUtils.h
 $O/find_oligo.o: io_utils.h
 $O/find_oligo.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/find_oligo.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/find_oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/find_oligo.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/find_oligo.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/find_oligo.o: contig_selector.h $(SRCROOT)/tk_utils/canvas_box.h contigEditor.h
@@ -689,11 +700,11 @@ $O/find_oligo.o: undo.h edUtils.h qual.h tman_display.h $(SRCROOT)/io_lib/includ
 $O/find_repeats.o: $(SRCROOT)/Misc/array.h
 $O/find_repeats.o: $(SRCROOT)/Misc/dstring.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/find_repeats.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/find_repeats.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/find_repeats.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/find_repeats.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/find_repeats.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/find_repeats.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/find_repeats.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h edStructs.h tkEditor.h
+$O/find_repeats.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/find_repeats.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h edStructs.h tkEditor.h
 $O/find_repeats.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/find_repeats.o: $(SRCROOT)/tk_utils/cli_arg.h find_repeats.h consen.h gap_hash.h
 $O/find_repeats.o: $(SRCROOT)/tk_utils/text_output.h fort.h $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -702,12 +713,12 @@ $O/find_repeats.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSh
 $O/find_repeats.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/find_repeats.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/find_repeats.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
-$O/find_repeats.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/find_repeats.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/find_repeats.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
 $O/find_repeats.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/find_repeats.o: contig_selector.h
 $O/find_repeats.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/find_repeats.o: complement.h contigEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/find_repeats.o: complement.h contigEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/find_repeats.o: cs-object.h io-reg.h
 $O/find_repeats.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/find_repeats.o: tkEdNames.h primlib.h $(SRCROOT)/primer3/src/primer3.h
@@ -753,14 +764,14 @@ $O/gap-tcl.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-err
 $O/gap-tcl.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/gap-tcl.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/gap-tcl.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h qual.h
-$O/gap-tcl.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/gap-tcl.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/gap-tcl.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/gap-tcl.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/gap-tcl.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/gap-tcl.o: $(SRCROOT)/tk_utils/tclXkeylist.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/gap-tcl.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/gap-tcl.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/gap-tcl.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
-$O/gap-tcl.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/gap-tcl.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/gap-tcl.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/gap-tcl.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/gap-tcl.o: clones.h seqInfo.h gap-tcl.h
 $O/gap-tcl.o: edStructs.h $(SRCROOT)/Misc/xalloc.h fort.h tkEditor.h
@@ -769,17 +780,17 @@ $O/gap-tcl.o: io_handle.h io_utils.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/gap-tcl.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/gap-tcl.o: tkEdNames.h io-reg.h
 $O/gap-tcl.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
-$O/gap_array.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/gap_array.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/gap_array.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/gap_array.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h active_tags.h
-$O/gap_array.o: gap_array.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/gap_array.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/gap_array.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/gap_array.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/gap_array.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h active_tags.h
+$O/gap_array.o: gap_array.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/gap_array.o: tagdb.h
 $O/gap_canvas_box.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io-reg.h
+$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io-reg.h
 $O/gap_canvas_box.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tk_utils/canvas_box.h
-$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/gap_canvas_box.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/gap_canvas_box.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/gap_canvas_box.o: gap_globals.h
 $O/gap_canvas_box.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
@@ -789,10 +800,10 @@ $O/gap_cli_arg.o: $(SRCROOT)/Misc/xalloc.h io_utils.h IO.h
 $O/gap_cli_arg.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/gap_cli_arg.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/gap_cli_arg.o: $(SRCROOT)/g/g-filedefs.h io_handle.h gap_cli_arg.h
-$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
 $O/gap_cli_arg.o: $(SRCROOT)/tk_utils/cli_arg.h
-$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/gap_cli_arg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/gap_cli_arg.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/gap_globals.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/gap_globals.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
@@ -802,18 +813,18 @@ $O/gap_globals.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g
 $O/gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h consen.h IO.h $(SRCROOT)/g/g-defs.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/read_matrix.h gap_globals.h $(SRCROOT)/Misc/os.h
-$O/gap_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/gap_globals.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
-$O/gap_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/gap_globals.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/gap_globals.o: fort.h $(SRCROOT)/seq_utils/align_lib.h hash_lib.h notedb.h
 $O/gap_hash.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/gap_hash.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/gap_hash.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/gap_hash.o: $(SRCROOT)/seq_utils/align_lib.h
 $O/gap_hash.o: $(SRCROOT)/seq_utils/dna_utils.h gap_hash.h hash_lib.h
-$O/gap_hash.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/gap_hash.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/gap_hash.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/gap_hash.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/gap_hash.o: io_utils.h IO.h $(SRCROOT)/g/g-defs.h
 $O/gap_hash.o: fort.h $(SRCROOT)/Misc/os.h
 $O/gap_hash.o: io_handle.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
@@ -825,9 +836,9 @@ $O/init.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.
 $O/init.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/init.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/init.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/init.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/init.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/init.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/init.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/init.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/init.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/init.o: $(SRCROOT)/tk_utils/sheet.h
 $O/init.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
 $O/init.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
@@ -842,12 +853,12 @@ $O/init.o: io-reg.h
 $O/init.o: io_handle.h edStructs.h $(SRCROOT)/Misc/xalloc.h
 $O/init.o: newgap_cmds.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h gap-tcl.h
 $O/init.o: template.h list.h undo.h edUtils.h qual.h tagUtils.h tagDefs.h
-$O/init.o: tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/init.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/io-reg.o: $(SRCROOT)/Misc/xalloc.h tk-io-reg.h
 $O/io-reg.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/io-reg.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/io-reg.o: $(SRCROOT)/tk_utils/text_output.h
 $O/io-reg.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/io-reg.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
@@ -857,14 +868,14 @@ $O/io_handle.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-fi
 $O/io_handle.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/io_handle.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/io_handle.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/io_handle.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/io_handle.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/io_handle.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/io_handle.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/io_handle.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/io_handle.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
 $O/io_handle.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/io_handle.o: $(SRCROOT)/tk_utils/text_output.h
 $O/io_handle.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/io_handle.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/io_handle.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/io_handle.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/io_handle.o: IO.h
 $O/io_handle.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/io_handle.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
@@ -873,13 +884,13 @@ $O/io_handle.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/io_handle.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/io_handle.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/io_handle.o: tkEdNames.h io-reg.h
-$O/io_handle.o: tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/io_handle.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/io_handle.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/io_handle.o: undo.h tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h
 $O/io_utils.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/io_utils.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/io_utils.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/io_utils.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/io_utils.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/io_utils.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/io_utils.o: io_utils.h IO.h
 $O/io_utils.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/io_utils.o: io_handle.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/Misc/FtoC.h
@@ -891,9 +902,9 @@ $O/join.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/join.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/join.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/join.o: $(SRCROOT)/seq_utils/align_lib.h hash_lib.h notes.h
-$O/join.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/join.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/join.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/join.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/join.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/join.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/join.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/seq_utils/align.h
 $O/join.o: $(SRCROOT)/tk_utils/sheet.h
 $O/join.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -903,22 +914,22 @@ $O/join.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/join.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/join.o: IO2.h contigEditor.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
 $O/join.o: edUtils.h qual.h $(SRCROOT)/Misc/os.h edStructs.h
-$O/join.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/join.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/join.o: tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/list.o: list.h $(SRCROOT)/Misc/xalloc.h
-$O/list_proc.o: $(SRCROOT)/Misc/FtoC.h newgap_cmds.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/list_proc.o: $(SRCROOT)/Misc/FtoC.h newgap_cmds.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/list_proc.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/list_proc.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h io_handle.h
 $O/list_proc.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/list_proc.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/list_proc.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/list_proc.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h list.h gap_globals.h
+$O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/list_proc.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h gap_globals.h
 $O/list_proc.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/list_proc.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/list_proc.o: io_utils.h IO.h
 $O/list_proc.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
-$O/mess.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/mess.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/mess.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/mess.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/mess.o: $(SRCROOT)/tk_utils/text_output.h
 $O/newgap_cmds.o: $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h newgap_cmds.h
 $O/newgap_cmds.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
@@ -928,18 +939,19 @@ $O/newgap_cmds.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/tran
 $O/newgap_cmds.o: $(SRCROOT)/seq_utils/align_lib_old.h seqInfo.h $(SRCROOT)/Misc/locks.h
 $O/newgap_cmds.o: $(SRCROOT)/seq_utils/read_matrix.h $(SRCROOT)/seq_utils/genetic_code.h
 $O/newgap_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/seq_utils/sequence_formats.h
-$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/newgap_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h gap_canvas_box.h
 $O/newgap_cmds.o: $(SRCROOT)/tk_utils/text_output.h quality_plot.h restriction_enzymes.h
 $O/newgap_cmds.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/newgap_cmds.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/newgap_cmds.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/newgap_cmds.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/newgap_cmds.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
-$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/newgap_cmds.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/newgap_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/newgap_cmds.o: io-reg.h
 $O/newgap_cmds.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
+$O/newgap_cmds.o: allelic_discreps.h
 $O/newgap_cmds.o: break_contig.h readpair.h tk-io-reg.h cs-object.h complement.h
 $O/newgap_cmds.o: check_assembly.h probe.h find_oligo.h show_relationships.h
 $O/newgap_cmds.o: consistency_display.h confidence_graph.h gap-create.h
@@ -963,37 +975,37 @@ $O/notedb.o: $(SRCROOT)/Misc/xalloc.h
 $O/notedb.o: $(SRCROOT)/Misc/misc.h
 $O/notedb.o: $(SRCROOT)/Misc/os.h
 $O/notes.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
-$O/notes.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/notes.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/notes.o: $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/notes.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/notes.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/notes.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/notes.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/notes.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/notes.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/notes.o: $(SRCROOT)/tk_utils/text_output.h gap_cli_arg.h notes.h
 $O/notes.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/notes.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/notes.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/Misc/dstring.h
 $O/notes.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/notes.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h
-$O/notes.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/notes.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/notes.o: edUtils.h qual.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/notes.o: io_handle.h io_utils.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/notes.o: tagDefs.h fortran.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
 $O/notes.o: tagUtils.h edStructs.h $(SRCROOT)/Misc/xalloc.h fort.h tkEditor.h
 $O/notes.o: tkEdNames.h io-reg.h primlib.h $(SRCROOT)/primer3/src/primer3.h
-$O/oligo.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/oligo.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/oligo.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/oligo.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/oligo.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/oligo.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/oligo.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/oligo.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/oligo.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/oligo.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/oligo.o: $(SRCROOT)/tk_utils/sheet.h
 $O/oligo.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
 $O/oligo.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/oligo.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/oligo.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
-$O/oligo.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/oligo.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/oligo.o: primlib.h
 $O/oligo.o: edStructs.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/Misc/os.h fort.h io_utils.h
@@ -1003,20 +1015,20 @@ $O/oligo.o: oligo.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/reg_exp.h
 $O/oligo.o: template.h list.h undo.h edUtils.h qual.h tagUtils.h tagDefs.h
 $O/oligo_sel.o: $(SRCROOT)/Misc/misc.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
 $O/oligo_sel.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
-$O/oligo_sel.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/oligo_sel.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/oligo_sel.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/oligo_sel.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/oligo_sel.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h qual.h tagUtils.h
-$O/oligo_sel.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/oligo_sel.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h qual.h tagUtils.h
+$O/oligo_sel.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/oligo_sel.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/oligo_sel.o: $(SRCROOT)/tk_utils/text_output.h oligo_sel.h dstrand.h $(SRCROOT)/Misc/FtoC.h
 $O/oligo_sel.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/oligo_sel.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/oligo_sel.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/oligo_sel.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/oligo_sel.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/oligo_sel.o: $(SRCROOT)/Misc/array.h
 $O/oligo_sel.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
-$O/oligo_sel.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/oligo_sel.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/oligo_sel.o: list_proc.h io_utils.h
 $O/oligo_sel.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/oligo_sel.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
@@ -1024,19 +1036,19 @@ $O/oligo_sel.o: edStructs.h $(SRCROOT)/Misc/xalloc.h fort.h tkEditor.h
 $O/oligo_sel.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/oligo_sel.o: tkEdNames.h io-reg.h
 $O/oligo_sel.o: undo.h edUtils.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
-$O/parse_ft.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/parse_ft.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/parse_ft.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/parse_ft.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/parse_ft.o: $(SRCROOT)/Misc/xalloc.h parse_ft.h
 $O/preass.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h IO.h
 $O/preass.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/preass.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
-$O/preass.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/preass.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/preass.o: $(SRCROOT)/io_lib/include/scf_extras.h preass.h $(SRCROOT)/tk_utils/text_output.h
 $O/preass.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/compress.h
 $O/preass.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h qual.h
 $O/preass.o: $(SRCROOT)/primer3/src/primer3.h
-$O/preass.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/preass.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/preass.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/preass.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/preass.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/preass.o: $(SRCROOT)/tk_utils/sheet.h
 $O/preass.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -1048,50 +1060,51 @@ $O/preass.o: primlib.h
 $O/preass.o: clones.h dbcheck.h
 $O/preass.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/preass.o: io_handle.h io_utils.h
-$O/preass.o: tagUtils.h edStructs.h fort.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/preass.o: tagUtils.h edStructs.h fort.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/preass.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
-$O/primlib.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
+$O/primlib.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
 $O/primlib.o: $(SRCROOT)/tk_utils/tcl_utils.h primlib.h $(SRCROOT)/primer3/src/primer3.h
-$O/primlib.o: gap_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/primlib.o: gap_globals.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/primlib.o: $(SRCROOT)/primer3/src/dpal.h
-$O/primlib.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/primlib.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/probe.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/probe.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/probe.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
 $O/probe.o: $(SRCROOT)/seq_utils/align_lib_old.h seqInfo.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/probe.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/tk_utils/text_output.h
 $O/probe.o: $(SRCROOT)/seq_utils/sequence_formats.h fort.h primlib.h
-$O/probe.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/probe.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/probe.o: $(SRCROOT)/tk_utils/tcl_utils.h assemble_direct.h $(SRCROOT)/seq_utils/align.h
 $O/probe.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
-$O/probe.o: probe.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/probe.o: probe.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/probe.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/probe.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/probe.o: io_handle.h io_utils.h gap_globals.h
-$O/qual.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/qual.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
 $O/qual.o: $(SRCROOT)/tk_utils/tcl_utils.h
 $O/qual.o: qual.h $(SRCROOT)/Misc/os.h
-$O/qual.o: gap_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/qual.o: gap_globals.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/qual.o: qualP.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/qualIO.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
-$O/qualIO.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
-$O/qualIO.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/qualIO.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/tk_utils/tcl_utils.h IO.h $(SRCROOT)/g/g-defs.h
-$O/qualIO.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/qualIO.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/qualIO.o: gap_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/qualIO.o: io_handle.h io_utils.h qual.h qualP.h
+$O/qualIO.o: $(SRCROOT)/Misc/xalloc.h
+$O/qualIO.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h io_handle.h io_utils.h
+$O/qualIO.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
+$O/qualIO.o: $(SRCROOT)/tk_utils/tcl_utils.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
+$O/qualIO.o: IO2.h qual.h qualP.h $(SRCROOT)/Misc/misc.h
+$O/qualIO.o: gap_globals.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/qualIO.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/qualIO.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
+$O/qualIO.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
 $O/quality_plot.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/quality_plot.o: $(SRCROOT)/Misc/dstring.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/quality_plot.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h qual.h quality_plot.h
 $O/quality_plot.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/quality_plot.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/quality_plot.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/quality_plot.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/quality_plot.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/quality_plot.o: $(SRCROOT)/primer3/src/dpal.h undo.h tagUtils.h tagDefs.h fortran.h
 $O/quality_plot.o: $(SRCROOT)/primer3/src/primer3.h
-$O/quality_plot.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/quality_plot.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/quality_plot.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/quality_plot.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/quality_plot.o: $(SRCROOT)/tk_utils/cli_arg.h
 $O/quality_plot.o: $(SRCROOT)/tk_utils/sheet.h
 $O/quality_plot.o: $(SRCROOT)/tk_utils/tclXkeylist.h fort.h $(SRCROOT)/tk_utils/text_output.h
@@ -1100,8 +1113,8 @@ $O/quality_plot.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.
 $O/quality_plot.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/quality_plot.o: io-reg.h
 $O/quality_plot.o: gap_canvas_box.h
-$O/quality_plot.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/quality_plot.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/quality_plot.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/quality_plot.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/quality_plot.o: IO.h
 $O/quality_plot.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/quality_plot.o: $(SRCROOT)/tk_utils/canvas_box.h
@@ -1115,15 +1128,15 @@ $O/reactions.o: $(SRCROOT)/Misc/misc.h gap_globals.h $(SRCROOT)/tk_utils/tcl_uti
 $O/reactions.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/reactions.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/reactions.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/reactions.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/reactions.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/reactions.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h fort.h qual.h
-$O/reactions.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/reactions.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/reactions.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/reactions.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h fort.h qual.h
+$O/reactions.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/reactions.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/reactions.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/reactions.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/reactions.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/reactions.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/reactions.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/reactions.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/reactions.o: io_utils.h
 $O/reactions.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
@@ -1135,15 +1148,15 @@ $O/reading_coverage.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h reading_c
 $O/reading_coverage.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/reading_coverage.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/reading_coverage.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/reading_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/reading_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/reading_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/reading_coverage.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/reading_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/reading_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/reading_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/reading_coverage.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/reading_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h hash.h
 $O/reading_coverage.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/text_output.h
 $O/reading_coverage.o: template_display.h
 $O/reading_coverage.o: io-reg.h
-$O/reading_coverage.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/reading_coverage.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/reading_coverage.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/reading_coverage.o: consen.h qual.h consistency_display.h
 $O/reading_coverage.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
@@ -1152,19 +1165,19 @@ $O/reading_coverage.o: newgap_cmds.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils
 $O/readpair.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/readpair.o: $(SRCROOT)/Misc/bitmap.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
 $O/readpair.o: $(SRCROOT)/Misc/xalloc.h io-reg.h
-$O/readpair.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/readpair.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/readpair.o: $(SRCROOT)/g/g-os.h $(SRCROOT)/Misc/os.h IO.h $(SRCROOT)/g/g-defs.h
 $O/readpair.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/readpair.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/readpair.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/readpair.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/readpair.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/readpair.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/readpair.o: $(SRCROOT)/tk_utils/canvas_box.h newgap_cmds.h
 $O/readpair.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h
 $O/readpair.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tclXkeylist.h complement.h
 $O/readpair.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/readpair.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h list.h
+$O/readpair.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h
 $O/readpair.o: $(SRCROOT)/primer3/src/dpal.h template.h undo.h
-$O/readpair.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/readpair.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/readpair.o: gap-dbstruct.h
 $O/readpair.o: fortran.h fort.h
 $O/readpair.o: cs-object.h contig_selector.h
@@ -1177,14 +1190,14 @@ $O/readpair.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib
 $O/readpair_coverage.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h reading_coverage.h
 $O/readpair_coverage.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/readpair_coverage.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
-$O/readpair_coverage.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/readpair_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h
-$O/readpair_coverage.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/readpair_coverage.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/readpair_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h
+$O/readpair_coverage.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/readpair_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h hash.h
 $O/readpair_coverage.o: $(SRCROOT)/tk_utils/text_output.h consen.h qual.h
 $O/readpair_coverage.o: io-reg.h
-$O/readpair_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/readpair_coverage.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/readpair_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/readpair_coverage.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/readpair_coverage.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h
 $O/readpair_coverage.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/readpair_coverage.o: consistency_display.h
@@ -1196,7 +1209,7 @@ $O/readpair_coverage.o: readpair_coverage.h $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/restriction_enzymes.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/restriction_enzymes.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/restriction_enzymes.o: $(SRCROOT)/Misc/xalloc.h qual.h edStructs.h fort.h tkEditor.h
-$O/restriction_enzymes.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/restriction_enzymes.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/restriction_enzymes.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/restriction_enzymes.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/restriction_enzymes.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
@@ -1206,9 +1219,9 @@ $O/restriction_enzymes.o: $(SRCROOT)/primer3/src/dpal.h undo.h edUtils.h tagUtil
 $O/restriction_enzymes.o: $(SRCROOT)/primer3/src/primer3.h
 $O/restriction_enzymes.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/tk_utils/text_output.h
 $O/restriction_enzymes.o: $(SRCROOT)/seq_utils/renz_utils.h
-$O/restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h
-$O/restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h hash.h list.h template.h
+$O/restriction_enzymes.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h
+$O/restriction_enzymes.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/restriction_enzymes.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h hash.h list.h template.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/restriction_enzyme_map.h $(SRCROOT)/Misc/getfile.h
@@ -1217,7 +1230,7 @@ $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h primlib.h
 $O/restriction_enzymes.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
-$O/restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/restriction_enzymes.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/restriction_enzymes.o: $(SRCROOT)/Misc/xerror.h
 $O/restriction_enzymes.o: io-reg.h
 $O/restriction_enzymes.o: IO.h $(SRCROOT)/g/g-defs.h
@@ -1230,13 +1243,13 @@ $O/ruler_display.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h 
 $O/ruler_display.o: $(SRCROOT)/Misc/misc.h
 $O/ruler_display.o: $(SRCROOT)/g/g-filedefs.h io_handle.h io_utils.h
 $O/ruler_display.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
-$O/ruler_display.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/ruler_display.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/ruler_display.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tcl_utils.h
-$O/ruler_display.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/ruler_display.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/ruler_display.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/ruler_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/ruler_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/ruler_display.o: $(SRCROOT)/tk_utils/canvas_box.h ruler_display.h template_display.h
 $O/ruler_display.o: $(SRCROOT)/tk_utils/tclXkeylist.h
-$O/ruler_display.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/ruler_display.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/ruler_display.o: gap_globals.h
 $O/ruler_display.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/ruler_display.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
@@ -1247,16 +1260,16 @@ $O/searchUtils.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-
 $O/searchUtils.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/searchUtils.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/searchUtils.o: $(SRCROOT)/seq_utils/search_utils.h $(SRCROOT)/seq_utils/dna_utils.h
-$O/searchUtils.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/searchUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/searchUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/searchUtils.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/searchUtils.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/searchUtils.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/searchUtils.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/searchUtils.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/searchUtils.o: $(SRCROOT)/tk_utils/cli_arg.h select.h $(SRCROOT)/Misc/misc.h
 $O/searchUtils.o: $(SRCROOT)/tk_utils/text_output.h tman_interface.h
 $O/searchUtils.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/searchUtils.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/searchUtils.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/searchUtils.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/searchUtils.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/searchUtils.o: qual.h $(SRCROOT)/Misc/os.h
 $O/searchUtils.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h
 $O/searchUtils.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
@@ -1268,18 +1281,18 @@ $O/searchUtils.o: tkEdNames.h io-reg.h
 $O/searchUtils.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/searchUtils.o: undo.h tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h
 $O/seqInfo.o: $(SRCROOT)/Misc/FtoC.h IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
-$O/seqInfo.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqInfo.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/seqInfo.o: $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/Misc/array.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/compress.h
 $O/seqInfo.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h qual.h
-$O/seqInfo.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/seqInfo.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seqInfo.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/seqInfo.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/seqInfo.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/seqInfo.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/seqInfo.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/seqInfo.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seqInfo.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/seqInfo.o: $(SRCROOT)/io_lib/include/traceType.h
 $O/seqInfo.o: $(SRCROOT)/Misc/xalloc.h
 $O/seqInfo.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/os.h
@@ -1293,13 +1306,13 @@ $O/seqInfo.o: tman_display.h $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/p
 $O/show_relationships.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/show_relationships.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
 $O/show_relationships.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/show_relationships.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/show_relationships.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/show_relationships.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/show_relationships.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h io_utils.h
+$O/show_relationships.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/show_relationships.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/show_relationships.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/show_relationships.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h io_utils.h
 $O/show_relationships.o: $(SRCROOT)/tk_utils/text_output.h
 $O/show_relationships.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
-$O/show_relationships.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/show_relationships.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/show_relationships.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/show_relationships.o: io_handle.h $(SRCROOT)/tk_utils/cli_arg.h newgap_structs.h
 $O/stack_dump.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/array.h
@@ -1308,22 +1321,22 @@ $O/stack_dump.o: $(SRCROOT)/Misc/bitmap.h stack_dump.h
 $O/stack_dump.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
 $O/stop_codon.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h edUtils.h edStructs.h fort.h
 $O/stop_codon.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
-$O/stop_codon.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/stop_codon.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/stop_codon.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/stop_codon.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/stop_codon.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/stop_codon.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/tk_utils/restriction_enzyme_map.h
-$O/stop_codon.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/stop_codon.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/stop_codon.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/stop_codon.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/stop_codon.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
-$O/stop_codon.o: $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/stop_codon.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/stop_codon.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/stop_codon.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h hash.h
+$O/stop_codon.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h hash.h
 $O/stop_codon.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/stop_codon.o: $(SRCROOT)/Misc/array.h
 $O/stop_codon.o: gap_canvas_box.h template_display.h
 $O/stop_codon.o: $(SRCROOT)/primer3/src/dpal.h undo.h tagUtils.h
-$O/stop_codon.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/stop_codon.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/stop_codon.o: io-reg.h
 $O/stop_codon.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/stop_codon.o: gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
@@ -1336,15 +1349,15 @@ $O/strand_coverage.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/strand_coverage.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/strand_coverage.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/strand_coverage.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/strand_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/strand_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/strand_coverage.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/strand_coverage.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/strand_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/strand_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/strand_coverage.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/strand_coverage.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/strand_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h hash.h list.h
 $O/strand_coverage.o: $(SRCROOT)/tk_utils/text_output.h consen.h qual.h
 $O/strand_coverage.o: template_display.h
 $O/strand_coverage.o: io-reg.h
-$O/strand_coverage.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/strand_coverage.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/strand_coverage.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/strand_coverage.o: consistency_display.h strand_coverage.h
 $O/strand_coverage.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
@@ -1352,14 +1365,14 @@ $O/strand_coverage.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/M
 $O/strand_coverage.o: template.h ruler_display.h gap_canvas_box.h newgap_cmds.h
 $O/tagEditor.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
 $O/tagEditor.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/tagEditor.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tagEditor.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tagEditor.o: $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
 $O/tagEditor.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tagEditor.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/tagEditor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tagEditor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/tagEditor.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/tagEditor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tagEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tagEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/tagEditor.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/tagEditor.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tagEditor.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h gap_globals.h
 $O/tagEditor.o: $(SRCROOT)/tk_utils/tcl_utils.h select.h
 $O/tagEditor.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
@@ -1372,17 +1385,17 @@ $O/tagEditor.o: io_utils.h IO.h $(SRCROOT)/g/g-defs.h
 $O/tagEditor.o: tkEdNames.h io-reg.h
 $O/tagEditor.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tagEditor.o: undo.h tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h
-$O/tagU1.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tagU1.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tagU1.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tagU1.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tagU1.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/tagU1.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/tagU1.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tagU1.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/tagU1.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tagU1.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h
 $O/tagU1.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/tagU1.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/tagU1.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tagU1.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tagU1.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tagU1.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tagU1.o: primlib.h
 $O/tagU1.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/tagU1.o: contigEditor.h tagdb.h notedb.h active_tags.h select.h
@@ -1394,13 +1407,13 @@ $O/tagU1.o: tkEdNames.h io-reg.h
 $O/tagU1.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tagU2.o: $(SRCROOT)/Misc/FtoC.h
 $O/tagU2.o: $(SRCROOT)/Misc/os.h fort.h io_utils.h
-$O/tagU2.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tagU2.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tagU2.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tagU2.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tagU2.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tagU2.o: $(SRCROOT)/primer3/src/primer3.h $(SRCROOT)/primer3/src/dpal.h
-$O/tagU2.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/tagU2.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tagU2.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/tagU2.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tagU2.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h
 $O/tagU2.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tagU2.o: $(SRCROOT)/tk_utils/text_output.h dbcheck.h active_tags.h tagdb.h
@@ -1411,7 +1424,7 @@ $O/tagU2.o: tagUtils.h edStructs.h $(SRCROOT)/Misc/xalloc.h
 $O/tagU2.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/tagU2.o: primlib.h
 $O/tagU2.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
-$O/tagU2.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tagU2.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tagU2.o: tagDefs.h fortran.h $(SRCROOT)/Misc/misc.h contigEditor.h
 $O/tagU2.o: template.h list.h undo.h edUtils.h qual.h tman_display.h
 $O/tagdb.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
@@ -1424,18 +1437,19 @@ $O/template.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-if.h $(SRCR
 $O/template.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/template.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/template.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
-$O/template.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/template.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/template.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/template.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/template.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/template.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/template.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h tagDefs.h fortran.h
 $O/template.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/template.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/template.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/template.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/template.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/template.o: $(SRCROOT)/primer3/src/dpal.h undo.h edUtils.h
 $O/template.o: $(SRCROOT)/Misc/os.h
 $O/template.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/template.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
+$O/template.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
 $O/template.o: qual.h tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/template.o: template.h list.h tagUtils.h edStructs.h fort.h tkEditor.h
 $O/template.o: tkEdNames.h io-reg.h
@@ -1449,9 +1463,9 @@ $O/template_display.o: $(SRCROOT)/io_lib/include/expFileIO.h
 $O/template_display.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/template_display.o: $(SRCROOT)/primer3/src/dpal.h undo.h edUtils.h qual.h
 $O/template_display.o: $(SRCROOT)/primer3/src/primer3.h
-$O/template_display.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/template_display.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/template_display.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/template_display.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/template_display.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/template_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
 $O/template_display.o: $(SRCROOT)/tk_utils/canvas_box.h hash.h
 $O/template_display.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/template_display.o: $(SRCROOT)/tk_utils/sheet.h $(SRCROOT)/tk_utils/tkSheet_struct.h
@@ -1460,9 +1474,9 @@ $O/template_display.o: $(SRCROOT)/tk_utils/text_output.h gap_globals.h
 $O/template_display.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h primlib.h
 $O/template_display.o: tagUtils.h edStructs.h
 $O/template_display.o: io-reg.h
-$O/template_display.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/template_display.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/template_display.o: template_display.h
-$O/template_display.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/template_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/template_display.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
 $O/template_display.o: active_tags.h $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/Misc/vlen.h
 $O/template_display.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
@@ -1472,19 +1486,19 @@ $O/template_display.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/text-io-reg.o: $(SRCROOT)/Misc/array.h
 $O/text-io-reg.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/text-io-reg.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/text-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/text-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/text-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/text-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/text-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/text-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
 $O/text-io-reg.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
 $O/text-io-reg.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h $(SRCROOT)/g/g-struct.h
 $O/tk-io-reg.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/tk-io-reg.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h template_display.h hash.h
 $O/tk-io-reg.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h io_utils.h
-$O/tk-io-reg.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/tk-io-reg.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h io_utils.h
+$O/tk-io-reg.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/tk-io-reg.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tk-io-reg.o: tk-io-reg.h io-reg.h
 $O/tk-io-reg.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/tk-io-reg.o: newgap_structs.h
@@ -1500,10 +1514,10 @@ $O/tkEdNames.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tkEdNames.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tkEdNames.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tkEdNames.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
-$O/tkEdNames.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tkEdNames.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tkEdNames.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/tkEdNames.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/tkEdNames.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tcl_utils.h notes.h $(SRCROOT)/tk_utils/tkSheet_config.h
@@ -1511,7 +1525,7 @@ $O/tkEdNames.o: $(SRCROOT)/tk_utils/tkSheet_common.h $(SRCROOT)/tk_utils/tkSheet
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/tkEdNames.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/tkEdNames.o: edStructs.h $(SRCROOT)/Misc/xalloc.h
-$O/tkEdNames.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tkEdNames.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tkEdNames.o: fort.h io_utils.h
 $O/tkEdNames.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/tkEdNames.o: io-reg.h
@@ -1529,10 +1543,10 @@ $O/tkEdUtils.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.
 $O/tkEdUtils.o: $(SRCROOT)/primer3/src/primer3.h
 $O/tkEdUtils.o: $(SRCROOT)/seq_utils/dna_utils.h notedb.h tman_interface.h
 $O/tkEdUtils.o: $(SRCROOT)/seq_utils/genetic_code.h $(SRCROOT)/Misc/misc.h
-$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
-$O/tkEdUtils.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tkEdUtils.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
+$O/tkEdUtils.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tkEdUtils.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/tkEdUtils.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tkEdUtils.o: $(SRCROOT)/tk_utils/tcl_utils.h edUtils.h qual.h edStructs.h
@@ -1540,16 +1554,16 @@ $O/tkEdUtils.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h primli
 $O/tkEdUtils.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/tkEdUtils.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/tkEdUtils.o: gap_globals.h
-$O/tkEdUtils.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tkEdUtils.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tkEdUtils.o: tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/tkEditor.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
 $O/tkEditor.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/tkEditor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tkEditor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/tkEditor.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/tkEditor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tkEditor.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/tkEditor.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/tkEditor.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/licence.h gap_globals.h $(SRCROOT)/tk_utils/tkSheet_config.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1574,10 +1588,10 @@ $O/tman_cons.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace
 $O/tman_cons.o: $(SRCROOT)/io_lib/include/traceType.h $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/tman_cons.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tman_cons.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
-$O/tman_cons.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tman_cons.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tman_cons.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h tman_interface.h edUtils.h
-$O/tman_cons.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tman_cons.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tman_cons.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tman_cons.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h tman_interface.h edUtils.h
+$O/tman_cons.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tman_cons.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/misc.h
 $O/tman_cons.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tman_cons.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -1586,7 +1600,7 @@ $O/tman_cons.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 $O/tman_cons.o: fort.h io_utils.h
 $O/tman_cons.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/tman_cons.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
-$O/tman_cons.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tman_cons.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tman_cons.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/tman_cons.o: qual.h $(SRCROOT)/Misc/os.h edStructs.h $(SRCROOT)/Misc/xalloc.h
 $O/tman_cons.o: tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
@@ -1600,39 +1614,39 @@ $O/tman_diff.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/
 $O/tman_diff.o: $(SRCROOT)/mutlib/mutlib.h $(SRCROOT)/mutlib/staden.h $(SRCROOT)/Misc/misc.h
 $O/tman_diff.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
 $O/tman_diff.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/Read.h
-$O/tman_diff.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/tman_diff.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h edUtils.h qual.h $(SRCROOT)/Misc/os.h
-$O/tman_diff.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tman_diff.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tman_diff.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h edUtils.h qual.h $(SRCROOT)/Misc/os.h
+$O/tman_diff.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tman_diff.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h tman_interface.h
 $O/tman_diff.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tman_diff.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/tkTraceIO.h
 $O/tman_diff.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
 $O/tman_diff.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
-$O/tman_diff.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/tman_diff.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/tman_diff.o: IO.h $(SRCROOT)/g/g-defs.h
 $O/tman_diff.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/tman_diff.o: fort.h io_utils.h
 $O/tman_diff.o: edStructs.h $(SRCROOT)/Misc/xalloc.h
-$O/tman_diff.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tman_diff.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tman_diff.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/tman_diff.o: tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/tman_display.o: $(SRCROOT)/Misc/misc.h
 $O/tman_display.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/tman_display.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h
-$O/tman_display.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tman_display.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tman_display.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/compress.h
 $O/tman_display.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
 $O/tman_display.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h edUtils.h
 $O/tman_display.o: $(SRCROOT)/primer3/src/primer3.h
-$O/tman_display.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tman_display.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
-$O/tman_display.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tman_display.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tman_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/tman_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/cli_arg.h tman_interface.h gap_globals.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tk_utils/tclXkeylist.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/tman_display.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tman_display.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tman_display.o: edStructs.h fort.h io_utils.h
 $O/tman_display.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/tman_display.o: primlib.h
@@ -1642,20 +1656,20 @@ $O/tman_display.o: tkEdNames.h io-reg.h
 $O/tman_display.o: tman_display.h $(SRCROOT)/io_lib/include/Read.h
 $O/tman_interface.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/tman_interface.o: $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
-$O/tman_interface.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tman_interface.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tman_interface.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
 $O/tman_interface.o: $(SRCROOT)/primer3/src/dpal.h template.h list.h undo.h tagUtils.h
 $O/tman_interface.o: $(SRCROOT)/primer3/src/primer3.h
-$O/tman_interface.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h io_handle.h tkEditor.h
+$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tkEditor.h
 $O/tman_interface.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
 $O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/tman_interface.o: $(SRCROOT)/tk8.4.0/generic/tk.h
-$O/tman_interface.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
-$O/tman_interface.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tman_interface.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tman_interface.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tman_interface.o: IO.h
 $O/tman_interface.o: primlib.h
 $O/tman_interface.o: edUtils.h qual.h $(SRCROOT)/Misc/os.h edStructs.h $(SRCROOT)/Misc/xalloc.h
@@ -1668,9 +1682,9 @@ $O/undo.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.
 $O/undo.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/scf.h
 $O/undo.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/undo.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/undo.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/undo.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
-$O/undo.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/undo.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/undo.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/undo.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/undo.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h extend.h
 $O/undo.o: $(SRCROOT)/tk_utils/sheet.h
 $O/undo.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h io-reg.h
@@ -1681,15 +1695,15 @@ $O/undo.o: undo.h edUtils.h qual.h $(SRCROOT)/Misc/os.h
 $O/undo.o: primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/undo.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
 $O/undo.o: contigEditor.h $(SRCROOT)/tk_utils/text_output.h
-$O/undo.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/undo.o: io_handle.h tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/undo.o: tagUtils.h tagDefs.h fortran.h $(SRCROOT)/Misc/dstring.h tman_display.h
 $O/vseqs.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/vseqs.o: $(SRCROOT)/Misc/bitmap.h
 $O/vseqs.o: $(SRCROOT)/Misc/misc.h
 $O/vseqs.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
-$O/vseqs.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
-$O/vseqs.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/xalloc.h
-$O/vseqs.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/vseqs.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/vseqs.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/xalloc.h
+$O/vseqs.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/vseqs.o: vseqs.h qual.h $(SRCROOT)/tk_utils/text_output.h
 $O/vseqs.o: gap-dbstruct.h $(SRCROOT)/g/g-os.h gap-if.h
 $O/vseqs.o: IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h

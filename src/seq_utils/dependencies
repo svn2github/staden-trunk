@@ -27,9 +27,6 @@ $O/dna_utils.o: $(SRCROOT)/Misc/xalloc.h
 $O/dna_utils.o: $(SRCROOT)/Misc/os.h
 $O/edge.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h dna_utils.h
 $O/edge.o: $(SRCROOT)/Misc/misc.h
-$O/g_band.o: $(SRCROOT)/Misc/xalloc.h
-$O/g_band.o: align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
-$O/g_band.o: align_lib_old.h
 $O/genetic_code.o: dna_utils.h $(SRCROOT)/Misc/array_arith.h
 $O/genetic_code.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
 $O/genetic_code.o: genetic_code.h $(SRCROOT)/text_utils/text_output.h $(SRCROOT)/Misc/misc.h
