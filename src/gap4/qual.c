@@ -838,7 +838,7 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
     register int j;
     register int *conq;
     int (*c_qual)[7], counts;
-    float val, *qual;
+    float val, *qual, *discrep;
     char *con, *con1, *con2;
     unsigned char base;
     float *qual1, *qual2;
@@ -853,6 +853,7 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
     c_qual = c_qual1;
     con = &con1[pos];
     qual = qual1 ? &qual1[pos] : NULL;
+    discrep = qual2 ? &qual2[pos] : NULL;
 
     counts = con2 ? 2 : 1;
 
@@ -919,6 +920,22 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		    val = 0;
 		    base = 5;
 		}
+	    }
+
+	    /* Obtaining 2nd-highest confidence */
+	    if (!con2 && discrep) {
+		int first = 0, second = 0;
+		int k;
+		for (k = 0; k < 5; k++) {
+		    if (first < conq[k]) {
+			second = first;
+			first = conq[k];
+		    } else if (second < conq[k]) {
+			second = conq[k];
+		    }
+		}
+
+		*discrep++ = (second * 100.0) / conq[5];
 	    }
 	    
 	    /*
