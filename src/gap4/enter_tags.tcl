@@ -84,7 +84,7 @@ proc reformat_tag_file {io file} {
 		    }
 		    set inum -$cnum($index)
 		} else {
-		    if {![info exists cnum($index)]} {
+		    if {![info exists rnum($index)]} {
 			set rnum($index) [db_info get_read_num $io $index]
 		    }
 		    set inum $rnum($index)
