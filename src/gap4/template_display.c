@@ -1189,6 +1189,7 @@ CalcTemplates(GapIO *io,	                                      /*  in */
 	      int not_single,	                                      /*  in */
 	      int read_pairs,
 	      int span_read_pairs,
+	      int consist_read_pairs,
 	      int win_height)	                                      /*  in */
 {
     int i;			                                  /* counter */
@@ -1218,6 +1219,10 @@ CalcTemplates(GapIO *io,	                                      /*  in */
 	/* if the template is in the contig */
 	if (t) {
 	    item_t *it;
+
+	    /* Check if we only want consistent read pairs shown */
+	    if (t->consistency && consist_read_pairs)
+		continue;
 
 	    /*
 	     * user display configurations: display templates with > 1 reading,
@@ -2395,6 +2400,12 @@ template_config(Tcl_Interp *interp,
     Tcl_LinkVar(interp, config, (char *)&config_array[SPAN_READ_PAIRS],
 		TCL_LINK_INT);
 
+    sprintf(config, "config%s.consist_read_pairs", frame);
+    config_array[CONSIST_READ_PAIRS] = atoi(Tcl_GetVar(interp,config,TCL_GLOBAL_ONLY));
+    Tcl_LinkVar(interp, config, (char *)&config_array[CONSIST_READ_PAIRS],
+		TCL_LINK_INT);
+
+
     sprintf(config, "config%s.calc_contig_pos", frame);
     config_array[CALC_CONTIG_POS] = atoi(Tcl_GetVar(interp,config,TCL_GLOBAL_ONLY));
     Tcl_LinkVar(interp, config, (char *)&config_array[CALC_CONTIG_POS],
@@ -2658,6 +2669,7 @@ display_templates(Tcl_Interp *interp,
 			      t->configs[MULTI_TEMPLATES],
 			      t->configs[READ_PAIRS],
 			      t->configs[SPAN_READ_PAIRS],
+			      t->configs[CONSIST_READ_PAIRS],
 			      t->canvas->height);
 
 	if (-1 == check) {

@@ -24,15 +24,16 @@
 #define TASK_TEMPLATE_REDRAW   0
 
 /* configure array for what to display on the template display */
-#define NUM_CONFIGS      8
-#define TEMPLATES        0
-#define READINGS         1
-#define MULTI_TEMPLATES  2
-#define READ_PAIRS       3 
-#define RULER            4
-#define TICKS            5
-#define SPAN_READ_PAIRS  6
-#define CALC_CONTIG_POS  7
+#define NUM_CONFIGS        9
+#define TEMPLATES          0
+#define READINGS           1
+#define MULTI_TEMPLATES    2
+#define READ_PAIRS         3   
+#define RULER              4
+#define TICKS              5
+#define SPAN_READ_PAIRS    6
+#define CALC_CONTIG_POS    7
+#define CONSIST_READ_PAIRS 8
 
 typedef struct {
     list_t *gel_cont;
