@@ -98,6 +98,7 @@ _split()
 * Show Relationships:: List Reading and Contig Information
 * Find Oligos::   Sequence Search
 * Auto Clipping:: Automatic Clipping by Quality and Sequence Similarity
+* Contig Navigation:: Navigate to contig regions from file
 @end menu
 
 _split()
@@ -109,6 +110,11 @@ _split()
 @section Show Relationships
 _include(show_rel-t.texi)
 
+@page
+_split()
+@node Contig Navigation
+@section Contig Navigation
+_include(contig_navigation-t.texi)
 
 @page
 _split()

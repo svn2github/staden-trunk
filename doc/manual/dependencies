@@ -35,6 +35,7 @@ gap4-t.texi: exp_suggest-t.texi
 gap4-t.texi: calc_consensus-t.texi
 gap4-t.texi: complement-t.texi
 gap4-t.texi: show_rel-t.texi
+gap4-t.texi: contig_navigation-t.texi
 gap4-t.texi: find_oligo-t.texi
 gap4-t.texi: extract-t.texi
 gap4-t.texi: clip-t.texi
@@ -146,6 +147,8 @@ contig_editor-t.texi: mut_traces_positive.unix.ps
 contig_editor-t.texi: contig_editor.traces.unix.ps
 contig_editor-t.texi: contig_editor.traces.compact.unix.ps
 contig_editor-t.texi: contig_editor.join.unix.ps
+contig_navigation-t.texi: contig_navigation_browse.unix.ps
+contig_navigation-t.texi: contig_navigation_table.unix.ps
 contig_ordering-t.texi: c_order_lb.unix.ps
 contig_ordering-t.texi: comparator.unix.ps
 contig_ordering-t.texi: c_order_t1.unix.ps
