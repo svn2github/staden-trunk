@@ -68,6 +68,40 @@ static int numu_lock_files = 0;
 #define SOCKET_ERROR -1
 #endif
 
+#if !defined(NOLOCKF)
+int test_if_locked(char *fname) {
+    int locked = 0;
+    int fd;
+
+    if ((fd = open(fname, O_RDONLY, 0)) != -1) {
+	locked = 1;
+	/*
+	 * If we locked this file ourselves then lockf() will succeed,
+	 * so test for this case also. We do this simply by looking through
+	 * the list of locked files to see if it is one we already know about.
+	 */
+	int i;
+	for (i = 0; i < numu_lock_files; i++) {
+	    if (strcmp(lock_files[i].pathname, fname) == 0) {
+		break;
+	    }
+	}
+
+	/*
+	 * If i == numu_lock_files then we are not using this db
+	 * ourselves. Use lockf() to check if another process has
+	 * this db open.
+	 */
+	if (i == numu_lock_files && lockf(fd, F_TEST, 0) == 0) {
+	    locked = 0;
+	}
+	close(fd);
+    }
+
+    return locked;
+}
+#endif
+
 int actf_lock(int read_only, char *file, char *version,int new) {
     char fname[2048];
     struct stat statbuf;
@@ -78,6 +112,7 @@ int actf_lock(int read_only, char *file, char *version,int new) {
     char db_path[2048];
     char aux_path[2048];
     char hostname[1024];
+    int locked;
 
     /*
      * This may appear useless as we're using dir for creating the BUSY file,
@@ -115,51 +150,41 @@ int actf_lock(int read_only, char *file, char *version,int new) {
     } else {
 	sprintf(db_name, "%s.%s", file, version);
     }
-    sprintf(fname,    "%s%s.%s.BUSY", dir, file, version);
     sprintf(db_path,  "%s.%s",      file, version);
     sprintf(aux_path, "%s.%s.aux",  file, version);
+    sprintf(fname,    "%s%s.%s.BUSY", dir, file, version);
 
 
-    /* Check for existance of lock */
+    /* Check for existance of lock on the BUSY file (from older gap4s) */
+    locked = 0;
     if (stat(fname, &statbuf) != -1) {
-	int locked = 1;
 #if !defined(NOLOCKF)
-	if ((fd = open(fname, O_RDONLY, 0)) != -1) {
-	    /*
-	     * If we locked this file ourselves then lockf() will succeed,
-	     * so test for this case also.
-	     */
-	    int i;
-	    for (i = 0; i < numu_lock_files; i++) {
-		if (strcmp(lock_files[i].pathname, fname) == 0) {
-		    break;
-		}
-	    }
-
-	    /*
-	     * If i == numu_lock_files then we are not using this db
-	     * ourselves. Use lockf() to check if another process has
-	     * this db open.
-	     */
-	    if (i == numu_lock_files && lockf(fd, F_TEST, 0) == 0) {
-		vmessage("WARNING! Database has lock file, but is no longer in use.\n");
-		log_file(NULL, "Overriding lock file");
-		if (!read_only)
-		    vmessage("WARNING! Taking ownership of lock.\n");
-		locked = 0;
-	    }
-	    close(fd);
+	locked = test_if_locked(fname);
+	if (!locked) {
+	    vmessage("WARNING! Database has lock file, "
+		     "but is no longer in use.\n");
+	    log_file(NULL, "Overriding lock file");
+	    if (!read_only)
+		vmessage("WARNING! Taking ownership of lock.\n");
 	}
+#else
+	locked = 1;
 #endif
-	if (locked) {
-	    if (read_only) {
-		vmessage("WARNING! Database is currently in use\n");
-		return 0;
-	    } else {
-		/* lock already exists */
-		actferr(5);
-		return 5;
-	    }
+    }
+
+    /* Check for the existance of a lock on the DB file itself */
+    if (!locked) {
+	locked = test_if_locked(db_path);
+    }
+
+    if (locked) {
+	if (read_only) {
+	    vmessage("WARNING! Database is currently in use\n");
+	    return 0;
+	} else {
+	    /* lock already exists */
+	    actferr(5);
+	    return 5;
 	}
     }
 

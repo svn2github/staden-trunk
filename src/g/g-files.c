@@ -169,6 +169,18 @@ GFile *g_open_file(char *fn, int read_only)
 	if ( !read_only || (gfile->fdaux = open(fnaux,O_RDONLY|O_BINARY)) == -1 )
 	    ABORT(GERR_OPENING_FILE);
 
+    if (lockf(gfile->fd, F_TEST, 0)) {
+	fprintf(stderr, "*** File %s is locked (inuse) by another process\n",
+		fn);
+	if (!read_only) {
+	    close(gfile->fdaux);
+	    ABORT(GERR_OPENING_FILE);
+	}
+    }
+    if (!read_only) {
+	lockf(gfile->fd, F_LOCK, 0);
+    }
+
 
 #ifdef USE_MMAP
     {
