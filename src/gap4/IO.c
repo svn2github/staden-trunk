@@ -1784,7 +1784,7 @@ int close_db(GapIO *io) {
 }
 
 static void convert_db(GapIO *io, char *project, char *version) {
-    char *vers = "B";
+    char *vers = "~";
     GReadings r;
     GAnnotations a;
     int gel, anno;
