@@ -35,6 +35,8 @@ set_def IGNORE_CUSTOM_PTYPE	0
 #-----------------------------------------------------------------------------
 # Colours
 #-----------------------------------------------------------------------------
+set_def BACKGROUNDS "bisque #99c8ff #a0ffa0 #ffa0a0 orange hotpink purple"
+
 set_def	CONTIG_SEL.CURSOR_COLOUR		"blue"
 set_def	CONTIG_SEL.CROSSHAIRS_COLOUR		"black"
 set_def	CONTIG_SEL.CONTIG_COLOUR		"black"
