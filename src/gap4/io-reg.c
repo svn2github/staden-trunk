@@ -113,7 +113,7 @@ int contig_register(GapIO *io, int contig,
     /* Log file */
     if (id != last_id) {
 	char buf[1024];
-	sprintf(buf, "> Register id=%d", id);
+	sprintf(buf, "> Register id=%d cnum=%d", id, contig);
 	log_file(NULL, buf);
 	last_id = id;
     }
