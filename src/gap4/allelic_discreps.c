@@ -638,8 +638,9 @@ void add_snp_edges(GapIO *io, int contig, template_c **tarr,
 	snp[i].nseqs = nseqs;
 	weight = snp[i].score;
 
-	printf("SNP %d at %d qual_score %f. Seqs: ",
-	       i, snp[i].pos, snp[i].score);
+	printf("SNP %d at %d qual_score %f. Seqs: %d ",
+	       i, snp[i].pos, snp[i].score,
+	       nseqs);
 
 	/* Iterate through all pairs */
 	for (j = 0; j < nseqs; j++) {
@@ -919,7 +920,9 @@ void filter_snps(GapIO *io, int contig, template_c **tarr,
 	printf("SNP %d at %d, match/mis = %d/%d\n",
 	       i, snp[i].pos, match, mismatch);
 
-	if ((double)match/(mismatch+match) < 0.6 /* || base[0] == base[1] */) {
+	if (mismatch + match <= 0 ||
+	    (double)match/(mismatch+match) < 0.6
+	    /* || base[0] == base[1] */) {
 	    printf("   Filtering SNP\n");
 	    remove_edges_at_pos(g, snp[i].pos);
 	    snp[i].pos = 0;
@@ -995,9 +998,9 @@ static void dump_snps(ad_graph *g, snp_t *snp, int nsnp) {
 	    count++;
 	}
 	printf("SNP %d pos %5d count %4d score %f avg %f\n",
-	       j, snp[j].pos, count, score, score/count);
+	       j, snp[j].pos, count, score, count ? score/count : 0);
 
-	if (score/count < 10) {
+	if (count == 0 || score/count < 10) {
 	    printf("SNP %d: REMOVED\n", j);
 	    remove_edges_at_pos(g, snp[j].pos);
 	    snp[j].pos = -snp[j].pos;
@@ -1078,6 +1081,150 @@ static void dump_graph(ad_graph *g) {
     fprintf(stderr, "}\n");
 }
 
+void print_snps(GapIO *io, int contig, snp_t *snps, int nsnps) {
+    int i, j;
+    int rn;
+
+    printf("int M[][]={\n");
+    for (rn = io_clnbr(io, contig); rn; rn = io_rnbr(io, rn)) {
+	for (i = 0; i < nsnps; i++) {
+	    for (j = 0; j < snps[i].nseqs; j++) {
+		if (snps[i].seqs[j].seqnum == rn)
+		    break;
+	    }
+	    if (j != snps[i].nseqs) {
+		printf(" '%c',", snps[i].seqs[j].base);
+	    } else {
+		printf(" 0,  ");
+	    }
+	}
+	putchar('\n');
+    }
+    printf("};\n");
+}
+
+void print_snps2(GapIO *io, int contig, snp_t *snps, int nsnps,
+		 template_c **tarr) {
+    int i, j;
+    char **templates;
+    char *cons;
+    int clen = io_clength(io, contig);
+
+    cons = (char *)xmalloc(clen+1);
+    calc_consensus(contig, 1, clen, CON_SUM,
+		   cons, NULL, NULL, NULL,
+		   consensus_cutoff, quality_cutoff,
+		   database_info, (void *)io);
+
+    templates = (char **)xcalloc((Ntemplates(io)+1), sizeof(char *));
+    puts(">>>SNP DUMP<<<");
+    for (i = 0; i < nsnps; i++) {
+	char base;
+	int count;
+
+	/*
+	 * Count the number of bases matching the SNP consensus either side.
+	 * We skip pads too. The reason for this is to work out if the SNP
+	 * occurs within a run of the same base type so we can downweight the
+	 * impact if it is a base vs pad SNP. The alignments are often poor
+	 * in such cases and also there seems to be copy-number variations
+	 * introduced by PCR that are not necessarily a real component of the
+	 * two alleles.
+	 */
+
+	/* Pads are a special case - compute base type as longest from l/r*/
+	if ((base = cons[snps[i].pos-1]) == '*') {
+	    char basel = '*', baser = '*';
+	    int countl = 0, countr = 0;
+
+	    /* Find left and right base type */
+	    j = snps[i].pos-2;
+	    while (j >= 0 && cons[j] == '*')
+		j--;
+	    if (j >= 0)
+		basel = cons[j];
+	    while (j >= 0 && cons[j] == basel)
+		j--, countl++;
+
+	    j = snps[i].pos;
+	    while (j < clen && cons[j] == '*')
+		j++;
+	    if (j < clen)
+		baser = cons[j];
+	    while (j < clen && cons[j] == baser)
+		j++, countr++;
+
+	    if (countl > countr && basel != '*')
+		base = basel;
+	    else if (countr > countl && baser != '*')
+		base = baser;
+	    else if (basel != '*')
+		base = basel;
+	    else
+		base = baser;
+	} else {
+	    base = cons[snps[i].pos-1];
+	}
+
+	count = 0;
+	for (j = snps[i].pos-1; j >= 0; j--) {
+	    if (cons[j] == '*')
+		continue;
+	    
+	    if (cons[j] == base)
+		count++;
+	    else
+		break;
+	}
+	for (j = snps[i].pos; j < clen; j++) {
+	    if (cons[j] == '*')
+		continue;
+	    
+	    if (cons[j] == base)
+		count++;
+	    else
+		break;
+	}
+
+	printf("SNP %d %c %d %f ", snps[i].pos, base,
+	       count, snps[i].score);
+	for (j = 0; j < snps[i].nseqs; j++) {
+	    int tnum = snps[i].seqs[j].tmplate;
+	    if (!templates[tnum]) {
+		templates[tnum] = (char *)xcalloc(nsnps+1, 1);
+		memset(templates[tnum], '-', nsnps);
+	    }
+	    templates[tnum][i] = snps[i].seqs[j].base;
+	    putchar(snps[i].seqs[j].base);
+	}
+	putchar('\n');
+    }
+
+    puts(">>>TEMPLATE DUMP START<<<");
+    for (i = 1; i <= Ntemplates(io); i++) {
+	double score;
+	int consist;
+
+	if (!templates[i])
+	    continue;
+
+	consist = tarr[i]->consistency;
+	score = 1;
+	if (consist & (TEMP_CONSIST_STRAND | TEMP_CONSIST_PRIMER))
+	    score /= 10;
+	else if (consist)
+	    score /= 3;
+
+	printf("TEMPLATE %-22s %f %s\n", get_template_name(io, i),
+	       score, templates[i]);
+	xfree(templates[i]);
+    }
+    puts(">>>TEMPLATE DUMP END<<<");
+
+    xfree(templates);
+    xfree(cons);
+}
+
 /* ------------------------------------------------------------------------ */
 /*
  * MAIN ENTRY POINT.
@@ -1136,6 +1283,9 @@ dstring_t *allelic_discreps(GapIO *io, int contig) {
 	
 	/* Add edges between all nodes that reside at this snp. */
 	add_snp_edges(io, contig, tarr, g, snps, nsnps);
+
+	/* Temporary debug to pass to new snp algorithm */
+	print_snps2(io, contig, snps, nsnps, tarr);
 
 	/* Optimise graph by reversing nodes */
 	optimise_graph(g);
