@@ -252,11 +252,12 @@ static void copy_consensus_annotations(GapIO *io, int cfrom, int cto) {
 int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 			 int duplicate_tags)
 {
-    int i;
+    int i, j;
     int *rnum2cnum = NULL;
     int *rnum_changed = NULL; /* 0 for unchanged, new cnum for changed */
     int *new_cnum = NULL;
     int cn, rn;
+    int last_read;
 
     /*
      * To implement this we firstly take the readings out of the contigs
@@ -285,6 +286,17 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
      */
     qsort(rnums, nreads, sizeof(rnums[0]), rsort_int);
 
+    /*
+     * Filter out any duplicates.
+     */
+    last_read = 0;
+    for (i = j = 0; i < nreads; i++) {
+	if (rnums[i] == last_read) {
+	    continue;
+	}
+	last_read = rnums[j++] = rnums[i];
+    }
+    nreads = j;
 
     /*
      * Produce a table of which contig each reading number is in.
