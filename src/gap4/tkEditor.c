@@ -1283,9 +1283,34 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	else
 	    num = ed->xx->cursorSeq;
 
+	Tcl_ResetResult(interp);
 	if (NULL != (name = edGetGelName(ed->xx, num))) {
 	    Tcl_AppendResult(interp, name, NULL);
 	} /* otherwise return a blank */
+
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_names_to_right") == 0) {
+	int num;
+	dstring_t *ds = NULL;
+
+	if (argc != 2 && argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_name ?gel_number?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 3)
+	    Tcl_GetInt(interp, argv[2], &num);
+	else
+	    num = ed->xx->cursorSeq;
+
+	if (NULL != (ds = edGetGelNamesToRight(ed->xx, num))) {
+	    Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	    dstring_destroy(ds);
+	} else {
+	    /* otherwise return a blank */
+	    Tcl_ResetResult(interp);
+	}
 
     } else if ('f' == *argv[1] && strcmp(argv[1], "find_read") == 0) {
 	int num;
