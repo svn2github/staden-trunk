@@ -4300,6 +4300,50 @@ int tcl_list_confidence(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int tcl_list_base_confidence(ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list_conf_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list_conf_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list_conf_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int freqmat[256], freqmis[256];
+    int i;
+
+    vfuncheader("list base confidence");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    memset(freqmat, 0, 256 * sizeof(int));
+    memset(freqmis, 0, 256 * sizeof(int));
+
+    for (i = 0; i < rargc; i++) {
+	if (-1 == get_base_confidences(args.io, rargv[i].contig,
+				       freqmat, freqmis)) {
+	    verror(ERR_WARN, "list_base_confidence",
+		   "Failed to get base confidences");
+	    continue;
+	}
+
+    }
+
+    vTcl_SetResult(interp, "%f",
+		   list_base_confidence(freqmat, freqmis)
+		   );
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+
+
 int tcl_find_tags(ClientData clientData, Tcl_Interp *interp,
 		  int objc, Tcl_Obj *CONST objv[])
 {
@@ -5219,6 +5263,8 @@ NewGap_Init(Tcl_Interp *interp) {
 		      NumReadingsInContig, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "list_confidence",
 			 tcl_list_confidence, (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "list_base_confidence",
+			 tcl_list_base_confidence, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "new_note",
 			 tcl_new_note, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "delete_note",
