@@ -1,0 +1,161 @@
+			Staden Package v1.5.3
+			=====================
+(aka 2004.1).
+
+The is a general new-features and bug-fix release of the Staden
+Package. There are no massive changes, but I hope you'll find the
+updates useful still. Windows users may find a larger difference as
+the previous release was not build on that platform; please read the
+1.4 release notes too.
+
+This release also includes much needed updates to the
+documentation. It is provided in PDF format; if you wish to obtain the
+old PostScript format we previously provided please use the Acrobat
+(or similar) tools.
+
+For the full list of bug fixes and gory details of all files changed,
+please see the ChangeLog. Here is a summary of new features or
+improvements:
+
+
+Gap4
+====
+
+*	New plot: 2nd-highest confidence. This plot shows next highest
+	confident base per consensus location. (This plots the same as
+	the contig editor "consensus discrepancy" search.)
+
+*	New plot: discrepancies. Much like the 2nd-highest confidence,
+	but with some added statistics to compute the likelihood of
+	this position containing two different sequences.
+
+*	New command List Base Confidence on View menu. This tabulates
+	base call confidence values along with their agreement or
+	disagreement with the consensus. This is a useful measure for
+	the amount of variations within an assembly (whether they are
+	real SNPs or assembly errors).
+
+*	Added a "Join To..." menu to the contig editor names
+	panel. This brings up the join editor based on read-pair
+	linkage between contigs.
+
+*	New editor search mode - by consensus discrepancy. Unlike the
+	normal discrepancy search, this finds locations where the
+	consensus scores computed from each base-types in turn
+	indicate a problem.
+
+*	Mousewheel support has been added to the Y-scrolling of the
+	contig editor and trace displays.
+
+*	New function: "quality clip contig ends" to trim back low
+	quality data off the end of contigs. The purpose is to correct
+	for phrap assemblies where clipping is typically done based on
+	disagreements, and disagreements at the very end when depth=1
+	do not happen. This leads to 'rubbish' being at the contig
+	end, devaluing the FIJ with "hidden data" turned off.
+
+*	The editor reference sequence will now always be shown at the
+	top of the editor.
+
+*	When auto-diff traces is enabled, the editor will
+	automatically pick wild-type traces to compare against if none
+	have been set.
+
+*	Improved the Y-scaling for auto-diff. It is now beneficial to
+	enable!
+
+*	Added a setting in the editor to automatically bring up
+	read-pairs of traces. That is, if a forward strand sequence is
+	clicked on and it overlaps with the reverse strand, then both
+	traces are shown.
+
+*	Tags may now contain simple GUIs in place of the text
+	panel. The GUI is based around the Spin ACD (Emboss) code and
+	so is a bit complex to describe. If there is sufficient
+	interest please contact me (jkbonfield) and I will post a
+	writeup on them.
+
+*	Added new template status codes to the contig editor. E
+	indicates that the template is consistent, but an "E"nd is
+	missing (ie it is not a read-pair). O indicates that both ends
+	are present, but one is in an"O"ther contig. The only
+	"D"istance flag has now be split into "D" and "d" to
+	distinguish between too big/small versus impossible.
+ 
+*	The "Sequence Search" function now searches finds matches in
+	padded sequence when using the "by tags" mode. Matches
+	displayed in the editor are now automatically selected to
+	speed up tagging.
+
+*	Added an option to control the maximum alignment length displayed
+	from find internal joins (in the text output window).
+
+*	Added some rudimentary checking for multiple gap4s writing to
+        the same database. One gap4 should now abort (instead of
+        corrupting the database).
+
+*	Added a new option to allow the highlight disagreements	mode
+	to be filtered by base quality. 
+
+*	Ambiguity codes can now be written to FASTA files when
+	saving the consensus.
+
+*	Added a template-size strictness option (in both the main
+	Options menu and the template display menus) to adjust the
+	leeway allowed in the minimum/maximum insert size information.
+
+*	Improved handling of pads in the restriction enzyme plots
+	(sizes listed are correct for padded sequences) and stop codon
+	plots (pads are ignored and no longer cause reading frame
+	shifts).
+
+*	Very short sequencing vector tags may now be ignored when
+	computing the validity of templates, as such tags are
+	typically erroneous.
+
+*	Added the ability to filter out certain types of primer
+	information when computing the consistency of templates. This
+	allows workarounds for invalid PR details in the experiment
+	files.
+
+*	Directed assembly now has the option to ignore vector-clip
+	tags (SL/SR) in the experiment files. This means that vector
+	tags in non-hidden data do not change the assembly when
+	exporting and reassembling the data.
+
+*	Added a "Prev" button to the contig editors Select Primer
+	interface.
+
+*	The editor names display can now be adjusted to show template
+	names instead of reading names (see the editor Settings menu).
+
+*	The contig editor now remembers the last used X-scrollbar
+	position for the names panel when restarting.
+
+
+Prefinish
+=========
+
+*	Sequences containing a "FAKE" note are now ignored when
+	computing strand coverage.
+
+*	Decreased the impact of primer3 scores on the experiment
+	"cost".
+
+*	Added options for checking template status
+	(-chk_template_stat) and to allow ignoring certain classes of
+	errors.
+
+*	Added a -min_vector_len parameter so very small (and hence
+	likely wrong) vector tags are ignored.
+
+
+Other
+=====
+
+*	New command-line tool "getABIfield". This is a generic tool
+	for dumping contents of AB1 files in a variety of formats.
+
+*	Convert_trace -normalise has been rewritten. It generally does
+	a much better job now. It also has a "-subtract" option to
+	remove fixed DC offsets from traces.
