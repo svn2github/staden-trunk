@@ -36,8 +36,9 @@ $O/finish_filter.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g
 $O/finish_filter.o: $(SRCROOT)/gap4/gap-dbstruct.h $(SRCROOT)/g/g-os.h $(SRCROOT)/gap4/gap-if.h
 $O/finish_filter.o: $(SRCROOT)/gap4/primlib.h $(SRCROOT)/primer3/src/primer3.h
 $O/finish_filter.o: $(SRCROOT)/gap4/template.h $(SRCROOT)/gap4/list.h finish_hash.h
-$O/finish_filter.o: $(SRCROOT)/primer3/src/dpal.h finish_filter.h
+$O/finish_filter.o: $(SRCROOT)/primer3/src/dpal.h finish_filter.h $(SRCROOT)/Misc/xalloc.h
 $O/finish_filter.o: $(SRCROOT)/seq_utils/align_lib.h $(SRCROOT)/gap4/hash_lib.h
+$O/finish_filter.o: $(SRCROOT)/seq_utils/dna_utils.h
 $O/finish_filter.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
 $O/finish_filter.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/gap4/IO.h
 $O/finish_filter.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h

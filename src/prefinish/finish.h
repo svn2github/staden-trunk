@@ -55,6 +55,7 @@ typedef struct {
     int	   find_dup_templates;	/* Try to identify duplicate templates */
     int    dust_level;		/* Dust low-complex filter threshold */
     int    min_extension;	/* Minimum contig extension to be worthwhile */
+    int    svec_as_cvec;	/* Treat SVEC as clone ends; useful for ESTs */
 
     /* Options for resequencing */
     int	   reseq_length;	/* Expected length of normal resequencing */

@@ -58,13 +58,16 @@ void complement_seq_qual_mapping(int len, char *seq, float *qual, int *map);
 
 /*
  * Looks for cloning vector. It's useful to know if its there so that we
- * don't allow extending into vector.
+ * don't allow extending into vector. If svec_also is true then this also
+ * treats SVEC as the same as CVEC. The reason for this is to treat sequencing
+ * vector as the clone-end for EST projects.
  *
  * Returns:
  *	Updates contents of left and right to be 0 for no vector and 1 for
  * 	vector present.
  */
-void find_cloning_vector(GapIO *io, int contig, int *left, int *right);
+void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
+			 int svec_also);
 
 /*
  * Clip suggested start and end points for new sequences based on the known

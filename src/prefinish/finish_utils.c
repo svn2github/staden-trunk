@@ -167,16 +167,19 @@ void complement_seq_qual_mapping(int len, char *seq, float *qual, int *map) {
 
 /*
  * Looks for cloning vector. It's useful to know if its there so that we
- * don't allow extending into vector.
+ * don't allow extending into vector. If svec_also is true then this also
+ * treats SVEC as the same as CVEC. The reason for this is to treat sequencing
+ * vector as the clone-end for EST projects.
  *
  * Returns:
  *	Updates contents of left and right to be 0 for no vector and 1 for
  * 	vector present.
  */
-void find_cloning_vector(GapIO *io, int contig, int *left, int *right) {
+void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
+			 int svec_also) {
     int gel;
     int cvec_l = 0, cvec_r = 0;
-    char *tag_types[] = {"CVEC"};
+    char *tag_types[] = {"CVEC", "SVEC"};
     GAnnotations *a;
     GReadings r;
 
@@ -186,7 +189,7 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right) {
 	if (r.position - r.start > 1)
 	    break;
 
-	a = vtagget(io, gel, 1, tag_types);
+	a = vtagget(io, gel, 1 + (svec_also>0), tag_types);
 	while (a && a != (GAnnotations *)-1) {
 	    int start;
 
@@ -200,7 +203,7 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right) {
 		break;
 	    }
 
-	    a = vtagget(io, 0, 1, tag_types);
+	    a = vtagget(io, 0,  1 + (svec_also>0), tag_types);
 	}
     }
 
@@ -210,7 +213,7 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right) {
 	if (r.position < io_clength(io, contig) - max_gel_len(io))
 	    break;
 
-	a = vtagget(io, gel, 1, tag_types);
+	a = vtagget(io, gel, 1 + (svec_also>0), tag_types);
 	while (a && a != (GAnnotations *)-1) {
 	    int end;
 
@@ -223,7 +226,7 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right) {
 	    if (end + 5 >= io_clength(io, contig))
 		cvec_r = 1;
 
-	    a = vtagget(io, 0, 1, tag_types);
+	    a = vtagget(io, 0, 1 + (svec_also>0), tag_types);
 	}
     }
 

@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.23"
+#define FINISH_VERSION "1.24"
 
 #include <tcl.h>
 #include <limits.h>
@@ -85,6 +85,7 @@ static finish_t *finish_new(void) {
     fin->opts.find_dup_templates= 1;
     fin->opts.dust_level	= 18;
     fin->opts.min_extension	= 50;
+    fin->opts.svec_as_cvec	= 0;
     fin->opts.reseq_length	= 400;
     fin->opts.reseq_nsolutions	= 4;
     fin->opts.long_length       = 700;
@@ -727,9 +728,9 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	        offsetof(finish_t, args.skip_template_file)},
 	{"-avail_template_file",ARG_STR,   1, NULL,
 	        offsetof(finish_t, args.avail_template_file)},
-	{"-external_seq_file",ARG_STR,   1, NULL,
+	{"-external_seq_file", ARG_STR,   1, NULL,
 	        offsetof(finish_t, args.external_seq_file)},
-	{"-output_file",ARG_STR,   1, NULL,
+	{"-output_file",       ARG_STR,   1, NULL,
 	        offsetof(finish_t, args.output_file)},
 	{"-use_avg_insert",    ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.use_avg_insert)},
@@ -739,16 +740,18 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 	 	offsetof(finish_t, opts.prob_mandatory)},
 	{"-max_score_drop",    ARG_DBL, 1, NULL,
 	        offsetof(finish_t, opts.max_score_drop)},
-	{"-min_template_score",    ARG_DBL, 1, NULL,
+	{"-min_template_score", ARG_DBL, 1, NULL,
 	        offsetof(finish_t, opts.min_template_score)},
-	{"-min_score",    ARG_DBL, 1, NULL,
+	{"-min_score",         ARG_DBL, 1, NULL,
 	        offsetof(finish_t, opts.min_score)},
-	{"-find_dup_templates",    ARG_INT, 1, NULL,
+	{"-find_dup_templates",ARG_INT, 1, NULL,
 	        offsetof(finish_t, opts.find_dup_templates)},
-	{"-dust_level",       ARG_INT,   1, NULL,
+	{"-dust_level",        ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.dust_level)},
-	{"-min_extension",       ARG_INT,   1, NULL,
+	{"-min_extension",     ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.min_extension)},
+	{"-svec_as_cvec",      ARG_INT,   1, NULL,
+	 	offsetof(finish_t, opts.svec_as_cvec)},
 	{"-reseq_length",      ARG_INT,   1, NULL,
 	 	offsetof(finish_t, opts.reseq_length)},
 	{"-reseq_nsolutions",  ARG_INT,   1, NULL,
@@ -1118,7 +1121,8 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 
 	/* Check for cloning (cosmid, bac, etc) vector at contig ends */
 	find_cloning_vector(fin->io, fin->contig,
-			    &fin->cvec_left, &fin->cvec_right);
+			    &fin->cvec_left, &fin->cvec_right,
+			    fin->opts.svec_as_cvec);
 
 	if (contigs)
 	    xfree(contigs);

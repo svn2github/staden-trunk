@@ -32,7 +32,7 @@ for {set rnum 1} {$rnum <= $nr} {incr rnum} {
         continue
     }
     if {[info exists chem_array($chem)]} {
-	puts $name=$chem_array($chem)
+	# puts $name=$chem_array($chem)
 	keylset r chemistry $chem_array($chem)
 	io_write_reading $io $rnum $r
     }

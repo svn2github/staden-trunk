@@ -30,4 +30,6 @@
 
 #define is_filtered(c) ((c) == '#' || ((c) >=  FILTER_POLYA && (c) <= FILTER_POLYY))
 
+void finish_filter(finish_t *fin);
+
 #endif /*_FINISH_FILTER_H*/
