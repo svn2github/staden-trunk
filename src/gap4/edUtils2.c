@@ -295,7 +295,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->compare_trace_select = 1;
     xx->compare_trace_algorithm = 1;
     xx->compare_trace_yscale = 1;
-    xx->group_templates = 0;
+    xx->group_mode = POSITION;
     xx->show_edits = 0;
     for (i=0; i<4; i++)
 	xx->edit_bg[i] = 0;
@@ -1317,7 +1317,7 @@ int initialiseDB(/* FORIO */
     
     DBI_contigNum(xx) = cnum;
     DBI_io(xx) = io;
-    
+
     /*
      * Register data
      */
@@ -1793,6 +1793,7 @@ int linesOnScreen (EdStruct *xx, int pos, int width)
     return count;
 }
 
+
 /*
  * Sorts a list of sequences so that sequences with the same template
  * are next to each other.
@@ -1802,9 +1803,9 @@ int linesOnScreen (EdStruct *xx, int pos, int width)
  *     Find a 'later' sequence, numbered j, with the same template
  *     Swap i+1 with j
  */
-static void sort_seq_list(EdStruct *xx, int *list, int count) {
+static void sort_seq_by_template(EdStruct *xx, int *list, int count) {
     int i, j, k, t;
-
+    
     for (i = 0; i < count; i++) {
 	k = DBI_DB(xx)[list[i]].template;
 	for (j = i+1; j < count; j++) {
@@ -1818,6 +1819,175 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
 	    }
 	}
     }
+}
+
+
+/*
+ * Sort sequence list by strand using a stable sort.
+ */
+static void sort_seq_by_strand(EdStruct *xx, int *list, int count) {
+    int i, swaps;
+
+    /* Trivial bubble sort */
+    do {
+	swaps = 0;
+	for (i = 0; i < count-1; i++) {
+	    if (DB_Comp(xx, list[i])   == COMPLEMENTED &&
+		DB_Comp(xx, list[i+1]) != COMPLEMENTED) {
+		int t;
+		t = list[i];
+		list[i] = list[i+1];
+		list[i+1] = t;
+		swaps = 1;
+	    }
+	}
+    } while (swaps);
+}
+
+
+/*
+ * Sort sequence list by clone using a stable sort.
+ * Not desparately efficient as the clone information is not cached, instead
+ * it is read from the database on-the-fly.
+ */
+static void sort_seq_by_clone(EdStruct *xx, int *list, int count) {
+    int i, swaps;
+    GapIO *io = DBI_io(xx);
+    char (*clones)[DB_NAMELEN+1];
+    char **clones2;
+
+    /* Precache clone names */
+    clones = (char (*)[DB_NAMELEN+1])xmalloc(count * sizeof(*clones));
+    clones2 = (char **)xmalloc(count * sizeof(*clones2));
+    if (!clones || !clones2)
+	return;
+
+    for (i = 0; i < count; i++) {
+	GReadings r;
+	GTemplates t;
+	GClones c;
+	
+	/* clones2 holds ptrs to clones, which we swap during sorting */
+	clones2[i] = clones[i];
+
+	clones[i][0] = '\0';
+	gel_read(io, DB_Number(xx, list[i]), r);
+	if (!r.template)
+	    continue;
+
+	template_read(io, r.template, t);
+	if (!t.clone)
+	    continue;
+
+	clone_read(io, t.clone, c);
+	if (!c.name)
+	    continue;
+
+	TextRead(io, c.name, clones[i], DB_NAMELEN);
+	clones[i][DB_NAMELEN] = 0;
+    }
+
+    /* Trivial bubble sort */
+    do {
+	swaps = 0;
+	for (i = 0; i < count-1; i++) {
+	    if (strcmp(clones2[i], clones2[i+1]) < 0) {
+		int t;
+		char *c;
+
+		t = list[i];
+		list[i] = list[i+1];
+		list[i+1] = t;
+
+		c = clones2[i];
+		clones2[i] = clones2[i+1];
+		clones2[i+1] = c;
+
+		swaps = 1;
+	    }
+	}
+    } while (swaps);
+
+    xfree(clones);
+    xfree(clones2);
+}
+
+
+/*
+ * Sort functions by sequence name and number - these do not need to use
+ * a stable sort as the names and numbers are unique.
+ */
+static EdStruct *tmp_xx; /* Global as qsort can't pass clientdata in */
+static int qsort_seq_by_alpha(const void *ps1, const void *ps2) {
+    int s1 = *(int *)ps1, s2 = *(int *)ps2;
+    return strcmp(DBgetName(DBI(tmp_xx), s1) + DB_GELNOLEN+1,
+		  DBgetName(DBI(tmp_xx), s2) + DB_GELNOLEN+1);
+}
+
+static int qsort_seq_by_numeric(const void *ps1, const void *ps2) {
+    int s1 = *(int *)ps1, s2 = *(int *)ps2;
+    return DB_Number(tmp_xx, s1) - DB_Number(tmp_xx, s2);
+}
+
+
+/*
+ * Sort sequence list in-line by xx->group_mode.
+ *
+ * Assumption: list is generated in POSITIONal sort.
+ */
+static void sort_seq_list(EdStruct *xx, int *list, int count) {
+    static int *last_list = NULL;
+    static int *last_sorted = NULL;
+    static int last_count = 0;
+    static int last_mode  = 0;
+
+    /* Check if it's the same list as before */
+    if (last_list && last_sorted &&
+	last_count == count &&
+	last_mode == xx->group_mode &&
+	memcmp(list, last_list, count * sizeof(*list)) == 0) {
+	memcpy(list, last_sorted, count * sizeof(*list));
+	return;
+    }
+	       
+    /* Cache this input */
+    last_list = xrealloc(last_list, count * sizeof(*list));
+    if (last_list)
+	memcpy(last_list, list, count * sizeof(*list));
+    last_count = count;
+    last_mode  = xx->group_mode;
+
+    switch(xx->group_mode) {
+    case POSITION:
+	break; /* Starting point */
+
+    case TEMPLATE:
+	sort_seq_by_template(xx, list, count);
+	break;
+
+    case STRAND:
+	sort_seq_by_strand(xx, list, count);
+	break;
+
+    case CLONE:
+	sort_seq_by_clone(xx, list, count);
+	break;
+
+    case ALPHA:
+	tmp_xx = xx;
+	qsort(list, count, sizeof(*list), qsort_seq_by_alpha);
+	break;
+
+    case NUMERIC:
+	tmp_xx = xx;
+	qsort(list, count, sizeof(*list), qsort_seq_by_numeric);
+	break;
+    }
+
+    /* Cache this output */
+    last_sorted = xrealloc(last_sorted, count * sizeof(*list));
+    if (last_sorted)
+	memcpy(last_sorted, list, count * sizeof(*list));
 }
 
 
@@ -1858,7 +2028,7 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 	}
     }
 
-    if (xx->group_templates)
+    if (xx->group_mode)
 	sort_seq_list(xx, DBI_list(xx), count);
 
     if (xx->consensusDisplayed) DBI_list(xx)[count++] = 0;
@@ -1899,7 +2069,7 @@ int *sequencesOnScreen(EdStruct *xx,int pos, int width)
 	}
     }
 
-    if (xx->group_templates)
+    if (xx->group_mode)
 	sort_seq_list(xx, DBI_list(xx), count);
 
     if (xx->consensusDisplayed) DBI_list(xx)[count++] = 0;
@@ -4163,7 +4333,8 @@ static void spanning_template_stats(EdStruct *xx[2], int overlapLength,
 	    continue;
 
 	check_template_length_overlap(DBI_io(*xx), t,
-				      c1, c2, overlapLength);
+				      c1, c2, /*overlapLength,*/
+				      ABS(offset));
 
 	/* Spanning, but not between both c1 and c2 */
 	if (!t->computed_length)

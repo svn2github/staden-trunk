@@ -438,13 +438,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    goto fail;
 	}
 
-	if (argc == 2)
-	    ed->xx->group_templates ^= 1;
-	else {
-	    Tcl_GetInt(interp, argv[2], &ed->xx->group_templates);
+	if (argc == 3) {
+	    int v;
+	    Tcl_GetInt(interp, argv[2], &v);
+	    if (v >= 0)
+		ed->xx->group_mode = v;
+	    else
+		ed->xx->group_mode ^= -v;
+
+	    ed->xx->refresh_flags |= ED_DISP_ALL;
+	    redisplaySequences(ed->xx, 0);
 	}
-	ed->xx->refresh_flags |= ED_DISP_ALL;
-	redisplaySequences(ed->xx, 0);
+
+	vTcl_SetResult(interp, "%d", ed->xx->group_mode);
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "set_insert") == 0) {
 	int val;

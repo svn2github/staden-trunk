@@ -504,7 +504,7 @@ proc create_editor_diff {w dname edname} {
 proc init_editor_states {w e dbptr} {
     global gap_defs consensus_mode licence read_only
     global $w.ShowQuality $w.AminoMode $w.DisplayTraces $w.AutoSave \
-	   $w.TemplateGroup $w.ShowEdits $w.Disagreements $w.CompareStrands \
+	   $w.GroupBy $w.ShowEdits $w.Disagreements $w.CompareStrands \
 	   $w.ShowCQuality $w.DisagreeMode $w.ShowUnpadded \
 	   $w.ConsensusAlgorithm _$dbptr.StoreUndo $w.DisplayTraces \
 	   $w.DiffTraces $w.DisplayMiniTraces
@@ -541,7 +541,7 @@ proc init_editor_states {w e dbptr} {
     $e show_consensus_quality [set $w.ShowCQuality]
     $e show_edits [set $w.ShowEdits]
     editor_set_superedit $e $w
-    $e set_grouping [set $w.TemplateGroup]
+    $e set_grouping [set $w.GroupBy]
     $e insert_confidence [keylget gap_defs CONTIG_EDITOR.INSERTION_CONFIDENCE]
     $e replace_confidence [keylget gap_defs CONTIG_EDITOR.REPLACE_CONFIDENCE]
     $e set_trace_lock [keylget gap_defs CONTIG_EDITOR.TRACE_LOCK]
@@ -659,7 +659,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
     global $w.SE_del_any_cons $w.SE_read_shift $w.SE_trans_any
     global $w.SE_uppercase $w.SE_edit_mode $w.SE_replace_cons
     global $w.TraceDiff $w.TraceConsMatch $w.TraceConsSelect $w.DisagreeMode
-    global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.TemplateGroup
+    global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.GroupBy
     global $w.ShowEdits $w.Disagreements $w.CompareStrands
     global $w.ShowCQuality $w.DisagreeCase
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
@@ -685,7 +685,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
     set $w.Status6	  [keylget gap_defs CONTIG_EDITOR.STATUS_FRAME3M]
     set $w.Status7	  [keylget gap_defs CONTIG_EDITOR.STATUS_AUTO_TRANSLATE]
     set $w.AminoMode	  [keylget gap_defs CONTIG_EDITOR.AMINO_ACID_MODE]
-    set $w.TemplateGroup  [keylget gap_defs CONTIG_EDITOR.TEMPLATE_GROUP]
+    set $w.GroupBy  [keylget gap_defs CONTIG_EDITOR.GROUP_BY]
     set $w.ShowQuality	  [keylget gap_defs CONTIG_EDITOR.SHOW_QUALITY]
     set $w.ShowCQuality	  [keylget gap_defs CONTIG_EDITOR.SHOW_CONSENSUS_QUALITY]
 
@@ -1549,7 +1549,19 @@ proc ednames_menu {w x y X Y} {
 	    $w.m add cascade -label "Goto..." -menu $w.m.goto
 	    menu $w.m.goto
 	    set this_contig [$e get_contig_num]
-	    foreach {seq cnum} $tseqs {
+	    foreach {seq dummy_cnum} $tseqs {
+		# Recalculate cnum. When joining contigs a contig may get
+		# renumbered. It may or may not be this contig. If it is not
+		# this contig and this contig is not getting joined, then this
+		# contig will not receive any events and hence cannot update
+		# its internal data structures to recalculate the contig
+		# numbers.
+		set cnum [db_info get_contig_num [$e io] $seq]
+		if {$cnum == -1} {
+		    verror ERR_WARN get_contig_num \
+			"Failed to identify contig for sequence $seq"
+		    set cnum $dummy_cnum
+		}
 		if {$cnum != $this_contig} {
 		    set cname " (Contig [left_gel [$e io] $cnum])"
 		} else {
@@ -2037,7 +2049,7 @@ proc save_editor_settings {e w} {
     global $w.SE_del_any_cons $w.SE_read_shift $w.SE_trans_any
     global $w.SE_uppercase $w.SE_edit_mode $w.SE_replace_cons
     global $w.TraceDiff $w.TraceConsMatch $w.TraceConsSelect $w.DisagreeMode
-    global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.TemplateGroup
+    global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.GroupBy
     global $w.ShowEdits $w.Disagreements $w.CompareStrands
     global $w.ShowCQuality $w.DisagreeCase
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
@@ -2064,7 +2076,7 @@ proc save_editor_settings {e w} {
     keylset gap_defs $C.STATUS_FRAME3M         [set $w.Status6]
     keylset gap_defs $C.STATUS_AUTO_TRANSLATE  [set $w.Status7]
     keylset gap_defs $C.AMINO_ACID_MODE        [set $w.AminoMode]
-    keylset gap_defs $C.TEMPLATE_GROUP         [set $w.TemplateGroup]
+    keylset gap_defs $C.GROUP_BY	       [set $w.GroupBy]
     keylset gap_defs $C.SHOW_QUALITY           [set $w.ShowQuality]
     keylset gap_defs $C.SHOW_CONSENSUS_QUALITY [set $w.ShowCQuality]
     keylset gap_defs $C.SHOW_UNPADDED          [set $w.ShowUnpadded]
@@ -2102,7 +2114,7 @@ proc save_editor_settings {e w} {
 	$C.STATUS_FRAME2M \
 	$C.STATUS_FRAME3M \
 	$C.AMINO_ACID_MODE \
-	$C.TEMPLATE_GROUP \
+	$C.GROUP_BY \
 	$C.SHOW_QUALITY \
 	$C.SHOW_CONSENSUS_QUALITY \
 	$C.SHOW_UNPADDED \

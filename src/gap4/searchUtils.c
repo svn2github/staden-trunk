@@ -1856,7 +1856,7 @@ static int findPrevDiscrepancy (EdStruct *xx, int value)
 int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 {
     int found = 0;
-    int group_templates = xx->group_templates;
+    int group_mode = xx->group_mode;
 
     /*
      * The "Group templates" option causes sequencesInRegion to return
@@ -1864,7 +1864,7 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
      * positional order, so we temporarily disable this while looking for
      * matches.
      */
-    xx->group_templates = 0;
+    xx->group_mode = 0;
 
     if (forwards) {
 	if (strcmp(type, "name") == 0)
@@ -1959,7 +1959,7 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 	    found = findPrevDiscrepancy(xx, atoi(value));
     }
 
-    xx->group_templates = group_templates;
+    xx->group_mode = group_mode;
 
     return found;
 }

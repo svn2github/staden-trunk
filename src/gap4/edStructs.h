@@ -69,6 +69,16 @@
 #define EDITOR_SL_FRAME3c	6
 #define EDITOR_SL_AUTOTRANSLATE	7 /* FIXME */
 
+/* These are the ways to sort the sequences in the editor */
+typedef enum {
+    POSITION = 0,
+    TEMPLATE = 1,
+    STRAND   = 2,
+    CLONE    = 3,
+    ALPHA    = 4,
+    NUMERIC  = 5
+} editor_sort_t;
+
 typedef f_int tag_id;
 typedef f_int comment_id;
 
@@ -271,7 +281,7 @@ typedef struct _EdStruct {
     int diff_bg;		/* Colour for show_differences colour mode */
     int compare_trace_algorithm;/* Trace diff: whether to use ABS() */
     int compare_trace_yscale;	/* Trace diff: do we scale in Y? */
-    int group_templates;	/* Are reads from same template are grouped */
+    editor_sort_t group_mode;	/* Sorting for seqs: template, name, strand..*/
     int show_edits;		/* Do we highlight edits? */
     int edit_bg[4];		/* Colours for edit types */
     int tmpl_bg[4];		/* Colours for edit types */
