@@ -1,3 +1,314 @@
+2003-11-19 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/newgap_structs.h,
+	* src/prefinish/fake_insert_sizes.tcl:
+	*** empty log message *** 
+
+	* src/prefinish/finish_cDNA:
+	Added low_quality solution picking 
+
+	* src/gap4/template.h:
+	Fixed a bug in TEMP_DIRECTION macro where it returned direction -1
+	for any error, rather than only on a TEMP_CONSIST_STRAND error. 
+
+	* src/gap4/list_proc.tcl:
+	Load List has an option to specify a list to be a "Reading List".
+	This then automatically tags it with SEQID to allow hyperlinks to
+	work. 
+
+	* src/gap4/actf.c:
+	Removed debugging 
+
+	* src/gap4/template.c:
+	When computing the template direction we now set this from the
+	first contig in the list rather than the last. The first in the
+	list will always be the first contig specified in
+	init_template_checks, and so is the 'correct' contig for use within
+	prefinish.
+	
+	The direction is also set to be the most frequent observed
+	direction for that template, rather than ? when there is a
+	conflict. 
+
+	* src/prefinish/finish_long.c,
+	* src/prefinish/finish_reverse.c,
+	* src/prefinish/finish_walk.c:
+	When setting the template direction we no longer set it to ? when
+	there is an inconsistency. This means that the template direction
+	will be set to the most well represented direction (unless it is
+	50/50 split in which case it is still ?). 
+
+2003-11-17 James Bonfield (jkb@sanger.ac.uk)
+
+	* tables/gaprc:
+	*** empty log message *** 
+
+	* src/io_lib/utils/open_trace_file.c:
+	Added ARC= and URL= RAWDATA search methods to fetch traces via the
+	ensembl trace archive and via a URL. 
+
+	* src/gap4/tkEdNames.c:
+	Added Tcl_ResultResult call to to get_name method. 
+
+	* src/gap4/contig_editor.tcl:
+	Added a "clear list" option to the names widget. 
+
+	* src/gap4/IO.h:
+	Added prototype for IO.h 
+
+	* src/gap4/actf.c:
+	Include more prototypes. 
+
+	* src/gap4/IO.c:
+	Minor comment changes 
+
+	* src/gap4/trace_display.tcl:
+	Moved checking of file format to after trace widget has loaded the
+	file. This removes the need to load the trace twice (the first load
+	was in determine_trace_type, now not used). 
+
+	* src/gap4/alter_rel.c,
+	* src/gap4/alter_rel.h,
+	* src/gap4/alter_rel.tcl,
+	* src/gap4/assemble_direct.c,
+	* src/gap4/dis_readings.c,
+	* src/gap4/dis_readings.h:
+	Moved the remove_contig_holes from assemble_direct to dis_readings.
+	Rewrote remove contig as a disassemble (for entire contig). Major
+	overhaul of disassemble readings. 
+
+	* src/gap4/dis_readings.tcl,
+	* src/gap4/newgap_cmds.c:
+	New disassemble readings interface. 
+
+	* src/seq_utils/align.c,
+	* src/seq_utils/align.h:
+	New function calignm(). Like calign(), but the alignment matrix
+	(W128) is an argument. The default matrix is now case insensitive
+	too. 
+
+	* src/gap4/tagU2.c:
+	Overhaul of split_contig_tags. 
+
+	* src/gap4/legacy.f:
+	Removed Fortran version of disassemble readings (now in C). 
+
+	* src/mutlib/tracealign_interpolate.cpp:
+	Removed a memory read-overflow. 
+
+2003-11-14 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/tracediff/main.cpp:
+	Converted cr/nl to nl.
+	
+	Fixed a bug in the printing of the tag positions. Positions
+	presumably changed from being a single value to a pair - we just
+	print the first element now. 
+
+2003-11-13 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/IO2.c:
+	Added code in stikit_ to set r.sense prior to calling
+	io_write_seq(). The changes made a while back to io_write_seq() to
+	update the in-memory io_length array caused the fortran code to
+	break as it uses the sign of the length to set the orientation. 
+
+2003-11-12 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/IO3.c:
+	Protect against the template (subclone_id) in get_subclone_info
+	from being zero and causing a crash. Only an issue for the old
+	"suggest primers" function and gap2caf. 
+
+2003-11-05 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/edUtils2.c:
+	In the editor reading numbers now have +/- instead of <blank>/- to
+	indicate strand. 
+
+	* src/gap4/gap-error.c:
+	Set email address to ask users to report bugs as
+	syshelp@sanger.ac.uk 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/template.c,
+	* src/gap4/template.h,
+	* src/gap4/tkEditor.c:
+	Spanning template status is displayed from the join editor when the
+	quit button is pressed. 
+
+2003-11-04 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/template.c:
+	Add template-end tolerance code to more locations to allow for
+	missing vector at the end of primer-walks. 
+
+	* tables/gaprc:
+	Added in the colours of template status within the editor. 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/dependencies,
+	* src/gap4/edInterface.c,
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/list_proc.tcl,
+	* src/gap4/oligo_param.tcl,
+	* src/gap4/tkEdNames.c,
+	* src/gap4/tkEdUtils.c,
+	* src/gap4/tkEditor.c,
+	* src/gap4/tkEditor.h:
+	Added template status analysis into the contig editor names
+	display.
+	
+	The right-click menu now allows a "goto" option to jump to other
+	members of that template.
+	
+	The menu also allows (de)selection of a single reading or
+	(de)selection of all readings on that template. 
+
+	* src/gap4/gap_globals.c:
+	Default "chem_as_double" is now 0 (off) 
+
+2003-10-27 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/vseqs.c,
+	* tables/gaprc:
+	*** empty log message *** 
+
+	* src/gap4/find_oligo.c,
+	* src/gap4/find_oligo.h,
+	* src/gap4/find_oligo.tcl,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	Added the ability to search by sequence within the readings as well
+	as the consensus. 
+
+	* src/gap4/contig_id.tcl:
+	Bugfix to selection changes when using a "range" contig_id 
+
+	* src/gap4/find_oligo.c:
+	Fixed out by one error. 
+
+2003-10-24 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/gap.tcl:
+	*** empty log message *** 
+
+	* src/io_lib/progs/extract_seq.c:
+	Added a -fofn option 
+
+	* src/gap4/oligo_param.tcl:
+	Added a GC_Clamp option to the oligo selection dialogue, and
+	remember the users inputs for some other bits. 
+
+	* src/stops/stops.c:
+	Added a baseline (-b) option to remove background. 
+
+	* src/gap4/tagU1.c:
+	Added protection for a defined, but empty, GTAGDB environment
+	variable. 
+
+	* src/gap4/edUtils2.c,
+	* src/gap4/qual.h,
+	* src/gap4/qualIO.c,
+	* src/gap4/vseqs.c:
+	Extended the database_info (and similar) callback functions to take
+	new job types for insertion and deletion into sequences. This is
+	currently only used by the new experimental shuffle pads option. 
+
+	* src/gap4/IO.c,
+	* src/gap4/actf.c:
+	Improved log file handling to write out the username opening the
+	database and a message when the lock file is overridden. 
+
+	* src/io_lib/utils/compress.c:
+	More error checking on writing compressed files. 
+
+	* src/io_lib/abi/seqIOABI.c:
+	Protect against the base spacing being listed as a negative number
+	in the ABI file. 
+
+	* src/mk/alpha.mk:
+	Removed -rpath support as it causes more problems than it cures. 
+
+	* src/gap4/contig_id.tcl,
+	* src/gap4/editor_search.tcl:
+	The contig identifier box and the 'value' component in the editor
+	search boxes are now automatically selected and focused, meaning
+	that users can simply type over the previous value. 
+
+2003-10-23 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/do_fij.c,
+	* src/gap4/hash_lib.c,
+	* src/gap4/hash_lib.h:
+	Fixed a bug in Find Internal Joins where it failed to spot some
+	matches. 
+
+2003-10-22 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/contig_editor.tcl:
+	Added hyperlinks to the disassemble and 'set active list' lists
+	created from the editor. 
+
+2003-10-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish.[ch], src/prefinish/finish_utils.[ch]:
+	Added an svec_as_cvec flag to allow SVEC tags to be treated as the
+	clone end. This is useful for finishing EST sequences with one EST
+	per contig.
+
+2003-10-02 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/gap4/assemble_direct.c:
+	Contig holes left after a disassembly are now stripped out, fixing
+	db inconsistencies. This function will also be useful for the
+	disassemble readings rewrite. 
+
+2003-10-01 James Bonfield (jkb@sanger.ac.uk)
+
+	* ChangeLog:
+	*** empty log message *** 
+
+	* src/gap4/IO.c:
+	Ensure that io_length() memory cache is kept up to date when
+	io_write_seq modifies it. 
+
+	* src/prefinish/fake_insert_sizes.tcl,
+	* src/prefinish/finish_cDNA,
+	* src/prefinish/svec2cvec.tcl:
+	New scripts for interfacing with the chickenEST project and the new
+	finish_me3 perl script. 
+
+	* src/gap4/hash_lib.c:
+	Set upper limit on the size of set_band_blocks to 5000 so that
+	really long alignments do not consume too much memory. 
+
+	* src/g/freetree.c:
+	When we have a tr->largest block long enough to hold the requested
+	length, we were returning NULL (due to broken code ordering)
+	instead of returning the block. This causes the database to
+	unnecessarily grow! 
+
+2003-09-04 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/prefinish/finish.c,
+	* src/prefinish/finish_main.c,
+	* src/prefinish/finish_sanger.tcl:
+	When searching for a solution on the bottom strand, set the
+	position to solve as the right hand end of this problem. Likewise
+	for the top strand (which is true by default). 
+
+2003-09-02 James Bonfield (jkb@sanger.ac.uk)
+
+	* src/prefinish/finish.c:
+	Fixed default value of pwalk_nsolutions from 400 (a cut and paste
+	error) to 1. Luckily finish.tcl specified this explicitly. 
+
 2003-08-07  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/seq_utils/dna_utils.c:
