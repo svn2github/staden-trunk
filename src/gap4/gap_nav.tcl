@@ -33,7 +33,7 @@ proc OpenNavFile { io w } {
     global $w.Count
     set t .navtable[set $w.Count]
     incr $w.Count
-    global $t.File $t.Auto $t.Edwin 
+    global $t.File $t.Auto $t.Edwin $t.FileName
 
     set fname [$w.navfile get2]
     if {$fname == ""} {
@@ -49,6 +49,7 @@ proc OpenNavFile { io w } {
     }
     
     set $t.File [split [read $fd] "\n"]
+    set $t.FileName $fname
     
     close $fd
 
@@ -150,9 +151,9 @@ proc CreateTableList { io t } {
 
 proc SaveTable { w tbl } {
 
-    global gap_defs
+    global gap_defs $w.FileName
     
-    set fname [$w.navfile get2]
+    set fname [set $w.FileName]
     if {$fname == ""} {
         bell
         return
