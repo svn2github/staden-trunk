@@ -63,8 +63,8 @@ SHLIB_LDFLAGS 		= -L$(L) $(SHLIB_STRIP) \
 SHLIB_PREFIX		= lib
 SHLIB_SUFFIX		= .so
 SHLIB_SONAME		=
-CLDFLAGS_E	       += -rpath '$${STADLIBBIN}'
-FLDFLAGS_E	       += -rpath '$${STADLIBBIN}'
+#CLDFLAGS_E	       += -rpath '$${STADLIBBIN}'
+#FLDFLAGS_E	       += -rpath '$${STADLIBBIN}'
 
 SHLIB_LDXX		= g++
 SHLIB_LDXXFLAGS		= -L$(L) $(SHLIB_STRIP) \
