@@ -266,6 +266,12 @@ int fcompress_file(FILE *fp) {
 	len = fread(buf, 1, BS, fp);
 	if (len > 0)
 	    fwrite(buf, 1, len, newfp);
+	else if (len == -1) {
+	    perror("fcompress_file()");
+	    remove(fname);
+	    free(fname);
+	    return 0;
+	}
     } while (!feof(fp));
     fflush(newfp);
     fclose(newfp);
