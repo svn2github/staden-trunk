@@ -1,3 +1,137 @@
+2004-01-13  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/gap.tcl:
+	Gap4 version "4.9 test 3"
+	
+2004-01-13  Mark Griffiths  <mng@sanger.ac.uk>
+
+	* src/gap4/trace_display.tcl:
+	(09:22:51) Fixed trace flash for trace display. 
+
+2004-01-13  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/io_lib/read/translate.c:
+	(17:02:00) In read2exp only set the file format to be TT_EXP when
+	'redirection to trace' is not enabled (ie it indicates where the
+	sequence came from, EXP or SCF/ZTR/...). 
+
+	* src/gap4/consen.c,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h,
+	* src/gap4/consen.h,
+	* src/gap4/consen.tcl,
+	* tables/gaprc:
+	(17:13:24) Save consensus now has the option to use the left-most
+	template name instead of left-most reading name as the contig
+	identifier. This is useful primarily for cDNA based projects. 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/tkEditor.c:
+	(17:14:48) Positions are now listed in the "goto..." menu from the
+	editor names. 
+
+	* src/gap4/actf.c:
+	* src/g/g-files.c,
+	(17:16:25) We now use lockf() on the database file itself (DB.V,
+	not DB.V.aux), thus preventing corruptions causing by manually
+	removing the BUSY file. 
+
+	* src/tk_utils/misc.c,
+	* lib/tk/xmfbox.tcl:
+	(17:22:07) Updated the tk Motif-style filebrowser to be MUCH faster
+	(x80) by using the dir_or_file command from tk_utils (which was
+	reimplemented to use Tcl_Obj and take a list as the argument). 
+
+	* src/prefinish/finish_cDNA:
+	(17:24:10) Removed blank -avail_template_file argument. 
+
+	* src/prefinish/finish_hash.c:
+	(17:25:49) Compare primer now checks for the sequence to hash being
+	shorter than the hash word length, in order to avoid for hashing
+	error messages. 
+
+	* src/gap4/gap.tcl:
+	(17:27:11) Update to version 4.9test3 
+
+2004-01-12  Mark Griffiths  <mng@sanger.ac.uk>
+
+	* src/gap4/gap_nav.tcl:
+	(11:17:20) fixed bell before raising dialog. 
+
+2004-01-12  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/prefinish/finish_main.c:
+	(10:35:03) Added a two-pass method to generate_experiments. Pick
+	the most appropriate end for single-stranded experiments (as
+	before), but if that fails we now work outwards from the other end
+	too. This helps to pick experiments when our contig is covered
+	entirely by a single-stranded region. 
+
+	* src/prefinish/finish_walk.c:
+	(10:35:44) We no longer rely on t_start1 and t_start2 when the
+	template is inconsistent as the template positioning information
+	may be invalid. Using min/max instead. 
+
+	* src/prefinish/finish.c:
+	(10:35:53) Updated version number. 
+
+	* src/gap4/template.c:
+	(11:47:45) Corrected guessing of template boundaries for
+	"complemented" templates. 
+
+	* src/prefinish/finish_walk.c:
+	(12:35:54) Apply a cost increase to experiments that do not connect
+	to at least one end of the problem region.
+	
+	The reason being that a problem from 1-1000 with reading length 600
+	can be solved in 2 experiments, but chosing the first experiment
+	(due to minor reasons like better primer) from 200-800 requires 2
+	extra experiments to solve it. 
+
+2004-01-09  Mark Griffiths  <mng@sanger.ac.uk>
+
+	* doc/manual/dependencies,
+	* doc/manual/gap4-t.texi:
+	(14:19:12) contig navigation help added. 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/edUtils.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/tclIndex:
+	(14:21:15) Added -nojoin to edit_contig command , returning path to
+	window. Added editor_id_to_edstruct. 
+
+	* tables/gaprc,
+	* tables/gaprc_menu_full:
+	(14:21:44) Added contig navigation menu to View menu. 
+
+	* doc/manual/contig_navigation-t.texi,
+	* doc/manual/contig_navigation_browse.unix.gif,
+	* doc/manual/contig_navigation_table.unix.gif:
+	(14:24:36) Contig navigation help files. 
+
+	* src/gap4/gap_nav.tcl:
+	(14:25:21) Contig navigation interface. 
+
+	* src/gap4/gap_nav.tcl:
+	(15:53:06) Fixed next/previous bug and added error checks on
+	contigs not found. 
+
+2004-01-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* lib/Makefile:
+	* lib/tablelist3.4/**
+	(14:42:07) Upgraded tablelist to v3.4 
+
+2003-12-18  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/tk_utils/text_output.c:
+	(16:13:56) Include hostname in the log_file output 
+
+	* src/gap4/dis_readings.c:
+	(16:14:28) Fixed more tag corruptions from disassemble readings. 
+
 2003-12-16 James Bonfield <jkb@sanger.ac.uk>
 
 	TAG CODEBASE with rel-1-3
@@ -416,9 +550,6 @@
 	disassemble readings rewrite. 
 
 2003-10-01 James Bonfield (jkb@sanger.ac.uk)
-
-	* ChangeLog:
-	*** empty log message *** 
 
 	* src/gap4/IO.c:
 	Ensure that io_length() memory cache is kept up to date when
