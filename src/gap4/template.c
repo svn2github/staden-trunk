@@ -924,6 +924,9 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 /*
  * As check_template_length, but taking into account a specific ordering
  * of two contigs (c1 left, c2 right) and an expected overlap size.
+ *
+ * Computed length is set to the template length, but if the template does
+ * not span c1 and c2 then it is set to zero.
  */
 void check_template_length_overlap(GapIO *io, template_c *t,
 				   int c1, int c2, int overlap) {
@@ -931,8 +934,10 @@ void check_template_length_overlap(GapIO *io, template_c *t,
     int distf, distr;
     GReadings r;
     
-    if (!(t->flags & TEMP_FLAG_SPANNING))
+    if (!(t->flags & TEMP_FLAG_SPANNING)) {
+	t->computed_length = 0;
 	return;
+    }
 
     distf = distr = 0;
 

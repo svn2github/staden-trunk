@@ -557,6 +557,25 @@ int edConfIncr(EdStruct *xx, int amount) {
 }
 
 /*
+ * updates the global Readings list with selections made in the contig editor
+ */
+void
+update_reading_list(GapIO *io,
+		    int r_num,
+		    int high_light)
+{
+    char cmd[1024];
+    char *r_name;
+
+    /* can't do the consensus */
+    if (r_num > 0) {
+	r_name = get_read_name(io, r_num);
+	sprintf(cmd, "UpdateReadingListItem %s %d", r_name, high_light);
+	Tcl_Eval(GetInterp(), cmd);
+    }
+}
+
+/*
  * State is -1 to toggle
  *           0 to clear
  *           1 to set
@@ -1045,6 +1064,28 @@ char *edGetGelName(EdStruct *xx, int number) {
     return DBgetName(DBI(xx), number);
 }
 
+/*
+ * Get all gel names from a number and sequences to the right of this number.
+ *
+ * Returns a dstring holding the list
+ *        or NULL for failure
+ */
+dstring_t *edGetGelNamesToRight(EdStruct *xx, int number) {
+    dstring_t *ds = NULL;
+    int seq;
+    int pos = DB_RelPos(xx, number);
+
+    ds = dstring_create(NULL);
+    for (seq = 1; seq <= DBI_gelCount(xx); seq++) {
+	if (DB_RelPos(xx, seq) > pos ||
+	    (DB_RelPos(xx, seq) == pos && seq >= number)) {
+	    dstring_appendf(ds, "{%s} ", DBgetName(DBI(xx), seq));
+	}
+    }
+
+    return ds;
+}
+
 
 /*
  * Set consensus mode
@@ -1300,11 +1341,17 @@ void edShowEdits(EdStruct *xx, int mode) {
 }
 
 
-/*
- * Hides a reading from the editor and consensus
+/**
+ * Hides a reading from the editor and consensus.
+ * If seq is negative then this implies hide +seq and all sequences to the
+ * right of this point.
+ * Otherwise we just hide the single seq itself.
+ *
+ * Returns 0 for success
+ *        -1 for failure
  */
-int edHideRead(EdStruct *xx, int seq, int check_cursor) {
-    int flag;
+int edHideRead(EdStruct *xx, int xseq, int check_cursor) {
+    int seq = ABS(xseq);
 
     if (check_cursor && ! onScreen(xx, seq, xx->cursorPos, NULL)) {
 	/*
@@ -1316,13 +1363,22 @@ int edHideRead(EdStruct *xx, int seq, int check_cursor) {
 	return 1;
     }
 
-    if (seq <= 0)
+    if (seq == 0)
         return 1;
 
-    flag = DB_Flags(xx, seq);
-    flag ^= DB_FLAG_INVIS;
+    if (xseq < 0) {
+	int pos = DB_RelPos(xx, seq);
+	for (seq = 1; seq <= DBI_gelCount(xx); seq++) {
+	    if (DB_RelPos(xx, seq) > pos ||
+		(DB_RelPos(xx, seq) == pos && seq >= -xseq)) {
+		DBsetFlags(xx, seq, DB_Flags(xx, seq) ^ DB_FLAG_INVIS);
+	    }
+	}
+	xx->refresh_flags |= ED_DISP_ALL;
+    } else {
+	DBsetFlags(xx, seq, DB_Flags(xx, seq) ^ DB_FLAG_INVIS);
+    }
 
-    DBsetFlags(xx, seq, flag);
     RedisplayName(xx, seq);
     xx->refresh_flags |= ED_DISP_CONS | ED_DISP_STATUS | ED_DISP_SELECTION;
     redisplaySequences(xx, 1);
