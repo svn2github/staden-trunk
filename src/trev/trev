@@ -67,7 +67,7 @@ find_dir() {
     echo $dir
 }
 
-STADENROOT=${STADENROOT_2003:-`find_dir $0`/..}
+STADENROOT=${STADENROOT_1_5:-`find_dir $0`/..}
 
 #
 # Set up base locations
