@@ -235,9 +235,11 @@ int exp_print_seq(FILE *fp, Exp_info *e, int eflt, int i)
 int exp_get_feature_index(char *e)
 {
     int i;
-    
-    for (i = 0; i < MAXIMUM_EFLTS; i++)
-	if(strcmp(eflt_feature_ids[i],e)==0) return i;
+    for (i = 0; i < MAXIMUM_EFLTS; i++) {
+	if (eflt_feature_ids[i][0] == e[0] &&
+	    eflt_feature_ids[i][1] == e[1])
+	    return i;
+    }
     
     return -1;
 }
@@ -307,37 +309,61 @@ void exp_destroy_info(Exp_info *e)
 
 
 
-
-
-static char *exp_read_sequence(FILE *fp)
 /*
- * Read from file a sequence, discarding all white space til a // is encountered
+ * Read from file a sequence, discarding all white space til a // is
+ * encountered
  */
+static char *exp_read_sequence(FILE *fp)
 {
-    char *seq;
-    int seql;
+    char *seq = NULL;
+    size_t seq_len = 0, seq_alloc;
     char line[EXP_FILE_LINE_LENGTH+1];
     char *l;
-    
-    seql = 0;
-    seq = (char *)xmalloc(seql+1);
+    static int valid_char[256], init = 0;
+
+    /* Initialise lookup tables for efficiency later on.*/
+    if (!init) {
+	int i;
+	for (i = 0; i < 256; i++) {
+	    if (i < 128 && !isspace(i) && !isdigit(i) && !iscntrl(i))
+		valid_char[i] = 1;
+	    else
+		valid_char[i] = 0;
+	}
+	init = 1;
+    }
+
+    /* Initialise memory */
+    seq_alloc = EXP_FILE_LINE_LENGTH * 8;
+    seq = (char *)xmalloc(seq_alloc);
     if (NULL == seq)
 	return NULL;
     seq[0] = '\0';
-    
+
+    /* Reading line by line, until we get "//" */
     l = fgets(line,EXP_FILE_LINE_LENGTH,fp);
     while (l!= NULL && strncmp(l,"//",2)) {
 	char *a, *b;
-	for(a=b=line;*a;a++)
-	    if (! isspace(*a) && !isdigit(*a)) *b++=*a;
+
+	/* make sure the seq buffer is large enough */
+	if (seq_len + EXP_FILE_LINE_LENGTH + 1 > seq_alloc) {
+	    seq_alloc *= 2;
+	    if (NULL == (seq = (char *)xrealloc(seq, seq_alloc)))
+		return NULL;
+	}
+
+	/* copy to seq, stripping spaces on the fly */
+	for(a=line, b = &seq[seq_len]; *a; a++)
+	    if (valid_char[(unsigned char)*a])
+		*b++ = *a;
 	*b = '\0';
-	seql = seql + b-line;
-	seq = (char *)xrealloc(seq,seql+1);
-	if (NULL == seq)
-	    return NULL;
-	strcat(seq,line);
+	seq_len = b-seq;
+
 	l = fgets(line,EXP_FILE_LINE_LENGTH,fp);
     }
+
+    /* Shrink the allocated string to reduce memory usage */
+    seq = (char *)xrealloc(seq, seq_len + 1);
     
     return seq;
 }
@@ -399,6 +425,7 @@ char *opos2str(int2 *opos, int len, char *buf) {
 }
 
 
+
 /*
  * Expands from the character string .. notation to the opos[] array, up to
  * a maximum of len elements in opos[].
@@ -406,28 +433,34 @@ char *opos2str(int2 *opos, int len, char *buf) {
  * Returns the length of the opos array.
  */
 int str2opos(int2 *opos, int len, char *buf) {
-    int i, n1, n2, st, en, m, j = 0;
+    /* int i, n1, n2, st, en, m, j = 0; */
+    int i, j = 0, st, en;
+    char *cp;
 
-    while (*buf) {
-	m = sscanf(buf, "%d%n..%d%n", &st, &n1, &en, &n2);
+    while (j < len && *buf) {
+	st = strtol(buf, &cp, 10);
+	if (buf == cp) {
+	    buf++;
+	    continue;
+	}
+	buf = cp;
+	if (buf[0] == '.' && buf[1] == '.') {
+	    en = strtol(buf += 2, &cp, 10);
+	    if (buf == cp) {
+		opos[j++] = st;
+		buf++;
+		continue;
+	    }
+	    buf = cp;
 
-	if (m == 1) {
-	    opos[j++] = st;
-	    buf += n1;
-	    if (j >= len)
-		break;
-	} else if (m == 2) {
 	    if (en >= st)
 		for (i = st; i <= en && j < len; i++)
 		    opos[j++] = i;
 	    else
 		for (i = st; i >= en && j < len; i--)
 		    opos[j++] = i;
-	    buf += n2;
-	    if (j >= len)
-		break;
 	} else {
-	    buf++;
+	    opos[j++] = st;
 	}
     }
 
@@ -448,20 +481,28 @@ int str2opos(int2 *opos, int len, char *buf) {
  * Returns: number of confidence values read, or -1 for error.
  */
 int str2conf(int1 *conf, int len, char *buf) {
-    int val1, ind = 0, pos;
+    int ind = 0;
 
-    while (*buf && sscanf(buf, "%d%n", &val1, &pos) == 1 && ind < len) {
-	if (buf[pos] == ',') {
+    while (*buf && ind < len) {
+	char *new_buf;
+	int val1;
+
+	val1 = strtol(buf, &new_buf, 10);
+	if (new_buf == buf)
+	    break;
+
+	if (*new_buf == ',') {
 	    fprintf(stderr, "4-tuple system is currently unsupported\n");
 	    return -1;
 	}
 
 	conf[ind++] = val1;
-	buf += pos;
+	buf = new_buf;
     }
 
     return ind;
 }
+
 
 /*
  * Converts the confidence array to the accuracy value string (AV).
@@ -550,6 +591,8 @@ Exp_info *exp_fread_info(FILE *fp)
     char *aline;
     int alloced_length = EXP_FILE_LINE_LENGTH+1;
     int apos, len;
+    int last_entry = -1;
+    size_t entry_len = 0;
     
     e = exp_create_info();
 
@@ -619,7 +662,8 @@ Exp_info *exp_fread_info(FILE *fp)
 		 * Tag lines may be split over multiple lines. If we have no
 		 * tag type then we append to the existing tag.
 		 */
-		if ((int)(c-aline) >= 10/* continuation lines */
+		if (entry == last_entry &&
+		    (int)(c-aline) >= 10/* continuation lines */
 		    && (entry == EFLT_TG || entry == EFLT_TC ||
 			entry == EFLT_ON || entry == EFLT_AV ||
 			entry == EFLT_NT || entry == EFLT_FT)) {
@@ -632,7 +676,7 @@ Exp_info *exp_fread_info(FILE *fp)
 		    if( exp_check_eid_read(e,entry) )
 			return NULL;
 		    en = exp_get_entry(e,entry);
-		    l1 = strlen(en);
+		    l1 = entry_len;
 		    l2 = strlen(&aline[10]);
 
 		    if (NULL == (en = exp_get_entry(e, entry) =
@@ -648,6 +692,8 @@ Exp_info *exp_fread_info(FILE *fp)
 		    en[l1] = '\n';
 		    aline[l2+9] = '\0';
 		    strcpy(&en[l1+1], &aline[10]);
+
+		    entry_len += l2;
 		} else {
 		    /*
 		     * Increment number of entries for line type entry
@@ -668,9 +714,12 @@ Exp_info *exp_fread_info(FILE *fp)
 			    for (i=3; isspace(c[i]) && i >= 0; c[i--]='\0');
 
 			exp_get_entry(e,entry) = (char *)strdup(c);
+			entry_len = strlen(c);
 		    }
 		}
 	    }
+
+	    last_entry = entry;
 	}
     }
 
