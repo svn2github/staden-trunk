@@ -458,29 +458,47 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
 # Updates the commands menu Edit Tags and Delete Tags cascades so that the
 # tags under the current cursor are listed.
 proc update_tag_menus {name1 name2 op} {
-    global $name1
+    global $name1 gap_defs
     regexp {(.*)\.[^.]*\.[^.]*$} $name1 _ e
 
     set menu $e.buttons.commands.menu.commands.edit_tag
     $menu configure -tearoff 0
     $menu delete 0 end
+    set count 0
     foreach tag [set $name1] {
 	foreach {ptr type st len} $tag {}
 	set end [expr {$st+$len-1}]
+	if {$count >= [keylget gap_defs MAX_MENU_ITEMS]} {
+	    set count 0
+	    $menu add cascade \
+		-label "More..." \
+		-menu $menu.more
+	    set menu [menu $menu.more -tearoff 0]
+	}
 	$menu add command \
 	    -label "$type $st-$end" \
 	    -command "$e.seqs edit_anno $ptr"
+	incr count
     }
 
     set menu $e.buttons.commands.menu.commands.delete_tag
     $menu configure -tearoff 0
     $menu delete 0 end
+    set count 0
     foreach tag [set $name1] {
 	foreach {ptr type st len} $tag {}
 	set end [expr {$st+$len-1}]
+	if {$count >= [keylget gap_defs MAX_MENU_ITEMS]} {
+	    set count 0
+	    $menu add cascade \
+		-label "More..." \
+		-menu $menu.more
+	    set menu [menu $menu.more -tearoff 0]
+	}
 	$menu add command \
 	    -label "$type $st-$end" \
 	    -command "$e.seqs delete_anno $ptr"
+	incr count
     }
 }
 
