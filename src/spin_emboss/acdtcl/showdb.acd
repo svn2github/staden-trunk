@@ -1,0 +1,228 @@
+package require Iwidgets
+namespace eval ::EMBOSS::showdb {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_showdb*Xentry.entry.width 30
+option add *e_showdb*Entryfield.width 30
+option add *e_showdb*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) showdb
+    set w [xtoplevel .e_showdb -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - showdb}
+    label $w._title -text {Displays information on the currently available databases}
+    pack $w._title -side top -fill both
+    set vars(showdb._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments database
+    iwidgets::entryfield $w.database \
+	-textvariable [namespace current]::vars(database) \
+	-labeltext [subst {Name of a single database to give information on}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.database component entry] -sticky nse
+    set vars(database) [subst {}]
+    pack $w.database -side top -fill both
+    set vars(database.path) $w.database
+    set vars(database.required)  0
+    set vars(database._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Format output as an HTML table}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    lappend arguments protein
+    checkbutton $w.protein \
+	-text [subst {Display protein databases}]\
+	-variable [namespace current]::vars(protein)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.protein -side top -anchor w
+    set vars(protein) [subst 1]
+    set vars(protein.path) $w.protein
+    set vars(protein.required)  0
+    set vars(protein._type) bool
+
+    lappend arguments nucleic
+    checkbutton $w.nucleic \
+	-text [subst {Display nucleic acid databases}]\
+	-variable [namespace current]::vars(nucleic)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.nucleic -side top -anchor w
+    set vars(nucleic) [subst 1]
+    set vars(nucleic.path) $w.nucleic
+    set vars(nucleic.required)  0
+    set vars(nucleic._type) bool
+
+    lappend arguments only
+    checkbutton $w.only \
+	-text [subst {Display the specified columns}]\
+	-variable [namespace current]::vars(only)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.only -side top -anchor w
+    set vars(only) [subst 0]
+    set vars(only.path) $w.only
+    set vars(only.required)  0
+    set vars(only._type) bool
+
+    lappend arguments heading
+    checkbutton $w.heading \
+	-text [subst {Display column headings}]\
+	-variable [namespace current]::vars(heading)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.heading -side top -anchor w
+    set vars(heading) [subst {[expr {(!$vars(only))}]}]
+    set vars(heading.path) $w.heading
+    set vars(heading.required)  0
+    set vars(heading.orig) $vars(heading)
+    set vars(heading.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] heading"
+    set vars(heading._type) bool
+
+    lappend arguments type
+    checkbutton $w.type \
+	-text [subst {Display 'type' column}]\
+	-variable [namespace current]::vars(type)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.type -side top -anchor w
+    set vars(type) [subst {[expr {(!$vars(only))}]}]
+    set vars(type.path) $w.type
+    set vars(type.required)  0
+    set vars(type.orig) $vars(type)
+    set vars(type.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] type"
+    set vars(type._type) bool
+
+    lappend arguments id
+    checkbutton $w.id \
+	-text [subst {Display 'id' column}]\
+	-variable [namespace current]::vars(id)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.id -side top -anchor w
+    set vars(id) [subst {[expr {(!$vars(only))}]}]
+    set vars(id.path) $w.id
+    set vars(id.required)  0
+    set vars(id.orig) $vars(id)
+    set vars(id.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] id"
+    set vars(id._type) bool
+
+    lappend arguments query
+    checkbutton $w.query \
+	-text [subst {Display 'qry' column}]\
+	-variable [namespace current]::vars(query)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.query -side top -anchor w
+    set vars(query) [subst {[expr {(!$vars(only))}]}]
+    set vars(query.path) $w.query
+    set vars(query.required)  0
+    set vars(query.orig) $vars(query)
+    set vars(query.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] query"
+    set vars(query._type) bool
+
+    lappend arguments all
+    checkbutton $w.all \
+	-text [subst {Display 'all' column}]\
+	-variable [namespace current]::vars(all)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.all -side top -anchor w
+    set vars(all) [subst {[expr {(!$vars(only))}]}]
+    set vars(all.path) $w.all
+    set vars(all.required)  0
+    set vars(all.orig) $vars(all)
+    set vars(all.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] all"
+    set vars(all._type) bool
+
+    lappend arguments comment
+    checkbutton $w.comment \
+	-text [subst {Display 'comment' column}]\
+	-variable [namespace current]::vars(comment)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.comment -side top -anchor w
+    set vars(comment) [subst {[expr {(!$vars(only))}]}]
+    set vars(comment.path) $w.comment
+    set vars(comment.required)  0
+    set vars(comment.orig) $vars(comment)
+    set vars(comment.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] comment"
+    set vars(comment._type) bool
+
+    lappend arguments release
+    checkbutton $w.release \
+	-text [subst {Display 'release' column}]\
+	-variable [namespace current]::vars(release)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.release -side top -anchor w
+    set vars(release) [subst 0]
+    set vars(release.path) $w.release
+    set vars(release.required)  0
+    set vars(release._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output database details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst stdout]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/showdb.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,38 @@
+# Phrap Gap4 module
+
+# Menu specifications
+set_menu gap_menu
+set fs ""
+catch {set fs [open "|gcphrap" r]}
+if {$fs == ""} {
+    add_cascade	{Assembly.Phrap Assembly} 0 0
+} else {
+    catch {close $fs}
+    add_cascade	{Assembly.Phrap Assembly} 12 22
+}
+add_command {Assembly.Phrap Assembly.Assemble}	 12 22	{PhrapAssemble \$io}
+add_command {Assembly.Phrap Assembly.Reassemble} 12 22	{PhrapReassemble \$io}
+
+# Defaults
+set_def PHRAP.ASS.WIN			.phrap_assembly
+set_def PHRAP.REASS.WIN			.phrap_reassembly
+
+set_def PHRAP.INFILE.WHICH.NAME		"Input readings from"
+set_def PHRAP.INFILE.WHICH.BUTTONS	{list file}
+set_def PHRAP.INFILE.WHICH.VALUE	2
+set_def PHRAP.INFILE.NAME.NAME		"List or file name"
+set_def PHRAP.INFILE.NAME.BROWSE	"Browse"
+set_def PHRAP.INFILE.NAME.VALUE		""
+
+set_def PHRAP.PARAM.NAME		"Other phrap parameters"
+set_def PHRAP.PARAM.VALUE		""
+
+set_def PHRAP.DEST_DIR.NAME		"Destination directory"
+set_def PHRAP.DEST_DIR.VALUE		"assembly"
+
+set_def PHRAP.QUALITY_CLIP.NAME		"Perform quality clipping"
+set_def PHRAP.QUALITY_CLIP.VALUE	0
+
+set_def PHRAP.DIFFERENCE_CLIP.NAME	"Perform difference clipping"
+set_def PHRAP.DIFFERENCE_CLIP.VALUE	1
+

@@ -1,0 +1,134 @@
+@cindex Qclip: man page
+@unnumberedsec NAME
+
+qclip --- an Experiment File sequence clipper
+
+@unnumberedsec SYNOPSIS
+
+Usage when confidence values are available (default mode):
+
+@code{qclip} [@code{-c}] [@code{-vt}] [@code{-m} @i{minimum_extent}]
+[@code{-M} @i{maximum_extent}] [@code{-w} @i{window_length}]@br
+[@code{-q} @i{average_quality}]
+
+Usage when confidence values are not available or are to be ignored:
+
+@code{qclip} [@code{-c}] [@code{-vt}] [@code{-m} @i{minimum_extent}]
+[@code{-M} @i{maximum_extent}] [@code{-s} @i{start_offset}]
+[@code{-R} @i{r_length}]@br
+[@code{-r} @i{r_unknown}]
+[@code{-L} @i{l_length}] [@code{-l} @i{l_unknown}]
+
+@unnumberedsec DESCRIPTION
+
+@code{Qclip} is a simple program to decide how much of the 5' and 3' ends of a
+sequence, stored as an Experiment File, should be clipped off
+i.e. marked to be ignored during assembly.
+
+The decision is made either by analysing the average confidence levels
+stored in the Experiment file (or an associated trace file), or by
+counting the numbers of unknown bases (eg @code{-} or @code{N}) found within
+windows slid left to right along the sequence.
+
+Large numbers of files can be processed in a single run and each file
+argument is assumed to be a valid Experiment File. The sequence
+is read from the Experiment File @code{SQ} record and the trace is read
+using the @code{LN} and @code{LT} identifiers; clipping is performed
+and @code{QL} and @code{QR} identifiers are appended to the file.
+
+For the default mode of clipping by confidence levels, the program firstly
+finds the region of highest average quality. A window is then slid from this
+point both rightwards and leftwards until the average quality over that
+@i{window length} (specified with the @code{-w} argument) drops below the 
+@i{average_quality} argument. The exact position of the clip point within that
+window is determined by successively decreasing the window length.
+
+When confidence values are not available, or when the @code{-n} argument is
+used, only the sequence base calls are analysed. In this
+case the right clip position is calculated by sliding a window of
+length @code{r_length} rightwards along the sequence, starting from base
+@code{start_offset}, and stopping when a window containing at least
+@code{r_unknown} unknown bases is found. 
+The left clip position is calculated by
+sliding a window leftwards from base @code{start_offset}. The
+algorithm used is identical to the right clip position except that the
+@code{l_unknown} and @code{l_length} parameters are used.
+
+The default arguments are
+"@code{-c -m 0 -M 9999 -w 30 -q 10}."
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-v}
+     Enable verbose output. This outputs information on which files are
+     currently being clipped.
+
+@item @code{-t}
+     Test mode. The QL and QR information is written to stdout instead of
+     being appended to the Experiment file.
+
+@item @code{-c}
+     Clip by confidence levels. This is the default mode of operation.
+
+@item @code{-n}
+     Clip by unknown base calls, even when confidence values are available.
+
+@item @code{-m} @i{extent}
+     If the clip algorithm returns a @code{QL} clip value of less than
+     @i{extent}, use @i{extent} as the @code{QL}
+     value.
+
+@item @code{-M} @i{extent}
+     If the clip algorithm returns a @code{QR} clip value of more than
+     @i{extent}, use @i{extent} as the @code{QR}
+     value.
+
+@item @code{-w}
+     Only used for the confidence level clipping mode.
+     The window length over which to compute the average confidence value.
+
+@item @code{-q}
+     Only used for the confidence level clipping mode.
+     The minimum average confidence in any given window for this window to
+     be considered as good quality sequence.
+        
+@item @code{-s} @i{offset}
+     Only used for the unknown base clipping mode.
+     Force the first window to start the calculations from position @i{offset}
+     in the sequence. This can be useful to avoid poor data at the 5'
+     end of a sequence.
+
+@item @code{-R} @i{length}
+     Only used for the unknown base clipping mode.
+     Set the length for the first rightwards window to @i{length}
+
+@item @code{-r} @i{unknown}
+     Only used for the unknown base clipping mode.
+     Stop sliding the first rightwards window when there are greater than or
+     equal to @i{unknown} bases within the current window.
+
+@item @code{-L} @i{length}
+     Only used for the unknown base clipping mode.
+     Set the length for the second rightwards window to @i{length}.  Setting
+     this value to zero prevents the second window calculations from being
+     performed.
+
+@item @code{-l} @i{unknown}
+     Only used for the unknown base clipping mode.
+     Stop sliding the second rightwards window when there are greater than or
+     equal to @i{unknown} bases within the current window.
+@end table
+
+@unnumberedsec EXAMPLE
+
+To clip a batch of sequences listed in the @file{fofn} file with a minimum
+left clip value of 20 bases use:
+
+@example
+qclip -m 20 `cat fofn`
+@end example
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)

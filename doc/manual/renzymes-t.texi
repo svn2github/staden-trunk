@@ -1,0 +1,57 @@
+@node Formats-Restriction
+@section Restriction Enzyme File
+@cindex Restriction enzyme files
+
+Restriction enzymes and their recognition sequences used by the package
+must be stored in the format described below. Updates of the files can be
+obtained from the REBASE restriction enzyme database of Dr R
+Roberts. Contact roberts@@neb.com or macelis@@neb.com to join the mailing
+list and state that you want the files sent in "staden" format.
+
+Standard four-cutter, six-cutter and all-enzymes files are supplied with
+the package and
+users can create and use their own "personal" files.  To create your own file
+of enzymes you may need to extract the information from the currently
+defined files. These are stored in the tables directory (folder)
+distributed with the package, and are named:
+
+@example
+RENZYM.4
+RENZYM.6
+RENZYM.ALL
+@end example
+
+
+We call the
+recognition sequences "strings". The format is as follows: each
+string or set of strings must be preceded by a name, each string
+must be preceded and terminated with a slash (/), and each set of
+strings by 2 slashes. For example AATII/GACGT'C// defines the name
+AATII, its recognition sequence GACGTC and its cut site with the '
+symbol; ACCI/GT'MKAC// defines the name ACCI and its recognition
+sequence includes IUB symbols for incompletely defined symbols in
+nucleic acid sequences; BBVI/GCAGCNNNNNNNN'/'NNNNNNNNNNNNGCTGC//
+defines the name BBVI and this time two recognition sequences and
+cut sites are specified to enable the definition of the cut position
+relative to the recognition sequence. If no cut site is
+included the first base of the recognition sequence is displayed as
+being on the 3' side of the recognition sequence.
+
+A section of a typical file follows:
+
+@example
+ AATII/GACGT'C//
+ ACCI/GT'MKAC//
+ AFLII/C'TTAAG//
+ AVAII/G'GWCC//
+ AVRII/C'CTAGG//
+ BANI/G'GYRCC//
+ BANII/GRGCY'C//
+ BBVI/GCAGCNNNNNNNN'/'NNNNNNNNNNNNGCTGC//
+ BCLI/T'GATCA//
+ BGLI/GCCNNNN'NGGC//
+ BGLII/A'GATCT//
+ BINI/GGATCNNNN'/'NNNNNGATCC//
+ BSMI/GAATGCN'/NG'CATTC//
+ BSP1286/GDGCH'C//
+@end example

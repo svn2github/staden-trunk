@@ -1,0 +1,96 @@
+@menu
+@ifset html
+* Formats-Introduction::        Introduction
+@end ifset
+* Formats-Scf::                 SCF
+* Formats-Exp::                 Experiment File
+* Formats-Restriction::         Restriction Enzymes
+* Formats-Vector_Primer::       Vector_primer Files
+* Formats-Vector-Sequences::    Vector Sequence Files
+@end menu
+
+_split()
+@ifset html
+@node Formats-Introduction
+@unnumberedsec Introduction
+@end ifset
+
+@cindex Reading name restrictions
+@cindex File name restrictions
+@cindex SCF file name restrictions
+@cindex Experiment file name restrictions
+@cindex Sample name restrictions
+@cindex Restrictions on file names
+@cindex Restrictions on experiment file names
+@cindex Restrictions on SCF file names
+@cindex Restrictions on reading names
+@cindex Restrictions on sample names
+
+
+This section introduces the various file formats used by the
+package, but first we describe some limitations on the names of files.
+ 
+There are restrictions on the characters used in
+file names and the length of the file names.
+ 
+Characters permitted in file names:
+ 
+QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890._-
+ 
+A reading name or experiment file name used in a sequence assembly project
+must not be longer than 16 characters.
+ 
+These restrictions also apply to SCF files which means, in turn, also to
+the names given to samples obtained from sequencing instruments. For example
+do not give sample names such as 27/OCT/96/r.1 when using and ABI machine:
+the / symbols will be interpreted as directory name separators on UNIX!
+ 
+
+Currently the formats used by the package include the following.
+
+@menu
+* Formats-Scf::                 SCF
+* Formats-Ztr::                 ZTR
+* Formats-Exp::                 Experiment File
+* Formats-Restriction::         Restriction Enzymes
+* Formats-Vector_Primer::       Vector_primer Files
+* Formats-Vector-Sequences::    Vector Sequence Files
+@end menu
+
+_split()
+_include(scf-t.texi)
+
+_split()
+_include(ztr-t.texi)
+
+@page
+_split()
+_include(exp-t.texi)
+
+@page
+_split()
+_include(renzymes-t.texi)
+
+@page
+_split()
+_include(vector_primer-t.texi)
+
+@page
+_split()
+@node Formats-Vector-Sequences
+@section Vector Sequence Format
+@cindex format: vector sequences
+@cindex vector sequences format
+@cindex plain text
+
+Sequences such as vectors or E. coli which are compared against readings using
+vector_clip
+(_fpref(Vector_Clip-Introduction, Vector_clip,t))
+and screen_seq
+(_fpref(Screen_seq, Screening for known possible contaminant
+sequences, screening), usually via pregap4
+(_fpref(Pregap4-Introduction,Pregap4, pregap4)), must be stored as plain text.
+i.e. the files should contain only the sequence data (no header or title)
+on records (lines) of up to 60 characters. Each record should be terminated
+by a newline character. No other characters should appear in the file.
+

@@ -1,0 +1,136 @@
+package require Iwidgets
+namespace eval ::EMBOSS::equicktandem {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_equicktandem*Xentry.entry.width 30
+option add *e_equicktandem*Entryfield.width 30
+option add *e_equicktandem*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) equicktandem
+    set w [xtoplevel .e_equicktandem -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - equicktandem}
+    label $w._title -text {Finds tandem repeats}
+    pack $w._title -side top -fill both
+    set vars(equicktandem._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst dna]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments maxrepeat
+    iwidgets::entryfield $w.maxrepeat \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxrepeat) \
+	-labeltext [subst {Maximum repeat size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxrepeat component entry] -sticky nse
+    set vars(maxrepeat) [subst 600]
+    pack $w.maxrepeat -side top -fill both
+    set vars(maxrepeat.path) $w.maxrepeat
+    set vars(maxrepeat.required)  1
+    set vars(maxrepeat._type) integer
+
+    lappend arguments threshold
+    iwidgets::entryfield $w.threshold \
+	-validate integer \
+	-textvariable [namespace current]::vars(threshold) \
+	-labeltext [subst {Threshold score}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.threshold component entry] -sticky nse
+    set vars(threshold) [subst 20]
+    pack $w.threshold -side top -fill both
+    set vars(threshold.path) $w.threshold
+    set vars(threshold.required)  1
+    set vars(threshold._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Report output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst report0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) report
+
+    lappend arguments origfile
+    xentry $w.origfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(origfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.origfile delete 0 end
+    $w.origfile insert end [subst equicktandem1.out]
+    pack $w.origfile -side top -fill both
+    set vars(origfile.path) $w.origfile
+    set vars(origfile.required)  0
+    set vars(origfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/equicktandem.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,339 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 2001. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+#
+# OVERVIEW
+# This module manages reference trace information for the mutation detection
+# modules hetscan and tracediff. The rationale for having this module is to
+# avoid duplication in each mutation module and minimise user confusion.
+#
+# Ideally, the pregap module system should be hierarchical so that a parent
+# module can hold information common to sub-modules, but at present we'll
+# settle for linear sequential operation.
+#
+#
+# INFORMATION FLOW
+# The pregap4 configuration file is used to store the following items of
+# information in the [::reference] module section.
+#
+# enabled               <0|1>
+# rtp_name              <reference-trace-positive-name>
+# rtp_clip_l            <reference-trace-positive-clip-left>
+# rtp_clip_r            <reference-trace-positive-clip-right>
+# rtn_name              <reference-trace-negative-name>
+# rtn_clip_l            <reference-trace-negative-clip-left>
+# rtn_clip_r            <reference-trace-negative-clip-right>
+# rseq_name     <reference sequence name (text or trace)>
+# rseq_offset       <ref seq start base number>
+# rseq_circular     <0|1> (is reference sequence circular?)
+# rseq_length       <ref seq length> (only used if rseq_circular is true)
+#
+# For each experiment file passed to the reference module, we augment it with
+# the reference trace information as follows:
+#
+# WT is set to the reference trace name for the current strand
+#    (determined by PR)
+# WL is set to the reference trace left clip point for the current strand
+# WR is set to the reference trace right clip point for the current strand
+#
+# The region over which mutation scanning occurs is determined by the quality
+# clip points for each trace as written by the quality clip module as QL/QR
+# records.
+#
+
+set help {pregap4 {Pregap4-Modules-Reference Traces}}
+
+
+proc name {} {
+#
+# Name shown in module selection panel
+#
+    return "Reference Traces & Sequences"
+}
+
+
+proc init {} {
+#
+# Sets up any data structures needed for this module
+#
+    mod_preset reference_enabled 1
+    mod_preset rtp_name         ""
+    mod_preset rtp_clip_l       -1
+    mod_preset rtp_clip_r       -1
+    mod_preset rtn_name         ""
+    mod_preset rtn_clip_l       -1
+    mod_preset rtn_clip_r       -1
+    mod_preset rseq_name    ""
+    mod_preset rseq_offset  1
+    mod_preset rseq_circular    0
+    mod_preset rseq_length  0
+}
+
+
+proc create_dialogue {w} {
+#
+# Adds and packs the necessary widgets onto the modules form
+#
+    variable rtp_name
+    variable rtp_clip_l
+    variable rtp_clip_r
+    variable rtn_name
+    variable rtn_clip_l
+    variable rtn_clip_r
+    variable rseq_name
+    variable rseq_offset
+    variable rseq_circular
+    variable rseq_length
+
+
+    get_fname $w.rtp_name \
+        -text "Reference Trace (+ve strand)" \
+        -type load \
+        -textvariable [namespace current]::rtp_name
+
+    xentry $w.rtp_clip_l \
+        -label "Clip left" \
+        -textvariable [namespace current]::rtp_clip_l \
+        -width 7
+
+    xentry $w.rtp_clip_r \
+        -label "Clip right" \
+        -textvariable [namespace current]::rtp_clip_r \
+        -width 7
+
+    pack $w.rtp_name $w.rtp_clip_l $w.rtp_clip_r -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill both -padx 10 -pady 5
+
+    get_fname $w.rtn_name \
+        -text "Reference Trace (-ve strand)" \
+        -type load \
+        -textvariable [namespace current]::rtn_name
+
+    xentry $w.rtn_clip_l \
+        -label "Clip left" \
+        -textvariable [namespace current]::rtn_clip_l \
+        -width 7
+
+    xentry $w.rtn_clip_r \
+        -label "Clip right" \
+        -textvariable [namespace current]::rtn_clip_r \
+        -width 7
+
+    pack $w.rtn_name $w.rtn_clip_l $w.rtn_clip_r -side top -fill both
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill both -padx 10 -pady 5
+
+    get_fname $w.rseq_name \
+        -text "Reference Sequence" \
+        -type load \
+        -textvariable [namespace current]::rseq_name
+
+    xentry $w.rseq_offset \
+        -label "Start base number" \
+        -textvariable [namespace current]::rseq_offset \
+        -width 7
+
+    xyn $w.rseq_circular \
+    -label "Circular?" \
+    -variable [namespace current]::rseq_circular \
+    -orient horiz
+
+    xentry $w.rseq_length \
+        -label "Sequence length" \
+        -textvariable [namespace current]::rseq_length \
+        -width 7
+
+    pack $w.rseq_name $w.rseq_offset $w.rseq_circular $w.rseq_length \
+    -side top -fill both
+}
+
+
+
+proc run {files} {
+#
+# Do module actions for a bunch of experiment files
+#
+    global file_type
+
+
+    # Create list of experiment files, then run update
+    set expfiles {}
+    foreach f $files {
+        if {$file_type($f) == "EXP"} {
+            lappend expfiles $f
+        }
+    }
+    run_update_expfiles $expfiles
+    return $files
+}
+
+
+
+proc run_update_expfiles {exp_files} {
+#
+# Adds WT, WL, WR records to experiment files
+#
+    variable rtp_name
+    variable rtp_clip_l
+    variable rtp_clip_r
+    variable rtn_name
+    variable rtn_clip_l
+    variable rtn_clip_r
+    variable rseq_name
+    variable rseq_offset
+    variable rseq_circular
+    variable rseq_length
+    global file_orig_name
+
+
+    foreach f $exp_files {
+    # Identify associated trace file, or exp file if no trace
+    catch {unset e}
+    array set e [read_exp_file $f]
+    if {[info exists e(LN)]} {
+        set LN [lindex [lindex $e(LN) end] 1]
+    } else {
+        set LN $f
+    }
+
+        pg_open $f
+
+    # Identify LN line's original filename. We've lost the pathname
+    # component so we cheat by adding our directory before we look this
+    # up in file_orig_name.
+    # FIXME: this may cause bugs when attempting to load sequences from
+    # multiple directories.
+
+    set new_ln $LN
+    do {
+        set LN $new_ln
+
+        set new_ln ""
+        if {[info exists file_orig_name($LN)]} {
+        set new_ln $file_orig_name($LN)
+        } elseif {[info exists file_orig_name([file join [pwd] $LN])]} {
+        set new_ln $file_orig_name([file join [pwd] $LN])
+        } else {
+        break
+        }
+    } while {$LN != $new_ln}
+
+    set LN [file tail $LN]
+
+    # If this is a reference sequence or trace, record this fact in
+    # the NT (NoTe) line type.
+    if {$LN == [file tail $rtp_name]} {
+        pg_update $f NT "REFT comment=control -ve"
+    } elseif {$LN == [file tail $rtn_name]} {
+        pg_update $f NT "REFT comment=control -ve"
+    } elseif {$LN == [file tail $rseq_name]} {
+        if {$rseq_circular} {
+            pg_update $f NT "REFS comment=sequence $rseq_offset $rseq_length"
+        } else {
+            pg_update $f NT "REFS comment=sequence $rseq_offset"
+        }
+    }
+
+
+        # Read PR record to get strand direction
+        set pr_rec [pg_query $f PR]
+        switch -exact $pr_rec {
+            1 - 3   {set direction 0}
+            2 - 4   {set direction 1}
+            default {set direction 0}
+        }
+
+
+        # Add wildtype records to experiment file
+        if { $direction == 0 } {
+
+            # Forward strand
+            pg_update $f WT $rtp_name
+            pg_update $f WL $rtp_clip_l
+            pg_update $f WR $rtp_clip_r
+
+        } else {
+
+            # Reverse strand
+            pg_update $f WT $rtn_name
+            pg_update $f WL $rtn_clip_l
+            pg_update $f WR $rtn_clip_r
+        }
+        pg_close $f
+        vmessage -nonewline .
+        update idletasks
+    }
+    vmessage ""
+}
+
+
+
+proc check_params {} {
+#
+# Checks that fields have valid values
+#
+    variable rtp_name
+    variable rtp_clip_l
+    variable rtp_clip_r
+    variable rtn_name
+    variable rtn_clip_l
+    variable rtn_clip_r
+
+
+    # Make sure at least one reference trace is specified
+    if { $rtp_name == "" && $rtn_name == "" } {
+        if { $rtp_name == "" } { return rtp_name }
+        if { $rtn_name == "" } { return rtn_name }
+    }
+
+
+    # Make sure left/right clip points are set for specified traces
+    if { $rtp_name != "" } {
+        if { $rtp_clip_l == "" } { return rtp_clip_l }
+        if { $rtp_clip_r == "" } { return rtp_clip_r }
+    }
+    if { $rtn_name != "" } {
+        if { $rtn_clip_l == "" } { return rtn_clip_l }
+        if { $rtn_clip_r == "" } { return rtn_clip_r }
+    }
+
+
+    # Everything is OK
+    return ""
+}
+
+
+proc process_dialogue {w} {
+    if { [check_params] == "" } {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+
+proc configure_dialogue {w mode} {
+#
+# Handles saving of parameters
+#
+    if {[string match save* $mode]} {
+        mod_save rtp_name      [$w.rtp_name get2]
+        mod_save rtp_clip_l    [$w.rtp_clip_l get2]
+        mod_save rtp_clip_r    [$w.rtp_clip_r get2]
+        mod_save rtn_name      [$w.rtn_name get2]
+        mod_save rtn_clip_l    [$w.rtn_clip_l get2]
+        mod_save rtn_clip_r    [$w.rtn_clip_r get2]
+    mod_save rseq_name     [$w.rseq_name get2]
+    mod_save rseq_offset   [$w.rseq_offset get2]
+    mod_save rseq_circular [$w.rseq_circular get]
+    mod_save rseq_length   [$w.rseq_length get2]
+    }
+}

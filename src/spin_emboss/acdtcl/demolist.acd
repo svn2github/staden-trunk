@@ -1,0 +1,47 @@
+package require Iwidgets
+namespace eval ::EMBOSS::demolist {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_demolist*Xentry.entry.width 30
+option add *e_demolist*Entryfield.width 30
+option add *e_demolist*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) demolist
+    set w [xtoplevel .e_demolist -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - demolist}
+    label $w._title -text {demonstration of the list functions}
+    pack $w._title -side top -fill both
+    set vars(demolist._type) application
+
+    lappend arguments gff
+    xentry $w.gff \
+	-label [subst {gff file to be read in}]\
+	-textvariable [namespace current]::vars(gff) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.gff delete 0 end
+    $w.gff insert end [subst {}]
+    pack $w.gff -side top -fill both
+    set vars(gff.path) $w.gff
+    set vars(gff.required)  1
+    set vars(gff._type) infile
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/demolist.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,211 @@
+@cindex IO introduction (C)
+@cindex Overview of Gap4 IO (C)
+
+[General notes to go somewhere: It is better to check success return codes
+rather than failure ones as the failure ones are often variable (-1, 1, >0,
+etc) but most return 0 for success.]
+
+The Gap4 I/O access from within C consists of several layers. These layers
+provide ways of breaking down the tasks into discrete methods, and of hiding
+most of the implementation details. For the programmer willing to extend Gap4,
+only the higher layer levels are of interest. Hence the lowest levels are
+described only briefly.
+
+@subsection "g" Level - Raw Database Access
+
+At the final end of any I/O is the actual code to read and write information
+to the disk. In Gap4 this is handled through a library named "g". This
+contains code for reading, writing, locking and updating of the physical
+database. It does not describe the structures contained in the gap database
+format itself, but rather provides functions to read and write arbitrary
+blocks of data. Don't delve into this unless you're feeling brave!
+
+The code for this library is contained within the @file{src/g} directory.
+No documentation is currently available on these functions.
+
+@subsection "Communication" Level - Interfaces to the "g" Level
+
+This level of code deals with describing the real Gap4 data structures and
+the interfacing with the g library. Generally this code should not be used.
+
+This code is contained within the @file{src/gap4} directory and breaks down as
+follows:
+
+@table @file
+@item  gap-if.c
+@itemx gap-local.c
+@itemx gap-remote.c
+	Interface functions with the g library. These are to provide
+	support for a local (ie compiled in) or remote (unimplemented)
+	database server.
+
+@item  gap-io.c
+	Contains @code{GAP_READ} and @code{GAP_WRITE} functions in byte swap
+	and non byte swap forms (depending on the system arch.). The
+	@code{gap_io_init()} function automatically determines the machine
+	endian and sets up function pointers to call the correct functions.
+
+@item  gap-error.c
+	Definitions of @code{GAP_ERROR} and @code{GAP_ERROR_FATAL} functions.
+
+@item  gap-dbstruct.c
+@itemx gap-create.c
+	Functions for creation, initialisation, and copying of database
+	files.
+
+@item  gap-dbstruct.h
+	@strong{VERY USEFUL!} The definitions of the gap structures that are
+	stored in the database.
+
+@item  gap-init.c
+	Initialises communication with the "g" database server by use of
+	@code{gap_init()}, @code{gap_open_server()} and
+	@code{gap_shutdown_server()} functions.
+@end table
+
+No documentation is currently available on these functions.
+
+@subsection Basic Gap4 I/O
+
+This level contains the basic functions for reading, writing, creation and
+deletion of the Gap4 structures, such as readings and templates as well as
+higher level functions built on top of these. It is this level of code that
+should generally be used by the programmer. The implementation of this level
+has function code and prototypes spread over a variety of files, but the
+programmer should only @code{#include} the @file{IO.h} file.
+
+The primary functions are:
+
+@table @file
+@item IO.c
+@table @code
+@item  open_db
+@itemx close_db
+@itemx del_db
+	Opening/creation, closing and deletion of databases.
+
+@item  GT_Read, GT_Write, GT_Write_cached
+@itemx TextRead, TextAllocRead, TextWrite
+@itemx DataRead, DataWrite
+@itemx ArrayRead, ArrayWrite
+@itemx BitmapRead, BitmapWrite
+	The basic IO calls. Note that the GT ones are for handling structures
+	(eg GReadings) and the others for data of the associated type.
+
+@item  io_init_contig
+@itemx io_init_annotations
+@itemx io_init_reading
+	Some functions for initialising new data structures. These in turn
+	call the @code{allocate()} function to create new database records.
+
+@item  io_read_seq
+@itemx io_write_seq
+	Reads and writes sequence information.
+
+@item  io_read_rd
+	Fetches the trace type and name values for a reading.
+
+@item  io_read_annotation
+@itemx io_write_annotation
+	Reading and writing of annotations (also known as tags).
+
+@item  allocate
+@itemx deallocate
+@itemx io_deallocate_reading
+        Allocation and deallocation of records.
+
+@item  flush2t
+        Flushes changes back to disk. The various write commands write the
+        data to disk, but until a flush occurs they will not be committed as
+        the up to date copies.
+@end table
+
+@item io_handle.c
+@table @code
+@item  io_handle
+@itemx handle_io
+        Converts between C @var{GapIO} pointer and an integer value which can
+        be passed around in Tcl and Fortran. The integer handle is used in the
+        Tcl scripting language.
+@end table
+
+@item io_utils.[ch]
+@table @code
+@item  get_gel_num, lget_gel_num
+@itemx get_contig_num, lget_contig_num
+        Converts single or lists of reading identifiers into reading or contig
+        numbers (with start and end ranges).
+
+@item  to_contigs_only
+        Converts a list of reading identifiers to contig numbers.
+
+@item  get_read_name
+@itemx get_contig_name
+@itemx get_vector_name
+@itemx get_template_name
+@itemx get_clone_name
+        Converts a structure number into its textual name.
+
+@item  chain_left
+        Finds the left most reading number in a contig from a given reading
+        number.
+
+@item  rnumtocnum
+        Converts from a reading number into a contig number.
+@end table
+@end table
+
+
+@subsection Other I/O Functions
+
+Still more I/O functions exist that aren't listed under the "Basic Gap4 I/O"
+header. The reason for this is primarily due to code structure rather than any
+particular grouping based on functionality. Specifically, these functions
+cannot be easily linked into "external" applications without a considerable
+amount of effort.
+
+The file break down is as follows.
+
+@table @file
+@item IO2.c
+@table @code
+@item  io_complement_seq
+	Complements, in memory, a sequence and associated structures.
+
+@item  io_insert_seq
+@itemx io_delete_seq
+@itemx io_replace_seq
+	Modifies in memory sequence details.
+
+@item  io_insert_base
+@itemx io_modify_base
+@itemx io_delete_base
+        Modifies a single base in a sequence on the disk.
+
+@item  pad_consensus
+        Inserts pads to the consensus sequence and all the readings at that
+        point.
+
+@item  io_delete_contig
+        Removes a contig structure.
+@end table
+
+@item IO3.c
+@table @code
+@item  get_read_info
+@itemx get_vector_info
+@itemx get_clone_info
+	Fetches miscellaneous information for reads (primers, insert size,
+	etc), vectors and clones.
+
+@item  io_get_extension
+	Returns the right cutoff of a reading. Found by checking the cut
+	points and any vector tags.
+
+@item  io_mod_extension
+	Modifies the cutoffs of readings.
+
+@item  write_rname
+        Updates a reading name in memory and disk.
+@end table
+@end table

@@ -1,0 +1,133 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+set mandatory 1
+set hidden 1
+
+proc name {} {
+    return "Report Production"
+}
+
+proc shutdown {files} {
+    global file_type
+    global file_error
+    global modules
+    global fofn fofn_dir
+    global file_orig_name
+
+    set ffofn [file join $fofn_dir [file tail $fofn]]
+    set fdl [open $ffofn.log w]
+
+    # File of passes
+    set fd [open $ffofn.passed w]
+    vmessage "Passed files:"
+    puts $fdl {[passed files]}
+    foreach f $files {
+	if {[info exists file_type($f)]} {
+	    vmessage "    [list $f] ($file_type($f))"
+	    puts $fd [file tail $f]
+	    puts $fdl "[list $f] ($file_type($f)) PASSED"
+	} else {
+	    vmessage "    [list $f] (???)"
+	    puts $fd [file tail $f]
+	    puts $fdl "[list $f] (???) PASSED"
+	}
+    }
+    close $fd
+    vmessage ""
+
+    # File of failures
+    vmessage "Failed files:"
+    puts $fdl "\n\[failed files\]"
+    set fd [open $ffofn.failed w]
+    set have_failures 0
+    foreach e [array names file_error] {
+	if {$file_error($e) != ""} {
+	    set have_failures 1
+	    if {[info exists file_type($e)]} {
+	        vmessage "    [list $e] ($file_type($e)) '$file_error($e)'"
+	        puts $fd [file tail $e]
+	        puts $fdl "[list $e] ($file_type($e)) ERROR: $file_error($e)"
+	    } else {
+	        vmessage "    [list $e] (???) '$file_error($e)'"
+	        puts $fd [file tail $e]
+	        puts $fdl "[list $e] (???) ERROR: $file_error($e)"
+	    }
+	}
+    }
+    if {$have_failures == 0} {
+       vmessage "    None"
+    }
+    close $fd
+    vmessage ""
+
+    # File history
+    puts $fdl "\n\[passed file history\]"
+    foreach f $files {
+	for {set str ""; set tf ""} {$f != ""} {} {
+	    if {[info exists file_type($f)]} {
+	        append str "[list $f] ($file_type($f))"
+	    } else {
+	        append str "[list $f] (???)"
+	    }
+	    catch {set tf $file_orig_name($f)}
+	    if {[set f [lindex [list $tf {}] [string match $tf $f]]] != ""} {
+		append str " <- "
+	    }
+	}
+	puts $fdl $str
+    }
+    puts $fdl "\n\[failed file history\]"
+    foreach f [array names file_error] {
+	if {$file_error($f) == ""} { continue }
+	for {set str ""; set tf ""} {$f != ""} {} {
+	    if {[info exists file_type($f)]} {
+	        append str "[list $f] ($file_type($f))"
+	    } else {
+	        append str "[list $f] (???)"
+	    }
+	    catch {set tf $file_orig_name($f)}
+	    if {[set f [lindex [list $tf {}] [string match $tf $f]]] != ""} {
+		append str " <- "
+	    }
+	}
+	puts $fdl $str
+    }
+
+    # Module reports
+    global fd_report
+    set fd_report [open $ffofn.report w]
+    foreach mod $modules {
+	if {[set ${mod}::enabled] == 0} {
+	    continue
+	}
+	if {![namespace eval ::$mod {info exists report}]} {
+	    continue
+	}
+	namespace eval ::$mod {
+	    if {$report != ""} {
+       		global fd_report
+		vmessage "- Report from '[name]' -"
+		vmessage $report
+		puts $fd_report "--- Report from '[name]' ---"
+		puts $fd_report $report
+	    }
+	}
+    }
+    close $fd_report
+
+    vmessage ""
+    vmessage ""
+    vmessage "                       ***   Processing finished   ***"
+    vmessage ""
+    vmessage ""
+
+    close $fdl
+    return $files
+}

@@ -1,0 +1,43 @@
+
+# DO NOT DELETE
+$O/FtoC.o: os.h
+$O/array.o: xerror.h xalloc.h
+$O/array.o: array.h
+$O/array_arith.o: os.h
+$O/array_arith.o: misc.h
+$O/array_arith.o: xalloc.h
+$O/bitmap.o: bitmap.h os.h
+$O/bitmap.o: xerror.h xalloc.h
+$O/crash.o: xalloc.h
+$O/crash.o: os.h
+$O/crash.o: misc.h
+$O/date.o: xalloc.h
+$O/date.o: os.h
+$O/date.o: misc.h
+$O/dstring.o: vlen.h
+$O/dstring.o: dstring.h
+$O/filenames.o: xalloc.h
+$O/filenames.o: os.h
+$O/filenames.o: misc.h
+$O/files.o: xalloc.h
+$O/files.o: os.h
+$O/files.o: misc.h
+$O/find.o: xalloc.h
+$O/find.o: os.h
+$O/find.o: misc.h
+$O/getfile.o: os.h xalloc.h
+$O/getfile.o: misc.h
+$O/getfile.o: getfile.h
+$O/locks.o: locks.h
+$O/parse_db.o: os.h
+$O/parse_db.o: xalloc.h parse_db.h misc.h
+$O/shell.o: xalloc.h
+$O/shell.o: os.h
+$O/shell.o: misc.h
+$O/strings.o: xalloc.h
+$O/strings.o: os.h
+$O/strings.o: misc.h
+$O/vlen.o: vlen.h
+$O/xalloc.o: error.h
+$O/xerror.o: os.h xalloc.h
+$O/xerror.o: xerror.h misc.h

@@ -1,0 +1,220 @@
+package require Iwidgets
+namespace eval ::EMBOSS::textsearch {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_textsearch*Xentry.entry.width 30
+option add *e_textsearch*Entryfield.width 30
+option add *e_textsearch*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) textsearch
+    set w [xtoplevel .e_textsearch -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - textsearch}
+    label $w._title -text {Search sequence documentation text. SRS and Entrez are faster!}
+    pack $w._title -side top -fill both
+    set vars(textsearch._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments pattern
+    iwidgets::entryfield $w.pattern \
+	-textvariable [namespace current]::vars(pattern) \
+	-labeltext [subst {Enter a pattern to search for}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pattern component entry] -sticky nse
+    set vars(pattern) [subst {}]
+    pack $w.pattern -side top -fill both
+    set vars(pattern.path) $w.pattern
+    set vars(pattern.required)  1
+    set vars(pattern._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments casesensitive
+    checkbutton $w.casesensitive \
+	-text [subst {Do a case-sensitive search}]\
+	-variable [namespace current]::vars(casesensitive)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.casesensitive -side top -anchor w
+    set vars(casesensitive) [subst 0]
+    set vars(casesensitive.path) $w.casesensitive
+    set vars(casesensitive.required)  0
+    set vars(casesensitive._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Format output as an HTML table}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    lappend arguments only
+    checkbutton $w.only \
+	-text [subst {Display the specified columns}]\
+	-variable [namespace current]::vars(only)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.only -side top -anchor w
+    set vars(only) [subst 0]
+    set vars(only.path) $w.only
+    set vars(only.required)  0
+    set vars(only._type) bool
+
+    lappend arguments heading
+    checkbutton $w.heading \
+	-text [subst {Display column headings}]\
+	-variable [namespace current]::vars(heading)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.heading -side top -anchor w
+    set vars(heading) [subst {[expr {(!$vars(only))}]}]
+    set vars(heading.path) $w.heading
+    set vars(heading.required)  0
+    set vars(heading.orig) $vars(heading)
+    set vars(heading.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] heading"
+    set vars(heading._type) bool
+
+    lappend arguments usa
+    checkbutton $w.usa \
+	-text [subst {Display the USA of the sequence}]\
+	-variable [namespace current]::vars(usa)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.usa -side top -anchor w
+    set vars(usa) [subst {[expr {(!$vars(only))}]}]
+    set vars(usa.path) $w.usa
+    set vars(usa.required)  0
+    set vars(usa.orig) $vars(usa)
+    set vars(usa.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] usa"
+    set vars(usa._type) bool
+
+    lappend arguments accession
+    checkbutton $w.accession \
+	-text [subst {Display 'accession' column}]\
+	-variable [namespace current]::vars(accession)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.accession -side top -anchor w
+    set vars(accession) [subst {[expr {(!$vars(only))}]}]
+    set vars(accession.path) $w.accession
+    set vars(accession.required)  0
+    set vars(accession.orig) $vars(accession)
+    set vars(accession.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] accession"
+    set vars(accession._type) bool
+
+    lappend arguments name
+    checkbutton $w.name \
+	-text [subst {Display 'name' column}]\
+	-variable [namespace current]::vars(name)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.name -side top -anchor w
+    set vars(name) [subst {[expr {(!$vars(only))}]}]
+    set vars(name.path) $w.name
+    set vars(name.required)  0
+    set vars(name.orig) $vars(name)
+    set vars(name.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] name"
+    set vars(name._type) bool
+
+    lappend arguments description
+    checkbutton $w.description \
+	-text [subst {Display 'description' column}]\
+	-variable [namespace current]::vars(description)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.description -side top -anchor w
+    set vars(description) [subst {[expr {(!$vars(only))}]}]
+    set vars(description.path) $w.description
+    set vars(description.required)  0
+    set vars(description.orig) $vars(description)
+    set vars(description.expr) {[expr {(!$vars(only))}]}
+    trace variable vars(only) w  "::EMBOSS::reset_value [namespace current] description"
+    set vars(description._type) bool
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output sequence details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst textsearch0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/textsearch.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

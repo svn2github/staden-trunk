@@ -1,0 +1,442 @@
+package require Iwidgets
+namespace eval ::EMBOSS::prettyplot {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_prettyplot*Xentry.entry.width 30
+option add *e_prettyplot*Entryfield.width 30
+option add *e_prettyplot*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) prettyplot
+    set w [xtoplevel .e_prettyplot -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - prettyplot}
+    label $w._title -text {Displays aligned sequences, with colouring and boxing}
+    pack $w._title -side top -fill both
+    set vars(prettyplot._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments msf
+    set vars(msf)       [get_active_seq_id 0]
+    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 0]}
+    set vars(msf.name)  [seq_info $vars(msf) name]
+    sequence_changed [namespace current] msf
+    set vars(msf.type) [subst gapany]
+    seq_id $w.msf \
+	-textvariable [namespace current]::vars(msf.name)\
+	-start_value $vars(msf.begin)\
+	-end_value $vars(msf.end)\
+	-to [seq_info $vars(msf) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
+    set vars(msf) [subst {}]
+    pack $w.msf -side top -fill both
+    set vars(msf.path) $w.msf
+    set vars(msf.required)  1
+    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
+   set vars(msf.totweight) [subst 0]
+    set vars(msf._type) seqset
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments residuesperline
+    iwidgets::entryfield $w.residuesperline \
+	-validate integer \
+	-textvariable [namespace current]::vars(residuesperline) \
+	-labeltext [subst {Number of residues to be displayed on each line}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.residuesperline component entry] -sticky nse
+    set vars(residuesperline) [subst 50]
+    pack $w.residuesperline -side top -fill both
+    set vars(residuesperline.path) $w.residuesperline
+    set vars(residuesperline.required)  0
+    set vars(residuesperline._type) integer
+
+    lappend arguments resbreak
+    iwidgets::entryfield $w.resbreak \
+	-validate integer \
+	-textvariable [namespace current]::vars(resbreak) \
+	-labeltext [subst {Residues before a space}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.resbreak component entry] -sticky nse
+    set vars(resbreak) [subst {[expr {$vars(residuesperline)}]}]
+    pack $w.resbreak -side top -fill both
+    set vars(resbreak.minimum) [subst 1]
+    set vars(resbreak.maximum) [subst {[expr {$vars(residuesperline)}]}]
+    set vars(resbreak.maximum.orig) $vars(resbreak.maximum)
+    set vars(resbreak.maximum.expr) {[expr {$vars(residuesperline)}]}
+    trace variable vars(residuesperline) w  "::EMBOSS::reset_value [namespace current] resbreak.maximum"
+    set vars(resbreak.path) $w.resbreak
+    set vars(resbreak.required)  0
+    set vars(resbreak.orig) $vars(resbreak)
+    set vars(resbreak.expr) {[expr {$vars(residuesperline)}]}
+    trace variable vars(residuesperline) w  "::EMBOSS::reset_value [namespace current] resbreak"
+    set vars(resbreak._type) integer
+
+    lappend arguments ccolours
+    checkbutton $w.ccolours \
+	-text [subst {Colour residues by their consensus value.}]\
+	-variable [namespace current]::vars(ccolours)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ccolours -side top -anchor w
+    set vars(ccolours) [subst 1]
+    set vars(ccolours.path) $w.ccolours
+    set vars(ccolours.required)  0
+    set vars(ccolours._type) bool
+
+    lappend arguments cidentity
+    iwidgets::entryfield $w.cidentity \
+	-textvariable [namespace current]::vars(cidentity) \
+	-labeltext [subst {Colour to display identical residues (RED)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cidentity component entry] -sticky nse
+    set vars(cidentity) [subst RED]
+    pack $w.cidentity -side top -fill both
+    set vars(cidentity.path) $w.cidentity
+    set vars(cidentity.required)  0
+    set vars(cidentity._type) string
+
+    lappend arguments csimilarity
+    iwidgets::entryfield $w.csimilarity \
+	-textvariable [namespace current]::vars(csimilarity) \
+	-labeltext [subst {Colour to display similar residues (GREEN)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.csimilarity component entry] -sticky nse
+    set vars(csimilarity) [subst GREEN]
+    pack $w.csimilarity -side top -fill both
+    set vars(csimilarity.path) $w.csimilarity
+    set vars(csimilarity.required)  0
+    set vars(csimilarity._type) string
+
+    lappend arguments cother
+    iwidgets::entryfield $w.cother \
+	-textvariable [namespace current]::vars(cother) \
+	-labeltext [subst {Colour to display other residues (BLACK)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cother component entry] -sticky nse
+    set vars(cother) [subst BLACK]
+    pack $w.cother -side top -fill both
+    set vars(cother.path) $w.cother
+    set vars(cother.required)  0
+    set vars(cother._type) string
+
+    lappend arguments docolour
+    checkbutton $w.docolour \
+	-text [subst {Colour residues by table oily, amide etc.}]\
+	-variable [namespace current]::vars(docolour)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.docolour -side top -anchor w
+    set vars(docolour) [subst 0]
+    set vars(docolour.path) $w.docolour
+    set vars(docolour.required)  0
+    set vars(docolour._type) bool
+
+    lappend arguments title
+    checkbutton $w.title \
+	-text [subst {Do not display the title}]\
+	-variable [namespace current]::vars(title)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.title -side top -anchor w
+    set vars(title) [subst 1]
+    set vars(title.path) $w.title
+    set vars(title.required)  0
+    set vars(title._type) bool
+
+    lappend arguments shade
+    iwidgets::entryfield $w.shade \
+	-textvariable [namespace current]::vars(shade) \
+	-labeltext [subst shading]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.shade component entry] -sticky nse
+    set vars(shade) [subst {}]
+    pack $w.shade -side top -fill both
+    set vars(shade.path) $w.shade
+    set vars(shade.required)  0
+    set vars(shade._type) string
+
+    lappend arguments pair
+    iwidgets::entryfield $w.pair \
+	-textvariable [namespace current]::vars(pair) \
+	-labeltext [subst {Values to represent identical similar related}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pair component entry] -sticky nse
+    set vars(pair) [subst 1.5,1.0,0.5]
+    pack $w.pair -side top -fill both
+    set vars(pair.path) $w.pair
+    set vars(pair.required)  0
+    set vars(pair._type) string
+
+    lappend arguments identity
+    iwidgets::entryfield $w.identity \
+	-validate integer \
+	-textvariable [namespace current]::vars(identity) \
+	-labeltext [subst {Only match those which are identical in all sequences.}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.identity component entry] -sticky nse
+    set vars(identity) [subst 0]
+    pack $w.identity -side top -fill both
+    set vars(identity.minimum) [subst 0]
+    set vars(identity.path) $w.identity
+    set vars(identity.required)  0
+    set vars(identity._type) integer
+
+    lappend arguments box
+    checkbutton $w.box \
+	-text [subst {Display prettyboxes}]\
+	-variable [namespace current]::vars(box)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.box -side top -anchor w
+    set vars(box) [subst 1]
+    set vars(box.path) $w.box
+    set vars(box.required)  0
+    set vars(box._type) bool
+
+    lappend arguments boxcol
+    checkbutton $w.boxcol \
+	-text [subst {Colour the background in the boxes}]\
+	-variable [namespace current]::vars(boxcol)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.boxcol -side top -anchor w
+    set vars(boxcol) [subst 0]
+    set vars(boxcol.path) $w.boxcol
+    set vars(boxcol.required)  0
+    set vars(boxcol._type) bool
+
+    lappend arguments boxcolval
+    iwidgets::entryfield $w.boxcolval \
+	-textvariable [namespace current]::vars(boxcolval) \
+	-labeltext [subst {Colour to be used for background. (GREY)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.boxcolval component entry] -sticky nse
+    set vars(boxcolval) [subst GREY]
+    pack $w.boxcolval -side top -fill both
+    set vars(boxcolval.path) $w.boxcolval
+    set vars(boxcolval.required)  0
+    set vars(boxcolval._type) string
+
+    lappend arguments name
+    checkbutton $w.name \
+	-text [subst {Display the sequence names}]\
+	-variable [namespace current]::vars(name)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.name -side top -anchor w
+    set vars(name) [subst 1]
+    set vars(name.path) $w.name
+    set vars(name.required)  0
+    set vars(name._type) bool
+
+    lappend arguments maxnamelen
+    iwidgets::entryfield $w.maxnamelen \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxnamelen) \
+	-labeltext [subst {Margin size for the sequence name.}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxnamelen component entry] -sticky nse
+    set vars(maxnamelen) [subst 10]
+    pack $w.maxnamelen -side top -fill both
+    set vars(maxnamelen.path) $w.maxnamelen
+    set vars(maxnamelen.required)  0
+    set vars(maxnamelen._type) integer
+
+    lappend arguments number
+    checkbutton $w.number \
+	-text [subst {Display the residue number}]\
+	-variable [namespace current]::vars(number)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.number -side top -anchor w
+    set vars(number) [subst 1]
+    set vars(number.path) $w.number
+    set vars(number.required)  0
+    set vars(number._type) bool
+
+    lappend arguments listoptions
+    checkbutton $w.listoptions \
+	-text [subst {Display the date and options used}]\
+	-variable [namespace current]::vars(listoptions)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.listoptions -side top -anchor w
+    set vars(listoptions) [subst 1]
+    set vars(listoptions.path) $w.listoptions
+    set vars(listoptions.required)  0
+    set vars(listoptions._type) bool
+
+    lappend arguments plurality
+    iwidgets::entryfield $w.plurality \
+	-validate real \
+	-textvariable [namespace current]::vars(plurality) \
+	-labeltext [subst {Plurality check value (totweight/2)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.plurality component entry] -sticky nse
+    set vars(plurality) [subst {[expr {( $vars(msf.totweight) / 2)}]}]
+    pack $w.plurality -side top -fill both
+    set vars(plurality.path) $w.plurality
+    set vars(plurality.required)  0
+    set vars(plurality.orig) $vars(plurality)
+    set vars(plurality.expr) {[expr {( $vars(msf.totweight) / 2)}]}
+    trace variable vars(msf.totweight) w  "::EMBOSS::reset_value [namespace current] plurality"
+    set vars(plurality._type) float
+
+    iwidgets::labeledframe $w.consensussection \
+	-labeltext [subst {consensus Section}]
+    pack $w.consensussection -side top -fill both
+    lappend wlist $w
+    append w .consensussection.childsite
+
+    lappend arguments consensus
+    checkbutton $w.consensus \
+	-text [subst {Display the consensus}]\
+	-variable [namespace current]::vars(consensus)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.consensus -side top -anchor w
+    set vars(consensus) [subst 0]
+    set vars(consensus.path) $w.consensus
+    set vars(consensus.required)  0
+    set vars(consensus._type) bool
+
+    lappend arguments collision
+    checkbutton $w.collision \
+	-text [subst {Allow collisions in calculating consensus}]\
+	-variable [namespace current]::vars(collision)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.collision -side top -anchor w
+    set vars(collision) [subst 1]
+    set vars(collision.path) $w.collision
+    set vars(collision.required)  0
+    set vars(collision._type) bool
+
+    lappend arguments alternative
+    iwidgets::entryfield $w.alternative \
+	-validate integer \
+	-textvariable [namespace current]::vars(alternative) \
+	-labeltext [subst {Use alternative collisions routine}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.alternative component entry] -sticky nse
+    set vars(alternative) [subst 0]
+    pack $w.alternative -side top -fill both
+    set vars(alternative.minimum) [subst 0]
+    set vars(alternative.maximum) [subst 3]
+    set vars(alternative.path) $w.alternative
+    set vars(alternative.required)  0
+    set vars(alternative._type) integer
+
+    lappend arguments matrixfile
+    set vars(matrixfile.protein) [subst {[expr {$vars(msf.protein)}]}]
+    iwidgets::combobox $w.matrixfile\
+	-textvariable [namespace current]::vars(matrixfile)\
+	-labeltext [subst {Matrix file}]
+    eval $w.matrixfile insert list end [list_matrices p]
+    grid [$w.matrixfile component entry] -sticky nse
+    $w.matrixfile delete entry 0 end
+    $w.matrixfile insert entry end [subst {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.matrixfile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.matrixfile -side top -fill both
+    set vars(matrixfile.path) $w.matrixfile
+    set vars(matrixfile.required)  0
+    set vars(matrixfile.protein.orig) $vars(matrixfile.protein)
+    set vars(matrixfile.protein.expr) {[expr {$vars(msf.protein)}]}
+    trace variable vars(msf.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile.protein"
+    set vars(matrixfile.orig) $vars(matrixfile)
+    set vars(matrixfile.expr) {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(matrixfile.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile"
+    set vars(matrixfile._type) matrix
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    lappend arguments showscore
+    iwidgets::entryfield $w.showscore \
+	-validate integer \
+	-textvariable [namespace current]::vars(showscore) \
+	-labeltext [subst {Print residue scores}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.showscore component entry] -sticky nse
+    set vars(showscore) [subst -1]
+    pack $w.showscore -side top -fill both
+    set vars(showscore.path) $w.showscore
+    set vars(showscore.required)  0
+    set vars(showscore._type) integer
+
+    lappend arguments portrait
+    checkbutton $w.portrait \
+	-text [subst {Set page to Portrait}]\
+	-variable [namespace current]::vars(portrait)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.portrait -side top -anchor w
+    set vars(portrait) [subst 0]
+    set vars(portrait.path) $w.portrait
+    set vars(portrait.required)  0
+    set vars(portrait._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments data
+    checkbutton $w.data \
+	-text [subst boolean]\
+	-variable [namespace current]::vars(data)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.data -side top -anchor w
+    set vars(data) [subst 0]
+    set vars(data.path) $w.data
+    set vars(data.required)  0
+    set vars(data._type) bool
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst xwindows]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) graph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/prettyplot.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,203 @@
+package require Iwidgets
+namespace eval ::EMBOSS::pdbparse {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_pdbparse*Xentry.entry.width 30
+option add *e_pdbparse*Entryfield.width 30
+option add *e_pdbparse*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) pdbparse
+    set w [xtoplevel .e_pdbparse -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - pdbparse}
+    label $w._title -text {Parses pdb files and writes cleaned-up protein coordinate files.}
+    pack $w._title -side top -fill both
+    set vars(pdbparse._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments pdb
+    iwidgets::entryfield $w.pdb \
+	-textvariable [namespace current]::vars(pdb) \
+	-labeltext [subst {Location of pdb files (pdb format input)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pdb component entry] -sticky nse
+    set vars(pdb) [subst ./]
+    pack $w.pdb -side top -fill both
+    set vars(pdb.path) $w.pdb
+    set vars(pdb.required)  1
+    set vars(pdb._type) string
+
+    lappend arguments pdbextn
+    iwidgets::entryfield $w.pdbextn \
+	-textvariable [namespace current]::vars(pdbextn) \
+	-labeltext [subst {Extension of pdb files (pdb format input)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pdbextn component entry] -sticky nse
+    set vars(pdbextn) [subst .ent]
+    pack $w.pdbextn -side top -fill both
+    set vars(pdbextn.path) $w.pdbextn
+    set vars(pdbextn.required)  1
+    set vars(pdbextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments nocamask
+    checkbutton $w.nocamask \
+	-text [subst {Mask non-amino acid groups in protein chains that do not contain a C-alpha atom}]\
+	-variable [namespace current]::vars(nocamask)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.nocamask -side top -anchor w
+    set vars(nocamask) [subst 0]
+    set vars(nocamask.path) $w.nocamask
+    set vars(nocamask.required)  1
+    set vars(nocamask._type) bool
+
+    lappend arguments nocamaska
+    checkbutton $w.nocamaska \
+	-text [subst {Mask amino acids in protein chains that do not contain a C-alpha atom}]\
+	-variable [namespace current]::vars(nocamaska)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.nocamaska -side top -anchor w
+    set vars(nocamaska) [subst 0]
+    set vars(nocamaska.path) $w.nocamaska
+    set vars(nocamaska.required)  1
+    set vars(nocamaska._type) bool
+
+    lappend arguments atommask
+    checkbutton $w.atommask \
+	-text [subst {Mask amino acid residues in protein chains with a single atom only}]\
+	-variable [namespace current]::vars(atommask)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.atommask -side top -anchor w
+    set vars(atommask) [subst 0]
+    set vars(atommask.path) $w.atommask
+    set vars(atommask.required)  1
+    set vars(atommask._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cpdbnaming
+    checkbutton $w.cpdbnaming \
+	-text [subst {Use pdbid code to name files}]\
+	-variable [namespace current]::vars(cpdbnaming)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.cpdbnaming -side top -anchor w
+    set vars(cpdbnaming) [subst 1]
+    set vars(cpdbnaming.path) $w.cpdbnaming
+    set vars(cpdbnaming.required)  0
+    set vars(cpdbnaming._type) bool
+
+    lappend arguments chnsiz
+    iwidgets::entryfield $w.chnsiz \
+	-validate integer \
+	-textvariable [namespace current]::vars(chnsiz) \
+	-labeltext [subst {Minimum number of residues in a chain for it to be parsed}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.chnsiz component entry] -sticky nse
+    set vars(chnsiz) [subst 5]
+    pack $w.chnsiz -side top -fill both
+    set vars(chnsiz.path) $w.chnsiz
+    set vars(chnsiz.required)  0
+    set vars(chnsiz._type) integer
+
+    lappend arguments maxmis
+    iwidgets::entryfield $w.maxmis \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxmis) \
+	-labeltext [subst {Maximum number of permissible mismatches between the ATOM and SEQRES sequences}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxmis component entry] -sticky nse
+    set vars(maxmis) [subst 3]
+    pack $w.maxmis -side top -fill both
+    set vars(maxmis.path) $w.maxmis
+    set vars(maxmis.required)  0
+    set vars(maxmis._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cpdb
+    iwidgets::entryfield $w.cpdb \
+	-textvariable [namespace current]::vars(cpdb) \
+	-labeltext [subst {Location of coordinate files (embl format output)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cpdb component entry] -sticky nse
+    set vars(cpdb) [subst ./]
+    pack $w.cpdb -side top -fill both
+    set vars(cpdb.path) $w.cpdb
+    set vars(cpdb.required)  1
+    set vars(cpdb._type) string
+
+    lappend arguments cpdbextn
+    iwidgets::entryfield $w.cpdbextn \
+	-textvariable [namespace current]::vars(cpdbextn) \
+	-labeltext [subst {Extension of coordinate files (embl format output)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cpdbextn component entry] -sticky nse
+    set vars(cpdbextn) [subst .pxyz]
+    pack $w.cpdbextn -side top -fill both
+    set vars(cpdbextn.path) $w.cpdbextn
+    set vars(cpdbextn.required)  1
+    set vars(cpdbextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    lappend arguments errf
+    xentry $w.errf \
+	-label [subst {Name of log file for the build}]\
+	-textvariable [namespace current]::vars(errf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.errf delete 0 end
+    $w.errf insert end [subst pdbparse.log]
+    pack $w.errf -side top -fill both
+    set vars(errf.path) $w.errf
+    set vars(errf.required)  1
+    set vars(errf._type) outfile
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/pdbparse.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,217 @@
+@cindex Make_weights: man page
+@unnumberedsec NAME
+
+make_weights --- makes weight matrices from sequence alignments
+
+@unnumberedsec SYNOPSIS
+
+@code{make_weights} [@code{-v}] [@code{-m} @i{mark position}]
+[@code{-c} @i{minimum score}] [@code{-C} @i{maximum score}]@br
+[@code{-w} @i{input weight matrix file name}]
+[@code{-o} @i{output weight matrix file name}]
+[@i{input aligned sequences file}]
+
+
+@unnumberedsec DESCRIPTION
+
+@code{make_weights} 
+is used to create weight matrix files from a file
+of aligned sequences. These weight matrices are for use with spin.
+
+The simplest usage is to read in a file of aligned sequence motifs, and write 
+out a weight matrix file created from their observed character frequencies at 
+each position. The only command line input required is the name of the file
+of aligned sequence and the name for the output weight matrix file.
+In this mode, make_weights reads in the file of aligned motifs, counts the
+character frequencies at each position, calculates weights from these, and then
+applies the weights to all the input sequences, recording the score for each.
+By default the two cutoff scores written to the weight matrix file will be set
+to the minimum and maximum scores obtained from this process. In this mode
+nothing will be written to the output screen.
+
+If no output file is supplied, none is written, but the scores for all the
+input sequences are written to the screen. In this way the user can decide
+whether to override the cutoff scores written to the weight matrix file.
+To set these values they can be supplied on the command line using the -c
+and -C options.
+
+To see the range of scores for a set of aligned sequences and an existing
+weight matrix file, the -w option should be used. In this case the matrix
+file is read, applied to the set of aligned sequences, and the scores are
+listed on the screen.
+
+The -m option is used to set the mark position and the -v option simply 
+lists the current version number of the program.
+
+The screen output produced by make_weights can be used as input to 
+make_weights. An example is shown below.
+
+@example
+Input to make_weights:
+
+HSTGM1A   acagcggaccgtgtgaccat comments
+HSARAF1G  aagtctaacagtatctatct 
+HSU01337  aagtctaacagtatctatct 
+HSA132695 gccgattgccgtatgtaaaa 
+HSCEL     ctctctgcaggtctcgggat 
+
+Output from make_weights:
+
+HSTGM1A   acagcggaccgtgtgaccat 0 0.049247 comments
+HSARAF1G  aagtctaacagtatctatct 1 0.010509 
+HSU01337  aagtctaacagtatctatct 2 0.010509 
+HSA132695 gccgattgccgtatgtaaaa 3 0.133783 
+HSCEL     ctctctgcaggtctcgggat 4 0.206426 
+@end example
+
+The output has added two extra columns between the sequences and the comments:
+a motif number and its score. This file could be passed through a sorting
+program to shift the lowest scoring motifs to the bottom of the file,
+and then the records with poor scores investigated, and perhaps removed.
+On UNIX the following creates a file as shown above, called don.s, and
+then sorts it on score to create the ordered file don.ss.
+
+@example
+make_weights don.mw > don.s
+sort -n -r +3 -o don.ss don.s
+@end example
+
+The weights are calculated in the following way.
+
+The algorithm deals with the problem of zero counts by adding a small amount 
+to every element. For alignments with few sequences the effect will be quite 
+marked, but for large datasets it will be very small.
+
+The score for unknown characters found in sequences is set to the mean for 
+the column.
+
+In calculating the log odds it is assumed that probability of each base type 
+in a random sequence is 0.25
+
+Let the counts for each position (column) and character type in the 
+alignment be stored in counts, and put the weights in matrix. Both
+are two dimensional arrays. Char_set_size is the character set size
+which is 4 for DNA.
+
+@example
+ for each column sum the counts to get the total
+     set small to 1 if total = 0 otherwise 1/total
+     set column total to total + small*char_set_size
+     for each character type
+        set matrix to counts + small
+        p = matrix/total
+        p = log ( p / 0.25 )
+        matrix = p
+     set unknown char (matrix) to mean for the column
+ end
+@end example
+
+Aligned sequences file format
+
+@i{name sequence comments}
+
+The file containing the aligned sequences should consist entirely of records
+containing data. Each record should contain a name, followed by the sequence,
+followed by arbitrary comments. Each record must be less that 2048 characters.
+At present make_weights is set to handle up to 10,000 records. Within a record
+fields (other than within the comments section) are separated by spaces. It
+is assumed that the sequences are aligned and do not contain leading spaces. 
+For example, the last but 1 record below is not aligned in the file, but will 
+be aligned after parsing.
+
+@example
+AB002455  ctgacagaaggtgccagggt 1
+AB002456  ccctggctgggtgagtatct 1
+AB002456  tttgctccaggtagacactg 2
+HSE27     atgtttgagggtgagggccc 1
+AB002460  atccccaaaggtgccacagc 1 unusual
+AB002461    cagggcccaggtaagggcgg 1
+AB003312  aatgctcaaggtacagagac 1
+@end example
+
+A weight matrix file (as shown below) consists of a single record title
+(here test matrix), a record containing the motif length (here 11), the
+"mark position" (here 5), and the minimum and maximum scores (here 
+0.0 and 10.0). The "mark position" is an offset which is added to
+the position of any matches reported by the search routine in spin.
+The next two records are ignored by the programs. The first gives the
+matrix column positions, and the next the total counts in each column.
+The final records (4 for DNA weight matrices) give the counts for each
+character type at each position in the motif. These counts are converted
+into weights that are used during the searches. Any position in a sequence
+which scores at least as high as the minimum score (here 0.0) is reported 
+as a match, and if the results are plotted they are scaled to fit the range
+defined by the minimum and maximum scores (here 0.0 and 10.0).
+
+@example
+test matrix
+11 5 0.0 10.0
+P     0     1     2     3     4     5     6     7     8     9    10
+n  8067  8067  8069  8067  8069  8069  8069  8069  8069  8069  8068
+a  2572  4755   700    61    73  3759  5667   542  1236  2082  1624
+c  3137  1109   301    33    89   260   671   518  1282  1803  2379
+g  1515  1146  6343  7897   103  3759  1060  6502  1821  2879  2098
+t   845  1059   725    77  7803   288   670   506  3728  1303  1967
+@end example
+
+The maximum number of columns in a record is 20. Longer motifs will have weight
+matrix files with sufficient blocks of 20 columns. For example the one shown 
+below has 22 positions and so a second block has been started.
+
+@example
+title
+22 0 0.0 3.0
+P  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+n  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4  4
+a  2  2  2  2  2  2  2  2  2  0  0  0  2  2  2  2  2  2  2  2
+c  1  1  1  1  1  1  1  1  1  0  0  0  1  1  1  1  1  1  1  1
+g  0  0  0  0  0  0  0  0  1  4  4  3  0  0  0  0  0  0  0  0
+t  1  1  1  1  1  1  1  1  0  0  0  1  1  1  1  1  1  1  1  1
+P 20 21
+n  4  4
+a  2  2
+c  1  1
+g  0  0
+t  1  1
+@end example
+
+@unnumberedsec OPTIONS
+@table @asis
+@item @code{-v}
+     Show the version number of the program.
+
+@item @code{-m}
+     Set the mark position. When matches are found using the weight matrix
+     offset m is added to the reported match position.
+
+@item @code{-c}
+     Set the minimum score. When the weight matrix is used to search a new
+     sequence all positions which reach this score are reported as a match.
+
+@item @code{-C}
+     Set the maximum score. When the weight matrix is used to search a new
+     sequence, matches are plotted using this value as the maximum.
+
+@item @code{-w}
+     Apply an input weight matrix to the set of aligned motifs. Write the 
+     scores for each motif on the screen, but do not create a new weight 
+     matrix file.
+
+@item @code{-o}
+     The file name for the weight matrix created.
+@end table
+
+@unnumberedsec EXAMPLE
+
+@example
+make_weights
+Usage: make_weights [options] input_file
+Where options are:
+    [-w input weights filename]      [-o output filename]
+    [-c min score]                   [-C max score]
+    [-m mark position]               [-v version]
+@end example
+
+@unnumberedsec SEE ALSO
+
+_fxref(SPIN-Weight-Matrix-Search, Motif search, spin)

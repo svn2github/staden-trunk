@@ -1,0 +1,112 @@
+package require Iwidgets
+namespace eval ::EMBOSS::garnier {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_garnier*Xentry.entry.width 30
+option add *e_garnier*Entryfield.width 30
+option add *e_garnier*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) garnier
+    set w [xtoplevel .e_garnier -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - garnier}
+    label $w._title -text {Predicts protein secondary structure}
+    pack $w._title -side top -fill both
+    set vars(garnier._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 1]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 1]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst PureProtein]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  1
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments idc
+    iwidgets::entryfield $w.idc \
+	-validate integer \
+	-textvariable [namespace current]::vars(idc) \
+	-labeltext [subst {idc param}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.idc component entry] -sticky nse
+    set vars(idc) [subst 0]
+    pack $w.idc -side top -fill both
+    set vars(idc.minimum) [subst 0]
+    set vars(idc.maximum) [subst 6]
+    set vars(idc.path) $w.idc
+    set vars(idc.required)  0
+    set vars(idc._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Report output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst report0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) report
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/garnier.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

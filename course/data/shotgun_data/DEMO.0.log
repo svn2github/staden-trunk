@@ -1,0 +1,31 @@
+Tue 07 Aug 10:07:10 2001 [3848] opening rw...
+Tue 07 Aug 10:07:10 2001 [3848] ...opened
+Tue 07 Aug 10:07:11 2001 [3848] check database
+Tue 07 Aug 10:07:12 2001 [3848] > Register id=1
+Tue 07 Aug 10:07:12 2001 [3848] Database information
+Tue 07 Aug 10:07:13 2001 [3848] edit contig
+Tue 07 Aug 10:07:14 2001 [3848] > Register id=2
+Tue 07 Aug 10:07:16 2001 [3848] > Deregister id=2 cnum=2: Contig editor @ 21
+Tue 07 Aug 10:07:23 2001 [3848] Doctor database
+Tue 07 Aug 10:07:23 2001 [3848] > Deregister id=1 cnum=1: Contig selector
+Tue 07 Aug 10:07:27 2001 [3848] > Register id=3
+Tue 07 Aug 10:07:28 2001 [3848] > Deregister id=3 cnum=1: Contig selector
+Tue 07 Aug 10:07:28 2001 [3848] close database
+Tue 07 Aug 10:07:28 2001 [3848] closing...
+Tue 07 Aug 10:07:28 2001 [3848] ...closed
+Tue 07 Aug 10:08:24 2001 [3914] opening rw...
+Tue 07 Aug 10:08:24 2001 [3914] ...opened
+Tue 07 Aug 10:10:14 2001 [3914] closing...
+Tue 07 Aug 10:10:14 2001 [3914] ...closed
+Tue 07 Aug 10:10:18 2001 [5776] opening rw...
+Tue 07 Aug 10:10:18 2001 [5776] ...opened
+Tue 07 Aug 10:10:19 2001 [5776] check database
+Tue 07 Aug 10:10:19 2001 [5776] > Register id=1
+Tue 07 Aug 10:10:20 2001 [5776] Database information
+Tue 07 Aug 10:10:21 2001 [5776] edit contig
+Tue 07 Aug 10:10:22 2001 [5776] > Register id=2
+Tue 07 Aug 10:10:59 2001 [5776] > Deregister id=2 cnum=5: Contig editor @ 73
+Tue 07 Aug 10:11:01 2001 [5776] > Deregister id=1 cnum=1: Contig selector
+Tue 07 Aug 10:11:01 2001 [5776] close database
+Tue 07 Aug 10:11:01 2001 [5776] closing...
+Tue 07 Aug 10:11:02 2001 [5776] ...closed

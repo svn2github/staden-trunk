@@ -1,0 +1,153 @@
+@menu
+* Contig-Selector-Contigs::             Selecting contigs
+* Contig-Selector-Order::               Changing the contig order
+* Contig-Selector-Menus::               The menus
+@end menu
+
+The gap4 Contig Selector is used to display, select and reorder contigs.
+It can be invoked from the gap4 View menu, but will automatically appear when
+a database is opened.  In the Contig Selector all contigs are shown as
+colinear horizontal lines separated by short vertical lines.  The length of
+the horizontal lines is proportional to the length of the contigs and their
+left to right order represents the current ordering of the contigs. This
+Contig Order is stored in the gap database and users can change it by
+dragging the lines representing the contigs in the display.  The Contig
+Selector can also be used to select contigs for processing. Tags
+(_fpref(Intro-Anno, Annotating and masking readings and contigs, gap4)) can
+also be displayed in the Contig Selector window.  As the mouse is moved over a
+contig, it is highlighted and the contig name (left most reading name) and
+length are displayed in the status line. The number in brackets is the contig
+number.
+
+@cindex Contig Selector: Contig order
+@cindex Contig order: Contig Selector
+
+_picture(contig_selector)
+
+The figure shows a typical display from the Contig Selector. At the top are
+the File, View and Results menus.  Below that are buttons for zooming
+and for displaying the crosshair. The four boxes to the right
+are used to display
+the X and Y coordinates of the crosshair. The rightmost two display the Y
+coordinates when the contig selector is transformed into the contig comparator
+(_fpref(Contig Comparator, Contig Comparator, comparator)).
+The two leftmost boxes display the X coordinates: the
+leftmost is the position in the contig and the other is the position
+in the overall consensus.  The crosshair is the vertical line spanning the
+panel below. 
+
+This panel shows the lines that represent the contigs and the
+currently active tags. Those tags shown above the contig lines are on readings
+and those below are on the consensus. 
+
+The information line is showing data for
+the contig that is currently under the crosshair.
+
+_split()
+@node Contig-Selector-Contigs
+@section Selecting Contigs
+@cindex Contig Selector: selecting contigs
+@cindex selecting contigs: Contig Selector
+@cindex naming contigs
+@cindex contig naming
+@cindex contigs - identifying
+@cindex identifying contigs
+
+Contigs can be selected by either clicking with the left mouse button
+on the line representing the required contig in the contig selector window
+or alternatively by choosing the "List contigs" option from the "View" menu. 
+This option invokes a "Contig List" list box where the contig names and 
+numbers are listed in the same order as they appear in the contig selector 
+window. 
+
+_picture(contig_list_box)
+
+Within this list box the contig names can be sorted 
+alphabetically on contig name or numerically on contig number. This is done 
+by selecting the corresponding item from the sort 
+menu at the top of the list box. Clicking on a name within the list box is 
+equivalent to clicking on the corresponding contig in the contig selector.
+More than one contig can be selected by dragging out a region with the left
+mouse button. Dragging the mouse off the bottom of the list will scroll it to
+allow selection of a range larger than the displayed section of the
+list.  When the left button is pressed any existing selection is
+cleared. To select several disjoint entries in the list press control
+and the left mouse button. 
+
+Most commands require a contig identifier (which can be the name or
+number of any reading on the contig) and gap4 contains several
+mechanisms for obtaining this information from users.  The names or
+numbers can be typed or cut and pasted into dialogue boxes (note that a
+reading number must be preceded by a # character, e.g.  "#102" means
+reading number 102 but "102" means the reading with name 102). Also any
+currently active dialogue boxes that require a contig to be selected can
+be updated simply by clicking on a contig in the contig selector or clicking
+on an entry in the "Contig Names" list box.  For
+example, if the Edit contig command is selected from the Edit menu it
+will bring up a dialogue requesting the identity of the contig to edit.
+If the user clicks the left mouse button on a contig in the contig
+selector window, the contig editor dialogue will automatically change to
+contain the name of the selected contig.  Some commands, such as the
+Contig Editor, can be selected from a popup menu that is activated by
+clicking the right mouse button on the contig line in the Contig
+Selector or clicking the right mouse button on the corresponding name within
+the "Contig List" list box. This simultaneously defines the contig to 
+operate on and so the command starts up without dialogue.
+
+Several contigs can be selected at once by either clicking on each
+contig with the left mouse button or dragging out a selection rectangle
+by holding the left mouse button down. Contigs which are entirely
+enclosed within the rectangle will be selected. Alternatively, selecting
+several contigs from the "Contig Names" list box will also result in each
+contig being selected. Selected contigs are highlighted in bold. Selecting
+the same contig again will unselect it.
+
+The currently selected contigs are also kept in a 'list' named contigs.
+
+_split()
+@node Contig-Selector-Order
+@section Changing the Contig Order
+@cindex Contig Selector: changing the contig order
+@cindex Contig Selector: saving the contig order
+
+The order of contigs is shown by the order of the lines representing
+them within the Contig Selector. The order of contigs can be changed by
+moving these lines using the middle mouse button, or Alt left mouse
+button.  Several contigs may
+be moved at once by selecting several contigs using the above method.
+After selection, move the contigs with the middle mouse button, or Alt
+left mouse button, and
+position the mouse cursor where you want the selection to be moved to.
+Upon release of the mouse button the contigs will be shuffled to reflect
+their new order. The separator line at the point the contig was moved
+from increases in height.
+
+The contig order is saved automatically whenever a contig is created or
+removed (eg auto assemble), including operations like disassemble which
+temporarily create contigs. The order can be saved manually using the
+Save Contig Order option on the File menu.
+
+_split()
+@node Contig-Selector-Menus
+@section The Contig Selector Menus
+@cindex Contig Selector: menus
+@cindex File menu: Contig Selector
+@cindex View menu: Contig Selector
+@cindex Results menu: Contig Selector
+
+The File menu contains only one command; "Exit". This simply quits the contig
+selector display.
+
+The View menu gives access to the Results Manager (_fpref(Results,
+Results Manager, results)), allows contigs to be selected using a list box
+containing the contig names 
+(_oxref(Contig-Selector-Contigs, Selecting Contigs)), allows active tags 
+(_fpref(Conf-Tag, TagSelector, configure)) to be selected, and the list of 
+selected contigs to be cleared. 
+
+The Results menu is updated on the fly to contain cascading menus for each of
+the plots shown when the contig selector is in its 2D 
+Contig Comparator mode
+(_fpref(Contig Comparator, Contig Comparator, comparator)).
+The contents of these cascading menus are identical to
+the pulldown menus available from within the Results Manager.

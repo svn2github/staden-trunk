@@ -1,0 +1,42 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+
+@c %**start of header
+@setfilename interface.info
+@settitle The User Interface
+@c @setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@setchapternewpage odd
+@c %**end of header
+
+include(header.m4)
+
+@titlepage
+@title The User Interface
+@subtitle 
+@author 
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+@end titlepage
+
+@node Top
+@ifinfo
+@top top-interface
+@end ifinfo
+
+@raisesections
+@set standalone
+_include(interface-t.texi)
+
+_split()
+@node Index
+@unnumberedsec Index
+@printindex cp
+@lowersections
+
+@shortcontents
+@contents
+@bye

@@ -1,0 +1,31 @@
+NOTES
+~~~~~
+
+1. We setup a windows NT event log service, in ControlSet001
+   which is the default set of configuration parameters.
+   Windows 9x will ignore these settings, since it has no
+   event logger.
+
+2. The user will need to be in administrator mode to install
+   the Staden package. ie. Only system-wide installation is
+   supported. This is because an event log service must be
+   installed.
+
+3. To drastically simplify the installation, we now use the
+   "sprun" program which sets up a staden environment on the 
+   fly. This includes the necessary paths and environment
+   variables.
+
+4. When setting up shell commands and icons, always use the full
+   paths and filenames. Otherwise things go horribly wrong.
+   Also all %1 place holders must be in quotes for the command
+   line parsing to work correctly in sprun.exe.
+
+5. The App Path must be setup in the registry. This prepends the
+   bin directorys to the path before invoking the program.
+
+
+6. If you want to quicly change the installation directory to
+   update the year, I usually do a search and replace in the
+   setup.wse script directory. It's a lot faster than going via 
+   the GUI route.

@@ -1,0 +1,242 @@
+package require Iwidgets
+namespace eval ::EMBOSS::msbar {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_msbar*Xentry.entry.width 30
+option add *e_msbar*Entryfield.width 30
+option add *e_msbar*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) msbar
+    set w [xtoplevel .e_msbar -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - msbar}
+    label $w._title -text {Mutate sequence beyond all recognition}
+    pack $w._title -side top -fill both
+    set vars(msbar._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments count
+    iwidgets::entryfield $w.count \
+	-validate integer \
+	-textvariable [namespace current]::vars(count) \
+	-labeltext [subst {Number of times to perform the mutation operations}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.count component entry] -sticky nse
+    set vars(count) [subst 1]
+    pack $w.count -side top -fill both
+    set vars(count.minimum) [subst 0]
+    set vars(count.path) $w.count
+    set vars(count.required)  1
+    set vars(count._type) integer
+
+    lappend arguments point
+    iwidgets::scrolledlistbox $w.point \
+	-exportselection 0\
+	-labeltext [subst {Point mutation operations}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::listbox_selected [namespace current] point"\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.point -side top -fill both -expand 1
+    set vars(point.mapping1) {None 0 Changes 4 Moves 6 Insertions 2 Duplications 5 Deletions 3 {Any of the following} 1}
+    set vars(point.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
+    eval $w.point insert end None {{Any of the following}} Insertions Deletions Changes Duplications Moves
+    set vars(point.path) $w.point
+    set vars(point.required)  1
+    set vars(point.delimiter) {;}
+    trace variable vars(point) w  "::EMBOSS::list_multi_changed [namespace current] point"
+    set vars(point) [subst 0]
+    set vars(point._type) list_multi
+
+    lappend arguments block
+    iwidgets::scrolledlistbox $w.block \
+	-exportselection 0\
+	-labeltext [subst {Block mutation operations}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::listbox_selected [namespace current] block"\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.block -side top -fill both -expand 1
+    set vars(block.mapping1) {None 0 Changes 4 Moves 6 Insertions 2 Duplications 5 Deletions 3 {Any of the following} 1}
+    set vars(block.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
+    eval $w.block insert end None {{Any of the following}} Insertions Deletions Changes Duplications Moves
+    set vars(block.path) $w.block
+    set vars(block.required)  1
+    set vars(block.delimiter) {;}
+    trace variable vars(block) w  "::EMBOSS::list_multi_changed [namespace current] block"
+    set vars(block) [subst 0]
+    set vars(block._type) list_multi
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments inframe
+    checkbutton $w.inframe \
+	-text [subst {Do 'codon' and 'block' operations in frame}]\
+	-variable [namespace current]::vars(inframe)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.inframe -side top -anchor w
+    set vars(inframe) [subst 0]
+    set vars(inframe.path) $w.inframe
+    set vars(inframe.required)  0
+    set vars(inframe._type) bool
+
+    lappend arguments codon
+    iwidgets::scrolledlistbox $w.codon \
+	-exportselection 0\
+	-labeltext [subst {Codon mutation operations}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::listbox_selected [namespace current] codon"\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(sequence.protein)?"N":"Y")}]}]]]
+    pack $w.codon -side top -fill both -expand 1
+    set vars(codon.mapping1) {None 0 Changes 4 Moves 6 Insertions 2 Duplications 5 Deletions 3 {Any of the following} 1}
+    set vars(codon.mapping2) {4 Changes 0 None 5 Duplications 1 {Any of the following} 6 Moves 2 Insertions 3 Deletions}
+    eval $w.codon insert end None {{Any of the following}} Insertions Deletions Changes Duplications Moves
+    set vars(codon.path) $w.codon
+    set vars(codon.required)  0
+    set vars(codon.delimiter) {;}
+    trace variable vars(codon) w  "::EMBOSS::list_multi_changed [namespace current] codon"
+    set vars(codon) [subst 0]
+    set vars(codon._type) list_multi
+    set vars(codon.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(sequence.protein)?"N":"Y")}]]}
+    trace variable vars(sequence.protein) w  "::EMBOSS::reset_needed [namespace current] codon"
+
+    lappend arguments minimum
+    iwidgets::entryfield $w.minimum \
+	-validate integer \
+	-textvariable [namespace current]::vars(minimum) \
+	-labeltext [subst {Minimum size for a block mutation}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minimum component entry] -sticky nse
+    set vars(minimum) [subst 1]
+    pack $w.minimum -side top -fill both
+    set vars(minimum.minimum) [subst 0]
+    set vars(minimum.path) $w.minimum
+    set vars(minimum.required)  0
+    set vars(minimum._type) integer
+
+    lappend arguments maximum
+    iwidgets::entryfield $w.maximum \
+	-validate integer \
+	-textvariable [namespace current]::vars(maximum) \
+	-labeltext [subst {Maximum size for a block mutation}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maximum component entry] -sticky nse
+    set vars(maximum) [subst 10]
+    pack $w.maximum -side top -fill both
+    set vars(maximum.minimum) [subst {[expr {$vars(minimum)}]}]
+    set vars(maximum.minimum.orig) $vars(maximum.minimum)
+    set vars(maximum.minimum.expr) {[expr {$vars(minimum)}]}
+    trace variable vars(minimum) w  "::EMBOSS::reset_value [namespace current] maximum.minimum"
+    set vars(maximum.path) $w.maximum
+    set vars(maximum.required)  0
+    set vars(maximum._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst Filename]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqoutall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/msbar.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

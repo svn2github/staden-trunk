@@ -1,0 +1,137 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 2003. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Searches for heterozygous insertions/deletions by analysis of trace data.
+# The primary input can be trace files or experiment files, but the results
+# are only written back to experiments files if that is the input source.
+# Appends TG records and a new QR record.
+#
+set help {pregap4 {Pregap4-Modules-Heterozygous Indels}}
+
+proc init {} {
+    mod_preset window_length		 101
+    mod_preset worst_envelope		 0.5
+    mod_preset worst_half_signal	 0.15
+    mod_preset signal_gradient		-0.146
+}
+
+proc run {files} {
+    variable window_length
+    variable worst_envelope
+    variable worst_half_signal
+    variable signal_gradient
+    variable report
+    global file_error
+	
+    set new_files {}
+    set report ""
+    foreach f $files {
+	if {[catch {set fd [open "|hetins \
+		-w $window_length \
+		-e $worst_envelope \
+		-h $worst_half_signal \
+		-g $signal_gradient \
+		[list $f]" r]} err]} {
+	    set file_error($f) "hetins: [strip_nl $err]"
+	    vmessage -nonewline !
+	} else {
+	    set pos [read $fd]
+	    if {[catch {close $fd} err]} {
+		set file_error($f) "trace_diff: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+		lappend new_files $f
+		regsub -all {[^0-9]+} $pos {} pos
+		if {$pos != "" && $pos != "0"} {
+		    append report "SEQ $f: 'hetins' found indel at $pos\n"
+		} else {
+		    append report "SEQ $f: 'hetins' did not find an indel\n"
+		}
+		vmessage -nonewline .
+	    }
+	}
+
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Heterozygous Indels"
+}
+
+proc create_dialogue {w} {
+    variable window_length
+    variable worst_envelope
+    variable worst_half_signal
+    variable signal_gradient
+
+    xentry $w.window_length \
+	-label "Window length" \
+	-default $window_length \
+	-width 7 \
+	-type "int 1"
+    xentry $w.worst_envelope \
+	-label "Worst envelope" \
+	-default $worst_envelope \
+	-width 7 \
+	-type "float 0 1"
+    xentry $w.worst_half_signal \
+	-label "Worst half signal" \
+	-default $worst_half_signal \
+	-width 7 \
+	-type "float 0 1"
+    xentry $w.signal_gradient \
+	-label "Signal gradient" \
+	-default $signal_gradient \
+	-width 7 \
+	-type "float -1 0"
+    pack $w.window_length $w.worst_envelope $w.worst_half_signal \
+	    $w.signal_gradient -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	    window_length worst_envelope worst_half_signal signal_gradient]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable window_length
+    variable worst_envelope
+    variable worst_half_signal
+    variable signal_gradient
+
+    set window_length		[$w.window_length get]
+    set worst_envelope		[$w.worst_envelope get]
+    set worst_half_signal	[$w.worst_half_signal get]
+    set signal_gradient		[$w.signal_gradient get]
+
+    if {[check_params] != ""} {
+	return 0
+    } else {
+	return 1
+    }
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save window_length		[$w.window_length get2]
+	mod_save worst_envelope		[$w.worst_envelope get2]
+	mod_save worst_half_signal	[$w.worst_half_signal get2]
+	mod_save signal_gradient	[$w.signal_gradient get2]
+    }
+}
+

@@ -1,0 +1,21 @@
+#!/bin/sed -f
+s/^@subsection/@subsubsection/
+s/^@section/@subsection/
+s/^@chapter/@section/
+
+s/^@unnumberedsubsec/@unnumberedsubsubsec/
+s/^@unnumberedsec/@unnumberedsubsec/
+s/^@unnumbered/@unnumberedsec/
+
+s/^@numberedsubsec/@numberedsubsubsec/
+s/^@numberedsec/@numberedsubsec/
+s/^@numbered/@numberedsec/
+
+s/^@appendixsubsec/@appendixsubsubsec/
+s/^@appendixsec/@appendixsubsec/
+s/^@appendix/@appendixsec/
+
+s/^@subheading/@subsubheading/
+s/^@heading/@subheading/
+s/^@chapheading/@sheading/
+s/^@majorheading/@sheading/

@@ -1,0 +1,190 @@
+package require Iwidgets
+namespace eval ::EMBOSS::funky {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_funky*Xentry.entry.width 30
+option add *e_funky*Entryfield.width 30
+option add *e_funky*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) funky
+    set w [xtoplevel .e_funky -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - funky}
+    label $w._title -text {Reads clean coordinate files and writes file of protein-heterogen contact data.}
+    pack $w._title -side top -fill both
+    set vars(funky._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments prot
+    iwidgets::entryfield $w.prot \
+	-textvariable [namespace current]::vars(prot) \
+	-labeltext [subst {Location of protein coordinate files for input (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.prot component entry] -sticky nse
+    set vars(prot) [subst ./]
+    pack $w.prot -side top -fill both
+    set vars(prot.path) $w.prot
+    set vars(prot.required)  1
+    set vars(prot._type) string
+
+    lappend arguments protextn
+    iwidgets::entryfield $w.protextn \
+	-textvariable [namespace current]::vars(protextn) \
+	-labeltext [subst {Extension of protein coordinate files (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.protextn component entry] -sticky nse
+    set vars(protextn) [subst .pxyz]
+    pack $w.protextn -side top -fill both
+    set vars(protextn.path) $w.protextn
+    set vars(protextn.required)  1
+    set vars(protextn._type) string
+
+    lappend arguments dom
+    iwidgets::entryfield $w.dom \
+	-textvariable [namespace current]::vars(dom) \
+	-labeltext [subst {Location of domain coordinate files for input (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.dom component entry] -sticky nse
+    set vars(dom) [subst ./]
+    pack $w.dom -side top -fill both
+    set vars(dom.path) $w.dom
+    set vars(dom.required)  1
+    set vars(dom._type) string
+
+    lappend arguments domextn
+    iwidgets::entryfield $w.domextn \
+	-textvariable [namespace current]::vars(domextn) \
+	-labeltext [subst {Extension of domain coordinate files (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.domextn component entry] -sticky nse
+    set vars(domextn) [subst .pxyz]
+    pack $w.domextn -side top -fill both
+    set vars(domextn.path) $w.domextn
+    set vars(domextn.required)  1
+    set vars(domextn._type) string
+
+    lappend arguments dic
+    xentry $w.dic \
+	-label [subst {Name of dictionary of heterogen groups}]\
+	-textvariable [namespace current]::vars(dic) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.dic delete 0 end
+    $w.dic insert end [subst Ehet.dat]
+    pack $w.dic -side top -fill both
+    set vars(dic.path) $w.dic
+    set vars(dic.required)  1
+    set vars(dic._type) infile
+
+    lappend arguments scop
+    xentry $w.scop \
+	-label [subst {Name of scop file for input (embl-like format)}]\
+	-textvariable [namespace current]::vars(scop) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scop delete 0 end
+    $w.scop insert end [subst Escop.dat]
+    pack $w.scop -side top -fill both
+    set vars(scop.path) $w.scop
+    set vars(scop.required)  1
+    set vars(scop._type) infile
+
+    lappend arguments vdwf
+    xentry $w.vdwf \
+	-label [subst {Name of data file with van der Waals radii}]\
+	-textvariable [namespace current]::vars(vdwf) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.vdwf delete 0 end
+    $w.vdwf insert end [subst Evdw.dat]
+    pack $w.vdwf -side top -fill both
+    set vars(vdwf.path) $w.vdwf
+    set vars(vdwf.required)  1
+    set vars(vdwf._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments thresh
+    iwidgets::entryfield $w.thresh \
+	-validate real \
+	-textvariable [namespace current]::vars(thresh) \
+	-labeltext [subst {Threshold contact distance}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.thresh component entry] -sticky nse
+    set vars(thresh) [subst 1.0]
+    pack $w.thresh -side top -fill both
+    set vars(thresh.path) $w.thresh
+    set vars(thresh.required)  1
+    set vars(thresh._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outf
+    xentry $w.outf \
+	-label [subst {Name of output file}]\
+	-textvariable [namespace current]::vars(outf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outf delete 0 end
+    $w.outf insert end [subst funky.out]
+    pack $w.outf -side top -fill both
+    set vars(outf.path) $w.outf
+    set vars(outf.required)  0
+    set vars(outf._type) outfile
+
+    lappend arguments logf
+    xentry $w.logf \
+	-label [subst {Name of log file}]\
+	-textvariable [namespace current]::vars(logf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.logf delete 0 end
+    $w.logf insert end [subst funky.log]
+    pack $w.logf -side top -fill both
+    set vars(logf.path) $w.logf
+    set vars(logf.required)  0
+    set vars(logf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/funky.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

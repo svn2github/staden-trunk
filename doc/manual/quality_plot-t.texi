@@ -1,0 +1,114 @@
+@cindex Quality plot
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Template
+Display, in which case it will appear as part of the Template Display.
+
+For each base in the consensus a "quality" code
+is computed based on the accuracy of 
+the data on each strand and whether or not the two strands agree. In a
+future release it will be renamed the "Strand Comparison Plot"
+This "quality" is then plotted using colour and 
+height to distinguish the quality codes shown below.
+
+@example
+@group
+Colour  Height          Meaning
+
+grey    0 to 0          OK on both strands, both agree
+blue    0 to 1          OK on plus strand only
+green  -1 to 0          OK on minus strand only
+red    -1 to 1          Bad on both strands
+black  -2 to 2          OK on both strands but they disagree
+@end group
+@end example
+
+_lpicture(template.quality)
+
+For example, in the figure we see that the first four hundred or so
+bases are mostly only well determined on the forward strand.
+
+@node Quality-Examining
+@subsection Examining the Quality Plot
+@cindex Quality plot: examining the plot
+
+Note that when displaying many bases the screen resolution implies that the
+quality codes for many bases will appear in the same screen pixel.  However
+the use of varying heights ensures that all problematic regions will be
+visible, even when the problem is only with a single base position. Hence when
+the quality plot consists of a single grey line all known quality problems
+have been resolved, at the current consensus and quality cutoffs. 
+
+The quality plot appears as "Calculate quality" in the Results Manager window
+(_fpref(Results, Results Manager, results)).
+
+Within the Results Manager commands available, using the right mouse
+button, include "Information",
+which lists a summary of
+the distribution of quality types to the output window, and "List" which lists
+the actual quality values for each base to the output window. These quality
+values are written in a textual form of single letters per base and are listed
+below.
+
+@table @var
+@item
+@r{+Strand -Strand}
+@item a
+@r{Good    Good} (in agreement)
+@item b
+@r{Good    Bad}
+@item c
+@r{Bad     Good}
+@item d
+@r{Good    None}
+@item e
+@r{None    Good}
+@item f
+@r{Bad     Bad}
+@item g
+@r{Bad     None}
+@item h
+@r{None    Bad}
+@item i
+@r{Good    Good} (disagree)
+@item j
+@r{None    None}
+@end table
+
+An example of the output using "Information" and "List" follows.
+
+@example
+============================================================
+Wed 02 Apr 12:14:06 1997: quality summary
+------------------------------------------------------------
+Contig xb56b6.s1 (#11)
+ 81.00 OK on both strands and they agree(a)
+  3.94 OK on plus strand only(b,d)
+ 11.98 OK on minus strand only(c,e)
+  1.85 Bad on both strands(f,g,h,j)
+  1.22 OK on both strands but they disagree(i)
+============================================================
+Wed 02 Apr 12:14:09 1997: quality listing
+------------------------------------------------------------
+Contig xb56b6.s1 (#11)
+
+          10         20         30         40         50         60
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeehee eeeeeeeeee eeeeeeeeee
+
+          70         80         90        100        110        120
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee
+
+         130        140        150        160        170        180
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee
+
+         190        200        210        220        230        240
+  eeeeeeeeee eeeeeeeeee heeeeeeeee eeeeeeeici iiaiaciiia aaaaaaaaac
+
+         250        260        270        280        290        300
+  aaaacaaaaa aaaaaaaiia aaaaaaaaaa aaaaaaaaaa aaaabaaaaa aaaaaaaaaa
+
+         310        320        330        340        350        360
+  aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa faaaaaaaaa
+
+[ output removed for brevity ]
+@end example

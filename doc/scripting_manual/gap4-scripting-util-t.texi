@@ -1,0 +1,316 @@
+@cindex Gap4 utitility commands
+
+@menu
+* G4Comm-db_info::              db_info
+* G4Comm-edid_to_editor::       edid_to_editor
+* G4Comm-add_tags::             add_tags
+* G4Comm-get_read_names::       get_read_names
+@end menu
+
+@split{}
+@node G4Comm-db_info
+@unnumberedsec db_info
+@findex db_info(T)
+@cindex database information from Tcl
+@cindex num_readings, db_info command
+@cindex num_contigs, db_info command
+@cindex t_contig_length, db_info command
+@cindex contig, total length
+@cindex get_read_num, db_info command
+@cindex get_contig_num, db_info command
+@cindex chain_left, db_info command
+@cindex longest_contig, db_info
+@cindex contig, finding the longest
+@cindex db_name, db_info command
+@cindex database name, db_info command
+
+@noindent
+@code{db_info} @code{num_readings} @i{io}
+
+This command returns the number of readings in the database.
+
+@sp 1
+@noindent
+@code{db_info} @code{num_contigs} @i{io}
+
+This command returns the number of contigs in the database.
+
+@sp 1
+@noindent
+@code{db_info} @code{t_contig_length} @i{io}
+
+This command returns the total number of characters in the consensus for all
+contigs.
+
+@sp 1
+@noindent
+@code{db_info} @code{t_read_length} @i{io}
+
+This command returns the total number of bases used in all the readings.
+
+@sp 1
+@noindent
+@code{db_info} @code{get_read_num} @i{io} @i{reading_identifier}
+
+This command returns the reading number (between 1 and @i{num_contigs}) for a
+specific reading. For instance, to convert the reading name
+@code{xb64a10.s1} to its reading number we use:
+
+@example
+set rnum [db_info get_read_num $io xb64a10.s1]
+@end example
+
+If the reading name is not found, -1 is returned.
+
+@sp 1
+@noindent
+@code{db_info} @code{get_contig_num} @i{io} @i{reading_identifier}
+
+This command returns the contig number for a specific reading. The
+number returned is the number of the contig structure, not the number of the
+left most reading within this contig. It returns -1 for failure.
+
+@sp 1
+@noindent
+@code{db_info} @code{chain_left} @i{io} @i{reading_identifier}
+
+This command returns the left most reading number within a contig specified by
+the @i{reading_identifier}. It returns -1 for failure.
+
+@sp 1
+@noindent
+@code{db_info} @code{longest_contig} @i{io}
+
+This command returns the contig number (not the left most reading number) of
+the longest contig in the database.
+
+@sp 1
+@noindent
+@code{db_info} @code{db_name} @i{io}
+
+This command returns the name of the database opened with the specified @i{io}
+handle. The name returned includes the version number, so an example result
+would be @code{TEST.0}.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-edid_to_editor
+@unnumberedsec edid_to_editor
+@cindex Editor identifier
+@findex edid_to_editor(T)
+@vindex REG_CURSOR_NOTIFY
+
+@noindent
+@code{edid_to_editor} @i{editor_id}
+
+This command converts the contig editor identifier number to the Tk pathname
+of the associated Editor widget. The contig editor identifier can be obtained
+from acknowledging (within C) a REG_CURSOR_NOTIFY event.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-add_tags
+@unnumberedsec add_tags
+@findex add_tags(T)
+@cindex Tags, adding
+@cindex Adding tags
+
+@example
+@group
+@exdent @code{add_tags}
+ -io            @i{io_handle:integer}
+ -tags          @i{tag_list:strings}
+@end group
+@end example
+
+This command adds a series of annotations to readings and contigs within the
+database.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-tags} tag_list
+
+This specifies the list of annotations to add. The format of @i{tag_list} is
+as a Tcl list of tag items, each of the format:
+
+@i{reading_number tag_type direction start}@code{..}@i{end comment_lines}
+
+If the @i{reading_number} is negative the tag is added to the consensus of the
+contig numbered -@i{reading_number}. The @i{tag_type} should be the four
+character tag type. The @i{direction} should be one of "+", "-" or "=" (both).
+The @i{start} and @i{end} specify the inclusive range of bases the annotation
+covers. These count from 1 in the original orientation of the sequence. The
+@i{comment_lines} hold the text for the annotation.  Several lines may be
+included.
+@end table
+
+The following example adds two tags. The first is to reading #12 from
+position 10 to 20 inclusive. The second is to contig #1.
+
+@example
+set t "@{12 COMM + 10..20 comment@} @{-1 REPT = 22..23 multi-line\ncomments@}"
+add_tags -io $io -tag_list $t
+@end example
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-get_read_names
+@unnumberedsec get_read_names
+@findex get_read_names(T)
+@cindex Reading names, getting
+@cindex Reading identifiers, getting
+
+@example
+@group
+@exdent @code{get_read_names}
+ -io            @i{io_handle:integer}
+?@i{identifier} ...?
+@end group
+@end example
+
+This command converts a list of reading identifiers to reading names. The
+identifiers can be either "#number" or the actual read name itself, although
+the command is obviously only useful for the first syntax. The names are
+returned as a Tcl list.
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-contig_order_to_number
+@unnumberedsec contig_order_to_number
+@findex contig_order_to_number(T)
+
+@example
+@group
+@exdent contig_order_to_number
+ -io            @i{io_handle:integer}
+ -order         @i{position:integer}
+@end group
+@end example
+
+This command converts a contig position number to a contig number. That is we
+can ask "which is the second contig from the left". The function returns the
+coontig number.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@item @code{-order} position
+
+The position of the contig. "1" is the left most contig.
+
+@end table
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-reset_contig_order
+@unnumberedsec reset_contig_order
+@findex reset_contig_order(T)
+
+@example
+@group
+@exdent reset_contig_order
+ -io            @i{io_handle:integer}
+@end group
+@end example
+
+This command resets the contig order so that the lowest numbered contig is at
+the left and the highest numbered contig at the right. The new contig order is
+written to disk and the database is flushed.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@end table
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-flush_contig_order
+@unnumberedsec flush_contig_order
+@findex flush_contig_order(T)
+
+@example
+@group
+@exdent flush_contig_order
+ -io            @i{io_handle:integer}
+@end group
+@end example
+
+This command writes the contig order information to disk and then runs the
+@code{io_flush} command.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-remove_contig_duplicates
+@unnumberedsec remove_contig_duplicates
+@findex remove_contig_duplicates(T)
+
+@example
+@group
+@exdent remove_contig_duplicates
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+@end group
+@end example
+
+This function removes duplicate contig identifiers from a given list. The
+function takes a list of identifiers (in the usual name or #number fashion)
+and returns a list of the left most reading names in the contigs. If two
+different identifiers for the same contig are given, only the one identifier
+is returned.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@item @code{-contigs} identifiers
+
+The list of contig identifiers.
+
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-get_tag_array
+@unnumberedsec get_tag_array
+@findex get_tag_array(T)
+
+@example
+@group
+@exdent get_tag_array
+@end group
+@end example
+
+This function parses the tag databases and returns a Tcl list containing the
+tag information. Each element of the returned list consist of the tag name,
+its type, and the default comment.
+
+For instance, the standard installation returns a list starting with
+"@code{@{comment COMM ?@} @{oligo OLIG @{@}@} @{compression COMP @{@}@} @{stop
+STOP @{@}@}}".

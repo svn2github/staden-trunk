@@ -1,0 +1,161 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Quality clipping, based on uncalled bases ('-' or 'N's).
+#
+# This processes Experiment files, writing the clipping segments back as
+# QL and QR lines
+#
+set help {pregap4 {Pregap4-Modules-Uncalled Clip}}
+
+proc init {} {
+    mod_preset offset 			70
+    mod_preset min_extent		0
+    mod_preset max_extent		9999
+    mod_preset right_win_length		100
+    mod_preset right_num_uncalled	5
+    mod_preset left_win_length		25
+    mod_preset left_num_uncalled	3
+}
+
+proc run {files} {
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+    variable report
+    global file_type
+    global file_error
+	
+    set new_files {}
+    set report ""
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {[catch {exec clip \
+		-s $offset \
+		-m $min_extent \
+		-M $max_extent \
+		-w $right_win_length \
+		-u $right_num_uncalled \
+		-l $left_win_length \
+		-y $left_num_uncalled $f} err]} {
+	        set file_error($f) "clip: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+	        lappend new_files $f
+	         append report "SEQ $f: clipped using 'clip'\n"
+		vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    vmessage -nonewline .
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Uncalled Base Clip"
+}
+
+proc create_dialogue {w} {
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+
+    xentry $w.offset \
+	-label "Start offset" \
+	-default $offset \
+	-width 7
+    xentry $w.min_extent \
+	-label "Minimum extent" \
+	-default $min_extent \
+	-width 7
+    xentry $w.max_extent \
+	-label "Maximum extent" \
+	-default $max_extent \
+	-width 7
+    xentry $w.right_win_length \
+	-label "3' window length" \
+	-default $right_win_length \
+	-width 7
+    xentry $w.right_num_uncalled \
+	-label "3' number of uncalled bases" \
+	-default $right_num_uncalled \
+	-width 7
+    xentry $w.left_win_length \
+	-label "5' window length" \
+	-default $left_win_length \
+	-width 7
+    xentry $w.left_num_uncalled \
+	-label "5' number of uncalled bases" \
+	-default $left_num_uncalled \
+	-width 7
+    pack $w.offset $w.min_extent $w.max_extent $w.right_win_length \
+	$w.right_num_uncalled $w.left_win_length $w.left_num_uncalled \
+	-side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	offset min_extent max_extent right_win_length right_num_uncalled \
+	left_win_length left_num_uncalled]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+
+    set offset		   [$w.offset get]
+    set min_extent	   [$w.min_extent get]
+    set max_extent	   [$w.max_extent get]
+    set right_win_length   [$w.right_win_length get]
+    set right_num_uncalled [$w.right_num_uncalled get]
+    set left_win_length    [$w.left_win_length get]
+    set left_num_uncalled  [$w.left_num_uncalled get]
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}
+
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save offset [$w.offset get2]
+	mod_save min_extent [$w.min_extent get2]
+	mod_save max_extent [$w.max_extent get2]
+	mod_save right_win_length [$w.right_win_length get2]
+	mod_save right_num_uncalled [$w.right_num_uncalled get2]
+	mod_save left_win_length [$w.left_win_length get2]
+	mod_save left_num_uncalled [$w.left_num_uncalled get2]
+    }
+}

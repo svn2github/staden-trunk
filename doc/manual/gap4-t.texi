@@ -1,0 +1,247 @@
+_include(gap4_org-t.texi)
+_include(gap4_mini-t.texi)
+_include(gap4_intro-t.texi)
+@page
+_split()
+@node Contig Selector
+@chapter Contig Selector
+_include(contig_selector-t.texi)
+
+@page
+_split()
+@node Contig Comparator
+@chapter Contig Comparator
+_include(comparator-t.texi)
+
+@page
+_split()
+@node Contig-Overviews
+@chapter Contig Overviews
+_include(template-t.texi)
+
+@page
+_split()
+@node Quality
+@section Plotting Consensus Quality
+_include(quality_plot-t.texi)
+
+@page
+_split()
+@node Stops
+@section Plotting Stop Codons
+_include(stops-t.texi)
+
+@page
+_split()
+@node Restrict
+@section Plotting Restriction Enzymes
+_include(restrict_enzymes-t.texi)
+
+@page
+_split()
+@node Editor
+@chapter Editing in Gap4
+_include(contig_editor-t.texi)
+
+@page
+_split()
+@node Assembly
+@chapter Assembling and Adding Readings to a Database
+_include(assembly-t.texi)
+
+
+@page
+_split()
+@node Ordering-and-Joining
+@chapter Ordering and Joining Contigs
+_include(contig_ordering-t.texi)
+
+@page
+_split()
+@node Read Pairs
+@section Find Read Pairs
+_include(read_pairs-t.texi)
+
+@page
+_split()
+@node FIJ
+@section Find Internal Joins
+_include(fij-t.texi)
+
+@page
+_split()
+@node Repeats
+@section Find Repeats
+_include(repeats-t.texi)
+
+@page
+_split()
+_include(disassembly-t.texi)
+
+@page
+_split()
+_include(exp_suggest-t.texi)
+
+@page
+_split()
+@node Calculate Consensus
+@chapter Calculating Consensus Sequences
+_include(calc_consensus-t.texi)
+
+@page
+_split()
+@node gap4-misc
+@chapter Miscellaneous functions
+@menu
+* Complement::    Complement a contig
+* Enter Tags::    Entering Files of Tags into a Database
+* Show Relationships:: List Reading and Contig Information
+* Find Oligos::   Sequence Search
+* Auto Clipping:: Automatic Clipping by Quality and Sequence Similarity
+@end menu
+
+_split()
+_include(complement-t.texi)
+
+@page
+_split()
+@node Show Relationships
+@section Show Relationships
+_include(show_rel-t.texi)
+
+
+@page
+_split()
+@node Find Oligos
+@section Sequence Search
+_include(find_oligo-t.texi)
+
+@page
+_split()
+@node Extract Readings
+@section Extract Readings
+_include(extract-t.texi)
+
+@page
+_split()
+@node Auto Clipping
+@section Automatic Clipping by Quality and Sequence Similarity
+_include(clip-t.texi)
+
+@page
+_split()
+@node Results
+@chapter Results Manager
+_include(results-t.texi)
+
+@page
+_split()
+@node Lists
+@chapter Lists
+_include(lists-t.texi)
+
+@page
+_split()
+@node Notes
+@chapter Notes
+_include(notes-t.texi)
+
+@page
+_split()
+@node GapDB
+@chapter Gap4 Database Files
+_include(gap_database-t.texi)
+
+@page
+_split()
+@node Copy Readings
+@chapter Copy Readings
+_include(copy_reads-t.texi)
+
+@page
+_split()
+@node Check Database
+@chapter Check Database
+_include(check_db-t.texi)
+
+@page
+_split()
+@node Doctor Database
+@chapter Doctor Database
+_include(doctor_db-t.texi)
+
+@page
+_split()
+@node Conf
+@chapter Configuring
+_include(configure-t.texi)
+
+
+_split()
+@node Gap4-Cline
+@chapter Command Line Arguments
+@cindex Command line arguments
+
+@table @code
+@cindex -check
+@cindex -nocheck
+@cindex nocheck (command line option)
+@cindex check (command line option)
+@item -check
+@itemx -nocheck
+Specifies whether to run the "Check Database" option when opening new
+databases. @code{-check} forces this to always be done and @code{-nocheck}
+forces it to never be done. By default Check Database is always performed when
+opening databases in read-write mode and never performed when opening in
+read-only mode.
+@sp 1
+@cindex -maxdb
+@cindex maxdb (command line option)
+@item -maxdb
+Specifies the maximum number of readings plus contigs. This value is not
+automatically adjusted whilst the program is running, but is not allowed to be
+set to a value too small for the database to be opened. It controls the size
+of some areas of memory (approximately @code{16*maxdb} bytes) used during
+execution of gap. The default value is @code{8000}.
+@sp 1
+@cindex -maxseq
+@cindex maxseq (command line option)
+@item -maxseq
+Specifies the maximum number of characters used in the concatenated consensus
+sequences. This parameter is generally not required as the value is normally
+computed and adjusted automatically. However a few functions (such as
+assembly) still need to know a maximum size before hand. The default is
+@code{100000} bases.
+@sp 1
+@item -ro
+@itemx -read_only
+@cindex -read_only
+@cindex read_only (command line option)
+Opens the database (if specified on the command line) in read only mode. This
+does not apply to databases opened using the file browser.
+@sp 1
+@item -no_exec_notes
+@cindex -no_exec_notes
+@cindex security
+Does not search for and execute any Notes of type @code{OPEN} or @code{CLOS}.
+This may be an important security measure if you are using foreign databases.
+@sp 1
+@item -no_rawdata_note
+@cindex -no_rawdata_note
+Does not make use of the @code{RAWD} note type for specifying the trace file
+search path.
+@sp 1
+@item --
+Treat this as the last command line option. Only useful if the database name
+is specified and the name starts with a minus character (not
+recommended!).
+@end table
+
+_ifdef([[_unix]],[[
+@page
+_split()
+@node Convert
+@chapter Converting Old Databases
+_include(convert-t.texi)
+]])
+

@@ -1,0 +1,72 @@
+package require Iwidgets
+namespace eval ::EMBOSS::whichdb {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_whichdb*Xentry.entry.width 30
+option add *e_whichdb*Entryfield.width 30
+option add *e_whichdb*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) whichdb
+    set w [xtoplevel .e_whichdb -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - whichdb}
+    label $w._title -text {Search all databases for an entry}
+    pack $w._title -side top -fill both
+    set vars(whichdb._type) application
+
+    lappend arguments entry
+    iwidgets::entryfield $w.entry \
+	-textvariable [namespace current]::vars(entry) \
+	-labeltext [subst {ID or Accession number}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.entry component entry] -sticky nse
+    set vars(entry) [subst {}]
+    pack $w.entry -side top -fill both
+    set vars(entry.path) $w.entry
+    set vars(entry.required)  1
+    set vars(entry._type) string
+
+    lappend arguments get
+    checkbutton $w.get \
+	-text [subst {Retrieve sequences}]\
+	-variable [namespace current]::vars(get)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.get -side top -anchor w
+    set vars(get) [subst 0]
+    set vars(get.path) $w.get
+    set vars(get.required)  0
+    set vars(get._type) bool
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(get))}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst whichdb0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(get))}]]}
+    trace variable vars(get) w  "::EMBOSS::reset_needed [namespace current] outfile"
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/whichdb.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,763 @@
+@menu
+* Con-Normal::                  Normal Consensus Output
+* Con-Extended::                Extended Consensus Output
+* Con-Unfinished::              Unfinished Consensus Output
+* Con-Quality::                 Quality output
+* Con-Calculation::             Consensus Algorithms
+* Qual-Cal::                    The Quality Calculation
+* Con-Evaluation::              List Consensus Confidence
+@end menu
+
+@cindex Consensus: outputting
+@cindex Calculate consensus
+@cindex consensus IUB codes
+@cindex IUB codes: consensus
+
+In this section we describe the types of consensus which gap4 can
+produce, the formats they can be written in, and the algorithms that can
+be used. The algorithms are not only used to produce consensus sequence
+files, but in many other places throughout gap4 where an analysis of the
+current quality of the data is required. One important place is inside
+the Contig Editor
+(_fpref(Editor, Editing in gap4, contig_editor))
+where they are used to produce an "on-the-fly" consensus, responding to
+every edit made by the user.
+
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+There are four main types of consensus sequence file that can be
+produced by the program: Normal, Extended, Unfinished, and Quality. They
+are all invoked from the File menu.
+
+"Normal" is the type of consensus file that would be expected: a
+consensus from the non-hidden parts of a contig. "Extended" is the same
+as "Normal" but the consensus is extended by inclusion of
+the hidden, non-vector sequence, from the ends of the
+contig. 
+
+"Unfinished" is the same as "Normal" except that any position where
+the consensus does not have good data for both strands 
+is written using A,C,G,T characters,
+and the rest (which has good data for both strands) is written
+using a different set of symbols. This sequence can be used
+for screening against new readings: 
+only the regions needing more readings will produce
+matches. By screening readings in this way, prior to assembly, users can
+avoid entering readings which will not help finish the project, and
+which may require further editing work to be performed.
+
+"Quality" produces a sequence of characters of the same length
+as the consensus, but they instead encode the reliability of the
+consensus at each point.
+
+Consensus sequence files can also encode the positions of the currently
+active tag types by changing the case of the tagged characters (marking) 
+or writing them in a different character set (masking)
+(_fpref(Anno-Act, Active tags and masking, t)).
+
+The consensus algorithms are usually configured to produce only the
+characters A,C,G,T and "-", but it is possible to set them to produce
+the complete set of IUB codes. This mode is useful for some types of
+work and allows the range of observed base types at any position to be
+coded in the consensus. How the IUB codes are chosen
+is described in the introduction to the consensus algorithms
+(_fpref(Con-Calculation, The Consensus Algorithms, t)).
+
+Depending on the type of consensus produced, the consensus sequence
+files can be written in three different formats:
+Experiment files
+(_fpref(Formats-Exp, Experiment File, formats)), 
+FASTA (@cite{Pearson,W.R. Using the FASTA program to search protein
+and DNA sequence databases. Methods in Molecular Biology. 25, 365-389 (1994)})
+or staden formats.  If experiment file format is selected a further menu
+appears that allows users to select for the inclusion of tag data in the
+output file.
+For FASTA format the sequence headers include the contig identfier as the
+sequence name and the project database name, version number and the number of
+the leftmost reading in the contig as comments. e.g. 
+">xyzzy.s1 B0334.0.274" is database B0334, copy 0, and the left most reading
+for the contig is number 274, which has a name of xyzzy.s1.
+For staden format the headers include the project database name
+and the number of the leftmost reading in the contig. e.g. 
+"<B0334.00274------->" is database B0334 and the left most reading for
+the contig is number 274. Staden format is maintained only for
+historical reasons - i.e. there may still be a few unfortunate people using it.
+Obviously Experiment file format can contain much more information, and
+can serve as the basis of a submission to the sequence library.
+
+_split()
+@node Con-Normal
+@section Normal Consensus Output
+@cindex Calculate consensus: normal consensus
+@cindex Normal consensus
+@cindex Fasta output from Gap
+
+This is the usual consensus type that will be calculated
+(and is available from the gap4 File menu).
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+Contigs can be
+selected from a file of file names or a list.  In addition, tagged regions can
+be masked or marked (_fpref(Anno-Act, Active tags and masking, tags)), and
+output can be in Experiment file, fasta 
+or staden formats.  If experiment file format is selected a further menu
+appears that allows users to select for the inclusion of tag data in the
+output file.
+
+_picture(calc_consensus.normal)
+
+The contigs for which to calculate a consensus can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated, and if it is clicked, an appropriate
+browser will be invoked. If the user selects "single" then the
+dialogue for choosing the contig, and the section to process, becomes
+active.
+
+If the user selects either "mask active tags" or "mark active tags"
+the "Select tags" button is activated, and if it is clicked, a dialogue
+panel appears to enable the user to select which tag types should be
+used in these processes. If "mask" is selected all segments covered by
+the tag types chosen will not be written as ACGT but as defi
+symbols. If "mark" is selected the tagged segments will be written in
+lowercase characters. Masking is useful for producing a sequence to
+screen against other sequences: only the unmasked segments will
+produce hits.
+
+The "strip pads" option will remove pads ("*"s) from the consensus sequence.
+In the case of experiment files this will also automatically adjust the
+position and length of the annotations to ensure that they still mark the
+correct segment of sequence.
+
+The routine can write its consensus sequence (plus extra data for
+experiment files) in "experiment file", "fasta" and "staden"
+formats. The output file can be chosen with the aid of a file
+browser. If experiment file format is selected the user can choose
+whether or not to have "all annotations", "annotations except in
+hidden", or "no annotations" written out with the sequence. If the
+user elects to include annotations the "select tags" button will become
+active, and if it is clicked, a dialogue for selecting the types to include
+will appear. 
+
+
+_split()
+@node Con-Extended
+@section Extended Consensus Output
+@cindex Calculate consensus: extended consensus
+@cindex Extended consensus
+
+This consensus type 
+(which is available from the gap4 File menu)
+is useful for those who are too impatient to
+complete their sequence and want to compare it, in its fullest extent,
+to other data.  The sequence produced therefore includes hidden data
+from the ends of the contigs.  
+
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+Contigs can be selected from a file of
+file names or a list.  In addition tagged regions can be masked or
+marked (_fpref(Anno-Act, Active tags and masking, tags)), and output can
+be in fasta or staden formats.
+
+_picture(calc_consensus.extended)
+
+The contigs for which to calculate a consensus can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated, and if it is clicked, an appropriate
+browser will be invoked. If the user selects "single" then the
+dialogue for choosing the contig and the section to process becomes
+active.
+
+Where possible
+the contigs are extended using the poor quality data from the readings
+near their ends. To ensure that this additional data is not too poor
+the program uses the following
+algorithm. It slides a window of size "Window size for good data scan"
+along the hidden data for each reading and stops if it finds a window
+that contains more than "Max dashes in scan window" non-ACGT
+characters. The data that extends the contig the furthest is added to
+its consensus sequence. 
+
+If the user selects either "mask active tags" or "mark active tags"
+the "Select tags" button is activated, and if it is clicked, a dialogue
+panel appears to enable the user to select which tag types should be
+used in these processes. If "mask" is selected all segments covered by
+the tag types chosen will not be written as ACGT but as defi
+symbols. If "mark" is selected the tagged segments will be written in
+lowercase characters. Masking is useful for producing a sequence to
+screen against other sequences: only the unmasked segments will
+produce hits.
+
+The "strip pads" option will remove pads ("*"s) from the consensus sequence.
+
+The routine can write its consensus sequence in "fasta" and "staden"
+formats. The output file can be chosen with the aid of a file browser. 
+
+_split()
+@node Con-Unfinished
+@section Unfinished Consensus Output
+@cindex Calculate consensus: unfinished consensus
+@cindex Unfinished consensus
+
+This option is available from the gap4 File menu.
+An "Unfinished" consensus is one in which any position where
+the consensus does not have good data for both strands 
+is written using A,C,G,T characters,
+and the rest (which has good data for both strands) is written
+using a different set of symbols (d,e,f,i). This sequence can be used
+for screening against new readings: 
+only the regions needing more readings will produce
+matches. By screening readings in this way, prior to assembly, users can
+avoid entering readings which will not help finish the project, and
+which may require further editing to be performed.
+This type of consensus
+when written in staden format, consists of
+A,C,G,T for single stranded regions and d,e,f,i for finished sequence
+(d=a,e=c,f=g,i=t). 
+
+
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+Contigs can be selected from a
+file of file names or a list, and output can be in fasta or staden
+formats.
+
+_picture(calc_consensus.unfinished)
+
+The contigs for which to calculate a consensus can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated, and if it is clicked, an appropriate
+browser will be invoked. If the user selects "single" then the
+dialogue for choosing the contig and the section to process becomes
+active.
+
+The "strip pads" option will remove pads ("*"s) from the consensus sequence.
+
+The routine can write its consensus sequence in "fasta" and "staden"
+formats. The output file can be chosen with the aid of a file browser. 
+
+_split()
+@node Con-Quality
+@section Quality Consensus Output
+@cindex Calculate consensus: quality
+@cindex Quality: output for consensus
+@cindex Quality codes
+
+
+The Quality Consensus Output option described here 
+(which is available from the gap4 File menu)
+applies either of the two simple
+consensus calculations
+(_fpref(Con-Calculation-1, Consensus Calculation Using Base Frequencies,
+t)) and 
+(_fpref(Con-Calculation-2, Consensus Calculation Using Weighted Base Frequencies, t))
+to the data for each strand of the DNA separately. 
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+It produces, not a consensus sequence, but an encoding of the "quality"
+of the data which defines whether it has been determined on both
+strands, and whether the strands agree.
+The categories of data
+and the codes produced are shown in the table. For example  'c' means 
+bad data on one strand is aligned with good data on the other.
+
+@table @var
+@item a
+@kbd{Good Good (in agreement)}
+@item b
+@kbd{Good Bad}
+@item c
+@kbd{Bad  Good}
+@item d
+@kbd{Good None}
+@item e
+@kbd{None Good}
+@item f
+@kbd{Bad  Bad}
+@item g
+@kbd{Bad  None}
+@item h
+@kbd{None Bad}
+@item i
+@kbd{Good Good (disagree)}
+@item j
+@kbd{None None}
+@end table
+
+_picture(calc_consensus.quality)
+
+The contigs for which to calculate a consensus can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated, and if it is clicked, an appropriate
+browser will be invoked. If the user selects "single" then the
+dialogue for choosing the contig and the section to process becomes
+active.
+
+The routine can only write its consensus sequence in "staden"
+format. The output file can be chosen with the aid of a file browser. 
+
+
+_split()
+@node Con-Calculation
+@section The Consensus Algorithms
+@cindex Calculate consensus: algorithm
+@cindex Consensus calculation method
+@cindex consensus IUB codes
+@cindex IUB codes: consensus
+
+@menu
+* Con-Calculation-1::     Consensus Calculation Using Base Frequencies
+* Con-Calculation-2::     Consensus Calculation Using Weighted Base Frequencies
+* Con-Calculation-3::     Consensus Calculation Using Confidence Values
+* Qual-Cal::              The Quality Calculation
+* Con-Evaluation::              List Consensus Confidence
+@end menu
+
+The consensus calculation is a very important component of gap4. It is
+used to produce an "on-the-fly" consensus, responding to every
+individual change in the Contig Editor
+(_fpref(Editor, Editing in gap4, contig_editor))
+and is used to produce the final sequence for submission to the sequence
+libraries. Some years ago
+@i{Bonfield, J.K. and Staden, R. The application of numerical estimates of
+base calling accuracy to DNA sequencing projects. Nucleic Acids Res. 23,
+1406-1410 (1995)} we put forward the idea of using base call 
+accuracy estimates in sequencing projects, and this has been partially
+realised with the values from the Phred program
+(@i{Ewing, B. and Green, P.
+Base-Calling of Automated Sequencer Traces Using Phred. II. Error
+Probabilities. Genome Research. Vol 8 no 3. 186-194 (1998)}).
+These values are widely used and have defined a decibel type
+scale for base call confidence values and gap4 is currently set to use 
+confidence values defined on this scale.
+An overview of our use of confidence values is contained in the
+introductory sections of the manual
+(_fpref(Intro-Base-Acc, The use of numerical estimates of base
+calling accuracy, t)).
+
+As is described elsewhere
+(_fpref(Con-Evaluation, List Consensus Confidence, calc_consensus))
+being able to calculate the confidence for each base in the consensus
+sequence makes it possible to estimate the number of errors it contains,
+and hence the number of errors that will be removed if particular bases
+are checked and, if necessary, edited. 
+
+Gap4 caters for base calls
+with and without confidence values and hence provides a choice of
+algorithms. 
+There are currently three consensus algorithms that may be used. The
+choice of the best algorithm will depend on the data that you have available
+and the purpose for which you are using gap4.
+
+The currently active consensus algorithm is selected from the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+The only way to produce a consensus sequence for which the reliability
+of each base is known, is to use reading data with base call confidence
+values. Their use, in combination with the Confidence Value 
+algorithm 
+(_fpref(Con-Calculation-3, Consensus Calculation Using Confidence Values, t)).
+is strongly recommended.
+
+For base calls without confidence values use the Base Frequencies algorithm
+(_fpref(Con-Calculation-1, Consensus Calculation Using Base Frequencies, t)).
+This is also a fast algorithm so
+it may be appopriate for very high depth assemblies such those 
+for mutation studies.
+
+For data with simple base call accuracy estimates rather than those on
+the decibel scale, the Weighted Base Frequencies algorithm should be used
+(_fpref(Con-Calculation-2, Consensus Calculation Using Weighted 
+Base Frequencies, t)).
+
+All confidence values lie in the range 0 to 100.
+When readings are entered into a database, gap4 assigns a confidence of
+99 to all bases 
+without confidence values. 
+For all three algorithms, a base with confidence of 100 is
+used to force the consensus base to that base type and to have a
+confidence of 100. However,if two or more base types at any position
+have confidence 100, the consensus will be set to "unknown", i.e. "-",
+and will have a confidence of 0.
+Note that dash ("-") is our preferred symbol for "unknown" as, within a
+sequence, it is more easily distinguished from A,C,G,T than "N". 
+
+The consensus sequence is also assigned a confidence, even when base
+call confidence values
+are not used to calculate it. 
+The scale and meaning of the consensus confidence changes
+between consensus algorithms. However the consensus cutoff parameter always
+has the same meaning. A consensus base with a confidence 'X' will be called as
+a dash when 'X' is lower than the consensus cutoff, otherwise it is the
+determined base type.
+
+Both the consensus cutoff and quality cutoff values can be set by using
+the "Configure cutoffs" command in the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+Within
+the Contig Editor (_fpref(Editor, Editing in gap4, contig_editor)) these
+values can be adjusted by clicking on the "<" and ">" symbols adjacent
+to the "C:" (consensus cutoff) and "Q:" (quality cutoff) displays in the
+top left corner of the editor. These buttons are repeating buttons - the
+values will adjust for as long as the left mouse button is held down.
+Changing these values lasts only as long as that invocation of the
+contig editor.
+
+The consensus algorithms are usually configured to produce only the
+characters A,C,G,T,* and "-", but it is possible to set them to produce
+the complete set of IUB codes. This mode is useful for some types of
+work and allows the range of observed base types at any position to be
+coded in the consensus. The IUB code at any position is determined in
+the following way.
+
+We assume that the user wants to know which base types have occurred at
+any point, but may want some control over the quality and relative
+frequency of those that are used to calculate the "consensus".
+For the simplest consensus algorithm there is no control
+over the quality of the base calls that are included, but the Consensus
+Cutoff can be used to control how the relative frequency affects the
+chosen IUB code. All base types whose computed "confidence" exceeds the
+Consensus Cutoff will be included in the selection of the IUB code. For
+example if only base type T reaches the Consenus Cutoff the IUB code
+will be T; if both T and C reach the cutoff the code will be Y; if A, C
+and T each reach the cutoff the code will be H; if A, C, G and T all
+reach the cutoff the code will be "N". For the Confidence Value
+algorithm the Quality Cutoff can be used to exclude base calls of low
+quality, so that all those that do not reach the Quality Cutoff are
+excluded from the IUB code calculation. Otherwise the logic of the code
+selection is the same as for the two simpler algorithms.
+
+Both the consensus cutoff and quality cutoff values can be set by using
+the "Configure cutoffs" command in the
+"Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)).
+
+The algorithms are explained below.
+
+_split()
+@node Con-Calculation-1
+@subsection Consensus Calculation Using Base Frequencies
+
+This algorithm can be used for any data, with or without confidence values.
+Each standard base type is given the same weight. The consensus
+will be the most frequent base type in a given column provided that the
+consensus cutoff parameter is low enough. All unrecognised base types,
+including IUB codes, are treated as dashes.
+Dashes are given a
+weight of 1/10th that of recognised base types. Pads are given a weight
+which is the average of their neighbouring bases.
+
+The confidence of a consensus base for this method is expressed as a
+percentage. 
+So for example a column of bases of A, A, A and T will give a consensus base
+of A and a confidence of 75. Therefore a consensus cutoff of 76 or higher will
+give a consensus base of "-".
+
+In the event that more than one base type is calculated to have the same
+confidence, and this
+exceeds the consensus cutoff, the bases are assigned in descending order of
+precedence: A, C, G and T.
+
+The quality cutoff parameter (Q in the Contig Editor) 
+has no effect on this algorithm.
+
+_split()
+@node Con-Calculation-2
+@subsection Consensus Calculation Using Weighted Base Frequencies
+
+This method can be used when simple, unquantified, base call quality
+values are available. Instead of simply counting base type frequencies
+it sums the quality values.
+Hence a column of 4 bases A,
+A, A and T with confidence values 10, 10, 10 and 50 would give combined totals
+of 30/80 for A and 50/80 for T (compared to 3/4 for A and 1/4 for 
+T when using frequencies). As
+with the unweighted frequency method this sets the confidence value of the
+consensus base to be the the fraction of the chosen base type weights over the
+total weights (62.5 in the above example).
+
+The quality cutoff parameter controls which bases are used in the calculation.
+Only bases with quality values greater than or equal to the quality cutoff are
+used, otherwise they are completely ignored and have no effect on either the
+base type chosen for the consensus or the consensus confidence value. In the
+above example setting the quality cutoff to 20 would give a T with
+confidence 100 (100 * 50/50).
+
+In the event that more than one base type is calculated to have the same
+weight, and this
+exceeds the consensus cutoff, the bases are assigned in descending order of
+precedence: A, C, G and T.
+
+This is Rule IV of @cite{Bonfield,J.K. and Staden,R. The application of
+numerical estimates of base calling accuracy to DNA sequencing projects.
+Nucleic Acids Research 23, 1406-1410 (1995).}
+
+_split()
+@node Con-Calculation-3
+@subsection Consensus Calculation Using Confidence values
+
+This is the prefered consensus algorithm for reading data with Phred
+decibel scale confidence values. As will become clear from the follwing
+description, it is more complicated than the other algorithms, but
+produces a much more useful result.
+
+A difficulty in designing an algorithm to calculate the confidence for
+a consensus derived from several readings, possibly using different
+chemistries, and hopefully from both strands of the DNA, is knowing
+the level of
+independence of the results from different experiments - namely the readings.
+Given that sequencing traces are sequence dependent, we do not regard
+readings as wholly independent, but at the same time,
+repeated readings which confirm base calls may give us more confidence
+in their accuracy. In addition, if we get a particularly good sequencing
+run, with consequently high base call confidence values, we are 
+more likely to believe its base call and confidence value assignments.
+The final point in this preamble
+is that the Phred confidence values 
+refer only to the probability for the called base, and
+they tell us nothing about the relative likelihood of each of the other
+3 base types appearing at the same position.
+These difficulties are taken into account by our algorithm, which
+is described below.
+
+In what follows, a particular position in an alignment of readings is
+referred to as a "column".
+The base calls in a column are classified by their chemistry
+and strand. We currently group them into "top strand dye primer", "top strand
+dye terminator", "bottom strand dye primer" and "bottom strand dye terminator"
+classes.
+
+Within each class there may be zero or many base calls. For each
+class we check for multiple occurrences of the same base type. 
+For each base type we find the highest confidence value, and then
+increase it by an amount dependent on the number of confirming reads.
+Then Bayes formula is used to derive the probabilities and hence the
+confidence values for each base type.
+
+To further describe the method it is easiest to work through an example.
+Suppose we have 5 readings with the
+following characteristics covering a particular column.
+
+@example
+Dye primer, top strand,        'A', confidence 20
+Dye primer, top strand,        'A', confidence 10
+Dye primer, top strand,        'T', confidence 20
+Dye terminator, top strand,    'T', confidence 10
+Dye primer, bottom strand,     'A', confidence 5
+@end example
+
+Hence there are three possible classes.
+
+Examining the "dye primer top strand" class we
+see there are three readings (A, A and T). The highest A is 20. We add to
+this a fixed quantity to indicate one other occurence of an A in this set. For
+this example we add 5. Now we have an adjusted confidence of
+25 for A and 20 for T. This is equivalent to a .997 
+probability of A being correct and .99 probability of T being correct.
+To use Bayes we split the remaining probabilies evenly.
+A has a probability of .997 and so the remaining .003 is spread amongst the
+other base types. Similarly for the .01 of the T. The result is shown in
+the table below.
+
+@example
+  |   A     C     G     T
+--+-----------------------
+A | .997  .001  .001  .001
+T | .0033 .0033 .0033 .990
+@end example
+
+Bayesian calculations on
+this table then give us probabilities of approximately .766 for A,
+.00154 for C, .00154 for G and .231 for T.
+
+The other classes give probalities of .033 for A, C, G and .9 for T, and
+.316 for A, and .228 for C, G and T.
+
+To combine the values for each class we produce a table for a further Bayesian
+calculation. Once again we fill in the probabilities and spread the remainder
+evenly amongst the other base types.
+
+@example
+           |   A      C      G     T
+-----------+--------------------------
+Primer Top | .766  .00154 .00154 .231
+Term   Top | .0333 .0333  .0333  .9
+Primer Bot | .316  .228   .228   .228
+@end example
+
+From this Bayes gives the 
+final probabilities of .135 for A, .0002 for C, .0002 for
+G and .854 for T.
+This is what would be expected intuitively: the T signal was present in
+both dye primer and dye terminator experiments with 1/100 and 1/10 error
+rates whilst the A signal was present on both strands with 1/100 and 1/3 error
+rates. 
+Hence the consensus base is T with confidence 8.4 (-10*log10(1-.854)).
+
+If a padding character is present in a
+column we consider the pad as a separate base type and then evenly divide the
+remaining probabilities by 4 instead of 3.
+
+_split()
+@node Qual-Cal
+@subsection The Quality Calculation
+@cindex Quality calculation algorithm
+
+The Quality Calculation described here 
+(which is available from the gap4 File menu)
+applies either of the two simple
+consensus calculations
+(_fpref(Con-Calculation-1, Consensus Calculation Using Base Frequencies,
+t)) and 
+(_fpref(Con-Calculation-2, Consensus Calculation Using Weighted Base Frequencies, t))
+to the data for each strand of the DNA separately. 
+It produces, not a consensus sequence, but an encoding of the "quality"
+of the data which defines whether it has been determined on both
+strands, and whether the strands agree.
+This quality is used as
+the basis for problem searches, such as find next problem, and the Quality
+Display within the Template Display (_fpref(Template-Quality, Quality Plot,
+template)).
+
+The categories of data
+and the codes produced are shown in the table. For example  'c' means 
+bad data on one strand is aligned with good data on the other.
+
+@table @var
+@item
+@r{+Strand -Strand}
+@item a
+@r{Good    Good} (in agreement)
+@item b
+@r{Good    Bad}
+@item c
+@r{Bad     Good}
+@item d
+@r{Good    None}
+@item e
+@r{None    Good}
+@item f
+@r{Bad     Bad}
+@item g
+@r{Bad     None}
+@item h
+@r{None    Bad}
+@item i
+@r{Good    Good} (disagree)
+@item j
+@r{None    None}
+@end table
+
+the "Configure cutoffs" command in the
+
+In the "Consensus algorithm" dialogue in the main gap4 Options menu
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, t)),
+setting the configuration to treat readings flagged using the
+"Special Chemistry" Experiment File line (CH field) 
+(_fpref(Formats-Exp, Experiment File, formats))
+affects this
+calculation. When set, the reading counts for both strands
+in the Consensus and Quality
+Calculations, and hence is equivalent to having data on both
+strands. 
+
+
+_split()
+@node Con-Evaluation
+@section List Consensus Confidence
+@cindex Calculate consensus: reliability
+@cindex Calculate consensus: confidence
+@cindex Consensus calculation confidence
+@cindex Confidence of consensus
+@cindex List confidence
+
+The Confidence Value consensus algorithm 
+(_fpref(Con-Calculation-3, Consensus Calculation Using Confidence Values, t))
+produces a consensus
+sequence for which the expected error rate for each base is known.
+The option described here 
+(which is available from the gap4 View menu)
+uses this information to calculate 
+the expected number of errors in a particular consensus sequence and
+to tabulate them.
+
+The decibel type scale introduced in the Phred program uses the formula
+-10xlog10(error_rate) to produce confidence values for the base calls. A
+confidence value of 10 corresponds to an error rate of 1/10; 20 to
+1/100; 30 to 1/1000; etc.
+
+So for example, if 50 bases in the consensus had confidence
+10, we would expect those 50 bases (with an error rate of 1/10) to
+contain 5 errors; and if 200 bases had confidence 20, we would expect
+them to contain 2 errors. If these 50 bases with confidence 10, and 200
+bases with confidence 20 were the least accurate parts of the consensus,
+they are the bases which we should check and edit first. In so doing we
+would be dealing with the places most likely to be wrong, and would
+raise the confidence of the whole consensus. The output produced by List
+Confidence shows the effect of working through all the lowest quality
+bases first, until the desired level of accuracy is reached. To do this
+it shows the cumulative number of errors that would be fixed by checking
+every consensus base with a confidence value less than a
+particular threshold.
+
+The List Confidence option is available from within the Commands menu of
+the Contig Editor and the main gap4 View menu. From the main menu
+the dialogue simply allows selection of one or more contigs. Pressing OK then
+produces a table similar to the following:
+
+@example
+Sequence length = 164068 bases.
+Expected errors =  168.80 bases (1/971 error rate).
+
+Value   Frequencies     Expected  Cumulative    Cumulative      Cumulative
+                        errors    frequencies   errors          error rate
+--------------------------------------------------------------------------
+  0          0             0.00         0          0.00         1/971
+  1          1             0.79         1          0.79         1/976
+  2          0             0.00         1          0.79         1/976
+  3          3             1.50         4          2.30         1/985
+  4         30            11.94        34         14.24         1/1061
+  5          2             0.63        36         14.87         1/1065
+  6        263            66.06       299         80.94         1/1867
+  7        151            30.13       450        111.06         1/2841
+  8        164            25.99       614        137.06         1/5168
+  9         96            12.09       710        149.14         1/8344
+ 10         80             8.00       790        157.14         1/14069
+@end example
+
+The output above states that there are 164068 bases in the consensus sequence
+with an expected 169 errors (giving an average error rate of one in 971).
+Next it lists each confidence value along with its frequency of occurrence and
+the expected number of errors (as explained above, frequency x
+error_rate).  For any particular confidence value the
+cumulative columns state: how many bases in the sequence have the same or
+lower confidence, how many errors are expected in those bases, and the
+new error rate if all these bases were checked and all the errors fixed.
+
+Above it states that there are 790 bases with confidence values of
+10 or less, and estimates there to be 157 errors in those 790 bases. 
+As we expect there to be about 169 errors in the whole consenus 
+this implies that manually checking
+those 790 bases would leave only 12 undetected errors. Given that the sequence
+length is 164068 bases this means an average error rate of 1 in 14069. 
+It is important to note that by using this editing strategy, this error
+rate  would be achieved by checking only 0.48% of the total number of
+consensus bases. This strategy is realised by use of the consensus
+quality search in the gap4 Contig Editor
+(_fpref(Editor-Search-ConsQual, Search by Consensus Quality, t)).

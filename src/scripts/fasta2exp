@@ -1,0 +1,30 @@
+#!/usr/bin/nawk -f
+BEGIN {
+    file="";
+}
+
+/^;/ {
+    next;
+}
+
+/^>/ {
+    gsub(">", "");
+    if (file != "") {
+        print "//" >> file;
+	close(file);
+    }
+    file=$1".exp";
+    print "ID   "$1 > file;
+    print "SQ" >> file;
+    print "Creating", $1;
+    next;
+}
+
+{
+    print "     "$0 >> file;
+}
+
+END {
+    print "//" >> file;
+    close(file);
+}

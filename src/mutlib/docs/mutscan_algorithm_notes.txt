@@ -1,0 +1,404 @@
+Mutscan Algorithm - Last Update: 21st February 2003
+=================
+
+INPUTS:
+
+1. Reference trace
+2. Reference trace clip points
+3. Input trace
+4. Analysis parameters
+
+
+ALGORITHM ADVANTAGES:
+
+* Low level of false positives.
+
+* Works on standard sequencer produced trace files, not machine specific.
+
+* Finds both heterozygotes, base-change mutations and most insertions &
+  deletions in a single step.
+
+* Due to the excellent synchronisation achieved between the input and reference
+  traces, no mobility correction information is necessary.
+
+
+
+ALGORITHM DISADVANTAGES:
+
+* Requires a reference trace, this may not always be available.
+
+* Will not detect non-heterozygous base insertions.
+
+* If reference peaks are not well defined, it can cause mutations to be missed.
+
+
+
+
+ALGORITHM:
+
+PREPROCESSING:
+
+1. Trace alignment
+
+   - Align the reference trace to the input trace without relying on basecalls
+     as per the tracediff algorithm. This involves quantisation of the trace
+     envelope and dynamic programming to do the alignment.
+
+     This step is a crucial to all subsequent steps. It's virtually impossible
+     to obtain robust peak synchronisation any other way. All other techniques
+     essentially rely on basecalling, which is very difficult to do in the
+     presense of noise and gel artifacts. This was a problem in CSA, sometimes
+     synchronisation wasn't obtained and the trace was rejected.
+
+     The main disadvantage of this method is that it's quite slow since we have
+     to align samples not bases using dynamic programming.
+
+   - The clip points on the reference trace take precedence unless the input
+     trace is shorter than the clipped reference.
+
+   - A guard margin of 2 bases is added to the left to minimise any endpoint
+     alignment problems. The extra two bases are not scanned for mutations.
+
+   - Another six bases are added to the right clip point if possible so that
+     we may catch insertions & deletions. These six bases are scanned for
+     mutations.
+
+   - The output of this step is a pair of perfectly aligned trace files and
+     they serve as the input to all subsequent processing stages.
+
+
+
+2. Generate a difference trace
+
+   - Construct a difference trace from the aligned traces.
+
+   - Remove low level noise by flooring it to the baseline value.
+
+   - Apply non-linear clipping to the difference trace to remove
+     halfwaves and leave only double peaks.
+
+   - Fill in tiny gaps, a primitive smoothing filter.
+
+   - After this step, only double peaks remain, everything else is
+     at baseline. This provides a quick method for the anaysis routine
+     to determine if there's a double peak at a particular sample
+     position.
+
+
+
+3. Peak parsing of input+reference traces.
+
+   - Create SAMPLES*4 peak parsing matrix.
+   - Non-zero entries designate a peak amplitude.
+   - Column number of non-zero matrix entry indicates peak position in samples.
+   - The peak searching algorithm uses a slope up/down count of 1 to find
+     every possible peak.
+
+   - We find all peaks by looking at each base trace individually, not just
+     the envelope. If we just look at the envelope, we can often miss peaks
+     due to compressions.
+
+   - After this step there will be many peaks that are generated as a result
+     of low level noise.
+
+   - The peak parsing matrices are in perfect synchronisation with their
+     respective traces. This ensures a straightforward mapping scheme back
+     to the primary data in later processing steps.
+
+
+
+4. Create noise floor estimates for input+reference traces.
+
+   - Create SAMPLES*1 noise floor vector, initialise to zero.
+   - Create SAMPLES*1 trace *envelope* vector.
+   - Search the envelope for peaks. The peak searching algorithm uses a
+     slope up/down count of 1 to find every possible peak.
+   - At each peak position use a percentage of that peak height as the
+     noise floor.
+   - Linearly interpolate through the zeros to create a continuous noise
+     floor vector.
+
+
+
+5. Elimate low level noise.
+
+   - Any peak <= noise floor estimate at that position is deleted.
+   - Keep a count of the number of peaks in each row.
+
+     This step removes all the low level noise leaving only well formed
+     peaks in the peak parsing matrix.
+
+
+ANALYSIS:
+
+1. Construct a fine-grained peak alignment map.
+
+   - Create a max(PEAKS)*8 peak mapping matrix to store the positions of
+     the corresponding peak pairs in the reference and input traces.
+
+   - For each trace channel individually, step through each peak in the
+     reference looking for a corresponding peak in the input. Use a small
+     search window +/- WINDOW samples either side of the reference peak.
+
+   - If such a peak is found, store the mapped positions positions in
+     rows 0 and 1 of the peak mapping matrix. Repeat for all trace channels.
+
+   - If no corresponding peak is found, the input position is marked as
+     such by setting it to zero.
+
+     At this stage most peak pairs will be accounted for. However the small
+     minority where there is a difference will need further analysis. There
+     will be two cases:
+
+     a) Genuine basechange mutations
+     b) Superflous peaks caused by noise in the reference
+
+
+
+2. Construct the scale factor matrix for the peak pairs.
+
+   - Construct a max(PEAKS)*4 scale factor matrix to store the peak
+     pair scale factors.
+
+   - Using peak pairs for reference and input, go through and generate
+     scale factors by looking at the amplitude ratios.
+
+   - Compute the scale factor mean and standard deviation statistics
+     for each base individually over the entire trace.
+
+
+
+3. Scan for potential mutations by looking for abnormal peak pair scale factors
+
+   - Using the scale factor mean and standard deviation statistics,
+     filter out all peak pairs that have a scale factor above 1-SD
+     from the mean, and all single bases with a scale factor of zero.
+
+   - Do basecalling at these potential mutation sites to determine
+     tag mutation labelling. If we discover an ambiguous reference, we
+     discard it. We do this on both the input and reference traces.
+
+   - For regions where there are shoulders, no well defined peak,
+     we do level calling instead of base calling.
+
+     NOTE:
+     Real heterozygous mutations have a drop in peak height of 50% with
+     respect to the reference trace after normalisation. This is the
+     key observation upon which this step is based.
+
+
+
+4. Determine normalised drop in peak height and mutation type
+
+   - Using the previous peak pair's scale factor, we compute the normalised
+     peak drop for the current peak pair.
+
+   - If the previous peak's scale factor lies outside 1-SD of the mean,
+     we use the mean instead.
+
+     NOTE:
+     Due to non-stationarity of the input signal, it's important to
+     use the previous peak's scale factor or one as close as possible
+     to the peak being examined.
+
+   - Using the base/level callers signal-to-noise ratio measurement,
+     we assign the mutation tag type to be either heterozygous, or
+     a base-change mutation. Base change mutations have a much higher
+     signal to noise ratio than heterozygotes.
+
+
+
+5. Validate the potential mutations
+
+   - Examine the peak drop ratio for heterozyous mutations. If it lies
+     beyond our upper and lower threshold parameters, mark for deletion.
+
+   - Look for a double peak at the mutations position in the trace
+     difference graph, if no double peak is found it's not a real mutation
+     so mark for deletion.
+
+     NOTE:
+     These steps are extremely important to cut down on the number of
+     false positives generated due to gel blobs and other trace abnormalities.
+
+   - The remaining mutations that have not been marked for deletion are
+     considered to be real and are output by the program as mutation tags.
+
+
+----------------------
+Problem
+=======
+
+Course dataset: 256_11cR, base 54
+
+Is an instance of a base-change mutation where a compression has occurred
+degrading the SNR below the heterozygote threshold. It's then treated as
+hetrozygous, but there's no peak drop, so it's discarded.
+
+So in general, how can we determine between a compression and a heterozygote?
+
+For a real heterozygote, we'd expect the G amplitude to drop to 50% of the
+reference, so if it's less than our lower threshold, then we can be pretty
+certain it isn't a heterozygote. But this is very early on in the process,
+so perhaps I need to do amplitude normalisation earlier.
+
+Or we could use the input trace noise-floor at that point. If the G is
+lower, then it can't be a heterozygote.
+
+
+If no peak found, and level of same trace is below noise floor then assume
+it's homozygous.
+
+
+But then if there's a base change mutation, we can't tell if the height
+has dropped simply because it's another type of trace!
+
+Currently I determine the tag type based on SNR, but this isn't always
+appropriate as discovered above. Neither is looking at peak height drop
+as it could be the falling edge of a compression of the same base type
+to the left.
+
+Perhaps I should look at the noise floor, see if the height of the
+current trace is below this, and don't mark it as ambiguous if it is.
+
+
+
+
+----------------------
+
+
+
+    OLD STUFF!!!!
+
+
+    Assigning mutation type notes
+    -----------------------------
+   - The SNR of some real mutations
+
+
+     Mattocks,Exon42
+     ---------------
+     16 Real  SNR=20
+     22 False SNR=2
+     51 Real  SNR=19
+     53 Real  SNR=21
+     66 False SNR=4
+     76 Real  SNR=20
+     77 Real  SNR=23
+     82 Real  SNR=19
+
+     Wallace,3
+     ---------
+     01_1f  False SNR=5
+     37_23f Real  SNR=57
+     37_23r Real  SNR=27
+     57_33f Real  SNR=58
+     57_33r Real  SNR=28
+
+     Christina
+     ---------
+     lea904 Real  SNR=7dB
+
+
+   Basecalling Notes
+   -----------------
+
+   At each peak position, replace each peak with a peak model whose
+   amplitudes decay to zero.
+
+   We need to do this because we need to know if the peaks are overlapping
+   completely (one inside the other) or just offset slightly. To do that
+   we need an accurate measure of peak width, and we can't get that when
+   two peaks of the same base are next to one another (they merge together
+   into an additive blob), we'd have to extrapolate to find the end point.
+
+   After that, we could do an alignment against the reference sequence
+   to determine if we've missed some bases.
+
+
+
+   Good Synchronisation is the Key to Finding Mutations
+   ----------------------------------------------------
+
+   The synchronisation problem is the most difficult part!
+
+   - Is this a better way to achieve synchronisation to the reference sequence
+     than CSA's method?
+
+   - Basecall the peaks in a simple fashion, if there are two peaks
+     in the same position, call the highest amplitude one.
+
+
+   - I'll get lots of pads in the reference due to double base calls so
+     I really do need a good merging step. This would even be the case if
+     I also peak called the reference using my own algorithm.
+
+
+   - But it could be a good way of determining which bases should be
+     merged together?
+
+     Reference Sequence: TGGAAATTTGATAATCC
+     Peakcall  Sequence:
+
+     Alignment:          TGGAAATTT*GATAATCC
+                         TG*AA*TT*AGATAATCC
+
+     A pad in the reference sequence implies a double call, while a pad
+     in the input sequence implies a missed call. The solution is just
+     to remove the column with pads in the reference sequence?
+
+     Alignment:          TGGAAATTTGATAATCC
+                         TG*AA*TT*GATAATCC
+
+     Still have a peak mapping problem since the pads can be shuffled. eg.
+
+     Alignment:          TGGAAATTTGATAATCC
+                         TG*AA*T*TGATAATCC
+
+     This is the problem with alignments, it doesn't strictly preserve
+     the ordering. That's why stepping through one at a time, searching
+     for the next peak of a given base is likely to be more robust.
+
+
+     But stepping through the peaks is still going to be a problem where
+     there are missed peak calls. That's why chris uses the mobility
+     info to determine where the next peak should be. It's also going
+     to barf at base change mutations.
+
+
+     Maybe I should go back to my original algorithm that used trace
+     segments? But instead use the noise floor as a means to avoid
+     segmentation boundary issues? Will still get those issues where
+     the noise level just/just doesn't cut through a trough. So no
+     this won't solve the problem.
+
+
+     If I carry on with the base caller, and solve the peak merging
+     problem, then missed peaks are not such a big deal. They will
+     come out of the wash in the alignment?
+
+
+     If we can rely on the basecaller, then there's no problem. But what
+     about gel problems and other abherrations? How will the basecaller
+     cope with these? To make such an extremely good basecaller is
+     very difficult.
+
+
+     Direct trace alignment seems like the most robust method to ensure
+     proper synchronisation. It also means I can detect normal mutations
+     as well as heterozygous ones.
+
+     Then I can use the noise floor and peak calling ideas to get peak
+     vectors.
+
+     There will be problems with non-corresponding peaks in the reference
+     and these will need to be dealt with somehow. But it will be much
+     easier since we know that things are in sync.
+
+     Then we just step through the peaks in step, searching around where
+     we expect them and do dynamic scaling to the reference to detect
+     the 1/2 drop in peak height. Probably better to work out the scale
+     factor based on a window of matching peaks. It should work well
+     in a local region - use past n base history.
+
+

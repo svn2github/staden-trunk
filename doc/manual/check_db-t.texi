@@ -1,0 +1,178 @@
+@cindex Check database
+
+@menu
+* Check-Database::              Database checks
+* Check-Contig::                Contig checks
+* Check-Reading::               Reading checks
+* Check-Anno::                  Anno checks
+* Check-Note::                  Note checks
+* Check-Template::              Template checks
+* Check-Vector::                Vector checks
+* Check-Clone::                 Clone checks
+@end menu
+
+This function 
+(which is available from the gap4 File menu)
+is used to perform a check on the logical consistency of
+the database.  No user intervention is required. If the checks are passed
+the message "Database is logically consistent" is written to the Output
+Window. If the database is not found to be consistent diagnostic
+messages will appear in the Output Window and Doctor Database from the
+Edit menu should be used to correct the problem. _fxref(Doctor Database,
+Doctor Database, gap4)
+
+Several options, such as assembly, automatically perform a check database
+prior to executing. If the database is found to be inconsistent the option
+will not continue. However some checks are considered as "non fatal" and will
+not block such operations. Currently the only non fatal checks are the
+positional checks for annotations and for readings that are never used. To fix
+the database, use the Doctor Database "ignore check database" setting to
+disable the inconsistency checking. _fxref(Doctor-IgnoreCheck, Ignoring Check
+Database, doctor_db)
+
+The following sections define the checks and the order in which they are
+performed.
+
+_split()
+@node Check-Database
+@section Database Checks
+@cindex Check database: database checks
+
+@itemize @bullet
+@item Number of contigs used is <= number allocated
+@item Disk and memory values for "number of contigs" are consistent
+@item Number of readings used is <= number allocated
+@item Disk and memory values for "number of readings" are consistent
+@item Disk and memory values for "actual database size" are consistent
+@item Actual database size <= maximum size
+@item Data_class is either DNA(0) or protein(1).
+@item Number of free annotations >= 0 and <= number allocated
+@item Contig order is consistent
+@item Number of free notes >= 0 and <= number allocated
+@item First note has prev_type as GT_Database
+@item Detect note loops
+@end itemize
+
+@node Check-Contig
+@section Contig Checks
+@cindex Check database: contig checks
+
+@itemize @bullet
+@item Has a left reading number
+@item Has a right reading number
+@item The left reading has no left neighbour
+@item The right reading has no right neighbour
+@item Chain right to
+@itemize @minus
+@item check loops
+@item check holes
+@item flag a reading as used
+@end itemize
+@item When finished chaining
+@itemize @minus
+@item check length is correct
+@item check right reading number is correct
+@end itemize
+@item Reference only valid reading numbers
+@item Chain left to
+@itemize @minus
+@item check loops
+@item flag readings as used, if not done so in right chaining;
+@end itemize
+@item When finished chaining, check left reading number is correct
+@item Chain along annotation list to
+@itemize @minus
+@item flag as used
+@item detect annotation loops
+@item annotation is within the contig
+@item annotation is rightwards of previous
+@end itemize
+@item First note has prev_type as GT_Contigs
+@item Detect note loops
+@end itemize
+
+@node Check-Reading
+@section Reading Checks
+@cindex Check database: reading checks
+
+@itemize @bullet
+@item Memory and disk values tally for
+@itemize @minus
+@item left neighbour
+@item right neighbour
+@item relative position
+@item length + sense
+@end itemize
+@item Left neighbour is a valid reading number
+@item Right neighbour is a valid reading number
+@item Reading is not used zero times
+@item Reading is not used more than once
+@item Hand holding: (lnbr[rnbr[reading]] == reading)
+@item Relative position of reading >= position of left neighbour
+@item Length != 0
+@item Used sequence length == "right clip position" - "left clip position"
+@item Has valid strand (0 or 1)
+@item Has valid primer
+@item Has valid sense (0 or 1)
+@item Chain along annotation list to 
+@itemize @minus
+@item flag as used
+@item detect annotation loops;
+@item annotation is rightwards of previous
+@end itemize
+@item First note has prev_type as GT_Readings
+@item Detect note loops
+@end itemize
+
+@node Check-Anno
+@section Annotation Checks
+@cindex Check database: annotation checks
+
+@itemize @bullet
+@item No loops in free annotation list
+@item Is neither used nor is on the free list
+@item Annotation is not used more than once
+@item Is used, yet is still on the free list
+@item Length >= 0
+@item Has valid strand (0 or 1)
+@end itemize
+
+@node Check-Note
+@section Note Checks
+@cindex Check database: note checks
+
+@itemize @bullet
+@item No loops in free note list
+@item Is neither used nor is on the free list
+@item Hand holding: (note->next->prev == note)
+@item Note is not used more than once
+@item Is used, yet is still on the free list
+@end itemize
+
+@node Check-Template
+@section Template Checks
+@cindex Check database: template checks
+
+@itemize @bullet
+@item Minimum insert length <= maximum insert length
+@item Has valid vector
+@item Has valid clone
+@item Has valid strand
+@end itemize
+
+@node Check-Vector
+@section Vector Checks
+@cindex Check database: vector checks
+
+@itemize @bullet
+@item Level > 0
+@item Level <= MAX_LEVEL (MAX_LEVEL currently is 10; a "feasibility" check)
+@end itemize
+
+@node Check-Clone
+@section Clone Checks
+@cindex Check database: clone checks
+
+@itemize @bullet
+@item Has valid vector
+@end itemize

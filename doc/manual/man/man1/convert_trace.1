@@ -1,0 +1,160 @@
+.TH "convert_trace" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+convert_trace \- Converts trace file formats
+
+.SH "SYNOPSIS"
+.PP
+
+\fBconvert_trace\fP
+[\fB-in_format\fP \fIformat\fP]
+[\fB-out_format\fP \fIformat\fP]
+[\fB-fofn\fP \fIfile_of_filenames\fP]
+[\fB-passed\fP \fIfofn\fP]
+[\fB-failed\fP \fIfofn\fP]
+[\fB-name\fP \fIid\fP]
+[\fB-subtract_background\fP]
+[\fB-normalise\fP]
+[\fB-scale\fP \fIrange\fP]
+[\fB-compress\fP \fImode\fP]
+[\fB-abi_data\fP \fIcounts\fP]
+[\fIinformat\fP \fIoutformat\fP]
+
+.SH "DESCRIPTION"
+.PP
+
+\fBconvert_trace\fP converts between the various DNA sequence chromatogram
+formats, optionally performing trace processing actions too. It can read ABI
+(raw or processed), ALF, CTF, SCF and ZTR formats. It can write CTF, EXP, PLN, 
+SCF and ZTR formats. (Note that EXP (Experiment File) and PLN formats are
+text sequences rather than a binary trace.)
+
+There are two main modes of operation; either with a file of filenames
+specified using the \fB-fofn\fP \fIfilename\fP option, or acting as a filter
+to process one single file. In this case the input and output file format may
+be specified as the last two options on the command line.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-abi_data\fP \fIcounts\fP
+Only of use when processing ABI files. This indicates which ABI
+\fBDATA\fP channel numbers to use. For sequencing files this defaults to
+"9,10,11,12" which corresponds to the processed data. To read the raw data 
+use "1,2,3,4".
+
+.TP
+\fB-compress\fP \fImode\fP
+Specifies the name of a program to use to compress the trace data prior to 
+writing. Due to limitations in the current implementation this option does 
+not work when \fBconvert_trace\fP is operating as a filter (and so
+requires use of the \fB-fofn\fP option). Valid values for \fImode\fP are
+compress, bzip, bzip2, gzip, pack and szip. Note that for ZTR, ZTR2 and
+ZTR3 format files specifying compression modes will not reduce the file
+size as this format already contains internal compression algorithms. The
+ZTR1 format does not internally compress and so \fB-compress\fP will have 
+an effect.
+
+.TP
+\fB-failed\fP \fIfofn\fP
+Produces a file listing the filenames which have failed to be
+converted. This only makes sense when also using \fB-fofn\fP.
+
+.TP
+\fB-fofn\fP \fIfile_of_filenames\fP
+Processes several files instead of one, with the filenames to read from and
+written to being listed in \fIfile_of_filenames\fP with one pair (input and
+output filenames) being listed per line, separated by spaces. If the
+filenames contain spaces then these may be "escaped" using
+backslashes. Similarly backslashes should be escaped using a double
+backslash. For example to convert "file a.scf" and "fileb.scf" to "file
+a.ztr" and "fileb.ztr" respectively we would use a \fIfile_of_filenames\fP
+containing:
+
+.nf
+.in +0.5i
+file\\ a.scf    file\\ a.ztr
+fileb.scf      fileb.ztr
+.in -0.5i
+.fi
+
+.TP
+\fB-in_format\fP \fIformat\fP
+Specifies the format for the input data. Typically the input format is
+automatically determined so this may not be required. \fIformat\fP should be 
+one of ABI, ALF, CTF, EXP, PLN, SCF, ZTR, ZTR1, ZTR2 or ZTR3. The ZTR
+formats all conform to the ZTR specification, but this indicates the
+compression level to be used.
+
+.TP
+\fB-name\fP \fIid\fP
+When producing an Experiment File this specifies the value of the
+\fBID\fP line. Without this option default Experiment File ID line is the 
+output filename, or if this is stdout it is the input filename.
+
+.TP
+\fB-normalise\fP
+Attempts to normalise the trace amplitudes to produce more even height
+peaks. This may be useful to compensate for large spikes at either the
+start or end of the trace.
+
+.TP
+\fB-out_format\fP \fIformat\fP
+Specifies the output format for all files, whether read from a file of
+filenames or via a filter.  \fIformat\fP should be 
+one of ABI, ALF, CTF, EXP, PLN, SCF, ZTR, ZTR1, ZTR2 or ZTR3. The ZTR
+formats all conform to the ZTR specification, but this indicates the
+compression level to be used.
+
+.TP
+\fB-passed\fP \fIfofn\fP
+Produces a file listing the filenames which have been successfully
+converted. This only makes sense when also using \fB-fofn\fP.
+
+.TP
+\fB-scale\fP \fIrange\fP
+Scales all trace amplitudes so that they fit within the range of 0 to 
+\fIrange\fP inclusive. Any integer value of \fIrange\fP may be used between 1
+and 65535, but this option is designed for down-scaling traces in order to 
+reduce file size.
+
+.TP
+\fB-subtract_background\fP
+Attempts to remove background trace levels by analysing each trace channel 
+independently to determine the baseline. This option is mainly used when
+processing raw data.
+.TE
+.SH "EXAMPLES"
+.PP
+
+To convert several files to ZTR format using the same example file of
+filenames listed in the \fB-fofn\fP option above:
+
+.nf
+.in +0.5i
+convert_trace -out_format ZTR -fofn filename
+.in -0.5i
+.fi
+
+To subtract the background from a raw ABI file and save this as an SCF file:
+
+.nf
+.in +0.5i
+convert_trace -abi_data 1,2,3,4 -subtract_background ABI SCF < a.abi > a.scf
+.in -0.5i
+.fi
+
+.SH "NOTES"
+.PP
+
+If ABI files are manually edited before input to convert_trace then the
+internal formats of these files may differ to the format expected by
+convert_trace.
+
+.SH "SEE ALSO"
+.PP
+
+_fxref(Formats-Scf, scf(4), formats)
+_fxref(Formats-Ztr, ztr(4), formats)
+_fxref(Man-makeSCF, makeSCF(1), makeSCF.1)
+

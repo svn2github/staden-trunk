@@ -1,0 +1,106 @@
+@cindex File browser
+@menu
+@ifset html
+* FB-Introduction::             Introduction
+@end ifset
+* FB-DirFiles::                 Directories and files
+* FB-Filter::                   Filters
+@ifset standalone
+* Index::			Index
+@end ifset
+@end menu
+
+_split()
+@ifset html
+@node FB-Introduction
+@unnumberedsubsec Introduction
+@end ifset
+@cindex File browser: introduction
+
+The file browser is a dialogue that allows the user to select 
+files from any directory. It is typically used when choosing a file for a
+particular action, such as opening a database in gap or saving a
+trace file in trev. The precise details of the layout may change
+depending on this context. In some circumstances, such as loading sequences into spin 
+several files may be selected (in which case the dialogue will be titled
+"Open multiple files"), in others only a single file can be selected.
+The illustration below shows the file browser
+as displayed when opening files from within trev. The
+@samp{Formats} and @samp{Filter} section here are used to select
+different file types. These dialogue components may not appear in all
+file browsers.
+
+_picture(filebrowser)
+
+The @samp{OK}, @samp{Filter} and @samp{Cancel} buttons perform their usual
+tasks; @samp{OK} accepts the file currently shown in the selection component,
+and @samp{Cancel} quits the dialogue.
+
+_split()
+@node FB-DirFiles
+@subsection Directories and Files
+@cindex Directories: file browser
+@cindex Files: file browser
+@cindex File browser: directories
+@cindex File browser: files
+
+The main component of the file browser dialogue consists of two scroll
+lists placed side by side. The left list is labelled "Directory" and
+shows a list of other directories to choose from. The right list is the
+list of files in the currently displayed directory.
+
+Double clicking with the left mouse button on a directory updates the
+file list. If a filter file browser component is visible then the
+current directory will be displayed as the start of the filter. The
+directory named ".." is the parent directory of the current directory.
+
+Single clicking on a file name updates the Selection component. Double
+clicking on a file name chooses this file and removes the dialogue. That
+is, it is equivalent to single clicking on the file to update the
+selection followed by pressing the @samp{OK} button. 
+
+When the dialogue
+allows multiple files to be selected (then titled "Open multiple files")
+holding down the Ctrl key will retain items already chosen.
+
+@node FB-Filter
+@subsection Filters
+@cindex File browser: filters
+@cindex Filters: file browser
+
+The top component of the file browser shown in the introduction
+contained a Filter component. This consists of a text entry window
+containing a string of the form @i{directory_name}/@i{file_pattern}.
+
+Some dialogues may not have a Filter component. In these cases the
+@i{file_pattern} is taken to be "@code{*}". Hence all files will be listed.
+The @i{directory_name} is the directory that the current list of files
+are contained within. The @i{file_pattern} is used to specify which of
+the files within this directory should be listed in the file list. The
+pattern uses the same form as UNIX shell wild card matching. To
+summarise this see the following table of simple examples.
+
+@table @code
+@item *
+Every filename
+@item xb*
+Every filename starting in "xb"
+@item a*b
+Every filename starting with "a" and ending with "b"
+@item a?b
+Every three letter filename with "a" as the first letter and "b" as the
+last letter.
+@item *scf
+Every filename ending in "scf"
+@item *[sS]cf
+Every filename ending with "scf" or "Scf".
+@item *@{scf,SCF@}
+Every filename ending with "scf" or "SCF".
+@end table
+
+@cindex File browser: formats
+@cindex Formats: file browser
+
+Some file browsers also include a Formats component. This is used to
+select the input or output format of the selected file. Updating the
+format will typically also update the filter.

@@ -1,0 +1,194 @@
+package require Iwidgets
+namespace eval ::EMBOSS::cons {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_cons*Xentry.entry.width 30
+option add *e_cons*Entryfield.width 30
+option add *e_cons*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) cons
+    set w [xtoplevel .e_cons -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - cons}
+    label $w._title -text {Creates a consensus from multiple alignments}
+    pack $w._title -side top -fill both
+    set vars(cons._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments msf
+    set vars(msf)       [get_active_seq_id 1]
+    if {$vars(msf) == -1} {set vars(msf) [get_active_seq_id 1]}
+    set vars(msf.name)  [seq_info $vars(msf) name]
+    sequence_changed [namespace current] msf
+    set vars(msf.type) [subst gapany]
+    seq_id $w.msf \
+	-textvariable [namespace current]::vars(msf.name)\
+	-start_value $vars(msf.begin)\
+	-end_value $vars(msf.end)\
+	-to [seq_info $vars(msf) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] msf $w.msf}"
+    set vars(msf) [subst {}]
+    pack $w.msf -side top -fill both
+    set vars(msf.path) $w.msf
+    set vars(msf.required)  1
+    trace variable vars(msf.name) w  "::EMBOSS::sequence_changed [namespace current] msf"
+   set vars(msf.totweight) [subst 0]
+    set vars(msf._type) seqset
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst {[expr {$vars(msf.protein)}]}]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Scoring matrix}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.protein.orig) $vars(datafile.protein)
+    set vars(datafile.protein.expr) {[expr {$vars(msf.protein)}]}
+    trace variable vars(msf.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrix
+
+    lappend arguments plurality
+    iwidgets::entryfield $w.plurality \
+	-validate real \
+	-textvariable [namespace current]::vars(plurality) \
+	-labeltext [subst {Plurality check value}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.plurality component entry] -sticky nse
+    set vars(plurality) [subst {[expr {( $vars(msf.totweight) / 2)}]}]
+    pack $w.plurality -side top -fill both
+    set vars(plurality.path) $w.plurality
+    set vars(plurality.required)  0
+    set vars(plurality.orig) $vars(plurality)
+    set vars(plurality.expr) {[expr {( $vars(msf.totweight) / 2)}]}
+    trace variable vars(msf.totweight) w  "::EMBOSS::reset_value [namespace current] plurality"
+    set vars(plurality._type) float
+
+    lappend arguments identity
+    iwidgets::entryfield $w.identity \
+	-validate integer \
+	-textvariable [namespace current]::vars(identity) \
+	-labeltext [subst {Required number of identities at a position}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.identity component entry] -sticky nse
+    set vars(identity) [subst 0]
+    pack $w.identity -side top -fill both
+    set vars(identity.minimum) [subst 0]
+    set vars(identity.path) $w.identity
+    set vars(identity.required)  0
+    set vars(identity._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+
+    lappend arguments name
+    iwidgets::entryfield $w.name \
+	-textvariable [namespace current]::vars(name) \
+	-labeltext [subst {Name of the consensus sequence}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.name component entry] -sticky nse
+    set vars(name) [subst {}]
+    pack $w.name -side top -fill both
+    set vars(name.path) $w.name
+    set vars(name.required)  0
+    set vars(name._type) string
+
+    lappend arguments setcase
+    iwidgets::entryfield $w.setcase \
+	-validate real \
+	-textvariable [namespace current]::vars(setcase) \
+	-labeltext [subst {Define a threshold above which the consensus is given in uppercase}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.setcase component entry] -sticky nse
+    set vars(setcase) [subst 0]
+    pack $w.setcase -side top -fill both
+    set vars(setcase.path) $w.setcase
+    set vars(setcase.required)  0
+    set vars(setcase._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/cons.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

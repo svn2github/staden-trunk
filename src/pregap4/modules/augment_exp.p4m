@@ -1,0 +1,95 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Augments the experiment file with fields held in an external database or
+# defined in the pregap4 config file.
+#
+
+#set hidden 1
+set help {pregap4 {Pregap4-Modules-Augment}}
+
+proc name {} {
+    return "Augment Experiment Files"
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global line_types
+    variable report
+    global orig_dir fofn_dir
+
+    set report ""
+	
+    foreach f $files {
+	if {$file_type($f) != "EXP"} {
+	    continue
+	}
+
+       	pg_open $f
+	set fields ""
+	foreach l $line_types {
+	    if {[set v [pg_query $f $l]] != ""} {
+		# Special case check for "41/-24" style setting of SP line
+		if {$l == "SP" && [string match "*/*" $v]} {
+		    set pr [pg_query $f PR]
+		    switch -exact $pr {
+			1   {regsub {(.*)/(.*)} $v {\1} v}
+			2   {regsub {(.*)/(.*)} $v {\2} v}
+			default
+			    {set v 0}
+		    }
+		}
+
+		
+		# Special case for filename specifications. If we're looking
+		# for a file (eg SF line) that is specified in a relative
+		# fashion, then we may need to change it to a full pathname
+		# when the output directory is not the same as the original
+		# directory.
+		if {($l == "SF" || $l == "CF") &&
+		    [string compare $fofn_dir $orig_dir] != 0} {
+		    set v [fullpath $v $orig_dir 1]
+		}
+		pg_update $f $l $v
+		lappend fields $l
+	    }
+	}
+      	if {$fields != ""} {
+	    append report "SEQ $f: added fields $fields\n"
+	}
+	pg_close $f
+	vmessage -nonewline .
+	update idletasks
+    }
+    vmessage ""
+
+    return $files
+}
+
+proc create_dialogue {w} {
+    label $w.label -text "Use the \"Simple Text Database\" or \"Experiment \
+File Line Types\" buttons below (which are also available in the \
+\"Information source\" menu) to define the fields you wish to add to the \
+Experiment File." \
+	-wraplength 300 -justify left
+
+    pack $w.label -side top -fill both -pady 15
+
+    button $w.simple \
+	-text "Simple Text Database" \
+	-command "unix_database"
+
+    button $w.exp_lines \
+	-text "Experiment File Line Types" \
+	-command "edit_exp_types"
+
+    pack $w.simple $w.exp_lines -fill x -side top -pady 5 -padx 5
+}

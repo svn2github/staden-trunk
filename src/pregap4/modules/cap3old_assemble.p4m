@@ -1,0 +1,150 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run Cap3 on experiment files
+#
+set help {pregap4 {Pregap4-Modules-Cap3 Assembly}}
+
+proc init {} {
+    mod_preset generate_constraints	0
+
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|cap3_s" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "cap3_s is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc name {} {
+    return "Cap3 assembly"
+}
+
+proc run {files} {
+    global fofn file_type file_error
+    variable report
+    variable generate_constraints
+
+    set report ""
+
+    # Create fofn and output dir
+    set one_or_more 0
+    set fd [open $fofn.tmp w]
+    set new_files ""
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {[string match "* *" $f]} {
+		set file_error($f) "cap3_assemble: filename contains a space"
+	        append report "SEQ $f: failed (filename contains spaces)\n"
+	    } else {
+		set one_or_more 1
+		# cap2 cannot handle full pathnames
+		puts $fd [file tail $f]
+	        set found([file tail $f]) 0
+	    }
+	} else {
+	    append report "SEQ $f: skipping - not in correct format\n"
+	    lappend new_files $f
+	}
+    }
+    close $fd
+
+    # Create the constraints
+    if {$generate_constraints} {
+	if {[catch {exec cap3_create_exp_constraints $fofn.tmp} var]} {
+	    append report "ERR: Failed to create constraints\n"
+	    append report "ERR: \"$var\"\n"
+	    append report "ERR: Aborting assembly.\n"
+	    verror ERR_WARN cap3_assemble/create_exp_constraints $var
+	    return $files
+	}
+    } else {
+	catch {file delete $fofn.tmp.con}
+    }
+
+    if {!$one_or_more} {
+	verror ERR_WARN cap3_assemble "No files to assemble"
+	return $new_files
+    }
+
+    if {[catch {file mkdir $fofn.assembly} var]} {
+	vmessage !
+	append report "ERR: Failed to create directory $fofn.assembly.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN cap3_assemble/mkdir $var
+	return $files
+    }
+
+    # Run cap3
+    # Cannot check error code as it returns random values from main()
+    catch {exec cap3_s \
+	-exp $fofn.tmp \
+	-out $fofn.assembly \
+	> $fofn.assembly/cap3_stdout} var
+    set fd [open $fofn.assembly/cap3_stderr w]
+    puts $fd $var
+    close $fd
+
+    # Passed files are those listed in $fofn.assembly/fofn. Missing ones
+    # were rejected.
+    set fd [open $fofn.assembly/fofn]
+    while {[gets $fd line] != -1} {
+	catch {unset found($line)}
+	append report "SEQ $line: assembled\n"
+	lappend new_files $line
+    }
+    foreach f [array names found] {
+	set file_error($f) "cap3_s: rejected"
+	append report "SEQ $f: rejected\n"
+    }
+
+    catch {file rename $fofn.tmp.con		$fofn.con}
+    catch {file rename $fofn.tmp.con.results	$fofn.con.results}
+    catch {file rename $fofn.tmp.info		$fofn.cap3_info}
+    catch {file rename $fofn.tmp.contigs.qual	$fofn.contigs.qual}
+
+    append report "\nAssembled data written to directory '$fofn.assembly'.\n"
+    append report "Output from cap3 sent to '$fofn.assembly/cap3_stdout'.\n"
+    append report "Diagnostics from cap3 sent to '$fofn.assembly/cap3_stderr'.\n"
+    append report "The cap3 module may also produced files named:\n"
+    append report "    $fofn.con\n"
+    append report "    $fofn.con.results\n"
+    append report "    $fofn.cap3_info\n"
+    append report "    $fofn.contigs.qual\n"
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable generate_constraints
+
+    xcheck $w.constraints \
+	-text "Auto-generate constraints" \
+	-variable [namespace current]::generate_constraints
+    pack $w.constraints -side top -fill both
+}
+
+proc configure_dialogue {w mode} {
+    variable generate_constraints
+
+    if {[string match save* $mode]} {
+	mod_save generate_constraints $generate_constraints
+    }
+}

@@ -1,0 +1,33 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+
+load_package seq_utils
+load_package tk_utils
+load_package iwidgets
+
+#-----------------------------------------------------------------------------
+# Menus
+#-----------------------------------------------------------------------------
+
+set_def   CURSOR.COLOUR.0	"#0000ff"; #blue
+set_def   CURSOR.COLOUR.1	"#8b8b00"; #yellow4 
+set_def   CURSOR.COLOUR.2	"#ff0000"; #red
+set_def   CURSOR.COLOUR.3	"#228b22"; #forestgreen
+set_def   CURSOR.COLOUR.4	"#5f9ea0"; #cadetblue
+set_def   CURSOR.COLOUR.5	"#4b0082"; #indigo
+set_def   CURSOR.COLOUR.6	"#a52a2a"; #brown
+set_def   CURSOR.COLOUR.7	"#ffa500"; #orange
+set_def   CURSOR.COLOUR.8	"#00c0c0"; #turquoise(ish)
+set_def   CURSOR.COLOUR.9	"#d02090"; #violet red
+
+set_def   RASTER.COLOUR.0	"#0000ff"; #blue
+set_def   RASTER.COLOUR.1	"#8b8b00"; #yellow4 
+set_def   RASTER.COLOUR.2	"#ff0000"; #red
+set_def   RASTER.COLOUR.3	"#228b22"; #forestgreen
+set_def   RASTER.COLOUR.4	"#5f9ea0"; #cadetblue
+set_def   RASTER.COLOUR.5	"#4b0082"; #indigo
+set_def   RASTER.COLOUR.6	"#a52a2a"; #brown
+set_def   RASTER.COLOUR.7	"#ffa500"; #orange
+set_def   RASTER.COLOUR.8	"#00c0c0"; #turquoise(ish)
+set_def   RASTER.COLOUR.9	"#d02090"; #violet red

@@ -1,0 +1,26 @@
+#!/usr/bin/nawk -f
+BEGIN {
+    file="";
+}
+
+/^;/ {
+    next;
+}
+
+/^>/ {
+    gsub(">", "");
+    if (file != "") {
+	close(file);
+    }
+    file=$1;
+    print "Creating", $1;
+    next;
+}
+
+{
+    print $0 >> file;
+}
+
+END {
+    close(file);
+}

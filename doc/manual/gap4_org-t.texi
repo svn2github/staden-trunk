@@ -1,0 +1,70 @@
+@node Gap-Intro-Manual
+@chapter Organisation of the gap4 Manual
+
+
+The main body of the gap4 manual is divided, where possible, 
+into sections covering related topics. If appropriate, these sections
+commence with an overview of the functions they contain.
+After the Introduction, the manual contains chapters on some important
+components of the user interface: the Contig Selector
+(_fpref(Contig Selector, Contig Selector, contig_selector)),
+the Contig Comparator
+(_fpref(Contig Comparator, Contig Comparator, comparator)),
+and then, in the chapter on Contig Overviews 
+(_fpref(Contig-Overviews, Contig Overviews, c))
+we describe the Template
+Display
+(_fpref(Template-Display, Template Display, template)),
+and its subcomponents
+the Stop Codon Plot
+(_fpref(Stops, Stop Codon Map, stops)), and the
+Restriction Enzyme Plot
+(_fpref(Restrict, Restriction Enzyme Search, restrict_enzymes)).
+
+Then there is a long chapter on the powerful Contig Editor
+(_fpref(Editor, Editor introduction, contig_editor)), followed by a
+chapter describing the many assembly engines and assembly modes which
+gap4 can offer
+(_fpref(Assembly, Assembly Introduction, assembly)).
+
+Gap4 contains functions to use the data in an assembly database to find the
+left to right order of contigs, and to compare their consensus sequences
+to look for joins that may have been missed during assembly.
+A "read-pair" is obtained by sequencing a DNA template (or "insert")
+from both ends: we then know the relative orientations of the two
+readings, and if we know the approximate
+template length, we know how far apart they
+should be after assembly. The next chapter is on the use of read-pair
+data for ordering contigs and checking assemblies and on the use of
+consensus comparisons for finding joins
+(_fpref(Ordering-and-Joining, Ordering and Joining Contigs, t)).
+
+
+The next chapter is on checking assemblies and removing readings
+(_fpref(Contig-Checking-and-Breaking, Checking Assemblies and Removing
+Readings, t)). The following chapter describes gap4's methods for
+suggesting experiments for helping to finish a sequencing project 
+(_fpref(Experiments, Finishing Experiments, experiments)). Then we
+describe the various consensus calculation algorithms, and the options
+for creating consensus sequence files
+(_fpref(Con-Calculation, The Consensus Calculation,
+calc_consensus)). Next is the description of a set of miscellaneous
+functions
+(_fpref(gap4-misc, Miscellaneous functions, t)), followed by chapters on
+the Results Manager
+(_fpref(Results, Results Manager, results)),
+Lists
+(_fpref(Lists, Lists Introduction, lists)),
+Notes
+(_fpref(Notes, Notes, notes)),
+Configuring gap4
+(_fpref(Conf-Introduction, Options Menu, configure)),
+gap4 Database Files
+(_fpref(GapDB, Gap Database Files, gap4)),
+_ifdef([[_unix]],[[Converting Old Databases
+(_fpref(Convert, Converting Old Databases, t)),
+]])Checking Databases for corruptions
+(_fpref(Check Database, Check Database, check_db))
+and Doctoring corrupted databases
+(_fpref(Doctor Database, Doctor database, doctor_db)).
+

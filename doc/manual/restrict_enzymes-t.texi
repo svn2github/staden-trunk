@@ -1,0 +1,158 @@
+@menu
+* Restrict-Selecting::          Selecting enzymes
+* Restrict-Examining::          Examining the plot
+* Restrict-Reconfig::           Reconfiguring the plot
+* Restrict-Tags::               Creating tags for cut sites
+* Restrict-Output::             Textual outputs
+@end menu
+
+@cindex Restriction enzymes
+
+The restriction enzyme map function finds and displays restriction sites
+within a specified region of a contig. 
+It is invoked from the gap4 View menu.
+Users can select the enzyme
+types to search for and can save the sites found as tags within the
+database.
+
+_lpicture(restrict_enzymes)
+
+This figure shows a typical view of the Restriction Enzyme Map
+in which the results for each enzyme type have been configured by the
+user to be drawn in different colours.  On the left of the display the
+enzyme names are shown adjacent to the lines of plotted results. If no
+result is found for any particular enzyme eg here APAI, the line will
+still be drawn so that zero cutters can be identified. Three of the
+enzymes types have been selected and are shown highlighted. The results
+can be scrolled vertically (and horizontally if the plot is zoomed in).
+A ruler is shown along the base and the current cursor position (the vertical
+black line) is shown in the left hand box near the top right of
+the display.  If the user clicks, in turn, on two restriction sites
+their separation in base pairs will appear in the top right hand box.
+Information about the last site touched is shown in the Information line
+at the bottom of the display. At the top the edit menu is shown
+torn off and can be used to create tags for highlighted enzyme types.
+
+_split()
+@node Restrict-Selecting
+@subsection Selecting Enzymes
+@cindex Restriction enzymes: selecting enzymes
+
+Files of restriction enzyme names and their cut sites are stored in disk
+files. For the format of these files and notes about creating new ones see 
+_fref(Formats-Restriction, Restriction enzyme files, renzymes)
+
+When the file is read, the list of enzymes is displayed in a scrolling
+window.  To select enzymes press and drag the left mouse button within
+the list.  Dragging the mouse off the bottom of the list will scroll it to
+allow selection of a range larger than the displayed section of the
+list.  When the left button is pressed any existing selection is
+cleared. To select several disjoint entries in the list press control
+and the left mouse button. Once the enzymes have been chosen, pressing
+OK will create the plot.
+
+_split()
+@node Restrict-Examining
+@subsection Examining the Plot
+@cindex Restriction enzymes: examining the plot
+
+Positioning the cursor over a match will cause its name and cut position
+to appear in the information line.  If the right mouse button is pressed
+over a match, a popup menu containing Information and Configure will
+appear. The Information function in this menu will display the data for
+this cut site and enzyme in the Output Window.
+
+It is possible to find the distance between any two cut sites.  Pressing
+the left mouse button on a match will display "Select another cut" at
+the bottom of the window.  Then, pressing the left button on another
+match will display the distance, in bases, between the two sites. This
+is shown in a box located at the top right corner of the window.
+
+_split()
+@node Restrict-Reconfig
+@subsection Reconfiguring the Plot
+@cindex Configure: restriction enzymes
+@cindex Restriction enzymes: configuring
+
+The plot displays the results for each restriction enzyme on a separate
+line.  Enzymes with no sites are also shown.  The order of these lines
+may be changed by pressing and dragging the middle mouse button or alt + left
+mouse button on one of the displayed names at the left side of the screen.
+
+The results are plotted as black lines but users can select colours for
+each enzyme type by pressing the right button on any of its matches.  A
+menu containing Information and Configure will pop up. Configure will
+display a colour selection dialogue.  Adjusting the colour here will
+adjust the colour for all matches for this restriction enzyme.
+
+_split()
+@node Restrict-Tags
+@subsection Creating Tags for Cut Sites
+@cindex Tags: restriction enzymes plot
+@cindex Restriction enzymes: tags, creation of
+@cindex Cut sites: restriction enzymes
+@cindex Restriction enzymes: cut sites
+
+Clicking the left mouse button on an enzyme name at the left of the
+display toggles a highlight.  The Create tags command from the Edit menu
+will add tags to the database for all the matches whose enzyme names are
+highlighted.
+The command displays a dialogue box
+listing the enzyme names on the left, and the tag type to create for
+that enzyme on the right. Tag types must be chosen for all the listed
+restriction enzyme types before the tags can be created. Suitable tag
+types to choose are the ENZ0, ENZ1 (etc) tags.
+
+_split()
+@node Restrict-Output
+@subsection Textual Outputs
+@cindex Restriction enzymes: textual output
+@cindex Output enzyme by enzyme: restriction enzymes plot
+@cindex Output ordered on position: restriction enzymes plot
+
+The Results menu of the plot contains options to list the restriction
+enzyme sites found. One option sorts the results by enzyme name and the
+other by the positions of the matches.
+
+The output below shows the textual output from "Output enzyme by enzyme".
+The Fragment column gives the size of the fragments between each of the cut
+sites. The Lengths column contains the fragment sizes sorted on size.
+
+@example
+Contig zf98g12.r1 (#801) 
+Number of enzymes = 3
+Number of matches = 7
+  Matches found=     1 
+      Name            Sequence                  Position Fragment lengths
+    1 AATII           GACGT'C                       7130   7129    556 
+                                                            556   7129 
+  Matches found=     5 
+      Name            Sequence                  Position Fragment lengths
+    1 ACCI            GT'CGAC                        414    413    189 
+    2 ACCI            GT'CTAC                       1296    882    413 
+    3 ACCI            GT'CTAC                       3871   2575    882 
+    4 ACCI            GT'CTAC                       5816   1945   1681 
+    5 ACCI            GT'CGAC                       7497   1681   1945 
+                                                            189   2575 
+  Matches found=     1 
+      Name            Sequence                  Position Fragment lengths
+    1 AHAII           GA'CGTC                       7127   7126    559 
+                                                            559   7126 
+@end example
+
+The output below shows the textual output from "Output ordered on position".
+
+@example
+Contig zf98g12.r1 (#801) 
+Number of enzymes = 3
+Number of matches = 7
+      Name            Sequence                  Position Fragment lengths
+    1 ACCI            GT'CGAC                        414    413      3 
+    2 ACCI            GT'CTAC                       1296    882    189 
+    3 ACCI            GT'CTAC                       3871   2575    367 
+    4 ACCI            GT'CTAC                       5816   1945    413 
+    5 AHAII           GA'CGTC                       7127   1311    882 
+    6 AATII           GACGT'C                       7130      3   1311 
+    7 ACCI            GT'CGAC                       7497    367   1945 
+                                                            189   2575 
+@end example

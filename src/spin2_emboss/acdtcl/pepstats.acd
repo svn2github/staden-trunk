@@ -1,0 +1,120 @@
+package require Iwidgets
+namespace eval ::EMBOSS::pepstats {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_pepstats*Xentry.entry.width 30
+option add *e_pepstats*Entryfield.width 30
+option add *e_pepstats*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) pepstats
+    set w [xtoplevel .e_pepstats -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - pepstats}
+    label $w._title -text {Protein statistics}
+    pack $w._title -side top -fill both
+    set vars(pepstats._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 1]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 1]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst PureProtein]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  1
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments termini
+    checkbutton $w.termini \
+	-text [subst {Include charge at N and C terminus}]\
+	-variable [namespace current]::vars(termini)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.termini -side top -anchor w
+    set vars(termini) [subst 1]
+    set vars(termini.path) $w.termini
+    set vars(termini.required)  0
+    set vars(termini._type) bool
+
+    lappend arguments aadata
+    iwidgets::entryfield $w.aadata \
+	-textvariable [namespace current]::vars(aadata) \
+	-labeltext [subst {Amino acid data file}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.aadata component entry] -sticky nse
+    set vars(aadata) [subst Eamino.dat]
+    pack $w.aadata -side top -fill both
+    set vars(aadata.path) $w.aadata
+    set vars(aadata.required)  0
+    set vars(aadata._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst pepstats0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/pepstats.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

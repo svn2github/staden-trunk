@@ -1,0 +1,304 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 2001. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+#
+# OVERVIEW
+# This module does trace differencing with the reference trace to detect
+# mutations.
+#
+# INFORMATION FLOW
+# The pregap4 configuration file is used to store the following items of
+# information in the [::tracediff] module section.
+#
+# enabled                            <0|1>
+# tracediff_sensitivity              <n>
+# tracediff_noise_threshold          <n>
+# tracediff_analysis_window          <n>
+# tracediff_peak_width_max           <n>
+# tracediff_peak_alignment           <n>
+# tracediff_complement_tags          <0|1>
+# tracediff_output_difference_traces <0|1>
+#
+# This module creates a file of filenames containing all the experiment files
+# and then invokes tracediff. The region over which trace differencing occurs
+# is determined by the quality clip points for each trace as written by the
+# quality clip module as QL/QR records. Finally, tracediff appends mutation
+# tags to the experiment files.
+
+set help {pregap4 {Pregap4-Modules-Trace Difference}}
+
+
+proc name {} {
+#
+# Name shown in module selection panel
+#
+    return "Trace Difference"
+}
+
+
+proc init {} {
+#
+# Sets up any data structures needed for this module
+#
+    mod_preset tracediff_sensitivity               5.0
+    mod_preset tracediff_noise_threshold           0.09
+    mod_preset tracediff_analysis_window           12
+    mod_preset tracediff_peak_alignment            0.35
+    mod_preset tracediff_peak_width_max            2.1
+    mod_preset tracediff_complement_tags           1
+    mod_preset tracediff_output_difference_traces  0
+}
+
+
+
+proc create_dialogue {w} {
+#
+# Adds and packs the necessary widgets onto the modules form
+#
+    variable tracediff_sensitivity
+    variable tracediff_noise_threshold
+    variable tracediff_analysis_window
+    variable tracediff_peak_alignment
+    variable tracediff_peak_width_max
+
+
+
+    xentry $w.tracediff_sensitivity \
+        -label "Sensitivity  (in SD's from mean)" \
+        -default $tracediff_sensitivity \
+        -width 7
+
+
+    xentry $w.tracediff_noise_threshold \
+        -label "Noise threshold  (as % of max)" \
+        -default $tracediff_noise_threshold \
+        -width 7
+
+
+    xentry $w.tracediff_analysis_window \
+        -label "Analysis window length  (in bases)" \
+        -default $tracediff_analysis_window \
+        -width 7
+
+
+    xentry $w.tracediff_peak_alignment \
+        -label "Maximum peak alignment deviation  (in bases)" \
+        -default $tracediff_peak_alignment \
+        -width 7
+
+
+    xentry $w.tracediff_peak_width_max \
+        -label "Maximum peak width  (in bases)" \
+        -default $tracediff_peak_width_max \
+        -width 7
+
+
+    pack $w.tracediff_sensitivity $w.tracediff_noise_threshold $w.tracediff_analysis_window \
+         $w.tracediff_peak_alignment $w.tracediff_peak_width_max -side top -fill both
+
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+
+    xcheck $w.tracediff_complement_tags \
+        -text "Complement bases on reverse strand tags" \
+        -variable [namespace current]::tracediff_complement_tags
+
+
+    xcheck $w.tracediff_output_difference_traces \
+        -text "Write difference traces out to disk" \
+        -variable [namespace current]::tracediff_output_difference_traces
+
+
+    pack $w.tracediff_complement_tags \
+         $w.tracediff_output_difference_traces -side top -fill both
+}
+
+
+
+proc run {files} {
+#
+# Do module actions for a bunch of experiment files
+#
+    global fofn
+    global file_type
+
+
+    # Create list of experiment files
+    set expfiles {}
+    foreach f $files {
+        if {$file_type($f) == "EXP"} {
+            lappend expfiles $f
+        }
+    }
+
+
+    # Create a file of filenames
+    set fh [open $fofn.tmp w]
+    foreach f $expfiles {
+       puts $fh $f
+    }
+    close $fh
+
+
+
+    # Do tracediff
+    run_tracediff $fofn.tmp
+    file delete $fofn.tmp
+    return $files
+}
+
+
+proc fevent {fd} {
+    variable report
+    variable tracediff_done
+
+    set data [read $fd]
+    append report $data
+    foreach line [split $data \n] {
+        if {[string match "Processing:*" $line]} {
+            vmessage -nonewline .
+        }
+    }
+    if {[eof $fd]} {
+        vmessage ""
+        set tracediff_done 1
+    }
+}
+
+
+proc run_tracediff {exp_fofn} {
+    variable report
+    variable tracediff_sensitivity
+    variable tracediff_noise_threshold
+    variable tracediff_analysis_window
+    variable tracediff_peak_alignment
+    variable tracediff_peak_width_max
+    variable tracediff_complement_tags
+    variable tracediff_output_difference_traces
+
+
+
+    # Execute tracediff
+    set report ""
+    set cmdline "|tracediff -s$tracediff_sensitivity \
+                            -t$tracediff_noise_threshold \
+                            -n$tracediff_analysis_window \
+                            -a$tracediff_peak_alignment \
+                            -w$tracediff_peak_width_max \
+                            [list -f$exp_fofn]"
+    if { $tracediff_complement_tags == 1 } {
+        append cmdline " -c"
+    }
+    if { $tracediff_output_difference_traces == 1 } {
+        append cmdline " -d"
+    }
+    if {[catch {set fd [open $cmdline]} err ]} {
+        append report "ERR: tracediff failed with error message '$err'.\n"
+        return
+    }
+
+
+
+    variable tracediff_done
+    variable output ""
+    fconfigure $fd -blocking 0
+    fileevent $fd readable "[namespace code [list fevent $fd]]"
+    vwait [namespace current]::tracediff_done
+    fconfigure $fd -blocking 1
+    if { [catch {close $fd} err ] } {
+        foreach line [split $err \n] {
+           verror ERR_WARN Tracediff $line
+        }
+    }
+}
+
+
+
+proc check_params {} {
+#
+# Checks that fields have valid values
+#
+    variable tracediff_sensitivity
+    variable tracediff_noise_threshold
+    variable tracediff_analysis_window
+    variable tracediff_peak_alignment
+    variable tracediff_peak_width_max
+
+
+    if { $tracediff_sensitivity == "" } {
+        return tracediff_sensitivity
+    }
+    if { $tracediff_noise_threshold == "" } {
+        return tracediff_noise_threshold
+    }
+    if { $tracediff_analysis_window == "" } {
+        return tracediff_analysis_window
+    }
+    if { $tracediff_peak_alignment == "" } {
+        return tracediff_peak_alignment
+    }
+    if { $tracediff_peak_width_max == "" } {
+        return tracediff_peak_width_max
+    }
+
+
+    # Everything is set
+    return ""
+}
+
+
+proc process_dialogue {w} {
+#
+# extracts any information from user editable entries or checkboxes ready for the
+# run function to utilise
+#
+    variable tracediff_sensitivity
+    variable tracediff_noise_threshold
+    variable tracediff_analysis_window
+    variable tracediff_peak_alignment
+    variable tracediff_peak_width_max
+    variable tracediff_peak_amplitude_ratio
+
+    set tracediff_sensitivity          [$w.tracediff_sensitivity get2]
+    set tracediff_noise_threshold      [$w.tracediff_noise_threshold get2]
+    set tracediff_analysis_window      [$w.tracediff_analysis_window get2]
+    set tracediff_peak_alignment       [$w.tracediff_peak_alignment get2]
+    set tracediff_peak_width_max       [$w.tracediff_peak_width_max get2]
+
+    if { [check_params] == "" } {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+
+proc configure_dialogue {w mode} {
+#
+# Handles saving of parameters
+#
+    variable tracediff_sensitivity
+    variable tracediff_noise_threshold
+    variable tracediff_analysis_window
+    variable tracediff_peak_alignment
+    variable tracediff_peak_width_max
+    variable tracediff_complement_tags
+    variable tracediff_output_difference_traces
+
+    if {[string match save* $mode]} {
+        mod_save tracediff_sensitivity             [$w.tracediff_sensitivity get2]
+        mod_save tracediff_noise_threshold         [$w.tracediff_noise_threshold get2]
+        mod_save tracediff_analysis_window         [$w.tracediff_analysis_window get2]
+        mod_save tracediff_peak_alignment          [$w.tracediff_peak_alignment get2]
+        mod_save tracediff_peak_width_max          [$w.tracediff_peak_width_max get2]
+        mod_save tracediff_complement_tags          $tracediff_complement_tags
+        mod_save tracediff_output_difference_traces $tracediff_output_difference_traces
+    }
+}

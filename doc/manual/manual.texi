@@ -1,0 +1,128 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+
+@c %**start of header
+@setfilename manual_unix.info
+@settitle The Staden Package Manual
+@setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@c %**end of header
+
+include(header.m4)
+
+@finalout
+
+@titlepage
+@title The Staden Package Manual
+@subtitle Last update on @today{}
+@author James Bonfield, Kathryn Beal, Mark Jordan,
+@author Yaping Cheng and Rodger Staden
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+Permission is given to duplicate this manual in both paper and electronic
+forms. If you wish to charge more than the duplication costs, or wish to make
+edits to the manual, please contact the authors by email to
+@code{staden-package@@mrc-lmb.cam.ac.uk}.
+@end titlepage
+
+@node Top
+@ifinfo
+@top Manual
+@end ifinfo
+
+@menu
+* Gap4::                Sequence assembly and finishing using Gap4
+* Mutations::           Searching for mutations using pregap4 and gap4
+* Pregap4::             Preparing readings for assembly using pregap4
+* Read Clipping::       Marking poor quality segments of readings
+* Vector_Clip::         Marking vector segments using vector_clip
+* Trev::                Viewing and editing trace data using trev
+* Spin::                Analysing and comparing sequences using spin
+* Interface::           User Interface
+* Formats::             File Formats
+* Man Pages::           Manual Pages
+* Index::               General Index
+* File Index::          File Index
+* Variable Index::      Variable Index
+* Function Index::      Function Index
+@end menu
+
+@node Manual-preface
+@unnumberedsec Preface
+_include(preface-t.texi)
+
+@node Gap
+@chapter Sequence assembly and finishing using Gap4
+@lowersections
+_include(gap4-t.texi)
+@raisesections
+
+@node Mutations
+@chapter Searching for point mutations using pregap4 and gap4
+_include(mutations-t.texi)
+
+@c @node Registration
+@c @chapter Contig Registration
+@c [[_include(registration-t.texi)]]
+
+@node Pregap4
+@chapter Preparing readings for assembly using pregap4
+@lowersections
+_include(pregap4-t.texi)
+@raisesections
+
+@node Read Clipping
+@chapter Marking poor quality and vector segments of readings
+_include(read_clipping-t.texi)
+
+_include(vector_clip-t.texi)
+
+@node Trev
+@chapter Viewing and editing trace data using trev
+_include(trev-t.texi)
+
+@node Spin
+@chapter Analysing and comparing sequences using spin
+@lowersections
+_include(spin-t.texi)
+@raisesections
+
+@node Interface
+@chapter User Interface
+_include(interface-t.texi)
+
+@node Formats
+@chapter File Formats
+_include(formats-t.texi)
+
+@node Man Pages
+@chapter Man Pages
+_include(manpages-t.texi)
+
+@node References
+@unnumbered References
+_include(references-t.texi)
+
+@node Index
+@unnumbered General Index
+@printindex cp
+
+@node File Index
+@unnumbered File Index
+@printindex pg
+
+@node Variable Index
+@unnumbered Variable Index
+@printindex vr
+
+@node Function Index
+@unnumbered Function Index
+@printindex fn
+
+@shortcontents
+@contents
+
+@bye

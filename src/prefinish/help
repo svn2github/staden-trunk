@@ -1,0 +1,352 @@
+-io io_handle
+	This specifies a Gap4 io handle.
+	At present (due to a weakness in the argument parsing) it may be
+	necessary to respecify this even when changing existing options.
+
+-contig identifer
+	Specifies the contig to finish. The identifier may also be given as
+	the identifier plus start and end positions.
+
+-check_contigs contig_list
+	A list of contig identifiers to compare primer sequences against. This
+	will only be used when searching for "chromosomal" primers. It is
+	optional.
+
+-external_seq dna_sequence
+	This supplies further sequence to screen against for all primers (both 
+	chromosomal and subclone walks). Typically it will be used to supply
+	the vector sequence. The format of dna_sequence should be just the raw 
+	dna letters, either in upper or lower case. This is optional.
+
+-external_seq_file filename
+	A filename containing further sequence to screen against for all
+	primers (both chromosomal and subclone walks). Typically it will be
+	used to supply the vector sequence. The file format should be just the
+	raw dna letters, either in upper or lower case. This is optional.
+
+-available_template_file filename
+	The filename should contain a list of template regular expression,
+	with one expression per line. The regexps are not anchored to either
+	end, so to match templates _starting_ with xb63 use "^xb63", otherwise 
+	a template named bx63a2 will also match.
+	Any templates listed in here will be considered as suitable for
+	use with experiments (primer walks, etc). Anything not listed is
+	rejected. If no -available_template_file is listed then all templates
+	are considered as suitable for use.
+
+-skip_template_file filename
+        Like the available_template_file this contains a list of regular
+	expressions. However any match found here will reject this template.
+	Note that this is performed after available templates (the order does
+	make a difference).
+	If no skip_template_file is specified then no changes are made (ie all 
+	templates used unless -available_template_file is specified).
+
+-use_avg_insert 0/1
+	When estimating the template size due to no read-pair information,
+	assume that the template insert size is the average of the specified
+	maximum and minimum values (1). Specifing as 0 will be cautious and
+	assume the minimum size.
+
+-prob_mandatory bit_pattern
+	This is a mask for the problem types. Problems that are left after
+	applying this mask are considered as important problems which need to
+	be solved.
+
+-mandatory_ratio fraction
+	The number of mandatory problems spanned by a particular candidate
+	experiment are counted before and after implementing that experiment .
+	If the experiment does not solve more than mandatory_ratio problems
+	(probs_after / probs_before) then the experiment will be rejected.
+
+-max_score_drop fraction
+	When picking multiple experiments within the same experiment group
+	(such as using difference templates for the same primer) each
+	experiment will have its own score. Max_score_drop indicates how much
+	worse a score may be than the best one before we reject it. This
+	implies that if we already have a good score then we may allow other
+	experiments with nearly as good scores, but not very poor
+	experiments. However if a low score experiment is all that is
+	available then we may still consider it as a suitable experiment.
+
+	The exact definition is current_score / maximum_score must be >=
+	max_score_drop (in the range of 0 to 1).
+
+-min_score float
+	Only accept experiments with a final score of > min_score. This may be
+	used to reject experiments which have only marginal improvements (such
+	as solving one low-confidence single base).  If multiple rounds or
+	multiple passes of experiment suggestion are being used then min_score
+	could be varied so that the initial pass is more stringent. This
+	compensates for the case at the ends of contigs where a very minor
+	problem (and solution) may exist. We could initially ignore this
+	solution in the hope that a sequence extending another contig will
+	cause a join and solve this problem.
+
+-min_template_score float
+	Each template is assigned a score. Any experiment using a template
+	with a score less than min_template_score will be rejected.
+
+-find_dup_templates int
+	Whether to search for duplicate templates by identifying matching
+	template start and end positions. To disable this specify zero as the
+	integer argument. Otherwise the argument indicates a tolerance with
+	1 stating an exact match, 2 being +/- 1 base, 3 being +/- 2 bases, etc.
+
+-dust_level int
+	Specifies the cutoff value applied to the DUST low-complexity
+	filtering algorithm. Defaults to 18. Higher values filter less and
+	lower values filter more. The low-complexity searching is used to
+	place experiments so that they do not start too close to such regions
+	(in order to aid joining).
+
+-pscores {float float float ...}
+	Used to control the scores calculated for fixing problems. Experiments 
+	are rated by how much they lower the problem-score divided by the
+	experiment cost. Different problem types can be given different
+	scores, with higher scores indicating more serious problems. The first 
+	two problem types listed MUST be for extending the contig to the left
+	and right, with other problem types being as returned by the
+	problem_command script.
+
+-mscores {float float float ...}
+	As per pscores, except these values are used when summing the
+	mandatory problem statistics. It's probably best to set these to
+	the same as the pscores, unless you wish to weight a specific problem
+	type as being more important, but without biasing the existing scoring
+	system.
+
+-min_extension int
+	The minimum contig extension to consider as worthwhile. Extensions
+	shorter than this get 10% of the extension bonus. The logic is that
+	sequences that extend by only a short amount should be considered as
+	"worthy" based on what else they solve, while sequences that extend
+	by a longer amount can stand on their own merit.
+
+-reseq_length integer
+	This is the expected length of a sequence; used in the "resequence"
+	solution type.
+
+-long_length integer
+	This is the expected length of a long gel sequence; used in the "long
+	reading" solution type.
+
+-pwalk_search_dist integer
+	False matches for primers (on sequencing vector inserts, rather than
+	top-level BAC/YAC clones) are searched for within the known (or
+	maximum) consensus range covered by that template. The
+	pwalk_search_dist value is added to both ends of this range to
+	compensate for any inaccuracies in the ranges specified for template
+	insert sizes.
+
+-pwalk_max_match score
+	A match between the primer and another sequence (consensus, vector,
+	etc) that has an identity above this score will cause this primer to
+	be rejected. The score is accumulated from scores for each base that
+	match weighted by the position, so that 3' matches score
+	higher. Currently this uses scores of 1.2, 1.0, 1.0, 1.0, 0.9, 0.8 and
+	0.7 for the first 3' end 7 bases, and 0.5 for each subsequent base
+	(going towards the 5' end).
+
+-pwalk_osp_score float
+	Primers returned by OSP must have OSP-scores <= this value. Note that
+	low OSP scores are better than high ones.
+
+-pwalk_noligos integer
+	How many of the best OSP scores should be include for further
+	testing. This is not how many we will output in the experiments, but
+	rather an optimisation method to speed up processing (so that if OSP
+	picks 20 primers we do not compute the overall experiment scores for
+	all combination of templates x 20 primers).
+
+-pwalk_offset1 integer
+	Given a problem at base X, these define where abouts we will pick a
+	primer: between X - pwalk_offset1 and X - pwalk_offset2. Both values
+	should be positive with offset1 being larger than offset2.
+
+-pwalk_offset2 integer
+	Given a problem at base X, these define where abouts we will pick a
+	primer: between X - pwalk_offset1 and X - pwalk_offset2. Both values
+	should be positive with offset1 being larger than offset2.
+
+-pwalk_seq_gap integer
+	Having picked a primer, this specifies how many bases are between the
+	end of the primer and the first reliably called base in the sequence
+	trace. This includes the distance between the primer and a low
+	complexity region, so even if the "problem" is far enough away we may
+	not pick a primer than is close to a tandem repeat as this will make
+	the assembly process tricky.
+
+-pwalk_consistent_only 0/1
+	If we fail to find a consistent template for a particular primer this
+	indicates whether we should attempt to use an inconsistent
+	template. Inconsist templates are where two or more sequences from
+	that template are present, but with conflicts. (Also see
+	-min_template_score.) Setting pwalk_consistent_only to 1 will disable
+	use of inconsistent templates.
+
+	For consistent templates we will allow primers to be used in regions
+	where that template has not yet been sequenced (as we know the
+	sequence from the consensus). This is not the case for inconsistent
+	templates regardless of this setting.
+
+	The cost of an experiment is scaled up by the inverse of its template
+	score, so where possible consistent templates will always be used in
+	preference to inconsistent ones.
+
+-pwalk_end_dist integer
+	Two parameters are used for deciding which consensus bases are
+	suitable for using within a primer; the confidence of each base, and
+	the overall consensus error rate for the entire primer (see below).
+	However for extending contigs we may wish to relax our criteria
+	slightly so that we may select primers in poor data in preference to
+	high quality primers that are likely to extend by too few bases.
+
+-pwalk_max_err float
+	The consensus confidence values allow us to predict the probability of 
+	a sequencing error in the short stretch picked for the primer. This
+	parameter specifies the maximum allowable error rate, so it may be
+	used to force primers to be picked only from good quality regions.
+	When near the end of contigs (within pwalk_end_dist) we use a weaker
+	criteria (pwalk_max_err2), otherwise the stronger pwalk_max_err
+	is used.
+
+-pwalk_max_err2 float
+	The consensus confidence values allow us to predict the probability of 
+	a sequencing error in the short stretch picked for the primer. This
+	parameter specifies the maximum allowable error rate, so it may be
+	used to force primers to be picked only from good quality regions.
+	When near the end of contigs (within pwalk_end_dist) we use a weaker
+	criteria (pwalk_max_err2), otherwise the stronger pwalk_max_err
+	is used.
+
+-pwalk_min_qual integer
+	This specifies the minimum consensus quality value (phred-scores) for
+	each individual base in a primer. Use with -pwalk_max_err these two
+	parameters allow you to specifying both base-by-base and average
+	qualities for the sequences used in primers. When near the end of
+	contigs, we use a weaker criteria (pwalk_min_qual2), otherwise we
+	use pwalk_min_qual.
+
+-pwalk_min_qual2 integer
+	This specifies the minimum consensus quality value (phred-scores) for
+	each individual base in a primer. Use with -pwalk_max_err these two
+	parameters allow you to specifying both base-by-base and average
+	qualities for the sequences used in primers. When near the end of
+	contigs, we use a weaker criteria (pwalk_min_qual2), otherwise we
+	use pwalk_min_qual.
+
+-pwalk_prob_mask bit_pattern
+	A bit-mask applied against the problem types for each base. Any base
+	which, after masking, still has problems listed will not be used for
+	designing a primer. The default -pwalk_prob_mask value is 0 (implying
+	that no problems should be masked). This is a general mechanism which
+	allows, for example, avoidance of picking primers in single-template
+	regions or as an alternative to the -pwalk_min_qual parameter.
+
+-pwalk_use_template integer
+	This indicates how many times we are allowed to pick primers from the
+	same template in any single finishing run. Using a template too many
+	times does not completely reject it, but it lowers the score (see
+	below).
+
+-pwalk_use_template_score float
+	For any experiments that use a template more than pwalk_use_template
+	times, the score for that experiment is multipled by this
+	value. Specifying pwalk_use_template_score as zero will force the
+	-pwalk_use_template value to be absolute.
+
+-pwalk_dup_template_cost float
+	For templates identified as being duplicated (see -find_dup_templates) 
+	this controls the multiplicative factor for the cost (equivalent to
+	dividing the score).
+
+-pwalk_tag_cons integer
+	When set to 1, PRIMer tags will be added to the consensus. Otherwise
+	primer tags are added to a suitable reading at that point. Sometimes
+	this will be a reading on the correct template, but this may not
+	always be possible. (In extreme cases the tag may not even be the
+	correct length, but the comments within it are still correct.)
+
+-pwalk_tag_type type
+	Selects the tag type returned from primer walking experiments.
+
+-pweight float
+	Weighting for this 'problem' type.
+
+-mandatory boolean
+	Whether this rule should be considered mandatory to solve. A
+	mandatory rule is one where a solution covering this region needs to
+	solve a significant portion of the mandatory rules, otherwise the
+	solution is rejected (even if it still has a good 'score').
+
+-mweight float
+	Weighting used in the mandatory score calculations.
+
+-avoid_primers boolean
+	Whether to allow primers to be chosen from any consensus bases where
+	this rule has not been met.
+
+class_strand_top
+	True if there are sequences on the top strand.
+
+class_strand_bottom
+	True if there are sequences on the bottom strand.
+
+class_sequence_depth_gt
+	True if the sequence depth is greater than a specified amount.
+
+class_sequence_depth_ge
+	True if the sequence depth is greater than or equal to a specified
+	amount.
+
+class_template_depth_gt
+	True if the template depth is greater than a specified amount.
+
+class_template_depth_ge
+	True if the template depth is greater than or equal to a specified
+	amount.
+
+class_confidence_gt
+	True if the consensus confidence is greater than a specified amount.
+
+class_confidence_ge
+	True if the consensus confidence is greater than or equal to a
+	specified amount.
+
+class_contig_left_end
+	True only for the first base in the consensus.
+
+class_contig_right_end
+	True only for the last base in the consensus.
+
+class_chemistry
+	True if the consensus at a given position is derived from at least
+	one sequence in the specified chemistries.
+
+class_low_complexity
+	True if this consensus region is of low sequence complexity.
+
+type_skip
+	Skip to the end of this problem (and do not produce any experiments).
+
+type_reseq
+	Pick experiments to resequence using the universal primers (but
+	potentially with a different sequencing chemistry).
+
+type_long
+	Pick experiments to resequence as a "long read".
+
+type_vpwalk
+	Pick primer-walking experiments from sequence templates (subclones).
+
+type_chwalk
+	Pick primer-walking experiments directly from the chromosomal DNA or
+	from the main clone (BAC, YAC, etc).
+
+solution_strand
+	Suitable strands to produce experiments for. "Any" will search on both
+	strands and pick the best scoring one.
+
+solution_chemistry
+	Sequencing chemistry for the suggested experiments.

@@ -1,0 +1,425 @@
+#
+# A hierarchial notebook. This operates a bit like a tabbed notebook,
+# but instead of using tabs we have a hierarchial list down the left
+# hand side and the current raised panel is shown on the right hand
+# side.
+#
+# The hierarchy starts with a "Tree" root. Each tree node should be a
+# Tree class or inherit the Tree class. So each node MUST have the
+# Tree methods, but _may_ also have the following:
+#
+# display {w}
+#	Creates the dialogue within $w
+#
+# raise {w}
+#	Called when this node is raised
+#
+# get_menu {}
+#	Called to query the right-button local menu details
+#
+# save {}
+#	Returns a '-option value' list of configuration parameters
+#
+
+#
+# Usual options.
+#
+itk::usual HierarchyBook {
+    keep -cursor -textfont -font
+    keep -background -foreground -textbackground 
+    keep -selectbackground -selectforeground 
+}
+
+class HierarchyBook {
+    inherit itk::Widget
+
+    public method root {}
+    public method register {{node {}}}
+    public method raise {node}
+
+    # Copied from iwidgets::Hierarchy and wrapped up here.
+    # We need a way to inherit this lot...
+    public {
+	method clear {}
+	method collapse {node}
+	method current {}
+	method draw {{when -now}}
+	method expand {node}
+	method expanded {node}
+	method expState { }
+	method mark {op args}
+	method prune {node}
+	method refresh {node}
+	method selection {op args}
+	method toggle {node}
+	
+	method bbox {index} 
+	method compare {index1 op index2} 
+	method debug {args} {eval $args}
+	method delete {first {last {}}} 
+	method dlineinfo {index} 
+	method dump {args}
+	method get {index1 {index2 {}}} 
+	method index {index} 
+	method insert {args} 
+	method scan {option args} 
+	method search {args} 
+	method see {index} 
+	method tag {op args} 
+	method window {option args} 
+	method xview {args}
+	method yview {args}
+    }
+
+    variable root {}
+
+    constructor {args} {}
+    destructor {}
+
+    itk_option define -width width Width 600
+    itk_option define -height height Height 400
+    itk_option define -fraction fraction Fraction {40 60}
+
+    private {
+	variable current_raised {}
+	variable path
+	variable frame_num 0
+
+	method get_tree {obj_name node}
+	method allocate_frame {node}
+	method menuload {}
+    }
+}
+
+#
+# Provide a lowercased access method.
+# 
+proc hierarchybook {pathName args} {
+    uplevel HierarchyBook $pathName $args
+}
+
+# -----------------------------------------------------------------------------
+# CONSTRUCTOR
+# -----------------------------------------------------------------------------
+body HierarchyBook::constructor {args} {
+    set root [HBRoot \#auto -hierarchy $this]
+    array set path {}
+
+    itk_component add hierarchy {
+	iwidgets::hierarchy $itk_interior.hier\
+	    -expanded 1 \
+	    -alwaysquery 1 \
+	    -querycommand "[code $this get_tree $root %n]" \
+	    -selectcommand "[code $this raise %n]" \
+	    -width 300 \
+	    -textmenuloadcommand "[code $this menuload]"
+    } {
+	usual
+    }
+
+    itk_component add frame {
+	frame $itk_interior.frame \
+	    -background blue
+    } {
+	usual
+    }
+
+    pack $itk_component(hierarchy) -side left -fill both
+    pack $itk_component(frame)     -side right -fill both -expand 1
+
+    set bgm [$itk_component(hierarchy) component bgMenu]
+    $bgm add command \
+	-label "Paste" \
+	-command [code $root paste_node]
+
+    eval itk_initialize $args
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Registers a node with the hierarchybook. The hierarchy has been updated,
+# but we cannot tell where without recursing through it to check. This makes
+# sure that all displays are generated.
+# -----------------------------------------------------------------------------
+body HierarchyBook::register {{node {}}} {
+    if {$node == ""} {
+	set node $root
+    }
+
+    foreach child [$node contents] {
+	register $child
+    }
+
+    if {[catch {$node info function display}]} {
+	# No display function - skip
+	return
+    }
+
+    if {[info exists path($node)]} {
+	# GUI already created
+	return
+    }
+
+    # Create the display
+    set w [allocate_frame $node]
+    $node display $w
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns the root of the tree
+# -----------------------------------------------------------------------------
+body HierarchyBook::root {} {
+    return HierarchyBook::$root
+}
+
+# ------------------------------------------------------------------
+# OPTION: -width
+#
+# Specifies the total width of the hierarchybook widget.
+# ------------------------------------------------------------------
+configbody HierarchyBook::width {
+#    $itk_component(pane) configure -width $itk_option(-width)
+}
+
+# ------------------------------------------------------------------
+# OPTION: -height
+#
+# Specifies the total height of the hierarchybook widget.
+# ------------------------------------------------------------------
+configbody HierarchyBook::height {
+#    $itk_component(pane) configure -height $itk_option(-height)
+}
+
+# ------------------------------------------------------------------
+# OPTION: -fraction
+#
+# Specifies the relative pane sizes for selector and display
+# ------------------------------------------------------------------
+configbody HierarchyBook::fraction {
+#    $itk_component(pane) fraction \
+\#	[lindex $itk_option(-fraction) 0] [lindex $itk_option(-fraction) 1]
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# This is the callback from the iwidgets::hierarchy -textmenuloadcommand. It
+# is used to generate the menus for the right-mouse button from items in the
+# tree.
+# -----------------------------------------------------------------------------
+body HierarchyBook::menuload {} {
+    # Query the item to see if it desires any specific menus
+    set hier $itk_component(hierarchy)
+    set item [$hier current]
+
+    # Clear the existing menu and fill it out with the new menu specs.
+    set menu [$hier component itemMenu]
+    $menu delete 0 end
+
+    $item create_menus $menu
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# This is the callback from the iwidgets::hierarchy -querycommand.
+# -----------------------------------------------------------------------------
+body HierarchyBook::get_tree {obj_name node} {
+    if {$node == ""} {
+	set node $obj_name
+    }
+    
+    set res ""
+    foreach child [$node contents] {
+	lappend res [list $child [$child cget -name]]
+    }
+    return $res
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# This is the callback from the iwidgets::hierarchy -selectcommand
+# -----------------------------------------------------------------------------
+body HierarchyBook::raise {node} {
+    set h $itk_component(hierarchy)
+    set f $itk_component(frame)
+    
+    $h selection clear
+    $h selection add $node
+
+    if {$current_raised != ""} {
+	pack forget $current_raised
+    }
+
+    if {![info exists path($node)]} {
+	set w [allocate_frame $node]
+	if {![catch {$node info function display}]} {
+	    grab $f
+	    $node display $w
+	    grab release $f
+	}
+    }
+    set w $path($node)
+    pack $w -expand 1 -fill both
+
+    # set window focus
+    global $current_raised.Focus
+    set $current_raised.Focus [focus]
+    set current_raised $w
+    global $current_raised.Focus
+    if {[info exists $current_raised.Focus]} {
+	focus [set $current_raised.Focus]
+    } else {
+	focus $w
+    }
+
+    catch {$node raise}
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Creates a new frame for the right-hand side of the panel and returns it.
+# -----------------------------------------------------------------------------
+body HierarchyBook::allocate_frame {node} {
+    set f $itk_component(frame).frame$frame_num
+#    iwidgets::scrolledframe $f
+    xScrolledframe $f
+    set path($node) $f
+    incr frame_num
+
+    return [$f childsite]
+
+#    set f $itk_component(frame).frame$frame_num
+#    frame $f
+#    set path($node) $f
+#    incr frame_num
+#
+#    return $f
+}
+
+# ---------------------------------------------------------------------------
+# PUBLIC:
+#
+# Wrappers around the Hierarchybook class
+# ---------------------------------------------------------------------------
+body HierarchyBook::clear {} {
+    prune $root
+}
+
+body HierarchyBook::collapse {node} {
+    return [$itk_component(hierarchy) collapse $node]
+}
+
+body HierarchyBook::current {} {
+    return [$itk_component(hierarchy) current]
+}
+
+body HierarchyBook::draw {{when -now}} {
+    return [$itk_component(hierarchy) draw $when]
+}
+
+body HierarchyBook::expand {node} {
+    return [$itk_component(hierarchy) expand $node]
+}
+
+body HierarchyBook::expanded {node} {
+    return [$itk_component(hierarchy) expanded $node]
+}
+
+body HierarchyBook::expState {} {
+    return [$itk_component(hierarchy) expState]
+}
+
+body HierarchyBook::mark {op args} {
+    return [eval $itk_component(hierarchy) mark $op $args]
+}
+
+# Recursively prune a book, destroying the GUI component too.
+body HierarchyBook::prune {node} {
+    foreach child [$node contents] {
+	prune $child
+    }
+    if {[info exists path($node)] && [winfo exists $path($node)]} {
+	destroy $path($node)
+    }
+    $node clear
+
+    return [$itk_component(hierarchy) prune $node]
+}
+
+body HierarchyBook::refresh {node} {
+    return [$itk_component(hierarchy) refresh $node]
+}
+
+body HierarchyBook::selection {op args} {
+    return [eval $itk_component(hierarchy) selection $op $args]
+}
+
+body HierarchyBook::toggle {node} {
+    return [$itk_component(hierarchy) toggle $node]
+}
+
+body HierarchyBook::bbox {index}  {
+    return [$itk_component(hierarchy) bbox $index]
+}
+
+body HierarchyBook::compare {index1 op index2}  {
+    return [$itk_component(hierarchy) compare $index1 $op $index2]
+}
+
+body HierarchyBook::delete {first {last {}}}  {
+    return [$itk_component(hierarchy) delete $first $last]
+}
+
+body HierarchyBook::dlineinfo {index}  {
+    return [$itk_component(hierarchy) dlineinfo $index]
+}
+
+body HierarchyBook::dump {args} {
+    return [eval $itk_component(hierarchy) dump $args]
+}
+
+body HierarchyBook::get {index1 {index2 {}}}  {
+    return [$itk_component(hierarchy) get $index1 $index2]
+}
+
+body HierarchyBook::index {index}  {
+    return [$itk_component(hierarchy) index $index]
+}
+
+body HierarchyBook::insert {args}  {
+    return [eval $itk_component(hierarchy) insert $args]
+}
+
+body HierarchyBook::scan {option args}  {
+    return [eval $itk_component(hierarchy) scan $option $args]
+}
+
+body HierarchyBook::search {args}  {
+    return [eval $itk_component(hierarchy) search $args]
+}
+
+body HierarchyBook::see {index}  {
+    return [$itk_component(hierarchy) see $index]
+}
+
+body HierarchyBook::tag {op args}  {
+    return [eval $itk_component(hierarchy) tag $op $args]
+}
+
+body HierarchyBook::window {option args}  {
+    return [eval $itk_component(hierarchy) window $window $args]
+}
+
+body HierarchyBook::xview {args} {
+    return [eval $itk_component(hierarchy) xview $args]
+}
+
+body HierarchyBook::yview {args} {
+    return [eval $itk_component(hierarchy) yview $args]
+}

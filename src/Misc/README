@@ -1,0 +1,541 @@
+Dynamic strings
+===============
+
+The key datatype is 'dstring_t'. Internally it contains a C str, and a couple
+of length pointers, but it is not necessary to ever access these elements
+directly.
+
+Creating and destroying
+-----------------------
+
+/*
+ * Allocates a new dstring, initialising it to a default str (or NULL).
+ *
+ * Returns dstring_t pointer on success.
+ *         NULL on failure.
+ */
+dstring_t *dstring_create(const char *str);
+
+/* Deallocates a dstring */
+void dstring_destroy(dstring_t *ds);
+
+/*
+ * Force the memory allocated for a dstring to be at least length characters
+ * long. (The allocated length will include 1 more to allow for the nul
+ * termination.)
+ * It's possible to shrink a string too, although shrinking a string will not
+ * guarantee if remains nul terminated.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int dstring_resize(dstring_t *ds, size_t length);
+
+Use dstring_create(NULL) or dstring_create("default string") to create a
+dstring. All memory is owned by the dstring and so it should not be freed
+using the normal free(), but by a call to dstring_destroy(dstring_ptr)
+instead.
+
+If you want to create a dstring with a specific length, create it will
+dstring_create() and then resize it using dstring_resize(). This will avoid
+the reallocing as a string grows, and also means you can use normal C code to
+write into the C-style string with the knowledge that you'll not have a buffer 
+overrun.
+
+
+Querying
+--------
+
+/*
+ * Returns a C string from a dstring. If the dstring is empty this may be
+ * NULL.
+ */
+char *dstring_str(const dstring_t *ds);
+
+/*
+ * Returns the length of the dstring (excluding nul; like strlen).
+ */
+size_t dstring_length(dstring_t *ds);
+
+/*
+ * Refreshes the cached dstring length.
+ * Use this if you obtain a copy of the internal C string and manipulate it
+ * in some way.
+ */
+void dstring_refresh_length(dstring_t *ds);
+
+dstring_str() returns the normal C-string; that is a standard char pointer to
+a nul-terminated string.
+
+If you wish to calculate the length call dstring_length(). This is the same as 
+strlen(dstring_str(dsptr)), but is faster due to the use of a cached length.
+
+Finally if you manipulate the string outside of the dstring* functions (eg by
+fetching the address using dstring_str()), then you can force the cached
+length to be recomputed (and indeed you MUST do this if you externally change
+the length) by calling dstring_refresh_length(dsptr).
+
+
+Insert, delete and replace
+--------------------------
+
+/*
+ * Insertion functions.
+ * dstring_ninsert, nappend and nprepend take a string and a length (much
+ * like strncmp, strncpy, etc).
+ * dstring_insert, append and prepend just take a normal C string.
+ * dstring_dinsert inserts one dstring into another.
+ *
+ * All Return 0 for success
+ *           -1 for failure
+ */
+int dstring_insert(dstring_t *ds, size_t offset, const char *str);
+int dstring_ninsert(dstring_t *ds,
+		    size_t offset,
+		    const char *str,
+		    size_t len);
+int dstring_dinsert(dstring_t *ds_to,
+		    size_t offset,
+		    const dstring_t *ds_from);
+int dstring_vinsertf(dstring_t *ds,
+		     size_t offset,
+		     const char *fmt,
+		     va_list args);
+int dstring_insertf(dstring_t *ds, size_t offset, const char *fmt, ...);
+int dstring_prepend(dstring_t *ds, const char *str);
+int dstring_nprepend(dstring_t *ds, const char *str, size_t len);
+int dstring_prependf(dstring_t *ds, const char *fmt, ...);
+int dstring_append(dstring_t *ds, const char *str);
+int dstring_nappend(dstring_t *ds, const char *str, size_t len);
+int dstring_appendf(dstring_t *ds, const char *fmt, ...);
+
+/*
+ * Deletes a section from a dstring, starting at 'offset' and extending
+ * for 'length' characters.
+ */
+void dstring_delete(dstring_t *ds, size_t offset, size_t length);
+
+/*
+ * Replaces a section from a dstring (at offset for length bytes) with a
+ * new (C) string.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int dstring_replace(dstring_t *ds,
+		    size_t offset,
+		    size_t length,
+		    const char *rep_str);
+
+/*
+ * Replaces a section from a dstring (at offset for length bytes) with a
+ * new dstring.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int dstring_dreplace(dstring_t *ds,
+		     size_t offset,
+		     size_t length,
+		     const dstring_t *rep_with);
+
+
+For insertion we have dstring_insert(), dstring_ninsert() and
+dstring_dinsert(). dstring_insert() just inserts a nul-terminated C string
+into a dstring. dstring_ninsert() is the same, but with a non-nul-terminated
+string (using a separate length paramater). Consider this to be analogous to
+strcpy vs strncpy. dstring_dinsert() inserts a dstring into another dstring.
+
+There are also a set of sprintf and vsprintf style functions with
+dstring_vinsertf() being the core function. This takes a format string and a
+va_list (stdarg.h) in the same manner as vsprintf. The other formatted
+insertion functions are dstring_insertf, dstring_appendf and
+dstring_prependf. All of these can be consider as (and are implemented as)
+wrappers around the generic dstring_vinsertf() call. For example:
+    dstring_appendf(dsptr, "%s %d", cstr, 15551);
+Note that the sprintf function uses vflen(), which (at the time of writing) is 
+the only external reference except for the standard C library.
+
+We can also insert to the start or end of a string using dstring_prepend,
+dstring_nprepend, destring_append and dstring_nappend(). As is obvious, these
+are all just trivial wrappers around the most generic dstring_ninsert()
+function.
+
+Deletion is covered by dstring_delete().
+
+Replace is covered by dstring_replace() and dstring_dreplace().
+
+
+Find & Replace
+--------------
+
+/*
+ * Searches for the first occurance of 'search' in a dstring starting
+ * at position offset (including looking at that position).
+ *
+ * Returns the new offset if found
+ *        -1 if not.
+ */
+int dstring_find(dstring_t *ds,
+		 size_t offset,
+		 const char *search);
+
+/*
+ * A combination of dstring_find and dstring_replace.
+ * Look for 'search' starting at a specific offset. If found replace it with
+ * replace.
+ *
+ * Returns position of replaced string if found
+ *        -1 if not found or on error.
+ */
+int dstring_find_replace(dstring_t *ds,
+			 size_t offset,
+			 const char *search,
+			 const char *rep_with);
+
+/*
+ * Look for 'search' starting at a specific offset. If found replace it with
+ * replace. Repeat until all occurances have been replaced.
+ *
+ * Returns 0 for success
+ *        -1 on error
+ */
+int dstring_find_replace_all(dstring_t *ds,
+			     const char *search,
+			     const char *rep_with);
+
+
+Searching is available via the dstring_find() function. It takes an offset
+into the string. To find all this should initially be set to zero. The call
+dstring_find() and report the match (if found), and keep recalling with the
+last found position+1 until no matches are found.
+
+A find and replace for a single match is available using
+dstring_find_replace(). This is literaly just a combination of the
+dstring_find and dstring_replace calls, so the only use is to save a little
+programming effort.
+
+To replace all occurances of a string, you could manually do a dstring_find
+and dstring_replace loop, or use multiple dstring_find_replace, but this is
+typically inefficient as it will lead to multiple moves of the string data.
+Hence a more efficient replace all algorithm has been implemented and is
+called dstring_find_replace_all().
+
+
+HTML Manipulation
+-----------------
+
+/*
+ * Converts a text string into a HTML version representing the same string.
+ * This includes escaping any HTML meta characters and searching for URLs
+ * within the string and replacing it with an HTML link (keeping the link as
+ * the anchor name).
+ * This is simply a wrapper joining dstring_escape_html and
+ * dstring_htmlise_links.
+ *
+ * Returns 0 for success
+ *        -1 on error
+ */
+int dstring_to_html(dstring_t *ds);
+
+/*
+ * Escapes HTML meta characters by replacing them with appropriate HTML
+ * codes.
+ * We deal with the following:
+ *
+ * &	&amp;
+ * <	&lt;
+ * >	&gt;
+ * "	&quot;
+ *
+ * Returns 0 for success
+ *        -1 on error
+ */
+int dstring_escape_html(dstring_t *ds);
+
+/*
+ * Searches for URLs in text strings and converts then to html href links.
+ * At present we just look for http://, https://, ftp://, file:// and
+ * mailto://
+ *
+ * Returns 0 for success
+ *        -1 on error
+ */
+int dstring_htmlise_links(dstring_t *ds);
+
+These are not really part of the core library itself, but some useful utility
+functions and may also act as example code for using the dstrings.
+
+The main function here is dstring_to_html. This escapes any HTML meta
+characters within a string and replaces URLs with HTML links. If either
+component of this is required separately use the dstring_escape_html or
+dstring_htmlise_links functions instead.
+
+==============================================================================
+
+An "Array" is a typeless dynamic array which grows automatically. Typeless is
+perhaps a bit harsh as types do need to be specified, but the basic
+construction is via void* instead:
+
+typedef struct {
+    int size;			/* element size */
+    int dim;			/* allocated number of elements */
+    int max;			/* elements accessed */
+    void *base;			/* base address of array */
+} ArrayStruct, *Array;
+
+Manipulation of should above be performed using the proper functions described 
+below. 
+
+/*
+ * Creates a new array of 'dim' objects with size 'size'.
+ *
+ * Returns the Array on success (a pointer)
+ *             NULL on failure.
+ */
+Array ArrayCreate(size_t size, int dim);
+
+/*
+ * Deallocates an Array created from ArrayCreate.
+ *
+ * Returns 0 on success
+ *         error-code on failure (for use with ArrayErrorString)
+ */
+int ArrayDestroy(Array a);
+
+/*
+ * Ensures that an Array is at least 'dim' elements long.
+ *
+ * Returns 0 on success
+ *         error-code on failure (for use with ArrayErrorString)
+ */
+int ArrayExtend(Array a, int dim);
+
+/*
+ * Ensures that an Array is at least 'i' elements long and then returns the
+ * address of element 'i'.
+ *
+ * Returns pointer to element i (conceptually &a[i]) on success
+ *         NULL on failure.
+ */
+extern void *ArrayRef(Array a, int i);
+
+/*
+ * Returns the maximum used element in an Array
+ */
+#define ArrayMax(a) ( (a)->max )
+
+/*
+ * Returns the pointer to the first element in the array.
+ * The first argument 't' is the type for elements.
+ */
+#define ArrayBase(t,a) ( (t *)((a)->base) )
+
+/*
+ * Returns element 'n' in Array 'a' of type 't'.
+ * If element 'n' does not exist the behaviour is undefined.
+ */
+#define arr(t,a,n) ((t*)((a)->base))[n]
+
+/*
+ * Returns element 'n' in Array 'a' of type 't'.
+ * If element 'n' does not exist it will be allocated first.
+ */
+#define ARR(t,a,n) (*((t*)ArrayRef((a),(n))))
+
+/*
+ * Returns the address of element 'n' in Array 'a' of type 't'.
+ * If element 'n' does not exist the behaviour is undefined.
+ */
+#define arrp(t,a,n) &((t*)((a)->base))[n]
+
+/*
+ * Returns the address of element 'n' in Array 'a' of type 't'.
+ * If element 'n' does not exist it will be allocated first.
+ */
+#define ARRP(t,a,n) ((t*)ArrayRef(a,n))
+
+/*
+ * Given an error code returned by one of the above functions, this returns
+ * the textual string form of the error.
+ */
+char *ArrayErrorString(int error);
+
+==============================================================================
+
+A bitmap is an array of single bits packed into an efficient storage
+mechanism. The structure is:
+
+#define BASE_TYPE uint4
+typedef struct {
+    BASE_TYPE *base;
+    int Nbitmap; /* Number of elements **not bits** allocated */
+    int Nbits;   /* Number of bits used */
+    int first_free; /* for optimization */
+} BitmapStruct, *Bitmap;
+
+However use the above only for educational purposes; all access to this should 
+be via one of the following functions or macros.
+
+/*
+ * Create a bit map for at least Nbits bits. 
+ *
+ * Returns pointer to a Bitmap on success
+ *         NULL on failure
+ */
+Bitmap BitmapCreate(int Nbits);
+
+/*
+ * Destroy a bitmap
+ *
+ * Returns 0 on success
+ *         error-code on failure
+ */
+int BitmapDestroy(Bitmap bitmap);
+
+/*
+ * Extend a bitmap so as to include at least newNbits bits.
+ * If the bitmap needs to be extended to accomodate newNbits, but
+ * cannot because of memory problems, an error code is returned and bitmap is
+ * unaffected
+ *
+ * Returns 0 on success
+ *         error-code on failure
+ */
+int BitmapExtend(Bitmap bitmap, int newNbits);
+
+/*
+ * Returns an index of an unset bit in bitmap. It may not be the first free
+ * bit.
+ *
+ * Assumption: for optimisation purposes we assume that the bit returned will
+ * be set by the caller (this routine does not set it).
+ */
+int BitmapFree(Bitmap bitmap);
+
+/*
+ * pretty print a bitmap
+ */
+int BitmapPrint(FILE *fp, Bitmap bitmap);
+
+/*
+ * Fetch a bitmap error string from an error code returned via one of the
+ * above functions.
+ */
+char *BitmapErrorString(int err);
+
+/*
+ * perform bitwise AND, inclusive OR or exclusive OR  between 
+ * bitmap1 and bitmap2.
+ *
+ * Returns a newly created Bitmap (to be destroyed by the caller using
+ *         BitmapDestroy).
+ *         NULL on failure.
+ */
+Bitmap BitmapNOT(Bitmap bitmap1);
+Bitmap BitmapAND(Bitmap bitmap1, Bitmap bitmap2);
+Bitmap BitmapOR (Bitmap bitmap1, Bitmap bitmap2);
+Bitmap BitmapXOR(Bitmap bitmap1, Bitmap bitmap2);
+
+/*
+ * Searches for the nth bit that has been set and returns its bit number.
+ * Undefined if there are not 'n' bits set.
+ */
+int FindNBitSet(Bitmap bitmap, int n);
+
+/* Clear bit number 'I' in Bitmap 'B' */
+#define BIT_CLR(B,I)  ((B)->first_free=MIN((B)->first_free,I), \
+		       (B)->base[BIT_IDX(I)] &= ~BIT_MSK(I))
+
+/* Set bit number 'I' in Bitmap 'B' */
+#define BIT_SET(B,I)  (B)->base[BIT_IDX(I)] |= BIT_MSK(I)
+
+/* Returns a boolean for whether bit 'I' in Bitmap 'B' is set */
+#define BIT_CHK(B,I) ((B)->base[BIT_IDX(I)] & BIT_MSK(I))
+
+/* Returns the number of bits used (clear or set) */
+#define BIT_NBITS(B) (B)->Nbits
+
+==============================================================================
+
+FtoC.h:
+Fstr2Cstr
+Cstr2Fstr
+	Fortran to C string conversion.
+
+array_arith.h:
+fill_int_array
+fill_double_array
+max_int_array
+min_int_array
+max_double_array
+min_double_array
+reset_zeroes
+sum_double_array
+div_double_array
+scale_double_array
+scale_double_array1
+ratio_double_arrays
+mult_double_array
+log_double_array
+	Various array (not "Array") manipulation functions. These appear to
+	only be used in a couple of Spin algorithms.
+
+error.h:
+message
+errout
+
+getfile.h:
+my_access
+expandpath
+expandname
+my_fopen
+
+locks.h:
+semaphoreCreate
+semaphoreGrab
+semaphoreRelease
+semaphoreGrabN
+semaphoreReleaseN
+semaphoreGrabExclusive
+semaphoreUsed
+semaphoreFree
+flagCreate
+flagSet
+flagUnset
+flagUsed
+flagFree
+	Only used inside the gap4 editor, which doesn't appear to need these
+	any more (they're Grabbed and Released, but never checked). Ditch
+	this lot!
+
+misc.h:
+getopt
+is_directory
+is_file
+file_exists
+file_size
+open_fofn
+read_fofn
+close_fofn
+fstrlen
+f2cstr
+c2fstr
+mystrtok
+myfind
+crash
+str_tolower
+str_toupper
+fn_tail
+fn_tolower
+fn_toupper
+shell_call
+date_str
+strdup
+strstr
+myusleep
+findfile
+MIN
+MAX
+SGN
+ABS

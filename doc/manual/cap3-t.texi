@@ -1,0 +1,501 @@
+@cindex Assembly: CAP3
+@cindex CAP3 Assembly
+@cindex Huang: Assembly (CAP3)
+@cindex Assembly: Huang
+
+This mode of assembly uses the global assembly program CAP3, developed by Xiaoqiu Huang.
+@cite{Huang, X. DNA Sequence Assembly under Forward-Reverse Constraints. In 
+preparation. (1998)}. 
+
+The CAP3 program can be accessed via the Gap4 interface through the "Assembly"
+menu or as a stand alone program.
+
+The CAP3 files for use with Gap4 must be obtained via ftp from the
+author, Xiaoqiu Huang.
+
+Email Xiaoqiu Huang (huang@@mtu.edu) stating that you want CAP3 for
+use with gap4 and the operating system for which you need the program
+(one of: Solaris 2; Digital Unix; SGI Irix; linux x86). He will then contact 
+you to arrange for the retrieval of the
+binary files.  The binary files are called cap3_s and 
+cap3_create_exp_constraints. Make these executable (eg chmod a+x cap3_s) and 
+move them to the directory
+@code{$STADENROOT/$MACHINE-bin}. The CAP3 options on the "Assembly" menu
+should now be available.
+
+@menu
+* Assembly-Perform CAP3 assembly:: Perform CAP3 assembly
+* Assembly-Import CAP3 assembly:: Import CAP3 assembly data
+* Assembly-Perform and import CAP3 assembly:: Perform and import CAP3 assembly
+* Assembly-Stand alone CAP3 assembly:: Stand alone CAP3 assembly
+* Assembly-Further details about CAP3:: Further details about CAP3
+@end menu
+
+@node Assembly-Perform CAP3 assembly
+@subsection Perform CAP3 assembly
+@cindex Assembly: perform CAP3 
+@cindex CAP3 assembly: perform
+
+_picture(assembly.CAP3)
+
+The assembly works on either a file or list of reading names in experiment
+file format (_fpref(Formats-Exp, Experiment File, formats)). 
+CAP3 assembles the readings and the alignments
+are written to the output window. New reading files are written in the 
+destination directory in experiment file format. If the destination directory 
+does not already exist, then it is created. These new files contain the 
+additional information required to recreate the same assembly within Gap4. 
+This is done by the addition of an AP line. 
+_oxref(Assembly-Directed, Directed Assembly). 
+
+CAP3 uses forward-reverse constraints to correct errors in assembly of reads.
+The constraints file is
+generated automatically using the information in the experiment files by 
+setting the "Use constraint file" radiobutton to "Yes". The constraints file 
+is named after the input file with the addition of ".con" ie if the input file
+is called fofn, the constraint file is called fofn.con. Note that if the 
+"Use constraint file" is set to "No", then any files of the format
+input_file.con will be deleted from the current directory. For further details,
+_fpref(Assembly-Further details about CAP3, Further details about CAP3).
+
+CAP3 also can use quality values to determine the consensus sequence. If the 
+quality values are present in the experiment files, then they are automatically
+used. For further details,
+_fpref(Assembly-Further details about CAP3, Further details about CAP3).
+
+@node Assembly-Import CAP3 assembly
+@subsection Import CAP3 assembly
+@cindex Assembly: import CAP3 
+@cindex CAP3 assembly: import
+
+This mode imports the aligned sequences produced after CAP3 assembly into
+Gap4 and maintains the same alignment. Importing 
+the files requires the directory containing the newly aligned readings, ie 
+the destination directory used in "Perform CAP3 assembly". Readings which are
+not entered are written to a "list" or "file" specified in the "Save failures"
+entry box. This mode is functionally equivalent to "Directed assembly".
+_oxref(Assembly-Directed, Directed Assembly). 
+
+@node Assembly-Perform and import CAP3 assembly
+@subsection Perform and import CAP3 assembly
+@cindex Assembly: perform and import CAP3 
+@cindex CAP3 assembly: perform and import
+
+This mode performs both the assembly, 
+_fpref(Assembly-Perform CAP3 assembly, Perform CAP3 assembly) and the import, 
+_fpref(Assembly-Import CAP3 assembly, Import CAP3 assembly) together. The 
+assembled readings
+are written to the destination directory and then are automatically
+imported from this directory into Gap4.
+
+@node Assembly-Stand alone CAP3 assembly
+@subsection Stand alone CAP3 assembly
+@cindex Assembly: stand alone CAP3 
+@cindex CAP3 assembly: stand alone
+
+The program can be alternatively accessed as a stand alone program with the 
+following command line arguments
+
+cap3_s -@i{format} file_of_filenames [-out destination_directory]
+
+@i{format} is the file format of the file of filenames and is either in 
+experiment file format or fasta format. Legal inputs are exp, EXP, fasta or
+FASTA.
+
+file_of_filenames is the name of the file containing the reading names to be
+assembled for experiment files or a single file of readings in fasta format.
+
+destination_directory is the name of a directory to which the new
+experiment files are written to. The default directory is "assemble".
+
+To use forward-reverse reading constraints, an appropriate 
+file_of_filenames.con file must exist in the current directory. This file 
+can be created from experiment files using the program:
+
+cap3_create_exp_constraints file_of_filenames
+
+where file_of_filenames is the same file as used for cap3_s. For fasta files,
+the constraint file is created using the program:
+
+formcon File_of_Reads Min_Distance Max_Distance
+
+See below for more information.
+
+If quality values are present in the experiment files, then these will be used
+automatically. For fasta files, the quality values must be in a separate file 
+of the type file_of_filenames.qual. See below for more information.
+
+@node Assembly-Further details about CAP3
+@subsection Further details about CAP3
+@cindex Assembly: CAP3 information
+@cindex CAP3 assembly: information
+
+The comments provided with CAP3 by Huang are detailed below.
+
+@b{CONTIG ASSEMBLY PROGRAM Version 3 (CAP3)}
+
+copyright (c) 1998 Michigan Technological University
+No part of this program may be distributed without prior written
+permission of the author.
+
+@display
+     Xiaoqiu Huang
+     Department of Computer Science
+     Michigan Technological University
+     Houghton, MI 49931
+     E-mail: huang@@cs.mtu.edu
+@end display
+
+Proper attribution of the author as the source of the software would
+be appreciated:
+@display
+     Huang, X. (1998)
+     DNA Sequence Assembly under Forward-Reverse Constraints.
+     In preparation.
+@end display
+
+CAP3 uses forward-reverse constraints to correct errors in assembly of reads.
+CAP3 works better if a lot more constraints are used.  If the file of sequence
+reads in FASTA format is named "xyz", then the file of forward-reverse
+constraints must be named "xyz.con".  Each line of the constraint file
+specifies one forward-reverse constraint of the form:
+
+@display
+ReadA   ReadB    MinimumDistance    MaximumDistance
+@end display
+
+where ReadA and ReadB are names of two reads, and MinimumDistance and
+MaximumDistance are distances (integers) in base pairs.  The constraint is
+satisfied if ReadA in forward orientation occurs in a contig before ReadB in
+reverse orientation, or ReadB in forward orientation occurs in a contig before
+ReadA in reverse orientation, and their distance is between MinimumDistance
+and MaximumDistance. We have a separate program to generate a constraint file
+from the sequence file.
+
+The program reports whether each constraint is satisfied or not. The report is
+in file @file{xyz.con.results}.  A sample report file is given here:
+
+@example
+CPBKY55F  CPBKY55R  500  6000  3210  satisfied
+CPBKY92F  CPBKY92R  500  6000  497   unsatisfied in distance
+CPBKY28F  CPBKY28R  500  6000   unsatisfied
+CPBKY56F  CPBKY56R  500  6000   10th link between CPBKI23F+ and CPBKT37R-
+@end example
+
+The first four columns are simply taken from the constraint file.
+
+Line 1 indicates that the constraint is satisfied, where the actual distance
+between the two reads is given on the fifth column.
+
+Line 2 indicates that the constraint is not satisfied in distance, that is,
+the two reads in opposite orientation occur in the same contig, but their
+distance (given on the fifth column) is out of the given range.
+
+Line 3 indicates that the constraint is not satisfied.
+
+Line 4 indicates that this constraint is the 10th one that links two contigs,
+where the 3' read of one contig is @code{CPBKI23F} in plus orientation and the
+5' read of the other is @code{CPBKT37R} in minus orientation. The information
+suggests that the two contigs should go together in the gap closure phase.
+Information about corrections made using constraints is reported in file named
+@file{.info}.
+
+A feature to use quality values in determination of consensus sequences has
+been added. The file of quality values must be named @file{xyz.qual}, where
+@file{xyz} is the name of the sequence file.  Only the sequence file is given
+as an argument to the program.  All the other input files must be in the same
+directory.  CAP3 uses the same format of a quality file as Phrap.  The quality
+values of contig consensuses are given in file @file{xyz.contigs.qual}. The
+results of CAP3 go to the standand output.
+
+CAP3 also uses a more effective filter to speed up overlap computation.
+
+CAP3 assumes that the low-quality ends of sequence reads have been trimmed.
+Otherwise, CAP3 may not work well. We have a separate program to trim
+low-quality ends and to produce a corresponging Phred quality file.  If you
+need this program, please let us know.  We plan to remove this assumption in
+the future.
+
+The CAP3 program consists of two C source files: @file{cap3.c} and
+@file{filter.c}. To produce the executable code named cap3, use the command:
+
+@example
+cc -O  cap3.c filter.c -o cap3
+@end example
+
+The usage is:
+
+@example
+cap3  File_of_Reads  >  output
+@end example
+
+The file @file{output} contains the output of CAP3.
+
+The features given above are new in CAP3. Below is for CAP2.  
+
+The CAP2 program assembles short DNA fragments into long sequences.
+CAP2 contains a number of improvements to the original version
+described in Genomics 14, pages 18-25, 1992. These improvements are:
+
+@itemize @bullet
+@item
+    Use of a more efficient filter for quickly detecting pairs of
+   fragments that could not overlap.
+
+@item
+   Accurate evaluation of overlap strengths through the use
+   of internally generated fragment-specific confidence vectors.
+
+@item
+   Identification of fragments from repetitive sequences and
+   resolution of ambiguities in assembly of those fragments.
+
+@item
+   Identification of chimeric fragments.
+
+@item
+   Automated refinement of poorly aligned regions of fragment
+   alignments
+@end itemize
+
+A chimeric fragment is made of two short pieces from non-adjacent
+regions of the DNA molecule. CAP2 may report a repeat structure like:
+
+@example
+F1	5' flanking
+F2	5' flanking
+I1	Internal
+I2	Internal
+I3	Internal
+T1	3' flanking
+T2	3' flanking
+@end example
+
+where F1, F2, I1, I2, I3, T1 and T2 are fragment names. The structure means
+that I1 ,I2 and I3 are from two copies of a repetitive element, F1 and F2
+flank the two copies at their 5' end, T1 and T2 flank them at their 3' end.
+CAP2 produces the two copies in the final sequence by resolving the
+ambiguities in the repeat structure.
+
+CAP2 is efficient in computer memory: a large number of DNA fragments can be
+assembled. The time requirement is acceptable; for example, CAP2 took 1.5
+hours to assemble 829 fragments of a total of 393 kb nucleotides into a single
+contig on a Sun SPARC 5.  The program is written in C and runs on Sun
+workstations.
+
+The CAP2 program can be run with the -r option. If this option is specified,
+then the program identifies chimeric fragments, reports repeat structures and
+resolves them.  Otherwise, these tasks are not performed.
+
+Large integer values should be used for MATCH, MISMAT, EXTEND.
+
+The comments given above are for CAP2. Written on Feb. 11, 95.
+
+@display
+Acknowledgements
+  
+   I thank Gene Spier for finding a problem with quality values for
+   reverse complements.
+@end display
+
+Below is a description of the parameters in the #define section of CAP.
+Two specially chosen sets of substitution scores and indel penalties
+are used by the dynamic programming algorithm: heavy set for regions
+of low sequencing error rates and light set for fragment ends of high
+sequencing error rates. (Use integers only.)
+
+@example
+	Heavy set:			 Light set:
+
+	MATCH     =  2			 MATCH     =  2
+	MISMAT    = -6			 LTMISM    = -3
+	EXTEND    =  4			 LTEXTEN   =  2
+@end example
+
+In the initial assembly, any overlap must be of length at least OVERLEN,
+and any overlap/containment must be of identity percentage at least
+PERCENT. After the initial assembly, the program attempts to join
+contigs together using weak overlaps. Two contigs are merged if the
+score of the overlapping alignment is at least CUTOFF. The value for
+CUTOFF is chosen according to the value for MATCH.
+
+POS5 and POS3 are fragment positions such that the 5' end between base 1
+and base POS5, and the 3' end after base POS3 are of high sequencing
+error rates, say more than 5%. For mismatches and indels occurring in
+the two ends, light penalties are used.
+
+@display
+Acknowledgments
+   The function diff() of Gene Myers is modified and used here.
+@end display
+
+A file of input fragments looks like:
+
+@example
+>G019uabh
+ATACATCATAACACTACTTCCTACCCATAAGCTCCTTTTAACTTGTTAAA
+GTCTTGCTTGAATTAAAGACTTGTTTAAACACAAAAATTTAGAGTTTTAC
+TCAACAAAAGTGATTGATTGATTGATTGATTGATTGATGGTTTACAGTAG
+GACTTCATTCTAGTCATTATAGCTGCTGGCAGTATAACTGGCCAGCCTTT
+AATACATTGCTGCTTAGAGTCAAAGCATGTACTTAGAGTTGGTATGATTT
+ATCTTTTTGGTCTTCTATAGCCTCCTTCCCCATCCCCATCAGTCTTAATC
+AGTCTTGTTACGTTATGACTAATCTTTGGGGATTGTGCAGAATGTTATTT
+TAGATAAGCAAAACGAGCAAAATGGGGAGTTACTTATATTTCTTTAAAGC
+>G028uaah
+CATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTGAATTAAAGACTTGTT
+TAAACACAAAATTTAGACTTTTACTCAACAAAAGTGATTGATTGATTGAT
+TGATTGATTGATGGTTTACAGTAGGACTTCATTCTAGTCATTATAGCTGC
+TGGCAGTATAACTGGCCAGCCTTTAATACATTGCTGCTTAGAGTCAAAGC
+ATGTACTTAGAGTTGGTATGATTTATCTTTTTGGTCTTCTATAGCCTCCT
+TCCCCATCCCATCAGTCT
+>G022uabh
+TATTTTAGAGACCCAAGTTTTTGACCTTTTCCATGTTTACATCAATCCTG
+TAGGTGATTGGGCAGCCATTTAAGTATTATTATAGACATTTTCACTATCC
+CATTAAAACCCTTTATGCCCATACATCATAACACTACTTCCTACCCATAA
+GCTCCTTTTAACTTGTTAAAGTCTTGCTTGAATTAAAGACTTGTTTAAAC
+ACAAAATTTAGACTTTTACTCAACAAAAGTGATTGATTGATTGATTGATT
+GATTGAT
+>G023uabh
+AATAAATACCAAAAAAATAGTATATCTACATAGAATTTCACATAAAATAA
+ACTGTTTTCTATGTGAAAATTAACCTAAAAATATGCTTTGCTTATGTTTA
+AGATGTCATGCTTTTTATCAGTTGAGGAGTTCAGCTTAATAATCCTCTAC
+GATCTTAAACAAATAGGAAAAAAACTAAAAGTAGAAAATGGAAATAAAAT
+GTCAAAGCATTTCTACCACTCAGAATTGATCTTATAACATGAAATGCTTT
+TTAAAAGAAAATATTAAAGTTAAACTCCCCTATTTTGCTCGTTTTTGCTT
+ATCTAAAATACATTCTGCACAATCCCCAAAGATTGATCATACGTTAC
+>G006uaah
+ACATAAAATAAACTGTTTTCTATGTGAAAATTAACCTANNATATGCTTTG
+CTTATGTTTAAGATGTCATGCTTTTTATCAGTTGAGGAGTTCAGCTTAAT
+AATCCTCTAAGATCTTAAACAAATAGGAAAAAAACTAAAAGTAGAAAATG
+GAAATAAAATGTCAAAGCATTTCTACCACTCAGAATTGATCTTATAACAT
+GAAATGCTTTTTAAAAGAAAATATTAAAGTTAAACTCCCC
+@end example
+
+A string after ">" is the name of the following fragment.
+Only the five upper-case letters A, C, G, T and N are allowed
+to appear in fragment data. No other characters are allowed.
+A common mistake is the use of lower case letters in a fragment.
+
+To run the program, type a command of form
+
+@example
+cap  file_of_fragments  
+@end example
+
+The output goes to the terminal screen. So redirection of the
+output into a file is necessary. The output consists of three parts:
+overview of contigs at fragment level, detailed display of contigs
+at nucleotide level, and consensus sequences.
+The output of CAP on the sample input data looks like:
+
+'+' = direct orientation; '-' = reverse complement
+
+@example
+OVERLAPS            CONTAINMENTS
+
+******************* Contig 1 ********************
+G022uabh+
+G019uabh+
+                    G028uaah+ is in G019uabh+
+G023uabh-
+                    G006uaah- is in G023uabh-
+
+DETAILED DISPLAY OF CONTIGS
+******************* Contig 1 ********************
+                .    :    .    :    .    :    .    :    .    :    .    :
+G022uabh+   TATTTTAGAGACCCAAGTTTTTGACCTTTTCCATGTTTACATCAATCCTGTAGGTGATTG
+            ____________________________________________________________
+consensus   TATTTTAGAGACCCAAGTTTTTGACCTTTTCCATGTTTACATCAATCCTGTAGGTGATTG
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G022uabh+   GGCAGCCATTTAAGTATTATTATAGACATTTTCACTATCCCATTAAAACCCTTTATGCCC
+            ____________________________________________________________
+consensus   GGCAGCCATTTAAGTATTATTATAGACATTTTCACTATCCCATTAAAACCCTTTATGCCC
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G022uabh+   ATACATCATAACACTACTTCCTACCCATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTG
+G019uabh+   ATACATCATAACACTACTTCCTACCCATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTG
+G028uaah+                            CATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTG
+            ____________________________________________________________
+consensus   ATACATCATAACACTACTTCCTACCCATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTG
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G022uabh+   AATTAAAGACTTGTTTAAACACAAAA-TTTAGACTTTTACTCAACAAAAGTGATTGATTG
+G019uabh+   AATTAAAGACTTGTTTAAACACAAAAATTTAGAGTTTTACTCAACAAAAGTGATTGATTG
+G028uaah+   AATTAAAGACTTGTTTAAACACAAAA-TTTAGACTTTTACTCAACAAAAGTGATTGATTG
+            ____________________________________________________________
+consensus   AATTAAAGACTTGTTTAAACACAAAA-TTTAGACTTTTACTCAACAAAAGTGATTGATTG
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G022uabh+   ATTGATTGATTGATTGAT                                          
+G019uabh+   ATTGATTGATTGATTGATGGTTTACAGTAGGACTTCATTCTAGTCATTATAGCTGCTGGC
+G028uaah+   ATTGATTGATTGATTGATGGTTTACAGTAGGACTTCATTCTAGTCATTATAGCTGCTGGC
+            ____________________________________________________________
+consensus   ATTGATTGATTGATTGATGGTTTACAGTAGGACTTCATTCTAGTCATTATAGCTGCTGGC
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G019uabh+   AGTATAACTGGCCAGCCTTTAATACATTGCTGCTTAGAGTCAAAGCATGTACTTAGAGTT
+G028uaah+   AGTATAACTGGCCAGCCTTTAATACATTGCTGCTTAGAGTCAAAGCATGTACTTAGAGTT
+            ____________________________________________________________
+consensus   AGTATAACTGGCCAGCCTTTAATACATTGCTGCTTAGAGTCAAAGCATGTACTTAGAGTT
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G019uabh+   GGTATGATTTATCTTTTTGGTCTTCTATAGCCTCCTTCCCCATCCCCATCAGTCTTAATC
+G028uaah+   GGTATGATTTATCTTTTTGGTCTTCTATAGCCTCCTTCCCCATCCC-ATCAGTCT     
+            ____________________________________________________________
+consensus   GGTATGATTTATCTTTTTGGTCTTCTATAGCCTCCTTCCCCATCCCCATCAGTCTTAATC
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G019uabh+   AGTCTTGTTACGTTATGACT-AATCTTTGGGGATTGTGCAGAATGTTATTTTAGATAAGC
+G023uabh-         GTAACGT-ATGA-TCAATCTTTGGGGATTGTGCAGAATGT-ATTTTAGATAAGC
+            ____________________________________________________________
+consensus   AGTCTTGTAACGTTATGACTCAATCTTTGGGGATTGTGCAGAATGTTATTTTAGATAAGC
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G019uabh+   AAAA-CGAGCAAAAT-GGGGAGTT-A-CTT-A-TATTT-CTTT-AAA--GC         
+G023uabh-   AAAAACGAGCAAAATAGGGGAGTTTAACTTTAATATTTTCTTTTAAAAAGCATTTCATGT
+G006uaah-                   GGGGAGTTTAACTTTAATATTTTCTTTTAAAAAGCATTTCATGT
+            ____________________________________________________________
+consensus   AAAAACGAGCAAAATAGGGGAGTTTAACTTTAATATTTTCTTTTAAAAAGCATTTCATGT
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G023uabh-   TATAAGATCAATTCTGAGTGGTAGAAATGCTTTGACATTTTATTTCCATTTTCTACTTTT
+G006uaah-   TATAAGATCAATTCTGAGTGGTAGAAATGCTTTGACATTTTATTTCCATTTTCTACTTTT
+            ____________________________________________________________
+consensus   TATAAGATCAATTCTGAGTGGTAGAAATGCTTTGACATTTTATTTCCATTTTCTACTTTT
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G023uabh-   AGTTTTTTTCCTATTTGTTTAAGATCGTAGAGGATTATTAAGCTGAACTCCTCAACTGAT
+G006uaah-   AGTTTTTTTCCTATTTGTTTAAGATCTTAGAGGATTATTAAGCTGAACTCCTCAACTGAT
+            ____________________________________________________________
+consensus   AGTTTTTTTCCTATTTGTTTAAGATCGTAGAGGATTATTAAGCTGAACTCCTCAACTGAT
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G023uabh-   AAAAAGCATGACATCTTAAACATAAGCAAAGCATATTTTTAGGTTAATTTTCACATAGAA
+G006uaah-   AAAAAGCATGACATCTTAAACATAAGCAAAGCATATNNT-AGGTTAATTTTCACATAGAA
+            ____________________________________________________________
+consensus   AAAAAGCATGACATCTTAAACATAAGCAAAGCATATTTTTAGGTTAATTTTCACATAGAA
+
+                .    :    .    :    .    :    .    :    .    :    .    :
+G023uabh-   AACAGTTTATTTTATGTGAAATTCTATGTAGATATACTATTTTTTTGGTATTTATT
+G006uaah-   AACAGTTTATTTTATGT                                       
+            ____________________________________________________________
+consensus   AACAGTTTATTTTATGTGAAATTCTATGTAGATATACTATTTTTTTGGTATTTATT
+
+
+CONSENSUS SEQUENCES
+>Contig 1
+TATTTTAGAGACCCAAGTTTTTGACCTTTTCCATGTTTACATCAATCCTGTAGGTGATTG
+GGCAGCCATTTAAGTATTATTATAGACATTTTCACTATCCCATTAAAACCCTTTATGCCC
+ATACATCATAACACTACTTCCTACCCATAAGCTCCTTTTAACTTGTTAAAGTCTTGCTTG
+AATTAAAGACTTGTTTAAACACAAAATTTAGACTTTTACTCAACAAAAGTGATTGATTG
+ATTGATTGATTGATTGATGGTTTACAGTAGGACTTCATTCTAGTCATTATAGCTGCTGGC
+AGTATAACTGGCCAGCCTTTAATACATTGCTGCTTAGAGTCAAAGCATGTACTTAGAGTT
+GGTATGATTTATCTTTTTGGTCTTCTATAGCCTCCTTCCCCATCCCCATCAGTCTTAATC
+AGTCTTGTAACGTTATGACTCAATCTTTGGGGATTGTGCAGAATGTTATTTTAGATAAGC
+AAAAACGAGCAAAATAGGGGAGTTTAACTTTAATATTTTCTTTTAAAAAGCATTTCATGT
+TATAAGATCAATTCTGAGTGGTAGAAATGCTTTGACATTTTATTTCCATTTTCTACTTTT
+AGTTTTTTTCCTATTTGTTTAAGATCGTAGAGGATTATTAAGCTGAACTCCTCAACTGAT
+AAAAAGCATGACATCTTAAACATAAGCAAAGCATATTTTTAGGTTAATTTTCACATAGAA
+AACAGTTTATTTTATGTGAAATTCTATGTAGATATACTATTTTTTTGGTATTTATT
+@end example

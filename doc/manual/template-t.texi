@@ -1,0 +1,541 @@
+@menu
+* Template-Display::            Template Display
+* Template-Templates::          Reading and Template Plot
+* Template-Templates-Display::  Reading and Template Plot Display
+* Template-Templates-Options::  Reading and Template Plot Options
+* Template-Templates-Operations:: Reading and Template Plot Operations
+* Template-Quality::            Quality Plot
+* Template-Restriction::        Restriction Enzyme Plot
+* Consistency-Display::         Consistency Display
+@end menu
+
+_split()
+
+Gap4 provides views of the data for an assembly project at 3 levels of
+resolution: the whole project can be seen from the Contig Selector 
+(_fpref(Contig Selector, Contig Selector, Contig Selector)),
+the most detail from the Contig Editor
+(_fpref(Editor, Editing in gap4, contig_editor)), and the Contig
+Overview Displays, described in this section, provide an intermediate
+level of information and data manipulation. 
+They are available from the main gap4 View menu.
+
+
+These middle level resolution displays provide graphical overviews of
+individual contigs or sets of contigs.  The possible
+information shown includes readings, templates, tags, restriction enzyme
+sites, stop codons, plots of the consensus quality, read coverage,
+read-pair coverage, strand coverage and consensus confidence.
+The displays of readings, templates, tags, restriction enzyme
+sites and plots of the consensus quality can be shown in a single
+window called the Template Display 
+(_fpref(Template-Display, Template Display, template)).
+The plots of reading coverage, read-pair coverage, strand coverage and
+consensus confidence can be shown in a single display called the
+Consistency Display
+(_fpref(Consistency-Display, Consistency Display, consistency_display)),
+or as separate plots.
+The Stop Codon Plot 
+(_fpref(Stops, Plotting Stop Codons, stops))
+and a more informative version of the Restriction Enzyme Plot
+(_fpref(Restrict, Plotting Restriction Enzymes, restrict_enzymes))
+can be shown in separate windows.
+
+@node Template-Display
+@section Template Display
+@cindex Template Display
+
+@menu
+* Template-Templates::          Reading and Template Plot
+* Template-Templates-Display::  Reading and Template Plot Display
+* Template-Templates-Options::  Reading and Template Plot Options
+* Template-Templates-Operations:: Reading and Template Plot Operations
+* Template-Quality::            Quality Plot
+* Template-Restriction::        Restriction Enzyme Plot
+@end menu
+
+The Template Display can show schematic plots of 
+readings, templates, tags, restriction enzyme
+sites and the consensus quality. It can be used to reorder contigs,
+create tags and invoke the Contig Editor. 
+It is invoked from the main gap4 View menu.
+
+An example showing all these information types can be seen in the Figure below.
+
+
+_lpicture(template.display)
+
+The large top section contains lines and arrows representing readings
+and templates. Beneath this are rulers;
+one for each contig, and below those is the quality plot. 
+The template and reading section of the display is in two parts. The top
+part contains the templates which have been sequenced from both ends but
+which are in some way inconsistent - for example given the current
+relative positions of their readings, they may have a length that is
+larger or greater than that expected, or the two readings may, as it
+were, face away from one another. Colour coding is used to distinguish
+between different types of inconsistency, and whether or not the
+inconsistency involves readings within or between contigs. For example,
+most of the problems shown in the screendump above are coloured
+dark yellow, indicating an inconsistency between a pair of contigs.
+The rest of the data, (mostly dark blue indicating templates sequenced
+from only one end), is plotted below the data for the inconsistent
+templates.
+Forward readings are blue and reverse readings are orange.
+Templates in bright yellow have been sequenced from both ends, are consistent and
+span a pair of contigs (and so indicate the relative orientation and
+separation of the contigs). 
+
+The coloured blocks immediately above and below the ruler are tags.
+Those above the ruler 
+can also be seen on their corresponding readings in the large top
+section. Zooming is available. The position of a crosshair
+is shown in the two left most boxes in the top right hand corner. The leftmost
+shows the distance in bases between the crosshair and the start of the contig
+underneath the crosshair. The middle box shows the distance between the
+crosshair and the start of the first contig. The right box shows the distance
+between two selected cut sites in the restriction enzyme plots.
+
+_picture(template.dialogue)
+
+As seen in the dialogue above,
+users can choose to display a single contig, all contigs, or a subset of 
+contigs from a file of filenames ("file") or a list ("list"). If either the
+file or list options are chosen, the "browse" button will be activated and can
+be used to call up a file or list browser dialogue.
+
+The items to be shown in the initial template display can be selected from the
+list of checkboxes. The default is to display all templates and readings.
+However, it is possible to display only templates with more than one reading 
+("Ignore 'single' templates) or templates with both forward and reverse 
+readings ("Show only read pairs"). These latter two options may be beneficial 
+if the database is very large.
+
+In the section below we give details about the individual components of
+the overall Template Display.
+
+_split()
+@node Template-Templates
+@subsection Reading and Template Plot
+@cindex Template Display: reading plot
+@cindex Template Display: template plot
+@cindex Template plot: template display
+@cindex Reading plot: template display
+@cindex Ignore single templates: template display
+@cindex Template display: ignore single templates
+@cindex Show only read pairs: template display
+@cindex Template display: show only read pairs
+
+@menu
+* Template-Templates-Display::  Reading and Template Plot Display
+* Template-Templates-Options::  Reading and Template Plot Options
+* Template-Templates-Operations:: Reading and Template Plot Operations
+@end menu
+
+The Reading and Template Plot shows templates and readings. The
+following sections describe the display, its options, and the operations
+which it can be used to perform.
+It is invoked from the main gap4 View menu.
+
+@node Template-Templates-Display
+@subsubsection Reading and Template Plot Display
+
+The Reading and Template Plot shows templates and readings.  Colour is used to
+provide additional information.
+The reading colour is used to convey the primer
+information. The default colours are:
+
+@table @var
+@item red
+primer unknown
+@item green
+forwards primer
+@item orange
+reverse primer
+@item dark_cyan
+custom forward primer
+@item orange-red
+custom reverse primer
+@end table
+
+Colour is used to distinguish the number and the location
+of the readings derived from each template.
+Templates with readings derived from only one end are drawn in blue. 
+Those with readings from both ends
+are pink when both ends are contained within the same contig.
+Those with readings from both ends are green when
+the readings are in different contigs and one of 
+the contigs is not being plotted.
+
+For each template gap4 stores an expected length, as a range between two
+values. From an assembly it is often possible to work out the actual length of
+a template based upon the positions within a contig of readings sequenced
+using the forward and reverse primers. The forward and reverse readings on
+a single template (called a read pair) are considered to be inconsistent if 
+this observed distance is outside of
+the range of acceptable sizes and then the template is drawn in black. 
+Alternatively it may be possible that both forward and reverse readings are 
+assembled on the same strand (in which case both arrows will point in the same
+direction). This too is a problem and hence the templates are drawn in
+black. 
+
+If more than one contig is displayed then the distance between adjacent 
+contigs is determined from any read pair information. If there are spanning 
+templates between two adjacent contigs and the readings on that template are 
+consistent, i.e. are in the correct orientation, the template is coloured yellow. 
+Templates which span non-adjacent contigs in the display or contain 
+inconsistent readings are coloured dark yellow.
+
+A summary of the default template colours follows.
+
+@table @var
+@item blue
+the template contains only readings from one end
+@item pink
+the template contains both forward and reverse readings in the same contig
+@item green
+the template contains both forward and reverse readings, but they are in
+separate contigs, and one of the contigs is not being displayed.
+@item black
+the readings on the template are within the same contig but are in
+contradictory orientations or are an unexpected distance apart
+@item yellow
+the readings on the template are within different contigs (both of which are being displayed) and are consistent
+@item dark_yellow
+the readings on the template are within different contigs (both of which are being displayed) and are inconsistent
+@end table
+
+@cindex Ruler: template display
+@cindex Contig: template display
+@cindex Template display: ruler
+@cindex Template display: contig
+
+If more than one contig is displayed, the contigs are positioned in the same
+left to right order as the input contig list, (which need not necessarily be in
+the same order as the contig selector).
+Overlapping contigs are drawn as staggered lines. 
+If the user selects the "Calculate contig positions" option from the menu
+the horizontal distance between adjacent contigs is
+determined from any available read pair information. 
+Otherwise, or in the absence of any read pair
+information, the second contig is positioned immediately following the first
+contig, but will be drawn staggered in the vertical direction. If the 
+readings on a template spanning two contigs are consistent, the distance 
+between the contigs is determined using the template's mean length.
+If there are several templates spanning a pair of contigs
+an average distance is calculated and used as the final 
+offset between the contigs. 
+Templates which span non-adjacent contigs or contain inconsistent readings 
+are not used in the calculation of the contig offsets. It is possible that 
+data in the database is inconsistent to such an extent that, although spanning 
+templates have consistent readings, the averaging can lead to a display which 
+shows the templates to have inconsistent readings, eg the readings are 
+pointing in opposite directions. 
+
+A summary of the templates and readings used to calculate the distance 
+between two contigs is displayed in the output window. An example is given 
+below:
+
+@example
+============================================================
+Wed 02 Apr 10:35:51 1997: template display
+------------------------------------------------------------
+Contig zf98g12.r1(651) and Contig zf23d2.s1(348) 
+Template       zf22h7( 376) length 1893
+Reading        zf22h7.r1(  +10R), pos   6257 +208, contig  651
+Reading        zf22h7.s1( -376F), pos    145 +331, contig  348
+Template       zf49f5( 536) length 1510
+Reading        zf49f5.r1( +255R), pos   6562 +239, contig  651
+Reading        zf49f5.s1( -536F), pos    227 +135, contig  348
+Gap between contigs = -11
+Offset of contig 348 from the beginning = 7674
+@end example
+
+The contig names and numbers are given in the top line. Below this, the
+spanning template name, number and length is displayed. Below this the reading
+name, whether the reading has been complemented (+: original -: complemented),
+number, primer information, starting position, length and contig number. This
+is of similar format to that displayed by the read pairs output.
+_fxref(ReadPair-Output, Find Read Pairs, read_pairs) The average gap between
+the contigs is given and finally the distance in bases between the start of
+the second contig and the start of the left most contig in the display.
+
+_split()
+@node Template-Templates-Options
+@subsubsection Reading and Template Plot Options
+@cindex Template display: tags
+@cindex Template display: select tags
+@cindex Select tags: template display
+@cindex Tags: template display
+
+
+_lpicture(template.display)
+
+Within the figure shown above the contents of the View menu are visible. The 
+"Templates", "Readings", "Quality Plot" and "Restriction Enzyme Plot" commands
+control which attributes are displayed. The graphics are always scaled to fit the
+information within the window size, subject to the current zoom level. This
+means that turning off templates, but leaving readings displayed, will improve
+visibility of the reading information.
+
+The "Ruler ticks" checkbox determines whether to draw numerical ticks on the 
+contigs. The number of ticks is defined in the .gaprc
+(_fpref(Conf-Introduction, Options Menu, configure)) file as NUM_TICKS 
+although the actual number of ticks per contig that will be displayed
+also depends on the space available on the screen.
+
+The "ignore 'single' templates" toggle controls whether to display all 
+templates or only those containing more than one reading. The "show only read 
+pairs" toggle controls whether all templates or only those containing both 
+forward and reverse readings are displayed.  Hence when set the templates 
+displayed are those with a known (observed) length. The "Show only spanning
+read pairs" toggle controls whether to display all templates or only those
+containing forward and reverse readings which are in different contigs.
+
+The plot can be enlarged or reduced using the standard zooming mechanism.
+_fxref(UI-Graphics-Zoom, Zooming, interface)
+
+The crosshair toggle button controls whether the cursor is visible. This is
+shown as a black vertical line. The position of the crosshair is displayed
+in the two boxes to the right of the crosshair toggle. The first box indicates
+the cursor position in the current contig. The second box indicates the 
+overall position of the cursor in the consensus. The third box is used to 
+show the distance between restriction enzyme cut sites. 
+_oxref(Template-Restriction, Restriction Enzyme Plot).
+
+Tags that are on the consensus can only be seen on the ruler. These are
+marked beneath the ruler line. Tags on readings can be seen both on the
+ruler (above the line) and on their appropriate readings within the
+template window. To configure the tag types that are shown use the
+"select Tags" command in the View menu. This brings up the usual tag
+selection dialog box. _fxref(Conf-Tag, Tag Selector, configure)
+
+
+_split()
+@node Template-Templates-Operations
+@subsubsection Reading and Template Plot Operations
+
+@cindex Readings list: template display
+@cindex Template display: readings list
+@cindex Template display: active readings
+
+
+The contig editor can be invoked by double clicking the middle mouse button,
+or Alt the left mouse button, 
+in any of the displays, ie template, ruler, quality or restriction enzyme
+plots. The editor will start up with the editing cursor on the base that 
+corresponds to the position clicked on in the Template Display. If more than 
+one contig is currently being displayed the editor decides which contig to show
+using the following rules. If the user clicks on the Quality Plot, the contig
+lines or the Restriction Enzyme Display, the corresponding contigs will
+be shown. If the user clicks on a gap between these displays the nearest contig
+will be selected. If the user clicks on
+the template or reading lines, the editor will show the contig whose left
+end is to the left of and closest to the cursor.
+
+The long blue vertical line seen in the previous 
+figure is the position of the 
+editing cursor within a Contig Editor. Each editor will produce its own cursor
+and each will be visible. Moving the editing 
+cursor within a contig editor automatically moves its cursor within the 
+Template Display. Similarly, clicking and dragging the editor cursor with the 
+middle mouse button, or Alt left mouse button, within the Template
+Display scrolls the associated Contig Editor.
+
+
+The order of the contigs can be changed within the Template Display by
+clicking with the middle mouse button, or Alt left mouse button, 
+on a contig line and dragging the line to
+the new position. The Template Display will update automatically once the 
+mouse button is released. The change of a dark yellow template to bright
+yellow is indicative that the two contigs are now in consistent positions
+and orientations. The order of the contigs in the gap4 database, as 
+displayed in the contig selector, can be updated by selecting the 
+"Update contig order" command in the Edit menu.
+
+By clicking on any of the contig lines in the ruler a popup menu is invoked.
+From this, information on the contig can be obtained, the contig editor can be
+started, the contig can be complemented, and the templates within the
+contig can be highlighted (shown by changing their line width).
+
+A list named @code{readings} always exists. It contains the
+list of readings that are highlighted in all the currently shown
+template displays.  _fxref(Lists, Lists, lists) The highlighting
+mechanism used is to draw the readings as thicker, bolder, lines. The
+"clear Active Readings" command from the View menu clears this list. The
+"highlight reading list" command loads a new set of readings to use for
+the "readings" list and then highlights these.
+
+To interactively add and remove readings from the active list use the
+left mouse button. Clicking on an individual reading will toggle its
+state from active to non active and back again. Pressing and holding the
+left mouse button, and moving the mouse, will drag out a bounding box.
+When the button is released all readings that are contained entirely
+within the bounding box will be toggled.
+
+Activating a reading (using any of the above methods) when an editor is
+running, will also highlight the reading within the editor. Similarly,
+highlighting the reading in the editor activates it within the template
+display and adds it to the active reading list.
+
+
+_split()
+@node Template-Quality
+@subsection Quality Plot
+@cindex Template display: quality plot
+@cindex Quality plot: template display
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Template
+Display, in which case it will appear as part of the Template Display.
+
+This display provides an overview of the quality of the consensus. The
+Contig Editor can be used to examine the problems revealed. A typical
+plot is displayed below.
+
+_lpicture(template.quality)
+
+For each base in the consensus a quality is
+computed based on the accuracy of the data on each strand. As can be seen in
+the Figure above, this information
+is then plotted using colour and height to distinguish between the
+different quality assignments.
+The colour and height codes are explained below.
+
+@example
+@group
+Colour  Height          Meaning
+
+grey    0 to 0          OK on both strands, both agree
+blue    0 to 1          OK on plus strand only
+green  -1 to 0          OK on minus strand only
+red    -1 to 1          Bad on both strands
+black  -2 to 2          OK on both strands but they disagree
+@end group
+@end example
+
+For example, in the figure we see that the first four hundred or so
+bases are mostly only well determined on the forward strand.
+
+Note that when a large number of bases are being displayed the limited screen 
+resolution causes the
+quality codes for adjacent bases to be drawn as single pixels. However
+the use of varying heights ensures that all problematic bases will be
+visible. Hence when
+the quality plot consists of a single grey line all known quality problems
+have been resolved, at the current consensus and quality cutoffs.
+
+To check problems the contig editor can be invoked by double clicking on the
+middle mouse button, or Alt left mouse button. 
+It will appear centred on the base corresponding to the
+position on which the mouse was clicked.
+
+The quality plot appears as "Calculate quality" in the Results Manager window
+(_fpref(Results, Results Manager, results)).
+
+Within the Results Manager commands available, using the right mouse
+button, include "Information",
+which lists a summary of
+the distribution of quality types to the output window, and "List" which lists
+the actual quality values for each base to the output window. These quality
+values are written in a textual form of single letters per base and are listed
+below.
+
+@table @var
+@item
+@r{+Strand -Strand}
+@item a
+@r{Good    Good} (in agreement)
+@item b
+@r{Good    Bad}
+@item c
+@r{Bad     Good}
+@item d
+@r{Good    None}
+@item e
+@r{None    Good}
+@item f
+@r{Bad     Bad}
+@item g
+@r{Bad     None}
+@item h
+@r{None    Bad}
+@item i
+@r{Good    Good} (disagree)
+@item j
+@r{None    None}
+@end table
+
+An example of the output using "Information" and "List" follows.
+
+@example
+============================================================
+Wed 02 Apr 12:14:06 1997: quality summary
+------------------------------------------------------------
+Contig xb56b6.s1 (#11)
+ 81.00 OK on both strands and they agree(a)
+  3.94 OK on plus strand only(b,d)
+ 11.98 OK on minus strand only(c,e)
+  1.85 Bad on both strands(f,g,h,j)
+  1.22 OK on both strands but they disagree(i)
+============================================================
+Wed 02 Apr 12:14:09 1997: quality listing
+------------------------------------------------------------
+Contig xb56b6.s1 (#11)
+
+          10         20         30         40         50         60
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeehee eeeeeeeeee eeeeeeeeee
+
+          70         80         90        100        110        120
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee
+
+         130        140        150        160        170        180
+  eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee eeeeeeeeee
+
+         190        200        210        220        230        240
+  eeeeeeeeee eeeeeeeeee heeeeeeeee eeeeeeeici iiaiaciiia aaaaaaaaac
+
+         250        260        270        280        290        300
+  aaaacaaaaa aaaaaaaiia aaaaaaaaaa aaaaaaaaaa aaaabaaaaa aaaaaaaaaa
+
+         310        320        330        340        350        360
+  aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa aaaaaaaaaa faaaaaaaaa
+
+[ output removed for brevity ]
+@end example
+
+_split()
+@node Template-Restriction
+@subsection Restriction Enzyme Plot
+@cindex Template display: restriction enzymes
+@cindex Restriction enzymes: template display
+
+The restriction enzyme plot within the template display is a reduced version
+of the main Restriction Enzyme Map function. The dialogue used for choosing
+the restriction enzymes is identical and is described with the main function.
+_fxref(Restrict, Plotting Restriction Enzymes, restrict)
+It is invoked from the Template Display View menu.
+An example plot from the template display can be seen below.
+
+_lpicture(template.restriction)
+
+Here we see the searches for two restriction enzymes. Each vertical line is
+drawn at the cut position of the matched restriction site. Unlike the main
+restriction enzyme plot here all matches are plotted on a single
+horizontal plot. Initially all sites are drawn in black. To distinguish one
+site from another either touch the site with the mouse cursor and read the 
+template
+display information line, or place the mouse cursor above a site and press
+the right mouse button. This pops up a menu containing "Information" and
+"Configure". The "Configure" option can be used to change the colour of all
+matches found for this enzyme. In the figure above we have changed
+the initial colours for both of the restriction enzymes searched for. The
+"Information" command displays information for all sites found in the text
+output window.
+
+As with the main Restriction Enzyme Map function, clicking the left mouse
+button on two restriction sites in turn displays the distance between the
+chosen sites in the information line. This figure is also displayed in the box
+at the top right hand corner of the template display.
+
+_include(consistency_display-t.texi)

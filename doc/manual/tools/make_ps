@@ -1,0 +1,82 @@
+#!/usr/bin/perl -w
+
+# RUN ON JURA
+
+#
+# Converts a gif image to postscript with the following rules.
+#
+# 1. The standard conversion is at 120x120 dpi.
+# 2. The maximum width is 16.3 cm.
+#
+# We resolve rule 2 by increasing the dpi.
+#
+
+# Location of imagic conversion program
+#$convert = '/usr/local/bin/convert';
+$convert = '/usr/X11R6/bin/convert';
+
+# Default density
+$default_density = '120';
+
+# For images with a non standard density, we list them here.
+%densities = (
+	      'conf_values_p.unix', '124',
+	      'consistency_p.unix', '123',
+	      'contig_editor.join.unix', '168',
+	      'contig_editor.screen.unix', '168',
+	      'contig_editor.traces.unix', '161',
+	      'contig_editor.traces.compact.unix', '161',
+	      'contig_editor_grey_scale.unix', '168',
+	      'contig_editor_mutations.unix', '168',
+	      'interface.menus.unix', '26',
+	      'primer_pos_plot.unix', '126',
+	      'primer_pos_seq_display.unix', '131',
+	      'read_coverage_p.unix', '123',
+	      'readpair_coverage_p.unix', '125',
+	      'restrict_enzymes.unix', '126',
+	      'spin_plot_base_comp_p.unix', '121',
+	      'spin_plot_drag1.unix', '125',
+	      'spin_plot_drag2.unix', '125',
+	      'spin_plot_drag3.unix', '125',
+	      'spin_restrict_enzymes_p.unix', '125',
+	      'spin_restrict_enzymes_p1.unix', '125',
+	      'spin_seq_display.unix', '151',
+	      'spin_sequence_display_t.unix', '155',
+	      'spin_trna_p.unix', '121',
+	      'stops.unix', '128',
+	      'traces_diff.unix', '163',
+	      'conf_values_p.unix', '121',
+	      'mut_contig_editor5.unix', '167',
+	      'mut_contig_editor_dis5.unix', '167',
+	      'mut_traces_het.unix', '161',
+	      'mut_traces_point.unix', '161',
+	      'mut_traces_positive.unix', '161',
+	      );
+
+while ($#ARGV >= 0) {
+    $_ = shift(@ARGV);
+    next if (/\.small\./);
+    s/\.gif//;
+    $fname = $_;
+    $density = $densities{$_} ? $densities{$_} : $default_density;
+    $density = $density . 'x' . $density;
+
+    # Convert the image
+    print "processing $_\n";
+    system "$convert -density $density $_.gif $_.ps";
+
+    # Find the size of the postscript image.
+    open(FILE, "$_.ps") || die "Cannot open $_.ps\n";
+    while (<FILE>) {
+	if (s/^%%BoundingBox: 0 0 (.*) .*/$1/) {
+	    $width=$_;
+	}
+    }
+    close(FILE);
+
+    # Check the size. 16.3cm = 462 1/72th inch.
+    if ($width gt 462) {
+	$size=int($width/462.0*120+1);
+	print "FIX: Suggested new density: '$fname', '$size',\n";
+    }
+}

@@ -1,0 +1,103 @@
+#
+# A Tree item compatible with being added to a hierarchybook.
+# This both inherits the Params class as is expected to be a child of it in
+# the tree structure.
+# It contains the configuration parameters for primer-walking experiments
+#
+
+class ParamWalk {
+    inherit Params
+
+    # Primer walking parameters
+    public {
+	variable pwalk_search_dist		100
+	variable pwalk_max_match		8
+	variable pwalk_noligos			4
+	variable pwalk_ntemplates		4
+	variable pwalk_offset1			130
+	variable pwalk_offset2			60
+	variable pwalk_seq_gap			60
+	variable pwalk_consistent_only		0
+	variable pwalk_max_err			0.02
+	variable pwalk_min_qual			30
+	variable pwalk_max_err2			0.1
+	variable pwalk_min_qual2		15
+	variable pwalk_end_dist			700
+	variable pwalk_use_template		1
+	variable pwalk_use_template_score	0
+	variable pwalk_tag_cons			0
+	variable pwalk_tag_type			""
+    }
+
+    public {
+	# Used by hierarchy book
+	method display {w}
+	method create_menus {m}
+    }
+
+    constructor {args} {
+	eval configure $args -name "{Primer walking parameters}"
+
+	set config {
+	    pwalk_search_dist		"Additional search distance"
+	    pwalk_max_match		"Maximum seconndary priming score"
+	    pwalk_noligos		"Number of primers"
+	    pwalk_ntemplates		"Number of templates per primer"
+	    pwalk_offset1		"Search start offset"
+	    pwalk_offset2		"Search end offset"
+	    pwalk_seq_gap		"Primer-to-called-sequence gap"
+	    pwalk_consistent_only	"Consistent only (0/1)"
+	    pwalk_max_err		"Maximum consensus error"
+	    pwalk_min_qual		"Minimum consensus base quality"
+	    pwalk_max_err2		"Maximum consensus error (ends)"
+	    pwalk_min_qual2		"Minimum consensus base quality (ends)"
+	    pwalk_end_dist		"Distance to consider as 'ends'"
+	    pwalk_use_template		"Number of time to use template"
+	    pwalk_use_template_score	"Template overuse multiplier"
+	    pwalk_tag_cons		"Tag consensus (0/1)"
+	    pwalk_tag_type		"Consensus tag type"
+	}
+
+	foreach {var text} $config {
+	    set data($var) [set $var]
+	    trace variable $var w [code $this varedit $var]
+	}
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when this node is added to the tree in order
+# to create the Tk dialogue.
+# -----------------------------------------------------------------------------
+body ParamWalk::display {w} {
+    set wins {}
+    set path $w
+    foreach {var text} $config {
+	iwidgets::entryfield $w.$var \
+	    -labeltext "$text" \
+	    -textvariable [scope $var] \
+	    -width 10
+	pack $w.$var -side top -fill both
+	lappend wins $w.$var
+
+	# Force the links to be shown correctly.
+	set $var [set $var]
+
+	if {[info exists ::prefinish::tooltips(-$var)]} {
+		::tooltip::attach $w.$var $::prefinish::tooltips(-$var)
+	}
+    }
+    eval ::iwidgets::Labeledwidget::alignlabels $wins
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook to create the menus.
+# NOTE: This accesses the global array ::rules
+# -----------------------------------------------------------------------------
+body ParamWalk::create_menus {m} {
+    # Empty function used to replace inherited copy from Params
+}

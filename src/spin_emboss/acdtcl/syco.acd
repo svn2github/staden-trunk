@@ -1,0 +1,181 @@
+package require Iwidgets
+namespace eval ::EMBOSS::syco {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_syco*Xentry.entry.width 30
+option add *e_syco*Entryfield.width 30
+option add *e_syco*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) syco
+    set w [xtoplevel .e_syco -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - syco}
+    label $w._title -text {Synonymous codon usage Gribskov statistic plot}
+    pack $w._title -side top -fill both
+    set vars(syco._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst DNA]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cfile
+    iwidgets::combobox $w.cfile\
+	-textvariable [namespace current]::vars(cfile)\
+	-labeltext [subst {Codon usage file}]
+    eval $w.cfile insert list end [list_codon_tables]
+    grid [$w.cfile component entry] -sticky nse
+    $w.cfile delete entry 0 end
+    $w.cfile insert entry end [subst Ehum.cut]
+    $w.cfile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.cfile -side top -fill both
+    set vars(cfile.path) $w.cfile
+    set vars(cfile.required)  0
+    set vars(cfile._type) codon
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Averaging window}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 30]
+    pack $w.window -side top -fill both
+    set vars(window.path) $w.window
+    set vars(window.required)  0
+    set vars(window._type) integer
+
+    lappend arguments uncommon
+    checkbutton $w.uncommon \
+	-text [subst {Show common codon usage}]\
+	-variable [namespace current]::vars(uncommon)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.uncommon -side top -anchor w
+    set vars(uncommon) [subst 0]
+    set vars(uncommon.path) $w.uncommon
+    set vars(uncommon.required)  0
+    set vars(uncommon._type) bool
+
+    lappend arguments minimum
+    iwidgets::entryfield $w.minimum \
+	-validate real \
+	-textvariable [namespace current]::vars(minimum) \
+	-labeltext [subst {Minimum value for a common codon}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minimum component entry] -sticky nse
+    set vars(minimum) [subst .15]
+    pack $w.minimum -side top -fill both
+    set vars(minimum.minimum) [subst 0.0]
+    set vars(minimum.maximum) [subst .99]
+    set vars(minimum.path) $w.minimum
+    set vars(minimum.required)  0
+    set vars(minimum._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments plot
+    checkbutton $w.plot \
+	-text [subst {Produce plot}]\
+	-variable [namespace current]::vars(plot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.plot -side top -anchor w
+    set vars(plot) [subst 0]
+    set vars(plot.path) $w.plot
+    set vars(plot.required)  0
+    set vars(plot._type) bool
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(plot)}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) xygraph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(plot)}]]}
+    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(plot))}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst syco0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(plot))}]]}
+    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] outfile"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/syco.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,902 @@
+@ignore
+@c MANSECTION=4
+@unnumberedsec NAME
+
+ExperimentFile --- Experiment File Format
+@end ignore
+
+@node Formats-Exp
+@section Experiment File
+@cindex Experiment files
+
+Experiment files contain gel readings plus information about them, and are
+used during the processing of the sequence. They are used to carry data
+between programs: they provide input to the programs and programs may in
+turn add to or modify them. When the experiment file for a reading reaches
+the assembly program it should be carrying all the data needed for its
+subsequent processing. The assembly program will copy what it needs into
+the assembly database. The file format is based on that of EMBL sequence
+entries and, if required, can be read as such by programs like spin.
+
+@menu
+* Exp-Records::                 Records
+* Exp-Explain::                 Explanation of Records
+* Exp-Example::                 Example Experiment File
+* Exp-Unsupported::             Unsupported Additions
+@end menu
+
+_split()
+@node Exp-Records
+@subsection Records
+@cindex Experiment files: record types
+@cindex Records in experiment files
+
+It is important to note that the assembly program gap4
+(_fpref(Gap4-Introduction, Gap4 introduction, gap4))
+ will not operate to
+its full effect if it is not given all the necessary data. For example
+gap4 contains many functions that can analyse the positions and relative
+orientations of readings from the same template in order to check the
+correctness of the assembly and determine the contig order. However if
+the records that name templates and their estimated lengths, and define
+the primers used to obtain readings from them are missing, none of these
+valuable analyses can be performed reliably. One way to ensure that all
+the necessary fields are present is to use the program pregap4
+(_fpref(Pregap4-Introduction, Pregap4 introduction, pregap4)).
+
+
+In the descriptions below records containing * are those read into the
+database during normal assembly; those with ** are extra items required when
+entering pre-assembled data; those with *** are read from SCF files
+(after the experiment file has been read to obtain the SCF file name);
+(_fpref(Formats-Scf, SCF introduction, scf))
+the record marked **** is an extra item required for Directed Assembly.
+
+The order of records in the file is not important. They are listed
+here in alphabetical order with, where possible, reasons for the 
+origin of their names. Several are redundant and no group is likely
+to make use of them all. Obviously others can be added in the future.
+Initially they might be of local use but if their use becomes wider they
+can be added to the standard set. Standard EMBL records such as FT are
+assumed to be included.
+
+
+@c TABLE_MODE=1
+@table @var
+@item AC
+ACcession number
+@item AP
+Assembly Position ****
+@item AQ
+AVerage Quality for bases 100..200
+@item AV
+Accuracy values for externally assembled data **, ***
+@item BC
+Base Calling software
+@item CC
+Comment line
+@item CF
+Cloning vector sequence File
+@item CH
+Special CHemistry
+@item CL
+Cloning vector Left end
+@item CN
+Clone Name
+@item CR
+Cloning vector Right end
+@item CS
+Cloning vector Sequence present in sequence *
+@item CV
+Cloning Vector type
+@item DR
+Direction of Read
+@item DT
+DaTe of experiment
+@item EN
+Entry Name
+@item EX
+EXperimental notes
+@item FM
+sequencing vector Fragmentation Method
+@item ID
+IDentifier *
+@item LE
+was Library Entry, but now identifies a well in a micro titre dish
+@item LI
+was subclone LIbrary but now identifies a micro titre dish
+@item LN
+Local format trace file Name *
+@item LT
+Local format trace file Type *
+@item MC
+MaChine on which experiment ran
+@item MN
+Machine generated trace file Name
+@item MT
+Machine generated trace file Type
+@item ON
+Original base Numbers (positions) **
+@item OP
+OPerator
+@item PC
+Position in Contig **
+@item PD
+Primer data (the sequence of a primer)
+@item PN
+Primer Name
+@item PR
+PRimer type *
+@item PS
+Processing Status
+@item QL
+poor Quality sequence present at Left (5') end *
+@item QR
+poor Quality sequence present at Right (3') end *
+@item RS
+Reference Sequence for numbering and mutation detection
+@item SC
+Sequencing vector Cloning site
+@item SE
+SEnse (ie whether complemented) **
+@item SF
+Sequencing vector sequence File
+@item SI
+Sequencing vector Insertion length *
+@item SL
+Sequencing vector sequence present at Left (5') end *
+@item SP
+Sequencing vector Primer site (relative to cloning site)
+@item SQ
+SeQuence *
+@item SR
+Sequencing vector sequence present at Right (3') end *
+@item SS
+Screening Sequence
+@item ST
+STrands *
+@item SV
+Sequencing Vector type *
+@item TG
+Gel reading Tag *
+@item TC
+Contig Tag *
+@item TN
+Template Name *
+@item WT
+Wild type trace
+@end table
+@c TABLE_MODE=0
+
+_split()
+@node Exp-Explain
+@subsection Explanation of Records
+@cindex Experiment file: explanation of records
+
+@c TABLE_MODE=2
+@cindex AC: experiment file line type
+@table @code
+@item Record
+AC, ACcession line
+@item Format
+AC   string
+@item Explanation
+A unique identifier for the reading.
+@end table
+@sp 2
+@cindex AP: experiment file line type
+@table @code
+@item Record
+AP, Assembly Position
+@item Format
+AP   Name_of_anchor_reading sense offset tolerance
+@item Explanation
+For readings whose position has been mapped by an external program, these
+records tell the "directed assembly" algorithm where to assemble the data.
+Positions are defined as offsets from an "anchor reading" which is the name of
+any reading already in the database, an orientation (sense, + or -), and a
+tolerance. Readings are aligned at relative position offset + or - tolerance.
+@end table
+@sp 2
+@cindex AQ: experiment file line type
+@table @code
+@item Record
+AQ, Average Quality of the reading.
+@item Format
+AQ   Numeric value in range 1 - 99.
+@item Explanation
+The average value of the "numerical estimate of base calling accuracy" as
+calculated by program eba. The value is useful for monitoring data quality and
+could also be used for deciding on an order of assembly - for example assemble
+the highest quality readings first.
+@end table
+@sp 2
+@cindex AV: experiment file line type
+@table @code
+@item Record
+AV, Accuracy Values
+@item Format
+AV   q1 q2 q3 @dots{} or a1,c1,g1,t1 a2,c2,g2,t2 @dots{}
+@item Explanation
+The accuracy values lie in the range 1-99. Either 1 per base (eg 89 50 @dots{}
+or 4 per base (eg 0,89,5,2 50,3,7,10). @cite{Bonfield,J.K and Staden,R.
+The application of numerical estimates of base calling accuracy to DNA
+sequencing projects. Nucleic Acids Res. 23 1406-1410, (1995)}.
+@end table
+@sp 2
+@cindex BC: experiment file line type
+@table @code
+@item Record
+BC, Base Calling software
+@end table
+@sp 2
+@cindex CC: experiment file line type
+@table @code
+@item Record
+CC, Comment line
+@item Format
+CC   string
+@item Explanation
+Any comments can be added on any number of lines.
+@end table
+@sp 2
+@cindex CF: experiment file line type
+@table @code
+@item Record
+CF, Cloning vector sequence File
+@item Format
+CF   string
+@item Explanation
+The name of the file containing the sequence of the cloning vector, to be used
+by vector_clip (_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+
+@end table
+@sp 2
+@cindex CH: experiment file line type
+@table @code
+@item Record
+CH, Special CHemistry
+@item Format
+CH   number
+@item Explanation
+Used to flag readings as having been sequenced using a "special chemistry". The
+number is a bit pattern with a bit for each chemistry type, thus allowing
+combinations of chemistries to be listed. Currently bit 0 is used to
+distinguish between dye-primer (0) and dye-terminator (1) chemistries. Bits 1
+to 4 inclusive indicate the type of chemistry: unknown (0, 0000), ABI
+Rhodamine (1, 0001), ABI dRhodamine (2, 0010), BigDye (3, 0011), Energy
+Transfer (4, 0100) and LiCor (5, 0101). So for example a BigDye Terminator has 
+bits 00111 set which is 7 in decimal.
+@end table
+@sp 2
+@cindex CL: experiment file line type
+@table @code
+@item Record
+CL, Cloning vector Left end
+@item Format
+CL   number
+@item Explanation
+The base position in the sequence that contains the last base in the cloning
+vector. Currently gap4 only uses the CS line.
+@end table
+@sp 2
+@cindex CN: experiment file line type
+@table @code
+@item Record
+CN, Clone Name
+@item Format
+CN   string
+@item Explanation
+The name of the segment of DNA that the reading has been
+derived from. Typically the name of a physical map clone. 
+@end table
+@sp 2
+@cindex CR: experiment file line type
+@table @code
+@item Record
+CR, Cloning vector Right end
+@item Format
+CR   number
+@item Explanation
+The base position in the sequence that contains the first base in the cloning
+vector. Currently gap4 only uses the CS line.
+@end table
+@sp 2
+@cindex CS: experiment file line type
+@table @code
+@item Record
+CS, Cloning vector Sequence present in sequence
+@item Format
+CS   range
+@item Explanation
+Regions of sequence found by vector_clip 
+(_fpref(Vector_Clip, Screening Against Vector Sequences,
+vector_clip)) to be cloning vector. Used in assembly to
+exclude unwanted sequence.
+@end table
+@sp 2
+@cindex CV: experiment file line type
+@table @code
+@item Record
+CV, Cloning Vector type
+@item Format
+CV   string
+@item Explanation
+The type of the cloning vector used.
+@end table
+@sp 2
+@cindex DR: experiment file line type
+@table @code
+@item Record
+DR, Direction of Read
+@item Format
+DR   direction
+@item Explanation
+Whether forward or reverse primers were used. Allows
+mapping of forward and reverse reads off the same template. NOTE however
+that we do not encourage the use of this method as the terms
+direction, sense and strand can be confusing. Instead we encourage the
+use of the PRimer line.
+@end table
+@sp 2
+@cindex DT: experiment file line type
+@table @code
+@item Record
+DT, DaTe of experiment
+@item Format
+DT   dd-mon-yyyy
+@item Explanation
+Any date information.
+@end table
+@sp 2
+@cindex EN: experiment file line type
+@table @code
+@item Record
+EN, Entry Name
+@item Format
+EN   string
+@item Explanation
+The name given to the reading
+@end table
+@sp 2
+@cindex EX: experiment file line type
+@table @code
+@item Record
+EX, EXperimental notes
+@item Format
+EX   string
+@item Explanation
+Another type of comment line for additional information.
+@end table
+@sp 2
+@cindex FM: experiment file line type
+@table @code
+@item Record
+FM, sequencing vector Fragmentation Method
+@item Format
+FM   string
+@item Explanation
+Fragmentation method used to create sequencing library.
+@end table
+@sp 2
+@cindex ID: experiment file line type
+@table @code
+@item Record
+ID, IDentifier
+@item Format
+ID   string
+@item Explanation
+This is the name given to the reading inside the assembly database
+and is equivalent to the ID line of an EMBL entry.
+@end table
+@sp 2
+@cindex LE: experiment file line type
+@table @code
+@item Record
+LE, Can be used to identify the location of materials
+@item Format
+LE   string
+@item Explanation
+Originally a micro titre dish well number. Used in
+combination with LI.
+@end table
+@sp 2
+@cindex LI: experiment file line type
+@table @code
+@item Record
+LI, Can be used to identify the location of materials
+@item Format
+LI   string
+@item Explanation
+Originally a micro titre dish identifier. Used in
+combination with LE.
+@end table
+@sp 2
+@cindex LN: experiment file line type
+@table @code
+@item Record
+LN, Local format trace file Name
+@item Format
+LN   string
+@item Explanation
+The name of the local format trace file. This information is passed
+onto gap4, and allows for local formats to be used.
+@end table
+@sp 2
+@cindex LT: experiment file line type
+@table @code
+@item Record
+LT, Local format trace file Type
+@item Format
+LT   string
+@item Explanation
+The type of the local trace file type (usually SCF).
+@end table
+@sp 2
+@cindex MC: experiment file line type
+@table @code
+@item Record
+MC, MaChine on which sequencing experiment was run
+@item Format
+MC   string
+@item Explanation
+The lab's name for the sequencing machine used to create the data.
+Used for logging the performance of individual machines.
+@end table
+@sp 2
+@cindex MN: experiment file line type
+@table @code
+@item Record
+MN, Machine generated trace file Name
+@item Format
+MN   string
+@item Explanation
+The name of the trace file generated by the sequencing machine MC.
+@end table
+@sp 2
+@cindex MT: experiment file line type
+@table @code
+@item Record
+MT, Machine generated trace file Type
+@item Format
+MT   string
+@item Explanation
+The type of machine generated trace file.
+@end table
+@sp 2
+@cindex ON: experiment file line type
+@table @code
+@item Record
+ON, Original base Numbers (positions)
+@item Format
+ON   (eg) 1..43 0 45..63 65..74 0 75..536
+@item Explanation
+The A..B notation means that values A to B inclusive, so this example reads
+that bases 1 to 43 are unchanged, there is a change at 44, etc.
+@end table
+@sp 2
+@cindex OP: experiment file line type
+@table @code
+@item Record
+OP, OPerator
+@item Format
+OP   string
+@item Explanation
+Someone's name, possibly the person who ran the
+sequencing machine. Useful, with expansion of the string field for
+monitoring the performance of individuals!
+@end table
+@sp 2
+@cindex PC: experiment file line type
+@table @code
+@item Record
+PC,  Position in Contig
+@item Format
+PC    number
+@item Explanation
+For preassembled data, the position to put the left end of the reading.
+@end table
+@sp 2
+@cindex PD: primer data - the sequence of a primer
+@table @code
+@item Record
+PD,  Primer Data
+@item Format
+PD    sequence
+@item Explanation
+The primer sequence.
+@end table
+@sp 2
+@cindex PN: experiment file line type
+@table @code
+@item Record
+PN, Primer Name
+@item Format
+PN   string
+@item Explanation
+Name of primer used, using local naming convention. Could be a
+universal primer. 
+@end table
+@sp 2
+@cindex PR: experiment file line type
+@table @code
+@item Record
+PR, PRimer type
+@item Format
+PR   number
+@item Explanation
+This record shows the direction of the reading and distinguishes between
+primers from the ends of the insert and those that are internal. It is
+important for the analysis of the relative orientations and positions of
+readings on templates. When the positions of readings on templates are
+analysed (_fpref(Read Pairs, Find read pairs, read_pairs)) primer types
+1,2,3 and 4 are represented using the symbols F,R,f and r respectively.
+
+@c TABLE_MODE=1
+@table @var
+@item 0
+Unknown
+@item 1
+Forward from beginning of insert
+@item 2
+Reverse from end of insert
+@item 3
+Custom forward i.e. a forward primer other than type 1.
+@item 4
+Custom reverse i.e. a reverse primer other than type 2.
+@end table
+@c TABLE_MODE=2
+@end table
+@sp 2
+@cindex PS: experiment file line type
+@table @code
+@item Record
+PS, Processing Status
+@item Format
+PS   explanation
+@item Explanation
+Indication of processing status. 
+@end table
+@sp 2
+@cindex QL: experiment file line type
+@table @code
+@item Record
+QL, poor Quality sequence present at Left (5') end
+@item Format
+QL   position
+@item Explanation
+The sequence up to and including the base at the marked position are
+considered to be of too poor quality to be used. 
+It may overlap with other marked
+sequences - CS, SL or SR. Used in assembly to exclude unwanted sequence.
+@end table
+@sp 2
+@cindex QR: experiment file line type
+@table @code
+@item Record
+QR, poor Quality sequence present at Right (3') end
+@item Format
+QR   position
+@item Explanation
+The sequence from and including the base at the marked position to the
+end is considered to be of too poor quality to be used. It may overlap with
+other marked sequences - CS, SL or SR. Used in assembly to exclude
+unwanted sequence.
+@end table
+@sp 2
+@cindex RS: experiment file line type
+@table @code
+@item Record
+RS, Reference Sequence
+@item Format
+RS   string
+@item Explanation
+The name of a sequence, usually in EMBL format, used to define the target
+sequence, base numbering 
+and feature table data for a project. Used to define the numbering and
+changes produced by mutations in individual sequence readings
+(_fpref(Mutation-Detection-Introduction, Introduction to mutation detection,t)).
+@end table
+@sp 2
+@cindex SC: experiment file line type
+@table @code
+@item Record
+SC, Sequencing vector Cloning site
+@item Format
+SC   position
+@item Explanation
+The cloning site of the sequence vector. Used by vector_clip 
+(_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+@end table
+@sp 2
+@cindex SE: experiment file line type
+@table @code
+@item Record
+SE, SEnse (ie whether complemented)
+@item Format
+SE   number
+@item Explanation
+For preassembled data, the sense of the reading (0 for forward, 1 for
+reverse).
+@end table
+@sp 2
+@cindex SF: experiment file line type
+@table @code
+@item Record
+SF, Sequencing vector sequence File
+@item Format
+SF   string
+@item Explanation
+The name of the file containing the sequence of the 
+sequencing vector, to be used by vector_clip 
+(_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+@end table
+@sp 2
+@cindex SI: experiment file line type
+@table @code
+@item Record
+SI, Sequencing vector Insertion length
+@item Format
+SI   range
+@item Explanation
+Expected insertion length of sequence in sequencing
+vector. Useful for selecting templates for further experiments.
+@end table
+@sp 2
+@cindex SL: experiment file line type
+@table @code
+@item Record
+SL, Sequencing vector sequence present at Left (5') end
+@item Format
+SL   position
+@item Explanation
+The sequence up to and including the base at the marked 
+position are considered to be sequencing vector. Written by vector_clip
+(_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+@end table
+@sp 2
+@cindex SP: experiment file line type
+@table @code
+@item Record
+SP, Sequencing vector Primer site (relative to cloning site)
+@item Format
+SP   position
+@item Explanation
+Location of the primer using to sequence relative to cloning site.
+Used by vector_clip 
+(_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+@end table
+@sp 2
+@cindex SQ: experiment file line type
+@table @code
+@item Record
+SQ, SeQuence
+@item Format
+SQ   \nsequence blocks@dots{}\n//\n
+@item Explanation
+Complete sequence, as determined by the sequencing machine. The sequence is
+broken into blocks of 10 bases with 6 blocks per line separated by a space
+(see the example below).
+@end table
+@sp 2
+@cindex SR: experiment file line type
+@table @code
+@item Record
+SR, Sequencing vector sequence present at Right (3') end
+@item Format
+SR   position
+@item Explanation
+The sequence from and including the base at the marked 
+position to the end are considered to be sequencing vector. Written by
+vector_clip 
+(_fpref(Vector_Clip, Screening Against Vector Sequences, vector_clip)).
+@end table
+@sp 2
+@cindex SS: experiment file line type
+@table @code
+@item Record
+SS, Screening Sequence
+@item Format
+SS   string
+@item Explanation
+Note that in earlier versions of this documentation this field was explained
+incorrectly. Due to this the field is not currently being used by any of our
+programs. The original meaning was to specify a sequence to screen against.
+Any number of SS lines could be present to denote any number of screening
+sequences. In the future we may change the meaning of this field to be a
+single SS line containing a file of filenames of screening sequences. If this
+causes problems for people then we will choose a new line type, so please
+inform us now. Also note that contrary to previous documentation, vector_clip does
+not use this field (it uses the SF field instead).
+@end table
+@sp 2
+@cindex ST: experiment file line type
+@table @code
+@item Record
+ST, STrands
+@item Format
+ST   number
+@item Explanation
+Denotes whether this is a single or double stranded template. This
+is useful for deducing suitable templates for later experiments.
+@end table
+@sp 2
+@cindex SV: experiment file line type
+@table @code
+@item Record
+SV, Sequencing Vector type
+@item Format
+SV   string
+@item Explanation
+Type of sequencing vector used. Can be used for choosing
+templates for custom primer experiments.
+@end table
+@sp 2
+@cindex TG: experiment file line type
+@table @code
+@item Record
+TC, Tag to be placed on the Consensus.
+@item Format
+TC   TYPE S position..length
+@item Explanation
+These lines instruct gap4 to place tags on the consensus.
+The format defines the tag type which is a 4 character identifier
+and should start at column position 5), its strand  ( "+", "-" or
+"=" which means both strands), its start position followed by the
+position of its end. These two values are separated by "..". Following
+lines starting TG with space characters up to column 10 are written
+into the comment field of the tag. For example the next three lines
+define a tag of type comment that is to be on both strands over the
+range 100 to 110 and the comment field will contain "This comment
+contains several lines".
+@example
+TC   COMM = 100..110
+TC        This comment contains
+TC          several lines
+@end example
+@end table
+@sp 2
+@cindex TC: experiment file line type
+@table @code
+@item Record
+TG, Tag to be placed on the reading.
+@item Format
+TG   TYPE S position..length
+@item Explanation
+These lines instruct gap4 to place tags on the reading.
+See TC for further information.
+@end table
+@sp 2
+@cindex TN: experiment file line type
+@table @code
+@item Record
+TN, Template Name
+@item Format
+TN   string
+@item Explanation
+The name of the template used in the experiment.
+@end table
+@sp 2
+@cindex WT: wild type trace file
+@table @code
+@item Record
+WT, Wild Type trace file
+@item Format
+WT   string
+@item Explanation
+The filename of the wild type trace file. Used for mutation studies.
+@end table
+@c TABLE_MODE=0
+
+_split()
+@node Exp-Example
+@subsection Example
+@cindex Experiment file: example
+@cindex Example experiment file
+
+@example
+ID   h4a01h6.s1
+EN   h4a01h6.s1
+TN   h4a01h6
+EX   lane 18, run time 10 hrs
+MN   Sample 18
+MC   A
+MT   ABI
+LN   h4a01h6.s1SCF
+LT   SCF
+DT   08-Jan-1993
+OP   ak
+TN   h4a01h6
+SV   M13mp18
+SF   /pubseq/seqlibs/vectors/m13mp18.seq
+SI   1000..2000
+SC   6249
+PN   -21
+PR   1
+DR   +
+SP   41
+ST   1
+CN   3G9
+CV   sCos-1
+CF   /pubseq/seqlibs/vectors/sCos-1.seq
+SS   /pubseq/seqlibs/vectors/m13mp18.seq
+SQ
+     GCTTGCATGC CTGCAGGTCG ACTCTAGAGG ATCCCCAACC AGTAAGGCAA CCCCGCCAGC
+     CTAGCCGGGT CCTCAACGAC AGGAGCACGA TCATGCGCAC CCGTCAGATC CAGACATGAT
+     AAGATACATT GATGAGTTTG GACAAACCAC AACTAGAATG CAGT-AAAAA AATGCTTTAT
+     TTGTGAAATT TGTGATGCTA TTGCTTTATT TGTAACCATT ATAAGCTGCA ATAAACAAGT
+     TAACAACAAC AATTGCATTC ATTTTATGTT TCAGGTTCAG GGGGAGGTGT GGGAGGTTTT
+     TTAAAGCAAG TAAAACCTCT ACAAATGTGG TATGGCTGAT TATGATCTCT AGTCAAGGCA
+     CTATACATCA AATATT-CCT TATTAACCCC CTTTACAAAT TTAAAAGGCT -AAAGGGTCC
+     ACAATTTTTG -GCCTAGGTA TTAATAGCCG GCACTTCTT- TGCCTGTTTT GG-GTAGGG-
+     AAAACCGGTA TGTTT-TGGT T-TTC
+//
+QL   0
+QR   281
+SL   36
+SR   506
+CS   37..280
+PS   Completely cloning vector
+@end example
+
+_split()
+@node Exp-Unsupported
+@subsection Unsupported Additions (From LaDeana Hillier)
+@cindex Experiment file: unsupported additions
+
+Note the clash on AP which the io-lib uses for "Assembly Position"
+and PC which is used for "Position in Contig"
+
+@c INDENT=0.1i
+@example
+People to track:
+TP Template Prep person
+QP Sequencer Person, person who does sequencing reactions
+LP Loader Person
+AL Agar Loader person (when they run a gel to determine SI)
+AP Agar reaction Person   (person who does the reactions to prepare
+                        the template to be run on a gel)
+
+Gel specific information
+GN Gel Name
+GL Gel Lane
+GP Gel Pourer person
+AG Agar Gel name (sizing gel)
+AF Agar Fate, no insert, no bands, what else?
+
+Name of library
+LB  Library name, probably not critical to assembly even though
+        one CN may have more than one library.  But it is important
+        to the cDNA project although I could put it in CN, since
+        the cDNA project wouldn't have a CN otherwise.
+
+Processing information
+PC processing comment (a comment about PS)
+        I think PS should just hold pass or fail and PC should hold
+        additional information about why things passed.
+
+Trace information gotten from the ABI machine (from info field in SCF file):
+TS   Trace Spacing
+DP   Dye Primer
+HA   signal strengtH A
+HG   signal strengtH G
+HC   signal strengtH C
+HT   signal strengtH T
+
+(NOTE rs suggested these should go in a single record
+
+PP   Primer Position  (position at which primer peak was detected in trace)
+
+Stuff most likely specific to the cDNA project:
+MP Map Position 
+TT Tissue Type of the library
+EI dbEst Id  
+ER dbEst Remark
+OE Other Est's which are similar
+NI NCBI ID
+GB GenBank accession number
+SD Submission Date (when est was submitted)
+UD Update date (when it was last updated)
+CI citation associated with this cDNA
+@end example
+@c INDENT=0.5i

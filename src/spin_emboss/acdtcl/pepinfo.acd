@@ -1,0 +1,176 @@
+package require Iwidgets
+namespace eval ::EMBOSS::pepinfo {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_pepinfo*Xentry.entry.width 30
+option add *e_pepinfo*Entryfield.width 30
+option add *e_pepinfo*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) pepinfo
+    set w [xtoplevel .e_pepinfo -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - pepinfo}
+    label $w._title -text {Plots simple amino acid properties in parallel}
+    pack $w._title -side top -fill both
+    set vars(pepinfo._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments inseq
+    set vars(inseq)       [get_active_seq_id 0]
+    if {$vars(inseq) == -1} {set vars(inseq) [get_active_seq_id 0]}
+    set vars(inseq.name)  [seq_info $vars(inseq) name]
+    sequence_changed [namespace current] inseq
+    set vars(inseq.type) [subst protein]
+    seq_id $w.inseq \
+	-textvariable [namespace current]::vars(inseq.name)\
+	-start_value $vars(inseq.begin)\
+	-end_value $vars(inseq.end)\
+	-to [seq_info $vars(inseq) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] inseq $w.inseq}"
+    set vars(inseq) [subst {}]
+    pack $w.inseq -side top -fill both
+    set vars(inseq.path) $w.inseq
+    set vars(inseq.required)  1
+    trace variable vars(inseq.name) w  "::EMBOSS::sequence_changed [namespace current] inseq"
+    set vars(inseq._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  1
+    set vars(graph._type) xygraph
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst pepinfo.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    lappend arguments generalplot
+    checkbutton $w.generalplot \
+	-text [subst {plot histogram of general properties}]\
+	-variable [namespace current]::vars(generalplot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.generalplot -side top -anchor w
+    set vars(generalplot) [subst 1]
+    set vars(generalplot.path) $w.generalplot
+    set vars(generalplot.required)  0
+    set vars(generalplot._type) bool
+
+    lappend arguments hydropathyplot
+    checkbutton $w.hydropathyplot \
+	-text [subst {plot graphs of hydropathy}]\
+	-variable [namespace current]::vars(hydropathyplot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.hydropathyplot -side top -anchor w
+    set vars(hydropathyplot) [subst 1]
+    set vars(hydropathyplot.path) $w.hydropathyplot
+    set vars(hydropathyplot.required)  0
+    set vars(hydropathyplot._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments hwindow
+    iwidgets::entryfield $w.hwindow \
+	-validate integer \
+	-textvariable [namespace current]::vars(hwindow) \
+	-labeltext [subst {Window size for hydropathy averaging}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.hwindow component entry] -sticky nse
+    set vars(hwindow) [subst 9]
+    pack $w.hwindow -side top -fill both
+    set vars(hwindow.minimum) [subst 1]
+    set vars(hwindow.maximum) [subst {[expr {$vars(inseq.length)}]}]
+    set vars(hwindow.maximum.orig) $vars(hwindow.maximum)
+    set vars(hwindow.maximum.expr) {[expr {$vars(inseq.length)}]}
+    trace variable vars(inseq.length) w  "::EMBOSS::reset_value [namespace current] hwindow.maximum"
+    set vars(hwindow.path) $w.hwindow
+    set vars(hwindow.required)  0
+    set vars(hwindow._type) integer
+
+    lappend arguments aaproperties
+    iwidgets::entryfield $w.aaproperties \
+	-textvariable [namespace current]::vars(aaproperties) \
+	-labeltext [subst {User defined amino acid properties}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.aaproperties component entry] -sticky nse
+    set vars(aaproperties) [subst Eaa_properties.dat]
+    pack $w.aaproperties -side top -fill both
+    set vars(aaproperties.path) $w.aaproperties
+    set vars(aaproperties.required)  0
+    set vars(aaproperties._type) string
+
+    lappend arguments aahydropathy
+    iwidgets::entryfield $w.aahydropathy \
+	-textvariable [namespace current]::vars(aahydropathy) \
+	-labeltext [subst {User defined hydropathy data}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.aahydropathy component entry] -sticky nse
+    set vars(aahydropathy) [subst Eaa_hydropathy.dat]
+    pack $w.aahydropathy -side top -fill both
+    set vars(aahydropathy.path) $w.aahydropathy
+    set vars(aahydropathy.required)  0
+    set vars(aahydropathy._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/pepinfo.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

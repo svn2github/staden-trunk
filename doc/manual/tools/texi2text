@@ -1,0 +1,59 @@
+#!/bin/awk -f
+
+# Skip over menus
+/^@menu/ {
+    in_menu=1;
+}
+
+/^@end menu/ {
+    in_menu = 0;
+    next
+}
+
+# Strip certain texinfo instructions completely
+/^@c/ {next}
+/^@cindex/ {next}
+/^@node/ {next}
+/^@picture/ {next}
+/^@example/ {next}
+/^@format/ {next}
+/^@cartouche/ {next}
+/^@group/ {next}
+/^@end/ {next}
+/^@enumerate/ {next}
+/^@itemize/ {next}
+/^@item/ {next}
+
+# Remove heading styles
+/^@section/ {$1="";}
+/^@subsection/ {$1="";}
+/^@subsubsection/ {$1="";}
+/^@chapter/ {$1="";}
+/^@numbered/ {$1="";}
+/^@numberedsec/ {$1="";}
+/^@numberedsubsec/ {$1="";}
+/^@numberedsubsubsec/ {$1="";}
+/^@unnumbered/ {$1="";}
+/^@unnumberedsec/ {$1="";}
+/^@unnumberedsubsec/ {$1="";}
+/^@unnumberedsubsubsec/ {$1="";}
+/^@appendix/ {$1="";}
+/^@appendixsec/ {$1="";}
+/^@appendixsubsec/ {$1="";}
+/^@appendixsubsubsec/ {$1="";}
+/^@chapheading/ {$1="";}
+/^@majorheading/ {$1="";}
+/^@heading/ {$1="";}
+/^@subheading/ {$1="";}
+/^@subsubheading/ {$1="";}
+
+# Remove inline text formatting commands
+/@[a-z][a-z]*\{/ {gsub("@[a-z][a-z]*\\\{","");gsub("\\\}","");}
+/@@/ {gsub("@@","@");}
+
+# Print what we've got left
+{
+    if (in_menu==0) {
+	print;
+    }
+}

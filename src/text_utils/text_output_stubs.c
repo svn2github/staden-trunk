@@ -1,0 +1,82 @@
+/*
+ * Stubs for the text_output system to be used when in a non windowing
+ * environment.
+ */
+
+#include <stdio.h>
+#include <stdarg.h>
+
+static int header_outputted = 0;
+
+void start_message(void) {}
+void end_message(void) {}
+
+/*
+ * Usage: verror(priority, name, format, args...);
+ * NB: don't pass more than 8K per call
+ */
+/* ARGSUSED */
+void verror(int priority, char *name, char *fmt, ...) { 
+    va_list args;
+
+    fprintf(stderr, "%s: ", name);
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    fprintf(stderr, "\n");
+}
+
+
+/*
+ * Usage: vmessage(format, args...);
+ */
+void vmessage(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+}
+
+/*
+ * Adds a new header to the text output window.
+ */
+void vfuncheader(char *fmt, ...) {
+    va_list args;
+
+    va_start(args, fmt);
+    vfprintf(stdout, fmt, args);
+    fprintf(stdout, "\n");
+    header_outputted = 1;
+}
+
+void vfuncparams(char *fmt, ...) {
+}
+
+/*
+ * Used for grouping outputs together (such as the 2D plot results).
+ * Basically we don't output a header if the last output was from this
+ * group and there haven't been function headers outputted since.
+ *
+ * group numbers:
+ * 1	2D plot matches
+ * 2	Information from template display
+ */
+void vfuncgroup(int group, char *fmt, ...) {
+    static int group_num = 0;
+    va_list args;
+
+
+    if (header_outputted || group != group_num) {
+	va_start(args, fmt);
+	vfprintf(stdout, fmt, args);
+	fprintf(stdout, "\n");
+
+	header_outputted = 0;
+	group_num = group;
+    }
+}
+
+
+/* Dummy function for text_output lib, but used in tk_utils */
+/* ARGSUSED */
+void log_file(char *fn, char *message) {}
+void log_vmessage(int log) {}

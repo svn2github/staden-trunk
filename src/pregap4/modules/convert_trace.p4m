@@ -1,0 +1,257 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Conversion between various trace file formats.
+# This is an optional module. Things run fine without it, however using SCF,
+# CTF, or best of all ZTR, can save considerable amounts of disk space.
+#
+set help {pregap4 {Pregap4-Modules-ConvertTrace}}
+
+proc init {} {
+    mod_preset down_scale 0
+    mod_preset down_scale_range 255
+    mod_preset output_format ztr
+    mod_preset subtract_background 0
+    mod_preset normalise 0
+    mod_preset del_temp_files 1
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global errorCode
+    global fofn
+    variable down_scale
+    variable down_scale_range
+    variable subtract_background 
+    variable normalise
+    variable output_format
+    variable report
+    variable del_temp_files
+
+    set new_files {}
+    set report ""
+
+    set lf [string tolower $output_format]
+    set uf [string toupper $output_format]
+
+    # Build up file of filenames
+    array set found {}
+    array set map {}
+    set fd [open $fofn.tmp w]
+    foreach f $files {
+	# NB: Conversion to the same format is still allowed as we may also
+	# be applying other factors, such as normalisation.
+	if {[lsearch {ABI ALF BIO SCF CTF ZTR} $file_type($f)] != -1 &&
+	    ([string toupper $file_type($f)] != [string toupper $output_format] ||
+	     $down_scale != 0 ||
+	     $normalise != 0 ||
+	     $subtract_background != 0)} {
+	    set new_f [eval [list $file_type($f)_filename_to_${lf}_name $f]]
+	    regsub -all {[ \\]} $f {\\&} g
+	    regsub -all {[ \\]} $new_f {\\&} new_g
+	    set map($f) $new_f
+	    puts $fd "$g $new_g"
+	    set found($f) 0
+	} else {
+	    lappend new_files $f
+	    vmessage -nonewline -
+        }
+    }
+    close $fd
+
+    # Run convert_trace, to process all files in one go.
+    set cmd "convert_trace -dots -out_format $output_format \
+                 -fofn   [list $fofn.tmp] \
+                 -passed [list $fofn.ct_passed] \
+                 -failed [list $fofn.ct_failed] "
+    if {$down_scale != 0} {
+	append cmd "-scale $down_scale_range "
+    }
+    if {$normalise != 0} {
+	append cmd "-normalise "
+    }
+    if {$subtract_background != 0} {
+	append cmd "-subtract_background "
+    }
+
+    catch {file delete $fofn.ct_passed}
+    catch {file delete $fofn.ct_failed}
+    set errorCode NONE
+
+    if {[catch {eval exec $cmd} var] && $errorCode != "NONE"} {
+	append report "ERR: convert_trace failed with error message '$var'.\n"
+	verror ERR_WARN convert_trace $errorCode
+	verror ERR_WARN convert_trace $var
+	return $files
+    }
+    vmessage $var
+
+    # Processed passed file
+    if {[catch {set fd [open $fofn.ct_passed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    set new_f $map($line)
+
+	    # If we are creating "a..ztr" from "a.ztr" and "a.ztr" is a tmp
+	    # file, then we can delete a.ztr and move a..ztr to a.ztr instead
+	    if {$del_temp_files && $file_orig_name($line) != $line} {
+		if {"[file root $line]." == "[file root $new_f]" &&
+		    [file extension $line] == [file extension $new_f]} {
+		    file rename -force $new_f $line
+		    set new_f $line
+		    append report "SEQ $line: recreated\n"
+		} else {
+		    catch {file delete $line}
+		    append report "SEQ $new_f: created from $line\n"
+		    append report "SEQ $line: deleted\n"
+		}
+	    } else {
+	    	append report "SEQ $new_f: created from $line\n"
+	    }
+
+	    set file_type($new_f) [string toupper $output_format]
+	    set file_error($new_f) {}
+	    set file_id($new_f) $file_id($line)
+	    set file_orig_name($new_f) $line
+	    lappend new_files $new_f
+	    catch {unset found($line)}
+
+	}
+        close $fd
+    }
+
+    # Process failed file
+    if {[catch {set fd [open $fofn.ct_failed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    set file_error($line) "convert_trace: failed"
+	    if {![info exists file_type($line)]} {
+		verror ERR_WARN convert_trace \
+		    "unknown reading with name '$line' in failed file"
+		continue
+	    }
+	    catch {unset found($line)}
+	    append report "SEQ $line: failed (convert_trace)\n"
+	}
+        close $fd
+    }
+
+    # Check that there aren't any missing - neither in passed or failed
+    foreach f [array names found] {
+	verror ERR_WARN convert_trace \
+	    "'lost' reading with name '$f'"
+	set file_error($f) "convert_trace: lost file"
+	append report "SEQ $f: lost\n"
+    }
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc name {} {
+    return "Trace Format Conversion"
+}
+
+proc create_dialogue {w} {
+    variable down_scale
+    variable down_scale_range
+    variable subtract_background 
+    variable normalise
+    variable output_format
+    variable del_temp_files
+
+    frame $w.format
+    label $w.format.l -text "Output format"
+    radiobutton $w.format.scf \
+	-text SCF \
+	-variable [namespace current]::output_format \
+	-value scf
+    radiobutton $w.format.ctf \
+	-text CTF \
+	-variable [namespace current]::output_format \
+	-value ctf
+    radiobutton $w.format.ztr \
+	-text ZTR \
+	-variable [namespace current]::output_format \
+	-value ztr
+    pack $w.format -side top -fill both
+    pack $w.format.l -side left
+    pack $w.format.scf $w.format.ctf $w.format.ztr -side right -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    xyn $w.scale \
+	-label "Downscale sample range?" \
+	-variable [namespace current]::down_scale \
+	-orient horiz \
+	-ncommand "$w.scale_range configure -state disabled" \
+	-ycommand "$w.scale_range configure -state normal"
+    pack $w.scale -side top -fill both
+
+    xentry $w.scale_range \
+	-label "Range" \
+	-textvariable [namespace current]::down_scale_range \
+	-width 12
+    pack $w.scale_range -side top -fill both
+
+    $w.scale set $down_scale
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+
+    xyn $w.subtract_background \
+	-label "Subtract background" \
+	-variable [namespace current]::subtract_background \
+	-orient horiz
+    pack $w.subtract_background -side top -fill both
+
+    xyn $w.normalise \
+	-label "Normalise amplitudes" \
+	-variable [namespace current]::normalise \
+	-orient horiz
+    pack $w.normalise -side top -fill both
+
+    frame $w.separator3 -bd 2 -relief raised -height 2
+    pack $w.separator3 -side top -fill x -padx 10 -pady 5
+
+    xyn $w.deltemp \
+	-label "Delete temporary files" \
+	-orient horiz \
+	-default $del_temp_files
+    pack $w.deltemp -side top -fill both
+}
+
+proc process_dialogue {w} {
+    variable del_temp_files
+    
+    set del_temp_files  [$w.deltemp get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	variable down_scale
+	variable down_scale_range
+	variable output_format
+	variable subtract_background
+	variable normalise
+	variable del_temp_files
+	mod_save down_scale $down_scale
+	mod_save down_scale_range $down_scale_range
+	mod_save output_format $output_format
+	mod_save subtract_background $subtract_background
+	mod_save normalise $normalise
+	mod_save del_temp_files [$w.deltemp get]
+    }
+}

@@ -1,0 +1,408 @@
+@node Trev
+@section Introduction
+@cindex Trev: introduction
+
+@cindex Trev 
+@menu
+* Trev-Opening::                Opening trace files
+* Trev-View::                   Viewing the trace
+* Trev-Searching::              Searching
+* Trev-Information::            Information
+* Trev-Editing::                Editing
+* Trev-Save::                   Saving a trace file
+* Trev-Files::                  Processing multiple files
+* Trev-Print::                  Printing a trace
+* Trev-Quit::                   Quitting Trev
+@ifset standalone
+* Index::			Index
+@end ifset
+@end menu
+
+_include(trev_mini-t.texi)
+
+_split()
+@node Trev-Opening
+@section Opening trace files
+@cindex Trev: opening trace files
+@cindex Opening trace files: Trev
+
+Trace files can be opened either on the command line or from within Trev.  
+In both cases it is possible to open several traces at once. In this case trev
+will add Next File, Previous File and Goto File buttons to allow quick
+navigation between traces.
+
+On the command line, this is simply done by specifying several files. With the
+"Open" dialogue from within trev multiple files may be selected by dragging
+with the left mouse button or using shift+left button and control+left button
+to extend regions or to toggle loading of individual files.
+
+@node Trev-Opening-Command
+@subsection Opening a trace file from the command line
+@cindex Command line arguments: Trev
+
+@table @code
+usage: trev [-@{ABI,ALF,EXP,SCF,PLN,Any@}] [-edits @var{value}]
+[-editscf] [-xmag @var{value}] [-ymag @var{value}] [-restrict]
+[@var{tracefilename} ...]
+
+@sp 1
+@item -ABI, -ALF, -EXP, -SCF, -PLN, -Any
+Optional. Defaults to Any. These define the possible input trace formats
+available. Currently these are 'ABI', 'ALF', experiment
+(_fpref(Formats-Exp, Experiment File, formats)), 'SCF'
+(_fpref(Formats-Scf, scf, formats)), plain ASCII text or 'any' in which case
+the program attempts to establish the file format from information
+contained within the trace file. 
+
+@sp 1
+@item -edits @var{value}
+Optional. Defaults to 1. If @var{value} is 1, the trace sequence can be
+edited. If @var{value} is 0, no edit line is displayed in Trev and the
+sequence may not be edited.
+
+@sp 1
+@item -editscf
+Optional. By default writing to SCF is disabled for safety and reasons of
+preference (we feel that all edits should be contained within an associated
+Experiment File thus leaving the original trace file intact). Specifying
+@code{-editscf} allows writing to SCF files.
+
+@sp 1
+@item -pregap_mode
+Optional. Only used by Pregap4. This adds a Reject button to Trev
+and disables certain file operations. This argument should only be used by
+programs that run Trev as subprocesses for processing batches of files.
+
+@sp 1
+@item -restrict
+Optional. Restricts the use of the trace editor to a single file by
+disabling the ability to open another file from within Trev. The main
+use of this option is for calling Trev from within scripts.
+
+@sp 1
+@item -xmag @var{value}
+Optional. Defaults to 150. Specifies the magnification along the X axis
+of the trace. Larger values represent higher magnifications.
+
+@sp 1
+@item -ymag @var{value}
+Optional. Defaults to 10. Specifies the magnification along the Y axis
+of the trace. The value should be between 10 and 100 with 10 showing all
+the trace and 100 being the largest magnification.
+@end table
+
+@node Trev-Opening-Internal
+@subsection Opening a trace file from within Trev
+@cindex Filebrowser: Trev
+
+To open a trace file select the "Open..." command from the File menu.
+This brings up a file browser from where the trace name can be selected.
+_fxref(File Browser, File Browser, filebrowser) The format of the trace
+file should be selected from the row of Format buttons. Currently these
+are 'ABI', 'ALF', Experiment File (_fpref(Formats-Exp, Experiment File,
+formats)), 'SCF' (_fpref(Formats-Scf, SCF File, formats)), plain ASCII
+text or 'any' in which case the program attempts to establish the file format
+from information contained within the trace file. Opening an experiment
+file opens the trace file named within the experiment file. Double
+clicking on the trace name will open this trace file.
+
+If a trace file is already open, it is closed before the new one is
+opened. If the previous trace has been edited, but not saved, a dialogue
+box is displayed, asking if you wish to save the file before loading a
+new file. Selecting "Yes" will automatically save the file to its
+current filename. Selecting "No" will discard any changes that have been
+made.
+
+_split()
+@node Trev-View
+@section Viewing the trace
+@cindex Trev: scaling
+@cindex Scaling: Trev
+@cindex Trev: fonts
+@cindex Fonts, within trev
+
+The trace can be scrolled using the scrollbar directly beneath the
+menubar. The trace can be magnified both in the vertical and horizontal
+directions using the two scales to the left of the trace.
+
+The base numbers, original sequence, edited sequence, confidence values
+and the trace can each be switched on or off
+by using the check buttons in the "Display"
+option of the View menu.
+
+The font for the original and edited sequence can be chosen from three sizes,
+selectable by using the Font submenu of the View menu.
+
+The figure below shows the bases, edited bases, a histogram of the confidence
+values, the traces, and the Information Window which can be switched on
+from the View Menu.
+
+_lpicture(trev_conf_trace)
+
+_split()
+@node Trev-Searching
+@subsection Searching
+@cindex Trev: searching
+@cindex Searching: Trev
+
+        Selecting the "Search..." command in the View menu brings up a
+window into which a text string can be entered. Pressing the "Next"
+button positions the cursor at the start of the next piece of sequence
+that matches the string specified in the text box. Pressing "Previous", 
+finds the previous match. The search is case insensitive.
+
+_split()
+@node Trev-Information
+@subsection Information
+@cindex Trev: information
+@cindex Information: Trev
+
+	The comments from the SCF file of the trace can be displayed
+using the "Information" option in the View menu.
+
+_split()
+@node Trev-Editing
+@section Editing
+@cindex Trev: editing
+@cindex Editing: Trev
+
+@node Trev-Cutoffs
+@subsection Setting the left and right cutoffs
+@cindex Trev: setting cutoffs
+@cindex Cutoff data: Trev
+@cindex Vectors, in Trev
+@cindex Trev: vector sequence
+
+	Poor data at the left and right ends of the trace can be marked
+using the "Left Quality" and "Right Quality" options in the Edit menu.
+Alternatively a keyboard shortcut for editing the cutoff is to press
+@code{Control L} or @code{Control R} to edit left or right cutoff
+respectively.  To select the left cutoff, choose the "Left Quality" option
+from the menu. Then click the left mouse button at the required position in the 
+trace display.
+The region from the start of the sequence to this position will
+be highlighted in grey. To select the right hand cutoff, choose the
+"Right Quality" option in the Edit menu and click the required position in the trace
+display. The region between the
+left boundary and the end of the sequence will be highlighted. To prevent
+accidentally changing the cutoffs once these have been selected, choose the
+"Sequence" option in the Edit menu.
+	
+If vector sequence has been marked trev will also display these in a similar
+fashion to the quality cutoffs except in a peach colour. These cutoffs can be
+changed by selecting "Left Vector" and "Right Vector" in the same fashion as
+editing the quality cutoffs. Where both quality and vector cutoffs coincide
+trev draws the regions by striping between both peach and grey.
+
+@node Trev-Sequence
+@subsection Editing the sequence
+@cindex Trev: editing the sequence
+@cindex Editing the sequence: Trev
+
+	If the ability to edit has not been disabled, there will be two
+windows showing the trace sequence. The original sequence is displayed
+in the upper window. The window below this, which contains the blue cursor,
+is the editing window. To edit this sequence, select the "Sequence"
+option in the Edit menu. The editing cursor is positioned by clicking
+with the left mouse button within the display. Bases are deleted to the
+left of the cursor using the delete key of the keyboard. Additional
+bases are inserted to the left of the cursor. Only A, a, C, c, G, g, T,
+and t are allowed. It is recommended that edits are entered in
+lower case to distinguish them from the original bases.
+
+@node Trev-Undo
+@subsection Undoing clip edits
+@cindex Trev: undo
+@cindex Undo clip edits, trev
+
+It is often easy to accidently forget which editing mode you are in and adjust
+a quality or vector clip point by mistake. Trev keeps track of all clip edits
+and hence these may be "Undone" by selecting "Undo Clipping" from the Edit
+menu. This will remove the last clip edit. It is not yet possible to undo
+sequence edits.
+
+_split()
+@node Trev-Save
+@section Saving a trace file
+@cindex Trev: saving a trace file
+@cindex Saving: Trev
+
+To save a trace file to a different file name or format choose the "Save
+As..."  command from the File menu. Select the format the file is to be
+saved in using the Format buttons. The output formats are CTF, SCF, ZTR,
+experiment and plain text. 
+Type a new name into the Selection box or
+select an existing name from the list of file names. Experiment format
+traces can be saved to their existing name using the "Save" option in
+the File menu.
+
+_split()
+@node Trev-Files
+@section Processing multiple files
+@cindex Multiple files in Trev
+@cindex Previous button, trev
+@cindex Next button, trev
+@cindex Reject button, trev
+@cindex Goto file button, trev
+
+When several trace files are specified on the command line to Trev, it will
+add Previous File, Next File, and Goto File buttons. The Previous File and
+Next File simply step through the specified trace files. The Goto File button
+will bring up a scrollable list of all the trace files specified. Clicking on
+any trace filename in this list will jump to that file.
+
+If Trev was brought up from Pregap4, or the @code{-pregap_mode} command line
+switch was used, Trev will also display a Reject button. This may be used to
+indicate to Pregap4 that the trace file shown is not worthy of any clipping at
+all and should be sent to the Pregap4 "failed" file.
+
+_split()
+@node Trev-Print
+@section Printing a trace
+@cindex Trev: printing a trace
+
+The Print option is available via the File menu, as shown below.
+
+_picture(trace_print_menu)
+
+It produces a PostScript file which you must then send to the printer
+yourself.
+
+All sizes given in the dialogues explained below should be in
+PostScript points (72pt = 1inch).
+
+Defaults and available options are specified in the file
+tk_utilsrc. These can be changed by copying the relevant line from
+tk_utilsrc into a file called .tk_utilsrc in your home or working
+directory, and then altering the settings as desired.
+
+Note that it is not yet possible to include the histogram of confidence values
+in the postscript output.
+
+@node Trev-Print-PageOptions
+@subsection Page options
+@cindex Trev: page options
+
+_picture(trace_print_page_dialogue)
+
+@node Trev-Print-PageOptions-Paper
+@subsubsection Paper options
+@cindex Trev: paper options
+
+Currently available page sizes:
+@table @var
+@item A4
+(842 x 595)
+@item A3
+(1191 x 842)
+@item US Letter
+(792 x 612)
+@end table
+
+Please note that the page size and orientation options do not
+determine the paper format that your printer will use. This must be
+set externally to trev.
+
+@node Trev-Print-PageOptions-Panels
+@subsubsection Panels
+@cindex Trev: print panels
+
+Traces are printed width-ways across the page. When the right-hand
+margin of the page is reached, printing continues below the current
+section and from the left-hand side. A 'panel' is one page-width's
+worth of trace (minus margins).
+
+The trace and the sequence and sequence number information are printed
+entirely within the given height of the panel, and the separation
+gives the amount of space that is left between panels. Thus they,
+together with the page height and top and bottom margins, determine
+how many panels will be printed per page.
+
+@node Trev-Print-PageOptions-Fonts
+@subsubsection Fonts
+@cindex Trev: print fonts
+
+All fonts listed should be available to most PostScript printers. Most 
+printers will default to Courier if a selected font is not recognised.
+
+@node Trev-Print-TraceOptions
+@subsection Trace options
+@cindex Trev: trace print options
+
+_picture(trace_print_trace_dialogue)
+
+@node Trev-Print-TraceOptions-Title
+@subsubsection Title
+@cindex Trev: trace print title
+
+The title is printed in the top left hand corner of every page. The
+default is the name of the trace file.
+
+@node Trev-Print-TraceOptions-Colour
+@subsubsection Line width and colour
+@cindex Trev: trace print colour and line width
+
+The defaults are those used by the trev display.
+The colours shown in the selection dialogue may not correspond exactly 
+to those printed, depending on the capabilities of your printer.
+Different colours will usually be printed using grey-scales on black
+and white printers.
+
+@node Trev-Print-TraceOptions-Dash
+@subsubsection Dash pattern
+@cindex Trev: trace print dash pattern
+
+Dash pattern is in PostScript dash format:
+
+	dash_1 gap_1... dash_n gap_n offset
+
+'dash_n' and 'gap_n' are the lengths of dashes and the gaps between
+them. The dash pattern starts at dash_1, continues to gap_n, then
+starts again at dash_1, until the whole line has been drawn. If n = 0,
+i.e. no values are given for 'dash' and 'gap', the result is a normal
+unbroken line. Offset must be given, and is the distance into the dash
+pattern at which the pattern should be started. The dash pattern is not
+demonstrated by the example line on the ps_trace_setup dialogue.
+
+@node Trev-Print-TraceOptions-Bases
+@subsubsection Print bases
+@cindex Trev: trace print bases
+
+Allows a subsection of the trace to be printed.
+
+The 'Visible' button sets the region to that currently displayed in
+the main trev window. If the display is altered, the print base
+settings will not change unless 'Visible' is pressed again. The whole
+sequence is printed if the start position is greater than the end
+position. The OK button will not work if the start or end positions
+given are outside the range of the sequence.
+
+@node Trev-Print-TraceOptions-Magnification
+@subsubsection Print magnification
+@cindex Trev: trace print magnification
+
+The X and Y scales are taken from the trev display, and cannot
+be set independently for PostScript output.
+
+@node Trev-Print-Example
+@subsection Example
+@cindex Trev: trace print example
+
+The segment of output displayed below indicates the effects
+of the settings given in the example dialogue screendumps shown above.
+NB: the page has been clipped to save space. The section shown is the
+top part of an A4 page.
+
+_picture(trace_print_trace1)
+
+_split()
+@node Trev-Quit
+@section Quitting 
+@cindex Trev: quit
+@cindex Quit: Trev
+
+To exit Trev, select the "Exit" command from the File menu. If the
+sequence has been edited but not saved, a dialogue box is displayed,
+asking if you wish to save the file before quitting. Selecting "Yes"
+will automatically save the file to it's current filename. Selecting
+"No" will discard any changes that have been made.

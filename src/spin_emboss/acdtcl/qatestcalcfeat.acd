@@ -1,0 +1,151 @@
+package require Iwidgets
+namespace eval ::EMBOSS::qatestcalcfeatures {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_qatestcalcfeatures*Xentry.entry.width 30
+option add *e_qatestcalcfeatures*Entryfield.width 30
+option add *e_qatestcalcfeatures*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) qatestcalcfeatures
+    set w [xtoplevel .e_qatestcalcfeatures -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - qatestcalcfeatures}
+    label $w._title -text {ACD file for QA testing}
+    pack $w._title -side top -fill both
+    set vars(qatestcalcfeatures._type) application
+
+    lappend arguments test
+    iwidgets::entryfield $w.test \
+	-textvariable [namespace current]::vars(test) \
+	-labeltext [subst Features]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.test component entry] -sticky nse
+    set vars(test) [subst {}]
+    pack $w.test -side top -fill both
+    set vars(test.path) $w.test
+    set vars(test.required)  1
+    set vars(test._type) features
+
+    lappend arguments testflength
+    iwidgets::entryfield $w.testflength \
+	-textvariable [namespace current]::vars(testflength) \
+	-labeltext [subst FLength]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testflength component entry] -sticky nse
+    set vars(testflength) [subst {[expr {$vars(test.flength)}]}]
+    pack $w.testflength -side top -fill both
+    set vars(testflength.path) $w.testflength
+    set vars(testflength.required)  1
+    set vars(testflength.orig) $vars(testflength)
+    set vars(testflength.expr) {[expr {$vars(test.flength)}]}
+    trace variable vars(test.flength) w  "::EMBOSS::reset_value [namespace current] testflength"
+    set vars(testflength._type) string
+
+    lappend arguments testfname
+    iwidgets::entryfield $w.testfname \
+	-textvariable [namespace current]::vars(testfname) \
+	-labeltext [subst FName]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfname component entry] -sticky nse
+    set vars(testfname) [subst {[expr {$vars(test.fname)}]}]
+    pack $w.testfname -side top -fill both
+    set vars(testfname.path) $w.testfname
+    set vars(testfname.required)  1
+    set vars(testfname.orig) $vars(testfname)
+    set vars(testfname.expr) {[expr {$vars(test.fname)}]}
+    trace variable vars(test.fname) w  "::EMBOSS::reset_value [namespace current] testfname"
+    set vars(testfname._type) string
+
+    lappend arguments testfbegin
+    iwidgets::entryfield $w.testfbegin \
+	-textvariable [namespace current]::vars(testfbegin) \
+	-labeltext [subst FBegin]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfbegin component entry] -sticky nse
+    set vars(testfbegin) [subst {[expr {$vars(test.fbegin)}]}]
+    pack $w.testfbegin -side top -fill both
+    set vars(testfbegin.path) $w.testfbegin
+    set vars(testfbegin.required)  1
+    set vars(testfbegin.orig) $vars(testfbegin)
+    set vars(testfbegin.expr) {[expr {$vars(test.fbegin)}]}
+    trace variable vars(test.fbegin) w  "::EMBOSS::reset_value [namespace current] testfbegin"
+    set vars(testfbegin._type) string
+
+    lappend arguments testfend
+    iwidgets::entryfield $w.testfend \
+	-textvariable [namespace current]::vars(testfend) \
+	-labeltext [subst FEnd]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfend component entry] -sticky nse
+    set vars(testfend) [subst {[expr {$vars(test.fend)}]}]
+    pack $w.testfend -side top -fill both
+    set vars(testfend.path) $w.testfend
+    set vars(testfend.required)  1
+    set vars(testfend.orig) $vars(testfend)
+    set vars(testfend.expr) {[expr {$vars(test.fend)}]}
+    trace variable vars(test.fend) w  "::EMBOSS::reset_value [namespace current] testfend"
+    set vars(testfend._type) string
+
+    lappend arguments testfprotein
+    iwidgets::entryfield $w.testfprotein \
+	-textvariable [namespace current]::vars(testfprotein) \
+	-labeltext [subst FProtein]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfprotein component entry] -sticky nse
+    set vars(testfprotein) [subst {[expr {$vars(test.fprotein)}]}]
+    pack $w.testfprotein -side top -fill both
+    set vars(testfprotein.path) $w.testfprotein
+    set vars(testfprotein.required)  1
+    set vars(testfprotein.orig) $vars(testfprotein)
+    set vars(testfprotein.expr) {[expr {$vars(test.fprotein)}]}
+    trace variable vars(test.fprotein) w  "::EMBOSS::reset_value [namespace current] testfprotein"
+    set vars(testfprotein._type) string
+
+    lappend arguments testfnucleic
+    iwidgets::entryfield $w.testfnucleic \
+	-textvariable [namespace current]::vars(testfnucleic) \
+	-labeltext [subst FNucleic]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfnucleic component entry] -sticky nse
+    set vars(testfnucleic) [subst {[expr {$vars(test.fnucleic)}]}]
+    pack $w.testfnucleic -side top -fill both
+    set vars(testfnucleic.path) $w.testfnucleic
+    set vars(testfnucleic.required)  1
+    set vars(testfnucleic.orig) $vars(testfnucleic)
+    set vars(testfnucleic.expr) {[expr {$vars(test.fnucleic)}]}
+    trace variable vars(test.fnucleic) w  "::EMBOSS::reset_value [namespace current] testfnucleic"
+    set vars(testfnucleic._type) string
+
+    lappend arguments testfsize
+    iwidgets::entryfield $w.testfsize \
+	-textvariable [namespace current]::vars(testfsize) \
+	-labeltext [subst FSize]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testfsize component entry] -sticky nse
+    set vars(testfsize) [subst {[expr {$vars(test.fsize)}]}]
+    pack $w.testfsize -side top -fill both
+    set vars(testfsize.path) $w.testfsize
+    set vars(testfsize.required)  1
+    set vars(testfsize.orig) $vars(testfsize)
+    set vars(testfsize.expr) {[expr {$vars(test.fsize)}]}
+    trace variable vars(test.fsize) w  "::EMBOSS::reset_value [namespace current] testfsize"
+    set vars(testfsize._type) string
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/qatestcalcfeatures.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

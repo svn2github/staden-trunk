@@ -1,0 +1,324 @@
+@cindex Doctor Database
+
+@menu
+* Doctor-Structures::           Structures menu
+* Doctor-IgnoreCheck::          Ignoring check database
+* Doctor-Extend::               Creating new structures
+* Doctor-Anno::                 Listing and removing annotations
+* Doctor-Shift::                Shifting readings
+* Doctor-Delete::               Delete contigs
+* Doctor-Contig Order::         Resetting the contig order
+@end menu
+
+Doctor Database 
+(which is available from the gap4 Edit menu)
+is used to make arbitrary changes to the database. It
+should be extremely unlikely that is use will be required, and if so, is for
+experts only. Very
+few checks are performed on the user's input and there are few
+limitations on what can be done.  
+Consequently this option should never be used without
+first making a backup using "Copy database". _fxref(GapDB-CopyDatabase, Making
+Backups of Databases, gap_database) It is very easy to create
+inconsistencies within the database. Do not feel that values (such as
+the maximum gel reading length) can be safely
+changed simply because they are shown in
+a dialogue. 
+
+_picture(doctor_db.main)
+
+The main window consists of a menubar containing "File", "Structures" and
+"Commands" menus. The menus contain:
+
+@itemize @bullet
+@item File
+@itemize @minus
+@item New
+@item Quit
+@end itemize
+@sp 1
+@item Structures
+@itemize @minus
+@item Database
+@item Reading
+@item Contig
+@item Annotation
+@item Template
+@item Original clone
+@item Vector
+@item Note
+@end itemize
+@sp 1
+@item Commands
+@itemize @minus
+@item Check
+@item Ignore check database
+@item Extend structures
+@itemize @minus
+@item Reading
+@item Annotation
+@item Template
+@item Clone
+@item Vector
+@end itemize
+@item Delete contig
+@item Shift readings
+@item Reset contig order
+@item Output annotations to file
+@item Delete annotations
+@end itemize
+@end itemize
+
+The New command in the Commands menu brings up another Doctor Database window
+complete with its own menubar. This is useful for comparing structures.
+Whilst Doctor Database is running all other program dialogues, including the
+main gap4 menubar, are blocked. Control is reenabled once the last Doctor
+Database window is removed. Remember to perform a Check Database
+(Commands menu) before quitting to double check for database consistency.
+
+
+_split()
+@node Doctor-Structures
+@section Structures Menu
+
+@ifset html
+@menu
+* Doctor-Database::             Database structure
+* Doctor-Reading::              Reading structure
+* Doctor-Contig::               Contig structure
+* Doctor-Annotation::           Annotation structure
+* Doctor-Template::             Template structure
+* Doctor-Clone::                Original clone structure
+* Doctor-Note::                 Note structure
+@end menu
+@end ifset
+
+The gap4 database consists of records of several
+predefined types. The types correspond to the commands available within the
+Structures menu. All of these, except for the "Database" command, insert a
+dialogue between the menubar and whatever is underneath it. In the picture
+below we have selected "Annotations" from the menu which has prompted for
+"Which annotation (1-380)" (the 1-380 is the valid range of inputs available).
+
+_picture(doctor_db.structures)
+
+In the panel beneath the "Which annotation" question is a panel detailing
+another annotation structure. In general the structure type and number are
+shown at the top of the panel (in this case annotation number 100). Beneath
+this are the structure fields on the left followed by the values for these
+fields on the right. Sometimes gap4 may store a value as numeric, but
+display the structure as both a numeric and a string describing this value.
+For instance here the annotation strand is "1" which is gap4's way of storing
+"reverse".
+
+Some values have an arrow next to them, such as with the "next" field in the
+illustration. Clicking on this arrow will display the structure referenced by
+this value. Here it is another annotation (annotation 357). It is
+stated 
+that the annotation is part of Contig number 6. Clicking on the arrow next to
+this will reveal that contig structure.
+
+Selected notes on editing the structures follows.
+
+@node Doctor-Database
+@subsection Database Structure
+@cindex Database structure: doctor database
+@cindex Doctor database: database structure
+
+There is only a single Database structure. A description of its 
+more important fields follows.
+
+@table @strong
+@item num_contigs
+The number of currently @i{used} contigs
+@sp 1
+@item num_readings
+The number of currently @i{used} readings
+@sp 1
+@item Ncontigs
+The number of currently @i{allocated} contigs
+@sp 1
+@item Nreadings
+The number of currently @i{allocated} readings
+@sp 1
+@item contigs
+@itemx readings
+@itemx annotations
+@itemx templates
+@itemx clones
+@itemx vectors
+@itemx notes
+Record numbers of arrays holding the record numbers of each item
+@sp 1
+@item free_annotations
+A linked list of unused annotations
+@item free_notes
+A linked list of unused notes
+@end table
+
+@node Doctor-Reading
+@subsection Reading Structure
+@cindex Reading structure: doctor database
+@cindex Doctor database: reading structure
+
+Some Reading Structure fields reference the record number in the gap4
+database of a string. Where this string is short, such as the reading name,
+both the record number and the contents of the string can be edited. To edit a
+single name the string should be changed. To swap two reading names around
+either edit both strings or swap the two name record numbers.
+
+The @strong{annotations} value references an annotation number. If this is
+zero then this reading has no annotations.
+
+The @strong{length} is the complete length of sequence, including hidden data.
+The @strong{sequence_length} is the length of only the used sequence. The
+location of the hidden data is specified by the @strong{start} and
+@strong{end} values. Note that @strong{sequence_length=end-start-1}.
+
+A @strong{left} or @strong{right} value of zero means that this reading has no
+left or right neighbour.
+
+@node Doctor-Contig
+@subsection Contig Structure
+@cindex Contig structure: doctor database
+@cindex Doctor database: contig structure
+
+A Contig Structure is defined as a list of readings. 
+The @strong{left} and @strong{right} values
+specify the first and last reading numbers in the doubly linked list
+representing the contig.
+
+@node Doctor-Annotation
+@subsection Annotation Structure
+@cindex Annotation structure: doctor database
+@cindex Doctor database: annotation structure
+
+Annotations are stored as linked lists. Each reading and each contig has a
+(possibly blank) list. All other unused annotations are held on the free list.
+The @strong{next} value is used to reference the next annotation number. A
+value of zero represents the end of the list.
+
+@node Doctor-Template
+@subsection Template Structure
+@cindex Template structure: doctor database
+@cindex Doctor database: template structure
+
+The Template name field can be edited as both a string and the record number
+pointing to that string. The Template Structure display has links to a vector
+number and a clone.
+
+@node Doctor-Clone
+@subsection Original Clone Structure
+@cindex Clone structure: doctor database
+@cindex Doctor database: clone structure
+@cindex Doctor database: original clone structure
+
+The original clone name is often the name of the database. The use of original
+clones is primarily for large scale sequencing. When breaking down a sequence
+into cosmids and then into sequencing templates, we say that each cosmid is a
+clone.
+
+@node Doctor-Note
+@subsection Note Structure
+@cindex Note structure: doctor database
+@cindex Doctor database: note structure
+
+A Note may be considered as a positonless annotation (without the position,
+length or strand fields). Notes store both their creation and
+last-modification dates. Notes may be attached, in a linked-list fashion, to
+readings, contigs, or the database structure.
+
+_split()
+@node Doctor-IgnoreCheck
+@section Ignoring Check Database
+@cindex Check database: ignoring
+@cindex Ignore check database
+
+Many functions use the Check Database function to determine whether the
+database is consistent. Often editing an inconsistent database can yield
+more and more inconsistencies. However it is sometimes useful to use such an
+editing function in the process of fixing the database. In such cases, the
+"Ignore check database" toggle should be set.
+
+An example of the use is for the Break Contig function. 
+If we find that a database is
+inconsistent due there being a gap in the contig, the obvious solution is to
+fix this using Break Contig. But Break Contig checks for consistency, and
+refuses to work if the database is inconsistent.
+
+_split()
+@node Doctor-Extend
+@section Extending Structures
+@cindex Extending structures: doctor database
+@cindex Doctor database: extending structures
+
+Sometimes it is required to allocate new structures. The "Extend structure"
+item on the command menu reveals a cascading menu containing the different
+structure types. Once a type has been selected a dialogue appears asking how
+many extra structures to create.
+
+The new structures created can then be modified using the Structures menu.
+Expect strange behaviour if these structures are not initialised correctly.
+
+_split()
+@node Doctor-Anno
+@section Listing and Removing Annotations
+@cindex Output annotations to file
+@cindex Delete annotations
+@cindex Annotations: deleting (Doctor Database)
+@cindex Annotations: outputting to file (Doctor Database)
+
+The Commands menu contains two commands for manipulating lists of annotations.
+@code{Output annotations to file} saves a list of annotations to file. The
+dialogue requests a filename to save the annotations to and an annotation
+type. Only one type can be specified.
+
+The format of the file is @code{"Annotation_number Type Position Length
+Strand"}.
+
+The "Delete annotations" command requests a file of annotations in this
+format. The function then removes these annotations from readings and contigs
+and adds them to the free annotation list.
+
+_split()
+@node Doctor-Shift
+@section Shift Readings
+@cindex Shift readings: doctor database
+@cindex Doctor database: shift readings
+
+The Shift Readings 
+option allows the user to change the relative positions of a set of
+neighbouring readings starting at a selected reading. Hence it can
+be used to change the alignment of readings within a contig.  It prompts for
+the number of the first reading to shift and then the relative
+distance to move by. A negative shift will move the readings leftwards.
+
+The reading and all its rightward neighbours are moved by the requested
+distance. Tags on the readings and the consensus are moved accordingly.
+The command also automatically updates then length of the contig.
+
+_split()
+@node Doctor-Delete
+@section Delete Contig
+@cindex Delete contig: doctor database
+@cindex Doctor database: delete contig
+@cindex Contig, deletion of: doctor database
+
+The Delete Contig 
+function removes a contig and all its readings.
+Annotations on the removed readings and contig are added to the free
+annotations list.
+
+_split()
+@node Doctor-Contig Order
+@section Reset Contig Order
+@cindex Contig order, reset: doctor database
+@cindex Doctor database: contig order
+@cindex Doctor database: reset contig order
+
+The contig order information contains a list of contig numbers. If a contig
+number does not appear within this list, or if it appears more than once,
+then the contig order is inconsistent and windows such as the Contig
+Selector may not work. The Reset Contig Order 
+function resets the contig order to a
+consistent state, but will lose the existing contig order information.

@@ -1,0 +1,165 @@
+package require Iwidgets
+namespace eval ::EMBOSS::psiblasts {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_psiblasts*Xentry.entry.width 30
+option add *e_psiblasts*Entryfield.width 30
+option add *e_psiblasts*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) psiblasts
+    set w [xtoplevel .e_psiblasts -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - psiblasts}
+    label $w._title -text {Runs PSI-BLAST given scopalign alignments}
+    pack $w._title -side top -fill both
+    set vars(psiblasts._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments align
+    iwidgets::entryfield $w.align \
+	-textvariable [namespace current]::vars(align) \
+	-labeltext [subst {Location of alignment files for input}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.align component entry] -sticky nse
+    set vars(align) [subst ./]
+    pack $w.align -side top -fill both
+    set vars(align.path) $w.align
+    set vars(align.required)  1
+    set vars(align._type) string
+
+    lappend arguments alignextn
+    iwidgets::entryfield $w.alignextn \
+	-textvariable [namespace current]::vars(alignextn) \
+	-labeltext [subst {File extension of alignment files}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.alignextn component entry] -sticky nse
+    set vars(alignextn) [subst .align]
+    pack $w.alignextn -side top -fill both
+    set vars(alignextn.path) $w.alignextn
+    set vars(alignextn.required)  1
+    set vars(alignextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments niter
+    iwidgets::entryfield $w.niter \
+	-validate integer \
+	-textvariable [namespace current]::vars(niter) \
+	-labeltext [subst {Number of PSIBLAST iterations}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.niter component entry] -sticky nse
+    set vars(niter) [subst 1]
+    pack $w.niter -side top -fill both
+    set vars(niter.path) $w.niter
+    set vars(niter.required)  1
+    set vars(niter._type) integer
+
+    lappend arguments evalue
+    iwidgets::entryfield $w.evalue \
+	-validate real \
+	-textvariable [namespace current]::vars(evalue) \
+	-labeltext [subst {Threshold E-value for inclusion in family}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.evalue component entry] -sticky nse
+    set vars(evalue) [subst 0.001]
+    pack $w.evalue -side top -fill both
+    set vars(evalue.path) $w.evalue
+    set vars(evalue.required)  1
+    set vars(evalue._type) float
+
+    lappend arguments maxhits
+    iwidgets::entryfield $w.maxhits \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxhits) \
+	-labeltext [subst {Maximum number of hits}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxhits component entry] -sticky nse
+    set vars(maxhits) [subst 1000]
+    pack $w.maxhits -side top -fill both
+    set vars(maxhits.path) $w.maxhits
+    set vars(maxhits.required)  1
+    set vars(maxhits._type) integer
+
+    lappend arguments submatrix
+    iwidgets::entryfield $w.submatrix \
+	-textvariable [namespace current]::vars(submatrix) \
+	-labeltext [subst {Residue substitution matrix}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.submatrix component entry] -sticky nse
+    set vars(submatrix) [subst ./EBLOSUM62]
+    pack $w.submatrix -side top -fill both
+    set vars(submatrix.path) $w.submatrix
+    set vars(submatrix.required)  1
+    set vars(submatrix._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments families
+    xentry $w.families \
+	-label [subst {Name of families file for output}]\
+	-textvariable [namespace current]::vars(families) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.families delete 0 end
+    $w.families insert end [subst scop.hits]
+    pack $w.families -side top -fill both
+    set vars(families.path) $w.families
+    set vars(families.required)  1
+    set vars(families._type) outfile
+
+    lappend arguments logf
+    xentry $w.logf \
+	-label [subst {Name of log file for the build}]\
+	-textvariable [namespace current]::vars(logf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.logf delete 0 end
+    $w.logf insert end [subst psiblasts.log]
+    pack $w.logf -side top -fill both
+    set vars(logf.path) $w.logf
+    set vars(logf.required)  1
+    set vars(logf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/psiblasts.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,228 @@
+package require Iwidgets
+namespace eval ::EMBOSS::vectorstrip {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_vectorstrip*Xentry.entry.width 30
+option add *e_vectorstrip*Entryfield.width 30
+option add *e_vectorstrip*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) vectorstrip
+    set w [xtoplevel .e_vectorstrip -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - vectorstrip}
+    label $w._title -text {Strips out DNA between a pair of vector sequences}
+    pack $w._title -side top -fill both
+    set vars(vectorstrip._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst dna]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    iwidgets::tabnotebook $w.book_2 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_2 -side top -fill both
+    set book(book_2) $w
+    set page [$w.book_2 add \
+	-label [subst {vectorfilesection Section}]]
+    $w.book_2 view [subst {vectorfilesection Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments vectorfile
+    checkbutton $w.vectorfile \
+	-text [subst {Are your vector sequences in a file?}]\
+	-variable [namespace current]::vars(vectorfile)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.vectorfile -side top -anchor w
+    set vars(vectorfile) [subst 1]
+    set vars(vectorfile.path) $w.vectorfile
+    set vars(vectorfile.required)  1
+    set vars(vectorfile._type) bool
+
+    lappend arguments vectors
+    xentry $w.vectors \
+	-label [subst {Name of vectorfile}]\
+	-textvariable [namespace current]::vars(vectors) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(vectorfile)?"Y":"N")}]}]]]
+    $w.vectors delete 0 end
+    $w.vectors insert end [subst {}]
+    pack $w.vectors -side top -fill both
+    set vars(vectors.path) $w.vectors
+    set vars(vectors.required)  0
+    set vars(vectors._type) infile
+    set vars(vectors.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(vectorfile)?"Y":"N")}]]}
+    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] vectors"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    lappend arguments mismatch
+    iwidgets::entryfield $w.mismatch \
+	-validate integer \
+	-textvariable [namespace current]::vars(mismatch) \
+	-labeltext [subst {Max allowed % mismatch}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mismatch component entry] -sticky nse
+    set vars(mismatch) [subst 10]
+    pack $w.mismatch -side top -fill both
+    set vars(mismatch.path) $w.mismatch
+    set vars(mismatch.required)  1
+    set vars(mismatch._type) integer
+
+    lappend arguments besthits
+    checkbutton $w.besthits \
+	-text [subst {Show only the best hits (minimise mismatches)?}]\
+	-variable [namespace current]::vars(besthits)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.besthits -side top -anchor w
+    set vars(besthits) [subst 1]
+    set vars(besthits.path) $w.besthits
+    set vars(besthits.required)  1
+    set vars(besthits._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments linkera
+    iwidgets::entryfield $w.linkera \
+	-textvariable [namespace current]::vars(linkera) \
+	-labeltext [subst {5' sequence}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(vectorfile))}]}]]]
+    grid [$w.linkera component entry] -sticky nse
+    set vars(linkera) [subst {}]
+    pack $w.linkera -side top -fill both
+    set vars(linkera.path) $w.linkera
+    set vars(linkera.required)  0
+    set vars(linkera._type) string
+    set vars(linkera.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(vectorfile))}]]}
+    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] linkera"
+
+    lappend arguments linkerb
+    iwidgets::entryfield $w.linkerb \
+	-textvariable [namespace current]::vars(linkerb) \
+	-labeltext [subst {3' sequence}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(vectorfile))}]}]]]
+    grid [$w.linkerb component entry] -sticky nse
+    set vars(linkerb) [subst {}]
+    pack $w.linkerb -side top -fill both
+    set vars(linkerb.path) $w.linkerb
+    set vars(linkerb.required)  0
+    set vars(linkerb._type) string
+    set vars(linkerb.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(vectorfile))}]]}
+    trace variable vars(vectorfile) w  "::EMBOSS::reset_needed [namespace current] linkerb"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outf
+    xentry $w.outf \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outf delete 0 end
+    $w.outf insert end [subst vectorstrip0.out]
+    pack $w.outf -side top -fill both
+    set vars(outf.path) $w.outf
+    set vars(outf.required)  1
+    set vars(outf._type) outfile
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst Filename]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence1.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqoutall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/vectorstrip.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+    ::EMBOSS::resizebook $book(book_2).book_2
+}
+
+
+}; # namespace eval
+

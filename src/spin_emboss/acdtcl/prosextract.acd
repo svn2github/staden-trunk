@@ -1,0 +1,60 @@
+package require Iwidgets
+namespace eval ::EMBOSS::prosextract {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_prosextract*Xentry.entry.width 30
+option add *e_prosextract*Entryfield.width 30
+option add *e_prosextract*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) prosextract
+    set w [xtoplevel .e_prosextract -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - prosextract}
+    label $w._title -text {Builds the PROSITE motif database for patmatmotifs to search}
+    pack $w._title -side top -fill both
+    set vars(prosextract._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infdat
+    iwidgets::entryfield $w.infdat \
+	-textvariable [namespace current]::vars(infdat) \
+	-labeltext [subst {Enter name of prosite directory}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.infdat component entry] -sticky nse
+    set vars(infdat) [subst {}]
+    pack $w.infdat -side top -fill both
+    set vars(infdat.path) $w.infdat
+    set vars(infdat.required)  1
+    set vars(infdat._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/prosextract.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

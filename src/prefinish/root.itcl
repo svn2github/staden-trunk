@@ -1,0 +1,20 @@
+#
+# The root node of a hierarchybook tree
+# It's essentially the same as Tree except with some menu support.
+#
+
+class HBRoot {
+    inherit Tree
+
+    constructor {args} {eval configure $args}
+
+    public method drop {type} {
+	if {$type == "::Pass"} {
+	    return end
+	} elseif {$type == "::Params" && ![contains Params]} {
+	    return start
+	} else {
+	    return ""
+	}
+    }
+}

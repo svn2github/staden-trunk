@@ -1,0 +1,75 @@
+The middle level functions consist of basic functions for reading, writing and
+creation of structures, text strings, arrays, bitmaps and other items of raw
+data. They're contained within the @file{Gap4/IO.c} file and @file{IO.h}
+should be #included before usage.
+
+@subsection GT_Read, TextRead, TextAllocRead, DataRead, ArrayRead and BitmapRead
+@findex GT_Read(C)
+@findex TextRead(C)
+@findex TextAllocRead(C)
+@findex DataRead(C)
+@findex ArrayRead(C)
+@findex BitmapRead(C)
+@example
+#include <IO.h>
+
+int GT_Read(
+	GapIO  *io,
+	int	rec,
+	void   *buf,
+	int	len,
+	GCardinal type_check);
+
+int TextRead(
+	GapIO  *io,
+	int	rec,
+	char   *buf,
+	int	len);
+
+char *TextAllocRead(
+	GapIO  *io,
+	int	rec);
+
+int DataRead(
+	GapIO  *io,
+	int	rec,
+	void   *buf,
+	int	len,
+	int	size);
+
+Array ArrayRead(
+	GapIO  *io,
+	int	rec,
+	int	elements);
+
+Bitmap BitmapRead(
+	GapIO  *io,
+	int	rec,
+	int	elements);
+@end example
+
+These functions read record number @var{rec} to the buffer @var{buf} of length
+@var{len}. Each returns zero for success and an error number for failure.
+If the length of the data on disk is less than @var{len} then only @var{len}
+bytes are read. If @var{len} is greater than the data on disk then the
+remaining bytes in @var{buf} are undefined.
+
+@code{GT_Read} reads arbitrary records of type @var{type_check}. This is
+typically a structure; for instance a @var{GContigs} structure with type
+@code{GT_Contigs}. For best compatibility, use the @code{contig_read},
+@code{gel_read}, @code{tag_read}, @code{vector_read} and @code{clone_read}
+function.
+
+@code{Text_Read} reads records of type @code{GT_Text}. This includes sequences
+and other text strings. It is possible to read text data containing NULLs, but
+this is not advisable.
+
+@code{TextAllocRead} is identical to @code{Text_Read} except that the
+necessary memory is allocated using @code{malloc}. This returns the string for
+success and NULL for failure.
+
+@code{DataRead} reads records of type @code{GT_Data}. This should be used for
+binary data that is not in one of the other principle formats. This includes
+reading confidence values and original positions.
+
+@code{ArrayRead} reads records of type @code{GT_Array}. The array is allocated

@@ -1,0 +1,218 @@
+#
+# A Tree item compatible with being added to a hierarchybook.
+#
+# A solution consists of strand information (top, bottom, any), a
+# sequencing chemistry, and a series of solution types which may each
+# be independently toggled.
+# It should be a child of a Rule.
+#
+
+class Solution {
+    inherit Tree
+
+    public {
+	variable name		"Experiment type"
+	variable strand		0;	# 0=Any, 1=+, 2=-
+	variable chemistry	17;	# See gap4/gap-dbstruct.h
+	variable experiments	{}
+    }
+
+    public {
+	# Used by hierarchybook
+	method display {w}
+	method create_menus {m}
+
+	# Others
+	method save {}
+	method experiments {}
+    }
+
+    private {
+	variable type_skip 1
+	variable type_reseq 0
+	variable type_long 0
+	variable type_vpwalk 0
+	variable type_chwalk 0
+	variable type_reverse 0
+	variable type_pcr 0
+
+	# Callbacks from GUI components to update public variables
+	method chemistry_selected {w}
+	method experiments_selected {}
+    }
+
+    constructor {args} {
+	eval configure $args
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when this node is added to the tree in order
+# to create the Tk dialogue.
+# -----------------------------------------------------------------------------
+body Solution::display {w} {
+    iwidgets::Labeledframe $w.type -labeltext "Experiment types"
+    pack $w.type -fill both -side top
+
+    set cs [$w.type childsite]
+
+    checkbutton $cs.skip \
+	-text "Skip over" \
+	-variable [scope type_skip] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.skip $::prefinish::tooltips(type_skip)
+
+    checkbutton $cs.reseq \
+	-text "Resequence" \
+	-variable [scope type_reseq] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.reseq $::prefinish::tooltips(type_reseq)
+
+    checkbutton $cs.long \
+	-text "Long read" \
+	-variable [scope type_long] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.long $::prefinish::tooltips(type_long)
+
+    checkbutton $cs.vpwalk \
+	-text "Subclone primer-walk" \
+	-variable [scope type_vpwalk] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.vpwalk $::prefinish::tooltips(type_vpwalk)
+
+    checkbutton $cs.chwalk \
+	-text "Genomic primer-walk" \
+	-variable [scope type_chwalk] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.chwalk $::prefinish::tooltips(type_chwalk)
+
+    pack $cs.skip $cs.reseq $cs.long $cs.vpwalk $cs.chwalk \
+	-side top \
+	-anchor w
+
+    iwidgets::Labeledframe $w.strand -labeltext "Strand"
+    pack $w.strand -fill both -side top
+    ::tooltip::attach $w.strand $::prefinish::tooltips(solution_strand)
+
+    set cs [$w.strand childsite]
+    radiobutton $cs.any \
+	-text "Any" \
+	-value 0 \
+	-variable [scope strand]
+    radiobutton $cs.top \
+	-text "Top" \
+	-value 1 \
+	-variable [scope strand]
+    radiobutton $cs.bot \
+	-text "Bottom" \
+	-value 2 \
+	-variable [scope strand]
+
+    pack $cs.any $cs.top $cs.bot \
+	-side top -anchor w
+
+    iwidgets::combobox $w.chemistry \
+	-labeltext "Select chemistry" \
+	-selectioncommand [itcl::code $this chemistry_selected $w.chemistry]
+    foreach ch [::chemistry::names] {
+	$w.chemistry insert list end $ch
+    }
+    set chname [::chemistry::num_to_str $chemistry]
+    $w.chemistry selection set [lsearch [::chemistry::names] $chname]
+    $w.chemistry configure -editable 0
+    ::tooltip::attach $w.chemistry $::prefinish::tooltips(solution_chemistry)
+    
+    pack $w.chemistry -side top -fill both -anchor w
+}
+
+# -----------------------------------------------------------------------------
+# OPTION: -experiment
+#
+# Sets the experiment type checkboxes
+# -----------------------------------------------------------------------------
+configbody Solution::experiments {
+    foreach exp {skip reseq long vpwalk chwalk reverse pcr} {
+	set type_$exp 0
+    }
+    foreach exp $experiments {
+	if {[info exists type_$exp]} {
+	    set type_$exp 1
+	} else {
+	    error "Invalid experiment type '$exp'"
+	}
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook to create the menus.
+# NOTE: This accesses the global array ::rules
+# -----------------------------------------------------------------------------
+body Solution::create_menus {m} {
+    Tree::create_menus $m
+    $m add command -label "Remove" -command "itcl::delete object $this"
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns a string of components to save for this rule.
+# -----------------------------------------------------------------------------
+body Solution::save {} {
+    set str ""
+    append str "-experiments [list $experiments]"
+    append str " -chemistry $chemistry"
+    append str " -strand $strand"
+    return $str
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Converts the experiments string to a hex encoded value for use by the
+# libfinish.so library
+# -----------------------------------------------------------------------------
+body Solution::experiments {} {
+    set encoded 0
+
+    foreach e $experiments {
+	set ind [lsearch {skip reseq vpwalk long pcr chwalk reverse} $e]
+	if {$ind == -1} {
+	    continue
+	}
+	set encoded [expr {$encoded | (1<<$ind)}]
+    }
+
+    return [format "0x%02x" $encoded]
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Called as a command on the checkbuttons.
+# Updates the "experiments" variable list.
+# -----------------------------------------------------------------------------
+body Solution::experiments_selected {} {
+    set experiments ""
+    foreach exp {skip reseq long vpwalk chwalk reverse pcr} {
+	if {[set type_$exp]} {
+	    lappend experiments $exp
+	}
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Called as a selectioncommand on the combobox.
+# Gets the selected item and turns it into a gap4 chemistry code, stored
+# in the chemistry variable.
+# -----------------------------------------------------------------------------
+body Solution::chemistry_selected {w} {
+    set chemistry [::chemistry::str_to_num [$w get [$w curselection]]]
+}
+
+

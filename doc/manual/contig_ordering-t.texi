@@ -1,0 +1,139 @@
+@menu
+* Order-Contigs::            Order Contigs
+* Read Pairs::               Find Read Pairs
+* FIJ::                      Find Internal Joins
+* Repeats::                  Find Repeats
+@end menu
+
+After the initial rounds of assembly it is likely that the data for a
+sequencing project will still not be contiguous. In order to minimise
+the number of experiments required to finish the project it is useful 
+to be able to get as much from the existing data as possible. The
+functions described in this section can help to get the current set of
+contigs into a consistent left to right order, can discover joins
+between contigs which were missed or overlooked by the assembly
+engines, and can help in the analysis of repeats which may cause
+problems for assembly. It is one of the strengths of gap4 that the
+results from several of these independent types of analysis can be
+combined in a single display
+(_fpref(Contig Comparator, Contig Comparator, comparator)),
+and where they are seen to reinforce one another, users can feel more
+confident in their decisions.
+
+_lpicture(comparator)
+
+A typical Contig Comparator display is shown in the figure above. It is
+showing results from other functions, as well as the ones described
+in this section.
+
+The first function
+(_fpref(Order-Contigs, Order Contigs, contig_ordering))
+automatically orders contigs based on read-pair data. The orderings
+found can be examined in the Template Display
+(_fpref(Template-Display, Template Display, template))
+
+The next function
+(_fpref(Read Pairs, Find read pairs, read_pairs))
+also examines read-pair data, but instead of automatically ordering the
+contigs, plots out their relationships in the Contig Comparator, from
+where the user can invoke the Template Display to check them, and use
+the Contig Selector
+to reorder them.
+
+Sometimes assembly engines will miss or regard some weak joins as too
+uncertain to be made. The Find Internal Joins function
+(_fpref(FIJ, Find Internal Joins, fij)),
+compares contigs, including their hidden data, to find matches between
+the ends of contigs. 
+Again results are presented in the Contig
+Comparator, and users can invoke the Contig Joining Editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor))
+to examine and make joins.
+
+Whereas Find Internal Joins makes sure that alignments between contigs
+continue right to their ends, another search, Find Repeats
+(_fpref(Repeats, Find Repeats, repeats))
+finds any identical segments of sequence, wherever they lie in the
+consensus. This has several uses. It gives another way of finding
+potential joins, and it provides a way of anotating (tagging) repeats so
+that their positions are obvious to users, and can be taken into account
+by other search procedures.
+Again results are presented in the Contig
+Comparator, and users can invoke the Contig Joining Editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor))
+to examine and make joins.
+
+@page
+_split()
+@node Order-Contigs
+@section Order contigs
+
+@cindex Ordering contigs:gap4
+@cindex Read pair data and contig ordering
+@cindex Template display and contig ordering
+@cindex Update contig order
+@cindex Listbox
+@cindex Complement contig
+@cindex Contig complementing
+@cindex Super contigs
+
+This routine uses read-pair information to try to work out the left to right
+order of sets of contigs. 
+It is invoked from the gap4 Edit menu.
+At present it attempts to order all the contigs in
+the database, and when finished it produces a listbox window which containing
+one or more sets (one set per line) of contigs listed by the names of their
+leftmost readings.  By clicking on their names in the listbox the user can
+request that these "super contigs" should be shown in the standard Template
+display window 
+(_fpref(Template-Display, Template Display, template)).
+
+Using the
+tools available within this window the user can manually move or complement
+any contigs which appear to have been misplaced. The combination
+of automatic ordering and the facility to view the results by eye and manually
+correct any errors make this a powerful tool.  The new contig order can
+be saved to the database by selecting the "Update contig order" command from
+the "Edit" menu of the Template display.  Note, however, that unlike the
+editing operations in the Contig editor, which are only committed to the disk
+copy of the database at the user's request, all the complementing operations
+in gap4 are always performed both in memory and on the disk.  This means that
+any complementing done as part of the contig ordering process will be
+immediately committed to disk.
+
+An example of the "Super contig" listbox is shown here.
+
+_picture(c_order_lb)
+
+@page
+The example seen in the figures shows a Template display before and
+after the application of the algorithm.
+
+_lpicture(c_order_t1)
+@exdent @i{Before ordering}
+@page
+
+_lpicture(c_order_t2)
+@exdent @i{After ordering}
+
+Notice how the operation has reduced the large number of dark yellow (inconsistent) templates by ordering and complementing the contigs so that they are now
+consistent and show in bright yellow. The few remaining dark yellow templates
+represent problems, possibly with misassembly or with misnaming of
+readings. The reliability of these dark yellow templates is also
+questionable when noting that one or the other of the readings are
+typically within the middle of large contigs, and hence are not likely
+to be spanning contigs. The gaps between the contigs, shown in the ruler
+at the bottom of the template display, are real estimates of size of the
+missing data, based on the expected lengths of the templates.
+
+The algorithm is based on ideas used to build cosmid contigs using
+hybridisation data @cite{Zhang,P, Schon,EA, Fischer,SG, Cayanis,E,
+Weiss,J, Kistler,S and Bourne,P, (1994) "An algorithm based on graph
+theory for the assembly of contigs in physical mapping of DNA", CABIOS
+10, 309-317}. A difficulty for algorithms of this type is dealing with
+errors in the data, i.e. pairs of readings that have been incorrectly
+assigned to the same template (often by simple typing errors made prior
+to the creation of the experiment files). Our algorithm uses several
+simple heuristics to deal with such problems but one known problem is that
+it does not correctly deal with cases where templates span non-adjacent
+contigs, or where such contigs interleave.

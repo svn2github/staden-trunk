@@ -1,0 +1,109 @@
+# PREGAP4:Multiple
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Sends email out when things have been finished.
+#
+
+set help {pregap4 {Pregap4-Modules-Email}}
+
+proc name {} {
+    return "Email"
+}
+
+proc init {} {
+    mod_preset email_program "Mail"
+    mod_preset email_args "-s \"Pregap4 has finished\""
+    mod_preset email_address ""
+    mod_preset enabled 0
+}
+
+proc run {files} {
+    variable email_program
+    variable email_args
+    variable email_address
+    variable report
+    global fofn
+
+    set report ""
+
+    if {[catch {set fd [open "|[list $email_program] $email_args [list $email_address]" w]} var]} {
+	append report "ERR: Could not send email.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting email.\n"
+	verror ERR_WARN email $var
+	return $files
+    }
+
+    append report "Sent email to $email_address"
+
+    puts $fd "Pregap has executed the Email module at date:"
+    puts $fd "\t[clock format [clock seconds]]"
+    puts $fd "\nThe output file of filenames is \"[pwd]/$fofn.passed\"."
+    close $fd
+
+    return $files
+}
+
+proc create_dialogue {w} {
+    variable email_program
+    variable email_args
+    variable email_address
+
+    xentry $w.address \
+	-label "Email address" \
+	-default $email_address \
+	-width 20
+    pack $w.address -side top -fill both
+
+    frame $w.separator -bd 2 -relief raised -height 2
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+
+    xentry $w.program \
+	-label "Email program" \
+	-default $email_program \
+	-width 20
+
+    xentry $w.args \
+	-label "Program arguments" \
+	-default $email_args \
+	-width 20
+
+    pack $w.program $w.args -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	email_program email_args email_address]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable email_program
+    variable email_args
+    variable email_address
+    
+    if {[set email_address [$w.address get]] == ""} { return 0 }
+    if {[set email_program [$w.program get]] == ""} { return 0 }
+    set email_args [$w.args get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save email_address [$w.address get2]
+	mod_save email_program [$w.program get2]
+	mod_save email_args [$w.args get2]
+    }
+}

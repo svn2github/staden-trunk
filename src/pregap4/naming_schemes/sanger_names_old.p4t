@@ -1,0 +1,10 @@
+[naming_scheme]
+#
+# This matches the old-style Sanger Centre naming scheme.
+#
+set ns_name "Old style Sanger Centre naming scheme"
+set ns_regexp {([^.]*)\.(.[0-9]+)(.)?.*}
+set ns_lt(TN) {$1}
+set ns_lt(PR) {subst {$2 {[spf]1 1} {[qr]1 2} {[spf]* 3} {[qr]* 4} 0}}
+set ns_lt(CH) {subst {$3 {t 1} 0}}
+set_name_scheme

@@ -1,0 +1,61 @@
+@cindex extract_seq: man page
+@unnumberedsec NAME
+
+extract_seq --- extracts sequence from a trace or experiment file.
+
+@unnumberedsec SYNOPSIS
+
+@code{extract_seq} [@code{-r}]
+[@code{-}(@code{abi}|@code{alf}|@code{scf}|@code{exp}|@code{pln})]
+[@code{-good_only}] [@code{-clip_cosmid}] [@code{-fasta_out}]
+[@code{-output} @i{output_name}] [@i{input_name}] @code{...}
+
+@unnumberedsec DESCRIPTION
+
+@code{extract_seq} extracts the sequence information from binary trace
+files, Experiment files, or from the old Staden format plain files. The input
+can be read either from files or from standard input, and the output can be
+written to either a file or standard output. Multiple input files can be
+specified. The output contains the sequences split onto lines of at most 60
+characters each.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-r}
+    Directs reading of experiment file to attempt extraction of sequence from
+    the referenced (@code{LN} and @code{LT} line types) trace file. Without
+    this option, or when the trace file cannot be found, the sequence
+    output is that listed in the Experiment File. This option has no effect
+    for other input format types.
+
+@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-exp}, @code{-pln}
+    Specify an input file format. This is not usually required as
+    @code{extract_seq} will automatically determine the correct input file
+    type. This option is supplied incase the automatic determination is
+    incorrect (which is possible, but has never been observed).
+
+@item @code{-good_only}
+    When reading an experiment file or SCF file containing clip marks, output
+    only the @i{good} sequence which is contained within the boundaries marked
+    by the @code{QL}, @code{QR}, @code{SL}, @code{SR}, @code{CL}, @code{CR}
+    and @code{CS} line types.
+
+@item @code{-clip_cosmid}
+    When the @code{-good_only} argument is specified this controls whether the
+    cosmid sequence should be considered good data. Without this argument
+    cosmid sequence is considered good.
+
+@item @code{-fasta_out}
+    Specifies that the output should be in fasta format
+
+@item @code{-output} @i{file}
+    The sequence will be written to @i{file} instead of standard
+    output.
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Formats-Scf, scf(4), formats)
+@code{Read}(4)

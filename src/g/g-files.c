@@ -1,0 +1,538 @@
+/*
+ * File: g-files.c
+ *
+ * Author: Simon Dear
+ *         MRC Laboratory of Molecular Biology
+ *	   Hills Road
+ *	   Cambridge CB2 2QH
+ *	   United Kingdom
+ *
+ * Description: routines for gap server file i/o
+ *
+ * Created: prior to 18 September 1992
+ * Updated:
+ *
+ */
+
+#include <stdio.h>
+#include <unistd.h> /* IMPORT: lseek */
+#include <fcntl.h> /* IMPORT: O_RDWR */
+#include <string.h>
+#include <errno.h>
+/*#include <malloc.h>*/
+
+/*
+ * mmap() support is just an experiment to allow benchmarking. It has been
+ * tested on DEC Alphas for read-access (write-access via mmap doesn't
+ * exist yet).
+ * The results were small (10%) when the data is cached, but in the more
+ * normal case (no cached data) the speed difference is negligible.
+ */
+#ifdef USE_MMAP
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
+#include "array.h"
+#include "freetree.h"
+
+#include "g-files.h"
+#include "g-os.h"
+#include "g-error.h"
+#include "g-io.h" /* IMPORT: low_level_vector */
+#include "g-db.h" /* IMPORT: panic_shutdown() */
+#include "g-defs.h" /* IMPORT: G_AUX_SUFFIX */
+#include "xalloc.h"
+
+/* johnt 6/1/99 - O_BINARY required to open files in binary mode for MS Windows */
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+ 
+
+static int g_read_aux_header(int fdaux, AuxHeader *header)
+/*
+ * Read the header from the aux file
+ */
+{
+    /*
+     * NOTE -
+     * for generality we avoid using machine independant IO here
+     */
+
+    /* LOW LEVEL IO HERE */
+    /* return (read(fdaux,header,sizeof(AuxHeader))!=sizeof(AuxHeader)); */
+    errno = 0;
+    return (low_level_vector[GOP_READ_AUX_HEADER])(fdaux,header,1);
+
+}
+
+static int g_read_aux_index(int fdaux, AuxIndex *idx, int num)
+/*
+ * Read records from the index of the aux file
+ */
+{
+    /*
+     * NOTE -
+     * for generality we avoid using machine independant IO here
+     */
+    return (low_level_vector[GOP_READ_AUX_INDEX])(fdaux,idx,num);
+}
+
+
+
+
+static GToggle g_toggle_state(GTimeStamp time, AuxIndex *idx)
+/*
+ * return the most recent image for a record from index
+ * which was created on or before time
+ */
+{
+    GToggle r,i;
+    GTimeStamp t;
+    r = G_NO_TOGGLE;
+    t = 0; /* assumes signed type */
+    for (i=0;i<2;i++) {
+	if (idx->time[i] <= time &&
+	    idx->time[i] >= t) {
+	    t = idx->time[i];
+	    r = i;
+	}
+    }
+
+    return r;
+}
+
+
+
+/*
+ * EXTERNAL ROUTINES
+ */    
+
+
+GFile *g_open_file(char *fn, int read_only)
+/*
+ * Open a file and its associated index
+ * On Error:
+ *	Returns NULL
+ *      Sets xerrno
+ */
+{
+    GFile *gfile;
+    char fnaux[1024];
+    GCardinal i;
+    int tree_init;
+    AuxIndex *idx_arr = NULL;
+
+    /* g_dump_file(fn); */
+
+    gfile = NULL;
+
+#define ABORT(E)\
+    {\
+         if (idx_arr) \
+             xfree(idx_arr); \
+	 g_free_gfile(gfile); \
+	 gfile = NULL; \
+	 (void)gerr_set(E); \
+	 return NULL; \
+    }
+
+    /* check file name isn't too long */
+    if ( strlen(fn) + strlen(G_AUX_SUFFIX) >= sizeof(fnaux) )
+	ABORT(GERR_NAME_TOO_LONG);
+    strcpy(fnaux,fn);
+    strcat(fnaux,G_AUX_SUFFIX);
+
+    /* allocate new data structure - GFile */
+    gfile = g_new_gfile();
+    if (gfile == NULL)
+	ABORT(GERR_OUT_OF_MEMORY);
+
+    /* check access privilages */
+    /* YUK! - to do */
+
+    /* set file name */
+    if ( (gfile->fname = (char *)xmalloc(strlen(fn)+1)) != NULL )
+	strcpy(gfile->fname,fn);
+    
+    /* open file and its aux */
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (read_only || (gfile->fd = open(fn,O_RDWR|O_BINARY)) == -1 )
+	if ( !read_only || (gfile->fd = open(fn,O_RDONLY|O_BINARY)) == -1 )
+	    ABORT(GERR_OPENING_FILE);
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (read_only || (gfile->fdaux = open(fnaux,O_RDWR|O_BINARY)) == -1 )
+	if ( !read_only || (gfile->fdaux = open(fnaux,O_RDONLY|O_BINARY)) == -1 )
+	    ABORT(GERR_OPENING_FILE);
+
+
+#ifdef USE_MMAP
+    {
+	struct stat sb;
+
+	stat(fn, &sb);
+	gfile->fdmap = (char *)mmap(NULL, sb.st_size, PROT_READ,
+				    MAP_FILE | MAP_FIXED | MAP_SHARED,
+				    gfile->fd, 0);
+    }
+#endif
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1==lseek(gfile->fdaux,0,0))
+	ABORT(GERR_SEEK_ERROR);
+
+    if (g_read_aux_header(gfile->fdaux,&gfile->header))
+	ABORT(GERR_READ_ERROR);
+
+/*
+    fprintf(stderr,"** \n");
+    fprintf(stderr,"** Opening file %s\n",fn);
+    fprintf(stderr,"**    file_size = %d\n",  gfile->header.file_size);
+    fprintf(stderr,"**   block_size = %d\n", gfile->header.block_size);
+    fprintf(stderr,"**  num_records = %d\n",gfile->header.num_records);
+    fprintf(stderr,"**  max_records = %d\n",gfile->header.max_records);
+    fprintf(stderr,"**    last_time = %d\n",  gfile->header.last_time);
+    fprintf(stderr,"**        flags = %d\n",      gfile->header.flags);
+    fprintf(stderr,"**    free_time = %d\n",  gfile->header.free_time);
+    fprintf(stderr,"** \n");
+*/
+
+    /* allocate index */
+    gfile->Nidx = gfile->header.num_records;
+    if ( (gfile->idx = ArrayCreate(sizeof(Index),gfile->Nidx)) == NULL )
+	ABORT(GERR_OUT_OF_MEMORY);
+
+    (void) ArrayRef(gfile->idx,gfile->Nidx-1);
+    for(i=0;i<gfile->Nidx;i++) arr(Index,gfile->idx,i).flags = G_INDEX_NEW;
+
+    /* force Array.max field to be updated */
+    (void)ArrayRef(gfile->idx,gfile->header.num_records-1);
+
+    /* read cached freetree */
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    lseek(gfile->fdaux, sizeof(AuxHeader) +
+	  gfile->header.num_records * sizeof(AuxIndex), SEEK_SET);
+    gfile->freetree = freetree_load(gfile->fdaux, gfile->header.last_time);
+    tree_init = gfile->freetree ? 1 : 0;
+
+    /* allocate freetree, if not loaded */
+    if (!tree_init) {
+	gfile->freetree = freetree_create(0,MAX_GCardinal);
+	if (gfile->freetree==NULL)
+	    ABORT(GERR_OUT_OF_MEMORY);
+    }
+
+    /* read aux index and initialise */
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1==lseek(gfile->fdaux,sizeof(AuxHeader),0))
+	ABORT(GERR_SEEK_ERROR);
+
+    /* Temporarily load the entire index in one step */
+    idx_arr = (AuxIndex *)xmalloc(gfile->header.num_records *
+				  sizeof(AuxIndex) + 1);
+    if (g_read_aux_index(gfile->fdaux, idx_arr, gfile->header.num_records))
+	ABORT(GERR_READ_ERROR);
+    
+    for (i=0;i<gfile->header.num_records;i++) {
+	AuxIndex *aidx;
+	GToggle toggle;
+
+	/* aidx points to the current processed index record */
+	aidx = &idx_arr[i];
+
+	/* set toggle to be current index of fruity chews */
+	toggle = g_toggle_state(gfile->header.last_time, aidx);
+	    
+	if (toggle != G_NO_TOGGLE) {
+	    if (gfile->header.flags & G_BLOCK_SIZE_CHANGED) {
+		arr(Index,gfile->idx,i).aux_allocated = aidx->used[toggle];
+	    } else {
+		arr(Index,gfile->idx,i).aux_allocated =
+		    FREETREE_BLOCK(aidx->used[toggle],
+				   gfile->header.block_size);
+	    }
+	    arr(Index,gfile->idx,i).aux_image = aidx->image[toggle];
+	    arr(Index,gfile->idx,i).aux_time = aidx->time[toggle];
+	    arr(Index,gfile->idx,i).aux_used = aidx->used[toggle];
+	} else {
+	    printf("No toggle for record %d\n", i);
+	}
+
+	/* update freetree */
+	if (toggle != G_NO_TOGGLE) {
+	    GImage image;
+	    image = aidx->image[toggle];
+	    if (image!=G_NO_IMAGE) {
+		int err;
+		/*
+		 * NOTE: allocated versus used space in file
+		 * We optimise on file space usage since we registered only
+		 * the used (arr(Index,gfile->idx,i).aux.used[t]) space, rather
+		 * than the whole of the allocated space. To do this we
+		 * would have to set the allocated space to equal the used
+		 * space. It is not necessary to modify index records in file.
+		 */
+		if (!tree_init) {
+		    err = freetree_register(gfile->freetree, image,
+					    arr(Index,gfile->idx,i)
+					       .aux_allocated);
+		    if (err == -1) {
+			if (err == TREE_OVERLAP) {
+			    fprintf(stderr,
+				    "** SERIOUS CORRUPTION DETECTED "
+				    "- file %s\n",
+				    g_filename(gfile));
+			    fprintf(stderr,"** record %d: "
+				    "image overlaps that of another record\n",
+				    i);
+			}
+			ABORT(err);
+		    }
+		}
+
+		/* flag as in use (G_INDEX_USED isn't needed or ever used) */
+		arr(Index,gfile->idx,i).flags = G_INDEX_NONE;
+	    } else {
+		/* 08/10/96
+		 * This is not an error, but some debugging info to see
+		 * whether or not we had a problem before when we set all
+		 * records to G_INDEX_NONE, rather than just the ones with
+		 * images (which stops them being initialised later).
+		 */
+		/* printf("Leaving record %d as G_INDEX_NEW\n", i); */
+	    }
+	}
+
+    }
+
+    xfree(idx_arr);
+
+    /* tree_print_ps(gfile->freetree->tree->left); */
+
+#undef ABORT
+
+    return gfile;
+}
+
+
+void g_close_file(GFile *g)
+/*
+ * Close a file and its associated index
+ */
+{
+    /* tidy up files if necessary */
+
+    /* free data structures */
+    g_free_gfile(g);
+}
+
+/* 6/1/99 johnt - Don't have fcntl with Visual C++ */
+#if !defined(_MSC_VER) && !defined(__APPLE__)
+int g_sync_aux_on(GFile *gfile)
+/*
+ * Force a flush of all prior data and then all subsequent data is to be
+ * written in SYNC mode.
+ */
+{
+    int fdaux = gfile->fdaux;
+#if 0
+    char c;
+#endif
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1 == fcntl(fdaux, F_SETFL, O_RDWR | O_SYNC))
+	return gerr_set(GERR_SYNC);
+
+#if 0
+    /* Force a SYNC write to flush all prior data. */
+    if (-1 == lseek(fdaux, 0, 0)) return gerr_set(GERR_SEEK_ERROR);
+    if (-1 == read(fdaux, &c, 1)) return gerr_set(GERR_READ_ERROR);
+    lseek(fdaux, 0, 0);
+    if (-1 == write(fdaux, &c, 1)) return gerr_set(GERR_WRITE_ERROR);
+#endif
+    if (-1 == fsync(fdaux)) return gerr_set(GERR_SYNC);
+
+    return 0;
+}
+
+int g_sync_aux_off(GFile *gfile)
+/*
+ * All subsequent data should not be written in SYNC mode.
+ */
+{
+    int fdaux = gfile->fdaux;
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1 == fcntl(fdaux, F_SETFL, O_RDWR))
+	return gerr_set(GERR_SYNC);
+
+    return 0;
+}
+
+
+int g_sync_on(GFile *gfile)
+/*
+ * Force a flush of all prior data and then all subsequent data is to be
+ * written in SYNC mode.
+ */
+{
+    int fd = gfile->fd;
+    char c;
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1 == fcntl(fd, F_SETFL, O_RDWR | O_SYNC))
+	return gerr_set(GERR_SYNC);
+
+#if 0
+    /* Sync all data to the disk */
+    fsync(gfile->fd);
+    fsync(gfile->fdaux);
+#endif
+
+    /*
+     * Force a SYNC write to flush all prior data.
+     *
+     * Faster than the fsync() method (0.6x time), but still much slower
+     * than no sync at at (~2.0x time).
+     */
+    if (-1 == lseek(fd, 0, 0)) return gerr_set(GERR_SEEK_ERROR);
+    if (-1 == read(fd, &c, 1)) return gerr_set(GERR_READ_ERROR);
+    lseek(fd, 0, 0);
+    if (-1 == write(fd, &c, 1)) return gerr_set(GERR_WRITE_ERROR);
+
+    return 0;
+}
+
+int g_sync_off(GFile *gfile)
+/*
+ * All subsequent data should not be written in SYNC mode.
+ */
+{
+    int fd = gfile->fd;
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1 == fcntl(fd, F_SETFL, O_RDWR))
+	return gerr_set(GERR_SYNC);
+
+    return 0;
+}
+
+#endif
+
+
+int g_write_aux_header(GFile *gfile)
+/*
+ * Write the header of the aux file
+ */
+{
+    int fdaux = gfile->fdaux;
+    AuxHeader *header = &gfile->header;
+    int check;
+
+    /* check arguments */
+    if (gfile==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1==lseek(fdaux,0,0)) return gerr_set(GERR_SEEK_ERROR);
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    /* check = write(fdaux,header,sizeof(AuxHeader)); */
+    check = (low_level_vector[GOP_WRITE_AUX_HEADER])(fdaux,header,1);
+    if (check)
+	return gerr_set(GERR_WRITE_ERROR);
+    else
+	return 0;
+}
+
+
+
+int g_write_aux_index(GFile *gfile, GCardinal rec)
+/*
+ * Read a record from the index of the aux file
+ */
+{
+    AuxIndex idx;
+    int fdaux = gfile->fdaux;
+    int check;
+    
+    idx.image[0] = arr(Index,gfile->idx,rec).aux_image;
+    idx.time [0] = arr(Index,gfile->idx,rec).aux_time;
+    idx.used [0] = arr(Index,gfile->idx,rec).aux_used;
+    idx.image[1] = 0;
+    idx.time [1] = 0;
+    idx.used [1] = 0;
+
+    /* check arguments */
+    if (gfile==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
+
+    /* LOW LEVEL IO HERE */
+    errno = 0;
+    if (-1==lseek(fdaux,sizeof(AuxHeader)+rec*sizeof(AuxIndex),0))
+	return gerr_set(GERR_SEEK_ERROR);
+
+    /* LOW LEVEL IO HERE */
+    /* check = write(fdaux,idx,sizeof(AuxIndex)); */
+    errno = 0;
+    check = (low_level_vector[GOP_WRITE_AUX_INDEX])(fdaux,&idx,1);
+    if (check)
+	return gerr_set(GERR_WRITE_ERROR);
+    else
+	return 0;
+}
+
+
+
+
+
+int g_remove_client(GFile *gfile, GClient client)
+/*
+ * Remove all locks in this file for this client
+ */
+{
+
+    /* check arguments */
+    if (gfile==NULL) return gerr_set(GERR_INVALID_ARGUMENTS);
+
+    /*
+     * if this client has locked the file, remove the lock
+     */
+    if (gfile->flock_client == client &&
+	gfile->flock_status == G_FLOCK_LOCKED) {
+
+	/* reset flock variables */
+	gfile->flock_status = G_FLOCK_NONE;
+	gfile->flock_client = 0;
+	gfile->flock_view = -1;
+
+    }
+
+    return 0;
+}
+
+
+
+
+
+char *g_filename(GFile *gfile)
+/*
+ * return file name of open file
+ */
+{
+    if (gfile->fname == NULL)
+	return "(unknown)";
+    else
+	return gfile->fname;
+
+}

@@ -1,0 +1,38 @@
+
+# DO NOT DELETE
+$O/copy_reads.o: $(SRCROOT)/Misc/dstring.h $(SRCROOT)/gap4/tagDefs.h $(SRCROOT)/gap4/fortran.h
+$O/copy_reads.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/copy_reads.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/gap4/io_handle.h $(SRCROOT)/gap4/consen.h
+$O/copy_reads.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
+$O/copy_reads.o: $(SRCROOT)/gap4/IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/array.h
+$O/copy_reads.o: $(SRCROOT)/gap4/active_tags.h $(SRCROOT)/gap4/tagdb.h $(SRCROOT)/gap4/list_proc.h
+$O/copy_reads.o: $(SRCROOT)/gap4/complement.h copy_reads.h $(SRCROOT)/gap4/gap_cli_arg.h
+$O/copy_reads.o: $(SRCROOT)/gap4/gap-dbstruct.h $(SRCROOT)/g/g-os.h $(SRCROOT)/gap4/gap-if.h
+$O/copy_reads.o: $(SRCROOT)/gap4/hash_lib.h $(SRCROOT)/gap4/assemble_direct.h
+$O/copy_reads.o: $(SRCROOT)/gap4/io-reg.h
+$O/copy_reads.o: $(SRCROOT)/gap4/qual.h $(SRCROOT)/gap4/tman_display.h $(SRCROOT)/io_lib/include/Read.h
+$O/copy_reads.o: $(SRCROOT)/gap4/seqInfo.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/copy_reads.o: $(SRCROOT)/gap4/tagUtils.h $(SRCROOT)/gap4/edStructs.h $(SRCROOT)/gap4/fort.h
+$O/copy_reads.o: $(SRCROOT)/gap4/tkEditor.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/copy_reads.o: $(SRCROOT)/io_lib/include/compress.h $(SRCROOT)/tk_utils/tkTrace.h
+$O/copy_reads.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
+$O/copy_reads.o: $(SRCROOT)/primer3/src/dpal.h $(SRCROOT)/gap4/undo.h $(SRCROOT)/gap4/edUtils.h
+$O/copy_reads.o: $(SRCROOT)/primer3/src/primer3.h
+$O/copy_reads.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/seq_utils/align_lib_old.h
+$O/copy_reads.o: $(SRCROOT)/seq_utils/align_lib.h $(SRCROOT)/gap4/fij.h $(SRCROOT)/gap4/io_utils.h
+$O/copy_reads.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/copy_reads.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/copy_reads.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
+$O/copy_reads.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/licence.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/sheet.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/tcl_utils.h copy_reads_globals.h $(SRCROOT)/Misc/misc.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/tkSheet_common.h $(SRCROOT)/gap4/tkEdNames.h
+$O/copy_reads.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/copy_reads.o: $(SRCROOT)/gap4/gap_globals.h
+$O/copy_reads.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
+$O/copy_reads.o: $(SRCROOT)/gap4/primlib.h
+$O/copy_reads_globals.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/copy_reads_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/copy_reads_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h

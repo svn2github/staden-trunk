@@ -1,0 +1,61 @@
+package require Iwidgets
+namespace eval ::EMBOSS::rebaseextract {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_rebaseextract*Xentry.entry.width 30
+option add *e_rebaseextract*Entryfield.width 30
+option add *e_rebaseextract*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) rebaseextract
+    set w [xtoplevel .e_rebaseextract -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - rebaseextract}
+    label $w._title -text {Extract data from REBASE}
+    pack $w._title -side top -fill both
+    set vars(rebaseextract._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments inf
+    xentry $w.inf \
+	-label [subst {Full pathname of WITHREFM}]\
+	-textvariable [namespace current]::vars(inf) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.inf delete 0 end
+    $w.inf insert end [subst {}]
+    pack $w.inf -side top -fill both
+    set vars(inf.path) $w.inf
+    set vars(inf.required)  1
+    set vars(inf._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/rebaseextract.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

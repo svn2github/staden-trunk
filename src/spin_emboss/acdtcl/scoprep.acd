@@ -1,0 +1,82 @@
+package require Iwidgets
+namespace eval ::EMBOSS::scoprep {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_scoprep*Xentry.entry.width 30
+option add *e_scoprep*Entryfield.width 30
+option add *e_scoprep*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) scoprep
+    set w [xtoplevel .e_scoprep -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - scoprep}
+    label $w._title -text {Reorder scop classificaiton file so that the representative structure of each family is given first}
+    pack $w._title -side top -fill both
+    set vars(scoprep._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments scopin
+    xentry $w.scopin \
+	-label [subst {Name of scop classification file (embl format input)}]\
+	-textvariable [namespace current]::vars(scopin) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopin delete 0 end
+    $w.scopin insert end [subst Escop.dat]
+    pack $w.scopin -side top -fill both
+    set vars(scopin.path) $w.scopin
+    set vars(scopin.required)  1
+    set vars(scopin._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments scopout
+    xentry $w.scopout \
+	-label [subst {Name of scop classification file (embl format output)}]\
+	-textvariable [namespace current]::vars(scopout) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopout delete 0 end
+    $w.scopout insert end [subst Escop.dat.out]
+    pack $w.scopout -side top -fill both
+    set vars(scopout.path) $w.scopout
+    set vars(scopout.required)  1
+    set vars(scopout._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/scoprep.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

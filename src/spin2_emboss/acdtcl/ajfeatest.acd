@@ -1,0 +1,86 @@
+package require Iwidgets
+namespace eval ::EMBOSS::ajfeatest {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_ajfeatest*Xentry.entry.width 30
+option add *e_ajfeatest*Entryfield.width 30
+option add *e_ajfeatest*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) ajfeatest
+    set w [xtoplevel .e_ajfeatest -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - ajfeatest}
+    label $w._title -text {Reads and writes (returns) a sequence and its features}
+    pack $w._title -side top -fill both
+    set vars(ajfeatest._type) application
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) sequence
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/ajfeatest.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

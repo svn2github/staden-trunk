@@ -1,0 +1,48 @@
+This manual is a guide to programming with the newer Tcl/Tk based Staden
+Package programs. It covers both using the programs in a scripting environment
+and writing modules to extend the functionality of them. The main content
+current covers the Tcl interfaces, with very little of the C functions
+currently documented. The reader should also be familier with the Tcl
+language.
+
+
+@unnumberedsec Conventions Used in This Manual
+
+@exdent @i{Italic} is used for:
+@itemize @bullet
+@item variable names
+@item command line values
+@item structure fields
+@end itemize
+
+@exdent @code{Fixed width bold} is used for:
+@itemize @bullet
+@item Code examples
+@item Command line arguments
+@item Typed in commands
+@item Program output
+@end itemize
+
+@sp 1
+The general format of the syntax for the more complex Tcl commands is to list
+the command name in bold followed by one or more command line arguments in
+bold with command line values in italic. The command line values have a
+brief description of the use of the value followed by the type and a default
+value. The Tcl convention of surrounding optional values in question marks is
+used. For instance the @code{edit_contig} command has the following syntax.
+
+@example
+@group
+@exdent @code{edit_contig}
+ -io            @i{io_handle:integer}
+ -contig        @i{identifier:string}
+?-reading       @i{identifier:string()}?
+?-pos           @i{position:integer(1)}?
+@end group
+@end example
+
+@sp 1
+@code{-io} and @code{-pos} both take integer values. @code{-pos} is
+optional, and has a default value of 1. @code{-contig} and @code{-reading}
+both require string values. @code{-reading} is optional, and has a default
+value of a blank string.

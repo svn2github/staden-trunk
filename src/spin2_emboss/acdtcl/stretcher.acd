@@ -1,0 +1,176 @@
+package require Iwidgets
+namespace eval ::EMBOSS::stretcher {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_stretcher*Xentry.entry.width 30
+option add *e_stretcher*Entryfield.width 30
+option add *e_stretcher*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) stretcher
+    set w [xtoplevel .e_stretcher -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - stretcher}
+    label $w._title -text {Finds the best global alignment between two sequences}
+    pack $w._title -side top -fill both
+    set vars(stretcher._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 1]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 1]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst any]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  1
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) sequence
+
+    lappend arguments sequenceb
+    set vars(sequenceb)       [get_active_seq_id 2]
+    if {$vars(sequenceb) == -1} {set vars(sequenceb) [get_active_seq_id 1]}
+    set vars(sequenceb.name)  [seq_info $vars(sequenceb) name]
+    sequence_changed [namespace current] sequenceb
+    set vars(sequenceb.type) [subst {[expr {($vars(sequencea.protein) ? "protein" : "nucleotide")}]}]
+    seq_id $w.sequenceb \
+	-textvariable [namespace current]::vars(sequenceb.name)\
+	-start_value $vars(sequenceb.begin)\
+	-end_value $vars(sequenceb.end)\
+	-to [seq_info $vars(sequenceb) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequenceb $w.sequenceb}"
+    set vars(sequenceb) [subst {}]
+    pack $w.sequenceb -side top -fill both
+    set vars(sequenceb.path) $w.sequenceb
+    set vars(sequenceb.required)  1
+    trace variable vars(sequenceb.name) w  "::EMBOSS::sequence_changed [namespace current] sequenceb"
+    set vars(sequenceb.type.orig) $vars(sequenceb.type)
+    set vars(sequenceb.type.expr) {[expr {($vars(sequencea.protein) ? "protein" : "nucleotide")}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] sequenceb.type"
+    set vars(sequenceb._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst {[expr {$vars(sequencea.protein)}]}]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Matrix filename}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.protein.orig) $vars(datafile.protein)
+    set vars(datafile.protein.expr) {[expr {$vars(sequencea.protein)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrix
+
+    lappend arguments gappenalty
+    iwidgets::entryfield $w.gappenalty \
+	-validate integer \
+	-textvariable [namespace current]::vars(gappenalty) \
+	-labeltext [subst gappenalty]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gappenalty component entry] -sticky nse
+    set vars(gappenalty) [subst {[expr {($vars(sequencea.protein)? 12 : 16)}]}]
+    pack $w.gappenalty -side top -fill both
+    set vars(gappenalty.minimum) [subst 0]
+    set vars(gappenalty.path) $w.gappenalty
+    set vars(gappenalty.required)  0
+    set vars(gappenalty.orig) $vars(gappenalty)
+    set vars(gappenalty.expr) {[expr {($vars(sequencea.protein)? 12 : 16)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gappenalty"
+    set vars(gappenalty._type) integer
+
+    lappend arguments gaplength
+    iwidgets::entryfield $w.gaplength \
+	-validate integer \
+	-textvariable [namespace current]::vars(gaplength) \
+	-labeltext [subst gaplength]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gaplength component entry] -sticky nse
+    set vars(gaplength) [subst {[expr {($vars(sequencea.protein)? 2 : 4)}]}]
+    pack $w.gaplength -side top -fill both
+    set vars(gaplength.minimum) [subst 0]
+    set vars(gaplength.path) $w.gaplength
+    set vars(gaplength.required)  0
+    set vars(gaplength.orig) $vars(gaplength)
+    set vars(gaplength.expr) {[expr {($vars(sequencea.protein)? 2 : 4)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gaplength"
+    set vars(gaplength._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Alignment output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst align0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) align
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/stretcher.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,1399 @@
+@node X1
+@chapter Preparation of ABI sequence data for input to gap4.
+
+@node X1-obj
+@section The Objectives of the Practical
+
+To take a first look at @b{pregap4}.
+
+@node X1-overview
+@section An Overview of the Practical Session
+
+The stages of the exercise are:
+
+@enumerate
+_ifdef([[_unix]],[[@item Log on.]]
+)@item Obtain a set of ABI sequencer data.
+@item Run pregap4 on a very simple data set.
+@end enumerate
+
+_ifdef([[_unix]],[[@node X1-login
+@section Logging on and getting ready to start
+
+Precisely how to log on to your workstation will depend on where we
+are. Hopefully by the time you are reading this we will have discussed and
+investigated the personal habits of the workstation in front of you. So, log
+on following in whatever fashion is "best" in the local environment. Just ask
+for help if you get stuck.
+
+To teach any operating system is not an objective of any of these
+exercises. The programs we will be investigating run under the operating
+system UNIX. It will be useful if you have some grasp of UNIX, but little will
+be assumed. Happily, it is possible to get by as normal users with a very
+small set of commands. What is required will be introduced gently as and when
+it is necessary. @footnote{We do assume you are familiar with files (named
+collections of data) and directories (or folders in Macintosh speak). From the
+user point of view, the major (only?) function of any operating system is to
+manage files within a hierarchy of directories. Increasingly, on modern
+workstations, this can be done via a @b{G}raphical @b{U}ser @b{I}nterface
+(@b{GUI}), which is very intuitive and very probably the way everything will
+be done in the near future. However, at this point in time, there are several
+UNIX GUIs with no single standard emerging. So for now we stick to the UNIX
+command line as this is the same on all UNIX systems.}
+
+Initially, we will just look around your disk space, and as good practice
+demands, make a directory for this exercise and move into it.
+
+To list the files in the current directory (your home directory) type in:
+
+@example
+ls
+@end example
+
+In as much as such a thing exists, @b{ls} is a typical UNIX command, generated
+by taking a word that vaguely approximates to what you want to do (in this
+case "@b{l}i@b{s}t") and knocking out random letters until you only have two
+or so left. Its use at this stage should reveal that you have no files of any
+relevance to this exercise.@footnote{Precisely what you see, will once again
+depend on where we are. It may well be considerably more than nothing, but it
+should all be ignorable as far as this exercise is concerned.}
+
+To @b{m}a@b{k}e a @b{dir}ectory called @b{pregap_intro} in which to store the
+files you will generate in the course of this first exercise, type in:
+
+@example
+mkdir pregap_intro
+@end example
+
+List your files once more to prove that you have indeed made a suitable
+directory by typing in:
+
+@example
+ls -F
+@end example
+
+The -F bit of this instruction encourages UNIX to add an extra character to
+the name of some files to show what type of file it is. As you will see,
+directory names are appended with a '/'. Ordinary files (not that you have any
+of any consequence at this point) are appended by nothing.
+
+To make your new pregap_intro directory the @b{c}urrent @b{d}irectory, type in:
+
+@example
+cd pregap_intro
+@end example
+
+To prove that the current directory is indeed pregap_intro, type in:
+
+@example
+pwd
+@end example
+
+and UNIX will tell you are indeed in a directory whose name ends in
+pregap_intro. The full path name from the root directory is displayed. Only
+concern yourself with the bit from you home directory onwards. @b{pwd} stands
+for @b{p}rint @b{w}orking @b{d}irectory .... of course. You are now ready to
+start.
+]])
+@node X1-obtaining
+@section Obtaining an Initial Set of ABI Sequencer Data
+
+In "real life", you would spend lots of time bent over a hot test tube
+generating lots of ABI (or similar) sequencing files. For the purposes of this
+exercise, we will use some data we prepared earlier (well someone did
+anyway). _ifdef([[_unix]],[[To make a working copy of this data in your pregap_intro directory,
+type in the following:
+
+@example
+cp $STADENROOT/course/data/ABI_Data/* .
+@end example
+
+which is a request to the UNIX operating system to @b{c}o@b{p}y all files
+(@b{*}) in the directory called @b{ABI_Data}, which is held somewhere within
+the Staden Package installation tree (@b{$STADENROOT/}...), to the current
+directory (@b{.}). Note the space between the star and the dot
+characters. This command will take a few seconds. When you are again prompted
+for further action by UNIX, type in:
+
+@example
+ls -l
+@end example
+
+which is a request to UNIX to list the files of your current directory out the
+@b{l}ong way (@b{-l}). The ABI sequencer data files you have just copied into
+your disk space will be displayed one per line. This time ls will tell you
+much more about each file than just its name.  @footnote{In particular:
+@itemize @minus
+@item
+The first character of each line indicates the type of the file. For
+example, a d in this position indicates a directory, a - indicates a regular
+data file. 
+
+@item
+The next three characters define the permissions afforded to the owner of the
+file. In this case, they should be set to @b{rw-} for all the listed
+files. This indicates that the file owner can @b{r}ead and @b{w}rite, but not
+e@b{x}ecute the files. Write permission is required in order to amend a
+file. Execute permission is required if the file is a program file or a file
+containing a list of textual UNIX commands (a script). Without execute
+permission, a program or script file cannot be made to run (execute
+even). Execute permission is also required for directories in order to gain
+full access to the files stored within.
+
+@item
+The next three characters define the permissions afforded to the members of
+the user group to which the owner of the file belongs. It is possible to
+divide the users of a system into groups. This allows users to set their file
+permissions such that members of the group to which they belong have greater
+access to their files than other users of the system. In this case, these
+three characters should be set @code{r--}, indicating that members of your
+user group may read your files but may not execute or write to them (i.e. run
+or amend).
+
+@item
+The next three characters define the permissions for 'other' users; that is
+people who are not the file owner and are not in the same 'group' as this
+file. Like the group permissions these are likely to be @code{r--}.
+
+@item
+Next is a number which represents the number of links to the file. It
+is possible to have a file accessible by more than one filename. In general
+this is not desired, so the number of links is typically one.
+
+@item
+The next two words are the name of the owner of the file and the name of
+the group of the file respectively.
+
+@item
+Next is a number representing the size of the file in bytes (letters if
+you prefer).
+
+@item
+Then is displayed the date and time of modification (or creation) of the
+file followed, at last, by the name of the file.
+@end itemize
+}]])
+_ifdef([[_windows]],[[Firstly we need to take a make a new folder in which
+to work. This can be done wherever you please, but we suggest that you
+maintain a 'home' directory so that your own work may be kept separate from
+that of others. Firstly you need to start up a file-system viewer window. This
+can be either the window popped up by double clicking on My Computer or the
+more complex explore window invoked by clicking with the right mouse button on
+My Computer and selecting the Explore option. We refer to these windows
+throughout the text as the windows explorers, but it doesn't matter which
+style you prefer. We suggest that you keep this window present at all times
+(although probably iconified) for quick access to the file-system so that you
+can see what effect various program operations have.
+
+So, within your explorer window, change to (or make) your home directory, and
+within that make a new folder named 'pregap4_intro'@footnote{New folders are
+created by pressing the right mouse button, selecting the 'New' cascading menu
+followed by 'Folder'. This will create a folder named 'New Folder', which
+should be renamed by typing 'pregap4_intro'. In general we will not explain
+how to use Windows itself except for the first time any specific bit of
+Windows knowledge is required.  } and then copy the initial set of ABI
+sequence data into this directory. The ABI data may be found in the
+'course/data/ABI_Data' subdirectory of the Staden Package
+installation@footnote{Typically '/Program Files/MRC LMB' if you accepted the
+defaults when installing the package. To copy the contents of the
+course/data/ABI Data directory it is easiest to switch the explorer window to
+display the directory you wish to copy from, then press control A to select
+all files, followed by control C to copy these files to the 'paste
+buffer'. Then switch the explorer window back to your 'pregap4_intro'directory
+and press control V to paste (copy) these files.}]])
+
+The files whose names end in @b{.Seq} contain reading sequences. The other
+files contain the trace data for the sequences (amongst many other things).
+_ifdef([[_unix]],[[To have a look at the sequences, type in:
+
+@example
+more *.Seq
+@end example
+
+That is, display the contents of all (@b{*}) files whose names end with
+@b{.Seq}, stopping after each page (well, windowfull really) and asking if any
+@b{more} data should be displayed. You should see each sequence file in turn
+displayed on your screen. To move from page to page press the space bar.  Type
+in @b{q} (for @b{q}uit) when you feel you have seen
+enough.]])_ifdef([[_windows]],[[To have a look at the sequences open them in a
+text editor, such as wordpad@footnote{Try to avoid using notepad instead, as
+notepad cannot even deal with ASCII text files produced on a Macintosh.}. Do
+not try and look at the other files in the same way as they are not text
+files.]]) Do not try and look at the other files in the same way. They are not
+text files and will not be a pretty sight if displayed.
+
+You are now ready to start processing your ABI sequence data with the programs
+of the Staden Package.
+
+@node X1-vector
+@section Obtaining Copies of the Vector Sequences for Screening the Reading.
+
+In order to run pregap4, you must have all the relevant vector sequences (in
+this case, the sequencing vector and the cosmid vector) available in local
+disk files, although not both in the same location. The Staden Package comes
+with a few standard sequencing vector files.
+
+For this exercise, all of this information will be provided for you. The
+required cloning vector (@b{lorist2}) sequence is in the same directory as your
+ABI data. The sequencing vector is @b{m13mp18} and is already held in the
+Staden Package installation directory. The cloning site used is @b{SmaI}.
+
+It is quite likely that you will find this data and information as "ready
+made" in "real life". A typical source of vector files is the sequence
+databanks, although it is sometimes tricky to customise the searches
+sufficiently well to find the ones that you want.
+
+@node X1-pregap4
+@section Using Pregap4 to Prepare a set of ABI Sequencer Files for Entry into a Sequencing Project Database.
+
+As illustrated in Figure 1, pregap4 guides the user through the stages of data
+preparation that precede the assembly@footnote{As Figure 1 shows, the
+execution of pregap4 can include assembly, but not in this exercise.} of read
+data into contigs within a sequencing project database@footnote{A full
+description of pregap4 is available at the WWW address:@*
+@url{http://www.mrc-lmb.cam.ac.uk/pubseq/manual/pregap4_[[]]_ifdef([[_unix]],[[unix]])[[]]_ifdef([[_windows]],[[windows]])_toc.html}}.
+To summarise the description very crudely, pregap4 sets out to do some or all
+of the following:
+
+@itemize @bullet
+@item Extract the useful parts of ABI or ALF files and write them out as
+ZTR files
+
+@item Hide poor quality data (so that is does not interfere with assembly)
+
+@item Hide sequencing vector sequence (if the clones being sequenced are made
+by "shot-gunning" the whole of large clones - e.g. cosmids - into the
+sequencing vector then some sequences will be partly or wholly the cosmid
+vector. These sequences can also be marked or eliminated.)
+
+_ifdef([[_unix]],[[
+@page
+@image{pregap4,,8in}
+@i{Figure 1. An Overview of the Operation of Pregap4.}
+
+@sp 1
+]])
+
+@item Screen for contamination (e.g. against the entire E.Coli sequence)
+
+@item Mark repeat sequence elements (e.g. Alu repeats in human data). Repeat
+sequence elements usually look very similar to each other making sequence
+assembly difficult. If such elements can be marked at this early stage they
+can be ignored during the initial assembly procedures, thus avoiding
+misplacements of reads.
+
+@end itemize
+
+Pregap4 may be configured to execute different subsets of its various
+functions according to circumstances. As pregap4 configurations may be stored
+in disk files and reused, reconfiguration is only required when circumstances
+change. Once pregap4 has been carefully configured for a particular project,
+it should be possible to run pregap4 on many successive batches of reads with
+no further user interaction. The default pregap4 execution mode is fully
+interactive, requiring you to explicitly state which steps are relevant and
+precisely how they are to be executed.
+
+_ifdef([[_windows]],[[
+@page
+@image{pregap4,,8in}
+@i{Figure 1. An Overview of the Operation of Pregap4.}
+
+@sp 1
+]])
+In the next stage of this practical, you will run pregap4 in default mode
+(i.e. fully interactively) on the data you have set up thus far. To start
+things rolling, _ifdef([[_unix]],[[type in:
+
+@example
+pregap4 &
+@end example
+
+The ampersand (@code{&}) tells UNIX that this is a graphical application which
+brings up its own window and therefore does not need additional user input at
+the command line prompt. This means that the prompt will be displayed again
+immediately after starting pregap4@footnote{If at
+anytime you omit to append a '@b{&}' to your @b{pregap4} command, you can free
+up your UNIX window retrospectively by typing in a @b{^Z} (hold the @b{Ctrl}
+key down and press the @b{Z} key once), which suspends the current process
+(pregap4). If you then type in:
+
+@example
+bg
+@end example
+
+the suspended process will be started up again in the background. At this
+point, all is exactly as if you had remembered the '@b{&}' in the first
+place.}. ]])_ifdef([[_windows]],[[select Pregap4 from the Start @result{} Programs @result{} Staden Package menu.]])
+
+Pregap4 pauses for a few dramatic moments before bringing up a new
+window titled "@i{Pregap4 version 1.3}".
+
+@image{pregap4-start,6in}
+
+First note the @b{Help} menu at the top of the pregap4 window. Using this menu
+you can invoke the web browser brimming over with pages of useful information
+about pregap4. The manual pages will give you far more information about
+pregap4 than these notes, so it has to be a good idea to get the pages into
+view and to try and browse the relevant manual pages as you go through this
+exercise. This should be easy as there are Help buttons on all of pregap4's
+sub-windows each linked to the manual page relevant to the current
+operation. If you click (left hand mouse button) on the main pregap4 Help
+menu, you will be offered a menu of pages from which you might wish to start
+exploring the pregap4 manual pages. We suggest you select the @b{Introduction}
+option@footnote{The Staden Package has a home page that you might also wish to
+investigate at some point.  If you wish to add it to your bookmark list, the
+URL is: @url{http://www.mrc-lmb.cam.ac.uk/pubseq/}}. Once netscape
+_ifdef([[_windows]],[[or internet explorer (or whatever is your local
+preference) ]])has rumbled into life you should have displayed the
+Introduction page for pregap4 (including, on the next page, a rather more
+beautiful version of Figure 1). Clicking on the word Introduction at the top
+of the page will transport you to the Index manual page for pregap4. From here
+you can reach anywhere in the pregap4 manual pages@footnote{True, but the
+context driven Help buttons provided on the various pregap4 sub-windows will
+often offer a more direct way to travel to the pertinent manual page.}.
+
+At the very top of the pregap4 window is a row of pull down menu buttons. We
+will consider the options available from these menus as the need arises.
+
+Just below the pull down menus is a row of clickable tabs labelled @b{Files to
+Process}, @b{Configure Modules} and @b{Textual Output}. These allow you to
+select between the three main pregap4 modes of operation. We will next look at
+each mode in turn.
+
+First, put pregap4 into its @b{Files to Process} mode (the default mode, so no
+need to click on the tab this time) and specify which files are to be
+processed. Do this by clicking on the @b{Add files}
+@footnote{An alternative is to
+produce a @i{File of filenames}, which is literally a text file containing a
+series of filenames to process (separated by newline characters). _ifdef([[_unix]],[[In this
+example the easiest solution is to use UNIX once more:
+
+@example
+ls Sample???? > fofn
+@end example
+
+
+This lists in all the files starting in @b{Sample} and ending in any four
+characters (@b{????}) and then saves this information to a file named
+@b{fofn}. Try typing @b{more fofn} to verify the contents of this
+file.]])_ifdef([[_windows]],[[In this example the easiest solution is
+to use an MS-DOS 'command shell' and type in:
+@example	
+dir /b Sample???? > fofn
+@end example
+
+This lists in 'bare' format (@b{/b}) all the files starting in Sample and
+ending in any four characters (@b{????}) and then saves this information to a
+file named fofn. Try typing type fofn to verify the contents of this file.]])}
+button and then using the file browser to change to your @b{pregap4_intro}
+directory (if you are not already there). All the ABI files for the exercise
+have names of the form @b{Sample}@i{_XXX}, where @i{_XXX} is space followed by
+a three digit number.  So as our ABI files do not end in an .ab1 extension you
+will need to select 'Any[[]]_ifdef([[_windows]],[[(*.*)]])' as the file
+type. The browser should then show all the files listed in this directory. We
+wish to process all of the binary sample files (which contain the raw trace
+data along with sequence and other information). We could process just the
+@b{.Seq} files if we wished, but by doing this we would be missing out on a
+lot of useful information. Pick the binary files by selecting each Sample
+@i{XXX} file, where @i{XXX} is, in this case, a three digit number. This is
+most easily performed @footnote{_ifdef([[_unix]],[[An alternative is to type in
+@b{Sample????} to the file-browser dialogue where it prompts for @i{Filter:}
+and then hit return followed by a mouse left-click and drag to select all
+those files.]])_ifdef([[_windows]],[[An alternative is to type in
+@b{Sample????} to the Windows file-browser dialogue where it prompts for
+@b{File name} and then hit return followed by control-a to select just those
+files starting in Sample, but without selecting the files ending in
+@b{.Seq}.]])}  by holding down the control key and clicking on the five files
+with the left mouse button. Once your selection is complete press the
+_ifdef([[_unix]],[[@b{OK}]])_ifdef([[_windows]],[[Open]]) button at the bottom
+of the window. The @i{Open[[]]_ifdef([[_unix]],[[ Multiple Files]])} window
+will slide politely back from whence it came and pregap4 will be displaying
+the list of sequences selected for displaying on the left hand side of the
+"Files to Process" panel.
+
+The next pregap4 mode is "Configure Modules". Modules, in this context, are
+programs that perform the various tasks that pregap4 can manage. In this mode,
+you choose and configure those pregap4 options you wish to be applied to the
+selected data files. Click on the @b{Configure Modules} tab and a list of all
+the available pregap4 modules will be displayed down the left hand side of the
+main pregap4 window in their order of execution@footnote{It is possible to
+reorder and add/subtract to this list of pregap4 modules. If you
+select @b{Add/Remove Modules} from the @b{Modules} pull down menu at the top
+of the pregap4 main window, a sub window titled "Add/Remove Modules" will lurch
+forth. Note that this window is covered in warnings about how one can mess up
+severely by fiddling about in this window. So, whatever you do, when you leave
+this window, do so by clicking on the Cancel button rather than the Apply
+button. Before leaving, note that you can drag modules around the "Modules to
+use list", thus altering their order of execution. You can drag modules from
+the "Modules to use" list into the "Others available" list, thus removing them
+from the list of modules that will be offered by pregap4 in "Configure
+Modules" mode. The current default is to put all modules distributed with the
+package in the "Modules to use" list. This reduces the chance of users adding
+modules in an illogical order. It also means that you have to first remove a
+few modules before you can have the joy of dragging them back from the "Others
+Available" list to the "Modules to use list, thus adding to the list of
+options offered by pregap4. All great fun, but remember, finish this
+exploration by clicking the Cancel button, which gets you back to a logical
+list of modules.}  Each of the optional modules (i.e. all but the mandatory
+@i{General Configuration}) has either a @tick{}, indicating that it will be
+executed, or a @cross{}, indicating that it will not be executed. To the right
+of each module in the list is either:
+
+@table @b
+@item nothing
+For all modules not selected.
+@item ok
+Indicating that there are parameters to set, but default values have been
+selected.
+@item -
+Indicating that there are no parameters to set.
+@item edit
+Indicating that there are parameters to set for which there are no default
+values  (i.e. you must configure these modules before pregap4 can do anything
+sensible).
+@end table
+
+You need to select all the modules you wish to execute by clicking the
+@tick{}s and @cross{}s with the left mouse button and to configure the
+selected modules where appropriate.
+
+Initially the @i{General Configuration} module will be highlighted and the right
+hand side of the screen will be displaying its adjustable parameters. Try
+clicking with the left mouse button on any of the other named tasks on the
+left and note how the right hand side updates accordingly. End up with the
+"General Configuration" highlighted once more. Now select each module in turn
+and configure it correctly for the data to processed.
+
+@subsection General Configuration
+
+The "General Configuration" module performs a variety of house-keeping tasks
+such as identifying the type of each file to process. It is not optional, so
+you do not have to think about the selection of a @tick{} or @cross{}.
+
+The single parameter you are invited to think about guides the way that pregap4
+will determine the entry names@footnote{Also known as "reading names" or
+"sample names".} for readings in any of the ABI, SCF, CTF and ZTR file
+formats@footnote{The complete list of input data formats that pregap4 will accept is:
+
+@table @b
+@item ABI
+Data taken directly from an ABI or MegaBace automatic sequencer
+
+@item ALF
+Data taken directly from an ALF automatic sequencer
+
+@item CTF
+A trace format designed to save disk space. Not actually used by any
+sequencing instrument, but these files can be created by pregap4 and other
+software (as you will see later).
+
+@item EXP
+Experiment format files. In this instance, pregap4 will only need to
+use those of its processes that apply to experiment files (e.g. screening for
+vector and tagging ALU repeats).
+
+@item PLN
+Plain sequence files. That is, files containing just the text version of the
+called bases. In this instance pregap4 will be required to generate experiment
+files and perform just those of its processes that apply to experiment files.
+
+@item SCF
+Data taken directly from a LiCor or ALF automatic sequence (possibly others
+too), or as data previously converted from ABI or ALF format. In this case,
+pregap4 will not have to make the SCF files, but will enact all other parts of
+its processing.
+
+@item ZTR
+The compressed trace format. Like CTF this is not yet a native output format
+from any sequencing machines, however it offers a significant disk space
+saving (generally considerably more so than CTF). See next module for more
+information on this.
+@end table
+
+Note that pregap4 is able to determine the format of each file it is offered
+and can therefore process batches of data files of mixed format.}.  All of
+these formats allow for the entry name to be saved in the file@footnote{For
+ABI files these are typically held in the sample sheet which should be filled
+out on the Macintosh.} with the traces and the called sequence (and much
+more). So for ABI and SCF files, the option exists to either read the entry
+names from the data files, or to derive the entry name from the names of the
+data files. We think that the pregap4 default, of reading the entry names from
+the data files was clearly the preferred option, but if no read or sample name
+was entered when the sequencing was done (for example within the ABI sample
+sheet), some alternative is essential. Of course, you could have found all
+this out for yourselves by clicking on the @b{Help on module} button in the
+bottom right hand corner of pregap4's main window (why not try it).
+
+The ABI sequence files for this exercise have had their sample sheet filled out
+correctly and also have daft filenames, so answer the @b{Get entry names
+from trace files} question with @b{Yes}.
+
+@subsection Phred
+
+Phred analyses the trace data and recalls the bases. It also computes a
+confidence value for each base call. The computed accuracy values are reckoned
+to be more reliable than those generated by the @i{Estimated Base Accuracies}
+module (see below), so one might normally prefer this option over the that.
+Clearly it would be silly to select both, as whichever was executed
+second would overwrite the deliberations of the first.
+
+As you may have read in the manual pages, phred is not part of the Staden
+package. It has to be obtained separately from the author, so the inclusion of
+the "Estimated Base Accuracies" module ensures that all users can estimate
+base accuracies, even if they have not yet obtained phred.
+
+As phred cannot deal with many file of the formats supported by pregap4 this
+module will automatically convert files to SCF before running phred. Phred's
+native output format is also SCF, so we can be sure to have SCF files after
+processing with phred.
+
+Primarily because we cannot be sure that phred is available, leave this option
+@cross{}ed. In a later exercise, we will look at processing reads
+called and assigned confidence values using phred.
+
+@subsection ATQA
+
+This is another third party trace analysis program. ATQA does not assign new
+base calls, but it does evaluate the existing (typically ABI) base calls and
+assigns new confidence values. It also produces confidence values for the
+possibility of an insertion or deletion at each base call.
+
+Much like phred, ATQA is best run on SCF files and so pregap4 will
+automatically reformat the input data if necessary. The output files will also 
+be in SCF format.
+
+As with phred, we cannot be sure that ATQA is available when running this
+course, so leave the option @cross{}ed.
+
+@subsection Estimate Base Accuracies
+
+This analyses the chromatogram data to assign a confidence for each base
+call. It's a poor-man's version of phred and ATQA, but unlike these it is a
+standard part of the package and so will work on all installations. It can
+deal with SCF, CTF and ZTR input files, but will automatically convert ABI and
+ALF input data to ZTR prior to processing.  There are no parameters to
+configure.  Leave it @tick{}ed.
+
+We have a choice of two output scales; logarithmic and signal to noise
+ratios. Keep the default (@b{logarithmic} as this is compatible with
+phred and it is what the quality clip module expects).
+
+@subsection Trace Format Conversion
+
+This module converts traces of one file format to another. This is not
+essential as Gap4 can read all the formats supported by this conversion module 
+anyway, but changing the file format can bring other benefits. The most
+significant difference is with the file size. Specifically ABI files contain
+lots of information which is not needed by Gap4 and so are very large. At the
+opposite end of the scale SCF, CTF and ZTR files contain just the required
+information, and in the case of ZTR this is further compressed down (by use of 
+appropriate algorithms, much like the @code{gzip} and @code{zip} tools) so
+that the typical file size is often one tenth of the original size.
+
+You are given the choice out ZTR, CTF and SCF @b{output format}s. SCF is a
+widely used standard, so if you are planning on sharing files with others then
+this may be a sensible choice. If, by this stage, your data will have been
+processed by phred, ATQA or eba then you will probably already have SCF
+files. If you're purely after saving as much space as possible then ZTR is the
+best choice.
+
+The @b{Downscale sample range} option allows for further space saving,
+although in this case by losing information. Typically a trace file will have
+a range of Y amplitudes ranging from zero to some maximum figure (often 1200
+for ABI files). By scaling these down to, say 0-255, the file size becomes
+smaller (at a cost of slightly lower resolution trace files). This option is
+purely for the more miserly computer owners so we recommend keeping this
+option at the @b{No} setting.
+
+Next you are presented with the choice of a couple of trace processing
+options; @b{Subtract background} and @b{Normalise amplitudes}. Both of these
+can be safely ignored and left at their default @b{No} states. Read the help
+if you want more specifics.
+
+Note that this module creates new files. It will not remove your existing
+files. So clearly we need to do this (later) if we wish to reap the space
+saving rewards. Disk space is not in short supply here, but to illustrate the
+point we will keep with the defaults (ZTR format, no downscaling) and keep the
+module @tick{}ed.
+
+
+_ifdef([[_unix]],[[@subsection Compress Trace Files
+
+If disk space is really important and for some reason you do not want to use
+ZTR format@footnote{such as wishing to keep the original ABI data to allow for
+the possibility of reprocessing with ABI tools} then this module may be used
+to compress the trace files using a selection of standard, third party,
+compression tools.  Four methods are on offer. For a description of these
+methods, use the Help on module button@footnote{@b{gzip} is the most widely
+used compression tool, but @b{bzip1} compression tool gives the best
+saving in disk space. However the bzip1 tool is less widely available than
+@b{gzip}.}. Note that attempting to compress ZTR files will not achieve
+anything as ZTR internally uses its own (better) compression.
+
+If you elect to compress your trace files, you are offered the option of
+leaving the filenames unchanged@footnote{The fact that the files are
+compressed and the mode of their compression is stored within the file, so the
+software does not need a file naming convention to be able to read the files
+appropriately. Naming files in a way that reflects the way they have been
+compressed (or not) is for the benefit of the user, not the software.} or
+adding a filename extension to indicate the compression type
+employed@footnote{The usual conventions are employed, that is:
+@table @b
+@item .Z
+Standard UNIX compression tool
+
+@item .gz
+The GNU @b{gzip} program
+@item .bz
+@b{bzip} version 1
+
+@item .bz2
+@b{bzip} version 2
+@end table
+}. However for this exercise we are using ZTR so and we should leave this module @cross{}ed.]])
+@subsection Initialise Experiment Files
+
+This extracts the sequence from the trace file to produce an Experiment
+File@footnote{If you are attending a real course, rather than just reading
+these notes online, then one of the papers you should have received by now
+gives a very complete description of Experiment Files. In a nutshell, they are
+plain text files containing the called sequence plus annotation. The
+annotation syntax is based on that of the EMBL database. Also see
+@url{http://www.mrc-lmb.cam.ac.uk/pubseq/formats.html}}. Look at the manual page for
+further detail. For your data set, Experiment files are essential, so leave it
+@tick{}ed.
+
+@subsection Augment Experiment Files
+
+This module augments Experiment files with any additional information about
+the sequences that we are able to supply to pregap4. For this exercise, there
+is no additional information, so deselect this option (i.e. make it @cross{}ed).
+
+We will look at augmenting experiment files in later exercises. Information
+such as the sequencing chemistry and types of primer used for each read will
+be incorporated into experiment files.
+
+@subsection Quality Clip
+
+As each read progresses, the quality of the trace data will inevitably
+decline. At some point the accuracy of the called sequence usually becomes so
+questionable that conventional wisdom suggests it should be ignored during
+contig assembly and editing ("hidden" in the terminology of the Staden
+Package). It is also common to find sequence of dubious quality at the very
+start of a read. It is generally advisable to "hide" this too.
+
+Here, pregap4 is offering to examine the sequence at both ends of each
+read. If the start/end of a read is found to be of insufficient quality, a
+clip@footnote{The program, invoked by pregap4, that identifies end regions
+where sequence quality is too poor for contig assembly is called @b{qclip}.} point
+is determined before/after which the read sequence is "hidden". Sequence is
+"hidden" by adding lines onto the experiment files produced in the "Initialise
+Experiment Files" module. These "clip lines" are recognised by gap4 and the
+"hidden" regions processed appropriately@footnote{I.e. largely ignored. The
+precise consequences of "hiding" sequence will become apparent later when we
+consider contig assembly and contig editing.}.
+
+pregap4 does not delete the sequence it "hides", it merely labels it. As you
+will see later, it is possible to manually edit the sequence clip-points
+introduced at this stage. This would only be a sensible strategy where the
+revealed sequence was of reasonable quality and of particular value.
+
+A whole host of adjustable parameters exist for this quality clipping
+module. The two main strategies are analysis of the text sequence (for
+determining the frequency of uncalled bases) and analysis of the confidence
+values assigned by the @i{Estimate Base Accuracies} or @i{Phred modules}.
+The insatiably curious may wish to read the 'qclip' program manual to
+understand how this works (as ever, just click on the Help on module
+button). For now just knowing what it plans to do is enough. Leave it
+@tick{}ed for this exercise and leave the settings at their default values
+(confidence clipping, assuming @i{Estimate Base Accuracies} has been enabled).
+
+@subsection Sequencing Vector Clip
+
+Because of the way these sequences were generated, there is bound to be a
+short stretch of vector sequence at the start of every read. As it will always
+be the same few bases (the bit between the end of the primer site and the
+cloning site) it should be a simple matter for pregap4@footnote{Actually, it
+is a program called @b{vector_clip}, invoked by pregap4, that does this job.}
+to work out where the useful sequence begins and mark the little bits of
+sequencing vector in an appropriate fashion@footnote{The sequence at the very
+start of a read is often poorly determined. Occasionally this can cause the
+vector at the start of a read to be missed. Otherwise this process is very
+reliable.}. Sequences derived from short inserts may also have an equally
+predictable section of sequencing vector at their end (the 3' end). pregap4
+will also search for these.
+
+Clearly sections of reads marked as vector sequence must be ignored during
+contig assembly. Following the fine example of the clipping module, pregap4
+does not delete the vector sequence it finds, it just records its location in
+the appropriate experiment files.
+
+This module is needed, so leave it @tick{}ed. You now definitely need to
+answer some questions. Although pregap4 (in this case) does have enough
+default answers to get by we can speed up the processing by being more
+specific. We need to supply information about the sequencing vector, the cut
+site and the primer site. This can be done in two ways; either by choosing
+from a predefined list, or by supplying our own vector sequence file along
+with a cut site and primer site.
+
+We'll wimp out and take the easy approach, so click on the @b{Yes} button next
+to the @b{Use vector-primer file} question (although it should already be
+selected). We get the option to pick a
+@i{vector-primer} filename, but pregap4 has thoughtfully already provided us
+with one. Next we should click on the @b{Select vector-primer file subset}
+button. At this stage we can see that "vector-primer" is actually a confusing
+name as up pops a small dialogue showing a list of vector and cut-site pairs.
+
+Initially pregap4 will have selected all vector/cut-site combinations and it will compare each combination against our sequence to find the best match. To speed things up a little we'll pick the pair suitable for this data:
+
+@example
+m13mp18/SmaI
+@end example
+
+Click on the @b{OK} button at the bottom of the @i{Vector/Cut-site} window to
+accept this change.
+
+The bottom three parameters for the "Sequencing Vector Clip" module control
+the methods used for identifying when a likely looking string of letters
+really is the vector sequence and when it is just similar by chance. Unless
+you're having problems, it's best just to ignore these@footnote{An explanation
+is, of course available via the Help on module button.}.
+
+@image{pregap4-svec,6in}
+
+@subsection Cross_match
+
+cross_match is another of Phil Green's programs. It is not part of the Staden
+package. Like phred, it must be obtained from the author. cross_match allows
+each read sequence to be compared with more than one vector sequence. However,
+it does not make use of primer site and cut site information and so will be
+less effective less than vector_clip at finding the particular vector
+matches. Leave this module @cross{}ed.
+
+@subsection Screen for Unclipped Vector
+
+Pregap4, clearly in belt and braces mode now offers yet another vector
+searching option. At first this seems like an odd thing to do, given that
+you've already selected the sequencing vector to search for. However recall
+that the previous search was very directed - looking for where we know vector
+should occur. This module is offering to search through the entirety of your
+reads for any regions that look suspiciously like any part of the sequencing
+vector@footnote{Again using vector_clip, the same program that was used for
+the Sequencing Vector Clip pregap4 module.}. It is possible for cloning to go
+wrong in a fashion that results in unexpected fragments of sequencing vector
+occurring anywhere in the read. Such readings should be discarded as
+unreliable data. pregap4 works out for itself that it is once again to use the
+@b{m13mp18} vector sequence file. The default value for the @b{Minimum length
+of match} (i.e. @b{30}) is fine (use the Help on module button for further
+detail). Leave this module @tick{}ed. It's generally not needed unless you
+are experiencing cloning problems.
+
+@subsection Poly-A Clip
+
+This module searches for runs of @b{A}s or runs of @b{T}s adjacent to
+the sequencing vector clips (either end). Upon finding a run the vector
+clip points are updated to include the run. Our data has not been
+produced using such linkers so we should leave this module @cross{}ed.
+
+@subsection Cloning Vector Clip
+
+Well, the sequencing vector is a cloning vector too, so this is rather
+unfortunate naming. However what this refers to is any vector used at any
+stage of the preparation of your clones that might conceivably form a part of
+the dna inserted into the sequencing vector. The example, that applies for the
+current data set, is the vector used to clone a cosmid prior to shotgunning
+into m13mp18. It is almost certain that some of the sequenced m13mp18 inserts
+will be partially or wholly this "cloning vector". Accordingly we shall now
+tell pregap4 which one we wish to search for. For this data @b{lorist2} was
+used, so type into the Vector file name box the name of the file containing
+the vector sequence which you copied into your working directory with your
+read data@footnote{Alternatively, of course, you could use the @b{Browse}
+button.}. That is:
+
+@example
+lorist2.vector
+@end example
+
+This module will look for any region of the read sequences that looks
+suspiciously similar to the vector sequence stored in the file
+@b{lorist2.vector} and will mark those regions appropriately@footnote{As
+before, by adding lines of annotation to experiment files.}. The settings of
+@i{Word length} and @i{Max probability} define the precise meaning of
+"suspiciously similar". Here, we can avoid deep thought and just accept the
+default values for @i{Word length} and @i{Max probability}. For a description
+of these parameters, click once more on the Help on module button.
+
+Notice that as soon as you move on to the next module, the @i{edit} flag next
+to the Cloning Vector Clip module name turns to an @i{ok} flag@footnote{At
+least it should. If it remains as edit, you have omitted to fill in a
+parameter value and must return until you GET IT RIGHT!}.
+
+@subsection Screen Sequences
+
+Pregap4 here offers to compare each read sequence with a sequence (or a number
+of sequences)@footnote{By invoking a program of the Staden package called
+@b{screen_seq}.}. When a "significant"@footnote{As defined by the @i{Minimum
+match length parameter}. Any exact match of this length or greater is
+considered "significant".} match between a read and a screen sequence is
+discovered, the read is rejected. The default use of this module is to screen
+reads for contamination with E.Coli.
+
+If you screen against just one sequence, you are required to provide a file
+containing that single screen sequence. If you wish to screen against more
+than one sequence, you are required to provide a "file of filenames"
+containing references to files each containing a single sequence to be
+screened against.
+
+We do not need to screen the reads used in this exercise, so leave the module
+@cross{}ed. As always, there is further discussion a mere click of the Help on module
+button away.
+
+_ifdef([[_unix]],[[@subsection Blast Screen
+
+The motivation for this module is the same as for the Screen Sequences
+module. However, this module does not use the Staden Package program
+@b{screen_seq}. Instead, it employs the popular database searching program
+@b{blast}@footnote{Not part of the Staden Package. Available from the
+NCBI.}. Sequences to be screened against must be stored within a blast format
+database. Reads that match any database entry "too well"@footnote{The
+definition of "Too well" being dependant upon the setting of the @i{Match
+fraction} parameter. As always, click on the Help on module button for the full
+and truly riveting story.} are rejected. As for the Screen Sequences module,
+the default screening is to protect against E.Coli contamination.
+
+Another fine module, but not required here, so leave it @cross{}ed.
+]])
+@subsection Interactive Clipping
+
+Here pregap4 is offering to display the trace data of each read@footnote{Using
+the Staden Package program @b{trev}.}. The poor quality and the segments
+marked as vector by pregap4 are displayed. You have the opportunity to
+amend/refine the automated quality and vector clip decisions made by
+pregap4. Where the number of reads makes this practical, interactive clipping
+is not a bad idea. In particular, automated quality clipping can be very
+harsh. Best use may not be made of reasonably good quality data. So for
+very small projects it may be worth the effort to manually refine
+pregap4's quality clips. Also, as mentioned above, very occasionally
+sequencing vector can be
+missed at the start of reads where read quality is poor. Such omissions can
+cause problems at assembly time that could be avoided if the problems were
+spotted and corrected at this stage.
+
+Clearly, when dealing with large batches of reads, interactive clipping is not
+a practical option, however, it could be worth the effort for a small batch,
+such as the one you are processing in this exercise. So enable this module by
+making sure that it is @tick{}ed.
+
+_ifdef([[_unix]],[[@subsection RepeatMasker
+
+Here you are offered the chance to seek out and tag sections of your read
+sequences that might be identical (or almost identical) to other regions of
+the DNA you aspire to sequence (i.e. repeat regions). Reads containing repeat
+regions can cause problems at contig assembly time as there is a good chance
+that they will be assembled into the wrong instance of the repeat they
+include. The strategy offered here is to seek out repeat regions and to tag
+them in a way that the contig assembly software will recognise. Repeat regions
+can then be treated with particular caution by the contig assembly software.
+
+The program used by pregap4 for this module is called @b{RepeatMasker}. It is
+not part of the Staden Package and must be obtained from its author. For
+details of how to obtain the program and concerning the parameters offered,
+click on the Help on module button.
+
+If you know you have RepeatMasker installed you may wish to try enabling
+this module, otherwise leave it @cross{}ed.
+]])
+
+@subsection Reference Traces/Sequences, Trace Difference, Heterozygote Scanner
+
+These three modules comprise a set of mutation detection algorithms
+designed to identify heterozygous bases within each sequence and
+non-heterozygous mutations between sequences. They work by trace
+analysis and so are generally much more reliable than looking at base
+calls alone.
+
+The mutation detection methods are demonstrated in another exercise, so
+for now leave all three modules @cross{}ed.
+
+@subsection Gap4 shotgun assembly, _ifdef([[_unix]],[[Cap3 assembly, FakII assembly, ]])Phrap assembly
+
+If you wanted pregap4 to assemble your reads into contigs after
+pre-processing, you would @tick{} one and only one of the assembly modules
+listed above@footnote{pregap4 does not stop you selecting more than one, all
+even, but it hardly makes any sense.}. You may select the Staden Package
+native assembler or one of the external
+assemblers[[]]_ifdef([[_windows]],[[@footnote{Only phrap is known for sure to
+work on Microsoft platforms, but a choice of cap2, cap3 and fakII is also
+available on UNIX, or on Windows for those brave enough to venture into
+uncharted territory.}]]) that are not distributed with the Staden Package and
+must be obtained from their authors.
+
+Leave all these modules @cross{}ed for this exercise.
+
+@subsection Enter assembly (into Gap4)
+
+If you choose to run any of the external contig assemblers
+_ifdef([[_unix]],[[(Cap2, Cap3, FakII or Phrap)]])_ifdef([[_windows]],[[(Phrap)]]) the assembled contigs would not be in a database that could be
+manipulated by gap4. This module takes the output from any of the external
+contig assemblers and reads it into a gap4 database ready for processing by
+gap4.
+
+Clearly, this is not required for this exercise, so leave it @cross{}ed.
+
+_ifdef([[_unix]],[[@subsection Email
+
+pregap4 can be set up to send you an email when it has finished all its
+tasks@footnote{Actually, you could get pregap4 to send you email after the
+completion of any or all of its many stages. You would do this by moving the
+email module up the list of things pregap4 has to do and/or entering the email
+option in the list more than once. You will see how you could do this in the
+next part of this exercise.}. Not a particularly useful option to consider
+when you are using the pregap4 Graphical User Interface (GUI), as you are
+currently. However, pregap4 can be run without its GUI@footnote{As you will
+see in the next exercise.} and in batch mode. Sending an email upon completion
+would make more sense in such circumstances.
+
+This module is not relevant here, so leave it @cross{}ed.
+]])
+At last you have satisfied the near bottomless curiosity of pregap4. Before
+you go any further, check that you have set everything up correctly. There
+should be no module still labelled edit and @b{only} the following modules
+should be selected for execution:
+
+@itemize @bullet
+@item @b{Estimate Base Accuracies}
+@item @b{Trace Format Conversion}
+@item @b{Initialise Experiment Files}
+@item @b{Quality Clip}
+@item @b{Sequencing Vector Clip}
+@item @b{Screen for Unclipped Vector}
+@item @b{Cloning Vector Clip}
+@item @b{Interactive Clipping}
+@end itemize
+
+Once you are satisfied that all is well, set pregap4 about its many tasks by
+clicking on the @b{Run} button at the bottom left of the pregap4 window (or
+chose @b{Run} from the main @b{Modules} pull down menu) to start pregap4
+thinking. It will quickly switch to the @i{Textual Output} mode and will start
+logging its progress.
+
+This will proceed merrily until the time comes to interactively clip. At this
+point the program will display the first trace for you and wait expectantly
+for you to do something.
+
+@node X1-trev
+@section A Quick Look at Interactive Clipping.
+
+Once most people have a @b{trev}, running, we will have a short demonstration
+of the finer points of trev@footnote{Note that trev has a @b{Help} button. This
+must be the best place to start your investigations. The Help options are
+"@i{Contents}", "@i{Introduction}" and "@i{Index}". I started with the
+"@i{Introduction}". All Help options are displayed by the web browser; be
+patient as it may take a few seconds to appear initially.}. If you feel you
+are well ahead of any demonstration, then here are a few extra things about
+trev. If you are a bit behind, do not worry as you will have had it all
+explained by the time you get here.
+
+@image{trev1,6in}
+
+@subsection Overview
+
+Trev is a graphical tool that allows you to:
+
+@itemize @bullet
+@item Edit the sequence of your reads
+@item Adjust the left and right quality clip points, determined by qclip
+@item Adjust the left and right vector clip points, determined by vector_clip
+@end itemize
+
+When trev is run as a pregap4 module, only the second two functions should be
+considered. By default, sequence editing is disabled in this context.
+
+@subsection The Edit Pull-Down Menu
+
+You can select which of the available edits to do by using the @b{Edit} pull
+down menu. Have a quick look at the Edit pull down menu. Note that the default
+editing choice is @b{Right Quality}. This is logical as this is the clip that
+is most likely to need adjustment. The commonest use of trev (in this context)
+is to move pregap4's Right Quality clips a little further to the right, thus
+revealing reasonably good data that pregap4 might have clipped a trifle
+harshly.
+
+Note also that the @b{Sequence} editing option is turned off by default. This
+is also logical as it is not sensible to edit sequence with trev at this
+stage. As you will discover, it is possible to turn the Sequence editing
+option on. In fact this exercise suggests you do just that, but it would not
+be sensible in "real life".
+
+The final option in the Edit pull down menu allows you to undo your last your
+clip adjustment. Very useful if you make a mess. This remains turned off until
+you have made at least one edit to pregap4's clipping decisions.
+
+@subsection The View pull down menu
+
+Trev allows various viewing modes. Select the @b{View} menu and select the
+@b{Information} option. A window will appear displaying various information
+about your read@footnote{Mostly information that would have been entered when
+the sequencing reaction was set up.}. Once you have drunk in all there is to
+know about your read, dismiss the Information window with a quick click of its
+@b{OK} button.
+
+Next select the @b{Search} option from the @b{View} pull down menu. This will
+provoke the appearance of a Search window. Type in a short sequence of your
+choice in the entry box, and you can strut up and down your read looking for
+matches (click on the @b{Next} button for a upward strut, and on the
+@b{Previous} button for a downward strut). When the novelty of all this pales,
+a sharp click on the @b{Cancel} button will send your @i{Search} window back
+from whence it came.
+
+Now try the various @b{Display} items in the @b{View} menu. If you elect
+to display the edits (by selecting the @b{Display edits} option) an
+extra sequence display will appear under the original sequence
+display. Look again in the Edit pull down menu. You are now permitted to edit
+the sequence.  The @b{confidence} mode reveals a series of bar graphs showing
+the sequence quality as assigned (in this case) by the @i{Estimate Base
+Accuracies} module.
+
+Try turning on and off the various display options for as long as it
+amuses you. Note that some display combinations make rather more sense than
+others! End up displaying everything (in particular, allowing sequence
+editing).
+
+@subsection The Options Pull-Down Menu
+
+From the @b{Options} pull-down menu you can elect to @b{Set
+fonts}_ifdef([[_unix]],[[ or change trev's @b{Colour} scheme. Using the Colour
+option too whimsically can result in some truly eye-straining
+combinations]]). Setting fonts can also get out of control quite
+easily. Playing with this is best undertaken with the relevant Help page in
+view@footnote{From the Help pages you can see that setting fonts is not
+something unique to trev but is available throughout the package.}.
+
+Some changes you make happen as you make them, others require you to click on
+the @b{OK} button, which implements all your changes and removes the option
+dialogue window. It might be advisable to keep clear of the @b{OK Permanent}
+button. This makes your changes effective for all programs of the Staden
+Package until you explicitly request otherwise@footnote{Whereas clicking on
+the @b{OK} button implies that you wish your selections to apply only to the
+current run of this application.}. Probably unwise when in abandoned
+experimentation mode.
+
+@subsection Editing Sequence
+
+Just to make sure, in "real life", @b{you would not edit your read sequence at
+this point}, but this is not "real life" so do it anyway. Select the
+@b{Sequence} option from the @b{Edit} pull down menu and then attack your
+sequence with abandon@footnote{Your edits do not have to make sense, we are
+not going to assemble this data.}. Note that you can only edit the sequence in
+the lower sequence display. The top sequence display always represents the
+originally called sequence and cannot be changed. You can add base characters
+(@b{A}, @b{C}, @b{G}, @b{T}, or @b{-, upper} or lower case). You can delete
+bases with the @b{Delete} key.
+
+Particularly if you have added lots of extra bases, you might need to adjust
+your view of your trev window. You can, of course, achieve this by resizing
+the whole trev window. Alternatively, you can adjust the height of the traces
+and the number of bases in view by using the @b{X} and @b{Y} sliders at the
+side of the trev display, which is lots of fun.
+
+@subsection Adjusting Clip Points
+
+All wonderful stuff, but your real intentions for trev, in its role as part of
+the pregap4 processing, should be solely to inspect and adjust the left and
+right vector and quality clips automatically computed by pregap4. Particularly
+the right hand quality clip, which can be made rather earlier in the sequence
+than most users would regard as necessary.
+
+trev colours regions clipped because they are vector (pink) and regions
+clipped because they are of insufficient quality (darkish grey). Where a
+region is judged to be both poor quality and vector sequence, it is adorned
+with tasteful grey and pink stripes.
+
+If you look at the start of your current read you will probably see a pink
+only region which ends with something like ...@b{GAGGATCCCC}. This is where
+the sequencing vector detection pregap4 module reckons the m13mp18 vector cut
+site is. Hopefully it has got this correct. Rightly or wrongly, you can adjust
+this clip by selecting the appropriate option from the Edit pull down
+menu@footnote{The option @b{Left Vector}.} and then clicking the left mouse
+button wherever you think the vector should end.
+
+Once you have had sufficient of readjusting your @b{Left Vector} clip point
+have a go at adjusting the @b{Left Quality} clip point@footnote{This time you
+select the @b{Left Quality} option from the @b{Edit} pull down menu. If you
+were unlucky enough to be working on the read with no poor quality sequence at
+the start, this will be your first chance to experience the wondrous pink and
+grey stripes.}. Click away moving the left quality clip hither and thither,
+hopefully ending up at a marginally justifiable position.
+
+Next scroll along the sequence and take a look at the clip points at the end
+of the read@footnote{Using the scroll bar over the sequence displays. Click
+with the left mouse button to the right of the current position and you take a
+leap towards the end of the read. Click with the left mouse button to the left
+of the current position and you take a leap towards the start of the
+read. _ifdef([[_unix]],[[Best of all, click with the middle mouse button and
+wherever you clicked becomes the current position.]])}. There may not be any
+vector found at this end, in which case you'll probably see a tiny slither of
+pink at the very right end signifying that it is "out there -
+somewhere". Think a little about the Right Quality clip and whether you agree
+with where pregap4 has placed it. Remember that getting the @b{Right Quality}
+clip positioned so that the minimum of usable sequence is "hidden" is the
+prime justification of interactive clipping@footnote{Only practical for
+relatively small scale projects, of course. Note also that this particular
+batch of trace files are of rather dubious quality. They have been chosen to
+illustrate some of the possible problems you will encounter. They should not
+be considered as typical sequences.}.
+
+@subsection Moving Through the Batch of Reads
+
+Trev starts by showing the first sequence in the batch we are processing. Note
+the @b{<< Previous file}, @b{Next file >>}, @b{Goto file} and @b{Reject} file
+buttons. The @b{<< Previous file} and @b{Next file >>} buttons allow you to
+progress in either direction through the files you have to process. The
+@b{Goto file} button pops up a list of files in which you can click to leap to
+the chosen one. The @b{Reject} file button may be used to completely reject a
+read from further processing. There are a couple of sequences in the
+five here that are very bad quality; I suggest that you @b{Reject}
+them. Note that the @i{Quality Clip} module could have done this for you
+as it has an option to define a minimum quality-clipped length.
+
+Once you have had a quick look@footnote{I suggest just a quick look at the
+clip points, particularly the @b{Right Quality} clip point will be sufficient
+after the first read.} through all files click on the @b{File} pull down menu
+and select @b{Exit}. trev will slide off silently, its job well done. Do not
+worry if you have made any dubious changes. You will not be assembling this
+data set. You will be using a more realistic data set in later exercises.
+
+@subsection The Pregap4 Output.
+
+Pregap4 will then continue processing and will rapidly finish (due to
+@i{Interactive Clipping} being the last module we enabled) displaying a
+full report of all its
+activities in its Output window. Use the scroll bar on the right side of the
+Output window to view the full extent of the pregap4's report of what it has
+been up to. The most important text output section is labelled "@i{Terminating
+modules}". This contains a summary of the status for each file (whether it has
+been passed or failed) and detailed reports from each of the modules. From
+these reports, you will see that three were passed and two failed
+(assuming that you @i{Reject}ed the two poor quality ones from within the
+@i{Trev} window.
+
+If you click and hold with your right mouse button in the Output
+window of pregap4, you will see that you can (amongst other things) @b{Remove}
+and @b{Output to disk} this information. Try it, but any remove experiments
+should come last. The Output to disk option might seem a trifle redundant
+here, as pregap4 has already placed this information neatly into disk
+files. _ifdef([[_unix]],[[This you can see for yourselves by moving back to you UNIX window and
+typing:
+
+@example
+ls
+@end example
+
+You should see that you have lots of brand new files. Those ending in @b{.exp}
+are the experiment files. Have a quick look at them with the command:
+
+@example
+more *.exp
+@end example
+]])_ifdef([[_windows]],[[This you can see for yourselves by opening up an explorer window in the same directory containing your copied ABI files.
+
+You should see that you have lots of brand new files. Those ending in @b{.exp}
+are the experiment files. They can be viewed in trev simply by double clicking
+on them. More educational is to view the file contents themselves by opening
+them up in @b{wordpad} (you guessed it - @b{notepad} cannot handle these
+either).]])
+
+You should see that they contain your read sequences exactly as they were
+called by the ABI sequencer@footnote{Unless you saved any edits made with
+trev.} plus lines of annotation added by the various modules of pregap4. Lines
+above the sequence were entered when the experiment file was initialised,
+lines below the sequence were added by subsequent pregap4 modules. For an
+explanation of what each line means, refer to the Experiment files paper you
+were given earlier.
+
+Notice the @code{LN} field in each experiment file. It points to a trace
+filename in ZTR format. Do not try to look at these using
+@b{_ifdef([[_unix]],[[more]])[[]]_ifdef([[_windows]],[[wordpad]])} as they are
+not text files (although _ifdef([[_unix]],[[trev may be used to view
+them]])[[]]_ifdef([[_windows]],[[once again double clicking will view them with
+trev]])). Try viewing @b{ha59a6.s1.ztr}. You should quickly see why it was
+automatically rejected. There are also files ending in @b{.scf}. These were
+temporarily created when the Estimate Base Accuracies module ran. Remember
+that at this stage we only had ABI format files, but the Staden Package (in
+common with many other tools) can only read ABI files. So the base accuracies
+were written to newly created SCF files instead - pregap4 isn't smart enough
+to notice that we wanted ZTR as our final output format. The SCF files are no
+longer needed and can be safely deleted.
+
+_ifdef([[_unix]],[[You should also have a number of new "file of file names" all beginning with
+@b{pregap.}. To see these a little more clearly, and in the order of creation,
+type in:
+
+@example
+ls -lrt pregap.*
+@end example
+
+that is, list all files that begin pregap., the long way (@b{-l}) in reverse
+order (@b{-r}) with respect to time (@b{-t}), i.e. the oldest first. Your list
+should be comprised of the following files:]])_ifdef([[_windows]],[[You should
+also have a number of new "file of file names" all beginning with pregap. To
+see these a little more clearly, and in the order of creation, right click in
+the explorer window and select @b{Arrange Icons} @result{} @b{by Date}. Your
+list should now start with the following files:]])
+
+@sp 1
+@multitable @columnfractions .25 .75
+@item @b{pregap.ct_passed}
+@item @b{pregap.ct_failed}
+@tab Lists of reads that passed/failed the Trace Format Conversion module.
+
+@item @b{pregap.svec_failed}
+@item @b{pregap.svec_passed}
+@tab Lists of reads that passed/failed the Sequencing Sector Clip module.
+
+@item @b{pregap.screenvec_failed}
+@item @b{pregap.screenvec_passed}
+@tab Lists of reads that passed/failed the Screen For Unclipped Vector module.
+
+@item @b{pregap.cvec_failed}
+@item @b{pregap.cvec_passed}
+@tab Lists of reads that passed/failed the Cloning Vector Clip module.
+
+@item @b{pregap.failed}
+@tab A list of all files that have been rejected at any stage by pregap4. The
+reason for failure may also be listed next to each file name.
+
+@item @b{pregap.log}
+@tab A summary of the passed files, the failed files, and the processing
+history of each file. This history shows where each file was derived from. For
+instance it may contain:
+
+@example
+
+xc61c9.s1.exp (EXP) <- xc61c9.s1.ztr (ZTR)
+  <- xc61c9.s1.scf (SCF) <- @{Sample 545@} (ABI)
+
+@end example
+
+This means that the experiment file (EXP) @b{xc61c9.s1.exp} was generated from
+the ZTR file @b{xc61c9.s1.ztr}, which was generated from the SCF file
+@b{xc61c9.s1.scf}, which in turn was generated from the ABI file named
+@b{Sample 545}. This also gives us the heavy hint that for backup purposes we
+should keep the ABI files; that currently we need the experiment file and the
+trace file it references (ie the ZTR file); and that the SCF file was a
+temporary file which is no longer needed.
+
+@item @b{pregap.passed}
+@tab The final list of experiment files of reads that have passed all pregap4
+modules. Any sequences which have been identified to contain repeats are
+listed after those that contain no repeats.
+
+@item @b{pregap.report}
+@tab The reports from each module in turn. This is the same as most of the text
+that appears in the textual output of pregap4.
+@end multitable
+@sp 1
+
+If we were going on to assemble these reads, the @b{pregap.passed} file would
+usually be the file of file names offered to gap4. _ifdef([[_unix]],[[Take a
+quick look at the contents of these files:
+
+@example
+more pregap.* 
+@end example
+]])_ifdef([[_windows]],[[Take a quick look at it in @b{wordpad}.]])
+
+Specifically, try looking at the @b{pregap.failed} file to see which sequences
+failed, and then looking at the @b{pregap.report} file to see why these
+sequences were rejected by pregap4. Finally look at one or two of the failed
+experiment files and try to convince yourself that the reason for the failure
+is correct and is recorded in the experiment file itself.
+
+@subsection Customising the Modules of Pregap4
+
+The modules offered by pregap4 and the order in which they are offered are
+configurable by the user. The list that you choose from in this exercise is
+merely the default list offered by the package. Take a quick look at how you
+might customise the list before moving on.
+
+From pregap4's @b{Modules} pull down menu, select the @b{Add/Remove Modules}
+option. A new window titled "Add/Remove Modules" will float into view offering
+two lists of pregap4 modules. The left hand list (@i{Modules to use}) is the
+list that you are offered by default, the right hand list (@i{Modules
+Available}) is the list of modules distributed with the Staden Package. You
+can:
+
+Change the position of an entry in the Modules to use list by clicking and
+holding on it with your left mouse button and dragging it to a new position in
+the list.  Remove an entry from the Modules to use list by clicking and
+holding on it with your left hand mouse button and dragging it over to the
+Modules available list. The corresponding entry in the Modules available list
+will light up and the entry in the Modules to use list will disappear.  Add an
+entry from the Modules available list to the Modules to use list by clicking
+and holding on it with your left hand mouse button and dragging it from one
+list to the other.
+
+Experiment with these options freely, but note that the advice to read the
+manual@footnote{See the blood red warning at the top of the window.} before
+doing too much of this stuff "for real" is good advice. 
+
+Note that pregap4 allows you to select any module as many times as you wish
+and to select any order of execution you desire. pregap4 does not try and
+protect you from insane selections. To do so would severely restrict the
+versatility with which the tool can be used. Ensuring sane selections in sane
+orders is completely up to the user.
+
+Also note, that you can produce your own pregap4 modules@footnote{or customise
+existing ones. How to do this is beyond the scope of this course, but is not
+that difficult. It is described very clearly in the manual. Have a quick look
+before moving on. First click on the main pregap4 @b{Help} menu and choose
+@b{Contents}. From the @i{Contents List}, select the @i{Writing your own
+modules} link.}  and arrange for pregap4 to be aware of their existence.
+
+As a real example try copying the @b{extract_seq.p4m} module into the
+@i{Modules to use} list, somewhere beneath the vector clipping modules.
+
+Having experienced all the above, you are faced with the choice of clicking on
+the @b{Apply} button (to put into force all your recent choices) or the
+@b{Cancel} button (which throws your module amendments away). To test our
+changes we shall press the @b{Apply} button. It doesn't matter if you have
+made all sorts of other changes as your changes will only apply to the current
+invocation of pregap4 (soon to end) and it is improving to watch your list of
+available modules update itself in the main pregap4 window.
+
+If you now look in the "Configure Modules" tab and select the @b{Extract
+Sequence} module you will see that this module will allow you to save your
+processed text sequences together in a single fasta file. (It is not normally
+present as Gap4 does not like multi-sequence fasta files and so this module
+could cause confusion in the more normal usage of pregap4.)
+
+To make your module list changes apply to all future invocations of pregap4
+made in the current directory, you would need to save your changes to a
+configuration disk file. To do this, select the @b{Save Module List} option
+from the @b{Modules} pull down menu. _ifdef([[_unix]],[[Now move to your UNIX window and type in:
+
+@example
+ls -lrt
+@end example
+
+You will see that your newest file is called:
+
+@example
+pregap4.config
+@end example
+
+Have a look inside this file you have just created by using @b{more} and you
+will see that your updated list of modules and whether they should be
+initially enabled or not, has been saved. As long as the @b{pregap4.config}
+file is left in place, this list will override the usual pregap4 default list
+whenever pregap4 is started up in this directory.]])_ifdef([[_windows]],[[Now
+move to your explorer window, refresh it, and view the @b{config.pg4}
+file@footnote{Using @b{wordpad} once more. Double clicking on a @b{.pg4} file
+will invoke pregap4 with that configuration file.}. You will see that your
+updated list of modules and whether they should be initially enabled or not,
+has been saved. As long as the @b{config.pg4} file is left in place, this list
+will override the usual pregap4 default list whenever pregap4 is started up in
+this directory.]])
+
+Finally, shut down pregap4 and using the @b{File} pull down menu and selecting
+@b{Exit}.

@@ -1,0 +1,13 @@
+#!/bin/sh
+if [ $# -eq 0 ]
+then
+    echo "Usage: bzip_trace file1 ..."
+    echo "eg, 'bzip_trace *.scf'"
+    exit
+fi
+
+for i in ${@+"$@"}
+do
+    echo "Compressing $i"
+    bzip < $i > .tmp && mv .tmp $i
+done

@@ -1,0 +1,732 @@
+@cindex Extensions, writing
+@cindex Packages, writing
+@cindex Modules, writing
+@cindex Plugins, writing
+@cindex Writing packages
+@cindex Composition, package
+
+@menu
+* Pkg-Command::         Creating a New Tcl Command
+* Pkg-GUI::             Adding a GUI to the Command
+* Pkg-Config::          Creating the Config File
+* Pkg-Help::            Writing the Online Help
+* Pkg-Wrappings::       Wrapping it all up
+@end menu
+
+An important feature of the newer Tcl/Tk based applications is the ability to
+write extensions to directly add new functionality. These are typical add new
+commands onto the main menus.
+
+The best method of explaining the process of creating an extension is to work
+through an example. Here we supply the full code for a Gap4 extension to count
+base composition. The same techniques will apply to writing extensions for
+other programs and we will point out the Gap4 specific components.
+The example is somewhat simplistic, but hopefully will explain the framework
+needed to write a more complex package.
+
+The complete sources for the composition package can be found in the
+@file{src/composition} file.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Command
+@section Creating a New Tcl Command
+
+@menu
+* Pkg-Command-Reg::     Registering the Command
+* Pkg-Command-Parse::   Parsing the Arguments
+* Pkg-Command-Return::  Returning a Result
+* Pkg-Command-Code::    Writing the Code Itself
+@end menu
+
+In general, for speed we wish our main algorithm to be written in C. Tcl is an
+interpreted language and runs very much slower than compiled C. As Tcl
+provides a method to extend the language with our own commands we will create
+a new command, which in this case is to be named "composition".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Command-Reg
+@subsection Registering the Command
+@findex Tcl_CreateCommand(C)
+@cindex Registering a command
+@cindex Command registration
+@findex Composition_Init(C)
+@cindex Tcl commands, creating
+@cindex Creating Tcl commands
+@cindex Composition, command registration
+
+Firstly we need to tell the Tcl interpreter which Tcl command should call
+which C function. We do this using the @code{Tcl_CreateCommand} function. This
+is typically called within the package initialisation routine. For a package
+named @code{composition} this is the @code{Composition_Init} routine.
+
+@example
+/*
+ * This is called when the library is dynamically linked in with the calling
+ * program. Use it to initialise any tables and to register the necessary
+ * commands.
+ */
+int Composition_Init(Tcl_Interp *interp) @{
+    if (NULL == Tcl_CreateCommand(interp,
+                                  "composition",
+                                  tcl_composition,
+                                  (ClientData) NULL,
+                                  (Tcl_CmdDeleteProc *) NULL)) @{
+        return TCL_ERROR;
+    @}
+
+    return TCL_OK;
+@}
+@end example
+
+In the above example we are saying that the Tcl command '@code{composition}'
+should call the C function '@code{tcl_composition}'. If we wished to call the
+C function with a specific argument that is known at the time of this
+initialisation then we would specify it in the @code{ClientData} argument
+(@code{NULL} in this example). The full information on using
+@code{Tcl_CreateCommand} is available in the Tcl manual pages.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Command-Parse
+@subsection Parsing the Arguments
+@cindex Argument parsing
+@cindex Option parsing
+@cindex Parsing arguments
+@cindex Command line arguments
+@cindex cli_arg.h
+@cindex Composition, argument parsing
+@findex tcl_composition(C)
+
+Our policy is to have a simple function to parse the command line arguments
+passed from Tcl. This should massage the arguments into a format usable by a
+separate (from Tcl) C or Fortran function which does the actual work. This
+clearly separates out the Tcl interface from the algorithms. The parsing will
+be done in the function registered with the Tcl interpreter. In our example
+this is @code{tcl_composition}.
+
+The latest Tcl/Tk release provides functions for easing the parsing of command
+line arguments. In the future we @i{may} switch to using this scheme, but at
+present we use (and document) our own methods. A quick overview of this is
+that we declare a structure to hold the argument results, a structure to
+define the available command line parameters, and then call the
+@code{parse_args} or @code{gap_parse_args} function. Note that it is entirely
+up to the author of the package code for the arguments should be processed.
+
+Firstly we need to include the @file{cli_arg.h} file. Secondly declare a
+structure containing the argument results. The structure does not need to be
+referenced outside of this file and so need not be in a public header file.
+Next we need a structure of type @code{cli_args[]} to specify the mapping of
+command line argument strings to argument result addresses. The
+@code{cli_args} structure is defined as follows.
+
+@vindex cli_args
+@example
+    typedef struct @{
+    char *command;      /* What to recognise, including the '-' symbol */
+    int type;           /* ARG_??? */
+    int value;          /* Set if this argument takes an argument */
+    char *def;          /* NULL if non optional argument */
+    int offset;         /* Offset into the 'result' structure */
+@} cli_args;
+@end example
+
+@vindex command, cli_args field
+@var{Command} is a text string holding the option name, such as "-file".
+The last entry in the argument array should have a @var{command} of
+@code{NULL}.
+
+@vindex value, cli_args field
+@var{Value} is either 0 or 1 to indicate whether an extra argument is
+required after the command line option. A value of 1 indicates that an extra
+argument is needed.
+
+@vindex type, cli_args field
+@var{Type} specifies the type of this extra argument. It can be one of
+@code{ARG_INT}, @code{ARG_STR}, @code{ARG_ARR}, @code{ARG_FLOAT} and (for Gap4
+only) @code{ARG_IO} to represent types of @code{int}, @code{char *},
+@code{char []}, @code{float} and @code{GapIO *}. An option with no extra
+argument must have the type of @code{ARG_INT} as in this case the stored value
+will be 0 or 1 to indicate whether the option was specified.
+
+Of the above types, @code{ARG_ARR} requires a better description. Options of
+this type are character arrays where the option argument is copied into the
+array. The @var{value} field for this type only specifies the length of the
+array. Finally the @code{offsetofa} macro instead of the @code{offsetof} macro
+(see below) must be used for the @var{offset} structure field. This type will
+possibly be removed in the future in favour of keeping @code{ARG_STR}. For
+@code{ARG_STR} the result is a character pointer which is set to the option
+argument. This requires no bounds checking and can use the standard
+@code{offsetof} macro.
+
+@vindex def, cli_args field
+@var{Def} specifies the default value for this option. If the option takes no
+extra argument or if it takes an extra argument and no default is suitable,
+then @code{NULL} should be used. Otherwise @code{def} is a text string, even
+in the case of @code{ARG_INT} in which case it will be converted to integer if
+needed.
+
+@vindex offset, cli_args field
+@findex offsetof(C)
+@findex offsetofa(C)
+@var{Offset} specifies the location within the results structure to store the
+result. The @code{offsetof} macro can be used to find this location. An
+exception to this is the @code{ARG_ARR} type where the @code{offsetofa}
+macro needs to be used instead (with the same syntax).
+
+For our composition package we will have the following two structures.
+
+@example
+typedef struct @{
+    GapIO *io;
+    char *ident;
+@} test_args;
+
+test_args args;
+cli_args a[] = @{
+    @{"-io",       ARG_IO,  1, NULL, offsetof(test_args, io)@},
+    @{"-contigs",  ARG_STR, 1, NULL, offsetof(test_args, ident)@},
+    @{NULL,        0,       0, NULL, 0@}
+@};
+@end example
+
+So we have two command line options, -io and -contigs, both of which take
+extra arguments. These are stored in @code{args.io} and @code{args.ident}
+respectively. The last line indicates the end of the argument list.
+
+@findex parse_args(C)
+@findex gap_parse_args(C)
+Once we've defined the structures we can actually process the process the
+arguments This is done using either @code{parse_args} or
+@code{gap_parse_args}. The latter of these two is for Gap4 only and is the
+only one which understands the @code{ARG_IO} type. The functions take four
+arguments which are the address of the @code{cli_args[]} array, the address
+of the result structure, and the @code{argc} and @code{argv} variables. The
+functions returns -1 for an error and 0 for success.
+
+@example
+    if (-1 == gap_parse_args(a, &args, argc, argv)) @{
+        return TCL_ERROR;
+    @}
+@end example
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Command-Return
+@subsection Returning a Result
+@cindex Results, returning to Tcl
+@cindex Tcl results
+@cindex Returning results to Tcl
+@cindex Pitfalls, in setting Tcl results
+@findex Tcl_AppendResult(C)
+@findex Tcl_SetResult(C)
+@findex vTcl_SetResult(C)
+@findex Tcl_ResetResult(C)
+@findex Tcl_DStringResult(C)
+@vindex interp->result(C)
+@cindex Composition, returning result
+
+To return a result to Tcl the @var{interp->result} variable needs to be set.
+This can be done in a variety of ways including setting the result manually or
+using a function such as @code{Tcl_SetResult}, @code{Tcl_AppendResult},
+@code{Tcl_ResetResult} or @code{Tcl_DStringResult}.
+
+However the choice of which to use is not as obvious as may first appear. A
+cautionary tale will illustrate some of the easy pitfalls. The following
+points are not made sufficiently clear in John Ousterhouts Tcl and Tk book.
+Additionally the problems are real and have been observed in the development
+of Gap4.
+
+Consider the case where we have many commands registered with the interpreter.
+One such example could be:
+
+@example
+int example(ClientData clientData, Tcl_Interp *interp, int argc, char **argv)
+@{
+    /* ... */
+
+    sprintf(interp->result, "%d", some_c_func());
+    return TCL_OK;
+@}
+@end example
+
+Now deep within @code{some_c_func} we have a @code{Tcl_Eval} call which
+happens to end with something like the following:
+
+@example
+proc some_tcl_func @{@} @{
+    # ...
+
+    set fred jim
+@}
+@end example
+
+Due to the call of @code{Tcl_Eval} in @code{some_c_func} the
+@var{interp->result} is now set to the last returned result, which is from the
+@code{set} command. In the above example @var{interp->result} points to 'jim'.
+The @code{sprintf} command in the @code{example} function will overwrite this
+string and hence change the value of the @var{fred} Tcl variable. This causes
+confusion and in some cases may also cause memory corruption where data is
+incorrectly freed.
+
+The moral of this tale is to be extremely wary. As there is no knowledge of
+what @code{some_c_func} does (and remember it may get updated later) we seem
+to trapped. One possible solution is to rewrite the @code{example} function as
+follows.
+
+@example
+int example(ClientData clientData, Tcl_Interp *interp, int argc, char **argv)
+@{
+    int ret;
+    /* ... */
+
+    ret = some_c_func();
+    Tcl_ResetResult(interp);
+    sprintf(interp->result, "%d", ret);
+    return TCL_OK;
+@}
+@end example
+
+This leads to another pitfall. If we have '@code{sprintf(interp->result, "%d",
+some_c_func(interp));}' and @code{some_c_func} calls (possibly indirectly) the
+@code{Tcl_ResetResult} function then we'll be modifying the
+@var{interp->result} address. This leads to undefined execution of code. (Is
+@code{sprintf} passed the original or final @var{interp->result} pointer?)
+
+Therefore I'm inclined to think that we should never use
+@code{Tcl_ResetResult} except immediately before a modification of
+@var{interp->result} in a separate C statement. My personal recommendation is
+to never write directly to @var{interp->result}. Additionally never reset
+@var{interp->result} to a new string unless @var{interp->freeProc} is also
+updated correctly. In preference, use @code{Tcl_SetResult}.
+
+The @code{Tcl_SetResult} function should always work fine, however it does not
+take @code{printf} style arguments. We have implemented a
+@code{vTcl_SetResult} which takes an @var{interp} argument and the standard
+@code{printf} format and additional arguments. For instance we would rewrite
+the example function as the following
+
+@example
+int example(ClientData clientData, Tcl_Interp *interp, int argc, char **argv)
+@{
+    int ret;
+    /* ... */
+
+    vTcl_SetResult(interp, "%d", some_c_func());
+    return TCL_OK;
+@}
+@end example
+
+As a final note on @code{vTcl_SetResult}; the current implementation only
+allows strings up to 8192 bytes. This should be easy to remedy if it causes
+problems for other developers.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Command-Code
+@subsection Writing the Code Itself
+@cindex Composition, algorithm
+
+The final C code itself is obviously completely different for each extension.
+
+In the example composition package we loop through each contig listed in our
+@code{-contigs} command line argument running a separate function that returns
+a Tcl list containing the total number of characters processed and the number
+of A, C, G, T and unknown nucleotides. Each list in turn is then added as an
+item to another list which is used for the final result.
+
+@example
+    /* Do the actual work */
+    Tcl_DStringInit(&dstr);
+    for (i = 0; i < num_contigs; i++) @{
+        result = doit(args.io, contigs[i].contig, contigs[i].start,
+                      contigs[i].end);
+        if (NULL == result) @{
+            xfree(contigs);
+            return TCL_ERROR;
+        @}
+
+        Tcl_DStringAppendElement(&dstr, result);
+    @}
+
+    Tcl_DStringResult(interp, &dstr);
+
+    xfree(contigs);
+    return TCL_OK;
+@}
+@end example
+
+The above is the end of the @code{tcl_composition} function. @code{doit} is
+our main algorithm written in C (which has no knowledge of Tcl). We use the
+Tcl dynamic strings routines to build up the final return value. The complete
+C code for this package can be found in the appendices.
+
+If a command has persistent data about a contig (such as a plot containing the
+composition) the registration scheme should be used to keep this data up to
+date whenever database edits are made. _oxref(Registration, Gap4 Contig
+Registration Scheme).
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-GUI
+@section Adding a GUI to the Command
+@cindex Composition, GUI
+@cindex Composition, interface
+@cindex GUI for commands
+@cindex Graphical User Interface for commands
+
+@menu
+* Pkg-GUI-Dialogue::            The Dialogue Creation
+* Pkg-GUI-Callback::            Calling the New Command
+* Pkg-GUI-tclIndex::            The tclIndex file
+@end menu
+
+Now we've defined a new Tcl command to perform the real guts of our example
+package we need to add Tk dialogues to provide a graphical interface to the
+user. This will typically be split into two main parts; the construction of
+the dialogues and the 'OK' callback procedure.
+
+@split{}
+@node Pkg-GUI-Dialogue
+@subsection The Dialogue Creation
+@cindex Dialogue creation
+@findex Composition(T)
+
+Firstly, we need to create the dialogue. This is done using both standard Tk
+commands and extra widgets defined in the tk_utils package. For the
+composition package the dialogue procedure is as follows.
+
+@example
+proc Composition @{io@} @{
+    global composition_defs
+
+    # Create a dialogue window
+    set t [keylget composition_defs COMPOSITION.WIN]
+    if [winfo exists $t] @{
+        raise $t
+        return
+    @}
+    toplevel $t
+
+    # Add the standard contig selector dialogues
+    contig_id $t.id -io $io
+    lorf_in $t.infile [keylget composition_defs COMPOSITION.INFILE] \
+        "@{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state normal@}
+        " -bd 2 -relief groove
+
+    # Add the ok/cancel/help buttons
+    okcancelhelp $t.but \
+        -ok_command "Composition2 $io $t $t.id $t.infile" \
+        -cancel_command "destroy $t" \
+        -help_command "show_help %composition Composition"
+
+    pack $t.infile $t.id $t.but -side top -fill both
+@}
+@end example
+
+Firstly we define the procedure name. In this case we'll call it
+@code{Composition}. It takes a single argument which is the IO handle of an
+opened Gap4 database.
+
+Next we need to create a new window. We've stored the Tk pathname of this
+window in the @code{COMPOSITION.WIN} keyed list value in the defaults for this
+package. As our package is called @var{composition} the defaults are
+@var{composition_defs}. We define them as global and use @code{keylget} to
+fetch the window pathname. It is wise to check that the dialogue window
+doesn't already exist before attempting to create a new one. This could happen
+if the user selects the option from the main menu twice without closing down
+the first dialogue window.
+
+Then the real dialogue components are added. In this case these consist of
+@code{contig_id}, @code{lorf_in} and @code{okcancelhelp} widgets. These are
+explained (FIXME: will be...) in the tk_utils and gap4 chapters. Note that the
+@code{okcancelhelp} command requires three Tcl scripts to execute when each of
+the Ok, Cancel and Help buttons are pressed.
+
+For the Ok button we call the @code{Composition2} procedure with the widget
+pathnames containing the users selections. The Cancel button is easy as we
+simply need to destroy the dialogue window. The Help button will call the
+@code{show_help} command to display the appropriate documentation. More on
+this later.
+
+@split{}
+@node Pkg-GUI-Callback
+@subsection Calling the New Command
+@findex lorf_in(T)
+@findex lorf_in_get(T)
+@findex lorf_get_list(T)
+@findex contig_id(T)
+@findex CreateAllContigList(T)
+@findex SetContigGlobals(T)
+@findex Composition2(T)
+
+Once the Ok callback from the @code{okcancelhelp} widget in the main dialogue
+has been executed we need to process any options the user has changed within
+the dialogue and pass these on to the main algorithms.
+
+For the extension widget we set the OK callback to execute a
+@code{Composition2} procedure. This starts as follows.
+
+@example
+# The actual gubbins. This can be either in straight tcl, or using Tcl and
+# C. In this example, for efficiency, we'll do most of the work in C.
+proc Composition2 @{io t id infile@} @{
+    # Process the dialogue results:
+    if @{[lorf_in_get $infile] == 4@} @{
+        # Single contig
+        set name [contig_id_gel $id]
+        set lreg [contig_id_lreg $id]
+        set rreg [contig_id_rreg $id]
+        SetContigGlobals $io $name $lreg $rreg
+        set list "@{$name $lreg $rreg@}"
+    @} elseif @{[lorf_in_get $infile] == 3@} @{
+        # All contigs
+        set list [CreateAllContigList $io]
+    @} else @{
+        # List or File of contigs
+        set list [lorf_get_list $infile]
+    @}
+
+    # Remove the dialogue
+    destroy $t
+
+    # Do it!
+    SetBusy
+    set res [composition -io $io -contigs $list]
+    ClearBusy
+@end example
+
+For this Gap4 command we have used the @code{lorf_in} widget to let the user
+select operations for a single contig, all contigs, a list of contigs, or a
+file of contigs. We firstly process this to build up the appropriate values to
+send to the @code{-list} option of the @code{composition} Tcl command. The
+processes involved here are explained in the @code{lorf_in} widget
+documentation. (FIXME: to write).
+
+Next we remove the dialogue window, enable the busy mode to grey out other
+menu items, and execute the command itself saving its result in the Tcl
+@var{res} variable.
+
+The procedure then continues by stepping through the @var{res} variable using
+tcl list and formatting commands to output to the main text window with the
+@code{vmessage} command. The complete code for this can be found in the
+appendices.
+
+@split{}
+@node Pkg-GUI-tclIndex
+@subsection The tclIndex file
+@cindex tclIndex file
+
+One final requirement before the Tcl dialogue is complete is to create the
+@file{tclIndex} file.
+
+Tcl uses a method whereby Tcl files are only loaded and executed when a
+command is first needed. This is done by referencing @var{auto_index} array in
+the Tcl error handler. This handler requires the @file{tclIndex} files to
+determine the location of each command. Failing to create this file will cause
+Tcl to complain that a command does not exist.
+
+To create a @file{tclIndex} file start up either @code{stash} or @code{tclsh}
+and type '@code{auto_mkindex} @i{dir}' where @i{dir} is the name of the
+directory (often simply ".") containing the Tcl files. For the composition
+package this created the following @file{tclIndex} file.
+
+@example
+# Tcl autoload index file, version 2.0
+# This file is generated by the "auto_mkindex" command
+# and sourced to set up indexing information for one or
+# more commands.  Typically each line is a command that
+# sets an element in the auto_index array, where the
+# element name is the name of a command and the value is
+# a script that loads the command.
+
+set auto_index(Composition) [list source [file join $dir composition.tcl]]
+set auto_index(Composition2) [list source [file join $dir composition.tcl]]
+@end example
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Config
+@section Creating the Config File
+@cindex Config file for packages
+@cindex Package config file
+
+The package needs to have a config file - an @file{rc} file. For the
+composition package this will be named @file{compositionrc}. The file contains 
+package dependencies, menu commands, and any user adjustable defaults.
+
+For the composition package we do not need any dependencies. The package
+depends on gap4 and tk_utils, but both of these are already loaded. If we did
+need to use an additional package, or simply an additional dynamic library,
+then we could add further @code{load_package} commands to the start of the
+file.
+
+Next we define the menu items. We could add an entirely new menu if the
+package defines many additional commands. In this example we'll simply add an
+extra command onto the standard Gap4 View menu.
+
+@example
+@group
+# We want to add to the View menu a new command named "Test Command".
+# This will call our TestCommand procedure with the contents of the global
+# $io variable (used for accessing the gap database).
+#
+# The command itself should be greyed out when the database is not open or
+# is empty.
+
+add_command     @{View.List Composition@}       8 10 @{Composition \$io@}
+@end group
+@end example
+
+This specifies that the @code{Composition $io} command is to be added to the
+View menu as 'List Composition'. It will be enabled only when the database is
+open and has data (8) and is disabled during busy modes and when the database
+has no data or is not open (10).
+
+Next we add any defaults. For the composition package this is simply the
+dialogue values for the composition command.
+
+@example
+# Now for the default values required by the composition command. Some of
+# these are the sort of things that will be configured by users (eg the
+# default cutoff score in a search routine) by creating their own .rc file
+# (.compositionrc in this case). Others are values used entirely by the
+# package itself. In our case  that's all we've got.
+
+set_defx defs_c_in      WHICH.NAME      "Input contigs from"
+set_defx defs_c_in      WHICH.BUTTONS   @{list file @{@{all contigs@}@} single@}
+set_defx defs_c_in      WHICH.VALUE     3
+set_defx defs_c_in      NAME.NAME       "List or file name"
+set_defx defs_c_in      NAME.BROWSE     "browse"
+set_defx defs_c_in      NAME.VALUE      ""
+
+set_def COMPOSITION.WIN .composition
+set_def COMPOSITION.INFILE $defs_c_in
+@end example
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Help
+@section Writing the Online Help
+@cindex Help, writing
+@cindex Writing help
+@cindex Online help
+@cindex Texinfo
+@cindex composition.topic
+@cindex composition.index
+@cindex composition.html
+@cindex HTML help files
+@cindex Topic help files
+@cindex Index help files
+
+The online help (including this) and printed manual for our programs are
+written using Texinfo.  However due to the usage of pictures (which aren't
+supported by Texinfo) we've made several modifications to the documentation
+system. We have modified makeinfo and texi2html scripts too. Consequently the
+system we use for documentation is not ready for public usage.
+
+However the final files needed for online usage by the applications can be
+produce by any system capable of creating HTML files and our own @file{.index}
+and @file{.topic} files.
+
+The principle method of bringing up help from a package is to use the
+@code{show_help} command. For the composition widget we used the following.
+
+@example
+show_help %composition Composition
+@end example
+
+The @code{%composition} indicates that the @code{show_help} command should
+read the @file{composition.topic} and @file{composition.index} files. These
+are normally read from the @file{$STADENROOT/manual/} directory, but by
+preceeding the name with a percent sign we can direct the @code{show_help}
+command to search for these files in the composition package directory.
+
+The last argument of @code{show_help} is the topic to display. In this case it
+is @code{Composition}. If the topic includes spaces then remember to use the
+Tcl quoting mechanism. The topic file is then scanned to find and line with
+this topic as the first 'word'. The second 'word' contains the index name. The
+index name is then looked up in the index file (as the first word) to find the
+URL (the second word). This two stage lookup is designed to protect against
+renaming section headings in the documentation. The index file can be easily
+created by parsing the html files to generate a mapping of heading names to
+URLs. However if the documentation changes we do not wish to need to change
+the Tcl calls to @code{show_help}.
+
+@example
+@i{composition.topic file:}
+
+    @{Composition@} @{Composition@}
+
+
+@i{composition.index file:}
+
+    @{Composition@} composition.html
+@end example
+
+For the composition package we have very simple topic and index files. The
+index and topic names are identical, so the topic file is trivial. The index
+file contains a single line mapping the @code{Composition} index entry to the
+@code{composition.html} file. If a named tag within the html file is needed
+then the URL would be @code{composition.html#tagname}. The html file itself is
+held within the same directory as the topic and index files.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Pkg-Wrappings
+@section Wrapping it all up
+
+We've now got all the code that we need to build a complete package. If this
+package is to be kept separate from the main Staden Package installation tree
+then we need to build our own directory tree for the package.
+
+For example, we'll create a separate directory for the composition package
+named @file{/home/spackages}. Within this directory we should place
+the rc file (@file{compositionrc}), the documentation
+(@file{composition.topic}, @file{composition.index} and
+@file{composition.html}) and the Tcl files @file{composition.tcl} and
+@file{tclIndex}.
+
+Additionally we need to have a dynamic library containing the C command. This
+should be placed in @file{/home/spackages/MACHINE-binaries/} where
+@file{MACHINE} is the machine type (eg @code{alpha}, @code{solaris},
+@code{sun}, @code{sgi}, @code{linux} or @code{windows}). The library will
+probably be named something like @file{libcomposition.so}.
+
+The actual compilation of the library is complicated due to each machine type
+having different linker options. The full description of the Makefile system
+is beyond the scope of this documentation, but in brief, the system works by
+having a single @file{Makefile} for the package, a @file{global.mk} file in
+the @file{$STADENROOT/src/mk} directory containing general definitions, and a
+system specific (eg @file{alpha.mk}) file also in @file{$STADENROOT/src/mk}
+defining system architecture specific definitions. These combine to allow
+system independent macros to be used for building dynamic libraries.
+The complete composition package Makefile is in the appendices.
+
+Once the package has been installed correctly an @code{ls -R} on the
+installation directory should look something like the following.
+
+@example
+alpha-binaries/     composition.index   composition.topic   tclIndex
+composition.html    composition.tcl     compositionrc
+
+./alpha-binaries:
+libcomposition.so   so_locations
+@end example
+
+Note that packages for multiple architectures may share the same installation
+tree as each architecture will need only its own @file{MACHINE-binaries}
+directory.
+
+The final requirement is to add the package onto gap4. This is done by adding
+the following to the users @file{.gaprc} file (where
+@file{/installation/directory/} is the location where containing the list of
+files).
+
+@example
+load_package /installation/directory/composition
+@end example

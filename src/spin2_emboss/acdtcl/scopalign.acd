@@ -1,0 +1,81 @@
+package require Iwidgets
+namespace eval ::EMBOSS::scopalign {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_scopalign*Xentry.entry.width 30
+option add *e_scopalign*Entryfield.width 30
+option add *e_scopalign*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) scopalign
+    set w [xtoplevel .e_scopalign -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - scopalign}
+    label $w._title -text {Generate alignments for SCOP families}
+    pack $w._title -side top -fill both
+    set vars(scopalign._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments scopf
+    xentry $w.scopf \
+	-label [subst {Name of scop file for input (embl-like format)}]\
+	-textvariable [namespace current]::vars(scopf) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopf delete 0 end
+    $w.scopf insert end [subst Escop.dat]
+    pack $w.scopf -side top -fill both
+    set vars(scopf.path) $w.scopf
+    set vars(scopf.required)  1
+    set vars(scopf._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments path
+    iwidgets::entryfield $w.path \
+	-textvariable [namespace current]::vars(path) \
+	-labeltext [subst {Location of alignment files for output}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.path component entry] -sticky nse
+    set vars(path) [subst ./]
+    pack $w.path -side top -fill both
+    set vars(path.path) $w.path
+    set vars(path.required)  1
+    set vars(path._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/scopalign.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,95 @@
+package require Iwidgets
+namespace eval ::EMBOSS::seqwords {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_seqwords*Xentry.entry.width 30
+option add *e_seqwords*Entryfield.width 30
+option add *e_seqwords*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) seqwords
+    set w [xtoplevel .e_seqwords -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - seqwords}
+    label $w._title -text {Generate file of hits for scop families by searching swissprot with keywords.}
+    pack $w._title -side top -fill both
+    set vars(seqwords._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments keyfile
+    xentry $w.keyfile \
+	-label [subst {Name of keywords file (input)}]\
+	-textvariable [namespace current]::vars(keyfile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.keyfile delete 0 end
+    $w.keyfile insert end [subst {}]
+    pack $w.keyfile -side top -fill both
+    set vars(keyfile.path) $w.keyfile
+    set vars(keyfile.required)  1
+    set vars(keyfile._type) infile
+
+    lappend arguments spfile
+    xentry $w.spfile \
+	-label [subst {Name of swissprot database (input)}]\
+	-textvariable [namespace current]::vars(spfile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.spfile delete 0 end
+    $w.spfile insert end [subst ./seq.dat]
+    pack $w.spfile -side top -fill both
+    set vars(spfile.path) $w.spfile
+    set vars(spfile.required)  1
+    set vars(spfile._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Name of seqwords hits file (output)}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst test.seqhits]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/seqwords.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

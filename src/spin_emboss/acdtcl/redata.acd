@@ -1,0 +1,114 @@
+package require Iwidgets
+namespace eval ::EMBOSS::redata {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_redata*Xentry.entry.width 30
+option add *e_redata*Entryfield.width 30
+option add *e_redata*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) redata
+    set w [xtoplevel .e_redata -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - redata}
+    label $w._title -text {Search REBASE for enzyme name, references, suppliers etc.}
+    pack $w._title -side top -fill both
+    set vars(redata._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments enzyme
+    iwidgets::entryfield $w.enzyme \
+	-textvariable [namespace current]::vars(enzyme) \
+	-labeltext [subst {Restriction enzyme name}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.enzyme component entry] -sticky nse
+    set vars(enzyme) [subst BamHI]
+    pack $w.enzyme -side top -fill both
+    set vars(enzyme.path) $w.enzyme
+    set vars(enzyme.required)  1
+    set vars(enzyme._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments isoschizomers
+    checkbutton $w.isoschizomers \
+	-text [subst {Show isoschizomers}]\
+	-variable [namespace current]::vars(isoschizomers)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.isoschizomers -side top -anchor w
+    set vars(isoschizomers) [subst 1]
+    set vars(isoschizomers.path) $w.isoschizomers
+    set vars(isoschizomers.required)  0
+    set vars(isoschizomers._type) bool
+
+    lappend arguments references
+    checkbutton $w.references \
+	-text [subst {Show references}]\
+	-variable [namespace current]::vars(references)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.references -side top -anchor w
+    set vars(references) [subst 1]
+    set vars(references.path) $w.references
+    set vars(references.required)  0
+    set vars(references._type) bool
+
+    lappend arguments suppliers
+    checkbutton $w.suppliers \
+	-text [subst {Show suppliers}]\
+	-variable [namespace current]::vars(suppliers)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.suppliers -side top -anchor w
+    set vars(suppliers) [subst 1]
+    set vars(suppliers.path) $w.suppliers
+    set vars(suppliers.required)  0
+    set vars(suppliers._type) bool
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst redata0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/redata.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,163 @@
+package require Iwidgets
+namespace eval ::EMBOSS::megamerger {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_megamerger*Xentry.entry.width 30
+option add *e_megamerger*Entryfield.width 30
+option add *e_megamerger*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) megamerger
+    set w [xtoplevel .e_megamerger -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - megamerger}
+    label $w._title -text {Merge two large overlapping nucleic acid sequences}
+    pack $w._title -side top -fill both
+    set vars(megamerger._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqa
+    set vars(seqa)       [get_active_seq_id 0]
+    if {$vars(seqa) == -1} {set vars(seqa) [get_active_seq_id 0]}
+    set vars(seqa.name)  [seq_info $vars(seqa) name]
+    sequence_changed [namespace current] seqa
+    set vars(seqa.type) [subst DNA]
+    seq_id $w.seqa \
+	-textvariable [namespace current]::vars(seqa.name)\
+	-start_value $vars(seqa.begin)\
+	-end_value $vars(seqa.end)\
+	-to [seq_info $vars(seqa) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqa $w.seqa}"
+    set vars(seqa) [subst {}]
+    pack $w.seqa -side top -fill both
+    set vars(seqa.path) $w.seqa
+    set vars(seqa.required)  1
+    trace variable vars(seqa.name) w  "::EMBOSS::sequence_changed [namespace current] seqa"
+    set vars(seqa._type) sequence
+
+    lappend arguments seqb
+    set vars(seqb)       [get_active_seq_id 1]
+    if {$vars(seqb) == -1} {set vars(seqb) [get_active_seq_id 0]}
+    set vars(seqb.name)  [seq_info $vars(seqb) name]
+    sequence_changed [namespace current] seqb
+    set vars(seqb.type) [subst DNA]
+    seq_id $w.seqb \
+	-textvariable [namespace current]::vars(seqb.name)\
+	-start_value $vars(seqb.begin)\
+	-end_value $vars(seqb.end)\
+	-to [seq_info $vars(seqb) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqb $w.seqb}"
+    set vars(seqb) [subst {}]
+    pack $w.seqb -side top -fill both
+    set vars(seqb.path) $w.seqb
+    set vars(seqb.required)  1
+    trace variable vars(seqb.name) w  "::EMBOSS::sequence_changed [namespace current] seqb"
+    set vars(seqb._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments wordsize
+    iwidgets::entryfield $w.wordsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(wordsize) \
+	-labeltext [subst {Word size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.wordsize component entry] -sticky nse
+    set vars(wordsize) [subst 20]
+    pack $w.wordsize -side top -fill both
+    set vars(wordsize.minimum) [subst 2]
+    set vars(wordsize.path) $w.wordsize
+    set vars(wordsize.required)  1
+    set vars(wordsize._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+
+    lappend arguments report
+    xentry $w.report \
+	-label [subst {Output report}]\
+	-textvariable [namespace current]::vars(report) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.report delete 0 end
+    $w.report insert end [subst megamerger1.out]
+    pack $w.report -side top -fill both
+    set vars(report.path) $w.report
+    set vars(report.required)  1
+    set vars(report._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/megamerger.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

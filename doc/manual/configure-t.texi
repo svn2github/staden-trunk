@@ -1,0 +1,500 @@
+@c ----------------------------------------------------------------------
+
+@node Conf-Introduction
+@section Introduction
+@cindex .gaprc
+@cindex gaprc
+@cindex .tk_utilsrc
+@cindex tk_utilsrc
+@cindex Colour blindness
+
+@menu
+* Conf-Consensus Algorithm::    Consensus Algorithm
+* Conf-Set Maxseq::             Set Maxseq
+* Conf-Fonts::                  Set Fonts
+_ifdef([[_unix]],[[* Conf-Colour::                 The Colour Configuration Window]])
+* Conf-Configure Menus::        Configuring Menus
+* Conf-Set Genetic Code::       Set Genetic Code
+* Conf-Alignment Scores::       Alignment Scores
+* Conf-Trace File Location::    Trace File Location
+* Conf-Tag::                    The Tag Selector
+* Conf-GTAGDB::                 Tag GTAGDB File
+@end menu
+
+The Options menu allows selection of the Consensus algorithm and the
+genetic code to use, and adjustment of various parameters
+used throughout gap4. It also provides a way of setting
+more trivial things such as fonts and colours.
+
+Most of these options have "OK Permanent" buttons in addition to the normal
+"OK" button. The "OK Permanent" button will save the current settings to the
+@file{.gaprc} file in the user's home directory.
+_ifdef([[_windows]],[[On Windows 95 this may be @code{C:\}.]])
+
+In general users will not need to be aware of this method as the most important
+configuration options are all available from within the graphical user
+interface. However there are many additional configurable parameters which may
+be referred to throughout the manual. These too are stored in the
+@file{.gaprc} files.
+
+When gap4 starts up it will first load the complete set of configurations from
+the @file{$STADENROOT/tables/gaprc} file. Next it loads @file{.gaprc} from the
+user's home directory, and finally @file{.gaprc} from the user's current
+project directory.  This means that the setting stored in the @file{.gaprc}
+file in the user's project directory will have priority over those found in
+the home directory, which, in turn, have priority of those found in the Staden
+Package installation directories.
+
+Note that searching for the @file{.gaprc} files only applies when starting
+gap4 and not when opening new or different databases.
+_ifdef([[_windows]],[[Hence if the user double clicks on a database
+@file{.aux} file then gap4 will read
+the @file{.gaprc} file found in the same directory as the database. If users
+start up gap4 from the Start menu and then open the project, the
+@file{.gaprc} file in the project directory will not be read.
+]]) _ifdef([[_unix]],[[Hence if the user changes directory to their project
+directory and starts gap4, then gap4 will read the @file{.gaprc} file found in
+that directory. If the user starts up gap4 from another directory and then
+uses the filebrowser to open a database, the @file{.gaprc} file in the project
+directory will not be read.]])
+
+The format of commands in the @file{.gaprc} file are:
+
+@quotation
+"#" followed by anything is a comment.
+
+"set_def VARIABLE value" sets the parameter "VARIABLE" to the value
+"value".  Note that value must be enclosed in double quotes if it
+contains spaces.
+
+"set_defx temp VARIABLE value" sets a parameter in a temporary list
+named "temp". This has no effect unless it is then used within a
+set_def command.  In this case we use "$temp" as the "value" parameter
+of a set_def command.
+@end quotation
+
+An example follows:
+
+@example
+@group
+set_def FIJ.MAXMIS.VALUE		30.00
+
+set_def	TEMPLATE.PRIMER_REVERSE_COLOUR	"green"
+
+set_def CONTIG_EDITOR.DISAGREE_MODE	2
+set_def CONTIG_EDITOR.DISAGREE_CASE	0
+set_def CONTIG_EDITOR.MAX_HEIGHT	25
+@end group
+@end example
+
+Note that some adjustments will effect more than just gap4. For example,
+the colours of traces are stored in the
+@file{.tk_utilsrc} file, and this file is used by both gap4 and trev.
+For colour blind users it can be useful to change these particular
+settings. For example the following is a @file{.tk_utilsrc} file
+to change the colours for the trace displays.
+
+@example
+set_def TRACE.COLOUR_A			white
+set_def TRACE.COLOUR_C			blue
+set_def TRACE.COLOUR_G			black
+set_def TRACE.COLOUR_T			"#ff8000"
+set_def TRACE.LINE_WIDTH		2
+@end example
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Consensus Algorithm
+@section Consensus Algorithm
+
+Gap4 currently contains 3 consensus algorithms
+(_fpref(Con-Calculation, The Consensus Algorithms, t)). 
+This option 
+(which is available from the gap4 Options menu)
+allows the
+algorithm to be selected. 
+
+Note the consensus algorithm is used in
+several places throughout gap4: 
+Assembly
+(_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly)),
+producing a consensus sequence file
+(_fpref(Con-Calculation, The Consensus Algorithms, t)),
+in the Contig Editor
+(_fpref(Editor, Editor introduction, contig_editor)),
+for Experiment Suggestion
+(_fpref(Experiments, Finishing Experiments, experiments)), and in the
+plot of the confidence values
+(_fpref(Consistency-Display, Consistency Display,t)).
+
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Set Maxseq
+@section Set Maxseq/Maxdb
+@cindex maxseq
+@cindex maximum sequence length
+@cindex sequence length, maximum
+
+The "Set maxseq/maxdb" option 
+(which is available from the gap4 Options menu)
+may be used to adjust the maximum size of the total
+consensus sequence contained within gap4. This includes concatenations
+of consensus sequences (with extra space for text headers) and the cutoff data at
+either end of each contig.
+
+When opening an already assembled project, maxseq is automatically increased
+accordingly (if required), so "Set maxseq" only needs to be used when adding
+in more data, such as when using the sequence assembly algorithms.
+
+The maxdb option controls the maximum combined number of readings and contigs
+allowed. Note that changing this does not take effect on the currently opened
+database so be sure to set it before opening your database.
+
+Both these values can also be adjusted by using the @code{-maxseq} and
+@code{-maxdb} command line arguments.
+_fxref(Gap4-Cline, Command Line Arguments, gap4)
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Fonts
+@section Set Fonts
+@cindex fonts, adjusting
+
+"Set fonts" 
+(which is available from the gap4 Options menu)
+controls the fonts used for the various components of gap4's
+windows. Note that for the correct operation of some displays, careful
+font selection is necessary. For example it is not wise to chose a
+proportional font for the Contig Editor, which displays fixed width sequence
+alignments. For more complete documentation, see
+_fref(UI-Fonts, Font Selection, interface).
+
+@c ----------------------------------------------------------------------
+_ifdef([[_unix]],[[
+_split()
+@node Conf-Colour
+@section Colour Configuration Window
+@cindex Colour configuration window
+@cindex Line thickness configuration
+
+Many gap4 displays make extensive use of colour.
+It is useful to able control the colours used for particular
+plots and the Colour Configuration window is used for this purpose. As the
+Colour Configuration window can be used from several different options, for
+convenience of documentation we refer to the window invoking the
+configuration window as the 'parent' window.
+
+One use for this dialogue is to edit the colours for individual
+restriction enzyme types when they are displayed as a single line within the
+Template Display. By default all types are drawn in black, 
+but the Colour Configuration dialogue enables each to be given its own
+colour.
+Another application is to adjust the colours used for displaying
+matches plotted within the Contig Comparator.
+
+Below is an example of using the Configure Window for a Find Read Pairs
+result. It was brought up using the configure command within the result
+manager. _fxref(Results, Result Manager, results) The window
+contains controls for adjusting both the line thickness and colour.
+Not all Colour Configuration
+dialogues (for example, when used with Restriction Enzyme Map) will include
+the line width section.
+
+_picture(configure.colour)
+
+The colour is adjusted by dragging the three
+sliders until the coloured box at the bottom of the window shows
+the desired colour. Colours edited here will affect the displays
+within the parent window. Pressing OK will shut down the
+configuration window and keep these colours. Pressing cancel will
+remove the window and will set the colours in the parent window
+back to their original colours.
+]])
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Configure Menus
+@section Configuring Menus
+@cindex Configure menus
+@cindex Menus, configuring
+@cindex User levels
+
+When used for the first time
+gap4 will start up in beginner mode. What this means is that some of
+the less widely used options will not appear in the menus. The "Configure
+menus" command in the Options menu may be used to change between "beginner" and
+"expert" mode. In expert mode all the menu items will be displayed.
+
+To permanently set the menu level users select the appropriate level
+and press
+the "OK Permanent" button. This will save the menu level information to the
+@file{.gaprc} file in their home directory.
+
+If desired, other menu levels may be created by the package
+administrator. This is achieved by editing the
+@file{$STADENROOT/tables/gaprc_menu_full} file, changing the @code{MENU_LEVELS}
+definition and adding the appropriate labels to the end of each command. Each
+command specified in the menu file ends in a list of menu levels in which it
+is active. To make a command active for several levels, enclose the level
+identifiers in a Tcl list, such as @code{@{m e@}}. If this is missing,
+the command will be active at all menu levels.
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Set Genetic Code
+@section Set Genetic Code
+@cindex Set genetic code
+@cindex Genetic code
+
+This function allows the user to change the genetic used in all the
+options. The codes are defined as a set of codon tables stored in the
+directory tables/gcodes distributed with the package. The current list
+of codes and their codon table file names is shown at the end of this
+section.
+
+The user interface consists of the dialogue shown below. The user selects
+the required code by clicking on it, and then clicking "OK" or "OK
+permanent". The former choice selects the code for immediate use, and
+the latter also selects it for future uses of the program.
+
+_picture(set_genetic_code)
+
+When the dialogue is left the codon table selected will be displayed, as
+below, in the Output Window.
+
+@example
+      ===============================================
+      F ttt       S tct       Y tat       C tgt      
+      F ttc       S tcc       Y tac       C tgc      
+      L tta       S tca       * taa       W tga      
+      L ttg       S tcg       * tag       W tgg      
+      ===============================================
+      L ctt       P cct       H cat       R cgt      
+      L ctc       P ccc       H cac       R cgc      
+      L cta       P cca       Q caa       R cga      
+      L ctg       P ccg       Q cag       R cgg      
+      ===============================================
+      I att       T act       N aat       S agt      
+      I atc       T acc       N aac       S agc      
+      M ata       T aca       K aaa       G aga      
+      M atg       T acg       K aag       G agg      
+      ===============================================
+      V gtt       A gct       D gat       G ggt      
+      V gtc       A gcc       D gac       G ggc      
+      V gta       A gca       E gaa       G gga      
+      V gtg       A gcg       E gag       G ggg      
+      ===============================================
+@end example
+
+The following table shows the list of available genetic codes and the
+files in which they are stored for use by the package. They were created
+from genetic code files obtained from the NCBI.
+
+@example
+code_1  Standard
+code_2  Vertebrate Mitochondrial
+code_3  Yeast Mitochondrial
+code_4  Coelenterate  Mitochondrial
+code_4  Mold Mitochondrial
+code_4  Protozoan Mitochondrial
+code_4  Mycoplasma
+code_4  Spiroplasma
+code_5  Invertebrate Mitochondrial
+code_6  Ciliate Nuclear
+code_6  Dasycladacean Nuclear
+code_6  Hexamita Nuclear
+code_9  Echinoderm Mitochondrial
+code_10 Euplotid Nuclear
+code_11 Bacterial
+code_12 Alternative Yeast Nuclear
+code_13 Ascidian Mitochondrial
+code_14 Flatworm Mitochondrial
+code_15 Blepharisma Macronuclear
+@end example
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Alignment Scores
+@section Alignment Scores
+@cindex Alignment scores
+@cindex Alignment matrix file
+@cindex Open penalty for alignments
+@cindex Extension penalty for alignments
+@cindex Gap penalties for alignments
+@cindex Matrix for alignments
+
+The Alignment Scores command 
+(which is available from the gap4 Options menu)
+may be used to adjust the gap open and gap
+extension penalties for some of the alignment algorithms used within gap4. At
+present this will affect all alignments except the Find Internal Joins
+function and most of the assembly algorithms.
+
+For dealing with sequences where the alignment differences have been caused by
+real evolutionary events, these parameters will probably need changing from
+the defaults. The default values are set up with the assumption that any
+alignment differences are due to base calling errors, and hence the gap
+extension penalty will be high.
+
+The alignment matrix may also be adjusted, but this is not listed in the
+dialogue. To do this take a copy of @file{$STADENROOT/tables/nuc_matrix},
+edit the copy, and set the @code{ALIGNMENT.MATRIX_FILE} parameter in your
+@file{.gaprc} file.
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-Trace File Location
+@section Trace File Location
+@cindex Trace file location
+@cindex RAWDATA
+
+Gap4 does not store the trace data within the gap4 database. Instead it stores
+the filename of the trace file. Usually the trace files are kept within the
+same directory as the gap4 database. If this is not the case
+gap4 needs to know where they are.
+
+To make sure that gap4 can still display the traces we need to specify any
+alternative locations where traces may be found. The "Trace File Location"
+command (which is available from the gap4 Options menu) performs this task. It
+brings up a dialogue asking for the directory names. If there is just one
+directory to specify, its name should be typed in. If there are several
+directories to search through, they must all be typed in, separated by the
+colon character (":"). To include a directory name that contains a colon, use
+a double colon.
+
+For example, on windows to specify two directories, use (eg)
+"@code{F::\tfiles1:G::\tfiles2}".
+
+In addition to specifying directories, RAWDATA may also be used to indicate
+that the trace files are contained within a @i{tar} file. The syntax for
+RAWDATA is then @code{TAR=}@i{filename}. This can be combined with
+directories if desired (for example,
+@code{.:/traces/online:TAR=/traces/archive.tar}). In order to speed up
+accessing of traces within the tar file a command line utility named
+@code{index_tar} may be used. This produces a text index containing the
+filenames held within the tar and their offsets within it. Programs will then
+use this index file to provide a fast way of accessing the trace. The syntax
+for @code{index_tar} is: @code{index_tar} @i{tar_filename} @code{>}
+@i{tar_filename}@code{.index}. (For example "@code{index_tar traces.tar >
+traces.tar.index}".)
+
+If the gap4 database has been opened with write-access this directory
+location will be stored as a database @code{RAWD} note
+(_fpref(Notes-Special, Special Note Types, notes)), which is read by gap4 when
+it opens the database. The demonstration data supplied with the package
+includes an example database (named DEMO.0) that has a RAWD note to specify
+that traces are fetched from a tar file within the same directory.
+
+An alternative way of specifying the trace file location is by setting the
+@code{RAWDATA} environment variable. On Unix and Windows NT this is
+straightforward (although system and shell specific). However on Windows 95
+this may prove difficult (and at least require a reboot), so manually setting
+the environment variable is no longer recommended.
+
+@c ----------------------------------------------------------------------
+@page
+_split()
+@node Conf-Tag
+@section The Tag Selector
+@cindex Tag Selector
+@cindex Annotation Selector
+
+Each command using tags (for example to mask tagged sequence segments) can
+utilise the Tag Selector to determine which tag types are to be used. As each
+command has its own particular use for tags, the default tags are
+command specific.
+
+_picture(interface.tag)
+
+The Tag Selector dialogue 
+(which is available from the relevant gap4 options)
+consists of a set of checkbuttons plus commands to
+select all tags or to deselect all tags. The "OK" button quits the display and
+accepts the selected list as the current list of active tags. The "Cancel"
+button quits the display without making any changes. The "As default" button
+marks the current selected tags as the defaults to be used for all future uses
+of this command. These selections are not saved to disk and will be lost when
+the program quits. To permanently set the default tag types, users must 
+modify their
+@file{.gaprc} file. Brief instructions on how to edit this file follow.
+They are also contained within the copy of the file distributed with
+the package: @file{$STADENROOT/tables/gaprc}. Search for "@code{Tag
+type lists}".
+
+@c ----------------------------------------------------------------------
+_split()
+@node Conf-GTAGDB
+@section The GTAGDB File
+@cindex GTAGDB
+@cindex Tag database
+
+To plot tags, gap uses a file describing the available tag types and
+their colours. It is possible for users to edit their own local copies
+of this file to create new tag types.
+
+The environment variable @code{GTAGDB} is used to specify the location
+of tag type databases. The @code{GTAGDB} variable consists of one or
+more file pathnames separated by colons. The first file read defines a
+set of tags and colours. Subsequent files can define additional
+tags and also override the earlier tag definitions. To achieve this gap4
+loads each file from the @code{GTAGDB} variable in the order of rightmost
+first to leftmost last. Thus, as is similar to the unix shell
+@code{PATH} variable, the leftmost pathnames have highest precedence for
+the resultant tag definitions. The default @code{GTAGDB} specified in the
+staden login and profile scripts is:
+
+@example
+GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB
+@end example
+
+Hence the @file{$STADTABL/GTAGDB} file is read and the
+@file{$HOME/GTAGDB} and @file{GTAGDB} (a file in the current directory)
+files are merged if present. To add a new tag type only to the
+database local to the current directory, create a @file{GTAGDB} file in
+the current directory.
+
+The BNF grammar for the tag database is as follows:
+
+@example
+<tag_db>       ::= <tag> <tag_db> | <empty>
+<tag>          ::= <tag_long_name> ':' <element_list> '\n'
+<element_list> ::= <element> | <element> ':' <element_list> | <empty>
+<element>      ::= <option_name> '=' <string>
+<option_name>  ::= 'id' | 'bg' | 'dt'
+@end example
+
+Quoting strings is optional for single words, but necessary when writing
+a string containing spaces. In plain English, this means that to define
+the compression tag (@code{COMP}) to be displayed in red, with no
+default annotation string we write:
+
+@example
+compression: id="COMP": bg=red
+@end example
+
+Any lines starting with hash (@samp{#}) are considered as comments. Lines
+ending in backslash (@samp{\}) are joined with the next line. Hence the
+above definition can be written in a clearer form using:
+
+@example
+# For marking compressions
+compression: \
+        id="COMP": \
+        bg=red:
+@end example
+
+An example including a default annotation string of "default string" follows:
+
+@example
+# For general comments
+comment: \
+        id="COMM": \
+        bg=MediumBlue: \
+        dt="default string"
+@end example
+
+Allowed names for colours are those recognised by the windowing system.
+_ifdef([[_unix]],[[These include colour names defined in the @file{rgb.txt}
+file (probably @file{/usr/lib/X11/rgb.txt} or @file{/usr/openwin/lib/rgb.txt})
+and the exact colour specifications using the @code{"#rrggbb"} notation.]])

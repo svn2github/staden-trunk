@@ -1,0 +1,15 @@
+[passed files]
+/home6/jkb/work/course/t/xb54b12.r1L.exp (EXP) PASSED
+/home6/jkb/work/course/t/xb56b6.s1L.exp (EXP) PASSED
+/home6/jkb/work/course/t/xb60b12.s1L.exp (EXP) PASSED
+/home6/jkb/work/course/t/xc04a1.s1L.exp (EXP) PASSED
+
+[failed files]
+
+[passed file history]
+/home6/jkb/work/course/t/xb54b12.r1L.exp (EXP) <- /home6/jkb/work/course/t/xb54b12.r1L.scf (SCF)
+/home6/jkb/work/course/t/xb56b6.s1L.exp (EXP) <- /home6/jkb/work/course/t/xb56b6.s1L.scf (SCF)
+/home6/jkb/work/course/t/xb60b12.s1L.exp (EXP) <- /home6/jkb/work/course/t/xb60b12.s1L.scf (SCF)
+/home6/jkb/work/course/t/xc04a1.s1L.exp (EXP) <- /home6/jkb/work/course/t/xc04a1.s1L.scf (SCF)
+
+[failed file history]

@@ -1,0 +1,45 @@
+class xScrolledframe {
+    inherit iwidgets::Scrolledframe
+    
+    constructor {args} {}
+    destructor {}
+
+    protected method _configureCanvas {} 
+#    protected method _configureFrame {} 
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+body xScrolledframe::constructor {args} {
+#    itk_option remove iwidgets::Labeledwidget::state
+
+    #
+    # Initialize the widget based on the command line options.
+    #
+    eval itk_initialize $args
+}
+
+# ------------------------------------------------------------------
+# PRIVATE METHOD: _configureCanvas 
+#
+# Responds to configure events on the canvas widget.  When canvas 
+# changes size, adjust frame size.
+# ------------------------------------------------------------------
+body xScrolledframe::_configureCanvas {} {
+    set sr [$itk_component(canvas) cget -scrollregion]
+    set srw [lindex $sr 2]
+    set srh [lindex $sr 3]
+
+    set c $itk_component(canvas)
+    if {$srw < [winfo width $c]} {
+	set srw [winfo width $c]
+    }
+    if {$srh < [winfo height $c]} {
+	set srh [winfo height $c]
+    }
+    $itk_component(canvas) itemconfigure 1 \
+	-width $srw \
+	-height $srh
+    $itk_component(sfchildsite) configure -height $srh -width $srw
+}

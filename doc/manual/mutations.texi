@@ -1,0 +1,36 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+@c %**start of header
+@setfilename mutations.info
+@settitle Mutation Detection
+@iftex
+@afourpaper
+@end iftex
+@setchapternewpage odd
+@c %**end of header
+
+@set standalone
+include(header.m4)
+
+@titlepage
+@title Mutation Detection
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+@end titlepage
+
+@node Top
+@ifinfo
+@top top-mutations
+@end ifinfo
+
+@raisesections
+_include(mutations-t.texi)
+
+_split()
+@node Index
+@unnumberedsec Index
+@printindex cp
+
+@contents
+@bye

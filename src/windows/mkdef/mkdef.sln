@@ -1,0 +1,21 @@
+Microsoft Visual Studio Solution File, Format Version 7.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mkdef", "mkdef.vcproj", "{D54AEBC6-62A5-4456-B531-A8E09EC06285}"
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		ConfigName.0 = Debug
+		ConfigName.1 = Release
+	EndGlobalSection
+	GlobalSection(ProjectDependencies) = postSolution
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{D54AEBC6-62A5-4456-B531-A8E09EC06285}.Debug.ActiveCfg = Release|Win32
+		{D54AEBC6-62A5-4456-B531-A8E09EC06285}.Debug.Build.0 = Release|Win32
+		{D54AEBC6-62A5-4456-B531-A8E09EC06285}.Release.ActiveCfg = Release|Win32
+		{D54AEBC6-62A5-4456-B531-A8E09EC06285}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,705 @@
+--- Report from 'Estimate Base Accuracies' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54b12.r1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54b12.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54c3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54f10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54f3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54f8.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54g1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54g3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54g5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54h10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb54h3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56a5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56b6.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56c3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56e5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56h1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb57d4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb57e3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb57e5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb57e8.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb57h12.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58c4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58d7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58e10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58e3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58e7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58f4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb58g8.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60b12.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60b9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60c11.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60d10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60e9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60f4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60g1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60g4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60h10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60h12.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61b10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61b7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61c2.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61c5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61c6.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61d4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61d9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61e3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61e8.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61g7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb61h12.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62c2.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62d10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62d7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62g9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62h3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb62h4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63a11.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63a7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63b10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63c10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63c3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63c7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63d6.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63e5.f1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63e5.r1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63e5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63e7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63e9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63f10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63g4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63g9.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb63h2.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64a1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64b2.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64b3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64c6.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64c7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64d11.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb64e3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66a5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66a6.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66b4.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66d5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66e10.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66e3.r1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66e3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66e5.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66f8.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb66h1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb92h3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb96b11.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc04a1.r1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc04a1.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc05f7.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc05h2.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc05h3.s1.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc06e5.s1.scf: assigned base accuracies
+
+--- Report from 'Initialise Experiment Files' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: created from /home6/jkb/work/course/t/xb54a3.s1.scf
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: created from /home6/jkb/work/course/t/xb54b12.r1.scf
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: created from /home6/jkb/work/course/t/xb54b12.s1.scf
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: created from /home6/jkb/work/course/t/xb54c3.s1.scf
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: created from /home6/jkb/work/course/t/xb54f10.s1.scf
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: created from /home6/jkb/work/course/t/xb54f3.s1.scf
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: created from /home6/jkb/work/course/t/xb54f3.s1ta.scf
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: created from /home6/jkb/work/course/t/xb54f8.s1.scf
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: created from /home6/jkb/work/course/t/xb54g1.s1.scf
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: created from /home6/jkb/work/course/t/xb54g3.s1.scf
+SEQ /home6/jkb/work/course/t/xb54g5.s1.exp: created from /home6/jkb/work/course/t/xb54g5.s1.scf
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: created from /home6/jkb/work/course/t/xb54h10.s1.scf
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: created from /home6/jkb/work/course/t/xb54h3.s1.scf
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: created from /home6/jkb/work/course/t/xb56a5.s1.scf
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: created from /home6/jkb/work/course/t/xb56b6.s1.scf
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: created from /home6/jkb/work/course/t/xb56c3.s1.scf
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: created from /home6/jkb/work/course/t/xb56e5.s1.scf
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: created from /home6/jkb/work/course/t/xb56h1.s1.scf
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: created from /home6/jkb/work/course/t/xb57d4.s1.scf
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: created from /home6/jkb/work/course/t/xb57e3.s1.scf
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: created from /home6/jkb/work/course/t/xb57e5.s1.scf
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: created from /home6/jkb/work/course/t/xb57e8.s1.scf
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: created from /home6/jkb/work/course/t/xb57h12.s1.scf
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: created from /home6/jkb/work/course/t/xb58c4.s1.scf
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: created from /home6/jkb/work/course/t/xb58d7.s1.scf
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: created from /home6/jkb/work/course/t/xb58e10.s1.scf
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: created from /home6/jkb/work/course/t/xb58e3.s1.scf
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: created from /home6/jkb/work/course/t/xb58e3.s1t.scf
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: created from /home6/jkb/work/course/t/xb58e7.s1.scf
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: created from /home6/jkb/work/course/t/xb58f4.s1.scf
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: created from /home6/jkb/work/course/t/xb58g8.s1.scf
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: created from /home6/jkb/work/course/t/xb60b12.s1.scf
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: created from /home6/jkb/work/course/t/xb60b9.s1.scf
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: created from /home6/jkb/work/course/t/xb60c11.s1.scf
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: created from /home6/jkb/work/course/t/xb60d10.s1.scf
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: created from /home6/jkb/work/course/t/xb60e9.s1.scf
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: created from /home6/jkb/work/course/t/xb60f4.s1.scf
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: created from /home6/jkb/work/course/t/xb60g1.s1.scf
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: created from /home6/jkb/work/course/t/xb60g4.s1.scf
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: created from /home6/jkb/work/course/t/xb60h10.s1.scf
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: created from /home6/jkb/work/course/t/xb60h12.s1.scf
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: created from /home6/jkb/work/course/t/xb61b10.s1.scf
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: created from /home6/jkb/work/course/t/xb61b7.s1.scf
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: created from /home6/jkb/work/course/t/xb61c2.s1.scf
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: created from /home6/jkb/work/course/t/xb61c5.s1.scf
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: created from /home6/jkb/work/course/t/xb61c6.s1.scf
+SEQ /home6/jkb/work/course/t/xb61d4.s1.exp: created from /home6/jkb/work/course/t/xb61d4.s1.scf
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: created from /home6/jkb/work/course/t/xb61d9.s1.scf
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: created from /home6/jkb/work/course/t/xb61e3.s1.scf
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: created from /home6/jkb/work/course/t/xb61e8.s1.scf
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: created from /home6/jkb/work/course/t/xb61g7.s1.scf
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: created from /home6/jkb/work/course/t/xb61h12.s1.scf
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: created from /home6/jkb/work/course/t/xb62c2.s1.scf
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: created from /home6/jkb/work/course/t/xb62d10.s1.scf
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: created from /home6/jkb/work/course/t/xb62d7.s1.scf
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: created from /home6/jkb/work/course/t/xb62g9.s1.scf
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: created from /home6/jkb/work/course/t/xb62h3.s1.scf
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: created from /home6/jkb/work/course/t/xb62h4.s1.scf
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: created from /home6/jkb/work/course/t/xb63a11.s1.scf
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: created from /home6/jkb/work/course/t/xb63a7.s1.scf
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: created from /home6/jkb/work/course/t/xb63b10.s1.scf
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: created from /home6/jkb/work/course/t/xb63c10.s1.scf
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: created from /home6/jkb/work/course/t/xb63c3.s1.scf
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: created from /home6/jkb/work/course/t/xb63c7.s1.scf
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: created from /home6/jkb/work/course/t/xb63d6.s1.scf
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: created from /home6/jkb/work/course/t/xb63e5.f1.scf
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: created from /home6/jkb/work/course/t/xb63e5.r1.scf
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: created from /home6/jkb/work/course/t/xb63e5.s1.scf
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: created from /home6/jkb/work/course/t/xb63e7.s1.scf
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: created from /home6/jkb/work/course/t/xb63e9.s1.scf
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: created from /home6/jkb/work/course/t/xb63f10.s1.scf
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: created from /home6/jkb/work/course/t/xb63g4.s1.scf
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: created from /home6/jkb/work/course/t/xb63g9.s1.scf
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: created from /home6/jkb/work/course/t/xb63h2.s1.scf
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: created from /home6/jkb/work/course/t/xb64a1.s1.scf
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: created from /home6/jkb/work/course/t/xb64b2.s1.scf
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: created from /home6/jkb/work/course/t/xb64b3.s1.scf
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: created from /home6/jkb/work/course/t/xb64c6.s1.scf
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: created from /home6/jkb/work/course/t/xb64c7.s1.scf
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: created from /home6/jkb/work/course/t/xb64d11.s1.scf
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: created from /home6/jkb/work/course/t/xb64e3.s1.scf
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: created from /home6/jkb/work/course/t/xb66a5.s1.scf
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: created from /home6/jkb/work/course/t/xb66a6.s1.scf
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: created from /home6/jkb/work/course/t/xb66b4.s1.scf
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: created from /home6/jkb/work/course/t/xb66d5.s1.scf
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: created from /home6/jkb/work/course/t/xb66e10.s1.scf
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: created from /home6/jkb/work/course/t/xb66e3.r1.scf
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: created from /home6/jkb/work/course/t/xb66e3.s1.scf
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: created from /home6/jkb/work/course/t/xb66e5.s1.scf
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: created from /home6/jkb/work/course/t/xb66f8.s1.scf
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: created from /home6/jkb/work/course/t/xb66h1.s1.scf
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: created from /home6/jkb/work/course/t/xb92h3.s1.scf
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: created from /home6/jkb/work/course/t/xb96b11.s1.scf
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: created from /home6/jkb/work/course/t/xc04a1.r1.scf
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: created from /home6/jkb/work/course/t/xc04a1.s1.scf
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: created from /home6/jkb/work/course/t/xc05f7.s1.scf
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: created from /home6/jkb/work/course/t/xc05h2.s1.scf
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: created from /home6/jkb/work/course/t/xc05h3.s1.scf
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: created from /home6/jkb/work/course/t/xc06e5.s1.scf
+
+--- Report from 'Augment Experiment Files' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54g5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61d4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: added fields SF CF TN PR SC SP SI CH
+
+--- Report from 'Quality Clip' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54g5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61d4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: clipped using 'qclip'
+
+--- Report from 'Sequencing Vector Clip' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61d4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: passed
+
+--- Report from 'Screen For Unclipped Vector' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: passed
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: passed
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: passed
+SEQ /home6/jkb/work/course/t/xb54g5.s1.exp: failed (sequence too short)
+SEQ /home6/jkb/work/course/t/xb61d4.s1.exp: failed (sequence too short)
+
+--- Report from 'Cloning Vector Clip' ---
+SEQ /home6/jkb/work/course/t/xb54a3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54b12.r1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54b12.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54c3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54f10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54f3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54f3.s1ta.exp: checked
+SEQ /home6/jkb/work/course/t/xb54f8.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54g1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54g3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54h10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb54h3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb56a5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb56b6.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb56c3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb56e5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb56h1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb57d4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb57e3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb57e5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb57e8.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb57h12.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58c4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58d7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58e10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58e3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58e3.s1t.exp: checked
+SEQ /home6/jkb/work/course/t/xb58e7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58f4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb58g8.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60b12.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60b9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60c11.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60d10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60e9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60f4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60g1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60g4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60h10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb60h12.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61b10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61b7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61c2.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61c5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61c6.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61d9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61e3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61e8.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61g7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb61h12.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62c2.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62d10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62d7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62g9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62h3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb62h4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63a11.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63a7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63b10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63c10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63c3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63c7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63d6.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63e5.f1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63e5.r1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63e5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63e7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63e9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63f10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63g4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63g9.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb63h2.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64a1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64b2.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64b3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64c6.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64c7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64d11.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb64e3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66a5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66a6.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66b4.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66d5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66e10.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66e3.r1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66e3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66e5.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66f8.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb66h1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb92h3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xb96b11.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xc04a1.r1.exp: checked
+SEQ /home6/jkb/work/course/t/xc04a1.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xc05f7.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xc05h2.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xc05h3.s1.exp: checked
+SEQ /home6/jkb/work/course/t/xc06e5.s1.exp: checked
+

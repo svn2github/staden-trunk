@@ -1,0 +1,1687 @@
+@cindex Gap4 main commands
+
+@menu
+* G4Comm-assemble_direct::        assemble_direct
+* G4Comm-assemble_misc::          assemble... commands
+* G4Comm-break_contig::           break_contig
+* G4Comm-calc_quality::           calc_quality
+* G4Comm-check_assembly::         check_assembly
+* G4Comm-check_database::         check_database
+* G4Comm-complement_contig::      complement_contig
+* G4Comm-delete_contig::          delete_contig
+* G4Comm-disassemble_readings::   disassemble_readings
+* G4Comm-double_strand::          double_strand
+* G4Comm-edit_contig::            edit_contig
+* G4Comm-enter_tags::             enter_tags
+* G4Comm-extract_readings::       extract_readings
+* G4Comm-find_long_gels::         find_long_gels
+* G4Comm-find_oligo::             find_oligo
+* G4Comm-find_primers::           find_primers
+* G4Comm-find_probes::            find_probes
+* G4Comm-find_read_pairs::        find_read_pairs
+* G4Comm-find_repeats::           find_repeats
+* G4Comm-find_taq_terminator::    find_taq_terminator
+* G4Comm-find_internal_joins::    find_internal_joins
+* G4Comm-get_consensus::          get_consensus
+* G4Comm-join_contig::            join_contig
+* G4Comm-minimal_coverage::       minimal_coverage
+* G4Comm-pre_assemble::           pre_assemble
+* G4Comm-shift_readings::         shift_readings
+* G4Comm-show_relationships::     show_relationships
+* G4Comm-unattached_readings::    unattached_readings
+@end menu
+
+@split{}
+@node G4Comm-assemble_direct
+@unnumberedsec assemble_direct
+@findex assemble_direct(T)
+@cindex Directed assembly
+@cindex Assembly, directed
+
+@example
+@group
+@exdent @code{assemble_direct}
+ -io            @i{io_handle:integer}
+ -files         @i{filenames:strings}
+?-output_mode   @i{mode:integer(0)}?
+?-max_pmismatch @i{percentage:float(-1)}?
+@end group
+@end example
+
+This performs the gap4 directed assembly function. It takes a list of
+Experiment File filenames and processes these according to their content. The
+Experiment Files should contain AP lines to govern their positions in the
+assembly.
+
+The function returns a list of failed files separated by newlines.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-files} filenames
+
+A Tcl list of Experiment File filenames.
+
+@sp 1
+@item @code{-output_mode} mode
+
+Whether to display alignments when assembling sequences containing a
+tolerance of zero or more. A @i{mode} of non-zero displays alignments, 0 does
+not. This is an optional argument with the default as 0.
+
+@sp 1
+@item @code{-max_pmismatch} percentage
+
+When aligning sequences (tolerance >= 0) the aligned sequences must match the
+consensus sequence with <= @i{percentage} mismatch. A @i{percentage} of -1
+implies no check should be made. The default for this option is -1.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-assemble_misc
+@unnumberedsec assemble... commands
+@cindex Independent assembly
+@cindex Assembly, independent
+@findex assemble_independent(T)
+
+@example
+@group
+@exdent @code{assemble_independent}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+?-output_mode    @i{mode:integer(1)}?
+?-min_match      @i{length:integer(20)}?
+?-min_overlap    @i{length:integer(0)}?
+?-max_pads       @i{count:integer(25)}?
+?-max_pmismatch  @i{percentage:float(5.0)}?
+?-joins          @i{to_join:integer(1)}?
+?-enter_failures @i{to_enter:integer(0)}?
+?-tag_types      @i{types:strings()}?
+@end group
+@end example
+
+@cindex New contigs assembly
+@cindex Assembly, new contigs
+@findex assemble_new_contigs(T)
+@example
+@group
+@exdent @code{assemble_new_contigs}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+@end group
+@end example
+
+@cindex One contig assembly
+@cindex Assembly, one contig
+@findex assemble_one_contig(T)
+@example
+@group
+@exdent @code{assemble_one_contig}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+@end group
+@end example
+
+@cindex Screen-only assembly
+@cindex Assembly, screen only
+@findex assemble_screen(T)
+@example
+@group
+@exdent @code{assemble_screen}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+?-output_mode    @i{mode:integer(1)}?
+?-min_match      @i{length:integer(20)}?
+?-min_overlap    @i{length:integer(0)}?
+?-max_pads       @i{count:integer(25)}?
+?-max_pmismatch  @i{percentage:float(5.0)}?
+?-save_align     @i{to_save:integer(0)}?
+?-win_size       @i{length:integer(0)}?
+?-max_dashes     @i{count:integer(0)}?
+?-tag_types      @i{types:strings()}?
+@end group
+@end example
+
+@cindex Shotgun assembly
+@cindex Assembly, shotgun
+@findex assemble_shotgun(T)
+@example
+@group
+@exdent @code{assemble_shotgun}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+?-output_mode    @i{mode:integer(1)}?
+?-min_match      @i{length:integer(20)}?
+?-min_overlap    @i{length:integer(0)}?
+?-max_pads       @i{count:integer(25)}?
+?-max_pmismatch  @i{percentage:float(5.0)}?
+?-joins          @i{to_join:integer(1)}?
+?-enter_failures @i{to_enter:integer(0)}?
+?-tag_types      @i{types:strings()}?
+@end group
+@end example
+
+@cindex Single stranded assembly
+@cindex Assembly, single stranded
+@findex assemble_single_strand(T)
+@example
+@group
+@exdent @code{assemble_single_strand}
+ -io             @i{io_handle:integer}
+ -files          @i{filenames:strings}
+?-output_mode    @i{mode:integer(1)}?
+?-min_match      @i{length:integer(20)}?
+?-min_overlap    @i{length:integer(0)}?
+?-max_pads       @i{count:integer(25)}?
+?-max_pmismatch  @i{percentage:float(5.0)}?
+?-joins          @i{to_join:integer(1)}?
+?-enter_failures @i{to_enter:integer(0)}?
+@end group
+@end example
+
+The assembly functions listed above all take similar arguments, but perform
+varying modes of assembly. The complete list of available arguments is listed
+below, but note that not all arguments apply to each function. Most functions
+return the failed readings and error codes with newlines between each
+reading and error code pair. @code{Screen_only} may return (when
+@i{save_align} is enabled) the reading alignment scores in a similar fashion.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-files} filenames
+
+@i{Filenames} must contain a Tcl list of files to assemble.
+
+@sp 1
+@vindex -output_mode
+@item @code{-output_mode} mode
+
+Specifies the level of verbosity of the output. The default is 0. @i{Mode}
+must be one of the following.
+
+@table @asis
+@item 1
+Display no alignments
+@item 2
+Display only passed alignments
+@item 3
+Display all alignments
+@item 4
+Display only failed alignments
+@end table
+
+@sp 1
+@vindex -min_match
+@item @code{-min_match} length
+Specifies the minimum length of exact match used during the hashing stage of
+assembly. The minium allowed value for this is 8. The default is 20.
+
+@sp 1
+@vindex -min_overlap
+@item @code{-min_overlap} length
+
+This specifies the minimum length of an overlap between a reading and
+a consensus sequence. The default is 0 which implies no overlap is too short.
+Note that @code{-min_match} is still used so all overlaps have to be larger
+than that parameter in order to be found.
+
+@sp 1
+@vindex -max_pads
+@item @code{-max_pads} count
+
+After alignments the number of pads required in each of the two sequences
+(consensus and reading, or two consensuses) must be less than or equal to
+@i{count}. The default is 25.
+
+@sp 1
+@vindex -max_pmismatch
+@item @code{-max_pmismatch} percentage
+
+After alignments the percentage of bases that do not match must be less than
+or equal to @i{percentage}. This is a floating point value. The default is
+5.0.
+
+@sp 1
+@item @code{-save_align} to_save
+
+This controls whether alignments scores are to be returned as the function
+result. A non zero value returns the scores. The default is 0.
+
+@sp 1
+@vindex -win_size
+@vindex -max_dashes
+@item @code{-win_size} length
+@itemx @code{-max_dashes} count
+
+During a screen-only assembly the cutoff data may be searched for matches. The
+criteria for determining how much cutoff sequence to align is selected as
+the portion where no more than @i{count} unknown ("-") bases within a region
+of @i{length} bases. Setting both these parameters to 0 means that cutoff data
+will be not searched. These are the defaults.
+
+@sp 1
+@item @code{-joins} to_join
+
+This controls whether joins between contigs should be allowed. A non zero
+value allows joins. The default is 1.
+
+@sp 1
+@item @code{-enter_failures} to_enter
+
+This controls whether failed readings should still be entered into the
+databases as single reading contigs. A non zero value will enable this. The
+default is 0.
+
+@sp 1
+@vindex -tag_types
+@item @code{-tag_types} types
+
+The assembly algorithm can mask segments of sequence covered by tags so
+that they are not used during hashing step and hence do not initiate
+overlaps.  If @i{types} is a non blank list of tag types then masking will
+be applied to hide sequence covered by tags of these types from the initial
+hashing stage of assembly. The default is a blank list, which means no
+masking will be performed.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-break_contig
+@unnumberedsec break_contig
+@cindex Contig breaking
+@cindex Break contig
+@findex break_contig(T)
+
+@example
+@group
+@exdent @code{break_contig}
+ -io            @i{io_handle:integer}
+ -readings      @i{identifiers:strings}
+@end group
+@end example
+
+This command breaks contigs into two or more pieces at given points. The
+function returns no value but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-readings} identifiers
+
+This specifies the list of readings. For each reading the contig will be
+broken such that the reading forms the left end of a new contig.
+@end table
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-calc_quality
+@unnumberedsec TODO: calc_quality
+@findex calc_quality(T)
+@cindex Quality calculation
+@cindex Calculating quality
+
+@example
+@group
+@exdent @code{calc_quality}
+ -io            @i{io_handle:integer}
+ -contig        @i{contig}
+ -window        @i{window}
+@end group
+@end example
+
+This command will have the interface updated in the future to conform to the
+style used by other commands. Use at your own risk.
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-check_assembly
+@unnumberedsec check_assembly
+@findex check_assembly(T)
+@cindex Assembly, checking
+@cindex Check assembly
+
+@example
+@group
+@exdent @code{check_assembly}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-cutoff        @i{use_cutoffs:integer(1)}?
+?-min_len       @i{length:integer(10)}?
+?-win_size      @i{length:integer(29)}?
+?-max_dashes    @i{count:integer(3)}?
+?-max_pmismatch @i{percentage:float(15.0)}?
+@end group
+@end example
+
+The command performs the Gap4 Check Assembly command. It compares either the
+used data or the cutoff data against the consensus sequence to find readings
+with poor match. The function is not currently ideally suitable for use in a
+script as it plots directly to the Contig Selector display. The function
+returns no value but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to check. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+
+@sp 1
+@item @code{-cutoff} use_cutoffs
+
+Controls whether the cutoff data is to be analysed. If @i{use_cutoffs} is a
+non zero value the cutoff data will be aligned and compared against the
+consensus. Otherwise the already aligned used data will be compared against
+the consensus. The default is 1.
+
+@sp 1
+@item @code{-min_len} min_length
+@itemx @code{-win_size} window_length
+@itemx @code{-max_dashes} count
+
+These parameters are only used when @i{-cutoff} is enabled. The criteria for
+determining how much cutoff sequence to align is selected as only the portion
+where no more than @i{count} unknown ("-") bases within a region of
+@i{window_length} bases. This sequence is then only used if the amount
+selected is at least @i{min_length} bases long. The defaults are 10 for
+@code{-min_len}, 29 for @code{-win_size} and 3 for @code{-max_dashes}.
+
+@sp 1
+@item @code{-max_pmismatch} percentage
+
+Only matches with greater than the specified percentage mismatch are displayed
+as problems. The default is 15.0.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-check_database
+@unnumberedsec check_database
+@findex check_database(T)
+@cindex Database checking
+@cindex Check database
+
+@example
+@group
+@exdent @code{check_database}
+ -io            @i{io_handle:integer}
+@end group
+@end example
+
+This function performs the gap4 check database function. It returns the number
+of serious database corruptions detected.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-complement_contig
+@unnumberedsec complement_contig
+@findex complement_contig(T)
+@cindex Contig, complementing
+@cindex Complement contig
+
+@example
+@group
+@exdent @code{complement_contig}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+@end group
+@end example
+
+This command complements one or more contigs and writes back the modified data
+to the database. It returns 0 for success and 1 for failure.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to complement. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-delete_contig
+@unnumberedsec delete_contig
+@findex delete_contig(T)
+@cindex Contig, deletion
+@cindex Delete contig
+
+@example
+@group
+@exdent @code{delete_contig}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+@end group
+@end example
+
+This command deletes one or more contigs from the database, including readings
+and associated information. The function returns no value but will generate a
+Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to delete. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-disassemble_readings
+@unnumberedsec disassemble_readings
+@findex disassemble_readings(T)
+@cindex Reading, disassembly
+@cindex Disassemble readings
+
+@example
+@group
+@exdent @code{disassemble_readings}
+ -io            @i{io_handle:integer}
+ -readings      @i{identifiers:strings}
+?-all           @i{for_all:integer(1)}?
+?-remove        @i{to_remove:integer(1)}?
+@end group
+@end example
+
+This command disassembles readings by either removing them from the database
+or moving them to their own contigs.  The function returns no value but will
+generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-readings} identifiers
+
+Specifies the list of readings to disassemble.
+
+@sp 1
+@item @code{-all} for_all
+
+Controls whether to disassemble all readings or only those that are not
+"crucial" (those that would cause a contig to break into fragments). A
+non-zero value will disassemble all. The default is 1.
+
+@sp 1
+@item @code{-remove} to_remove
+
+Controls whether to completely remove the readings from the database or to
+move them to their own contigs. A non-zero value will remove them, otherwise
+they are moved. The default is 1.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-double_strand
+@unnumberedsec double_strand
+@findex double_strand(T)
+@cindex Double stranding
+@cindex Strands
+
+@example
+@group
+@exdent @code{double_strand}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-max_nmismatch @i{count:integer(8)}
+?-max_pmismatch @i{percentage:float(8.)}
+@end group
+@end example
+
+This command searches for single stranded regions and attempts to make them
+double stranded data by finding neighbouring readings with hidden data that
+is good enough to reveal. The function returns no value but will generate a
+Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to double strand. The @i{@{contig start
+end@}} syntax may be used for an identifier to double strand only a region of
+the contig, otherwise all of it is double stranded.
+
+@sp 1
+@vindex -max_nmismatch
+@item @code{-max_nmismatch
+
+This} cifies the maximum number of mismatches allowed in the extended dat
+between the reading and the consensus. The default is 8.
+
+@sp 1
+@vindex -max_pmismatch
+@item @code{-max_pmismatch
+
+This} cifies the maximum percentage mismatch allowed in the extended dat
+between the reading and the consensus. The default is 8.0.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-edit_contig
+@unnumberedsec edit_contig
+@findex edit_contig(T)
+@cindex Contig, editing
+@cindex Edit contig
+
+@example
+@group
+@exdent @code{edit_contig}
+ -io            @i{io_handle:integer}
+ -contig        @i{identifier:string}
+?-reading       @i{identifier:string()}?
+?-pos           @i{position:integer(1)}?
+@end group
+@end example
+
+This command brings up a contig editor display. The function returns no value
+but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contig} identifier
+
+This specifies the contig to edit.
+
+@sp 1
+@item @code{-reading} identifier
+@item @code{-pos} position
+
+By default the editor starts with the display and cursor at the left end of
+the consensus. Use these options to specify a different reading and position.
+The position is relative to the start of the specified reading. To start the
+editor at a specific position in the consensus sequence use only @code{-pos}.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-enter_tags
+@unnumberedsec enter_tags
+@findex enter_tags(T)
+@cindex Tags, adding
+@cindex Adding tags
+
+@example
+@group
+@exdent @code{enter_tags}
+ -io            @i{io_handle:integer}
+ -file          @i{filename:string}
+@end group
+@end example
+
+This command reads a file containing tags (annotations) and enters them into
+the database. The function returns no value but will generate a Tcl error if
+an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-file} filename
+
+This specifies the file containing the tag data.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-extract_readings
+@unnumberedsec extract_readings
+@findex extract_readings(T)
+@cindex Readings, extracting
+@cindex Extract readings
+
+@example
+@group
+@exdent @code{extract_readings}
+ -io            @i{io_handle:integer}
+ -readings      @i{identifiers:strings}
+?-directory     @i{directory:string(extracts)}?
+?-quality       @i{add_quality:integer(1)}?
+@end group
+@end example
+
+This command copies the edited sequences from the database to Experiment
+Files on disk. The database is not altered. The function returns no value
+but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-readings} identifiers
+
+Specifies the list of readings to extract.
+
+@sp 1
+@item @code{-directory} directory
+
+The files created are all placed in a subdirectory (created by this command).
+This option specifies the directory to be used. The default is
+@file{extracts}.
+
+@sp 1
+@item @code{-quality} add_quality
+
+This controls whether quality, original positions, and pre-assembly format
+data is to be included in the file. A non-zero value will output the extra
+data. The default is 1.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_long_gels
+@unnumberedsec find_long_gels
+@findex find_long_gels(T)
+@cindex Readings, long runs
+@cindex Find long gels
+
+@example
+@group
+@exdent @code{find_long_gels}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-avg_len       @i{length:integer(500)}?
+@end group
+@end example
+
+This command searches for places where rerunning a reading as a long gel will
+solve a problem. The function returns no value but will generate a Tcl error
+if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@vindex -avg_len
+@item @code{-avg_len} length
+
+This specifies the length expected for a long reading. This is used to
+determine which readings are suitable for rerunning and the amount of
+coverage available. The default is 500 base pairs.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_oligo
+@unnumberedsec find_oligo
+@findex find_oligo(T)
+@cindex Oligos, finding
+@cindex Primers, finding
+@cindex Find oligo
+
+@example
+@group
+@exdent @code{find_oligo}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-min_pmatch    @i{percentage:float(75.0)}?
+?-seq           @i{sequence:string()}?
+?-tag_types     @i{types:string()}?
+@end group
+@end example
+
+This command searches for short sequence segments and plots them in the Contig
+Selector. It will fail when not running in a graphical environment containing
+the Contig Selector. The function returns no value but will generate a Tcl
+error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@item @code{-min_pmatch} percentage
+
+Only matches with this level of similarity or better will be displayed. The
+default is 75%.
+
+@sp 1
+@item @code{-seq} sequence
+
+The command will search for the @i{sequence} in each of the specified
+contigs, plotting matches above (or equal to) the mininum percentage match.
+This option takes precedence over the @code{-tag_types} option. The default
+is a blank string, which implies no searching.
+
+@sp 1
+@item @code{-tag_types} types
+
+If a list of tag types is specified the algorithm first obtains the sequence
+underneath each tag of these types. For each sequence the search is
+independently performed with that sequence as the search string. If
+@code{-seq} has also been specified this option is invalid. The default is a
+blank list of tag types, which implies no tags will be searched for.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_primers
+@unnumberedsec find_primers
+@findex find_primers(T)
+@cindex Primers, suggesting
+@cindex Find primers
+
+This command performs the Gap4 "Suggest Primers" function. It searches for
+locations where choosing an oligo primer for "walking" off another reading
+will solve a problem. The command returns a list of primer
+information in the form "@i{template_name reading_name primer_identifier
+sequence position direction}", separated by newlines.
+
+@example
+@group
+@exdent @code{find_primers}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings()}
+?-search_from   @i{position:integer(20)}?
+?-search_to     @i{position:integer(60)}?
+?-num_primers   @i{count:integer(1)}?
+?-primer_start  @i{count:integer(1)}?
+?-params        @i{OSP_params:string}?
+@end group
+@end example
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@item @code{-search_from} position
+@itemx @code{-search_to} position
+
+These two options control the region, relative to the problem, in which to
+look for suitable oligos. The defaults are @i{from} 20 @i{to} 60, which
+means that to cover an area starting at position 1000 in the forward strand
+the command will pick oligos from the sequence at positions 940 to 980.
+
+@sp 1
+@item @code{-num_primers} count
+
+This controls how many oligos to pick to solve each problem. The default is 1.
+
+@sp 1
+@item @code{-primer_start} count
+
+Each oligo is given a primer name consisting of the database name followed by
+the primer number. The numbers start at @i{count} and increment for each new
+primer. The default is 1.
+
+@sp 1
+@vindex osp_defs
+@vindex gap_defs, OSP
+@item @code{-params} OSP_params
+
+This specifies the parameters to the OSP algorithm as a keyed list. The
+defaults are undefined unless the gaprc file has been parsed. In this case the
+defaults are as used by Gap4. Not all of the OSP parameters listed below are
+needed or used, but we don't have further details. The defaults listed in the
+gaprc file are:
+
+@example
+#----------------------------------------------
+# The OSP Prm defaults
+#----------------------------------------------
+set_def OSP.prod_len_low                0
+set_def OSP.prod_len_high               200
+set_def OSP.prod_gc_low                 0.40
+set_def OSP.prod_gc_high                0.55
+set_def OSP.prod_tm_low                 70.0
+set_def OSP.prod_tm_high                90.0
+
+set_def OSP.min_prim_len                17
+set_def OSP.max_prim_len                23
+set_def OSP.prim_gc_low                 0.30
+set_def OSP.prim_gc_high                0.70
+set_def OSP.prim_tm_low                 50
+set_def OSP.prim_tm_high                55
+
+set_def OSP.self3_hmlg_cut              8
+set_def OSP.selfI_hmlg_cut              14
+set_def OSP.pp3_hmlg_cut                8
+set_def OSP.ppI_hmlg_cut                14
+set_def OSP.primprod3_hmlg_cut          0
+set_def OSP.primprodI_hmlg_cut          0
+set_def OSP.primother3_hmlg_cut         0.0
+set_def OSP.primotherI_hmlg_cut         0.0
+set_def OSP.delta_tm_cut                2.0
+set_def OSP.end_nucs                    S
+
+set_def OSP.wt_prod_len                 0
+set_def OSP.wt_prod_gc                  0
+set_def OSP.wt_prod_tm                  0
+set_def OSP.wt_prim_s_len               0
+set_def OSP.wt_prim_a_len               0
+set_def OSP.wt_prim_s_gc                0
+set_def OSP.wt_prim_a_gc                0
+set_def OSP.wt_prim_s_tm                0
+set_def OSP.wt_prim_a_tm                0
+set_def OSP.wt_self3_hmlg_cut           2
+set_def OSP.wt_selfI_hmlg_cut           1
+set_def OSP.wt_pp3_hmlg_cut             2
+set_def OSP.wt_ppI_hmlg_cut             1
+set_def OSP.wt_primprod3_hmlg_cut       0
+set_def OSP.wt_primprodI_hmlg_cut       0
+set_def OSP.wt_primother3_hmlg_cut      0
+set_def OSP.wt_primotherI_hmlg_cut      0
+set_def OSP.wt_delta_tm_cut             0
+set_def OSP.AT_score                    2
+set_def OSP.CG_score                    4
+set_def OSP.wt_ambig                    avg
+@end example
+
+To change a default you need to specify the full OSP parameters with modified
+values. For instance:
+
+@example
+global gap_defs
+
+set osp_defs [keylget gap_defs OSP]
+keylset osp_defs min_prim_len 18
+
+find_primers \
+        -params $osp_defs \
+        @i{(etc)}
+@end example
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_probes
+@unnumberedsec find_probes
+@findex find_probes(T)
+@cindex Probes, finding
+@cindex Find probes
+
+@example
+@group
+@exdent @code{find_probes}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-min_size      @i{length:integer(15)}?
+?-max_size      @i{length:integer(19)}?
+?-max_pmatch    @i{fraction:float(90.0)}?
+?-from          @i{position:integer(10)}?
+?-to            @i{position:integer(100)}?
+?-vectors       @i{filename:string()}?
+@end group
+@end example
+
+This command performs the Gap4 "Suggest Probes" function. It searches for
+unique sequences at the ends of contigs suitable for probing clone
+libraries to pick overlapping sequences and hence to extend contigs.  The
+command returns a newline separated list of probes in the form
+"@code{Contig} @i{ident} @code{position} @i{int} @code{Tm} @i{int}
+@code{sequence} @i{string}".
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to use. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+
+@sp 1
+@item @code{-min_size} length
+@itemx @code{-max_size} length
+
+These specify an inclusive range of the allowed lengths of probes chosen.
+The defaults are @i{min_size} of 15 and @i{max_size} of 19.
+
+@sp 1
+@item @code{-max_pmatch} fraction
+
+Each potential probe sequence is comparared against all contig sequences
+and, optionally, several vector sequences. This option specifies the
+maximum percentage match between the probe and the comparison sequences.
+Only sequences with no matches above this percentage match are considered
+unique.  sequences.  The default is 90.0.
+
+@sp 1
+@item @code{-from} position
+@itemx @code{-to} position
+
+These specify the area in which to look for probes as an offset from the
+ends of the contigs. The defaults are @i{from} 10 @i{to} 100.
+
+@sp 1
+@item @code{-vectors} filename
+
+This specifies a file of vector filenames. NB: This will possibly be changed
+to a Tcl list of vector filenames. The uniqueness search will then also check
+the vector files for matches. The vector files can be in any format readable
+by the @i{seq_utils} library (currently Staden, EMBL, CODATA, GENBANK and
+FASTA). The default is blank, which implies no vectors to check.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_read_pairs
+@unnumberedsec find_read_pairs
+@findex find_read_pairs(T)
+@cindex Reading pairs, finding
+@cindex Find read pairs
+
+@example
+@group
+@exdent @code{find_read_pairs}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+@end group
+@end example
+
+This command searches for templates containing both forward and reverse
+readings where the forward and reverse readings are in differing contigs. This
+information is plotted on the Contig Selector. The command will not work if
+the Contig Selector is not displayed. The function returns no value but will
+generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to use. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_repeats
+@unnumberedsec find_repeats
+@findex find_repeats(T)
+@cindex Repeats, finding
+@cindex Find repeats
+
+@example
+@group
+@exdent @code{find_repeats}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-direction     @i{direction:integer(3)}?
+?-min_match     @i{length:integer(25)}?
+?-outfile       @i{filename:string()}?
+?-tag_types     @i{types:string()}?
+@end group
+@end example
+
+The command searches for perfect matches between two or more fragments in the
+consensus sequences. This information is plotted on the Contig Selector. The
+command will not work if the Contig Selector is not displayed. The function
+returns no value but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@item @code{-direction} direction
+
+This specifies whether forward repeats (1), reverse repeats (2), or both (3)
+are to be found. The default is 3 (both).
+
+@sp 1
+@item @code{-min_match} length
+
+This specifies the minimum length of a repeat to be searched for. The default
+is 25. The minimum allowed is 8.
+
+@sp 1
+@item @code{-outfile} filename
+
+This specifies a file in which to save the tag hits. The results are
+written in the form of REPT annotations which are suitable for passing onto
+the @code{enter_tags} command.  The default is a blank string, which
+implies no file should be created.
+
+@sp 1
+@item @code{-tag_types} types
+
+If @i{types} is a non blank list of tag types then masking will be applied to
+remove sequence covered by tags of these types from the repeat searching. The
+default is a blank list, which means no masking will be performed.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_taq_terminator
+@unnumberedsec find_taq_terminator
+@findex find_taq_terminator(T)
+@cindex Taq terminators, suggesting
+@cindex Terminator reactions, suggesting
+@cindex Find taq terminators
+
+@example
+@group
+@exdent @code{find_taq_terminator}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-avg_len       @i{length:integer(350)}?
+@end group
+@end example
+
+This command searches for places where rerunning a reading as a dye terminator
+reaction will solve a problem. Currently these places are identified by the
+presence of a COMP (compression) or STOP annotation. The function returns no
+value but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@vindex -avg_len
+@item @code{-avg_len} length
+
+This specifies the expected length achieved by a terminator reading . This is
+used to determine which readings are suitable for rerunning and for the amount
+of coverage available. The default is 350 base pairs.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-find_internal_joins
+@unnumberedsec find_internal_joins
+@findex find_internal_joins(T)
+@cindex Joins, finding
+@cindex Find internal joins
+
+@example
+@group
+@exdent @code{find_internal_joins}
+ -io            @i{io_handle:integer}
+ -contigs       @i{identifiers:strings}
+?-mode          @i{mode:string(end_all)}?
+?-segment       @i{identifier:string()}?
+?-min_match     @i{length:integer(15)}?
+?-max_pads      @i{count:integer(25)}?
+?-max_pmismatch @i{percentage:float(30.0)}?
+?-win_size      @i{length:integer(0)}?
+?-max_dashes    @i{count:integer(0)}?
+?-probe_length  @i{length:integer(100)}?
+?-mask          @i{mask:string(none)}?
+?-tag_types     @i{types:string()}?
+@end group
+@end example
+
+This command searches for potential joins between contigs by comparing the
+sequence data in each contig. This information is plotted on the Contig
+Selector. The command will not work if the Contig Selector is not displayed.
+The function returns no value but will generate a Tcl error if an error
+occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@item @code{-mode} mode
+
+This specifies the segments of contigs in which to search for joins.
+Valid @i{mode}s are:
+
+@table @code
+@item end_end
+Compares only the ends of each contigs with the ends of other contigs.
+@item end_all
+Compares the ends of each contigs with the entirety of other contigs.
+@item all_all
+Compares all of each contig with all of the other contigs.
+@item segment
+Compares a segment of a particular contig with all of the contig contigs.
+@end table
+
+The default mode is "@code{end_all}".
+
+@sp 1
+@item @code{-segment} identifier
+
+When @i{mode} is "@code{segment}" this specifies the region of the contig
+identifier to compare. The default is blank.
+
+@sp 1
+@item @code{-min_match} length
+
+Specifies the minimum length of exact match used during the hashing stage of
+find internal joins. The minium allowed value for this is 14. The default is
+15.
+
+@sp 1
+@item @code{-max_pads} count
+
+After alignments the number of pads required in each of the two consensus
+sequences must be less than or equal to @i{count}. The default is 25.
+
+@sp 1
+@item @code{-max_pmismatch} count
+
+After alignments the percentage of bases that do not match must be less than
+or equal to @i{percentage}. This is a floating point value. The default is
+30.0.
+
+@sp 1
+@item @code{-win_size} length
+@itemx @code{-max_dashes} count
+
+If these are both set to non-zero values the cutoff data will be searched for
+matches. The criteria for determining how much cutoff sequence to align is
+selected as the portion where no more than @i{count} unknown ("-") bases
+within a region of @i{length} bases. The defaults are 0 for both, which
+implies only used data should be searched.
+
+@sp 1
+@item @code{-mask} mask
+@itemx @code{-tag_types} mask
+
+If @i{types} is a non blank list of tag types then masking or marking will
+be applied to the sequence covered by tags of these types from. When
+@i{mask} is "@code{mark}" the sequence is converted to an alternative
+character set so that matches will be found, but are clearly visible in the
+output as being matches between marked fragments. When @i{mask} is
+"@code{mask}" the sequence is removed so that no matches will be initiated
+between this sequence and another fragment. The defaults are"
+@code{none}" for @i{mask} and a blank string for the tag types, which
+disables masking and marking.
+@end table
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-get_consensus
+@unnumberedsec get_consensus
+@findex get_consensus(T)
+@cindex Consensus calculation
+
+@example
+@group
+@exdent @code{get_consensus}
+ -io            @i{io_handle}
+ -contigs       @i{identifiers:strings}
+ -outfile       @i{filename:string}
+?-type          @i{type:string(normal)}?
+?-mask          @i{mask:string(none)}?
+?-tag_types     @i{types:string()}?
+?-win_size      @i{length:integer(0)}?
+?-max_dashes    @i{count:integer(0)}?
+?-format        @i{format:integer(3)}?
+?-annotations   @i{annotations:integer(0)}?
+?-truncate      @i{truncate:integer(0)}?
+@end group
+@end example
+
+This command calculates the consensus sequence for one or more contigs and
+saves it to a file. The function returns no value but will generate a Tcl
+error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to search. The @i{@{contig start end@}}
+syntax may be used for an identifier to search only a region of the
+contig, otherwise all of it is searched.
+
+@sp 1
+@item @code{-outfile} filename
+
+Specifies the filename to write the consensus sequence too. This has no
+default value.
+
+@sp 1
+@item @code{-type} type
+
+This specifies the final output type for the consensus algorithm. Valid
+@i{type}s are:
+
+@table @code
+@item normal
+The standard consensus sequence consisting of A, C, G, T, - and *.
+
+@item extended
+As per @code{normal}, except the cutoff data at the ends of contigs is used to
+provide consensus sequence beyond the well defined contig ends.
+
+@item unfinished
+The consensus sequence in single stranded regions is output as a, c, g and
+t whilst the consensus for finished regions is listed as d, e f and i (for
+a, c, g and t respectively).  The quality of each base is output instead
+of the consensus base. The base quality is listed as a single letter from
+the following table showing the quality of each strand independently.
+
+@cindex Quality codes
+@table @var
+@item a
+@kbd{Good Good (in agreement)}
+@item b
+@kbd{Good Bad}
+@item c
+@kbd{Bad  Good}
+@item d
+@kbd{Good None}
+@item e
+@kbd{None Good}
+@item f
+@kbd{Bad  Bad}
+@item g
+@kbd{Bad  None}
+@item h
+@kbd{None Bad}
+@item i
+@kbd{Good Good (disagree)}
+@item j
+@kbd{None None}
+@end table
+@end table
+
+@sp 1
+@item @code{-win_size} length
+@itemx @code{-max_dashes} count
+
+These are only of use during the @i{extended} consensus type.  The criteria
+for determining how much cutoff sequence to output is selected as the
+portion where there are no more than @i{count} unknown ("-") bases are
+found within a region of @i{length} bases. The defaults are 0 for both,
+which implies that only used data should be output.
+
+@sp 1
+@item @code{-format} format
+
+Specifies the output format of the file to be created. All formats can be
+written for all consensus types, but some may not be legal (eg Fasta files
+containing quality codes instead of sequence). The available formats are:
+
+@cindex Format codes
+@table @code
+@item 1
+Staden format
+@item 2
+Fasta format
+@item 3
+Experiment File format
+@end table
+
+The default is 3.
+
+@sp 1
+@item @code{-annotations} annotations
+
+This controls whether to output annotations. This is only of used in the
+Experiment File output format. Note that with the @i{extended} consensus type
+the annotation positions are still for the @i{normal} consensus; this is a bug
+which will only be fixed if it is considered useful. A non-zero value will
+output annotations. The default is 0, which is to not output annotations.
+
+@sp 1
+@item @code{-truncate} truncate
+
+This controls whether annotations within or overlapping the cutoff data will
+be output. A non-zero value will not output annotations within the cutoff
+data. The default is 0.
+
+@sp 1
+@item @code{-mask} mask
+@itemx @code{-tag_types} types
+
+If @i{types} is a non blank list of tag types then masking or marking will
+be applied to the sequence covered by tags of these types from. When
+@i{mask} is "@code{mask}" the sequence is converted to an alternative
+character set (@var{d}, @var{e}, @var{f} and @var{i} for Experiment Files
+and Staden format and @var{n}s for Fasta format). When @i{mask} is
+"@code{mark}" the sequence is in lowercase. The defaults are"
+@code{none}" for @i{mask} and a blank string for the tag types, which
+disables masking and marking. Masking and marking is only used in the
+@i{normal} and @i{extended} consensus types.
+@end table
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-join_contig
+@unnumberedsec join_contig
+@findex join_contig(T)
+@cindex Contig, joining
+@cindex Join contigs
+
+@example
+@group
+@exdent @code{join_contig}
+ -io            @i{io_handle:integer}
+ -contig1       @i{identifier:string}
+?-reading1      @i{identifier:string()}?
+?-pos1          @i{position:integer(1)}?
+ -contig2       @i{identifier:string}
+?-reading2      @i{identifier:string()}?
+?-pos2          @i{position:integer(1)}?
+@end group
+@end example
+
+This command brings up a join editor display. The display consists of two
+contig editors, one above the other. The function returns no value but will
+generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contig1} identifier
+@itemx @code{-contig2} identifier
+
+These specify the contigs to join.
+
+@sp 1
+@item @code{-reading1} identifier
+@itemx @code{-reading2} identifier
+@itemx @code{-pos1} position
+@itemx @code{-pos2} position
+
+By default the editors start with the display and cursor at the left end of
+the consensus. Use these options to specify a different reading and position.
+The position is relative to the start of the specified reading. To start the
+editors at specific positions in the consensus sequence use only
+@code{-pos}@i{n}.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-minimal_coverage
+@unnumberedsec minimal_coverage
+@findex minimal_coverage(T)
+@cindex Contig coverage
+@cindex Minimal coverage
+
+@example
+@group
+@exdent @code{minimal_coverage}
+ -io            @i{io_handle:integer}
+ -contigs       @i{indentifiers:strings}
+@end group
+@end example
+
+This command produces a list of readings that, between them, cover the full
+length of the contig. The algorithm may not produce the optimum set of
+readings, but the result is at least close to optimum. The command returns the
+minimal list of readings.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+This specifies the list of contigs to use. Only the contig identifier is
+currently used, although the syntax specifying start and end ranges is valid.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-pre_assemble
+@unnumberedsec pre_assemble
+@findex pre_assemble(T)
+@cindex Assembly, preassembled data
+
+@example
+@group
+@exdent @code{pre_assemble}
+ -io            @i{io_handle:integer}
+ -files         @i{filenames:strings}
+@end group
+@end example
+
+This command performs the Gap4 "Enter Preassembled Data" function. It
+assembles data that contains the PC, SE, ON and AV Experiment File line types
+to specify exactly the position data. This is superseded by the
+assemble_direct command and should no longer be used. The function returns no
+value but will generate a Tcl error if an error occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-files} filenames
+
+@i{Filenames} must contain a Tcl list of files to assemble.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-shift_readings
+@unnumberedsec shift_readings
+@findex shift_readings(T)
+@cindex Readings, shifting
+@cindex Shift readings
+
+@example
+@group
+@exdent @code{shift_readings}
+ -io            @i{io_handle:integer}
+ -readings      @i{identifiers:integers}
+ -distances     @i{distances:integers}
+@end group
+@end example
+
+This command shifts all readings to the right of (and including) a specified
+reading by a particular amount to the left or right. It is mainly for manually
+manipulating the database structures to join contigs. Use is not recommended.
+The function returns no value but will generate a Tcl error if an error
+occurs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@item @code{-readings} readings
+@itemx @code{-distances} distances
+
+For each reading listed in the @i{readings} argument, that reading and all
+those to the right of it are shifted by the corresponding element in the
+@i{distances} list. Positive distances shift right; negative distances shift
+left.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-show_relationships
+@unnumberedsec show_relationships
+@findex show_relationships(T)
+@cindex Contig, relationship lists
+@cindex Show relationships
+
+@example
+@group
+@exdent @code{show_relationships}
+ -io            @i{io_handle:integer}
+?-contigs       @i{identifiers:strings()}?
+?-order         @i{order:integer(1)}?
+@end group
+@end example
+
+This command performs the Gap4 Show Relationships function. The function
+returns no value but will generate a Tcl error if an error occurs.
+
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+
+@sp 1
+@item @code{-contigs} identifiers
+
+Specifies single segments of contigs for which to display the relationships
+data. In the current implementation only the first contig (and start and
+end position) in the identifier list is processed. Not specifying any
+contigs (which is the default) will make show_relationships process all
+contigs.
+
+@sp 1
+@item @code{-order} order
+
+Controls whether the output should be sorted on positional order or reading
+number order. This has no effect when @code{-contigs} is used. An @i{order}
+of 1 specifies that the output will list each contig in turn together with
+the readings within that contig listed in positional order. An @i{order} of
+0 lists all contig records first followed by all readings in contig and
+reading number order. The default is 1.
+@end table
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node G4Comm-unattached_readings
+@unnumberedsec unattached_readings
+@findex unattached_readings(T)
+@cindex Readings, finding unattached
+@cindex Unattached readings
+
+@example
+@group
+@exdent @code{unattached_readings}
+ -io            @i{io_handle:integer}
+@end group
+@end example
+
+This command produces a list of the contigs which are single readings. The
+command returns a Tcl list of the reading identifiers for these contigs.
+
+@table @var
+@item @code{-io} io_handle
+
+The database IO handle returned from a previous @code{open_db} call.
+@end table

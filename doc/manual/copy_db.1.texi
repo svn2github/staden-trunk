@@ -1,0 +1,55 @@
+@cindex Copy_db: man page
+@unnumberedsec NAME
+
+copy_db --- a garbage collecting gap4 database copier and merger
+
+@unnumberedsec SYNOPSIS
+
+@code{copy_db} [@code{-v}] @i{from.vers} ... @i{to.vers}
+
+@unnumberedsec DESCRIPTION
+
+@code{Copy_db} copies one or more gap4 databases to a new name by
+physically extracting the information from the first databases and
+writing it to the last database listed on the command line. This
+operation can be considered analogous to copying files into a directory.
+This is slower than a direct @code{cp} command, but has the advantage
+of merging several databases together and the resulting database will
+have been  garbage collected. That is, any fragmentation in the original
+databases is removed (as much as is possible).
+
+NOTE: Care should be taken when merging database. @strong{No checks} are
+performed to make sure that the databases do not already contain the
+same readings. Thus attempting to copy the same database several times will
+cause problems later on. No merging of vector, clone or template
+information is performed either.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-v}
+     Enable verbose output. This gives a running summary of the current piece
+     of information being copied.
+@end table
+
+@unnumberedsec EXAMPLES
+
+To merge database X with database Y to give a new database Z use:
+
+@example
+copy_db X.0 Y.0 Z.0
+@end example
+
+@unnumberedsec NOTES
+
+To copy a database quickly without garbage collecting the UNIX @code{cp}
+command can be used as follows. This copies version F of database DB to
+version T of database XYZZY.
+
+@example
+cp DB.F XYZZY.T; cp DB.F.aux XYZZY.T.aux
+@end example
+
+Care must be taken to check for the busy file (@file{DB.F.BUSY}) before making
+the copy. If the database is written to during the operation of the copy
+command then the new database may be corrupted.

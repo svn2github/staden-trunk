@@ -1,0 +1,160 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Conversion of ABI and ALF data files to the SCF format.
+# This is an optional module. Things run fine without it, however using SCF
+# files can save considerable amounts of disk space.
+#
+set help {pregap4 {Pregap4-Modules-ABI2SCF}}
+
+proc init {} {
+    mod_preset bit_size 16
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global errorCode
+    variable bit_size
+    variable report
+
+    set new_files {}
+    set report ""
+
+    # If all the files are biolims files, then a considerable speed improvement
+    # can be acheived by processing all at once
+    set all_bio 1
+    foreach f $files {
+       if {$file_type($f) != "BIO"} {
+	   set all_bio 0
+	   break	
+       }
+    }
+    if { $all_bio } {
+	set cmd "makeSCF -s -any" 
+	catch {unset newfile_array}
+	
+        # build command line
+	foreach f $files {
+	    set f_scf [eval [list $file_type($f)_filename_to_scf_name $f]]
+	    if {[info exists file_id($f_scf)]} {
+		continue
+	    }
+	    lappend cmd $f $f_scf
+	    set newfile_array($f) $f_scf
+	    catch {file delete $f_scf}
+	}
+	# run it
+        update idletasks
+	catch {eval exec $cmd} err
+
+        #now check for any errors
+	foreach f $files {
+	    update idletasks
+	    if { $newfile_array($f) != "" } {
+		set f_scf $newfile_array($f)
+		if {[file exists $f_scf]} {
+		    set file_type($f_scf) SCF
+		    set file_error($f_scf) {}
+		    set file_id($f_scf) $file_id($f)
+		    set file_orig_name($f_scf) $f
+		    lappend new_files $f_scf
+		    append report "SEQ $f_scf: created from $f\n"
+		    vmessage -nonewline .
+		} else {
+		    set file_error($f) "makeSCF: [strip_nl $err]"
+		    vmessage -nonewline !
+		}
+	    } else {
+		set f_scf [eval [list $file_type($f)_filename_to_scf_name $f]]
+		set file_error($f) "makeSCF: non-unique sample name [file tail $f_scf]"
+		vmessage -nonewline !
+	    }
+	    update idletasks
+	}
+
+    } else {
+      foreach f $files {
+	# NB: Conversion of SCF to SCF is done to for shrinkage to 8 bit.
+	if {$file_type($f) == "ABI" || $file_type($f) == "ALF" ||
+	    $file_type($f) == "SCF"|| $file_type($f) == "BIO"} {
+	    set f_scf [eval [list $file_type($f)_filename_to_scf_name $f]]
+	    if {[info exists file_id($f_scf)]} {
+		set file_error($f) "makeSCF: non-unique sample name [file tail $f_scf]"
+		vmessage -nonewline !
+		update idletasks
+		continue
+	    }
+	    set cmd "makeSCF -s -any [list $f] \
+		-output [list $f_scf]"
+	    if {$bit_size == 8} {
+		set cmd "$cmd -8"
+	    }
+	    set errorCode NONE
+	    if {[catch {eval exec $cmd} err] && $errorCode != "NONE"} { \
+		set file_error($f) "makeSCF: [strip_nl $err]"
+	        vmessage -nonewline !
+	    } else {
+		if {$err != ""} {
+		    verror ERR_WARN "makeSCF warning" "$f: $err"
+		}
+		set file_type($f_scf) SCF
+		set file_error($f_scf) {}
+		set file_id($f_scf) $file_id($f)
+		set file_orig_name($f_scf) $f
+		lappend new_files $f_scf
+		append report "SEQ $f_scf: created from $f\n"
+	        vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    vmessage -nonewline .
+	}
+	update idletasks
+      }
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "ALF/ABI to SCF Conversion"
+}
+
+proc create_dialogue {w} {
+    variable bit_size
+
+    frame $w.bit_l
+    label $w.bit_l.l -text "SCF bit size"
+    frame $w.bit_b
+    radiobutton $w.bit_b.eight \
+	-text "8 bit" \
+	-variable [namespace current]::bit_size \
+	-value 8
+    radiobutton $w.bit_b.sixteen \
+	-text "16 bit" \
+	-variable [namespace current]::bit_size \
+	-value 16
+    pack $w.bit_l.l -side top
+    pack $w.bit_b.eight $w.bit_b.sixteen -side top -anchor w
+
+    pack $w.bit_l $w.bit_b -side top -fill both
+}
+
+proc configure_dialogue {w mode} {
+    variable bit_size
+
+    if {[string match save* $mode]} {
+	mod_save bit_size $bit_size
+    }
+}

@@ -1,0 +1,195 @@
+@cindex Assembly: Phrap
+@cindex Phrap Assembly
+@cindex Green, Phil (Phrap)
+
+This mode of assembly uses the 
+Phrap program, developed by Phil Green.  For best
+Phrap and Gap4 integration a modified version (gcphrap) is required.  The main
+purpose of the change is to allow Phrap to support the Experiment File format
+for both input and output.  
+For this version please email Phil Green (phg@@u.washington.edu).
+
+A summary of the benefits of using the Gap4 Phrap interface follows.
+
+@itemize @bullet
+@item Naming conventions.
+Phrap has it's own specific naming conventions. Failure to adhere to these
+will reduce the reliability of phrap. Using the modified Phrap to read
+Experiment Files allows use of any naming scheme as no information needs to be
+encoded in the reading name.  (Instead it is in other fields in the Experiment
+File.)
+
+@item User interface.
+Phrap can now be used just as easily as Gap4's own assembly options by simply
+making Phrap available on the Gap4 menus.
+
+@item Pregap4 compatible.
+As Phrap now reads Experiment files this means a common preprocessing program
+can be used for whichever assembly algorithm is chosen.
+@end itemize
+
+Finally note that if Phred is used for base calling Gap4 will operate best
+with the "confidence" probability mode enabled. _fxref(Con-Calculation, The
+Consensus Calculation, calc_consensus)
+
+@menu
+* Assembly-Before Phrap::       Before using Phrap
+* Assembly-Phrap Assemble::     Phrap Assembly
+* Assembly-Phrap Reassemble::   Phrap Reassembly
+* Assembly-Phrap CLI::          Phrap on the Command Line
+@end menu
+
+@node Assembly-Before Phrap
+@subsection Before Using Phrap
+
+To get the most out of Phrap (and Gap4) a base caller which generates
+confidence values should be used. The Phred base caller (also written by Phil
+Green) is probably the most widely used example and has been extensively
+tested in conjunction with Phrap.
+
+There are two significant methods of running Phred. The first is to produce a
+@file{.phd} file containing the new base calls and confidence values. The
+second is to produce a new SCF file. For use with Gap4 we recommend outputting
+SCF files as this will ensure a correct synchronisation between the trace
+displays and the sequence displays. In the following example phred is used to
+reassign the base calls for all traces held in the @file{chromat_dir}
+directory, writing new SCF files into the @file{new_chromat_dir} directory.
+
+@example
+phred -id chromat_dir -cd new_chromat_dir
+@end example
+
+These SCF files can then be passed into pregap in the same fashion as normal
+except for one additional @code{.pregaprc} parameter ("@code{do_eba=No"}) to
+disable Pregap's own quality value assignment. Add this to your
+@file{.pregaprc} file using @code{echo "do_eba=No" >> .pregaprc}.  If
+cross_match needs to be used, instead of the vector_clip program used in
+pregap, the Experiment File patch also allows cross_match to read (but
+currently not write) Experiment Files. This means that Pregap can be used with
+vector clipping disabled to generate the Experiment Files. cross_match can
+then be used to output clipping sequence in a fasta file which could be passed
+into Phrap.
+
+@example
+cross_match fofn.passed vector.seq -minmatch 12 -minscore 20 -screen > scr.out
+@end example
+
+The above example uses cross_match to analyse the pregap output of files
+listed in @file{fofn.passed}. This will produce a new file named
+@file{fofn.passed.screen} which will be a Fasta format file rather than a new
+file of filenames. However this filename can be given to the Phrap interface
+in Gap4 instead of the requested file of filenames and Phrap will
+automatically detect that this is a fasta file.
+
+@node Assembly-Phrap Assemble
+@subsection Phrap Assembly
+
+The Phrap assemble command takes a file of Experiment File filenames and
+passes these into Phrap for assembly. The resulting assembly from Phrap is
+then automatically entered into the Gap4 database (implemented using the
+Directed Assembly command).
+
+_picture(phrap.assembly)
+
+The "Destination directory" in the above dialogue is the location for Phrap to
+output the assembled data in Experiment File format. These files do not need
+to be kept unless further analysis of the assembly outside of Gap4 is
+required. Internally they are used as input to the Directed Assembly option.
+
+If you have specific Phrap parameters add them to the "Other phrap parameters"
+entry box. Please see the documentation that came with Phrap for a list of
+available parameters. If in doubt, just leave this blank.
+
+Next there is the option to perform quality clipping (_fpref(Clip-Quality,
+Quality clipping, clip)) and difference clipping (_fpref(Clip-Difference,
+Difference clipping, clip)). These options are useful for tidying up the Phrap
+assembly. To see the raw Phrap assembly turn both of these off. They may be
+selected from the Gap4 Edit menu at a later stage without the need to rerun
+phrap.
+
+Pressing OK will then start Phrap running. At the end of assembly you should
+be presented with output in the main text window and the Contig
+Selector window. Phrap will also have produced several files named after the
+input file of filenames. These have extensions @file{.contigs},
+@file{.contigs.qual}, @file{.log} and @file{.singlets}. The Phrap
+documentation explains their contents. The main output of Phrap is also
+written to disk as a file named @file{stdout}, held in the destination
+directory.
+
+@node Assembly-Phrap Reassemble
+@subsection Phrap Reassembly
+
+Gap4 also provides a graphical interface for using Phrap to reassemble a set
+of sequences already held within a Gap4 database. It extracts readings from
+the database, reassembles them using Phrap, and enters the newly assembled
+readings back into the database.
+
+The dialogue is identical to that used in the Phrap Assemble command. For
+dialogue help please see _oref(Assembly-Phrap Assemble, Phrap Assembly).
+
+Edits to both sequences and confidence values are preserved. Annotations are
+also preserved although they may have their length changed if the reassembly
+results in adding or removing a pad within the annotated segment.
+
+Although it is not necessary to understand the individual steps taken during
+reassembly it is instructive and may answer some questions.
+
+@itemize @bullet
+@item Backup the database to version @code{~}.
+
+@item "Extract Readings" on the list of readings we wish to reassemble. This
+dumps out the edited sequences, confidences and annotations (and more) to the
+Experiment Files.
+
+@item "Disassemble Readings" to remove the old copies from the Gap4 database.
+This will break contigs if necessary (such as when reassembling a chunk within
+the middle of a contig).
+
+@item Run phrap on our Experiment Files created in step 2.
+
+@item "Directed Assembly" on the phrap output.
+@end itemize
+
+@node Assembly-Phrap CLI
+@subsection Phrap on the Command Line
+
+If you wish to use the new Phrap within your own scripts you will probably
+need to understand how to use Phrap on the command line. The full Phrap
+documentation should come with the Phrap distribution. Here we just give an
+outline of the changes involved in handling Experiment files.
+
+Phrap automatically detects the file type for input sequences. If the contents
+of the file start with a '>' it is assumed to be a Fasta file and processing
+is identical to the previous Phrap version. Otherwise the file is assumed to
+be a file of Experiment File filenames.
+
+With Experiment Files, the @code{PR}, @code{TN} and @code{CH} line types are
+used to hold information which Phrap normally requires in the reading name (in
+a Phrap specific format). We produce a new sequence name for phrap consisting
+of @i{phrap_name}@code{//}@i{file_name} where @i{phrap_name} is generated from
+the aforementioned Experiment File lines. This allows for minimal Phrap source
+changes whilst retaining complete user control over naming conventions. Phrap
+also reads the @code{SL} and @code{SR} line types, which specify the vector
+clips. Quality clip information is ignored.
+
+If the @code{-exp} parameter is given to Phrap, Phrap reads the next argument
+as a directory in which to write Experiment Files. Use "@code{-exp .}" to
+overwrite the input files, although this is not usually recommended. Without
+this parameter Phrap will output fasta or ace format files in the normal
+manner.
+
+The filenames of the Experiment Files are the same as the input file names.
+The Phrap reading name is processed to strip off the @i{phrap_name}@code{//}
+to obtain the original Experiment File name. This Experiment File is then read
+and all relevant information copied out to the newly created Experiment File.
+Annotations (@code{TG} lines) have their positions and lengths updated as
+required (due to padding). New quality left (@code{QL}) and quality right
+(@code{QR}) line types created. Finally an Assembly Position (@code{AP}) line
+is added. This provides the necessary information for the Gap4 Directed
+Assembly option to enter the sequences.
+
+One result of this method is that it is possible to use cross_match with a set
+of Experiment files to output a screened fasta file and then to run Phrap on
+the fasta file producing Experiment Files. Despite the fact that Phrap was
+only given a fasta file, the original Experiment File contents are used in
+writing out the aligned Experiment Files.

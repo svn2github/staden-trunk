@@ -1,0 +1,10 @@
+set name "Minimum consensus confidence"
+
+set expression "<confidence_ge 30>"
+
+set pweight 0.7
+set mweight 0.7
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}

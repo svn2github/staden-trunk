@@ -1,0 +1,110 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run Cap2 on experiment files
+#
+set help {pregap4 {Pregap4-Modules-Cap2 Assembly}}
+
+proc init {} {
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|cap2_s" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "cap2_s is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc name {} {
+    return "Cap2 assembly"
+}
+
+proc run {files} {
+    global fofn file_type file_error
+    variable report
+
+    set report ""
+
+    # Create fofn and output dir
+    set one_or_more 0
+    set fd [open $fofn.tmp w]
+    set new_files ""
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {[string match "* *" $f]} {
+		set file_error($f) "cap2_assemble: filename contains a space"
+	        append report "SEQ $f: failed (filename contains spaces)\n"
+	    } else {
+		set one_or_more 1
+		# cap2 cannot handle full pathnames
+		puts $fd [file tail $f]
+	        set found([file tail $f]) 0
+	    }
+	} else {
+	    append report "SEQ $f: skipping - not in correct format\n"
+	    lappend new_files $f
+	}
+    }
+    close $fd
+
+    if {!$one_or_more} {
+	verror ERR_WARN cap2_assemble "No files to assemble"
+	return $new_files
+    }
+
+    if {[catch {file mkdir $fofn.assembly} var]} {
+	vmessage !
+	append report "ERR: Failed to create directory $fofn.assembly.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN cap2_assemble/mkdir $var
+	return $files
+    }
+
+    # Run cap2
+    # Cannot check error code as it returns random values from main()
+    catch {exec cap2_s \
+	-exp $fofn.tmp \
+	-out $fofn.assembly \
+	-r \
+	> $fofn.assembly/cap2_stdout} var
+    set fd [open $fofn.assembly/cap2_stderr w]
+    puts $fd $var
+    close $fd
+
+    file rename -force $fofn.assembly/outfile $fofn.assembly/fofn
+
+    # Passed files are those listed in $fofn.assembly/outfile. Missing ones
+    # were rejected.
+    set fd [open $fofn.assembly/fofn]
+    while {[gets $fd line] != -1} {
+	catch {unset found($line)}
+	append report "SEQ $line: assembled\n"
+	lappend new_files $line
+    }
+    foreach f [array names found] {
+	set file_error($f) "cap2_s: rejected"
+	append report "SEQ $f: rejected\n"
+    }
+
+    append report "\nAssembled data written to directory '$fofn.assembly'.\n"
+    append report "Output from cap2 sent to '$fofn.assembly/cap2_stdout'.\n"
+    append report "Diagnostics from cap2 sent to '$fofn.assembly/cap2_stderr'.\n"
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}

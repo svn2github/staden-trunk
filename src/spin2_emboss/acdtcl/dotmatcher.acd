@@ -1,0 +1,234 @@
+package require Iwidgets
+namespace eval ::EMBOSS::dotmatcher {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_dotmatcher*Xentry.entry.width 30
+option add *e_dotmatcher*Entryfield.width 30
+option add *e_dotmatcher*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) dotmatcher
+    set w [xtoplevel .e_dotmatcher -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - dotmatcher}
+    label $w._title -text {Displays a thresholded dotplot of two sequences}
+    pack $w._title -side top -fill both
+    set vars(dotmatcher._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 1]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 1]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst any]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  0
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) sequence
+
+    lappend arguments sequenceb
+    set vars(sequenceb)       [get_active_seq_id 2]
+    if {$vars(sequenceb) == -1} {set vars(sequenceb) [get_active_seq_id 1]}
+    set vars(sequenceb.name)  [seq_info $vars(sequenceb) name]
+    sequence_changed [namespace current] sequenceb
+    set vars(sequenceb.type) [subst {[expr {($vars(sequencea.protein) ? "protein" : "nucleotide")}]}]
+    seq_id $w.sequenceb \
+	-textvariable [namespace current]::vars(sequenceb.name)\
+	-start_value $vars(sequenceb.begin)\
+	-end_value $vars(sequenceb.end)\
+	-to [seq_info $vars(sequenceb) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequenceb $w.sequenceb}"
+    set vars(sequenceb) [subst {}]
+    pack $w.sequenceb -side top -fill both
+    set vars(sequenceb.path) $w.sequenceb
+    set vars(sequenceb.required)  0
+    trace variable vars(sequenceb.name) w  "::EMBOSS::sequence_changed [namespace current] sequenceb"
+    set vars(sequenceb.type.orig) $vars(sequenceb.type)
+    set vars(sequenceb.type.expr) {[expr {($vars(sequencea.protein) ? "protein" : "nucleotide")}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] sequenceb.type"
+    set vars(sequenceb._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments windowsize
+    iwidgets::entryfield $w.windowsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(windowsize) \
+	-labeltext [subst {window size over which to test threshhold}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.windowsize component entry] -sticky nse
+    set vars(windowsize) [subst 10]
+    pack $w.windowsize -side top -fill both
+    set vars(windowsize.minimum) [subst 3]
+    set vars(windowsize.path) $w.windowsize
+    set vars(windowsize.required)  0
+    set vars(windowsize._type) integer
+
+    lappend arguments threshold
+    iwidgets::entryfield $w.threshold \
+	-validate integer \
+	-textvariable [namespace current]::vars(threshold) \
+	-labeltext [subst threshold]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.threshold component entry] -sticky nse
+    set vars(threshold) [subst 17]
+    pack $w.threshold -side top -fill both
+    set vars(threshold.minimum) [subst 0]
+    set vars(threshold.path) $w.threshold
+    set vars(threshold.required)  0
+    set vars(threshold._type) integer
+
+    lappend arguments matrixfile
+    set vars(matrixfile.protein) [subst {[expr {$vars(sequencea.protein)}]}]
+    iwidgets::combobox $w.matrixfile\
+	-textvariable [namespace current]::vars(matrixfile)\
+	-labeltext [subst {Matrix file}]
+    eval $w.matrixfile insert list end [list_matrices p]
+    grid [$w.matrixfile component entry] -sticky nse
+    $w.matrixfile delete entry 0 end
+    $w.matrixfile insert entry end [subst {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.matrixfile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.matrixfile -side top -fill both
+    set vars(matrixfile.path) $w.matrixfile
+    set vars(matrixfile.required)  0
+    set vars(matrixfile.protein.orig) $vars(matrixfile.protein)
+    set vars(matrixfile.protein.expr) {[expr {$vars(sequencea.protein)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile.protein"
+    set vars(matrixfile.orig) $vars(matrixfile)
+    set vars(matrixfile.expr) {[expr {$vars(matrixfile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(matrixfile.protein) w  "::EMBOSS::reset_value [namespace current] matrixfile"
+    set vars(matrixfile._type) matrix
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments stretch
+    checkbutton $w.stretch \
+	-text [subst {Stretch plot}]\
+	-variable [namespace current]::vars(stretch)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.stretch -side top -anchor w
+    set vars(stretch) [subst 0]
+    set vars(stretch.path) $w.stretch
+    set vars(stretch.required)  0
+    set vars(stretch._type) bool
+
+    lappend arguments data
+    checkbutton $w.data \
+	-text [subst {Display as data}]\
+	-variable [namespace current]::vars(data)\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(stretch))}]}]]]
+    pack $w.data -side top -anchor w
+    set vars(data) [subst 1]
+    set vars(data.path) $w.data
+    set vars(data.required)  0
+    set vars(data._type) bool
+    set vars(data.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(stretch))}]]}
+    trace variable vars(stretch) w  "::EMBOSS::reset_needed [namespace current] data"
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst xwindows]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {((!$vars(data)) && (!$vars(stretch)))}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) graph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {((!$vars(data)) && (!$vars(stretch)))}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {((!$vars(data)) && (!$vars(stretch)))}]]}
+    trace variable vars(stretch) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    lappend arguments xygraph
+    iwidgets::combobox $w.xygraph\
+	-textvariable [namespace current]::vars(xygraph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.xygraph insert list end [list_graph_types]
+    grid [$w.xygraph component entry] -sticky nse
+    $w.xygraph delete entry 0 end
+    $w.xygraph insert entry end [subst data]
+    $w.xygraph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(stretch)}]}]]]
+    pack $w.xygraph -side top -fill both
+    set vars(xygraph.path) $w.xygraph
+    set vars(xygraph.required)  0
+    set vars(xygraph._type) xygraph
+    set vars(xygraph.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(stretch)}]]}
+    trace variable vars(stretch) w  "::EMBOSS::reset_needed [namespace current] xygraph"
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Display as data}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(data) && (!$vars(stretch)))}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst dotmatcher0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(data) && (!$vars(stretch)))}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] outfile"
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(data) && (!$vars(stretch)))}]]}
+    trace variable vars(stretch) w  "::EMBOSS::reset_needed [namespace current] outfile"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/dotmatcher.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,44 @@
+.TH "get_scf_field" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+get_scf_field \- extract comments from an SCF file
+
+.SH "SYNOPSIS"
+.PP
+
+\fBget_scf_field\fP [ \fB-cqs\fP ] \fIfilename\fP [ \fBField-ID\fP ... ]
+
+.SH "DESCRIPTION"
+.PP
+
+The \fBget_scf_field\fP command extracts comments from an SCF file. Each
+comment is of the form \fIField-ID\fP=\fIcomment\fP. Where \fIField-ID\fP is
+a 4 character identifier.
+
+With no \fIField-ID\fP arguments specified all comments are listed. Otherwise
+only those specified on the command line are listed.
+
+.SH "OPTIONS"
+.PP
+
+.TP
+\fB-c\fP
+Suppresses the output of the \fIField-ID\fP. Only the right hand side of the
+comment is displayed. The default action is the display the full comment in
+the form listed above.
+
+.TP
+\fB-q\fP
+Query mode. Here no output is displayed, but it simply returns true
+or false depending on whether any of requested comments were found.
+
+.TP
+\fB-s\fP
+Silent mode. No error messages are produced, except for usage messages. It
+returns true or false for success or failure.
+.TE
+.SH "SEE ALSO"
+.PP
+
+_fxref(Man-get_comment, get_comment(1), get_comment.1)
+_fxref(Formats-Scf, scf(4), formats)

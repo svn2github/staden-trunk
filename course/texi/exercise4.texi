@@ -1,0 +1,634 @@
+@node X4
+@chapter Using Phred and Phrap
+
+@node X4-obj
+@section The Objectives of the Practical
+
+By now you should be familier with most of the tools, so the objectives
+here are simply to introduce integration of the Staden Package with Phil
+Green's phred/phrap/consed suite.
+
+We make an implicit assumption here that Phred and Phrap are available
+for your platform. To date we know that Phred and Phrap are freely
+available to academics on Unix platforms (possibly including MacOS X,
+although not MacOS 9 or earlier). Phred and Phrap are also available for
+Microsoft Windows, but only commercially. In order to install a
+non-commercial version of Phred and Phrap you will also need to be
+familier with using source code compilers. Fortunately for this exercise
+we have already installed the software.
+
+@node X4-overview
+@section An Overview of the Practical Session
+
+@enumerate
+@item Exploration of cross_match vs vector_clip
+@item Using Phred/Phrap
+@item Identifying misassemblies
+@item Producing the finished article.
+@end enumerate
+
+@node X4-data
+@section Obtaining a Data Set for this Excercise
+
+You know the pattern by now - we have created some data for you
+already.
+
+_ifdef([[_unix]],[[Once more we should create a new directory to copy
+the data into. The data to copy is also in @i{$STADENROOT/course/data},
+so use the following commands to copy it out.
+
+@example
+cd
+mkdir exercise4
+cd exercise4
+cp $STADENROOT/course/data/ex4_shotgun/* .
+@end example
+]])
+
+You have just copied 646 SCF trace files.
+
+@node X4-cross_match
+@section Testing cross_match and vector_clip
+
+Before we go straight in to processing 646 files, we should experiment a
+while on just a few. The purpose of this section is cautionary. Many
+people will tell you to use the Staden Package or to use Phil Green's
+suite, but each package has strengths and weaknesses. From the
+perspective of a user you will want to combine the best bits of each
+package. Here we test the difference between the vector clipping
+strategies used in Cross_match and Vector_clip (as we used in the
+Sequencing Vector Clip module).
+
+Start up pregap4
+
+@example
+pregap4 &
+@end example
+
+In the @b{Files to Process} tab use the @b{Add files} button to load the
+@b{first 15 trace files} (i.e. @i{St8A11Aa1.s1t.scf} to
+@i{St8A11Ab5.s1t.scf} inclusive).
+
+Now switch to @b{Configure Modules} and disable all modules (@b{Modules}
+menu, @b{Deselect all modules}) and then enable the following:
+
+@itemize @bullet
+@item @b{Phred}
+@item @b{Trace Format Conversion}
+@item @b{Initialise Experiment Files}
+@item @b{Cross_match}
+@item @b{Interactive Clipping}
+@end itemize
+
+
+The @i{cross_match} module will need configuring to specify the vector
+file. Along with the trace files you also copied over a file named
+@i{m13mp18.seq}. This file is in FASTA format as this is required by
+@i{cross_match}. Then hit @b{Run} to set things going.
+
+You will quickly get a @i{Trev} window popping up. Try hitting @b{Next
+file >>} until you have seen the start of all 15 files. You will see
+that not one single file was vector clipped. The m13mp18 vector around
+the SmaI cut site ends with @b{TCTAGAGGATCCCC}. We can clearly see
+sequence around positions 40 to 50 in most traces, but the preceeding
+sequence is incorrectly base called due to the presence of several large
+spikes in the trace.
+
+Exit @i{Trev} and switch back to the @i{Cross_match} module in the
+@i{Configure Modules} tab. Notice the values of the @i{Minimum match
+length} and @i{Minimum score}. These control the quality of matches
+found by cross_match. Try halving the values (@b{Minimum match length} =
+@b{6} and @b{Minimum score} = @b{10}) and @b{Run}ning once more.
+
+@i{Cross_match} takes a little longer, but still marked no
+vector. This time it has infact found some potential vector, but
+@i{Trev} only colours vector when it is in legal places - at the start
+or end of a sequence. Look at the @b{St8A11Aa12.s1t.exp}
+file@footnote{Using, for example, @b{more St8A11Aa12.s1t.exp} in your
+Unix window.} and you will see that it now contains the following text.
+
+@example
+TG   SVEC = 34..46
+TG        Found by cross_match
+TG   SVEC = 87..96
+TG        Found by cross_match
+TG   SVEC = 183..192
+TG        Found by cross_match
+TG   SVEC = 225..238
+TG        Found by cross_match
+TG   SVEC = 337..370
+TG        Found by cross_match
+@end example
+
+These experiment file tags @b{TG} reveal where cross_match found
+a match between the trace sequence and the m13mp18 vector. One of these
+(@b{34..46} is really vector, but all the others occur by
+chance. Furthermore the real vector is only labelled from 34 to 46,
+although we know that this makes no biological sense - the vector has to
+extend from 1 to 46. If we look at all the other experiment files we
+would see that in 4 out of 15 files had real vector identified (albeit
+truncated), but with an additional 19 false matches elsewhere in the
+sequence.
+
+The reason that @i{cross_match} performs so badly is that it is not
+doing a directed search. It is much like blast; it finds any local
+alignment between anywhere in the sequence and anywhere in the vector.
+
+Quit @i{Trev}, if it is still running, and go back to the @i{Configure
+Modules} tab in pregap4. Now @b{Disable cross_match} and @b{enable
+Sequencing Vector Clip}. Click on @b{Select vector-primer subset} to
+specify @b{m13mp18/SmaI} as the appropriate vector/cut-site combination
+and then try @b{Run}ning once more.
+
+We can immediately see, in the @i{Trev} window, that @i{vector_clip} has
+performed much better, correctly clipping 13 out of 15 sequences. One
+sequence (@i{St8A11Ab1.s1t}) has no vector clipped at all and one other
+(@i{St8A11Ab5.s1t}) has the vector clip in the wrong place (base 104).
+
+There is one last thing to try, so exit @i{Trev} one more time and get
+back to the @i{Sequencing Vector Clip} module. We know that the part of
+the trace containing vector which has been correctly base called is
+short, but vector_clip defaults to aligning over 40 base pairs. This
+means the alignments will be poor, so we can try reducing this alignment
+length so that a larger percentage of good data will be matched. To do
+this set the @b{Max primer to cut-site length} to @b{20}.
+
+One last @b{Run} and you should now see that all 15 files are correctly
+vector clipped. The key reason that vector_clip has performed so much
+better is simply that it is looking for a specific piece of vector at a
+specific location in the trace file, so it can afford to find very weak
+matches.
+
+@node X4-phrap
+@section Using Phrap
+
+Now we are ready to try our test parameters on the entire data set. If
+@i{trev} is still running, shut it down first.
+
+The first thing to do is to go back to @b{Files to Process}, @b{Clear
+current list} and then use @b{Add files} to select all the @b{SCF} files
+(using Control-A).
+
+Then, in @b{Configure Modules}, we need to adjust a few modules. Set the
+following modules to be enabled and disable all others.
+
+@itemize @bullet
+@item @b{Phred}
+@item @b{Trace Format Conversion}
+@item @b{Initialise Experiment Files}
+@item @b{Augment Experiment Files}
+@item @b{Sequencing Vector Clip}
+@item @b{Phrap assembly}
+@item @b{Enter assembly (into gap4)}
+@end itemize
+
+We are not using @i{Quality Clip} here as Phrap makes use of the full
+length of sequence.  As you will see later it then performs its own
+quality clipping based on what bits match.
+
+Keep the same parameters for @i{Sequencing Vector Clip} as before. We
+do not need to do any other vector clipping with this data set.
+
+Note that the @i{Phrap Assembly} module uses a program called
+@i{gcphrap} and not @i{phrap}. Gcphrap stands for Gap Compatible
+Phrap. It is a set of patches to phrap which may be downloaded from the
+MRC LMB web site. The reason for the
+difference is that phrap only supports FASTA files. This means that it
+cannot support any annotations, including marking of vector
+sequence. The traditional way that phrap overcomes this is to replace
+vector with 'X's (which is one of the standard output formats from
+cross_match). Gcphrap adds support for reading and writing
+experiment files, allowing phrap to be placed into Pregap4. Without it
+we would be stuck using fasta files and cross_match. For instructions on
+obtaining (and, alas, compiling) gcphrap see
+@url{http://www.mrc-lmb.cam.ac.uk/pubseq/phrap.html}.
+
+We have not enabled @i{RepeatMasker} for two reasons. The first is that
+it is slow to run and we (the course organisers) are in the fortunate
+position of knowing that it has no benefit for this data. The second is
+that it may not necessarily help (gc)phrap. One consequence of phrap's
+approach of 'X'ing out vector and repeats is that they cannot be used
+for sequence alignments. This is intentional, but it has an unfortunate
+side effect. It means that any short sections of repeats that happen to
+contain base calling errors leading to insertions or deletions will not
+be correctly aligned in the final assembly. A better strategy would be
+to exclude repeated segments from alignment scores, but to include them
+in computing the actual alignment itself. Unfortunately, at present,
+this is not something phrap can do (due to the reliance of FASTA
+files). The gcphrap upgrade, although allowing additional file formats,
+does not add this feature either.
+
+Gcphrap's output is a set of aligned experiment files. We use the
+@i{Enter assembly into Gap4} module to load these files into Gap4. This
+does not do any assembly in Gap4 as that has already been performed by
+Phrap, it simply converts the phrap output into a gap4 database. It
+needs some configuring, so:
+
+In the @b{Enter assembly (into Gap4)} module set:
+@* @b{Gap4 database name} to @b{phtest},
+@* @b{Gap4 database version} to @b{0},
+@* Select @b{Create new database},
+@* and @b{Disable} the @b{Post-assembly difference clipping} option
+(more on what this means later).
+
+Use the @b{Load naming scheme} option (@b{File} menu) to load the
+@b{sanger_names_new.p4t} naming scheme. (As this data is not quite so
+old as the previous lot.)
+
+Then make sure we use @b{Save all Parameters (in all modules)}.
+
+Finally, hit @b{Run}.
+
+It will take a little while for pregap4 to finish, but once it does and
+once you have verified it did so without errors then exit pregap4.
+
+@node X4-Misassemblies
+@section Checking for mis-assemblies
+
+Start up gap4 and load your @i{phtest.0} database. You should find you
+have three contigs, with one long one.
+
+The first thing we should do is to check the validity of the assembly
+produced. Use @b{Check assembly} (main @b{View} menu). Answer @b{Use
+cutoff data} with @b{No}. Set the @b{Maximum percentage of mismatches}
+to @b{30} and hit @b{OK}.
+
+There are many areas of difference plotted, but this is because phrap is
+using full-length data and so the quality is often very poor. Try using
+the @i{Contig comparator} @b{Next} button a few times to see the
+problems in the editor. Often we see that the differences are simply
+local stretches of poor quality data with better quality further
+along. This usually does not have a significant effect on the consensus
+as the confidence values are known.
+
+While we cannot easily hide a poor quality stretch in the middle of a
+sequence we can do so for sequence ends. However phrap has automatically
+set the quality clip points based on where there are too many
+differences between a sequence and the consensus. This has two key
+effects, one good and one bad.
+
+@enumerate
+@item Unclipped vector may not be a problem.
+Because the vector disagrees with the consensus it will quality clipped
+by phrap. It is still best to try to vector_clip as best as we can
+though to help phrap.
+
+@item Misassemblies are hard to spot
+If a sequence has been assembled in the wrong place due to a repeat, but the
+sequence does contain unique data flanking the repeat, phrap will hide the
+unique data assuming that it is a vector or chimeric.
+@end enumerate
+
+To work around the second of these effects we should use @b{Check
+assembly} once more, this time with @b{Use cutoff data} set to @b{Yes}
+and the @b{Maximum percentage of mismatches} set to @b{50%}. (A lower
+percentage will give too many matches to easily spot the problems.)
+It would be best to clear the old plot first (by shutting down the
+Contig Comparator), or to use the Results menu to remove the old plot.
+
+Note the match in the far top left hand corner. The longer matches
+indicate a more signficiant disagreement. Highlight it with the mouse and
+the information line at the bottom of the window states:
+
+@example
+check_assembly: -#10@@158 len 169, mis 52.66%
+@end example
+
+So this is a long match with a strong disagreement - a prime candidate for a
+misassembly. Double click on the match to bring up the editor and look at the
+cutoff data and traces. The traces for the discrepant data are poor quality,
+but the base calls are clearly (mostly) correct. This is a real misassembly.
+However there are other ways of detecting this too so, for now, ignore this
+problem and shutdown the editor once more.
+
+You may also want to try the @b{Find repeats} option (@b{View}
+menu). Keep the @b{Minimum repeat} length as @b{25}, change the task
+to @b{Find both} and press @b{OK}. What we are seeing is a dot-plot of
+short (>= 25 base pairs) exactly repeated sections. Turn on the
+Contig comparator @b{crosshairs} and then move the mouse over the
+various check assembly matches. If on the same X or Y axis we also find
+a repeat then this gives further evidence that a misassembly has
+occurred.
+
+Next try @b{Find Internal Joins} (@b{View} menu). Answer @b{Use hidden data}
+with @b{No} and use the @b{quick} alignment algorithm. Accept the defaults for 
+everything else and hit @b{OK}.
+
+One of the matches, in the far top right, is between contig #3 and #90 (the
+two longest ones). Double click on it to bring up the join editor and hit
+align. Scroll along to the right until you see the matching segment. Recognise
+it? It's the same place that check assembly reported as disagreeing,
+confirming our suspicions of a mis-assembly. We can break this contig in two
+such that reading @i{St8A11Ce10.s1t} and all sequences rightwards are in one
+contig and reading @i{St9A4Eb7.s1t} and all sequences leftwards are in another
+contig. This cannot be done within the join editor, so quit it and make
+sure you answer @b{No} to the "Make join?" question.
+
+From the main @b{Edit} menu select @b{Break a contig} and type in
+@b{St8A11Ce10.s1t} as the sequence identifier. After hitting @b{OK} your
+contig selector window will update to show the additional contig. It's now
+time to re-run @b{Find Internal Joins} once more to get a fresh display. You
+still still be able to find a match representing a join between the longest
+two contigs (it is one of the pair of matches in the top right), so make that
+join using the join editor.
+
+You now have one main contig, and a few small bits we have yet to fit anywhere 
+nice. @b{PLEASE} do make a backup of your database at this stage using the
+@b{Copy database} function (in the main gap4 File menu).
+
+@node X4-Results
+@section Preliminary investigations
+
+There's still much more work to do on tidying up the quality of our assembly,
+but perhaps we are impatient and wish to see what the sequence may contain
+right now.
+
+Firstly we need to save the consensus, so use the main gap4 @b{File} menu to
+select @b{Save consensus} in @b{normal} format. Make sure you request a
+@b{single} contig and that it is the longest one. Change the output format to
+be @b{fasta} and pick a sensible name ("cons_draft" for example. Once that it
+done we no longer need gap4, so either iconify the windows or shut it down.
+
+Now we can try using another Staden Package tool named @i{spin}.
+
+@example
+spin cons_draft &
+@end example
+
+This starts up a window looking much like gap4's main window, although with a
+different set of menus. As we specified the sequence on the command line it
+has already been loaded.
+
+Spin contains many dna and protein sequence analysis functions, including
+sequence alignments, dot plots, gene prediction and an interface to most of
+the EMBOSS programs. For this tutorial we will restrict ourselves to looking
+for genes.
+
+The genome we are sequence part of is bacterial, so firstly we need to use the 
+@b{Translation} menu to pick the @b{Set genetic code} function. Within this
+dialogue pick @b{Bacterial And Plant Plastid} and press @b{OK}. A genetic code 
+table is displayed in the output window.
+
+Next we shall search for long open reading frames, as these most probably
+contain coding sequence. Within the @b{Translation} menu we find a cascading
+menu named @b{Find open reading frames}, and within that the @b{write as
+feature table} command. Select this to bring up a new dialogue. This is a
+crude way of predicting exons and genes, so we will only use the largest open
+reading frames. Specify @b{Strand} as @b{top}, set the @b{Minimum ORF in
+codons} to be @b{500} and press @b{OK}. The text output window should now
+contain:
+
+@example
+Sequence St8A11Cd8.s1t
+FT   CDS             376..2721
+FT   CDS             10688..14464
+FT   CDS             11803..13707
+FT   CDS             14468..16663
+FT   CDS             15082..16659
+FT   CDS             16530..18272
+FT   CDS             21931..24378
+FT   CDS             26057..29854
+FT   CDS             30879..32603
+@end example
+
+A better way to predict coding sequence is to analyse the variation in
+codons. Statistical analysis of codons used within coding data and codons
+within non-coding data allows us to discriminate between the two, but to do
+this we need to have a codon usage table. Spin does not yet contain an easy
+way to accumulate all of our open reading frame data into a single set (unlike 
+Artemis), so for now we take the easiest approach by looking for the longest
+open reading frame. From the above list this appears to be @b{10688..14464}.
+
+Use the @b{Translation} menu once more and pick @b{Calculate and write codon
+table to disk}. Specify the sequence @b{Start position} as @b{10688} and the
+sequence @b{End position} as @b{14464}. Pick a name for the output file (say
+@b{codusage}) and press @b{OK}. The output window once again lists the table,
+but more importantly we also now have it on disk@footnote{A more useful way of 
+obtaining codon usage tables is from @url{http://www.kazusa.or.jp/codon/}.}.
+
+Now use the @b{Search} menu and select the @b{Protein genes} sub-menu. Within
+here are three separate statistical methods for identifying possible coding
+sequence, the most widely known of which is @b{Codon pref}. Select it and you
+will be greeted with a new dialogue.
+
+Spin has helpfully (?) decided to remember our last used start and end
+position, which in this case is not particularly helpful. Set these back to
+the full length. The easiest way of doing this is to type in @b{1} as both the 
+start and end and then press the little down arrow to the right of the end
+position entry box. This causes spin to cycle round (and so displays 33903).
+
+The codon usage table here is optional. Try this function without specifying
+it to start with and you will be greeted with three separate plots, one for
+each positive reading frame@footnote{To see the three negative reading frames
+you need to complement the sequence and repeat the search.}. The stop codons
+are plotted in red. The pale greeny-blue lines represent the likelihood of
+this X position being coding sequence. We can see a vague correlation between
+the gaps in the stop codons (i.e. long open reading frames) and peaks in the
+codon preference plot. 
+
+The algorithm does need a codon usage table in order to work, but it produced
+its own one based on the genetic code and knowledge of the average amino acid
+composition. This is not very reliable, so shutdown the @i{Spin sequence plot}
+graphical window and try the @b{Codon pref} function once more, but this time
+specifying @b{codusage} as the optional @b{Codon table}. Now we see a much
+more convincing plot with greater correlation between open reading frames and
+the plot.
+
+Also try the @b{author test} in the same menu (shutting down the old plot
+first to keep the screen tidy). This differs slightly in the way the
+calculations are expressed and so instead of requiring a window length to
+average over we can specify a percentage error (from which the appropriate
+window length will be calculated). The author test can also use a double codon
+table where we have an analysis of codon usage in coding data and a separate
+analysis of codon usage in non-coding data. In our case we only have the one
+table in our file, so specify @b{codusage} once more and press @b{OK}.
+
+@image{spin-author,6in}
+
+Try double clicking on the plots somewhere; you will get a textual sequence
+display appear. Within this use the @b{Settings} menu followed by
+@b{Translate} and @b{Translate + frames}. You will need to resize the window
+to see all of the extra information. The bold blue line in the plots
+represents the position of the cursor in the sequence display, try dragging it 
+around to move the sequence display.
+
+In the graphical display drag the @b{X} bar to the right to zoom up (so that
+about 5000 base pairs are visible), and scroll back to the left. The middle
+reading frame has a section of strong coding likelihood, but with a stop codon 
+right in the middle. Double click on the stop codon to move your text sequence
+display to that point and then use the text display to try and get a more
+precise fix on the stop codon. It appears to be at base @b{1785}.
+
+@image{spin-seq,6in}
+
+So is this stop codon for real, or is it simply due to bad sequencing data?
+Unfortunately spin cannot view the consensus confidence values so it is hard
+to know. However we can switch back to gap4 to find out.
+
+In gap4 the base numbering in the editor defaults to counting characters in
+the consensus, regardless of what they are. When we saved our consensus we
+stripped out the padding characters (the "*"s) so base 1785 in the sequence in 
+spin is not base 1785 in the contig editor. Fortunately the contig editor has
+a mode to solve this. Back in gap4, start up the contig editor and in the
+editor @b{Settings} menu select @b{Show Unpadded Positions}. Once enabled,
+scroll to base @b{1785} and look at the sequences. The editor can also display 
+the translations (@b{Settings} menu, @b{Status line} submenu, @b{Translate +
+frames}) which helps to find the exact same spot. The data around this spot is 
+truly awful so the codon could just as easily be @b{TAC} as @b{TAA}. I suspect
+this is not a real stop codon at all.
+
+@image{gap4-nostop,6.3in}
+
+Shut down spin and we shall set to work on improving our sequence quality.
+
+@node X4-Finishing
+@section Finishing experiments
+
+Phrap uses the full length sequence, including the very poor quality bits.  If
+we look we can see many cases where if we performed quality clipping with a
+minimum average quality of 15 then there would simply be no data left to
+overlap. By using the poor quality data phrap has saved us work using find
+internal joins, but we still need to perform lots more experiments to get the
+consensus to an acceptable level.
+
+Firstly we need to see how bad things really are, so use the @b{Confidence
+values graph} on our longest contig to plot the poor quality regions. You will
+need to zoom up several times to get an easy to see picture. Within this
+window also turn on the @b{Reading coverage histogram}. Note that the first
+few bases and the last (approximately) 400 bases of the consensus is only one
+sequence deep, so most of the worst errors will be there.
+
+From the main gap4 View menu select @b{List Confidence} to get a tabular
+summary of results for our longest contig. Selecting the entire longest contig 
+I was told there are 82.65 errors, but excluding the single-deep contig ends
+(leaving 74 to 34353 inclusive in my assembly) gave the following more
+promising results:
+
+@example
+Sequence length = 34280 bases.
+Expected errors =   18.48 bases (1/1854 error rate).
+Value	Frequencies	Expected  Cumulative	Cumulative	Cumulative
+			errors    frequencies	errors		error rate
+--------------------------------------------------------------------------
+  0	     0		   0.00         0	   0.00		1/1854.49
+  1	     0		   0.00         0	   0.00		1/1854.49
+  2	     1		   0.63         1	   0.63		1/1920.03
+  3	     7		   3.51         8	   4.14		1/2389.59
+  4	     9		   3.58        17	   7.72		1/3185.1
+  5	     7		   2.21        24	   9.94		1/4009.81
+  6	     4		   1.00        28	  10.94		1/4543.85
+  7	     4		   0.80        32	  11.74		1/5081.41
+  8	     2		   0.32        34	  12.06		1/5331.94
+  9	     5		   0.63        39	  12.69		1/5910.63
+ 10	    14		   1.40        53	  14.09		1/7791.4
+ 11	    13		   1.03        66	  15.12		1/10180.9
+ 12	     5		   0.32        71	  15.43		1/11233.4
+ 13	     9		   0.45        80	  15.88		1/13181.8
+ 14	    12		   0.48        92	  16.36		1/16148.3
+ 15	    12		   0.38       104	  16.74		1/19663.3
+ 16	     8		   0.20       112	  16.94		1/22225.2
+ 17	    10		   0.20       122	  17.14		1/25527.4
+ 18	    14		   0.22       136	  17.36		1/30580.3
+ 19	    14		   0.18       150	  17.54		1/36285.3
+ 20	    12		   0.12       162	  17.66		1/41564.9
+ 21	    10		   0.08       172	  17.74		1/45994.8
+ 22	    21		   0.13       193	  17.87		1/55939.9
+ 23	    20		   0.10       213	  17.97		1/66879.5
+ 24	    22		   0.09       235	  18.06		1/80662.6
+ 25	    26		   0.08       261	  18.14		1/100011
+@end example
+
+Normally at this stage we would start with automated experiment suggestion
+tools, possibly followed by manually picking further finishing
+experiments. Feel free to try this yourself, but for the impatient we have
+provided another data set including numerous (208) finishing experiments.
+
+The phrap approach at this stage is to completely reassemble the entire
+project, treating the assembly as a new set of 854 sequences (the original 646 
+plus our new 208). However doing this would be risky as it may misassemble
+things once more, undoing our earlier work. We are already fairly certain that
+our overall assembly is correct, so it makes sense to simply add new data
+using the current assembly as a framework.
+
+This is ideal for the Gap4 iterative assembler, so we shall use the
+"Normal Shotgun Assembly" function to enter our new sequences. Before
+we get there though we need to use Pregap4 once more to process the
+raw trace files. There is no need to shutdown gap4 at this stage (although do
+so if you wish), but it may make sense to iconify the windows to free up some
+screen space.
+
+@example
+cp $STADENROOT/course/data/ex4_directed/* .
+pregap4 -fofn fn.directed &
+@end example
+
+The above commands copy over the 208 new trace files along with a pre-made
+file of filenames named @i{fn.directed}. Then it starts up pregap4 with this
+new set of sequences automatically loaded.
+
+Recall that Gap4 cannot assemble full-length data that has not been quality
+clipped (however for our finishing experiments we want only the good data
+anyway so this should not be an issue). So once pregap4 has started make sure
+you @b{enable} the @b{Quality clip} module.
+
+If we have gap4 still running we cannot assemble additional data into our
+database using pregap4. Neither do we wish to use phrap on this data set. So
+@b{disable} both the @b{Phrap assembly} and @b{Enter assembly (into gap4)}
+modules. Finally, @b{Run} pregap4.
+
+Once that has finished, exit pregap4 and get back to gap4. From the
+@b{Assembly} menu pick @b{Normal shotgun assembly}. For the input file of
+filenames specify @b{fn.directed.passed} and specify anything for the failure
+file of filenames. The rest of the parameters we'll just keep as they are.
+
+Intially after assembly it looks like we have many more contigs (which is
+true), but closer inspection should show that the additional contigs are
+mainly 1 or 2 sequences each (unlike phrap, gap4 does not reject
+singletons). Our longest contig now has 800 sequences in it, which is 173 more 
+than before.
+
+Use the @b{Confidence values graph} once more and things look much more
+appealing. The contig ends still have not been double stranded, but the rest
+of the contig looks good. Running @b{List confidence} once more, excluding the 
+contig ends (and so specifying a range from 404 to 34789) we see a huge
+difference to before@footnote{Again your parameters may vary slightly, but you 
+should still see a huge change.}:
+
+@example
+Sequence length = 34386 bases.
+Expected errors =    0.40 bases (1/86354 error rate).
+Value   Frequencies     Expected  Cumulative    Cumulative      Cumulative
+                        errors    frequencies   errors          error rate
+--------------------------------------------------------------------------
+  0          0             0.00         0          0.00         1/86354.6
+  1          0             0.00         0          0.00         1/86354.6
+  2          0             0.00         0          0.00         1/86354.6
+  3          0             0.00         0          0.00         1/86354.6
+  4          0             0.00         0          0.00         1/86354.6
+  5          0             0.00         0          0.00         1/86354.6
+  6          0             0.00         0          0.00         1/86354.6
+  7          1             0.20         1          0.20         1/173082
+  8          0             0.00         1          0.20         1/173082
+  9          0             0.00         1          0.20         1/173082
+ 10          0             0.00         1          0.20         1/173082
+ 11          1             0.08         2          0.28         1/288385
+ 12          0             0.00         2          0.28         1/288385
+ 13          0             0.00         2          0.28         1/288385
+ 14          1             0.04         3          0.32         1/432932
+ 15          0             0.00         3          0.32         1/432932
+ 16          1             0.03         4          0.34         1/633179
+ 17          0             0.00         4          0.34         1/633179
+ 18          0             0.00         4          0.34         1/633179
+ 19          0             0.00         4          0.34         1/633179
+ 20          1             0.01         5          0.35         1/776086
+@end example
+
+So the base error rate has dropped from 1/1854 to 1/86354, with just a
+handfull of bases with confidence <= 20. We may wish to manually check these
+few lowest values just to be certain.
+
+The final step is to use @b{Save consensus} one last time to produce a
+finished FASTA format file to pass on to our analaysis programs.
+
+
+

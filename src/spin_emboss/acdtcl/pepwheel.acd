@@ -1,0 +1,225 @@
+package require Iwidgets
+namespace eval ::EMBOSS::pepwheel {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_pepwheel*Xentry.entry.width 30
+option add *e_pepwheel*Entryfield.width 30
+option add *e_pepwheel*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) pepwheel
+    set w [xtoplevel .e_pepwheel -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - pepwheel}
+    label $w._title -text {Shows protein sequences as helices}
+    pack $w._title -side top -fill both
+    set vars(pepwheel._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst Protein]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments wheel
+    checkbutton $w.wheel \
+	-text [subst {Plot the wheel}]\
+	-variable [namespace current]::vars(wheel)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.wheel -side top -anchor w
+    set vars(wheel) [subst 1]
+    set vars(wheel.path) $w.wheel
+    set vars(wheel.required)  0
+    set vars(wheel._type) bool
+
+    lappend arguments steps
+    iwidgets::entryfield $w.steps \
+	-validate integer \
+	-textvariable [namespace current]::vars(steps) \
+	-labeltext [subst {Number of steps}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.steps component entry] -sticky nse
+    set vars(steps) [subst 18]
+    pack $w.steps -side top -fill both
+    set vars(steps.minimum) [subst 2]
+    set vars(steps.maximum) [subst 100]
+    set vars(steps.path) $w.steps
+    set vars(steps.required)  0
+    set vars(steps._type) integer
+
+    lappend arguments turns
+    iwidgets::entryfield $w.turns \
+	-validate integer \
+	-textvariable [namespace current]::vars(turns) \
+	-labeltext [subst {Number of turns}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.turns component entry] -sticky nse
+    set vars(turns) [subst 5]
+    pack $w.turns -side top -fill both
+    set vars(turns.minimum) [subst 1]
+    set vars(turns.maximum) [subst 100]
+    set vars(turns.path) $w.turns
+    set vars(turns.required)  0
+    set vars(turns._type) integer
+
+    iwidgets::labeledframe $w.amphipathicsection \
+	-labeltext [subst {amphipathic Section}]
+    pack $w.amphipathicsection -side top -fill both
+    lappend wlist $w
+    append w .amphipathicsection.childsite
+
+    lappend arguments amphipathic
+    checkbutton $w.amphipathic \
+	-text [subst {Prompt for amphipathic residue marking}]\
+	-variable [namespace current]::vars(amphipathic)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.amphipathic -side top -anchor w
+    set vars(amphipathic) [subst 0]
+    set vars(amphipathic.path) $w.amphipathic
+    set vars(amphipathic.required)  0
+    set vars(amphipathic._type) bool
+
+    lappend arguments squares
+    iwidgets::entryfield $w.squares \
+	-textvariable [namespace current]::vars(squares) \
+	-labeltext [subst {Mark as squares}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.squares component entry] -sticky nse
+    set vars(squares) [subst ILVM]
+    pack $w.squares -side top -fill both
+    set vars(squares.path) $w.squares
+    set vars(squares.required)  0
+    set vars(squares._type) string
+
+    lappend arguments diamonds
+    iwidgets::entryfield $w.diamonds \
+	-textvariable [namespace current]::vars(diamonds) \
+	-labeltext [subst {Mark as diamonds}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.diamonds component entry] -sticky nse
+    set vars(diamonds) [subst DENQST]
+    pack $w.diamonds -side top -fill both
+    set vars(diamonds.path) $w.diamonds
+    set vars(diamonds.required)  0
+    set vars(diamonds._type) string
+
+    lappend arguments octags
+    iwidgets::entryfield $w.octags \
+	-textvariable [namespace current]::vars(octags) \
+	-labeltext [subst {Mark as octagons}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.octags component entry] -sticky nse
+    set vars(octags) [subst HKR]
+    pack $w.octags -side top -fill both
+    set vars(octags.path) $w.octags
+    set vars(octags.required)  0
+    set vars(octags._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    iwidgets::labeledframe $w.datasection \
+	-labeltext [subst {datasection Section}]
+    pack $w.datasection -side top -fill both
+    lappend wlist $w
+    append w .datasection.childsite
+
+    lappend arguments data
+    checkbutton $w.data \
+	-text [subst {Display as data}]\
+	-variable [namespace current]::vars(data)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.data -side top -anchor w
+    set vars(data) [subst 1]
+    set vars(data.path) $w.data
+    set vars(data.required)  0
+    set vars(data._type) bool
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(data)}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst pepwheel0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(data)}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] outfile"
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst xwindows]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) graph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/pepwheel.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

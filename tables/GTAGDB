@@ -1,0 +1,256 @@
+#
+# This is a tag database for gap
+#
+# The syntax in BNF is:
+#
+#    <tag_db>      ::= <tag> <tag_db> | <empty>
+#    <tag>         ::= <identifier> : <option_list> \n | <identifier> \n
+#    <option_list> ::= <option> : <option_list> | <option_list>
+#    <option>      ::= <option_name> = <string>
+#
+# Lines starting with a # are comments and are ignored.
+# Newlines can be escaped over by placing a back slash at the end of the line
+#
+# options        description                  default value
+#   id="string"    identifier for searching     1st 4 characters of identifier
+#   fg=colour      foreground colour            fg for window
+#   bg=colour      background colour            bf for window
+#   dt="string"    default text for tag         none
+#
+# examples:
+#   comment:fg=blue:dt="?"
+#
+# NOTE: fg is now taken as bg in xgap - we disallow fg colours.
+#
+
+# Must be first item
+# QUAL: id="QUAL": fg="green"
+# ^^^^ Que?	
+
+# For general comments
+comment: \
+	id="COMM": \
+	bg="#6060FF": \
+	dt="?"
+
+# For marking oligos
+oligo: \
+	id="OLIG": \
+	bg=yellow: \
+
+# For marking 'finish' produced primers
+primer: \
+	id="PRIM": \
+	bg=yellow2: \
+
+# For marking compressions
+compression: \
+	id="COMP": \
+	bg=red: \
+
+# For marking stops
+stop: \
+	id="STOP": \
+	bg="#AAAAFF": \
+
+# For marking repeats
+repeat: \
+	id="REPT": \
+	bg=green2: \
+
+# For marking ALU sequences
+"Alu segment" : \
+	id="ALUS" : \
+	bg=green
+
+#
+# The following are for marking cases when the cutoff is known
+# to be vector. Find internal joins will not look at cutoffs
+# for readings that have a tag of these types
+#
+#"ignore cutoff (sequencing vector)":id="IGNS":bg=lemonchiffon1
+#"ignore cutoff (cloning vector)":id="IGNC":bg=lemonchiffon2
+
+# For marking cosmid vector
+"cosmid vector" : \
+	id="CVEC" : \
+	bg="#ffd0ff"
+
+# For marking cosmid vector
+"sequencing vector" : \
+	id="SVEC" : \
+	bg="#ffd0d0"
+
+
+# For marking compressions
+"resolved compression": \
+	id="RCMP": \
+	bg=burlywood: \
+
+# For masking during assembly and find internal joins etc
+"mask me": \
+	id="MASK": \
+	bg=gray: \
+
+
+# Finished data
+"finished data": \
+	id="FNSH": \
+	bg=hotpink:
+#
+# For Phred
+#
+# "ambiguous":id="ABMG":bg=hotpink
+
+#
+# The restriction enzymes
+#
+"restriction enzyme 0": \
+        id="ENZ0": \
+        bg=PaleVioletRed:
+"restriction enzyme 1": \
+        id="ENZ1": \
+        bg=DarkOrchid:
+"restriction enzyme 2": \
+        id="ENZ2": \
+        bg=Purple:
+"restriction enzyme 3": \
+        id="ENZ3": \
+        bg=MediumPurple:
+"restriction enzyme 4": \
+        id="ENZ4": \
+        bg=violet:
+"restriction enzyme 5": \
+        id="ENZ5": \
+        bg=plum:
+"restriction enzyme 6": \
+        id="ENZ6": \
+        bg=orchid:
+"restriction enzyme 7": \
+        id="ENZ7": \
+        bg=maroon:
+"restriction enzyme 8": \
+        id="ENZ8": \
+        bg=DarkOrange:
+"restriction enzyme 9": \
+        id="ENZ9": \
+        bg=OrangeRed:
+
+# For Mutations
+"Mutation" : \
+	id="MUTA" : \
+	bg="#ff8c00"
+
+"Homozygous False +ve" : \
+	id="HOM+" : \
+	bg="#ff9c20"
+
+"Homozygous False -ve" : \
+	id="HOM-" : \
+	bg="#cf6c00"
+
+"Heterozygous" : \
+	id="HETE" : \
+	bg="#ff0000"
+
+"Heterozygous False +ve" : \
+	id="HET+" : \
+	bg="#ff2020"
+
+"Heterozygous False -ve" : \
+	id="HET-" : \
+	bg="#df0000"
+
+"Heterozygous indel" : \
+	id="HETI" : \
+	bg="#ff0000"
+
+"Mutscan coverage" : id="MCOV" : bg="#d0d0d0"
+
+# Difference clip tags
+"Difference clipped" : \
+	id="DIFF" : \
+	bg="#aaffaa"
+
+#Biolims Feature
+"Biolims Feature": \
+	id="BIOL": \
+	bg="thistle":
+
+#
+# Embl/Genbank feature table definitions
+# FIXME: These colours are not good!
+#
+"FEATURE: -":			id="F---": bg="#4A4368"
+"FEATURE: -10_signal":		id="F-10": bg="#8F9448"
+"FEATURE: -35_signal":		id="F-35": bg="#5027AC"
+"FEATURE: 3'UTR":		id="F3_U": bg="#7E36F9"
+"FEATURE: 3'clip":		id="F3_c": bg="#FC13E5"
+"FEATURE: 5'UTR":		id="F5_U": bg="#7CC486"
+"FEATURE: 5'clip":		id="F5_c": bg="#4B15AF"
+"FEATURE: CAAT_signal":		id="FCAA": bg="#A72580"
+"FEATURE: CDS":			id="FCDS": bg="#4AA090"
+"FEATURE: C_region":		id="FCre": bg="#6E64F9"
+"FEATURE: D-loop":		id="FD-l": bg="#240BAB"
+"FEATURE: D_segment":		id="FD-s": bg="#7A0F51"
+"FEATURE: GC_signal":		id="FGCs": bg="#128AAE"
+"FEATURE: J_segment":		id="FJ-s": bg="#6B6DB7"
+"FEATURE: LTR":			id="FLTR": bg="#F00B22"
+"FEATURE: N_region":		id="FN-r": bg="#F78732"
+"FEATURE: RBS":			id="FRBS": bg="#45B30A"
+"FEATURE: STS":			id="FSTS": bg="#3FFA1C"
+"FEATURE: S_region":		id="FS-r": bg="#B93720"
+"FEATURE: TATA_signal":		id="FTAT": bg="#3D7E5A"
+"FEATURE: V_region":		id="FV-r": bg="#56D9D8"
+"FEATURE: V_segment":		id="FV-s": bg="#F829EF"
+"FEATURE: attenuator":		id="Fatt": bg="#AD7739"
+"FEATURE: conflict":		id="Fcon": bg="#8F2E3A"
+"FEATURE: enhancer":		id="Fenh": bg="#8392AC"
+"FEATURE: exon":		id="Fexn": bg="#A15698"
+"FEATURE: gene":		id="Fgen": bg="#4EADC0"
+"FEATURE: iDNA":		id="FiDN": bg="#71318A"
+"FEATURE: intron":		id="Fint": bg="#3C2FA3"
+"FEATURE: mRNA":		id="FmRN": bg="#F00429"
+"FEATURE: mat_peptide":		id="Fmat": bg="#6AE62C"
+"FEATURE: misc_RNA":		id="Fm-R": bg="#653BD9"
+"FEATURE: misc_binding":	id="Fm-b": bg="#2D6E9D"
+"FEATURE: misc_difference":	id="Fm-d": bg="#B917F9"
+"FEATURE: misc_feature":	id="Fm-f": bg="#9B9E2C"
+"FEATURE: misc_recomb":		id="Fm-r": bg="#D4EE3E"
+"FEATURE: misc_signal":		id="Fm-S": bg="#3C438F"
+"FEATURE: misc_structure":	id="Fm-s": bg="#7796BF"
+"FEATURE: modified_base":	id="Fmod": bg="#49FCD1"
+"FEATURE: mutation":		id="Fmut": bg="#751DCD"
+"FEATURE: old_sequence":	id="Fold": bg="#CD0804"
+"FEATURE: polyA_signal":	id="FpAS": bg="#C9517C"
+"FEATURE: polyA_site":		id="FpAs": bg="#04AC80"
+"FEATURE: precursor_RNA":	id="FpRN": bg="#D9103A"
+"FEATURE: prim_transcript":	id="Fp_t": bg="#B875B6"
+"FEATURE: primer_bind":		id="Fp_b": bg="#382589"
+"FEATURE: promoter":		id="Fpro": bg="#287D64"
+"FEATURE: protein_bind":	id="Fprt": bg="#4030D4"
+"FEATURE: rRNA":		id="FrRN": bg="#F41E8E"
+"FEATURE: rep_origin":		id="Frpo": bg="#C13E96"
+"FEATURE: repeat_region":	id="Frpr": bg="#ED8142"
+"FEATURE: repeat_unit":		id="Frpu": bg="#5B896E"
+"FEATURE: satellite":		id="Fsat": bg="#D233FE"
+"FEATURE: scRNA":		id="FscR": bg="#5394B6"
+"FEATURE: sig_peptide":		id="Fsig": bg="#486791"
+"FEATURE: snRNA":		id="FsnR": bg="#8787B7"
+"FEATURE: source":		id="Fsrc": bg="#02096E"
+"FEATURE: stem_loop":		id="Fstm": bg="#DF12A0"
+"FEATURE: tRNA":		id="FtRN": bg="#736CDC"
+"FEATURE: terminator":		id="Fter": bg="#FF03D9"
+"FEATURE: transit_peptide":	id="Ft-p": bg="#55C6A4"
+"FEATURE: unsure":		id="F???": bg="#643ECC"
+"FEATURE: variation":		id="Fvar": bg="#892D49"
+
+# For marking copy_reads readings
+lent: \
+        id="LENT": \
+        bg=turquoise: \
+
+borrowed: \
+        id="BORO": \
+        bg=SkyBlue: \
+

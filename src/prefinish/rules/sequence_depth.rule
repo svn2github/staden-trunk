@@ -1,0 +1,7 @@
+set name "Minimum sequence depth"
+
+set expression "<sequence_depth_ge 2>"
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}

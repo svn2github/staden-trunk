@@ -1,0 +1,20 @@
+
+_split()
+@node Clipping-Introduction
+@unnumberedsec Introduction to read clipping
+@cindex clipping readings
+@cindex reading clipping
+@cindex hidden data
+
+For most assembly routines to work well it is necessary to present them with
+data of reasonable quality. Generally sequences produced by machines suffer
+from having poor quality data at one or both ends and so methods are
+needed to define
+where the data is too poor to use. Some base callers include an increased
+number of "N" symbols in the sequence in doubtful regions and so these
+can be searched for. In the ideal situation base accuracy estimates or confidence
+values for each base call will be available, and then these can be
+searched to find where the average confidence value
+becomes too low for reliable assembly.
+The program qclip (_fpref(Man-qclip,qclip, manpages)) performs both type
+of analysis.

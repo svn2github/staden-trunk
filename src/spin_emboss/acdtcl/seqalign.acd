@@ -1,0 +1,117 @@
+package require Iwidgets
+namespace eval ::EMBOSS::seqalign {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_seqalign*Xentry.entry.width 30
+option add *e_seqalign*Entryfield.width 30
+option add *e_seqalign*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) seqalign
+    set w [xtoplevel .e_seqalign -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - seqalign}
+    label $w._title -text {Generate extended alignments for families in a scop families file by using CLUSTALW with seed alignments.}
+    pack $w._title -side top -fill both
+    set vars(seqalign._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments inpath
+    iwidgets::entryfield $w.inpath \
+	-textvariable [namespace current]::vars(inpath) \
+	-labeltext [subst inpath]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.inpath component entry] -sticky nse
+    set vars(inpath) [subst ./]
+    pack $w.inpath -side top -fill both
+    set vars(inpath.path) $w.inpath
+    set vars(inpath.required)  1
+    set vars(inpath._type) string
+
+    lappend arguments extn
+    iwidgets::entryfield $w.extn \
+	-textvariable [namespace current]::vars(extn) \
+	-labeltext [subst extn]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.extn component entry] -sticky nse
+    set vars(extn) [subst .align]
+    pack $w.extn -side top -fill both
+    set vars(extn.path) $w.extn
+    set vars(extn.required)  1
+    set vars(extn._type) string
+
+    lappend arguments scopin
+    xentry $w.scopin \
+	-label [subst {Name of scop hits file (input)}]\
+	-textvariable [namespace current]::vars(scopin) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopin delete 0 end
+    $w.scopin insert end [subst {}]
+    pack $w.scopin -side top -fill both
+    set vars(scopin.path) $w.scopin
+    set vars(scopin.required)  1
+    set vars(scopin._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outpath
+    iwidgets::entryfield $w.outpath \
+	-textvariable [namespace current]::vars(outpath) \
+	-labeltext [subst {Location of extended alignment files (Escop format output)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.outpath component entry] -sticky nse
+    set vars(outpath) [subst ./]
+    pack $w.outpath -side top -fill both
+    set vars(outpath.path) $w.outpath
+    set vars(outpath.required)  1
+    set vars(outpath._type) string
+
+    lappend arguments outextn
+    iwidgets::entryfield $w.outextn \
+	-textvariable [namespace current]::vars(outextn) \
+	-labeltext [subst outextn]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.outextn component entry] -sticky nse
+    set vars(outextn) [subst .ealign]
+    pack $w.outextn -side top -fill both
+    set vars(outextn.path) $w.outextn
+    set vars(outextn.required)  1
+    set vars(outextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/seqalign.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

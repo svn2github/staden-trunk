@@ -1,0 +1,78 @@
+@cindex compiling
+@cindex linking
+@vindex GAPDB_EXT_INC
+@vindex GAPDB_EXT_OBJS
+@vindex GAPDB_EXT_LIBS
+
+If you require usage of the Gap4 I/O functions in a program other than Gap4
+itself you will need to compile and link in particular ways to use the
+function prototypes and to add the Gap4 functions to your binary. At present,
+the object files required for database access do not comprise a library.
+
+The compiler include search path needs adjusting to add the
+@file{$STADENROOT/src/gap4} directory and possibly the
+@file{$STADENROOT/src/g} directory. Once your own object files are compiled,
+they need to be linked with the following gap4 object files.
+
+@table @code
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/actf.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-create.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-dbstruct.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-error.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-if.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-init.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-io.o
+@item  $STADENROOT/src/gap4/$MACHINE-binaries/gap-local.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/gap-remote.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/IO.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/io_handle.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/io-reg.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/io_utils.o
+@itemx $STADENROOT/src/gap4/$MACHINE-binaries/text-io-reg.o
+@end table
+
+Finally, a library search path of @file{$STADENROOT/lib/$MACHINE-binaries}
+should be used to link the @code{-lg -ltext_utils -lmisc} libraries.
+
+All of the above definitions have been added to a single Makefile held in
+@file{$STADENROOT/src/mk/gap4_defs.mk} as the @code{GAPDB_EXT_INC},
+@code{GAPDB_EXT_OBJS} and @code{GAPDB_EXT_LIBS} variables. When possible,
+these should be used in preference to hard coding the variable object
+filenames as this provides protection against future coding changes.
+So for example, if we have a program held in the file @file{demo.c} we could
+have a simple Makefile as follows.
+
+@example
+SRCROOT=$(STADENROOT)/src
+include $(SRCROOT)/mk/global.mk
+include $(SRCROOT)/mk/$(MACHINE).mk
+
+OBJS = $(O)/demo.o
+
+LIBS = $(MISC_LIB)
+
+$(O)/demo: $(OBJS)
+        $(CLD) -o $@ $(OBJS) $(LIBS) $(LIBSC)
+@end example
+
+If we now extend this program so that it requires the Gap4 I/O routines, the
+Makefile should be modified to:
+
+@example
+SRCROOT=$(STADENROOT)/src
+include $(SRCROOT)/mk/global.mk
+include $(SRCROOT)/mk/$(MACHINE).mk
+include $(SRCROOT)/mk/gap4_defs.mk
+
+INCLUDES_E += $(GAPDB_EXT_INC)
+
+OBJS = $(O)/demo.o $(GAPDB_EXT_OBJS)
+
+LIBS = $(MISC_LIB) $(GAPDB_EXT_LIBS)
+
+$(O)/demo: $(OBJS)
+        $(CLD) -o $@ $(OBJS) $(LIBS) $(LIBSC)
+@end example
+
+If you require an example of a program that utilises the Gap4 I/O functions,
+see the @code{convert} program in @file{$STADENROOT/src/convert/}.

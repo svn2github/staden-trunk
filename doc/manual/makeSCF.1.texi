@@ -1,0 +1,94 @@
+@cindex makeSCF: man page
+@unnumberedsec NAME
+
+makeSCF --- Converts trace files to SCF files.
+
+@unnumberedsec SYNOPSIS
+
+@code{makeSCF} [@code{-8}] [@code{-2}] [@code{-3}]
+-(@code{abi}|@code{alf}|@code{scf}|@code{pln}) @i{input_name}
+[@code{-compress} @i{compression_mode}] [@code{-normalise}
+[@code{-output} @i{output_name}]
+
+@unnumberedsec DESCRIPTION
+
+@code{MakeSCF} converts trace files to the SCF format. It can input ABI 373A,
+Pharmacia A.L.F., or previously created SCF files (although converting from
+SCF to SCF serves no useful purpose!). 
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-8}
+    Force conversion to 8 bit sample data. This shrinks the size of SCF
+    files using 16 bit sample values, but at a loss of resolution. For trace
+    display purposes this accuracy loss is acceptable.
+
+@item @code{-2}
+    Force the output to be written in SCF version 2. By default the
+    latest version (3) is used.
+
+@item @code{-3}
+    Force the output to be written in SCF version 3. This is the default.
+
+@item @code{-s}
+    Silent mode. This prevents the output of the copyright message.
+
+@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-any}
+    Specify an input file format. A file format of "any" will force
+    @code{makeSCF} to automatically determine the correct input file type.
+
+@item @code{-compress} @i{compression_mode}
+    Requests the generated SCF file to be passed through a separate compression
+    program before writing to disk. @code{makeSCF} does not contain any
+    compression algorithms itself. It requires the appropriately named tool to
+    be on the system and in the user's @r{PATH}.
+    Valid responses for @i{compression_mode} are (in order of best compression
+    first) @code{bzip}, @code{gzip}, @code{compress} and @code{pack}. Note
+    that @code{bzip} at present is only bzip version 1 and that bzip version 2
+    is incompatible.
+
+@item @code{-normalise}
+    Performs some very simple trace normalisation. This subtracts the
+    background signal (by defining the background signal to be the lowest of
+    the four traces) and rescales the peak heights, averaging the height over
+    a `window' of 1000 trace sample points. This option may be useful
+    for some unscaled ALF files.
+
+@item @code{-output} @i{file}
+    Specifies the filename for the SCF file to be produced. If this is not
+    specified the SCF file will be sent to standard output.
+@end table
+
+@unnumberedsec EXAMPLES
+
+To convert an ABI 373A trace:
+
+@example
+@code{makeSCF -8 -abi trace.abi -output trace.scf}
+@end example
+
+To convert an ALF archive to individual SCF files (Warning! this 
+will most certainly fail if your clone names contain spaces):
+
+@example
+@code{alfsplit trace.alf | awk '/^Clone/ @{print $3 "ALF"@}' > trace.files}
+
+@code{sh -c 'for i in `cat trace.files`;do makeSCF -alf $i -output}
+@code{    $i.scf;done}
+@end example
+
+@unnumberedsec NOTES
+
+If ABI and A.L.F files are edited before input to makeSCF the contents of
+the resulting SCF files are unpredictable.
+To use Pharmacia A.L.F. files the @code{alfsplit} program should first
+be used. Then @code{makeSCF} should be run on each of the split files.
+See the example above.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Scf, scf(4), formats)
+_fxref(Man-convert_trace, convert_trace(1), convert_trace.1)
+_fxref(Man-eba, eba(1), eba.1)
+

@@ -1,0 +1,91 @@
+package require Iwidgets
+namespace eval ::EMBOSS::demofeatures {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_demofeatures*Xentry.entry.width 30
+option add *e_demofeatures*Entryfield.width 30
+option add *e_demofeatures*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) demofeatures
+    set w [xtoplevel .e_demofeatures -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - demofeatures}
+    label $w._title -text {demonstration of the feature functions}
+    pack $w._title -side top -fill both
+    set vars(demofeatures._type) application
+
+    lappend arguments featout
+    xentry $w.featout \
+	-label [subst {feature file for output}]\
+	-textvariable [namespace current]::vars(featout) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.featout delete 0 end
+    $w.featout insert end [subst gff:demofeatures.gff]
+    pack $w.featout -side top -fill both
+    set vars(featout.path) $w.featout
+    set vars(featout.required)  1
+    set vars(featout._type) featout
+
+    lappend arguments typesort
+    checkbutton $w.typesort \
+	-text [subst {Do you want to Sort by Type}]\
+	-variable [namespace current]::vars(typesort)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.typesort -side top -anchor w
+    set vars(typesort) [subst 0]
+    set vars(typesort.path) $w.typesort
+    set vars(typesort.required)  0
+    set vars(typesort._type) bool
+
+    lappend arguments startsort
+    checkbutton $w.startsort \
+	-text [subst {Do you want to Sort by Start position}]\
+	-variable [namespace current]::vars(startsort)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.startsort -side top -anchor w
+    set vars(startsort) [subst 0]
+    set vars(startsort.path) $w.startsort
+    set vars(startsort.required)  0
+    set vars(startsort._type) bool
+
+    lappend arguments dictionary
+    checkbutton $w.dictionary \
+	-text [subst {Read in the Gff Dictionary}]\
+	-variable [namespace current]::vars(dictionary)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.dictionary -side top -anchor w
+    set vars(dictionary) [subst 1]
+    set vars(dictionary.path) $w.dictionary
+    set vars(dictionary.required)  0
+    set vars(dictionary._type) bool
+
+    lappend arguments tracedict
+    checkbutton $w.tracedict \
+	-text [subst {Dump out the Dictionary at the end}]\
+	-variable [namespace current]::vars(tracedict)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.tracedict -side top -anchor w
+    set vars(tracedict) [subst 1]
+    set vars(tracedict.path) $w.tracedict
+    set vars(tracedict.required)  0
+    set vars(tracedict._type) bool
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/demofeatures.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

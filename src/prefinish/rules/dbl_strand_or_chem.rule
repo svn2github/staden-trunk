@@ -1,0 +1,9 @@
+set name "Double stranded/chemistry"
+
+set expression "(<strand_top> && <strand_bottom>) ||
+                (<chemistry 1 3 5 7 9 11 13 15 17> &&
+	         <chemistry 0 2 4 6 8 10 12 14 16>)"
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}

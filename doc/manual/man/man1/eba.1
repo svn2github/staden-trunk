@@ -1,0 +1,64 @@
+.TH "eba" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+eba \- Estimates Base Accuracy in an SCF or ZTR file
+
+.SH "SYNOPSIS"
+.PP
+
+\fBeba\fP [\fItrace_file\fP]
+
+.SH "DESCRIPTION"
+.PP
+
+\fBEba\fP will calculate numerical estimates of base accuracy for each
+base in an SCF or ZTR file. The figures calculated should not be considered as
+reliable and better values can be obtained from phred or ATQA.
+
+The method employed by eba to estimate the base accuracies performs the
+following calculation for each base. Calculate the area under the peaks
+for each base type. Divide the area under the called base by the largest
+area under the other three bases. From the 2002 release these values are
+normalised to the phred scale (this was achieved by comaring the
+original eba values and phred values for 4.6 million base calls of
+Sanger Centre data).
+
+With no filename as an argument eba reads from standard input and writes
+to standard output. This enables eba to be used as a filter, or to
+estimate base accuracies for unwritable files. If a file is specified on
+the command line then the accuracy figures will be written to this file.
+
+.SH "EXAMPLES"
+.PP
+
+To write base accuracy figures to an SCF file named \fBe04f10.s1SCF\fP.
+
+.nf
+.in +0.5i
+\fBeba e04f10.s1SCF\fP
+.in -0.5i
+.fi
+
+To write base accuracy figures on the original eba scale to an SCF file 
+named \fBe04f10.s1SCF\fP.
+
+.nf
+.in +0.5i
+\fBeba -old_scale e04f10.s1SCF\fP
+.in -0.5i
+.fi
+
+To write base accuracy figures to a ZTR file named \fBe04f10.s1.ztr\fP
+in another users directory, and to store the updated file in the
+current directory:
+
+.nf
+.in +0.5i
+\fBeba < ~user/e04f10.s1.ztr > e04f10.s1.ztr\fP
+.in -0.5i
+.fi
+
+.SH "SEE ALSO"
+.PP
+
+_fxref(Formats-Scf, scf(4), formats)

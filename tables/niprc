@@ -1,0 +1,302 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+load_package tk_utils
+
+#-----------------------------------------------------------------------------
+# Global variables
+#-----------------------------------------------------------------------------
+set_def OUTPUT_SCROLL		1
+set_def GENETIC_CODE_DIR	$env(STADTABL)/gcodes
+set_def GENETIC_CODE		code_1
+
+#-----------------------------------------------------------------------------
+# Local variables
+#-----------------------------------------------------------------------------
+set_def SEQED.AMINO_ACID_MODE		0
+
+#-----------------------------------------------------------------------------
+# Window sizes
+#-----------------------------------------------------------------------------
+set_def RASTER.PLOT_HEIGHT		200
+set_def RASTER.PLOT_WIDTH		500
+set_def RASTER.SINGLE.PLOT_HEIGHT       60
+set_def RASTER.BORDERWIDTH		2
+
+set_def RULER.PLOT_HEIGHT		40
+set_def RULER.PLOT_WIDTH		100
+
+#-----------------------------------------------------------------------------
+# Window names
+#-----------------------------------------------------------------------------
+set_def NIP.WIN			.nip
+#set_def RASTER.WIN		.raster
+#set_def RASTER.R.WIN		.r
+#set_def NIP.RESULTS.WIN		.nip_results
+
+set_def RASTER.TITLE		"SPIN Sequence Plot"
+
+#-----------------------------------------------------------------------------
+# Useful common questions - asked by many options
+#-----------------------------------------------------------------------------
+set_defx defs_win_len NAME		"Window length"
+set_defx defs_win_len VALUE		"11"
+set_defx defs_win_len MIN		"1"
+set_defx defs_win_len MAX		"401"
+
+
+
+#-----------------------------------------------------------------------------
+# Our options
+#-----------------------------------------------------------------------------
+#cursor
+set_def NIP.CURSOR.SENSITIVE		5 
+set_def NIP.CURSOR.LINE_WIDTH		2
+
+#plot base composition
+set_def NIP.PBC.A			1
+set_def NIP.PBC.C			0
+set_def NIP.PBC.G			0
+set_def NIP.PBC.T			1
+set_def NIP.PBC.RANGE.NAME		"Plot range"
+set_def NIP.PBC.WIN_LEN			$defs_win_len
+set_def NIP.PBC.WIN_LEN.VALUE		31
+set_def NIP.PBC.WIN_LEN.MAX		201
+set_def NIP.PBC.L_WIDTH			0
+set_def NIP.PBC.COLOUR			"#0000ff"; #blue
+
+#count dinucleotide frequencies
+set_def NIP.DINUC_FREQ.RANGE.NAME	"Save range"
+
+#plot gene search
+set_def NIP.PGS.WIN_LEN			$defs_win_len
+set_def NIP.PGS.WIN_LEN.NAME		"Window length (in codons)"
+set_def NIP.PGS.WIN_LEN.VALUE		67
+set_def NIP.PGS.WIN_LEN.MAX		301
+set_def NIP.PGS.RANGE.NAME		"Plot range"
+set_def NIP.PGS.L_WIDTH			0
+set_def NIP.PGS.METHOD.NAME		"select searching method"
+set_def NIP.PGS.METHOD.VALUE		1
+set_def NIP.PGS.METHOD.BUTTON.1		"base pref"
+set_def NIP.PGS.METHOD.BUTTON.2		"codon pref"
+set_def NIP.PGS.METHOD.BUTTON.3		"author test"
+set_def NIP.PGS.METHOD.BUTTON.4		"base bias"
+set_def NIP.PGS.MODE.NAME		"select display mode"
+set_def NIP.PGS.MODE.VALUE		1
+set_def NIP.PGS.MODE.BUTTON.1		"separate"
+set_def NIP.PGS.MODE.BUTTON.2		"together"
+set_def NIP.PGS.C_TABLE.NAME		"Codon table"
+set_def NIP.PGS.C_TABLE.VALUE		""
+set_def NIP.PGS.C_TABLE_O.NAME	"Codon table (optional)"
+set_def NIP.PGS.C_TABLE_O.VALUE	""
+set_def NIP.PGS.STOP.NAME	"Plot stop codons"
+set_def NIP.PGS.STOP.VALUE	1
+set_def NIP.PGS.MODE.NAME	"Select mode"
+set_def NIP.PGS.MODE.VALUE	1
+set_def NIP.PGS.MODE.VALUE1	1
+set_def NIP.PGS.MODE.VALUE2	0
+set_def NIP.PGS.MODE.BUTTON.1	bias
+set_def NIP.PGS.MODE.BUTTON.2	"no bias"
+set_def NIP.PGS.MODE.BUTTON.3	"Set to average amino acid composition"
+set_def NIP.PGS.MODE.BUTTON.4	"Set to amino acid composition only"
+set_def NIP.PGS.ERROR.NAME	"Percentage error"
+set_def NIP.PGS.ERROR.VALUE	0.1
+set_def NIP.PGS.ERROR.MIN	0.0005
+set_def NIP.PGS.ERROR.MAX	20
+
+set_def NIP.CODONPREF.COLOUR.F1		"#228b22"; #forestgreen
+set_def NIP.CODONPREF.COLOUR.F2		"#228b22"; #forestgreen
+set_def NIP.CODONPREF.COLOUR.F3		"#228b22"; #forestgreen
+set_def NIP.AUTHOR.COLOUR.F1		"#5f9ea0"; #cadetblue
+set_def NIP.AUTHOR.COLOUR.F2		"#5f9ea0"; #cadetblue
+set_def NIP.AUTHOR.COLOUR.F3		"#5f9ea0"; #cadetblue
+set_def NIP.BASEBIAS.COLOUR		"#8b8b00"; #yellow4
+
+#trna search
+set_def NIP.TRNA.RANGE.NAME		"Plot range"
+set_def NIP.TRNA.PLOT_HEIGHT            50
+set_def NIP.TRNA.TICK_HT		50
+set_def NIP.TRNA.COLOUR			 "#00c0c0"; #turquoise(ish)
+set_def NIP.TRNA.L_WIDTH        	1
+
+#plot start codons
+set_def NIP.START_CODON.TICK_HT		20
+set_def NIP.START_CODON.RANGE.NAME	"Plot range"
+set_def NIP.START_CODON.STRAND.NAME	"Select strand"
+set_def NIP.START_CODON.STRAND.VALUE	1
+set_def NIP.START_CODON.STRAND.BUTTON.1	"Positive strand"
+set_def NIP.START_CODON.STRAND.BUTTON.2	"Complementary strand"
+set_def NIP.START_CODON.STRAND.BUTTON.3	"Both strands"
+set_def NIP.START_CODON.COLOUR.F1	"#d02090"; #violet red
+set_def NIP.START_CODON.COLOUR.F2	"#d02090"; #violet red
+set_def NIP.START_CODON.COLOUR.F3	"#d02090"; #violet red
+
+
+#plot stop codons
+set_def NIP.STOP_CODON.TICK_HT		20
+set_def NIP.STOP_CODON.RANGE.NAME	"Plot range"
+set_def NIP.STOP_CODON.STRAND.NAME	"Select strand"
+set_def NIP.STOP_CODON.STRAND.VALUE	1
+set_def NIP.STOP_CODON.STRAND.BUTTON.1	"Positive strand"
+set_def NIP.STOP_CODON.STRAND.BUTTON.2	"Complementary strand"
+set_def NIP.STOP_CODON.STRAND.BUTTON.3	"Both strands"
+set_def NIP.STOP_CODON.COLOUR.F1	"#ff0000"; #red
+set_def NIP.STOP_CODON.COLOUR.F2	"#ff0000"; #red
+set_def NIP.STOP_CODON.COLOUR.F3	"#ff0000"; #red
+set_def NIP.STOP_CODON.L_WIDTH  	1
+
+#splice search
+set_def NIP.SPLICE.TICK_HT		0.5
+set_def NIP.SPLICE.RANGE.NAME		"Plot range"
+set_def NIP.SPLICE.PLOT_HEIGHT          60
+set_def NIP.SPLICE.DONOR.NAME		"Donor weight matrix"
+set_def NIP.SPLICE.DONOR.VALUE		"$env(STADTABL)/ied.wts"
+set_def NIP.SPLICE.ACCEPTOR.NAME	"Acceptor weight matrix"
+set_def NIP.SPLICE.ACCEPTOR.VALUE	"$env(STADTABL)/eia.wts"
+set_def NIP.SPLICE.COLOUR.F1		"#ffa500"; #orange
+set_def NIP.SPLICE.COLOUR.F2		"#00c0c0"; #turquoise(ish)
+set_def NIP.SPLICE.COLOUR.F3		"#d02090"; #violet red
+set_def NIP.SPLICE.L_WIDTH      	1
+
+
+#string search
+set_def NIP.STRING_SEARCH.TICK_HT		20
+set_def NIP.STRING_SEARCH.RANGE.NAME		"Range"
+set_def NIP.STRING_SEARCH.PLOT_HEIGHT         	60 
+set_def NIP.STRING_SEARCH.COLOUR		"#4b0082"; #indigo
+
+#weight matrix search
+set_def NIP.WTMATRIX_SEARCH.TICK_HT		20
+set_def NIP.WTMATRIX_SEARCH.RANGE.NAME		"Range"
+set_def NIP.WTMATRIX_SEARCH.PLOT_HEIGHT         60
+set_def NIP.WTMATRIX_SEARCH.MATRIX.NAME		"Weight matrix"
+set_def NIP.WTMATRIX_SEARCH.COLOUR		"#a52a2a"; #brown
+set_def NIP.WTMATRIX_SEARCH.L_WIDTH 		1
+
+#codon usage
+set_def NIP.CODON_USAGE.OUTPUT.NAME     "Saving codon table"
+set_def NIP.CODON_USAGE.OUTPUT.VALUE    1
+set_def NIP.CODON_USAGE.OUTPUT.BUTTON.1 "Output single table"
+set_def NIP.CODON_USAGE.OUTPUT.BUTTON.2 "Output double table"
+
+set_def NIP.CODON_USAGE.FILENAME.NAME	"Save table to (optional)"
+set_def NIP.CODON_USAGE.FILENAME.VALUE	""
+set_def NIP.CODON_USAGE.C_TABLE.NAME	"File name"
+set_def NIP.CODON_USAGE.C_TABLE.VALUE	""
+set_def NIP.CODON_USAGE.C_TABLE_YN.NAME	"Read from existing codon table"
+set_def NIP.CODON_USAGE.C_TABLE_YN.VALUE 0
+
+set_def NIP.CODON_USAGE.CODON_TOTAL.NAME 	"Show codon totals as"
+set_def NIP.CODON_USAGE.CODON_TOTAL.VALUE 	1
+set_def NIP.CODON_USAGE.CODON_TOTAL.BUTTON.1	"observed counts"
+set_def NIP.CODON_USAGE.CODON_TOTAL.BUTTON.2	"percentage"
+set_def NIP.CODON_USAGE.STRAND.NAME		"Strand"
+set_def NIP.CODON_USAGE.STRAND.VALUE		1
+set_def NIP.CODON_USAGE.STRAND.BUTTON.1		"forward"
+set_def NIP.CODON_USAGE.STRAND.BUTTON.2		"reverse"
+set_def NIP.CODON_USAGE.RANGE.NAME		"Range"
+set_def NIP.CODON_USAGE.INFILE.NAME.NAME	"List or file name"
+set_def NIP.CODON_USAGE.INFILE.NAME.BROWSE	Browse
+set_def NIP.CODON_USAGE.INFILE.NAME.VALUE	""
+set_def NIP.CODON_USAGE.INFILE.WHICH.NAME	"Input ranges from"
+set_def NIP.CODON_USAGE.INFILE.WHICH.BUTTONS	{list file single}
+set_def NIP.CODON_USAGE.INFILE.WHICH.VALUE	3
+
+#restriction enzyme map
+set_def NIP.RENZ.RANGE.NAME			"Plot range"
+
+#translation
+set_def NIP.TRANSLATE.RANGE.NAME		"Range"
+set_def NIP.TRANSLATE.LENGTH.NAME		"Line length"
+set_def NIP.TRANSLATE.LENGTH.VALUE		60
+set_def NIP.TRANSLATE.MODE.NAME			"Display as:"
+set_def NIP.TRANSLATE.MODE.VALUE		1
+set_def NIP.TRANSLATE.MODE.BUTTON.1		"1 letter"
+set_def NIP.TRANSLATE.MODE.BUTTON.2		"3 letter"
+
+#translate to feature table
+set_def NIP.TRANSLATE_FT.RANGE.NAME	"Save range"
+set_def NIP.TRANSLATE_FT.MIN_ORF.NAME	"Minimum ORF in codons"
+set_def NIP.TRANSLATE_FT.MIN_ORF.MIN 	5
+set_def NIP.TRANSLATE_FT.MIN_ORF.MAX	1000
+set_def NIP.TRANSLATE_FT.MIN_ORF.VALUE	30
+
+#translate to fasta file
+set_def NIP.TRANSLATE_FASTA.RANGE.NAME		"Save range"
+set_def NIP.TRANSLATE_FASTA.MIN_ORF.NAME 	"Minimum ORF in codons"
+set_def NIP.TRANSLATE_FASTA.MIN_ORF.MIN 	5
+set_def NIP.TRANSLATE_FASTA.MIN_ORF.MAX		1000
+set_def NIP.TRANSLATE_FASTA.MIN_ORF.VALUE	30
+set_def NIP.TRANSLATE_FASTA.FILENAME.NAME	"Fasta filename"
+set_def NIP.TRANSLATE_FASTA.FILENAME.VALUE		""
+
+#set genetic code
+set_def NIP.GENETIC_CODE.C_TABLE.NAME	"Codon table"
+set_def NIP.GENETIC_CODE.C_TABLE.VALUE	""
+set_def NIP.GENETIC_CODE.TYPE.NAME	"Select genetic code"
+set_def NIP.GENETIC_CODE.TYPE.VALUE	1
+set_def NIP.GENETIC_CODE.TYPE.BUTTON.1	"Standard"
+set_def NIP.GENETIC_CODE.TYPE.BUTTON.2	"Mammalian mitochondrial"
+set_def NIP.GENETIC_CODE.TYPE.BUTTON.3	"Yeast mitochondrial"
+set_def NIP.GENETIC_CODE.TYPE.BUTTON.4	"Personal"
+
+#rotate
+set_def NIP.ROTATE.ORIGIN.NAME		Origin
+set_def NIP.ROTATE.ORIGIN.VALUE		1
+
+#
+# Select which plots which want to be plotted by default on top of another plot
+# eg
+#set_def STOPCODON  		GENESEARCH
+# will plot stop codons on top of any gene search plot
+# limitations: can't plot something of 1 frame on a plot of 3 frames
+#
+set_def STRINGSEARCH		""
+set_def BASECOMP		""
+set_def BASEPREF		""
+set_def CODONPREF		""
+set_def AUTHOR			""
+set_def BASEBIAS		""
+set_def TRNA			""
+set_def STOPCODON  		GENESEARCH
+set_def STARTCODON  		GENESEARCH
+set_def SPLICE			""
+set_def WTMATRIXSEARCH		""
+set_def FT_VIEWER       	""
+
+#-----------------------------------------------------------------------------
+# SEQED
+#-----------------------------------------------------------------------------
+#save
+set_def SEQED.SAVE.RANGE.NAME		"Range"
+set_def SEQED.SAVE.LINE_LEN.NAME	"Line length"
+set_def SEQED.SAVE.LINE_LEN.VALUE	60
+set_def SEQED.SAVE.FILENAME.NAME	"File name"
+set_def SEQED.SAVE.FILENAME.VALUE	""
+
+set_def SEQED.SEARCH.DIRECTION.NAME	Direction
+set_def SEQED.SEARCH.DIRECTION.VALUE	1
+set_def SEQED.SEARCH.DIRECTION.BUTTON.1	forward
+set_def SEQED.SEARCH.DIRECTION.BUTTON.2	backward
+set_def SEQED.SEARCH.MATCH.NAME		"Minimum percent match"
+set_def SEQED.SEARCH.MATCH.VALUE	75.0
+set_def SEQED.SEARCH.STRAND.NAME	Strand
+set_def SEQED.SEARCH.STRAND.VALUE	1
+set_def SEQED.SEARCH.STRAND.BUTTON.1	forward
+set_def SEQED.SEARCH.STRAND.BUTTON.2	reverse
+set_def SEQED.SEARCH.STRING.NAME	"Search string"
+set_def SEQED.SEARCH.STRING.VALUE	""
+set_def SEQED.SEARCH.USE_IUB.NAME               "Search algorithm"
+set_def SEQED.SEARCH.USE_IUB.VALUE              1
+set_def SEQED.SEARCH.USE_IUB.BUTTON1.NAME       "iub codes"
+set_def SEQED.SEARCH.USE_IUB.BUTTON2.NAME       literal
+set_def SEQED.SEARCH.USE_IUB.BUTTON1.VALUE      1
+set_def SEQED.SEARCH.USE_IUB.BUTTON2.VALUE      0
+
+# Set this to a Tcl list of the interpreter names of programs which Gap4 can
+# communicate with using the Send To command. If they're not already running,
+# it'll start one itself with the second half of the name. NB, interpreter
+# names not listed here, but containing an EventHandler function will still be
+# listed.
+# Eg "set_def GAP_SEND_TO {{Prog1 prog1} {Prog2 {/bin/prog2 -s}}}"
+set_def NIP_SEND_TO {{Sip4 sip4}}

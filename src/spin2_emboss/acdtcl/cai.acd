@@ -1,0 +1,112 @@
+package require Iwidgets
+namespace eval ::EMBOSS::cai {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_cai*Xentry.entry.width 30
+option add *e_cai*Entryfield.width 30
+option add *e_cai*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) cai
+    set w [xtoplevel .e_cai -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - cai}
+    label $w._title -text {CAI codon adaptation index}
+    pack $w._title -side top -fill both
+    set vars(cai._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqall
+    set vars(seqall)       [get_active_seq_id 1]
+    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 1]}
+    set vars(seqall.name)  [seq_info $vars(seqall) name]
+    sequence_changed [namespace current] seqall
+    set vars(seqall.type) [subst DNA]
+    seq_id $w.seqall \
+	-textvariable [namespace current]::vars(seqall.name)\
+	-start_value $vars(seqall.begin)\
+	-end_value $vars(seqall.end)\
+	-to [seq_info $vars(seqall) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
+    set vars(seqall) [subst {}]
+    pack $w.seqall -side top -fill both
+    set vars(seqall.path) $w.seqall
+    set vars(seqall.required)  1
+    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
+    set vars(seqall._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cfile
+    iwidgets::combobox $w.cfile\
+	-textvariable [namespace current]::vars(cfile)\
+	-labeltext [subst {Codon usage file}]
+    eval $w.cfile insert list end [list_codon_tables]
+    grid [$w.cfile component entry] -sticky nse
+    $w.cfile delete entry 0 end
+    $w.cfile insert entry end [subst Eyeastcai.cut]
+    $w.cfile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.cfile -side top -fill both
+    set vars(cfile.path) $w.cfile
+    set vars(cfile.required)  1
+    set vars(cfile._type) codon
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst cai0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/cai.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,186 @@
+package require Iwidgets
+namespace eval ::EMBOSS::nrscope {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_nrscope*Xentry.entry.width 30
+option add *e_nrscope*Entryfield.width 30
+option add *e_nrscope*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) nrscope
+    set w [xtoplevel .e_nrscope -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - nrscope}
+    label $w._title -text {Converts redundant EMBL-format SCOP file to non-redundant one}
+    pack $w._title -side top -fill both
+    set vars(nrscope._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments scopin
+    xentry $w.scopin \
+	-label [subst {Name of scop file for input (embl-like format)}]\
+	-textvariable [namespace current]::vars(scopin) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopin delete 0 end
+    $w.scopin insert end [subst Escop.dat]
+    pack $w.scopin -side top -fill both
+    set vars(scopin.path) $w.scopin
+    set vars(scopin.required)  1
+    set vars(scopin._type) infile
+
+    lappend arguments dpdb
+    iwidgets::entryfield $w.dpdb \
+	-textvariable [namespace current]::vars(dpdb) \
+	-labeltext [subst {Location of clean domain coordinate files for input (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.dpdb component entry] -sticky nse
+    set vars(dpdb) [subst ./]
+    pack $w.dpdb -side top -fill both
+    set vars(dpdb.path) $w.dpdb
+    set vars(dpdb.required)  1
+    set vars(dpdb._type) string
+
+    lappend arguments extn
+    iwidgets::entryfield $w.extn \
+	-textvariable [namespace current]::vars(extn) \
+	-labeltext [subst {File extension of clean domain coordinate files}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.extn component entry] -sticky nse
+    set vars(extn) [subst .pxyz]
+    pack $w.extn -side top -fill both
+    set vars(extn.path) $w.extn
+    set vars(extn.required)  1
+    set vars(extn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments thresh
+    iwidgets::entryfield $w.thresh \
+	-validate real \
+	-textvariable [namespace current]::vars(thresh) \
+	-labeltext [subst {The % sequence identity redundancy threshold}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.thresh component entry] -sticky nse
+    set vars(thresh) [subst 95.0]
+    pack $w.thresh -side top -fill both
+    set vars(thresh.path) $w.thresh
+    set vars(thresh.required)  1
+    set vars(thresh._type) float
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst 1]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Residue substitution matrix}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst EBLOSUM62]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  1
+    set vars(datafile._type) matrixf
+
+    lappend arguments gapopen
+    iwidgets::entryfield $w.gapopen \
+	-validate real \
+	-textvariable [namespace current]::vars(gapopen) \
+	-labeltext [subst {Gap insertion penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapopen component entry] -sticky nse
+    set vars(gapopen) [subst 10]
+    pack $w.gapopen -side top -fill both
+    set vars(gapopen.minimum) [subst 1.]
+    set vars(gapopen.maximum) [subst 100.]
+    set vars(gapopen.path) $w.gapopen
+    set vars(gapopen.required)  1
+    set vars(gapopen._type) float
+
+    lappend arguments gapextend
+    iwidgets::entryfield $w.gapextend \
+	-validate real \
+	-textvariable [namespace current]::vars(gapextend) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapextend component entry] -sticky nse
+    set vars(gapextend) [subst 0.5]
+    pack $w.gapextend -side top -fill both
+    set vars(gapextend.minimum) [subst 0.0]
+    set vars(gapextend.maximum) [subst 10.]
+    set vars(gapextend.path) $w.gapextend
+    set vars(gapextend.required)  1
+    set vars(gapextend._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments scopout
+    xentry $w.scopout \
+	-label [subst {Name of non-redundant scop file for output (embl-like format)}]\
+	-textvariable [namespace current]::vars(scopout) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.scopout delete 0 end
+    $w.scopout insert end [subst EscopNR.dat]
+    pack $w.scopout -side top -fill both
+    set vars(scopout.path) $w.scopout
+    set vars(scopout.required)  1
+    set vars(scopout._type) outfile
+
+    lappend arguments errf
+    xentry $w.errf \
+	-label [subst {Name of log file for the build}]\
+	-textvariable [namespace current]::vars(errf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.errf delete 0 end
+    $w.errf insert end [subst nrscope.log]
+    pack $w.errf -side top -fill both
+    set vars(errf.path) $w.errf
+    set vars(errf.required)  1
+    set vars(errf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/nrscope.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

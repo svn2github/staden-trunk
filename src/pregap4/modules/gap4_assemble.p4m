@@ -1,0 +1,297 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Use shotgun assembly to enter data into a gap4 database
+#
+
+set help {pregap4 {Pregap4-Modules-Gap4 Assembly}}
+
+proc init {} {
+    mod_preset database_name ""
+    mod_preset database_version 0
+    mod_preset create 0
+    mod_preset min_match 15
+    mod_preset max_pads 25
+    mod_preset max_pmismatch 5.0
+    mod_preset enter_all 0
+    mod_preset gap4_maxseq 100000
+    mod_preset gap4_maxdb 8000
+
+    variable create
+    variable create_mode
+    if {$create == 1} {
+	set create_mode create
+    } else {
+	set create_mode append
+    }
+    
+    variable db_busy 0
+}
+
+proc name {} {
+    return "Gap4 shotgun assembly"
+}
+
+proc run {files} {
+    global file_error file_type
+    global maxseq maxdb
+    variable report
+    variable database_name
+    variable database_version
+    variable create
+    variable min_match
+    variable max_pads
+    variable max_pmismatch
+    variable enter_all
+    variable gap4_maxseq
+    variable gap4_maxdb
+
+    set report ""
+    load_package gap
+    global gap_fatal_errors
+    set gap_fatal_errors 0
+    set maxseq $gap4_maxseq
+    set maxdb $gap4_maxdb
+
+    # Fail if the database exists and is in use
+    if {[file exists $database_name.$database_version.BUSY]} {
+	append report "ERR: The Gap4 database is currently in use. Aborting.\n"
+	verror ERR_WARN gap4_assemble "database busy"
+	return $files
+    }
+
+    # Find the list of files to process. Any file with a space in its name is
+    # failed here as we know Gap4 cannot cope with this.
+    set tfiles {}
+    set new_files {}
+    foreach f $files {
+	if {$file_type($f) == "EXP" || $file_type($f) == "PLN"} {
+	    if {[string match "* *" [file tail $f]]} {
+		set file_error($f) "gap4_assemble: filename contains a space"
+	        append report "SEQ $f: failed (filename contains spaces)\n"
+	    } else {
+		# Gap4 auto-assemble cannot handle long pathnames
+		lappend tfiles [file tail $f]
+	        set found($f) 0
+	    }
+	} else {
+	    append report "SEQ $f: skipping - not in correct format\n"
+	    lappend new_files $f
+	}
+    }
+
+    if {$tfiles == ""} { return $new_files }
+
+    # Open the database
+    if {$create} {
+        catch {file delete $database_name.$database_version}
+        catch {file delete $database_name.$database_version.aux}
+        catch {file delete $database_name.$database_version.BUSY}
+        set e [catch {set io [open_db \
+		-name $database_name \
+		-version $database_version \
+		-create 1 \
+		-access rw]} var]
+    } else {
+        set e [catch {set io [open_db \
+		-name $database_name \
+		-version $database_version \
+		-create 0 \
+		-access rw]} var]
+    }
+
+    if {$e || $io == ""} {
+	append report "ERR: Failed to open database $database_name.$database_version.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting.\n"
+	verror ERR_WARN open_db $var
+        catch {file delete $database_name.$database_version.BUSY}
+	append report $var
+	return $files
+    }
+
+    # Do the assembly
+    set e [catch {set result [assemble_shotgun \
+	-io $io \
+	-files $tfiles \
+	-output_mode 1 \
+	-min_match $min_match \
+	-max_pads $max_pads \
+	-max_pmismatch $max_pmismatch \
+	-enter_failures [expr 1-$enter_all]]} err]
+    if {$e} {
+        append report "ERR: Failed to assemble; \"$err\"\n"    
+    }
+
+    # Process the result - this lists the failures.
+    foreach f $result {
+	append report "SEQ [lindex $f 0]: failed ([lrange $f 1 end])\n"
+	set ind [lsearch $files [lindex $f 0]]
+	set file_error([lindex $f 0]) "gap4_assemble: failed with code [lrange $f 1 end]"
+	catch {unset found([lindex $f 0])}
+    }
+
+    if {[array names found] != {}} {
+        eval lappend new_files [array names found]
+    }
+    foreach f [array names found] {
+	append report "SEQ $f: assembled\n"
+    }
+
+    # Close the Gap4 database
+    close_db -io $io
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable database_name
+    variable database_version
+    variable create
+    variable min_match
+    variable max_pads
+    variable max_pmismatch
+    variable enter_all
+    variable gap4_maxseq
+    variable gap4_maxdb
+    variable create_mode
+
+    xentry $w.database_name \
+	-label "Gap4 database name" \
+	-default $database_name \
+	-width 7
+    xentry $w.database_version \
+	-label "Gap4 database version" \
+	-default $database_version \
+	-width 7
+    frame $w.create
+    radiobutton $w.create.create \
+	-text "Create new database" \
+	-variable [namespace current]::create_mode \
+	-value create
+    radiobutton $w.create.append \
+	-text "Append to existing database" \
+	-variable [namespace current]::create_mode \
+	-value append
+    pack $w.create.create -side left
+    pack $w.create.append -side right
+
+    pack $w.database_name $w.database_version $w.create -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    xentry $w.min_match \
+	-label "Minimum exact match" \
+	-default $min_match \
+	-width 7 \
+	-type "int 14"
+    xentry $w.max_pads \
+	-label "Maximum number of pads" \
+	-default $max_pads \
+	-width 7 \
+	-type "int 0"
+    xentry $w.max_pmismatch \
+	-label "Maximum percentage mismatch" \
+	-default $max_pmismatch \
+	-width 7 \
+	-type float
+    xcheck $w.enter \
+	-text "Enter all readings" \
+	-variable [namespace current]::enter_all
+    xentry $w.gap4_maxseq \
+	-label "Maximum consensus length" \
+	-default $gap4_maxseq \
+	-width 7 \
+	-type "int 0"
+    xentry $w.gap4_maxdb \
+	-label "Maximum database size" \
+	-default $gap4_maxdb \
+	-width 7 \
+	-type "int 0"
+
+    pack $w.min_match $w.max_pads $w.max_pmismatch $w.gap4_maxseq \
+	 $w.gap4_maxdb -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	database_name database_version create min_match max_pads \
+	max_pmismatch enter_all gap4_maxseq gap4_maxdb]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable database_name
+    variable database_version
+    variable min_match
+    variable max_pads
+    variable max_pmismatch
+    variable enter_all
+    variable gap4_maxseq
+    variable gap4_maxdb
+    variable create
+    variable create_mode
+
+    if {[set database_name    [$w.database_name    get]] == ""} { return 0 }
+    if {[set database_version [$w.database_version get]] == ""} { return 0 }
+    if {[set min_match        [$w.min_match        get]] == ""} { return 0 }
+    if {[set max_pads         [$w.max_pads         get]] == ""} { return 0 }
+    if {[set max_pmismatch    [$w.max_pmismatch    get]] == ""} { return 0 }
+    if {[set gap4_maxseq      [$w.gap4_maxseq      get]] == ""} { return 0 }
+    if {[set gap4_maxdb       [$w.gap4_maxdb       get]] == ""} { return 0 }
+    if {$create_mode == "create"} {
+	set create 1
+    } else {
+	set create 0
+    }
+
+
+    # Fail if the database exists and is in use
+    if {[file exists $database_name.$database_version.BUSY]} {
+        variable db_busy
+        if {$db_busy == 0} {
+	    tk_messageBox -icon error -message "Gap4 database is busy"
+	    set db_busy 1
+	}
+	return 0
+    }
+    set db_busy 0
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    variable create
+    variable enter_all
+    variable create_mode
+
+    if {$create_mode == "create"} {
+	set create 1
+    } else {
+	set create 0
+    }
+
+    if {[string match save* $mode]} {
+	mod_save database_name [$w.database_name get2]
+	mod_save database_version [$w.database_version get2]
+	mod_save create $create
+	mod_save min_match [$w.min_match get2]
+	mod_save max_pads [$w.max_pads get2]
+	mod_save max_pmismatch [$w.max_pmismatch get2]
+	mod_save enter_all $enter_all
+	mod_save gap4_maxseq [$w.gap4_maxseq get2]
+	mod_save gap4_maxdb [$w.gap4_maxdb get2]
+    }
+}
+

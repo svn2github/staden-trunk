@@ -1,0 +1,53 @@
+@cindex polyA_clip: man page
+@cindex polyA clipping
+@cindex polyT clipping
+
+@unnumberedsec NAME
+
+polyA_clip --- Mark polyA and polyT heads and tails.
+
+@unnumberedsec SYNOPSIS
+
+@code{polyA_clip} [@code{-vt}] [@code{-t}] [@code{-x} @i{min_length(0)}] 
+[@code{p} @i{percent_cutoff(95)}] [@code{w} @i{window_length(50)}] files...
+
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-v}
+     Enable verbose output. This outputs information on which files are
+     currently being clipped.
+
+@item @code{-t}
+     Test mode. The SL and SR information is written to stdout instead of
+     being appended to the Experiment file.
+
+@item @code{-x} @i{min_length}
+     Sequences which after clipping are shorter than min_length are reported.
+     
+@item @code{-w} @i{window_length}
+     The length of the window that is slid along the sequence to analyse the
+     composition.
+
+@item @code{-p} @i{percentage}
+     Windows containing this percentage of A or T bases are considered as 
+     polyA or polyT
+@end table
+
+@unnumberedsec DESCRIPTION
+
+PolyA_clip searches the 5' and 3' ends of sequence readings for the presence
+of polyA and polyT heads and tails. It marks them using the SL and SR 
+experiment file records, and hence should be applied after quality clipping
+and sequence vector clipping. Any number of files can be processed in a single
+run. The algorithm is as follows. The user supplies window_length and  
+percentage. From MIN(QR,SR) slide the window left until 
+percent_A < percentage and percent_T < percentage.
+Then from the right edge of the window look left until
+a C or G is found. Mark this base SR. Do the equivalent for the 5' end and
+mark SL.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)

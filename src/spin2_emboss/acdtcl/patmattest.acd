@@ -1,0 +1,66 @@
+package require Iwidgets
+namespace eval ::EMBOSS::patmattest {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_patmattest*Xentry.entry.width 30
+option add *e_patmattest*Entryfield.width 30
+option add *e_patmattest*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) patmattest
+    set w [xtoplevel .e_patmattest -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - patmattest}
+    label $w._title -text {test of pattern matching}
+    pack $w._title -side top -fill both
+    set vars(patmattest._type) application
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) sequence
+
+    lappend arguments expression
+    iwidgets::entryfield $w.expression \
+	-textvariable [namespace current]::vars(expression) \
+	-labeltext [subst {Regular expression to search sequence for.}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.expression component entry] -sticky nse
+    set vars(expression) [subst {}]
+    pack $w.expression -side top -fill both
+    set vars(expression.path) $w.expression
+    set vars(expression.required)  1
+    set vars(expression._type) string
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/patmattest.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

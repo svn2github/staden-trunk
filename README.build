@@ -1,0 +1,29 @@
+To build the source tree, you need to have Tcl, Tk, IncrTcl, iWidgets, Zlib
+and libPNG installed.
+
+The distributions we use are held in the ftp subdirectory of the source
+distribution. (Newer versions may exist, but we have not tested these.)
+In a few cases we have tweaked things here and there (bug fixes and the like), 
+but we have always submitted back bug fixes so future releases of these
+third-party libraries should not require any local tweaks.
+
+If you do not already have these libraries install then unpack and install
+them following the instructions included with each library. If you're just
+recompiling the Staden Package source note that it's probably just easiest to
+grab a binary release and avoid needing to rebuild the third party
+libraries. (The binary Staden Package releases contain prebuilt copies of
+these.) The unpacked tcl, tk (etc) directories included in the src directory
+contain just the few files needed to build the staden package source; mostly
+header files.
+
+Compilers:
+---------
+
+You'll need C, C++ and Fortran compilers. Any ANSI C compiler should do;
+they're generally pretty reliable. C++ can be trickier. Microsoft Visual C++
+works (not sure which version though). GNU g++ also works, but make sure you
+use 3.2.1 or later as the STL has problems with older releases. The Fortran
+code is limited to one file in the gap4 directory. An F2C converted copy is
+also in the same directory, but building this also requires building the
+libf2c libraries. This is a workable alternative (to using, say, g77), but is
+in itself quite a bit of work.

@@ -1,0 +1,3133 @@
+_include(spin_org-t.texi)
+_include(spin_mini-t.texi)
+
+_split()
+@node SPIN-Intro-Menus
+@section Spin Menus
+@cindex EMBOSS
+
+The main window for spin contains File, View, Options, Sequences, Statistics,
+Translation, Search, Comparison and Emboss menus.
+
+@node SPIN-Intro-Menu-File
+@subsection Spin File Menu
+
+The File menu includes sequence reading, saving and management options.
+
+@itemize @bullet
+@item Load sequences (_fpref(SPIN-Read Sequences, Reading in sequences, t))
+@item Save (_fpref(SPIN-Save Sequence, Save, t))
+@item Change directory
+@item Sequence manager (_fpref(SPIN-Sequence Manager, Sequence manager)) 
+@item Exit
+@end itemize
+
+
+@node SPIN-Intro-Menu-View
+@subsection Spin View Menu
+
+The View menu contains options to give access to the Results
+Manager, and to the Sequence Display.
+
+@itemize @bullet
+@item Results manager (_fpref(SPIN-Result-Manager, Result manager))
+@item Sequence display (_fpref(SPIN-Sequence-Display, Sequence display))
+@end itemize
+
+@node SPIN-Intro-Menu-Options
+@subsection Spin Options Menu
+
+The Options menu contains options for configuring spin and its functions.
+
+@itemize @bullet
+@item Change protein score matrix (_fpref(SPIN-Changing the score matrix, Changing the score matrix))
+@item Set protein alignment symbols
+(_fpref(SPIN-Set protein alignment symbols, Set protein alignment symbols, t))
+@item Configure maximum number of matches 
+(_fpref(SPIN-Changing Max Match Number, Changing the maximum number of matches,t))
+@item Configure default number of matches 
+(_fpref(SPIN-Changing Default Match Number, Changing the default number of
+matches))
+@item Hide duplicate matches 
+(_fpref(SPIN-Hide duplicate matches, Hide duplicate matches,t))
+@item Set fonts
+@item Colours
+
+@end itemize
+
+@node SPIN-Intro-Menu-Sequences
+@subsection Spin Sequences Menu
+
+The Sequences menu contain options for manipulating the sequences
+currently loaded into spin.
+All these operations
+are also obtainable from a pop up menu in the sequence manager 
+(_fpref(SPIN-Sequence Manager, Sequence manager)).
+
+@itemize @bullet
+@item Horizontal
+(_fpref(SPIN-Change Active Sequence, Change the active sequence, t))
+@item Vertical
+(_fpref(SPIN-Change Active Sequence, Change the active sequence, t))
+@item Set range
+(_fpref(SPIN-Set Range, Set the range,t))
+@item Copy 
+(_fpref(SPIN-Copy, Copy sequence,t))
+@item Complement sequence
+(_fpref(SPIN-Complement Sequence, Complement sequence,t))
+@item Interconvert t and u
+(_fpref(SPIN-Interconvert t and u, Interconvert t and u,t))
+@item Translate sequence
+(_fpref(SPIN-Translate Sequence, Translate sequence,t))
+@item Scramble sequence
+(_fpref(SPIN-Scramble Sequence, Scramble sequence,t))
+@item Sequence type
+(_fpref(SPIN-Sequence Type, Sequence type,t))
+@item Rotate sequence
+(_fpref(SPIN-Rotate Sequence, Rotate sequence,t))
+@item Save
+(_fpref(SPIN-Save Sequence, Save sequence,t))
+@item Delete
+(_fpref(SPIN-Delete Sequence, Delete sequence,t))
+@end itemize
+
+@node SPIN-Intro-Menu-Statistics
+@subsection Spin Statistics Menu
+
+The Statistics menu contains the spin functions for analysing and
+plotting the composition of sequences.
+
+@itemize @bullet
+@item Count sequence composition
+(_fpref(SPIN-Base-Composition, Count Sequence Composition))
+@item Plot base composition
+(_fpref(SPIN-Plot-Base-Composition, Plot Base Composition))
+@item Count dinucleotide frequencies
+(_fpref(SPIN-Dinucleotide-Freq, Dinucleotide Frequencies)).
+@end itemize
+
+@node SPIN-Intro-Menu-Translation
+@subsection Spin Translation Menu
+
+The "Translation" menu contains options to set the genetic code,
+translate to protein, find open reading frames and to calculate 
+codon tables.
+
+@itemize @bullet
+@item Set genetic code
+(_fpref(SPIN-Set-Genetic-Code, Set Genetic Code))
+@item Translate
+(_fpref(SPIN-Translation-General, Translation)),
+@item Find open reading frames
+(_fpref(SPIN-Open-Reading-Frames, Find Open Reading Frames))
+@item Calculate and write codon table to disk
+(_fpref(SPIN-Codon-Usage-Tables, Calculate codon usage, t))
+@end itemize
+
+@node SPIN-Intro-Menu-Search
+@subsection Spin Search Menu
+
+The "Search" menu contains a variety of different searching and analysis
+techniques.
+
+@itemize @bullet
+@item Protein genes: Codon pref
+(_fpref(SPIN-Codon-Usage-Method, Codon Usage Method))
+@item Protein genes: Author test
+(_fpref(SPIN-Author-Test, Author Test))
+@item Protein genes: Base bias
+(_fpref(SPIN-Uneven-Positional-Base-Freqs, Uneven Positional base
+Frequencies))
+@item tRNA genes
+(_fpref(SPIN-TRNA-Search, tRNA Search))
+@item Search for string (DNA)
+(_fpref(SPIN-String-Search, Subsequence search))
+@item Restriction enzyme map
+(_fpref(SPIN-Restrict-Introduction, Restriction enzyme search))
+@item Plot start codons
+(_fpref(SPIN-Start-Codon-Search, Start Codon Search))
+@item Plot stop codons
+(_fpref(SPIN-Stop-Codon-Search, Stop Codon Search))
+@item Search for splice junctions
+(_fpref(SPIN-Splice-Site-Search, Splice Site Search))
+@item Search using weight matrix
+(_fpref(SPIN-Weight-Matrix-Search, Motif Search))
+@end itemize
+
+
+@node SPIN-Intro-Menu-Comparison
+@subsection Spin Comparison Menu
+
+The Comparison menu contains the spin analytical functions for comparing
+and aligning the sequences.
+
+@itemize @bullet
+@item Find similar spans
+(_fpref(SPIN-Find similar spans, Finding Similar Spans))
+@item Find matching words
+(_fpref(SPIN-Find matching words, Finding Matching Words))
+@item Find best diagonals
+(_fpref(SPIN-Find Best Diagonals, Finding the Best Diagonals))
+@item Align sequences
+(_fpref(SPIN-Align Sequences, Aligning Sequences Globally))
+@item Local alignment
+(_fpref(SPIN-Local alignment, Aligning Sequences Locally))
+@end itemize
+
+_ifdef([[_unix]],[[
+@node SPIN-Intro-Menu-Emboss
+@subsection Spin Emboss Menu
+@cindex EMBOSS
+
+Spin provides a graphical user interface for most of the the programs contained in EMBOSS
+_uref(http://www.hgmp.mrc.ac.uk/Software/EMBOSS/). 
+Those that are not provided
+are the ones that deal with multiple sequence alignments and the various rarely
+used tools such as the ones for database indexing. There are a lot of programs
+in EMBOSS so cascading menus are used. As far as the user is concerned the
+EMBOSS programs appear as though part of spin - all results are plotted in the
+same way as for equivalent spin functions, the sequences can be viewed in
+the sequence displays, and textual results appear in the Output Window.
+
+An important feature of EMBOSS is that it provides access to the sequence
+libraries.
+
+Notes on configuring EMBOSS for use via spin are included in the
+package's /doc directory. In summary these notes state the following:
+After installing EMBOSS the main task is to
+create the dialogues and menus for spin. This is entirely automatic.
+The create_emboss_files program attempts to find the location for your
+installed EMBOSS release. From this is iterates through all of the acd
+files
+and produces tcl/tk GUIs for each program. These are placed in the
+$STADENROOT/lib/spin_emboss/acdtcl directory. An Emboss menu is added to 
+Spin,
+with the menu specification being in $STADENROOT/tables/emboss_menu.
+]])
+
+@node SPIN-Functions
+@chapter Spin's Analytical Functions
+
+@menu
+* SPIN-Base-Composition::     Count Sequence composition
+* SPIN-Dinucleotide-Freq::    Dinucleotide frequencies
+* SPIN-Plot-Base-Composition::   Plot base composition
+* SPIN-String-Search::Subsequence search
+* SPIN-Codon-Usage-Tables:: Calculate codon usage
+* SPIN-Set-Genetic-Code::   Set genetic code
+* SPIN-Translation-General::  Translation - general
+* SPIN-Open-Reading-Frames::  Find open reading frames
+* SPIN-Start-Codon-Search::  Start codon search
+* SPIN-Stop-Codon-Search::   Stop codon search
+* SPIN-Codon-Usage-Method::   Codon usage method
+* SPIN-Positional-Base-Prefs::   Positional base preferences
+* SPIN-Author-Test::   Author test
+* SPIN-Uneven-Positional-Base-Freqs::   Uneven positional base frequencies
+* SPIN-Splice-Site-Search::   Splice site search
+* SPIN-Weight-Matrix-Search::   Motif search
+* SPIN-TRNA-Search::   tRNA search
+* SPIN-Find similar spans::   Finding Similar Spans
+* SPIN-Find matching words::  Finding Matching Words
+* SPIN-Local alignment::      Aligning Sequences Locally
+* SPIN-Find Best Diagonals::  Finding the Best Diagonals
+* SPIN-Align Sequences::      Aligning Sequences Globally
+@end menu
+
+
+Spin contains both simple and sophisticated analytical functions, mostly
+producing graphical results. The following sections describe the
+functions, approximately in order of increasing complexity.
+
+_split()
+@node SPIN-Base-Composition
+@section Count Sequence Composition
+@cindex Sequence composition:spin
+
+When a sequence is read into the program its composition is displayed in
+the Output Window to provide a simple check that the data has been
+read correctly. The values can also be requested from the "Statistics"
+menu, when a dialogue will allow subsections of the sequence to be
+analysed. The results are displayed as shown below.
+
+@example
+@group
+
+============================================================
+Wed 12 Nov 17:10:25 1997: sequence composition
+------------------------------------------------------------
+A 1966 (24.17%) C 1996 (24.54%) G 2185 (26.86%) T 1987 (24.43%) - 0 (0.00%)
+
+Or for protein sequences:
+============================================================
+Mon 14 Oct 17:11:04 2002: sequence composition
+------------------------------------------------------------
+Sequence MYSA_DROME: 1 to 2411
+Protein
+AA  A     B     C     D     E     F     G     H     I     K     L     M     N    
+N  201   0     30    150   281   74    127   45    126   233   243   43    121   
+%  8.3   0.0   1.2   6.2   11.7  3.1   5.3   1.9   5.2   9.7   10.1  1.8   5.0   
+M  14287 0     3094  17263 36281 10891 7246  6171  14258 29865 27498 5642  13807 
+
+AA  P     Q     R     S     T     V     W     Y     Z     X     *     -    
+N  55    167   141   96    93    108   14    63    0     0     0     0     
+%  2.3   6.9   5.8   4.0   3.9   4.5   0.6   2.6   0.0   0.0   0.0   0.0   
+M  5341  21398 22022 8360  9403  10706 2607  10280 0     0     0     0     
+M  5341  21398 22022 8360  9403  10706 2607  10280 0     0     0     0     
+@end group
+@end example
+
+
+@node SPIN-Dinucleotide-Freq
+@section Count Dinucleotide Frequencies
+@cindex Dinucleotide frequencies:spin
+
+This routine simply counts dinucleotide frequencies for the selected region of
+the sequence. It also calculates an expected distribution based on the base 
+composition. The output looks like:
+
+@example
+@group
+        A                C                G                T
+     Obs    Expected  Obs    Expected  Obs    Expected  Obs    Expected
+ A     7.91    5.84     5.64    5.93     5.05    6.49     5.57    5.91
+ C     5.91    5.93     5.14    6.02     7.38    6.59     6.10    5.99
+ G     6.11    6.49     7.56    6.59     6.30    7.22     6.90    6.56
+ T     4.24    5.91     6.18    5.99     8.14    6.56     5.86    5.97
+
+@end group
+@end example
+
+_split()
+@node SPIN-Plot-Base-Composition
+@section Plot base composition
+@cindex Base composition plotting:spin
+@cindex Plotting base composition:spin
+@cindex Composition: sequence:spin
+@cindex Sequence composition:spin
+@cindex Persistence of results:spin
+@cindex Memory saving:spin
+@cindex Memory usage:spin
+
+
+The composition of the sequence can be displayed graphically. A window is
+slid along the sequence one base at a time, and at each point the number
+of occurrences of each selected base type is counted and plotted. Users can
+select which base types are counted, the size of the window used and the
+region of the sequence to analyse. 
+
+_lpicture(spin_plot_base_comp_p)
+
+For
+example the A and T composition can be plotted by selecting base
+types A and T in the dialogue. As usual the values can also be listed in
+the text Output Window. Note that this "result", i.e. the base
+composition counts for every position along the sequence, will persist
+until the user explicitly removes it. To save memory delete results as
+soon as they are no longer required.
+
+_picture(spin_plot_base_comp_d)
+
+
+_split()
+@node SPIN-Codon-Usage-Tables
+@section Calculate codon usage
+@cindex Codon usage:spin
+@cindex Codon frequencies:spin
+@cindex Codon tables:spin
+@cindex Codon composition:spin
+
+Codon usage tables can be calculated and written to the Output Window,
+and written to disk. If required the values found can be added to the
+counts in a
+pre-existing codon table, or when written out to disk they can be
+concatenated with an existing codon table file. In the first case the
+existing file will be read and added to the values calculated for the
+region defined by the user. In the latter, the values calculated for the
+region defined by the user will be written immediately after those from
+the existing table, hence producing a pair of tables joined end to end.
+An example of this is shown at the end of this section, and a more
+typical result is shown below.
+
+_lpicture(spin_count_codons_t)
+
+Refering to the figure of the dialogue below, the user can select the
+range and strand over which to
+count. Note that irrespective of the strand being counted, the positions in the
+sequence are always defined from the current 5' end. i.e. to count over
+bases 1 to 100 the user should set the Start position to 1 and the End
+position to 100.
+The values in the table can be expressed as
+observed counts or as percentages of usage for the cognate amino acid.
+
+_picture(spin_count_codons_d)
+
+The table can be output as a single table (as shown above), or as a
+double table (shown below). The user can request that the counts from an
+existing table be read and added to the counts which are about to be
+calculated, in which case the "File name" text window will be activated.
+If the user selects to output a double table, this dialogue will also be
+activated. To save the output in the selected form to a file, the user
+should fill in the "Save table to" text window.
+
+Two of the protein coding search functions 
+(_fpref(SPIN-Codon-Usage-Method, Codon Usage Method))
+and
+(_fpref(SPIN-Author-Test, Author Test))
+work best using a double
+codon table. The top table should contain the codon usage for the coding
+regions and the bottom table the usage for non-coding regions. A typical
+double codon table of this sort is shown below.
+
+@example
+
+      ===============================================
+      F ttt     4 S tct    30 Y tat     5 C tgt     9
+      F ttc    35 S tcc    21 Y tac    15 C tgc     5
+      L tta     4 S tca     7 * taa     0 * tga     0
+      L ttg    24 S tcg     9 * tag     0 W tgg    15
+      ===============================================
+      L ctt    71 P cct     1 H cat    17 R cgt    37
+      L ctc    39 P ccc     2 H cac    15 R cgc    18
+      L cta     0 P cca    14 Q caa    87 R cga     1
+      L ctg     4 P ccg     0 Q cag    18 R cgg     1
+      ===============================================
+      I att    33 T act    30 N aat    12 S agt     2
+      I atc    53 T acc    20 N aac    59 S agc     5
+      I ata     1 T aca     3 K aaa    23 R aga    38
+      M atg    32 T acg     0 K aag   117 R agg     0
+      ===============================================
+      V gtt    30 A gct    71 D gat    58 G ggt     5
+      V gtc    22 A gcc    54 D gac    32 G ggc     1
+      V gta     7 A gca     6 E gaa    76 G gga    49
+      V gtg     5 A gcg     0 E gag   101 G ggg     1
+      ===============================================
+      ===============================================
+      F ttt    10 S tct     8 Y tat     7 C tgt     4
+      F ttc    12 S tcc     2 Y tac     4 C tgc     3
+      L tta     6 S tca     4 * taa     7 * tga    10
+      L ttg    11 S tcg     3 * tag     4 W tgg     6
+      ===============================================
+      L ctt     5 P cct     3 H cat     4 R cgt     0
+      L ctc     6 P ccc     1 H cac     4 R cgc     0
+      L cta     3 P cca     1 Q caa     9 R cga     5
+      L ctg     6 P ccg     3 Q cag     5 R cgg     2
+      ===============================================
+      I att    13 T act     6 N aat     7 S agt     4
+      I atc     7 T acc     0 N aac     3 S agc     2
+      I ata    12 T aca     5 K aaa     9 R aga    16
+      M atg     7 T acg     3 K aag     4 R agg     4
+      ===============================================
+      V gtt     6 A gct     2 D gat     8 G ggt     4
+      V gtc     2 A gcc     1 D gac     3 G ggc     1
+      V gta     5 A gca     1 E gaa     9 G gga     9
+      V gtg     4 A gcg     0 E gag     3 G ggg     0
+      ===============================================
+@end example
+
+To calculate such a table using spin the following steps are
+required. First calculate the codon usage for a typical coding
+segment and save the resulting table in table A. Then use the option
+again, but this time select to "Output double table", and type the name
+of table A into the "File name" text box. Next define the start and end
+points of a non-coding region, and save the results to double table
+B. The file containing double table B is now suitable for use by the
+protein gene searching functions.
+
+_split()
+@node SPIN-Set-Genetic-Code
+@section Set genetic code
+@cindex Set genetic code:spin
+@cindex Genetic code:spin
+
+This function allows the user to change the genetic used in all the
+options. The codes are defined as a set of codon tables stored in the
+directory tables/gcodes distributed with the package. The current list
+of codes and their codon table file names is shown at the end of this
+section.
+
+The user interface consists of the dialogue shown below. The user selects
+the required code by clicking on it, and then clicking "OK" or "OK
+permanent". The former choice selects the code for immediate use, and
+the latter also selects it for future uses of the program.
+
+_picture(set_genetic_code)
+
+When the dialogue is left the codon table selected will be displayed, as
+below, in the Output Window.
+
+@example
+      ===============================================
+      F ttt       S tct       Y tat       C tgt      
+      F ttc       S tcc       Y tac       C tgc      
+      L tta       S tca       * taa       W tga      
+      L ttg       S tcg       * tag       W tgg      
+      ===============================================
+      L ctt       P cct       H cat       R cgt      
+      L ctc       P ccc       H cac       R cgc      
+      L cta       P cca       Q caa       R cga      
+      L ctg       P ccg       Q cag       R cgg      
+      ===============================================
+      I att       T act       N aat       S agt      
+      I atc       T acc       N aac       S agc      
+      M ata       T aca       K aaa       G aga      
+      M atg       T acg       K aag       G agg      
+      ===============================================
+      V gtt       A gct       D gat       G ggt      
+      V gtc       A gcc       D gac       G ggc      
+      V gta       A gca       E gaa       G gga      
+      V gtg       A gcg       E gag       G ggg      
+      ===============================================
+@end example
+
+The following table shows the list of available genetic codes and the
+files in which they are stored for use by the package. They were created
+from genetic code files obtained from the NCBI.
+
+@example
+code_1  Standard
+code_2  Vertebrate Mitochondrial
+code_3  Yeast Mitochondrial
+code_4  Coelenterate  Mitochondrial
+code_4  Mold Mitochondrial
+code_4  Protozoan Mitochondrial
+code_4  Mycoplasma
+code_4  Spiroplasma
+code_5  Invertebrate Mitochondrial
+code_6  Ciliate Nuclear
+code_6  Dasycladacean Nuclear
+code_6  Hexamita Nuclear
+code_9  Echinoderm Mitochondrial
+code_10 Euplotid Nuclear
+code_11 Bacterial
+code_12 Alternative Yeast Nuclear
+code_13 Ascidian Mitochondrial
+code_14 Flatworm Mitochondrial
+code_15 Blepharisma Macronuclear
+@end example
+
+_split()
+@node SPIN-Translation-General
+@section Translation - general
+
+@cindex Translation to protein:spin
+@cindex DNA translation:spin
+@cindex Protein:spin
+
+Translations of the sequence can be obtained in three ways. The first is
+an option available within the "Sequence manager" or the "Sequences" menu 
+(_fpref(SPIN-Sequence Manager, Sequence manager)).
+
+The second is
+an option in the Sequence display 
+(_fpref(SPIN-Sequence-Display, Spin Sequence Display)) which enables the 
+translation to be shown with the scrolling sequence.
+
+The third, which has two methods of defining the segments to translate,
+is described here. The translations are written to the Output window, from
+where they can be saved to disk.
+A segment of a typical display is shown below.
+
+_picture(spin_translate_t)
+
+Users select either to use a feature table to define the segments to translate
+or can simply enter a start and end position. In the latter case a six phase
+transtation over that one segment is written out. If a feature table is used
+(and this assumes the sequence file was an EMBL entry complete with features),
+the CDS records from the table will be listed in the dialogue window and the
+user can select which ones should be used
+(_fpref(SPIN-Feature Tables, Use of feature tables in spin, t)).
+The translations produced will be
+written in FASTA format ready to be saved to disk (which the next release of
+spin will do automatically!). 
+
+The user can also choose
+the line length, and whether one or three letter amino acid symbols are
+produced. 
+
+_picture(spin_translate_d)
+
+_split()
+@node SPIN-Open-Reading-Frames
+@section Find open reading frames
+@cindex Find open reading frames:spin
+@cindex Open reading frames:spin
+
+This function will find open reading frames greater than an specified length. 
+The results can be output in two ways, either in feature table format
+
+@example
+@group
+
+FT   CDS             120..233
+FT   CDS             161..256
+FT   CDS             301..396
+FT   CDS             333..497
+FT   CDS             512..736
+FT   CDS             525..965
+FT   CDS             740..952
+FT   CDS             754..876
+FT   CDS             956..1789
+@end group
+@end example
+
+or as a fasta file.
+
+@example
+@group
+>120                 120..233
+VISENISLLKIGAKNHHWLLKQLLKMSMGGFCCVNVIY*
+>161                 161..256
+EPSLAVKTVIKNVNGWFLLCKCHLLNRYLFLD*
+>301                 301..396
+ICCARTCAICDLKHALSPVFTRYLQFFMIEQG*
+>333                 333..497
+SEARFITSVYALFTVFHDRTGLAEKSQLYALEKYLNIYSPFGYLLFEITGAHRII*
+>512                 512..736
+CLTLSLKESFIRHAAYLEGSRSEKRDVCVARESKRCSEASARSVTGGDSKWIAVQPQRPL
+LGRLCNKRGPGSLSA*
+>525                 525..965
+ALKKVLYDTRHTSKGAGVKNVMSVSLVSRNVARKLLLVQLLVVIASGLLFSLKDPFWGVS
+AISGGLAVFLPNVLFMIFAWRHQAHTPAKGRVAWTFAFGEAFKVLAMLVLLVVALAVLKA
+VFLPLIVTWVLVLVVQILAPAVINNKG*
+>740                 740..952
+RFVYDICLASPGAYTSERPGGLDIRIWRSFQSSGDVGVTGGGVGGFKGGILAADRYVGFG
+AGGSDTGTGCN*
+>754                 754..876
+YLPGVTRRIHQRKAGWPGHSHLAKLSKFWRCWCYWWWRWRF*
+>956                 956..1789
+QQRVKGIMASENMTPQDYIGHHLNNLQLDLRTFSLVDPQNPPATFWTINIDSMFFSVVLG
+LLFLVLFRSVAKKATSGVPGKFQTAIELVIGFVNGSVKDMYHGKSKLIAPLALTIFVWVF
+LMNLMDLLPIDLLPYIAEHVLGLPALRVVPSADVNVTLSMALGVFILILFYSIKMKGIGG
+FTKELTLQPFNHWAFIPVNLILEGVSLLSKPVSLGLRLFGNMYAGELIFILIAGLLPWWS
+QWILNVPWAIFHILIITLQAFIFMVLTIVYLSMASEEH*
+@end group
+@end example
+
+The user can select that start and end points over which to do the search,
+which strand to search (either the forward, reverse or both) and the
+minimum length of the open reading frame in codons. If the output is being
+written in fasta format, the name of file is also required.
+
+_picture(spin_find_orf_d)
+
+_include(spin_restrict_enzymes-t.texi)
+
+
+_split()
+@node SPIN-String-Search
+@section Subsequence search
+@cindex String searching:spin
+@cindex Subsequence searching:spin
+@cindex Searching for strings:spin
+@cindex String matching:spin
+@cindex Matching strings:spin
+@cindex Finding strings:spin
+@cindex String finding:spin
+@cindex Percentage matches:spin
+@cindex Searching for oligos:spin
+@cindex Oligo searching:spin
+@cindex Motif searching: percentage matches:spin
+
+
+Two subsequence or string searches are available. One, selected from the "Search" menu
+on the Output Window, produces both graphical and textual output, and
+the other, selected from the "Search" button in the Sequence display,
+moves the cursor to the position of the next match. Here we document the
+use of the first search, and the other is described in
+_oref(SPIN-Sequence-Display-Search, Sequence display string search).
+
+As shown in the dialogue the user selects the range and strand over
+which the search should be performed, the search algorithm, the minimum percentage match,
+and the subsequence/string for which to search. The search algorithm allows either NC-IUB 
+codes @cite{Cornish-Bowden, A. (1985) Nucl. Acids Res. 13, 3021-3030} or a 
+literal search. The literal search will search for exact matches eg
+inputting a search string of "n" will search for the letter "n". The NC-IUB 
+codes option can use any of the NC-IUB symbols
+shown in the figure below and the search is not case sensitive.
+
+@example
+@group
+@cartouche
+              NC-IUB SYMBOLS
+ 
+        A,C,G,T
+        R        (A,G)        'puRine'
+        Y        (T,C)        'pYrimidine'
+        W        (A,T)        'Weak'
+        S        (C,G)        'Strong'
+        M        (A,C)        'aMino'
+        K        (G,T)        'Keto'
+        H        (A,T,C)      'not G'
+        B        (G,C,T)      'not A'
+        V        (G,A,C)      'not T'
+        D        (G,A,T)      'not C'
+        N        (G,A,C,T)    'aNy'
+
+@end cartouche
+@end group
+@end example
+
+_picture(spin_string_search_d)
+
+The matches are plotted as vertical lines at the match positions with
+the heights of the lines in proportion to their score. The matches are
+also written in the Output Window as shown below.
+
+_lpicture(spin_string_search_p)
+
+
+@example
+@group
+============================================================
+Tue 19 Oct 11:52:50 1999: string search
+------------------------------------------------------------
+Position 7837 score 9 percent match 90.000000
+ Percentage mismatch  10.0
+                 1
+          string atrytayrat
+                 ::..::..: 
+      atpase.seq atgctatgag
+              7837
+@end group
+@end example
+
+_split()
+@node SPIN-Weight-Matrix-Search
+@section Motif search
+@cindex Motif searching:spin
+@cindex Weight matrix:spin
+@cindex Searching:spin
+@cindex Searching for motifs:spin
+
+This option is used to search for motifs such as binding sites. The
+motifs are defined using weight matrices which are stored as files 
+that need to be created beforehand. These matrices are usually
+calculated from alignments of trusted examples of the motif. The
+@code{make_weights} program can be used to create weight matrices from
+sets of aligned sequences
+(_fpref(Man-make_weights, Make_weights, t))
+We also plan to build up a library of matrix files which we will place
+in our ftp site.
+
+An example weight matrix file is shown below. It consists
+of a title record; a record defining the motif size, an offset and the score
+range; 2 records which need to be present but which are ignored; 4 records
+defining the base frequencies calculated from the trusted examples.
+
+An example weight matrix file is shown below. The first line gives the
+title ('Mount acceptors' in this example). The next line gives the motif 
+length (18), the "mark position" (15), and the minimum and maximum
+scores (0.0 and 10.0). The "mark position" is an offset which is added
+to the position of any matches reported by the search routine in
+spin. The next two lines are ignored by the programs. The first of them
+gives the matrix column positions, and the next gives the total counts
+in each column. The final lines (4 for DNA weight matrices) give the
+counts for each character type at each position in the motif. These
+counts are converted into weights that are used during the searches. Any
+position in a sequence which scores at least as high as the minimum
+score is reported as a match, and if the results are plotted they are
+scaled to fit the range defined by the minimum and maximum scores.
+
+@example
+@group
+ Mount acceptors
+     18    15   0.0   10.0
+ P -14 -13 -12 -11 -10  -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3
+ N 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113
+ T  58  50  57  59  67  56  58  49  47  66  64  31  34   0   0  11  41  31
+ C  21  28  34  25  29  33  35  32  42  40  33  25  74   0   0  23  28  41
+ A  17  11  11  18   7  17  12  23  15   3  10  29   5 113   0  24  21  21
+ G  17  24  11  11  10   7   8   9   9   4   6  28   0   0 113  55  23  20
+@end group
+@end example
+
+Search results are plotted as log-odds and appear as shown below.
+
+_lpicture(spin_weight_matrix)
+
+The dialogue for the option is shown below.
+
+_picture(spin_weight_matrix_dial)
+
+
+_split()
+@node SPIN-Gene-Finding
+@section Gene finding
+@cindex Finding genes: Introduction:spin
+@cindex Gene finding: Introduction:spin
+@cindex Searching: protein genes:spin
+@cindex Searching: tRNA genes:spin
+@cindex Searching: motifs:spin
+@cindex motifs: spin
+
+@menu
+* SPIN-Start-Codon-Search::      Start Codon Search
+* SPIN-Stop-Codon-Search::       Stop Codon Search
+* SPIN-Codon-Usage-Method::	Codon Usage Method
+* SPIN-Author-Test::	        Author Test
+* SPIN-Uneven-Positional-Base-Freqs::	Uneven Positional Base Frequencies Method
+* SPIN-Splice-Site-Search::	Splice Site Search
+* SPIN-Weight-Matrix-Search::	Motif Search
+* SPIN-TRNA-Search::		tRNA Gene Search
+@end menu
+
+
+Many years ago @cite{Staden R. (1984) Graphic methods to determine
+the function of nucleic acid sequences. Nucl. Acids Res. 12, 521-538}
+we separated methods for searching for genes and their
+control regions into two classes: "gene search by signal", and "gene
+search by content". 
+@cite{Staden R. (1985) Computer methods to locate genes  and  signals  in
+nucleic acid sequences, Genetic Engineering: Principles
+and Methods Vol. 7, Edited  by  J. K. Setlow   and   A.
+Hollaender, Plenum Publishing Corp.}.
+Signal searches look for short segments of
+sequences such as promoters, ribosome binding sites, splice junctions,
+etc, whereas content searches look for the sequence patterns that are
+characteristic of protein coding regions, or RNA genes. Protein coding
+sequences produce particular amino acid sequences, often using preferred
+codons, and this leaves patterns in the sequence that can be used to
+distinguish them from non-protein-coding DNA. tRNA genes must produce
+stable cloverleaf structures and "standard" tRNAs must contain
+particular (conserved) bases at locations within the cloverleaf. These
+features can be used to locate tRNA genes, and probably other RNA
+genes could be sought in a similar way.
+
+The methods described in the following sections are either "content" or
+"signal" searches and spin's graphical presentation of results can be used to
+see if together they produce a consistent gene prediction. 
+
+_split()
+@node SPIN-Start-Codon-Search
+@subsection Start codon search
+@cindex Searching: start codons:spin
+@cindex Start codons:spin
+
+This function plots the positions of all start codons using the default
+genetic code in all 3 reading frames. The positions can be listed to the
+Output Window. The start codons are plotted beneath
+the centre of the plot (in contrast to the stop codons which are plotted
+above the centre). If any of the gene search methods are currently being
+displayed, the start codons will automatically be plotted on top of the
+corresponding frame, otherwise they will be plotted in three separate plots.
+These plots can be dragged and dropped in the usual manner.
+
+_picture(spin_start_d)
+
+_lpicture(spin_start_p)
+
+_split()
+@node SPIN-Stop-Codon-Search
+@subsection Stop codon search
+@cindex Searching: stop codons:spin
+@cindex Searching: protein genes:spin
+@cindex Open reading frames:spin
+@cindex Searching: open reading frames:spin
+
+Stop codons can be searched for on either (or both) strands of the
+sequence. The stop codons are displayed graphically, with a different
+colour used for each reading frame, and their positions can also be
+listed in the Output Window. If any of the gene search methods are currently
+being displayed, the stop codons will automatically be plotted on top of the
+corresponding frame. As usual the graphical plots can be dragged and dropped 
+to new locations.
+
+_picture(spin_stops_d)
+
+_lpicture(spin_stops_p)
+
+In the example below we show the stop codon search results after they
+have been drawn on a plot containing results from
+a protein gene search method. Here we can see that the open reading
+frames coincide with the highest scoring segments from the protein gene
+prediction plots.
+
+_lpicture(spin_stops_p2)
+
+
+_split()
+@node SPIN-Codon-Usage-Method
+@subsection Codon usage method
+
+@cindex Searching: protein genes:spin
+@cindex Finding protein genes:spin
+@cindex Codon usage tables:spin
+@cindex Normalisation: codon usage tables:spin
+@cindex Stop codons:spin
+@cindex Codon usage method:spin
+
+
+This gene finding method is based on @cite{Staden, R. and McLachlan, A.D. (1982)
+Codon preference and its use in identifying protein coding regions in
+long DNA sequences. Nucl. Acid Res. 10, 141-156.}
+
+The current method contains a number of improvements on the original
+one. We are trying to decide if each segment of the sequence is coding or 
+non-coding. Each possibility is represented by a model consisting of a table of
+expected codon usage. The calculation finds the
+odds that each segment of the sequence fits either the coding or 
+non-coding model, and the results are plotted as log odds. 
+
+The results for each reading frame are plotted in the graphics
+window with frame 1 in the top panel, frame 2 the middle and frame 3
+in the bottom panel. Frame 1 is the frame of the first base in the
+active region. At each position along the sequence the program
+also plots a single dot for the reading frame with the highest
+score. These dots appear at the midpoints of the three panels and will
+form a continuous line if one reading frame is consistently the
+highest scoring.
+
+The figure shown below shows a SPIN Sequence Plot containing the results of
+the codon usage method on a sequence from C. elegans. This sequence has
+strong codon usage bias and so produces clear results for the method.
+Here the results are for the standard codon usage employing only the
+codon usage table shown below and a window length of 67 codons (i.e.
+no table of codon usage for non-coding sequence was supplied, and no
+normalisation was performed on the coding table). Compare the results
+to the other screen dump shown later, which also uses
+a window of 67 codons.
+
+Also visible in the figure are the cross hairs. Their x position is shown
+in sequence base numbers in the left hand box above the plot, and the y
+coordinate, expressed using the score values of the gene search, is
+shown in the right hand box. Each line in the window has its own colour
+and can be dragged and dropped to new locations to reorganise the plot.
+The cursor in the plot can be used to control the position of the
+cursor in the sequence display.
+
+_lpicture(spin_codon_usage)
+
+As can be seen in the dialogue below 
+the user can define the size of the scan window in codons (note that the
+window length must be odd), the name of
+the file containing the codon usage table, and the region of the
+sequence to be analysed. The longer the window the smoother the plots
+but the more difficult it is to finds the ends of the coding
+segments. The stronger the codon preference in the codon table the
+higher the discrimination between coding and non-coding (assuming the
+sequence being analysed has the same preferences as those of the
+table). Note also that the amino acid composition represented in the
+table will also influence the results.
+
+_picture(spin_codon_usage_dial)
+
+The user should supply the name of a file containing two concatenated
+codon usage tables - the first being from coding sequence and the
+second from noncoding sequence. 
+This double codon table can be calculated by
+spin using 
+the Codon Usage function
+(_fpref(SPIN-Codon-Usage-Tables, Calculate codon usage, t)).
+
+If the user gives
+the name of a file that contains only a single codon table the
+algorithm will assume that it is from coding sequence, and will
+generate a noncoding table that consists of the frequencies
+that would be expected if the sequence being analysed was random
+but had the same base composition as the codon table.
+
+If no table is specified the program will generate a codon usage table
+corresponding to an average amino acid composition, and then derive
+a non-coding table from its base composition. This is equivalent to the
+"positional base preferences" method, and hence replaces it. More information
+about this method is given further down
+(_fpref(SPIN-Positional-Base-Prefs, Positional base Preferences))
+
+In addition the user can select to set the amino acid composition of the
+coding table to have an average amino acid composition, and/or to have
+no codon preference (i.e. for each amino acid the codon counts are equal,
+i.e.  (TTT = TTC); (TTA = TTG = CTT = CTC = CTA = CTG); ...;
+(GGT = GGC = GGA = GGG)). In the latter case the search uses amino acid 
+composition only.
+
+
+The   average   amino
+  composition  used  to normalise the values in the codon table
+is that described by McCaldon and Argos @cite{McCaldon  and  Argos (1988),
+Proteins  4,  99-122}. 
+
+The dialogue also allows the user to control whether or not the positions
+of stop codons are included in the display.
+
+Codon tables are scaled so that the sum of their values is 1000 and then
+any zero entries are set to 1/1000. Stop codons in the coding table are
+made to be neutral by setting them to the mean value for the table.
+
+Example of the tables employed/calculated for
+an input coding table, no non-coding table, and normalise to average
+amino acid composition.
+
+@example
+@group
+
+Table read in:
+
+      ===============================================
+      F ttt     3 S tct    29 Y tat     5 C tgt     9
+      F ttc    35 S tcc    21 Y tac    15 C tgc     5
+      L tta     2 S tca     6 * taa     0 * tga     0
+      L ttg    23 S tcg     9 * tag     0 W tgg    15
+      ===============================================
+      L ctt    70 P cct     1 H cat    17 R cgt    37
+      L ctc    39 P ccc     2 H cac    15 R cgc    18
+      L cta     0 P cca    14 Q caa    87 R cga     1
+      L ctg     4 P ccg     0 Q cag    17 R cgg     1
+      ===============================================
+      I att    32 T act    30 N aat    11 S agt     1
+      I atc    53 T acc    20 N aac    56 S agc     5
+      I ata     1 T aca     3 K aaa    21 R aga    36
+      M atg    31 T acg     0 K aag   115 R agg     0
+      ===============================================
+      V gtt    28 A gct    69 D gat    57 G ggt     5
+      V gtc    22 A gcc    52 D gac    32 G ggc     1
+      V gta     7 A gca     6 E gaa    76 G gga    48
+      V gtg     4 A gcg     0 E gag    99 G ggg     1
+      ===============================================
+
+@end group
+@end example
+
+@example
+@group
+
+Program generates non-coding table from the base 
+composition of the coding table:
+
+      ===============================================
+      F ttt    13 S tct    13 Y tat    12 C tgt    18
+      F ttc    13 S tcc    12 Y tac    12 C tgc    17
+      L tta    12 S tca    12 * taa    11 * tga    16
+      L ttg    18 S tcg    17 * tag    16 W tgg    24
+      ===============================================
+      L ctt    13 P cct    12 H cat    12 R cgt    17
+      L ctc    12 P ccc    12 H cac    11 R cgc    17
+      L cta    12 P cca    11 Q caa    11 R cga    16
+      L ctg    17 P ccg    17 Q cag    16 R cgg    23
+      ===============================================
+      I att    12 T act    12 N aat    11 S agt    16
+      I atc    12 T acc    11 N aac    11 S agc    16
+      I ata    11 T aca    11 K aaa    11 R aga    15
+      M atg    16 T acg    16 K aag    15 R agg    22
+      ===============================================
+      V gtt    18 A gct    17 D gat    16 G ggt    24
+      V gtc    17 A gcc    17 D gac    16 G ggc    23
+      V gta    16 A gca    16 E gaa    15 G gga    22
+      V gtg    24 A gcg    23 E gag    22 G ggg    31
+      ===============================================
+
+@end group
+@end example
+
+@example
+@group
+
+Program generates coding table with average amino acid
+composition and stops set to mean:
+
+      ===============================================
+      F ttt     3 S tct    28 Y tat     8 C tgt    11
+      F ttc    36 S tcc    20 Y tac    24 C tgc     6
+      L tta     1 S tca     6 * taa    16 * tga    16
+      L ttg    15 S tcg     9 * tag    16 W tgg    13
+      ===============================================
+      L ctt    46 P cct     3 H cat    12 R cgt    23
+      L ctc    25 P ccc     6 H cac    10 R cgc    11
+      L cta     0 P cca    42 Q caa    33 R cga     1
+      L ctg     3 P ccg     0 Q cag     7 R cgg     1
+      ===============================================
+      I att    19 T act    33 N aat     7 S agt     1
+      I atc    32 T acc    22 N aac    37 S agc     5
+      I ata     1 T aca     3 K aaa     9 R aga    22
+      M atg    24 T acg     0 K aag    48 R agg     0
+      ===============================================
+      V gtt    30 A gct    45 D gat    34 G ggt     7
+      V gtc    24 A gcc    34 D gac    19 G ggc     1
+      V gta     8 A gca     4 E gaa    27 G gga    63
+      V gtg     4 A gcg     0 E gag    35 G ggg     1
+      ===============================================
+
+@end group
+@end example
+
+_split()
+@node SPIN-Positional-Base-Prefs
+@subsection Positional base preferences
+
+This method for finding protein coding regions
+is a variant of the codon usage method. Here, instead of measuring the
+closeness to an table of codon frequencies whose main discriminating
+power is due codon preferences, we look for similarity to the codon
+usage that would be expected from a protein sequence of average amino
+acid composition, but with no codon preference. The method is
+surprisingly effective:
+When  tested  against all the E. coli
+  sequences in the EMBL sequence library it correctly  identified  the
+  coding  frame  for  91% of window positions.  (The E. coli sequences
+  were chosen only for technical reasons: we have no  reason  to  think
+  the method would work less well on other organisms with roughly even
+  base composition.) 
+@cite{Staden R. (1990) Finding protein coding regions in genomic sequences.
+                  In Doolittle, R,R (ed), Methods in Enzymology, 183, 
+                  Academic Press, San Diego, CA, 163-180.}
+
+The   average   amino
+  composition  used  to derive the values in the codon table
+is that described by McCaldon and Argos @cite{McCaldon  and  Argos (1988),
+Proteins  4,  99-122}. 
+
+_lpicture(spin_codon_usage_aaonly)
+
+Above is the result of applying this method to the C. elegans sequence
+analysed above with a codon preference table. Note that, as would be expected,
+the main difference
+is the that the range of observed scores is very much reduced.
+
+_split()
+@node SPIN-Author-Test
+@subsection Author test
+@cindex Searching: protein genes:spin
+@cindex Finding protein genes:spin
+@cindex Codon usage tables:spin
+@cindex Sequence interpretation: finding protein genes:spin
+@cindex Normalisation: codon usage tables:spin
+@cindex Stop codons:spin
+@cindex Author test:spin
+
+This is an unpublished method for distinguishing between coding and
+noncoding segments of a DNA sequence. It is basically an extension of
+the Codon Usage method in which we compare the sequence to two tables
+of codon usage to see which of the two it is most like. One table
+should contain typical codon usage from a coding sequence and the
+other typical codon usage from a noncoding region. It is based on
+methods used to decide authorship of text - is the usage of words
+(codons) more
+like that of author A (coding) or that of author B (noncoding)?
+
+_lpicture(spin_author_p)
+
+The results for each reading frame are plotted in the graphics
+window with frame 1 in the top panel, frame 2 the middle and frame 3
+in the bottom panel. Frame 1 is the frame of the first base in the
+active region. At each position along the sequence the program
+also plots a single dot for the reading frame with the highest
+score. These dots appear at the midpoints of the three panels and will
+form a continuous line if one reading frame is consistently the
+highest scoring.
+The figure shows a SPIN Sequence Plot containing the results of
+the author test method on a sequence from E. coli.
+Also visible are the cross hairs. Their x position is shown
+in sequence base numbers in the left hand box above the plot, and the y
+coordinate, expressed using the score values of the gene search, is
+shown in the right hand box. Each line in the window has its own colour
+and can be dragged and dropped to new locations to reorganise the plot.
+The cursor in the plot can be used to control the position of the
+cursor in the sequence display.
+
+
+@example
+@group
+A typical pair of concatenated codon tables for use by the Author test
+
+      ===============================================
+      F ttt     0 S tct     6 Y tat     2 C tgt     3
+      F ttc     3 S tcc     8 Y tac     6 C tgc     0
+      L tta     0 S tca     0 * taa     0 * tga     0
+      L ttg     1 S tcg     0 * tag     0 W tgg     0
+      ===============================================
+      L ctt     1 P cct     0 H cat     0 R cgt    12
+      L ctc     1 P ccc     0 H cac     4 R cgc     5
+      L cta     1 P cca     2 Q caa     2 R cga     0
+      L ctg    19 P ccg     7 Q cag    12 R cgg     0
+      ===============================================
+      I att     5 T act     3 N aat     2 S agt     2
+      I atc    22 T acc     6 N aac     7 S agc     1
+      I ata     0 T aca     1 K aaa     8 R aga     0
+      M atg     8 T acg     0 K aag     2 R agg     0
+      ===============================================
+      V gtt    14 A gct    12 D gat     7 G ggt    16
+      V gtc     1 A gcc     4 D gac     9 G ggc    11
+      V gta     7 A gca     8 E gaa    14 G gga     0
+      V gtg     4 A gcg     5 E gag     2 G ggg     0
+      ===============================================
+      ===============================================
+      F ttt    16 S tct     8 Y tat     8 C tgt    12
+      F ttc     7 S tcc     0 Y tac     4 C tgc     8
+      L tta     7 S tca     9 * taa    14 * tga     6
+      L ttg     7 S tcg     5 * tag     2 W tgg    17
+      ===============================================
+      L ctt     4 P cct     5 H cat     7 R cgt     4
+      L ctc     1 P ccc     0 H cac     7 R cgc     8
+      L cta     2 P cca     2 Q caa     3 R cga     4
+      L ctg     6 P ccg     1 Q cag     7 R cgg     4
+      ===============================================
+      I att     5 T act     3 N aat     3 S agt     4
+      I atc     2 T acc     5 N aac     1 S agc     1
+      I ata     6 T aca     8 K aaa    13 R aga     7
+      M atg     4 T acg     5 K aag     9 R agg     6
+      ===============================================
+      V gtt     5 A gct     2 D gat     3 G ggt     3
+      V gtc     3 A gcc     4 D gac     3 G ggc     5
+      V gta     2 A gca     4 E gaa     3 G gga     2
+      V gtg     5 A gcg     5 E gag     2 G ggg     5
+      ===============================================
+@end group
+@end example
+
+The mathematical treatment of the data is very different from that of
+the codon usage method.
+
+Given the two tables of codon usage the algorithm works out the
+optimal weighting to give each codon to obtain the best discrimination
+between coding and noncoding sequence. 
+The user sets the expected error rate as a percentage and the algorithm
+will choose the corresponding window length to use for the analysis.
+
+_picture(spin_author_d)
+
+The user should supply the name of a file containing two concatenated
+codon usage tables - the first being from coding sequence and the
+second from noncoding sequence. 
+This double codon table can be calculated by
+spin using 
+the Codon Usage function
+(_fpref(SPIN-Codon-Usage-Tables, Calculate codon usage, t)).
+
+If the user gives
+the name of a file that contains only a single codon table the
+algorithm will assume that it is from coding sequence, and will
+generate a noncoding table that consists of the frequencies
+that would be expected if the sequence being analysed was random.
+The region to be analysed can also be set.
+
+
+_split()
+@node SPIN-Uneven-Positional-Base-Freqs
+@subsection Uneven positional base preferences
+@cindex Searching: protein genes:spin
+@cindex Finding protein genes:spin
+@cindex Sequence interpretation: finding protein genes:spin
+@cindex Uneven positional base frequencies:spin
+
+This method is used to find regions of a  sequence  that
+code  for  a
+protein.  It is based  on  the method of Fickett @cite{Fickett,J. (1982) 
+Nucl. Acid Res.10}, and unlike the other methods currently in the
+package does not attempt to say either which strand or frame is likely
+to be coding, only which regions of the sequence.
+
+The method looks for sections of the sequence in which the
+frequencies at which  each  of  the  four  bases  occupy  the  three
+positions  in  codons  is  nonrandom.  The level of nonrandomness is
+plotted on a scale that shows the probability that the  sequence  is
+coding.  At each position along a sequence the calculation gives the
+same value for all six possible reading frames, so only one value is
+plotted. Seventy six percent of coding regions score above 0.78  and
+76% of noncoding regions below 0.78. 
+No known window in a
+coding region has a value below 0.4, but 14% of windows in noncoding
+sequences  score  below  it. No known window in a noncoding region
+reaches a score of 1.34, but this score is reached by 16%  of  known  coding
+regions. These statements are now very much out of date.
+
+The method was first described in  @cite{Staden R. (1984) 
+Nucl. Acid Res.  12, 551-567}.
+It looks through the sequence in one  fixed  phase  and  counts  the
+number  of  times  each  base  appears  in  each  of  the three codon
+positions: for each window position it counts A1,A2,A3 and  C1,C2,C3
+and  G1,G2,G3  and  T1,T2,T3  and calculates AMEAN=(A1+A2+A3)/3, and
+similarly CMEAN, GMEAN and TMEAN; it  then  calculates  ADIF=abs(A1-
+AMEAN)+abs(A2-AMEAN)+abs(A3-AMEAN) and similarly CDIF, GDIF and TDIF
+to measure the differences  between  an  even  base  usage  for  all
+positions  in  the  codons  and the observed usage. The routine then
+calculates and plots the sum ADIF+CDIF+GDIF+TDIF.
+
+
+
+In the figure shown below it will be seen that much of the sequence
+being analysed appears to be coding, and this is indeed the case. Many
+of the troughs between peaks correspond to the ends of genes in this
+E. coli sequence (which was not a good choice to illustrate the
+method!). The horizontal line is at 76%. 76% of coding regions achieve values
+above this line and 76% of noncoding regions achieve scores below the line.
+ 
+_lpicture(spin_base_bias_p)
+
+As can be seen in the dialogue below 
+the user can set the window length in codons (although around 67 codons is
+generally suitable) and can restrict the search to a sub region of the
+sequence. Note that the window length must be odd.
+
+
+_picture(spin_base_bias_d)
+
+_split()
+@node SPIN-Splice-Site-Search
+@subsection Splice site search
+@cindex Splice junctions:spin
+@cindex Intron/exon boundaries:spin
+@cindex Weight matrix: splice sites:spin
+@cindex Splice sites:spin
+@cindex Reading frame:spin
+@cindex Searching: splice sites:spin
+@cindex Searching: protein genes:spin
+
+This method is used to search  for  mRNA  splice  junctions  
+using  a  weight
+matrix.  The  default  weight  matrix is still that derived from the
+paper of @cite{Mount S.M, (1982) Nucl. Acids Res. 10, 459-472}, but
+we are about to create a whole new set which will be organism specific,
+and will include them in later releases and make them available via ftp.
+
+The  results are displayed in three colours, one colour for each
+reading frame. The donors are plotted upwards from the base of the
+panel and the acceptors are plotted downwards from the top of the
+panel. The donors and acceptors with the same colour are compatible; 
+eg red donors are compatible with red acceptors.
+Of course it is the  combination
+of  reading  frame  and splice sites that really matters, so donors
+and acceptors drawn in different colours can be compatible if the
+reading frame changes. By default all the sites are drawn in the same
+plot but in the figure shown below they have been separated by reading
+frame using the programs ability to reorganise the positions of
+graphical results. This layout of the donors and acceptors is designed
+to fit with the gene search methods and stop codon plots.
+The results are plotted as Log-Odds.
+
+_lpicture(spin_splice)
+
+The  frequency  table  shown
+below  is  used  as  a  weight  matrix  and  AG  and GT are
+obligatory at the appropriate positions.
+ 
+@example
+@group
+ Mount acceptors redone 16-4-91                              
+     18    15   0.0   10.0
+ P -14 -13 -12 -11 -10  -9  -8  -7  -6  -5  -4  -3  -2  -1   0   1   2   3
+ N 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113 113
+ T  58  50  57  59  67  56  58  49  47  66  64  31  34   0   0  11  41  31
+ C  21  28  34  25  29  33  35  32  42  40  33  25  74   0   0  23  28  41
+ A  17  11  11  18   7  17  12  23  15   3  10  29   5 113   0  24  21  21
+ G  17  24  11  11  10   7   8   9   9   4   6  28   0   0 113  55  23  20
+ Mount donors redone 16-4-91                                 
+     12     4   0.0    8.0
+ P  -2  -1   0   1   2   3   4   5   6   7   8   9
+ N 136 136 136 136 136 136 136 136 136 136 136 136
+ T  28   8  15  17   0 136   9  16   7  84  30  36
+ C  41  60  16   7   0   0   3  13   3  17  28  39
+ A  40  56  89  12   0   0  83  91  12  23  53  33
+ G  27  12  16 100 136   0  41  16 114  12  25  28
+@end group
+@end example
+
+_split()
+@node SPIN-TRNA-Search
+@subsection tRNA search
+
+@cindex Searching: tRNA genes:spin
+@cindex tRNA gene search:spin
+@cindex Sequence interpretation: tRNA gene search:spin
+@cindex Cloverleaf:spin
+@cindex Conserved bases in tRNA:spin
+@cindex Intron in tRNA:spin
+@cindex tRNA introns:spin
+@cindex Stems and loops:spin
+
+This method is used to find segments of a sequence that might code for tRNAs.
+It looks  for  potential cloverleaf forming structures and then for the
+presence of the expected conserved bases. It presents  results  graphically
+and draws out the cloverleafs.
+ 
+The algorithm uses a large number of parameters including some loop
+lengths, scores for each of the four stems, and scores for the conserved
+bases, but we have not yet included an interface for setting these. We
+apologise for this and plan to add the interface in a future release. 
+Using individual base pair scores of A-T = G-C = 2, G-T = 1, 
+in its present form the algorithm is set to search for segments of
+sequence satisfying the following minimum scores:
+
+
+@itemize @bullet
+@item aminoacyl stem 12
+@item tu stem 9
+@item anticodon stem 8
+@item du stem 4
+@item minimum total stem score 36
+@item minimum number of conserved bases 16
+@item no introns
+@end itemize
+ 
+The algorithm was first described in @cite{Staden,R. (1980)
+A computer program to search for tRNA genes. Nucl. Acid Res 8, 
+817-825}, but has been completely rewritten since then.
+The tRNAs  that  have been  sequenced  so far have two
+characteristics that can be used to locate their genes  within  long
+DNA  sequences.  Firstly they  have  a common   secondary  structure
+-  the  cloverleaf  -  and  secondly, particular bases almost always
+appear  at  certain  positions  in the cloverleaf.   The  cloverleaf
+is composed of four base-paired stems and four loops.  Three of  the
+stems are  of  fixed  length  but  the fourth,  the  dhu  stem which
+usually has four base pairs, sometimes has only three.  All  of  the
+loops  can  vary in size.   The  following relationships between the
+stems in the cloverleaf are assumed in the program:  (a)  there  are
+no  bases  between  one  end   of   the  aminoacyl  stem   and   the
+adjoining tuc stem;  (b) there are two bases between  the  aminoacyl
+stem and the dhu stem;  (c) there is one base between the  dhu  stem
+and the anticodon stem;  (d) there are at least three bases  between
+the  anticodon  stem  and the tuc stem.  The program looks first for
+cloverleaf structure and then for  conserved  bases.
+ 
+The output shows the position of the possible gene in the
+sequence by a vertical line the height of which shows the number  of
+basepairs  made in the stems. Typical graphical output:
+
+_lpicture(spin_trna_p)
+
+The cloverleaf structure is also drawn
+in the text Output Window. Typical text output:
+
+_lpicture(spin_trna_t)
+
+
+_split()
+@node SPIN-Comparisons
+@chapter Spin Comparison Functions
+
+@menu
+* SPIN-Find similar spans::   Finding Similar Spans
+* SPIN-Find matching words::  Finding Matching Words
+* SPIN-Local alignment::      Aligning Sequences Locally
+* SPIN-Find Best Diagonals::  Finding the Best Diagonals
+* SPIN-Align Sequences::      Aligning Sequences Globally
+@end menu
+
+Spin contains three functions for finding local segments of similarity
+between pairs of sequences 
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)),
+(_fpref(SPIN-Find matching words, Finding Matching Words)) and
+(_fpref(SPIN-Local alignment, Aligning Sequences Locally)),
+and two for finding global
+similarity
+(_fpref(SPIN-Find Best Diagonals, Finding the Best Diagonals)) and
+(_fpref(SPIN-Align Sequences, Aligning Sequences Globally)).
+All functions produce results which are plotted in a dot
+matrix display called a SPIN Sequence Comparison Plot.
+Obviously global similarity consists of many small matching
+segments and so the local similarity searches, when plotted, will
+also reveal any larger scale relationships.
+
+_split()
+@node SPIN-Find similar spans
+@section Finding Similar Spans
+@cindex Find similar spans: spin
+
+This method was first described by
+McLachlan @cite{Mclachlan,A.D. Tests for comparing related amino acid sequences
+J. Mol. Biol. 61, 409-424 (1971)}. 
+It involves calculating a score for each position in the plot
+by summing points found when looking forwards and
+backwards along a diagonal line of a given length (window length). The
+algorithm does not simply look for identity but uses a score matrix that
+contains scores for every possible pair of character types. At each point
+that the score is above a minimum score, a match is saved. The matches
+are plotted as a single point in the SPIN Sequence Comparison Plot, corresponding to the centre of the
+matching span (_fpref(SPIN-SPIN Sequence Comparison Plot, SPIN Sequence Comparison Plot)) (Although see "Rescan
+matches, below).
+
+_picture(spin_similar_spans)
+
+The dialogue box (shown above) requests the horizontal and vertical sequences
+and their ranges (_fpref(SPIN-Selecting a sequence, Selecting a sequence)), 
+the window span length and the minimum score. 
+Only results above this minimum score are plotted. The default
+value for the minimum score is one that would produce
+approximately 500 matches between two random sequences of the same
+composition as the two under investigation
+(_fpref(SPIN-Probability Calculations, Probabilities and expected number of matches)). 
+This value of 500 can be changed using the "Configure default number
+of matches" option of the "Options" menu on the main menubar
+(_fpref(SPIN-Changing Default Match Number, Changing the default number of
+matches)). The upper and lower limits of the minimum score are similarly
+determined except that the expected number of matches for the upper limit is
+0 and for the lower limit is "maximum number of matches". The "maximum number of
+matches" value can be altered if more matches are required to be plotted by 
+using the
+"Configure maximum number of matches" option of the "Options" menu
+(_fpref(SPIN-Changing Max Match Number, Changing the maximum number of
+matches)).
+
+Further operations available for find similiar spans are:
+
+@table @var
+
+@item Information
+
+This command gives a brief description of the sequences used in the comparison,
+the input parameters used and the number of matches found.
+
+@example
+@group
+
+horizontal EMBL: hsproperd 
+vertical EMBL: mmproper
+window length 11 min match 9
+number of matches 1772
+
+@end group
+@end example
+
+@item Results
+
+A detailed listing of all the hits found is displayed in the Output Window.
+
+@example
+@group
+
+Positions          2 h        630 v and score          9
+
+ Percentage mismatch  18.2
+                2        12
+              H agcctatcaac
+                ::::::: : :
+              V agcctatgagc
+              630       640
+
+Positions          7 h        369 v and score          9
+
+ Percentage mismatch  18.2
+                7        17
+              H atcaacccaga
+                :  ::::::::
+              V aggaacccaga
+              369       379
+
+@end group
+@end example
+
+@item Tabulate Scores
+This option lists scores, probabilities, and their expected and
+observed numbers of matches.
+
+@example
+@group
+
+score    9 probability 1.73e-04 expected          365 observed 1772
+score   10 probability 1.17e-05 expected           25 observed 601
+score   11 probability 3.60e-07 expected            1 observed 149
+
+@end group
+@end example
+
+@item Rescan matches
+It is also possible to plot a dot for each residue with a score above a 
+minimum value within each matching span using the "Rescan matches" command.
+This is only a temporary result and will be destroyed if the SPIN Sequence Comparison Plot is
+altered (_fpref(SPIN-Managing-Results, Controlling and Managing Results,t)).
+
+
+@item Configure
+This option allows the line width and colour of the matches to be altered. 
+_fxref(UI-Colour, Colour Selector, interface)
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Comparison Plot.
+
+@item Display sequences
+Selecting this command invokes the SPIN Sequence Comparison Display 
+(_fpref(SPIN-Sequence-Comparison Display, Sequence comparison display)). 
+Moving the cursor in the sequence display will move the cursors of the
+same sequence in any SPIN Sequence Comparison Plot (_fpref(SPIN-Cursors, Cursors)).
+To force the sequence display to show the nearest match,
+use the "nearest match" button in the sequence display plot. To force
+the sequences to maintain their current register activate the "Lock" button.
+
+@item Hide
+This option removes the points from the SPIN Sequence Comparison Plot but retains the information
+in memory.
+
+@item Reveal
+This option will redisplay previously hidden points in the SPIN Sequence Comparison Plot.
+
+@item Remove
+This command removes all the information regarding this particular
+invocation of Find similar spans and access to this data lost.
+
+@end table
+
+_split()
+@node SPIN-Find matching words
+@section Finding Matching Words
+@cindex Find matching words: spin
+
+The find matching words routine finds runs of identical characters in the
+sequence. Its main value is speed, being hundreds of times faster than the
+find similar spans function. It is of course not very sensitive but is
+useful for long DNA sequences.
+
+_picture(spin_match_words)
+
+The dialogue allows the horizontal and vertical sequences and their ranges
+to be selected (_fpref(SPIN-Selecting a sequence, Selecting a sequence)).
+The word length is the minimum number of consecutive matching characters. All 
+runs of identical characters that are at least as long as the word length will
+produce a line on the SPIN Sequence Comparison Plot of length proportional to the actual word
+length 
+(_fpref(SPIN-SPIN Sequence Comparison Plot, SPIN Sequence Comparison Plot)).
+
+Further operations available for find matching words are:
+
+@table @var
+
+@item Information
+This command gives a brief description of the sequences used in the comparison, the input parameters used and the number of hits found.
+
+@example
+@group
+
+horizontal EMBL: hsproperd
+vertical EMBL: mmproper
+word length 8 
+Number of matches 140
+
+@end group
+@end example
+
+@item Results
+A detailed listing of all the matching words is obtained in the Output
+Window. The horizontal (h) and vertical (v) positions of the beginning of 
+the match are listed along with the length of the match and the match itself.
+
+@example
+@group
+
+Positions        162 h          4 v and length         14
+ttcacccagtatga
+Positions        225 h         67 v and length         18
+gaagactgctgtctcaac
+Positions        509 h        118 v and length          8
+ctctgtca
+Positions        276 h        118 v and length          9
+ctctgtcag
+Positions        288 h        130 v and length          8
+tgcaggtc
+Positions        626 h        131 v and length          8
+gcaggtct
+Positions       1208 h        144 v and length          8
+atggtcag
+
+@end group
+@end example
+
+@item Tabulate scores
+This option lists scores, probabilities, and their expected and observed 
+numbers of matches.
+@example
+@group
+
+score    8 probability 2.06e-05 expected           43 observed 140
+score    9 probability 5.35e-06 expected           11 observed 67
+score   10 probability 1.39e-06 expected            3 observed 45
+score   11 probability 3.60e-07 expected            1 observed 35
+score   12 probability 9.35e-08 expected            0 observed 22
+score   13 probability 2.43e-08 expected            0 observed 18
+score   14 probability 6.30e-09 expected            0 observed 17
+score   15 probability 1.63e-09 expected            0 observed 11
+score   16 probability 4.24e-10 expected            0 observed 9
+score   17 probability 1.10e-10 expected            0 observed 9
+score   18 probability 2.86e-11 expected            0 observed 8
+score   19 probability 7.42e-12 expected            0 observed 6
+score   20 probability 1.93e-12 expected            0 observed 5
+score   21 probability 5.00e-13 expected            0 observed 3
+score   22 probability 1.30e-13 expected            0 observed 2
+score   23 probability 3.37e-14 expected            0 observed 2
+score   24 probability 8.74e-15 expected            0 observed 2
+
+@end group
+@end example
+
+
+@item Configure
+This option allows the line width and colour of the matches to be altered.
+_fxref(UI-Colour, Colour Selector, interface)
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Comparison Plot.
+
+@item Display sequences
+Selecting this command invokes the sequence display 
+(_fpref(SPIN-Sequence-Comparison Display, Sequence comparison display)). 
+Moving the cursor in the sequence display will move the cursors of the
+same sequence in any SPIN Sequence Comparison Plot (_fpref(SPIN-Cursors, Cursors)).
+To force the sequence display to show the nearest match,
+use the "nearest match" button in the sequence display plot.
+
+@item Hide
+This option removes the points from the SPIN Sequence Comparison Plot but retains the information
+in memory.
+
+@item Reveal
+This option will redisplay previously hidden points in the SPIN Sequence Comparison Plot.
+
+@item Remove
+This command removes all the information regarding this particular
+invocation of Find matching words, and access to this data is lost.
+
+@end table
+
+_split()
+@node SPIN-Find Best Diagonals
+@section Finding the Best Diagonals
+@cindex Find best diagonals: spin
+
+This option is among the fastest and can be useful for a quick comparison of
+two long DNA sequences. The algorithm is as follows.
+First it finds the positions of runs of identical
+characters ("words") of length word length, as for the find matching words
+algorithm. These words are accumulated in an imaginary SPIN Sequence Comparison Plot and the
+number of hits on each diagonal is summed to produce a histogram.
+The histogram is
+analysed to find its mean and standard deviation. The diagonals that
+lie above some cutoff score (defined in standard deviation units), are 
+rescanned using the find similar spans algorithm. Any window lengths
+reaching the cutoff score produce a dot which is
+plotted in the usual way.
+
+_picture(spin_diagonals)
+
+The dialogue box requests horizontal and vertical sequences and their ranges
+(_fpref(SPIN-Selecting a sequence, Selecting a sequence)),
+the minimum number of identical characters in a run
+"word length", the minimum standard deviation, the window length and the
+minimum score.
+
+The points are plotted to the SPIN Sequence Comparison Plot (_fpref(SPIN-SPIN Sequence Comparison Plot, SPIN Sequence Comparison Plot)).
+
+Further operations available for find best diagonals are:
+
+@table @var
+
+@item Information
+This command gives a brief description of the sequences used in the 
+comparison and the input parameters used.
+
+@example
+@group
+
+horizontal EMBL: hsproperd
+vertical EMBL: mmproper
+window length 11 minimum score 9 word length 8 minimum sd 3.000000
+
+@end group
+@end example
+
+@item Results
+A listing of all the matches is obtained in the Output Window. The horizontal 
+(h) and vertical (v) positions of the beginning of the match are listed.
+
+@example
+@group
+
+Positions       1066 h        905 v 
+Positions       1067 h        906 v 
+Positions       1068 h        907 v 
+Positions       1069 h        908 v 
+Positions       1070 h        909 v 
+Positions       1071 h        910 v 
+Positions       1072 h        911 v 
+Positions       1073 h        912 v 
+Positions       1074 h        913 v 
+
+@end group
+@end example
+
+@item Configure
+This option allows the line width and colour of the matches to be altered.
+_fxref(UI-Colour, Colour Selector, interface)
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Comparison Plot.
+
+@item Display sequences
+Selecting this command invokes the sequence display 
+(_fpref(SPIN-Sequence-Comparison Display, Sequence comparison display)). 
+Moving the cursor in the sequence display will move the cursors of the
+same sequence in any SPIN Sequence Comparison Plot (_fpref(SPIN-Cursors, Cursors)).
+To force the sequence display to show the nearest match,
+use the "nearest match" button in the sequence display plot.
+
+@item Hide
+This option removes the points from the SPIN Sequence Comparison Plot but retains the information
+in memory.
+
+@item Reveal
+This option will redisplay previously hidden points in the SPIN Sequence Comparison Plot.
+
+@item Remove
+This command removes all the information regarding this particular
+invocation of Find best diagonals, and access to this data is lost.
+
+@end table
+
+
+_split()
+@node SPIN-Align Sequences
+@section Aligning Sequences Globally
+@cindex Align sequences: spin
+
+This function will produce an optimal global alignment of two segments of the
+sequence. The dynamic programming alignment algorithm is based on 
+@cite{Huang,X On global sequence alignment. CABIOS 10 227-235 (1994)}. 
+There is no length limit of the sequences but the sequences to be
+aligned should be of the same type i.e. both be DNA or both protein. 
+
+_picture(spin_align_seq)
+
+A dialogue box (shown above) requests the horizontal and vertical sequences 
+and the ranges over which they are to be aligned 
+(_fpref(SPIN-Selecting a sequence, Selecting a sequence))
+and the gap start penalty 
+and the gap extension penalty. In addition, if the sequence is DNA, 
+the "score for match" and
+"score for mis-match" must be provided. These values are used to generate a
+score matrix. For protein sequences, the score matrix can be changed from the 
+"Options" menu (_fpref(SPIN-Changing the score matrix, Changing the
+score matrix)).
+
+The alignment is displayed in the Output Window along with the 
+percentage mismatch (see below) and on the SPIN Sequence Comparison Plot as a line. The
+line represents the path of the alignment.
+
+The following plot shows a global alignment of two Xenopus Laevis
+sequences. The vertical sequence (xlactcag) is genomic DNA, and the
+horizontal sequence (xlacacr) is the corresponding cDNA. The vertical
+sections of the plotted path correspond to introns in the genomic DNA, which
+are obviously absent from the cDNA.
+
+_lpicture(spin_align_p)
+
+
+Below we show a typical alignment (from a different pair of sequences)
+as produced in the Output Window.
+
+@example
+@group
+
+ Percentage mismatch  29.6
+                1        11        21        31        41        51
+      hsproperd gagcctatcaacccagataaagcgggacctcctctctggtagaggtgcagggggcagtac
+                                                                            
+       mmproper ************************************************************
+             -157      -147      -137      -127      -117      -107
+
+               61        71        81        91       101       111
+      hsproperd tcaacatgatcacagagggagcgcaggcccctcgattgttgctgccgccgctgctcctgc
+                                                                            
+       mmproper ************************************************************
+              -97       -87       -77       -67       -57       -47
+
+              121       131       141       151       161       171
+      hsproperd tgctcaccctgccagccacaggctcagaccccgtgctctgcttcacccagtatgaagaat
+                                                      :: :::::::::::::: :: :
+       mmproper **************************************tgtttcacccagtatgaggagt
+              -37       -27       -17        -7         3        13
+
+              181       191       201       211       221       231
+      hsproperd cctccggcaagtgcaagggcctcctggggggtggtgtcagcgtggaagactgctgtctca
+                :::: :::: :::::: ::::: :: ::: : :   :::: :: ::::::::::::::::
+       mmproper cctctggcaggtgcaaaggcctacttgggagagacatcagggtagaagactgctgtctca
+               23        33        43        53        63        73
+
+@end group
+@end example
+
+The two aligned sequences are automatically saved in memory and can be
+accessed through the sequence manager. They are assigned default filenames
+which are based on the parent with the addition of _a"number" where "number" is
+a unique identifier (see the twelth and thirteenth entries of the sequence
+manager picture (_fpref(SPIN-Sequence Manager, Sequence manager)).
+
+Further operations available for align sequences are:
+
+@table @var
+
+@item Information
+This command gives a brief description of the sequences used in the 
+comparison and the input parameters used.
+
+@example
+@group
+
+horizontal PERSONAL: m13mp18.seq from 1 to 7250
+vertical PERSONAL: lawrist7.seq from 1 to 5261
+
+@end group
+@end example
+
+@item Configure
+This option allows the line width and colour of the matches to be altered.
+_fxref(UI-Colour, Colour Selector, interface)
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Comparison Plot.
+
+@item Display sequences
+Selecting this command invokes the Sequence Comparison Display 
+(_fpref(SPIN-Sequence-Comparison Display, Sequence comparison display)). 
+Moving the cursor in the sequence display will move the cursors of the
+same sequence in any SPIN Sequence Comparison Plot (_fpref(SPIN-Cursors, Cursor)).
+To force the sequence display to show the nearest match,
+use the "nearest match" button in the sequence display plot.
+
+@item Hide
+This option removes the points from the SPIN Sequence Comparison Plot but retains the information
+in memory.
+
+@item Reveal
+This option will redisplay previously hidden points in the SPIN Sequence Comparison Plot.
+
+@item Remove
+This command removes all the information regarding this particular
+invocation of Align sequences, and access to this data is lost.
+
+@end table
+
+_split()
+@node SPIN-Local alignment
+@section Aligning Sequences Locally
+@cindex Local alignment: spin
+@cindex Alignment local: spin
+@cindex Sim: spin
+@cindex Smith-Waterman: spin
+
+The local alignment routine is based around the program SIM by 
+Huang and Miller which is an implementation of the Smith-Waterman algorithm
+@cite{Huang,X.Q. & Miller, W. A Time-Efficient, Linear-Space Local Similarity Algorithm. Advances in Applied Mathematics 12 337-357 (1991)}.
+
+SIM finds k best non-intersecting alignments between two sequences or
+within a single 
+sequence using dynamic programming techniques. The alignments are
+reported in order of decreasing similarity score and share no aligned pairs.
+SIM requires space proportional to the sum of the input sequence lengths
+and the output alignment lengths, so it accommodates 100,000-base
+sequences on a workstation. Both sequences must be of the same type, ie both
+be DNA or both be protein.
+
+_picture(spin_local_align)
+
+A dialogue box (shown above) requests the horizontal and vertical sequences 
+and the ranges over which they are to be aligned 
+(_fpref(SPIN-Selecting a sequence, Selecting a sequence)). Either a specified
+number of alignments can be requested or alternatively, all alignments above
+a certain score. If the sequence
+is DNA, the scores for a matching aligned pair, a transition and a transversion
+must be provided. These values are used to generate a score matrix. For 
+protein sequences, the score matrix can be changed from the 
+"Options" menu (_fpref(SPIN-Changing the score matrix, Changing the
+score matrix)). Both DNA and protein sequences require the penalty for opening
+a gap and the penalty for gap extension.
+
+The alignments are displayed in the Output Window along with the 
+percentage mismatch (see below) and on the SPIN Sequence Comparison Plot as a series of lines, each
+line corresonding to a single alignment. The
+line represents the path of alignments. 
+
+
+The following two plots show local alignments of two Xenopus Laevis
+sequences. The vertical sequence (xlactcag) is genomic DNA, and the
+horizontal sequence (xlacacr) is the corresponding cDNA.
+
+The first plot is of a local alignment using a higher than default
+penalty for each residue in the gap (1 as opposed to 0.2). It has also
+been specified that all alignments scoring more than 20 are to be shown.
+The result of this is seven aligned regions, represented by seven
+diagonal lines in the plot. These regions correspond to the exons that
+are present in both sequences, separated by the introns that are only
+present in the genomic sequence.
+
+_lpicture(spin_local_p1)
+
+The second plot shows the result for the same two sequences when the
+default gap penalty is accepted and when only the highest scoring
+alignment is displayed. This best alignment covers five of the seven
+exons identified in the previous plot, with the lower gap penalty
+allowing it to span the introns that separate them.
+
+_lpicture(spin_local_p2)
+
+Below is a typical aligment as written to the Output Window.
+
+@example
+@group
+
+ Percentage mismatch  35.7
+               438       448       458       468       478       488
+               h caggcctgtgaggaccagcagtgctgtcctgagatgggcggctggtctggctgggggccc
+                 :::::::::::   :::: ::  ::: ::       :: : :::: :   :::::: :::
+               m caggcctgtgacacccagaagacctgccccacacatggggcctgggcatcctggggcccc
+               451       461       471       481       491       501
+
+               498       508       518
+               h tgggagccttgctctgtcacctgc
+                 :::   ::  :::: :   :::::
+               m tggagcccccgctcaggatcctgc
+               511       521       531
+
+@end group
+@end example
+
+Further operations available for local alignments are:
+
+@table @var
+
+@item Information
+This command gives a brief description of the sequences used in the 
+comparison and the input parameters used.
+
+@example
+@group
+
+horizontal PERSONAL: h from 1 to 1553
+vertical PERSONAL: m from 1 to 1358
+number of alignments 3 
+score for match 1
+score for transition -1
+score for transversion -1
+penalty for starting gap 6
+penalty for each residue in gap 0.2
+
+@end group
+@end example
+
+@item Configure
+This option allows the line width and colour of the matches to be altered.
+_fxref(UI-Colour, Colour Selector, interface)
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Comparison Plot.
+
+@item Display sequences
+Selecting this command invokes the Sequence Comparison Display 
+(_fpref(SPIN-Sequence-Comparison Display, Sequence comparison display)). 
+Moving the cursor in the sequence display will move the cursors of the
+same sequence in any SPIN Sequence Comparison Plot (_fpref(SPIN-Cursors, Cursor)).
+To force the sequence display to show the nearest match,
+use the "nearest match" button in the sequence display plot.
+
+@item Hide
+This option removes the points from the SPIN Sequence Comparison Plot but retains the information
+in memory.
+
+@item Reveal
+This option will redisplay previously hidden points in the SPIN Sequence Comparison Plot.
+
+@item Remove
+This command removes all the information regarding this particular
+invocation of Local alignment, and access to this data is lost.
+
+@end table
+
+
+_split()
+@node SPIN-Managing-Results
+@chapter Controlling and Managing Results
+
+@menu
+* SPIN-Probability Calculations::  Probabilities and expected numbers of matches
+* SPIN-Changing Max Match Number:: Changing the maximum number of matches
+* SPIN-Changing Default Match Number:: Changing the default number of matches
+* SPIN-Hide duplicate matches:: Hide duplicate matches
+* SPIN-Changing the score matrix:: Changing the score matrix
+* SPIN-Set protein alignment symbols:: Set protein alignment symbols
+* SPIN-Result-Manager:: Result manager
+@end menu
+
+Spin allows the parameters for each analytical option to be set in
+dialogues immediately prior to their execution, but there are other global
+parameters which can influence the results obtained, and they are
+described here.
+
+This section also covers, in its description of the "Results Manager"
+how results can be manipulated after they have been obtained. As this
+implies, almost all searches conducted by spin produce results that are
+retained until the user explicitly deletes them, and these are termed
+"Permanent results". Any other results are termed "Temporary". At
+present, the only temporary results are those produced by a variant of
+the Similar Spans algorithm,
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)),
+in which the plot can be overlayed by marking every
+identical character in each matching span with separate dots. These
+extra dots are not stored as results and any changes to the SPIN Sequence Comparison Plot,
+for example plotting new data, will destroy them.  
+
+
+@node SPIN-Probability Calculations
+@section Probabilities and expected numbers of matches
+@cindex Match probabilities in spin
+@cindex Probabilities in spin
+@cindex Significance of matches in spin
+@cindex Expected number of matches in spin
+
+
+To suggest reasonable ranges of cutoff scores for the 
+Similar Spans
+(_fpref(SPIN-Find similar spans, Finding Similar Spans))
+and Matching Words
+(_fpref(SPIN-Find matching words, Finding Matching Words))
+comparison
+functions, and later to help users assess the significance of the 
+matches found between sequences,
+spin calculates their probabilities and the expected number of
+matches
+@cite{Staden R, Methods for calculating the probabilities of finding
+patterns in sequences. CABIOS 5 89-96 (1989)}. 
+For both algorithms the probability
+depends on the composition of the two sequences, the cutoff score, and,
+for the matching spans algorithm, the score matrix. The probability is
+the chance of finding the given score in 
+infinitely long random sequences of the same composition as the pair
+being compared. The expected number of
+matches for any score is calculated by multiplying its probability value
+by the product of the lengths of the two sequences.
+Note that no correction is made for the case of comparing a sequence
+against itself.
+
+The matches found for these two algorithms can be assessed by selecting
+the Tabulate Scores option, which will produce a list of observed and
+expected results as shown in the example below.
+
+@example
+@group
+
+score    9 probability 1.73e-04 expected          365 observed 1772
+score   10 probability 1.17e-05 expected           25 observed 601
+score   11 probability 3.60e-07 expected            1 observed 149
+
+@end group
+@end example
+
+In this case there are clearly many more matches at each score level
+than would be expected by chance.
+
+@node SPIN-Changing Max Match Number
+@section Changing the maximum number of matches
+@cindex Changing the maximum number of matches: spin
+
+The maximum number of matches is a guideline
+limit to the number of matches 
+that a comparison function is allowed to produce. In conjunction with the
+probability calculations its value is used to determine the range of
+scores allowed for an option - for example, the lowest "minimum score"
+for the "find similar spans" function 
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)). Altering the
+maximum number of matches value will 
+in turn alter the range of scores available in a function. 
+Note that this maximum only provides a guideline and each function
+will always attempt to calculate all matches. However,
+if the scores are set too low, and the sequences are long, 
+very large numbers of matches matches may be produced and the functions
+may run slowly as the program gobbles up increasing amounts of memory to
+store them.
+
+The maximum number of matches is altered using the Options menu. 
+
+@node SPIN-Changing Default Match Number
+@section Changing the default number of matches
+@cindex Changing the default number of matches: spin
+
+The default number of matches is used to determine the default score in the
+function dialogue boxes. If the two sequences being analysed were
+scrambled (i.e. had the order of their bases or amino acids changed
+randomly) and then compared using the default score, they should be
+found to contain approximately the default number of matches.
+Hence this number provides users with a crude assessment of 
+the significance of the matches found: if more than the default number
+are found, the sequences are more similar than is likely by chance.
+
+The default number of matches is altered using the Options menu.
+
+@node SPIN-Hide duplicate matches
+@section Hide duplicate matches
+@cindex Hide duplicate matches: spin
+@cindex Duplicate matches: spin
+
+If the horizontal and vertical sequences are the same
+the comparison plots would be a mirror image about the main diagonal. 
+In this case the default is that only the lower half of 
+the plot is calculated. If the "Hide duplicate matches" checkbutton is
+not set the entire plot will be displayed. It is important to note this
+property of the algorithms: if only one half of the plot is displayed
+the main diagonal has been found to be identical!
+
+@node SPIN-Changing the score matrix
+@section Changing the score matrix
+@cindex Changing the score matrix: spin
+@cindex Format of protein score matrix
+@cindex Protein score matrix format
+@cindex Score matrix format
+
+This option allows users to select their own score matrix for protein
+sequence comparison and is 
+available from the "Options" menu which invokes a dialogue 
+box. Enter the full filename of the matrix in the entry box. Clicking on
+the "browse" button will invoke a file browser. _fxref(File Browser,
+File Browser, interface) 
+
+The recommended
+format for the matrices is that used by
+blast @cite{Altschul, Stephen F., Warren Gish, Webb Miller, Eugene W. Myers,
+and David J. Lipman.  Basic local alignment search tool.  J. Mol. Biol.
+215:403-10 (1990)}.
+Note that the NCBI make a whole range of protein score matrices
+available in this format and we include the one shown below
+in the package tables directory in a file named pam250.
+
+@tex
+\global\let\nonarrowing=\comment
+@end tex
+@example
+#
+# This matrix was produced by "pam" Version 1.0.6 [28-Jul-93]
+#
+# PAM 250 substitution matrix, scale = ln(2)/3 = 0.231049
+#
+# Expected score = -0.844, Entropy = 0.354 bits
+#
+# Lowest score = -8, Highest score = 17
+#
+   A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  X  *
+A  2 -2  0  0 -2  0  0  1 -1 -1 -2 -1 -1 -3  1  1  1 -6 -3  0  0  0  0 -8
+R -2  6  0 -1 -4  1 -1 -3  2 -2 -3  3  0 -4  0  0 -1  2 -4 -2 -1  0 -1 -8
+N  0  0  2  2 -4  1  1  0  2 -2 -3  1 -2 -3  0  1  0 -4 -2 -2  2  1  0 -8
+D  0 -1  2  4 -5  2  3  1  1 -2 -4  0 -3 -6 -1  0  0 -7 -4 -2  3  3 -1 -8
+C -2 -4 -4 -5 12 -5 -5 -3 -3 -2 -6 -5 -5 -4 -3  0 -2 -8  0 -2 -4 -5 -3 -8
+Q  0  1  1  2 -5  4  2 -1  3 -2 -2  1 -1 -5  0 -1 -1 -5 -4 -2  1  3 -1 -8
+E  0 -1  1  3 -5  2  4  0  1 -2 -3  0 -2 -5 -1  0  0 -7 -4 -2  3  3 -1 -8
+G  1 -3  0  1 -3 -1  0  5 -2 -3 -4 -2 -3 -5  0  1  0 -7 -5 -1  0  0 -1 -8
+H -1  2  2  1 -3  3  1 -2  6 -2 -2  0 -2 -2  0 -1 -1 -3  0 -2  1  2 -1 -8
+I -1 -2 -2 -2 -2 -2 -2 -3 -2  5  2 -2  2  1 -2 -1  0 -5 -1  4 -2 -2 -1 -8
+L -2 -3 -3 -4 -6 -2 -3 -4 -2  2  6 -3  4  2 -3 -3 -2 -2 -1  2 -3 -3 -1 -8
+K -1  3  1  0 -5  1  0 -2  0 -2 -3  5  0 -5 -1  0  0 -3 -4 -2  1  0 -1 -8
+M -1  0 -2 -3 -5 -1 -2 -3 -2  2  4  0  6  0 -2 -2 -1 -4 -2  2 -2 -2 -1 -8
+F -3 -4 -3 -6 -4 -5 -5 -5 -2  1  2 -5  0  9 -5 -3 -3  0  7 -1 -4 -5 -2 -8
+P  1  0  0 -1 -3  0 -1  0  0 -2 -3 -1 -2 -5  6  1  0 -6 -5 -1 -1  0 -1 -8
+S  1  0  1  0  0 -1  0  1 -1 -1 -3  0 -2 -3  1  2  1 -2 -3 -1  0  0  0 -8
+T  1 -1  0  0 -2 -1  0  0 -1  0 -2  0 -1 -3  0  1  3 -5 -3  0  0 -1  0 -8
+W -6  2 -4 -7 -8 -5 -7 -7 -3 -5 -2 -3 -4  0 -6 -2 -5 17  0 -6 -5 -6 -4 -8
+Y -3 -4 -2 -4  0 -4 -4 -5  0 -1 -1 -4 -2  7 -5 -3 -3  0 10 -2 -3 -4 -2 -8
+V  0 -2 -2 -2 -2 -2 -2 -1 -2  4  2 -2  2 -1 -1 -1  0 -6 -2  4 -2 -2 -1 -8
+B  0 -1  2  3 -4  1  3  0  1 -2 -3  1 -2 -4 -1  0  0 -5 -3 -2  3  2 -1 -8
+Z  0  0  1  3 -5  3  3  0  2 -2 -3  0 -2 -5  0  0 -1 -6 -4 -2  2  3 -1 -8
+X  0 -1  0 -1 -3 -1 -1 -1 -1 -1 -1 -1 -1 -2 -1  0  0 -4 -2 -1 -1 -1 -1 -8
+* -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8 -8  1
+@end example
+
+But for historical reasons the default matrix used by the program
+is the one shown below.
+
+@example
+   C  S  T  P  A  G  N  D  E  Q  B  Z  H  R  K  M  I  L  V  F  Y  W  -  X  ?  
+C 22 10  8  7  8  7  6  5  5  5  5  5  7  6  5  5  8  4  8  6 10  2 10 10 10 10
+S 10 12 11 11 11 11 11 10 10  9 10 10  9 10 10  8  9  7  9  7  7  8 10 10 10 10
+T  8 11 13 10 11 10 10 10 10  9 10 10  9  9 10  9 10  8 10  7  7  5 10 10 10 10
+P  7 11 10 16 11  9  9  9  9 10  9 10 10 10  9  8  8  7  9  5  5  4 10 10 10 10
+A  8 11 11 11 12 11 10 10 10 10 10 10  9  8  9  9  9  8 10  6  7  4 10 10 10 10
+G  7 11 10  9 11 15 10 11 10  9 10 10  8  7  8  7  7  6  9  5  5  3 10 10 10 10
+N  6 11 10  9 10 10 12 12 11 11 12 11 12 10 11  8  8  7  8  6  8  6 10 10 10 10
+D  5 10 10  9 10 11 12 14 13 12 13 12 11  9 10  7  8  6  8  4  6  3 10 10 10 10
+E  5 10 10  9 10 10 11 13 14 12 12 13 11  9 10  8  8  7  8  5  6  3 10 10 10 10
+Q  5  9  9 10 10  9 11 12 12 14 11 13 13 11 11  9  8  8  8  5  6  5 10 10 10 10
+B  5 10 10  9 10 10 12 13 12 11 13 11 11 10 10  8  8  6  8  5  7  4 10 10 10 10
+Z  5 10 10 10 10 10 11 12 13 13 11 14 12 10 10  8  8  8  8  5  6  4 10 10 10 10
+H  7  9  9 10  9  8 12 11 11 13 11 12 16 12 10  8  8  8  8  8 10  7 10 10 10 10
+R  6 10  9 10  8  7 10  9  9 11 10 10 12 16 13 10  8  7  8  6  6 12 10 10 10 10
+K  5 10 10  9  9  8 11 10 10 11 10 10 10 13 15 10  8  7  8  5  6  7 10 10 10 10
+M  5  8  9  8  9  7  8  7  8  9  8  8  8 10 10 16 12 14 12 10  8  6 10 10 10 10
+I  8  9 10  8  9  7  8  8  8  8  8  8  8  8  8 12 15 12 14 11  9  5 10 10 10 10
+L  4  7  8  7  8  6  7  6  7  8  6  8  8  7  7 14 12 16 12 12  9  8 10 10 10 10
+V  8  9 10  9 10  9  8  8  8  8  8  8  8  8  8 12 14 12 14  9  8  4 10 10 10 10
+F  6  7  7  5  6  5  6  4  5  5  5  5  8  6  5 10 11 12  9 19 17 10 10 10 10 10
+Y 10  7  7  5  7  5  8  6  6  6  7  6 10  6  6  8  9  9  8 17 20 10 10 10 10 10
+W  2  8  5  4  4  3  6  3  3  5  4  4  7 12  7  6  5  8  4 10 10 27 10 10 10 10
+- 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+X 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+? 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+  10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10 10
+@end example
+@tex
+\global\let\nonarrowing=\relax
+@end tex
+
+@node SPIN-Set protein alignment symbols
+@section Set protein alignment symbols
+@cindex protein alignment symbols: spin
+
+This option allows users to set their own sequence similarity levels and 
+alignment symbols for protein sequence alignments. The dialogue (shown below)
+provides for setting a symbol for identical characters and for three levels
+of similarity with corresponding symbols.
+
+_picture(spin_alignment_symbols)
+
+_split()
+@node SPIN-USER-Interface
+@chapter The Spin User Interface
+
+@menu
+* SPIN-Spin-Plot::                             The SPIN Sequence PLot
+* SPIN-Sequence-Display:: Sequence display
+* SPIN-SPIN Sequence Comparison Plot::         The SPIN Sequence Comparison Plot
+* SPIN-Sequence-Comparison Display::           The SPIN Sequence Comparison Display
+@end menu
+
+Spin has several displays. The first is
+a top level window from which all the main options are selected and
+which receives textual results. 
+Most analytical functions which operate on single sequences
+add their graphical results to a "SPIN Sequence Plot" that is associated 
+with the sequence being analysed. (An exception is the restriction enzyme 
+search which produces its own separate window.) Most functions which compare
+pairs of sequences add their results to a "SPIN Sequence Comparison Plot".
+The SPIN Sequence Plot and the SPIN Sequence Comparison Plot each have
+associated sequence display windows: the Sequence Display and the 
+Sequence Comparison Display. These allow the text of the sequences to be
+viewed and use cursors to show the corresponding positions in the graphical
+displays.
+
+Spin is
+best operated using a three button mouse, but alternative keybindings
+are available. Full details of the user interface
+are described elsewhere
+(_fpref(UI-Introduction, User Interface, t)).
+
+The main window (shown below) contains an Output Window for
+textual results, an Error window for error messages, and a series of
+menus arranged along the top
+(_fpref(SPIN-Intro-Menus, Spin menus,t)).
+The contents of the two text windows can
+be searched, edited and saved. Each set of results is preceded by
+a header containing the time and date when it was generated.
+
+_lpicture(spin_translate_t)
+
+As can be seen 
+the main menu bar contains File, View, Options, Sequences, Statistics,
+Translation, Comparison, Search and Emboss menus.
+
+_split()
+@node SPIN-Spin-Plot
+@section SPIN Sequence Plot
+
+@cindex SPIN Sequence Plot: spin
+
+@menu
+* SPIN-CURSORS::         Cursors
+* SPIN-CROSSHAIRS::      Crosshairs
+* SPIN-ZOOM::            Zoom
+* SPIN-DRAG::            Drag and drop
+@end menu
+
+Graphical results are shown in separate windows. Most functions add their
+graphical results to a SPIN Sequence Plot that is associated with the
+sequence being analysed, but some functions such as the
+restriction enzyme search produce their own separate windows. Each set of
+graphical results has its own particular default drawing method, but
+individual results can be "dragged and dropped" by users, hence allowing
+plots to rearranged and superimposed. Plots can also be extracted from
+the main graphics window and dropped to create new independent windows.
+The graphical results can be zoomed and scrolled in both x and y
+directions. Zooming is achieved using the X and Y scale bars at the bottom
+of the plot. The individual plots can be scrolled in y
+using the scroll bars attached to their right hand edge. The sequence
+can be scrolled using the scroll bar at the base of the plot.
+
+_lpicture(spin_plot_p)
+
+The figure shows a SPIN Sequence Plot containing the results of
+a gene search method based on codon usage, upon which is superimposed a 
+search for start codons and stop codons. The vertical blue line represents
+the cursor. The x position of the cursor is shown in the left hand box above
+the plot. Each result in the window has its own colour.
+At the right hand side of each panel is a set of square boxes with the
+same colours as the lines drawn in the adjacent plot. These
+icon-like objects represent individual results and allow the user to 
+operate on them. For example at the right of the middle panel is a
+pop-up menu containing the items: "Information", "List results",
+"Configure", "Hide" and "Remove". 
+(_fpref(SPIN-Result-Manager, Result manager)).
+
+The square icons can also be used to move the corresponding results to
+new locations. These operations are explained below (_fpref(SPIN-DRAG, Drag and drop)).
+The cursor in the plot can be used to control the position of the
+cursor in the sequence display.
+
+The SPIN Sequence Plot contains three menus: "File", "View" and
+"Results". The "File" menu contains the "Exit" command which closes down
+the plot; the "View" menu contains the "Results manager" command (_fpref(SPIN-Result-Manager, Result manager));
+ and the "Results" menu contains a list of the results, colour coded
+i.e. the text is written in the same colour as the plot. For each result
+a series of commands can be accessed from a cascading menu.
+(_fpref(SPIN-Result-Manager, Result manager)).
+
+
+_lpicture(spin_results_manager_d2)
+
+@node SPIN-CURSORS
+@subsection Cursors
+@cindex Cursor: spin
+
+Each sequence displayed in a SPIN Sequence Plot will have a corresponding cursor
+of a particular colour. The same sequence displayed in several SPIN Sequence Plots
+will have a cursor of the same colour. To move a cursor, click on it
+with the middle mouse button, or Alt left mouse button, 
+held down and drag the mouse.
+The cursor will move all
+other cursors displayed that relate to that sequence, whether these be
+in different SPIN Sequence Plots or within the sequence display.
+
+
+@node SPIN-CROSSHAIRS
+@subsection Crosshairs
+
+@cindex Crosshairs: spin
+
+Crosshairs can be turned on or off using the check button labelled
+"crosshairs". The x and y positions of the crosshairs are indicated in
+the two boxes to the right of the check box respectively. The x value is
+the base position in the sequence and the y value the score for the
+corresponding plot.
+
+
+@node SPIN-ZOOM
+@subsection Zoom
+@cindex Zoom: spin
+
+The graphical results can be zoomed and scrolled in both x and y
+directions. Zooming is achieved using the X and Y scale bars at the bottom
+the plot. The individual plots can be scrolled in y
+using the scroll bars attached to their right hand edge. The sequence
+can be scrolled using the scroll bar at the base of the plot.
+
+@node SPIN-DRAG
+@subsection Drag and drop
+@cindex Drag and drop graphics: spin
+@cindex Graphics rearrangement: spin
+
+The square boxes at the right edge of the SPIN Sequence Plot panels have the same
+colours as the individual results in the display. These icons can be used to
+drag and drop the results to which they correspond. This is activated by
+pressing the middle mouse button, or Alt left mouse button, 
+over the box and then moving the cursor
+over the SPIN Sequence Plot to the new location. As the cursor moves over each
+part of the plot rectangular boxes will appear to indicate the position
+that the dragged result will occupy if the mouse button is
+released. Results can be dropped on top of another plot (signified by a
+rectangle drawn over the centre of the plot), above another plot
+(signified by a rectangle drawn in the top third of the plot), or below
+another plot (signified by a rectangle drawn in the bottom third of the
+plot). The figure below shows three panels containing a protein gene
+prediction and three panels showing the positions of stop codons in each
+of the reading frames. 
+
+_lpicture(spin_plot_drag1)
+
+@page
+The figure below shows the same SPIN Sequence Plot but with the rectangle
+indicating where the user has dragged the frame 1 stop codon results.
+
+_lpicture(spin_plot_drag2)
+
+@page
+The figure below shows the result of releasing the middle mouse
+button, or Alt left mouse button: 
+the stop codon plot has moved to be superimposed on the gene
+prediction plot.
+
+_lpicture(spin_plot_drag3)
+
+_split()
+@node SPIN-Sequence-Display
+@section Sequence display
+@cindex Sequence display:spin
+@cindex Sequence viewer:spin
+@cindex Sequence scrolling:spin
+@cindex Cursor positioning:spin
+@cindex Cursor linking:spin
+@cindex Cursor dragging:spin
+@cindex Display interaction:spin
+@cindex Interaction of displays:spin
+
+Each sequence shown in the "Sequence manager" list can have its own
+"Sequence display" window.
+The Sequence display provides a way of viewing and scrolling along the
+characters of the sequence. It can also show translations to protein and
+the positions of restriction enzyme cutting sites. Movement along the
+sequence is controlled by standard mouse and cursor commands and by the
+use of a subsequence/string search routine. The cursor can also be controlled by
+dragging the cursor in the programs' graphical displays.
+
+When restriction enzyme cutting sites are shown in the Sequence display
+window the number of rows of text to be displayed at any position along the
+sequence varies with the density of the sites. This presents a tricky
+problem about how to position the lines of text relative to the top and
+bottom of the window. Should the height of the window grow and shrink
+vertically as the user scrolls? Should the window maintain a fixed
+height, in which case should the top or the bottom be clipped if the
+number of lines of text exceeds the window height? We have programmed it
+so that
+the nucleotide sequence remains at a fixed height to provide a constant
+reference and the user can select this height by use of a vertical
+scroll bar and by growing or shrinking the window. The scroll bar will
+allow vertical movement when the number of lines of text exceeds the
+current window size.
+
+_lpicture(spin_sequence_display_t)
+
+
+_split()
+@node SPIN-Sequence-Display-Search
+@subsection Search
+@cindex String searching:spin
+@cindex Subsequence searching:spin
+@cindex Searching for strings:spin
+@cindex String matching:spin
+@cindex Matching strings:spin
+@cindex Finding strings:spin
+@cindex String finding:spin
+@cindex Percentage matches:spin
+@cindex Searching for oligos:spin
+@cindex Oligo searching:spin
+@cindex Motif searching: percentage matches:spin
+@cindex NC-IUB symbols:spin
+@cindex IUB symbols:spin
+@cindex DNA character set
+@cindex Nucleotide symbols
+
+The Sequence display contains a subsequence or string search function which moves the
+cursor to the position of the next match.
+As shown in the dialogue the user selects the direction and strand over
+which the search should be performed, the search algorithm, the minimum percentage match,
+and the subsequence/string for which to search. The search algorithm allows either NC-IUB 
+codes @cite{Cornish-Bowden, A. (1985) Nucl. Acids Res. 13, 3021-3030} or a 
+literal search. The literal search will search for exact matches eg
+inputting a search string of "n" will search for the letter "n". The NC-IUB 
+codes option can use any of the NC-IUB symbols
+shown in the figure below. Once activated the Search dialogue
+will remain visible until the user clicks on the "Cancel" button. 
+The cursor will move to the next
+matching position each time the user clicks on the "Search" button, or
+will "beep" if there is no such match.
+
+_picture(spin_sequence_display_d)
+ 
+@example
+@group
+@cartouche
+              NC-IUB SYMBOLS
+ 
+        A,C,G,T
+        R        (A,G)        'puRine'
+        Y        (T,C)        'pYrimidine'
+        W        (A,T)        'Weak'
+        S        (C,G)        'Strong'
+        M        (A,C)        'aMino'
+        K        (G,T)        'Keto'
+        H        (A,T,C)      'not G'
+        B        (G,C,T)      'not A'
+        V        (G,A,C)      'not T'
+        D        (G,A,T)      'not C'
+        N        (G,A,C,T)    'aNy'
+
+@end cartouche
+@end group
+@end example
+
+@node SPIN-Sequence-Display-Save
+@subsection Save
+
+@cindex Restriction enzyme sites:spin
+@cindex Sites: restriction enzymes:spin
+@cindex Cutting sites: restriction enzymes:spin
+@cindex Dumping results to file:spin
+@cindex Translation to protein:spin
+@cindex Double stranded sequence listing:spin
+@cindex Single stranded sequence listing:spin
+
+
+Saving the contents of the sequence display to a file
+
+The Sequence display contents can be dumped to a file by selecting the
+"Save" option from the menu. Whatever options are currently activated
+(i.e. which of restriction enzyme sites, translation, ruler and strands)
+will be written to disk. The user can define the region of the sequence
+for which to dump the results and the name of the file to use.
+
+_picture(spin_sequence_display_save_d)
+
+
+_split()
+@node SPIN-SPIN Sequence Comparison Plot
+@section SPIN Sequence Comparison Plot
+@cindex SPIN Sequence Comparison Plot: spin
+@cindex Dot plot: spin
+
+@menu
+* SPIN-Cursors::                         Cursors
+* SPIN-Crosshairs::                      Crosshairs
+* SPIN-Zoom::                            Zoom
+* SPIN-Drag::                            Drag and drop
+@end menu
+
+When a comparison function has been run on a pair of sequences a 
+SPIN Sequence Comparison Plot will appear. The results from each 
+comparison
+can be viewed in a "Sequence Comparison Display" in which the two sequences can
+be scrolled passed one another.
+
+The SPIN Sequence Comparison Plot display shows the results of comparison algorithms. Each match
+is represented as either a single dot ("Find similar spans", "Find best diagonals") or
+a line ("Find matching words", "Align sequences", "Local alignment"). 
+Sets of matches from a single invocation of a
+comparison command are termed "a result".  Each result is plotted using
+a single colour which can be configured via the results manager
+(_fpref(SPIN-Result-Manager, Result manager)). The maximum dimensions
+of the SPIN Sequence Comparison Plot are indicated on the rulers at the bottom and left hand side.
+It is possible within spin to compare many different sequences. This means that
+there may be more than one horizontal or vertical sequence shown in the spin
+plot. All the points are scaled to the largest sequence in each direction.
+Plots can also be extracted from or added to each SPIN Sequence Comparison Plot.
+
+_lpicture(spin_dot_plot)
+
+The diagram above shows the results of a "find similar spans" search (olive)
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)), 
+and a "find
+matching words" 
+(red) (_fpref(SPIN-Find matching words, Finding Matching Words)), between human and
+mouse properdin (hsproperd and mmproper). 
+At the right hand side is a set of square boxes with the
+same colours as the dots drawn in the adjacent plot. These
+icon-like objects represent individual results and allow the user to 
+operate on them. For example, in the figure above, the user has clicked
+the right mouse button on the icon to raise a pop-up menu beneath the 
+"matching words" result
+(_fpref(SPIN-Result-Manager, Result manager)).
+
+The square icons can also be used to move the corresponding results to
+new locations. These operations are explained below 
+(_fpref(SPIN-Drag, Drag and drop)).
+
+The SPIN Sequence Comparison Plot has 3 menus, "File", "View" and "Results". 
+
+The "File" menu contains the "Exit" command to quit the SPIN Sequence Comparison Plot. This
+shuts down the SPIN Sequence Comparison Plot display removes all the results displayed in that
+plot.
+
+The "View" menu contains the "Results manager" command, see
+_oref(SPIN-Result-Manager, Result manager).
+
+The "Results" menu provides a quick method of interfacing with the menu 
+obtainable via the "Results manager" (_fpref(SPIN-Result-Manager, Result manager)).
+
+_split()
+@node SPIN-Cursors
+@subsection Cursors
+@cindex Cursor: spin
+
+Each sequence displayed in a SPIN Sequence Comparison Plot will have a corresponding cursor of a
+particular colour. In the picture above, the sequence on the horizontal
+axis has a vertical blue cursor whereas the sequence on the vertical axis has 
+a horizontal olive green cursor. 
+The same sequence displayed in several SPIN Sequence Comparison Plots will have
+a cursor of the same colour unless the sequence has been plotted on a 
+different axis. The x and y positions of the cursors are indicated in
+the two boxes to the right of the crosshair check box respectively. To move a 
+cursor, click on it with the middle mouse button, or Alt left mouse button,
+held down and drag the mouse.
+The cursor will move all
+other cursors displayed that relate to that sequence, whether they are
+in different SPIN Sequence Comparison Plots or within the sequence display.
+
+@node SPIN-Crosshairs
+@subsection Crosshairs
+@cindex Crosshairs: spin
+
+Crosshairs can be turned on or off using the check button labelled
+"crosshairs". The x and y positions of the crosshairs are indicated in
+the two boxes to the right of the check box. The position
+of the crosshairs can be "frozen" at a particular position by pressing
+the control button and moving the mouse cursor outside the SPIN Sequence Comparison Plot
+window.
+
+@node SPIN-Zoom
+@subsection Zoom
+@cindex Zoom: spin
+
+Plots can be enlarged either by resizing the window or zooming. Zooming
+is achieved in two ways: either using the buttons at the base of the plot; 
+or by holding down the control key and right mouse button and
+dragging out a rectangle around the region to be zoomed. 
+Rectangles that are too small are ignored and
+a warning bell will sound. The Back button will restore the plot to the
+previous magnification. Zooming will increase the magnification of the
+plot so that the contents of the dragged out rectangle fill the display.
+The scrollbars allow the SPIN Sequence Comparison Plot to be scrolled in both directions.
+
+It is not possible to zoom the results from Rescan matches
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)).
+
+
+@node SPIN-Drag
+@subsection Drag and drop
+@cindex Drag and drop graphics: spin
+@cindex Graphics rearrangement: spin
+
+The square boxes at the right edge of the SPIN Sequence Comparison Plot panels have the same
+colours as the individual results in the display. These icons can be used to
+drag and drop the results to which they correspond. This is activated by
+pressing the middle mouse button, or Alt left mouse button, 
+over the box and then moving the cursor
+over the SPIN Sequence Comparison Plot to the new location or anywhere outside the SPIN Sequence Comparison Plot. 
+As the cursor moves over each
+part of the plot rectangular boxes will appear to indicate the position
+that the dragged result will occupy if the mouse button is
+released. Results can be dropped on top of another plot (signified by a
+rectangle drawn over the centre of the plot), above another plot
+(signified by a rectangle drawn in the top third of the plot), or below
+another plot (signified by a rectangle drawn in the bottom third of the
+plot). Moving the mouse cursor outside the SPIN Sequence Comparison Plot and releasing the mouse
+button will create a new SPIN Sequence Comparison Plot containing that result.
+
+_split()
+@node SPIN-Sequence-Comparison Display
+@section Sequence Comparison Display
+@cindex Sequence display: spin
+
+A sequence display is associated with a single set of results 
+(_fpref(SPIN-Result-Manager, Result manager)). To invoke a Sequence 
+Comparison Display, bring up a pop
+up menu for the required result, either from the Results manager, the Results
+menu in the SPIN Sequence Comparison Plot, or the coloured square icon on the right of the spin
+plot. From the menu, select the "Display sequences" option.
+
+_lpicture(spin_seq_display)
+
+The horizontal sequence is drawn above the vertical sequence. In the
+picture above, "hsproperd" is the horizontal sequence and "mmproper" is
+the vertical sequence. The central panel indicates characters which are
+identical between the horizontal and vertical sequences. The buttons to
+the left of the sequences allow scrolling of the sequences either 1 character
+at a time (< or >) or a screen width (<< or >>). Pressing the Lock
+button "locks" the two sequences together and they can be scrolled as
+one.  Movement of the sequences is also controlled by the scrollbars or by
+moving the corresponding cursor in the SPIN Sequence Comparison Plot 
+(_fpref(SPIN-SPIN Sequence Comparison Plot, SPIN Sequence Comparison Plot)). The black cursors in the sequence display 
+correspond to the position of the cursor in the SPIN Sequence Comparison Plot. The sequences can be
+made to 'jump' to the nearest match in those results by pressing the 
+"Nearest match" or "Nearest dot" buttons. Nearest match means the match
+whose x,y coordinate in sequence character positions is closest, whereas
+Nearest dot means the match which appears closest in screen
+coordinates. If the display edges were proportional to the sequence
+lengths the Nearest dot and Nearest match would be equivalent.
+
+_split()
+@node SPIN-Results
+@chapter Controlling and Managing Results
+
+@node SPIN-Result-Manager
+@section Result manager
+
+@cindex Results manager: spin
+@menu
+* SPIN-RM-Information::          Show information
+* SPIN-RM-List::                 List results
+* SPIN-RM-Configure::            Configure results
+* SPIN-RM-Hide::                 Hide results
+* SPIN-RM-Reveal::               Reveal results
+* SPIN-RM-Remove::               Remove results
+@end menu
+
+
+Many functions within spin produce "results" which are plotted to 
+the SPIN Sequence Plot (_fpref(SPIN-Spin-Plot, SPIN Sequence Plot)) or
+the 
+SPIN Sequence Comparison Plot (_fpref(SPIN-SPIN Sequence Comparison Plot, SPIN Sequence Comparison Plot)).
+The Result Manager provides a
+mechanism to interrogate and operate on these results. 
+
+_picture(spin_results_manager_d)
+
+The Result Manager can be accessed via the "Results manager" command in
+the View menu on either the main menu or the menu bar of the SPIN Sequence Plot. 
+Alternatively the results can be accessed as a menu attached to the "Results"
+option on the SPIN Sequence Plot menu bar. In this case the individual results are
+written in the same colour as the plots they refer to:
+
+_lpicture(spin_results_manager_d2)
+
+
+Each result is listed in the window containing the time the result was
+created, the name of the function which created the result and the
+result number. The number is simply a unique identifier to help
+distinguish between multiple results produced by the same function. The
+results are listed in time order, the oldest at the top.
+
+@cindex Memory saving: spin
+
+Each item in the list is consuming memory on your computer. Running
+functions over and over again without removing the previous results will
+slow down your machine and it will, eventually, run out of memory. Removing 
+items from the list solves this.
+
+Pressing the right mouse button over an listed item will display a popup
+menu of operations to perform on this result. 
+
+@node SPIN-RM-Information
+@subsection Information
+
+This option in the pop-up writes data about the parameters used to
+obtain the corresponding result.
+
+@node SPIN-RM-List
+@subsection List
+
+This option in the pop-up writes all the numerical values for the result
+to the Output Window. This should be used sparingly as it requires a lot
+of memory.
+
+@node SPIN-RM-Configure
+@subsection Configure
+
+This option allows the line width and colour of the matches to be altered
+(_fpref(UI-Colour, Colour Selector, interface)).
+A colour browser is displayed from which the desired line width or colour can 
+be configured. Pressing OK will update the SPIN Sequence Plot.
+
+@node SPIN-RM-Hide
+@subsection Hide
+
+This option removes the points from the SPIN Sequence Plot but retains the information
+in memory.
+
+@node SPIN-RM-Reveal
+@subsection Reveal
+
+This option will redisplay previously hidden points in the SPIN Sequence Plot.
+
+@node SPIN-RM-Remove
+@subsection Remove
+
+This command removes all the information regarding this particular
+result and access to this data is lost.
+
+
+_split()
+@node Reading and Managing Sequences
+@chapter Reading and Managing Sequences
+
+Spin manages sequences at two levels. First it provides for reading
+sequences into the program from disk files, and secondly it contains a
+range of facilities for deriving new sequences
+from them. For example it can internally produce
+protein sequences from DNA sequences, or produce the complement of a DNA
+sequence, rotate it about any position, or scramble it. Each of these
+types of internal operation produces a new sequence which can be
+analysed using the comparison functions, or which can be saved to
+disk. In the same way, performing a sequence alignment produces two new
+sequences which can be analysed or saved to disk.
+
+The sections below deals first with reading sequences from disk, and then
+with what can be done to produce new sequences in memory.
+New sequences are obtained from disk using the Load sequences option in
+the File menu, and sequences are managed internally using the Sequences
+menu. 
+
+@node SPIN-Feature Tables
+@section Use of feature tables in spin
+@cindex feature tables
+
+At present spin can only read feature tables from EMBL style files and use them
+to perform translations to protein. Like many components of spin, for us this
+was an exercise in doing the hard part (ie parsing and using the table), but
+we still need to apply it to many other tasks. We also need to generalise it
+to read genbank files.
+
+We also limited the types of record we accepted: only those with precisely
+defined endpoints. This means we do not store records which for example
+include <1..2000 or 1001.1005 but would store and use
+those with (1001..2000) or complement(join(2691..4571,4918..5163)).
+
+
+@node SPIN-Read Sequences
+@section Reading in sequences
+@cindex Read sequence: spin
+@cindex Entry sequence: spin
+
+This section describes how sequences are obtained from disk files.
+
+@menu
+* SPIN-Simple search::           Simple
+* SPIN-Personal search::         Extracting a sequence from a personal archive file
+@end menu
+
+Personal sequence files can be in plain text, "Staden", EMBL, 
+Genbank, PIR, FASTA and GCG formats. If
+supported by the format, personal files can contain multiple entries
+preceded by entry names. As is explained below a browser is available
+for selecting entries from such files. The file format is worked out 
+automatically.
+
+
+New sequences are entered into spin using the "Load sequence" option in
+the File menu. 
+_ifdef([[_unix]],[[This invokes a cascading menu containing 2 modes of
+searching, the simple search and a personal archive
+search (see below).]])
+
+If a sequence is entered which has the
+same name as one already loaded, its name within the program 
+is changed by the addition of
+'#number' where 'number' is a unique identifer. For example, if the 
+sequence "hsproperd" has already been loaded and this sequence is loaded
+again, the name of this second sequence is changed to "hsproperd#0".
+
+If only one sequence has been loaded, the comparison functions will
+compare this sequence against itself.
+
+
+@node SPIN-Simple search
+@subsection Simple search
+@cindex Load sequence: spin
+@cindex Get sequence: spin
+@cindex Simple search: spin
+@cindex EMBOSS
+
+_picture(spin_simple_search)
+
+This allows the selection of personal files. The second 
+option button is an "Entry" / "Filename" selection menu and the 
+entry box next to this should be completed with either an entryname or 
+file_name accordingly. If a personal file is selected, the filename 
+should be entered in the entrybox. The Browse buttons at the far right of
+the dialogue box either invoke a library browser or a file browser,
+_fpref(File Browser, File Browser, interface) depending on whether a sequence 
+library or personal file has been selected. 
+From the file browser multiple files can be entered by use of the Ctrl key 
+and mouse. Library access is only available
+via EMBOSS.
+
+@node SPIN-Personal search
+@subsection Extracting a sequence from a personal archive file
+@cindex Personal search: spin
+
+_picture(spin_personal_search)
+
+This method invokes an archive browser. Enter the filename of the personal 
+file in the entrybox. The Browse
+button to the right will invoke a file browser, 
+_fpref(File Browser, File Browser, interface). If the file contains 
+multiple entries, these will be displayed in the list box. It is necessary to
+press "Enter" after entering the filename in order for the entries to be 
+displayed. Select the required entryname(s) and press OK. The selected entries
+should now have been loaded into spin.
+
+@node SPIN-Sequence Manager
+@section Sequence manager
+@cindex Sequence manager: spin
+
+
+Spin allows more than two sequences to be available to the user. The sequence
+manager allows the user to perform operations on the sequences which have
+been loaded into spin. The same operations can also be invoked from the 
+"Sequences" menu. The sequence manager is invoked from the "File" menu.
+This command invokes a list box showing all the sequences
+which have been read into spin together with their ranges, lengths and whether
+they are DNA (D) or Protein (P).  The currently active horizontal and
+vertical sequences are marked with "H" and "V" respectively. In the 
+picture below, these are "hsproperd" and "mmproper".
+
+_picture(spin_seq_manager)
+
+Clicking on the sequence name in the sequence manager with the right mouse 
+button invokes a pop-up menu containing operations which may be performed on 
+that sequence. The operations available depends on whether the sequence is DNA
+or protein.
+
+These options are described in greater detail below.
+
+@menu
+* SPIN-Change Active Sequence::  Change the active sequence
+* SPIN-Set Range::               Set the range
+* SPIN-Copy::                    Copy the sequence
+* SPIN-Complement Sequence::     Complement sequence
+* SPIN-Interconvert t and u::    Interconvert t and u
+* SPIN-Translate Sequence::      Translate sequence
+* SPIN-Scramble Sequence::       Scramble sequence
+* SPIN-Rotate Sequence::         Rotate sequence
+* SPIN-Save Sequence::           Save sequence
+* SPIN-Delete Sequence::         Delete sequence
+@end menu
+
+@node SPIN-Change Active Sequence
+@subsection Change the active sequence
+@cindex Active sequence: spin
+
+To change the currently active horizontal or vertical sequence, use either 
+the "Sequences" menu or select the sequence from the Sequence manager.
+Select 
+"Horizontal" or "Vertical" from the menu. This sequence will now be
+the active "Horizontal" or "Vertical" sequence.
+
+@node SPIN-Set Range
+@subsection Set the range
+@cindex Set the range: spin
+@cindex Range: spin
+
+If you are only interested in a particular region of a sequence, it is
+possible to specify the start and end positions of this region to create a
+new entry in the Sequence manager. The new sequence will have the same name
+as the parent, with the addition of a "_s" plus a unique number. The third
+entry in the picture above shows the range has been set from 100 to 1000,
+giving a total length of 901 bases for the sequence "hsproperd". 
+
+@node SPIN-Copy
+@subsection Copy Sequence
+@cindex Copy sequence: spin
+@cindex Spin: copy sequence
+
+This option in the Sequences menu allows a sequence to be duplicated or
+copied.  This simply creates a new entry in the Sequence Manager. The
+user can select which sequence and the segment start and end points to
+be copied.
+
+@node SPIN-Sequence Type
+@subsection Sequence type
+@cindex Spin: sequence type (linear or circular)
+@cindex circular sequences:spin
+
+This option allows the user to change the status of a sequence to become
+either circular or linear.
+
+@node SPIN-Complement Sequence
+@subsection Complement sequence
+@cindex Complement sequence: spin
+
+This function will reverse and complement nucleic acid sequences.
+Select the "Complement" command from either the "Sequences" menu or the 
+sequence manager pop-up menu. A new sequence will be added to the sequence 
+manager list
+box with the same name as the parent but with "_c" appended to the end. The
+forth entry in the picture above is the complemented sequence of "hsproperd".
+
+@node SPIN-Interconvert t and u
+@subsection Interconvert t and u
+@cindex Transcribe sequence: spin
+@cindex Interconvert t and u: spin
+
+This function interconverts T and U characters i.e. between DNA and RNA. A
+new sequence is added to the sequence manager list box with the same name
+as the parent but the addition to the end of "_r". The fifth entry is the
+picture above is the transcribed sequence of "hsproperd".
+
+@node SPIN-Translate Sequence
+@subsection Translate sequence
+@cindex Translate sequence: spin
+
+This operation is only available for DNA sequences. 
+Select the "Translate" command from either the "Sequences" menu or the 
+sequence manager pop-up menu. It is possible to 
+translate in any particular frame by selecting the appropriate check box. 
+For each translation, a new sequence will be added to the
+sequence manager list box with the same name as the parent but with the
+addition to the end of either
+"_rf1", "_rf2" or "_rf3" to signify reading frames 1, 2 or 3 respectively.
+
+The "all together" option will produce a single new sequence
+in the sequence manager, with the extension "_rf123", exemplified by the
+ninth entry in the picture above. Although at this point
+the sequence is still DNA, when it is used in a comparison function
+the program will translate it automatically into the three reading frames. The
+important point is that the results from the three reading frames will be
+superimposed in the plot, hence enabling frameshift errors to be spotted.
+
+For example to compare a DNA sequence in all it's reading frames with a protein:
+
+@enumerate
+
+@item Convert the DNA sequence using the "all together" command
+@item Select this sequence as horizontal
+@item Select the protein sequence as vertical
+@item Invoke the relevant comparison function
+
+@end enumerate
+
+@node SPIN-Scramble Sequence
+@subsection Scramble sequence
+@cindex Scramble sequence: spin
+
+This function produces a version of a given DNA or protein sequence in
+which the characters are randomly reordered. i.e. the new sequence has
+the same length and composition as the original but with the characters in
+a random order. The
+new sequence will be added to the sequence manager list box with the same
+name as the parent except with "_x" plus a unique number appended to the end. 
+The tenth entry
+in the picture above is the scrambled version of "hsproperd". For long
+sequences, scrambling and then comparing should produce similar
+numbers of matches as are predicted by the probability calculations
+(_fpref(SPIN-Probability Calculations, Probabilities and expected number of matches)). 
+
+@node SPIN-Rotate Sequence
+@subsection Rotate sequence
+@cindex Rotate sequence: spin
+
+This function allows the user to specify a new origin for a sequence. A new
+sequence is added to the sequence manager list box with the same name as the
+parent except with "_o" plus a unique number appended to the end. The
+eleventh entry in the picture above is of a rotated version of "mmproper".
+This operation is not allowed for sub-sequences ie those created using
+"Set range".
+
+
+@node SPIN-Save Sequence
+@subsection Save sequence
+@cindex Save sequence: spin
+
+To save a sequence to a file, select the "Save" option from either the "File"
+menu, the "Sequences" menu or the sequence manager pop-up
+menu.  This command invokes a file name entry box. The browse button to
+the right of the dialogue box invokes a filebrowser.
+_fxref(File Browser, File Browser, interface)
+The sequence is written as either EMBL or FASTA format. If EMBL is selected
+and the sequence has an associated feature table, the feature table will
+also be written out
+(_fpref(SPIN-Feature Tables, Use of feature tables in spin, t)).
+
+_picture(spin_save_sequence_d)
+
+
+@node SPIN-Delete Sequence
+@subsection Delete sequence
+@cindex Delete sequence: spin
+
+To delete a sequence, select the "Delete" option from either the "Sequences"
+menu or the sequence manager pop-up menu. This
+command will remove the sequence from the sequence manager and all plots and
+results that were produced from it. 
+
+@node SPIN-Selecting a sequence
+@section Selecting a sequence
+@cindex Selecting a sequence: spin
+@cindex Seq identifier: spin
+
+All the comparison functions request a horizontal and a vertical sequence
+and the ranges over which the function will operate. It is therefore possible 
+to compare the same sequence over different ranges. The default sequences which
+appear when the dialogue box for the comparison function is brought up, are
+the current "active" sequences  
+(_fpref(SPIN-Sequence Manager, Sequence manager)). 
+To select a different
+sequence for this invocation of the function, press the Browse button to
+the right of the "Seq identifier" box. This will invoke a Sequence manager if 
+one is not already displayed. Clicking with the left mouse button on the name 
+of the required sequence in the sequence manager will update the function 
+dialogue box with the sequence name and it's currently defined range. To 
+change the range, enter the new start and end positions. These positions will 
+be remembered for future invocations of any of the comparison functions for
+this sequence.
+
+

@@ -1,0 +1,185 @@
+@cindex screen_seq: man page
+@unnumberedsec NAME
+
+screen_seq --- filters out sequence readings containing contaminating DNA
+
+@unnumberedsec SYNOPSIS
+
+@code{screen_seq} @code{-}[@code{lcwmiIsSpft}]
+[@code{-l} @i{Length of minimum match (25)}]
+[@code{-m} @i{Maximum vector length (100000)}]
+[@code{-i} @i{Input file of reading file names}]
+[@code{-I} @i{Input file of single reading to screen}]
+[@code{-s} @i{Input file of sequence file names}]
+[@code{-S} @i{Input file of single sequence to screen against}]
+[@code{-p} @i{Passed output file of file names}]
+[@code{-f} @i{Failed output file of file names}]
+[@code{-t} @i{Test only mode}]
+
+
+@unnumberedsec DESCRIPTION
+
+@code{screen_seq} searches sequence readings to
+filter out those from extraneous DNA
+such as vector or bacterial sequences. We have separated this task
+from that of locating and marking the extents of sequencing vector and
+other cloning vectors. There we require precise identification of the
+junction between the vectors and the target DNA. The filtering process
+described here is designed to spot strong matches between readings and a
+panel of possible contaminating sequences, and it splits readings into
+passes and fails. Readings that fail have a PS line containing the word
+"contaminant" and a tag of type "CONT" added to their experiment file.
+
+Normal usage would be to compare a batch of readings in experiment file
+format against a batch of possible contaminant sequences stored in (at
+present) simple text files. Each batch is presented to the program as a
+file of file names, and the program will write out two new files of file
+names: one containing the names of the files that do not match any of
+the contaminant sequences (the passes), and the other those that do
+match (the
+fails). It is also possible to compare single readings and single
+contaminant files by giving their file names (i.e. it is not necessary
+to use a file of file names for single files).
+
+Given the frequent need to compare against the full E. coli genome the
+algorithm is designed to be fast. The user controls the speed and
+sensitivity by supplying a single parameter, "min_match".
+The program will find the longest exact match of at
+least min_match characters.
+
+The search is
+conducted only over the clipped portion of the readings. On our Alpha machine
+it takes about 1 second to compare both strands of a reading against the
+4.7 million bases of E. coli.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-l} @i{Length of minimum match (25)}
+        The length of match required to initiate a closer search.
+
+@item @code{-m} @i{Maximum vector length (100000)}
+        The maximum length of the longest sequence to screen the readings against.
+
+@item @code{-i} @i{Input file of reading file names}
+
+@item @code{-I} @i{Input file of single reading to screen}
+
+@item @code{-s} @i{Input file of sequence file names to screen against}
+
+@item @code{-S} @i{Input file of single sequence to screen against}
+
+@item @code{-p} @i{Passed output file of file names}
+
+@item @code{-f} @i{Failed output file of file names}
+
+@item @code{-t} @i{Test only mode}
+        In test mode no experiment files are changed and the results are written
+        to stdout. When not in test mode a dot "." is written to stdout for each
+        comparison, and an exclamation mark "!" for each error detected.
+@end table
+
+@unnumberedsec EXAMPLES
+
+@example
+Usage: screen_seq [options and paramters] 
+Where options and parameters are:
+    [-l minimum match (25)]           [-m Max vector length (100000)]
+    [-i readings to screen fofn]      [-I reading to screen]
+    [-s seqs to screen against fofn]  [-S seq to screen against]
+    [-t test only]
+    [-p passed fofn]                  [-f failed fofn]
+@end example
+
+
+1. Screen the readings whose names are stored in fofn against a batch of
+possible contaminant sequences whose names are stored in vnames. Write
+the names of the readings that pass to file p and those that fail to
+file f. Increase the maximum sequence length to 5000,000 characters and
+require a minimum match of 20.
+
+
+@example
+@code{screen_seq -i fofn -s vnames -p p -f f -l20 -m5000000}
+@end example
+
+2. Screen the single reading stored in xpg33.g1 against a batch of
+possible contaminant sequences whose names are stored in vnames. If the
+reading does not match write its name to file p, otherwise to
+file f. Increase the maximum sequence length to 5000,000 characters and
+require a minimum match of 20.
+
+@example
+@code{screen_seq -I xpg33.g1 -s vnames -p p -f f -l20 -m5000000}
+@end example
+
+3. Screen the readings whose names are stored in fofn against a single
+possible contaminant sequence stored in ecoli.seq. Write
+the names of the readings that pass to file pass and those that fail to
+file fails. Increase the maximum sequence length to 5000,000 characters and
+require minimum  match of 20.
+
+@example
+@code{screen_seq -i fofn -S ecoli.seq -p pass -f fails -l20 -m5000000}
+@end example
+
+
+
+@unnumberedsec NOTES
+
+Limits
+
+Screen_seq is currently set to be able to process a maximum of 10,000
+readings and 5000 screening sequences in a single run. The maximum
+length of any screening sequence is 100,000 although this can be
+overridden by use of the -m parameter (set it to 5000000 for E. coli).
+At present the sequences to screen against must be stored in simple text
+files containing individual sequences, with no entry names, and <100
+characters per line.
+
+
+The following errors can be reported.
+
+@cindex Screen_seq: error codes
+@enumerate 1
+@item   "Failed to open file of file names to screen against". Fatal failure to
+open the file of file names to screen against.
+@item   "Failed to open single file to screen against". Fatal failure to
+open the file to screen against.
+@item   "Failed to open file of file names to screen". Fatal failure to
+open the file of file names to screen.
+@item   "Failed to open single file to screen". Fatal failure to
+open the file to screen.
+@item   "Failed to open file of passed file names". Fatal failure to
+open the file of file names for readings that do not match.
+@item   "Failed to open file of failed file names". Fatal failure to
+open the file of file names for readings that match.
+@item   "Failed to open single file to screen". Fatal failure to
+open the file to screen.
+@item   "Error: could not open vector file". An individual sequence file
+could not be opened.
+@item   "Error: could not read vector file". An individual sequence file
+could not be read.
+@item   "Error: could not hash vector file". An individual sequence file
+could not be prepared for comparison.
+@item	"Error: could not open experiment file". The file does not exist
+or is unreadable.
+@item	"Error: no sequence in experiment file".
+@item	"Error: sequence too short". The reading is shorter than the
+minimum match length.
+@item	"Error: could not write to experiment file". The disk is full or
+the file is write protected.
+@item   "Error: hashing problem". An error occurred in the comparison
+algorithm. Please report to staden-package@@mrc-lmb.cam.ac.uk
+@end enumerate
+
+Inconsistencies in the selection of options, such as selecting -I and
+-i, should also cause the usage message (shown below) to appear, and 
+the program to terminate. 
+
+@i{PS} record added to the experiment file for any reading that matches.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp,Experiment File, formats)
+_fxref(Vector_Clip, Screening Against Vector Sequences, vector_clip)

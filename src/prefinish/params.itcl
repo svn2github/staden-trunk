@@ -1,0 +1,410 @@
+#
+# A Tree item compatible with being added to a hierarchybook.
+# The Params class holds the miscellaneous paramaters for configuring the
+# prefinish system. It contains children with more specific paramaters
+# (primer3, experiment costs, etc).
+#
+
+class Params {
+    inherit Tree
+
+    public {
+	variable name			{General parameters}
+	variable external_seq		""; # backwards compatiblility; unused
+	variable external_seq_file	""
+	variable skip_template_file	skip_templates
+	variable avail_template_file	""
+	variable use_avg_insert		0
+	variable mandatory_ratio	0.4
+	variable max_score_drop		0.2
+	variable min_template_score	0.4
+	variable min_score		0.6
+	variable find_dup_templates	1
+	variable dust_level		18
+	variable min_extension		50
+    }
+
+    protected variable config {
+	external_seq_file	"External sequence filename"
+	dust_level		"DUST level"
+	skip_template_file	"File of templates to skip"
+	avail_template_file	"File of templates to pick from"
+	find_dup_templates	"Find duplicate templates"
+	use_avg_insert		"Use average insert size"
+	min_template_score	"Minimum template score"
+	min_score		"Minimum experiment score"
+	max_score_drop		"Maximum experiment score drop"
+	mandatory_ratio		"Mandatory-problem ratio"
+	min_extension		"Minimum contig extension"
+    }
+
+    constructor {args} {}
+    destructor {}
+
+    public {
+	# Used by hierarchy book
+	method display {w}
+	method create_menus {m}
+
+	# Others
+	method save {}
+	method drop {type}
+	method delete {}
+
+	# Initialises an inherited from $node to $this.
+	method inherit_from {node change}
+
+	# Methods to add and remove a variable trace on a node. These methods
+	# are called in the inherited node by the node that wishes to inherit.
+	# The callback is the 
+	method trace_variable_set {command}
+	method trace_variable_clear {command}
+	method trace_variable_callback {name value}
+
+	# Called by inherited node to notify this node of a change.
+	# (Specified as an argument to trace_variable_set)
+	method inherited_variable_changed
+
+	method parent_params
+	method parent
+    }
+
+    private {
+	# A list of commands to call when local variables change.
+	variable trace_cmd  {}
+
+	# Arrays indexed by variable containing "trace variable" ids for
+	# traces on the local and inherited copies of the variables.
+	# The inherited variable trace is to update whenever the inherited
+	# node changes. The local trace is to check when local edits reset
+	# the local value back to the same as the inherited one.
+	variable local_trace_id
+	variable inherited_trace_id
+
+	method entryedit
+    }
+
+    protected {
+	variable data
+	method varedit
+
+	# Pathname of the container widget (a frame)
+	variable path {}
+
+	# Adds a hyperlink from a variable to its inherited copy
+	method link {mode var}
+
+	# The node we are inheriting values from
+	variable inherited_node
+    }
+}
+
+# -----------------------------------------------------------------------------
+# CONSTRUCTOR
+# -----------------------------------------------------------------------------
+body Params::constructor {args} {
+    eval configure $args
+
+    foreach {var text} $config {
+	set data($var) [set $var]
+	trace variable $var w [code $this varedit $var]
+    }
+}
+
+body Params::destructor {} {
+    if {[info exists inherited_node]} {
+	$inherited_node trace_variable_clear \
+	    [code $this inherited_variable_changed]
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when this node is added to the tree in order
+# to create the Tk dialogue.
+# -----------------------------------------------------------------------------
+body Params::display {w} {
+    set wins {}
+    set path $w
+    foreach {var text} $config {
+	iwidgets::entryfield $w.$var \
+	    -labeltext "$text" \
+	    -textvariable [scope $var] \
+	    -width 10
+	pack $w.$var -side top -fill both
+	lappend wins $w.$var
+	
+	# Force the links to be shown correctly.
+	set $var [set $var]
+
+	if {[info exists ::prefinish::tooltips(-$var)]} {
+		::tooltip::attach $w.$var $::prefinish::tooltips(-$var)
+	}
+    }
+    eval ::iwidgets::Labeledwidget::alignlabels $wins
+}
+
+#
+# var is the local variable name
+# name1 is a global-scope named version of var
+#
+body Params::varedit {var name1 name2 op} {
+    if {[info exists inherited_node]} {
+	if {[$this cget -$var] == [$inherited_node cget -$var]} {
+	    set data($var) inherited
+	    link create $var
+	} else {
+	    set data($var) [$this cget -$var]
+	    link destroy $var
+	}
+    } else {
+	set data($var) [$this cget -$var]
+    }
+
+    # If we are being inherited, notify our dependents of the local change.
+    foreach cmd $trace_cmd {
+	uplevel \#0 $cmd [list $var] [list [$this cget -$var]]
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook to create the menus.
+# NOTE: This accesses the global array ::rules
+# -----------------------------------------------------------------------------
+body Params::create_menus {m} {
+    Tree::create_menus $m
+    if {[$parent info class] != "::HBRoot"} {
+	$m add separator
+	$m add command -label "Remove" -command "itcl::delete object $this"
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Overrides the Tree::delete method to prevent deletion of this node if this
+# is the toplevel parameters.
+# -----------------------------------------------------------------------------
+body Params::delete {} {
+    # Only delete ourselves if we are not the root params instance
+    if {[$parent info class] != "::HBRoot"} {
+	itcl::delete object $this
+    } else {
+	bell
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns a string of components to save for this rule.
+# -----------------------------------------------------------------------------
+body Params::save {} {
+    set str ""
+    foreach {var text} $config {
+	append str " -$var [list $data($var)]"
+    }
+    return $str
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Checks whether a class of "type" may be dropped within us. If so we return
+# the desired position (eg start or end). Otherwise we return "" to indicate
+# that this is an incompatible object.
+# -----------------------------------------------------------------------------
+body Params::drop {type} {
+    # Only allow other params within us
+    regsub {^::} $type {} type
+    if {[lsearch {ParamCosts ParamPrimer3 ParamWalk} $type] == -1} {
+	return ""; #no drop
+    }
+
+    # Only allow one of each type
+    if {[contains $type]} {
+	return ""
+    }
+
+    return end
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Used to indicate that this Params inherits its values from another one.
+# Inherited values are displayed differently in the GUI and are linked to
+# changes in the inherited Params structured.
+# 'change' indicates whether we should change the current values to match
+# the parent or not.
+#
+# Note that this and other related inheritance functions make extensive use
+# of "$this cget -variable" instead of "$variable". The reason for this is
+# to ensure that in derived classes we access the variables within the derived
+# class instead of this base class. This also gives the derived classes the
+# ability to override variables (in additional to the usual method replacement
+# mechanisms).
+# -----------------------------------------------------------------------------
+body Params::inherit_from {node change} {
+    if {[info exists inherited_node]} {
+	return
+    }
+
+    set inherited_node $node
+
+    foreach {var text} $config {
+	# Copy the initial values from our inherited node, and flag them
+	# as inherited.
+	if {$change || [$this cget -$var] == [$node cget -$var]} {
+	    $this configure -$var [$node cget -$var]
+	}
+    }
+
+    # Register our inheritance interest with the inherited_node, supplying
+    # a method for it to call whenever variables are modified.
+    $inherited_node trace_variable_set [code $this inherited_variable_changed]
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC (but do not use externally)
+#
+# This is the method called by objects that we inherit to indicate that a
+# variable in the inherited object has changed. It is supplied as an argument
+# to the trace_variable_set method.
+# -----------------------------------------------------------------------------
+body Params::inherited_variable_changed {name value} {
+    if {$data($name) == "inherited"} {
+	$this configure -$name $value
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Adds 'command' as code to be called whenever one of the public variables of
+# this class instance is changed. 'command' is called with two additional
+# arguments consisting of the variable name and the variable value.
+# -----------------------------------------------------------------------------
+body Params::trace_variable_set {command} {
+    lappend trace_cmd $command
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Removes a trace_variable command; the opposite of the trace_variable_set
+# method.
+# -----------------------------------------------------------------------------
+body Params::trace_variable_clear {command} {
+    set ind [lsearch $trace_cmd $command]
+    if {$ind != -1} {
+	set trace_cmd [lreplace $trace_cmd $ind $ind]
+    }
+}
+
+
+body Params::link {mode var} {
+    if {$path == ""} {
+	return
+    }
+    set l [$path.$var component entry]
+    if {$mode == "create"} {
+	set font [$l cget -font]
+	if {![string match "* underline" $font]} {
+	    set font "$font underline"
+	}
+	$l configure -foreground blue -font $font
+	bind $l <Double-1> "[get_hierarchy] raise $inherited_node"
+	$l configure -cursor hand2
+    } else {
+	set font [$l cget -font]
+	regsub { ?underline} $font {} font
+	$l configure -foreground black -font $font
+	bind $l <Double-1> {}
+	$l configure -cursor {}
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Starting from 'node' scan the contents to see if a child has type Params.
+# If not, go to node's parent and try again.
+# This way we either return the first Params above node in the hierarchy or
+# "" for none found.
+# -----------------------------------------------------------------------------
+body Params::parent_params {node} {
+    set node [$node parent]
+    if {$node == ""} {
+	return ""
+    }
+
+    foreach _child [$node contents] {
+	if {[$_child isa Params]} {
+	    return $_child
+	}
+    }
+
+    if {[$node info class] != "::HBRoot"} {
+	return [parent_params [$node parent]]
+    } else {
+	return ""
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Overrides the Tree parent method, which is called to set the parent
+# variable when a node is added to another node.
+#
+# Our method uses chain to call the Tree method and then uses parent_params
+# to see if we wish to initiate data inheritance (calling inherit_from if
+# so).
+# -----------------------------------------------------------------------------
+body Params::parent {{node {}}} {
+    if {$node == ""} {
+	return [chain]
+    } else {
+	chain $node
+	if {[$this info class] != "::Params"} {
+	    set _parent [parent_params [$node parent]]
+	} else {
+	    set _parent [parent_params $parent]
+	}
+	set _parent 
+	flush stdout
+	if {$_parent == ""} {
+	    return
+	}
+
+	# The parent is the first ::Params type above this params (or the
+	# one containing $this if $this isn't params). If $this isn't params
+	# then we find a child of _parent that is the same. The reason is
+	# that this code is used in derived classes, eg ParamWalk. We are
+	# looking for the ParamWalk to inherit, and not a Param.
+	if {[$_parent info class] != [$this info class]} {
+	    foreach _child [$_parent contents] {
+		if {[$_child info class] != [$this info class]} {
+		    continue
+		}
+		if {$_child == $this} {
+		    set _parent ""
+		} else {
+		    set _parent $_child
+		}
+		break
+	    }
+	}
+
+	if {$_parent == ""} {
+	    return
+	}
+
+	# So we've found something to inherit; do so.
+	inherit_from $_parent 0
+    }
+}

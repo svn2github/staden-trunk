@@ -1,0 +1,173 @@
+package require Iwidgets
+namespace eval ::EMBOSS::freak {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_freak*Xentry.entry.width 30
+option add *e_freak*Entryfield.width 30
+option add *e_freak*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) freak
+    set w [xtoplevel .e_freak -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - freak}
+    label $w._title -text {Residue/base frequency table or plot}
+    pack $w._title -side top -fill both
+    set vars(freak._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqall
+    set vars(seqall)       [get_active_seq_id 1]
+    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 1]}
+    set vars(seqall.name)  [seq_info $vars(seqall) name]
+    sequence_changed [namespace current] seqall
+    set vars(seqall.type) [subst any]
+    seq_id $w.seqall \
+	-textvariable [namespace current]::vars(seqall.name)\
+	-start_value $vars(seqall.begin)\
+	-end_value $vars(seqall.end)\
+	-to [seq_info $vars(seqall) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
+    set vars(seqall) [subst {}]
+    pack $w.seqall -side top -fill both
+    set vars(seqall.path) $w.seqall
+    set vars(seqall.required)  1
+    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
+    set vars(seqall._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments letters
+    iwidgets::entryfield $w.letters \
+	-textvariable [namespace current]::vars(letters) \
+	-labeltext [subst {Residue letters}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.letters component entry] -sticky nse
+    set vars(letters) [subst gc]
+    pack $w.letters -side top -fill both
+    set vars(letters.path) $w.letters
+    set vars(letters.required)  1
+    set vars(letters._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments step
+    iwidgets::entryfield $w.step \
+	-validate integer \
+	-textvariable [namespace current]::vars(step) \
+	-labeltext [subst {Stepping value}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.step component entry] -sticky nse
+    set vars(step) [subst 1]
+    pack $w.step -side top -fill both
+    set vars(step.path) $w.step
+    set vars(step.required)  0
+    set vars(step._type) integer
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Averaging window}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 30]
+    pack $w.window -side top -fill both
+    set vars(window.path) $w.window
+    set vars(window.required)  0
+    set vars(window._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments plot
+    checkbutton $w.plot \
+	-text [subst {Produce graphic}]\
+	-variable [namespace current]::vars(plot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.plot -side top -anchor w
+    set vars(plot) [subst 0]
+    set vars(plot.path) $w.plot
+    set vars(plot.required)  0
+    set vars(plot._type) bool
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(plot)}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) xygraph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(plot)}]]}
+    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(plot))}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst freak0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(plot))}]]}
+    trace variable vars(plot) w  "::EMBOSS::reset_needed [namespace current] outfile"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/freak.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

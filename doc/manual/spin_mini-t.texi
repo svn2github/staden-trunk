@@ -1,0 +1,364 @@
+@cindex Spin
+
+_split()
+@node SPIN-Introduction
+@chapter Introduction
+
+Spin is an interactive and graphical 
+program for analysing and comparing sequences. It contains functions to
+search for restriction sites, consensus sequences/motifs and protein 
+coding regions, can analyse the composition of the sequence and
+translate DNA to protein. 
+It also contains functions for locating segments of similarity within and
+between sequences, and for finding global and local alignments between pairs of
+sequences. 
+To help assess the statistical significance of comparisons the program can
+calculate tables of expected and observed score frequencies for each
+score level.
+Most analytical functions which operate on single sequences
+add their graphical results to a "SPIN Sequence Plot" that is associated 
+with the sequence being analysed. (An exception is the restriction enzyme 
+search which produces its own separate window.) Most functions which compare
+pairs of sequences add their results to a "SPIN Sequence Comparison Plot".
+The SPIN Sequence Plot and the SPIN Sequence Comparison Plot each have
+associated sequence display windows: the Sequence Display and the 
+Sequence Comparison Display. These allow the text of the sequences to be
+viewed and use cursors to show the corresponding positions in the graphical
+displays.
+The graphical plots can be zoomed, and cursors or crosshairs can be
+used to locate the positions of the individual results. Plots can be 
+superimposed.
+
+@node SPIN-Intro-Functions
+@section Summary of the Spin Single Sequence Functions
+
+Spin's main single sequence analytical functions are accessed via the 
+Statistics,
+Translation and Search menus.
+The "Statistics" menu contains options to count and plot the base composition 
+(_fpref(SPIN-Plot-Base-Composition, Plot Base Composition))
+and also to count the dinucleotide frequencies
+(_fpref(SPIN-Dinucleotide-Freq, Dinucleotide Frequencies)).
+
+The "Translation" menu contains options to set the genetic code
+(_fpref(SPIN-Set-Genetic-Code, Set Genetic Code)), translate to protein
+(_fpref(SPIN-Translation-General, Translation)),
+find open reading frames and write the results in either feature
+table format or as fasta format protein sequence files
+(_fpref(SPIN-Open-Reading-Frames, Find Open Reading Frames)), and to calculate 
+codon tables.
+
+The "Search" menu contains a variety of different searching techniques.
+"Protein genes" has four methods for finding protein genes
+(_fpref(SPIN-Codon-Usage-Method, Codon Usage Method))
+(_fpref(SPIN-Author-Test, Author Test)),
+(_fpref(SPIN-Positional-Base-Prefs, Positional base Preferences))
+(accessed as a subcomponent of the Codon Usage Method), and
+(_fpref(SPIN-Uneven-Positional-Base-Freqs, Uneven Positional base
+Frequencies)). There is also a method to search for tRNA genes
+(_fpref(SPIN-TRNA-Search, tRNA Search)).
+It is also possible to perform subsequence or string searches 
+(_fpref(SPIN-String-Search, String search)) and restriction enzyme searches
+(_fpref(SPIN-Restrict-Introduction, Restriction enzyme search)). 
+There are searches for start 
+(_fpref(SPIN-Start-Codon-Search, Start Codon Search)) and stop codons 
+(_fpref(SPIN-Stop-Codon-Search, Stop Codon Search)), splice junction
+searches (_fpref(SPIN-Splice-Site-Search, Splice Site Search)), and
+general motif searches using weight matrices (_fpref(SPIN-Weight-Matrix-Search, 
+Motif Search)).
+
+_split()
+@node SPIN-Intro-Comparison-Functions
+@section Summary of the Spin Comparison Functions
+
+This section outlines the functions obtained from the Comparison menu.
+All produce graphical and textual output. 
+Using a score matrix, the "Find similar spans"
+function compares every segment of one sequence with all those of the
+other and reports those that reach a user defined score. The
+segments are of a fixed length (span) set by the user
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)).
+To look for short matching segments of any length, and allowing gaps, a
+local dynamic programming routine can be used
+(_fpref(SPIN-Local alignment, Aligning Sequences Locally)).
+The fastest routine for locating segments of similarity (and generally
+only suitable for DNA sequences) finds all identical subsequences (or words)
+(_fpref(SPIN-Find matching words, Finding Matching Words)).
+For a quick global comparison of sequences using a combination of the
+Matching Words and Matching Spans algorithms the "Find best
+diagonals" algorithm can be used
+(_fpref(SPIN-Find Best Diagonals, Finding the Best Diagonals)).
+Global alignments can be produced and plotted using a dynamic programming
+algorithm 
+(_fpref(SPIN-Align Sequences, Aligning Sequences Globally)).
+
+@page
+_split()
+@node SPIN-Intro-Interface
+@section Introduction to the Spin User Interface
+
+@menu
+* SPIN-Intro-Interface-plot::                          The SPIN Sequence Plot
+* SPIN-Intro-Interface-seq::                      The SPIN Sequence Display
+* SPIN-Intro-Interface-comparison-plot::         The SPIN Sequence Comparison Plot
+* SPIN-Intro-Interface-sequence-comparison-display::           The SPIN Sequence Comparison Display
+@end menu
+
+Spin has several main displays. The first is
+a top level window from which all the main options are selected and
+which receives textual results. 
+Most analytical functions which operate on single sequences
+add their graphical results to a "SPIN Sequence Plot" that is associated 
+with the sequence being analysed. (An exception is the restriction enzyme 
+search which produces its own separate window.) Most functions which compare
+pairs of sequences add their results to a "SPIN Sequence Comparison Plot".
+The SPIN Sequence Plot and the SPIN Sequence Comparison Plot each have
+associated sequence display windows: the Sequence Display and the 
+Sequence Comparison Display. These allow the text of the sequences to be
+viewed and use cursors to show the corresponding positions in the graphical
+displays.
+
+Spin is
+best operated using a three button mouse, but alternative keybindings
+are available. Full details of the user interface
+are described elsewhere
+(_fpref(UI-Introduction, User Interface, t)), and here we give an
+introduction based around a series of screenshots.
+
+The main window (shown below) contains an Output Window for
+textual results, an Error window for error messages, and a series of
+menus arranged along the top
+(_fpref(SPIN-Intro-Menus, Spin menus,t)).
+The contents of the two text windows can
+be searched, edited and saved. Each set of results is preceded by
+a header containing the time and date when it was generated.
+
+_lpicture(spin_translate_t)
+
+As can be seen 
+the main menu bar contains File, View, Options, Sequences, Statistics,
+Translation, Comparison, Search and Emboss menus.
+In general most functions add their graphical results to a 
+"SPIN Sequence Plot", but those obtained from the Comparison menu add
+their results to a "SPIN Sequence Comparison Plot".
+
+@page
+_split()
+@node SPIN-Intro-Interface-plot
+@subsection Introduction to the Spin Plot
+
+Most of the spin functions display their results in a 
+two-dimensional plot called a "spin plot" (_fpref(SPIN-Spin-Plot, Spin plot)).
+Sets of matches from a single invocation of a
+function are termed "a result".  Each result is plotted using
+a single colour which can be configured via the results manager
+(_fpref(SPIN-Result-Manager, Result manager)). 
+
+The figure shown below shows a spin plot window containing the results of
+a gene search method based on codon usage, superimposed on a search for
+stop codons
+(_fpref(SPIN-Codon-Usage-Method, Codon Usage Method)). 
+Each plot window contains a cross hair. Its x position is shown
+in sequence base numbers in the left hand box above the plot, and the y
+coordinate, expressed using the score values of the gene search, is
+shown in the right hand box.
+
+_lpicture(spin_plot_p)
+
+At the right hand side of each panel is a set of square boxes with the
+same colours as the lines drawn in the adjacent plot. These
+icon-like objects represent individual results and allow the user to 
+operate on them. For example at the right of the middle panel is a
+pop-up menu containing the items: "Information", "List results",
+"Configure", "Hide" and "Remove". 
+(_fpref(SPIN-Result-Manager, Result manager)).
+
+These icons can also be used to
+drag and drop the results to which they correspond. This is activated by
+pressing the middle mouse button, or Alt left mouse button, 
+over the box and then moving the cursor
+over the spin plot to the new location or anywhere outside the spin plot
+(_fpref(SPIN-DRAG, Drag and drop))
+
+Each spin plot window also contains a cursor that denotes the position of
+the cursor in the Sequence display window 
+(_fpref(SPIN-Sequence-Display, Spin Sequence Display)).
+The user can move a cursor by clicking and dragging 
+with the middle mouse button, or Alt left mouse button.
+This will move the cursor in the sequence display and all other cursors displayed
+that relate to the sequence.
+
+The graphical results can be zoomed and scrolled in both x and y
+directions. Zooming is achieved using the X and Y scale bars at the top
+left hand corner of the plot. The individual plots can be scrolled in y
+using the scroll bars attached to their right hand edge. The sequence
+can be scrolled using the scroll bar at the base of the plot.
+
+To illustrate further uses of the program we include some more screen
+dumps below.
+
+_lpicture(spin_restrict_enzymes_p)
+
+The figure above shows the results of a search for restriction enzymes
+(_fpref(SPIN-Restrict-Introduction, Restriction enzyme search)).
+
+_lpicture(spin_plot_base_comp_p)
+
+The figure above is a plot of the base composition of a sequence.
+
+_lpicture(spin_weight_matrix)
+
+The figure above shows the way in which the results of
+weight matrix searches for motifs are plotted
+(_fpref(SPIN-Weight-Matrix-Search, Motif Search)).
+
+_lpicture(spin_splice)
+
+
+The figure about shows the way in which the results of
+searches for splice junctions are plotted. The donor and acceptor
+predictions are separated and a different colour is used for each
+reading frame
+(_fpref(SPIN-Splice-Site-Search, Splice Site Search)).
+
+_lpicture(spin_base_bias_p)
+
+The figure above shows a method for finding protein coding regions which
+does not distinguish reading frame or strand
+(_fpref(SPIN-Uneven-Positional-Base-Freqs, Uneven Positional base
+Frequencies)).
+
+
+_lpicture(spin_trna_t)
+
+The figure above shows how results from the tRNA gene search function
+are displayed in the Output window
+(_fpref(SPIN-TRNA-Search, tRNA Search)).
+
+
+_split()
+@node SPIN-Intro-Interface-seq
+@subsection Introduction to the Spin Sequence Display
+
+Spin also has a sequence display window in which the user can view the
+sequence in
+textual form. This window allows the user to scroll along the sequence.
+Users can view one or both strands,
+can switch on displays of the encoded amino acids in up to six reading
+frames, can switch on a display of the restriction enzyme sites, and can
+perform other simple subsequence or string searches to locate features in the
+sequence. In the figure shown below the user has switched on a three
+phase translation on the top strand, double stranded sequence, and a
+restriction enzyme search.
+
+_lpicture(spin_sequence_display_t)
+
+The sequence cursor can be under the control of the graphics
+cursor i.e. the cursor in the sequence viewer can be moved by the user
+dragging the cursor in the graphics window. Similarly the cursor in the
+graphics plots can be moved by the sequence viewer cursor.
+
+
+@page
+_split()
+@node SPIN-Intro-Interface-comparison-plot
+@subsection Introduction to the Spin Sequence Comparison Plot
+
+All of the spin comparison 
+functions display their results as points or lines in a 
+two-dimensional plot called a "Spin Sequence Comparison Plot" (_fpref(SPIN-SPIN Sequence Comparison Plot, Spin Sequence Comparison Plot)).
+Sets of matches from a single invocation of a
+comparison command are termed "a result".  Each result is plotted using
+a single colour which can be configured via the results manager
+(_fpref(SPIN-Result-Manager, Result manager)). 
+
+_lpicture(spin_dot_plot)
+
+The diagram above shows the results of a "Find similar spans" search (olive)
+(_fpref(SPIN-Find similar spans, Finding Similar Spans)), and a "Find
+matching words" 
+(red) (_fpref(SPIN-Find matching words, Finding Matching Words)).
+
+At the right hand side is a set of square boxes with the
+same colours as the dots drawn in the adjacent plot. These
+icon-like objects represent individual results and allow the user to 
+operate on them. For example clicking with the right mouse button brings
+up the pop-up menu beneath the "matching words"
+result contains the results menu for this result
+(_fpref(SPIN-Result-Manager, Result manager)).
+These icons can also be used to
+drag and drop the results to which they correspond. This is activated by
+pressing the middle mouse button, or Alt left mouse button, 
+over the box and then moving the cursor
+over the Spin Sequence Comparison Plot to the new location or anywhere outside the Spin Sequence Comparison Plot
+(_fpref(SPIN-Drag, Drag and drop)).
+
+Crosshairs can be turned on or off using the check button labelled
+"crosshairs". The x and y positions of the crosshairs are indicated in
+the two boxes to the right of the check box.
+
+Each sequence displayed in a Spin Sequence Comparison Plot will have a cursor 
+of a particular colour. In the picture above, the sequence on the horizontal
+axis has a vertical blue cursor whereas the sequence on the vertical axis has 
+a horizontal olive green cursor. In general, 
+the same sequence displayed in several Spin Sequence Comparison Plots will have
+a cursor of the same colour.
+The user can move a cursor by clicking and dragging 
+with the middle mouse button, or with Alt left mouse button.
+This will move all other
+cursors displayed that relate to the sequence, whether they are in
+different Spin Sequence Comparison Plots or within the sequence display.
+
+Plots can be enlarged either by resizing the window or zooming. Zooming
+is achieved by holding down the control key and right mouse button and
+dragging out a rectangle. This process can be repeated.
+The Back button will restore the plot to the previous magnification. 
+
+To illustrate further uses of the program we include some more screen
+dumps below.
+
+
+_lpicture(spin_plot)
+
+The picture above shows the results after performing a "Find similar spans"
+comparison between the three reading frames of two DNA sequences, producing 
+nine superimposed sets of results.
+
+@page
+_lpicture(spin_local_p1)
+
+Local alignment searches join similar segments with lines. The above
+screen dump shows such an analysis in which 
+genomic DNA containing 7 exons and is compared to
+its corresponding cDNA.
+
+
+_lpicture(spin_align_p)
+
+The above screendump shows a global alignment of the same pair of
+sequences.
+
+_split()
+@node SPIN-Intro-Interface-sequence-comparison-display
+@subsection Introduction to the Spin Sequence Comparison Display
+
+A sequence comparison display is associated with a single set of results 
+and can be invoked by bringing up a pop
+up menu for the required result, either from the Results manager
+(_fpref(SPIN-Result-Manager, Result manager)), the Results
+menu in the Spin Sequence Comparison Plot, or the coloured square icon on the 
+right of the plot.
+
+_lpicture(spin_seq_display)
+
+The horizontal sequence is drawn above the vertical sequence and the 
+central panel indicates characters which are
+identical. The buttons (< >) and (<< >>) scroll the sequences.
+Pressing the Lock
+button forces the sequences to scroll together.
+Movement of the sequences is also controlled by the scrollbars or by
+moving the corresponding cursor in the Spin Sequence Comparison Plot.
+The black cursors in the sequence display 
+correspond to the position of the cursor in the Spin Sequence Comparison Plot. The sequences can be
+made to 'jump' to the nearest match in those results by pressing the 
+"Nearest match" or "Nearest dot" buttons.

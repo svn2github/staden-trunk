@@ -1,0 +1,425 @@
+@c This is a Texinfo file describing Pregap4.
+@c By itself it is human readable as a text document, although this document
+@c alone does not contain everything needed to process with texi2dvi.
+
+_split()
+@node Pregap4-Introduction
+@chapter Introduction
+@cindex Introduction
+@cindex Pregap4
+
+@menu
+* Pregap4-Intro-Files::         Summary of the Files used and the Processing Steps
+* Pregap4-Intro-Interface::         Introduction to the Pregap4 User Interface
+* Pregap4-Intro-Interface-Files:: Introduction to the Files to Process Window
+* Pregap4-Intro-Interface-Configure:: Introduction to the Configure Modules Window
+* Pregap4-Intro-Interface-Output:: Introduction to the Textual Output Window
+* Pregap4-Intro-Interface-Running:: Introduction to Running Pregap4
+@end menu
+
+
+Before entry into a gap4 database the raw data from sequencing instruments
+needs to be passed through several processes, such as screening for vectors,
+quality evaluation, and conversion of data formats. 
+Pregap4 is used to pass a batch of
+readings through these steps in an automatic way. It provides an
+interface for setting up and configuring the processing and for
+controlling the passage of the readings through each stage.
+The separate tasks are termed "modules" and each module is typically
+managed by a dedicated program. Pregap4 wraps all of these
+modules into a single easy to use environment, whilst maintaining the
+flexibility to select and extend the processing modules.
+It is an, as yet, 
+unpublished replacement of the program pregap
+@cite{Bonfield, J.K. and Staden, R. Experiment files and their application
+during large-scale sequencing projects. DNA Sequence 6, 109-117 (1996)}.
+
+
+_split()
+@node Pregap4-Intro-Files
+@section Summary of the Files used and the Processing Steps
+
+Gap4 stores the data for an assembly project in a gap4
+database. Before being entered into the gap4 database the data must be
+passed through several steps via pregap4. The range
+of tasks that can be peformed using pregap4 are shown schematically in
+the following figure.
+
+@page
+_picture(pregap4_overview)
+@page
+
+
+The package can handle data produced by a variety of sequencing
+instruments, and also data entered using digitisers or that has been typed in by
+hand. One of the first steps is to convert trace files, such as those of
+ABI, which are in proprietary format, to SCF files 
+(_fpref(Formats-Scf, SCF introduction, scf)).  
+
+Next, as originally put forward in @cite{Bonfield,J.K. and Staden,R. The application of
+numerical estimates of base calling accuracy to DNA sequencing
+projects. Nucleic Acids Research 23, 1406-1410 (1995)} 
+(_fpref(Intro-Base-Acc, The use of numerical estimates of base
+calling accuracy, t)), if they are not already included in the files,
+base call confidence values are calculated, and are 
+normally stored in the reading's SCF file.
+
+Next the base calls are copied from the trace files 
+to text files known as Experiment files
+(_fpref(Formats-Exp, Experiment files, exp)). 
+
+@cindex FASTA files: pregap4
+@cindex pregap4: FASTA files
+
+Note it is also possible to enter sequence readings in the form of FASTA
+files for use at this stage of the processing, in which case they will be
+automatically converted to Experiment file format.
+
+All the subsequent processes operate on the Experiment files.
+
+Experiment file format is similar to that of EMBL sequence entries in
+that each record starts with a two letter identifier, but we have
+invented new records specific to sequencing experiments. 
+Gap4 can make use of information about readings which may not be
+contained within the raw data files, such as sequencing chemistry and whether
+it is a forward or reverse reading. Gap4 will work without this information,
+but at a reduced level. For instance knowing which forward and reverse
+readings belong together allows gap4 to check the validity of assembly
+and for automatic ordering of contigs.
+
+One of
+pregap4's next tasks is to augment the Experiment files to include data about
+the chemistry, vectors, primers and templates used in the production of each
+reading, and if necessary it can extract this information from external
+databases (_fpref(Pregap4-Database, Information Sources, pregap4)), or via
+local reading name conventions
+(_fpref(Pregap4-Naming, Pregap4 Naming Schemes, t)).
+Once the Experiment file for a reading contains all the necessary
+information the remaining processing programs can be used in turn to
+analyse the data. 
+
+First the reading is marked at both ends to define the range of
+reasonable quality base calls
+(_fpref(Pregap4-Modules-Quality Clip, Quality Clip, t)).
+
+Then the reading is searched for the
+presence of sequencing vector at the 5' end 3' ends
+(_fpref(Pregap4-Modules-Sequence Vector, Sequencing Vector Clip, t)).
+
+Next the sequence is checked for the presence of "cloning" vector,
+i.e. non-sequencing vectors, such as those of BACs
+(_fpref(Pregap4-Modules-Cloning Vector, Cloning Vector Clip, t)).
+
+The final check of this type is to screen the reading for any vector
+that may have been missed in the previous searches
+(_fpref(Pregap4-Modules-Screen Vector, Screen for Unclipped Vector, t)).
+
+The next check is to screen the reading for any set of
+sequences which it may be contaminated by, such as E. coli
+(_fpref(Pregap4-Modules-Screen, Screen Sequences, t)).
+
+Note that vector sequence files are normally stored in the package
+vectors directory/folder. If a file of vector file names is used the
+vector sequences can also be stored in its directory/folder. Files
+of file names and vector-primer files can also contain environment
+variables to define the location of vector files.
+
+Vector_primer files, vector sequence files and files of file names
+must be stored in plain text files
+(_fpref(Formats-Vector_Primer, Vector_primer Files, vector_primer)),
+(_fpref(Formats-Vector-Sequences, Vector sequence format, vector files)).
+
+Pregap4 is usually used non-interactively once the modules have been
+configured, but some groups prefer (or have the time) to check the data
+by eye using the program trev (_fpref(Trev,Trev,trev)) at this stage.
+
+Another option is to search the readings for families of known repeats
+(_fpref(Pregap4-Modules-Repeats, Tag Repeats, t)). This will tag any
+regions which are found to match known repeats.
+
+Some groups are using the package for mutation studies and 
+the final pregap4 option, prior to assembly is to use the tracediff and hetscan programs
+(_fpref(Mutation-Detection-Introduction, Introduction to mutation
+detection, mutations)) to search the readings for mutations
+(_fpref(Pregap4-Modules-Trace Difference, Trace
+Difference,t) and _fpref(Pregap4-Modules-Heterozygote Scanner, Heterozygote
+Scanner,t)).
+
+Pregap4 can also be used to assemble the readings into a gap4 database
+(_fpref(Pregap4-Modules-Gap4 Assembly, Gap4 Shotgun Assembly, t)), or
+to assemble the readings using an external assembly engine such as FAKII
+(_fpref(Pregap4-Modules-FakII Assembly, FakII Assembly, t)),
+and then to enter that assembly into a gap4 database
+(_fpref(Pregap4-Modules-Enter Assembly, Enter Assembly into Gap4, t)).
+
+_ifdef([[_unix]],[[The following figure shows an overview of the range of
+tasks that can be
+performed by pregap4, plus the names of the programs which can be used.
+The program names marked with an asterisk (*) are not included in the
+Staden Package and must be obtained from elsewhere.
+
+@page
+_picture(pregap4_overview2)
+@page]])
+
+@cindex pregap4rc files
+@cindex configuration files: pregap4
+
+It is unlikely that any particular user will want to employ all of these
+options and one of pregap4's modes of use is to enable users to
+configure the program for their work
+(_fpref(Pregap4-Modules, Configuring Modules, pregap4)).
+Not only can they select which
+tasks should be performed, and which of the alternative programs
+("modules") should be used for them, but also the order in which they are
+applied. Although it is very rarely a problem, this high level of
+flexibility comes at a price in the current version of pregap4: pregap4
+does not include code to check on the logicality of the configuration
+set by a user and will attempt to execute the modules in the order
+given. There are some users, who having read this section, will
+configure pregap4 to perform assembly before creating the Experiment
+files from the trace files. Pregap4 will attempt to do this and 
+no data will be assembled as the files given to the assembly engine
+will be in the wrong format. This is just something to be aware of.
+
+Pregap4 uses configuration files to remember the setup for each user or
+project. These files define which modules are activated and what their
+parameter settings are 
+(_fpref(Pregap4-Config-Files, Using Config Files, pregap4)). These files,
+which can obviously save considerable amounts of time, are created
+automatically and can be saved from the Configure Modules Window once
+the configuration is complete.
+
+
+The trace files are not altered, but are kept as archival data so that
+it is always possible to check the original base calls and traces. The
+trace files are used by gap4 to display traces and to compare the final
+consensus sequence with the original data, therefore they must be kept
+online for the lifetime of the project. To save disk space it is best to use
+SCF files and, if they were derived from a proprietary format such as
+that of ABI, to remove the originals. 
+
+Any changes to the data prior to assembly
+(and we recommend that none are made until readings
+can be viewed aligned with others) are made to the copy of the sequence
+in the Experiment file. For example the results of all the searching
+procedures outlined above are added as new records to each reading's
+Experiment file.
+The reading data, in Experiment file format, is entered into the project
+database
+(_fpref(GapDB, Gap Database Files, gap4)),
+usually via one of the assembly engines. All the changes to
+the data made by gap4 are made to the copies of the data in the project
+database.  Once the data has been copied into the gap4 database the
+Experiment files are no longer required.
+
+@cindex temporary files
+@cindex pregap4: temporary files
+
+During processing pregap4 uses temporary files. The number and nature of
+these files depends on the modules used. At the very least pregap4 will
+produce files containing the names of the input files and the result of
+their processing. Those that were processed successfully will be stored
+in a file with a name ending ".passed" and those that failed in one
+ending ".failed". The ".passed" file can be used as a file of input file
+names for assembly into gap4 (assuming that a pregap4 
+assembly module has not already been used). 
+
+While it is running, pregap4 will 
+create files with a file name prefix
+defined by the user, and store them
+in an output directory of the user's choice
+(_fpref(Pregap4-Files, Specifying Files to Process, pregap4)).
+
+When processing has 
+finished pregap4 will produce a report containing information
+from each module and the final list of passed and failed sequences.
+
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Interface
+@section Introduction to the Pregap4 User Interface
+
+Pregap4 provides interfaces to define the batch of data files to be
+processed, which modules are to applied to them; to configure the
+modules, and to start the processing. It also provides mechanisms for
+adding and removing modules, but this facility
+will be used far less often than the others.
+
+Pregap4 supports two styles of windowing. The default method is a compact
+mode, with the alternative being "separate" mode - similar to gap4 and
+spin.
+
+
+_picture(pregap4_separate)
+
+This is the "separate" window style. Here the main window is always visible,
+with commands in the main window bringing up new windows. In the picture above 
+the configure window can be seen on top of the main window.
+
+The second style is "compact" mode.
+
+_picture(pregap4_compact)
+
+In the compact picture above the most common top level windows are "pages" in
+a tabbed notebook. The benefit is greatly reduced screen space and quicker
+controls, but the text output window is no longer permanently visible.
+The Window Style can be changed using the options menu
+(_fpref(Pregap4-Config-Window Styles, Window Styles, pregap4)).
+
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Interface-Files
+@subsection Introduction to the Files to Process Window
+
+Pregap4 operates on batches of files. These files can be
+binary trace files (in ABI, ALF or SCF format), Experiment Files, or plain
+text, and do not need to all be in the same format. The Files to Process
+Window is used to define which files are to be processed.
+The "Files to Process" dialogue (see below) 
+can be brought up from the File menu, or
+by pressing the appropriate tab when in @code{compact_win} mode.
+
+_picture(pregap4_files)
+
+
+On the left hand side of the figure
+is the current list of files to process. This list
+can be edited simply by clicking with the mouse and typing.
+
+On the right side of the panel is the pregap4 output filename prefix, the
+output directory name, and several buttons. The filename prefix is used when
+pregap4 needs to create files.
+For example after processing there may be @i{prefix}.passed,
+@i{prefix}.failed files. All files will be created within the output directory.
+
+The buttons allow selection of the files to process. The "Add files" button
+will bring up a file browser, which will allow one or more files to be
+selected. Pressing Ok on the file browser will then add the selected files to
+the "List of files to process" panel on the left side of the pregap4 window.
+
+The "Add file of filenames" button may be used to select a list of files whose
+filenames have been written to a `file of filenames'. 
+
+The "Clear current list" button will
+remove all filenames from the list. 
+
+Both the "Add files" and "Add file of
+filenames" button append their selections to the list of files to process, so
+to replace the current list the "Clear current list" button must first be
+used. 
+
+The "Save current list to..." button may be used to produce a
+new file of filenames, containing the combined list of files to process.
+
+_ifdef([[_unix]],[[It is also 
+possible to specify the files to process on the command line.
+Three examples:
+
+@example
+pregap4 -fofn files
+pregap4 xb54a3.s1SCF xb54b12.r1LSCF xb54b12.r1SCF
+pregap4 *SCF
+@end example
+]])
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Interface-Configure
+@subsection Introduction to the Configure Modules Window
+
+The "Configure Modules" dialogue is available from the Modules menu or, when
+using the compact window style, by pressing the Configure Modules tab.
+
+As can be seen in the figure below, 
+the left side of the display contains a list of the
+currently loaded modules. One module in this list will be highlighted. 
+The right side of the display shows the configuration panel for this
+highlighted module and is module specific.
+
+_picture(pregap4_config)
+
+The module list shown on the left consists of a series of module names and
+their status, and is termed the "enable status". 
+The tick or cross at the left of the name indicates whether this
+module is enabled. 
+The text to the right of the module name indicates whether the
+module has been given all the parameters needed for it to run. This will
+be one of "ok" (all configuration options have been filled in), "-" (no
+configuration options exist for this module), "edit" (further configuration is
+required") or blank (this module is disabled).
+
+The "enable status" can be toggled by left clicking on the tick/cross to the
+left of the module name. The enable status can be written to the current
+Pregap4 configuration file using the "Save Module List" or "Save All
+Parameters" commands in the Modules menu. Left clicking anywhere on a module
+name in the module list will switch the pane on the right side of the window
+to display any available parameters for this module. Not all modules will have
+parameters to configure.
+
+For modules that do have parameters, the top line of the configuration panel
+will contain two buttons labelled "Select params to save" and "Save these
+parameters". The "Select params to save" button will add check boxes next to
+each parameter. Clicking on these check boxes allows selection of individual
+parameters to save for this module. Once these have been selected pressing the
+"Save" will save only those selected to the pregap4 configuration
+file. Pressing the "Save these parameters" button will save all parameters for
+this module to the configuration file. 
+
+The bottom strip of the window is an "Information Line".
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Interface-Output
+@subsection Introduction to the Textual Output Window
+
+Pregap4 has a main text output window identical to that of gap4 and spin.
+It is used for showing textual results in the top section and
+error messages in the lower part. Full details of the user interface are
+given elsewhere 
+(_fpref(UI-Introduction, User Interface, t)), but an example of the Text
+Output Window is given below.
+
+_picture(pregap4_textwin)
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Interface-Running
+@subsection Introduction to Running Pregap4
+
+When pregap4 is started the user first needs to
+select the files to process. This is done using the "Files to Process"
+command (from the File menu).
+_ifdef([[_unix]],[[Alternatively the files can be specified on the command
+line at the time of starting up Pregap4.]])
+The "Configure Modules" tab allows for the currently available modules to
+be enabled or disabled, and the module parameters edited accordingly.
+
+Once all modules have been configured (so that none have @code{edit} listed
+next to their name) pregap4 is ready to begin processing. This is
+started by pressing
+"Run" or by selecting "Run" from the File menu. 
+
+When pregap4 has a setup that would be useful in the future
+"Save All Parameters (in all modules)" from the Modules menu can be
+used, and pregap4 will store all the module parameters to a
+configuration file ready for subsequent runs.
+
+_ifdef([[_unix]],[[To run pregap4 in a non interactive mode use "@code{pregap4
+-nowin}". This will not bring up a graphical interface and will attempt to
+"Run" automatically. Hence it is necessary to also specify the files to
+process on the command line and also to have previously configured pregap4.]])
+
+When processing has 
+finished pregap4 will produce a report containing information
+from each module and the final list of passed and failed sequences.
+
+If for any reason pregap4 fails a particular step in the processing, users
+are strongly recommended to correct whatever has caused the module to fail,
+clean up any files it has created, and then repeat the whole process. That
+is, until users have a good understanding of what happens at each stage of
+processing, it is better to repeat all the steps with the original list of
+files, than to try to guess which step to continue from.
+

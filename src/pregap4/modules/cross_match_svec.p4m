@@ -1,0 +1,294 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Runs cross_match on a batch of experiment files
+# This takes a single fasta file of one or more vectors and looks for matches
+# between vector and sequence.
+#
+# It can create SL and SR lines for vector found at the ends of sequence, and
+# MASK tags for vector in the centre of sequences.
+#
+# It does not use SF at all.
+#
+# FIXME: This is ugly and horrible. It's probably quite slow (lots of tcl
+# parsing) negating the speed benefits of cross_match. To fix this we should
+# either change cross_match to write experiment files or write some C code
+# to recover the data from the fasta output in a quicker fashion.
+#
+
+set help {pregap4 {Pregap4-Modules-Cross_match}}
+
+proc name {} {
+    return "Cross_match"
+}
+
+proc init {} {
+    mod_preset minmatch 12
+    mod_preset minscore 20
+    mod_preset gap_size 15
+    mod_preset vector_file ""
+    mod_preset tag_type SVEC
+
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|cross_match" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "cross_match is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc run {files} {
+    global file_type file_error
+    global fofn
+    variable minmatch
+    variable minscore
+    variable gap_size
+    variable vector_file
+    variable report
+    variable tag_type
+
+    set new_files {}
+    set report ""
+
+    # Create the fasta file
+    set fd [open $fofn.fasta w]
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    catch {unset e}
+	    array set e [read_exp_file $f]
+	    set seq [query_exp_file e SQ]
+	    regsub -all {[-]} $seq N seq
+	    if {$seq == ""} {
+		set file_error($f) "cross_match: malformed experiment file"
+	    }
+	    regsub -all "\[ \n\r\t\]" $f _ fnew
+	    set translate($fnew) $f
+	    set to_find($fnew) 1
+	    puts $fd ">$fnew"
+	    puts $fd "$seq"
+	} else {
+	    lappend new_files $f
+	}
+    }
+    close $fd
+
+    # Run cross_match. No error checking as cross_match returns random
+    # values from main() making it somewhat tricky to detect failures!
+    catch {exec cross_match $fofn.fasta $vector_file \
+	-minmatch $minmatch \
+	-minscore $minscore \
+	-screen} var
+
+    # Process $fofn.fasta.screen
+    set fd [open $fofn.fasta.screen r]
+    gets $fd title
+    while {$title != ""} {
+	# Get sequence from fasta output
+	regsub {^>(.*[^ ]+) *$} $title {\1} name
+	set seq ""
+	set title ""
+	while {[gets $fd line] != -1} {
+	    if {[string match {>*} $line]} {
+		set title $line
+		break
+	    }
+	    append seq $line
+	}
+	set seq_l [split $seq {}]
+
+	set failed 0
+
+	# Find 'X'ed out regions, expanding to include 'N's
+	set count 0
+	set ranges {}
+	set range_start -1
+	set has_x 0
+	foreach c $seq_l {
+	    if {$c == "X" || $c == "N"} {
+		if {$c == "X"} { set has_x 1 }
+		if {$range_start != -1} {
+		    set range_end $count
+		} else {
+		    set range_start $count
+		    set range_end $count
+		}
+	    } else {
+		if {$range_start != -1} {
+		    if {$has_x} {
+		        lappend ranges [list $range_start $range_end]
+		    }
+		    set has_x 0
+		    set range_start -1
+		}
+	    }
+	    incr count
+	}
+	if {$range_start != -1 && $has_x} {
+	    set range_end $count
+	    lappend ranges [list $range_start $range_end]
+	}
+
+	if {![info exists to_find($name)]} {
+	    verror ERR_WARN cross_match_svec \
+		"Unknown sequence '$name' in output file"
+	    continue
+	}
+
+	unset to_find($name)
+	set name $translate($name)
+
+	if {[llength $ranges] == 0} {
+	    lappend new_files $name
+	    vmessage -nonewline .
+	    update idletasks
+	    append report "SEQ $name: no matches\n"
+	    continue
+	}
+
+	# Join match elements together when matches are no more than
+	# $gap_size bases apart.
+	set last_left 0
+	set last_right 0
+	set new_ranges {}
+	foreach r "$ranges" {
+	    foreach {left right} $r {}
+	    if {$left - $last_right > $gap_size} {
+		if {!($last_left == 0 && $last_right == 0)} {
+		    lappend new_ranges [list $last_left $last_right]
+		}
+		set last_left $left
+	    }
+	    set last_right $right
+	}
+	if {[string length $seq]-1 - $last_right > $gap_size} {
+	    lappend new_ranges [list $last_left $last_right]
+	} else {
+	    lappend new_ranges [list $last_left [string length $seq]]
+	}
+	set ranges $new_ranges
+
+	# Load experiment file
+	catch {unset exp_file}
+	array set exp_file [read_exp_file $name]
+
+	# Produce SL, SR or TG lines
+	set seq_len [string length $seq]
+	foreach r $ranges {
+	    set start [expr [lindex $r 0]+1]
+	    set end [expr [lindex $r 1]+1]
+	    append report "SEQ $name: masked $start to $end\n"
+	    set sl -1
+	    set sr -1
+	    if {$start <= 5} {
+		set sl $end
+	    }
+	    if {$end >= [expr $seq_len+1-5]} {
+		set sr $start
+	    }
+	    if {$sl != -1 && $sr != -1} {
+		set file_error($name) "cross_match: entirely vector"
+		set failed 1
+	    }
+	    if {$sl != -1} { add_to_exp_file exp_file SL $sl }
+	    if {$sr != -1} { add_to_exp_file exp_file SR $sr }
+	    if {$sl == -1 && $sr == -1} {
+		add_to_exp_file exp_file TG \
+		    "$tag_type = $start..$end\nFound by cross_match"
+	    }
+	}
+
+	if {!$failed} {
+	    write_exp_file exp_file $name
+	    lappend new_files $name
+	    vmessage -nonewline .
+	} else {
+	    vmessage -nonewline !
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    # Check that there aren't any missing files
+    foreach f [array names to_find] {
+	set fnew $translate($f)
+	verror ERR_WARN cross_match_svec \
+	    "cross_match 'lost' reading with name $fnew"
+	set file_error($fnew) "cross_match_svec: lost file"
+    }
+
+    catch {file delete $fofn.fasta}
+    catch {file delete $fofn.fasta.log}
+    catch {file delete $fofn.fasta.screen}
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable minmatch
+    variable minscore
+    variable vector_file
+
+    get_fname $w.file \
+	-text "FASTA vector file name" \
+	-type load \
+	-default $vector_file \
+	-type fileinput
+    xentry $w.minmatch \
+	-label "Minimum match length" \
+	-default $minmatch \
+	-width 7 \
+	-type "int 1"
+    xentry $w.minscore \
+	-label "Minimum score" \
+	-default $minscore \
+	-width 7 \
+	-type float
+
+    pack $w.file $w.minmatch $w.minscore -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	minmatch minscore vector_file]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable minmatch
+    variable minscore
+    variable vector_file
+
+    set vector_file [$w.file get]
+    set minmatch    [$w.minmatch get]
+    set minscore    [$w.minscore get]
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save vector_file [$w.file get2]
+	mod_save minmatch [$w.minmatch get2]
+	mod_save minscore [$w.minscore get2]
+    }
+}

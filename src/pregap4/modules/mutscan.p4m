@@ -1,0 +1,281 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 2001. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+#
+# OVERVIEW
+# This module scans a trace for both point and heterozygous mutations.
+#
+
+set help {pregap4 {Pregap4-Modules-Mutation Scanner}}
+
+
+proc name {} {
+#
+# Name shown in module selection panel
+#
+    return "Mutation Scanner"
+}
+
+
+proc init {} {
+#
+# Sets up any data structures needed for this module
+#
+    mod_preset mutscan_noise_threshold          0.25
+    mod_preset mutscan_peakdrop_threshold_lower 0.2
+    mod_preset mutscan_peakdrop_threshold_upper 0.7
+    mod_preset mutscan_search_window_size       0.9
+    mod_preset mutscan_hetsnr_threshold         7.6
+    mod_preset mutscan_alignment_threshold      15
+    mod_preset mutscan_complement_tags          1
+}
+
+
+
+proc create_dialogue {w} {
+#
+# Adds and packs the necessary widgets onto the modules form
+#
+    variable mutscan_noise_threshold
+    variable mutscan_peakdrop_threshold_lower
+    variable mutscan_peakdrop_threshold_upper
+    variable mutscan_search_window_size
+    variable mutscan_hetsnr_threshold
+    variable mutscan_alignment_threshold
+
+
+    xentry $w.mutscan_noise_threshold \
+        -label "Adaptive noise floor (as % of envelope peak height)" \
+        -default $mutscan_noise_threshold \
+        -width 7
+
+    xentry $w.mutscan_peakdrop_threshold_lower \
+        -label "Lower peak drop threshold (as % of reference peak height)" \
+        -default $mutscan_peakdrop_threshold_lower \
+        -width 7
+
+    xentry $w.mutscan_peakdrop_threshold_upper \
+        -label "Upper peak drop threshold (as % of reference peak height)" \
+        -default $mutscan_peakdrop_threshold_upper \
+        -width 7
+
+    xentry $w.mutscan_search_window_size \
+        -label "Peak alignment search window size (in bases)" \
+        -default $mutscan_search_window_size \
+        -width 7
+
+    xentry $w.mutscan_hetsnr_threshold \
+        -label "Heterozygote SNR threshold (dB)" \
+        -default $mutscan_hetsnr_threshold \
+        -width 7
+
+    xentry $w.mutscan_alignment_threshold \
+        -label "Trace alignment failure threshold (in mutations)" \
+        -default $mutscan_alignment_threshold \
+        -width 7
+
+
+    pack $w.mutscan_noise_threshold \
+         $w.mutscan_peakdrop_threshold_lower $w.mutscan_peakdrop_threshold_upper \
+         $w.mutscan_search_window_size $w.mutscan_hetsnr_threshold \
+         $w.mutscan_alignment_threshold -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    xcheck $w.mutscan_complement_tags \
+        -text "Complement bases on reverse strand tags" \
+        -variable [namespace current]::mutscan_complement_tags
+
+    pack $w.mutscan_complement_tags -side top -fill both
+}
+
+
+
+proc run {files} {
+#
+# Do module actions for a bunch of experiment files
+#
+    global fofn
+    global file_type
+
+
+    # Create list of experiment files
+    set expfiles {}
+    foreach f $files {
+        if {$file_type($f) == "EXP"} {
+            lappend expfiles $f
+        }
+    }
+
+
+    # Create a file of filenames
+    set fh [open $fofn.tmp w]
+    foreach f $expfiles {
+       puts $fh $f
+    }
+    close $fh
+
+
+
+    # Do mutscan
+    run_mutscan $fofn.tmp
+    file delete $fofn.tmp
+    return $files
+}
+
+
+proc fevent {fd} {
+    variable report
+    variable mutscan_done
+
+    set data [read $fd]
+    append report $data
+    foreach line [split $data \n] {
+        if {[string match "Scanning:*" $line]} {
+            vmessage -nonewline .
+        }
+    }
+    if {[eof $fd]} {
+        vmessage ""
+        set mutscan_done 1
+    }
+}
+
+
+proc run_mutscan {exp_fofn} {
+    variable report
+    variable mutscan_noise_threshold
+    variable mutscan_peakdrop_threshold_lower
+    variable mutscan_peakdrop_threshold_upper
+    variable mutscan_search_window_size
+    variable mutscan_hetsnr_threshold
+    variable mutscan_alignment_threshold
+    variable mutscan_complement_tags
+
+
+    # Execute mutscan
+    set report ""
+    set cmdline "|mutscan -a$mutscan_alignment_threshold \
+                -h$mutscan_hetsnr_threshold \
+                -l$mutscan_peakdrop_threshold_lower \
+                -n$mutscan_noise_threshold \
+                -u$mutscan_peakdrop_threshold_upper \
+                -w$mutscan_search_window_size \
+                [list -f$exp_fofn]"
+    if { $mutscan_complement_tags == 1 } {
+        append cmdline " -c"
+    }
+    if {[catch {set fd [open $cmdline]} err ]} {
+        append report "ERR: Mutscan failed with error message '$err'.\n"
+        return
+    }
+
+
+
+    variable mutscan_done
+    variable output ""
+    fconfigure $fd -blocking 0
+    fileevent $fd readable "[namespace code [list fevent $fd]]"
+    vwait [namespace current]::mutscan_done
+    fconfigure $fd -blocking 1
+    if { [catch {close $fd} err ] } {
+        foreach line [split $err \n] {
+           verror ERR_WARN Mutscan $line
+        }
+    }
+}
+
+
+
+proc check_params {} {
+#
+# Checks that fields have valid values
+#
+    variable mutscan_noise_threshold
+    variable mutscan_peakdrop_threshold_lower
+    variable mutscan_peakdrop_threshold_upper
+    variable mutscan_search_window_size
+    variable mutscan_hetsnr_threshold
+    variable mutscan_alignment_threshold
+
+
+    if { $mutscan_noise_threshold == "" } {
+        return mutscan_noise_threshold
+    }
+    if { $mutscan_peakdrop_threshold_lower == "" } {
+        return mutscan_peakdrop_threshold_lower
+    }
+    if { $mutscan_peakdrop_threshold_upper == "" } {
+        return mutscan_peakdrop_threshold_upper
+    }
+    if { $mutscan_search_window_size == "" } {
+        return mutscan_search_window_size
+    }
+    if { $mutscan_hetsnr_threshold == "" } {
+        return mutscan_hetsnr_threshold
+    }
+    if { $mutscan_alignment_threshold == "" } {
+        return mutscan_alignment_threshold
+    }
+
+
+    # Everything is set
+    return ""
+}
+
+
+proc process_dialogue {w} {
+#
+# extracts any information from user editable entries or checkboxes ready for the
+# run function to utilise
+#
+    variable mutscan_noise_threshold
+    variable mutscan_peakdrop_threshold_lower
+    variable mutscan_peakdrop_threshold_upper
+    variable mutscan_search_window_size
+    variable mutscan_hetsnr_threshold
+    variable mutscan_alignment_threshold
+
+    set mutscan_noise_threshold           [$w.mutscan_noise_threshold get2]
+    set mutscan_peakdrop_threshold_lower  [$w.mutscan_peakdrop_threshold_lower get2]
+    set mutscan_peakdrop_threshold_upper  [$w.mutscan_peakdrop_threshold_upper get2]
+    set mutscan_search_window_size        [$w.mutscan_search_window_size get2]
+    set mutscan_hetsnr_threshold          [$w.mutscan_hetsnr_threshold get2]
+    set mutscan_alignment_threshold       [$w.mutscan_alignment_threshold get2]
+
+    if { [check_params] == "" } {
+        return 1
+    } else {
+        return 0
+    }
+}
+
+
+proc configure_dialogue {w mode} {
+#
+# Handles saving of parameters
+#
+    variable mutscan_noise_threshold
+    variable mutscan_peakdrop_threshold_lower
+    variable mutscan_peakdrop_threshold_upper
+    variable mutscan_search_window_size
+    variable mutscan_hetsnr_threshold
+    variable mutscan_alignment_threshold
+    variable mutscan_complement_tags
+
+    if {[string match save* $mode]} {
+        mod_save mutscan_noise_threshold          [$w.mutscan_noise_threshold get2]
+        mod_save mutscan_peakdrop_threshold_lower [$w.mutscan_peakdrop_threshold_lower get2]
+        mod_save mutscan_peakdrop_threshold_upper [$w.mutscan_peakdrop_threshold_upper get2]
+        mod_save mutscan_search_window_size       [$w.mutscan_search_window_size get2]
+        mod_save mutscan_hetsnr_threshold         [$w.mutscan_hetsnr_threshold get2]
+        mod_save mutscan_alignment_threshold      [$w.mutscan_alignment_threshold get2]
+        mod_save mutscan_complement_tags          $mutscan_complement_tags
+    }
+}

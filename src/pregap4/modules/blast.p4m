@@ -1,0 +1,236 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# This modules runs blast to check for significant hits against a specific
+# database. Any files with hits spanning more than a certain percentage of
+# the sequence is rejected. The purpose is for detection of (for example)
+# E. coli contamination.
+#
+set help {pregap4 {Pregap4-Modules-Blast}}
+
+proc init {} {
+    global env
+    mod_preset database $env(STADTABL)/blast_data/ecoli
+    mod_preset e_value 1e-10
+    mod_preset match_fraction 0.5
+    mod_preset tag_type "<none>"
+
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|blastall" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "blastall is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc name {} {
+    return "Blast screen"
+}
+
+proc run {files} {
+    variable database
+    variable match_fraction
+    variable e_value
+    variable tag_type
+    global file_type file_error fofn fofn_dir
+    variable report
+    global env
+
+    set new_files {}
+    set report ""
+    set fasta ""
+
+    if {[string match $tag_type "<none>"]} {
+	set tag_type ""
+    }
+
+
+    set db_dir [file dirname $database]
+    set db_fn  [file tail $database]
+
+    # Set the BLASTDB to be the directory containing the database. This allows
+    # blast to work even where there are spaces in the directory name, although
+    # it still cannot handle the last component of the filename containing
+    # spaces.
+    set env(BLASTDB) $db_dir
+
+    # Build up our fasta input to blast
+    foreach f $files {
+	if {$file_type($f) != "EXP" && $file_type($f) != "PLN"} {
+	    lappend new_files $f
+	    continue
+	}
+
+	vmessage -nonewline .
+	update idletasks
+
+	set fd [open "|extract_seq -good_only [list $f]" r]
+	set seq [read $fd]
+	regsub -all {[^ACGTacgt]} $seq {N} seq
+        if {[catch {close $fd} var]} {
+	    verror ERR_WARN "extract_seq: $var"
+        }
+
+	set length($f) [string length $seq]
+	if {$length($f) != 0} {
+	    append fasta ">[file tail $f]\n$seq\n"
+	    set full_name([file tail $f]) $f
+	} else {
+	    set file_error($f) "blast: sequence rejected - too short"
+	    vmessage -nonewline !
+	}
+    }
+    vmessage ""
+    update idletasks
+
+    # Run blast
+    catch {file delete $fofn.blast}
+    if {[catch {set fd [open "|blastall -p blastn -d [list $db_fn] -g F -e $e_value > [list $fofn.blast]" w]} var]} {
+	append report "ERR: blast failed with error message '$var'.\n"
+	verror ERR_WARN $var
+	return $files
+    }
+    puts $fd $fasta
+    if {[catch {close $fd} var]} {
+	verror ERR_WARN "blastall: [strip_nl $var]"
+	# Don't fail - blast sometimes reports messages to stderr anyway.
+	# return $files
+    }
+
+    # Process blast
+    if {[catch {set fd [open $fofn.blast r]}]} {
+	verror ERR_WARN "No blast output file?"
+	return $files
+    }
+    set query ""
+    while {[gets $fd line] != -1} {
+        if {[string match {Query= *} $line]} {
+	    vmessage -nonewline .
+	    update idletasks
+            if {[info exists a]} {
+                set match($query) [llength [array names a]]
+                unset a
+            } else {
+                set match($query) 0
+            }
+            regsub {^Query= (.*)} $line {\1} query
+	    set query $full_name($query)
+	    set match_name ""
+	    set match_score ""
+	    set tagged 0
+	    if {![string match $tag_type ""]} {
+	        catch {unset exp_file}
+		array set exp_file [read_exp_file $query]
+	    }
+	} elseif {[regsub {^> (.*)$} $line {\1} tmp]} {
+	    set match_name $tmp
+	} elseif {[regsub {^(Score = .* Expect.*)} $line {\1} tmp]} {
+	    set match_score $tmp
+        } elseif {[regsub {^Query:? ([0-9]*) .* ([0-9]*)$} $line {\1 \2} range]} {
+            set from [lindex $range 0]
+            set to [lindex $range 1]
+            for {set i $from} {$i <= $to} {incr i} {
+                set a($i) 1
+            }
+	    if {![string match $tag_type ""]} {
+		incr tagged
+		add_to_exp_file exp_file TG \
+		    "$tag_type = $from..$to\nBlast match with $match_name\n\
+		    $match_score"
+	    }
+        } elseif {[regexp {^Number of Hits to DB:.*} $line]} {
+	    if {$tagged} {
+		write_exp_file exp_file $query
+	    }
+	}
+    }
+    close $fd
+    set match($query) [llength [array names a]]
+
+    foreach f [array names match] {
+        if {$f == ""} { continue }
+
+       	set mfract [expr double($match($f))/$length($f)]
+	append report "SEQ $f: total match length = $match($f) \
+		(fract=$mfract)\n"
+
+	if {$mfract >= $match_fraction} {
+	    set file_error($f) "blast: match fraction $mfract"
+	} else {
+	    lappend new_files $f
+	}
+    }
+    vmessage ""
+    update idletasks
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable database
+    variable match_fraction
+    variable e_value
+    variable tag_type
+
+    xentry $w.database \
+	-label "BLAST database" \
+	-default $database
+    xentry $w.e_value \
+	-label "E value" \
+	-default $e_value \
+	-type float
+    xentry $w.match \
+	-label "Match fraction" \
+	-default $match_fraction \
+	-type "float 0 100"
+    xentry $w.tag_type \
+	-label "Tag type" \
+	-default $tag_type
+
+    pack $w.database $w.e_value $w.match $w.tag_type -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	database match_fraction e_value]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable database
+    variable match_fraction
+    variable e_value
+    variable tag_type
+
+    if {[set database       [$w.database get]] == ""} { return 0 }
+    if {[set match_fraction [$w.match    get]] == ""} { return 0 }
+    if {[set e_value        [$w.e_value  get]] == ""} { return 0 }
+    set tag_type [$w.tag_type get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save database [$w.database get2]
+	mod_save match_fraction [$w.match get2]
+	mod_save e_value [$w.e_value get2]
+	mod_save tag_type [$w.tag_type get2]
+    }
+}

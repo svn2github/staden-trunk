@@ -1,0 +1,248 @@
+@node Contig-Checking-and-Breaking
+@chapter Checking Assemblies and Removing Readings
+@menu
+
+* Check Assembly::                    Checking Assemblies
+* Removing Readings::                 Removing Readings and Breaking Contigs
+* Break Contig::                      Breaking Contigs
+* Disassemble::                       Disassembling Readings
+@end menu
+
+@cindex assembly problems: breaking contigs
+@cindex assembly problems: removing readings
+@cindex assembly problems: disassembling readings
+
+After assembly, and prior to editing, it can be useful to examine the
+quality of the alignments between individual readings and the
+sections of the consensus which they overlap. This may
+reveal doubtful joins between sections of contigs, poorly aligned
+readings, or readings that have been misplaced. By using this analysis
+in combination with other gap4
+functions 
+such as Find internal joins (_fpref(FIJ, Find Internal
+Joins, fij)) and Find repeats (_fpref(Repeats, Find Repeats,
+repeats)), 
+it is also possible to discover if 
+readings have been positioned in the
+wrong copies of repeat elements. 
+The functions for checking the alignment of readings in contigs are
+described below.
+_fxref(Check Assembly, Checking Assemblies, check_ass)
+
+If readings are found to be misplaced
+or need removing for other reasons, gap4 has functions
+for breaking contigs
+(_fpref(Break Contig, Breaking Contigs, disassembly)),
+and removing readings
+(_fpref(Disassemble, Disassembling Readings, disassembly)).
+These functions can be accessed through the main gap4 Edit menu or from
+within the Contig Editor.
+
+If readings are removed from contigs to start new contigs of one
+reading, these contigs can then be processed by Find internal joins 
+(_fpref(FIJ, Find Internal
+Joins, fij)) 
+and the Join editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)), which should
+reveal all the other positions at which the reading matches.
+
+@page
+_split()
+@node Check Assembly
+@subsection Checking Assemblies
+@cindex Check assembly
+
+The Check Assembly routine (which is invoked from the gap4 View menu)
+is used to check contigs for potentially misassembled readings
+by comparing them against the segment of the consensus which
+they overlap.  It has two modes of use: the first simply counts the
+percentage mismatch between each reading and the consensus it overlaps,
+and the second performs an alignment between the hidden data for a
+reading and the consensus it overlaps.  If the percentage is above a
+user defined maximum, a result is produced.  That is, one mode compares
+the "visible" part of the readings, and the other aligns and compares
+the hidden data. Results are displayed in
+the Output Window and plotted on the main diagonal in the Contig
+Comparator. _fxref(Contig Comparator, Contig Comparator, comparator)
+
+From the Contig Comparator the user can invoke the Contig Editor to
+examine the alignment of any problem reading. _fxref(Editor, Editing in
+gap4, contig_editor) If the reading appears to be correctly positioned
+the user can either edit it, or in the case of poor alignment of the
+hidden data, place a tag, so that it does not produce a result if the
+search is done again.  Note however such data will then also be ignored
+by the automatic double stranding routine. _fxref(Double Strand, Double Stranding, exp_suggest)
+A typical textual output from the analysis of hidden data is shown below.
+
+@example
+@group
+Reading 802(fred.s1) has percentage mismatch of 25.86
+
+              375       385       395       405       415       425
+        Reading *CCTGTTTTAAATTG-TGG-C-CCCG*-TTAACCGGGGT*CAAC**CTGGGTTGCTTA
+                 : ::::: :::::: ::  : :::::  ::: ::: ::::::  ::::: ::::: :
+      Consensus ACATGTTT*AAATTGATGAACACCCG*AATAAACGGTGT*CAAAA*CTGGATTGCTAA
+             2929      2939      2949      2959      2969      2979
+@end group
+@end example
+
+_picture(check_ass)
+
+Users select either to search only one contig ("single"), all contigs
+("all contigs"), or a subset of contigs contained in a "file" or a
+"list". If "file" or "list" is selected the "browse" button will be
+activated and clicking on it will invoke a file or list browser. If a
+single contig is selected the "Contig identifier" dialogue will be
+activated and users should enter a contig name.
+
+Selecting between analysing the visible or hidden data is done by
+clicking on "yes" or "no" in the "Use cutoff data" dialogue. All
+alignments that are worse than "Maximum percentage of mismatches" will
+produce a result in the Output Window and the Contig Comparator.  If
+"Use cutoff data" is selected then dialogue to enable the user to
+restrict the quality and length of the hidden data that the program
+aligns is activated.  First, to avoid finding very short
+mismatching regions (where percentage mismatch figures could be very
+high) users can set a "Minimum length of alignment" figure. Secondly to
+ensure that the hidden data is not so bad that alignments will
+necessarily be poor, the program uses the following algorithm. It slides
+a window of size "Window size for good data scan" along the hidden data
+for each reading and stops if it finds a window that contains more than
+"Max dashes in scan window" non-ACGT characters.
+
+To check the used data for each reading 
+("Use cutoff data" is set to "No") the program
+compares all segments of size 'window' against the consensus sequence 
+that they lie above (obviously no alignment is required).
+If the percentage mismatch within any segment is above the
+specified amount, then the entire 'alignment' of the reading and consensus
+is displayed. Note that in the output the program will first give the percentage
+mismatch over the window length, and then the percentage over the whole reading. 
+To check the overall percentage mismatch of readings, 
+simply set the "Window size for used data" to be longer than the
+reading lengths. To check for divergence of segments within readings
+set the window size accordingly.
+
+@cindex reading percent mismatch
+@cindex readings: sorted on alignment score
+@cindex aligned readings: sorted on alignment score
+
+The "Information" window produced by selecting "Information" from the
+Contig Comparator "Results" menu produces a summary of the results
+sorted in order os percentage mismatch.
+
+
+By clicking with the right mouse button
+on results plotted in the Contig Comparator a pop-up menu is revealed
+which can be used to invoke the Contig Editor
+(_fpref(Editor, Editing in gap4, contig_editor)). The editor will start
+up with the cursor positioned on the problem reading. If the reading is
+found to be misplaced it can be marked for removal from within the Editor
+(_fpref(Editor-Comm-Remove Reading, Remove Reading, contig_editor)).
+However, prior to this it may be beneficial to use some of the other
+analyses such as Find internal joins (_fpref(FIJ, Find Internal
+Joins, fij)) and Find repeats (_fpref(Repeats, Find Repeats,
+repeats)), which may help to find its correct location. Both of these
+functions produce results plotted in the Contig Comparator
+(_fpref(Contig Comparator, Contig Comparator, comparator)) and any
+alternative locations will give matches on the same vertical or
+horizontal projection as the problem reading.
+
+@page
+_split()
+@node Removing Readings
+@section Removing Readings and Breaking Contigs
+
+Occasionally contigs require more drastic changes than simple basecall
+edits. Sometimes it is necessary
+to remove readings that have been put in the wrong
+place, or to break contigs that should not have been joined. Gap4
+contains functions to help with these problems, and two
+types of interface. 
+
+If a contig
+needs to be broken cleanly into two new contigs, with all the readings,
+other than the two at the incorrect join, still linked together, then
+Break Contig 
+(_fpref(Break Contig, Breaking Contigs, disassembly)), or
+(_fpref(Editor-Comm-Break Contig, Break Contig, contig_editor))
+should be used. The former interface is available via the main gap4 Edit
+menu, and the latter as an option in the Contig Editor.
+
+If one or more readings need removing from from contig(s), even if their
+removal will break the contiguity of a contig, then
+(_fpref(Disassemble, Disassemble Readings, disassembly)), or
+(_fpref(Editor-Comm-Remove Reading, Remove Reading, contig_editor))
+should be used. The former interface is available via the main gap4 Edit
+menu, and the latter as an option in the Contig Editor. Readings can be
+removed from the database completely, or moved to start individual new
+contigs, one for each reading.
+
+
+@page
+_split()
+@node Break Contig
+@subsection Breaking Contigs
+@cindex Break contig
+
+The Break Contig function (which is available from the gap4 Edit menu)
+enables contigs to be broken by removing the
+link between two adjacent readings. The
+user defines the name or number of the reading that, after the break,
+will be at the left end of the new contig. That is, the break is made
+between the named reading and the reading to its left.
+
+_picture(break_contig)
+
+It is also possible to interactive select places to break the contig when
+using the Contig Editor.
+_fxref(Editor-Comm-Break Contig, Break Contig, contig_editor)
+
+@page
+_split()
+@node Disassemble
+@subsection Disassembling Readings
+@cindex Disassemble readings
+@cindex Removing readings
+
+This function is used to remove readings from a database or move
+readings to new contigs. 
+There are two interfaces which allow sets of readings to be
+disassembled. One is to identify the readings interactively when using
+the
+Contig Editor
+(_fpref(Editor-Remove Readings, Remove Readings, contig_editor)),
+and the other, described below, is available as a separate option from
+the main gap4 Edit menu.
+
+If readings are removed from the database all
+reference to them is deleted.  If a reading is moved to a new contig,
+the new contig will contain only that single reading.
+Such contigs can then be processed by Find internal joins 
+(_fpref(FIJ, Find Internal
+Joins, fij)) 
+and the Join editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)), which should
+reveal all the other positions at which the reading matches.
+
+Disassembly can also distinguish between "crucial" and
+"non-crucial" readings: a crucial reading is defined as one that, if
+removed, would leave a single stranded region in the contig or cause a
+break in the contig. Conversely non-crucial readings are those that are
+entirely covered by other readings from both strands of the sequence.
+So if only non-crucial readings were removed the amount of single
+stranded data would not change.  Note that when readings are removed
+from the database the program cleans up by moving data to fill up any holes
+made in its list of readings, and this will cause some high numbered
+readings to be given different numbers.
+
+_picture(disassembly)
+
+The set of readings to be processed can be read from a "file" or a "list" and
+clicking on the "browse" button will invoke an appropriate browser. If just a
+single reading is to be assembled choose "single" and enter the filename
+instead of the file or list of filenames.  The "Removal mode" is either "All
+readings" or "Non-crucial only" which are explained above. The "task" is to
+"Remove readings from database" or simply "Move readings to new contigs" which
+means each will start a new contig. For large batches of readings this
+processing can be quite slow.

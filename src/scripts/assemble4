@@ -1,0 +1,76 @@
+#!/bin/sh
+#
+# Suitable for Version 1996.3 onwards
+#
+# Script to assemble data into a gap4 database using a file of file
+# names. No vector screening is performed.
+
+# Startup gap4 with this script. The backslash here fools tcl into thinking
+# the next line is a comment, thus enabling the script to be both bourne shell
+# and tcl compatible. \
+exec stash -f "$0" ${@+"$@"} || exit 1
+
+proc open_database {name} {
+    if {[set dot [string last . $name]] == -1} {
+        puts "ERROR: Invalid database name '$name'"
+        return ""
+    }
+    set db_name [string range $name 0 [expr $dot-1]]
+    set version_num [string range $name [expr $dot+1] end]
+
+    if {[file exists $name.BUSY]} {
+	puts "ERROR: Database is busy"
+	return ""
+    }
+
+    # Make backup if the database already exists.
+    if {[file exists $name]} {
+	exec cp $name $db_name.X
+        exec cp $name.aux $db_name.X.aux
+	set c 0
+    } else {
+	set c 1
+    }
+
+    return [open_db -name $db_name -version $version_num -access rw -create $c]
+}
+
+# Set up the gap4 defaults
+load_package gap
+
+# Turn off the annoyance bell ringing when writing readings to the fail file
+error_bell 0
+
+# Check arguments
+if {$argc != 2 && $argc != 3} {
+    puts "Usage: assemble database.version file_of_filenames {failure_file}"
+    exit 1
+}
+set dbname [lindex $argv 0]
+set fofn   [lindex $argv 1]
+if {$argc == 3} {
+    set fails [lindex $argv 2]
+} else {
+    set fails $fofn.fails
+}
+
+# Open the database
+if {[set io [open_database $dbname]] == ""} {
+    puts "ERROR: Couldn't open database '[lindex $argv 0]'"
+    exit 1
+}
+
+# Shotgun assembly
+set result [assemble_shotgun \
+	-io $io \
+	-files [ListLoad $fofn files] \
+	-min_match     [keylget gap_defs AUTO_ASSEMBLE.MINMATCH.VALUE] \
+	-max_pads      [keylget gap_defs AUTO_ASSEMBLE.MAXPADS.VALUE] \
+	-max_pmismatch [keylget gap_defs AUTO_ASSEMBLE.MISMATCH.VALUE]]
+ListCreate2 fails $result
+ListSave $fails fails
+
+# Close the database
+close_db -io $io
+
+exit

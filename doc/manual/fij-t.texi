@@ -1,0 +1,177 @@
+@cindex Find internal joins
+@cindex joining contigs
+@cindex contig joining
+@cindex hidden data
+@cindex overlap finding
+@cindex finding overlaps
+@cindex finding joins
+@cindex masking
+@cindex marking
+
+The purpose of this function (which is invoked from the gap4 View menu)
+is to use sequences already in the database
+to find possible joins between contigs.  Generally these will be joins
+that were missed or judged to be unsafe during assembly and this
+function allows users to examine the overlaps and decide if they should
+be made. During assembly joins may have been missed because of poor
+data, or not been made because the sequence was repetitive.  Also it may
+be possible to find potential joins by extending the consensus sequences
+with the data from the 3' ends of readings which was considered to be
+too unreliable to align during assembly i.e. we can search in the
+"hidden data".
+
+If it has not already occurred, use of this function will automatically
+transform the Contig Selector into the Contig Comparator.  Each match
+found is plotted as a diagonal line in the Contig Comparator, and is
+written as an alignment in the Output Window. The length of the diagonal
+line is proportional to the length of the aligned region. If the match
+is for two contigs in the same orientation the diagonal will be parallel
+to the main diagonal, if they are not in the same orientation the line
+will be perpendicular to
+the main diagonal. The matches displayed in the Contig Comparator can be
+used to invoke the Join Editor (_fpref(Editor-Joining, The Join Editor,
+contig_editor)) 
+or Contig Editor.  _fxref(Editor,
+Editing in gap4, contig_editor) 
+Alternatively, the "Next" button at the top left of the Contig
+Comparator can be used to select each result in turn, starting with the
+best, and ending with the worst. When this is in use, users can find the 
+match in the Contig Comparator which corresponds to the next result by
+placing the cursor over the Next button. The plotted match and the contigs
+involved will turn white.
+
+_lpicture(comparator)
+
+A typical display from the Contig Comparator is shown in the figure
+above. 
+
+To define the match all numbering is relative to base number one in the
+contig: matches to the left (i.e.  in the hidden data) have negative
+positions, matches off the right end of the contig (i.e. in the hidden
+data) have positions greater than that of the contig length.  The
+convention for reporting the positions of overlaps is as follows: if
+neither contig needs to be complemented the positions are as shown.  If
+the program says "contig x in the - sense" then the positions shown
+assume contig x has been complemented. For example, in the results given
+below the positions for the first overlap are as reported, but those for
+the second assume that the contig in the minus sense (i.e. 443) has been
+complemented.
+
+@example
+Possible join between contig   445 in the + sense and contig   405
+Percentage mismatch after alignment =  4.9
+       412        422        432        442        452        462
+    405  TTTCCCGACT GGAAAGCGGG CAGTGAGCGC AACGCAATTA ATGTGAG,TT AGCTCACTCA
+          ::::::::: : ::::::::  ::::: ::: :::::::::: :::::::::: ::::::::::
+    445  *TTCCCGACT G,AAAGCGGG TAGTGA,CGC AACGCAATTA ATGTGAG*TT AGCTCACTCA
+      -127       -117       -107        -97        -87        -77
+       472        482        492        502        512
+    405  TTAGGCACCC CAGGCTTTAC ACTTTATGCT TCCGGCTCGT AT
+         :::::::::: :::::::::: :::::::::: :::::::::: ::
+    445  TTAGGCACCC CAGGCTTTAC ACTTTATGCT TCCGGCTCGT AT
+       -67        -57        -47        -37        -27
+Possible join between contig   443 in the - sense and contig   423
+Percentage mismatch after alignment = 10.4
+        64         74         84         94        104        114
+    423  ATCGAAGAAA GAAAAGGAGG AGAAGATGAT TTTAAAAATG AAACG*CGAT GTCAGATGGG
+         :::: ::::: :::::::::: :::::::::: ::::::  :: ::::: :::: :::::::::
+    443  ATCG,AGAAA GAAAAGGAGG AGAAGATGAT TTTAAA,,TG AAACGACGAT GTCAGATGG,
+      3610       3620       3630       3640       3650       3660
+       124        134        144        154        164
+    423  TTG*ATGAAG TAGAAGTAGG AG*AGGTGGA AGAGAAGAGA GTGGGA
+         ::: :::::: :::::::::: :: :::::::  ::: ::::: :: ::
+    443  TTGGATGAAG TAGAAGTAGG AGGAGGTGGA ,GAG,AGAGA GTTGG*
+      3670       3680       3690       3700       3710
+@end example
+
+_split()
+@node FIJ-Dialogue
+@subsection Find Internal Joins Dialogue
+@cindex Find internal joins: dialogue
+
+_picture(fij.dialogue)
+
+The contigs to use in the search can be defined as "all contigs", a list
+of contigs in a file "file", or a list of contigs in a list "list".
+If "file" or "list" is selected the browse button is activated
+and gives access to file or list browsers.
+Two types of search can be selected: one, "Probe all against all"
+compares all the contigs defined against one another; the other "Probe
+with single contig", compares one contig against all the contigs in the
+list. If this option is selected the Contig identifier panel in the
+dialogue box is ungreyed. Both sense of the sequences are compared.
+
+
+If users elect not to "Use standard consensus" they can either "Mark
+active tags" or "Mask active tags", in which cases the "Select tags"
+button will be activated. Clicking on this button will bring up a check
+box dialogue to enable the user to select the tags types they wish to
+activate. Masking the active tags means that all segments covered by
+tags that are "active" will not be used by the matching algorithms.
+A typical
+use of this mode is to avoid finding matches in segments covered by tags
+of type ALUS (ie segments thought to be Alu sequence)
+or REPT (ie segment that are known to be repeated elsewhere in
+the data (_fpref(Anno-Types, Tag types, tags)). "Marking" is of less use:
+matches will be found in marked
+segments during searching, but in the alignment shown
+in the Output Window, marked segments will be shown in lower case.
+
+The default setting for the consensus
+is to "Use hidden data" which means that where possible the
+contigs are extended using the poor quality data from the readings near
+their ends. To ensure that this additional data is not so poor that
+matches will be missed, the program uses algorithms which can be configured
+from the "Edit hidden data parameters" dialogue. Two algorithms are available.
+Both slide a window along the reading until a set criteria is met.
+By default an algorithm which sums confidence values within the window is used.
+It stops when a window with < "Minimum average confidence" is found. The other
+algorithm counts the number of uncalled bases in the window and stops when
+the total reaches "Max number of uncalled bases in window".
+The selected algorithm is applied to all the readings near the ends of contigs
+and the data that extends the contig the furthest is added to its consensus
+sequence. 
+
+If your total consensus sequence length (including a 20 character header for
+each contig that is used internally by the program) plus any hidden data 
+at the ends of contigs is greater than the current value of a parameter 
+called maxseq, Find Internal Joins may produce an error message advising 
+you to increase maxseq. Maxseq can be set on the command line
+(_fpref(Gap4-Cline, Command line arguments, gap4)) or by using the options
+menu (_fpref(Conf-Set Maxseq, Set Maxseq, configure)).
+
+The search algorithms first finds matching words of length "Word length",
+and only considers overlaps of length at least "Minimum overlap". Only
+alignments better than "Maximum percent mismatches" will be reported.
+
+There are two search algorithms: "Sensitive" or "Quick". The quick algorithm
+should be applied first, and then the sensitive one employed
+to find any less obvious
+overlaps. 
+
+The sensitive algorithm sums the lengths of
+the matching words of length "Word length" on each diagonal. It then finds
+the centre of gravity of the most significant diagonals. Significant diagonals
+are those whose probability of occurence is < "Diagonal threshold". It then
+uses a dynamic programming algorithm to align around the centre of gravity,
+using a band size of "Alignment band size (percent)". For example: if the 
+overlap was 1000 bases long and the percentage set at 5, the aligner would 
+only consider alignments within 50 bases either side of the centre of gravity.
+Obviously the larger the percentage and the overlap, the slower the aligment.
+
+The quick algorithm can find overlaps and align 100,000 base sequences in a
+few seconds by considering, in its initial phase only matching segments of
+length "Minimum initial match length". However it does a dynamic programming
+alignment of all the chunks between the matching segments, and so produces an
+optimal alignment. Again a banded dynamic algorithm can be selected, but as
+this only applies to the chunks between matching segments, which for good
+alignments will be very short, it should make little difference to the speed.
+
+After the search the results will be sorted so that the best matches are
+at the top of a list. This list can be stepped through, one result at a
+time using the Contig Joining Editor, by clicking on the "Next" button
+at the top left of the Contig Comparator.
+
+@cindex error messages: find internal joins
+@cindex error messages: maxseq
+@cindex maxseq: find internal joins

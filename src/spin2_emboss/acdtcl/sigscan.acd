@@ -1,0 +1,231 @@
+package require Iwidgets
+namespace eval ::EMBOSS::sigscan {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_sigscan*Xentry.entry.width 30
+option add *e_sigscan*Entryfield.width 30
+option add *e_sigscan*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) sigscan
+    set w [xtoplevel .e_sigscan -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - sigscan}
+    label $w._title -text {Scans a sparse protein signature against swissprot}
+    pack $w._title -side top -fill both
+    set vars(sigscan._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sigin
+    xentry $w.sigin \
+	-label [subst {Name of signature file for input}]\
+	-textvariable [namespace current]::vars(sigin) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.sigin delete 0 end
+    $w.sigin insert end [subst test.sig]
+    pack $w.sigin -side top -fill both
+    set vars(sigin.path) $w.sigin
+    set vars(sigin.required)  1
+    set vars(sigin._type) infile
+
+    lappend arguments database
+    set vars(database)       [get_active_seq_id 1]
+    if {$vars(database) == -1} {set vars(database) [get_active_seq_id 1]}
+    set vars(database.name)  [seq_info $vars(database) name]
+    sequence_changed [namespace current] database
+    set vars(database.type) [subst any]
+    seq_id $w.database \
+	-textvariable [namespace current]::vars(database.name)\
+	-start_value $vars(database.begin)\
+	-end_value $vars(database.end)\
+	-to [seq_info $vars(database) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] database $w.database}"
+    set vars(database) [subst ./test.seq]
+    pack $w.database -side top -fill both
+    set vars(database.path) $w.database
+    set vars(database.required)  1
+    trace variable vars(database.name) w  "::EMBOSS::sequence_changed [namespace current] database"
+    set vars(database._type) seqall
+
+    lappend arguments targetf
+    xentry $w.targetf \
+	-label [subst {Name of (optionally grouped) scop families file for input}]\
+	-textvariable [namespace current]::vars(targetf) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.targetf delete 0 end
+    $w.targetf insert end [subst test.fam]
+    pack $w.targetf -side top -fill both
+    set vars(targetf.path) $w.targetf
+    set vars(targetf.required)  1
+    set vars(targetf._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments thresh
+    iwidgets::entryfield $w.thresh \
+	-validate integer \
+	-textvariable [namespace current]::vars(thresh) \
+	-labeltext [subst {Minimum length (residues) of overlap required for two hits with the same code to be counted as the same hit.}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.thresh component entry] -sticky nse
+    set vars(thresh) [subst 20]
+    pack $w.thresh -side top -fill both
+    set vars(thresh.path) $w.thresh
+    set vars(thresh.required)  1
+    set vars(thresh._type) integer
+
+    lappend arguments sub
+    set vars(sub.protein) [subst 1]
+    iwidgets::combobox $w.sub\
+	-textvariable [namespace current]::vars(sub)\
+	-labeltext [subst {Residue substitution matrix}]
+    eval $w.sub insert list end [list_matrices p]
+    grid [$w.sub component entry] -sticky nse
+    $w.sub delete entry 0 end
+    $w.sub insert entry end [subst ./EBLOSUM62]
+    $w.sub configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sub -side top -fill both
+    set vars(sub.path) $w.sub
+    set vars(sub.required)  1
+    set vars(sub._type) matrixf
+
+    lappend arguments gapo
+    iwidgets::entryfield $w.gapo \
+	-validate real \
+	-textvariable [namespace current]::vars(gapo) \
+	-labeltext [subst {Gap insertion penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapo component entry] -sticky nse
+    set vars(gapo) [subst 10]
+    pack $w.gapo -side top -fill both
+    set vars(gapo.minimum) [subst 1.]
+    set vars(gapo.maximum) [subst 100.]
+    set vars(gapo.path) $w.gapo
+    set vars(gapo.required)  1
+    set vars(gapo._type) float
+
+    lappend arguments gape
+    iwidgets::entryfield $w.gape \
+	-validate real \
+	-textvariable [namespace current]::vars(gape) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gape component entry] -sticky nse
+    set vars(gape) [subst 0.5]
+    pack $w.gape -side top -fill both
+    set vars(gape.minimum) [subst 0.0]
+    set vars(gape.maximum) [subst 10.]
+    set vars(gape.path) $w.gape
+    set vars(gape.required)  1
+    set vars(gape._type) float
+
+    lappend arguments nterm
+    iwidgets::combobox $w.nterm\
+	-textvariable [namespace current]::vars(nterm.name)\
+	-labeltext [subst {Select number}]
+    trace variable vars(nterm.name) w  "::EMBOSS::list_changed [namespace current] nterm"
+    eval $w.nterm insert list end {{Align anywhere and allow only complete signature-sequence fit}} {{Align anywhere and allow partial signature-sequence fit}} {{Use empirical gaps only}}
+    set vars(nterm.mapping1) {{Use empirical gaps only} 3 {Align anywhere and allow partial signature-sequence fit} 2 {Align anywhere and allow only complete signature-sequence fit} 1}
+    set vars(nterm.mapping2) {1 {Align anywhere and allow only complete signature-sequence fit} 2 {Align anywhere and allow partial signature-sequence fit} 3 {Use empirical gaps only}}
+    grid [$w.nterm component entry] -sticky nse
+    $w.nterm delete entry 0 end
+    array set tmpmap $vars(nterm.mapping2)
+    set def [subst 1]
+    catch {set def $tmpmap($def)}
+    set vars(nterm) $def
+    $w.nterm insert entry end $def
+    $w.nterm configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.nterm -side top -fill both
+    set vars(nterm.path) $w.nterm
+    set vars(nterm.required)  1
+    set vars(nterm.delimiter) ,
+    set vars(nterm._type) list
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments nhits
+    iwidgets::entryfield $w.nhits \
+	-validate integer \
+	-textvariable [namespace current]::vars(nhits) \
+	-labeltext [subst {Number of hits to output}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.nhits component entry] -sticky nse
+    set vars(nhits) [subst 100]
+    pack $w.nhits -side top -fill both
+    set vars(nhits.path) $w.nhits
+    set vars(nhits.required)  1
+    set vars(nhits._type) integer
+
+    lappend arguments hitsf
+    xentry $w.hitsf \
+	-label [subst {Name of signature hits file for output}]\
+	-textvariable [namespace current]::vars(hitsf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.hitsf delete 0 end
+    $w.hitsf insert end [subst test.hits]
+    pack $w.hitsf -side top -fill both
+    set vars(hitsf.path) $w.hitsf
+    set vars(hitsf.required)  1
+    set vars(hitsf._type) outfile
+
+    lappend arguments alignf
+    xentry $w.alignf \
+	-label [subst {Name of signature alignments file for output}]\
+	-textvariable [namespace current]::vars(alignf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.alignf delete 0 end
+    $w.alignf insert end [subst test.align]
+    pack $w.alignf -side top -fill both
+    set vars(alignf.path) $w.alignf
+    set vars(alignf.required)  1
+    set vars(alignf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/sigscan.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,169 @@
+@menu
+* Compar-Examining::            Examining Results
+* Compar-AutoNavigation::       Automatic Match Navigation
+@end menu
+
+@cindex Comparator window
+@cindex Contig Comparator
+
+gap4 commands such as Find Internal Joins (_fpref(FIJ, Find Internal
+Joins, fij)), Find Repeats (_fpref(Repeats, Find Repeats, repeats)),
+Check Assembly (_fpref(Check Assembly, Check Assembly, check_ass)), and
+Find Read Pairs (_fpref(Read Pairs, Find Read Pairs, read_pairs))
+automatically transform the Contig Selector (_fpref(Contig Selector,
+Contig Selector, contig_selector)) to produce the Contig Comparator.  To
+produce this transformation a copy of the Contig Selector is added at
+right angles to the original window to create a two dimensional
+rectangular surface on which to display the results of comparing or
+checking contigs. Each of the functions plots its results as diagonal
+lines of different colours.  If the plotted points are close to the main
+diagonal they represent results from pairs of contigs that are in the
+correct relative order.  Lines parallel to the main diagonal represent
+contigs that are in the correct relative orientation to one another.
+Those perpendicular to the main diagonal show results for which one
+contig would need to be reversed before the pair could be joined.  The
+manual contig dragging procedure can be used to change the relative
+positions of contigs.  _fxref(Contig-Selector-Order, Changing the Contig
+Order, contig_selector) As the contigs are dragged the plotted results
+will be automatically moved to their corresponding new positions.  This
+means that if users drag the contigs to move their plotted results close
+to the main diagonal they will be simultaneously putting their contigs
+into the correct relative positions.
+
+Because this plot can simultaneously show the results of independent
+types of search, users can see if different analyses produce
+corroborating evidence for the ordering of contigs.  Also, if for
+example, a result
+from Check Assembly lies on the same horizontal or vertical projection
+as a result from Find Repeats, users can see the alternative position to
+place the doubtful reading. Ie this is an indication that a reading may have
+been assembled in an incorrect position.
+
+By use of popup menus the plotted results can be used to invoke a subset
+of commands.  For example if the user clicks the right mouse button over
+a result from Find Internal Joins a menu containing Invoke Join Editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)) and Invoke
+Contig Editors (_fpref(Editor, Editing in gap4, contig_editor))
+will pop up. If the user selects Invoke Join Editor the Join Editor will
+be started with the two contigs aligned at the match position contained
+in the result. If required one of the contigs will be complemented to
+allow their alignment.
+
+A typical display from the Contig Comparator is shown below. It includes
+results for Find Internal Joins in black, Find Repeats in red, Check
+Assembly in green, and Find Read Pairs in blue. Notice that there are
+several Find Internal Joins, Find Read Pairs and Find Repeats results
+close to the main diagonal near the top left of the display, indicating
+that the contigs represented in that area are likely to be in the
+correct relative positions to one another.  In the middle of the bottom
+right quadrant there is a blue diagonal line perpendicular to the main
+diagonal which indicates a pair of contigs that are in the wrong
+relative orientation.  The crosshairs show the positions for a pair of
+contigs. The vertical line continues into the Contig Selector part of
+the display, and the position represented by the horizontal line is also
+duplicated there.
+
+_lpicture(comparator)
+
+_split()
+@node Compar-Examining
+@section Examining Results and Using Them to Select Commands
+@cindex Contig Comparator: manipulating results
+
+Moving the cursor over plotted results highlights them, and the
+information line
+gives a brief description of the currently highlighted match. This is in
+the form:
+
+@var{match name}: @var{contig1_number}@@@var{position_in_contig1},
+with @var{contig2_number}@@@var{position_in_contig2},
+@var{length_of_the_match}
+
+For Find Internal Joins the percentage mismatch is also displayed.
+
+Several operations can be performed on each match. Pressing the right
+mouse button over a match invokes a popup menu.  This menu will contain
+a set of options which depends on the type of result to which the match
+corresponds. The following is a complete list, but not all will appear
+for each type of result.
+
+@table @var
+@item Information
+@cindex Information, in Contig Comparator
+Sends a textual description of the match to the Output Window.
+
+@cindex Hide, in Contig Comparator
+@cindex Invoke contig editors, in Contig Comparator
+@cindex Invoke contig join editors, in Contig Comparator
+@cindex Invoke template display, in Contig Comparator
+
+@item Hide
+Removes the match from the Contig Comparator. The match can be revealed
+again by using "Reveal all" within the Results Manager.
+
+@item Invoke contig editors
+@itemx Invoke join editors
+@itemx Invoke template display
+
+When invoked these options bring up their respective
+displays to show the match in greater detail. 
+
+@item Remove
+@cindex Remove, in Contig Comparator
+Removes the match from the Contig Comparator. The match
+cannot be  revealed again by using "Reveal all" within the
+Results Manager.
+@end table
+
+One of the items in the popup menu may have an asterisk next to it. This is
+the default operation which can also be performed by double clicking the left
+mouse button on the match.
+For Repeat or Find Internal Joins matches this will normally be the Join
+Editor, or two Contig Editors when the match is between two points in
+the same contig. For Read Pairs two Template Displays are shown.
+
+The crosshairs can be toggled on and off and a diagonal line going from
+top left to bottom right of the plot can also be displayed if required.
+This is useful as a guide for moving the contigs such that their matches
+lie upon the diagonal line.
+
+The "Results" menu on the contig selector window provides a similar mechanism
+of accessing results, but at the level of all matches in a particular search.
+This is simply a menu driven interface to the Results Manager window
+(_fpref(Results, Results Manager, gap4)), but containing only the results
+relevant to the contig comparator window.
+
+_split()
+@node Compar-AutoNavigation
+@section Automatic Match Navigation
+@cindex Contig comparator: auto navigation
+@cindex Contig comparator: next button
+@cindex Next button, in Contig comparator
+@cindex Sort Matches
+
+The "Next" button of the contig comparator window automatically invokes the
+default operation on the next match from the current active result. This
+provides a mechanism to step through each match in turn ensuring that no
+matches have been missed.
+
+With a single result (set of matches) plotted, the "Next" button simply steps
+through each match in turn until all have been seen. Moving the mouse above
+the "Next" button, without pressing it, highlights the next match and
+displays brief information about it in the status line at the bottom of the
+window. To step through the matches in "best first" order, select the "Sort
+Matches" option from the relevant name in the Results menu. The exact order is
+dependent on the result in question, but is generally arranged to be the most
+interesting ones first. For example, Find Internal Joins shows the lowest
+mismatch first whilst Check Assembly shows the highest mismatches
+first.
+
+Bringing up another result now directs "Next" to step through each of the new
+matches. To change the result that "Next" operates on, use the Result menu to
+select the "Use for 'Next'" option in the desired result. Alternatively,
+double clicking on a match also causes "Next" to process the list starting
+from the selected result.
+
+The "Next" scheme remembers any matches that have been previously examined
+either by itself or by manually double clicking, and will skip these. To clear
+this 'visited' information select "Reset 'Next'" in the Results Manager.
+

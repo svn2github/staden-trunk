@@ -1,0 +1,184 @@
+package require Iwidgets
+namespace eval ::EMBOSS::compseq {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_compseq*Xentry.entry.width 30
+option add *e_compseq*Entryfield.width 30
+option add *e_compseq*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) compseq
+    set w [xtoplevel .e_compseq -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - compseq}
+    label $w._title -text {Counts the composition of dimer/trimer/etc words in a sequence}
+    pack $w._title -side top -fill both
+    set vars(compseq._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments word
+    iwidgets::entryfield $w.word \
+	-validate integer \
+	-textvariable [namespace current]::vars(word) \
+	-labeltext [subst {Word size to consider (e.g. 2=dimer)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.word component entry] -sticky nse
+    set vars(word) [subst 2]
+    pack $w.word -side top -fill both
+    set vars(word.minimum) [subst 1]
+    set vars(word.maximum) [subst 20]
+    set vars(word.path) $w.word
+    set vars(word.required)  1
+    set vars(word._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infile
+    xentry $w.infile \
+	-label [subst {'compseq' file to use for expected word frequencies}]\
+	-textvariable [namespace current]::vars(infile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.infile delete 0 end
+    $w.infile insert end [subst {}]
+    pack $w.infile -side top -fill both
+    set vars(infile.path) $w.infile
+    set vars(infile.required)  0
+    set vars(infile._type) infile
+
+    lappend arguments frame
+    iwidgets::entryfield $w.frame \
+	-validate integer \
+	-textvariable [namespace current]::vars(frame) \
+	-labeltext [subst {Frame of word to look at (0=all frames)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.frame component entry] -sticky nse
+    set vars(frame) [subst 0]
+    pack $w.frame -side top -fill both
+    set vars(frame.minimum) [subst 0]
+    set vars(frame.maximum) [subst {[expr {$vars(word)}]}]
+    set vars(frame.maximum.orig) $vars(frame.maximum)
+    set vars(frame.maximum.expr) {[expr {$vars(word)}]}
+    trace variable vars(word) w  "::EMBOSS::reset_value [namespace current] frame.maximum"
+    set vars(frame.path) $w.frame
+    set vars(frame.required)  0
+    set vars(frame._type) integer
+
+    lappend arguments ignorebz
+    checkbutton $w.ignorebz \
+	-text [subst {Ignore the amino acids B and Z and just count them as 'Other'}]\
+	-variable [namespace current]::vars(ignorebz)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ignorebz -side top -anchor w
+    set vars(ignorebz) [subst 1]
+    set vars(ignorebz.path) $w.ignorebz
+    set vars(ignorebz.required)  0
+    set vars(ignorebz._type) bool
+
+    lappend arguments reverse
+    checkbutton $w.reverse \
+	-text [subst {Count words in the forward and reverse sense}]\
+	-variable [namespace current]::vars(reverse)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.reverse -side top -anchor w
+    set vars(reverse) [subst 0]
+    set vars(reverse.path) $w.reverse
+    set vars(reverse.required)  0
+    set vars(reverse._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst compseq0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    lappend arguments zerocount
+    checkbutton $w.zerocount \
+	-text [subst {Display the words that have a frequency of zero}]\
+	-variable [namespace current]::vars(zerocount)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.zerocount -side top -anchor w
+    set vars(zerocount) [subst 1]
+    set vars(zerocount.path) $w.zerocount
+    set vars(zerocount.required)  0
+    set vars(zerocount._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/compseq.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

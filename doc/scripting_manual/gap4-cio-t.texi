@@ -1,0 +1,49 @@
+@menu
+* G4cio-Introduction::          Introduction and Overview
+* G4cio-Compiling::             Compiling and Linking with Other Programs
+* G4cio-Database_Structures::   Database Structures
+* G4cio-GapIO_Structure::       The GapIO Structure
+* G4cio-Macros::                IO.h Macros
+* G4cio-Basic_Level::           Basic Gap4 I/O
+* G4cio-Other::                 Other I/O Functions
+@end menu
+
+@node G4Cio-Introduction
+@section Introduction and Overview
+_include(gap4-cio-intro-t.texi)
+
+@c
+@split{}
+@section Compiling and Linking with Other Programs
+_include(gap4-cio-compile-t.texi)
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-Database_Structures
+@section Database Structures
+_include(gap4-cio-database-t.texi)
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GapIO_Structure
+@section The GapIO Structure
+_include(gap4-cio-gapio-t.texi)
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-Macros
+@section IO.h Macros
+_include(gap4-cio-IO.h-t.texi)
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-Basic_Level
+@section Basic Gap4 I/O
+_include(gap4-cio-basic-t.texi)
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-Other
+@section Other I/O functions
+_include(gap4-cio-other-t.texi)
+

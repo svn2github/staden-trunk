@@ -1,0 +1,69 @@
+.TH "extract_seq" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+extract_seq \- extracts sequence from a trace or experiment file.
+
+.SH "SYNOPSIS"
+.PP
+
+\fBextract_seq\fP [\fB-r\fP]
+[\fB-\fP(\fBabi\fP|\fBalf\fP|\fBscf\fP|\fBexp\fP|\fBpln\fP)]
+[\fB-good_only\fP] [\fB-clip_cosmid\fP] [\fB-fasta_out\fP]
+[\fB-output\fP \fIoutput_name\fP] [\fIinput_name\fP] \fB...\fP
+
+.SH "DESCRIPTION"
+.PP
+
+\fBextract_seq\fP extracts the sequence information from binary trace
+files, Experiment files, or from the old Staden format plain files. The input
+can be read either from files or from standard input, and the output can be
+written to either a file or standard output. Multiple input files can be
+specified. The output contains the sequences split onto lines of at most 60
+characters each.
+
+.SH "OPTIONS"
+.PP
+
+.TP
+\fB-r\fP
+Directs reading of experiment file to attempt extraction of sequence from
+the referenced (\fBLN\fP and \fBLT\fP line types) trace file. Without
+this option, or when the trace file cannot be found, the sequence
+output is that listed in the Experiment File. This option has no effect
+for other input format types.
+
+.TP
+\fB-abi\fP, \fB-alf\fP, \fB-scf\fP, \fB-exp\fP, \fB-pln\fP
+Specify an input file format. This is not usually required as
+\fBextract_seq\fP will automatically determine the correct input file
+type. This option is supplied incase the automatic determination is
+incorrect (which is possible, but has never been observed).
+
+.TP
+\fB-good_only\fP
+When reading an experiment file or SCF file containing clip marks, output
+only the \fIgood\fP sequence which is contained within the boundaries marked
+by the \fBQL\fP, \fBQR\fP, \fBSL\fP, \fBSR\fP, \fBCL\fP, \fBCR\fP
+and \fBCS\fP line types.
+
+.TP
+\fB-clip_cosmid\fP
+When the \fB-good_only\fP argument is specified this controls whether the
+cosmid sequence should be considered good data. Without this argument
+cosmid sequence is considered good.
+
+.TP
+\fB-fasta_out\fP
+Specifies that the output should be in fasta format
+
+.TP
+\fB-output\fP \fIfile\fP
+The sequence will be written to \fIfile\fP instead of standard
+output.
+.TE
+.SH "SEE ALSO"
+.PP
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Formats-Scf, scf(4), formats)
+\fBRead\fP(4)

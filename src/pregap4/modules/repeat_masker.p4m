@@ -1,0 +1,252 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Runs RepeatMasker on a batch of experiment files.
+# This needs to convert the experiment files to a fasta file, run RepeatMasker,
+# and then convert the repeats found into Experiment File tags
+#
+
+set help {pregap4 {Pregap4-Modules-RepeatMasker}}
+
+proc name {} {
+    return "RepeatMasker"
+}
+
+proc init {} {
+    mod_preset tag_type REPT
+    mod_preset alu_only 0
+    mod_preset simple_only 0
+    mod_preset no_primate_rodent 0
+    mod_preset rodent_only 0
+    mod_preset no_low_complexity 0
+    mod_preset library "<default>"
+    mod_preset cutoff 200
+    mod_preset align_output 0
+
+    variable enabled
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|RepeatMasker" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "RepeatMasker is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc run {files} {
+    global file_type file_error
+    global fofn
+    global errorCode
+    variable report
+    variable tag_type
+    variable alu_only
+    variable simple_only
+    variable no_primate_rodent
+    variable rodent_only
+    variable no_low_complexity
+    variable library
+    variable cutoff
+    variable align_output
+
+    set report ""
+
+    # Create the fasta file
+    set fd [open $fofn.fasta w]
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    array set e [read_exp_file $f]
+	    set seq [query_exp_file e SQ]
+	    regsub -all {[-]} $seq N seq
+	    if {$seq == ""} {
+		set file_error($f) "repeat_masker: malformed experiment file"
+	    }
+	    puts $fd ">$f"
+	    puts $fd "$seq"
+	}
+    }
+    close $fd
+
+    # Remove any temporary files which RepeatMasker will produce. It won't
+    # do this itself, so we could become confused.
+    catch {file delete $fofn.fasta.cat}
+    catch {file delete $fofn.fasta.masked}
+    catch {file delete $fofn.fasta.masked.log}
+    catch {file delete $fofn.fasta.out}
+    catch {file delete $fofn.fasta.out.xm}
+    catch {file delete $fofn.fasta.tbl}
+
+    # Run RepeatMasker
+    set args "-cutoff $cutoff"
+    if {$alu_only} {
+	lappend args "-alu"
+    }
+    if {$simple_only} {
+	lappend args "-int"
+    }
+    if {$no_primate_rodent} {
+	lappend args "-mam"
+    }
+    if {$rodent_only} {
+	lappend args "-mus"
+    }
+    if {$no_low_complexity} {
+	lappend args "-low"
+    }
+    if {$library != "<default>" && $library != ""} {
+	lappend args -lib $library
+    }
+    if {$align_output} {
+       lappend args "-a"
+    }
+    set errorCode NONE
+    if {[catch {eval exec RepeatMasker -xm [list $fofn.fasta] $args} var]} {
+	if {$errorCode != "NONE"} {
+	    append report "ERR: RepeatMasker failed with error message '$var'.\n"
+	    return $files
+	}
+    }
+
+    # Read the cross_match output and update the Experiment Files
+    if {[catch {set fd [open $fofn.fasta.out.xm r]} var]} {
+	# No .xm file implies no repeats.
+	append report "RepeatMasker found no repeats.\n"
+	return $files
+    }
+    while {[gets $fd line] != -1} {
+	set id [lindex $line 4]
+	append report "SEQ $id: Repeat [lindex $line 9]\n"
+	catch {unset e}
+	array set e [read_exp_file $id]
+	regsub -all {.{70}} $line "&\n" folded
+	set tag "$tag_type + [lindex $line 5]..[lindex $line 6]\n$folded"
+	add_to_exp_file e TG $tag
+	write_exp_file e $id
+    }
+    close $fd
+
+    return $files
+}
+
+proc create_dialogue {w} {
+    variable tag_type
+    variable alu_only
+    variable simple_only
+    variable no_primate_rodent
+    variable rodent_only
+    variable no_low_complexity
+    variable library
+    variable cutoff
+    variable align_output
+
+    xentry $w.library \
+	-label "Repeat library  " \
+	-default $library \
+	-width 30
+    pack $w.library -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    xentry $w.cutoff \
+	-label "RepeatMasker cutoff" \
+	-default $cutoff \
+	-width 7 \
+	-type float
+    xcheck $w.align \
+	-text "Generate .align output files" \
+	-variable [namespace current]::align_output
+    pack $w.cutoff $w.align -side top -fill both
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+
+    xentry $w.tag_type \
+	-label "Gap4 tag type" \
+	-default $tag_type \
+	-width 7
+    pack $w.tag_type -side top -fill both
+
+    frame $w.separator3 -bd 2 -relief raised -height 2
+    pack $w.separator3 -side top -fill x -padx 10 -pady 5
+
+    label $w.types -text "Types of repeat to screen against"
+
+    xcheck $w.alu \
+	-text "Alu only" \
+	-variable [namespace current]::alu_only
+
+    xcheck $w.rodent \
+	-text "Rodent only" \
+	-variable [namespace current]::rodent_only
+
+    xcheck $w.simple \
+	-text "Simple only" \
+	-variable [namespace current]::simple_only
+
+    xcheck $w.primate \
+	-text "Mammalian excluding primate/rodent" \
+	-variable [namespace current]::no_primate_rodent
+
+    xcheck $w.low \
+	-text "No low complexity" \
+	-variable [namespace current]::no_low_complexity
+
+    pack $w.types $w.alu $w.rodent $w.simple $w.primate $w.low \
+	-side top -fill both
+
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	tag_type alu_only simple_only no_primate_rodent rodent_only \
+	no_low_complexity cutoff align_output]]} {
+	return $inv
+    }
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable tag_type
+    variable library
+    variable cutoff
+
+    if {[set library   [$w.library  get]] == ""} { return 0 }
+    if {[set cutoff    [$w.cutoff   get]] == ""} { return 0 }
+    if {[set tag_type  [$w.tag_type get]] == ""} { return 0 }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    variable tag_type
+    variable alu_only
+    variable simple_only
+    variable no_primate_rodent
+    variable rodent_only
+    variable no_low_complexity
+    variable library
+    variable cutoff
+    variable align_output
+
+    if {[string match save* $mode]} {
+	mod_save tag_type [$w.tag_type get2]
+	mod_save library [$w.library get2]
+	mod_save cutoff [$w.cutoff get2]
+	mod_save alu_only $alu_only
+	mod_save simple_only $simple_only
+	mod_save no_primate_rodent $no_primate_rodent
+	mod_save rodent_only $rodent_only
+	mod_save no_low_complexity $no_low_complexity
+	mod_save align_output $align_output
+    }
+}

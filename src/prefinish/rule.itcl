@@ -1,0 +1,478 @@
+#
+# A Tree item compatible with being added to a hierarchybook.
+# A Rule consists of weightings, a set of rule specific attributes, and
+# may contain zero or one Solution children.
+#
+
+class Rule {
+    inherit Tree
+
+    public {
+	variable name		"unknown"
+	variable mandatory	0;      # Boolean - is it a mandatory rule?
+	variable pweight	1.0;    # Rule score weighting
+	variable mweight	1.0;    # Mandatory score weighting
+	variable avoid_primers	0;	# -pwalk_prob_mask option
+	variable solution_defaults "";  # Argument list to pass to Solution
+	variable expression	"";	# Rule expression
+    }
+
+    public {
+	# Used by hierarchybook
+	method display {w}
+	method raise {}
+	method create_menus {m}
+
+	# Others
+	method save {}
+	method drop {type}
+	method current_rule {}
+	method dependencies {}
+	method copy_node {{top 0}}
+    }
+
+    private {
+	variable data
+	common current_rule ""
+
+	method get_expression {}
+
+	method gui_generate {w expr}
+	method gui_template_depth_ge {w var}
+	method gui_sequence_depth_ge {w var}
+	method gui_strand_top {w var}
+	method gui_strand_bottom {w var}
+	method gui_confidence_ge {w var}
+	method gui_contig_left_end {w var}
+	method gui_contig_right_end {w var}
+	method gui_low_complexity {w var}
+	method gui_chemistry {w var}
+	method gui_chemistry_selected {w var}
+    }
+
+    constructor {args} {
+	eval configure $args
+    }
+}
+
+# -----------------------------------------------------------------------------
+# OPTION: -expression
+#
+# Parses the experiment string and generates the "data" local array
+# -----------------------------------------------------------------------------
+configbody Rule::expression {
+    set param_count 0
+    foreach {_ tok} [regexp -all -inline {(<[^>]*>)} $expression] {
+	if {![string match "<*>" $tok]} {
+	    error "Invalid keyword in expression '$tok'"
+	}
+	set tok [string trim $tok <>]
+	set data(parameter$param_count.type) [lindex $tok 0]
+	set data(parameter$param_count.value) [lrange $tok 1 end]
+	incr param_count
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when this node is added to the tree in order
+# to create the Tk dialogue.
+# -----------------------------------------------------------------------------
+body Rule::display {w} {
+    xentry $w.pweight \
+	-label "Rule weight" \
+	-textvariable [scope pweight]
+    pack $w.pweight -fill both -side top -padx 10
+    ::tooltip::attach $w.pweight $::prefinish::tooltips(-pweight)
+
+    checkbutton $w.mandatory \
+	-text "Mandatory" \
+	-variable [scope mandatory]
+    pack $w.mandatory -anchor w -side top -padx 10
+    ::tooltip::attach $w.mandatory $::prefinish::tooltips(-mandatory)
+
+    xentry $w.mweight \
+	-label "Mandatory score weight" \
+	-textvariable [scope mweight]
+    pack $w.mweight -fill both -side top -padx 10
+    ::tooltip::attach $w.mweight $::prefinish::tooltips(-mweight)
+
+    checkbutton $w.avoid_primers \
+	-text "Filter primers" \
+	-variable [scope avoid_primers]
+    pack $w.avoid_primers -anchor w -side top -padx 10
+    ::tooltip::attach $w.avoid_primers $::prefinish::tooltips(-avoid_primers)
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 5 -pady 5
+
+    if {$expression != ""} {
+	gui_generate $w $expression
+    } else {
+	pack [label $w.l -text "(no configurable parameters)"]
+    }
+
+    dependencies
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when a pass is raised.
+# We use it to keep track of the last user-selected Pass.
+# -----------------------------------------------------------------------------
+body Rule::raise {} {
+    set current_rule $this
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook to create the menus.
+# NOTE: This accesses the global array ::rules
+# -----------------------------------------------------------------------------
+body Rule::create_menus {m} {
+    Tree::create_menus $m
+    set type [clipboard_type]
+    if {$type == "Solution" && ![contains Solution]} {
+	$m add command \
+	    -label "Paste $type" \
+	    -command [code $this paste_node]
+    }
+    $m add separator
+    if {![contains Solution]} {
+	$m add command \
+	    -label "Add solution" \
+	    -command "::prefinish::add_solu [get_hierarchy] $this"
+	$m add separator
+    }
+
+    $m add command \
+	-label "Remove" \
+	-command "itcl::delete object $this"
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns a string of components to save for this rule.
+# -----------------------------------------------------------------------------
+body Rule::save {} {
+    #FIXME: do sanity checking first?
+    set str "-name [list $name]"
+    append str " -mandatory $mandatory"
+    append str " -pweight $pweight"
+    append str " -mweight $mweight"
+    append str " -avoid_primers $avoid_primers"
+    set exp [get_expression]
+    append str " -expression [list $exp]"
+
+    return $str
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns a list of {name arg} tuples describing the prefinish classification
+# patterns that this rule depends on.
+# Eg "{strand_top} {strand_bottom} {confidence_ge 30}"
+# -----------------------------------------------------------------------------
+body Rule::dependencies {} {
+    set dependencies {}
+    foreach param [array names data -glob parameter*.type] {
+	regsub {\.type$} $param {} param
+	switch $data($param.type) {
+	    strand_top -
+	    strand_bottom -
+	    contig_left_end -
+	    contig_right_end -
+	    low_complexity {
+		lappend dependencies $data($param.type)
+	    }
+
+	    template_depth_ge -
+	    sequence_depth_ge -
+	    confidence_ge {
+		lappend dependencies [list $data($param.type) \
+					   $data($param.value)]
+	    }
+
+	    chemistry {
+		lappend dependencies "$data($param.type) $data($param.value)"
+	    }
+
+	    default {
+		error "Unknown parameter type '$data($param.type)'"
+	    }
+	}
+    }
+
+    return $dependencies
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns the last user-selected rule, or this rule if none selected.
+# -----------------------------------------------------------------------------
+body Rule::current_rule {} {
+    if {$current_rule == ""} {
+	return $this
+    } else {
+	return $current_rule
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Private method called by 'display' to take a rule expression and turn it
+# into a series of gui components.
+#
+# w
+#	The frame in which to create our components.
+#
+# expr
+#	The expression in the prefinish .rule format.
+# -----------------------------------------------------------------------------
+body Rule::gui_generate {w expr} {
+    set bracket_count 0
+    set item_count 0
+    set param_count 0
+    set frame_list $w
+    foreach {_ tok} [regexp -all -inline {([()]|\|\||\&\&|<[^>]*>)} $expr] {
+	switch $tok {
+	    "(" {
+		set w $w.frame$bracket_count
+		frame $w -bd 4 -relief groove
+		pack $w -side top -fill both -padx 10 -pady 3
+		incr bracket_count
+		lappend frame_list $w
+	    }
+	    ")" {
+		set frame_list [lreplace $frame_list end end]
+		set w [lindex $frame_list end]
+	    }
+	    "||" {
+		label $w.item$item_count -text "or"
+		pack $w.item$item_count -side top -anchor w
+		incr item_count
+	    }
+	    "&&" {
+		label $w.item$item_count -text "and"
+		pack $w.item$item_count -side top -anchor w
+		incr item_count
+	    }
+	    default {
+		if {![string match "<*>" $tok]} {
+		    error "Invalid keyword in expression '$tok'"
+		}
+		set tok [string trim $tok <>]
+		set data(parameter$param_count.type) [lindex $tok 0]
+		set data(parameter$param_count.value) [lrange $tok 1 end]
+		if {[catch {eval [list gui_[lindex $tok 0]] \
+				[list $w.item$item_count] \
+				[list parameter$param_count.value]} err]} {
+		    error "Parsing expression '$tok': $err"
+		}
+		::tooltip::attach $w.item$item_count \
+		    $::prefinish::tooltips(class_[lindex $tok 0])
+		pack $w.item$item_count -padx 10 -anchor w -fill x -pady 3
+		incr item_count
+		incr param_count
+	    }
+	}
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# All the private methods below named gui_* correspond to each one of the
+# valid keywords allowed within an expression.
+#
+# w
+#	The pathname to create for this dialogue component (does not exist yet)
+#
+# var
+#	An optional argument (such as the 30 from "confidence_ge 30").
+#	Not all expression keywords required an argument, but all methods
+#	require it in order to have the same prototype.
+#
+
+body Rule::gui_template_depth_ge {w var} {
+    xentry $w \
+        -label "Minimum template depth" \
+	-textvariable [scope data($var)]
+}
+
+body Rule::gui_sequence_depth_ge {w var} {
+    xentry $w \
+        -label "Minimum sequence depth" \
+	-textvariable [scope data($var)]
+
+}
+body Rule::gui_confidence_ge {w var} {
+    xentry $w \
+        -label "Minimum consensus confidence" \
+	-textvariable [scope data($var)]
+}
+
+body Rule::gui_strand_top {w var} {
+    frame $w -bd 0
+    label $w.l -text "Strand top"
+    frame $w.r -bd 0
+    pack $w.l -side left
+    pack $w.r -side right -expand 1
+}
+
+body Rule::gui_strand_bottom {w var} {
+    frame $w -bd 0
+    label $w.l -text "Strand bottom"
+    frame $w.r -bd 0
+    pack $w.l -side left
+    pack $w.r -side right -expand 1
+}
+
+body Rule::gui_contig_left_end {w var} {
+    frame $w -bd 0
+    label $w.l -text "Extend left end of contig"
+    frame $w.r -bd 0
+    pack $w.l -side left
+    pack $w.r -side right -expand 1
+}
+
+body Rule::gui_contig_right_end {w var} {
+    frame $w -bd 0
+    label $w.l -text "Extend right end of contig"
+    frame $w.r -bd 0
+    pack $w.l -side left
+    pack $w.r -side right -expand 1
+}
+
+body Rule::gui_low_complexity {w var} {
+    frame $w -bd 0
+    label $w.l -text "Low complexity"
+    frame $w.r -bd 0
+    pack $w.l -side left
+    pack $w.r -side right -expand 1
+}
+
+body Rule::gui_chemistry {w var} {
+    set chemistries [::chemistry::names]
+    iwidgets::scrolledlistbox $w \
+	-exportselection 0 \
+	-labeltext "Required chemistries" \
+	-hscrollmode dynamic \
+	-vscrollmode dynamic \
+	-selectmode multiple \
+	-selectioncommand [itcl::code $this gui_chemistry_selected $w $var] \
+	-visibleitems 20x[llength $chemistries]
+    eval [list $w] insert end $chemistries
+    foreach ch $data($var) {
+	set chname [::chemistry::num_to_str $ch]
+	$w selection set [lsearch $chemistries $chname]
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Callback from selecting the chemistry listbox. Dynamically updates the
+# numeric list form of the chemistry field.
+# -----------------------------------------------------------------------------
+body Rule::gui_chemistry_selected {w var} {
+    set sel {}
+    foreach ind [$w getcurselection] {
+	lappend sel [::chemistry::str_to_num [$w get $ind]]
+    }
+    set data($var) $sel
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Computes a new expression by switching the values in the current dialogues
+# with the defaults listed in the expression option.
+# The new expression is returned.
+# -----------------------------------------------------------------------------
+body Rule::get_expression {} {
+    # Parse an 'expression' and replace the values with ones taken from the
+    # dialogue.
+    set new_expr ""
+    set state text
+    set text ""
+    set count 0
+    foreach char [split $expression {}] {
+	switch $char {
+	    "<" {
+		append new_expr $char
+		if {$state == "text"} {
+		    set state keyword
+		    set keyword ""
+		    set char ""
+		}
+	    }
+
+	    " " {
+		if {$state != "value"} {
+		    append new_expr $char
+		}
+		if {$state == "keyword"} {
+		    set state value
+		    set value ""
+		    set char ""
+		}
+	    }
+
+	    ">" {
+		if {$state == "value"} {
+		    assert {$data(parameter$count.type) == $keyword}
+		    set char "$data(parameter$count.value)>"
+		    incr count
+		} elseif {$state == "keyword"} {
+		    incr count
+		}
+		append new_expr $char
+		set state text
+	    }
+
+	    default {
+		if {$state != "value"} {
+		    append new_expr $char
+		}
+	    }
+	}
+	append $state $char
+    }
+
+    return $new_expr
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Checks whether a class of "type" may be dropped within us. If so we return
+# the desired position (eg start or end). Otherwise we return "" to indicate
+# that this is an incompatible object.
+# -----------------------------------------------------------------------------
+body Rule::drop {type} {
+    if {$type == "::Solution" && ![contains Solution]} {
+	return end
+    } else {
+	return ""
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Overrides the Tree copy_node function. The key difference is that this
+# implementation updates the "expression" variable from the current filled out
+# dialogue using the get_expression method.
+# -----------------------------------------------------------------------------
+body Rule::copy_node {{top 0}} {
+    set expression [get_expression]
+    return [chain $top]
+}

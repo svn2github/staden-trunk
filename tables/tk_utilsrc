@@ -1,0 +1,335 @@
+#global auto_path
+#lappend auto_path $env(STADLIB)/../../tk_utils
+
+set_def OUTPUT_SCROLL		1
+# 17/03/99 johnt - use windows as default help viewer under windows
+if {"$tcl_platform(platform)" == "windows"} {
+  set_def HELP_PROGRAM		windows
+} elseif {$tcl_platform(os) == "Darwin"} {
+  set_def HELP_PROGRAM		macosx
+} else {
+  set_def HELP_PROGRAM		auto
+}
+set_def PRINT_COMMAND		{lpr}
+
+#Fonts
+if {"$tcl_platform(platform)" == "windows"} {
+  set_def FONT.TEXT {-family Courier -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.LISTBOX {-family {MS Sans Serif} -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.ENZYME {-family {MS Sans Serif} -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.BUTTON {-family {MS Sans Serif} -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.MENU {-family {MS Sans Serif} -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.MENU_TITLE {-family {MS Sans Serif} -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.TITLE {-family Courier -size 12 -weight bold -slant roman -underline 0 -overstrike 0}
+  set_def FONT.SHEET {-family Courier -size 10 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.TRACE {-family Helvetica -size 8 -weight normal -slant roman -underline 0 -overstrike 0}
+  set_def FONT.TRACE_CONF {-family Fixed -size 7}
+} elseif {$tcl_platform(os) == "Darwin" && 0} {
+  set_def FONT.MENU	{-family system}
+  set_def FONT.MENU_TITLE	{-family Helvetica -weight bold -slant italic -size -12}
+  set_def FONT.TEXT	{-family Courier -size -12}
+  set_def FONT.BUTTON	{-family system}
+  set_def FONT.LISTBOX	{-family Helvetica -weight bold -size -12}
+  set_def FONT.TITLE	{-family Helvetica -size -16 -weight bold}
+  set_def FONT.SHEET	{-family Courier -size -16}
+  set_def FONT.TRACE	{-family Helvetica -size -12}
+  set_def FONT.ENZYME	{-family Helvetica -size -11}
+  set_def FONT.TRACE_CONF {-family Helvetica -size 7}
+} else {
+  set_def FONT.MENU	{-family Helvetica -weight bold -size -12}
+  set_def FONT.MENU_TITLE	{-family Helvetica -weight bold -slant italic -size -12}
+  set_def FONT.TEXT	{-family Courier -size -12}
+  set_def FONT.BUTTON	{-family Helvetica -weight bold -size -12}
+  set_def FONT.LISTBOX	{-family Helvetica -weight bold -size -12}
+  set_def FONT.TITLE	{-family Helvetica -size -16 -weight bold}
+  set_def FONT.SHEET	{-family Fixed -size -20}
+  set_def FONT.TRACE	{-family Helvetica -size -12}
+  set_def FONT.ENZYME	{-family Helvetica -size -11}
+  set_def FONT.TRACE_CONF {-family Helvetica -size 7}
+}
+
+#Colours. Blank implies tk defaults
+set_def FOREGROUND		{}
+set_def BACKGROUND		{}
+
+#Window placement style. 1 => automatic, 0 => default WM mechanism.
+set_def PLACE_WINDOWS		1
+
+
+#text output display
+set_def TEXT_REDIR.WIN			.text_redir
+set_def TEXT_OUTPUT.WIN			.text_output
+set_def TEXT_OUTPUT.LISTNAME		"list name"
+set_def TEXT_OUTPUT.FILENAME		"file name"
+set_def TEXT_REDIR.FILENAME		"file name"
+set_def TEXT_OUTPUT.OUTPUT.1.NAME       "Output header"
+set_def TEXT_OUTPUT.OUTPUT.1.VALUE      0
+set_def TEXT_OUTPUT.OUTPUT.2.NAME       "Output parameters"
+set_def TEXT_OUTPUT.OUTPUT.2.VALUE      0
+set_def TEXT_OUTPUT.OUTPUT.3.NAME       "Output text"
+set_def TEXT_OUTPUT.OUTPUT.3.VALUE      1
+set_def ERROR_BELL			1
+
+# Restriction enzyme selection box
+set_def R_ENZ.WIN                       ".list_of_restriction_enzymes"
+set_def R_ENZ.INFILE.NAME               "File name"
+set_def R_ENZ.SELFILE.NAME              "Select input source"
+set_def R_ENZ.SELFILE.VALUE             2
+set_def R_ENZ.SELFILE.BUTTON.1          "All enzyme file "
+set_def R_ENZ.SELFILE.BUTTON.2          "6 cutter file"
+set_def R_ENZ.SELFILE.BUTTON.3          "4 cutter file"
+set_def R_ENZ.SELFILE.BUTTON.4          "Personal"
+set_def R_ENZ.E_NAME.NAME               "Name of enzyme"
+set_def R_ENZ.E_NAME.SEQ                "Sequence of enzyme"
+set_def R_ENZ.E_FILE.1                  "\$STADTABL/RENZYM.ALL"
+set_def R_ENZ.E_FILE.2                  "\$STADTABL/RENZYM.6"
+set_def R_ENZ.E_FILE.3                  "\$STADTABL/RENZYM.4"
+set_def R_ENZ.E_FILE.4                  ""
+
+# Restriction enzyme selection box
+set_def R_ENZ.RANGE.NAME		"plot range"
+
+set_def R_ENZ.WIN               	.restriction_enzymes
+set_def R_ENZ.PLOT_WIDTH                700
+set_def R_ENZ.PLOT_HEIGHT               500
+set_def R_ENZ.NAME_WIDTH                70
+
+set_def R_ENZ.TICK_HEIGHT  		12
+set_def R_ENZ.TICK_WIDTH   		0
+set_def R_ENZ.TICK_COLOUR  		"black"
+
+set_def R_ENZ.RULER.WIN           	.ruler
+set_def R_ENZ.RULER.COLOUR      	"black"
+set_def R_ENZ.RULER.LINE_WIDTH  	2
+set_def R_ENZ.RULER.PLOT_HEIGHT 	50
+set_def R_ENZ.RULER.OFFSET      	15
+set_def R_ENZ.RULER.TEXT_OFFSET 	17
+set_def R_ENZ.RULER.TICK_HEIGHT 	10
+set_def R_ENZ.RULER.TICK_WIDTH  	0
+set_def R_ENZ.RULER.TICK_COLOUR 	"black"
+set_def R_ENZ.RULER.NUM_TICKS   	4
+
+
+set_def R_ENZ.BORDERWIDTH       	2
+set_def R_ENZ.CURSOR            	.cursor_t
+set_def R_ENZ.CURSOR_COLOUR     	"black"
+set_def R_ENZ.CURSOR_WIDTH      	0
+set_def R_ENZ.NAMES.PLOT_WIDTH  	100
+set_def R_ENZ.PLOT_HEIGHT       	500
+set_def R_ENZ.CUTS_COLOUR       	"black"
+set_def R_ENZ.SELECT_COLOUR     	"pink2"
+set_def R_ENZ.TEXT_COLOUR       	"black"
+set_def R_ENZ.EDITOR.CROSSHAIR_COLOUR	"black"
+
+#-----------------------------------------------------------------------------
+# Container and element
+#-----------------------------------------------------------------------------
+set_menu canvas_menu
+add_menu File				1 0 left
+add_menu View				1 0 left
+add_menu Results			1 0 left
+add_menu Help				1 0 right
+
+add_command {File.Close} 		1 0 {container_start_shutdown $c_win $c_id}
+
+add_command {View.Results manager} 	1 0 {container_results_manager {show_help spin {SPIN-Result-Manager}} $c_win}
+
+set_def ELEMENT.SELECT_COLOUR		white
+
+#strand
+set TOP_S 1
+set BOTTOM_S 2
+
+#orienation (of sequence, eg in dot plot)
+set HORIZONTAL 1
+set VERTICAL   2
+set BOTH       3
+set CIRCLE     4
+
+set DNA 1
+set PROTEIN 2
+
+#types of element
+set CANVAS     0
+set RASTER     1
+set SEQ_EDITOR 2
+set RULER_AMP  3
+set RULER_LEN  4
+
+#position of element movement highlight
+set TOP    1
+set MIDDLE 2
+set BOTTOM 3
+set LEFT   4
+set RIGHT  5
+
+set_def CONTAINER.MAX_ROW		999
+set_def CONTAINER.MAX_COL		999
+set_def CONTAINER.RULER_ROW		500
+set_def CONTAINER.RULER_COL		500
+set_def CONTAINER.SEQ_EDITOR_ROW	999
+
+set_def CONTAINER.WIN		.container_win
+set_def CONTAINER.RESULTS.WIN 	.container_results_win 
+set_def CONTAINER.BUTTONS.WIN	.buttons
+set_def CONTAINER.HSCROLL.WIN	.sb_h
+set_def CONTAINER.VSCROLL.WIN	.sb_v
+set_def CONTAINER.BRIEF.WIN	.brief
+set_def CONTAINER.KEYBOX.WIN	.key
+set_def CONTAINER.MENUBAR	.menubar
+
+set_def CONTAINER.POS1.NAME	.pos1
+set_def CONTAINER.POS2.NAME 	.pos2
+set_def CONTAINER.POS1.WIDTH	8
+set_def CONTAINER.POS2.WIDTH	8
+
+set_def RULER_H.WIN		.ruler_h
+set_def RULER_V.WIN		.ruler_v
+set_def RULER.PLOT_HEIGHT	40
+set_def RULER.PLOT_WIDTH	100
+
+set_def CONTAINER.RULER.COLOUR              "black"
+set_def CONTAINER.RULER.LINE_WIDTH          2
+set_def CONTAINER.RULER.PLOT_HEIGHT         50
+set_def CONTAINER.RULER.OFFSET              15
+set_def CONTAINER.RULER.TEXT_OFFSET         17
+set_def CONTAINER.RULER.TICK_HEIGHT         10
+set_def CONTAINER.RULER.TICK_WIDTH          0
+set_def CONTAINER.RULER.TICK_COLOUR         "black"
+set_def CONTAINER.RULER.NUM_TICKS           4
+
+set_def CONTAINER.TICK_HEIGHT               12
+set_def CONTAINER.TICK_WIDTH                0
+set_def CONTAINER.TICK_COLOUR               "black"
+
+set_def ELEMENT.WIN			.element_win
+set_def ELEMENT.PLOT_HEIGHT		200
+set_def ELEMENT.PLOT_WIDTH		500
+set_def ELEMENT.SINGLE.PLOT_HEIGHT 	50
+
+set_def DOT.PLOT_HEIGHT			500
+set_def DOT.PLOT_WIDTH			500
+
+set_def CURSOR.LINE_WIDTH		2
+set_def CROSSHAIR.COLOUR		"black"
+set_def CROSSHAIR.LINE_WIDTH  		2
+
+#-----------------------------------------------------------------------------
+# Window names
+#-----------------------------------------------------------------------------
+set_def RASTER.WIN			.raster
+set_def RASTER.R.WIN			.r
+set_def RASTER.RESULTS.WIN		.raster_results
+
+set_def RASTER.SCALEX.WIN		.scale_x
+set_def RASTER.SCALEY.WIN		.scale_y
+set_def RASTER.SCALEX.MIN		1
+set_def RASTER.SCALEX.MAX		100
+set_def RASTER.SCALEY.MIN		1
+set_def RASTER.SCALEY.MAX		100
+set_def RASTER.SCALEX.MIN_BASES		10
+
+# Trace colours
+set_def TRACE.COLOUR_A			#00c500
+set_def TRACE.COLOUR_C			blue
+set_def TRACE.COLOUR_G			black
+set_def TRACE.COLOUR_T			orangered
+set_def TRACE.COLOUR_CURSOR		navy
+if { $tcl_platform(platform) == "windows" } {
+    set_def TRACE.COLOUR_QUALITY	SystemButtonShadow
+} else {
+    set_def TRACE.COLOUR_QUALITY	grey
+}
+set_def TRACE.COLOUR_VECTOR		#e8c8c0
+set_def TRACE.LINE_WIDTH		0
+
+# print options
+set_def PS.PAGE_SIZES.A4	{"A4" 842 595}
+set_def PS.PAGE_SIZES.A3	{"A3" 1191 842}
+set_def PS.PAGE_SIZES.US_Letter	{"US Letter" 792 612}
+
+set_def PS.WIN			.print_setup
+set_def PS.PAGE			"A4"
+set_def PS.PAGE_HEIGHT		842
+set_def PS.PAGE_WIDTH		595
+set_def PS.ORIENTATION		Portrait
+set_def PS.TOP_MARGIN		72
+set_def PS.BOTTOM_MARGIN	72	
+set_def PS.LEFT_MARGIN		72
+set_def PS.RIGHT_MARGIN		72
+set_def PS.PANEL_HEIGHT		103
+set_def PS.PANEL_WIDTH		453
+set_def PS.PANEL_SEPARATION	13
+set_def PS.N_PANEL		6
+
+set_def PS.FONTS { \
+	Courier \
+	Courier-Bold \
+	Courier-BoldOblique \
+	Courier-Oblique \
+	Helvetica \
+	Helvetica-Bold \
+	Helvetica-BoldOblique \
+	Helvetica-Oblique \
+	Symbol \
+	Times-Bold \
+	Times-BoldItalic \
+	Times-Italic \
+	Times-Roman \
+	AvantGarde-Book \
+	AvantGarde-BookOblique \
+	AvantGarde-Demi \
+	AvantGarde-DemiOblique \
+	Bookman-Demi \
+	Bookman-DemiItalic \
+	Bookman-Light \
+	Bookman-LightItalic \
+	Helvetica-Narrow \
+	Helvetica-Narrow-Bold \
+	Helvetica-Narrow-BoldOblique \
+	Helvetica-Narrow-Oblique \
+	NewCenturySchlbk-Bold \
+	NewCenturySchlbk-BoldItalic \
+	NewCenturySchlbk-Italic \
+	NewCenturySchlbk-Roman \
+	Palatino-Bold \
+}
+
+set_def PS.FONT			Helvetica
+set_def PS.FONT_MIN		5
+set_def PS.FONT_MAX		24
+set_def PS.FONT_SIZE		12
+
+set_def PS.LW_MIN		0
+set_def PS.LW_MAX		10
+set_def PS.DASHES		{"0" "5 5 0" "10 10 0" "5 5 10 10 0"}
+
+set_defx defs_ps_trace	LW	[keylget tk_utils_defs TRACE.LINE_WIDTH]
+set_defx defs_ps_trace	DASH	0
+
+set_def PS.A		$defs_ps_trace
+set_def PS.A.COLOUR	[keylget tk_utils_defs TRACE.COLOUR_A]
+set_def PS.C		$defs_ps_trace
+set_def PS.C.COLOUR	[keylget tk_utils_defs TRACE.COLOUR_C]
+set_def PS.G		$defs_ps_trace
+set_def PS.G.COLOUR	[keylget tk_utils_defs TRACE.COLOUR_G]
+set_def PS.T		$defs_ps_trace
+set_def PS.T.COLOUR	[keylget tk_utils_defs TRACE.COLOUR_T]
+set_def PS.N		$defs_ps_trace
+set_def PS.N.COLOUR	black
+
+set_def PS.TRACE_WIN	.ps_trace_setup
+
+# Borders for reducing the default maximum window size. (Eg to compensate
+# for MS Windows start bars or Unix CDE windows).
+if {"$tcl_platform(platform)" == "windows"} {
+    set_def X_BORDER_SIZE 8
+    set_def Y_BORDER_SIZE 55
+} else {
+    set_def X_BORDER_SIZE 0
+    set_def Y_BORDER_SIZE 0
+}
+
+after idle catch tk_utils_init
+
+

@@ -1,0 +1,14 @@
+[naming_scheme]
+#
+# This is a general purpose naming scheme for mutation detection purposes.
+# It sets the TN and PR records in the experiment file. An 'f' or 'r' suffix
+# on the name indicates the sequence direction, forward or reverse.
+#
+# We also allow an optional _number (eg _01) to append the name, as
+# this is often automatically added by some ABI instruments.
+#
+set ns_name "Mutation detection naming scheme"
+set ns_regexp {(.*)([FfRr])(_[0-9]+)?$}
+set ns_lt(TN) {$1}
+set ns_lt(PR) {subst {$2 {[fF] 1} {[rR] 2} 0}}
+set_name_scheme

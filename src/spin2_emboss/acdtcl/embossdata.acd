@@ -1,0 +1,122 @@
+package require Iwidgets
+namespace eval ::EMBOSS::embossdata {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_embossdata*Xentry.entry.width 30
+option add *e_embossdata*Entryfield.width 30
+option add *e_embossdata*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) embossdata
+    set w [xtoplevel .e_embossdata -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - embossdata}
+    label $w._title -text {Finds or fetches the data files read in by the EMBOSS programs}
+    pack $w._title -side top -fill both
+    set vars(embossdata._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    $w.book_1 view [subst {advanced Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments showall
+    checkbutton $w.showall \
+	-text [subst {Show all potential EMBOSS data files}]\
+	-variable [namespace current]::vars(showall)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.showall -side top -anchor w
+    set vars(showall) [subst 0]
+    set vars(showall.path) $w.showall
+    set vars(showall.required)  0
+    set vars(showall._type) bool
+
+    lappend arguments fetch
+    checkbutton $w.fetch \
+	-text [subst {Fetch a data file}]\
+	-variable [namespace current]::vars(fetch)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.fetch -side top -anchor w
+    set vars(fetch) [subst 0]
+    set vars(fetch.path) $w.fetch
+    set vars(fetch.required)  0
+    set vars(fetch._type) bool
+
+    lappend arguments filename
+    iwidgets::entryfield $w.filename \
+	-textvariable [namespace current]::vars(filename) \
+	-labeltext [subst {File to fetch or search for}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(fetch)}]}]]]
+    grid [$w.filename component entry] -sticky nse
+    set vars(filename) [subst {}]
+    pack $w.filename -side top -fill both
+    set vars(filename.path) $w.filename
+    set vars(filename.required)  0
+    set vars(filename._type) string
+    set vars(filename.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(fetch)}]]}
+    trace variable vars(fetch) w  "::EMBOSS::reset_needed [namespace current] filename"
+
+    lappend arguments reject
+    iwidgets::scrolledlistbox $w.reject \
+	-exportselection 0\
+	-labeltext [subst {Directories to ignore}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::selection_selected [namespace current] reject"\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.reject -side top -fill both -expand 1
+    eval $w.reject insert end None PROSITE PRINTS CVS CODONS
+    set vars(reject.path) $w.reject
+    set vars(reject.required)  0
+    trace variable vars(reject) w  "::EMBOSS::select_multi_changed [namespace current] reject"
+    set vars(reject) [subst {2, 3, 4}]
+    set vars(reject._type) selection_multi
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outf
+    xentry $w.outf \
+	-label [subst {Results file name}]\
+	-textvariable [namespace current]::vars(outf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outf delete 0 end
+    $w.outf insert end [subst stdout]
+    pack $w.outf -side top -fill both
+    set vars(outf.path) $w.outf
+    set vars(outf.required)  0
+    set vars(outf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/embossdata.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,41 @@
+.TH "find_renz" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+find_renz \- Identifies the position of a cut site within a sequence
+
+.SH "SYNOPSIS"
+.PP
+
+\fBfind_renz\fP [\fB-vp\fP] \fIenzyme\fP \fIfilename\fP ...
+
+.SH "DESCRIPTION"
+.PP
+
+\fBfind_renz\fP may be used to determine the position that an enzyme cuts a
+sequence. It's use as a command line utility is primarily designed for
+internal use within \fBpregap4\fP and as a user utility for producing
+\fIvector-primer\fP files for use with \fBvector_clip\fP. As such it is
+dedicated to finding one and only one such cut site and considers no cuts
+sites or multiple cut sites to be an error.
+
+Only one enzyme may be specified, which is given by the enzyme name (upper or
+lower case is not important). One or more filenames may be specified. If an
+enzyme does not cut a sequence the message "Enzyme not found in sequence" will 
+be sent to stderr. If an enzyme cuts a sequence more than once the message
+"Found more than one match" will be sent to stderr. Otherwise output is
+produced to stdout. This means that wildcards may be used (@code{find_renz -vp 
+smai *.seq >> vpfile}) with the output redirected without needing to consider
+whether the enzyme is suitable for all files matching the wildcard pattern.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-vp\fP
+Specifies that the output should be in a format suitable for saving to a
+vector-primer file (to use with vector_clip). Without this only the cut
+site position is listed.
+.TE
+.SH "SEE ALSO"
+.PP
+
+_fxref(Man-vector_clip, vector_clip(1), vector_clip.1)

@@ -1,0 +1,241 @@
+
+@cindex vector_clip: man page
+@unnumberedsec NAME
+
+vector_clip --- finds and marks vector segments in sequence readings
+
+@unnumberedsec SYNOPSIS
+
+
+@code{vector_clip} @code{-}[@code{schr}]
+[@code{-w} @i{word_length (4)}] [@code{-n} @i{num_diags (7)}]
+[@code{-d} @i{diagonal_score (0.35)}] [@code{-l} @i{minimum_match (20/70%)}]
+[@code{-m} @i{minimum_5'_position}] [@code{-t}] [@code{-p}
+@i{passed_fofn}] [@code{-f} @i{failed_fofn}] @i{input_fofn}
+
+@unnumberedsec DESCRIPTION
+
+@code{vector_clip} finds and marks vector segments in sequence readings stored
+in experiment file format. For sequencing vectors it can be used to find the
+5' primer and, for short inserts, the sequence to the 3' side of the cloning
+site. It can also be used to find 3' primer sequences. A further option can do
+a final check for any vector rearrangements that could be missed by the more
+specific searches around the cloning site. For cloning vectors it will search
+both orientations of the sequence and mark any segments found.  The vector
+sequences must be stored as simple text files. For cloning vector
+searches the reading's experiment file must contain the name of the
+cloning vector file. For sequencing vector searches, either the experiment
+file for each reading must contain the information about the vector
+sequence (the file name, cloning site and primer offset) or
+vector-primer files must be used. Vector-primer files contain sets of
+sequences from around cloning sites, and vector_clip can use these to
+find the vector that matches each reading best. If the match is above
+the cutoff score the reading is clipped. Vector-primer files are the
+simplest method of providing vector_clip with the data it needs for
+finding sequencing vectors. More information is available elsewhere
+(_fpref(Vector_Clip, Screening Against Vector Sequences, t)).
+
+
+The program processes batches of readings by the use of file of file names:
+one is used for input and two for output. The input file lists the names of
+all the readings to process, one name per line. One output file contains the
+names of all the readings that pass the screening and the other contains the
+names of those that fail.
+
+@unnumberedsec OPTIONS
+
+@table @code
+@item -s
+Mark sequencing vector. Searches for 5' primer, 3' running into vector.
+@item -c
+Mark cloning vector. Searches both strands for cloning vector.
+@item -h
+Hgmp primer. Searches 3' end for a primer.
+@item -i vector_primer filename
+Mark transposon data.
+@item -r
+Vector rearrangements. Searches for sequencing vector rearrangements.
+@item -t
+Test only. Does not change the experiment files, displays hits.
+@end table
+
+@table @var
+@item @code{-L} minimum percentage match 5' end (60)
+sequencing vector searches and transposon search
+@item @code{-R} minimum percentage match 3' end (80)
+sequencing vector searches and transposon search
+@item @code{-m} minimum 5' position
+allows a minimum 5' end cutoff to be set if a sufficiently good match is not 
+found (i.e. it is really a default 5' cutoff position). 
+If a value of -1 is used the program will set the cutoff to be the 
+distance between the primer and the cloning site.
+@item @code{-v} vector-primer-pair filename
+sequencing vector search using vector-primer-pair file
+@item @code{-V} vector_primer length
+the length of the sequence stored in the vector_primer file to use for
+the 5' search
+@item @code{-w} word_length (4)
+cloning vector search hash length
+@item @code{-P} probability
+cloning vector search, (a score less likely than P is a match)
+@item @code{-n} num_diags (7)
+cloning vector search, old score based algorithm: number of diagonals to combine
+@item @code{-d} diagonal score (0.35)
+cloning vector search, old score based algorithm
+@item @code{-l} minimum match (20)
+sequencing vector rearrangements and transposon search minimum match length
+@item @code{-M} maximum vector length (100000)
+all algorithms, reset for vectors >100000 bases
+@item @code{-p} passed fofn
+file of file names for passed files
+@item @code{-f} failed fofn
+file of file names for failed files
+@item input fofn ...
+input file of file names
+@end table
+
+@unnumberedsec EXAMPLES
+
+@example
+Usage: vector_clip [options] file_of_filenames
+Where options are:
+    [-s mark sequencing vector]      [-c mark cloning vector]
+    [-h hgmp primer]                 [-r vector rearrangements]
+    [-w word_length (4)]             [-n num_diags (7)]
+    [-d diagonal score (0.35)]       [-l minimum match (20)]
+    [-L minimum % 5' match (60)]     [-R minimum % 3' match (80)]
+    [-m default 5' position]         [-t test only]
+    [-M Max vector length (100000)]  [-P max Probability]
+    [-v vector_primer filename]      [-i vector_primer filename]
+    [-V vector_primer length]
+    [-p passed fofn]                 [-f failed fofn]
+@end example
+
+
+Screen for sequencing vector using 5' cutoff of 70%, a 3' cutoff of 90%
+and default 5' primer position of 30. The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+
+@example
+@code{vector_clip -s -L70 -R90 -m30 -pfiles.pass -f files.fail files.in}
+@end example
+
+Screen for sequencing vector using 5' cutoff of 60%, a 3' cutoff of 80%
+and default 5' primer position of 30. The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail. This shows
+that the default search is for sequencing vector.
+
+
+@example
+@code{vector_clip -m30 -pfiles.pass -f files.fail files.in}
+@end example
+
+Screen for sequencing vector using 5' cutoff of 60%, a 3' cutoff of 80%
+and a vector-primer-pair file called vector_primer_file. 
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+
+@example
+@code{vector_clip -v vector_primer_file -pfiles.pass -f files.fail files.in}
+@end example
+
+Screen transposon data using 5' cutoff of 80%, a 3' cutoff of 85%, a match length of 10
+and a vector-primer-pair file called vector_primer_file. 
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+
+@example
+@code{vector_clip -i vector_primer_file -L 80 -R 85 -l 10 -pfiles.pass \}
+@code{            -f files.fail files.in}
+@end example
+
+
+Screen for cloning vector using the old algorithm with a word length of 4, 
+summing 7 diagonals and diagonal cutoff score of 0.4. 
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+
+@example
+@code{vector_clip -c -w4 -n7 -d0.4 -pfiles.pass -f files.fail files.in}
+@end example
+
+Screen for cloning vector using the probability based algorithm with a 
+word length of 4 and probability cutoff of 1.0e-13.
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+
+@example
+@code{vector_clip -c -P 1.0e-13 -pfiles.pass -f files.fail files.in}
+@end example
+
+
+Screen for 3' primer using a cutoff of 75%.
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+@example
+@code{vector_clip -h -R75 -pfiles.pass -f files.fail files.in}
+@end example
+
+Screen for sequencing vector rearrangements using a cutoff of 20 bases.
+The batch of files to process are
+named in files.in, the names of the passed files are written to
+files.pass and the names of those that fail to files.fail.
+
+@example
+@code{vector_clip -r -l20 -pfiles.pass -f files.fail files.in}
+@end example
+
+@unnumberedsec NOTES
+
+The following error messages can be generated.
+
+@cindex Vector_Clip: error codes
+@enumerate 1
+@item Error: could not open experiment file
+@item Error: no sequence in experiment file
+@item Error: sequence too short
+@item Error: missing vector file name
+@item Error: missing cloning site
+@item Error: missing primer site
+@item Error: could not open vector file
+@item Error: could not write to experiment file
+@item Error: could not read vector file
+@item Error: missing primer sequence
+@item Error: hashing problem
+@item Error: alignment problem
+@item Error: invalid cloning site
+@item Warning: sequence now too short (no message)
+@item Warning: sequence entirely cloning vector (no message)
+@item Warning: possible vector rearrangement (no message)
+@item Warning: error parsing vector_primer file
+@item Warning: primer pair mismatch!
+@item Aborting: more than X entries in vector_primer file
+@end enumerate
+
+@i{SL}, @i{SR}, @i{CL}, @i{CR}, @i{CS}, @i{PS}, @i{PR} and @i{SF}
+records are written to the experiment files.
+
+@unnumberedsec SEE ALSO
+
+
+_fxref(Formats-Exp,Experiment File, formats) 
+
+
+For notes on defining the cloning and primer sites,
+_fxref(Vector_Clip-Sites, Defining the Positions of Cloning and Primer Sites for Vector_Clip, vector_clip)
+
+
+_fxref(Formats-Scf, scf(4), formats)

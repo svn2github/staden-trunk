@@ -1,0 +1,615 @@
+Before using any of the functions a firm understanding of the data structures
+is needed. The main objects held within the database are readings, contigs,
+templates, vectors, clones and annotations. These reference additional records
+of other objects or one of the primitive types.
+
+There are five basic types from which the database structures are constructed.
+These are:
+
+@table @var
+@item GCardinal
+	A single 4 byte integer.
+
+@item Text
+	An ascii string which may ending in a null. The null character may, or
+	may not, be present in the actual data stored on the disk.
+
+@item Array
+	An extendable list of 4 byte integer values.
+
+@item Bitmap
+	An extendable array of single bits.
+
+@item Data
+	Any other data. This is handled in a similar manner to the Text type
+	except the null character may be present.
+@end table
+
+In the C code, the @var{GCardinal} is the basic type used in most database
+structures.  Other structure elements are larger and so are typically stored
+as another @code{GCardinal} containing the record number of the data itself.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GDatabase
+@subsection The GDatabase Structure
+
+@vindex GDatabase(C)
+@example
+#define GAP_DB_VERSION 2
+#define GAP_DNA		   0
+#define GAP_PROTEIN	   1
+
+typedef struct @{ 
+    GCardinal version;		/* Database version - GAP_DB_VERSION */
+    GCardinal maximum_db_size;	/* MAXDB */
+    GCardinal actual_db_size;	/* */
+    GCardinal max_gel_len;	/* 4096 */
+    GCardinal data_class;	/* GAP_DNA or GAP_PROTEIN */
+
+    /* Used counts */
+    GCardinal num_contigs;	/* number of contigs used */
+    GCardinal num_readings;	/* number of readings used */
+
+    /* Bitmaps */
+    GCardinal Nfreerecs;	/* number of bits */
+    GCardinal freerecs;		/* record no. of freerecs bitmap */
+
+    /* Arrays */
+    GCardinal Ncontigs;		/* elements in array */
+    GCardinal contigs;		/* record no. of array of type GContigs */
+
+    GCardinal Nreadings;	/* elements in array */
+    GCardinal readings;		/* record no. of array of type GReading */
+
+    GCardinal Nannotations;	/* elements in array */
+    GCardinal annotations;	/* record no. of array of type GAnnotation */
+    GCardinal free_annotations; /* head of list of free annotations */
+
+    GCardinal Ntemplates;	/* elements in array */
+    GCardinal templates;	/* record no. of array of type GTemplates */
+
+    GCardinal Nclones;		/* elements in array */
+    GCardinal clones;		/* record no. of array of type GClones */
+
+    GCardinal Nvectors;		/* elements in array */
+    GCardinal vectors;		/* record no. of array of type GVectors */
+
+    GCardinal contig_order;	/* record no. of array of type GCardinal */
+
+    GCardinal Nnotes;		/* elements in array */
+    GCardinal notes_a;		/* records that are GT_Notes */
+    GCardinal notes;		/* Unpositional annotations */
+    GCardinal free_notes;	/* SINGLY linked list of free notes */
+@} GDatabase; 
+
+@end example
+
+This is always the first record in the database. In contains information about
+the Gap4 database as a whole and can be viewed as the root from which all
+other records are eventually referenced from. Care must be taken when dealing
+with counts of contigs and readings as there are two copies; one for the used
+number and one for the allocated number.
+
+The structure contains several database record numbers of arrays. These arrays
+in turn contain record numbers of structures. Most other structures, and
+indeed functions within Gap4, then reference structure numbers (eg a reading
+number) and not their record numbers. The conversion from one to the other is
+done by accessing the arrays listed in the GDatabase structure.
+
+For instance, to read the structure for contig number 5 we could do the
+following.
+
+@example
+GContigs c;
+GT_Read(io, arr(GCardinal, io->contigs, 5-1), &c, sizeof(c), GT_Contigs);
+@end example
+
+In the above code, @code{io->contigs} is the array of GCardinals whose record
+number is contained within the @var{contigs} element of the GDatabase
+structure. In practise, this is hidden away by simply calling
+"@code{contig_read(io, 5, c)}" instead.
+
+@table @var
+@vindex version, GDatabase. (C)
+@vindex GAP_DB_VERSION(C)
+@item version
+	Database record format version control. The current version is held
+	within the @code{GAP_DB_VERSION} macro.
+
+@vindex maximum_db_size, GDatabase. (C)
+@vindex actual_db_size, GDatabase. (C)
+@item maximum_db_size
+@item actual_db_size
+	These are essentially redundant as Gap4 can support any number of
+	readings up to @var{maximum_db_size}, and @var{maximum_db_size} can be
+	anything the user desires. It is specifable using the @code{-maxdb}
+	command line argument to gap4.
+
+@vindex max_gel_len, GDatabase. (C)
+@item max_gel_len
+	This is currently hard coded as 4096 (but is relatively easy to
+	change).
+
+@vindex data_class, GDatabase. (C)
+@vindex GAP_DNA(C)
+@vindex GAP_PROTEIN(C)
+@item data_class
+	This specifies whether the database contains DNA or protein sequences.
+	In the current implementation only DNA is supported.
+
+@vindex num_contigs, GDatabase. (C)
+@vindex num_readings, GDatabase. (C)
+@item  num_contigs
+@itemx num_readings
+	These specify the number of @strong{used} contigs and readings. They
+	may be different from the number of records allocated.
+
+@vindex Nfreerecs, GDatabase. (C)
+@vindex freerecs, GDatabase. (C)
+@item  Nfreerecs
+@itemx freerecs
+	@var{freerecs} is the record number of a bitmap with a single element
+	per record in the database. Each free bit in the bitmap corresponds to
+	a free record.	The @var{Nfreerecs} variable holds the number of bits
+	allocated in the freerecs bitmap.
+
+@vindex Ncontigs, GDatabase. (C)
+@vindex contigs, GDatabase. (C)
+@item  Ncontigs
+@itemx contigs
+	@var{contigs} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GContigs structures.
+	@var{Ncontigs} is the number of elements allocated in the
+	@var{contigs} array. Note that this is different from
+	@var{num_contigs}, which is the number of elements used.
+
+@vindex Nreadings, GDatabase. (C)
+@vindex readings, GDatabase. (C)
+@item  Nreadings
+@itemx readings
+	@var{readings} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GReadings structures.
+	@var{Nreadings} is the number of elements allocated in the
+	@var{readings} array. Note that this is different from
+	@var{num_readings}, which is the number of elements used.
+
+@vindex Nannotations, GDatabase. (C)
+@vindex annotations, GDatabase. (C)
+@vindex free_annotations, GDatabase. (C)
+@item  Nannotations
+@itemx annotations
+@itemx free_annotations
+	@var{annotations} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GAnnotations
+	structures.  @var{Nannotations} is the number of elements allocated in
+	the @var{annotations} array. @var{free_annotations} is the record
+	number of the first free annotation, which forms the head of a linked
+	list of free annotations.
+
+@vindex Ntemplates, GDatabase. (C)
+@vindex templates, GDatabase. (C)
+@item  Ntemplates
+@itemx templates
+	@var{templates} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GTemplates structures.
+	@var{Ntemplates} is the number of elements allocated in the
+	@var{templates} array.
+
+@vindex Nclones, GDatabase. (C)
+@vindex clones, GDatabase. (C)
+@item  Nclones
+@itemx clones
+	@var{clones} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GClones structures.
+	@var{Nclones} is the number of elements allocated in the @var{clones}
+	array.
+
+@vindex Nvectors, GDatabase. (C)
+@vindex vectors, GDatabase. (C)
+@item  Nvectors
+@itemx vectors
+	@var{vectors} is the record number of an array of GCardinals. Each
+	element of the array is the record number of a GVectors structures.
+	@var{Nvectors} is the number of elements allocated in the
+	@var{vectors} array.
+
+@vindex contig_order, GDatabase. (C)
+@item  contig_order
+	This is the record number of an array of GCardinals of size
+	@var{NContigs}. Each element of the array is a contig number. The
+	index of the array element indicates the position of this contig.
+	Thus the contigs are displayed in the order that they appear in this
+	array.
+@end table
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GReadings
+@subsection The GReadings Structure
+
+@vindex GAP_SENSE_ORIGINAL(C)
+@vindex GAP_SENSE_REVERSE(C)
+@vindex GAP_STRAND_FORWARD(C)
+@vindex GAP_STRAND_REVERSE(C)
+@vindex GAP_PRIMER_UNKNOWN(C)
+@vindex GAP_PRIMER_FORWARD(C)
+@vindex GAP_PRIMER_REVERSE(C)
+@vindex GAP_PRIMER_CUSTFOR(C)
+@vindex GAP_PRIMER_CUSTREV(C)
+@vindex GAP_CHEM_DOUBLE(C)
+
+@example
+/* GReadings.sense */
+#define GAP_SENSE_ORIGINAL 0
+#define GAP_SENSE_REVERSE  1
+/* GReadings.strand */
+#define GAP_STRAND_FORWARD 0
+#define GAP_STRAND_REVERSE 1
+/* GReadings.primer */
+#define GAP_PRIMER_UNKNOWN 0
+#define GAP_PRIMER_FORWARD 1
+#define GAP_PRIMER_REVERSE 2
+#define GAP_PRIMER_CUSTFOR 3
+#define GAP_PRIMER_CUSTREV 4
+
+/* GReadings.chemistry */
+/*	Bit 0 is 1 for terminator, 0 for primer */
+#define GAP_CHEM_TERMINATOR	(1<<0)
+/*	Bits 1 to 4 inclusive are the type (any one of, not bit pattern) */
+#define GAP_CHEM_TYPE_MASK	(15<<1)
+#define GAP_CHEM_TYPE_UNKNOWN	(0<<1)
+#define GAP_CHEM_TYPE_ABI_RHOD	(1<<1)
+#define GAP_CHEM_TYPE_ABI_DRHOD	(2<<1)
+#define GAP_CHEM_TYPE_BIGDYE	(3<<1)
+#define GAP_CHEM_TYPE_ET	(4<<1)
+#define GAP_CHEM_TYPE_LICOR	(5<<1)
+
+typedef struct @{
+    GCardinal name;
+    GCardinal trace_name;
+    GCardinal trace_type;
+    GCardinal left;		/* left neighbour */
+    GCardinal right;		/* right neighbour */
+    GCardinal position;		/* position in contig */
+    GCardinal length;		/* total length of reading */
+    GCardinal sense;		/* 0 = original, 1 = reverse */
+    GCardinal sequence;
+    GCardinal confidence;
+    GCardinal orig_positions;
+    GCardinal chemistry;	/* see comments above (GAP_CHEM_*) */
+    GCardinal annotations;	/* start of annotation list */
+    GCardinal sequence_length;	/* clipped length */
+    GCardinal start;		/* last base of left cutoff */
+    GCardinal end;		/* first base of right cutoff */
+    GCardinal template;		/* aka subclone */
+    GCardinal strand;		/* 0 = forward, 1 = reverse */
+    GCardinal primer;		/* 0 = unknown, 1 = forwards, */
+				/* 2 = reverse, 3 = custom forward */
+                                /* 4 = custom reverse */
+    GCardinal notes;		/* Unpositional annotations */
+@} GReadings; 
+@end example
+
+The reading structure contains information related to individual sequence
+fragments. It should be read and written using the @code{gel_read} and
+@code{gel_write} functions. Whilst it is perfectly possible to use
+@code{GT_Read} to access this data, using @code{gel_read} will read from an
+in-memory cache and so is much faster. Using @code{GT_Write} to write a
+@var{GReadings} structure must never be used as it will invalidate the cache.
+
+@table @var
+@vindex name, GReadings. (C)
+@item name
+The record number of the text string containing the reading identifier.
+Care must be taken to use the correct functions to access the reading name.
+Use @code{io_read_reading_name} and @code{io_write_reading_name} instead of
+@code{io_read_text} or @code{io_write_text}. _oxref(Script-io_rw_reading_name,
+io_read_reading_name and io_write_reading_name).
+
+@vindex trace_name, GReadings. (C)
+@item trace_name
+The record number of the text string containing the trace filename.
+
+@vindex trace_type, GReadings. (C)
+@item trace_type
+The record number of the text string containing the type of the trace.
+
+@vindex left, GReadings. (C)
+@item left
+	The left hand neighbour of this sequence, or 0 if this is the first
+	reading in the contig. Sequences are stored in a doubly linked list
+	which is sorted on positional order. The right hand neighbour of the
+	sequence referenced by this field should be the same as this sequence
+	number. NOTE: this is the reading number, not the record number.
+
+@vindex right, GReadings. (C)
+@item right
+	The right hand neighbour of this sequence, or 0 if this is the last
+	reading in the contig. The left hand neighbour of the sequence
+	referenced by this field should be the same as this sequence number.
+	NOTE: this is the reading number, not the record number.
+
+@vindex position, GReadings. (C)
+@item position
+	The absolute position of this reading within the contig (starting from
+	1).
+
+@vindex length, GReadings. (C)
+@item length
+	The total length of this reading, including cutoff data.
+
+@vindex sense, GReadings. (C)
+@item sense
+	The orientation of this reading. 0=original, 1=reversed. The
+	@code{GAP_SENSE_*} macros should be used in preference to integer
+	values.
+
+@vindex sequence, GReadings. (C)
+@item sequence
+	The record number of the text string containing the complete sequence.
+
+@vindex confidence, GReadings. (C)
+@item confidence
+	The record number of the 1 byte integer array containing the confidence
+	values. This has one value per sequence base and so is the same length
+	as the sequence array.
+
+@vindex orig_positions, GReadings. (C)
+@item orig_positions
+	The record number of the 2 byte integer array containing the original
+	positions of each base. This has one 2 byte value per sequence base.
+
+@vindex chemistry, GReadings. (C)
+@item chemistry
+	The chemistry type of this reading. 0=normal. @code{chemistry &
+	GAP_CHEM_DOUBLE} contains the terminator reaction information. Non
+	zero implies a terminator reaction, which can then optionally be used
+	as double stranded sequence.
+
+@vindex annotations, GReadings. (C)
+@item annotations
+	The number of the first annotation for this reading. Annotations are
+	stored in a linked list structure. This value is 0 if no annotations
+	are available. NOTE: This is not the same as the record number of the
+	first annotation.
+
+@vindex sequence_length, GReadings. (C)
+@item sequence_length
+	The used length of sequence. This should always be the same as the
+	@var{end-start-1}.
+
+@vindex start, GReadings. (C)
+@item start
+	The position of the last base in the left hand cutoff data (starting
+	from 1).
+
+@vindex end, GReadings. (C)
+@item end
+	The position of the first base in the right hand cutoff data (starting
+	from 1).
+
+@vindex template, GReadings. (C)
+@item template
+	The template number. Readings sharing a template (ie insert) have the
+	same template number.
+
+@vindex strand, GReadings. (C)
+@item strand
+	The strand this sequence was derived from. 0=forward, 1=reverse. The
+	@code{GAP_STRAND_*} macros should be used in preference to integer
+	values.
+
+@vindex primer, GReadings. (C)
+@item primer
+	The primer type for this sequence. 0=unknown, 1=forward, 2=reverse,
+	3=custom forward, 4=custom reverse. The @code{GAP_PRIMER_*} macros
+	should be used in preference to integer values.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GContigs
+@subsection The GContigs Structure
+
+@example
+typedef struct @{ 
+    GCardinal left;		/* left reading number */
+    GCardinal right;		/* right reading number */
+    GCardinal length;		/* contig sequence length */
+    GCardinal annotations;	/* start of annotation list */
+    GCardinal notes;		/* Unpositional annotations */
+@} GContigs; 
+@end example
+
+@table @var
+@vindex left, GContigs. (C)
+@item left
+	The number of the leftmost reading in this contig. This is a reading
+	number, not a record number.
+
+@vindex right, GContigs. (C)
+@item right
+	The number of the rightmost reading in this contig. This is a reading
+	number, not a record number. Note that the rightmost reading is
+	defined as the reading the left end furthest to the right and not the
+	reading with the right end furthest to the right.
+
+@vindex length, GContigs. (C)
+@item length
+	The total length of this contig.
+
+@vindex annotations, GContigs. (C)
+@item annotations
+	The annotation number of the first annotation on the consensus for
+	this contig or 0 if none are available.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GAnnotations
+@subsection The GAnnotations Structure
+
+@example
+typedef struct @{ 
+    GCardinal type;
+    GCardinal position; 
+    GCardinal length; 
+    GCardinal strand; 
+    GCardinal annotation; 
+    GCardinal next;
+@} GAnnotations; 
+@end example
+
+The annotations (aka tags) are comments attached to segments of readings or
+contig consensus sequences. The location is stored as position and length in
+the original orientation, so complementing a reading does not require edits to
+the annotations. Consensus sequences are always considered uncomplemented and
+so complementing a contig does require complementing of annotations that are
+stored on the consensus.
+
+The annotations can be linked together to form linked lists, sorted on
+ascending position. The @var{GReadings} and @var{GContigs} structures contain
+an annotations field which holds the annotation number of the left most
+(original orientation) annotation.
+
+Unused annotations are kept in an unsorted linked list referenced by the
+@var{free_annotatons} field of the @var{GDatabase} structure.
+
+@table @var
+@vindex type, GAnnotations. (C)
+@item type
+	The type of the annotation; a 4 byte integer which the user sees as a
+	4 character string.
+
+@vindex position, GAnnotations. (C)
+@item position
+	The position of the left end of the annotation.
+
+@vindex length, GAnnotations. (C)
+@item length
+	The length of the annotation.
+
+@vindex strand, GAnnotations. (C)
+@item strand 
+	The annotation strand. 0 for positive, 1 for negative, and 2 for both.
+
+@vindex annotation, GAnnotations. (C)
+@item annotation
+	The record number of the text string containing a comment for the
+	annotation. Zero means no comment.
+
+@vindex next, GAnnotations. (C)
+@item next
+	The annotation number of the next annotation in the linked list, or
+	zero if this is the last in this linked list.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GVectors
+@subsection The GVectors Structure
+
+@example
+/* GVectors.level */
+#define GAP_LEVEL_UNKNOWN  0
+#define GAP_LEVEL_CLONE	   1
+#define GAP_LEVEL_SUBCLONE 2
+
+typedef struct @{
+    GCardinal name;		/* vector name */
+    GCardinal level;		/* 1=clone, 2=subclone, etc */
+@} GVectors; 
+@end example
+
+The vector structure contains simply information on any vectors used in
+cloning and subcloning. The @var{GTemplates} and @var{GClones} structures
+reference this structure.
+
+@table @var
+@vindex name, GVectors. (C)
+@item name
+	The record number of the text string containing the name for this
+	vector.
+
+@vindex level, GVectors. (C)
+@item level
+	A numeric value for the level of the vector. Use the
+	@code{GAP_LEVEL_*} macros for this field.
+@end table
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GTemplates
+@subsection The GTemplates Structure
+
+@example
+typedef struct @{
+    GCardinal name;
+    GCardinal strands;
+    GCardinal vector;
+    GCardinal clone;
+    GCardinal insert_length_min;
+    GCardinal insert_length_max;
+@} GTemplates;
+@end example
+
+The template structure holds information about the physcial insert of a clone.
+A reading is within any single template, but several readings may share the
+same template.
+
+@table @var
+@vindex name, GTemplates. (C)
+@item name
+	The record number of the text string containing the template name
+
+@vindex strands, GTemplates. (C)
+@item strands
+	The number of strands available. Either 1 or 2.
+
+@vindex vector, GTemplates. (C)
+@item vector
+	The vector number of the vector ("sequencing vector") used.
+
+@vindex clone, GTemplates. (C)
+@item clone
+	The clone number of the clone that this template came from.
+
+@vindex insert_len_min, GTemplates. (C)
+@item insert_len_min
+	The minimum expected size of insert.
+
+@vindex insert_len_max, GTemplates. (C)
+@item insert_len_max
+	The maximum expected size of insert.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-GClones
+@subsection The GClones Structure
+
+@example
+typedef struct @{
+    GCardinal name;
+    GCardinal vector;
+@} GClones;
+@end example
+
+The clone structure holds simple information to identify which original piece
+of materal our templates were derived from. Often we have a single clone per
+database and the database name is the same as the clone name.
+
+@table @var
+@vindex name, GClones. (C)
+@item name
+	The record number of the text string containing the clone name.
+
+@vindex vector, GClones. (C)
+@item vector
+	The vector number of the vector used. The vector referenced here could
+	be M13 for a very small project, or a cosmid, YAC or BAC for a larger
+	"subcloned
+@end table

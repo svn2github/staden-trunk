@@ -1,0 +1,144 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Compresses trace files (or anything else you happen to feed it). A choice of
+# compression programs is given, all of which io_lib knows how to uncompress.
+# Also there's the choice of whether to keep the original name, or to let the
+# files be named with the appropriate compression extension.
+# This is an optional module, but it saves considerable disk space.
+# gzip is the most commonly available program, but bzip2 does a much better
+# job.
+#
+set help {pregap4 {Pregap4-Modules-Compress Traces}}
+
+proc init {} {
+    mod_preset compression gzip
+    mod_preset keep_names 0
+}
+
+# All files pass, although some may fail to compress (in which case the
+# uncompressed ones are in the 'passed' list).
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    variable compression
+    variable keep_names
+    variable report
+    set count 0
+    set total 0
+
+    switch $compression {
+	compress {set ext Z}
+	gzip	 {set ext gz}
+	bzip	 {set ext bz}
+	bzip2	 {set ext bz2}
+    }
+
+    set report ""
+    set new_files ""
+    foreach f $files {
+	incr total
+	set errorCode NONE
+	if {$keep_names == 1} {
+	    catch {eval exec $compression < [list $f] > [list $f.tmp]} var
+	    if {$errorCode != "NONE"} {
+	        append report "ERR: compressing $f: $var\n"
+	        catch {file delete $f.tmp}
+	    } else {
+	        catch {file rename -force $f.tmp $f} var
+	        if {$errorCode != "NONE"} {
+		    append report "ERR: renaming $f.tmp to $f: $var\n"
+	        } else {
+		    incr count
+	        }
+	    }
+	    lappend new_files $f
+	} else {
+	    catch {file delete $f.$ext}
+	    catch {eval exec $compression [list $f]} var
+	    if {$errorCode != "NONE"} {
+	        append report "ERR: compressing $f: $var\n"
+	        catch {file delete $f.tmp}
+	    }
+	    if {[file exists $f.$ext]} {
+		set file_type($f.$ext) $file_type($f)
+		set file_error($f.$ext) {}
+		set file_id($f.$ext) $file_id($f)
+		set file_orig_name($f.$ext) $f
+		lappend new_files $f.$ext
+	        incr count
+	    } else {
+		append report "SEQ $f: did not compress.\n"
+		lappend new_files $f
+	    }
+	}
+	vmessage -nonewline .
+	update idletasks
+    }
+    vmessage ""
+    append report "Compressed $count of $total files.\n"
+
+    return $new_files
+}
+
+proc name {} {
+    return "Compress Trace Files"
+}
+
+proc create_dialogue {w} {
+    variable compression
+    variable keep_names
+
+    xyn $w.keep_names \
+	-label "Keep existing filenames" \
+	-orient vert \
+	-default $keep_names \
+	-variable [namespace current]::keep_names
+    pack $w.keep_names -side top -fill both
+
+    frame $w.separator -bd 2 -relief raised -height 2
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+
+    frame $w.comp_l
+    label $w.comp_l.l -text "Compression method"
+    frame $w.comp_b
+    radiobutton $w.comp_b.compress\
+	-text "Compress" \
+	-variable [namespace current]::compression \
+	-value compress
+    radiobutton $w.comp_b.gzip \
+	-text "Gzip" \
+	-variable [namespace current]::compression \
+	-value gzip
+    radiobutton $w.comp_b.bzip1 \
+	-text "Bzip1" \
+	-variable [namespace current]::compression \
+	-value bzip
+    radiobutton $w.comp_b.bzip2 \
+	-text "Bzip2" \
+	-variable [namespace current]::compression \
+	-value bzip2
+    pack $w.comp_l.l -side top
+    pack $w.comp_b.compress $w.comp_b.gzip $w.comp_b.bzip1 $w.comp_b.bzip2 \
+	-side top -anchor w
+    pack $w.comp_l $w.comp_b -side top -fill both
+}
+
+proc configure_dialogue {w mode} {
+    variable compression
+    variable keep_names
+
+    if {[string match save* $mode]} {
+	mod_save compression $compression
+	mod_save keep_names [$w.keep_names get]
+    }
+}

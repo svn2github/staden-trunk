@@ -1,0 +1,226 @@
+
+# DO NOT DELETE
+$O/editor.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/editor.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/spin/nip_globals.h
+$O/editor.o: $(SRCROOT)/spin/seq_reg.h
+$O/editor.o: $(SRCROOT)/spin/seq_reg_structs.h text_editor.h feature_colour.h
+$O/editor.o: $(SRCROOT)/spin/seq_results.h $(SRCROOT)/spin/nip_results.h
+$O/editor.o: $(SRCROOT)/spin/spin_globals.h read_sequence.h parse_feature.h editor.h
+$O/editor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/editor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/editor.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/editor.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/editor.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/editor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/editor.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/editor.o: $(SRCROOT)/tk_utils/tkRaster.h feature_table.h
+$O/editor.o: feature_editor.h graphic_editor.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/editor.o: renzyme_map_canvas.h
+$O/editor.o: renzyme_search.h renzyme_box.h editor_reg.h end_editor.h
+$O/editor_reg.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/editor_reg.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/spin/seq_raster.h $(SRCROOT)/spin/seq_results.h
+$O/editor_reg.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/spin/spin_globals.h
+$O/editor_reg.o: $(SRCROOT)/spin/seq_reg.h $(SRCROOT)/tk_utils/tkRaster.h
+$O/editor_reg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/editor_reg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/editor_reg.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/editor_reg.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/editor_reg.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/editor_reg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/editor_reg.o: editor_reg.h editor.h read_sequence.h parse_feature.h
+$O/end_editor.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/end_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/end_editor.o: $(SRCROOT)/seq_utils/dna_utils.h feature_table.h editor_reg.h
+$O/end_editor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/end_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/end_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/end_editor.o: $(SRCROOT)/tk_utils/tcl_utils.h renzyme_search.h renzyme_box.h
+$O/end_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/end_editor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/end_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/end_editor.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/end_editor.o: end_editor.h text_editor.h
+$O/end_editor.o: read_sequence.h parse_feature.h editor.h $(SRCROOT)/spin/seq_reg.h
+$O/feature_colour.o: $(SRCROOT)/Misc/xalloc.h parse_db.h
+$O/feature_colour.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/feature_colour.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/feature_colour.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/feature_colour.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/feature_colour.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/feature_colour.o: feature_colour.h
+$O/feature_editor.o: $(SRCROOT)/Misc/xalloc.h editor.h read_sequence.h parse_feature.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/feature_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/feature_editor.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/feature_editor.o: $(SRCROOT)/spin/seq_reg.h
+$O/feature_editor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/feature_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/feature_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/feature_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/feature_editor.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/feature_editor.o: $(SRCROOT)/seq_utils/genetic_code.h
+$O/feature_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/feature_editor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/feature_editor.o: feature_colour.h
+$O/feature_editor.o: feature_editor.h
+$O/feature_editor.o: feature_table.h $(SRCROOT)/seq_utils/sequence_formats.h parse_db.h
+$O/feature_editor.o: text_editor.h end_editor.h renzyme_search.h renzyme_box.h
+$O/feature_table.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h parse_feature.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/feature_table.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/feature_table.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/feature_table.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/feature_table.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/feature_table.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/feature_table.o: feature_table.h read_sequence.h
+$O/feature_table.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/feature_table.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/feature_table.o: $(SRCROOT)/Misc/misc.h
+$O/feature_table.o: feature_colour.h
+$O/graphic_editor.o: $(SRCROOT)/Misc/getfile.h $(SRCROOT)/tk_utils/text_output.h
+$O/graphic_editor.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/graphic_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/graphic_editor.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/spin/spin_globals.h
+$O/graphic_editor.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/graphic_editor.o: $(SRCROOT)/spin/seq_results.h $(SRCROOT)/tk_utils/restriction_enzyme_map.h
+$O/graphic_editor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/graphic_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/graphic_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/graphic_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/graphic_editor.o: $(SRCROOT)/tk_utils/canvas_box.h $(SRCROOT)/tk_utils/cli_arg.h
+$O/graphic_editor.o: $(SRCROOT)/tk_utils/tcl_utils.h renzyme_box.h renzyme_search.h
+$O/graphic_editor.o: $(SRCROOT)/tk_utils/tkRaster.h graphic_editor.h
+$O/graphic_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/graphic_editor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/graphic_editor.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/graphic_editor.o: editor_reg.h $(SRCROOT)/spin/nip_results.h $(SRCROOT)/spin/nip_globals.h
+$O/graphic_editor.o: read_sequence.h parse_feature.h editor.h $(SRCROOT)/spin/seq_reg.h
+$O/graphic_editor.o: renzyme_map_canvas.h $(SRCROOT)/spin/seq_reg_structs.h
+$O/parse_db.o: $(SRCROOT)/Misc/os.h
+$O/parse_db.o: $(SRCROOT)/Misc/xalloc.h parse_db.h $(SRCROOT)/Misc/misc.h
+$O/parse_feature.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/parse_feature.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/parse_feature.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h read_sequence.h
+$O/parse_feature.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/parse_feature.o: $(SRCROOT)/Misc/misc.h
+$O/parse_feature.o: parse_feature.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/read_sequence.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/read_sequence.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/read_sequence.o: $(SRCROOT)/seq_utils/sequence_formats.h read_sequence.h
+$O/read_sequence.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/read_sequence.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/read_sequence.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/read_sequence.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/read_sequence.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/read_sequence.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/read_sequence.o: $(SRCROOT)/Misc/misc.h
+$O/read_sequence.o: $(SRCROOT)/tk_utils/tkRaster.h editor.h
+$O/read_sequence.o: feature_table.h renzyme_search.h renzyme_box.h
+$O/read_sequence.o: parse_feature.h editor_reg.h $(SRCROOT)/spin/seq_reg.h
+$O/renzyme_box.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/getfile.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/renzyme_box.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/renzyme_box.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/renzyme_box.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/renzyme_box.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/renzyme_box.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/renzyme_box.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/renzyme_box.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/renzyme_box.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/renzyme_box.o: renzyme_box.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/text_output.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/spin/nip_structs.h $(SRCROOT)/spin/nip_results.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/spin/seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tk_utils/canvas_box.h editor_reg.h $(SRCROOT)/spin/seq_reg.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/renzyme_map_canvas.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/renzyme_map_canvas.o: editor.h read_sequence.h parse_feature.h
+$O/renzyme_map_canvas.o: graphic_editor.h $(SRCROOT)/tk_utils/cli_arg.h renzyme_box.h
+$O/renzyme_map_canvas.o: renzyme_search.h renzyme_map_canvas.h
+$O/renzyme_search.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/renzyme_search.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/renzyme_search.o: $(SRCROOT)/spin/tkSeqed.h $(SRCROOT)/tk_utils/sheet.h
+$O/renzyme_search.o: $(SRCROOT)/spin/tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/renzyme_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/renzyme_search.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/renzyme_search.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/renzyme_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/renzyme_search.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/seq_utils/renz_utils.h
+$O/renzyme_search.o: $(SRCROOT)/tk_utils/tcl_utils.h renzyme_box.h renzyme_search.h
+$O/renzyme_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/renzyme_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/renzyme_search.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/renzyme_search.o: editor_reg.h feature_table.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/renzyme_search.o: graphic_editor.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/renzyme_search.o: read_sequence.h parse_feature.h editor.h $(SRCROOT)/spin/seq_reg.h
+$O/text_editor.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h editor.h read_sequence.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h
+$O/text_editor.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/text_editor.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/text_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/text_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/text_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/text_editor.o: $(SRCROOT)/tk_utils/cli_arg.h editor_reg.h
+$O/text_editor.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/text_editor.o: $(SRCROOT)/seq_utils/genetic_code.h
+$O/text_editor.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/text_editor.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/Misc/misc.h
+$O/text_editor.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/text_editor.o: feature_colour.h
+$O/text_editor.o: feature_table.h graphic_editor.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/text_editor.o: parse_feature.h $(SRCROOT)/spin/seq_reg.h
+$O/text_editor.o: text_editor.h end_editor.h renzyme_search.h renzyme_box.h

@@ -1,0 +1,235 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# Misc
+#-----------------------------------------------------------------------------
+
+#put somewhere else eventually.....
+set_def SEQ.FILE.BUTTON.1		"Personal file"
+set_def SEQ.FILE.BUTTON.2		"Sequence library"
+set_def SEQ.FILE.NAME			"Select source of sequence"
+set_def SEQ.FILE.VALUE			"2"
+
+set_def SEQ.PERS.BUTTON.1		"Staden"
+set_def SEQ.PERS.BUTTON.2		"EMBL"
+set_def SEQ.PERS.BUTTON.3		"GenBank"
+set_def SEQ.PERS.BUTTON.4		"PIR"
+set_def SEQ.PERS.BUTTON.5		"GCG"
+set_def SEQ.PERS.BUTTON.6		"FASTA"
+
+set_def SEQ.PERS.NAME			"Select file format"
+set_def SEQ.PERS.VALUE			"1"
+
+#-----------------------------------------------------------------------------
+# Global variables
+#-----------------------------------------------------------------------------
+#default protein score matrix
+set_def SIP.PROT_MAT 			"$env(STADTABL)/pam250"
+
+#-----------------------------------------------------------------------------
+# Window sizes
+#-----------------------------------------------------------------------------
+set_def SIP.SEQ_DISP.PLOT_WIDTH		80
+set_def SIP.RASTER.PLOT_HEIGHT		400
+set_def SIP.RASTER.PLOT_WIDTH		400
+set_def SIP.RULER.PLOT_HEIGHT		40
+set_def SIP.RULER.PLOT_WIDTH		100
+
+set_def RASTER.PLOT_HEIGHT		400
+set_def RASTER.PLOT_WIDTH		400
+set_def RASTER.BORDERWIDTH		2
+set_def RASTER.TITLE			"SPIN Sequence Comparison Plot"
+set_def RULER.PLOT_HEIGHT		40
+set_def RULER.PLOT_WIDTH		100
+
+#-----------------------------------------------------------------------------
+# Window names
+#-----------------------------------------------------------------------------
+set_def SIP.WIN			.sip
+set_def RASTER.WIN		.raster
+set_def RASTER.R.WIN		.raster.r
+set_def SIP.SEQ_DISP.WIN	.sequence_display
+
+#-----------------------------------------------------------------------------
+#cursor
+#-----------------------------------------------------------------------------
+set_def SIP.CURSOR.SENSITIVE		5
+set_def SIP.CURSOR.LINE_WIDTH		2
+
+#-----------------------------------------------------------------------------
+# initial settings
+#-----------------------------------------------------------------------------
+#expected number of matches for setting default cutoff score
+set_def SIP.NUM_MATCHES			500  
+#max number of matches
+set_def SIP.MAX_MATCHES			50000
+
+
+#-----------------------------------------------------------------------------
+# Useful common questions - asked by many options
+#-----------------------------------------------------------------------------
+set_defx defs_f_or_l_in	WHICH.NAME	"Input from"
+set_defx defs_f_or_l_in	WHICH.BUTTONS	{list file}
+set_defx defs_f_or_l_in	WHICH.VALUE	2
+set_defx defs_f_or_l_in	NAME.NAME	"List or file name"
+set_defx defs_f_or_l_in	NAME.BROWSE	"Browse"
+set_defx defs_f_or_l_in	NAME.VALUE	""
+
+set_defx defs_win_len NAME		"window length"
+set_defx defs_win_len VALUE		"11"
+set_defx defs_win_len MIN		"1"
+set_defx defs_win_len MAX		"401"
+
+set_defx defs_word_len  NAME		"word length"
+set_defx defs_word_len DNA.VALUE	"8"
+set_defx defs_word_len DNA.MIN		"1"
+set_defx defs_word_len DNA.MAX		"1000"
+
+set_defx defs_word_len PROTEIN.VALUE	"2"
+set_defx defs_word_len PROTEIN.MIN	"1"
+set_defx defs_word_len PROTEIN.MAX	"3"
+
+set_defx defs_min_score NAME		"minimum score"
+
+#-----------------------------------------------------------------------------
+# Our options
+#-----------------------------------------------------------------------------
+#compare spans
+set_def SIP.CS.DIR.BUTTON.1		"reverse"
+set_def SIP.CS.DIR.BUTTON.2		"forward"
+set_def SIP.CS.DIR.NAME			"direction"
+set_def SIP.CS.DIR.VALUE		"2"
+set_def SIP.CS.RANGE_H.NAME		"Horizontal"
+set_def SIP.CS.RANGE_V.NAME		"Vertical"
+set_def SIP.CS.WIN_LEN			$defs_win_len
+set_def SIP.CS.MIN_SCORE		$defs_min_score
+set_def SIP.CS.LINE_WIDTH		0
+set_def SIP.CS.COLOUR			"#ff0000"; #red
+set_def SIP.CS.SIMILAR.NAME     	"plot similar characters"
+set_def SIP.CS.SIMILAR.VALUE    	0
+set_def SIP.CS.SCORE.NAME       	"character score"
+set_def SIP.CS.SCORE.VALUE      	1
+
+
+set_def SIP.INFILE		   	$defs_f_or_l_in
+set_def SIP.INFILE.WHICH.NAME 		"Input reading names from"
+
+#identity algorithm
+set_def SIP.IDENTITY.WORD_LEN		$defs_word_len
+set_def SIP.IDENTITY.LINE_WIDTH		0
+set_def SIP.IDENTITY.COLOUR		"#0000ff"; #blue
+
+#quick scan
+set_def SIP.QS.WIN_LEN			$defs_win_len
+set_def SIP.QS.MIN_SCORE		$defs_min_score
+set_def SIP.QS.WORD_LEN			$defs_word_len
+set_def SIP.QS.SD.NAME			"minimum sd"
+set_def SIP.QS.SD.VALUE			"3.0"
+set_def SIP.QS.SD.MIN			"0.0"
+set_def SIP.QS.SD.MAX			"10.0"
+set_def SIP.QS.LINE_WIDTH		0
+set_def SIP.QS.COLOUR			"#228b22"; #forestgreen
+
+#align sequences
+set_def SIP.ALIGN.MATCH.NAME			"score for match"
+set_def SIP.ALIGN.MATCH.VALUE			4
+set_def SIP.ALIGN.MATCH.MIN			-100
+set_def SIP.ALIGN.MATCH.MAX			100
+
+set_def SIP.ALIGN.MISMATCH.NAME			"score for mis-match"
+set_def SIP.ALIGN.MISMATCH.VALUE		-2
+set_def SIP.ALIGN.MISMATCH.MIN			-100
+set_def SIP.ALIGN.MISMATCH.MAX			100
+
+set_def SIP.ALIGN.START_GAP.NAME		"penalty for starting gap"
+set_def SIP.ALIGN.START_GAP.DNA.VALUE		8
+set_def SIP.ALIGN.START_GAP.PROTEIN.VALUE	10
+set_def SIP.ALIGN.START_GAP.MIN			0
+set_def SIP.ALIGN.START_GAP.MAX			100
+
+set_def SIP.ALIGN.CONT_GAP.NAME			"penalty for each residue in gap"
+set_def SIP.ALIGN.CONT_GAP.DNA.VALUE		1
+set_def SIP.ALIGN.CONT_GAP.PROTEIN.VALUE	10
+set_def SIP.ALIGN.CONT_GAP.MIN			0
+set_def SIP.ALIGN.CONT_GAP.MAX			100
+
+set_def SIP.ALIGN.LINE_WIDTH			0
+set_def SIP.ALIGN.COLOUR			"#4b0082"; #indigo
+
+#sim align sequences
+set_def SIP.SIM.NUM_ALIGN.NAME1			"number of alignments"
+set_def SIP.SIM.NUM_ALIGN.VALUE1		1
+set_def SIP.SIM.NUM_ALIGN.MIN1			1
+set_def SIP.SIM.NUM_ALIGN.MAX1			100
+set_def SIP.SIM.NUM_ALIGN.NAME2			"alignments above score"
+set_def SIP.SIM.NUM_ALIGN.DNA.VALUE2		20
+set_def SIP.SIM.NUM_ALIGN.PROTEIN.VALUE2	300
+set_def SIP.SIM.NUM_ALIGN.MIN2			1
+set_def SIP.SIM.NUM_ALIGN.MAX2			10000
+
+set_def SIP.SIM.MATCH.NAME			"score for match"
+set_def SIP.SIM.MATCH.VALUE			1
+set_def SIP.SIM.MATCH.MIN			-100
+set_def SIP.SIM.MATCH.MAX			100
+
+set_def SIP.SIM.TRANSITION.NAME			"score for transition"
+set_def SIP.SIM.TRANSITION.VALUE		-1
+set_def SIP.SIM.TRANSITION.MIN			-100
+set_def SIP.SIM.TRANSITION.MAX			100
+
+set_def SIP.SIM.TRANSVERSION.NAME		"score for transversion"
+set_def SIP.SIM.TRANSVERSION.VALUE		-1
+set_def SIP.SIM.TRANSVERSION.MIN		-100
+set_def SIP.SIM.TRANSVERSION.MAX		100
+
+set_def SIP.SIM.START_GAP.NAME			"penalty for starting gap"
+set_def SIP.SIM.START_GAP.DNA.VALUE		6.0
+set_def SIP.SIM.START_GAP.PROTEIN.VALUE		12
+set_def SIP.SIM.START_GAP.MIN			0
+set_def SIP.SIM.START_GAP.MAX			100
+
+set_def SIP.SIM.CONT_GAP.NAME			"penalty for each residue in gap"
+set_def SIP.SIM.CONT_GAP.DNA.VALUE		0.2
+set_def SIP.SIM.CONT_GAP.PROTEIN.VALUE		4
+set_def SIP.SIM.CONT_GAP.MIN			0
+set_def SIP.SIM.CONT_GAP.MAX			100
+
+set_def SIP.SIM.LINE_WIDTH			0
+set_def SIP.SIM.COLOUR				"#ffa500"; #orange
+
+#score matrix
+set_def SIP.SCORE.TYPE.BUTTON.1		"DNA"
+set_def SIP.SCORE.TYPE.BUTTON.2		"protein"
+set_def SIP.SCORE.TYPE.NAME		"format"
+set_def SIP.SCORE.TYPE.VALUE		"2"
+
+#removing duplicates
+set_def SIP.DUP.NAME			"Remove duplicate matches"
+set_def SIP.DUP.VALUE			0
+
+#rotate
+set_def SIP.ROTATE.ORIGIN.NAME		Origin
+set_def SIP.ROTATE.ORIGIN.VALUE		1
+
+# Set this to a Tcl list of the interpreter names of programs which Gap4 can
+# communicate with using the Send To command. If they're not already running,
+# it'll start one itself with the second half of the name. NB, interpreter
+# names not listed here, but containing an EventHandler function will still be
+# listed.
+# Eg "set_def GAP_SEND_TO {{Prog1 prog1} {Prog2 {/bin/prog2 -s}}}"
+set_def SIP_SEND_TO {{Nip4 nip4}}
+
+
+#
+# Select which plots which want to be plotted by default on top of another plot
+# eg
+#set_def STOPCODON  		GENESEARCH
+# will plot stop codons on top of any gene search plot
+# limitations: can't plot something of 1 frame on a plot of 3 frames
+#
+set_def BESTDIAGONALS   ""
+set_def SIMILARSPANS    ""
+set_def MATCHINGWORDS   ""
+

@@ -1,0 +1,56 @@
+@cindex init_exp: man page
+@unnumberedsec NAME
+
+init_exp --- create and initialise an Experiment File
+
+@unnumberedsec SYNOPSIS
+
+@code{init_exp} [@code{-}(@code{abi}|@code{alf}|@code{scf}|@code{pln})]
+[@code{-output} @i{file}] [@code{-name} @i{entry_name}] [@code{-conf}] @i{file}
+
+@unnumberedsec DESCRIPTION
+
+@code{init_exp} initiates an Experiment File for a binary trace file or
+a plain sequence file. The Experiment File created
+contains the @code{ID}, @code{EN}, @code{LN}, @code{LT} and @code{SQ}
+lines.
+
+The experiment file is, by default, sent to standard output, unless an
+output file is specified using the @code{-output} option. The default
+entry name for the Experiment File is derived from the filenames used.
+If an output file has been specified, then this is taken as the
+@code{EN} field. Otherwise the input file name is used. The user can
+override the default by using the @code{-name} option.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-pln}
+    Specify an input file format. This is not usually required as
+    @code{init_exp} will automatically determine the correct input file
+    type. This option is supplied incase the automatic determination is
+    incorrect (which is possible, but has never been observed).
+
+@item @code{-output} @i{file}
+    The experiment file will be written to @i{file} instead of standard
+    output. Additionally the value of the @code{EN} and @code{ID}
+    fields, assuming @code{-name} has not been specified, will be @i{file}.
+
+@item @code{-name} @i{name}
+    Sets the @code{ID} and @code{EN} fields to @i{name}, regardless of
+    the output filename used.
+
+@item @code{-conf}
+    Fills out the @code{AV} field with the quality values found in the SCF
+    file.
+
+@end table
+
+@unnumberedsec NOTES
+
+This program was formerly known as @code{expGetSeq}.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+@code{Read}(4)

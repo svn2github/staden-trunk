@@ -1,0 +1,628 @@
+package require Iwidgets
+namespace eval ::EMBOSS::showseq {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_showseq*Xentry.entry.width 30
+option add *e_showseq*Entryfield.width 30
+option add *e_showseq*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) showseq
+    set w [xtoplevel .e_showseq -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - showseq}
+    label $w._title -text {Display a sequence with features, translation etc..}
+    pack $w._title -side top -fill both
+    set vars(showseq._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments format
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(format.name)\
+	-labeltext [subst {Display format}]
+    trace variable vars(format.name) w  "::EMBOSS::list_changed [namespace current] format"
+    eval $w.format insert list end {{Enter your own list of things to display}} {{Sequence only}} {{Default sequence with features}} {{Pretty sequence}} {{One frame translation}} {{Three frame translations}} {{Six frame translations}} {{Restriction enzyme map}} Baroque
+    set vars(format.mapping1) {{Restriction enzyme map} 7 {One frame translation} 4 {Enter your own list of things to display} 0 {Six frame translations} 6 {Three frame translations} 5 {Pretty sequence} 3 {Default sequence with features} 2 Baroque 8 {Sequence only} 1}
+    set vars(format.mapping2) {8 Baroque 4 {One frame translation} 0 {Enter your own list of things to display} 5 {Three frame translations} 1 {Sequence only} 6 {Six frame translations} 2 {Default sequence with features} 7 {Restriction enzyme map} 3 {Pretty sequence}}
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    array set tmpmap $vars(format.mapping2)
+    set def [subst 2]
+    catch {set def $tmpmap($def)}
+    set vars(format) $def
+    $w.format insert entry end $def
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.format -side top -fill both
+    set vars(format.path) $w.format
+    set vars(format.required)  1
+    set vars(format.delimiter) ,
+    set vars(format._type) list
+
+    lappend arguments things
+    iwidgets::scrolledlistbox $w.things \
+	-exportselection 0\
+	-labeltext [subst {Specify your own things to display}] \
+	-hscrollmode dynamic\
+	-vscrollmode dynamic\
+	-selectmode extended\
+	-selectioncommand "::EMBOSS::listbox_selected [namespace current] things"\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(format) == 0)}]}]]]
+    pack $w.things -side top -fill both -expand 1
+    set vars(things.mapping1) {{Blank line} B {CompFrame1 translation} -1 {Restriction enzyme cut sites in reverse sense} -R {Frame1 translation} 1 {CompFrame2 translation} -2 {Restriction enzyme cut sites in forward sense} R {Frame2 translation} 2 {CompFrame3 translation} -3 {Frame3 translation} 3 {Complement sequence} C {Ticks line} T {Number ticks line} N Features F Sequence S Annotation A}
+    set vars(things.mapping2) {A Annotation 1 {Frame1 translation} R {Restriction enzyme cut sites in forward sense} B {Blank line} 2 {Frame2 translation} S Sequence 3 {Frame3 translation} C {Complement sequence} T {Ticks line} -1 {CompFrame1 translation} F Features -R {Restriction enzyme cut sites in reverse sense} -2 {CompFrame2 translation} -3 {CompFrame3 translation} N {Number ticks line}}
+    eval $w.things insert end Sequence {{Blank line}} {{Frame1 translation}} {{Frame2 translation}} {{Frame3 translation}} {{CompFrame1 translation}} {{CompFrame2 translation}} {{CompFrame3 translation}} {{Ticks line}} {{Number ticks line}} {{Complement sequence}} Features {{Restriction enzyme cut sites in forward sense}} {{Restriction enzyme cut sites in reverse sense}} Annotation
+    set vars(things.path) $w.things
+    set vars(things.required)  0
+    set vars(things.delimiter) ,
+    trace variable vars(things) w  "::EMBOSS::list_multi_changed [namespace current] things"
+    set vars(things) [subst B,N,T,S,A,F]
+    set vars(things._type) list_multi
+    set vars(things.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(format) == 0)}]]}
+    trace variable vars(format) w  "::EMBOSS::reset_needed [namespace current] things"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    iwidgets::tabnotebook $w.book_2 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_2 -side top -fill both
+    set book(book_2) $w
+    set page [$w.book_2 add \
+	-label [subst regions]]
+    $w.book_2 view [subst regions]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments translate
+    iwidgets::entryfield $w.translate \
+	-textvariable [namespace current]::vars(translate) \
+	-labeltext [subst {Regions to translate (eg: 4-57,78-94)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.translate component entry] -sticky nse
+    set vars(translate) [subst {}]
+    pack $w.translate -side top -fill both
+    set vars(translate.path) $w.translate
+    set vars(translate.required)  0
+    set vars(translate._type) range
+
+    lappend arguments orfminsize
+    iwidgets::entryfield $w.orfminsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(orfminsize) \
+	-labeltext [subst {Minimum size of ORFs}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.orfminsize component entry] -sticky nse
+    set vars(orfminsize) [subst 0]
+    pack $w.orfminsize -side top -fill both
+    set vars(orfminsize.minimum) [subst 0]
+    set vars(orfminsize.path) $w.orfminsize
+    set vars(orfminsize.required)  0
+    set vars(orfminsize._type) integer
+
+    lappend arguments uppercase
+    iwidgets::entryfield $w.uppercase \
+	-textvariable [namespace current]::vars(uppercase) \
+	-labeltext [subst {Regions to put in uppercase (eg: 4-57,78-94)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.uppercase component entry] -sticky nse
+    set vars(uppercase) [subst {}]
+    pack $w.uppercase -side top -fill both
+    set vars(uppercase.path) $w.uppercase
+    set vars(uppercase.required)  0
+    set vars(uppercase._type) range
+
+    lappend arguments highlight
+    iwidgets::entryfield $w.highlight \
+	-textvariable [namespace current]::vars(highlight) \
+	-labeltext [subst {Regions to colour in HTML (eg: 4-57 red 78-94 green)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.highlight component entry] -sticky nse
+    set vars(highlight) [subst {}]
+    pack $w.highlight -side top -fill both
+    set vars(highlight.path) $w.highlight
+    set vars(highlight.required)  0
+    set vars(highlight._type) range
+
+    lappend arguments annotation
+    iwidgets::entryfield $w.annotation \
+	-textvariable [namespace current]::vars(annotation) \
+	-labeltext [subst {Regions to mark (eg: 4-57 promoter region 78-94 first exon)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.annotation component entry] -sticky nse
+    set vars(annotation) [subst {}]
+    pack $w.annotation -side top -fill both
+    set vars(annotation.path) $w.annotation
+    set vars(annotation.required)  0
+    set vars(annotation._type) range
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {restriction Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments flatreformat
+    checkbutton $w.flatreformat \
+	-text [subst {Display RE sites in flat format}]\
+	-variable [namespace current]::vars(flatreformat)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.flatreformat -side top -anchor w
+    set vars(flatreformat) [subst 0]
+    set vars(flatreformat.path) $w.flatreformat
+    set vars(flatreformat.required)  0
+    set vars(flatreformat._type) bool
+
+    lappend arguments mincuts
+    iwidgets::entryfield $w.mincuts \
+	-validate integer \
+	-textvariable [namespace current]::vars(mincuts) \
+	-labeltext [subst {Minimum cuts per RE}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mincuts component entry] -sticky nse
+    set vars(mincuts) [subst 1]
+    pack $w.mincuts -side top -fill both
+    set vars(mincuts.minimum) [subst 1]
+    set vars(mincuts.maximum) [subst 1000]
+    set vars(mincuts.path) $w.mincuts
+    set vars(mincuts.required)  0
+    set vars(mincuts._type) integer
+
+    lappend arguments maxcuts
+    iwidgets::entryfield $w.maxcuts \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxcuts) \
+	-labeltext [subst {Maximum cuts per RE}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxcuts component entry] -sticky nse
+    set vars(maxcuts) [subst 2000000000]
+    pack $w.maxcuts -side top -fill both
+    set vars(maxcuts.minimum) [subst {[expr {$vars(mincuts)}]}]
+    set vars(maxcuts.minimum.orig) $vars(maxcuts.minimum)
+    set vars(maxcuts.minimum.expr) {[expr {$vars(mincuts)}]}
+    trace variable vars(mincuts) w  "::EMBOSS::reset_value [namespace current] maxcuts.minimum"
+    set vars(maxcuts.maximum) [subst 2000000000]
+    set vars(maxcuts.path) $w.maxcuts
+    set vars(maxcuts.required)  0
+    set vars(maxcuts._type) integer
+
+    lappend arguments sitelen
+    iwidgets::entryfield $w.sitelen \
+	-validate integer \
+	-textvariable [namespace current]::vars(sitelen) \
+	-labeltext [subst {Minimum recognition site length}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.sitelen component entry] -sticky nse
+    set vars(sitelen) [subst 4]
+    pack $w.sitelen -side top -fill both
+    set vars(sitelen.minimum) [subst 2]
+    set vars(sitelen.maximum) [subst 20]
+    set vars(sitelen.path) $w.sitelen
+    set vars(sitelen.required)  0
+    set vars(sitelen._type) integer
+
+    lappend arguments single
+    checkbutton $w.single \
+	-text [subst {Force single RE site only cuts}]\
+	-variable [namespace current]::vars(single)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.single -side top -anchor w
+    set vars(single) [subst 0]
+    set vars(single.path) $w.single
+    set vars(single.required)  0
+    set vars(single._type) bool
+
+    lappend arguments blunt
+    checkbutton $w.blunt \
+	-text [subst {Allow blunt end RE cutters}]\
+	-variable [namespace current]::vars(blunt)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.blunt -side top -anchor w
+    set vars(blunt) [subst 1]
+    set vars(blunt.path) $w.blunt
+    set vars(blunt.required)  0
+    set vars(blunt._type) bool
+
+    lappend arguments sticky
+    checkbutton $w.sticky \
+	-text [subst {Allow sticky end RE cutters}]\
+	-variable [namespace current]::vars(sticky)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sticky -side top -anchor w
+    set vars(sticky) [subst 1]
+    set vars(sticky.path) $w.sticky
+    set vars(sticky.required)  0
+    set vars(sticky._type) bool
+
+    lappend arguments ambiguity
+    checkbutton $w.ambiguity \
+	-text [subst {Allow ambiguous RE matches}]\
+	-variable [namespace current]::vars(ambiguity)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ambiguity -side top -anchor w
+    set vars(ambiguity) [subst 1]
+    set vars(ambiguity.path) $w.ambiguity
+    set vars(ambiguity.required)  0
+    set vars(ambiguity._type) bool
+
+    lappend arguments plasmid
+    checkbutton $w.plasmid \
+	-text [subst {Allow circular DNA}]\
+	-variable [namespace current]::vars(plasmid)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.plasmid -side top -anchor w
+    set vars(plasmid) [subst 0]
+    set vars(plasmid.path) $w.plasmid
+    set vars(plasmid.required)  0
+    set vars(plasmid._type) bool
+
+    lappend arguments commercial
+    checkbutton $w.commercial \
+	-text [subst {Only use restriction enzymes with suppliers}]\
+	-variable [namespace current]::vars(commercial)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.commercial -side top -anchor w
+    set vars(commercial) [subst 1]
+    set vars(commercial.path) $w.commercial
+    set vars(commercial.required)  0
+    set vars(commercial._type) bool
+
+    lappend arguments limit
+    checkbutton $w.limit \
+	-text [subst {Limits RE hits to one isoschizomer}]\
+	-variable [namespace current]::vars(limit)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.limit -side top -anchor w
+    set vars(limit) [subst 1]
+    set vars(limit.path) $w.limit
+    set vars(limit.required)  0
+    set vars(limit._type) bool
+
+    lappend arguments preferred
+    checkbutton $w.preferred \
+	-text [subst {Report preferred isoschizomers}]\
+	-variable [namespace current]::vars(preferred)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.preferred -side top -anchor w
+    set vars(preferred) [subst 0]
+    set vars(preferred.path) $w.preferred
+    set vars(preferred.required)  0
+    set vars(preferred._type) bool
+
+    lappend arguments enzymes
+    iwidgets::entryfield $w.enzymes \
+	-textvariable [namespace current]::vars(enzymes) \
+	-labeltext [subst {Comma separated restriction enzyme list}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.enzymes component entry] -sticky nse
+    set vars(enzymes) [subst all]
+    pack $w.enzymes -side top -fill both
+    set vars(enzymes.path) $w.enzymes
+    set vars(enzymes.required)  0
+    set vars(enzymes._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst miscellaneous]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments table
+    iwidgets::combobox $w.table\
+	-textvariable [namespace current]::vars(table.name)\
+	-labeltext [subst {Code to use}]
+    trace variable vars(table.name) w  "::EMBOSS::list_changed [namespace current] table"
+    eval $w.table insert list end Standard {{Standard (with alternative initiation codons)}} {{Vertebrate Mitochondrial}} {{Yeast Mitochondrial}} {{Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma}} {{Invertebrate Mitochondrial}} {{Ciliate Macronuclear and Dasycladacean}} {{Echinoderm Mitochondrial}} {{Euplotid Nuclear}} Bacterial {{Alternative Yeast Nuclear}} {{Ascidian Mitochondrial}} {{Flatworm Mitochondrial}} {{Blepharisma Macronuclear}} {{Chlorophycean Mitochondrial}} {{Trematode Mitochondrial}} {{Scenedesmus obliquus}} {{Thraustochytrium Mitochondrial}}
+    set vars(table.mapping1) {{Invertebrate Mitochondrial} 5 {Flatworm Mitochondrial} 14 Standard 0 {Vertebrate Mitochondrial} 2 {Trematode Mitochondrial} 21 {Standard (with alternative initiation codons)} 1 {Thraustochytrium Mitochondrial} 23 {Chlorophycean Mitochondrial} 16 {Blepharisma Macronuclear} 15 {Ciliate Macronuclear and Dasycladacean} 6 Bacterial 11 {Alternative Yeast Nuclear} 12 {Euplotid Nuclear} 10 {Ascidian Mitochondrial} 13 {Scenedesmus obliquus} 22 {Yeast Mitochondrial} 3 {Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma} 4 {Echinoderm Mitochondrial} 9}
+    set vars(table.mapping2) {0 Standard 1 {Standard (with alternative initiation codons)} 2 {Vertebrate Mitochondrial} 21 {Trematode Mitochondrial} 3 {Yeast Mitochondrial} 22 {Scenedesmus obliquus} 4 {Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma} 23 {Thraustochytrium Mitochondrial} 5 {Invertebrate Mitochondrial} 6 {Ciliate Macronuclear and Dasycladacean} 9 {Echinoderm Mitochondrial} 10 {Euplotid Nuclear} 11 Bacterial 12 {Alternative Yeast Nuclear} 13 {Ascidian Mitochondrial} 14 {Flatworm Mitochondrial} 15 {Blepharisma Macronuclear} 16 {Chlorophycean Mitochondrial}}
+    grid [$w.table component entry] -sticky nse
+    $w.table delete entry 0 end
+    array set tmpmap $vars(table.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(table) $def
+    $w.table insert entry end $def
+    $w.table configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.table -side top -fill both
+    set vars(table.path) $w.table
+    set vars(table.required)  0
+    set vars(table.delimiter) {;}
+    set vars(table._type) list
+
+    lappend arguments threeletter
+    checkbutton $w.threeletter \
+	-text [subst {Display protein sequences in three-letter code}]\
+	-variable [namespace current]::vars(threeletter)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.threeletter -side top -anchor w
+    set vars(threeletter) [subst 0]
+    set vars(threeletter.path) $w.threeletter
+    set vars(threeletter.required)  0
+    set vars(threeletter._type) bool
+
+    lappend arguments number
+    checkbutton $w.number \
+	-text [subst {Number the sequences}]\
+	-variable [namespace current]::vars(number)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.number -side top -anchor w
+    set vars(number) [subst 0]
+    set vars(number.path) $w.number
+    set vars(number.required)  0
+    set vars(number._type) bool
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {Width of sequence to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 60]
+    pack $w.width -side top -fill both
+    set vars(width.minimum) [subst 1]
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    lappend arguments length
+    iwidgets::entryfield $w.length \
+	-validate integer \
+	-textvariable [namespace current]::vars(length) \
+	-labeltext [subst {Line length of page (0 for indefinite)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.length component entry] -sticky nse
+    set vars(length) [subst 0]
+    pack $w.length -side top -fill both
+    set vars(length.minimum) [subst 0]
+    set vars(length.path) $w.length
+    set vars(length.required)  0
+    set vars(length._type) integer
+
+    lappend arguments margin
+    iwidgets::entryfield $w.margin \
+	-validate integer \
+	-textvariable [namespace current]::vars(margin) \
+	-labeltext [subst {Margin around sequence for numbering}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.margin component entry] -sticky nse
+    set vars(margin) [subst 10]
+    pack $w.margin -side top -fill both
+    set vars(margin.minimum) [subst 0]
+    set vars(margin.path) $w.margin
+    set vars(margin.required)  0
+    set vars(margin._type) integer
+
+    lappend arguments name
+    checkbutton $w.name \
+	-text [subst {Show sequence ID}]\
+	-variable [namespace current]::vars(name)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.name -side top -anchor w
+    set vars(name) [subst 1]
+    set vars(name.path) $w.name
+    set vars(name.required)  0
+    set vars(name._type) bool
+
+    lappend arguments description
+    checkbutton $w.description \
+	-text [subst {Show description}]\
+	-variable [namespace current]::vars(description)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.description -side top -anchor w
+    set vars(description) [subst 1]
+    set vars(description.path) $w.description
+    set vars(description.required)  0
+    set vars(description._type) bool
+
+    lappend arguments offset
+    iwidgets::entryfield $w.offset \
+	-validate integer \
+	-textvariable [namespace current]::vars(offset) \
+	-labeltext [subst {Offset to start numbering the sequence from}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.offset component entry] -sticky nse
+    set vars(offset) [subst 1]
+    pack $w.offset -side top -fill both
+    set vars(offset.path) $w.offset
+    set vars(offset.required)  0
+    set vars(offset._type) integer
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Use HTML formatting}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {feature Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments matchsource
+    iwidgets::entryfield $w.matchsource \
+	-textvariable [namespace current]::vars(matchsource) \
+	-labeltext [subst {Source of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchsource component entry] -sticky nse
+    set vars(matchsource) [subst *]
+    pack $w.matchsource -side top -fill both
+    set vars(matchsource.path) $w.matchsource
+    set vars(matchsource.required)  0
+    set vars(matchsource._type) string
+
+    lappend arguments matchtype
+    iwidgets::entryfield $w.matchtype \
+	-textvariable [namespace current]::vars(matchtype) \
+	-labeltext [subst {Type of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchtype component entry] -sticky nse
+    set vars(matchtype) [subst *]
+    pack $w.matchtype -side top -fill both
+    set vars(matchtype.path) $w.matchtype
+    set vars(matchtype.required)  0
+    set vars(matchtype._type) string
+
+    lappend arguments matchsense
+    iwidgets::entryfield $w.matchsense \
+	-validate integer \
+	-textvariable [namespace current]::vars(matchsense) \
+	-labeltext [subst {Sense of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchsense component entry] -sticky nse
+    set vars(matchsense) [subst 0]
+    pack $w.matchsense -side top -fill both
+    set vars(matchsense.path) $w.matchsense
+    set vars(matchsense.required)  0
+    set vars(matchsense._type) integer
+
+    lappend arguments minscore
+    iwidgets::entryfield $w.minscore \
+	-validate real \
+	-textvariable [namespace current]::vars(minscore) \
+	-labeltext [subst {Minimum score of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minscore component entry] -sticky nse
+    set vars(minscore) [subst 0.0]
+    pack $w.minscore -side top -fill both
+    set vars(minscore.path) $w.minscore
+    set vars(minscore.required)  0
+    set vars(minscore._type) float
+
+    lappend arguments maxscore
+    iwidgets::entryfield $w.maxscore \
+	-validate real \
+	-textvariable [namespace current]::vars(maxscore) \
+	-labeltext [subst {Maximum score of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxscore component entry] -sticky nse
+    set vars(maxscore) [subst 0.0]
+    pack $w.maxscore -side top -fill both
+    set vars(maxscore.path) $w.maxscore
+    set vars(maxscore.required)  0
+    set vars(maxscore._type) float
+
+    lappend arguments matchtag
+    iwidgets::entryfield $w.matchtag \
+	-textvariable [namespace current]::vars(matchtag) \
+	-labeltext [subst {Tag of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchtag component entry] -sticky nse
+    set vars(matchtag) [subst *]
+    pack $w.matchtag -side top -fill both
+    set vars(matchtag.path) $w.matchtag
+    set vars(matchtag.required)  0
+    set vars(matchtag._type) string
+
+    lappend arguments matchvalue
+    iwidgets::entryfield $w.matchvalue \
+	-textvariable [namespace current]::vars(matchvalue) \
+	-labeltext [subst {Value of feature tags to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchvalue component entry] -sticky nse
+    set vars(matchvalue) [subst *]
+    pack $w.matchvalue -side top -fill both
+    set vars(matchvalue.path) $w.matchvalue
+    set vars(matchvalue.required)  0
+    set vars(matchvalue._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output sequence details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst showseq0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/showseq.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+    ::EMBOSS::resizebook $book(book_2).book_2
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,15 @@
+#!/bin/sh
+# Produces a dependencies file for use with gmake.
+
+# M4 include commands.
+for i in *.texi
+do
+    sed -n "s/^_include(\(.*\))/$i: \1/p" $i
+done
+
+# PostScript files from the images
+for i in *.texi
+do
+    sed -n "s/^_picture(\(.*\))/$i: \1.unix.ps/p" $i
+    sed -n "s/^_lpicture(\(.*\))/$i: \1.unix.ps/p" $i
+done

@@ -1,0 +1,221 @@
+package require Iwidgets
+namespace eval ::EMBOSS::getorf {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_getorf*Xentry.entry.width 30
+option add *e_getorf*Entryfield.width 30
+option add *e_getorf*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) getorf
+    set w [xtoplevel .e_getorf -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - getorf}
+    label $w._title -text {Finds and extracts open reading frames (ORFs)}
+    pack $w._title -side top -fill both
+    set vars(getorf._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst DNA]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments table
+    iwidgets::combobox $w.table\
+	-textvariable [namespace current]::vars(table.name)\
+	-labeltext [subst {Code to use}]
+    trace variable vars(table.name) w  "::EMBOSS::list_changed [namespace current] table"
+    eval $w.table insert list end Standard {{Standard (with alternative initiation codons)}} {{Vertebrate Mitochondrial}} {{Yeast Mitochondrial}} {{Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma}} {{Invertebrate Mitochondrial}} {{Ciliate Macronuclear and Dasycladacean}} {{Echinoderm Mitochondrial}} {{Euplotid Nuclear}} Bacterial {{Alternative Yeast Nuclear}} {{Ascidian Mitochondrial}} {{Flatworm Mitochondrial}} {{Blepharisma Macronuclear}} {{Chlorophycean Mitochondrial}} {{Trematode Mitochondrial}} {{Scenedesmus obliquus}} {{Thraustochytrium Mitochondrial}}
+    set vars(table.mapping1) {{Invertebrate Mitochondrial} 5 {Flatworm Mitochondrial} 14 Standard 0 {Vertebrate Mitochondrial} 2 {Trematode Mitochondrial} 21 {Standard (with alternative initiation codons)} 1 {Thraustochytrium Mitochondrial} 23 {Chlorophycean Mitochondrial} 16 {Blepharisma Macronuclear} 15 {Ciliate Macronuclear and Dasycladacean} 6 Bacterial 11 {Alternative Yeast Nuclear} 12 {Euplotid Nuclear} 10 {Ascidian Mitochondrial} 13 {Scenedesmus obliquus} 22 {Yeast Mitochondrial} 3 {Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma} 4 {Echinoderm Mitochondrial} 9}
+    set vars(table.mapping2) {0 Standard 1 {Standard (with alternative initiation codons)} 2 {Vertebrate Mitochondrial} 21 {Trematode Mitochondrial} 3 {Yeast Mitochondrial} 22 {Scenedesmus obliquus} 4 {Mold, Protozoan, Coelenterate Mitochondrial and Mycoplasma/Spiroplasma} 23 {Thraustochytrium Mitochondrial} 5 {Invertebrate Mitochondrial} 6 {Ciliate Macronuclear and Dasycladacean} 9 {Echinoderm Mitochondrial} 10 {Euplotid Nuclear} 11 Bacterial 12 {Alternative Yeast Nuclear} 13 {Ascidian Mitochondrial} 14 {Flatworm Mitochondrial} 15 {Blepharisma Macronuclear} 16 {Chlorophycean Mitochondrial}}
+    grid [$w.table component entry] -sticky nse
+    $w.table delete entry 0 end
+    array set tmpmap $vars(table.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(table) $def
+    $w.table insert entry end $def
+    $w.table configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.table -side top -fill both
+    set vars(table.path) $w.table
+    set vars(table.required)  0
+    set vars(table.delimiter) {;}
+    set vars(table._type) list
+
+    lappend arguments minsize
+    iwidgets::entryfield $w.minsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(minsize) \
+	-labeltext [subst {Minimum nucleotide size of ORF to report}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minsize component entry] -sticky nse
+    set vars(minsize) [subst 30]
+    pack $w.minsize -side top -fill both
+    set vars(minsize.path) $w.minsize
+    set vars(minsize.required)  0
+    set vars(minsize._type) integer
+
+    lappend arguments find
+    iwidgets::combobox $w.find\
+	-textvariable [namespace current]::vars(find.name)\
+	-labeltext [subst {Type of output}]
+    trace variable vars(find.name) w  "::EMBOSS::list_changed [namespace current] find"
+    eval $w.find insert list end {{Translation of regions between STOP codons}} {{Translation of regions between START and STOP codons}} {{Nucleic sequences between STOP codons}} {{Nucleic sequences between START and STOP codons}} {{Nucleotides flanking START codons}} {{Nucleotides flanking initial STOP codons}} {{Nucleotides flanking ending STOP codons}}
+    set vars(find.mapping1) {{Nucleotides flanking START codons} 4 {Nucleic sequences between STOP codons} 2 {Translation of regions between STOP codons} 0 {Nucleotides flanking ending STOP codons} 6 {Nucleic sequences between START and STOP codons} 3 {Translation of regions between START and STOP codons} 1 {Nucleotides flanking initial STOP codons} 5}
+    set vars(find.mapping2) {4 {Nucleotides flanking START codons} 0 {Translation of regions between STOP codons} 5 {Nucleotides flanking initial STOP codons} 1 {Translation of regions between START and STOP codons} 6 {Nucleotides flanking ending STOP codons} 2 {Nucleic sequences between STOP codons} 3 {Nucleic sequences between START and STOP codons}}
+    grid [$w.find component entry] -sticky nse
+    $w.find delete entry 0 end
+    array set tmpmap $vars(find.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(find) $def
+    $w.find insert entry end $def
+    $w.find configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.find -side top -fill both
+    set vars(find.path) $w.find
+    set vars(find.required)  0
+    set vars(find.delimiter) {;}
+    set vars(find._type) list
+
+    lappend arguments methionine
+    checkbutton $w.methionine \
+	-text [subst {Change initial START codons to Methionine}]\
+	-variable [namespace current]::vars(methionine)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.methionine -side top -anchor w
+    set vars(methionine) [subst 1]
+    set vars(methionine.path) $w.methionine
+    set vars(methionine.required)  0
+    set vars(methionine._type) bool
+
+    lappend arguments circular
+    checkbutton $w.circular \
+	-text [subst {Is the sequence circular}]\
+	-variable [namespace current]::vars(circular)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.circular -side top -anchor w
+    set vars(circular) [subst 0]
+    set vars(circular.path) $w.circular
+    set vars(circular.required)  0
+    set vars(circular._type) bool
+
+    lappend arguments reverse
+    checkbutton $w.reverse \
+	-text [subst {Find ORFs in the reverse sequence}]\
+	-variable [namespace current]::vars(reverse)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.reverse -side top -anchor w
+    set vars(reverse) [subst 1]
+    set vars(reverse.path) $w.reverse
+    set vars(reverse.required)  0
+    set vars(reverse._type) bool
+
+    lappend arguments flanking
+    iwidgets::entryfield $w.flanking \
+	-validate integer \
+	-textvariable [namespace current]::vars(flanking) \
+	-labeltext [subst {Number of flanking nucleotides to report}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.flanking component entry] -sticky nse
+    set vars(flanking) [subst 100]
+    pack $w.flanking -side top -fill both
+    set vars(flanking.path) $w.flanking
+    set vars(flanking.required)  0
+    set vars(flanking._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst Filename]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqoutall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/getorf.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

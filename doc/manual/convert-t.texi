@@ -1,0 +1,81 @@
+@cindex Convert program
+@cindex Bap databases: conversion to gap4
+@cindex Dap databases: conversion to bap or gap4
+
+@menu
+* Conv-Program::        The conversion program
+* Conv-Example::        Example
+@end menu
+
+gap4 is the current program in a rather long line of sequence
+assembly programs that have been distributed as part of the "Staden"
+Package. Each of these earlier programs used different types of file to
+store assembly data. These old files are incompatible with gap4, but the
+package contain a program (convert) to convert them to gap4 databases.
+It is possible to convert from:
+
+@itemize @bullet
+@item plain text file (created by convert)
+@item dap database
+@item bap database
+@end itemize
+
+to any of the following formats
+@itemize @bullet
+@item plain text file (created by convert)
+@item bap database
+@item gap4 database
+@end itemize
+
+@node Conv-Program
+@section The Conversion Program
+
+The program takes no command line arguments and has a scrolling text
+style of interface. Users are prompted
+for the format, name and version of the database to convert.
+If the source is an xdap or xbap database, ensure that the name and
+version are in uppercase. 
+If the source is a text file, the version is
+requested but ignored! Next users are prompted for the
+format, name and version of the database to create. Ensure
+that names and versions are in the appropriate case and that the files
+do already exist.
+
+Then the program converts the database (which may take some
+time) and writes out a message to signify that
+the conversion has successfully completed.
+
+@node Conv-Example
+@section Example
+@cindex Convert program example
+
+Here is a log of a typical conversion session. User input is shown in
+bold.
+
+@example
+Covert Project Database
+Version 1.3, 4th December 1995
+Please enter database to convert:
+
+Available types are:
+0. Flat file - created with this program
+1. xdap database
+2. xbap database
+
+Database type? @b{2}
+Database name? @b{ZK643}
+Database version? @b{0}
+
+Please enter database to create:
+
+Available types are:
+0. Flat file - created with this program
+1. xbap database
+2. xgap database
+
+Database type? @b{2}
+Database name? @b{ZK643}
+Database version? @b{1}
+
+Conversion completed
+@end example

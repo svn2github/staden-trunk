@@ -1,0 +1,382 @@
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_complement_seq
+@section io_complement_seq
+@vindex io_complement_seq(C)
+@cindex complementing
+
+@example
+#include <IO.h>
+
+int io_complement_seq(
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos);
+@end example
+
+This function complements a sequence held in memory. No database I/O is
+performed.  A sequence of length @var{*length} is passed in the @var{seq}
+argument with associated confidence values (@var{conf}) and original positions
+(@var{opos}) arrays. The @var{start} and @var{end} arguments contain the left
+and right cutoff points within this sequence.
+
+The function will reverse and comlement the sequence, negate the @var{start}
+and @var{end} values, and reverse the @var{conf} and @var{opos} arrays. If
+either of @var{conf} or @var{opos} are passed as @code{NULL}, neither will be
+reversed. @var{length} is not modified, despite the fact that it is passed by
+reference.
+
+The function returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_insert_seq
+@section io_insert_seq
+@vindex io_insert_seq(C)
+
+@example
+#include <IO.h>
+
+int io_insert_seq(
+        int2    maxgel,
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos,
+        int2    pos,
+        char   *bases,
+        int1   *newconf,
+        int2   *newopos,
+        int2    Nbases);
+@end example
+
+@code{io_insert_seq} inserts one or more bases into the sequence, confidence
+and original positions arrays specified. No database I/O is performed.
+
+The existing sequence, confidence values, and original positions arrays are
+passed as @var{seq}, @var{conf}, and @var{opos} arguments. All are mandatory.
+The length of sequence and hence the number of used elements in these arrays
+is passed as @var{length}, with @var{start} and @var{end} containing the left
+and right cutoff positions.
+
+The new sequence, confidence values, and original positions to insert are
+passed as @var{bases}, @var{newconf} and @var{newopos}. The number of bases to
+insert is @var{Nbases}. Either or both of the @var{newconf} and @var{newopos}
+arguments may be NULL. The inserted confidence values will then default to 100
+for non pad ("@code{*}") bases. For pads, the confidence value defaults to the
+average of the confidence values of the first two neighbouring bases that are
+not pads. The inserted original positions default to 0. These bases are to be
+inserted at the position specified by @var{pos}, counting as position 1 being
+to the left of the first base in the sequence.
+
+As this operation increases the size of the @var{seq}, @var{conf}, and
+@var{opos} arrays, their allocated size must be passed in @var{maxgel}. If the
+insertion causes data to be shuffle beyond the @var{maxgel}, the right end of
+the sequence is clipped to ensure that no more than @var{maxgel} bases are
+present. The @var{start} and @var{end} values may be incremented, depending on
+where the insertion occurs.
+
+This function returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_delete_seq
+@section io_delete_seq
+@vindex io_delete_seq(C)
+
+@example
+#include <IO.h>
+
+int io_delete_seq(
+        int2    maxgel,
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos,
+        int2    pos,
+        int2    Nbases);
+@end example
+
+@code{io_delete_seq} removes one or more bases from the sequence, confidence
+and original positions arrays specified. No database I/O is performed.
+
+The existing sequence, confidence values, and original positions arrays are
+passed as @var{seq}, @var{conf}, and @var{opos} arguments. All are mandatory.
+The length of sequence and hence the number of used elements in these arrays
+is passed as @var{length}, with @var{start} and @var{end} containing the left
+and right cutoff positions. The allocated size of these arrays is
+@var{maxgel}, however it is not required by this function (FIXME).
+
+The @var{pos} and @var{Nbases} arguments specify where and how many bases to
+delete, counting with the first base as base number 1. The @var{length}
+argument is described by @var{Nbases} and the @var{seq}, @var{conf} and
+@var{opos} arrays shuffled accordingly. The @var{start} and @var{end} values
+may be decrememnted, depending on where the deletion occurs.
+
+The function returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_replace_seq
+@section io_replace_seq
+@vindex io_replace_seq(C)
+
+@example
+#include <IO.h>
+
+int io_replace_seq(
+        int2    maxgel,
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos,
+        int2    pos,
+        char   *bases,
+        int1   *newconf,
+        int2   *newopos,
+        int2    Nbases,
+        int     diff_only,
+        int     conf_only);
+@end example
+
+@code{io_replace_seq} replaces on or more bases from the sequence, confidence
+and original positions arrays specified. No database I/O is performed.
+
+The existing sequence, confidence values, and original positions arrays are
+passed as @var{seq}, @var{conf}, and @var{opos} arguments. All are mandatory.
+The length of sequence and hence the number of used elements in these arrays
+is passed as @var{length}, with @var{start} and @var{end} containing the left
+and right cutoff positions. The allocated size of these arrays is
+@var{maxgel}. FIXME: it is used - does it need to be?
+
+The new sequence, confidence values, and original positions to replace are
+passed as @var{bases}, @var{newconf} and @var{newopos}. The number of bases to
+replace is @var{NBases}. Either or both of the @var{newconf} and @var{newopos}
+arguments may be NULL. The replaced confidence values will then default to 100
+for non pad ("@code{*}") bases. For pads, the confidence value defaults to the
+average of the confidence values of the first two neighbouring bases that are
+not pads. The replaced original positions default to 0. These bases are to be
+inserted at the position specified by @var{pos}, counting as position 1 being
+to the left of the first base in the sequence. The @var{length}, @var{start}
+and @var{end} values are left unchanged.
+
+This function returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node pad_consensus
+@section pad_consensus
+@vindex pad_consensus(C)
+
+@example
+#include <IO.h>
+
+int pad_consensus(
+        GapIO  *io,
+        int     contig,
+        int     pos,
+        int     npads);
+@end example
+
+This function inserts @var{npads} pads into the consensus for contig number
+@var{contig} at position @var{pos} by inserting into all of the readings
+creating the consensus at this point.
+
+The function deals with inserting to the appropriate readings including
+adjustment of cutoff positions and annotations, moving of all the readings
+to the right of @var{pos}, and adjustment of the annotations on the consensus
+sequence.
+
+It returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node calc_consensus
+@section calc_consensus
+@vindex calc_consensus(C)
+@cindex consensus calculation
+
+@example
+#include <qual.h>
+
+int calc_consensus(
+        int     contig,
+        int     start,
+        int     end,
+        int     mode,
+        char   *con,
+        char   *con2,
+        float  *qual,
+        float  *qual2,
+        float   cons_cutoff,
+        int     qual_cutoff,
+        int    (*info_func)(int          job,
+                            void        *mydata,
+                            info_arg_t  *theirdata),
+        void   *info_data);
+
+int database_info(
+        int          job,
+        void        *mydata,
+        info_arg_t  *theirdata);
+@end example
+
+This function calculates the consensus sequence for a given segment of a
+contig. It can produce a single consensus sequence using all readings, or
+split it into two sequences; one for each strand. Additionally, it can produce
+either one (combinded strands) or two (individual strands) sets of values
+relating to the accuracy of the returned consensus.
+
+The @var{contig}, @var{start} and @var{end} arguments hold the contig and
+range to calculate the consensus for. The ranges are inclusive and start
+counting with the first base as position 1.
+
+@var{con} and @var{con2} are buffers to store the consensus. These are
+allocated by the caller to be at least of size @var{end-start+1}. If
+@var{con2} is @code{NULL} both strands are calculated as a single consensus to
+be stored in @var{con}. Otherwise the top strand is stored in @var{con} and
+the bottom strand is stored in @var{con2}.
+
+@var{mode} should be one of @code{CON_SUM} or @code{CON_WDET}. @code{CON_SUM}
+is the "normal" mode, which indicates that the consensus sequence is simply
+the most likely base or a dash (depending on @var{cons_cutoff}. The
+@code{CON_WDET} mode is used to return special characters for bases that are
+good quality and identical on both strands. Where one strand has a dash, the
+consensus base for the other strand is used. Where both strands differ, and
+are not dashes, the consensus is returned as dash. Note that despite requiring
+the consensus for each starnd independently, this mode requires that
+@var{con2} is @code{NULL}. To summarise the action of the @code{CON_WDET}
+mode, the final consensus is derived as follows:
+
+@example
+ Top     Bottom   Resulting
+Strand   Strand     Base
+---------------------------
+   A        A         d
+   C        C         e
+   G        G         f
+   T        T         i
+   -        -         -
+   -        @var{x}         @var{x}
+   @var{x}        -         @var{x}
+   @var{x}        @var{y}         -
+@end example
+
+[Where @var{x} and @var{y} are one of A, C, G or T, and @var{x} != @var{y}.]
+
+@var{qual_cutoff} and @var{cons_cutoff} hold the quality and consensus cutoff
+paramaters used in the consensus algorithm for determining which bases are of
+sufficient quality to use and by how big a majority this base type must have
+before it is returned as the consensus base (otherwise "-" is used). For a
+complete description of how these parameters operate see the consensus
+algorithm description in the main Gap4 manual. (FIXME: should we duplicate
+this here?)
+
+The @var{qual} and @var{qual2} buffers are allocated by the caller to be the
+same size as the @var{con} and @var{con2} buffers. They are filled with the
+a floating point representing the ratio of score for the consensus base type
+to the score for all base types (where the definition of score depends on the
+@var{qual_cutoff} parameter). This is the value compared against
+@var{cons_cutoff} to determine whether the consensus base is a dash.
+Either or both of @var{qual} and @var{qual2} can be passed as NULL if no
+accuracy information is required. Note that the accuracy information for
+@var{qual2} is only available when @var{con2} has also been passed as non NULL.
+
+The algorithm uses @var{info_func} to obtain information about the readings
+from the database. @var{info_data} is passed as the second argument
+(@var{mydata}) to @var{info_func}. @var{info_func} is called each time some
+information is required about a reading or contig. It's purpose is to abstract
+out the algorithm from the data source. There are currently two such
+functions, the most commonly used of which is @code{database_info} function
+(the other being @code{contEd_info} to fetch data from the contig editor
+structures). The @code{database_info} function obtains the sequence details
+from the database. It requires a @var{GapIO} pointer to be passed as
+@var{info_data}.
+
+The function returns 0 for success, -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node calc_quality
+@section calc_quality
+@vindex calc_quality(C)
+@cindex quality calculation
+@cindex accuracy calculation
+
+@example
+#include <qual.h>
+
+int calc_quality(
+        int     contig,
+        int     start,
+        int     end,
+        char   *qual,
+        float   cons_cutoff,
+        int     qual_cutoff,
+        int   (*info_func)(int          job,
+                           void        *mydata,
+                           info_arg_t  *theirdata),
+        void   *info_data)
+
+int database_info(
+        int          job,
+        void        *mydata,
+        info_arg_t  *theirdata);
+@end example
+
+This function calculates the quality codes for a given segment of a contig
+consensus sequence. The quality information is stored in the @var{qual}
+buffer, which should be allocated by the caller to be at least
+@var{end-start+1} bytes long. The contents of this buffer is one byte per
+base, consisting of a letter between 'a' and 'j'. There are #defines in
+@file{qual.h} assigning meanings to these codes, which should be used in
+preference to hard coding the codes themselves. The defines and meanings are
+as follows.
+
+@table @code
+@item a - R_GOOD_GOOD_EQ
+Data is good on both strands and both strands agree on the same consensus base.
+@item b - R_GOOD_BAD
+Data is good on the top strand, but poor on the bottom strand.
+@item c - R_BAD_GOOD
+Data is good on the bottom strand, but poor on the top strand.
+@item d - R_GOOD_NONE
+Data is good on the top strand, but no data is available on the bottom strand.
+@item e - R_NONE_GOOD
+Data is good on the bottom strand, but no data is available on the top strand.
+@item f - R_BAD_BAD
+Data is available on both strands, but both strands are poor data.
+@item g - R_BAD_NONE
+Data is poor on the top strand, with no data on the bottom strand.
+@item h - R_NONE_BAD
+Data is poor on the bottom strand, with no data on the top strand.
+@item i - R_GOOD_GOOD_NE
+Data is good on both strands, but the consensus base differs between top and
+bottom strand.
+@item j - R_NONE_NONE
+No data is available on either strand (this should never occur).
+@end table
+
+The @var{contig}, @var{start} and @var{end} arguments hold the contig and
+range to calculate the quality for. The ranges are inclusive and start
+counting with the first base as position 1.
+
+@var{qual_cutoff} and @var{cons_cutoff} hold the quality and consensus cutoff
+parameters. These are used in an identical manner to the @code{calc_quality}
+function. _oxref(calc_quality, calc_quality).
+
+The @var{info_func} and @var{info_data} arguments are also used in the same
+way as @code{calc_quality}. Generally @var{info_func} should be
+@code{database_info} and @var{info_data} should be a @var{GapIO} pointer.
+This will then read the sequence data from the Gap4 database.
+
+The function returns 0 for success, -1 for failure.

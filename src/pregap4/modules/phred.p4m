@@ -1,0 +1,131 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run phred on a batch of trace files to produce recalled SCF files
+#
+set help {pregap4 {Pregap4-Modules-Phred}}
+
+proc name {} {
+    return "Phred"
+}
+
+proc init {} {
+    mod_preset other_args ""
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|phred" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "phred is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global fofn
+    global fofn_dir
+    variable other_args
+    variable report
+
+    set new_files {}
+    set report ""
+    set tmp $fofn.tmp_scf
+    foreach f $files {
+        if {$file_type($f) == "EXP" || $file_type($f) == "PLN"} {
+	    lappend new_files $f
+	    vmessage -nonewline -
+	    continue
+	}
+
+	# If the input file isn't SCF then we convert it first
+	if {$file_type($f) != "SCF"} {
+	    if {[catch {exec convert_trace any scf < $f > $tmp} err]} {
+		# Couldn't convert, so just skip this trace
+		verror ERR_WARN "convert_trace" "$tmp: $err"
+		lappend new_files $f
+		vmessage -nonewline -
+		continue
+	    }
+	    set tname $tmp
+	} else {
+	    set tname $f
+	}
+
+	# Phred it
+	set errorCode NONE
+	set new_name [$file_type($f)_filename_to_scf_name $f]
+	if {[catch {eval exec phred -cv 3 $other_args \
+	   -c [list $new_name] [list $tname]} err]} {
+	    if {$errorCode != "NONE"} {
+		verror ERR_WARN "phred" "$tname: $err"
+		set file_error($f) "phred: failed with msg \"[strip_nl $err]\""
+		vmessage -nonewline !
+		continue
+	    } else {
+		append report "ERR: Phred $f produced error message.\n"
+		append report "ERR: \"$err\"\n"
+	    }
+	}
+
+	if {![file exists $new_name]} {
+	    set file_error($f) "phred: failed to produce output file"
+	    append report "ERR: Phred failed to process $f\n"
+	    continue
+	}
+
+	# Worked...
+	set file_type($new_name) SCF
+	set file_error($new_name) {}
+	set file_id($new_name) $file_id($f)
+	set file_orig_name($new_name) $f
+	append report "SEQ $new_name: created from $f\n"
+	vmessage -nonewline .
+	lappend new_files $new_name
+
+	# Remove tmp file if necessary
+	if {$file_type($f) != "SCF"} {
+	    file delete $tname
+	}
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable other_args
+
+    xentry $w.other_args \
+	-label "Phred arguments" \
+	-default $other_args \
+	-width 30
+    pack $w.other_args -side top -fill both
+}
+
+proc process_dialogue {w} {
+    variable other_args
+    set other_args [$w.other_args get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save other_args [$w.other_args get2]
+    }
+}

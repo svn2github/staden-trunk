@@ -1,0 +1,68 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+load_package tk_utils
+
+# The menu state bit enable/disable patterns are as follows
+# Bit 0: Startup (and no database open)		(on)
+# Bit 1: Busy mode				(off)
+# Bit 2: With a database open...		(on/off)
+# Bit 3: ...which contains data			(on/off)
+
+#-----------------------------------------------------------------------------
+# Menus
+#-----------------------------------------------------------------------------
+set_menu copy_reads_menu
+add_menu File				1 2 left
+add_menu Help				1 2 right
+
+add_command 	{File.Copy reads}		 1 2 {CopyReads -1}
+add_command	{File.Exit}			 1 2 {Copy_Reads_Exit}
+
+add_command	{Help.Contents}		1 0 {show_help gap4 {Copy Reads}}
+add_command	{Help.Output Window}	1 0 {show_help interface {UI-Output}}
+
+set_defx defs_c_in	WHICH.NAME	"Input contigs from"
+set_defx defs_c_in	WHICH.BUTTONS	{file {{all contigs}}}
+set_defx defs_c_in	WHICH.VALUE	2
+set_defx defs_c_in	NAME.NAME	"File name"
+set_defx defs_c_in	NAME.BROWSE	"Browse"
+set_defx defs_c_in	NAME.VALUE	""
+
+#copy reads
+
+set_def COPY_READS.TAG_SOURCE.NAME	"LENT"
+set_def COPY_READS.TAG_SOURCE.TEXT	"lent to "
+set_def COPY_READS.TAG_DESTINATION.NAME	"BORO"
+set_def COPY_READS.TAG_DESTINATION.TEXT	"borrowed from "
+
+set_def COPY_READS.INFILE1		$defs_c_in
+set_def COPY_READS.INFILE2		$defs_c_in
+
+set_def COPY_READS.INFILE1.WHICH.NAME	"Contigs to compare from source database"
+set_def COPY_READS.INFILE2.WHICH.NAME	"Contigs to compare from destination database"
+
+set_def COPY_READS.TRACES.RADIO.NAME	"Location of source traces"
+set_def COPY_READS.TRACES.RADIO.VALUE	2
+set_def COPY_READS.TRACES.RADIO.BUTTON.1	"directory"
+set_def COPY_READS.TRACES.RADIO.BUTTON.2	"read from database"
+set_def COPY_READS.TRACES.FROM.NAME	"Directory path"
+set_def COPY_READS.TRACES.FROM.VALUE	""
+
+set_def COPY_READS.ALIGN_CONS   "Consensus searching parameters"
+
+set_def COPY_READS.ALIGN_READS	"Reading assembly parameter" 
+
+set_def COPY_READS.MINCL.NAME	"Minimum contig length"
+set_def COPY_READS.MINCL.VALUE	2000
+set_def COPY_READS.MINCL.MIN	1
+
+set_def COPY_READS.MIN_QUAL.NAME	"Minimum average reading quality"
+set_def COPY_READS.MIN_QUAL.VALUE	30.0
+set_def COPY_READS.MIN_QUAL.MIN		0.0
+set_def COPY_READS.MIN_QUAL.MAX		100.0
+
+set_def COPY_READS.DISPLAY_CONS.NAME	"Display consensus alignments"
+set_def COPY_READS.DISPLAY_CONS.VALUE	0
+set_def COPY_READS.DISPLAY_SEQ.NAME	"Display sequence alignments"
+set_def COPY_READS.DISPLAY_SEQ.VALUE	0

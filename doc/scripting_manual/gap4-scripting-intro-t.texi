@@ -1,0 +1,69 @@
+@cindex Gap4
+
+This chapter describes the gap4 scripting language. The language is an
+extension of the Tcl and Tk languages. This manual does not contain
+information on using Tcl and Tk itself - only our extensions.
+
+For the purpose of consistency, many gap4 commands take identical arguments.
+To simplify the documentation and to remove redundancy these arguments are
+only briefly discussed with each command description. However first we need to
+describe the terminology used throughout this manual.
+
+@table @i
+@cindex Reading identifier
+@vindex identifier
+@item Reading identifier
+        Used to specify a reading. It can consist of the reading's unique
+        name, a hash followed by its reading number, or if it is at the start
+        of a contig, an equals followed by the contig number.
+        
+        Eg @code{fred.s1}, @code{#12}, or @code{=2}.
+
+@cindex Contig identifier
+@item Contig identifier
+        A contig is identified by any reading within it, so all reading
+        identifiers are contig identifiers. However when a contig
+        identifier is displayed by a command it typically chooses the left
+        most reading name. If a contig number is known, simply use
+        @code{=}@i{number} as a contig identifier.
+@end table
+
+@noindent Common arguments:
+@table @asis
+@vindex -contigs
+@item @code{-contigs} @i{contig_list}
+        @i{Contig_list} is a Tcl list of contig identifiers. If an item in the
+        list is itself a list, then the first element of the list is the
+        identifier and the second and third elements specify a range
+        within that contig.
+
+        Eg @code{-contigs @{read1 @{read5 1000 2000@} read6@}}
+
+@vindex -readings
+@item @code{-readings} @i{reading_list}
+        @i{Reading_list} is a Tcl list of reading identifiers.
+
+        Eg @code{-reading_list @{read1 read2@}}
+
+@vindex -contig
+@item @code{-contig} @i{contig_identifier}
+        Specifies a single contig by an indentifier.
+
+@vindex -reading
+@item @code{-reading} @i{reading_identifier}
+        Specifies a single reading by an identifier.
+
+@vindex -cnum
+@item @code{-cnum} @i{contig_number}
+        Specifies a contig by its number (NB: this not the same as a reading
+        number within that contig).
+
+@vindex -rnum
+@item @code{-rnum} @i{reading_number}
+        Specifies a reading by its number.
+
+@vindex -io
+@item @code{-io} @i{io_handle}
+        Specifies an IO handle by a numerical value as returned from a
+        previous @code{open_db} command.
+@end table

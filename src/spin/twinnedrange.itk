@@ -1,0 +1,354 @@
+# -----------------------------------------------------------------------------
+# twinnedrange class corresponding scale_range
+# -----------------------------------------------------------------------------
+
+itk::usual Twinnedrange {
+    keep -background -borderwidth -cursor -foreground -highlightcolor \
+	 -highlightthickness -insertbackground -insertborderwidth \
+	 -insertofftime -insertontime -insertwidth -labelfont \
+	 -selectbackground -selectborderwidth -selectforeground \
+	 -textbackground -textfont 
+}
+
+class Twinnedrange {
+
+    inherit itk::Widget
+
+    constructor {args} {}
+    destructor {}
+
+    itk_option define -range range Range {{} {}}
+    itk_option define -startname startName StartName "Start position"
+    itk_option define -endname endName EndName "End position"
+    itk_option define -minvalue minValue MinValue 1
+    itk_option define -state state State normal
+    itk_option define -start start Start 0
+    itk_option define -end end End 0
+
+    public method get_s {}
+    public method get_e {}
+    
+    protected method _checkstart {}
+    protected method _checkend {}
+    protected method _up_start {}
+    protected method _up_end {}
+    protected method _down_start {}
+    protected method _down_end {}
+}
+
+proc ::twinnedrange {pathName args} {
+    uplevel  ::Twinnedrange $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+
+body Twinnedrange::constructor {args} {
+
+    itk_component add start {
+	spinrange $itk_component(hull).start \
+		-validate integer \
+		-sticky nse \
+		-increment [code $this _up_start] \
+		-decrement [code $this _down_start] \
+		-width 8
+    } {
+	  usual
+    }
+    pack $itk_component(start) -fill both
+
+    itk_component add end {
+	  spinrange $itk_component(hull).end \
+		    -validate integer\
+	            -sticky nse \
+		    -increment [code $this _up_end] \
+	            -decrement [code $this _down_end] \
+		    -width 8
+    } {
+	    usual
+    }
+
+    pack $itk_component(end) -fill x
+
+   #
+   # are they necessary?
+   #
+   # bind $itk_component(start) <Any-Leave> [code $this _checkstart]
+   # bind $itk_component(end) <Any-Leave> [code $this _checkend]
+
+    eval itk_initialize $args
+ 
+    foreach {from to} $itk_option(-range) {}
+    $itk_component(start) delete 0 end    
+    $itk_component(start) insert end "$from"
+    $itk_component(end) delete 0 end
+    $itk_component(end) insert end "$to"  
+}
+
+configbody Twinnedrange::start {
+ 
+    if {$itk_option(-start) != 0} {
+	$itk_component(start) delete 0 end
+	$itk_component(start) insert 0 $itk_option(-start)
+    }
+}
+
+configbody Twinnedrange::end {
+    
+    if {$itk_option(-end) != 0} {
+	$itk_component(end) configure -default $itk_option(-end)
+    }
+}
+
+# ------------------------------------------------------------------
+# OPTION: -range
+#
+# Set min and max values for "start" and "end" entry component.
+# ------------------------------------------------------------------
+configbody Twinnedrange::range {
+
+    $itk_component(start) configure -range $itk_option(-range)
+    $itk_component(end) configure -range $itk_option(-range)
+}
+
+# ------------------------------------------------------------------
+# OPTION: -startname
+#
+# Specifies the label text for "start" component.
+# ------------------------------------------------------------------
+configbody Twinnedrange::startname {
+
+    $itk_component(start) configure -labeltext $itk_option(-startname)
+}
+
+# ------------------------------------------------------------------
+# OPTION: -endname
+#
+# Specifies the label text for "end" component.
+# ------------------------------------------------------------------
+configbody Twinnedrange::endname {
+
+    $itk_component(end) configure -labeltext $itk_option(-endname)
+}
+
+# ------------------------------------------------------------------
+# OPTION: -minvalue
+#
+# ------------------------------------------------------------------
+configbody Twinnedrange::minvalue {
+
+}
+
+# ------------------------------------------------------------------
+# OPTION: -state
+#
+# Specifies the state of the "start"and "end" component.
+# ------------------------------------------------------------------
+configbody Twinnedrange::state {
+       switch -- $itk_option(-state) {
+	disabled {
+	    $itk_component(start) configure -state disabled
+	    $itk_component(end) configure -state disabled
+	}
+	normal {    
+	    $itk_component(start) configure -state normal
+	    $itk_component(end) configure -state normal
+	}
+	default {
+	    error "bad state option \"$itk_option(-state)\",\
+		    should be either disabled or normal"
+	}
+    }
+}
+    
+# -------------------------------------------------------------------------
+# METHOD: -checkstart
+#
+# Bindings used to check the "start" boundary when <Any-Leave> and <Return>. 
+# --------------------------------------------------------------------------   
+body Twinnedrange::_checkstart {} {
+
+    set from  [$itk_component(start) get]
+    set to  [$itk_component(end) get]
+
+    if {$from > $to} {
+	set from [expr {$to - 1}]
+	$itk_component(start) delete 0 end
+	$itk_component(start) insert 0 $from
+    }
+}
+
+# ------------------------------------------------------------------------
+# METHOD: -checkend
+#
+# Bindings used to check the "end" boundary when <Any-Leave> and <Return>. 
+# ------------------------------------------------------------------------   
+body Twinnedrange::_checkend {} {
+
+    set from  [$itk_component(start) get]
+    set to  [$itk_component(end) get]
+
+    if {$to < $from} {
+	set to [expr {$from + 1}]
+	$itk_component(end) delete 0 end
+	$itk_component(end) insert 0 $to
+    }
+
+}
+
+# ------------------------------------------------------------------
+# METHOD: _up_start
+#
+# Start up arrow button press event.  Increment value in entry. 
+# Check the boundary gave by option(-range).
+# ------------------------------------------------------------------   
+body Twinnedrange::_up_start {} {
+
+    set min_v [lindex $itk_option(-range) 0]
+    set max_v [lindex $itk_option(-range) 1]
+
+    set count  [$itk_component(start) get]
+    set to  [$itk_component(end) get]
+
+    if {$min_v != "" && $max_v != ""} {
+	if {$count < $min_v || $count >= $max_v} {
+	    set count [expr {$min_v - 1}]
+	}
+	set count [expr {$count + 1}]
+    } else {
+	set count [expr {$count + 1}]
+    }
+
+    if { $count > $to } {
+	set to $count
+	$itk_component(end) delete 0 end
+	$itk_component(end) insert 0 $to
+    }
+    $itk_component(start) delete 0 end
+    $itk_component(start) insert 0 $count
+}
+
+# ------------------------------------------------------------------
+# METHOD: _down_start
+#
+# Start down arrow button press event.  Decrement value in entry. 
+# Check the boundary gave by option(-range).
+# ------------------------------------------------------------------   
+body Twinnedrange::_down_start {} {
+
+    set min_v [lindex $itk_option(-range) 0]
+    set max_v [lindex $itk_option(-range) 1]
+ 
+    set count [$itk_component(start) get]
+    set to  [$itk_component(end) get]
+    
+    if {$min_v != "" && $max_v != ""} {
+	if {$count <= $min_v || $count > $max_v} {
+	    set count [expr {$to + 1}]
+	}
+	set count [expr {$count - 1}]
+    } else {
+	set count [expr {$count - 1}]
+    }
+
+    if { $count > $to } {
+	set to [expr {$count - 1}]
+	$itk_component(end) delete 0 end
+	$itk_component(end) insert 0 $to  
+    }
+    $itk_component(start) delete 0 end
+    $itk_component(start) insert 0 $count  
+}
+
+# ------------------------------------------------------------------
+# METHOD: _up_end
+#
+# End up arrow button press event.  Increment value in entry. 
+# Check the the boundary gave by option(-range).
+# ------------------------------------------------------------------   
+body Twinnedrange::_up_end {} {
+
+    set min_v [lindex $itk_option(-range) 0]
+    set max_v [lindex $itk_option(-range) 1]
+
+    set count  [$itk_component(end) get]
+    set from  [$itk_component(start) get]
+
+    if {$min_v != "" && $max_v != ""} {
+	if {$count < $min_v || $count >= $max_v} {
+	    set count [expr {$min_v - 1}]
+	}
+	set count [expr {$count + 1}]
+
+    } else {
+	set count [expr {$count + 1}]
+    }
+
+    if { $count < $from } {
+	set count $from
+	#set from $count
+	$itk_component(end) delete 0 end
+	$itk_component(end) insert 0 $count
+    }
+    $itk_component(end) delete 0 end
+    $itk_component(end) insert 0 $count
+
+}
+
+# ------------------------------------------------------------------
+# METHOD: _down_end
+#
+# End down arrow button press event.  Decrement value in entry. 
+# Check the boundary gave by option(-range).
+# ------------------------------------------------------------------   
+body Twinnedrange::_down_end {} {
+
+    set min_v [lindex $itk_option(-range) 0]
+    set max_v [lindex $itk_option(-range) 1]
+ 
+    set count [$itk_component(end) get]
+    set from  [$itk_component(start) get]
+
+    if {$min_v != "" && $max_v != ""} {
+	if {$count <= $min_v || $count > $max_v} {
+	    set count [expr {$max_v + 1}]
+	}
+	    set count [expr {$count - 1}]
+    } else {
+	set count [expr {$count - 1}]
+    }
+
+    if { $count < $from } {
+	set from $count
+	$itk_component(start) delete 0 end
+	$itk_component(start) insert 0 $from 
+    }
+    $itk_component(end) delete 0 end
+    $itk_component(end) insert 0 $count  
+}
+
+# ------------------------------------------------------------------
+# METHOD: get_s 
+#
+# Returns a value of the "start" component.
+# ------------------------------------------------------------------
+body Twinnedrange::get_s {} {
+    $itk_component(start) validate
+    return [$itk_component(start) get]
+}   
+
+# ------------------------------------------------------------------
+# METHOD: get_e
+#
+# Returns a value of the "end" component.
+# ------------------------------------------------------------------
+body Twinnedrange::get_e {} {
+    $itk_component(end) validate
+    return [$itk_component(end) get]
+}   
+
+
+
+
+

@@ -1,0 +1,102 @@
+\input texinfo
+@c %**start of header
+@setfilename scripting.info
+@settitle Programming with Gap4
+@setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@c %**end of header
+
+@set standalone
+include(header.m4)
+
+@titlepage
+@title Programming with Gap4
+@subtitle Version 0.99.2 (October 1997)
+@subtitle
+@author James Bonfield
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 1995, 1996, Medical Research Council, Laboratory of Molecular Biology.
+@end titlepage
+
+@node Top
+@ifinfo
+@top Programming Gap4
+@end ifinfo
+
+@menu
+* Preface::             Preface
+* Tk_utils::            Tk_utils Library
+* Tcl-scripts::         Tcl Scripting of Gap4
+* C-IO::                Database I/O in C
+* C-Sequence::          Sequence Manipulation in C
+* C-Anno::              Annotation Functions in C
+* Registration::        Contig Registration Scheme
+* Packages::            Writing Packages
+
+* Appendix-Compostion:: Appendix A - Composition Package
+@end menu
+
+@node Preface
+@unnumbered Preface
+_include(preface-t.texi)
+
+@node Tk_utils
+@chapter Tk_utils Library
+_include(tkutils-t.texi)
+
+@node Tcl-scripts
+@chapter Tcl Scripting of Gap4
+_include(gap4-t.texi)
+
+@node C-IO
+@chapter Database I/O in C
+_include(gap4-cio-t.texi)
+
+@node C-Editing
+@chapter Sequence Editing Functions in C
+_include(gap4-cedit-t.texi)
+
+@node C-Anno
+@chapter Annotation Functions in C
+_include(gap4-canno-t.texi)
+
+@node Registration
+@chapter Contig Registration Scheme
+_include(gap4-registration-t.texi)
+
+@node Packages
+@chapter Writing Packages
+_include(extension-t.texi)
+
+@node Appendix-Composition
+@appendix Composition Package
+_include(appendix-t.texi)
+
+@split{}
+@node Function Index
+@unnumbered Function Index
+This index contains lists of the C and Tcl function calls available. Entry
+items listed with a @i{(T)} suffix are callable from Tcl. Entry items listed
+with a @i{(C)} suffix are callable from within C.
+@printindex fn
+
+@split{}
+@node Variable Index
+@unnumbered Variable and Type Index
+This index contains lists of C and Tcl variables and types. Entry items listed
+with a @i{(T)} suffix are Tcl variables. Entry items listed with a @i{(C)}
+suffix are C variables. All types are C.
+@printindex vr
+
+@split{}
+@node Concept Index
+@unnumbered Concept Index
+@printindex cp
+
+@summarycontents
+@contents
+
+@bye

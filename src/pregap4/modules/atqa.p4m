@@ -1,0 +1,93 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1999. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run ATQA on a batch of trace files to produce SCF files with
+# recalculated confidences
+#
+set help {pregap4 {Pregap4-Modules-ATQA}}
+
+proc name {} {
+    return "ATQA"
+}
+
+proc init {} {
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|ATQA" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "ATQA is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global fofn
+    variable report
+
+    set new_files {}
+    set report ""
+    set tmp $fofn.tmp_scf
+    foreach f $files {
+	# If the input file isn't SCF then we convert it first
+	if {$file_type($f) != "SCF"} {
+	    if {[catch {exec convert_trace any scf < $f > $tmp} err]} {
+		# Couldn't convert, so just skip this trace
+		verror ERR_WARN "convert_trace" "$tmp: $err"
+		lappend new_files $f
+		vmessage -nonewline -
+		continue
+	    }
+	    set tname $tmp
+	} else {
+	    set tname $f
+	}
+
+	# ATQA it
+	set new_name [$file_type($f)_filename_to_scf_name $f]
+	if {[catch {exec ATQA -s $tname $new_name} err]} {
+	    set file_error($f) "ATQA: [strip_nl $err]"
+	    vmessage -nonewline !
+	} else {
+	    append report "SEQ $f: confidences recalculated by ATQA.\n"
+	}
+
+	if {![file exists $new_name]} {
+	    set file_error($f) "ATQA: failed to produce output file"
+	    append report "ERR: ATQA failed to process $f\n"
+	    continue
+	}
+
+	# Worked...
+	set file_type($new_name) SCF
+	set file_error($new_name) {}
+	set file_id($new_name) $file_id($f)
+	set file_orig_name($new_name) $f
+	append report "SEQ $new_name: created from $f\n"
+	vmessage -nonewline .
+	lappend new_files $new_name
+
+	# Remove tmp file if necessary
+	if {$file_type($f) != "SCF"} {
+	    file delete $tname
+	}
+    }
+    vmessage ""
+
+    return $new_files
+}

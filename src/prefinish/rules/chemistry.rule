@@ -1,0 +1,10 @@
+set name "Required chemistries"
+
+set expression "<chemistry 7 13 15 17>"
+
+set pweight 0.8
+set mweight 0.8
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}

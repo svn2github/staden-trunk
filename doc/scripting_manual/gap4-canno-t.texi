@@ -1,0 +1,521 @@
+NOTE: The terms @var{annotation} and @var{tag} are freely interchangable.
+Their varying use simply reflects the evolution of the code.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node shift_contig_tags
+@section shift_contig_tags
+@vindex shift_contig_tags(C)
+@cindex consensus tags, shifting
+@cindex tags, shifting in consensus
+@cindex annotations, shifting in consensus
+
+@example
+#include <tagUtils.h>
+
+void shift_contig_tags(
+        GapIO  *io,
+        int     contig,
+        int     posn,
+        int     dist);
+@end example
+
+This function moves tags within a contig with number @var{contig}. All tags
+starting at position @var{posn}, or to the right of @var{posn} are moved to
+the right by @var{dist} bases. @var{dist} should not be a negative value.
+
+The function is used internally by (for example) algorithms to add pads to the
+consensus or for joing contigs.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node merge_contig_tags
+@section merge_contig_tags
+@vindex merge_contig_tags(C)
+@cindex tags, merging in consensus
+@cindex annotations, merging in consensus
+
+@example
+#include <tagUtils.h>
+
+void merge_contig_tags(
+        GapIO  *io,
+        int     contig1,
+        int     contig2,
+        int     off);
+@end example
+
+This function is used to join a tag list from one contig to a tag list from
+another contig. All the tags in contig number @var{contig1} are added to
+contig number @var{contig2}. Each tag is moved by @var{off} bases when it is
+copied. The tag list is correctly maintained as sorted list. At the end of the
+function, the tags list for contig number @var{contig2} is set to 0.
+
+The main purpose of this function is for use when joining contigs.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node complement_contig_tags
+@section complement_contig_tags
+@vindex complement_contig_tags(C)
+@cindex consensus tags, complementing
+@cindex tags, complementing
+@cindex annotations, complementing
+
+@example
+#include <tagUtils.h>
+
+void complement_contig_tags(
+        GapIO  *io,
+        int     contig);
+@end example
+
+This function complements the positions and orientations of each tag on the
+consensus sequence for contig number @var{contig}. The tags on the readings
+are not modified as these are always kept in their original orientation.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node split_contig_tags
+@section split_contig_tags
+@vindex split_contig_tags(C)
+@cindex consensus tags, splitting in two
+@cindex tags, splitting lists
+@cindex annotations, splitting lists
+
+@example
+#include <tagUtils.h>
+
+void split_contig_tags(
+        GapIO  *io,
+        int     cont1,
+        int     cont2,
+        int     posl,
+        int     posr);
+@end example
+
+This function is called by the break contig algorithm and has little, if any,
+other use. When we're splitting a contig in half we need to move the
+annotations too. Annotations that overlap the two contigs are duplicated.
+Annotations that overlap the end of a contig have their lengths and positions
+corrected.
+
+@var{posl} and @var{posr} hold the overlap region of contigs @var{cont1} and
+@var{cont2} before splitting. At the time of calling this routine, @var{cont2}
+has just been created (and has no tags). Both contigs have their lengths set
+correctly, but all of the tags are still in @var{cont1}. This function
+corrects these tag locations.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node remove_contig_tags
+@section remove_contig_tags
+@vindex remove_contig_tags(C)
+@cindex consensus tags, removing
+@cindex tags, removing from consensus
+@cindex annotations, removing from consensus
+
+@example
+#include <tagUtils.h>
+
+void remove_contig_tags(
+        GapIO  *io,
+        int     contig,
+        int     posl,
+        int     posr);
+@end example
+
+This function removes annotations over the region defined as @var{posl} to
+@var{posr} from the consensus for contig number @var{contig}. Passing
+@var{posl} and @var{posr} as zero implies the entire consensus. This uses the
+@code{rmanno} function for the main portion of the work.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node remove_gel_tags
+@section remove_contig_tags
+@vindex remove_contig_tags(C)
+@cindex reading tags, removing
+@cindex tags, removing from readings
+@cindex annotations, removing from readings
+
+@example
+#include <tagUtils.h>
+
+void remove_gel_tags(
+        GapIO  *io,
+        int     gel,
+        int     posl,
+        int     posr);
+@end example
+
+This function removes annotations over the region defined as @var{posl} to
+@var{posr} from the reading numbered @var{gel}. Passing @var{posl} and
+@var{posr} as zero implies the entire reading. This uses the @code{rmanno}
+function for the main portion of the work.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node rmanno
+@section rmanno
+@vindex rmanno(C)
+@cindex tags, removing
+@cindex annotations, removing
+
+@example
+#include <tagUtils.h>
+
+int rmanno(
+        GapIO  *io,
+        int     anno,
+        int     lpos,
+        int     rpos);
+@end example
+
+This function removes annotations in a specified region from an annotation
+list. The annotation list starts at annotation number @var{anno}. The new list
+head (which will change if we delete the first annotation) is returned. The
+region to remove annotations over is between base numbers @var{lpos} and
+@var{rpos} inclusive. Note that annotations overlapping this region, but not
+contained entirely within it, will have their either their position or length
+modified, or may need splitting in two. (Consider the case where a single tag
+spans the entire region to see where splitting is necessary.)
+
+When succeeding the the new annotation number to form the annotation list
+head. Otherwise returns 0.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node tag2values
+@section tag2values
+@vindex tag2values(C)
+@cindex tags, converting from string to values
+@cindex annotations, converting from string to values
+@cindex conversion of tag formats
+
+@example
+#include <tagUtils.h>
+
+int tag2values(
+        char   *tag,
+        char   *type,
+        int    *start,
+        int    *end,
+        int    *strand,
+        char   *comment);
+@end example
+
+This function converts a tag in string format to a tag represented by a series
+of separate integer/string values. It performs the opposite task to the
+@code{values2tag} function.
+
+The tag string format is as used in the experiment file @code{TG} lines. The
+format is "@var{TYPE}<space>@var{S}<space>@var{start}..@var{end}" followed by
+zero or more comment lines, each starting with a newline character. @var{TYPE}
+is the tag type, which must be 4 characters, and @var{S} is the strand; one of
+"@code{+}", "@code{-}" or "@code{b}" (both).
+
+The tag string is passed as the @var{tag} argument. This is then expanded into
+the @var{type}, @var{start}, @var{end}, @var{strand} and @var{comment} values.
+The comment must have been allocated before hand (@code{strlen(tag)} will
+always be large enough). If no comment was found then @var{comment} is set to
+be an empty string. @var{type} should be allocated to be 5 bytes long.
+
+The function returns 0 for success, -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node values2tag
+@section values2tag
+@vindex values2tag(C)
+@cindex tags, converting from values to string
+@cindex annotations, converting from values to string
+@cindex conversion of tag formats
+
+@example
+#include <tagUtils.h>
+
+int values2tag(
+        char   *tag,
+        char   *type,
+        int     start,
+        int     end,
+        int     strand,
+        char   *comment);
+@end example
+
+This function converts a tag represented by a series of separate
+integer/string values to a single string of the format used by the experiment
+file @code{TG} line type. It performs the opposite task to the
+@code{tag2values} function.
+
+For the format of the tag string please see _ref(tag2values, tag2values).
+
+The @var{type}, @var{start}, @var{end}, @var{strand} and @var{comment}
+paramaters contain the current tag details. @var{comment} must be specified
+even when no comment exists, but can be specified as a blank string in this
+case. @var{tag} is expected to have been allocated already and no bounds
+checks are performed. A safe size for allocation is @code{strlen(comment)+30}.
+
+The function returns 0 for success, -1 for failure.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node rmanno_list
+@section rmanno_list
+@vindex rmanno_list(C)
+@cindex tags, removing
+@cindex annotations, removing
+
+@example
+#include <tagUtils.h>
+
+int rmanno_list(
+        GapIO  *io,
+        int     anno_ac,
+        int    *anno_av);
+@end example
+
+This function removes a list of annotations from the database. The annotation
+lists for readings and contigs are also updated accordingly. The annotations
+numbers to remove are held in an array named @var{anno_av} with @var{anno_ac}
+elements.
+
+This function returns 0 for success, -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node insert_NEW_tag
+@section insert_NEW_tag
+@vindex insert_NEW_tag(C)
+@cindex tag, creation of
+@cindex annotations, creation of
+
+@example
+#include <tagUtils.h>
+
+void insert_NEW_tag(
+        GapIO  *io,
+        int     N,
+        int     pos,
+        int     length,
+        char   *type,
+        char   *comment,
+        int     sense);
+@end example
+
+This function adds a new tag to the database. If @var{N} is positive, the tag
+is added to reading number @var{N}, otherwise it is added to contig number
+@var{-N}. The reading and contig annotation lists are updated accordingly.
+
+The @var{pos}, @var{length}, @var{type}, @var{comment} and @var{sense}
+arguments specify the position, length, type (a 4 character string), comment
+and orientation of the tag to create. @var{comment} may be @code{NULL}.
+@var{sense} should be one of 0 for forward, 1 for reverse and 2 for both.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node create_tag_for_gel
+@section create_tag_for_gel
+@vindex create_tag_for_gel(C)
+@cindex tag, creation of
+@cindex annotations, creation of
+
+@example
+#include <tagUtils.h>
+
+void create_tag_for_gel(
+        GapIO  *io,
+        int     gel,
+        int     gellen,
+        char   *tag);
+@end example
+
+This function is a textual analogue of the @code{insert_NEW_tag} function
+(which it uses). The function creates a new tag for a reading. The
+@var{gel} argument should contain the reading number and @var{gellen} the
+reading length. The tag to create is passed as the @var{tag} argument which is
+in the same format as taken by the @var{tag2values} function.
+_oxref(tag2values, tag2values).
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node ctagget
+@section ctagget and vtagget
+@vindex ctagget(C)
+@vindex vctagget(C)
+@cindex tag, searching for
+@cindex annotations, searching for
+
+@example
+#include <tagUtils.h>
+
+GAnnotations *ctagget(
+        GapIO  *io,
+        int     gel,
+        char   *type);
+
+GAnnotations *vtagget(
+        GapIO  *io,
+        int     gel,
+        int     num_t,
+        char  **type);
+@end example
+
+These function provides a mechanism of iterating around all the available tags
+of particular types on a given reading or contig number. The @code{ctagget}
+function searches for a single tag type, passed in @var{type} as a 4 byte
+string. The @code{vtagget} function searches for a set of tag types, passed as
+an array of @var{num_t} 4 byte strings.
+
+To use the functions, call them with a non zero @var{gel} number and the tag
+type(s). The function will return a pointer to a @var{GAnnotations} structure
+containing the first tag on this reading or contig of this type. If none are
+found, @code{NULL} is returned.
+
+To find the next tag on this reading or contig, of the same type, call the
+function with @var{gel} set to 0. To find all the tags of this type, keep
+repeating this until @code{NULL} is returned.
+
+Returns a @var{GAnnotations} pointer for success, @code{NULL} for "not found",
+and @code{(GAnnotations *)-1} for failure. The annotation pointer returned is
+valid until the next call of the function.
+
+For example, the following function prints information on all vector tags for
+a given reading.
+
+@example
+void print_tags(GapIO *io, int rnum) @{
+    char *type[] = @{"SVEC", "CVEC"@};
+    GAnnotations *a;
+
+    a = vtagget(io, rnum, sizeof(types)/sizeof(*types), types);
+
+    while (a && a != (GAnnotations *)-1) @{
+        printf("position %d, length %d\n",
+            a->position, a->length);e
+
+        a = vtagget(io, 0, sizeof(types)/sizeof(*types), types);
+    @}
+@}
+@end example
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node tag_shift_for_insert
+@section tag_shift_for_insert
+@vindex tag_shift_for_insert(C)
+@cindex tag, insertion within
+@cindex annotations, insertion within
+@cindex inserting into tags
+
+@example
+#include <tagUtils.h>
+
+void tag_shift_for_insert(
+        GapIO  *io,
+        int     N,
+        int     pos);
+@end example
+
+This function shifts or extends tags by a single base. The purpose is to
+handle cases where we need to insert into a sequence. An edit at position
+@var{pos} will mean moving every tag to the right of this one base rightwards.
+A tag that spans position @var{pos} will have it's length increased by one.
+If @var{N} is positive it specifies the reading number to operate on,
+otherwise it specifies the contig number (negated).
+
+NOTE: This function @strong{does not} work correctly for complemented
+readings. It is planned to fix this problem by creating a new function that
+operates in a more intelligent fashion. To work around this problem, logic
+similar to the following needs to be used.
+
+@example
+    /*
+     * Adjust tags
+     * NOTE: Must always traverse reading in reverse of original sense
+     */
+    if (complemented) @{
+        for(i=j=0; i < gel_len; i++) @{
+            if (orig_seq[i] != padded_seq[j]) @{
+                tag_shift_for_insert(io, gel_num, length-j);
+            @} else
+                j++;
+        @}
+    @} else @{
+        for(i=j=gel_len-1; i >= 0; i--) @{
+            if (orig_seq[i] != padded_seq[j]) @{
+                tag_shift_for_insert(io, gel_num, j+1);
+            @} else
+                j--;
+        @}
+    @}
+@end example
+
+In the above example @var{padded_seq} is a padded copy of @var{orig_seq}. The
+function calls @code{tag_shift_for_insert} for each pad. Note that the order
+of the insertions is important and differs depending on whether the reading is
+complemented or not.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node tag_shift_for_delete
+@section tag_shift_for_delete
+@vindex tag_shift_for_delete(C)
+@cindex tag, deletion within
+@cindex annotations, deletion within
+@cindex deleting into tags
+
+@example
+#include <tagUtils.h>
+
+void tag_shift_for_delete(
+        GapIO  *io,
+        int     N,
+        int     pos);
+@end example
+
+This function shifts or shrinks tags by a single base. The purpose is to
+handle cases where we need to delete a base within a sequence. An deletion at
+position @var{pos} will mean moving every tag to the right of this position
+one base leftwards.  A tag that spans position @var{pos} will have it's length
+decreased by one.  If @var{N} is positive it specifies the reading number to
+operate on, otherwise it specifies the contig number (negated).
+
+NOTE: This function @strong{does not} work correctly for complemented
+readings. Also, it does not remove the tag when a deletion shrinks it's size
+to 0. It is planned to fix these problem by creating a new function that
+operates in a more intelligent fashion. To work around this problem, use logic
+similar to the example in @code{tag_shift_for_insert}.
+_oxref(tag_shift_for_insert, tag_shift_for_insert).
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node type2str
+@section type2str and str2type
+@vindex type2str(C)
+@vindex str2type(C)
+@cindex tags, type conversion
+@cindex annotations, type conversion
+
+@example
+#include <tagUtils.h>
+
+int str2type(
+        char   *stype);
+
+void type2str(
+        int     itype,
+        char    stype[5]);
+@end example
+
+Note that these two functions are infact #defines. The prototypes are listed
+simply to guide their correct usage.
+
+@code{str2type} converts a 4 character tag type, pointed to by @var{stype}
+into an integer value as used in the @var{GAnnotations.type} field.
+
+@code{type2str} converts an integer type passed as @var{itype} to a 4
+character (plus 1 nul) string.

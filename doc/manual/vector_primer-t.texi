@@ -1,0 +1,36 @@
+@node Formats-Vector_Primer
+@section Vector_primer File
+@cindex Vector_Primer files
+@cindex format: vector_primer files
+
+
+The vector_primer files store
+the data for each vector/primer pair combination as a single record
+(line) and up to 100 records can be contained in a file. The items on each
+line must be separated by spaces or tabs (only the file name can contain spaces)
+and a newline character ends the record. 
+
+The items in a record are:
+
+name seq_r seq_f file_name
+
+name is an arbitrary record name.
+seq_r is the sequence between the reverse primer and the cloning site.
+seq_f is the sequence between the forward primer and the cloning site.
+file_name is the name of the file containing the complete vector sequence.
+
+An example file containing two entries 
+(for m13mp18, and a vector called f1) is 
+shown below. "\" symbols have been used to denote wrapped lines and so it
+can be seen that the first record is shown on two lines and the next on 1.
+
+@example
+
+m13mp18 attacgaattcgagctcggtaccc ggggatcctctagagtcgacctgcaggcatgcaagcttggc \
+/pubseq/tables/vectors/m13mp18.seq
+f1 CCGGGAATTCGCGGCCGCGTCGACT CTAGACTCGAGTTATGCATGCA  af_clones_vec
+@end example
+See 
+_oref(Vector_Clip-Vector_Primer-Files, Vector_Primer files)
+for information about creating new vector_primer file entries.
+

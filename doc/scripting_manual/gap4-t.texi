@@ -1,0 +1,46 @@
+@menu
+* Gap4s-Introduction::          Introduction
+* Gap4s-IO::                    Low-level IO Access
+* Gap4s-Util::                  Utility Commands
+* Gap4s-Main::                  Main Commands
+* Gap4s-Editor::                The Editor Widget
+* Gap4s-EdNames::               The EdNames Widget
+@end menu
+
+@node Gap4s-Introduction
+@section Introduction
+_include(gap4-scripting-intro-t.texi)
+
+@page
+@node Gap4s-IO
+@section Low-level IO Access
+@lowersections
+_include(gap4-scripting-io-t.texi)
+@raisesections
+
+@page
+@node Gap4s-Util
+@section Utility Commands
+@lowersections
+_include(gap4-scripting-util-t.texi)
+@raisesections
+
+@page
+@node Gap4s-Main
+@section Main Commands
+@lowersections
+_include(gap4-scripting-comm-t.texi)
+@raisesections
+
+@page
+@node Gap4s-Editor
+@section The Editor Widget
+_include(gap4-editor-t.texi)
+
+
+@page
+@node Gap4s-EdNames
+@section The EdNames Widget
+
+This widget is currently undocumented. See the @file{src/gap4/tkEdNames.c}
+file.

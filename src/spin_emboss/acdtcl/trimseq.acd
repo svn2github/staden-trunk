@@ -1,0 +1,186 @@
+package require Iwidgets
+namespace eval ::EMBOSS::trimseq {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_trimseq*Xentry.entry.width 30
+option add *e_trimseq*Entryfield.width 30
+option add *e_trimseq*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) trimseq
+    set w [xtoplevel .e_trimseq -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - trimseq}
+    label $w._title -text {Trim ambiguous bits off the ends of sequences}
+    pack $w._title -side top -fill both
+    set vars(trimseq._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst gapany]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Window size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 1]
+    pack $w.window -side top -fill both
+    set vars(window.path) $w.window
+    set vars(window.required)  0
+    set vars(window._type) integer
+
+    lappend arguments percent
+    iwidgets::entryfield $w.percent \
+	-validate real \
+	-textvariable [namespace current]::vars(percent) \
+	-labeltext [subst {Percent threshold of ambiguity in window}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.percent component entry] -sticky nse
+    set vars(percent) [subst 100.0]
+    pack $w.percent -side top -fill both
+    set vars(percent.path) $w.percent
+    set vars(percent.required)  0
+    set vars(percent._type) float
+
+    lappend arguments strict
+    checkbutton $w.strict \
+	-text [subst {Trim off all ambiguity codes, not just N or X}]\
+	-variable [namespace current]::vars(strict)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.strict -side top -anchor w
+    set vars(strict) [subst 0]
+    set vars(strict.path) $w.strict
+    set vars(strict.required)  0
+    set vars(strict._type) bool
+
+    lappend arguments star
+    checkbutton $w.star \
+	-text [subst {Trim off asterisks}]\
+	-variable [namespace current]::vars(star)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.star -side top -anchor w
+    set vars(star) [subst 0]
+    set vars(star.path) $w.star
+    set vars(star.required)  0
+    set vars(star._type) bool
+
+    lappend arguments left
+    checkbutton $w.left \
+	-text [subst {Trim at the start}]\
+	-variable [namespace current]::vars(left)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.left -side top -anchor w
+    set vars(left) [subst 1]
+    set vars(left.path) $w.left
+    set vars(left.required)  0
+    set vars(left._type) bool
+
+    lappend arguments right
+    checkbutton $w.right \
+	-text [subst {Trim at the end}]\
+	-variable [namespace current]::vars(right)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.right -side top -anchor w
+    set vars(right) [subst 1]
+    set vars(right.path) $w.right
+    set vars(right.required)  0
+    set vars(right._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst Filename]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqoutall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/trimseq.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

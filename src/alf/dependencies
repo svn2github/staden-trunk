@@ -1,0 +1,3 @@
+
+# DO NOT DELETE
+$O/alfsplit.o: $(SRCROOT)/Misc/os.h

@@ -1,0 +1,200 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Sequence vector clipping (eg m13).
+#
+# This processes Experiment files, reading the SF, SV, SC and SP line types,
+# writing to SL and SR lines.
+#
+set help {pregap4 {Pregap4-Modules-Screen}}
+
+proc name {} {
+    return "Screen Sequences"
+}
+
+proc init {} {
+    global env
+    mod_preset min_match 25
+    mod_preset max_length 250000
+    mod_preset screen_mode fofn
+    mod_preset screen_file $env(STADENROOT)/userdata/ecoli.files
+    variable screen_file
+    set screen_file [fullpath $screen_file]
+}
+
+proc run {files} {
+    variable min_match
+    variable max_length
+    variable screen_mode
+    variable screen_file
+    variable report
+    global fofn
+    global file_type
+    global file_error
+    global errorCode
+
+    set new_files {}
+    set report ""
+
+    # Create file of filenames
+    set fd [open $fofn.tmp w]
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    puts $fd $f
+	    set found($f) 0
+	} else {
+	    lappend new_files $f
+        }
+    }
+    close $fd
+
+    catch {file delete $fofn.screenseq_passed}
+    catch {file delete $fofn.screenseq_failed}
+    # Call screen_seq
+    set errorCode NONE
+    if {$screen_mode == "single"} {
+        set err [catch {exec screen_seq \
+	    -l $min_match \
+	    -m $max_length \
+	    -i $fofn.tmp \
+	    -p $fofn.screenseq_passed \
+	    -f $fofn.screenseq_failed \
+	    -S $screen_file } var]
+    } else {
+        set err [catch {exec screen_seq \
+	    -l $min_match \
+	    -m $max_length \
+	    -i $fofn.tmp \
+	    -p $fofn.screenseq_passed \
+	    -f $fofn.screenseq_failed \
+	    -s $screen_file} var]
+    }
+    if {$errorCode != "NONE"} {
+	append report "ERR: screen_seq failed with error message '$var'.\n"
+	return $files
+    }
+
+    vmessage $var
+
+    # Process passed file
+    if {[catch {set fd [open $fofn.screenseq_passed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    lappend new_files $line
+	    catch {unset found($line)}
+	    append report "SEQ $line: passed\n"
+	}
+        close $fd
+    }
+
+    # Process failed file
+    if {[catch {set fd [open $fofn.screenseq_failed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    if {[regsub {(.*) Error:.*} $line {\1} name] == 0} {
+	        set name $line
+	    }
+	    if {![info exists file_type($name)]} {
+		verror ERR_WARN screen_seq \
+		    "screen_seq has unknown reading '$name' in failed file"
+		continue
+	    }
+	    if {[regsub {.*Error:} $line {} line]} {
+	        set file_error($name) "screen_seq: $line"
+	    } else {
+		set file_error($name) "screen_seq rejected"
+	    }
+	    catch {unset found($name)}
+	    append report "SEQ $name: failed ($line)\n"
+	}
+        close $fd
+    }
+
+    # Check that there aren't any missing - neither in passed or failed
+    foreach f [array names found] {
+	verror ERR_WARN screen_seq "screen_seq 'lost' reading with name '$f'"
+	set file_error($f) "screen_seq: lost file"
+	append report "SEQ $f: lost\n"
+    }
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable min_match
+    variable max_length
+    variable screen_mode
+    variable screen_file
+
+    get_fname $w.screen_file \
+	-text "Screen filename" \
+	-type load \
+	-default $screen_file
+    xyn $w.screen_mode \
+	-label "Screen single sequence" \
+	-orient horiz \
+	-default [string compare $screen_mode "fofn"] \
+	-ycommand "$w.screen_file configure -text {Screen seq. filename}" \
+	-ncommand "$w.screen_file configure -text {Screen seq. file of filenames}"
+    xentry $w.max_length \
+	-label "Maximum screen sequence length" \
+	-default $max_length \
+	-width 7 \
+	-type "int 1"
+
+    pack $w.screen_mode $w.screen_file $w.max_length -side top -fill both
+
+    frame $w.separator -bd 2 -relief raised -height 2
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+    
+
+    xentry $w.min_match \
+	-label "Minimum match length" \
+	-default $min_match \
+	-width 7 \
+	-type "int 1"
+
+    pack $w.min_match -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	min_match max_length screen_mode screen_file]]} {
+	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable min_match
+    variable max_length
+    variable screen_mode
+    variable screen_file
+
+    if {[set min_match	 [$w.min_match	 get]] == ""} { return 0 }
+    if {[set max_length	 [$w.max_length	 get]] == ""} { return 0 }
+    if {[set screen_mode [$w.screen_mode get]] == ""} { return 0 }
+    set screen_mode [lindex {fofn single} $screen_mode]
+    if {[set screen_file [$w.screen_file get]] == ""} { return 0 }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save min_match [$w.min_match get2]
+	mod_save max_length [$w.max_length get2]
+	mod_save screen_mode \
+	    [lindex {fofn single} [$w.screen_mode get]]
+	mod_save screen_file [$w.screen_file get2]
+    }
+}

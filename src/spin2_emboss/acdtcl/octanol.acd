@@ -1,0 +1,160 @@
+package require Iwidgets
+namespace eval ::EMBOSS::octanol {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_octanol*Xentry.entry.width 30
+option add *e_octanol*Entryfield.width 30
+option add *e_octanol*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) octanol
+    set w [xtoplevel .e_octanol -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - octanol}
+    label $w._title -text {Displays protein hydropathy}
+    pack $w._title -side top -fill both
+    set vars(octanol._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 1]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 1]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst pureprotein]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  1
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments datafile
+    xentry $w.datafile \
+	-label [subst {White-Wimley data file (Ewhite-wimley.dat)}]\
+	-textvariable [namespace current]::vars(datafile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.datafile delete 0 end
+    $w.datafile insert end [subst Ewhite-wimley.dat]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile._type) datafile
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {window size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 19]
+    pack $w.width -side top -fill both
+    set vars(width.minimum) [subst 1]
+    set vars(width.maximum) [subst 200]
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  1
+    set vars(graph._type) xygraph
+
+    lappend arguments octanolplot
+    checkbutton $w.octanolplot \
+	-text [subst {Display the octanol plot}]\
+	-variable [namespace current]::vars(octanolplot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.octanolplot -side top -anchor w
+    set vars(octanolplot) [subst 0]
+    set vars(octanolplot.path) $w.octanolplot
+    set vars(octanolplot.required)  0
+    set vars(octanolplot._type) bool
+
+    lappend arguments interfaceplot
+    checkbutton $w.interfaceplot \
+	-text [subst {Display the interface plot}]\
+	-variable [namespace current]::vars(interfaceplot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.interfaceplot -side top -anchor w
+    set vars(interfaceplot) [subst 0]
+    set vars(interfaceplot.path) $w.interfaceplot
+    set vars(interfaceplot.required)  0
+    set vars(interfaceplot._type) bool
+
+    lappend arguments differenceplot
+    checkbutton $w.differenceplot \
+	-text [subst {Do not display the difference plot}]\
+	-variable [namespace current]::vars(differenceplot)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.differenceplot -side top -anchor w
+    set vars(differenceplot) [subst 1]
+    set vars(differenceplot.path) $w.differenceplot
+    set vars(differenceplot.required)  0
+    set vars(differenceplot._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/octanol.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,163 @@
+package require Iwidgets
+namespace eval ::EMBOSS::contacts {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_contacts*Xentry.entry.width 30
+option add *e_contacts*Entryfield.width 30
+option add *e_contacts*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) contacts
+    set w [xtoplevel .e_contacts -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - contacts}
+    label $w._title -text {Reads coordinate files and writes contact files}
+    pack $w._title -side top -fill both
+    set vars(contacts._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cpdb
+    iwidgets::entryfield $w.cpdb \
+	-textvariable [namespace current]::vars(cpdb) \
+	-labeltext [subst {Location of coordinate files for input (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cpdb component entry] -sticky nse
+    set vars(cpdb) [subst ./]
+    pack $w.cpdb -side top -fill both
+    set vars(cpdb.path) $w.cpdb
+    set vars(cpdb.required)  1
+    set vars(cpdb._type) string
+
+    lappend arguments cpdbextn
+    iwidgets::entryfield $w.cpdbextn \
+	-textvariable [namespace current]::vars(cpdbextn) \
+	-labeltext [subst {Extension of coordinate files (embl-like format)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.cpdbextn component entry] -sticky nse
+    set vars(cpdbextn) [subst .pxyz]
+    pack $w.cpdbextn -side top -fill both
+    set vars(cpdbextn.path) $w.cpdbextn
+    set vars(cpdbextn.required)  1
+    set vars(cpdbextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments thresh
+    iwidgets::entryfield $w.thresh \
+	-validate real \
+	-textvariable [namespace current]::vars(thresh) \
+	-labeltext [subst {Threshold contact distance}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.thresh component entry] -sticky nse
+    set vars(thresh) [subst 1.0]
+    pack $w.thresh -side top -fill both
+    set vars(thresh.path) $w.thresh
+    set vars(thresh.required)  1
+    set vars(thresh._type) float
+
+    lappend arguments ignore
+    iwidgets::entryfield $w.ignore \
+	-validate real \
+	-textvariable [namespace current]::vars(ignore) \
+	-labeltext [subst {Threshold ignore distance}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.ignore component entry] -sticky nse
+    set vars(ignore) [subst 20.0]
+    pack $w.ignore -side top -fill both
+    set vars(ignore.path) $w.ignore
+    set vars(ignore.required)  1
+    set vars(ignore._type) float
+
+    lappend arguments vdwf
+    iwidgets::entryfield $w.vdwf \
+	-textvariable [namespace current]::vars(vdwf) \
+	-labeltext [subst {Name of data file with van der Waals radii}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.vdwf component entry] -sticky nse
+    set vars(vdwf) [subst Evdw.dat]
+    pack $w.vdwf -side top -fill both
+    set vars(vdwf.path) $w.vdwf
+    set vars(vdwf.required)  1
+    set vars(vdwf._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments con
+    iwidgets::entryfield $w.con \
+	-textvariable [namespace current]::vars(con) \
+	-labeltext [subst {Location of contact files for output}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.con component entry] -sticky nse
+    set vars(con) [subst ./]
+    pack $w.con -side top -fill both
+    set vars(con.path) $w.con
+    set vars(con.required)  1
+    set vars(con._type) string
+
+    lappend arguments conextn
+    iwidgets::entryfield $w.conextn \
+	-textvariable [namespace current]::vars(conextn) \
+	-labeltext [subst {Extension of contact files}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.conextn component entry] -sticky nse
+    set vars(conextn) [subst .con]
+    pack $w.conextn -side top -fill both
+    set vars(conextn.path) $w.conextn
+    set vars(conextn.required)  1
+    set vars(conextn._type) string
+
+    lappend arguments conerrf
+    xentry $w.conerrf \
+	-label [subst {Name of log file for the build}]\
+	-textvariable [namespace current]::vars(conerrf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.conerrf delete 0 end
+    $w.conerrf insert end [subst contacts.log]
+    pack $w.conerrf -side top -fill both
+    set vars(conerrf.path) $w.conerrf
+    set vars(conerrf.required)  1
+    set vars(conerrf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/contacts.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

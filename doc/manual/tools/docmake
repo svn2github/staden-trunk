@@ -1,0 +1,50 @@
+#!/bin/sh
+#
+# jkb 06/10/95 - creates stubs for the document system.
+#
+
+if [ "$DOCDIR"x = "x" ]
+then
+    DOCDIR=.
+    export DOCDIR
+fi
+
+text2texi=$DOCDIR/tools/text2texi
+
+# Ask the user for the names.
+echo -n 'Enter document name (no spaces) : '
+read DOCNAME
+echo -n 'Enter document title : '
+read DOCTITLE
+echo -n 'Enter document subtitle (if any) : '
+read DOCSUBTIT
+echo -n 'Enter document author (if any) : '
+read DOCAUTHOR
+echo
+
+# Escape any shell or texi meta characters - yum!
+XDOCNAME=`echo $DOCNAME|sed 's:\\\\:\\\\\\\\:g;s:/:\\\\/:g'|$text2texi`
+XDOCTITLE=`echo $DOCTITLE|sed 's:\\\\:\\\\\\\\:g;s:/:\\\\/:g'|$text2texi`
+XDOCSUBTIT=`echo $DOCSUBTIT|sed 's:\\\\:\\\\\\\\:g;s:/:\\\\/:g'|$text2texi`
+XDOCAUTHOR=`echo $DOCAUTHOR|sed 's:\\\\:\\\\\\\\:g;s:/:\\\\/:g'|$text2texi`
+
+# Create the doc.texi file
+echo Creating $DOCNAME.texi
+sed "s/DOCNAME/$XDOCNAME/;s/DOCTITLE/$XDOCTITLE/;s/DOCSUBTIT/$XDOCSUBTIT/;s/DOCAUTHOR/$XDOCAUTHOR/" < $DOCDIR/doc.template > $DOCNAME.texi
+
+echo Creating $DOCNAME-t.texi
+# Create the doc-t.texi file
+cp $DOCDIR/doc-t.template $DOCNAME-t.texi
+
+# Edit the makefile. (let's hope DOCNAME doesn't start with a fullstop)
+cp Makefile Makefile.bak
+echo 'Editing Makefile (a copy is in Makefile.bak)'
+ed Makefile << _ed_ > /dev/null
+/^all:/s/xref/$DOCNAME xref/
++1
+i
+$DOCNAME:       ${DOCNAME}_toc.html $DOCNAME.index $DOCNAME.dvi
+.
+w
+q
+_ed_

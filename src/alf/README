@@ -1,0 +1,24 @@
+alfprocess Scripts and Filters
+------------------------------
+The scripts and filters here were developed at the MRC-LMB for INTERNAL
+USE ONLY. As we are aware that people elsewhere will want to develop
+similar software we include them in the Staden package as EXAMPLES of
+what can be achieved.
+
+THESE SCRIPTS WILL NOT WORK ON YOUR SYSTEM WITHOUT MODIFICATION.
+
+This directory contains:
+    2rs.c		- filter to convert abi and alf uncertainty codes to
+			  staden uncertainty codes
+    alfbackup.sh        - script to be back up a folder and transfer to project
+    alfprocess		- script to process a batch of alf data
+    alfprocess2		- script to process a batch of alf data
+    alfprocessDoc	- documentation on alfprocess
+    alfsplit.c		- Takes big combined alf results file, and splits it
+			  into separate files for each clone.
+    alftransfer		- script to transfer alf files into a results directory
+    makefile		- To compile c programs
+
+Happy hacking,
+
+    sd@uk.ac.cam.mrc-lmb

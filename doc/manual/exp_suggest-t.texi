@@ -1,0 +1,456 @@
+_split()
+@node Experiments
+@chapter Finishing Experiments
+
+@menu
+* Double Strand::         Double Stranding
+* Suggest Primers::       Suggest Primers
+* Suggest Long::          Suggest Long Readings
+* Compressions::          Resequence Compressions
+* Suggest Probes::        Suggest Probes
+@end menu
+
+Gap4 contains several functions for helping to select experiments to
+finish an assembly project. These functions 
+(which are all available from the gap4 Experiments menu)
+are able to automatically
+analyse the
+contigs to find the regions which need attention, and to suggest
+appropriate experiments. 
+
+Prior to performing any experiments it can
+be worthwhile to try to make the most of the existing data by moving the
+boundary between the hidden and visible data of 
+readings to cover single stranded readings.
+(_fpref(Double Strand, Double Strand, exp_suggest)) 
+
+The following "Experiment Suggestion" functions analyse the contigs to
+find problems, and then suggest the best templates to use for further
+experiments. 
+
+Primers and templates for primer walking experiments can be suggested.
+(_fpref(Suggest Primers, Suggest Primers, exp_suggest)).
+Sometimes resequencing on a long gel machine will help to fill a single
+stranded region or join a pair of contigs.
+(_fpref(Suggest Long, Suggest Long Readings, exp_suggest)).
+Compressions and stops can be solved by resequencing using an different
+chemistry.
+(_fpref(Compressions, Compressions and Stops, exp_suggest)).
+In order to select oligos to use as probes for clones near the ends of
+contigs a further function is available.
+(_fpref(Suggest Probes, Suggest Probes, exp_suggest)).
+
+_split()
+@node Double Strand
+@section Double Stranding
+@cindex Double strand
+
+The purpose of this function 
+(which is available from the gap4 Edits menu)
+is to use hidden data
+to fill regions of contigs that have
+data on only one strand
+(_fpref(Intro-Hidden, Use of the "hidden" poor quality data, gap4)).
+First the routine finds a region that has data for
+only one strand. Then it examines the nearby readings on the other
+strand to see if they have hidden data that covers the single stranded
+region.  If so it
+finds the best alignment between this hidden data and the consensus over
+the region. If this alignment is good enough the data is converted from
+hidden to visible.  This process is continued over all the selected
+contigs. The function can be run on a subsection of a single contig, on all
+contigs, or on a subset of contigs that are named in a file of a list.
+
+Significant portions of the sequence can be  covered  by  this
+operation,  hence  saving  a great deal of experimental work, and it
+can be used as a standard part of cleaning up a sequencing project.
+However it must be noted that an increased number of edits may be
+required after its application. The amount of  cutoff
+data  used depends on the number of mismatches and the percentage
+mismatch in the alignment. That is, it depends on the quality of the
+alignment, not the quality of the data: if it aligns it is assumed to
+be correct!
+
+The program reports its progress in the Output window as shown in the
+following example.
+
+@example
+Wed 03:52:46 PM: double strand
+------------------------------------------------------------
+Double stranding contig xf48g3.s1 between 1 and 6189
+Double stranded zf23b2.s1       by 121 bases at offset 3752
+Double stranded zf18g11.s1      by 194 bases at offset 5652
+Positive strand :
+	Double stranded 315 bases with 2 inserts into consensus
+	Filled 0 holes
+Complementing contig   358
+Double stranded zg29a11.s1      by 42 bases at offset 5265 - Filled
+Double stranded zf38c7.s1       by 131 bases at offset 5015 - Filled
+Negative strand :
+	Double stranded 174 bases with 1 insert into consensus
+	Filled 2 holes
+@end example
+
+_picture(exp_suggest.double)
+
+The contigs to process can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated, and if it is clicked, an appropriate
+browser will be invoked. If the user selects "single" then the
+dialogue for choosing the contig and the section to process becomes
+active.
+
+Only alignments with not more than "Maximum number of mismatches" and
+"Maximum percentage of mismatches" will be accepted.
+
+@page
+_split()
+@node Suggest Primers
+@section Suggest Primers
+@cindex Suggest primers
+@cindex Primers: suggestion of
+
+The purpose of this function 
+(which is available from the gap4 Experiments menu)
+is to suggest custom primer experiments to
+extend and "double strand" contigs.  First the routine finds regions of
+contigs with data on only one strand. Then it selects templates and
+primers, which if used in sequencing experiments, would produce data to
+cover these single stranded regions.  This information is written to a
+file or a list and also appears in the Output window.  For each primer
+suggested a tag is automatically created containing the template name
+and the sequence.  See also _oref(Suggest Long, Suggest Long), and
+_oref(Double Strand, Double Strand).
+
+The following example shows how the results appear in the Output
+window.
+
+@example
+Wed 04:53:08 PM: Suggest Primers
+------------------------------------------------------------
+Selecting oligos for contig xf23a3.s1 between 1 and 12379
+At  3873 - template zf23b2, primer GAAACTGGATAATACGAC, number 1
+At  5847 - template zf18g11, primer CCTCCAATAGCGTGAAG, number 2
+At  7924 - template zf22d11, primer GTAAAGTGTAATTCAAGGAAG, number 3
+At  9033 - template zf97c10, primer ATGATAGAAATCTCGTGG, number 4
+At  9972 - template zf98b5, primer GCGGAAAGTTGAAAGAG, number 5
+At 10506 - template zg09a9, primer ACACATCATTTCGGAGG, number 6
+At 10958 - template zf24c1, primer CAGTTTACGAGAAAGTCC, number 7
+At 11529 - template zg29a12, primer ACCTTCCCAAAAGTTCC, number 8
+At 11897 - template zf97d7, primer AACCCGATTTTCGTAATG, number 9
+Complementing contig   358
+At 11400 - template zf38b1, primer CGAAGACCCAAAGAAAG, number 11
+At  9902 - template zf98a4, primer CTTTTCTCTTTCAACTTTCC, number 12
+At  7104 - template zf22h10, primer GTTGTCACGAAAATCGC, number 13
+At  6564 - template zf21e6, primer CGGATCAAATATGGATGG, number 14
+At  1499 - template zf98a11, primer CGTGATTTTTACACTATTTCC, number 15
+At   774 - template zf19c4, primer TCCAATTTTGATTCAGGC, number 16
+Complementing contig    46
+@end example
+
+The following shows the contents of the corresponding file. The fields are
+@i{template name}, @i{reading name}, @i{primer name}, @i{primer sequence},
+@i{position} and @i{direction}.
+
+@example
+zf23b2 zf23b2.s1 B0334.1 GAAACTGGATAATACGAC 3818 +
+zf18g11 zf18g11.s1 B0334.2 CCTCCAATAGCGTGAAG 5789 +
+zf22d11 zf22d11.s1 B0334.3 GTAAAGTGTAATTCAAGGAAG 7883 +
+zf97c10 zf97c10.s1 B0334.4 ATGATAGAAATCTCGTGG 8984 +
+zf98b5 zf98b5.s1 B0334.5 GCGGAAAGTTGAAAGAG 9932 +
+zg09a9 zg09a9.s1 B0334.6 ACACATCATTTCGGAGG 10460 +
+zf24c1 zf24c1.s1 B0334.7 CAGTTTACGAGAAAGTCC 10902 +
+zg29a12 zg29a12.r1 B0334.8 ACCTTCCCAAAAGTTCC 11487 +
+zf97d7 zf97d7.s1 B0334.9 AACCCGATTTTCGTAATG 11855 +
+zf23a3 zf23a3.s1 B0334.10 CAAAGCAATGTCCCCAG 12339 +
+zf38b1 zf38b1.s1 B0334.11 CGAAGACCCAAAGAAAG 930 -
+zf98a4 zf98a4.s1 B0334.12 CTTTTCTCTTTCAACTTTCC 2427 -
+zf22h10 zf22h10.s1 B0334.13 GTTGTCACGAAAATCGC 5220 -
+zf21e6 zf21e6.s1 B0334.14 CGGATCAAATATGGATGG 5771 -
+zf98a11 zf98a11.s1 B0334.15 CGTGATTTTTACACTATTTCC 10833 -
+zf19c4 zf19c4.s1 B0334.16 TCCAATTTTGATTCAGGC 11565 -
+@end example
+
+_picture(exp_suggest.primers)
+
+The contigs to process can be a particular
+"single" contig, "all contigs", or a subset of contigs whose names are
+stored in a "file" or a "list". If a file or list is selected the
+browse button will be activated and, if it is clicked, an appropriate
+browser will be invoked. If the user selects "single", then the
+dialogue for choosing the contig and the section to process becomes
+active.
+
+The primer sequences, their template names and their reading names can
+be written to a file or a list and an appropriate browser can be used to
+aid its selection.
+
+For each single stranded region located, the program will search for a
+primer on its 5' side in the region "search start position", to
+"search end position". That is, it will try to locate a primer starting at
+"search start position" and then will look increasingly further away
+until it reaches "search end position".
+
+If required, by employing the "number of primers per match" entry box,
+the user can request that the program tries to suggest more than one
+primer per problem. The "primer start number" is an attempt to
+generate a unique name for each primer suggested. If the number was
+set to, say 11, and the database was named B0334, then the first primer
+would be named B0334.11, the next B0334.12, etc in the output file.
+
+The "Edit parameters" button invokes a dialogue box which allows the 
+specification of further parameters. Primer constraints can be specified 
+by melting temperature, length and G+C content.
+
+@page
+_split()
+@node Suggest Long
+@section Suggest Long Readings
+@cindex Suggest long readings
+@cindex Long readings: suggestion of
+
+This routine 
+(which is available from the gap4 Experiments menu)
+suggests which templates could be resequenced on a long gel
+machine to fill in single stranded regions or extend contigs. The "Estimated
+long reading length" tells the routine the expected length of reading that
+will be produced by the sequencing machine. The routine finds all single
+stranded regions, and where possible suggests solutions. Solutions will not be
+suggested using readings from templates that have inconsistent read-pair
+information.
+
+The example output below shows a list of  problem  segments
+followed by suggested templates.
+
+@example
+  Prob 1..1:            Extend contig start for joining.
+      Long       c91d3.s1@   367. T_pos=366, T_size=1000..1500 (1250), cov 189
+      Long      c99e12.s1@   340. T_pos=191, T_size=1000..1500 (1250), cov 216
+
+  Prob 1..456:          No +ve strand data.
+      No solution.
+
+  Prob 1597..1736:      No +ve strand data.
+      Long       c53c6.s1@  1074. T_pos=341, T_size=1000..1500 (1250), cov 32
+      Long      e04c11.s1@  1076. T_pos=376, T_size=1000..1500 (1250), cov 34
+      Long       e05h9.s1@  1081. T_pos=377, T_size=1000..1500 (1250), cov 39
+      Long       e05a1.s1@  1198. T_pos=329, T_size=1000..1500 (1250), cov 156*
+      Long      c53b11.s1@  1382. T_pos=216, T_size=1000..1500 (1250), cov 340*
+
+  Prob 2530..2532:      No +ve strand data.
+      Long       e03a8.s1@  2283. T_pos=199, T_size=1000..1500 (1250), cov 308*
+      Long      e05b10.s1@  2331. T_pos=200, T_size=1000..1500 (1250), cov 356*
+
+  Prob 3974..4067:      No -ve strand data.
+      No solution.
+
+  Prob 4067..4067:      Extend contig end for joining.
+   D  Long       e06a3.s1@  3588. T_pos=366, T_size=1000..1500 (1582), cov 76
+      Long       c53b1.s1@  3709. T_pos=360, T_size=1000..1500 (1250), cov 197
+@end example
+
+        Some brief notes on the above output; looking at the suggested
+  rerun of reading e05a1.s1.
+
+@table @code
+@item Prob 1597..1736:        No +ve strand data.
+A single stranded region has been identified in this contig at bases
+1597 to 1736 inclusive.
+
+@item "?D Long"
+The optional two letters before the word "Long" are used to flag possibly
+inconsistent templates (templates that are definitely inconsistent are
+ignored). "?" means that no primer information is available
+for the template that the reading is from. "D" means that the template size is not
+within the expected minimum and maximum. In this case the observed size is
+displayed (see below).
+
+@item "Long       e05a1.s1@  1198."
+A possible solution; rerun reading e05a1.s1 as a long gel. The first
+used base at the 5' end of this reading is at position 1198 in the
+contig. Typically this roughly corresponds to the primer position for
+this reading in the contig.
+
+@item T_pos=329
+The last used base at the 3' end of the reading is estimated to be the
+329th base of the template.  Together with the template lengths this
+gives us an estimate of how much template there is available for a long
+gel or for walking.
+
+@item T_size=1000..1500 (1250)
+The estimated size for this template is 1250 bases.  Gap4 is supplied a
+minimum and maximum size when a reading is assembled.  In this case the
+minimum is 1000 bases, and the maximum 1500.  When 
+forward and reverse reads assembled into the same contig
+estimate the real length reasonably accurately. Otherwise (as can be
+seen here), the estimated length is simply the average of the supplied
+minimum and maximum lengths.
+
+@item cov 156*
+We would expect a long gel to cover our "hole" by 156 bases. This
+estimate is based purely on the position of the start of the reading in
+relation to the start of the hole, and the estimated length of a long
+gel.  The asterisk here marks that this coverage is more than enough to
+completely solve the problem by plugging the positive strand hole.
+@end table
+
+For the problem "3974..4067" there is "No solution" listed.  This is due
+to the fact that there are no suitable readings within the estimated
+long gel reading length of this problem.
+
+_picture(exp_suggest.long)
+
+@page
+_split()
+@node Compressions
+@section Compressions and Stops
+@cindex Compressions: suggested experiments
+@cindex Stops: suggested experiments
+
+This option 
+(which is available from the gap4 Experiments menu)
+searches through a region of a contig looking for stop (STOP) or
+compression (COMP) tags.  These tags could have been added using the Contig
+Editor or by a suitable external program which can analyse traces to detect
+these types of problems. For each such tag found the routine produces a list
+of readings that could be resequenced to try to solve the problem. Obviously
+the types of experiments available will change as the technology
+improves but at present the program produces output that suggests "Taq
+terminator" experiments. We welcome suggestions for other experiment types or
+news of any programs that can automatically assign the tags. The results, in
+the form of suggestions, are written to the Output window.
+
+_picture(exp_suggest.comp)
+
+Note that the Taq reading length is used as  a  guideline  for
+deciding  which  readings  are  suitable  candidates  for  solving a
+problem. All readings in the correct orientation and with their 5'  ends
+within  this  length  are  assumed  to solve the problem. The actual
+distance is listed in the output; an example of this is shown below.
+
+@example
+  Prob 1544..1545: COMP tag on strand 0 (forward)
+     Taq for xd26d8.s1        @  1365 179
+
+  Prob 1554..1554: STOP tag on strand 0 (forward)
+     Taq for xd26d8.s1        @  1365 189
+
+  Prob 5276..5288: COMP tag on strand 1 (reverse)
+     Taq for xc34g11.s1       @  5299  23
+     Taq for xc34g11.s1t      @  5298  22
+     Taq for xc34d6.s1        @  5316  40
+     Taq for xc45e1.s1        @  5463 187
+
+  Prob 24042..24046: COMP tag on strand 1 (reverse)
+     Taq for xc50a12.s1       @ 24167 125
+     Taq for xc33d1.s1        @ 24188 146
+     Taq for xc36h4.s1        @ 24208 166
+     Taq for xc51c8.s1        @ 24232 190
+@end example
+
+The format of the above output is:
+
+@example
+  Prob <start>..<end>: <type> tag on strand <st>
+      Taq for <read> @@ <pos> <distance>
+      ...
+@end example      
+
+Where:
+
+@table @code
+@item <start>..<end>
+marks the inclusive range for the tag in the contig.
+@item <type>
+is the type of the current tag.
+@item <st>
+is the strand of the reading that the tag is placed upon
+@item <read>
+is the gel reading name.
+@item <pos>
+is the position of the 5' end of <read> in the contig.
+@item <distance>
+is the distance of the 5' end from the tag.
+@end table
+
+@page
+_split()
+@node Suggest Probes
+@section Suggest Probes
+@cindex Suggest probes
+@cindex Oligos: choosing for probes
+
+The suggest probes function 
+(which is available from the gap4 Experiments menu)
+looks for oligos at the end of each contig
+suitable for use with an @i{oligo probing strategy} invented by
+Jonathan Flint. 
+@cite{Flint,J., Sims,M., Clark,K., Staden,R. and Thomas,K. An 
+oligo-screening strategy to fill gaps found during shotgun sequencing
+projects. DNA Sequence 8, 241-245}. The probing strategy is used part
+way through a sequencing project to find clones which should help to
+extend contigs. The gap4 function described here is used to select
+oligos from readings that are near the ends of the current
+contigs. These oligos are synthesised and then used to probe a pool of
+sequencing clones. Those which it selects are then sequenced in the hope
+that they will lengthen the contigs.
+
+_picture(suggest_probes.main)
+
+The dialogue contains the usual methods of selecting the set of contigs to
+operate on. For each end of the selected contigs, oligos are chosen using the
+OSP @cite{Hillier, L., and Green, P. (1991). "OSP: an oligonucleotide
+selection program," PCR Methods and Applications, 1:124-128}.
+selection criteria which is dependent on the maximum and minimum size of
+oligos specified. The "search from" and "search to" parameters control the
+area of consensus sequence in which to search for oligos. For example,
+if they are set to 10 and 100 respectively the a section of consensus sequence
+used is 90 bases long and starts 10 bases from the end of the contig.
+
+Once an oligo is found it is screened against all the existing
+consensus sequence. An oligo is rejected if it matches with a score
+greater than or equal to the "maximum percentage match". If a file of
+vector filenames has been specified then the oligos are also screened
+against the vector sequences.
+
+Typical output for a single contig follows. The output shows all oligos that
+have passed the screening process. The information listed includes the
+distance of this oligo from the end of the contig (@code{Dist ??}), the score
+returned from the OSP selection (@code{primer=??}), the melting temperature
+(@code{Tm=??}), the best percentage match found (@code{match=??%}) and the
+oligo sequence.
+
+@example
+Contig zf37b5.s1(495): Start
+    Rejected 8 oligos due to non uniqueness
+Contig zf37b5.s1(495): End
+    No oligos found
+Contig zf48g3.s1(315): Start
+    Pos     71, Dist  70, primer=16, Tm=52, match=75%, GCGTTTTACAATAACTTCTC
+    Pos     80, Dist  79, primer=16, Tm=50, match=72%, AATAACTTCTCAGGCAAC
+    Pos     69, Dist  68, primer=16, Tm=52, match=75%, GTGCGTTTTACAATAACTTC
+    Pos     48, Dist  47, primer=20, Tm=50, match=72%, AAAATACCATTGCAGCTC
+    Pos     52, Dist  51, primer=20, Tm=55, match=71%, TACCATTGCAGCTCACC
+    Pos     51, Dist  50, primer=20, Tm=52, match=71%, ATACCATTGCAGCTCAC
+    Pos     63, Dist  62, primer=22, Tm=55, match=76%, CTCACCGTGCGTTTTAC
+    Pos     68, Dist  67, primer=24, Tm=50, match=72%, CGTGCGTTTTACAATAAC
+    Pos     77, Dist  76, primer=24, Tm=50, match=72%, TACAATAACTTCTCAGGC
+    Pos     46, Dist  45, primer=28, Tm=50, match=78%, TCAAAATACCATTGCAGC
+    Rejected 1 oligo due to non uniqueness
+@end example
+
+This output is sent to both the Output Window and additionally
+to a suggest probes output window. This latter window (shown below) allows
+selection of oligos from those available for each contig by clicking the
+left mouse button on a line of the output. The selected oligos are shown in
+blue. By default the first in each set is automatically selected.
+
+_picture(suggest_probes.select)
+
+The selected oligos can then be written to a file by filling in the "output
+filename" and will have OLIG tags created for them when the "Create tags"
+checkbutton is selected. This output window vanishes once OK is pressed, but
+the text in the main Output Window is left intact.
+
+

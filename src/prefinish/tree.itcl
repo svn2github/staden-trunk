@@ -1,0 +1,173 @@
+# Implements a simple Tree member of a HierarchyBook, consisting of a
+# hierarchy of other trees and knowledge of the containing book.
+# Although it is possible to get 'graphs' from this by creating loops
+# this should be avoided as it is not part of the design.
+#
+# It is expected that most nodes in the tree will inherit this and add 
+# additional methods. See the hierarchybook for more details on this.
+
+class Tree {
+    variable children ""
+    variable parent ""
+    public variable hierarchy ""
+    public variable name ""
+
+    private common clipboard ""
+
+    constructor {args} {
+	eval configure $args
+    }
+
+    # Not only deletes this tree component and all children recursively, but
+    # we also remove ourselves from the containing hierarchybook and ask
+    # for a redraw.
+    destructor {
+	set h [get_hierarchy]
+	$parent remove $this
+	$hierarchy prune $this
+	clear
+	$hierarchy draw -eventually
+    }
+
+    method add {node {position end}} {
+	if {$position == "end"} {
+	    lappend children $node
+	} else {
+	    set children [concat $node $children]
+	}
+	$node parent $this
+	$node configure -hierarchy $hierarchy
+    }
+
+    method remove {node} {
+	set ind [lsearch $children $node]
+	if {$ind == -1} {
+	    puts stderr "node $node not found in $this"
+	    return
+	}
+	set children [lreplace $children $ind $ind]
+    }
+
+    method parent {{node {}}} {
+	if {$node != ""} {
+	    set parent $node
+	} else {
+	    return $parent
+	}
+    }
+
+    method contents {} {
+	return $children
+    }
+
+    method clear {} {
+	foreach child $children {
+	    itcl::delete object $child
+	}
+	set children ""
+    }
+
+    method delete {} {
+	itcl::delete object $this
+    }
+
+    protected method get_hierarchy {} {
+	if {$hierarchy == ""} {
+	    set hierarchy [$parent get_hierarchy]
+	}
+	return $hierarchy
+    }
+
+    method copy_node {{top 0}} {
+	# Class type
+	set _clip [$this info class]
+
+	# Class args
+	set args ""
+	foreach v [$this configure] {
+	    foreach {_name _initial _current} $v {
+		lappend args $_name $_current
+	    }
+	}
+	lappend _clip $args
+
+	# Class children
+	set _children ""
+	foreach _child [contents] {
+	    lappend _children [$_child copy_node]
+	}
+	lappend _clip $_children
+
+	if {$top} {
+	    set clipboard $_clip
+	}
+
+	return $_clip
+    }
+
+    protected method clipboard_type {} {
+	set type [lindex [lindex $clipboard 0] 0]
+	regsub {^::} $type {} type
+	return $type
+    }
+
+    method paste_node {{clip {}}} {
+	if {$clip == ""} {
+	    set clip $clipboard
+	}
+	foreach {_type _args _children} $clip {
+	    # Check if this is a valid type to drop
+	    set drop ""
+	    if {![catch {$this info function drop}]} {
+		set drop [$this drop $_type]
+	    }
+	    if {$drop == ""} {
+		bell
+		continue
+	    }
+
+	    set t [eval $_type ::\#auto $_args]
+	    add $t $drop
+	    foreach _child $_children {
+		$t paste_node $_child
+	    }
+	}
+
+	[get_hierarchy] draw -eventually
+    }
+
+    method create_menus {m} {
+	$m add command \
+	    -label "Copy" \
+	    -command [code $this copy_node 1]
+#	$m add command \
+	    -label "Paste" \
+	    -command [code $this paste_node]
+#	$m add separator
+    }
+
+    # Returns a boolean indicating whether this tree node contains a class
+    # of a specific type.
+    method contains {type} {
+	foreach _child $children {
+	    if {[$_child isa $type]} {
+		return 1
+	    }
+	}
+	return 0
+    }
+
+    #
+    # Returns a list of children of a specified type.
+    #
+    method find_by_type {type} {
+	set res {}
+	foreach _child $children {
+	    if {[$_child isa $type]} {
+		lappend res $_child
+	    }
+	}
+
+	return $res
+    }
+}

@@ -1,0 +1,175 @@
+package require Iwidgets
+namespace eval ::EMBOSS::qatestcalcseqset {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_qatestcalcseqset*Xentry.entry.width 30
+option add *e_qatestcalcseqset*Entryfield.width 30
+option add *e_qatestcalcseqset*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) qatestcalcseqset
+    set w [xtoplevel .e_qatestcalcseqset -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - qatestcalcseqset}
+    label $w._title -text {ACD file for QA testing}
+    pack $w._title -side top -fill both
+    set vars(qatestcalcseqset._type) application
+
+    lappend arguments test
+    set vars(test)       [get_active_seq_id 0]
+    if {$vars(test) == -1} {set vars(test) [get_active_seq_id 0]}
+    set vars(test.name)  [seq_info $vars(test) name]
+    sequence_changed [namespace current] test
+    set vars(test.type) [subst any]
+    seq_id $w.test \
+	-textvariable [namespace current]::vars(test.name)\
+	-start_value $vars(test.begin)\
+	-end_value $vars(test.end)\
+	-to [seq_info $vars(test) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] test $w.test}"
+    set vars(test) [subst {}]
+    pack $w.test -side top -fill both
+    set vars(test.path) $w.test
+    set vars(test.required)  1
+    trace variable vars(test.name) w  "::EMBOSS::sequence_changed [namespace current] test"
+   set vars(test.totweight) [subst 0]
+    set vars(test._type) seqset
+
+    lappend arguments testlength
+    iwidgets::entryfield $w.testlength \
+	-textvariable [namespace current]::vars(testlength) \
+	-labeltext [subst Length]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testlength component entry] -sticky nse
+    set vars(testlength) [subst {[expr {$vars(test.length)}]}]
+    pack $w.testlength -side top -fill both
+    set vars(testlength.path) $w.testlength
+    set vars(testlength.required)  1
+    set vars(testlength.orig) $vars(testlength)
+    set vars(testlength.expr) {[expr {$vars(test.length)}]}
+    trace variable vars(test.length) w  "::EMBOSS::reset_value [namespace current] testlength"
+    set vars(testlength._type) string
+
+    lappend arguments testname
+    iwidgets::entryfield $w.testname \
+	-textvariable [namespace current]::vars(testname) \
+	-labeltext [subst Name]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testname component entry] -sticky nse
+    set vars(testname) [subst {[expr {$vars(test.name)}]}]
+    pack $w.testname -side top -fill both
+    set vars(testname.path) $w.testname
+    set vars(testname.required)  1
+    set vars(testname.orig) $vars(testname)
+    set vars(testname.expr) {[expr {$vars(test.name)}]}
+    trace variable vars(test.name) w  "::EMBOSS::reset_value [namespace current] testname"
+    set vars(testname._type) string
+
+    lappend arguments testbegin
+    iwidgets::entryfield $w.testbegin \
+	-textvariable [namespace current]::vars(testbegin) \
+	-labeltext [subst Begin]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testbegin component entry] -sticky nse
+    set vars(testbegin) [subst {[expr {$vars(test.begin)}]}]
+    pack $w.testbegin -side top -fill both
+    set vars(testbegin.path) $w.testbegin
+    set vars(testbegin.required)  1
+    set vars(testbegin.orig) $vars(testbegin)
+    set vars(testbegin.expr) {[expr {$vars(test.begin)}]}
+    trace variable vars(test.begin) w  "::EMBOSS::reset_value [namespace current] testbegin"
+    set vars(testbegin._type) string
+
+    lappend arguments testend
+    iwidgets::entryfield $w.testend \
+	-textvariable [namespace current]::vars(testend) \
+	-labeltext [subst End]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testend component entry] -sticky nse
+    set vars(testend) [subst {[expr {$vars(test.end)}]}]
+    pack $w.testend -side top -fill both
+    set vars(testend.path) $w.testend
+    set vars(testend.required)  1
+    set vars(testend.orig) $vars(testend)
+    set vars(testend.expr) {[expr {$vars(test.end)}]}
+    trace variable vars(test.end) w  "::EMBOSS::reset_value [namespace current] testend"
+    set vars(testend._type) string
+
+    lappend arguments testprotein
+    iwidgets::entryfield $w.testprotein \
+	-textvariable [namespace current]::vars(testprotein) \
+	-labeltext [subst Protein]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testprotein component entry] -sticky nse
+    set vars(testprotein) [subst {[expr {$vars(test.protein)}]}]
+    pack $w.testprotein -side top -fill both
+    set vars(testprotein.path) $w.testprotein
+    set vars(testprotein.required)  1
+    set vars(testprotein.orig) $vars(testprotein)
+    set vars(testprotein.expr) {[expr {$vars(test.protein)}]}
+    trace variable vars(test.protein) w  "::EMBOSS::reset_value [namespace current] testprotein"
+    set vars(testprotein._type) string
+
+    lappend arguments testnucleic
+    iwidgets::entryfield $w.testnucleic \
+	-textvariable [namespace current]::vars(testnucleic) \
+	-labeltext [subst Nucleic]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testnucleic component entry] -sticky nse
+    set vars(testnucleic) [subst {[expr {$vars(test.nucleic)}]}]
+    pack $w.testnucleic -side top -fill both
+    set vars(testnucleic.path) $w.testnucleic
+    set vars(testnucleic.required)  1
+    set vars(testnucleic.orig) $vars(testnucleic)
+    set vars(testnucleic.expr) {[expr {$vars(test.nucleic)}]}
+    trace variable vars(test.nucleic) w  "::EMBOSS::reset_value [namespace current] testnucleic"
+    set vars(testnucleic._type) string
+
+    lappend arguments testtotweight
+    iwidgets::entryfield $w.testtotweight \
+	-textvariable [namespace current]::vars(testtotweight) \
+	-labeltext [subst Totweight]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testtotweight component entry] -sticky nse
+    set vars(testtotweight) [subst {[expr {$vars(test.totweight)}]}]
+    pack $w.testtotweight -side top -fill both
+    set vars(testtotweight.path) $w.testtotweight
+    set vars(testtotweight.required)  1
+    set vars(testtotweight.orig) $vars(testtotweight)
+    set vars(testtotweight.expr) {[expr {$vars(test.totweight)}]}
+    trace variable vars(test.totweight) w  "::EMBOSS::reset_value [namespace current] testtotweight"
+    set vars(testtotweight._type) string
+
+    lappend arguments testcount
+    iwidgets::entryfield $w.testcount \
+	-textvariable [namespace current]::vars(testcount) \
+	-labeltext [subst Count]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testcount component entry] -sticky nse
+    set vars(testcount) [subst {[expr {$vars(test.count)}]}]
+    pack $w.testcount -side top -fill both
+    set vars(testcount.path) $w.testcount
+    set vars(testcount.required)  1
+    set vars(testcount.orig) $vars(testcount)
+    set vars(testcount.expr) {[expr {$vars(test.count)}]}
+    trace variable vars(test.count) w  "::EMBOSS::reset_value [namespace current] testcount"
+    set vars(testcount._type) string
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/qatestcalcseqset.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

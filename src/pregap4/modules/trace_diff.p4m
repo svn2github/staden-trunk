@@ -1,0 +1,213 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Mutation detection.
+#
+# Requires WT line type, for sequence to compare against. It does not
+# detect heterozygote mutations.
+#
+set help {pregap4 {Pregap4-Modules-Mutations}}
+
+proc init {} {
+    mod_preset score 4.0
+    mod_preset start 50
+    mod_preset end 400
+    mod_preset band_width 50
+    mod_preset update_exp_file 1
+    mod_preset other_args ""
+}
+
+proc run {files} {
+    variable score
+    variable start
+    variable end
+    variable band_width
+    variable other_args
+    variable update_exp_file
+    variable report ""
+    global file_type
+    global file_error
+    global modules
+
+    set last_wt ""
+
+    set new_files {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    set wt [pg_query $f WT]
+	    if {$wt == ""} {
+		set file_error($f) "trace_diff: No wildtype information"
+		vmessage -nonewline !
+		continue
+	    }
+
+	    if {[string compare $wt $last_wt] != 0} {
+		set last_wt $wt
+		append report "Using $wt as wild-type trace.\n"
+	    }
+
+	    if {([lsearch -exact $modules augment_exp] == -1 ||
+		 [set ::augment_exp::enabled] == 0) && $update_exp_file} {
+		pg_open $f
+		pg_update $f WT $wt
+		append report "SEQ $f: added fields WT\n"
+		pg_close $f
+	    }
+
+	    if {[catch {set fd [open "|trace_diff \
+		-S \
+		-n $score \
+		-s $start \
+		-e $end \
+		-b $band_width \
+		$other_args [list $f]" r]} err]} {
+		append report "ERR: [strip_nl $err]"
+	        set file_error($f) "trace_diff: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+		set lines [read $fd]
+		if {[catch {close $fd} err]} {
+		    set file_error($f) "trace_diff: [strip_nl $err]"
+		    vmessage -nonewline !
+		} else {
+		    lappend new_files $f
+		    set mut ""
+		    foreach line [split $lines \n] {
+			regsub {.* } $line {} line
+			if {$line != ""} {
+			    lappend mut $line
+			}
+		    }
+		    if {$mut != ""} {
+		        append report "SEQ $f: mutations at $mut\n"
+		    } else {
+		        append report "SEQ $f: no mutations\n"
+		    }
+		    vmessage -nonewline .
+		}
+	    }
+	    update idletasks
+       	} else {
+	    lappend new_files $f
+	}
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Mutation Detection"
+}
+
+proc create_dialogue {w} {
+    variable score
+    variable start
+    variable end
+    variable band_width
+    variable other_args
+
+    set wtl ""
+    set wtr ""
+    foreach {wtl wtr} [split [get_def WT] "|"] {}
+    get_fname $w.wild_type_l \
+	-text "Wild type file (+ve strand)" \
+	-type load \
+	-default $wtl \
+	-state [lindex {normal disabled} [is_command WT]]
+    get_fname $w.wild_type_r \
+	-text "Wild type file (-ve strand)" \
+	-type load \
+	-default $wtr \
+	-state [lindex {normal disabled} [is_command WT]]
+    xentry $w.start \
+	-label "Start position" \
+	-default $start \
+	-width 7
+    xentry $w.end \
+	-label "end position" \
+	-default $end \
+	-width 7
+    xentry $w.score \
+	-label "Score" \
+	-default $score \
+	-width 7
+
+    frame $w.separator -bd 2 -relief raised -height 2
+
+    xentry $w.band_width \
+	-label "Alignment band width" \
+	-default $band_width \
+	-width 7
+    xentry $w.other_args \
+	-label "Other arguments" \
+	-default $other_args \
+	-width 7
+
+    pack $w.wild_type_l $w.wild_type_r $w.start $w.end $w.score \
+	 -side top -fill both
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+    pack $w.band_width $w.other_args -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [global_param_exists WT]]} { return $inv }
+    # NB: other_args is optional
+    if {"" != [set inv [local_param_exists [namespace current] \
+	score start end band_width]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable score
+    variable start
+    variable end
+    variable band_width
+    variable other_args
+    global WT
+
+    if {![is_command WT]} {
+        set l [$w.wild_type_l get]
+        set r [$w.wild_type_r get]
+	if {$r != ""} {
+           set WT "$l|$r"
+	} else {
+	    set WT $l
+	}
+        if {$WT == ""} { return 0 }
+    }
+    if {[set score	[$w.score get]]      == ""} { return 0 }
+    if {[set start	[$w.start get]]      == ""} { return 0 }
+    if {[set end	[$w.end get]]        == ""} { return 0 }
+    if {[set band_width	[$w.band_width get]] == ""} { return 0 }
+    set other_args [$w.other_args get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	set l [$w.wild_type_l get2]
+	set r [$w.wild_type_r get2]
+	if {$r != ""} {
+	    glob_save WT "$l|$r"
+	} else {
+	    glob_save WT $l
+	}
+	mod_save score [$w.score get2]
+	mod_save start [$w.start get2]
+	mod_save end [$w.end get2]
+	mod_save band_width [$w.band_width get2]
+	mod_save other_args [$w.other_args get2]
+    }
+}

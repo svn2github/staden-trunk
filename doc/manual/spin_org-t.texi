@@ -1,0 +1,28 @@
+@node SPIN_ORG
+@chapter Organisation of the Spin Manual
+
+The Introductory section of the manual gives an overview of the
+functions
+(_fpref(SPIN-Intro-Functions, Summary of the Spin Functions, t)),
+the menus
+(_fpref(SPIN-Intro-Menus, Spin Menus, t))
+and the user interface
+(_fpref(SPIN-Intro-Interface, Introduction to the Spin User Interface,
+t)). The Introduction to the user interface includes a range of screen
+dumps which give an overview of what spin can do, and taken as a whole,
+the introduction should contain sufficient information 
+to enable users to start using the program. 
+
+The next section 
+describes in turn each of the main functions
+(_fpref(SPIN-Functions, The Spin Functions, t)).
+This is followed by a detailed description of the spin user interface
+(_fpref(SPIN-USER-Interface, The Spin User Interface, t)).
+Next is a section describing how users can control the results from
+the functions, and how they can be manipulated once they have
+been obtained
+(_fpref(SPIN-Results, Controlling and Managing Results, t)).
+The final part of the manual describes how to read sequences into spin
+and the kinds of manipulations which can be performed on them to prepare
+them for analysis
+(_fpref(Reading and Managing Sequences, Reading and Managing Sequences, t)).

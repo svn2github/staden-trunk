@@ -1,0 +1,155 @@
+#
+# A Tree item compatible with being added to a hierarchybook.
+# The Pass is group of several Rules and optionally one set of
+# configuration parameters (Params).
+#
+
+class Pass {
+    inherit Tree
+
+    public {
+	# Used by hierarchybook
+	method raise {}
+	method create_menus {m}
+
+	# Others
+	method drop {type}
+	method current_pass {}
+    }
+
+    private {
+	# The collective is a list of all instances of Pass
+	common collective
+	common current_pass
+
+	method renumber {}
+    }
+
+    constructor {args} {}
+    destructor {}
+}
+
+# -----------------------------------------------------------------------------
+# CONSTRUCTOR
+# -----------------------------------------------------------------------------
+body Pass::constructor {args} {
+    if {![info exists collective]} {
+	set collective $this
+    } else {
+	lappend collective $this
+    }
+    eval configure $args
+    set name "Pass [expr {[lsearch $collective $this]+1}]"
+
+    set current_pass ""
+}
+
+# -----------------------------------------------------------------------------
+# DESTRUCTOR
+# -----------------------------------------------------------------------------
+body Pass::destructor {} {
+    set ind [lsearch $collective $this]
+    if {$ind != -1} {
+	set collective [lreplace $collective $ind $ind]
+    }
+    foreach member $collective {
+	$member renumber
+    }
+    if {$current_pass == $this} {
+	set current_pass [lindex $collective end]
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook when a pass is raised.
+# We use it to keep track of the last user-selected Pass.
+# -----------------------------------------------------------------------------
+body Pass::raise {} {
+    set current_pass $this
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Called by the Hierarchybook to create the menus.
+# NOTE: This accesses the global array ::prefinish::rules
+# -----------------------------------------------------------------------------
+body Pass::create_menus {m} {
+    Tree::create_menus $m
+    set type [clipboard_type]
+    if {$type == "Rule" || \
+	    ($type == "Params" && ![contains Params])} {
+	$m add command \
+	    -label "Paste $type" \
+	    -command [code $this paste_node]
+    }
+    $m add separator
+    if {![contains Params]} {
+	$m add command \
+	    -label "Add Params" \
+	    -command "::prefinish::add_param [get_hierarchy] $this"
+    }
+    $m add cascade \
+	-label "Add Rule" \
+	-menu $m.rules
+
+    if {[winfo exists $m.rules]} {
+	destroy $m.rules
+    }
+
+    menu $m.rules
+    foreach p [lsort [array names ::prefinish::rules]] {
+	array set rule $::prefinish::rules($p)
+	$m.rules add command \
+	    -label "$rule(name)" \
+	    -command "[list ::prefinish::add_rule [get_hierarchy] $p \
+			       $::prefinish::rules($p) $this]"
+    }
+
+    $m add separator
+    $m add command \
+	-label "Remove" \
+	-command "itcl::delete object $this"
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Returns the last selected pass, or the this one if none have been selected.
+# -----------------------------------------------------------------------------
+body Pass::current_pass {} {
+    if {$current_pass == ""} {
+	return $this
+    } else {
+	return $current_pass
+    }
+}
+
+# -----------------------------------------------------------------------------
+# PRIVATE
+#
+# Called by the destructor. The "Nth" instance of a Pass is determined 
+# by its position in the collective (a Tcl list). We rename accordingly.
+# -----------------------------------------------------------------------------
+body Pass::renumber {} {
+    set name "Pass [expr {[lsearch $collective $this]+1}]"
+}
+
+# -----------------------------------------------------------------------------
+# PUBLIC
+#
+# Checks whether a class of "type" may be dropped within us. If so we return
+# the desired position (eg start or end). Otherwise we return "" to indicate
+# that this is an incompatible object.
+# -----------------------------------------------------------------------------
+body Pass::drop {type} {
+    if {$type == "::Params" && ![contains Params]} {
+	return start
+    } elseif {$type == "::Rule"} {
+	return end
+    } else {
+	return ""
+    }
+}

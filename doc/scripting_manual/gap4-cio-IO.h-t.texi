@@ -1,0 +1,211 @@
+
+There are many C macros defined to interact with the @var{GapIO} structure.
+These both simplify and improve readeability of the code and also provide a
+level of future proofing. Where the macros are available it is always
+advisable to use these instead of accessing the @var{GapIO} structure
+directly.
+
+Note that not all of these macros are actually held within the @file{IO.h}
+file, rather some are in files included by @file{IO.h}. However whenever
+wishing to use one of these macros you should still use "@code{#include
+<IO.h>}".
+
+@table @code
+@findex io_dbsize(C)
+@item io_dbsize(@var{io})
+	@var{io}@code{->db.actual_db_size}@br
+	The maximum number of readings plus contigs allowed.
+
+@findex max_gel_len(C)
+@cindex maximum reading length
+@cindex reading length, maximum
+@cindex gel length, maximum
+@item max_gel_len(@var{io})
+	@var{(io)}@code{->max_gel_len}@br
+	The maximum reading length.
+
+@findex NumContigs(C)
+@item NumContigs(@var{io})
+	@var{(io)}@code{->db.num_contigs}@br
+	The number of used contigs.
+
+@findex NumReadings(C)
+@item NumReadings(@var{io})
+	@var{(io)}@code{->db.num_readings}@br
+	The number of used readings.
+
+@findex Ncontigs(C)
+@item Ncontigs(@var{io})
+	@var{(io)}@code{->db.Ncontigs}@br
+	The number of allocated contigs.
+
+@findex Nreadings(C)
+@item Nreadings(@var{io})
+	@var{(io)}@code{->db.Nreadings}@br
+	The number of allocated readings.
+
+@findex Nannotations(C)
+@item Nannotations(@var{io})
+	@var{(io)}@code{->db.Nannotations}@br
+	The number of allocated annotations.
+
+@findex Ntemplates(C)
+@item Ntemplates(@var{io})
+	@var{(io)}@code{->db.Ntemplates}@br
+	The number of annotated templates.
+
+@findex Nclones(C)
+@item Nclones(@var{io})
+	@var{(io)}@code{->db.Nclones}@br
+	The number of allocated clones.
+
+@findex Nvectors(C)
+@item Nvectors(@var{io})
+	@var{(io)}@code{->db.Nvectors}@br
+	The number of allocated vectors.
+
+@findex io_relpos(C)
+@item io_relpos(@var{io,g})
+	@var{(io)}@code{->relpos[(}@var{g}@code{)]}@br
+	The position of a reading @var{g}.
+
+@findex io_length(C)
+@item io_length(@var{io,g})
+	@var{(io)}@code{->length[(}@var{g}@code{)]}@br
+	The length of a reading @var{g}. If the reading is complemented this
+	value is negative, but still represents the length.
+
+@findex io_lnbr(C)
+@item io_lnbr(@var{io,g})
+	@var{(io)}@code{->lnbr[(}@var{g}@code{)]}@br
+	The reading number of the left neighbour of reading @var{g}.
+
+@findex io_rnbr(C)
+@item io_rnbr(@var{io,g})
+	@var{(io)}@code{->rnbr[(}@var{g}@code{)]}@br
+	The reading number of the right neighbour of reading @var{g}.
+
+@findex io_clength(C)
+@item io_clength(@var{io,c})
+	@var{(io)}@code{->relpos[io_dbsize(}@var{io}@code{)-(}@var{c}@code{)]}@br
+	The length of contig @var{c}.
+
+@findex io_clnbr(C)
+@item io_clnbr(@var{io,c})
+	@var{(io)}@code{->lnbr[io_dbsize(}@var{io}@code{)-(}@var{c}@code{)]}@br
+	The leftmost reading number of contig @var{c}.
+
+@findex io_crnbr(C)
+@item io_crnbr(@var{io,c})
+	@var{(io)}@code{->rnbr[io_dbsize(}@var{io}@code{)-(}@var{c}@code{)]}@br
+	The rightmost reading number of contig @var{c}.
+
+@findex io_name(C)
+@item io_name(@var{io})
+	@var{(io)}@code{->db_name}@br
+	The database name.
+
+@findex io_rdonlu(C)
+@item io_rdonly(@var{io})
+	This returns 1 when the database has been opened as read-only; 0
+	otherwise.
+
+@findex io_rname(C)
+@item io_rname(@var{io,g})
+	This returns the reading name for reading number @var{g}. This is
+	fetched from the in memory cache.
+
+@findex io_wname(C)
+@item io_wname(@var{io,g,n})
+	Sets the in-memory copy of the reading name for reading number @var{g}
+	to be the string @var{n}. This does not write to disk.
+
+@findex PRIMER_TYPE(C)
+@item PRIMER_TYPE(@var{r})
+	This returns the type of the primer used for sequencing reading number
+	@var{r}. This information is calculated from the @var{primer} and
+	@var{strand} fields of the @var{GReadings} structure. It returns one
+	of @code{GAP_PRIMER_UNKNOWN}, @code{GAP_PRIMER_FORWARD},
+	@code{GAP_PRIMER_REVERSE}, @code{GAP_PRIMER_CUSTFOR} and
+	@code{GAP_PRIMER_CUSTREV}.
+
+@findex PRIMER_TYPE_GUESS(C)
+@item PRIMER_TYPE_GUESS(@var{r})
+	As @code{PRIMER_TYPE} except always choose a sensible guess in place
+	of @code{GAP_PRIMER_UNKNOWN}.
+
+@findex STRAND(C)
+@item STRAND(@var{r})
+	Returns the strand (one of @code{GAP_STRAND_FORWARD} or
+	@code{GAP_STRAND_REVERSE}) from the primer information for reading
+	number @var{r}. The reason for these primer and strand macros is that
+	the meaning of the @var{primer} and @var{strand} fields of
+	@var{GReadings} has changed slightly from early code in that we now
+	make a distinction between custom forward primers and custom reverse
+	primers. The @var{strand} field may become completely redundant in
+	future as it can now be derived entirely from the primer.
+
+@cindex Cache, GReadings
+@cindex GReadings cache
+@cindex Reading name cache
+@findex contig_read(C)
+@findex gel_read(C)
+@findex tag_read(C)
+@findex vector_read(C)
+@findex clone_read(C)
+@item  contig_read(@var{io, cn, c})
+@itemx gel_read(@var{io, gn, g})
+@itemx tag_read(@var{io, tn, t})
+@itemx vector_read(@var{io, vn, v})
+@itemx clone_read(@var{io, cn, c})
+	Reads one of the basic database structures. For contigs,
+	@code{contig_read} reads contig number @var{cn} and stores in the
+	@var{GContigs} structure named @var{c}. Eg to read the a contig:
+
+@example
+	GContigs c;
+	contig_read(io, contig_num, c);
+@end example
+
+	This is functionally equivalent to:
+
+@example
+	GContigs c;
+	GT_Read(io, arr(GCardinal, io->contigs, contig_num-1),
+		&c, sizeof(c), GT_Contigs);
+@end example
+
+	The exception to this is @code{gel_read} which reads from a cached
+	copy held in memory.
+
+@findex contig_write(C)
+@findex gel_write(C)
+@findex tag_write(C)
+@findex vector_write(C)
+@findex clone_write(C)
+@item  contig_write(@var{io, cn, c})
+@item  gel_write(@var{io, gn, g})
+@item  tag_write(@var{io, tn, t})
+@item  vector_write(@var{io, vn, v})
+@item  clone_write(@var{io, cn, c})
+	Writes one of the basic types in a similar fashion to the read
+	functions. To write to annotation number @var{anno} we should use:
+
+@example
+	GAnnotations a;
+	/* ... some code to manipulate 'a' ... */
+	tag_write(io, anno, a);	       
+@end example
+
+	This is functionally equivalent to:
+
+@example
+	GT_Write(io, arr(GCardinal, io->annotations, anno-1),
+		 &a, sizeof(a), GT_Annotations);
+@end example
+
+	Note that the @code{gel_write} function @strong{must} be used instead
+	of @code{GT_Write} as @code{gel_write} will also update the reading
+	memory cache.
+
+@end table

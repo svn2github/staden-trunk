@@ -1,0 +1,242 @@
+package require Iwidgets
+namespace eval ::EMBOSS::cpgplot {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_cpgplot*Xentry.entry.width 30
+option add *e_cpgplot*Entryfield.width 30
+option add *e_cpgplot*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) cpgplot
+    set w [xtoplevel .e_cpgplot -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - cpgplot}
+    label $w._title -text {Plot CpG rich areas}
+    pack $w._title -side top -fill both
+    set vars(cpgplot._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst DNA]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Window size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 100]
+    pack $w.window -side top -fill both
+    set vars(window.minimum) [subst 1]
+    set vars(window.maximum) [subst {[expr {$vars(sequence.end)}]}]
+    set vars(window.maximum.orig) $vars(window.maximum)
+    set vars(window.maximum.expr) {[expr {$vars(sequence.end)}]}
+    trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] window.maximum"
+    set vars(window.path) $w.window
+    set vars(window.required)  1
+    set vars(window._type) integer
+
+    lappend arguments shift
+    iwidgets::entryfield $w.shift \
+	-validate integer \
+	-textvariable [namespace current]::vars(shift) \
+	-labeltext [subst {Window shift increment}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.shift component entry] -sticky nse
+    set vars(shift) [subst 1]
+    pack $w.shift -side top -fill both
+    set vars(shift.minimum) [subst 1]
+    set vars(shift.maximum) [subst {[expr {$vars(window)}]}]
+    set vars(shift.maximum.orig) $vars(shift.maximum)
+    set vars(shift.maximum.expr) {[expr {$vars(window)}]}
+    trace variable vars(window) w  "::EMBOSS::reset_value [namespace current] shift.maximum"
+    set vars(shift.path) $w.shift
+    set vars(shift.required)  1
+    set vars(shift._type) integer
+
+    lappend arguments minlen
+    iwidgets::entryfield $w.minlen \
+	-validate integer \
+	-textvariable [namespace current]::vars(minlen) \
+	-labeltext [subst {Minimum length of an island}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minlen component entry] -sticky nse
+    set vars(minlen) [subst 200]
+    pack $w.minlen -side top -fill both
+    set vars(minlen.minimum) [subst 1]
+    set vars(minlen.maximum) [subst {[expr {$vars(sequence.end)}]}]
+    set vars(minlen.maximum.orig) $vars(minlen.maximum)
+    set vars(minlen.maximum.expr) {[expr {$vars(sequence.end)}]}
+    trace variable vars(sequence.end) w  "::EMBOSS::reset_value [namespace current] minlen.maximum"
+    set vars(minlen.path) $w.minlen
+    set vars(minlen.required)  1
+    set vars(minlen._type) integer
+
+    lappend arguments minoe
+    iwidgets::entryfield $w.minoe \
+	-validate real \
+	-textvariable [namespace current]::vars(minoe) \
+	-labeltext [subst {Minimum observed/expected}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minoe component entry] -sticky nse
+    set vars(minoe) [subst 0.6]
+    pack $w.minoe -side top -fill both
+    set vars(minoe.minimum) [subst 0.]
+    set vars(minoe.maximum) [subst 10.]
+    set vars(minoe.path) $w.minoe
+    set vars(minoe.required)  1
+    set vars(minoe._type) float
+
+    lappend arguments minpc
+    iwidgets::entryfield $w.minpc \
+	-validate real \
+	-textvariable [namespace current]::vars(minpc) \
+	-labeltext [subst {Minimum percentage}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minpc component entry] -sticky nse
+    set vars(minpc) [subst 50.]
+    pack $w.minpc -side top -fill both
+    set vars(minpc.minimum) [subst 0.]
+    set vars(minpc.maximum) [subst 100.]
+    set vars(minpc.path) $w.minpc
+    set vars(minpc.required)  1
+    set vars(minpc._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst cpgplot0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  1
+    set vars(graph._type) xygraph
+
+    lappend arguments obsexp
+    checkbutton $w.obsexp \
+	-text [subst {Show observed/expected threshold line}]\
+	-variable [namespace current]::vars(obsexp)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.obsexp -side top -anchor w
+    set vars(obsexp) [subst 1]
+    set vars(obsexp.path) $w.obsexp
+    set vars(obsexp.required)  0
+    set vars(obsexp._type) bool
+
+    lappend arguments cg
+    checkbutton $w.cg \
+	-text [subst {Show CpG rich regions}]\
+	-variable [namespace current]::vars(cg)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.cg -side top -anchor w
+    set vars(cg) [subst 1]
+    set vars(cg.path) $w.cg
+    set vars(cg.required)  0
+    set vars(cg._type) bool
+
+    lappend arguments pc
+    checkbutton $w.pc \
+	-text [subst {Show percentage line}]\
+	-variable [namespace current]::vars(pc)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.pc -side top -anchor w
+    set vars(pc) [subst 1]
+    set vars(pc.path) $w.pc
+    set vars(pc.required)  0
+    set vars(pc._type) bool
+
+    lappend arguments featout
+    xentry $w.featout \
+	-label [subst {feature file for output}]\
+	-textvariable [namespace current]::vars(featout) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.featout delete 0 end
+    $w.featout insert end [subst feature1.out]
+    pack $w.featout -side top -fill both
+    set vars(featout.path) $w.featout
+    set vars(featout.required)  0
+    set vars(featout._type) featout
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/cpgplot.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

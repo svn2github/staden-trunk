@@ -1,0 +1,805 @@
+These functions consist of both basic functions for reading, writing and
+creation of database items and simple I/O functions that build upon such
+operations. They are mainly contained within the @file{Gap4/IO.c} file.
+
+The return codes do vary greatly from function to function. Most return 0 for
+success and -1 for failure. However some will return other codes. In general
+it is best to check equality to the success code rather than equality to a
+specific failure code.
+
+and read as an array of @var{GCardinal}s. @var{elements} indicates the number
+of array elements and not the size of the array in bytes.
+
+@code{BitmapRead} reads records of type @code{GT_Bitmap}. The bitmap is
+allocated by this function. @var{elements} indicates the number of bits and
+not the size of the bitmap in bytes.
+
+@subsection GT_Write, GT_Write_cached, TextWrite, DataWrite, ArrayWrite, BitmapWrite
+
+@findex GT_Write(C)
+@findex GT_Write_cached(C)
+@findex TextWrite(C)
+@findex DataWrite(C)
+@findex ArrayWrite(C)
+@findex BitmapWrite(C)
+@example
+#include <IO.h>
+
+int GT_Write(
+        GapIO  *io,
+        int     rec,
+        void   *buf,
+        int     len,
+        GCardinal type);
+
+int GT_Write_cached(
+        GapIO  *io,
+        int     read,
+        GReadings *r);
+
+int TextWrite(
+        GapIO  *io,
+        int     rec,
+        char   *buf,
+        int     len);
+
+int DataWrite(
+        GapIO  *io,
+        int     rec,
+        void   *buf,
+        int     len,
+        int     size);
+
+int ArrayWrite(
+        GapIO  *io,
+        int     rec,
+        int     elements,
+        Array   a);
+
+int BitmapWrite(
+        GapIO  *io,
+        int     rec,
+        Bitmap  b);
+@end example
+
+These functions write record number @var{rec} with the appropriate data type.
+They return zero for success and an error code for failure.
+
+@code{GT_Write} writes arbitrary records of type @var{type}. This is usually a
+structure. Do not use this function for writing @var{GReadings} structures.
+For best compatibility, use the @code{contig_write}, @code{gel_write},
+@code{tag_write}, @code{vector_write} and @code{clone_write} function.
+
+@code{GT_Write_cached} is an interface to @code{GT_Write} which also updates
+the in-memory reading cache. For best compatibility, use the
+@code{gel_write} function.
+
+@code{TextWrite} writes a record of type @code{GT_Text}. It is used to write
+text only strings. 
+
+@code{DataWrite} writes a record of type @code{GT_Data}. It is used to write
+binary data such as sequence confidence values.
+
+@code{ArrayWrite} writes a record of type @code{GT_Array}. The array must be
+an array of @var{GCardinal} values. @var{elements} indicates the number of
+array elements and not the size of the array in bytes.
+
+@code{BitmapWrite} writes a record of type @code{GT_Bitmap}. @var{elements}
+indicates the number of bits and not the size of the bitmap in bytes.
+
+@node G4Cio-io_handle
+@subsection io_handle and handle_io
+@cindex IO handles
+@findex io_handle(C)
+@findex handle_io(C)
+
+@example
+#include <IO.h>
+
+GapIO *io_handle(
+        f_int *handle);
+
+f_int *handle_io(
+        GapIO *io);
+@end example
+
+These two routines convert between @var{GapIO} pointers and integer handles.
+Both the Fortran and Tcl code uses integer handles due to no support for
+structures.
+
+@code{io_handle} takes a pointer to an integer handle and returns the
+associated @var{GapIO} pointer. It returns NULL for failure.
+
+@code{handle_io} takes a @var{GapIO} pointer and returns a pointer to a
+integer handle. It returns NULL for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-io_read_seq
+@subsection io_read_seq
+@cindex Sequence, reading
+@cindex Reading sequences
+@findex io_read_seq(C)
+
+@example
+#include <IO.h>
+
+int io_read_seq(
+        GapIO  *io,
+        int     N,
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos);
+@end example
+
+This function loads from memory and disk information on gel readings and
+stores this in the paramaters passed over.
+
+The reading number to read should be passed as @var{N}. The integers pointed
+to by @var{length}, @var{start} and @var{end} pointers are then written to
+with the total length (@var{GReadings.length}), the last base number (counting
+from 1) of the left hand cutoff data, and the first base number of te right
+hand cutoff data.
+
+The sequence, confidence and original position data is then loaded and stored
+in the address pointed to by @var{seq}, @var{conf} and @var{opos} respectively.
+This is expected to be allocated to the correct size by the caller of this
+function. Either or both of @var{conf} and @var{opos} can be NULL, in which
+case the data is not loaded or stored. @var{seq} must always be non NULL.
+
+This function returns 0 for success and non zero for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-io_write_seq
+@subsection io_write_seq
+@cindex Sequence, writing
+@cindex Writing sequences
+@findex io_write_seq(C)
+
+@example
+#include <IO.h>
+
+
+int io_write_seq(
+        GapIO  *io,
+        int     N,
+        int2   *length,
+        int2   *start,
+        int2   *end,
+        char   *seq,
+        int1   *conf,
+        int2   *opos);
+@end example
+
+This function updates disk and memory details of reading number @var{N}. If
+this reading does not yet exist, all non existant readings up to and including
+@var{N} will be initialised first using the @code{io_init_readings} function.
+
+[FIXME: The current implement @strong{does not} update the fortran lngth
+(io_length()) array. This needs to be done by the caller. ]
+
+The @var{length} argument is the total length of the sequence, and hence also
+the expected size of the @var{seq}, @var{conf} and @var{opos} arrays.
+@var{start} and @var{end} contain the last base number of the left cutoff data
+and the first base number of the right cutoff data.
+
+Unlike @var{io_read_seq}, all arguments to this function are mandatory.
+If the records on disk do not already exist then they are allocated first
+using the @code{allocate} function.
+
+This function returns 0 for success and non zero for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node G4Cio-get_read_info
+@subsection get_read_info, get_vector_info, get_clone_info and get_subclone_info
+@findex get_read_info(C)
+@findex get_vector_info(C)
+@findex get_clone_info(C)
+@findex get_subclone_info(C)
+
+@example
+#include <IO.h>
+
+int get_read_info(
+        GapIO  *io,
+        int     N,
+        char   *clone,
+        int     l_clone,
+        char   *cvector,
+        int     l_cvector,
+        char   *subclone,
+        int     l_subclone,
+        char   *scvector,
+        int     l_scvector,
+        int    *length,
+        int    *insert_min,
+        int    *insert_max,
+        int    *direction,
+        int    *strands,
+        int    *primer,
+        int    *clone_id,
+        int    *subclone_id,
+        int    *cvector_id,
+        int    *scvector_id);
+
+int get_vector_info(
+        GapIO  *io,
+        int     vector_id,
+        char   *vector,
+        int l_vector);
+
+int get_clone_info(
+        GapIO  *io,
+        int     clone_id,
+        char   *clone,
+        int     l_clone,
+        char   *cvector,
+        int     l_cvector,
+        int    *cvector_id);
+
+int get_subclone_info(
+        GapIO  *io,
+        int     subclone_id,
+        char   *clone,
+        int     l_clone,
+        char   *cvector,
+        int     l_cvector,
+        char   *subclone,
+        int     l_subclone,
+        char   *scvector,
+        int     l_scvector,
+        int    *insert_min,
+        int    *insert_max,
+        int    *strands,
+        int    *clone_id,
+        int    *cvector_id,
+        int    *scvector_id);
+@end example
+
+These functions return clone, template and vector information.
+
+@code{get_vector_info} returns the name of a vector. This is stored in the
+buffer at @var{vector}.
+
+@code{get_clone_info} function returns the name of the clone and the vector
+number (stored at @var{clone} and @var{cvector_id} and results of
+@code{get_vector_info} for this vector.
+
+@code{get_subclone_info} returns the template information (insert size, number
+of strands, vector and clone numbers stored at @var{insert_min},
+@var{insert_max}, @var{strands}, @var{scvector_id} and @var{clone_id}) along
+with the results from @code{get_vector_info} and @code{get_clone_info} on the
+appropriate vector and clone numbers.
+
+@code{get_read_info} returns the reading information including direction,
+primer, template (subclone) number (stored at @var{direction}, @var{strands},
+@var{primer}, and @var{clone_id}), and the results of the
+@code{get_subclone_info} on this template number.
+
+For all four functions, the arguments used to store text fields, such as the
+clone name (@var{clone}), all have corresponding buffer lengths sent as the
+same argument name preceeded by @var{l_} (eg @var{l_clone}). These buffers
+need to be allocated by the caller of the function.
+
+Any buffer or integer pointer arguments may be passed as @code{NULL} to avoid
+filling in this field. For buffers the same is also true when specifying the
+buffer length as zero.
+
+The @var{clone}, @var{vector} and @var{subclone} buffers are used to store the
+names of the clone, vector or template. If appropriate, the clone or
+template number will also be stored at the @var{clone_id} and
+@var{subclone_id} addresses.
+
+For functions returning information more than one vector, these are split into
+two levels. The sequencing vector is the vector used to sequence this
+template. It has arguments named @var{scvector} (name), @var{l_scvector} (name
+length) and @var{scvector_id} (vector number). The clone vector is the vector
+used in the sequecing of the fragment which is later broken down and
+resequenced as templates. This may not be appropriate in many projects. It has
+arguments named @var{cvector} (name), @var{l_cvector} (name length) and
+@var{cvector_id} (vector number).
+
+All functions return 0 for success and an error code for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_init_reading
+@subsection io_init_reading, io_init_contig and io_init_annotations
+@findex io_init_reading(C)
+@findex io_init_contig(C)
+@findex io_init_annotations(C)
+
+@example
+#include <IO.h>
+
+int io_init_reading(
+        GapIO  *io,
+        int     N);
+
+int io_init_contig(
+        GapIO  *io,
+        int     N);
+
+int io_init_annotations(
+        GapIO  *io,
+        int     N);
+@end example
+
+These functions create new reading, contig and annotations structures. Each
+takes two arguments; the first being the @var{GapIO} pointer, and the second
+being the new reading, contig or annotation number to create. This is not the
+number of new structures, but rather the highest allowed number for this
+structure.
+For instance, if we have 10 readings, "@code{io_init_reading(io, 12)}" will
+create two more, numbered 11 and 12.
+
+For readings, the records are recovered (by increasing the @var{GDatabase}
+@var{NumReadings} field to @var{NReadings}) if available. The new
+@var{GReadings} structure are not guaranteed to be clear.
+
+For contigs, the records are recovered if available. The contig_order array is
+also updated with the new contigs being added at the rightmost position. The
+new contigs are added to the registration scheme with blank registration
+lists. The new @var{GContigs} structures are not guaranteed to be clear.
+
+For annotations, new records are always allocated from disk. It is up to the
+caller to first check that there are no free annotations in the
+@var{free_annotations} list. The new @var{GAnnotations} structures are not
+guaranteed to be clear.
+
+All functions returns return 0 for success, and -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_read_annotation
+@subsection io_read_annotation and io_write_annotation
+@findex io_read_annotation(C)
+@findex io_write_annotation(C)
+@cindex tags, reading and writing
+@cindex annotations, reading and writing
+
+@example
+#include <IO.h>
+
+int io_read_annotation(
+        GapIO  *io,
+        int     N,
+        int    *anno);
+
+int io_write_annotation(
+        GapIO  *io,
+        int     N,
+        int    *anno);
+@end example
+
+These functions read and write the first annotation number in the linked lists
+referenced by the reading and contig structures.
+For both functions, @var{N} is a reading number if it is above zero or a
+contig number when below zero (in which case it is negated).
+
+@code{io_read_annotation} reads the @var{annotations} field of reading @var{N}
+or contig @var{-N} and stores this in @var{anno}. It sets @var{anno} to 0
+returns 1 for failure. Otherwise it returns 0.
+
+@code{io_write_annotation} sets the @var{annotations} field of reading @var{N}
+or contig @var{-N} to be @var{*anno}. Despite the fact that it is a pointer,
+the contents of @var{anno} is not modified. It returns 1 for failure and 0 for
+success (but currently always returns 0).
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node allocate
+@subsection allocate
+@cindex allocating records
+@findex allocate(C)
+
+@example
+#include <IO.h>
+
+int allocate(
+        GapIO    *io,
+        GCardinal type);
+@end example
+
+These allocate and deallocate records in the g database.
+
+Th @code{allocate} function allocates a new record from the g database. It
+finds a free record, or creates a new record, and returns this record number.
+The record will be automatically locked for exclusive read/write access. The
+type of the record is sent in @var{type}.  This must be one of following:
+
+@itemize @asis
+@item @code{GT_Text}
+@item @code{GT_Data}
+@item @code{GT_Array}
+@item @code{GT_Bitmap}
+@item @code{GT_Database}
+@item @code{GT_Contigs}
+@item @code{GT_Readings}
+@item @code{GT_Vectors}
+@item @code{GT_Annotations}
+@item @code{GT_Templates}
+@item @code{GT_Clones}
+@end itemize
+
+The function does not initialise or even write the new record to disk. The
+record number is valid, but a @code{GT_Read} call will produce an error. It is
+up to the caller to initialise the structure and perform the first
+@code{GT_Write} (or equivalent) call.
+
+It returns the record number for success, and terminates the program for
+failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node deallocate
+@subsection deallocate
+@findex deallocate(C)
+@cindex deallocating records
+@cindex removing records
+
+@example
+#include <IO.h>
+
+int deallocate(
+        GapIO    *io,
+        int       rec);
+@end example
+
+The @code{deallocate} function removes record @var{rec} from the g database.
+This uses the @code{g_remove} function, but unlocking is only performed at the
+next database flush.
+
+It returns 0 for success and 1 for failure.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_deallocate_reading
+@subsection io_deallocate_reading
+@findex io_deallocate_reading(C)
+@cindex readings, deallocating
+@cindex deallocating readings
+@cindex removing readings
+
+@example
+#include <IO.h>
+
+int io_deallocate_reading(
+        GapIO  *io,
+        int     N);
+@end example
+
+The @code{io_deallocate_reading} function deallocates the records linked to by
+reading number @var{N}. These are the @var{name}, @var{trace_name},
+@var{trace_type}, @var{sequence}, @var{confidence} and @var{orig_positions}
+fields of the @var{GReadings} structure.
+
+The reading itself is not deallocated. The operation of Gap4 requires that
+reading numbers are sequential with all numbers used. It is up to the caller
+of this routine to make sure that this is still true.
+
+It returns 0 for success and >=1 for failure.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_read_rd
+@subsection io_read_rd and io_write_rd
+@findex io_read_rd(C)
+@findex io_write_rd(C)
+@cindex trace data, reading and writing
+
+@example
+#include <IO.h>
+
+int io_read_rd(
+        GapIO  *io,
+        int     N,
+        char   *file,
+        int     filelen,
+        char   *type,
+        int     typelen);
+
+int io_write_rd(
+        GapIO  *io,
+        int     N,
+        char   *file,
+        int     filelen,
+        char   *type,
+        int     typelen);
+@end example
+
+These routines read and write the reading 'raw data' paramaters. These are the
+file name and file type of the sequence trace file.
+
+For both functions, @var{N} is the reading number; @var{file} is a buffer,
+allocated by the caller, of length @var{filelen}; and @var{type} is a buffer,
+allocated by the caller, of length @var{typelen}.
+
+@code{io_read_rd} copies the trace filename to @var{file} and it's type to
+@var{type}. If either of these unknown the corresponding buffer is filled with
+spaces instead. It returns 0 if both name and type are known and 1 is either
+or both are unknown.
+
+@code{io_write_rd} write new file name and file type information. If @var{N}
+is an unknown reading number, it is first allocated using
+@code{io_init_readings}. It returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node open_db
+@subsection open_db
+@findex open_db(C)
+@findex database, opening
+@findex opening databases
+
+@example
+#include <IO.h>
+
+GapIO *open_db(
+        char   *project,
+        char   *version,
+        int    *status,
+        int     create,
+        int     read_only);
+@end example
+
+@code{open_db} opens existing databases or creates new databases.
+The database to be opened or created has unix filenames of
+"@var{project}.@var{version}" and "@var{project}.@var{version}.aux".
+
+The @var{create} variable should be 0 or 1. A value of 1 indicates that this
+database is to be created. This will not be done if there is a file named
+"@var{project}.@var{version}.BUSY", in which case the @var{status} variable is
+set to contain @code{IO_READ_ONLY}.
+
+The @var{read_only} variable should be 0 or 1. A value of 1 indicates that the
+database should be opened in read only mode, otherwise read/write access is
+desired. If the database is busy then the database may still be opened in read
+only mode instead. In this case the @var{status} variable is set to contain
+@code{IO_READ_ONLY}.
+
+The @var{GapIO} structure is then initialised and returned. A successful
+return will leave @var{status} containing 0. For failure, the function returns
+NULL.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node close_db
+@subsection close_db
+@findex close_db(C)
+@findex database, closing
+@findex closing databases
+
+@example
+#include <IO.h>
+
+int close_db(
+        GapIO *io);
+@end example
+
+This function closes a database. @var{io} is a @var{GapIO} pointer returned
+from a previous call to @code{open_db}. If necessary, the busy file is
+removed, and all allocated memory is freed.
+
+The function returns 0 for success and -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node del_db
+@subsection del_db
+@findex del_db(C)
+@findex database, deletion of
+@findex deleting databases
+
+@example
+#include <IO.h>
+
+int del_db(
+        char   *project,
+        char   *version);
+@end example
+
+This removes the databases files for a particular @var{version} of a
+@var{project}. The database should not be open at the time of calling this
+function. On unix, the files removed are named "@var{project}.@var{version}"
+and "@var{project}.@var{version}.aux".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node flush2t
+@subsection flush2t
+@findex flush2t(C)
+@cindex flushing data
+@cindex time stamps
+
+@example
+#include <IO.h>
+
+void flush2t(
+        GapIO *io);
+@end example
+
+This functions checks out all written data by updating the database time
+stamp. If Gap4 crashes, upon restarting any data written since the last time
+stamp is ignored. The purpose of this is to ensure that the data in the
+database is internally consistent. Hence you should only call this function
+when the database writes are consistent.
+
+An example of this is in deleting a reading @var{N} which has left and right
+neighbours of @var{L} and @var{R}. The operation of writes may be:
+
+@itemize @minus
+@item set right neighbour of @var{L} to be @var{R}
+@item set left neighbour of @var{R} to be @var{L}
+@item deallocate @var{N}.
+@end itemize
+
+The database is consistent before these operations, and after these
+operations, but not at any stage in between.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node get_gel_num
+@subsection get_gel_num and get_contig_num
+@findex get_gel_num(C)
+@findex get_contig_num(C)
+@cindex reading names, reading
+@cindex contig names, reading
+
+@example
+#include <IO.h>
+
+int get_gel_num(
+        GapIO  *io,
+        char   *gel_name,
+        int     is_name);
+
+int get_contig_num(
+        GapIO  *io,
+        char   *gel_name,
+        int     is_name);
+@end example
+
+These functions convert reading and contig names into reading and contig
+numbers. (A contig name is defined to be the name of any reading held within
+that contig.)
+
+The @var{is_name} argument is mainly used for backwards compatibility. It
+should be passed as either @code{GGN_ID} or @code{GGN_NAME}. When equal to
+@code{GGN_ID}, @var{gel_name} is treated as a @var{reading identifier},
+otherwise it is treated as a @var{reading name}. An identifier is defined to
+be either a reading name; a hash sign followed by a reading number; or an
+equals sign followed by a contig number.
+
+Both functions return -1 for failure or the appropriate reading or contig
+number for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node lget_gel_num
+@subsection lget_gel_num and lget_contig_num
+@findex lget_gel_num(C)
+@findex lget_contig_num(C)
+@cindex reading names, reading
+@cindex contig names, reading
+@vindex contig_list_t(C)
+
+@example
+#include <IO.h>
+
+int lget_gel_num(
+        GapIO  *io,
+        int     listArgc,
+        char  **listArgv,
+        int    *rargc,
+        int   **rargv);
+
+int lget_contig_num(
+        GapIO  *io,
+        int     listArgc,
+        char  **listArgv,
+        int    *rargc,
+        contig_list_t **rargv);
+@end example
+
+These functions perform the same task as @code{get_gel_num} and
+@code{get_contig_num} except on lists of identifier instead of single
+identifiers.
+
+The list of identifiers is passed in @var{listArgv} as an array of
+@var{listArgc} strings. They return arrays of reading or contig numbers by
+setting @var{*rargv} to point to an array of @var{*rargc} elements. The memory
+is allocated by these functions and should be deallocated by the caller using
+@code{free}.
+
+For @code{lget_gel_num} the return arrays are arrays of integer values.
+@code{lget_contig_num} returns arrays of @var{contig_list_t} structures. This
+structure is defined as follows.
+
+@example
+typedef struct contig_list @{
+    int contig;
+    int start;
+    int end;
+@} contig_list_t;
+@end example
+
+If any string within the @var{listArgv} argument to @code{lget_contig_num} is
+a list, the second and third elements of this list are used to define the
+@var{start} and @var{end} offsets within the contig (which is defined by the
+name held in the first element of the list). Otherwise, the @var{start} and
+@var{end} fields are set to 1 and the length of the contig respectively.
+
+For instance, it is legal for pass over "@code{rname}", "@code{rname 100}" and
+"@code{rname 100 200}" as contig identifiers.
+
+Both functions return 0 for success and -1 for failure.  Note that the
+returned @var{rargc} value may not be the same as @var{listArgc} in the case
+where one or more identifiers could not be translated.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node to_contigs_only
+@subsection to_contigs_only
+@findex to_contigs_only(C)
+
+@example
+#include <IO.h>
+
+int *to_contigs_only(
+        int     num_contigs,
+        contig_list_t *cl);
+@end example
+
+This functions converts an array of @var{contig_list_t} structures to an array
+of integers containing only the contig number information. The @var{cl} and
+@var{num_contigs} elements correspond to the returned @var{rargv} and
+@var{rargc} arguments from the @code{lget_contig_num} function.
+
+It returns a malloc array of integers for success or @code{NULL} for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node chain_left
+@subsection chain_left
+@vindex chain_left(C)
+@cindex left most reading
+
+@example
+#include <IO.h>
+
+int chain_left(
+        GapIO  *io,
+        int     gel);
+@end example
+
+This function finds the left most reading number of the contig containing the
+reading numbered @var{gel}. This is done by chaining along the left neighbours
+of each reading in turn until the contig end is reached. The function detects
+possible loops and returns -1 in this case. Otherwise the left most reading
+number is returned.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node rnumtocnum
+@subsection rnumtocnum
+@vindex rnumtocnum(C)
+@cindex contig numbers, from reading numbers
+
+@example
+#include <IO.h>
+
+int rnumtocnum(
+        GapIO  *io,
+        int     gel);
+@end example
+
+This function returns the contig number for the contig containing the reading
+numbered @var{gel}. It returns -1 if the contig number cannot be found.

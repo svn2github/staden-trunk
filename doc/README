@@ -1,0 +1,28 @@
+HTML
+====
+
+The main entrypoint for all the documentation here is the following file:
+
+	staden_home.html
+
+
+Text
+====
+
+There are also text copies of some bits of documentation.
+
+	Acknowledgements
+	Copyright
+	emboss.txt
+
+
+PDF/PostScript
+==============
+
+The main and mini manuals are now in PDF format. The scripting manual is still
+available in both postscript and PDF format
+
+	manual_*.pdf
+	mini_*.pdf
+	scripting.pdf
+	scripting.ps.gz

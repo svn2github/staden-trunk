@@ -1,0 +1,109 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Update biolims data from processed experiment files
+#
+set help {pregap4 {Pregap4-Modules-Update Biolims}}
+
+proc init {} {
+  mod_preset reset_filetype "yes"
+}
+
+# only processes biolims files
+# other files are still kept in the pass list
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    variable reset_filetype
+    variable report
+    set count 0
+    set total 0
+
+    set report ""
+    set new_files ""
+    foreach f $files {
+      incr total
+
+      set biofile 0
+      set b $f
+      set bio $b
+
+      set b $file_orig_name($bio)
+      while { $b != $bio && $biofile != 1 } {
+       
+        if { [biolims path $b] } {
+          if [catch {biolims update $f }] {
+	    append report "ERR: updating $f\n"
+	  } else {
+            if { $reset_filetype == "yes" } {
+	      append report "SEQ updated $f to BioLIMS $b \n"
+	      lappend new_files $b
+	    } else {
+	      append report "SEQ updated $f to BioLIMS\n"
+	      lappend new_files $f
+            }
+            incr count
+	  }
+          set biofile 1
+	}
+        set bio $b
+        set b $file_orig_name($bio)       
+      }
+      if { $biofile == 0 } {
+          append report "SEQ $f is not from BioLIMS\n"
+	  lappend new_files $f
+      }
+      vmessage -nonewline .
+      update idletasks
+    }
+    vmessage ""
+    append report "Updated BioLIMS with $count of $total files.\n"
+
+    return $new_files
+}
+
+proc name {} {
+    return "Update BioLIMS"
+}
+
+proc create_dialogue {w} {
+    variable reset_filetype
+
+    frame $w.bit_l
+    label $w.bit_l.l -text "Reset filetype to BioLIMS"
+    frame $w.bit_b
+    radiobutton $w.bit_b.yes \
+	-text "Yes" \
+	-variable [namespace current]::reset_filetype \
+	-value "yes"
+    radiobutton $w.bit_b.no \
+	-text "No" \
+	-variable [namespace current]::reset_filetype \
+	-value "no"
+    pack $w.bit_l.l -side top
+    pack $w.bit_b.yes $w.bit_b.no -side top -anchor w
+
+    pack $w.bit_l $w.bit_b -side top -fill both
+}
+
+proc configure_dialogue {w mode} {
+    variable reset_filetype
+
+    if {[string match save* $mode]} {
+	mod_save reset_filetype $reset_filetype
+    }
+}
+
+
+
+
+

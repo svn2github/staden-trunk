@@ -1,0 +1,795 @@
+_split()
+@node Gap4-Introduction
+@chapter Introduction
+@cindex Gap4
+@menu
+* Gap-Intro-Files::         Summary of the Files used and the Preprocessing Steps
+* Gap-Intro-Funtions::          Summary of Gap4's Functions
+* Gap-Intro-Interface::         Introduction to the Gap4 User Interface
+* Gap-Intro-Interface-CS::      Introduction to the Gap4 Contig Selector
+* Gap-Intro-Interface-CC::      Introduction to the Gap4 Contig Comparator
+* Gap-Intro-Interface-TD::      Introduction to the Gap4 Template Display
+* Gap-Intro-Interface-CD::      Introduction to the Gap4 Consistency Display
+* Gap-Intro-Interface-RE::      Introduction to the Gap4 Restriction Map
+* Gap-Intro-Interface-SC::      Introduction to the Gap4 Stop Codon Map
+* Gap-Intro-Interface-CE::      Introduction to the Gap4 Contig Editor
+* Gap-Intro-Interface-CJ::      Introduction to the Gap4 Contig Joining Editor
+@end menu
+
+
+Gap4 
+is a Genome Assembly Program.  
+The program contains all the tools that would be expected from an assembly
+program plus many unique features and a very easily used interface.
+The original version was described in
+@cite{Bonfield,J.K., Smith,K.F. and
+Staden,R. A new DNA sequence assembly program. Nucleic Acids Res. 24,
+4992-4999 (1995)} 
+
+Gap4 is very big and powerful. Everybody employs a subset of options and
+has their favourite way of accessing and using them. Although there is a
+lot of it, users are encouraged to go through the whole of the documentation
+once, just to discover what is possible, and the way that best suits
+their own work. At the very least, the whole of this introductory
+chapter should be read, as in the long run, it will save time.
+
+This chapter serves as a cross reference point, to give an overview of the
+program and to introduce some of the important ideas which it uses. The
+main topics that are introduced are listed in the current section. We
+introduced the use of base call accuracy values for speeding up
+sequencing projects 
+(_fpref(Intro-Base-Acc, The use of numerical estimates of base
+calling accuracy, t)).
+The ability to annotate segments of readings and the consensus can be very
+convenient 
+(_fpref(Intro-Anno, Annotating and masking readings and contigs, t)).
+Generally the 3' ends of readings from sequencing instruments are of too
+low a quality to be used to create reliable consensus, but they can be
+useful, for example, for finding joins between contigs
+(_fpref(Intro-Hidden, Use of the "hidden" poor quality data, t)).
+
+One of the most powerful features of gap4 is its graphical user
+interface which enables the data to be viewed and manipulated at several
+levels of resolution. The displays which provide these different views are 
+introduced, with several screenshots
+(_fpref(Gap-Intro-Interface, Introduction to the gap4 User Interface, t)).
+
+It is important to understand the different files used by our
+sequence assembly software, and how the data is processed before it
+reaches gap4
+(_fpref(Gap-Intro-Files,
+Summary of the Files used and the Preprocessing Steps, t)).
+
+Note that gap4 is a very flexible program, and is designed so that it
+can easily be configured to suit different purposes and ways of
+working. For example it is easy to create a beginners 
+version of gap4 which has
+only a subset of functions. What is described in this manual is the full
+version, and so is likely to contain some perhaps more esoteric options
+that few people will need to use.
+This introductory section also contains a
+complete list of the options in the gap4 main menus
+(_fpref(Gap-Intro-Menus, Gap4 Menus, t)).
+
+In addition to sequence assembly, gap4 can be used for managing mutation
+study data and for helping to discover and check for mutations
+(_fpref(Mutation-Detection-Introduction, Introduction to Searching for Mutations, t)).
+
+Two further useful facilities of gap4 are "Lists" and "Notes".
+For many operations it is convenient to be able to process sets of data 
+together - for example to
+calculate a consensus sequence for a subset of the contigs. To
+facilitate this gap4 uses lists
+(_fpref(Lists, Lists Introduction, lists))
+A `Note' 
+(_fpref(Notes, Notes, notes))
+is an arbitrary piece of text which can be attached to any
+reading, any contig, or to the
+database in general. 
+
+
+@page
+_split()
+@node Gap-Intro-Files
+@section Summary of the Files used and the Preprocessing Steps
+
+@cindex BUSY files
+@cindex database write access
+@cindex database readonly access
+@cindex readonly
+@cindex database limits
+@cindex gap4 database limits: resetting
+@cindex gap4 database sizes
+@cindex gap4 database sizes: resetting
+@cindex gap4 database: maxdb
+@cindex gap4 database: maxseq
+@cindex gap4 database: reading length limits
+@cindex reading length limits in gap4
+@cindex database: gap4 maxdb
+@cindex database: gap4 maxseq
+@cindex trace files: location
+@cindex trace files: defining location
+@cindex directories: trace files
+@cindex gap4: viewing trace files
+
+
+
+
+
+@cindex simultaneous database access
+
+Gap4 stores the data for an assembly project in a gap4
+database. Before being entered into the gap4 database the data must be
+passed through several preassembly steps, usually via pregap4
+(_fpref(Pregap4-Introduction, Pregap4 introduction, pregap4)). 
+These steps are outlined below.
+
+The programs can handle data produced by a variety of sequencing
+instruments. 
+They can also
+handle data entered using digitisers or that has been typed in by
+hand. Usually the trace files in proprietary format, such as
+those of ABI, are converted to SCF files (_fpref(Formats-Scf, SCF introduction,
+scf)) or ZTR files.
+As originally put forward in @cite{Bonfield,J.K. and Staden,R. The application of
+numerical estimates of base calling accuracy to DNA sequencing
+projects. Nucleic Acids Research 23, 1406-1410 (1995).} gap4 makes
+important use of basecall confidence values, 
+(_fpref(Intro-Base-Acc, The use of numerical estimates of base
+calling accuracy, t))
+which are normally stored in the reading's SCF file.
+
+One of the first steps in the preprocessing is to copy
+the base calls from the trace files 
+to text files known as Experiment files
+(_fpref(Formats-Exp, Experiment files, exp)). 
+All the subsequent processes operate on the Experiment files.
+Other preassembly steps include quality and vector clipping.
+Each step is performed by a specific program
+controlled by the program pregap4
+(_fpref(Pregap4-Introduction, Pregap4 introduction, pregap4)). 
+
+Experiment file format is similar to that of EMBL sequence entries in
+that each record starts with a two letter identifier, but we have
+invented new records specific to sequencing experiments. One of
+pregap4's tasks is to augment the Experiment files to include data about
+the vectors, primers and templates used in the production of each
+reading, and if necessary it can extract this information from external
+databases. Some of the information is needed by pregap4 and some by
+gap4. (Note that in order to get the most from gap4 it is essential to make
+sure that it is supplied, via the Experiment files, with all the information
+it needs.)
+
+The trace files are not altered, but are kept as archival data so that
+it is always possible to check the original base calls and traces. Any
+changes to the data prior to assembly
+(and we recommend that none are made until readings
+can be viewed aligned with others) are made to the copy of the sequence
+in the Experiment file.
+
+The reading data, in Experiment file format, is entered into the project
+database (_fpref(GapDB, Gap Database Files, gap4)), usually via one of
+the assembly engines. Because Experiment file format was based on EMBL
+file format, EMBL files can also be entered and their feature tables will
+be convered to tags.  There is no limit to the length of readings which
+can be entered.
+
+All the changes to
+the data made by gap4 are made to the copies of the data in the project
+database.  Once the data has been copied into the gap4 database the
+Experiment files are no longer required.
+
+Gap4 uses the trace files to display the traces 
+(_fpref(Editor-Traces, Traces, t)),
+and to compare the edited bases with the original base calls
+(_fpref(Editor-Search-VerifyEdit1, Search by Evidence for Edit (1), t)),
+(_fpref(Editor-Search-VerifyEdit2, Search by Evidence for Edit (2), t)).
+However gap4 databases do not store trace files: they record only the
+names of the trace files 
+(which are copied from the readings' Experiment files).
+This means that
+if the trace files for a project are not in the same directory/folder as
+the gap4 database, gap4 needs to be told where they are, otherwise it
+cannot use them. Ideally, all the trace files for a project should be stored
+in one directory. To tell gap4 where they are the "Trace file location"
+command in the Options menu should be used (_fpref(Conf-Trace File Location,
+Trace File Location,t)).
+
+Gap4 databases have a number of size constraints, some of which can be altered
+by users and others which are fixed. 
+
+While gap4 is running it often needs to calculate a consensus. The maximum size
+of this sequence is controlled by a variable "maxseq". Most routines are able 
+to automatically increase the value of maxseq while they are running, but some 
+of the older functions, including some of the original assembly engines, are 
+not. This means that it is important for users to set maxseq to a sufficiently 
+high value before running these elderly routines. By default maxseq is 
+currently set to 100000, but users can set it on the command line or from 
+within the Options menu.
+
+Gap4 databases contain one record for each reading and one for each contig. 
+The sum of these two sets of records is the "database_size", and the maximum 
+value that database_size is permitted to reach is "maxdb". When databases are
+initialised maxdb is set, by default, to 8000. Users can alter this value on
+the command line or from within the Options menu of gap4.
+
+Gap4 databases also limit the number and names of readings so that various 
+output routines know how many character positions are required: the maximum
+number imposed in this way is 99,999,999, and the maximum reading name length
+is 40.
+
+Currently we have sites with single gap4 databases containing over 200,000
+readings with consensus sequences in excess of 7,000,000 bases.
+
+A gap4 database can be used by several users simultaneously, but only
+one is allowed to change the contents of the database, and the others
+are given "readonly" access. 
+As part of its mechanism to
+prevent more than one person editing a database at once
+gap4 uses a "BUSY" file
+to signify that the database is opened for writing.
+Before opening a database for
+writing, gap4 checks to see if the BUSY file for that database exists. 
+If it does, the database is
+opened only for reading, if not it creates the file, so that any
+additional attempts to open the
+database for writing will be blocked. 
+When the user with write access closes the database, the BUSY file is
+deleted, hence re-enabling its ability to be opened for changes.
+It is worth remembering that a side effect of this mechanism, 
+is that in the event of a
+program or system crash the BUSY file will be left on the disk, even
+though 
+the database is
+not being used. In this case users must remove the BUSY file 
+before using the database
+(_fpref(GapDB, Gap4 Database Files, t)).
+
+The final result from a sequencing project is a consensus sequence 
+(_fpref(Con-Calculation, The Consensus Calculation, calc_consensus))
+and
+gap4 can write these in Experiment file format, fasta format or staden
+format. Of course the whole database and all the trace files are also
+useful for future reference as they allow any queries about the accuracy
+of the sequence to be answered.
+
+@page
+_split()
+@node Gap-Intro-Funtions
+@section Summary of Gap4's Functions
+
+The tasks which gap4 can perform can be roughly divided into 
+assembly
+(_fpref(Assembly, Assembly Introduction, assembly)), 
+finishing
+(_fpref(Experiments, Finishing Experiments, experiments)),
+and editing
+(_fpref(Editor, Editor introduction, contig_editor)).
+But gap4 contains many other functions which can help to complete a
+sequencing project with the minimum amount of effort, and some of these
+are listed below.
+
+Readings are entered into the gap4 database using the 
+assembly algorithms (_fpref(Assembly, Assembly Introduction, assembly)). 
+In general these algorithms will build the largest 
+contigs they can by finding overlaps between the readings, however some,
+perhaps more doubtful, 
+joins between contigs may be missed, and these can be discovered, checked 
+and made using 
+Find Internal Joins (_fpref(FIJ, Find Internal Joins, fij)),
+Find repeats (_fpref(Repeats, Find repeats, repeats)) and
+Join Contigs (_fpref(Editor-Joining, The Join Editor, contig_editor)).
+Find Internal Joins compares the ends of contigs to see if there are
+possible overlaps and then presents the overlap in the Contig Joining
+Editor, from where the user can view the traces, make edits and join the
+contigs. Find Repeats can be used in a similar way, but unlike Find
+Internal Joins it does not require the matches it finds to continue to
+the ends of contigs.
+
+Read-pair data can be used to automatically put contigs into the
+correct order
+(_fpref(Order-Contigs, Ordering Contigs, contig_ordering)),
+and information about contigs which share templates can be plotted out
+(_fpref(Read Pairs, Find Read Pairs, read_pairs)).
+The relationships of readings and templates, within and between contigs
+can also be shown by the Template Display
+(_fpref(Template-Display, Template Display, template))
+which has a wide selection of display modes and uses.
+
+Problems with the assembly can be revealed by use of 
+Check Assembly (_fpref(Check Assembly, Checking Assemblies, check_ass)),
+Find repeats (_fpref(Repeats, Find repeats, repeats)), and 
+Restriction Enzyme mapping
+(_fpref(Restrict, Plotting Restriction Enzymes, restrict_enzymes)).
+Check Assembly compares every reading with the segment of the consensus
+it overlaps to see how well it aligns. Those that align poorly are
+plotted out in the Contig Comparator. Find Repeats also presents its
+results in the Contig Comparator, so if used in conjunction with Check
+Assembly, it can show cases where readings have been assembled into
+the wrong copy of a repeated element. At the end of a project 
+the Restriction Enzyme map function can be used 
+to compare the consensus sequence with a restriction digest of
+the target sequence.
+Problems can also be found by use of the various Coverage Plots available in
+the Consistency Display
+(_fpref(Consistency-Display, Consistency Display, consistency)). These
+plots will show regions of low or high reading coverage
+(_fpref(Consistency-ReadingCov, Reading Coverage Histogram,
+consistency_display)),
+places with data for only one strand
+(_fpref(Consistency-StrandCov, Strand Coverage, consistency_display)),
+or where there is no read-pair coverage
+(_fpref(Consistency-ReadPairCov, Read-Pair Coverage Histogram, consistency_display)).
+Errors can be corrected by 
+Disassemble Readings (_fpref(Disassemble, Disassembling Readings, disassembly))
+and Break Contig (_fpref(Break Contig, Breaking Contigs, disassembly)) which
+can remove readings from contigs or databases or can break contigs.
+
+The general level of completeness of the consensus sequence
+can be seen diagrammatically using the 
+Quality Plot (_fpref(Template-Quality, Quality Plot, template)), and
+the confidence values for each base in the consensus sequence can be
+plotted (_fpref(Consistency-Confidence, Confidence
+Values Graph, consistency_display)).
+
+The most powerful component of gap4 is its Contig Editor 
+(_fpref(Editor, Editor introduction, contig_editor)).
+which has many
+display modes and search facilities to enable very rapid discovery and
+fixing of base call errors.
+
+If working on a protein coding sequence, the
+consensus can be analysed using the
+Stop Codon Map (_fpref(Stops, Stop Codon Map, stops)), and
+its translation viewed using the Contig Editor
+(_fpref(Editor-Status, Status Line, contig_editor)).
+
+The final result from a sequencing project is a consensus sequence 
+(_fpref(Con-Calculation, The Consensus Calculation, calc_consensus)).
+
+
+@page
+_split()
+@node Gap-Intro-Interface
+@section Introduction to the gap4 User Interface
+
+Gap4 has a main window from which all the main options are selected from
+menus. When a database is open it also has a Contig Selector which will
+transform into a Contig Comparator whenever needed. In addition many of
+the gap4 functions, such as the Contig Editor or the Template Display
+will create their own windows when they are activated. All the graphical
+displays and the Contig Editor can be scrolled in register. The base of the
+graphical display
+windows usually contains an Information Line for showing short textual
+data about results or items touched by the mouse cursor. Gap4 is
+best operated using a three button mouse, but alternative keybindings
+are available. Full details of the user interface
+are described elsewhere
+(_fpref(UI-Introduction, User Interface, t)), and here we give an
+introduction based around a series of screenshots.
+
+The main window (shown below) contains an Output window for
+textual results, an Error window for error messages, and a series of
+menus arranged along the top. The contents of the two text windows can
+be searched, edited and saved. Each set of results is preceded by
+a header containing the time and date when it was generated.
+
+Some of the text will be underlined and shaded differently. These are
+hyperlinks which perform an operation when clicked (with the left mouse
+button) on, typically invoking a graphical display such as the contig
+editor. Clicking on these with the right mouse button will bring up a menu of
+additional operations. At present only a few commands (Show Relationships and 
+the Search functions) produce hypertext, but if there is sufficient interest
+this may be expanded on.
+
+_lpicture(interface.output)
+
+@page
+_split()
+@node Gap-Intro-Interface-CS
+@subsection Introduction to the Contig Selector
+
+
+The gap4 Contig Selector is used to display, select and reorder contigs.
+In the Contig Selector all contigs
+are shown as colinear horizontal lines separated by short vertical
+lines. The length of the horizontal
+lines is proportional to the length of the contigs and their left to
+right order represents the current
+ordering of the contigs. Users can change the contig order by
+dragging the lines representing the contigs. This is done by clicking
+and holding the middle mouse button, or Alt left mouse button, 
+on a line and then moving the mouse cursor.
+The Contig Selector can also be used to select
+contigs for processing. For example, clicking with the right mouse
+button on the line representing a
+contig will invoke a menu containing the
+commands which can be performed on that
+contig. 
+There are several alternative ways of specifying which contig an
+operation should be performed on. Contigs are identified by the name or
+number of any reading they contain. When a dialogue is requesting a
+contig name, using the left mouse button to click on the contig in the
+Contig Selector will
+transfer its name to the dialogue box. Other methods are available
+(_fpref(Contig-Selector-Contigs, Selecting Contigs, t)).
+
+As the mouse is moved over a contig, it is highlighted and the contig
+name (left
+most reading name) and length are displayed in the Information Line. 
+The number in brackets is the contig number (actually the number of its
+leftmost reading).
+Tags or annotations
+(_fpref(Intro-Anno, Annotating and masking readings and contigs, t))
+can also be displayed in the
+Contig Selector window. 
+
+_picture(contig_selector)
+
+The figure shows a typical display from  the Contig Selector. At the top
+are the File, View and Results menus. Below that are buttons for
+zooming and  for displaying the crosshair. The  four  boxes to the
+right are used to display the X and  Y coordinates of the crosshair. The
+rightmost two   display the Y  coordinates  when the contig  selector is
+transformed  into    the   Contig   Comparator.
+The  two leftmost   boxes display the  X  coordinates: the
+leftmost is the position in the contig and the  other is the position in
+the overall consensus. The  crosshair is the  vertical line spanning the
+panel below. Tags are shown as coloured rectangles above and below the
+lines
+(_fpref(Contig Selector, Contig Selector, contig_selector)).
+
+@page
+_split()
+@node Gap-Intro-Interface-CC
+@subsection Introduction to the Contig Comparator
+
+Gap4 commands such as Find Internal Joins (_fpref(FIJ, Find Internal
+Joins, fij)), Find Repeats (_fpref(Repeats, Find Repeats, repeats)),
+Check Assembly (_fpref(Check Assembly, Check Assembly, check_ass)), and
+Find Read Pairs (_fpref(Read Pairs, Find Read Pairs, read_pairs))
+automatically transform the Contig Selector (_fpref(Contig Selector,
+Contig Selector, contig_selector)) to produce the Contig Comparator.
+To
+produce this transformation a copy of the Contig Selector is added at
+right angles to the original window to create a two dimensional
+rectangular surface on which to display the results of comparing or
+checking contigs. 
+
+Each of the functions plots its results as diagonal
+lines of different colours.  In general, 
+if the plotted points are close to the main
+diagonal they represent results from pairs of contigs that are in the
+correct relative order.  Lines parallel to the main diagonal represent
+contigs that are in the correct relative orientation to one another.
+Those perpendicular to the main diagonal show results for which one
+contig would need to be reversed before the pair could be joined.  The
+manual contig dragging procedure can be used to change the relative
+positions of contigs.  _fxref(Contig-Selector-Order, Changing the Contig
+Order, contig_selector) As the contigs are dragged the plotted results
+will automatically be moved to their corresponding new positions.  This
+means that, in general, 
+if users drag the contigs to move their plotted results close
+to the main diagonal they will simultaneously be putting their contigs
+into the correct relative positions.
+
+This plot can simultaneously show the results of independent types of
+search, making it easy for users to see if different analyses produce
+corroborating evidence for the ordering of contigs. Indications that a
+reading may have been assembled in an incorrect position can also be
+seen - if for example a result from Check Assembly lies on the same
+horizontal or vertical projection as a result from Find Repeats, users
+can see the alternative position to place the doubtful reading.
+
+The plotted results can be used to invoke a subset of commands by the
+use of pop-up menus.
+For example if the user clicks the right mouse button over
+a result from Find Internal Joins a menu containing Invoke Join Editor
+(_fpref(Editor-Joining, The Join Editor, contig_editor)) and Invoke
+Contig Editors (_fpref(Editor, Editing in gap4, contig_editor))
+will pop up. If the user selects Invoke Join Editor the Join Editor will
+be started with the two contigs aligned at the match position contained
+in the result. If required one of the contigs will be complemented to
+allow their alignment. 
+
+@page
+_lpicture(comparator)
+
+A typical display from the Contig Comparator is shown above. It includes
+results for Find Internal Joins in black, Find Repeats in red, Check
+Assembly in green, and Find Read Pairs in blue. 
+Notice that there are several internal joins, read pairs and repeats
+close to the main diagonal near the top left of the display. This
+indicates that the contigs represented in that area are 
+likely to be in the correct positions relative to one another. In the
+middle of the bottom right quadrant there is a blue diagonal line
+perpendicular to the main diagonal. This indicates a pair of contigs
+that are in the wrong relative orientation. The crosshairs show the
+positions for a pair of 
+contigs. The vertical line continues into the Contig Selector part of
+the display, and the position represented by the horizontal line is also
+duplicated there
+(_fpref(Contig Comparator, Contig Comparator, comparator)).
+
+
+@page
+_split()
+@node Gap-Intro-Interface-TD
+@subsection Introduction to the Template Display
+
+The Template Display can show schematic plots of readings, templates,
+tags, restriction enzyme sites and the consensus quality. Colour coding
+distinguishes reading, primer and template types. The Template Display
+can also be used to reorder contigs and to invoke the Contig Editor.
+
+An example showing all these information types can be seen in the Figure below.
+
+
+_lpicture(template.display)
+
+The large top section contains lines and arrows representing readings
+and templates. Beneath this are rulers;
+one for each contig, and below those is the quality plot. 
+The template and reading section of the display is in two parts. The top
+part contains the templates which have been sequenced from both ends but
+which are in some way inconsistent - for example given the current
+relative positions of their readings, they may have a length that is
+larger or greater than that expected, or the two readings may, as it
+were, face away from one another. Colour coding is used to distinguish
+between different types of inconsistency, and whether or not the
+inconsistency involves readings within or between contigs. For example,
+most of the problems shown in the screendump above are coloured
+dark yellow, indicating an inconsistency between a pair of contigs.
+The rest of the data, (mostly dark blue indicating templates sequenced
+from only one end), is plotted below the data for the inconsistent
+templates.
+Forward readings are light blue and reverse readings are orange.
+Templates in bright yellow have been sequenced from both ends, are consistent and
+span a pair of contigs (and so indicating the relative orientation and
+separation of the contigs). 
+
+At the bottom is the restriction enzyme plot.
+The coloured blocks immediately above and below the ruler are tags.
+Those above the ruler 
+can also be seen on their corresponding readings in the large top
+section. 
+The display can be zoomed. The position of a crosshair
+is shown in the two left most boxes in the top right hand corner. 
+The leftmost
+shows the distance in bases between the crosshair and the start of the 
+contig
+underneath the crosshair. The middle box shows the distance between the
+crosshair and the start of the first contig. The right box shows the 
+distance
+between two selected cut sites in the restriction enzyme plots
+(_fpref(Template-Display, Template Display, template)).
+
+@page
+_split()
+@node Gap-Intro-Interface-CD
+@subsection Introduction to the Consistency Display
+
+The Consistency Display provides plots designed to highlight 
+potential problems in contigs. It
+is invoked from the main gap4 View menu by selecting any of its plots. Once
+a plot has been displayed, any of the other types of consistency plot can
+be displayed within the same frame from the View menu of the Consistency
+Display. 
+
+An example showing the Confidence Values Graph and the corresponding Reading
+Coverage Histogram, Read-Pair Coverage Histogram and Strand Coverage
+is shown below.
+
+_lpicture(consistency_p)
+
+If more than one contig is displayed, the contigs are
+drawn immediately after one another but are staggered in the y direction.
+
+The ruler ticks can be turned on or off from the View menu of the consistency
+display. 
+The plots can be enlarged or reduced using the standard zooming mechanism.
+_fxref(UI-Graphics-Zoom, Zooming, interface)
+
+The crosshair toggle button controls whether the crosshair is visible. This is
+shown as a black vertical and horizontal line. The position of the crosshair is
+shown in the 3 boxes to the right of the 
+crosshair toggle. The first box indicates the cursor position in the current
+contig. The second box indicates the overall position of the cursor in the 
+consensus. The last box shows the y position of the crosshair. 
+(_fpref(Consistency-Display, Consistency Display, consistency)).
+
+
+@page
+_split()
+@node Gap-Intro-Interface-RE
+@subsection Introduction to the Restriction Enzyme Map
+
+The restriction enzyme map function finds and displays restriction sites
+within a specified region of a contig. Users can select the enzyme
+types to search for and can save the sites found as tags within the
+database.
+
+_lpicture(restrict_enzymes)
+
+This figure shows a typical view of the Restriction Enzyme Map
+in which the results for each enzyme type have been configured by the
+user to be drawn in different colours.  On the left of the display the
+enzyme names are shown adjacent to their rows of plotted results. If no
+result is found for any particular enzyme eg here APAI, the row will
+still be shown so that zero cutters can be identified. Three of the
+enzymes types have been selected and are shown highlighted. The results
+can be scrolled vertically (and horizontally if the plot is zoomed in).
+A ruler is shown along the base and the current cursor position (the 
+vertical black line) is shown in the left hand box near the top right of
+the display.  If the user clicks, in turn, on two restriction sites
+their separation in base pairs will appear in the top right hand box.
+Information about the last site touched is shown in the Information line
+at the bottom of the display. At the top the edit menu is shown
+and can be used to create tags for highlighted enzyme types
+(_fpref(Restrict, Restriction Enzyme Search, restrict_enzymes)).
+
+
+@page
+_split()
+@node Gap-Intro-Interface-SC
+@subsection Introduction to the Stop Codon Map
+
+The Stop Codon Map plots the positions of all the stop codons on one or
+both strands of a contig consensus sequence.  If the Contig Editor is 
+being used on
+the same contig, the Refresh button will be enabled, and if used, will 
+fetch the
+current consensus from the editor, repeat the search and replot the stop
+codons.
+
+_lpicture(stops)
+
+The figure shows a typical zoomed in view of the Stop Codon Map display.
+The positions for the stop codons in each reading frame (here all six
+frames are
+shown) are displayed in horizontal strips. Along the top are buttons for
+zooming, the crosshair toggle, a refresh
+button and two boxes for showing the crosshair position. The left box shows
+the current position and the right-hand box the separation of the last two
+stop codons selected by the user.  Below the display of stop codons is a
+ruler and a horizontal scrollbar. The information line is showing the data 
+for
+the last stop codon the user has touched with the cursor. Also shown on the
+left is the View menu which is used to select the 
+reading frames to display
+(_fpref(Stops, Stop Codon Map, stops)).
+
+
+@page
+_split()
+@node Gap-Intro-Interface-CE
+@subsection Introduction to the Contig Editor
+
+The gap4 Contig Editor is designed to allow rapid checking and editing of
+characters in assembled readings. Very large savings in time can be achieved
+by its sophisticated problem finding procedures which automatically direct the
+user only to the bases that require attention.  The following is a selection of
+screenshots to give an overview of its use.
+
+_lpicture(contig_editor.screen)
+
+The figure above shows a screendump from the Contig Editor
+which contains segments of aligned
+readings, their consensus and a six phase translation. The Commands menu
+is also shown.  The main components are: the controls at
+the top; reading names on the left; sequences to their right; and status lines
+at the bottom. Some of the reading names are written in light grey which
+indicates that their traces/chromatograms are being displayed (in
+another window, see below).
+
+One reading name is written with inverse colours, which indicates that it
+has been selected by the user. To the left of each reading name is the reading
+number, which is negative for readings which have been reversed and complemented.
+The first of the status lines, labelled "Strands", is showing a
+summary of strand coverage. The left half of the segment of sequence
+being displayed is covered
+only by readings from one strand of the DNA, but the right half contains data
+from both strands.
+
+Along the top of the editor window is a row of command buttons
+and menus. The rightmost pair of buttons provide help
+and exit.  To their left are two menus, one of which is currently in use.  To
+the left of this is a button which initially displays a search dialogue,
+and then pressing it again, will perform the selected search. 
+Further left is the undo button:
+each time the user clicks on this box the program reverses the previous edit
+command.  The next button, labelled "Cutoffs" is used to toggle between
+showing or hiding the reading data that is of poor quality or is vector
+sequence. In this figure it has been activated, showing the poor quality
+data in light grey. Within this, sequencing vector is displayed in
+lilac. The next button to the left is the Edit Modes menu
+which allows users to select which editing commands are enabled. The
+next command toggles between insert and replace and so governs the effect of
+typing in the edit window.
+
+One of the readings contains a yellow tag, and elsewhere some bases are
+coloured red, which indicates they are of poor quality.  The Information Line
+at the bottom of the window can show 
+information about readings, annotations and
+base calls. In this case it is showing information about the reliability of
+the base beneath the editing cursor.
+
+_lpicture(contig_editor_grey_scale)
+
+A better way of displaying the accuracy of bases is to shade their
+surroundings so that the lighter the background the better the data.
+In the figure above, this grey scale encoding of the base accuracy or
+confidence has been activated for bases in the readings and the
+consensus. This
+screenshot also shows the Contig Editor displaying disagreements and edits.
+Disagreements between the consensus and individual base calls are shown
+in dark green. Notice that these disagreements are in poor
+quality base calls. Edits (here they are all pads) are shown with a
+light green background. When they are present, replacements/insertions
+are shown in pink, deletions in red and confidence value changes in purple.
+The consensus confidence takes into account several factors, including
+individual base confidences, sequencing chemistry, and strand coverage.
+It can be seen that the consensus for 
+the section covered by data from only one strand has been calculated to
+be of lower confidence than the rest. The Status Line includes two
+positions marked with exclamation marks (!) which means that the
+sequence is covered by data from both strands, but that the consensus
+for each of the two strands is different.
+The Information Line at the bottom of the window is showing
+information about the reading under the cursor: its name, number,
+clipped length, full length, sequencing vector and BAC clone name.
+
+_lpicture(contig_editor.traces)
+
+The Contig Editor can rapidly display the traces for any reading or set
+of readings. The number of rows and columns of traces 
+displayed can be set by the user. The traces scroll in register with one
+another, and with the cursor in the Contig Editor. Conversely, the
+Contig Editor cursor can be scrolled by the trace cursor. 
+A typical view is shown above.
+
+This figure is an example of the Trace Display showing three traces
+from readings in the previous two Contig Editor screendumps.
+These are the best two traces from each strand plus a trace from a
+reading which contains a disagreement with the consensus. The program
+can be configured to automatically 
+bring up this combination of traces for each
+problem located by the "Next search" option.
+The histogram or vertical bars plotted top down show the confidence
+value for each base call. The reading number, together with the direction of
+the reading (+ or -) and the chemistry by which it was determined, is given at
+the top left of each sub window.  There are three buttons ('Info', 'Diff', and
+'Quit') arranged vertically with X and Y scale bars to their right. The Info
+button produces a window like the one shown in the bottom right hand
+corner. The Diff button is mostly used for mutation detection, and causes a
+pair of traces to be subtracted from one another and the result plotted, hence
+revealing their differences.  (_fpref(Editor-Traces, Traces, contig_editor)).
+
+@page
+_split()
+@node Gap-Intro-Interface-CJ
+@subsection Introduction to the Contig Joining Editor
+
+Contigs are joined interactively using the Join Editor.
+This is simply a pair
+of contig editor displays stacked one above the other with a "differences"
+line in between. The Contig Join Editor is usually invoked by clicking
+on a Find Internal Joins, or Find Repeats result in the Contig
+Comparator. In which case the two contigs will appear 
+with the match found by these searches displayed.
+
+The few differences between the Join Editor and the Contig Editor can be seen
+in the figure below. Otherwise all the commands and operations are the
+same as those for the Contig Editor.
+
+_lpicture(contig_editor.join)
+
+In this figure the Cutoff or Hidden data is being displayed for the
+right hand contig. One difference between the Contig Editor and the Join
+Editor is the Lock button. When set (as it is in the
+illustration) the two contigs scroll in register, otherwise they can be
+scrolled independently.
+
+The Align button aligns the overlapping consensus sequences
+(_fpref(Editor-Joining, Editor joining, contig_editor)).
+

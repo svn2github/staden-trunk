@@ -1,0 +1,469 @@
+@menu
+* UI-Introduction::	        Introduction
+* UI-Basics::                   Basic controls; buttons, menus, entries
+* UI-Mouse::                    Standard Mouse Operations
+* UI-Output::                   The Output and Error Windows
+* UI-Graphics::                 Graphics Window
+* UI-Colour::                   Colour Selector
+* File Browser::                File Browser
+* UI-Fonts::                    Font Selection
+@ifset standalone
+* Index::                       Index
+@end ifset
+@end menu
+
+_split()
+@node UI-Introduction
+@unnumberedsec Introduction
+@cindex User interface
+@cindex User interface: introduction
+
+This chapter describes the graphical user interface implemented in the
+programs gap4, pregap4, spin and trev.
+
+_split()
+@node UI-Basics
+@section Basic Interface Controls
+@menu
+* UI-Buttons::                  Buttons
+* UI-Menus::                    Menus
+* UI-Text::                     Text windows
+* UI-Entries::                  Entry boxes
+@end menu
+
+The key components of any graphical interface are menus, buttons and text entry
+boxes. These are usually grouped together into 'panels' or 'dialogues'. For
+the sake of simplifying the rest of the documentation we describe the
+operation and control of the user interface here.
+
+_split()
+@node UI-Buttons
+@subsection Buttons
+@cindex Buttons
+@cindex User interface: buttons
+
+There are three basic types of button; command buttons, radio buttons and
+check buttons. Buttons are used by moving the mouse pointer over the button
+(it will then be highlighted, as is "Choice 3" below) and pressing the left
+mouse button. The illustration below demonstrates each of the three types.
+
+_picture(interface.buttons)
+
+The buttons labelled "Command 1", "Command 2" and "Command 3" are command
+buttons. These perform a particular action, which is usually determined by the
+text within the button. Typically command buttons have a slightly raised look.
+A typical example is the "Clear" button visible on the main gap4 window.
+See the illustration in _oref(UI-Output, Output and Error Windows).
+
+The buttons underneath, labelled "Choice 1", "Choice 2" and "Choice 3" are
+radio buttons. These have small diamonds to the left of each name. Only one of
+these boxes in each group of radio buttons (it is possible to have several
+distinct groups) may be set at any one time. In this example "Choice 1" has
+been selected. For example, selecting "Choice 3" will now clear the diamond
+next to "Choice 1" and fill the diamond next to "Choice 3".
+
+The bottom row of buttons are check buttons. These each have small boxes to
+the left of each name. They act similarly to radio buttons except that more than
+one can be selected at any one time. Here we have "Check 2" and "Check 3"
+selected, with "Check 1" deselected. Pressing a check button will toggle it;
+so clicking the left mouse button on "Check 2" would deselect it and clear the
+neighbouring box. The "Scroll on output" button is an example of a check
+button. See the illustration in _oref(UI-Output, Output and Error Windows).
+
+_split()
+@node UI-Menus
+@subsection Menus
+@cindex Menus
+@cindex User interface: menus
+
+When many operations are available it is impractical to arrange them all in
+command buttons. For this reason we have menus. Typically we will use a
+"menubar" consisting of several menus arranged side by side 
+
+_picture(interface.menus)
+
+The menubar is a series of menu buttons arranged side by side. In the above
+picture, the menus are "File" through to "Help". Selecting an item from a menu
+is done by pressing and holding the left mouse button whilst the cursor is
+above the menu button. The available menu choices will then be displayed.
+Whilst still pressing the mouse button, move down to the desired choice and
+then release the mouse button. Releasing the mouse button when the mouse
+cursor is not over a menu item will remove the menu without executing any
+options. Alternatively, it is possible to press and release the left mouse
+button whilst the cursor is above a menu button. The menu options will be
+revealed.  Now move down and press and release the left button once more once
+on the selected item.
+
+To see an overview of the menu contents press the left mouse button over a
+menu button and move the mouse cursor over the other menu buttons. As each
+menu button is highlighted the appropriate options for this menu will be
+shown.
+
+Some menu items lead to further menus. These are called cascading menus. Treat
+these exactly as normal menus. 
+
+To tear off a menu pull down the menu using the left mouse button, select
+the dashed perforation line, and release the button. The menu will be
+redrawn with a title bar which can be used to move it to any position on
+the screen. Not all menus support tearing off.
+
+_split()
+@node UI-Text
+@subsection Text Windows
+@cindex Text windows
+@cindex User interface: text windows
+
+A text window is simply an area of the screen set aside for displaying textual
+information. A typical example is the Output and Error windows seen on the
+main gap4 screen. See the illustration in _oref(UI-Output, Output and
+Error Windows).
+
+The most basic use of text windows is to display data. If the data is large
+then there will usually be scrollbars on the right and bottom sides of the
+text display. If the data is of an editable nature (such as the comments in a
+tag in gap4) we may perform many editing operations on the text. The
+simplest commands follow.
+
+@example
+@group
+Arrow keys              Moves the editing cursor
+Left mouse button       Sets the editing cursor
+Middle mouse button     Panning - controls both scrollbars at once
+Alt left mouse button   Panning - controls both scrollbars at once
+Delete                  Deletes the character to the left of the cursor
+Most other keys         Adds text to the window
+@end group
+@end example
+
+In addition to the above,  some more advanced features are  available,
+mostly following the @code{Emacs} style of key bindings.
+
+@example
+Delete                  Delete region (when highlighted), otherwise as above
+Control D               Delete character to the right of the cursor
+Control N               Down one line
+Control P               Up one line
+Control B               Move back on character
+Control F               Move forward on character
+Control A               Move to start of line
+Control E               Move to end of line
+Meta b                  Move back one word
+Meta f                  Move forward one word
+Meta <                  Move to start
+Meta >                  Move to end
+Control Up              Move up one paragraph
+Control Down            Move down one paragraph
+Next                    Move done one page
+Prev                    Move up one page
+Control K               Delete to end of line
+Control T               Transpose two characters
+Drag left button        Highlights a region (for cut and paste)
+Control /               Select all (for cut and paste)
+Control \               Deselect all (for cut and paste)
+@end example
+
+_split()
+@node UI-Entries
+@subsection Text Entry Boxes
+@cindex Entry boxes
+@cindex User interface: entry boxes
+
+An entry box is basically a small, one line, text window. All of the same
+editing commands exist, although many are redundant for such a small window.
+
+_picture(interface.entry)
+
+A typical entry box can be seen in the gap4 dialogue for opening new
+databases. Here the ringed region to the right of the "Enter new filename"
+text is the entry box. The current contents of this entry is "file". The
+vertical black line visible is the text entry point.
+
+_split()
+@node UI-Mouse
+@section Standard Mouse Operations
+@cindex Mouse control: overview
+@cindex Mouse buttons: overview
+@cindex Buttons: mouse overview
+@cindex Left mouse button: overview
+@cindex Middle mouse button: overview
+@cindex Alt left mouse button: overview
+@cindex Right mouse button: overview
+
+The same mouse buttons are used for similar operations throughout the
+programs. A brief description of the mouse control is listed below.
+On UNIX three button mice are used, but on Windows or Linux two buttons
+are more
+common, and so the alternative of Alt-left-mouse button is used for the
+middle button.
+
+@code{Left button                     Select}
+@quotation
+In a dialogue this selects an item from a list of items.
+Within a graphical display (eg the template display) this
+"selects" an item. Selected items are shown in bold. Selecting
+an already selected item will deselect it.
+@end quotation
+
+@code{Drag left button                Select region}
+@quotation
+This operates only for the graphical displays. A rectangular box can
+be dragged out between where the left button was pressed (and held
+down) to the current mouse cursor position. Releasing the left button
+will then select all items contained entirely within the rectangle.
+Within the contig editor such selections are displayed by underlining
+the region instead.
+@end quotation
+
+@code{Drag middle button              Move}
+@quotation
+This currently operates only for the contig selector. The selected
+items (or the item under the mouse pointer if none are selected) are
+dragged until the middle button is released.
+@end quotation
+
+@code{Drag Alt left button            Move}
+@quotation
+This currently operates only for the contig selector. The selected
+items (or the item under the mouse pointer if none are selected) are
+dragged until the button is released.
+@end quotation
+
+@code{Right button                    Popup menu}
+@quotation
+Within some displays this will pop up a menu displaying a list of
+commands that can be used on the selected item.
+@end quotation
+
+_split()
+@node UI-Output
+@section The Output and Error Windows
+@cindex Output window
+@cindex Error window
+@cindex Search: in the output window
+@cindex Scroll on output
+@cindex Redirect output
+@cindex Clear: in output window
+
+The main screen has three portions; the menubar, the output window and the
+error window. Of these, the output and error windows are identical except for
+the data that appears within them. Here we describe the general operation of
+the output window only, although the details apply to the error window too.
+
+_lpicture(interface.output)
+
+The output window consists of a text window with a set of labels and buttons
+above it. At the top left is the window name followed by a colon. After
+the colon the name of the current output file will be shown in blue italic
+letters. All new output appearing in this window will also be sent to this
+file. Initially no output file is specified and this label is blank (as can be
+seen in the error window). Using the "Redirect" menu located at the top right
+of the window a new file can be opened, or an existing one closed (in which
+case output is no longer sent to the specified file). The output and error
+windows may both have redirection files.
+
+The "Search" button invokes a dialogue box requesting a string to search
+and whether to search forwards or backwards from the current position of
+the cursor. The search is case insensitive. Hitting the the OK button finds 
+the next match.The bell is sounded if no more matches can be found. 
+
+The "Scroll on output" check button toggles whether the window should
+automatically scroll when new output appears to ensure that it is
+visible. The default (as seen in the illustration) state is to
+scroll. The "Clear" button removes all output from the window.
+
+Each command, when run, adds a title to the output window. This
+contains the current time together with the command name. Output for
+this command then appears beneath the header. In the illustration the
+output from three commands is visible. Of these the "edit contig"
+command produces no output, but still has a header.
+
+Pressing the right button with the cursor above a piece of output
+(either in its header or the text beneath it) will pop up a menu of
+operations. This operation is not valid for the error window. The
+commands are:
+
+@code{Show input parameters}
+@quotation
+Inserts the input parameters of the command, if any, beneath the 
+command header
+@end quotation
+
+@code{Remove}
+@quotation
+Deletes this text from the output window
+@end quotation
+
+@code{Output to disk}
+@quotation
+Sends this text to a specified file
+@end quotation
+
+@code{Output to list}
+@quotation
+Sends this text to a specified list
+@end quotation
+
+_ifdef([[_unix]],[[
+
+@code{Output to command}
+@quotation
+Starts up a specified command and sends this text to the input of the
+command. Any output from the command is added back to the output
+window. Any errors from the command appear in the output window.
+Currently this allows commands to run for up to five seconds, and
+terminates the command if it has taken longer. To start longer running
+applications add an ampersand (&) after the command name.
+@end quotation
+
+ ]])
+
+The output operations allow the user to specify whether the header, input 
+parameters or text for the command, in any combination, are sent to the
+output.
+
+
+
+The text in the error window has a different format to the output
+window. Instead of large portions of text separated by headers, each
+item in the error window consists of a single line containing the
+date, the name of the function producing the error, and a brief
+description of the error. Many error messages will be displayed in
+their own dialogue boxes (eg not having write access to a file) and
+hence will not appear in the error window.  Each time an error message
+is added the bell is rung.
+
+_split()
+@node UI-Graphics
+@section Graphics Window
+@cindex Graphics windows: user interface
+
+@menu
+@ifset html
+* UI-Graphics-Intro::	        Introduction
+@end ifset
+* UI-Graphics-Zoom::            Zooming
+@end menu
+
+@ifset html
+@node UI-Graphics-Intro
+@unnumberedsubsec Introduction
+@end ifset
+
+The graphical displays have several features in common. Commands are
+selected from buttons and menus ranged along the top of the window.
+Menus can be "torn off" and positioned anywhere on the screen. Zooming
+is allowed using the mouse. The "Zoom out" button undoes the previous zoom
+command. Crosshairs and cursors can be toggled on and off, and their
+coordinates in base positions appear in boxes in the top right hand
+corner of the displays.  Items plotted in the graphical displays
+have text attached, and as the cursor passes over an item, it is
+highlighted and its text appears in an Information line at the bottom of
+the display.
+
+@node UI-Graphics-Zoom
+@subsection Zooming
+@cindex Zooming graphics
+@cindex User interface: Zooming graphics
+
+Plots can be enlarged either by resizing the window or zooming. 
+In some plots zooming
+is achieved by holding down the control key and right mouse button and
+dragging out a rectangle.  Rectangles that are too small are ignored and
+a warning bell will sound. The content of the window is magnified such
+that the contents of the zoom box fill the window. 
+The Zoom out button will restore the plot to the previous
+magnification. In other plots, x and y scale boxes achieve similar effects.
+
+_split()
+@node UI-Colour
+@section Colour Selector
+@cindex Colour selector
+@cindex User interface: colour selector
+
+A common operation is to change the colour of a plot. For this we use the
+colour selector dialogue shown below. The three sliders control the red,
+green, and blue intensities to use in producing the desired colour. The
+shaded box at the bottom illustrates the current colour. In some displays
+this will also interactively update the colour in the associated plot
+simultaneously.
+
+_picture(interface.colour)
+
+Pressing the "OK" button will quit the colour selector and update the
+appropriate colours in the plot. Pressing "Cancel" will quit the colour
+selector without making any changes to the plot. Note that some colour
+dialogues may also be combined with extra controls for adjusting other
+graphical styles, such as the line width.
+
+Many programs have a "Colours" command in the Options menu. This displays two
+colour selectors; one for each of the foreground and background colours. This
+can be used to adjust the main colour scheme used for the program. Pressing
+"OK" selects this colour scheme and keeps it in use until the program exits.
+Pressing "OK Permanent" accepts this colour scheme, but also updates the
+@file{$HOME/.tk_utilsrc} file. This means that the colour scheme will be used
+for all future program uses. To revert to the default colours, manually edit
+the @file{$HOME/.tk_utilsrc} file.
+
+_split()
+@node File Browser
+@section File Browser
+_include(filebrowser-t.texi)
+
+_split()
+@node UI-Fonts
+@section Font Selection
+@cindex Fonts
+@cindex Configuring: fonts
+
+The Options menu of most programs contains a "Set fonts" command. This brings
+up a font selection dialogue consisting of some sample text, three option
+menus to select the font name, family and size, and some check buttons for
+font styles.
+
+_picture(interface.fonts)
+
+In the above picture, @strong{button_font} is the currently selected font
+name. This option menu contains several of the following font types. The exact
+ones available depends on the program being used.
+
+@table @strong
+@item button_font
+Used for buttons, labels, checkbuttons and radiobuttons.
+@item menu_font
+Used for menu buttons and their contents, including pull down menu contents.
+@item text_font
+Used for textual displays, such as the main output windows. This should be
+chosen to be a fixed width font, such as @code{Courier}.
+@item sheet_font
+Used for the scrolled text displays such as the contig editor in gap4 and the
+sequence displays in spin. This too needs to be chosen as a fixed
+width font.
+@item title_font
+Used as for headings within text windows such as contig names in the gap4
+suggest probes function.
+@item menu_title_font
+Used in the title line of popup menus.
+@item trace_font
+Used for the sequence and number displays in the trace displays for both gap4
+and Trev.
+@end table
+
+Next to the font name is the font family selector. The contents of this menu
+will depend on the fonts available to your system. Some may be inappropriate,
+or not even in the correct language. Next to the family selector is the size
+menu. This contains a range of sizes in both pixel and point units. If a font
+of a particular size is not available, the nearest font or size will be
+automatically chosen. Specifying fonts to be a fixed number of points states
+that the font should have a specific physical size, regardless of monitor size
+or screen resolution. There are 72.27 points to the inch. Underneath these we
+have Bold, Italic, Overstrike and Underline check buttons.
+
+Whilst choosing the font, the fonts used in the entire program automatically
+update to show you how things will look. Pressing "Cancel" will reset the
+fonts back to their original state. Pressing "OK" will keep these chosen
+fonts, until the program is exited. Pressing "OK Permanent" will keep these
+fonts, but will also add them to the user's @file{$HOME/.tk_utilsrc} file.
+This file is processed when the programs start up, and so your font choice
+will be permanently chosen. To remove this font choice, manual editing of the
+@file{$HOME/.tk_utilsrc} file is required.
+

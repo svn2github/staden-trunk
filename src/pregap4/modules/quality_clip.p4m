@@ -1,0 +1,257 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Quality clipping, based on phred confidence values
+#
+# This processes Experiment files, writing the clipping segments back as
+# QL and QR lines
+#
+set help {pregap4 {Pregap4-Modules-Quality Clip}}
+
+proc init {} {
+    mod_preset clip_mode		confidence
+    mod_preset min_extent		0
+    mod_preset max_extent		999999
+    mod_preset min_length		0
+
+    # for clip_mode==confidence
+    mod_preset conf_val			10
+    mod_preset window_length		30
+    
+    # For clipping eba values, try window_length 100 and conf_val 70
+
+    # for clip_mode==sequence
+    mod_preset offset 			70
+    mod_preset right_win_length		100
+    mod_preset right_num_uncalled	5
+    mod_preset left_win_length		25
+    mod_preset left_num_uncalled	3
+}
+
+proc run {files} {
+    variable clip_mode
+    variable conf_val
+    variable window_length
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable min_length
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+    variable report
+    global file_type
+    global file_error
+	
+    set new_files {}
+    set report ""
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {$clip_mode == "sequence"} {
+		set cmode -n
+	    } else {
+		set cmode -c
+	    }
+	    if {[catch {exec qclip \
+		$cmode \
+		-m $min_extent \
+		-M $max_extent \
+		-x $min_length \
+		-w $window_length \
+		-q $conf_val \
+		-s $offset \
+		-R $right_win_length \
+		-r $right_num_uncalled \
+		-L $left_win_length \
+		-l $left_num_uncalled $f} err]} {
+	        set file_error($f) "qclip: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+	        lappend new_files $f
+	         append report "SEQ $f: clipped using 'qclip'\n"
+		vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    # vmessage -nonewline .
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Quality Clip"
+}
+
+proc create_dialogue {w} {
+    variable clip_mode
+    variable conf_val
+    variable window_length
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable min_length
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+
+    # Common to both methods
+    frame $w.mode
+    label $w.mode.l -text "Clip mode"
+    radiobutton $w.mode.confidence \
+	    -text "by confidence" \
+	    -variable [namespace current]::clip_mode \
+	    -value confidence
+    radiobutton $w.mode.sequence \
+	    -text "by base calls" \
+	    -variable [namespace current]::clip_mode \
+	    -value sequence
+    pack $w.mode -side top -fill both
+    pack $w.mode.l -side left
+    pack $w.mode.confidence $w.mode.sequence -side right
+    xentry $w.min_extent \
+	-label "Minimum extent" \
+	-default $min_extent \
+	-width 7 \
+	-type "int 0"
+    xentry $w.max_extent \
+	-label "Maximum extent" \
+	-default $max_extent \
+	-width 7 \
+	-type "int 0"
+    xentry $w.min_length \
+	-label "Minimum length (reject if too short)" \
+	-default $min_length \
+	-width 7 \
+	-type "int 0"
+    pack $w.min_extent $w.max_extent $w.min_length -side top -fill both
+
+    frame $w.separator -bd 2 -relief raised -height 2
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+
+    # New-style confidence clip
+    label $w.conf_label \
+	-text "Clip by confidence values"
+    pack $w.conf_label -anchor c  -side top
+    xentry $w.window_length \
+	-label "Window length" \
+	-default $window_length \
+	-width 7 \
+	-type "int 1"
+    xentry $w.conf_val \
+	-label "Average confidence" \
+	-default $conf_val \
+	-width 7 \
+	-type "int 0 100"
+    pack $w.window_length $w.conf_val \
+	-side top -fill both
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+
+    # Old-style sequence clip
+    label $w.seq_label \
+	-text "Clip by base calls"
+    pack $w.seq_label -anchor c  -side top
+    xentry $w.offset \
+	-label "Start offset" \
+	-default $offset \
+	-width 7 \
+	-type "int 0"
+    xentry $w.right_win_length \
+	-label "3' window length" \
+	-default $right_win_length \
+	-width 7 \
+	-type "int 1"
+    xentry $w.right_num_uncalled \
+	-label "3' number of uncalled bases" \
+	-default $right_num_uncalled \
+	-width 7 \
+	-type "int 0"
+    xentry $w.left_win_length \
+	-label "5' window length" \
+	-default $left_win_length \
+	-width 7 \
+	-type "int 1"
+    xentry $w.left_num_uncalled \
+	-label "5' number of uncalled bases" \
+	-default $left_num_uncalled \
+	-width 7 \
+	-type "int 1"
+    pack $w.offset $w.right_win_length \
+	$w.right_num_uncalled $w.left_win_length $w.left_num_uncalled \
+	-side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	offset min_extent max_extent min_length right_win_length \
+	right_num_uncalled left_win_length left_num_uncalled clip_mode \
+	conf_val window_length]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable clip_mode
+    variable conf_val
+    variable window_length
+    variable offset
+    variable min_extent
+    variable max_extent
+    variable min_length
+    variable right_win_length
+    variable right_num_uncalled
+    variable left_win_length
+    variable left_num_uncalled
+
+    set conf_val	   [$w.conf_val get]
+    set window_length	   [$w.window_length get]
+    set offset		   [$w.offset get]
+    set min_extent	   [$w.min_extent get]
+    set max_extent	   [$w.max_extent get]
+    set min_length	   [$w.min_length get]
+    set right_win_length   [$w.right_win_length get]
+    set right_num_uncalled [$w.right_num_uncalled get]
+    set left_win_length    [$w.left_win_length get]
+    set left_num_uncalled  [$w.left_num_uncalled get]
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}
+
+
+proc configure_dialogue {w mode} {
+    variable clip_mode
+
+    if {[string match save* $mode]} {
+	mod_save clip_mode $clip_mode
+	mod_save offset [$w.offset get2]
+	mod_save min_extent [$w.min_extent get2]
+	mod_save max_extent [$w.max_extent get2]
+	mod_save min_length [$w.min_length get2]
+	mod_save window_length [$w.window_length get2]
+	mod_save conf_val [$w.conf_val get2]
+	mod_save right_win_length [$w.right_win_length get2]
+	mod_save right_num_uncalled [$w.right_num_uncalled get2]
+	mod_save left_win_length [$w.left_win_length get2]
+	mod_save left_num_uncalled [$w.left_num_uncalled get2]
+    }
+}

@@ -1,0 +1,116 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Estimate base accuracies.
+#
+# This only operates on the SCF files. It produces confidence values that can
+# be used within Gap4. However they are not of the scale desired by Gap4 and
+# should only be used when no other alternatives are available.
+#
+
+set help {pregap4 {Pregap4-Modules-EBA}}
+
+proc init {} {
+     mod_preset scale logarithmic
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    variable report
+    variable scale
+	
+    set new_files {}
+    set report ""
+    foreach f $files {
+	# Can't deal with text files - so skip these.
+	if {$file_type($f) == "EXP" || $file_type($f) == "PLN"} {
+	    lappend new_files $f
+	    vmessage -nonewline -
+	    continue
+	}
+
+	# If the input file isn't one of SCF, CTF or ZTR then we convert
+	# it first to ZTR.
+	if {$file_type($f) == "ABI" || $file_type($f) == "ALF"} {
+	    set new_name [$file_type($f)_filename_to_ztr_name $f]
+	    if {[catch {exec convert_trace any ztr < $f > $new_name} err]} {
+		# Couldn't convert, so just skip this trace
+		verror ERR_WARN "convert_trace" "$new_name: $err"
+		lappend new_files $f
+		vmessage -nonewline -
+		continue
+	    }
+
+	    set file_type($new_name) ZTR
+	    set file_error($new_name) {}
+	    set file_id($new_name) $file_id($f)
+	    set file_orig_name($new_name) $f
+	    append report "SEQ $new_name: created from $f\n"
+
+	    set tname $new_name
+	} else {
+	    set tname $f
+	}
+			   
+	if {$scale == "snratio"} {
+	    set scale_arg -old_scale
+	} else {
+	    set scale_arg -phred_scale
+	}
+	if {[catch {exec eba $scale_arg $tname} err]} {
+	    set file_error($tname) "eba: [strip_nl $err]"
+	    vmessage -nonewline !
+	} else {
+	    lappend new_files $tname
+	    vmessage -nonewline .
+	    append report "SEQ $tname: assigned base accuracies\n"
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Estimate Base Accuracies"
+}
+
+proc create_dialogue {w} {
+    variable scale
+
+    label $w.scale_label \
+	-text "Select confidence value scale"
+
+    radiobutton $w.phred \
+	-text "Logarithmic (phred)" \
+	-variable [namespace current]::scale \
+	-value logarithmic
+
+    radiobutton $w.old \
+	-text "S/N (original)" \
+	-variable [namespace current]::scale \
+	-value snratio
+
+    pack $w.scale_label -side top
+    pack $w.phred $w.old -side top -anchor w
+}
+
+proc configure_dialogue {w mode} {
+    variable scale
+
+    if {[string match save* $mode]} {
+	mod_save scale $scale
+    }
+}
+

@@ -1,0 +1,190 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Cloning vector clipping (eg cosmid, bac).
+#
+# This processes Experiment files, reading the CF and CF line types,
+# writing to the CS line.
+#
+set help {pregap4 {Pregap4-Modules-Cloning Vector}}
+
+proc init {} {
+    mod_preset word_length 4
+    mod_preset probability 1e-12
+    mod_preset update_exp_file 1
+}
+
+proc run {files} {
+    variable word_length
+    variable probability
+    variable update_exp_file
+    variable report
+    global file_type
+    global file_error
+    global fofn
+    global modules
+    global errorCode
+    global orig_dir
+	
+    set new_files {}
+    set tfiles {}
+    set report ""
+
+    set fd [open $fofn.tmp w]
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {[pg_query $f CF] == ""} {
+		set file_error($f) "cloning_vector_clip: No CF information"
+		continue
+	    }
+	    puts $fd $f
+	    lappend tfiles $f
+	    set found($f) 0
+	} else {
+	    lappend new_files $f
+        }
+    }
+    close $fd
+
+    if {([lsearch -exact $modules augment_exp] == -1 ||
+	 [set ::augment_exp::enabled] == 0) && $update_exp_file} {
+	foreach f $tfiles {
+	    pg_open $f
+	    set v [fullpath [pg_query $f CF] $orig_dir 1]
+	    pg_update $f CF $v
+	    pg_close $f
+       	    append report "SEQ $f: added fields CF\n"
+	}
+    }
+
+    catch {file delete $fofn.cvec_passed}
+    catch {file delete $fofn.cvec_failed}
+    set errorCode NONE
+    if {[catch {exec vector_clip -c \
+	-w $word_length \
+	-P $probability \
+	-p $fofn.cvec_passed -f $fofn.cvec_failed $fofn.tmp} var]} {
+	if {$errorCode != "NONE"} {
+	    append report "ERR: vector_clip failed with error message '$var'.\n"
+	    return $files
+	}
+    }
+    vmessage $var
+
+    # Process passed file
+    if {[catch {set fd [open $fofn.cvec_passed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    lappend new_files $line
+	    catch {unset found($line)}
+	    append report "SEQ $line: checked\n"
+	}
+        close $fd
+    }
+
+    # Process failed file
+    if {[catch {set fd [open $fofn.cvec_failed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    if {[regsub {(.*) Error:.*} $line {\1} name] == 0} {
+	        set name [lindex $line 0]
+	    }
+	    if {![info exists file_type($name)]} {
+		verror ERR_WARN cloning_vector_clip \
+		    "vector_clip has unknown reading '$name' in failed file"
+		continue
+	    }
+	    regsub {^[^ ]* *((Error: *)|)} $line {} line
+	    set file_error($name) "cloning_vector_clip: $line"
+	    catch {unset found($name)}
+	    append report "SEQ $name: failed ($line)\n"
+	}
+        close $fd
+    }
+
+    # Check that there aren't any missing - neither in passed or failed
+    foreach f [array names found] {
+	verror ERR_WARN cloning_vector_clip \
+	    "vector_clip 'lost' reading with name '$f'"
+	set file_error($f) "cloning_vector_clip: lost file"
+	append report "SEQ $f: lost\n"
+    }
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc name {} {
+    return "Cloning Vector Clip"
+}
+
+proc create_dialogue {w} {
+    variable word_length
+    variable probability
+
+    get_fname $w.file \
+	-text "Vector file name" \
+	-type load \
+	-default [get_def CF] \
+	-state [lindex {normal disabled} [is_command CF]]
+
+    frame $w.separator -bd 2 -relief raised -height 2
+
+    xentry $w.word_length \
+	-label "Word length" \
+	-default $word_length \
+	-width 10 \
+	-type "int 1"
+    xentry $w.probability \
+	-label "Max probability" \
+	-default $probability \
+	-width 10 \
+	-type float
+
+    pack $w.file -side top -fill both
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+    pack $w.word_length $w.probability -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [global_param_exists CF]]} { return $inv }
+    if {"" != [set inv [local_param_exists [namespace current] \
+	word_length probability]]} {
+	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable word_length
+    variable probability
+    global CF
+
+    if {![is_command CF]} {
+	set CF [$w.file get]
+        if {$CF == ""} { return 0 }
+    }
+
+    # Algorithm adjustments
+    if {[set word_length [$w.word_length get]] == ""} { return 0 }
+    if {[set probability [$w.probability get]] == ""} { return 0 }
+ 
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	glob_save CF [$w.file get2]
+	mod_save word_length [$w.word_length get2]
+	mod_save probability [$w.probability get2]
+    }
+}
+

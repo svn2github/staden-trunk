@@ -1,0 +1,96 @@
+#
+# This is a tag database for gap
+#
+# The syntax in BNF is:
+#
+#    <tag_db>      ::= <tag> <tag_db> | <empty>
+#    <tag>         ::= <identifier> : <option_list> \n | <identifier> \n
+#    <option_list> ::= <option> : <option_list> | <option_list>
+#    <option>      ::= <option_name> = <string>
+#
+# Lines starting with a # are comments and are ignored.
+# Newlines can be escaped over by placing a back slash at the end of the line
+#
+# options        description                  default value
+#   bg=colour      background colour            bf for window
+#   bc =colour     border colour
+#   bw =int        border width
+#   sh="string"    shape
+#
+# examples:
+#   comment:fg=blue:dt="?"
+#
+# NOTE: fg is now taken as bg in xgap - we disallow fg colours.
+#
+
+# Must be first item
+# QUAL: id="QUAL": fg="green"
+# ^^^^ Que?	
+
+#
+# Embl/Genbank feature table definitions
+# FIXME: These colours are not good!
+#
+"-":			bg="#4A4368": bc="#4A4368": bw=2: sh="rectangle"
+"-10_signal":		bg="#8F9448": bc="#8F9448": bw=2: sh="rectangle"
+"-35_signal":		bg="#5027AC": bc="#5027AC": bw=2: sh="rectangle"
+"3'UTR":		bg="#7E36F9": bc="#7E36F9": bw=2: sh="rectangle"
+"3'clip":		bg="#FC13E5": bc="#FC13E5": bw=2: sh="rectangle"
+"5'UTR":		bg="#7CC486": bc="#7CC486": bw=2: sh="rectangle"
+"5'clip":		bg="#4B15AF": bc="#4B15AF": bw=2: sh="rectangle"
+"CAAT_signal":		bg="#A72580": bc="#A72580": bw=2: sh="rectangle"
+"CDS":			bg="#4AA090": bc="#4AA090": bw=2: sh="rectangle"
+"C_region":		bg="#6E64F9": bc="#6E64F9": bw=2: sh="rectangle"
+"D-loop":		bg="#240BAB": bc="#240BAB": bw=2: sh="rectangle"
+"D_segment":		bg="#7A0F51": bc="#7A0F51": bw=2: sh="rectangle"
+"GC_signal":		bg="#128AAE": bc="#128AAE": bw=2: sh="rectangle"
+"J_segment":		bg="#6B6DB7": bc="#6B6DB7": bw=2: sh="rectangle"
+"LTR":			bg="#F00B22": bc="#F00B22": bw=2: sh="rectangle"
+"N_region":		bg="#F78732": bc="#F78732": bw=2: sh="rectangle"
+"RBS":			bg="#45B30A": bc="#45B30A": bw=2: sh="rectangle"
+"STS":			bg="#3FFA1C": bc="#3FFA1C": bw=2: sh="rectangle"
+"S_region":		bg="#B93720": bc="#B93720": bw=2: sh="rectangle"
+"TATA_signal":		bg="#3D7E5A": bc="#3D7E5A": bw=2: sh="rectangle"
+"V_region":		bg="#56D9D8": bc="#56D9D8": bw=2: sh="rectangle"
+"V_segment":		bg="#F829EF": bc="#F829EF": bw=2: sh="rectangle"
+"attenuator":		bg="#AD7739": bc="#AD7739": bw=2: sh="rectangle"
+"conflict":		bg="#8F2E3A": bc="#8F2E3A": bw=2: sh="rectangle"
+"enhancer":		bg="#8392AC": bc="#8392AC": bw=2: sh="rectangle"
+"exon":			bg="#A15698": bc="#A15698": bw=2: sh="rectangle"
+"gene":			bg="#4EADC0": bc="#4EADC0": bw=2: sh="rectangle"
+"iDNA":			bg="#71318A": bc="#71318A": bw=2: sh="rectangle"
+"intron":		bg="#3C2FA3": bc="#3C2FA3": bw=2: sh="rectangle"
+"mRNA":			bg="#F00429": bc="#F00429": bw=2: sh="rectangle"
+"mat_peptide":		bg="#6AE62C": bc="#6AE62C": bw=2: sh="rectangle"
+"misc_RNA":		bg="#653BD9": bc="#653BD9": bw=2: sh="rectangle"
+"misc_binding":		bg="#2D6E9D": bc="#2D6E9D": bw=2: sh="rectangle"
+"misc_difference":	bg="#B917F9": bc="#B917F9": bw=2: sh="rectangle"
+"misc_feature":		bg="#9B9E2C": bc="#9B9E2C": bw=2: sh="rectangle"
+"misc_recomb":		bg="#D4EE3E": bc="#D4EE3E": bw=2: sh="rectangle"
+"misc_signal":		bg="#3C438F": bc="#3C438F": bw=2: sh="rectangle"
+"misc_structure":	bg="#7796BF": bc="#7796BF": bw=2: sh="rectangle"
+"modified_base":	bg="#49FCD1": bc="#49FCD1": bw=2: sh="rectangle"
+"mutation":		bg="#751DCD": bc="#751DCD": bw=2: sh="rectangle"
+"old_sequence":		bg="#CD0804": bc="#CD0804": bw=2: sh="rectangle"
+"polyA_signal":		bg="#C9517C": bc="#C9517C": bw=2: sh="rectangle"
+"polyA_site":		bg="#04AC80": bc="#04AC80": bw=2: sh="rectangle"
+"precursor_RNA":	bg="#D9103A": bc="#D9103A": bw=2: sh="rectangle"
+"prim_transcript":	bg="#B875B6": bc="#B875B6": bw=2: sh="rectangle"
+"primer_bind":		bg="#382589": bc="#382589": bw=2: sh="rectangle"
+"promoter":		bg="#287D64": bc="#287D64": bw=2: sh="rectangle"
+"protein_bind":		bg="#4030D4": bc="#4030D4": bw=2: sh="rectangle"
+"rRNA":			bg="#F41E8E": bc="#F41E8E": bw=2: sh="rectangle"
+"rep_origin":		bg="#C13E96": bc="#C13E96": bw=2: sh="rectangle"
+"repeat_region":	bg="#ED8142": bc="#ED8142": bw=2: sh="rectangle"
+"repeat_unit":		bg="#5B896E": bc="#5B896E": bw=2: sh="rectangle"
+"satellite":		bg="#D233FE": bc="#D233FE": bw=2: sh="rectangle"
+"scRNA":		bg="#5394B6": bc="#5394B6": bw=2: sh="rectangle"
+"sig_peptide":		bg="#486791": bc="#486791": bw=2: sh="rectangle"
+"snRNA":		bg="#8787B7": bc="#8787B7": bw=2: sh="rectangle"
+"source":		bg="#02096E": bc="#02096E": bw=2: sh="rectangle"
+"stem_loop":		bg="#DF12A0": bc="#DF12A0": bw=2: sh="rectangle"
+"tRNA":			bg="#736CDC": bc="#736CDC": bw=2: sh="rectangle"
+"terminator":		bg="#FF03D9": bc="#FF03D9": bw=2: sh="rectangle"
+"transit_peptide":	bg="#55C6A4": bc="#55C6A4": bw=2: sh="rectangle"
+"unsure":		bg="#643ECC": bc="#643ECC": bw=2: sh="rectangle"
+"variation":		bg="#892D49": bc="#892D49": bw=2: sh="rectangle"

@@ -1,0 +1,80 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+
+@c %**start of header
+@setfilename mini_manual_unix.info
+@settitle The Staden Package Mini-Manual
+@setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@c %**end of header
+
+include(header.m4)
+
+@finalout
+
+@titlepage
+@title The Staden Package Mini-Manual
+@subtitle Last update on @today{}
+@author James Bonfield, Kathryn Beal, Mark Jordan,
+@author Yaping Cheng and Rodger Staden
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+Permission is given to duplicate this manual in both paper and electronic
+forms. If you wish to charge more than the duplication costs, or wish to make
+edits to the manual, please contact the authors by email to
+@code{staden-package@@mrc-lmb.cam.ac.uk}.
+@end titlepage
+
+@node Top
+@ifinfo
+@top Mini-Manual
+@end ifinfo
+
+@menu
+* Mini-Preface::             Preface
+* Mini-Gap4::                Sequence Assembly and Finishing Using gap4
+* Mini-Mutations::           Searching for mutations using pregap4 and gap4
+* Mini-Pregap4::             Preparing Readings for Assembly Using Pregap4
+* Mini-Trev::                Viewing Traces Using Trev
+* Mini-Spin::                Analysing Sequences Using Spin
+@end menu
+
+@node Mini-Preface
+@chapter Preface
+_include(preface-t.texi)
+
+@node Mini-Gap4
+@chapter Sequence Assembly and Finishing Using Gap4
+@lowersections
+_include(gap4_mini-t.texi)
+@raisesections
+
+@node Mutations
+@chapter Searching for point mutations using pregap4 and gap4
+_include(mutations-t.texi)
+
+@node Mini-Pregap4
+@chapter Preparing Readings for Assembly Using Pregap4
+@lowersections
+_include(pregap4_mini-t.texi)
+@raisesections
+
+@node Mini-Trev
+@chapter Viewing Traces Using Trev
+@lowersections
+_include(trev_mini-t.texi)
+@raisesections
+
+@node Mini-Spin
+@chapter Analysing Sequences Using Spin
+@lowersections
+_include(spin_mini-t.texi)
+@raisesections
+
+@c @shortcontents
+@contents
+
+@bye

@@ -1,0 +1,502 @@
+@cindex Gap4 IO
+@cindex Gap4 database access
+@cindex IO, gap4 database access
+@cindex Database access to gap4
+
+@menu
+* Script-Intro::        Introduction
+* Script-IO Basics::    IO Primitives
+* Script-IO Commands::  Gap-level IO Commands
+@end menu
+
+@c @split{}
+@node Script-Intro
+@section Introduction
+
+FIXME: Add intro here
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-IO Basics
+@section IO Primitives
+@cindex IO Primitives
+
+@menu
+* Script-io_rw_text::         io_read_text and io_write_text
+* Script-io_rw_data::         io_read_data and io_write_data
+* Script-flush::              Flushing data
+@end menu
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_text
+@subsection io_read_text and io_write_text
+@findex io_read_text(T)
+@findex io_write_text(T)
+@cindex text reading
+@cindex text writing
+@cindex reading text records
+@cindex writing text records
+
+The database structures typically contain record numbers of text strings
+rather than copies of the strings themselves, as this easily allows resizing
+of the strings.
+
+@table @asis
+@item @code{io_read_text} @i{io} @i{record_number}
+Reads the text from @i{record_number} and returns it. Results in a Tcl error
+if it fails.
+@sp 1
+@item @code{io_write_text} @i{io} @i{record_number} @i{text}
+Writes @i{text} to the requested @i{record_number}. Returns 0 for success, -1
+for failure
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_data
+@subsection io_read_data and io_write_data
+@findex io_read_data(T)
+@findex io_write_data(T)
+@cindex data reading
+@cindex data writing
+@cindex reading data records
+@cindex writing data records
+
+These functions are for reading and writing the binary data in the database.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-flush
+@subsection Flushing data
+@findex io_flush(T)
+@findex flush2t(C)
+@vindex gap_auto_flush(T)
+@cindex flushing data
+
+When updating the database information it is often necessary to perform
+several edits. Initially we assume that the database is consistent and
+correct. After updating the database we also wish for the database to be
+consistent and correct. However during update this may not be true.
+
+Consider the case of adding a new reading to the end of a contig. We need to
+write the new reading with it's left neighbour set to the original last
+reading in the contig; then need to update the original last reading's
+right neighbour to reference our new last reading; and finally we need to
+update the contig information. During this operation the database is
+inconsistent so should the program or system terminate unexpectedly we wish to
+revert back to the earlier consistent state.
+
+This is performed by use of controlled flushing. The database internally
+maintains a time stamp of the last flushed state. When we open a database that
+contains data written after the last flush we ignore the new data and use the
+data written at the last flush.
+
+@table @asis
+@item @code{io_flush} @i{io}
+A Tcl function to flush the data stored in the database reference by @i{io}.
+Always returns success.
+@sp 1
+@item @code{void flush2t(}@i{GapIO *io}@code{)}
+A C function to flush the database. Void return type.
+@sp 1
+@item @code{gap_auto_flush}
+A variable to control whether the Tcl level io write commands (eg.
+@code{io_write_reading}, @code{io_write_reading_name}, @code{io_add_reading}
+and @code{io_allocate}) automatically flush after performing the write. Note
+the consequences of this action. By default this is set to 0 which disables
+automatic flush. A non zero value enables automatic flush.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-IO Commands
+@section Low-level IO Commands
+
+@menu
+* Script-open_close::         Opening, Closing and Copying Databases
+
+* Script-io_rw_database::     io_read_database and io_write_database
+* Script-io_rw_reading::      io_read_reading and io_write_reading
+* Script-io_rw_contig::       io_read_contig and io_write_contig
+* Script-io_rw_annotation::   io_read_annotation and io_write_annotation
+* Script-io_rw_vector::       io_read_vector and io_write_vector
+* Script-io_rw_template::     io_read_template and io_write_template
+* Script-io_rw_clone::        io_read_clone and io_write_clone
+
+* Script-io_rw_reading_name:: io_read_reading_name and io_write_reading_name
+* Script-io_add::             io_add_* commands and io_allocate
+@end menu
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-open_close
+@subsection Opening, Closing and Copying Databases
+
+Before any database accessing can take place the gap4 database must be opened.
+This is done using the @code{open_db} call. This returns an @i{io} handle
+which should be passed to all other functions accessing the database.
+
+@sp 1
+@findex open_db(T)
+@cindex opening gap4 databases from Tcl
+@example
+@group
+@exdent @code{open_db}
+ -name          @i{database_name}
+?-version       @i{version}?
+?-create        @i{boolean}?
+?-access        @i{access_mode}?
+@end group
+@end example
+
+This opens a database named @i{database_name}. The actual files used will be
+@i{database_name.version}. The routine is used for both creating a new
+database and opening an existing database. The value returned is the io handle
+of the opened database. More than one database may be opened at one time.
+
+@table @asis
+@item -name @i{database_name}
+Specifies the database name. The name is the start component of the two
+filenames used for storing the database and so is the section up to, but not
+including, the full stop. This is not an optional argument.
+@sp 1
+@item -version @i{version}
+This optional parameter specifies the database version. The version is
+the single character after the full stop in the UNIX database filenames. It is
+expected to be a single character. The default value (as used for newly
+created databases) is "0".
+@sp 1
+@item -create @i{boolean}
+Whether to open an existing database (-create 0) or a new database (-create
+1). The default here is 0; to open an existing database.
+@sp 1
+@item -access @i{access_mode}
+@vindex read_only(T)
+The @i{access_mode} specifies whether the database is to be opened in
+read-only mode or read-write mode. Valid arguments are "r", "READONLY", "rw"
+and "WRITE". If a database is opened in "rw" or "WRITE" mode a BUSY file will
+be created. If the BUSY file already exists then the database is opened in
+read-only mode instead. Either way, the @code{read_only} Tcl variable is set
+to 0 for read-write and 1 for read-only mode.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+_rule
+@findex close_db(T)
+@cindex closing gap4 databases from Tcl
+@example
+@group
+@exdent @code{close_db}
+ -io            @i{io_handle}
+@end group
+@end example
+
+This closes a previously opened database. Returns nothing, but produces a Tcl
+error for failure.
+
+@table @asis
+@item -io @i{io}
+Specifies which database to close. The @i{io} is the io handle returned from a
+previous @code{open_db} call. Attempting to close databases that have not been
+opened will lead to undefined results.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+_rule
+@findex copy_db(T)
+@cindex copying gap4 databases from Tcl
+@example
+@group
+@exdent @code{copy_db}
+ -io            @i{io_handle}
+ -version       @i{version}
+?-collect       @i{boolean}?
+@end group
+@end example
+
+This command copies a currently open database to a new version number. The
+currently opened database is not modified. After copying the current open
+database referred to by @i{io_handle} is still the original database.
+
+@table @asis
+@item -io @i{io}
+Specifies which database to copy. The @i{io} is the io handle returned from a
+previous @code{open_db} call. Attempting to copy databases that have not been
+opened will lead to undefined results.
+@sp 1
+@item -version @i{version}
+This parameter specifies the database version to create to place the copy in.
+@sp 1
+@item -collect @i{boolean}
+This optional parameter specifies whether to perform garbage collection when
+copying the file. A value of 0 means no garbage collection; which is simply to
+do a raw byte-by-byte copy of the two database files. A non zero value will
+read and write each reading, contig, (etc) in turn to the new database, thus
+resolving any database fragmentation. The default value is "0".
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_database
+@subsection io_read_database
+@findex io_read_database(T)
+@cindex database structure, Tcl io
+
+The database structure holds information that is relevant to the entire
+project rather than on a per reading, per contig or per 'whatever' basis.
+Among other things it keeps track of the amount of information stored.
+
+@table @asis
+@item @code{io_read_database} @i{io}
+Reads the database structure from a specified @i{io} number and stores it in a
+keyed list. Returns the structure as keyed list when successful, or a blank
+string for failure.
+@sp 1
+@item @code{io_write_database} @i{io} @i{keyed_list_contents}
+Writes the database structure stored in the @i{keyed_list} to a specified
+@i{io} number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GDatabase
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_reading
+@subsection io_read_reading
+@findex io_read_reading(T)
+@cindex reading structure, Tcl access
+
+The reading structure holds the primary information stored for each sequence.
+It references several other structures by their numbers into their own
+structure index. The reading structures also contain references to other
+reading structures. This is done by use of a doubly linked list ("left" and
+"right" fields), sorted on ascending position within the contig.
+
+@table @asis
+@item @code{io_read_reading} @i{io} @i{reading_number}
+Reads a reading structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_reading} @i{io} @i{reading_number} @i{keyed_list_contents}
+Writes a reading structure stored in the @i{keyed_list} to a specified @i{io}
+number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the readinf structure, see (FIXME) "The GReadings
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_contig
+@subsection io_read_contig
+@findex io_read_contig(T)
+@cindex contig structure, Tcl access
+
+The contig structure holds simple information about each contiguous stretch of
+sequence. The actual contents and sequence of the contig is held within the
+readings structures, including the relative positioning of each sequence.
+
+@table @asis
+@item @code{io_read_contig} @i{io} @i{contig_number}
+Reads a contig structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_contig} @i{io} @i{contig_number} @i{keyed_list_contents}
+Writes a contig structure stored in the @i{keyed_list} to a specified @i{io}
+number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GContigs
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_annotation
+@subsection io_read_annotation
+@findex io_read_annotations(T)
+@cindex annotations structure, Tcl access
+@cindex tag structure, Tcl access
+
+Annotations, also known as tags, are general comments attached to segments of
+sequences (either real readings or the consensus). They form a singly linked
+list by use of the "next" field. The annotations must be sorted in ascending
+order.
+
+@table @asis
+@item @code{io_read_annotation} @i{io} @i{annotation_number}
+Reads an annotation structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_annotation} @i{io} @i{annotation_number}
+@i{keyed_list_contents}
+Writes an annotation structure stored in the @i{keyed_list} to a specified
+@i{io} number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GAnnotations
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_vector
+@subsection io_read_vector
+@findex io_read_vector(T)
+@cindex vector structure, Tcl access
+
+This holds information used on the vectors (one structure per vector) used for
+all stages of cloning and subcloning. For example both m13mp18 and pYAC4
+vectors.
+
+@table @asis
+@item @code{io_read_vector} @i{io} @i{vector_number}
+Reads a vector structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_vector} @i{io} @i{vector_number} @i{keyed_list_contents}
+Writes a vector structure stored in the @i{keyed_list} to a specified @i{io}
+number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GVectors
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_template
+@subsection io_read_template
+@findex io_read_template(T)
+@cindex template structure, Tcl access
+
+The template is the final piece of material used for the readings. So if we
+sequenced the insert from both ends then we would expect to have two reading
+structures referencing this template structure.
+
+@table @asis
+@item @code{io_read_template} @i{io} @i{template_number}
+Reads a template structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_template} @i{io} @i{template_number} @i{keyed_list_contents}
+Writes a template structure stored in the @i{keyed_list} to a specified @i{io}
+number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GTemplates
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_clone
+@subsection io_read_clone
+@findex io_read_clone(T)
+@cindex clone structure, Tcl access
+
+The clone is the the material that our templates were derived from.
+Typically the clone name is used as the database name. Example vectors are
+cosmid, YAC or BAC vectors.
+
+@table @asis
+@item @code{io_read_clone} @i{io} @i{clone_number}
+Reads a clone structure from a specified @i{io} number and stores it in
+a keyed list.
+@sp 1
+@item @code{io_write_clone} @i{io} @i{clone_number} @i{keyed_list_contents}
+Writes a clone structure stored in the @i{keyed_list} to a specified @i{io}
+number. Returns 0 for success, -1 for failure.
+@end table
+
+For a description of the database structure, see (FIXME) "The GClones
+Structure".
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_rw_reading_name
+@subsection io_read_reading_name and io_write_reading_name
+@findex io_read_reading_name(T)
+@findex io_write_reading_name(T)
+@cindex reading name, Tcl access
+
+When accessing the reading name record referenced by the reading structure,
+special purpose functions must be used. The reading names are cached in
+memory once a database is opened. This speeds up accesses, but requires
+different IO functions. Note that @code{io_write_text} to update a reading
+name will invalidate the cache and cause bugs.
+
+@table @asis
+@item @code{io_read_reading_name} @i{io} @i{reading_number}
+Returns the reading name for reading @i{reading_number}.
+@sp 1
+@item @code{io_write_reading_name} @i{io} @i{reading_number} @i{name}
+Writes the new reading @i{name} for reading @i{reading_number}. Assuming
+correct syntax, this always returns success.
+@end table
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node Script-io_add
+@subsection io_add_* commands and io_allocate
+@cindex allocation of structures from Tcl
+@cindex structure allocation from Tcl
+@cindex reading allocation, Tcl
+@cindex contig allocation, Tcl
+@cindex annotation allocation, Tcl
+@cindex template allocation, Tcl
+@cindex vector allocation, Tcl
+@cindex clone allocation, Tcl
+
+A set of Tcl functions exists for allocating new gap4 database structures.
+Each function allocates the next sequentially numbered structure. In the case
+of annotations it is preferable to reuse items stored on the annotation free
+list before allocating new structures.
+
+@table @asis
+@findex io_add_reading(T)
+@item @code{io_add_reading} @i{io}
+Creates a new reading numbered @code{NumReadings(io)+1}. The name, trace_name
+and trace_type fields are all allocated and written as "uninitialised". No
+other items are allocated and all other fields are set to 0. The database
+num_readings and Nreadings fields are also updated.  Returns the new reading
+number.
+@sp 1
+@findex io_add_contig(T)
+@item @code{io_add_contig} @i{io}
+Creates a new contig numbered @code{NumContigs(io)+1}. The contig structure
+fields are all set to 0. The contig_order array is updated with the new contig
+as the last (right most) one. The database num_contigs and Ncontigs fields are
+also updated. Returns the new contig number.
+@sp 1
+@findex io_add_annotation(T)
+@item @code{io_add_annotation} @i{io}
+Creates a new annotation. The structure fields initialised to 0. The database
+Nannotations field is also updated. Returns the new annotation number.
+@sp 1
+@findex io_add_template(T)
+@item @code{io_add_template} @i{io}
+Creates a new template. The template name is allocated and set to
+"uninitialised"; strand is set to 1; vector is set to the "unknown" vector (1)
+if present or creates a new blank vector to reference; and the clone,
+insert_size_min and insert_size_max are set to 0. The database Ntemplates
+field is also updated. Returns the new template number.
+@sp 1
+@findex io_add_vector(T)
+@item @code{io_add_vector} @i{io}
+Creates a new vector. The vector name is allocated and set to "uninitialised".
+The level is set to 0. The database Nvectors field is also updated. Returns
+the new vector number.
+@sp 1
+@findex io_add_clone(T)
+@item @code{io_add_clone} @i{io}
+Creates a new clone. The clone name is allocated and set to "uninitialised".
+The vector is set to the "unknown" vector(1) or creates a new blank vector to
+reference. The database Nclones field is also updated. Returns the new
+template number.
+@sp 1
+@findex io_allocate(T)
+@item @code{io_allocate} @i{io} @i{type}
+Allocates a new record of the specified @i{type}. Currently only the
+@code{text} type is supported. The new record number is returned.
+@end table

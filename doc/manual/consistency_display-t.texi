@@ -1,0 +1,134 @@
+_split()
+@node Consistency-Display
+@section Consistency Display
+@cindex Consistency display
+
+@menu
+* Consistency-Display::     Consistency Display
+* Consistency-Confidence::  Confidence Values Graph
+* Consistency-ReadingCov::  Reading Coverage Histogram
+* Consistency-ReadPairCov::    Read-Pair Coverage Histogram
+* Consistency-StrandCov::    Strand Coverage
+@end menu
+
+The Consistency Display provides plots designed to highlight 
+potential problems in contigs. It
+is invoked from the main gap4 View menu by selecting any of its plots. Once
+a plot has been displayed, any of the other types of consistency plot can
+be displayed within the same frame from the View menu of the Consistency
+Display. 
+
+An example showing the Confidence Values Graph and the corresponding Reading
+Coverage Histogram, Read-Pair Coverage Histogram and Strand Coverage is 
+shown below.
+
+_lpicture(consistency_p)
+
+One or more contigs can be displayed and are drawn in the same order
+at the input contig list (which need not necessarily be in the same order as 
+the contig selector). If more than one contig is displayed, the contigs are
+drawn immediately after one another but are staggered in the y direction.
+
+The ruler ticks can be turned on or off from the View menu of the consistency
+display. 
+
+The plots can be enlarged or reduced using the standard zooming mechanism.
+_fxref(UI-Graphics-Zoom, Zooming, interface)
+
+The crosshair toggle button controls whether the crosshair is visible. This is
+shown as a black vertical and horizontal line. The position of the crosshair is
+shown in the 3 boxes to the right of the 
+crosshair toggle. The first box indicates the cursor position in the current
+contig. The second box indicates the overall position of the cursor in the 
+consensus. The last box shows the y position of the crosshair. 
+
+
+_split()
+@node Consistency-Confidence
+@subsection Confidence Values Graph
+@cindex Confidence values graph
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Consistency Display
+in which case it appear part of the Consistency Display.
+
+The confidence values are determined from the current consensus algorithm
+(_fpref(Con-Calculation, The Consensus Algorithms, t)). 
+
+_lpicture(conf_values_p)
+
+Please note that this plot can be very slow for long contigs. This is
+caused by the large number of points (not the calculation) and we hope
+to speed it up in a future release.
+
+_split()
+@node Consistency-ReadingCov
+@subsection Reading Coverage Histogram
+@cindex Reading coverage
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Consistency Display
+in which case it will appear as part of the Consistency Display.
+
+The number of readings which cover each base position along the contig
+are plotted as a histogram. 
+
+_lpicture(read_coverage_p)
+
+As can be seen in the dialogue below, the user can select the contigs(s)
+to display, and whether to plot: Forward strand only, Reverse strand
+only, Both strands or the Summation of both strands. In the example
+shown above both strands have been plotted: forward in red and reverse
+in black.
+
+_picture(read_coverage_d)
+
+
+_split()
+@node Consistency-ReadPairCov
+@subsection Read-Pair Coverage Histogram
+@cindex Read-pair coverage
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Consistency Display
+in which case it will appear as part of the Consistency Display.
+
+The number of read-pairs which cover each base position along the contig
+are plotted as a histogram. 
+
+_lpicture(readpair_coverage_p)
+
+_split()
+@node Consistency-StrandCov
+@subsection Strand Coverage
+@cindex strand coverage
+
+This option can be invoked from the main gap4 View menu, in which case
+it appears as a single plot, or from the View menu of the Consistency Display
+in which case it will appear as part of the Consistency Display.
+
+The display is used to show which regions of the data are covered by
+readings from each of the two strands of the DNA. 
+A separate line is drawn for each strand: forward in red and reverse
+in black.
+The function works in two complementary modes: it can plot the positions
+which are covered, or the positions which are not. The latter is probably
+the most useful as it directs users to the places requiring further data.
+
+The figure below shows the covered positions, and the figure below that
+shows the uncovered positions for the same contig.
+
+_lpicture(strand_coverage_p1)
+_lpicture(strand_coverage_p2)
+
+The plot can be regarded as a coarse version of the Quality Plot
+(_fpref(Template-Quality, Quality Plot, template)),
+in that it shows the strand coverage using the Quality Calculation
+(_fpref(Qual-Cal, The Quality Calculation, calc_consensus)),
+but does not reveal problems with individual base positions.
+
+
+_picture(strand_coverage_d)
+
+The dialogue allows user to select the contig(s) and strands to analyse
+and whether to plot Coverage or Problems.

@@ -1,0 +1,214 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run phrap in experiment file mode
+#
+set help {pregap4 {Pregap4-Modules-Phrap Assembly}}
+
+proc init {} {
+    mod_preset minmatch 12
+    mod_preset minscore 30
+    mod_preset other_args ""
+
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|gcphrap" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "gcphrap is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc name {} {
+    return "Phrap assembly"
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global errorCode
+    variable report
+    variable minmatch
+    variable minscore
+    variable other_args
+    global fofn
+    global fofn_dir
+
+    set report ""
+
+    # Create fofn and output dir
+    set fofnf [file tail $fofn]
+    set one_or_more 0
+    set fd [open $fofn.tmp w]
+    set new_files ""
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) != "EXP"} {
+	    append report "SEQ $f: skipping - not in correct format\n"
+	    lappend new_files $f
+	    continue
+	}
+
+	set one_or_more 1
+	puts $fd $f
+	set found($f) 0
+    }
+    close $fd
+
+    if {!$one_or_more} {
+	verror ERR_WARN phrap_assemble "No files to assemble"
+	return $files
+    }
+
+    if {[catch {file mkdir $fofn.assembly} var]} {
+	vmessage !
+	append report "ERR: Failed to create directory $fofn.assembly.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN phrap_assemble/mkdir $var
+	return $files
+    }
+
+    # Run phrap
+    set errorCode NONE
+    if {[catch {eval exec gcphrap \
+	-minmatch $minmatch \
+	-minscore $minscore \
+	$other_args \
+	-exp [list $fofn.assembly] \
+	[list $fofn.tmp] > [list $fofn.assembly/phrap_stdout]} var]} {
+	if {$errorCode != "NONE"} {
+	    append report "ERR: Failed to execute phrap.\n"
+	    append report "ERR: \"$var\"\n"
+	    append report "ERR: Aborting assembly.\n"
+	    verror ERR_WARN phrap $var
+	    return $files
+	}
+    }
+    set fd [open $fofn.assembly/phrap_stderr w]
+    puts $fd $var
+    close $fd
+
+    # Change $fofn.tmp.ph into relative pathnames
+    set fdi [open $fofn.assembly/$fofnf.tmp.ph]
+    set fdo [open $fofn.assembly/fofn w]
+    while {[gets $fdi line] != -1} {
+	puts $fdo [file tail $line]
+    }
+    close $fdi
+    close $fdo
+    file delete $fofn.assembly/$fofnf.tmp.ph
+
+    # Passed files are those listed in $fofn.assembly/fofn. Missing ones
+    # were rejected, possibly because they're "singlets".
+    set fd [open $fofn.assembly/fofn]
+    while {[gets $fd line] != -1} {
+	regsub {\.ph$} $line {} line
+	set f [file join $fofn_dir $line]
+	append report "SEQ $f: assembled\n"
+	catch {unset found($f)}
+	lappend new_files $f
+    }
+    if {[catch {set fd [open $fofn.tmp.singlets]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    if {[regsub {^>[^/]*//(.*[^ ]+) *$} $line {\1} f] == 1} {
+		set file_error($f) "phrap: singlet"
+		append report "SEQ $f: singlet\n"
+		catch {unset found($f)}
+	    }
+	}
+	close $fd
+    }
+    foreach f [array names found] {
+	set file_error($f) "phrap: failed"
+	append report "SEQ $f: failed\n"
+    }
+
+    # Rename phrap output files
+    catch {file rename $fofn.tmp.contigs 	$fofn.contigs}
+    catch {file rename $fofn.tmp.contigs.qual	$fofn.contigs.qual}
+    catch {file rename $fofn.tmp.singlets 	$fofn.singlets}
+    catch {file rename $fofn.tmp.log		$fofn.phrap_log}
+
+    append report "\nAssembled data written to directory '$fofn.assembly'.\n"
+    append report "Output from phrap sent to '$fofn.assembly/phrap_stdout'.\n"
+    append report "Diagnostics from phrap sent to '$fofn.assembly/phrap_stderr'.\n"
+    append report "The phrap module may also produced files named:\n"
+    append report "    $fofn.contigs\n"
+    append report "    $fofn.contigs.qual\n"
+    append report "    $fofn.singlets\n"
+    append report "    $fofn.phrap_log\n"
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable minmatch
+    variable minscore
+    variable other_args
+
+    xentry $w.minmatch \
+	-label "Minimum exact match" \
+	-default $minmatch \
+	-width 7 \
+	-type "int 1"
+    xentry $w.minscore \
+	-label "Minimum SWAT score" \
+	-default $minscore \
+	-width 7 \
+	-type float
+    pack $w.minmatch $w.minscore -side top -fill both
+
+    frame $w.separator -bd 2 -relief raised -height 2
+    pack $w.separator -side top -fill x -padx 10 -pady 5
+
+    xentry $w.other_args \
+	-label "Other phrap arguments" \
+	-default $other_args \
+	-width 30
+    pack $w.other_args -side top -fill both
+
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	minmatch minscore]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable minmatch
+    variable minscore
+    variable other_args
+
+    if {[set minmatch [$w.minmatch get]] == ""} { return 0 }
+    if {[set minscore [$w.minscore get]] == ""} { return 0 }
+    set other_args [$w.other_args get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save minmatch [$w.minmatch get2]
+	mod_save minscore [$w.minscore get2]
+	mod_save other_args [$w.other_args get2]
+    }
+}

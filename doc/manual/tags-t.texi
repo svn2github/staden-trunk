@@ -1,0 +1,120 @@
+@cindex Annotating readings
+@cindex Annotating contigs
+@cindex Labelling readings
+@cindex Labelling contigs
+@cindex Tags
+
+Gap4 can label segments of readings and contigs using "tags"
+(_fpref(Editor-Annotations, Create Tag, t)).
+The program
+recognises a set of standard tags types and users can also invent
+their own. Each tag type has a unique four character identifier, a name,
+a direction, a colour and a text string for recording notes. Tags can be
+created, edited and removed by users and by internal routines. Tags can
+also be input along with readings. This is important when reference sequences
+are used during mutation detection
+(_fpref(Mutation-Detection-Reference-Sequences, Reference sequences,
+t)).
+
+@menu
+* Anno-Types::          Standard tag types
+* Anno-Act::            Active tags and masking
+@end menu
+
+
+_split()
+@node Anno-Types
+@subsection Standard tag types
+
+The standard tag types include those shown below plus the FT records from EMBL
+sequence file entries. Users can also invent their
+own and add them to their personal GTAGDB. This is a file that describes
+the available tag types and their colours
+(_fpref(Conf-GTAGDB, Configure
+the tag database, configure)).
+
+@sp 2
+@example
+@group
+@strong{Code}    @strong{Function}
+COMM    Comment
+COMP    Compression
+RCMP    Resolved compression
+STOP    Stop
+OLIG    Oligo (primer)
+REPT    Repeat
+ALUS    Alu sequence
+SVEC    Sequencing vector
+CVEC    Cloning vector
+MASK    Mask me
+FNSH    Finished segment
+ENZ0    Restriction enzyme 0
+ENZ9    Restriction enzyme 9
+MUTN    Mutation
+DIFF    Sequence different to consensus
+HETE    Heterozygous mutation
+HET+    Heterozygous mutation False +ve
+HET-    Heterozygous mutation False -ve
+HOM+    Homozygous mutation False +ve
+HOM-    Homozygous mutation False -ve
+FCDS    FEATURE: CDS
+F***    All other (60) EMBL FT record types
+@end group
+@end example
+
+_split()
+@node Anno-Act
+@subsection Active tags and masking
+
+@cindex Active tags
+@cindex Masking contigs
+@cindex Contigs masking
+@cindex Marking contigs
+@cindex Contigs marking
+
+Tags are used for a variety of purposes and for each function in the
+program the user can choose which tag types are currently
+"active". Where they are being used to provide visual clues this will
+determine which tag types appear in the displays, but for other
+functions they can be used to control which parts of the sequence are
+omitted from processing. This mode of tag use is called "masking". For
+example the program contains a routine to search for repeats, and if any
+are found, the user needs to know if such sequence duplications are
+caused by incorrect assembly or are genuine repeats. Once the user has
+checked a duplication reported by the program and found it to be a
+repeat, it can be labelled with a REPT tag. If the repeat routine is run
+in masking mode and with REPT tags active, any segment covered by a REPT
+tag will not be reported as a match. So once the "problem" has been
+dealt with it can be labelled so it is not reported on subsequent
+searches. In addition the tag is available to provide annotation for the
+completed sequence when it is sent to the data libraries.
+
+A more complicated application of masking is available for two of the
+other search procedures in the program: (_fpref(Assembly-Shot, Shotgun
+assembly, assembly)) and (_fpref(FIJ, Find Internal Joins, fij)). The former
+is the general assembly function and the latter is used to find
+potential joins between contigs in the database. Below we describe how
+masking can be used during assembly and similar comments apply to Find
+Internal Joins. 
+
+In the assembly function the user can choose to employ
+masking and then select the types of tags to be used as masks. Readings
+are compared in two stages: first the program looks for exact matches of
+some minimum length and then for each possible overlap it performs an
+alignment. If the masking mode is selected the masked regions are not
+used during the search for exact matches, but they are used during
+alignment. The effect of this is that new readings that would lie
+entirely inside masked regions will not produce exact matches and so
+will not be entered. However readings that have sufficient data outside
+of masked segments can produce matches and will be correctly aligned
+even if they overlap the masked data. A common use for masking during
+assembly or Find Internal Joins is to avoid finding matches that are
+entirely contained in Alu segments.
+
+A further mode related to masking is "marking". Marking is available for
+the consensus calculation (_fpref(Calculate Consensus, Consensus
+calculation, calc_consensus)) and for Find Internal Joins (_fpref(FIJ,
+Find Internal Joins, fij)). Instead of masking the regions covered by
+active tags these routines simply write these sections of the consensus
+sequence in lowercase letters. That is they make it easy for users to
+see where the tagged segments are. Marking has no other effect.

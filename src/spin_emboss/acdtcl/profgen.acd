@@ -1,0 +1,269 @@
+package require Iwidgets
+namespace eval ::EMBOSS::profgen {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_profgen*Xentry.entry.width 30
+option add *e_profgen*Entryfield.width 30
+option add *e_profgen*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) profgen
+    set w [xtoplevel .e_profgen -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - profgen}
+    label $w._title -text {Generates various profiles for each alignment in a directory.}
+    pack $w._title -side top -fill both
+    set vars(profgen._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infpath
+    iwidgets::entryfield $w.infpath \
+	-textvariable [namespace current]::vars(infpath) \
+	-labeltext [subst infpath]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.infpath component entry] -sticky nse
+    set vars(infpath) [subst ./]
+    pack $w.infpath -side top -fill both
+    set vars(infpath.path) $w.infpath
+    set vars(infpath.required)  1
+    set vars(infpath._type) string
+
+    lappend arguments infextn
+    iwidgets::entryfield $w.infextn \
+	-textvariable [namespace current]::vars(infextn) \
+	-labeltext [subst infextn]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.infextn component entry] -sticky nse
+    set vars(infextn) [subst .ealign]
+    pack $w.infextn -side top -fill both
+    set vars(infextn.path) $w.infextn
+    set vars(infextn.required)  1
+    set vars(infextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments type
+    iwidgets::combobox $w.type\
+	-textvariable [namespace current]::vars(type.name)\
+	-labeltext [subst {Select type}]
+    trace variable vars(type.name) w  "::EMBOSS::list_changed [namespace current] type"
+    eval $w.type insert list end Frequency Gribskov Henikoff
+    set vars(type.mapping1) {Henikoff H Frequency F Gribskov G}
+    set vars(type.mapping2) {H Henikoff F Frequency G Gribskov}
+    grid [$w.type component entry] -sticky nse
+    $w.type delete entry 0 end
+    array set tmpmap $vars(type.mapping2)
+    set def [subst F]
+    catch {set def $tmpmap($def)}
+    set vars(type) $def
+    $w.type insert entry end $def
+    $w.type configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.type -side top -fill both
+    set vars(type.path) $w.type
+    set vars(type.required)  1
+    set vars(type.delimiter) ,
+    set vars(type._type) list
+
+    set vars(dogap) [subst {[expr {($vars(type) != "f")}]}]
+    set vars(dogap.orig) $vars(dogap)
+    set vars(dogap.expr) {[expr {($vars(type) != "f")}]}
+    trace variable vars(type) w  "::EMBOSS::reset_value [namespace current] dogap"
+    set vars(dogap._type) var
+
+    lappend arguments threshold
+    iwidgets::entryfield $w.threshold \
+	-validate integer \
+	-textvariable [namespace current]::vars(threshold) \
+	-labeltext [subst {Enter threshold reporting percentage}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="F")}]}]]]
+    grid [$w.threshold component entry] -sticky nse
+    set vars(threshold) [subst 75]
+    pack $w.threshold -side top -fill both
+    set vars(threshold.minimum) [subst 1]
+    set vars(threshold.maximum) [subst 100]
+    set vars(threshold.path) $w.threshold
+    set vars(threshold.required)  0
+    set vars(threshold._type) integer
+    set vars(threshold.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="F")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] threshold"
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst 1]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Scoring matrix}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)!="F")}]}]]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {($vars(type) == "G" ? "Epprofile" : $vars(type) == "H" ? "EBLOSUM62" : $vars(type) == "F" ? "EBLOSUM62" : "")}]}
+    trace variable vars(type) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrixf
+    set vars(datafile.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)!="F")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] datafile"
+
+    lappend arguments open
+    iwidgets::entryfield $w.open \
+	-validate real \
+	-textvariable [namespace current]::vars(open) \
+	-labeltext [subst {Gap opening penalty}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(dogap)}]}]]]
+    grid [$w.open component entry] -sticky nse
+    set vars(open) [subst 3.0]
+    pack $w.open -side top -fill both
+    set vars(open.path) $w.open
+    set vars(open.required)  0
+    set vars(open._type) float
+    set vars(open.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(dogap)}]]}
+    trace variable vars(dogap) w  "::EMBOSS::reset_needed [namespace current] open"
+
+    lappend arguments extension
+    iwidgets::entryfield $w.extension \
+	-validate real \
+	-textvariable [namespace current]::vars(extension) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(dogap)}]}]]]
+    grid [$w.extension component entry] -sticky nse
+    set vars(extension) [subst 0.3]
+    pack $w.extension -side top -fill both
+    set vars(extension.path) $w.extension
+    set vars(extension.required)  0
+    set vars(extension._type) float
+    set vars(extension.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(dogap)}]]}
+    trace variable vars(dogap) w  "::EMBOSS::reset_needed [namespace current] extension"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments smpfpath
+    iwidgets::entryfield $w.smpfpath \
+	-textvariable [namespace current]::vars(smpfpath) \
+	-labeltext [subst smpfpath]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="F")}]}]]]
+    grid [$w.smpfpath component entry] -sticky nse
+    set vars(smpfpath) [subst ./tmp/]
+    pack $w.smpfpath -side top -fill both
+    set vars(smpfpath.path) $w.smpfpath
+    set vars(smpfpath.required)  0
+    set vars(smpfpath._type) string
+    set vars(smpfpath.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="F")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] smpfpath"
+
+    lappend arguments smpfextn
+    iwidgets::entryfield $w.smpfextn \
+	-textvariable [namespace current]::vars(smpfextn) \
+	-labeltext [subst smpfextn]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="F")}]}]]]
+    grid [$w.smpfextn component entry] -sticky nse
+    set vars(smpfextn) [subst .freq]
+    pack $w.smpfextn -side top -fill both
+    set vars(smpfextn.path) $w.smpfextn
+    set vars(smpfextn.required)  0
+    set vars(smpfextn._type) string
+    set vars(smpfextn.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="F")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] smpfextn"
+
+    lappend arguments gbpfpath
+    iwidgets::entryfield $w.gbpfpath \
+	-textvariable [namespace current]::vars(gbpfpath) \
+	-labeltext [subst gbpfpath]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="G")}]}]]]
+    grid [$w.gbpfpath component entry] -sticky nse
+    set vars(gbpfpath) [subst ./tmp/]
+    pack $w.gbpfpath -side top -fill both
+    set vars(gbpfpath.path) $w.gbpfpath
+    set vars(gbpfpath.required)  0
+    set vars(gbpfpath._type) string
+    set vars(gbpfpath.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="G")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] gbpfpath"
+
+    lappend arguments gbpfextn
+    iwidgets::entryfield $w.gbpfextn \
+	-textvariable [namespace current]::vars(gbpfextn) \
+	-labeltext [subst gbpfextn]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="G")}]}]]]
+    grid [$w.gbpfextn component entry] -sticky nse
+    set vars(gbpfextn) [subst .gribs]
+    pack $w.gbpfextn -side top -fill both
+    set vars(gbpfextn.path) $w.gbpfextn
+    set vars(gbpfextn.required)  0
+    set vars(gbpfextn._type) string
+    set vars(gbpfextn.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="G")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] gbpfextn"
+
+    lappend arguments hnpfpath
+    iwidgets::entryfield $w.hnpfpath \
+	-textvariable [namespace current]::vars(hnpfpath) \
+	-labeltext [subst hnpfpath]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="H")}]}]]]
+    grid [$w.hnpfpath component entry] -sticky nse
+    set vars(hnpfpath) [subst ./tmp/]
+    pack $w.hnpfpath -side top -fill both
+    set vars(hnpfpath.path) $w.hnpfpath
+    set vars(hnpfpath.required)  0
+    set vars(hnpfpath._type) string
+    set vars(hnpfpath.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="H")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] hnpfpath"
+
+    lappend arguments hnpfextn
+    iwidgets::entryfield $w.hnpfextn \
+	-textvariable [namespace current]::vars(hnpfextn) \
+	-labeltext [subst hnpfextn]\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {($vars(type)=="H")}]}]]]
+    grid [$w.hnpfextn component entry] -sticky nse
+    set vars(hnpfextn) [subst .henik]
+    pack $w.hnpfextn -side top -fill both
+    set vars(hnpfextn.path) $w.hnpfextn
+    set vars(hnpfextn.required)  0
+    set vars(hnpfextn._type) string
+    set vars(hnpfextn.needed_expr)  {[::EMBOSS::convert_bool [expr {($vars(type)=="H")}]]}
+    trace variable vars(type) w  "::EMBOSS::reset_needed [namespace current] hnpfextn"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/profgen.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,192 @@
+Random notes on the documentation system
+----------------------------------------
+
+The base source type for the documenation is GNU TeXInfo. This is easy 
+to learn, but we have our own local changes to address a few problems.
+
+1. We want to have a common source for Unix and Windows documentation, 
+which means some sort of 'if' syntax. For flexibility we decided to go 
+with M4. Note though that not all M4 preprocessors are reliable enough 
+to cope. (For example earlier GNU releases and the Digital Unix m4 crash.)
+
+2. In the past TexInfo did not support images. For this reason we
+added our own image commands and you should not attempt to use the
+builtin image formatting of newer texinfo releases. Again this has
+been implemented using m4.
+
+3. We want to produce nice HTML output. Again this wasn't part of the
+texinfo package until recently, so we use a third party texi2html
+script (again with local modifications).
+
+4. We need to split html pages where we want and not just at each
+chapter or section heading. This is dealt with via the _split m4
+macro, which does nothing when producing postscript or pdf.
+
+PDF output is still not working ideally.  When producing the
+PostScript we use "dvips -Ppdf". Amongst other things this disables
+downloading of bitmap fonts which improves PDF quality. However there
+are still issues to do with resampling of image files. Generally using 
+an alternative postscript to pdf conversion tool may be best.
+
+
+How it works
+------------
+
+To understand what happens to the documentation I'll explain the
+various inputs, outputs and programs used.
+
+Printed copies
+..............
+
+manual.texi -> (m4) -> manual_unix.texinfo
+manual.texi -> (m4) -> manual_windows.texinfo
+
+The master document is a stub doc containing lots of _include commands 
+for each chapter. We use m4 to generate one large document. The m4
+step also replaces cross-reference macros, deals with the unix vs
+windows sections, and also produces two output versions (.texinfo or
+.htmlinfo) depending on whether this output is to be used for passing
+into tex or into texi2html.
+                     
+manual_unix.texinfo -> (tools/update-nodes) -> manual_unix.texinfo
+
+Update-nodes is a tiny script to invoke the emacs
+'texinfo-update-node' command on the document. This sets the @node
+parent, next and previous fields. I'm not sure if this step is still required.
+
+manual_unix.texinfo -> (texi2dvi) -> manual_unix.dvi
+
+Texi2dvi is a script to run tex (and texindex, etc) on the texinfo
+file.
+
+manual_unix.dvi -> (dvips) -> manual_unix.ps
+
+Converts the DVI file into a postscript file. We use dvips -t a4 -Ppdf 
+options.
+
+manual_unix.ps -> (ps2pdf) -> manual_unix.pdf
+
+Ps2pdf converts the PostScript into PDF. There are now more direct
+routes to go from texinfo to pdf, but again this route reflects the
+long history of using texinfo.
+
+
+HTML copies
+...........
+
+gap4.texi -> (m4) -> gap4_unix.htmlinfo
+gap4.texi -> (m4) -> gap4_windows.htmlinfo
+
+The html version is generated directly from the original manual.texi
+again, but using different m4 processing options (-D_html instead of
+-D_tex). This allows for the _split command to control html page
+breaks and for the cross referencing to work between documents.
+
+Note that we produce html copies of each main program in turn as
+separate 'documents', instead of htmlising the master manual.texi
+document. The original reason for this was that it makes linking
+easier as we can direct a link to gap4_unix_toc.html instead of
+manual_unix_172.html (for example). Changes in the html 'template'
+code (see the main $STADENROOT/doc/templates directory) make this
+unnecessary, but it's still nice to be able to get a full table of
+contents and index for one application without having it polluted by
+the other applications.
+
+gap4_unix.htmlinfo -> (tools/texi2html) -> gap4_unix_toc.html (+ others)
+
+Texi2html is the main conversion tool. I believe that there's now an
+html output mode of makeinfo, but again the reason we do not use this
+is partly historical. Also makeinfo does not work on our files due to
+the addition of the _split command.
+
+gap4_unix_toc.index -> (tools/html_index.pl) -> gap4_unix.index
+
+The .index file is how the Tcl/Tk programs get the context-sensitive
+help to work. It's a mapping of node name (ie 'topic') to a URL. Hence 
+in gap4 Tcl we have "show_help gap4 {FIJ-Dialogue}" which is looked up 
+in gap4_unix.index to give the line "{FIJ-Dialogue} gap4_unix_99.html",
+and so the web browser is then pointed in the appropriate
+location. This also means that adding/removing pages does not require
+the code to change at all.
+
+*.html -> (tools/xref_update.pl) -> *.html
+
+One issue of building separate html documents for gap4, pregap4, spin, 
+etc is that cross-references are only resolved by texi2html internal
+to that document. A reference in gap4 from the pregap4 documentation
+could not be resolved. The original m4 step adds html comments "<!--
+XREF:nodename -->" to the generated html. Texi2html was modified to
+also add comments before each node name. Then the xref_update.pl
+program simply matches these comments together to modify the html to
+resolve external cross-references.
+
+*_toc.html -> (tools/merge_indexes.pl) -> master_unix_brief.html
+					  master_unix_contents.html
+					  master_unix_index.html
+
+This merges the various separate table of contents produced by texi2html
+into verbose and brief combined copies. It also searches the contents
+page for the index and then merges the indexes together to produce a
+master index.
+
+
+Other bits and bobs
+...................
+
+There's also a few other specific tools for converting texinfo
+documents.
+
+The Unix manual pages ("man pages") are written in texinfo and
+converted using tools/texi2man.pl. This attempts to convert a basic
+and stylised texinfo document into a "nroff -man" format manual
+page. Cross references to other manual pages get converted into the
+(for example) "scf(4)" format we expect to see in manual pages. It's
+not foolproof and the formatting often goes astray, but it's easier
+than having two separate formats of text and realistically we wouldn't
+bother with man pages at all if we did not have a similar technique.
+
+The image format we use (currently) is gif. We use the imagemagic
+'convert' tool to generate the encapsulated postscript required by
+tex. However letting it just do the job by itself gives poor results
+as we do not want it to expand up all images to fit the page. For
+example this would lead to very zoomed images for simple dialogues.
+
+Instead we apply an image specific -density option to control the .ps
+generation. The tools/make_ps script handles this. It has a list of
+all the image names and the density, when not the default of 120dpi,
+for images that need special consideration.
+
+Some of the images are rather large and for fast web viewing we would
+like a half-sized version to be used instead. The distinction between
+the two is based on whether we use _picture or _lpicture (large
+picture) in the texi document. For large images the html code produced
+references image_name.small.gif, which in turn is a URL to a page
+named image_name.gif.html which references the full sized copy named
+image_name.gif. The generation of these tiny image_name.gif.html pages
+is via tools/make_gif.html. It takes no arguments as it simply
+iterates through all *.small.gif files.
+
+
+Using the Makefile
+------------------
+
+So now we get to the crucial bit - how do we rebuild the
+documentation?
+
+Unfortunately due to the complexity and dependencies I cannot be sure that all 
+dependencies are resolved. To be sure you may wish to do a "make spotless"
+before rebuilding. There is a crude dependencies generation system "make
+depend" to search for m4 _include, _picture and _lpicture commands. If you
+wish to add more dependency searching methods to this edit the
+tools/make_dependencies script.
+
+There's also a "unix" and "windows" target for building the
+documentation just for one platform type. This helps speed things up
+when iterative making edits and checking the results.
+
+Finally, try just using "make gap4_unix.dvi" when testing the
+formatting and then use "xdvi gap4_unix.dvi" to view the results. This
+will only build the docs for one application (gap4 in this example)
+and avoids going all the way to PostScript. Xdvi is an excellent
+viewer and I find it faster and easier than viewing postscript
+documents.

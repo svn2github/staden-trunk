@@ -1,0 +1,35 @@
+@cindex get_comment: man page
+@unnumberedsec NAME
+
+get_comment --- extract comments from trace files
+
+@unnumberedsec SYNOPSIS
+
+@code{get_comment} [ @code{-c} ] [ @code{Field-ID} ... ]
+
+@unnumberedsec DESCRIPTION
+
+The @code{get_comment} command extracts text fields from a variety of trace
+formats, read in from stdin. Each comment is of the form
+@i{Field-ID}=@i{comment}, regardless of the file format. @i{Field-ID} is
+typically 4 character identifier.
+
+With no @i{Field-ID} arguments specified all comments are listed. Otherwise
+only those specified on the command line are listed.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-h}
+    Display the usage help.
+
+@item @code{-c}
+    Suppresses the output of the @i{Field-ID}. Only the right hand side of the
+    comment is displayed. The default action is the display the full comment in
+    the form listed above.
+
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Man-get_scf_field, get_scf_field(1), get_scf_field.1)

@@ -1,0 +1,1253 @@
+@cindex Tk_utils library
+@cindex Tkutils library
+@cindex stash
+@vindex TKUTILS_LIBRARY
+@vindex LD_LIBRARY_PATH
+
+@menu
+* TkU-Keyed Lists::             Keyed Lists
+* TkU-Dynamic::                 Runtime Loading of Libraries.
+* TkU-Defaults::                Default Files
+* TkU-Menus::                   Specifying Menu Configurations
+* TkU-Menu Control::            Controlling Menu Behaviour
+* TkU-Dialogues::               Common Dialogue Components
+* TkU-Output::                  Text Output and Errors
+* TkU-Other::                   Other Utility Commands
+@end menu
+
+The @i{tk_utils} library provides basic Tcl and Tk extensions suitable for all
+applications. The common components of the programs, such as the text output
+display, keyed lists, and the configuration file handling are contained within
+this library.
+
+The @code{stash} executable is a modified version of @code{wish} that contains
+these commands. When not using @code{stash} the Tcl load command must be used
+to dynamically link the library. From wish it is necessary to use the
+following startup code:
+
+@example
+lappend auto_path $env(TKUTILS_LIBRARY)
+catch @{load libmisc.so@}
+catch @{load libread.so@}
+load libtk_utils.so
+@end example
+
+The above assumes that the @code{TKUTILS_LIBRARY} and @code{LD_LIBRARY_PATH}
+environment variables have been set correctly. These are automatically done if
+the package initialisation files (@file{staden.profile} or
+@file{staden.login}) are sourced.
+
+Once either @code{stash} or a boot-strapped @code{wish} is running the
+tk_utils library code is available.
+
+@split{}
+@node TkU-Keyed Lists
+@section Keyed Lists
+@cindex Keyed Lists
+@cindex TclX
+
+Many functions make use of the TclX Keyed List extension. Keyed Lists can be
+compared to C structures. The following description has been taken from the
+TclX distribution @footnote{The TclX copyright states the following.
+
+@i{Copyright 1992-1996 Karl Lehenbauer and Mark Diekhans.
+Permission to use, copy, modify, and distribute this software and its
+documentation for any purpose and without fee is hereby granted, provided
+that the above copyright notice appear in all copies.  Karl Lehenbauer and
+Mark Diekhans make no representations about the suitability of this
+software for any purpose.  It is provided "as is" without express or
+implied warranty.}}.
+
+@quotation
+  <start of quotation>
+
+  A keyed list is a list in which each element contains a key and value pair.
+  These  element  pairs  are stored as lists themselves, where the key is the
+  first element of the list, and the value  is  the  second.   The  key-value
+  pairs are referred to as fields.  This is an example of a keyed list:
+
+@example
+@{@{NAME @{Frank Zappa@}@} @{JOB @{musician and composer@}@}@}
+@end example
+
+  If the variable @var{person} contained the above list, then @code{keylget
+  person NAME} would return @code{@{Frank Zappa@}}.  Executing the command:
+
+@example
+keylset person ID 106
+@end example
+
+  would make person contain
+
+@example
+@{@{ID 106@} @{NAME @{Frank Zappa@}@} @{JOB @{musician and composer@}@}
+@end example
+
+  Fields may contain subfields; `.' is the  separator  character.   Subfields
+  are  actually  fields where the value is another keyed list.  Thus the
+  following list has the top level fields @code{ID} and @code{NAME}, and
+  subfields @code{NAME.FIRST} and @code{NAME.LAST}:
+
+@example
+@{ID 106@} @{NAME @{@{FIRST Frank@} @{LAST Zappa@}@}@}
+@end example
+
+  There is no limit to the recursive depth  of  subfields,  allowing  one  to
+  build complex data structures.
+
+  Keyed lists are constructed and accessed via a  number  of  commands.   All
+  keyed list management commands take the name of the variable containing the
+  keyed list as an argument (i.e. passed by reference), rather  than  passing
+  the list directly.
+
+@table @asis
+@findex keyldel(C)
+@item @code{keyldel} @i{listvar key}
+       Delete the field specified by key from the keyed list in the  variable
+       @var{listvar}.  This removes both the key and the value from the keyed
+       list.
+
+@sp 1
+@findex keylget(C)
+@item @code{keylget} @i{listvar ?key? ?retvar | @{@}?}
+       Return the value associated with key from the keyed list in the
+       variable @var{listvar}.  If @var{retvar} is not specified, then the
+       value will be returned as the result of the command. In this case, if
+       key is not found in the list, an error will result.
+
+       If @var{retvar} is specified and key is in the list, then the value is
+       returned in the variable retvar and the command returns 1 if the key
+       was present within the list.  If key isn't in the list, the command
+       will return 0, and retvar will be left unchanged.  If @code{@{@}} is
+       specified for retvar, the value is not returned, allowing the Tcl
+       programmer to determine if a key is present in a keyed list without
+       setting a variable as a side-effect.
+
+       If key is omitted, then a list of all the keys in the  keyed  list  is
+       returned.
+
+@sp 1
+@findex keylkeys(C)
+@item @code{keylkeys} @i{listvar ?key?}
+       Return the a list of the keys in the keyed list in the variable
+       @var{listvar}.  If keys is specified, then it is the name of a key
+       field whose subfield keys are to be retrieve.
+
+@sp 1
+@findex keylset(C)
+@item @code{keylset} @i{listvar key value ?key2 value2 ...?}
+       Set the value associated with key, in the keyed list contained in the
+       variable @var{listvar}, to value.  If listvar does not exists, it is
+       created.  If @var{key} is not currently in the list, it will be added.
+       If it already exists, @var{value} replaces the existing value.
+       Multiple keywords and values may be specified, if desired.
+@end table
+
+  <end of quotation>
+@end quotation
+
+An example best illustrates their usage. In this case we're using Gap4 to
+extract some @i{template} information for readings within an assembly
+database.
+
+@example
+% set io [open_db -name TEST -version 1 -access rw]
+% set r [io_read_reading $io 1]
+% puts $r
+@{name 34@} @{trace_name 39@} @{trace_type 40@} @{left 25@} @{right 33@} @{position 90@}
+@{length 545@} @{sense 1@} @{sequence 36@} @{confidence 37@} @{orig_positions 38@}
+@{chemistry 0@} @{annotations 1@} @{sequence_length 440@} @{start 71@} @{end 512@}
+@{template 1@} @{strand 0@} @{primer 1@}
+% set t [io_read_template $io [keylget r template]]
+% puts $t
+@{name 45@} @{strands 1@} @{vector 1@} @{clone 1@} @{insert_length_min 1400@}
+@{insert_length_max 2000@}
+% keylset t insert_length_max 2500
+% puts $t
+@{name 45@} @{strands 1@} @{vector 1@} @{clone 1@} @{insert_length_min 1400@}
+@{insert_length_max 2500@}
+% io_write_template $io [keylget r template] $t
+% close_db -io $io
+@end example
+
+The above is an interactive session. It starts by opening database
+@code{TEST}, version @code{1}. Then the first reading is loaded from the
+database and listed. Next the template for this reading is loaded and also
+listed. Finally, the maximum length for this template is changed to 2500
+,written back to the database, and the database closed.
+
+@split{}
+@node TkU-Dynamic
+@section Runtime Loading of Libraries
+@cindex Runtime libraries
+@cindex Dynamic libraries
+@cindex Libraries, loading of
+
+The main command for loading dynamic libraries is the @code{load_package}
+command. This adds on a new directory to the Tcl search path and dynamically
+loads up a new C library. For programmers, the procedure of creating these
+libraries is initially fairly complex. Once done, all the user requires is a
+single @code{load_package} command adding to the application @file{rc} file to
+extend the applications functionality.
+
+The existing Tcl package system allows for the dynamic loading to be delayed
+until a command is needed. However this system does not satisfactorily deal
+with the case where libraries contain only C commands. Hence the package
+system utilised by the Staden Package dynamically links in libraries to the
+running executable at the time of the load_package call. This is typically
+done in the startup phase of programs.
+
+_rule
+@split{}
+@node TkU-load_package
+@unnumberedsubsec load_package
+@findex load_package(C), short version
+@vindex tk_utils_defs
+@vindex _defs
+@example
+@exdent @strong{load_package} @i{name}
+@end example
+
+This loads the dynamic library named (eg) lib@i{name}.so. The "lib" and
+".so" components of this library name a system dependent strings. The system
+will automatically use the correct local terminology depending on the system
+type.
+
+Firstly the @code{$STADLIB/}@i{name} directory is appended to Tcl auto_path
+variable. Next the @code{$STADTABL/}@i{name}@code{rc} file is used to specify
+the package menus and defaults (which are saved as a keyed list in the global
+tcl variable @i{name}_defs). The @code{.}@i{name}@code{rc} file is also loaded
+up from the callers HOME directory and from the current directory, if they
+exist, in this order.  This means that a user can override defaults specified
+in the @code{STADTABL} directory by creating an rc file in their home
+directory, and then to override these specifications further in a
+project-by-project fashion by adding configurations to the current directory.
+
+Next the library itself is dynamically loaded. The file to be loaded is held
+within the @code{$STADLIB/$MACHINE-binaries} directory. If the library does
+not exist within this directory then it is not loaded and no error is
+produced.
+
+Finally if existent, the package initialisation function in C will then be
+called with a Tcl interpreter as the sole argument and returns an integer
+(TCL_OK or TCL_ERROR). It is this function which performs the registering of
+new commands to the Tcl language. The C function name must be the package name
+with the first character as upper case, the following characters as lowercase,
+and suffixed by @code{_Init}. See the Tcl load manual page for full details.
+
+So for the tk_utils library the @code{$STADLIB/tk_utils} directory is added to
+the auto_path variable, the @code{$STADTABL/tk_utilsrc} file is processed, and
+executes the C function @code{Tk_utils_Init()}. 
+
+_rule{}
+@split{}
+@findex load_package(C), long version
+@example
+@exdent @strong{load_package} @i{tcldir libdir name ?init?}
+@end example
+
+This is the more versatile form of the load_package command. The procedures
+performed are the same, however the location of the files is no longer
+controlled solely by environment variables.
+
+@i{Tcldir} specifies the directory to add to the Tcl auto_path variable and is
+used for the search path of the @i{name}@code{rc} file. As with the simpler
+form of load_package the @code{STADTABL}, HOME, and current directory versions
+of the rc file are also loaded, with each file overriding values specified in
+the earlier copies.
+
+The @i{libdir} argument specifies the location to find the dynamic library
+file to load. Specifying this as a single @code{-} (minus sign) requests that
+no dynamic library is to be loaded. In this way libraries consisting solely of
+Tcl files may be used. Specifying @i{libdir} as a blank string (either "" or
+@{@}) indicates that the library is to be searched for in the users
+@code{LD_LIBRARY_PATH} instead.
+
+Both the @i{tcldir} and @i{libdir} variables allow a few substitutions to
+expand up to common locations.
+
+@table @var
+@item %L
+Expands to @code{$STADLIB}
+@item %S
+Expands to @code{$STADENROOT/src}
+@item %%
+Expands to a single percent sign
+@end table
+
+The @i{init} argument is used to indicate whether the dynamic library loaded
+has an initialisation routine. It should be set to 0 or 1. The current
+implementation always attemps to execute the initialisation routine, but
+when @i{init} is 0 errors will be ignored.
+
+@split{}
+@node TkU-Defaults
+@section Default Files
+@cindex Default files
+@cindex rc files
+
+The application @i{rc} files contain all the configuration details required by
+the application. Typically an @i{rc} file starts by loading up more packages
+using more @code{load_package} commands. This allows for hierarchial
+dependencies of packages and simplifies the loading of any single package. For
+instance, the @file{siprc} file contains a @code{load_package} call for
+seqlib. The @file{seqlibrc} file in turn has a @code{load_package} call for
+@code{tk_utils}.
+
+Next we may define the menu data. Defining menus here allows for extensions to
+be written that add new commands directly onto the main menu. This obviously
+provides the ability to have third party extensions without sacrificing
+usability for the user. _oxref(TkU-Menus, Specifying Menu Configurations).
+
+The rest of the @i{rc} file will contain the default value for applications.
+These may vary from the configuration parameters to the colours of plots to
+the text used in a particular dialogue. The available parameters to set are a
+function of the application itself, but the commands used to set these are
+universal.
+
+_rule
+@split{}
+@node TkU-set_def
+@unnumberedsubsec set_def
+@findex set_def(T)
+@example
+@exdent @strong{set_def} @i{parameter} @i{value}
+@end example
+
+This sets the application parameter @i{parameter} to @i{value}. @i{Parameter}
+is a Keyed List field within the application defs variable. If @i{value}
+is more than one word, the Tcl quoting mechanisms must be used. Valid examples
+are:
+
+@example
+set_def CONSENSUS_CUTOFF                0.01
+set_def STOP_CODON.RULER_COLOUR         black
+set_def TRACE_DISPLAY.BACKGROUND        $normal_bg
+set_def CONTIG_EDITOR.SE_SET.1          @{0 0 0 1 0 0 0 0 1 1@}
+set_def CONTIG_EDITOR.SE_SET.1          "0 0 0 1 0 0 0 0 1 1"
+@end example
+
+The last two of these are different ways of acheiving the same result.
+
+_rule
+@split{}
+@node TkU-set_defx
+@unnumberedsubsec set_defx
+@findex set_defx(T)
+@example
+@exdent @strong{set_defx} @i{variable} @i{parameter} @i{value}
+@end example
+
+When we have common values to set for many parameters we may use the
+@code{set_defx} command. For example take the following settings:
+
+@example
+set_def FIJ.HIDDEN.NAME         "Window size for good data scan"
+set_def FIJ.HIDDEN.MIN          1
+set_def FIJ.HIDDEN.MAX          200
+set_def FIJ.HIDDEN.VALUE        100
+
+set_def ASSEMBLE.HIDDEN.NAME    "Window size for good data scan"
+set_def ASSEMBLE.HIDDEN.MIN     1
+set_def ASSEMBLE.HIDDEN.MAX     200
+set_def ASSEMBLE.HIDDEN.VALUE   100
+@end example
+
+The repetition here of common elements is tedious. Using @code{set_defx} the
+equivalent becomes:
+
+@example
+set_defx defs_hidden    NAME    "Window size for good data scan"
+set_defx defs_hidden    MIN     1
+set_defx defs_hidden    MAX     200
+set_defx defs_hidden    VALUE   100
+
+set_def  FIJ.HIDDEN             $defs_hidden
+set_def  ASSEMBLE.HIDDEN        $defs_hidden
+@end example
+
+@split{}
+@node TkU-Menus
+@section Specifying Menu Configurations
+@cindex Configuring menus
+@cindex Menu configuration
+
+By specifying menu configurations within the application rc file we provide
+the ability for extensions to include their own menu additions. When combined
+with the dynamic linking ability this means that new C functions can be
+written complete with GUI and menu items. These can then be "wrapped up" into
+a package suitable for distribution to other users.
+
+Not all menus within our programs are specified within the configuration file,
+but typically the main menu is. Theoretically other menus (such as the gap4
+contig editor ones) could be defined in this manner too.
+
+An important concept in the menu code is menu states. At any time a menu item
+or a menu button can be either enabled or disabled (greyed out). Certain
+actions require a subset of the menu items to be enabled or disabled. Actions
+can be split into menu state changes that enable menu items and those that
+disable them. If an action needs to both enable and disable then two menu
+state changes should be applied. Menu states are specified as bit patterns
+with one bit per action.
+
+For example in gap4 we have several enable states and several disable states.
+
+@sp 1
+@table @asis
+@item @strong{bit}
+@strong{Enable description}
+@item 0
+Startup settings
+@item 2
+A new database has been opened
+@item 3
+The database has data
+@end table
+
+@sp 1
+@table @asis
+@item @strong{bit}
+@strong{Disable description}
+@item 1
+Busy mode has been set
+@item 2
+The database has been closed
+@item 3
+The database has no data
+@item 4
+Read-only mode is enabled
+@end table
+
+Note that not all bits are used in the enable and disable settings. This is
+purely to simplify the numbering for the user. For example bits 2 and 3 
+have the same meaning for both the enable set and the disable set.
+
+Bit 0 is always the startup setting. If a menu item does not have this bit set
+then it is disabled, otherwise it is enabled.
+
+Bit 1 is always used by the busy mode. Busy mode disables items that have bit
+1 set in the disable settings. When busy mode is turned off the menu settings
+revert to their initial state (prior to busy mode being enabled) and so no
+enable bit is necessary.
+
+The other bits defined are application dependent. In this case bits 2 and 3
+define whether the database opened and whether it contains data.
+
+_rule
+@split{}
+@node TkU-set_menu
+@unnumberedsubsec set_menu
+@findex set_menu(T)
+@example
+@exdent @strong{set_menu} @i{name}
+@end example
+
+The first menu command to be used is @code{set_menu}. This states that all
+further menu commands, until the next set_menu, will store their data in the
+Tcl variable @i{name}.
+
+_rule
+@split{}
+@node TkU-add_menu
+@unnumberedsubsec add_menu
+@findex add_menu(T)
+@example
+@exdent @strong{add_menu} @i{name} @i{onval} @i{offval} @i{pos}
+@end example
+
+Before adding commands to menus we need to create the menus themselves. The
+@code{add_menu} command does this. The menu @i{name} is the text to appear for
+the menu button. If this includes spaces it must be enclosed in quotes or
+curly brackets.
+
+@i{Onval} and @i{offval} define the state masks for the enable and disable
+sets. Menus are always enabled whenever any of the items within them are
+enabled, even if the @i{offval} set defines otherwise. Menus are usually
+enabled at startup (@i{onval} == 1) and disabled during busy mode (@i{offval}
+== 2).
+
+The @i{pos} argument may be either @code{left} or @code{right}. This requests
+the position to place the menu. Each leftwards positioned menu is packed to
+the right of the currently shown left menus. Hence the order in which menus
+are defined controls the order in which they will appear. Similarly for
+rightwards positioned menus.
+
+So for example, the Gap4 main menus are defined as follows.
+
+@example
+add_menu File           1 2 left
+add_menu Edit           1 2 left
+add_menu View           1 2 left
+add_menu Options        1 2 left
+add_menu Experiments    1 2 left
+add_menu Lists          1 2 left
+add_menu Assembly       1 2 left
+add_menu Help           1 0 right
+@end example
+
+If more than one add_menu command is present for the same menu name the latter
+of the two takes priority.
+
+_rule
+@split{}
+@node TkU-add_cascade
+@unnumberedsubsec add_cascade
+@findex add_cascade(T)
+@example
+@exdent @strong{add_cascade} @i{name} @i{onval} @i{offval}
+@end example
+
+This adds a cascading menu item within an existing menu. The @i{name} should
+be the menu name followed by a full stop followed by the cascading menu name.
+So to add a @code{Save To} cascading menu to the @code{File} menu the @i{name}
+should be set to "@code{@{File.Save To@}}".
+
+@i{Onval} and @i{offval} operate in the same fashion as the @code{add_menu}
+command.
+
+_rule
+@split{}
+@node TkU-add_command
+@unnumberedsubsec add_command
+@findex add_command(T)
+@example
+@exdent @strong{add_command} @i{name} @i{onval} @i{offval} @i{command}
+@end example
+
+This adds a new command to an application. The @i{name} should be the menu
+pathname followed by fullstop followed by the name of the command to appear in
+the menu. So if the command is within a cascading menu the @i{name} will have
+several components broken down by fullstops, ending in the command name
+itself.
+
+The @i{onval} and @i{offval} arguments control the states for which the
+command is to be enabled in.
+
+The @i{command} argument is the command to execute when this menu item is
+selected. This is a single argument so Tcl quoting rules must be obeyed for
+multi-word commands. This command is evaluated (using the Tcl @code{eval}
+command) at the time of selecting the menu item. If the command is to contain
+references to variables, it is important to distinguish between variables
+expanded at the time of creating the menu item and the time of executing the
+menu item by backslashing the latter.
+
+For example, the Gap4 "Quality" mode of the consensus output has the following
+specification.
+
+@example
+add_command  @{File.Calculate a consensus.quality@}  8 10  @{QualityDialog \$io@}
+@end example
+
+Here the "quality" command is within the "Calculate a consensus" cascading
+menu which is within the "File" menu. It is enabled by bit 3 (a database
+containing data has been opened) and is disabled by bits 1 and 3 (the database
+has no data or busy mode is enabled). The command to run is
+@code{QualityDialog $io}. If we did not backslash the @code{$io} in this
+command the @i{io} variable would be expanded up at the time of creating the
+menus, say to "0". Then when the menu item is selected we would always execute
+@code{QualityDialog 0} which is not the desired effect.
+
+_rule
+@split{}
+@node TkU-add_separator
+@unnumberedsubsec add_separator
+@findex add_separator(T)
+@example
+@exdent @strong{add_separator} @i{name}
+@end example
+
+This simply adds a separator to the menu. The @i{name} specifies both the menu
+containing the separator and a name for the separator itself. Separator names
+do not appear in the menu, but are still required.
+
+_rule
+@split{}
+@node TkU-add_radio
+@unnumberedsubsec add_radio
+@findex add_radio(T)
+@example
+@exdent @strong{add_radio} @i{name} @i{onval} @i{offval} @i{variable} @i{value} @i{command}
+@end example
+
+Multiple radio buttons are grouped together to form a set of which any one
+button can be activated at any one time. The @code{add_radio} command adds
+commands to menus in a similar fashion to the @code{add_command} command, but
+has two additional arguments; @i{variable} and @i{value}.
+
+Each radio button within a group uses the same @i{variable} with differing
+@i{values}. When a radio button is selected the global Tcl @i{variable} is set
+with the associated @i{value} and the @i{command} is executed. A useful tip is
+that the contents of the @i{variable} may be passed to the @i{command} as an
+argument using @code{\$}@i{variable}.
+
+As each group can specify its own variable, multiple radio button groups are
+possible .
+
+_rule
+@split{}
+@node TkU-add_check
+@unnumberedsubsec add_check
+@findex add_check(T)
+@example
+@exdent @strong{add_check} @i{name} @i{onval} @i{offval} @i{variable} @i{command}
+@end example
+
+A check button command is identical to a normal command created by
+@code{add_command} except that the menu item also has a box showing the
+current toggled state. Unlike radio buttons each check button operates
+independently of every other check button.
+
+The @i{variable} button specifies the global Tcl variable to hold the state
+for this check button. It will contain 1 for enabled and 0 for disabled.
+Whenever the item is selected the variable will be toggled and the command
+executed.
+
+@split{}
+@node TkU-Menu Control
+@section Controlling Menu Behaviour
+@cindex Controlling menu behaviour
+@cindex Menu control
+
+The creation and control of menus within applications is governed by further
+menu commands. These do not appear within the configuration files but rather
+the Tcl code for the applications themselves.
+
+_rule
+@split{}
+@node TkU-create_menus
+@unnumberedsubsec create_menus
+@cindex Menu creation
+@cindex Creating menus
+@findex create_menus(T)
+@example
+@exdent @strong{create_menus} @i{menu_specs} ?@i{pathname}?
+@end example
+
+Uses the menu specifications passed over in the @i{menu_specs} variable to
+create the main menubar. @i{Pathname} specifies the root Tk window pathname in
+which to create the menus. If this is not specified the Tk root (.) is used
+instead.
+
+The menu specifications are created from processing the application rc file.
+The @code{set_menu} command is used to specify a Tcl variable to store these
+specifications in. The contents of this variable should be used as the
+@i{menu_specs} argument.
+
+_rule
+@split{}
+@node TkU-menu_state_on
+@unnumberedsubsec menu_state_on
+@cindex Enable menu states
+@cindex Menu enabling
+@findex menu_state_on(T)
+@example
+@exdent @strong{menu_state_on} @i{menu_specs} @i{mask} ?@i{pathname}?
+@end example
+
+Enables menu items by applying menu state @i{mask} to the menus described in
+the @i{menu_specs} data. @i{Menu_specs} is the contents of the variable
+created by the @code{set_menu} command and written to by subsequent
+@code{add_}* commands.
+
+The @i{mask} is applied to each item in the menu specs. If the menu item
+enable set ANDed with the @i{mask} is non zero the menu item is enabled.
+Otherwise it is not changed (and not disabled). It is possible to combine
+multiple enable bits together in a single call. Hence the following two
+examples are identical.
+
+@example
+menu_state_on $gap_menu 4 .mainwin.menus
+menu_state_on $gap_menu 8 .mainwin.menus
+
+menu_state_on $gap_menu 12 .mainwin.menus
+@end example
+
+@i{Pathname} specifies the root location of the menu widgets as given to a
+previous @code{create_menus} command.
+
+_rule
+@split{}
+@node TkU-menu_state_off
+@unnumberedsubsec menu_state_off
+@cindex Disable menu states
+@cindex Menu disabling
+@findex menu_state_off(T)
+@example
+@exdent @strong{menu_state_off} @i{menu_specs} @i{mask} ?@i{pathname}?
+@end example
+
+This command is the same as the @code{menu_state_off} command except that menu
+items with their disable set value ANDed with the @i{mask} are disabled.
+Otherwise the menu item is left in the current state.
+
+_rule
+@split{}
+@node TkU-menu_state_set
+@unnumberedsubsec menu_state_set
+@findex menu_state_set(T)
+@example
+@exdent @strong{menu_state_set} @i{menu_spec_variable} @i{mask} ?@i{pathname}?
+@end example
+
+This command provides a combined interface to the @code{menu_state_on} and
+@code{menu_state_off} functions. The name of the global variable containing
+the menu specifications is passed over in the @i{menu_spec_variable} argument.
+This must have been set by using the @code{set_menu} command.
+
+If the @i{mask} value is positive the @code{menu_state_on} command is called
+with this mask, otherwise the @code{menu_state_off} command is called with the
+absolute value of the @i{mask}.
+
+@i{Pathname} specifies the root location of the menu widgets as given to a
+previous @code{create_menus} command.
+
+_rule
+@split{}
+@node TkU-menu_state_save
+@unnumberedsubsec menu_state_save
+@findex menu_state_save(T)
+@cindex Menu, saving states
+@cindex Saving menu states
+@example
+@exdent @strong{menu_state_save} @i{pathname}
+@end example
+
+This command queries the current states of the menus created as children of
+@i{pathname} and returns them as a string suitable for passing to a later
+@code{menu_state_restore} function. The principle use of this function is
+within the @code{SetBusy} command.
+
+_rule
+@split{}
+@node TkU-menu_state_restore
+@unnumberedsubsec menu_state_restore
+@findex menu_state_restore(T)
+@cindex Menu, restoring states
+@cindex Restoring menu states
+@cindex Menu, loading states
+@cindex Loading menu states
+@example
+@exdent @strong{menu_state_restore} @i{pathname} @i{states}
+@end example
+
+This commands sets the current states of the menus created as children of
+@i{pathname}. The @i{state} variable contains the menu state information as
+returned from an earlier @i{menu_state_save} function. The principle use of
+this function is within the @code{ClearBusy} command.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node TkU-Dialogues
+@section Common Dialogue Components
+@cindex Dialogue components
+@findex radiolist(T)
+@findex entrybox(T)
+@findex checklist(T)
+@findex okcancelhelp(T)
+@findex ColourBox(T)
+@findex repeater(T)
+@findex scalebox(T)
+@findex yes_no(T)
+
+This section has yet to be written. I need to outline the basic tk_utils
+widget-like commands: radiolist, entrybox, checklist, okcancelhelp, ColourBox,
+repeater, scalebox and yes_no. The interfaces will probably change to tidy
+things up before this section is written.
+
+okcancelhelp
+
+checklist
+
+entrybox
+
+messagebox
+
+radiolist
+
+renzbox
+
+repeater
+
+scalebox
+
+scale_range
+
+yes_no
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node TkU-Output
+@section Text Output and Errors
+@cindex Output of text messages
+@cindex Error messages, outputting
+
+A selection of C and Tcl functions exist for outputting text to either the
+stdout or stderr streams. For entirely text based applications these messages
+simply appear on their usual streams. For graphical applications the messages
+can appear in the main window of the application. The programmer is free to
+use the usual C output routines, such as @code{printf}, but doing so will no
+output to the main window.
+
+To utilise the text based version of the routines no initialisation is
+required. For the windowing version the following startup code should be used
+from within @code{stash}.
+
+@example
+tkinit
+pack [frame .output -relief raised -bd 2] -fill both -expand 1
+load_package tk_utils
+tout_create_wins .output
+@end example
+
+In the above example @code{.output} can be replaced by any window name you
+choose. The @code{load_package tk_utils} command is required to load the
+@var{tk_utils_defs} variable. The @code{tout_create_wins} command does the
+actual work of creating the necessary output and error windows. From then on,
+the text output routines will send data to the windows instead of stdout and
+stderr.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-tout_init
+@unnumberedsubsec tout_init
+@findex tout_init(T)
+
+@example
+@exdent @code{tout_init} @i{output_path} @i{error_path}
+@end example
+
+This command initialises the redirection of the text output commands. The two
+rrquired arguments specify the Tk pathnames of text widgets for the output and
+errors to be sent to. The function returns nothing.
+
+The following example illustrates the usage. In practise the
+@code{tout_create_wins} command should be used instead to provide a common
+style interface.
+
+@example
+pack [text .output -height 5] [text .error -height 5] -side top
+tout_init .output .error
+vmessage This appears in the output window
+verror ERR_WARN This appears in the error window
+@end example
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-tout_create_wins
+@unnumberedsubsec tout_create_wins
+@findex tout_create_wins(T)
+
+@example
+@exdent @code{tout_create_wins} @i{frame}
+@end example
+
+This creates output and error windows within the specified @var{frame}.
+@var{frame} may be @code{@{@}} to add these directly to the top level.
+The function returns nothing. The windows created also contain functional
+search, scroll on output, clear, and redirect buttons.
+
+This function also calls the @code{tout_init} command to initialise
+redirection of the text output functions.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-tout_set_scroll
+@unnumberedsubsec tout_set_scroll
+@findex tout_set_scroll(T)
+@cindex Scrolling on output
+
+@example
+@exdent @code{tout_set_scroll} @i{stream} @i{to_scroll}
+@end example
+
+This command controls whether outputting text should automatically scroll the
+relevant output window so that the new text is visible. @var{stream} should be
+one of @code{stdout} or @code{stderr}. If @var{to_scroll} is 0, scrolling is
+not automatically performed, otherwise scrolling is performed.
+
+This control is connected to the "scroll on output" button created by the
+@code{tout_create_wins} command.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-tout_set_redir
+@unnumberedsubsec tout_set_redir
+@findex tout_set_redir(T)
+@cindex Redirecting output
+
+@example
+@exdent @code{tout_set_redir} @i{stream} @i{filename}
+@end example
+
+This command can be used to enable redirection of any output or error to a
+file. Output also still appears in the appropriate window. @var{stream} should
+be one of @code{stdout} or @code{stderr}. @var{filename} specifies which file
+to save output to. Any previously redirected filename for this stream is
+automatically closed. A blank @var{filename} can be used to close the current
+redirection for this stream without opening a new file. The command returns 1
+for success, 0 for failure.
+
+This control is connected to the "redirect" menu created by the
+@code{tout_create_wins} command.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-tout_pipe
+@unnumberedsubsec tout_pipe
+@findex tout_pipe(T)
+@cindex Piping output to commands
+
+@example
+@exdent @code{tout_pipe} @i{command} @i{input} @i{forever}
+@end example
+
+This command executes the unix shell @var{command} with @var{input}. If
+@var{forever} is 0, the command is terminated if it takes more than a specific
+amount of time (currently 5 seconds). A value of @var{forever} other than 0
+causes the @code{tout_pipe} command to wait until @var{command} has finished.
+The stdout and stderr streams from @var{command} appear in the appropriate
+output window. The command returns 0 for success, -1 for failure.
+
+NOTE: This command may not be implemented on all platforms.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-error_bell
+@unnumberedsubsec error_bell
+@findex error_bell(T)
+@cindex Bell, upon errors
+@cindex Error bell
+
+@example
+@exdent @code{error_bell} @i{status}
+@end example
+
+This command controls whether a bell should be emitted for each error
+displayed. (Currently bells only ring for the C implementation of
+@code{verror} and not the Tcl one). If @var{status} is 0, no bell is rung.
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-vmessage
+@unnumberedsubsec vmessage
+@cindex Text output
+
+@findex vmessage(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void vmessage(char *fmt, ...);}
+@end example
+
+This C function displays text in the text output window or prints to stdout
+when in a non graphical environment. Arguments are passed in the standard
+@code{printf} syntax. Hence @code{vmessage("output");} and
+@code{vmessage("value=%d",i);} are both legal uses.
+
+@sp 1
+@findex vmessage(T)
+@example
+@exdent @code{vmessage} ?@var{text} ...?
+@end example
+
+This is the Tcl interface to the vmessage C function. Any number of arguments
+can be specified. Each are concatenated together with spaces inbetween them.
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-verror
+@unnumberedsubsec verror
+@cindex Error output
+
+@findex verror(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void verror(int priority, char *name, char *fmt, ...);}
+@end example
+
+This C function displays text in the error output window or prints to stderr
+when in a non graphical environment. The @var{priority} argument may be one
+of @code{ERR_WARN} or @code{ERR_FATAL}. The @var{name} argument is used as
+part of the error message, along with the time stamp and the error itself.
+@var{name} should not be any more than 50 characters long, and ideally much
+shorter. The @var{fmt} arguments onwards form the standard @code{printf} style
+arguments of a format specifier and string components.
+
+An error with priority of @code{ERR_WARN} will be sent only to the error
+window. Priority @code{ERR_FATAL} will print to stderr as well.
+@code{ERR_FATAL} should be used in conditions where there is a chance that the
+program may subsequently crash, thus removing the error window from the screen
+and preventing users from reporting error messages.
+
+@sp 1
+@findex verror(T)
+@example
+@exdent @code{vmessage} @var{priority} @var{text} ?...?
+@end example
+
+This is the Tcl interface to the verror C function. The @var{priority}
+argument should be one of @code{ERR_WARN} or @code{ERR_FATAL} as described
+above. The @var{text} and subsequent arguments make up the contents of the
+error message itself with each argument concatenated with a single space
+between arguments.  The Tcl (not C) implementation of @code{verror} currently
+has a limit of 8192 bytes of error message per call.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-vfuncheader
+@unnumberedsubsec vfuncheader
+@cindex Function header output
+@cindex Header text output
+
+@findex vfuncheader(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void vfuncheader(char *fmt, ...);}
+@end example
+
+This C function displays the name of a function in the output window. The
+function header consists of ruler lines, the date and time, and the formatted
+string specified by the @var{fmt} and subsequent arguments.  These arguments
+should be specified in the standard @code{printf} style. The header, after
+formatting, must be less than 8192 bytes long.
+
+@sp 1
+@findex vfuncheader(T)
+@example
+@exdent @code{vfuncheader} @var{title}
+@end example
+
+This is the Tcl interface to the vfuncheader C function. It takes a single
+argument named @var{title} and uses this as the function title. The @var{title}
+must be less 8192 bytes long.
+
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-vfuncgroup
+@unnumberedsubsec vfuncgroup
+@cindex Function group output
+@cindex Group (function) output
+
+@findex vfuncgroup(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void vfuncgroup(int group, char *fmt, ...);}
+@end example
+
+This C function is identical to the @code{vfuncheader} function except that it
+will not output a new header if the last call to @code{vfuncgroup} was with
+the same @var{group} number and there have been no intevening
+@code{vfuncheader} calls.
+
+The @var{group} argument is an integer value specifying a group number. Each
+option within a program using this function should have its own unique group
+number. However currently there is no allocation system for ensuring that this
+is so. The @var{fmt} and subsequent arguments specify the header in the
+standard @code{printf} style. The header, after formatting, must be less than
+8192 bytes long.
+
+@sp 1
+@findex vfuncgroup(T)
+@example
+@exdent @code{vfuncgroup} @var{group_number} @var{title}
+@end example
+
+This is the Tcl interface to the vfuncheader C function. The @var{title}
+must be less 8192 bytes long.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-vfuncparams
+@unnumberedsubsec vfuncparams
+@cindex Function parameters
+@cindex Parameters, text output
+
+@findex vfuncparams(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void vfuncparams(char *fmt, ...);}
+@end example
+
+This function sets the parameters used for producing the current output. These
+are added as a tagged text segment to the text underneath the last displayed
+header. The right mouse button in the output window brings up a menu from
+which these parameters can be displayed. By default they are not displayed.
+The parameters can be any length and are specified by @var{fmt} and
+subsequent arguments in the standard @code{printf} style.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-Output-start_message
+@unnumberedsubsec start_message and end_message
+@cindex Text buffering, start_message
+@cindex Output buffering, start_message
+
+@findex start_message(C)
+@findex end_message(C)
+@example
+@exdent @code{#include <text_output.h>}
+@exdent @code{void start_message(void);}
+@exdent @code{void end_message(void);}
+@end example
+
+Sometimes we wish to bring up a separate window containing simple message
+outputs (eg in gap4 this could be information about a reading that was clicked
+on). The @code{start_message} function clears the current message buffer and
+starts copying all subsequent output to the stdout window to this buffer.
+
+The @code{end_message} function disables this message copying and display the
+current contents of the message buffer in a separate window.
+
+At present, there are no Tcl interface to these routines.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node TkU-Other
+@section Other Utility Commands
+
+@c -------------------------------------------------------------------------
+@node TkU-Tkinit
+@unnumberedsubsec tkinit
+@findex tkinit(T)
+@cindex Tk, initialising
+
+@example
+@exdent @code{tkinit}
+@end example
+
+This command calls the @code{Tk_Init} C function. The purpose of this function
+is to allow the @code{stash} program to be used in a non windowing
+environment. To achieve this the initialisation of Tk has been delayed until
+this command is ran. Hence one binary can be used for both text work (no
+@code{tkinit} call) and graphics work (with a @code{tkinit} call).
+
+@c -------------------------------------------------------------------------
+@node TkU-Capture
+@unnumberedsubsec capture
+@findex capture(T)
+@cindex Capturing command output
+@cindex output: saving
+
+@example
+@exdent @code{capture} @i{command} ?@i{varname}?
+@end example
+
+This command executes @i{command} and stores any text written to stdout in the
+tcl variable named in @i{varname}. If @i{varname} is not specified then the
+output is returned, otherwise the return codes from the @code{Tcl_Eval}
+routine are used (ie @code{TCL_OK} for success).
+
+For example the command "@code{set x [capture @{puts foo@}]}" and
+"@code{capture @{puts foo@} x}" both set @i{x} to contain "@i{foo\n}".
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-expandpath
+@unnumberedsubsec expandpath
+@findex expandpath(T)
+@cindex Path expansion
+@cindex Tilde expansion
+
+@example
+@exdent @code{expandpath} @i{pathname}
+@end example
+
+This command returns an expanded copy of @i{pathname} with tilde sequences
+and environment variables expanded in a usual shell-like fashion. It is a
+direct interface to the @code{expandpath} C routine, so see this for full
+details.
+
+For example, the command "@code{expandpath @{~/bin/$MACHINE@}}" may return a
+string like "@i{/home5/pubseq/bin/alpha}".
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-vTcl_SetResult
+@unnumberedsubsec vTcl_SetResult
+@findex vTcl_SetResult(C)
+@cindex Tcl_SetResult; varargs version
+
+@example
+@exdent @code{#include <tcl_utils.h>}
+@exdent @code{void vTcl_SetResult(Tcl_Interp *interp, char *fmt, ...);}
+@end example
+
+This function is a varargs implementation of the standard @code{Tcl_SetResult}
+function. The Tcl result is set to be the string specified by the @var{fmt}
+and subsequent arguments in the standard @code{sprintf} style.
+
+NOTE: The current implementation has a limit of setting up to 8192 bytes.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-vTcl_DStringAppend
+@unnumberedsubsec vTcl_DStringAppend
+@findex vTcl_DStringAppend(C)
+@cindex Tcl_DStringAppend; varargs version
+
+@example
+@exdent @code{#include <tcl_utils.h>}
+@exdent @code{void vTcl_DStringAppend(Tcl_DString *dsPtr, char *fmt, ...);}
+@end example
+
+This function is a varargs implementation of the standard
+@code{Tcl_DStringAppend} function. The string specified by the @var{fmt} and
+subsequent arguments (in the standard @code{sprintf} style) is appended to the
+existing dynamic string.
+
+@c -------------------------------------------------------------------------
+_rule
+@split{}
+@node TkU-w
+@unnumberedsubsec w and vw
+@findex w(C)
+@findex vw(C)
+@cindex Strings, making writable
+@cindex Writable strings
+@cindex Keyed lists, writable strings
+@cindex Tcl_SetVar, writable strings
+
+@example
+@exdent @code{#include <tcl_utils.h>}
+@exdent @code{char *w(char *str);}
+@exdent @code{char *vw(char *fmt, ...);}
+@end example
+
+These functions return strings held in writable memory. Writable strings are
+required in the arguments of many Tcl functions, including @code{Tcl_SetVar}
+and @code{Tcl_GetKeyedListField}. The arguments specify the string the return
+as writable. For @code{w()} this is simply an exact copy of the argument. For
+@code{vw()} the returned string is a formatted copy of the input, which is
+specified in the standard @code{printf} style.
+
+The return value from the @code{w} function isvalid only until the next call
+of @code{w()}. Similarly for the @code{vw} function.
+
+Examples of usage are:
+
+@example
+Tcl_GetKeyedListField(interp, vw("MODE%d", mode_num), gap_defs, &buf);
+
+Tcl_SetVar(interp, w("arr(element)"), "10", TCL_GLOBAL_ONLY);
+@end example
+
+NOTE: In the current implementations both functions have a limit of handling
+8192 bytes per call.

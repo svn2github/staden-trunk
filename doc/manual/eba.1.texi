@@ -1,0 +1,54 @@
+@cindex eba: man page
+@unnumberedsec NAME
+
+eba --- Estimates Base Accuracy in an SCF or ZTR file
+
+@unnumberedsec SYNOPSIS
+
+@code{eba} [@i{trace_file}]
+
+@unnumberedsec DESCRIPTION
+
+@code{Eba} will calculate numerical estimates of base accuracy for each
+base in an SCF or ZTR file. The figures calculated should not be considered as
+reliable and better values can be obtained from phred or ATQA.
+
+The method employed by eba to estimate the base accuracies performs the
+following calculation for each base. Calculate the area under the peaks
+for each base type. Divide the area under the called base by the largest
+area under the other three bases. From the 2002 release these values are
+normalised to the phred scale (this was achieved by comaring the
+original eba values and phred values for 4.6 million base calls of
+Sanger Centre data).
+
+With no filename as an argument eba reads from standard input and writes
+to standard output. This enables eba to be used as a filter, or to
+estimate base accuracies for unwritable files. If a file is specified on
+the command line then the accuracy figures will be written to this file.
+
+@unnumberedsec EXAMPLES
+
+To write base accuracy figures to an SCF file named @code{e04f10.s1SCF}.
+
+@example
+@code{eba e04f10.s1SCF}
+@end example
+
+To write base accuracy figures on the original eba scale to an SCF file 
+named @code{e04f10.s1SCF}.
+
+@example
+@code{eba -old_scale e04f10.s1SCF}
+@end example
+
+To write base accuracy figures to a ZTR file named @code{e04f10.s1.ztr}
+in another users directory, and to store the updated file in the
+current directory:
+
+@example
+@code{eba < ~user/e04f10.s1.ztr > e04f10.s1.ztr}
+@end example
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Scf, scf(4), formats)

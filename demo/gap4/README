@@ -1,0 +1,11 @@
+This directory contains a demonstration database consisting of several contigs.
+The trace data has been base-called with phred, and converted to ZTR format.
+To demonstrate distribution of data the traces are stored within a tar file,
+but this does not need to be extracted in order to view the traces.
+
+As phred confidence values are available the DEMO.0 database has also been
+configured to start up using the "confidence value" mode of the consensus
+algorithm. See the database notes for an example of how this was done.
+
+You should be able to use Find Internal Joins to identify contig overlaps and
+to join the data into one single contig.

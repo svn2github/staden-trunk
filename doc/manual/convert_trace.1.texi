@@ -1,0 +1,140 @@
+@cindex convert_trace: man page
+@unnumberedsec NAME
+
+convert_trace --- Converts trace file formats
+
+@unnumberedsec SYNOPSIS
+
+@code{convert_trace}
+[@code{-in_format} @i{format}]
+[@code{-out_format} @i{format}]
+[@code{-fofn} @i{file_of_filenames}]
+[@code{-passed} @i{fofn}]
+[@code{-failed} @i{fofn}]
+[@code{-name} @i{id}]
+[@code{-subtract_background}]
+[@code{-normalise}]
+[@code{-scale} @i{range}]
+[@code{-compress} @i{mode}]
+[@code{-abi_data} @i{counts}]
+[@i{informat} @i{outformat}]
+
+@unnumberedsec DESCRIPTION
+
+@code{convert_trace} converts between the various DNA sequence chromatogram
+formats, optionally performing trace processing actions too. It can read ABI
+(raw or processed), ALF, CTF, SCF and ZTR formats. It can write CTF, EXP, PLN, 
+SCF and ZTR formats. (Note that EXP (Experiment File) and PLN formats are
+text sequences rather than a binary trace.)
+
+There are two main modes of operation; either with a file of filenames
+specified using the @code{-fofn} @i{filename} option, or acting as a filter
+to process one single file. In this case the input and output file format may
+be specified as the last two options on the command line.
+
+@unnumberedsec OPTIONS
+@table @asis
+@item @code{-abi_data} @i{counts}
+    Only of use when processing ABI files. This indicates which ABI
+    @code{DATA} channel numbers to use. For sequencing files this defaults to
+    "9,10,11,12" which corresponds to the processed data. To read the raw data 
+    use "1,2,3,4".
+
+@item @code{-compress} @i{mode}
+    Specifies the name of a program to use to compress the trace data prior to 
+    writing. Due to limitations in the current implementation this option does 
+    not work when @code{convert_trace} is operating as a filter (and so
+    requires use of the @code{-fofn} option). Valid values for @i{mode} are
+    compress, bzip, bzip2, gzip, pack and szip. Note that for ZTR, ZTR2 and
+    ZTR3 format files specifying compression modes will not reduce the file
+    size as this format already contains internal compression algorithms. The
+    ZTR1 format does not internally compress and so @code{-compress} will have 
+    an effect.
+
+@item @code{-failed} @i{fofn}
+    Produces a file listing the filenames which have failed to be
+    converted. This only makes sense when also using @code{-fofn}.
+
+@item @code{-fofn} @i{file_of_filenames}
+    Processes several files instead of one, with the filenames to read from and
+    written to being listed in @i{file_of_filenames} with one pair (input and
+    output filenames) being listed per line, separated by spaces. If the
+    filenames contain spaces then these may be "escaped" using
+    backslashes. Similarly backslashes should be escaped using a double
+    backslash. For example to convert "file a.scf" and "fileb.scf" to "file
+    a.ztr" and "fileb.ztr" respectively we would use a @i{file_of_filenames}
+    containing:
+
+@example
+file\ a.scf    file\ a.ztr
+fileb.scf      fileb.ztr
+@end example
+
+@item @code{-in_format} @i{format}
+    Specifies the format for the input data. Typically the input format is
+    automatically determined so this may not be required. @i{format} should be 
+    one of ABI, ALF, CTF, EXP, PLN, SCF, ZTR, ZTR1, ZTR2 or ZTR3. The ZTR
+    formats all conform to the ZTR specification, but this indicates the
+    compression level to be used.
+
+@item @code{-name} @i{id}
+    When producing an Experiment File this specifies the value of the
+    @code{ID} line. Without this option default Experiment File ID line is the 
+    output filename, or if this is stdout it is the input filename.
+
+@item @code{-normalise}
+    Attempts to normalise the trace amplitudes to produce more even height
+    peaks. This may be useful to compensate for large spikes at either the
+    start or end of the trace.
+
+@item @code{-out_format} @i{format}
+    Specifies the output format for all files, whether read from a file of
+    filenames or via a filter.  @i{format} should be 
+    one of ABI, ALF, CTF, EXP, PLN, SCF, ZTR, ZTR1, ZTR2 or ZTR3. The ZTR
+    formats all conform to the ZTR specification, but this indicates the
+    compression level to be used.
+
+@item @code{-passed} @i{fofn}
+    Produces a file listing the filenames which have been successfully
+    converted. This only makes sense when also using @code{-fofn}.
+
+@item @code{-scale} @i{range}
+    Scales all trace amplitudes so that they fit within the range of 0 to 
+    @i{range} inclusive. Any integer value of @i{range} may be used between 1
+    and 65535, but this option is designed for down-scaling traces in order to 
+    reduce file size.
+
+@item @code{-subtract_background}
+    Attempts to remove background trace levels by analysing each trace channel 
+    independently to determine the baseline. This option is mainly used when
+    processing raw data.
+@end table
+
+@unnumberedsec EXAMPLES
+
+To convert several files to ZTR format using the same example file of
+filenames listed in the @code{-fofn} option above:
+
+@example
+convert_trace -out_format ZTR -fofn filename
+@end example
+
+To subtract the background from a raw ABI file and save this as an SCF file:
+
+@example
+convert_trace -abi_data 1,2,3,4 -subtract_background ABI SCF < a.abi > a.scf
+@end example
+
+@unnumberedsec NOTES
+
+If ABI files are manually edited before input to convert_trace then the
+internal formats of these files may differ to the format expected by
+convert_trace.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Scf, scf(4), formats)
+_fxref(Formats-Ztr, ztr(4), formats)
+_fxref(Man-makeSCF, makeSCF(1), makeSCF.1)
+
+

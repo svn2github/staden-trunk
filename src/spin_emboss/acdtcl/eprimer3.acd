@@ -1,0 +1,926 @@
+package require Iwidgets
+namespace eval ::EMBOSS::eprimer3 {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_eprimer3*Xentry.entry.width 30
+option add *e_eprimer3*Entryfield.width 30
+option add *e_eprimer3*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) eprimer3
+    set w [xtoplevel .e_eprimer3 -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - eprimer3}
+    label $w._title -text {Picks PCR primers and hybridization oligos}
+    pack $w._title -side top -fill both
+    set vars(eprimer3._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst dna]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    iwidgets::tabnotebook $w.book_2 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_2 -side top -fill both
+    set book(book_2) $w
+    set page [$w.book_2 add \
+	-label [subst {Program Options}]]
+    $w.book_2 view [subst {Program Options}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments explainflag
+    checkbutton $w.explainflag \
+	-text [subst {Explain flag}]\
+	-variable [namespace current]::vars(explainflag)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.explainflag -side top -anchor w
+    set vars(explainflag) [subst 0]
+    set vars(explainflag.path) $w.explainflag
+    set vars(explainflag.required)  0
+    set vars(explainflag._type) bool
+
+    lappend arguments fileflag
+    checkbutton $w.fileflag \
+	-text [subst {Create results files for each sequence}]\
+	-variable [namespace current]::vars(fileflag)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.fileflag -side top -anchor w
+    set vars(fileflag) [subst 0]
+    set vars(fileflag.path) $w.fileflag
+    set vars(fileflag.required)  0
+    set vars(fileflag._type) bool
+
+    lappend arguments task
+    iwidgets::combobox $w.task\
+	-textvariable [namespace current]::vars(task.name)\
+	-labeltext [subst {Select task}]
+    trace variable vars(task.name) w  "::EMBOSS::list_changed [namespace current] task"
+    eval $w.task insert list end {{Pick PCR primers}} {{Pick PCR primers and hybridization probe}} {{Pick forward primer only}} {{Pick reverse primer only}} {{Pick hybridization probe only}}
+    set vars(task.mapping1) {{Pick reverse primer only} 3 {Pick hybridization probe only} 4 {Pick forward primer only} 2 {Pick PCR primers and hybridization probe} 1 {Pick PCR primers} 0}
+    set vars(task.mapping2) {4 {Pick hybridization probe only} 0 {Pick PCR primers} 1 {Pick PCR primers and hybridization probe} 2 {Pick forward primer only} 3 {Pick reverse primer only}}
+    grid [$w.task component entry] -sticky nse
+    $w.task delete entry 0 end
+    array set tmpmap $vars(task.mapping2)
+    set def [subst 0]
+    catch {set def $tmpmap($def)}
+    set vars(task) $def
+    $w.task insert entry end $def
+    $w.task configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.task -side top -fill both
+    set vars(task.path) $w.task
+    set vars(task.required)  0
+    set vars(task.delimiter) ,
+    set vars(task._type) list
+
+    lappend arguments numreturn
+    iwidgets::entryfield $w.numreturn \
+	-validate integer \
+	-textvariable [namespace current]::vars(numreturn) \
+	-labeltext [subst {Number of results to return}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.numreturn component entry] -sticky nse
+    set vars(numreturn) [subst 5]
+    pack $w.numreturn -side top -fill both
+    set vars(numreturn.minimum) [subst 0]
+    set vars(numreturn.path) $w.numreturn
+    set vars(numreturn.required)  0
+    set vars(numreturn._type) integer
+
+    lappend arguments firstbaseindex
+    iwidgets::entryfield $w.firstbaseindex \
+	-validate integer \
+	-textvariable [namespace current]::vars(firstbaseindex) \
+	-labeltext [subst {First base index}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.firstbaseindex component entry] -sticky nse
+    set vars(firstbaseindex) [subst 1]
+    pack $w.firstbaseindex -side top -fill both
+    set vars(firstbaseindex.path) $w.firstbaseindex
+    set vars(firstbaseindex.required)  0
+    set vars(firstbaseindex._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Sequence options}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments includedregion
+    iwidgets::entryfield $w.includedregion \
+	-textvariable [namespace current]::vars(includedregion) \
+	-labeltext [subst {Included region(s)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.includedregion component entry] -sticky nse
+    set vars(includedregion) [subst {}]
+    pack $w.includedregion -side top -fill both
+    set vars(includedregion.path) $w.includedregion
+    set vars(includedregion.required)  0
+    set vars(includedregion._type) range
+
+    lappend arguments target
+    iwidgets::entryfield $w.target \
+	-textvariable [namespace current]::vars(target) \
+	-labeltext [subst {Target region(s)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.target component entry] -sticky nse
+    set vars(target) [subst {}]
+    pack $w.target -side top -fill both
+    set vars(target.path) $w.target
+    set vars(target.required)  0
+    set vars(target._type) range
+
+    lappend arguments excludedregion
+    iwidgets::entryfield $w.excludedregion \
+	-textvariable [namespace current]::vars(excludedregion) \
+	-labeltext [subst {Excluded region(s)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.excludedregion component entry] -sticky nse
+    set vars(excludedregion) [subst {}]
+    pack $w.excludedregion -side top -fill both
+    set vars(excludedregion.path) $w.excludedregion
+    set vars(excludedregion.required)  0
+    set vars(excludedregion._type) range
+
+    lappend arguments forwardinput
+    iwidgets::entryfield $w.forwardinput \
+	-textvariable [namespace current]::vars(forwardinput) \
+	-labeltext [subst {Forward input primer sequence to check}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.forwardinput component entry] -sticky nse
+    set vars(forwardinput) [subst {}]
+    pack $w.forwardinput -side top -fill both
+    set vars(forwardinput.path) $w.forwardinput
+    set vars(forwardinput.required)  0
+    set vars(forwardinput._type) string
+
+    lappend arguments reverseinput
+    iwidgets::entryfield $w.reverseinput \
+	-textvariable [namespace current]::vars(reverseinput) \
+	-labeltext [subst {Reverse input primer sequence to check}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.reverseinput component entry] -sticky nse
+    set vars(reverseinput) [subst {}]
+    pack $w.reverseinput -side top -fill both
+    set vars(reverseinput.path) $w.reverseinput
+    set vars(reverseinput.required)  0
+    set vars(reverseinput._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Primer Details}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments pickanyway
+    checkbutton $w.pickanyway \
+	-text [subst {Pick anyway}]\
+	-variable [namespace current]::vars(pickanyway)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.pickanyway -side top -anchor w
+    set vars(pickanyway) [subst 0]
+    set vars(pickanyway.path) $w.pickanyway
+    set vars(pickanyway.required)  0
+    set vars(pickanyway._type) bool
+
+    lappend arguments mispriminglibrary
+    xentry $w.mispriminglibrary \
+	-label [subst {Mispriming library}]\
+	-textvariable [namespace current]::vars(mispriminglibrary) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.mispriminglibrary delete 0 end
+    $w.mispriminglibrary insert end [subst {}]
+    pack $w.mispriminglibrary -side top -fill both
+    set vars(mispriminglibrary.path) $w.mispriminglibrary
+    set vars(mispriminglibrary.required)  0
+    set vars(mispriminglibrary._type) infile
+
+    lappend arguments maxmispriming
+    iwidgets::entryfield $w.maxmispriming \
+	-validate real \
+	-textvariable [namespace current]::vars(maxmispriming) \
+	-labeltext [subst {Primer maximum mispriming}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxmispriming component entry] -sticky nse
+    set vars(maxmispriming) [subst 12.00]
+    pack $w.maxmispriming -side top -fill both
+    set vars(maxmispriming.maximum) [subst 9999.99]
+    set vars(maxmispriming.path) $w.maxmispriming
+    set vars(maxmispriming.required)  0
+    set vars(maxmispriming._type) float
+
+    lappend arguments pairmaxmispriming
+    iwidgets::entryfield $w.pairmaxmispriming \
+	-validate real \
+	-textvariable [namespace current]::vars(pairmaxmispriming) \
+	-labeltext [subst {Primer pair maximum mispriming}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pairmaxmispriming component entry] -sticky nse
+    set vars(pairmaxmispriming) [subst 24.00]
+    pack $w.pairmaxmispriming -side top -fill both
+    set vars(pairmaxmispriming.maximum) [subst 9999.99]
+    set vars(pairmaxmispriming.path) $w.pairmaxmispriming
+    set vars(pairmaxmispriming.required)  0
+    set vars(pairmaxmispriming._type) float
+
+    lappend arguments gcclamp
+    iwidgets::entryfield $w.gcclamp \
+	-validate integer \
+	-textvariable [namespace current]::vars(gcclamp) \
+	-labeltext [subst {GC clamp}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gcclamp component entry] -sticky nse
+    set vars(gcclamp) [subst 0]
+    pack $w.gcclamp -side top -fill both
+    set vars(gcclamp.minimum) [subst 0]
+    set vars(gcclamp.path) $w.gcclamp
+    set vars(gcclamp.required)  0
+    set vars(gcclamp._type) integer
+
+    lappend arguments osize
+    iwidgets::entryfield $w.osize \
+	-validate integer \
+	-textvariable [namespace current]::vars(osize) \
+	-labeltext [subst {Primer optimum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.osize component entry] -sticky nse
+    set vars(osize) [subst 20]
+    pack $w.osize -side top -fill both
+    set vars(osize.minimum) [subst 1]
+    set vars(osize.path) $w.osize
+    set vars(osize.required)  0
+    set vars(osize._type) integer
+
+    lappend arguments minsize
+    iwidgets::entryfield $w.minsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(minsize) \
+	-labeltext [subst {Primer minimum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minsize component entry] -sticky nse
+    set vars(minsize) [subst 18]
+    pack $w.minsize -side top -fill both
+    set vars(minsize.minimum) [subst 1]
+    set vars(minsize.path) $w.minsize
+    set vars(minsize.required)  0
+    set vars(minsize._type) integer
+
+    lappend arguments maxsize
+    iwidgets::entryfield $w.maxsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxsize) \
+	-labeltext [subst {Primer maximum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxsize component entry] -sticky nse
+    set vars(maxsize) [subst 27]
+    pack $w.maxsize -side top -fill both
+    set vars(maxsize.minimum) [subst {[expr {$vars(minsize)}]}]
+    set vars(maxsize.minimum.orig) $vars(maxsize.minimum)
+    set vars(maxsize.minimum.expr) {[expr {$vars(minsize)}]}
+    trace variable vars(minsize) w  "::EMBOSS::reset_value [namespace current] maxsize.minimum"
+    set vars(maxsize.maximum) [subst 35]
+    set vars(maxsize.path) $w.maxsize
+    set vars(maxsize.required)  0
+    set vars(maxsize._type) integer
+
+    lappend arguments otm
+    iwidgets::entryfield $w.otm \
+	-validate real \
+	-textvariable [namespace current]::vars(otm) \
+	-labeltext [subst {Primer optimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.otm component entry] -sticky nse
+    set vars(otm) [subst 60.0]
+    pack $w.otm -side top -fill both
+    set vars(otm.path) $w.otm
+    set vars(otm.required)  0
+    set vars(otm._type) float
+
+    lappend arguments mintm
+    iwidgets::entryfield $w.mintm \
+	-validate real \
+	-textvariable [namespace current]::vars(mintm) \
+	-labeltext [subst {Primer minimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mintm component entry] -sticky nse
+    set vars(mintm) [subst 57.0]
+    pack $w.mintm -side top -fill both
+    set vars(mintm.path) $w.mintm
+    set vars(mintm.required)  0
+    set vars(mintm._type) float
+
+    lappend arguments maxtm
+    iwidgets::entryfield $w.maxtm \
+	-validate real \
+	-textvariable [namespace current]::vars(maxtm) \
+	-labeltext [subst {Primer maximum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxtm component entry] -sticky nse
+    set vars(maxtm) [subst 63.0]
+    pack $w.maxtm -side top -fill both
+    set vars(maxtm.minimum) [subst {[expr {$vars(mintm)}]}]
+    set vars(maxtm.minimum.orig) $vars(maxtm.minimum)
+    set vars(maxtm.minimum.expr) {[expr {$vars(mintm)}]}
+    trace variable vars(mintm) w  "::EMBOSS::reset_value [namespace current] maxtm.minimum"
+    set vars(maxtm.path) $w.maxtm
+    set vars(maxtm.required)  0
+    set vars(maxtm._type) float
+
+    lappend arguments maxdifftm
+    iwidgets::entryfield $w.maxdifftm \
+	-validate real \
+	-textvariable [namespace current]::vars(maxdifftm) \
+	-labeltext [subst {Maximum difference in Tm of primers}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxdifftm component entry] -sticky nse
+    set vars(maxdifftm) [subst 100.0]
+    pack $w.maxdifftm -side top -fill both
+    set vars(maxdifftm.path) $w.maxdifftm
+    set vars(maxdifftm.required)  0
+    set vars(maxdifftm._type) float
+
+    lappend arguments ogcpercent
+    iwidgets::entryfield $w.ogcpercent \
+	-validate real \
+	-textvariable [namespace current]::vars(ogcpercent) \
+	-labeltext [subst {Primer optimum GC percent}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.ogcpercent component entry] -sticky nse
+    set vars(ogcpercent) [subst 50.0]
+    pack $w.ogcpercent -side top -fill both
+    set vars(ogcpercent.path) $w.ogcpercent
+    set vars(ogcpercent.required)  0
+    set vars(ogcpercent._type) float
+
+    lappend arguments mingc
+    iwidgets::entryfield $w.mingc \
+	-validate real \
+	-textvariable [namespace current]::vars(mingc) \
+	-labeltext [subst {Primer minimum GC percent}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mingc component entry] -sticky nse
+    set vars(mingc) [subst 20.0]
+    pack $w.mingc -side top -fill both
+    set vars(mingc.path) $w.mingc
+    set vars(mingc.required)  0
+    set vars(mingc._type) float
+
+    lappend arguments maxgc
+    iwidgets::entryfield $w.maxgc \
+	-validate real \
+	-textvariable [namespace current]::vars(maxgc) \
+	-labeltext [subst {Primer maximum GC percent}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxgc component entry] -sticky nse
+    set vars(maxgc) [subst 80.0]
+    pack $w.maxgc -side top -fill both
+    set vars(maxgc.minimum) [subst {[expr {$vars(mingc)}]}]
+    set vars(maxgc.minimum.orig) $vars(maxgc.minimum)
+    set vars(maxgc.minimum.expr) {[expr {$vars(mingc)}]}
+    trace variable vars(mingc) w  "::EMBOSS::reset_value [namespace current] maxgc.minimum"
+    set vars(maxgc.path) $w.maxgc
+    set vars(maxgc.required)  0
+    set vars(maxgc._type) float
+
+    lappend arguments saltconc
+    iwidgets::entryfield $w.saltconc \
+	-validate real \
+	-textvariable [namespace current]::vars(saltconc) \
+	-labeltext [subst {Salt concentration (mM)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.saltconc component entry] -sticky nse
+    set vars(saltconc) [subst 50.0]
+    pack $w.saltconc -side top -fill both
+    set vars(saltconc.path) $w.saltconc
+    set vars(saltconc.required)  0
+    set vars(saltconc._type) float
+
+    lappend arguments dnaconc
+    iwidgets::entryfield $w.dnaconc \
+	-validate real \
+	-textvariable [namespace current]::vars(dnaconc) \
+	-labeltext [subst {DNA concentration (nM)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.dnaconc component entry] -sticky nse
+    set vars(dnaconc) [subst 50.0]
+    pack $w.dnaconc -side top -fill both
+    set vars(dnaconc.path) $w.dnaconc
+    set vars(dnaconc.required)  0
+    set vars(dnaconc._type) float
+
+    lappend arguments numnsaccepted
+    iwidgets::entryfield $w.numnsaccepted \
+	-validate integer \
+	-textvariable [namespace current]::vars(numnsaccepted) \
+	-labeltext [subst {Maximum Ns accepted in a primer}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.numnsaccepted component entry] -sticky nse
+    set vars(numnsaccepted) [subst 0]
+    pack $w.numnsaccepted -side top -fill both
+    set vars(numnsaccepted.minimum) [subst 0]
+    set vars(numnsaccepted.path) $w.numnsaccepted
+    set vars(numnsaccepted.required)  0
+    set vars(numnsaccepted._type) integer
+
+    lappend arguments selfany
+    iwidgets::entryfield $w.selfany \
+	-validate real \
+	-textvariable [namespace current]::vars(selfany) \
+	-labeltext [subst {Maximum self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.selfany component entry] -sticky nse
+    set vars(selfany) [subst 8.00]
+    pack $w.selfany -side top -fill both
+    set vars(selfany.minimum) [subst 0.00]
+    set vars(selfany.maximum) [subst 9999.99]
+    set vars(selfany.path) $w.selfany
+    set vars(selfany.required)  0
+    set vars(selfany._type) float
+
+    lappend arguments selfend
+    iwidgets::entryfield $w.selfend \
+	-validate real \
+	-textvariable [namespace current]::vars(selfend) \
+	-labeltext [subst {Maximum 3' self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.selfend component entry] -sticky nse
+    set vars(selfend) [subst 3.00]
+    pack $w.selfend -side top -fill both
+    set vars(selfend.minimum) [subst 0.00]
+    set vars(selfend.maximum) [subst {[expr {$vars(selfany)}]}]
+    set vars(selfend.maximum.orig) $vars(selfend.maximum)
+    set vars(selfend.maximum.expr) {[expr {$vars(selfany)}]}
+    trace variable vars(selfany) w  "::EMBOSS::reset_value [namespace current] selfend.maximum"
+    set vars(selfend.path) $w.selfend
+    set vars(selfend.required)  0
+    set vars(selfend._type) float
+
+    lappend arguments maxpolyx
+    iwidgets::entryfield $w.maxpolyx \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxpolyx) \
+	-labeltext [subst {Maximum polynucleotide repeat}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxpolyx component entry] -sticky nse
+    set vars(maxpolyx) [subst 5]
+    pack $w.maxpolyx -side top -fill both
+    set vars(maxpolyx.minimum) [subst 0]
+    set vars(maxpolyx.path) $w.maxpolyx
+    set vars(maxpolyx.required)  0
+    set vars(maxpolyx._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Product details}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments productosize
+    iwidgets::entryfield $w.productosize \
+	-validate integer \
+	-textvariable [namespace current]::vars(productosize) \
+	-labeltext [subst {Product optimum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.productosize component entry] -sticky nse
+    set vars(productosize) [subst 200]
+    pack $w.productosize -side top -fill both
+    set vars(productosize.minimum) [subst 0]
+    set vars(productosize.path) $w.productosize
+    set vars(productosize.required)  0
+    set vars(productosize._type) integer
+
+    lappend arguments productsizerange
+    iwidgets::entryfield $w.productsizerange \
+	-textvariable [namespace current]::vars(productsizerange) \
+	-labeltext [subst {Product size range}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.productsizerange component entry] -sticky nse
+    set vars(productsizerange) [subst 100-300]
+    pack $w.productsizerange -side top -fill both
+    set vars(productsizerange.path) $w.productsizerange
+    set vars(productsizerange.required)  0
+    set vars(productsizerange._type) range
+
+    lappend arguments productotm
+    iwidgets::entryfield $w.productotm \
+	-validate real \
+	-textvariable [namespace current]::vars(productotm) \
+	-labeltext [subst {Product optimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.productotm component entry] -sticky nse
+    set vars(productotm) [subst 0.0]
+    pack $w.productotm -side top -fill both
+    set vars(productotm.path) $w.productotm
+    set vars(productotm.required)  0
+    set vars(productotm._type) float
+
+    lappend arguments productmintm
+    iwidgets::entryfield $w.productmintm \
+	-validate real \
+	-textvariable [namespace current]::vars(productmintm) \
+	-labeltext [subst {Product minimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.productmintm component entry] -sticky nse
+    set vars(productmintm) [subst -1000000.0]
+    pack $w.productmintm -side top -fill both
+    set vars(productmintm.path) $w.productmintm
+    set vars(productmintm.required)  0
+    set vars(productmintm._type) float
+
+    lappend arguments productmaxtm
+    iwidgets::entryfield $w.productmaxtm \
+	-validate real \
+	-textvariable [namespace current]::vars(productmaxtm) \
+	-labeltext [subst {Product maximum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.productmaxtm component entry] -sticky nse
+    set vars(productmaxtm) [subst 1000000.0]
+    pack $w.productmaxtm -side top -fill both
+    set vars(productmaxtm.minimum) [subst {[expr {$vars(productmintm)}]}]
+    set vars(productmaxtm.minimum.orig) $vars(productmaxtm.minimum)
+    set vars(productmaxtm.minimum.expr) {[expr {$vars(productmintm)}]}
+    trace variable vars(productmintm) w  "::EMBOSS::reset_value [namespace current] productmaxtm.minimum"
+    set vars(productmaxtm.path) $w.productmaxtm
+    set vars(productmaxtm.required)  0
+    set vars(productmaxtm._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Primer Penalty Weights}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments maxendstability
+    iwidgets::entryfield $w.maxendstability \
+	-validate real \
+	-textvariable [namespace current]::vars(maxendstability) \
+	-labeltext [subst {Maximum 3' end stability}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxendstability component entry] -sticky nse
+    set vars(maxendstability) [subst 9.0]
+    pack $w.maxendstability -side top -fill both
+    set vars(maxendstability.maximum) [subst 999.9999]
+    set vars(maxendstability.path) $w.maxendstability
+    set vars(maxendstability.required)  0
+    set vars(maxendstability._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Internal Oligo Input}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments oligoexcludedregion
+    iwidgets::entryfield $w.oligoexcludedregion \
+	-textvariable [namespace current]::vars(oligoexcludedregion) \
+	-labeltext [subst {Internal oligo excluded region}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoexcludedregion component entry] -sticky nse
+    set vars(oligoexcludedregion) [subst {}]
+    pack $w.oligoexcludedregion -side top -fill both
+    set vars(oligoexcludedregion.path) $w.oligoexcludedregion
+    set vars(oligoexcludedregion.required)  0
+    set vars(oligoexcludedregion._type) range
+
+    lappend arguments oligoinput
+    iwidgets::entryfield $w.oligoinput \
+	-textvariable [namespace current]::vars(oligoinput) \
+	-labeltext [subst {Internal oligo input sequence (if any)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoinput component entry] -sticky nse
+    set vars(oligoinput) [subst {}]
+    pack $w.oligoinput -side top -fill both
+    set vars(oligoinput.path) $w.oligoinput
+    set vars(oligoinput.required)  0
+    set vars(oligoinput._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_2 add \
+	-label [subst {Internal Oligo Details}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments oligoosize
+    iwidgets::entryfield $w.oligoosize \
+	-validate integer \
+	-textvariable [namespace current]::vars(oligoosize) \
+	-labeltext [subst {Internal oligo optimum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoosize component entry] -sticky nse
+    set vars(oligoosize) [subst 20]
+    pack $w.oligoosize -side top -fill both
+    set vars(oligoosize.minimum) [subst 0]
+    set vars(oligoosize.path) $w.oligoosize
+    set vars(oligoosize.required)  0
+    set vars(oligoosize._type) integer
+
+    lappend arguments oligominsize
+    iwidgets::entryfield $w.oligominsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(oligominsize) \
+	-labeltext [subst {Internal oligo minimum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligominsize component entry] -sticky nse
+    set vars(oligominsize) [subst 18]
+    pack $w.oligominsize -side top -fill both
+    set vars(oligominsize.minimum) [subst 0]
+    set vars(oligominsize.path) $w.oligominsize
+    set vars(oligominsize.required)  0
+    set vars(oligominsize._type) integer
+
+    lappend arguments oligomaxsize
+    iwidgets::entryfield $w.oligomaxsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(oligomaxsize) \
+	-labeltext [subst {Internal oligo maximum size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomaxsize component entry] -sticky nse
+    set vars(oligomaxsize) [subst 27]
+    pack $w.oligomaxsize -side top -fill both
+    set vars(oligomaxsize.minimum) [subst {[expr {$vars(oligominsize)}]}]
+    set vars(oligomaxsize.minimum.orig) $vars(oligomaxsize.minimum)
+    set vars(oligomaxsize.minimum.expr) {[expr {$vars(oligominsize)}]}
+    trace variable vars(oligominsize) w  "::EMBOSS::reset_value [namespace current] oligomaxsize.minimum"
+    set vars(oligomaxsize.maximum) [subst 35]
+    set vars(oligomaxsize.path) $w.oligomaxsize
+    set vars(oligomaxsize.required)  0
+    set vars(oligomaxsize._type) integer
+
+    lappend arguments oligootm
+    iwidgets::entryfield $w.oligootm \
+	-validate real \
+	-textvariable [namespace current]::vars(oligootm) \
+	-labeltext [subst {Internal oligo optimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligootm component entry] -sticky nse
+    set vars(oligootm) [subst 60.0]
+    pack $w.oligootm -side top -fill both
+    set vars(oligootm.path) $w.oligootm
+    set vars(oligootm.required)  0
+    set vars(oligootm._type) float
+
+    lappend arguments oligomintm
+    iwidgets::entryfield $w.oligomintm \
+	-validate real \
+	-textvariable [namespace current]::vars(oligomintm) \
+	-labeltext [subst {Internal oligo minimum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomintm component entry] -sticky nse
+    set vars(oligomintm) [subst 57.0]
+    pack $w.oligomintm -side top -fill both
+    set vars(oligomintm.path) $w.oligomintm
+    set vars(oligomintm.required)  0
+    set vars(oligomintm._type) float
+
+    lappend arguments oligomaxtm
+    iwidgets::entryfield $w.oligomaxtm \
+	-validate real \
+	-textvariable [namespace current]::vars(oligomaxtm) \
+	-labeltext [subst {Internal oligo maximum Tm}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomaxtm component entry] -sticky nse
+    set vars(oligomaxtm) [subst 63.0]
+    pack $w.oligomaxtm -side top -fill both
+    set vars(oligomaxtm.minimum) [subst {[expr {$vars(oligomintm)}]}]
+    set vars(oligomaxtm.minimum.orig) $vars(oligomaxtm.minimum)
+    set vars(oligomaxtm.minimum.expr) {[expr {$vars(oligomintm)}]}
+    trace variable vars(oligomintm) w  "::EMBOSS::reset_value [namespace current] oligomaxtm.minimum"
+    set vars(oligomaxtm.path) $w.oligomaxtm
+    set vars(oligomaxtm.required)  0
+    set vars(oligomaxtm._type) float
+
+    lappend arguments oligoogcpercent
+    iwidgets::entryfield $w.oligoogcpercent \
+	-validate real \
+	-textvariable [namespace current]::vars(oligoogcpercent) \
+	-labeltext [subst {Internal oligo optimum GC percent}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoogcpercent component entry] -sticky nse
+    set vars(oligoogcpercent) [subst 50.0]
+    pack $w.oligoogcpercent -side top -fill both
+    set vars(oligoogcpercent.path) $w.oligoogcpercent
+    set vars(oligoogcpercent.required)  0
+    set vars(oligoogcpercent._type) float
+
+    lappend arguments oligomingc
+    iwidgets::entryfield $w.oligomingc \
+	-validate real \
+	-textvariable [namespace current]::vars(oligomingc) \
+	-labeltext [subst {Internal oligo minimum GC}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomingc component entry] -sticky nse
+    set vars(oligomingc) [subst 20.0]
+    pack $w.oligomingc -side top -fill both
+    set vars(oligomingc.path) $w.oligomingc
+    set vars(oligomingc.required)  0
+    set vars(oligomingc._type) float
+
+    lappend arguments oligomaxgc
+    iwidgets::entryfield $w.oligomaxgc \
+	-validate real \
+	-textvariable [namespace current]::vars(oligomaxgc) \
+	-labeltext [subst {Internal oligo maximum GC}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomaxgc component entry] -sticky nse
+    set vars(oligomaxgc) [subst 80.0]
+    pack $w.oligomaxgc -side top -fill both
+    set vars(oligomaxgc.minimum) [subst {[expr {$vars(oligomingc)}]}]
+    set vars(oligomaxgc.minimum.orig) $vars(oligomaxgc.minimum)
+    set vars(oligomaxgc.minimum.expr) {[expr {$vars(oligomingc)}]}
+    trace variable vars(oligomingc) w  "::EMBOSS::reset_value [namespace current] oligomaxgc.minimum"
+    set vars(oligomaxgc.path) $w.oligomaxgc
+    set vars(oligomaxgc.required)  0
+    set vars(oligomaxgc._type) float
+
+    lappend arguments oligosaltconc
+    iwidgets::entryfield $w.oligosaltconc \
+	-validate real \
+	-textvariable [namespace current]::vars(oligosaltconc) \
+	-labeltext [subst {Internal oligo salt concentration (mM)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligosaltconc component entry] -sticky nse
+    set vars(oligosaltconc) [subst 50.0]
+    pack $w.oligosaltconc -side top -fill both
+    set vars(oligosaltconc.path) $w.oligosaltconc
+    set vars(oligosaltconc.required)  0
+    set vars(oligosaltconc._type) float
+
+    lappend arguments oligodnaconc
+    iwidgets::entryfield $w.oligodnaconc \
+	-validate real \
+	-textvariable [namespace current]::vars(oligodnaconc) \
+	-labeltext [subst {Internal oligo DNA concentration (nM)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligodnaconc component entry] -sticky nse
+    set vars(oligodnaconc) [subst 50.0]
+    pack $w.oligodnaconc -side top -fill both
+    set vars(oligodnaconc.path) $w.oligodnaconc
+    set vars(oligodnaconc.required)  0
+    set vars(oligodnaconc._type) float
+
+    lappend arguments oligoselfany
+    iwidgets::entryfield $w.oligoselfany \
+	-validate real \
+	-textvariable [namespace current]::vars(oligoselfany) \
+	-labeltext [subst {Internal oligo maximum self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoselfany component entry] -sticky nse
+    set vars(oligoselfany) [subst 12.00]
+    pack $w.oligoselfany -side top -fill both
+    set vars(oligoselfany.maximum) [subst 9999.99]
+    set vars(oligoselfany.path) $w.oligoselfany
+    set vars(oligoselfany.required)  0
+    set vars(oligoselfany._type) float
+
+    lappend arguments oligoselfend
+    iwidgets::entryfield $w.oligoselfend \
+	-validate real \
+	-textvariable [namespace current]::vars(oligoselfend) \
+	-labeltext [subst {Internal oligo maximum 3' self complementarity}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligoselfend component entry] -sticky nse
+    set vars(oligoselfend) [subst 12.00]
+    pack $w.oligoselfend -side top -fill both
+    set vars(oligoselfend.minimum) [subst {[expr {$vars(oligoselfany)}]}]
+    set vars(oligoselfend.minimum.orig) $vars(oligoselfend.minimum)
+    set vars(oligoselfend.minimum.expr) {[expr {$vars(oligoselfany)}]}
+    trace variable vars(oligoselfany) w  "::EMBOSS::reset_value [namespace current] oligoselfend.minimum"
+    set vars(oligoselfend.maximum) [subst 9999.99]
+    set vars(oligoselfend.path) $w.oligoselfend
+    set vars(oligoselfend.required)  0
+    set vars(oligoselfend._type) float
+
+    lappend arguments oligomaxpolyx
+    iwidgets::entryfield $w.oligomaxpolyx \
+	-validate integer \
+	-textvariable [namespace current]::vars(oligomaxpolyx) \
+	-labeltext [subst {Internal oligo maximum polynucleotide repeat}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomaxpolyx component entry] -sticky nse
+    set vars(oligomaxpolyx) [subst 5]
+    pack $w.oligomaxpolyx -side top -fill both
+    set vars(oligomaxpolyx.minimum) [subst 0]
+    set vars(oligomaxpolyx.path) $w.oligomaxpolyx
+    set vars(oligomaxpolyx.required)  0
+    set vars(oligomaxpolyx._type) integer
+
+    lappend arguments oligomishyblibrary
+    xentry $w.oligomishyblibrary \
+	-label [subst {Internal oligo mishybridizing library}]\
+	-textvariable [namespace current]::vars(oligomishyblibrary) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.oligomishyblibrary delete 0 end
+    $w.oligomishyblibrary insert end [subst {}]
+    pack $w.oligomishyblibrary -side top -fill both
+    set vars(oligomishyblibrary.path) $w.oligomishyblibrary
+    set vars(oligomishyblibrary.required)  0
+    set vars(oligomishyblibrary._type) infile
+
+    lappend arguments oligomaxmishyb
+    iwidgets::entryfield $w.oligomaxmishyb \
+	-validate real \
+	-textvariable [namespace current]::vars(oligomaxmishyb) \
+	-labeltext [subst {Internal oligo maximum mishybridization}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.oligomaxmishyb component entry] -sticky nse
+    set vars(oligomaxmishyb) [subst 12.0]
+    pack $w.oligomaxmishyb -side top -fill both
+    set vars(oligomaxmishyb.maximum) [subst 9999.99]
+    set vars(oligomaxmishyb.path) $w.oligomaxmishyb
+    set vars(oligomaxmishyb.required)  0
+    set vars(oligomaxmishyb._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst eprimer30.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/eprimer3.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+    ::EMBOSS::resizebook $book(book_2).book_2
+}
+
+
+}; # namespace eval
+

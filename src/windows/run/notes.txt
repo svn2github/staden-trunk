@@ -1,0 +1,12 @@
+NOTES:
+======
+
+* A -c option has been added to invoke the command console
+  instead of winstash.exe. This is tricker than it sounds
+  due to the differences between all the windows versions.
+
+  The command console sets up the environment to allow the
+  user to use the utility programs found in the windows-bin
+  subdirectory.
+
+

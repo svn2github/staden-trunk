@@ -1,0 +1,138 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+# Pregap initialisation module
+# The purpose of this is to set up the global pregap arrays.
+# These are:
+#     file_type		The type of each file
+#     file_error	An error attached to each file
+#     file_id		A unique identifier for this file - used in DB queries
+
+#set hidden 1
+set mandatory 1
+set help {pregap4 {Pregap4-Modules-General}}
+
+#for biolims command
+load_package biolimstcl
+
+# If biolims failed, produce dummy command:
+if {[info command ::biolims] == ""} {
+    proc ::biolims {args} {
+        return 0
+    }
+}
+
+proc init {} {
+    mod_preset use_sample_name 1
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global fofn_dir
+    global fofn
+
+    catch {unset file_type}
+    catch {unset file_error}
+    catch {unset file_id}
+    catch {unset file_orig_name}
+
+    # Process input file list to derive file types
+    set new_files {}
+    foreach f $files {
+	if {![biolims path $f]} {
+	    # If file doesn't exist, but it's not identified as an UNKnown
+	    # type, then it is being fetched remotely via RAWDATA, so
+	    # skip the "file exists" stuff.
+	    if {[file exists $f] || [trace_type $f] == "UNK"} {
+		if {[file pathtype $f] != "absolute"} {
+		    set f [file join [pwd] $f]
+		}
+		set file_orig_name($f) $f
+		if {![file readable $f]} {
+		    set file_type($f) UNK
+		    set file_error($f) "init: Unreadable or nonexistant file"
+		    continue
+		}
+	    } else {
+		set file_orig_name($f) $f
+	    }
+	} else {
+	    set file_orig_name($f) $f
+	    if {![biolims lane $f]} {
+		set filetype($f) UNK
+		set file_error($f) "init: Non-existant BioLIMS lane"
+		continue
+	    }
+	}
+
+	set file_type($f) [trace_type $f]
+	if {$file_type($f) == "UNK"} {
+	    set file_error($f) "init: Unknown file type"
+	    vmessage -nonewline !
+	} else {
+	    set file_error($f) {}
+	    lappend new_files $f
+	    vmessage -nonewline .
+	}
+	set file_id($f) [eval [list $file_type($f)_filename_to_entry_name $f]]
+	init_lines $file_id($f)
+	update idletasks
+    }
+
+    # Sort our absolute pathnames and output dirs...
+    if {[file pathtype $fofn_dir] != "absolute"} {
+	set fofn_dir [file join [pwd] $fofn_dir]
+    }
+    set fofn [file join $fofn_dir [file tail $fofn]]
+    cd $fofn_dir
+
+    vmessage ""
+
+    return $new_files
+}
+
+proc init_lines {id} {
+    namespace eval ::SEQ_${id}::lines {
+	array set lines {}
+    }
+    upvar #0 ::SEQ_${id}::lines lines
+    set lines(ID) $id
+    set lines(EN) $id
+}
+
+proc name {} {
+    return "General Configuration"
+}
+
+proc create_dialogue {w} {
+    variable use_sample_name
+
+    xyn $w.sname \
+	-label "Get entry names from trace files" \
+	-orient vert \
+	-default $use_sample_name
+    pack $w.sname -side top -fill both
+}
+
+proc process_dialogue {w} {
+    variable use_sample_name
+    
+    set use_sample_name [$w.sname get]
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save use_sample_name [$w.sname get]
+    }
+}

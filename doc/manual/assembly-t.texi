@@ -1,0 +1,651 @@
+@cindex Assembly
+@cindex Entering readings
+
+Assembly is performed by selecting one of the functions from the
+Assembly menu. The options available are:
+
+@menu
+* Assembly-Shot::       Normal shotgun assembly
+* Assembly-Ind::        Assemble independently
+* Assembly-Single::     Assemble into single stranded regions
+* Assembly-One::        Stack readings
+* Assembly-New::        Put all readings in separate contigs
+* Assembly-Directed::   Directed assembly
+* Assembly-Screen::     Screen only
+_ifdef([[_unix]],[[* Assembly-CAP2::       CAP2 assembly
+* Assembly-CAP3::       CAP3 assembly
+* Assembly-FAKII::      FAKII assembly
+* Assembly-Phrap::      Phrap assembly
+]])* Assembly-Tips::       Tips on entering readings
+* Assembly-Codes::      Assembly Failure Codes
+@end menu
+
+@ifset tex
+@itemize @bullet
+@item
+Normal shotgun assembly
+@item
+Assemble independently
+@item
+Assembly into single stranded regions
+@item
+Stack readings
+@item
+Put all readings in separate contigs
+@item
+Directed assembly
+@item
+Enter pre-assembled data
+@item
+Screen only
+_ifdef([[_unix]],[[@item
+CAP2 assembly
+@item
+CAP3 assembly
+@item
+FAKII assembly
+@item
+Phrap assembly]])
+@end itemize
+@end ifset
+
+The data for a project is stored in an assembly database 
+(_fxref(GapDB, Gap Database Files, gap4))
+All modes of assembly except CAP2, CAP3 and FAKII can either assemble all the
+readings for a project in a single operation or can add batches of
+new data as they are produced. CAP2, CAP3 and FAKII can only be used to 
+assemble all the data for a project as a single operation.
+
+For all modes the names of the readings to assemble are read from a
+list or file of file names, and the names of readings that fail to be
+entered are written to a list or a file of file names. If only a single read
+is to be assembled the "single" button may be pressed and the filename entered
+instead of the file of filenames.
+
+Now that a sufficient number of readings to get close to contiguity can be
+obtained quite quickly, and that more repetitive genomes are being sequenced
+it is sensible to use a "global" algorithm for assembly, such as Cap2, Cap3, 
+FakII or Phrap. These algorithms compare each reading against all of the 
+others to work out their most likely left to right order and so have a better 
+chance of correctly assembling repetitive elements than an algorithm that only
+compares readings to the ones already assembled.
+
+There is no limit to the length of the individual readings which can be
+assembled.  Hence reference sequences for use in mutation studies or for
+use as guide sequences can be assembled.
+
+
+@cindex Assembly: limits
+@cindex Assembly: resetting limits
+@cindex Assembly: maxseq
+@cindex Assembly: maxdb
+@cindex Assembly: large projects
+@cindex maxseq: gap4 assembly
+@cindex maxdb: gap4 assembly
+@cindex gap4 assembly limits
+@cindex gap4: resetting assembly limits
+@cindex gap4 database: resetting sizes
+
+Note that 
+Normal shotgun assembly (_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly)),
+Assemble independently (_fpref(Assembly-Shot, Assembly Independently, assembly)),
+Assembly into single stranded regions (_fpref(Assembly-Single, Assembly Single, assembly)),
+Screen only (_fpref(Assembly-Screen, Screen Only, assembly)),
+Put all readings in separate contigs (_fpref(Assembly-New, Assembly new, assembly)),
+may require the parameters maxseq and maxdb to be set beforehand
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure)). The maxseq parameter defines the maximum
+length of consensus that can be created, and the maxdb parameter the maximum number of readings
+and contigs that the database can hold (i.e. number of readings + number of contigs).
+
+
+
+_split()
+@node Assembly-Shot
+@section Normal Shotgun Assembly
+@cindex Assembly: shotgun
+@cindex Shotgun assembly 
+
+In the absence of any of the external assembly engines, which are in
+general superior, particularly for repetitive data, 
+this is the  mode that  most users will  employ  for all assembly.  It
+takes one reading at a time and compares it  with all the data already
+assembled in the database. If a reading matches  it is aligned. If the
+alignment is good enough the reading  is entered into the database. If
+a reading aligns  well with  two contigs it  is entered  into one of
+them, then the  two contigs are compared. If  they align well they are
+joined. If the  reading does not match it  starts  a new contig. If  a
+reading matches but does not align well it can  either be entered as a
+new contig or rejected.
+
+A submode allows  tagged  regions of contigs  to  be masked and  hence
+restricts the areas into which data is entered. Users select the types
+of tags to be used  as masks. As  outlined above readings are compared
+in two stages: first  the  program looks   for exact matches  of  some
+minimum  length, and  then for  each possible overlap  it  performs an
+alignment. If the masking mode is  selected the masked regions are not
+used during the  search for exact  matches,  but they are  used during
+alignment. The  effect  of this is   that new readings  that would lie
+entirely  inside masked regions will  not produce exact matches and so
+will not be entered.   However   readings that have  sufficient   data
+outside of masked areas can produce hits and will be correctly aligned
+even if they  overlap  the masked data.  For  this mode the names   of
+readings that do  not produce matches are  written  to the error  file
+with code 5. Note that new readings that carry tags of the types being
+used for masking will be masked only after they have been entered.
+
+_picture(assembly.shot)
+
+As explained above the user can select to "Apply masking", and if so,
+the "Select tags" button will be activated and if it is clicked will
+bring up a dialogue to allow tag types to be selected.
+_fxref(Conf-Tag, Tag Selector, configure)
+
+The "display mode" dialogue allows the type of output produced to be
+set.  "Hide all alignments" means that only the briefest amount of
+output will be produced. "Show passed alignments" means that only
+alignments that fall inside the entry criteria will be displayed. "Show
+all alignments" means that all alignments, including those that fail the
+entry criteria, are displayed. "Show only failed alignments" displays
+alignments only for the readings that fail the entry criteria. Adding text to
+the text output window will increase the processing time.
+
+When comparing each reading the program looks first
+for a "Minimum initial match", and for each such matching region found
+it will produce an alignment. If the "Maximum pads per read" and the
+"Maximum percent mismatch" are not exceeded the reading will be
+entered. The maximum pads can be inserted in both the reading
+and the consensus. If users agree we would prefer to swap the maximum
+pads criteria for a minimum overlap. i.e. only overlaps of some
+minimum length would be accepted. 
+
+Assembly usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings that are not entered to a
+"file" or a "list" and an appropriate browser is available to enable users to
+choose the name of the file or list. Occasionally it might be convenient to
+forbid joins between contigs to be made if a new reading overlaps them both,
+but the default is to "Permit joins".
+
+If a reading is found to match but does not align within the alignment
+criteria it can be entered as a new contig or rejected. These two
+choices are described as "Enter all readings" or "Reject failures".
+Pressing the "OK" button will start the assembly process.
+
+Note that this option may require the parameter maxseq to be set beforehand
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure)). This parameter defines the maximum
+length of consensus that can be created.
+
+Typical output would be:
+
+@example
+(Output removed to save space)
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+Processing     51 in batch
+Reading name xb61h12.s1
+Reading length    104
+Total matches found     2
+Contig     9 position   590 matches strand -1 at position     1
+Contig    36 position    92 matches strand -1 at position     1
+Trying to align with contig      9
+Percent mismatch  2.1, pads in contig  0, pads in gel  1
+ Percentage mismatch   2.1
+              590       600       610       620       630       640
+     Consensus  TTGAAAAATTAAAAACTTTTTTTGAAAATAAAAAAGAGTGAAAGTAAAGTAAAAGACAAG
+                ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+       Reading  TTGAAAAATTAAAAACTTTTTTTGAAAATAAAAAAGAGTGAAAGTAAAGTAAAAGACAAG
+                1        11        21        31        41        51
+
+              650       660       670       680
+     Consensus  TAGCATGTAAATCAACTAAAAATAACTAATATTTT
+                ::::::::::::::::::::::::: :::::::: 
+       Reading  TAGCATGTAAATCAACTAAAAATAA,TAATATTT-
+               61        71        81        91
+
+Trying to align with contig     36
+Percent mismatch  0.0, pads in contig  0, pads in gel  0
+ Percentage mismatch   0.0
+               92       102
+     Consensus  TTGAAAAATTAAAAACTTTT
+                ::::::::::::::::::::
+       Reading  TTGAAAAATTAAAAACTTTT
+                1        11
+
+Overlap between contigs    36 and     9
+Length of overlap between the contigs   111
+Entering the new reading into contig     9
+This gel reading has been given the number     47
+Complementing contig    36
+Complementing contig     9
+Trying to align the two contigs
+Percent mismatch  4.4, pads in contig  0, pads in gel  3
+ Percentage mismatch   5.3
+               86        96       106       116       126       136
+     Consensus  AAAAGTTTTTAATTTTTCAATTGTTTGGGTGTTCCTTTGACTATTAGAAAAACACCCCCC
+                ::::::::::::::::::::::::::::::::::::::::::::::::::: :: :::::
+     Consensus  AAAAGTTTTTAATTTTTCAATTGTTTGGGTGTTCCTTTGACTATTAGAAAA,CA,CCCCC
+                1        11        21        31        41        51
+
+              146       156       166       176       186       196
+     Consensus  TTGCTCCTGTTGTGCAATTTTTGTTTTAAGTTTTCAATC*TTT*TATTTTAATA
+                ::::::::::::::::::::::::::::::::::: ::: ::: :::::: :::
+     Consensus  TTGCTCCTGTTGTGCAATTTTTGTTTTAAGTTTTC-ATC,TTTTTATTTT-ATA
+               61        71        81        91       101       111
+
+Editing contig    36
+Completing the join between contigs    47 and    36
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+(Output removed to save space)
+
+Batch finished
+   100 sequences processed
+    96 sequences entered into database
+    11 joins made
+     9 joins failed
+@end example
+
+_split()
+@node Assembly-Ind
+@subsection Assemble Independently
+@cindex Assemble: independently i.e. ignoring previous data
+
+This mode works in exactly the same way as normal shotgun assembly
+(_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly))
+with all its options and settings, except that the new batch of data is
+assembled independently of all the data already in the database. This
+means that the only overlaps found will be between the readings in the
+current batch. One role for this mode would be to assemble a
+batch of data that was known from the way it was produced (say a set of
+nested clones covering some problem region such as a repeat) to
+overlap. Use of Assemble Independently will ensure that the batch of
+readings will only be overlapped with one another, and will not be
+aligned with other similar regions of the consensus. Once assembled in
+this way they can be joined to other contigs using Find Internal Joins.
+_fxref(FIJ, Find Internal Joins, fij)
+
+_split()
+@node Assembly-Single
+@subsection Assemble Into Single Stranded Regions
+@cindex Assembly: single stranded regions
+@cindex Single stranded regions: assembling into
+
+This mode works like normal assembly (_fpref(Assembly-Shot, Normal Shotgun
+Assembly, assembly)) with masking, except that the masking is done for regions
+that already have sufficient data on both strands of the sequence. This means
+that new readings will only be assembled into regions that are single stranded
+or which border, and overlap, such segments. Note that this means that
+readings that do not match are not entered, therefore those that would
+actually lie between contigs are rejected.
+
+_picture(assembly.single)
+
+The "display mode" dialogue allows the type of output produced to be
+set.  "Hide all alignments" means that only the briefest amount of
+output will be produced. "Show passed alignments" means that only
+alignments that fall inside the entry criteria will be displayed. "Show
+all alignments" means that all alignments, including those that fail the
+entry criteria, are displayed. "Show only failed alignments" displays
+alignments only for the readings that fail the entry criteria.
+
+When comparing each reading the program looks first for a "Minimum
+initial match", and for each such matching region found it will produce
+an alignment. If the "Maximum pads per read" and the "Maximum percent
+mismatch" are not exceeded the reading will be entered. The maximum pads
+can be inserted in both the reading and the consensus. If users agree we
+would prefer to swap the maximum pads criteria for a minimum overlap.
+i.e. only overlaps of some minimum length would be accepted.
+
+Assembly usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings that are not entered to a
+"file" or a "list" and an appropriate browser is available to enable users to
+choose the name of the file or list.  Occasionally it might be convenient to
+forbid joins between contigs to be made if a new reading overlaps them both,
+but the default is to "Permit joins".
+
+Pressing the "OK" button will start the assembly process.
+
+Note that this option may require the parameter maxseq to be set beforehand
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure)). This parameter defines the maximum
+length of consensus that can be created.
+
+
+_split()
+@node Assembly-One
+@subsection Stack Readings
+@cindex Assembly: into one contig
+@cindex Assembly: stack readings
+
+This assembly mode assumes that all the readings are already aligned 
+and simply stacks
+them on top of one another in a new contig. 
+
+_picture(assembly.one)
+
+Assembly usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings that are not entered to a
+"file" or a "list" and an appropriate browser is available to enable users to
+choose the name of the file or list.
+
+_split()
+@node Assembly-New
+@subsection Put All Readings In Separate Contigs
+@cindex Assembly: into new contigs
+@cindex Assembly: into separate contigs
+
+This algorithm 
+simply loads the readings into the database without comparing them, each
+starting a new contig. This can be of use to those employing the
+database for storage rather than assembly.
+
+_picture(assembly.new)
+
+Assembly usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings that are not entered to a
+"file" or a "list" and an appropriate browser is available to enable users to
+choose the name of the file or list.
+
+_split()
+@node Assembly-Directed
+@section Directed Assembly
+@cindex Assembly: directed
+@cindex Directed assembly
+
+This assembly method  assumes that a preprocessing
+program, such as an external assembly engine, 
+has been used to map the relative positions of the readings to
+within a reasonable level of accuracy or tolerance. 
+The assembly is "directed" by use of special "Assembly Position" or AP
+records included in each reading's experiment file. It is expected that
+these AP records will be added to the experiment files by the
+preprocessing program, or by a program which parses the output from such
+a program, and so the details given below are not of interest to the
+average user.
+
+The experiment file for each reading must
+contain a special "Assembly Position" or AP line that defines the
+position at which to assemble the reading. The position is not defined
+absolutely, but relative to any other reading (the "anchor reading")
+that has already been assembled. The definition includes the name of
+the anchor reading, the sense of the new reading, its offset relative
+to the anchor reading and the tolerance. i.e.:
+
+@example
+AP   anchor_reading sense offset tolerance
+@end example
+
+The sense is defined using + or - symbols.
+
+The offset can be of any size and can be positive or negative. Offset
+positions are defined from 0. i.e. the first base in a contig or a
+reading is base number 0.
+
+For normal use tolerance is a
+non-negative value, and the first base of the new reading must be
+aligned at plus or minus "tolerance" bases of "offset".  If tolerance
+is zero, after alignment the position must be exactly "offset"
+relative to the anchor reading.  If tolerance is negative then
+alignment is not performed and the reading is simply entered at
+position "offset" relative to the anchor reading.  
+
+To start a new contig the reading must include an AP line containing
+the anchor_reading *new* and the sense.
+
+
+Example AP line:
+
+@example
+AP   fred.021 + 1002 40
+@end example
+
+Example AP line to start a new contig:
+
+@example
+AP   *new* +
+@end example
+
+The algorithm is as follows. Get the next reading name, read the AP
+line, find the anchor reading in the database, get the consensus for
+the region defined by anchor_reading + offset +/- tolerance. Perform
+an alignment with the new reading, check the position and the
+percentage mismatch. If OK enter the reading.
+
+Obviously the way the positions of readings are specified is very
+flexible but one example of use would be to employ a file of file names
+containing a left-to-right ordered list of reading names, with each
+reading using the one to its left as its anchor reading. In this way
+whole contigs can be entered.
+
+Although not specifically designed for the purpose this mode of
+assembly can be used for "assembly onto template".
+
+_picture(assembly.directed)
+
+If required, the alignments can be shown in the Output window by
+selecting "Display alignments". Only readings for which the "Maximum
+percent mismatch" after alignment is not exceeded will be entered into
+the database, unless the "enter all readings" box is checked. In that case
+a reading that does not match well enough will be placed in a new contig.
+Specifying a "Maximum percent mismatch" of zero has a special meaning; it
+implies that there should be no mismatches and so no alignments need to be
+performed, and hence the consensus does not need to be computed either. For
+data that has already been padded and aligned using an external tool (such as
+an external assembly program) setting Maximum percent mismatch to zero can
+have a significant improvement in the speed of Directed Assembly.
+
+Assembly usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings that are not entered to a
+"file" or a "list" and an appropriate browser is available to enable users to
+choose the name of the file or list.
+
+It is important to note that the algorithm assumes that readings are
+entered in the correct order, i.e. a reading can only be entered into the
+defined AP position after
+the reading relative to which its position is defined. The order of the
+readings is defined by the order in the list or file of file names, and
+hence should be ordered by the external assembly  engine. But
+if the browser is used to select a batch of sequences, they are unlikely
+to be in the correct order by chance, so care must be taken in its use.
+If reading X specifies an anchor reading that has not been entered the 
+algorithm will start a new contig starting with X.
+
+_split()
+@node Assembly-Screen
+@section Screen Only
+@cindex Assembly: screen only
+@cindex Screen only: assembly
+
+This function is used to compare a batch of readings against the data in
+an assembly database without entering them. 
+It performs "normal shotgun assembly" and records the
+percentage mismatch for each matching reading in a file.  If required,
+this file
+could then be sorted on percentage mismatch and used as a file of file
+names for "normal shotgun assembly"; in which case the best matches
+would be entered first. The readings in the
+batch are only compared to the current contents of the assembly database,
+and are not compared against the other readings in the batch.
+
+
+_picture(assembly.screen)
+
+As explained in normal assembly
+(_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly))
+the user can select to "Apply masking", and if so, the "Select tags"
+button will be activated and if it is clicked will bring up a dialogue
+to allow tag types to be selected. _fxref(Conf-Tag, Tag Selector, configure)
+
+The "display mode" dialogue allows the type of output produced to be
+set.  "Hide all alignments" means that only the briefest amount of
+output will be produced. "Show passed alignments" means that only
+alignments that fall inside the entry criteria will be displayed. "Show
+all alignments" means that all alignments, including those that fail the
+entry criteria, are displayed. "Show only failed alignments" displays
+alignments only for the readings that fail the entry criteria.
+
+When comparing each reading the program looks first for a "Minimum
+initial match", and for each such matching region found it will produce
+an alignment. If the "Maximum pads per read" and the "Maximum percent
+mismatch" are not exceeded the reading will be entered. The maximum pads
+can be inserted in both the reading and the consensus. If users agree we
+would prefer to swap the maximum pads criteria for a minimum overlap.
+i.e. only overlaps of some minimum length would be accepted.
+
+Screening usually works on sets of reading names and they can be read from
+either a "file" or a "list" and an appropriate browser is available to enable
+users to choose the name of the file or list. If just a single reading is to
+be assembled choose "single" and enter the filename instead of the file or list
+of filenames.
+
+The routine writes the names of all the readings and their alignment scores
+expressed as percentage mismatches to a "file" or a "list" and an appropriate
+browser is available to enable users to choose the name of the file or list.
+
+Previous versions of the package also had the ability to search for matches in 
+the "hidden" poor quality data at the ends of contigs. This feature is no
+longer available.
+
+Note that this option may require the parameter maxseq to be set beforehand
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure)). This parameter defines the maximum
+length of consensus that can be created.
+
+
+_ifdef([[_unix]],[[
+_split()
+@node Assembly-CAP2
+@section Assembly CAP2
+_include(cap2-t.texi)
+
+_split()
+@node Assembly-CAP3
+@section Assembly CAP3
+_include(cap3-t.texi)
+
+_split()
+@node Assembly-FAKII
+@section Assembly FAKII
+_include(fak2-t.texi)
+
+_split()
+@node Assembly-Phrap
+@section Assembly Phrap
+_include(phrap-t.texi)
+
+]])
+
+_split()
+@node Assembly-Tips
+@section General Comments and Tips on Assembly
+@cindex Tips on assembly
+@cindex Assembly: tips
+
+The program has several methods for assembly and it may not be obvious
+which is most appropriate for a given problem. The following notes may
+help. They also contain information on methods for checking the
+correctness of an assembly.
+
+If you have access to an
+external program that can generate the order and approximate positions
+of readings then Directed Assembly can be used. The same is true if the
+experimental method used generates an ordered set of readings
+(_fpref(Assembly-Directed, Directed Assembly, assembly)).
+
+If you have access to a external global assembly program that can
+produce an assembly and write out correct experiment files then Directed
+Assembly can still be used by specifying a "tolerance" of -1 (in the
+experiment file AP lines).
+
+For routine shotgun assembly of whole data-sets or incremental data-sets
+Normal Shotgun Assembly can be used. Through the idea of "Masked
+assembly" this option also can also restrict the assembly to particular
+regions of the consensus
+(_fpref(Assembly-Shot, Normal shotgun assembly, assembly)).
+
+Note that 
+Normal shotgun assembly (_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly)),
+Assemble independently (_fpref(Assembly-Shot, Assembly Independently, assembly)),
+Assembly into single stranded regions (_fpref(Assembly-Single, Assembly Single, assembly)),
+Screen only (_fpref(Assembly-Screen, Screen Only, assembly)),
+Put all readings in separate contigs (_fpref(Assembly-New, Assembly new, assembly)),
+may require the parameter maxseq to be set beforehand
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure)). This parameter defines the maximum
+length of consensus that can be created. If you find that the assembly process
+is only entering the first few hundred of a batch of readings, try increasing maxseq.
+
+If you have a batch of readings that are known to overlap one another,
+but which, due to repeats, may also match other places in the consensus,
+then it can be helpful to use Assemble Independently. This will ensure
+that the batch of readings are compared only to one another, and hence
+will not be assembled into the wrong places
+(_fpref(Assembly-Ind, Assemble independently, assembly)).
+
+Almost all readings are assembled automatically in their first pass
+through the assembly routine. Those that are not can be dealt with in
+two ways. Either they can be put through assembly again with less
+stringent parameters, or entered using the "Put all readings in new
+contigs" routine and then joined to the contig they overlap using Find
+Internal Joins _fxref(FIJ, Find Internal Joins, fij).
+If it is found that readings are not being
+assembled in their first pass through the assembler, then it is likely
+that the contigs require some editing to improve the consensus. Also it
+may be that poor quality data is being used, possibly by users
+over-interpreting films or traces. In the long term it can be more
+efficient to stop reading early and save time on editing. For those
+using fluorescent sequencing machines the unused data can be
+incorporated after assembly using the Contig Editor and Double Strand.
+
+An independent and important check on assembly is obtained by
+sequencing both ends of templates. Providing the correct information is
+given in the experiment files gap can check the positions and
+orientations of readings from the same
+template (_fpref(Read Pairs, Find read pairs, read_pairs)).
+Any inconsistencies are
+shown both textually and graphically. In addition this information can
+be used to find possible joins between contigs.
+
+
+_split()
+@node Assembly-Codes
+@section Assembly Failure Codes
+@cindex Assembly: failure codes
+
+@table @var
+@item 0
+The reading file was not found or is of invalid format
+@item 1
+The reading file was too short (less than the minimum match length)
+@item 2
+The reading appeared to match somewhere but failed to align
+sufficiently well (too many padding characters or too high a percentage
+mismatch)
+@item 3
+A reading of the same name was already present in the database
+@item 4
+This error number is no longer used
+@item 5
+During a masked assembly, no sequence match with this reading was found.
+@end table

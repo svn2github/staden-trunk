@@ -1,0 +1,39 @@
+@cindex get_scf_field: man page
+@unnumberedsec NAME
+
+get_scf_field --- extract comments from an SCF file
+
+@unnumberedsec SYNOPSIS
+
+@code{get_scf_field} [ @code{-cqs} ] @i{filename} [ @code{Field-ID} ... ]
+
+@unnumberedsec DESCRIPTION
+
+The @code{get_scf_field} command extracts comments from an SCF file. Each
+comment is of the form @i{Field-ID}=@i{comment}. Where @i{Field-ID} is
+a 4 character identifier.
+
+With no @i{Field-ID} arguments specified all comments are listed. Otherwise
+only those specified on the command line are listed.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-c}
+    Suppresses the output of the @i{Field-ID}. Only the right hand side of the
+    comment is displayed. The default action is the display the full comment in
+    the form listed above.
+
+@item @code{-q}
+    Query mode. Here no output is displayed, but it simply returns true
+    or false depending on whether any of requested comments were found.
+
+@item @code{-s}
+    Silent mode. No error messages are produced, except for usage messages. It
+    returns true or false for success or failure.
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Man-get_comment, get_comment(1), get_comment.1)
+_fxref(Formats-Scf, scf(4), formats)

@@ -1,0 +1,188 @@
+package require Iwidgets
+namespace eval ::EMBOSS::seealso {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_seealso*Xentry.entry.width 30
+option add *e_seealso*Entryfield.width 30
+option add *e_seealso*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) seealso
+    set w [xtoplevel .e_seealso -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - seealso}
+    label $w._title -text {Finds programs sharing group names}
+    pack $w._title -side top -fill both
+    set vars(seealso._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments search
+    iwidgets::entryfield $w.search \
+	-textvariable [namespace current]::vars(search) \
+	-labeltext [subst {Program to search for}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.search component entry] -sticky nse
+    set vars(search) [subst {}]
+    pack $w.search -side top -fill both
+    set vars(search.path) $w.search
+    set vars(search.required)  1
+    set vars(search._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments emboss
+    checkbutton $w.emboss \
+	-text [subst {Search the EMBOSS programs}]\
+	-variable [namespace current]::vars(emboss)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.emboss -side top -anchor w
+    set vars(emboss) [subst 1]
+    set vars(emboss.path) $w.emboss
+    set vars(emboss.required)  0
+    set vars(emboss._type) bool
+
+    lappend arguments embassy
+    checkbutton $w.embassy \
+	-text [subst {Search the EMBASSY programs}]\
+	-variable [namespace current]::vars(embassy)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.embassy -side top -anchor w
+    set vars(embassy) [subst 1]
+    set vars(embassy.path) $w.embassy
+    set vars(embassy.required)  0
+    set vars(embassy._type) bool
+
+    lappend arguments explode
+    checkbutton $w.explode \
+	-text [subst {Use the expanded group names}]\
+	-variable [namespace current]::vars(explode)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.explode -side top -anchor w
+    set vars(explode) [subst 0]
+    set vars(explode.path) $w.explode
+    set vars(explode.required)  0
+    set vars(explode._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output program details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst stdout]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+
+    iwidgets::labeledframe $w.htmlsection \
+	-labeltext [subst {htmlsection Section}]
+    pack $w.htmlsection -side top -fill both
+    lappend wlist $w
+    append w .htmlsection.childsite
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Format the output for HTML}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    lappend arguments prelink
+    iwidgets::entryfield $w.prelink \
+	-textvariable [namespace current]::vars(prelink) \
+	-labeltext [subst {String to form the first half of an HTML link}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.prelink component entry] -sticky nse
+    set vars(prelink) [subst {}]
+    pack $w.prelink -side top -fill both
+    set vars(prelink.path) $w.prelink
+    set vars(prelink.required)  0
+    set vars(prelink._type) string
+
+    lappend arguments postlink
+    iwidgets::entryfield $w.postlink \
+	-textvariable [namespace current]::vars(postlink) \
+	-labeltext [subst {String to form the second half of an HTML link}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.postlink component entry] -sticky nse
+    set vars(postlink) [subst {}]
+    pack $w.postlink -side top -fill both
+    set vars(postlink.path) $w.postlink
+    set vars(postlink.required)  0
+    set vars(postlink._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    lappend arguments groups
+    checkbutton $w.groups \
+	-text [subst {Output only the group names}]\
+	-variable [namespace current]::vars(groups)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.groups -side top -anchor w
+    set vars(groups) [subst 0]
+    set vars(groups.path) $w.groups
+    set vars(groups.required)  0
+    set vars(groups._type) bool
+
+    lappend arguments colon
+    checkbutton $w.colon \
+	-text [subst {Put a colon in the group name between two levels}]\
+	-variable [namespace current]::vars(colon)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.colon -side top -anchor w
+    set vars(colon) [subst 0]
+    set vars(colon.path) $w.colon
+    set vars(colon.required)  0
+    set vars(colon._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/seealso.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,131 @@
+package require Iwidgets
+namespace eval ::EMBOSS::recoder {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_recoder*Xentry.entry.width 30
+option add *e_recoder*Entryfield.width 30
+option add *e_recoder*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) recoder
+    set w [xtoplevel .e_recoder -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - recoder}
+    label $w._title -text {Remove restriction sites but maintain the same translation}
+    pack $w._title -side top -fill both
+    set vars(recoder._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seq
+    set vars(seq)       [get_active_seq_id 0]
+    if {$vars(seq) == -1} {set vars(seq) [get_active_seq_id 0]}
+    set vars(seq.name)  [seq_info $vars(seq) name]
+    sequence_changed [namespace current] seq
+    set vars(seq.type) [subst DNA]
+    seq_id $w.seq \
+	-textvariable [namespace current]::vars(seq.name)\
+	-start_value $vars(seq.begin)\
+	-end_value $vars(seq.end)\
+	-to [seq_info $vars(seq) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seq $w.seq}"
+    set vars(seq) [subst {}]
+    pack $w.seq -side top -fill both
+    set vars(seq.path) $w.seq
+    set vars(seq.required)  1
+    trace variable vars(seq.name) w  "::EMBOSS::sequence_changed [namespace current] seq"
+    set vars(seq._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments enzymes
+    iwidgets::entryfield $w.enzymes \
+	-textvariable [namespace current]::vars(enzymes) \
+	-labeltext [subst {Comma separated enzyme list}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.enzymes component entry] -sticky nse
+    set vars(enzymes) [subst all]
+    pack $w.enzymes -side top -fill both
+    set vars(enzymes.path) $w.enzymes
+    set vars(enzymes.required)  1
+    set vars(enzymes._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sshow
+    checkbutton $w.sshow \
+	-text [subst {Display untranslated sequence}]\
+	-variable [namespace current]::vars(sshow)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sshow -side top -anchor w
+    set vars(sshow) [subst 0]
+    set vars(sshow.path) $w.sshow
+    set vars(sshow.required)  0
+    set vars(sshow._type) bool
+
+    lappend arguments tshow
+    checkbutton $w.tshow \
+	-text [subst {Display translated sequence}]\
+	-variable [namespace current]::vars(tshow)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.tshow -side top -anchor w
+    set vars(tshow) [subst 0]
+    set vars(tshow.path) $w.tshow
+    set vars(tshow.required)  0
+    set vars(tshow._type) bool
+
+    lappend arguments outf
+    xentry $w.outf \
+	-label [subst {Results file name}]\
+	-textvariable [namespace current]::vars(outf) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outf delete 0 end
+    $w.outf insert end [subst recoder0.out]
+    pack $w.outf -side top -fill both
+    set vars(outf.path) $w.outf
+    set vars(outf.required)  1
+    set vars(outf._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/recoder.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

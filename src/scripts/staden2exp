@@ -1,0 +1,96 @@
+#!/usr/local/bin/perl -w
+
+#
+# 11/06/96 jkb
+# Converts the old staden gel reading file format to an experiment file
+# Usage:
+#
+# staden2exp [-ID name] [file]
+#
+# Without specifying 'file' the program acts as a filter. Specifying '-ID name'
+# in either case will force outputting an ID and EN line. By default the
+# filename is used or nothing is outputted when used as a filter.
+#
+
+$lseq=""; $mseq=""; $rseq=""; $file="";
+
+# Process args
+while (@ARGV) {
+    $arg = shift @ARGV;
+    if ($arg eq "-ID") {
+	$id = shift @ARGV;
+	next;
+    }
+    $file=$arg
+}
+
+if ($file) {
+    @ARGV=($file);
+    $id = $file;
+} else {
+    @ARGV=("-");
+}
+
+if ($id) {
+    print "ID   $id\n";
+    print "EN   $id\n";
+}
+
+# Read the file
+while (<ARGV>) {
+    # Title line
+    if (/^;[ 0-9]/) {
+	($type, $file) = unpack("\@19 A4 A100", $_);
+	print "LT   $type\n";
+	print "LN   $file\n";
+	next;
+    }
+
+    # 5' cut sequence
+    if (/^;<(.*)/) {
+	$lseq .= $1;
+	next;
+    }
+
+    # 3' cut sequence
+    if (/^;>(.*)/) {
+	$rseq .= $1;
+	next;
+    }
+
+    # tags
+    if (/^;;/) {
+	($type, $pos, $length, $anno) = unpack("\@2 A4 x A6 x A6 x A100", $_);
+	$pos = $pos + 0;
+	$end = $length + $pos - 1;
+	print "TG   $type + $pos..$end";
+	$len = length($anno);
+	for ($i = 0; $i < $len; $i += 70) {
+	    print "\n          ", substr($anno, $i, 70);
+	}
+	print "\n";
+	next;
+    }
+
+    s/\n//;
+    $mseq .= $_
+}
+
+# Do QL and QR lines
+$QL=length($lseq);
+$QR=length($lseq)+length($mseq)+1;
+$seq=$lseq . $mseq . $rseq;
+$len=length($seq);
+
+print "QL   $QL\n" if ($QL != 0);
+print "QR   $QR\n" if ($QR != $len+1);
+
+# Print the formatted sequence
+print "SQ   ";
+for ($i = 0; $i < $len;) {
+    print "\n     ";
+    for ($j = 0; $j < 6 && $i < $len; $j++, $i += 10) {
+         print substr($seq, $i, 10), " ";
+    }
+}
+print "\n//\n";

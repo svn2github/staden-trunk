@@ -1,0 +1,191 @@
+# -----------------------------------------------------------------------------
+# Dumps the problem arrays.
+proc dump_problem {io fin fd cnum} {
+    set pos 1
+    set plist [$fin dump_problems]
+    set rname [left_gel $io $cnum]
+    set pstart 1
+    set plast [lindex $plist 0]
+    foreach prob $plist {
+	if {$prob != 0} {
+	    if {$prob != $plast} {
+		puts $fd "$rname $pstart $pstart..[expr {$pos-1}] problem flags=$plast"
+		set pstart $pos
+		set plast $prob
+	    }
+	}
+	incr pos
+    }
+    if {$prob != 0} {
+	puts $fd "$rname $pstart $pstart..[expr {$pos-1}] problem flags=$plast"
+    }
+}
+
+
+proc usage {argv0} {
+    puts stderr "Usage: $argv0 \[options ...\] DBNAME.VERSION"
+    puts stderr "Where options are:"
+    puts stderr {    -add_tags}
+    puts stderr {    -dump_problems <filename>}
+    puts stderr {    -skip_solutions}
+    puts stderr {    -contig <identifier> ...}
+    puts stderr {    -from <basepos>}
+    puts stderr {    -to <basepos>}
+    puts stderr {    -debug <level>}
+    exit
+}
+
+# -----------------------------------------------------------------------------
+# Main entry point
+
+source $env(STADTABL)/shlib.conf
+load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
+load_package gap
+load_package prefinish
+
+set opt(-add_tags) 0
+set opt(-dump_problems) ""
+set opt(-skip_solutions) 0
+set opt(-from) 0
+set opt(-to) 0
+set opt(-contig) ""
+set opt(-debug) 0
+set opt(-min_contig_len) 2000
+
+while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
+    set arg [lindex $argv 0];
+    set argv [lrange $argv 1 $argc]
+    incr argc -1;
+
+    switch -exact -- $arg {
+	-- {
+	    break
+	}
+
+	-contig -
+	-from -
+	-to -
+	-debug -
+	-min_contig_len -
+	-dump_problems {
+	    set opt($arg) [lindex $argv 0]
+	    set argv [lrange $argv 1 $argc]
+	    incr argc -1;
+	}
+
+	-add_tags -
+	-skip_solutions {
+	    set opt($arg) 1
+	}
+
+	default {
+	    break
+	}
+    }
+}
+
+if {$opt(-dump_problems) != ""} {
+    set opt(-dump_problems) [open $opt(-dump_problems) w]
+}
+
+if {[llength $argv] != 1} {
+    usage $argv0
+}
+
+puts "*** DBname [lindex $argv 0]"
+puts "*** Date	 [clock format [clock seconds]]"
+puts ""
+
+# Load vector file
+set vector ""
+if {![catch {set fd [open vector]}]} {
+    set vector [read $fd]
+    regsub -all "\[#>\]\[^\n\]*\n" $vector {} vector
+    regsub -all {[^ACGTNacgtn]} $vector {} vector
+    close $fd
+    puts "Read [string length $vector] bytes of vector"
+    puts ""
+}
+
+# Open database, choose contig, select consensus mode
+
+cd [file dir [lindex $argv 0]]
+foreach {dbname dbvers} [split [file tail [lindex $argv 0]] .] {}
+if {$opt(-add_tags) != ""} {
+    set io [open_db -name $dbname -version $dbvers -access rw]
+} else {
+    set io [open_db -name $dbname -version $dbvers -access r]
+}
+
+set consensus_cutoff 0.02
+set quality_cutoff 1
+set consensus_mode 2
+
+set clist [CreateAllContigList $io]
+set db [io_read_database $io]
+set num_contigs [keylget db num_contigs]
+set tcl [db_info t_contig_length $io]
+set maxseq [expr {round(($tcl + 20*$num_contigs)*1.1)}]
+
+# Allocate a 'finish' Tcl_Obj object. (Note that this can grow quite big.)
+# This contains consensus, confidence values, virtual sequences, etc.
+# It's the main data block passed between the various finishing functions.
+finish .f \
+    -io $io \
+    -check_contigs $clist \
+    -output_file $dbname.$dbvers.experiments \
+    -debug0 $opt(-debug) \
+    -debug1 $opt(-debug) \
+    -debug2 $opt(-debug) \
+    -debug3 $opt(-debug) \
+    -debug4 $opt(-debug) \
+    -debug5 $opt(-debug) \
+    -debug6 $opt(-debug) \
+    -debug7 $opt(-debug) \
+    -debug8 $opt(-debug) \
+    -debug9 $opt(-debug)
+
+
+# Produce a list of contigs to process. "contigs" is a list of contig numbers
+# The -min_contig_len option only applies when -contig(s) is not explicitly
+# used.
+set contigs ""
+if {$opt(-contig) != ""} {
+    foreach c $opt(-contig) {
+	set cnum [db_info get_contig_num $io $c]
+	if {$cnum == -1} {
+	    puts "Unknown contig $c"
+	    exit
+	}
+	lappend contigs $cnum
+    }
+} else {
+    for {set cnum 1} {$cnum <= $num_contigs} {incr cnum} {
+	set c [io_read_contig 1 $cnum]
+	if {[keylget c length] < $opt(-min_contig_len)} {
+	    continue
+	}
+	lappend contigs $cnum
+    }
+}
+
+# Loop through selected contigs
+foreach cnum $contigs {
+    set c [io_read_contig 1 $cnum]
+
+    set start [expr {$opt(-from) ? $opt(-from) : 1}]
+    set end   [expr {$opt(-to) ? $opt(-to) : [keylget c length]}]
+
+    process_contig $io .f opt $cnum $start $end $class_bits
+}
+
+if {$opt(-dump_problems) != ""} {
+    close $opt(-dump_problems)
+}
+
+# Reclaim memory
+.f delete
+
+close_db -io $io
+
+exit

@@ -1,0 +1,50 @@
+@cindex Results manager
+@cindex Results manager: introduction
+@cindex Results: removing
+@cindex Removing results
+
+Some commands within gap4 produce "results" that are updated
+automatically as data is edited. The Result Manager provides a way to
+list these results, and to interact with them.
+
+A result is an abstract term used to define any collection of
+data. Typically this data can be displayed, manipulated and is usually
+updated automatically when changes are made that affect it. In gap4
+each set of matches from a particular search
+plotted on the Contig Comparator 
+(_fpref(Contig Comparator, Contig
+Comparator, comparator))
+is a result, as are
+entire displays such as the Template Display.
+
+_picture(results.1)
+
+The "results" window, shown above, can be invoked either from the View
+menu in the main display or from the View menu of the Contig Comparator.
+Each result is listed in the window on a separate line containing the
+time that the result was created (which may not be the same as when it
+was last updated), the name of the function that created the result, and
+the result number. The number is simply a unique identifier to help
+distinguish two results produced by the same function.
+
+Each item in the list is consuming memory on your computer. Running
+functions over and over again without removing the previous results
+will slow down your machine and it will, eventually, run out of
+memory. Removing items from the list solves this.
+
+Pressing the right mouse button over an listed item will display a popup
+menu of operations that can be performed on this result. The operations
+available will always contain "Remove" which will delete this result and
+shut down any associated window, but others listed will depend on the
+result selected. In the illustration above the popup menu for the
+"Repeat search" can be seen. Here the operations relate to a set of
+repeat matches currently being displayed in the Contig Comparator (not
+shown).
+
+The Contig Comparator functions ("Find internal joins", "Find read
+pairs", "Find repeats", "Check assembly" and "Find Sequences") are all
+listed in the Results Manager once per usage of the function. It is
+worth remembering that the only places to completely remove the plots
+from one of these functions is using the "Remove" command within the
+Results Manager or to use the "Clear" button within the Contig
+Comparator to remove all plots.

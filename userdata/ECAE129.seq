@@ -1,0 +1,419 @@
+ID   ECAE129    standard; DNA; PRO; 11005 BP.
+XX
+AC   AE000129; U00096;
+XX
+SV   AE000129.1
+XX
+DT   29-JAN-1997 (Rel. 50, Created)
+DT   05-DEC-2000 (Rel. 66, Last updated, Version 5)
+XX
+DE   Escherichia coli K12 MG1655 section 19 of 400 of the complete genome.
+XX
+KW   .
+XX
+OS   Escherichia coli K12
+OC   Bacteria; Proteobacteria; gamma subdivision; Enterobacteriaceae;
+OC   Escherichia; Escherichia coli.
+XX
+RN   [1]
+RP   1-11005
+RX   MEDLINE; 97426617.
+RX   PUBMED; 97426617.
+RA   Blattner F.R., Plunkett G. III, Bloch C.A., Perna N.T., Burland V.,
+RA   Riley M., Collado-Vides J., Glasner J.D., Rode C.K., Mayhew G.F.,
+RA   Gregor J., Davis N.W., Kirkpatrick H.A., Goeden M.A., Rose D.J., Mau B.,
+RA   Shao Y.;
+RT   "The complete genome sequence of Escherichia coli K-12";
+RL   Science 277(5331):1453-1474(1997).
+XX
+RN   [2]
+RP   1-11005
+RA   Blattner F.R.;
+RT   ;
+RL   Submitted (16-JAN-1997) to the EMBL/GenBank/DDBJ databases.
+RL   Guy Plunkett III, Laboratory of Genetics, University of Wisconsin, 445
+RL   Henry Mall, Madison, WI 53706, USA. Email: ecoli@genetics.wisc.edu Phone:
+RL   608-262-2534 Fax: 608-263-7459
+XX
+RN   [3]
+RP   1-11005
+RA   Blattner F.R.;
+RT   ;
+RL   Submitted (02-SEP-1997) to the EMBL/GenBank/DDBJ databases.
+RL   Guy Plunkett III, Laboratory of Genetics, University of Wisconsin, 445
+RL   Henry Mall, Madison, WI 53706, USA. Email: ecoli@genetics.wisc.edu Phone:
+RL   608-262-2534 Fax: 608-263-7459
+XX
+RN   [4]
+RP   1-11005
+RA   Plunkett G. III.;
+RT   ;
+RL   Submitted (13-OCT-1998) to the EMBL/GenBank/DDBJ databases.
+RL   Laboratory of Genetics, University of Wisconsin, 445 Henry Mall, Madison,
+RL   WI 53706, USA
+XX
+DR   SWISS-PROT; P28635; YAEC_ECOLI.
+DR   SWISS-PROT; P30750; ABC_ECOLI.
+DR   SWISS-PROT; P30863; YAFB_ECOLI.
+DR   SWISS-PROT; P30864; YAFC_ECOLI.
+DR   SWISS-PROT; P31546; YAED_ECOLI.
+DR   SWISS-PROT; P31547; YAEE_ECOLI.
+XX
+CC   This sequence was determined by the E. coli Genome Project at the
+CC   University of Wisconsin-Madison (Frederick R. Blattner, director).
+CC   Supported by NIH grants HG00301 and HG01428 (from the Human Genome
+CC   Project and NCHGR). The entire sequence was independently
+CC   determined from E. coli K12 strain MG1655. Predicted open reading
+CC   frames were determined using GeneMark software, kindly supplied by
+CC   Mark Borodovsky, Georgia Institute of Technology, Atlanta, GA,
+CC   30332 [e-mail: mark@amber.gatech.edu].  Open reading frames that
+CC   have been correlated with genetic loci are being annotated with CG
+CC   Site Nos., unique ID nos. for the genes in the E. coli Genetic
+CC   Stock Center (CGSC) database at Yale University, kindly supplied by
+CC   Mary Berlyn. A public version of the database is accessible
+CC   (http://cgsc.biology.yale.edu). Annotation of the genome is an
+CC   ongoing task whose goal is to make the genome sequence more useful
+CC   by correlating it with other data.  Comments to the authors are
+CC   appreciated. Updated information will be available at the E. coli
+CC   Genome Project's World Wide Web site
+CC   (http://www.genetics.wisc.edu). *** The E. coli K12 sequence and
+CC   its annotations are periodically updated; this is version M54. No
+CC   sequence changes. Annotation updates: updated gene identifications
+CC   and products; all new functional assignments courtesy of Monica
+CC   Riley; added promoters, protein binding sites, and repeated
+CC   sequences described in reference 1. The unique numeric identifiers
+CC   beginning with a lowercase 'b' assigned to each gene (protein- or
+CC   RNA-encoding) are now designated as gene synonyms instead of
+CC   labels. This should allow them to be searched for in Entrez as gene
+CC   names.
+XX
+FH   Key             Location/Qualifiers
+FH
+FT   source          1..11005
+FT                   /db_xref="taxon:83333"
+FT                   /organism="Escherichia coli K12"
+FT                   /strain="K12"
+FT                   /sub_strain="MG1655"
+FT   CDS             complement(89..904)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P28635"
+FT                   /note="f271; 100 pct identical to YAEC_ECOLI SW: P28635"
+FT                   /transl_table=11
+FT                   /gene="yaeC"
+FT                   /function="putative membrane; Not classified"
+FT                   /product="putative lipoprotein"
+FT                   /protein_id="AAC73308.1"
+FT                   /translation="MAFKFKTFAAVGALIGSLALVGCGQDEKDPNHIKVGVIVGAEQQV
+FT                   AEVAQKVAKDKYGLDVELVTFNDYVLPNEALSKGDIDANAFQHKPYLDQQLKDRGYKLV
+FT                   AVGNTFVYPIAGYSKKIKSLDELQDGSQVAVPNDPTNLGRSLLLLQKVGLIKLKDGVGL
+FT                   LPTVLDVVENPKNLKIVELEAPQLPRSLDDAQIALAVINTTYASQIGLTPAKDGIFVED
+FT                   KESPYVNLIVTREDNKDAENVKKFVQAYQSDEVYEAANKVFNGGAVKGW"
+FT   CDS             complement(944..1597)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P31547"
+FT                   /note="f218; 100 pct identical to YAEE_ECOLI SW: P31547"
+FT                   /transl_table=11
+FT                   /gene="yaeE"
+FT                   /function="putative transport; Not classified"
+FT                   /product="putative transport system permease protein"
+FT                   /protein_id="AAC73309.1"
+FT                   /translation="MSEPMMWLLVRGVWETLAMTFVSGFFGFVIGLPVGVLLYVTRPGQ
+FT                   IIANAKLYRTVSAIVNIFRSIPFIILLVWMIPFTRVIVGTSIGLQAAIVPLTVGAAPFI
+FT                   ARMVENALLEIPTGLIEASRAMGATPMQIVRKVLLPEALPGLVNAATITLITLVGYSAM
+FT                   GGAVGAGGLGQIGYQYGYIGYNATVMNTVLVLLVILVYLIQFAGDRIVRAVTRK"
+FT   promoter        complement(965..993)
+FT                   /note="factor Sigma70; predicted +1 start at 220982"
+FT                   /gene="yaeE"
+FT   CDS             complement(1590..2621)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P30750"
+FT                   /note="f343; 98 pct identical to fragment (231 aa)ABC_ECOLI
+FT                   SW: P30750; 65 pct identical (1 gap) to 345 aa ABC_HAEIN
+FT                   SW: P44785"
+FT                   /transl_table=11
+FT                   /gene="abc"
+FT                   /function="transport; Not classified"
+FT                   /product="ATP-binding component of a transporter"
+FT                   /protein_id="AAC73310.1"
+FT                   /translation="MIKLSNITKVFHQGTRTIQALNNVSLHVPAGQIYGVIGASGAGKS
+FT                   TLIRCVNLLERPTEGSVLVDGQELTTLSESELTKARRQIGMIFQHFNLLSSRTVFGNVA
+FT                   LPLELDNTPKDEVKRRVTELLSLVGLGDKHDSYPSNLSGGQKQRVAIARALASNPKVLL
+FT                   CDEATSALDPATTRSILELLKDINRRLGLTILLITHEMDVVKRICDCVAVISNGELIEQ
+FT                   DTVSEVFSHPKTPLAQKFIQSTLHLDIPEDYQERLQAEPFTDCVPMLRLEFTGQSVDAP
+FT                   LLSETARRFNVNNNIISAQMDYAGGVKFGIMLTEMHGTQQDTQAAIAWLQEHHVKVEVL
+FT                   GYV"
+FT   protein_bind    2708..2717
+FT                   /note="central position to predicted promoter: -72"
+FT                   /bound_moiety="MetJ predicted site"
+FT   promoter        2751..2779
+FT                   /note="factor Sigma70; predicted +1 start at 222810"
+FT   CDS             2809..3384
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P31546"
+FT                   /note="o191; 100 pct identical to YAED_ECOLI SW: P31546"
+FT                   /transl_table=11
+FT                   /gene="yaeD"
+FT                   /function="putative enzyme; Not classified"
+FT                   /product="putative phosphatase"
+FT                   /protein_id="AAC73311.1"
+FT                   /translation="MAKSVPAIFLDRDGTINVDHGYVHEIDNFEFIDGVIDAMRELKKM
+FT                   GFALVVVTNQSGIARGKFTEAQFETLTEWMDWSLADRDVDLDGIYYCPHHPQGSVEEFR
+FT                   QVCDCRKPHPGMLLSARDYLHIDMAASYMVGDKLEDMQAAVAANVGTKVLVRTGKPITP
+FT                   EAENAADWVLNSLADLPQAIKKQQKPAQ"
+FT   rRNA            3747..5288
+FT                   /note="CG Site No. 183; 16S rRNA of rrnH operon"
+FT                   /gene="rrsH"
+FT                   /function="RNA; Ribosomal and stable RNAs"
+FT                   /product="16S ribosomal RNA"
+FT   tRNA            5357..5433
+FT                   /note="anticodon: GAU; CG Site No. 610; in rrnH operon"
+FT                   /gene="ileV"
+FT                   /product="tRNA-Ile"
+FT                   /function="RNA; tRNA"
+FT   repeat_region   5396..5431
+FT                   /note="REP (repetitive extragenic palindromic) element;
+FT                   contains 1 REP sequence"
+FT   tRNA            5476..5551
+FT                   /note="anticodon: UGC; CG Site No. 1036; in rrnH operon"
+FT                   /gene="alaV"
+FT                   /product="tRNA-Asx"
+FT                   /function="RNA; tRNA"
+FT   rRNA            5735..8638
+FT                   /note="CG Site No. 197; 23S rRNA of rrnH operon"
+FT                   /gene="rrlH"
+FT                   /function="RNA; Ribosomal and stable RNAs"
+FT                   /product="23S ribosomal RNA"
+FT   rRNA            8732..8851
+FT                   /note="CG Site No. 204; 5S rRNA of rrnH operon"
+FT                   /gene="rrfH"
+FT                   /function="RNA; Ribosomal and stable RNAs"
+FT                   /product="5S ribosomal RNA"
+FT   tRNA            8904..8980
+FT                   /note="anticodon: GUC; CG Site No. 988; in rrnH operon"
+FT                   /gene="aspU"
+FT                   /product="tRNA-Val"
+FT                   /function="RNA; tRNA"
+FT   promoter        9038..9068
+FT                   /note="factor Sigma70; predicted +1 start at 229099"
+FT   promoter        9074..9102
+FT                   /note="factor Sigma70; predicted +1 start at 229133"
+FT   CDS             9143..9946
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P30863"
+FT                   /note="o267; 100 pct identical to YAFB_ECOLI SW: P30863"
+FT                   /transl_table=11
+FT                   /gene="yafB"
+FT                   /function="putative enzyme; Not classified"
+FT                   /product="putative aldose reductase (EC 1.1.1.21)"
+FT                   /protein_id="AAC73312.1"
+FT                   /translation="MAIPAFGLGTFRLKDDVVISSVITALELGYRAIDTAQIYDNEAAV
+FT                   GQAIAESGVPRHELYITTKIWIENLSKDKLIPSLKESLQKLRTDYVDLTLIHWPSPNDE
+FT                   VSVEEFMQALLEAKKQGLTREIGISNFTIPLMEKAIAAVGAENIATNQIELSPYLQNRK
+FT                   VVAWAKQHGIHITSYMTLAYGKALKDEVIARIAAKHNATPAQVILAWAMGEGYSVIPSS
+FT                   TKRKNLESNLKAQNLQLDAEDKKAIAALDCNDRLVSPEGLAPEWD"
+FT   CDS             complement(9943..10857)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P30864"
+FT                   /note="f304; 99 pct identical to YAFC_ECOLI SW: P30864"
+FT                   /transl_table=11
+FT                   /gene="yafC"
+FT                   /function="putative transport; Not classified"
+FT                   /product="putative transcriptional regulator LYSR-type"
+FT                   /protein_id="AAC73313.1"
+FT                   /translation="MKATSEELAIFVSVVESGSFSRAAEQLGQANSAVSRAVKKLEMKL
+FT                   GVSLLNRTTRQLSLTEEGERYFRRVQSILQEMAAAESEIMETRNTPRGLLRIDAATPVV
+FT                   LHFLMPLIKPFRERYPEVTLSLVSSETIINLIERKVDVAIRAGTLTDSSLRARPLFNSY
+FT                   RKIIASPDYISRYGKPETIDDLKQHICLGFTEPASLNTWPIARSDGQLHEVKYGLSSNS
+FT                   GETLKQLCLSGNGIACLSDYMIDKEIARGELVELMADKVLPVEMPFSAVYYSDRAVSTR
+FT                   IRAFIDFLSEHVKTAPGGAVREA"
+FT   promoter        10927..10955
+FT                   /note="factor Sigma70; predicted +1 start at 230986"
+FT   promoter        complement(10998..>11005)
+FT                   /note="factor Sigma70; predicted +1 start at 231015"
+XX
+SQ   Sequence 11005 BP; 2886 A; 2588 C; 2974 G; 2557 T; 0 other;
+     caatattgaa tcaggagctt gtaaaaatga caagacgggc aagcgcccgt cctgaatgat        60
+     attacaaatt gtggaaacag cctaaaaatt accagccttt aacagctccg ccgttaaaca       120
+     ctttgtttgc tgcttcgtaa acttcgtcag actgataagc ctggacgaat ttcttcacgt       180
+     tctcggcgtc tttgttatct tcacgcgtca cgatcaggtt tacgtacggg gactctttat       240
+     cttcaacaaa gataccgtct ttcgccggag tcaggccaat ctggctggca taggtggtat       300
+     tgataactgc cagagcgatt tgcgcgtcgt ccagagaacg cggcagttgc ggtgcttcca       360
+     gttcaacaat tttcagattt ttggggttct caacaacatc aagaacggtc ggcagcaggc       420
+     caacgccatc tttcagtttg atcaagccca ctttttgcag cagcagcagt gaacgaccaa       480
+     ggttagttgg gtcgtttggc acggcaacct gcgaaccatc ctgcagttca tccagtgatt       540
+     tgattttctt ggagtaacca gcaatcggat aaacaaaagt gttgcctact gcgaccagtt       600
+     tgtagccacg atctttcagt tgctgatcaa ggtacggttt atgctggaag gcgttggcgt       660
+     cgatatcgcc tttgctcaat gcttcgtttg gcagaacata gtcgttgaag gttaccagct       720
+     caacgtccag gccatatttg tctttcgcaa ctttctgcgc gacttctgca acctgctgtt       780
+     cggcaccaac aatcacgccg actttaatgt ggtttggatc tttttcatcc tgaccgcagc       840
+     ctaccagtgc cagtgatccg atcagggctc ccactgccgc aaaggttttg aatttgaacg       900
+     ccatacctta ttccttcttc aattatttat gttgtgttga acgttacttg cgagtgacag       960
+     cccggacgat gcggtcgcct gcgaactgaa ttaaataaac cagaatgacc agcaatacca      1020
+     gtaccgtatt catcaccgtc gcgttatagc cgatgtagcc atactgatag ccaatctgac      1080
+     ctaaaccacc ggcaccgact gcaccaccca tcgcggaata accgaccagg gtaatcaggg      1140
+     tgatagttgc cgcattcacc agacccggca gcgcttccgg taacagcacc ttacggacga      1200
+     tctgcatcgg cgtggcaccc attgcgcggg aagcttcaat taacccggtt gggatctcca      1260
+     gcagagcgtt ctcgaccata cgggcaataa acggtgctgc accaacggtt aacggaacaa      1320
+     tcgctgcctg caaaccaatc gatgtaccga caataacgcg ggtaaacgga atcatccata      1380
+     caagcaagat aatgaacggg atggaacgga aaatgttcac aatcgcagaa acggtacgat      1440
+     acagcttcgc gttagcaata atttgccccg gacgcgtgac ataaagcaga acgccaaccg      1500
+     gcagaccaat cacaaagcca aaaaaaccgg atacgaaggt cattgccagc gtttcccata      1560
+     cgccacgaac cagcagccac atcatcggct cagacataac ccagtacctc tacttttaca      1620
+     tggtgttcct gcagccaggc aatggcggct tgcgtatctt gttgtgtgcc gtgcatttca      1680
+     gtcagcatga tgccgaactt aacgccaccg gcgtaatcca tctgcgcgct aataatgttg      1740
+     ttgttgacgt tgaaacgacg cgcggtttca gaaagcagtg gggcatcgac cgattgaccg      1800
+     gtaaactcca gacgcagcat cggcacgcag tcagtaaatg gctccgcttg cagacgttcc      1860
+     tggtaatctt ccgggatatc cagatgcagg gtcgactgaa taaacttctg cgccagcggc      1920
+     gttttcggat gcgagaacac ttcacttacc gtgtcctgct cgatcagttc tccattgctg      1980
+     atgaccgcca cgcaatcaca aatgcgcttc acaacgtcca tttcgtgggt gatcaacaga      2040
+     atcgtcaacc ccagacggcg gttgatgtct ttcagcagtt cgagaataga acgtgtcgtt      2100
+     gccgggtcca gcgcgctggt ggcttcatca cacagcaata ctttgggatt gctggctaac      2160
+     gcacgggcaa ttgccacacg ttgtttctgc ccaccggaaa gattcgacgg gtagctatca      2220
+     tgcttatcgc caagaccaac caatgacagc aattccgtca cgcgacgttt gacctcgtct      2280
+     ttcggtgtgt tgtccagctc cagcggcaga gccacgttgc caaaaacagt acgcgaagag      2340
+     agcaggttaa aatgctggaa aatcatacca atctggcggc gagctttggt caactcggat      2400
+     tctgacagcg tggtcagttc ctggccatcg accagcacgc taccctcggt tgggcgctcc      2460
+     agcaggttta cacaacgtat aagcgtactc ttacccgcgc ctgaggcacc gataacgcca      2520
+     taaatttgtc cagctggcac atgcaggctg acgttgttca acgcctggat ggtgcgggtg      2580
+     ccctggtgga acactttggt gatattcgaa agttttatca ttgattattt attatcgtca      2640
+     ttaagttagt cgtggcatct cgaatgcctg aaacgggcaa cgccgtcaat gaaatggatg      2700
+     ttaaggcatc cagacgtcta aatcaatcag gtttatgcga agagcacttt cttgcaggtc      2760
+     gaaacatgcg atactagcgt cacatgcctt attaaggagc tataaaaggt ggcgaagagc      2820
+     gtacccgcaa tttttcttga ccgtgatggc accattaatg tcgatcacgg ctatgtccat      2880
+     gagatcgaca actttgaatt tatcgacggt gttattgacg ccatgcgcga gctaaaaaaa      2940
+     atgggctttg cgctggtggt agtaaccaac cagtctggca ttgctcgcgg taaatttacc      3000
+     gaagcacagt ttgaaacgct gaccgagtgg atggactggt cgctggcgga ccgagatgtc      3060
+     gatctggatg gtatctatta ttgcccgcat catccgcagg gtagtgttga agagtttcgc      3120
+     caggtctgcg attgccgcaa accacatccg gggatgcttt tgtcagcacg cgattatttg      3180
+     catattgata tggccgcttc ttatatggtg ggcgataaat tagaagatat gcaggcagcg      3240
+     gttgcggcga acgtgggaac aaaagtgctg gtgcgtacgg gtaaacctat tacgcctgaa      3300
+     gcagaaaacg cggcggattg ggtgttaaat agcctggcag acctgccgca agcgataaaa      3360
+     aagcagcaaa aaccggcaca atgattaaaa gatgagcggt tgaaataaaa atgcattttt      3420
+     ccgcttgtct tcctgagccg actccctata atgcgcctcc atcgacacgg cggatgtgaa      3480
+     tcacttcaca caaacagccg gttcggttga agagaaaaat cctgaaattc agggttgact      3540
+     ctgaaagagg aaagcgtaat atacgccacc tcgcgacagt gagctgaaag ccgcgtcgca      3600
+     actgctcttt aacaatttat cagacaatct gtgtgggcac tcgaagatac ggattcttaa      3660
+     cgtcgcaaga cgaaaaatga ataccaagtc tcaagagtga acacgtaatt cattacaaag      3720
+     tttaattctt tgagcatcaa acttttaaat tgaagagttt gatcatggct cagattgaac      3780
+     gctggcggca ggcctaacac atgcaagtcg aacggtaaca ggaagaagct tgcttctttg      3840
+     ctgacgagtg gcggacgggt gagtaatgtc tgggaaactg cctgatggag ggggataact      3900
+     actggaaacg gtagctaata ccgcataacg tcgcaagacc aaagaggggg accttcgggc      3960
+     ctcttgccat cggatgtgcc cagatgggat tagctagtag gtggggtaac ggctcaccta      4020
+     ggcgacgatc cctagctggt ctgagaggat gaccagccac actggaactg agacacggtc      4080
+     cagactccta cgggaggcag cagtggggaa tattgcacaa tgggcgcaag cctgatgcag      4140
+     ccatgccgcg tgtatgaaga aggccttcgg gttgtaaagt actttcagcg gggaggaagg      4200
+     gagtaaagtt aatacctttg ctcattgacg ttacccgcag aagaagcacc ggctaactcc      4260
+     gtgccagcag ccgcggtaat acggagggtg caagcgttaa tcggaattac tgggcgtaaa      4320
+     gcgcacgcag gcggtttgtt aagtcagatg tgaaatcccc gggctcaacc tgggaactgc      4380
+     atctgatact ggcaagcttg agtctcgtag aggggggtag aattccaggt gtagcggtga      4440
+     aatgcgtaga gatctggagg aataccggtg gcgaaggcgg ccccctggac gaagactgac      4500
+     gctcaggtgc gaaagcgtgg ggagcaaaca ggattagata ccctggtagt ccacgccgta      4560
+     aacgatgtcg acttggaggt tgtgcccttg aggcgtggct tccggagcta acgcgttaag      4620
+     tcgaccgcct ggggagtacg gccgcaaggt taaaactcaa atgaattgac gggggcccgc      4680
+     acaagcggtg gagcatgtgg tttaattcga tgcaacgcga agaaccttac ctggtcttga      4740
+     catccacaga actttccaga gatggattgg tgccttcggg aactgtgaga caggtgctgc      4800
+     atggctgtcg tcagctcgtg ttgtgaaatg ttgggttaag tcccgcaacg agcgcaaccc      4860
+     ttatcttttg ttgccagcgg tccggccggg aactcaaagg agactgccag tgataaactg      4920
+     gaggaaggtg gggatgacgt caagtcatca tggcccttac gaccagggct acacacgtgc      4980
+     tacaatggcg catacaaaga gaagcgacct cgcgagagca agcggacctc ataaagtgcg      5040
+     tcgtagtccg gattggagtc tgcaactcga ctccatgaag tcggaatcgc tagtaatcgt      5100
+     ggatcagaat gccacggtga atacgttccc gggccttgta cacaccgccc gtcacaccat      5160
+     gggagtgggt tgcaaaagaa gtaggtagct taaccttcgg gagggcgctt accactttgt      5220
+     gattcatgac tggggtgaag tcgtaacaag gtaaccgtag gggaacctgc ggttggatca      5280
+     cctccttacc ttaaagaagc gtactttgca gtgctcacac agattgtctg atgaaaatga      5340
+     gcagtaaaac ctctacaggc ttgtagctca ggtggttaga gcgcacccct gataagggtg      5400
+     aggtcggtgg ttcaagtcca ctcaggccta ccaaatttgc acggcaaatt tgaagaggtt      5460
+     ttaactacat gttatggggc tatagctcag ctgggagagc gcctgctttg cacgcaggag      5520
+     gtctgcggtt cgatcccgca tagctccacc atctctgtag tggttaaata aaaaatactt      5580
+     cagagtgtac ctgcaaaggt tcactgcgaa gttttgctct ttaaaaatct ggatcaagct      5640
+     gaaaattgaa acactgaaca atgaaagttg ttcgtgagtc tctcaaattt tcgcaacacg      5700
+     atgatggatc gcaagaaaca tcttcgggtt gtgaggttaa gcgactaagc gtacacggtg      5760
+     gatgccctgg cagtcagagg cgatgaagga cgtgctaatc tgcgataagc gtcggtaagg      5820
+     tgatatgaac cgttataacc ggcgatttcc gaatggggaa acccagtgtg tttcgacaca      5880
+     ctatcattaa ctgaatccat aggttaatga ggcgaaccgg gggaactgaa acatctaagt      5940
+     accccgagga aaagaaatca accgagattc ccccagtagc ggcgagcgaa cggggaggag      6000
+     cccagagcct gaatcagtgt gtgtgttagt ggaagcgtct ggaaaggcgc gcgatacagg      6060
+     gtgacagccc cgtacacaaa aatgcacatg ctgtgagctc gatgagtagg gcgggacacg      6120
+     tggtatcctg tctgaatatg gggggaccat cctccaaggc taaatactcc tgactgaccg      6180
+     atagtgaacc agtaccgtga gggaaaggcg aaaagaaccc cggcgagggg agtgaaaaag      6240
+     aacctgaaac cgtgtacgta caagcagtgg gagcatgctt aggcgtgtga ctgcgtacct      6300
+     tttgtataat gggtcagcga cttatattct gtagcaaggt taaccgaata ggggagccga      6360
+     agggaaaccg agtcttaact gggcgttaag ttgcagggta tagacccgaa acccggtgat      6420
+     ctagccatgg gcaggttgaa ggttgggtaa cactaactgg aggaccgaac cgactaatgt      6480
+     tgaaaaatta gcggatgact tgtggctggg ggtgaaaggc caatcaaacc gggagatagc      6540
+     tggttctccc cgaaagctat ttaggtagcg cctcgtgaac tcatctccgg gggtagagca      6600
+     ctgtttcggc aagggggtca tcccgactta ccaacccgat gcaaactgcg aataccggag      6660
+     aatgttatca cgggagacac acggcgggtg ctaacgtccg tcgtgaagag ggaaacaacc      6720
+     cagaccgcca gctaaggtcc caaagtcatg gttaagtggg aaacgatgtg ggaaggccca      6780
+     gacagccagg atgttggctt agaagcagcc atcatttaaa gaaagcgtaa tagctcactg      6840
+     gtcgagtcgg cctgcgcgga agatgtaacg gggctaaacc atgcaccgaa gctgcggcag      6900
+     cgacgcttat gcgttgttgg gtaggggagc gttctgtaag cctgtgaagg tgtactgtga      6960
+     ggtatgctgg aggtatcaga agtgcgaatg ctgacataag taacgataaa gcgggtgaaa      7020
+     agcccgctcg ccggaagacc aagggttcct gtccaacgtt aatcggggca gggtgagtcg      7080
+     acccctaagg cgaggccgaa aggcgtagtc gatgggaaac aggttaatat tcctgtactt      7140
+     ggtgttactg cgaagggggg acggagaagg ctatgttggc cgggcgacgg ttgtcccggt      7200
+     ttaagcgtgt aggctggttt tccaggcaaa tccggaaaat caaggctgag gcgtgatgac      7260
+     gaggcactac ggtgctgaag caacaaatgc cctgcttcca ggaaaagcct ctaagcatca      7320
+     ggtaacatca aatcgtaccc caaaccgaca caggtggtca ggtagagaat accaaggcgc      7380
+     ttgagagaac tcgggtgaag gaactaggca aaatggtgcc gtaacttcgg gagaaggcac      7440
+     gctgatatgt aggtgaagcg acttgctcgt ggagctgaaa tcagtcgaag ataccagctg      7500
+     gctgcaactg tttattaaaa acacagcact gtgcaaacac gaaagtggac gtatacggtg      7560
+     tgacgcctgc ccggtgccgg aaggttaatt gatggggtta gcgcaagcga agctcttgat      7620
+     cgaagccccg gtaaacggcg gccgtaacta taacggtcct aaggtagcga aattccttgt      7680
+     cgggtaagtt ccgacctgca cgaatggcgt aatgatggcc aggctgtctc cacccgagac      7740
+     tcagtgaaat tgaactcgct gtgaagatgc agtgtacccg cggcaagacg gaaagacccc      7800
+     gtgaaccttt actatagctt gacactgaac attgagcctt gatgtgtagg ataggtggga      7860
+     ggctttgaag tgtggacgcc agtctgcatg gagccgacct tgaaatacca ccctttaatg      7920
+     tttgatgttc taacgttgac ccgtaatccg ggttgcggac agtgtctggt gggtagtttg      7980
+     actggggcgg tctcctccta aagagtaacg gaggagcacg aaggttggct aatcctggtc      8040
+     ggacatcagg aggttagtgc aatggcataa gccagcttga ctgcgagcgt gacggcgcga      8100
+     gcaggtgcga aagcaggtca tagtgatccg gtggttctga atggaagggc catcgctcaa      8160
+     cggataaaag gtactccggg gataacaggc tgataccgcc caagagttca tatcgacggc      8220
+     ggtgtttggc acctcgatgt cggctcatca catcctgggg ctgaagtagg tcccaagggt      8280
+     atggctgttc gccatttaaa gtggtacgcg agctgggttt agaacgtcgt gagacagttc      8340
+     ggtccctatc tgccgtgggc gctggagaac tgaggggggc tgctcctagt acgagaggac      8400
+     cggagtggac gcatcactgg tgttcgggtt gtcatgccaa tggcactgcc cggtagctaa      8460
+     atgcggaaga gataagtgct gaaagcatct aagcacgaaa cttgccccga gatgagttct      8520
+     ccctgactcc ttgagagtcc tgaaggaacg ttgaagacga cgacgttgat aggccgggtg      8580
+     tgtaagcgca gcgatgcgtt gagctaaccg gtactaatga accgtgaggc ttaaccttac      8640
+     aacgccgaag ctgttttggc ggattgagag aagattttca gcctgataca gattaaatca      8700
+     gaacgcagaa gcggtctgat aaaacagaat ttgcctggcg gccgtagcgc ggtggtccca      8760
+     cctgacccca tgccgaactc agaagtgaaa cgccgtagcg ccgatggtag tgtggggtct      8820
+     ccccatgcga gagtagggaa ctgccaggca tcaaattaag cagtaagccg gtcataaaac      8880
+     cggtggttgt aaaagaattc ggtggagcgg tagttcagtc ggttagaata cctgcctgtc      8940
+     acgcaggggg tcgcgggttc gagtcccgtc cgttccgcca cttattaaga agcctcgagt      9000
+     taacgctcga ggtttttttt cgtctgtata tctattattg ccagaatcgc aaaaatcctc      9060
+     tgcattttac gctctttttc ctcaacagtc tgaagcccat aatcacctca gttaacgaaa      9120
+     atagcattaa aagaggcata ttatggctat ccctgcattt ggtttaggta ctttccgtct      9180
+     gaaagacgac gttgttattt catctgtgat aacggcgctt gaacttggtt atcgcgcaat      9240
+     tgataccgca caaatctatg ataacgaagc cgcagtaggt caggcgattg cagaaagtgg      9300
+     cgtgccacgt catgaactct acatcaccac taaaatctgg attgaaaatc tcagcaaaga      9360
+     caaattgatc ccaagtctga aagagagcct gcaaaaattg cgtaccgatt atgttgatct      9420
+     gacgctaatc cactggccgt caccaaacga tgaagtctct gttgaagagt ttatgcaggc      9480
+     gctgctggaa gccaaaaaac aagggctgac gcgtgagatc ggtatttcca acttcacgat      9540
+     cccgttgatg gaaaaagcga ttgctgctgt tggtgctgaa aacatcgcta ctaaccagat      9600
+     tgaactctct ccttatctgc aaaaccgtaa agtggttgcc tgggctaaac agcacggcat      9660
+     ccatattact tcctatatga cgctggcgta tggtaaggcc ctgaaagatg aggttattgc      9720
+     tcgtatcgca gctaaacaca atgcgactcc ggcacaagtg attctggcgt gggctatggg      9780
+     ggaaggttac tcagtaattc cttcttctac taaacgtaaa aacctggaaa gtaatcttaa      9840
+     ggcacaaaat ttacagcttg atgccgaaga taaaaaagcg atcgccgcac tggattgcaa      9900
+     cgaccgcctg gttagcccgg aaggtctggc tcctgaatgg gattaagcct ctctgacagc      9960
+     tcctccggga gctgttttta catgctcgct aaggaaatcg ataaaagccc ggatgcgcgt     10020
+     acttaccgca cggtcgctgt aatagacggc actgaatggc atttccactg gcaacacttt     10080
+     atctgccatt aactccacca attctccgcg agcgatttct ttgtcgatca tgtagtcgga     10140
+     caaacacgca atcccgttgc cactcaggca aagctgtttc agtgtttccc cactattgga     10200
+     tgacaaaccg tacttcacct catgtaattg tccatcgcta cgggctatcg gccaggtatt     10260
+     gagggaagcg ggttcagtga atcccaggca aatatgttgc tttaaatcgt cgatcgtttc     10320
+     tggcttcccg tagcgggaaa tataatcggg ggaggcgata atttttcgat aactgttaaa     10380
+     taacggcctg gcacgtaagc tggaatccgt taacgtacca gcgcgtatcg cgacatccac     10440
+     ttttctttcg atcaaattaa taatcgtttc ggaggagact agcgacaaag tgacttccgg     10500
+     atagcgttca cggaaaggct taattaacgg catcagaaag tgcagcacca ctggagttgc     10560
+     ggcatcgatc cgtaacagtc cacgcggtgt attacgcgtc tccataattt ctgattctgc     10620
+     cgctgccatc tcctgcaaaa ttgactgtac gcgacgaaaa taacgctcgc cttcttccgt     10680
+     caggctaagt tgtcgcgtgg tccgattaag caggctaacg ccaagtttca tctccagctt     10740
+     tttcaccgcc cggcttaccg ctgagtttgc ttgccctaat tgttccgctg cccggctaaa     10800
+     gctgccgctt tcgacgaccg aaacaaaaat ggcgagttct tccgacgtgg ctttcatttt     10860
+     tgctcctgtt gcaaaataga agagatattt tgaatttatt tgtcattaaa ccatcaggat     10920
+     gcgtgatatg tcatgcgatt taatgttctc cataatgagc aaaattctga ccggtgtaag     10980
+     cacttgctta cataacaata tacaa                                           11005
+//

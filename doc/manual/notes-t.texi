@@ -1,0 +1,151 @@
+@menu
+* Notes-Selector::              Selecting Notes
+* Notes-Editor::                Editing Notes
+* Notes-Special::               Special Note Types
+@end menu
+
+@cindex Notes
+
+A `Note' is an arbitrary piece of text which can be attached to any reading,
+any contig, or to a database as a whole. Each note also contains a note
+type, a creation date and a modification date. Any number of notes can
+be attached to each reading, contig or database.
+They can be considered as positionless tags.
+
+_split()
+@node Notes-Selector
+@section Selecting Notes
+@cindex Notes: selecting
+@cindex Edit notebooks
+
+The primary interface to creating, viewing and editing notes is the Note
+Selector window. This is accessable from a variety of places, 
+including anywhere a contig or reading name (or line in a graphical plot) is
+displayed, and also by using the "Edit Notebooks" command in the main gap4 Edit
+menu.
+
+_picture(notes.selector)
+
+The Note Selector initially starts up showing the database notes (unless
+selected from a specific contig or reading plot). The picture above shows three
+notes attached to the main gap4 database record. These are of type @code{OPEN}
+and @code{RAWD}, both of which have a specific meaning to gap4, and type
+@code{COMM}.
+
+The View Menu is used to see a list of notes for readings or contigs.
+If Reading Notes or Contig Notes is selected, the interface will ask for
+a reading or contig
+identifier by adding an extra line to the Note Selector Window, just beneath
+the menus. Typing one in and pressing return will then list the notes for
+that reading or contig. 
+
+To speed up selection, it is possible to use the right
+mouse button on the Contig Selector Window and in the contig rulers at the
+bottom of many plots (such as the Template Display), to select the "List Notes"
+option. This will start the Note Selector if it is not already running, and
+will direct it to display notes for the desired contig. Similarly, the
+right mouse button can be used 
+to popup a menu from a reading in the Template Display or
+from a reading name in the Contig Editor.
+
+To edit a note, double click anywhere in the Note Selector on the line
+for the note.
+
+To delete a note, single click on the note line to highlight it and then select
+"Delete" from the Note Selector Edit menu. To delete several notes
+at once, first highlight a range by left clicking and dragging the mouse to
+mark a region of notes, and then use Delete. Alternatively notes may be
+deleted by double clicking to bring up the note editor and selecting Delete
+from the Note Editor File menu.
+
+To create a new note use the "New" command from the Edit menu. The note will
+be added to whatever data type is currently shown. To create a
+note for a particular contig, select that contig using the Contig Notes option
+in the View menu, and then use New to create a new note. New notes
+will have type @code{COMM} and the contents can be in any format.
+
+_split()
+@node Notes-Editor
+@section Editing Notes
+@cindex Notes: editing
+
+Double clicking on a note in the Note Selector, or creating a new note, will
+bring up the Note Editor Window. This is simple text editor,
+allowing use of keyboard arrow keys and the mouse to position and edit text.
+It also has keyboard bindings for many of the simple emacs movement commands.
+
+_picture(notes.editor)
+
+At the top of the Notes Editor are three buttons. 
+The leftmost is the File menu
+which contains the "Save", "Delete" and "Exit" options. Next to this is the
+Type selector. This menu name displays the currently selected note type. To
+change the note 
+type select the appropriate type from the Type menu. The final button
+gives access to the online Help.
+
+Listed underneath the menu are the creation and modification dates. The
+creation date if fixed when a note is created.
+The modification date is adjusted every time a note is edited.
+(Simply viewing a note will not update the modification date, but saving
+changes to it will.)
+
+Underneath these is the note text itself. For convenience, the first line of
+each note is shown in the note selector window (so it can be helpful to
+make it identifiable).
+
+_split()
+@node Notes-Special
+@section Special Note Types
+@cindex Notes: special types
+
+Several types of note have special meanings. These include the
+@code{OPEN}, @code{CLOS} and @code{RAWD} note types.
+
+@table @code
+@cindex CLOS note type
+@cindex OPEN note type
+@item OPEN
+@itemx CLOS
+Notes of type OPEN and CLOS
+should contain pure Tcl code. If they exist, they will be
+executed when the database is opened (@code{OPEN}) and closed (@code{CLOS}).
+Take great care in creating and editing a note with these types! The purpose
+is to allow configuration options to be attached to a database, and
+hence allow for different gap4 configurations to be used when a UNIX directory
+contains more than one database. In general use of the @file{.gaprc} file 
+(_fpref(Conf-Introduction, Options Menu, configure)) is probably safer.
+
+If there is a problem with a database containing a malformed @code{OPEN} or
+@code{CLOS} note, it may be opened using @code{gap4 -no_exec_notes}. This will
+prevent gap4 from executing the @code{OPEN} and @code{CLOS} notes and so allow
+them to be fixed using the Note Editor.
+@sp 1
+
+@cindex RAWD note type
+@cindex RAWDATA
+@item RAWD
+This note specifies an alternative to the @code{RAWDATA} environment
+variable and should be set to be the full directory name for the
+location of the trace files for the database.
+If both the environment variable and the note are exist then
+the note will take priority. This automatic use of this note can be disabled
+be using the @code{-no_rawdata_note} command line option to gap4.
+@sp 1
+
+@cindex INFO note type
+@item INFO
+When created on a reading or a contig, this note may be displayed in the
+contig editor "information line"
+(_fpref(Editor-Info, The Editor Information Line, contig_editor))
+when the user moves the mouse over the editor sequence name list.
+@end table
+
+It is possible to create your own types by editing the 
+@file{$STADENROOT/tables/NOTEDB}
+file. The format is fairly self explainatory, and is very similar to the
+@file{GTAGDB} file. Each note type should consist of the long name followed by
+a colon and @code{id=}@i{4_letter_short_name}, optionally followed by
+@code{dt="}@i{any default text for this note}@code{"}. Lines may be split at
+colons by adding a backslash to the end of the line. See the standard
+@file{NOTEDB} file for examples.

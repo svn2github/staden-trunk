@@ -1,0 +1,53 @@
+The file contains acknowledgements to others for their input to the package.
+We apologise to those we have missed.
+
+------------------------------------------------------------------------------
+The OSP code used for oligo selection in bap, gap and gap4 is from (C) LaDeana
+Hillier and Philip Green. See the src/{gap4,bap}/osp-bits subdirectories.
+
+People wanting to obtain the program OSP should contact:
+
+    LaDeana Hillier (lfw@elegans.wustl.edu)
+    Department of Genetics
+    Washington University School of Medicine
+    4566 Scott Avenue, Box 8232
+    St. Louis, MO 63110
+    USA
+
+Reference:
+
+Hillier, L., and Green, P. (1991) PCR Methods and Applications, 1:124-128.
+OSP: an oligonucleotide selection program. 
+
+
+------------------------------------------------------------------------------
+The alignment algorithm used within the gap4 Directed Assembly mode is
+(c) 1992 Xiaoqiu Huang. See the src/gap4/align_ss2.c file.
+
+This algorithm is based upon one by Gene Myers and Web Miller, which we also
+use.
+
+References:
+
+Huang, X. CABIOS Vol 10 no 3. 227-235 (1994).
+On global sequence alignment.
+
+Myers, E.W.,  and Miller, W. (1988) Optimal alignments in linear space.
+Comput. Applic. Biosci. 4 11-17.
+
+------------------------------------------------------------------------------
+The Tcl language and the Tk toolkit were written by John Ousterhout. These
+have been used primarily for the interface in gap4.
+
+References:
+
+Ousterhout, J.K., (1990) ``TCL: An Embeddable Command Language'',
+in the Proceedings of the 1990 Winter USENIX Conference, pp 133-146.
+
+Ousterhout, J.K., (1991) ``An X11 Toolkit Based on the TCL Language'',
+in the Proceedings of the 1991 Winter USENIX Conference, pp 105-115.
+
+These papers can be obtained by ftp from:
+ftp://ftp.cs.berkeley.edu/ucb/tcl/tkUsenix91.ps
+ftp://ftp.cs.berkeley.edu/ucb/tcl/tkF10.ps
+

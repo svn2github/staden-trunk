@@ -1,0 +1,18 @@
+Setting up EMBOSS for use with Spin
+===================================
+
+The create_emboss_files program attempts to find the location for your
+installed EMBOSS release. From this is iterates through all of the acd files
+and produces tcl/tk GUIs for each program. These are placed in the
+$STADENROOT/lib/spin_emboss/acdtcl directory. An Emboss menu is added to Spin, 
+with the menu specification being in $STADENROOT/tables/emboss_menu.
+
+An example EMBOSS setup is distributed with the Staden Package. This was built 
+from the EMBOSS-2.0.0 release, but most of it is likely to work with newer
+versions, except obviously where new programs are added.
+
+Note that the dialogues created may be very large (as is the case with showseq 
+for example). However the ACD files we used were modified by adding
+appropriate section: and endsection: keywords. This means that some of the
+EMBOSS dialogues in Spin have multiple "tabs". (In time these will make their
+way in to the official EMBOSS releases.)

@@ -1,0 +1,44 @@
+
+
+primer_test.pl: testing ../src/primer3_core Mon Jun 24 17:06:36 BST 2002
+
+Testing fatal errors
+OK
+
+primer_boundary OK
+primer_internal OK
+primer_boundary_formated OK
+primer_internal_formated OK
+primer_start_codon OK
+primer_boundary1 OK
+primer_internal1 OK
+primer_task OK
+primer_task_formated OK
+primer_boundary1_formated OK
+primer_internal1_formated OK
+primer_check OK
+primer_must_use OK
+primer_must_use_formated OK
+primer_syntax OK
+primer_end_pathology OK
+primer_num_best OK
+primer_quality_boundary OK
+primer_obj_fn OK
+primer OK
+primer list files OK
+primer1 OK
+primer1 list files OK
+primer_mispriming OK
+primer_mispriming_formated OK
+primer_mispriming_boundary1 OK
+primer_mispriming_boundary1_formated OK
+primer_mispriming_boundary2 OK
+primer_mispriming_boundary2_formated OK
+primer_mispriming_long_lib OK
+primer_rat OK
+primer_human OK
+primer_ch OK
+long_seq OK
+primer_position_penalty OK
+primer_position_penalty_formated OK
+DONE

@@ -1,0 +1,125 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 2001. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Poly-A clipping
+#
+# This processes Experiment files, rewriting SR values as necessary.
+#
+set help {pregap4 {Pregap4-Modules-PolyA-Clip}}
+
+proc init {} {
+    mod_preset percent_match	95
+    mod_preset window_length	50
+    mod_preset min_length		0
+}
+
+proc run {files} {
+    variable percent_match
+    variable window_length
+    variable min_length
+    variable report
+    global file_type
+    global file_error
+	
+    set new_files {}
+    set report ""
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    array set e [read_exp_file $f]
+	    set sr [query_exp_file e SR]
+	    if {[catch {exec polyA_clip \
+		-p $percent_match \
+		-x $min_length \
+		-w $window_length \
+		$f} err]} {
+	        set file_error($f) "polyA_clip: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+	        lappend new_files $f
+		array set e [read_exp_file $f]
+		set new_sr [query_exp_file e SR]
+		if {$sr != $new_sr} {
+		    append report "SEQ $f: polyA clipped at $new_sr\n"
+		} else {
+		    append report "SEQ $f: no polyA identified\n"
+		}
+		vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    # vmessage -nonewline .
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc name {} {
+    return "Poly-A Clip"
+}
+
+proc create_dialogue {w} {
+    variable percent_match
+    variable window_length
+    variable min_length
+
+    xentry $w.percent_match \
+	-label "Percentage match" \
+	-default $percent_match \
+	-width 7 \
+	-type "int 1 100"
+    xentry $w.window_length \
+	-label "Window length" \
+	-default $window_length \
+	-width 7 \
+	-type "int 1"
+    xentry $w.min_length \
+	-label "Minimum length (reject if too short)" \
+	-default $min_length \
+	-width 7 \
+	-type "int 0"
+    pack $w.percent_match $w.window_length $w.min_length -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	percent_match min_length window_length]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable percent_match
+    variable window_length
+    variable min_length
+
+    set percent_match	   [$w.percent_match get]
+    set window_length	   [$w.window_length get]
+    set min_length	   [$w.min_length get]
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}
+
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	mod_save percent_match	[$w.percent_match get2]
+	mod_save min_length	[$w.min_length get2]
+	mod_save window_length	[$w.window_length get2]
+    }
+}

@@ -1,0 +1,5 @@
+
+# DO NOT DELETE
+$O/get_scf_field.o: $(SRCROOT)/io_lib/include/compress.h
+$O/get_scf_field.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/os.h
+$O/get_scf_field.o: $(SRCROOT)/Misc/xalloc.h

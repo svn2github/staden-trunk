@@ -1,0 +1,85 @@
+@lowersections
+
+@c Put man pages in alphabetical order as there's little other sensible
+@c ordering to these.
+
+@page
+@node Man-convert_trace
+@chapter Convert_trace
+_include(convert_trace.1.texi)
+
+@page
+@node Man-copy_db
+@chapter Copy_db
+_include(copy_db.1.texi)
+
+@page
+@node Man-copy_reads
+@chapter Copy_reads
+_include(copy_reads.1.texi)
+
+@page
+@node Man-eba
+@chapter Eba
+_include(eba.1.texi)
+
+@page
+@node Man-extract_seq
+@chapter Extract_seq
+_include(extract_seq.1.texi)
+
+@page
+@node Man-find_renz
+@chapter Find_renz
+_include(find_renz.1.texi)
+
+@page
+@node Man-get_comment
+@chapter Get_comment
+_include(get_comment.1.texi)
+
+@page
+@node Man-get_scf_field
+@chapter Get_scf_field
+_include(get_scf_field.1.texi)
+
+@page
+@node Man-init_exp
+@chapter Init_exp
+_include(init_exp.1.texi)
+
+@page
+@node Man-makeSCF
+@chapter MakeSCF
+_include(makeSCF.1.texi)
+
+@page
+@node Man-make_weights
+@chapter Make_weights
+_include(make_weights.1.texi)
+
+@page
+@node Man-polyA_clip
+@chapter PolyA_clip
+_include(polyA_clip.1.texi)
+
+@node Man-qclip
+@chapter Qclip
+_include(qclip.1.texi)
+
+@page
+@node Man-screen_seq
+@chapter Screen_seq
+_include(screen_seq.1.texi)
+
+@page
+@node Man-tracediff
+@chapter TraceDiff
+_include(tracediff.1.texi)
+
+@page
+@node Man-vector_clip
+@chapter Vector_clip
+_include(vector_clip.1.texi)
+
+@raisesections

@@ -1,0 +1,237 @@
+@menu
+* GapDB-Directories::   Directories
+* GapDB-New::           Creating a new database
+* GapDB-Existing::      Opening an existing database
+* GapDB-CopyDatabase::  Making backups of databases
+* GapDB-Names::         Reading and Contig Names and Numbers
+@end menu
+
+@cindex Database: gap4 filenames
+@cindex Entering readings
+@cindex readings: entering
+
+Gap4 stores the data for each sequencing project (e.g. the data 
+for a single cosmid or BAC) in a gap4 assembly database, so at 
+the start of a sequencing project
+the user should employ gap4 to create the database for the project 
+(_fpref(GapDB-New, Opening a New Database, gap_database)).
+New database are created with sufficient index space for around
+8000 readings, but this can be extended if required.
+
+Gel reading data
+in experiment file format 
+(_fpref(Formats-Exp, Experiment File Format, exp))
+is entered into the database using the methods
+available from the assembly menu 
+(_fpref(Assembly, Entering Readings into the Database (Assembly),gap4)).
+
+To assemble more data for the project or
+to edit or analyse readings already entered the user should open the
+same project database 
+(_fpref(GapDB-Existing, Opening an Existing Database, gap_database)).
+
+Although the database files are designed to be free of corruption it is
+advisable to make regular backups 
+(_fpref(GapDB-CopyDatabase, Making Backups of Databases, gap-database)).
+
+
+Database names can have from one to 240 letters and must not include a
+full stop or spaces. The database itself consists of two files; a file
+of records and an index file. If the database is called @file{FRED} then
+version 0 of the database comprises the pair of files named
+@file{FRED.0} and @file{FRED.0.aux}, the latter of these being the index
+file. The "version" is the character after the full stop in these
+filenames. Versions are not limited to numbers alone, but must be single characters.
+
+@cindex Database: busy file
+@cindex Busy file
+@cindex readonly
+@cindex Database: readonly
+@cindex Database: locked
+@cindex locked database
+@cindex readonly database
+
+When a database is opened for writing a @file{BUSY} file is created. For the
+@file{FRED} database this will be named @file{FRED.0.BUSY}. When the
+database is closed the file is deleted. The file is
+used by gap4 to signify that the database is opened for writing and is
+part of its mechanism to prevent more than one person editing a
+database at any time. Before opening a database for writing, 
+gap4 checks to see if the BUSY file for that database exists. If it does
+the database is opened only for reading, if not it creates the file, so
+that any additional attempts to open the database for writing will be
+blocked. A side effect of this mechanism, is that 
+in the event of a program or system crash the BUSY file
+will be left on the disk, even though the database is not being used. In
+this case users must remove the BUSY file 
+(after checking that it really isn't in
+use!) using, on UNIX the @code{rm} command before opening the database. Eg
+"@code{rm FRED.0.BUSY}". On Windows use the Recycle Bin.
+
+The gap4 database is robustly designed.  Killing the program whilst
+updating the database should never yield an inconsistent state. A
+"roll-back" mechanism is utilised to undo any partially written updates
+and revert to the last consistent database. Hence quitting abnormally
+may result in the loss of some data. Always quit using the Exit command
+within the File menu.
+
+However it is advised that copies of the database are made
+regularly to safeguard against any software bugs or disk
+corruptions.
+
+_split()
+@node GapDB-Directories
+@section Directories
+@cindex Directories
+
+By default, Gap4 expects files to be in the current directory.
+In dialogues which request filenames, full pathnames can be specified,
+however it is generally tidier to keep files
+specific to a particular project in the same directory as the project database.
+Creating new databases and opening new databases will change directory to the
+directory containing the opened project.
+
+It is possible to change the current directory by selecting "Change directory"
+from the File menu. Be warned that changing to a directory other than that
+containing the database and the trace files may mean that gap4 can no
+longer find the trace files. 
+The solutions to this problem are discussed elsewhere 
+(_fpref(Conf-Trace File Location, Trace File Location,t)).
+
+_split()
+@node GapDB-New
+@section Opening a New Database
+@cindex Creating a new database
+@cindex Database: new
+@cindex Database: creating new
+@cindex New database creation
+
+To create a new gap4 database select the "New" command from the File menu. This
+brings up a dialogue prompting the the new filename. Type the name of
+the database to create without specifying the version number. To
+create version 0 of a database named @file{FRED} typing @code{FRED} will
+create the two database files, @file{FRED.0} and @file{FRED.0.aux}.
+
+If the database already exists you will be asked whether you wish to
+overwrite it. Any database that was already open will be closed before
+the new database is created. The new database is then opened, ready for
+input.
+
+Note that Gap4 database names are case sensitive. 
+
+_split()
+@node GapDB-Existing
+@section Opening an Existing Database
+@cindex Opening databases
+@cindex Database: opening
+
+To open an existing database select the "Open..." command from the File
+menu.  This brings up a file browser where the database name can be
+selected. The databases will be listed in a @code{NAME.V} notation
+(where @code{V} is the version number). Double clicking on the database
+name will then open this database.
+
+If the program already had a database open it will close it 
+before the new one is
+opened. If the new database is already in use by gap4 a dialogue will
+appear warning you that the database has been opened in read only mode.
+This mode prevents any edits from being made to the database by greying out
+certain options and disabling the editing capabilities in the contig editor.
+
+A database may also be opened by specifying the database name and
+version on the unix command line. To open version 0 of the database
+@file{FRED} use "@code{gap4 FRED.0}".
+
+_split()
+@node GapDB-CopyDatabase
+@section Making Backups of Databases
+@cindex Backing up databases
+@cindex Database: backups
+@cindex Save As
+@cindex Copy Database
+
+The importance of making regular backups of your data cannot be over stated.
+Using the "Copy database" command from the File menu brings up a dialogue
+asking for a new database version. Type in a single character for the
+new version and press "ok" or return. If the new database already exists
+you will be asked whether you wish to overwrite it. Any subsequent changes you
+make will still be to the database that you originally opened, not to the
+database you have just saved to.
+
+The database file may sometimes become fragmented. An option available when
+saving is to use garbage collection. This creates the new database by only
+copying over the used portions of data (and hence reduces fragmentation).
+However it is quite a lot slower than the standard "Copy database" mechanism,
+so if this causes problems add "@code{set_def COPY_DATABASE.COLLECT 0}" to
+your @file{.gaprc} file to change the default to no garbage collection. It
+should be noted that garbage collection also performs a rigorous database
+consistency check.
+
+Do not always use the same version character for you backups. Instead
+keep several different backups. Otherwise you may find that both your
+current database and the backup have problems. It is also wise to run
+"check database" to verify data integrity. 
+_fxref(Check Database, Check Database, check_db)
+
+It is also possible to backup databases from outside gap4 by using
+standard unix commands to copy @strong{both} the record and index files.
+Care should be taken when doing this to ensure that the database is not
+being modified whilst copying. See your unix or 
+Windows manuals for further details or
+the @code{copy_db} manual page (_fpref(Man-copy_db, Copy_db, manpages)) for
+the external garbage collecting database copy program.
+
+_split()
+@node GapDB-Names
+@section Reading and Contig Names and Numbers
+@cindex Reading names
+@cindex Reading name restrictions
+@cindex Reading name length restrictions
+@cindex File name restrictions
+@cindex Experiment file name restrictions
+@cindex Experiment file name length restrictions
+@cindex SCF file name restrictions
+@cindex sample name restrictions
+@cindex Reading numbers
+@cindex Readings: maximum in a database
+@cindex Database: maximum size
+@cindex Contig names
+
+For various reasons there are restrictions on the characters used in 
+file names and the length of the file names.
+
+Characters permitted in file names:
+
+@c @code{A}..@code{Za}..@code{z0}..@code{9._-}
+@code{ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-}
+
+A reading name or experiment file name must not be longer than 40 characters.
+
+These restrictions also apply to SCF files which means, in turn, also to
+the names given to samples obtained from sequencing instruments. For example
+do not give sample names such as 27/OCT/96/r.1 when using and ABI machine:
+the / symbols will be interpreted as directory name separators on UNIX!
+
+As each reading is entered into a project database it is given a unique
+number. The first is numbered 1, the second 2 and so on. Their reading
+names are read from the ID line in the experiment files and copied into
+the database. As new readings are created and existing ones removed the
+reading numbers change in an unpredictable fashion. Hence when taking
+notes on a project always record the reading name instead of the reading
+number.
+
+The maximum number of readings a database can hold is 99,999,999.
+
+Many options ask for a reading or contig identifier. A contig identifier is
+simply any reading name or number within that contig. A reading
+identifier is either the reading name or the hash ("@code{#}") character
+followed by the number. For example, if the reading name is
+@code{fred.gel} with number 99 users could type "@code{fred.gel}" or
+"@code{#99}" when asked to identify the contig.
+
+Generally when prompting for a contig or reading name a default is
+supplied. This is the last name you used, or if you've only just opened
+the database, the name of the longest contig in the database.
+For more information about selecting contigs within the program see
+_fxref(Contig-Selector-Contigs, Selecting Contigs, t).
+

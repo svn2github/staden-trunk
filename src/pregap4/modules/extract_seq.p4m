@@ -1,0 +1,208 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1999. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Runs extract_seq on a batch of files
+#
+set help {pregap4 {Configuring Modules:Extract Sequence}}
+
+proc name {} {
+    return "Extract Sequence"
+}
+
+proc init {} {
+    mod_preset good_only	1
+    mod_preset clip_cosmid	0
+    mod_preset fasta_out	1
+    mod_preset one_file		1
+    mod_preset file_name	""
+    mod_preset file_suffix	""
+
+    variable enabled
+
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|extract_seq -" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "extract_seq is not in user's PATH"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    variable report
+
+    variable good_only
+    variable clip_cosmid
+    variable fasta_out
+    variable one_file
+    variable file_name
+    variable file_suffix
+
+    variable options
+
+    set report ""
+
+    set options ""
+    if {$good_only == 1} {
+	set options "$options -good_only"
+    }
+    if {$clip_cosmid == 1} {
+	set options "$options -clip_cosmid"
+    }
+    if {$fasta_out == 1} {
+	set options "$options -fasta_out"
+    }
+
+    # Run extract_seq
+    if {$one_file == 1} {
+	if {[catch {eval exec extract_seq $options -output [list $file_name] $files} err]} {
+	    vmessage $err
+	    vmessage -nonewline !
+	} else {
+	    vmessage -nonewline .
+	}
+    } else {
+	foreach f $files {
+	    if {[catch {eval exec extract_seq $options -output [list $f$file_suffix $f]} err]} {
+		set file_error($f) "extract_seq: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+		vmessage -nonewline .
+	    }
+	}
+    }
+
+    vmessage ""
+
+    # extract_seq does not change exp or SCF
+    # files so want to return the same list
+    # of files as was started with
+
+    return $files
+}
+
+proc create_dialogue {w} {
+    variable good_only
+    variable clip_cosmid
+    variable fasta_out
+    variable one_file
+    variable file_name
+    variable file_suffix
+
+    xyn $w.good_only \
+	-label "Output only the good sequence" \
+	-orient horiz \
+	-default $good_only \
+	-ycommand "$w.clip_cosmid configure -state normal" \
+	-ncommand "$w.clip_cosmid configure -state disabled" \
+	-variable [namespace current]::good_only
+
+    xyn $w.clip_cosmid \
+	-label "Consider cosmid as good sequence" \
+	-orient horiz \
+	-default $good_only \
+	-variable [namespace current]::clip_cosmid
+
+    xyn $w.fasta_out \
+	-label "Output in fasta format" \
+	-orient horiz \
+	-default $good_only \
+	-variable [namespace current]::fasta_out
+
+    xyn $w.one_file \
+	-label "Output in one file only" \
+	-orient horiz \
+	-default $one_file \
+	-ycommand "$w.file_name configure -state normal;
+                   $w.file_suffix configure -state disabled" \
+	-ncommand "$w.file_name configure -state disabled;
+                   $w.file_suffix configure -state normal" \
+	-variable [namespace current]::one_file
+
+    xget_fname $w.file_name \
+	-text "File name" \
+	-type save \
+	-default $file_name \
+
+    xentry $w.file_suffix \
+	-label "File name suffix" \
+	-default $file_suffix \
+	-width 14
+
+    $w.good_only set $good_only
+    $w.one_file set $one_file
+
+    pack $w.good_only -side top -fill both
+    pack $w.clip_cosmid -side top -fill both
+    pack $w.fasta_out -side top -fill both
+    pack $w.one_file -side top -fill both
+    pack $w.file_name -side top -fill both
+    pack $w.file_suffix -side top -fill both
+
+}
+
+proc configure_dialogue {w mode} {
+    variable good_only
+    variable clip_cosmid
+    variable fasta_out
+    variable one_file
+    variable file_name
+    variable file_suffix
+
+    if {[string match save* $mode]} {
+	mod_save good_only [$w.good_only get]
+	mod_save clip_cosmid [$w.clip_cosmid get]
+	mod_save fasta_out [$w.fasta_out get]
+	mod_save file_name [$w.file_name get]
+	mod_save file_suffix [$w.file_suffix get]
+    }
+}
+
+proc check_params {} {
+    variable one_file
+
+    if {$one_file == 1} {
+	if {"" != [set inv [local_param_exists [namespace current] file_name]]} {
+	    return $inv
+	}
+    } else {
+	if {"" != [set inv [local_param_exists [namespace current] file_suffix]]} {
+	    return $inv
+	}
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable good_only
+    variable clip_cosmid
+    variable fasta_out
+    variable one_file
+    variable file_name
+    variable file_suffix
+
+    if {$one_file == 1} {
+	set file_name [$w.file_name get]
+    } else {
+	set file_suffix [$w.file_suffix get]
+    }
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}

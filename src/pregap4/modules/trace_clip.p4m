@@ -1,0 +1,168 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Quality clipping, base on the quality of the traces
+#
+# This processes Experiment files, writing the clipping segments back as
+# QL and QR lines
+#
+#set help {pregap4 {Pregap4-Modules-Trace Clip}}
+
+proc name {} {
+    return "Trace Quality Clip"
+}
+
+proc init {} {
+    mod_preset clip_args "-c 0.342229 -C 0.678329 -f 0.652174 -k 0.393247 -K 0.505387 -F 0.862162"
+    mod_preset end 	 both
+    mod_preset max_right 600
+    mod_preset min_left	 5
+    mod_preset start	 -1
+}
+
+proc run {files} {
+    global file_type file_error
+    variable clip_args
+    variable end
+    variable max_right
+    variable min_left
+    variable start
+    variable report
+
+    if {$end == "left"} {
+	set args "-L $clip_args"
+    } elseif {$end == "right"} {
+	set args "-R $clip_args"
+    } else {
+	set args "-b $clip_args"
+    }
+
+    set new_files {}
+    set report ""
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {[catch {eval exec trace_clip \
+		    -m $max_right \
+		    -M $min_left \
+		    -s $start \
+		    $args [list $f]} err]} {
+	        set file_error($f) "trace_clip: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+	        lappend new_files $f
+		append report "SEQ $f: clipped using 'trace_clip'\n"
+		vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    vmessage -nonewline .
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable clip_args
+    variable end
+    variable max_right
+    variable min_left
+    variable start
+
+    label $w.label -text "The trace_clip arguments should be determined using the scale_trace_clip program. This will supply you with the trace_clip arguments that are tuned to your own style of quality clipping." -wraplength 300 -justify left
+
+    xentry $w.clip_args \
+	-label "Trace_clip arguments" \
+	-default $clip_args \
+	-width 25
+
+    pack $w.label -side top -fill both -pady 15
+    pack $w.clip_args -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    frame $w.end_l
+    label $w.end_l.l -text "Ends to clip"
+    frame $w.end_b
+    radiobutton $w.end_b.left \
+	-text "Left" \
+	-variable [namespace current]::end \
+	-value left
+    radiobutton $w.end_b.right \
+	-text "Right" \
+	-variable [namespace current]::end \
+	-value right
+    radiobutton $w.end_b.both \
+	-text "Both" \
+	-variable [namespace current]::end \
+	-value both
+    pack $w.end_l.l -side left
+    pack $w.end_b.left $w.end_b.right $w.end_b.both -side top -anchor w
+    pack $w.end_l $w.end_b -side top -fill both
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+
+    xentry $w.max_right \
+	-label "Maximum right clip" \
+	-default $max_right \
+	-width 7 \
+	-type "int 0"
+    xentry $w.min_left \
+	-label "Minimum left clip" \
+	-default $min_left \
+	-width 7 \
+	-type "int 0"
+    xentry $w.start \
+	-label "Start point (-1 for auto.)" \
+	-default $start \
+	-width 7 \
+	-type "int -1"
+
+    pack $w.max_right $w.min_left $w.start -side top -fill both
+}
+
+proc check_params {} {
+    # NB: clip_args are optional
+    if {"" != [set inv [local_param_exists [namespace current] \
+	max_right min_left start]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable clip_args
+    variable max_right
+    variable min_left
+    variable start
+
+    set clip_args [$w.clip_args get]
+    if {[set max_right [$w.max_right get]] == ""} { return 0 }
+    if {[set min_left  [$w.min_left  get]] == ""} { return 0 }
+    if {[set start     [$w.start     get]] == ""} { return 0 }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    if {[string match save* $mode]} {
+	variable end
+	mod_save end $end
+	mod_save clip_args [$w.clip_args get2]
+	mod_save max_right [$w.max_right get2]
+	mod_save min_left [$w.min_left get2]
+	mod_save start [$w.start get2]
+    }
+}

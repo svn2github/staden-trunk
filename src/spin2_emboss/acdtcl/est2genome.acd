@@ -1,0 +1,303 @@
+package require Iwidgets
+namespace eval ::EMBOSS::est2genome {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_est2genome*Xentry.entry.width 30
+option add *e_est2genome*Entryfield.width 30
+option add *e_est2genome*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) est2genome
+    set w [xtoplevel .e_est2genome -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - est2genome}
+    label $w._title -text {Align EST and genomic DNA sequences}
+    pack $w._title -side top -fill both
+    set vars(est2genome._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments est
+    set vars(est)       [get_active_seq_id 1]
+    if {$vars(est) == -1} {set vars(est) [get_active_seq_id 1]}
+    set vars(est.name)  [seq_info $vars(est) name]
+    sequence_changed [namespace current] est
+    set vars(est.type) [subst dna]
+    seq_id $w.est \
+	-textvariable [namespace current]::vars(est.name)\
+	-start_value $vars(est.begin)\
+	-end_value $vars(est.end)\
+	-to [seq_info $vars(est) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] est $w.est}"
+    set vars(est) [subst {}]
+    pack $w.est -side top -fill both
+    set vars(est.path) $w.est
+    set vars(est.required)  1
+    trace variable vars(est.name) w  "::EMBOSS::sequence_changed [namespace current] est"
+    set vars(est._type) seqall
+
+    lappend arguments genome
+    set vars(genome)       [get_active_seq_id 2]
+    if {$vars(genome) == -1} {set vars(genome) [get_active_seq_id 1]}
+    set vars(genome.name)  [seq_info $vars(genome) name]
+    sequence_changed [namespace current] genome
+    set vars(genome.type) [subst dna]
+    seq_id $w.genome \
+	-textvariable [namespace current]::vars(genome.name)\
+	-start_value $vars(genome.begin)\
+	-end_value $vars(genome.end)\
+	-to [seq_info $vars(genome) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] genome $w.genome}"
+    set vars(genome) [subst {}]
+    pack $w.genome -side top -fill both
+    set vars(genome.path) $w.genome
+    set vars(genome.required)  1
+    trace variable vars(genome.name) w  "::EMBOSS::sequence_changed [namespace current] genome"
+    set vars(genome._type) sequence
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments match
+    iwidgets::entryfield $w.match \
+	-validate integer \
+	-textvariable [namespace current]::vars(match) \
+	-labeltext [subst {Score for matching two bases}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.match component entry] -sticky nse
+    set vars(match) [subst 1]
+    pack $w.match -side top -fill both
+    set vars(match.path) $w.match
+    set vars(match.required)  0
+    set vars(match._type) integer
+
+    lappend arguments mismatch
+    iwidgets::entryfield $w.mismatch \
+	-validate integer \
+	-textvariable [namespace current]::vars(mismatch) \
+	-labeltext [subst {Cost for mismatching two bases}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mismatch component entry] -sticky nse
+    set vars(mismatch) [subst 1]
+    pack $w.mismatch -side top -fill both
+    set vars(mismatch.path) $w.mismatch
+    set vars(mismatch.required)  0
+    set vars(mismatch._type) integer
+
+    lappend arguments gappenalty
+    iwidgets::entryfield $w.gappenalty \
+	-validate integer \
+	-textvariable [namespace current]::vars(gappenalty) \
+	-labeltext [subst {Gap penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gappenalty component entry] -sticky nse
+    set vars(gappenalty) [subst 2]
+    pack $w.gappenalty -side top -fill both
+    set vars(gappenalty.path) $w.gappenalty
+    set vars(gappenalty.required)  0
+    set vars(gappenalty._type) integer
+
+    lappend arguments intronpenalty
+    iwidgets::entryfield $w.intronpenalty \
+	-validate integer \
+	-textvariable [namespace current]::vars(intronpenalty) \
+	-labeltext [subst {Intron penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.intronpenalty component entry] -sticky nse
+    set vars(intronpenalty) [subst 40]
+    pack $w.intronpenalty -side top -fill both
+    set vars(intronpenalty.path) $w.intronpenalty
+    set vars(intronpenalty.required)  0
+    set vars(intronpenalty._type) integer
+
+    lappend arguments splicepenalty
+    iwidgets::entryfield $w.splicepenalty \
+	-validate integer \
+	-textvariable [namespace current]::vars(splicepenalty) \
+	-labeltext [subst {Splice site penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.splicepenalty component entry] -sticky nse
+    set vars(splicepenalty) [subst 20]
+    pack $w.splicepenalty -side top -fill both
+    set vars(splicepenalty.path) $w.splicepenalty
+    set vars(splicepenalty.required)  0
+    set vars(splicepenalty._type) integer
+
+    lappend arguments minscore
+    iwidgets::entryfield $w.minscore \
+	-validate integer \
+	-textvariable [namespace current]::vars(minscore) \
+	-labeltext [subst {Minimum accepted score}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minscore component entry] -sticky nse
+    set vars(minscore) [subst 30]
+    pack $w.minscore -side top -fill both
+    set vars(minscore.path) $w.minscore
+    set vars(minscore.required)  0
+    set vars(minscore._type) integer
+
+    lappend arguments reverse
+    checkbutton $w.reverse \
+	-text [subst {Reverse orientation}]\
+	-variable [namespace current]::vars(reverse)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.reverse -side top -anchor w
+    set vars(reverse) [subst 0]
+    set vars(reverse.path) $w.reverse
+    set vars(reverse.required)  0
+    set vars(reverse._type) bool
+
+    lappend arguments splice
+    checkbutton $w.splice \
+	-text [subst {Use donor and acceptor splice sites}]\
+	-variable [namespace current]::vars(splice)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.splice -side top -anchor w
+    set vars(splice) [subst 1]
+    set vars(splice.path) $w.splice
+    set vars(splice.required)  0
+    set vars(splice._type) bool
+
+    lappend arguments mode
+    iwidgets::entryfield $w.mode \
+	-textvariable [namespace current]::vars(mode) \
+	-labeltext [subst {Comparison mode}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mode component entry] -sticky nse
+    set vars(mode) [subst both]
+    pack $w.mode -side top -fill both
+    set vars(mode.path) $w.mode
+    set vars(mode.required)  0
+    set vars(mode._type) string
+
+    lappend arguments best
+    checkbutton $w.best \
+	-text [subst {Print out only best alignment}]\
+	-variable [namespace current]::vars(best)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.best -side top -anchor w
+    set vars(best) [subst 1]
+    set vars(best.path) $w.best
+    set vars(best.required)  0
+    set vars(best._type) bool
+
+    lappend arguments space
+    iwidgets::entryfield $w.space \
+	-validate real \
+	-textvariable [namespace current]::vars(space) \
+	-labeltext [subst {Space threshold (in megabytes)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.space component entry] -sticky nse
+    set vars(space) [subst 10.0]
+    pack $w.space -side top -fill both
+    set vars(space.path) $w.space
+    set vars(space.required)  0
+    set vars(space._type) float
+
+    lappend arguments shuffle
+    iwidgets::entryfield $w.shuffle \
+	-validate integer \
+	-textvariable [namespace current]::vars(shuffle) \
+	-labeltext [subst Shuffle]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.shuffle component entry] -sticky nse
+    set vars(shuffle) [subst 0]
+    pack $w.shuffle -side top -fill both
+    set vars(shuffle.path) $w.shuffle
+    set vars(shuffle.required)  0
+    set vars(shuffle._type) integer
+
+    lappend arguments seed
+    iwidgets::entryfield $w.seed \
+	-validate integer \
+	-textvariable [namespace current]::vars(seed) \
+	-labeltext [subst {Random number seed}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.seed component entry] -sticky nse
+    set vars(seed) [subst 20825]
+    pack $w.seed -side top -fill both
+    set vars(seed.path) $w.seed
+    set vars(seed.required)  0
+    set vars(seed._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst est2genome0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+
+    lappend arguments align
+    checkbutton $w.align \
+	-text [subst {Show the alignment}]\
+	-variable [namespace current]::vars(align)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.align -side top -anchor w
+    set vars(align) [subst 0]
+    set vars(align.path) $w.align
+    set vars(align.required)  0
+    set vars(align._type) bool
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {Alignment width}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 50]
+    pack $w.width -side top -fill both
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/est2genome.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

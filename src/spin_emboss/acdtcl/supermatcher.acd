@@ -1,0 +1,227 @@
+package require Iwidgets
+namespace eval ::EMBOSS::supermatcher {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_supermatcher*Xentry.entry.width 30
+option add *e_supermatcher*Entryfield.width 30
+option add *e_supermatcher*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) supermatcher
+    set w [xtoplevel .e_supermatcher -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - supermatcher}
+    label $w._title -text {Finds a match of a large sequence against one or more sequences}
+    pack $w._title -side top -fill both
+    set vars(supermatcher._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqa
+    set vars(seqa)       [get_active_seq_id 0]
+    if {$vars(seqa) == -1} {set vars(seqa) [get_active_seq_id 0]}
+    set vars(seqa.name)  [seq_info $vars(seqa) name]
+    sequence_changed [namespace current] seqa
+    set vars(seqa.type) [subst any]
+    seq_id $w.seqa \
+	-textvariable [namespace current]::vars(seqa.name)\
+	-start_value $vars(seqa.begin)\
+	-end_value $vars(seqa.end)\
+	-to [seq_info $vars(seqa) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqa $w.seqa}"
+    set vars(seqa) [subst {}]
+    pack $w.seqa -side top -fill both
+    set vars(seqa.path) $w.seqa
+    set vars(seqa.required)  1
+    trace variable vars(seqa.name) w  "::EMBOSS::sequence_changed [namespace current] seqa"
+    set vars(seqa._type) seqall
+
+    lappend arguments seqb
+    set vars(seqb)       [get_active_seq_id 1]
+    if {$vars(seqb) == -1} {set vars(seqb) [get_active_seq_id 0]}
+    set vars(seqb.name)  [seq_info $vars(seqb) name]
+    sequence_changed [namespace current] seqb
+    set vars(seqb.type) [subst {[expr {($vars(seqa.protein) ? "stopprotein" : "nucleotide")}]}]
+    seq_id $w.seqb \
+	-textvariable [namespace current]::vars(seqb.name)\
+	-start_value $vars(seqb.begin)\
+	-end_value $vars(seqb.end)\
+	-to [seq_info $vars(seqb) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqb $w.seqb}"
+    set vars(seqb) [subst {}]
+    pack $w.seqb -side top -fill both
+    set vars(seqb.path) $w.seqb
+    set vars(seqb.required)  1
+    trace variable vars(seqb.name) w  "::EMBOSS::sequence_changed [namespace current] seqb"
+    set vars(seqb.type.orig) $vars(seqb.type)
+    set vars(seqb.type.expr) {[expr {($vars(seqa.protein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(seqa.protein) w  "::EMBOSS::reset_value [namespace current] seqb.type"
+   set vars(seqb.totweight) [subst 0]
+    set vars(seqb._type) seqset
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments gapopen
+    iwidgets::entryfield $w.gapopen \
+	-validate real \
+	-textvariable [namespace current]::vars(gapopen) \
+	-labeltext [subst {Gap opening penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapopen component entry] -sticky nse
+    set vars(gapopen) [subst {[expr {($vars(seqa.protein)? 10.0 : 10.0)}]}]
+    pack $w.gapopen -side top -fill both
+    set vars(gapopen.minimum) [subst 1.0]
+    set vars(gapopen.maximum) [subst 100.0]
+    set vars(gapopen.path) $w.gapopen
+    set vars(gapopen.required)  1
+    set vars(gapopen.orig) $vars(gapopen)
+    set vars(gapopen.expr) {[expr {($vars(seqa.protein)? 10.0 : 10.0)}]}
+    trace variable vars(seqa.protein) w  "::EMBOSS::reset_value [namespace current] gapopen"
+    set vars(gapopen._type) float
+
+    lappend arguments gapextend
+    iwidgets::entryfield $w.gapextend \
+	-validate real \
+	-textvariable [namespace current]::vars(gapextend) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapextend component entry] -sticky nse
+    set vars(gapextend) [subst {[expr {($vars(seqa.protein)? 0.5 : 0.5)}]}]
+    pack $w.gapextend -side top -fill both
+    set vars(gapextend.minimum) [subst 0.1]
+    set vars(gapextend.maximum) [subst 10.0]
+    set vars(gapextend.path) $w.gapextend
+    set vars(gapextend.required)  1
+    set vars(gapextend.orig) $vars(gapextend)
+    set vars(gapextend.expr) {[expr {($vars(seqa.protein)? 0.5 : 0.5)}]}
+    trace variable vars(seqa.protein) w  "::EMBOSS::reset_value [namespace current] gapextend"
+    set vars(gapextend._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst {[expr {$vars(seqa.protein)}]}]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Matrix file}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.protein.orig) $vars(datafile.protein)
+    set vars(datafile.protein.expr) {[expr {$vars(seqa.protein)}]}
+    trace variable vars(seqa.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrixf
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {Alignment width}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 16]
+    pack $w.width -side top -fill both
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    lappend arguments wordlen
+    iwidgets::entryfield $w.wordlen \
+	-validate integer \
+	-textvariable [namespace current]::vars(wordlen) \
+	-labeltext [subst {word length for initial matching}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.wordlen component entry] -sticky nse
+    set vars(wordlen) [subst 6]
+    pack $w.wordlen -side top -fill both
+    set vars(wordlen.minimum) [subst 3]
+    set vars(wordlen.path) $w.wordlen
+    set vars(wordlen.required)  0
+    set vars(wordlen._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Alignment output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst align0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) align
+
+    lappend arguments errorfile
+    xentry $w.errorfile \
+	-label [subst {Error file to be written to}]\
+	-textvariable [namespace current]::vars(errorfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.errorfile delete 0 end
+    $w.errorfile insert end [subst supermatcher.error]
+    pack $w.errorfile -side top -fill both
+    set vars(errorfile.path) $w.errorfile
+    set vars(errorfile.required)  0
+    set vars(errorfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/supermatcher.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

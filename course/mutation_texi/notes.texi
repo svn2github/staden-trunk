@@ -1,0 +1,582 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+@c %**start of header
+@setfilename course.info
+@settitle Sequencing Project Management Using the Staden Package
+@iftex
+@afourpaper
+@end iftex
+@c @setchapternewpage odd
+@c %**end of header
+
+@c Experiment with smaller amounts of whitespace between chapters
+@c and sections.
+@tex
+\global\chapheadingskip = 15pt plus 4pt minus 2pt 
+\global\secheadingskip = 12pt plus 3pt minus 2pt
+\global\subsecheadingskip = 9pt plus 2pt minus 2pt
+@end tex
+
+@c Experiment with smaller amounts of whitespace between paragraphs in
+@c the 8.5 by 11 inch format.
+@tex
+\global\parskip 6pt plus 1pt
+@end tex
+
+@paragraphindent 0
+
+@titlepage
+@title Mutation Detection Using the Staden Package
+@subtitle Last update on @today{}
+@author James Bonfield, David Judge
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2002.
+Permission is given to duplicate this manual in both paper and electronic
+forms. If you wish to charge more than the duplication costs, or wish to make
+edits to the manual, please contact the authors by email to
+@code{staden-package@@mrc-lmb.cam.ac.uk}.
+
+The package may be obtained by following the links from:
+@br
+ 
+@url{http://www.mrc-lmb.cam.ac.uk/pubseq/}.
+@end titlepage
+
+@chapter Pregap4
+
+@section Obtaining the course data
+
+This exercise contains some sequencing data for you to experiment with. This
+is in the same directory as the Staden Package installation (referenced as
+@i{$STADENROOT}) and can be copied by the following Unix commands.
+
+@example
+mkdir  exercise
+cp  $STADENROOT/course/data/mutations/*  exercise
+cd  exercise
+ls
+@end example
+
+Do not worry if you do not understand Unix. Put simply we created a new
+directory named @i{exercise}, we copied all the files from
+@i{$STADENROOT/course/data/mutations/} to our new @i{exercise} directory, and we then
+changed into this directory and listed the contents. The software also works
+directly within Microsoft Windows (running on the local machine instead of
+requiring a remote server and X11 display) and then the above commands would
+be replaced by a normal Windows file copy.
+
+You should see lots of files ending in @i{.scf} and one file ending in
+@i{.embl}. The @i{.scf} files are the raw sequencing files produced from
+an ABI sequencing instrument, including two traces which we will use as
+references. They are in a different format than ABI use, but the
+software you will use can either format. The EMBL file is the BRCA1
+complete mRNA sequence, as fetched from the EBI using SRS, which we will
+use as our reference sequence.
+
+@section Starting Pregap4
+
+Pregap4 is the tool for automating the various steps to take a binary sequence 
+trace file and to convert it into something usable by the sequence assembly
+tools. Along the way it also performs the mutation analysis steps described in 
+the talk.
+
+Start pregap4 by typing into your command line:
+
+@example
+pregap4 &
+@end example
+
+@section Loading your files
+
+Pregap4 has a series of menus at the top of the window and a large
+tabbed-notebook underneath this (containing @i{Files to Process}, @i{Configure
+Modules} and @i{Textual Output}). We will start with the first tab - @i{Files
+to Process}.
+
+Click on the @b{Add files} button to bring up a file browser. Select all the
+@i{.scf} files and the @i{HS14680.embl} file by clicking on @b{Any} to view
+all files. Left click on the first file in the "Files:" panel and drag down to 
+the end before letting go (as there are no other files in this
+directory). Press @b{OK} to accept your selection and Pregap4 will update to
+reveal the sequences you have selected.
+
+@image{pregap4-1,16cm}
+
+@section Selecting the Modules
+
+Now click on the @b{Configure Modules} tab to reveal the list of tasks that
+Pregap4 can perform. The left side of the window is the module name and the
+right side shows the configuration parameters for the currently selected
+module. Select different modules by clicking on their name to the left. Click
+on the @b{[ ]} or @b{[x]} boxes in the far left to enable or disable a
+module. Modules with an @b{[x]} next to them will be used by Pregap4. There are
+a lot of options available in Pregap4, but for our case we can ignore most of
+them so follow this simple walk-through. Any modules not listed below
+should be left disabled.
+
+@table @asis
+@item General Configuration
+@br
+(This module cannot be disabled.) Accept @b{No} to the @i{Get entry names from 
+trace files} question. Pregap4 is offering to rename the files by extracting
+the "sample names" contained within them. This is useful if you filled out the 
+sample sheet using the ABI sequencing software, but this is not the case
+for our data.
+
+@item Phred
+@br
+@b{Enable} this.
+@br
+Phred is an alternative base caller to the ABI software. The
+biggest benefit in using Phred is that for every base called it assigns a
+probability of it being called correctly.
+
+@item Estimate Base Accuracies
+@br
+@b{Disable} this.
+@br
+This simply measures signal to noise ratios as an alternative to re-calling
+the bases and assigning confidence values, but it conflicts with Phred so this 
+should be disabled.
+
+@item Trace Format Conversion
+@itemx Initialise Experiment Files
+@itemx Augment Experiment Files
+@br
+Keep these three as they are - enabled.
+@br
+The Trace Format Conversion compresses the trace files to save some disk
+space. The Experiment Files are textual copies of the traces, much like
+EMBL files. The @i{Augment} step applies the "naming scheme", which we
+come to later.
+
+@item Quality Clip
+@br
+Keep this enabled. It identifies the poor quality regions of the trace files
+and hides them from assembly (although the data is not deleted). The
+@i{average confidence} used to determine good data defaults to @i{15}, which
+is approximately equivalent to a 3% error rate.
+
+@item Sequencing Vector Clip
+@itemx Screen for Unclipped Vector
+@itemx Cloning Vector Clip
+@br
+@b{Disable} all three of these.
+@br
+These modules are intended for shotgun-sequencing projects where a vector
+sequence (bluescript, pUC, etc) will be present at the start of every
+sequence. This is not true with our data.
+
+@item Reference Traces
+@br
+@b{Enable} this.
+@br
+Here we tell Pregap4 what our reference trace files are and the reference
+sequence. There are three buttons labelled @b{Browse}. Click on each in turn
+and specify the following:
+
+@i{Reference Trace (+ve strand) = } @b{000906_11cF.scf}
+
+@i{Reference Trace (-ve strand) = } @b{000906_11cR.scf}
+
+@i{Reference Sequence = } @b{HS14680.embl}
+
+We shall see later on (in Gap4) how these files are used.
+
+@item Trace Difference
+@itemx Heterozygote Scanner
+@br
+@b{Enable} both of these modules.
+@br
+These perform the primary task of automatically detecting mutations.
+
+@item Gap4 shotgun assembly
+@br
+@b{Enable} this module.
+@br
+You will also need to specify the sequence database to align (assemble) your
+sequences into and as this is does not yet exist we shall create a new
+one. So answer @i{Gap4 database name} with @b{BRCA1} and click on the checkbox 
+next to @b{Create new database}.
+@end table
+
+Assuming all has gone to plan you should only have the modules enabled that
+this picture shows. Here the Reference Traces module has been highlighted to
+show the reference traces and sequences used.
+
+@image{pregap4-2,16cm}
+
+@section Naming Schemes
+
+How does Pregap4 know whether a sequence should be compared against the
++ve strand or -ve strand reference sequence? We have to tell it. The
+easiest way of doing this is by careful naming of the files. Notice that
+our files are always in pairs; eg @i{000310_11cF.scf} and
+@i{000310_11cR.scf}. This is exon @i{11} primer @i{c} for patient
+@i{000310} in the @i{F}orward and @i{R}everse direction.  Pregap4 has a
+choice of several simple naming conventions, including this one.
+
+Use the main @b{File} menu and select @b{Load Naming Scheme}. Press @b{Browse} 
+and double click on the @b{mutation_detection.p4t} file. Then press @b{OK} to
+close the @i{Load naming scheme} window.
+
+@section Running Pregap4
+
+Before we run pregap4, it is wise to save all of our settings so far. Use the
+@b{File} menu and select @b{Save all Parameters (in all modules)}. This
+creates a configuration file in this directory so that any future pregap4
+sessions will be far quicker to set up.
+
+Now click the @b{Run} button in the bottom left (or select @b{Run} from the
+@b{Modules} menu) to set pregap4 going. It will automatically switch to the
+@i{Textual Output} window and display the results and ultimately claim:
+
+@example
+***   Processing finished   ***
+@end example
+
+Switch back to your terminal window and list your files once more:
+
+@example
+ls
+@end example
+
+You'll see lots of new files created, the most important being
+
+@table @strong
+@item pregap.passed
+A list of files that passed all processing steps.
+
+@item pregap.failed
+A list of files that failed at least one processing steps.
+
+@item BRCA1.0
+@itemx BRCA1.0.aux
+A gap4 assembly database containing your aligned sequences.
+@end table
+
+Assuming all has worked correctly, exit pregap4.
+
+
+@chapter Gap4
+
+To start up gap4 type into your terminal window:
+
+@example
+gap4 &
+@end example
+
+We need to open the assembly database produced by Pregap4, so use the @b{File}
+menu and select @b{Open}. Double click on the @b{BRCA1.0.aux} file.  A new
+window titled @i{Contig Selector} will pop up. A @i{Contig} is a set of
+overlapping sequences - in this case our aligned patient and reference
+sequences. We only have the one aligned set and so the @i{contig selector}
+window is showing one single horizontal line representing that set. Move the
+mouse cursor over it and the line will turn white and it will report the
+length and number of sequences underneath.
+
+With the mouse cursor on top of the contig line, click the right mouse
+button to bring up a menu and select @b{Edit Contig}.
+
+@section Contig Editor
+
+A new window named @i{Contig Editor: 1 HS14680} will now appear.
+
+@image{gap4-1,16cm}
+
+At the top of the editor are a series of buttons, menus, and scroll bars.
+Underneath this we have the sequence names on the left and the DNA sequence
+on the right. The top most sequence should be HS14680. This is our reference
+sequence, which can be seen by the @i{S} to the left of its name.
+
+Scroll along so position 2200 is central. Note the reverse strand
+sequences (those with names ending in @i{R}) all have negative numbers
+before their names (e.g. @i{-19 001321_11cR}) while the forward strand
+sequences have positive numbers. This indicates that the reverse strand
+sequences have been reversed and complemented. (Note that if this is the
+other way around then it implies that the entire contig needs reversing
+and complementing, which was one of the other options available from the
+@i{contig selector} popup menu we saw a moment ago.)
+
+Click on the @b{Cutoffs} button at the top of the editor window. More
+sequence should appear, displayed in a light grey colour. This is the
+poor quality sequence which was hidden by Pregap4's @b{Quality Clip}
+module. We can see the confidence values assigned by the Phred base
+caller by using the editor @b{Settings} menu and selecting @b{Show
+Reading Quality}. The dark bases indicate low confidence whilst the
+light bases indicate high confidence. Click on a base to see the
+confidence (and probability) shown at the bottom of the editor. Double
+click on a base to view the trace and confirm phred's base-calling
+decisions. Tidy up your display by clicking on the @b{Cutoffs} button once
+more to hide the poor quality data, deselecting @b{Show Reading
+Quality}, and closing any trace windows.
+
+Try positioning your editor cursor somewhere by single clicking on a base call
+with the left mouse button. An inverse base (light text with a black
+background) represents the current position of the editing cursor. Try typing
+some new bases and you will see that the default editing mode is to
+over-type. Initially this is all you are allowed to do, but the editor allows
+much more than this using the @i{Edit Modes} menu. We do not have time to
+discuss all these features here, so for now press the @b{Undo} button several
+times until it beeps, informing you that there are no more edits to undo.
+
+Click on the editor @b{Settings} menu and select @b{Highlight
+disagreements}. Now only bases that differ from the consensus (which is the
+same as the reference sequence in this case) are shown as base calls; all
+others are displayed as dots. This is a quick way of identifying base calls
+that differ from the reference sequence.
+
+Double click at editor base position 2196 for sequences @i{000256_11cR}
+and @i{000906_11cR} traces, to show their traces. You should be able to
+see some differences between the two traces.  Right click on the top
+trace and select @b{Trace Difference}. Left click on the bottom
+trace. The differences trace is now visible showing two mutations, one
+of which is at a heterozygous position. The heterozygous base has been
+labelled as G by the base caller, which is the same as the reference
+base call. So looking for base call differences alone is clearly
+misleading and @i{Highlight Disagreements} alone is not sufficient. Turn
+off @b{Highlight Disagreements} now (by going back into the @i{Settings}
+menu.
+
+@image{gap4-2,16cm}
+
+The difference plot is computed by aligning the two traces and subtracting one
+from the other, without any scaling in the Y axis. Hence when two traces are
+identical we expect a flat line central to the trace display. A mutation can
+be seen as a double peak, one above and one below this central line - two are
+clearly present in the picture above. A peak in one direction implies a change
+in the signal strength for one dye only without a corresponding change for a
+second dye. This is not a mutation, but is typically caused by the presence of
+an adjacent mutation (as the peak heights are strongly dependent on the
+preceding bases). Searching for double peaks in the difference plot is
+precisely how the automatic methods within Pregap4 work. Double peaks
+sufficiently higher than the background noise will be automatically labelled
+and mutations and pregap4 then adds "tags" (the red and orange coloured bases) 
+the bases, which we see in the editor window.
+
+Moving back to the trace display, drag the scrollbar on the bottom difference
+trace to the right until you see another obvious mutation. Note that the
+editor window has also been scrolling at the same time. You should be
+somewhere around editor base 2430 now.
+
+To make it easier to verify when mutations have been automatically detected on
+both strands we can display the forward and reverse sequences vertically
+adjacent to one another in the editor. (This is what the reading name
+convention in Pregap4 was used to determine.) Use the @b{Settings} menu to
+select @b{Group Readings by Templates}. Note that one pair have an @i{F} and
+@i{R} next to the far left of their names - these are the forward and reverse
+reference traces that we specified in Pregap4.
+
+Now go back to the @b{Settings} menu, into the @b{Trace Display} sub-menu and
+select @b{Auto-diff Traces}. Try double clicking on a red or orange tag. You
+should now see 6 traces displayed in a 2x3 grid. The left hand sides shows the
+top (forward) strand and the right side shows the bottom strand.
+
+@image{gap4-3,16cm}
+
+Next turn on @b{Translate using Feature Tables} in the @b{Settings} ->
+@b{Status Line} menu. The bottom line of the editor should now be showing an
+amino acid translation of the BRCA1 gene. This information has been
+extracted from the CDS records in the EMBL reference sequence
+@i{HS14680}. This allows us to determine what the amino acid change is for
+each mutation, or whether it is a "silent" mutation. We could also use a
+genomic sequence for the reference (possibly containing multiple genes with
+multiple exons) in which case each exon is translated as appropriate. This
+then allows us to determine when mutations are in non-coding or splicing
+regions.
+
+To get a summary of mutation positions use the @b{Report Mutations}
+command in the editor @b{Commands} menu. This brings up a dialogue
+offering a choice reporting all tagged bases or simply all bases with
+base-calls different to the reference sequence. We can also sort the
+output sequence by sequence or position by position, depending on
+whether we wish to know details about a particular patient or are
+looking for SNPs at a particular site. For now just accept the defaults
+and press @b{OK}. It may appear that nothing has happened, but if you
+find your main Gap4 text output window (the first one that came up when
+you started Gap4) you should see the following.
+
+@example
+000256_11cF  2196G>R (expressed D>[ND]) (strand - only)
+000555_11cF  2196G>R (expressed D>[ND]) (strand - only)
+
+000256_11cF  2201C>T (silent S) (strand - only)
+000416_11cF  2201C>T (silent S) (strand - only)
+000437_11cF  2201C>T (silent S) (strand - only)
+000465_11cF  2201C>Y (silent S) (strand - only)
+000555_11cF  2201C>T (silent S) (strand - only)
+002461_11cF  2201C>T (silent S) (strand - only)
+
+000256_11cF  2430T>C (silent L) (double stranded)
+000416_11cF  2430T>Y (silent L) (double stranded)
+000437_11cF  2430T>Y (silent L) (double stranded)
+000465_11cF  2430T>Y (silent L) (double stranded)
+000555_11cF  2430T>Y (silent L) (double stranded)
+001321_11cF  2430T>Y (silent L) (double stranded)
+002461_11cF  2430T>Y (silent L) (double stranded)
+
+000256_11cF  2731C>T (expressed P>L) (double stranded)
+000416_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+000437_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+000465_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+000555_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+001321_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+002461_11cF  2731C>Y (expressed P>[PL]) (double stranded)
+
+000256_11cF  2788G>T (expressed G>V) (strand - only)
+@end example
+
+Let's look at the first line in detail.
+
+@example
+000256_11cF  2196G>R (expressed D>[ND]) (strand - only)
+@end example
+
+@code{@i{000256_11cF}} is the patient sample (actually this represents
+both the @code{@i{F}} and @code{@i{R}} sequence as both are considered
+here). Position @code{@i{2196}} in the aligned reference sequence is
+base @code{@i{G}}, but in the patient sample it is a mix of bases
+@code{A} and @code{G} (DNA ambiguity code @code{@i{R}}). This is the
+first base of codon @code{GAC} which codes for amino acid
+@code{D}. Mutating it to @code{AAC} yields amino acid @code{N}. So our
+mix of @code{A} and @code{G} gives either amino acid @code{D} or
+@code{N} depending on the copy of the gene being expressed. This is
+reported as @code{@i{expressed D>[ND]}}. Finally note that this mutation
+has only been observed on the reverse strand sequence.
+
+@page
+@section Tags / Annotations
+
+The Report Mutations function used the coloured tags to identify the
+mutations. These were automatically added by the Pregap4 modules. @i{Trace
+Difference} produced the orange tags ("Mutation" tag - "MUTA" in short form)
+short) by computing the difference traces and detecting peaks above and below
+the base line. @i{Heterozygote Scanner} produced the red tags ("Heterozygous"
+tag - "HETE" in short form) by searching for superimposed peaks.
+
+Move back to the editor window and right-click on a red @i{HETE} tag and
+select the @b{Edit Tag} command from the popup menu. A new window appears
+showing the tag type and a text comment, which may be edited to include any
+details you wish. The very start of the tag will be two base calls,
+representing the mixture present (eg "CT").
+
+@image{gap4-4,10cm}
+
+@b{Cancel} this window and try creating a new tag by right clicking on
+another base-call and selecting @b{Create Tag}. Click on the
+@b{Type:comment} field and scroll down the list to select @b{HETE} and
+press @b{OK}. Now type a comment, remembering to start your comment with
+two adjacent base calls representing the mixture (e.g. "@code{AG My
+comment.}"). Then press @b{Save} and run @b{Report Mutations} once more
+to verify the new output.
+
+Right click on an orange @i{MUTA} tag and select @b{Edit Tag} again. The
+format of the first line is slightly different (eg @code{@i{C->T}})
+representing the reference sequence base-call and the patient base-call.
+
+@section Positive Controls
+
+We may be looking for a specific mutation and not just any difference to the
+reference sequence. So far we have used the reference traces as a negative
+control; a trace in which we expect there to be no mutation. Gap4 also allows
+us to set sequences to be positive controls.
+
+Right click on the sequence name @b{001321_11cR} in the left side of the
+editor. You will get a popup menu containing, amongst other things, @b{set as
+reference trace}. Select this, select @b{Positive control} and press
+@b{OK}. Do the same for @b{001321_11cF} too. You should now see a lowercase
+@i{f} and @i{r} next to these two sequence names. (Notice that this menu also
+allows you to change the negative control traces should you wish to pick
+something different than @i{000906_11cR} and @i{000906_11cF}.)
+
+Now try double clicking on another sequence at a site of a known
+mutation to view the traces, such as position @i{2731} in sequence
+@i{000555_11cF}. After a short pause you will now see 12 traces arranged
+in a 4x3 grid. The left-most two columns are the same as before (top and
+bottom strands compared against the wild-type / negative control
+reference traces). The right-most two columns contain the top and bottom
+strand patient traces compared against the positive control. The
+difference traces for the positive control should be flat indicating
+that there is a match between the patient and the positive control.
+
+@image{gap4-6,16cm}
+
+Try the same again, but this time for sequence @i{000256_11cF}. Here you can
+see this patient is different from both our negative and positive controls.
+
+Finally, before exiting the editor use the @b{Settings} menu and select
+@b{Save Settings}. This will now remember the various options (such as
+@i{Group Readings by Templates}) you have enabled. Exit the editor by pressing
+the @b{Quit} button in the top right and save any changes.
+
+@section Template Display
+
+To get an overview of your sequences try the @i{Template Display}. Right click
+on the contig line in the @b{Contig Selector} and select @b{Template
+Display}. You'll see a graphical representation of your sequences, starting
+with lots of short lines with arrows on their ends at the top (representing
+our patient sequences), a longer line underneath this representing the
+reference sequence, and finally at the bottom (with numbers next to it) is the
+consensus sequence.
+
+Try zooming up by pressing the @b{50%} button a few times until the patient
+data more or less fills the screen.
+
+You'll see lots of coloured markers on the sequences indicating the positions
+of the mutation tags. Try double clicking on one of these tags and you'll get
+a contig editor launched at that position. Try to rearrange the windows to see 
+the template display and as much of the contig editor window as
+possible. You'll see that there's now a vertical cursor in the template
+display. This indicates the position of the editing cursor in the contig
+editor. Try clicking on the vertical line in the template display and dragging 
+it left or right. You will see that this scrolls the editor.
+
+@image{gap4-5,16cm}
+
+As you'll have seen in the introductory talk, the template display is
+particularly useful when you are dealing with multiple exons and/or
+multiple sets of primers as it provides an easy visual overview of the
+sequence alignments against a genomic reference sequence.
+
+@section Exiting
+
+Finally, shut down gap4 by going to the main Gap4 text output window and
+selecting the @b{File} menu and @b{Exit}.
+
+@chapter Discussion Of Mutation Data Processing Methods
+
+The original version of these methods was described in 
+James K Bonfield,  Cristina Rada and Rodger Staden, @cite{Automated detection
+of  point mutations using fluorescent  sequence  trace  subtraction, Nucleic
+Acids Res. 26, 3404-3409, 1998.}. The more recent work has been done by Mark
+Jordan and James Bonfield.
+
+At present pregap4 and gap4 clearly show their primary usage in the field of
+genome assembly, but versions tailored to mutation studies can be created once
+the requirements are agreed.
+
+The automatic mutation and heterozygote detection programs work well on all
+the test data we have but now they require evaluation by external groups. Such
+analysis would enable us to improve the algorithms and to tune their
+parameters.  At present we know that sometimes a base will be declared both as
+a mutation and as a heterozygous position when visual inspection shows that it
+is one or the other.
+
+There is still much that can be done overall to improve the methods, 
+but the text above summarises their status in July 2002. Although currently
+valuable for real scientific and clinical work they should perhaps be viewed
+as prototypes.
+
+@bye
+
+
+
+TO DO
+=====
+
+Look up these sequences in a real mutation database.
+
+Add protocol / recommendations as described in RS web pages.
+
+

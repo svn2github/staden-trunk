@@ -1,0 +1,41 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+@c %**start of header
+@setfilename references.info
+@settitle References
+@setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@setchapternewpage odd
+@c %**end of header
+
+@set standalone
+include(header.m4)
+
+@titlepage
+@title References
+@subtitle 
+@author 
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+@end titlepage
+
+@node Top
+@ifinfo
+@top top-references
+@end ifinfo
+
+@raisesections
+_include(references-t.texi)
+
+_split()
+@node Index
+@unnumberedsec Index
+@printindex cp
+@lowersections
+
+@shortcontents
+@contents
+@bye

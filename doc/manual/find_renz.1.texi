@@ -1,0 +1,38 @@
+@cindex find_renz: man page
+@unnumberedsec NAME
+
+find_renz --- Identifies the position of a cut site within a sequence
+
+@unnumberedsec SYNOPSIS
+
+@code{find_renz} [@code{-vp}] @i{enzyme} @i{filename} ...
+
+@unnumberedsec DESCRIPTION
+
+@code{find_renz} may be used to determine the position that an enzyme cuts a
+sequence. It's use as a command line utility is primarily designed for
+internal use within @code{pregap4} and as a user utility for producing
+@i{vector-primer} files for use with @code{vector_clip}. As such it is
+dedicated to finding one and only one such cut site and considers no cuts
+sites or multiple cut sites to be an error.
+
+Only one enzyme may be specified, which is given by the enzyme name (upper or
+lower case is not important). One or more filenames may be specified. If an
+enzyme does not cut a sequence the message "Enzyme not found in sequence" will 
+be sent to stderr. If an enzyme cuts a sequence more than once the message
+"Found more than one match" will be sent to stderr. Otherwise output is
+produced to stdout. This means that wildcards may be used (@code{find_renz -vp 
+smai *.seq >> vpfile}) with the output redirected without needing to consider
+whether the enzyme is suitable for all files matching the wildcard pattern.
+
+@unnumberedsec OPTIONS
+@table @asis
+@item @code{-vp}
+    Specifies that the output should be in a format suitable for saving to a
+    vector-primer file (to use with vector_clip). Without this only the cut
+    site position is listed.
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Man-vector_clip, vector_clip(1), vector_clip.1)

@@ -1,0 +1,219 @@
+@menu
+* List-Special::                Special list names
+* List-Commands::               Basic list commands
+* List-ContigToRead::           Contigs To Readings command
+* List-MinCoverage::            Minimal Coverage command
+* List-Unattached::             Unattached Readings command
+* List-SearchSequenceNames::    Search Sequence Names
+* List-SearchTemplateNames::    Search Template Names
+* List-SearchAnnotations::      Search Annotation Contents
+@end menu
+
+@cindex Lists
+
+For many operations it is convenient to be able to process sets of data together - for example to calculate a consensus sequence for a subset of the contigs. To facilitate this gap4 uses lists.
+
+Most gap4 commands dealing with batches of files or sets of readings or contigs
+can use either files of filenames or lists. When selecting list names from
+within dialogues the "browse" button will display a window containing all the
+currently existing lists. To select a list simply double click on the list
+name. Alternatively the name may simply be typed in.
+
+The List menu on the main menubar contains commands to Edit, Create, Delete,
+Copy, Load, and Save lists. Some of these display a list editor. This is
+simply a scrollable text window supporting simple editing facilities 
+(_fpref(UI-Text, Text Windows, interface)).
+
+The "Clear" button clears the list. The "Ok" button removes the list
+editor window. It is not necessary to use "Ok" here before supplying the list
+name for input to another option. 
+
+_split()
+@node List-Special
+@section Special List Names
+@cindex Lists: special names
+@cindex contigs list
+@cindex readings list
+@cindex allcontigs list
+@cindex allreadings list
+
+Some lists are automatically updated or are generated on-the-fly as needed.
+The lists named "contigs" and "readings" correspond to the currently selected
+contigs in the contig selector window and the currently selected readings in
+the template displays. Note that lists (with any names) can also be created
+from selected items in the contig editor.
+_fxref(Editor-Output List, Set Output List, contig_editor)
+The "allcontigs" and "allreadings" lists are created as needed and always
+contain an identifier for every contig and every reading identifier.
+
+Because of the way the lists are implemented, as is outlined below,
+there are some useful "tricks" that can be employed.
+A list name consisting of a contig identifier surrounded by square
+brackets ('[' and ']') will cause the creation of a list containing all of the
+readings within that contig. For example, to use the Extract Readings
+option (_fpref(Extract Readings, Extract Readings, ex))
+to extract all the readings from
+contig 'xb54f8.s1', the list name given in the Extract Readings dialogue
+would be '[xb54f8.s1]'.
+
+A list name surrounded by curly brackets ('@{' and '@}') will cause the
+creation of a list containing all of the readings in the contigs
+named in the
+specified list name. So '@{contigs@}' is equivalent to all the readings
+in the
+contigs contained in the 'contigs' list. Hence the 'allreadings' list is
+identical to '@{allcontigs@}'.
+
+These tricks can be used anywhere where a list name is required except for
+editing and deletion of lists. As a final example,
+to produce a file of filenames for the
+currently selected contigs, save the list named '@{contigs@}' to a file.
+
+_split()
+@node List-Commands
+@section Basic List Commands
+@cindex Lists: commands
+@cindex Lists: copy
+@cindex Lists: load
+@cindex Lists: save
+@cindex Lists: edit
+@cindex Lists: create
+@cindex Lists: delete
+_ifdef([[_unix]],[[@cindex Lists: print]])
+@cindex Copy list
+@cindex Load list
+@cindex Save list
+@cindex Edit list
+@cindex Create list
+@cindex Delete list
+_ifdef([[_unix]],[[@cindex Print list]])
+
+The basic operations that can be performed on lists include copying,
+loading, saving, editing,
+_ifdef([[_unix]],[[printing,]])
+creation and deletion. Joining and splitting can only be performed
+using the list editors and using cut and paste between windows.
+
+The Load and Save commands require a list name and a file name. If
+only the name of the file is given the list is assumed to have the same
+name.  If it is desired to load or
+save a list from/to a file of a different name then both should be
+specified. Creating a list that already exists (or loading a file into
+an already existing list) is allowed, but will produce a warning
+message.
+
+_split()
+@node List-ContigToRead
+@section Contigs To Readings Command
+@cindex Lists: Contigs to Readings
+@cindex Contigs to Readings: lists
+@cindex File of filenames generation
+
+This command produces a list or file of reading names for a single contig or
+for a set of contigs. The user interface provides a dialogue
+to select the contigs and to select a list name or filename.
+
+_split()
+@node List-MinCoverage
+@section Minimal Coverage Command
+@cindex Lists: minimal coverage
+@cindex minimal coverage: lists
+
+This command produces a minimal list of readings that
+together span the entire length of a contig. The dialogue allows 
+contigs names to be defined using a list or a file of filenames. 
+The output produced, can be sent to a list or a file of filenames. 
+An example use of
+this function is to determine a minimal set of overlapping readings
+for resequencing.
+
+_split()
+@node List-Unattached
+@section Unattached Readings Command
+@cindex Lists: unattached readings
+@cindex Unattached readings: lists
+
+This command finds the contigs that consist of single readings. The output
+can be written to a list or a file of filenames. One example
+use of the option is for tidying up projects by removing the trivial
+and unrequired contigs. In this case the list would be used
+as input to disassemble readings
+(_fpref(Disassemble, Disassembling Readings, disassembly)).
+
+_split()
+@node List-SearchSequenceNames
+@section Search Sequence Names
+@cindex Lists: search sequence names
+@cindex Search sequence names: lists
+@cindex Reading names, searching for
+@cindex Sequence names, searching for
+
+This command allows searching for sequences matching a given pattern. The
+function produces both a list in the text output window and a gap4 "list" of
+reading names. The highlighted output is clickable, with the left mouse button 
+invoking the contig editor and the right mouse button displaying a popup-menu
+allowing additional operations (contig editor, template display, reading notes 
+and contig notes).
+
+The text search may be performed as either case-sensitive or
+case-insensitive. Additionally the pattern search types are available.
+
+@table @strong
+@item sub-string
+Matches any reading name where the pattern matches all or part of the name.
+
+@item wild-cards
+Searches for a pattern using normal filename wild-card matching syntax. So
+@code{*} matches any sequence of characters, @code{?} matches any single
+character, @code{[}@i{chars}@code{]} matches a set of characters defined by
+@i{chars}, and @code{\}@i{char} matches the literal character
+@i{char}. Character sets may use a minus sign to match a range. For example
+@code{x*.[fr][1-9]} matches any name starting with @code{x} and ending with
+fullstop followed by either @code{f} or @code{r} followed by a single digit
+between 1 and 9 inclusive. To match a substring using wild-cards prepend or
+append the search string with @code{*}.
+
+@item regular expression
+This uses the Tcl regular expression syntax to perform a match. These patterns
+are naturally sub-strings unless anchored to one or both ends using the
+@code{^}@i{expression}@code{$} syntax. A full description of regular
+expressions is beyond the scope of this manual.
+@end table
+
+_split()
+@node List-SearchTemplateNames
+@section Search Template Names
+@cindex Lists: Search template names
+@cindex Search template names: lists
+@cindex Template names, searching for
+
+This searches for template names matching a given pattern. The gap4 list
+produce will contain just the template names, but the information listed in
+the text output window lists the template names and the readings contained
+within each template. The reading names are hyperlinks and so double
+left-clicking on them will bring up the contig editor whilst right-clicking
+brings up a popup menu.
+
+For a description of the types of template search patterns see
+_fref(List-SearchSequenceNames, Search Sequence Names, lists)
+
+_split()
+@node List-SearchAnnotations
+@section Search Annotation Contents
+@cindex Lists: Search annotation contents
+@cindex Search annotation contents: lists
+@cindex Annotations, searching for
+@cindex Tags, searching for
+
+This searches the contents of annotations on both the individual reading
+sequences and the consensus sequences. A gap4 list will be produce containing
+the annotation number, contig and position. In the text output window a more
+complete description is available listing the annotation type and the contents
+of each annotation. Both the list and text-output window will contain a
+highlighted section which is a hyperlink. Double clicking on this with the
+left mouse button will bring up the contig editor at that point. Clicking with
+the right mouse button will display a popup-menu with further options.
+
+For a description of the types of annotation search patterns see
+_fref(List-SearchSequenceNames, Search Sequence Names, lists)
+

@@ -1,0 +1,42 @@
+--- Report from 'Estimate Base Accuracies' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.scf: assigned base accuracies
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.scf: assigned base accuracies
+
+--- Report from 'Initialise Experiment Files' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: created from /home6/jkb/work/course/t/xb54b12.r1L.scf
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: created from /home6/jkb/work/course/t/xb56b6.s1L.scf
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: created from /home6/jkb/work/course/t/xb60b12.s1L.scf
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: created from /home6/jkb/work/course/t/xc04a1.s1L.scf
+
+--- Report from 'Augment Experiment Files' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: added fields SF CF TN PR SC SP SI CH
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: added fields SF CF TN PR SC SP SI CH
+
+--- Report from 'Quality Clip' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: clipped using 'qclip'
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: clipped using 'qclip'
+
+--- Report from 'Sequencing Vector Clip' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: passed
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: passed
+
+--- Report from 'Screen For Unclipped Vector' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: passed
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: passed
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: passed
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: passed
+
+--- Report from 'Cloning Vector Clip' ---
+SEQ /home6/jkb/work/course/t/xb54b12.r1L.exp: checked
+SEQ /home6/jkb/work/course/t/xb56b6.s1L.exp: checked
+SEQ /home6/jkb/work/course/t/xb60b12.s1L.exp: checked
+SEQ /home6/jkb/work/course/t/xc04a1.s1L.exp: checked
+

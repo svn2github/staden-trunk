@@ -1,0 +1,618 @@
+
+# DO NOT DELETE
+$O/codon_content.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/codon_content.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/codon_content.o: $(SRCROOT)/seq_utils/edge.h codon_content.h $(SRCROOT)/Misc/array_arith.h
+$O/codon_content.o: $(SRCROOT)/seq_utils/sequence_formats.h
+$O/codon_content.o: $(SRCROOT)/Misc/misc.h
+$O/compare_spans.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/compare_spans.o: $(SRCROOT)/seq_utils/align_lib_old.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/compare_spans.o: $(SRCROOT)/seq_utils/edge.h
+$O/compare_spans.o: sip_hash.h readpam.h
+$O/compare_spans.o: $(SRCROOT)/Misc/xalloc.h
+$O/dinuc_freqs.o: $(SRCROOT)/seq_utils/dna_utils.h
+$O/emboss_input_funcs.o: $(SRCROOT)/Misc/xalloc.h
+$O/emboss_input_funcs.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk_utils/tclCanvGraph.h seq_plot_funcs.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk_utils/text_output.h seq_results.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/emboss_input_funcs.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/emboss_input_funcs.o: emboss_input_funcs.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/emboss_input_funcs.o: spin_globals.h sequence_pair_display.h seq_element.h
+$O/feature_selector.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/feature_selector.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/feature_selector.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/Misc/parse_db.h
+$O/feature_selector.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/feature_selector.o: $(SRCROOT)/Misc/xalloc.h
+$O/feature_selector.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/feature_selector.o: feature_selector.h
+$O/ft_viewer.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/ft_viewer.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_results.h
+$O/ft_viewer.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/ft_viewer.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/element_canvas.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_results.h nip_globals.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/tcl_utils.h ft_viewer.h spin_globals.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/ruler_tick.h
+$O/ft_viewer.o: $(SRCROOT)/tk_utils/text_output.h
+$O/ft_viewer.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/ft_viewer.o: seq_reg.h
+$O/ft_viewer.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/ft_viewer.o: feature_selector.h
+$O/ft_viewer.o: seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/init.o: $(SRCROOT)/seq_utils/renz_utils.h nip_cmds.h sequtils_cmds.h
+$O/init.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/init.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/init.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/sheet.h
+$O/init.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/init.o: $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/init.o: tkSeqedNames.h
+$O/init.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/init.o: tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_base_comp.o: $(SRCROOT)/Misc/xalloc.h
+$O/nip_base_comp.o: $(SRCROOT)/seq_utils/base_comp.h seq_plot_funcs.h seq_element.h
+$O/nip_base_comp.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/nip_base_comp.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_base_comp.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_base_comp.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_base_comp.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_base_comp.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_base_comp.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_base_comp.o: seq_results.h
+$O/nip_base_comp.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_base_comp.o: nip_base_comp.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_base_comp.o: nip_results.h $(SRCROOT)/tk_utils/text_output.h nip_globals.h
+$O/nip_base_comp.o: seq_reg.h
+$O/nip_canvas_box.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/nip_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_canvas_box.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_canvas_box.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/nip_canvas_box.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_canvas_box.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_canvas_box.o: seq_results.h
+$O/nip_canvas_box.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/nip_canvas_box.o: nip_results.h $(SRCROOT)/tk_utils/text_output.h
+$O/nip_canvas_box.o: seq_reg.h
+$O/nip_cmds.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h nip_structs.h $(SRCROOT)/tk_utils/cli_arg.h
+$O/nip_cmds.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/base_comp.h seqed.h
+$O/nip_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/tk_utils/tkSheet_common.h
+$O/nip_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/nip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_cmds.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h $(SRCROOT)/Misc/misc.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/ruler_tick.h nip_globals.h nip_results.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/text_output.h tkSeqed.h $(SRCROOT)/tk_utils/sheet.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/tkSheet.h seq_results.h
+$O/nip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_cmds.o: codon_content.h seq_reg.h
+$O/nip_cmds.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/nip_cmds.o: ft_viewer.h spin_globals.h spin_structs.h
+$O/nip_cmds.o: nip_base_comp.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_cmds.o: nip_gene_search.h trna_search.h nip_stop_codon.h
+$O/nip_cmds.o: nip_sendto.h $(SRCROOT)/seq_utils/open_reading_frames.h dinuc_freqs.h
+$O/nip_cmds.o: nip_trna_search.h splice_search.h nip_splice_search.h
+$O/nip_cmds.o: nip_wtmatrix_search.h $(SRCROOT)/tk_utils/licence.h spin_cli_arg.h
+$O/nip_cmds.o: seqed_translate.h tkSeqedUtils.h nip_restriction_enzymes.h
+$O/nip_cmds.o: sequtils.h nip_string_search.h seqed_write.h $(SRCROOT)/seq_utils/edge.h
+$O/nip_cmds.o: tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/nip_gene_search.o: $(SRCROOT)/Misc/misc.h
+$O/nip_gene_search.o: $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_gene_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_gene_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_gene_search.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_gene_search.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_gene_search.h
+$O/nip_gene_search.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/array_arith.h
+$O/nip_gene_search.o: $(SRCROOT)/tk_utils/text_output.h codon_content.h nip_globals.h
+$O/nip_gene_search.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_gene_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_gene_search.o: nip_results.h
+$O/nip_gene_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_gene_search.o: seq_reg.h
+$O/nip_gene_search.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/nip_gene_search.o: seq_plot_funcs.h seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_gene_search.o: seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/nip_globals.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/nip_globals.o: nip_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/text_output.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/seq_utils/renz_utils.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/Misc/os.h
+$O/nip_restriction_enzymes.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/nip_restriction_enzymes.o: nip_canvas_box.h
+$O/nip_restriction_enzymes.o: nip_restriction_enzymes.h nip_globals.h
+$O/nip_restriction_enzymes.o: nip_results.h $(SRCROOT)/tk_utils/restriction_enzyme_map.h
+$O/nip_restriction_enzymes.o: seq_results.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_splice_search.o: $(SRCROOT)/Misc/os.h
+$O/nip_splice_search.o: $(SRCROOT)/seq_utils/sequence_formats.h
+$O/nip_splice_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_splice_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_splice_search.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_splice_search.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_splice_search.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_results.h splice_search.h
+$O/nip_splice_search.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/xalloc.h
+$O/nip_splice_search.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/nip_splice_search.o: seq_results.h
+$O/nip_splice_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_splice_search.o: seq_reg.h
+$O/nip_splice_search.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/nip_splice_search.o: nip_splice_search.h nip_globals.h
+$O/nip_splice_search.o: nip_wtmatrix_search.h $(SRCROOT)/tk_utils/element_canvas.h
+$O/nip_splice_search.o: seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h $(SRCROOT)/Misc/misc.h
+$O/nip_splice_search.o: seq_plot_funcs.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_stop_codon.o: $(SRCROOT)/seq_utils/genetic_code.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_stop_codon.o: $(SRCROOT)/seq_utils/renz_utils.h nip_globals.h
+$O/nip_stop_codon.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/nip_stop_codon.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_stop_codon.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_stop_codon.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/element_canvas.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_results.h nip_stop_codon.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/xalloc.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/nip_stop_codon.o: seq_results.h
+$O/nip_stop_codon.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/nip_stop_codon.o: seq_plot_funcs.h seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_string_search.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/Misc/misc.h
+$O/nip_string_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_string_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_results.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/text_output.h nip_globals.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/tkCanvGraph.h $(SRCROOT)/tk_utils/element_canvas.h
+$O/nip_string_search.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_string_search.o: $(SRCROOT)/Misc/xalloc.h seq_reg.h
+$O/nip_string_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_string_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_string_search.o: $(SRCROOT)/Misc/os.h
+$O/nip_string_search.o: nip_string_search.h seq_plot_funcs.h seq_element.h
+$O/nip_string_search.o: seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/nip_trna_search.o: $(SRCROOT)/Misc/os.h seq_plot_funcs.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/nip_trna_search.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/nip_trna_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_trna_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/xalloc.h
+$O/nip_trna_search.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_trna_search.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/nip_trna_search.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_trna_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_trna_search.o: seq_results.h
+$O/nip_trna_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/nip_trna_search.o: $(SRCROOT)/Misc/misc.h
+$O/nip_trna_search.o: seq_reg.h
+$O/nip_trna_search.o: nip_results.h $(SRCROOT)/tk_utils/text_output.h nip_globals.h
+$O/nip_trna_search.o: seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_trna_search.o: trna_search.h nip_trna_search.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/Misc/xalloc.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/seq_utils/dna_utils.h splice_search.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/tclCanvGraph.h nip_results.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/text_output.h nip_globals.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/nip_wtmatrix_search.o: seq_reg.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/nip_wtmatrix_search.o: $(SRCROOT)/Misc/os.h
+$O/nip_wtmatrix_search.o: nip_wtmatrix_search.h $(SRCROOT)/Misc/misc.h
+$O/nip_wtmatrix_search.o: seq_plot_funcs.h seq_element.h
+$O/nip_wtmatrix_search.o: seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/probs.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/probs.o: $(SRCROOT)/seq_utils/align_lib_old.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/probs.o: $(SRCROOT)/seq_utils/dna_utils.h probs.h
+$O/probs.o: sip_hash.h readpam.h $(SRCROOT)/seq_utils/align.h
+$O/readpam.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/readpam.o: $(SRCROOT)/seq_utils/align_lib_old.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/readpam.o: $(SRCROOT)/seq_utils/sequence_formats.h readpam.h $(SRCROOT)/seq_utils/align.h
+$O/seq_element.o: $(SRCROOT)/Misc/xalloc.h seq_reg.h
+$O/seq_element.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/seq_element.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_element.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/seq_element.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_element.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h seq_results.h
+$O/seq_element.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_element.o: $(SRCROOT)/tk_utils/element_canvas.h
+$O/seq_element.o: $(SRCROOT)/tk_utils/text_output.h
+$O/seq_element.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_element.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/seq_element.o: seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/seq_element_cmds.o: $(SRCROOT)/Misc/xalloc.h
+$O/seq_element_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h spin_cli_arg.h
+$O/seq_element_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_element_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/tclCanvGraph.h seq_results.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/tclXkeylist.h $(SRCROOT)/tk_utils/text_output.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/seq_element_cmds.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_element_cmds.o: seq_element.h
+$O/seq_element_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_element_cmds.o: seq_reg.h
+$O/seq_reg.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h seq_reg.h
+$O/seq_reg.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h spin_globals.h
+$O/seq_reg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_reg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seq_reg.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_reg.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/seq_reg.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_reg.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seq_reg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_reg.o: $(SRCROOT)/Misc/misc.h
+$O/seq_reg_cmds.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h feature_selector.h seq_element.h
+$O/seq_reg_cmds.o: $(SRCROOT)/Misc/xalloc.h spin_structs.h $(SRCROOT)/tk_utils/cli_arg.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclInt.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itclIntDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itk.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itk/generic/itkDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h sequtils.h sip_cmds.h nip_cmds.h
+$O/seq_reg_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclInt.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/licence.h seqed.h tkSeqed.h $(SRCROOT)/tk_utils/sheet.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/tclXkeylist.h seq_reg.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/tkCanvGraph.h $(SRCROOT)/tk_utils/element_canvas.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclIntDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seq_reg_cmds.o: $(SRCROOT)/incrTcl-3.3cvs/itcl/generic/itcl.h
+$O/seq_reg_cmds.o: seq_element_cmds.h
+$O/seq_reg_cmds.o: seq_sendto.h spin_globals.h emboss_input_funcs.h
+$O/seq_reg_cmds.o: sequence_pair_display.h seq_results.h
+$O/seq_reg_cmds.o: spin_cli_arg.h $(SRCROOT)/tk_utils/text_output.h
+$O/seq_reg_cmds.o: tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/seq_results.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/seq_results.o: $(SRCROOT)/seq_utils/genetic_code.h $(SRCROOT)/seq_utils/scramble.h
+$O/seq_results.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/seq_results.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_results.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seq_results.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_results.o: $(SRCROOT)/tk_utils/tclCanvGraph.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/seq_results.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_results.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_results.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seq_results.o: codon_content.h seq_results.h
+$O/seq_sendto.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h seq_results.h
+$O/seq_sendto.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/seq_sendto.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seq_sendto.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seq_sendto.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seq_sendto.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/seq_sendto.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seq_sendto.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seq_sendto.o: $(SRCROOT)/Misc/misc.h
+$O/seq_sendto.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seq_sendto.o: seq_reg.h
+$O/seqed.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/tk_utils/tclCanvGraph.h seqed.h
+$O/seqed.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqed.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqed.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqed.o: $(SRCROOT)/tk_utils/text_output.h spin_globals.h seq_element.h
+$O/seqed.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/seqed.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/seq_utils/renz_utils.h seq_results.h
+$O/seqed.o: tkSeqedNames.h
+$O/seqed.o: seq_reg.h
+$O/seqed.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seqed.o: $(SRCROOT)/Misc/xalloc.h
+$O/seqed.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/seqed.o: tkSeqed.h $(SRCROOT)/tk_utils/sheet.h
+$O/seqed.o: tkSeqedUtils.h $(SRCROOT)/tk_utils/tcl_utils.h seqed_restriction_enzymes.h
+$O/seqedInterface.o: $(SRCROOT)/seq_utils/renz_utils.h tkSeqedUtils.h
+$O/seqedInterface.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqedInterface.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqedInterface.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqedInterface.o: $(SRCROOT)/tk_utils/sheet.h
+$O/seqedInterface.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/seqedInterface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/seqedInterface.o: tkSeqedNames.h
+$O/seqedInterface.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seqedInterface.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seqedInterface.o: seqedInterface.h tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/Misc/xalloc.h tkSeqedUtils.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/seq_utils/dna_utils.h tkSeqed.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/seq_utils/renz_utils.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/sheet.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/seqed_restriction_enzymes.o: tkSeqedNames.h
+$O/seqed_restriction_enzymes.o: $(SRCROOT)/Misc/os.h
+$O/seqed_restriction_enzymes.o: seqed_restriction_enzymes.h $(SRCROOT)/Misc/misc.h
+$O/seqed_search.o: $(SRCROOT)/seq_utils/renz_utils.h $(SRCROOT)/Misc/xalloc.h tkSeqedUtils.h
+$O/seqed_search.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqed_search.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqed_search.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/sheet.h
+$O/seqed_search.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqed_search.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/seqed_search.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/seqed_search.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seqed_search.o: tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seqed_search.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/seqed_search.o: tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/seqed_translate.o: $(SRCROOT)/seq_utils/genetic_code.h seqed_translate.h
+$O/seqed_translate.o: $(SRCROOT)/seq_utils/renz_utils.h tkSeqedUtils.h
+$O/seqed_translate.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/seqed_translate.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqed_translate.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqed_translate.o: $(SRCROOT)/tk_utils/sheet.h
+$O/seqed_translate.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/seqed_translate.o: $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/seqed_translate.o: tkSeqedNames.h
+$O/seqed_translate.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seqed_translate.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seqed_translate.o: tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/seqed_write.o: $(SRCROOT)/Misc/xalloc.h seqed_write.h
+$O/seqed_write.o: $(SRCROOT)/seq_utils/genetic_code.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/seqed_write.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/seqed_write.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/seqed_write.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/seqed_write.o: $(SRCROOT)/tk_utils/sheet.h
+$O/seqed_write.o: $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/seqed_write.o: tkSeqedNames.h
+$O/seqed_write.o: $(SRCROOT)/seq_utils/renz_utils.h
+$O/seqed_write.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/seqed_write.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/seqed_write.o: seqed_restriction_enzymes.h seqed_translate.h tkSeqedUtils.h
+$O/seqed_write.o: tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sequence_pair_display.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/sequence_pair_display.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/sequence_pair_display.o: $(SRCROOT)/seq_utils/align_lib_old.h sip_results.h
+$O/sequence_pair_display.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sequence_pair_display.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sequence_pair_display.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sequence_pair_display.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sequence_pair_display.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/sequence_pair_display.o: $(SRCROOT)/tk_utils/tclCanvGraph.h $(SRCROOT)/Misc/xalloc.h
+$O/sequence_pair_display.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/sequence_pair_display.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sequence_pair_display.o: sequence_pair_display.h
+$O/sequence_pair_display.o: seq_reg.h
+$O/sequence_pair_display.o: seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/sequence_pair_display.o: spin_globals.h readpam.h $(SRCROOT)/seq_utils/align.h
+$O/sequtils.o: $(SRCROOT)/seq_utils/base_comp.h $(SRCROOT)/tk_utils/text_output.h
+$O/sequtils.o: $(SRCROOT)/seq_utils/dna_utils.h seq_results.h
+$O/sequtils.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/sequtils.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sequtils.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/seq_utils/edge.h
+$O/sequtils.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/sequtils.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/sequtils.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sequtils.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sequtils.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/sim.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/sim.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sim.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/sim.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sim.o: $(SRCROOT)/seq_utils/align_lib_old.h
+$O/sim.o: sip_sim.h $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_align.o: $(SRCROOT)/Misc/misc.h
+$O/sip_align.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/align_lib_old.h
+$O/sip_align.o: $(SRCROOT)/Misc/xerror.h sip_align.h $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h
+$O/sip_align.o: $(SRCROOT)/seq_utils/dna_utils.h readpam.h seq_plot_funcs.h
+$O/sip_align.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/sip_align.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_align.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_align.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sip_align.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_align.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sip_align.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_align.o: $(SRCROOT)/tk_utils/tclCanvGraph.h sip_results.h $(SRCROOT)/Misc/array.h
+$O/sip_align.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tcl_utils.h sip_globals.h
+$O/sip_align.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/sip_align.o: seq_results.h
+$O/sip_align.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/sip_align.o: sequence_pair_display.h nip_results.h seq_element.h
+$O/sip_cmds.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tk_utils/text_output.h
+$O/sip_cmds.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/sip_cmds.o: $(SRCROOT)/seq_utils/align_lib_old.h sip_align.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/sip_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/sip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_cmds.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/sip_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h seq_results.h
+$O/sip_cmds.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/sip_cmds.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_cmds.o: $(SRCROOT)/tk_utils/tclCanvGraph.h sip_results.h
+$O/sip_cmds.o: sip_globals.h sip_structs.h
+$O/sip_cmds.o: sip_hash.h sip_find_identity.h probs.h readpam.h
+$O/sip_cmds.o: sip_sendto.h sip_sim.h sequtils.h $(SRCROOT)/tk_utils/licence.h
+$O/sip_cmds.o: sip_similar_spans.h sip_quick_scan.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/sip_cmds.o: spin_cli_arg.h spin_structs.h
+$O/sip_find_identity.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/text_output.h
+$O/sip_find_identity.o: $(SRCROOT)/Misc/xerror.h sip_find_identity.h $(SRCROOT)/Misc/misc.h
+$O/sip_find_identity.o: $(SRCROOT)/seq_utils/align_lib_old.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/sip_find_identity.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_find_identity.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sip_find_identity.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_find_identity.o: $(SRCROOT)/tk_utils/tclCanvGraph.h sip_results.h $(SRCROOT)/Misc/array.h
+$O/sip_find_identity.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/sip_find_identity.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_find_identity.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_find_identity.o: sip_hash.h
+$O/sip_find_identity.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/sip_find_identity.o: seq_reg.h
+$O/sip_find_identity.o: probs.h seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/sip_find_identity.o: readpam.h $(SRCROOT)/seq_utils/align.h
+$O/sip_find_identity.o: sequence_pair_display.h seq_element.h
+$O/sip_find_identity.o: sip_globals.h $(SRCROOT)/seq_utils/dna_utils.h seq_plot_funcs.h
+$O/sip_globals.o: $(SRCROOT)/Misc/xerror.h seq_results.h seq_reg.h
+$O/sip_globals.o: $(SRCROOT)/seq_utils/sequence_formats.h $(SRCROOT)/Misc/misc.h
+$O/sip_globals.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/sip_globals.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sip_globals.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_globals.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/sip_globals.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
+$O/sip_globals.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/sip_globals.o: sip_results.h $(SRCROOT)/Misc/array.h
+$O/sip_hash.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/sip_hash.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h
+$O/sip_hash.o: $(SRCROOT)/seq_utils/align_lib_old.h sip_results.h $(SRCROOT)/Misc/array.h
+$O/sip_hash.o: $(SRCROOT)/seq_utils/dna_utils.h
+$O/sip_hash.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_hash.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h seq_reg.h
+$O/sip_hash.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sip_hash.o: $(SRCROOT)/tk_utils/canvas_box.h $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/sip_hash.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_hash.o: $(SRCROOT)/Misc/xerror.h seq_results.h
+$O/sip_hash.o: $(SRCROOT)/seq_utils/sequence_formats.h readpam.h
+$O/sip_quick_scan.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/sip_quick_scan.o: $(SRCROOT)/seq_utils/align_lib_old.h sip_quick_scan.h
+$O/sip_quick_scan.o: $(SRCROOT)/seq_utils/renz_utils.h nip_restriction_enzymes.h
+$O/sip_quick_scan.o: $(SRCROOT)/seq_utils/sequence_formats.h seq_reg.h
+$O/sip_quick_scan.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_quick_scan.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/element_canvas.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/restriction_enzyme_map.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/text_output.h readpam.h $(SRCROOT)/seq_utils/align.h
+$O/sip_quick_scan.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/sip_quick_scan.o: sip_hash.h seq_results.h
+$O/sip_quick_scan.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/sip_quick_scan.o: compare_spans.h sip_find_identity.h $(SRCROOT)/Misc/misc.h
+$O/sip_quick_scan.o: seq_element.h $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/sip_quick_scan.o: seq_plot_funcs.h sequence_pair_display.h nip_results.h
+$O/sip_quick_scan.o: sip_globals.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/sip_quick_scan.o: sip_results.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/sip_results.o: $(SRCROOT)/Misc/xerror.h sip_globals.h $(SRCROOT)/seq_utils/align.h
+$O/sip_results.o: $(SRCROOT)/seq_utils/align_lib_old.h probs.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/sip_results.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_results.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sip_results.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_results.o: $(SRCROOT)/tk_utils/tclCanvGraph.h sip_results.h $(SRCROOT)/Misc/array.h
+$O/sip_results.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/sip_results.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_results.o: $(SRCROOT)/Misc/misc.h
+$O/sip_results.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_results.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/sip_results.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/sip_results.o: readpam.h sip_similar_spans.h
+$O/sip_results.o: seq_results.h seq_reg.h
+$O/sip_sim.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h sip_sim.h
+$O/sip_sim.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/sip_sim.o: $(SRCROOT)/seq_utils/align_lib_old.h seq_results.h
+$O/sip_sim.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_sim.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/sip_sim.o: $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_sim.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/container.h
+$O/sip_sim.o: $(SRCROOT)/tk_utils/canvas_box.h $(SRCROOT)/tk_utils/tclCanvGraph.h sip_results.h
+$O/sip_sim.o: $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tcl_utils.h sip_globals.h
+$O/sip_sim.o: $(SRCROOT)/tk_utils/tkCanvGraph.h
+$O/sip_sim.o: $(SRCROOT)/Misc/xalloc.h
+$O/sip_sim.o: sim.h
+$O/sip_sim.o: $(SRCROOT)/tk_utils/tkRaster.h
+$O/sip_sim.o: readpam.h $(SRCROOT)/seq_utils/dna_utils.h seq_plot_funcs.h
+$O/sip_sim.o: seq_reg.h
+$O/sip_sim.o: sequence_pair_display.h nip_results.h seq_element.h
+$O/sip_similar_spans.o: $(SRCROOT)/seq_utils/align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/sip_similar_spans.o: $(SRCROOT)/seq_utils/align_lib_old.h $(SRCROOT)/tk_utils/text_output.h
+$O/sip_similar_spans.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/sip_similar_spans.o: $(SRCROOT)/seq_utils/sequence_formats.h
+$O/sip_similar_spans.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/sip_similar_spans.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/sip_similar_spans.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/sip_similar_spans.o: $(SRCROOT)/tk_utils/container.h $(SRCROOT)/tk_utils/canvas_box.h
+$O/sip_similar_spans.o: $(SRCROOT)/tk_utils/tclCanvGraph.h compare_spans.h sip_hash.h
+$O/sip_similar_spans.o: $(SRCROOT)/tk_utils/tkCanvGraph.h probs.h
+$O/sip_similar_spans.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/sip_similar_spans.o: seq_results.h
+$O/sip_similar_spans.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/sip_similar_spans.o: $(SRCROOT)/Misc/xalloc.h
+$O/sip_similar_spans.o: seq_plot_funcs.h sequence_pair_display.h seq_element.h
+$O/sip_similar_spans.o: seq_reg.h
+$O/sip_similar_spans.o: sip_globals.h rescan_matches.h sip_similar_spans.h
+$O/sip_similar_spans.o: sip_results.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h readpam.h
+$O/spin_cli_arg.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h spin_cli_arg.h
+$O/spin_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/spin_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h $(SRCROOT)/Misc/misc.h
+$O/spin_cli_arg.o: $(SRCROOT)/tk_utils/cli_arg.h
+$O/spin_cli_arg.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/spin_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/spin_globals.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/spin_globals.o: spin_globals.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/splice_search.o: $(SRCROOT)/Misc/array_arith.h splice_search.h
+$O/splice_search.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/splice_search.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/Misc/getfile.h
+$O/splice_search.o: $(SRCROOT)/Misc/misc.h
+$O/tkSeqed.o: $(SRCROOT)/Misc/misc.h
+$O/tkSeqed.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/seq_utils/dna_utils.h seqedInterface.h
+$O/tkSeqed.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/tkSeqed.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tkSeqed.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h tkSeqed.h $(SRCROOT)/tk_utils/sheet.h
+$O/tkSeqed.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/tkSeqed.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/tkSeqed.o: $(SRCROOT)/tk_utils/tkSheet_common.h $(SRCROOT)/tk_utils/tkSheet.h tkSeqedUtils.h
+$O/tkSeqed.o: $(SRCROOT)/tk_utils/tkSheet_config.h
+$O/tkSeqed.o: $(SRCROOT)/tk_utils/tk_defs.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/tkSeqed.o: $(SRCROOT)/seq_utils/renz_utils.h
+$O/tkSeqed.o: seqed_restriction_enzymes.h seqed_search.h
+$O/tkSeqed.o: tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/tkSeqedNames.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/tkSeqedNames.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk8.4.0/generic/tk.h $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/xalloc.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk_utils/tkSheet_config.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkSeqedNames.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk_utils/tk_defs.h $(SRCROOT)/tk_utils/tkSheet_common.h
+$O/tkSeqedNames.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h
+$O/tkSeqedUtils.o: $(SRCROOT)/Misc/misc.h
+$O/tkSeqedUtils.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h seqed_translate.h
+$O/tkSeqedUtils.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/tkSeqedUtils.o: $(SRCROOT)/seq_utils/renz_utils.h tkSeqedUtils.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tcl8.4.0/generic/tcl.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclDecls.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tcl8.4.0/generic/tclPlatDecls.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tk8.4.0/generic/tkDecls.h $(SRCROOT)/tk_utils/sheet.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tk_utils/tclCanvGraph.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tk_utils/tkRaster.h $(SRCROOT)/tk_utils/container.h
+$O/tkSeqedUtils.o: $(SRCROOT)/tk_utils/tkSheet_common.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tkSeqedUtils.o: tkSeqed.h $(SRCROOT)/tk8.4.0/generic/tk.h
+$O/tkSeqedUtils.o: seq_results.h $(SRCROOT)/seq_utils/sequence_formats.h
+$O/tkSeqedUtils.o: seqed_restriction_enzymes.h seqed_write.h seqed_search.h
+$O/tkSeqedUtils.o: tkSeqedNames.h $(SRCROOT)/tk_utils/tkSheet_struct.h seq_reg.h
+$O/trna_search.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/trna_search.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/trna_search.o: $(SRCROOT)/seq_utils/edge.h codon_content.h $(SRCROOT)/Misc/array_arith.h
+$O/trna_search.o: $(SRCROOT)/Misc/misc.h
+$O/trna_search.o: trna_search.h

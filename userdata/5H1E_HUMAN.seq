@@ -1,0 +1,102 @@
+ID   5H1E_HUMAN     STANDARD;      PRT;   365 AA.
+AC   P28566; Q9P1Y1;
+DT   01-DEC-1992 (Rel. 24, Created)
+DT   01-DEC-1992 (Rel. 24, Last sequence update)
+DT   20-AUG-2001 (Rel. 40, Last annotation update)
+DE   5-HYDROXYTRYPTAMINE 1E RECEPTOR (5-HT-1E) (SEROTONIN RECEPTOR) (5-
+DE   HT1E) (S31).
+GN   HTR1E.
+OS   Homo sapiens (Human).
+OC   Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+OC   Mammalia; Eutheria; Primates; Catarrhini; Hominidae; Homo.
+OX   NCBI_TaxID=9606;
+RN   [1]
+RP   SEQUENCE FROM N.A.
+RC   TISSUE=BRAIN;
+RX   MEDLINE=92302274; PubMed=1608964;
+RA   McAllister G., Charlesworth A., Snodin C., Beer M.S., Noble A.J.,
+RA   Middlemiss D.N., Iversen L.L., Whiting P.;
+RT   "Molecular cloning of a serotonin receptor from human brain (5HT1E): a
+RT   fifth 5HT1-like subtype.";
+RL   Proc. Natl. Acad. Sci. U.S.A. 89:5517-5521(1992).
+RN   [2]
+RP   SEQUENCE FROM N.A.
+RX   MEDLINE=92128546; PubMed=1733778;
+RA   Levy F.O., Gudermann T., Birnbaumer M., Kaumann A.J., Birnbaumer L.;
+RT   "Molecular cloning of a human gene (S31) encoding a novel serotonin
+RT   receptor mediating inhibition of adenylyl cyclase.";
+RL   FEBS Lett. 296:201-206(1992).
+RN   [3]
+RP   SEQUENCE FROM N.A.
+RX   MEDLINE=92382553; PubMed=1513320;
+RA   Zgombick J.M., Schechter L.E., Macchi M., Hartig P.R., Branchek T.A.,
+RA   Weinshank R.L.;
+RT   "Human gene S31 encodes the pharmacologically defined serotonin 5-
+RT   hydroxytryptamine1E receptor.";
+RL   Mol. Pharmacol. 42:180-185(1992).
+RN   [4]
+RP   SEQUENCE OF 1-363 FROM N.A.
+RA   Kitano T., Kobayakawa H., Saitou N.;
+RL   Submitted (APR-2000) to the EMBL/GenBank/DDBJ databases.
+CC   -!- FUNCTION: THIS IS ONE OF THE SEVERAL DIFFERENT RECEPTORS FOR 5-
+CC       HYDROXYTRYPTAMINE (SEROTONIN), A BIOGENIC HORMONE THAT FUNCTIONS
+CC       AS A NEUROTRANSMITTER, A HORMONE, AND A MITOGEN. THE ACTIVITY OF
+CC       THIS RECEPTOR IS MEDIATED BY G PROTEINS THAT INHIBITS ADENYLATE
+CC       CYCLASE ACTIVITY.
+CC   -!- SUBCELLULAR LOCATION: INTEGRAL MEMBRANE PROTEIN.
+CC   -!- SIMILARITY: BELONGS TO FAMILY 1 OF G-PROTEIN COUPLED RECEPTORS.
+CC       STRONGEST TO THE OTHER 5HT-1 SUBTYPE RECEPTORS.
+CC   --------------------------------------------------------------------------
+CC   This SWISS-PROT entry is copyright. It is produced through a collaboration
+CC   between  the Swiss Institute of Bioinformatics  and the  EMBL outstation -
+CC   the European Bioinformatics Institute.  There are no  restrictions on  its
+CC   use  by  non-profit  institutions as long  as its content  is  in  no  way
+CC   modified and this statement is not removed.  Usage  by  and for commercial
+CC   entities requires a license agreement (See http://www.isb-sib.ch/announce/
+CC   or send an email to license@isb-sib.ch).
+CC   --------------------------------------------------------------------------
+DR   EMBL; M91467; AAA58353.1; -.
+DR   EMBL; Z11166; CAA77558.1; -.
+DR   EMBL; M92826; AAA58355.1; -.
+DR   EMBL; AB041373; BAA94458.1; -.
+DR   PIR; S20579; S20579.
+DR   PIR; A45260; A45260.
+DR   GCRDb; GCR_0299; -.
+DR   GCRDb; GCR_0401; -.
+DR   GCRDb; GCR_0455; -.
+DR   MIM; 182132; -.
+DR   InterPro; IPR000276; GPCR_Rhodpsn.
+DR   Pfam; PF00001; 7tm_1; 1.
+DR   PRINTS; PR00237; GPCRRHODOPSN.
+DR   PRINTS; PR01101; 5HTRECEPTOR.
+DR   PROSITE; PS00237; G_PROTEIN_RECEP_F1_1; 1.
+DR   PROSITE; PS50262; G_PROTEIN_RECEP_F1_2; 1.
+KW   G-protein coupled receptor; Transmembrane; Glycoprotein;
+KW   Multigene family.
+FT   DOMAIN        1     22       EXTRACELLULAR (POTENTIAL).
+FT   TRANSMEM     23     47       1 (POTENTIAL).
+FT   DOMAIN       48     59       CYTOPLASMIC (POTENTIAL).
+FT   TRANSMEM     60     81       2 (POTENTIAL).
+FT   DOMAIN       82     96       EXTRACELLULAR (POTENTIAL).
+FT   TRANSMEM     97    118       3 (POTENTIAL).
+FT   DOMAIN      119    138       CYTOPLASMIC (POTENTIAL).
+FT   TRANSMEM    139    159       4 (POTENTIAL).
+FT   DOMAIN      160    179       EXTRACELLULAR (POTENTIAL).
+FT   TRANSMEM    180    201       5 (POTENTIAL).
+FT   DOMAIN      202    291       CYTOPLASMIC (POTENTIAL).
+FT   TRANSMEM    292    314       6 (POTENTIAL).
+FT   DOMAIN      315    324       EXTRACELLULAR (POTENTIAL).
+FT   TRANSMEM    325    347       7 (POTENTIAL).
+FT   DOMAIN      348    365       CYTOPLASMIC (POTENTIAL).
+FT   CARBOHYD      2      2       N-LINKED (GLCNAC...) (POTENTIAL).
+FT   CARBOHYD      5      5       N-LINKED (GLCNAC...) (POTENTIAL).
+FT   DISULFID     95    173       BY SIMILARITY.
+SQ   SEQUENCE   365 AA;  41682 MW;  4C31DD783A3F7483 CRC64;
+     MNITNCTTEA SMAIRPKTIT EKMLICMTLV VITTLTTLLN LAVIMAIGTT KKLHQPANYL
+     ICSLAVTDLL VAVLVMPLSI IYIVMDRWKL GYFLCEVWLS VDMTCCTCSI LHLCVIALDR
+     YWAITNAIEY ARKRTAKRAA LMILTVWTIS IFISMPPLFW RSHRRLSPPP SQCTIQHDHV
+     IYTIYSTLGA FYIPLTLILI LYYRIYHAAK SLYQKRGSSR HLSNRSTDSQ NSFASCKLTQ
+     TFCVSDFSTS DPTTEFEKFH ASIRIPPFDN DLDHPGERQQ ISSTRERKAA RILGLILGAF
+     ILSWLPFFIK ELIVGLSIYT VSSEVADFLT WLGYVNSLIN PLLYTSFNED FKLAFKKLIR
+     CREHT
+//

@@ -1,0 +1,216 @@
+@menu
+* ReadPair-Display::            Graphical Output
+* ReadPair-Output::             Textual Output
+@end menu
+
+@cindex Find read pairs
+@cindex Read pairs
+
+This function is used to check the positions and orientations of
+readings taken from the same templates. 
+It is invoked from the gap4 View menu.
+
+For each template the relative
+position of its readings and the contigs they are in are examined. This
+analysis can give information about the relative order, separation and
+orientations of contigs and also show possible problems in the data.
+The search can be over the whole database or a subset of contigs named
+in a list (_fpref(Lists, Lists, lists)) 
+or file of file names. The results are written to the Output
+Window and plotted in the Contig Comparator 
+(_fxref(Contig Comparator, Contig Comparator, comparator)).
+Read pair information is also used to colour code the results displayed in the
+Template Display 
+(_fpref(Template-Display, Template Display, template)).
+
+Note that during assembly the template names and lengths are copied from
+the experiment files into the gap database. _fxref(Formats-Exp,
+Experiment Files, exp) The accuracy of the lengths will depend upon some
+size selection being performed during the cloning procedures.
+
+_picture(read_pairs)
+
+Users choose to process "all contigs" or a subset selected from a file
+of file names ("file") or a list ("list"). If either of the subset
+options is selected the "browse" button will be activated and can be
+clicked on to call up a file or list browser dialogue.
+
+_split()
+@node ReadPair-Display
+@subsection Find Read Pairs Graphical Output
+@cindex Find read pairs: display
+
+The contig comparator is used to plot all templates with readings that span
+contigs. That is, the lines drawn on the contig comparator are a visual
+representation of the relationship (orientation and overlap) between contigs.
+When a template spans more than two contigs, all the combinations of pairs of
+contigs are plotted. However such cases are uncommon.
+
+_lpicture(comparator)
+
+The figure above shows a typical Contig Comparator plot which includes
+several types of result in addition to those from Read Pair analysis.
+
+The lines for the read-pairs 
+are, by default, shown in blue. The length of the line is the average
+length of the two readings within the pair. The slope of the line represents
+the relative orientation of the two readings. If they are both the same
+orientation (including both complemented) the line is drawn from top left to
+bottom right, otherwise the line is drawn from top right to bottom left.
+
+Clicking with the right mouse button on a read pair line brings up a menu
+containing, amongst other things, "Invoke template display"
+(_fpref(Template-Display, Template Display, template)).
+This creates a template display of the two contigs. The spanning template 
+will be coloured bright yellow if the readings on the template are 
+consistent with one another, or dark yellow if they are not. The ordering of
+the contigs may need to be altered, or one contig may need complementing,
+before the readings on the template become consistent. Using the 
+"Invoke join editor" command 
+(_fpref(Editor-Joining, The Join Editor, contig_editor))
+from the same menu will bring up the Join Editor 
+with the two contigs shown end to end. 
+
+_split()
+@node ReadPair-Output
+@subsection Find Read Pairs Text Output
+@cindex Find read pairs: output
+@cindex Find read pairs: example
+
+Two types of results are written to the Output Window: those containing
+apparently consistent data about the relative orientations and positions
+of contigs, and those that show inconsistencies in the data. The
+inconsistencies will be due to misassembly or to misnaming of readings and
+templates.
+
+In the Output Window the program writes a line of information for each
+template and a line of information for each reading from that template.
+In order to restrict this information to fit on a standard 80 column
+display a few abbreviations are used.  An example for two consistent and
+one 
+problematic template is shown below. Templates with possible problems are
+separated from those without. The templates shown are sorted by problem;
+consistent templates at the top followed by increasingly inconsistent
+templates at the bottom.
+
+@example
+@group
+Template       zf18c8( 117), length 1400-2000(expected 1700)
+     Reading        zf18a2.s1(   +1F), pos   5620  +91, contig   46
+     Reading        zf18c8.s1( -117F), pos   1084 +288, contig  127
+
+Template       zf98f4( 659), length 1400-2000(computed 7263)
+     Reading        zf98f4.s1( -659F), pos     27 +238, contig  548
+     Reading        zf98f4.r1( +800R), pos   5392 +211, contig   46
+
+*** Possibly problematic templates listed below ***
+Template       zf24g6( 262), length 1400-2000(observed 1365)
+ D   Reading        zf24g6.r1( +808R), pos    463 +206, contig   46
+ D   Reading        zf24g6.s1( -262F), pos   1559 +268, contig   46
+@end group
+@end example
+
+@subsubsection The Template Lines
+@cindex Find read pairs: template lines
+@cindex Template: find read pairs
+
+To describe the format of the template line we provide a detailed explanation
+of the lines above for the last Template block.
+
+@table @code
+@item "Template       zf24g6( 262)"
+This is template with name "zf24g6" and number 262.
+
+@item length 1400-2000
+These are the minimum and maximum lengths specified for this template.
+
+@item observed(1365)
+This section has the general format of "comment(distance)", where "comment" is
+one of the following.
+
+@table @var
+@item observed
+The template has both forward and reverse readings within this contig. From
+this information the actual size of the template can be seen. In the example
+this is "1365".
+
+@item expected
+The template length is estimated as the average of the specified minimum and
+maximum size. This will be seen when the template does not span contigs and
+does not have both forward and reverse primers visible.
+
+@item computed
+The template has forward and reverse readings in different contigs. The length
+is computed by butting the two contigs together, end to end, and finding the
+resultant separation of the template ends. It is not possible to tell whether
+the two contigs overlap, and if so by how much. Hence the "computed" lengths
+should not be considered as absolute.
+@end table
+@end table
+
+@subsubsection The Reading Lines
+@cindex Find read pairs: reading lines
+
+@table @code
+@item "?DPS"
+The first four characters may be either space or one of "?", "D", "P" or "S".
+The meaning of each of these is as follows.
+
+@table @var
+@item ?
+No primer information is available for these readings.
+@item D
+The distance between forward and reverse primers (ie the template length) is
+not as expected.
+@item P
+The primer information for readings on this template is inconsistent. An
+example of this is where two forward readings exist, both using the universal
+primer, and the readings are not in close proximity to each other.
+@item S
+The template strand information is inconsistent. This problem can be seen when
+the forward and reverse readings are from the same strand, or two forward
+readings are pointing in opposite directions.
+@end table
+
+Absence of all of these characters means that the template is consistent.
+
+@item "Reading        zf24g6.r1"
+The reading name
+
+@item "( +808R)"
+The reading number. The "+" or "-" character preceding the number represents
+whether the reading has been complemented ("+" for original, "-" for
+complemented). The letter following the number indicates the primer
+information found for this reading. It may be one of:
+
+@table @var
+@item ?
+Unknown
+@item F
+Forward, universal primer
+@item f
+Forward, custom primer (eg a walk)
+@item R
+Reverse, universal primer
+@item r
+Reverse, custom primer
+@end table
+
+@item "pos    463 +206"
+The position and the length of the reading within the contig. In this case the
+reading starts at position 463 and extends for 206 bases. For a complemented
+reading the position marks the 3' end of the reading. For both cases the
+position can be considered as the 'left end' of the reading as displayed
+within the contig.
+
+@item "contig   46"
+The reading number of the left most reading within this contig.
+@end table
+
+In the above example the template has two readings. It can be seen that the
+template starts at contig position 463 and finishes at position 1827.  The
+observed length is 1365, which is just below the expected minimum length of
+1400. Hence the template is flagged as having an invalid distance. There are
+no other inconsistencies for this template and so it is likely that the
+only "problem" is that the experimental size selection process was not
+as precise as was thought.

@@ -1,0 +1,279 @@
+# -----------------------------------------------------------------------------
+# feature_selector class
+# -----------------------------------------------------------------------------
+
+class Feature_selector {
+
+    inherit itk::Widget
+    
+    constructor {args} {}
+
+    public method get {}
+    public method read_key_info {-file filename} @iread_feature_db
+    public method get_key_info {} @iget_feature_db
+    public method save_key_info {-file filename -items selected} @save_feature_db
+
+    private method _save_selection {p}
+    private method _open_personal {}
+    private method _config_selection {w x y}
+    private method _enter_key_info {w r c} 
+}
+
+# ------------------------------------------------
+# Provide a lowercase access method for the class.
+# ------------------------------------------------
+
+proc ::feature_selector {pathName args} {
+    uplevel ::Feature_selector $pathName $args
+}
+
+# ------------------------------------------------------------------
+#                        CONSTRUCTOR
+# ------------------------------------------------------------------
+
+body Feature_selector::constructor {args} {
+
+    itk_component add f_keys {
+	iwidgets::tabnotebook $itk_component(hull).f_keys \
+		-tabpos n \
+		-angle 15 \
+		-margin 6 \
+		-width 550 \
+		-height 250 	
+    }
+    pack $itk_component(f_keys) -expand yes -fill both 
+    
+    foreach {p n} {all "All feature keys" personal "Personal feature keys"} {
+	set tb($p) [$itk_component(f_keys) add -label $n]
+	tablelist::tablelist $tb($p).tl \
+	    -columns {10 "Key"   
+                      10 "Fill colour"
+	              10 "Border colour"
+	              10 "Border width"
+                      10 "Shape"}\
+            -labelcommand tablelist::sortByColumn \
+	    -xscrollcommand [list $tb($p).hsb set] \
+	    -yscrollcommand [list $tb($p).vsb set] \
+	    -selectbackground navy -selectforeground white \
+	    -height 15 -stretch all \
+	    -selectmode extended\
+	    -exportselection 0
+	   
+	scrollbar $tb($p).vsb -orient vertical   -command [list $tb($p).tl yview]
+	scrollbar $tb($p).hsb -orient horizontal -command [list $tb($p).tl xview]
+
+	frame $tb($p).fm
+	#checkedgetfname $tb($p).fm.f -labeltext "Output filename" -type save
+	#$tb($p).fm.f configure -width 35 
+	frame $tb($p).fm.se -bd 2 -relief raised -height 30 -width 2   
+	button $tb($p).fm.sa -text "Save" -width 3 -command [code $this _save_selection $p]
+	#pack $tb($p).fm.f $tb($p).fm.se $tb($p).fm.sa -side left -expand 1
+	pack $tb($p).fm.se $tb($p).fm.sa -side left -expand 1
+
+	if {$p == "personal"} {
+	    frame $tb($p).lo
+	    #checkedgetfname $tb($p).lo.f -labeltext "Input filename   " -type load
+	    #$tb($p).lo.f configure -width 35 
+	    frame $tb($p).lo.se -bd 2 -relief raised -height 30 -width 2   
+	    button $tb($p).lo.sa -text "Open" -width 3 -command [code $this _open_personal]
+	    #pack $tb($p).lo.f $tb($p).lo.se $tb($p).lo.sa -side left -expand 1   	    
+	    pack $tb($p).lo.se $tb($p).lo.sa -side left -expand 1   	    
+	}
+
+	frame $tb($p).all
+	button $tb($p).all.sa -text "Select all" -command "$tb($p).tl selection clear 0 end; $tb($p).tl selection set 0 end"
+	button $tb($p).all.ca -text "Clear all" -command "$tb($p).tl selection clear 0 end"
+
+	pack $tb($p).all.sa $tb($p).all.ca -side left -expand 1
+
+	grid $tb($p).tl -row 0 -column 0 -sticky news
+	grid $tb($p).vsb -row 0 -column 1 -sticky ns
+	grid $tb($p).hsb -row 1 -column 0 -sticky ew
+
+	grid $tb($p).all -row 2 -column 0 -sticky ew
+
+	if {$p == "personal"} {
+	    grid $tb($p).lo -row 3 -column 0 -sticky ew -columnspan 2 -pady 2 -padx 2
+	}
+	grid $tb($p).fm -row 4 -column 0 -sticky ew -columnspan 2 -pady 2 -padx 2
+
+	grid rowconfigure    $tb($p) 0 -weight 1
+	grid columnconfigure $tb($p) 0 -weight 1
+
+	set body [$tb($p).tl bodypath]
+	
+	bind $body <Double-1> [code $this _config_selection $tb($p).tl %x %y]
+    }
+
+       
+    $itk_component(f_keys) select 0
+    
+    eval itk_initialize $args
+
+    #read in default FEATUREDB file and select all items
+    read_key_info -file FEATUREDB
+    set key_info [get_key_info]
+
+    $tb(all).tl delete 0 end
+    foreach key $key_info {
+	#necessary so that I can do a cellconfigure
+	$tb(all).tl insert end ""
+	_enter_key_info $tb(all).tl end $key
+    }
+    $tb(all).tl selection set 0 end
+}
+
+# ------------------------------------------------------------------
+#                            OPTIONS
+# ------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------
+#                            METHODS
+# ------------------------------------------------------------------
+
+# ------------------------------------------------------------------
+# METHOD: _open_personal
+#
+# Fill the tablelist with the content of the file entered by user.
+# ------------------------------------------------------------------
+body Feature_selector::_open_personal {} {
+
+    set key_info ""
+    set pers_file [$itk_component(f_keys).canvas.notebook.cs.page2.cs.lo.f get]
+    
+    if {$pers_file != ""} {
+	read_key_info -file $pers_file
+
+	set key_info [get_key_info] 
+	$itk_component(f_keys).canvas.notebook.cs.page2.cs.tl delete 0 end
+	if {$key_info != ""} {
+	    foreach key $key_info {
+		$itk_component(f_keys).canvas.notebook.cs.page2.cs.tl insert end ""
+		_enter_key_info $itk_component(f_keys).canvas.notebook.cs.page2.cs.tl end $key
+	    }
+	} else {
+	    tk_messageBox -icon error -type ok -title "Feature selector file" \
+		-message "You have not entered a feature table format file"
+	    raise [winfo toplevel $itk_component(hull)]	   
+	    #focus $itk_component(f_keys).canvas.notebook.cs.page2.cs.lo.f.entry
+	}   
+    } else {
+	$itk_component(f_keys).canvas.notebook.cs.page2.cs.tl delete 0 end
+	#$itk_component(f_keys).canvas.notebook.cs.page2.cs.lo.f.entry delete 0 end
+    }
+}
+
+# -----------------------------------------------------------------------------------
+# METHOD: _save_selection
+#
+# Save as the record(s) are selected in the currently page into file.
+# ------------------------------------------------------------------------------------
+body Feature_selector::_save_selection {p} {
+
+    if {$p == "all"} {
+	set page page1
+    } else {
+	set page page2
+    }
+
+    set selected_item [get]
+
+    set filename [$itk_component(f_keys).canvas.notebook.cs.$page.cs.fm.f get]
+    if {$filename != ""} {
+	if {$selected_item != ""} {
+	    save_key_info -file $filename -items $selected_item
+	    raise [winfo toplevel $itk_component(hull)]
+	} else {
+	    tk_messageBox -icon error -type ok -title "Save feature selection file" \
+		-message "No selection has been Made"
+	    raise [winfo toplevel $itk_component(hull)]
+	}
+    } else {
+	$itk_component(f_keys).canvas.notebook.cs.$page.cs.fm.f.entry delete 0 end
+	raise [winfo toplevel $itk_component(hull)]
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD: _update selection
+#
+# Enter selection into table
+# ------------------------------------------------------------------
+body Feature_selector::_enter_key_info {tbl row configs} {
+
+    if {[keylget configs type err]} {
+	$tbl cellconfigure $row,0 -text [keylget configs type]
+    }
+    if {[keylget configs fill err]} {
+	$tbl cellconfigure $row,1 -bg [keylget configs fill]
+    }
+    if {[keylget configs outline err]} {
+	$tbl cellconfigure $row,2 -bg [keylget configs outline]
+    }
+    if {[keylget configs width err]} {
+	$tbl cellconfigure $row,3 -text [keylget configs width]
+    }
+    if {[keylget configs shape err]} {
+	$tbl cellconfigure $row,4 -text [keylget configs shape]
+    }
+}
+
+# ------------------------------------------------------------------
+# METHOD: _config selection
+#
+# Binding to double-1 to config of colour and shape
+# ------------------------------------------------------------------
+body Feature_selector::_config_selection {tbl x y} {
+    set row [$tbl curselection]
+    keylset init_config fill [$tbl cellcget $row,1 -bg]
+    keylset init_config outline [$tbl cellcget $row,2 -bg]
+    keylset init_config width [$tbl cellcget $row,3 -text]
+    keylset init_config shape [$tbl cellcget $row,4 -text]
+
+    set configs [colour_shape_box $tbl.cs $init_config]
+    _enter_key_info $tbl $row $configs
+}
+
+# --------------------------------------------------------------------------------------
+# METHOD: get
+#
+# Returns a list containing all of the items are selected in the currently selected page.
+# ---------------------------------------------------------------------------------------
+body Feature_selector::get {} {
+
+    set page ""
+    set selected_index [[$itk_component(f_keys) component tabset] index select]    
+    if {$selected_index == 0} {
+	set page page1
+    } else {
+	set page page2
+    }    
+
+    set row_all ""
+    set cur_sel [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl curselection]
+    set num_sel [llength $cur_sel]
+    if {$num_sel == 0} {
+	bell
+	return ""
+    }
+
+    for {set i 0} {$i < $num_sel} {incr i} {
+	set row_single ""
+	set row_sel [lindex $cur_sel $i]
+
+	keylset row_single type [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl cellcget $row_sel,0 -text]
+
+	keylset row_single fill [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl cellcget $row_sel,1 -bg]
+
+	keylset row_single outline [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl cellcget $row_sel,2 -bg]
+
+	keylset row_single width [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl cellcget $row_sel,3 -text]
+
+	keylset row_single shape [$itk_component(f_keys).canvas.notebook.cs.$page.cs.tl cellcget $row_sel,4 -text]
+
+	set row_single \{$row_single\}
+	set row_all [concat $row_all $row_single]
+    }
+    return $row_all   
+}

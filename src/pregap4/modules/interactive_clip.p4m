@@ -1,0 +1,90 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Interactive clipping - uses trev to view/edit files
+#
+set help {pregap4 {Pregap4-Modules-Interactive Clip}}
+
+proc fevent {fd} {
+    variable output
+    variable trev_done
+
+    append output [read $fd]
+    if {[eof $fd]} {
+	set trev_done 1
+    }
+}
+
+proc run {files} {
+    global file_error env tcl_platform
+    global fofn
+    variable report
+
+    set report ""
+
+    # Create temporary file of filenames for trev
+    set fd [open $fofn.tmp w]
+    foreach f $files {
+	puts $fd $f
+    }
+    close $fd
+
+    if {$tcl_platform(os) == "Darwin" && 0} {
+        # Disabled for now as the above is only needed in aqua l&f
+	if {[catch {set fd [open "| [list $env(STADENROOT)/Applications/Trev.app/Contents/MacOS/launcher] -pregap_mode -editscf -fofn $fofn.tmp"]} var]} {
+	    append report "ERR: trev failed with error message '$var'.\n"
+	    return $files
+	}
+    } elseif {$tcl_platform(platform) == "windows"} {
+	if {[catch {set fd [open "|wish [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn $fofn.tmp"]} var]} {
+	    append report "ERR: trev failed with error message '$var'.\n"
+	    return $files
+	}
+    } else {
+	if {[catch {set fd [open "|stash [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn $fofn.tmp"]} var]} {
+	    append report "ERR: trev failed with error message '$var'.\n"
+	    return $files
+	}
+    }
+
+
+    variable trev_done
+    variable output ""
+    fconfigure $fd -blocking 0
+    fileevent $fd readable "[namespace code [list fevent $fd]]"
+    vwait [namespace current]::trev_done
+    fconfigure $fd -blocking 1
+    close $fd
+
+    set new_files ""
+    foreach line [split $output \n] {
+	if {[lindex $line 0] == "STATUS"} {
+	    set new_files [lrange $line 1 end]
+	}
+    }
+
+    set files ""
+    foreach f $new_files {
+	if {[lindex $f 1]} {
+	    lappend files [lindex $f 0]
+	    append report "SEQ [lindex $f 0]: accepted\n"
+	} else {
+	    set file_error([lindex $f 0]) "interactive_clip: manually rejected"
+	    append report "SEQ [lindex $f 0]: rejected\n"
+	}
+    }
+
+    catch {file delete $fofn.tmp}
+    return $files
+}
+
+proc name {} {
+    return "Interactive clipping"
+}

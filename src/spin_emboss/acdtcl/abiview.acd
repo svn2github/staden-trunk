@@ -1,0 +1,201 @@
+package require Iwidgets
+namespace eval ::EMBOSS::abiview {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_abiview*Xentry.entry.width 30
+option add *e_abiview*Entryfield.width 30
+option add *e_abiview*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) abiview
+    set w [xtoplevel .e_abiview -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - abiview}
+    label $w._title -text {Reads ABI file and display the trace}
+    pack $w._title -side top -fill both
+    set vars(abiview._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments fname
+    xentry $w.fname \
+	-label [subst {Name of the ABI trace file}]\
+	-textvariable [namespace current]::vars(fname) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.fname delete 0 end
+    $w.fname insert end [subst {}]
+    pack $w.fname -side top -fill both
+    set vars(fname.path) $w.fname
+    set vars(fname.required)  1
+    set vars(fname._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outseq
+    iwidgets::labeledframe $w.outseq \
+	-labeltext [subst {Sequence file}]
+    pack $w.outseq -side top -fill both
+    lappend wlist $w
+    set w [$w.outseq childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(outseq.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(outseq) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(outseq.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(outseq.path) $w.outseq
+    set vars(outseq.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(outseq._type) seqout
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  1
+    set vars(graph._type) xygraph
+
+    lappend arguments startbase
+    iwidgets::entryfield $w.startbase \
+	-validate integer \
+	-textvariable [namespace current]::vars(startbase) \
+	-labeltext [subst {First base to report or display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.startbase component entry] -sticky nse
+    set vars(startbase) [subst 0]
+    pack $w.startbase -side top -fill both
+    set vars(startbase.minimum) [subst 0]
+    set vars(startbase.path) $w.startbase
+    set vars(startbase.required)  0
+    set vars(startbase._type) integer
+
+    lappend arguments endbase
+    iwidgets::entryfield $w.endbase \
+	-validate integer \
+	-textvariable [namespace current]::vars(endbase) \
+	-labeltext [subst {Last base to report or display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.endbase component entry] -sticky nse
+    set vars(endbase) [subst 0]
+    pack $w.endbase -side top -fill both
+    set vars(endbase.path) $w.endbase
+    set vars(endbase.required)  0
+    set vars(endbase._type) integer
+
+    lappend arguments separate
+    checkbutton $w.separate \
+	-text [subst {Separate the trace graphs for the 4 bases}]\
+	-variable [namespace current]::vars(separate)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.separate -side top -anchor w
+    set vars(separate) [subst 0]
+    set vars(separate.path) $w.separate
+    set vars(separate.required)  0
+    set vars(separate._type) bool
+
+    lappend arguments yticks
+    checkbutton $w.yticks \
+	-text [subst {Display y-axis ticks}]\
+	-variable [namespace current]::vars(yticks)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.yticks -side top -anchor w
+    set vars(yticks) [subst 0]
+    set vars(yticks.path) $w.yticks
+    set vars(yticks.required)  0
+    set vars(yticks._type) bool
+
+    lappend arguments sequence
+    checkbutton $w.sequence \
+	-text [subst {Display the sequence on the graph}]\
+	-variable [namespace current]::vars(sequence)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sequence -side top -anchor w
+    set vars(sequence) [subst 1]
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  0
+    set vars(sequence._type) bool
+
+    lappend arguments window
+    iwidgets::entryfield $w.window \
+	-validate integer \
+	-textvariable [namespace current]::vars(window) \
+	-labeltext [subst {Sequence display window size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.window component entry] -sticky nse
+    set vars(window) [subst 40]
+    pack $w.window -side top -fill both
+    set vars(window.path) $w.window
+    set vars(window.required)  0
+    set vars(window._type) integer
+
+    lappend arguments bases
+    iwidgets::entryfield $w.bases \
+	-textvariable [namespace current]::vars(bases) \
+	-labeltext [subst {Base graphs to be displayed}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bases component entry] -sticky nse
+    set vars(bases) [subst GATC]
+    pack $w.bases -side top -fill both
+    set vars(bases.path) $w.bases
+    set vars(bases.required)  0
+    set vars(bases._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/abiview.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

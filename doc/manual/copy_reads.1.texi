@@ -1,0 +1,153 @@
+@cindex Copy_reads: man_page
+@unnumberedsec NAME
+
+copy_reads --- copies overlapping reads from a source database to a destination database
+
+@unnumberedsec SYNOPSIS
+Usage:
+
+@code{copy_reads} [@code{-win}] [@code{-source_trace_dir} @i{directory of source traces}]
+               [@code{-contigs_from} @i{file of contigs in source database}] 
+               [@code{-min_contig_len} @i{minimum contig length}] 
+               [@code{-min_average_qual} @i{minimum average read quality}] 
+               [@code{-contigs_to} @i{file of contigs in destination database}] 
+               [@code{-mask} @i{masking mode}] 
+               [@code{-tag_types} @i{list of tag types}] 
+               [@code{-word_length} @i{word length}] 
+               [@code{-min_overlap} @i{minimum overlap}] 
+               [@code{-max_pmismatch} @i{maximum percentage mismatch}] 
+               [@code{-min_match} @i{minimum match}] 
+               [@code{-band} @i{use banding algorithm}] 
+               [@code{-display_cons} @i{display consensus alignments}] 
+               [@code{-align_max_mism} @i{maximum percent mismatch}] 
+               [@code{-display_seq} @i{display reading alignments}] 
+               @i{source database}
+               @i{destination database}
+
+@unnumberedsec DESCRIPTION
+
+During large scale sequencing projects where the genome is cloned into e.g.
+BACs prior to being subcloned into sequencing vectors it is generally 
+the case that the ends of the DNA from one BAC will overlap that of two other
+BACs. Unless it is being used for quality control, it is a waste of time to
+sequence the overlapping regions twice, and so most labs transfer the relevant
+data between the adjacent gap4 databases. This is the function of @code{copy_reads}
+which copies readings from a "source" database to a "destination" database.
+
+The consensus sequences for
+user selected contigs in each of the two databases are compared in both
+orientations. If an overlapping region is found, readings of sufficient
+quality are automatically assembled into the destination database. In 
+the source database readings which have been added to the destination
+database will be tagged with a "LENT" tag and the equivalent readings in
+the destination databse will be tagged with a "BORO" (borrowed) tag.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-win}
+     Bring up a dialogue window
+
+@item @code{-source_trace_dir} @i{directory of source traces}
+     The location of the traces of the source database can either be
+     specified by giving the directory name or if this is not specified,
+     determined from the rawdata note (_fpref(Conf-Trace File Location, 
+     Trace File Location, configure)) held within the database. The program
+     will add the location of the source traces into the
+     rawdata note of the destination database. If the environment variable
+     RAWDATA is set, this will be taken to be the location of the destination
+     database traces and will also be added to the rawdata note
+     of the destination database. If there are no traces for the source
+     database, no rawdata note will be created.
+
+@item @code{-contigs_from} @i{file of contigs in source database}
+     One or more contigs from the source database can be compared. These are
+     selected either by providing a file containing a list of contig names 
+     (any reading name from within that contig, typically the first reading 
+     name). If no file is specified, all contigs will be compared.
+
+@item @code{-min_contig_len} @i{minimum contig length}
+     Only contigs in the source database over a user defined length will be 
+     used. The default is 2000 bases.
+
+@item @code{-min_average_qual} @i{minimum average read quality}
+      A minimum reading quality can be set so that only readings with an 
+      average quality over the specified amount will be entered into the 
+      destination database. The default is 30.0.
+
+@item @code{-contigs_to} @i{file of contigs in destination database}
+     One or more contigs from the destination database can be compared. These are
+     selected either by providing a file containing a list of contig names 
+     (any reading name from within that contig, typically the first reading 
+     name). If no file is specified, all contigs will be compared.
+
+@item @code{-mask} @i{masking mode}
+     The consensus sequence is determined for each contig in both databases
+     using either the standard consensus algorithm (none) or "Mask active tags" (mask).
+     Masking the active tags means that
+     all segments covered by tags that are "active" will not be used by the
+     matching algorithms. A typical use of this mode is to avoid finding
+     matches in segments covered by tags of type ALUS (ie segments thought to
+     be Alu sequence) or REPT (ie segment that are known to be repeated
+     elsewhere in the data (_fpref(Anno-Types, Tag types, tags)). The default
+     is none.
+
+@item @code{-tag_types} @i{list of tag types}
+     A list of tag types to be used when the -mask option (above) is specified
+     to be in "mask" mode. The list is delimited by "".
+
+@item @code{-word_length} @i{word length}
+     The consensus searching parameters are equivalent to those found in the
+     find internal joins algorithm (_fpref(FIJ, Find Internal Joins, fij)). 
+     The search algorithm first finds matching words of length @i{Word
+     length}. Possible values are 4 or 8. The default is 8. 
+
+@item @code{-min_overlap} @i{minimum overlap}
+     The search algorithm only considers overlaps of length at least 
+     @i{Minimum overlap}. The default is 20.
+
+@item @code{-max_pmismatch} @i{maximum percentage mismatch}
+     Only alignments better than @i{Maximum percent mismatch} will be reported.
+     The default is 30.0.
+
+@item @code{-min_match} @i{minimum match}
+     The algorithm considers in its initial phase only matching segments of 
+     length @i{Minimum initial match length}. However it
+     does a dynamic programming alignment of all the chunks between the
+     matching segments, and so produces an optimal alignment. The default is
+     15.
+
+@item @code{-band} @i{use banding algorithm}
+     A banded dynamic algorithm can be selected, but as this only applies to 
+     the chunks between matching segments, which for good alignments will be 
+     very short and it should make little difference to the speed. Possible
+     values are 0 (no) or 1 (yes). The default is 1. 
+
+@item @code{-display_cons} @i{display consensus alignments} 
+     This allows the alignments between the consensus sequences to be 
+     displayed.
+
+@item @code{-align_max_mism} @i{maximum percent mismatch} 
+     If a match between two consensus sequences is found, the
+     readings in that overlap are assembled into the destination database
+     using the "directed assembly" function (_fpref(Assembly-Directed,
+     Directed Assembly, assembly)). Only readings for which the @i{maximum
+     percent mismatch} is not exceeded, and which have an average
+     reading quality higher than the specified minimum, will be entered into 
+     the database. The default value is 10.0.
+
+@item @code{-display_seq} @i{display reading alignments} 
+     This allows the alignments between the source database readings and the 
+     destination consensus to be displayed.
+
+@end table
+
+@unnumberedsec EXAMPLE
+
+To copy readings from @file{source_db} to @file{destination_db} and display
+the consensus match
+
+@example
+copy_reads -display_cons source_db destination_db
+@end example
+

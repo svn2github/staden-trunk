@@ -1,0 +1,106 @@
+#!/bin/sh
+#\
+exec stash $0 ${@+"$@"}
+
+#
+# Splits a plain text or fasta file into a series of Experiment Files
+# containing AP lines. These can then be put into directed assembly.
+# The purpose is to allow assembly of very large sequences in an easy manner.
+# NB. This is pretty hacky - with minimal error checking.
+#
+
+
+set overlap 1000
+set length 25000
+
+#############################################################################
+
+proc get_seq {fd seq_name_p} {
+    upvar $seq_name_p seq_name
+    global next_seq
+
+    if {[info exists next_seq]} {
+	regexp "^>(.*)" $next_seq tmp seq_name
+	set seq ""
+    } else {
+        gets $fd line
+        if {[string match ">*" $line]} {
+            # Fasta format - rename sequence
+            regexp "^>(.*)" $line tmp seq_name
+    	    set seq ""
+        } else {
+    	    regsub -all {[^acgtnACGTN-]} $line {} seq
+        }
+    }
+
+    while {[gets $fd line] != -1} {
+	if {[string match ">*" $line]} {
+	    # New fasta entry
+	    set next_seq $line
+	    return $seq
+	} else {
+	    regsub -all {[^acgtnACGTN-]} $line {} line
+	    append seq $line
+	}
+    }
+
+    return $seq
+}
+
+
+# Parse args
+if {[llength $argv] != 1} {
+    puts "Usage: splitseq_da filename"
+    exit
+}
+
+# Read and reformat file. Supports plain text and fasta formats
+set fd [open $argv r]
+set seq_name $argv
+while {[set seq [get_seq $fd seq_name]] != ""} {
+    set num 0
+    set last ""
+    set l [string length $seq]
+    set inc [expr $length-$overlap]
+    set fdfofn [open $seq_name.fofn w]
+    for {set i 0} {$i+$overlap < $l} {incr i $inc} {
+	set subseq [string range $seq $i [expr $i+$length-1]]
+	if {$last != ""} {
+	    set AP "$last + $inc -1"
+	} else {
+	    set AP "*new* +"
+	}
+       	puts "Creating file $seq_name.[format %04d $num]"
+	puts $fdfofn $seq_name.[format %04d $num]
+	set fdout [open $seq_name.[format %04d $num] w]
+	puts $fdout "ID   $seq_name.[format %04d $num]"
+	puts $fdout "SQ"
+	set len [string length $subseq]
+	set count 0
+	for {set j 0} {$j < $len} {incr j 10} {
+	    if {$count == 0} {
+		puts -nonewline $fdout "     "
+	    } else {
+		puts -nonewline $fdout " "
+	    }
+	    puts -nonewline $fdout [string range $subseq $j [expr $j+9]]
+	    if {[incr count] == 6} {
+	        set count 0
+		puts $fdout ""
+	    }
+	}
+	if {$count != 0} {
+	    puts $fdout ""
+	}
+	puts $fdout "//"
+       	puts $fdout "AP   $AP"
+	set last $seq_name.[format %04d $num]
+	incr num
+    }
+    close $fdfofn
+    puts "Creating file $seq_name.fofn"
+
+}
+close $fd
+
+exit

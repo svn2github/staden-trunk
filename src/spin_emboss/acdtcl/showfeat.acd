@@ -1,0 +1,336 @@
+package require Iwidgets
+namespace eval ::EMBOSS::showfeat {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_showfeat*Xentry.entry.width 30
+option add *e_showfeat*Entryfield.width 30
+option add *e_showfeat*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) showfeat
+    set w [xtoplevel .e_showfeat -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - showfeat}
+    label $w._title -text {Show features of a sequence.}
+    pack $w._title -side top -fill both
+    set vars(showfeat._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 0]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 0]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst any]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+    set vars(sequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments matchsource
+    iwidgets::entryfield $w.matchsource \
+	-textvariable [namespace current]::vars(matchsource) \
+	-labeltext [subst {Source of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchsource component entry] -sticky nse
+    set vars(matchsource) [subst *]
+    pack $w.matchsource -side top -fill both
+    set vars(matchsource.path) $w.matchsource
+    set vars(matchsource.required)  0
+    set vars(matchsource._type) string
+
+    lappend arguments matchtype
+    iwidgets::entryfield $w.matchtype \
+	-textvariable [namespace current]::vars(matchtype) \
+	-labeltext [subst {Type of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchtype component entry] -sticky nse
+    set vars(matchtype) [subst *]
+    pack $w.matchtype -side top -fill both
+    set vars(matchtype.path) $w.matchtype
+    set vars(matchtype.required)  0
+    set vars(matchtype._type) string
+
+    lappend arguments matchtag
+    iwidgets::entryfield $w.matchtag \
+	-textvariable [namespace current]::vars(matchtag) \
+	-labeltext [subst {Tag of feature to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchtag component entry] -sticky nse
+    set vars(matchtag) [subst *]
+    pack $w.matchtag -side top -fill both
+    set vars(matchtag.path) $w.matchtag
+    set vars(matchtag.required)  0
+    set vars(matchtag._type) string
+
+    lappend arguments matchvalue
+    iwidgets::entryfield $w.matchvalue \
+	-textvariable [namespace current]::vars(matchvalue) \
+	-labeltext [subst {Value of feature tags to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.matchvalue component entry] -sticky nse
+    set vars(matchvalue) [subst *]
+    pack $w.matchvalue -side top -fill both
+    set vars(matchvalue.path) $w.matchvalue
+    set vars(matchvalue.required)  0
+    set vars(matchvalue._type) string
+
+    lappend arguments sort
+    iwidgets::combobox $w.sort\
+	-textvariable [namespace current]::vars(sort.name)\
+	-labeltext [subst {Sort features by ...}]
+    trace variable vars(sort.name) w  "::EMBOSS::list_changed [namespace current] sort"
+    eval $w.sort insert list end {{Sort by Source}} {{Sort by Start position}} {{Sort by Type}} {{No sorting done}} {{Join coding regions together}}
+    set vars(sort.mapping1) {{Sort by Source} source {Join coding regions together} join {No sorting done} nosort {Sort by Type} type {Sort by Start position} start}
+    set vars(sort.mapping2) {join {Join coding regions together} nosort {No sorting done} source {Sort by Source} type {Sort by Type} start {Sort by Start position}}
+    grid [$w.sort component entry] -sticky nse
+    $w.sort delete entry 0 end
+    array set tmpmap $vars(sort.mapping2)
+    set def [subst start]
+    catch {set def $tmpmap($def)}
+    set vars(sort) $def
+    $w.sort insert entry end $def
+    $w.sort configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.sort -side top -fill both
+    set vars(sort.path) $w.sort
+    set vars(sort.required)  0
+    set vars(sort.delimiter) ,
+    set vars(sort._type) list
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Use HTML formatting}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    lappend arguments id
+    checkbutton $w.id \
+	-text [subst {Show sequence ID}]\
+	-variable [namespace current]::vars(id)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.id -side top -anchor w
+    set vars(id) [subst 1]
+    set vars(id.path) $w.id
+    set vars(id.required)  0
+    set vars(id._type) bool
+
+    lappend arguments description
+    checkbutton $w.description \
+	-text [subst {Show description}]\
+	-variable [namespace current]::vars(description)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.description -side top -anchor w
+    set vars(description) [subst 1]
+    set vars(description.path) $w.description
+    set vars(description.required)  0
+    set vars(description._type) bool
+
+    lappend arguments scale
+    checkbutton $w.scale \
+	-text [subst {Show scale line}]\
+	-variable [namespace current]::vars(scale)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.scale -side top -anchor w
+    set vars(scale) [subst 1]
+    set vars(scale.path) $w.scale
+    set vars(scale.required)  0
+    set vars(scale._type) bool
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {Width of graphics lines}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 60]
+    pack $w.width -side top -fill both
+    set vars(width.minimum) [subst 0]
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    lappend arguments collapse
+    checkbutton $w.collapse \
+	-text [subst {Display features with the same type on one line}]\
+	-variable [namespace current]::vars(collapse)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.collapse -side top -anchor w
+    set vars(collapse) [subst 0]
+    set vars(collapse.path) $w.collapse
+    set vars(collapse.required)  0
+    set vars(collapse._type) bool
+
+    lappend arguments forward
+    checkbutton $w.forward \
+	-text [subst {Display forward sense features}]\
+	-variable [namespace current]::vars(forward)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.forward -side top -anchor w
+    set vars(forward) [subst 1]
+    set vars(forward.path) $w.forward
+    set vars(forward.required)  0
+    set vars(forward._type) bool
+
+    lappend arguments reverse
+    checkbutton $w.reverse \
+	-text [subst {Display reverse sense features}]\
+	-variable [namespace current]::vars(reverse)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.reverse -side top -anchor w
+    set vars(reverse) [subst 1]
+    set vars(reverse.path) $w.reverse
+    set vars(reverse.required)  0
+    set vars(reverse._type) bool
+
+    lappend arguments unknown
+    checkbutton $w.unknown \
+	-text [subst {Display unknown sense features}]\
+	-variable [namespace current]::vars(unknown)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.unknown -side top -anchor w
+    set vars(unknown) [subst 1]
+    set vars(unknown.path) $w.unknown
+    set vars(unknown.required)  0
+    set vars(unknown._type) bool
+
+    lappend arguments strand
+    checkbutton $w.strand \
+	-text [subst {Display strand of features}]\
+	-variable [namespace current]::vars(strand)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.strand -side top -anchor w
+    set vars(strand) [subst 0]
+    set vars(strand.path) $w.strand
+    set vars(strand.required)  0
+    set vars(strand._type) bool
+
+    lappend arguments source
+    checkbutton $w.source \
+	-text [subst {Display source of features}]\
+	-variable [namespace current]::vars(source)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.source -side top -anchor w
+    set vars(source) [subst 0]
+    set vars(source.path) $w.source
+    set vars(source.required)  0
+    set vars(source._type) bool
+
+    lappend arguments position
+    checkbutton $w.position \
+	-text [subst {Display position of features}]\
+	-variable [namespace current]::vars(position)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.position -side top -anchor w
+    set vars(position) [subst 0]
+    set vars(position.path) $w.position
+    set vars(position.required)  0
+    set vars(position._type) bool
+
+    lappend arguments type
+    checkbutton $w.type \
+	-text [subst {Display type of features}]\
+	-variable [namespace current]::vars(type)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.type -side top -anchor w
+    set vars(type) [subst 1]
+    set vars(type.path) $w.type
+    set vars(type.required)  0
+    set vars(type._type) bool
+
+    lappend arguments tags
+    checkbutton $w.tags \
+	-text [subst {Display tags of features}]\
+	-variable [namespace current]::vars(tags)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.tags -side top -anchor w
+    set vars(tags) [subst 0]
+    set vars(tags.path) $w.tags
+    set vars(tags.required)  0
+    set vars(tags._type) bool
+
+    lappend arguments values
+    checkbutton $w.values \
+	-text [subst {Display tag values of features}]\
+	-variable [namespace current]::vars(values)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.values -side top -anchor w
+    set vars(values) [subst 1]
+    set vars(values.path) $w.values
+    set vars(values.required)  0
+    set vars(values._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output feature details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst showfeat0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/showfeat.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,11 @@
+set name "Minimum template depth"
+
+set expression "<template_depth_ge 2>"
+
+set mandatory 1
+set avoid_primers 1
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}
+

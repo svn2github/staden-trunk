@@ -1,0 +1,179 @@
+package require Iwidgets
+namespace eval ::EMBOSS::palindrome {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_palindrome*Xentry.entry.width 30
+option add *e_palindrome*Entryfield.width 30
+option add *e_palindrome*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) palindrome
+    set w [xtoplevel .e_palindrome -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - palindrome}
+    label $w._title -text {Looks for inverted repeats in a nucleotide sequence}
+    pack $w._title -side top -fill both
+    set vars(palindrome._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments insequence
+    set vars(insequence)       [get_active_seq_id 0]
+    if {$vars(insequence) == -1} {set vars(insequence) [get_active_seq_id 0]}
+    set vars(insequence.name)  [seq_info $vars(insequence) name]
+    sequence_changed [namespace current] insequence
+    set vars(insequence.type) [subst nucleotide]
+    seq_id $w.insequence \
+	-textvariable [namespace current]::vars(insequence.name)\
+	-start_value $vars(insequence.begin)\
+	-end_value $vars(insequence.end)\
+	-to [seq_info $vars(insequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] insequence $w.insequence}"
+    set vars(insequence) [subst {}]
+    pack $w.insequence -side top -fill both
+    set vars(insequence.path) $w.insequence
+    set vars(insequence.required)  1
+    trace variable vars(insequence.name) w  "::EMBOSS::sequence_changed [namespace current] insequence"
+    set vars(insequence._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments minpallen
+    iwidgets::entryfield $w.minpallen \
+	-validate integer \
+	-textvariable [namespace current]::vars(minpallen) \
+	-labeltext [subst {Enter minimum length of palindrome}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.minpallen component entry] -sticky nse
+    set vars(minpallen) [subst 10]
+    pack $w.minpallen -side top -fill both
+    set vars(minpallen.minimum) [subst 1]
+    set vars(minpallen.maximum) [subst {[expr {($vars(insequence.length)/2)}]}]
+    set vars(minpallen.maximum.orig) $vars(minpallen.maximum)
+    set vars(minpallen.maximum.expr) {[expr {($vars(insequence.length)/2)}]}
+    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] minpallen.maximum"
+    set vars(minpallen.path) $w.minpallen
+    set vars(minpallen.required)  1
+    set vars(minpallen._type) integer
+
+    lappend arguments maxpallen
+    iwidgets::entryfield $w.maxpallen \
+	-validate integer \
+	-textvariable [namespace current]::vars(maxpallen) \
+	-labeltext [subst {Enter maximum length of palindrome}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.maxpallen component entry] -sticky nse
+    set vars(maxpallen) [subst 100]
+    pack $w.maxpallen -side top -fill both
+    set vars(maxpallen.minimum) [subst {[expr {$vars(minpallen)}]}]
+    set vars(maxpallen.minimum.orig) $vars(maxpallen.minimum)
+    set vars(maxpallen.minimum.expr) {[expr {$vars(minpallen)}]}
+    trace variable vars(minpallen) w  "::EMBOSS::reset_value [namespace current] maxpallen.minimum"
+    set vars(maxpallen.maximum) [subst {[expr {($vars(insequence.length)/2)}]}]
+    set vars(maxpallen.maximum.orig) $vars(maxpallen.maximum)
+    set vars(maxpallen.maximum.expr) {[expr {($vars(insequence.length)/2)}]}
+    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] maxpallen.maximum"
+    set vars(maxpallen.path) $w.maxpallen
+    set vars(maxpallen.required)  1
+    set vars(maxpallen._type) integer
+
+    lappend arguments gaplimit
+    iwidgets::entryfield $w.gaplimit \
+	-validate integer \
+	-textvariable [namespace current]::vars(gaplimit) \
+	-labeltext [subst {Enter maximum gap between repeated regions}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gaplimit component entry] -sticky nse
+    set vars(gaplimit) [subst 100]
+    pack $w.gaplimit -side top -fill both
+    set vars(gaplimit.minimum) [subst 0]
+    set vars(gaplimit.maximum) [subst {[expr {$vars(insequence.length)}]}]
+    set vars(gaplimit.maximum.orig) $vars(gaplimit.maximum)
+    set vars(gaplimit.maximum.expr) {[expr {$vars(insequence.length)}]}
+    trace variable vars(insequence.length) w  "::EMBOSS::reset_value [namespace current] gaplimit.maximum"
+    set vars(gaplimit.path) $w.gaplimit
+    set vars(gaplimit.required)  1
+    set vars(gaplimit._type) integer
+
+    lappend arguments nummismatches
+    iwidgets::entryfield $w.nummismatches \
+	-validate integer \
+	-textvariable [namespace current]::vars(nummismatches) \
+	-labeltext [subst {Number of mismatches allowed}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.nummismatches component entry] -sticky nse
+    set vars(nummismatches) [subst 0]
+    pack $w.nummismatches -side top -fill both
+    set vars(nummismatches.minimum) [subst 0]
+    set vars(nummismatches.path) $w.nummismatches
+    set vars(nummismatches.required)  1
+    set vars(nummismatches._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst palindrome0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    lappend arguments overlap
+    checkbutton $w.overlap \
+	-text [subst {Report overlapping matches}]\
+	-variable [namespace current]::vars(overlap)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.overlap -side top -anchor w
+    set vars(overlap) [subst 1]
+    set vars(overlap.path) $w.overlap
+    set vars(overlap.required)  1
+    set vars(overlap._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/palindrome.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

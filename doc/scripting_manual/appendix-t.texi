@@ -1,0 +1,331 @@
+@cindex Composition source code
+
+Here are the main source components for the Gap4 composition extension
+
+@menu
+* Appendix-Composition-Makefile::        Makefile
+* Appendix-Composition-composition.c::   composition.c
+* Appendix-Composition-composition.tcl:: composition.tcl
+@end menu
+
+@split{}
+@node Appendix-Composition-Makefile
+@appendixsec Makefile
+@cindex Composition Makefile
+@cindex Makefile, composition package
+
+@format
+@example
+# Makefile for the composition 'package' to add to gap4.
+
+LIBS = composition
+PROGS= $(LIBS)
+
+SRCROOT=$(STADENROOT)/src
+include $(SRCROOT)/mk/global.mk
+include $(SRCROOT)/mk/$(MACHINE).mk
+
+INSTALLDIR  = ./install
+
+INCLUDES_E += $(TCL_INC) $(TKUTILS_INC) $(GAP4_INC) $(G_INC)
+CFLAGS     += $(SHLIB_CFLAGS)
+
+TESTBIN     = $(O)
+L           = $(INSTALLDIR)/$(O)
+
+# Objects
+OBJS = \
+        $(TESTBIN)/composition.o
+
+DEPS = \
+        $(G_DEP) \
+        $(TKUTILS_DEP) \
+        $(TCL_DEP)
+
+#
+# Main dependency
+#
+$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+        @@
+
+$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS)
+        -mkdir $(INSTALLDIR)
+        -mkdir $(INSTALLDIR)/$(O)
+        $(SHLIB_LD) $(SHLIB_LDFLAGS) $@@ $(OBJS) $(DEPS)
+
+DEPEND_OBJ = $(OBJS)
+
+install: $(LIBS)
+        cp tclIndex composition.tcl compositionrc composition.topic \
+        composition.index composition.html $(INSTALLDIR)
+
+include dependencies
+@end example
+@end format
+
+@split{}
+@node Appendix-Composition-composition.c
+@appendixsec composition.c
+@cindex composition.c
+
+@format
+@example
+#include <tcl.h>
+
+#include "IO.h"                 /* GapIO */
+#include "gap_globals.h"        /* consensus/quality cutoffs */
+#include "qual.h"               /* calc_consensus() */
+#include "cli_arg.h"            /* cli_arg, parse_args() */
+
+static int tcl_composition(ClientData clientData, Tcl_Interp *interp,
+                           int argc, char **argv);
+static char *doit(GapIO *io, int contig, int lreg, int rreg);
+
+/*
+ * This is called when the library is dynamically linked in with the calling
+ * program. Use it to initialise any tables and to register the necessary
+ * commands.
+ */
+int Composition_Init(Tcl_Interp *interp) @{
+    if (NULL == Tcl_CreateCommand(interp,
+                                  "composition",
+                                  tcl_composition,
+                                  (ClientData) NULL,
+                                  (Tcl_CmdDeleteProc *) NULL))
+        return TCL_ERROR;
+
+    return TCL_OK;
+@}
+
+
+/*
+ * The composition itself.
+ * This is called with an argc and argv in much the same way that main()
+ * is. We can either parse them ourselves, our use the gap parse_args
+ * utility routine.
+ */
+static int tcl_composition(ClientData clientData, Tcl_Interp *interp,
+                           int argc, char **argv) @{
+    int num_contigs;
+    contig_list_t *contigs = NULL;
+    char *result;
+    int i;
+    Tcl_DString dstr;
+
+    /* A structure definition to store the arguments in */
+    typedef struct @{
+        GapIO *io;
+        char *ident;
+    @} test_args;
+
+    /* The mapping of the argument strings to our structure above */
+    test_args args;
+    cli_args a[] = @{
+        @{"-io",       ARG_IO,  1, NULL, offsetof(test_args, io)@},
+        @{"-contigs",  ARG_STR, 1, NULL, offsetof(test_args, ident)@},
+        @{NULL,      0,       0, NULL, 0@}
+    @};
+
+    /*
+     * First things first, add a header to the output window. This shows the
+     * date and function name.
+     */
+    vfuncheader("test command");
+
+    /* Parse the arguments */
+    if (-1 == gap_parse_args(a, &args, argc, argv)) @{
+        return TCL_ERROR;
+    @}
+
+    active_list_contigs(args.io, args.ident, &num_contigs, &contigs);
+    if (num_contigs == 0) @{
+        xfree(contigs);
+        return TCL_OK;
+    @}
+
+    /* Do the actual work */
+    Tcl_DStringInit(&dstr);
+    for (i = 0; i < num_contigs; i++) @{
+        result = doit(args.io, contigs[i].contig, contigs[i].start,
+                      contigs[i].end);
+        if (NULL == result) @{
+            xfree(contigs);
+            return TCL_ERROR;
+        @}
+
+        Tcl_DStringAppendElement(&dstr, result);
+    @}
+
+    Tcl_DStringResult(interp, &dstr);
+
+    xfree(contigs);
+    return TCL_OK;
+@}
+
+/*
+ * Our main work horse. For something to do as an example we'll output
+ * the sequence composition of the contig in the given range.
+ */
+static char *doit(GapIO *io, int contig, int lreg, int rreg) @{
+    static char result[1024];
+    char *consensus;
+    int i, n[5];
+
+    if (0 == lreg && 0 == rreg) @{
+        rreg = io_clength(io, contig);
+        lreg = 1;
+    @}
+
+    if (NULL == (consensus = (char *)xmalloc(rreg-lreg+1)))
+        return NULL;
+
+    if (-1 == calc_consensus(contig, lreg, rreg, CON_SUM,
+                             consensus, NULL, NULL, NULL,
+                             consensus_cutoff, quality_cutoff,
+                             database_info, (void *)io)) @{
+        xfree(consensus);
+        return NULL;
+    @}
+
+    n[0] = n[1] = n[2] = n[3] = n[4] = 0;
+    for (i = 0; i <= rreg - lreg; i++) @{
+        switch(consensus[i]) @{
+        case 'a':
+        case 'A':
+            n[0]++;
+            break;
+
+        case 'c':
+        case 'C':
+            n[1]++;
+            break;
+
+        case 'g':
+        case 'G':
+            n[2]++;
+            break;
+
+        case 't':
+        case 'T':
+            n[3]++;
+            break;
+
+        default:
+            n[4]++;
+        @}
+    @}
+
+    /* Return the information */
+    sprintf(result, "%d %d %d %d %d %d",
+            rreg - lreg + 1, n[0], n[1], n[2], n[3], n[4]);
+
+    xfree(consensus);
+
+    return result;
+@}
+@end example
+@end format
+
+@split{}
+@node Appendix-Composition-composition.tcl
+@appendixsec composition.tcl
+@cindex composition.tcl
+
+@format
+@example
+# The main command procedure to bring up the dialogue
+proc Composition @{io@} @{
+    global composition_defs
+
+    # Create a dialogue window
+    set t [keylget composition_defs COMPOSITION.WIN]
+    if [winfo exists $t] @{
+        raise $t
+        return
+    @}
+    toplevel $t
+
+    # Add the standard contig selector dialogues
+    contig_id $t.id -io $io
+    lorf_in $t.infile [keylget composition_defs COMPOSITION.INFILE] \
+        "@{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state disabled@}
+         @{contig_id_configure $t.id -state normal@}
+        " -bd 2 -relief groove
+
+    # Add the ok/cancel/help buttons
+    okcancelhelp $t.but \
+        -ok_command "Composition2 $io $t $t.id $t.infile" \
+        -cancel_command "destroy $t" \
+        -help_command "show_help %composition Composition"
+
+    pack $t.infile $t.id $t.but -side top -fill both
+@}
+
+# The actual gubbins. This can be either in straight Tcl, or using Tcl and
+# C. In this example, for efficiency, we'll do most of the work in C.
+proc Composition2 @{io t id infile@} @{
+    # Process the dialogue results:
+    if @{[lorf_in_get $infile] == 4@} @{
+        # Single contig
+        set name [contig_id_gel $id]
+        set lreg [contig_id_lreg $id]
+        set rreg [contig_id_rreg $id]
+        SetContigGlobals $io $name $lreg $rreg
+        set list "@{$name $lreg $rreg@}"
+    @} elseif @{[lorf_in_get $infile] == 3@} @{
+        # All contigs
+        set list [CreateAllContigList $io]
+    @} else @{
+        # List or File of contigs
+        set list [lorf_get_list $infile]
+    @}
+
+    # Remove the dialogue
+    destroy $t
+
+    # Do it!
+    SetBusy
+    set res [composition -io $io -contigs $list]
+    ClearBusy
+
+    # Format the output
+    set count 0
+    set tX 0
+    set tA 0
+    set tC 0
+    set tG 0
+    set tT 0
+    set tN 0
+    foreach i $res @{
+        vmessage "Contig [lindex [lindex $list $count] 0]"
+        incr count
+
+        set X [lindex $i 0]; incr tX $X
+        if @{$X <= 0@} continue;
+
+        set A [lindex $i 1]; incr tA $A
+        set C [lindex $i 2]; incr tC $C
+        set G [lindex $i 3]; incr tG $G
+        set T [lindex $i 4]; incr tT $T
+        set N [lindex $i 5]; incr tN $N
+        vmessage "  Length  [format %6d $X]"
+        vmessage "  No. As  [format @{%6d %5.2f%%@} $A [expr 100*$@{A@}./$X]]"
+        vmessage "  No. Cs  [format @{%6d %5.2f%%@} $C [expr 100*$@{C@}./$X]]"
+        vmessage "  No. Gs  [format @{%6d %5.2f%%@} $G [expr 100*$@{G@}./$X]]"
+        vmessage "  No. Ts  [format @{%6d %5.2f%%@} $T [expr 100*$@{T@}./$X]]"
+        vmessage "  No. Ns  [format @{%6d %5.2f%%@} $N [expr 100*$@{N@}./$X]]\n"
+    @}
+
+    if @{$count > 1@} @{
+        vmessage "Total length [format %6d $tX]"
+        vmessage "Total As     [format @{%6d %5.2f%%@} $tA [expr 100*$@{A@}./$tX]]"
+        vmessage "Total Cs     [format @{%6d %5.2f%%@} $tC [expr 100*$@{C@}./$tX]]"
+        vmessage "Total Gs     [format @{%6d %5.2f%%@} $tG [expr 100*$@{G@}./$tX]]"
+        vmessage "Total Ts     [format @{%6d %5.2f%%@} $tT [expr 100*$@{T@}./$tX]]"
+        vmessage "Total Ns     [format @{%6d %5.2f%%@} $tN [expr 100*$@{N@}./$tX]]"
+    @}
+@}
+@end example
+@end format

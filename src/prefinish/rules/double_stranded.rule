@@ -1,0 +1,10 @@
+set name "Double stranded"
+
+set expression "<strand_top> && <strand_bottom>"
+
+set pweight 0.1
+set mweight 0.1
+
+set solution_defaults {
+    -experiments {vpwalk long reseq}
+}

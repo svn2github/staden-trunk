@@ -1,0 +1,223 @@
+package require Iwidgets
+namespace eval ::EMBOSS::emowse {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_emowse*Xentry.entry.width 30
+option add *e_emowse*Entryfield.width 30
+option add *e_emowse*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) emowse
+    set w [xtoplevel .e_emowse -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - emowse}
+    label $w._title -text {Protein identification by mass spectrometry}
+    pack $w._title -side top -fill both
+    set vars(emowse._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 1]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 1]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst protein]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+    set vars(sequences._type) seqall
+
+    lappend arguments infile
+    xentry $w.infile \
+	-label [subst {Name of molecular weight data file}]\
+	-textvariable [namespace current]::vars(infile) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.infile delete 0 end
+    $w.infile insert end [subst {}]
+    pack $w.infile -side top -fill both
+    set vars(infile.path) $w.infile
+    set vars(infile.required)  1
+    set vars(infile._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments weight
+    iwidgets::entryfield $w.weight \
+	-validate integer \
+	-textvariable [namespace current]::vars(weight) \
+	-labeltext [subst {Whole sequence molwt}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.weight component entry] -sticky nse
+    set vars(weight) [subst 0]
+    pack $w.weight -side top -fill both
+    set vars(weight.path) $w.weight
+    set vars(weight.required)  1
+    set vars(weight._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments enzyme
+    iwidgets::combobox $w.enzyme\
+	-textvariable [namespace current]::vars(enzyme.name)\
+	-labeltext [subst {Enzyme or reagent}]
+    trace variable vars(enzyme.name) w  "::EMBOSS::list_changed [namespace current] enzyme"
+    eval $w.enzyme insert list end Trypsin Lys-C Arg-C Asp-N V8-bicarb V8-phosph Chymotrypsin CNBr
+    set vars(enzyme.mapping1) {Lys-C 2 CNBr 8 Chymotrypsin 7 V8-phosph 6 Trypsin 1 V8-bicarb 5 Arg-C 3 Asp-N 4}
+    set vars(enzyme.mapping2) {8 CNBr 4 Asp-N 5 V8-bicarb 1 Trypsin 6 V8-phosph 2 Lys-C 7 Chymotrypsin 3 Arg-C}
+    grid [$w.enzyme component entry] -sticky nse
+    $w.enzyme delete entry 0 end
+    array set tmpmap $vars(enzyme.mapping2)
+    set def [subst 1]
+    catch {set def $tmpmap($def)}
+    set vars(enzyme) $def
+    $w.enzyme insert entry end $def
+    $w.enzyme configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.enzyme -side top -fill both
+    set vars(enzyme.path) $w.enzyme
+    set vars(enzyme.required)  0
+    set vars(enzyme.delimiter) ,
+    set vars(enzyme._type) list
+
+    lappend arguments aadata
+    iwidgets::entryfield $w.aadata \
+	-textvariable [namespace current]::vars(aadata) \
+	-labeltext [subst {Amino acid data file}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.aadata component entry] -sticky nse
+    set vars(aadata) [subst Eamino.dat]
+    pack $w.aadata -side top -fill both
+    set vars(aadata.path) $w.aadata
+    set vars(aadata.required)  0
+    set vars(aadata._type) string
+
+    lappend arguments pcrange
+    iwidgets::entryfield $w.pcrange \
+	-validate integer \
+	-textvariable [namespace current]::vars(pcrange) \
+	-labeltext [subst {Allowed whole sequence weight variability}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.pcrange component entry] -sticky nse
+    set vars(pcrange) [subst 25]
+    pack $w.pcrange -side top -fill both
+    set vars(pcrange.minimum) [subst 0]
+    set vars(pcrange.maximum) [subst 75]
+    set vars(pcrange.path) $w.pcrange
+    set vars(pcrange.required)  0
+    set vars(pcrange._type) integer
+
+    lappend arguments frequencies
+    iwidgets::entryfield $w.frequencies \
+	-textvariable [namespace current]::vars(frequencies) \
+	-labeltext [subst {Frequencies file}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.frequencies component entry] -sticky nse
+    set vars(frequencies) [subst Efreqs.dat]
+    pack $w.frequencies -side top -fill both
+    set vars(frequencies.path) $w.frequencies
+    set vars(frequencies.required)  0
+    set vars(frequencies._type) string
+
+    lappend arguments tolerance
+    iwidgets::entryfield $w.tolerance \
+	-validate real \
+	-textvariable [namespace current]::vars(tolerance) \
+	-labeltext [subst tolerance]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.tolerance component entry] -sticky nse
+    set vars(tolerance) [subst 0.1]
+    pack $w.tolerance -side top -fill both
+    set vars(tolerance.minimum) [subst 0.1]
+    set vars(tolerance.maximum) [subst 1.0]
+    set vars(tolerance.path) $w.tolerance
+    set vars(tolerance.required)  0
+    set vars(tolerance._type) float
+
+    lappend arguments partials
+    iwidgets::entryfield $w.partials \
+	-validate real \
+	-textvariable [namespace current]::vars(partials) \
+	-labeltext [subst {Partials factor}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.partials component entry] -sticky nse
+    set vars(partials) [subst 0.4]
+    pack $w.partials -side top -fill both
+    set vars(partials.minimum) [subst 0.1]
+    set vars(partials.maximum) [subst 1.0]
+    set vars(partials.path) $w.partials
+    set vars(partials.required)  0
+    set vars(partials._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst emowse0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/emowse.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

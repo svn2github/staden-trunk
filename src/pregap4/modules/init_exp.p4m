@@ -1,0 +1,134 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Initialise the experiment files.
+#
+# This operates on anything that is not already an experiment file.
+# The newly created experiment files contain the rudimentary elements such
+# as name, sequence and associated trace files.
+# It is the experiment files that Gap4 needs for assembly.
+#
+
+#set hidden 1
+set help {pregap4 {Pregap4-Modules-Initexp}}
+
+proc name {} {
+    return "Initialise Experiment Files"
+}
+
+#
+# Splits FASTA files into multiple experiment format files.
+# Returns a new list of filenames.
+#
+proc find_fasta {files} {
+    global file_type
+    global file_error
+
+    set new_files {}
+    foreach f $files {
+	if {$file_type($f) == "PLN"} {
+	    # Read the file
+	    if {[catch {set fd [open $f]}]} {
+		set file_error($f) "init_exp: could not open"
+		continue
+	    }
+	    set contents [read $fd]
+	    close $fd
+
+	    # Skip to next if it's not fasta
+	    if {[string match ">*" $contents] == 0} {
+		lappend new_files $f
+		continue
+	    }
+
+	    # iterate around fasta entries
+	    set name ""
+	    foreach line [split $contents "\n"] {
+		if {[regexp {^>([^ 	|]*)} $line _ _name]} {
+		    set name $_name
+		    set seqs($name) ""
+		    set file_orig_name($name.exp) $f
+		    set file_type($name.exp) EXP
+		} else {
+		    append seqs($name) $line
+		}
+	    }
+	} else {
+	    lappend new_files $f
+	}
+    }
+
+    # Convert seqs array into experiment file structures, and write them out
+    foreach seq [array names seqs] {
+	set e(ID) "{1 $seq}"
+	set e(SQ) "{2 $seqs($seq)}"
+	set e(__) 3
+	write_exp_file e $seq.exp
+	lappend new_files $seq.exp
+    }
+
+    return $new_files
+}
+
+proc run {files} {
+    global file_type
+    global file_error
+    global file_id
+    global file_orig_name
+    global fofn_dir
+    variable report
+
+    set new_files {}
+
+    # First of all go through files looking for FASTA format.
+    # We'll expand these out into multiple sequences if necessary.
+    set files [find_fasta $files]
+
+    foreach f $files {
+	if {$file_type($f) != "EXP"} {
+	    if {$file_type($f) != "BIO"} {
+		# Check if the trace file is in our output directory. If not
+		# the subsequent programs (such as qclip and Gap4) may
+		# fail. $f should be a full pathname. If it's not then it
+		# implies the trace is found via RAWDATA, so don't attempt
+		# the copy.
+		set nf [file join $fofn_dir [file tail $f]]
+		if {![string match $f $nf] && [file path $f] == "absolute"} {
+		    append report "SEQ $nf: copied from $f\n"
+		    file copy -force -- $f $nf
+		}
+	    }
+
+	    # Create the experiment file
+	    set f_exp [eval [list $file_type($f)_filename_to_exp_name $f]]
+	    set f_ent $file_id($f)
+
+	    if {[catch {exec init_exp -conf -output $f_exp -name $f_ent $f} err]} {
+		set file_error($f) "init_exp: [strip_nl $err]"
+		vmessage -nonewline !
+	    } else {
+		set file_type($f_exp) EXP
+		set file_error($f_exp) {}
+		set file_id($f_exp) $file_id($f)
+		set file_orig_name($f_exp) $f
+		lappend new_files $f_exp
+	        append report "SEQ $f_exp: created from $f\n"
+		vmessage -nonewline .
+	    }
+	} else {
+	    lappend new_files $f
+	    vmessage -nonewline .
+	}
+	update idletasks
+    }
+    vmessage ""
+
+    return $new_files
+}

@@ -1,0 +1,191 @@
+_split()
+@node SPIN-Restrict-Introduction
+@section Restriction enzyme search
+@menu
+* SPIN-Restrict-Selecting::          Selecting enzymes
+* SPIN-Restrict-Examining::          Examining the plot
+* SPIN-Restrict-Reconfig::           Reconfiguring the plot
+@end menu
+
+_split()
+@cindex Restriction enzymes: introduction: spin
+
+The restriction enzyme map function finds and displays restriction sites
+found within a specified region of a sequence. Users can select the enzyme
+types to search for.
+
+_lpicture(spin_restrict_enzymes_p)
+
+This figure shows a typical view of the Restriction Enzyme Map function
+in which the results for most enzyme types are shown as black vertical
+lines opposite the enzyme names, but in which some of the enzymes sites
+have been configured by the user to be drawn in different colours.
+If no
+result is found for any particular enzyme eg here AccIII, the line will
+still be drawn so that zero cutters can be identified. 
+The results
+can be scrolled vertically (and horizontally if the plot is zoomed in).
+A ruler is shown along the base and the current cursor (the vertical
+black line) position is shown in the left hand box near the top right of
+the display.  If the user clicks, in turn, on two restriction sites
+their separation in base pairs will appear in the top right hand box.
+Information about the last site touched is shown in the Information line
+at the bottom of the display.
+
+_split()
+@node SPIN-Restrict-Selecting
+@subsection Selecting Enzymes
+@cindex Restriction enzymes: selecting enzymes: spin
+
+Files of restriction enzyme names and their cut sites are stored in disk
+files. For the format of these files see 
+_fref(Formats-Restriction, Restriction enzyme files, restriction_enzymes)
+Standard four-cutter, six-cutter and all-enzymes files are available and
+the users can use their own "personal" files.  To create your own file
+of enzymes you may need to extract the information from the currently
+defined files. These are pointed to by the @code{RENZYM.4},
+@code{RENZYM.6} and @code{RENZYM.ALL} environment variables.
+
+_picture(spin_restrict_enzymes_d)
+
+When the file is read the list of enzymes is displayed in a scrolling
+window.  To select enzymes press and drag the left mouse button within
+the list.  Dragging the mouse off the bottom of the list will scroll to
+allow selection of a range larger than the displayed section of the
+list.  When the left button is pressed any existing selection is
+cleared. To select several disjoint entries in the list press control
+and the left mouse button. Once the enzymes have been chosen, pressing
+OK will create the plot.
+
+_split()
+@node SPIN-Restrict-Examining
+@subsection Examining the Plot
+@cindex Restriction enzymes: examining the plot: spin
+
+Positioning the cursor over a match will cause its name and cut position
+to appear in the information line.  If the right mouse button is pressed
+over a match, a popup menu containing Information and Configure will
+appear. The Information function in this menu will display the data for
+this cut site and enzyme in the output window.
+
+It is possible to find the distance between any two cut sites.  Pressing
+the left mouse button on a match will display "Select another cut" at
+the bottom of the window.  Then, pressing the left button on another
+match will display the distance, in bases, between the two sites. This
+is shown in a box located at the top right corner of the window.
+
+_split()
+@node SPIN-Restrict-Reconfig
+@subsection Reconfiguring the Plot
+@cindex Configure: restriction enzymes: spin
+@cindex Restriction enzymes: configuring: spin
+
+The plot displays the results for each restriction enzyme on a separate
+line.  Enzymes with no sites are also shown.  The order of these lines
+may be changed by pressing and dragging the middle mouse button, or Alt
+left mouse button, on one
+of the displayed names at the left side of the screen. For example the
+figure below shows the results seen above but after the coloured 
+(i.e. non-black) rows of sites have been dragged and dropped to be
+vertically adjacent.
+
+_lpicture(spin_restrict_enzymes_p1)
+
+The results are plotted as black lines but users can select colours for
+each enzyme type by pressing the right button on any of its matches.  A
+menu containing Information and Configure will pop up. Configure will
+display a colour selection dialogue.  Adjusting the colour here will
+adjust the colour for all matches found with this restriction enzyme.
+
+_split()
+@node SPIN-Restrict-Printing
+@subsection Printing the sites
+@cindex Restriction site printing:spin
+@cindex Restriction site listing:spin
+
+From the Result manager (_fpref(SPIN-Result-Manager, Result manager)),
+menu a pop-up menu for restriction sites results can be used to write
+the results in two forms to the the Output window - from here the
+results can be saved to a file. The two choices of format are "Output
+enzyme by enzyme" and "Output ordered on position", brief examples of
+which are shown below. The output also appears in an "Information" window.
+Note that these listings are also available from
+gap4. 
+
+The restriction enzyme results output ordered "enzyme by enzyme".
+The enzymes
+sites are numbered and named and the actual cut site from the sequence
+is written, followed by the position of the cut, the fragment size, and
+finally a sorted list of fragment sizes. 
+A list of zero cutters is written underneath.
+
+@example
+
+  Matches found=     1 
+      Name            Sequence                 Position Fragment lengths
+    1 ApaLI           G'TGCAC                      3506   3505   3505 
+                                                          4629   4629 
+  Matches found=     8                         
+      Name            Sequence                 Position Fragment lengths
+    1 ApoI            A'AATTC                      1939   1938    184 
+    2 ApoI            G'AATTT                      2632    693    339 
+    3 ApoI            A'AATTT                      2996    364    364 
+    4 ApoI            G'AATTC                      3180    184    419 
+    5 ApoI            A'AATTT                      5283   2103    639 
+    6 ApoI            G'AATTC                      5702    419    693 
+    7 ApoI            A'AATTC                      6341    639   1455 
+    8 ApoI            A'AATTC                      7796   1455   1938 
+                                                           339   2103 
+  Matches found=     2                         
+      Name            Sequence                 Position Fragment lengths
+    1 AseI            AT'TAAT                      1790   1789    435 
+    2 AseI            AT'TAAT                      2225    435   1789 
+
+Zero cutters:
+      Acc65I
+      AccIII
+      AclNI
+      AhdI
+      ApaI
+      AscI
+      Asp700I
+      Asp718I
+      AspEI
+      AsuNHI
+      AvrII
+                                                          5910   5910 
+@end example
+
+
+The restriction enzyme results output ordered on position. The enzymes
+sites are numbered and named and the actual cut site from the sequence
+is written, followed by the position of the cut, the fragment size, and
+finally a sorted list of cut sizes.
+
+@example
+
+============================================================
+Wed 19 Nov 15:42:38 1997: Restriction enzymes result list
+------------------------------------------------------------
+Sequence /nfs/skye/home10/rs/work/doc/spin/atpase.dat
+Number of enzymes = 80
+Number of matches = 597
+      Name            Sequence                 Position Fragment lengths
+    1 AspLEI          GCG'C                         157    156      0 
+    2 AccII           CG'CG                         313    156      0 
+    3 AspLEI          GCG'C                         313      0      0 
+    4 AviII           TGC'GCA                       322      9      0 
+    5 AspLEI          GCG'C                         323      1      0 
+    6 AsuHPI          'CGCTTTATCACC                 342     19      0 
+    7 AflIII          A'CGCGT                       362     20      0 
+    8 AccII           CG'CG                         364      2      0 
+    9 BcgI            'AACAGGGTTAGCAGAAAAGTCG       389     25      0 
+   10 BcgI            GCAGAAAAGTCGCAATTGTATGCA'     423     34      0 
+   11 AsuHPI          'CATTTATTCACC                 440     17      0 
+   12 AspLEI          GCG'C                         486     46      0 
+   13 AciI            C'CGC                         502     16      0 
+   14 AciI            G'CGG                         552     50      0 
+   15 AccII           CG'CG                         552      0      0 
+   16 AclI            AA'CGTT                       614     62      0 
+
+@end example

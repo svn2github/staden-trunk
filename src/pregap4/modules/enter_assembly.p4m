@@ -1,0 +1,276 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Enter assembled files (directed assembly format) into a Gap4 database
+#
+
+set help {pregap4 {Pregap4-Modules-Enter Assembly}}
+
+proc init {} {
+    mod_preset database_name ""
+    mod_preset database_version 0
+    mod_preset create 0
+    mod_preset quality_clip 0
+    mod_preset quality 15
+    mod_preset difference_clip 1
+
+    variable create
+    variable create_mode
+    if {$create == 1} {
+	set create_mode create
+    } else {
+	set create_mode append
+    }
+}
+
+proc name {} {
+    return "Enter assembly (into Gap4)"
+}
+
+proc run {files} {
+    global fofn file_error fofn_dir
+    variable report
+    variable database_name
+    variable database_version
+    variable create
+    variable quality_clip
+    variable quality
+    variable difference_clip
+
+    set report ""
+    load_package gap
+    global gap_fatal_errors
+    set gap_fatal_errors 0
+    global maxdb
+    set maxdb [expr {2*[llength $files]+1}]
+
+    # Open the database
+    if {$create} {
+        catch {file delete $database_name.$database_version}
+        catch {file delete $database_name.$database_version.aux}
+        catch {file delete $database_name.$database_version.BUSY}
+        set e [catch {set io [open_db \
+		-name $database_name \
+		-version $database_version \
+		-create 1 \
+		-access rw]} var]
+    } else {
+        set e [catch {set io [open_db \
+		-name $database_name \
+		-version $database_version \
+		-create 0 \
+		-access rw]} var]
+    }
+    if {$e || $io == ""} {
+	append report "ERR: Failed to open database $database_name.$database_version.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting.\n"
+	verror ERR_WARN open_db $var
+	return $files
+    }
+
+    # Query the current number of contigs (as we may be assembling into an
+    # already existant database)
+    set db [io_read_database $io]
+    set old_num_contigs [keylget db num_contigs]
+
+    if {[catch {cd $fofn.assembly} var]} {
+	append report "ERR: Failed to change directory to $fofn.assembly.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting enter assembly.\n"
+	verror ERR_WARN enter_assembly $var
+	return $files
+    }
+
+    # Find list of files to process
+    if {[catch {set fd [open fofn]} var] == 1} {
+	cd ..
+	append report "ERR: Could not open file $fofn.assembly/fofn.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting enter assembly.\n"
+	verror ERR_WARN enter_assembly $var
+	return $files
+    }
+
+    set tfiles {}
+    set new_files {}
+    while {[gets $fd f] != -1} {
+	if {[string match "* *" $f]} {
+	    set file_error($f) "enter_assembly: filename contains a space"
+	    append report "SEQ $f: failed (filename contains spaces)\n"
+	} else {
+	    lappend tfiles $f
+	    set found($f) 0
+	}
+    }
+    close $fd
+    if {$tfiles == ""} { return $new_files }
+
+    # Do directed assembly
+    catch {assemble_direct \
+	-io $io \
+	-files $tfiles \
+	-max_pmismatch 100 \
+	-output_mode 0 \
+	-align 0} var
+    if {$var != ""} {
+	foreach f $var {
+	    # For phrap:
+	    regsub {\.ph$} $f {} f
+
+	    append report "SEQ $f: failed\n"
+	    set file_error($f) "enter_assembly: failed"
+	    catch {unset found($f)}
+	}
+    } else {
+	append report "All files passed.\n"
+    }
+    cd ..
+     
+    foreach f [array names found] {
+	regsub {\.ph$} $f {} f
+	append report "SEQ $f: entered\n"
+	lappend new_files [file join $fofn_dir $f]
+    }
+
+    # Do quality and difference clipping
+    if {$quality_clip == 1 || $difference_clip == 1} {
+	# Find contigs added since last check
+        set db [io_read_database $io]
+        set num_contigs [keylget db num_contigs]
+	set list {}
+	for {set i $old_num_contigs} {$i < $num_contigs} {incr i} {
+	    lappend list =[expr $i+1]
+	}
+
+	# Now clip
+	if {$quality_clip} {
+	    quality_clip -io $io -contigs $list -quality $quality
+	}
+
+	if {$difference_clip} {
+	    difference_clip -io $io -contigs $list
+	}
+    }
+
+    # Close the Gap4 database
+    close_db -io $io
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable database_name
+    variable database_version
+    variable create
+    variable quality_clip
+    variable quality
+    variable difference_clip
+    variable create_mode
+
+    xentry $w.database_name \
+	-label "Gap4 database name" \
+	-default $database_name \
+	-width 7
+    xentry $w.database_version \
+	-label "Gap4 database version" \
+	-default $database_version \
+	-width 7
+
+    frame $w.create
+    radiobutton $w.create.create \
+	-text "Create new database" \
+	-variable [namespace current]::create_mode \
+	-value create
+    radiobutton $w.create.append \
+	-text "Append to existing database" \
+	-variable [namespace current]::create_mode \
+	-value append
+    pack $w.create.create -side left
+    pack $w.create.append -side right
+
+    pack $w.database_name $w.database_version $w.create -side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    frame $w.q
+    xcheck $w.q.qclip \
+	-text "Post-assembly quality clipping" \
+	-variable [namespace current]::quality_clip
+    xentry $w.q.qval \
+	-label "Lowest (average) quality to use" \
+	-default $quality \
+	-width 7 \
+	-type int
+
+    pack $w.q.qclip $w.q.qval -side top -fill both -expand 1
+    pack $w.q -side top -fill both
+
+    frame $w.separator2 -bd 2 -relief raised -height 2
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+
+    xcheck $w.dclip \
+	-text "Post-assembly difference clipping" \
+	-variable [namespace current]::difference_clip
+
+    pack $w.dclip -side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	database_name database_version create quality_clip quality \
+	difference_clip]]} {
+    	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable database_name
+    variable database_version
+    variable quality
+    variable create
+    variable create_mode
+
+    if {[set database_name    [$w.database_name    get]] == ""} { return 0 }
+    if {[set database_version [$w.database_version get]] == ""} { return 0 }
+    if {[set quality          [$w.q.qval           get]] == ""} { return 0 }
+    if {$create_mode == "create"} {
+	set create 1
+    } else {
+	set create 0
+    }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    variable quality_clip
+    variable difference_clip
+    variable create
+    variable create_mode
+
+    if {$create_mode == "create"} {
+	set create 1
+    } else {
+	set create 0
+    }
+
+    if {[string match save* $mode]} {
+	mod_save database_name [$w.database_name get2]
+	mod_save database_version [$w.database_version get2]
+	mod_save create $create
+	mod_save quality_clip $quality_clip
+	mod_save quality [$w.q.qval get2]
+	mod_save difference_clip $difference_clip
+    }
+}

@@ -1,0 +1,63 @@
+.TH "init_exp" 1 "" "" "Staden Package"
+.SH "NAME"
+.PP
+init_exp \- create and initialise an Experiment File
+
+.SH "SYNOPSIS"
+.PP
+
+\fBinit_exp\fP [\fB-\fP(\fBabi\fP|\fBalf\fP|\fBscf\fP|\fBpln\fP)]
+[\fB-output\fP \fIfile\fP] [\fB-name\fP \fIentry_name\fP] [\fB-conf\fP] \fIfile\fP
+
+.SH "DESCRIPTION"
+.PP
+
+\fBinit_exp\fP initiates an Experiment File for a binary trace file or
+a plain sequence file. The Experiment File created
+contains the \fBID\fP, \fBEN\fP, \fBLN\fP, \fBLT\fP and \fBSQ\fP
+lines.
+
+The experiment file is, by default, sent to standard output, unless an
+output file is specified using the \fB-output\fP option. The default
+entry name for the Experiment File is derived from the filenames used.
+If an output file has been specified, then this is taken as the
+\fBEN\fP field. Otherwise the input file name is used. The user can
+override the default by using the \fB-name\fP option.
+
+.SH "OPTIONS"
+.PP
+
+.TP
+\fB-abi\fP, \fB-alf\fP, \fB-scf\fP, \fB-pln\fP
+Specify an input file format. This is not usually required as
+\fBinit_exp\fP will automatically determine the correct input file
+type. This option is supplied incase the automatic determination is
+incorrect (which is possible, but has never been observed).
+
+.TP
+\fB-output\fP \fIfile\fP
+The experiment file will be written to \fIfile\fP instead of standard
+output. Additionally the value of the \fBEN\fP and \fBID\fP
+fields, assuming \fB-name\fP has not been specified, will be \fIfile\fP.
+
+.TP
+\fB-name\fP \fIname\fP
+Sets the \fBID\fP and \fBEN\fP fields to \fIname\fP, regardless of
+the output filename used.
+
+.TP
+\fB-conf\fP
+Fills out the \fBAV\fP field with the quality values found in the SCF
+file.
+
+.TE
+.SH "NOTES"
+.PP
+
+This program was formerly known as \fBexpGetSeq\fP.
+
+.SH "SEE ALSO"
+.PP
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+\fBRead\fP(4)

@@ -1,0 +1,89 @@
+@menu
+* Clip-Difference::             Difference clipping
+* Clip-Quality::                Quality clipping
+@end menu
+
+@cindex Clipping within Gap4
+
+Our
+consensus calculation algorithms use the data for all the unclipped
+bases covering each position in a contig. However, some assembly 
+engines may leave the ends of readings unaligned, and these
+unaligned bases could therefore lead to the
+production of an incorrect consensus. 
+The two clipping
+methods described here 
+(which are available from the gap4 Edit menu)
+are
+designed to overcome this potential problem.
+
+In addition to improving the reliability of the consensus
+calculation, clipping in this way tidies up the alignments,
+so helping the user to concentrate on the better data. 
+It is important to note that in no case
+is the clipped sequence thrown away. The contig editor can show this hidden
+data, and the clip points may be manually adjusted to reveal any clipped
+sequence.
+
+_split()
+@node Clip-Difference
+@subsection Difference Clipping
+@cindex Clipping by differences
+@cindex Difference clipping
+
+_picture(difference_clip)
+
+The difference clipping method 
+(which is available from the gap4 Edit menu)
+works in stages. First it calculates the 
+most likely consensus
+sequence. Then it compares each reading with that consensus sequence and
+identifies areas at the ends of the reading where there are enough
+differences to indicate the possibility of badly aligned bases. The clip
+points are adjusted accordingly.
+
+To identify the clip points for each reading the algorithm first finds 
+a good matching
+segment near the middle of the reading. Then steps, base by base, from this
+point to the left accumulating a score as it goes by using +1 
+for a match and -2 for a mismatch. 
+It sets the left clip point at the position of the highest score.
+The right clip point is set in an equivalent way.
+These new clip points are used only if they are more severe than the
+existing ones. The portions of readings which have
+been clipped are then tagged using a @code{DIFF} tag type. To see
+which segments have been clipped use the contig editor search tool.
+
+After clipping the algorithm then identifies any holes (breaks in the contigs)
+that may have been created and fills them up again by extending the
+sequence(s) with the fewest number(s) of expected errors.
+
+_split()
+@node Clip-Quality
+@subsection Quality Clipping
+@cindex Clipping by quality
+@cindex Quality clipping
+
+_picture(quality_clip)
+
+The quality clipping function 
+(which is available from the gap4 Edit menu)
+clips the ends of readings when the average
+(over 31 bases) confidence value is lower than a user defined threshold.  As
+with the difference clipping method the clips are only adjusted when the newly
+calculated clip points are more stringent than the originals.
+
+After clipping Gap4 then identifies any holes (breaks in the contigs) that may
+have been created and fills them up again by extending the sequence(s) with
+the fewest number of expected errors.
+
+An example output follows.
+@example
+Hole from 32652 to 32725: extend #1378 and #1385 with 3.157324 expected errors
+@end example
+
+We have observed that when using confidence values expressed as 
+-10*log(err_rate),
+it is sometimes better not to clip using the confidence values, but to
+use the difference clipping method 
+(_fpref(Clip-Difference, Difference Clipping, clip)).

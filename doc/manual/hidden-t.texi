@@ -1,0 +1,30 @@
+@cindex Hidden data
+@cindex data hidden
+
+In general sequences obtained from machines contain segments such as
+vector sequence and poor quality data that need either to be removed or
+ignored during assembly and editing. In our package we do not remove
+such segments but instead we mark them so that the programs can deal
+with them appropriately. In gap4 such data is referred to as "hidden".
+The positions to hide are determined initially by preprocessing programs
+such as vector_clip (_fpref(Vector_Clip, Screening Against Vector
+Sequences, vector_clip)) and qclip
+(_fpref(Man-qclip, qclip, manpages)).
+
+
+The hidden data can be revealed in the Contig Editor by toggling the
+Cutoffs button (_fpref(Editor-Cutoffs, Adjusting the Cutoff
+data, contig_editor)); can be used to search for possible joins between
+contigs (_fpref(FIJ, Find Internal Joins, fij)), and can be included in
+the consensus sequence (_fpref(Con-Extended, Extended consensus,
+calc_consensus)) to be used by external screening programs.  For these
+cases the program can distinguish data that is hidden because it is
+vector and data that is hidden because it is of poor quality: only poor quality
+data is included.
+
+The position of hidden data can be changed interactively in the Contig
+Editor. In addition the Double Strand function (_fpref(Double Strand,
+Double stranding, exp_suggest)) will reduce the amount of hidden data
+for readings that cover single stranded regions of contigs, if the data
+aligns well with that on the other strand.
+

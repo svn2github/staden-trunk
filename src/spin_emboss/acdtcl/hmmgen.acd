@@ -1,0 +1,104 @@
+package require Iwidgets
+namespace eval ::EMBOSS::hmmgen {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_hmmgen*Xentry.entry.width 30
+option add *e_hmmgen*Entryfield.width 30
+option add *e_hmmgen*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) hmmgen
+    set w [xtoplevel .e_hmmgen -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - hmmgen}
+    label $w._title -text {Generates a hidden Markov model for each alignment in a directory.}
+    pack $w._title -side top -fill both
+    set vars(hmmgen._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments infpath
+    iwidgets::entryfield $w.infpath \
+	-textvariable [namespace current]::vars(infpath) \
+	-labeltext [subst infpath]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.infpath component entry] -sticky nse
+    set vars(infpath) [subst ./]
+    pack $w.infpath -side top -fill both
+    set vars(infpath.path) $w.infpath
+    set vars(infpath.required)  1
+    set vars(infpath._type) string
+
+    lappend arguments infextn
+    iwidgets::entryfield $w.infextn \
+	-textvariable [namespace current]::vars(infextn) \
+	-labeltext [subst infextn]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.infextn component entry] -sticky nse
+    set vars(infextn) [subst .ealign]
+    pack $w.infextn -side top -fill both
+    set vars(infextn.path) $w.infextn
+    set vars(infextn.required)  1
+    set vars(infextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfpath
+    iwidgets::entryfield $w.outfpath \
+	-textvariable [namespace current]::vars(outfpath) \
+	-labeltext [subst outfpath]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.outfpath component entry] -sticky nse
+    set vars(outfpath) [subst ./]
+    pack $w.outfpath -side top -fill both
+    set vars(outfpath.path) $w.outfpath
+    set vars(outfpath.required)  1
+    set vars(outfpath._type) string
+
+    lappend arguments outfextn
+    iwidgets::entryfield $w.outfextn \
+	-textvariable [namespace current]::vars(outfextn) \
+	-labeltext [subst outfextn]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.outfextn component entry] -sticky nse
+    set vars(outfextn) [subst .hmm]
+    pack $w.outfextn -side top -fill both
+    set vars(outfextn.path) $w.outfextn
+    set vars(outfextn.required)  1
+    set vars(outfextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/hmmgen.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

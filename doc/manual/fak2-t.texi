@@ -1,0 +1,308 @@
+@cindex Assembly: FAKII
+@cindex FAKII Assembly
+@cindex Myers: Assembly (FAKII)
+@cindex Assembly: Myers
+
+This mode of assembly uses the global assembly program FAKII, developed by 
+Myers @cite{Eugene W. Myers Jr., Mudita Jain and Susan Larson, University of
+Arizona, Department of Computer Science}. 
+
+The FAKII program can be accessed via the Gap4 interface through the "Assembly"
+menu or as a series of stand alone programs. 
+
+The FAKII files for use with Gap4 must be obtained via ftp from the
+authors Eugene W Myers Jr., Mudita Jain, Eric Anson and Susan Larson
+at the University of Arizona, Department of Computer Science.
+
+First email a request for authorisation to Dr Gene Myers
+(gene@@cs.arizona.edu) stating you want FAKII for use with Gap4. He
+will email you a postscript file containing the authorisation
+document.  Print the document.  Read it.  Sign it, fax it back to Gene
+Myers at +1 (520) 621-4246 and also post the original signed copy back
+to Gene.
+
+Then email Susan Larson (susanjo@@cs.arizona.edu) requesting a copy of
+FAKII for use with Gap4 and she will contact you to arrange for the
+transfer. Make sure you tell Susan the operating system for which you
+need the program (one of: SunOS 4.1.1; Solaris 2.5; DEC OSF/1 V3.0 and
+Digital Unix; Irix 5.3).  Make the files Susan sends executable (eg
+chmod a+x *) and move them into the directory
+@code{$STADENROOT/$MACHINE-bin}.  The environment variable FAKII must
+also be set to @code{$STADENROOT/$MACHINE-bin}, for example, for the
+bash shell, @code{export FAKII=$STADENROOT/$MACHINE-bin}.  You could add
+this to your staden.profile or staden.login files.
+
+Prior to the files being in this directory the FAKII items on the
+assembly menu in Gap4 will have been greyed out; now they should
+appear in normal text and the functions will be selectable.
+
+@menu
+* Assembly-Perform FAKII assembly:: Perform FAKII assembly
+* Assembly-Import FAKII assembly:: Import FAKII assembly data
+* Assembly-Perform and import FAKII assembly:: Perform and import FAKII assembly
+@end menu
+
+@node Assembly-Perform FAKII assembly
+@subsection Perform FAKII assembly
+@cindex Assembly: perform FAKII 
+@cindex FAKII assembly: perform
+
+_picture(assembly.fak2)
+
+Assembly using FAKII can be split into either two or three distinct phases. The
+first phase is that of computing and storing overlaps (graph creation). The 
+second phase is optional and involves the creation of a constraint file. The 
+third phase is the computation and display of the assembly based on the graph
+and the constraint file if one was created.
+
+The assembly works on a file of reading names in experiment file format 
+(_fpref(Formats-Exp, Experiment File, formats)) 
+
+The graph creation phase is modulated by three floating point numbers that
+control which overlaps are detected and/or accepted as follows:
+
+The "Error limit". The maximum sequencing error rate for which overlaps will
+be guaranteed to be detected. For example, if this is set to 10%, then the 
+program
+looks for overlaps with 20% or less differences in the aligned
+regions. This parameter should never be greater than .2, and we
+suggest .099 as a standard value.
+
+The "Overlap threshold". The overlap score of an
+overlap is the log of the a priori odds that such an overlap would
+occur by chance. Pragmatically, this score is the length of the
+overlap minus a marginally decreasing penalty per difference. A
+typical value is 10, implying an overlap of at least 10 bases is
+needed and that for the overlap to occur by chance is a one in a
+million (approximately 4^10) event.
+
+The "Distribution limit". It is further
+required that the distribution of differences along the alignment of
+an overlap not be highly skewed but spread across the alignment. The
+distribution score of an alignment is the minimum over all segments of
+the alignment of the probability that one would see the observed
+number of differences in that segment given an underlying error
+process occurring at rate "Error limit". This probability should not be too
+small, as if it is, it implies there is a segment of the alignment
+that has an unusually large number of differences in it. Note that
+this is quite conservative as we are assuming the error process is
+at the maximum error rate (and not the average error rate). We recommend 
+using a value of .0001 or less.
+
+The "Error limit" and "Distribution limit" parameters control
+the efficiency with which overlaps are detected. The smaller the
+error limit or the higher the distribution limit, the less time
+overlap detection will take. By far the most important of these two
+efficiency parameters in Version 4.1 is the "Error limit". Note that
+both are not "thresholds", but only "limits": the graph creation function 
+guarantees to find all overlaps inside the error limit and distribution
+limit, but may report additional overlaps as well. On the other hand,
+the overlap threshold is a true threshold: any overlap not scoring
+above it, i.e., that is not statistically significant enough, will
+not be entered into the overlap graph. 
+
+One should set these three parameters to the most lenient/inclusive values 
+that they think
+will be ever be needed for proper assembly, moderated by the level of
+efficiency with which the computation can be done. Philosophically, our view 
+is that overlap detection is a one-time
+computation in which one determines all the possible ways that the
+fragments could go together. Later, during assembly, one
+can select a more stringent subset of the overlaps with which to meld
+fragments. With regard to efficiency, it should be noted that there
+are significant changes in performance as "Error limit" crosses the levels
+.05 and .10. Thus our recommendation is to use .099 as a standard setting.
+
+The graph creation routine creates a binary file in the 
+directory specified in the "Destination directory" entrybox. The name of this
+file is defined in the .gaprc file. 
+_fxref(Conf-Introduction, Options Menu, configure)
+The default name is "graph.bin". In addition, any output from this routine is
+written to a file "graph_stderr" which is in the destination directory. 
+This information is also displayed in the text output window. The graph 
+binary file may be used as input to the standalone programs, "show_graph"
+and "assemble".
+
+The FAKII assembly program supports the use of a constraints file. This file
+is generated automatically by setting the "Use constraint file" radiobutton
+to "Yes". A binary and ascii version of this file are written to the 
+destination directory. The names of these files can be specified in the 
+.gaprc file and their default values are "constraint.bin" and 
+"constraint.ascii". The binary version of the constraints file may be used
+with the "assemble" stand alone program via the "-c" option.
+
+Readings which are on the same template are constrained by both distance and 
+orientation. The template name is defined in the experiment
+file by the TN line (_fpref(Formats-Exp, Experiment File, formats)) If this 
+does not exist, the EN or alternatively the ID 
+line is used. If none of these have been defined, the template is deemed to 
+be "unknown". The orientation is determined from the primer information (PR). 
+If no PR line is defined, the primer type is guessed from the strand (ST) 
+information. The template length is given as a range in the SI line. Forward 
+and reverse primer readings must lie at the beginning and end of the template 
+respectively and therefore must be separated by the template length. Custom 
+primers may lie anywhere on the template. 
+
+The final phase is that of assembly which is based on the graph and the 
+constraints file, if one was created. Several alternative assemblies may be
+produced from a single set of input parameters. These different assemblies
+may be distinguished by setting the "Assembly number". Setting this to 1 will
+produce the best assembly. Setting it to 2, will produce the 2nd best 
+assembly, etc. 
+
+The assembly takes place over a
+subset of the edges in the overlap graph determined by three
+floating point parameters as follows:
+
+The "Error rate". The distribution
+score of each edge in the overlap graph will be computed assuming an
+error process at the specified rate. Edges will then be eliminated
+if their distribution score/probability is below "Distribution threshold".
+
+The "Overlap threshold". Specifies the minimum
+overlap score for edges to be considered in assemblies. Setting this
+paramenter to 0. guarantees that no edges are eliminated on this
+basis.
+
+The "Distribution threshold". Specifies the minimum error distribution score 
+for edges to be considered in assemblies. Any edge in the overlap graph
+whose distribution score with respect to error rate "Error rate" is less
+than "Distribution threshold" is eliminated from consideration as regards 
+melding fragments. Setting this parameter to 1.0 eliminates all edges, and
+setting it to 0.0 eliminates none.
+
+The destination directory defines where the output files will be written. If
+the directory does not already exist, it is created. 
+
+The assembly routine creates a binary file "assem.bin" in the destination
+directory. In addition, any output from this routine is written to a file
+"assemble_stderr" also in the destination directory. The assembly binary file
+may be used as input to the "show_layout", "show_multi" and "write_exp_file" 
+stand alone programs.
+
+It is possible to view the final assembly in two ways using the "Show layout" 
+and "Show multi-alignment" check buttons. 
+
+Show layout produces a "stick diagram" of an assembly in which the 
+arrangement of fragments in each contig of an assembly is shown by depicting 
+each fragment as a line with an arrowhead at one end or the other to indicate 
+its orientation. (Details as for the show_layout command)
+
+@example
+@group
+*** CONTIG 1 (Score = 3480.32): 
+ 
+           0.2K      0.4K      0.6K      0.8K      1.0K 
+              |         |         |         |         | 
+ 1:  --------->      ---------------------> <----------. 
+ 2:   <-----------------  <--------------------+-------. 
+ 3:     <--------------   <--------------------- <-----. 
+ 4:      <----------        ------------------->-------. 
+ 5:                         --------------->      -----. 
+ 6:                               ------------->         
+ 7:                          ---------------->           
+ 8:                                 <----------------    
+ 
+ 1:  xb54f3.s1:   1  xb66a6.s1: 322 xb60c11.s1: 793 
+ 2:  xb66e3.r1:  38  xb60e9.s1: 435 xb63f10.s1: 852 
+ 3: xb57h12.s1:  72  xc04a1.r1: 435  xb66f8.s1: 884 
+ 4:  xb61e3.s1:  85  xb64b3.s1: 470  xb56b6.s1: 874 
+ 5: xb54b12.s1: 463  xb58f4.s1: 919 
+ 6:  xb64a1.s1: 600 
+ 7:  xb66a5.s1: 481 
+ 8:  xb60f4.s1: 622 
+ 
+@end group
+@end example
+
+@example
+@group
+
+          
+ 1: .----                                                
+ 2: .---->                                               
+ 3: .-----                                               
+ 4: .-------->                                           
+ 5: .---->                                               
+ 6:  ----->                                              
+ 
+ 1: xb60c11.s1: 793 
+ 2: xb63f10.s1: 852 
+ 3:  xb66f8.s1: 884 
+ 4:  xb56b6.s1: 874 
+ 5:  xb58f4.s1: 919 
+ 6: xb62d10.s1:1007 
+ 
+@end group
+@end example
+
+
+Show multi-alignment prints a multi-alignment of each contig of an assembly
+along with the consensus sequence. (Details as for the show_multi command).
+
+@example
+@group
+
+*** CONTIG 1 (Score = 3480.32): 
+ 
+ xb54f3.s1>: CTNTNAAAAGGCGTTGGATTNGTACGTTTCGACAAAAAAGACGAAGCTGA 
+ xb66e3.r1<:                                      AAGACGAAGCTGA 
+             -------------------------------------------------- 
+             CTnTnAAAAGGCGTTGGATTnGTACGTTTCGACAAAAAAGACGAAGCTGA 
+ 
+ xb54f3.s1>: GTGTTGCAATTAAAACACTAAATGGAAGTATTCCATCAGGATGTTCAGAG 
+ xb66e3.r1<: -TGTTGCAATTAAAACACTAAATGGAAGTATTCCATCAGGATGTTCAGAG 
+xb57h12.s1<:                      ATGGAAGTATTCCATCAGGATGTTCAGAG 
+ xb61e3.s1<:                                   ATCAGGATGTTCAGAG 
+             -------------------------------------------------- 
+             gTGTTGCAATTAAAACACTAAATGGAAGTATTCCATCAGGATGTTCAGAG 
+ 
+ xb54f3.s1>: CAAATCACAGTGAAATTCGCAAATAATCCAGCAAGTAACAATCCGAAAGG 
+ xb66e3.r1<: CAAATCACAGTGAAATTCGCAAATAATCCAGCAAGTAACAATCCGAAAGG 
+xb57h12.s1<: CAAATCACAGTGAAATTCGCAAATAATCCAGCAAGTAACAATCCGAAAGG 
+ xb61e3.s1<: CAAATCACAGTGAAATTCGCAAATAATCCAGCAAGTAACAATCCGAAAGG 
+             -------------------------------------------------- 
+             CAAATCACAGTGAAATTCGCAAATAATCCAGCAAGTAACAATCCGAAAGG 
+ 
+@end group
+@end example
+
+@node Assembly-Import FAKII assembly
+@subsection Import FAKII assembly
+@cindex Assembly: import FAKII 
+@cindex FAKII assembly: import
+
+This mode imports the aligned sequences produced after FAKII assembly into
+Gap4 and maintains the same alignment. It takes data from
+the directory containing the assembly binary file (default
+name "assem.bin"), ie the destination directory used in "Perform FAKII 
+assembly". A single contig may be entered, all the contigs or a file or list
+of contig numbers. Note that the contig numbers are those defined by
+FAKII and not by Gap4. The assembly information for each reading is 
+extracted from the assembly binary file and new experiment files are created
+in the same directory as assembly binary file (ie that defined in "Directory
+containing assembly"). If the original experiment files are accessible (ie in
+the directory in which the Gap4 program is being run), the new experiment files
+will incorporate information from the original experiment files. If the
+original files are not available, the new experiment files produced will 
+contain only limited information. Once the new experiment files have been
+created, these are read into Gap4 in a manner which is functionally equivalent
+to "Directed assembly". 
+_oxref(Assembly-Directed, Directed Assembly). 
+Readings from the selected contigs which are
+not entered are written to a "list" or "file" specified in the "Save failures"
+entry box.
+
+@node Assembly-Perform and import FAKII assembly
+@subsection Perform and import FAKII assembly
+@cindex Assembly: perform and import FAKII 
+@cindex FAKII assembly: perform and import
+
+This mode performs both the assembly _oref(Assembly-Perform FAKII
+assembly, Perform FAKII assembly) and the import _oref(Assembly-Import
+FAKII assembly, Import FAKII assembly) routines together. The assembled 
+readings are written to the destination directory and then are automatically
+imported from this directory into the Gap4 database.
+
+
+

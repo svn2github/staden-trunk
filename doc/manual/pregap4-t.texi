@@ -1,0 +1,4764 @@
+_include(pregap4_org-t.texi)
+_include(pregap4_mini-t.texi)
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Intro-Menus
+@section Pregap4 Menus
+
+The main window of pregap4 contains File, Modules, Information source
+and Options menus.
+
+@c --------------------------------------------------------------------------
+@node Pregap4-Intro-Menus-File
+@subsection Pregap4 File menu
+
+The File menu includes functions to set the files for processing,
+loading configuration files and naming schemes, including configuration
+components, starting processing and exiting.
+
+@itemize @bullet
+@item Set Files to Process (_fpref(Pregap4-Files, Specifying Files to Process, pregap4))
+@item Load New Config File (_fpref(Pregap4-Config-Files, Using Config Files, pregap4))
+@item Load Naming Scheme (_fpref(Pregap4-Naming, Pregap4 Naming Schemes, pregap4))
+@item Include Config Component (_fpref(Pregap4-Components, Pregap4
+Components, pregap4))
+@item Save All Parameters (in all modules) (_fpref(Pregap4-Modules, Configuring Modules, pregap4))
+@item Save All Parameters (in all modules) to: (_fpref(Pregap4-Modules, Configuring Modules, pregap4))
+@item Save Module List (_fpref(Pregap4-Modules, Configuring Modules, pregap4))
+@item Exit
+@end itemize
+
+@c --------------------------------------------------------------------------
+@node Pregap4-Intro-Menus-Modules
+@subsection Pregap4 Modules menu
+
+The pregap4 Modules menu contains options for adding and configuring
+modules, and running pregap4.
+
+@itemize @bullet
+@item Add/Remove Modules (_fpref(Pregap4-ModAdd, Adding and Removing
+Modules, pregap4))
+@item Configure Modules (_fpref(Pregap4-Modules, Configuring Modules, pregap4))
+@item Select all modules
+@item Deselect all modules
+@end itemize
+
+@c --------------------------------------------------------------------------
+@node Pregap4-Intro-Menus-Information
+@subsection Pregap4 Information source menu
+
+The Information source menu contains options for specifying how the
+information required for the experiment files is to be obtained. These
+menu options can also be entered from the "Augment Experiment Files"
+module.
+
+@itemize @bullet
+@item Simple Text Database (_fpref(Pregap4-Database-Simple, Simple text
+Database))
+@item Experiment File Line Types (_fpref(Pregap4-Database-LineTypes,
+Experiment File Line Types))
+@end itemize
+
+@c --------------------------------------------------------------------------
+@node Pregap4-Intro-Menus-Options
+@subsection Pregap4 Options menu
+
+The Options menu contains options for setting fonts and colours and
+defining the style of the user interface.
+
+@itemize @bullet
+@item Set Fonts (_fpref(Pregap4-Config-Fonts Colours, Fonts and Colours, pregap4))
+@item Set Colours (_fpref(Pregap4-Config-Fonts Colours, Fonts and Colours, pregap4))
+@item Compact Window Style (_fpref(Pregap4-Config-Window Styles, Window Styles, pregap4))
+@item Separate Window Style (_fpref(Pregap4-Config-Window Styles, Window Styles, pregap4))
+@end itemize
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Files
+@chapter Specifying Files to Process
+@cindex Files, specifying
+
+Pregap4 needs to be given a list of files to process. These files can be
+binary trace files (in ABI, ALF, SCF, CTF or ZTR format), Experiment Files,
+FASTA, or
+plain text. The files to process do not need to all be in the same format.
+FASTA files will be converted to Experiment files.
+
+_picture(pregap4_files)
+
+Refering to the figure above,
+the "Files to Process" dialogue can be brought up from the File menu, or just
+by pressing the appropriate tab when in @code{compact_win} mode.
+
+On the left hand side we have the current list of files to process. This list
+can be edited simply by clicking with the mouse and typing as normal. This
+only edits Pregap4's temporary copy of this list and does not modify the
+contents of any file of filenames that the list was obtained from.
+
+On the right side of the panel is the pregap4 output filename prefix, the
+output directory name, and several buttons. The filename prefix is used when
+Pregap4 needs to create files for its own use, both for temporary and not so
+temporary files. For example after processing there may be @i{prefix}.passed,
+@i{prefix}.failed files. The prefix defaults to @file{pregap} until a file of
+filenames is loaded, in which case it switches to the last used file of
+filenames.  All files will be created within the output directory, regardless
+of where the input files reside. The output directory defaults to the current
+directory or to the last used input directory.
+
+The buttons allow selection of the files to process. The "Add files" button
+will bring up a file browser, which will allow one or more file to be
+selected. Pressing Ok on the file browser will then add the selected files to
+the "List of files to process" panel on the left side of the pregap4 window.
+The "Add file of filenames" button may be used to select a list of files whose
+filenames have been written to a `file of filenames'. The list of files to
+process may be edited within pregap4, allowing new filenames to be
+added or removed. The "Clear current list" will
+remove all filenames from the list. Both the "Add files" and "Add file of
+filenames" button append their selections to the list of files to process, so
+to replace the current list the "Clear current list" button must first be
+used. Finally the "Save current list to..." button may be used to produce a
+new file of filenames, containing the combined list of files to process.
+
+_ifdef([[_unix]],[[It is possible to specify the files to process on the
+command line at the time of starting up Pregap4. If we have a file named
+@file{files} containing three filenames: @file{xb54a3.s1SCF},
+@file{xb54b12.r1LSCF} and @file{xb54b12.r1SCF}, then the first two command
+lines below are equivalent.
+
+@example
+pregap4 -fofn files
+pregap4 xb54a3.s1SCF xb54b12.r1LSCF xb54b12.r1SCF
+pregap4 *SCF
+@end example
+
+If the only files ending in @file{SCF} in this directory were the three listed
+above then the last command above would also be equivalent to the other two.
+]])
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Running
+@chapter Running Pregap4
+@cindex Run command
+
+When the Run button or Run command (File menu) is used, pregap4 starts
+processing the files using the selected modules and their configurations. If
+the configuration is invalid an error message will be produced. For example
+the following may be written to the error window, and the configure modules
+panel will be selected with the problematic module automatically highlighted.
+
+@example
+Fri 10 Jul 10:04:25 1998 Run: Module sequence_vector_clip needs configuring
+@end example
+
+Assuming that the configuration is correct, the processing will start and
+output will be sent to the output window as progress is made. The progress
+within each module is shown by a series of fullstops (@code{.}) for each
+correctly processed sequence, and an exclamation mark (@code{!}) for each
+failed sequence.
+
+_picture(pregap4_textwin)
+
+The text output window above shows the early processing stages of 20
+sequences. When finished pregap4 will produce a report containing information
+from each module and the final list of passed and failed sequences. For
+example:
+
+@example
+- Report Production -
+Passed files:
+    xb54a3.s1.exp (xb54a3.s1SCF.gz) : type EXP
+    xb54b12.r1L.exp (xb54b12.r1LSCF.gz) : type EXP
+    xb54b12.r1.exp (xb54b12.r1SCF.gz) : type EXP
+    xb54b12.s1.exp (xb54b12.s1SCF.gz) : type EXP
+    xb54c3.s1.exp (xb54c3.s1SCF.gz) : type EXP
+
+Failed files:
+    xb54g5.s1.exp (xb54g5.s1SCF.gz) 'screen_vector_clip:  sequence too short'
+
+- Report from 'Augment Experiment Files' -
+xb54a3.s1.exp : added fields SF CF SC SP TN ST PR SI CH.
+xb54b12.r1L.exp : added fields SF CF SC SP TN ST PR SI CH.
+xb54b12.r1.exp : added fields SF CF SC SP TN ST PR SI CH.
+xb54b12.s1.exp : added fields SF CF SC SP TN ST PR SI CH.
+xb54g5.s1.exp : added fields SF CF SC SP TN ST PR SI CH.
+xb54c3.s1.exp : added fields SF CF SC SP TN ST PR SI CH.
+
+- Report from 'Tag Repeats' -
+xb54a3.s1.exp : no repeat found.
+xb54b12.r1L.exp : no repeat found.
+xb54b12.r1.exp : no repeat found.
+xb54b12.s1.exp : no repeat found.
+xb54c3.s1.exp : no repeat found.
+
+
+                       ***   Processing finished   ***
+@end example
+
+@pindex .passed
+@pindex .failed
+@pindex .log
+@pindex .report
+
+The list of passed and failed files are written to @i{prefix}.passed and
+@i{prefix}.failed, where @i{prefix} is the output filename prefix specified in
+the "Files to Process" panel. The reports are written to @i{prefix}.report.
+The passed and failed files contain the most recent filenames associated with
+each sequence. So if a sequence fails early on it could be listed as something
+like @code{xb54a3.s1SCF.gz} and if it fails later it will be listed like
+@code{xb54a3.s1.exp}. This is because it is the final filename
+which is important for later processing, such as for assembly into gap4.
+
+A @i{prefix}.log file is also created containing a list of passed files,
+failed files, and the filename history for each file (the intermediates will
+still exist). The format of the passed section is "@i{filename}
+@code{(}@i{file_type}@code{) PASSED}". The format of the failed section is
+"@i{filename} @code{(}@i{file_type}@code{) ERROR: }@i{error message}". The
+format of the file history lines is a series of "@i{filename}
+@code{(}@i{file_type}@code{)}" segments separated by "@code{<-}", with the
+original filename listed to the right. Filenames containing Tcl
+meta-characters may be `escaped' using curly braces or back slashes. (The Tcl
+@code{subst} command may be used to generate the original name.) An example of
+a log file follows. This was produced with the command line
+"@code{pregap4  "Sample 671"  WT5.exp  zf89a2.s1.scf  xb56e5.s1.scf}".
+
+@example
+[passed files]
+ha59a6.s1.exp (EXP) PASSED
+WT5.exp (EXP) PASSED
+xb56e5.s1.exp (EXP) PASSED
+
+[failed files]
+zf89a2.s1.exp (UNK) ERROR: screen_vector_clip:  sequence too short
+
+[passed file history]
+ha59a6.s1.exp (EXP) <- ha59a6.s1.scf (SCF) <- @{Sample 671@} (ABI)
+WT5.exp (EXP)
+xb56e5.s1.exp (EXP) <- xb56e5.s1.scf
+
+[failed file history]
+zf89a2.s1.exp (UNK) <- zf89a2.s1.scf
+@end example
+
+Some modules may also keep their own separate records, such as an assembly
+log. Where this is the case, it will be explained in the help specific to that
+module.
+
+After running pregap4 it is time to either assemble the data (if this was not
+done using pregap4) or to edit it. If the data has already been assembled with
+Pregap4 then you will need to start up gap4 and use `Open Database'. Otherwise
+one of the gap4 assembly functions should be used, with the
+@i{filename_prefix}@code{.passed} file. For more information on this see the
+Gap4 manual.
+
+_ifdef([[_unix]],[[
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Batch
+@chapter Non Interactive Processing
+@cindex Batch mode
+@cindex Non-interactive processing
+
+Pregap4 can also be used in a non-interactive environment (in "batch mode").
+For this to work it is necessary for pregap4 to already have a valid
+configuration file with sufficient information for pregap4 to successfully
+complete the required processing steps. The best way generate this is to take
+a small set of sequences that you wish to work on and to run Pregap4
+interactively on these.  Once pregap4 can run and complete and you know that
+the configuration for that set is correct, use "Save all parameters (in all
+modules)" from the Modules menu to save the current configuration to disk.
+
+It will then be possible to run pregap4 with the @code{-nowin} argument on the
+full set of sequences and on any other set that require the same processing
+steps. It will be necessary to specify the files to process on the command
+line. Then pregap4 will execute the processing steps sending output normally
+seen in the output window to the standard output (@code{stdout}).
+
+It is possible to have different configuration files for different data sets.
+These can be specified on the command line using @code{-config}.
+
+@example
+pregap4 -nowin -config clip_only.conf -fofn files > files.output
+@end example
+
+The above example runs pregap4 in batch mode on the files listed in
+@file{files}. It will use the previously defined configuration contained in
+@file{clip_only.conf} and will save text output to @file{files.output}. After
+this processing, the files @file{files.passed}, @file{files.failed},
+@file{files.log} and @file{files.report} will also have been produced.
+
+If you wish to manually or automatically (via your own script) generate the
+Pregap4 configuration file instead of using the GUI, please see
+_oref(Pregap4-ManualConfig, Low Level Pregap4 Configuration).
+]])
+_ifdef([[_unix]],[[
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-CLI
+@chapter Command Line Arguments
+@cindex Command line arguments
+@cindex Arguments, command line
+
+Typically for interactive use of pregap4 users need type nothing more than
+@code{pregap4}. For the more inquisitive user the following command line
+options are available.
+
+@table @asis
+@cindex -config
+@pindex pregap4.config
+@item @code{-config} @i{config_file}
+This specifies an alternative configuration file to Pregap4. The default
+configuration file is named @file{pregap4.config}. It is valid to specify a
+filename which does not yet exist. This filename will be used for both reading
+and writing configurations to.
+@sp 1
+
+@cindex -fofn
+@item @code{-fofn} @i{filename}
+Specifies a file of filenames for processing. Multiple uses of @code{-fofn}
+are allowed and they are additive. The default prefix for pregap4 output files
+is derived from the last specified file of filenames.
+@sp 1
+
+@cindex -nowin
+@cindex -no_win
+@item @code{-nowin}
+@itemx @code{-no_win}
+These are synonyms. They prevent pregap4 from displaying its graphical user
+interface and force it to automatically "Run".  This argument should only be
+used when driving pregap4 as a batch job. It is necessary to create a valid
+configuration file before using this option.
+@sp 1
+
+@cindex -win_compact
+@item @code{-win_compact}
+This uses a compact GUI mode with the main dialogues listed as separate tabs
+in the main window. This can be made the default display style by selecting
+"Compact Window Style" in the Options menus. The command line option overrides
+this default.
+_oxref(Pregap4-Config-Window Styles, Window Styles).
+@sp 1
+
+@cindex -win_separate
+@item @code{-win_separate}
+This uses a GUI mode using separate top level windows in a similar manner to
+Gap4 and Spin. This can be made the default display style by selecting
+"Separate Window Style" in the Options menus. The command line option
+overrides this default.
+_oxref(Pregap4-Config-Window Styles, Window Styles).
+
+@cindex --
+@item @code{--}
+Indicates the end of pregap4 options. This is used in case filenames start with
+a minus sign, to distinguish filenames from possible pregap4 options.
+@end table
+
+Any other arguments on the command line are assumed to be filenames. For
+example the following command executes pregap4 in batch mode using
+configuration file @file{batchX} on all files in the current directory named
+@i{something}@code{.ZTR}.
+
+@example
+pregap4 -config batchX -nowin -- *.ZTR
+@end example
+
+The @code{--} in the above example is to guard against the unlikely case where
+@code{*.ZTR} could match a filename starting with minus.
+]])
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Config
+@chapter Configuring the Pregap4 User Interface
+@cindex Configuring pregap4
+
+@menu
+* Pregap4-Config-Fonts Colours::        Fonts and Colours
+* Pregap4-Config-Window Styles::        Window Styles
+@end menu
+
+@node Pregap4-Config-Fonts Colours
+@section Fonts and Colours
+@cindex Fonts
+@cindex Colours
+
+The pregap4 Options menu contains options for modifying the fonts and colours
+used. These options are common to many programs and so are documented
+elsewhere.
+_fxref(UI-Fonts, Font Selection, interface)
+_fxref(UI-Colour, Colour Selector, interface)
+
+@node Pregap4-Config-Window Styles
+@section Window Styles
+@cindex Window styles
+@cindex Styles of windows
+
+Pregap4 supports two styles of windowing. The default method is a compact
+mode, with the alternative being "separate" mode - similar to gap4 and
+spin.
+
+_picture(pregap4_separate)
+
+This is the "separate" window style. Here the main window is always visible,
+with commands in the main window bringing up new windows. In the picture above
+the configure window can be seen on top of the main window.
+
+@page
+The second style is "compact" mode.
+
+_picture(pregap4_compact)
+
+In the compact picture above the most common top level windows are "pages" in
+a tabbed notebook.
+_ifdef([[_unix]],[[This is similar to some window styles in the Microsoft
+Windows desktop.]])
+The benefit is greatly reduced screen space and quicker
+controls, but the text output window is no longer permanently visible.
+
+To switch styles select the "Compact Window Style" and "Separate Windows
+Style" commands from the Options menu.
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Modules
+@chapter Configuring Modules
+@cindex Configuring modules
+@cindex Modules, configuring
+
+@menu
+* Pregap4-Modules-General::              General Configuration
+* Pregap4-Modules-EBA::                  Estimate Base Accuracies
+* Pregap4-Modules-Phred::                Phred
+* Pregap4-Modules-ATQA::                 ATQA
+* Pregap4-Modules-ConvertTrace::         Trace Format Conversion
+_ifdef([[_unix]],[[* Pregap4-Modules-Compress Traces::      Compress Trace Files]])
+* Pregap4-Modules-Initexp::              Initialise Experiment Files
+* Pregap4-Modules-Augment::              Augment Experiment Files
+* Pregap4-Modules-Quality Clip::         Quality Clip
+* Pregap4-Modules-Sequence Vector::      Sequencing Vector Clip
+* Pregap4-Modules-Cross_match::          Cross_match
+* Pregap4-Modules-Cloning Vector::       Cloning Vector Clip
+* Pregap4-Modules-Screen Vector::        Screen for Unclipped Vector
+* Pregap4-Modules-Screen::               Screen Sequences
+* Pregap4-Modules-Blast::                Blast Screen
+* Pregap4-Modules-Interactive Clip::     Interactive Clipping
+* Pregap4-Modules-Extract Seq::          Extract Sequence
+* Pregap4-Modules-RepeatMasker::         RepeatMasker
+* Pregap4-Modules-Repeats::              Tag Repeats
+* Pregap4-Modules-Mutations::            Mutation Detection
+* Pregap4-Modules-Reference Traces::     Reference Traces
+* Pregap4-Modules-Trace Difference::     Trace Difference
+* Pregap4-Modules-Mutation Scanner::     Mutation Scanner
+* Pregap4-Modules-Gap4 Assembly::        Gap4 Shotgun Assembly
+* Pregap4-Modules-Cap2 Assembly::        Cap2 Assembly
+* Pregap4-Modules-Cap3 Assembly::        Cap3 Assembly
+* Pregap4-Modules-FakII Assembly::       FakII Assembly
+* Pregap4-Modules-Phrap Assembly::       Phrap Assembly
+* Pregap4-Modules-Enter Assembly::       Enter Assembly into Gap4
+* Pregap4-Modules-Email::                Email
+* Pregap4-Modules-Old Cloning Vector::   Old Cloning Vector Clip - Obsolete
+* Pregap4-Modules-ABI2SCF::              ALF/ABI to SCF Conversion - Obsolete
+@end menu
+
+The "Configure Modules" dialogue is available from the Modules menu or, when
+using the compact window style, by pressing the Configure Modules tab.
+
+This dialogue contains the main interface through which most of the
+user's interaction with pregap4
+will be performed. The left side of the display contains a list of the
+currently loaded modules. One module in this list will be highlighted.
+The right side of the display shows the configuration panel for this
+highlighted module.
+
+_picture(pregap4_config)
+
+The module list shown on the left consists of a series of module names and
+their status, and is termed the "enable status".  The @code{[ ]} and
+@code{[x]} strings at the left of the name indicates whether this module is
+enabled; crossed boxes are enabled modules. The highlighting is another
+indication of whether the module is enabled. The "General Configuration"
+module is mandatory and cannot be disabled. The text to the right of the
+module name indicates whether the module has been given all the parameters
+needed for it to process. This will be one of "ok" (all configuration options
+have been filled in), "-" (no configuration options exist for this module),
+"edit" (further configuration is required") or blank (this module is
+disabled).
+
+The "enable status" can be toggled by left clicking on the "@code{[ ]}" to the
+left of the module name. The enable status can be written to the current
+Pregap4 configuration file using the "Save Module List" or "Save All
+Parameters" commands in the Modules menu. Left clicking anywhere on a module
+name in the module list will switch the pane on the right side of the window
+to display any available parameters for this module. Not all modules will have
+parameters to configure.
+
+For modules that do have parameters, the top line of the configuration panel
+will contain a button labelled "Save these parameters". This button will save
+all parameters for this module to the configuration file. Note that this is
+not the same as the "Save all parameters" option in the main Modules menu, as
+this saves all parameters in all modules.
+
+@c --------------------
+_split()
+@node Pregap4-Modules-General
+@section General Configuration
+@cindex General configuration module
+@pindex init.p4m
+
+@table @strong
+@item Description
+This is a mandatory module. It is always the first module executed and will
+not appear in the "Add/Remove Modules" list. Its purpose is to set general
+parameters which affect several other modules. At present it contains just two
+items.
+@sp 1
+
+@item Option: Get entry names from trace files
+Many trace formats include storage for a sequence "sample name". This option
+controls whether or not the sample name should be used instead of deriving the
+name from the filename. If "No" is answered to this question then the sequence
+sample name will be generated by removing the filename suffix; for example
+@code{xb55a2.s1.ztr} will become @code{xb55a2.s1}.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-EBA
+@section Estimate Base Accuracies
+@cindex  Estimate base accuracies module
+@pindex eba.p4m
+
+@table @strong
+@item Description
+This module analyses the traces at each base call to estimate a confidence
+value for the called base. It does this by simply looking at the area
+underneath the trace for the called base and dividing this by the highest area
+under the trace for the three uncalled bases. This is a very simplistic
+statistic which should ideally only be used for measuring the average
+reliability of the entire sequence rather than any individual base. If another
+program (eg Phred, or ATQA) is available then this should be used in
+preference. From the 2002 release the eba values are
+normalised to the phred scale (this was achieved by comaring the
+original eba values and phred values for 4.6 million base calls of
+Sanger Centre data).
+
+There are no adjustable parameters for this module.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Phred
+@section Phred
+@cindex Phred module
+@pindex phred.p4m
+
+Phred is not included as part of the Staden Package. It is available from Phil
+Green.
+_uref(http://www.genome.washington.edu/UWGC/analysistools/phred.htm)
+
+@table @strong
+@item Description
+Phred is an ABI base caller. @cite{Ewing, B. and Green, P. 1998. Base-Calling
+of Automated Sequencer Traces Using Phred. II. Error Probabilities. Genome
+Res. 8, 186-194}. It will analyse the chromatogram data to produce new base
+calls. For each base it assigns confidence value indicating how likely this
+base call is to be correct. These confidence values are significantly more
+reliable than those produced by eba and they are compatible with the Phrap
+assembly program and the gap4 consensus algorithm.
+@sp 1
+Phred can process either ABI or SCF files, but pregap4 will automatically
+convert all input to SCF format first. This means that the phred pregap4
+module will be able to process any supported trace format.
+@sp 1
+There are no adjustable parameters for this module.
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-Modules-ATQA
+@section ATQA
+@cindex ATQA module
+@pindex atqa.p4m
+
+ATQA is not include as part of the Staden package. It is available from
+its developers, Daniel H. Wagner, Associates, at
+_uref(http://www.wagner.com/).
+
+@table @strong
+@item Description
+The ATQA program estimates confidence values for each called base in a
+lane file. A confidence value corresponds to the probability that the
+associated base call is incorrect by the formula
+
+@example
+score = -10*log10(probability of error).
+@end example
+
+(This is the same log scale used by Phred.) In fact, the ATQA program
+computes four confidence values for each called base. The first three
+values correspond to the probabilities of substitution, insertion, and
+deletion errors, respectively. The fourth value is a combined score
+representing the probability that the called base is an error of any
+sort. Currently, only the combined confidence value is used by Staden
+package software.
+@sp 1
+Unlike Phred, the ATQA program does not produce base calls. Rather, it
+assigns confidence values to each base call in a lane file based on
+features of the trace data. The current version of the ATQA program is
+tuned to base calls made by the ABI base caller and to trace data from
+the ABI 377 sequencer.
+@sp 1
+Although ATQA can read ABI files, it will not create SCF files in such
+circumstances. However pregap4 will always convert any non SCF trace files
+into SCF format before running ATQA, so an explicit conversion is not
+required.
+
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-Modules-ConvertTrace
+@section Trace Format Conversion
+@cindex Trace Format Conversion
+@cindex convert_trace
+@pindex convert_trace.p4m
+
+@table @strong
+@item Description
+This converts files between the various supported trace formats. At present it
+can read ABI, ALF, SCF, CTF and ZTR formats, and can write SCF, CTF and ZTR.
+Of these formats, ZTR typically represents the smallest size and is fast due
+to its own internal compression routines.
+_ifdef([[_unix]],[[For a table of file sizes coupled
+with external compression tools, see
+_oref(Pregap4-Modules-Compress Traces, Compress Trace Files).]])
+
+
+The Trace Format Conversion may also be used to apply some simple editing
+methods to the traces. These include down-scaling (to reduce file size),
+background subtraction, and amplitude normalisation.
+@sp 1
+
+@item Option: Output format
+This selects the format for the output trace files. If the output format is
+the same as the input format then the input files will not be
+overridden. Instead new files will be produced with names based on the input
+names, generated by replacing (for example) ".scf" with "..scf".
+The available output format choices are ZTR, CTF and SCF.
+
+@item Option: Downscale sample range
+@itemx Option: Range
+These select whether to reduce the scale used to store the amplitudes, and if
+so to what range. ABI files typically range from 0 to 1600 (which is
+approximately 11-bit data). Shrinking this down to 0 to 255 (8-bit) will
+usually be visually comparable as the trace displays in Gap4 and Trev are
+typically smaller than 255 pixels high, although if the Y scale is increased
+differences will still be detectable. The purpose of this is to further reduce
+file size.
+@sp 1
+
+@item Option: Subtract background
+This attempts to eliminate the trace background by a simple technique of
+deducting the lowest of the four amplitudes from all of the four
+amplitudes. This is an overly crude method which should only be used when the
+preprocessing software included on the sequencing manufacturer's instruments
+has not been used.
+
+@item Option: Normalise amplitudes
+This uses a sliding window to compute the average single strengths. From this
+it scales the data to try and provide, on average, more uniform peak heights
+along the trace. Again this is a very simplistic method and so it is not
+advisable unless their is a problem with the sequencing manufacturer's own
+software.
+
+@item Option: Delete temporary files
+When pregap4 can determine that a trace file is neither the original input or
+the final output then it is considered to be a temporary file which may be
+suitable for deletion. An example would be using Phred with ABI files and then
+converting to ZTR. Phred produces SCF files and so we have ABI to SCF to ZTR,
+in which the SCF files may be safely deleted.
+@end table
+
+_ifdef([[_unix]],[[
+@c --------------------
+_split()
+@node Pregap4-Modules-Compress Traces
+@section Compress Trace Files
+@cindex Compress Trace Files module
+@pindex compress_trace.p4m
+
+@table @strong
+@item Description
+All the programs that access trace files can uncompress on-the-fly. This module
+maybe used to compress existing trace files. No compression programs are
+supplied with the package, although there are several good public domain
+compression programs available.
+
+Note that using the ZTR trace format will typically yield better compression
+than using any of the supported compression programs on an SCF
+file. Attempting to compress a ZTR file using this module will not decrease
+the size (and may even increase the file size). Also see
+_oref(Pregap4-Modules-ConvertTrace, Trace format conversion).
+@sp 1
+
+@item Option: Compression method
+This selects the algorithm used for compressing trace files. The choices are
+None, Compress (the standard UNIX compression program), Gzip (from GNU) and
+Bzip versions 1 and 2. These are listed in ascending order of compression
+ratios, with Bzip (either version) giving the best compression. Generally Gzip
+is the best supported program and is not too far behind Bzip.
+
+The following table provides comparisons with compression sizes on ABI and SCF
+files. (Note that the ABI file typically holds 12 bit trace data data.) The
+sizes listed are the average length, in bytes, of the 96 (originally ABI 3700
+trace) files that the tests were performed on. The SCF and ZTR files were
+recalled using phred, so also contain confidence values. For comparison, the
+ZTR file sizes are also shown.
+
+@sp 1
+@example
+@strong{File type}               @strong{Size in bytes}
+abi                     189150
+compressed abi          104681
+gzipped abi             87789
+bzipped abi             62032
+16-bit scf              82124
+compress 16-bit scf     26574
+gzipped 16-bit scf      25957
+bzipped 16-bit scf      18877
+16-bit ztr              17185
+8-bit scf               45967
+compress 8-bit scf      15000
+gzipped 8-bit scf       14718
+bzipped 8-bit scf       12659
+8-bit ztr               11155
+@end example
+@end table
+]])
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Initexp
+@section Initialise Experiment Files
+@cindex Initialise Experiment files module
+@pindex init_exp.p4m
+
+@table @strong
+@item Description
+This modules creates an Experiment File from a trace file (of any format). It
+uses the @code{init_exp} program to write @code{ID}, @code{EN}, @code{LN},
+@code{LT}, @code{AQ} and @code{SQ} Experiment File line types. This module is
+mandatory for many subsequent modules, such as vector clipping/screening and
+assembly.
+
+There are no adjustable parameters for this module.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Augment
+@section Augment Experiment Files
+@cindex Augment Experiment files module
+@pindex augment_exp.p4m
+
+@table @strong
+@item Description
+This module adds further data to the Experiment File, with the additional
+information typically obtained from external sources. Such information could
+be the data required by the vector clipping program, or template
+information
+needed by gap4.
+
+The parameters for this module may be configured by using the "Simple Text
+Database" (_fpref(Pregap4-Database-Simple, Simple text Database)) or
+"Experiment File Line Types" (_fpref(Pregap4-Database-LineTypes, Experiment
+File Line Types)) dialogues. These both allow setting of the Experiment File
+records to be written during the Augment stage.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Quality Clip
+@section Quality Clip
+@cindex Quality clip module
+@pindex quality_clip.p4m
+
+@table @strong
+@item Description
+
+This module determines where the sequence quality is too poor to use for
+reliable assembly. It supercedes the Uncalled Base Clip module.  This uses the
+@code{qclip} program which reads and writes to Experiment Files. Its default
+quality evaluation is based on the range of values produced by the Estimate
+Base Accuracies module (quality value 70, averaged over 100 bases). For use
+with phred, try lower values such as quality value 15 averaged over 50 bases.
+When quality values are not available it will use the same method as the
+Uncalled Base Clip module; to analyse the base calls and count the number of
+undetermined bases within a given window of sequence. Both 5' and 3' ends may
+be quality clipped.
+
+For the confidence mode of clipping the method starts from the point of
+highest average quality, and then steps outwards in both directions until the
+average quality is below a defined threshold.
+
+For the sequence mode of clipping the method starts from a defined position
+and steps outwards in both directions until the number of uncalled bases
+within a given window length exceeds a predefined threshold. For
+more details see the @code{qclip} documentation
+(_fpref(Man-qclip, qclip, manpages)).
+
+Note that the Phrap assembly algorithm works best without quality clipping and
+it can make use of the full length of readings (due to the use of the Phred
+confidence values).
+@sp 1
+
+@item Option: Clip mode
+This may be one of "by sequence" or "by confidence". The "by sequence" mode is
+equivalent to the Uncalled Clip module. The "by confidence" mode uses
+Phred-scaled confidence values to determine the quality for clipping. This
+does not work with @code{eba} confidence values.
+@sp 1
+
+@item Option: Minimum extent
+The lowest allowable 5' clip position.
+@sp 1
+
+@item Option: Maximum extent
+The largest allowable 3' clip position.
+@sp 1
+
+@item Option: Minimum length
+If after quality clipping the good portion of a sequence is shorter than the
+specified length, then this file will be rejected with the message "qclip:
+Sequence too short".
+@sp 1
+
+@item Option: Window length
+The window length over which the confidence will be averaged.
+This option is only relevant for the "clip by confidence" mode.
+@sp 1
+
+@item Option: Average confidence
+The minimum average confidence (over `window length' bases) for sequence to be
+accepted as good quality.
+This option is only relevant for the "clip by confidence" mode.
+@sp 1
+
+@item Option: Start offset
+The base number to start the 5' and 3' good quality searches from.
+This option is only relevant for the "clip by sequence" mode.
+@sp 1
+
+@item Option: 3' window length
+The window length in which to count uncalled bases.
+This option is only relevant for the "clip by sequence" mode.
+@sp 1
+
+@item Option: 3' number of uncalled bases
+The maximum allowed count of uncalled bases in a single window length.
+This option is only relevant for the "clip by sequence" mode.
+@sp 1
+
+@item Option: 5' window length
+The window length in which to count uncalled bases.
+This option is only relevant for the "clip by sequence" mode.
+@sp 1
+
+@item Option: 5' number of uncalled bases
+The maximum allowed count of uncalled bases in a single window length.
+This option is only relevant for the "clip by sequence" mode.
+@sp 1
+
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Sequence Vector
+@section Sequencing Vector Clip
+@cindex Sequencing vector clip module
+@pindex sequence_vector_clip.p4m
+
+@table @strong
+@item Description
+This module uses the @code{vector_clip} program to identify and mark the
+sequencing vector (those used to produce templates for sequencing, eg m13mp18
+or puc18). To achieve this task it needs to know information about the vector
+including the cut site position and the position of the primer site relative
+to the cut site.
+_fxref(Vector_Clip-Sites, Defining the Positions of Cloning and Primer Sites for Vector_Clip, vector_clip).
+@sp 1
+
+@item Option: Use Vector-primer file
+Vector_clip may be told to search through a series of vectors and primers held
+within an external file. Alternatively we can request that it looks only at
+one specific, known, vector. This question is to determine which of the two
+mutually exclusive methods to use. In general it is still important for the
+Experiment File to contain primer and template data. The Vector-primer module can
+be used to add the primer and sequencing vector information to the Experiment File
+but not the template name.
+
+@item Option: Vector-primer filename.
+This is only used if the "Use Vector-primer file" question was answered with
+"Yes". Each input sequence will be compared against each vector-primer pair to
+find the best match. This provides a simple way of comparing against multiple
+vectors or comparing against both forward and reverse primers of a single
+vector. For further details on creating this vector-primer file, see
+_fref(Vector_Clip-Vector_Primer-Files, Vector_Primer file format, vector_clip).
+@sp 1
+
+@item Option: Select vector-primer subset
+This is used in conjuction with the vector-primer filename to indicate which
+of the vector-primer pairs listed in this file should be used. Initially this
+is set to all vector-primer pairs, but efficiency will be greatly increased if
+just the required subset is selected. (Internally pregap4 will then temporarily
+produce a new vector-primer filename each time @code{vector_clip} requires
+one, containing just the selected items.) To select more than one
+vector-primer pair use the standard listbox mouse bindings: single left click
+to pick an item; click and drag to select a range; and control left click to
+toggle a single item. The selected list will be saved to the pregap4
+configuration file whenever all the parameters for this module are saved.
+@sp 1
+
+@item Option: Max primer to cut-site length
+This parameter is only used when a vector-primer file is defined. The sequence
+stored in the vector-primer file may be considerably longer than we expect to
+see at the start of the sequences being analysed. By defining the maximum
+length of sequence we expect to see, @code{vector_clip} may be more sensitive
+and slightly faster.
+@sp 1
+
+@item Option: Vector file name
+This, and the following two options, are only used if the "Use Vector-primer
+file" question was answered with "No".  The vector file name should be the
+name of a file containing just the vector bases or white space, in a plain
+text format.
+@sp 1
+
+@item Option: Cut site
+The cut site specified as a base count from the start of the vector file.
+@sp 1
+
+@item Option: Primer site
+The primer site specified as a base offset from the cut site. e.g. for m13mp18
+forward primers the value is 41. If, instead of the usual single value,
+two values
+are specified separated by a slash, then this gives the values for the
+universal forward and reverse primers (for example "@code{41/-24}"). Only use
+this format if the @code{PR} (primer type) experiment file line type is known
+AND will be specified in the experiment file. If the PR record
+is not specified in the
+experiment file, the primer site position will be set to zero, and the vector
+clipping is unlikely to work correctly.
+(PR values do not have to be known if they
+can be derived using naming schemes such as those used
+by the Sanger Centre). If the
+primer site indicates a custom primer sequence then the primer site is taken
+to be 0.
+@sp 1
+
+@item Option: Percentage minimum 5' match
+@itemx Option: Percentage minimum 3' match
+Both ends of the sequence are checked using a dynamic programming algorithm to
+find the optimal alignment. An end is marked as vector if the
+percentage match is at least as high as this supplied parameter.
+@sp 1
+
+@item Option: Default 5' position
+This specifies the value to use for marking the 5' sequencing vector if none
+is detected. Specifying this as -1 will cause the absolute value given for the
+primer site (which is specified as relative to the cut site).
+@sp 1
+
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Cross_match
+@section Cross_match
+@cindex Cross_match module
+@pindex cross_match_svec.p4m
+
+Cross_match is not included as part of the Staden Package. It is available from
+Phil Green.
+_uref(http://www.genome.washington.edu/UWGC/analysistools/swat.htm)
+
+@table @strong
+@item Description
+This uses the @code{cross_match} program to search for sequencing vector.
+(Future versions may also check for other cloning vectors.) This allows for
+searching of multiple vector files. However as cross_match does not make use of
+primer and cut site information the vector detection is inherently less
+sensitive than @code{vector_clip}
+(_fpref(Vector_Clip, Screening against Vector Sequences, vector_clip)).
+@sp 1
+
+@item Option: FASTA vector file name
+This specifies a fasta format file of one or more sequencing vector sequences.
+@sp 1
+
+@item Option: Minimum match length
+Minimum length of matching word for SWAT comparison.
+@sp 1
+
+@item Option: Minimum score
+Minimum SWAT score.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Cloning Vector
+@section Cloning Vector Clip
+@cindex Cloning vector clip module
+@pindex cloning_vector_clip.p4m
+
+@table @strong
+@item Description
+This module searches for non "sequencing" vectors used in the shotgunning
+process, eg for Cosmid or YAC. Any fragment in any orientation of this vector
+could be present so there is no need for the cut sites to be known. The
+@code{vector_clip} program is used for this task
+(_fpref(Vector_Clip, Screening against Vector Sequences, vector_clip)).
+
+@sp 1
+
+@item Option: Vector file name
+The filename containing the vector sequence. At present this should be a file
+containing a single plain text sequence containing just the bases or white
+space.
+@sp 1
+
+@item Option: Max probability
+For each match its probability of occurring by chance is calculated. Any match
+with a probability lower than `Max probability' is accepted.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Screen Vector
+@section Screen for Unclipped Vector
+@cindex Screen for unclipped vector module
+@pindex screen_vector.p4m
+
+@table @strong
+@item Description
+This module may be used to identify undetected segments of sequencing vector
+or to detect recombinations. After searching and marking sequencing vector,
+any further strong matches to the sequencing vector indicate a possible
+problem. This module uses the @code{vector_clip} program
+(_fpref(Vector_Clip, Screening against Vector Sequences, vector_clip)).
+
+Note that this module requires the Sequencing Vector Clip module to be used
+before screening, otherwise all sequences containing unclipped vector will be
+falsely rejected.
+@sp 1
+
+@item Option: Minimum length of match
+If a match of at least this length is found then the sequence currently being
+processed will be rejected.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Screen
+@section Screen Sequences
+@cindex Screen sequences module
+@pindex screen_seq.p4m
+
+@table @strong
+@item Description
+This module can perform very fast matches between the sequences to process and
+one or more screen sequences. Any sequence containing a significant match is
+rejected. An example of use for this module is to reject sequences prior to
+assembly that appear to be contaminated with E. coli. This uses the
+@code{screen_seq} program
+(_fpref(Man-screen_seq, Screen_seq, screen_seq)).
+@sp 1
+
+@item Option: Screen single sequence
+This is yes/no question used to determine whether the screen sequence filename
+is the filename of a single sequence or a filename of a file containing a
+series of sequence filenames. To compare just one file select "Yes".
+@sp 1
+
+@item Option: Screen sequence file (of filenames)
+This is either the filename of a single sequence or the filename of a file of
+filenames, depending on the answer to the previous question. The sequence
+files must be in plain text format containing just the bases or white space.
+@sp 1
+
+@item Option: Maximum screen sequence length
+The maximum length of any individual screen sequence.
+@sp 1
+
+@item Option: Minimum match length
+Any fragment containing an exact match longer than
+this length will be rejected.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Blast
+@section Blast Screen
+@cindex Blast screen module
+@pindex blast.p4m
+
+@table @strong
+@item Description
+This module uses the @code{blastall} program to compare all the input
+sequences against a prebuilt blast database of screen sequences. It is not
+possible to compare against a subset of the database - to do this build a new
+blast database using formatdb. This module is an alternative to the
+Screen Sequences module which uses the @code{screen_seq} program.
+
+Blast may be used for either completely rejecting sequences or for simply
+tagging the matching segments, or for both. If you wish to tag with several
+tag types, then several instances of the Blast screen module need to be used.
+
+Blast is not included as part of the Staden Package. It is available from the
+NCBI.
+@sp 1
+
+@item Option: BLAST database
+This is the filename of the BLAST database to screen against, with the
+@file{.nhr}, @file{.nin} and @file{.nsq} suffixes removed.
+@sp 1
+
+@item Option: E value
+This specifies the `E value' used by blast when determining which hits should
+be considered as real.
+
+@item Option: Match fraction
+This is the total percentage of the sequence which much have a blast match
+somewhere in the BLAST database searched in order to reject this sequence.
+Segments of the input sequence that match multiple components in the BLAST
+database are only counted once when computing this percentage, but the
+locations of the matches in the BLAST database do not need to be consecutive.
+
+If you wish to accept everything, but still want to tag the matches, then set
+the match fraction to greater than @code{1.0}.
+
+@item Option: Tag type
+The default for this is @code{<none>} which indicates no tagging is
+required. Otherwise this should be a 4 letter tag type (such as @code{REPT})
+known to gap4.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Interactive Clip
+@section Interactive Clipping
+@cindex Interactive clipping module
+@pindex interactive_clip.p4m
+
+@table @strong
+@item Description
+This modules invokes the @code{trev} program to view the raw chromatogram
+files. The user can then adjust the quality and vector clip positions if
+desired.
+The trev window will contain Next and Previous
+buttons to skip from trace to trace. The Reject buttons allows a trace to be
+rejected, in which case it is added to the failure file with the message
+"@code{interactive clip: manually rejected}".
+
+There are no adjustable parameters for this module.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Extract Seq
+@section Extract Sequence
+@cindex Extract Sequence module
+@pindex extract_seq.p4m
+
+@table @strong
+@item Description
+
+This module uses the @code{extract_seq} program to extract the sequence
+information from binary trace files, Experiment files, or from the old
+Staden format plain files. The output contains the sequences split onto
+lines of at most 60 characters each, in plain or fasta format. The input
+files are passed unchanged onto subsequent modules.
+@sp 1
+
+@item Option: Output only the good sequence
+    When reading an experiment file or trace file containing clip marks, output
+    only the good sequence which is contained within the boundaries marked
+    by the @code{QL}, @code{QR}, @code{SL}, @code{SR}, @code{CL}, @code{CR}
+    and @code{CS} line types.
+@sp 1
+
+@item Option: Consider cosmid as good sequence
+    When the @code{Output only the good sequence} option is specified
+    this controls whether the cosmid sequence should be considered
+    good.
+@sp 1
+
+@item Option: Output in fasta format
+    Specifies that the output should be in fasta format rather than
+    plain text.
+@sp 1
+
+@item Option: Output in one file only
+    If this option is selected then the output from every sequence is
+    sent to one file. This is best used with the
+    @code{Output in fasta format} option selected, and is useful for
+    feeding into BLAST searches, for example. The file to write to is
+    specified in the @code{File name} filed.
+
+    If this option is unselected then the output is sent to separate
+    files, one per sequence. The output files have the same name as
+    the input files, except with an extra suffix specified in the
+    @code{File name suffix} field.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-RepeatMasker
+@section RepeatMasker
+@cindex RepeatMasker module
+@pindex repeat_masker.p4m
+
+RepeatMasker is not included as part of the Staden Package. It is available
+from Arian Smit.
+_uref(http://ftp.genome.washington.edu/RM/RepeatMasker.html)
+
+@table @strong
+@item Description
+This module uses the @code{RepeatMasker} program. This is a program which
+searches for a comprehensive set of repeat sequences. Any matches which are
+found will be tagged with a comment indicating the type of repeat. These tags
+will then be visible from within gap4. Full documentation is available from
+the author of RepeatMasker, or from typing @code{RepeatMasker -h}.
+
+@sp 1
+
+@item Option: Repeat library
+This specifies the directory containing the library of repeat sequences. Only
+one library directory may be specified. The library "<default>" will let
+RepeatMasker use its own default library.
+@sp 1
+
+@item Option: RepeatMasker cutoff
+This specifies the cutoff score for RepeatMasker. The documentation with
+RepeatMasker states that a cutoff of 250 will guarantee no false positives.
+@sp 1
+
+@item Option: Gap4 tag type
+When a repeat is found a tag will be added to the Experiment File. This
+specifies the tag type to use. It should be one of the tag types available to
+Gap4, but other tag types may be used if desired (they will be coloured as is
+@code{COMM}ent tags in gap4).
+@sp 1
+
+@item Option: Types of repeat to screen against
+The default setting of RepeatMasker is to search for primate repeats, however
+it may be told to search for other repeat families or to restrict its search
+to only ALU primate repeats. The full list of options here are Alu only,
+Rodent only, Simple only, Mammalian excluding primate/rodent, and no low
+complexity. These are as defined in the RepeatMasker documentation. It is not
+known what effect enabling mutually exclusive options will have.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Repeats
+@section Tag Repeats
+@cindex Tag repeats module
+@pindex tag_repeats.p4m
+
+@table @strong
+@item Description
+This module uses the @code{repe} program to identify and mark known repetitive
+elements within the sequences. An example usage is to tag all ALU fragments.
+This information may be used by the gap4 assembly algorithm to improve the
+assembly by initially ignoring matches between two ALU fragments which may
+otherwise produce incorrect assemblies. If available, we recommend using
+RepeatMasker instead of this module.
+@sp 1
+
+@item Option: Repeat file name
+This is the filename of a file of filenames, each of which contain a single
+repeat to search for. The format of these individual files is plain text
+consisting of just the nucleotides and white space.
+@sp 1
+
+@item Option: Repeat score
+This is the minimum score for classifying a matched segment as a repeat.
+@sp 1
+
+@item Option: Tag type
+This is the gap4 tag type to use for identifying this repeat segment. It is
+not possible to choose different tag types for different repeats, although the
+tag comments contain the match score and match filename.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Mutations
+@section Mutation Detection
+@cindex Mutation detection module
+@pindex trace_diff.p4m
+
+@table @strong
+@item Description
+@strong{Superceded by the newer modules:}
+(_fpref(Pregap4-Modules-Trace Difference, Trace
+Difference))
+and (_fpref(Pregap4-Modules-Mutation Scanner, Mutation Scanner)).
+
+This module compares each sequence chromatogram against a "wild type" or
+reference chromatogram to detect point mutations. The mutations are
+detected by aligning and subtracting each trace from the wild type trace to
+produce a "difference trace". The difference trace is then analysed to
+identify point mutations which are written back to the Experiment File and
+@code{MUTN} tags. This uses the @code{trace_diff} program
+@cite{Bonfield, J.K., Rada, C. and Staden, R. Automated detection of point
+mutations using fluorescent sequence trace subtraction. Nucleic Acids Res. 26,
+3404-3409 (1998)}.
+
+Obviously the reference traces should be as similar as possible to the ones
+being compared against it. It should be prepared by sequencing the wild type
+from the same primer, and using the same chemistry as the readings being
+screened.  One good way to produce a reference trace is to run the wild type
+sequence on the gel along with the other samples.  It is also possible to get
+gap4 to produce a consensus trace. This requires using pregap4 twice. Firstly
+process the sequences through pregap4 with all the appropriate options except
+with the mutation detection module disabled.  Assemble these sequences into
+gap4. Within gap4, for each contig start up the Contig Editor and select Save
+Consensus Trace from the command menu. This will produce a trace which is the
+average of the traces in that contig. Then delete the gap4 database and
+reprocess the sequences using Pregap4, this time using mutation detection to
+compare against the consensus trace.
+
+@sp 1
+
+@item Option: Wild type file (+ve strand)
+@itemx Option: Wild type file (-ve strand)
+These are the filenames of the chromatogram for the wild type sequence on each
+strand. These may be in any allow trace format (SCF, ZTR, ABI, CTF or ALF).
+In the augment stage, these are represented in the @code{WT} line type using
+@i{plus_filename}@code{|}@i{minus_filename} notation.
+@sp 1
+
+@item Option: Start position
+@itemx Option: End position
+These define the range within each sequence in which to identify mutations.
+The algorithm works better on good quality data so including very bad sequence
+may give errors.
+@sp 1
+
+@item Option: Score
+This a threshold used to determine when a peak in the difference trace is
+considered to be a mutation. The higher the value the more stringent the test.
+@sp 1
+
+@item Option: Alignment band width
+The trace alignment is performed by firstly doing a sequence alignment on the
+text sequences contained in the two files. This parameter
+specifies the band width for
+this alignment. Smaller values give quicker alignments, but only work if the
+alignment is sufficiently close to the main diagonal.
+@sp 1
+
+@item Option: Other arguments
+This allows for any other arguments to be passed to the @code{trace_diff}
+program. See the trace_diff documentation for more details.
+@sp 1
+@end table
+@strong{The module above is superceded by the newer modules:}
+(_fpref(Pregap4-Modules-Trace Difference, Trace
+Difference,t))
+and (_fpref(Pregap4-Modules-Mutation Scanner, Mutation Scanner,t)).
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Reference Traces
+@section Reference Traces and Reference Sequences
+@cindex Reference trace module
+@cindex Reference sequence: pregap4
+@cindex pregap4: Reference sequence
+@cindex pregap4: naming schemes
+@cindex naming schemes: pregap4
+@cindex naming schemes: mutation detection
+
+@table @strong
+@item Description
+This module specifies the reference traces and reference sequences used by the
+two mutation detection modules (_fpref(Pregap4-Modules-Trace Difference, Trace
+Difference) and _fpref(Pregap4-Modules-Mutation Scanner, Mutation
+Scanner)). The left and right clip points for each trace can also be specified.
+
+A reference trace should be as similar as possible to the ones being
+compared against. It should be prepared by sequencing the wild type from
+the same primer and using the same chemistry as the readings being
+screened. One good way to produce a reference trace is to run the wild type
+sequence on the gel along with the other samples.
+
+If the input files have been sequenced from both strands, reference traces from
+each strand may be specified here.
+
+NOTE:
+In order for pregap4 to choose the appropriate wild type trace it needs to know
+the strand for each input sequence. This is specified by the PR record in the
+experiment file which is typically generated using a naming convention
+(_fpref(Pregap4-Naming, Pregap4 Naming Schemes, pregap4)) If pregap4 cannot
+determine the strand, or if only one reference trace is specified, then each
+input sequence will be compared against the +ve strand reference trace.
+
+The reference data supplied in this module, when entered with gap4 shotgun assembly,
+will add REFS and REFT notes (_fpref(Notes, Notes, notes)) to the gap4 database.
+A reference sequence is used to number bases in the Contig Editor
+(_fpref(Editor-Reference-Data, Reference sequences and traces,t)) and in reporting
+the positions of mutations (_fpref(Editor-Comm-Report-Mutations, Report Mutations,t).)
+
+@sp 1
+
+@item Option: Reference Trace (+ve strand)
+@itemx Option: Reference Trace (-ve strand)
+These are the filenames of the chromatogram for the reference trace on each
+strand. These may be in any allowable trace format (ZTR, SCF, ABI, CTF or ALF).
+The filenames are entered into the experiment file as @code{WT} records by the
+"Augment Database" phase of pregap4, so this module must also be enabled.
+
+@item Option: Clip left
+@itemx Option: Clip right
+These values determine which region of the reference trace (in bases) is used
+for mutation detection. This can be used to exclude poor quality regions, or
+restrict the range over which mutation detection occurs. Restricting the range
+will also speed up the algorithms. If you specify -1 for any value, mutscan will
+use the clip point QL/QR records within the reference trace experiment file
+(provided they exist). If they don't exist, then the entire reference trace is used.
+i.e. No clipping occurs. If the range specified is too small, the mutation detection
+algorithms may report an error, since there must be a useful overlap between
+the sequences in order to process them.
+
+@item Option: Reference Sequence
+This specifies the reference sequence, which is typically an annotated EMBL
+entry. This field is optional.
+
+@item Option: Start base number
+If a reference sequence was specified this indicates which base number it will
+start counting from within Gap4's contig editor. It also defines the positions
+of mutations, as output by the Report mutations function of gap4
+_fxref(Editor-Comm-Report-Mutations, Report Mutations,t).
+
+@item Option: Circular
+@itemx Option: Sequence length
+If the reference sequence is defined to be circular then the length needs to
+be known too. When the base number reaches the sequence length the next base
+in the sequence will be renumbered to base 1. This may be useful if the
+circular reference sequence needs to be chopped to form a linear sequence at a
+different position than the standard numbering. (For example this is typical
+when sequencing the mitochondrial variable loop, which by standard conventions
+contains base number 1.)
+
+@sp 1
+@end table
+
+Note that it is possible (though no longer recommended)
+to use gap4 to produce a consensus trace. This requires
+using pregap4 twice. Firstly process the sequences through pregap4 with all
+the appropriate options except with the mutation detection modules
+disabled. Assemble these sequences into gap4. Within gap4, for each contig
+start up the Contig Editor and select Save Consensus Trace from the command
+menu (available only in expert mode). This will produce a trace which is the
+average of the traces in that contig. Then delete the gap4 database and
+reprocess the sequences using Pregap4, this time using mutation detection to
+compare against the consensus trace. Best results are usually obtained by
+first deleting pads in the consensus sequence. You should inspect the
+resulting consensus trace carefully to ensure there are no discontinuities
+introduced as a result of the pad deletions.
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Trace Difference
+@section Trace Difference
+@cindex Trace difference module
+
+@table @strong
+@item Description
+This module compares each sequence chromatogram against a "wild type" or
+reference chromatogram to detect point mutations. The mutations are
+detected by aligning and subtracting each trace from the wild type trace to
+produce a "difference trace". The difference trace is then analysed to
+identify point mutations which are written back to the Experiment File as
+@code{MUTA} tags. The basic idea is explained in the paper @cite{Bonfield,
+J.K., Rada, C. and Staden, R. Automated detection of point mutations using
+fluorescent sequence trace subtraction. Nucleic Acids Res. 26, 3404-3409 (1998)}.
+
+This implementation is the second version of the algorithm. The previous
+version used basecalls to do trace alignment. This led to problems when
+bases were called in error (often the case around mutations). The new algorithm
+ignores the basecalls completely and aligns the trace signals themselves,
+avoiding such problems. This is much more computationally intensive, but it
+has proved to be fast enough for interactive use.
+
+If the input files have sequenced from both strands then two wild type
+sequences may be given. In order for pregap4 to choose the appropriate wild
+type trace it needs to know the strand for each input sequence, which is
+typically generated using the naming convention. A simple naming scheme is
+provided with pregap4 (in the lib/pregap4/naming_schemes directory) called
+"mutation_detection.p4t". This can be loaded from the pregap4 file menu. It
+assumes that trace names have an 'f' or 'r' suffix, denoting the forward and
+reverse strands respectively. If you need something more complex, then you'll
+have to create and load your own naming scheme. If pregap4 cannot determine
+the strand, or if only one wild type is specified, then each input sequence
+will be compared against the +ve strand wild type.
+
+The reference or wild type traces for tracediff are specified in the
+_fpref(Pregap4-Modules-Reference Traces, Reference Traces module).
+
+@sp 1
+
+
+@item Option: Sensitivity
+This threshold is used to determine when an above/below baseline double
+peak in the difference trace is considered to be a mutation. It is specified
+in standard deviations from the mean over the analysis window. The higher the
+value, the more stringent the test. This value is reduced dynamically
+by the algorithm in the presense of mutations since small mutations near
+larger ones can often be missed with a uniform sensitivity setting. It's
+likely that some experimentation with this parameter will be required for
+optimal mutation detection in your data.
+@sp 1
+
+
+@item Option: Noise threshold
+This threshold is used to filter out low level noise during the analysis
+phase. It is specified as a percentage of the maximum peak-to-peak trace
+difference value. A high threshold will lead to fewer false positives but
+you run the additional risk of missing low level mutations.
+@sp 1
+
+
+@item Option: Analysis window length
+Analysis of the trace difference is done over a local region to counter
+the effects of non-stationarity in the trace signal. The analysis region is
+defined by a short window whose length is specified in bases. The window is
+asymmetric in that it's located to the left of the base it's positioned on.
+This avoids measurement problems when mutations are encountered. The window
+size is a tradeoff. If it's too big, low level mutations may be missed. If
+it's too small, there may be insufficient data to give unbiased measurements
+leading to many false positives.
+@sp 1
+
+
+@item Option: Maximum peak alignment deviation
+The centres of each individual half-peak of a double peak above and below
+the baseline must align reasonably well for them to be considered to be
+real mutations. The amount of half-peak alignment deviation allowable is
+specified in bases by this parameter, usually as a fraction of one base.
+@sp 1
+
+
+@item Option: Maximum peak width
+During analysis, the width of each peak is measured to avoid problems caused
+by gel artifacts. These often appear as broad peaks that overlay many bases.
+The maximum peak width is specified in bases. A lower value will lead to
+fewer false positives, but you run the additional risk of missing smeared
+mutations towards the end of a trace.
+@sp 1
+
+
+@item Option: Complement bases on reverse strand tags
+After mutation detection and after readings have been assembled into a GAP4
+database, GAP4 displays both forward and reverse readings in a single direction
+in the contig editor. This makes it much easier to compare sequences and traces
+in both directions simultaneously. When the corresponding traces are displayed,
+any reverse strand traces are complemented automatically such that the bases are
+interchanged. In this case, the original mutation tag generated by tracediff will
+then be of the wrong sense, so if checked, this option complements the tag base
+labels to match the complemented trace displayed by GAP4.
+@sp 1
+
+
+@item Option: Write difference traces out to disk
+After trace difference analysis, the generated traces are normally discarded and not
+written to disk. Checking this option lets you save the trace difference files to
+the same directory as the original traces. The .ZTR trace format is used for this
+purpose. The original filename is retained and a "_diff.ztr" suffix is appended.
+@sp 1
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Mutation Scanner
+@section Mutation Scanner
+@cindex Mutation scanner module
+
+@table @strong
+@item Description
+This module compares each input sequence chromatagram against a reference
+chromatogram (or trace) to detect mutations. The reference traces are specified
+in the _fpref(Pregap4-Modules-Reference Traces, Reference Traces module). Using
+this method it is possible to detect both base-change mutations and heterozygous
+mutations.
+
+It works by aligning the reference trace with the input trace and then examining
+the peak pairs for each individual base separately. It does not use basecalls as
+these are prone to error and their use generates too many false positives. After
+normalisation, the amplitude ratios of peak pairs which are abnormal are analysed
+more closely. For heterozygotes, a drop in peak height with respect to the reference
+of about 50% is expected. The final set of candidate mutations are validated against
+a difference trace to ensure it contains a double peak at that location, thus
+confirming the mutation to be real. After chromatagram analysis has been completed,
+mutation tags are written back to the Experiment File as @code{HETE} and @code{MUTA}
+tags.
+
+@sp 1
+
+@item Option: Adaptive Noise Floor
+Traces are very noisy difficult to process signals. To find valid peaks in a trace
+an adaptive noise threshold based on envelope height is used to eliminate all low
+level noise from consideration. The effect of this parameter can be seen in the
+trace below. By default this parameter is set to 25% of envelope peak height.
+If set lower, too much noise is picked up; if set higher, low level mutations may
+be missed.
+
+_picture(mut_mutscan_adaptive_noise_threshold)
+
+@sp 1
+
+@item Option: Upper and Lower Peak Drop Thresholds
+For heterozygote mutations, the peak height of the mutant drops by 50% with respect
+to the normalised reference trace as shown in the trace below. For accurate detection,
+we use this information to validate potential mutations. Due to overzealous preprocessing
+done by sequencing machine software, the peak height drops are often not 50%, but
+typically hover between 20% and 70% of reference peak height. Any potential heterozygote
+whose peak height drop with respect to the normalised reference trace that lies within
+this range is considered to be a real mutation.
+
+_picture(mut_mutscan_peak_drop_threshold)
+
+@sp 1
+
+@item Option: Peak Alignment Search Window Size
+In an ideal world, heterozygote peaks in a trace would be perfectly aligned on top of
+each other. In practice however, they can often be skewed due to gel chemistry problems
+or inaccurate mobility correction as shown in the trace below. When mutscan looks
+for peak pairs, it allows for this skew by looking either side of the current position
+for nearby peaks. This parameter is the distance mutscan looks in bases around each
+candidate position.
+
+_picture(mut_mutscan_peak_alignment_threshold)
+
+@sp 1
+
+@item Option: Heterozygote SNR Threshold
+For a normal trace containing normal bases, the signal-to-noise ratio (SNR) is the
+ratio of the highest base peak to the second highest trace level. Mutscan computes
+this value in decibels (dB) as 20*log10(S/N). For normal bases, this usually in
+the region of 20-30dB or higher. However, for heterozygotes, the SNR as defined
+by this measure degrades significantly to around 2-5dB. This is the mechanism
+mutscan uses to accurately determine the mutation tag type. If the candidate
+mutation's SNR is equal to or below this threshold, mutscan designates it to be
+heterozygous, otherwise it's considered to be a normal base-change mutation.
+
+@sp 1
+
+@item Option: Trace Alignment Failure Threshold
+Mutscan works by aligning a mutant trace against a reference trace and comparing
+the peaks. However, if the traces are too different, the alignment may fail and
+as a consequence, large numbers of false positive mutation tags are generated.
+Typically, within each trace there are only one or two mutations, so if we find
+15 mutations, then we can confidently predict that things have gone badly wrong!
+This parameter sets a threshold, beyond which an alignment failure error message
+is printed, rather than outputting large numbers of invalid mutation tags.
+
+@sp 1
+
+@item Option: Complement Bases on Reverse Strand Tags
+After mutation detection and after readings have been assembled into a GAP4
+database, GAP4 displays both forward and reverse readings in a single direction
+in the contig editor. This makes it much easier to compare sequences and traces
+in both directions simultaneously. When the corresponding traces are displayed,
+any reverse strand traces are complemented automatically such that the bases are
+interchanged. In this case, the original mutation tag generated by mutscan will
+then be of the wrong sense. If checked, this option complements the tag base
+labels to match the complemented trace displayed by GAP4.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Gap4 Assembly
+@section Gap4 Shotgun Assembly
+@cindex Gap4 shotgun assembly module
+@pindex gap4_assemble.p4m
+
+@table @strong
+@item Description
+This module assembles the processed sequences into gap4 using gap4's own
+assembly engine. Note that this is incompatible with use of "Enter assembly
+into Gap4", which should only be used for external (to gap4) assembly engines.
+@sp 1
+
+@item Option: Gap4 database name
+@itemx Option: Gap4 database version
+The name and version of the database to assemble into.
+@sp 1
+
+@item Option: Create new database
+This is a toggle to define whether the specified gap4 database should be
+created or appended to. Be warned that at present creating a new database will
+overwrite existing one of the same name, in the same directory, without any
+warnings.
+@sp 1
+
+@item Option: Minimum exact match
+@itemx Option: Maximum number of pads
+@itemx Option: Maximum percentage mismatch
+These control the main assembly parameters within gap4. For more details see
+_fref(Assembly-Shot, Normal shotgun assembly, gap4)
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Cap2 Assembly
+@section Cap2 Assembly
+@cindex Cap2 assembly module
+@pindex cap2_assemble.p4m
+
+Cap2 is not included as part of the Staden Package. It is available from
+Xiaoqiu Huang (_uref(mailto:huang@mtu.edu,,huang@@mtu.edu)).
+
+@table @strong
+@item Description
+This module uses the @code{cap2} program to perform shotgun assembly. Output
+will be placed in the @i{fofn}.assembly directory, where @i{fofn} is the
+filename prefix listed in the "Files to Process" panel. The output is in a
+format suitable for directed assembly within gap4. This can also be performed
+by using the "Enter Assembly into Gap4" module.
+@sp 1
+There are no adjustable parameters for this module.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Cap3 Assembly
+@section Cap3 Assembly
+@cindex Cap3 assembly module
+@pindex cap3_assemble.p4m
+
+Cap3 is not included as part of the Staden Package. It is available from
+Xiaoqiu Huang (_uref(mailto:huang@mtu.edu,,huang@@mtu.edu)).
+
+@table @strong
+@item Description
+This module uses the @code{cap3} program to perform shotgun assembly. Output
+will be placed in the @i{fofn}.assembly directory, where @i{fofn} is the
+filename prefix listed in the "Files to Process" panel. The output is in a
+format suitable for directed assembly within gap4. This can also be performed
+by using the "Enter Assembly into Gap4" module. Cap3 differs from Cap2 in that
+it can make use of confidence values (in the range supplied from
+@code{phred}) and constraints.
+@sp 1
+
+@item Option: Auto-generate constraints
+When enabled, this uses the reading direction (forward / reverse primers),
+the template name and the insert size, to produce a file containing data to
+constrain how the readings may be assembled.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-FakII Assembly
+@section FakII Assembly
+@cindex FakII assembly module
+@pindex fakii_assemble.p4m
+
+FakII is not included as part of the Staden Package. It is available from
+Susan Miller (_uref(mailto:susanjo@cs.arizona.edu,,susanjo@@cs.arizona.edu)).
+
+@table @strong
+@item Description
+This module uses the @code{FakII} suite of programs to perform shotgun
+assembly. Output will be placed in the @i{fofn}.assembly directory, where @i{fofn}
+is the filename prefix listed in the "Files to Process" panel. The output is
+in a format suitable for directed assembly within gap4. This can also be
+performed by using the "Enter Assembly into Gap4" module.
+@sp 1
+
+@item Option: E limit
+@itemx Option: D limit
+@itemx Option: O threshold
+These parameters control the @code{graph} component of FakII, which is used to
+find the initial overlaps between sequences.
+_ifdef([[_unix]],[[For further details, see
+_fref(Assembly-FAKII, Assembly FAKII, assembly)
+]])@sp 1
+
+@item Option: Auto-generate constraints
+When enabled, this uses the reading direction (forward / reverse primers),
+the template name and the insert size, to produce a file containing data to
+constrain how the readings may be assembled.
+@sp 1
+
+@item Option: E rate
+@itemx Option: O threshold
+@itemx Option: D threshold
+These parameters control the @code{assemble} component of FakII, which is used
+for determining the best construction of sequences from the overlap graph.
+
+@item Option: Assembly number
+This allows for non optimum assemblies to be chosen. The optimum assembly is
+assembly number 1, with the next optimum being number 2, and so on.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Phrap Assembly
+@section Phrap Assembly
+@cindex Phrap assembly module
+@pindex phrap_assemble.p4m
+
+Phrap is not included as part of the Staden Package. It is available from
+Phil Green.
+_uref(http://www.genome.washington.edu/UWGC/analysistools/phrap.htm)
+
+@table @strong
+@item Description
+This module uses the @code{phrap} program to perform shotgun assembly. Output
+will be placed in the @i{fofn}.assembly directory, where @i{fofn} is the
+filename prefix listed in the "Files to Process" panel. The output is in a
+format suitable for directed assembly within gap4. This can also be performed
+by using the "Enter Assembly into Gap4" module. Phrap can make use of the
+confidence value information written by the @code{phred} program to produce
+better assemblies. Phrap also uses the full length of the sequence and will
+ignore any quality clipping. It is still necessary to clip sequencing vector.
+@sp 1
+
+@item Option: Minimum exact match
+Minimum length of matching word for SWAT comparison.
+@sp 1
+
+@item Option: Minimum SWAT score
+Minimum SWAT score.
+@sp 1
+
+@item Option: Other phrap arguments
+Any other phrap command line arguments.
+@sp 1
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Enter Assembly
+@section Enter Assembly into Gap4
+@cindex Enter assembly module
+@pindex enter_assembly.p4m
+
+@table @strong
+@item Description
+This module is used to enter assemblies into gap4 which have been generated
+externally to gap4 (ie all assembly engines except "Gap4 shotgun assembly"). This is
+achieved by using the gap4 "Directed Assembly" function. The assembly is read
+from the @i{fofn}.assembly directory, where @i{fofn} is the filename prefix
+listed in the "Files to Process" panel.
+@sp 1
+
+@item Option: Gap4 database name
+@itemx Option: Gap4 database version
+The name and version of the database to assemble into.
+@sp 1
+
+@item Option: Create new database
+This is a toggle to define whether the specified gap4 database should be
+created or appended to.  Be warned that at present creating a new database
+will overwrite existing one of the same name, in the same directory, without
+any warnings.
+@sp 1
+
+@item Option: Post-assembly quality clipping
+@itemx Option: Lowest (average) quality to use
+This can be used to direct gap4 to run the "Quality Clip" function after
+entering the assembly. This performs quality clipping by identifying segments
+where the average quality is below a particular threshold. This should only be
+necessary if quality clipping was not performed earlier (eg because Phrap was
+used for assembly), and even then it is usually better to use difference
+clipping instead.
+@sp 1
+
+@item Option: Post-assembly difference clipping
+This can be used to direct gap4 to run the "Difference Clip" function after
+entering the assembly. This identifies ends of readings where the alignment
+between readings and consensus is bad and marks these ends as hidden data. This
+is primarily designed for use after the Phrap assembly engine, which sometimes
+leaves poorly aligned end fragments.
+@end table
+
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Email
+@section Email
+@cindex Email module
+@pindex email.p4m
+
+@table @strong
+@item Description
+This module can be used to send an E-mail indicating that the processing of
+Pregap4 has reached a given point. This may be of use when running pregap4 in
+batch mode, where the GUI is not visible. Typically the email module is placed
+at the end of the module list to indicate that pregap4 has (almost) finished,
+however it may be used elsewhere in the module list if desired.
+@sp 1
+
+@item Option: Email address
+The email address to send a message to.
+@sp 1
+
+@item Option: Email program
+The mail agent used for sending the message.
+@sp 1
+
+@item Option: Program arguments
+The arguments (except for the email address) to the mail agent. These could
+include options for setting the email subject.
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-Modules-Old Cloning Vector
+@section Old Cloning Vector Clip - Obsolete
+@cindex Cloning vector clip module (old style)
+@pindex old_cloning_vector_clip.p4m
+
+@table @strong
+@item Description
+This is an older version of the Cloning Vector Clip module. It still uses the
+@code{vector_clip} program to perform this task, but does not use the newer
+probabilistic model for analysing matches. It is still present as an option
+for people who have tuned the parameters for their data and are happy with
+this. The probability mode is recommended
+(_fpref(Vector_Clip, Screening against Vector Sequences, vector_clip)).
+@sp 1
+
+@item Option: Vector file name
+The filename containing the vector sequence. At present this should be a file
+containing a single plain text sequence containing just the bases or white
+space.
+@sp 1
+
+@item Option: Word length
+@itemx Option: Number of diagonals
+@itemx Option: Diagonal score
+The searching method involves hashing words to quickly identify matches and
+then combining these words along the best and neighbouring diagonals to
+produce an overall score which is compared against the diagonal score to
+determine whether this is vector sequence. The score is normalised from 0 (no
+match) to 1.0 (perfect match). For full details on this see the vector_clip
+manual.
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-Modules-ABI2SCF
+@section ALF/ABI to SCF Conversion - Obsolete
+@cindex ALF/ABI to SCF conversion module
+
+@table @strong
+@item Description
+This module converts ABI and ALF files to SCF format using the @code{makeSCF}
+program. SCF format is not required by programs such as gap4,
+but it is considerably
+smaller and has been designed to give high compression ratios.
+@sp 1
+
+@item Option: SCF bit size
+This selects the data size for the chromatogram data. An 8 bit value can store
+256 possible values, which is typically good enough for display purposes. If Y
+scaling is required (for instance because the signal strength diminishes
+significantly along the length of the trace), or further computational analysis
+of the trace is required, a 16 bit data size should be chosen.  As the majority
+of the trace file is the sample data, using 8 bit data typically saves about
+half of the disk space.
+_ifdef([[_unix]],[[Also see _oref(Pregap4-Modules-Compress Traces, Compress Trace Files).]])
+This module may also be used for converting 16-bit SCF files to 8-bit SCF
+files.
+@end table
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Config-Files
+@chapter Using Config Files
+@cindex Configuration files
+
+Pregap4 uses configuration files to remember the setup for each user or
+project. These files define which modules are activated and what their
+parameter settings are. The files,
+which can obviously save considerable amounts of time, are created
+automatically and can be saved from the Configure Modules Window once
+the configuration is complete.
+
+The "Load New Config File" option, available from the File menu, may be used
+to switch to a new (existing) configuration file. Pregap4 will display a file
+browser window to enable selection of another configuration file. Once chosen,
+Pregap4 will discard the existing configuration and use the new one.
+From this point onwards, any modifications and saving in Pregap4
+will be to the new configuration file.
+
+_ifdef([[_unix]],[[
+This option is equivalent to selecting the configuration file on the
+command menu, such as in the following example.
+
+@example
+pregap4 -config new_config_file
+@end example
+]])
+
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Naming
+@chapter Pregap4 Naming Schemes
+@cindex Load naming scheme
+@cindex Naming schemes
+
+@menu
+* Pregap4-Naming-Mutation detection:: Mutation Detection Naming Scheme
+* Pregap4-Naming-Sanger_names_old:: Old Sanger Centre Naming Scheme
+* Pregap4-Naming-Sanger_names_new:: New Sanger Centre Naming Scheme
+* Pregap4-Naming-Writing::          Writing your own Naming Schemes
+@end menu
+
+The "Load Naming Scheme" command is in the File menu. It will bring up a
+dialogue requesting the pathname of a naming scheme file. The browse button
+will automatically bring up the file browser in the pregap4 naming scheme
+directory, however naming schemes can be loaded from elsewhere if desired.
+The "Save to config file" query determines whether the component is also
+copied to the current pregap4 configuration file to make this component the
+default for subsequent pregap4 runs.
+
+The use of naming schemes within pregap4 is specifically for extracting
+information from a reading name in order to supply paramaters to other pregap4
+modules or to gap4. For example a naming scheme may be used to indicate where
+both the forward and reverse primers have been used to generate two sequences,
+which gap4 can then use for checking assembly and suggesting possible contig
+joins.
+
+Currently only two naming schemes are supplied with pregap4, both of which are
+from the Sanger Centre. To create your own naming schemes please see
+_oref(Pregap4-Naming-Writing, Writing Your Own Naming Scheme).
+
+_split()
+@node Pregap4-Naming-Mutation detection
+@section Mutation Detection Naming Scheme
+@cindex Mutation detection naming scheme
+@pindex mutation_detection.p4t
+
+@table @strong
+@item Filename
+mutation_detection.p4t
+@sp 1
+
+@item Description
+This naming scheme can be used for other purposes too, but its primary goal is
+to provide the simplest scheme possible suitable for handling pairs of
+sequences for the mutation detection module.
+
+Any sequence with a name ending with @code{f} or @code{F} is assumed to be a
+forward reading and any sequence with a naming ending with @code{r} or
+@code{R} is assumed to be a reverse reading. The rest of the name
+(i.e. everything except the last character) is used as the template name and
+so needs to exactly match between the forward and reverse reading pair.
+@sp 1
+
+@item Configuration section
+@code{[naming_scheme]}
+@sp 1
+
+@item Configuration elements
+@code{PR_com}, @code{TN_com}.
+@end table
+
+
+_split()
+@node Pregap4-Naming-Sanger_names_old
+@section Old Sanger Centre Naming Scheme
+@cindex Sanger Centre naming scheme, old
+@pindex sanger_names_old.p4t
+
+@table @strong
+@item Filename
+sanger_names_old.p4t
+@sp 1
+
+@item Description
+This scheme extracts information from sequence names by assuming that they
+adhere to the old-style Sanger Centre naming scheme. The information extracted
+consists of the template name, primer type and chemistry information. The
+format of a reading name is as follows.
+@sp 1
+<@i{template_name}>@code{.}<@i{strand}><@i{primer}><@i{conditions}><@i{repetition}>
+@sp 1
+In the above, @i{strand} and @i{primer} are each one character long and are
+defined according to the following tables. @i{Conditions} can be
+0, 1 or 2 characters indicating none, one or two sequencing conditions.
+@i{Repetitions} is optional and is used purely for creating unique names when
+resequencing a template with the same strand, primer and conditions as a
+previous sequencing reaction.
+
+@tex
+\global\tableindent=1.2in
+@end tex
+@sp 1
+@table @asis
+@item @strong{Strand}
+@strong{Description}
+@item @code{s}, @code{f}
+Forward, single stranded template.
+@item @code{r}
+Reverse, single stranded template.
+@item @code{p}
+Forward, double stranded template.
+@item @code{q}
+Reverse, double stranded template.
+@end table
+
+@sp 1
+@table @asis
+@item @strong{Primer}
+@strong{Description}
+@item @code{1}
+Universal primer (end of insert).
+@item @code{2}, @code{3}, etc
+Custom primer.
+@end table
+
+@sp 1
+@table @asis
+@item @strong{Conditions}
+@strong{Description}
+@item @code{t}
+Dye terminator chemistry.
+@item @code{l}
+Long gel
+@end table
+
+@sp 1
+@table @asis
+@item @strong{Repetition}
+@strong{Description}
+@item @code{a}, @code{b}, @code{c}, ...
+Any letter except l and t
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+
+@sp 1
+For example "@code{U16F10.p1t}" is a forward dye-terminator sequence from the
+double stranded template named @code{U16F10} using the universal primer.
+@sp 1
+
+@item Configuration section
+@code{[naming_scheme]}
+@sp 1
+
+@item Configuration elements
+@code{PR_com}, @code{TN_com}, @code{CH_com}.
+@end table
+
+_split()
+@node Pregap4-Naming-Sanger_names_new
+@section New Sanger Centre Naming Scheme
+@cindex Sanger Centre naming scheme, new
+@pindex sanger_names_new.p4t
+
+@table @strong
+@item Filename
+sanger_names_new.p4t
+@sp 1
+
+@item Description
+This scheme extracts information from sequence names by assuming that they
+adhere to the new-style (~1997) Sanger Centre naming scheme. This is explained
+clearly on the Sanger Centre's web pages at
+
+_uref(http://www.sanger.ac.uk/Software/sequencing/,,http://www.sanger.ac.uk/Software/sequencing/)
+@sp 1
+The information extracted consists of the template name, primer type and
+chemistry information. The format of a reading name is as follows.
+@sp 1
+<@i{template_name}>@code{.}<@i{strand}><@i{primer}><@i{chemistry}>
+@sp 1
+The @i{strand}, @i{primer} and @i{chemistry} fields are each one character
+long and are mandatory. They are defined by the following tables.
+
+@tex
+\global\tableindent=1.2in
+@end tex
+@sp 1
+@table @asis
+@item @strong{Strand}
+@strong{Description}
+@item @code{p}
+Forward, double stranded template.
+@item @code{q}
+Reverse, double stranded template.
+@item @code{r}
+Reverse, single stranded template.
+@item @code{s}
+Forward, single stranded template.
+@end table
+
+@sp 1
+@table @asis
+@item @strong{Primer}
+@strong{Description}
+@item @code{1}
+Universal primer (end of insert).
+@item @code{2}
+Custom primer.
+@end table
+
+@sp 1
+@table @asis
+@item @strong{Conditions}
+@strong{Description}
+@item @code{t}
+standard (ABI) terminator
+@item @code{d}
+dRhodamine terminator
+@item @code{p}
+standard (ABI) primer
+@item @code{e}
+energy transfer primer
+@item @code{b}
+big dye primer
+@item @code{c}
+big dye terminator
+@item @code{l}
+licor
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+
+@sp 1
+For example "@code{U16F10.p1t}" is a forward standard (ABI) terminator
+sequence from the double stranded template named @code{U16F10} using the
+universal primer.
+@sp 1
+
+@item Configuration section
+@code{[naming_scheme]}
+@sp 1
+
+@item Configuration elements
+@code{PR_com}, @code{TN_com}, @code{CH_com}.
+@end table
+
+_split()
+@node Pregap4-Naming-Writing
+@section Writing Your Own Naming Schemes
+@cindex Naming schemes, creating.
+
+The naming schemes are defined in the "component" files. At present two
+examples exist; both are naming schemes taken from the Sanger Centre. It is
+possible to define your own naming scheme, or indeed any other component. A
+component is basically just a file which you want to add (in its entirety) to
+the user's pregap4 configuration file. Typically these files end in the
+extension @file{.p4t}.
+
+The naming schemes are defined by use of three variables: @var{ns_name},
+@var{ns_regexp} and @var{ns_lt}.
+
+@var{ns_name} is simply a text name for the naming scheme.
+
+@var{ns_regexp} is a regular expression which will be matched against each
+sequence identifier. The bracketed segments are assigned to Tcl variables
+which can be referenced as @code{$1}, @code{$2}, @code{$3} etc.
+
+@var{ns_lt} is an array indexed by Experiment File line types. The contents of
+a particular array element is either a string containing the value for that
+line type or the word @code{subst} followed by a substitution list of the
+following format:
+
+@code{subst @{}@i{string} @code{@{}@i{pattern} @i{replacement}@code{@}} ...
+@i{default_replacement}@code{@}}
+
+In addition to this we need a bit of preamble stating that the following
+component is part of the pregap4 naming scheme section. This can be done by
+making sure the first line of the component file is @code{[naming_scheme]}.
+
+A completely new example naming scheme may be, in English, as follows:
+
+The reading identifier will consist of the template name, followed by a full
+stop, followed by two characters to determine the primer type and position,
+a single character to determine the chemistry, and any extra characters needed
+to create a unique name. Forward and reverse readings from the same "insert"
+or "template" will share the same template name. This in turn allows for gap4
+to know the relative positions, orientations and distances of two such
+readings and hence will allow it to point out possible problems.
+
+Putting this more specifically: a template name is any string of
+alpha-numerics (a-z, 0-9 and underscore). The primer type could be defined as:
+
+@table @code
+@item uf
+universal forward primer
+item ur
+universal reverse primer
+@item cf
+custom forward primer
+@item cr
+custom reverse primer
+@end table
+
+The chemistry can be defined as:
+
+@table @code
+@item p
+Dye-Primer
+@item P
+Big dye-primer
+@item t
+Dye-Terminator
+@item T
+Big dye-terminator
+@end table
+
+For example @code{fred.ufp}, @code{fred.urp} and @code{bert.cfT} are all valid
+names.
+
+The above variable definitions may seem complex so we shall work through the
+example naming scheme. Firstly we need to define the regular expression. To
+new users this can be complex, but is described in great detail in many places
+(try the Unix "grep" manual page). In the shortest form: dot (@code{.})
+matches any character; square brackets delimit a set of characters, any one of
+which is allowed (or if it starts with @code{^} it is the complement set - any
+except those listed). Following a character or set with @code{+} indicates one
+or more copies of the preceeding expression, @code{*} is for zero or more
+copies, and @code{?} is for zero or one copy.
+
+So to define our example names we would start our component file with:
+
+@example
+[naming_scheme]
+set ns_name "Example naming scheme"
+set ns_regexp @{([^.]*)\.(..)(.).*@}
+@end example
+
+The backslash in the above text is to state that we want to match a real full
+stop character instead of the "any character" that regular expressions usually
+regard full stop as meaning. The @code{ns_regexp} will store the three
+bracketed segments in @code{$1}, @code{$2} and @code{$3}.
+
+The first segment is the template name. To use this we simply add:
+
+@example
+set ns_lt(TN) @{$1@}
+@end example
+
+The next segment is the primer type.  The primer type is defined for gap4 as a
+single digit number. 0 is for unknown, 1 is universal forward primer, 2 is
+universal reverse primer, 3 is custom forward primer, and 4 is custom reverse
+primer. So we wish to map @code{uf} to @code{1}, @code{ur} to @code{2},
+@code{cf} to @code{3}, @code{cr} to @code{4}, and anything else to @code{0}.
+This is done with the following command:
+
+@example
+set ns_lt(PR) @{subst @{$2 @{uf 1@} @{ur 2@} @{cf 3@} @{cr 4@} 0@}@}
+@end example
+
+The final segment is the chemistry. At present gap4 only distinguishes between
+dye-primer and dye-terminators, although our naming scheme also "knows about"
+big dyes. So we wish to map both @code{p} and @code{P} to chemistry type
+@code{0}, and @code{t} and @code{T} to chemistry type @code{1}. Anything else
+we'll also assume is dye-primer. In much the same way that the regular
+expressions work, we can use square brackets in our patterns to say "any of
+these letters". So the command for this is:
+
+@example
+set ns_lt(CH) @{subst @{$3 @{[pP] 0@} @{[tT] 1@} 0@}@}
+@end example
+
+The final line to add to the component file is @code{set_name_scheme}. This is
+a pregap4 command which tells it that you have finished defining the naming
+scheme. So the completed component file is simply:
+
+@example
+[naming_scheme]
+set ns_name "Example naming scheme"
+set ns_regexp @{([^.]*)\.(..)(.).*@}
+set ns_lt(TN) @{$1@}
+set ns_lt(PR) @{subst @{$2 @{uf 1@} @{ur 2@} @{cf 3@} @{cr 4@} 0@}@}
+set ns_lt(CH) @{subst @{$3 @{[pP] 0@} @{[tT] 1@} 0@}@}
+set_name_scheme
+@end example
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Components
+@chapter Pregap4 Components
+@cindex Components
+@cindex Include config component
+
+A "Component" in pregap4 is a predefined section of a pregap4 configuration
+file. It will generally be used to add on complex configurations which are not
+easily created using the GUI. Currently there are only two predefined
+components, both of which specify a naming scheme and so are easiest loaded
+using the Load Naming Convention function; see _oref(Pregap4-Naming, Load
+Naming Convention).
+
+_picture(pregap4_component)
+
+The "Include Config Component" command in the File menu is used to load a
+component. The "browse" button will bring up a file browser listing the
+default pregap4 component directory, however components can be loaded from
+elsewhere if desired. The "Save to config file" query determines whether the
+component is also copied to the current pregap4 configuration file to make
+this component the default for subsequent pregap4 runs.
+
+Note that a component may have a configuration section listed within it. If
+this is present the component will replace any configuration with the same
+section name.
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-Database
+@chapter Information Sources
+@cindex Information sources
+@cindex Database integration
+
+@menu
+* Pregap4-Database-Simple::     Simple Text Database
+* Pregap4-Database-LineTypes::  Experiment File Line Types
+@end menu
+
+The "Information Sources" menu contains options to obtain information from
+external data sources, such as a text database. This does not include
+information encoded inside a reading name convention. At present there are only
+two options - Simple Text Database and Experiment File Line Types - although
+it is hoped that a link up to a robust relational database could also be
+included here.
+
+_split()
+@node Pregap4-Database-Simple
+@section Simple Text Database
+@cindex Simple Text Database
+@cindex Database, plain text format
+@cindex Augment, by text database
+
+This option allows interrogation of a very simple format text database with
+one line per sequence. The sequence identifier is the first word of a line
+with one or more additional columns of information relating to specific
+information about that sequence. All columns in the database file must have
+the same format and only one database file may be used at any one time.
+
+For example, we may wish to store the primer type, primer site, template name
+and the number of strands on the template for each sequence. This corresponds
+to the @code{PR}, @code{SP}, @code{TN} and @code{ST} Experiment File line
+types. We could then create a text database looking something like the
+following:
+
+@example
+# ID            PR      SP      TN        ST
+xb54a3.s1       1        41     xb54a3    1
+xb54b12.s1      1        41     xb54b12   2
+xb54b12.r1      2       -24     xb54b12   2
+xb54b12.r1L     2       -24     xb54b12   2
+@end example
+
+(The first line, starting with @code{#} is just a comment. Pregap4 does not
+use this; it is purely so that we know which information is in which column.)
+
+We can then direct pregap4 to extract the information from each of these four
+columns for each reading being processed and to store this information in the
+Experiment File. This information can then be utilised by the vector clipping
+and assembly modules.
+
+_picture(pregap4_simpledb)
+
+The Simple Text Database interface consists of an entry box to specify the
+database file name, add and delete buttons, and a line type selector for each
+column in the database (excluding the reading name column).
+The above picture contains the database setup for extracting the primer type,
+primer position, template name and number of strands as described in the above
+example.
+
+The "Add column" button adds a new line type selector at the bottom of the
+window.  This contains an option menu which can be clicked to choose a new
+Experiment File line type and a label indicating the column number. The
+"Delete column" button removes the bottom-most line type selector.
+
+The "Ok" button will accept this configuration and will also write the details
+to the current pregap4 configuration file. To disable a previously setup
+Simple Database Configuration press delete until there are no line types
+listed and then press Ok once more.
+
+The simple text database does not need to include a record for every
+reading and special characters can be used to encode names so that
+readings produced in similar ways can be grouped.
+For example, if the first 6 letters of the name encode a "plate" name,
+and all the sequences on that plate have been sequenced using the same
+vector then we could create a database file as follows.
+
+@example
+# ID            SF              SC      SP
+6abz91*         m13mp18.seq     6249    41/-24
+6aca68*         puc18.seq       248     40/-28
+6aca69*         puc18.seq       248     40/-28
+6aca70*         puc18.seq       248     40/-28
+6acb21*         m13mp18.seq     6249    41/-24
+6acd49*         puc18.seq       248     40/-28
+6acd51*         puc18.seq       248     40/-28
+@end example
+
+The sequence identifier (ID) is searched for using a pattern matching rule (as
+dictated by the Tcl @code{string match} command). The pattern matching uses
+special characters as follows:
+
+@table @code
+@item *
+Matches any sequence of characters in the reading identifier, including an
+empty string.
+@sp 1
+@item ?
+Matches any single character in the reading identifier.
+@sp 1
+@item [@i{chars}]
+Matches any character in the set given by chars. If a sequence of the form
+@i{r-v} appears in chars, then any character between @i{r} and @i{v},
+inclusive, will match (@code{rstuv}).
+@sp 1
+@item \@i{x}
+Matches the single character @i{x}. This provides a way of avoiding the special
+interpretation of the characters @code{*?[]\} in the reading identifier.
+@end table
+
+_split()
+@node Pregap4-Database-LineTypes
+@section Experiment File Line Types
+@cindex Experiment File line types
+@cindex Line types, in experiment file
+@cindex Augment, by line types
+
+A list of Experiment File line types may be viewed and edited using this
+option (_fpref(Exp-Records, Experiment file format record types, exp)).
+A table of the Experiment File line types is displayed along with
+their current values. A brief description of the line type underneath the
+mouse cursor is displayed in the Information Line
+at the bottom of the window. The table consists of
+three columns. The first is a label identifying the line being edited. The
+second column is an option menu from which either @i{Value} or @i{Command} may
+be selected. The third column is the current value or command.
+
+_picture(pregap4_edit_exp)
+
+Line type values will be used for every sequence. The Augment Experiment Files
+module will add this line type to each Experiment File. This is suitable for
+specifying information which is constant across an entire batch, such as
+insert size (SI) or operator (OP). The Line type commands are executed each
+time the Augment Experiment Files module adds that line to the Experiment
+File. Hence the commands are used for information which may change from
+sequence to sequence. This table should be used for editing line type values,
+but we do not recommend that you use it for editing commands (although it is
+useful to know which commands have been set).
+
+In the above example the PR, SP and ST commands were generated using the
+Simple Text Database interface, whilst the SC and SF values come from the
+Sequencing Vector Clip module parameters and the SI value was typed in by
+hand using this table.
+
+The "OK (in memory)" and "OK (and save)" buttons will accept the currently
+displayed values and commands. The "OK (in memory)" button will use these
+settings for the current pregap4 runs. The "OK (and save)" button will use
+them for the current session and all subsequent pregap4 sessions as it saves
+the information to the pregap4 configuration file.
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-ModAdd
+@chapter Adding and Removing Modules
+@cindex Adding modules
+@cindex Removing modules
+@cindex Modules, adding and removing
+
+This section details how to select newly written modules in Pregap4, or how to
+change the order of existing modules.
+
+It is for system managers and advanced users only.
+
+
+Pregap4 has a default set of modules to use. Any module within this list may
+be enabled or disabled. If you only need to screen a set of experiment files
+using @code{blast} or @code{screen_seq} it may be tempting to use the
+Add/Remove Modules screen (from Modules menu) to remove everything else. This
+is not necessary; just disable the unwanted modules. The real purpose of
+Add/Remove Modules is to define the contents and order of the list that
+appears in the Configure Modules screen.  This may be required if you create
+your own modules, or if you wish to never use certain modules. (Removing them
+from the list instead of simply disabling them will speed up starting
+Pregap4.)
+
+It is possible for a module to be used more than once. For example if you wish
+to use blast to screen against several databases then this control may be used
+to add two "Blast screen" items to the Configure Modules screen. Note though,
+that this is not applicable to many modules. For example it is not possible to
+screen against multiple vectors by simply using multiple Sequencing Vector
+Clip modules (rather this should be done using a file of vector-primer
+information). No error checking is performed with the Add/Remove Modules
+screen.
+
+A pregap4 module is a specific piece of Tcl/Tk code that interfaces between
+pregap4 (by providing a @code{run} procedure and an optional GUI for
+configuration) and an external program to do the main work (as Tcl itself is
+generally too slow for anything except the most simple of operations). The
+exact specification of a module can be found elsewhere
+(_oref(Pregap4-WritingMods, Writing New Modules)).
+
+_picture(pregap4_select)
+
+@pindex .pregap4rc
+@pindex pregap4rc
+@vindex MODULE_PATH
+
+All modules must end in @file{.p4m}. Pregap4 uses a module search path to
+search for files with this suffix. The module search path is a space separated
+list. By default it will be set to @code{$STADENROOT/lib/pregap4/modules}. It
+may be adjusted temporarily within the program, or permanently by setting the
+MODULE_PATH variable within your @file{.pregap4rc} or run-specific
+configuration files. For example:
+
+@example
+set MODULE_PATH "$env(STADLIB)/pregap4/modules ."
+@end example
+
+The two lists shown in the dialogue represent the current modules to use (on
+the left) and the total list of known modules. Modules may be added to the
+left (to use) list by clicking any mouse button on the right hand list,
+dragging the mouse cursor to a location within the left list, and then release
+the mouse button. To remove a module from the 'to use' list simply drag and
+drop from left to right. This mechanism also allows for changing the order of
+modules within the left list.
+
+The order of modules is vitally important and in the current version of
+Pregap4 the validity of the order is not checked. Common sense should prevent
+most problems. For instance it is pointless to assemble and enter into gap4
+before vector clipping. The best source of information on the possible
+orderings comes from the documentation for each individual module. Some
+modules are directly incompatible with each other as they perform the same or
+mutually exclusive tasks. For example it is only possible to use one of the
+assembly methods.
+
+Once the modules have been selected press "Apply" to reinitialise Pregap4.
+If you wish to make your newly selected list the default for subsequent
+Pregap4 runs use the "Save Module List" command in the Modules menu.
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-ManualConfig
+@chapter Low Level Pregap4 Configuration
+@cindex low level pregap4 configuration
+@cindex Configuration: pregap4 low level
+
+@menu
+* Pregap4-ManualConfig-Global::         Low Level Global Configuration
+* Pregap4-ManualConfig-Components::     Low Level Component Configuration
+* Pregap4-ManualConfig-Modules::        Low Level Module Configuration
+@end menu
+
+Most users will never need to configure pregap4 at this level. However by
+understanding the methods that pregap4 uses you will see how to tailor Pregap4
+in a more flexible manner.
+
+The pregap4 configuration file consists of several sections. Each section is
+started with "@code{[}@i{section_name}@code{]}". The main pregap4 sections are
+@code{[module_list]}, @code{[global_variables]}, and one section per module
+named @code{[::}@i{module_name}@code{]}.
+
+_split()
+@node Pregap4-ManualConfig-Global
+@section Low Level Global Configuration
+@cindex Global variables
+@vindex MODULE_PATH
+@vindex MODULES
+
+The @code{[module_list]} section contains definitions of the
+@code{MODULE_PATH} and @code{MODULES} variables. The @code{MODULE_PATH} is a
+space delimited list of directory names in which to search for the pregap4
+modules (@code{*.p4m} files). The @code{MODULES} variable is the default list
+of modules to list in the configuration window. The order of modules in this
+list determines the order that they will be executed in. The default
+@code{[module_list]} section is as follows:
+
+@example
+[module_list]
+set MODULE_PATH "$env(STADLIB)/pregap4/modules ."
+set MODULES @{
+    phred
+    atqa
+    convert_trace
+    eba
+    compress_trace
+    init_exp
+    augment_exp
+    quality_clip
+    trace_clip
+    sequence_vector_clip
+    cross_match_svec
+    cloning_vector_clip
+    screen_vector
+    screen_seq
+    blast
+    interactive_clip
+    repeat_masker
+    tag_repeats
+    trace_diff
+    gap4_assemble
+    cap2_assemble
+    cap3_assemble
+    fakii_assemble
+    phrap_assemble
+    enter_assembly
+    email
+@}
+@end example
+
+The @code{[global_variables]} section defines the values for each of the
+Experiment File line types. These are currently primarily used by the Augment
+Experiment Files module, but may also be used by the vector clipping and
+mutation detection modules. The default @code{[global_variables]} section is
+blank.
+
+As an example, the following section defines the sequencing vector file for
+each sequence to be @code{m13mp18.vector} with @code{6249} and @code{41} as
+the cut site and primer site. Each sequence has a primer type of 1 (forward
+universal primer) and the template name is derived from the sequence name by
+taking the segment of the string preceding the full stop.
+
+@example
+[global_variables]
+set SF m13mp18.vector
+set SC 6249
+set SP 41
+set PR 1
+proc TN_com @{@} @{ global lines; return [lindex [split $lines(ID) .] 0] @}
+@end example
+
+_split()
+@node Pregap4-ManualConfig-Components
+@section Low Level Component Configuration
+@cindex Component configuration
+
+Pregap4 Components may each contain their own configuration section. Where
+several components are mutually exclusive, such as components describing
+naming conventions, it makes sense to give each component the same
+configuration section. This will ensure that loading a new component will
+overwrite the old one. At present the only defined components both create a
+@code{[naming_scheme]} section.
+
+Components may redefine items which could appear in other configuration
+sections. In this case the last definition of that setting will take priority.
+For instance if a component defines the @code{TN_com} procedure and this is
+also defined in the @code{[global_variables]} section then the component will
+only take priority if it is after the global section in the configuration file.
+
+Components may also be used to define parameters for modules. Once again the
+components need to be listed after the module definitions being overridden. To
+define module components in this way, use the @code{module} command. An example
+follows.
+
+@example
+@code{module tag_repeats @{set repeat_file repeats.list@}}
+@end example
+
+_split()
+@node Pregap4-ManualConfig-Modules
+@section Low Level Module Configuration
+@cindex Modules, configuring
+@cindex Configuring modules
+
+@menu
+* Pregap4-ManualConfig-General::              General Configuration
+* Pregap4-ManualConfig-ABI2SCF::              ALF/ABI to SCF Conversion
+* Pregap4-ManualConfig-EBA::                  Estimate Base Accuracies
+* Pregap4-ManualConfig-Phred::                Phred
+* Pregap4-ManualConfig-ATQA::                 ATQA
+_ifdef([[_unix]],[[* Pregap4-ManualConfig-Compress Traces::      Compress Trace Files]])
+* Pregap4-ManualConfig-ConvertTrace::         Trace Format Conversion
+* Pregap4-ManualConfig-Initexp::              Initialise Experiment Files
+* Pregap4-ManualConfig-Augment::              Augment Experiment Files
+* Pregap4-ManualConfig-Uncalled Clip::        Uncalled Base Clip
+* Pregap4-ManualConfig-Quality Clip::         Quality Clip
+* Pregap4-ManualConfig-Sequence Vector::      Sequencing Vector Clip
+* Pregap4-ManualConfig-Cross_match::          Cross_match
+* Pregap4-ManualConfig-Cloning Vector::       Cloning Vector Clip
+* Pregap4-ManualConfig-Old Cloning Vector::   Old Cloning Vector Clip
+* Pregap4-ManualConfig-Screen Vector::        Screen for Unclipped Vector
+* Pregap4-ManualConfig-Screen::               Screen Sequences
+* Pregap4-ManualConfig-Blast::                Blast Screen
+* Pregap4-ManualConfig-Interactive Clip::     Interactive Clipping
+* Pregap4-ManualConfig-Extract Seq::          Extract Sequence
+* Pregap4-ManualConfig-Repeats::              Tag Repeats
+* Pregap4-ManualConfig-RepeatMasker::         Repeat Masker
+* Pregap4-ManualConfig-Mutations::            Mutation Detection
+* Pregap4-ManualConfig-Gap4 Assembly::        Gap4 Shotgun Assembly
+* Pregap4-ManualConfig-Cap2 Assembly::        Cap2 Assembly
+* Pregap4-ManualConfig-Cap3 Assembly::        Cap3 Assembly
+* Pregap4-ManualConfig-FakII Assembly::       FakII Assembly
+* Pregap4-ManualConfig-Phrap Assembly::       Phrap Assembly
+* Pregap4-ManualConfig-Enter Assembly::       Enter Assembly into Gap4
+* Pregap4-ManualConfig-Email::                Email
+* Pregap4-ManualConfig-Shutdown::             Shutdown
+@end menu
+
+Each module has its own configuration section named after the module name. The
+configuration section will be "@code{[::}@i{module_filename_prefix}@code{]}"
+where @i{module_filename_prefix} is the filename of the module with the
+@code{.p4m} extension removed. For example, the @code{init_exp.p4m} module has a
+configuration section of @code{[::init_exp]}.
+
+Each module is loaded into its own namespace, also named after the module in
+the same manner. Thus in the above example the Initialise Experiment Files
+module uses the namespace @code{::init_exp}. This means that all local
+variables within that module will be within that name space and will not clash
+with identical named variables in other modules. When pregap4 reads the
+configuration file any configuration section starting in double colon is taken
+to be a name space and the following configuration is executed in that
+namespace. So the following example enables the Initialise Experiment Files
+module, but disables the Estimate Base Accuracies module.
+
+@vindex enabled
+
+@example
+[::init_exp]
+set enabled 1
+
+[::eba]
+set enabled 0
+@end example
+
+In the following sections the variables, inputs and outputs of each module are
+listed. Every module has an @code{enabled} local variable. This may be either
+@code{0} for disabled or @code{1} for enabled. Disabled modules are still
+listed in the configuration panel, although they will not be executed.
+
+The tables in each section below list the module filename, the local variables
+and a very brief description of their valid values, the files used or produced
+by this module, the possible sequence specific errors that can be produced
+(which will be written to the failure file as the reason for failure), and the
+format of any @code{SEQ} lines in the module report. Other information may
+also be reported, but the @code{SEQ} lines are easily recognisable to
+facilitate easy parsing of results.
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-General
+@subsection General Configuration
+@cindex General configuration configuration
+@pindex init.p4m
+@vindex use_sample_name
+
+@table @strong
+@item Filename
+@code{init.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item use_sample_name
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+(none)
+@sp 1
+
+@item Errors
+@code{init: Unreadable or nonexistent file}
+@*@code{init: Unknown file type}
+@sp 1
+
+@item Report
+(None)
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-ABI2SCF
+@subsection ALF/ABI to SCF Conversion
+@cindex ALF/ABI to SCF conversion configuration
+@pindex to_scf.p4m
+@vindex bit_size
+
+@table @strong
+@item Filename
+@code{to_scf.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item bit_size
+@code{8}/@code{16}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+Creates the SCF files if required.
+@sp 1
+
+@item Errors
+@code{makeSCF: }@i{makeSCF error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: created from} @i{old seqid}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-EBA
+@subsection Estimate Base Accuracies
+@cindex Estimate base accuracies configuration
+@pindex eba.p4m
+
+@table @strong
+@item Filename
+@code{eba.p4m}
+@sp 1
+
+
+@item Local variables
+(none)
+
+@item Files
+Modified SCF files with new confidence values.
+@sp 1
+
+@item Errors
+@code{eba: }@i{eba error message}
+@sp 1
+
+@item Report
+(none)
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Phred
+@subsection Phred
+@cindex Phred configuration
+@pindex phred.p4m
+
+@table @strong
+@item Filename
+@code{phred.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+@pindex .scf_dir
+@pindex phred.log
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.scf_dir} --- temporary directory
+@br @code{phred.log} --- phred log file
+@br Creates the SCF files if required.
+@sp 1
+
+@item Errors
+@code{phred: }@i{phred error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: created from} @i{old seqid}
+@br @code{SEQ} @i{seqid}@code{: re-base-called}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-ATQA
+@subsection ATQA
+@cindex ATQA configuration
+@pindex atqa.p4m
+
+@table @strong
+@item Filename
+@code{atqa.p4m}
+@sp 1
+
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+Updates the confidence values within SCF files.
+@sp 1
+
+@item Errors
+@code{ATQA: }@i{ATQA error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: confidences recalculated by ATQA.}
+@end table
+@sp 3
+
+_ifdef([[_unix]],[[
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Compress Traces
+@subsection Compress Trace Files
+@cindex Compress Trace Files configuration
+@pindex compress_trace.p4m
+@vindex compression
+@vindex keep_names
+
+@table @strong
+@item Filename
+@code{compress_trace.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item compression
+@code{none}/@code{compress}/@code{gzip}/@code{bzip}/@code{bzip2}
+@item keep_names
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@i{seqid}@code{.tmp} --- temporary
+@br @i{seqid}@code{.}@i{compression_extension}
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: did not compress}
+@end table
+@sp 3
+]])
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-ConvertTrace
+@subsection Trace Format Conversion
+@cindex Trace Format Conversion configuration
+@pindex convert_trace.p4m
+
+@table @strong
+@item Filename
+@code{convert_trace.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item output_format
+@code{ZTR}/@code{CTF}/@code{ZTR}
+@item down_scale
+@code{0}/@code{1}
+@item down_scale_range
+@i{integer}
+@item subtract_background
+@code{0}/@code{1}
+@item normalise
+@code{0}/@code{1}
+@item del_temp_files
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+Creates Trace files.
+@sp 1
+
+@item Errors
+@code{convert_trace: }@i{convert_trace error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: created from} @i{old seqid}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Initexp
+@subsection Initialise Experiment Files
+@cindex Initialise Experiment Files configuration
+@pindex init_exp.p4m
+
+@table @strong
+@item Filename
+@code{init_exp.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+Creates Experiment files.
+@sp 1
+
+@item Errors
+@code{init_exp: }@i{init_exp error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: created from} @i{old seqid}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Augment
+@subsection Augment Experiment Files
+@cindex Augment Experiment files configuration
+@pindex augment_exp.p4m
+@vindex _com
+
+@table @strong
+@item Filename
+@code{augment_exp.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Global variables
+All the @code{@i{XX}} and @code{@i{XX}_com} variables that define the two
+letter Experiment File line types.
+@sp 1
+
+@item Files
+Updates Experiment files.
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: added fields} @i{field names}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Uncalled Clip
+@subsection Uncalled Base Clip
+@cindex Uncalled base clip configuration
+@pindex uncalled_clip.p4m
+@vindex offset
+@vindex min_extent
+@vindex max_extent
+@vindex right_win_length
+@vindex right_num_uncalled
+@vindex left_win_length
+@vindex left_num_uncalled
+
+@table @strong
+@item Filename
+@code{uncalled_clip.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item offset
+@i{integer}
+@item min_extent
+@i{integer}
+@item max_extent
+@i{integer}
+@item right_win_length
+@i{integer}
+@item right_num_uncalled
+@i{integer}
+@item left_win_length
+@i{integer}
+@item left_num_uncalled
+@i{integer}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+Modifies Experiment files
+@sp 1
+
+@item Errors
+@code{clip: }@i{clip error message}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: clipped using 'clip'}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Quality Clip
+@subsection Quality Clip
+@cindex quality clip configuration
+@pindex quality_clip.p4m
+@vindex window_length
+@vindex conf_val
+@vindex clip_mode
+@vindex offset
+@vindex min_extent
+@vindex max_extent
+@vindex min_length
+@vindex right_win_length
+@vindex right_num_uncalled
+@vindex left_win_length
+@vindex left_num_uncalled
+
+@table @strong
+@item Filename
+@code{quality_clip.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item clip_mode
+@code{sequence}/@code{confidence}
+@item window_length
+@i{integer}
+@item conf_val
+@i{integer}
+@item min_extent
+@i{integer}
+@item max_extent
+@i{integer}
+@item min_length
+@i{integer}
+@item offset
+@i{integer}
+@item right_win_length
+@i{integer}
+@item right_num_uncalled
+@i{integer}
+@item left_win_length
+@i{integer}
+@item left_num_uncalled
+@i{integer}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+Modifies Experiment files
+@sp 1
+
+@item Errors
+@code{qclip: }@i{qclip error message}
+@code{qclip: }@i{Sequence too short (length=%d)}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: clipped using 'qclip'}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Sequence Vector
+@subsection Sequencing Vector Clip
+@cindex Sequencing vector clip configuration
+@pindex sequence_vector_clip.p4m
+@vindex def_5_pos
+@vindex update_exp_file
+@vindex min_5_match
+@vindex min_3_match
+@vindex use_vp_file
+@vindex vp_file
+@vindex vector_list
+@vindex vp_length
+@vindex SP
+@vindex SF
+@vindex SC
+
+@table @strong
+@item Filename
+@code{sequence_vector_clip.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item min_5_match
+@i{float}
+@item min_3_match
+@i{float}
+@item def_5_pos
+@i{integer}
+@item update_exp_file
+@code{0}/@code{1}
+@item use_vp_file
+@code{0}/@code{1}
+@item vp_file
+@i{filename}
+@item vector_list
+@i{string}
+@item vp_length
+@i{integer}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item SP
+@itemx SP_com
+@item SC
+@itemx SC_com
+@item SF
+@itemx SF_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .svec_passed
+@pindex .svec_failed
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.svec_passed}
+@br @i{fofn}@code{.svec_failed}
+@sp 1
+
+@item Errors
+@code{sequence_vector_clip: No SF, SC or SP information}
+@br @code{sequence_vector_clip: }@i{vector_clip error message}
+@br @code{sequence_vector_clip: lost file}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: passed}
+@br @code{SEQ} @i{seqid}@code{: failed (}@i{reason}@code{)}
+@br @code{SEQ} @i{seqid}@code{: lost}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Cross_match
+@subsection Cross_match
+@cindex Cross_match configuration
+@pindex cross_match_svec.p4m
+@vindex minmatch
+@vindex minscore
+@vindex vector_file
+@vindex SF
+
+@table @strong
+@item Filename
+@code{cross_match_svec.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item minmatch
+@i{integer}
+@item minscore
+@i{integer}
+@item vector_file
+@i{filename}
+@item gap_size
+@i{integer}
+@item tag_type
+@i{string}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item SF
+@itemx SF_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.tmp.log} --- temporary
+@br @i{fofn}@code{.tmp.screen} --- temporary
+@sp 1
+
+@item Errors
+@code{cross_match: }@i{cross_match error message}
+@br @code{cross_match: entirely vector}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: masked }@i{start}@code{ to }@i{end}
+@br @code{SEQ} @i{seqid}@code{: no matches}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Cloning Vector
+@subsection Cloning Vector Clip
+@cindex Cloning vector clip configuration
+@pindex cloning_vector_clip.p4m
+@vindex word_length
+@vindex probability
+@vindex update_expfile
+@vindex CF
+
+@table @strong
+@item Filename
+@code{cloning_vector_clip.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item word_length
+@i{integer}
+@item probability
+@i{float}
+@item update_exp_file
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item CF
+@itemx CF_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .cvec_passed
+@pindex .cvec_failed
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.cvec_passed}
+@br @i{fofn}@code{.cvec_failed}
+@sp 1
+
+@item Errors
+@code{sequence_vector_clip: No CF information}
+@br @code{sequence_vector_clip: }@i{vector_clip error message}
+@br @code{sequence_vector_clip: lost file}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: checked}
+@br @code{SEQ} @i{seqid}@code{: failed (}@i{reason}@code{)}
+@br @code{SEQ} @i{seqid}@code{: lost}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Old Cloning Vector
+@subsection Old Cloning Vector Clip
+@cindex Old cloning vector clip configuration
+@cindex Cloning vector clip configuration (old style)
+@pindex old_cloning_vector_clip.p4m
+@vindex word_length
+@vindex num_diags
+@vindex diag_score
+@vindex update_expfile
+@vindex CF
+
+@table @strong
+@item Filename
+@code{old_cloning_vector_clip.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item word_length
+@i{integer}
+@item num_diags
+@i{integer}
+@item diag_score
+@i{float}
+@item update_exp_file
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item CF
+@itemx CF_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .cvec_passed
+@pindex .cvec_failed
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.cvec_passed}
+@br @i{fofn}@code{.cvec_failed}
+@sp 1
+
+@item Errors
+@code{sequence_vector_clip: No CF information}
+@br @code{sequence_vector_clip: }@i{vector_clip error message}
+@br @code{sequence_vector_clip: lost file}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: checked}
+@br @code{SEQ} @i{seqid}@code{: failed (}@i{reason}@code{)}
+@br @code{SEQ} @i{seqid}@code{: lost}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Screen Vector
+@subsection Screen for Unclipped Vector
+@cindex Screen for unclipped vector configuration
+@pindex screen_vector.p4m
+@vindex min_match
+@vindex update_exp_file
+@vindex SF
+
+@table @strong
+@item Filename
+@code{screen_vector.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item min_match
+@i{integer}
+@item update_exp_file
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item SF
+@itemx SF_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .screenvec_passed
+@pindex .screenvec_failed
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.screenvec_passed}
+@br @i{fofn}@code{.screenvec_failed}
+@sp 1
+
+@item Errors
+@code{sequence_vector_clip: No CF information}
+@br @code{sequence_vector_clip: }@i{vector_clip error message}
+@br @code{sequence_vector_clip: lost file}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: passed}
+@br @code{SEQ} @i{seqid}@code{: failed (}@i{reason}@code{)}
+@br @code{SEQ} @i{seqid}@code{: lost}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Screen
+@subsection Screen Sequences
+@cindex Screen sequences configuration
+@pindex screen_seq.p4m
+@vindex min_match
+@vindex max_length
+@vindex screen_mode
+@vindex screen_file
+
+@table @strong
+@item Filename
+@code{screen_seq.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item min_match
+@i{integer}
+@item max_length
+@i{integer}
+@item screen_mode
+@code{single}/@code{fofn}
+@item screen_file
+@i{filename}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .screenseq_passed
+@pindex .screenseq_failed
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.screenseq_passed}
+@br @i{fofn}@code{.screenseq_failed}
+@sp 1
+
+@item Errors
+@code{screen_seq: }@i{screen_seq error message}
+@br @code{screen_seq: lost file}
+@sp 1
+
+@item Report
+@code{SEQ} @i{seqid}@code{: passed}
+@br @code{SEQ} @i{seqid}@code{: failed (}@i{reason}@code{)}
+@br @code{SEQ} @i{seqid}@code{: lost}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Blast
+@subsection Blast Screen
+@cindex Blast screen configuration
+@pindex blast.p4m
+@vindex match_fraction
+
+@table @strong
+@item Filename
+@code{blast.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item database
+@i{filename_prefix}
+@item match_fraction
+@i{float}
+@item e_value
+@i{float}
+@item tag_type
+@i{string}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .blast
+@i{fofn}@code{.blast}
+@sp 1
+
+@item Errors
+@code{blast: match fraction }@i{fraction}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: total match length = }@i{match_length}
+@code{ (fract=}@i{match_fraction}@code{)}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Interactive Clip
+@subsection Interactive Clipping
+@cindex Interactive clipping configuration
+@pindex interactive_clip.p4m
+
+@table @strong
+@item Filename
+@code{interactive_clip.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+May modify Experiment files.
+@sp 1
+
+@item Errors
+@code{interactive_clip: manually rejected}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: accepted}
+@br @code{SEQ }@i{seqid}@code{: rejected}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Extract Seq
+@subsection Extract Sequence
+@cindex Extract sequence configuration
+@pindex extract_seq.p4m
+
+@table @strong
+@item Filename
+@code{extract_seq.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+    User specified
+@sp 1
+
+@item Errors
+    @code{extract_seq: }@i{extract_seq error message}
+@sp 1
+
+@item Report
+    (none)
+@sp 3
+@end table
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Repeats
+@subsection Tag Repeats
+@cindex Tag repeats configuration
+@pindex tag_repeats.p4m
+@vindex repeat_file
+@vindex score
+@vindex tag_types
+
+@table @strong
+@item Filename
+@code{tag_repeats.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item repeat_file
+@i{filename}
+@item score
+@i{float}
+@item tag_types
+@i{string}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .tagrep_free
+@pindex .tagrep_repeat
+@pindex .tagrep_log
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.tagrep_free}
+@br @i{fofn}@code{.tagrep_repeat}
+@br @i{fofn}@code{.tagrep_log}
+@sp 1
+
+@item Errors
+@code{tag_repeats: lost file}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: no repeat found}
+@br @code{SEQ }@i{seqid}@code{: repeat found (}@i{details}@code{)}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-RepeatMasker
+@subsection RepeatMasker
+@cindex RepeatMasker configuration
+@pindex repeats_masker.p4m
+@vindex tag_type
+@vindex alu_only
+@vindex simple_only
+@vindex no_primate_rodent
+@vindex no_low_complexity
+@vindex library
+@vindex cutoff
+
+@table @strong
+@item Filename
+@code{repeat_masker.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item tag_type
+@i{string}
+@item alu_only
+@code{0}/@code{1}
+@item simple_only
+@code{0}/@code{1}
+@item no_primate_rodent
+@code{0}/@code{1}
+@item rodent_only
+@code{0}/@code{1}
+@item no_low_complexity
+@code{0}/@code{1}
+@item library
+@i{directory}
+@item cutoff
+@i{integer}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .fasta.cat
+@pindex .fasta.masked
+@pindex .fasta.masked.log
+@pindex .fasta.out
+@pindex .fasta.out.xm
+@pindex .fasta.tbl
+@i{fofn}@code{.fasta.cat}
+@br @i{fofn}@code{.fasta.masked}
+@br @i{fofn}@code{.fasta.masked.log}
+@br @i{fofn}@code{.fasta.out}
+@br @i{fofn}@code{.fasta.out.xm}
+@br @i{fofn}@code{.fasta.tbl}
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: Repeat} @i{repeat name}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Mutations
+@subsection Mutation Detection
+@cindex Mutation detection configuration
+@pindex trace_diff.p4m
+@vindex score
+@vindex start
+@vindex end
+@vindex band_width
+@vindex other_args
+@vindex update_exp_file
+@vindex WT
+
+@table @strong
+@item Filename
+@code{trace_diff.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item score
+@i{float}
+@item start
+@i{int}
+@item end
+@i{int}
+@item band_width
+@i{int}
+@item other_args
+@i{string}
+@item update_exp_file
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Global variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item WT
+@itemx WT_com
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+May modify Experiment files.
+@sp 1
+
+@item Errors
+@code{trace_diff: No wildtype information}
+@br @code{trace_diff: }@i{trace_diff error message}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: mutations at }@i{positions}
+@br @code{SEQ }@i{seqid}@code{: no mutations}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Gap4 Assembly
+@subsection Gap4 Shotgun Assembly
+@cindex Gap4 shotgun assembly configuration
+@pindex gap4_assemble.p4m
+@vindex database_name
+@vindex database_version
+@vindex create
+@vindex min_match
+@vindex max_pads
+@vindex max_pmismatch
+@vindex enter_all
+
+@table @strong
+@item Filename
+@code{gap4_assemble.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item database_name
+@i{string}
+@item database_version
+@i{character}
+@item create
+@code{0}/@code{1}
+@item min_match
+@i{integer}
+@item max_pads
+@i{integer}
+@item max_pmismatch
+@i{float}
+@item enter_all
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .aux
+@i{database_name}@code{.}@i{database_version}
+@br @i{database_name}@code{.}@i{database_version}@code{.aux}
+@sp 1
+
+@item Errors
+@code{gap4_assemble: failed with code }@i{error_code}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: failed (}@i{assembly error code}@code{)}
+@br @code{SEQ }@i{seqid}@code{: failed (filename contains spaces)}
+@br @code{SEQ }@i{seqid}@code{: skipping - not in correct format}
+@br @code{SEQ }@i{seqid}@code{: assembled}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Cap2 Assembly
+@subsection Cap2 Assembly
+@cindex Cap2 assembly configuration
+@pindex cap2_assemble.p4m
+
+@table @strong
+@item Filename
+@code{cap2_assemble.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+@pindex .assembly/fofn
+@pindex .assembly/cap2_stdout
+@pindex .assembly/cap2_stderr
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.assembly/fofn}
+@br @i{fofn}@code{.assembly/cap2_stdout}
+@br @i{fofn}@code{.assembly/cap2_stderr}
+@sp 1
+
+@item Errors
+@code{cap2_s: }@i{cap2_s error message}
+@br @code{cap2_s: rejected}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: rejected}
+@br @code{SEQ }@i{seqid}@code{: assembled}
+@br @code{SEQ }@i{seqid}@code{: failed (filename contains spaces)}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Cap3 Assembly
+@subsection Cap3 Assembly
+@cindex Cap3 assembly configuration
+@pindex cap3_assemble.p4m
+
+@table @strong
+@item Filename
+@code{cap3_assemble.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item generate_constraints
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .assembly/fofn
+@pindex .assembly/cap3_stdout
+@pindex .assembly/cap3_stderr
+@pindex .con
+@pindex .con.results
+@pindex .cap3_info
+@pindex .contigs.qual
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.assembly/fofn}
+@br @i{fofn}@code{.assembly/cap3_stdout}
+@br @i{fofn}@code{.assembly/cap3_stderr}
+@br @i{fofn}@code{.con}
+@br @i{fofn}@code{.con.results}
+@br @i{fofn}@code{.cap3_info}
+@br @i{fofn}@code{.contigs.qual}
+@sp 1
+
+@item Errors
+@code{cap3_s: }@i{cap3_s error message}
+@br @code{cap3_s: rejected}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: rejected}
+@br @code{SEQ }@i{seqid}@code{: assembled}
+@br @code{SEQ }@i{seqid}@code{: failed (filename contains spaces)}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-FakII Assembly
+@subsection FakII Assembly
+@cindex FakII assembly configuration
+@pindex fakii_assemble.p4m
+@vindex graph_e_limit
+@vindex graph_o_threshold
+@vindex graph_d_limit
+@vindex assem_number
+@vindex assem_e_rate
+@vindex assem_o_threshold
+@vindex assem_d_threshold
+@vindex generate_constraints
+
+@table @strong
+@item Filename
+@code{fakii_assemble.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item graph_e_limit
+@i{float}
+@item graph_o_threshold
+@i{float}
+@item graph_d_limit
+@i{float}
+@item assem_number
+@i{integer}
+@item assem_e_rate
+@i{float}
+@item assem_o_threshold
+@i{float}
+@item assem_d_threshold
+@i{float}
+@item generate_constraints
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .assembly/fofn
+@pindex .assembly/graph_stderr
+@pindex .assembly/graph.dat
+@pindex .assembly/constraints_stderr
+@pindex .assembly/constraints.ascii
+@pindex .assembly/constraints.dat
+@pindex .assembly/assemble_stderr
+@pindex .assembly/assemble.dat
+@pindex .assembly/write_exp_file_stdout
+@pindex .assembly/write_exp_file_stderr
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.assembly/fofn}
+@br @i{fofn}@code{.assembly/graph_stderr}
+@br @i{fofn}@code{.assembly/graph.dat}
+@br @i{fofn}@code{.assembly/constraints_stderr}
+@br @i{fofn}@code{.assembly/constraints.ascii}
+@br @i{fofn}@code{.assembly/constraints.dat}
+@br @i{fofn}@code{.assembly/assemble_stderr}
+@br @i{fofn}@code{.assembly/assemble.dat}
+@br @i{fofn}@code{.assembly/write_exp_file_stdout}
+@br @i{fofn}@code{.assembly/write_exp_file_stderr}
+@sp 1
+
+@item Errors
+@code{fakii: rejected}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: assembled}
+@br @code{SEQ }@i{seqid}@code{: rejected}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Phrap Assembly
+@subsection Phrap Assembly
+@cindex Phrap assembly configuration
+@pindex phrap_assemble.p4m
+@vindex minmatch
+@vindex minscore
+@vindex other_args
+
+@table @strong
+@item Filename
+@code{phrap_assemble.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item minmatch
+@i{integer}
+@item minscore
+@i{integer}
+@item other_args
+@i{string}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .assembly/fofn
+@pindex .assembly/phrap_stdout
+@pindex .assembly/phrap_stderr
+@pindex .contigs
+@pindex .contigs.qual
+@pindex .singlets
+@pindex .phrap_log
+@i{fofn}@code{.tmp} --- temporary
+@br @i{fofn}@code{.assembly/fofn}
+@br @i{fofn}@code{.assembly/phrap_stdout}
+@br @i{fofn}@code{.assembly/phrap_stderr}
+@br @i{fofn}@code{.contigs}
+@br @i{fofn}@code{.contigs.qual}
+@br @i{fofn}@code{.singlets}
+@br @i{fofn}@code{.phrap_log}
+@sp 1
+
+@item Errors
+@code{phrap: singlet}
+@br @code{phrap: failed}
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: assembled}
+@br @code{SEQ }@i{seqid}@code{: singlet}
+@br @code{SEQ }@i{seqid}@code{: failed}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Enter Assembly
+@subsection Enter Assembly into Gap4
+@cindex Enter assembly configuration
+@pindex enter_assembly.p4m
+@vindex database_name
+@vindex database_version
+@vindex create
+@vindex quality_clip
+@vindex difference_clip
+
+@table @strong
+@item Filename
+@code{enter_assembly.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item database_name
+@i{string}
+@item database_version
+@i{character}
+@item create
+@code{0}/@code{1}
+@item quality_clip
+@code{0}/@code{1}
+@item quality
+@i{integer}
+@item difference_clip
+@code{0}/@code{1}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+@pindex .assembly/fofn
+@pindex .aux
+@i{fofn}@code{.assembly/fofn} --- reads
+@br @i{fofn}@code{.assembly/*} --- reads
+@br @i{database_name}@code{.}@i{database_version}
+@br @i{database_name}@code{.}@i{database_version}@code{.aux}
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+@code{SEQ }@i{seqid}@code{: failed}
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Email
+@subsection Email
+@cindex Email configuration
+@pindex email.p4m
+@vindex email_progam
+@vindex email_args
+@vindex email_address
+
+@table @strong
+@item Filename
+@code{email.p4m}
+@sp 1
+
+@item Local variables
+@tex
+\global\tableindent=2in
+@end tex
+@table @code
+@item email_program
+@i{string}
+@item email_args
+@i{string}
+@item email_address
+@i{string}
+@end table
+@tex
+\global\tableindent=0.8in
+@end tex
+@sp 1
+
+@item Files
+(none)
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+(none)
+@end table
+@sp 3
+
+@c --------------------
+_split()
+@node Pregap4-ManualConfig-Shutdown
+@subsection Shutdown
+@cindex Shutdown configuration
+@pindex shutdown.p4m
+
+@table @strong
+@item Filename
+@code{shutdown.p4m}
+@sp 1
+
+@item Local variables
+(none)
+@sp 1
+
+@item Files
+@pindex .passed
+@pindex .failed
+@pindex .log
+@pindex .report
+@i{fofn}@code{.passed}
+@br @i{fofn}@code{.failed}
+@br @i{fofn}@code{.log}
+@br @i{fofn}@code{.report}
+@sp 1
+
+@item Errors
+(none)
+@sp 1
+
+@item Report
+This module collates the reports from all other modules.
+@end table
+
+
+@c --------------------------------------------------------------------------
+_split()
+@node Pregap4-WritingMods
+@chapter Writing New Modules
+@cindex Modules, creating
+
+@menu
+* Pregap4-WritingMods-Overview::           An Overview of a Module
+* Pregap4-WritingMods-Functions::          Functions
+* Pregap4-WritingMods-Module Variables::   Module Variables
+* Pregap4-WritingMods-Global Variables::   Global Variables
+* Pregap4-WritingMods-Builtin::            Builtin Functions
+* Pregap4-WritingMods-Example::            An Example Module
+@end menu
+
+@node Pregap4-WritingMods-Overview
+@section An Overview of a Module
+@cindex Modules, overview
+
+A pregap4 module is a single file containing a series of functions with
+predefined interfaces. Pregap4 uses these functions to communicate with module.
+
+This section is for system managers and programmers only.
+
+
+The module itself is written using the Tcl/Tk language. A definition of this
+language is outside the scope of this manual, however several books exist on
+the subject. Each modules executes inside a Tcl "namespace". This means that
+modules may make use of global variables and global function names without
+fear of clashing with other modules. Indeed the use of specific function names
+and global variables is of considerable importance for designing a new module.
+
+@node Pregap4-WritingMods-Functions
+@section Functions
+@cindex Module functions
+@cindex Functions, in modules
+
+The basic structure of a module is that it has a series of known functions
+which pregap4 expects to use. Some of these functions are mandatory, whilst
+others will only be called by pregap4 if they have been defined.
+
+@table @var
+@item name
+@findex name
+    Mandatory.
+
+    Arguments: none
+
+    Returns:   The textual name of the module.
+
+    This function is used to query a human readable name for the module
+    (eg "ALF/ABI to SCF Conversion"). This name is used in the module list
+    at the left side of the pregap4 window.
+@sp 2
+
+@item init
+@findex init
+    Optional.
+
+    Arguments: None
+
+    Returns:   None
+
+    This sets up any data structures needed for this module. It can be
+    used for providing defaults for global variables when they are not
+    known (eg they have no settings in the system or user pregap4rc files)
+    and for setting up any other data structures required.
+@sp 2
+
+@item run
+@findex run
+    Optional.
+
+    Arguments: A Tcl list of files to process
+
+    Returns:   A new Tcl list of files for subsequent processing.
+
+    This is the main work horse. It is optional, however in all but the
+        most esoteric cases, it will be needed.
+
+    The single argument is a Tcl list of sequence names. These are either
+    filenames on disk or identifiers used for fetching data from a
+    database. The module should loop through the sequences which it can
+    process (which may not be all of them, depending on the known
+    information and file types).
+
+    When finished, it needs to return a new list of files. If a file has
+    been rejected by this module (eg it is completely sequencing vector)
+    then this sequence name should be omitted from the returned list.
+    However do make sure that all failed files have an error string
+    attached to them by setting the file_error(seq name) array element.
+@sp 2
+
+@item shutdown
+@findex shutdown
+    Optional.
+
+    Arguments: A Tcl list of files to process
+
+    Returns:   A new Tcl list of files for subsequent processing.
+
+    Deallocates any data structures that have been setup during the init
+    or run stages. Most modules will not need this function. As with the
+    run module, the returned value should be the list of passed files,
+    which is generally the same as the list passed into this function.
+
+    A special module, which is always included by pregap4, is the
+    shutdown.p4m module. This is always the last module to have shutdown
+    called. It produces the reports for pregap4 and does some general house
+    keeping.
+@sp 2
+
+@item create_dialogue
+@findex create_dialogue
+    Optional.
+
+    Arguments: A tk pathname
+
+    Returns:   None
+
+    This create a dialogue controlling the parameters for this module. The
+    tk pathname passed into this function should be the root for all
+    components of this dialogue. (Note though that this is not a toplevel
+    window, but a subwindow of the main pregap4 dialogue.)
+@sp 2
+
+@item check_params
+@findex check_params
+        Optional.
+
+        Arguments: None
+
+        Returns:   A variable name or a blank string.
+
+        This checks that this module has valid answers to all of its
+        mandatory questions. If this is the case a blank string is returned,
+        otherwise the first variable name which needs a value is returned.
+@sp 2
+
+@item process_dialogue
+@findex process_dialogue
+    Optional.
+
+    Arguments: A tk pathname
+
+    Returns:   0 for failure, 1 for success
+
+    This is executed in all modules before the run functions are executed.
+    It's purpose is to extract any information from user editable entries
+    or checkboxes ready for the run function to utilise. It may also be
+    used to check that the data entered is valid.
+
+    The return code is used to indicate whether this module has sufficient
+    data to execute. If 0 is returned pregap4 will beep and make sure that
+    the dialogue 'tab' for this module is displayed. Further processing
+    then stops until the 'Run' button is pressed again.
+
+    For instance if a module needs to know the sequencing vector to screen
+    against, then this should check if the value has been entered or can
+    be obtained via a command. If so it returns 1.
+@sp 2
+
+@item configure_dialogue path mode
+@findex configure_dialogue
+    Optional.
+
+    Arguments: A tk pathname, the configure mode
+
+    Returns:   None
+
+    If this function is present pregap4 will add a button to the top of the
+    module dialogue inviting the user to save the parameters for this
+        module to the configuration file.
+
+        In early releases of pregap4 (2000.0 and before) a "Select parameters
+        to save" button was also available. To maintain compatibility with
+        older modules the "mode" parameter is still used. If you wish the
+        module to be backwards compatible with old pregap4 releases then this
+        needs to be checked to make sure that it contains "save_all". If it
+        does not then no action should be taken. In the 2001 release and newer
+        the "mode" parameter will always contain "save_all" so no check is
+        required.
+
+        To save the dialogue information this function should use the pregap4
+        mod_save and glob_save functions.
+@end table
+
+@node Pregap4-WritingMods-Module Variables
+@section Module Variables
+@cindex Module variables
+@cindex Variables, in modules
+
+@table @var
+@item mandatory
+@vindex mandatory
+    The existence of this variable (set to anything) states that this
+    module cannot be disabled.
+@sp 1
+
+@item hidden
+@vindex hidden
+
+The existence of this variable states that its name shall not appear
+    in the module list (although it will still be used).
+@sp 1
+
+@item report
+@vindex report
+    The contents of this variable are displayed at the end of the pregap
+    run by the shutdown.p4m module.
+@end table
+
+@node Pregap4-WritingMods-Global Variables
+@section Global Variables
+@cindex Global variables
+@cindex Variables, global to all modules
+
+Several global variables exist which may need to be updated within the
+modules. For successful operation it is required to update these when
+applicable.
+
+@table @var
+@item file_type
+@vindex file_type
+This is a Tcl array indexed by file name. It is initialised by the General
+Configuration module to be one of @code{ABI}, @code{ALF}, @code{EXP},
+@code{PLN}, @code{SCF} or @code{UNK}.
+@sp 1
+
+@item file_error
+@vindex file_error
+This is a global array indexed by the current file name. If a file has been
+rejected by a module (ie not returned from the @code{run} function) then
+the appropriate array element must be filled with a reason. Typically the
+format for this reason will start with the module name followed by a colon.
+For example "makeSCF: unknown file type".
+@sp 1
+
+@item file_id
+@vindex file_id
+This is a global array, indexed by filenames, containing the sequence
+identifiers (which are often different to the sequence filenames). It is
+initialised by the General Configuration module.
+@sp 1
+
+@item file_orig_name
+This is a global array holding any original filename for each currently
+processed file. It is initialised by the General Configuration module such
+that each file points to its own filename.
+@end table
+
+When creating and returning a new file (such as when switching from SCF files
+to Experiment Files in the Initialise Experiment Files module) it is required
+that the arrays are all updated correctly. This involves creating new array
+elements for each of the above four arrays. The @var{file_type} array element,
+indexed by a new name should contain the new file type (eg @code{set
+file_type(seq10.exp) EXP}). The @var{file_error} array element should be set
+to a blank string. The @var{file_id} should inherit the sequence identifier
+from the original file (eg @code{set file_id(seq10.exp) $file_id(seq10.scf)}).
+The @var{file_orig_name} array element should point to the old filename (not
+the original filename pointed to by the old filename). In this way
+@var{file_orig_name} could be considered as a list of the intermediate files
+generated for each final sequence file.
+
+@node Pregap4-WritingMods-Builtin
+@section Builtin Functions
+@cindex Functions, builtin
+
+Apologies, but this section of documentation is still unfinished.
+
+The full definition of these functions may be found in the Tcl code for
+Pregap4 itself. It is recommended that you use the Unix @code{grep} utility to
+find the definitions and example uses.
+
+@node Pregap4-WritingMods-Example
+@section An Example Module
+@cindex Example code
+@cindex Module, example code
+
+The best examples are the existing modules. Try looking at the Compress Trace
+Files module as an example. This may be found in
+@file{$STADENROOT/lib/pregap4/modules/compress_trace.p4m}.
+
+

@@ -1,0 +1,211 @@
+package require Iwidgets
+namespace eval ::EMBOSS::polydot {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_polydot*Xentry.entry.width 30
+option add *e_polydot*Entryfield.width 30
+option add *e_polydot*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) polydot
+    set w [xtoplevel .e_polydot -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - polydot}
+    label $w._title -text {Displays all-against-all dotplots of a set of sequences}
+    pack $w._title -side top -fill both
+    set vars(polydot._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 0]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 0]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst any]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+   set vars(sequences.totweight) [subst 0]
+    set vars(sequences._type) seqset
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments wordsize
+    iwidgets::entryfield $w.wordsize \
+	-validate integer \
+	-textvariable [namespace current]::vars(wordsize) \
+	-labeltext [subst {Word size}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.wordsize component entry] -sticky nse
+    set vars(wordsize) [subst 6]
+    pack $w.wordsize -side top -fill both
+    set vars(wordsize.minimum) [subst 2]
+    set vars(wordsize.path) $w.wordsize
+    set vars(wordsize.required)  1
+    set vars(wordsize._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    iwidgets::labeledframe $w.datasection \
+	-labeltext [subst {data Section}]
+    pack $w.datasection -side top -fill both
+    lappend wlist $w
+    append w .datasection.childsite
+
+    lappend arguments data
+    checkbutton $w.data \
+	-text [subst {Display as data}]\
+	-variable [namespace current]::vars(data)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.data -side top -anchor w
+    set vars(data) [subst 1]
+    set vars(data.path) $w.data
+    set vars(data.required)  0
+    set vars(data._type) bool
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst xwindows]
+    $w.graph configure \
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {(!$vars(data))}]}]]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  0
+    set vars(graph._type) graph
+    set vars(graph.needed_expr)  {[::EMBOSS::convert_bool [expr {(!$vars(data))}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] graph"
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [::EMBOSS::convert_bool [subst {[expr {$vars(data)}]}]]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst polydot0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  0
+    set vars(outfile._type) outfile
+    set vars(outfile.needed_expr)  {[::EMBOSS::convert_bool [expr {$vars(data)}]]}
+    trace variable vars(data) w  "::EMBOSS::reset_needed [namespace current] outfile"
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    lappend arguments gap
+    iwidgets::entryfield $w.gap \
+	-validate integer \
+	-textvariable [namespace current]::vars(gap) \
+	-labeltext [subst {Gap (in residues) between dotplots}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gap component entry] -sticky nse
+    set vars(gap) [subst 10]
+    pack $w.gap -side top -fill both
+    set vars(gap.minimum) [subst 0]
+    set vars(gap.path) $w.gap
+    set vars(gap.required)  0
+    set vars(gap._type) integer
+
+    lappend arguments boxit
+    checkbutton $w.boxit \
+	-text [subst {Draw a box around each dotplot}]\
+	-variable [namespace current]::vars(boxit)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.boxit -side top -anchor w
+    set vars(boxit) [subst 1]
+    set vars(boxit.path) $w.boxit
+    set vars(boxit.required)  0
+    set vars(boxit._type) bool
+
+    lappend arguments dumpfeat
+    checkbutton $w.dumpfeat \
+	-text [subst {Dump all matches as feature files}]\
+	-variable [namespace current]::vars(dumpfeat)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.dumpfeat -side top -anchor w
+    set vars(dumpfeat) [subst 0]
+    set vars(dumpfeat.path) $w.dumpfeat
+    set vars(dumpfeat.required)  0
+    set vars(dumpfeat._type) bool
+
+    lappend arguments format
+    iwidgets::entryfield $w.format \
+	-textvariable [namespace current]::vars(format) \
+	-labeltext [subst {format to Dump out as}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.format component entry] -sticky nse
+    set vars(format) [subst gff]
+    pack $w.format -side top -fill both
+    set vars(format.path) $w.format
+    set vars(format.required)  0
+    set vars(format._type) string
+
+    lappend arguments ext
+    iwidgets::entryfield $w.ext \
+	-textvariable [namespace current]::vars(ext) \
+	-labeltext [subst {Extension for feature file}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.ext component entry] -sticky nse
+    set vars(ext) [subst gff]
+    pack $w.ext -side top -fill both
+    set vars(ext.path) $w.ext
+    set vars(ext.required)  0
+    set vars(ext._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/polydot.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

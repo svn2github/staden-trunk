@@ -1,0 +1,52 @@
+@cindex Stop codons display
+@cindex Plot stop codons
+
+The Stop Codon Map plots the positions of all the stop codons on one or both
+strands of a contig consensus sequence.  
+It can be invoked from the gap4 View menu.
+If the Contig Editor is being used on
+the same contig, the Refresh button will be enabled and if used will fetch the
+current consensus from the editor, repeat the search and replot the stop
+codons.
+
+_lpicture(stops)
+
+The figure shows a typical zoomed in view of the Stop Codon Map display.  The
+positions for the stop codons in each reading frame (here all six frames are
+shown) are displayed in horizontal strips. Along the top are buttons for zooming, the crosshair toggle, a refresh
+button and two boxes for showing the crosshair position. The left box shows
+the current position and the right-hand box the separation of the last two
+stops codons selected by the user.  Below the display of stop codons is a
+ruler and a horizontal scrollbar. The information line is showing the data for
+the last stop codon the user has touched with the cursor. Also shown on the
+left is a copy of the View menu which is user to select the reading
+frames to display.
+
+
+@node Stops-Examining
+@subsection Examining the Plot
+@cindex Plot stop codons: examining the plot
+@cindex Stop codons: examining the plot
+
+Positioning the  cursor over a plotted  point will cause its codon and
+position to appear in the information line.
+
+It is possible to find the distance between any two stop codons.
+Pressing the left mouse button on a plotted point will display "Select
+another codon" at the bottom of the window.  Then, pressing the left
+button on another plotted point will display the distance, in bases,
+between the two sites. This is shown in the box located at the top right
+corner of the window.
+
+@node Stops-Updating
+@subsection Updating the Plot
+@cindex Plot stop codons: updating the plot
+@cindex Stop codons: updating the plot
+
+If the Contig Editor (_fpref(Editor, Editing in gap4, contig_editor)) is
+currently running on the same contig as is being displayed as a Stop
+Codon Map, the Refresh button will be shown in bold lettering and hence
+be active, otherwise it will be greyed out.  Pressing the button will
+fetch the current consensus from the Contig Editor and replot its stop
+codons.  Hence the plot can be kept current with the changes being made
+in the editor.

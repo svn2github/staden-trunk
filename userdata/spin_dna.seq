@@ -1,0 +1,542 @@
+ID   ECAE198    standard; DNA; PRO; 11639 BP.
+XX
+AC   AE000198; U00096;
+XX
+SV   AE000198.1
+XX
+DT   29-JAN-1997 (Rel. 50, Created)
+DT   05-DEC-2000 (Rel. 66, Last updated, Version 6)
+CC   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CC   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CC   14-AUG-2001 Doctored by RS by the addition of a tRNA sequence to the end!
+CC   for use with spin as a demo sequence
+CC   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+CC   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+XX
+DE   Escherichia coli K12 MG1655 section 88 of 400 of the complete genome.
+XX
+KW   .
+XX
+OS   Escherichia coli K12
+OC   Bacteria; Proteobacteria; gamma subdivision; Enterobacteriaceae;
+OC   Escherichia; Escherichia coli.
+XX
+RN   [1]
+RP   1-11639
+RX   MEDLINE; 97426617.
+RX   PUBMED; 97426617.
+RA   Blattner F.R., Plunkett G. III, Bloch C.A., Perna N.T., Burland V.,
+RA   Riley M., Collado-Vides J., Glasner J.D., Rode C.K., Mayhew G.F.,
+RA   Gregor J., Davis N.W., Kirkpatrick H.A., Goeden M.A., Rose D.J., Mau B.,
+RA   Shao Y.;
+RT   "The complete genome sequence of Escherichia coli K-12";
+RL   Science 277(5331):1453-1474(1997).
+XX
+RN   [2]
+RP   1-11639
+RA   Blattner F.R.;
+RT   ;
+RL   Submitted (16-JAN-1997) to the EMBL/GenBank/DDBJ databases.
+RL   Guy Plunkett III, Laboratory of Genetics, University of Wisconsin, 445
+RL   Henry Mall, Madison, WI 53706, USA. Email: ecoli@genetics.wisc.edu Phone:
+RL   608-262-2534 Fax: 608-263-7459
+XX
+RN   [3]
+RP   1-11639
+RA   Blattner F.R.;
+RT   ;
+RL   Submitted (02-SEP-1997) to the EMBL/GenBank/DDBJ databases.
+RL   Guy Plunkett III, Laboratory of Genetics, University of Wisconsin, 445
+RL   Henry Mall, Madison, WI 53706, USA. Email: ecoli@genetics.wisc.edu Phone:
+RL   608-262-2534 Fax: 608-263-7459
+XX
+RN   [4]
+RP   1-11639
+RA   Plunkett G. III.;
+RT   ;
+RL   Submitted (13-OCT-1998) to the EMBL/GenBank/DDBJ databases.
+RL   Laboratory of Genetics, University of Wisconsin, 445 Henry Mall, Madison,
+RL   WI 53706, USA
+XX
+DR   SPTREMBL; P75874; P75874.
+DR   SWISS-PROT; P02934; OMPA_ECOLI.
+DR   SWISS-PROT; P08846; SULA_ECOLI.
+DR   SWISS-PROT; P15038; HELD_ECOLI.
+DR   SWISS-PROT; P37065; YCCF_ECOLI.
+DR   SWISS-PROT; P37066; MGSA_ECOLI.
+DR   SWISS-PROT; P45569; YCBG_ECOLI.
+DR   SWISS-PROT; P75869; YCCR_ECOLI.
+DR   SWISS-PROT; P75870; YCCS_ECOLI.
+DR   SWISS-PROT; P75873; YCCT_ECOLI.
+DR   SWISS-PROT; P75875; YCCV_ECOLI.
+DR   SWISS-PROT; P75876; YCCW_ECOLI.
+XX
+CC   This sequence was determined by the E. coli Genome Project at the
+CC   University of Wisconsin-Madison (Frederick R. Blattner, director).
+CC   Supported by NIH grants HG00301 and HG01428 (from the Human Genome
+CC   Project and NCHGR). The entire sequence was independently
+CC   determined from E. coli K12 strain MG1655. Predicted open reading
+CC   frames were determined using GeneMark software, kindly supplied by
+CC   Mark Borodovsky, Georgia Institute of Technology, Atlanta, GA,
+CC   30332 [e-mail: mark@amber.gatech.edu].  Open reading frames that
+CC   have been correlated with genetic loci are being annotated with CG
+CC   Site Nos., unique ID nos. for the genes in the E. coli Genetic
+CC   Stock Center (CGSC) database at Yale University, kindly supplied by
+CC   Mary Berlyn. A public version of the database is accessible
+CC   (http://cgsc.biology.yale.edu). Annotation of the genome is an
+CC   ongoing task whose goal is to make the genome sequence more useful
+CC   by correlating it with other data.  Comments to the authors are
+CC   appreciated. Updated information will be available at the E. coli
+CC   Genome Project's World Wide Web site
+CC   (http://www.genetics.wisc.edu). *** The E. coli K12 sequence and
+CC   its annotations are periodically updated; this is version M54. No
+CC   sequence changes. Annotation updates: updated gene identifications
+CC   and products; all new functional assignments courtesy of Monica
+CC   Riley; added promoters, protein binding sites, and repeated
+CC   sequences described in reference 1. The unique numeric identifiers
+CC   beginning with a lowercase 'b' assigned to each gene (protein- or
+CC   RNA-encoding) are now designated as gene synonyms instead of
+CC   labels. This should allow them to be searched for in Entrez as gene
+CC   names.
+XX
+FH   Key             Location/Qualifiers
+FH
+FT   source          1..11639
+FT                   /db_xref="taxon:83333"
+FT                   /organism="Escherichia coli K12"
+FT                   /strain="K12"
+FT                   /sub_strain="MG1655"
+FT   promoter        63..89
+FT                   /note="factor Sigma70; predicted +1 start at 1017681"
+FT   protein_bind    86..105
+FT                   /note="central position to predicted promoter:1"
+FT                   /bound_moiety="CRP predicted site"
+FT   promoter        complement(102..133)
+FT                   /note="factor Sigma70; predicted +1 start at 1017680"
+FT   CDS             123..575
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P45569"
+FT                   /note="o150; 100 pct identical to fragment YCBG_ECOLI
+FT                   SW:P45569 but has 111 additional N-terminal residues"
+FT                   /transl_table=11
+FT                   /gene="ycbG"
+FT                   /function="putative enzyme; Not classified"
+FT                   /product="putative dehydrogenase"
+FT                   /protein_id="AAC74042.1"
+FT                   /translation="MKYQQLENLESGWKWKYLVKKHREGELITRYIEASAAQEAVDVLL
+FT                   SLENEPVLVNGWIDKHMNPELVNRMKQTIRARRKRHFNAEHQHTRKKSIDLEFIVWQRL
+FT                   AGLAQRRGKTLSETIVQLIEDAENKEKYANKMSSLKQDLQALLGKE"
+FT   CDS             complement(651..1691)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P02934"
+FT                   /note="f346; 100 pct identical to OMPA_ECOLI SW: P02934"
+FT                   /transl_table=11
+FT                   /gene="ompA"
+FT                   /function="membrane; Outer membrane constituents"
+FT                   /product="outer membrane protein 3a (II*;G;d)"
+FT                   /protein_id="AAC74043.1"
+FT                   /translation="MKKTAIAIAVALAGFATVAQAAPKDNTWYTGAKLGWSQYHDTGFI
+FT                   NNNGPTHENQLGAGAFGGYQVNPYVGFEMGYDWLGRMPYKGSVENGAYKAQGVQLTAKL
+FT                   GYPITDDLDIYTRLGGMVWRADTKSNVYGKNHDTGVSPVFAGGVEYAITPEIATRLEYQ
+FT                   WTNNIGDAHTIGTRPDNGMLSLGVSYRFGQGEAAPVVAPAPAPAPEVQTKHFTLKSDVL
+FT                   FNFNKATLKPEGQAALDQLYSQLSNLDPKDGSVVVLGYTDRIGSDAYNQGLSERRAQSV
+FT                   VDYLISKGIPADKISARGMGESNPVTGNTCDNVKQRAALIDCLAPDRRVEIEVKGIKDV
+FT                   VTQPQA"
+FT   promoter        complement(1832..1859)
+FT                   /note="factor Sigma70; promoter ompAp2; documented +1 at
+FT                   1019410"
+FT   promoter        complement(1839..1866)
+FT                   /note="factor Sigma70; promoter ompA; documented +1 at
+FT                   1019414"
+FT   CDS             complement(2048..2557)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P08846"
+FT                   /note="f169; 100 pct identical to SULA_ECOLI SW: P08846"
+FT                   /transl_table=11
+FT                   /gene="sulA"
+FT                   /function="phenotype; Cell division"
+FT                   /product="suppressor of lon; inhibits cell division and
+FT                   ftsZ ring formation"
+FT                   /protein_id="AAC74044.1"
+FT                   /translation="MYTSGYAHRSSSFSSAASKIARVSTENTTAGLISEVVYREDQPMM
+FT                   TQLLLLPLLQQLGQQSRWQLWLTPQQKLSREWVQASGLPLTKVMQISQLSPCHTVESMV
+FT                   RALRTGNYSVVIGWLADDLTEEEHAELVDAANEGNAMGFIMRPVSASSHATRQLSGLKI
+FT                   HSNLYH"
+FT   protein_bind    complement(2579..2599)
+FT                   /note="central position to sulA promoter:14.5"
+FT                   /bound_moiety="LexA documented site"
+FT   promoter        complement(2594..2622)
+FT                   /note="factor Sigma70; promoter sulA; documented +1 at
+FT                   1020168"
+FT   promoter        2685..2713
+FT                   /note="factor Sigma70; predicted +1 start at 1020305"
+FT   CDS             2776..3405
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P75869"
+FT                   /note="o209; This 209 aa ORF is 31 pct identical (8 gaps)
+FT                   to 173 residues of an approx. 224 aa protein TFOX_HAEIN
+FT                   SW:P43779"
+FT                   /transl_table=11
+FT                   /gene="b0959"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74045.1"
+FT                   /translation="MKSLSYKRIYKSQEYLATLGTIEYRSLFGSYSLTVDDTVFAMVSD
+FT                   GELYLRACEQSAQYCVKHPPVWLTYKKCGRSVTLNYYRVDESLWRNQLKLVRLSKYSLD
+FT                   AALKEKSTRNTRERLKDLPNMSFHLEAILGEVGIKDVRALRILGAKMCWLRLRQQNSLV
+FT                   TEKILFMLEGAIIGIHEAALPVARRQELAEWADSLTPKQEFPAELE"
+FT   CDS             complement(3368..5530)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P75870"
+FT                   /note="f720; This 720 aa ORF is 38 pct identical (20 gaps)
+FT                   to 692 residues of an approx. 720 aa protein YHFK_HAEIN SW:
+FT                   P44289"
+FT                   /transl_table=11
+FT                   /gene="b0960"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74046.1"
+FT                   /translation="MAFMLSPLLKRYTWNSAWLYYARIFIALCGTTAFPWWLGDVKLTI
+FT                   PLTLGMVAAALTDLDDRLAGRLRNLIITLFCFFIASASVELLFPWPWLFAIGLTLSTSG
+FT                   FILLGGLGQRYATIAFGALLIAIYTMLGTSLYEHWYQQPMYLLAGAVWYNVLTLIGHLL
+FT                   FPVRPLQDNLARCYEQLARYLELKSRMFDPDIEDQSQAPLYDLALANGLLMATLNQTKL
+FT                   SLLTRLRGDRGQRGTRRTLHYYFVAQDIHERASSSHIQYQTLREHFRHSDVLFRFQRLM
+FT                   SMQGQACQQLSRCILLRQPYQHDPHFERAFTHIDAALERMRDNGAPADLLKTLGFLLNN
+FT                   LRAIDAQLATIESEQAQALPHNNDENELADDSPHGLSDIWLRLSRHFTPESALFRHAVR
+FT                   MSLVLCFGYAIIQITGMHHGYWILLTSLFVCQPNYNATRHRLKLRIIGTLVGIAIGIPV
+FT                   LWFVPSLEGQLVLLVITGVLFFAFRNVQYAHATMFITLLVLLCFNLLGEGFEVALPRVI
+FT                   DTLIGCAIAWAAVSYIWPDWQFRNLPRMLERATEANCRYLDAILEQYHQGRDNRLAYRI
+FT                   ARRDAHNRDAELASVVSNMSSEPNVTPQIREAAFRLLCLNHTFTSYISALGAHREQLTN
+FT                   PEILAFLDDAVCYVDDALHHQPADEERVNEALASLKQRMQQLEPRADSKEPLVVQQVGL
+FT                   LIALLPEIGRLQRQITQVPQETPVSA"
+FT   CDS             complement(5540..5986)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P37065"
+FT                   /note="f148; 100 pct to fragment YCCF_ECOLI SW: P37065
+FT                   (35aa) but has 113 additional C-terminal residues"
+FT                   /transl_table=11
+FT                   /gene="yccF"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74047.1"
+FT                   /translation="MRTVLNILNFVLGGFATTLGWLLATLVSIVLIFTLPLTRSCWEIT
+FT                   KLSLVPYGNEAIHVDELNPAGKNVLLNTGGTVLNIFWLIFFGWWLCLMHIATGIAQCIS
+FT                   IIGIPVGIANFKIAAIALWPVGRRVVSVETAQAAREANARRRFE"
+FT   promoter        complement(5636..5663)
+FT                   /note="factor Sigma70; predicted +1 start at 1023214"
+FT                   /gene="yccF"
+FT   promoter        6006..6034
+FT                   /note="factor Sigma70; predicted +1 start at 1023626"
+FT   CDS             6109..8163
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P15038"
+FT                   /note="o684; 98 pct identical to HELD_ECOLI SW: P15038"
+FT                   /transl_table=11
+FT                   /gene="helD"
+FT                   /EC_number="3.6.1.-"
+FT                   /function="enzyme; DNA - replication, repair,
+FT                   restriction/modification"
+FT                   /product="DNA helicase IV"
+FT                   /protein_id="AAC74048.1"
+FT                   /translation="MELKATTLGKRLAQHPYDRAVILNAGIKVSGDRHEYLIPFNQLLA
+FT                   IHCKRGLVWGELEFVLPDEKVVRLHGTEWGETQRFYHHLDAHWRRWSGEMSEIASGVLR
+FT                   QQLDLIATRTGENKWLTREQTSGVQQQIRQALSALPLPVNRLEEFDNCREAWRKCQAWL
+FT                   KDIESARLQHNQAYTEAMLTEYADFFRQVESSPLNPAQARAVVNGEHSLLVLAGAGSGK
+FT                   TSVLVARAGWLLARGEASPEQILLLAFGRKAAEEMDERIRERLHTEDITARTFHALALH
+FT                   IIQQGSKKVPIVSKLENDTAARHELFIAEWRKQCSEKKAQAKGWRQWLTEEMQWSVPEG
+FT                   NFWDDEKLQRRLASRLDRWVSLMRMHGGAQAEMIASAPEEIRDLFSKRIKLMAPLLKAW
+FT                   KGALKAENAVDFSGLIHQAIVILEKGRFISPWKHILVDEFQDISPQRAALLAALRKQNS
+FT                   QTTLFAVGDDWQAIYRFSGAQMSLTTAFHENFGEGERCDLDTTYRFNSRIGEVANRFIQ
+FT                   QNPGQLKKPLNSLTNGDKKAVTLLDESQLDALLDKLSGYAKPEERILILARYHHMRPAS
+FT                   LEKAATRWPKLQIDFMTIHASKGQQADYVIIVGLQEGSDGFPAAARESIMEEALLPPVE
+FT                   DFPDAEERRLMYVALTRARHRVWALFNKENPSPFVEILKNLDVPVARKP"
+FT   CDS             complement(8195..8662)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P37066"
+FT                   /note="f155; formerly designated yccG"
+FT                   /transl_table=11
+FT                   /gene="mgsA"
+FT                   /function="enzyme; Central intermediary metabolism: Pool,
+FT                   multipurpose conversions"
+FT                   /product="methylglyoxal synthase"
+FT                   /protein_id="AAC74049.1"
+FT                   /translation="MYIMELTTRTLPARKHIALVAHDHCKQMLMSWVERHQPLLEQHVL
+FT                   YATGTTGNLISRATGMNVNAMLSGPMGGDQQVGALISEGKIDVLIFFWDPLNAVPHDPD
+FT                   VKALLRLATVWNIPVATNVATADFIIQSPHFNDAVDILIPDYQRYLADRLK"
+FT   promoter        complement(8687..8715)
+FT                   /note="factor Sigma70; predicted +1 start at 1026265"
+FT   CDS             complement(8749..9411)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P75873"
+FT                   /note="f220; This 220 aa ORF is 26 pct identical (6 gaps)
+FT                   to 215 residues of an approx. 224 aa protein YG81_HAEIN SW:
+FT                   P44290"
+FT                   /transl_table=11
+FT                   /gene="b0964"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74050.1"
+FT                   /translation="MKTGIVTTLIALCLPVSVFATTLRLSTDVDLLVLDGKKVSSSLLR
+FT                   GADSIELDNGPHQLVFRVEKTIHLSNSEERLYISPPLVVSFNTQLINQVNFRLPRLENE
+FT                   REANHFDAAPRLELLDGDATPIPVKLDILAITSTAKTIDYEVEVERYNKSAKRASLPQF
+FT                   ATMMADDSTLLSGVSELDAIPPQSQVLTEQRLKYWFKLADPQTRNTFLQWAEKQPSS"
+FT   promoter        9350..9378
+FT                   /note="factor Sigma70; predicted +1 start at 1026970"
+FT   promoter        9364..9381
+FT                   /note="factor Sigma54; predicted +1 start at 1026973"
+FT   promoter        complement(9440..9468)
+FT                   /note="factor Sigma70; predicted +1 start at 1027018"
+FT   CDS             9503..9997
+FT                   /codon_start=1
+FT                   /db_xref="SPTREMBL:P75874"
+FT                   /note="o164; This 164 aa ORF is 27 pct identical (5 gaps)
+FT                   to 105 residues of an approx. 424 aa protein YBDA_ECOLISW:
+FT                   P24077"
+FT                   /transl_table=11
+FT                   /gene="b0965"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74051.1"
+FT                   /translation="MLSFIRISCMVGMSALSYTLLNSLEEIMKETDIAGILTSTHTIAL
+FT                   VGASDKPDRPSYRVMKYLLDQGYHVIPVSPKVAGKTLLGQKGYGTLADVPEKVDMVDVF
+FT                   RNSEAAWGVAQEAIAIGAKTLWMQLGVINEQAAVLARDAGLNVVMDRCPAIEIPRLGLA
+FT                   K"
+FT   CDS             complement(10042..10410)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P75875"
+FT                   /note="f122; This 122 aa ORF is 32 pct identical (1 gap)
+FT                   to67 residues of an approx. 176 aa protein VPG_BWYVG SW:
+FT                   P09512"
+FT                   /transl_table=11
+FT                   /gene="yccV"
+FT                   /function="orf; Unknown"
+FT                   /product="orf, hypothetical protein"
+FT                   /protein_id="AAC74052.1"
+FT                   /translation="MWNFTLISKVKISREVTMIASKFGIGQQVRHSLLGYLGVVVDIDP
+FT                   VYSLSEPSPDELAVNDELRAAPWYHVVMEDDNGLPVHTYLAEAQLSSELQDEHPEQPSM
+FT                   DELAQTIRKQLQAPRLRN"
+FT   protein_bind    complement(10400..10411)
+FT                   /note="central position to predicted promoter:151"
+FT                   /bound_moiety="AraC predicted site"
+FT   CDS             complement(10417..11520)
+FT                   /codon_start=1
+FT                   /db_xref="SWISS-PROT:P75876"
+FT                   /note="f367; This 396 aa ORF is 32 pct identical (9 gaps)
+FT                   to 385 residues of an approx. 400 aa protein YWBD_BACSU SW:
+FT                   P39587"
+FT                   /transl_table=11
+FT                   /gene="b0967"
+FT                   /function="putative enzyme; Not classified"
+FT                   /product="putative oxidoreductase"
+FT                   /protein_id="AAC74053.1"
+FT                   /translation="MEGKASLGETIDIVDHQGKWLARGAYSPASQIRARVWTFDPSESI
+FT                   DIAFFSRRLQQAQKWRDWLAQKDGLDSYRLIAGESDGLPGITIDRFGNFLVLQLLSAGA
+FT                   EYQRAALISALQTLYPECSIYDRSDVAVRKKEGMELTQGPVTGELPPALLPIEEHGMKL
+FT                   LVDIQHGHKTGYYLDQRDSRLATRRYVENKRVLNCFSYTGGFAVSALMGGCSQVVSVDT
+FT                   SQEALDIARQNVELNKLDLSKAEFVRDDVFKLLRTYRDRGEKFDVIVMDPPKFVENKSQ
+FT                   LMGACRGYKDINMLAIQLLNEGGILLTFSCSGLMTSDLFQKIIADAAIDAGRDVQFIEQ
+FT                   FRQAADHPVIATYPEGLYLKGFACRVM"
+FT   promoter        complement(10553..10581)
+FT                   /note="factor Sigma70; predicted +1 start at 1028131"
+FT                   /gene="b0967"
+FT   promoter        11581..11609
+FT                   /note="factor Sigma70; predicted +1 start at 1029201"
+XX
+SQ   Sequence 11639 BP; 3038 A; 2846 C; 3029 G; 2726 T; 0 other;
+     gtagaaagca ccgacaatac tcctggcatg ggcgttaaag ctcacaggat ggagattctt        60
+     ttcttcactg gcctaaaaag ctgatattct gtaaagagtt acacggtaac attgagatcg       120
+     ctatgaaata tcaacaactt gaaaatcttg aaagcggttg gaaatggaag tatctggtta       180
+     agaagcatcg cgaaggggag ttaatcaccc gttacataga agccagtgcc gcccaggaag       240
+     ccgtcgatgt gttgctctcg ctggaaaatg aacccgtgct ggtaaatggc tggattgaca       300
+     agcatatgaa tccggaactg gtcaatcgca tgaagcaaac cattcgggca agacgaaagc       360
+     gccattttaa tgcggaacac cagcatacgc gcaaaaaatc gatcgatctg gaatttattg       420
+     tctggcaacg tctggctggt cttgcgcagc gtcgcggtaa aacgctttct gaaacgattg       480
+     ttcagctgat tgaagatgcg gaaaacaaag agaaatacgc gaataaaatg tcttctctga       540
+     agcaggatct gcaggcattg ctgggtaagg aataactgac gaaagtcagt tcaatttact       600
+     aaaggcaaaa aaaaccccgc agcagcgggg tttttctacc agacgagaac ttaagcctgc       660
+     ggctgagtta caacgtcttt gataccttta acttcgatct ctacgcgacg atccggagcc       720
+     aggcagtcga tcagtgcagc acgctgtttc acgttgtcac aggtgttgcc agtaaccggg       780
+     ttggattcgc ccataccacg tgcggagatc ttgtctgccg ggataccttt ggagatcagg       840
+     taatcaacaa cagactgagc acggcgctcg gacagaccct ggttgtaagc gtcagaaccg       900
+     atgcggtcgg tgtaacccag aacaactacg gaaccgtctt tcggatccag gttgctcagc       960
+     tggctgtaca gctgatccag agcagcctga ccttccggtt tcagggttgc tttgttgaag      1020
+     ttgaacagaa cgtcagactt cagagtgaag tgcttggtct gtacttccgg tgccggagct      1080
+     ggagccggag caactactgg agctgcttcg ccctgaccga aacggtagga aacacccagg      1140
+     ctcagcatgc cgttgtccgg acgagtgccg atggtgtgtg cgtcaccgat gttgttggtc      1200
+     cactggtatt ccagacgggt agcgatttca ggagtgatcg cgtactcaac accgccagcg      1260
+     aagaccggag aaacgccggt gtcgtggttt ttaccataaa cgttggattt agtgtctgca      1320
+     cgccatacca tgccacccag acgagtgtag atgtccaggt cgtcagtgat tgggtaaccc      1380
+     agtttagcgg tcagttgaac gccctgagct ttgtatgcac cgttttcaac gctgcctttg      1440
+     tacggcatac gacctaacca gtcgtaaccc atttcaaagc caacatacgg gttaacctgg      1500
+     taaccaccaa aagcaccagc gcccagttgg ttttcatggg tcgggccatt gttgttgatg      1560
+     aaaccagtgt catggtactg ggaccagccc agtttagcac cagtgtacca ggtgttatct      1620
+     ttcggagcgg cctgcgctac ggtagcgaaa ccagccagtg ccactgcaat cgcgatagct      1680
+     gtctttttca ttttttgcgc ctcgttatca tccaaaatac gccatgaata tctccaacga      1740
+     gataacacgg ttaaatcctt caccggggga tctgctcaat attaactcta ccgatatctt      1800
+     cggcttatgc cgagcacccc tggcgatgta aagtctacaa cgtagttgaa aacttacaag      1860
+     tgtgaactcc gtcaggcata tgaaaaaaaa gtcttgtata aggtatgttt aatctttttt      1920
+     gtcagcgaca atttacagaa gagaatcgcg gaaaccgctt cagacaagcc tccgcaagga      1980
+     aaattagtca cgactgaaag cattggctgg gcgacaaaaa aagttccagg attaatccta      2040
+     aatttactta atgatacaaa ttagagtgaa tttttagccc ggaaagttgt ctcgtggcgt      2100
+     gagaggatgc gcttaccgga cgcataataa accccatagc gttaccttca tttgccgcat      2160
+     caacaagttc agcatgctct tcttcagtca aatcatctgc caaccaaccg atcaccacac      2220
+     tgtaattgcc cgtgcgtaaa gcgcgaacca ttgactccac agtgtggcaa ggggagagct      2280
+     ggctaatctg cattactttc gttaagggta gcccagatgc ctgaacccat tcccgactca      2340
+     gtttttgttg cggtgttaac cagagttgcc agcgcgattg ctgaccgagt tgctgtaaca      2400
+     atggcaacag tagaagttgc gtcatcatgg gctgatcttc gcgatagaca acttcactga      2460
+     taagcccggc tgtagtgttt tccgtagaga cacgcgcaat tttacttgct gcggatgaga      2520
+     acgacgaaga acgatgtgca tagcctgaag tgtacataat caatccagcc cctgtgagtt      2580
+     actgtatgga tgtacagtac atccagtgac aacaaagatc aaccctattt tcggaaagag      2640
+     cctcgcaaat tttgtcgttg gtgacgggaa aacataaatt aatcttgccc cttaagaata      2700
+     agttgcctat tttcgtagtt aacggatccg ttaatgtgaa tcattctttt atgttatgat      2760
+     tttaaaagga attttatgaa aagcctctcc tataagcgga tctataaatc acaagaatac      2820
+     ctggcaacgt tgggcacaat tgaataccga tcattgtttg gcagttacag cctgaccgtt      2880
+     gacgacacgg tgtttgcgat ggtttctgat ggtgagttgt atcttcgggc ttgtgagcaa      2940
+     agtgcacagt actgtgtaaa acatccgcct gtctggctga catataaaaa gtgtggccga      3000
+     tccgttaccc tcaattacta tcgggttgat gaaagtctat ggcgaaatca actgaagctg      3060
+     gtgcgtctgt cgaaatattc tctcgatgca gcgctgaaag agaaaagcac gcgcaatacc      3120
+     cgggaaagac tgaaagattt gcccaatatg tcttttcatc tggaagcgat tctcggggag      3180
+     gtggggatta aggatgtacg ggcgttacgt atacttgggg caaaaatgtg ttggttgcga      3240
+     ctgcggcagc aaaacagtct ggtgacagaa aagattctgt ttatgcttga aggtgccatt      3300
+     atcggcattc atgaagctgc gctcccggtg gcacgccgcc aggagcttgc agaatgggct      3360
+     gactctctta cgccgaaaca ggagtttcct gcggaacttg agtaatctgg cgttgcagac      3420
+     gaccaatctc aggcagtaat gcaatcaata atccaacttg ttgtacgacc agaggttctt      3480
+     tgctgtctgc ccgtggttca agttgctgca tccgctgttt caggctagct aatgcctcat      3540
+     tgacgcgttc ttcatcagca ggttgatgat gtaacgcgtc atcaacatag caaactgcgt      3600
+     catcaagaaa cgccagaatt tcaggattag ttaactgctc ccggtgagca ccgagggctg      3660
+     agatatagct ggtaaacgta tggttaaggc acagcaaccg aaacgcggct tcgcgaattt      3720
+     gcggggtaac gttcggctcg ctggacatat ttgataccac cgacgccagc tcagcatcac      3780
+     ggttgtgtgc atcgcggcgg gcaatacgat acgccagacg gttatcacgc ccctgatggt      3840
+     attgctccag tatggcatcg agataccgac agttggcctc tgtggcgcgt tcgagcatgc      3900
+     gcggcagatt gcgaaactgc cagtcaggcc agatgtagct cactgccgcc cacgcaatgg      3960
+     cacaaccaat cagcgtatcg attacgcgag gtaacgctac ttcaaaacct tcacccagta      4020
+     agttaaaaca cagtagcacc aaaagtgtga tgaacatcgt tgcatgagcg tattgcacgt      4080
+     tacggaaggc aaaaaagagc acgccggtaa taaccagcag caccagctgc ccttccagtg      4140
+     atggcacaaa ccacagcaca ggaatgccaa tggcgatacc taccagcgta ccaataatcc      4200
+     ttaacttcag gcggtggcgc gtggcgttat agtttggctg gcagacaaac aaacttgtca      4260
+     gcaagatcca atacccgtga tgcattccgg ttatctgaat gatggcgtag ccgaagcaca      4320
+     acaccagcga cattcttacc gcatgacgga agagggcgga ttccggcgtg aagtgacggc      4380
+     taagacgcag ccagatatca ctcaacccgt gcgggctgtc atcagcgagc tcattttcgt      4440
+     cattattatg gggtagtgcc tgggcctgtt ctgattcaat tgttgccagt tgggcatcaa      4500
+     tggcgcgtaa attgttcagc aaaaatccca gtgttttgag taaatcggcg ggtgcgccgt      4560
+     tatcgcgcat ccgctccagc gcagcatcaa tatgcgtaaa agcgcgctca aaatgcggat      4620
+     catgttgata aggctgacgc aacaaaatac agcgtgacag ttgctggcac gcctggccct      4680
+     gcatcgacat cagccgctga aaacggaaca gcacgtcgct gtggcgaaaa tgttcacgca      4740
+     atgtttgata ctgaatatga gaagagctgg cacgctcgtg aatatcctgt gcgacaaagt      4800
+     aataatgcag cgtgcgacgc gttccccgtt gaccacgatc gccacgtaag cgggtcagca      4860
+     gcgagagttt cgtctgattc aatgtcgcca tcagcagacc gttggcgaga gccaaatcgt      4920
+     acagcggtgc ctggctttga tcttcaatat caggatcaaa catgcgcgac ttgagctcaa      4980
+     gataacgcgc cagttgttca tagcaacgcg ccaggttgtc ctgcagcggg cggaccggga      5040
+     acagcagatg accaataagt gtcaggacgt tgtaccagac ggcaccggcc agcagataca      5100
+     tcggctgctg ataccagtgc tcatacagtg atgttcccaa catagtgtaa atggcgatca      5160
+     gcaatgcacc gaaggcaatt gttgcatagc gttgacccag accgccgagc aaaatgaagc      5220
+     cgctggtaga gagcgttaag ccaatcgcaa atagccaggg ccagggaaac agcaattcta      5280
+     ctgaggccga ggcgataaaa aagcagaaca gcgtaatgat gaggttacgc aaacgtcccg      5340
+     ccagtcggtc atcgagatcg gtcagcgccg ctgccaccat ccccagcgtt agcggaatcg      5400
+     tcagttttac atcacccagc caccacggaa acgctgtggt tccacaaagc gcaataaaaa      5460
+     tacgcgcgta atacagccag gcgctgttcc aggtatagcg tttgagcaaa ggacttagca      5520
+     taaaggccat attagtggat tattcaaaac gacgacgtgc attggcttca cgcgcagctt      5580
+     gcgctgtttc taccgatacc acgcgacgac caaccggcca tagtgcaata gcggcaattt      5640
+     taaagttcgc aatgccgaca ggaatgccaa tgattgaaat acattgtgcg atgcccgttg      5700
+     caatgtgcat caggcataac caccagccaa agaaaatcag ccagaaaata ttcaataccg      5760
+     taccgccagt attcagcagc acatttttgc cagccgggtt cagttcatcg acatgaatag      5820
+     cttcattgcc ataaggcacc agagacagtt tagtgatctc ccagcaggat cgtgtcagcg      5880
+     gtaaggtaaa aatcagcaca atactgacca gagtcgccaa cagccagccc agagtggtgg      5940
+     caaatccgcc aagcacaaag ttcagaatgt tcaaaacggt acgcataaaa cctcgcttta      6000
+     ctgtggtttt cagtaatggg cggcaattgt aacgtttttt tgggctggag cacgttttct      6060
+     ctgacggtta cactgataag aaataatttc gtgtggatct acagagtcat ggaactgaaa      6120
+     gcgacaacgc ttggaaaacg tctggcacag cacccttacg atcgggcggt gatcctcaat      6180
+     gccgggatta aagtctccgg cgatcgccac gaatacctta ttcctttcaa tcaattactg      6240
+     gcgattcact gtaagcgcgg tctggtatgg ggcgagctgg aatttgtact gccggacgaa      6300
+     aaagtggtgc gtctgcacgg caccgaatgg ggcgagacgc agcgttttta ccatcatctt      6360
+     gatgctcact ggcggcggtg gagtggcgag atgagcgaaa ttgcgtctgg tgttttacgc      6420
+     cagcaactgg atttgattgc cacgcgcact ggggaaaata aatggctgac gcgtgagcaa      6480
+     acctctggcg tgcagcaaca aatccgccag gctttgtcgg cgttgccgtt gccggttaac      6540
+     cgactggaag aattcgataa ctgccgtgag gcgtggcgta aatgtcaggc ctggttgaaa      6600
+     gatattgaaa gcgctcggtt gcagcataac caggcgtata ccgaagccat gcttaccgag      6660
+     tatgcggatt ttttccgcca ggtcgagtct tcaccgctga atccggcgca ggcccgggca      6720
+     gtcgttaatg gcgagcattc tctgttagtg ctggcaggtg caggaagcgg aaaaacgtcg      6780
+     gtgctggtgg cccgtgcagg ctggttgctg gcgcgtggtg aagcgtcccc tgagcaaatt      6840
+     ttattgctgg cgtttggtcg caaagccgct gaagagatgg acgagcggat tcgcgaacgg      6900
+     ctacataccg aagacattac cgcacgcacg tttcatgcgc tggcgctgca tattattcag      6960
+     cagggcagca aaaaagttcc gatagtcagc aaactggaaa atgataccgc tgcccgtcat      7020
+     gaactcttta ttgctgagtg gcgcaagcaa tgcagcgaaa agaaagcgca ggcgaagggc      7080
+     tggcggcaat ggctgacgga agaaatgcag tggtcagtgc cagaaggtaa cttctgggat      7140
+     gatgaaaaat tacagcgtcg ccttgcctct cgcctcgatc gctgggtaag tctgatgcgg      7200
+     atgcacggtg gtgcacaggc agaaatgatt gccagtgcac ccgaagagat tcgcgatctg      7260
+     ttcagtaaac gtatcaagtt gatggccccg ttattaaaag cctggaaagg tgcgctgaag      7320
+     gcagaaaacg ctgtcgattt ttcgggcctt attcatcagg cgattgtgat tctggagaaa      7380
+     ggtcgcttta tcagcccgtg gaagcatatt ctggttgatg aatttcagga tatctcgccg      7440
+     cagcgggcag cgttgttagc ggcattacgc aagcaaaaca gtcagacgac gttgttcgct      7500
+     gttggtgatg actggcaggc gatttaccga ttcagcggtg cgcaaatgtc gctcaccacc      7560
+     gctttccatg aaaactttgg tgaaggcgaa cgctgtgatt tagacacgac ttaccgtttt      7620
+     aacagtcgta tcggtgaggt ggcaaaccgg tttattcagc agaacccagg ccagctgaaa      7680
+     aagccgctaa acagcttaac caatggagac aaaaaagccg tcacgttatt ggatgagagt      7740
+     caacttgacg ctttgctgga taagctctct ggttatgcca aaccggaaga gcgcattctg      7800
+     atcctggcgc gttaccatca catgaggcct gccagcctgg aaaaagcggc aacacgctgg      7860
+     ccgaagttgc aaatcgactt tatgaccatt catgccagca aagggcaaca ggcggattac      7920
+     gtcatcatcg ttggcttgca ggagggaagt gatggttttc cggctgcggc gcgggagtcg      7980
+     attatggaag aggcgctact gccaccggtt gaggatttcc cggacgctga agaacggcgg      8040
+     ttaatgtacg tggcgctgac ccgggcacgc catcgggtat gggcactgtt taacaaagag      8100
+     aatccctctc cctttgtgga aatactgaaa aatctggatg tgccggtggc gagaaaaccg      8160
+     taagaaacag gtggcgtttg ccacctgtgc aatattactt cagacggtcc gcgagataac      8220
+     gctgataatc ggggatcaga atatcgaccg cgtcgttgaa atgcggcgac tggattatga      8280
+     agtctgccgt tgccacgttg gtggcgaccg gaatgttcca taccgtcgcc agacgcagca      8340
+     aggctttcac gtcaggatcg tgcggcacgg catttagtgg atcccagaag aaaatcaata      8400
+     catcaatttt cccttctgag atcaatgcgc caacctgctg gtcacccccc attgggccac      8460
+     tcaacatcgc gttgacgttc atgccggtcg cgcgggaaat taagttaccg gtagtgcctg      8520
+     ttgcatacag tacgtgttgt tccagtaacg gttgatgccg ttccacccag ctcatcagca      8580
+     tttgtttgca gtgatcgtgt gccaccagcg caatatgttt ccgcgcaggt aaagtgcgag      8640
+     tcgtcagttc cataatgtac atccgtagtt aactttccta cagattactg taagcactta      8700
+     tcgctgcaag ataaagaccg aaaaagcctg cgcacaggca caaaaatctc aggaagatgg      8760
+     ttgtttttcc gcccactgca ggaaagtatt tcgcgtttgt gggtcagcca gtttaaacca      8820
+     atacttcagc cgttgttctg tgagcacctg agactgcggt ggaatagcat ccagctcgga      8880
+     aacacccgaa agcagcgtac tgtcatctgc catcatcgtg gcaaattgcg gtagtgaagc      8940
+     gcgtttcgcg gatttgttat agcgttcaac ctcgacctca taatcaatcg tttttgccgt      9000
+     tgaggtaatg gcgagaatat ccagctttac cggaatcggc gtcgcatcgc catccaacaa      9060
+     ttcaaggcgc ggcgcggcat caaaatggtt agcttcccgc tcattctcca ggcgaggcag      9120
+     gcgaaaattg acctggttga tgagctgggt attaaaactg accaccagcg gtggggagat      9180
+     atacagccgt tcttcactat tggaaagatg aatcgtcttc tcaacgcgaa acactaactg      9240
+     atgcggtcca ttatccagtt caatgctgtc cgcaccgcgc agcagagagc tggaaacctt      9300
+     cttgccgtcg agtaccagaa gatcgacatc ggttgaaagc cgcagcgtgg tggcaaaaac      9360
+     ggataccggc aaacataatg caatcaaggt ggtcacgatg ccggttttca taggtagctc      9420
+     ctgtcaaaag accgcccgaa taataatgtg tcaaaatttt tctttaatca tacttactaa      9480
+     catatagaca tatttcccgc ttttgctctc attcattcgt attagctgca tggttggcat      9540
+     gtcggctttg tcgtacactt tgttaaacag tctggaggaa ataatgaaag aaaccgatat      9600
+     tgcaggcatt ttaacgtcca ctcacaccat tgcgctggtg ggggcaagcg acaaacccga      9660
+     tcgtcccagc tatcgcgtga tgaaatatct actcgaccag gggtatcacg tcattccggt      9720
+     ttcgccaaaa gttgccggca aaacgctgct gggccagaag gggtatggca cgctggcaga      9780
+     cgttccggaa aaagtcgata tggtcgatgt tttccgtaat tcagaagcgg cgtggggcgt      9840
+     ggcacaggaa gctattgcca ttggcgcgaa aactctctgg atgcaactgg gggtgattaa      9900
+     tgagcaagcg gcagtactgg cacgggatgc cgggttaaat gtggtgatgg atcgctgccc      9960
+     ggctattgag atccctcgcc tgggcctggc caaataaaaa atccccggaa ggcaaaaacc     10020
+     ttccggggat ttgttcaggg attagttacg cagacgcggg gcctggagtt gtttgcggat     10080
+     ggtctgcgcc agctcatcca tggatggctg ttcaggatgt tcatcctgca attcgctact     10140
+     tagctgggct tcagccaggt aggtatgaac cggtaggccg ttatcgtcct ccatcactac     10200
+     gtgataccac ggagcggcgc gaagctcgtc attcaccgcc agctcatcag gcgacggttc     10260
+     agagagcgaa taaaccgggt cgatatccac gaccactccg agataaccta acagggaatg     10320
+     gcggacctgc tggccgatac cgaatttgct ggcaatcata gtcacctccc gggaaatctt     10380
+     tacctttgat ataagggtaa aattccacat ttcaagttac atgacgcgac aggcaaaccc     10440
+     tttcagatat agcccttccg gataggtagc gatcaccgga tgatcggctg cctgacggaa     10500
+     ctgctctata aattgtacat cacgaccggc atcaattgcg gcatccgcga tgattttctg     10560
+     aaataaatcg ctggtcatca gaccggaaca ggagaaagtc aggagaatac cgccttcatt     10620
+     cagcagctga atcgccagca tgttgatgtc tttataacca cgacacgcgc ccatcaactg     10680
+     gcttttattc tcaacaaact tcggcgggtc catcacgata acgtcaaatt tttcaccgcg     10740
+     atcgcgataa gtacgcagca atttaaagac atcatcacgg acaaactcag ccttgctcag     10800
+     atccagtttg ttcagctcaa cgttctgccg tgcaatatcc agcgcttcct gggaggtatc     10860
+     aacgctgaca acctggctgc aaccgcccat cagtgccgat acggcgaaac caccggtata     10920
+     ggagaaacag ttcagcacac gtttattttc aacgtagcgg cgggtagcca ggcggctatc     10980
+     acgctggtcc aggtagtagc ccgttttgtg tccgtgctga atatccacca gcagtttcat     11040
+     tccgtgttct tcaatcggca gcagggcagg tggcaactcg ccggtgacgg ggccctgggt     11100
+     cagctccatt ccttcttttt tacgtaccgc gacgtcgctg cgatcgtaaa tcgaacattc     11160
+     cgggtacagc gtttgcaggg cactaattaa tgccgcgcgc tgatattctg ccccagcact     11220
+     cagcagttgc agcaccagaa aattaccgaa acgatcgata gtaatacccg gcaggccatc     11280
+     agattctccg gcgattaaac gatagctgtc gaggccatct ttttgcgcca gccagtcacg     11340
+     ccatttttgt gcttgttgca aacggcggga aaaaaaagca atgtcgatag actcagacgg     11400
+     gtcaaacgtc cagacgcgcg cccggatttg cgaagctggc gaataagcgc cgcgtgctaa     11460
+     ccattttccc tgatgatcaa caatatcgat ggtttcaccg aggctggctt taccttccat     11520
+     gcgggcaacg gccccggaaa agacccacgg atggcgacga agtaatgatt tttcgcgccc     11580
+     tttggctaac actaaacgta cactcataat ttacttttct gtcgatgcaa agaaatggg      11639
+     gtccacgtag ctcagcagga tagagcacag gattcctaat cctggggtcg gaggttcga
+     atcctctcgt ggacacca
+//

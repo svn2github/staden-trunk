@@ -1,0 +1,114 @@
+PRIMER PICKING RESULTS FOR boundary_test_00
+
+No mispriming library specified
+No internal oligo mishyb library specified
+Using 1-based sequence positions
+OLIGO            start  len      tm     gc%   any    3' seq
+LEFT PRIMER          3   25   62.73   36.00 12.00 10.00 CACGTCATCTCATCAAATTTGATTG
+RIGHT PRIMER        82   25   60.65   36.00  4.00  3.00 GAATTGTTTGGAAATGACAGTGAGT
+INTERNAL OLIGO      31   25   71.50   56.00 12.00  8.00 ACGTACGTACGTTGCAGTCGACGCA
+SEQUENCE SIZE: 84
+INCLUDED REGION SIZE: 84
+
+PRODUCT SIZE: 80, PAIR ANY COMPL: 7.00, PAIR 3' COMPL: 1.00
+
+    1 NNCACGTCATCTCATCAAATTTGATTGNNNACGTACGTACGTTGCAGTCGACGCANNACT
+        >>>>>>>>>>>>>>>>>>>>>>>>>   ^^^^^^^^^^^^^^^^^^^^^^^^^  <<<
+
+   61 CACTGTCATTTCCAAACAATTCNN
+      <<<<<<<<<<<<<<<<<<<<<<  
+
+KEYS (in order of precedence):
+>>>>>> left primer
+<<<<<< right primer
+^^^^^^ internal oligo
+
+
+Statistics
+         con   too    in    in          no    tm    tm  high  high        high      
+         sid  many   tar  excl   bad    GC   too   too   any    3'  poly   end      
+        ered    Ns   get   reg   GC% clamp   low  high compl compl     X  stab    ok
+Left      35    33     0     0     0     0     0     0     0     0     0     0     2
+Right     35    33     0     0     0     0     0     0     0     0     0     0     2
+Intl      60    57     0     0     0     0     0     0     0     0     0     0     3
+Pair Stats:
+considered 4, unacceptable product size 1, no internal oligo 2, ok 1
+primer3 release 0.9
+
+
+PRIMER PICKING RESULTS FOR boundary_test_01
+
+No mispriming library specified
+No internal oligo mishyb library specified
+Using 1-based sequence positions
+OLIGO            start  len      tm     gc%   any    3' seq
+LEFT PRIMER          3   25   62.73   36.00 12.00 10.00 CACGTCATCTCATCAAATTTGATTG
+RIGHT PRIMER        82   25   60.65   36.00  4.00  3.00 GAATTGTTTGGAAATGACAGTGAGT
+INTERNAL OLIGO      30   25   62.73   36.00 12.00 10.00 CACGTCATCTCATCAAATTTGATTG
+SEQUENCE SIZE: 84
+INCLUDED REGION SIZE: 84
+
+PRODUCT SIZE: 80, PAIR ANY COMPL: 7.00, PAIR 3' COMPL: 1.00
+
+    1 NNCACGTCATCTCATCAAATTTGATTGNNCACGTCATCTCATCAAATTTGATTGNNNACT
+        >>>>>>>>>>>>>>>>>>>>>>>>>  ^^^^^^^^^^^^^^^^^^^^^^^^^   <<<
+
+   61 CACTGTCATTTCCAAACAATTCNN
+      <<<<<<<<<<<<<<<<<<<<<<  
+
+KEYS (in order of precedence):
+>>>>>> left primer
+<<<<<< right primer
+^^^^^^ internal oligo
+
+
+Statistics
+         con   too    in    in          no    tm    tm  high  high        high      
+         sid  many   tar  excl   bad    GC   too   too   any    3'  poly   end      
+        ered    Ns   get   reg   GC% clamp   low  high compl compl     X  stab    ok
+Left      30    28     0     0     0     0     0     0     0     0     0     0     2
+Right     30    29     0     0     0     0     0     0     0     0     0     0     1
+Intl      60    57     0     0     0     0     0     0     0     0     0     0     3
+Pair Stats:
+considered 2, unacceptable product size 1, ok 1
+primer3 release 0.9
+
+
+PRIMER PICKING RESULTS FOR boundary_test_02
+
+No mispriming library specified
+No internal oligo mishyb library specified
+Using 1-based sequence positions
+OLIGO            start  len      tm     gc%   any    3' seq
+LEFT PRIMER          3   25   62.73   36.00 12.00 10.00 CACGTCATCTCATCAAATTTGATTG
+RIGHT PRIMER        82   25   60.65   36.00  4.00  3.00 GAATTGTTTGGAAATGACAGTGAGT
+INTERNAL OLIGO      30   25   62.73   36.00 12.00 10.00 CACGTCATCTCATCAAATTTGATTG
+SEQUENCE SIZE: 84
+INCLUDED REGION SIZE: 84
+
+PRODUCT SIZE: 80, PAIR ANY COMPL: 7.00, PAIR 3' COMPL: 1.00
+
+    1 NNCACGTCATCTCATCAAATTTGATTGNNCACGTCATCTCATCAAATTTGATTGNNNACT
+        >>>>>>>>>>>>>>>>>>>>>>>>>  ^^^^^^^^^^^^^^^^^^^^^^^^^   <<<
+
+   61 CACTGTCATTTCCAAACAATTCNN
+      <<<<<<<<<<<<<<<<<<<<<<  
+
+KEYS (in order of precedence):
+>>>>>> left primer
+<<<<<< right primer
+^^^^^^ internal oligo
+
+
+Statistics
+         con   too    in    in          no    tm    tm  high  high        high      
+         sid  many   tar  excl   bad    GC   too   too   any    3'  poly   end      
+        ered    Ns   get   reg   GC% clamp   low  high compl compl     X  stab    ok
+Left       5     4     0     0     0     0     0     0     0     0     0     0     1
+Right      5     4     0     0     0     0     0     0     0     0     0     0     1
+Intl      60    57     0     0     0     0     0     0     0     0     0     0     3
+Pair Stats:
+considered 1, ok 1
+primer3 release 0.9
+
+

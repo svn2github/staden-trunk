@@ -1,0 +1,46 @@
+package require Iwidgets
+namespace eval ::EMBOSS::demostring {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_demostring*Xentry.entry.width 30
+option add *e_demostring*Entryfield.width 30
+option add *e_demostring*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) demostring
+    set w [xtoplevel .e_demostring -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - demostring}
+    label $w._title -text {demonstration of the string functions}
+    pack $w._title -side top -fill both
+    set vars(demostring._type) application
+
+    lappend arguments instring
+    iwidgets::entryfield $w.instring \
+	-textvariable [namespace current]::vars(instring) \
+	-labeltext [subst {Value for instr}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.instring component entry] -sticky nse
+    set vars(instring) [subst {}]
+    pack $w.instring -side top -fill both
+    set vars(instring.path) $w.instring
+    set vars(instring.required)  1
+    set vars(instring._type) string
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/demostring.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

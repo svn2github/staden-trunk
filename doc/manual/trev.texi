@@ -1,0 +1,53 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+@c %**start of header
+@setfilename trev.info
+@settitle Trev
+@c @setchapternewpage odd
+@iftex
+@afourpaper
+@end iftex
+@setchapternewpage on
+@c %**end of header
+
+@set standalone
+include(header.m4)
+
+@titlepage
+@title Trev
+@subtitle 
+@author 
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+@end titlepage
+
+@node Top
+@ifinfo
+@top top-trev
+@end ifinfo
+
+@c @tex
+@c \global\pageno=-10
+@c @end tex
+@c 
+@c @unnumbered Preface
+@c PREFACE TEXT
+@c 
+@c @tex
+@c \vfill \eject
+@c \global\pageno=1
+@c @end tex
+
+@raisesections
+_include(trev-t.texi)
+
+_split()
+@node Index
+@unnumberedsec Index
+@printindex cp
+@lowersections
+
+@shortcontents
+@contents
+@bye

@@ -1,0 +1,55 @@
+_split()
+@node Complement
+@section Complement a Contig
+
+This function 
+(which is available from the gap4 Edit menu)
+is used to complement a contig, which means that it will
+complement and reverse all its readings and reorder them to produce a
+contig with the opposite orientation. It operates on a single contig
+selected via a dialogue box.
+
+_split()
+@node Enter Tags
+@section Enter Tags
+@cindex tags: entering from a file
+@cindex entering tags from file
+@cindex annotations: entering from a file
+@cindex entering annotations from file
+
+
+This routine 
+(which is available from the gap4 Edit menu)
+is used to add a set of tags (_fpref(Intro-Anno, Annotation
+readings and contigs, gap4)) stored in a file, to the database. The file
+format (see below) is identical to the output produced by the "save tags to
+file" option of "Find Repeats". _fxref(Repeats, Find Repeats, repeats) The
+format is a subset of the experiment file format. _fxref(Formats-Exp,
+Experiment Files, formats) The two are close enough for Enter tags to use an
+experiment file as input. The only input required is the name of the file to
+read and a file browser can be used to aid its selection.
+
+Note that "Enter tags" will remove any results plotted in the Contig 
+Comparator.
+
+The start of a typical file is shown below.
+
+@example
+CC   Repeat number 0, end 1
+ID   zf48g3.s1
+TC   REPT b 1031..1072
+TC        Repeats with contig zf48g3.s1, offset 957
+CC   Repeat number 0, end 2
+ID   zf48g3.s1
+TC   REPT b 957..998
+TC        Repeats with contig zf48g3.s1, offset 1031
+CC   
+CC   Repeat number 1, end 1
+ID   zf48g3.s1
+TC   REPT b 1102..1130
+TC        Repeats with contig zf48g3.s1, offset 953
+CC   Repeat number 1, end 2
+ID   zf48g3.s1
+TC   REPT b 953..981
+TC        Repeats with contig zf48g3.s1, offset 1102
+@end example

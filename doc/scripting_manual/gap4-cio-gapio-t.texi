@@ -1,0 +1,172 @@
+@vindex GapIO(C)
+@cindex GapIO structure
+
+The main object passed around between the I/O functions is the @var{GapIO}
+structure. This is returned from the @code{open_db} function and is then
+passed around in much the same manner as a unix file descriptor or @var{FILE}
+pointer is. The structure, held in @file{gap4/IO.h}, is as follows.
+
+@example
+typedef struct @{
+    GapServer *server;		/* our server */
+    GapClient *client;		/* ourselves */
+
+    int Nviews;			/* number of locked views */
+    Array views;		/* all locked views */
+
+    GDatabase db;		/* main database record */
+    Bitmap freerecs;		/* bitmap of unused */
+    Array contigs;		/* list of contig */
+    Array readings;		/* list of reading records */
+    Array annotations;		/* list of annotation records */
+    Array templates;		/* list of template records */
+    Array clones;		/* list of clone records */
+    Array vectors;		/* list of vector records */
+
+    int4 *relpos;		/* relpg[] */
+    int4 *length;		/* length[] */
+    int4 *lnbr;			/* lnbr[] */
+    int4 *rnbr;			/* rnbr[] */
+
+    char db_name[DB_FILELEN];	/* database "file.version" */
+
+    Array contig_order;		/* order of contigs */
+    Array contig_reg;		/* Registration arrays for each contig */
+
+#ifdef GAP_CACHE
+    Array reading;		/* Array of GReading _structures_ */
+    Array read_names;		/* Array of reading names */
+#endif
+    int freerecs_changed;	/* Whether to flush freerecs bitmap */
+    Bitmap updaterecs;		/* bitmap of updated records */
+    Bitmap tounlock;		/* bitmap of records to unlock at next flush */
+@} GapIO;
+@end example
+
+Many of the items held within this structure are used internally by the I/O
+functions. However it's worth describing all very briefly.
+
+@table @var
+@vindex server, GapIO. (C)
+@vindex client, GapIO. (C)
+@item  server
+@itemx client
+	The @var{server} and @var{client} pointers are used in the low level g
+	library communication. They need not be used by any external code.
+
+@vindex Nviews, GapIO. (C)
+@vindex views, GapIO. (C)
+@item  Nviews
+@itemx views
+	Each record in the database needs to be locked before it can be
+	accessed. A view is returned for each independent lock of a record.
+	These are used internally by the low level reading and writing
+	function.
+
+@vindex db, GapIO. (C)
+@item  db
+	This is a direct copy of the @var{GDatabase} structure for this
+	database. This needs to be kept up to date with the on disk copy
+	whenever changes are made (eg by adding a new reading).
+
+@vindex freerecs, GapIO. (C)
+@item  freerecs
+	This is a copy of the free records bitmap referenced by the
+	@var{io->db.freerecs} field. It is kept up to date internally.
+
+@vindex contigs, GapIO. (C)
+@vindex readings, GapIO. (C)
+@vindex annotations, GapIO. (C)
+@vindex templates, GapIO. (C)
+@vindex clones, GapIO. (C)
+@vindex vectors, GapIO. (C)
+@item  contigs
+@itemx readings
+@itemx annotations
+@itemx templates
+@itemx clones
+@itemx vectors
+	These are lookup arrays to convert structure numbers to record
+	numbers. For instance, all readings are numbered from 1 upwards.
+	Similarly for contigs. However reading number 1 and contig number 1
+	will have their own unique record numbers in the g database.
+
+	The extensible array package is used for storing this information. To
+	translate from reading number @var{N} to the record number use
+	"@code{arr(GCardinal, io->readings, N-1)}".
+
+@vindex relpos, GapIO. (C)
+@vindex length, GapIO. (C)
+@vindex lnbr, GapIO. (C)
+@vindex rnbr, GapIO. (C)
+@item  relpos
+@itemx length
+@itemx lnbr
+@itemx rnbr
+	These are arrays of 4-byte integers of size
+	@var{io->db.actual_db_size}. They hold information about both
+	readings and contigs. 
+
+	For readings, the array contents hold copies of the @var{position},
+	@var{sequence_length}, @var{left} and @var{right} fields of the
+	@var{GReadings} structures. Reading number @var{R} has this data
+	stored in array elements @var{R} (counting from element 0, which is
+	left blank).
+	
+	For contigs, the array contents hold copies of the @var{length},
+	@var{left} and @var{right} fields of the @var{GContigs} structure. For
+	historical reasons the contig length is held in the @var{relpos}
+	array with the @var{length} array left blank. Contig number @var{C}
+	has this data stored in array elements @var{io->db.actual_db_size-C}.
+
+	For ease of use and future compatibility several macros have been
+	defined for accessing this data. _oxref(G4Cio-Macros, IO.h Macros).
+	These should be used instead of direct access.	Thus to find the
+	length of reading @var{R} we use @code{io_length(io,R)} and to find
+	the length of contig @var{C} we use @code{io_clength(io,C)}.
+
+	NOTE: These arrays are not updated automatically. If you modify data
+	using one of the write functions you also need to update the arrays in
+	sync. This is one of the problems that the check database command
+	looks for so mistakes should be obvious.
+
+@vindex db_name, GapIO. (C)
+@item  db_name
+	The name of the database in a @i{file.version} syntax. This array is
+	allocated to be @code{DB_FILELEN} bytes long. The @code{io_name} macro
+	should be used for accessing this field.
+
+@vindex contig_order, GapIO. (C)
+@item  contig_order
+	An array loaded from @var{io->db.contig_order}. This holds the left to
+	right ordering of contigs. It is automatically undated by the create
+	and delete contig function.
+
+@vindex contig_reg, GapIO. (C)
+@item  contig_reg
+	The contig registration scheme information. There's an entire chapter
+	on this topic. _oxref(Registration, Gap4 Contig Registration Scheme).
+
+@vindex reading, GapIO. (C)
+@vindex read_names, GapIO. (C)
+@item  reading
+@itemx read_names
+	These are cached copies of the @var{GReadings} structures and the
+	reading names referenced by the @var{GReadings.name} fields. They are
+	updated automatically when using the correct functions
+	(@code{gel_read} and @code{gel_write}). Use of lower level functions
+	is disallowed for accessing this data.
+
+@vindex freerecs_changed, GapIO. (C)
+@vindex updaterecs, GapIO. (C)
+@vindex tounlock, GapIO. (C)
+@item  freerecs_changed
+@itemx updaterecs
+@itemx tounlock
+	These three are used internally for maintaining the update and
+	data flushing scheme. @var{freerecs_changed} is a flag to state
+	whether or not the @var{freerecs} bitmap needs writing to disk.
+	@var{updaterecs} and @var{tounlock} are bitmaps with a bit per record
+	to signify whether the record needs rewriting or unlocking. Their use
+	is not required outside of the low level functions.
+@end table

@@ -1,0 +1,197 @@
+package require Iwidgets
+namespace eval ::EMBOSS::water {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_water*Xentry.entry.width 30
+option add *e_water*Entryfield.width 30
+option add *e_water*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) water
+    set w [xtoplevel .e_water -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - water}
+    label $w._title -text {Smith-Waterman local alignment.}
+    pack $w._title -side top -fill both
+    set vars(water._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequencea
+    set vars(sequencea)       [get_active_seq_id 0]
+    if {$vars(sequencea) == -1} {set vars(sequencea) [get_active_seq_id 0]}
+    set vars(sequencea.name)  [seq_info $vars(sequencea) name]
+    sequence_changed [namespace current] sequencea
+    set vars(sequencea.type) [subst any]
+    seq_id $w.sequencea \
+	-textvariable [namespace current]::vars(sequencea.name)\
+	-start_value $vars(sequencea.begin)\
+	-end_value $vars(sequencea.end)\
+	-to [seq_info $vars(sequencea) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequencea $w.sequencea}"
+    set vars(sequencea) [subst {}]
+    pack $w.sequencea -side top -fill both
+    set vars(sequencea.path) $w.sequencea
+    set vars(sequencea.required)  1
+    trace variable vars(sequencea.name) w  "::EMBOSS::sequence_changed [namespace current] sequencea"
+    set vars(sequencea._type) sequence
+
+    lappend arguments seqall
+    set vars(seqall)       [get_active_seq_id 1]
+    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 0]}
+    set vars(seqall.name)  [seq_info $vars(seqall) name]
+    sequence_changed [namespace current] seqall
+    set vars(seqall.type) [subst {[expr {($vars(sequencea.protein) ? "stopprotein" : "nucleotide")}]}]
+    seq_id $w.seqall \
+	-textvariable [namespace current]::vars(seqall.name)\
+	-start_value $vars(seqall.begin)\
+	-end_value $vars(seqall.end)\
+	-to [seq_info $vars(seqall) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
+    set vars(seqall) [subst {}]
+    pack $w.seqall -side top -fill both
+    set vars(seqall.path) $w.seqall
+    set vars(seqall.required)  1
+    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
+    set vars(seqall.type.orig) $vars(seqall.type)
+    set vars(seqall.type.expr) {[expr {($vars(sequencea.protein) ? "stopprotein" : "nucleotide")}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] seqall.type"
+    set vars(seqall._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments gapopen
+    iwidgets::entryfield $w.gapopen \
+	-validate real \
+	-textvariable [namespace current]::vars(gapopen) \
+	-labeltext [subst {Gap opening penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapopen component entry] -sticky nse
+    set vars(gapopen) [subst {[expr {($vars(sequencea.protein)? 10.0 : 10.0)}]}]
+    pack $w.gapopen -side top -fill both
+    set vars(gapopen.minimum) [subst 1.0]
+    set vars(gapopen.maximum) [subst 100.0]
+    set vars(gapopen.path) $w.gapopen
+    set vars(gapopen.required)  1
+    set vars(gapopen.orig) $vars(gapopen)
+    set vars(gapopen.expr) {[expr {($vars(sequencea.protein)? 10.0 : 10.0)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gapopen"
+    set vars(gapopen._type) float
+
+    lappend arguments gapextend
+    iwidgets::entryfield $w.gapextend \
+	-validate real \
+	-textvariable [namespace current]::vars(gapextend) \
+	-labeltext [subst {Gap extension penalty}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.gapextend component entry] -sticky nse
+    set vars(gapextend) [subst {[expr {($vars(sequencea.protein)? 0.5 : 0.5)}]}]
+    pack $w.gapextend -side top -fill both
+    set vars(gapextend.minimum) [subst 0.1]
+    set vars(gapextend.maximum) [subst 10.0]
+    set vars(gapextend.path) $w.gapextend
+    set vars(gapextend.required)  1
+    set vars(gapextend.orig) $vars(gapextend)
+    set vars(gapextend.expr) {[expr {($vars(sequencea.protein)? 0.5 : 0.5)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] gapextend"
+    set vars(gapextend._type) float
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments datafile
+    set vars(datafile.protein) [subst {[expr {$vars(sequencea.protein)}]}]
+    iwidgets::combobox $w.datafile\
+	-textvariable [namespace current]::vars(datafile)\
+	-labeltext [subst {Matrix file}]
+    eval $w.datafile insert list end [list_matrices p]
+    grid [$w.datafile component entry] -sticky nse
+    $w.datafile delete entry 0 end
+    $w.datafile insert entry end [subst {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.datafile configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.datafile -side top -fill both
+    set vars(datafile.path) $w.datafile
+    set vars(datafile.required)  0
+    set vars(datafile.protein.orig) $vars(datafile.protein)
+    set vars(datafile.protein.expr) {[expr {$vars(sequencea.protein)}]}
+    trace variable vars(sequencea.protein) w  "::EMBOSS::reset_value [namespace current] datafile.protein"
+    set vars(datafile.orig) $vars(datafile)
+    set vars(datafile.expr) {[expr {$vars(datafile.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(datafile.protein) w  "::EMBOSS::reset_value [namespace current] datafile"
+    set vars(datafile._type) matrixf
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments brief
+    checkbutton $w.brief \
+	-text [subst {Brief identity and similarity}]\
+	-variable [namespace current]::vars(brief)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.brief -side top -anchor w
+    set vars(brief) [subst 1]
+    set vars(brief.path) $w.brief
+    set vars(brief.required)  0
+    set vars(brief._type) bool
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Alignment output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst align0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) align
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/water.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

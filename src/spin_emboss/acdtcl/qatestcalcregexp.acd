@@ -1,0 +1,61 @@
+package require Iwidgets
+namespace eval ::EMBOSS::qatestcalcregexp {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_qatestcalcregexp*Xentry.entry.width 30
+option add *e_qatestcalcregexp*Entryfield.width 30
+option add *e_qatestcalcregexp*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) qatestcalcregexp
+    set w [xtoplevel .e_qatestcalcregexp -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - qatestcalcregexp}
+    label $w._title -text {ACD file for QA testing}
+    pack $w._title -side top -fill both
+    set vars(qatestcalcregexp._type) application
+
+    lappend arguments test
+    iwidgets::entryfield $w.test \
+	-textvariable [namespace current]::vars(test) \
+	-labeltext [subst {Regular expression}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.test component entry] -sticky nse
+    set vars(test) [subst {}]
+    pack $w.test -side top -fill both
+    set vars(test.path) $w.test
+    set vars(test.required)  1
+    set vars(test._type) regexp
+
+    lappend arguments testlength
+    iwidgets::entryfield $w.testlength \
+	-textvariable [namespace current]::vars(testlength) \
+	-labeltext [subst Length]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.testlength component entry] -sticky nse
+    set vars(testlength) [subst {[expr {$vars(test.length)}]}]
+    pack $w.testlength -side top -fill both
+    set vars(testlength.path) $w.testlength
+    set vars(testlength.required)  1
+    set vars(testlength.orig) $vars(testlength)
+    set vars(testlength.expr) {[expr {$vars(test.length)}]}
+    trace variable vars(test.length) w  "::EMBOSS::reset_value [namespace current] testlength"
+    set vars(testlength._type) string
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/qatestcalcregexp.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

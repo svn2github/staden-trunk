@@ -1,0 +1,196 @@
+We have recently been working on gap4 to improve both the speed of certain
+operations and general memory usage. This work should be available in the next
+release (no set date yet).
+
+Feedback is particularly useful for this work. Specifically it would be nice
+to know what people consider the current problems to be. Is speed or memory
+the most important factor? Are you planning on managing large shotguns with
+gap4? It is feasible that we can reduce the memory overhead with opening
+databases by an extra 15%, but doing so will take us more time (during which
+we could be performing more useful additions) and will cost some program
+speed. Comments please.
+
+Note that the majority of tests have been performed using optimised code on a
+Dec Alpha system. Some values will be different with a big endian machine as
+there is no overhead in byte swapping for I/O required and will vary
+enormously from database to database. Also note that the Alpha is a 64 bit
+machine and so memory usage is typically higher. For comparative purposes some
+results for gap and xgap have been included for those still using the old
+programs.
+
+The test databases listed below have the following composition:
+Database A	 722 reads,   744 annotations,   12 contigs.
+Database B	2407 reads,  1845 annotations,   29 contigs.
+Database C	5306 reads,  9053 annotations,   79 contigs.
+Database D	6403 reads, 34786 annotations, 2452 contigs.
+
+Speed summary
+=============
+
+The actual changes themselves are not as important as the effect they have.
+Some changes will apply to gap and xgap as well as gap4. Specifically I/O
+bound routines in gap/xgap maybe sped up slightly (by perhaps 5-10%) and
+opening a database will be sped up considerably. The other changes are
+specific to gap4.
+
+For gap4, a table of speed improvements follows. It is important to realise
+that the database used makes a big difference. Most of the following were
+tested on database A (722 readings and 744 annotations). All tests were
+performed on a Dec Alpha running Digital Unix.
+
+Assembly (100 reads)		 17% faster
+Double strand (A)		 28%
+Suggest primers (A)		 39%
+Disassemble (400 reads, A)	126%
+Enter 752 tags (A)		977%
+Extract readings (A)		252%
+Enter preass (400, new db)	 41%
+Open database A		Percentage speed increase:  39%
+Open database B		Percentage speed increase: 122%
+Open database C		Percentage speed increase: 898%
+
+Other functions have doubtless increased in speed too.
+
+Memory summary
+==============
+
+Both gap, xgap and gap4 have reduced memory overheads. All have the same
+memory savings in the code, however gap4 uses most of this additional memory
+for subsequent important speed increases.
+
+
+Startup costs for the programs without opening any database
+(* == estimated values)
+
+Alpha/Digital Unix	gap	orig	4.52Mb virtual, 1.8Mb real
+Alpha/Digital Unix	gap	new	4.66Mb virtual, 1.8Mb real
+
+Alpha/Digital Unix	gap4	orig	4.79Mb virtual, 1.3Mb real
+Alpha/Digital Unix	gap4	new	4.79Mb virtual, 1.3Mb real
+
+Alpha/Digital Unix	xgap	orig	6.44Mb virtual, 2.3Mb real
+Alpha/Digital Unix	xgap	new*	6.52Mb virtual, 2.3Mb real
+
+Sparc/Solaris		gap	orig	4.86Mb virtual, 2.9Mb real
+Sparc/Solaris		gap	new	5.08Mb virtual, 2.8Mb real
+
+Sparc/Solaris		gap4	orig	4.07Mb virtual, 2.7Mb real
+Sparc/Solaris		gap4	new	4.08Mb virtual, 2.6Mb real
+
+Sparc/Solaris		xgap	orig	6.75Mb virtual, 4.4Mb real
+Sparc/Solaris		xgap	new*	6.97Mb virtual, 4.3Mb real
+
+
+Startup costs for the programs with database B open.
+
+Alpha/Digital Unix	gap	orig	8.20Mb virtual, 5.3Mb real
+Alpha/Digital Unix	gap	new	7.67Mb virtual,	4.7Mb real
+
+Alpha/Digital Unix	gap4	orig	9.61Mb virtual, 5.4Mb real
+Alpha/Digital Unix	gap4	new	9.37Mb virtual, 5.3Mb real
+
+Alpha/Digital Unix	xgap	orig   10.40Mb virtual, 5.8Mb real
+Alpha/Digital Unix	xgap	new*    9.87Mb virtual, 5.2Mb real
+
+Sparc/Solaris		gap	orig	7.72Mb virtual, 5.6Mb real
+Sparc/Solaris		gap	new	7.47Mb virtual, 5.2Mb real
+
+Sparc/Solaris		gap4	orig	9.15Mb virtual, 6.7Mb real
+Sparc/Solaris		gap4	new	7.58Mb virtual, 5.8Mb real
+
+Sparc/Solaris		xgap	orig	9.73Mb virtual, 7.1Mb real
+Sparc/Solaris		xgap	new*	9.48Mb virtual, 6.7Mb real
+
+
+The above table illustrate several points:
+
+1. The relative startup costs for gap, gap4, and xgap. On both systems gap4
+comes out better than gap and xgap. The reason for this is the way memory is
+handled.  With really large databases a higher maxseq paramter is required.
+With gap and xgap this allocates large amounts of memory at startup. Gap4 only
+allocates this memory when required, and deallocates when it is no longer
+required.
+
+2. The recent changes have made few changes to the startup costs.
+
+3. The new gap program has significant memory reductions (around 20%) over the
+original copy on both systems. Gap4 on solaris also has significant memory
+reductions, but gap4 on Dec Alpha systems has only a very minor memory change.
+
+4. In nearly all memory comparisons gap4 is considerably better than xgap. The
+only exception is gap4 for the Dec Alpha, which is about the same.
+
+
+Details
+=======
+
+[ The following changes apply to code shared by gap4, gap and xgap and
+consequently affect the speed and memory for all of them. ]
+
+Open database
+-------------
+Opening a database is now much faster, especially with large databases. The
+actual improvement is a change in complexity from O(N^2) to O(NlogN) where N
+is the number of database records.
+
+Memory reductions
+-----------------
+The memory overhead of opening a database has been reduced. The start up costs
+for gap with database B are around 20% less with gap, but less for gap4 due to
+caching.
+
+Streamline the I/O system
+-------------------------
+Various minor speed increases were made to the IO system shared by gap4, gap
+and xgap. These include inlining certain functions, shifting some checks
+outside of loops, and buffering some operations until necessary. The total
+speed increase for I/O intensive operations is probably around 5%.
+
+Increased database blocking factor
+----------------------------------
+The blocking factor is used to round up allocated space on the disk to the
+next 'block'. This reduces fragmentation. The factor has been raised from 4 to
+16, yielding fewer fragments and consequently slightly less memory
+(marginally- perhaps 1%).
+
+Removed max records limitation
+------------------------------
+The I/O system had an arbitrary limit of 100,000 records; there are often
+around 10 records per reading. This restriction has been lifted.
+
+[ The following changes are for gap4 only. ]
+
+Speed up check database
+-----------------------
+This routine is now around twice as fast.
+
+New copy database mechanism
+---------------------------
+The "Save As" function can now either copy directly (the old method, but
+fast), or with garbage collection (slower).
+
+Sequence insertion speedup
+--------------------------
+The routine to insert bases into a sequence in memory has been sped up 18
+fold. This change gives rise to a 10% speed up in assembly and a larger
+increase to double strand.
+
+Improved byte swapping routines
+-------------------------------
+Little endian systems (DEC Alpha) have to rearrange the data read from disk
+before it is usable in memory (and vice versa). This rearrangement has been
+sped up by 5% which has a minor affect on most I/O.
+
+Better deallocation of records
+------------------------------
+Both the disassembly routine and tag removal failed to deallocate certain
+database records. The consequence was a slight increase in database size every
+time these routines were used. The new copy database mechanism above cures
+this for existing database. New databases will not suffer from this problem.
+
+Cache reading information
+-------------------------
+More reading information is cached now, including the name, but excluding the
+sequence itself. This extra memory usage has reduced the memory saved by the
+above stage, but total memory usage is still less than before. This change has
+a LARGE increase in efficiency.

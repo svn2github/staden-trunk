@@ -1,0 +1,134 @@
+package require Iwidgets
+namespace eval ::EMBOSS::histogramtest {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_histogramtest*Xentry.entry.width 30
+option add *e_histogramtest*Entryfield.width 30
+option add *e_histogramtest*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) histogramtest
+    set w [xtoplevel .e_histogramtest -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - histogramtest}
+    label $w._title -text {test of graphics}
+    pack $w._title -side top -fill both
+    set vars(histogramtest._type) application
+
+    lappend arguments sets
+    iwidgets::entryfield $w.sets \
+	-validate integer \
+	-textvariable [namespace current]::vars(sets) \
+	-labeltext [subst {Number of sets of data}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.sets component entry] -sticky nse
+    set vars(sets) [subst 1]
+    pack $w.sets -side top -fill both
+    set vars(sets.minimum) [subst 1]
+    set vars(sets.maximum) [subst 10]
+    set vars(sets.path) $w.sets
+    set vars(sets.required)  0
+    set vars(sets._type) integer
+
+    lappend arguments points
+    iwidgets::entryfield $w.points \
+	-validate integer \
+	-textvariable [namespace current]::vars(points) \
+	-labeltext [subst {Number of data points per set}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.points component entry] -sticky nse
+    set vars(points) [subst 10]
+    pack $w.points -side top -fill both
+    set vars(points.minimum) [subst 1]
+    set vars(points.maximum) [subst 200]
+    set vars(points.path) $w.points
+    set vars(points.required)  0
+    set vars(points._type) integer
+
+    lappend arguments bins
+    iwidgets::entryfield $w.bins \
+	-validate integer \
+	-textvariable [namespace current]::vars(bins) \
+	-labeltext [subst {Number of bars}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.bins component entry] -sticky nse
+    set vars(bins) [subst {[expr {$vars(points)}]}]
+    pack $w.bins -side top -fill both
+    set vars(bins.minimum) [subst 1]
+    set vars(bins.maximum) [subst {[expr {$vars(points)}]}]
+    set vars(bins.maximum.orig) $vars(bins.maximum)
+    set vars(bins.maximum.expr) {[expr {$vars(points)}]}
+    trace variable vars(points) w  "::EMBOSS::reset_value [namespace current] bins.maximum"
+    set vars(bins.path) $w.bins
+    set vars(bins.required)  0
+    set vars(bins.orig) $vars(bins)
+    set vars(bins.expr) {[expr {$vars(points)}]}
+    trace variable vars(points) w  "::EMBOSS::reset_value [namespace current] bins"
+    set vars(bins._type) integer
+
+    lappend arguments xstart
+    iwidgets::entryfield $w.xstart \
+	-validate integer \
+	-textvariable [namespace current]::vars(xstart) \
+	-labeltext [subst {start value for x axis}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.xstart component entry] -sticky nse
+    set vars(xstart) [subst 0]
+    pack $w.xstart -side top -fill both
+    set vars(xstart.path) $w.xstart
+    set vars(xstart.required)  0
+    set vars(xstart._type) integer
+
+    lappend arguments xend
+    iwidgets::entryfield $w.xend \
+	-validate integer \
+	-textvariable [namespace current]::vars(xend) \
+	-labeltext [subst {end value for x axis}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.xend component entry] -sticky nse
+    set vars(xend) [subst {[expr {($vars(xstart)+$vars(points))}]}]
+    pack $w.xend -side top -fill both
+    set vars(xend.minimum) [subst {[expr {($vars(xstart)+1)}]}]
+    set vars(xend.minimum.orig) $vars(xend.minimum)
+    set vars(xend.minimum.expr) {[expr {($vars(xstart)+1)}]}
+    trace variable vars(xstart) w  "::EMBOSS::reset_value [namespace current] xend.minimum"
+    set vars(xend.path) $w.xend
+    set vars(xend.required)  0
+    set vars(xend.orig) $vars(xend)
+    set vars(xend.expr) {[expr {($vars(xstart)+$vars(points))}]}
+    trace variable vars(xstart) w  "::EMBOSS::reset_value [namespace current] xend"
+    trace variable vars(points) w  "::EMBOSS::reset_value [namespace current] xend"
+    set vars(xend._type) integer
+
+    lappend arguments graph
+    iwidgets::combobox $w.graph\
+	-textvariable [namespace current]::vars(graph)\
+	-labeltext [subst {Graphics output format}]
+    eval $w.graph insert list end [list_graph_types]
+    grid [$w.graph component entry] -sticky nse
+    $w.graph delete entry 0 end
+    $w.graph insert entry end [subst data]
+    $w.graph configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.graph -side top -fill both
+    set vars(graph.path) $w.graph
+    set vars(graph.required)  1
+    set vars(graph._type) xygraph
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/histogramtest.html}
+    pack $w._okcancelhelp -side bottom -fill x
+}
+
+
+}; # namespace eval
+

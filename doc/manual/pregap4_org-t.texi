@@ -1,0 +1,76 @@
+@node Pregap4-Intro-Manual
+@chapter Organisation of the Pregap4 Manual
+
+Pregap4 is a relatively simple program to use. It is also very flexible
+and extendable, and so much of the manual is taken up by explaining to
+programmers and system managers how it can be configured. The average
+user need not be concerned with these details.
+
+The Introductory section of the manual is meant to give an overview of
+the program: what it is for, the files it uses and functions it
+performs, and how to use it.
+It is very important for all users to have a basic
+understanding of the files used by pregap4 and the processes through
+which it can pass their data
+(_fpref(Pregap4-Intro-Files, Summary of the Files used and the
+Processing Steps, t)).
+The next section of the Introduction
+(_fpref(Pregap4-Intro-Menus, Pregap4 Menus, t))
+tabulates the program's menus. This is followed by an overview of the
+pregap4 user interface
+(_fpref(Pregap4-Intro-Interface, Introduction to the Pregap4 User
+Interface, t)) which should give a clear idea of how to actually use the
+program, and concludes the introductory section.
+
+More detail about how to define the set of files to be
+processed
+(_fpref(Pregap4-Files, Specifying Files to Process, pregap4)) is
+followed by a section showing 
+how to run pregap4 and giving examples of its use
+(_fpref(Pregap4-Running, Running Pregap4, pregap4)).
+_ifdef([[_unix]],[[This is followed by notes on non-interactive processing
+(_fpref(Pregap4-Batch, Non Interactive Processing, t)) and
+details of the command line arguments that can be used
+(_fpref(Pregap4-CLI, Command line arguments, t)).
+]])Next are sections
+on configuring the pregap4 user interface
+(_fpref(Pregap4-Config, Configuring the Pregap4 User Interface, t)).
+
+The next part of the manual
+describes how to use the Configure Modules Window to
+select the modules to apply and to set their parameters
+(_fpref(Pregap4-Modules, Configuring Modules, pregap4)).
+This is one of the longest and most detailed parts of the manual in that
+it describes how to configure all the current possible modules, many of
+which will not be available at all sites, and several of which perform
+identical functions. Obviously, only the entries which describe 
+the functions that are available at a site, are of interest.
+
+One of the important tasks of pregap4 is to make sure that each
+reading's Experiment file contains all the information needed by gap4 to
+ensure the accuracy of the final consensus sequence and to make the
+project proceed as efficiently as possible. Pregap4 provides several methods
+for sourcing this information. One of these, as for example employed at
+the Sanger Centre in the UK, is to encode some information about a
+reading in its reading name. Pregap4 contains flexible mechanisms to
+enable a variety of the "Naming schemes" or "Naming conventions" to be
+used as a source of information to augment the Experiment files
+(_fpref(Pregap4-Naming, Pregap4 Naming Schemes, t)).
+Alternatively pregap4 can use simple text databases as an information source
+(_fpref(Pregap4-Database, Information Sources, pregap4)), or the user
+can set up some Experiment file record types for use with a batch of readings
+(_fpref(Exp-Records, Experiment file format record types, exp)).
+
+The rest of the manual deals with increasingly complicated matters, and
+the average user should never need to consult these sections. First
+there is a section on adding an removing modules
+(_fpref(Pregap4-ModAdd, Adding and Removing Modules, t)). This describes
+how to control the list of modules which appear in the Configure Modules
+Window. The package is usually shipped with this list set to contain
+more modules than are likely to be available at any one site and so it
+might be found useful to remove those that are not available.
+
+The next two sections, as their names imply, are for programmers only
+(_fpref(Pregap4-ManualConfig, Low Level Pregap4 Configuration, t))
+and
+(_fpref(Pregap4-WritingMods, Writing New Modules,t)).

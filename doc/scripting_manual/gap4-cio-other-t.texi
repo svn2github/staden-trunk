@@ -1,0 +1,229 @@
+This section includes all the other I/O functions which don't fit well into
+the other sections. Specifically, these functions cannot be used when
+compiling external programs that utilise the gap4 I/O functions. The reason
+for this is that they require many other portions of the gap4 objects which in
+turn require more.
+
+Whilst it is possible to still link in this manner, it is unwieldy and far
+from ideal. If you have need to use any of these functions in code that is to
+run separate from Gap4 then please mail us. We will then investigate tidying
+up the code further to aid such compilations.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_get_extension
+@subsection io_get_extension
+@findex io_get_extension(C)
+@cindex cutoff data, reading
+@cindex hidden data, reading
+
+@example
+#include <IO.h>
+
+int io_get_extension(
+	GapIO  *io,
+	int	N,
+	char   *seq,
+	int	max_seq,
+	int    *length,
+	int    *complement);
+@end example
+
+@code{io_get_extension} reads the usable 3' cutoff data for reading number
+@var{N}. The cutoff data is stored in @var{seq}. The length stored is the
+smaller of @var{max_seq} bytes or the length of the 3' cutoff data.
+The length of data stored in @var{seq} is written to the @var{length} pointer.
+The orientation of the reading is stored in the @var{complement} pointer.
+
+The reading annotations are also read to determine which segments are
+considered usable. The existance of a tag with type @code{IGNS} or
+@code{IGNC}, anywhere on the reading, indicates that there is no suitable
+cutoff data for this reading. @var{length} is set to 1 and the function
+returns 1.
+
+If a tag of type @code{SVEC} or @code{CVEC} exists within the 3' cutoff
+data the segment returned consists of that between the 3' cutoff point and
+the start of the vector tag.
+
+The function returns 0 for success and 1 for failure.
+
+NOTE: The current implementation looks any tags with types @code{IGN?} and
+@code{?VEC} rather than the specific types listed.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_mod_extension
+@subsection io_mod_extension
+@findex io_mod_extension(C)
+@cindex cutoff data, modifying
+@cindex hidden data, modifying
+
+@example
+#include <IO.h>
+
+int io_mod_extension(
+	GapIO  *io,
+	int	N,
+	int	shorten_by);
+@end example
+
+@code{io_mod_extension} modifies the position of the 3' cutoff data for
+reading number @var{N}. The 3' cutoff position is defined to be the base
+number, counting from 1, of the first base within the cutoff data.
+
+@var{shorten_by} is subtracted from either the @var{end} or @var{start} field
+in the @var{GReadings} structure, depending on whether the reading is
+complemented. It is legal to specify a negative amount to increase the
+used portion of the reading.
+
+[FIXME]@br
+NOTE that this implementation does not set the @var{sequence_length} field or
+the @code{io_length(io,N)} data for this reading.
+
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_insert_base
+@subsection io_insert_base, io_modify_base and io_delete_base
+@findex io_insert_base(C)
+@findex io_modify_base(C)
+@findex io_delete_base(C)
+
+@example
+#include <IO.h>
+
+int io_insert_base(
+	GapIO  *io,
+	int	gel,
+	int	pos,
+	char	base);
+
+int io_modify_base(
+	GapIO  *io,
+	int	gel,
+	int	pos,
+	char	base);
+
+int io_delete_base(
+	GapIO  *io,
+	int	gel,
+	int	pos);
+@end example
+
+These functions modify readings by inserting, changing, or deleting individual
+bases. Where needed, they update any annotations on the reading to ensure that
+all annotations are still covering the same sequence fragments. The confidence
+values and original positions arrays are also updated. Inserted and edited
+bases are given confidence of 100 and original positions of 0.
+
+@code{io_insert_base} uses the @code{io_insert_seq} function to inserts a
+single base with chacter @var{base} to at base position @var{pos}. Positions
+are measured counted such that inserting at base 1 inserts a base at the start
+of sequence.
+
+@code{io_modify_base} uses the @code{io_replace_seq} function to replace a
+single base at position @var{pos} with @var{base}.
+
+@code{io_delete_base} uses the @code{io_delete_seq} function to delete a
+single base at position @var{pos}.
+
+FIXME:@br
+NOTE that @code{io_insert_base} and @code{io_delete_base} modify the sequence,
+but DO NOT update the the @var{GReadings.sequence_length} or
+@code{io_length()} data.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node io_delete_contig
+@subsection io_delete_contig
+@findex io_delete_contig(C)
+@cindex contig, deletion of
+
+@example
+#include <IO.h>
+
+int io_delete_contig(
+	GapIO  *io,
+	int	contig_num);
+@end example
+
+This function deletes a single contig number from the database. It
+@strong{does not} remove any of the readings on the contig, but all
+annotations on the consensus sequence for this contig are deallocated.
+
+The last contig in the database is renumbered to be @var{contig_num}. This
+updates the @code{io_clength()}, @code{io_clnbr()}, and @code{io_crnbr()}
+arrays in @var{io} and the contig order information.
+
+A @code{REG_DELETE} notification is sent to the deleted contig @strong{after}
+removal, followed by a @code{REG_NUMBER_CHANGE} notification to renumbered
+contig, followed by updating the contig registry tables.e
+
+It returns 0 for success.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node write_rname
+@subsection write_rname
+@findex write_rname(C)
+@cindex reading names, writing
+
+@example
+#include <IO.h>
+
+int write_rname(
+	GapIO  *io,
+	int	rnum,
+	char   *name);
+@end example
+
+This writes a new reading name @var{name} for reading number @var{rnum}.
+This updates both the disk and memory copies of the reading structure and the
+reading name cache, using the @code{gel_write} and @code{io_wname} functions.
+If reading @var{rnum} does not exist, it is created first using the
+@code{io_init_reading} function.
+
+It returns 0 for success and -1 for failure.
+
+@c ---------------------------------------------------------------------------
+@split{}
+@node get_read_name
+@subsection get_read_name, get_contig_name, get_vector_name, get_template_name, and get_clone_name
+@vindex get_read_name(C)
+@vindex get_contig_name(C)
+@vindex get_vector_name(C)
+@vindex get_template_name(C)
+@vindex get_clone_name(C)
+
+@example
+#include <IO.h>
+
+char *get_read_name(
+	GapIO  *io,
+	int number);
+
+char *get_contig_name(
+	GapIO  *io,
+	int number);
+
+char *get_vector_name(
+	GapIO  *io,
+	int number);
+
+char *get_template_name(
+	GapIO  *io,
+	int number);
+
+char *get_clone_name(
+	GapIO  *io,
+	int number);
+@end example
+
+These functions convert reading, contig, vector, template and clone numbers
+into reading, contig, vector, and clone names respectively. Each function
+takes a @var{number} argument and returns a string containing the name. The
+string is held in a static buffer and is valid only until the next call of the
+same function. If the name is unknown, the string "@code{???}" is returned.
+
+

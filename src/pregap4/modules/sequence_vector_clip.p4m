@@ -1,0 +1,515 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Sequence vector clipping (eg m13).
+#
+# This processes Experiment files, reading the SF, SV, SC and SP line types,
+# writing to SL and SR lines.
+#
+
+set help {pregap4 {Pregap4-Modules-Sequence Vector}}
+
+proc init {} {
+    global env
+
+    mod_preset min_5_match 60
+    mod_preset min_3_match 80
+    mod_preset def_5_pos -1
+    mod_preset update_exp_file 1
+    mod_preset use_vp_file 1
+    mod_preset vp_file $env(STADENROOT)/tables/vector_primer
+    mod_preset vector_list ""
+    mod_preset vp_length 40
+
+    variable vp_file
+    if {$vp_file != ""} {
+        set vp_file [fullpath $vp_file]
+    }
+}
+
+proc run {files} {
+    variable min_5_match
+    variable min_3_match
+    variable def_5_pos
+    variable update_exp_file
+    variable report
+    variable use_vp_file
+    variable vp_file
+    variable vp_length
+    variable vector_list
+    global file_type
+    global file_error
+    global fofn
+    global modules
+    global errorCode
+    global orig_dir
+	
+    set new_files {}
+    set tfiles {}
+    set report ""
+
+    set fd [open $fofn.tmp w]
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) == "EXP"} {
+	    if {$use_vp_file == 0 &&
+		([pg_query $f SF] == "" ||
+		[pg_query $f SC] == "" ||
+		[pg_query $f SP] == "")} {
+		set file_error($f) "sequence_vector_clip: No SF, SC or SP information"
+		continue
+	    }
+	    puts $fd $f
+	    lappend tfiles $f
+	    set found($f) 0
+	} else {
+	    lappend new_files $f
+        }
+    }
+    close $fd
+
+    if {([lsearch -exact $modules augment_exp] == -1 ||
+	 [set ::augment_exp::enabled] == 0) &&
+	 $update_exp_file && $use_vp_file != 1} {
+	foreach f $tfiles {
+	    pg_open $f
+	    set v [pg_query $f SP]
+	    if {[string match "*/*" $v]} {
+		set pr [pg_query $f PR]
+		switch -exact $pr {
+		    1   {regsub {(.*)/(.*)} $v {\1} v}
+		    2   {regsub {(.*)/(.*)} $v {\2} v}
+		    default
+			{set v 0}
+		}
+	    }
+	    pg_update $f SP $v
+
+	    set SC [pg_query $f SC]
+	    set SF [fullpath [pg_query $f SF] $orig_dir 1]
+	    pg_update $f SF $SF
+	    if {[regexp {^[0-9]+$} $SC] == 0} {
+		if {[catch {set fd [open "|find_renz $SC [list $SF]" r]} err]} {
+		   return 0
+		}
+		set SC [read $fd]
+		regsub "\n" $SC {} SC
+		catch {close $fd} err
+
+		if {$errorCode != "NONE"} {
+		    verror ERR_WARN sequence_vector_clip \
+			"Error \"$err\" when looking for [$w.cut_site get]"
+		    continue
+		}
+	    }
+	    pg_update $f SC $SC
+	    pg_close $f
+
+       	    append report "SEQ $f: added fields SP SC SF\n"
+	}
+    }
+
+    catch {file delete $fofn.svec_passed}
+    catch {file delete $fofn.svec_failed}
+    set errorCode NONE
+    if {$use_vp_file == 1} {
+	load_vectors $vp_file
+	create_vector_file $fofn.tmp_vp
+        catch {exec vector_clip -s \
+	    -v $fofn.tmp_vp \
+	    -V $vp_length \
+	    -L $min_5_match \
+	    -R $min_3_match \
+	    -m $def_5_pos \
+	    -p $fofn.svec_passed -f $fofn.svec_failed $fofn.tmp} var
+	catch {file delete $fofn.tmp_vp}
+    } else {
+        catch {exec vector_clip -s \
+	    -L $min_5_match \
+	    -R $min_3_match \
+	    -m $def_5_pos \
+	    -p $fofn.svec_passed -f $fofn.svec_failed $fofn.tmp} var
+    }
+    if {$errorCode != "NONE"} {
+	append report "ERR: vector_clip failed with error message '$var'.\n"
+	return $files
+    }
+    vmessage $var
+
+    # Process passed file
+    if {[catch {set fd [open $fofn.svec_passed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    lappend new_files $line
+	    catch {unset found($line)}
+	    append report "SEQ $line: passed\n"
+	}
+        close $fd
+    }
+
+    # Process failed file
+    if {[catch {set fd [open $fofn.svec_failed r]}] == 0} {
+	while {[gets $fd line] != -1} {
+	    if {[regsub {(.*) Error:.*} $line {\1} name] == 0} {
+	        set name [lindex $line 0]
+	    }
+	    if {![info exists file_type($name)]} {
+		verror ERR_WARN sequence_vector_clip \
+		    "vector_clip has unknown reading '$name' in failed file"
+		continue
+	    }
+	    regsub {^[^ ]* *((Error: *)|)} $line {} line
+	    set file_error($name) "sequence_vector_clip: $line"
+	    catch {unset found($name)}
+	    append report "SEQ $name: failed ($line)\n"
+	}
+        close $fd
+    }
+
+    # Check that there aren't any missing - neither in passed or failed
+    foreach f [array names found] {
+	verror ERR_WARN sequence_vector_clip \
+	    "vector_clip 'lost' reading with name '$f'"
+	set file_error($f) "sequence_vector_clip: lost file"
+	append report "SEQ $f: lost\n"
+    }
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc name {} {
+    return "Sequencing Vector Clip"
+}
+
+proc create_dialogue {w} {
+    variable min_5_match
+    variable min_3_match
+    variable def_5_pos
+    variable use_vp_file
+    variable vp_file
+    variable vp_length
+
+    xyn $w.use_vp_file \
+	-label "Use Vector-primer file" \
+	-orient horiz \
+	-default $use_vp_file \
+	-ycommand "$w.file        configure -state disabled;
+		   $w.cut_site    configure -state disabled;
+		   $w.primer_site configure -state disabled;
+		   $w.vp_file     configure -state normal;
+		   $w.select_vectors configure -state normal;
+		   $w.vp_length   configure -state normal" \
+	-ncommand "$w.file        configure \
+			-state [lindex {normal disabled} [is_command SF]];
+		   $w.cut_site    configure \
+			-state [lindex {normal disabled} [is_command SC]];
+		   $w.primer_site configure \
+			-state [lindex {normal disabled} [is_command SP]];
+		   $w.vp_file     configure -state disabled;
+		   $w.select_vectors configure -state disabled;
+		   $w.vp_length   configure -state disabled" \
+	-variable [namespace current]::use_vp_file
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+
+    xget_fname $w.vp_file \
+	-text "Vector-primer filename" \
+	-type load \
+	-default $vp_file
+    $w.vp_file xview end
+    button $w.select_vectors \
+	-text "Select vector-primer subset" \
+	-command "[namespace current]::pick_vectors $w.pv \[$w.vp_file get\]"
+    xentry $w.vp_length \
+	-label "Max primer to cut-site length" \
+	-default $vp_length \
+	-width 7 \
+	-type "int 1"
+		
+    frame $w.separator2 -bd 2 -relief raised -height 2
+
+    xget_fname $w.file \
+	-text "Vector file name" \
+	-type load \
+	-default [get_def SF]
+    xentry $w.cut_site \
+	-label "Cut site" \
+	-default [get_def SC] \
+	-width 7
+    # Do not change primer_site type to int: it uses (eg) "41/-24" notation.
+    xentry $w.primer_site \
+	-label "Primer site" \
+	-default [get_def SP] \
+	-width 7
+
+    frame $w.separator3 -bd 2 -relief raised -height 2
+
+    xentry $w.min_5_match \
+	-label "Percentage minimum 5' match" \
+	-default $min_5_match \
+	-width 7 \
+	-type "float 0 100"
+    xentry $w.min_3_match \
+	-label "Percentage minimum 3' match" \
+	-default $min_3_match \
+	-width 7 \
+	-type "float 0 100"
+    xentry $w.def_5_pos \
+	-label "Default 5' position" \
+	-default $def_5_pos \
+	-width 7 \
+	-type "int -1"
+
+    $w.use_vp_file set $use_vp_file
+
+    pack $w.use_vp_file -side top -fill both
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+    pack $w.vp_file -side top -fill both
+    pack $w.select_vectors -side top -anchor w
+    pack $w.vp_length -side top -fill both
+    pack $w.separator2 -side top -fill x -padx 10 -pady 5
+    pack $w.file $w.cut_site $w.primer_site -side top -fill both
+    pack $w.separator3 -side top -fill x -padx 10 -pady 5
+    pack $w.min_5_match $w.min_3_match $w.def_5_pos -side top -fill both
+}
+
+# Loads a vector_primer file contents in to an array named "vectors"
+# The array key is the vector name.
+# The array contents is lines (including name) from the vector_primer file.
+proc load_vectors {fname} {
+    variable vectors
+    variable vector_list
+
+    catch {unset vectors}
+
+    set fd [open $fname r]
+    while {[gets $fd line] != -1} {
+	set name [lindex $line 0]
+	set vectors($name) $line
+    }
+    if {![info exists vector_list] || $vector_list == ""} {
+	set vector_list [array names vectors]
+    }
+    close $fd
+}
+
+# Builds a new vector_primer file based on the vectors array and the
+# vector_list chosen from that array.
+proc create_vector_file {fname} {
+    variable vectors
+    variable vector_list
+
+    set fd [open $fname w]
+    foreach name $vector_list {
+	puts $fd $vectors($name)
+    }
+    close $fd
+}
+
+# Creates the GUI for picking vectors.
+proc pick_vectors {w {fname vector_primer}} {
+    variable vectors
+    variable vector_list
+
+    if {![file readable $fname]} {
+	tk_messageBox -icon error -message "Invalid vector-primer filename"
+	return
+    }
+
+    if {[winfo exists $w]} {
+	raise $w
+	wm deiconify $w
+	return
+    }
+    modal $w -resizable 1
+
+    # Label
+    label $w.label \
+	    -text "Vector/Cut site"
+    pack $w.label -side top -anchor c
+
+    # Scrolled listbox
+    set l [frame $w.list]
+    pack $l -side top -fill both -expand 1
+    listbox $l.vec \
+	    -selectmode extended \
+	    -xscrollcommand "$l.xscroll set" \
+	    -yscrollcommand "$l.yscroll set" \
+	    -width 30 \
+	    -height 15
+    scrollbar $l.xscroll \
+	    -orient horizontal \
+	    -command "$l.vec xview"
+    scrollbar $l.yscroll \
+	    -orient vertical \
+	    -command "$l.vec yview"
+    grid rowconfigure $l 0 -weight 1
+    grid columnconfigure $l 0 -weight 1
+    grid $l.vec $l.yscroll -sticky nsew
+    grid $l.xscroll -sticky nsew
+
+    # Add vectors to the listbox
+    load_vectors $fname
+    set ind 0
+    foreach name [array names vectors] {
+	$l.vec insert end $name
+	if {[lsearch -exact $vector_list $name] != -1} {
+	    $l.vec selection set $ind
+	}
+	incr ind
+    }
+
+    # Buttons
+    set l [frame $w.buttons]
+    pack $l -side top -fill both
+
+    button $l.ok \
+	    -text "Ok" \
+	    -command "[namespace current]::pick_vectors2 {$w} $w.list.vec; \
+		      destroy $w"
+    button $l.cancel \
+	    -text "Cancel" \
+	    -command "destroy $w"
+    button $l.help \
+	    -text "Help" \
+	    -command "show_help pregap4 {Pregap4-Modules-Sequence Vector}"
+
+    pack $l.ok $l.cancel $l.help -side left -expand 1
+}
+
+# The OK callback from the vector-picking GUI.
+# This resets the vector_list variable to be our chosen selection.
+proc pick_vectors2 {w lbox} {
+    variable vectors
+    variable vector_list
+
+    set selection [$lbox curselection]
+    set size [llength $selection]
+    set vector_list ""
+    for {set i 0} {$i < $size} {incr i} {
+	set name [$lbox get [lindex $selection $i]]
+	lappend vector_list $name
+    }
+}
+
+proc check_params {} {
+    variable use_vp_file
+
+    if {$use_vp_file == 0 } {
+        if {"" != [set inv [global_param_exists SF SC SP]]} {
+	    return $inv
+        }
+
+	global SF SC SP PR
+	if {[info exists SP] && [string match "*/*" $SP]} {
+	    if {![info exists PR] && ![is_command PR]} {
+		verror ERR_WARN sequence_vector_clip \
+		    "fwd/rev notation for primer site requires the\
+		    primer type to be known (eg by use of naming scheme)."
+		return SP
+	    }
+	}
+
+    } else {
+       	variable vp_file
+	if {"" != [set inv [local_param_exists [namespace current] \
+	    vp_file vp_length]]} {
+	    return $inv
+	}
+    }
+    if {"" != [set inv [local_param_exists [namespace current] \
+	min_5_match min_3_match def_5_pos]]} {
+	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialogue {w} {
+    variable min_5_match
+    variable min_3_match
+    variable def_5_pos
+    variable vp_file
+    variable vp_length
+    variable vector_list
+    variable use_vp_file
+    global SF SC SP PR
+    global errorCode
+
+    # Required parameters
+    if {$use_vp_file == 0} {
+        if {![is_command SF]} {
+	    set SF [$w.file get]
+            if {$SF == ""} { return 0 }
+        }
+
+        if {![is_command SC]} {
+            set SC [$w.cut_site get]
+            if {$SC == ""} { return 0 }
+	    set errorCode NONE
+	    if {[regexp {^[0-9]+$} $SC] == 0} {
+		if {[catch {set fd [open "|find_renz $SC [list $SF]" r]} err]} {
+		   return 0
+		}
+		set SC [read $fd]
+		regsub "\n" $SC {} SC
+		catch {close $fd} err
+
+		if {$errorCode != "NONE"} {
+		    verror ERR_WARN sequence_vector_clip \
+			"Error \"$err\" when looking for [$w.cut_site get]"
+		    return 0
+		}
+	    }	    
+        }
+
+        if {![is_command SP]} {
+            set SP [$w.primer_site get]
+	    if {[string match "*/*" $SP]} {
+		if {![info exists PR] && ![is_command PR]} {
+		    verror ERR_WARN sequence_vector_clip \
+			"fwd/rev notation for primer site requires the\
+			primer type to be known (eg by use of naming scheme)."
+		    set SP ""
+		}
+	    }
+            if {$SP == ""} { return 0 }
+	}
+    } else {
+        if {[set vp_file [$w.vp_file get]] == ""} { return 0 }
+    }
+
+    # Algorithm adjustments
+    if {[set min_5_match   [$w.min_5_match   get]] == ""} { return 0 }
+    if {[set min_3_match   [$w.min_3_match   get]] == ""} { return 0 }
+    if {[set def_5_pos     [$w.def_5_pos     get]] == ""} { return 0 }
+    if {[set vp_length     [$w.vp_length     get]] == ""} { return 0 }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    variable vector_list
+
+    if {[string match save* $mode]} {
+	mod_save use_vp_file [$w.use_vp_file get]
+	mod_save vp_file [$w.vp_file get2]
+	mod_save vector_list $vector_list
+	mod_save vp_length [$w.vp_length get2]
+	glob_save SF [$w.file get2]
+	glob_save SC [$w.cut_site get2]
+	glob_save SP [$w.primer_site get2]
+	mod_save min_5_match [$w.min_5_match get2]
+	mod_save min_3_match [$w.min_3_match get2]
+	mod_save def_5_pos [$w.def_5_pos get2]
+    }
+}
+

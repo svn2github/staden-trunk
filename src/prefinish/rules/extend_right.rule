@@ -1,0 +1,14 @@
+set name "Extend contig rightwards"
+
+set expression "<contig_right_end>"
+
+set pweight 0.5
+set mweight 10.0
+
+set mandatory 1
+set avoid_primers 1
+
+set solution_defaults {
+    -experiments {vpwalk}
+    -strand 1
+}

@@ -1,0 +1,2721 @@
+@menu
+* Editor-Movement::            Moving around the editor
+* Editor-Names::               The sequence names display
+* Editor-Editing::             Commands for editing data
+* Editor-Selections::          Cut and paste control
+* Editor-Annotations::         Creating, editing and deleting tags
+* Editor-Searching::           Searching
+* Editor-Commands::            The "commands" menu
+* Editor-Settings::            The "settings" menu
+* Editor-Remove Readings::     Removing Readings
+* Editor-Primer Selection::    Searching for primers
+* Editor-Traces::              Displaying the raw trace data
+* Editor-Info::                The editor information line
+* Editor-Joining::             The join editor
+* Editor-Multiple Editors::    Using several editors at once
+* Editor-Quitting::            Quitting the editor
+* Editor-Techniques::          Editing techniques
+* Editor-Summary::             Summary of key bindings
+@end menu
+
+The gap4 Contig Editor is designed to allow rapid checking and editing of
+characters in assembled readings. Very large savings in time can be achieved
+by its sophisticated problem finding procedures which automatically direct the
+user only to the bases that require attention.  The following is a selection of
+screenshots to give an overview of its use.
+
+_lpicture(contig_editor.screen)
+
+The figure above shows a screendump from the Contig Editor
+which contains segments of aligned
+readings, their consensus and a six phase translation. The Commands menu
+is also shown.  The main components are: the controls at
+the top; reading names on the left; sequences to their right; and status lines
+at the bottom. Some of the reading names are written in light grey which
+indicates that their traces/chromatograms are being displayed (in
+another window, see below).
+
+One reading name is written with inverse colours, which indicates that it
+has been selected by the user. To the left of each reading name is the reading
+number, which is negative for readings which have been reversed and complemented.
+The first of the status lines, labelled "Strands", is showing a
+summary of strand coverage. The left half of the segment of sequence
+being displayed is covered
+only by readings from one strand of the DNA, but the right half contains data
+from both strands.
+
+Along the top of the editor window is a row of command buttons
+and menus. The rightmost pair of buttons provide help
+and exit.  To their left are two menus, one of which is currently in use.  To
+the left of this is a button which initially displays a search dialogue,
+and then pressing it again, will perform the selected search. 
+Further left is the undo button:
+each time the user clicks on this box the program reverses the previous edit
+command.  The next button, labelled "Cutoffs" is used to toggle between
+showing or hiding the reading data that is of poor quality or is vector
+sequence. In this figure it has been activated, revealing the poor quality
+data in light grey. Within this, sequencing vector is displayed in
+lilac. The next button to the left is the Edit Modes menu
+which allows users to select which editing commands are enabled. The
+next command toggles between insert and replace and so governs the effect of
+typing in the edit window. The 2 entryboxes on the left hand side labelled
+C and Q set the consensus and quality cutoff values 
+(_fpref(Editor-Techniques-Cutoffs, Consensus and Quality Cutoffs, contig_editor)).
+
+One of the readings contains a yellow tag, and elsewhere some bases are
+coloured red, which indicates they are of poor quality.  The Information Line
+at the bottom of the window can show 
+information about readings, annotations and
+base calls. In this case it is showing information about the reliability of
+the base beneath the editing cursor.
+
+_lpicture(contig_editor_grey_scale)
+
+A better way of displaying the accuracy of bases is to shade their
+surroundings so that the lighter the background the better the data.
+In the figure above, this grey scale encoding of the base accuracy or
+confidence has been activated for bases in the readings and the
+consensus. This
+screenshot also shows the Contig Editor displaying disagreements and edits.
+Disagreements between the consensus and individual base calls are shown
+in dark green. Notice that these disagreements are in poor
+quality base calls. Edits (here they are all pads) are shown with a
+light green background. When they are present, replacements/insertions
+are shown in pink, deletions in red and confidence value changes in purple.
+The consensus confidence takes into account several factors, including
+individual base confidences, sequencing chemistry, and strand coverage.
+It can be seen that the consensus for 
+the section covered by data from only one strand has been calculated to
+be of lower confidence than the rest. The Status Line includes two
+positions marked with exclamation marks (!) which means that the
+sequence is covered by data from both strands, but that the consensus
+for each of the two strands is different.
+The Information Line at the bottom of the window is showing
+information about the reading under the cursor: its name, number,
+clipped length, full length, sequencing vector and BAC clone name.
+
+The Contig Editor can rapidly display the traces for any reading or set
+of readings. The number of rows and columns of traces 
+displayed can be set by the user. The traces scroll in register with one
+another, and with the cursor in the Contig Editor. Conversely, the
+Contig Editor cursor can be scrolled by the trace cursor. 
+A typical view is shown below.
+
+_lpicture(contig_editor.traces)
+
+This figure is an example of the Trace Display showing three traces
+from readings in the previous two Contig Editor screendumps.
+These are the best two traces from each strand plus a trace from a
+reading which contains a disagreement with the consensus. The program
+can be configured to automatically 
+bring up this combination of traces for each
+problem located by the "Next search" option.
+The histogram or vertical bars plotted top down show the confidence
+value for each base call. The reading number, together with the direction of
+the reading (+ or -) and the chemistry by which it was determined, is given at
+the top left of each sub window.  There are three buttons ('Info', 'Diff', and
+'Quit') arranged vertically with X and Y scale bars to their right. The Info
+button produces a window like the one shown in the bottom right hand
+corner. The Diff button is mostly used for mutation detection, and causes a
+pair of traces to be subtracted from one another and the result plotted, hence
+revealing their differences.  (_fpref(Editor-Traces, Traces, contig_editor)).
+
+
+_split()
+@node Editor-Movement
+@section Moving the visible segment of the contig
+@cindex Contig Editor: cursor movement
+
+The contig editor displays only one segment of the entire contig, although
+several contig editors can be in use at once.  Above the sequence display
+is a "scrollbar". This line represents the entire contig, with a greyed
+section representing the currently displayed segment. To change the
+displayed segment put the mouse cursor in the scrollbar and use the mouse
+buttons. The available controls are:
+
+@example
+@group
+Middle Mouse Button      Set displayed section
+Alt Left Mouse Button    Set displayed section
+Left Mouse Button        Scroll left or right one screenful
+@end group
+@end example
+
+On the far right side of the contig is a vertically oriented scrollbar.
+Typically the editor will be showing all available data, in which case the
+vertical scrollbar cannot be scrolled. In regions of exceptionally deep
+coverage, the editor makes sure that the controls, the consensus, and any
+status lines are visible. The remaining space is taken up with however many
+sequences fit. The vertical scrollbar can then be used, using the mouse buttons
+listed above, to scroll through the sequences.
+
+In addition to the scrollbars there are four buttons on the
+left hand side for scrolling by fixed amounts.
+
+@example
+@group
+<<              Scroll left half a screenful
+<               Scroll left one base
+>               Scroll right one base
+>>              Scroll right half a screenful
+@end group
+@end example
+
+Within the editor window itself two more key combinations can be used
+for scrolling forwards and backwards an entire screenful. These, and
+several others, are modelled after the @code{Emacs} key bindings.
+
+@example
+@group
+Control v       Scroll right one screenful
+Meta v          Scroll left one screenful
+@end group
+@end example
+
+Finally, moving the editing cursor will always adjust the displayed
+section so that the editing cursor is visible. Hence this can also be
+used to scroll around the editor in both horizontal and vertical fashions.
+
+
+
+
+_split()
+@node Editor-Names
+@section Names
+@cindex Contig Editor: names display
+@cindex Contig Editor: highlighting readings
+@cindex Highlighting readings in the editor
+@cindex names in the editor
+@cindex reading names in the editor
+
+At the left side of the editor window is a display containing the
+reading names and numbers. Each line consists of its number (negative
+numbers represent complemented readings) and its name. The bottom line
+is always @code{CONSENSUS}. Also on the bottom line is the current edit
+status. This is modelled on @code{Emacs}, and consists of one of @code{----},
+@code{-%%-} and @code{-**-}, to symbolise "No unsaved edits made", "No edits
+made - editor is in read only mode", and "Unsaved edits made".
+
+Pressing the right mouse button on a name will popup a menu containing
+operations to perform for that specific reading. These include Remove
+Reading (_fpref(Editor-Comm-Remove Reading, Remove Reading, contig_editor)),
+Set as reference sequence (_fpref(Editor-Reference-Sequences, Reference sequences, contig_editor)),
+Set as reference trace (_fpref(Editor-Reference-Traces, Reference traces, contig_editor)),
+and List Notes (_fpref(Notes-Selector, Selecting Notes, notes)). Similar menus
+exist for the @code{CONSENSUS} name and for any editor status lines displayed.
+
+The maximum length of a reading name is 40 characters. Additionally there
+are 7 characters taken up with the direction and number of a reading. By
+default the names display only shows 23 characters (enough to show 16 letters
+of a reading name). A horizontal scrollbar just above the reading names can be
+used to scroll the reading names. Note that the numbers and orientation are
+always visible. To change the width of the editor names display set the
+@code{CONTIG_EDITOR.NAMES_WIDTH} setting in your @file{.gaprc}. For example:
+
+@example
+set_def CONTIG_EDITOR.NAMES_WIDTH	23
+@end example
+
+The foreground colour for the text reveals whether the trace for this reading
+is shown - a grey foreground indicates that the trace is visible.  The
+background colour represents a user highlight and the disassembly mode. The
+default background colour is light grey (the same colour as the general editor
+background).  Clicking the left mouse button on a reading name toggles the
+background of the name component of number-name pair to black.  This is
+particularly useful for keeping track of an individual reading whilst
+scrolling the editor. As the editor scrolls an individual reading will move up
+and down the editor display. By highlighting this reading it becomes easy to
+track. The number component of the number-name pair is used to highlight
+readings that are to be disassembled. _fxref(Disassemble, Disassemble Readings,
+disassembly) In this case the background is dark grey.
+
+If the template display is in use, highlighting a reading name in the
+editor will select this reading in the template display (by marking
+it as bold). Similarly selecting a reading in the template display (left
+mouse button) will highlight the reading in the contig editor.
+Additionally the contig editor cursor is visible within the template
+display allowing the position of the editor to be controllable from the
+template display and connected plots (such as the quality plot). 
+_fxref(Template-Display, Template Display, template)
+
+The readings contained within the "readings" list are automatically
+highlighted when the editor starts. Toggling the highlighted names in the
+editor updates the "readings" list accordingly.
+_fxref(List-Special, Special List Names, lists)
+
+Once an output list for the editor has been set, pressing the middle
+mouse button, or Alt left mouse button, on the names display has the same effect as the using the
+left button, except that it adds (and never removes) the reading name to the
+specified list. _oxref(Editor-Output List, Set Output List). This is similar
+to using the left mouse button to add names to the "readings" list, except
+that it allows for multiple lists to be built up.
+
+_split()
+@node Editor-Editing
+@section Editing
+@cindex Editing: contig editor
+@cindex Contig Editor: editing features
+
+@menu
+* Editor-Cursor::              Moving the editing cursor
+* Editor-Modes::               Editing modes
+* Editor-Quality Values::      Adjusting the quality values
+* Editor-Cutoffs::             Adjusting the cutoff data
+* Editor-Editing Summary::     Summary of editing commands
+@end menu
+
+Editing can take up a significant portion of the time taken to finish a
+sequencing project. Gap4 has a selection of searches (_fpref(Editor-Searching,
+Searching, contig_editor)) designed to speed up this process.
+The problems that require most attention are conflicts between good
+bases. Where base 
+confidence values are present it should be unnecessary to edit all
+conflicting bases as, in general,
+this will amount to adjusting poor quality data to agree with good quality
+data, in which case the consensus sequence should be correct anyway.
+
+Pads in the consensus should not be considered a problem
+requiring edits because it is possible to
+output the consensus sequence (from the main Gap4 File menu) with pads
+stripped out. Obviously poorly defined pads (a mixture of several pads and
+real bases) require checking in the same manner as other poorly
+defined consensus bases.
+
+If you wish to check all base conflicts set the consensus algorithm to
+Frequency (_fpref(Con-Calculation, The Consensus Algorithms, calc_consensus))
+and the consensus cutoff to 100. The consensus will then be a dash in all
+places where there is not a 100% agreement in the sequences. The "Next
+Problem" editor button will then step one at a time through each conflict.
+
+_split()
+@node Editor-Cursor
+@subsection Moving the editing cursor
+@cindex Cursor: contig editor
+@cindex Contig Editor: cursor
+
+Nearly all editing operations happen at the location of the editing cursor.
+This cursor appears as a solid block. The simplest mechanism of moving the
+cursor is simply use the left mouse button. Alternatively the following keys
+can be used.
+
+@example
+@group
+ Left arrow or Control b        Move left one base
+ Right arrow or Control f       Move right one base
+ Up arrow or Control p          Move up one base
+ Down arrow or Control n        Move down one base
+ Control a                      Move editing cursor to start of used
+ Control e                      Move editing cursor to end of used
+ Meta a                         Move editing cursor to start of cutoff
+ Meta e                         Move editing cursor to end of cutoff
+ Meta <                         Move editing cursor to start of contig
+ Meta >                         Move editing cursor to end of contig
+@end group
+@end example
+
+The difference between the last four Control and Meta key combinations
+depends on whether "Cutoffs" is set. If it is, then "Control a"
+will move to the start of the used data for this reading and "Meta a"
+will move to the start of the cutoff data for this reading. Otherwise
+they both move to the same point (the used data start). Similarly for
+"Control e" and "Meta e". The action of these four key presses in the
+consensus line is simply to move to the start or end of the entire
+consensus sequence.
+
+The cursor can be placed on any sequence data shown in the editor.
+
+_split()
+@node Editor-Modes
+@subsection Editing Modes
+@cindex Edit modes: contig editor
+@cindex Contig Editor: edit modes
+@cindex Superedit: contig editor
+
+The editor operates in two main edit modes - Replace and Insert.  Replace
+allows a character to be replaced by another and Insert allows characters
+to be inserted.  Replace is the default mode. The mode can be changed by
+pressing the button marked "Insert". The checkbox next to the button will
+be set (filled by a dark colour) when the mode is "Insert". By default
+these modes are restricted until the Edit Modes menu
+is used to change them.
+
+The Edit Modes menu consists of a series of checkboxes and radiobuttons which
+control which editing options are enabled.
+
+@table @strong
+@cindex Allow insert in read: contig editor
+@cindex Allow del in read: contig editor
+@cindex Contig Editor: allow insert in read
+@cindex Contig Editor: Allow del in read
+@item Allow insert in read
+@itemx Allow del in read
+        Insertion or deletion within a reading will shift the sequence 
+characters and so will alter their alignment.
+This is acceptable provided action is
+        taken to correct it, by either shifting the reading or by
+        inserting or deleting a base elsewhere. This functionality is
+        disabled by default and is enabled by checking the appropriate
+        checkbox.  Note though that insertion and deletion of bases within
+        the cutoff data will shuffle the cutoff data rather than the
+        reading itself and hence will not break alignment. However this
+        operation still requires the edit mode to be enabled.
+
+@sp 1
+@cindex Allow insert any in cons: contig editor
+@cindex Allow del dash cons: contig editor
+@cindex Allow del any in cons: contig editor
+@cindex Contig Editor: allow insert any in cons
+@cindex Contig Editor: allow del dash in cons
+@cindex Contig Editor: allow del any in cons
+@item Allow insert any in cons
+@itemx Allow del dash in cons
+@itemx Allow del any in cons
+        These operations control the editing actions allowed for the
+        consensus. By default the only operations allowed are insertion
+        and deletion of pads. This is because consensus editing is
+        typically used for removing columns of pads where a single reading
+        has been overcalled.
+
+        When editing at 100% disagreement, such cases will be dashes in the
+        consensus, so "Allow del dash in cons" enables deletion of both
+        dash and pads.
+
+        "Allow insert any in cons" and "Allow del any in cons" allow any
+        column to be completely inserted or deleted.  These are potentially
+        dangerous actions, however the "Evidence for edits" options can
+        detect such edits.
+
+@sp 1
+@cindex Allow replace in cons: contig editor
+@cindex Contig Editor: allow replace in cons
+@item Allow replace in cons
+        Replacing a base in the consensus changes all of the bases in
+        readings at this point that disagree with the typed base. The
+        actual edit performed depends upon the "Edit by base type" and
+        "Edit by confidence" radiobuttons.
+        
+@sp 1
+@cindex Allow reading shift: contig editor
+@cindex Contig Editor: allow reading shift
+@item Allow reading shift
+        To shift a reading place the cursor at the far left end of the
+        reading. If cutoffs is set this should be the far left end of
+        the cutoff data. Then typing space or delete will move the reading
+        right or left respectively by one position. This operation is
+        disabled by default.
+
+@sp 1
+@cindex Allow transpose any: contig editor
+@cindex Contig Editor: allow transpose any
+@item Allow transpose any
+        Moving pads within a reading is often a useful procedure, and the
+        'movement' of a pad alone will not break the alignment.
+        For this reason it is possible to move pads around without using
+        insert/delete. Placing the cursor over a pad in a reading and
+        pressing "Control l" or "Control r" will move that pad left or
+        right one base. This operation will not work with the cursor on the
+        consensus. Pad movement is allowed at all times. The selection of
+        "Allow transpose any" allows any pair of adjacent characters to be
+swapped.
+@sp 1
+@cindex Allow uppercase: contig editor
+@cindex Contig Editor: allow uppercase
+@item Allow uppercase
+        A rule often followed by users is to type all modifications in
+        lower case which makes edited characters easier to see.
+        The "Allow uppercase" checkbox controls whether this rule is
+        enforced or not. By default "Allow uppercase" is checked which
+        means that the rule is not enforced.
+
+@sp 1
+@cindex Edit by base type: contig editor
+@cindex Edit by base confidence: contig editor
+@cindex Contig Editor: edit by base type
+@cindex Contig Editor: edit by base confidence
+@item Edit by base type
+@itemx Edit by confidence
+
+These two selections are radiobuttons, and are mutually exclusive.
+They control the outcome when replacing bases
+in the consensus. When editing the consensus 
+"Edit by base type" changes bases that disagree
+with the consensus to the base typed. "Edit by confidence"
+changes the confidence of disagreeing bases to 0. If the consensus
+quality cutoff value is greater than or equal to zero, characters with an
+accuracy value of 0 are ignored in the consensus calculation. That is, although
+the characters still appear in the reading, they are not used to calculate the
+consensus. In this way it is possible to maintain the original base calls
+for visual inspection, but get the correct consensus.
+
+Note that "Edit by confidence" will not work if the
+"frequency" consensus algorithm is in use (_fpref(Con-Calculation, The
+Consensus Calculation, calc_consensus)). If you wish to use "Edit by
+confidence", make sure that the quality cutoff is zero or higher, otherwise
+the frequency consensus algorithm will be used instead.
+
+@sp 1
+@cindex Edit mode sets: contig editor
+@cindex Mode sets: contig editor
+@cindex Contig Editor: mode sets
+@cindex Contig Editor: edit mode sets
+@item Mode set 1
+@itemx Mode set 2
+
+To make it easier to set the editing modes two user definable
+sets are available. By default these are as follows.
+
+Mode set 1:
+@itemize @minus
+@item   Disallow insert in read
+@item   Disallow del in read
+@item   Disallow insert any in cons
+@item   Allow del dash in cons
+@item   Disallow del any in cons
+@item   Disallow replace in cons
+@item   Disallow reading shift
+@item   Disallow transpose any
+@item   Allow uppercase
+@item   Edit by confidence
+@end itemize
+
+Mode set 2:
+@itemize @minus
+@item   Allow insert in read
+@item   Allow del in read
+@item   Allow insert any in cons
+@item   Allow del dash in cons
+@item   Disallow del any in cons
+@item   Allow replace in cons
+@item   Allow reading shift
+@item   Disallow transpose any
+@item   Allow uppercase
+@item   Edit by confidence
+@end itemize
+
+Currently the only way of redefining these sets is to add lines to
+your @file{.gaprc} file.
+_fxref(Conf-Introduction, Options Menu, configure)
+The method is to define a list of 1s and 0s to specify the states
+in the order listed above. The two default sets are defined as
+follows.
+
+@example
+set_def CONTIG_EDITOR.SE_SET.1    @{0 0 0 1 0 0 0 0 1 1@}
+set_def CONTIG_EDITOR.SE_SET.2    @{1 1 1 1 0 1 1 0 1 1@}
+@end example
+@end table
+
+_split()
+@node Editor-Quality Values
+@subsection Adjusting the Quality Values
+@cindex Quality values: contig editor, use within
+@cindex Cutoff values: contig editor
+@cindex Contig Editor: quality values
+@cindex Contig Editor: cutoff values
+
+Each base has its own quality value. Assembly will allow only
+values between 1 and 99 inclusive. A quality value of 0 means that this base
+should be ignored. A quality value of 100 means that this base is definitely
+correct and the consensus will be forced to be the same base type and will be
+given a consensus confidence of 100. If two conflicting bases both have a
+quality of 100 the consensus will be a dash with a confidence of 0.
+
+Newly added bases or replaced bases are assigned their own quality values. By
+default these are both 100. The "Set Default Confidence" option in the
+settings menu allows these values to be changed.
+
+Several keyboard commands are available to edit the quality value of an
+individual base. The '[' and ']' keys set the quality to 0 and 100
+repsectively. To increment or decrement the confidence of a base by 1 use
+Shift plus the Up and Down arrow keys. To increment or decrement by 10 use
+Control plus the Up and Down arrow keys. The editor will beep if you reach
+quality 0 or 100. Finally note that quality values can also be made visible by
+the use of grey scales for the sequence background colour. _oxref(Editor-Show
+Quality, Show Quality).
+
+@node Editor-Cutoffs
+@subsection Adjusting the Cutoff Data
+@cindex Cutoff data: contig editor
+@cindex Hidden data: contig editor
+@cindex Contig Editor: cutoff data
+
+The cutoff data is displayed by pressing the "Cutoffs"
+toggle at the top of the editor. The cutoff sequence will be
+displayed in grey. We call the boundary between the cutoff data and
+the used data the cutoff position. These positions can be shifted
+left or right for each end of the reading using the Meta Left-arrow
+and Meta Right-arrow keys respectively. As keyboards may not have a
+meta key, Control Left-arrow and Control Right-arrow also have the
+same effect. These key combinations adjust the cutoff positions by a
+single base at a time. They only work when the cursor is on the very
+first or very last "used" base, depending on which cutoff you wish
+to adjust.
+
+If large changes are required the cutoffs can be "zapped" to
+new positions using the "<" and ">" keys. To use these, place the
+editing cursor to the position required (which may be within the
+cutoff data or the used data) and press the "<" key to set the left
+cutoff to the base between the cursor and the base leftwards of the
+cursor. Similarly ">" sets the right cutoff to the base between the
+cursor and the base leftwards of the cursor. Note that many
+keyboards have "<" and ">" above the "," and "." keys. In this case
+you will need to press Shift in conjunction with "," and "." to
+perform the operations.
+
+_split()
+@node Editor-Editing Summary
+@subsection Summary of Editing Commands
+@cindex Summary of editing commands: contig editor
+@cindex Contig Editor: editing keys
+
+A brief summary of these editing operations and which (if any) edit modes are
+required can be seen below:
+
+@example
+Key          Location    Ins/Rep  Edit Mode           Action
+--------------------------------------------------------------------------
+base/*       Reading     Replace  any                 Change base
+base/*       Reading     Insert   Insert in read      Change base
+delete       Reading     both     Delete in read      Del base left & move
+Ctrl delete  Reading     both     Delete in read      Delete base to left
+Ctrl d       Reading     both     Delete in read      Delete under cursor
+delete       Read start  both     Readint shift       Shift left
+space        Read start  both     Reading shift       Shift right
+Ctrl l       Reading     both     any                 Move pad left
+Ctrl r       Reading     both     any                 Move pad right
+Ctrl l       Reading     both     Transpose any       Move base left
+Ctrl r       Reading     both     Transpose any       Move base left
+[            Reading     both     any                 Set quality to 0
+]            Reading     both     any                 Set quality to 100
+Shift Up     Reading     both     any                 Incr. quality by 1
+Shift Down   Reading     both     any                 Decr. quality by 1
+Ctrl Up      Reading     both     any                 Incr. quality by 10
+Ctrl Down    Reading     both     any                 Decr. quality by 10
+<            Reading     both     any                 Set left cutoff
+>            Reading     both     any                 Set right cutoff
+Meta left    Reading     both     any                 Adjust left cutoff
+Meta right   Reading     both     any                 Adjust right cutoff
+*            Consensus   both     any                 Insert pad column
+base         Consensus   Insert   Insert any in cons  Insert column
+base         Consensus   Replace  any                 Replace column
+delete *     Consensus   both     any                 Delete column
+delete -     Consensus   both     Del dash in con     Delete column
+delete any   Consensus   both     Del any in cons     Delete column
+Ctrl d       Consensus   both     Del dash/any        Delete column
+@end example
+
+_split()
+@node Editor-Selections
+@section Selections
+@cindex Selections: contig editor
+@cindex Contig Editor: selections
+
+It is possible to highlight an area of a reading or the
+consensus sequence in preparation for performing some further action
+upon it. Such examples of actions are: creating annotations and
+aligning sequence. We call these highlighted areas "selections".
+They will be displayed as an underlined region.
+
+The simplest way to make a selection is using the left mouse
+button. Pressing the mouse button marks the base beneath the cursor 
+as the start of the selection. Then, without releasing the button,
+moving the mouse cursor adjusts the end of the selection. Finally
+releasing the button will allow normal use of the mouse again.
+
+Sometimes we may wish to make a selection longer than is visible on the
+screen, or to extend our current selection. This can be done by using shift
+left mouse button to adjust the end of the selection. Hence we can mark the
+start of the selection using the left button, scroll along the contig to
+the desired position, and set the end using the shift left button.
+
+The selection is stored in a "cut buffer". This allows for
+the usual "cut and paste" operations between applications, although
+the contig editor only supports this in one direction (as it is not
+possible to "paste" into the window). The mechanism employed for this
+follows the usual X Windows standard of using the middle mouse button
+(or Alt left mouse button).
+For example, to send a piece of sequence to a text editor (eg
+@code{Emacs}) mark the desired region using the left mouse button in
+the editor window and then press the middle button, or Alt left mouse
+button, whilst the mouse
+cursor is in the text editor window. The sequence will then be
+inserted into the text editor.
+
+A quick summary of the mouse commands follows.
+
+@example
+Left button                       Position editing cursor to mouse cursor
+Left button (drag)                Mark start and end of selection
+Shift left button                 Adjust end of selection
+Middle button (another window)    Copy selected sequence
+Alt left button (another window)  Copy selected sequence
+@end example
+
+_split()
+@node Editor-Annotations
+@section Annotations
+@cindex Tags: contig editor
+@cindex Annotations: contig editor
+@cindex Contig Editor: annotations
+@cindex Contig Editor: tags
+
+Annotations (or tags) can be placed at any position on readings or on
+the consensus.
+They are usually used to record
+positions of primers for walking, or to mark sites, such as
+repeats or compressions, that have caused problems during sequencing. 
+They can also be used to contain feature table data as read from an EMBL format
+sequence file
+(_fpref(Mutation-Detection-Reference-Sequences, Reference sequences, t)).
+Each
+annotation has a type such as "primer", a position, a length, a strand
+(forward, reverse or both) and an optional comment. Each type and strand
+has an associated colour that will be shown on the display. For
+information on searching for annotations see _oref(Editor-Search-Type,
+Searching by Tag Type), and _oref(Editor-Search-Anno, Searching by
+Annotation Comments).
+
+_picture(contig_editor.taged)
+
+To create an annotation,  make a selection and then select
+"Create Tag" from the contig editor commands menu.
+_oxref(Editor-Commands, The Commands Menu). This will bring up a further
+window; the "tag editor" (shown above). The "Type:" button at the top of
+the editor invokes a selectable list from which tag types can be chosen. 
+See below.
+
+_picture(contig_editor.tagsel)
+
+Use this to select the desired type of
+annotation.  
+
+Next the strand of the annotation can be selected. This
+will be displayed as one of "<----->", "<-----" and "----->". The
+comment (the box beneath the buttons) can be edited using the usual
+combination of keyboard input and arrow keys. The "Save" button will
+exit the tag editor and create the annotation. To abandon editing
+without creating the annotation use the "Cancel" button.
+
+To edit an existing annotation, position the editing cursor
+within a annotation and select "Edit Tag" from the commands menu. Once
+again the tag editor will be invoked and operates as before. Here
+"Save" will save the edited changes and "Cancel" will abandon
+changes.
+
+Removing a annotation involves positioning the editing cursor within
+an annotation and selecting "Delete Tag" from the commands menu.  
+
+As usual, "undo" can be used to undo any of these annotation creations,
+edits and removals.
+
+The Control-Q key sequence may be used to toggle the displaying of tags.
+Pressing it once will prevent all tags from being displayed in the editor.
+This is sometimes useful to see any colouring information underneath the tag.
+Pressing Control-Q once more will redisplay them.
+
+_split()
+@node Editor-Searching
+@section Searching
+@cindex Searching: contig editor
+@cindex Contig Editor: searching
+
+@menu
+* Editor-Search-Pos::           Searching by position
+* Editor-Search-Prob::          Searching by problem
+* Editor-Search-Anno::          Searching by annotation comments
+* Editor-Search-Seq::           Searching by sequence
+* Editor-Search-Qual::          Searching by quality
+* Editor-Search-ConsQual::      Searching by consensus quality
+* Editor-Search-File::          Searching by file
+* Editor-Search-Name::          Searching by reading name
+* Editor-Search-Edit::          Searching by edits
+* Editor-Search-VerifyEdit1::   Searching by evidence for edit (1)
+* Editor-Search-VerifyEdit2::   Searching by evidence for edit (2)
+* Editor-Search-Type::          Searching by tag type
+* Editor-Search-Discrepancies:: Searching by discrepancies
+@end menu
+
+The contig editor's searching ability and its links to the consensus
+calculation algorithm are crucial in determining the efficiency with which
+contigs can be checked and corrected. The consensus is calculated "on the
+fly" and changes in response to edits. For editing, the most important
+search functions are those which reveal problems in the consensus
+whilst ignoring all bases that are adequately well determined.
+The default search type is therefore by consensus quality. By default this
+is done in the forward direction and for a quality value of 30, although
+this is configurable by changing the collowing lines in the gaprc file.
+
+@example
+set_def CONTIG_EDITOR.SEARCH.DEFAULT_TYPE       consquality
+set_def CONTIG_EDITOR.SEARCH.DEFAULT_DIRECTION  forward
+set_def CONTIG_EDITOR.SEARCH.CONSQUALITY_DEF    30
+@end example
+
+Selecting "Next Search" brings up a window which can remain present
+during normal editor operation. The window allows the user to select
+the direction of search, the type of search, and a value to search
+on. The value is entered into a value text box, then pressing the
+"search" button performs the search. If successful, the cursor is
+positioned accordingly. An audible tone indicates failure. Pressing
+the "Cancel" button removes the search window. The search window is
+automatically removed when the contig editor is exited.
+
+_picture(contig_editor.search)
+
+The "Cutoffs"
+button can be used to select whether or not searching should find
+matches within the cutoff data.
+
+The Control-s key binding in the editor is equivalent to searching forward for
+the next match. The Escape Control-s key sequence performs a reverse search.
+Both key bindings will bring up the search window if it is not currently
+displayed.
+
+As is described below, there are thirteen different search modes.
+
+@node Editor-Search-Pos
+@subsection Search by Position
+@cindex Searching by position: contig editor
+
+The presence of padding characters in the consensus can greatly alter the
+length of the sequence, and the positions of the bases along it. Positions
+can therefore be defined in two ways: those which include pads and those
+which do not. This option
+(termed a search!) moves the cursor to a specified position.
+The numeric position is specified in
+the value text box. Eg a value of "1234" causes the cursor to be
+placed at base number 1234 in the contig. 
+Positioning within a 
+reading is achieved by prefixing the number with the "@@" character,
+eg "@@123" positions the cursor at base 123 of the sequence in which
+the cursor lies. Relative positions can be specified by prefixing
+the number with a plus or minus character. Eg "+1234" will advance
+the cursor 1234 bases. If possible, the cursor is positioned within
+the same sequence. The direction buttons have no effect on this
+operation.
+
+@node Editor-Search-Prob
+@subsection Search by Problem
+@cindex Searching by problem: contig editor
+
+This positions the cursor at the next place in the consensus
+sequence which is "*", "-" or "N". The search can be
+performed either forwards or backwards from the current cursor
+position. Obviously the characters
+appearing in the consensus depend on the selected consensus calculation
+algorithm and the thresholds set.
+
+@node Editor-Search-Anno
+@subsection Search by Annotation Comments
+@cindex Searching by annotation comments: contig editor
+
+This positions the cursor at the start of the next tag which
+has a comment containing the string specified in the value box.
+Only currently active tag types are searched.
+The search performed is a regular expression search, and
+certain characters have special meaning. Be careful when your
+string contains ".", "*", "[", "]", "\", "^" or "$". The search can be
+performed either forwards or backwards from the current cursor
+position. Searching with an empty value will find all tags.
+
+@node Editor-Search-Type
+@subsection Search by Tag Type
+@cindex Searching by tag type: contig editor
+
+This positions the cursor at the start of the next tag of the specified
+type. If the tag type is not active, the tag will be found and
+underlined but will remain invisible.
+To change
+the type, select from the menu that pops up when the mouse is clicked
+on the button labeled "Type:". The search can be performed either
+forwards or backwards of the current cursor position. To find all
+tags, use "Search by Annotation Comments", with an empty text box.
+
+@node Editor-Search-Seq
+@subsection Search by Sequence
+@cindex Searching by sequence: contig editor
+
+This positions the cursor at the start of the next segment of
+sequence that matches the value specified in the text box.
+The search is case insensitive, ignores pads, and can allow a specified
+number of mismatches. It is performed on the readings, not on the consensus
+sequence, and can be either forwards or backwards from the current
+cursor position.
+
+@node Editor-Search-Qual
+@subsection Search by Quality
+@cindex Searching by quality: contig editor
+
+This positions the cursor at the next place in the consensus
+sequence where the consensus for each of the two strands disagree.
+Where there is only data for one strand the search will stop
+at every base. The search can be performed either forwards or
+backwards from the current cursor position.
+
+@node Editor-Search-ConsQual
+@subsection Search by Consensus Quality
+@cindex Searching by consensus quality: contig editor
+
+This positions the cursor on the consensus at the next
+position where the quality of
+the consensus is below a given threshold. The quality of the consensus is
+calculated by the consensus algorithm. For this search
+the quality threshold should be entered into the
+value box and should be within the range of 0 to 100 inclusive.
+
+@node Editor-Search-File
+@subsection Search by file
+@cindex Searching by file: contig editor
+
+This steps the cursor through a set of positions specified in a file.
+The format for the positions in the file is one per
+line with each line consisting of a reading name, a position within that
+reading, and an optional comment. If a position is relative to the
+start of the contig rather than the start of any particular reading, then
+simply use the first reading in the contig. Positions that are beyond the
+ends for the reading are still valid, although the editing cursor is moved
+onto the consensus sequence.
+
+The comment can consist of any string. Multiline comments are possible, but
+they must be written using @code{\n} in the comment string rather than an
+actual newline character (which would signify the start of the next
+record). 
+The
+comment for the current position is displayed at the bottom of the editor search
+window in a text panel which is visible only when in the "search by file"
+mode.
+
+Any record containing a reading name that is not in the current contig is silently
+ignored. This allows for a search file to have positions for all contigs.
+However at present there is no mechanism for stepping through an entire search
+file bringing up editors for each contig as required. 
+This will be implemented in the future.
+
+An example file follows.
+
+@example
+xb63c7.s2 102
+xb63c7.s2 30 A multi-\nline comment.
+xb32a2.s1 56 Oligo, of length 12
+xa17b1.r1 5714 Repeat from 5714 to 5780
+@end example
+
+@node Editor-Search-Name
+@subsection Search by Reading Name
+@cindex Searching reading name: contig editor
+
+This positions the cursor at the left end of the reading specified
+in the value text box. If the value is prefixed with a hash sign it
+is assumed to be a reading number. Otherwise it is assumed to be a
+reading name. Eg "#123" positions the cursor at the left end of
+reading number 123. "a16a12.s1" positions at the start of reading
+a16a12.s1. If the value was "a16" the cursor is positioned at the
+first reading which starts with "a16".
+
+@node Editor-Search-Edit
+@subsection Search by Edit
+@cindex Searching by edits: contig editor
+
+This positions the cursor at the next place in the contig where an edit has
+been made. Edits include base insertions, deletions, replacements and
+confidence value changes.The search can be performed either forwards or
+backwards from the current cursor position.
+
+@node Editor-Search-VerifyEdit1
+@subsection Search by Evidence for Edit (1)
+@cindex Searching by Verify AND: contig editor
+@cindex Verfiy AND: contig editor
+@cindex Searching by Evidence for Edit1: contig editor
+@cindex Evidence for Edit1: contig editor
+
+The Evidence for Edit (1) option checks edited bases to find bases in the
+consensus for which there is no evidence in the original readings. The
+definition of evidence is that at least one reading had this original base
+call. 
+Currently this search operates only in the forward direction.
+
+@node Editor-Search-VerifyEdit2
+@subsection Search by Evidence for Edit (2)
+p@cindex Searching by Verify OR: contig editor
+@cindex Verfiy OR: contig editor
+@cindex Searching by Evidence for Edit2: contig editor
+@cindex Evidence for Edit2: contig editor
+
+The Evidence for Edit (2) option checks edited bases to find bases in the
+consensus for which there is no evidence in the original readings. The
+definition of evidence is that at least one reading from each strand
+had this original base call.
+Currently this searches only in the forward direction.
+
+@node Editor-Search-Discrepancies
+@subsection Search by Discrepancies
+@cindex Searching by discrepancies: contig editor
+@cindex Discrepancies: searching for in contig editor
+
+This finds positions where two or more bases are above a particular
+quality level, but in disagreement. The quality threshold is given in the
+value box and should be within the range of 0 to 100 inclusive.
+
+_split()
+@node Editor-Commands
+@section The Commands Menu
+@cindex Commands menu: contig editor
+@cindex Contig Editor: commands menu
+
+The Commands menu is available by either pressing the Commands button
+at the top of the contig editor window, or by pressing the Control key
+and the left mouse button, or by pressing right mouse button with the
+mouse cursor anywhere within the sequence display section of the
+contig editor. A menu will be revealed containing the following
+options (which are described in greater detail below).
+
+@menu
+* Editor-Searching::            Searching
+* Editor-Annotations::          Create Tag
+* Editor-Annotations::          Edit Tag
+* Editor-Annotations::          Delete Tag
+* Editor-Comm-Save::            Save Contig
+* Editor-Comm-Dump::            Dump Contig to File
+* Editor-Comm-Consensus Trace:: Save Consensus Trace
+* Editor-Comm-List Confidence:: List Confidence
+* Editor-Comm-Report-Mutations:: Report Mutations
+* Editor-Comm-Primer Selection:: Select Primer
+* Editor-Comm-Align::           Align
+* Editor-Comm-Shuffle::         Shuffle Pads
+* Editor-Comm-Remove Reading::  Reading reading
+* Editor-Comm-Break Contig::    Break Contig
+@end menu
+
+@subsection Search
+
+This Contig Editor Commands menu function
+Performs a search. _oxref(Editor-Searching, Searching).
+
+@subsection Create Tag
+
+This Contig Editor Commands menu function
+Creates an annotation. _oxref(Editor-Annotations, Annotations).
+
+@subsection Edit Tag
+
+This Contig Editor Commands menu function
+Edits an annotation. _oxref(Editor-Annotations, Annotations).
+
+@subsection Delete Tag
+
+This Contig Editor Commands menu function
+Removes an annotation. _oxref(Editor-Annotations, Annotations).
+
+@node Editor-Comm-Save
+@subsection Save Contig
+@cindex Contig Editor: saving
+@cindex Saving: contig editor
+
+This Contig Editor Commands menu function
+writes any edited data to disk. The undo history is
+cleared and it is no longer possible to quit and abandon these saved
+changes. The Control-x followed by Control-s will also save the contig editor
+in the same manner as the Save command.
+
+@node Editor-Comm-Dump
+@subsection Dump Contig to File
+@cindex Dump Contig: contig editor
+@cindex Contig Editor: Dump Contig
+@cindex Contigs: printing
+@cindex Printing contigs
+@cindex Contigs: saving to file
+@cindex saving contigs to file
+@cindex Contig Editor: saving to file
+@cindex aligned readings: saving to file
+@cindex aligned readings: printing
+@cindex printing: aligned readings
+
+This Contig Editor Commands menu function
+outputs the current contig, as currently shown (e.g. with status
+lines) to a file. The user can select the region to dump, the length of each
+line, and the file name to use. The sequence names can be up to 40 characters, 
+but often projects do not use the full length. To avoid wasted space in the
+output the number of columns to use for sequence names can be adjusted.
+
+@node Editor-Comm-Consensus Trace
+@subsection Save Consensus Trace
+@cindex Save Consensus Trace: contig editor
+@cindex Contig Editor: Save Consensus Trace
+@cindex Consensus Trace
+@cindex Trace: Consensus Trace
+
+This Contig Editor Commands menu function
+produces a trace file for the consensus sequence by averaging the
+traces of the readings. The command brings up a
+dialogue containing controls to specify the filename, the consensus start and
+end positions, the strand, and whether to use matching reads.
+
+As the trace of a reading is dependent on the direction it was read, the
+consensus trace can be computed from all the reads in either the forward or
+reverse directions, but not both at once. When the "Use only matching reads"
+toggle is set to "Yes" only the readings of the correct strand that have the
+same base call as the consensus sequence are used. The option is useful for
+producing wild-type trace files for a mutation analysis project.
+
+@node Editor-Comm-List Confidence
+@subsection List Confidence
+@cindex List confidence: contig editor
+@cindex Contig Editor: List Confidence
+
+This Contig Editor Commands menu function
+operates in a very similar manner to the main Gap4 List Confidence
+command (_fpref(Con-Evaluation, List Confidence, calc_consensus)), except that
+it only operates on the current contig, and it
+uses the current editor consensus confidences rather than the ones saved to
+disk. It displays a dialogue requesting a range within the contig and a
+question asking if only summary of the results is required.
+
+Pressing OK or Apply will add to the editor information line a count of the
+expected number of errors and the error rate. If the "Only update information
+line" question was answered "No" then the full frequency table will also be
+output. It will appear in the main text output window in the same format
+as the "List Confidence"
+command in the main Gap4 View menu. The Apply button can be used to calculate
+the number of errors without removing the dialogue.
+
+It is often the very ends of contigs (which are
+generally low coverage and bad quality) that have most of the errors,
+and so
+it is sometimes useful to set a range which
+includes all of the contig except for around 1000 bases from each end.
+
+
+
+@node Editor-Comm-Report-Mutations
+@subsection Report Mutations
+@cindex Report mutations: contig editor
+@cindex Mutation reporting: contig editor
+@cindex Contig Editor: mutation reporting
+This Contig Editor Commands menu function is used to produce a list of all
+the bases annotated with mutation tags (or those bases which differ from
+the consensus/reference sequence). If the tags or differences are within
+segments of sequence which are also annotated with EMBL feature table CDS
+records, the report will include data describing its effect.
+The report, which can be sorted by sequence or position, 
+includes the reading names, mutation positions relative to the 
+reference
+sequence, the actual change, its effect, and the evidence. An example is shown
+below.
+
+@example
+@group
+@cartouche
+
+001321_11aF 33885T>Y (silent F) (strand - only)
+001321_11aF 34407G>K (expressed E>[ED]) (strand - only)
+001321_11cF 35512T>Y (silent L) (double stranded)
+001321_11cF 35813C>Y (expressed P>[PL]) (double stranded)
+001321_11dF 36314A>R (expressed E>[EG]) (double stranded)
+001321_11eF 36749A>R (expressed K>[KR]) (double stranded)
+001321_11eF 37313T>K (noncoding) (strand - only)
+000256_11eF 36749A>G (expressed K>R) (double stranded)
+
+@end cartouche
+@end group
+@end example
+
+Here the first record is for reading 001321_11aF, position 33885, T changed
+to T and C (i.e. is heterozygous) to produce no amino acid change, with evidence coming only from
+the complementary strand. The last record is for reading 000256_11eF, position
+36749, A changed to G, producing an amino acid change K to R, with evidence
+from both strands of the sequence. The penultimate record denotes a 
+heterozygote in a noncoding region.
+
+
+@node Editor-Comm-Primer Selection
+@subsection Select Primer
+@cindex Primer selection: contig editor
+@cindex Oligo selection: contig editor
+@cindex Contig Editor: oligo selection
+@cindex Contig Editor: primer selection
+
+This Contig Editor Commands menu function
+allows the user to employ the primer selection algorithm OSP to
+find primers for sequencing experiments. _oxref(Editor-Primer Selection,
+Searching for Primers).
+
+@node Editor-Comm-Align
+@subsection Align
+@cindex Contig Editor: align
+@cindex Align: contig editor
+
+This Contig Editor Commands menu function
+performs a sequence alignment between the currently selected segment of a
+reading and the consensus sequence. It provides a simple way of extending the
+visible part of a reading to use its hidden data, which is often useful to
+double strand a short section of consensus without the need to perform further
+experiments.  On a sequence, highlight the cutoff data to align along with a
+small section of the good quality non-cutoff data. Then select the align
+command and adjust the cutoff point as desired.  Pads are inserted in the
+consensus and readings as necessary, although pads will not be inserted in the
+cutoff data of other sequences.
+
+@node Editor-Comm-Shuffle
+@subsection Shuffle Pads
+@cindex Contig Editor: shuffle Pads
+@cindex Shuffle Pads: contig editor
+@cindex pad shuffling: contig editor
+@cindex aligning pads: contig editor
+@cindex pad alignment: contig editor
+
+One weakness of the alignment strategy used in the current shotgun assembly
+algorithm is that padding characters are not always aligned with one
+another. 
+This Contig Editor Commands menu function
+attempts to align padding characters using a very
+simply strategy. It does not solve all pad alignment problems but is a
+useful first step during cleaning-up operations. After
+shuffling, all columns consisting entirely of pads are removed.
+
+@node Editor-Comm-Remove Reading
+@subsection Remove Reading
+
+This Contig Editor Commands menu function
+marks a reading for subsequent removal. _oxref(Editor-Remove Readings,
+Removing readings from the contig)
+
+@node Editor-Comm-Break Contig
+@subsection Break Contig
+@cindex Contig editor: break contig
+@cindex Break contig: contig editor
+@cindex Contig breaking
+
+This Contig Editor Commands menu function
+breaks the contig so that the reading underneath the editing cursor is
+the left end of a new contig. In order to perform this operation all edits
+are saved automatically first. Once saved these edits cannot be undone. This
+operation is identical to the Break Contig command in the main menu.
+_fxref(Break Contig, Break Contig, disassembly)
+
+
+_split()
+@node Editor-Settings
+@section The Settings Menu
+@cindex Settings menu: contig editor
+@cindex Contig Editor: settings menu
+@cindex Consensus: contig editor
+@cindex configure: contig editor
+@cindex Settings: saving in contig editor
+@cindex Contig Editor: saving settings
+@cindex Contig Editor: saving configuration
+
+The purpose of this menu is to configure the operation of the contig
+editor, including the consensus calculation, the active tags and the
+status lines. Settings can be saved using the "Save settings" button.
+Settings for the following options can be changed.
+
+@ifset tex
+@itemize @bullet
+@item
+Status Line
+@item
+Trace Display
+@item
+Consensus algorithm
+@item
+Highlight Disagreements
+@item
+Compare Strands
+@item
+Toggle auto-save
+@item
+3 Character Amino Acids
+@item
+Group Readings by Template
+@item
+Show reading quality
+@item
+Show consensus quality
+@item
+Show edits
+@item
+Show unpadded positions
+@item
+Set Active Tags
+@item
+Set Output List
+@item
+Set Default Confidences
+@item Store Undo
+Set or unset saving of undo
+@end itemize
+@end ifset
+
+
+@menu
+* Editor-Status::               Status Line
+* Editor-Trace Display::        Trace Display
+* Editor-Consensus algorithm::  Consensus Algorithm
+* Editor-Disagree::             Highlight Disagreements
+* Editor-Compare::              Compare Strands
+* Editor-auto-save::            Toggle auto-save
+* Editor-3Char::                3 Character Amino Acids
+* Editor-Group Templates::      Group Readings by Templates
+* Editor-Show Quality::         Show reading/consensus quality
+* Editor-Show edits::           Show edits
+* Editor-Show unpadded pos::    Show Unpadded Positions
+* Editor-Active Tags::          Set Active Tags
+* Editor-Output List::          Set Output List
+* Editor-Default Confidence::   Set Default Confidences
+* Editor-Store Undo::           Set or unset saving of undo
+@end menu
+
+@node Editor-Status
+@subsection Status Line
+@cindex Contig Editor: status line
+@cindex Status line: contig editor
+
+The contig editor can display several additional text lines underneath the
+consensus sequence. This "status" data is of textual form and can
+provide additional
+information about the data displayed above. Currently, there are two forms
+of status line available. These are "Strands" and "Translate Frame". Both
+status line types update automatically as edits are made that change the
+consensus.
+
+The status line menu is accessed by cascading off the settings menu.
+It contains the following.
+
+@itemize @bullet
+@item Show Strands
+@item Translate using feature tables
+
+@item Translate frame 1+
+@item Translate frame 2+
+@item Translate frame 3+
+@item Translate frame 1-
+@item Translate frame 2-
+@item Translate frame 3-
+
+@item Translate + frames
+@item Translate - frames
+@item Translate all frames
+
+@item Remove all
+@end itemize
+
+@cindex Contig Editor: Show Strands
+@cindex Show Strands: contig editor
+
+"Show Strands" creates a single line consisting of the +, -, = and !
+characters.  These indicate: positive strand only, negative strand
+only, both strands (in agreement) and both strands (in disagreement)
+respectively.
+
+@cindex Contig Editor: translations
+@cindex Contig Editor: translations using feature tables
+@cindex Feature tables: Translation in Contig Editor
+@cindex Translations: contig editor
+The frame translation  status lines provide translations in each of the
+six available  reading
+frames. Alternatively, using the "Translate using feature tables", only
+segments described in CDS records will be translated. The CDS records
+are those contained in the reference sequence. Translations can be
+displayed in either the single character or the three character amino
+acid codes.
+
+Pressing the right mouse button on the 'name' segment of the status
+line (on the left hand side) pops up a menu. The commands available
+may depend on the type of the status line chosen, however currently it
+will always only contain  the "Remove" command. This, as expected,
+removes the status line from the display. To remove all status lines
+use the "Remove all" command from the "Status Line" cascading menu.
+
+Note that
+the data in the status line cannot be cut and pasted, modified or
+searched; it is not possible to move the cursor into these lines.
+
+@node Editor-Trace Display
+@subsection Trace Display
+@cindex Contig Editor: Trace Display menu
+@cindex Trace Display menu: contig editor
+
+The editor trace display has two configurations specific to its own
+usage. 
+
+@itemize @bullet
+@item Auto-display Traces
+@item Auto-diff Traces
+@end itemize
+
+@cindex Auto-display Traces: contig editor
+@cindex Contig Editor: auto-display traces
+
+When switched on, auto-display traces will direct certain searches to
+automatically display relevant traces to aid in solving problems.  This
+works in conjunction with most appropriate searches. The traces chosen to
+solve the "problem" will, by default, be the best trace from each strand which
+agrees with the consensus (which is calculated at a low 
+consensus cutoff) and the
+best trace from each strand which disagrees with the consensus. This selection
+of traces may be adjusted by modifying the
+@code{CONTIG_EDITOR.AUTO_DISPLAY_TRACES_CONF} configuration variable. The
+default setting of this is "@code{+ - +d -d}". Each of the space separated
+elements in this string corresponds to a trace file to choose. If one cannot
+be found, then it is ignored. The order listed here is the order in which they
+will be displayed in the trace window. The complete list of available trace
+specifiers is:
+
+@table @code
+@item +
+Best +ve strand trace agreeing with consensus
+@item +p
+Best +ve strand dye-primer trace agreeing with consensus
+@item +t
+Best +ve strand dye-terminator trace agreeing with consensus
+@item -
+Best -ve strand trace agreeing with consensus
+@item -p
+Best -ve strand dye-primer trace agreeing with consensus
+@item -t
+Best -ve strand dye-terminator trace agreeing with consensus
+@item d
+Best trace disagreeing with consensus
+@item +d
+Best +ve strand trace disagreeing with consensus
+@item -d
+Best -ve strand trace disagreeing with consensus
+@item +2
+Second best +ve strand trace agreeing with consensus
+@item +2p
+Second best +ve strand dye-primer trace agreeing with consensus
+@item +2t
+Second best +ve strand dye-terminator trace agreeing with consensus
+@item -2
+Second best -ve strand trace agreeing with consensus
+@item -2p
+Second best -ve strand dye-primer trace agreeing with consensus
+@item -2t
+Second best -ve strand dye-terminator trace agreeing with consensus
+@item 2d
+Second best trace disagreeing with consensus
+@item +2d
+Second best +ve strand trace disagreeing with consensus
+@item -2d
+Second best -ve strand trace disagreeing with consensus
+@end table
+
+@cindex Trace differences: contig editor
+@cindex Contig Editor: Trace differences
+
+Once this is
+activated, whenever the user double clicks on a base in the editor
+sequence display, not only is the reading's trace displayed, but also
+its designated reference trace plus the difference between them. If its
+complementary reading is available, its trace and reference trace and
+their differences are also displayed.
+
+_lpicture(mut_traces_het)
+
+Trace differences display
+
+As is shown in the figure below, it is also possible to set the trace
+difference display to use positive and negative references
+
+_lpicture(mut_traces_positive)
+
+
+For further information about mutation detection, see
+_fref(Mutation-Detection-Introduction, Search for Mutations, mutations)
+
+@node Editor-Consensus algorithm
+@subsection Consensus Algorithm
+@cindex Consensus algorith in contig editor
+
+This allows selection of the consensus algorithm to use within the Contig
+Editor. Like the consensus and quality cutoff parameters, it is local to the
+specific editor being used. The main Consensus algorithm option should be used
+to globally change the algorithm being used.
+_fxref(Conf-Consensus Algorithm, Consensus Algorithm, configure)
+
+@node Editor-Disagree
+@subsection Highlight Disagreements
+@cindex Highlight Disagreements: contig editor
+@cindex Contig Editor: Highlight Disagreements
+@cindex Dots: contig editor highlight disagreements
+@cindex Colour: contig editor highlight disagreements
+
+This toggles between the normal sequence display (showing the current base
+assignments) and one in which those assignments that differ from the consensus
+are highlighted. It makes scanning for problems by eye much easier.
+
+Several modes of highlighting are available: "By dots" will only display the
+bases that differ from the consensus, displaying all other bases as full
+stops. The base colours are as normal (ie reflecting tags and quality). "By
+foreground colour" and "By background colour" displays all base characters,
+but colours those that differ from the consensus. This allows easier visual
+scanning of the context that a difference occurs in, but it may be wise to
+disable the displaying of tags. Finally the "Case sensitive" toggle controls
+whether upper and lower case bases of the same base type should be considered
+differences.
+
+@node Editor-Compare
+@subsection Compare Strands
+@cindex Contig Editor: Compare Strands
+@cindex Compare Strands: contig editor
+
+This toggles the consensus calculation routine between
+treating both strands together or independently. In the independent
+case any difference between the two strands is shown in the
+consensus as a '-'. Hence these clashes are found as problems by the
+"Search by problem" option.
+
+@node Editor-auto-save
+@subsection Toggle auto-save
+@cindex Contig Editor: toggle auto-save
+@cindex Contig Editor: auto-save
+@cindex Auto-save: contig editor
+@cindex Toggle auto-save: contig editor
+
+Selecting auto-save toggles the auto save feature. Initially this is
+turned off each time the contig editor is invoked. Once toggled the
+adjacent checkbox will be set to indicate the feature is enabled and
+the contig will be saved. From that point onwards the contig editor
+will write its data to disk every 50 edits. Each time an auto save is
+performed it is announced in the output window. Saving more frequently
+can still be performed manually by using "Save Contig".
+
+Unlike "saves" made using the manual "Save Contig" command, 
+the "Undo" button will allow the user to undo edits regardless
+of when the last auto save occurred. 
+
+@node Editor-3Char
+@subsection 3 Character Amino Acids
+@cindex 3 Character Amino Acids: contig editor
+@cindex Contig Editor: 3 Character Amino Acids
+
+By default, the codon translation within the status line displays
+single character amino acid codes. Selecting "3 Character
+Amino Acids" will toggle the status line to display three
+character amino acid codes.
+
+
+@node Editor-Group Templates
+@subsection Group Readings by Templates
+@cindex Templates: grouping readings in contig editor
+@cindex Contig Editor: group readings by templates
+@cindex Group Readings by Templates: contig editor
+@cindex Mutation detection: Group Readings by Templates
+
+When set, this forces readings from the same template to be displayed
+vertically adjacent to one another. The real "X coordinate" of the reading is
+not changed, so this has no effect for readings from the same template that
+are never visible together on the screen at the same time. The purpose of the
+function is to provide a method for grouping batches of readings
+together, for example when looking for mutations. They
+do not need to be from the same template, but can be grouped using the
+template name.
+
+Note that when
+this mode is in use the operation of the up and down arrow keys incorrectly
+affects the editing cursor. Using the mouse to position the editing cursor
+still works correctly.
+
+@node Editor-Show Quality
+@subsection Show Reading and Consensus Quality
+@cindex Show reading quality: contig editor
+@cindex Show consensus quality: contig editor
+@cindex Contig Editor: show reading quality
+@cindex Contig Editor: show consensus quality
+@cindex Quality values: contig editor, displayed
+
+When the quality cutoff value is 0 or higher and either of the "show
+reading quality" or "show consensus quality" 
+toggles is set, the background for
+bases is shaded in a grey level dependent on their quality.  There are ten
+levels of shading with the darkest representing poor data and the lightest
+representing good data. So with the quality cutoff set to 50, all bases with a
+quality of less than fifty are shown with a red foreground and a dark grey
+background, bases with quality just above 50 will have the darkest grey
+background, and bases with a quality of 100 will have the lightest background.
+When tags are present the background colour is that of the tag rather than the
+quality.
+
+The colours used are adjustable by modifying your @file{.gaprc} file. The
+defaults are shown below.
+
+@example
+set_def CONTIG_EDITOR.QUAL0_COLOUR     "#494949"
+set_def CONTIG_EDITOR.QUAL1_COLOUR     "#696969"
+set_def CONTIG_EDITOR.QUAL2_COLOUR     "#898989"
+set_def CONTIG_EDITOR.QUAL3_COLOUR     "#a9a9a9"
+set_def CONTIG_EDITOR.QUAL4_COLOUR     "#b9b9b9"
+set_def CONTIG_EDITOR.QUAL5_COLOUR     "#c9c9c9"
+set_def CONTIG_EDITOR.QUAL6_COLOUR     "#d9d9d9"
+set_def CONTIG_EDITOR.QUAL7_COLOUR     "#e0e0e0"
+set_def CONTIG_EDITOR.QUAL8_COLOUR     "#e8e8e8"
+set_def CONTIG_EDITOR.QUAL9_COLOUR     "#f0f0f0"
+set_def CONTIG_EDITOR.QUAL_IGNORE      "#ff5050"
+@end example
+
+
+@node Editor-Show edits
+@subsection Show edits
+@cindex Show Edits: contig editor
+@cindex Contig Editor: show edits
+
+When set, any change between the bases displayed and the original sequence
+held in the trace files is shown by changing the background colour of the
+changed base. The detection of these edits depends on the quality values
+and the "original position" data. Hence the traces do not need to be present
+in order to detect edits. The colour of the bases reflects the type of change
+found. The colours are adjustable by editing the @file{.gaprc} file. The
+following table lists the colour, gaprc variable name and the meaning.
+
+@table @i
+@item red
+@code{CONTIG_EDITOR.EDIT_DEL_COLOUR } --- Deletion
+@item pink
+@code{CONTIG_EDITOR.EDIT_BASE_COLOUR} --- Base change or insertion
+@item green
+@code{CONTIG_EDITOR.EDIT_PAD_COLOUR } --- Padding character
+@item purple
+@code{CONTIG_EDITOR.EDIT_CONF_COLOUR} --- Confidence value
+@end table
+
+@node Editor-Show unpadded pos
+@subsection Show Unpadded Positions
+@cindex Show unpadded positions
+@cindex Unpadded positions in editor
+
+The ruler at the top of the contig editor displays every tenth base number in
+the consensus sequence. Without "show unpadded positions" enabled any
+character in the consensus is counted, including padding characters. If "show
+unpadded positions" is enabled the ruler will only count non pad ("*")
+characters. Please note that this may considerably slow down the editor on
+large databases as the full consensus needs to be calculated in order to plot
+the ruler. If you just need to obtain the occasional unpadded position it is
+better to press the Enter key or to use the "unpadded position" search.
+
+@node Editor-Active Tags
+@subsection Set Active Tags
+@cindex Set Active Tags: contig editor
+@cindex Contig Editor: set active tags
+
+"Set Active Tags" allows configuration of which tag types should be displayed
+within the editor. Note that searches for tag annotations will only examine
+active tags, but searching for a specific tag type will find tags even when
+tags of this type are not visible. In this situation the tag will still be
+invisible, but as usual the tag location will be underlined. This option is
+particularly useful for exploring cases where a section of sequence has many
+overlapping tags. An alternative to using this dialogue is using the Control-Q
+key, which toggles the display of active tags.
+
+
+@node Editor-Output List
+@subsection Set Output List
+@cindex Set Output List: contig editor
+@cindex Contig Editor: set output list
+
+"Set output list" pops up a dialogue asking for a list name to be used
+when outputting reading names (_fpref(Lists, Lists, lists)). 
+Once an output list has been specified,
+pressing the middle button, or Alt left mouse button,
+on a reading name will add the name to the
+end of list.  Note that selecting the same name more than once will add
+the name to the list more than once. The list is never cleared by the editor.
+This allows multiple editors to append to the same list. If required, use the
+list menu to clear the list.
+
+@node Editor-Default Confidence
+@subsection Set Default Confidences
+@cindex Set Default Confidences: contig editor
+@cindex Contig Editor: set default confidences
+@cindex Confidence in contig editor
+@cindex Quality in contig editor
+
+Replacing bases or inserting new bases in the editor can assign new confidence
+values to those bases. The default setting is to set these confidence values to 100
+which has the effect of forcing the consensus to be that base. The "Set
+Default Confidences" dialogue allows these default values to be changed.
+The allowable range of confidence values for a base is from 0 to 100
+inclusive. The dialogue also allows selection of confidence -1. This tells the
+editor to not change the confidence value. When replacing a base this keeps
+the same confidence value of the base that is being replaced. When inserting a
+base this uses the average of the confidence value of the two surrounding
+bases.
+
+
+@node Editor-Store Undo
+@subsection Set or unset saving of undo
+@cindex Set or unset saving of undo: contig editor
+@cindex Contig Editor: Set or unset saving of undo
+@cindex Undo: contig editor
+@cindex Undo toggle: contig editor
+
+Storing the undo information takes up a great deal of computer
+memory and slows down the alignment algorithm. Particularly when using
+the Join Editor for very large overlaps (e.g. after copying batches of
+readings from one database to another), it can be useful to turn off
+the saving of undo information.
+For this reason the settings menu
+contains an option to turn off (or on) the saving of undo information.
+
+
+_split()
+@node Editor-Remove Readings
+@section Removing Readings
+@cindex Contig editor: disassemble readings
+@cindex Contig editor: remove reading
+@cindex Remove reading: contig editor
+@cindex Disassembly: contig editor
+
+It is often desirable to completely remove a reading from a contig. When not
+using the editor this is typically performed using the Disassemble Readings
+function. _fxref(Disassemble, Disassemble Readings, disassembly)
+When using the editor, the "Remove Reading" option on the editor commands
+menu performs a similar task.
+
+The command marks the reading underneath the editing cursor to be removed once
+the editor is quitted. Until then, the reading number in the names section of
+the display is shown with a dark grey background. The reading will also not be
+used in the calculation of the consensus. Thus, if all readings at a
+particular section of consensus are marked for removal the consensus sequence
+will be shown as dashes. Selecting the "Removing Reading" command again with
+the editing cursor on a reading already marked for removal will cancel the
+removal request. The keyboard command of Control-H may also be used as a
+shortcut to the "Removing Reading" command.
+
+Once the editor has been quitted you will be asked whether you wish to
+disassemble the marked readings. Answering "No" will simply quit the editor as
+normal without removing any readings. Answering "Yes" will bring up the
+usual "Disassemble Readings" dialogue. The options here allow removal of all
+readings from this contig, or non-crucial only. A crucial reading is one that
+will cause this contig to be broken into two or more segments. A choice is
+also given as to whether the readings should be completely removed from this
+database, or for each reading to be placed in its own contig. Pressing "OK"
+now will remove the readings from the contig, breaking the contig if
+necessary, and will quit the editor. Pressing "Cancel" will close the
+"Disassemble Readings" dialogue without making any changes and will not quit
+the editor.
+
+At any time, quitting the editor and not disassembling the readings will leave
+a List (_fpref(Lists, Lists, lists)) named "disassemble" containing the
+readings marked for removal. These may then be disassembled at a later stage
+if necessary. However the list will only be available until the next editor is
+quit (at which stage that editor will create its own, possibly blank,
+disassemble list), so make a copy if necessary.
+
+_split()
+@node Editor-Primer Selection
+@section Primer Selection
+@cindex Primer Selection: contig editor
+@cindex Contig Editor: Primer selection
+@cindex Oligo selection: contig editor
+@cindex Contig Editor: Primer selection
+
+The oligo selection engine is the one used in the program OSP.
+It is described in 
+@cite{Hillier, L., and Green, P. (1991). "OSP: an oligonucleotide
+selection program," PCR Methods and Applications, 1:124-128}.
+Oligo selection is a complex operation. The normal mode of use is
+outlined below:
+
+@enumerate
+@item
+Open the oligo selection window, by selecting "Select Primer" from the
+contig editor commands menu.
+
+@item
+Position the cursor to where you want the oligo to be chosen. While the
+oligo selection window is visible, you will still have complete control over
+positioning and editing within the contig editor.
+
+@item
+Indicate the strand for which you require an oligo. This is
+done by toggling the direction arrows ("----->" or "<------").
+
+
+@item
+Press the "Find Oligos" button to find all suitable oligos
+(see the "Parameters" subsection below for further information on
+controlling this procedure). Information for the closest suitable oligo to
+the cursor position is given in the output text window. In the
+contig editor the position of the oligo is marked by a temporary
+tag on the consensus. The window is recentered if the oligo is
+off the screen.
+
+@item
+If this oligo is not suitable (it may have been used before, and failed)
+the next closest oligo can be viewed by pressing "Next".
+
+@item
+Suitable templates are automatically identified for the
+currently displayed oligo (see the "Template selection"
+subsection below). By default, the template is that closest to
+the oligo site. If the choice is not suitable (it may be known to
+be a poor quality template, say) another can be chosen from the
+"Choose from" pull-down menu. Templates that do not
+appear on the menu can be specified by selecting simply typing their name
+in the "Template name" entry box. However, the template must be on the correct
+strand and be upstream of the oligo.
+
+@item
+A tag can be created for the current oligo by pressing the
+button "Accept". The annotation for this tag
+holds the name of the template and the oligo primer sequence.
+There are fields to allow the user to specify their own primer
+name ("serial#") and comments ("flags") for this tag. An example
+of oligo tag annotation:
+
+@example
+@group
+ serial#=
+ template=a16a9.s1
+ sequence=CGTTATGACCTATATTTTGTATG
+ flags=
+@end group
+@end example
+
+@item
+The oligo selection window is closed when "Accept" or "Quit" is selected.
+@end enumerate
+
+@subsection Parameters
+
+The parameters controlling the selection of oligos can be
+changed by pressing the "Edit parameters" button. This invokes a
+dialogue box which allows the specification of further parameters.
+
+By default, the oligos are selected from a window that extends
+40 bases either side of the cursor. The size and location of this
+window relative to the cursor position can be changed in the
+"Edit parameters" window.
+
+Primer constraints can be specified by melting temperature, length
+and G+C content.
+
+In gap4 oligos are ranked according to their overall score, where the
+best oligos have lower scores.
+
+@subsection Template selection
+
+For simplicity, each reading is considered to represent a
+template. In practice, many readings can be made off the same
+template. Suitable templates that are identified are those that
+satisfy all of the following conditions:
+
+@enumerate
+@item
+are in the appropriate sense,
+
+@item
+have 5' ends that start upstream of the oligo,
+
+@item
+are sufficiently close to the oligo to be useful.
+@end enumerate
+
+This last criterion relates to the insert size for the
+templates used for sequencing and the average reading length. A
+template is considered useful if a full reading can be made from it,
+taking into account both of these factors. The default insert size
+is 1000 bases (although the size range should be included in the
+experiment file for each reading, and hence the default would not be
+required), and the default average reading length is 400 bases.
+These values can be changed in the "Edit parameters" window.
+
+_split()
+@node Editor-Traces
+@section Traces
+@cindex Trace displays: contig editor
+@cindex Contig Editor: trace display
+
+The original trace data from which the readings where derived can be displayed
+by double clicking (two quick clicks) with the left or middle mouse button on
+the area of interest. Control t has the same effect.  The trace will be
+displayed centred around the base clicked upon and the name of the reading in
+the contig editor will be highlighted.  Double clicking on the consensus
+displays all the readings covering that position.  Double clicking on a
+reading which already has its trace displayed will cause the corresponding
+trace to be surrounded by a red border.
+
+Moving the mouse pointer over a base causes the display of an information
+line at the bottom of the window. This gives the base type, its position
+in the sequence, and its confidence value.
+
+There are two forms of trace display which are selected using the "Compact"
+button at the top of the Trace display. The compact form differs by not
+showing the Info, Diff, Comp. and Cancel buttons at the left of each trace.
+
+Note that gap4 does not store the trace files in the project database:
+it stores only their names and reads them when required. However it does
+not know which directory they are stored in, unless this is specified using the "Trace File Location" option
+(_fpref(Conf-Trace File Location, Trace File Location, configure)). 
+
+_lpicture(contig_editor.traces)
+
+The picture shows an example of three displayed traces. The reading number,
+together with the direction of the reading (+ or -) and the chemistry by
+which it was determined, is given at the top left of each sub window.
+The chemistry information is found from comments in the experiment file.
+'uf' and 'ur' indicate universal forward and universal reverse, 'cf' and 'cf'
+indicate custom forward and custom reverse, and 'p' and 't' indicate primer
+and terminator. There are four buttons ('Info', 'Diff', 'Comp.' and 'Cancel')
+below this information, and X and Y scale bars to the right.
+
+The "Info" button will display a window like the one shown at the bottom right
+of the picture. This contains the comments from the relevant SCF file.
+
+The "Diff" buttons are used to produce a new trace showing the differences
+between two existing traces. To use this, press "Diff" in any window. The
+mouse cursor then changes to a cross symbol. Pressing the left mouse button
+anywhere on another trace that has a "Diff" button will create the difference
+trace. Any other button cancels the operation. The algorithm used for
+computing the difference trace is adjustable by parameters in the settings
+menu (_fpref(Editor-Trace Display, Trace Display Settings, contig_editor)).
+The trace differencing was originally designed for visual inspection of
+suspected mutations
+@cite{Bonfield, J.K., Rada, C. and Staden, R. Automated detection of point
+mutations using fluorescent sequence trace subtraction. Nucleic Acids Res. 26,
+3404-3409 (1998)}.
+
+The "Comp." button complements the displayed trace. If the sequence in the
+editor has been complemented then the trace will automatically be shown in the 
+complementary sense. This button may be used to toggle the complementarity.
+
+The "Cancel" button will remove the trace.
+
+The X and Y scale bars zoom the trace in the appropriate direction. The default
+Y scale is to fit the highest peak on the screen without clipping. When the
+"Show confidence" check-button is selected, the confidence value for each base
+call will be displayed as a histogram, overlayed on the trace displays. The
+base confidence values are not computed by gap4, but rather are read from the
+SCF file which is assumed to have been generated by one of the programs that
+compute confidence values (such as phred, ATQA or eba). When ABI files are in
+use, confidence values may not be shown.
+
+The trace is displayed on the right with a scrollbar directly below it and
+with the reading name in the top left corner. The vertical line seen in these
+three traces shows the location of the editing cursor in the contig editor window.
+The lock button on the trace displays ties the editing cursor movement to the 
+scrolling of the trace windows and vice versa.
+
+The trace display supports the display of up to four columns of traces,
+and can display any number of rows. The number of columns and rows can
+be configured and saved using the buttons at the top of the window. A
+scrollbar is provided if there are more traces to display than can be
+viewed with the current settings. 
+
+To modify the number of traces that are shown at any one time, and the heights
+of these, add (and edit) the following lines to your @file{$HOME/.gaprc} file.
+
+@example
+set_def TRACE_DISPLAY.ROWS      	5
+set_def TRACE_DISPLAY.COLUMNS      	2
+set_def TRACE_DISPLAY.TRACE_HEIGHT	150
+@end example
+
+New traces are always added to the bottom right of the window.
+
+Resizing the width of the trace window, moving the trace window and
+adjusting the X magnification are all remembered and used when bringing
+up new trace displays.
+
+The "Close" button at the top right of the Trace Display removes the
+Trace Display.
+
+An example of the "Compact" form of the trace display is shown below.
+
+_lpicture(contig_editor.traces.compact)
+
+_split()
+@node Editor-Reference-Data
+@section Reference Sequence and Traces
+@cindex Reference sequence: contig editor
+@cindex Reference traces: contig editor
+@cindex Contig Editor: Reference sequence
+@cindex Contig Editor: Reference traces
+
+@menu
+* Editor-Reference-Sequences::   Reference sequences
+* Editor-Reference-Traces::     Reference traces
+@end menu
+
+Reference sequences can be used to provide standard base numbering for contigs.
+If they have feature table tags which contain CDS records the Contig Editor
+can use them to translate only the known coding segments, and in the correct
+reading frame. The primary use for reference sequences is in mutation detection.
+
+Reference Traces provide standards, both positive and negative for mutation
+detection by trace comparison.
+
+_split()
+@node Editor-Reference-Sequences
+@subsection Reference sequences
+
+In order to put readings and their mutations in context we use a
+reference sequence and feature table. This enables mutations to be
+reported using positions defined by the reference sequence, and also
+allows the effect of the mutations to be noted. To facilitate this gap4
+is able to store entries from the EMBL sequence library complete with
+their feature tables. These feature tables are converted to gap4
+database annotations (tags), which means that they can be selectively
+displayed in the template display and editor, and used to translate only
+the exons (in the correct reading frame).
+The reference sequence can be designated (or reassigned) 
+by right clicking on its name. Once set it should
+appear labelled "S" at the left edge of the editor.
+
+_split()
+@node Editor-Reference-Traces
+@subsection Reference traces
+From the "settings" menu of the editor
+the trace display can be set to "Auto-Diff traces". Once this is
+activated, whenever the user double clicks on a base in the editor
+sequence display, not only is the reading's trace displayed, but also
+its designated reference trace plus the difference between them. If its
+complementary reading is available, its trace and reference trace and
+their differences are also displayed.
+
+The preferred way of assigning reference traces to readings is by use of
+"naming conventions"; that is to have a simple set of rules which
+control the names given to the trace files. It can be seen in the
+figures showing the editor that forward and reverse readings from the
+same patient have names with a common root but which end either F or
+R. This both ties the two together (so the software knows which is the
+corresponding 
+complementary trace when the user double clicks on a reading) and also
+enables the association of readings and their reference traces. Once a
+convention has been adopted the rules can be defined for pregap4 by
+loading them via the "Load Naming Scheme" option in its File menu
+(_fpref(Pregap4-Naming, Pregap4 Naming Schemes, pregap4)). For
+any batch of readings the reference traces are defined within pregap4's
+"Reference Traces" module.
+
+Within the Contig Editor reference traces can be set by right clicking
+on their names in the editor. When this is done a menu will popup. This
+allows the user to select whether the trace is to be used as a 
+positive or negative control.
+
+
+_split()
+@node Editor-Info
+@section The Editor Information Line
+@cindex Information line: contig editor
+@cindex Status line: contig editor
+@cindex Contig Editor: information line
+@cindex Unpadded base positions
+
+The very bottom line of the editor display is text line used by the editor to
+display pieces of useful information. Currently this gives information on
+individual bases, readings, the contig, and tags, as the mouse is moved over
+the appropriate object. For bases (in both readings and the consensus) this
+information is only displayed when a mouse button is pressed. The left mouse
+button displays with format @code{BASE_BRIEF_FORMAT1} and format
+@code{BASE_BRIEF_FORMAT2} is displayed when pressing 'Enter'. By default the
+only difference between the two is that 'Enter' will display the
+"unpadded position" of a base in the consensus - ie its position in the
+consensus after pads have been removed.  The contents and format of the
+information displayed is completely configurable by adding the relevant
+definitions to your @file{.gaprc} file.  The defaults are as follows.
+
+@example
+set_def READ_BRIEF_FORMAT  \
+        @{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn@   \
+         Chemistry:%a   Primer:%P   %c@}
+
+set_def CONTIG_BRIEF_FORMAT  \
+        @{Contig:%n(#%Rn)   Length:%l   %c@}
+
+set_def TAG_BRIEF_FORMAT  \
+        @{Tag type:%t   Direction:%d   Comment:"%.100c"@}
+
+set_def BASE_BRIEF_FORMAT1  \
+	@{Base confidence:%c  (Probability %p)   Position %P@}
+
+set_def BASE_BRIEF_FORMAT2  \
+	@{Base confidence:%c  (Probability %p)   Position %P   \
+          Unpadded position %U@}
+
+@end example
+
+Tag information is shown when the mouse is moved over an annotation. Read
+information is shown when the mouse is moved over the reading name in the
+names section of the display. Contig information is displayed when the mouse
+is moved over the "Consensus" line in the names display. If you wish to leave
+the contig editor window without changing the information line contents as the
+mouse moves over other information press and hold the Shift key whilst moving
+the mouse. This disables the automatic highlighting. The same mechanism also
+works for other windows (such as the template display).
+
+The general style of the formats is the string to display with particular
+strings substituting % characters. For instance in the reading format %n is
+substituted by the reading name. The general format of a % expansion is:
+
+@itemize @bullet
+@item
+        A percent sign.
+@item
+        An optional minus sign to request left alignment of the information.
+        When displaying information in a specific field with where that data
+        does not fill the entire space allowed the information will, by
+        default, be right justified. Adding a minus character here requests
+        left justification.
+@item
+        An optional minimum field width. This is a decimal number indicating
+        how much space to leave for this information.
+@item
+        An optional precision for numbers or maximum field width for strings.
+        This is given as a fullstop followed by a decimal number.
+@item
+        An optional 'R' to specify Raw mode. This changes the meaning of many
+        (but not all) of the expansion requests to give a numercial
+        representation of the data. For example %n is a reading name
+        and %Rn is a reading number.
+@item
+        Th expansion type itself. This is either one or two letters. See below
+        for full details of their meanings.
+@end itemize
+
+To programmers this syntax may seem very similar to @code{printf}. This is
+intentional, but do not assume it is the same. Specifically the print syntax
+of @code{%#}, @code{%+} and @code{%0} will not work.
+
+@subsection Reading Information
+@cindex Information line: readings in contig editor
+@cindex READ_BRIEF_FORMAT
+
+Example output is @b{Reading:xc04a1.s1(#74)   Length:295(474)   Vector:m13mp18
+Clone:test   Chemistry:primer   Primer:forward universal}.
+
+@table @strong
+@item %%
+        A single % sign
+@item %n
+        Reading name. Raw mode: number
+@item %#
+        Reading number
+@item %t
+        Trace name
+@item %p
+        Position
+@item %l
+        Clipped length
+@item %L
+        Total length
+@item %s
+        Start of clip
+@item %e
+        End of clip
+@item %S
+        Sense (whether complemented) - "+" or "-". Raw mode: 0/1
+@item %a
+        Chemistry - "primer" or "terminator". Raw mode: 0/1
+@item %d
+        Strand - "+" or "-". Raw mode: 0/1
+@item %P
+        Primer - "unknown", "forward universal", "reverse universal",
+        "forward custom" or "reverse custom".  Raw mode: 0/1/2/3/4
+@item %Tn
+        Template name. Raw mode: template number
+@item %T#
+        Template number
+@item %Tv
+        Template vector. Raw mode: template vector number
+@item %Ti
+        Template insert size
+@item %Cn
+        Clone name. Raw mode: clone number
+@item %C#
+        Clone number
+@item %Cv
+        Clone vector. Raw mode: clone vector number
+@item %c
+	User defined text, taken from the the first note of type INFO.
+@end table
+
+@subsection Contig Information
+@cindex Information line: contig in contig editor
+@cindex CONTIG_BRIEF_FORMAT
+
+Example output is @b{Contig:xc04a1.s1(#74)   Length:1316}.
+
+@table @strong
+@item %%
+        Single % sign
+@item %n
+        Left most reading name. Raw mode: reading number
+@item %s
+        (As %n)
+@item %e
+        Right most reading name. Raw mode: reading number
+@item %#
+        Contig number
+@item %l
+        Contig length
+@item %E
+        Expected number of errors (can be slow on large contigs)
+@item %c
+	User defined text, taken from the the first note of type INFO.
+@end table
+
+@subsection Tag Information
+@cindex Information line: tags in contig editor
+@cindex TAG_BRIEF_FORMAT
+
+Example output is @b{Tag type:OLIG   Direction:-   Comment:"template=xc04a1
+sequence=
+@br CGATTGCAGAATAAGACG"}.
+
+@table @strong
+@item %%
+        Single % sign
+@item %p
+        Tag position
+@item %d
+        Tag direction - "+", "-" or "=". Raw mode: 0/1/2
+@item %t
+        Tag type (always 4 characters)
+@item %l
+        Tag length
+@item %n
+        Tag number (0 if unknown)
+@item %c
+        Tag comment
+@end table
+
+@subsection Base Information
+@cindex Information line: bases in contig editor
+@cindex BASE_BRIEF_FORMAT1
+@cindex BASE_BRIEF_FORMAT2
+
+Example output is @b{Base confidence:13  (Probability 0.954020)   Position 3805
+  Unpadded position 3678}.
+
+@table @strong
+@item %%
+        Single % sign
+@item %c
+        Confidence value (phred style)
+@item %p
+        Confidence value (as probability)
+@item %P
+        Padded consensus base position
+@item %U
+        Unpadded consensus base position
+@end table
+
+
+_split()
+@node Editor-Joining
+@section The Join Editor
+@cindex Join Editor
+@cindex Contig Editor: joining
+
+Contigs are joined interactively using the Join Editor.
+This is simply a pair
+of contig editor displays stacked above one another with a "differences"
+line in between. 
+Note that it is essential
+to align the contigs over the full length of their overlap. It is much more
+difficult to achieve this after a join has been made, and until the
+alignment is correct, the consensus sequence will be nonsense.
+
+The few differences between the Join Editor and the Contig Editor can be seen
+in the figure below. Otherwise all the commands and operations are the
+same as those for the Contig Editor 
+
+_lpicture(contig_editor.join)
+
+One difference is the Lock button. When set (as it is in the
+illustration) scrolling either contig, by using the scrollbar or the
+four movement buttons, will also scroll the other contig.
+
+The Align button aligns the overlapping consensus sequences and adds pads
+The alignment routine assumes that the two contigs are already
+in approximately the right relative position (as they are immediately
+after the
+Join Editor has been invoked from Find Internal Joins, or Find
+Repeats). If they are not they must be positioned manually before using
+the Align button.
+
+It should be noted
+that each of the pair of editors comprising the Contig Editor 
+maintains its own undo history, and using Align
+is likely to add to both undo histories. 
+Hence, to undo the results of the Align command
+the Undo button in both editors must be used.
+
+Note also that storing the undo information takes up a great deal of computer
+memory and slows down the alignment process. For this reason the settings menu
+contains an option to turn off (or on) the saving of undo information. When
+aligning very long overlaps it is advisable to turn off the undo saving.
+
+When "Join/Quit" is pressed a dialogue box is displayed containing
+the percentage mismatch of the overlap, and asking if the join should be made.
+For joins above a certain
+level of mismatch (20 percent by default) a second confirmation is required.
+
+_split()
+@node Editor-Multiple Editors
+@section Using Several Editors at Once
+@cindex Contig Editor: multiple editors
+
+Several editors can be used simultaneously, even on the same contig.
+In the latter
+case, it is useful to understand the difference between the data and
+the view of the data.
+
+Each operating Contig Editor is a view of the data for
+a particular contig. With two editors
+viewing the same contig, making changes in either will effect the data
+that both are viewing, hence the change will be visible in both
+editors. Similarly, using Undo in either will undo the changes to both.
+
+When quitting and saving
+changes, other editors for the same contig will act as if a "Save
+Contig" request has been made by using the "Commands" menu (ie changes
+are written to disk and the undo information will be reset). Answering
+"no" to the "Save changes" query,
+simply shuts down the editor without saving. If there is no other
+editor for this contig then the changes will be lost, otherwise the
+changes will be retained until the last editor for the contig is
+exited.
+
+Interaction between Contig Editors and Join Editors is more
+complicated and generally isn't advised. However such interactions
+work consistently with the notion of views of contigs. For example,
+suppose there are two Contig Editors open on two separate contigs, and in
+addition to these a Join Editor displaying both contigs. Making the
+join in the Join Editor will update the two stand-alone Contig Editors
+so that they are each 
+viewing the correct positions in the new contig, even though
+they're both now viewing the same contig.
+
+_split()
+@node Editor-Quitting
+@section Quitting the Editor
+@cindex Quitting: contig editor
+@cindex Contig Editor: quitting
+
+The "Quit" button quits the editor. If changes have been made since
+the last save (either a "Save Contig" or an auto- save) you will be
+asked whether you wish to save these changes.  Answering "Cancel"
+abandons the quit process and provides control of the editor again,
+otherwise the appropriate action will be taken and the editor quitted.
+
+Within a join editor, the "Quit" button is changed to "Join/Quit". Pressing it
+will prompt for making the join. You will be told the percentage mismatch of
+the overlapping consensus sequences. The join can either be accepted,
+rejected, or cancelled (in which case the editor is not quitted and the join
+is not made).
+
+_split()
+@node Editor-Techniques
+@section Editing Techniques
+@cindex Techniques of editing
+@cindex Editing techniques
+@cindex Contig Editor: editing techniques
+@cindex Contig Editor: techniques
+
+@menu
+* Editor-Techniques-Cutoffs::   Consensus and Quality Cutoffs
+* Editor-Techniques-EType::     Editing by Base Change or Confidence
+* Editor-Techniques-Overcall::  Base overcalls
+* Editor-Techniques-Undercall:: Base undercalls
+* Editor-Techniques-Disagree::  Multiple Base Disagreements
+* Editor-Techniques-Quality::   Poor Quality
+* Editor-Techniques-Check::     Checking for Errors
+@end menu
+
+The editor documentation describes the available controls, but not how these
+should be used most efficiently. Some editing is performed in a local style or
+is personal preference, but a great deal of the common editing tasks are best
+dealt with in specific ways. This section aims to give example methods of
+resolving the common problems.  Typically, problems will be found using one of
+the editor searches (such as "consensus quality" or "problem"). Used in
+conjunction with "Auto-display traces" (_fpref(Editor-Trace Display, Trace
+Display Settings, contig_editor)) this will automatically bring up a set of
+traces that are likely to be of assistance in resolving the problem. Prior to
+working on a contig it can be helpful to use "Shuffle Pads" to try to align
+padding characters _oxref(Editor-Comm-Shuffle, Shuffle Pads).
+
+
+_split()
+@node Editor-Techniques-Cutoffs
+@subsection Consensus and Quality Cutoffs
+
+The most rapid editing technique 
+(_fpref(Intro-Base-Acc, The use of numerical estimates of base calling
+accuracy, gap4)) is only available if base call
+confidence values have been assigned to the reading data using
+a scale proportional to -log(error_rate).
+Using the "confidence" consensus method will make use of confidence values to
+give the most probable consensus sequence and a probability of each base being
+correct. Using the editor "consensus quality" search then provides an
+extremely quick way of identifying the lowest quality consensus bases. The
+List Confidence command will give information on the expected number of
+errors that can be fixed by examining all consensus bases with a quality less
+than a particular amount. This gives a good indication to the choice of
+theshold to use in the consensus quality search. Additionally you will also be
+told the expected error rates. With this system it is possible to stop editing
+once a particular average quality has been achieved.
+
+Care should be taken in considering your desired error rate. An average error
+rate of 1 in 10,000 may be easily achievable. However there could still be
+consensus bases with very low confidence. Hence it is perhaps best to choose
+both an average error rate and a minimum consensus confidence for your
+finishing criteria. The consensus confidence values are scaled such that a
+confidence of 20 is a 1 in 100 error rate, 30 is 1 in 1000, 40 is 1 in 10000
+and so on.
+
+The rest of this section described methods to use when the
+aforementioned confidence values are not available.
+
+The Consensus and Quality cutoff values used whilst editing are personal
+preference. Rather than state suggested values, we discuss the merits of
+using example values.
+
+The meaning of the consensus and quality cutoff values changes slightly
+depending on the consensus algorithm in use. For more information on the
+algorithms and these values see _fref(Con-Calculation, The Consensus
+Calculation, calc_consensus)
+
+With the "Base type frequencies" and "Quality weighted base type" methods, a
+consensus cutoff value of 100 means that @strong{every} sequence disagreement
+will yield a dash in the consensus. Hence the "Next Search" button when in
+"problem" search mode can be used to verify every potential problem. This is a
+lot of work, but if you wish to make sure that all disagreements are
+checked this is the easiest way.
+
+With a quality cutoff of -1, lowering the consensus cutoff value to (eg) 90
+means that a base in the consensus will only be a dash when over 10% of the
+bases disagree with the majority at that point. So a base covered by 11
+sequences, 10 of which state @code{A} and one of which states @code{C} would
+not be considered a problem and would not be found by the problem search. Note
+that this is regardless of the strand information. So if the @code{A}s are on
+the positive strand and the single @code{C} is on the negative strand then this
+is still not considered a problem. However, see below.
+
+Still working with the "Base type frequencies" and "Quality weighted base
+type" consensus methods, changing the quality cutoff to be 0 or more means
+that the consensus base is derived from the relative quality of bases instead
+of simple frequency counts.  A quality cutoff of 0 and a consensus cutoff of
+90 means that the base will be a dash only when the sum of the quality values
+for the most common base type (defined by the highest quality sum) is less
+than 90% of the total. In comparison with a quality cutoff of -1, this means
+that the above example of 10 @code{A} bases and 1 @code{C} base would be
+considered a problem if the @code{C} base had a sufficiently high quality.
+
+If you have confidence values for each base available you may consider it
+unnecessary to check disagreements caused by poor quality data disagreeing
+with good quality data, although disagreements between good data and good data
+should always be checked. However it should be obvious from this that with a
+quality cutoff of 0 and a consensus cutoff of 100% every sequence conflict is
+still considered a potential problem. A specific change in the consensus
+cutoff (eg from 100% to 90%) will typically find less problems when the
+quality cutoff is 0 than when it is -1. This is entirely due to differences
+between good quality data and poor quality data being excluded.
+
+Finally, the "Compare Strands" editor setting calculates two independent
+consensus sequences; one for each strand. The consensus shown is then the base
+calculated in each of the two consensus sequences if they agree, or dash if
+they do not. The "confidence" consensus algorithm already takes into account
+strand and chemistry when calculating the consensus base type and confidence,
+but will only lower the confidence value for strand disagreements, rather than
+setting the consensus base to be a dash.  For all consensus methods enabling
+"Compare Strands" will force you to check all consensus bases where the
+evidence from each strand is conflicting.
+
+_split()
+@node Editor-Techniques-EType
+@subsection Editing by Base Change or Confidence
+@cindex Editing techniques: confidence values
+@cindex Confidence values: editing techniques
+@cindex Contig editor: confidence values
+
+Once a location has been found where an edit needs to be made there are two
+possible methods of resolving the problem. Assuming that the edit is a base
+replacement, the first way is to simply replace the differing base with the
+corrected base. This adds the new base at 100% quality.  A second solution is
+to set the confidence of the differing base to 0.  Assuming that we have the
+quality cutoff set to zero or more, this will remove the differing base
+from the consensus calculation, thus enabling the consensus to be 100%
+identical.
+
+Both of these methods may be used when replacing bases in the consensus and
+are selectable using the "Edit Modes" menu. Fixing a problem by adjusting its
+confidence leaves the original, conflicting, base visible on the screen.
+However if the changed reading is the only one on a strand then adjusting the
+confidence means that the point only has good data on one strand.
+
+_split()
+@node Editor-Techniques-Overcall
+@subsection Base Overcalls
+@cindex Editing techniques: overcalls
+@cindex Overcalls: editing techniques
+
+A common problem is that of base overcalls that will result in perhaps one
+reading having and extra base, and all the others being padded by the alignment
+routines:
+
+@example
+Read1      ACC*AG
+Read2      ACC*AG
+Read3      ACC*AG
+Read4      ACCCAG
+Read5      ACC*AG
+Consensus  ACC*AG
+@end example
+
+In this first case we see that @code{Read4} has an extra @code{C}, probably
+due to an overcall. Check that the trace for @code{Read4} shows an overcall.
+It is a good idea to check good quality traces for both strands as well as the
+trace with the apparent problem. Also note that enabling "Show reading
+quality" (Settings menu) will show the reading quality as grey scales.
+
+We now need to remove the column. It would appear that this could be done by
+removing the @code{*} from each of Readings 1, 2, 3 and 5, and removing the
+@code{C} from Reading 4. However this will only make edits to those five
+readings. As we're trying to remove an entire column from the contig, we need
+to shift to the left by a single base the position of any readings to the
+right. Naturally this is not the ideal method.
+
+By placing the editing cursor in the consensus (on the second A) we can
+press Delete to remove the entire column. This automatically makes sure that
+everything is consistent. If we are editing at 100% consensus cutoff then this
+consensus base will be a '-' instead of a '*'. For this to work we need to
+make sure that we have "Allow del dash in cons" enabled in the Edit Modes
+menu. _oxref(Editor-Modes, Editing Modes).
+
+_split()
+@node Editor-Techniques-Undercall
+@subsection Base Undercalls
+
+@example
+Read1      ACCCAG
+Read2      ACCCAG
+Read3      ACCCAG
+Read4      ACC*AG
+Read5      ACCCAG
+Consensus  ACCCAG
+@end example
+
+In the above case we see that @code{Read4} has a @code{C} missing. Once again
+we must check the traces to be sure that we wish to edit the reading. If so,
+then we can either make an edit specifically to @code{Read4} itself (in
+"replace" mode) or type @code{C} in the consensus at this column. The latter
+will change either the base type of the @code{*} in @code{Read4} to @code{c},
+or will change its confidence value to 0. This depends upon the value of the
+"Edit by base type"/"Edit by confidence" setting in the Edit Modes menu.
+
+When replacing base types, it is preferable to use lowercase letters. This
+makes the modified base stand out. However even when using uppercase letters
+it is always possible to search for edits at a later stage, although they
+won't be as obvious to the human eye. Finally, note that the "Allow replace in
+cons" mode must be set to to enable this solution.
+
+_split()
+@node Editor-Techniques-Disagree
+@subsection Multiple Base Disagreements
+
+@example
+Read1      ACCGAG
+Read2      ACCGAG
+Read3      AC*GAG
+Read4      ACCGAG
+Read5      AC*GAG
+Consensus  AC-GAG
+@end example
+
+Now we have a more complex case. Two disagreements out of five readings. Care
+should be taken to check these traces. Also note the strand of each reading.
+If the database is highly repetitive, and @code{Read1}, @code{Read2}, and
+@code{Read4} are all from one strand, with @code{Read3} and @code{Read5} from
+the opposite strand then there is a chance that a misassembly has occurred or
+that the problem is a strand dependent sequencing artifact.
+
+Typically this is clear when using the "Highlight disagreements"
+mode. 
+_oxref(Editor-Disagree, Highlight Disagreements). 
+By selecting this mode
+and by also highlighting the reading names (_fpref(Editor-Names, The sequence
+names display, contig_editor)) scanning along the contig will quickly show
+whether there are other disagreements in common with these two readings versus
+the other three (which would support the evidence of misassembly).
+
+If any misassembled readings have been spotted then mark them for disassembly
+(_fpref(Editor-Remove Readings, Remove Readings, contig_editor)) and they'll
+no longer cause conflicts in the consensus. If the problem is a simple case of
+needing to edit, then making the edit in the consensus will require only one
+key stroke instead of the two needed to edit the individual readings.
+
+_split()
+@node Editor-Techniques-Quality
+@subsection Poor Quality
+
+@example
+Read1      ACC*AGT*CGTA
+Read2      ACC*AGT*CGTA
+Read3      ACC*AGT*CGTA
+Read4      ACCCAGTCCG
+Read5      ACC*AGT*CGTA
+Consensus  ACC*AGT*CGTA
+@end example
+
+This is identical to the first case, except we have two edits within
+@code{Read4} in close proximity. This is usually due to a poor quality
+reading, which can be checked by examining the trace and confidence values.
+Whilst we could continue to make edits in the normal fashion it may be wiser
+to take another approach.
+
+One technique is to adjust the cutoff data for @code{Read4}. By marking the
+data as hidden, this portion of the reading will no longer be used for
+producing the consensus. However we can only extend the cutoff data at one end
+or the other; it is not possible to have "hidden" data part way through a
+reading except by modifying its confidence. Note though that adjusting the
+cutoff data may mean that we have no data for one strand, which should be
+solved by extra experiments.
+
+If the reading is poor quality along its entire length, then disassembly is
+also a viable option. Using Highlight Disagreements (_fpref(Editor-Disagree, Highlight Disagreements). 
+) or
+Check Assembly (_fpref(Check Assembly, Check Assembly, check_ass)) is a good
+way of finding such readings. Note that disassembling readings may have other
+implications. It could cause a hole in the contig (in which case it will be
+broken in two) or it could cause a single stranded segment. If this is the
+case, the user needs to weigh up the work involved with making many edits along
+the length of this reading against performing another experiment to obtain better
+quality data.
+
+_split()
+@node Editor-Techniques-Check
+@subsection Checking for Errors
+
+It is important to check the final sequence for any errors introduced by
+incorrect editing. We strongly advise this when making use of the more
+dangerous options in "Edit Modes" as it is possible to accidentally make
+changes. The editor provides several methods for checking the edits performed
+on the data.
+
+The search menu contains two search types
+(_fpref(Editor-Search-VerifyEdit1, Search for evidence for edits(1), search))
+and
+(_fpref(Editor-Search-VerifyEdit2, Search for evidence for edits(2), search)).
+"Evidence for edits (1)" searches for the next
+edited place where none of the original readings
+agree with the consensus. This helps to spot cases where entire
+columns have been inserted or deleted. "Evidence for edits (2)" performs the
+same checks as "Evidence for edits (1)", but on each strand independently. So
+it will find all edited places where there is not evidence from both
+strands.
+
+Further checks may be performed outside the editor. Using the Find Read Pairs
+command all templates containing both forward and reverse readings will be
+checked to make sure that the relative orientation and distance of the
+sequences is correct. _fxref(Read Pairs, Find Read Pairs, read_pairs)
+
+Finally, the Check Assembly command can either check the hidden data for each
+reading to check that it does not diverge from the consensus sequence, or the
+visible data can be examined to locate segments with a high proportion of
+disagreements with the consensus.  _fxref(Check Assembly, Check Assembly,
+check_ass) Such cases arise from unnoticed section of vector sequence,
+chimeric reads, or due to a reading being in the wrong copy of a repeated
+element.
+
+_split()
+@node Editor-Summary
+@section Summary
+@cindex Summary: contig editor
+@cindex Contig Editor: summary
+@cindex Keyboard summary (contig editor)
+
+@node Editor-Summary-Keys
+@subsection Keyboard summary for editing window
+
+("Left", "Right", "Up", "Down" refer to the appropriate arrow keys.)
+
+@example
+Escape/Control v                Scroll right one screenful
+Meta/Alt v                      Scroll left one screenful
+
+Left or Control b               Move editing cursor left one base
+Right or Control f              Move editing cursor right one base
+Up or Control p                 Move editing cursor up one base
+Down or Control n               Move editing cursor down one base
+Control a                       Move editing cursor to start of used
+Control e                       Move editing cursor to end of used
+Meta/Alt/Escape a               Move editing cursor to start of cutoff
+Meta/Alt/Escape e               Move editing cursor to end of cutoff
+Meta/Alt/Escape comma           Move editing cursor to start of contig
+Meta/Alt/Escape fullstop        Move editing cursor to end of contig
+
+Meta/Control/Alt Left           Extend left cutoff data
+Meta/Control/Alt Right          Extend right cutoff data
+Control l                       Move pad left
+Control r                       Move pad right
+<                               Zap left cutoff data
+>                               Zap right cutoff data
+
+[                               Set confidence to 0
+]                               Set confidence to 100
+Shift Up                        Increase confidence of base by 1
+Shift Down                      Decrease confidence of base by 1
+Control Up                      Increase confidence of base by 10
+Control Down                    Decrease confidence of base by 10
+Delete                          Delete base or Shift reading left
+Backspace                       Delete base or Shift reading left
+Control Delete                  Delete base from left and move left
+Control d                       Delete base from right; do not move
+
+Space                           Shift reading right
+Undo key or Control underscore  Perform an undo
+Control i                       Toggle insert mode
+Control h                       Toggle a sequence for removal
+Control t                       Display trace
+Control s                       Search forward
+Escape Control s                Search backwards
+Control x Control s             Save editor
+Control q                       Toggle tag display
+Control c or Control Insert     Copy underlined region to paste buffer
+Insert                          Insert a padding character (*)
+any ACGT1234DVBHKLMNRY5678*-    Insert or change base (both cases allowed)
+@end example
+
+@node Editor-Summary-Mouse
+@subsection Mouse summary for editing window
+
+@example
+Left button                     Position editing cursor to mouse cursor
+                                Update editor information line
+Left button (drag)              Mark start and end of selection
+Shift left button               Adjust end of selection
+Enter key                       Update editor information line (unpadded pos.)
+Return key                      As Enter key, but also moves editing cursor
+Left button (double click)      Display trace
+Middle button (double click)    Display trace
+Control left button             Display commands menu
+Right button                    Display commands menu
+@end example
+
+@node Editor-Summary-MouseNames
+@subsection Mouse summary for names window
+
+@example
+@group
+Left button                     Toggle user highlight (not in status line)
+Middle button/Alt left button   Add name to output list (if set)
+Right button                    Display popup menu
+@end group
+@end example
+
+@node Editor-Summary-Scroll
+@subsection Mouse summary for scrollbar
+
+@example
+@group
+Middle button                   Set scrollbar position
+Alt left button                 Set scrollbar position
+Left button                     Scroll left or right one screenful
+@end group
+@end example
+
+In addition to the scrollbar manipulation, the "<<", "<", ">",
+">>" buttons also scroll the editor left or right by half a
+screenful or one base.

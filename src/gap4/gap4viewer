@@ -1,0 +1,123 @@
+#!/bin/sh
+
+# Finds the directory holding this program
+find_dir() {
+    arg0=$1
+
+    # Protect against ls, sed and echo being exported shell functions.
+    # Eg ls() { ls -F ${@+"$@"} }; export ls
+    unset ls
+    unset sed
+    unset echo
+    
+    orig_dir=`pwd`
+    must_loop=yes
+
+    # The looping is to protect against symbolic links. We find the location
+    # of arg0, but if arg0 is a link to elsewhere then we go around again
+    # finding its location (noting that symlinks may be ether relative
+    # or full pathnames).
+    while [ -n "$must_loop" ]
+    do
+	cur_dir=`pwd`
+    
+	# Find directory that $arg0 resides in
+	case $arg0 in
+	    /*)
+		# Full pathname, not much to do
+		dir=`echo $arg0 | sed 's:/[^/]*$::'`
+		;;
+	    *)
+		# Relative pathname, add current directory.
+		dir=`echo $cur_dir/$arg0 | sed 's:/[^/]*$::'`
+		;;
+	esac
+    
+	if [ -h $arg0 ]
+	then
+	    # NOTE: This statement will not work when $arg0 is a filename
+	    # containing "-> ".
+	    lnto=`ls -l -- $arg0 | sed 's/.*-> //'`
+	    lndir=`echo $lnto | sed 's:/[^/]*$::'`
+	    case $lndir in
+		/*)
+		    # Absolute symlink
+		    dirto=$lndir
+		    ;;
+		*)
+		    # Relative symlink
+		    dirto=`echo $arg0 | sed "s:/[^/]*\$:/$lndir:"`
+		    ;;
+	    esac
+
+	    cd "$dirto"
+	    arg0=`echo $lnto | sed 's:.*/::'`
+	    must_loop=yes
+	else
+	    must_loop=
+	fi
+    done
+    
+    # To tidy up cases with ../ and ./ we cd to the directory, getcwd, and then
+    # cd back again
+    cd "$dir"
+    dir=`pwd`
+    cd "$orig_dir"
+    
+    echo $dir
+}
+
+STADENROOT=${STADENROOT_2001:-`find_dir $0`/..}
+
+#
+# Set up base locations
+#
+STADENROOT=$STADENROOT;			export STADENROOT
+STADTABL=$STADENROOT/tables;		export STADTABL
+STADLIB=$STADENROOT/lib;		export STADLIB
+TCL_LIBRARY=$STADLIB/tcl;		export TCL_LIBRARY
+TK_LIBRARY=$STADLIB/tk;			export TK_LIBRARY
+
+#
+# set MACHINE to one of alpha/sun/solaris/sgi/linux.
+#
+MACHINE=`uname -sr | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*/alpha/;s/Linux.*/linux/;s/FreeBSD.*/linux/'`
+export MACHINE
+
+#
+# The Digital Unix version is compiled on Digital Unix V4.0. This causes
+# problems for the few people using Digital Unix 3.0 and 3.2, but these can
+# be worked around by preloading the re-entrant copy of the C library.
+#
+if [ "`uname -sr | sed 's/\..*//'`" = "OSF1 V3" ]
+then
+    echo "------------------------------------------------------------------"
+    echo "This version of the Staden Package was built on Digital Unix 4.0."
+    echo "You may experience problems on this older OS version, but I am"
+    echo "setting the _RLD_LIST environment variable in an attempt to solve"
+    echo "the known problems."
+    echo "------------------------------------------------------------------"
+    _RLD_LIST=/shlib/libc_r.so:DEFAULT; export _RLD_LIST
+fi
+
+#
+# Set up PATH and LD_LIBRARY_PATH
+#
+PATH=$STADENROOT/$MACHINE-bin:$PATH
+export PATH
+STADLIBBIN=$STADLIB/$MACHINE-binaries
+export STADLIBBIN
+if [ "$LD_LIBRARY_PATH" != "" ]
+then
+    LD_LIBRARY_PATH=$STADLIBBIN:$LD_LIBRARY_PATH
+else
+    LD_LIBRARY_PATH=$STADLIBBIN
+fi
+export LD_LIBRARY_PATH
+
+STADLICENCE=$STADTABL/licence.viewer
+export STADLICENCE
+#
+# Run it!
+#
+exec stash -f "$STADLIB/gap/gap.tcl" ${@+"$@"}

@@ -1,0 +1,1773 @@
+@menu
+@ifset html
+* Reg-Introduction::    Introduction
+@end ifset
+* Reg-Structures::          Data Structures
+* Reg-Registrating Data::   Registering a piece of data
+* Reg-Callbacks::           The callback function
+* Reg-Notifications::       The notifications available
+* Reg-Sending::             Sending a notification
+* Reg-Tasks::               Specific notification tasks
+* Reg-Functions::           C Functions available
+* Reg-Locking::             Locking mechanisms
+* Reg-Specific Examples::   Examples of Specific Functions
+* Reg-Tcl::                 Tcl Interfaces
+* Reg-To Do::               Future enhancements
+@end menu
+
+@ifset html
+@split{}
+@node Reg-Introduction
+@section Introduction
+@end ifset
+@cindex Registration introduction
+
+Each function wishing to access a contig on a long term basis needs to
+register itself before accessing the data. For example, the template display
+and contig editors should register, but show relationships produces a report
+taken from a single snap shot of the data and so does not need to register.
+
+The idea of registering is to allow communication between views of the same
+(or derived) data, this insuring that they can be automatically kept up to
+date when modifications are made, and can provide mechanisms to prevent
+multiple, incompatible, edits of the same data. An example can be seen in the
+template display. Suppose we have the display showing contig 4. A join contig
+operation links this to contig 7 and produces a new contig --- number 10.
+Other contig numbers may have shuffled too: if we had 9 contigs then contig 9
+may well be renumbered to contig 4.
+
+Therefore we need to notify any functions displaying contig 9 of a contig
+number change. We also need to notify displays of contig 4 that the number is
+now 10, and both this and contig 7 that the contents and length has changed.
+
+Central to the scheme is the result manager. This displays a list of which
+data is registered and provides a further method for the user to interrogate
+specific results.
+
+Notifications may also be for requesting data as well as informing changes.
+All registered items must respond to certain notifications, such as for
+determining the name of the function, so that it can be listed in the results
+manager.
+
+@split{}
+@node Reg-Structures
+@section Data Structures
+@cindex Registration structures
+
+For each contig we maintain a list of displays of this data. We register by
+supplying a function (of a specific type) to our registration scheme, along
+with any data of our own (called our @i{client_data}) that we wish to be
+passed back. When an operation is performed on this contig the function that
+we specified is called along with our own client_data and a description of the
+operation made. A function often does not need to be told of all changes, so
+when registering it's possible to list only those operations that should be
+responded to.
+
+In addition to maintaining the above information, each registration contains
+an identifier, a time stamp, a type, and an "id" value.
+
+The identifier is a simply number that is used to specify a single registered
+data, or a group of registered data. An example of it's use is within the
+contig selector; the selector is registered on all contigs, but each
+registration has the same identifier. A new identifier is returned by calling
+the @code{register_id} function.
+
+The time stamp is allocated automatically when the @code{contig_register}
+function is called. It is displayed within the results manager.
+
+@cindex Types, registration scheme
+@cindex Registration types
+@vindex REG_TYPE_UNKNOWN
+@vindex REG_TYPE_EDITOR
+@vindex REG_TYPE_FIJ
+@vindex REG_TYPE_READPAIR
+@vindex REG_TYPE_REPEAT
+@vindex REG_TYPE_QUALITY
+@vindex REG_TYPE_TEMPLATE
+@vindex REG_TYPE_RESTRICTION
+@vindex REG_TYPE_STOPCODON
+@vindex REG_TYPE_CONTIGSEL
+@vindex REG_TYPE_CHECKASS
+@vindex REG_TYPE_OLIGO
+The type is used to flag a registered data as belonging to a specific
+function. This is useful for when we wish to send a notification to all
+instances of a particular display, or to query whether the contig editor is
+running (such as performed by the stop codon display). The current types known
+are:
+
+@example
+@group
+REG_TYPE_UNKNOWN
+REG_TYPE_EDITOR
+REG_TYPE_FIJ
+REG_TYPE_READPAIR
+REG_TYPE_REPEAT
+REG_TYPE_QUALITY
+REG_TYPE_TEMPLATE
+REG_TYPE_RESTRICTION
+REG_TYPE_STOPCODON
+REG_TYPE_CONTIGSEL
+REG_TYPE_CHECKASS
+REG_TYPE_OLIGO
+@end group
+@end example
+
+The id value is used to distinguish which pieces of data are connected. Each
+"result" has a single id value, but may consist of multiple pieces of
+registered data, all sharing the same id.
+
+@cindex contig_reg_t structure
+@vindex contig_reg_t
+So the registration consists of the following structure:
+
+@example
+@group
+typedef struct @{
+    void  (*func)(
+                  GapIO    *io,
+                  int       contig,
+                  void     *fdata,
+                  reg_data *jdata);
+    void   *fdata;
+    int     id;
+    time_t  time;
+    int     flags;
+    int     type;
+    int     uid; /* A _unique_ identifier for this contig_reg_t */
+@} contig_reg_t;
+@end group
+@end example
+
+The @code{func} and @code{fdata} are the callback functions and
+client_data. @var{uid} is a number unique to all registrations, even those
+that have common @var{id} values. You need not be concerned about it's use; it
+is internal to the registration system.
+
+Hence the total memory used by the registration system is an array of arrays
+of above structures. One array per contig, containing an array of
+@var{contig_reg_t} structs.
+
+A notification of an action involves creating a @var{reg_data} structure and
+sending this to one of the notification functions (such as
+@code{contig_notify}). The @var{reg_data} structure is infact a union of many
+structure types; one for each notification type. In common to all these types
+is the job field. This must be filled out with the current notification type.
+_oxref(Reg-Notifications, The Notifications Available).
+
+As @var{reg_data} is a union of structures, it must be access by a further
+pointer indirection. For instance, to determine the position of the contig
+editor cursor from a @code{REG_CURSOR_NOTIFY} notification we need to write
+"@code{reg_data->cursor_notify->pos}" rather than simply
+"@code{reg_data->pos}". The complete list of union names can be found in
+io-reg.h. The current list is summarised below. The types and use of these
+structures will be discussed in further detail later.
+
+@cindex reg_data structure
+@vindex reg_data
+@example
+typedef union _reg_data @{
+    /* MUST be first here and in job data structs */
+    int job;
+    
+    reg_generic         generic;
+    reg_number          number;
+    reg_join            join;
+    reg_order           order;
+    reg_length          length;
+    reg_query_name      name;
+    reg_delete          delete;
+    reg_complement      complement;
+    reg_get_lock        glock;
+    reg_set_lock        slock;
+    reg_quit            quit;
+    reg_get_ops         get_ops;
+    reg_invoke_op       invoke_op;
+    reg_params          params;
+    reg_cursor_notify   cursor_notify;
+    reg_anno            annotations;
+    reg_register        c_register;
+    reg_deregister      c_deregister;@
+    reg_highlight_read  highlight;
+    reg_buffer_start    buffer_start;
+    reg_buffer_end      buffer_end;
+@} reg_data;
+@end example
+
+@split{}
+@node Reg-Registrating Data
+@section Registering a Piece of Data
+@cindex Registration of data
+
+To register data several things need to be known; the contig number, the
+callback function, the client_data (typically the address of the data to
+register), the list of notifications to respond to, an indentifier, and the
+"type" of this data (one of the @code{REG_TYPE_} macros).
+
+If the data needs updating when more than one specific contig changes, then
+the data should be registered with more than one contig.
+
+Use the @code{contig_register} function to register an item. The prototype
+is:
+
+@example
+#include <io-reg.h>
+
+int contig_register(
+        GapIO  *io,
+        int     contig,
+        void  (*func)(
+                      GapIO     *io,
+                      int        contig,
+                      void      *fdata,
+                      reg_data  *jdata),
+        void   *fdata,
+        int     id,
+        int     flags,
+        int     type);
+@end example
+
+@var{contig} is a contig number in the C sense (@code{1} to
+@code{NumContigs(io)}), not a gel reading number.
+
+The @var{fdata} (the client_data mentioned before) can be anything you wish.
+It will be passed back to the callback function @var{func} when a notification
+is made.  Typically it's best to simply pass the address of your data that you
+wish to keep up to date. If your data is not a single pointer then turn it
+into one by creating a structure containing all the relevant pointers.
+
+The id number is usually unique for each time an option it ran, but common to
+all registrations of this particular piece of data. This is not a hard and
+fast rule --- it depends on how you wish to interact with this data. For
+instance, the contig selector window registers with all contigs so that it can
+be notified when any contig changes. The same @var{id} is used for each of
+these registrations as it is the collection of registrations as a whole which
+is required for the display.
+
+"Flags" is used to request which notifications should be sent to this callback
+function. Each notification has a name which is actually a #define for a
+number. This names can be ORed together to generate a bit field of
+acknowledged requests. There are some predefined bitfields (for shortening the
+function call) that can themselves be ORed together. _oxref(Reg-Notifications,
+The Notifications Available).  Finally, one special flag can be ORed on to
+request that this function does not appear in the results manager window. This
+flag is @code{REG_FLAG_INVIS}: see the contig selector code for an example.
+
+An example of using @code{contig_register} can be seen in the stop codon plot.
+Our stop codon results are all held within a structure of type
+@var{mobj_stop}. The general outline of our stop codon code is as follows:
+
+@example
+mobj_stop *s;
+int id;
+
+if (NULL == (s = (mobj_stop *)xmalloc(sizeof(mobj_stop)))) @{
+    return 0;
+@}
+
+[ Fill in our 's' structure with our results ]
+
+DrawStopCodons(s);
+id = register_id();
+contig_register(io, contig_number, stop_codon_callback, (void *)s, id,
+                REG_REQUIRED | REG_DATA_CHANGE | REG_OPS | REG_GENERIC
+                | REG_NUMBER_CHANGE | REG_REGISTERS | REG_CURSOR_NOTIFY,
+                REG_TYPE_STOPCODON);
+@end example
+
+Here we've requested that the result @var{s}, of type
+@code{REG_TYPE_STOPCODON}, should be passed to the @code{stop_codon_callback}
+function whenever a notification of type @code{REG_REQUIRED},
+@code{REG_DATA_CHANGE}, @code{REG_OPS}, @code{REG_GENERIC},
+@code{REG_NUMBER_CHANGE}, @code{REG_REGISTERS} or @code{REG_CURSOR_NOTIFY}
+occurs. These notification types are actually combinations of types, but more
+on this later.
+
+@split{}
+@node Reg-Callbacks
+@section The Callback Function
+@cindex Callbacks, registration
+@cindex Registration callbacks
+
+The callback function must be of the following prototype:
+
+@example
+void function(
+        GapIO     *io,
+        int        contig,
+        void      *fdata,
+        reg_data  *jdata);
+@end example
+
+Here @var{fdata} will be the client_data specified when registering. The first
+task within our callback function will be to cast this to a useful type. As
+the type of this @var{fdata} will change depending on what piece of data is
+registered this is a required, but tedious, action.
+
+The next task at hand is to see exactly why the callback function was called.
+This is listed in the @var{reg_data} parameter. Specifically
+@code{jdata->job} will be one of the many notification types. The suggested
+coding method is to perform a switch on this field as follows:
+
+@example
+static void some_callback(GapIO *io, int contig, void *fdata, reg_data *jdata)
+@{
+    some_type_t *s = (some_type_t *)fdata;
+
+    switch(jdata->job) @{
+    case REG_QUERY_NAME:
+        sprintf(jdata->name.line, "Some name");
+        break;
+
+    case REG_QUIT:
+    case REG_DELETE:
+        ShutDownSomeDisplay(fdata);
+        xfree(fdata);
+        break;
+    @}
+@}
+@end example
+
+@code{REG_QUERY_NAME}, @code{REG_QUIT}, @code{REG_DELETE} and
+@code{REG_PARAMS} are required to be accepted by all registered items.
+
+In general the callback function will also be interested in changes to the
+contig that the data is registered with. These involve the @code{REG_JOIN_TO},
+@code{REG_COMPLEMENT}, @code{REG_LENGTH}, @code{REG_NUMBER_CHANGE} and
+@code{REG_ANNO} requests.
+
+For precise details on handling the various notifications, please see
+the following section.
+
+@split{}
+@node Reg-Notifications
+@section The Notifications Available
+@cindex Notifications, registration
+@cindex Registration notifications
+
+@menu
+* Reg-REG_GENERIC::                         REG_GENERIC
+* Reg-REG_NUMBER_CHANGE::                   REG_NUMBER_CHANGE
+* Reg-REG_JOIN_TO::                         REG_JOIN_TO
+* Reg-REG_ORDER::                           REG_ORDER
+* Reg-REG_LENGTH::                          REG_LENGTH
+* Reg-REG_QUERY_NAME::                      REG_QUERY_NAME
+* Reg-REG_DELETE::                          REG_DELETE
+* Reg-REG_GET_LOCK and REG_SET_LOCK::       REG_GET_LOCK and REG_SET_LOCK
+* Reg-REG_COMPLEMENT::                      REG_COMPLEMENT
+* Reg-REG_PARAMS::                          REG_PARAMS
+* Reg-REG_QUIT::                            REG_QUIT
+* Reg-REG_CURSOR_NOTIFY::                   REG_CURSOR_NOTIFY
+* Reg-REG_GET_OPS::                         REG_GET_OPS
+* Reg-REG_INVOKE_OP::                       REG_INVOKE_OP
+* Reg-REG_ANNO::                            REG_ANNO
+* Reg-REG_REGISTER and REG_DEREGISTER::     REG_REGISTER and REG_DEREGISTER
+* Reg-REG_HIGHLIGHT_READ::                  REG_HIGHLIGHT_READ
+* REG-REG_BUFFER_START and REG_BUFFER_END:: REG_BUFFER_START and REG_BUFFER_END
+@end menu
+
+In order to shorten code, especially when requesting which notifications
+should be accepted using the @code{contig_register} call, the following
+macros may be of use. They are used to group the various notifications.
+
+@example
+@group
+#define REG_REQUIRED    (REG_QUERY_NAME | REG_DELETE | REG_QUIT | REG_PARAMS)
+#define REG_DATA_CHANGE (REG_JOIN_TO | REG_LENGTH | REG_COMPLEMENT)
+#define REG_OPS         (REG_GET_OPS | REG_INVOKE_OP)
+#define REG_LOCKS       (REG_GET_LOCK | REG_SET_LOCK)
+#define REG_REGISTERS   (REG_REGISTER | REG_DEREGISTER)
+#define REG_BUFFER      (REG_BUFFER_START | REG_BUFFER_END)
+#define REG_ALL         (REG_REQUIRED | REG_DATA_CHANGE | REG_OPS | REG_LOCKS\
+                         | REG_ORDER | REG_CURSOR_NOTIFY | REG_NUMBER_CHANGE \
+                         | REG_ANNO | REG_REGISTERS | REG_HIGHLIGHT_READ \
+                         | REG_BUFFER)
+@end group
+@end example
+
+In the following descriptions, we outline the different notifications in the
+format of name followed by the name within the @var{reg_data} structure, the
+structure itself, and the description.
+
+@split{}
+@node Reg-REG_GENERIC
+@subsection REG_GENERIC
+@cindex REG_GENERIC
+@vindex REG_GENERIC
+@example
+@group
+reg_generic         generic;
+
+typedef struct @{
+    int    job;        /* REG_GENERIC */
+    int    task;       /* Some specific task */
+    void  *data;     /* And data associated with the task */
+@} reg_generic;
+@end group
+@end example
+
+This is used for sending specific requests to specific data or data types.
+The task is a macro named after the type the task deals with. Eg
+@code{TASK_EDITOR_SETCURSOR}. @code{REG_GENERIC} is usually used in conjuction
+with a @code{result_notify} or @code{type_contig_notify} function call.
+_oxref(Reg-Tasks, Specific Notification Tasks).
+
+@node Reg-REG_NUMBER_CHANGE
+@subsection REG_NUMBER_CHANGE
+@cindex REG_NUMBER_CHANGE
+@vindex REG_NUMBER_CHANGE
+@example
+@group
+reg_number          number;
+
+typedef struct @{
+    int    job;        /* REG_NUMBER_CHANGE */
+    int    number;     /* New contig number */
+@} reg_number;
+@end group
+@end example
+
+Sent whenever a contig number changes, but not when a reading number
+changes. This is currently only sent when renumbering contigs during a
+contig delete operation.
+    
+@node Reg-REG_JOIN_TO
+@subsection REG_JOIN_TO
+@cindex REG_JOIN_TO
+@vindex REG_JOIN_TO
+@example
+@group
+reg_join            join;
+
+typedef struct @{
+    int    job;        /* REG_JOIN_TO */
+    int    contig;     /* New contig number */
+    int    offset;     /* Offset of old contig into new contig */
+@} reg_join;
+@end group
+@end example
+
+Used to notify data that this contig has just been joined to another contig,
+at a specified offset. @var{contig} is contig number that this contig has been
+joined to (and hence it's new number). @var{offset} is the offset within the
+new contig that the old contig has been joined to. This request is always sent
+to the right most of the contig pair to join. The leftmost contig receives a
+@code{REG_LENGTH} notification. _oxref(Reg-Joining two contigs, Joining Two
+Contigs).
+
+@node Reg-REG_ORDER
+@subsection REG_ORDER
+@cindex REG_ORDER
+@vindex REG_ORDER
+@example
+@group
+reg_order           order;
+
+typedef struct @{
+    int    job;        /* REG_ORDER */
+    int    pos;        /* New order */
+@} reg_order;
+@end group
+@end example
+
+The purpose is to inform when the contig order changes. @var{pos} is the new
+position of this contig. To be consistent, there will be further
+@var{REG_ORDER} requests indicating the new position of the contig that was
+previously at this position. Typically this is simply handled by sending a
+notification for each contig. To handle these efficiently it is probably best
+to use the @code{REG_BUFFER_START} and @code{REG_BUFFER_END} notifications.
+
+@split{}
+@node Reg-REG_LENGTH
+@subsection REG_LENGTH
+@cindex REG_LENGTH
+@vindex REG_LENGTH
+@example
+@group
+reg_length          length;
+
+typedef struct @{
+    int    job;        /* REG_LENGTH, implies data change too */
+    int    length;     /* New length */
+@} reg_length;
+@end group
+@end example
+
+Sent whenever the length or data within of a contig changes. In this respect
+@code{REG_LENGTH} is a bit of a misnomer; replacing a single base within the
+contig editor and then saving (which does not change the length of that
+contig) will still send a @code{REG_LENGTH} request to inform data that the
+contig has changed. This is one of the most frequently sent and acknowledged
+requests.
+
+@node Reg-REG_QUERY_NAME
+@subsection REG_QUERY_NAME
+@cindex REG_QUERY_NAME
+@vindex REG_QUERY_NAME
+@example
+@group
+reg_query_name      name;
+
+typedef struct @{
+    int    job;        /* REG_QUERY_NAME */
+    char  *line;     /* char[80] */
+@} reg_query_name;
+@end group
+@end example
+
+Sent by the @code{result_names} routine to obtain a brief one line (less than
+80 characters) name of this registered item. Callback procedures should write
+into the @var{line} field themselves with no need for memory allocation.  The
+name returned here will be used as a component of the line within the Results
+Manager window. Registered data is required to handle this request, unless it
+is invisible (has the @code{REG_FLAG_INVIS} bit set).
+
+@node Reg-REG_DELETE
+@subsection REG_DELETE
+@cindex REG_DELETE
+@vindex REG_DELETE
+@example
+@group
+reg_delete          delete;
+
+typedef struct @{
+    int    job;        /* REG_DELETE */
+@} reg_delete;
+@end group
+@end example
+
+The registered data should be removed and any associated displays should be
+shutdown. This is in response to a contig being deleted (by the
+@code{io_delete_contig} function), or a programmed shutdown to force
+associated displays to quit (such as when forcing the quality display to quit
+when the user quits the template display). Registered data is required to
+handle this request.
+
+@node Reg-REG_GET_LOCK and REG_SET_LOCK
+@subsection REG_GET_LOCK and REG_SET_LOCK
+@cindex REG_GET_LOCK
+@cindex REG_GET_LOCK
+@vindex REG_SET_LOCK
+@example
+@group
+#define REG_LOCK_READ   1
+#define REG_LOCK_WRITE  2
+
+reg_get_lock        glock;
+reg_set_lock        slock;
+
+typedef struct @{
+    int    job;        /* REG_GET_LOCK */
+    int    lock;       /* Sends lock requirements, returns locks allowed */
+@} reg_get_lock, reg_set_lock;
+@end group
+@end example
+
+Both these notifications share the same structure. The pair are used in
+conjunction to determine whether exclusive write access is allowed on this
+contig, and if so to set this access. This is all managed by the
+@code{contig_lock_write} function. _oxref(Reg-Locking, Locking
+Mechanisms). Functions wishing to modify data, such as complement, should
+use locking.
+
+@split{}
+@node Reg-REG_COMPLEMENT
+@subsection REG_COMPLEMENT
+@cindex REG_COMPLEMENT
+@vindex REG_COMPLEMENT
+@example
+@group
+reg_complement      complement;
+
+typedef struct @{
+    int    job;        /* REG_COMPLEMENT */
+@} reg_complement;
+@end group
+@end example
+
+Notifies that the contig has just been complemented. It may prove easy to
+simply handle this and other data change notifications all the same.  However
+in slow functions, it may be quicker to handle complement functions
+separately, as it can be quicker to complement result data than to recalculate
+it.
+
+@node Reg-REG_PARAMS
+@subsection REG_PARAMS
+@cindex REG_PARAMS
+@vindex REG_PARAMS
+@example
+@group
+reg_params          params;
+
+typedef struct @{
+    int    job;        /* REG_PARAMS */
+    char  *string;     /* Pointer to params string */
+@} reg_params;
+@end group
+@end example
+
+Sent as a request for obtaining the parameters used for generating this
+data. Note that in contrast to @code{REG_NAME} the @var{string}  field here is
+not already allocated. The function acknowledging this request should point
+@var{string} to a static buffer of it's own. Currently, although implemented,
+this request is not used.
+
+@node Reg-REG_QUIT
+@subsection REG_QUIT
+@cindex REG_QUIT
+@vindex REG_QUIT
+@example
+@group
+reg_quit            quit;
+
+typedef struct @{
+    int    job;        /* REG_GET_LOCK */
+    int    lock;       /* Sends lock requirements, returns locks allowed */
+@} reg_quit;
+@end group
+@end example
+
+Sent to request a shutdown for this display. This is not like
+@code{REG_DELETE}n, whereby the data is told that it must shutdown as the
+contig has already been deleted. If a display cannot shutdown (for example it
+is a contig editor that has unsaved data) the lock should be cleared and the
+calling function should check this to determine whether the shutdown
+succeeded. This is handled internally by the @code{tcl_quit_displays}
+function.
+
+@node Reg-REG_CURSOR_NOTIFY
+@subsection REG_CURSOR_NOTIFY
+@cindex REG_CURSOR_NOTIFY
+@vindex REG_CURSOR_NOTIFY
+@example
+@group
+reg_cursor_notify   cursor_notify;
+
+typedef struct @{
+    int    job;           /* REG_CURSOR_NOTIFY */
+    int    editor_id;     /* Which contig editor */
+    int    seq;           /* Gel reading number (0 == consensus) */
+    int    pos;           /* Position in gel reading */
+@} reg_cursor_notify;
+@end group
+@end example
+
+Sent by the contig editor at startup and whenever the editing cursor moves.
+The @var{editor_id} is a number unique to each contig editor, so it is
+possible to distinguish different editors. @var{seq} is either 0 for the
+consensus, or a gel reading number. @var{pos} is the offset within that gel
+reading, rather than the total offset into the consensus (unless @var{seq} is
+0).
+
+@split{}
+@node Reg-REG_GET_OPS
+@subsection REG_GET_OPS
+@cindex REG_GET_OPS
+@vindex REG_GET_OPS
+@example
+@group
+reg_get_ops         get_ops;
+
+typedef struct @{
+    int    job;      /* REG_GET_OPS */
+    char  *ops;      /* Somewhere to place ops in, unalloced to start with */
+@} reg_get_ops;
+@end group
+@end example
+
+Within the Results Manager a popup menu is available for choosing from a list
+of tasks to be performed on this data. These can include anything, but
+typically include deleting the data and listing textual information.  The
+@var{ops} field will intitially point to @code{NULL} when the callback
+function is called. The callback function should then assign ops to a static
+string listing @code{NULL} separated items to appear on the popup menu, ending
+in a double @code{NULL}. If an item in this string is "@code{SEPARATOR}", a
+separator line on the menu will appear. If an item is "@code{PLACEHOLDER}",
+then nothing for this item will appear in the menu, but the numbering used for
+@code{REG_INVOKE_OP} will count "@code{PLACEHOLDER}" as an option. An example
+of the acknowledging code follows:
+
+@example
+case REG_GET_OPS:
+    if (r->all_hidden)
+        jdata->get_ops.ops = "Information\0PLACEHOLDER\0"
+            "Hide all\0Reveal all\0SEPARATOR\0Remove\0";
+    else
+        jdata->get_ops.ops = "Information\0Configure\0"
+            "Hide all\0Reveal all\0SEPARATOR\0Remove\0";
+    break;
+@end example
+
+Here we have a menu containing, "Information", "Configure", "Hide all",
+"Reveal all" and "Remove". In this example, if @code{r->all_hidden} is set
+then the "Configure" option does not appear, but the later options (eg Remove)
+will always be given the same number (4 in this case).
+
+@node Reg-REG_INVOKE_OP
+@subsection REG_INVOKE_OP
+@cindex REG_INVOKE_OP
+@vindex REG_INVOKE_OP
+@example
+@group
+reg_invoke_op       invoke_op;
+
+typedef struct @{
+    int    job;        /* REG_INVOKE_OP */
+    int    op;         /* Operation to perform */
+@} reg_invoke_op;
+@end group
+@end example
+
+When the user has chosen an option from the Results Manager popup window (from
+the list returned by @code{REG_GET_OPS}), @code{REG_INVOKE_OP} is called with
+an integer value (held in the @var{op} field) detailing which operation was
+chosen. @var{op} starts counting from zero for the first item returned from
+@code{REG_GET_OPS}, and counts up one each time for each operation or
+@code{PLACEHOLDER} listed. An example of an acknowledge for
+@code{REG_INVOKE_OP} to complement the example given in @code{REG_GET_OPS}
+follows:
+
+@example
+case REG_INVOKE_OP:
+    switch (jdata->invoke_op.op) @{
+    case 0: /* Information */
+        csmatch_info((mobj_repeat *)r, "Find Repeats");
+        break;
+    case 1: /* Configure */
+        csmatch_configure(io, cs->window, (mobj_repeat *)r);
+        break;
+    case 2: /* Hide all */
+        csmatch_hide(our_interp, cs->window, (mobj_repeat *)r, csplot_hash);
+        break;
+    case 3: /* Reveal all */
+        csmatch_reveal(our_interp, cs->window, (mobj_repeat *)r, csplot_hash);
+        break;
+    case 4: /* Remove */
+        csmatch_remove(io, cs->window, (mobj_repeat *)r, csplot_hash);
+        break;
+    @}
+    break;
+@end example
+
+@split{}
+@node Reg-REG_ANNO
+@subsection REG_ANNO
+@cindex REG_ANNO
+@vindex REG_ANNO
+@example
+@group
+reg_anno            annotations;
+
+typedef struct @{
+    int    job;        /* REG_ANNO */
+@} reg_anno;
+@end group
+@end example
+
+Sent when only the annotations (tags) for a contig have been updated. It is
+sometimes simplest for clients to handle @code{REG_ANNO} in the same manner as
+@code{REG_LENGTH}. However in some cases it can be much more efficient to
+handle separately as it may be easier to redisplay annotations than to
+redisplay everything.
+
+@node Reg-REG_REGISTER and REG_DEREGISTER
+@subsection REG_REGISTER and REG_DEREGISTER
+@cindex REG_REGISTER
+@vindex REG_REGISTER
+@cindex REG_DEREGISTER
+@vindex REG_DEREGISTER
+@example
+@group
+reg_register        c_register;
+reg_deregister      c_deregister;
+
+typedef struct @{
+    int    job;        /* REG_REGISTER, REG_DEREGISTER */
+    int    id;         /* Registration id */
+    int    type;       /* Registration type */
+    int    contig;     /* Contig number */
+@} reg_register, reg_deregister;
+@end group
+@end example
+
+Both of these notifications share the same structure. They are sent whenever a
+registration or deregistration of another piece of data is performed for this
+contig. An example of the use of this is within the stop codon display which
+enables use of the "Refresh" button when a contig editor is running. The
+@var{id}, @var{type} and @var{contig} fields here are the same as the fields
+with the same name from the @var{contig_reg_t} structure.
+
+@node Reg-REG_HIGHLIGHT_READ
+@subsection REG_HIGHLIGHT_READ
+@cindex REG_HIGHLIGHT_READ
+@vindex REG_HIGHLIGHT_READ
+@example
+@group
+reg_highlight_read  highlight;
+
+typedef struct @{
+    int    job;       /* REG_HIGHLIGHT_READ */
+    int    seq;       /* Gel reading number (-ve == contig consensus) */
+    int    val;       /* 1==highlight, 0==dehighlight */
+@} reg_highlight_read;
+@end group
+@end example
+
+This is used for notifying that an individual reading has been highlighted.
+It's purpose is to allow displays to synchronise highlighting of data. For
+instance, both the contig editor and template display send and acknowledge
+this notification. Thus when a name in the editor is highlighted the template
+display will highlight the appropriate reading, and vice versa.
+
+When @var{seq} is positive it represents the reading to highlight, otherwise
+it is 0 minus the contig number (not leftmost reading number).
+
+@node Reg-REG_BUFFER_START and REG_BUFFER_END
+@subsection REG_BUFFER_START and REG_BUFFER_END
+@cindex REG_BUFFER_START
+@vindex REG_BUFFER_START
+@cindex REG_BUFFER_END
+@vindex REG_BUFFER_END
+@example
+@group
+reg_buffer_start    buffer_start;
+reg_buffer_end      buffer_end;
+
+typedef struct @{
+    int    job;
+@} reg_buffer_start, reg_buffer_end;
+@end group
+@end example
+
+These two notifications share the same structure, which holds no information.
+The purpose of @code{REG_BUFFER_START} is simply as a signal that many
+notifications will be arriving in quick succession, until a
+@code{REG_BUFFER_END} request arrives. The purpose is to speed up redisplay of
+functions registered with many contigs.
+
+As an example consider the enter tags function. This adds tags to many,
+potentially all, contigs. We can keep track of which contigs we need to send
+@code{REG_ANNO} requests to, and send them with code similar to the following:
+
+@example
+/* Notify of the start of the flurry of updates */
+rs.job = REG_BUFFER_START;
+for (i = 0; i < NumContigs(args.io); i++) @{
+    if (contigs[i]&1) @{
+        contig_notify(args.io, i+1, (reg_data *)&rs);
+    @}
+@}
+
+/* Now notify all the contigs that we've added tags to */
+ra.job = REG_ANNO;
+for (i = 0; i < NumContigs(args.io); i++) @{
+    if (contigs[i]&1) @{
+        contig_notify(args.io, i+1, (reg_data *)&ra);
+    @}
+@}
+
+/* Notify of the end of the flurry of updates */
+re.job = REG_BUFFER_END;
+for (i = 0; i < NumContigs(args.io); i++) @{
+    if (contigs[i]&1) @{
+        contig_notify(args.io, i+1, (reg_data *)&re);
+    @}
+@}
+@end example
+
+Consider the action of the contig selector. This needs to refresh the display
+whenever any modifications are made, including annotations. The enter tags
+function needs to send notifications to many contigs, thus the contig selector
+will receive many requests. It is obviously more efficient for the contig
+selector to only redisplay once. The addition of @code{BUFFER_START} and
+@code{BUFFER_END} solve this. As we don't know exactly which functions will be
+registered with which contigs, the enter tags code has to notify every contig.
+Hence the contig selector code must keep a count on the start and end of
+buffers so that it only needs to redisplay on the last buffer end. This code
+is as follows (tidied up and much shortened for brevity):
+
+@example
+switch(jdata->job) @{
+case REG_BUFFER_START:
+    @{
+        cs->buffer_count++;
+        cs->do_update = REG_BUFFER_START;
+        return;
+    @}
+
+case REG_BUFFER_END:
+    @{
+        cs->buffer_count--;
+        if (cs->buffer_count <= 0) @{
+            cs->buffer_count = 0;
+            if (cs->do_update & REG_LENGTH) @{
+                [ Redisplay Contigs ]
+            @} else if (cs->do_update & REG_ANNO) @{
+                [ Redisplay Tags ]
+            @} else if (cs->do_update & REG_ORDER) @{
+                [ Shuffle Order]
+            @}
+            cs->do_update = 0;
+        @}
+        return;
+    @}
+
+case REG_ANNO:
+    @{
+        if (!cs->do_update) @{
+            [ Redisplay Tags ]
+        @} else @{
+            cs->do_update |= REG_ANNO;
+        @}
+        return;
+    @}
+/* etc */
+@end example
+
+For further examples of handling buffering see the template display code.
+
+@split{}
+@node Reg-Sending
+@section Sending a Notification
+@cindex Notification, sending
+@cindex Sending a notification
+
+When a function modifies data it is the responsibility of this function to
+inform others, via the contig registration scheme, of this change. At the time
+of notification the data on disk and in memory should be consistent (ie that
+check_database should not fail). To illustrate this, when joining two contigs
+we should not start sending notifications until we've recomputed the lengths
+and left/right neighbours of the joined contig.
+
+To send a request, one of the notification functions should be used. The
+simplest of these is @code{contig_notify}. This function takes a @var{GapIO}
+pointer, a contig number, and a @var{reg_data} pointer as arguments. The
+@var{reg_data} is the union of notification types outlined in the above
+sections. The separate steps for notifying are:
+
+@enumerate
+@item
+Create a variable of the appropriate structure type (eg @code{reg_length}).
+@item
+Fill the job field of this structure with the correct definition (eg
+@code{REG_LENGTH}).
+@item
+Fill in any structure dependant fields of the structure (eg @var{length} in the
+case of @code{reg_length}).
+@item
+Call @code{contig_notify} with the @var{GapIO}, contig number and notification
+structure.  The notification structure should be cast back to a pointer to the
+@var{reg_data} union type.
+@end enumerate
+
+An example illustrating the above steps would be:
+
+@example
+@group
+reg_length jl;
+
+[...]
+
+jl.job = REG_LENGTH;
+jl.length = some_length;
+contig_notify(io, contig_number, (reg_data *)&jl);
+@end group
+@end example
+
+The available notification functions are @code{contig_notify},
+@code{result_notify}, @code{type_notify} and @code{type_contig_notify}.
+_oxref(Reg-Functions, C Functions Available).
+
+@split{}
+@node Reg-Tasks
+@section Specific Notification Tasks 
+@cindex Tasks, notification
+@cindex Notification tasks
+
+Some registered items may support extra forms of communication than the listed
+notifications. In this case, we use the @code{REG_GENERIC} notification
+together with a task number and some task specific data to send a specific
+task to a specific registered data. This provides a way for individual
+displays to add new communicates methods to the registration scheme.
+
+To send a @code{REG_GENERIC} task, the @var{reg_generic} structure must first
+be completed by setting @var{job}, @var{task} and @var{data}. @var{Data} will
+point to another structure, which is unique for specific type of task. The
+task data structure must then be initialised and sent to the appropriate
+client contig, id or type.
+
+The @var{task} number needs to be unique across all the types of generic tasks
+likely to be sent to the client. For instance, a contig editor can receive
+@code{TASK_EDITOR_SETCURSOR} and @code{TASK_EDITOR_GETCON} tasks. Obviously
+the @code{#define}s for these tasks need to be different. However they may
+safely coincide with @code{TASK_TEMPLATE_REDRAW}, which is used by the
+template display, as we know that the the editor will never receive this task
+(and vice versa). The assignment of task numbers is at present something which
+requires further investigation. However the use of defines everywhere means
+that they are trivial to change.
+
+@subsection TASK_EDITOR_GETCON
+@cindex TASK_EDITOR_GETCON
+@vindex TASK_EDITOR_GETCON
+@example
+@group
+typedef struct @{
+    char  *con;         /* Allocated by the contig editor */
+    int    lreg;        /* Set lreg and rreg to 0 for all consensus */
+    int    rreg;
+    int    con_cut;
+    int    qual_cut;
+@} task_editor_getcon;
+@end group
+@end example
+Allocates and calculates a consensus (stored in @var{con}) between @var{lreg}
+and @var{rreg}. If @var{lreg} and @var{rreg} are both zero, then all the
+consensus is computed. The calling function is expected to free @var{con} when
+finished. An example of use can be seen in the stop codon code:
+
+@example
+reg_generic gen;
+task_editor_getcon tc;
+
+gen.job = REG_GENERIC;
+gen.task = TASK_EDITOR_GETCON;
+gen.data = (void *)&tc;
+
+tc.lreg = 0;
+tc.rreg = 0;
+tc.con_cut = consensus_cutoff;
+tc.qual_cut = quality_cutoff;
+
+if (type_contig_notify(args.io, args.contig, REG_TYPE_EDITOR,
+                       (reg_data *)&gen, 0) == -1)
+    return TCL_OK;
+
+[...]
+
+xfree(tc.con);
+@end example
+    
+@subsection TASK_CANVAS_SCROLLX
+@cindex TASK_CANVAS_SCROLLX
+@vindex TASK_CANVAS_SCROLLX
+
+@subsection TASK_CANVAS_SCROLLY
+@cindex TASK_CANVAS_SCROLLY
+@vindex TASK_CANVAS_SCROLLY
+
+@subsection TASK_CANVAS_ZOOMBACK
+@cindex TASK_CANVAS_ZOOMBACK
+@vindex TASK_CANVAS_ZOOMBACK
+
+@subsection TASK_CANVAS_ZOOM
+@cindex TASK_CANVAS_ZOOM
+@vindex TASK_CANVAS_ZOOM
+
+@subsection TASK_CANVAS_CURSOR_X
+@cindex TASK_CANVAS_CURSOR_X
+@vindex TASK_CANVAS_CURSOR_X
+
+@subsection TASK_CANVAS_CURSOR_Y
+@cindex TASK_CANVAS_CURSOR_Y
+@vindex TASK_CANVAS_CURSOR_Y
+
+@subsection TASK_CANVAS_CURSOR_DELETE
+@cindex TASK_CANVAS_CURSOR_DELETE
+@vindex TASK_CANVAS_CURSOR_DELETE
+
+@subsection TASK_CANVAS_RESIZE
+@cindex TASK_CANVAS_RESIZE
+@vindex TASK_CANVAS_RESIZE
+
+@subsection TASK_CANVAS_REDRAW
+@cindex TASK_CANVAS_REDRAW
+@vindex TASK_CANVAS_REDRAW
+
+@subsection TASK_CANVAS_WORLD
+@cindex TASK_CANVAS_WORLD
+@vindex TASK_CANVAS_WORLD
+
+@subsection TASK_WINDOW_ADD
+@cindex TASK_WINDOW_ADD
+@vindex TASK_WINDOW_ADD
+
+@subsection TASK_WINDOW_DELETE
+@cindex TASK_WINDOW_DELETE
+@vindex TASK_WINDOW_DELETE
+
+@subsection TASK_CS_REDRAW
+@cindex TASK_CS_REDRAW
+@vindex TASK_CS_REDRAW
+
+@subsection TASK_RENZ_INFO
+@cindex TASK_RENZ_INFO
+@vindex TASK_RENZ_INFO
+
+@subsection TASK_TEMPLATE_REDRAW
+@cindex TASK_TEMPLATE_REDRAW
+@vindex TASK_TEMPLATE_REDRAW
+
+@subsection TASK_DISPLAY_RULER
+@cindex TASK_DISPLAY_RULER
+@vindex TASK_DISPLAY_RULER
+
+@subsection TASK_DISPLAY_TICKS
+@cindex TASK_DISPLAY_TICKS
+@vindex TASK_DISPLAY_TICKS
+
+@split{}
+@node Reg-Functions
+@section C Functions Available
+
+@menu
+* Reg-contig_register_init::        contig_register_init
+* Reg-register_id::                 register_id
+* Reg-contig_register::             contig_register
+* Reg-contig_deregister::           contig_deregister
+* Reg-contig_notify::               contig_notify
+* Reg-contig_register_join::        contig_register_join
+* Reg-result_to_regs::              result_to_regs
+* Reg-result_names::                result_names
+* Reg-result_time::                 result_time
+* Reg-result_notify::               result_notify
+* Reg-result_data::                 result_data
+* Reg-type_to_result::              type_to_result
+* Reg-type_notify::                 type_notify
+* Reg-type_contig_notify::          type_contig_notify
+@end menu
+
+The prototypes for all of these functions can be found in @file{io-reg.h}. The
+code for these functions is held in @file{io-reg.c}.
+
+@split{}
+@node Reg-contig_register_init
+@subsection contig_register_init
+@findex contig_register_init(C)
+@example
+@group
+#include <io-reg.h>
+
+int contig_register_init(GapIO  *io);
+@end group
+@end example
+
+Initialises the contig register lists. This is only performed once,
+upon opening of a new database. The registration lists are
+automatically extended when new contigs are created.
+
+The function returns 0 for succes, -1 for error.
+
+@node Reg-register_id
+@subsection register_id
+@findex register_id(C)
+@example
+@group
+int register_id();
+
+Returns: the id (always a non zero value).
+@end group
+@end example
+Returns a new id number for use as the id field to be sent to a
+@code{contig_register} call. Each time this function is called a new number
+is returned.
+
+@node Reg-contig_register
+@subsection contig_register
+@findex contig_register(C)
+@example
+@group
+int contig_register(GapIO *io, int contig,
+                    void (*func)(GapIO *io, int contig, void *fdata,
+                                 reg_data *jdata),
+                    void *fdata,
+                    int id, int flags, int type);
+Returns:  0 for success
+         -1 for error.
+@end group
+@end example
+Registers "func(io, contig, fdata, jdata)" with the specified contig.
+This doesn't check whether the (func,fdata) pair already exist for
+this contig.
+
+@node Reg-contig_deregister
+@subsection contig_deregister
+@findex contig_deregister(C)
+@example
+@group
+int contig_deregister(GapIO *io, int contig,
+                      void (*func)(GapIO *io, int contig, void *fdata,
+                                   reg_data *jdata),
+                      void *fdata);
+
+Returns:  0 for success
+         -1 for error.
+@end group
+@end example
+Deregisters "func(io, contig, fdata, jdata)" from the specified
+contig. The (func,fdata) pair must match exactly to deregister.
+
+@node Reg-contig_notify
+@subsection contig_notify
+@findex contig_notify(C)
+@example
+@group
+void contig_notify(GapIO *io, int contig, reg_data *jdata);
+@end group
+@end example
+Sends a notification request to all items registered with the
+specified contig.
+
+@node Reg-contig_register_join
+@subsection contig_register_join
+@findex contig_register_join(C)
+@example
+@group
+int contig_register_join(GapIO *io, int cfrom, int cto);
+
+Returns:  0 for success
+         -1 for error.
+@end group
+@end example
+Joins two registration lists. This adds all items listed on the
+registration list for contig 'cfrom' to the registration list for
+contig 'cto'. Entries that are registered on both lists are not
+duplicated. The 'cfrom' registration list is left intact.
+
+@split{}
+@node Reg-result_to_regs
+@subsection result_to_regs
+@findex result_to_regs(C)
+@example
+@group
+contig_reg_t **result_to_regs(GapIO *io, int id);
+
+Returns:  An allocated list of contig_reg_t pointers upon success.
+          NULL for failure.
+@end group
+@end example
+Converts an id number to an array of @var{contig_reg_t} pointers. The
+@var{contig_reg_t} structures pointed to are considered the property of the
+registration scheme and should not be modified. The caller is expect
+to deallocate the returned list by calling the @code{xfree} function.
+
+@node Reg-result_names
+@subsection result_names
+@findex result_names(C)
+@example
+@group
+char *result_names(GapIO *io, int *contig, int *reg, int *id, int first);
+
+Returns: The next name upon success.
+         NULL for failure.
+@end group
+@end example
+Generates description of functions registered with a particular contig.
+If contig 0 is specified then all are listed.
+'contig' is modified to return the contig number this result was from
+(useful when sending contig 0), as is 'reg' to return the index into
+the registration array for this contig. This (contig,reg) pair
+specifies a particular result without the need for remembering
+pointers. 'id' contains a unique id number for this result.
+
+@node Reg-result_time
+@subsection result_time
+@findex result_time(C)
+@example
+@group
+char *result_time(GapIO *io, int contig, int id);
+
+Returns: The time for success.
+         "unknown" for failure.
+@end group
+@end example
+Given a specific contig and id number, returns a string describing the
+time a specific id was registered. This assumes that all registered
+items with this id was registered at the same time. The string is
+statically allocated and should be be freed.
+
+@node Reg-result_notify
+@subsection result_notify
+@findex result_notify(C)
+@example
+@group
+void result_notify(GapIO *io, int id, reg_data *jdata, int all);
+@end group
+@end example
+Sends a notification request to registered data with the specified id.
+If 'all' is non zero then all registered data with this id will be
+notified, otherwise only the first instance of this id found will be
+notified.
+
+@node Reg-result_data
+@subsection result_data
+@findex result_data(C)
+@example
+@group
+void *result_data(GapIO *io, int id, int contig);
+
+Returns:  contig_reg_t->data for id upon success
+          NULL upon failure.
+@end group
+@end example
+Returns the data component of a @var{contig_reg_t} structure for a specific
+id. If id represents more than one piece of data, the first found
+(the search order is undefined) is returned. If the contig is
+specified then id will be search for only within this contig
+registration list, otherwise (when contig is zero) all contigs are
+scanned.
+
+@split{}
+@node Reg-type_to_result
+@subsection type_to_result
+@findex type_to_result(C)
+@example
+@group
+int type_to_result(GapIO *io, int type, int contig);
+
+Returns:  id value for success.
+          0 for failure.
+@end group
+@end example
+Returns the first id value found for a given id. If contig is specifed
+as a non zero value we search for id only within this contig.
+Otherwise all contigs are scanned.
+
+@node Reg-type_notify
+@subsection type_notify
+@findex type_notify(C)
+@example
+@group
+int type_notify(GapIO *io, int type, reg_data *jdata, int all);
+        
+Returns:  0 for success
+         -1 when none of this type were found.
+@end group
+@end example
+Sends a notification request to registered data with the specified
+type. If 'all' is non zero then all registered data with this type
+will be notified, otherwise only the first instance of this type found
+will be notified.
+
+@node Reg-type_contig_notify
+@subsection type_contig_notify
+@findex type_contig_notify(C)
+@example
+@group
+int type_contig_notify(GapIO *io, int contig, int type,
+                       reg_data *jdata, int all);
+
+Returns:  0 for success
+         -1 when none of this type were found.
+@end group
+@end example
+Sends a notification request to registered data of a given type only
+within the specified contig. If 'all' is non zero then all registered
+data with this type in this contig will be notified, otherwise only
+the first instance of this type found will be notified. 
+
+@split{}
+@node Reg-Locking
+@section Locking Mechanisms
+@cindex Locking
+
+When preparing to update data it is essential that a function checks whether
+other displays are currently accessing this data, and if so whether these
+displays are allowing the data to be modified.
+
+This is implemented with use of the REG_GET_LOCK and REG_SET_LOCK
+notifications. These notifications both both include a lock field within their
+structures. This is initially set to the mode of access desired (currently
+REG_LOCK_WRITE is the only one we support). The @code{contig_notify} call is
+then used to send this notification to all appropriate data callbacks. If a
+callback wishes to block the request to write it should clear this lock flag.
+
+The calling code then checks the returned status of the lock flag. If the
+REG_LOCK_WRITE bit is still set then it knows locking is allowed. In this case
+notification of the acceptance of this lock is sent around using the
+REG_SET_LOCK request. An example of the communication follows. To send the
+lock request we do:
+
+@example
+    reg_get_lock lg;
+
+    lg.job = REG_GET_LOCK;
+    lg.lock = REG_LOCK_WRITE;
+
+    contig_notify(io, contig, (reg_data *)&lg);
+@end example
+
+The default action of ignoring the REG_GET_LOCK request will allow the write
+operation to take place. The contig editor does not support updates of the
+contig that it is editing other than those made by itself, so it needs to
+block such locks. The callback procedure of the contig editor contains:
+
+@example
+    case REG_GET_LOCK:
+        /*
+         * We need exclusive access, so clear any write lock
+         */
+        if (jdata->glock.lock & REG_LOCK_WRITE)
+            jdata->glock.lock &= ~REG_LOCK_WRITE;
+
+        break;
+@end example
+
+The calling code should now check the status of the lock and send a
+REG_SET_LOCK request if the lock was not blocked:
+
+@example
+    if (lg.lock & REG_LOCK_WRITE) @{
+        reg_set_lock ls;
+
+        ls.job = REG_SET_LOCK;
+        ls.lock = REG_LOCK_WRITE;
+
+        contig_notify(io, contig, (reg_data *)&ls);
+
+        [ ... ]
+    @}
+@end example
+
+To simplify this procedure, the @code{contig_lock_write} function performs
+the above lock request and acknowledge protocol.
+
+@example
+int contig_lock_write(GapIO *io, int contig);
+
+Returns:  0 for success (write granted)
+         -1 for failure (write blocked)
+
+@end example
+
+In some cases, where large amounts of data are modified in unpredictable
+fashion, it is easier to simply shut down all displays viewing the database
+before proceding. This is especially true of functions such as assembly where
+all contigs maybe modified. In this case we use the locking mechanism once
+more, except with a REG_QUIT call instead of REG_GET_LOCK. The same procedure
+of checking and clearing (if necessary) the lock flag is used. Once again, an
+example from the contig editor callback illustrates the procedure.
+
+@example
+    case REG_QUIT:
+        /*
+         * We are being asked to quit. We can only allow this is we
+         * haven't made changes.
+         */
+        if (_editsMade(db)) @{
+            jdata->glock.lock &= ~REG_LOCK_WRITE;
+        @} else @{
+            DBI_callback(db, DBCALL_QUIT, 0, 0, NULL);
+        @}
+
+        break;
+@end example
+
+The code above checks whether the editor has made any edits. If not the editor
+is shutdown, otherwise the REG_LOCK_WRITE flag is cleared.
+
+The @code{tcl_quit_displays} function can be used to perform the REG_QUIT
+locking procedure. Currently this is an interface to Tcl and no C interface,
+other than using the contig_notify with REG_QUIT, exists.
+_oxref(Reg-Tcl, Tcl Interfaces).
+
+@split{}
+@node Reg-Specific Examples
+@section Examples of Specific Functions
+
+@menu
+* Reg-Deleting a contig::           Deleting a contig
+* Reg-Joining two contigs::         Joining two contigs
+@end menu
+
+Here we describe in detail how certain operations interact with the contig
+registration. They are described here because the notifications generated may
+not be immediately obvious.
+
+@split{}
+@node Reg-Deleting a contig
+@subsection Deleting a contig
+@cindex Deleting a contig
+
+As contig numbers must always be from 1 to N, where N is the number of
+contigs, if we remove a particular contig, we need to ensure we still have
+contigs 1 to N-1. In thise case, deleting contig x, where x != N, will mean
+that we have a hole (at x) which can be filled by moving N down to x.
+
+To illustrate in an algorithm we have the following; Given N contigs and a
+request to delete contig x.
+
+@enumerate
+@item
+Delete contig x. This is a NULL operation as far as the
+@code{io_delete_contig} operation goes as we're already assuming the data on
+this contig has gone elsewhere.
+@item
+Move contig N to contig x (if x != N). This includes updating the disk
+images as well as the fortran arrays and the contig order, but not the
+registration lists --- yet.
+@item
+Decrement the number of contigs. (N--)
+@item
+Notify contig x of the delete using REG_DELETE.
+@item
+Notify contig N of the renumber to contig x using REG_NUMBER_CHANGE.
+(if appropriate)
+@item
+Update registration list information.
+@end enumerate
+
+Hence it is important to remember that after an @code{io_delete_contig} the
+contig numbers may not be the same as before the call.
+
+@split{}
+@node Reg-Joining two contigs
+@subsection Joining two contigs
+@cindex Joining two contigs
+
+The order of events within the joining is crucial. In the past several bugs
+have arisen due to this order being incorrect. We need to notify both the left
+and right contigs of the change, to join the two registration lists, and to
+delete the contig. Deleting the contig must be the last operation as this may
+renumber one of our contigs.
+
+The order used is as follows, assuming we are joining two contigs together.
+We join 'left' to 'right', giving a new contig 'left'.
+
+@enumerate
+@item
+Perform the actual join of the data. This involves updating everything
+except without notifications and without modifying the registration
+lists.
+@item
+Send a REG_JOIN_TO request to 'right' informing the new contig number
+is 'left'. This also includes the offset of 'right' within 'left'.
+@item
+Merge the registration lists using @code{contig_register_join}. We copy
+'right' to 'left', leaving 'right' unchanged. It is required to leave
+'right' unchanged so that the delete request is acknowledged.
+@item
+Notify 'left' of a change of length using REG_LENGTH. Note that this
+now also includes notifying items previously register with 'right'.
+@item
+Delete contig 'right'. As shown above, this will generate REG_DELETE
+and possibly REG_NUMBER_CHANGE requests.
+@end enumerate
+
+@split{}
+@node Reg-Tcl
+@section Tcl Interfaces
+
+@menu
+* Reg-tcl_clear_cp::             clear_cp
+* Reg-tcl_clear_template::       clear_template
+* Reg-tcl_register_id::          register_id
+* Reg-tcl_result_names::         result_names
+* Reg-tcl_result_time::          result_time
+* Reg-tcl_result_delete::        result_delete
+* Reg-tcl_result_quit::          result_quit
+* Reg-tcl_reg_get_ops::          reg_get_ops
+* Reg-tcl_reg_invoke_op::        reg_invoke_op
+* Reg-tcl_reg_notify_highlight:: reg_notify_highlight
+* Reg-tcl_reg_notify_update::    reg_notify_update
+* Reg-tcl_quit_displays::        quit_displays
+@end menu
+
+Some of the contig registration scheme needs to be visible at the Tcl/Tk
+level. This includes, amongst other things, anything to do with the Results
+Manager window. The complete list of Tcl callable functions can be found in
+tk-io-reg.h. The functions are described below.
+
+@split{}
+@node Reg-clear_cp
+@subsection clear_cp
+@findex clear_cp(T)
+@example
+@group
+clear_cp -io handle -id number
+
+Returns: nothing
+@end group
+@end example
+
+This command removes (sends a @code{REG_QUIT} request) all registered items
+that have displays on the contig comparator window. Currently this list is
+hard coded to include the following types: @code{REG_TYPE_FIJ},
+@code{REG_TYPE_READPAIR}, @code{REG_TYPE_REPEAT}, @code{REG_TYPE_CHECKASS},
+@code{REG_TYPE_OLIGO}.
+
+The contig comparator is then turned back into the 1D contig selector window.
+The @var{id} of the contig comparator is needed for this.
+
+@split{}
+@node Reg-clear_template
+@subsection clear_template
+@findex clear_template(T)
+@example
+@group
+clear_template -io handle -id number
+
+Returns: nothing
+@end group
+@end example
+
+This command deletes all items on the template display with an id of
+@var{number}. It loops through all windows contained within this template
+display, sending a @code{REG_QUIT} request to them.
+
+FIXME: This doesn't appear to remove either the template display itself or the
+ruler. Is it meant to?
+
+@split{}
+@node Reg-tcl_register_id
+@subsection register_id
+@findex register_id(T)
+@example
+@group
+register_id
+        
+Returns: the id.
+@end group
+@end example
+A Tcl interface to the @code{register_id} function.
+
+@node Reg-tcl_result_names
+@subsection result_names
+@findex result_names(T)
+@example
+@group
+result_names -io handle
+
+Returns: a list describing all results.
+@end group
+@end example
+A Tcl interface to the @code{result_names} function. This produces a single
+string describing the complete list of results. The format is
+"@{contig regnum id string@} ?@{contig regnum id string@}? ..." and so can
+be accessed as a Tcl list.
+
+@node Reg-tcl_result_time
+@subsection result_time
+@findex result_time(T)
+@example
+@group
+result_time -io handle -contig contig_number -id id_number
+
+Returns: the time in string format.
+@end group
+@end example
+A Tcl interface to the @code{result_time} function.
+
+@node Reg-tcl_result_delete
+@subsection result_delete
+@findex result_delete(T)
+@example
+@group
+result_delete -io handle -id id_number
+
+Returns: nothing
+@end group
+@end example
+Sends a REG_DELETE request to a specific id.
+
+@node Reg-tcl_result_quit
+@subsection result_quit
+@findex result_quit(T)
+@example
+@group
+result_quit -io handle -id id_number
+
+Returns: nothing
+@end group
+@end example
+Sends a REG_QUIT request to a specific id.
+
+@split{}
+@node Reg-tcl_reg_get_ops
+@subsection reg_get_ops
+@findex reg_get_ops(T)
+@example
+@group
+reg_get_ops -io handle -id id_number
+
+Returns: a Tcl list of available operations.
+@end group
+@end example
+A Tcl interface to the REG_GET_OPS notification.
+
+@node Reg-tcl_reg_invoke_op
+@subsection reg_invoke_op
+@findex reg_invoke_op(T)
+@example
+@group
+reg_invoke_op -io handle -id id_number -option option_number
+
+Returns: nothing
+@end group
+@end example
+A Tcl interface to the REG_INVOKE_OP notification.
+
+@node Reg-tcl_reg_notify_update
+@subsection reg_notify_update
+@findex reg_notify_update(T)
+@example
+@group
+reg_notify_update -io handle -contig contig_number
+
+Returns: nothing
+@end group
+@end example
+Sends a REG_LENGTH request to a specific contig, or to all contigs if
+contig_number is specified as 0.
+        
+@node Reg-tcl_reg_notify_highlight
+@subsection reg_notify_highlight
+@findex reg_notify_highlight(T)
+@example
+@group
+reg_notify_highlight -io handle -reading identifier -highlight value
+
+Returns: nothing
+@end group
+@end example
+Sends a REG_HIGHLIGHT request to a specific contig, indicating that the
+highlight value of the specified @var{reading_number} is @var{value}. The
+reading is specified as an @var{identifier} consisting of the name,
+#reading_number or =contig_number.
+        
+@node Reg-tcl_quit_displays
+@subsection quit_displays
+@findex quit_displays(T)
+@example
+@group
+quit_displays io_handle function_name
+
+Returns:  0 for success
+         -1 for failure
+@end group
+@end example
+Sends a REG_QUIT request to all registered data. If an error occurs,
+a database busy message is sent to the error window with the
+"function_name" listed.
+
+@split{}
+@node Reg-To Do
+@section Future Enhancements
+
+@enumerate
+@item
+Rationalise naming and arguments to functions:
+@enumerate
+@item
+Some Tcl interfaces don't take "-io handle" notation (@code{quit_displays})
+@item
+We refer to "result" in function names, but "id" in arguments. They're the
+same.
+@end enumerate
+@item
+Add more type conversion routines. Also rationalise the existing routines.
+We should have a completely orthoganal set of interrogation function so
+that manipulation contigs, types and ids are the same.
+@item
+Document usage of registration scheme within the contig comparitor (it's
+not straight forward or immediately obvious).
+@end enumerate
+

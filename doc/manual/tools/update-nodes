@@ -1,0 +1,2 @@
+#!/bin/sh
+emacs -batch $1 -l ${DOCDIR:-.}/tools/update-nodes.el

@@ -1,0 +1,99 @@
+package require Iwidgets
+namespace eval ::EMBOSS::codcmp {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_codcmp*Xentry.entry.width 30
+option add *e_codcmp*Entryfield.width 30
+option add *e_codcmp*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) codcmp
+    set w [xtoplevel .e_codcmp -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - codcmp}
+    label $w._title -text {Codon usage table comparison}
+    pack $w._title -side top -fill both
+    set vars(codcmp._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments first
+    iwidgets::combobox $w.first\
+	-textvariable [namespace current]::vars(first)\
+	-labeltext [subst {First codon usage file}]
+    eval $w.first insert list end [list_codon_tables]
+    grid [$w.first component entry] -sticky nse
+    $w.first delete entry 0 end
+    $w.first insert entry end [subst Ehum.cut]
+    $w.first configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.first -side top -fill both
+    set vars(first.path) $w.first
+    set vars(first.required)  1
+    set vars(first._type) codon
+
+    lappend arguments second
+    iwidgets::combobox $w.second\
+	-textvariable [namespace current]::vars(second)\
+	-labeltext [subst {Second codon usage file}]
+    eval $w.second insert list end [list_codon_tables]
+    grid [$w.second component entry] -sticky nse
+    $w.second delete entry 0 end
+    $w.second insert entry end [subst Ehum.cut]
+    $w.second configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.second -side top -fill both
+    set vars(second.path) $w.second
+    set vars(second.required)  1
+    set vars(second._type) codon
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst codcmp0.out]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/codcmp.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

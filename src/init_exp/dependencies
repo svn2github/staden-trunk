@@ -1,0 +1,10 @@
+
+# DO NOT DELETE
+$O/init_exp.o: $(SRCROOT)/Misc/xalloc.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/array.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/open_trace_file.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/os.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/translate.h
+$O/init_exp.o: $(SRCROOT)/Misc/misc.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/compress.h
+$O/init_exp.o: $(SRCROOT)/io_lib/include/Read.h

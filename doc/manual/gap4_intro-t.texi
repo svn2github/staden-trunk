@@ -1,0 +1,290 @@
+@page
+_split()
+@node Gap-Intro-Menus
+@section Gap4 Menus
+
+
+The main window for gap4 contains File, Edit, View, Options, Experiments,
+Lists and Assembly menus. 
+
+@node Gap-Intro-Menus-File
+@subsection Gap4 File menu
+
+The File menu includes database opening and
+copying functions and consensus calculation options. 
+
+@itemize @bullet
+@item Change Directory (_fpref(GapDB-Directories, Directories, Directories))
+@item Check Database (_fpref(Check Database, Check Database, check_db))
+@item New (_fpref(GapDB-New, Opening a New Database, newdb))
+@item Open (_fpref(GapDB-Existing, Opening an Existing Database, exist))
+@item Copy Database (_fpref(GapDB-CopyDatabase, Making Backups of Databases,db))
+@item Copy Readings (_fpref(Copy Reads, Copying Readings,copy_reads))
+@item Save Consensus (_fpref(Con-Calculation, The Consensus Calculation,calc_consensus))
+@item Extract Readings (_fpref(Extract Readings, Extract Readings, ex))
+@end itemize
+
+@node Gap-Intro-Menus-Edit
+@subsection Gap4 Edit menu
+The Edit menu
+contains options that alter the contents of the database.
+
+@itemize @bullet
+@item Edit Contig (_fpref(Editor, Editor introduction, contig_editor))
+@item Join Contigs (_fpref(Editor-Joining, Editor joining, contig_editor))
+@item Save Contig Order (_fpref(Order-Contigs, Order Contigs, contig_ordering))
+@item Break Contig (_fpref(Break Contig, Break Contig, disassembly))
+@item Complement a Contig (_fpref(Complement, Complement a Contig, c))
+@item Order Contigs (_fpref(Order-Contigs, Order Contigs, contig_ordering))
+@item Quality Clip (_fpref(Clip-Quality, Quality Clipping, c))
+@item Difference Clip (_fpref(Clip-Difference, Difference Clipping, d))
+@item Double Strand (_fpref(Double Strand, Double Strand, exp_suggest))
+@item Disassemble Readings (_fpref(Break Contig, Break Contig, disassembly))
+@item Enter Tags (_fpref(Enter Tags, Enter Tags, complement))
+@item Edit Notebooks (_fpref(Notes, Notes, notes))
+@item Doctor Database (_fpref(Doctor Database, Doctor database, doctor_db))
+@end itemize
+
+@node Gap-Intro-Menus-View
+@subsection Gap4 View menu
+
+The View menu contains options to look at the data at several levels of
+detail, and analytic functions which present their results graphically.
+
+@itemize @bullet
+@item Contig Selector (_fpref(Contig Selector, Contig Selector,contig_selector))
+@item ResultsManager (_fpref(Results, Results Manager, results))
+@item Find Internal Joins (_fpref(FIJ, Find Internal Joins, fij))
+@item Find Read Pairs (_fpref(Read Pairs, Find Read Pairs, read_pairs))
+@item Find Repeats (_fpref(Repeats, Find repeats, repeats))
+@item Check Assembly (_fpref(Check Assembly, Check Assembly, check_ass))
+@item Sequence Search (_fpref(Find Oligos, Find Oligos, find_oligo))
+@item Template Display (_fpref(Template-Display, Template Display, template))
+@item Show Relationships (_fpref(Show Relationships, Show Relationships, show_rel))
+@item Restriction Enzyme map
+(_fpref(Restrict, Restriction Enzyme Search, restrict_enzymes))
+@item Stop Codon Map (_fpref(Stops, Stop Codon Map, stops))
+@item Quality Plot (_fpref(Template-Quality, Quality Plot, template))
+@item List Confidence (_fpref(Con-Evaluation, List Confidence, calc_consensus))
+@item Reading Coverage Histogram (_fpref(Consistency-ReadingCov, Reading
+Coverage Histogram, consistency_display))
+@item Read-Pair Coverage Histogram (_fpref(Consistency-ReadPairCov,
+Read-Pair Coverage Histogram, consistency_display))
+@item Strand Coverage (_fpref(Consistency-StrandCov, Strand Coverage, consistency_display))
+@item Confidence Values Graph (_fpref(Consistency-Confidence, Confidence
+Values Graph, consistency_display))
+@end itemize
+
+@node Gap-Intro-Menus-Options
+@subsection Gap4 Options menu
+The Options menu contains options for configuring gap4.
+
+@itemize @bullet
+@item Consensus Algorithm
+(_fpref(Conf-Consensus Algorithm, Consensus Algorithm, configure))
+@item Set Maxseq
+(_fpref(Conf-Set Maxseq, Set Maxseq, configure))
+@item Set Fonts
+(_fpref(Conf-Fonts, Set Fonts, configure))
+_ifdef([[_unix]],[[@item Colours
+(_fpref(Conf-Colour, The Colour Configuration Window, configure))]])
+@item Configure Menus
+(_fpref(Conf-Configure Menus, Configuring Menus, configure))
+@item Set Genetic Code
+(_fpref(Conf-Set Genetic Code, Set Genetic Code, configure))
+@item Alignment Scores
+(_fpref(Conf-Alignment Scores, Alignment Scores, configure))
+@item Trace File Location
+(_fpref(Conf-Trace File Location, Trace File Location, configure))
+@end itemize
+
+@node Gap-Intro-Menus-Experiments
+@subsection Gap4 Experiments menu
+
+The Experiments menu contains options to analyse the contigs and to
+suggest experimental solutions to problems.
+
+@itemize @bullet
+@item Suggest Long Readings (_fpref(Suggest Long, Suggest Long Readings, exp_suggest))
+@item Suggest Primers (_fpref(Suggest Primers, Suggest Primers, exp_suggest))
+@item Compressions and Stops
+(_fpref(Compressions, Compressions and Stops, exp_suggest))
+@item Suggest Probes
+(_fpref(Suggest Probes, Suggest Probes, exp_suggest))
+@end itemize
+
+@node Gap-Intro-Menus-Lists
+@subsection Gap4 Lists menu
+
+The Lists menu contains a set of options for creating and editing lists for
+use in various parts of the program.
+
+@itemize @bullet
+@item Creation and Editing 
+(_fpref(Lists, Lists Introduction, lists))
+@item Contigs To Readings
+(_fpref(List-ContigToRead, Contigs To Readings Command, lists))
+@item Minimal Coverage
+(_fpref(List-MinCoverage, Lists Minimum Coverage, lists))
+@item Unattached Readings
+(_fpref(List-Unattached, Lists Unattached Readings, lists))
+@end itemize
+
+
+@node Gap-Intro-Menus-Assembly
+@subsection Gap4 Assembly menu
+The Assembly menu contains various assembly and data entry methods.
+
+@itemize @bullet
+@item Normal Shotgun Assembly
+(_fpref(Assembly-Shot, Normal Shotgun Assembly, assembly))
+@item Directed Assembly (_fpref(Assembly-Directed, Directed Assembly,
+assembly))
+@item Screen Only (_fpref(Assembly-Screen, Assembly Screen Only, assembly))
+@item Assembly Independently
+(_fpref(Assembly-Ind, Assembly Independently, assembly))
+_ifdef([[_unix]],[[@item Cap2 Assembly (_fpref(Assembly-CAP2, Assembly CAP2, assembly))
+@item Cap3 Assembly (_fpref(Assembly-CAP3, Assembly CAP3, assembly))
+@item FAKII Assembly (_fpref(Assembly-FAKII, Assembly FAKII, assembly))
+@item Phrap Assembly (_fpref(Assembly-Phrap Assemble, Phrap Assembly, assembly))
+]])@end itemize
+
+@page
+_split()
+@node Intro-Base-Acc
+@section The use of numerical estimates of base calling accuracy
+
+@cindex Base accuracies - use of
+@cindex Confidence values - use of
+@cindex Quality values - use of
+@cindex Editing and base accuracies
+
+
+In this section we give an overview of our use, when available, of
+base call accuracy estimates or confidence values. We also explain
+the importance of the consensus calculations used by gap4, and their
+role in minimising the work needed to complete sequencing projects.
+
+We first put forward the idea of using numerical estimates of base
+calling accuracy in our paper describing SCF format 
+@cite{Dear, S. and Staden, R, 1992. A standard file format for data from DNA
+sequencing instruments. DNA Sequence 3, 107-110} and then expanded on
+their use for editing and assembly in 
+@cite{Bonfield,J.K. and Staden,R. The application of numerical estimates
+of base calling accuracy to DNA sequencing projects. Nucleic Acids
+Res. 23, 1406-1410 (1995)}.
+
+In Bonfield and Staden (1995), we stated 
+"...the most useful outcome of having a sequence reading determined by a
+computer-controlled instrument would be that each base was assigned a
+numerical estimate of its probability of having been called
+correctly... having numerical estimates of base accuracy is the key to
+further automation of data handling for sequencing projects. ... The
+simple procedure we propose in this paper is a method of using the
+numerical estimates of base calling accuracy to obviate much of the
+tedious and time consuming trace checking currently performed during a
+sequencing project. In summary we propose that the numerical estimates
+of base accuracy should be used by software to decide if conflicts
+between readings require human expertise to help adjudicate. We argue
+that if the accuracy estimates are reasonably reliable then the
+majority of conflicts can be ignored... and so the time taken to check
+and edit a contig will be greatly reduced." 
+
+This has been achieved by making the consensus calculations 
+(_fpref(Con-Calculation, The Consensus Calculation, calc_consensus))
+central to gap4, and by providing calculations which 
+make use of base call accuracy estimates to give each
+consensus base a quality measure. 
+The consensus is not stored in
+the gap4 database but is calculated when required by each function
+that needs it, and hence always takes into account the current data. 
+In the Contig Editor the consensus is updated instantly to reflect any
+change made by the user.
+
+In 1998 the first useable probability values became available through
+the program Phred
+(@i{Ewing, B. and Green, P.
+Base-Calling of Automated Sequencer Traces Using Phred. II. Error
+Probabilities. Genome Research. Vol 8 no 3. 186-194 (1998)}).
+Phred produces a confidence value that defines the probability that the
+base call is correct. This was an important step forward and
+these values are widely used and have defined a decibel type
+scale for base call confidence values. Gap4 is currently set to use 
+confidence values defined on this scale.
+
+The confidence value is given by the formula
+@example
+     C_value = -10*log10(probability of error)
+@end example
+
+A confidence value of 10 corresponds to an error rate of 1/10; 20 to
+1/100; 30 to 1/1000; and so on. Using the main
+gap4 consensus algorithm they enable the production of a consensus
+sequence for which the expected error rate for each base is known.
+
+As is described elsewhere
+(_fpref(Con-Evaluation, List Consensus Confidence, calc_consensus))
+being able to calculate the confidence for each base in the consensus
+sequence makes it possible to estimate the number of errors it contains,
+and hence the number of errors that will be removed if particular bases
+are checked and, if necessary, edited. 
+For example, if 1000 bases in the consensus had confidence
+20, we would expect those 1000 bases (with an error rate of 1/100) to
+contain 10 errors.
+
+Another program which produces decibel scale confidence values for ABI
+377 data is ATQA 
+@cite{Daniel H. Wagner, Associates, at http://www.wagner.com/}.
+
+For gap4 the confidence values
+are expected to lie in the range 1 to 99, with 0 and 100
+having special meanings to the program.
+
+The confidence values are stored
+in SCF or Experiment files and copied into gap4 databases during assembly
+or data entry. 
+
+The searches provided by the Contig Editor
+(_fpref(Editor-Searching, Searching, contig_editor))
+are one of gap4's most important time saving features. The user
+selects a search type, for example to find places where the confidence
+for the consensus falls below a given threshold, and the search
+automatically moves the cursor to the next such position in the
+consensus. The Contig Editor locates the next
+problem by applying the consensus calculation 
+to the contig.
+To edit a contig the user selects
+"Search" repeatedly, knowing that it will 
+only move to places where there is a conflict
+between good data or where the data is poor.
+Note that the program is usually configured to automatically
+display the relevant traces for each position located by the search option.
+
+The main result is that far fewer disagreements
+between data are brought to the attention of the user and fewer traces
+have to be inspected by eye, and so the whole process is faster.
+Another consequence of the
+strategy is that, as fewer bases need changing to produce the correct
+consensus, most of what appears on the screen will be the original
+base calls. Indeed we have taken this a step further and suggest
+that if a base needs changing because it has a high accuracy estimate,
+and is conflicting with other good data, then rather than change the
+character shown on the screen, the user should lower its accuracy
+value. By so doing more of the original base calls are left unchanged
+and hence are visible to the user. There is a function within the
+contig editor to reset the accuracy value for the current base to
+0. Alternatively the accuracy value for the base that is thought to be
+correct can be set within the contig editor to 100. 
+
+@page
+_split()
+@node Intro-Hidden
+@section Use of the "hidden" poor quality data
+_include(hidden-t.texi)
+
+@page
+_split()
+@node Intro-Anno
+@section Annotating and masking readings and contigs
+_include(tags-t.texi)
+

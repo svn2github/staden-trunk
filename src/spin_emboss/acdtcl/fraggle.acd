@@ -1,0 +1,125 @@
+package require Iwidgets
+namespace eval ::EMBOSS::fragment {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_fragment*Xentry.entry.width 30
+option add *e_fragment*Entryfield.width 30
+option add *e_fragment*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) fragment
+    set w [xtoplevel .e_fragment -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - fragment}
+    label $w._title -text {Removes fragment sequences from a seqsearch hits file}
+    pack $w._title -side top -fill both
+    set vars(fragment._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments hitsin
+    iwidgets::entryfield $w.hitsin \
+	-textvariable [namespace current]::vars(hitsin) \
+	-labeltext [subst {Location of seqsearch hits files (input)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.hitsin component entry] -sticky nse
+    set vars(hitsin) [subst ./]
+    pack $w.hitsin -side top -fill both
+    set vars(hitsin.path) $w.hitsin
+    set vars(hitsin.required)  1
+    set vars(hitsin._type) string
+
+    lappend arguments hitsextn
+    iwidgets::entryfield $w.hitsextn \
+	-textvariable [namespace current]::vars(hitsextn) \
+	-labeltext [subst {Extension of seqsearch hits files}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.hitsextn component entry] -sticky nse
+    set vars(hitsextn) [subst .hits]
+    pack $w.hitsextn -side top -fill both
+    set vars(hitsextn.path) $w.hitsextn
+    set vars(hitsextn.required)  1
+    set vars(hitsextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments thresh
+    iwidgets::entryfield $w.thresh \
+	-validate integer \
+	-textvariable [namespace current]::vars(thresh) \
+	-labeltext [subst {Percentage of median length for definition of fragments}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.thresh component entry] -sticky nse
+    set vars(thresh) [subst 50]
+    pack $w.thresh -side top -fill both
+    set vars(thresh.path) $w.thresh
+    set vars(thresh.required)  1
+    set vars(thresh._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments hitsout
+    iwidgets::entryfield $w.hitsout \
+	-textvariable [namespace current]::vars(hitsout) \
+	-labeltext [subst {Location of new hits output files (output)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.hitsout component entry] -sticky nse
+    set vars(hitsout) [subst ./]
+    pack $w.hitsout -side top -fill both
+    set vars(hitsout.path) $w.hitsout
+    set vars(hitsout.required)  1
+    set vars(hitsout._type) string
+
+    lappend arguments hitsoutextn
+    iwidgets::entryfield $w.hitsoutextn \
+	-textvariable [namespace current]::vars(hitsoutextn) \
+	-labeltext [subst {Extension of scop hits files}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.hitsoutextn component entry] -sticky nse
+    set vars(hitsoutextn) [subst .hits]
+    pack $w.hitsoutextn -side top -fill both
+    set vars(hitsoutextn.path) $w.hitsoutextn
+    set vars(hitsoutextn.required)  1
+    set vars(hitsoutextn._type) string
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/fragment.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

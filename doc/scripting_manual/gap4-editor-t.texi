@@ -1,0 +1,814 @@
+@cindex Editor widget
+
+@menu
+* GEditor-Intro::       Introduction
+* GEditor-Configure::   Configuration Options
+* GEditor-Commands::    Widget Commands
+@end menu
+
+@c -------------------------------------------------------------------------
+@node GEditor-Intro
+@subsection Introduction
+@findex editor(C)
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Configure
+@subsection Configuration Options
+@cindex Editor widget: configuration
+@cindex Configuration: editor widget
+
+These options are specified when creating the editor widget to configure its
+look and feel. In addition to the options listed below the editor supports the
+@code{-width}, @code{-height}, @code{-font}, @code{-borderWidth},
+@code{-relief}, @code{-foreground}, @code{-background}, @code{-xscrollcommand}
+and @code{-yscrollcommand}. These are described in detail in the Tk
+@i{options} manual page. Note that the @code{-width} and @code{-height} values
+are measured in characters.
+
+In the descriptions below `Command-Line Name' refers to he switch used
+  in class commands and @code{configure} widget commands to set this value.
+`Database Name' refers to the option's name in the option database (e.g.  in
+@file{.Xdefaults} files).  `Database Class' refers to the option's class value
+in the option database.
+
+@sp 1
+@table @asis
+@item Command-Line Name: @code{-lightcolour}
+@itemx Database Name: @code{lightColour}
+@itemx Database Class: @code{Foreground}
+@vindex -lightcolour: editor widget
+@vindex lightColour: editor widget
+
+        Specifies the foreground colour to use when displaying the cutoff
+        data.
+
+@sp 1
+@item Command-Line Name: @code{-max_height}
+@itemx Database Name: @code{maxHeight}
+@itemx Database Class: @code{MaxHeight}
+@vindex -max_height: editor widget
+@vindex maxHeight: editor widget
+
+        Specifies the maximum height the editor is allowed to display, in
+        units of characters. The vertical scrollbar will be used when more
+        than this many sequences are displayed.
+
+@sp 1
+@item Command-Line Name: @code{-qualcolour}@i{n} (0 <= @i{n} <= 9)
+@itemx Database Name: @code{qualColour}@i{n}
+@itemx Database Class: @code{Background}
+@vindex -qualcolour: editor widget
+@vindex qualColour: editor widget
+
+        These specify the 10 colours to be used for the background of the
+        bases when @code{show_quality} is enabled. @code{-qualcolour0} should
+        be the darkest (defaults to '@code{#494949}') and @code{-qualcolour9}
+        should be the lightest (defaults to '@code{#d9d9d9}').
+
+@sp 1
+@item Command-Line Name: @code{-qual_fg}
+@itemx Database Name: @code{qualForeground}
+@itemx Database Class: @code{Foreground}
+@vindex -qual_fg: editor widget
+@vindex qualForeground: editor widget
+
+        This specifies the foreground colour of bases with poorer
+        quality than the current quality cutoff. By default this is
+        redish ('@code{#ff5050}').
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Commands
+@subsection Widget Commands
+@cindex Editor commands
+@cindex Editor widget commands
+
+@menu
+* GEditor-Units::               Units and Coordinates
+* GEditor-Cursor::              The Editing Cursor
+* GEditor-Select::              The Selection
+* GEditor-Cutoff::              Cutoff Adjustments
+* GEditor-Anno::                Annotations
+* GEditor-Edits::               Editing Commands
+* GEditor-Settings::            Editing Toggles and Settings
+* GEditor-Search::              Searching
+* GEditor-Primer::              Primer Selection
+* GEditor-Status::              The Status Line
+* GEditor-Trace::               The Trace Display
+* GEditor-Misc::                Miscellaneous Commands
+@end menu
+
+The 'editor' widget is based upon the sheet display widget except with a large
+range of editing commands added. The data for the editor cannot be specified
+from the Tcl level, rather this requires using a C interface to adjust the
+tkEditor structure. Hence the editor widget is very specific for the task at
+hand.
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Units
+@subsubsection Units and Coordinates
+@cindex Editor units
+@cindex Units in editor widget
+
+The contig editor works in base coordinates. Some widget commands take x
+and/or y position arguments. These are by default in base units. However it is
+possible to use '@code{@@pos}' as the position argument to specify
+'@code{pos}' as pixel units.
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Cursor
+@subsubsection The Editing Cursor
+@cindex Editor cursor
+@cindex Cursor in editor widget
+
+@table @var
+@findex cursor_left: editor widget
+@findex cursor_right: editor widget
+@findex cursor_up: editor widget
+@findex cursor_down: editor widget
+@item @code{cursor_left}
+@itemx @code{cursor_right}
+@itemx @code{cursor_up}
+@itemx @code{cursor_down}
+
+        Move the editing cursor in the appropriate direction. The exact
+        allowed movements depends on where the cursor is and whether cutoff
+        data is displayed.
+
+@findex read_start: editor widget
+@findex read_end: editor widget
+@item @code{read_start}
+@itemx @code{read_end}
+
+        Positions the cursor at the beginning or end of the used data for this
+        sequence.
+
+@findex read_start2: editor widget
+@findex read_end2: editor widget
+@item @code{read_start2}
+@itemx @code{read_end2}
+
+        Positions the cursor at the beginning or end of the displayed data for
+        this sequence. These differ from @code{read_start} and @code{read_end}
+        when cutoff data is displayed in that they use the ends of the
+        cutoff data.
+
+@findex contig_start: editor widget
+@findex contig_end: editor widget
+@item @code{contig_start}
+@itemx @code{contig_end}
+
+        Positions the cursor on the consensus line at the start or end of the
+        contig.
+
+@findex cursor_set: editor widget
+@item @code{cursor_set} xpos ypos
+
+        Positions the cursor at the correct position and sequence based on an
+        (x,y) coordinate pair from the topleft corner of the screen. Units are
+        in bases unless '@code{@@}@i{xpos} @code{@@}@i{ypos}' is used, in
+        which case they are pixels.
+
+@findex cursor_consensus: editor widget
+@item @code{cursor_consensus ?}xpos@code{?}
+        Positions the cursor at an absolute position within the
+        consensus. If no @i{xpos} is given the existing position
+        within the contig is returned.
+
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Select
+@subsubsection The Selection
+@cindex Selections: editor widget
+@cindex Editor widget: selections
+
+The widget supports the standard X selection via the '@code{select}' command.
+The general form of this command is '@code{select} @i{option ?arg?}'. A
+selection here is simply a portion of text. Selections can be made on any
+sequence or consensus sequence and are denoted by being underlined.
+
+@table @var
+@findex select clear: editor widget
+@item @code{select clear}
+
+        Clears and disowns the current selection.
+
+@findex select from: editor widget
+@item @code{select from} pos
+
+        Grabs the current selection and sets it's start position.
+
+@findex select to: editor widget
+@findex select adjust: editor widget
+@item @code{select to} pos
+@itemx @code{select adjust} pos
+
+        Currently both these are the same. They set the end position of the
+        selection.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Cutoff
+@subsubsection Cutoff Adjustments
+@cindex Cutoffs: editor widget
+@cindex Editor widget: cutoffs
+
+The consensus calculation can be tuned by changing the threshhold at which a
+particular base type is considered to have the 'majority'; a dash (-) is
+displayed when the majority is not sufficiently high. See the staden package
+manual for precise details on this.
+
+An additiona quality cutoff can be applied to each base. This determines the
+contribution that each base makes to the consensus calculation and also the
+colour used when displaying bases on the screen.  Bases with a quality lower
+than the cutoff are displayed in @code{qualColour} and @code{qualForeground}
+colours, as defined in the configuration Options listed above.
+
+@table @var
+@findex set_ccutoff: editor widget
+@item @code{set_ccutoff ?}value@code{?}
+
+        If @var{value} is specified the consensus cutoff is set to
+        @var{value}.  Otherwise the existing consensus cutoff value is
+        returned without making any changes.
+
+@findex set_qcutoff: editor widget
+@item @code{set_qcutoff ?}value@code{?}
+
+        If @var{value} is specified the quality cutoff is set to @var{value}.
+        Otherwise the existing quality cutoff value is returned without making
+        any changes.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Anno
+@subsubsection Annotations
+@cindex Annotations: editor widget
+@cindex Editor widget: annotations
+
+@table @var
+@findex delete_anno: editor widget
+@item @code{delete_anno}
+
+        Delete the tag underneath the cursor. This also sets the current
+        selection to be the range covered by the tag.
+
+@findex create_anno: editor widget
+@item @code{create_anno}
+
+        Brings up a tag editor window to create a new tag. This requires the
+        selection to have been previously set.
+
+@findex edit_anno: editor widget
+@item @code{edit_anno}
+
+        Brings up a tag editor window. This also sets the current selection to
+        be the range covered by the tag.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Edits
+@subsubsection Editing Commands
+@cindex Editing commands: editor widget
+@cindex Editor widget: editing commands
+
+@table @var
+@findex transpose_left: editor widget
+@findex transpose_right: editor widget
+@item @code{transpose_left}
+@itemx @code{transpose_right}
+
+        Moves a base in a sequence either left or right one character. Does
+        not work on the consensus sequence. Only pads can be moved unless the
+        appropriate superedit mode is enabled.
+
+@findex extend_left: editor widget
+@findex extend_right: editor widget
+@findex zap_left: editor widget
+@findex zap_right: editor widget
+@item @code{extend_left}
+@itemx @code{extend_right}
+@itemx @code{zap_left}
+@itemx @code{zap_right}
+
+        Adjusts the current left or right cutoff for a sequence. The
+        @code{extend_} commands move the cutoff by a single base and require
+        the editing cursor to be at the appropriate end of the used data. The
+        @code{zap_} commands set the appropriate end of the used data to be
+        the current cursor position.
+
+@findex delete_key: editor widget
+@findex delete_left_key: editor widget
+@item @code{delete_key}
+@itemx @code{delete_left_key}
+
+        Delete comes in two modes. Both delete the base to the left of the
+        editing cursor. @code{delete_key} then moves the sequence to the right
+        and the editing cursor left by one base to fill the removed base.
+        @code{delete_left_key} moves the sequence to the left of the editing
+        cursor right by one base, and hence changes the sequence start
+        position too. Typically the @kbd{DEL} key is bound to
+        @code{delete_key} and @kbd{CTRL-DEL} is bound to
+        @code{delete_left_key}.
+
+@findex edit_key: editor widget
+@itemx @code{edit_key} character
+
+        Other general key presses. Typically any other key press is bound to
+        this call, which then handles the actual editing or replacing of
+        bases. The key character should be passed over as an argument.
+
+@findex set_confidence: editor widget
+@item @code{set_confidence} value
+
+        Sets the confidence value of a base to @i{value}. In the current
+        implementation only values of 0 and 100 are allowed.
+
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Settings
+@subsubsection Editing Toggles and Settings
+@cindex Toggles: editor widget
+@cindex Settings: editor widget
+@cindex Editor widget: toggles
+@cindex Editor widget: settings
+
+The editor has a variety of boolean values for determining editing and display
+modes. Most take an optional @var{value} parameter to explicitly set the value
+of the boolean. With no @var{value} parameter specified the boolean is toggled
+instead.
+
+@table @var
+@findex set_reveal: editor widget
+@item @code{set_reveal ?}value@code{?}
+
+        This sets the editor 'cutoffs' mode. A setting of 1
+        indicates that cutoff data is to be displayed in the
+        @code{lightColour} colour. A setting of 0 indicates that no cutoff
+        data is to be displayed.
+
+@findex set_insert: editor widget
+@item @code{set_insert ?}value@code{?}
+
+        This command sets the editor insert/replace mode. A @i{value} of 1
+        sets the editor to insert mode. A @i{value} of 0 sets the editor to
+        replace mode.
+
+@cindex Superedit: editor widget
+@cindex Editor widget: superedit
+@findex superedit: editor widget
+@item @code{superedit} modes
+
+        This command sets which editing actions should be allowed. The
+        @i{modes} argument should be a Tcl list of 10 values, each 0
+        (disabled) or 1 (enabled). The values in order repesent insert any to
+        read, delete any from read, insert to consensus, delete dash from
+        consensus, delete any from consensus, replace base in consensus, shift
+        readings, transpose any bases, can use uppercase edits, and
+        replacement mode. The replacement mode is 0 for editing by base type
+        and 1 for edit by confidence value.
+
+@findex auto_save: editor widget
+@item @code{auto_save ?}value@code{?}
+
+        This command sets the auto-save mode. A @i{value} of 1 enables
+        auto-saving. A @i{value} of 0 disables it.
+
+@findex show_differences: editor widget
+@item @code{show_differences ?}value@code{?}
+
+        This command set the show differences mode. A @i{value} of 1 will
+        display only those bases that disagree with the consensus. All
+        other bases are displayed as a fullstop. A @i{value} of 0 shows all
+        bases.
+
+@findex compare_strands: editor widget
+@item @code{compare_strands ?}value@code{?}
+
+        This command sets the compare strands mode. A @i{value} of 1 will make
+        the editor compute the consensus separately for the positive and
+        negative strands. Strands that disagree are given a final consensus
+        character of '-'. A @i{value} of 0 will use the normal single
+        consensus mode.
+
+@findex join_lock: editor widget
+@item @code{join_lock ?}value@code{?}
+
+        This command sets the scroll locking between two editors forming a
+        join editor. A @i{value} of 1 will mean that scrolling (not cursor
+        movement) in one contig will also scroll the other contig.
+
+@findex show_quality: editor widget
+@item @code{show_quality} value
+
+        This commands sets the quality display mode. With a @i{value} of 1 and
+        a positive quality cutoff value all qualities values are displayed as
+        grey scales using the 10 @code{qualColour}@i{n} configuration options.
+
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Search
+@subsubsection Searching
+@cindex Searching in the editor widget
+@cindex Editor widget: searching
+
+The editor search procedures search for a particular item and move the editing
+cursor and xview position if a search item is found. Each search command takes
+a direction and a search string. @i{Direction} can be either '@code{forward}'
+or '@code{reverse}'.
+
+@table @var
+@findex search name: editor widget
+@item @code{search} direction @code{name} value
+
+        Searches for the reading name starting with @i{value}.
+
+@findex search anno: editor widget
+@item @code{search} direction @code{anno ?}value@code{?}
+
+        Searches for the annotation containing a comment matching the
+        @i{value} regular expression. Not specifying @i{value} will match all
+        annotations.
+
+@findex search sequence: editor widget
+@item @code{search} direction @code{sequence} value
+
+        Searches for the sequence @i{value} using a case-insensitive exact
+        match.
+        
+@findex search tag: editor widget
+@item @code{search} direction @code{tag} value
+
+        Searches for a tag with type @i{value}.
+
+@findex search position:
+@item @code{search} direction @code{position} value
+
+        Moves to a specific position. If @i{value} is an absolute number (eg
+        '@code{30717}' then the editing cursor is moved to that consensus
+        base.  If @i{value} is '@code{@@}' followed by a number (eg
+        '@code{@@100}') then the editing cursor is moved to that base within
+        the current reading.  If @i{value} starts with a plus or minus the
+        editing cursor is moved forwards or backwards by that amount. The
+        @i{direction} parameter here has no effect and is included purely for
+        consistency.
+
+@findex search problem: editor widget
+@item @code{search} direction @code{problem}
+
+        Searches for undefined bases or pads.
+
+@findex search quality: editor widget
+@item @code{search} direction @code{quality}
+
+        Searches for bases of poor quality (undefined bases, pads, or single
+        stranded data).
+
+@findex search edit: editor widget
+@item @code{search} direction @code{edit}
+
+        Searches for sequence edits, including confidence value changes.
+
+@findex search verifyand: editor widget
+@findex search verifyor: editor widget
+@item @code{search} direction @code{verifyand}
+@itemx @code{search} direction @code{verifyor}
+
+        Searches for consensus bases that have a lack of evidence in the
+        original sequences. @code{verifyand} looks for evidence on both
+        strands together. @code{verifyor} looks for evidence on each strand
+        independently and defines a match to be places where either strand has
+        a lack of evidence. In the current implementation of these two
+        searches only the forward direction is supported.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Primer
+@subsubsection Primer Selection
+@cindex Primer selection in editor widget
+@cindex Editor widget: primer selection
+@findex select_oligos: editor widget
+
+These control the searching for and creation of oligo primers. Together they
+form the Select Primer functionality of the contig editor.  The
+@code{generate} command must be run first. All other commands have undefined
+behaviour when the generate command has not been run since the last quit
+command.
+
+@table @var
+@findex select_oligos generate: editor_widget
+@item @code{select_oligos generate} sense forward backward avg_length
+
+        Generates a list of oligos suitable for use on the @i{sense} strand,
+        within @i{forward} bases rightwards of the cursor and @i{backward}
+        bases leftwards. Returns the number of oligos found, or -1 for error.
+
+@findex select_oligos next: editor_widget
+@item @code{select_oligos next}
+
+        Picks the next oligo in the list produced by the @code{generate}
+        command (or the first if this hasn't been called yet). This remembers
+        the current active oligo number and returns the default template
+        followed by the complete list of templates (including the default)
+        suitable for this oligo.
+
+@findex select_oligos accept: editor_widget
+@item @code{select_oligos accept} template
+
+        Adds the tag to the database for this oligo using the named
+        @i{template} ("" can be specified here if none is required). Returns a
+        status line containing the template name and the oligo sequence. 
+
+@findex select_oligos quit: editor_widget
+@item @code{select_oligos quit}
+
+        Frees up memory allocated by @code{generate} command.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Status
+@subsubsection The Status Line
+@cindex Status line in editor widget
+@cindex Editor widget: status line
+@findex status: editor widget
+
+@table @var
+@findex status add: editor_widget
+@item @code{status add} type
+
+        Adds a new status line to the bottom of the editor. The @i{type} may
+        be one of the following.
+
+        @table @var
+        @item 0
+                Strand display
+        @item 1, 2 or 3
+                Amino acid translations in reading frame 1, 2 and 3 for the
+                positive strand.
+
+        @item 4, 5 or 6
+                Amino acid translations in reading frame 1, 2 and 3 for the
+                negative strand.
+        @end table
+
+@findex status delete: editor_widget
+@item status @code{delete} type
+
+        Delete a status line. The @i{type} is from the same set listed above.
+
+@findex translation_mode: editor_widget
+@item @code{translation_mode} mode
+
+        This command sets the style of amino acids displayed. @i{Mode} may be
+        either @code{1} or @code{3} to output 1 character or 3 character
+        abbreviations.
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Trace
+@subsubsection The Trace Display
+@cindex Trace display in editor widget
+@cindex Editor widget: trace display
+
+@table @var
+@findex autodisplay_traces: editor widget
+@item @code{autodisplay_traces ?}value@code{?}
+
+        This command sets the automatic trace display mode. A @i{value} of 1
+        will make the editor display relevant traces to solve a problem when
+        the @code{problem} search type is used. A @i{value} of 0 disables
+        this.
+
+@findex set_trace_lock: editor widget
+@item @code{set_trace_lock ?}value@code{?}
+
+        This command sets the locking mode between the editor cursor and the
+        trace cursor. With a @i{value} of 1 any movement in the editor cursor
+        also moves the connected trace displays. A @i{value} of 0 disables
+        this.
+
+@findex trace_comparator: editor widget
+@item @code{trace_comparator ?}identifier@code{?}
+
+        This command specifies another reading identifier (within the same
+        contig) to compare all new traces against. The comparator
+        @var{identifier} can either be a reading identifier to compare against
+        that specific reading or @code{0} to compare against a consensus
+        trace.  When @code{invoke_trace} is called the comparator trace, the
+        requested trace, and their differences are displayed. With no
+        @var{identifier} argument the automatic trace comparison is disabled.
+
+@findex trace_config: editor widget
+@item @code{trace_config ?}match select@code{?}
+
+        This command controls of generation of the consensus trace when
+        @code{trace_comparator 0} is used. The consensus trace is calculated
+        as the average trace of readings on the same strand as the trace we
+        wish to compare it against. If @var{match} is non zero, each single
+        base segment of the consensus trace is averaged from only readings in
+        agreement with the consensus sequence. If @var{select} is non zero the
+        trace to compare against is not used in the consensus trace
+        calculation. With no @var{match} or @var{select} arguments the current
+        settings are returned.
+
+@findex delete_trace: editor_widget
+@item @code{delete_trace} path
+
+        Removes a trace with the Tk @i{path} from the trace display. Useful
+        for when quitting the editor.
+
+@findex invoke_trace: editor_widget
+@item @code{invoke_trace}
+
+        Adds a trace to the trace display.
+
+@findex diff_trace: editor_widget
+@item @code{diff_trace} path1 path2
+
+        This brings up a difference trace between two currently displayed
+        traces with the Tk pathnames of @var{path1} and @var{path2}. These
+        pathnames are returned from the initial @code{trace_add} and
+        @code{trace_create} Tcl utility routines and are typically only known
+        internally to the editor.
+
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Misc
+@subsubsection Miscellaneous Commands
+@cindex Editor, miscellaneous commands
+
+@table @var
+@findex xview: editor_widget
+@findex yview: editor_widget
+@item @code{xview ?}position@code{?}
+@itemx @code{yview ?}position@code{?}
+
+These commands are used to query and change the horizontal and vertical
+position of the information displayed in the editor's window. Without
+specifying the optional @i{position} argument the current value is returned.
+Specifying @i{position} sets the position and updates the editor display.
+
+@findex align: editor_widget
+@item @code{align}
+
+        Aligns the data covered by the selection with the consensus sequence.
+        The sequence is then padded automatically.
+
+@findex configure: editor_widget
+@item @code{configure ?}option@code{? ?}value option value ...@code{?}
+
+        Reconfigures the editor. NB: not all configuration options allowed at
+        startup operate correctly when reconfiguring. (This is a bug.)
+
+@findex dump_contig: editor_widget
+@item @code{dump_contig} filename from to line_length
+
+        Saves the contig display to a file within a specified region. The
+        output consists of the data and settings of the current display.
+
+@findex edits_made: editor_widget
+@item @code{edits_made}
+
+        Queries whether edits have been made. Returns 1 if they have, 0 if
+        they have not.
+
+@findex find_read: editor_widget
+@item @code{find_read} identifier
+
+        Converts a reading identifier to an internal editor sequence number.
+
+@findex get_displayed_annos: editor_widget
+@item @code{get_displayed_annos}
+
+        Returns a list of the displayed annotation types.
+
+@findex get_extents: editor_widget
+@item @code{get_extents}
+
+        Returns the start and end of the displayable contig positions. If
+        cutoff data is shown this will also include the cutoff data beyond the
+        normal contig ends.
+
+@findex get_hidden_reads: editor_widget
+@item @code{get_hidden_reads}
+
+        This returns the hidden reads as a list of reading name identifiers.
+
+@findex get_name: editor_widget
+@item @code{get_name ?}gel_number@code{?}
+
+        Returns the gel name from a given internal reading number, or for the
+        reading underneath the editing cursor.
+
+@findex get_number: editor_widget
+@item @code{get_number ?}xpos ypos@code{?}
+
+        Returns the editor's internal reading number covering the screen
+        coordinate (@i{xpos},@i{ypos}).  If no @i{xpos} and @i{ypos} are
+        specified then the position of the editing cursor is used.
+
+@findex get_read_number: editor_widget
+@item @code{get_read_number ?}xpos ypos@code{?}
+
+        Returns the reading number covering the screen coordinate
+        (@i{xpos},@i{ypos}).  If no @i{xpos} and @i{ypos} are specified then
+        the position of the editing cursor is used.
+
+@findex hide_read: editor_widget
+@item @code{hide_read}
+
+        This command toggles the 'hidden' status of a reading. Hidden readings
+        are not used to compute the consensus.
+
+@findex io: editor_widget
+@item @code{io}
+
+        This returns the IO handle used for this editor.
+
+@findex join: editor_widget
+@item @code{join}
+
+        Performs a join in the join editor.
+
+@findex join_align: editor_widget
+@item @code{join_align}
+
+        Performs an alignment (and pads automatically) on the overlapping
+        region in a join editor.
+
+@findex join_mode: editor_widget
+@item @code{join_mode}
+
+        Queries whether the editor is part of a join editor. Returns 1 if it
+        is and 0 if it is not.
+
+@findex join_percentage: editor_widget
+@item @code{join_percentage}
+
+        Returns the percentage mismatch of the overlap for a join editor.
+
+@findex save: editor_widget
+@item @code{save}
+
+        Saves the database, but doesn't quit.
+
+@findex set_displayed_annos: editor_widget
+@item @code{set_displayed_annos ?}type ...@code{?}
+
+        Sets the displayed annotation types to those specified. All other are
+        turned off.
+
+@findex shuffle_pads: editor_widget
+@item @code{shuffle_pads}
+
+        Realigns pads along the total length of the consensus.
+
+@findex undo: editor_widget
+@item @code{undo}
+
+        Undoes the last compound operation (from a list of changes).
+
+@findex write_mode: editor_widget
+@item @code{write_mode}
+
+        This toggles the editor between read-write and read-only mode.
+
+@end table
+
+@c -------------------------------------------------------------------------
+@split{}
+@node GEditor-Quit
+@subsubsection Quitting the Widget
+@cindex Quitting the editor
+@cindex Editor, quitting
+
+Destroying the editor widget automatically destroys the associated data
+(edStruct) and deregisters from the contig. However a quit command also
+exists. The difference between using the Tk destroy command and quit is that
+quit also sends acknowledgements of shutdown allowing other displays to tidy
+up (such as deleting a displayed cursor). Hence quit is the preferred method.
+
+@table @var
+@findex quit: editor_widget
+@item @code{quit}
+
+        Destroys the widget.
+@end table

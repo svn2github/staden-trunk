@@ -1,0 +1,48 @@
+
+For some types of sequencing project it is convenient to view and edit the
+chromatogram data prior to assembly into a gap4 database
+(_fpref(Gap4-Introduction, Gap4 Introduction, gap4)),
+and this is the function of the program trev.
+
+Trev displays the original trace data, its base calls and confidence
+values, and it allows the sequence of the
+trace to be edited and the left and right cutoffs to be defined. 
+Several file formats can be read in addition to our own Experiment Files
+(_fpref(Formats-Exp, Experiment File, formats)),  and 'SCF' files
+(_fpref(Formats-Scf, scf, formats)). 
+Any edits made are normally saved to Experiment files, not to the 
+chromatogram files which we regard as archival data. 
+
+A typical display from trev is shown below. It includes the trace data, the
+original sequence, the edited sequence, the
+menu bar, and the name of the sequence being edited. The left cutoff region 
+is shown shaded. 
+
+_picture(trev_pic)
+
+
+The trace can be scrolled using the scrollbar directly beneath the
+menubar. The trace can be magnified in the vertical and horizontal
+directions using the scale bars to the left of the trace.
+
+The base numbers, original sequence, edited sequence, confidence values
+and the trace can each be switched on or off, and the font for the
+original and edited sequence is selectable.
+
+@page
+The figure below shows the bases, edited bases, a histogram of the confidence
+values, the traces, and the Information Window which can be switched on
+from the View Menu.
+
+_lpicture(trev_conf_trace)
+
+Trev can be used to produce postscript
+files of the traces so that they can be printed. The colours, line
+widths, etc are configurable. An example is shown in the figure below.
+ 
+_picture(trace_print_trace1)
+
+Note that we strongly 
+recommend that readings are not edited prior to assembly as it is far better
+to edit them when their alignment with other readings can be seen.
+

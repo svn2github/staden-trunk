@@ -1,0 +1,123 @@
+package require Iwidgets
+namespace eval ::EMBOSS::primersearch {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_primersearch*Xentry.entry.width 30
+option add *e_primersearch*Entryfield.width 30
+option add *e_primersearch*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) primersearch
+    set w [xtoplevel .e_primersearch -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - primersearch}
+    label $w._title -text {Searches DNA sequences for matches with primer pairs}
+    pack $w._title -side top -fill both
+    set vars(primersearch._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequences
+    set vars(sequences)       [get_active_seq_id 1]
+    if {$vars(sequences) == -1} {set vars(sequences) [get_active_seq_id 1]}
+    set vars(sequences.name)  [seq_info $vars(sequences) name]
+    sequence_changed [namespace current] sequences
+    set vars(sequences.type) [subst dna]
+    seq_id $w.sequences \
+	-textvariable [namespace current]::vars(sequences.name)\
+	-start_value $vars(sequences.begin)\
+	-end_value $vars(sequences.end)\
+	-to [seq_info $vars(sequences) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequences $w.sequences}"
+    set vars(sequences) [subst {}]
+    pack $w.sequences -side top -fill both
+    set vars(sequences.path) $w.sequences
+    set vars(sequences.required)  1
+    trace variable vars(sequences.name) w  "::EMBOSS::sequence_changed [namespace current] sequences"
+    set vars(sequences._type) seqall
+
+    lappend arguments primers
+    xentry $w.primers \
+	-label [subst {Primer file}]\
+	-textvariable [namespace current]::vars(primers) \
+	-checkcommand ::EMBOSS::check_infile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.primers delete 0 end
+    $w.primers insert end [subst {}]
+    pack $w.primers -side top -fill both
+    set vars(primers.path) $w.primers
+    set vars(primers.required)  1
+    set vars(primers._type) infile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {required Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments mismatchpercent
+    iwidgets::entryfield $w.mismatchpercent \
+	-validate integer \
+	-textvariable [namespace current]::vars(mismatchpercent) \
+	-labeltext [subst {Allowed percent mismatch}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.mismatchpercent component entry] -sticky nse
+    set vars(mismatchpercent) [subst 0]
+    pack $w.mismatchpercent -side top -fill both
+    set vars(mismatchpercent.path) $w.mismatchpercent
+    set vars(mismatchpercent.required)  1
+    set vars(mismatchpercent._type) integer
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments out
+    xentry $w.out \
+	-label [subst {Output filename}]\
+	-textvariable [namespace current]::vars(out) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.out delete 0 end
+    $w.out insert end [subst primersearch0.out]
+    pack $w.out -side top -fill both
+    set vars(out.path) $w.out
+    set vars(out.required)  1
+    set vars(out._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/primersearch.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

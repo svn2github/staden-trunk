@@ -1,0 +1,149 @@
+package require Iwidgets
+namespace eval ::EMBOSS::coderet {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_coderet*Xentry.entry.width 30
+option add *e_coderet*Entryfield.width 30
+option add *e_coderet*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) coderet
+    set w [xtoplevel .e_coderet -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - coderet}
+    label $w._title -text {Extract CDS, mRNA and translations from feature tables}
+    pack $w._title -side top -fill both
+    set vars(coderet._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqall
+    set vars(seqall)       [get_active_seq_id 1]
+    if {$vars(seqall) == -1} {set vars(seqall) [get_active_seq_id 1]}
+    set vars(seqall.name)  [seq_info $vars(seqall) name]
+    sequence_changed [namespace current] seqall
+    set vars(seqall.type) [subst DNA]
+    seq_id $w.seqall \
+	-textvariable [namespace current]::vars(seqall.name)\
+	-start_value $vars(seqall.begin)\
+	-end_value $vars(seqall.end)\
+	-to [seq_info $vars(seqall) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] seqall $w.seqall}"
+    set vars(seqall) [subst {}]
+    pack $w.seqall -side top -fill both
+    set vars(seqall.path) $w.seqall
+    set vars(seqall.required)  1
+    trace variable vars(seqall.name) w  "::EMBOSS::sequence_changed [namespace current] seqall"
+    set vars(seqall._type) seqall
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments cds
+    checkbutton $w.cds \
+	-text [subst {Extract CDS sequences}]\
+	-variable [namespace current]::vars(cds)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.cds -side top -anchor w
+    set vars(cds) [subst 1]
+    set vars(cds.path) $w.cds
+    set vars(cds.required)  0
+    set vars(cds._type) bool
+
+    lappend arguments mrna
+    checkbutton $w.mrna \
+	-text [subst {Extract mrna sequences}]\
+	-variable [namespace current]::vars(mrna)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.mrna -side top -anchor w
+    set vars(mrna) [subst 1]
+    set vars(mrna.path) $w.mrna
+    set vars(mrna.required)  0
+    set vars(mrna._type) bool
+
+    lappend arguments translation
+    checkbutton $w.translation \
+	-text [subst {Extract translated sequences}]\
+	-variable [namespace current]::vars(translation)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.translation -side top -anchor w
+    set vars(translation) [subst 1]
+    set vars(translation.path) $w.translation
+    set vars(translation.required)  0
+    set vars(translation._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments seqout
+    iwidgets::labeledframe $w.seqout \
+	-labeltext [subst {Sequence output filename}]
+    pack $w.seqout -side top -fill both
+    lappend wlist $w
+    set w [$w.seqout childsite]
+    iwidgets::combobox $w.format\
+	-textvariable [namespace current]::vars(seqout.format)\
+	-labeltext {File format}
+    eval $w.format insert list end [list_file_formats]
+    grid [$w.format component entry] -sticky nse
+    $w.format delete entry 0 end
+    $w.format insert entry end fasta
+    $w.format configure \
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(seqout.format.path) $w.format
+    pack $w.format -side top -fill both
+    xentry $w.name \
+	-label {Filename}\
+	-textvariable [namespace current]::vars(seqout) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    set vars(seqout.name.path) $w.name
+    pack $w.name -side top -fill both
+    $w.name delete 0 end
+    $w.name insert end [subst sequence0.out]
+    set vars(seqout.path) $w.seqout
+    set vars(seqout.required)  1
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    set vars(seqout._type) seqout
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/coderet.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+

@@ -1,0 +1,56 @@
+\input epsf     % -*-texinfo-*-
+\input texinfo
+
+@c %**start of header
+@setfilename pregap4.info
+@settitle Pregap4
+@iftex
+@afourpaper
+@end iftex
+@setchapternewpage odd
+@c %**end of header
+
+@set standalone
+include(header.m4)
+
+@finalout
+
+@titlepage
+@title Pregap4
+@subtitle
+@author
+@page
+@vskip 0pt plus 1filll
+_include(copyright.texi)
+@end titlepage
+
+@node Top
+@ifinfo
+@top top-pregap4
+@end ifinfo
+
+_include(pregap4-t.texi)
+
+_split()
+@node General Index
+@unnumbered General Index
+@printindex cp
+
+_split()
+@node File Index
+@unnumbered File Index
+@printindex pg
+
+_split()
+@node Variable Index
+@unnumbered Variable Index
+@printindex vr
+
+_split()
+@node Function Index
+@unnumbered Function Index
+@printindex fn
+
+@shortcontents
+@contents
+@bye

@@ -1,0 +1,308 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+#
+# Run fakii on experiment files
+#
+
+set help {pregap4 {Pregap4-Modules-FakII Assembly}}
+
+proc init {} {
+    mod_preset graph_e_limit		.099
+    mod_preset graph_o_threshold 	10.0
+    mod_preset graph_d_limit		0.0001
+    mod_preset assem_number		1
+    mod_preset assem_e_rate		0.05
+    mod_preset assem_o_threshold	20.0
+    mod_preset assem_d_threshold	0.0001
+    mod_preset generate_constraints	0
+
+    load_package fak2
+    global env fak2_defs
+    if {![info exists env(FAKII)]} {
+        set env(FAKII) [keylget fak2_defs BINARIES]
+    }
+
+    variable enabled
+
+    set bin [keylget fak2_defs BINARIES]
+    if {$enabled} {
+	set fs ""
+	catch {set fs [open "|$bin/create_graph" r]}
+	if {$fs == ""} {
+	    set enabled 0
+	    error init "fakii programs not found in $bin"
+	} else {
+	    catch {close $fs}
+	}
+    }
+}
+
+proc name {} {
+    return "FakII assembly"
+}
+
+proc run {files} {
+    global fofn file_type file_error fak2_defs
+    variable report
+    variable graph_e_limit
+    variable graph_d_limit
+    variable graph_o_threshold
+    variable assem_e_rate
+    variable assem_o_threshold
+    variable assem_d_threshold
+    variable assem_number
+    variable generate_constraints
+
+    set report ""
+
+    # Find where the FakII binaries are. We use the full pathname as
+    # Irix 6 has a program named "assemble".
+    load_package fak2
+    set bin [keylget fak2_defs BINARIES]
+
+    # Create fofn and output dir
+    set one_or_more 0
+    set fd [open $fofn.tmp w]
+    set new_files ""
+    array set found {}
+    foreach f $files {
+	if {$file_type($f) != "EXP"} {
+	    lappend new_files $f
+	    continue
+	}
+
+	set one_or_more 1
+	puts $fd [file tail $f]
+	set found([file tail $f]) 0
+    }
+    close $fd
+
+    if {!$one_or_more} {
+	verror ERR_WARN fakii_assemble "No files to assemble"
+	return $files
+    }
+
+    # Run Graph creation program
+    if {[catch {file mkdir $fofn.assembly} var]} {
+	vmessage "!"
+	append report "ERR: Failed to create directory $fofn.assembly.\n"
+	append report "ERR: \"$var\"\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN fakii_assemble/mkdir $var
+	return $files
+    }
+
+    if {[catch {exec $bin/create_graph \
+	$graph_e_limit \
+	$graph_o_threshold \
+	$graph_d_limit \
+	-exp $fofn.tmp \
+	2> $fofn.assembly/graph_stderr \
+	> $fofn.assembly/graph.dat} var]} {
+	vmessage "!"
+	append report "ERR: Failed to execute create_graph.\n"
+	append report "ERR: Please see $fofn.assembly/graph_stderr\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN fakii_assemble/create_graph $var
+	return $files
+    }
+
+    # If we wish to generate constraints based on template and read pair
+    # information we need to run create_exp_constraints first.
+    # Then (whether or not we have constraints), run assemble.
+    if {$generate_constraints} {
+	if {[catch {exec $bin/create_exp_constraints \
+	    $fofn.assembly/constraints.dat $fofn.assembly/constraints.ascii \
+	    < $fofn.assembly/graph.dat \
+	    2> $fofn.assembly/constraints_stderr} var]} {
+	    vmessage "!"
+	    append report "ERR: Failed to execute create_exp_constraints.\n"
+	    append report "ERR: Please see $fofn.assembly/constraints_stderr\n"
+	    append report "ERR: Aborting assembly.\n"
+	    verror ERR_WARN fakii_assemble/create_exp_constraints $var
+	    return $files
+	}
+	if {[catch {exec $bin/assemble \
+	    -$assem_number \
+	    -c$fofn.assembly/constraints.dat \
+	    $assem_e_rate $assem_o_threshold $assem_d_threshold \
+	    < $fofn.assembly/graph.dat \
+	    > $fofn.assembly/assemble.dat \
+	    2> $fofn.assembly/assemble_stderr} var]} {
+	    vmessage "!"
+	    append report "ERR: Failed to execute assemble.\n"
+	    append report "ERR: Please see $fofn.assembly/assemble_stderr\n"
+	    append report "ERR: Aborting assembly.\n"
+	    verror ERR_WARN fakii_assemble/assemble $var
+	    return $files
+	}
+    } else {
+	if {[catch {exec $bin/assemble -$assem_number \
+	    $assem_e_rate $assem_o_threshold $assem_d_threshold \
+	    < $fofn.assembly/graph.dat \
+	    > $fofn.assembly/assemble.dat \
+	    2> $fofn.assembly/assemble_stderr} var]} {
+	    vmessage "!"
+	    append report "ERR: Failed to execute assemble.\n"
+	    append report "ERR: Please see $fofn.assembly/assemble_stderr\n"
+	    append report "ERR: Aborting assembly.\n"
+	    verror ERR_WARN fakii_assemble/assemble $var
+	    return $files
+	}
+    }
+
+    # Finally run write_exp_file to produce the experiment files
+    if {[catch {exec $bin/write_exp_file \
+	-o $fofn.assembly \
+	-f $fofn.assembly/fofn \
+	< $fofn.assembly/assemble.dat \
+	> $fofn.assembly/write_exp_file_stdout \
+	2> $fofn.assembly/write_exp_file_stderr} var]} {
+	vmessage "!"
+	append report "ERR: Failed to execute write_exp_file.\n"
+	append report "ERR: Please see $fofn.assembly/write_exp_file_stderr\n"
+	append report "ERR: Aborting assembly.\n"
+	verror ERR_WARN fakii_assemble/write_exp_file $var
+	return $files
+    }
+
+    # Passed files are those listed in $fofn.assembly/fofn. Missing ones
+    # were rejected.
+    set fd [open $fofn.assembly/fofn]
+    while {[gets $fd line] != -1} {
+	catch {unset found($line)}
+	append report "SEQ $f: assembled\n"
+	lappend new_files $line
+    }
+    foreach f [array names found] {
+	set file_error($f) "fakii: rejected"
+	append report "SEQ $f: rejected\n"
+    }
+
+    append report "\nOutput from FakII sent to '$fofn.assembly/*_stdout'\n"
+    append report "Diagnostics from FakII sent to '$fofn.assembly/*_stderr'\n"
+    append report "Assembled data written to directory '$fofn.assembly'\n"
+
+    catch {file delete $fofn.tmp}
+
+    return $new_files
+}
+
+proc create_dialogue {w} {
+    variable graph_e_limit
+    variable graph_d_limit
+    variable graph_o_threshold
+    variable assem_e_rate
+    variable assem_o_threshold
+    variable assem_d_threshold
+    variable assem_number
+    variable generate_constraints
+
+    label $w.graph -text "Graph parameters"
+    xentry $w.graph_e_limit \
+	-label "E limit" \
+	-default $graph_e_limit \
+	-width 7 \
+	-type float
+    xentry $w.graph_d_limit \
+	-label "D limit" \
+	-default $graph_d_limit \
+	-width 7 \
+	-type float
+    xentry $w.graph_o_threshold \
+	-label "O threshold" \
+	-default $graph_o_threshold \
+	-width 7 \
+	-type float
+    pack $w.graph -side top 
+    pack $w.graph_e_limit $w.graph_d_limit $w.graph_o_threshold \
+	-side top -fill both
+
+    frame $w.separator1 -bd 2 -relief raised -height 2
+    pack $w.separator1 -side top -fill x -padx 10 -pady 5
+
+    label $w.assem -text "Assembly parameters"
+    xcheck $w.constraints \
+	-text "Auto-generate constraints" \
+	-variable [namespace current]::generate_constraints
+    xentry $w.assem_e_rate \
+	-label "E rate" \
+	-default $assem_e_rate \
+	-width 7 \
+	-type float
+    xentry $w.assem_o_threshold \
+	-label "O threshold" \
+	-default $assem_o_threshold \
+	-width 7 \
+	-type float
+    xentry $w.assem_d_threshold \
+	-label "D threshold" \
+	-default $assem_d_threshold \
+	-width 7 \
+	-type float
+    xentry $w.assem_number \
+	-label "Assembly number" \
+	-default $assem_number \
+	-width 7 \
+	-type int
+    pack $w.assem -side top 
+    pack $w.constraints $w.assem_e_rate $w.assem_o_threshold \
+	$w.assem_d_threshold $w.assem_number \
+	-side top -fill both
+}
+
+proc check_params {} {
+    if {"" != [set inv [local_param_exists [namespace current] \
+	graph_e_limit graph_o_threshold graph_d_limit \
+	assem_number assem_e_rate assem_o_threshold assem_d_threshold]]} {
+	return $inv
+    }
+
+    return ""
+}
+
+proc process_dialog {w} {
+    variable graph_e_limit
+    variable graph_d_limit
+    variable graph_o_threshold
+    variable assem_e_rate
+    variable assem_o_threshold
+    variable assem_d_threshold
+    variable assem_number
+
+    set graph_e_limit		[$w.graph_e_limit get]
+    set graph_d_limit		[$w.graph_d_limit get]
+    set graph_o_threshold	[$w.graph_o_threshold get]
+    set assem_e_rate		[$w.assem_e_rate get]
+    set assem_o_threshold	[$w.assem_o_threshold get]
+    set assem_d_threshold	[$w.assem_d_threshold get]
+    set assem_number		[$w.assem_number get]
+
+    if {[check_params] != ""} {
+	return 0
+    }
+
+    return 1
+}
+
+proc configure_dialogue {w mode} {
+    variable generate_constraints
+
+    if {[string match save* $mode]} {
+	mod_save graph_e_limit [$w.graph_e_limit get2]
+	mod_save graph_d_limit [$w.graph_d_limit get2]
+	mod_save graph_o_threshold [$w.graph_o_threshold get2]
+	mod_save graph_o_threshold [$w.graph_o_threshold get2]
+	mod_save assem_o_threshold [$w.assem_o_threshold get2]
+	mod_save assem_d_threshold [$w.assem_d_threshold get2]
+	mod_save assem_number [$w.assem_number get2]
+	mod_save generate_constraints $generate_constraints
+    }
+}

@@ -1,0 +1,11 @@
+[naming_scheme]
+#
+# This matches the new-style Sanger Centre naming scheme.
+# http://www.sanger.ac.uk/Software/sequencing/glossary/naming.shtml
+#
+set ns_name "New style Sanger Centre naming scheme"
+set ns_regexp {([^.]*)\.(.[0-9]+)(.).*}
+set ns_lt(TN) {$1}
+set ns_lt(PR) {subst {$2 {[spf]1 1} {[qr]1 2} {[spf]* 3} {[qr]* 4} 0}}
+set ns_lt(CH) {subst {$3 {p 2} {b 6} {e 8} {t 3} {d 5} {c 7} {f 9} {l 11} {m 12} {n 13} {j 16} {k 17} 0}}
+set_name_scheme

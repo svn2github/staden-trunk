@@ -1,0 +1,27 @@
+set_menu prefinish_menu
+add_menu File		1 0 left
+add_menu Add		1 0 left
+add_menu Options        1 0 left 
+
+add_command {File.Load}			1 0 {::prefinish::prefin_load $h}
+add_command {File.Save}			1 0 {::prefinish::prefin_save $h}
+add_command {File.Save As}		1 0 \
+	    {::prefinish::prefin_save $h __DEFAULT__}
+add_command {File.Generate CLI App}	1 0 {::prefinish::generate_save $h}
+add_separator {File.Sep1}
+add_command {File.Exit}			1 0 {::prefinish::exit $h}
+
+set_def RULE_DIR $env(STADLIB)/prefinish/rules
+
+add_command {Add.Configuration}		1 0 {::prefinish::add_param $h}
+add_command {Add.Pass}			1 0 {::prefinish::add_pass $h}
+add_cascade {Add.Rule}			1 0
+add_command {Add.Solution}		1 0 {::prefinish::add_solu $h}
+add_separator {Add.Sep1}
+add_command {Add.Remove}		1 0 {::prefinish::remove_node $h}
+
+add_check   {Options.Show tooltips}     1 0 \
+        ::prefinish::opt_tooltips ::prefinish::show_tooltips 
+add_command {Options.Save options}      1 0 {::prefinish::save_options} 
+ 
+set_def SHOW_TOOLTIPS	1 

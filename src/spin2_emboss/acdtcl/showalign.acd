@@ -1,0 +1,350 @@
+package require Iwidgets
+namespace eval ::EMBOSS::showalign {
+namespace import ::EMBOSS::*
+variable vars
+variable arguments
+
+
+option add *e_showalign*Xentry.entry.width 30
+option add *e_showalign*Entryfield.width 30
+option add *e_showalign*Combobox.width 27
+
+proc create_dialogue {} {
+    variable vars
+    variable arguments
+    set vars(application) showalign
+    set w [xtoplevel .e_showalign -resizable 0]
+    if {$w == {}} return
+    bind $w <Destroy> \
+"if {{$w} == {%W}} {::EMBOSS::destroy_dialogue [namespace current]}"
+    fix_maxsize $w
+    wm title $w {EMBOSS - showalign}
+    label $w._title -text {Displays a multiple sequence alignment}
+    pack $w._title -side top -fill both
+    set vars(showalign._type) application
+
+    iwidgets::tabnotebook $w.book_1 -tabpos n -padx 10 -equaltabs 0
+    pack $w.book_1 -side top -fill both
+    set book(book_1) $w
+    set page [$w.book_1 add \
+	-label [subst {input Section}]]
+    $w.book_1 view [subst {input Section}]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments sequence
+    set vars(sequence)       [get_active_seq_id 1]
+    if {$vars(sequence) == -1} {set vars(sequence) [get_active_seq_id 1]}
+    set vars(sequence.name)  [seq_info $vars(sequence) name]
+    sequence_changed [namespace current] sequence
+    set vars(sequence.type) [subst gapany]
+    seq_id $w.sequence \
+	-textvariable [namespace current]::vars(sequence.name)\
+	-start_value $vars(sequence.begin)\
+	-end_value $vars(sequence.end)\
+	-to [seq_info $vars(sequence) length]\
+	-browse_cmd seq_browser\
+	-update_cmd "{::EMBOSS::seq_updates [namespace current] sequence $w.sequence}"
+    set vars(sequence) [subst {}]
+    pack $w.sequence -side top -fill both
+    set vars(sequence.path) $w.sequence
+    set vars(sequence.required)  1
+    trace variable vars(sequence.name) w  "::EMBOSS::sequence_changed [namespace current] sequence"
+   set vars(sequence.totweight) [subst 0]
+    set vars(sequence._type) seqset
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {advanced Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments refseq
+    iwidgets::entryfield $w.refseq \
+	-textvariable [namespace current]::vars(refseq) \
+	-labeltext [subst {The number or the name of the reference sequence}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.refseq component entry] -sticky nse
+    set vars(refseq) [subst 0]
+    pack $w.refseq -side top -fill both
+    set vars(refseq.path) $w.refseq
+    set vars(refseq.required)  0
+    set vars(refseq._type) string
+
+    lappend arguments bottom
+    checkbutton $w.bottom \
+	-text [subst {Display the reference sequence at the bottom}]\
+	-variable [namespace current]::vars(bottom)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.bottom -side top -anchor w
+    set vars(bottom) [subst 1]
+    set vars(bottom.path) $w.bottom
+    set vars(bottom.required)  0
+    set vars(bottom._type) bool
+
+    lappend arguments show
+    iwidgets::combobox $w.show\
+	-textvariable [namespace current]::vars(show.name)\
+	-labeltext [subst {What to show}]
+    trace variable vars(show.name) w  "::EMBOSS::list_changed [namespace current] show"
+    eval $w.show insert list end {{All of the sequences}} {{Identities between the sequences}} {{Non-identities between the sequences}} {{Similarities between the sequences}} {{Dissimilarities between the sequences}}
+    set vars(show.mapping1) {{Non-identities between the sequences} N {Identities between the sequences} I {Dissimilarities between the sequences} D {Similarities between the sequences} S {All of the sequences} A}
+    set vars(show.mapping2) {D {Dissimilarities between the sequences} I {Identities between the sequences} A {All of the sequences} N {Non-identities between the sequences} S {Similarities between the sequences}}
+    grid [$w.show component entry] -sticky nse
+    $w.show delete entry 0 end
+    array set tmpmap $vars(show.mapping2)
+    set def [subst N]
+    catch {set def $tmpmap($def)}
+    set vars(show) $def
+    $w.show insert entry end $def
+    $w.show configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.show -side top -fill both
+    set vars(show.path) $w.show
+    set vars(show.required)  0
+    set vars(show.delimiter) ,
+    set vars(show._type) list
+
+    lappend arguments order
+    iwidgets::combobox $w.order\
+	-textvariable [namespace current]::vars(order.name)\
+	-labeltext [subst {Output order of the sequences}]
+    trace variable vars(order.name) w  "::EMBOSS::list_changed [namespace current] order"
+    eval $w.order insert list end {{Input order - no change}} {{Alphabetical order of the names}} {{Similarity to the reference sequence}}
+    set vars(order.mapping1) {{Alphabetical order of the names} A {Input order - no change} I {Similarity to the reference sequence} S}
+    set vars(order.mapping2) {A {Alphabetical order of the names} I {Input order - no change} S {Similarity to the reference sequence}}
+    grid [$w.order component entry] -sticky nse
+    $w.order delete entry 0 end
+    array set tmpmap $vars(order.mapping2)
+    set def [subst I]
+    catch {set def $tmpmap($def)}
+    set vars(order) $def
+    $w.order insert entry end $def
+    $w.order configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.order -side top -fill both
+    set vars(order.path) $w.order
+    set vars(order.required)  0
+    set vars(order.delimiter) ,
+    set vars(order._type) list
+
+    lappend arguments similarcase
+    checkbutton $w.similarcase \
+	-text [subst {Show similar residues in lower-case}]\
+	-variable [namespace current]::vars(similarcase)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.similarcase -side top -anchor w
+    set vars(similarcase) [subst 1]
+    set vars(similarcase.path) $w.similarcase
+    set vars(similarcase.required)  0
+    set vars(similarcase._type) bool
+
+    lappend arguments matrix
+    set vars(matrix.protein) [subst {[expr {$vars(sequence.protein)}]}]
+    iwidgets::combobox $w.matrix\
+	-textvariable [namespace current]::vars(matrix)\
+	-labeltext [subst {Similarity scoring Matrix file}]
+    eval $w.matrix insert list end [list_matrices p]
+    grid [$w.matrix component entry] -sticky nse
+    $w.matrix delete entry 0 end
+    $w.matrix insert entry end [subst {[expr {$vars(matrix.protein)?"EBLOSUM62":"EDNAMAT"}]}]
+    $w.matrix configure \
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.matrix -side top -fill both
+    set vars(matrix.path) $w.matrix
+    set vars(matrix.required)  0
+    set vars(matrix.protein.orig) $vars(matrix.protein)
+    set vars(matrix.protein.expr) {[expr {$vars(sequence.protein)}]}
+    trace variable vars(sequence.protein) w  "::EMBOSS::reset_value [namespace current] matrix.protein"
+    set vars(matrix.orig) $vars(matrix)
+    set vars(matrix.expr) {[expr {$vars(matrix.protein)?"EBLOSUM62":"EDNAMAT"}]}
+    trace variable vars(matrix.protein) w  "::EMBOSS::reset_value [namespace current] matrix"
+    set vars(matrix._type) matrix
+
+    lappend arguments uppercase
+    iwidgets::entryfield $w.uppercase \
+	-textvariable [namespace current]::vars(uppercase) \
+	-labeltext [subst {Regions to put in uppercase (eg: 4-57,78-94)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.uppercase component entry] -sticky nse
+    set vars(uppercase) [subst {}]
+    pack $w.uppercase -side top -fill both
+    set vars(uppercase.path) $w.uppercase
+    set vars(uppercase.required)  0
+    set vars(uppercase._type) range
+
+    lappend arguments number
+    checkbutton $w.number \
+	-text [subst {Number the sequences}]\
+	-variable [namespace current]::vars(number)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.number -side top -anchor w
+    set vars(number) [subst 1]
+    set vars(number.path) $w.number
+    set vars(number.required)  0
+    set vars(number._type) bool
+
+    lappend arguments ruler
+    checkbutton $w.ruler \
+	-text [subst {Display ruler}]\
+	-variable [namespace current]::vars(ruler)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.ruler -side top -anchor w
+    set vars(ruler) [subst 1]
+    set vars(ruler.path) $w.ruler
+    set vars(ruler.required)  0
+    set vars(ruler._type) bool
+
+    lappend arguments width
+    iwidgets::entryfield $w.width \
+	-validate integer \
+	-textvariable [namespace current]::vars(width) \
+	-labeltext [subst {Width of sequence to display}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.width component entry] -sticky nse
+    set vars(width) [subst 60]
+    pack $w.width -side top -fill both
+    set vars(width.minimum) [subst 1]
+    set vars(width.path) $w.width
+    set vars(width.required)  0
+    set vars(width._type) integer
+
+    lappend arguments margin
+    iwidgets::entryfield $w.margin \
+	-validate integer \
+	-textvariable [namespace current]::vars(margin) \
+	-labeltext [subst {Length of margin for sequence names}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.margin component entry] -sticky nse
+    set vars(margin) [subst -1]
+    pack $w.margin -side top -fill both
+    set vars(margin.minimum) [subst -1]
+    set vars(margin.path) $w.margin
+    set vars(margin.required)  0
+    set vars(margin._type) integer
+
+    lappend arguments names
+    checkbutton $w.names \
+	-text [subst {Show sequence IDs}]\
+	-variable [namespace current]::vars(names)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.names -side top -anchor w
+    set vars(names) [subst 1]
+    set vars(names.path) $w.names
+    set vars(names.required)  0
+    set vars(names._type) bool
+
+    lappend arguments html
+    checkbutton $w.html \
+	-text [subst {Use HTML formatting}]\
+	-variable [namespace current]::vars(html)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.html -side top -anchor w
+    set vars(html) [subst 0]
+    set vars(html.path) $w.html
+    set vars(html.required)  0
+    set vars(html._type) bool
+
+    lappend arguments highlight
+    iwidgets::entryfield $w.highlight \
+	-textvariable [namespace current]::vars(highlight) \
+	-labeltext [subst {Regions to colour in HTML (eg: 4-57 red 78-94 green)}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.highlight component entry] -sticky nse
+    set vars(highlight) [subst {}]
+    pack $w.highlight -side top -fill both
+    set vars(highlight.path) $w.highlight
+    set vars(highlight.required)  0
+    set vars(highlight._type) range
+
+    lappend arguments plurality
+    iwidgets::entryfield $w.plurality \
+	-validate real \
+	-textvariable [namespace current]::vars(plurality) \
+	-labeltext [subst {Plurality check % for consensus}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.plurality component entry] -sticky nse
+    set vars(plurality) [subst 50.0]
+    pack $w.plurality -side top -fill both
+    set vars(plurality.minimum) [subst 0.0]
+    set vars(plurality.maximum) [subst 100.0]
+    set vars(plurality.path) $w.plurality
+    set vars(plurality.required)  0
+    set vars(plurality._type) float
+
+    lappend arguments setcase
+    iwidgets::entryfield $w.setcase \
+	-validate real \
+	-textvariable [namespace current]::vars(setcase) \
+	-labeltext [subst {Threshold above which the consensus is given in uppercase}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.setcase component entry] -sticky nse
+    set vars(setcase) [subst 0]
+    pack $w.setcase -side top -fill both
+    set vars(setcase.path) $w.setcase
+    set vars(setcase.required)  0
+    set vars(setcase._type) float
+
+    lappend arguments identity
+    iwidgets::entryfield $w.identity \
+	-validate real \
+	-textvariable [namespace current]::vars(identity) \
+	-labeltext [subst {Required % of identities at a position fro consensus}]\
+	-state [lindex {disabled normal} [subst 1]]
+    grid [$w.identity component entry] -sticky nse
+    set vars(identity) [subst 0.0]
+    pack $w.identity -side top -fill both
+    set vars(identity.minimum) [subst 0.0]
+    set vars(identity.maximum) [subst 100.0]
+    set vars(identity.path) $w.identity
+    set vars(identity.required)  0
+    set vars(identity._type) float
+
+    lappend arguments consensus
+    checkbutton $w.consensus \
+	-text [subst {Display the consensus line}]\
+	-variable [namespace current]::vars(consensus)\
+	-state [lindex {disabled normal} [subst 1]]
+    pack $w.consensus -side top -anchor w
+    set vars(consensus) [subst 1]
+    set vars(consensus.path) $w.consensus
+    set vars(consensus.required)  0
+    set vars(consensus._type) bool
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+
+    set page [$w.book_1 add \
+	-label [subst {output Section}]]
+    lappend wlist $w
+    set w $page
+
+    lappend arguments outfile
+    xentry $w.outfile \
+	-label [subst {Output sequence details to a file}]\
+	-textvariable [namespace current]::vars(outfile) \
+	-checkcommand ::EMBOSS::check_outfile\
+	-state [lindex {disabled normal} [subst 1]]
+    $w.outfile delete 0 end
+    $w.outfile insert end [subst stdout]
+    pack $w.outfile -side top -fill both
+    set vars(outfile.path) $w.outfile
+    set vars(outfile.required)  1
+    set vars(outfile._type) outfile
+
+    set w [lindex $wlist end]
+    set wlist [lreplace $wlist end end]
+    okcancelhelp $w._okcancelhelp -bd 2 -relief groove\
+	-ok_command "::EMBOSS::run_dialogue [namespace current] $w" \
+	-cancel_command "destroy $w" \
+	-help_command {show_url [::EMBOSS::data_dir]/../doc/programs/html/showalign.html}
+    pack $w._okcancelhelp -side bottom -fill x
+
+    ::EMBOSS::resizebook $book(book_1).book_1
+}
+
+
+}; # namespace eval
+
