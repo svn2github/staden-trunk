@@ -10,7 +10,7 @@
 #include <tk.h>
 #include <math.h>
 #include <X11/Xutil.h>
-#include "png.h" /* local 1.2.5 copy */
+#include <png.h>
 #include "tk_defs.h"
 
 #include "os.h"
