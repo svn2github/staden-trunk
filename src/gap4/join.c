@@ -1,3 +1,4 @@
+/*  Last edited: Nov 30 14:57 2004 (badger) */
 /*
  * File:
  * Version: join.c
@@ -170,7 +171,6 @@ int align_contigs (OVERLAP *overlap) {
         free_overlap(overlap);
 	ierr = affine_align(overlap,params);
 
-	destroy_alignment_params (params);
 	destroy_alignment_params (params);
 	return ierr;
     }
