@@ -1,0 +1,87 @@
+spin2 / spin2_emboss
+
+Spin2 and spin2_emboss should supersede spin and spin_emboss
+
+New features
+------------
+* All graphics now use the tk canvas (previously most used tkRaster with
+the exception being the restriction enzyme map). This allows the use of
+features of the canvas such as tagging to allow more interactive behavior.
+It also means that all graphics use the same code and have the same 
+functionality. 
+
+* The organisation of the graphics code has been changed dramatically. 
+
+* The graphics result can be rotated 90 degrees to be plotted on the y axis of 
+dot plots. 
+
+* The graphics results can be moved to the left or right of existing plots 
+aswell as above, below and superimposed.
+
+* Started a graphical feature table viewer. 
+
+* Can do top and/or bottom strand for all graphical results. Top strand 
+results appear above the ruler, bottom strand results appear below the ruler.
+
+* Removed keybox from the right hand side and use bindings to highlight and
+move plots around. Have 2 bars to replace "all" for moving all plots in a
+window and allows collapsing and expanding of a window.
+
+Known bugs
+----------
+* Having sequences of different lengths on the y axis of dot plots causes major
+problems and scaling is not always correct on the x axis.
+
+* The sequence display is partly integrated into the new scheme but since it
+was due to be replaced by seqed, this was done only to prove it could work.
+It is very buggy.
+
+* reinstate listing output for highlighted match for splice search/wt matrix 
+search
+
+* list results for global and local alignments not done. For sip_align this
+has been commented out since 27.09.00 ~pubseq/share/src/unused/sip4/backups/
+Don't know why this is so.
+
+* need to do string representation of graph object
+
+* plotting sequence display first then doing a base composition plot causes
+a crash
+
+* numerous memory leaks
+
+* If the sequence range is the same as the graphics window size (default 
+500 pixels), no results are plotted. Scaling bug. Was fixed in spin and gap4
+so need to reinstate the change that was made.
+
+* Vertical axis numbering isn't optimally positioned.
+
+* The cursor for the y axis is out by one. 
+
+* Cursor bug:
+Find matching words.
+Zoom
+Double click to get seqs, close sequence display
+Zoom out
+Now auto-highlight wrongly highlights the vertical cursor (and horizontal one
+is nowhere to be seen).
+
+* Cursor bug:
+Plot codon pref
+Zoom up
+Scroll in X
+Zoom out
+The Y cursor has now moved; it should not have.
+The Y cursor is now in three different places; the top plot has one position,
+the bottom two have another, and the ruler a third position.
+
+* Plot 2 2d plots. Move the top one to beneath the other one. The new plot
+loses both horizontal and vertical cursors.
+
+* Plot a range, then plot over all the sequence. The plot is zoomed but I 
+can't zoom back.
+
+* Various binding bugs
+
+
+
