@@ -489,6 +489,58 @@ static void DelTagSequence(char *sequence, int length) {
 	xfree(sequence);
 }
 
+int inexact_pad_match(char *seq,
+		      int seq_len,
+		      char *string,
+		      int string_len,
+		      int mis_match,
+		      int *match,
+		      int *score,
+		      int max_matches)
+{
+    char *pos;
+    char *uppert;
+    int i;
+    int n_matches;
+    int n_mis;
+
+    /* remove any pads from the pattern search */
+    depad_seq(string, &string_len, NULL);
+
+    /* uppercase search string */
+    if (NULL == (uppert = (char *)xmalloc(string_len + 1)))
+	return -2;
+    uppert[string_len] = 0;
+    for (i = string_len-1; i >= 0; i--) {
+	uppert[i] = toupper(string[i]);
+    }
+    pos = NULL;
+
+    n_matches = 0;
+    pos = pstrstr_inexact(seq, uppert, mis_match, &n_mis);
+    while (pos) {
+	if (n_matches < max_matches) {
+	    match[n_matches] = pos - seq;
+	    score[n_matches] = string_len - n_mis;
+	    n_matches++;
+	} else {
+	    /* make positions start at 1 */
+	    for (i=0; i < max_matches; i++) {
+		match[i]++;
+	    }
+	    return -1; /* out of match storage */
+	}
+	pos++;
+	pos = pstrstr_inexact(pos, uppert, mis_match, &n_mis);
+    }
+    /* make positions start at 1 */
+    for (i=0; i < n_matches; i++) {
+	match[i]++;
+    }
+    xfree(uppert);
+    return n_matches;
+}
+
 /*
  * find matches between string covered by a tag and contig list with
  * a minimum match of mis_match
@@ -639,58 +691,6 @@ TagMatch(GapIO *io,                                                    /* in */
     xfree(match);
     xfree(scores);
     return cnt;
-}
-
-int inexact_pad_match(char *seq,
-		      int seq_len,
-		      char *string,
-		      int string_len,
-		      int mis_match,
-		      int *match,
-		      int *score,
-		      int max_matches)
-{
-    char *pos;
-    char *uppert;
-    int i;
-    int n_matches;
-    int n_mis;
-
-    /* remove any pads from the pattern search */
-    depad_seq(string, &string_len, NULL);
-
-    /* uppercase search string */
-    if (NULL == (uppert = (char *)xmalloc(string_len + 1)))
-	return -2;
-    uppert[string_len] = 0;
-    for (i = string_len-1; i >= 0; i--) {
-	uppert[i] = toupper(string[i]);
-    }
-    pos = NULL;
-
-    n_matches = 0;
-    pos = pstrstr_inexact(seq, uppert, mis_match, &n_mis);
-    while (pos) {
-	if (n_matches < max_matches) {
-	    match[n_matches] = pos - seq;
-	    score[n_matches] = string_len - n_mis;
-	    n_matches++;
-	} else {
-	    /* make positions start at 1 */
-	    for (i=0; i < max_matches; i++) {
-		match[i]++;
-	    }
-	    return -1; /* out of match storage */
-	}
-	pos++;
-	pos = pstrstr_inexact(pos, uppert, mis_match, &n_mis);
-    }
-    /* make positions start at 1 */
-    for (i=0; i < n_matches; i++) {
-	match[i]++;
-    }
-    xfree(uppert);
-    return n_matches;
 }
 
 /*
