@@ -909,6 +909,8 @@ set_def DIRECT_ASSEMBLY.MAXMIS			$defs_maxmis
 set_def DIRECT_ASSEMBLY.MAXMIS.VALUE		10.00
 set_def DIRECT_ASSEMBLY.DISPLAY.NAME		"Display alignments"
 set_def DIRECT_ASSEMBLY.DISPLAY.VALUE		0
+set_def DIRECT_ASSEMBLY.IGNORE_VEC.NAME		"Ignore svec (SL/SR) clips"
+set_def DIRECT_ASSEMBLY.IGNORE_VEC.VALUE	0
 set_def DIRECT_ASSEMBLY.FAILURE.NAME		"Select alignment failure mode"
 set_def DIRECT_ASSEMBLY.FAILURE.BUTTON.1	"Reject failures"
 set_def DIRECT_ASSEMBLY.FAILURE.BUTTON.2	"Enter all readings"
