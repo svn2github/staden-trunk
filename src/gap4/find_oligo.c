@@ -819,8 +819,13 @@ StringMatch(GapIO *io,                                                 /* in */
 		    strcpy(cons_match, &seq[pos1[j]-1]);
 		    depad_seq_len(cons_match, stringlen);
 
-		    if (rn)
-			pos1[j] += r.position-1;
+		    if (rn) {
+			if (cutoff_data) {
+			    pos1[j] += r.position-1 - r.start;
+			} else {
+			    pos1[j] += r.position-1;
+			}
+		    }
 		    pos2[j] = pos1[j];
 		    length[j] = stringlen;
 
