@@ -199,14 +199,6 @@ void SetReadingPosLen(int whole_reading, GapIO  *io, int reading_num,
 
 void CalcXCoords(int pos, int len, int *x1, int *x2);
 
-/*
- * HACK - move somewhere else ?
- * called from edInterface.c, updates the global Readings list with selections
- * made in the contig editor
- */
-void
-update_reading_list(GapIO *io, int r_num, int high_light);
-
 double TemplateLocalCursor(int id, c_offset *contig_offset, int *contig_array,
 			   int num_contigs, double wx);
 

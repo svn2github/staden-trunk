@@ -416,6 +416,7 @@ extern int edSetInsertMode(EdStruct *xx, int insert);
 extern int edSetSuperedit(EdStruct *xx, int superedit);
 extern int edGetGelNumber(EdStruct *xx, int x, int y);
 extern char *edGetGelName(EdStruct *xx, int number);
+extern dstring_t *edGetGelNamesToRight(EdStruct *xx, int number);
 extern int edGetStatusNumber(EdStruct *xx, int x, int y);
 extern void edSetCMode(EdStruct *xx, int value);
 extern void edSetCCutoff(EdStruct *xx, int value);

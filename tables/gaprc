@@ -695,6 +695,8 @@ set_def DIS_READINGS.SELTASK.BUTTON.2	"Split into single-read contigs"
 set_def DIS_READINGS.SELTASK.BUTTON.3	"Move readings to new contigs"
 set_def DIS_READINGS.SELTASK.VALUE	3
 
+set_def DIS_READINGS.DUPCONSTAGS.VALUE	1
+
 #suggest long gels
 set_def LONGGELS.GLEN.NAME		"Estimated long reading length"
 set_def LONGGELS.GLEN.VALUE		700
@@ -1072,6 +1074,7 @@ set_def CODON.NAMES.PLOT_WIDTH	100
 set_def	CODON.TEXT_COLOUR	"black"
 
 #contig selector
+set_def CONTIG_SEL.DISPLAY_AT_STARTUP 1
 set_def CONTIG_SEL.WIN		.contig_sel
 set_def CONTIG_SEL.BORDERWIDTH	2
 set_def CONTIG_SEL.LINE_WIDTH	2
