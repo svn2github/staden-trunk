@@ -418,7 +418,6 @@ int main(int argc, char **argv) {
   Exp_info *exp_file = NULL;
   int file_type, ret;
   int qr;
-  char *expline;
   extern DLL_IMPORT char *optarg;
   extern DLL_IMPORT int optind;
 
@@ -470,8 +469,11 @@ int main(int argc, char **argv) {
       goto bail_out;
     }
     /* get the QR value for later */
-    expline = exp_get_entry ( exp_file, EFLT_QR );
-    qr = atoi ( expline );
+
+    if (exp_Nentries(exp_file, EFLT_QR))
+	qr = atoi(exp_get_entry ( exp_file, EFLT_QR ));
+    else
+	qr = 0;
 
     /* Extract LN record, gives us input trace file name */
     if( exp_get_str(exp_file,EFLT_LN,buffer,BUFSIZE) ) {
