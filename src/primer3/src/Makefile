@@ -7,6 +7,8 @@ SRCROOT=../..
 include	$(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 
+CFLAGS += $(SHLIB_CFLAGS)
+
 P3BIN=$(O)
 #L=$(O)
 
