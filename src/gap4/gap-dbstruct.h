@@ -239,7 +239,7 @@ typedef struct {
     GCardinal num_readings;	/* number of readings used */
 
     /* Bitmaps */
-    GCardinal Nfreerecs;	/* number of bits */
+    GCardinal Nfreerecs;	/* number of words (currently 32bits/word) */
     GCardinal freerecs;
 
     /* Arrays */
