@@ -97,7 +97,7 @@ static finish_t *finish_new(void) {
     fin->opts.pwalk_offset1     = 80;
     fin->opts.pwalk_offset2     = 10;
     fin->opts.pwalk_length      = 400;
-    fin->opts.pwalk_nsolutions  = 400;
+    fin->opts.pwalk_nsolutions  = 1;
     fin->opts.pwalk_seq_gap     = 20;
     fin->opts.pwalk_consistent_only = 0;
     fin->opts.pwalk_max_err     = 0.02;
