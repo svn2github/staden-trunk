@@ -629,6 +629,11 @@ int io_write_free_annotation(GapIO *io, int *f);
  */
 int find_max_gel_len(GapIO *io, int contig, int clipped);
 
+/*
+ * swap readings N and M
+ */
+int swap_read(GapIO *io, int M, int N);
+
 #include "io_handle.h"
 #include "io_utils.h"
 
