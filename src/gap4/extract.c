@@ -652,21 +652,15 @@ int extract_readings(GapIO *io,
     }
 
     for (i= 0; i < num_readings; i++) {
-	if ((gel = get_gel_num(io, reading_array[i], GGN_ID)) > 0) {
-            if (NULL == (tmp = get_read_name(io, gel)))
-                continue;
-	    sprintf(path, "%s/%s", dir, tmp);
-	    fprintf(fp, "%s\n", tmp);
-	    vmessage("Creating experiment file %s\n", path);
-	    if (-1 == create_exp_file(io, path, format, &sorted_reads[i])){
-		verror(ERR_WARN, "extract_readings",
-		       "Writing experiment file %s failed.",
-		       reading_array[i]);
-	    }
-	} else {
+	if (NULL == (tmp = get_read_name(io, sorted_reads[i].rnum)))
+	    continue;
+	sprintf(path, "%s/%s", dir, tmp);
+	fprintf(fp, "%s\n", tmp);
+	vmessage("Creating experiment file %s\n", path);
+	if (-1 == create_exp_file(io, path, format, &sorted_reads[i])){
 	    verror(ERR_WARN, "extract_readings",
-		   "Reading %s not found in database.",
-		   reading_array[i]);
+		   "Writing experiment file %s failed.",
+		   tmp);
 	}
 
 	UpdateTextOutput();
