@@ -3,7 +3,9 @@
 #-----------------------------------------------------------------------------
 load_package tk_utils
 load_package copy_reads
-load_package iwidgets
+if {[info commands tk] != ""} {
+   load_package iwidgets
+}
 
 # Next line can be removed when using the updated newgap_top.tcl
 # load_package %L/gap		{}	gap		1
