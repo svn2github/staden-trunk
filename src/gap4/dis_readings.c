@@ -1,52 +1,512 @@
 #include "misc.h"
 #include "IO.h"
+#include "IO2.h"
 #include "fort.h"
 #include "list_proc.h"
+#include "dis_readings.h"
+#include "tagUtils.h"
+#include "notes.h"
+#include "dbcheck.h"
 
-int 
-disassemble_readings(int handle,                                       /* in */
-		     char *list,                                       /* in */
-                     int iall,                                         /* in */
-                     int iopt)                                         /* in */
+/**
+ * Unlinks an individual read by linking its left and right neighbours to
+ * one another.
+ *
+ * Only updates certain in-memory caches...
+ */
+static void unlink_reading(GapIO *io, int rnum, int cnum, int *rnum_changed) {
+    GReadings *r, *rl, *rr;
+
+    r = arrp(GReadings, io->reading, rnum-1);
+    if (r->left) {
+	rl = arrp(GReadings, io->reading, r->left-1);
+	rl->right = r->right;
+	io_rnbr(io, r->left) = r->right;
+	rnum_changed[r->left] = 1;
+    } else {
+	io_clnbr(io, cnum) = io_rnbr(io, rnum);
+    }
+
+    if (r->right) {
+	rr = arrp(GReadings, io->reading, r->right-1);
+	rr->left = r->left;
+	io_lnbr(io, r->right) = r->left;
+	rnum_changed[io_rnbr(io, rnum)] = 1;
+    } else {
+	io_crnbr(io, cnum) = io_lnbr(io, rnum);
+    }
+}
+
+
+/**
+ * Removes and deallocates a reading by swapping it with the last reading
+ * numbers (relinking as needed) and decrementing the number of readings.
+ *
+ * Only updates certain in-memory caches...
+ */
+static void remove_and_swap_reading(GapIO *io, int rnum, int *rnum2cnum,
+				   int *rnum_changed) {
+    GReadings *rdel, *rmov;
+    int cnum;
+
+    if (rnum != NumReadings(io)) {
+	/* Swap the last used reading structures with this one. */
+	swap_read(io, rnum, NumReadings(io));
+
+
+	/*
+	 * And now relink the neighbours too for the reading we shuffled
+	 * down.
+	 * rmov = the one just moved. rdel = the one to delete.
+	 */
+	rmov = arrp(GReadings, io->reading, rnum-1);
+	rdel = arrp(GReadings, io->reading, NumReadings(io)-1);
+	rnum_changed[rnum] = 1;
+
+	cnum = rnum2cnum[NumReadings(io)];
+	rnum2cnum[NumReadings(io)] = rnum2cnum[rnum];
+	rnum2cnum[rnum] = cnum;
+
+	if (rmov->left) {
+	    GReadings *rl = arrp(GReadings, io->reading, rmov->left-1);
+	    rl->right = rnum;
+	    rnum_changed[rmov->left] = 1;
+	} else {
+	    io_clnbr(io, cnum) = rnum;
+	}
+
+	if (rmov->right) {
+	    GReadings *rr = arrp(GReadings, io->reading, rmov->right-1);
+	    rr->left = rnum;
+	    rnum_changed[rmov->right] = 1;
+	} else {
+	    io_crnbr(io, cnum) = rnum;
+	}
+    } else {
+	rdel = arrp(GReadings, io->reading, rnum-1);
+    }
+
+    /*
+     * Deallocate reading and decrement database count.
+     */
+    remove_gel_tags(io, NumReadings(io), 0, 0);
+    delete_note_list(io, rdel->notes);
+    io_deallocate_reading(io, NumReadings(io));
+    NumReadings(io)--;
+}
+
+
+/**
+ * Removes contigs with left and right neighbours set to zero (ie empty).
+ */
+static void delete_empty_contigs(GapIO *io) {
+    int i;
+
+    for (i = 1; i <= NumContigs(io); i++) {
+	if (io_clnbr(io, i) != 0 || io_crnbr(io, i) != 0)
+	    continue;
+
+	io_delete_contig(io, i);
+	i--;
+    }
+}
+
+/**
+ * Moves an unlinked reading into a specific contig.
+ * This inserts the reading at the appropriate position.
+ * FIXME: we could optimise this by inserting all at the start, and
+ * sorting at the end.
+ */
+static void move_read_to_contig(GapIO *io, int rnum, int cnum) {
+    int rnbr;
+    int pos = io_relpos(io, rnum);
+    int len = ABS(io_length(io, rnum));
+    GReadings *r, *rr;
+
+    /* Find read to right of this one, or zero if none */
+    rnbr = io_clnbr(io, cnum);
+    while (rnbr && io_relpos(io, rnbr) <= pos)
+	rnbr = io_rnbr(io, rnbr);
+
+    if (rnbr) {
+	io_rnbr(io, rnum) = rnbr;
+	if ((io_lnbr(io, rnum) = io_lnbr(io, rnbr))) {
+	    rr = arrp(GReadings, io->reading, io_lnbr(io, rnum)-1);
+	    rr->right = rnum;
+	    io_rnbr(io, io_lnbr(io, rnum)) = rnum;
+	} else {
+	    io_clnbr(io, cnum) = rnum;
+	}
+	rr = arrp(GReadings, io->reading, rnbr-1);
+	rr->left = rnum;
+	io_lnbr(io, rnbr) = rnum;
+    } else {
+	if ((io_lnbr(io, rnum) = io_crnbr(io, cnum))) {
+	    rr = arrp(GReadings, io->reading, io_lnbr(io, rnum)-1);
+	    rr->right = rnum;
+	    io_rnbr(io, io_lnbr(io, rnum)) = rnum;
+	} else {
+	    io_clnbr(io, cnum) = rnum;
+	}
+	io_rnbr(io, rnum) = 0;
+	io_crnbr(io, cnum) = rnum;
+    }
+
+    r = arrp(GReadings, io->reading, rnum-1);
+    r->right = io_rnbr(io, rnum);
+    r->left  = io_lnbr(io, rnum);
+
+    if (io_clength(io, cnum) < pos + len-1)
+	io_clength(io, cnum) = pos + len-1;
+}
+
+static int rsort_int(const void *pi1, const void *pi2) {
+    int i1 = *(int *)pi1;
+    int i2 = *(int *)pi2;
+
+    return i2 - i1;
+}
+
+
+/**
+ * Removes a set of readings from either the contig or the database.
+ *
+ * When removing from the database we need to delete everything related to
+ * that reading (annotations, template if not used elsewhere, etc). When
+ * moving to a new contig, we prefer to keep all readings clustered together.
+ *
+ * Ie if we remove A & B (overlapping) from one contig and C from another
+ * then we create two new contigs containing A & B in one and C in the other.
+ *
+ * move == 0   => remove
+ * move == 1   => split to new single-read contigs
+ * move == 2   => move to new still-joined contigs
+ */
+int disassemble_readings(GapIO *io, int *rnums, int nreads, int move)
 {
-    GapIO *io;
-    f_int ngels, nconts;
-    char *gel;
-    f_int iok, fiopt = iopt, fiall = iall;
-    f_int *array;
-    int max_gel;
+    int i;
+    int *rnum2cnum = NULL;
+    int *rnum_changed = NULL;
+    int *new_cnum = NULL;
+    int cn, rn;
 
-    if ( (io = io_handle(&handle)) == NULL){	
-	return -1;
+    /*
+     * To implement this we firstly take the readings out of the contigs
+     * (moving/removing as appropriate) and then tidy up the holes in the
+     * existing contig, splitting the contig if desired.
+     *
+     * So the plan is:
+     *
+     * 0. Reverse sort all reading numbers (so as to never renumber a
+     *    reading we wish to delete).
+     * 1. Produce a table of which contig each reading number is in.
+     * 2. Unlink readings from their neighbours
+     * 3. If removing, delete the unlinked readings (and shuffle numbers
+     *    around)
+     * 4. If keeping, form new contigs based on the contigs the readings
+     *    were in. No need to worry about positions or overlaps.
+     * 5. Remove the holes in the new contigs, splitting and shifting
+     *    as necessary.
+     */
+
+
+    /*
+     * Reverse sort by number. We remove the highest one first so that
+     * we never get in hot water by swapping the reading number of a reading
+     * that we still need to delete.
+     */
+    qsort(rnums, nreads, sizeof(rnums[0]), rsort_int);
+
+
+    /*
+     * Produce a table of which contig each reading number is in.
+     */
+    rnum2cnum = (int *)xmalloc((NumReadings(io)+1) * sizeof(int));
+    rnum_changed = (int *)xmalloc((NumReadings(io)+1) * sizeof(int));
+    for (cn = 1; cn <= NumContigs(io); cn++) {
+	for (rn = io_clnbr(io, cn); rn; rn = io_rnbr(io, rn)) {
+	    rnum2cnum[rn] = cn;
+	    rnum_changed[rn] = 0;
+	}
+    } 
+
+    
+    /*
+     * A table of new contig numbers to be used for moving all reads from
+     * contig X into the new contig Y, preserving overlaps where possible.
+     */
+    new_cnum = (int *)xcalloc(NumContigs(io)+1, sizeof(int));
+
+
+    /*
+     * Unlink readings from their neighbours.
+     * Need to consider the boundary cases where the "neighbour" is a contig
+     * rather than another reading.
+     * Do this entirely using in-memory data structures for now...
+     */
+    for (i = 0; i < nreads; i++) {
+	unlink_reading(io, rnums[i], rnum2cnum[rnums[i]], rnum_changed);
     }
 
-    max_gel = find_max_gel_len(io, 0, 0)+1;
 
-    ngels = NumReadings(io);
-    nconts = NumContigs(io);
+    /*
+     * If removing, delete the unlinked readings (and shuffle numbers around).
+     * We know how many we are removing, so we swap 
+     */
+    if (move == 0) {
+	for (i = 0; i < nreads; i++) {
+	    remove_and_swap_reading(io, rnums[i], rnum2cnum, rnum_changed);
+	}
+    } else {
+	/* split into single-read contigs or move as a whole to new contig */
+	for (i = 0; i < nreads; i++) {
+	    int rnum = rnums[i];
+	    int cnum = new_cnum[rnum2cnum[rnum]];
 
-    if (-1 == set_active_list(list)) {
-	return -1;
+	    /* Create a new contig if desired */
+	    if (move == 1 || !cnum) {
+		io_init_contig(io, NumContigs(io)+1);
+		cnum = NumContigs(io);
+		io_clnbr(io, cnum) = 0;
+		io_crnbr(io, cnum) = 0;
+		io_clength(io, cnum) = 0;
+		new_cnum[rnum2cnum[rnum]] = cnum;
+	    }
+
+	    /* Move reading to the contig */
+	    move_read_to_contig(io, rnum, cnum);
+	    rnum_changed[rnum] = 1;
+	}
     }
 
-    if ((array = (f_int *)xmalloc(max_gel * sizeof(f_int)))==NULL){
-	return(-1);
-    }
-    if ((gel = (char *)xmalloc(max_gel * sizeof(char)))==NULL){
-	return(-1);
+    /*
+     * Write back all contig records.
+     * The io_c[lr]nbr records have been updated, but not the GContigs
+     * structures.
+     */
+    for (i = 1; i <= NumContigs(io); i++) {
+	GContigs c;
+	contig_read(io, i, c);
+	c.left  = io_clnbr(io, i);
+	c.right = io_crnbr(io, i);
+	c.length = io_clength(io, i);
+	contig_write(io, i, c);
     }
 
-    remgbc_(&io_relpos(io,1), &io_length(io,1), &io_lnbr(io,1),
-	    &io_rnbr(io,1), &ngels, &nconts, &io_dbsize(io), gel,
-            &max_gel, &handle, &iok, array, &fiall, &fiopt,
-            (f_int)max_gel);
+
+    /* Delete contigs that have entirely vanished */
+    delete_empty_contigs(io);
+
+    /*
+     * Write back all edited reading records.
+     * The cached GReadings structures are up to date, but not the
+     * io_* arrays. So we recalculate those too.
+     */
+    for (i = 1; i <= NumReadings(io); i++) {
+	GReadings r;
+
+	if (!rnum_changed[i])
+	    continue;
+	
+	gel_read(io, i, r);
+	io_lnbr(io, i) = r.left;
+	io_rnbr(io, i) = r.right;
+	io_length(io, i) = (r.sense ? -1 : 1) * r.sequence_length;
+	io_relpos(io, i) = r.position;
+	gel_write(io, i, r); /* Force write to sync mem & disk */
+    }
+    
+    /* flush2t(io); */
+
+    /* Remove contig holes. This may break contigs too */
+    remove_contig_holes_all(io);
 
     flush2t(io);
 
-    xfree(array);
-    xfree(gel);
+    xfree(rnum2cnum);
+    xfree(rnum_changed);
+    xfree(new_cnum);
 
     return 0;
-            
-} /* end disassemble_readings */
+}
 
+
+/*
+ * ---------------------------------------------------------------------------
+ * Contig tidying functions.
+ *
+ * If we break the logical consistency of the databse then these will try to
+ * fix it. This is useful to do for simplicities sake. For example to enter
+ * directed assembly data we can just slurp up all the data and then scan
+ * through afterwards to make sure we have no contigs and that the contig
+ * starts at base 1.
+ */
+
+/**
+ * remove_contig_holes - checks for gaps in a contig at the start, end or
+ * internal. Internal holes require splitting the contig in two, while start
+ * and end gaps simply require adjustment of the length and shuffling sequence
+ * positions.
+ *
+ * This function obtains all information from the disk (or cached) database 
+ * structures rather than the internal arrays incase these are not
+ * consistent (yet). It does however assume that the reading positions
+ * are sorted left to right.
+ *
+ * Returns 0 for success
+ *        -1 for error
+ */
+int remove_contig_holes(GapIO *io, int cnum) {
+    int rnum, prev_rnum, new_contig;
+    int furthest;
+    int cstart;
+    int shift;
+    GContigs c;
+    GReadings r;
+    
+    if (contig_read(io, cnum, c))
+	return -1;
+
+    do {
+	new_contig = 0;
+	
+	rnum = c.left;
+	prev_rnum = 0;
+	cstart = 1;
+	furthest = 1;
+
+	while (rnum) {
+	    if (gel_read(io, rnum, r))
+		return -1;
+	    
+	    /* First read in contig => clip & shift consensus tags */
+	    if (cstart) {
+		if (r.position != 1)
+		    vmessage("Gap at start, shifting by %d bases\n", shift);
+		shift = r.position - 1;
+		if (shift) {
+		    /*
+		     * This may be further sped up. Shifting tags may be
+		     * slow (it writes back the results to disk), and if
+		     * this contig has many holes then some tags will be 
+		     * shifted multiple times.
+		     */
+		    c.annotations = rmanno(io, c.annotations, 1, shift+1);
+		    contig_write(io, cnum, c);
+		    shift_contig_tags(io, cnum, 1, -shift);
+		}
+	    }
+	    
+	    r.position -= shift;
+	    io_relpos(io, rnum) -= shift;
+
+	    /* If there's a gap - start a new contig */
+	    if (!cstart && r.position > furthest) {
+		vmessage("Hole from %d to %d, breaking contig\n",
+			 furthest, r.position);
+		new_contig = 1;
+		break;
+	    }
+
+	    /* keep track of rightmost sequence end, to spot gaps */
+	    if (furthest < r.position + r.sequence_length - 1)
+		furthest = r.position + r.sequence_length - 1;
+
+	    if (shift) {
+		gel_write(io, rnum, r);
+		io_relpos(io, rnum) = r.position;
+	    }
+
+	    prev_rnum = rnum;
+	    rnum = r.right;
+	    cstart = 0;
+	}
+
+	/* Last read => remove any annotations off contig end */
+	if (furthest < c.length)
+	    c.annotations = rmanno(io, c.annotations, furthest+1, c.length);
+
+	/* Update contig size etc */
+	c.length = furthest;
+	c.right = prev_rnum;
+	contig_write(io, cnum, c);
+	io_crnbr(io, cnum) = c.right;
+	io_clength(io, cnum) = c.length;
+
+	if (new_contig) {
+	    int left_cnum = cnum;
+
+	    if (-1 == io_init_contig(io, cnum = NumContigs(io)+1))
+		return -1;
+
+	    split_contig_tags(io, left_cnum, cnum, r.position, furthest);
+
+	    contig_read(io, cnum, c);
+	    c.left = rnum;
+	    io_clnbr(io, cnum) = c.left;
+
+	    /* Terminate read link list for existing contig */
+	    gel_read(io, prev_rnum, r);
+	    r.right = 0;
+	    io_rnbr(io, prev_rnum) = 0;
+	    gel_write(io, prev_rnum, r);
+
+	    /* Start read link list for new contig */
+	    gel_read(io, rnum, r);
+	    r.left = 0;
+	    io_lnbr(io, rnum) = 0;
+	    gel_write(io, rnum, r);
+	}
+    } while (new_contig);
+
+    return 0;
+}
+
+/**
+ * Calls remove_contig_holes for all contigs in the DB.
+ * Returns the same codes.
+ *
+ * Returns 0 for success
+ *        -1 for error
+ */
+int remove_contig_holes_all(GapIO *io) {
+    int i, ret = 0;
+    for (i = 1; i <= NumContigs(io); i++) {
+	ret |= remove_contig_holes(io, i);
+    }
+
+    return ret;
+}
+
+
+/**
+ * Deletes an entire contig icluding all the readings, annotations, notes, etc
+ * This is a wrapper around disassemble readings.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int delete_contig(GapIO *io, int contig) {
+    int ret;
+    int *reads, nreads, rnum;
+
+    /*
+     * Create an array to hold all reads in the contig.
+     * We don't know how large this is up front, but as it's temporary
+     * memory we just use the worst case of all readings in the
+     * database.
+     */
+    if (NULL == (reads = (int *)xmalloc(NumReadings(io) * sizeof(int))))
+	return -1;
+
+    nreads = 0;
+    for (rnum = io_clnbr(io, contig); rnum; rnum = io_rnbr(io, rnum))
+	reads[nreads++] = rnum;
+
+    /* Remove them all */
+    ret = disassemble_readings(io, reads, nreads, 0);
+
+    xfree(reads);
+
+    return ret;
+}

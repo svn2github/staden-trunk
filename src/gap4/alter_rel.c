@@ -9,72 +9,8 @@
 #include "gap-error.h"
 #include "fort.h"
 #include "tagUtils.h"
+#include "dis_readings.h"
 
-/* ------------------------------------------------------------------------- */
-/* Delete contig */
-
-void delete_contig(GapIO *io, int contig) {
-    f_int icont, *handle, *temp = NULL, gelnum;
-    char *tmpgel = NULL;
-    f_int ngels, nconts;
-    int max_len;
-
-    if (NULL == (temp = (f_int *)xcalloc(io_dbsize(io), sizeof(f_int))))
-	goto end;
-
-    max_len = find_max_gel_len(io, contig, 0);
-    if (NULL == (tmpgel = (char *)xmalloc(max_len)))
-	goto end;
-
-    icont = io_dbsize(io) - contig;
-    handle = handle_io(io);
-    gelnum = io_clnbr(io, contig);
-    ngels = NumReadings(io);
-    nconts = NumContigs(io);
-
-    remcon_(&io_relpos(io,1), &io_length(io,1), &io_lnbr(io,1), &io_rnbr(io,1),
-	    &ngels, &nconts, &io_dbsize(io), &icont, tmpgel,
-	    &gelnum, handle, &max_len, temp, max_len);
-
- end:
-    flush2t(io);
-    if (temp)
-	xfree(temp);
-    if (tmpgel)
-	xfree(tmpgel);
-}
-
-/* ------------------------------------------------------------------------- */
-/* Shift contig */
-
-void shift_readings(GapIO *io, int gel, int distance) {
-    int j, contig, icont, right;
-    f_int *handle, ngels, nconts;
-
-    if (-1 == (contig = rnumtocnum(io, gel)))
-	return;
-    icont = io_dbsize(io) - contig;
-
-    handle = handle_io(io);
-    ngels = NumReadings(io);
-    nconts = NumContigs(io);
-
-    shiftc_(&io_relpos(io,1), &io_length(io,1), &io_lnbr(io,1), &io_rnbr(io,1),
-	    &ngels, &nconts, handle, &io_dbsize(io),
-            &gel, &icont, &distance);
-
-    /*
-     * find the longest reading leftwards of g and move tags rightwards of
-     * this by distance i.
-     */
-    right = 0;
-    for (j = io_clnbr(io, contig); j != gel; j = io_rnbr(io, j))
-        if (io_relpos(io, j) + abs(io_length(io, j)) > right)
-            right = io_relpos(io, j) + abs(io_length(io, j));
-
-    shift_contig_tags(io, contig, right, distance);
-    flush2t(io);
-}
 
 /* ------------------------------------------------------------------------- */
 /* Annotation list handling */

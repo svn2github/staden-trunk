@@ -778,7 +778,7 @@ proc AR_delete_contig {io f} {
     pack $f.dia.e $f.dia.but -side top -fill x
 }
 
-proc AR_shift_readings {io f} {
+proc AR_fix_holes {io f} {
     global gap_fatal_errors
     global CurContig
     global gap_defs
@@ -786,20 +786,28 @@ proc AR_shift_readings {io f} {
     set gap_fatal_errors 0
     if [winfo exists $f.dia] {destroy $f.dia}
     frame $f.dia
+    xyn $f.dia.e2 \
+	-label "All contigs" \
+	-orient horiz \
+	-ycommand "entrybox_configure $f.dia.e -state disabled" \
+	-ncommand "entrybox_configure $f.dia.e  -state normal"
     entrybox $f.dia.e \
-	-title "Shift from which reading?" \
+	-title "Which contig?" \
 	-type "CheckContigName $io" \
 	-default "$CurContig"
-    entrybox $f.dia.e2 \
-	-title "Distance to shift by" \
-	-default 0
+    $f.dia.e2 set 1
 
     frame $f.dia.but
     button $f.dia.but.ok -text "Ok" -command "\
-	shift_readings \
+	if {\[$f.dia.e2 get\]} { \
+            remove_contig_holes \
 		-io $io \
-		-distances \[entrybox_get $f.dia.e2\] \
-		-readings \[entrybox_get $f.dia.e\];\
+		-contigs \[ListGet allcontigs\];\
+        } else { \
+            remove_contig_holes \
+		-io $io \
+		-contigs \[entrybox_get $f.dia.e\];\
+        }; \
 	destroy $f.dia"
     button $f.dia.but.cancel -text "Cancel" -command "destroy $f.dia"
 
@@ -945,8 +953,8 @@ proc AlterRelationships {io} {
     $com.m add cascade -label "Extend structures" -menu $com.m.s
     $com.m add command -label "Delete contig" \
 	-command "AR_delete_contig $io $t"
-    $com.m add command -label "Shift readings" \
-	-command "AR_shift_readings $io $t"
+    $com.m add command -label "Fix contig holes" \
+	-command "AR_fix_holes $io $t"
     $com.m add command -label "Reset contig order" \
 	-command "reset_contig_order -io $io"
     $com.m add command -label "Output annotations to file" \
