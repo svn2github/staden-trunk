@@ -20,6 +20,7 @@ typedef struct {
     double self_end;
     double gc_clamp;
     double max_poly_x;
+    int num_return;	/* Number of pairs to return (pcr mode only) */
 } primlib_args;
 
 typedef struct {
@@ -27,8 +28,13 @@ typedef struct {
     primer_state *p3state;
 
     /* public */
+    /* For single primers */
     int nprimers;
     primer_rec *primers;
+
+    /* For pairs of primers */
+    int npairs;
+    primer_pair *pairs;
 } primlib_state;
 
 void primlib_set_args(primlib_state *state, primlib_args *args);
@@ -36,6 +42,9 @@ void primlib_set_args(primlib_state *state, primlib_args *args);
 primlib_state *primlib_create(void);
 
 int primlib_choose(primlib_state *state, char *seq);
+
+int primlib_choose_pcr(primlib_state *state, char *seq, int target, int tlen);
+
 
 void primlib_destroy(primlib_state *state);
 

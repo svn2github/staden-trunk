@@ -58,6 +58,9 @@ void primlib_set_args(primlib_state *state, primlib_args *args) {
 
     if (args->max_poly_x)
 	state->p3args.max_poly_x = args->max_poly_x;
+
+    if (args->num_return)
+	state->p3args.num_return = args->num_return;
 }
 
 primlib_state *primlib_create(void)
@@ -65,6 +68,8 @@ primlib_state *primlib_create(void)
     primlib_state *state = malloc(sizeof(*state));
     if (!state)
 	return NULL;
+
+    memset(state, 0, sizeof(*state));
 
     set_default_global_primer_args(&state->p3args);
     /*state->p3args.primer_task = pick_hyb_probe_only;*/
@@ -108,6 +113,49 @@ primlib_choose(primlib_state *state, char *seq)
     /* Convert primer3 results to primlib data structures */
     state->nprimers = state->p3state->n_f;
     state->primers = state->p3state->f;
+
+    return 0;
+}
+
+int
+primlib_choose_pcr(primlib_state *state, char *seq, int target, int tlen)
+{
+    seq_args sa;
+
+    if (!state)
+	return -1;
+
+    /* Initialise seq_args structure */
+    memset(&sa, 0, sizeof(sa));
+    sa.start_codon_pos = PR_DEFAULT_START_CODON_POS;
+    sa.sequence = seq;
+    sa.incl_l = strlen(seq);
+    sa.incl_s = state->p3args.first_base_index;
+
+    sa.tar[0][0] = target;
+    sa.tar[0][1] = tlen;
+    sa.num_targets = 1;
+
+    memset(&state->p3args.glob_err, 0, sizeof(state->p3args.glob_err));
+    if (0 != primer3_choose(state->p3state, &state->p3args, &sa)) {
+	if (sa.error.data || state->p3args.glob_err.data) {
+	    printf("primer3 failed: ");
+	    if (sa.error.data)
+		printf("'%s' ", sa.error.data);	
+	    if (state->p3args.glob_err.data)
+		printf("'%s'", state->p3args.glob_err.data);
+	    printf("\n");
+	}
+
+	state->nprimers = 0;
+	return -1;
+    }
+
+    /* Convert primer3 results to primlib data structures */
+    state->nprimers = state->p3state->n_f;
+    state->primers = state->p3state->f;
+    state->npairs = state->p3state->best_pairs.num_pairs;
+    state->pairs = state->p3state->best_pairs.pairs;
 
     return 0;
 }
@@ -160,6 +208,8 @@ static void primlib_set_arg_by_str(primlib_args *args,
 	args->gc_clamp = atoi(tmpbuf);
     } else if (strncmp(name, "max_poly_x", name_len) == 0) {
 	args->max_poly_x = atoi(tmpbuf);
+    } else if (strncmp(name, "num_return", name_len) == 0) {
+	args->num_return = atof(tmpbuf);
     } else {
 	fprintf(stderr, "Unknown keyword '%.*s'\n",
 		name_len, name);
