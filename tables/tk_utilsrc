@@ -45,7 +45,7 @@ if {"$tcl_platform(platform)" == "windows"} {
   set_def FONT.SHEET	{-family Fixed -size -20}
   set_def FONT.TRACE	{-family Helvetica -size -12}
   set_def FONT.ENZYME	{-family Helvetica -size -11}
-  set_def FONT.TRACE_CONF {-family Helvetica -size 7}
+  set_def FONT.TRACE_CONF {-family Helvetica -size -9}
 }
 
 #Colours. Blank implies tk defaults
@@ -329,6 +329,8 @@ if {"$tcl_platform(platform)" == "windows"} {
     set_def X_BORDER_SIZE 0
     set_def Y_BORDER_SIZE 0
 }
+
+set_def FONT_METRICS ""
 
 after idle catch tk_utils_init
 
