@@ -1,3 +1,8 @@
+2003-12-16 James Bonfield <jkb@sanger.ac.uk>
+
+	TAG CODEBASE with rel-1-2
+	Gap4 version "4.9 test 2"
+	
 2003-12-16  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/gap4/gap.tcl:
