@@ -10,7 +10,7 @@ namespace sp {
 int matrix_create( matrix_t* m, int rows, int cols )
 {
     int r;
-    assert(m);
+    assert(m != NULL);
     assert(rows>0);
     assert(cols>0);
 
@@ -47,7 +47,7 @@ int matrix_create( matrix_t* m, int rows, int cols )
 void matrix_destroy( matrix_t* m )
 {
     int r;
-    assert(m);
+    assert(m != NULL);
 
 
     /* If nothing to do, exit */
@@ -73,7 +73,7 @@ void matrix_destroy( matrix_t* m )
 
 int* matrix_row( matrix_t* m, int row )
 {
-    assert(m);
+    assert(m != NULL);
     assert(row<m->rows);
     if( !m || (row<0) || (row>=m->rows) )
         return 0;
@@ -85,7 +85,7 @@ int* matrix_row( matrix_t* m, int row )
 
 int matrix_rows( matrix_t* m )
 {
-    assert(m);
+    assert(m != NULL);
     return m->rows;
 }
 
@@ -93,14 +93,14 @@ int matrix_rows( matrix_t* m )
 
 int matrix_cols( matrix_t* m )
 {
-    assert(m);
+    assert(m != NULL);
     return m->cols;
 }
 
 
 int** matrix_data( matrix_t* m )
 {
-    assert(m);
+    assert(m != NULL);
     return m->data;
 }
 
@@ -109,8 +109,8 @@ void matrix_fill( matrix_t* m, int value )
 {
     int r;
     int c;
-    assert(m);
-    assert(m->data);
+    assert(m != NULL);
+    assert(m->data != NULL);
     
 
     /* Valid input? */
@@ -129,9 +129,9 @@ void matrix_print( matrix_t* m, std::FILE* s )
 {
     int r;
     int c;
-    assert(m);
-    assert(s);
-    assert(m->data);
+    assert(m != NULL);
+    assert(s != NULL);
+    assert(m->data != NULL);
     
 
     /* Valid input? */

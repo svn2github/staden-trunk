@@ -39,7 +39,7 @@
 */
 void TraceAlignInit( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
    std::memset( ta, 0, sizeof(tracealign_t) );
    ta->ResultString    = new char[ 512 ];
    ta->ResultString[0] = 0;
@@ -54,7 +54,7 @@ void TraceAlignInit( tracealign_t* ta )
 */
 void TraceAlignDestroy( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
    assert(ta->Initialised);
    try
    {
@@ -78,8 +78,8 @@ void TraceAlignDestroy( tracealign_t* ta )
 */
 void TraceAlignSetReference( tracealign_t* ta, mutlib_strand_t d, Read* r, int ql, int qr )
 {
-   assert(r);
-   assert(ta);
+   assert(r != NULL);
+   assert(ta != NULL);
    assert(ta->Initialised);
    ta->Reference[d].ClipL  = ql;
    ta->Reference[d].ClipR  = qr;
@@ -96,8 +96,8 @@ void TraceAlignSetReference( tracealign_t* ta, mutlib_strand_t d, Read* r, int q
 */
 void TraceAlignSetInput( tracealign_t* ta, mutlib_strand_t d, Read* r, int ql, int qr )
 {
-   assert(r);
-   assert(ta);
+   assert(r != NULL);
+   assert(ta != NULL);
    assert(ta->Initialised);
    ta->Input.ClipL  = ql;
    ta->Input.ClipR  = qr;
@@ -115,7 +115,7 @@ void TraceAlignSetInput( tracealign_t* ta, mutlib_strand_t d, Read* r, int ql, i
 */
 mutlib_result_t TraceAlignGetResultCode( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
    assert(ta->Initialised);
    return ta->ResultCode;
 }
@@ -130,7 +130,7 @@ mutlib_result_t TraceAlignGetResultCode( tracealign_t* ta )
 */
 const char* TraceAlignGetResultString( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
    assert(ta->Initialised);
    return ta->ResultString;
 }
@@ -145,7 +145,7 @@ const char* TraceAlignGetResultString( tracealign_t* ta )
 */
 Read* TraceAlignGetAlignment( tracealign_t* ta, mutlib_input_t i, int* l, int* r )
 {
-   assert(ta);
+   assert(ta != NULL);
    assert(ta->Initialised);
    if( l != 0 )
       *l = ta->Alignment[i].ClipL;
@@ -192,7 +192,7 @@ mutlib_result_t TraceAlignExecute( tracealign_t* ta )
     int                     State       = STATE_INITIALISE;
     TraceAlignCache*        Cache       = 0;
     int                     BandSize    = 0;
-    assert(ta);
+    assert(ta != NULL);
     assert(ta->Initialised);
     try
     {

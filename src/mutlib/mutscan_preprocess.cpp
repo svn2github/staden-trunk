@@ -28,7 +28,7 @@
 */
 mutlib_result_t MutScanPreprocessor::Execute( mutscan_t* ms, Trace& t, int n, int left, int right )
 {
-    assert(ms);
+    assert(ms != NULL);
     assert(ms->Initialised);
 
 

@@ -19,7 +19,7 @@
 #include <cctype>             // For tolower()
 #include <cstring>            // For strlen()
 #include <align.hpp>
-
+#include <locale>
 
 
 //------------
@@ -115,7 +115,7 @@ void Alignment::InputSequence( int n, const char* s, int l )
 {
    assert(n>=0);
    assert(n<MAX_INPUT_SEQUENCES);
-   assert(s);
+   assert(s != NULL);
    assert(*s);
    m_pInputSequence[n]       = s;
    m_nInputSequenceLength[n] = (l<0) ? std::strlen(s) : l;
@@ -129,8 +129,8 @@ void Alignment::InputSequence( int n, const char* s, int l )
 
 void Alignment::Matrix( int** m, int n, bool AutoDestroy )
 {
-   assert(m);
-   assert(m[0]);
+   assert(m != NULL);
+   assert(m[0] != NULL);
    assert(n>0);
    m_oMatrix.Wrap( m, n, n, AutoDestroy );
 }
@@ -190,6 +190,8 @@ int Alignment::Execute( algorithm_t a )
 
 
    // Adjust alignment parameters
+   printf("align with penalty %d,%d\n",
+	  m_nGapPenaltyBegin, m_nGapPenaltyExtend);
    sp::set_align_params( m_pParams, m_nBand, m_nGapPenaltyBegin, m_nGapPenaltyExtend,
                         SP_ALIGNMENT_RETURN_SEQ, 0, 0, m_nPadSymbol, m_nPadSymbol,
                         0, 0, a, 8, 0, m_nEdgeScore, 0.0, m_oMatrix.Raw() );
@@ -217,7 +219,7 @@ char* Alignment::OutputSequence( int n ) const
    // This horrible hack is required due to poor Overlap structure design.
    assert(n>=0);
    assert(n<MAX_INPUT_SEQUENCES);
-   assert(m_pOverlap);
+   assert(m_pOverlap != NULL);
    switch(n)
    {
       case 0: return m_pOverlap->seq1_out;
@@ -237,7 +239,7 @@ int Alignment::OutputSequenceLength( int n ) const
 {
     assert(n>=0);
     assert(n<MAX_INPUT_SEQUENCES);
-    assert(m_pOverlap);
+    assert(m_pOverlap != NULL);
     return m_pOverlap->seq_out_len;
 }
 
@@ -251,7 +253,7 @@ int Alignment::OutputSequenceLeftOverlap( int n ) const
 {
     assert(n>=0);
     assert(n<MAX_INPUT_SEQUENCES);
-    assert(m_pOverlap);
+    assert(m_pOverlap != NULL);
     return m_pOverlap->left;
 }
 
@@ -265,7 +267,7 @@ int Alignment::OutputSequenceRightOverlap( int n ) const
 {
     assert(n>=0);
     assert(n<MAX_INPUT_SEQUENCES);
-    assert(m_pOverlap);
+    assert(m_pOverlap != NULL);
     return m_pOverlap->right;
 }
 
@@ -277,7 +279,7 @@ int Alignment::OutputSequenceRightOverlap( int n ) const
 
 double Alignment::OutputScore() const
 {
-    assert(m_pOverlap);
+    assert(m_pOverlap != NULL);
     if( m_pOverlap->seq_out_len > 0 )
         return m_pOverlap->score / m_pOverlap->seq_out_len;
     else

@@ -20,7 +20,7 @@
 
 void MutScanDestroyResults( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
 
 
    // Delete result string

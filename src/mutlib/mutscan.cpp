@@ -39,7 +39,7 @@
 */
 void MutScanInit( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
    MutScanParameters Parameter;
    std::memset( ms, 0, sizeof(mutscan_t) );
    for( int n=0; n<MUTSCAN_PARAMETERS; n++ )
@@ -55,7 +55,7 @@ void MutScanInit( mutscan_t* ms )
 */
 void MutScanDestroy( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    try
    {
@@ -76,7 +76,7 @@ void MutScanDestroy( mutscan_t* ms )
 */
 double MutScanGetParameter( mutscan_t* ms, mutscan_parameter_t p )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    assert(p<MUTSCAN_PARAMETERS);
    return (p<MUTSCAN_PARAMETERS) ? ms->Parameter[p] : 0.0;
@@ -89,7 +89,7 @@ double MutScanGetParameter( mutscan_t* ms, mutscan_parameter_t p )
 */
 void MutScanSetParameter( mutscan_t* ms, mutscan_parameter_t p, double v )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    assert(p<MUTSCAN_PARAMETERS);
    if( p < MUTSCAN_PARAMETERS )
@@ -104,8 +104,8 @@ void MutScanSetParameter( mutscan_t* ms, mutscan_parameter_t p, double v )
 */
 void MutScanSetReference( mutscan_t* ms, mutlib_strand_t d, Read* r, int ql, int qr )
 {
-   assert(r);
-   assert(ms);
+   assert(r != NULL);
+   assert(ms != NULL);
    assert(ms->Initialised);
    ms->ReferenceTrace[d].ClipL  = ql;
    ms->ReferenceTrace[d].ClipR  = qr;
@@ -122,8 +122,8 @@ void MutScanSetReference( mutscan_t* ms, mutlib_strand_t d, Read* r, int ql, int
 */
 void MutScanSetInput( mutscan_t* ms, mutlib_strand_t d, Read* r, int ql, int qr )
 {
-   assert(r);
-   assert(ms);
+   assert(r != NULL);
+   assert(ms != NULL);
    assert(ms->Initialised);
    MutScanDestroyResults( ms );
    ms->InputTrace.ClipL  = ql;
@@ -142,7 +142,7 @@ void MutScanSetInput( mutscan_t* ms, mutlib_strand_t d, Read* r, int ql, int qr 
 */
 mutlib_result_t MutScanGetResultCode( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    return ms->ResultCode;
 }
@@ -157,7 +157,7 @@ mutlib_result_t MutScanGetResultCode( mutscan_t* ms )
 */
 const char* MutScanGetResultString( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    return ms->ResultString;
 }
@@ -170,7 +170,7 @@ const char* MutScanGetResultString( mutscan_t* ms )
 */
 int MutScanGetTagCount( mutscan_t* ms )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    return ms->TagCount;
 }
@@ -183,12 +183,12 @@ int MutScanGetTagCount( mutscan_t* ms )
 */
 mutlib_tag_t* MutScanGetTag( mutscan_t* ms, int n )
 {
-   assert(ms);
+   assert(ms != NULL);
    assert(ms->Initialised);
    assert(n<ms->TagCount);
    if( n < ms->TagCount )
    {
-      assert(ms->Tag);
+      assert(ms->Tag != NULL);
       return &ms->Tag[n];
    }
    return 0;
@@ -222,7 +222,7 @@ mutlib_result_t MutScanExecute( mutscan_t* ms )
     int                 State             = STATE_INITIALISE;
     const int           BASE_MARGIN_LEFT  = 2;
     const int           BASE_MARGIN_RIGHT = 6;
-    assert(ms);
+    assert(ms != NULL);
     assert(ms->Initialised);
     try
     {
@@ -302,7 +302,6 @@ mutlib_result_t MutScanExecute( mutscan_t* ms )
                     DifferenceTrace = AlignedTrace[MUTLIB_INPUT].Subtract( AlignedTrace[MUTLIB_INPUT_REFERENCE] );
                     if( DifferenceTrace )
                     {
-                        // Apply non-linear filtering
                         DifferenceTrace->Floor( 35 );
                         DifferenceTrace->FloorHalfwaves();
                         DifferenceTrace->FloorNarrowPeaks( SamplesPerBase/2 );
@@ -347,7 +346,6 @@ mutlib_result_t MutScanExecute( mutscan_t* ms )
                     }
                     State = STATE_COVERAGE_TAG;
                     break; }
-
 
 
                 case STATE_COVERAGE_TAG: {

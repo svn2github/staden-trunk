@@ -201,7 +201,7 @@ T* List<T>::Prev()
 template <typename T>
 void List<T>::Append( T* p )
 {
-   assert(p);
+   assert(p != NULL);
    if( m_nCount )
    {
        while( Next() );
@@ -307,7 +307,7 @@ T* List<T>::Remove( int n )
 template <typename T>
 void List<T>::Insert( T* p, int n )
 {
-   assert(p);
+   assert(p != NULL);
    assert(n>=0);
 
 

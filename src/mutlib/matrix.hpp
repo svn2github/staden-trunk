@@ -135,7 +135,7 @@ void SimpleMatrix<T>::Create( int nRows, int nCols )
 template <typename T>
 void SimpleMatrix<T>::Wrap( T** p, int nRows, int nCols, bool AutoDestroy )
 {
-   assert(p);
+   assert(p != NULL);
    assert(nRows>0);
    assert(nCols>0);
    if( m_pMatrix )

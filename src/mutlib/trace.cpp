@@ -1051,6 +1051,7 @@ Trace* Trace::Subtract( Trace& t )
     pDifference->Raw()->maxTraceVal = 2 * nMax;
     pDifference->Raw()->leftCutoff  = 0;
     pDifference->Raw()->rightCutoff = 0;
+
     return pDifference;
 }
 
@@ -1099,7 +1100,7 @@ void Trace::ScaleTo( Trace& t )
         }
     }
 
-
+#if 1
     // Scale this trace
     for( int n=0; n<nLen; n++ )
     {
@@ -1108,6 +1109,17 @@ void Trace::ScaleTo( Trace& t )
         m_pTrace[2][n] = static_cast<TRACE>( m_pTrace[2][n] * Scale[n] );
         m_pTrace[3][n] = static_cast<TRACE>( m_pTrace[3][n] * Scale[n] );
     }
+#else
+    // Double this trace - useful for debugging tracediff on heterozygous
+    // indels.
+    for( int n=0; n<nLen; n++ )
+    {
+        m_pTrace[0][n] = static_cast<TRACE>( m_pTrace[0][n] * 2 );
+        m_pTrace[1][n] = static_cast<TRACE>( m_pTrace[1][n] * 2 );
+        m_pTrace[2][n] = static_cast<TRACE>( m_pTrace[2][n] * 2 );
+        m_pTrace[3][n] = static_cast<TRACE>( m_pTrace[3][n] * 2 );
+    }
+#endif
 }
 
 
@@ -1310,6 +1322,7 @@ void Trace::Floor( int threshold )
     int signal;
     const int cols     = Samples();
     const int baseline = Baseline();
+    puts("floor");
     for( int r=0; r<4; r++ )
     {
         for( int c=0; c<cols; c++ )
@@ -1326,6 +1339,7 @@ void Trace::FloorHalfwaves()
 {
     const int cols     = Samples();
     const int baseline = Baseline();
+    puts("floorhalfwaves");
     for( int c=0; c<cols; c++ )
     {
         // Keep record of number of positive/negative signal values
@@ -1363,6 +1377,7 @@ void Trace::FloorNarrowPeaks( int width_threshold )
     const int baseline = Baseline();
 
 
+    puts("floornarrowpeaks");
     for( int r=0; r<4; r++ )
     {
         int resume = 0;
@@ -1422,4 +1437,61 @@ void Trace::FillGaps()
             }
         }
     }
+#if 0
+    {
+      double tot = 0, avg;
+      for (int i = 0; i < Samples(); i++) {
+	for (int j = 0; j < 4; j++) {
+	  tot += ABS(m_pTrace[j][i]-baseline);
+	}
+      }
+      avg = tot / Samples();
+      printf("Avg = %f\n", avg);
+
+#define WL 20
+      for (int i = Samples()-11; i >= WL; i--) {
+	double t = 0;
+	for (int x = -WL; x <= WL; x++) {
+	  tot = 0;
+	  for (int j = 0; j < 4; j++) {
+	    tot += ABS(m_pTrace[j][i+x]-baseline);
+	  }
+	  t += tot;
+	}
+	t /= 2*WL+1;
+	printf("%d %d %f %f\n", i, BaseNumberFromSamplePosition(i), t, t/avg);
+      }
+    }
+#endif
+
+}
+
+void Trace::AvgFilt( double scale ) {
+    const int cols     = Samples();
+    const int baseline = Baseline();
+    double totp = 0, totm = 0;
+
+    for( int c=0; c<cols; c++ ) {
+	totp *= 0.98;
+	totm *= 0.98;
+	double ratio;
+
+	for( int r=0; r<4; r++ ) {
+	    if (m_pTrace[r][c] > baseline)
+		totp += m_pTrace[r][c] - baseline;
+	    else
+		totm += baseline - m_pTrace[r][c];
+	}
+
+	ratio = (totp+1) / (totm+1);
+	if (ratio < 1)
+	    ratio = 1/ratio;
+
+	printf("%d %f %f %f %d\n", c, totp, totm, ratio, baseline/2);
+
+	if (ratio > 20 || (totp > baseline*2 && totm > baseline*2)) {
+	    for( int r=0; r<4; r++ )
+		m_pTrace[r][c] = baseline;
+	}
+    }    
 }

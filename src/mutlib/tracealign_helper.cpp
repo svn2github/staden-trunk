@@ -23,7 +23,7 @@
 
 void TraceAlignDestroyResults( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
 
 
    // Reset result code/string
@@ -50,7 +50,7 @@ void TraceAlignDestroyResults( tracealign_t* ta )
 
 void TraceAlignDestroyCache( tracealign_t* ta )
 {
-   assert(ta);
+   assert(ta != NULL);
 
 
    // Delete reference cache data

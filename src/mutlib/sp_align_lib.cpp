@@ -2578,6 +2578,9 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
   char OLD_PAD_SYM, NEW_PAD_SYM;
   int gap_open_x, gap_open_y, gap_extend_x, gap_extend_y, gap_to_gap;
   int MAX_E = 0;
+  int best_max = 0;
+  int best_max_row = 0;
+  int best_max_col = 0;
 #ifndef DYNMAT
   W128_P W128_p;
   W128_p = params->score_matrix;
@@ -3015,6 +3018,22 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
       b_s = best_G1;
          }
        }
+
+       {
+	   int best = 0;
+	   if (best < best_F1)
+	       best = best_F1;
+	   if (best < best_G1)
+	       best = best_G1;
+	   if (best < best_H1)
+	       best = best_H1;
+	   if (best_max < best) {
+	       best_max = best;
+	       best_max_row = row;
+	       best_max_col = column;
+	   }
+       }
+
      }
      if((e<0)||(e>=SIZE_MAT))
 
@@ -3036,6 +3055,10 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
        }
      }
       }
+
+   printf("Best coord = %d at (%d,%d) of %d at (%d,%d)\n",
+	  best_max, best_max_row, best_max_col, 
+	  -1, max_row, max_col);
 
    /*
    printf("row %d max_col %d first_row %d band_left %d max_row %d\n",row,max_col,first_row,band_left,max_row);
@@ -3986,7 +4009,7 @@ int affine_align(OVERLAP *overlap, ALIGN_PARAMS *params) {
    mem = overlap->seq1_len * overlap->seq2_len;
     }
     if (mem > MAX_MEMORY) {
-   return affine_align_bits(overlap,params);
+      return affine_align_bits(overlap,params);
     }
     return affine_align_big(overlap,params);
 }

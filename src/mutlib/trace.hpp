@@ -46,6 +46,7 @@ class Trace
     void        ScaleTo( Trace& t );
     void        FloorHalfwaves();
     void        Floor( int threshold );
+    void        AvgFilt( double scale );
     void        FloorNarrowPeaks( int width_threshold );
     void        Range( int n1, int n2 );
     bool        Open( const char* pFileName );

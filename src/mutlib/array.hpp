@@ -170,7 +170,7 @@ void SimpleArray<T>::Length( int n )
 template <typename T>
 void SimpleArray<T>::Wrap( T* p, int nCapacity, bool AutoDestroy )
 {
-   assert(p);
+   assert(p != NULL);
    assert(nCapacity>0);
    if( m_pArray )
       Empty();
@@ -224,7 +224,7 @@ void SimpleArray<T>::Range( int n1, int n2 )
 template <typename T>
 void SimpleArray<T>::Append( T* p, int n )
 {
-    assert(p);
+    assert(p != NULL);
     assert(n>0);
 
 
@@ -316,7 +316,7 @@ class NumericArray : public SimpleArray<T>
 template <typename T>
 double NumericArray<T>::Mean() const
 {
-   assert(m_pArray);
+   assert(m_pArray != NULL);
    double acc = 0.0;
    for( int n=m_nLowerLimit; n<=m_nUpperLimit; n++ )
       acc += m_pArray[n];
@@ -334,7 +334,7 @@ double NumericArray<T>::Mean() const
 template <typename T>
 double NumericArray<T>::Variance( double* nMean ) const
 {
-   assert(m_pArray);
+   assert(m_pArray != NULL);
    double tmp;
    double acc  = 0.0;
    double mean = nMean ? *nMean : Mean();

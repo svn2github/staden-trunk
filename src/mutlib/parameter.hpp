@@ -76,7 +76,7 @@ NumericParameter<T>::NumericParameter()
 template <typename T>
 NumericParameter<T>::NumericParameter( T nDefaultValue, T nMinValue, T nMaxValue, const char* pName )
 {
-    assert(pName);
+    assert(pName != NULL);
     m_nValue        = nDefaultValue;
     m_nDefaultValue = nDefaultValue;
     m_nMinimumValue = nMinValue;

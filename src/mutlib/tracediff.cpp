@@ -37,7 +37,7 @@
 */
 void TraceDiffInit( tracediff_t* td )
 {
-   assert(td);
+   assert(td != NULL);
    TraceDiffParameters Parameter;
    std::memset( td, 0, sizeof(tracediff_t) );
    td->ResultString    = new char[ 512 ];
@@ -56,7 +56,7 @@ void TraceDiffInit( tracediff_t* td )
 */
 void TraceDiffDestroy( tracediff_t* td )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    try
    {
@@ -79,7 +79,7 @@ void TraceDiffDestroy( tracediff_t* td )
 */
 double TraceDiffGetParameter( tracediff_t* td, tracediff_parameter_t p )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    assert(p<TRACEDIFF_PARAMETERS);
    return (p<TRACEDIFF_PARAMETERS) ? td->Parameter[p] : 0.0;
@@ -92,7 +92,7 @@ double TraceDiffGetParameter( tracediff_t* td, tracediff_parameter_t p )
 */
 void TraceDiffSetParameter( tracediff_t* td, tracediff_parameter_t p, double v )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    assert(p<TRACEDIFF_PARAMETERS);
    if( p < TRACEDIFF_PARAMETERS )
@@ -107,7 +107,7 @@ void TraceDiffSetParameter( tracediff_t* td, tracediff_parameter_t p, double v )
 */
 void TraceDiffSetReference( tracediff_t* td, Read* w, mutlib_strand_t d, int ql, int qr )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    TraceAlignSetReference( &td->Alignment, d, w, ql, qr );
 }
@@ -120,7 +120,7 @@ void TraceDiffSetReference( tracediff_t* td, Read* w, mutlib_strand_t d, int ql,
 */
 void TraceDiffSetInput( tracediff_t* td, Read* i, mutlib_strand_t d, int ql, int qr )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    TraceAlignSetInput( &td->Alignment, d, i, ql, qr );
 }
@@ -134,7 +134,7 @@ void TraceDiffSetInput( tracediff_t* td, Read* i, mutlib_strand_t d, int ql, int
 */
 mutlib_result_t TraceDiffGetResultCode( tracediff_t* td )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    return td->ResultCode;
 }
@@ -149,7 +149,7 @@ mutlib_result_t TraceDiffGetResultCode( tracediff_t* td )
 */
 const char* TraceDiffGetResultString( tracediff_t* td )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    return td->ResultString;
 }
@@ -163,7 +163,7 @@ const char* TraceDiffGetResultString( tracediff_t* td )
 */
 Read* TraceDiffGetDifference( tracediff_t* td, int* dl, int* dr )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    if( dl != 0 )
       *dl = td->DifferenceLeft;
@@ -180,7 +180,7 @@ Read* TraceDiffGetDifference( tracediff_t* td, int* dl, int* dr )
 */
 int TraceDiffGetTagCount( tracediff_t* td )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    return td->TagCount;
 }
@@ -193,12 +193,12 @@ int TraceDiffGetTagCount( tracediff_t* td )
 */
 mutlib_tag_t* TraceDiffGetTag( tracediff_t* td, int n )
 {
-   assert(td);
+   assert(td != NULL);
    assert(td->Initialised);
    assert(n<td->TagCount);
    if( n < td->TagCount )
    {
-      assert(td->Tag);
+      assert(td->Tag != NULL);
       return &td->Tag[n];
    }
    return 0;
@@ -224,7 +224,7 @@ mutlib_result_t TraceDiffExecute( tracediff_t* td, tracediff_algorithm_t a )
     Trace*              DiffTrace = 0;
     bool                Done      = false;
     int                 State     = STATE_INITIALISE;
-    assert(td);
+    assert(td != NULL);
     try
     {
         while(!Done)

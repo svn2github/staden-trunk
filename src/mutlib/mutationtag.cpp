@@ -26,7 +26,7 @@
 
 MutationTag::MutationTag( const char* name )
 {
-   assert(name);
+   assert(name != NULL);
    assert(std::strlen(name)<5);
    m_cBaseRef      = '-';
    m_cBaseInp[0]   = '-';
@@ -113,7 +113,7 @@ const char* MutationTag::Comment()
 
 void MutationTag::Name( const char* newname )
 {
-    assert(newname);
+    assert(newname != NULL);
     assert(std::strlen(newname)==4);
     std::strcpy( m_pName, newname );
 }

@@ -46,7 +46,7 @@ static const int    INP = MUTLIB_INPUT;
 */
 mutlib_result_t MutScanAnalyser::Execute( mutscan_t* ms, MutScanPreprocessor Data[], Trace Tr[], Trace* DifferenceTrace )
 {
-    assert(ms);
+    assert(ms != NULL);
     assert(ms->Initialised);
 
 

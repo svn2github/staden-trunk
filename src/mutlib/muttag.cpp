@@ -13,7 +13,7 @@
  */
 
 
-#include <cctype>            // For toupper()
+#include <locale>            // For toupper()
 #include <cstring>           // For strcpy(), strlen(), ...
 #include <cstdio>            // For sprintf()
 #include <muttag.hpp>
@@ -72,7 +72,7 @@ static const char* pCommentTable[] = {
 
 MutTag::MutTag( const char* Name, mutlib_mutation_t mt, int p, mutlib_strand_t d )
 {
-   assert(Name);
+   assert(Name != NULL);
    assert(std::strlen(Name)<5);
    m_nType                   = mt;
    m_nStrand                 = d;

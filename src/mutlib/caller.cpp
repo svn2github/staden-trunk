@@ -19,7 +19,7 @@
 
 int Caller::LoadPeaks( SimpleMatrix<int>& Peak, int nPos, int nAmbiguityWindow, call_t data[4] )
 {
-    assert(data);
+    assert(data != NULL);
     assert(nPos>=0);
     assert(nAmbiguityWindow>0);
     int peaks = 0;
