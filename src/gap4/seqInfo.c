@@ -452,7 +452,7 @@ void parse_features(Exp_info *e) {
     char *tag;
     int comment_len;
     int tag_len;
-    char *comment;
+    char *comment = NULL;
     int t;
     char tag_type[5];
     int feat_num = 0;
@@ -551,11 +551,11 @@ void parse_features(Exp_info *e) {
 	    }
 
 	    exp_set_entry(e, EFLT_TG, tag);
-	    xfree(tag);
+	    xfree(tag);	
 	}
-    }
 
-    xfree(comment);
+	xfree(comment);
+    }
 }
 /* ------------------------------------------------------------------------- */
 
