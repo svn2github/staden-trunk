@@ -27,6 +27,7 @@
 #include "tkEdNames.h"
 #include "io-reg.h"
 #include "primlib.h"
+#include "template.h"
 
 /* New (crude, but simple) consensus caching system */
 #define CACHE_CONSENSUS_2
@@ -185,6 +186,9 @@ typedef struct {
     int reference_seq;		/* 0 for none. Otherwise a seq id */
     int reference_len;		/* length of ref seq (if cyclic, 0 if not) */
     int reference_offset;	/* the base number for the 1st base of ref */
+    
+    /* Template information */
+    template_c **templates;
 } DBInfo;
 
 typedef struct {
@@ -270,6 +274,7 @@ typedef struct _EdStruct {
     int group_templates;	/* Are reads from same template are grouped */
     int show_edits;		/* Do we highlight edits? */
     int edit_bg[4];		/* Colours for edit types */
+    int tmpl_bg[4];		/* Colours for edit types */
     cursor_t *cursor;		/* Cursor structure */
     int names_xpos;		/* X position of names display */
     int default_conf_r;		/* Confidence for replace bases, -1 for old */

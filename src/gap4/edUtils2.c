@@ -242,6 +242,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
 	xx->DBi->store_undo = 1;
 	xx->DBi->registration_id = 0;
 	xx->DBi->reference_seq = 0;
+	xx->DBi->templates = NULL;
     }
 
     xx->displayPos = 1;
@@ -298,6 +299,8 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->show_edits = 0;
     for (i=0; i<4; i++)
 	xx->edit_bg[i] = 0;
+    for (i=0; i<4; i++)
+	xx->tmpl_bg[i] = 0;
     xx->names_xpos = 0;
     xx->default_conf_r = 100;
     xx->default_conf_n = 100;
@@ -1424,6 +1427,15 @@ int initialiseDB(/* FORIO */
         DBI_order(xx)[0] = 0;
 	DBsetNumber(xx, 0, -DBI_contigNum(xx));
     }
+
+    /*
+     * Compute template information.
+     */
+    if (xx->DBi->templates)
+	uninit_template_checks(DBI_io(xx), xx->DBi->templates);
+    xx->DBi->templates = init_template_checks(DBI_io(xx), 1, &cnum, 1);
+    /* xx->DBi->templates = init_template_checks(DBI_io(xx), 0, NULL, 0);*/
+    check_all_templates(DBI_io(xx), xx->DBi->templates);
 
     /*
      * Redisplay. Important as we've possibly changed the ordering.

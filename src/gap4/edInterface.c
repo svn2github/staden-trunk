@@ -556,7 +556,12 @@ int edConfIncr(EdStruct *xx, int amount) {
     return 0;
 }
 
-int edSelectRead(EdStruct *xx, int seq) {
+/*
+ * State is -1 to toggle
+ *           0 to clear
+ *           1 to set
+ */
+int edSelectRead(EdStruct *xx, int seq, int state) {
     int flag;
     reg_highlight_read rh;
 
@@ -564,7 +569,13 @@ int edSelectRead(EdStruct *xx, int seq) {
 	return 1;
 
     flag = DB_Flags(xx, seq);
-    flag ^= DB_FLAG_SELECTED;
+    if (state == -1) {
+	flag ^= DB_FLAG_SELECTED;
+    } else if (state == 0) {
+	flag &= ~DB_FLAG_SELECTED;
+    } else {
+	flag |= DB_FLAG_SELECTED;
+    }
 
     DBsetFlags(xx, seq ,flag);
     RedisplayName(xx, seq);
@@ -1353,12 +1364,12 @@ int *edGetHiddenReads(EdStruct *xx) {
 void edSetTraceComparator(EdStruct *xx, int seq) {
     if (xx->compare_trace != -1 &&
 	(DB_Flags(xx, xx->compare_trace) & DB_FLAG_SELECTED)) {
-	edSelectRead(xx, xx->compare_trace);
+	edSelectRead(xx, xx->compare_trace, -1);
     }
 
     xx->compare_trace = seq;
     if (seq != -1 && !(DB_Flags(xx, seq) & DB_FLAG_SELECTED))
-	edSelectRead(xx, seq);
+	edSelectRead(xx, seq, -1);
 }
 
 
@@ -1522,6 +1533,7 @@ int edSetBriefTag(EdStruct *xx, int seq, tagStruct *t, char *format) {
  * %Tn	Template name (Raw: template number)
  * %T#	Template number
  * %Tv	Template vector (Raw: template vector number)
+ * %Tc	Template consistency (Raw: as a number)
  * %Ti	Template insert size
  * %Cn	Clone name (Raw: clone number)
  * %C#	Clone number
@@ -1749,6 +1761,7 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 		GTemplates t;
 		GReadings r;
 		char name[DB_NAMELEN+1];
+		template_c *tc;
 
 		gel_read(io, rnum, r);
 		if (0 == r.template && format[i+1] != '#') {
@@ -1756,6 +1769,12 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 		    break;
 		} else {
 		    template_read(io, r.template, t);
+		}
+
+		if (r.template && DBI(xx)->templates[r.template]) {
+		    tc = DBI(xx)->templates[r.template];
+		} else {
+		    tc = NULL;
 		}
 
 		switch (format[++i]) {
@@ -1783,6 +1802,33 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 			char buf[1024];
 			sprintf(buf, "%d..%d",
 				t.insert_length_min, t.insert_length_max);
+			add_string(status_buf, &j, l1, l2, buf);
+		    }
+		    break;
+
+		case 'c':
+		    {
+			int tstat;
+			char buf[10];
+
+			tstat = tc ? tc->consistency : TEMP_CONSIST_UNKNOWN;
+
+			if (raw) {
+			    add_number(status_buf, &j, l1, l2, tstat);
+			    break;
+			}
+			*buf = 0;
+
+			if (tstat & TEMP_CONSIST_DIST)
+			    strcat(buf, "D");
+			if (tstat & TEMP_CONSIST_PRIMER)
+			    strcat(buf, "P");
+			if (tstat & TEMP_CONSIST_STRAND)
+			    strcat(buf, "S");
+			if (tstat & TEMP_CONSIST_UNKNOWN)
+			    strcat(buf, "?");
+			if (!tstat)
+			    strcat(buf, "ok");
 			add_string(status_buf, &j, l1, l2, buf);
 		    }
 		    break;

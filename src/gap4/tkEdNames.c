@@ -181,26 +181,36 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edSetBriefNameStatus(en->xx, x, y);
 
     } else if ('h' == *argv[1] && strcmp(argv[1], "highlight") == 0) {
-	int y, x;
+	int y, x, mode = -1;
 
-	if (argc != 3 && argc != 4) {
+	if (argc != 4 && argc != 5) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " highlight ?xpos? ypos\"",
+			     argv[0], " highlight mode ?xpos? ypos\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	if (argc == 4) {
-	    sheet_arg_x(TKSHEET(en), argv[2], &x);
-	    sheet_arg_y(TKSHEET(en), argv[3], &y); y++;
+	Tcl_GetInt(interp, argv[2], &mode);
+
+	if (argc == 5) {
+	    sheet_arg_x(TKSHEET(en), argv[3], &x);
+	    y = 4; /* argv number of y, rather than y itself */
 	} else {
 	    x = 2;
-	    sheet_arg_y(TKSHEET(en), argv[2], &y); y++;
+	    y = 3;
 	}
 
-	if (-1 != (y = edGetGelNumber(en->xx, 0, y))) {
+	if (*argv[y] == '=') {
+	    y = get_gel_num(DBI_io(en->xx), &argv[y][1], GGN_ID);
+	    y = rnum_to_edseq(en->xx, y);
+	} else {
+	    sheet_arg_y(TKSHEET(en), argv[y], &y); y++;
+	    y = edGetGelNumber(en->xx, 0, y);
+	}
+
+	if (-1 != y) {
 	    if (x != 0) {
-		edSelectRead(en->xx, y);
+		edSelectRead(en->xx, y, mode);
 	    } else {
 		if (y)
 		    select_note(DBI_io(en->xx), GT_Readings,

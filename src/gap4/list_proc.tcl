@@ -111,10 +111,56 @@ proc ListCreate {name list} {
 }
 
 proc ListAppend {name list} {
-    global NGList
+    global NGList NGListTag
 
     ListEditSave $name
-    lappend NGList($name) $list
+    foreach item $list {
+	lappend NGList($name) $item
+    }
+    if {[info exists NGListTag($name)] && $NGListTag($name) == "SEQID"} {
+	ListRemoveDuplicates $name
+    }
+}
+
+proc ListRemoveDuplicates {name} {
+    global NGList
+
+    # Convert list into array
+    set l ""
+    set ind 0
+    foreach item $NGList($name) {
+	lappend l $item $ind
+	incr ind
+    }
+    array set dummy $l
+
+    # Reverse the array to order via index
+    set l ""
+    foreach {item val} [array get dummy] {
+	lappend l $val $item
+    }
+    unset dummy
+    array set dummy $l
+
+    # Convert the array back into a list
+    set l ""
+    foreach ind [lsort -integer [array names dummy]] {
+	lappend l $dummy($ind)
+    }
+    set NGList($name) $l
+}
+
+proc ListSubtract {name list} {
+    global NGList NGListTag
+
+    ListEditSave $name
+    set l $NGList($name)
+    foreach item $list {
+	while {[set ind [lsearch -exact $l $item]] != -1} {
+	    set l [lreplace $l $ind $ind]
+	}
+    }
+    set NGList($name) $l
 }
 
 proc ListClear {name} {

@@ -62,7 +62,7 @@ int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
     if (args.reuse) {
 	int id;
 
-	if (-1 != (id = editor_available(contig, 1))) {
+	if (-1 != (id = editor_available(contig, 0))) {
 	    if (*args.reading)
 		move_editor(id, reading, args.pos);
 	    else
@@ -422,6 +422,8 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	xx->qual_bg[i] = xx->ed->qual_bg[i]->pixel;
     for (i=0; i<4; i++)
 	xx->edit_bg[i] = xx->ed->edit_bg[i]->pixel;
+    for (i=0; i<4; i++)
+	xx->tmpl_bg[i] = xx->ed->tmpl_bg[i]->pixel;
     xx->qual_below = xx->ed->qual_below->pixel;
     xx->diff_bg = xx->ed->diff_bg->pixel;
 
@@ -635,6 +637,8 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
 	    xx[i]->qual_bg[j] = xx[i]->ed->qual_bg[j]->pixel;
 	for (j=0; j<4; j++)
 	    xx[i]->edit_bg[j] = xx[i]->ed->edit_bg[j]->pixel;
+	for (j=0; j<4; j++)
+	    xx[i]->tmpl_bg[j] = xx[i]->ed->tmpl_bg[j]->pixel;
 	xx[i]->qual_below = xx[i]->ed->qual_below->pixel;
 	xx[i]->diff_bg = xx[i]->ed->diff_bg->pixel;
 

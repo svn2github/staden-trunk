@@ -104,6 +104,18 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_COLOR,
 	 "-editcolour3","qualColour3",	"Background",	"lightblue",
 	 offset(edit_bg[3]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-tmplcolour0","tmplColour0",	"Background",	"lightblue",
+	 offset(tmpl_bg[0]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-tmplcolour1","tmplColour1",	"Background",	"lightblue",
+	 offset(tmpl_bg[1]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-tmplcolour2","tmplColour2",	"Background",	"lightblue",
+	 offset(tmpl_bg[2]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-tmplcolour3","tmplColour3",	"Background",	"lightblue",
+	 offset(tmpl_bg[3]),		0, NULL},
     {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
@@ -177,6 +189,8 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
 	ed->qual_bg[i] = NULL;
     for (i = 0; i < 4; i++)
 	ed->edit_bg[i] = NULL;
+    for (i = 0; i < 4; i++)
+	ed->tmpl_bg[i] = NULL;
     ed->qual_below = NULL;
     ed->diff_bg    = NULL;
     ed->xScrollCmd = NULL;
@@ -1485,6 +1499,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	vTcl_SetResult(interp, "%d %d", left, right);
 
+	
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_contig_num") == 0) {
+	vTcl_SetResult(interp, "%d", DBI_contigNum(ed->xx));
+ 
     } else if ('j' == *argv[1] && strcmp(argv[1], "join_percentage") == 0) {
 	char buf[10];
 	int overlapLength, wingeCount;
@@ -1849,6 +1867,40 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 	Tcl_ResetResult(interp);
 	Tcl_SetResult(interp, flag_str, TCL_VOLATILE);
+
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_template_seqs") == 0) {
+	int seq;
+	int tnum;
+	dstring_t *ds = NULL;
+	template_c *tarr;
+	item_t *item;
+
+	if (argc != 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_template_seqs seq",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_ResetResult(interp);
+
+	Tcl_GetInt(interp, argv[2], &seq);
+	tnum = DBI(ed->xx)->DB[seq].template;
+	tarr = DBI(ed->xx)->templates[tnum];
+
+	if (!tarr)
+	    goto fail;
+	
+	ds = dstring_create(NULL);
+	for (item = head(tarr->gel_cont); item; item = item->next) {
+	    gel_cont_t *gc = (gel_cont_t *)item->data;
+	    char *rname = get_read_name(DBI_io(ed->xx), gc->read);
+	    dstring_appendf(ds, "%s %d ", rname, gc->contig);
+	}
+
+	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	dstring_destroy(ds);
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "show_mini_traces") == 0) {
 	int height;

@@ -380,7 +380,7 @@ extern int edKeyDeleteLeft(EdStruct *xx);
 extern int edConf100(EdStruct *xx);
 extern int edConf0(EdStruct *xx);
 extern int edConfIncr(EdStruct *xx, int amount);
-extern int edSelectRead(EdStruct *xx, int seq);
+extern int edSelectRead(EdStruct *xx, int seq, int state);
 extern void edSelectClear(EdStruct *xx);
 extern void edSelectFrom(EdStruct *xx, int pos);
 extern void edSelectTo(EdStruct *xx, int pos);

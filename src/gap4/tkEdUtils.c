@@ -675,6 +675,33 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	    }
 	}
 
+	/*
+	 * Colour the base between number and name if the template for this
+	 * sequence is inconsistent.
+	 */
+	{
+	    int tnum = DBI(xx)->DB[seqList[k]].template;
+	    if (DBI(xx)->templates[tnum] &&
+		DBI(xx)->templates[tnum]->consistency) {
+		nsplodge[DB_GELNOLEN+1].sh |= sh_bg;
+		switch (DBI(xx)->templates[tnum]->consistency) {
+		case TEMP_CONSIST_DIST:
+		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[0];
+		    break;
+		case TEMP_CONSIST_STRAND:
+		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[1];
+		    break;
+		case TEMP_CONSIST_PRIMER:
+		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[2];
+		    break;
+		default:
+		    /* Multiple problems */
+		    nsplodge[DB_GELNOLEN+1].bg = xx->tmpl_bg[3];
+		    break;
+		}
+	    }
+	}
+
 	name = DBgetName(DBI(xx), seqList[k]);
 
 	/* Indicate whether notes are present */

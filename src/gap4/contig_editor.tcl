@@ -306,6 +306,10 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
 	-editcolour1 [keylget gap_defs CONTIG_EDITOR.EDIT_BASE_COLOUR] \
 	-editcolour2 [keylget gap_defs CONTIG_EDITOR.EDIT_PAD_COLOUR] \
 	-editcolour3 [keylget gap_defs CONTIG_EDITOR.EDIT_CONF_COLOUR] \
+	-tmplcolour0 [keylget gap_defs CONTIG_EDITOR.TEMP_DIST_COLOUR] \
+	-tmplcolour1 [keylget gap_defs CONTIG_EDITOR.TEMP_STRAND_COLOUR] \
+	-tmplcolour2 [keylget gap_defs CONTIG_EDITOR.TEMP_PRIM_COLOUR] \
+	-tmplcolour3 [keylget gap_defs CONTIG_EDITOR.TEMP_OTHER_COLOUR] \
 	-max_height  $max_height \
 	-bg [tk::Darken [. cget -bg] 115]
 
@@ -742,6 +746,11 @@ proc edname_to_editor {edname} {
     return $ed
 }
 
+proc editor_to_edname {ed} {
+    regsub "seqs$" $ed "names" edname
+    return $edname
+}
+
 proc popup_editor_menu {w x y} {
     regsub "\.seqs" $w ".buttons.commands.menu.commands" m
 
@@ -1123,10 +1132,12 @@ proc editor_setlist2 {t l_var l_name} {
     destroy $t
 }
 
+# Adds to the active list the reading under a specific x,y coordinate on
+# the ednames (n) window
 proc editor_addlist {n x y} {
     global $n.List
 
-    $n highlight $y
+    $n highlight -1 $y
 
     # Get reading name
     if {[set num [$n get_number $x $y]] != "" && "$num" != 0} {
@@ -1144,6 +1155,54 @@ proc editor_addlist {n x y} {
     if {[info exist $n.List]} {
         ListAppend [set $n.List] [lindex $name 1]
     }
+}
+
+# Adds to the active list one or more sequence names
+proc editor_addlist_read {n names} {
+    global $n.List
+    if {[info exist $n.List]} {
+	ListAppend [set $n.List] $names
+	foreach name $names {
+	    $n highlight 1 =$name
+	}
+    } else {
+	foreach name $names {
+	    $n highlight 1 =$name
+	}
+    }
+}
+
+proc editor_dellist_read {n names} {
+    global $n.List
+    if {[info exist $n.List]} {
+	ListSubtract [set $n.List] $names
+	foreach name $names {
+	    $n highlight 0 =$name
+	}
+    } else {
+	foreach name $names {
+	    $n highlight 0 =$name
+	}
+    }
+}
+
+# As editor_addlist_read, but it takes a set of {name contig} pairs as the
+# items to add to the list. We just produce a new list consisting of the names
+# and use editor_addlist_read
+proc editor_addlist_template {n tseqs} {
+    set names ""
+    foreach {name cnum} $tseqs {
+	lappend names $name
+    }
+    editor_addlist_read $n $names
+}
+
+proc editor_dellist_template {n tseqs} {
+    set names ""
+    foreach {name cnum} $tseqs {
+	lappend names $name
+    }
+    editor_dellist_read $n $names
 }
 
 proc copy_name {n x y} {
@@ -1427,22 +1486,46 @@ proc ednames_menu {w x y X Y} {
 	$w.m add command -label "List notes" \
 	    -command "NoteSelector [$e io] contig =$cnum"
     } else {
-	create_popup $w.m "Commands for [lindex $name 1]"
-	set rnum [$w get_read_number $seq_num]
-	$w.m add command -label "List notes" \
-	    -command "NoteSelector [$e io] reading #$rnum"
-	if {$licence(type) == "f"} {
-	    $w.m add command -label "Remove reading" \
-		-command "$e hide_read $seq_num"
-	    $w.m add separator
-	}
-
 	set flags [$e get_flags $seq_num]
 	set refseq [lsearch -exact $flags REFSEQ]
 	set refseq [expr {$refseq == -1 ? 0 : 1}]
 	set refneg [lsearch -exact $flags REFTRACE_NEG]
 	set refpos [lsearch -exact $flags REFTRACE_POS]
 	set reftrace [expr {($refneg == -1 && $refpos == -1) ? 0 : 1}]
+	set tseqs [$e get_template_seqs $seq_num]
+
+	create_popup $w.m "Commands for [lindex $name 1]"
+	set rnum [$w get_read_number $seq_num]
+
+	if {[llength $tseqs] != 0} {
+	    $w.m add cascade -label "Goto..." -menu $w.m.goto
+	    menu $w.m.goto
+	    set this_contig [$e get_contig_num]
+	    foreach {seq cnum} $tseqs {
+		if {$cnum != $this_contig} {
+		    set cname " (Contig [left_gel [$e io] $cnum])"
+		} else {
+		    set cname ""
+		}
+		$w.m.goto add command -label "Goto $seq$cname" \
+		    -command "ed_goto_seq $e $seq $cnum"
+	    }
+	}
+
+	$w.m add command -label "Select this reading" \
+	    -command "editor_addlist_read [editor_to_edname $e] \
+                      [lindex $name 1]"
+	$w.m add command -label "Deselect this reading" \
+	    -command "editor_dellist_read [editor_to_edname $e] \
+                      [lindex $name 1]"
+	$w.m add command -label "Select readings on this template" \
+	    -command "editor_addlist_template [editor_to_edname $e] \
+                      [list $tseqs]"
+	$w.m add command -label "Deselect readings on this template" \
+	    -command "editor_dellist_template [editor_to_edname $e] \
+                      [list $tseqs]"
+	$w.m add command -label "List notes" \
+	    -command "NoteSelector [$e io] reading #$rnum"
 
 	if {!$refseq} {
 	    $w.m add command -label "Set as reference sequence" \
@@ -1459,9 +1542,20 @@ proc ednames_menu {w x y X Y} {
 	    $w.m add command -label "Clear as reference trace" \
 		-command "$e set_reference_trace $seq_num 0"
 	}
+
+	if {$licence(type) == "f"} {
+	    $w.m add separator
+	    $w.m add command -label "Remove reading" \
+		-command "$e hide_read $seq_num"
+	}
     }
 
     tk_popup $w.m [expr $X-20] [expr $Y-10]
+}
+
+# Function to jump to a specific sequence in the editor.
+proc ed_goto_seq {e name cnum} {
+    edit_contig -io [$e io] -contig =$cnum -reading $name -reuse 1
 }
 
 # Dialogue for setting a reference sequence
@@ -2172,7 +2266,7 @@ bind Editor <<copy>>		{
 }
 bind Editor <<paste>>		{break;}
 
-bind EdNames <<select>>		{%W highlight @%x @%y}
+bind EdNames <<select>>		{%W highlight -1 @%x @%y}
 bind EdNames <<move>>		{editor_addlist %W @%x @%y}
 bind EdNames <<copy>>		{copy_name %W @%x @%y}
 bind EdNames <<menu>>		{ednames_menu %W %x %y %X %Y}

@@ -232,7 +232,7 @@ proc seloli_accept {ed t} {
     }
 
     set tname [entrybox_get $e]
-    ListAppend oligos [$ed select_oligo accept "$tname"]
+    ListAppend oligos [list [$ed select_oligo accept "$tname"]]
 
     seloli_quit $ed $t
 }
