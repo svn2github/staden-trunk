@@ -1929,7 +1929,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	for (item = head(tarr->gel_cont); item; item = item->next) {
 	    gel_cont_t *gc = (gel_cont_t *)item->data;
 	    char *rname = get_read_name(DBI_io(ed->xx), gc->read);
-	    dstring_appendf(ds, "%s %d ", rname, gc->contig);
+	    dstring_appendf(ds, "%s %d %d ", rname, gc->contig,
+			    io_relpos(DBI_io(ed->xx), gc->read));
 	}
 
 	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);

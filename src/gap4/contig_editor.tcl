@@ -1210,7 +1210,7 @@ proc editor_dellist_read {n names} {
 # and use editor_addlist_read
 proc editor_addlist_template {n tseqs} {
     set names ""
-    foreach {name cnum} $tseqs {
+    foreach {name cnum pos} $tseqs {
 	lappend names $name
     }
     editor_addlist_read $n $names
@@ -1218,7 +1218,7 @@ proc editor_addlist_template {n tseqs} {
 
 proc editor_dellist_template {n tseqs} {
     set names ""
-    foreach {name cnum} $tseqs {
+    foreach {name cnum pos} $tseqs {
 	lappend names $name
     }
     editor_dellist_read $n $names
@@ -1549,7 +1549,7 @@ proc ednames_menu {w x y X Y} {
 	    $w.m add cascade -label "Goto..." -menu $w.m.goto
 	    menu $w.m.goto
 	    set this_contig [$e get_contig_num]
-	    foreach {seq dummy_cnum} $tseqs {
+	    foreach {seq dummy_cnum pos} $tseqs {
 		# Recalculate cnum. When joining contigs a contig may get
 		# renumbered. It may or may not be this contig. If it is not
 		# this contig and this contig is not getting joined, then this
@@ -1563,9 +1563,9 @@ proc ednames_menu {w x y X Y} {
 		    set cnum $dummy_cnum
 		}
 		if {$cnum != $this_contig} {
-		    set cname " (Contig [left_gel [$e io] $cnum])"
+		    set cname " (Contig [left_gel [$e io] $cnum] @ $pos)"
 		} else {
-		    set cname ""
+		    set cname " @ $pos"
 		}
 		$w.m.goto add command -label "Goto $seq$cname" \
 		    -command "ed_goto_seq $e $seq $cnum"
