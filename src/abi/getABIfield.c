@@ -394,7 +394,8 @@ void dump_time(char *data, size_t sz, int hex, int separator, int date_sep) {
  *       -2 = raw
  *       +? = that format number
  */
-int dumpABIBlock(abi_index_t *ind, int style, int separator, int date_sep) {
+int dumpABIBlock(abi_index_t *ind, int style, int separator, int date_sep,
+		 int line_sep) {
     if (style == -2) {
 	dump_raw(ind->data, ind->size);
     } else {
@@ -463,13 +464,13 @@ int dumpABIBlock(abi_index_t *ind, int style, int separator, int date_sep) {
     }
 
     if (separator != '\n')
-	puts("");
+	putchar(line_sep);
 
     return 0;
 }
 
 int dump_abi(char *fn, abi_t *abi, int style, int separator, int date_sep,
-	     int tagged) {
+	     int line_sep, int tagged) {
     int i;
     for (i = 0; i < abi->header.nindex; i++) {
 	abi_index_t *ind = &abi->index[i];
@@ -483,14 +484,18 @@ int dump_abi(char *fn, abi_t *abi, int style, int separator, int date_sep,
 		   ind->idv);
 	}
 
-	dumpABIBlock(ind, style, separator, date_sep);
+	dumpABIBlock(ind, style, separator, date_sep, line_sep);
     }
+
+    if (line_sep != '\n')
+	puts("");
 
     return 0;
 }
 
 int doit(char *fn, int argc, char **argv,
-	 int style, int separator, int date_sep, int tagged, int all) {
+	 int style, int separator, int date_sep, int line_sep,
+	 int tagged, int all) {
     abi_t *abi;
     int retcode = 0;
     int arg = 0;
@@ -501,7 +506,8 @@ int doit(char *fn, int argc, char **argv,
     }
 
     if (all) {
-	retcode = dump_abi(fn, abi, style, separator, date_sep, tagged);
+	retcode = dump_abi(fn, abi, style, separator, date_sep, line_sep,
+			   tagged);
     } else if (arg == argc) {
 	retcode = dump_index(abi);
     } else {
@@ -516,25 +522,29 @@ int doit(char *fn, int argc, char **argv,
 	    
 	    count = (++arg < argc) ? atoi(argv[arg]) : 1;
 	    
-	    if (tagged)
+	    if ((arg == 1 || line_sep == '\n') && tagged)
 		printf("%s %.4s %d ", fn, lstr, count);
+	    else if (tagged)
+		printf("%.4s %d ", lstr, count);
 
 	    if (NULL == (ind = find_abi_index(abi, label, count))) {
 		retcode = -1;
 		continue;
 	    }
 
-	    if (-1 == dumpABIBlock(ind, style, separator, date_sep))
+	    if (-1 == dumpABIBlock(ind, style, separator, date_sep, line_sep))
 		retcode = -1;
 	}
     }
+
+    if (line_sep != '\n')
+	puts("");
 
     return retcode;
 }
 
 void usage(void) {
     fprintf(stderr, "Usage: getABIfield [optons] [--] file [NAME [COUNT]] ... \n");
-    fprintf(stderr, "    -n x           display name 'x'. List index is not set.\n");
     fprintf(stderr, "    -l             set the output field separator to newline\n");
     fprintf(stderr, "    -h             hex mode\n");
     fprintf(stderr, "    -r             raw mode\n");
@@ -544,6 +554,7 @@ void usage(void) {
     fprintf(stderr, "                             10=date, 11=time, 18=P-string, 19=C-string)\n");
     fprintf(stderr, "    -I fofn        file of filenames, use \"-I -\" to read fofn from stdin\n");
     fprintf(stderr, "    -F sep         separator between elements in a block\n");
+    fprintf(stderr, "    -L sep         separator between blocks listed in a file\n");
     fprintf(stderr, "    -D sep         separator within date and time format items\n");
     fprintf(stderr, "    --             force end of command line options\n");
     fprintf(stderr, "    file           ABI filename to read. Use \"-\" for stdin\n");
@@ -551,7 +562,7 @@ void usage(void) {
 }
 
 int main(int argc, char **argv) {
-    int style = 0, separator = ' ', date_sep = '\0';
+    int style = 0, separator = ' ', date_sep = '\0', line_sep = '\n';
     int arg, retcode = 0, tagged = 0, all = 0;
     char *fofn = NULL, file[1024];
     FILE *fofn_fp;
@@ -576,6 +587,11 @@ int main(int argc, char **argv) {
 	    if (++arg == argc)
 		usage();
 	    separator=*argv[arg];
+
+	} else if (strcmp(argv[arg], "-L") == 0) {
+	    if (++arg == argc)
+		usage();
+	    line_sep=*argv[arg];
 
 	} else if (strcmp(argv[arg], "-D") == 0) {
 	    if (++arg == argc)
@@ -610,7 +626,7 @@ int main(int argc, char **argv) {
 	if (argc-arg < 1)
 	    usage();
 	return doit(argv[arg], argc-arg-1, &argv[arg+1],
-		    style, separator, date_sep, tagged, all);
+		    style, separator, date_sep, line_sep, tagged, all);
     }
 
     /* File of filenames */
@@ -629,7 +645,7 @@ int main(int argc, char **argv) {
 	    *cp = 0;
 
 	retcode |= doit(file, argc-arg, &argv[arg],
-			style, separator, date_sep, tagged, all);
+			style, separator, date_sep, line_sep, tagged, all);
     }
 
     if (fofn_fp != stdin) {
