@@ -61,3 +61,50 @@ proc ListConfidence2 {io t lorf id summary} {
 	-summary $summary
     ClearBusy
 }
+
+proc ListBaseConfidence {io} {
+    global gap_defs
+
+    set t [keylget gap_defs LIST_CONFIDENCE.WIN]2
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "List base confidence"
+
+    contig_id $t.id -io $io -range 0
+
+    lorf_in $t.infile [keylget gap_defs LIST_CONFIDENCE.INFILE] \
+	"{contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state normal}
+	" -bd 2 -relief groove
+
+    okcancelhelp $t.ok \
+	-ok_command "ListBaseConfidence2 $io $t $t.infile $t.id" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap4 {Con-Evaluation}" \
+	-bd 2 -relief groove
+
+    pack $t.infile $t.id $t.ok -side top -fill x
+}
+
+
+proc ListBaseConfidence2 {io t lorf id} {
+    if {[lorf_in_get $lorf] == 4} {
+        if {[set contign [contig_id_gel $id]] == ""} {bell; return}
+	set list "{$contign}"
+	SetContigGlobals $io $contign
+    } elseif {[lorf_in_get $lorf] == 3} {
+	set list [CreateAllContigList $io]
+    } else {
+	if {[set list [lorf_get_list $lorf]] == ""} {bell; return}
+    }
+    destroy $t
+
+    SetBusy
+    list_base_confidence \
+	-io $io \
+	-contigs $list
+    ClearBusy
+
+}
+

@@ -246,6 +246,7 @@ set auto_index(SendTo) [list source [file join $dir sendto.tcl]]
 set auto_index(EventHandler) [list source [file join $dir sendto.tcl]]
 
 set auto_index(ListConfidence) [list source [file join $dir qual.tcl]]
+set auto_index(ListBaseConfidence) [list source [file join $dir qual.tcl]]
 
 set auto_index(prefinish) [list source [file join $dir gap_prefinish.tcl]] 
 
