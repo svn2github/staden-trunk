@@ -40,6 +40,7 @@
 #include "array.h"
 #include "misc.h"
 #include "template.h"
+#include "allelic_discreps.h"
 
 typedef struct {
     int seqnum;
@@ -1010,9 +1011,21 @@ static void dump_snps(ad_graph *g, snp_t *snp, int nsnp) {
 /*
  * Assign templates, and hence sequences to each of the separate alleles
  * based on node->orient.
+ *
+ * It returns a tcl-style list of two lists (one for each list), with
+ * each sub list being a list of readings in the that allele. Not all
+ * readings will make their way into an allele as some have "unknown"
+ * placements.
+ *
+ * Returns dstring_t for success
+ *         NULL for failure
  */
-void assign_alleles(GapIO *io, int conitg, ad_graph *g) {
+dstring_t *assign_alleles(GapIO *io, int conitg, ad_graph *g) {
     int rnum;
+    dstring_t *ds0, *ds1, *ds;
+
+    ds0 = dstring_create(NULL);
+    ds1 = dstring_create(NULL);
 
     for (rnum = io_clnbr(io, conitg); rnum; rnum = io_rnbr(io, rnum)) {
 	GReadings r;
@@ -1027,9 +1040,21 @@ void assign_alleles(GapIO *io, int conitg, ad_graph *g) {
 	    continue;
 	}
 
+	if (n->orient == 0)
+	    dstring_appendf(ds0, "%s ", io_rname(io, rnum));
+	if (n->orient == 1)
+	    dstring_appendf(ds1, "%s ", io_rname(io, rnum));
+
 	printf("READ %s allele %d (score %f)\n",
 	       io_rname(io, rnum), n->orient, n->edge_sum);
     }
+
+    ds = dstring_create(NULL);
+    dstring_insertf(ds, 0, "{%s} {%s}", dstring_str(ds0), dstring_str(ds1));
+    dstring_destroy(ds0);
+    dstring_destroy(ds1);
+
+    return ds;
 }
 
 
@@ -1061,8 +1086,7 @@ static void dump_graph(ad_graph *g) {
  * function attempts to split templates into two sets corresponding
  * to each of the two alleles.
  */
-int allelic_discreps(GapIO *io, int contig) {
-    int err_code = -1;
+dstring_t *allelic_discreps(GapIO *io, int contig) {
     ad_graph *g = NULL;
     int ntemplates, i;
     template_c **tarr;
@@ -1070,6 +1094,7 @@ int allelic_discreps(GapIO *io, int contig) {
     int nsnps;
     int nchecks = 2;
     int cycle;
+    dstring_t *ds = NULL;
 
     puts("Attach debugger now");
     sleep(1);
@@ -1078,7 +1103,7 @@ int allelic_discreps(GapIO *io, int contig) {
     /* Compute the discrepancies and obtain possible SNP locations & scores */
     snps = candidate_snps(io, contig, &nsnps);
     if (!nsnps)
-	return 0;
+	return NULL;
 
     /* Compute template consistency status; used for scoring SNPs */
     if (NULL == (tarr = init_template_checks(io, 1, &contig, 1)))
@@ -1150,12 +1175,9 @@ int allelic_discreps(GapIO *io, int contig) {
     /* List SNPs */
 
     /* List templates/reads on each allele */
-    assign_alleles(io, contig, g);
+    ds = assign_alleles(io, contig, g);
 
-    dump_graph(g);
-
-    /* END: flow to error tidy-up but with exit code 0 */
-    err_code = 0;
+    /* dump_graph(g); */
 
  error:
     if (snps)
@@ -1167,7 +1189,7 @@ int allelic_discreps(GapIO *io, int contig) {
     if (tarr)
 	uninit_template_checks(io, tarr);
 
-    return err_code;
+    return ds;
 }
 
 
