@@ -1,3 +1,49 @@
+2003-12-08  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edStructs.h,
+	* src/gap4/edUtils2.c,
+	* src/gap4/searchUtils.c,
+	* src/gap4/tkEditor.c,
+	* tables/gaprc_menu_full,
+	* tables/gaprc:
+	(12:06:48) Added new "group by" methods to the editor. In addition
+	to the original "group by templates" we can group by strand, clone,
+	name, number and position.
+	
+	Also fixed a bug in the "go to" function to jump to alternate reads
+	on a template. After a join the cached contig number could be
+	invalid, so the contig number is calculated on the fly. 
+
+	* src/gap4/hash_lib.c:
+	(12:08:00) Improved the align_blocks() function.
+	
+	(In some cases this caused the join editor "align" command to not
+	work.) 
+
+	* src/gap4/template.c:
+	(12:09:17) check_template_length_overlap() has been rewritten to
+	more correctly figure out if a template is inconsistent between two
+	contigs. It now checks for primer inconsistencies, eg where two
+	forward readings exist, but not at the same position or in
+	differing orientations. 
+
+	* staden.profile:
+	(12:11:00) Removed "bash"isms. 
+
+	* src/mutscan/main.cpp:
+	(12:13:16) Added a call to read_experiment_redirect(), otherwise
+	some traces read had no original position information. Also
+	reformatted to remove windows linefeeds. 
+
+	* src/prefinish/finish_cDNA:
+	(12:13:38) Min template score is now 0.1 (instead of 0.3). 
+
+2003-12-01 James Bonfield <jkb@sanger.ac.uk>
+
+	TAG CODEBASE with rel-1-2
+	Gap4 version "4.9 test 1"
+	
 2003-12-01 James Bonfield <jkb@sanger.ac.uk>
 
 	* src/gap4/IO.h,
