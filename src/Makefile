@@ -99,7 +99,6 @@ install:
 distcommon:
 	-mkdir $(DIST)/src
 
-	-cp README.subset $(DIST)/src/README
 	-cp -R Makefile $(DIST)/src
 
 	-mkdir $(DIST)/src/Misc
@@ -119,26 +118,21 @@ distcommon:
 	-cp -R gap4/*.h $(DIST)/src/gap4
 	-cp -R gap4/*.h $(DIST)/src/gap4
 
-	# FIXME: It's downloadable from our ftpsite anyway.
-	#
-	# -mkdir $(DIST)/src/io_lib
-	# -cp -R io_lib/*.h $(DIST)/src/io_lib
+#	FIXME: It's downloadable from our ftpsite anyway.
+#
+#	-mkdir $(DIST)/src/io_lib
+#	-cp -R io_lib/*.h $(DIST)/src/io_lib
 
 	-mkdir $(DIST)/src/lib
-	-cp -R lib/README $(DIST)/src/lib
 
 	-mkdir $(DIST)/src/mk
 	-cp -R mk/*.mk mk/README $(DIST)/src/mk
 
 	-mkdir $(DIST)/src/scripts
 	cd scripts;\
-	cp FE-stealdata FE-stealdata.csh Makefile       $(DIST)/src/scripts;\
-	cp assemble assemble4 assemble4.doc bzip2_trace $(DIST)/src/scripts;\
-	cp bzip_trace clip-seq.awk clip-seqs            $(DIST)/src/scripts;\
-	cp clipping.doc dependencies dub exp2fasta      $(DIST)/src/scripts;\
-	cp fasta-split fasta2exp make_fasta gzip_trace  $(DIST)/src/scripts;\
-	cp ncbi_gc_parse.tcl splitseq_da staden2exp     $(DIST)/src/scripts;\
-	cp stealdata stealdata.doc stealdata.stl        $(DIST)/src/scripts;\
+	cp Makefile assemble4 bzip_trace bzip2_trace    $(DIST)/src/scripts;\
+	cp embl2exp fasta2exp fasta-split gzip_trace    $(DIST)/src/scripts;\
+	cp make_fasta splitseq_da staden2exp		$(DIST)/src/scripts;\
 	cd ..
 
 	-mkdir $(DIST)/src/seq_utils
@@ -150,15 +144,15 @@ distcommon:
 	-mkdir $(DIST)/src/tk_utils
 	-cp -R tk_utils/*.h $(DIST)/src/tk_utils
 
-	# Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
-	-mkdir $(DIST)/src/tcl8.4.0
-	-mkdir $(DIST)/src/tcl8.4.0/generic
-	-cp -R tcl8.4.0/generic/tcl*.h $(DIST)/src/tcl8.4.0/generic
-	-mkdir $(DIST)/src/tk8.4.0
-	-mkdir $(DIST)/src/tk8.4.0/generic
-	-mkdir $(DIST)/src/tk8.4.0/compat
-	-cp -R tk8.4.0/generic/tk*.h $(DIST)/src/tk8.4.0/generic
-	-cp -R tk8.4.0/compat/*.h $(DIST)/src/tk8.4.0/compat
+#	Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
+	-mkdir $(DIST)/src/tcl8.4.6
+	-mkdir $(DIST)/src/tcl8.4.6/generic
+	-cp -R tcl8.4.0/generic/tcl*.h $(DIST)/src/tcl8.4.6/generic
+	-mkdir $(DIST)/src/tk8.4.6
+	-mkdir $(DIST)/src/tk8.4.6/generic
+	-mkdir $(DIST)/src/tk8.4.6/compat
+	-cp -R tk8.4.6/generic/tk*.h $(DIST)/src/tk8.4.6/generic
+	-cp -R tk8.4.6/compat/*.h $(DIST)/src/tk8.4.6/compat
 
 
 
@@ -173,15 +167,15 @@ distunix: distcommon
 	-mkdir $(DIST)/src/lib/sgi-binaries
 	-mkdir $(DIST)/src/lib/solaris-binaries
 
-	# Biolims - for Solaris only
+#	 Biolims - for Solaris only
 	-cp -R lib/solaris-binaries/libbiolimsio.so $(DIST)/lib/solaris-binaries
 	-cp -R lib/solaris-binaries/libbiolimsgap.so $(DIST)/lib/solaris-binaries
 
-	# Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
-	-mkdir $(DIST)/src/tcl8.4.0/unix
-	-cp -R tcl8.4.0/unix/*.h $(DIST)/src/tcl8.4.0/unix
-	-mkdir $(DIST)/src/tk8.4.0/unix
-	-cp -R tk8.4.0/unix/*.h $(DIST)/src/tk8.4.0/unix
+#	 Bits of TCL that are needed for compilation of libraries (eg:PRIDE)
+	-mkdir $(DIST)/src/tcl8.4.6/unix
+	-cp -R tcl8.4.6/unix/*.h $(DIST)/src/tcl8.4.6/unix
+	-mkdir $(DIST)/src/tk8.4.6/unix
+	-cp -R tk8.4.6/unix/*.h $(DIST)/src/tk8.4.6/unix
 
 
 
@@ -194,10 +188,10 @@ distwindows: distcommon
 	-cp pregap4/pregap4.bat $(DIST)/windows-bin
 	-cp ../windows-bin/*.exe $(DIST)/windows-bin
 	-cp scripts/splitseq_da $(DIST)/windows-bin
-	-mkdir $(DIST)/src/tcl8.4.0/win
-	-cp -R tcl8.4.0/win/*.h $(DIST)/src/tcl8.4.0/win
-	-mkdir $(DIST)/src/tk8.4.0/win
-	-cp -R tk8.4.0/win/*.h $(DIST)/src/tk8.4.0/win
+	-mkdir $(DIST)/src/tcl8.4.6/win
+	-cp -R tcl8.4.6/win/*.h $(DIST)/src/tcl8.4.6/win
+	-mkdir $(DIST)/src/tk8.4.6/win
+	-cp -R tk8.4.6/win/*.h $(DIST)/src/tk8.4.6/win
 
 
 
@@ -213,43 +207,43 @@ distsrc:
 	cp -R mk/*.mk mk/README $(DISTSRC)/src/mk
 	cp -R Makefile $(DISTSRC)/src
 	mkdir $(DISTSRC)/src/ftp
-	cp -R ftp/tcl8.4.0sp.tar.gz \
-	      ftp/tk8.4.0sp.tar.gz \
+	cp -R ftp/tcl8.4.6-src.tar.gz \
+	      ftp/tk8.4.6-src.tar.gz \
 	      ftp/cvs-itcl3.1.0.tar.gz \
 	      ftp/zlib.tar.gz \
 	      ftp/libpng-1.2.5.tar.bz2 \
 	      $(DISTSRC)/src/ftp
 	$(MAKE) $(FLAGS) JOB=distsrc
-	# A few bits of Tcl that are needed for compilation
-	-mkdir $(DISTSRC)/src/tcl8.4.0
-	-mkdir $(DISTSRC)/src/tcl8.4.0/generic
-	-cp -R tcl8.4.0/generic/tcl*.h $(DISTSRC)/src/tcl8.4.0/generic/
-	-mkdir $(DISTSRC)/src/tcl8.4.0/unix
-	-cp -R tcl8.4.0/unix/tclAppInit.c $(DISTSRC)/src/tcl8.4.0/unix
-	# A few bits of Tk that are needed for compilation
-	-mkdir $(DISTSRC)/src/tk8.4.0
-	-mkdir $(DISTSRC)/src/tk8.4.0/generic
-	-mkdir $(DISTSRC)/src/tk8.4.0/unix
-	-mkdir $(DISTSRC)/src/tk8.4.0/compat
-	-cp -R tk8.4.0/generic/tk*.h $(DISTSRC)/src/tk8.4.0/generic/
-	-cp -R tk8.4.0/unix/tkUnixPort.h $(DISTSRC)/src/tk8.4.0/unix
-	-cp -R tk8.4.0/compat/*.h $(DISTSRC)/src/tk8.4.0/compat
-	# Some itcl stuff
+#	 A few bits of Tcl that are needed for compilation
+	-mkdir $(DISTSRC)/src/tcl8.4.6
+	-mkdir $(DISTSRC)/src/tcl8.4.6/generic
+	-cp -R tcl8.4.6/generic/tcl*.h $(DISTSRC)/src/tcl8.4.6/generic/
+	-mkdir $(DISTSRC)/src/tcl8.4.6/unix
+	-cp -R tcl8.4.6/unix/tclAppInit.c $(DISTSRC)/src/tcl8.4.6/unix
+#	 A few bits of Tk that are needed for compilation
+	-mkdir $(DISTSRC)/src/tk8.4.6
+	-mkdir $(DISTSRC)/src/tk8.4.6/generic
+	-mkdir $(DISTSRC)/src/tk8.4.6/unix
+	-mkdir $(DISTSRC)/src/tk8.4.6/compat
+	-cp -R tk8.4.6/generic/tk*.h $(DISTSRC)/src/tk8.4.6/generic/
+	-cp -R tk8.4.6/unix/tkUnixPort.h $(DISTSRC)/src/tk8.4.6/unix
+	-cp -R tk8.4.6/compat/*.h $(DISTSRC)/src/tk8.4.6/compat
+#	 Some itcl stuff
 	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
 	-cp -R incrTcl-3.3cvs/itcl/generic/*.h \
 	       $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
 	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
 	-cp -R incrTcl-3.3cvs/itk/generic/*.h \
 	       $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
-	# Dummy licence code
+#	 Dummy licence code
 	-cp -R licence/distrib $(DISTSRC)/src/licence
-	## STLPort
-	#-mkdir $(DISTSRC)/src/stlport
-	#-cp -R stlport/alpha $(DISTSRC)/src/stlport
-	#-cp -R stlport/linux $(DISTSRC)/src/stlport
-	#-cp -R stlport/macosx $(DISTSRC)/src/stlport
+#	# STLPort
+#	-mkdir $(DISTSRC)/src/stlport
+#	-cp -R stlport/alpha $(DISTSRC)/src/stlport
+#	-cp -R stlport/linux $(DISTSRC)/src/stlport
+#	-cp -R stlport/macosx $(DISTSRC)/src/stlport
 
-	# Windows compilation bits
+#	 Windows compilation bits
 	mkdir $(DISTSRC)/src/windows
 	cp -R windows/include $(DISTSRC)/src/windows
 	mkdir $(DISTSRC)/src/windows/mkdef
