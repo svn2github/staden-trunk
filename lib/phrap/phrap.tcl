@@ -212,8 +212,7 @@ proc PhrapReassemble2 {io t infile params dest_dir doqclip minqual dodclip} {
     if {[catch {disassemble_readings \
 	-io $io \
 	-readings $list \
-	-all 1 \
-	-remove 1}]} {
+	-move 0}]} {
 	verror ERR_WARN "Failed when disassembling readings."
 	verror ERR_WARN "Remember that there is a backup - version \"~\"."
 	ClearBusy
