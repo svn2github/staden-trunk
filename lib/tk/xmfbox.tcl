@@ -4,7 +4,7 @@
 #	Unix platform. This implementation is used only if the
 #	"::tk_strictMotif" flag is set.
 #
-# RCS: @(#) $Id: xmfbox.tcl,v 1.1.1.1 2003-06-09 11:25:56 jkb Exp $
+# RCS: @(#) $Id: xmfbox.tcl,v 1.2 2004-01-13 17:22:30 jkb Exp $
 #
 # Copyright (c) 1996 Sun Microsystems, Inc.
 # Copyright (c) 1998-2000 Scriptics Corporation
@@ -119,7 +119,6 @@ proc ::tk::MotifFDialog_Create {dataName type argList} {
     }
 
     MotifFDialog_FileTypes $w
-    MotifFDialog_Update $w
 
     # Withdraw the window, then update all the geometry information
     # so we know how big it wants to be, then center the window in the
@@ -151,6 +150,7 @@ proc ::tk::MotifFDialog_FileTypes {w} {
     # No file types: use "*" as the filter and display no radio-buttons
     if {$data(-filetypes) == ""} {
 	set data(filter) *
+	MotifFDialog_Update $w
 	return
     }
 
@@ -567,24 +567,48 @@ proc ::tk::MotifFDialog_LoadFiles {w} {
     # We also do two smaller sorts (files + dirs) instead of one large sort,
     # which gives a small speed increase.
     #
-    set top 0
-    set dlist ""
+
+#    set top 0
+#    set dlist ""
+#    set flist ""
+#    foreach f [glob -nocomplain .* *] {
+#	if {[file isdir ./$f]} {
+#	    lappend dlist $f
+#	} else {
+#            foreach pat $data(filter) {
+#                if {[string match $pat $f]} {
+#		if {[string match .* $f]} {
+#		    incr top
+#		}
+#		lappend flist $f
+#                    break
+#	    }
+#            }
+#	}
+#    }
+
+    # Re-implemented the above code to use the dir_or_file command.
+    # This means that this code may not work on windows (not an issue as this
+    # is the Unix based filebrowser) and it will not work with other
+    # filesystems (eg the builtin virtual filesystem).
+    #
+    # However we tested this code as 80 times faster, primarily due to the
+    # slowness of the tcl "file isdir" command.
+    foreach {dlist flist_tmp} [dir_or_file [glob -nocomplain .* *]] {}
     set flist ""
-    foreach f [glob -nocomplain .* *] {
-	if {[file isdir ./$f]} {
-	    lappend dlist $f
-	} else {
-            foreach pat $data(filter) {
-                if {[string match $pat $f]} {
+    set top 0
+    foreach f $flist_tmp {
+	foreach pat $data(filter) {
+	    if {[string match $pat $f]} {
 		if {[string match .* $f]} {
 		    incr top
 		}
 		lappend flist $f
-                    break
+		break
 	    }
-            }
 	}
     }
+
     eval [list $data(dList) insert end] [lsort -dictionary $dlist]
     eval [list $data(fList) insert end] [lsort -dictionary $flist]
 
