@@ -1073,7 +1073,7 @@ static int findNextQualProb (EdStruct *xx)
     for (i=spos; i<= epos; i+=SEARCH_CHUNKS) {
 	width = min(epos-i+1,SEARCH_CHUNKS);
 	calc_quality(0, i, i+width, buffer, xx->con_cut, xx->qual_cut, 
-		     contEd_info, (void *)DBI(xx));
+		     contEd_info, (void *)xx);
 	for (j=0;j<width;j++) {
 	    if ((xx->consensus_mode == CONSENSUS_MODE_CONFIDENCE &&
 		 buffer[j] != R_GOOD_GOOD_EQ &&
@@ -1123,7 +1123,7 @@ static int findPrevQualProb (EdStruct *xx)
 	width = min(i-epos+1,SEARCH_CHUNKS);
 	calc_quality(0, i - width + 1, i + 1, buffer,
 		     xx->con_cut, xx->qual_cut, 
-		     contEd_info, (void *)DBI(xx));
+		     contEd_info, (void *)xx);
 	for (j=width-1; j>=0; j--) {
 	    if ((xx->consensus_mode == CONSENSUS_MODE_CONFIDENCE &&
 		 buffer[j] != R_GOOD_GOOD_EQ &&
@@ -1384,7 +1384,7 @@ static int cop_check(EdStruct *xx, int spos, char *ok, int from, int to,
 		 */
 		calc_consensus(0, j + spos, j + spos, CON_SUM, &c1, &c2,
 			       &q1, &q2, xx->con_cut, xx->qual_cut,
-			       contEd_info, (void *)DBI(xx));
+			       contEd_info, (void *)xx);
 
 		if (!(ok[j] & 1) && c1 != '*')
 		    return j + spos;
