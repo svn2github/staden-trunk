@@ -461,6 +461,12 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 	    printf("Fixed vector pointer for template %d\n", i);
 	    tt.vector = 0;
 	}
+	if (tt.insert_length_min > tt.insert_length_max) {
+	    int max = tt.insert_length_max;
+	    tt.insert_length_max = tt.insert_length_min;
+	    tt.insert_length_min = max;
+	    printf("Fixed insert size for template %d\n", i);
+	}
 	if (tt.clone)
 	    tt.clone += start_s;
 	if (tt.vector)
