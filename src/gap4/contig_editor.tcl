@@ -420,11 +420,16 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     # now fixes the resize problem and it seems that we no longer need this
     # change anyway.
     #
-#     bind $w <Any-Configure> {
-#    	if {[winfo toplevel %W] == "%W"} {
-#    	    after 1000 {if {[winfo exists %W]} {wm geometry %W {}}}
-#    	}
-#     }
+    # 4th May 2004:
+    # It's about time this is totally rewritten! However, I put the hack back
+    # again. Since the change to disable 'SetGrid' on the sheet widget to fix
+    # a bug in the MetaCity wm, this broke twm.
+    #
+    bind $w <Any-Configure> {
+   	if {[winfo toplevel %W] == "%W"} {
+   	    after 1000 {if {[winfo exists %W]} {wm geometry %W {}}}
+   	}
+    }
 
     SetDefaultTags CONTIG_EDITOR.TAGS $editor
     wm protocol $w WM_DELETE_WINDOW \
