@@ -215,34 +215,33 @@ Contig Editor
 and the other, described below, is available as a separate option from
 the main gap4 Edit menu.
 
-If readings are removed from the database all
-reference to them is deleted.  If a reading is moved to a new contig,
-the new contig will contain only that single reading.
-Such contigs can then be processed by Find internal joins 
+_picture(disassembly)
+
+If readings are removed from the database all reference to them is
+deleted. If a reading is moved to a ``single-read contig'' a new
+contig will be created containing this one single reading, which may
+then be re-processed by Find Internal Joins
 (_fpref(FIJ, Find Internal
 Joins, fij)) 
 and the Join editor
 (_fpref(Editor-Joining, The Join Editor, contig_editor)), which should
 reveal all the other positions at which the reading matches.
 
-Disassembly can also distinguish between "crucial" and
-"non-crucial" readings: a crucial reading is defined as one that, if
-removed, would leave a single stranded region in the contig or cause a
-break in the contig. Conversely non-crucial readings are those that are
-entirely covered by other readings from both strands of the sequence.
-So if only non-crucial readings were removed the amount of single
-stranded data would not change.  Note that when readings are removed
-from the database the program cleans up by moving data to fill up any holes
-made in its list of readings, and this will cause some high numbered
-readings to be given different numbers.
+More useful is the general ``Move readings to new contigs''. This will
+keep any assembly relationships intact between the set of readings to
+be disassembled. For example if three readings overlap then when
+disassembled all three will end up in a single new contig. This
+function is particularly useful for pulling apart false joins or
+repeats.
 
-_picture(disassembly)
+The set of readings to be processed can be read from a ``file'' or a ``list'' and
+clicking on the ``browse'' button will invoke an appropriate browser. If just a
+single reading is to be assembled choose ``single'' and enter the
+reading name instead of the file or list of filenames.
 
-The set of readings to be processed can be read from a "file" or a "list" and
-clicking on the "browse" button will invoke an appropriate browser. If just a
-single reading is to be assembled choose "single" and enter the filename
-instead of the file or list of filenames.  The "Removal mode" is either "All
-readings" or "Non-crucial only" which are explained above. The "task" is to
-"Remove readings from database" or simply "Move readings to new contigs" which
-means each will start a new contig. For large batches of readings this
-processing can be quite slow.
+Removal via a ``list'' is a particularly powerful option when
+controlled via the list generation functions within the contig
+editor. For example break contig could be viewed as disassembling a
+list of readings selected using ``Select this reading and all to
+right''.
+

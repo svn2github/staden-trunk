@@ -38,7 +38,10 @@ panel below.
 
 This panel shows the lines that represent the contigs and the
 currently active tags. Those tags shown above the contig lines are on readings
-and those below are on the consensus. 
+and those below are on the consensus.  Right clicking on a tag gives a
+menu containing ``information'' (to see the tag contents) and ``Edit
+contig at tag'' which invokes the contig editor centred on the
+selected tag.
 
 The information line is showing data for
 the contig that is currently under the crosshair.
@@ -72,7 +75,8 @@ mouse button. Dragging the mouse off the bottom of the list will scroll it to
 allow selection of a range larger than the displayed section of the
 list.  When the left button is pressed any existing selection is
 cleared. To select several disjoint entries in the list press control
-and the left mouse button. 
+and the left mouse button.  The ``Copy'' button copies the current
+selection to the paste buffer.
 
 Most commands require a contig identifier (which can be the name or
 number of any reading on the contig) and gap4 contains several

@@ -117,6 +117,12 @@ matches will be found in marked
 segments during searching, but in the alignment shown
 in the Output Window, marked segments will be shown in lower case.
 
+Some alignments may be very large. For speed and ease of scrolling
+Gap4 does not display the textual form of the longest alignments,
+although they are still visible within the contig comparator
+window. The maximum length of the alignment to print up is controlled
+by the ``Maximum alignment length to list (bp)'' control.
+
 The default setting for the consensus
 is to "Use hidden data" which means that where possible the
 contigs are extended using the poor quality data from the readings near

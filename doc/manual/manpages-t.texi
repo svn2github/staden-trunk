@@ -34,6 +34,11 @@ _include(extract_seq.1.texi)
 _include(find_renz.1.texi)
 
 @page
+@node Man-getABIfield
+@chapter GetABIfield
+_include(getABIfield.1.texi)
+
+@page
 @node Man-get_comment
 @chapter Get_comment
 _include(get_comment.1.texi)
@@ -76,6 +81,11 @@ _include(screen_seq.1.texi)
 @node Man-tracediff
 @chapter TraceDiff
 _include(tracediff.1.texi)
+
+@page
+@node Man-trace_dump
+@chapter Trace_dump
+_include(trace_dump.1.texi)
 
 @page
 @node Man-vector_clip

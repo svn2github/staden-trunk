@@ -189,18 +189,6 @@ _split()
 @cindex Command line arguments
 
 @table @code
-@cindex -check
-@cindex -nocheck
-@cindex nocheck (command line option)
-@cindex check (command line option)
-@item -check
-@itemx -nocheck
-Specifies whether to run the "Check Database" option when opening new
-databases. @code{-check} forces this to always be done and @code{-nocheck}
-forces it to never be done. By default Check Database is always performed when
-opening databases in read-write mode and never performed when opening in
-read-only mode.
-@sp 1
 @cindex -maxdb
 @cindex maxdb (command line option)
 @item -maxdb
@@ -226,16 +214,43 @@ assembly) still need to know a maximum size before hand. The default is
 Opens the database (if specified on the command line) in read only mode. This
 does not apply to databases opened using the file browser.
 @sp 1
-@item -no_exec_notes
+@cindex -check
+@cindex -nocheck
+@cindex nocheck (command line option)
+@cindex check (command line option)
+@item -check
+@itemx -no_check
+Specifies whether to run the "Check Database" option when opening new
+databases. @code{-check} forces this to always be done and @code{-nocheck}
+forces it to never be done. By default Check Database is always performed when
+opening databases in read-write mode and never performed when opening in
+read-only mode.
+@sp 1
+@item -exec_notes
+@itemx -no_exec_notes
+@cindex -exec_notes
 @cindex -no_exec_notes
 @cindex security
-Does not search for and execute any Notes of type @code{OPEN} or @code{CLOS}.
-This may be an important security measure if you are using foreign databases.
+Controls whether to search for and execute any Notes of type
+@code{OPEN} or @code{CLOS}. This may be an important security measure
+if you are using foreign databases. Gap4 defaults to -no_check_notes.
 @sp 1
-@item -no_rawdata_note
+@item -rawdata_note
+@itemx -no_rawdata_note
+@cindex -rawdata_note
 @cindex -no_rawdata_note
-Does not make use of the @code{RAWD} note type for specifying the trace file
-search path.
+Controls whether to make use of the @code{RAWD} note type for
+specifying the trace file search path. Defaults to -rawdata_note.
+@sp 1
+@item -csel
+@itemx -no_csel
+@cindex -csel
+@cindex -no_csel
+Controls whether to automatically start up the contig selector when
+opening a new gap4 database. In some cases (such as when dealing with
+many EST clusters each in their own contig) the contig selector is not
+a practical tool; this simply offers a way of speeding up database
+opening. Defaults to -csel.
 @sp 1
 @item --
 Treat this as the last command line option. Only useful if the database name

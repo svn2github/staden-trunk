@@ -6,6 +6,7 @@
 * Con-Calculation::             Consensus Algorithms
 * Qual-Cal::                    The Quality Calculation
 * Con-Evaluation::              List Consensus Confidence
+* Con-ListBaseConf::            List Base Confidence
 @end menu
 
 @cindex Consensus: outputting
@@ -132,6 +133,11 @@ The "strip pads" option will remove pads ("*"s) from the consensus sequence.
 In the case of experiment files this will also automatically adjust the
 position and length of the annotations to ensure that they still mark the
 correct segment of sequence.
+
+Normally the consensus sequences are named after the left-most reading
+in each contig. For the purposes of single-template based sequencing
+projects (eg cDNA assemblies) the option exists to ``Name consensus by
+left-most template'' instead of by left-most reading.
 
 The routine can write its consensus sequence (plus extra data for
 experiment files) in "experiment file", "fasta" and "staden"
@@ -761,3 +767,81 @@ rate  would be achieved by checking only 0.48% of the total number of
 consensus bases. This strategy is realised by use of the consensus
 quality search in the gap4 Contig Editor
 (_fpref(Editor-Search-ConsQual, Search by Consensus Quality, t)).
+
+_split()
+@node Con-ListBaseConf
+@section List Base Confidence
+@cindex Confidence of base calls
+@cindex List base confidence
+
+The various base-callers may produce a confidence value for each base
+call. Previous sections describe how this may be used to produce a
+consensus sequence along with a consensus confidence.
+
+This function tabulates the frequency of each base confidence value
+along with a count of how many times is matches or mismatches the
+consensus. Given that the standard scale for confidence values follows
+the @i{-10log10(probability of error)} formula we can determine what
+the expected frequency of mismatches should be for any particular
+confidence value. By comparing this with our observed frequencies we
+then have a powerful summary of the amount of misassembled data.
+
+@example
+Total bases considered : 45270
+Problem score          : 1.337130
+
+Conf.        Match        Mismatch           Expected      Over-
+value         freq            freq               freq  representation
+---------------------------------------------------------------------
+  0              0               0               0.00      0.00
+  1              0               0               0.00      0.00
+  2              0               0               0.00      0.00
+  3              0               0               0.00      0.00
+  4             37              22              23.49      0.94
+  5              0               0               0.00      0.00
+  6             89              46              33.91      1.36
+  7            119              26              28.93      0.90
+  8            256              37              46.44      0.80
+  9            368              30              50.11      0.60
+ 10            669              31              70.00      0.44
+...
+@end example
+
+In the above example we see that there are 59 sequence bases with
+confidence 4, of which 37 match the consensus and 22 do not. If we
+work on the assumption that the consensus is correct then we would
+expect approximately 40% of these to be incorrect, but we have
+measured 37% to be incorrect (22/59) giving 0.94 fraction of the
+expected amount.
+
+For a more problematic assembly, we may see a section of output like
+this:
+
+@example
+Total bases considered : 1617511
+Problem score          : 311.591358
+
+Conf.        Match        Mismatch           Expected      Over-
+value         freq            freq               freq  representation
+---------------------------------------------------------------------
+...
+ 20          13432             384             138.16      2.78
+ 21          23384             851             192.51      4.42
+ 22          18763             487             121.46      4.01
+ 23          13712             300              70.23      4.27
+ 24          21182             363              85.77      4.23
+ 25          20466             218              65.41      3.33
+ 26           9752             123              24.80      4.96
+ 27          23071             282              46.60      6.05
+ 28          13816             158              22.15      7.13
+ 29          27514             166              34.85      4.76
+ 30          15664             140              15.80      8.86
+...
+@end example
+
+We can see here that the observed mismatch frequency is greatly more
+than the expected number. This indicates the number of misassemblies
+(or SNPs in the case of mixed samples) within this project and is
+reflected by the combined ``Problem score''. This score is simply the
+sum of the final column (or 1 over that column for values less than
+1.0).

@@ -4,6 +4,7 @@
 * List-ContigToRead::           Contigs To Readings command
 * List-MinCoverage::            Minimal Coverage command
 * List-Unattached::             Unattached Readings command
+* List-HighlightReadings::      Highlight Readings List
 * List-SearchSequenceNames::    Search Sequence Names
 * List-SearchTemplateNames::    Search Template Names
 * List-SearchAnnotations::      Search Annotation Contents
@@ -102,6 +103,12 @@ specified. Creating a list that already exists (or loading a file into
 an already existing list) is allowed, but will produce a warning
 message.
 
+The ``Reading list'' option controls whether the list to be loaded is
+a list of reading names (which is normally the case). This will then
+turn on hyperlinking in any text views of this list. Double-left
+clicking on an underlined reading name will bring up the contig editor
+while right-clicking will bring up a command menu.
+
 _split()
 @node List-ContigToRead
 @section Contigs To Readings Command
@@ -139,6 +146,15 @@ use of the option is for tidying up projects by removing the trivial
 and unrequired contigs. In this case the list would be used
 as input to disassemble readings
 (_fpref(Disassemble, Disassembling Readings, disassembly)).
+
+@node List-HighlightReadings
+@section Highlight Readings List
+@cindex Lists: highlight readings list
+@cindex Highlight readings list
+
+This simply loads the ``readings'' list so that the template display
+and contig editor auto-highlight the chosen readings. This function is
+the same as the Highlight Readings List option in the template display.
 
 _split()
 @node List-SearchSequenceNames

@@ -7,8 +7,10 @@ _split()
 * Consistency-Display::     Consistency Display
 * Consistency-Confidence::  Confidence Values Graph
 * Consistency-ReadingCov::  Reading Coverage Histogram
-* Consistency-ReadPairCov::    Read-Pair Coverage Histogram
-* Consistency-StrandCov::    Strand Coverage
+* Consistency-ReadPairCov:: Read-Pair Coverage Histogram
+* Consistency-StrandCov::   Strand Coverage
+* Consistency-2ndHighest::  2nd-Highest Confidence
+* Consistency-Discrepancy:: Discrepancy Graph
 @end menu
 
 The Consistency Display provides plots designed to highlight 
@@ -132,3 +134,43 @@ _picture(strand_coverage_d)
 
 The dialogue allows user to select the contig(s) and strands to analyse
 and whether to plot Coverage or Problems.
+
+_split()
+@node Consistency-2ndHighest
+@subsection 2nd-Highest Confidence
+@cindex 2nd-Highest Confidence
+@cindex Second highest confidence graph
+
+The traditional way to compute the consensus confidence values is to
+take into account both the matching and mismatching bases within each
+individual column. If instead we work on the hypothesis that a contig
+may have more than one sequence present then we can instead compute
+five consensus confidence values at every point (four bases plus pad)
+by only totally up the bases that agree and ignoring those that
+mismatch.
+
+_picture(2nd_highest_confidence)
+
+In the case of zero conflicts the highest confidence value will be the
+same as the standard consensus confidence. When a conflict occurs, the
+second highest confidence value can be used as a measure of how strong
+the conflict could be. It is this value is plotted.
+
+_split()
+@node Consistency-Discrepancy
+@subsection Discrepancy Graph
+@cindex Discrepancy Graph
+
+At present this is a rather specialist function written for a
+particular in-house purpose. This plot relates very closely to the
+2nd-Highest Confidence plot (_fpref(Consistency-2ndHighest,
+2nd-Highest Confidence, consistency_display)), but it also takes into
+account depth information.
+
+_picture(discrepancy_graph) 
+
+Specifically as assumption is made that a contig may consist of two
+alleles with approximately 50/50 ratio. Any discrepancies visible by
+looking at the second highest confidence value should therefore also
+be backed up by a 50/50 split in sequence depth.
+

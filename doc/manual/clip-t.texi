@@ -1,6 +1,7 @@
 @menu
 * Clip-Difference::             Difference clipping
 * Clip-Quality::                Quality clipping
+* Clip-QClipEnds::              Quality clip ends
 * Clip-NBases:			N-Base clipping
 @end menu
 
@@ -90,10 +91,26 @@ use the difference clipping method
 (_fpref(Clip-Difference, Difference Clipping, clip)).
 
 _split()
+@node Clip-QClipEnds
+@subsection Quality Clip Ends
+@cindex Clipping by quality, ends only
+@cindex Quality clip ends
+
+_picture(quality_clip_ends)
+
+This function performs a similar analysis to Quality Clipping, but
+only trimming the ends of contigs. This can be useful as Phrap
+automatically clips where sequences disagree, but the ends of contigs
+will not be trimmed in such a manner. By trimming such poor quality
+from the end Find Internal Joins may find some problematic matches.
+
+_split()
 @node Clip-NBases
 @subsection N-Base Clipping
 @cindex Clipping by N bases
 @cindex N-base clipping
+
+_picture(NBase_clip)
 
 The purpose of this function is to remove runs of @code{N}s or @code{-}s
 from the ends of sequences. Other bases may be interspersed in a run of

@@ -452,6 +452,11 @@ data that has already been padded and aligned using an external tool (such as
 an external assembly program) setting Maximum percent mismatch to zero can
 have a significant improvement in the speed of Directed Assembly.
 
+The ``Ignore svec (SL/SR) clips'' option controls whether sequencing
+vector clip points should be considered when setting the hidden data
+sections for the sequence. With this option enabled only the quality
+clip (QL/QR) experiment file records will be used.
+
 Assembly usually works on sets of reading names and they can be read from
 either a "file" or a "list" and an appropriate browser is available to enable
 users to choose the name of the file or list. If just a single reading is to

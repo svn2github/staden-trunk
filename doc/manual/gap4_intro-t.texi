@@ -37,7 +37,9 @@ contains options that alter the contents of the database.
 @item Complement a Contig (_fpref(Complement, Complement a Contig, c))
 @item Order Contigs (_fpref(Order-Contigs, Order Contigs, contig_ordering))
 @item Quality Clip (_fpref(Clip-Quality, Quality Clipping, c))
+@item Quality Clip Ends (_fpref(Clip-QClipEnds, Quality Clip Ends, c))
 @item Difference Clip (_fpref(Clip-Difference, Difference Clipping, d))
+@item N-Base Clip (_fpref(Clip-NBases, N-Base Clipping, c))
 @item Double Strand (_fpref(Double Strand, Double Strand, exp_suggest))
 @item Disassemble Readings (_fpref(Break Contig, Break Contig, disassembly))
 @item Enter Tags (_fpref(Enter Tags, Enter Tags, complement))
@@ -125,9 +127,17 @@ use in various parts of the program.
 @item Contigs To Readings
 (_fpref(List-ContigToRead, Contigs To Readings Command, lists))
 @item Minimal Coverage
-(_fpref(List-MinCoverage, Lists Minimum Coverage, lists))
+(_fpref(List-MinCoverage, Minimum Coverage, lists))
 @item Unattached Readings
-(_fpref(List-Unattached, Lists Unattached Readings, lists))
+(_fpref(List-Unattached, Unattached Readings, lists))
+@item Highlight Readings List
+(_fpref(List-HighlightReadings, Highlight Readings List, lists))
+@item Search Sequence Names
+(_fpref(List-SearchSequenceNames, Search Sequence Names, lists))
+@item Search Template Names
+(_fpref(List-SearchTemplateNames, Search Template Names, lists))
+@item Search Annotation Contents
+(_fpref(List-SearchAnnotations, Search Annotation Contents, lists))
 @end itemize
 
 

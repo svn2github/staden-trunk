@@ -124,12 +124,17 @@ cap2-t.texi: assembly.cap2.unix.ps
 cap3-t.texi: assembly.CAP3.unix.ps
 clip-t.texi: difference_clip.unix.ps
 clip-t.texi: quality_clip.unix.ps
+clip-t.texi: quality_clip_ends.unix.ps
+clip-t.texi: NBase_clip.unix.ps
 comparator-t.texi: comparator.unix.ps
 configure-t.texi: configure.colour.unix.ps
 configure-t.texi: set_genetic_code.unix.ps
 configure-t.texi: interface.tag.unix.ps
+configure-t.texi: template_status.unix.ps
 consistency_display-t.texi: read_coverage_d.unix.ps
 consistency_display-t.texi: strand_coverage_d.unix.ps
+consistency_display-t.texi: 2nd_highest_confidence.unix.ps
+consistency_display-t.texi: discrepancy_graph.unix.ps 
 consistency_display-t.texi: consistency_p.unix.ps
 consistency_display-t.texi: conf_values_p.unix.ps
 consistency_display-t.texi: read_coverage_p.unix.ps
@@ -138,6 +143,7 @@ consistency_display-t.texi: strand_coverage_p1.unix.ps
 consistency_display-t.texi: strand_coverage_p2.unix.ps
 contig_editor-t.texi: contig_editor.taged.unix.ps
 contig_editor-t.texi: contig_editor.tagsel.unix.ps
+contig_editor-t.texi: contig_editor.tagmacro.unix.ps
 contig_editor-t.texi: contig_editor.search.unix.ps
 contig_editor-t.texi: contig_editor.screen.unix.ps
 contig_editor-t.texi: contig_editor_grey_scale.unix.ps
