@@ -9,41 +9,105 @@
 
 #-----------------------------------------------------------------------------
 # Changing the fonts
+proc update_font_metrics {} {
+    global env tk_utils_defs _font_metrics
+    
+    array set _font_metrics [keylget tk_utils_defs FONT_METRICS]
+
+    set new_fonts 0
+    foreach font [lsort [font families]] {
+	if {![info exists _font_metrics($font)]} {
+	    array set d [font metrics [list $font]]
+	    set _font_metrics($font) $d(-fixed)
+	    incr new_fonts
+	}
+    }
+
+    if {$new_fonts} {
+	keylset tk_utils_defs FONT_METRICS [array get _font_metrics]
+	update_defs tk_utils_defs $env(HOME)/.tk_utilsrc FONT_METRICS
+    }
+}
+
 proc font_name_change {w n} {
-    $w.l1 configure -font $n
-    $w.l2 configure -font $n
-    $w.l3 configure -font $n
-    $w.f2.name configure -text $n
-    $w.f2.family configure -text [font configure $n -family]
-    global $w.f3.Bold $w.f3.Italic $w.f3.Overstrike $w.f3.Underline
+    $w.l.l1 configure -font $n
+    $w.l.l2 configure -font $n
+    $w.l.l3 configure -font $n
+    array set fn [font configure $n]
+
+    do {
+	set ind [lsearch -exact [string tolower [$w.f2.family get 0 end]] \
+		     [string tolower $fn(-family)]]
+	if {$ind == -1} {
+	    $w.f2.family insert end $fn(-family)
+	}
+    } while {$ind == -1}
+
+    $w.f2.family activate $ind
+    $w.f2.family selection clear 0 end
+    $w.f2.family selection set $ind
+    $w.f2.family see $ind
+
+    global $w.f3.Bold $w.f3.Italic $w.f3.Fixed $w.f3.Underline
     set $w.f3.Bold [font configure $n -weight]
     set $w.f3.Italic [font configure $n -slant]
-    set $w.f3.Overstrike [font configure $n -overstrike]
     set $w.f3.Underline [font configure $n -underline]
-    font_size_change $w [font configure $n -size]
+    font_size_change $w [expr {abs([font configure $n -size])}]
 }
 
 proc font_family_change {w f} {
-    set fn [$w.f2.name cget -text]
-    $w.f2.family configure -text $f
+    do {
+	set ind [lsearch -exact [string tolower [$w.f2.family get 0 end]] \
+		     [string tolower $f]]
+	if {$ind == -1} {
+	    $w.f2.family insert end $f
+	}
+    } while {$ind == -1}
+
+    $w.f2.family activate $ind
+    $w.f2.family selection clear 0 end
+    $w.f2.family selection set $ind
+    $w.f2.family see $ind
+
+    set fn [$w.f2.name get [$w.f2.name curselection]]
     font configure $fn -family $f
 }
 
 proc font_size_change {w s} {
-    set fn [$w.f2.name cget -text]
-    if {$s > 0} {
-	$w.f2.size configure -text "$s points"
-    } else {
-	$w.f2.size configure -text "[expr -$s] pixels"
-    }
-    font configure $fn -size $s
+    do {
+	set ind [lsearch -exact -integer [$w.f2.size get 0 end] $s]
+	if {$ind == -1} {
+	    $w.f2.size insert end $s
+	}
+    } while {$ind == -1}
+
+    $w.f2.size activate $ind
+    $w.f2.size selection clear 0 end
+    $w.f2.size selection set $ind
+    $w.f2.size see $ind
+
+    set fn [$w.f2.name get [$w.f2.name curselection]]
+    font configure $fn -size -[expr {abs($s)}]
 }
 
 proc font_style_change {w name var} {
-    set fn [$w.f2.name cget -text]
+    set fn [$w.f2.name get [$w.f2.name curselection]]
 
     global $var
     eval font configure $fn $name [set $var]
+}
+
+proc font_filter {w} {
+    global _font_metrics $w.f3.Fixed
+    update_font_metrics
+
+    $w.f2.family delete 0 end
+    foreach i [lsort [array names _font_metrics]] {
+	if {[set $w.f3.Fixed] && $_font_metrics($i) == 0} {
+	    continue
+	}
+	$w.f2.family insert end $i
+    }
 }
 
 proc SetFonts {{w .font_config}} {
@@ -51,8 +115,6 @@ proc SetFonts {{w .font_config}} {
 	if {[xtoplevel $w -resizable 0] == ""} return
 	wm title $w "Set fonts"
     }
-
-    set font_names [lsort [font families]]
 
     set old ""
     foreach i [font names] {
@@ -68,36 +130,45 @@ proc SetFonts {{w .font_config}} {
     pack $w.ok -side bottom -fill both
     set w $w.f
 
-    label $w.l1 -text "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    label $w.l2 -text "abcdefghijklmnopqrstuvwxyz"
-    label $w.l3 -text "01234567890!@#$%^&*()_-=_+"
+    frame $w.l -height 100 -width 400 -bd 1 -relief groove
+    pack propagate $w.l 0
+    label $w.l.l1 -text "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    label $w.l.l2 -text "abcdefghijklmnopqrstuvwxyz"
+    label $w.l.l3 -text "01234567890!@#$%^&*()_-=_+"
+    pack $w.l.l1 $w.l.l2 $w.l.l3
     set m [frame $w.f2]
 
-    xmenubutton $m.name -indicatoron 1 -text name -menu $m.name.m
-    xmenubutton $m.family -indicatoron 1 -text family -menu $m.family.m
-    xmenubutton $m.size -indicatoron 1 -text size -menu $m.size.m
+    frame $w.def
+    button $w.def.small -text "Default: small" -command "font_small $w"
+    button $w.def.large -text "Default: large" -command "font_large $w"
+    pack $w.def.small $w.def.large -side left -expand 1
 
-    menu $m.name.m -tearoff 0
+    listbox $m.name -yscrollcommand "$m.namey set" -exportselection 0
+    scrollbar $m.namey -orient vert -command "$m.name yview"
+    bind $m.name <<select>> "+%W activate \[%W index @%x,%y\]"
+    bind $m.name <<ListboxSelect>> \
+	"+font_name_change $w \[%W get active\];"
+    bind $m.name <Any-Enter> {focus %W}
     foreach i [font names] {
-	$m.name.m add command -label $i \
-		-command [list font_name_change $w $i]
+	$m.name insert end $i
     }
 
-    menu $m.family.m -tearoff 0
-    foreach i $font_names {
-	$m.family.m add command -label $i \
-		-command [list font_family_change $w $i]
-    }
+    listbox $m.family -yscrollcommand "$m.familyy set" -exportselection 0 \
+	-selectmode browse
+    scrollbar $m.familyy -orient vert -command "$m.family yview"
+    bind $m.family <<select>> "+%W activate \[%W index @%x,%y\]"
+    bind $m.family <<ListboxSelect>> \
+	"+font_family_change $w \[%W get active\];"
+    bind $m.family <Any-Enter> {focus %W}
 
-    menu $m.size.m -tearoff 0
-    for {set i 5} {$i < 16} {incr i} {
-	$m.size.m add command -label "$i pixels" \
-		-command [list font_size_change $w -$i]
-    }
-    $m.size.m add separator
-    for {set i 8} {$i < 20} {incr i} {
-	$m.size.m add command -label "$i points" \
-		-command [list font_size_change $w $i]
+    listbox $m.size -yscrollcommand "$m.sizey set" -exportselection 0 -width 10
+    scrollbar $m.sizey -orient vert -command "$m.size yview"
+    bind $m.size <<select>> "+%W activate \[%W index @%x,%y\]"
+    bind $m.size <<ListboxSelect>> \
+	"+font_size_change $w \[%W get active\];"
+    bind $m.size <Any-Enter> {focus %W}
+    for {set i 5} {$i <= 24} {incr i} {
+	$m.size insert end "$i"
     }
 
     frame $w.f3
@@ -109,16 +180,50 @@ proc SetFonts {{w .font_config}} {
 	-command [list font_style_change $w -slant $w.f3.Italic] \
 	-variable $w.f3.Italic \
 	-onvalue italic -offvalue roman
-    checkbutton $w.f3.overstrike -text "Overstrike" \
-	-command [list font_style_change $w -overstrike $w.f3.Overstrike] \
-	-variable $w.f3.Overstrike
+    checkbutton $w.f3.fixed -text "Fixed" \
+	-command [list font_filter $w] \
+	-variable $w.f3.Fixed
     checkbutton $w.f3.underline -text "Underline" \
 	-command [list font_style_change $w -underline $w.f3.Underline] \
 	-variable $w.f3.Underline
 
-    pack $w.l1 $w.l2 $w.l3 $w.f2 $w.f3 -side top
-    pack $m.name $m.family $m.size -side left
-    pack $w.f3.bold $w.f3.italic $w.f3.overstrike $w.f3.underline -side left
+    pack $m.name $m.namey $m.family $m.familyy $m.size $m.sizey \
+	-side left -fill both
+    pack $w.f3.bold $w.f3.italic $w.f3.fixed $w.f3.underline -side left
+    pack $w.def $w.l $w.f2 $w.f3  -side bottom -fill both
+    
+    $w.f2.name activate 0
+    $w.f2.name selection set 0
+    font_filter $w
+    font_name_change $w [lindex [font names] 0]
+}
+
+proc font_small {w} {
+    font configure menu_font         -family Helvetica -weight bold -size -12
+    font configure menu_title_font   -family Helvetica -weight bold -slant italic -size -12
+    font configure text_font         -family Courier -size -12
+    font configure button_font       -family Helvetica -weight bold -size -12
+    font configure listbox_font      -family Helvetica -weight bold -size -12
+    font configure title_font        -family Helvetica -size -16 -weight bold
+    font configure sheet_font        -family Fixed -size -20
+    font configure trace_font        -family Helvetica -size -12
+    font configure enzyme_font       -family Helvetica -size -11
+    font configure trace_conf_font   -family Helvetica -size -9
+
+    font_name_change $w [lindex [font names] 0]
+}
+
+proc font_large {w} {
+    font configure menu_font         -family Helvetica -weight bold -size -14
+    font configure menu_title_font   -family Helvetica -weight bold -slant italic -size -16
+    font configure text_font         -family Courier -size -16
+    font configure button_font       -family Helvetica -weight bold -size -15
+    font configure listbox_font      -family Helvetica -weight bold -size -16
+    font configure title_font        -family Helvetica -size -16 -weight bold
+    font configure sheet_font        -family Fixed -size -20
+    font configure trace_font        -family Helvetica -size -12
+    font configure enzyme_font       -family Helvetica -size -11
+    font configure trace_conf_font   -family Helvetica -size -9
 
     font_name_change $w [lindex [font names] 0]
 }
