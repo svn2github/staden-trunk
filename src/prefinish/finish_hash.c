@@ -298,6 +298,11 @@ double compare_primer(char *seq1, int len1, char *prim, int lprim,
     int allocated = 0;
     int i;
 
+    if (len1 < 4) {
+	/* shorter than word length => skip */
+	return 0;
+    }
+
     /* Pad strip */
     if (len1 > 8192) {
 	if (NULL == (tmp_buf = (char *)xmalloc(len1)))
