@@ -15,17 +15,23 @@ proc EnterTags {io} {
 
     getFname $t.file [keylget gap_defs ENTER_TAGS.FILENAME] load
 
+    xyn $t.unpadded \
+	-label "Unpadded tag positions?" \
+	-orient horiz \
+	-default 0
+
     okcancelhelp $t.ok \
-	-ok_command "EnterTags2 $io $t $t.file" \
+	-ok_command "EnterTags2 $io $t $t.file $t.unpadded" \
 	-cancel_command "destroy $t" \
 	-help_command "show_help gap4 {Enter Tags}" \
 	-bd 2 -relief groove
 
-    pack $t.file $t.ok -side top -fill both
+    pack $t.file $t.unpadded $t.ok -side top -fill both
 }
 
-proc EnterTags2 {io t file} {
+proc EnterTags2 {io t file unpadded} {
     if {[set name [entrybox_get $t.file.entry]] == ""} {bell; return}
+    set unpadded [$unpadded get]
     destroy $t
 
     if {![quit_displays $io "enter_tags"]} {
@@ -35,7 +41,7 @@ proc EnterTags2 {io t file} {
 
     SetBusy
     set tags [reformat_tag_file $io $name]
-    add_tags -io $io -tags $tags
+    add_tags -io $io -tags $tags -unpadded $unpadded
     ContigInitReg $io
     ClearBusy
 

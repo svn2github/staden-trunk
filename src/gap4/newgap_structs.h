@@ -264,6 +264,7 @@ typedef struct {
 typedef struct {
     GapIO *io;
     char *file;
+    int unpadded;
 } enter_tags_arg;
 
 typedef struct {
@@ -409,6 +410,7 @@ typedef struct {
 typedef struct {
     GapIO *io;
     char *tag_list;
+    int unpadded;
 } add_tags_arg;
 
 typedef struct {

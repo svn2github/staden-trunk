@@ -374,7 +374,8 @@ void insert_NEW_tag(GapIO *io, int N, int pos, int length, char *type,
  * Create a tag for a gel
  */
 void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
-			int *cache, int cache_len, int *cache_pos) {
+			int *cache, int cache_len, int *cache_pos,
+			int unpadded_tags) {
     char type[5], *comment;
     int start, end, strand, npos;
 
@@ -393,14 +394,12 @@ void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
     }
 
 
-#if 0
     /*
      * Tag is in depadded sequence. Convert to a padded coordinate.
      */
     if (unpadded_tags && gel > 0) {
 	GReadings r;
 
-	printf("=== gel %d start %d ===\n", gel, start);
 	gel_read(io, gel, r);
 	if (r.sequence) {
 	    char *seq;
@@ -416,29 +415,21 @@ void create_tag_for_gel(GapIO *io, int gel, int gellen, char *tag,
 		int j = r.sense ? r.length+1-i : i;
 		if (seq[i-1] == '*') {
 		    pads++;
+		    continue;
 		}
-		if (gel == 290)
-		    printf("%d %d %c\n", i, j, seq[i-1], pads);
 		if (j-pads == start) {
-		    if (gel == 290)
-			printf("start %d -> %d\n", start, start+pads);
 		    new_start = start + pads;
 		}
 		if (j-pads == end) {
-		    if (gel == 290)
-			printf("end %d -> %d\n", end, end+pads);
 		    new_end = end + pads;
 		}
 	    }
 
-	    printf("Gel %d, pos %d..%d becomes %d..%d\n",
-		   gel, start, end, new_start, new_end);
 	    start = new_start;
 	    end = new_end;
 	    xfree(seq);
 	}
     }
-#endif
 
 
 #if 0
@@ -554,7 +545,8 @@ char *get_comment(GapIO *io, comment_id cp)
 
 void tagfil_(f_int *relpg, f_int *lngthg, f_int *lnbr, f_int *rnbr,
 	     f_int *ngels, f_int *nconts, f_int *idbsiz,
-	     char *namarc, f_int *idev, f_int *verb, f_implicit l_namarc)
+	     char *namarc, f_int *idev, f_int *verb, f_int *unpadded_tags,
+	     f_implicit l_namarc)
 /*
  * Open up file namarc
  * For each reading ("ID" lines) create tags ("TG/TC" lines)
@@ -666,7 +658,8 @@ void tagfil_(f_int *relpg, f_int *lngthg, f_int *lnbr, f_int *rnbr,
 	    } while (cp);
 
 	    if (gel_num) {
-		create_tag_for_gel(io, gel_num, len, comment, NULL, 0, NULL);
+		create_tag_for_gel(io, gel_num, len, comment, NULL, 0, NULL,
+				   *unpadded_tags);
 		UpdateTextOutput();
 	    }
 	}

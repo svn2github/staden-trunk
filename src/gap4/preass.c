@@ -282,7 +282,7 @@ int add_reading(GapIO *io, SeqInfo *si, int contig, int position, int sense) {
     for(i = 0; i < exp_Nentries(si->e, EFLT_TG); i++) {
 	create_tag_for_gel(io, geln, si->length, 
 			   arr(char *, si->e->entries[EFLT_TG], i),
-			   NULL, 0, NULL);
+			   NULL, 0, NULL, 0);
     }
 
 

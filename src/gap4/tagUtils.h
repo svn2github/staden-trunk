@@ -131,7 +131,8 @@ extern int write_tag(GapIO *io, tag_id n, tagRecord t);
 extern tag_id get_free_tag(GapIO *io);
 extern void delete_tag_rec(GapIO *io, tag_id t);
 extern void create_tag_for_gel(GapIO *io, int gel, int gellen, char *line,
-			       int *cache, int cache_len, int *cache_pos);
+			       int *cache, int cache_len, int *cache_pos,
+			       int unpadded_tags);
 extern tagStruct *findPreviousTag(EdStruct *xx, int seq, tagStruct *tag);
 
 Array find_tags(GapIO *io, contig_list_t *contigs, int num_contigs,
@@ -278,7 +279,8 @@ extern f_proc_ret rmgtag_(f_int *handle, f_int *gel, f_int *lpos, f_int *rpos);
 
 void tagfil_(f_int *relpg, f_int *lngthg, f_int *lnbr, f_int *rnbr,
 	     f_int *ngels, f_int *nconts, f_int *idbsiz,
-	     char *namarc, f_int *idev, f_int *verb, f_implicit l_namarc);
+	     char *namarc, f_int *idev, f_int *verb, f_int *unpadded_tags,
+	     f_implicit l_namarc);
 void write_tags(GapIO *io, char *fname, int num_tags,
 		int *read1, int *pos1, int *read2, int *pos2, int *length);
 

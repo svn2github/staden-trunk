@@ -3448,8 +3448,9 @@ int EnterTags(ClientData clientData,
     enter_tags_arg args;
     GapIO *io;
     cli_args a[] = {
-	{"-io",	    ARG_IO,  1, NULL, offsetof(enter_tags_arg, io)},
-	{"-file",   ARG_STR, 1, NULL, offsetof(enter_tags_arg, file)},
+	{"-io",	      ARG_IO,  1, NULL, offsetof(enter_tags_arg, io)},
+	{"-file",     ARG_STR, 1, NULL, offsetof(enter_tags_arg, file)},
+	{"-unpadded", ARG_INT, 1, "0",  offsetof(enter_tags_arg, unpadded)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -3466,7 +3467,7 @@ int EnterTags(ClientData clientData,
     idbsiz = io_dbsize(io);
     tagfil_(&io_relpos(io,1), &io_length(io,1), &io_lnbr(io,1), &io_rnbr(io,1),
 	    &ngels, &nconts, &idbsiz, args.file, handle_io(io), NULL,
-	    strlen(args.file));
+	    &args.unpadded, strlen(args.file));
 
     return TCL_OK;
 }
@@ -3872,6 +3873,7 @@ int tcl_add_tags(ClientData clientData, Tcl_Interp *interp,
     cli_args a[] = {
 	{"-io",		ARG_IO,	 1, NULL, offsetof(add_tags_arg, io)},
 	{"-tags",	ARG_STR, 1, NULL, offsetof(add_tags_arg, tag_list)},
+	{"-unpadded",   ARG_INT, 1, "0",  offsetof(add_tags_arg, unpadded)},
 	{NULL,		0,	 0, NULL, 0}
     };
 
@@ -3929,7 +3931,7 @@ int tcl_add_tags(ClientData clientData, Tcl_Interp *interp,
 	    last = r;
 	}
 	create_tag_for_gel(args.io, r, gellen, tags[i]+n,
-			   cache, cache_len, &cache_pos);
+			   cache, cache_len, &cache_pos, args.unpadded);
     }
     if (cache)
 	xfree(cache);

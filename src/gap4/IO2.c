@@ -439,7 +439,7 @@ f_proc_ret stikit_(f_int *HANDLE,
     for(i=0;i<exp_Nentries(si->e,EFLT_TG);i++) {
 	create_tag_for_gel(io, (int)*NGEL, si->length, 
 			   arr(char *, si->e->entries[EFLT_TG], i),
-			   NULL, 0, NULL);
+			   NULL, 0, NULL, 0);
     }
 
     /*
