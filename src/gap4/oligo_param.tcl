@@ -382,7 +382,7 @@ proc select_oligo_params { f } {
 	wm title $f "Primer parameters"
     }
 
-    frame $f.tm -bd 2 -relief groove
+    frame $f.tm -bd 0 -relief groove
     label $f.tm.label -text [keylget gap_defs SUGGEST_PRIMERS.PARAMS.TM.NAME]
     entrybox $f.tm.min \
 	-default $pdefs(min_tm) \
@@ -405,7 +405,7 @@ proc select_oligo_params { f } {
     pack $f.tm.label -side left 
     pack $f.tm.max $f.tm.opt $f.tm.min -side right 
 
-    frame $f.length -bd 2 -relief groove
+    frame $f.length -bd 0 -relief groove
     label $f.length.label -text [keylget gap_defs SUGGEST_PRIMERS.PARAMS.LEN.NAME]
     entrybox $f.length.min \
 	-default $pdefs(min_len) \
@@ -428,7 +428,7 @@ proc select_oligo_params { f } {
     pack $f.length.label -side left
     pack $f.length.max $f.length.opt $f.length.min -side right 
 
-    frame $f.gc -bd 2 -relief groove
+    frame $f.gc -bd 0 -relief groove
     label $f.gc.label -text "GC content (%)"
     entrybox $f.gc.min \
 	-default $pdefs(min_gc) \
