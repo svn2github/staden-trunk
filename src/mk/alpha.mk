@@ -49,7 +49,7 @@ T = /usr/lib/lib
 
 F77=f77
 FLD_PROG=$(CC)
-F77_DEP=-lfor
+F77_DEP=
 
 EXTRA_LIBS += -ldnet_stub -lots -lmld
 
