@@ -1200,6 +1200,9 @@ static int is_edit(EdStruct *xx, int seq, int pos, int dir, int comp) {
 	    } else if (b1 != '*') {
 		vmessage("Base inserted (or changed from pad)\n");
 		return 1;
+	    } else if (b1 == '*' && (c1 == 0 || c1 == 100)) {
+		vmessage("Pad confidence changed\n");
+		return 1;
 	    }
 	}
     }
