@@ -266,6 +266,10 @@ void set_protein_lookup() {
     /* note also that protein_match is not used anywhere! */
 }
 
+int *get_protein_lookup(void) {
+    return protein_lookup;
+}
+
 /************************************************************/
 
 /*

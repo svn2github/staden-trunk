@@ -120,6 +120,7 @@ SEQ_UTILS_EXPORT int protein_lookup[256];
  * Initialise protein_lookup and protein_match arrays
  */
 void set_protein_lookup(void);
+int *get_protein_lookup(void);
 
 /*
  *
