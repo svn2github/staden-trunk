@@ -433,7 +433,7 @@ int add_reading(GapIO *io, SeqInfo *si, int contig, int position, int sense) {
 
 /* ------------------------ Fortran interface ------------------------------ */
 
-void update_fortran_arrays(int handle, 
+void update_fortran_arrays(GapIO *io,
 			   int *ngels, 
 			   int *nconts,
 			   int *idbsiz, 
@@ -443,20 +443,27 @@ void update_fortran_arrays(int handle,
 			   int *rnbr) 
 {
     int i;
-    GapIO *io;
+    GReadings r;
+    GContigs c;
     
-    if (NULL == (io = io_handle(&handle)))
-	return;
-
     *ngels = NumReadings(io);
     *nconts = NumContigs(io);
 
-    for (i = 1; i <= *ngels; i++)
-	readg_(&handle, &i, &relpg[i-1], &lngthg[i-1], &lnbr[i-1], &rnbr[i-1]);
+    for (i = 1; i <= *ngels; i++) {
+	gel_read(io, i, r);
+	io_relpos(io, i) = r.position;
+	io_length(io, i) = (r.sense == GAP_SENSE_REVERSE)
+	    ? -r.sequence_length
+	    : +r.sequence_length;
+	io_lnbr(io, i)   = r.left;
+	io_rnbr(io, i)   = r.right;
+    }
 
-    for (i = *idbsiz-*nconts; i <= *idbsiz-1; i++) {
-	int c = *idbsiz - i;
-	readc_(&handle, &c, &relpg[i-1], &lnbr[i-1], &rnbr[i-1]);
+    for (i = 1; i <= *nconts; i++) {
+	contig_read(io, i, c);
+	io_clength(io, i) = r.length;
+	io_clnbr(io, i)   = r.left;
+	io_crnbr(io, i)   = r.right;
     }
 }
 
@@ -487,7 +494,7 @@ pre_assemble(int handle,
 	verror(ERR_WARN, "enter_preassembled", "failed");
     }
     
-    update_fortran_arrays(handle, &ngels, &nconts, &idbsiz,
+    update_fortran_arrays(io, &ngels, &nconts, &idbsiz,
 			  relpg, lngthg, lnbr, rnbr);
 /*    
     dbchek_(handle, relpg, lngthg, lnbr, rnbr, idm, idbsiz, ngels, nconts,
@@ -522,7 +529,7 @@ f_proc_ret preass_(f_int *handle, f_int *ngels, f_int *nconts,
 	puts("Failed");
     }
 
-    update_fortran_arrays(handle, ngels, nconts, idbsiz,
+    update_fortran_arrays(io, ngels, nconts, idbsiz,
 			  relpg, lngthg, lnbr, rnbr);
     
     dbchek_(handle, relpg, lngthg, lnbr, rnbr, idm, idbsiz, ngels, nconts,
