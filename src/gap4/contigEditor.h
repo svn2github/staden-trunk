@@ -8,7 +8,7 @@
 
 extern int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino,
 		       int pos, float con_cut, int qual_cut,
-		       int reveal_cutoffs);
+		       int reveal_cutoffs, char *sets);
 extern int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2],
 		       int llino[2], int pos[2], float con_cut, int qual_cut);
 

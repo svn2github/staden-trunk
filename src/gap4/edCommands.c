@@ -401,7 +401,7 @@ static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
 	tmp = consensus_mode;
 	consensus_mode = sp_consensus_mode;
 	calc_consensus(0, i-width+1, i, CON_SUM, buffer, NULL, NULL, NULL,
-		       sp_consensus_cutoff, -1, contEd_info, (void *)DBI(xx));
+		       sp_consensus_cutoff, -1, contEd_info, (void *)xx);
 	consensus_mode = tmp;
 
 	for (j = width-1; j >= 0; j--) {

@@ -1049,8 +1049,8 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	    DBgetSequence(xx, seqList[k], pos-DB_RelPos(xx,seqList[k]),
 			  width, seq_str);
 	    /* FIXME: temporary hack */
-	    if (xx->group && xx->group[seqList[k]]) {
-		*seq_str = '0'+xx->group[seqList[k]];
+	    if (xx->set && xx->set[seqList[k]]) {
+		*seq_str = '0'+xx->set[seqList[k]];
 	    }
 	    ptr = seq_str;
 	}

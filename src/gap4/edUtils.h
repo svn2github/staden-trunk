@@ -437,6 +437,7 @@ extern void edJoinAlign(EdStruct *xx);
 extern void edSetActiveAnnos(EdStruct *xx, int argc, char **argv);
 extern void edSetMiniTraces(EdStruct *xx, int height);
 extern void edNextDifference(EdStruct *xx, int fwd);
+extern void edViewSet(EdStruct *xx, int set);
 extern int getQual(EdStruct *xx, int seq, int pos);
 extern int edDoSearch(EdStruct *xx, int forwards, int strand, char
 		      *type, char *value);

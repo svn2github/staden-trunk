@@ -95,9 +95,9 @@ proc JoinContig {io} {
 # part of a join editor (hence subtle changes such as the addition of a lock
 # button occur).
 #
-proc create_editor {w edname join reveal ccut qcut dbptr} {
+proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
     set ed     $w.$edname
-    global $ed.Repeater $ed.Reveal gap_defs db_namelen
+    global $ed.Repeater $ed.Reveal $ed.Tlist gap_defs db_namelen
     global licence
     global tk_utils_defs
     global $w.LREG
@@ -126,6 +126,7 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     set middle	$ed.middle
     set bottom	$ed.bottom
     set status  $w.status
+    set tabs    $ed.tabs
 
     set editor	$ed.seqs
     set names	$ed.names
@@ -141,6 +142,16 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     frame $middle -bd 0
     frame $bottom -bd 0
 
+    # The very top of the editor is now a tabset to give the feel of a tabbed
+    # notebook. We only have one editor, but the tabs switch between
+    # sequence sets
+    global $ed.Sets
+    set $ed.Sets $sets
+    if {[llength $sets]} {
+	set $ed.Tlist [editor_tabs_create $tabs $sets $editor]
+    } else {
+	set $ed.Tlist {}
+    }
 
     # TOP: On the left we have the confidence and quality cutoff adjusters.
     # On the right are a series of buttons
@@ -392,11 +403,11 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     pack $scrollx -in $middle -side left -fill both -expand 1
     frame $bottom.l -bd 0
     pack $bottom.l -in $bottom -side left -fill both
-    pack $namesx $names -in $bottom.l -side top -fill both
-    pack $editor  -in $bottom -side left -fill both -expand 1
+    pack $namesx $names -in $bottom.l -side top -fill x
+    pack $editor  -in $bottom -side left -anchor n -fill x -expand 1
     pack $scrolly -in $bottom -side right -fill both
 
-    pack $status -side bottom -fill both
+    pack $status -side bottom -fill both -expand 1
     pack $status.dummy -fill both
     place $status.l -relx 0
 
@@ -450,6 +461,9 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     bindtags $editor "$editor allfocus Editor all"
     bindtags $names  "$names allfocus EdNames all"
 
+    bind $editor <Alt-Key-Up> "$tabs prev"
+    bind $editor <Alt-Key-Down> "$tabs next"
+
     # Put a trace on variable NAMED ${editor}(tags) and use this to update
     # tag menus.
     global $editor.Tags
@@ -459,6 +473,86 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     after idle "catch {$names xview $ednames_scrollpos}"
 
     return "$editor $names"
+}
+
+proc create_editor_tabs_old {tabs sets editor} {
+    if {[xtoplevel $tabs -resizable 1] == ""} {return}
+    set tabs $tabs.t
+    iwidgets::tabset $tabs \
+	-tabpos n \
+	-command "$editor view_set"
+
+    set gnum 1
+    $tabs add -label All
+    foreach g $sets {
+	$tabs add -label $gnum
+	incr gnum
+    }
+
+    pack $tabs -side bottom -fill both -expand 1
+}
+
+proc editor_tabs_create {t sets editor} {
+    if {[xtoplevel $t -resizable 1] == ""} {return}
+    set l $t.list
+    tablelist $t.list \
+	-columns {0 "Set" 0 "No. seqs"} \
+	-labelcommand tablelist::sortByColumn \
+	-exportselection 0 \
+	-stretch 0 \
+	-selectmode extended \
+	-yscrollcommand [list $t.yscroll set]
+    $t.list columnconfigure 1 -sortmode integer
+
+    frame $t.buttons -bd 0
+    button $t.buttons.cancel \
+	-text "Cancel" \
+	-command "destroy $t"
+
+    button $t.buttons.help \
+	-text "Help" \
+	-command "show_help gap4 FIXME"
+
+    pack $t.buttons.cancel $t.buttons.help -side left -expand 1
+
+    # Add a scrollbar    
+    scrollbar $t.yscroll -command "$t.list yview"
+
+    grid columnconfigure $t 0 -weight 1
+    grid rowconfigure $t 0 -weight 1
+
+    grid $t.list $t.yscroll -sticky nsew
+    grid $t.buttons -sticky nsew
+
+    # Bindings
+    bind [$t.list bodypath] <<menu>> \
+	"puts foo"
+    bind [$t.list bodypath] <<select>> \
+	"editor_tabs_select $editor %W %x %y"
+
+    # Populate
+    editor_tabs_repopulate $t.list $sets
+
+    return $t.list
+}
+
+proc editor_tabs_repopulate {w sets} {
+    $w selection clear 0 end
+    $w delete 0 end
+
+    set gnum 1
+    $w insert end [list All 0]
+    foreach g $sets {
+	$w insert end [list $gnum [llength $g]]
+	incr gnum
+    }
+}
+
+proc editor_tabs_select {editor w x y} {
+    foreach {line char} [split [$w index @$x,$y] .] {}
+    set grp [lindex [$w get $line.0 $line.end] 0]
+    if {$grp == "All"} {set grp 0}
+    $editor view_set $grp
 }
 
 # Updates the commands menu Edit Tags and Delete Tags cascades so that the
@@ -989,16 +1083,6 @@ proc editor_quit {top ed e object} {
 	    return
 	}
     }
-
-# FIXME - why don't these exist?	
-#   unset $ed.Repeater
-#   unset $ed.Insert
-#   unset $ed.Superedit
-#   unset $ed.Reveal
-#   unset $ed.Disagreements
-#   unset $ed.CompareStrands
-#   unset $ed.DisplayTraces
-#   unset $ed.AutoSave
 
 #    destroy $top
 	$e quit
@@ -1674,6 +1758,9 @@ proc ednames_to_right {w seq_num} {
 proc ednames_menu {w x y X Y} {
     global licence
     set e [edname_to_editor $w]
+    set ed [winfo parent $e]
+    global $ed.Tlist
+    set tlist [set $ed.Tlist]
 
     # Sequence/consensus names
     set seq_num [$w get_number @$x @$y]
@@ -1794,6 +1881,19 @@ proc ednames_menu {w x y X Y} {
 	$w.m add separator
 	$w.m add command -label "Clear selection" \
 	    -command "editor_clearlist [editor_to_edname $e]"
+	$w.m add cascade -label "Move selection to..." \
+	    -menu $w.m.moveto
+	menu $w.m.moveto
+	$w.m.moveto add command -label All \
+	    -command "ed_move_set $e {$tlist} 0"
+	$w.m.moveto add command -label New \
+	    -command "ed_move_set $e {$tlist} +"
+	set gnum 1
+	foreach grp [set ::[editor_to_ed $e].Sets] {
+	    $w.m.moveto add command -label "Set $gnum" \
+		-command "ed_move_set $e {$tlist} $gnum"
+	    incr gnum
+	}
     }
 
     tk_popup $w.m [expr $X-20] [expr $Y-10]
@@ -1849,6 +1949,57 @@ proc ed_jointo_seq {e cnum1 name1 cnum2 name2} {
 	-reading1 $name1 \
 	-contig2 =$cnum2 \
 	-reading2 $name2 
+}
+
+# Function to move sequences between sets
+proc ed_move_set {e list grp} {
+    set ed [editor_to_ed $e]
+    set n [editor_to_edname $e]
+    global $ed.Sets $ed.Tlist
+    global $n.List
+
+    if {$list == ""} {
+	set $ed.Tlist [editor_tabs_create $ed.tabs "" $e]
+	set list [set $ed.Tlist]
+    }
+
+    if {[info exists $n.List]} {
+	set sel [ListGet [set $n.List]]
+    } else {
+	set sel [ListGet readings]
+    }
+
+    set sets [set $ed.Sets]
+
+    # Remove from current sets
+    set newsets ""
+    foreach g $sets {
+	foreach r $sel {
+	    set ind [lsearch $g $r]
+	    if {$ind >= 0} {
+		set g [lreplace $g $ind $ind]
+	    }
+	}
+	lappend newsets $g
+    }
+
+    # Move to new sets
+    if {$grp == "+"} {
+	lappend newsets $sel
+	set grp [llength $newsets]
+    } elseif {$grp != 0} {
+	set g [lindex $newsets [expr {$grp-1}]]
+	foreach r $sel {
+	    lappend g $r
+	}
+	set newsets [lreplace $newsets [expr {$grp-1}] [expr {$grp-1}] $g]
+    }
+
+    set $ed.Sets $newsets
+
+    # Update displays; both editor structure and tablelist
+    $e move_to_set $grp $sel
+    editor_tabs_repopulate $list $newsets
 }
 
 # Dialogue for setting a reference sequence
@@ -2265,6 +2416,7 @@ proc editor_change_consensus_algorithm {e w} {
 }
 
 proc save_editor_settings {e w} {
+    puts w=$w
     global gap_defs env
     global $w.ShowQuality $w.AminoMode $w.DisplayTraces $w.AutoSave
     global $w.SE_ins_read $w.SE_del_read $w.SE_ins_cons $w.SE_del_dash_cons

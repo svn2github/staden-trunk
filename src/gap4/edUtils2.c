@@ -1,10 +1,3 @@
-/*  Last edited: Jan  7 10:34 2004 (mng) */
-/* Search for FORIO for bits to fix */
-
-/* Separate out into private and non private functions */
-
-/* Mark other IO */
-
 #include <math.h>
 #include <stddef.h> /* 11/1/99 johnt - for size_t on WINNT */
 #include <ctype.h>
@@ -235,6 +228,8 @@ static void destroyEdStruct(EdStruct *xx) {
     if (xx->quality)
 	xfree(xx->quality);
 #endif
+    if (xx->set)
+	xfree(xx->set);
 
     semaphoreRelease(activeLock);
 }
@@ -341,6 +336,7 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->lines_per_seq = 1;
     xx->diff_trace_size = 0;
     xx->diff_qual = 0;
+    xx->set = NULL;
 
     /* Set all tags to be displayed by default */
     if (NULL == (xx->tag_list = (int *)xmalloc(tag_db_count * sizeof(int))))
@@ -521,7 +517,8 @@ void calculateConsensusLength(EdStruct *xx)
  * This is the contig editor version.
  */
 int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
-    DBInfo *db = (DBInfo *)mydata;
+    EdStruct *xx = (EdStruct *)mydata;
+    DBInfo *db = DBI(xx);
 
     switch (job) {
     case GET_SEQ:
@@ -568,11 +565,23 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	    int gel = 1;
 	    
 	    contig_info->length = _DB_Length(db, 0);
-	    do {
-	        contig_info->leftgel = gel;
-		gel = (_DBI_gelCount(db) == gel) ? 0 : gel + 1;
-	    } while (_DB_Flags(db, _DBI_order(db)[contig_info->leftgel])
-		     & DB_FLAG_INVIS);
+
+	    contig_info->leftgel = 0;
+	    for (gel = 1; gel <= _DBI_gelCount(db); gel = gel+1) {
+		/* Skip if it's "hidden" for disassembly */
+		if (_DB_Flags(db, _DBI_order(db)[gel]) & DB_FLAG_INVIS) {
+		    continue;
+		}
+
+		/* Skip if we're showing a set and it's not in this one */
+		if (xx->set && xx->curr_set &&
+		    xx->set[_DBI_order(db)[gel]] != xx->curr_set) {
+		    continue;
+		}
+
+		contig_info->leftgel = gel;
+		break;
+	    }
 
 	    return 0;
 	}
@@ -593,11 +602,24 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	    gel_info->as_double    = _DB_Flags (db, gelo) & DB_FLAG_TERMINATOR;
 	    gel_info->start	   = _DB_Start (db, gelo);
 	    gel_info->template     = _DB_Template(db, gelo);
-	    do {
-	        gel_info->next_right
-		    = (_DBI_gelCount(db) == gel) ? 0 : gel + 1;
-		gel = gel_info->next_right;
-	    } while (_DB_Flags(db, _DBI_order(db)[gel]) & DB_FLAG_INVIS);
+
+	    gel_info->next_right = 0;
+	    for (gel++; gel <= _DBI_gelCount(db); gel = gel+1) {
+		/* Skip if it's "hidden" for disassembly */
+		if (_DB_Flags(db, _DBI_order(db)[gel]) & DB_FLAG_INVIS) {
+		    continue;
+		}
+
+		/* Skip if we're showing a set and it's not in this one */
+		if (xx->set && xx->curr_set &&
+		    xx->set[_DBI_order(db)[gel]] != xx->curr_set) {
+		    continue;
+		}
+
+		gel_info->next_right = gel;
+		break;
+	    }
+
 	    return 0;
 	}
     case DEL_GEL_INFO:
@@ -646,7 +668,7 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 		       xx->con_cut,
 		       xx->consensus_mode ? xx->qual_cut : -1,
 		       contEd_info,
-		       (void *)DBI(xx));
+		       (void *)xx);
 	consensus_mode = tmp_mode;
 
 	for (i=0; i<width; i++) {
@@ -701,7 +723,7 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 				   xx->con_cut,
 				   xx->consensus_mode ? xx->qual_cut : -1,
 				   contEd_info,
-				   (void *)DBI(xx));
+				   (void *)xx);
 		    consensus_mode = tmp_mode;
 		    memcpy(str, xx->consensus, width);
 		    if (qual)
@@ -716,7 +738,7 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 				   xx->con_cut,
 				   xx->consensus_mode ? xx->qual_cut : -1,
 				   contEd_info,
-				   (void *)DBI(xx));
+				   (void *)xx);
 		    consensus_mode = tmp_mode;
 #ifdef CACHE_CONSENSUS_2
 		}
@@ -747,7 +769,7 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 			       dummy1, str, dummy2, qual,
 			       xx->con_cut,
 			       xx->consensus_mode ? xx->qual_cut : -1,
-			       contEd_info, (void *)DBI(xx));
+			       contEd_info, (void *)xx);
 		consensus_mode = tmp_mode;
 	    } else {
 		tmp_mode = consensus_mode;
@@ -756,7 +778,7 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 			       str, dummy1, qual, dummy2,
 			       xx->con_cut,
 			       xx->consensus_mode ? xx->qual_cut : -1,
-			       contEd_info, (void *)DBI(xx));
+			       contEd_info, (void *)xx);
 		consensus_mode = tmp_mode;
 	    }
 	    
@@ -782,7 +804,7 @@ void DBcalcDiscrepancies(EdStruct *xx,int pos, int width, float *qual)
 		   str, NULL, NULL, qual,
 		   xx->con_cut, 0,
 		   contEd_info,
-		   (void *)DBI(xx));
+		   (void *)xx);
     consensus_mode = tmp_mode;
     xfree(str);
 }
@@ -1214,6 +1236,20 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 	    switch(jdata->generic.task) {
 
 	    case TASK_EDITOR_GETCON: {
+		/* Find edstruct */
+		EdStruct *xx = NULL;
+		int x;
+
+		for (x = 0; x < MAX_DISP_PROCS; x++) {
+		    if ((void *)_DBI_dispFunc(db)[x] ==
+			(void *)db_callback_tk) {
+		        xx = (EdStruct *)(_DBI_dispData(db)[x]);
+			break;
+		    }
+		}
+		if (!xx)
+		    break;
+
 		/*
 		 * Returns con == NULL for failure.
 		 * Otherwise returns the excerpt of consensus between lreg
@@ -1233,7 +1269,7 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 
 		calc_consensus(0, tc->lreg, tc->rreg, CON_SUM, tc->con, NULL,
 			       NULL, NULL, tc->con_cut, tc->qual_cut,
-			       contEd_info, (void *)db);
+			       contEd_info, (void *)xx);
 		tc->con[tc->rreg] = 0;
 	    }
 	    }
@@ -1823,8 +1859,11 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 	    */
 
 	    if (p + DB_Length2(xx,DBI_order(xx)[i]) > pos &&
-		p < pos + width && DB_Length(xx, DBI_order(xx)[i]))
-		count++;
+		p < pos + width && DB_Length(xx, DBI_order(xx)[i]) &&
+		(!xx->set ||
+		 xx->curr_set == 0 ||
+		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
+		    count++;
 	}
     } else {
 	for (count=0 ;
@@ -1833,8 +1872,12 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 	     DB_RelPos(xx,DBI_order(xx)[i]) < (pos+width) ;
 	     i++) {
 	    if (DB_RelPos(xx,DBI_order(xx)[i]) +
-		DB_Length(xx,DBI_order(xx)[i]) > pos &&
-		DB_Length(xx,DBI_order(xx)[i])) count++;
+		     DB_Length(xx,DBI_order(xx)[i]) > pos &&
+		DB_Length(xx,DBI_order(xx)[i]) &&
+		(!xx->set ||
+		 xx->curr_set == 0 ||
+		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
+		count++;
 	}
     }
 
@@ -1869,8 +1912,12 @@ int linesOnScreen (EdStruct *xx, int pos, int width)
 	relPos = DB_RelPos(xx,DBI_order(xx)[i]) - len_lcut;
 	length = DB_Length(xx,DBI_order(xx)[i]) + len_lcut + len_rcut;
 
-        if (relPos < pos+width && relPos+length>pos)
-	    count++;
+        if (relPos < pos+width && relPos+length>pos) {
+	    if (!xx->set ||
+		xx->curr_set == 0 ||
+		(xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set))
+		count++;
+	}
     }
 
     count += xx->consensusDisplayed;
@@ -1894,6 +1941,37 @@ static void sort_seq_by_template(EdStruct *xx, int *list, int count) {
 	swaps = 0;
 	for (i = 0; i < count-1; i++) {
 	    if (DBI_DB(xx)[list[i]].template < DBI_DB(xx)[list[i+1]].template)
+	    {
+		int t;
+		t = list[i];
+		list[i] = list[i+1];
+		list[i+1] = t;
+		swaps = 1;
+	    }
+	}
+    } while (swaps);
+}
+
+/*
+ * Sorts a list of sequences so that sequences with the same grouping
+ * are next to each other.
+ * We use bubble sort here, despite inefficiencies, as it is a nice and
+ * easy "stable" sort. This allows us to firstly sort by strand so that
+ * the sequences within a set are also sorted by template and by +/-
+ * order.
+ */
+static void sort_seq_by_set(EdStruct *xx, int *list, int count) {
+    int i, swaps;
+
+    if (!xx->set)
+	return;
+
+
+    /* Trivial bubble sort */
+    do {
+	swaps = 0;
+	for (i = 0; i < count-1; i++) {
+	    if (xx->set[list[i]] > xx->set[list[i+1]])
 	    {
 		int t;
 		t = list[i];
@@ -2067,6 +2145,14 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
 	tmp_xx = xx;
 	qsort(list, count, sizeof(*list), qsort_seq_by_numeric);
 	break;
+
+    case SET:
+	/*
+	sort_seq_by_strand(xx, list, count);
+	sort_seq_by_template(xx, list, count);
+	*/
+	sort_seq_by_set(xx, list, count);
+	break;
     }
 
     /*
@@ -2115,7 +2201,10 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 	    */
 
 	    if (p + DB_Length2(xx,DBI_order(xx)[i]) > pos &&
-		p < pos + width && DB_Length(xx, DBI_order(xx)[i]))
+		p < pos + width && DB_Length(xx, DBI_order(xx)[i]) &&
+		(!xx->set ||
+		 xx->curr_set == 0 ||
+		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
 		DBI_list(xx)[count++]=DBI_order(xx)[i];
 	}
     } else {
@@ -2126,7 +2215,10 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 	     i++) {
 	    if (DB_RelPos(xx,DBI_order(xx)[i]) +
 		DB_Length(xx,DBI_order(xx)[i]) > pos &&
-		DB_Length(xx,DBI_order(xx)[i]))
+		DB_Length(xx,DBI_order(xx)[i]) &&
+		(!xx->set ||
+		 xx->curr_set == 0 ||
+		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
 		DBI_list(xx)[count++]=DBI_order(xx)[i];
 	}
     }
@@ -2168,7 +2260,10 @@ int *sequencesOnScreen(EdStruct *xx,int pos, int width)
 	length = DB_Length(xx,DBI_order(xx)[i]) + len_lcut + len_rcut;
 
         if (relPos < pos+width && relPos+length>pos) {
-	    DBI_list(xx)[count++]=DBI_order(xx)[i];
+	    if (!xx->set ||
+		xx->curr_set == 0 ||
+		(xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set))
+		DBI_list(xx)[count++]=DBI_order(xx)[i];
 	}
     }
 

@@ -2168,7 +2168,7 @@ static int edSetBriefContig(EdStruct *xx, int seq, char *format) {
 		calc_consensus(0, 1, DB_Length(xx, seq), CON_SUM,
 			       con, NULL, qual, NULL,
 			       xx->con_cut, xx->qual_cut,
-			       contEd_info, (void *)DBI(xx));
+			       contEd_info, (void *)xx);
 
 		nerrs = 0.0;
 		for (i = 0; i < DB_Length(xx, seq); i++) {
@@ -2598,7 +2598,7 @@ int edListConfidence(EdStruct *xx, int start, int end, int info_only) {
     /* Get the consensus along with the confidence values */
     calc_consensus(0, start, end, CON_SUM, con, NULL, qual, NULL,
 		   xx->con_cut, xx->qual_cut,
-		   contEd_info, (void *)DBI(xx));
+		   contEd_info, (void *)xx);
 
     for (i = 0; i < end - start + 1; i++) {
 	if (qual[i] < 0) qual[i] = 0;
@@ -2771,4 +2771,31 @@ void edNextDifference(EdStruct *xx, int fwd) {
 	xfree(con1);
     if (con2)
 	xfree(con2);
+}
+
+void edViewSet(EdStruct *xx, int set) {
+    xx->curr_set = set;
+    xx->refresh_flags |= ED_DISP_ALL;
+    redisplaySequences(xx, 0);
+}
+
+void edMoveSet(EdStruct *xx, int set_num, int nseqs, char **seqs) {
+    int i;
+
+    if (!xx->set) {
+	xx->set = (int *)xcalloc(DBI(xx)->DB_gelCount+1, sizeof(int));
+    }
+
+    for (i = 0; i < nseqs; i++) {
+	int rnum = get_gel_num(DBI_io(xx), seqs[i], GGN_ID);
+	if (rnum > 0)
+	    rnum = rnum_to_edseq(xx, rnum);
+	if (rnum > 0) {
+	    printf("%d %d->%d\n", rnum, xx->set[rnum], set_num);
+	    xx->set[rnum] = set_num;
+	}
+    }
+
+    xx->refresh_flags |= ED_DISP_ALL;
+    redisplaySequences(xx, 0);
 }

@@ -76,7 +76,8 @@ typedef enum {
     STRAND   = 2,
     CLONE    = 3,
     ALPHA    = 4,
-    NUMERIC  = 5
+    NUMERIC  = 5,
+    SET      = 6
 } editor_sort_t;
 
 typedef f_int tag_id;
@@ -306,6 +307,8 @@ typedef struct _EdStruct {
     int lines_per_seq;		/* (Height-1) of mini-traces */
     int diff_trace_size;	/* 0 == auto, N == from cursor +- N bases */
     int template_names;		/* 1 == template names instead of read names */
+    int *set;			/* Which subgroup/set the sequence is in */
+    int curr_set;		/* Currently viewed set. 0 = all */
 } EdStruct;
 
 

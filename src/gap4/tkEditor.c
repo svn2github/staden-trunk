@@ -2063,6 +2063,46 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	edNextDifference(ed->xx, 0);
 
+    } else if ('v' == *argv[1] && strcmp(argv[1], "view_set") == 0) {
+	int set;
+
+	if (argc != 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " view_set set_number\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &set);
+	edViewSet(ed->xx, set);
+
+    } else if ('m' == *argv[1] && strcmp(argv[1], "move_to_set") == 0) {
+	int set;
+	char **s_argv;
+	int s_argc;
+	int i;
+
+	if (argc < 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " move_to_set set_number ?seq ...?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &set);
+	if (Tcl_SplitList(interp, argv[3], &s_argc, &s_argv) != TCL_OK)
+	    goto fail;
+
+	printf("Set %d:\n", set);
+	for (i = 0; i < s_argc; i++) {
+	    printf("    +%s\n", s_argv[i]);
+	}
+	edMoveSet(ed->xx, set, s_argc, s_argv);
+
+	Tcl_Free((char *)s_argv);
+
     } else {
 	Tcl_AppendResult(interp, "bad option \"", argv[1], "\": must be FIXME",
 			 NULL);

@@ -30,6 +30,7 @@ typedef struct {
     GapIO *io;
     char *contig;
     char *reading;
+    char *sets;
     int pos;
     int reuse;
     int nojoin;
@@ -46,6 +47,7 @@ int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
 	{"-pos",     ARG_INT, 1, "1",  offsetof(ec_arg, pos)},
 	{"-reuse",   ARG_INT, 1, "0",  offsetof(ec_arg, reuse)},
         {"-nojoin",  ARG_INT, 1, "0",  offsetof(ec_arg, nojoin)},
+	{"-sets",    ARG_STR, 1, "",   offsetof(ec_arg, sets)},
 	{NULL,      0,       0, NULL, 0}
     };
 
@@ -77,7 +79,7 @@ int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
     }
     
     return edit_contig(interp, args.io, contig, reading, args.pos,
-		       consensus_cutoff, quality_cutoff, 0);
+		       consensus_cutoff, quality_cutoff, 0, args.sets);
 }
 
 typedef struct {
@@ -359,8 +361,35 @@ void db_callback_tk(void *xxv, int type, int seq, int pos, void *pointer) {
     }
 }
 
+static void add_sets(Tcl_Interp *interp, GapIO *io,
+		       EdStruct *xx, char *sets) {
+    char **argv;
+    int argc;
+    int i, j;
+
+    Tcl_SplitList(interp, sets, &argc, &argv);
+    for (i = 0; i < argc; i++) {
+	int nreads;
+	int *reads;
+	if (!xx->set) {
+	    xx->set = (int *)xcalloc(DBI(xx)->DB_gelCount+1, sizeof(int));
+	}
+	active_list_readings(io, argv[i], &nreads, &reads);
+
+	for (j = 0; j < nreads; j++) {
+	    int rnum = rnum_to_edseq(xx, reads[j]); /* SLOW */
+	    if (rnum > 0)
+		xx->set[rnum] = i+1;
+	}
+	xfree(reads);
+    }
+
+    Tcl_Free((char *)argv);
+}
+
 int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
-		float con_cut, int qual_cut, int reveal_cutoffs) {
+		float con_cut, int qual_cut, int reveal_cutoffs,
+		char *sets) {
     EdStruct *xx;
     char ccut[10], qcut[10], rev[10], *edname, dbptr[50];
     int i;
@@ -383,7 +412,8 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 			      " 0 ",               /* is not a join editor */
 			      rev, " ",            /* reveal cutoffs */
 			      ccut, " ", qcut, " ",
-			      dbptr,
+			      dbptr, " ",
+			      "{", sets, "}",
 			      NULL)) {
 	fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
     }
@@ -420,6 +450,7 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	return TCL_ERROR;
     }
 
+    add_sets(interp, io, xx, sets);
     xx->cursor->sent_by = DBI_registration_id(xx);
 
     xx->con_cut = con_cut;
