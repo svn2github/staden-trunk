@@ -816,6 +816,9 @@ tagStruct *DBgetTags (DBInfo *db, int seq)
     /* already in memory? */
     if (_DB_Flags(db,seq) & DB_FLAG_TAG_IN_MEMORY)
 	return (tagStruct *)_DB_Tags(db,seq);
+
+    /* ensure seq is loaded */
+    DBgetSeq(db, seq);
     
     /* read in tag list */
     i = _DB_Number(db,seq);
@@ -1920,7 +1923,7 @@ int onScreen (EdStruct *xx, int seq, int pos, int *wrong_x)
      */
     seqList = sequencesOnScreen(xx,xx->displayPos, xx->displayWidth);
     for(screenRow=xx->displayYPos;
-	screenRow < xx->displayHeight/xx->lines_per_seq + xx->displayYPos-1 &&
+	screenRow < xx->displayHeight/xx->lines_per_seq + xx->displayYPos-2 &&
 	seqList[screenRow] != seq;
 	screenRow++);
     if (seqList[screenRow] != seq && seq != 0) {
@@ -2267,12 +2270,12 @@ void showCursor(EdStruct *xx, int seq, int pos)
 	} else {
 	    /* Below */
 	    for (screenRow = xx->displayHeight/xx->lines_per_seq
-		     + xx->displayYPos;
+		     + xx->displayYPos - 1;
 		 seqList[screenRow] != 0 && seqList[screenRow] != seq;
 		 screenRow++);
 	    if (seqList[screenRow] != 0) {
 		xx->displayYPos =
-		    (screenRow - (xx->displayHeight/xx->lines_per_seq - 1));
+		    (screenRow - (xx->displayHeight/xx->lines_per_seq - 2));
 	    }
 	}
 
