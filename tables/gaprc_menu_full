@@ -404,6 +404,8 @@ add_check	{Settings.Show edits}			1 0 {$w.ShowEdits} \
 	{$e show_edits \[set $w.ShowEdits\]}
 add_check	{Settings.Show Unpadded Positions}	1 0 {$w.ShowUnpadded} \
 	{$e set_unpadded_ruler}
+add_check	{Settings.Show Template Names}		1 0 {$w.TemplateNames} \
+	{$e show_template_names -1}
 add_command	{Settings.Set Active Tags}		1 0 \
 	{editor_setannos $e $e.select_tags}
 add_command	{Settings.Set Output List}		1 0 \
