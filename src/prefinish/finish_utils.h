@@ -67,7 +67,7 @@ void complement_seq_qual_mapping(int len, char *seq, float *qual, int *map);
  * 	vector present.
  */
 void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
-			 int svec_also);
+			 int svec_also, int min_length);
 
 /*
  * Clip suggested start and end points for new sequences based on the known
@@ -78,11 +78,13 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
  *	s_start		Current suggestion for new sequence start in contig
  *	s_end		Current suggestion for new sequence end in contig
  *	rnum		Reading number to compare against
+ *	min_length	Minimum length of SVEC tag to consider it to be valid
  *
  * Returns:
  *	Void return, but updates s_start and s_end.
  */
-void finish_clip_svec(GapIO *io, int *s_start, int *s_end, int rnum);
+void finish_clip_svec(GapIO *io, int *s_start, int *s_end, int rnum,
+		      int min_length);
 
 /*
  * Finds the readings covering a specific consensus base

@@ -177,7 +177,7 @@ void complement_seq_qual_mapping(int len, char *seq, float *qual, int *map) {
  * 	vector present.
  */
 void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
-			 int svec_also) {
+			 int svec_also, int min_length) {
     int gel;
     int cvec_l = 0, cvec_r = 0;
     char *tag_types[] = {"CVEC", "SVEC"};
@@ -199,7 +199,7 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
 		 ? r.length - (a->length + a->position - 1)
 		 : a->position - 1);
 
-	    if (start <= 5) {
+	    if (start <= 5 && a->length >= min_length) {
 		cvec_l = 1;
 		break;
 	    }
@@ -256,7 +256,8 @@ void find_cloning_vector(GapIO *io, int contig, int *left, int *right,
  * Returns:
  *	Void return, but updates s_start and s_end.
  */
-void finish_clip_svec(GapIO *io, int *s_start, int *s_end, int rnum) {
+void finish_clip_svec(GapIO *io, int *s_start, int *s_end, int rnum,
+		      int min_length) {
     char *tag_types[] = {"SVEC"};
     GAnnotations *a;
     GReadings r;
@@ -266,6 +267,12 @@ void finish_clip_svec(GapIO *io, int *s_start, int *s_end, int rnum) {
     a = vtagget(io, rnum, 1, tag_types);
     while (a && a != (GAnnotations *)-1) {
 	int start, end;
+
+	if (a->length < min_length) {
+	    /* Skip if this is a very short vector tag */
+	    a = vtagget(io, 0, 1, tag_types);
+	    continue;
+	}
 
 	start = r.position - r.start +
 	    (r.sense
