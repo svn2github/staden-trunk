@@ -119,7 +119,8 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 	s_end = s_end2;
 
 	/* Adjust expected sequence length based on vector tags */
-	finish_clip_svec(fin->io, &s_start, &s_end, rnum);
+	finish_clip_svec(fin->io, &s_start, &s_end, rnum,
+			 fin->opts.min_vector_len);
 
 	if (fin->opts.debug[EXPERIMENT_RESEQ])
 	    printf("read %c%d (%d): %d-%d\n",
