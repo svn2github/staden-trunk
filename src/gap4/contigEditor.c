@@ -1,3 +1,4 @@
+/*  Last edited: Jan  7 10:35 2004 (mng) */
 #include <tk.h>
 
 #include "io-reg.h"
@@ -31,6 +32,7 @@ typedef struct {
     char *reading;
     int pos;
     int reuse;
+    int nojoin;
 } ec_arg;
 
 int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
@@ -43,6 +45,7 @@ int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
 	{"-reading", ARG_STR, 1, "",   offsetof(ec_arg, reading)},
 	{"-pos",     ARG_INT, 1, "1",  offsetof(ec_arg, pos)},
 	{"-reuse",   ARG_INT, 1, "0",  offsetof(ec_arg, reuse)},
+        {"-nojoin",  ARG_INT, 1, "0",  offsetof(ec_arg, nojoin)},
 	{NULL,      0,       0, NULL, 0}
     };
 
@@ -60,17 +63,19 @@ int tk_edit_contig(ClientData clientData, Tcl_Interp *interp,
 	reading = io_clnbr(args.io, contig);
 
     if (args.reuse) {
-	int id;
+      int id;
+      
+      if (-1 != (id = editor_available(contig, args.nojoin))) {
+        if (*args.reading)
+          move_editor(id, reading, args.pos);
+        else
+          move_editor(id, 0, args.pos);
 
-	if (-1 != (id = editor_available(contig, 0))) {
-	    if (*args.reading)
-		move_editor(id, reading, args.pos);
-	    else
-		move_editor(id, 0, args.pos);
-	    return TCL_OK;
-	}
+        Tcl_SetResult(interp, Tk_PathName(EDTKWIN(editor_id_to_edstruct(id)->ed)), NULL);
+        return TCL_OK;
+      }
     }
-
+    
     return edit_contig(interp, args.io, contig, reading, args.pos,
 		       consensus_cutoff, quality_cutoff, 0);
 }
@@ -482,6 +487,9 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	sprintf(c_io, "%d", *handle_io(io));
 	Tcl_VarEval(interp, "SelectReadingList ", c_io, NULL);
     }
+
+    Tcl_SetResult(interp, Tk_PathName(EDTKWIN(xx->ed)), NULL);
+
     return TCL_OK;
 }
 

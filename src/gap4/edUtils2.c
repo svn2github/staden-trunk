@@ -1,3 +1,4 @@
+/*  Last edited: Jan  7 10:34 2004 (mng) */
 /* Search for FORIO for bits to fix */
 
 /* Separate out into private and non private functions */
@@ -104,6 +105,10 @@ int valid_consensus(EdStruct *xx, int from, int to) { return 0; }
  */
 int edused[MAXEDSTATES] = {0};
 EdStruct edstate[MAXEDSTATES] = {0};
+
+EdStruct *editor_id_to_edstruct(int id) {
+    return &edstate[id];
+}
 
 int editor_available(int contig, int nojoin) {
     int j;

@@ -1,3 +1,4 @@
+/*  Last edited: Jan  7 11:56 2004 (mng) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <tcl.h>
@@ -5178,6 +5179,7 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "save_contig_order", tcl_save_contig_order,
 		      (ClientData) NULL,
 		      NULL);
+    
 #if 0
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
 			 (ClientData) NULL, NULL);

@@ -1,3 +1,4 @@
+/*  Last edited: Jan  7 10:34 2004 (mng) */
 /*
  * File: edUtils.h
  * Version:
@@ -439,6 +440,7 @@ void status_strand(EdStruct *xx, int pos, int width,
 void front_editor(EdStruct *xx);
 int move_editor(int id, int seq, int pos);
 int editor_available(int contig, int nojoin);
+EdStruct *editor_id_to_edstruct(int id);
 
 void setDisplayPosP(EdStruct *xx, int pos);
 void setDisplayPos(EdStruct *xx, int pos);

@@ -245,3 +245,5 @@ set auto_index(EventHandler) [list source [file join $dir sendto.tcl]]
 set auto_index(ListConfidence) [list source [file join $dir qual.tcl]]
 
 set auto_index(prefinish) [list source [file join $dir gap_prefinish.tcl]] 
+
+set auto_index(ViewNavigationData) [list source [file join $dir gap_nav.tcl]] 
