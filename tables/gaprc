@@ -68,7 +68,7 @@ set_def TAG_BRIEF_FORMAT  \
 	{Tag type:%t   Direction:%d   Comment:"%.100c"}
 
 set_def READ_BRIEF_FORMAT  \
-	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P   %c}
+	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P  Tstat:%Tc %c}
 
 set_def CONTIG_BRIEF_FORMAT  \
 	{Contig:%n(#%Rn)   Length:%l   %c}
@@ -135,6 +135,11 @@ set_def CONTIG_EDITOR.EDIT_DEL_COLOUR	"red"
 set_def CONTIG_EDITOR.EDIT_BASE_COLOUR	"#ff9090"
 set_def CONTIG_EDITOR.EDIT_PAD_COLOUR	"#90ee90"
 set_def CONTIG_EDITOR.EDIT_CONF_COLOUR	"#6060ff"
+
+set_def CONTIG_EDITOR.TEMP_DIST_COLOUR    "#bbbbbb"
+set_def CONTIG_EDITOR.TEMP_STRAND_COLOUR  "#FF3939"
+set_def CONTIG_EDITOR.TEMP_PRIM_COLOUR    "#5959FF"
+set_def CONTIG_EDITOR.TEMP_OTHER_COLOUR   "#555555"
 
 #set_def CONTIG_EDITOR.QUAL0_COLOUR	"#494949"
 #set_def CONTIG_EDITOR.QUAL1_COLOUR	"#595959"
