@@ -916,9 +916,14 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 	if (t->end2 > t->min)
 	    t->end2 = t->min;
     }
-    t->computed_length = ABS(MAX(t->end, t->end2) - MIN(t->start, t->start2));
+    t->computed_length = MAX(t->end, t->end2) - MIN(t->start, t->start2);
+    if (t->direction == 1)
+	t->computed_length *= -1;
 
     if (t->computed_length > te.insert_length_max * template_size_tolerance)
+	t->consistency |= TEMP_CONSIST_DIST;
+
+    if (t->computed_length < te.insert_length_min / template_size_tolerance)
 	t->consistency |= TEMP_CONSIST_DIST;
 
     if (!(t->flags & TEMP_FLAG_SPANNING) ||
@@ -1029,10 +1034,10 @@ void check_template_length_overlap(GapIO *io, template_c *t,
     length = -1;
     if (!(f1 & TEMP_FLAG_GUESSED_START) &&
 	!(f2 & TEMP_FLAG_GUESSED_END)) {
-	length = ABS(c2_end - c1_start);
+	length = t->direction ? c1_start - c2_end : c2_end - c1_start;
     } else if (!(f1 & TEMP_FLAG_GUESSED_END) &&
 	       !(f2 & TEMP_FLAG_GUESSED_START)) {
-	length = ABS(c1_end - c2_start);
+	length = t->direction ? c2_start - c1_end : c1_end - c2_start;
     }
 
     /* Check validity of length */

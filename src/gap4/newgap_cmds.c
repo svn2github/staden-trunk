@@ -1122,10 +1122,10 @@ PrintTemplateReadings(ClientData clientData,
 
 	if (t->flags & (TEMP_FLAG_GUESSED_START | TEMP_FLAG_GUESSED_END)) {
 	    sprintf(tmp, "estimated length        %d\n",
-		    ABS(t->end - t->start));
+		    t->direction ? t->start - t->end : t->end - t->start);
 	} else {
 	    sprintf(tmp, "observed length         %d\n",
-		    ABS(t->end - t->start));
+		    t->direction ? t->start - t->end : t->end - t->start);
 	}
 	Tcl_DStringAppend(&str, tmp, -1);
 

@@ -635,7 +635,7 @@ static void do_report(GapIO *io, template_c **tarr, int *order) {
 
 	if (mode == NULL) {
 	    mode = (tc->flags & TEMP_FLAG_EXPECTED) ? "expected" : "observed";
-	    length = ABS(tc->end - tc->start);
+	    length = tc->direction ? tc->start - tc->end : tc->end - tc->start;
 	}
 
 	/* Template line */
