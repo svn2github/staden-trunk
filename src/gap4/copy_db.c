@@ -345,21 +345,26 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 	if (note_write(iot, i + start_n, nt) && errs) goto error;
     }
     /* Join free lists */
-    if (iot->db.free_notes) {
-	int note;
+    if (iot->db.free_notes && iof->db.free_notes) {
+	int note, next;
 
-	if (note = iof->db.free_notes) {
-	    for (;;) {
-		note_read(iof, note, n);
-		if (!n.next)
-		    break;
-		note = n.next;
-	    }
-	    n.next = iot->db.free_notes;
-	    note_write(iot, note + start_n, n);
-	    iot->db.free_notes = iof->db.free_notes + start_n;
-	}
+	/* Find last note in free list */
+	for (note = iot->db.free_notes;
+	     note_read(iot, note, n), n.next;
+	     note = n.next)
+	    ;
+
+	/* And then join forward... */
+	next = n.next = iof->db.free_notes + start_n;
+	note_write(iot, note, n);
+
+	/* ...and backward */
+	note_read(iot, next, n);
+	n.prev = note;
+	n.prev_type = GT_Notes;
+	note_write(iot, next, n);
     } else {
+	/* No notes in "io_to", so copy value from "io_from". */
 	if (iof->db.free_notes)
 	    iot->db.free_notes = iof->db.free_notes + start_n;
     }
