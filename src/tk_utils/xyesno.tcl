@@ -40,9 +40,9 @@ namespace eval ::Widget::Xyn {;
     variable $w
     upvar 0 $w data
 
-    pack $data(xlabel) -side left -fill both
-    pack $data(yes)    -side left -fill both
-    pack $data(no)     -side left -fill both
+    pack $data(xlabel) -side left  -fill both
+    pack $data(no)     -side right -fill both
+    pack $data(yes)    -side right -fill both
     set data(Var) 1
     set data(VarName) ${w}(Var)
 }
