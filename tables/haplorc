@@ -3,3 +3,4 @@ add_command {View.SNP candidates} 8 10 {CandidateSNPs \$io}
 
 set_def CANDIDATE_SNPS.WIN .snps
 set_def CANDIDATE_SNPS.foo bar
+set_def CURSOR_COLOURS {blue orange4 green3 red hotpink}
