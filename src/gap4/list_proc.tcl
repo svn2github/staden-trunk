@@ -999,8 +999,26 @@ proc InitReadingList { } {
 
 #result of trace on NGList(readings)
 #HACK with global io but I can't see an easier way of solving this yet
+proc UpdateReadingDisplays_disable {} {
+    global NGList_urd
+    set NGList_urd 0
+}
+
+proc UpdateReadingDisplays_enable {} {
+    global NGList_urd
+    set NGList_urd 1
+}
+
+set NGList_urd 1
+
 proc UpdateReadingDisplays {args} {
-    global NGList r_list io
+    global NGList r_list io NGList_urd
+
+    # Optimisation for when this gets triggered LOTS of times, eg
+    # when adding many many items to the readings list.
+    if {!$NGList_urd} {
+	return
+    }
 
     PruneReadingList
 
@@ -1059,14 +1077,14 @@ proc GetReadingList { } {
 proc UpdateReadingListItem { r_name highlight} {
     global r_list NGList NGListTag
 
-    set r_list $NGList(readings)
     if {$highlight} {
-	lappend r_list $r_name
+	lappend NGList(readings) $r_name
     } else {
+	set r_list $NGList(readings)
 	set pos [lsearch -exact $r_list $r_name]
 	set r_list [lreplace $r_list $pos $pos]
+	ListCreate2 readings $r_list $NGListTag(readings)
     }
-    ListCreate2 readings $r_list $NGListTag(readings)
 }
 
 proc SetReadingList { list } {

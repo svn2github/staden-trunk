@@ -1146,7 +1146,7 @@ proc editor_setlist2 {t l_var l_name} {
 proc editor_addlist {n x y} {
     global $n.List
 
-    $n highlight -1 $y
+    set highlighted [$n highlight -1 $y]
 
     # Get reading name
     if {[set num [$n get_number $x $y]] != "" && "$num" != 0} {
@@ -1162,13 +1162,18 @@ proc editor_addlist {n x y} {
 
     # Add name to list
     if {[info exist $n.List]} {
-        ListAppend [set $n.List] [lindex $name 1]
+	if {$highlighted} {
+	    editor_addlist_read $n [lindex $name 1]
+	} else {
+	    editor_dellist_read $n [lindex $name 1]
+	}
     }
 }
 
 # Adds to the active list one or more sequence names
 proc editor_addlist_read {n names} {
     global $n.List
+    UpdateReadingDisplays_disable
     if {[info exist $n.List]} {
 	ListAppend [set $n.List] $names
 	foreach name $names {
@@ -1179,10 +1184,13 @@ proc editor_addlist_read {n names} {
 	    $n highlight 1 =$name
 	}
     }
+    UpdateReadingDisplays_enable
+    UpdateReadingDisplays
 }
 
 proc editor_dellist_read {n names} {
     global $n.List
+    UpdateReadingDisplays_disable
     if {[info exist $n.List]} {
 	ListSubtract [set $n.List] $names
 	foreach name $names {
@@ -1193,6 +1201,8 @@ proc editor_dellist_read {n names} {
 	    $n highlight 0 =$name
 	}
     }
+    UpdateReadingDisplays_enable
+    UpdateReadingDisplays
 }
 
 # As editor_addlist_read, but it takes a set of {name contig} pairs as the
@@ -1489,6 +1499,21 @@ proc editor_trace_config {e w} {
 }
 
 #
+# Given a sequence number, this returns a list of sequence names starting
+# at that sequence number and chaining right.
+#
+proc ednames_to_right {w seq_num} {
+    set names [$w get_names_to_right $seq_num]
+    set rnames ""
+    foreach n $names {
+	lappend rnames [lindex $n 1]
+    }
+
+    return $rnames
+}
+
+
+#
 # Pops up a list of commands to run on a status line
 #
 proc ednames_menu {w x y X Y} {
@@ -1538,9 +1563,15 @@ proc ednames_menu {w x y X Y} {
 	$w.m add command -label "Select this reading" \
 	    -command "editor_addlist_read [editor_to_edname $e] \
                       [lindex $name 1]"
+	$w.m add command -label "Select this reading and all to right" \
+	    -command "editor_addlist_read [editor_to_edname $e] \
+                      \[ednames_to_right $w $seq_num\]"
 	$w.m add command -label "Deselect this reading" \
 	    -command "editor_dellist_read [editor_to_edname $e] \
                       [lindex $name 1]"
+	$w.m add command -label "Deselect this reading and all to right" \
+	    -command "editor_dellist_read [editor_to_edname $e] \
+                      \[ednames_to_right $w $seq_num\]"
 	$w.m add command -label "Select readings on this template" \
 	    -command "editor_addlist_template [editor_to_edname $e] \
                       [list $tseqs]"
@@ -1568,8 +1599,10 @@ proc ednames_menu {w x y X Y} {
 
 	if {$licence(type) == "f"} {
 	    $w.m add separator
-	    $w.m add command -label "Remove reading" \
+	    $w.m add command -label "Remove reading (this only)" \
 		-command "$e hide_read $seq_num"
+	    $w.m add command -label "Remove reading and all to right" \
+		-command "$e hide_read -$seq_num"
 	}
 	$w.m add separator
 	$w.m add command -label "Clear selection" \
@@ -2292,7 +2325,8 @@ bind Editor <<copy>>		{
 }
 bind Editor <<paste>>		{break;}
 
-bind EdNames <<select>>		{%W highlight -1 @%x @%y}
+#bind EdNames <<select>>		{%W highlight -1 @%x @%y}
+bind EdNames <<select>>		{editor_addlist %W @%x @%y}
 bind EdNames <<move>>		{editor_addlist %W @%x @%y}
 bind EdNames <<copy>>		{copy_name %W @%x @%y}
 bind EdNames <<menu>>		{ednames_menu %W %x %y %X %Y}
