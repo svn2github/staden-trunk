@@ -934,6 +934,177 @@ void difference_clip(GapIO *io, int num_contigs, contig_list_t *cl,
 }
 
 /*
+ * Starting from the left end, this identifies the point at which the
+ * average quality (over win_len bases) is >= avg_qual. This base number is
+ * returned.
+ * Returns -1 for failure.
+ */
+static int avg_clip(GapIO *io, int1 *conf, int conf_len,
+		    int win_len, int avg_qual) {
+    int total, qual_tot;
+    int win_len2;
+    int i, i_end;
+
+    /* Win_len should be an odd number */
+    if ((win_len & 1) == 0)
+	win_len |= 1;
+    win_len2 = win_len/2;
+
+    if (conf_len <= win_len)
+	return -1;
+
+    total = 0;
+    for (i = 0; i < win_len; i++)
+	total += conf[i];
+    qual_tot = avg_qual * win_len;
+
+    if (total >= qual_tot)
+	return -1;
+
+    i_end = conf_len - win_len2 - 1;
+    i = win_len2 + 1;
+    do {
+	total += conf[i + win_len2] - conf[i - win_len2 - 1];
+	i++;
+    } while (total < qual_tot && i < i_end);
+    i--;
+
+    if (win_len > 5) {
+	int c = avg_clip(io, &conf[i - win_len/2],
+			 win_len*2+1, win_len-2, avg_qual);
+	if (c != -1)
+	    i = i-win_len/2 + c;
+    }
+    
+    return i;
+}
+
+/*
+ * Clips the contig end back based on an average quality value.
+ * We only look for the leftmost and rightmost reading. The furthest these
+ * can be clipped back is to where the next reading is found (ie depth=2).
+ */
+void quality_clip_ends(GapIO *io, int contig, int avg_qual)
+{
+    int rnum, rnum1, rnum2;
+    int rpos1, rpos2;
+    GReadings r;
+    int1 *conf = 0;
+    int conf_len;
+    int clip;
+    int i;
+    int win_len = 31;
+
+    printf("\n=== CONTIG %d ===\n", contig);
+
+    /* --- Left end --- */
+    /* Identify 2 leftmost sequences */
+    rnum1 = io_clnbr(io, contig);
+    rnum2 = io_rnbr(io, rnum1);
+    printf("Leftmost read=%d & %d\n", rnum1, rnum2);
+
+    /* Load confidence */
+    gel_read(io, rnum1, r);
+    if (NULL == (conf = (int1 *)xcalloc(r.length, sizeof(*conf))))
+	return;
+    conf_len = r.length;
+    if (DataRead(io, r.confidence, conf, r.length * sizeof(*conf),
+		 sizeof(*conf)))
+	return;
+
+    /* Clip sequence */
+    clip = avg_clip(io, conf, conf_len, win_len, avg_qual)+2;
+    if (clip-2 != -1 && clip > r.start && rnum2) {
+	int apos = r.position - r.start + clip;
+	printf("1clip = %d (abs %d)\n", clip, apos);
+	if (apos > io_relpos(io, rnum2)) {
+	    clip -= apos - io_relpos(io, rnum2);
+	    apos = r.position - r.start + clip;
+	    printf("2clip = %d (abs %d)\n", clip, apos);
+	}
+
+	r.position = r.position - r.start + clip;
+	r.start = clip;
+	r.sequence_length = r.end - r.start - 1;
+	io_relpos(io, rnum1) = r.position;
+	io_length(io, rnum1) = r.sequence_length * (r.sense ? -1 : 1);
+	gel_write(io, rnum1, r);
+    }
+    xfree(conf);
+
+
+    /* --- Right end --- */
+    rnum1 = rnum = io_crnbr(io, contig);
+    gel_read(io, rnum, r);
+    rpos1 = r.position + r.sequence_length-1;
+    rpos2 = 0;
+    rnum2 = 0;
+
+    /* Identify 2 rightmost sequences */
+    while (rnum = io_lnbr(io, rnum)) {
+	gel_read(io, rnum, r);
+	/*
+	 * Optimisation - REAL traces are not (yet) going to be longer than
+	 * 2Kb, so stop looking at that point.
+	 */
+	if (io_clength(io, contig) - r.position >= 2000)
+	    break;
+
+	if (rpos1 <= r.position + r.sequence_length-1) {
+	    rpos1  = r.position + r.sequence_length-1;
+	    rnum2 = rnum1;
+	    rpos2 = rpos1;
+	    rnum1 = rnum;
+	} else if (rpos2 < r.position + r.sequence_length-1) {
+	    rpos2 = r.position + r.sequence_length-1;
+	    rnum2 = rnum;
+	}
+    }
+	
+    printf("Rightmost read=%d & %d\n", rnum1, rnum2);
+
+    /* Load and reverse confidence array */
+    gel_read(io, rnum1, r);
+    if (NULL == (conf = (int1 *)xcalloc(r.length, sizeof(*conf))))
+	return;
+    conf_len = r.length;
+    if (DataRead(io, r.confidence, conf, r.length * sizeof(*conf),
+		 sizeof(*conf)))
+	return;
+    for (i = 0; i < r.length/2; i++) {
+	int tmp;
+	tmp = conf[i];
+	conf[i] = conf[r.length-i];
+	conf[r.length-i] = tmp;
+    }
+
+    /* Compute clip point (in original orientation) */
+    clip = avg_clip(io, conf, conf_len, win_len, avg_qual);
+    if (clip != -1)
+	clip = r.length - clip;
+
+    /* Clip */
+    if (clip != -1 && ++clip < r.end && rnum2) {
+	int apos = r.position - r.start + clip;
+	printf("1clip = %d (abs %d)\n", clip, apos);
+	if (apos < io_relpos(io, rnum2) + ABS(io_length(io, rnum2))-1) {
+	    clip-= apos - (io_relpos(io, rnum2) + ABS(io_length(io, rnum2))-1);
+	    apos = r.position - r.start + clip;
+	    printf("2clip = %d (abs %d)\n", clip, apos);
+	}
+
+	r.end = clip+2;
+	r.sequence_length = r.end - r.start - 1;
+	io_length(io, rnum1) = r.sequence_length * (r.sense ? -1 : 1);
+	gel_write(io, rnum1, r);
+    }
+
+    xfree(conf);
+
+    remove_contig_holes(io, contig);
+}
+
+/*
 
 set io [open_db -name F35H8 -version 1 -access rw]
 quality_clip -io $io -contigs {=6 =7} -quality 35

@@ -6,6 +6,7 @@
 
 void quality_clip(GapIO *io, int num_contigs, contig_list_t *cl, int qual_avg);
 void N_clip(GapIO *io, int num_contigs, contig_list_t *cl);
+void quality_clip_ends(GapIO *io, int contig, int avg_qual);
 void difference_clip(GapIO *io, int num_contigs, contig_list_t *cl,
 		     int add_tags);
 

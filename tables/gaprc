@@ -231,6 +231,7 @@ set_def TRACE_DISPLAY.WINDOW_WIDTH	1000
 set_def TRACE_DISPLAY.FULL_NAME		1
 set_def TRACE_DISPLAY.SHOW_CONFIDENCE	0
 set_def TRACE_DISPLAY.COMPACT_MODE	1
+set_def TRACE_DISPLAY.LINE_WIDTH	0
 
 # This defines the type, number, and order of traces shown when "auto-display
 # traces" is enabled and a problem is searched for.
@@ -320,6 +321,7 @@ set_def DOCTOR_DATABASE.WIN	.doctor
 set_def COMPLEMENT_CONTIG.WIN	.complement_contig
 set_def QUALITY_CLIP.WIN	.quality_clip
 set_def N_CLIP.WIN		.nbase_clip
+set_def Q_CLIP_ENDS.WIN		.qclip_ends
 set_def DIFFERENCE_CLIP.WIN	.difference_clip
 set_def DOUBLE_STRAND.WIN	.double_strand
 set_def SELECT_TAGS.WIN		.select_tags
@@ -736,6 +738,9 @@ set_def QUALITY_CLIP.INFILE		$defs_c_in
 
 #N-base clip
 set_def N_CLIP.INFILE			$defs_c_in
+
+#Quality clip ends
+set_def Q_CLIP_ENDS.INFILE		$defs_c_in
 
 #difference clip
 set_def DIFFERENCE_CLIP.INFILE		$defs_c_in
