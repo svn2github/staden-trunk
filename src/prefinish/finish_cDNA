@@ -1,0 +1,423 @@
+#!/bin/ksh
+#\
+STADENROOT=/usr/local/badger/gap4_test; export STADENROOT; . $STADENROOT/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
+
+proc finishing_rules {bits} {
+    # Problem 0: Extend contig leftwards
+    set p0 [expr {!((($bits & 0x0001)==0))}]
+
+    # Problem 1: Extend contig rightwards
+    set p1 [expr {!((($bits & 0x0002)==0))}]
+
+    # Problem 2: No top strand
+    set p2 [expr {($bits & 0x0004) == 0}]
+
+    # Problem 3: No bottom strand
+    set p3 [expr {($bits & 0x0008) == 0}]
+
+    return [expr {$p0 | ($p1<<1) | ($p2<<2) | ($p3<<3)}]
+}
+
+proc find_solutions_0 {base_bits problem_bits} {
+    # Optimisation - no problems => no solutions required
+    if {[expr {$problem_bits&3}] == 0} {return 0}
+
+    set type 0;   # None
+    set chem 17;  # BDv3 term
+    set strand 0; # Any
+
+    #Problem 0: Extend contig leftwards
+    if {[expr {$problem_bits&0x01}]} {
+        set type [expr {$type|0x04}]
+        set chem 17
+        set strand 2
+    }
+
+    #Problem 1: Extend contig rightwards
+    if {[expr {$problem_bits&0x02}]} {
+        set type [expr {$type|0x04}]
+        set chem 17
+        set strand 1
+    }
+
+    return [expr $type | ($strand << 16) | ($chem << 24)]
+}
+
+proc find_solutions_1 {base_bits problem_bits} {
+    # Optimisation - no problems => no solutions required
+    if {$problem_bits == 0} {return 0}
+
+    set type 0;   # None
+    set chem 17;  # BDv3 term
+    set strand 0; # Any
+
+    #Problem 2: No top strand
+    if {[expr {$problem_bits & 0x04}]} {
+	set type [expr {$type|0x04}]
+	set strand 1;
+    }
+
+    #Problem 3: No bottom strand
+    if {[expr {$problem_bits & 0x08}]} {
+	set type [expr {$type|0x04}]
+	set strand 2;
+    }
+
+    #Problem 2: Double stranded
+#    if {[expr {$problem_bits&0x04}]} {
+#        set type [expr {$type|0x04}]
+#        set chem 17
+#	# Only allow picking top strand experiment when the top strand is
+#	# present, and a bottom strand exp when the bottom strand is present.
+#	# This is to force extension of each end of the pair in each
+#	# round until they overlap and completely double strand. Otherwise
+#	# a read-pair split into two contigs would do two extension experiments
+#	# and two double strand experiments, which may be redundant.
+#	if {($base_bits & (0x04 | 0x08)) != (0x04 | 0x08)} {
+#	    if {$base_bits & 0x08} {
+#	        set strand 1
+#	    } else {
+#	        set strand 2
+#	    }
+#	} else {
+#	    set strand 0
+#        }
+#    }
+
+    return [expr $type | ($strand << 16) | ($chem << 24)]
+}
+
+set class_bits {
+    {0 contig_left_end}
+    {1 contig_right_end}
+    {2 strand_top}
+    {3 strand_bottom}
+}
+
+proc global_params {f} {
+    $f configure \
+        -external_seq_file {} \
+        -dust_level 18 \
+        -skip_template_file skip_templates \
+        -avail_template_file {} \
+        -find_dup_templates 1 \
+        -use_avg_insert 0 \
+        -min_template_score 0.4 \
+        -min_score 0.6 \
+        -max_score_drop 0.2 \
+        -mandatory_ratio 0.4 \
+        -min_extension 50 \
+        -pwalk_search_dist 100 \
+        -pwalk_max_match 10 \
+        -pwalk_noligos 4 \
+        -pwalk_ntemplates 4 \
+        -pwalk_offset1 130 \
+        -pwalk_offset2 60 \
+        -pwalk_seq_gap 60 \
+        -pwalk_consistent_only 0 \
+        -pwalk_max_err 0.05 \
+        -pwalk_min_qual 20 \
+        -pwalk_max_err2 0.1 \
+        -pwalk_min_qual2 15 \
+        -pwalk_end_dist 700 \
+        -pwalk_use_template 4 \
+        -pwalk_use_template_score 0.5 \
+        -pwalk_tag_cons 0 \
+        -pwalk_tag_type AFOL \
+	-pwalk_nsolutions 1 \
+        -primer_min_tm 50 \
+        -primer_max_tm 55 \
+        -primer_opt_tm 53 \
+        -primer_min_len 17 \
+        -primer_max_len 23 \
+        -primer_opt_len 20 \
+        -primer_min_gc 30 \
+        -primer_opt_gc 0 \
+        -primer_max_gc 70 \
+        -primer_salt_conc 50 \
+        -primer_dna_conc 50 \
+        -primer_max_end_stability 100 \
+        -primer_self_any 8 \
+        -primer_self_end 3 \
+        -primer_gc_clamp 1 \
+        -primer_max_poly_x 5 \
+        -reseq_cost 1.2 \
+        -long_length 700 \
+        -vpwalk_cost 3.0 \
+        -cpwalk_cost 8.0 \
+        -reseq_length 400 \
+        -long_cost 2.0 \
+        -pwalk_length 400 \
+        -pscores {0.5 0.5 0.55} \
+        -mscores {10.0 10.0 0.1} \
+        -pwalk_prob_mask 3 \
+        -prob_mandatory 3
+}
+
+
+proc process_contig {io f &opt cnum start end class_bits} {
+    upvar ${&opt} opt
+
+    set c [io_read_contig $io $cnum]
+    set tags ""
+    set contig "#[keylget c left]"
+
+    puts "### CONTIG ID $contig  (=$cnum [left_gel $io $cnum]) ###"
+
+    # Reconfigure the finish object to work on this specific contig
+    $f configure \
+	-io $io \
+	-contig "{$contig $start $end}"
+
+    # Classify the bases to produce a bit-pattern
+    $f classify \
+	-bits $class_bits
+
+    # -- Pass 1
+
+    global_params $f
+
+    # Identify problems and solutions from bit-classifications
+    $f find_problems \
+        -problem_command finishing_rules \
+        -solution_command find_solutions_0 \
+        -tag_types {MASK CVEC}
+
+    if {$opt(-dump_problems) != ""} {
+        dump_problem $io $f $opt(-dump_problems) $cnum
+    }
+
+    if {$opt(-skip_solutions)} {
+        return
+    }
+
+    # Produce solutions
+    append tags " [$f implement_solutions \
+		    -tag_types {OLIG PRIM MASK CVEC}]"
+
+    # -- Pass 2
+
+    global_params $f
+
+    # Identify problems and solutions from bit-classifications
+    $f find_problems \
+        -problem_command finishing_rules \
+        -solution_command find_solutions_1 \
+        -tag_types {MASK CVEC}
+
+    if {$opt(-dump_problems) != ""} {
+        dump_problem $io $f $opt(-dump_problems) $cnum
+    }
+
+    if {$opt(-skip_solutions)} {
+        return
+    }
+
+    # Produce solutions
+    append tags " [$f implement_solutions \
+		    -tag_types {OLIG PRIM MASK CVEC}]"
+
+    if {$opt(-add_tags)} {
+	puts tags="$tags"
+	add_tags -io $io -tags $tags
+    }
+    set fd [open tags a]
+    puts $fd $tags
+    close $fd
+
+    flush stdout
+}
+
+# -----------------------------------------------------------------------------
+# Dumps the problem arrays.
+proc dump_problem {io fin fd cnum} {
+    set pos 1
+    set plist [$fin dump_problems]
+    set rname [left_gel $io $cnum]
+    set pstart 1
+    set plast [lindex $plist 0]
+    foreach prob $plist {
+	if {$prob != 0} {
+	    if {$prob != $plast} {
+		puts $fd "$rname $pstart $pstart..[expr {$pos-1}] problem flags=$plast"
+		set pstart $pos
+		set plast $prob
+	    }
+	}
+	incr pos
+    }
+    if {$prob != 0} {
+	puts $fd "$rname $pstart $pstart..[expr {$pos-1}] problem flags=$plast"
+    }
+}
+
+
+proc usage {argv0} {
+    puts stderr "Usage: $argv0 \[options ...\] DBNAME.VERSION"
+    puts stderr "Where options are:"
+    puts stderr {    -add_tags}
+    puts stderr {    -dump_problems <filename>}
+    puts stderr {    -skip_solutions}
+    puts stderr {    -contig <identifier> ...}
+    puts stderr {    -from <basepos>}
+    puts stderr {    -to <basepos>}
+    puts stderr {    -debug <level>}
+    exit
+}
+
+# -----------------------------------------------------------------------------
+# Main entry point
+
+source $env(STADTABL)/shlib.conf
+load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
+load_package gap
+load_package prefinish
+
+set opt(-add_tags) 0
+set opt(-dump_problems) ""
+set opt(-skip_solutions) 0
+set opt(-from) 0
+set opt(-to) 0
+set opt(-contig) ""
+set opt(-debug) 0
+set opt(-min_contig_len) 2000
+
+while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
+    set arg [lindex $argv 0];
+    set argv [lrange $argv 1 $argc]
+    incr argc -1;
+
+    switch -exact -- $arg {
+	-- {
+	    break
+	}
+
+	-contig -
+	-from -
+	-to -
+	-debug -
+	-min_contig_len -
+	-dump_problems {
+	    set opt($arg) [lindex $argv 0]
+	    set argv [lrange $argv 1 $argc]
+	    incr argc -1;
+	}
+
+	-add_tags -
+	-skip_solutions {
+	    set opt($arg) 1
+	}
+
+	default {
+	    break
+	}
+    }
+}
+
+if {$opt(-dump_problems) != ""} {
+    set opt(-dump_problems) [open $opt(-dump_problems) w]
+}
+
+if {[llength $argv] != 1} {
+    usage $argv0
+}
+
+puts "*** DBname [lindex $argv 0]"
+puts "*** Date	 [clock format [clock seconds]]"
+puts ""
+
+# Load vector file
+set vector ""
+if {![catch {set fd [open vector]}]} {
+    set vector [read $fd]
+    regsub -all "\[#>\]\[^\n\]*\n" $vector {} vector
+    regsub -all {[^ACGTNacgtn]} $vector {} vector
+    close $fd
+    puts "Read [string length $vector] bytes of vector"
+    puts ""
+}
+
+# Open database, choose contig, select consensus mode
+
+cd [file dir [lindex $argv 0]]
+foreach {dbname dbvers} [split [file tail [lindex $argv 0]] .] {}
+if {$opt(-add_tags) != ""} {
+    set io [open_db -name $dbname -version $dbvers -access rw]
+} else {
+    set io [open_db -name $dbname -version $dbvers -access r]
+}
+
+set consensus_cutoff 0.02
+set quality_cutoff 1
+set consensus_mode 2
+
+set clist [CreateAllContigList $io]
+set db [io_read_database $io]
+set num_contigs [keylget db num_contigs]
+set tcl [db_info t_contig_length $io]
+set maxseq [expr {round(($tcl + 20*$num_contigs)*1.1)}]
+
+# Allocate a 'finish' Tcl_Obj object. (Note that this can grow quite big.)
+# This contains consensus, confidence values, virtual sequences, etc.
+# It's the main data block passed between the various finishing functions.
+finish .f \
+    -io $io \
+    -check_contigs $clist \
+    -output_file $dbname.$dbvers.experiments \
+    -debug0 $opt(-debug) \
+    -debug1 $opt(-debug) \
+    -debug2 $opt(-debug) \
+    -debug3 $opt(-debug) \
+    -debug4 $opt(-debug) \
+    -debug5 $opt(-debug) \
+    -debug6 $opt(-debug) \
+    -debug7 $opt(-debug) \
+    -debug8 $opt(-debug) \
+    -debug9 $opt(-debug)
+
+
+# Produce a list of contigs to process. "contigs" is a list of contig numbers
+# The -min_contig_len option only applies when -contig(s) is not explicitly
+# used.
+set contigs ""
+if {$opt(-contig) != ""} {
+    foreach c $opt(-contig) {
+	set cnum [db_info get_contig_num $io $c]
+	if {$cnum == -1} {
+	    puts "Unknown contig $c"
+	    exit
+	}
+	lappend contigs $cnum
+    }
+} else {
+    for {set cnum 1} {$cnum <= $num_contigs} {incr cnum} {
+	set c [io_read_contig 1 $cnum]
+	if {[keylget c length] < $opt(-min_contig_len)} {
+	    continue
+	}
+	lappend contigs $cnum
+    }
+}
+
+# Loop through selected contigs
+foreach cnum $contigs {
+    set c [io_read_contig 1 $cnum]
+
+    set start [expr {$opt(-from) ? $opt(-from) : 1}]
+    set end   [expr {$opt(-to) ? $opt(-to) : [keylget c length]}]
+
+    process_contig $io .f opt $cnum $start $end $class_bits
+}
+
+if {$opt(-dump_problems) != ""} {
+    close $opt(-dump_problems)
+}
+
+# Reclaim memory
+.f delete
+
+close_db -io $io
+
+exit
+
+
