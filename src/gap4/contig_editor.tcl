@@ -24,6 +24,9 @@ if {![info exists .cedit.SE_fast_delete_anno]} {
 	[keylget gap_defs CONTIG_EDITOR.SE_FAST_DELETE_ANNOTATION]
 }
 
+# Remember last location the user scrolled the names display to
+set ednames_scrollpos 0
+
 #-----------------------------------------------------------------------------
 # User dialogue for starting up the editors
 #-----------------------------------------------------------------------------
@@ -452,6 +455,9 @@ proc create_editor {w edname join reveal ccut qcut dbptr} {
     global $editor.Tags
     trace variable $editor.Tags w update_tag_menus
 
+    global ednames_scrollpos
+    after idle "catch {$names xview $ednames_scrollpos}"
+
     return "$editor $names"
 }
 
@@ -500,8 +506,100 @@ proc update_tag_menus {name1 name2 op} {
 	    -command "$e.seqs delete_anno $ptr"
 	incr count
     }
+
+    if {[keylget gap_defs CONTIG_EDITOR.TAG_POPUPS]} {
+	if {[catch {handle_tag_popups $name1 $e} err]} {
+	    global errorInfo; puts $err,$errorInfo
+	}
+    }
 }
 
+catch {font create tooltip_font    -family Helvetica -size -12}
+proc tag_popup {w msg} {
+    # Work out coordinates
+    set x [expr {[winfo pointerx $w]+5}]
+    set y [expr {[winfo pointery $w]+15}]
+    set padx 5
+    set bd 1
+    set xdim 0
+    set lines 0
+    foreach line [split $msg "\n"] {
+	set dim [font measure tooltip_font $line]
+	if {$dim > $xdim} {
+	    set xdim $dim
+	}
+	incr lines
+    }
+    incr xdim [expr {2*($padx+$bd)}]
+    array set metrics [font metrics tooltip_font]
+    set ydim [expr {$lines*$metrics(-linespace) + 2*$bd+2}]
+
+    # Make sure it'llbe on the screen.
+    if {[expr {$x+$xdim}] > [winfo screenwidth $w]} {
+	set x [expr {[winfo screenwidth $w]-$xdim}]
+    }
+    if {[expr {$y+$ydim}] > [winfo screenheight $w]} {
+	set y [expr {[winfo pointery $w]-$ydim-10}]
+    }
+
+    # Create the window itself
+    set p $w.tag_tooltip
+    if {[winfo exists $p]} {destroy $p}
+    toplevel $p
+    wm overrideredirect $p 1
+    wm geometry $p +$x+$y
+
+    label $p.l \
+	-bg lightyellow \
+	-justify left \
+	-padx $padx \
+	-bd $bd -relief solid \
+	-font tooltip_font \
+	-text $msg
+    pack $p.l -fill both -expand 1
+
+    # Bindings to remove it
+    bind $p <1> {destroy [winfo toplevel %W]}
+}
+
+proc handle_tag_popups {t e} {
+    global $t gap_defs
+
+    set msg ""
+    set msg2 ""
+    foreach tag [set $t] {
+	foreach {ptr type st len} $tag {}
+	if {$msg != ""} {append msg "\n"}
+	set txt [$e.seqs get_anno $ptr]
+	append msg "$type:$txt"
+	append msg2 "$type\("
+	set first 1
+	foreach line [split $txt "\n"] {
+	    foreach {var val} [split $line =] {break}
+	    if {$var == "TABNAME"} {
+		if {!$first} {append msg2 " "}
+		set first 0
+		append msg2 "$val:"
+	    }
+	    if {$var == "type"} {
+		append msg2 "$val"
+	    }
+	}
+	append msg2 "\) "
+    }
+
+    if {[keylget gap_defs CONTIG_EDITOR.TAG_POPUPS] == 2} {
+	if {$msg == {}} {
+	    catch {destroy $e.tag_tooltip}
+	} else {
+	    tag_popup $e $msg
+	}
+    }
+    if {$msg2 != ""} {
+	after idle "[lindex [$e.seqs configure -highlightcommand] 4] [list $msg2]"
+    }
+}
+ 
 # Adds a 'diff' bar between a couple of editors. Assumes at least one editor
 # is already packed in 'w'.
 proc create_editor_diff {w dname edname} {
@@ -533,10 +631,9 @@ proc init_editor_states {w e dbptr} {
 	   $w.ShowCQuality $w.DisagreeMode $w.ShowUnpadded \
 	   $w.ConsensusAlgorithm _$dbptr.StoreUndo $w.DisplayTraces \
 	   $w.DiffTraces $w.DisplayMiniTraces
-    global $w.Status0
-    global $w.Status1 $w.Status2 $w.Status3 $w.Status4 $w.Status5 $w.Status6
-    global $w.Status7
-    global $w.LREG $w.RREG
+    global $w.Status0 $w.Status1 $w.Status2 $w.Status3 $w.Status4 \
+	   $w.Status5 $w.Status6 $w.Status7
+    global $w.LREG $w.RREG $w.TemplateNames
 
     # Initialise contig editor state
     foreach [list $w.LREG $w.RREG] [$e get_extents] {}
@@ -565,6 +662,7 @@ proc init_editor_states {w e dbptr} {
     $e show_quality [set $w.ShowQuality]
     $e show_consensus_quality [set $w.ShowCQuality]
     $e show_edits [set $w.ShowEdits]
+    $e show_template_names [set $w.TemplateNames]
     editor_set_superedit $e $w
     $e set_grouping [set $w.GroupBy]
     $e insert_confidence [keylget gap_defs CONTIG_EDITOR.INSERTION_CONFIDENCE]
@@ -687,7 +785,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
     global $w.TraceDiff $w.TraceConsMatch $w.TraceConsSelect $w.DisagreeMode
     global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.GroupBy
     global $w.ShowEdits $w.Disagreements $w.CompareStrands
-    global $w.ShowCQuality $w.DisagreeCase
+    global $w.ShowCQuality $w.DisagreeCase $w.TemplateNames
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
     global $w.Status4 $w.Status5 $w.Status6 $w.Status7
     global $w.ShowUnpadded $w.DiffTraces $w.DisplayMiniTraces
@@ -717,6 +815,7 @@ proc create_editor_menus {dbptr join w e n m1 m2 m3 m4} {
 
     set $w.ShowUnpadded   [keylget gap_defs CONTIG_EDITOR.SHOW_UNPADDED]
     set $w.ShowEdits	  [keylget gap_defs CONTIG_EDITOR.SHOW_EDITS]
+    set $w.TemplateNames  [keylget gap_defs CONTIG_EDITOR.TEMPLATE_NAMES]
     set $w.TraceDiff	  [keylget gap_defs CONTIG_EDITOR.TRACE_DIFF]
     set $w.TraceConsMatch [keylget gap_defs CONTIG_EDITOR.TRACE_CONS_MATCH]
     set $w.TraceConsSelect [keylget gap_defs CONTIG_EDITOR.TRACE_CONS_SELECT]
@@ -1031,7 +1130,9 @@ proc scroll_editor {seqs args} {
 }
 
 proc scroll_names {names args} {
+    global ednames_scrollpos
     eval $names xview $args
+    set ednames_scrollpos [$names xview]
 }
 
 proc scroll_ll {seqs sbar} {
@@ -1703,8 +1804,45 @@ proc ed_goto_seq {e name cnum} {
 
 # Function to invoke join editor between a specific pair of sequences.
 proc ed_jointo_seq {e cnum1 name1 cnum2 name2} {
+    # check if contigs need complementing.
+    set io [$e io]
+    set rn1 [db_info get_read_num $io $name1]
+    set rn2 [db_info get_read_num $io $name2]
+    if {$rn1 < 1 || $rn2 < 1} {
+	bell
+	return
+    }
+    set r1 [io_read_reading $io $rn1]
+    set d1 [string map {3 1 4 2} [keylget r1 primer]]
+    set r2 [io_read_reading $io $rn2]
+    set d2 [string map {3 1 4 2} [keylget r2 primer]]
+    if {$d1 != 0 && $d2 != 0} {
+	if {[keylget r1 sense] == [keylget r2 sense]} {
+	    if {$d1 == $d2} {
+		set comp 0
+	    } else {
+		set comp 1
+	    }
+	} else {
+	    if {$d1 == $d2} {
+		set comp 1
+	    } else {
+		set comp 0
+	    }
+	}
+    } else {
+	set comp 0
+    }
+
+    # Complement if needed
+    global read_only
+    if {!$read_only && $comp} {
+	complement_contig -io $io -contigs $name1
+    }
+
+    # Bring up the join editor
     join_contig \
-	-io [$e io] \
+	-io $io \
 	-contig1 =$cnum1 \
 	-reading1 $name1 \
 	-contig2 =$cnum2 \
@@ -2133,7 +2271,7 @@ proc save_editor_settings {e w} {
     global $w.TraceDiff $w.TraceConsMatch $w.TraceConsSelect $w.DisagreeMode
     global $w.TraceDiffAlgorithm $w.TraceDiffScale $w.GroupBy
     global $w.ShowEdits $w.Disagreements $w.CompareStrands
-    global $w.ShowCQuality $w.DisagreeCase
+    global $w.ShowCQuality $w.DisagreeCase $w.TemplateNames
     global $w.Status0 $w.Status1 $w.Status2 $w.Status3
     global $w.Status4 $w.Status5 $w.Status6 $w.Status7
     global $w.ShowUnpadded $w.DiffTraces $w.DisplayMiniTraces
@@ -2178,6 +2316,7 @@ proc save_editor_settings {e w} {
     keylset gap_defs $C.SE_TRANS_ANY           [set $w.SE_trans_any]
     keylset gap_defs $C.SE_UPPERCASE           [set $w.SE_uppercase]
     keylset gap_defs $C.SE_EDIT_MODE           [set $w.SE_edit_mode]
+    keylset gap_defs $C.TEMPLATE_NAMES         [set $w.TemplateNames]
 
     # Write to the .gaprc file
     update_defs gap_defs $env(HOME)/.gaprc \
@@ -2217,7 +2356,8 @@ proc save_editor_settings {e w} {
 	$C.SE_READ_SHIFT \
 	$C.SE_TRANS_ANY \
 	$C.SE_UPPERCASE \
-	$C.SE_EDIT_MODE
+	$C.SE_EDIT_MODE \
+	$C.TEMPLATE_NAMES
 
     # Also save the tag macros (tag_editor.tcl)
     tag_macro_save
