@@ -112,6 +112,8 @@ void end_message(char *parent)
 void log_file(char *fn, char *message) {
     static FILE *fp = NULL;
     char tbuf[100];
+    static char hname[256];
+    static int hname_done = 0;
     time_t t = time(NULL);
 
     strftime(tbuf, sizeof(tbuf)-1, "%a %d %b %H:%M:%S %Y", localtime(&t));
@@ -119,12 +121,19 @@ void log_file(char *fn, char *message) {
     if (!logging)
 	return;
 
+    if (!hname_done) {
+	if (gethostname(hname, 256))
+	    sprintf(hname, "?");
+	hname_done = 1;
+    }
+
     if (fn) {
 	if (fn && *fn == 0) {
 	    if (fp) {
 		if (message) {
 		    fseek(fp, 0, SEEK_END);
-		    fprintf(fp, "%s [%d] %s\n", tbuf, (int)getpid(), message);
+		    fprintf(fp, "%s [%d@%s] %s\n",
+			    tbuf, (int)getpid(), hname, message);
 		}
 		fclose(fp);
 		fp = NULL;
@@ -138,7 +147,7 @@ void log_file(char *fn, char *message) {
 
     if (fp && message) {
 	fseek(fp, 0, SEEK_END);
-	fprintf(fp, "%s [%d] %s\n", tbuf, (int)getpid(), message);
+	fprintf(fp, "%s [%d@%s] %s\n", tbuf, (int)getpid(), hname, message);
 	fflush(fp);
     }
 }
