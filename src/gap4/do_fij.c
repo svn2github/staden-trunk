@@ -169,7 +169,9 @@ int do_it_fij ( char seq[], int seq_len,
 	    h->seq1_len = overlap->seq1_len = seq1_len;
 
 	    if (hash_seqn(h, 1)) {
-		verror(ERR_WARN, "find internal joins", "hashing 1" ); 
+		verror(ERR_WARN, "find internal joins",
+		       "hashing 1st sequence (#%d)",
+		       contig_list[contig1_num].contig_left_gel); 
 		continue;
 	    }
     
@@ -192,7 +194,9 @@ int do_it_fij ( char seq[], int seq_len,
 		    h->seq2_len = overlap->seq2_len = seq2_len;
 
 		    if (hash_seqn(h, 2)) {
-			verror(ERR_WARN, "find internal joins", "hashing 2" ); 
+			verror(ERR_WARN, "find internal joins",
+			       "hashing 2nd sequence (#%d)",
+			       contig_list[contig2_num].contig_left_gel); 
 			continue;
 		    }
 
@@ -285,7 +289,9 @@ int do_it_fij ( char seq[], int seq_len,
 
 	    /*printf("seq1 %s\n",overlap->seq1);*/
 	    if (hash_seqn(h, 1)) {
-		verror(ERR_WARN, "find internal joins", "hashing 1" ); 
+		verror(ERR_WARN, "find internal joins",
+		       "hashing 1st sequence (#%d)",
+		       contig_list[contig1_num].contig_left_gel); 
 		continue;
 	    }
     
@@ -310,7 +316,9 @@ int do_it_fij ( char seq[], int seq_len,
 		    h->seq2_len = overlap->seq2_len = seq2_len;
 
 		    if (hash_seqn(h, 2)) {
-			verror(ERR_WARN, "find internal joins", "hashing 2" ); 
+			verror(ERR_WARN, "find internal joins", 
+			       "hashing 2nd sequence (#%d)",
+			       contig_list[contig2_num].contig_left_gel); 
 			continue;
 		    }
 
