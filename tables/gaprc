@@ -34,7 +34,7 @@ set_def GENETIC_CODE		$env(STADTABL)/gcodes/code_1
 set_def	CONTIG_SEL.CURSOR_COLOUR		"blue"
 set_def	CONTIG_SEL.CROSSHAIRS_COLOUR		"black"
 set_def	CONTIG_SEL.CONTIG_COLOUR		"black"
-set_def	CONTIG_SEL.HIGHLIGHT_COLOUR		"white"
+set_def	CONTIG_SEL.HIGHLIGHT_COLOUR		"hotpink"
 
 set_def	STOP_CODON.TICK_COLOUR			"black"
 set_def	STOP_CODON.RULER_COLOUR			"black"
@@ -67,8 +67,10 @@ set_def	TEMPLATE.HIGHLIGHT_COLOUR		"white"
 set_def TAG_BRIEF_FORMAT  \
 	{Tag type:%t   Direction:%d   Comment:"%.100c"}
 
+#set_def READ_BRIEF_FORMAT  \
+#	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P  Tstat:%Tc %c}
 set_def READ_BRIEF_FORMAT  \
-	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P  Tstat:%Tc %c}
+	{%n(#%Rn) Clone:%Cn Vector:%Tv Type:%P;%a Tmpl:%Tc %c}
 
 set_def CONTIG_BRIEF_FORMAT  \
 	{Contig:%n(#%Rn)   Length:%l   %c}
@@ -406,12 +408,6 @@ set_defx defs_procmode	VALUE		1
 set_defx defs_procmode	BUTTON.1	"Process all contigs"
 set_defx defs_procmode	BUTTON.2	"Select contig"
 
-set_defx defs_remmode	NAME		"Removal mode"
-set_defx defs_remmode	VALUE		1
-set_defx defs_remmode	BUTTON.1	"All selected readings"
-set_defx defs_remmode	BUTTON.2	"Non-crucial only"
-
-
 set_defx defs_maxmis	NAME	"Maximum percent mismatch"
 set_defx defs_maxmis	MIN	0.00
 set_defx defs_maxmis	MAX	100.0
@@ -695,9 +691,9 @@ set_def DIS_READINGS.INFILE.WHICH.BUTTONS	{list file single}
 
 set_def DIS_READINGS.SELTASK		$defs_seltask
 set_def DIS_READINGS.SELTASK.BUTTON.1	"Remove readings from database"
-set_def DIS_READINGS.SELTASK.BUTTON.2	"Move readings to new contigs"
-
-set_def DIS_READINGS.REMMODE		$defs_remmode
+set_def DIS_READINGS.SELTASK.BUTTON.2	"Split into single-read contigs"
+set_def DIS_READINGS.SELTASK.BUTTON.3	"Move readings to new contigs"
+set_def DIS_READINGS.SELTASK.VALUE	3
 
 #suggest long gels
 set_def LONGGELS.GLEN.NAME		"Estimated long reading length"
