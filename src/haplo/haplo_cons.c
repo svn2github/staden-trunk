@@ -141,8 +141,8 @@ int calc_template_depth(GapIO *io, int contig, int start, int end,
 	for (i = r_start; i <= r_end; i++) {
 	    tdepth[i - start]++;
 	    // printf("tdepth[%d]++\n", i-start);
-	    if (max < tdepth[i - start]++)
-		max = tdepth[i - start]++;
+	    if (max < tdepth[i - start])
+		max = tdepth[i - start];
 	}
 	
 	t_end[tnum] = i;
