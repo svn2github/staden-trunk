@@ -32,16 +32,16 @@ $(O)/tracediff: $(OBJSD)
 
 
 pathutil.cpp:
-	ln -s ../mutlib/pathutil.cpp
+	ln -s ../mutlib/pathutil.cpp .
 
 pathutil.h:
-	ln -s ../mutlib/pathutil.h
+	ln -s ../mutlib/pathutil.h .
 
 stringlist.cpp:
-	ln -s ../mutlib/stringlist.cpp
+	ln -s ../mutlib/stringlist.cpp .
 
 stringlist.hpp:
-	ln -s ../mutlib/stringlist.hpp
+	ln -s ../mutlib/stringlist.hpp .
 
 
 distsrc: distsrc_dirs
