@@ -2068,6 +2068,24 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
 	break;
     }
 
+    /*
+     * Move any REFSEQ tagged sequences to the statr of the list.
+     * This cannot be done for POSITION collating order as there is code
+     * (in searchUtils.c for example) that relies on the position sorting
+     * to be absolutely correct for optimisation purposes.
+     */
+    if (xx->group_mode != POSITION) {
+	int i;
+	for (i = 1; i < count; i++) {
+	    if (DB_Flags(xx, list[i]) & DB_FLAG_REFSEQ) {
+		/* move to first pos */
+		int rs = list[i];
+		memmove(&list[1], &list[0], i*sizeof(*list));
+		list[0] = rs;
+	    }
+	}
+    }
+
     /* Cache this output */
     last_sorted = xrealloc(last_sorted, count * sizeof(*list));
     if (last_sorted)
