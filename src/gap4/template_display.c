@@ -2344,28 +2344,6 @@ static void template_callback(GapIO *io, int contig, void *fdata,
     }
 }
 
-/*
- * HACK - move somewhere else ?
- * called from edInterface.c, updates the global Readings list with selections
- * made in the contig editor
- */
-void
-update_reading_list(GapIO *io,
-		    int r_num,
-		    int high_light)
-{
-    char cmd[1024];
-    char *r_name;
-
-    /* can't do the consensus */
-    if (r_num > 0) {
-	r_name = get_read_name(io, r_num);
-	sprintf(cmd, "UpdateReadingListItem %s %d", r_name, high_light);
-	Tcl_Eval(GetInterp(), cmd);
-    }
-}
-
-
 void
 template_config(Tcl_Interp *interp,
 		char *frame,
