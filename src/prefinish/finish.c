@@ -1,4 +1,4 @@
-#define FINISH_VERSION "1.30"
+#define FINISH_VERSION "1.31"
 
 #include <tcl.h>
 #include <limits.h>
@@ -1108,8 +1108,8 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 			   gap4_global_get_consensus_cutoff(),
 			   gap4_global_get_quality_cutoff(),
 			   database_info, (void *)(fin->io));
-	    fin->vc->cons = fin->cons;
 	}
+	fin->vc->cons = fin->cons;
 	memcpy(fin->orig_qual, fin->qual, io_clength(fin->io, fin->contig)
 	       * sizeof(fin->orig_qual[0]));
 
