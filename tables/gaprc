@@ -35,8 +35,10 @@ set_def IGNORE_CUSTOM_PTYPE	0
 #-----------------------------------------------------------------------------
 # Colours
 #-----------------------------------------------------------------------------
-set_def BACKGROUNDS "#c8bfff #c8bf98 #c6f3ad #dbc6c2 #ffffa4 #add6da #c1edf8 #b8cb7d #a8a8a4 #e8db88 bisque #ffa0a0"
-
+set_def BACKGROUNDS ""
+# If you want Gap4 to use different colours for subsequent gap4s that
+# start up, add them as a list. Eg:
+#set_def BACKGROUNDS "#c8bfff #c8bf98 #c6f3ad #dbc6c2 #ffffa4 #add6da #c1edf8 #b8cb7d #a8a8a4 #e8db88 bisque #ffa0a0"
 
 set_def	CONTIG_SEL.CURSOR_COLOUR		"blue"
 set_def	CONTIG_SEL.CROSSHAIRS_COLOUR		"black"
