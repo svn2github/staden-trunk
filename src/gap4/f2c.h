@@ -10,6 +10,13 @@ typedef short int shortint;
 typedef float real;
 typedef double doublereal;
 
+#ifndef min
+#    define min(a,b) ((a)<(b)?(a):(b))
+#endif
+#ifndef max
+#    define max(a,b) ((a)>(b)?(a):(b))
+#endif
+
 int swritf_(char *sbuf, char *fmt, ...);
 int jfromc_(char *data, integer *length_p, ftnlen);
 integer s_cmp(char *a0, char *b0, ftnlen la, ftnlen lb);
