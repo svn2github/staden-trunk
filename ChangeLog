@@ -1,3 +1,93 @@
+2004-11-01  jkbonfield  <jkbonfield>
+
+	* Makefile:
+	(09:28:04) Updated make dist targets. "lib" is now common only as
+	binaries are copied during the src dist target. 
+
+	* README.build:
+	(09:28:35) Updated build instructions. 
+
+	* lib/Makefile:
+	(09:29:49) Updated tablelist version to copy for distrib building. 
+
+	* src/Makefile:
+	(09:30:38) More distrib building changes. 
+
+	* src/Makefile.thirdparty:
+	(09:31:31) Now checks out a specific dated version of itcl (equiv
+	to the Windows 3.3 build). 
+
+	* src/prefinish/Makefile:
+	(09:31:56) Updated distsrc target. 
+
+	* Makefile:
+	(16:28:05) More distrib building tidyups. 
+
+	* Version:
+	(16:28:33) The time for a new release approaches! 
+
+	* src/Makefile:
+	(16:28:57) Distrib building updates. 
+
+	* src/Makefile.thirdparty:
+	(16:29:24) Fix itcl/iwidgets builds (to work with the cvs checkout
+	version). 
+
+	* src/tk_utils/help_choose.tcl:
+	(16:30:50) Auto now looks for mozilla first. 
+
+	* lib/phrap/phrap.tcl:
+	(16:51:25) (Fix from Niklas Wikstrom). Updated disassemble_readings
+	call to use the new syntax. 	
+
+	* src/spin/spin.tcl:
+	(16:54:44) Updated version to 1.3 
+
+2004-10-29  jkbonfield  <jkbonfield>
+
+	* src/mk/linux-ia64.mk:
+	(10:24:23) Itanium/gcc support. 
+
+	* doc/manual/tools/update-nodes:
+	(10:32:30) Use $0 when finding update-nodes.el so that calling this
+	script from other directories (eg ../scripting) still works. This
+	fixes a bug introduced in the last modification to this file. 
+
+	* src/Makefile.thirdparty:
+	(10:41:39) Use .built-$(O) instead of .built so we can
+	clean/rebuild for different OSes in the same source tree. 
+
+	* src/io_lib/Makefile:
+	(10:42:10) Automatically create binary output directories. 
+
+	* src/gap4/trace_display.tcl:
+	(10:42:46) Fixed bug with the right-click menu (it didn't exist!) 
+
+2004-10-28  jkbonfield  <jkbonfield>
+
+	* src/gap4/gap.tcl:
+	(09:02:28) Allow for backgrounds to be blank, to disable it. 
+
+	* tables/gaprc:
+	(09:03:56) Set the default background colour list to "" (ie just
+	the usual grey). 
+
+	* lib/Makefile:
+	(09:15:53) Various updates for distribution building 
+
+	* src/Makefile,
+	* src/mutlib/Makefile,
+	* src/tk_utils/Makefile:
+	(09:15:56) Various updates for distribution building 
+
+	* src/Makefile.thirdparty:
+	(15:27:28) A new Makefile to download, compile and locally-install
+	the required third party packages. 
+
+	* src/mk/global.mk:
+	(16:53:29) Compile and link against root/src/lib instead of
+	root/lib. 
+
 2004-10-27  jkbonfield  <jkbonfield>
 
 	* src/spin_emboss/acd2tcl.tcl:
