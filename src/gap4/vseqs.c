@@ -142,7 +142,7 @@ vrseq_t *new_vrseq(vcontig_t *vc) {
     vrseq->right = NULL;
 
     /* Allocate a new vseq */
-    if (NULL == (vseq = (vseq_t *)xmalloc(sizeof(*vseq))))
+    if (NULL == (vseq = (vseq_t *)xcalloc(1, sizeof(*vseq))))
 	return NULL;
 
     vseq->seq = NULL;

@@ -128,6 +128,7 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 
 	/* Expected to cover region */
 	exp = xrealloc(exp, ++nexp * sizeof(*exp));
+	memset(&exp[nexp-1].r, 0, sizeof(GReadings));
 	exp[nexp-1].r.name = r.name;
 	exp[nexp-1].r.position = s_start;
 	exp[nexp-1].r.sequence_length = s_end - s_start + 1;
