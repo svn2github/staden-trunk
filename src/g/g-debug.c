@@ -140,12 +140,12 @@ void g_dump_file(char *fn) {
 
     printf("** \n");
     printf("** Opening file %s\n",fn);
-    printf("**    file_size = %d\n", gfile->header.file_size);
-    printf("**   block_size = %d\n", gfile->header.block_size);
-    printf("**  num_records = %d\n", gfile->header.num_records);
-    printf("**  max_records = %d\n", gfile->header.max_records);
-    printf("**    last_time = %d\n", gfile->header.last_time);
-    printf("**        flags = %d\n", gfile->header.flags);
+    printf("**    file_size = %"PRIGImage"\n", gfile->header.file_size);
+    printf("**   block_size = %"PRIGCardinal"\n", gfile->header.block_size);
+    printf("**  num_records = %"PRIGCardinal"\n", gfile->header.num_records);
+    printf("**  max_records = %"PRIGCardinal"\n", gfile->header.max_records);
+    printf("**    last_time = %"PRIGCardinal"\n", gfile->header.last_time);
+    printf("**        flags = %"PRIGHFlags"\n", gfile->header.flags);
     printf("** \n");
 
     /* allocate index */
@@ -191,7 +191,7 @@ void g_dump_file(char *fn) {
 		    len, len_r);
 	}
 
-	printf("record %05d pos %08d len %05d : %08x",
+	printf("record %05d pos %020"PRIGImage" len %08d : %08x",
 	       i, aux_ind.image[toggle], aux_ind.used[toggle],
 	       (((((buf[0] << 8) + buf[1]) << 8) + buf[2]) << 8) + buf[3]);
 	if (len > 4)

@@ -45,7 +45,7 @@
 
 
 typedef struct _cache_ {
-    /*4*/ GImage image;		/* file offset */
+    /*8*/ GImage image;		/* file offset */
     /*4*/ GCardinal allocated;	/* bytes allocated */
     /*4*/ GCardinal used;	/* bytes used */
     /*4*/ GCardinal rec;	/* index entry for this cache entry */
@@ -61,7 +61,7 @@ typedef struct {
     /*4*/ GCardinal  loc_allocated;
 #endif
 
-    /*4*/ GImage     aux_image;
+    /*8*/ GImage     aux_image;
     /*4*/ GTimeStamp aux_time;
     /*4*/ GCardinal  aux_used;
     /*4*/ GCardinal  aux_allocated;	/* bytes allocated to record*/
@@ -82,7 +82,7 @@ typedef struct {
 
 
 typedef struct {
-    GCardinal file_size;	/* size of file in bytes */
+    GImage    file_size;	/* size of file in bytes */
     GCardinal block_size;       /* size of each block (for allocation only) */
     GCardinal num_records;	/* number of records in record file */
     GCardinal max_records;	/* max number of records in record file */
@@ -129,6 +129,10 @@ typedef struct _gfile_ {
      */
     char *fdmap;
     char *fdauxmap;
+
+    /* Mapping for which file reading functions to use */
+    int (*(*low_level_vector))(int fd, void *x, int num);
+    int swapped; /* true => byte-swapping is needed */
 } GFile;
 
 
@@ -202,7 +206,7 @@ typedef struct _gdb_ {
  * function declarations
  *************************************************************/
 
-extern GFile *g_new_gfile(void);
+extern GFile *g_new_gfile(int bitsize);
 /*
  * create and initialise a new gfile structure
  */

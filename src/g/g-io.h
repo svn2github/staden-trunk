@@ -31,20 +31,29 @@
 
 
 
-extern int write_aux_header_(int fd, void *rec, int num);
-extern int write_aux_header_swapped_(int fd, void *rec, int num);
-extern int read_aux_header_(int fd, void *header, int num);
-extern int read_aux_header_swapped_(int fd, void *header, int num);
-extern int write_aux_index_(int fd, void *rec, int num);
-extern int write_aux_index_swapped_(int fd, void *idx, int num);
-extern int read_aux_index_(int fd, void *rec, int num);
-extern int read_aux_index_swapped_(int fd, void *idx, int num);
+extern int write_aux_header32_(int fd, void *rec, int num);
+extern int write_aux_header_swapped32_(int fd, void *rec, int num);
+extern int read_aux_header32_(int fd, void *header, int num);
+extern int read_aux_header_swapped32_(int fd, void *header, int num);
+extern int write_aux_index32_(int fd, void *rec, int num);
+extern int write_aux_index_swapped32_(int fd, void *idx, int num);
+extern int read_aux_index32_(int fd, void *rec, int num);
+extern int read_aux_index_swapped32_(int fd, void *idx, int num);
+
+extern int write_aux_header64_(int fd, void *rec, int num);
+extern int write_aux_header_swapped64_(int fd, void *rec, int num);
+extern int read_aux_header64_(int fd, void *header, int num);
+extern int read_aux_header_swapped64_(int fd, void *header, int num);
+extern int write_aux_index64_(int fd, void *rec, int num);
+extern int write_aux_index_swapped64_(int fd, void *idx, int num);
+extern int read_aux_index64_(int fd, void *rec, int num);
+extern int read_aux_index_swapped64_(int fd, void *idx, int num);
 
 
-extern G_EXPORT int (*low_level_vectors[4])(int fd, void *x, int num);
-extern G_EXPORT int (*low_level_vectors_swapped[4])(int fd, void *x, int num);
-extern G_EXPORT int (*(*low_level_vector))(int fd, void *x, int num);
-extern G_EXPORT int (*(*set_low_level_vector(void)))(int fd, void *x, int num);
+extern G_EXPORT int (*low_level_vectors_swapped64[4])(int fd, void *x, int num);
+extern G_EXPORT int (*low_level_vectors_swapped32[4])(int fd, void *x, int num);
+extern G_EXPORT int (*low_level_vectors64[4])(int fd, void *x, int num);
+extern G_EXPORT int (*low_level_vectors32[4])(int fd, void *x, int num);
 
 #define GOP_WRITE_AUX_HEADER 0
 #define GOP_WRITE_AUX_INDEX  1

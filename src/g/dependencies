@@ -1,33 +1,32 @@
 
 # DO NOT DELETE
-$O/freetree.o: $(SRCROOT)/Misc/xalloc.h g-os.h $(SRCROOT)/Misc/os.h
+$O/freetree.o: $(SRCROOT)/Misc/xalloc.h freetree-io.h
 $O/freetree.o: freetree.h g-error.h $(SRCROOT)/Misc/xerror.h
-$O/g-connect.o: $(SRCROOT)/Misc/array.h
-$O/g-connect.o: g-connect.h g-struct.h freetree.h g-error.h $(SRCROOT)/Misc/xerror.h
+$O/freetree.o: g-os.h $(SRCROOT)/Misc/os.h
+$O/g-connect.o: g-filedefs.h $(SRCROOT)/Misc/array.h
 $O/g-connect.o: g-defs.h g-db.h
-$O/g-connect.o: g-filedefs.h g-os.h $(SRCROOT)/Misc/os.h
+$O/g-connect.o: g-connect.h g-struct.h freetree.h g-error.h $(SRCROOT)/Misc/xerror.h
+$O/g-connect.o: g-os.h $(SRCROOT)/Misc/os.h
 $O/g-db.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h g-db.h
-$O/g-db.o: g-defs.h g-files.h g-io.h g-request.h
-$O/g-db.o: g-struct.h freetree.h g-error.h g-filedefs.h g-os.h $(SRCROOT)/Misc/os.h
-$O/g-debug.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h freetree.h
-$O/g-debug.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/g-debug.o: $(SRCROOT)/Misc/misc.h
-$O/g-debug.o: g-defs.h
-$O/g-debug.o: g-error.h g-files.h g-struct.h g-filedefs.h g-os.h g-io.h g-db.h
+$O/g-db.o: $(SRCROOT)/Misc/os.h g-filedefs.h g-defs.h g-files.h
+$O/g-db.o: g-io.h g-request.h
+$O/g-db.o: g-struct.h freetree.h g-error.h g-os.h
 $O/g-error.o: g-error.h $(SRCROOT)/Misc/xerror.h g-misc.h
-$O/g-files.o: g-io.h g-db.h g-defs.h $(SRCROOT)/Misc/xalloc.h
-$O/g-files.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h
+$O/g-files.o: $(SRCROOT)/Misc/xalloc.h
+$O/g-files.o: $(SRCROOT)/Misc/os.h
+$O/g-files.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h g-os.h
 $O/g-files.o: $(SRCROOT)/Misc/array.h
-$O/g-files.o: g-files.h g-struct.h g-filedefs.h g-os.h $(SRCROOT)/Misc/os.h
-$O/g-io.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/g-io.o: g-files.h g-struct.h
+$O/g-files.o: g-files.h g-struct.h g-filedefs.h g-io.h g-db.h g-defs.h
+$O/g-io.o: $(SRCROOT)/Misc/os.h g-filedefs.h $(SRCROOT)/Misc/array.h
 $O/g-io.o: g-io.h
-$O/g-io.o: freetree.h g-error.h $(SRCROOT)/Misc/xerror.h g-filedefs.h g-os.h
-$O/g-request.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h g-request.h g-struct.h
+$O/g-io.o: g-files.h g-struct.h
+$O/g-io.o: freetree.h g-error.h $(SRCROOT)/Misc/xerror.h g-os.h
+$O/g-request.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h g-os.h
 $O/g-request.o: $(SRCROOT)/Misc/array.h
-$O/g-request.o: g-defs.h g-db.h g-misc.h $(SRCROOT)/Misc/xalloc.h
-$O/g-request.o: g-filedefs.h g-os.h $(SRCROOT)/Misc/os.h g-files.h
-$O/g-struct.o: $(SRCROOT)/Misc/xalloc.h
-$O/g-struct.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h g-files.h g-struct.h
+$O/g-request.o: $(SRCROOT)/Misc/os.h
+$O/g-request.o: g-misc.h $(SRCROOT)/Misc/xalloc.h
+$O/g-request.o: g-request.h g-struct.h g-filedefs.h g-files.h g-defs.h g-db.h
+$O/g-struct.o: $(SRCROOT)/Misc/xerror.h freetree.h g-error.h g-os.h
 $O/g-struct.o: $(SRCROOT)/Misc/array.h
-$O/g-struct.o: g-filedefs.h g-os.h $(SRCROOT)/Misc/os.h
+$O/g-struct.o: $(SRCROOT)/Misc/os.h
+$O/g-struct.o: g-files.h g-struct.h g-filedefs.h g-io.h $(SRCROOT)/Misc/xalloc.h

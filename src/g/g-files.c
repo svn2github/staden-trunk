@@ -60,23 +60,32 @@
 #endif
  
 
-int g_read_aux_header(int fdaux, AuxHeader *header)
+static int g_read_aux_header(GFile *gfile, AuxHeader *header)
 /*
  * Read the header from the aux file
  */
 {
-    /*
-     * NOTE -
-     * for generality we avoid using machine independant IO here
-     */
-
-    /* LOW LEVEL IO HERE */
-    /* return (read(fdaux,header,sizeof(AuxHeader))!=sizeof(AuxHeader)); */
+    int err;
     errno = 0;
-    return (low_level_vector[GOP_READ_AUX_HEADER])(fdaux,header,1);
+    err = gfile->low_level_vector[GOP_READ_AUX_HEADER](gfile->fdaux,header,1);
+    
+    /* Auto-sense low-level vector set use based on the bit-size */
+    if (!err) {
+	if (header->format == G_32BIT) {
+	    gfile->low_level_vector = gfile->swapped
+		? low_level_vectors_swapped32
+		: low_level_vectors32;
+	} else {
+	    gfile->low_level_vector = gfile->swapped
+		? low_level_vectors_swapped64
+		: low_level_vectors64;
+	}
+    }
+
+    return err;
 }
 
-static int g_read_aux_index(int fdaux, AuxIndex *idx, int num)
+static int g_read_aux_index(GFile *gfile, AuxIndex *idx, int num)
 /*
  * Read records from the index of the aux file
  */
@@ -85,7 +94,7 @@ static int g_read_aux_index(int fdaux, AuxIndex *idx, int num)
      * NOTE -
      * for generality we avoid using machine independant IO here
      */
-    return (low_level_vector[GOP_READ_AUX_INDEX])(fdaux,idx,num);
+    return (gfile->low_level_vector[GOP_READ_AUX_INDEX])(gfile->fdaux,idx,num);
 }
 
 
@@ -132,6 +141,7 @@ GFile *g_open_file(char *fn, int read_only)
     GCardinal i;
     int tree_init;
     AuxIndex *idx_arr = NULL;
+    int recsize;
 
     /* g_dump_file(fn); */
 
@@ -154,7 +164,7 @@ GFile *g_open_file(char *fn, int read_only)
     strcat(fnaux,G_AUX_SUFFIX);
 
     /* allocate new data structure - GFile */
-    gfile = g_new_gfile();
+    gfile = g_new_gfile(G_32BIT);
     if (gfile == NULL)
 	ABORT(GERR_OUT_OF_MEMORY);
 
@@ -212,7 +222,7 @@ GFile *g_open_file(char *fn, int read_only)
     if (-1==lseek(gfile->fdaux,0,0))
 	ABORT(GERR_SEEK_ERROR);
 
-    if (g_read_aux_header(gfile->fdaux,&gfile->header))
+    if (g_read_aux_header(gfile, &gfile->header))
 	ABORT(GERR_READ_ERROR);
 
 /*
@@ -242,14 +252,19 @@ GFile *g_open_file(char *fn, int read_only)
     /* read cached freetree */
     /* LOW LEVEL IO HERE */
     errno = 0;
+    recsize = (gfile->header.format == G_32BIT)
+	? sizeof(AuxIndex32)
+	: sizeof(AuxIndex);
     lseek(gfile->fdaux, sizeof(AuxHeader) +
-	  gfile->header.num_records * sizeof(AuxIndex), SEEK_SET);
-    gfile->freetree = freetree_load(gfile->fdaux, gfile->header.last_time);
+	  gfile->header.num_records * recsize, SEEK_SET);
+    gfile->freetree = (gfile->header.format == G_32BIT)
+	? freetree_load_int4(gfile->fdaux, gfile->header.last_time)
+	: freetree_load_int8(gfile->fdaux, gfile->header.last_time);
     tree_init = gfile->freetree ? 1 : 0;
 
     /* allocate freetree, if not loaded */
     if (!tree_init) {
-	gfile->freetree = freetree_create(0,MAX_GCardinal);
+	gfile->freetree = freetree_create(0,MAX_GImage);
 	if (gfile->freetree==NULL)
 	    ABORT(GERR_OUT_OF_MEMORY);
     }
@@ -263,7 +278,7 @@ GFile *g_open_file(char *fn, int read_only)
     /* Temporarily load the entire index in one step */
     idx_arr = (AuxIndex *)xmalloc(gfile->header.num_records *
 				  sizeof(AuxIndex) + 1);
-    if (g_read_aux_index(gfile->fdaux, idx_arr, gfile->header.num_records))
+    if (g_read_aux_index(gfile, idx_arr, gfile->header.num_records))
 	ABORT(GERR_READ_ERROR);
     
     for (i=0;i<gfile->header.num_records;i++) {
@@ -339,9 +354,7 @@ GFile *g_open_file(char *fn, int read_only)
     }
 
     xfree(idx_arr);
-
-    /* tree_print_ps(gfile->freetree->tree->left); */
-
+    
 #undef ABORT
 
     return gfile;
@@ -475,7 +488,7 @@ int g_write_aux_header(GFile *gfile)
     /* LOW LEVEL IO HERE */
     errno = 0;
     /* check = write(fdaux,header,sizeof(AuxHeader)); */
-    check = (low_level_vector[GOP_WRITE_AUX_HEADER])(fdaux,header,1);
+    check = (gfile->low_level_vector[GOP_WRITE_AUX_HEADER])(fdaux,header,1);
     if (check)
 	return gerr_set(GERR_WRITE_ERROR);
     else
@@ -492,6 +505,7 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
     AuxIndex idx;
     int fdaux = gfile->fdaux;
     int check;
+    int recsize;
     
     idx.image[0] = arr(Index,gfile->idx,rec).aux_image;
     idx.time [0] = arr(Index,gfile->idx,rec).aux_time;
@@ -505,13 +519,16 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
 
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (-1==lseek(fdaux,sizeof(AuxHeader)+rec*sizeof(AuxIndex),0))
+    recsize = (gfile->header.format == G_32BIT)
+	? sizeof(AuxIndex32)
+	: sizeof(AuxIndex);
+    if (-1==lseek(fdaux,sizeof(AuxHeader)+rec*recsize,0))
 	return gerr_set(GERR_SEEK_ERROR);
 
     /* LOW LEVEL IO HERE */
     /* check = write(fdaux,idx,sizeof(AuxIndex)); */
     errno = 0;
-    check = (low_level_vector[GOP_WRITE_AUX_INDEX])(fdaux,&idx,1);
+    check = (gfile->low_level_vector[GOP_WRITE_AUX_INDEX])(fdaux,&idx,1);
     if (check)
 	return gerr_set(GERR_WRITE_ERROR);
     else
@@ -590,7 +607,7 @@ int g_check_header(GFile *gfile)
     if (-1==lseek(gfile->fdaux,0,0))
 	return gerr_set(GERR_SEEK_ERROR);
 
-    g_read_aux_header(gfile->fdaux, &diskheader);
+    g_read_aux_header(gfile, &diskheader);
 
     if (diskheader.last_time != gfile->header.last_time) {
 	fprintf(stderr, "** SERIOUS PROBLEM - file %s\n",

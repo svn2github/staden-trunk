@@ -100,7 +100,7 @@ static void del_node(free_tree *t, free_tree_n *n) {
  *
  * Always returns a free_tree_n pointer.
  */
-static free_tree_n *tree_find_pos(free_tree_n *t, int pos) {
+static free_tree_n *tree_find_pos(free_tree_n *t, GImage pos) {
     for (;;) {
 	if (pos < t->pos) {
 	    /* left child */
@@ -140,9 +140,9 @@ static free_tree_n *tree_find_pos(free_tree_n *t, int pos) {
  *                        1 for butt with left end
  *                        2 for butt with right end
  */
-static free_tree_n *tree_find_pos_len(free_tree_n *t, int pos, int len,
-				      int *status) {
-    int end;
+static free_tree_n *tree_find_pos_len(free_tree_n *t, GImage pos,
+				      GImage len, int *status) {
+    GImage end;
 
     *status = 0;
     for (;;) {
@@ -200,7 +200,7 @@ static free_tree_n *tree_find_pos_len(free_tree_n *t, int pos, int len,
  * Returns a free_tree_n pointer when one is found.
  *           NULL for failure
  */
-static free_tree_n *tree_find_len(free_tree *tr, int len) {
+static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
     free_tree_n *root = tr->tree->left;
     free_tree_n *rover = tr->rover;
     free_tree_n *t;
@@ -407,8 +407,8 @@ static void tree_delete_node(free_tree *t, free_tree_n *node) {
     del_node(t, node);
 }
 
-static int last_end;
-static int tree_sum;
+static GImage last_end;
+static GImage tree_sum;
 
 /*
  * Prints a tree to stdout in the "inorder" order.
@@ -419,7 +419,7 @@ static void tree_print_r(free_tree_n *t, int indent) {
 	assert(t->left->parent == t);
 	tree_print_r(t->left, indent+1);
     }
-    printf("pos=%d, len=%d\n", t->pos, t->len);
+    printf("pos=%"PRIGImage", len=%"PRIGImage"\n", t->pos, t->len);
     tree_sum += t->pos;
     assert(t->pos > last_end);
     last_end = t->pos + t->len;
@@ -432,11 +432,11 @@ static void tree_print_r(free_tree_n *t, int indent) {
 }
 
 void tree_print(free_tree *t) {
-    puts("============== TREE ============");
+    printf("============== TREE %p ============\n", t);
     last_end = -1;
     tree_sum = 0;
     tree_print_r(t->tree, 0);
-    printf("Tree sum=%d\n", tree_sum);
+    printf("Tree sum=%"PRIGImage"\n", tree_sum);
 }
 
 
@@ -578,7 +578,7 @@ free_tree_n *tree_rotate_right(free_tree_n *t) {
  * Returns a free_tree pointer for success
  *         NULL for failure
  */
-free_tree *freetree_create(int pos, int len) {
+free_tree *freetree_create(GImage pos, GImage len) {
     free_tree *t;
 
     if (NULL == (t = (free_tree *)xmalloc(sizeof(free_tree)))) {
@@ -632,7 +632,7 @@ void freetree_destroy(free_tree *t) {
  * Returns 0 for success
  *        -1 for failure
  */
-int freetree_register(free_tree *t, int pos, int len) {
+int freetree_register(free_tree *t, GImage pos, GImage len) {
     free_tree_n *n, *lnode;
 
     /* Find node for this position */
@@ -704,9 +704,9 @@ int freetree_register(free_tree *t, int pos, int len) {
  * Returns offset for success
  *        -1 for failure
  */
-int freetree_allocate(free_tree *t, int len) {
+GImage freetree_allocate(free_tree *t, GImage len) {
     free_tree_n *n;
-    int pos;
+    GImage pos;
 
     /* Find free block */
     if (t->tree->left) {
@@ -752,9 +752,10 @@ int freetree_allocate(free_tree *t, int len) {
  * Returns offset for success
  *        -1 for failure
  */
-int freetree_reallocate(free_tree *t, int pos, int old_len, int new_len) {
+int freetree_reallocate(free_tree *t, GImage pos, GImage old_len,
+			GImage new_len) {
     free_tree_n *n;
-    int new_pos;
+    GImage new_pos;
 
     /*
      * Search tree for the position at the end of this block. This will
@@ -772,7 +773,7 @@ int freetree_reallocate(free_tree *t, int pos, int old_len, int new_len) {
 	    tree_delete_node(t, n);
 	    /* printf("Reallocated position %d by deleting node\n", pos); */
 	} else {
-	    int diff = pos + new_len - n->pos;
+	    GImage diff = pos + new_len - n->pos;
 
 	    if (n == t->largest)
 		t->largest = NULL;
@@ -802,7 +803,7 @@ int freetree_reallocate(free_tree *t, int pos, int old_len, int new_len) {
  * Returns 0 for success
  *        -1 for failure
  */
-int freetree_unregister(free_tree *t, int pos, int len) {
+int freetree_unregister(free_tree *t, GImage pos, GImage len) {
     free_tree_n *n, *l, *r;
     int status;
 
@@ -1008,211 +1009,10 @@ static int calc_crc(char *data, int len) {
     return crc;
 }
 
-/*
- * Saves a freetree to disk at the end of the file pointed to by 'fd'.
- * To verify validity for subsequent reads, we also store the current global
- * time stamp along with a 32-bit CRC of the entire tree.
- * (If the tree becomes corrupted then we would inevitably corrupt the entire
- * database.)
- *
- * Returns:
- *	0 for success
- *	-1 for failure
- */
-int freetree_save(free_tree *t, int fd, int last_time) {
-    int i, j;
-    free_tree_n *n;
-    int4 *data;
-    int data_ind = 0;
-    int endian = 1;
+#define TYPE int4
+#include "freetree-io.h"
+#undef TYPE
 
-    /* Allocate a block of data to write our tree into */
-    data = (int4 *)xmalloc((t->nblocks * BLOCK_FACTOR * 5 + 6) * sizeof(int4));
-    if (!data)
-	return -1;
-
-    /* Main tree structure */
-    data[data_ind++] = t->nblocks;
-    data[data_ind++] = last_time;
-    data[data_ind++] = find_node_addr(t, t->free_nodes);
-    data[data_ind++] = find_node_addr(t, t->tree);
-    data[data_ind++] = find_node_addr(t, t->rover);
-
-    for (i = 0; i < t->nblocks; i++) {
-	for (j = 0; j < BLOCK_FACTOR; j++) {
-	    n = &t->node_blocks[i][j];
-
-	    data[data_ind++] = find_node_addr(t, n->left);
-	    data[data_ind++] = find_node_addr(t, n->right);
-	    data[data_ind++] = find_node_addr(t, n->parent);
-	    data[data_ind++] = n->pos;
-	    data[data_ind++] = n->len;
-	}
-    }
-
-    if (*(char *)&endian) {
-	int i;
-	for (i = 0; i < data_ind; i++)
-	    swap_int4(data[i], data[i]);
-    }
-
-    data[data_ind] = calc_crc((char *)data, data_ind * 4);
-    data_ind++;
-
-    if (*(char *)&endian) {
-	swap_int4(data[data_ind-1], data[data_ind-1]);
-    }
-
-    /* LOW LEVEL IO HERE */
-    write(fd, data, data_ind * sizeof(int4));
-
-    xfree(data);
-
-    return 0;
-}
-
-/*
- * Loads a freetree from the current location in the file pointed to by fd.
- * We check that the last_time matches the one passed in here and that the
- * 32-bit CRC is correct.
- * If any of these operations fail we return NULL and the tree will be
- * recomputed from scratch.
- *
- * Returns:
- *	A free_tree pointer for success.
- *	NULL for failure.
- */
-free_tree *freetree_load(int fd, int last_time) {
-    free_tree *t = NULL;
-    int4 *data = NULL;
-    int4 nblocks;
-    int endian = 1;
-    int sz;
-    int data_ind = 0;
-    int last_block;
-    int i, j;
-
-    /* Load the first 5 blocks */
-    sz = 5 * sizeof(int4);
-    if (!(data = (int4 *)xmalloc(sz)))
-	goto error;
-
-    /* LOW LEVEL IO HERE */
-    errno = 0;
-    if (20 != read(fd, data, sz))
-	goto error;
-
-    /* Check time stamp */
-    if (be_int4(data[1]) != last_time) {
-	fprintf(stderr, "Incorrect tree timestamp - rebuilding tree\n");
-	goto error;
-    }
-
-    /* Load the other blocks */
-    nblocks = be_int4(data[0]);
-    last_block = nblocks * BLOCK_FACTOR * 5 + 5;
-    sz =  (last_block+1) * 4;
-    if (!(data = (int4 *)xrealloc(data, sz)))
-	goto error;
-
-    sz -= 5*4; /* first 5 already loaded */
-    
-    /* LOW LEVEL IO HERE */
-    errno = 0;
-    if (sz != read(fd, &data[5], sz)) {
-	fprintf(stderr, "Tree too short\n");
-	goto error;
-    }
-
-
-    /* Check CRC */
-    if (*(char *)&endian) {
-	swap_int4(data[last_block], data[last_block]);
-    }
-    if (data[last_block] != calc_crc((char *)data, last_block*4)) {
-	fprintf(stderr, "Invalid tree CRC\n");
-	goto error;
-    }
-
-    /* Byte-swap blocks */
-    if (*(char *)&endian) {
-	int i;
-
-	for (i = 0; i < last_block ; i++)
-	    swap_int4(data[i], data[i]);
-    }
-
-    /* Construct the tree top */
-    if (!(t = (free_tree *)xmalloc(sizeof(free_tree))))
-	goto error;
-    t->tree = NULL;
-    t->rover = NULL;
-    t->node_blocks = NULL;
-    t->nblocks = 0;
-    t->free_nodes = NULL;
-    t->largest = NULL;
-
-    /* Allocate tree memory */
-    if (!(t->node_blocks = (free_tree_n **)xmalloc(nblocks *
-						   sizeof(free_tree_n *))))
-	goto error;
-    for (i = 0; i < nblocks; i++)
-	t->node_blocks[i] = NULL;
-    for (i = 0; i < nblocks; i++) {
-	free_tree_n *n;
-
-	n = t->node_blocks[i] =
-	    (free_tree_n *)xmalloc(BLOCK_FACTOR * sizeof(free_tree_n));
-	if (!n)
-	    goto error;
-	for (j = 0; j < BLOCK_FACTOR; j++) {
-	    n[j].left = NULL;
-	    n[j].right = NULL;
-	    n[j].parent = NULL;
-	    n[j].pos = 0;
-	    n[j].len = 0;
-	}
-    }
-
-    /* Decode blocks into tree */
-    t->nblocks    = nblocks;
-    data_ind = 2;
-    if (-1 == node_ind2addr(t, data[data_ind++], &t->free_nodes))
-	goto error;
-
-    if (-1 == node_ind2addr(t, data[data_ind++], &t->tree))
-	goto error;
-
-    if (-1 == node_ind2addr(t, data[data_ind++], &t->rover)) {
-	t->rover = NULL;
-    }
-
-    for (i = 0; i < t->nblocks; i++) {
-	for (j = 0; j < BLOCK_FACTOR; j++) {
-	    free_tree_n *n = &t->node_blocks[i][j];
-	    if (-1 ==  node_ind2addr(t, data[data_ind++], &n->left))
-		n->left = NULL;
-
-	    if (-1 == node_ind2addr(t, data[data_ind++], &n->right))
-		n->right = NULL;
-
-	    if (-1 == node_ind2addr(t, data[data_ind++], &n->parent))
-		n->right = NULL;
-
-	    n->pos = data[data_ind++];
-	    n->len = data[data_ind++];
-	}
-    }
-
-    if (data)
-	xfree(data);
-
-    return t;
-
- error:
-    if (data)
-	xfree(data);
-    if (t)
-	freetree_destroy(t);
-    return NULL;
-}
+#define TYPE int8
+#include "freetree-io.h"
+#undef TYPE

@@ -17,6 +17,7 @@
 #include <stdio.h> /* IMPORT: NULL */
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 /*#include <malloc.h>*/ /* IMPORT: malloc */
 
 #include "array.h"
@@ -47,9 +48,6 @@ GDB *g_open_database_(char *fns[], GCardinal Nfns, int read_only)
 	(void) gerr_set(GERR_INVALID_ARGUMENTS);
 	return NULL;
     }
-
-    /* set low level things */
-    (void) set_low_level_vector();
 
     if (NULL == (gdb = g_new_gdb()))
 	return NULL;
@@ -110,14 +108,27 @@ void g_shutdown_database_(GDB *gdb)
 
     if (gdb==NULL) return;
 
+    /* Save the freetree, as long as we opened in read-write mode */
     if (g = gdb->gfile) {
-
 	/* LOW LEVEL IO HERE */
-	lseek(g->fdaux, sizeof(AuxHeader) +
-	      g->header.num_records * sizeof(AuxIndex), SEEK_SET);
+	int mode = fcntl(g->fdaux, F_GETFL, 0);
+	if ((mode & O_ACCMODE) & O_RDWR) {
+	    int recsize;
 
-	/* Save a cached copy of the freetree for fast startup next time */
-	freetree_save(g->freetree, g->fdaux, g->header.last_time);
+	    /* LOW LEVEL IO HERE */
+	    recsize = (g->header.format == G_32BIT)
+		? sizeof(AuxIndex32)
+		: sizeof(AuxIndex);
+	    lseek(g->fdaux, sizeof(AuxHeader) +
+		  g->header.num_records * recsize, SEEK_SET);
+
+	    /* Save a cached copy of the freetree for fast startup next time */
+	    if (g->header.format == G_32BIT)
+		freetree_save_int4(g->freetree, g->fdaux, g->header.last_time);
+	    else
+		freetree_save_int8(g->freetree, g->fdaux, g->header.last_time);
+	}
+
     }
 
     g_free_gdb(gdb);

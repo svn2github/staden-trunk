@@ -60,13 +60,16 @@
 #define TREE_NOT_FOUND			22
 #define TREE_OVERLAP			23
 
+#define GERR_WRONG_BITSIZE              24
+
 /*
  * A "g" interface to the xerr_set() code. All we need is an error number.
  * This is then translated into both a unique number and a string to pass
  * to the xerr_set routine.
  */
 extern char *gerrors[];
-/* #define gerr_set(e) ((e)?xerr_set((e), gerrors[(e)]):0) */
-int gerr_set(int errcode);
+/*int gerr_set(int errcode); */
+#define gerr_set(e) (gerr_set_lf((e),__LINE__,__FILE__))
+int gerr_set_lf(int errcode, int line, char *file);
 
 #endif /*_G_ERROR_H_*/

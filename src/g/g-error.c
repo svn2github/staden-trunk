@@ -44,12 +44,25 @@ char *gerrors[] = {
 
     /* Tree code */
     "item not found in free-tree",
-    "overlap within free-tree"
+    "overlap within free-tree",
+
+    "Incompatible database bit-size"
 };
+
+#ifdef gerr_set
+#    undef gerr_set
+#endif
 
 int gerr_set(int errcode) {
     if (errcode)
 	return xerr_set(errcode, gerrors[errcode]);
+    else
+	return 0;
+}
+
+int gerr_set_lf(int errcode, int line, char *file) {
+    if (errcode)
+	return xerr_set_globals(errcode, gerrors[errcode], line, file);
     else
 	return 0;
 }

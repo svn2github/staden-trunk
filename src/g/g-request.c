@@ -222,8 +222,9 @@ static int read_image_(int fd, GImage image, GCardinal used, void *buf, GCardina
 	in = (len>used)?used:len;
 	/* LOW LEVEL IO HERE */
 	errno = 0;
-	if (-1==lseek(fd, (long)image, 0))
+	if (-1==lseek(fd, (off_t)image, 0))
 	    return gerr_set(GERR_SEEK_ERROR);
+
 	/* LOW LEVEL IO HERE */
 	errno = 0;
 	check = read(fd, buf, in);
@@ -285,7 +286,7 @@ static int readv_image_(int fd, GImage image, GCardinal used, GIOVec *v, GCardin
 
 	/* LOW LEVEL IO HERE */
 	errno = 0;
-	if (-1==lseek(fd, (long)image, 0))
+	if (-1==lseek(fd, (off_t)image, 0))
 	    return gerr_set(GERR_SEEK_ERROR);
 
 	if (used > 0 && vcnt > 0) {
@@ -403,8 +404,9 @@ static int write_image_(int fd, GImage image, GCardinal allocated, void *buf, GC
     int check;
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (-1==lseek(fd, (long)image, 0))
+    if (-1==lseek(fd, (off_t)image, 0))
 	return gerr_set(GERR_SEEK_ERROR);
+
     /* LOW LEVEL IO HERE */
     errno = 0;
     check = write(fd, buf, (int)len);
@@ -430,7 +432,7 @@ static int writev_image_(int fd, GImage image, GCardinal allocated, GIOVec *v, G
 
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (-1==lseek(fd, (long)image, 0))
+    if (-1==lseek(fd, (off_t)image, 0))
 	return gerr_set(GERR_SEEK_ERROR);
 
     if (allocated > 0 && vcnt > 0) {

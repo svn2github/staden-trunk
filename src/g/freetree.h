@@ -2,13 +2,14 @@
 #define _FREE_TREE_H_
 
 #include "g-error.h"
+#include "g-os.h"
 
 typedef struct free_tree_n_ {
     struct free_tree_n_ *left;
     struct free_tree_n_ *right;
     struct free_tree_n_ *parent;
-    int pos;
-    int len;
+    GImage pos;
+    GImage len;
 } free_tree_n;
 
 typedef struct free_tree_ {
@@ -30,7 +31,7 @@ typedef struct free_tree_ {
  * Returns a free_tree pointer for success
  *         NULL for failure
  */
-free_tree *freetree_create(int pos, int len);
+free_tree *freetree_create(GImage pos, GImage len);
 
 /*
  * Deallocates memory used by a free_tree
@@ -44,7 +45,7 @@ void freetree_destroy(free_tree *t);
  * Returns 0 for success
  *        -1 for failure
  */
-int freetree_register(free_tree *t, int pos, int len);
+int freetree_register(free_tree *t, GImage pos, GImage len);
 
 /*
  * Allocates a space from the free tree. If this doesn't exist, then space
@@ -53,7 +54,7 @@ int freetree_register(free_tree *t, int pos, int len);
  * Returns offset for success
  *        -1 for failure
  */
-int freetree_allocate(free_tree *t, int len);
+GImage freetree_allocate(free_tree *t, GImage len);
 
 /*
  * Adds some space (pos+len) back to the free_tree.
@@ -61,7 +62,7 @@ int freetree_allocate(free_tree *t, int len);
  * Returns 0 for success
  *        -1 for failure
  */
-int freetree_unregister(free_tree *t, int pos, int len);
+int freetree_unregister(free_tree *t, GImage pos, GImage len);
 
 #define FREETREE_BLOCK(len, block_size) (\
     ((len) % (block_size)) \
@@ -79,7 +80,8 @@ int freetree_unregister(free_tree *t, int pos, int len);
  *	0 for success
  *	-1 for failure
  */
-int freetree_save(free_tree *t, int fd, int last_time);
+int freetree_save_int4(free_tree *t, int fd, int last_time);
+int freetree_save_int8(free_tree *t, int fd, int last_time);
 
 /*
  * Loads a freetree from the current location in the file pointed to by fd.
@@ -92,6 +94,7 @@ int freetree_save(free_tree *t, int fd, int last_time);
  *	A free_tree pointer for success.
  *	NULL for failure.
  */
-free_tree *freetree_load(int fd, int last_time);
+free_tree *freetree_load_int4(int fd, int last_time);
+free_tree *freetree_load_int8(int fd, int last_time);
 
 #endif

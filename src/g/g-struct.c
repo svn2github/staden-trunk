@@ -24,7 +24,7 @@
 #include "freetree.h"
 #include "g-files.h" /* IMPORT: g_close_file */
 #include "g-struct.h"
-
+#include "g-io.h"
 #include "xalloc.h"
 
 
@@ -47,21 +47,36 @@ static void g_destroy_index(GFile *gfile)
  * GFile
  */
 
-GFile *g_new_gfile()
+GFile *g_new_gfile(int bitsize)
 /*
  * create and initialise a new gfile structure
  */
 {
     GFile *gfile;
-    if ( ( gfile = (GFile *)xmalloc(sizeof(GFile)) ) != NULL ) {
-	gfile->fname = NULL;
-	gfile->fd = gfile->fdaux = -1;
-        gfile->freetree = NULL;
-        gfile->Nidx = 0; gfile->idx = NULL;
-	gfile->flock_client = -1; /* An invalid client number */
-	gfile->flock_status = G_FLOCK_NONE;
-	gfile->check_header = 1;
+    int endian = 1;
+
+    if (NULL == ( gfile = (GFile *)xmalloc(sizeof(GFile))))
+	return NULL;
+
+    gfile->fname = NULL;
+    gfile->fd = gfile->fdaux = -1;
+    gfile->freetree = NULL;
+    gfile->Nidx = 0; gfile->idx = NULL;
+    gfile->flock_client = -1; /* An invalid client number */
+    gfile->flock_status = G_FLOCK_NONE;
+    gfile->check_header = 1;
+    if ( *(char *)&endian ) {
+	gfile->low_level_vector = (bitsize == G_64BIT)
+	    ? low_level_vectors_swapped64
+	    : low_level_vectors_swapped32;
+	gfile->swapped = 1;
+    } else {
+	gfile->low_level_vector = (bitsize == G_64BIT)
+	    ? low_level_vectors64
+	    : low_level_vectors32;
+	gfile->swapped = 0;
     }
+
     return gfile;
 }
 

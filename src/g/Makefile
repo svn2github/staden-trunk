@@ -31,8 +31,7 @@ GSLIB = \
 
 GSMISC = \
 	$(GBIN)/g-error.o \
-	$(GBIN)/g-io.o \
-	$(GBIN)/g-debug.o
+	$(GBIN)/g-io.o
 
 GSREQ = \
 	$(GBIN)/g-connect.o \
