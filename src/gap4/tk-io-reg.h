@@ -160,4 +160,11 @@ int tk_delete_cursor(ClientData clientData, Tcl_Interp *interp,
 
 int tk_cursor_ref(ClientData clientData, Tcl_Interp *interp,
 		  int argc, char **argv);
+
+/*
+ * Interface to contig_lock_write()
+ */
+int tk_contig_lock_write(ClientData clientData, Tcl_Interp *interp,
+			 int argc, char **argv);
+
 #endif /* _TK_IO_REG_H_ */

@@ -942,6 +942,9 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
     char buf[1024];
 
     Tcl_DStringInit(&ds);
+    sprintf(buf, "{contig_num %d} ", contig);
+    Tcl_DStringAppend(&ds, buf, -1);
+    
     switch (jdata->job) {
     case REG_NUMBER_CHANGE:
 	sprintf(buf, "{number %d}",
@@ -1214,6 +1217,15 @@ int tk_contig_notify(ClientData clientData, Tcl_Interp *interp,
 	    break;
 	}
 
+    case REG_LENGTH:
+	{
+	    reg_length rl;
+	    rl.job = REG_LENGTH;
+	    rl.length = io_clength(args.io, args.cnum);
+	    contig_notify(args.io, args.cnum, (reg_data *)&rl);
+	    break;
+	}
+
     default:
 	verror(ERR_WARN, "contig_notify", "Unknown event type '%s'",
 	       args.type);
@@ -1419,5 +1431,27 @@ int tk_cursor_ref(ClientData clientData, Tcl_Interp *interp,
     cn.cursor->job = CURSOR_MOVE;
 
     contig_notify(args.io, args.cnum, (reg_data *)&cn);
+    return TCL_OK;
+}
+
+
+/*
+ * Interface to contig_lock_write()
+ */
+int tk_contig_lock_write(ClientData clientData, Tcl_Interp *interp,
+			 int argc, char **argv)
+{
+    cn_arg args;
+
+    cli_args a[] = {
+        {"-io",   ARG_IO,  1, NULL, offsetof(cn_arg, io)},
+	{"-cnum", ARG_INT, 1, NULL, offsetof(cn_arg, cnum)},
+        {NULL,        0,       0, NULL, 0}
+    };
+    if (-1 == gap_parse_args(a, &args, argc, argv))
+        return TCL_ERROR;
+
+    vTcl_SetResult(interp, "%d", contig_lock_write(args.io, args.cnum));
+
     return TCL_OK;
 }
