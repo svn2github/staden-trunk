@@ -4,14 +4,18 @@
 
 include ../options.mk
 
-PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment
+PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump
 
 ifdef IOLIB_PLN
 PROGS += $(O)/extract_seq
 endif
 
 ifdef IOLIB_SCF
-PROGS += $(O)/scf_update $(O)/scf_info $(O)/scf_dump $(O)/trace_dump $(O)/makeSCF
+PROGS += $(O)/scf_update $(O)/scf_info $(O)/scf_dump $(O)/makeSCF
+endif
+
+ifdef IOLIB_ZTR
+PROGS += $(O)/ztr_dump
 endif
 
 SRCROOT=../..
@@ -28,6 +32,7 @@ SUOBJS=$(O)/scf_update.o
 SIOBJS=$(O)/scf_info.o
 STOBJS=$(O)/scf_dump.o
 TDOBJS=$(O)/trace_dump.o
+ZDOBJS=$(O)/ztr_dump.o
 MSOBJS=$(O)/makeSCF.o
 CTOBJS=$(O)/convert_trace.o
 ITOBJS=$(O)/index_tar.o
@@ -52,6 +57,9 @@ $(O)/scf_dump: 		$(STOBJS)
 
 $(O)/trace_dump: 	$(TDOBJS) 
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TDOBJS) $(PLIBS)
+
+$(O)/ztr_dump: 	$(ZDOBJS) 
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ZDOBJS) $(PLIBS) $(MATH_LIB)
 
 $(O)/makeSCF: 		$(MSOBJS) 
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(MSOBJS) $(PLIBS)
