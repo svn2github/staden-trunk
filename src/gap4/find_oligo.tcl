@@ -140,6 +140,7 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
 	set active_tags [GetDefaultTags FINDOLIGO.TAGS]
     } elseif {$tags == 2} {
 	set sequence [entrybox_get $seq]
+	set sequence [string map {{*} {}} $sequence]
     }
 
     if {$tags == 1 && $active_tags == ""} {
