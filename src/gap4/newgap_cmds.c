@@ -335,6 +335,7 @@ int UnattachedReadings(ClientData clientData,
  * db_info t_contig_length io
  * db_info t_read_length io
  * db_info get_read_num io identifier
+ * db_info get_template_num io t_identifier
  * db_info get_contig_num io identifier
  * db_info chain_left io identifer (returns reading number)
  * db_info longest_contig io
@@ -385,6 +386,14 @@ int db_info(ClientData clientData,
 	    goto db_error;
 	}
 	vTcl_SetResult(interp, "%d", get_gel_num(io, argv[3], GGN_ID));
+	return TCL_OK;
+    }
+
+    if (strcmp(argv[1], "get_template_num") == 0) {
+	if (argc != 4) {
+	    goto db_error;
+	}
+	vTcl_SetResult(interp, "%d", template_name_to_number(io, argv[3]));
 	return TCL_OK;
     }
 
