@@ -1,3 +1,21 @@
+2003-06-19  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/clip.c, src/gap4/clip.tcl, src/gap4/newgap_cmds.c,
+	src/gap4/tclIndex, tables/gaprc, tables/gaprc_menu_full:
+	Added a clip sequence by %age of non-ACGT (labelled N-clip). This
+	solves a phrap alignment bug.
+
+2003-06-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/gap4/trace_display.tcl (trace_flash): 
+	Replace the trace-flash window to cover the whole height of the
+	trace instead of +40 onwards. (+40 was inappropriate after we
+	moved the base calls from the top to the bottom of the trace.)
+	
+	* src/gap4/contig_editor.tcl:
+	Added 'break' to F1-F10 bindings so that the global keyboard menu
+	traversal bindings do trigger.
+
 2003-06-11  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/gap4/contigEditor.c, src/gap4/contig_editor.tcl,
@@ -19,7 +37,7 @@
 2003-06-06  James Bonfield  <jkb@sanger.ac.uk>
 
 	* src/prefinish/finish.c: set to version 1.19
-\
+
 	* src/prefinish/finish.tcl:
 	Changed the optimisation on solving low consensus confidence
 	problems; we now always check both strands. Slower, but better in

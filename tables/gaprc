@@ -310,6 +310,7 @@ set_def TAG_EDITOR.WIN		.tag
 set_def DOCTOR_DATABASE.WIN	.doctor
 set_def COMPLEMENT_CONTIG.WIN	.complement_contig
 set_def QUALITY_CLIP.WIN	.quality_clip
+set_def N_CLIP.WIN		.nbase_clip
 set_def DIFFERENCE_CLIP.WIN	.difference_clip
 set_def DOUBLE_STRAND.WIN	.double_strand
 set_def SELECT_TAGS.WIN		.select_tags
@@ -727,6 +728,9 @@ set_def QUALITY_CLIP.MINQUAL.MIN	0
 set_def QUALITY_CLIP.MINQUAL.MAX	50
 set_def QUALITY_CLIP.MINQUAL.VALUE	15
 set_def QUALITY_CLIP.INFILE		$defs_c_in
+
+#N-base clip
+set_def N_CLIP.INFILE			$defs_c_in
 
 #difference clip
 set_def DIFFERENCE_CLIP.INFILE		$defs_c_in

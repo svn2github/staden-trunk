@@ -98,6 +98,7 @@ add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
 add_command	{Edit.Save contig order}	 8 26 {SaveContigOrder \$io} e
 add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
 add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e
+add_command	{Edit.N-base Clip}		 8 26 {NClip \$io} e
 add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
 add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
 add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
