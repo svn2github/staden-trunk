@@ -106,7 +106,27 @@ proc CreateTableList { io t } {
     
     frame $t.b
     pack $t.b -side bottom -expand yes -fill both -padx 5
+
+    frame $t.s -relief groove -borderwidth 2
+    pack $t.s -side bottom -expand yes -fill both -padx 5 -pady 5
     
+    label $t.s.head -text "Contig Length: "
+    pack $t.s.head -side left    
+
+    label $t.s.info
+    pack $t.s.info -side left -padx 10
+
+    canvas $t.s.can -width 400 -height 20
+    pack $t.s.can -side right -padx 5
+    
+    label $t.s.cpos -text "Region Indicator: "
+    pack $t.s.cpos -side right  
+
+
+    $t.s.can create line 2 10 2 20 -width 2 -fill black
+    $t.s.can create line 400 10 400 20 -width 2 -fill black
+    $t.s.can create line 0 15 400 15 -width 2 -fill black 
+
     button $t.b.save -text "Save"    -command "SaveTable $t $tbl"
     button $t.b.close -text "Close"  -command "destroy $t"
     button $t.b.help -text "Help"    -command "show_help gap4 {Contig Navigation}"
@@ -223,6 +243,7 @@ proc RaiseAndMoveContig {io tbl w} {
     set sel [$tbl curselection]
     set ctg [$tbl cellcget [$tbl curselection],0 -text]
     set pos [$tbl cellcget [$tbl curselection],1 -text]
+    set com [$tbl cellcget [$tbl curselection],2 -text]
 
     if {[db_info get_read_num $io $ctg] <= 0} {
         bell
@@ -241,7 +262,23 @@ proc RaiseAndMoveContig {io tbl w} {
     }
     set bg [keylget gap_defs NAVIGATION.SELECT_COLOUR]
     $tbl rowconfigure $sel -bg $bg
-    
+
+    set ctgnum [db_info get_contig_num $io $ctg]
+    set ctg_len [c_length $io $ctgnum]
+    $w.s.info configure -text "$ctg_len bp"
+   
+
+    if {[regexp {Quality value} $com _dummy_] == 1} {
+        set end $pos
+    } else {
+        regexp {To:([0-9]+)\)$} $com _dummy_ end
+    }
+    $w.s.can delete POS
+    set pstart [expr {int((400.0 * $pos)/$ctg_len)}]
+    set pend   [expr {int((400.0 * $end)/$ctg_len)}]
+    $w.s.can create rectangle $pstart 10 $pend 20 -fill red -width 0 -tags POS
+
+
 }
 
 proc compareAsSet {item1 item2} {
