@@ -72,6 +72,7 @@
 #include "readpair_coverage.h"
 #include "reading_coverage.h"
 #include "strand_coverage.h"
+#include "allelic_discreps.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -4940,6 +4941,7 @@ int tcl_allelic_discreps(ClientData clientData, Tcl_Interp *interp,
     contig_list_t *contig_array = NULL;
     int num_contigs = 0;
     int i;
+    dstring_t *ds;
 
     /* Parse arguments */
     cli_args a[] = {
@@ -4958,11 +4960,18 @@ int tcl_allelic_discreps(ClientData clientData, Tcl_Interp *interp,
 	return TCL_OK;
     }
 
+    ds = dstring_create(NULL);
     for (i = 0; i < num_contigs; i++) {
-	allelic_discreps(args.io, contig_array[i].contig);
+	dstring_t *ds2;
+	ds2 = allelic_discreps(args.io, contig_array[i].contig);
+	dstring_appendf(ds, "{%s} ", dstring_str(ds2));
+	dstring_destroy(ds2);
     }
 
     xfree(contig_array);
+
+    Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+    dstring_destroy(ds);
 
     return TCL_OK;
 }
