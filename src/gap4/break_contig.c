@@ -25,7 +25,7 @@ int break_contig(GapIO *io, int rnum) {
     }
 
     /* Disassemble */
-    ret = disassemble_readings(io, reads, nreads, 2 /* move */);
+    ret = disassemble_readings(io, reads, nreads, 2 /* move */, 1 /* dup */);
 
     xfree(reads);
     return ret;

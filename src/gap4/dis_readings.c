@@ -213,6 +213,7 @@ static void copy_consensus_annotations(GapIO *io, int cfrom, int cto) {
 		last.position = a.position;
 		last.length = a.length;
 		last.type = a.type;
+		last.next = 0;
 		if (a.annotation) {
 		    char *comment = get_comment(io, a.annotation);
 		    last.annotation = put_comment(io, comment);
@@ -338,6 +339,8 @@ int disassemble_readings(GapIO *io, int *rnums, int nreads, int move,
 		io_crnbr(io, cnum) = 0;
 		io_clength(io, cnum) = 0;
 		new_cnum[rnum2cnum[rnum]] = cnum;
+		vmessage("New contig created with left reading %s\n",
+			 io_rname(io, rnum));
 	    }
 
 	    /* Move reading to the contig */
@@ -530,6 +533,9 @@ int remove_contig_holes(GapIO *io, int cnum) {
 
 	    if (-1 == io_init_contig(io, cnum = NumContigs(io)+1))
 		return -1;
+
+	    vmessage("New contig created with left reading %s\n",
+		     io_rname(io, rnum));
 
 	    split_contig_tags(io, left_cnum, cnum, r.position, furthest);
 
