@@ -1,0 +1,40 @@
+@cindex Search from file
+@cindex Contig navigation
+@cindex Contig region
+
+
+This function, which can be found under the view menu,
+allows the user to navigate to areas of interest within 
+contigs.
+When Contig navigation is selected a dialog box is raised
+asking for a filename containing the regions. The format is
+the same as the search by file function.
+_fxref(Editor-Search-File,Search by file,contig_editor)
+
+_picture(contig_navigation_browse)
+
+The user can either enter the name of the file or browse
+for it using the browse button. Once ok is hit, the file is 
+loaded into a table for viewing.
+
+_picture(contig_navigation_table)
+
+The table has three fixed headers, contigID, Position and Problem
+Type. Clicking on any of these cause the whole table to be sorted
+on that column.
+The regions can be viewed by either randomly double clicking on a row 
+or selecting a row and using the next (->>) and previous (<<-) buttons 
+at the bottom. The corresponding contig editor will be opened and 
+moved to the position indicated.
+Once a row has been clicked on it's background will be changed to 
+highlight that it has been visited. 
+
+The reset button will clear the table and re-read the data from 
+file.
+Auto-close editors is set on by default. It closes any un-needed 
+editors when the user selects a region on a different contig. 
+Save will save the table list, including all rows previously marked
+as selected, back to the file. If this file is re-read at a later stage
+then the table will have the same sort order and tagging as when saved. 
+
+
