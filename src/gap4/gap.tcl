@@ -97,23 +97,21 @@ proc DatabaseInfo {io} {
     set maxgel [keylget db max_gel_len]
 
     set i ""
-    append i [format "Database size       %7d       Max reading length %7d\n" \
+    append i [format "Database size       %10d       Max reading length %10d\n" \
 		 [keylget db actual_db_size] $maxgel]
-    append i [format "No. Readings        %7d       No. Contigs        %7d\n" \
+    append i [format "No. Readings        %10d       No. Contigs        %10d\n" \
 	         $nr $nc]
-    append i [format "No. Annotations     %7d       No. Templates      %7d\n" \
+    append i [format "No. Annotations     %10d       No. Templates      %10d\n" \
 		 [keylget db Nannotations] [keylget db Ntemplates]]
-    append i [format "No. Clones          %7d       No. Vectors        %7d\n" \
+    append i [format "No. Clones          %10d       No. Vectors        %10d\n" \
 		 [keylget db Nclones]      [keylget db Nvectors]]
-    append i [format "Total contig length %7d       Average length    %8.1f\n"\
+    append i [format "Total contig length %10ld       Average length      %11.1f\n"\
 		 $tcl [expr double($tcl)/$nc]]
-    append i [format "Total characters in readings                    %12d\n" \
+    append i [format "Total characters in readings                       %15ld\n" \
 		 $trl]
-    append i [format "Average reading characters per consensus character \
-	    %8.2f\n" \
+    append i [format "Average reading characters per consensus character    %15.2f\n" \
 	        [expr double($trl)/$tcl]]
-    append i [format "Average used length of reading                     \
-	    %8.2f\n" \
+    append i [format "Average used length of reading                        %15.2f\n" \
 		[expr double($trl) / $nr]]
 
     set maxgel 1024; # minor space saving
