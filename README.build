@@ -1,5 +1,195 @@
-Windows build 1st July 2004
-===========================
+		      Unix build - 28th Oct 2004
+		      ==========================
+
+
+External dependencies
+=====================
+
+The package code does not compile without having a few other libraries
+installed. It is possible that these may be on your system already,
+but the binary distributions of the Staden Package come complete with
+prebuilt copies anyway. (The reason is that we cannot be sure if the
+libraries will be installed already and if so what version.)
+
+External packages required:
+
+* tcl		(tested with 8.4.6)
+* tk		(tested with 8.4.6)
+* itcl		(tested with 3.2.1)
+* iwidgets	(tested with 4.0.1)
+* zlib		(tested with 1.2.2)
+* libpng	(tested with 1.2.7)
+(Different versions may work.)
+
+If you wish to compile these, do:
+
+	cd src
+	make -f Makefile.thirdparty
+
+This downloads (from sourceforge), configures, compile and installs the
+binary library components into the src/lib/$MACHINE-binaries directory.
+
+NOTE: src/Makefile.thirdparty does NOT copy over the text lib files,
+such as the tcl, tk, itcl and iwidgets "tcl" files. The reason for
+this is that some have been locally modified to either fix bugs or
+improve performance. Upgrading to new versions of the thirdparty
+libraries may therefore prove to be harder than expected.
+
+If you need to manually compile various bits without using the
+Makefile.thirdparty, this is essentially what it does:
+
+tcl
+---
+
+From within $STADENROOT/src:
+	gzip -cd tcl8.4.6-src.tar.gz | tar xf -
+	cd tcl8.4.6/unix
+	./configure --enable-shared --prefix=../../..
+	make
+	cp libtcl8.4.so ../../../lib/$MACHINE-binaries
+
+The $STADENROOT/lib/tcl directory already includes copies of the
+tcl8.4.6/library contents, but for newer Tcl releases you may need to
+update this copy.
+
+
+tk
+--
+
+From within $STADENROOT/src:
+	gzip -cd tk8.4.6-src.tar.gz | tar xf -
+	cd tk8.4.6/unix
+	./configure --enable-shared --prefix=../../..
+	make
+	cp libtk8.4.so ../../../lib/$MACHINE-binaries
+	
+
+The $STADENROOT/lib/tk directory already includes copies of the
+tk8.4.6/library contents, but for newer Tcl releases you may need to
+update this copy.
+
+NOTE:  The tk library (tcl code) shipped with the Staden package has
+some substantial speedups in the Tk file browser and various other
+tweaks. If you copy over a new library then you may find bugs.
+
+
+itcl
+----
+
+From within $STADENROOT/src:
+	gzip -cd itcl3.2.1_src.tgz | tar xf -
+	cd itcl3.2.1
+	./configure --enable-shared
+	make
+	cp */*so ../../lib/$MACHINE-binaries
+
+
+iwidgets
+--------
+
+From within $STADENROOT/src:
+	gzip -cd iwidgets4.0.1.tar.gz |tar xf -
+	cd iwidgets4.0.1
+	./configure --with-itcl=../itcl3.2.1 --prefix=../..
+	make install-libraries
+
+At this point it'll have some broken links, so fix this with:
+	rm ../../lib/widgets
+	mv ../../lib/iwidgets4.0.1 ../../lib/iwidgets
+
+
+zlib
+----
+
+From within $STADENROOT/src:
+	gzip -cd zlib-1.2.2.tar.gz |tar xf -
+	cd zlib-1.2.2
+	./configure
+	make
+
+png
+---
+
+From within $STADENROOT/src:
+	gzip -cd libpng-1.2.7.tar.gz |tar xf -
+	cd libpng-1.2.7
+	make -f scripts/makefile.??? ZLIBINC=../zlib-1.2.2 ZLIBLIB=../zlib-1.2.2
+	cp -R libpng12* ../../lib/$MACHINE-binaries
+
+Where the "makefile.???" is the appropriate makefile (Eg makefile.linux)
+
+
+Compiler setups
+===============
+
+Prerequisites:
+	C compiler (eg gcc)
+	C++ compiler (eg g++)
+	FORTRAN compiler (eg g77)
+	GNU Make
+	TeXInfo (for documentation only)
+	
+
+Firstly define the MACHINE environment variable. This may be done for you
+when you source the staden.login or staden.profile.
+Eg for bash within the root:
+
+	export STADENROOT=`pwd`
+	. staden.profile
+
+The standard MACHINE settings may be:
+	alpha		      (Tru64 running on Alphas)
+	linux		      (x86 based linux)
+	linux-ia64	      (Itanium based linux)
+	macosx		      (Apple's MacOSX)
+	solaris		      (Sparc based Solaris 2.x or 7+)
+	sgi		      (Mips based SGI systems)
+
+If you wish to define your own, firstly set MACHINE appropriately and
+then create a src/mk/$MACHINE.mk Makefile stub. It's best to check out
+how the others (eg src/mk/linux.mk) work.
+
+The $MACHINE.mk file is also where you may change compiler definitions
+specific to that machine. If you need to change global options that
+are cross-platform (eg whether to enable optimisation or debugging)
+then these may be edited within "src/mk/global.mk".
+
+
+Building
+========
+
+To compile the code and docs just type "make" and let it get on with
+it.
+
+If you only want to build the source code, "cd src" first and do make
+there. Similarly if you want only want documentation then "cd doc"
+first.
+
+I recommend saving your output to a file. E.g. with bash:
+
+	make 2>&1 | tee make.out
+
+
+The programs should now be compiled, but they have not yet been
+installed. We do this by building a complete distribution, copying out
+bits from the source tree.
+
+	make distunix
+
+At present it will attempt to install binaries for all the supported
+systems, but please edit the Makefile and search for the "distunix:"
+target. Within there it should be obvious which sections to comment
+out to skip the other platforms. (The binaries get copied over by
+doing little more than a "make MACHINE=xyzzy install".)
+
+At the end of this, you should find a distrib subdirectory containing
+another directory (named after the contents of your "Version" file).
+
+=============================================================================
+
+
+		     Windows build 1st July 2004
+		     ===========================
 
 * Install mingw (3.1.0), msys (1.0.10).
 Put these somewhere without a space in their path. Ie not "/program
