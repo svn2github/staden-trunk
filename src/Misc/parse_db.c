@@ -36,8 +36,8 @@
 
 static char *infile;	/* File being parsed */
 
-/* 18/1/99 johnt - increased size of word to 1024 to allow for multiline string tokens */
-static char word[1024];	/* Array containing the TOK_ID word */
+#define MAXWORD 8192
+static char word[MAXWORD];	/* Array containing the TOK_ID word */
 static int lineno;	/* Current line number being processed */
 
 /* ---------------- private routines ----------------- */
@@ -157,6 +157,10 @@ static int next_word(FILE *fp)
 	    /* quoted string */
 	    for(a=getc(fp);a!=EOF && a!='"';a=getc(fp)) {
 		if (a=='\n') lineno++;
+		if (a=='\\') {
+		    if (EOF == (a=getc(fp)))
+			break;
+		}
 		if( a != '\r' ) /* 18/1/99 johnt - handle \r\n on WINNT */
 		  *s++ = a;
 	    }
@@ -180,7 +184,6 @@ static int next_word(FILE *fp)
     *s = '\0';
     spring_clean_text(word,word);
     return token;
-    
 }
 
 static int parse_entry(FILE *fp, pf_spec *spec, char *store) {
@@ -224,7 +227,7 @@ static int parse_entry(FILE *fp, pf_spec *spec, char *store) {
 		    }
 		}
 		if (!spec[i].name) {
-		    char buf[1024];
+		    char buf[MAXWORD];
 		    sprintf(buf, "Warning - unknown identifier \"%s\"\n",word);
 		    parse_error(buf);
 		}
@@ -248,7 +251,7 @@ static int parse_entry(FILE *fp, pf_spec *spec, char *store) {
 			break;
 		    default:
 			{
-			    char buf[1024];
+			    char buf[MAXWORD];
 			    sprintf(buf, "Unknown type %d\n", type);
 			    parse_error(buf);
 			}
