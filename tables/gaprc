@@ -132,7 +132,7 @@ set_def CONTIG_EDITOR.TRACE_DIFF		0
 set_def CONTIG_EDITOR.TRACE_CONS_MATCH		1
 set_def CONTIG_EDITOR.TRACE_CONS_SELECT		1
 set_def CONTIG_EDITOR.TRACE_DIFF_ALGORITHM	0
-set_def CONTIG_EDITOR.TRACE_DIFF_SCALE		0
+set_def CONTIG_EDITOR.TRACE_DIFF_SCALE		1
 set_def CONTIG_EDITOR.TRACE_LOCK		1
 
 set_def CONTIG_EDITOR.DISAGREEMENTS	0
@@ -442,7 +442,7 @@ set_defx defs_l_or_f	BUTTON.2	list
 set_defx defs_l_or_f	BUTTON.3	file
 
 set_defx defs_hidden	NAME		"Use hidden data"
-set_defx defs_hidden	VALUE		1		
+set_defx defs_hidden	VALUE		0		
 
 set_defx defs_f_or_l_in	WHICH.NAME	"Input from"
 set_defx defs_f_or_l_in	WHICH.BUTTONS	{list file}
