@@ -4088,6 +4088,43 @@ tcl_quality_clip(ClientData clientData,
 }
 
 int
+tcl_N_clip(ClientData clientData,
+	   Tcl_Interp *interp,
+	   int argc,
+	   char *argv[])
+{
+    list2_arg args;
+    contig_list_t *contig_array = NULL;
+    int num_contigs;
+
+    cli_args a[] = {
+	{"-io",	     ARG_IO,  1, NULL, offsetof(list2_arg, io)},
+	{"-contigs", ARG_STR, 1, NULL, offsetof(list2_arg, inlist)},
+	{NULL,	  0,	   0, NULL, 0}
+    };
+
+    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
+
+    vfuncheader("N-base clip");
+
+    if (-1 == gap_parse_args(a, &args, argc, argv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+    if (num_contigs == 0) {
+	if (contig_array)
+	    xfree(contig_array);
+	return TCL_OK;
+    }
+
+    N_clip(args.io, num_contigs, contig_array);
+
+    xfree(contig_array);
+
+    return TCL_OK;
+}
+
+int
 tcl_difference_clip(ClientData clientData,
 		    Tcl_Interp *interp,
 		    int argc,
@@ -5064,6 +5101,8 @@ NewGap_Init(Tcl_Interp *interp) {
 		      tcl_order_contigs, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "quality_clip",
 		      tcl_quality_clip, (ClientData)NULL, NULL);
+    Tcl_CreateCommand(interp, "N_clip",
+		      tcl_N_clip, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "difference_clip",
 		      tcl_difference_clip, (ClientData)NULL, NULL);
     Tcl_CreateCommand(interp, "num_readings_in_contig",

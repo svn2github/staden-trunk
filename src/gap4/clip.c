@@ -69,6 +69,7 @@ static int quality_clip_contig(GapIO *io, int contig, int start, int end,
 		     sizeof(*conf)))
 	    continue;
 
+	/* Clip left by quality */
 	if (rnum != io_clnbr(io, contig)) {
 	    total = 0;
 	    for (i = 0; i < win_len; i++)
@@ -90,6 +91,7 @@ static int quality_clip_contig(GapIO *io, int contig, int start, int end,
 	    left = r.start;
 	}
 
+	/* Clip right by quality */
 	if (r.position + r.sequence_length <= io_clength(io, contig)) {
 	    total = 0;
 	    for (i = 0; i < win_len; i++)
@@ -135,6 +137,123 @@ static int quality_clip_contig(GapIO *io, int contig, int start, int end,
     }
 
     xfree(conf);
+    return 0;
+}
+
+/*
+ * Perform quality clipping on an individual contig based on runs of Ns.
+ * The idea is to clip of sections that are left in by phrap due to flukey
+ * matches (an N match scores zero, so will not be rejected unless there are
+ * other mismatches).
+ *
+ * Note that this can produce holes, which need to be fixed by the fix_holes()
+ * function, and can also reorder the readings.
+ */
+static int N_clip_contig(GapIO *io, int contig, int start, int end,
+			 int *old_start, int *old_end)
+{
+    int rnum;
+    int i;
+    int left, right;
+    GReadings r;
+    int scoretab[256];
+    
+    /* Find start reading */
+    for (rnum = io_clnbr(io, contig);
+	 io_relpos(io, rnum) < start;
+	 rnum = io_rnbr(io, rnum))
+	;
+
+    for (i = 0; i < 256; i++) {
+	scoretab[i] = 0; /* K, R, Y, etc */
+    }
+    scoretab['N'] = scoretab['n'] = scoretab['-'] = 1;
+    scoretab['A'] = scoretab['a'] = -1;
+    scoretab['C'] = scoretab['c'] = -1;
+    scoretab['G'] = scoretab['g'] = -1;
+    scoretab['T'] = scoretab['t'] = -1;
+
+    /*
+     * Loop through readings up to 'end' position.
+     * The leftmost and rightmost sequences need to be treated specially
+     * as we do not want to clip these. Doing so will change the length of the
+     * consensus. Doing that means that we need to deal with consensus tags
+     * (shifting, clipping and deleting them).
+     */
+    for (; rnum && io_relpos(io, rnum) <= end; rnum = io_rnbr(io, rnum)) {
+	char *seq;
+
+	gel_read(io, rnum, r);
+	io_aread_seq(io, rnum, NULL, NULL, NULL,
+			 &seq, NULL, NULL, 0);
+
+	/* Clip left */
+	if (rnum != io_clnbr(io, contig)) {
+	    int score = 0, best_score = 0, best_pos = -1;
+	    
+	    for (i = r.start; i < r.end-1 && score >= -10; i++) {
+		score += scoretab[(unsigned char)seq[i]];
+		if (best_score <= score) {
+		    best_score = score;
+		    best_pos = i;
+		}
+	    }
+	    left = (best_pos != -1) ? best_pos+1 : r.start;
+	} else {
+	    left = r.start;
+	}
+
+	/* Clip right */
+	if (rnum != io_crnbr(io, contig)) {
+	    int score = 0, best_score = 0, best_pos = -1;
+	    
+	    for (i = r.end-2; i >= r.start && score >= -10; i--) {
+		score += scoretab[(unsigned char)seq[i]];
+		if (best_score <= score) {
+		    best_score = score;
+		    best_pos = i;
+		}
+	    }
+	    right = (best_pos != -1) ? best_pos+1 : r.end;
+	} else {
+	    right = r.end;
+	}
+
+	if (left >= r.end - 1)
+	    left = r.end - 2;
+	if (right <= r.start + 1)
+	    right = r.start + 2;
+
+	if (right < left + 2)
+	    right = left + 2;
+
+	if (r.start < left)
+	    vmessage("Read #%d: clipping %d base%s from left end\n",
+		     rnum, left-r.start, left-r.start ? "s" : "");
+
+	if (r.end > right)
+	    vmessage("Read #%d: clipping %d base%s from right end\n",
+		     rnum, r.end - right, r.end - right  ? "s" : "");
+
+	/*
+	printf("Gel %d: L %d->%d    R %d->%d\n",
+	       rnum, r.start, left, r.end, right);
+	*/
+
+	r.position += left - r.start;
+	old_start[rnum] = r.start;
+	old_end[rnum] = r.end;
+	r.start = left;
+	r.end = right;
+	r.sequence_length = r.end - r.start - 1;
+
+	gel_write(io, rnum, r);
+	io_relpos(io, rnum) = r.position;
+	io_length(io, rnum) = r.sense ? -r.sequence_length : r.sequence_length;
+
+	xfree(seq);
+    }
+
     return 0;
 }
 
@@ -744,6 +863,30 @@ void quality_clip(GapIO *io, int num_contigs, contig_list_t *cl, int qual_avg)
     for (i = 0; i < num_contigs; i++) {
 	quality_clip_contig(io, cl[i].contig, cl[i].start, cl[i].end, qual_avg,
 			    old_start, old_end);
+	reorder_readings(io, cl[i].contig);
+	fix_holes(io, cl[i].contig, old_start, old_end);
+	reorder_readings(io, cl[i].contig);
+	flush2t(io);
+    }
+
+    xfree(old_start);
+    xfree(old_end);
+}
+
+
+void N_clip(GapIO *io, int num_contigs, contig_list_t *cl)
+{
+    int i;
+    int *old_start, *old_end;
+
+    if (NULL == (old_start = (int *)xcalloc(NumReadings(io)+1, sizeof(int))))
+	return;
+    if (NULL == (old_end = (int *)xcalloc(NumReadings(io)+1, sizeof(int))))
+	return;
+
+    for (i = 0; i < num_contigs; i++) {
+	N_clip_contig(io, cl[i].contig, cl[i].start, cl[i].end,
+		      old_start, old_end);
 	reorder_readings(io, cl[i].contig);
 	fix_holes(io, cl[i].contig, old_start, old_end);
 	reorder_readings(io, cl[i].contig);

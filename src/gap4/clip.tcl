@@ -133,3 +133,59 @@ proc DifferenceClip2 {io t lorf id tag} {
 
     ClearBusy
 }
+
+proc NClip {io} {
+    global gap_defs
+
+    set l [keylget gap_defs N_CLIP]
+    set t [keylget l WIN]
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "N-base clip"
+
+    contig_id $t.id -io $io
+
+    lorf_in $t.infile [keylget l INFILE] \
+	"{contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state disabled}
+	 {contig_id_configure $t.id -state normal}
+	" -bd 2 -relief groove
+
+    okcancelhelp $t.ok \
+	-ok_command "NClip2 $io $t $t.infile $t.id" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap4 {Clip-NBases}" \
+	-bd 2 -relief groove
+
+    pack $t.infile $t.id $t.ok -side top -fill x
+}
+
+proc NClip2 {io t lorf id} {
+    if {[lorf_in_get $lorf] == 4} {
+        if {[set contign [contig_id_gel $id]] == ""} {bell; return}
+       	if {[set lreg  [contig_id_lreg $id]] == ""} {bell; return}
+	if {[set rreg  [contig_id_rreg $id]] == ""} {bell; return}
+	set list "{$contign $lreg $rreg}"
+	SetContigGlobals $io $contign
+    } elseif {[lorf_in_get $lorf] == 3} {
+	set list [CreateAllContigList $io]
+    } else {
+	if {[set list [lorf_get_list $lorf]] == ""} {bell; return}
+    }
+
+    destroy $t
+
+    if {![quit_displays $io "N-base clip"]} {
+	return
+    }
+
+    SetBusy
+    N_clip \
+	-io $io \
+	-contigs $list
+    catch {ContigInitReg $io}
+
+    ClearBusy
+}
+
+

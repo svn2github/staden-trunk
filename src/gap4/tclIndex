@@ -20,6 +20,7 @@ set auto_index(BreakContig) [list source [file join $dir break_contig.tcl]]
 set auto_index(CheckAssembly) [list source [file join $dir check_assembly.tcl]]
 
 set auto_index(QualityClip) [list source [file join $dir clip.tcl]]
+set auto_index(NClip) [list source [file join $dir clip.tcl]]
 set auto_index(DifferenceClip) [list source [file join $dir clip.tcl]]
 
 set auto_index(ComplementContig) [list source [file join $dir complement.tcl]]
