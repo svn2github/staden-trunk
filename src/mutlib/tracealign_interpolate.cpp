@@ -106,6 +106,7 @@ void TraceAlignInsertBases( char cPad, SimpleArray<char>& Envelope, Trace& Tin, 
     int     nOrigSamples;
     int     nOverlapL   = nOverlap[0];
     int     nOverlapR   = nOverlap[1];
+    int     nBases      = Tin.Raw()->NBases;
     char*   pSrcBase    = Tin.Raw()->base;
     char*   pDstBase    = Tout.Raw()->base;
     uint_2* pSrcBasePos = Tin.Raw()->basePos;
@@ -119,7 +120,7 @@ void TraceAlignInsertBases( char cPad, SimpleArray<char>& Envelope, Trace& Tin, 
 
 
     // Insert bases
-    for( s=nOverlapL, d=0; s<=nOverlapR; s++, d++ )
+    for( s=nOverlapL, d=0; s<=nOverlapR && s+1<nBases; s++, d++ )
     {
         pDstBase[d]    = pSrcBase[s];
         pDstBasePos[d] = nBasePos;
