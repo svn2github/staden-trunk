@@ -966,6 +966,22 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetResult(interp, trace_type_int2str(tracePtr->read->format),
 		      TCL_STATIC);
 
+    } else if (strcmp(argv[1], "orig_format") == 0) {
+	int fm;
+
+	if (argc != 2) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " orig_format\"",
+			     (char *)NULL);
+	    result = TCL_ERROR;
+	    goto release;
+	}
+
+	fm = tracePtr->read->orig_trace_format;
+	if (TT_UNK == fm)
+	    fm = tracePtr->read->format;
+	Tcl_SetResult(interp, trace_type_int2str(fm), TCL_STATIC);
+
     } else if (strcmp(argv[1], "flash") == 0) {
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
