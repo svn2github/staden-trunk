@@ -361,13 +361,15 @@ proc new_trace_create2 {w e title allow_diff} {
 	label $w.bar.r3 -text 3 -relief raised
 	label $w.bar.r4 -text 4 -relief raised
 	label $w.bar.r5 -text 5 -relief raised
+	label $w.bar.r6 -text 6 -relief raised
 	bind $w.bar.r1 <1> {set trace_rows 1}
 	bind $w.bar.r2 <1> {set trace_rows 2}
 	bind $w.bar.r3 <1> {set trace_rows 3}
 	bind $w.bar.r4 <1> {set trace_rows 4}
 	bind $w.bar.r5 <1> {set trace_rows 5}
+	bind $w.bar.r6 <1> {set trace_rows 6}
 	pack $w.bar.rows $w.bar.r1 $w.bar.r2 $w.bar.r3 $w.bar.r4 $w.bar.r5 \
-	    -side left
+	    $w.bar.r6 -side left
 
 	# Show confidence
 	checkbutton $w.bar.conf -text "Show confidence" \
@@ -572,7 +574,7 @@ proc new_trace_create2 {w e title allow_diff} {
     if {$allow_diff} {
 	recurse_trace_bind $tf_r
     }
-    bind $tf_r.trace <<menu>> "tk_popup $tf_r.m %X %Y"
+    bind $tf_r <<menu>> "tk_popup $tf_r.m %X %Y"
 
     if {$tcl_platform(platform) == "unix"} {
 	scrollbar $tf_r.scroll \
@@ -650,6 +652,21 @@ proc new_trace_create2 {w e title allow_diff} {
 
     bind $tf_r.trace <Any-Motion> \
 	"$w.info.l configure -text \[%W base_info @%x\]"
+
+    # Mouse-wheel support
+    bind $tf_r.trace <MouseWheel> \
+	"$w.traces.c yview scroll \[expr {%D/120}\] units"
+    if {[tk windowingsystem] eq "x11"} {
+	foreach c {trace name} {
+	    bind $tf_r.$c <4> "$w.traces.c yview scroll -1 units"
+	    bind $tf_r.$c <5> "$w.traces.c yview scroll +1 units"
+	    bind $tf_r.$c <Control-4> \
+		"$w.traces.c yview scroll -\$trace_rows units"
+	    bind $tf_r.$c <Control-5> \
+		"$w.traces.c yview scroll +\$trace_rows units"
+	}
+    }
+
 
     # Without this use "auto-diff traces" gives blank windows. Everything
     # has been gridded and sized correctly, but tk seems to have calculated
@@ -749,7 +766,7 @@ proc reshape_trace_window {w c ys cols} {
 
 proc trace_changed_rows {w c ys args} {
     global trace_rows
-    for {set i 1} {$i <= 5} {incr i} {
+    for {set i 1} {$i <= 6} {incr i} {
 	$w.bar.r$i configure -relief raised
     }
     $w.bar.r$trace_rows configure -relief sunken
