@@ -1030,6 +1030,23 @@ int edSetRulerMode(EdStruct *xx, int ispadded) {
 
 
 /*
+ * Controls whether reading names (0) or template names (1) are shown
+ * in the edNames component.
+ */
+int edSetTemplateNameMode(EdStruct *xx, int val) {
+    xx->template_names = val;
+
+    xx->refresh_flags |= ED_DISP_NAMES;
+    redisplaySequences(xx, 0);
+
+    return 0;
+}
+int edGetTemplateNameMode(EdStruct *xx) {
+    return xx->template_names;
+}
+
+
+/*
  * Get gel number from position. Returns the gel number or -1 for failure.
  */
 int edGetGelNumber(EdStruct *xx, int x, int y) {
