@@ -222,6 +222,7 @@ set auto_index(TempDispDialog) [list source [file join $dir template_display.tcl
 set auto_index(GetItemInfo) [list source [file join $dir template_display.tcl]]
 set auto_index(SelectReadingList) [list source [file join $dir template_display.tcl]]
 set auto_index(PrintContigDetails) [list source [file join $dir template_display.tcl]]
+set auto_index(InputSelectReadingList) [list source [file join $dir template_display.tcl]]
 
 set auto_index(trace_add) [list source [file join $dir trace_display.tcl]]
 set auto_index(trace_create) [list source [file join $dir trace_display.tcl]]
