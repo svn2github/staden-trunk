@@ -8,7 +8,10 @@
 #include "os.h"
 #include "xalloc.h"
 
+#ifdef _MSC_VER
 extern int getopt( int argc, char* const argv[], const char* optstring );
+#endif
+
 extern int is_directory(char * fn);
 extern int is_file(char * fn);
 extern int file_exists(char * fn);
