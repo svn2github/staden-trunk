@@ -595,7 +595,7 @@ int init_hash8n (
    if (word_length < 4) word_length = 4;
    if (word_length > 4) word_length = 8;
     }
-    size_hash = (int)pow(4.0, (float) word_length);
+    size_hash = (int)pow(4.0, (double) word_length);
     
     if ( HASH_JOB_BLKS & job ) {
    min_match = MAX(min_match,word_length);
