@@ -150,10 +150,9 @@ proc find_solutions_sanger1_ends {base_bits problem_bits} {
 
     # Problem 3: low template/sequence coverage
     # Skip for now as we're only doing contig ends
-    if {[expr {$problem_bits&0x04}]} {
-	# Primer walk, any strand
-	set type 0
-    }
+#    if {[expr {$problem_bits&0x04}]} {
+#	# Primer walk, any strand
+#    }
 
     return [expr $type | ($strand << 16) | ($chem << 24)]
 }

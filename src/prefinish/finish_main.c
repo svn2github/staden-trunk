@@ -411,6 +411,12 @@ experiments_t *generate_experiments(finish_t *fin, int solution_ind,
 	    sol_start += fin->start;
 	    sol_end += fin->start;
 
+	    if (strand == 2)
+		pos = sol_end;
+	    else if (strand == 1)
+		pos = sol_start;
+	    /* else pos stay as left base */
+
 	    /*
 	     * If we're near the right end and the end needs extending then
 	     * we should also set extending to be true to ensure that we
@@ -1111,11 +1117,14 @@ void implement_solutions(Tcl_Interp *interp, finish_t *fin) {
     int found_soln, soln_type;
     int exp_ind;
 
+    printf("In implement_solutions\n");
+    fflush(stdout);
+
     /* Step through contig identifying problems */
     for (i = 0; i < fin->length; i++) {
 	int cover_end;
 	int extending;
-
+	
 	if (!fin->solution_bits[i])
 	    continue;
 
