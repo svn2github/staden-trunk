@@ -7,7 +7,7 @@ set opts "-w 100 -t 4"
 
 proc open_database {argv} {
     foreach {dbname dbvers} [split [lindex $argv 0] .] {}
-    return [open_db -name $dbname -version $dbvers -access ro]
+    return [open_db -name $dbname -version $dbvers]
 }
 
 load_package gap
