@@ -12,6 +12,7 @@
 #include "find_fragments.h"
 #include "xalloc.h"
 #include "misc.h"
+#include "tagUtils.h"
 
 static void classify_callback(GapIO *io, int contig, int start, int end,
 			      seq_frag *frag, int num_frags,
@@ -118,7 +119,9 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
     for (i = 0; i < num_frags; i++) {
 	vrseq_t *vr;
 	GReadings r;
-	int virtual;
+	GNotes n;
+	int virtual, fake, nnote;
+	int cons_type = str2type("FAKE");
 
 	vr = vrseq_index2ptr(d->vc, frag[i].num);
 	
@@ -129,6 +132,20 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 	    gel_read(io, frag[i].num, r);
 	    virtual = 0;
 	}
+
+
+	/*
+	 * Check if it has a FAKE note, so we can avoid considering it to
+	 * be verification of top or bottom strand.
+	 */
+	for (nnote = r.notes; nnote; nnote = n.next) {
+	    note_read(io, nnote, n);
+	    if (n.type == cons_type) {
+		break;
+	    }
+	}
+	fake = nnote ? 1 : 0;
+
 
 	/* Also store template numbers here for counting below */
 	templates[i] = r.template;
@@ -146,11 +163,11 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 	    for (cbits = d->con_bits; cbits != cend; cbits++) {
 		switch(cbits->type) {
 		case CLASS_STRAND_TOP:
-		    bit = (r.sense == GAP_SENSE_ORIGINAL);
+		    bit = !fake && (r.sense == GAP_SENSE_ORIGINAL);
 		    break;
 		    
 		case CLASS_STRAND_BOTTOM:
-		    bit = (r.sense == GAP_SENSE_REVERSE);
+		    bit = !fake && (r.sense == GAP_SENSE_REVERSE);
 		    break;
 
 		case CLASS_SEQ_DEPTH_GT:

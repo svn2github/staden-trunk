@@ -31,3 +31,9 @@ rawdata: id="RAWD"
 "reference trace": \
 	id="REFT": fg=red: gf="#707000":  \
 	dt="# REFERENCE: sequence_id length offset\n"
+
+#
+# FAKE to indicate consensus, etc. These should be excluded from
+# strand calculations, etc.
+#
+"Fake (eg consensus)": id="FAKE": bg=orange
