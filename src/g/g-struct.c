@@ -60,6 +60,7 @@ GFile *g_new_gfile()
         gfile->Nidx = 0; gfile->idx = NULL;
 	gfile->flock_client = -1; /* An invalid client number */
 	gfile->flock_status = G_FLOCK_NONE;
+	gfile->check_header = 1;
     }
     return gfile;
 }

@@ -120,6 +120,11 @@ typedef struct _gfile_ {
     GCardinal flock_view; /* views for existing file lock */
 
     /*
+     * For checking external processes have no performed an update.
+     */
+    int check_header;
+
+    /*
      * For mmaped IO
      */
     char *fdmap;

@@ -51,7 +51,7 @@
 #endif
  
 
-static int g_read_aux_header(int fdaux, AuxHeader *header)
+int g_read_aux_header(int fdaux, AuxHeader *header)
 /*
  * Read the header from the aux file
  */
@@ -65,7 +65,6 @@ static int g_read_aux_header(int fdaux, AuxHeader *header)
     /* return (read(fdaux,header,sizeof(AuxHeader))!=sizeof(AuxHeader)); */
     errno = 0;
     return (low_level_vector[GOP_READ_AUX_HEADER])(fdaux,header,1);
-
 }
 
 static int g_read_aux_index(int fdaux, AuxIndex *idx, int num)
@@ -554,3 +553,52 @@ char *g_filename(GFile *gfile)
 	return gfile->fname;
 
 }
+
+int g_check_header(GFile *gfile)
+/*
+ * Checks whether the on-disk copy matches the in-memory copy of the
+ * header.
+ *
+ * The rationale behind this is that users still manually remove the BUSY
+ * file because "they know best". They then act all suprised when their
+ * database becomes corrupt. Our alternative here is to check the master
+ * time-stamp in the Aux header and to simply abort Gap4 (losing all unsaved
+ * edits) if it has been changed external to this process.
+ *
+ * For efficiencies sake, we do not want to call this function too often.
+ * Hence it is planned to be called only on the first disk update after a
+ * flush. This still leaves room for race conditions (multiple people editing
+ * simultaenously), but it covers the more common case of a gap4 session
+ * left open for ages and then going back to it later.
+ */
+{
+    AuxHeader diskheader;
+
+    if (gfile == NULL)
+	return gerr_set(GERR_INVALID_ARGUMENTS);
+
+    /* Re-read from disk */
+    if (-1==lseek(gfile->fdaux,0,0))
+	return gerr_set(GERR_SEEK_ERROR);
+
+    g_read_aux_header(gfile->fdaux, &diskheader);
+
+    printf("Disk=%d, current=%d\n",
+	   diskheader.last_time,
+	   gfile->header.last_time);
+
+    if (diskheader.last_time != gfile->header.last_time) {
+	fprintf(stderr, "** SERIOUS PROBLEM - file %s\n",
+		g_filename(gfile));
+	fprintf(stderr, "** Time stamp modified by another process\n");
+	fprintf(stderr, "** Hint: DO NOT REMOVE LOCK FILES!\n**\n");
+	fprintf(stderr, "** The '%s.log' file contains information on\n",
+		g_filename(gfile));
+	fprintf(stderr, "** who else has the database open.\n");
+	panic_shutdown();
+    }
+
+    return 0;
+}
+
+

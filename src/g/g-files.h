@@ -54,4 +54,10 @@ extern int g_remove_client(GFile *gfile, GClient client);
  * Remove all locks in this file for this client
  */
 
+extern int g_check_header(GFile *gfile);
+/*
+ * Checks whether the on-disk copy matches the in-memory copy of the
+ * header.
+ */
+
 #endif /*_G_FILES_H_*/

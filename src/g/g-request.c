@@ -540,7 +540,6 @@ static GTimeStamp next_edtime(GFile *gfile)
     }
 
     return edtime;
-
 }
 
 
@@ -811,6 +810,8 @@ static int g_unlock_views(GDB *gdb, GView v)
     /* g_sync_on(gfile); */
     if (updates) update_header(gfile,edtime);
     /* g_sync_off(gfile); */
+
+    gfile->check_header = 1;
 
     return 0;
 }
@@ -1099,6 +1100,11 @@ int g_write_(GDB *gdb, GClient c, GView v, void *buf, GCardinal len)
     if (gdb==NULL || buf==NULL || len<=0 || check_client(gdb,c) || check_view(gdb,v))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
 
+    if (gdb->gfile->check_header) {
+	g_check_header(gdb->gfile);
+	gdb->gfile->check_header = 0;
+    }
+
     if (err = update_cache_for_write(gdb, c, v, len, 0, &cache))
 	return err;
 
@@ -1126,6 +1132,11 @@ int g_writev_(GDB *gdb, GClient c, GView v, GIOVec *vec, GCardinal vcnt)
     if (gdb==NULL || check_GIOVec(vec,vcnt,&len) || check_client(gdb,c) || check_view(gdb,v))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
 
+    if (gdb->gfile->check_header) {
+	g_check_header(gdb->gfile);
+	gdb->gfile->check_header = 0;
+    }
+
     if (err = update_cache_for_write(gdb, c, v, len, 0, &cache))
 	return err;
 
@@ -1151,6 +1162,11 @@ int g_remove_(GDB *gdb, GClient c, GView v) {
     /* check arguments */
     if (gdb==NULL || check_client(gdb,c) || check_view(gdb,v))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
+
+    if (gdb->gfile->check_header) {
+	g_check_header(gdb->gfile);
+	gdb->gfile->check_header = 0;
+    }
 
     /*
      * Find a cache for this 'write' request. This is either our own cache
@@ -1487,7 +1503,6 @@ int g_view_info_(GDB *gdb, GClient c, GView v, GViewInfo *info)
 }
 
 
-
 /* ARGSUSED */
 int g_rec_info_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, GRecInfo *info)
 /*
@@ -1537,7 +1552,3 @@ int g_header_info_(GDB *gdb, GClient c, GFileN file_N, GHeaderInfo *info)
 
     return 0;
 }
-
-
-
-
