@@ -15,6 +15,7 @@
 #include "tcl_utils.h"
 #include "edUtils.h"
 #include "tclXkeylist.h"
+#include "dna_utils.h"
 
 #define MAXMATCHES 10000
 /*
@@ -51,9 +52,9 @@ FindStopCodons(int strand,                                            /* in */
     int array_inc = MAXMATCHES;
     int last_word[SIZE_HASH];
     int word_count[SIZE_HASH];
-
     int start_codon = 0;
     int end_codon;
+    int *depad_to_pad;
 
     end_codon = num_codons - 1;
 
@@ -75,6 +76,12 @@ FindStopCodons(int strand,                                            /* in */
 	return -2;
     }
 
+    /*
+     * Hashing code requires non-padded sequence. We also need this to
+     * determine the correct reading frame and ORF lengths.
+     */
+    depad_to_pad = (int *)xcalloc(sequence_len+1, sizeof(int));
+    depad_seq(sequence, &sequence_len, depad_to_pad);
     hash_dna(sequence, sequence_len, seq_hash_values, last_word,
 	     word_count);
 
@@ -99,11 +106,11 @@ FindStopCodons(int strand,                                            /* in */
 	    if ((*match)[cnt].enz_name == 0) {
 		(*match)[cnt].enz_name = CODON_LEN;
 	    }
-	    (*match)[cnt].cut_pos = matches[k]%sequence_len;
+	    (*match)[cnt].cut_pos = depad_to_pad[matches[k]]%sequence_len;
 	    /* for complementary strand, have reading frames 4, 5, 6 */
 	    if (i >= num_codons) {
 		(*match)[cnt].enz_name += CODON_LEN;
-		(*match)[cnt].cut_pos = (matches[k]%sequence_len) + 2;
+		(*match)[cnt].cut_pos = (depad_to_pad[matches[k]]%sequence_len) + 2;
 	    }
 	    /* reference to sequence of stop codon */
 	    (*match)[cnt].enz_seq = i;
@@ -133,6 +140,7 @@ FindStopCodons(int strand,                                            /* in */
     *total_matches = cnt;
     xfree(seq_hash_values);
     xfree(matches);
+    xfree(depad_to_pad);
     return 1;
 }
 
@@ -216,7 +224,7 @@ display_stop_codons(Tcl_Interp *interp,
 	} else {
 	    y_offset = s->yoffset + ((s->c_match.match[i].enz_name-1)%3) * s->tick->ht;
 	}
-	PlotStickMap(interp, s->window, cut_site, 0,  y_offset,
+	PlotStickMap(interp, s->window, cut_site, cut_site, 0,  y_offset,
 		     s->tick->ht, s->tick->line_width, s->tick->colour, 
 		     s->c_match.match[i].enz_seq,
 		     1, io_clength(io, s->c_match.contig));
