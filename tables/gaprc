@@ -945,7 +945,7 @@ set_def CHECK_ASSEMBLY.USED.WINSIZE.VALUE	50
 set_def FINDOLIGO.INFILE		$defs_c_in
 set_def FINDOLIGO.MAXMIS		$defs_maxmis
 set_def FINDOLIGO.MAXMIS.NAME		"Minimum percent match"
-set_def FINDOLIGO.MAXMIS.VALUE		75.00
+set_def FINDOLIGO.MAXMIS.VALUE		100.00
 set_def	FINDOLIGO.SELMODE.NAME		"Select sequence to match"
 set_def	FINDOLIGO.SELMODE.VALUE		2
 set_def	FINDOLIGO.SELMODE.BUTTON.1	"Use tags"
