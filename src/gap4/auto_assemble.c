@@ -152,6 +152,8 @@ auto_assemble(f_int handle,                                            /* in */
 	return NULL;
     }
 
+    invalidate_rnumtocnum(io, 1);
+
     prev_nreadings = NumReadings(io);
 
     /*
@@ -264,6 +266,8 @@ auto_assemble(f_int handle,                                            /* in */
     }
 
     check_contig_orientations(io, prev_nreadings);
+
+    invalidate_rnumtocnum(io, 0);
 
     xfree(cends);
     xfree(nends);
