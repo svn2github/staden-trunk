@@ -583,10 +583,6 @@ int g_check_header(GFile *gfile)
 
     g_read_aux_header(gfile->fdaux, &diskheader);
 
-    printf("Disk=%d, current=%d\n",
-	   diskheader.last_time,
-	   gfile->header.last_time);
-
     if (diskheader.last_time != gfile->header.last_time) {
 	fprintf(stderr, "** SERIOUS PROBLEM - file %s\n",
 		g_filename(gfile));
