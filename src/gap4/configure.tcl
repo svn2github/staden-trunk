@@ -19,10 +19,6 @@ proc ConfigureCutoffs {} {
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Consensus algorithm"
 
-    keylset rm REMMODE [keylget gap_defs DIS_READINGS.REMMODE]
-    set b1 [keylget rm REMMODE.BUTTON.1]
-    set b2 [keylget rm REMMODE.BUTTON.2]
-
     scalebox $t.consensus \
 	-title [keylget l CONSENSUS_NAME] \
 	-orient horizontal \
