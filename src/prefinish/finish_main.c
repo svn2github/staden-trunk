@@ -529,6 +529,7 @@ static void score_experiments(Tcl_Interp *interp,
     int shift, nearby_probs;
     int *virtual;
     int virtual_count=0;
+    int group_size;
     
     for (i = 0; i < nexp; i++)
 	exp[i].score = 666;
@@ -540,6 +541,15 @@ static void score_experiments(Tcl_Interp *interp,
 	if (len <= 0) {
 	    exp[i].score = 0;
 	    continue;
+	}
+
+	/*
+	 * Identify how many other experiments are part of this same group.
+	 */
+	group_size = 0;
+	for (j = 0; j < nexp; j++) {
+	    if (exp[i].group_id == exp[j].group_id)
+		group_size++;
 	}
 
 	extended = 0;
@@ -758,6 +768,14 @@ static void score_experiments(Tcl_Interp *interp,
 		       mand_probs1, mand_probs2);
 	    exp[i].score = (nprobs1-nprobs2) / exp[i].cost;
 	}
+
+	/*
+	 * Decrease score based on number of solutions in this group. (Eg
+	 * the number of templates chosen for a primer-walk experiment.)
+	 * At the requested number of solutions no decrease is made.
+	 */
+	exp[i].score *= pow(MIN(group_size, exp[i].group_num)/
+			    (double)exp[i].group_num, 0.3);
 
 	/* Penalise for over use of a template */
 	if (fin->template_used[exp[i].r.template] >=
