@@ -471,7 +471,7 @@ int main( int argc, char* argv[] )
             {
                 // Write mutation tags to experiment file
                 mutlib_tag_t* pTag = TraceDiffGetTag( &td, i );
-                assert(pTag);
+                assert(pTag != NULL);
                 char c = (pTag->Strand==MUTLIB_STRAND_FORWARD) ? '+' : '-';
                 std::sprintf( pBuffer, "%s %c %d..%d\n%s", pTag->Type, c, *pTag->Position,
                               *pTag->Position, pTag->Comment );

@@ -84,7 +84,7 @@ void filter_tags ( mutscan_t& ms, int nTags, int threshold ) {
     // Get coverage range
     for( int i=0; i<nTags; i++ ) {
         mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
-        assert(pTag);
+        assert(pTag != NULL);
 
 	if (std::strcmp(pTag->Type,"MCOV") == 0) {
 	    cov_start = pTag->Position[0];
@@ -168,7 +168,7 @@ void filter_tags ( mutscan_t& ms, int nTags, int threshold ) {
     puts("==Left==");
     for( int i=0; i<nTags; i++ ) {
         mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
-        assert(pTag);
+        assert(pTag != NULL);
 	if (std::strcmp(pTag->Type,"MCOV") == 0)
 	    continue;
 
@@ -607,7 +607,7 @@ int main( int argc, char* argv[] )
             {
                 // Write mutation tags to experiment file & stdout
                 mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
-                assert(pTag);
+                assert(pTag != NULL);
 
 		if (!*pTag->Type)
 		  continue;

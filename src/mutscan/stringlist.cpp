@@ -24,7 +24,7 @@
 
 StringListNode::StringListNode( const char* s )
 {
-    assert(s);
+    assert(s != NULL);
     if( !s )
         s = "";
     m_pString = new char[ std::strlen(s)+1 ];
