@@ -1,3 +1,78 @@
+2003-12-01 James Bonfield <jkb@sanger.ac.uk>
+
+	* src/gap4/IO.h,
+	* src/gap4/IO3.c:
+	(15:22:09) Code tidyup to remove unused fortran functions 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/tkEdNames.c,
+	* src/gap4/tkEditor.c,
+	* src/gap4/edInterface.c,
+	* src/gap4/tclIndex,
+	* src/gap4/template.c,
+	* src/gap4/list_proc.tcl:
+	(15:23:08) Improved reading selection from within the editor. Added
+	a "select all from right" option (and made it work snappily). 
+
+	* src/gap4/break_contig.c,
+	* src/gap4/dis_readings.c:
+	(15:24:13) Fixed a tag corruption bug in disassemble readings
+	whereby the annotation freelist could get joined onto the end of a
+	contig list when duplicating tags (due to breaking a contig).
+	
+	Made tag duplication an option. 
+
+	* src/gap4/contig_selector.tcl,
+	* src/gap4/gap.tcl,
+	* tables/gaprc:
+	(15:27:41) Added -no_csel and -csel options to control whether the
+	contig selector starts automatically. 
+
+	* src/gap4/edUtils2.c:
+	(15:28:41) Fixed a bug in computation of the number of spanning
+	templates; displayed when shutting down the join editor. 
+
+	* src/gap4/preass.c:
+	(15:29:06) Replaced used of old fortran functions with C versions. 
+
+	* src/gap4/edInterface.c,
+	* src/gap4/template_display.c,
+	* src/gap4/template_display.h:
+	(15:30:14) Moved update_reading_list function to edInterface.c 
+
+2003-11-26 James Bonfield <jkb@sanger.ac.uk>
+
+	* src/gap4/break_contig.c,
+	* src/gap4/dis_readings.c,
+	* src/gap4/dis_readings.h,
+	* src/gap4/dis_readings.tcl,
+	* src/gap4/legacy.f,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	(15:23:42) Fixed various disassemble readings bugs relating to
+	annotations and splitting contigs. Whether to duplicate the
+	annotations is now an option (although at present omitted from the
+	GUI as it doesn't honour this flag in all cases).
+	
+	Break contig has also been rewritten to use disassemble readings as
+	a basis for its operation.
+	
+	Finally, the fortran code for both disassemble readings and break
+	contig has been ditched. 
+
+	* src/gap4/IO3.c:
+	(15:24:23) Fixed a bug in swap_read() (used by disassemble
+	readings). It wasn't relinking the "prev" field of notes back to
+	the newly renumbered sequence. 
+
+	* src/gap4/copy_db.c:
+	(15:24:51) Fixed a bug in merging the db.free_notes fields. 
+
+	* src/gap4/find_oligo.tcl:
+	(18:01:44) Remove pads from sequence in "find sequence" function
+	before doing the search. (It matches padded data fine anyway, so
+	this just avoids the user having the depad their query sequence.) 
+
 2003-11-19 James Bonfield (jkb@sanger.ac.uk)
 
 	* src/gap4/newgap_structs.h,
