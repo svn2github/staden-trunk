@@ -176,11 +176,15 @@ C         CALL FMTDB1(SEQ1,IDIM1,1,IDIM1,60,6)
 C      WRITE(*,*)'MAIN'
 C      WRITE(*,*)(SEQ1(JJJJ),JJJJ=1,IDIM1)
       JGEL = JGEL + 1
-      WRITE(INFOD,1006)JGEL
- 1006 FORMAT('Processing ',I8,' in batch')
+C      WRITE(INFOD,1006)JGEL
+C 1006 FORMAT('Processing ',I8,' in batch')
+C CHECKED
+      CALL SWRITF(INFOD,'Processing %8d in batch%!', JGEL)
       CALL INFO(INFOD)
-1007  FORMAT('File name ',A)
-      WRITE(INFOD,1007)NAMARC
+C       WRITE(INFOD,1007)NAMARC
+C 1007  FORMAT('File name ',A)
+C CHECKED
+      CALL SWRITF(INFOD, 'File name %.*s%!', LEN(NAMARC), NAMARC)
       CALL INFO(INFOD)
 C Added by Simon 23-March-1993
       CALL ARRFIO(NAMARC,SEQ2,IDIM2,1,IOK)
@@ -190,8 +194,10 @@ C        IF(INF.EQ.1) RETURN
          CALL AERROR(LIST,NAMARC,0)
          GO TO 1
       END IF
-      WRITE(INFOD,1800)IDIM2
-1800  FORMAT('Reading length ',I6)
+C       WRITE(INFOD,1800)IDIM2
+C 1800  FORMAT('Reading length ',I6)
+C CHECKED
+      CALL SWRITF(INFOD,'Reading length %6d%!',IDIM2)
       CALL INFO(INFOD)
 C
 C
@@ -243,10 +249,12 @@ C
           PERMIS(1) = 0.
           LENO = 0
         END IF
-        WRITE(INFOUD,1022)NAMARC,PERMIS(1),IDIM2,LENO
+C        WRITE(INFOUD,1022)NAMARC,PERMIS(1),IDIM2,LENO
+C 1022 FORMAT(A,F5.1,2I6)
+        CALL SWRITF(INFOUD,'%.*s%5.1f%6d%6d%!', LEN(NAMARC), NAMARC,
+     +     PERMIS(1), IDIM2, LENO)
         CALL TOLIST(LIST,INFOUD)
       END IF
- 1022 FORMAT(A,F5.1,2I6)
       IF(IOKENT.NE.0) GO TO 1
 C     THIS RETURNS THE FOLLOWING:
 C     ILEFTS  POSITION IN CONSENSUS OF LEFT END OF MATCHING CONTIGS
@@ -347,8 +355,10 @@ C
           LINCON(I)=J
           GO TO 100
 99      CONTINUE
-        WRITE(INFOD,10077)LLINO(I)
-10077   FORMAT(' Contig line for contig',I8,' not found!')
+C        WRITE(INFOD,10077)LLINO(I)
+C10077   FORMAT(' Contig line for contig',I8,' not found!')
+        CALL SWRITF(INFOD,' Contig line for contig%8d not found!%!',
+     +       LLINO(I))
         CALL ERROMF(INFOD)
         GO TO 900
 100   CONTINUE
@@ -360,8 +370,10 @@ C                     SINGLE OVERLAP
 C
 C
 C
-        WRITE(INFOD,1014)LLINO(1)
-1014    FORMAT('New reading overlaps contig',I8)
+C        WRITE(INFOD,1014)LLINO(1)
+C1014    FORMAT('New reading overlaps contig',I8)
+C CHECKED
+        CALL SWRITF(INFOD,'New reading overlaps contig%8d%!',LLINO(1))
         CALL INFO(INFOD)
         IF(ITOTPG(1).GT.0) CALL CCTA(SEQG2(1,1),IDIM22(1))
 C      WRITE(*,*)'BEFORE entry'
@@ -396,8 +408,11 @@ C
 C                     DOUBLE OVERLAP
 C
 C
-      WRITE(INFOD,1013)LLINO
-1013  FORMAT('Overlap between contigs',I8,' and',I8)
+C      WRITE(INFOD,1013)LLINO
+C1013  FORMAT('Overlap between contigs',I8,' and',I8)
+C CHECKED
+      CALL SWRITF(INFOD, 'Overlap between contigs%8d and%8d%!',
+     +     LLINO(1), LLINO(2))
       CALL INFO(INFOD)
       IF(ANSJOK.NE.0) THEN
 C
@@ -408,7 +423,9 @@ C
         CALL INFO(
      +  'Read overlaps 2 contigs: entering it at best site')
         IF(ITOTPG(IGOOD).GT.0) CALL CCTA(SEQG2(1,IGOOD),IDIM22(IGOOD))
-        WRITE(INFOD,1012)LLINO(IGOOD)
+C        WRITE(INFOD,1012)LLINO(IGOOD)
+        CALL SWRITF(INFOD,'Entering the new reading into contig%8d%!',
+     +       LLINO(IGOOD))
         CALL INFO(INFOD)
         CALL AENTER(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
      +  SEQG2(1,IGOOD),NAMARC,JOINT(IGOOD),ITYPE(IGOOD),
@@ -442,7 +459,9 @@ C
         CALL INFO(
      +  'Read overlaps twice in one contig: entering it at best site')
         IF(ITOTPG(IGOOD).GT.0) CALL CCTA(SEQG2(1,IGOOD),IDIM22(IGOOD))
-        WRITE(INFOD,1012)LLINO(IGOOD)
+C        WRITE(INFOD,1012)LLINO(IGOOD)
+        CALL SWRITF(INFOD,'Entering the new reading into contig%8d%!',
+     +       LLINO(IGOOD))
         CALL INFO(INFOD)
         CALL AENTER(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
      +  SEQG2(1,IGOOD),NAMARC,JOINT(IGOOD),ITYPE(IGOOD),
@@ -470,8 +489,11 @@ C is the overlap between the contigs too large?
 C
       CALL AJOIN3(RELPG,IDBSIZ,LINCON,ITYPE,ISENSE,JOINT,
      +IDIM22,KLASS,IOVER,PL,PR)
-      WRITE(INFOD,1002)IOVER
-1002  FORMAT('Length of overlap between the contigs',I6)
+C      WRITE(INFOD,1002)IOVER
+C1002  FORMAT('Length of overlap between the contigs',I6)
+C CHECKED
+      CALL SWRITF(INFOD,'Length of overlap between the contigs%6d%!',
+     +     IOVER)
       CALL INFO(INFOD)
       IF(IOVER.GT.MAXOVR)THEN
         CALL INFO('Overlap too large: entry only')
@@ -488,7 +510,9 @@ C
           GO TO 1
         END IF
         IF(ITOTPG(IGOOD).GT.0) CALL CCTA(SEQG2(1,IGOOD),IDIM22(IGOOD))
-        WRITE(INFOD,1012)LLINO(IGOOD)
+C        WRITE(INFOD,1012)LLINO(IGOOD)
+        CALL SWRITF(INFOD,'Entering the new reading into contig%8d%!',
+     +       LLINO(IGOOD))
         CALL INFO(INFOD)
         CALL AENTER(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
      +  SEQG2(1,IGOOD),NAMARC,JOINT(IGOOD),ITYPE(IGOOD),
@@ -510,11 +534,15 @@ C
           CALL ERROMF('Error calculating consensus')
           GO TO 900
         END IF
-        WRITE(INFOD,1020)LLINO
+C        WRITE(INFOD,1020)LLINO
+        CALL SWRITF(INFOD, 'Could not join contigs%8d and%8d%!',
+     +       LLINO(1), LLINO(2))
         CALL INFO(INFOD)
-1020    FORMAT('Could not join contigs',I8,' and',I8)
-1021    FORMAT('Reading has been entered into contig',I8)
-        WRITE(INFOD,1021)LLINO(IGOOD)
+C1020    FORMAT('Could not join contigs',I8,' and',I8)
+C1021    FORMAT('Reading has been entered into contig',I8)
+C        WRITE(INFOD,1021)LLINO(IGOOD)
+        CALL SWRITF(INFOD, 'Reading has been entered into contig%8d%!',
+     +       LLINO(IGOOD))
         CALL INFO(INFOD)
         JOINF = JOINF + 1
         GO TO 1
@@ -529,9 +557,12 @@ C   WHICH CONTIG IS LEFTMOST?
 C   SAVE LENGTH OF RMOST CONTIG FOR DELETION STEP LATER
       ILCR=ILC(RMOST)
       IF(ITOTPG(LMOST).GT.0) CALL CCTA(SEQG2(1,LMOST),IDIM22(LMOST))
-      WRITE(INFOD,1012)LLINO(LMOST)
+C      WRITE(INFOD,1012)LLINO(LMOST)
+C CHECKED
+      CALL SWRITF(INFOD,'Entering the new reading into contig%8d%!',
+     +     LLINO(LMOST))
       CALL INFO(INFOD)
-1012  FORMAT('Entering the new reading into contig',I8)
+C1012  FORMAT('Entering the new reading into contig',I8)
       CALL AENTER(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
      +SEQG2(1,LMOST),NAMARC,JOINT(LMOST),ITYPE(LMOST),
      +ISENSE(LMOST),SEQC2(1,LMOST),ITOTPC(LMOST),
@@ -615,9 +646,11 @@ C        CALL AERROR(LIST,NAMARC,4)
         GO TO 1
       END IF
       IF(ITOTPC(LMOST).GT.0)THEN
-        WRITE(INFOD,1017)LLINO(LMOST)
+C        WRITE(INFOD,1017)LLINO(LMOST)
+C CHECKED
+        CALL SWRITF(INFOD,'Editing contig%8d%!',LLINO(LMOST))
         CALL INFO(INFOD)
-1017    FORMAT('Editing contig',I8)
+C1017    FORMAT('Editing contig',I8)
         CALL ABEDIN(RELPG,LNGTHG,LNBR,RNBR,
      +  NGELS,NCONTS,SEQ3,LINCON(LMOST),JOINT(LMOST),SEQC2(1,LMOST),
      +  ITOTPC(LMOST),IDOUT(LMOST),IDBSIZ,IDEV1,
@@ -626,7 +659,9 @@ C        CALL AERROR(LIST,NAMARC,4)
       JOINT(RMOST)=1
       IDOUT(RMOST)=ILC(RMOST)
       IF(ITOTPC(RMOST).GT.0)THEN
-        WRITE(INFOD,1017)LLINO(RMOST)
+C        WRITE(INFOD,1017)LLINO(RMOST)
+C CHECKED
+        CALL SWRITF(INFOD,'Editing contig%8d%!',LLINO(RMOST))
         CALL INFO(INFOD)
         CALL ABEDIN(RELPG,LNGTHG,LNBR,RNBR,
      +  NGELS,NCONTS,SEQ3,LINCON(RMOST),JOINT(RMOST),SEQC2(1,RMOST),
@@ -636,9 +671,13 @@ C        CALL AERROR(LIST,NAMARC,4)
       ILC(RMOST)=ILCR
       LTL=LNBR(LINCON(LMOST))
       LTR=LNBR(LINCON(RMOST))
-      WRITE(INFOD,1018)LNBR(LINCON(LMOST)),LNBR(LINCON(RMOST))
+C      WRITE(INFOD,1018)LNBR(LINCON(LMOST)),LNBR(LINCON(RMOST))
+C CHECKED
+      CALL SWRITF(INFOD,
+     +     'Completing the join between contigs%8d and%8d%!',
+     +     LNBR(LINCON(LMOST)),LNBR(LINCON(RMOST)))
       CALL INFO(INFOD)
-1018  FORMAT('Completing the join between contigs',I8,' and',I8)
+C1018  FORMAT('Completing the join between contigs',I8,' and',I8)
       CALL AJOIN2(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,IDBSIZ,
      +JOINT(LMOST),LTL,LTR,LINCON(LMOST),LINCON(RMOST),IDEV1)
       LLINO(1)=LTL
@@ -691,17 +730,23 @@ C        JOINF = JOINF + 1
       END IF
 901   CONTINUE
       CALL INFO('Batch finished')
-      WRITE(INFOD,1030)JGEL
- 1030 FORMAT(I8,' sequences processed')
+C      WRITE(INFOD,1030)JGEL
+C 1030 FORMAT(I8,' sequences processed')
+C CHECKED
+      CALL SWRITF(INFOD,'%8d sequences processed%!',JGEL)
       CALL INFO(INFOD)
-      WRITE(INFOD,1031)JNGEL
- 1031 FORMAT(I8,' sequences entered into database')
+C      WRITE(INFOD,1031)JNGEL
+C 1031 FORMAT(I8,' sequences entered into database')
+      CALL SWRITF(INFOD,'%8d sequences entered into database%!',JNGEL)
       CALL INFO(INFOD)
-      WRITE(INFOD,1032)JNJOIN
- 1032 FORMAT(I8,' joins made')
+C      WRITE(INFOD,1032)JNJOIN
+C 1032 FORMAT(I8,' joins made')
+      CALL SWRITF(INFOD,'%8d joins made%!',JNJOIN)
       CALL INFO(INFOD)
-      WRITE(INFOD,1033)JOINF
- 1033 FORMAT(I8,' joins failed')
+C      WRITE(INFOD,1033)JOINF
+C 1033 FORMAT(I8,' joins failed')
+C CHECKED
+      CALL SWRITF(INFOD,'%8d joins failed%!',JOINF)
       CALL INFO(INFOD)
       END
       SUBROUTINE DBAUTP(RELPG,LNGTHG,LNBR,RNBR,NGELS,NCONTS,
@@ -788,9 +833,13 @@ C   LOOK THRU ARC FILE
       J = INDB(NGELS,RNAMES,NAMID)
       IF (J.NE.0) THEN
 C   FOUND
-        WRITE(INFOD,1013)J
-1013    FORMAT('New reading already in database with number',I8,
-     +  ' Entry aborted')
+C        WRITE(INFOD,1013)J
+C1013    FORMAT('New reading already in database with number',I8,
+C     +  ' Entry aborted')
+C CHECKED
+        CALL SWRITF(INFOD,
+     +'New reading already in database with number%8d Entry aborted%!',
+     +        J)
         CALL ERROMF(INFOD)
         IFAIL=6
         RETURN
@@ -804,9 +853,13 @@ C
       CALL SINDB(IDEVN,NGELS,RNAMES,NAMID,2)
 C   SET LENGTH THIS GEL
       LNGTHG(NGELS)=IDIM*ISENSE
-      WRITE(INFOD,1003)NGELS
+C      WRITE(INFOD,1003)NGELS
 C      WRITE(*,1003)NGELS
-1003  FORMAT('This gel reading has been given the number ',I8)
+C1003  FORMAT('This gel reading has been given the number ',I8)
+C CHECKED
+      CALL SWRITF(INFOD,
+     +     'This gel reading has been given the number %8d%!',
+     +     NGELS)
       CALL INFO(INFOD)
 C   WRITE NAME OF ARCHIVE TO LIST OF ARCHIVES
 C   NAMPRO,ARC
@@ -1489,8 +1542,10 @@ C      WRITE(*,*)'IDIM',IDIM,IDCEND
       END IF
       CALL SQCOPY(GELCOP,GEL,IDIMG)
       KSENSE = 0
-      WRITE(INFOD,1000)IMATC
- 1000 FORMAT('Total matches found',I6)
+C      WRITE(INFOD,1000)IMATC
+C 1000 FORMAT('Total matches found',I6)
+C CHECKED
+      CALL SWRITF(INFOD, 'Total matches found%6d%!', IMATC)
       CALL INFO(INFOD)
       IF(IMATC.EQ.0) THEN
         IFAIL(1) = 0
@@ -1498,11 +1553,15 @@ C      WRITE(*,*)'IDIM',IDIM,IDCEND
         RETURN
       END IF
       DO 99 I = 1,IMATC
-        WRITE(INFOD,1002)JLLINO(I),JPOSC(I),JSENSE(I),
-     +  JPOSG(I)
- 1002   FORMAT
-     +  ('Contig',I8,' position',I8,' matches strand ',I2,
-     +  ' at position',I8)
+C        WRITE(INFOD,1002)JLLINO(I),JPOSC(I),JSENSE(I),
+C     +  JPOSG(I)
+C 1002   FORMAT
+C     +  ('Contig',I8,' position',I8,' matches strand ',I2,
+C     +  ' at position',I8)
+C CHECKED
+        CALL SWRITF(INFOD,
+     +     'Contig%8d position%8d matches strand %2d at position%8d%!',
+     +     JLLINO(I),JPOSC(I),JSENSE(I), JPOSG(I))
         CALL INFO(INFOD)
  99   CONTINUE
       JMATC = 0
@@ -1533,8 +1592,10 @@ C     +   LENOVR,JPOSG(I),IDIMG,JPOSC(I),JLC(I)
         JDIM22 = IDIMG
         JDOUT = MAXGEL
         IDSAV = MAXSAV
-        WRITE(INFOD,1001)JLLINO(I)
- 1001   FORMAT('Trying to align with contig ',I8)
+C        WRITE(INFOD,1001)JLLINO(I)
+C 1001   FORMAT('Trying to align with contig ',I8)
+C CHECKED
+        CALL SWRITF(INFOD,'Trying to align with contig %8d%!',JLLINO(I))
         CALL INFO(INFOD)
         CALL ALINE(SEQ1(JLEFTS(I)),GEL,SEQG3,SEQC3,
      +  SAVPS,SAVPG,SAVL,IDSAV,JLC(I),JDIM22,JDOUT,
@@ -1715,9 +1776,13 @@ C
 C          WRITE(*,*)X,ITOTPC,ITOTPG
       IF (ISHOW.EQ.1) THEN
         IF(IFAIL.EQ.0) THEN
-          WRITE(INFOD,1052)X,ITOTPC,ITOTPG
-1052      FORMAT('Percent mismatch ',F4.1,', pads in contig',I3,
-     +    ', pads in gel',I3)
+C          WRITE(INFOD,1052)X,ITOTPC,ITOTPG
+C1052      FORMAT('Percent mismatch ',F4.1,', pads in contig',I3,
+C     +    ', pads in gel',I3)
+C CHECKED
+          CALL SWRITF(INFOD,
+     + 'Percent mismatch %4.1f, pads in contig%3d, pads in gel%3d%!',
+     +         X,ITOTPC,ITOTPG)
           CALL INFO(INFOD)
         END IF
         RETURN
@@ -1725,15 +1790,26 @@ C          WRITE(*,*)X,ITOTPC,ITOTPG
         IF (IFAIL.NE.0) RETURN
       ELSE IF(ISHOW.EQ.4) THEN
         IF (IFAIL.EQ.0) THEN
-          WRITE(INFOD,1052)X,ITOTPC,ITOTPG
+C          WRITE(INFOD,1052)X,ITOTPC,ITOTPG
+C CHECKED
+          CALL SWRITF(INFOD,
+     + 'Percent mismatch %4.1f, pads in contig%3d, pads in gel%3d%!',
+     +         X,ITOTPC,ITOTPG)
           CALL INFO(INFOD)
           RETURN
         END IF
       END IF
-      WRITE(INFOD,1052)X,ITOTPC,ITOTPG
-      WRITE(NAME2,1000)'     Consensus'
-      WRITE(NAME1,1000)'       Reading'
-1000  FORMAT(A)
+C      WRITE(INFOD,1052)X,ITOTPC,ITOTPG
+C CHECKED
+      CALL SWRITF(INFOD,
+     + 'Percent mismatch %4.1f, pads in contig%3d, pads in gel%3d%!',
+     +         X,ITOTPC,ITOTPG)
+C      WRITE(NAME2,1000)'     Consensus'
+C      WRITE(NAME1,1000)'       Reading'
+C1000  FORMAT(A)
+C CHECKED
+      CALL SWRITF(NAME2, '    Consensus %!')
+      CALL SWRITF(NAME1, '      Reading %!')
       KC = FORTA(SEQC2(1),SEQG2(IENDG),LO,NAME2,NAME1,LEN(NAME1),
      +  IENDC,IENDG,INFOD,80)
       END
@@ -2377,11 +2453,16 @@ C 5 no match found during masked assembly
          END IF
  5    CONTINUE
  6    CONTINUE
-      WRITE(INFOD,1000)NAME(1:L),IERR
- 1000 FORMAT(A,I2)
-      WRITE(ERRMSG,1010)'Failed file ',NAME(1:L),
-     +     'written to error file'
- 1010 FORMAT(A,A,A)
+C      WRITE(INFOD,1000)NAME(1:L),IERR
+C 1000 FORMAT(A,I2)
+C CHECKED
+      CALL SWRITF(INFOD,'%.*s%2d%!',LEN(NAME(1:L)),NAME(1:L),IERR)
+C      WRITE(ERRMSG,1010)'Failed file ',NAME(1:L),
+C     +     'written to error file'
+C 1010 FORMAT(A,A,A)
+C CHECKED
+      CALL SWRITF(ERRMSG,'Failed file %.*swritten to error file%!',
+     +     LEN(NAME(1:L)),NAME(1:L))
       CALL ERROMF(ERRMSG)
       CALL TOLIST(LIST,INFOD)
       CALL INFO(ERRMSG)
@@ -2776,8 +2857,10 @@ C   AUTHOR: RODGER STADEN
       CHARACTER INFOD*30
       INTEGER X
 C
-      WRITE(INFOD,1000)LLINO
-1000  FORMAT( 'Complementing contig',I8)
+C      WRITE(INFOD,1000)LLINO
+C1000  FORMAT( 'Complementing contig',I8)
+C CHECKED
+      CALL SWRITF(INFOD, 'Complementing contig%8d%!',LLINO)
       CALL INFO(INFOD)
 C   CHAIN THRU AND PUT RIGHT ENDS IN RELPG
       N=LLINO
@@ -3024,91 +3107,12 @@ C   AUTHOR: RODGER STADEN
 99      CONTINUE
 100   CONTINUE
       END
-      SUBROUTINE ARRFIM(IDEV,SEQNCE,J)
-      CHARACTER TEMP(80),SEQNCE(J)
-      CHARACTER SPACE,ENDCHR,TITCHR
-      SAVE ENDCHR,SPACE,TITCHR
-      DATA ENDCHR/'@'/
-      DATA SPACE/' '/
-      DATA TITCHR/';'/
-      IDMX=J
-      J=0
-1     CONTINUE
-      READ(IDEV,1001,END=30,ERR=40)TEMP
-1001  FORMAT(80A1)
-      IF(TEMP(1).EQ.TITCHR)THEN
-        GO TO 1
-      END IF
-10    CONTINUE
-      DO 20 I=1,80
-        IF(TEMP(I).NE.SPACE)THEN
-          IF(TEMP(I).EQ.ENDCHR)RETURN
-          IF(J.EQ.IDMX)THEN
-            CALL ERROMF('Too much data, so input truncated')
-            RETURN
-          END IF
-          J=J+1
-          SEQNCE(J)=TEMP(I)
-        END IF
-20    CONTINUE
-      GO TO 1
-30    CONTINUE
-      RETURN
- 40   CONTINUE
-      CALL ERROMF('Error reading file')
-      J = 0
-      END
-      INTEGER FUNCTION JFROMC(CHARS,LENGTH)
-C   AUTHOR: RODGER STADEN
-C   INTEGER FUNCTION TO CONVERT CHARACTER ARRAYS OF
-C   NUMERALS TO BINARY FORM
-      CHARACTER NUMBER*10,CHARS(LENGTH)
-C   LENGTH OF STRING NUMBER
-      LENS=10
-      NUMBER=' '
-      CALL RJSTFY(CHARS,NUMBER,LENS,LENGTH)
-      READ(NUMBER,1002,ERR=100)LIST
-1002  FORMAT(I10)
-      JFROMC=LIST
-      RETURN
-100   CONTINUE
-      JFROMC = 0
-      CALL ERROMF('Error in internal read, value set to zero')
-      END
       SUBROUTINE ERROMF(STRING)
       CHARACTER STRING*(*)
       CALL FVERR(0, 'Error', STRING)
       END
       SUBROUTINE BUSYF()
 C      WRITE(*,*)'BUSY'
-      END
-      SUBROUTINE FMTDB(SEQ1,IDIM,ISW,ISE,LINLEN,IDEV)
-C   NOTE SAME AS FMTSEP!
-C   AUTHOR: RODGER STADEN
-      CHARACTER SEQ1(IDIM), INFOD*100
-      INTEGER KL(12)
-      ISWW=ISW-1
-      IE=ISW-1
-1     CONTINUE
-      WRITE(INFOD,1003)
-1003  FORMAT( )
-      CALL INFO(INFOD)
-C   SET UP DECIMAL COUNTERS
-      DO 50 J=1,LINLEN/10
-        ISWW=ISWW+10
-        KL(J)=ISWW
-50    CONTINUE
-      IS=IE+1
-      IE=IE+LINLEN
-      IF(IE.GT.ISE)IE=ISE
-      WRITE(INFOD,1001)(KL(KKK),KKK=1,MIN(IE-IS+1,LINLEN)/10)
-      CALL INFO(INFOD)
-      WRITE(INFOD,1002)(SEQ1(K),K=IS,IE)
-      CALL INFO(INFOD)
-1002  FORMAT( '  ',12(10A1,1X))
-1001  FORMAT( ' ',12(5X,I6))
-      IF(IE.EQ.ISE)RETURN
-      GO TO 1
       END
 C     SQCOM
       SUBROUTINE SQCOM(SEQ,IDIM)
@@ -3243,8 +3247,6 @@ C
         DO 60 I = 0,255
           POINT2(I) = POINT1(I)
 60      CONTINUE
-      ELSE
-        WRITE(*,*)'ERROR INITIALISING CHARACTER LOOKUP POINTERS'
       END IF
       END
       INTEGER FUNCTION INDEXA(STRING,ID,CHAR)
@@ -3279,27 +3281,6 @@ C  GET COLLATING SEQUENCE VALUE
       ICOL = ICHAR(CHAR)
 C  THIS POINTS TO A VALUE IN POINTR
       CTONUM = POINT1(ICOL)
-      END
-      SUBROUTINE RJSTFY(ARRAY,STRING,LENS,LENGTH)
-C   AUTHOR: RODGER STADEN
-      CHARACTER STRING*(*),ARRAY(LENGTH)
-      STRING=' '
-C   LOOK FOR FIRST NON SPACE CHAR
-      K=LENGTH+1
-      DO 1 I=1,LENGTH
-      K=K-1
-1     IF(ARRAY(K).NE.' ')GO TO 2
-C   ALL SPACES!
-      RETURN
-2     CONTINUE
-      K1=K
-C  POINT TO RIGHT END OF STRING
-      K3=LENS+1
-      DO 3 I=1,K1
-      K3=K3-1
-      STRING(K3:K3)=ARRAY(K)
-3     K=K-1
-      RETURN
       END
       SUBROUTINE BUB3AS(LIST,LIST2,LIST3,IDIM)
 C   AUTHOR: RODGER STADEN

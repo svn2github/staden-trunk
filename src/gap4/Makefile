@@ -138,6 +138,7 @@ GAPFUNCS = \
 	$(GAP4BIN)/find_fragments.o\
 	$(GAP4BIN)/vseqs.o\
 	$(GAP4BIN)/$(GAP4_LEGACY)\
+	$(GAP4BIN)/f2c.o \
 	$(GAP4BIN)/allelic_discreps.o
 
 #	$(GAP4BIN)/shuffle_pads.o
