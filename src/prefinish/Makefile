@@ -27,6 +27,7 @@ OBJS=\
 	$(FINBIN)/finish_utils.o \
 	$(FINBIN)/finish_walk.o \
 	$(FINBIN)/finish_reverse.o \
+	$(FINBIN)/finish_filter.o \
 	$(FINBIN)/dust.o
 
 FIN_DEP=\

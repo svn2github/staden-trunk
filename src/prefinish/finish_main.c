@@ -8,6 +8,7 @@
 #include "finish_long.h"
 #include "finish_walk.h"
 #include "finish_reverse.h"
+#include "finish_filter.h"
 #include "find_fragments.h"
 #include "xalloc.h"
 #include "misc.h"
@@ -208,11 +209,6 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 		    }
 		    break;
 
-		case CLASS_LOW_COMPLEXITY:
-		    /* FIXME: to do */
-		    bit = 0;
-		    break;
-
 		default:
 		    bit = 0;
 		    break;
@@ -249,24 +245,69 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
 	    switch (d->con_bits[k].type) {
 	    case CLASS_SEQ_DEPTH_GT:
 		bit = (num_frags > d->con_bits[k].arg);
-		d->bits[i2] |= bit << d->con_bits[k].bit;
 		break;
 
 	    case CLASS_SEQ_DEPTH_GE:
 		bit = (num_frags >= d->con_bits[k].arg);
-		d->bits[i2] |= bit << d->con_bits[k].bit;
 		break;
 
 	    case CLASS_TEMP_DEPTH_GT:
 		bit = (template_depth > d->con_bits[k].arg);
-		d->bits[i2] |= bit << d->con_bits[k].bit;
 		break;
 
 	    case CLASS_TEMP_DEPTH_GE:
 		bit = (template_depth >= d->con_bits[k].arg);
-		d->bits[i2] |= bit << d->con_bits[k].bit;
 		break;
+
+	    case CLASS_LOW_COMPLEXITY:
+		bit = (d->filtered[i2] == FILTER_LOWCOMPLEX);
+		break;
+		
+	    case CLASS_POLY_A:
+		bit = (d->filtered[i2] == FILTER_POLYA);
+		break;
+		
+	    case CLASS_POLY_C:
+		bit = (d->filtered[i2] == FILTER_POLYC);
+		break;
+		
+	    case CLASS_POLY_G:
+		bit = (d->filtered[i2] == FILTER_POLYG);
+		break;
+		
+	    case CLASS_POLY_T:
+		bit = (d->filtered[i2] == FILTER_POLYT);
+		break;
+		
+	    case CLASS_POLY_K:
+		bit = (d->filtered[i2] == FILTER_POLYK);
+		break;
+		
+	    case CLASS_POLY_M:
+		bit = (d->filtered[i2] == FILTER_POLYM);
+		break;
+		
+	    case CLASS_POLY_R:
+		bit = (d->filtered[i2] == FILTER_POLYR);
+		break;
+		
+	    case CLASS_POLY_S:
+		bit = (d->filtered[i2] == FILTER_POLYS);
+		break;
+		
+	    case CLASS_POLY_W:
+		bit = (d->filtered[i2] == FILTER_POLYW);
+		break;
+		
+	    case CLASS_POLY_Y:
+		bit = (d->filtered[i2] == FILTER_POLYY);
+		break;
+		
+	    default:
+		bit = 0;
 	    }
+
+	    d->bits[i2] |= bit << d->con_bits[k].bit;
 	}
     }
 }

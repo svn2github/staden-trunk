@@ -4,6 +4,7 @@
 #include "IO.h"
 #include "finish_walk.h"
 #include "finish_utils.h"
+#include "finish_filter.h"
 #include "gap_globals.h"
 #include "xalloc.h"
 #include "misc.h"
@@ -179,27 +180,27 @@ static int near_low_complexity(finish_t *fin, int pos, int dir) {
     int i;
     int i_end;
     int count_filt = 0, count_total = 0;
-
+    
     if (!fin->filtered)
 	return 0;
 
     /*
-     * Count how many # and non-# symbols there are between where the
-     * pos and additional 100 basepairs beyond where we expect the sequence
-     * to start. If it's got too many then reject.
+     * Count how many filtered and non-filtered symbols there are between
+     * where the pos and additional 100 basepairs beyond where we
+     * expect the sequence to start. If it's got too many then reject.
      */
     if (dir == 1) {
 	i_end = MIN(io_clength(fin->io, fin->contig),
 		    pos + fin->opts.pwalk_seq_gap+100);
 	for (i = pos; i < i_end; i++) {
-	    if (fin->filtered[i] == '#')
+	    if (is_filtered(fin->filtered[i]))
 		count_filt++;
 	}
 	count_total = i_end - pos;
     } else {
 	i_end = MAX(-1, pos - fin->opts.pwalk_seq_gap-100);
 	for (i = pos; i > i_end; i--) {
-	    if (fin->filtered[i] == '#')
+	    if (is_filtered(fin->filtered[i]))
 		count_filt++;
 	}
 	count_total = pos - i_end;
@@ -300,7 +301,7 @@ static experiment_walk_t *find_primers(finish_t *fin,
 		fin->orig_prob_bits[i] & fin->opts.pwalk_prob_mask)
 		unpadded_cons[j] = '-';
 	    else
-		unpadded_cons[j] = fin->filtered[i] == '#'
+		unpadded_cons[j] = is_filtered(fin->filtered[i])
 		    ? '-'
 		    : fin->cons[i];
 	    unpadded_qual[j] = fin->orig_qual[i];

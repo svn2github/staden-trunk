@@ -26,6 +26,17 @@
 #define CLASS_SEQ_DEPTH_GE	10
 #define CLASS_TEMP_DEPTH_GE	11
 #define CLASS_CONFIDENCE_GE	12
+#define CLASS_POLY_A		13
+#define CLASS_POLY_C		14
+#define CLASS_POLY_G		15
+#define CLASS_POLY_T		16
+#define CLASS_POLY_K		17
+#define CLASS_POLY_M		18
+#define CLASS_POLY_R		19
+#define CLASS_POLY_S		20
+#define CLASS_POLY_W		21
+#define CLASS_POLY_Y		22
+
 
 typedef struct {
     int bit;		/* Bit number */

@@ -14,6 +14,7 @@
 #include "finish_utils.h"
 #include "finish_long.h"
 #include "finish_walk.h"
+#include "finish_filter.h"
 #include "vseqs.h"
 #include "template.h"
 #include "list_proc.h"
@@ -585,6 +586,7 @@ static int configure_skip_templates(finish_t *fin,
     return TCL_OK;
 }
 
+#if 0
 static void finish_filter(finish_t *fin) {
     int i, clen;
 
@@ -620,6 +622,7 @@ static void finish_filter(finish_t *fin) {
     if (fin->opts.debug[FIN_DEBUG_DUST] > 1)
 	printf("%.*s\n", clen, fin->filtered);
 }
+#endif
 
 /*
  * Called from tcl_finish_configure to read a sequence from a file and
@@ -1665,6 +1668,46 @@ static con_bits_t *parse_con_bits(Tcl_Interp *interp, char *str, int *nbits) {
 
 	} else if (strcmp(argv[1], "low_complexity") == 0) {
 	    con_bits[i].type = CLASS_LOW_COMPLEXITY;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_A") == 0) {
+	    con_bits[i].type = CLASS_POLY_A;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_C") == 0) {
+	    con_bits[i].type = CLASS_POLY_C;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_G") == 0) {
+	    con_bits[i].type = CLASS_POLY_G;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_T") == 0) {
+	    con_bits[i].type = CLASS_POLY_T;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_K") == 0) {
+	    con_bits[i].type = CLASS_POLY_K;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_M") == 0) {
+	    con_bits[i].type = CLASS_POLY_M;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_R") == 0) {
+	    con_bits[i].type = CLASS_POLY_R;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_S") == 0) {
+	    con_bits[i].type = CLASS_POLY_S;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_W") == 0) {
+	    con_bits[i].type = CLASS_POLY_Y;
+	    con_bits[i].arg = 0;
+
+	} else if (strcmp(argv[1], "poly_Y") == 0) {
+	    con_bits[i].type = CLASS_POLY_Y;
 	    con_bits[i].arg = 0;
 
 	} else {
