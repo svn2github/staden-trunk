@@ -1,0 +1,135 @@
+Organisation of the code 
+======================== 
+ 
+The package consists of the following directories, which I organise here into
+libraries and applications. In some cases it's a little bit complicated as the
+same directory houses both a C library, Tcl functions to communicate with that 
+library and/or provide additional GUI code, and an application. 
+ 
+For example Gap4 consists of lots of C (with a tiny bit of Fortran). These are
+compiled together to produce (for example) libgap.so. The same directory
+contains lots of .tcl files and an associated tclIndex file for use with the
+stash "load_package" command. Finally it also contains gap.tcl, the main
+startup file for gap4. ('Gap4' is effectively just "stash .../gap/gap.tcl").
+ 
+Pure C libraries 
+---------------- 
+ 
+Misc 
+io_lib 
+text_utils 
+g 
+seq_utils 
+mutlib (C++) 
+ 
+Pure Tcl libraries 
+------------------ 
+cap2 
+cap3 
+phrap 
+spin_emboss 
+ 
+C and Tcl libraries 
+------------------- 
+ 
+tk_utils 
+prefinish
+gap4 (also app startup code) 
+spin (also app startup code) 
+spin2 (also app startup code) 
+seqed (also app startup code) 
+ 
+Applications 
+------------ 
+ 
+abi 
+alf 
+convert 
+eba 
+expGetSeq 
+get_scf_field 
+hetins 
+init_exp 
+make_weights 
+qclip 
+pregap4 (pure Tcl) 
+screen_seq 
+tracealign 
+tracediff 
+traceview 
+trev (pure Tcl) 
+vector_clip 
+ 
+External libraries used 
+----------------------- 
+png 
+zlib 
+primer3 (modified to act as a library instead of an application) 
+tcl 
+tk 
+IncrTcl 
+tkdnd 
+iwidgets (pure itcl/itk) 
+tablelist (pure Tcl) 
+
+
+Library hierarchy
+-----------------
+
+A dependency tree is hard to draw if we include all the applications, as gap4
+and spin both include lots of dependencies which would lead to many
+crossing arrows. So I'll break down just the basic libraries.
+
+  	 +-----------------------------------+------------+
+	 |             tk_utils              | text_utils |
+         |  +------+----+--------+-----+-----+------------+
+         |  | Itcl | Tk | io_lib | png |                  |
+         +--+------+----+--------+-----+      Misc        |
+         |     Tcl      |    zlib      |                  |
+         +--------------+--------------+------------------+
+
+So io_lib does not (yet) depend on Misc, but it does contain quite a bit of
+duplicated code. The reason for this is that historically we've distributed
+io_lib as a separate Open Source package and so we copied the necessary bits
+from Misc into io_lib. Ideally we should revert back to having io_lib depend
+on Misc and remove this duplication.
+
+Misc is where the OS dependent bits belong such as byte-order handling
+functions and various implementations of various missing functions so that all 
+the OSes come to a common standard. In addition to this it has useful
+data-type handling code such as dynamic arrays and dynamic strings.
+
+Text_utils and tk_utils both contain some of the same functions: vmessage,
+verror, vfuncheader (and maybe more). In the tk_utils world these use Tcl/Tk
+to add text to the main text output windows. In text_utils these just print
+to stderr and stdout.
+
+A complication arises in that some algorithms in seq_utils will use vmessage
+or verror. seq_utils itself may be called (for example) from both Gap4 (which
+has a tk window and uses tk_utils) and vector_clip (which is a non-GUI tool
+and uses text_utils). So when linking Gap4 we want to use seq_utils and
+tk_utils and when linking vector_clip we want to use seq_utils and
+text_utils. The original plan (back in the unix-only days) was that when
+linking seq_utils we would not specify tk_utils or text_utils and so build a
+library with unresolved externals. These will be resolved only when linking
+the final application.
+
+Unfortunately exploiting such lazy linking techniques will not work on Windows 
+as they are not supported. All symbols have to be resolved when linking a
+library, meaning we have to explicitly state whether seq_utils links against
+tk_utils or text_utils. This then causes crashes if vector_clip links against
+seq_utils and text_utils, meaning that text_utils becomes less
+useful. Ultimately the solution is that the strict algorithm libraries (such
+as seq_utils) want rewriting so as not to print up messages at all; they
+should simply return error strings which are dealt with by the application in
+an application specific manner.
+
+Gap4 and spin depend on pretty much all of the above. Gap4 also depends on "g" 
+and "mutlib", both of which depend on a variety of other libraries (g: Misc,
+mutlib: tk_utils, io_lib, seq_utils, Misc).
+
+Finally, "prefinish" depends on Gap4 and most of the same libraries it depends 
+on.
+
+==============================================================================
+
