@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# For all the pngs that are split into a small and large version, create a
+# .png.html file which is simply an html page containing the png. This is
+# needed because the tcl/tk html viewer doesn't support png files directly.
+
+for i in *.small.*.png
+do
+    name=`echo $i | sed 's/\.small\.\(.*\)\.png$/\.\1/'`
+    # name=`echo $i | sed 's/.small.png$//'`
+    echo "Creating $name.png.html"
+    cat > $name.png.html << _eof_
+<html><body bgcolor="#ffffff">
+<img src="$name.png">
+</body></html>
+_eof_
+done
