@@ -143,6 +143,7 @@ set_def CONTIG_EDITOR.TEMP_DIST_COLOUR    "#bbbbbb"
 set_def CONTIG_EDITOR.TEMP_STRAND_COLOUR  "#FF3939"
 set_def CONTIG_EDITOR.TEMP_PRIM_COLOUR    "#5959FF"
 set_def CONTIG_EDITOR.TEMP_OTHER_COLOUR   "#555555"
+set_def CONTIG_EDITOR.TEMP_END_COLOUR     "#dddddd"
 
 #set_def CONTIG_EDITOR.QUAL0_COLOUR	"#494949"
 #set_def CONTIG_EDITOR.QUAL1_COLOUR	"#595959"
@@ -462,16 +463,16 @@ set_def GLOBAL.READING		$defs_rn
 #-----------------------------------------------------------------------------
 # The Primer3 defaults
 #-----------------------------------------------------------------------------
-set_def PRIMER.min_tm 50
-set_def PRIMER.opt_tm 55
-set_def PRIMER.max_tm 60
-set_def PRIMER.min_gc 30
+set_def PRIMER.min_tm 58
+set_def PRIMER.opt_tm 60
+set_def PRIMER.max_tm 65
+set_def PRIMER.min_gc 20
 set_def PRIMER.opt_gc 50
-set_def PRIMER.max_gc 70
+set_def PRIMER.max_gc 80
 set_def PRIMER.min_len 17
-set_def PRIMER.opt_len 18
+set_def PRIMER.opt_len 20
 set_def PRIMER.max_len 23
-set_def PRIMER.max_poly_x 4
+set_def PRIMER.max_poly_x 5
 set_def PRIMER.self_any 5
 set_def PRIMER.self_end 3
 set_def PRIMER.gc_clamp 1
@@ -820,6 +821,24 @@ set_def SUGGEST_PRIMERS.SEARCH_NUM.VALUE	1
 set_def SUGGEST_PRIMERS.PARAMS.TM.NAME		"Tm (Celsius)"
 set_def SUGGEST_PRIMERS.PARAMS.LEN.NAME		"Length (bases)"
 set_def SUGGEST_PRIMERS.PARAMS.GC.NAME		"G+C Content (%)"
+
+# PCR primers
+set_def PCR_PRIMERS.INFILE			$defs_c_in
+set_def PCR_PRIMERS.INFILE.WHICH.BUTTONS	{list file {{all contigs}}}
+set_def PCR_PRIMERS.TASK			2
+set_def PCR_PRIMERS.SEARCH_START.NAME		"Closest to end"
+set_def PCR_PRIMERS.SEARCH_START.MIN		0
+set_def PCR_PRIMERS.SEARCH_START.MAX		500
+set_def PCR_PRIMERS.SEARCH_START.VALUE		15
+set_def PCR_PRIMERS.SEARCH_END.NAME		"Furthest from end"
+set_def PCR_PRIMERS.SEARCH_END.MIN		0
+set_def PCR_PRIMERS.SEARCH_END.MAX		500
+set_def PCR_PRIMERS.SEARCH_END.VALUE		100
+set_def PCR_PRIMERS.PARAMS.TM.NAME		"Tm (Celsius)"
+set_def PCR_PRIMERS.PARAMS.LEN.NAME		"Length (bases)"
+set_def PCR_PRIMERS.PARAMS.GC.NAME		"G+C Content (%)"
+set_def PCR_PRIMERS.TMDIFF.NAME			"Maximum Oligo Tm difference"
+set_def PCR_PRIMERS.TMDIFF.VALUE		4
 
 # Minimal coverage
 set_def MINIMAL_COVERAGE.INFILE			$defs_c_in
