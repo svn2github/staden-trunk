@@ -37,7 +37,7 @@ typedef struct contig_list {
 
 #if GAP_CACHE!=0
 #    define gel_read(io, gn, g) \
-        (memcpy(&g, arrp(GReadings, (io)->reading, (gn)-1), sizeof(g)), 0)
+        (gn > 0 ? (memcpy(&g, arrp(GReadings, (io)->reading, (gn)-1), sizeof(g)), 0) : -1)
 #    define gel_write(io, gn, g) \
         GT_Write_cached(io, gn, &g)
 #else
