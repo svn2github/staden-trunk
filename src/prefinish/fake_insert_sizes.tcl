@@ -1,6 +1,6 @@
 #!/bin/sh
 #\
-exec stash "$0" ${@+"$@"} || exit 1
+STADENROOT=/usr/local/badger/gap4_test; export STADENROOT; . $STADENROOT/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
 
 #
 # This sets the insert size fields to min 1 max 100000 for all
