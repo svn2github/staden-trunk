@@ -74,13 +74,13 @@ int test_if_locked(char *fname) {
     int fd;
 
     if ((fd = open(fname, O_RDONLY, 0)) != -1) {
+	int i;
 	locked = 1;
 	/*
 	 * If we locked this file ourselves then lockf() will succeed,
 	 * so test for this case also. We do this simply by looking through
 	 * the list of locked files to see if it is one we already know about.
 	 */
-	int i;
 	for (i = 0; i < numu_lock_files; i++) {
 	    if (strcmp(lock_files[i].pathname, fname) == 0) {
 		break;
