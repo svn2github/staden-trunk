@@ -995,14 +995,13 @@ void quality_clip_ends(GapIO *io, int contig, int avg_qual)
     int clip;
     int i;
     int win_len = 31;
-
-    printf("\n=== CONTIG %d ===\n", contig);
+    int printed_cname = 0;
+    int clipped;
 
     /* --- Left end --- */
     /* Identify 2 leftmost sequences */
     rnum1 = io_clnbr(io, contig);
     rnum2 = io_rnbr(io, rnum1);
-    printf("Leftmost read=%d & %d\n", rnum1, rnum2);
 
     /* Load confidence */
     gel_read(io, rnum1, r);
@@ -1017,15 +1016,19 @@ void quality_clip_ends(GapIO *io, int contig, int avg_qual)
     clip = avg_clip(io, conf, conf_len, win_len, avg_qual)+2;
     if (clip-2 != -1 && clip > r.start && rnum2) {
 	int apos = r.position - r.start + clip;
-	printf("1clip = %d (abs %d)\n", clip, apos);
 	if (apos > io_relpos(io, rnum2)) {
 	    clip -= apos - io_relpos(io, rnum2);
 	    apos = r.position - r.start + clip;
-	    printf("2clip = %d (abs %d)\n", clip, apos);
 	}
 
 	r.position = r.position - r.start + clip;
 	r.start = clip;
+	clipped = r.sequence_length - (r.end - r.start - 1);
+	if (clipped) {
+	    vmessage("Contig %s     ", io_rname(io, io_clnbr(io, contig)));
+	    printed_cname = 1;
+	    vmessage("clip %d from left     ", clipped);
+	}
 	r.sequence_length = r.end - r.start - 1;
 	io_relpos(io, rnum1) = r.position;
 	io_length(io, rnum1) = r.sequence_length * (r.sense ? -1 : 1);
@@ -1062,8 +1065,6 @@ void quality_clip_ends(GapIO *io, int contig, int avg_qual)
 	}
     }
 	
-    printf("Rightmost read=%d & %d\n", rnum1, rnum2);
-
     /* Load and reverse confidence array */
     gel_read(io, rnum1, r);
     if (NULL == (conf = (int1 *)xcalloc(r.length, sizeof(*conf))))
@@ -1087,18 +1088,27 @@ void quality_clip_ends(GapIO *io, int contig, int avg_qual)
     /* Clip */
     if (clip != -1 && ++clip < r.end && rnum2) {
 	int apos = r.position - r.start + clip;
-	printf("1clip = %d (abs %d)\n", clip, apos);
 	if (apos < io_relpos(io, rnum2) + ABS(io_length(io, rnum2))-1) {
 	    clip-= apos - (io_relpos(io, rnum2) + ABS(io_length(io, rnum2))-1);
 	    apos = r.position - r.start + clip;
-	    printf("2clip = %d (abs %d)\n", clip, apos);
 	}
 
 	r.end = clip+2;
+	clipped = r.sequence_length - (r.end - r.start - 1);
+	if (clipped) {
+	    if (!printed_cname)
+		vmessage("Contig %s     ", io_rname(io, io_clnbr(io, contig)));
+	    vmessage("clip %d from right",
+		     r.sequence_length - (r.end - r.start - 1));
+	    printed_cname = 1;
+	}
 	r.sequence_length = r.end - r.start - 1;
 	io_length(io, rnum1) = r.sequence_length * (r.sense ? -1 : 1);
 	gel_write(io, rnum1, r);
     }
+
+    if (printed_cname)
+	vmessage("\n");
 
     xfree(conf);
 
