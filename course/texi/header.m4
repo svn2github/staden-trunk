@@ -248,4 +248,5 @@ $3
 @end ifhtml
 ]])]])]])]])
 
-
+_define([[_tick]],[[@code{[x]}]])
+_define([[_cross]],[[@code{[ ]}]])

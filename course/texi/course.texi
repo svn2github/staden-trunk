@@ -25,14 +25,6 @@
 
 @paragraphindent 0
 
-@macro tick{}
-@code{[x]}
-@end macro
-
-@macro cross{}
-@code{[ ]}
-@end macro
-
 include(header.m4)
 
 @titlepage

@@ -23,12 +23,10 @@
 # preprocessor to generate different .texinfo files.
 #
 %_unix.texinfo:	%.texi
-	m4 -Uunix -D_unix -D_tex -D_html < $< > $@.tmp
-	makeinfo --no-validate -E $@ $@.tmp
+	m4 -Uunix -D_unix -D_tex -D_html < $< > $@
 
 %_windows.texinfo:	%.texi
-	m4 -Uunix -D_windows -D_tex -D_html < $< > $@.tmp
-	makeinfo --no-validate -E $@ $@.tmp
+	m4 -Uunix -D_windows -D_tex -D_html < $< > $@
 
 # How to build .dvi files from our macro-expanded .texinfo
 # files
@@ -47,7 +45,8 @@
 	dvips -t a4 -Ppdf -o $@ $<
 
 %.pdf:	%.ps
-	PATH=$$PATH:/usr/local/bin ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
+#	PATH=$$PATH:/usr/local/bin ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
+	PATH=$$PATH:/usr/local/bin ps2pdf $<
 
 # Converts an A4 formatted .texi file into a US-letter formatted file.
 %_us.texinfo: %.texinfo

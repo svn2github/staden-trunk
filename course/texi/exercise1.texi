@@ -435,8 +435,8 @@ Available" list to the "Modules to use list, thus adding to the list of
 options offered by pregap4. All great fun, but remember, finish this
 exploration by clicking the Cancel button, which gets you back to a logical
 list of modules.}  Each of the optional modules (i.e. all but the mandatory
-@i{General Configuration}) has either a @tick{}, indicating that it will be
-executed, or a @cross{}, indicating that it will not be executed. To the right
+@i{General Configuration}) has either a _tick(), indicating that it will be
+executed, or a _cross(), indicating that it will not be executed. To the right
 of each module in the list is either:
 
 @table @b
@@ -454,7 +454,7 @@ sensible).
 @end table
 
 You need to select all the modules you wish to execute by clicking the
-@tick{}s and @cross{}s with the left mouse button and to configure the
+_tick()s and _cross()s with the left mouse button and to configure the
 selected modules where appropriate.
 
 Initially the @i{General Configuration} module will be highlighted and the right
@@ -468,7 +468,7 @@ and configure it correctly for the data to processed.
 
 The "General Configuration" module performs a variety of house-keeping tasks
 such as identifying the type of each file to process. It is not optional, so
-you do not have to think about the selection of a @tick{} or @cross{}.
+you do not have to think about the selection of a _tick() or _cross().
 
 The single parameter you are invited to think about guides the way that pregap4
 will determine the entry names@footnote{Also known as "reading names" or
@@ -548,7 +548,7 @@ native output format is also SCF, so we can be sure to have SCF files after
 processing with phred.
 
 Primarily because we cannot be sure that phred is available, leave this option
-@cross{}ed. In a later exercise, we will look at processing reads
+_cross()ed. In a later exercise, we will look at processing reads
 called and assigned confidence values using phred.
 
 @subsection ATQA
@@ -563,7 +563,7 @@ automatically reformat the input data if necessary. The output files will also
 be in SCF format.
 
 As with phred, we cannot be sure that ATQA is available when running this
-course, so leave the option @cross{}ed.
+course, so leave the option _cross()ed.
 
 @subsection Estimate Base Accuracies
 
@@ -572,7 +572,7 @@ call. It's a poor-man's version of phred and ATQA, but unlike these it is a
 standard part of the package and so will work on all installations. It can
 deal with SCF, CTF and ZTR input files, but will automatically convert ABI and
 ALF input data to ZTR prior to processing.  There are no parameters to
-configure.  Leave it @tick{}ed.
+configure.  Leave it _tick()ed.
 
 We have a choice of two output scales; logarithmic and signal to noise
 ratios. Keep the default (@b{logarithmic} as this is compatible with
@@ -614,7 +614,7 @@ Note that this module creates new files. It will not remove your existing
 files. So clearly we need to do this (later) if we wish to reap the space
 saving rewards. Disk space is not in short supply here, but to illustrate the
 point we will keep with the defaults (ZTR format, no downscaling) and keep the
-module @tick{}ed.
+module _tick()ed.
 
 
 _ifdef([[_unix]],[[@subsection Compress Trace Files
@@ -650,7 +650,7 @@ The GNU @b{gzip} program
 @item .bz2
 @b{bzip} version 2
 @end table
-}. However for this exercise we are using ZTR so and we should leave this module @cross{}ed.]])
+}. However for this exercise we are using ZTR so and we should leave this module _cross()ed.]])
 @subsection Initialise Experiment Files
 
 This extracts the sequence from the trace file to produce an Experiment
@@ -661,13 +661,13 @@ plain text files containing the called sequence plus annotation. The
 annotation syntax is based on that of the EMBL database. Also see
 @url{http://www.mrc-lmb.cam.ac.uk/pubseq/formats.html}}. Look at the manual page for
 further detail. For your data set, Experiment files are essential, so leave it
-@tick{}ed.
+_tick()ed.
 
 @subsection Augment Experiment Files
 
 This module augments Experiment files with any additional information about
 the sequences that we are able to supply to pregap4. For this exercise, there
-is no additional information, so deselect this option (i.e. make it @cross{}ed).
+is no additional information, so deselect this option (i.e. make it _cross()ed).
 
 We will look at augmenting experiment files in later exercises. Information
 such as the sequencing chemistry and types of primer used for each read will
@@ -705,7 +705,7 @@ values assigned by the @i{Estimate Base Accuracies} or @i{Phred modules}.
 The insatiably curious may wish to read the 'qclip' program manual to
 understand how this works (as ever, just click on the Help on module
 button). For now just knowing what it plans to do is enough. Leave it
-@tick{}ed for this exercise and leave the settings at their default values
+_tick()ed for this exercise and leave the settings at their default values
 (confidence clipping, assuming @i{Estimate Base Accuracies} has been enabled).
 
 @subsection Sequencing Vector Clip
@@ -728,7 +728,7 @@ contig assembly. Following the fine example of the clipping module, pregap4
 does not delete the vector sequence it finds, it just records its location in
 the appropriate experiment files.
 
-This module is needed, so leave it @tick{}ed. You now definitely need to
+This module is needed, so leave it _tick()ed. You now definitely need to
 answer some questions. Although pregap4 (in this case) does have enough
 default answers to get by we can speed up the processing by being more
 specific. We need to supply information about the sequencing vector, the cut
@@ -768,7 +768,7 @@ package. Like phred, it must be obtained from the author. cross_match allows
 each read sequence to be compared with more than one vector sequence. However,
 it does not make use of primer site and cut site information and so will be
 less effective less than vector_clip at finding the particular vector
-matches. Leave this module @cross{}ed.
+matches. Leave this module _cross()ed.
 
 @subsection Screen for Unclipped Vector
 
@@ -785,7 +785,7 @@ occurring anywhere in the read. Such readings should be discarded as
 unreliable data. pregap4 works out for itself that it is once again to use the
 @b{m13mp18} vector sequence file. The default value for the @b{Minimum length
 of match} (i.e. @b{30}) is fine (use the Help on module button for further
-detail). Leave this module @tick{}ed. It's generally not needed unless you
+detail). Leave this module _tick()ed. It's generally not needed unless you
 are experiencing cloning problems.
 
 @subsection Poly-A Clip
@@ -793,7 +793,7 @@ are experiencing cloning problems.
 This module searches for runs of @b{A}s or runs of @b{T}s adjacent to
 the sequencing vector clips (either end). Upon finding a run the vector
 clip points are updated to include the run. Our data has not been
-produced using such linkers so we should leave this module @cross{}ed.
+produced using such linkers so we should leave this module _cross()ed.
 
 @subsection Cloning Vector Clip
 
@@ -845,7 +845,7 @@ containing references to files each containing a single sequence to be
 screened against.
 
 We do not need to screen the reads used in this exercise, so leave the module
-@cross{}ed. As always, there is further discussion a mere click of the Help on module
+_cross()ed. As always, there is further discussion a mere click of the Help on module
 button away.
 
 _ifdef([[_unix]],[[@subsection Blast Screen
@@ -861,7 +861,7 @@ fraction} parameter. As always, click on the Help on module button for the full
 and truly riveting story.} are rejected. As for the Screen Sequences module,
 the default screening is to protect against E.Coli contamination.
 
-Another fine module, but not required here, so leave it @cross{}ed.
+Another fine module, but not required here, so leave it _cross()ed.
 ]])
 @subsection Interactive Clipping
 
@@ -882,7 +882,7 @@ spotted and corrected at this stage.
 Clearly, when dealing with large batches of reads, interactive clipping is not
 a practical option, however, it could be worth the effort for a small batch,
 such as the one you are processing in this exercise. So enable this module by
-making sure that it is @tick{}ed.
+making sure that it is _tick()ed.
 
 _ifdef([[_unix]],[[@subsection RepeatMasker
 
@@ -901,7 +901,7 @@ details of how to obtain the program and concerning the parameters offered,
 click on the Help on module button.
 
 If you know you have RepeatMasker installed you may wish to try enabling
-this module, otherwise leave it @cross{}ed.
+this module, otherwise leave it _cross()ed.
 ]])
 
 @subsection Reference Traces/Sequences, Trace Difference, Heterozygote Scanner
@@ -913,12 +913,12 @@ analysis and so are generally much more reliable than looking at base
 calls alone.
 
 The mutation detection methods are demonstrated in another exercise, so
-for now leave all three modules @cross{}ed.
+for now leave all three modules _cross()ed.
 
 @subsection Gap4 shotgun assembly, _ifdef([[_unix]],[[Cap3 assembly, FakII assembly, ]])Phrap assembly
 
 If you wanted pregap4 to assemble your reads into contigs after
-pre-processing, you would @tick{} one and only one of the assembly modules
+pre-processing, you would _tick() one and only one of the assembly modules
 listed above@footnote{pregap4 does not stop you selecting more than one, all
 even, but it hardly makes any sense.}. You may select the Staden Package
 native assembler or one of the external
@@ -928,7 +928,7 @@ available on UNIX, or on Windows for those brave enough to venture into
 uncharted territory.}]]) that are not distributed with the Staden Package and
 must be obtained from their authors.
 
-Leave all these modules @cross{}ed for this exercise.
+Leave all these modules _cross()ed for this exercise.
 
 @subsection Enter assembly (into Gap4)
 
@@ -938,7 +938,7 @@ manipulated by gap4. This module takes the output from any of the external
 contig assemblers and reads it into a gap4 database ready for processing by
 gap4.
 
-Clearly, this is not required for this exercise, so leave it @cross{}ed.
+Clearly, this is not required for this exercise, so leave it _cross()ed.
 
 _ifdef([[_unix]],[[@subsection Email
 
@@ -953,7 +953,7 @@ currently. However, pregap4 can be run without its GUI@footnote{As you will
 see in the next exercise.} and in batch mode. Sending an email upon completion
 would make more sense in such circumstances.
 
-This module is not relevant here, so leave it @cross{}ed.
+This module is not relevant here, so leave it _cross()ed.
 ]])
 At last you have satisfied the near bottomless curiosity of pregap4. Before
 you go any further, check that you have set everything up correctly. There
