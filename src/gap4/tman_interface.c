@@ -688,7 +688,7 @@ static void trace_columns(EdStruct *xx, int cols) {
 static tman_dc *seq2edc(int seq) {
     int i;
     for (i = 0; i < MAXCONTEXTS; i++) {
-	if (edc[i].dc && edc[i].seq == seq)
+	if (edc[i].dc && edc[i].seq == seq && edc[i].type != TRACE_TYPE_MINI)
 	    return &edc[i];
     }
 
@@ -720,8 +720,6 @@ int auto_diff(EdStruct *xx, int seq, int contig_pos) {
     DisplayContext *ref_neg_top_dc = NULL, *ref_neg_bot_dc = NULL;
     DisplayContext *top_seq1_dc    = NULL, *top_seq2_dc    = NULL;
     DisplayContext *bot_seq1_dc    = NULL, *bot_seq2_dc    = NULL;
-
-    printf("Auto_diff seq %d pos %d\n", seq, contig_pos);
 
     /* Find sequences 1000 base pairs either side of the 5' position */
     seq_5 = DB_Comp(xx, seq) == UNCOMPLEMENTED
@@ -1332,6 +1330,7 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
     int tmp_pos;
     int tmp_dts;
     int tmp_seq;
+    int tmp_lps;
     int ncolumns;
     int row, col;
     dstring_t *seqname;
@@ -1357,16 +1356,19 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
     xx->cursorSeq = 0;
     tmp_dts = xx->diff_trace_size;
     xx->diff_trace_size = 10; /* speeds up differencing */
+    tmp_lps = xx->lines_per_seq;
+    xx->lines_per_seq = 1;
     auto_diff(xx, seq, pos);
     tman_reposition_traces(xx, pos, 0);
     xx->cursorPos = tmp_pos;
     xx->cursorSeq = tmp_seq;
     xx->diff_trace_size = tmp_dts;
+    xx->lines_per_seq = tmp_lps;
 
     /* Count how many traces there are, to work out the number of columns */
     ncolumns = 0;
     for (i = 0; i < MAXCONTEXTS; i++) {
-	if (edc[i].dc)
+	if (edc[i].dc && edc[i].type != TRACE_TYPE_MINI)
 	    ncolumns++;
     }
 
@@ -1387,7 +1389,7 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
 	char buf[1024];
 	Tcl_DString ds;
 
-	if (!edc[i].dc)
+	if (!edc[i].dc || edc[i].type == TRACE_TYPE_MINI)
 	    continue;
 
 	Tcl_DStringInit(&ds);
