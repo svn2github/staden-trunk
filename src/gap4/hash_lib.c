@@ -959,6 +959,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	}
     }
 #endif
+
     for (i = 1; i < h->matches; i++) {
 	int diff;
 	int end1 = h->block_match[i-1].pos_seq1 + h->block_match[i-1].length;
@@ -986,6 +987,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	    h->matches--;
 	}
     }
+
 
     /* align up to the first matching words,
      * align the segments between the matching words
@@ -1291,7 +1293,12 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 			 h->block_match[i].best_score)) {
 		    h->block_match[i].best_score = t;
 		    h->block_match[i].prev_block = j;
-		    h->block_match[j].next_block = i;
+		    if (h->block_match[j].next_block != -1 &&
+			h->block_match[h->block_match[j].next_block].best_score >=
+			h->block_match[i].best_score)
+			; /* skip */
+		    else
+			h->block_match[j].next_block = i;
 		    tt = t+h->block_match[i].length;
 		    if (tt>best_score) {
 			best_score = tt;
