@@ -390,8 +390,9 @@ $(MUTBIN)/%.a: $(MUTSRC)/%.cpp
 
 
 # Automatically make $(MACHINE)-binaries output directories
-$(O):
-	mkdir $(O)
+$(O)/.dir:
+	-mkdir $(O)
+	touch $(O)/.dir
 
 #
 # Files requiring simple C and FORTRAN compilation ($(SRC)/thing.c -> thing.o)
@@ -399,15 +400,15 @@ $(O):
 # 
 # 7/1/99 johnt - added abstractions to support Visual C++, and mkdef command
 # to build Windows DEF files
-$(O)/%.o:	%.c $(O)
+$(O)/%.o:	%.c $(O)/.dir
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.f $(O)
+$(O)/%.o:	%.f $(O)/.dir
 	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.cpp $(O)
+$(O)/%.o:	%.cpp $(O)/.dir
 	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
 
 
@@ -418,17 +419,17 @@ $(O)/%.o:	%.cpp $(O)
 # the files, yet still force compilation of all files (eg due to important
 # header file changes or compile flags).
 #
-$(O)/%.o:	$(REMOTESRC)/%.c $(O)
+$(O)/%.o:	$(REMOTESRC)/%.c $(O)/.dir
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
 
-$(O)/%.o:	$(REMOTESRC)/%.f $(O)
+$(O)/%.o:	$(REMOTESRC)/%.f $(O)/.dir
 	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
 
-$(O)/%.o:	$(REMOTESRC)/%.cpp $(O)
+$(O)/%.o:	$(REMOTESRC)/%.cpp $(O)/.dir
 	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
 
 
