@@ -143,12 +143,15 @@ add_command	{Options.Configure menus}	1 2 {ConfigureMenus}
 add_command	{Options.Set genetic code}	1 2 {SetGeneticCode} {e}
 add_command	{Options.Alignment scores}	1 2 {SetAlignmentScores} {e}
 add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {e}
+add_command	{Options.Set template size strictness} \
+			     		 1 2 {SetTemplateSizeStrictness} {e}
 
 add_command	{Experiments.Suggest long readings}  8 10 {LongGels \$io} e
 add_command	{Experiments.Compressions and Stops} 8 10 {TaqTerminator \$io} e
 add_command	{Experiments.Suggest primers}	     8 26 {SuggestPrimers \$io} e
 add_command	{Experiments.Suggest probes}	     8 10 {SuggestProbes \$io} e
 add_command	{Experiments.Prefinish}		     8 10 {prefinish \$io}
+add_command	{Experiments.Pick PCR Primers}	     8 10 {::pcr_primers::GUI \$io}
 
 add_command	{Lists.View/Edit}	        12 6 {EditListDialog}
 add_command	{Lists.Create}			12 6 {CreateListDialog}
@@ -492,6 +495,8 @@ add_check {View.Show only read pairs} 1 0 {config$f.read_pairs} \
 	{update_template_display -io $io -id \[set $f.template_id\]}
 add_check {View.Show only spanning read pairs} 1 0 {config$f.span_read_pairs} \
 	{update_template_display -io $io -id \[set $f.template_id\]}
+add_check {View.Show only consistent read pairs} 1 0 {config$f.consist_read_pairs} \
+	{update_template_display -io $io -id \[set $f.template_id\]}
 add_check {View.Calculate contig postions} 1 0 {config$f.calc_contig_pos} \
         {update_template_display -io $io -id \[set $f.template_id\] -recalc 1}
 add_separator {View.S1}
@@ -500,6 +505,7 @@ add_command {View.Select tags} 1 0 \
 	\[set $f.template_id\] $t_win $r_win}
 add_command {View.Clear ActiveReadings} 1 0 {ListClear readings}
 add_command {View.Highlight reading list} 1 0 {InputSelectReadingList $io}
+add_command {View.Set Template-size Strictness} 1 0 {SetTSizeStrictness $io $f $t_win}
 
 add_command {Help.Introduction} 1 0 {show_help gap4 {Template-Display}}
 add_command {Help.Reading and Template Plot} 1 0 {show_help gap4 {Template-Templates}}
