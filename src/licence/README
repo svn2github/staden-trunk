@@ -1,0 +1,5 @@
+This directory contains the remnants of the original Staden Package
+licence checking code. It's now just dummy files in order to get it all
+compiling.
+
+TODO: Remove all references to the calls here so we can ditch this lot.
