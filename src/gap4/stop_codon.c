@@ -55,6 +55,7 @@ FindStopCodons(int strand,                                            /* in */
     int start_codon = 0;
     int end_codon;
     int *depad_to_pad;
+    int unpadded_len;
 
     end_codon = num_codons - 1;
 
@@ -84,8 +85,9 @@ FindStopCodons(int strand,                                            /* in */
      * determine the correct reading frame and ORF lengths.
      */
     depad_to_pad = (int *)xcalloc(sequence_len+1, sizeof(int));
-    depad_seq(sequence, &sequence_len, depad_to_pad);
-    hash_dna(sequence, sequence_len, seq_hash_values, last_word,
+    unpadded_len = sequence_len;
+    depad_seq(sequence, &unpadded_len, depad_to_pad);
+    hash_dna(sequence, unpadded_len, seq_hash_values, last_word,
 	     word_count);
 
      for (i = start_codon; i <= end_codon; i++) {
@@ -96,7 +98,7 @@ FindStopCodons(int strand,                                            /* in */
 			    matches, max_matches, 
 			    &num_matches, seq_hash_values); */
 	
-	dna_search(sequence, sequence_len, codon[i], CODON_LEN, 
+	dna_search(sequence, unpadded_len, codon[i], CODON_LEN, 
 		   sequence_type, seq_hash_values, last_word, word_count,
 		   matches, max_matches, &num_matches);
 	    
