@@ -13,6 +13,21 @@ if {[catch tkinit]} {
 catch {console hide}
 wm withdraw .
 
+proc splash_screen {} {
+    toplevel [set w .splash]
+    image create photo splash -file /nfs/team71/psg/jkb/logo.gif
+    wm transient .splash
+    wm overrideredirect .splash 1
+    label $w.splash -image splash
+    pack $w.splash -fill both
+    set x [expr {([winfo screenwidth $w]-[image width splash])/2}]
+    set y [expr {([winfo screenheight $w]-[image height splash])/2}]
+    wm geometry $w +$x+$y
+}
+
+#splash_screen
+#update idletasks
+
 # Override the current X defaults - these are not obvious, and ORDER COUNTS!
 # Probably only necessary for CDE/Solaris. Best to override with
 # tk_setPalette anyway.
@@ -429,7 +444,7 @@ set logging [keylget gap_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
 
-set GAP_VERSION "4.9 test 2"
+set GAP_VERSION "4.9 test 3"
 
 switch $licence(type) {
     f		{}
@@ -633,5 +648,6 @@ bind allfocus <Any-Enter> {
 # Force auto-loading of the EventHandler
 catch EventHandler
 
+#destroy .splash
 raise .
 focus -force .
