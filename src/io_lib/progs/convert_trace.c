@@ -16,6 +16,7 @@ struct opts {
     int scale;
     int sub_background;
     int normalise;
+    int min_normalise;
     int compress_mode;
     int dots;
 };
@@ -239,77 +240,56 @@ void reset_max_called_height(Read *r) {
 	r->maxTraceVal = max;
 }
 
-void rescale_heights(Read *r) {
-    int win_len = 1000;
-    int total = 0;
-    int max, max2;
-    int i, j, k, l;
-    double max_val = 0, rescale;
+/*
+ * Rescales peak heights based on a moving "marker". The marker tracks
+ * up and down (attack and decay) based on the difference between itself and
+ * the trace envelope. We then divide by the marker value to attempt to
+ * normalise peak heights.
+ *
+ * min_marker is used to avoid scaling up noise and represents the minimum
+ * value the marker is allowed to reach. Make sure it is > 0 or divide by
+ * zero may occur.
+ */
+void rescale_heights(Read *r, int min_marker) {
+    double marker = 0;
+    int i, j, max, mtv = 0;
     TRACE *tx[4];
-    int mtv;
 
     tx[0] = r->traceA;
     tx[1] = r->traceC;
     tx[2] = r->traceG;
     tx[3] = r->traceT;
 
-    if (r->NPoints < 2*win_len + 1)
-	return;
-
-    for (k = 0; k < 2; k++) {
-	max2 = win_len * r->maxTraceVal;
-	
-	for (i = 0; i < win_len; i++) {
-	    max = 0;
-	    for (l = 0; l < 4; l++)
-		if (tx[l][i] > max) max = tx[l][i];
-	    total += max;
-	}
-	
-	for (j = 0; i < r->NPoints; i++, j++) {
-	    max = 0;
-	    for (l = 0; l < 4; l++)
-		if (tx[l][j] > max) max = tx[l][j];
-	    total -= max;
-	    
-	    max = 0;
-	    for (l = 0; l < 4; l++)
-		if (tx[l][i] > max) max = tx[l][i];
-	    total += max;
-	    
-	    for (l = 0; l < 4; l++) {
-		if (k == 0) {
-		    if (tx[l][j] * ((double)max2 / total) > max_val)
-			max_val = tx[l][j] * ((double)max2 / total);
-		} else {
-		    tx[l][j] *= (double)max2 / total * rescale;
-		}
-	    }
-	}
-
-	for (; j < r->NPoints; j++) {
-	    for (l = 0; l < 4; l++) {
-		if (k == 0) {
-		    if (tx[l][j] * ((double)max2 / total) > max_val)
-			max_val = tx[l][j] * ((double)max2 / total);
-		} else {
-		    tx[l][j] *= (double)max2 / total * rescale;
-		}
-	    }
-	    
-	}
-
-	if (max_val > 65535) {
-	    rescale = 65535 / max_val;
-	    mtv = 65535;
+    for (i = 0; i < r->NPoints; i++) {
+	for (max = j = 0; j < 4; j++)
+	    if (max < tx[j][i])
+		max = tx[j][i];
+	if (!marker) {
+	    marker = max;
 	} else {
-	    rescale = 1.0;
-	    mtv = max_val;
+	    if (max >= marker) {
+		/* attack */
+		marker += (max - marker) / 20.0;
+	    } else {
+		/* decay */
+		marker -= (marker - max) / 10.0;
+	    }
+	    if (marker < min_marker)
+		marker = min_marker;
 	}
+
+	for (j = 0; j < 4; j++) {
+	    double new = tx[j][i] * 2000.0/marker;
+	    tx[j][i] = new > 32767 ? 32767 : new;
+	    if (mtv < tx[j][i])
+		mtv = tx[j][i];
+	}
+
     }
 
     r->maxTraceVal = mtv;
 }
+
 
 int convert(FILE *infp, FILE *outfp, char *infname, char *outfname,
 	    struct opts *opts) {
@@ -339,7 +319,7 @@ int convert(FILE *infp, FILE *outfp, char *infname, char *outfname,
     }
 
     if (opts->normalise) {
-	rescale_heights(r);
+	rescale_heights(r, opts->min_normalise);
     }
 
     if (opts->scale) {
@@ -379,6 +359,7 @@ void usage(void) {
     puts("\t-name id                  ID line for experiment file output");
     puts("\t-subtract_background      Subtracts the trace background");
     puts("\t-normalise                Normalises peak heights");
+    puts("\t-min_normalise            Minimum trace amp for normalising");
     puts("\t-scale range              Downscales peaks to 0-range");
     puts("\t-compress mode            Compress file output (not if stdout)");
     puts("\t-abi_data counts	      ABI DATA lanes to copy: eg 9,10,11,12");
@@ -394,6 +375,7 @@ int main(int argc, char **argv) {
     opts.scale = 0;
     opts.sub_background = 0;
     opts.normalise = 0;
+    opts.min_normalise = 100;
     opts.name = NULL;
     opts.compress_mode = -1;
     opts.dots = 0;
@@ -426,6 +408,10 @@ int main(int argc, char **argv) {
 
 	} else if (strcmp(*argv, "-normalise") == 0) {
 	    opts.normalise = 1;
+
+	} else if (strcmp(*argv, "-min_normalise") == 0) {
+	    opts.min_normalise = atoi(*++argv);
+	    argc--;
 
 	} else if (strcmp(*argv, "-dots") == 0) {
 	    opts.dots = 1;
