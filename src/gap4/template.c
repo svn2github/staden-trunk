@@ -639,7 +639,7 @@ void get_template_positions(GapIO *io, template_c *t, int contig) {
     template_read(io, t->num, te);
     if (t->start == UNKNOWN_POS) {
 	if (found_for)
-	    t->start = t->min;
+	    t->start = t->direction ? t->max : t->min;
 	t->flags |= TEMP_FLAG_GUESSED_START;
     } else {
 	t->flags &= ~TEMP_FLAG_GUESSED_START;
@@ -647,7 +647,7 @@ void get_template_positions(GapIO *io, template_c *t, int contig) {
 
     if (t->end == UNKNOWN_POS) {
 	if (found_rev)
-	    t->end = t->max;
+	    t->end = t->direction ? t->min : t->max;
 	t->flags |= TEMP_FLAG_GUESSED_END;
     } else {
 	t->flags &= ~TEMP_FLAG_GUESSED_END;
