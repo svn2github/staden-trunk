@@ -73,8 +73,6 @@ vcontig_t *new_vcontig(GapIO *io, int contig) {
     db->next_rnum = NumReadings(io)+1;
     db->cons = NULL;
 
-    printf("Create vcontig\n");
-
     return db;
 }
 
@@ -92,8 +90,6 @@ vcontig_t *new_vcontig(GapIO *io, int contig) {
  */
 void del_vcontig(vcontig_t *vc) {
     vrseq_t *v, *v2;
-
-    printf("Delete vcontig\n");
 
     v = vc->left;
     while (v) {
@@ -187,11 +183,13 @@ void del_vrseq(vcontig_t *vc, vrseq_t *vrseq) {
     if (!vrseq || !vc)
 	return;
 
+#if 0
     if (!vrseq->vseq) {
 	verror(ERR_WARN, "del_vrseq",
 	       "virtual attempt to delete a real sequence\n");
 	return;
     }
+#endif
 
     /* printf("Del virtual sequence %d\n", vrseq->rnum); */
 
