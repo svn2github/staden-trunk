@@ -503,25 +503,26 @@ load_package tk_utils
 tk_utils_init
 load_package gap
 
-if {[tk appname Gap4] != "Gap4"} {
-    set app [tk appname]
-    # Multiple gap4s - recolour!
-    set gnum 2
-    foreach col [keylget gap_defs BACKGROUNDS] {
-	set "colours(Gap4 #$gnum)" $col
-	incr gnum
+if {[keylget gap_defs BACKGROUNDS] != ""} {
+    if {[tk appname Gap4] != "Gap4"} {
+        set app [tk appname]
+        # Multiple gap4s - recolour!
+        set gnum 2
+        foreach col [keylget gap_defs BACKGROUNDS] {
+	    set "colours(Gap4 #$gnum)" $col
+	    incr gnum
+        }
+        keylset tk_utils_defs FOREGROUND black
+        if {[info exists colours($app)]} {
+	    keylset tk_utils_defs BACKGROUND $colours($app)
+        } else {
+	    keylset tk_utils_defs BACKGROUND $col
+        }
+	unset col
+	unset gnum
+	unset colours
     }
-    keylset tk_utils_defs FOREGROUND black
-    if {[info exists colours($app)]} {
-	keylset tk_utils_defs BACKGROUND $colours($app)
-    } else {
-	keylset tk_utils_defs BACKGROUND $col
-    }
-    unset col
-    unset gnum
-    unset colours
 }
-
 
 if {$licence(type) == "d"} {
     LicenceSplash Gap4 3
