@@ -271,7 +271,7 @@ NipFindStopCodons(char *strand,                                        /* in */
 #define CODON_LEN 3
 
     int *seq_hash_values;
-    int *matches, max_matches=MAXMATCHES;
+    int *matches, max_matches;
     int num_matches;
     int i, k;
     int cnt1 = 0;
@@ -306,6 +306,7 @@ NipFindStopCodons(char *strand,                                        /* in */
 	return -2;
     }
 
+    max_matches = sequence_len+3;
     if ( ! (matches = (int *) xmalloc ( sizeof(int)*(max_matches) ))) {
 	return -1;
     }

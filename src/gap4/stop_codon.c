@@ -44,7 +44,7 @@ FindStopCodons(int strand,                                            /* in */
 
     int compareint(int *, int *);
     int *seq_hash_values;
-    int *matches, max_matches=MAXMATCHES;
+    int *matches, max_matches;
     int num_matches;
     int i, k;
     int cnt = 0;
@@ -69,9 +69,12 @@ FindStopCodons(int strand,                                            /* in */
 	return -2;
     }
 
+    /* match gets realloced as it goes */
     if (NULL == (*match = (R_Match*)xcalloc(MAXMATCHES, sizeof(R_Match))))
 	return 0;
     
+    /* matches isn't realloced, so we use worst case. It's free soon though */
+    max_matches = sequence_len+1;
     if ( ! (matches = (int *) xmalloc ( sizeof(int)*(max_matches) ))) {
 	return -2;
     }
