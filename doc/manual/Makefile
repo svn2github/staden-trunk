@@ -65,14 +65,14 @@ M4=m4
 %.ps:	%.dvi
 	dvips -t a4 -Ppdf -o $@ $<
 
+# PDF generation. Directly from the texinfo.
+# Note that as the texinfo is reordered, this produces out of order
+# data too (contents page at the end).
+# One solution is (eg):
+#   pdftk manual_unix.pdf cat 1-2 469-end 3-468 output new.pdf
+# however this loses the bookmarks.
 %.pdf:	%.texinfo
 	texi2pdf $<
-
-# PDF generation. I've never really had a great deal of luck with getting
-# good fonts out of ps2pdf, but it's worth a try.
-#%.pdf:	%.ps
-#	ps2pdf -dEncodeColorImages=false $<
-#	ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
 
 # Converts an A4 formatted .texi file into a US-letter formatted file.
 %_us.texinfo: %.texinfo
