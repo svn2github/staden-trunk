@@ -10,7 +10,7 @@
 #include <tk.h>
 #include <math.h>
 #include <X11/Xutil.h>
-#include <png.h>
+#include "png.h" /* local 1.2.5 copy */
 #include "tk_defs.h"
 
 #include "os.h"
@@ -2143,7 +2143,8 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
     if (i)
 	XDestroyImage(i);
 
-    png_destroy_write_struct(&png_ptr, &info_ptr);
+    if (png_ptr)
+	png_destroy_write_struct(&png_ptr, &info_ptr);
 
     return -1;
 }
