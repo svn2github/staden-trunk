@@ -377,6 +377,8 @@ add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
 	1 {$e set_grouping \[set $w.GroupBy\]}
 add_radio       {Settings.Group Readings.By Clone}   1 0 {$w.GroupBy}\
 	3 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Grouping}   1 0 {$w.GroupBy}\
+	6 {$e set_grouping \[set $w.GroupBy\]}
 
 add_separator	{Settings.S1}
 add_check	{Settings.Highlight Disagreements}	1 0 {$w.Disagreements}\
@@ -571,6 +573,8 @@ add_command {View.2nd-Highest Confidence} 	1 0 \
 	{CreateConfidenceGraph $io second \[set $t.cons_id\] $t}
 add_command {View.Discrepancy graph} 	1 0 \
 	{CreateConfidenceGraph $io discrep \[set $t.cons_id\] $t}
+add_command {View.Diploid graph} 	1 0 \
+	{CreateConfidenceGraph $io discrep2 \[set $t.cons_id\] $t}
 add_command {View.Reading coverage histogram} 	1 0 \
 	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
 add_command {View.Readpair coverage histogram} 	1 0 \

@@ -3,6 +3,7 @@
 #-----------------------------------------------------------------------------
 load_package tk_utils
 load_package copy_reads
+load_package iwidgets
 
 # Next line can be removed when using the updated newgap_top.tcl
 # load_package %L/gap		{}	gap		1
@@ -1267,3 +1268,4 @@ if {[keylget gap_defs MENU_FILE] != "viewer"} {
     load_package %L/fak2	 {}	 fak2 0
     load_package %L/phrap	 {}	 phrap 0
 }
+load_package haplo
