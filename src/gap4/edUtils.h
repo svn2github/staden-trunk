@@ -146,6 +146,7 @@
 #define DB_Start(X,A)    ((X)->DBi->DB[(A)].gap_start)
 #define DB_End(X,A)      ((X)->DBi->DB[(A)].gap_end)
 #define DB_Length2(X,A)  ((X)->DBi->DB[(A)].gap_length) /* full length */
+#define DB_Template(X,A) ((X)->DBi->DB[(A)].template)
 #define DB_Alloced(X,A)  ((X)->DBi->DB[(A)].alloc_length)
 #define DB_WSeq(X,A)     (DB_Seq((X),(A))+DB_Start((X),(A)))
 
@@ -162,6 +163,7 @@
 #define _DB_Start(DBi,A)    ((DBi)->DB[(A)].gap_start)
 #define _DB_End(DBi,A)      ((DBi)->DB[(A)].gap_end)
 #define _DB_Length2(DBi,A)  ((DBi)->DB[(A)].gap_length)
+#define _DB_Template(DBi,A) ((DBi)->DB[(A)].template)
 #define _DB_Alloced(DBi,A)  ((DBi)->DB[(A)].alloc_length)
 #define _DB_WSeq(DBi,A)     (_DB_Seq((DBi),(A))+_DB_Start((DBi),(A)))
 

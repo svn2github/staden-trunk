@@ -95,6 +95,7 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 	    gel_info->start	   = r.start;
 	    gel_info->length       = r.end - r.start - 1;
 	    gel_info->unclipped_len= r.length;
+	    gel_info->template     = r.template;
 	    /*
 	    gel_info->as_double	   =
 		((r.chemistry & GAP_CHEM_TERMINATOR) == GAP_CHEM_TERMINATOR) &&

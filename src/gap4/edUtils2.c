@@ -591,6 +591,7 @@ int contEd_info(int job, void *mydata, info_arg_t *theirdata) {
 	    gel_info->position     = _DB_RelPos(db, gelo);
 	    gel_info->as_double    = _DB_Flags (db, gelo) & DB_FLAG_TERMINATOR;
 	    gel_info->start	   = _DB_Start (db, gelo);
+	    gel_info->template     = _DB_Template(db, gelo);
 	    do {
 	        gel_info->next_right
 		    = (_DBI_gelCount(db) == gel) ? 0 : gel + 1;

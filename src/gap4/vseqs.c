@@ -566,6 +566,7 @@ int virtual_info_func(int job, void *mydata, info_arg_t *theirdata) {
 		gel_info->start	       = 1;
 		gel_info->as_double    =
 		    vr->vseq->r.chemistry & GAP_CHEM_TERMINATOR;
+		gel_info->template     = vr->vseq->r.template;
 	    } else {
 		GReadings r;
 		gel_read(io, gel_info->gel, r);
@@ -578,6 +579,7 @@ int virtual_info_func(int job, void *mydata, info_arg_t *theirdata) {
 		gel_info->position     = r.position;
 		gel_info->as_double    = r.chemistry & GAP_CHEM_TERMINATOR;
 		gel_info->start	       = r.start;
+		gel_info->template     = r.template;
 		/*
 		  gel_info->as_double	   =
 		  ((r.chemistry & GAP_CHEM_TERMINATOR) == GAP_CHEM_TERMINATOR) &&
