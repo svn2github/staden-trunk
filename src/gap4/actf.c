@@ -172,10 +172,21 @@ int actf_lock(int read_only, char *file, char *version,int new) {
 #endif
     }
 
+#if 0
+    /*
+     * WARNING: The following code (along with code in g/g-files.c) checks
+     * for a lock on the database itself. HOWEVER this fails in some cases
+     * over NFS claiming that a database is locked when it is not (due to
+     * server crashes/resets). Perhaps this is bugs in rpc.lockd/statd, but
+     * regardless of where the blame lies, for now it causes more problems
+     * than it solves.
+     */
+
     /* Check for the existance of a lock on the DB file itself */
     if (!locked) {
 	locked = test_if_locked(db_path);
     }
+#endif
 
     if (locked) {
 	if (read_only) {
