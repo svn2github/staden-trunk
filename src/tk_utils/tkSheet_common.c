@@ -37,6 +37,7 @@ Tk_Window SheetCmdCommon(Tcl_Interp *interp, Tk_Window main,
     /* Set its class */
     Tk_SetClass(tkwin, class);
 
+
     /*
      * Initialise variables so that configure works correctly.
      */
@@ -413,6 +414,8 @@ static void SheetDestroy(char *clientData) {
 	sw->extension(sw->extensionData, SHEET_JOB_DESTROY, NULL);
 
     Tk_FreeOptions(sw->configSpecs, (char *)sw, sw->sw.display, 0);
+
+    Tcl_CancelIdleCall(SheetDisplay, (ClientData)sw);
 
     sheet_destroy(&sw->sw);
     xfree(sw);
