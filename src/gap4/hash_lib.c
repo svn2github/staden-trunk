@@ -662,7 +662,6 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i ) {
     }
 
 int hash_seqn (Hash *h, int job) {
-
     if ( job == 1 ) {
 	if (h->word_length == 8 ) {
 	    if ( hash_seq8n ( h->seq1, h->values1, 
@@ -676,6 +675,7 @@ int hash_seqn (Hash *h, int job) {
 		return -1;
 	    }
 	}
+
 	return 0;
     }
     else if ( job == 2 ) {
@@ -693,6 +693,7 @@ int hash_seqn (Hash *h, int job) {
 	}
 	return 0;
     }
+
     return -2;
 }
 
@@ -796,7 +797,6 @@ int align_bit ( ALIGN_PARAMS *params, OVERLAP *overlap, EDIT_PAIR *edit_pair) {
     l2 = overlap->seq2_len;
     if ((l1 > 0) && (l2 > 0 )) {
 	if(ret = affine_align(overlap,params)) return -1;
-	
 	if ( update_edit_pair ( edit_pair, overlap)) return -1;
     }
     else {
@@ -924,71 +924,6 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 
     init_overlap (overlap, h->seq1, h->seq2, h->seq1_len, h->seq2_len);
  
-    /*
-     * Due to repeats in the sequence next to an indel it may be
-     * possible for the blocks to slightly overlap. We need to trim back the
-     * ends when this happens.
-     */
-#if 0
-    for (i = 1; i < h->matches; i++) {
-	int diff;
-	int end1 = h->block_match[i-1].pos_seq1 + h->block_match[i-1].length;
-	int end2 = h->block_match[i-1].pos_seq2 + h->block_match[i-1].length;
-
-	if ((diff = end1 - h->block_match[i].pos_seq1) > 0) {
-	    h->block_match[i-1].length -= diff;
-	    if (h->block_match[i].pos_seq1 + diff > h->seq1_len)
-		diff = h->seq1_len - h->block_match[i].pos_seq1;
-	    if (h->block_match[i].pos_seq2 + diff > h->seq2_len)
-		diff = h->seq2_len - h->block_match[i].pos_seq2;
-	    printf("Trimming %d bases due to overlap in seq1\n");
-	    h->block_match[i].pos_seq1 += diff;
-	    h->block_match[i].pos_seq2 += diff;
-	    h->block_match[i].length -= diff;
-	}
-	if ((diff = end2 - h->block_match[i].pos_seq2) > 0) {
-	    h->block_match[i-1].length -= diff;
-	    if (h->block_match[i].pos_seq1 + diff > h->seq1_len)
-		diff = h->seq1_len - h->block_match[i].pos_seq1;
-	    if (h->block_match[i].pos_seq2 + diff > h->seq2_len)
-		diff = h->seq2_len - h->block_match[i].pos_seq2;
-	    printf("Trimming %d bases due to overlap in seq2\n");
-	    h->block_match[i].pos_seq1 += diff;
-	    h->block_match[i].pos_seq2 += diff;
-	    h->block_match[i].length -= diff;
-	}
-    }
-#endif
-
-    for (i = 1; i < h->matches; i++) {
-	int diff;
-	int end1 = h->block_match[i-1].pos_seq1 + h->block_match[i-1].length;
-	int end2 = h->block_match[i-1].pos_seq2 + h->block_match[i-1].length;
-
-	if ((diff = end1 - h->block_match[i].pos_seq1) > 0) {
-	    h->block_match[i].pos_seq1 += diff;
-	    h->block_match[i].pos_seq2 += diff;
-	    h->block_match[i].length -= diff;
-	}
-	if ((diff = end2 - h->block_match[i].pos_seq2) > 0) {
-	    h->block_match[i].pos_seq1 += diff;
-	    h->block_match[i].pos_seq2 += diff;
-	    h->block_match[i].length -= diff;
-	}
-    }
-
-    for (i = 1; i < h->matches; i++) {
-	while (i < h->matches && h->block_match[i].length < 1) {
-	    int j;
-	    for (j = i+1; j < h->matches; j++) {
-		memmove(&h->block_match[j-1], &h->block_match[j],
-			sizeof(h->block_match[0]));
-	    }
-	    h->matches--;
-	}
-    }
-
-
     /* align up to the first matching words,
      * align the segments between the matching words
      * align from the last matching words to the ends
@@ -1006,10 +941,11 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     len_seq = MAX(overlap->seq1_len,overlap->seq2_len);
     
     /*
-    printf("intercepts s1 %d s2 %d len_to_align %d\n",s1,s2,len_seq);
-    printf("block 0 pos1 %d pos2 %d len %d\n",h->block_match[0].pos_seq1,
-	   h->block_match[0].pos_seq2,h->block_match[0].length);
+    printf("<Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
+	   0, overlap->seq1_len, 0, overlap->seq2_len,
+	   overlap->seq1, overlap->seq2);
     */
+
     params->edge_mode = 6;
     if ( band_in) band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
     set_align_params (params, band, 0,0,0,0, s1, s2,0,0,1);
@@ -1039,11 +975,13 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	overlap->seq1 = &(h->seq1[s1]);
 	overlap->seq2 = &(h->seq2[s2]);
 	len_seq = MAX(overlap->seq1_len,overlap->seq2_len);
+
 	/*
-	printf("s1 %d s2 %d len_to_align %d\n",s1,s2,len_seq);
-	printf("block %d pos1 %d pos2 %d len %d\n",i,h->block_match[i].pos_seq1,
-	       h->block_match[i].pos_seq2,h->block_match[i].length);
-	       */
+	printf("Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
+	       s1, overlap->seq1_len, s2, overlap->seq2_len,
+	       overlap->seq1, overlap->seq2);
+	*/
+
 	if ( len_seq > 0 ) {
 
 	    if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
@@ -1070,10 +1008,15 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     
     overlap->seq1_len = h->seq1_len - s1;
     overlap->seq2_len = h->seq2_len - s2;
-    /*printf("at end s1 %d s2 %d len1 %d len2 %d\n",s1,s2,overlap->seq1_len,overlap->seq2_len);*/
     overlap->seq1 = &(h->seq1[s1]);
     overlap->seq2 = &(h->seq2[s2]);
     
+    /*
+    printf(">Align pos %d+%d / %d+%d (%.10s... %.10s...)\n",
+	   s1, overlap->seq1_len, s2, overlap->seq2_len,
+	   overlap->seq1, overlap->seq2);
+    */
+
     if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
     set_align_params (params, band, 0,0,0,0, 0,0,0,0,1);
     params->edge_mode = 9;
@@ -1099,7 +1042,8 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 		    edit_pair->next2,
 		    100,
 		    stdout);
-		    */
+    */
+
     /* now create the overlap from the edit buffers */
     max_seq = h->seq1_len + h->seq2_len + 1;
     /*printf("align_wrap malloc overlap_out %d\n",max_seq);*/
@@ -1204,6 +1148,7 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     int good_blocks, first_block;
     int *index_ptr = NULL;
     double best_percent;
+    int more_shuffling;
 
     gap_pen = -1;
     best_score = -1000000;
@@ -1226,13 +1171,14 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     }
 
     /* sort the blocks on distance from starts of sequences */
-    i = sort_blocks(h->block_match, h->matches);
 
+    i = sort_blocks(h->block_match, h->matches);
 
     /* set each blocks score to its distance from the nearest edge
      * find the best score as this start score plus match length
      * and note the block number
      */
+
     for (i=0;i<h->matches;i++) {
         gap_pen = 
 	-MIN(h->block_match[i].pos_seq1,h->block_match[i].pos_seq2);
@@ -1242,22 +1188,20 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
         }
 	h->block_match[i].best_score = gap_pen;
 	h->block_match[i].prev_block = -1;
-	h->block_match[i].next_block = -1;
     }
 
     if (best_prev == -1) return 0; /* bail out if there is no good score */
 
     /*
+    printf("=== STEP 1 === %d\n",h->matches);
     for (i=0;i<h->matches;i++) {
-	printf("i %d %d %d %d %d %d %d %d\n",i,
+	printf("i %d %d %d %d %d %d %d\n",i,
 	       h->block_match[i].pos_seq1,
 	       h->block_match[i].pos_seq2,
 	       h->block_match[i].length,
 	       h->block_match[i].diag,
 	       h->block_match[i].best_score,
-	       h->block_match[i].prev_block,
-	       h->block_match[i].next_block);
-
+	       h->block_match[i].prev_block);
     }
     */
 
@@ -1265,41 +1209,41 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
      * predecessor. This is given by: best_score + length - diag_shift
      * note the best score and block number as we proceed
      */
+
     for (i=1;i<h->matches;i++) {
 	for(j=i-1;j>-1;j--) {
-	    /*
-	     * If the end of one block slightly overlaps the next block,
-	     * then we still need to consider this as a suitable previous
-	     * block. If the score works out sufficient for this then we
-	     * can trim up the ends later to avoid any problems with
-	     * negative distances between blocks.
-	     */
+
 # define MAX_BLOCK_OVERLAP 20
 	    if( ((h->block_match[j].pos_seq1 + h->block_match[j].length)
 		 <= h->block_match[i].pos_seq1 + MAX_BLOCK_OVERLAP)
 		&& ((h->block_match[j].pos_seq2 + h->block_match[j].length)
-		 <= h->block_match[i].pos_seq2 + MAX_BLOCK_OVERLAP)) {
+		 <= h->block_match[i].pos_seq2) + MAX_BLOCK_OVERLAP) {
+		int len = h->block_match[j].length;
+		int dist;
 
-		/*
-		 * If appending this block to the list, accounting for
-		 * a drop in score due to being on different diagonals,
-		 * increases the current score, then link prev/next.
-		 */
 		diag_shift = abs(h->block_match[i].diag - 
 				 h->block_match[j].diag);
+
+		/* Reduce effective length when blocks overlap */
+		dist = h->block_match[j].pos_seq1 + h->block_match[j].length -
+		    h->block_match[i].pos_seq1;
+		if (dist > 0)
+		    len -= dist;
+
+		dist = h->block_match[j].pos_seq2 + h->block_match[j].length -
+		    h->block_match[i].pos_seq2;
+		if (dist > 0)
+		    len -= dist;
+
+		/* best score does not include current match */
 		if ( (t = h->block_match[j].best_score +
-		      h->block_match[i].length - diag_shift*2) >
-		     MAX(h->block_match[j].best_score,
-			 h->block_match[i].best_score)) {
+		      len - diag_shift) >
+		    h->block_match[i].best_score ) {
 		    h->block_match[i].best_score = t;
 		    h->block_match[i].prev_block = j;
-		    if (h->block_match[j].next_block != -1 &&
-			h->block_match[h->block_match[j].next_block].best_score >=
-			h->block_match[i].best_score)
-			; /* skip */
-		    else
-			h->block_match[j].next_block = i;
 		    tt = t+h->block_match[i].length;
+
+		    /* printf("i %d j %d t %d tt %d\n",i,j,t,tt); */
 		    if (tt>best_score) {
 			best_score = tt;
 			best_prev = i;
@@ -1310,50 +1254,21 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     }
 
     /*
-     * Now iterate through all lists once more finding the terminating
-     * item of the list and rescore based on their distance from the other
-     * contig end. (The current score already takes into account the distance
-     * from the start.)
-     */
-    best_score = -1000000;
+    printf("=== STEP 2 === %d\n",h->matches);
     for (i=0;i<h->matches;i++) {
-	if (h->block_match[i].prev_block != -1) {
-	    /* Only chain from the start to the end, not internally */
-	    continue;
-	}
-	j = i;
-	while (h->block_match[j].next_block != -1)
-	    j = h->block_match[j].next_block;
-	/* i and j now form the first and last block numbers in a list */
-
-	/*
-	 * Currently the estimated local alignment score is
-	 *     best_score + distance to first block.
-	 * For global (used here) the score is
-	 *     best_score - distance to right edge.
-	 *
-	 * This code is currently only called from FIJ. Here we do not wish
-	 * a strong local alignment (repeat) that does not extend to the contig
-	 * ends to be chosen over a poorer match that covers the full
-	 * contig overlap (ie T/L edge to B/R edge).
-	 * Hence we reset best_score to be the global score:
-	 */
-	h->block_match[j].best_score -=
-	    MIN( (h->seq1_len - (h->block_match[j].pos_seq1 +
-				 h->block_match[j].length)),
-		 (h->seq2_len - (h->block_match[j].pos_seq2 +
-				 h->block_match[j].length)));
-	if (best_score < h->block_match[j].best_score) {
-	    best_score = h->block_match[j].best_score;
-	    best_prev = j;
-	}
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
     }
+    */
 
-    /*
-     * best_prev is now the last block in the best set of blocks
-     *
-     * shuffle the ordered blocks to the start of the array
-     */
+    /* best_prev is now last block */
+
+    /* shuffle the ordered blocks to the start of the array */
 
     tt = h->block_match[best_prev].best_score;
     h->block_match[best_prev].best_score = -1;
@@ -1378,7 +1293,8 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	i=h->block_match[i].prev_block;
     }
 
-    tt = 0;
+    h->block_match[best_prev].best_score = tt;
+
     for (j=0;j<good_blocks;j++) {
 	i = index_ptr[j];
 	if (i != j) {
@@ -1388,18 +1304,128 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
 	    h->block_match[j].diag       = h->block_match[i].diag;
 	    h->block_match[j].best_score = h->block_match[i].best_score;
 	    h->block_match[j].prev_block = h->block_match[i].prev_block;
-	    h->block_match[j].next_block = h->block_match[i].next_block;
 	}
-	tt += h->block_match[j].length;
     }
+
+    /*
+    printf("=== STEP 5 === %d, %d\n",h->matches, good_blocks);
+    for (i=0;i<good_blocks;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
+
+    /*
+     * Clip back overlapping block elements, keeping the longest block intact
+     * where possible.
+     */
+    do {
+	more_shuffling = 0;
+	for (i = 0; i < good_blocks-1; i++) {
+	    int dist;
+	    dist = h->block_match[i].pos_seq1 + h->block_match[i].length
+		- h->block_match[i+1].pos_seq1;
+	    if (dist > 0) {
+		if (h->block_match[i].length > h->block_match[i+1].length) {
+		    h->block_match[i+1].length   -= dist;
+		    h->block_match[i+1].pos_seq1 += dist;
+		    h->block_match[i+1].pos_seq2 += dist;
+		} else {
+		    h->block_match[i].length -= dist;
+		}
+	    }
+
+	    dist = h->block_match[i].pos_seq2 + h->block_match[i].length
+		- h->block_match[i+1].pos_seq2;
+	    if (dist > 0) {
+		if (h->block_match[i].length > h->block_match[i+1].length) {
+		    h->block_match[i+1].length   -= dist;
+		    h->block_match[i+1].pos_seq1 += dist;
+		    h->block_match[i+1].pos_seq2 += dist;
+		} else {
+		    h->block_match[i].length -= dist;
+		}
+	    }
+	}
+
+	/* Check for blocks with length <= 0 */
+	for (i = j = 0; i < good_blocks; i++) {
+	    if (h->block_match[i].length > 0) {
+		h->block_match[j].pos_seq1   = h->block_match[i].pos_seq1;
+		h->block_match[j].pos_seq2   = h->block_match[i].pos_seq2;
+		h->block_match[j].length     = h->block_match[i].length;
+		h->block_match[j].diag       = h->block_match[i].diag;
+		h->block_match[j].best_score = h->block_match[i].best_score;
+		h->block_match[j].prev_block = h->block_match[i].prev_block;
+		j++;
+	    } else {
+		more_shuffling = 1;
+	    }
+	}
+	good_blocks = j;
+
+    } while (more_shuffling);
+
+    /*
+    printf("=== STEP 6 === %d, %d\n",h->matches, good_blocks);
+    for (i=0;i<good_blocks;i++) {
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
 
     if ( index_ptr ) xfree (index_ptr);
     h->matches = good_blocks;
+    /*printf("returned %d matches with best score %d\n",h->matches,best_score);*/
+
+    /*
+    tt = 0;
+    for (i=0;i<h->matches;i++) {
+	tt += h->block_match[i].length;
+	printf("i %d %d %d %d %d %d %d\n",i,
+	       h->block_match[i].pos_seq1,
+	       h->block_match[i].pos_seq2,
+	       h->block_match[i].length,
+	       h->block_match[i].diag,
+	       h->block_match[i].best_score,
+	       h->block_match[i].prev_block);
+    }
+    */
+    
+	   /*
+	      could set 2 scores:
+	      the % of the diagonal which is covered by blocks
+	      the % of the region between and including the two
+	      outermost blocks ( ie a local or repeat score)
+	      local is best score + distance to first block
+	      global is best score - distance to right edge
+	      */
 
     i = h->matches/2;
     i = h->block_match[i].diag;
     j = diagonal_length(h->seq1_len, h->seq2_len, i);
-    best_percent = (100.0 * tt) / j;
+    best_percent = 
+	   100.0*(double)(best_score - h->block_match[0].best_score) /
+	   (double)j;
+    /*
+    printf("local %d global %d %f\n",
+	   best_score - h->block_match[0].best_score,
+	   best_score - 
+	   MIN( (h->seq1_len - (h->block_match[h->matches-1].pos_seq1 +
+		 h->block_match[h->matches-1].length)),
+	        (h->seq2_len - (h->block_match[h->matches-1].pos_seq2 +
+		 h->block_match[h->matches-1].length))),best_percent);
+		 */
 
     overlap->seq1 = h->seq1;
     overlap->seq2 = h->seq2;
@@ -1595,23 +1621,15 @@ int compare_b(Hash *h,
     h->matches = -1;
     for (pw2=0;pw2<nrw;pw2++) {
  	word = h->values2[pw2];
-	/*
-	if (word != 0x968c)
-	    continue;
-	printf("\r%d", pw2);
-	*/
 	if ( -1 != word ) {
 	    if ( 0 != (ncw = h->counts[word]) ) {
 		for (j=0,pw1=h->last_word[word];j<ncw;j++) {
 		    diag_pos = h->seq1_len - pw1 + pw2 - 1;
-		    /* With diag opt=12466168
-		     * without = 14149434 clock ticks
-		     */
-		    if ( h->diag[diag_pos] < pw2) {
+		    if ( h->diag[diag_pos] < pw2 ) {
 			if ((match_size = match_len ( 
 						       h->seq1, pw1, h->seq1_len,
 						       h->seq2, pw2, h->seq2_len))
-			    >= h->min_match) {
+			    >= h->min_match ) {
 			    h->matches++;
 			    if(h->max_matches == h->matches) {
 				return -5;
@@ -1629,13 +1647,13 @@ int compare_b(Hash *h,
 	    }
 	}
     }
-
     h->matches += 1;
     if ( h->matches < 1 ) return 0;
     job_in = params->job;
     params->job = 3; /* force return of edit buffers */
     pw2 = align_blocks ( h, params, overlap );
     params->job = job_in;
+
     return pw2;
 }
 
