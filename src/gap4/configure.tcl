@@ -453,35 +453,42 @@ proc AppendRawDataNote {io path} {
     WriteRawDataNote $io $nn $rawdata
 }
 
-proc SetTemplateSizeStrictness {} {
-    global template_size_strictness
+proc SetTemplateSizeTolerance {} {
+    global template_size_tolerance
 
-    set w .template_size_strictness
+    set w .template_size_tolerance
 
     if {[xtoplevel $w -resizable 0] == ""} return
-    wm title $w "Template Size Strictness"
+    wm title $w "Template Size Tolerance"
 
     xentry $w.size \
 	-label "Limits scale factor" \
-	-default $template_size_strictness
+	-default $template_size_tolerance
 
     okcancelhelp $w.ok \
-	-ok_command "SetTemplateSizeStrictness2 $w" \
+	-ok_command "SetTemplateSizeTolerance2 $w 0" \
+	-perm_command "SetTemplateSizeTolerance2 $w 1" \
 	-cancel_command "destroy $w" \
 	-help_command "show_help gap4 FIXME"
     
     pack $w.size $w.ok -side top -fill both
 }
 
-proc SetTemplateSizeStrictness2 {w} {
-    global template_size_strictness
+proc SetTemplateSizeTolerance2 {w perm} {
+    global template_size_tolerance gap_defs env
     
     set new [$w.size get]
     if {$new <= 0} {
 	bell
 	return
     }
-
     destroy $w
-    set template_size_strictness $new
+
+    set template_size_tolerance $new
+
+    keylset gap_defs TEMPLATE_TOLERANCE $template_size_tolerance
+
+    if {$perm} {
+	update_defs gap_defs $env(HOME)/.gaprc TEMPLATE_TOLERANCE
+    }
 }

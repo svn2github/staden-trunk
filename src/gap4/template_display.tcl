@@ -1364,29 +1364,29 @@ proc FindReadingYCoord { canvas r_num} {
 }
 
 ##############################################################################
-proc SetTSizeStrictness {io f t} {
-    global template_size_strictness
+proc SetTSizeTolerance {io f t} {
+    global template_size_tolerance
 
     set w $f.tss
     if {[xtoplevel $w -resizable 0] == ""} {
 	return
     }
-    wm title $w "Set Template Size Strictness"
+    wm title $w "Set Template Size Tolerance"
 
     xentry $w.size \
 	-label "Limits scale factor" \
-	-default $template_size_strictness
+	-default $template_size_tolerance
     
     okcancelhelp $w.ok \
-	-ok_command "SetTSizeStrictness2 $io $f $t $w" \
+	-ok_command "SetTSizeTolerance2 $io $f $t $w" \
 	-cancel_command "destroy $w" \
 	-help_command "show_help gap4 FIXME"
     
     pack $w.size $w.ok -side top -fill both
 }
 
-proc SetTSizeStrictness2 {io f t w} {
-    global template_size_strictness
+proc SetTSizeTolerance2 {io f t w} {
+    global template_size_tolerance
     
     set new [$w.size get]
     if {$new <= 0} {
@@ -1395,6 +1395,6 @@ proc SetTSizeStrictness2 {io f t w} {
     }
 
     destroy $w
-    set template_size_strictness $new
+    set template_size_tolerance $new
     UpdateTemplateDisplay $io $f $t
 }

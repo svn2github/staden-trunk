@@ -33,7 +33,7 @@ set auto_index(SetGeneticCode) [list source [file join $dir configure.tcl]]
 set auto_index(SetAlignmentScores) [list source [file join $dir configure.tcl]]
 set auto_index(SetRawData) [list source [file join $dir configure.tcl]]
 set auto_index(FindRawDataNote) [list source [file join $dir configure.tcl]]
-set auto_index(SetTemplateSizeStrictness) [list source [file join $dir configure.tcl]]
+set auto_index(SetTemplateSizeTolerance) [list source [file join $dir configure.tcl]]
 
 set auto_index(NormalDialog) [list source [file join $dir consen.tcl]]
 set auto_index(ExtendedDialog) [list source [file join $dir consen.tcl]]

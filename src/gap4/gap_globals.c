@@ -41,7 +41,7 @@ int exec_notes = 0;
 int rawdata_note = 0;
 int gopenval = 8;
 int gextendval = 1;
-double template_size_strictness = 1;
+double template_size_tolerance = 1;
 
 static char *gap_defs_trace(ClientData cd, Tcl_Interp *interp,
 			    char *n1, char *n2, int flags);
@@ -60,11 +60,11 @@ int   gap4_global_get_gopenval( void )			{ return gopenval; }
 void  gap4_global_set_gopenval( int ov )		{ gopenval=ov; }
 int   gap4_global_get_gextendval( void )		{ return gextendval; }
 void  gap4_global_set_gextendval( int ev )		{ gextendval=ev; }
-double gap4_global_get_template_size_strictness ( void ) {
-    return template_size_strictness;
+double gap4_global_get_template_size_tolerance ( void ) {
+    return template_size_tolerance;
 }
-void   gap4_global_set_template_size_strictness ( double ts ) {
-    template_size_strictness=ts;
+void   gap4_global_set_template_size_tolerance ( double ts ) {
+    template_size_tolerance=ts;
 }
 
 
@@ -224,9 +224,9 @@ int init_globals(Tcl_Interp *interp) {
     Tcl_LinkVar(interp, "align_extend_cost", (char *)&gextendval,
 		TCL_LINK_INT);
 
-    /* template_size_strictness */
-    Tcl_LinkVar(interp, "template_size_strictness", 
-		(char *)&template_size_strictness,
+    /* template_size_tolerance */
+    Tcl_LinkVar(interp, "template_size_tolerance", 
+		(char *)&template_size_tolerance,
 		TCL_LINK_DOUBLE);
 
 

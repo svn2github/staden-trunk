@@ -22,8 +22,8 @@ int    gap4_global_get_gopenval( void );
 void   gap4_global_set_gopenval( int ov );
 int    gap4_global_get_gextendval( void );
 void   gap4_global_set_gextendval( int ev );
-double gap4_global_get_template_size_strictness( void );
-void   gap4_global_set_template_size_strictness( double ts );
+double gap4_global_get_template_size_tolerance( void );
+void   gap4_global_set_template_size_tolerance( double ts );
 
 
 
@@ -64,7 +64,7 @@ extern int consensus_iub;		/* "consensus_iub" -  see qual.c */
 extern int exec_notes;			/* "exec_notes" - see notes.c */
 extern int rawdata_note;		/* "rawdata_note" - see notes.c */
 
-extern double template_size_strictness; /* "template_size_strictness" */
+extern double template_size_tolerance;  /* "template_size_tolerance" */
 
 
 #define CONSENSUS_MODE_FREQ	  0
