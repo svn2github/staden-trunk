@@ -315,7 +315,7 @@ void db_callback_tk(void *xxv, int type, int seq, int pos, void *pointer) {
 	     * otherwise it's the coordinates.
 	     */
 	    if (0 == seq && 0 == pos) {
-		seq = xx->cursorSeq;
+		seq = xx->cursorSeq ? DB_Number(xx, xx->cursorSeq) : -1;
 		pos = xx->cursorPos;
 	    }
 	    xx->cursor->seq = seq;
