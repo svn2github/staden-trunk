@@ -1,3 +1,4 @@
+/*  Last edited: Nov 30 14:57 2004 (badger) */
 /*
  * File: IO2.c
  * Version:
@@ -1164,10 +1165,10 @@ int io_delete_contig(GapIO *io, int contig_num) {
      * hole made and set the number of registered items in it to zero.
      */
     ar = io_reg(io, contig_num);
-    memcpy(&io_reg(io, contig_num), &io_reg(io, NumContigs(io)+1),
-           sizeof(io_reg(io, contig_num)));
-    memcpy(&io_cursor(io, contig_num), &io_cursor(io, NumContigs(io)+1),
-           sizeof(io_cursor(io, contig_num)));
+    memmove(&io_reg(io, contig_num), &io_reg(io, NumContigs(io)+1),
+	    sizeof(io_reg(io, contig_num)));
+    memmove(&io_cursor(io, contig_num), &io_cursor(io, NumContigs(io)+1),
+	    sizeof(io_cursor(io, contig_num)));
     io_reg(io, NumContigs(io)+1) = ar;
     io_Nreg(io, NumContigs(io)+1) = 0;
     io_cursor(io, NumContigs(io)+1) = NULL;
