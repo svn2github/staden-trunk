@@ -120,10 +120,10 @@ INCLUDES	= $(INCLUDES_S) -I. -I$(MISCSRC) $(INCLUDES_E)
 # to add a 'fort.h' file or something similar in there? Similarly for XBIN.
 XBIN		=
 STADLIB		= ../../lib
-TCLBIN		= $(STADLIB)/$(O)
-TKBIN		= $(STADLIB)/$(O)
-ITCLBIN		= $(STADLIB)/$(O)
-ITKBIN		= $(STADLIB)/$(O)
+TCLBIN		= $(L)
+TKBIN		= $(L)
+ITCLBIN		= $(L)
+ITKBIN		= $(L)
 TTBIN		=
 XSRC		= 
 TCLVERS		= 8.4
@@ -217,6 +217,7 @@ SPIN_INC	= -I$(SPINSRC)
 COPYREADS_INC	= -I$(COPYREADSSRC)
 MUT_INC		= -I$(SRCROOT) -I$(MUTSRC)
 P3_INC		= -I$(SRCROOT)/primer3/src
+ZLIB_INC 	= -I$(SRCROOT)/zlib
 PNG_INC	        = -I$(SRCROOT)/libpng
 
 #
@@ -229,6 +230,7 @@ O = $(MACHINE)-binaries
 S = ..
 # Lib
 L = $(SRCROOT)/lib/$(O)
+LD_LIBRARY_PATH := $(L):$(LD_LIBRARY_PATH)
 
 #
 # Default Tool Talk object files, for gap only.
