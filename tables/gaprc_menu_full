@@ -143,8 +143,8 @@ add_command	{Options.Configure menus}	1 2 {ConfigureMenus}
 add_command	{Options.Set genetic code}	1 2 {SetGeneticCode} {e}
 add_command	{Options.Alignment scores}	1 2 {SetAlignmentScores} {e}
 add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {e}
-add_command	{Options.Set template size tolerance} \
-			     		 1 2 {SetTemplateSizeTolerance} {e}
+add_command	{Options.Template Status} \
+			     		 1 2 {SetTemplateStatusConfig} {e}
 
 add_command	{Experiments.Suggest long readings}  8 10 {LongGels \$io} e
 add_command	{Experiments.Compressions and Stops} 8 10 {TaqTerminator \$io} e
