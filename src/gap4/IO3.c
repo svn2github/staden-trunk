@@ -654,6 +654,7 @@ int swap_read(GapIO *io, int M, int N) {
     char name[DB_NAMELEN+1];
     int nnoteM;
     int nnoteN;
+    int cnum;
 
     if (N>Nreadings(io)) err |= io_init_reading(io,N);
     if (M>Nreadings(io)) err |= io_init_reading(io,M);
@@ -694,6 +695,11 @@ int swap_read(GapIO *io, int M, int N) {
     arr(GReadings, io->reading, N-1) = arr(GReadings, io->reading, M-1);
     arr(GReadings, io->reading, M-1) = r;
 #endif
+
+    /* Swap cached contig numbers */
+    cnum = arr(int, io->rnum2cnum, N-1);
+    arr(int, io->rnum2cnum, N-1) = arr(int, io->rnum2cnum, M-1);
+    arr(int, io->rnum2cnum, M-1) = cnum;
 
     /* write array */
     err = ArrayDelay(io, io->db.readings, io->db.Nreadings, io->readings);

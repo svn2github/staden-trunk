@@ -35,6 +35,8 @@ static void unlink_reading(GapIO *io, int rnum, int cnum, int *rnum_changed) {
     } else {
 	io_crnbr(io, cnum) = io_lnbr(io, rnum);
     }
+
+    update_rnumtocnum(io, rnum, 0);
 }
 
 
@@ -65,7 +67,9 @@ static void remove_and_swap_reading(GapIO *io, int rnum, int *rnum2cnum,
 
 	cnum = rnum2cnum[NumReadings(io)];
 	rnum2cnum[NumReadings(io)] = rnum2cnum[rnum];
+	update_rnumtocnum(io, NumReadings(io), rnum2cnum[rnum]);
 	rnum2cnum[rnum] = cnum;
+	update_rnumtocnum(io, rnum, cnum);
 
 	if (rmov->left) {
 	    GReadings *rl = arrp(GReadings, io->reading, rmov->left-1);
@@ -158,6 +162,8 @@ static void move_read_to_contig(GapIO *io, int rnum, int cnum) {
 
     if (io_clength(io, cnum) < pos + len-1)
 	io_clength(io, cnum) = pos + len-1;
+
+    update_rnumtocnum(io, rnum, cnum);
 }
 
 static int rsort_int(const void *pi1, const void *pi2) {
@@ -491,6 +497,9 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	while (rnum) {
 	    if (gel_read(io, rnum, r))
 		return -1;
+
+	    /* Ensure the reading to contig number cache is up to date */
+	    update_rnumtocnum(io, rnum, cnum);
 	    
 	    /* First read in contig => clip & shift consensus tags */
 	    if (cstart) {
@@ -579,6 +588,8 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	    r.left = 0;
 	    io_lnbr(io, rnum) = 0;
 	    gel_write(io, rnum, r);
+
+	    update_rnumtocnum(io, rnum, cnum);
 	}
 
 	/* Now perform the tag removal, if detected as necessary earlier */

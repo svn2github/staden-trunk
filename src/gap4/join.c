@@ -1,4 +1,3 @@
-/*  Last edited: Nov 30 14:57 2004 (badger) */
 /*
  * File:
  * Version: join.c
@@ -829,10 +828,10 @@ int dojoin(GapIO *io, int lnconl, int lnconr, int relx) {
     reg_join rj;
 
     /* Shift readings in lnconr by relx */
-    io_relpos(io, gr_l) = relx+1;
-    i = gr_l;
-    while (i = io_rnbr(io, i)) {
+    for (i = gr_l; i; i = io_rnbr(io, i)) {
 	io_relpos(io, i) += relx;
+	/* Also update their cached contig number */
+	update_rnumtocnum(io, i, lnconl);
     }
 
     /* Linkup ends of contigs (but not yet in correct left to right order) */

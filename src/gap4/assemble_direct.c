@@ -904,6 +904,7 @@ int link_reading(GapIO *io, int from_rnum, int rnum,
     /*
      * Write back
      */
+    update_rnumtocnum(io, rnum, contig);
     if (gel_write(io, rnum, r) || contig_write(io, contig, c))
 	return -1;
 

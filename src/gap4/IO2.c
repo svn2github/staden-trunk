@@ -1,4 +1,3 @@
-/*  Last edited: Nov 30 14:57 2004 (badger) */
 /*
  * File: IO2.c
  * Version:
@@ -1071,7 +1070,7 @@ int io_delete_contig(GapIO *io, int contig_num) {
     reg_number rn;
     reg_delete rd;
     Array ar;
-
+    int rnum;
 
     /* remove annotations for contig contig_num */
     remove_contig_tags(io, contig_num, 0, 0);
@@ -1096,6 +1095,10 @@ int io_delete_contig(GapIO *io, int contig_num) {
 	n.prev = contig_num;
 	note_write(io, c.notes, n);
     }
+
+    /* Renumber the cached contig number */
+    for (rnum = io_clnbr(io, contig_num); rnum; rnum = io_rnbr(io, rnum))
+	update_rnumtocnum(io, rnum, contig_num);
       
     /*
      * Find contig_num in our order array and shuffle the array down

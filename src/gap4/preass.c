@@ -42,6 +42,8 @@ int load_preassembled(GapIO *io,
     GContigs c;
     int count = 0, failed = 0;
 
+    invalidate_rnumtocnum(io, 1);
+
     /* ---- Check if we've enough room in the database ---- */
     if (num + 1 + (NumReadings(io) + NumContigs(io) + 2) >=
 	io->db.actual_db_size) {
@@ -180,6 +182,8 @@ int load_preassembled(GapIO *io,
     vmessage("\n%4d sequences processed\n", num);
     vmessage("%4d sequences entered into database\n\n", num - failed);
     UpdateTextOutput();
+
+    invalidate_rnumtocnum(io, 0);
 
     return 0;
 }
