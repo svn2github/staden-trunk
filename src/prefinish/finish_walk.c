@@ -907,7 +907,7 @@ experiments_t *find_templates(finish_t *fin, experiment_walk_t *prim,
 		exp[nexp-1].group_id = group_id;
 		exp[nexp-1].group_num = fin->opts.pwalk_ntemplates;
 		exp[nexp-1].t_score = fin->tarr[r.template]->score;
-		exp[nexp-1].t_dir = TEMP_DIRECTION(fin->tarr[r.template]);
+		exp[nexp-1].t_dir = fin->tarr[r.template]->direction;
 		exp[nexp-1].log_func = log_walk;
 
 		/* e_walk component */

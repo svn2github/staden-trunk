@@ -354,7 +354,7 @@ experiments_t *experiment_reverse(finish_t *fin, int pos,
 	exp[nexp-1].group_id = finish_next_group_id(0);
 	exp[nexp-1].group_num = 1;
 	exp[nexp-1].t_score = fin->tarr[r.template]->score;
-	exp[nexp-1].t_dir = TEMP_DIRECTION(fin->tarr[i]);
+	exp[nexp-1].t_dir = fin->tarr[i]->direction;
 
 	templates_picked[tnum] = i;
 	tnum++;

@@ -152,7 +152,7 @@ experiments_t *experiment_reseq(finish_t *fin, int pos,
 	exp[nexp-1].group_id = finish_next_group_id(0);
 	exp[nexp-1].group_num = 1;
 	exp[nexp-1].t_score = fin->tarr[r.template]->score;
-	exp[nexp-1].t_dir = TEMP_DIRECTION(fin->tarr[r.template]);
+	exp[nexp-1].t_dir = fin->tarr[r.template]->direction;
     }
 
     *nexp_p = nexp;
