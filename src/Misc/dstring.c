@@ -376,7 +376,7 @@ int dstring_find_replace(dstring_t *ds,
 			 size_t offset,
 			 const char *search,
 			 const char *rep_with) {
-    size_t pos;
+    int pos;
     size_t search_len = strlen(search);
 
     /* Find */
@@ -407,7 +407,7 @@ int dstring_find_replace_all(dstring_t *ds,
      * excessive use of string shifting.
      */
     dstring_t *new_ds = dstring_create(NULL);
-    size_t found_pos, current_pos = 0;
+    int found_pos, current_pos = 0;
     size_t search_len = strlen(search);
     dstring_t tmp;
 
@@ -483,7 +483,7 @@ int dstring_htmlise_links(dstring_t *ds) {
     size_t i;
 
     for (i = 0; i < nlinks; i++) {
-	size_t pos = 0;
+	int pos = 0;
 	while (-1 != (pos = dstring_find(ds, pos, links[i]))) {
 	    size_t end, url_len;
 	    char *str = dstring_str(ds);
