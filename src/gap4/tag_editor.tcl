@@ -327,6 +327,7 @@ proc tag_macro_load {} {
 	# Expand \n and \\ back - study this carefull if it needs fixing.
 	set macro [string map "\\\\\\\\ \\\\ \\\\n \\n" $macro]
 	array set ed_macro_$key $macro
+	array set ed_macro_$key {set 1}
     }
 }
 
