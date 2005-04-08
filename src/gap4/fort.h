@@ -93,13 +93,6 @@ f_proc_ret baprep_(f_int *relpg,  f_int *lngthg, f_int *lnbr,   f_int *rnbr,
 		   f_implicit seq1_l	/* maxseq */
 		   );
 
-/* dbsysnews.f */
-f_proc_ret cmplmt_(f_int *relpg,  f_int *lngthg, f_int *lnbr,   f_int *rnbr,
-		   f_int *ngels,  f_int *nconts, f_int *lincon, f_int *llino,
-		   char  *gel,    f_int *idbsiz, f_int *idevr,  f_int *maxgel,
-		   f_implicit gel_l	/* maxgel */
-		   );
-
 f_proc_ret inits_(void);
 
 f_proc_ret shiftc_(f_int *relpg,  f_int *lngthg, f_int *lnbr,   f_int *rnbr,
@@ -164,16 +157,6 @@ f_proc_ret remcon_(f_int *relpg,  f_int *lngthg, f_int *lnbr,   f_int *rnbr,
 		   );
 		   
 		   
-/* subs89.f */
-f_proc_ret sqcom_(char *seq, f_int *idim,
-		  f_implicit seq_l	/* idim */
-		  );
-
-f_proc_ret sqrev_(char *seq, f_int *idim,
-		  f_implicit seq_l	/* idim */
-		  );
-
-
 /* fmtdb.f */
 f_proc_ret fmtdb_(char  *seq1,   f_int *idim,    f_int *isw,    f_int *ise,
 		  f_int *linlen, f_int *iden,

@@ -28,6 +28,7 @@
 #include "reg_exp.h"
 #include "xalloc.h"
 #include "primlib.h"
+#include "dna_utils.h"
 
 /*
  * Compilation modes:
@@ -845,8 +846,7 @@ int edSelectOligoGenerate(EdStruct *xx, int sense, int bkwd_width,
      * Complement if necessary
      */
     if (sense == BACKWARDS) {
-	sqcom_(so->consensus, &consensusLength, consensusLength);
-	sqrev_(so->consensus, &consensusLength, consensusLength);
+	complement_seq(so->consensus, consensusLength);
     }
 
     for (j = i = 0; i < consensusLength; i++) {

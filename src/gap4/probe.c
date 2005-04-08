@@ -106,8 +106,7 @@ static int find_uniques_vector(GapIO *io, int contig, float match_perc,
 	    ol[i].best_match = best;
 
 	    /* Find matches in the reverse sense */
-	    sqcom_(oligo, &ol[i].length, ol[i].length);
-	    sqrev_(oligo, &ol[i].length, ol[i].length);
+	    complement_seq(oligo, ol[i].length);
 	    nmatches = inexact_match(seq, vector_len, oligo, ol[i].length,
 				     min_match, match_arr, score_arr,
 				     MAX_MATCHES);
@@ -183,8 +182,7 @@ static int find_uniques_con(GapIO *io, int contig, float match_perc,
 	    best = bi;
 
 	/* Find matches in the reverse sense */
-	sqcom_(oligo, &oligo_len, oligo_len);
-	sqrev_(oligo, &oligo_len, oligo_len);
+	complement_seq(oligo, oligo_len);
 	nmatches = inexact_match(ci->con_all, ci->con_len, oligo, oligo_len,
 				 min_match, match_arr, score_arr, MAX_MATCHES);
 	if (nmatches < 0) {
@@ -271,8 +269,7 @@ static oligo_t *get_probes(GapIO *io, int contig, int from, int to,
     scan[len] = '\0';
 
     if (sense == REVERSE) {
-	sqcom_(scan, &len, len);
-	sqrev_(scan, &len, len);
+	complement_seq(scan, len);
     }
 
 
@@ -310,8 +307,7 @@ static oligo_t *get_probes(GapIO *io, int contig, int from, int to,
 		ol[i].length);
 	ol[i].sequence[ol[i].length] = '\0';
 	if (sense == REVERSE) {
-	    sqcom_(ol[i].sequence, &ol[i].length, ol[i].length);
-	    sqrev_(ol[i].sequence, &ol[i].length, ol[i].length);
+	    complement_seq(ol[i].sequence, ol[i].length);
 	}
 
 	ol[i].matches = 0;

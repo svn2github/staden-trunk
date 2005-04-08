@@ -31,6 +31,7 @@
 #include "contig_selector.h"
 #include "clones.h"
 #include "notes.h"
+#include "dna_utils.h"
 
 /*************************************************************
  * Sequence manipulation routines
@@ -47,8 +48,7 @@ int io_complement_seq(int  *length,	/* length of complete string */
  * explicitly.
  */
 {
-    f_int len;
-
+    int len = *length;
     int1 tint1;			/* temporary int1 */
     int2 tint2;			/* temporary int2 */
     int i;
@@ -56,9 +56,7 @@ int io_complement_seq(int  *length,	/* length of complete string */
     int orig_end;
 
     /* complement sequence */
-    len = *length;
-    (void) sqcom_(seq,&len,(f_implicit)1);
-    (void) sqrev_(seq,&len,(f_implicit)1);
+    complement_seq(seq, len);
 
     /* reverse start and end pointers */
     orig_start = *start;
@@ -978,9 +976,7 @@ int cgetext(GapIO *io, int gel, char *cutoff, int *cutlen) {
     *cutlen = len;
 
     if (comp) {
-	f_int flen = len;
-	sqcom_(cutoff,&flen,(f_implicit)1);
-	sqrev_(cutoff,&flen,(f_implicit)1);
+	complement_seq(cutoff, len);
     }
 	
     return 0;

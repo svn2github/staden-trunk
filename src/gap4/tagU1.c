@@ -33,6 +33,7 @@
 #include "xalloc.h"
 #include "active_tags.h"
 #include "select.h"
+#include "dna_utils.h"
 
 static tagStruct *tagFreeList = NULL;
 
@@ -416,10 +417,7 @@ char normaliseBase(EdStruct *xx,int seq,char deletedBase)
 {
     
     if (DB_Comp(xx,seq) == COMPLEMENTED) {
-	char base = deletedBase;
-	f_int i=1;
-	sqcom_(&base,&i,(f_implicit)1);
-	return base;
+	return complement_base(deletedBase);
     } else
 	return deletedBase;
 }
@@ -815,31 +813,6 @@ int U_create_annotation(EdStruct *xx, int seq, int pos, int length, char *type, 
 /************************************************************
  * Interface level
  ************************************************************/
-
-
-char *normaliseBases(EdStruct *xx,int seq, int num_bases, char *bases)
-/*
- * complement and reverse the sequence
- */
-{
-    char *new;
-    
-    if ( (new = (char *) xmalloc(num_bases)) != NULL ) {
-	
-	strncpy(new,bases,num_bases);
-	
-	if (DB_Comp(xx,seq) == COMPLEMENTED) {
-	    f_int n = num_bases;
-	    /* complement */
-	    sqcom_(new,&n,(f_implicit)1);
-	    /* reverse */
-	    sqrev_(new,&n,(f_implicit)1);
-	}
-    }
-    
-    return new;
-}
-
 
 
 void tagInsertBases(EdStruct *xx, int seq, int pos, int num_bases)
