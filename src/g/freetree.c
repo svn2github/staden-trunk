@@ -2,21 +2,27 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#define NDEBUG
+// #define NDEBUG
 #include <assert.h>
 #include "freetree.h"
 #include "xalloc.h"
 #include "g-os.h"
+#include "misc.h"
+
+/*
+ * Apr 2005: This code now uses AVL trees for maintaining a mostly balanced
+ * freetree. Implementing AVL balancing isn't trivial, but the following
+ * web resources helped greatly.
+ *
+ * GNU libavl docs:
+ *    http://www.stanford.edu/~blp/avl/libavl.html/Rebalancing-AVL-Trees.html
+ *
+ * A C++ AVL tree (less detailed, but still with some useful hints):
+ *    http://www.cmcrossroads.com/bradapp/ftp/src/libs/C++/AvlTrees.html
+ */
 
 /*
  * TODO:
- * - Use a block allocating system. According to dmalloc the memory usage
- *   of this module is 50% administration (aka malloc headers) so we could
- *   feasibly save nearly half of our memory.
- *
- * - Use an AVL tree height balancing system to reduce the time taken by
- *   the tree_find_pos algorithm.
- *
  * - Add check to tree_find_pos to error on cases where the block isn't there.
  *   This will spot the 'overlapping image' cases, I hope.
  *
@@ -30,11 +36,22 @@
  *   (We'd have to change the search functions to return the parent as well
  *   as the current node.)
  *
- * - Remove hack of having the root node always containing upto INT_MAX in
- *   space. We should simply recode to keep track of the last value in the
- *   tree somewhere else. This would simplify things in the long run as
- *   this node at present would cause problems with an AVL balancing system.
+ * - Use hints from various malloc systems for improved performance.
+ *   "Dynamic Storage Allocation: A Survey and Critical Review" is a good
+ *   review article on such things.
+ *
+ * - The most obvious malloc-style improvement is the use of multiple
+ *   lists with each list being a specific range of sizes. Given that#
+ *   gap4 has specific sizes for many structures (eg GReadings, GContigs, etc)
+ *   this could speed up the tree_find_len algorithm a lot.
+ *   The linked lists could be circular (so we start anywhere and continue
+ *   until we get back to the same point) and implemented directly within the 
+ *   AVL tree itself via next (and maybe prev) pointers. Hence we have one
+ *   single tree in which multiple lists are threaded.
  */
+
+static free_tree *g;
+#define NUM(n) (n ? (int)find_node_addr(g,n) : 0)
 
 /*
  * Allocates a new free_tree_n node.
@@ -67,6 +84,7 @@ static free_tree_n *new_node(free_tree *t) {
 	    n[i].parent = NULL;
 	    n[i].pos = 0;
 	    n[i].len = 0;
+	    n[i].balance = 0;
 	    prev = &n[i];
 	}
 	t->free_nodes = &n[BLOCK_FACTOR-1];
@@ -81,6 +99,7 @@ static free_tree_n *new_node(free_tree *t) {
     n->parent = NULL;
     n->pos = 0;
     n->len = 0;
+    n->balance = 0;
 
     return n;
 }
@@ -96,11 +115,13 @@ static void del_node(free_tree *t, free_tree_n *n) {
  * Search for a tree element in which pos is a member of. We scan the tree
  * in an inorder fasion.
  *
- * Complexity: O(log(N)) for a balanced tree (which these aren't).
+ * Complexity: O(log(N)) for a balanced tree.
  *
  * Always returns a free_tree_n pointer.
  */
-static free_tree_n *tree_find_pos(free_tree_n *t, GImage pos) {
+static free_tree_n *tree_find_pos(free_tree *ft, GImage pos) {
+    free_tree_n *t = ft->root;
+
     for (;;) {
 	if (pos < t->pos) {
 	    /* left child */
@@ -130,7 +151,7 @@ static free_tree_n *tree_find_pos(free_tree_n *t, GImage pos) {
  * Search for a tree element in which the (pos,len) pair butt up against, or
  * NULL if there are none.
  *
- * Complexity: O(log(N)) for a balanced tree (which these aren't).
+ * Complexity: O(log(N)) for a balanced tree.
  *
  * Returns the node next to (pos,len) for success
  *         NULL for not found.
@@ -140,9 +161,10 @@ static free_tree_n *tree_find_pos(free_tree_n *t, GImage pos) {
  *                        1 for butt with left end
  *                        2 for butt with right end
  */
-static free_tree_n *tree_find_pos_len(free_tree_n *t, GImage pos,
+static free_tree_n *tree_find_pos_len(free_tree *ft, GImage pos,
 				      GImage len, int *status) {
     GImage end;
+    free_tree_n *t = ft->root;
 
     *status = 0;
     for (;;) {
@@ -201,7 +223,7 @@ static free_tree_n *tree_find_pos_len(free_tree_n *t, GImage pos,
  *           NULL for failure
  */
 static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
-    free_tree_n *root = tr->tree->left;
+    free_tree_n *root = tr->root;
     free_tree_n *rover = tr->rover;
     free_tree_n *t;
     int i;
@@ -225,13 +247,13 @@ static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
     t = rover;
 
     for (i=0; i < 2; i++) {
-	for (; t->parent;) {
+	while (t) {
 	    if (t == rover && i == 1)
 		break;
 
 	    /* printf("pos=%d,len=%d\n", t->pos, t->len); */
 	    /* Check node */
-	    if (t->len >= len)
+	    if (t->len >= len && t != tr->wilderness)
 		return tr->rover=t;
 
 	    /* Traverse left */
@@ -247,9 +269,8 @@ static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
 	    }
 	    
 	    /* Backtrack */
-	    for (;t->parent;) {
-		/* from left, go to right */
-		if (t->parent->left == t && t->parent->right) {
+	    while (t) {
+		if (t->parent && t->parent->left == t && t->parent->right) {
 		    t = t->parent->right;
 		    break;
 		}
@@ -261,28 +282,23 @@ static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
 	
 	/*
 	 * If we've fallen out of the above loop then it means we've hit the
-	 * parent (NOTE: there is no right neighbour to the parent) or
-	 * the rover (second loop around).
+	 * root or the rover (second loop around).
 	 *
 	 * In the first case we scan the bit that starting from the rover
 	 * missed by now starting from the root node and rechecking everything
 	 * again (this time stopping at the rover).
 	 */
-	if (i == 0) {
-	    if (t->left == NULL)
-		break;
-	    t = t->left;
-	}
-
-	if (rover == root)
+	if (i == 1)
 	    break;
+	else 
+	    t = tr->root;
     }
 
  quick:
 
     fflush(stdout);
     tr->rover = root;
-    return root->len >= len ? root : NULL;
+    return tr->wilderness->len >= len ? tr->wilderness : NULL;
 }
 
 
@@ -336,109 +352,86 @@ static free_tree_n *tree_walk_right(free_tree_n *n) {
 }
 
 
-/*
- * Deletes a node - we DON'T check if the node to delete is the root, but
- * this would cause an invalid tree anyway.
- */
-static void tree_delete_node(free_tree *t, free_tree_n *node) {
-    free_tree_n **rover = &t->rover;
-
-    if (node == *rover)
-	*rover = NULL;
-
-    if (node == t->largest)
-	t->largest = NULL;
-
-    if (node->left == NULL && node->right == NULL) {
-	/* Leaf node */
-	if (node->parent->left == node)
-	    node->parent->left = NULL;
-	else
-	    node->parent->right = NULL;
-
-    } else if (node->left == NULL) {
-	/* Only right child - replace by our right */
-	if (node->parent->left == node)
-	    node->parent->left = node->right;
-	else
-	    node->parent->right = node->right;
-	node->right->parent = node->parent;
-
-    } else if (node->right == NULL) {
-	/* Only left child - replace by our left */
-	if (node->parent->left == node)
-	    node->parent->left = node->left;
-	else
-	    node->parent->right = node->left;
-	node->left->parent = node->parent;
-
-    } else {
-	free_tree_n *succ;
-	/*
-	 * This is an interior node - replace with next ordered item in
-	 * the tree. We can do this by taking the nodes right child and
-	 * following left.
-	 */
-	for (succ = node->right; succ->left; succ=succ->left)
-	    ;
-
-	/* Make sure we did actually manage to go left... */
-	if (succ->parent != node) {
-	    succ->parent->left = succ->right;
-	    if (succ->right)
-		succ->right->parent = succ->parent;
-	}
-
-	/* Unlink node */
-	if (node->parent->left == node) {
-	    node->parent->left = succ;
-	} else {
-	    node->parent->right = succ;
-	}
-	succ->left = node->left;
-	succ->left->parent = succ;
-	if (node->right != succ) {
-	    succ->right = node->right;
-	    succ->right->parent = succ;
-	}
-	succ->parent = node->parent;
-    }
-
-    del_node(t, node);
-}
-
 static GImage last_end;
 static GImage tree_sum;
+
+static int tree_height(free_tree_n *t) {
+    int lh = 0, rh = 0;
+
+    if (!t) return 0;
+
+    lh = 1 + tree_height(t->left);
+    rh = 1 + tree_height(t->right);
+
+    return MAX(lh, rh);
+}
 
 /*
  * Prints a tree to stdout in the "inorder" order.
  */
-static void tree_print_r(free_tree_n *t, int indent) {
+static int tree_print_r(free_tree_n *t) {
+    int hl, hr;
+    int err = 0;
     if (t->left) {
-	/*putchar('l');*/
 	assert(t->left->parent == t);
-	tree_print_r(t->left, indent+1);
+	err |= tree_print_r(t->left);
     }
-    printf("pos=%"PRIGImage", len=%"PRIGImage"\n", t->pos, t->len);
+    hl = tree_height(t->left);
+    hr = tree_height(t->right);
+    printf("%.*s%p: l=%p r=%p p=%p hgt=%d/%d/%d %ld+%ld\n",
+	   ABS(t->balance), t->balance+"--=+++"+2,
+	   t, t->left, t->right, t->parent,
+	   tree_height(t), hr - hl, t->balance,
+	   (long)t->pos, (long)t->len);
+
+    err |= (hr-hl != t->balance);
+
     tree_sum += t->pos;
     assert(t->pos > last_end);
     last_end = t->pos + t->len;
     if (t->right) {
-	/*putchar('r');*/
 	assert(t->right->parent == t);
-	tree_print_r(t->right, indent-1);
+	err |= tree_print_r(t->right);
     }
-    /*putchar('b');*/
+    return err;
 }
 
 void tree_print(free_tree *t) {
-    printf("============== TREE %p ============\n", t);
+    int err;
+    printf("============== TREE %p, root %p ============\n", t, t->root);
     last_end = -1;
     tree_sum = 0;
-    tree_print_r(t->tree, 0);
+    err = tree_print_r(t->root);
+    if (err) {
+	printf("@@@@@@ INVALID BALANCES @@@@@@\n");
+    }
+    assert(err == 0);
     printf("Tree sum=%"PRIGImage"\n", tree_sum);
 }
 
+static void tree_print_dot_r(FILE *fp, free_tree_n *t) {
+    if (t->left)
+	fprintf(fp, "edge [color=\"#00BB00\"] a%p -> a%p\n", t, t->left);
+    if (t->right)
+	fprintf(fp, "edge [color=\"#2020FF\"] a%p -> a%p\n", t, t->right);
+
+    if (t->left) {
+	tree_print_dot_r(fp, t->left);
+    }
+
+    if (t->right) {
+	tree_print_dot_r(fp, t->right);
+    }
+}
+
+void tree_print_dot(free_tree *t) {
+    FILE *fp = fopen("freetree.dot", "w");
+    fprintf(fp, "digraph G {\n");
+    fprintf(fp, "rotate=90 size=\"11,3\" ratio=fill\n");
+    tree_print_dot_r(fp, t->root);
+    fprintf(fp, "}\n");
+    fclose(fp);
+}
 
 /*
  * Generates postscript to print the tree. It's pretty rough and ready, with
@@ -448,41 +441,57 @@ void tree_print(free_tree *t) {
 void tree_print_ps(free_tree_n *t) {
     float step=65536;
     float yinc = 10000;
-    float degrade = .9;
+    float yred = 0.98;
+    float xred = 0.7;
+    int i;
+    int depth = 0, maxdepth = 0;
 
     puts("%!PS");
-    puts("500 380 translate 90 rotate newpath 0 0 moveto .003 .002 scale");
+    puts("500 380 translate 90 rotate newpath 0 0 moveto .003 .0005 scale");
 
     for (; t->parent;) {
 	if (!t->left) {
 	    if (!t->right) {
-		for (;t->parent; step*=2, yinc/=degrade) {
+		for (;t->parent; step/=xred, yinc/=yred) {
 		    if (t->parent->left == t && t->parent->right) {
 			t = t->parent->right;
-			printf("%f %f rmoveto\n", step*2, -yinc/degrade);
-			printf("%f %f rlineto\n", step*2, yinc/degrade);
+			printf("%f %f rmoveto\n", step/xred, -yinc/yred);
+			printf("%f %f rlineto\n", step/xred, yinc/yred);
 			break;
 		    }
 		    if (t->parent->left == t)
-			printf("%f %f rmoveto\n", step*2, -yinc/degrade);
+			printf("%f %f rmoveto\n", step/xred, -yinc/yred);
 		    else
-			printf("%f %f rmoveto\n", -step*2, -yinc/degrade);
+			printf("%f %f rmoveto\n", -step/xred, -yinc/yred);
 		    t=t->parent;
+		    depth--;
 		}
 	    } else {
 		printf("%f %f rlineto\n", step, yinc);
-		step/=2;
-		yinc*=degrade;
+		step*=xred;
+		yinc*=yred;
+		depth++;
 		t = t->right;
 	    }
 	} else {
 	    printf("%f %f rlineto\n", -step, yinc);
-	    step/=2;
-	    yinc*=degrade;
+	    step*=xred;
+	    yinc*=yred;
+	    depth++;
 	    t = t->left;
 	}
+	if (maxdepth < depth)
+	    maxdepth = depth;
     }
-
+    puts("stroke");
+    {double ypos = 10000;
+    for (yinc=10000,i=0; i < maxdepth; i++) {
+	printf("-100000 %f moveto 100000 %f lineto\n", ypos, ypos);
+	yinc *= yred;
+	ypos += yinc;
+    }
+    }
+    
     puts("stroke showpage");
 }
 
@@ -530,35 +539,390 @@ int tree_total_depth(free_tree_n *t) {
 
 
 /*
- * Rotate left the tree around node 't'. Returns the new root (the new 't').
+ * Rotate left the tree around node 'A'. Returns the new root ('B').
+ *
+ *    A              B
+ *   / \            / \
+ *  1   B    =>    A   3
+ *     / \        / \
+ *    2   3      1   2
  */
-free_tree_n *tree_rotate_left(free_tree_n *t) {
-    free_tree_n *r;
+free_tree_n *tree_rotate_left(free_tree_n *A) {
+    free_tree_n *B = A->right;
 
-    r = t->right;
-    t->right = r->left;
-    t->right->parent = t;
-    r->left = t;
-    r->parent = t->parent;
-    t->parent = r;
+    puts("rotate_left");
 
-    return r;
+    B->parent = A->parent;
+    if ((A->right = B->left))
+	A->right->parent = A;
+    B->left = A;
+    A->parent = B;
+
+    A->balance = - --B->balance;
+
+    return B;
 }
 
 /*
- * Rotate right the tree around node 't'. Returns the new root (the new 't').
+ * Rotate right the tree around node 'A'. Returns the new root ('B').
+ *
+ *      A          B
+ *     / \        / \
+ *    B   3  =>  1   A
+ *   / \            / \
+ *  1   2          2   3
  */
-free_tree_n *tree_rotate_right(free_tree_n *t) {
-    free_tree_n *l;
+free_tree_n *tree_rotate_right(free_tree_n *A) {
+    free_tree_n *B = A->left;
 
-    l = t->left;
-    t->left = l->right;
-    t->left->parent = t;
-    l->right = t;
-    l->parent = t->parent;
-    t->parent = l;
+    puts("rotate_right");
 
-    return l;
+    B->parent = A->parent;
+    if ((A->left = B->right))
+	A->left->parent = A;
+    B->right = A;
+    A->parent = B;
+
+    A->balance = - ++B->balance;
+    return B;
+}
+
+/*
+ * Rotate double-left around node 'A'. Returns the new root ('B').
+ *
+ *         A              B
+ *        / \           /   \
+ *       1   C         A     C
+ *          / \   =>  / \   / \
+ *         B   4     1   2 3   4
+ *        / \
+ *       2   3
+ */
+free_tree_n *tree_rotate_left2(free_tree_n *A) {
+    free_tree_n *C = A->right;
+    free_tree_n *B = C->left;
+
+    B->parent = A->parent;
+    if ((A->right = B->left))
+	A->right->parent = A;
+    if ((C->left = B->right))
+	C->left->parent = C;
+    B->left = A;
+    A->parent = B;
+    B->right = C;
+    C->parent = B;
+
+    B->left->balance  = -MAX(B->balance, 0);
+    B->right->balance = -MIN(B->balance, 0);
+    B->balance = 0;
+
+    return B;
+}
+
+/*
+ * Rotate double-right around node 'A'. Returns the new root (the new 'B').
+ *
+ *         A              B
+ *        / \           /   \
+ *       C   4         C     A
+ *      / \       =>  / \   / \
+ *     1   B         1   2 3   4
+ *        / \
+ *       2   3
+ */
+free_tree_n *tree_rotate_right2(free_tree_n *A) {
+    free_tree_n *C = A->left;
+    free_tree_n *B = C->right;
+
+    B->parent = A->parent;
+    if ((C->right = B->left))
+	C->right->parent = C;
+    if ((A->left = B->right))
+	A->left->parent = A;
+    B->left = C;
+    C->parent = B;
+    B->right = A;
+    A->parent = B;
+
+    B->left->balance  = -MAX(B->balance, 0);
+    B->right->balance = -MIN(B->balance, 0);
+    B->balance = 0;
+
+    return B;
+}
+
+/*
+ * Rebalance the (sub)tree rooted at node 'n' if required.
+ */
+void tree_rebalance(free_tree *t, free_tree_n *n) {
+    free_tree_n *parent = n->parent;
+    free_tree_n *new_root = NULL;
+
+    switch (n->balance) {
+    case -2:
+	switch (n->left->balance) {
+	case -1:
+	    new_root = tree_rotate_right(n);
+	    break;
+	case +1:
+	    new_root = tree_rotate_right2(n);
+	    break;
+	default:
+	    abort();
+	}
+	break;
+
+    case +2:
+	switch (n->right->balance) {
+	case +1:
+	    new_root = tree_rotate_left(n);
+	    break;
+	case -1:
+	    new_root = tree_rotate_left2(n);
+	    break;
+	default:
+	    abort();
+	}
+	break;
+    }
+
+    if (!new_root)
+	return;
+
+    if (parent) {
+	if (parent->left == n)
+	    parent->left = new_root;
+	else
+	    parent->right = new_root;
+    } else {
+	t->root = new_root;
+    }
+}
+
+/*
+ * Inserts 'node' to be a child of 'parent' to either the left (direction = -1)
+ * or right (direction = +1) child.
+ */
+static void tree_insert_node(free_tree *t,
+			     free_tree_n *parent,
+			     free_tree_n *node,
+			     int direction) {
+
+    printf("Insert node %p to %p dir %d\n",
+	   node, parent, direction);
+
+    /* Link it in */
+    if (direction == -1) {
+	assert(parent->left == NULL);
+	parent->left = node;
+	node->parent = parent;
+    } else {
+	assert(parent->right == NULL);
+	parent->right = node;
+	node->parent = parent;
+    }
+
+    /* Correct balancing */
+    /* Propogate change upwards when parent's balance is zero */
+    while (parent && parent->balance == 0) {
+	parent->balance += (parent->left == node) ? -1 : +1;
+	node = parent;
+	parent = node->parent;
+    }
+    if (!parent)
+	return;
+    /*
+     * Now we have the other two cases, where parent's balance is either
+     * the opposite of direction (in which case we are balancing it) or
+     * the same (in which case it becomes too unbalanced and rotations are
+     * requried).
+     * 
+     * So we apply the balance and if it's -2 or +2 we rebalance.
+     */
+    parent->balance += (parent->left == node) ? -1 : +1;
+
+    tree_rebalance(t, parent);
+
+    //tree_print(t);
+    //tree_print_dot(t);
+}
+
+/*
+ * Deletes a node, maintaining AVL balance factors.
+ */
+/*static*/ void tree_delete_node(free_tree *t, free_tree_n *n) {
+    free_tree_n **rover = &t->rover;
+    free_tree_n *p = n->parent, *r = n->right, *s;
+    int dir, sdir;
+
+    printf("Delete_node %p\n", n);
+
+    if (n == *rover)
+	*rover = NULL;
+
+    if (n == t->largest)
+	t->largest = NULL;
+
+    if (p) {
+	dir = (p->left == n) ? -1 : +1;
+    } else {
+	dir = 0;
+    }
+
+    if (r == NULL) {
+	/* No right child, so move n->left to the place of n */
+	if (dir == -1) {
+	    if ((p->left = n->left))
+		p->left->parent = p;
+	} else if (dir == +1) {
+	    if ((p->right = n->left))
+		p->right->parent = p;
+	} else {
+	    t->root = n->left;
+	    n->left->parent = NULL;
+	}
+
+	s = p;
+	sdir = dir;
+
+    } else if (r->left == NULL) {
+	/* We have a right child 'r', but it does not have a left child */
+	if ((r->left = n->left)) {
+	    r->left->parent = r;
+	}
+	r->parent = p;
+	if (dir == -1) {
+	    p->left = r;
+	} else if (dir == +1) {
+	    p->right = r;
+	} else {
+	    t->root = r;
+	}
+
+	r->balance = n->balance;
+	s = r;
+	sdir = +1;
+
+    } else {
+	/*
+	 * We have a right child 'r' which also has a left child. Here we do
+	 * an inorder successor 's' to find the node that should replace 'n'
+	 */
+	for (s = r->left; s->left; r = s, s = r->left);
+
+	/* Move s */
+	if ((s->left = n->left))
+	    s->left->parent = s;
+	if ((r->left = s->right))
+	    r->left->parent = r;
+	s->right = n->right;
+	s->right->parent = s;
+	s->parent = p;
+	if (dir == -1) {
+	    p->left = s;
+	} else if (dir == +1) {
+	    p->right = s;
+	} else {
+	    t->root = s;
+	}
+
+	s->balance = n->balance;
+	s = r; /* first node to backtrack from when balancing */
+	sdir = -1;
+    }
+
+
+    /*
+     * Now rebalance, starting from 's'and working upwards.
+     * 'sdir' holds the direction from 's' that we came from (or initially
+     * from where the node was deleted).
+     */
+    while (s) {
+	if (sdir == -1) {
+	    s->balance++;
+	    /*
+	     * Case 1: deleting the node balances the tree at 's',
+	     * but the change in height means theparent may need updating
+	     * (so we keep looping).
+	     */
+	    /* s->balance == 0; do nothing */
+
+	    /*
+	     * Case 2: deleting the node unbalanced the tree at 's',
+	     * but the total height of s will not change
+	     * (was h/h, now h-1/h, so still max height of h).
+	     * => update and break
+	     */
+	    if (s->balance == +1) {
+		break;
+
+	    /*
+	     * Case 3: deleting the node causes the already unbalanced tree
+	     * at 's' to become overly unbalanced, requiring a rotation.
+	     */
+	    } else if (s->balance > +1) {
+		free_tree_n *x = s->right;
+		free_tree_n *p = s->parent;
+		int bal = x->balance;
+		if (bal < 0) {
+		    r = tree_rotate_left2(s);
+		} else {
+		    r = tree_rotate_left(s);
+		}
+
+		if (p) {
+		    if (p->left == s)
+			p->left = r;
+		    else
+			p->right = r;
+		} else {
+		    t->root = r;
+		}
+
+		if (bal == 0)
+		    break;
+
+		s = r;
+	    }
+	} else if (sdir == +1) {
+	    s->balance--;
+	    if (s->balance == -1) {
+		break;
+	    } else if (s->balance < -1) {
+		free_tree_n *x = s->left;
+		free_tree_n *p = s->parent;
+		int bal = x->balance;
+		if (bal > 0) {
+		    r = tree_rotate_right2(s);
+		} else {
+		    r = tree_rotate_right(s);
+		}
+
+		if (p) {
+		    if (p->left == s)
+			p->left = r;
+		    else
+			p->right = r;
+		} else {
+		    t->root = r;
+		}
+
+		if (bal == 0)
+		    break;
+
+		s = r;
+	    }
+	}
+
+	if (s->parent)
+	    sdir = (s->parent->left == s) ? -1 : +1;
+	s = s->parent;
+    }
+
+    //tree_print(t);
+
+    /* Deallocate the deleted node */
+    del_node(t, n);
 }
 
 /*
@@ -585,19 +949,24 @@ free_tree *freetree_create(GImage pos, GImage len) {
 	return NULL;
     }
 
+    g = t;
+
     t->node_blocks = NULL;
     t->nblocks = 0;
     t->free_nodes = NULL;
 
-    if (NULL == (t->tree = new_node(t))) {
+    if (NULL == (t->root = new_node(t))) {
 	xfree(t);
 	return NULL;
     }
-    t->tree->pos = pos;
-    t->tree->len = len;
+    t->root->pos = pos;
+    t->root->len = len;
 
     t->rover = NULL;
     t->largest = NULL;
+    t->wilderness = t->root;
+
+    printf("Create tree with root %p\n", t->root);
 
     return t;
 }
@@ -636,7 +1005,11 @@ int freetree_register(free_tree *t, GImage pos, GImage len) {
     free_tree_n *n, *lnode;
 
     /* Find node for this position */
-    n = tree_find_pos(t->tree, pos);
+    n = tree_find_pos(t, pos);
+
+    /*printf("Register %ld+%ld => found %p (%ld+%ld)\n",
+	   (long)pos, (long)len, n, (long)n->pos, (long)n->len);
+    */
 
     /*
      * Our node found could be fitting one of the following cases
@@ -685,11 +1058,9 @@ int freetree_register(free_tree *t, GImage pos, GImage len) {
 		for (tmp = n->left; tmp->right; tmp=tmp->right)
 		    ;
 
-		tmp->right = lnode;
-		lnode->parent = tmp;
+		tree_insert_node(t, tmp, lnode, +1);
 	    } else {
-		lnode->parent = n;
-		n->left = lnode;
+		tree_insert_node(t, n, lnode, -1);
 	    }
 	}
     }
@@ -699,7 +1070,7 @@ int freetree_register(free_tree *t, GImage pos, GImage len) {
 
 /*
  * Allocates a space from the free tree. If this doesn't exist, then space
- * from the first node (aka end of the disk file) is used.
+ * from the wildeness node (aka end of the disk file) is used.
  * 
  * Returns offset for success
  *        -1 for failure
@@ -709,17 +1080,13 @@ GImage freetree_allocate(free_tree *t, GImage len) {
     GImage pos;
 
     /* Find free block */
-    if (t->tree->left) {
-	if (NULL == (n = tree_find_len(t, len))) {
-	    /* None found in tree - use root node */
-	    n = t->tree;
-	    if (n->len < len) {
-		(void)gerr_set(TREE_OUT_OF_SPACE);
-		return -1;
-	    }
+    if (NULL == (n = tree_find_len(t, len))) {
+	/* None found in tree - use root node */
+	n = t->wilderness;
+	if (n->len < len) {
+	    (void)gerr_set(TREE_OUT_OF_SPACE);
+	    return -1;
 	}
-    } else {
-	n = t->tree;
     }
 
     /*
@@ -761,7 +1128,7 @@ int freetree_reallocate(free_tree *t, GImage pos, GImage old_len,
      * Search tree for the position at the end of this block. This will
      * tell us whether there is room to grow the block by.
      */
-    n = tree_find_pos(t->tree, pos + old_len);
+    n = tree_find_pos(t, pos + old_len);
     if (n->pos == pos + old_len && n->pos + n->len >= pos + new_len) {
 
 	/*
@@ -811,7 +1178,7 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
      * Search tree for (pos,len) pair. This function will tell us whether
      * the (pos,len) pair butt up to a free block or is between blocks.
      */
-    n = tree_find_pos_len(t->tree, pos, len, &status);
+    n = tree_find_pos_len(t, pos, len, &status);
     switch(status) {
     default:
 	/* printf("Dealloc %d+%d: OVERLAP\n", pos, len); */
@@ -833,15 +1200,11 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	l->right = NULL;
 	l->pos   = pos;
 	l->len   = len;
-	l->parent= n;
 
 	if (!t->largest || l->len >= t->largest->len)
 	    t->largest = l;
 
-	if (n->pos > pos)
-	    n->left = l;
-	else
-	    n->right = l;
+	tree_insert_node(t, n, l, n->pos > pos ? -1 : +1);
 
 	break;
 
@@ -1009,6 +1372,7 @@ static int calc_crc(char *data, int len) {
     return crc;
 }
 
+#if 0
 #define TYPE int4
 #include "freetree-io.h"
 #undef TYPE
@@ -1016,3 +1380,17 @@ static int calc_crc(char *data, int len) {
 #define TYPE int8
 #include "freetree-io.h"
 #undef TYPE
+#endif
+
+free_tree *freetree_load_int4(int fd, int last_time) {
+    return NULL;
+}
+free_tree *freetree_load_int8(int fd, int last_time) {
+    return NULL;
+}
+int freetree_save_int4(free_tree *t, int fd, int last_time) {
+    return -1;
+}
+int freetree_save_int8(free_tree *t, int fd, int last_time) {
+    return -1;
+}

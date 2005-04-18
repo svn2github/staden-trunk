@@ -8,14 +8,16 @@ typedef struct free_tree_n_ {
     struct free_tree_n_ *left;
     struct free_tree_n_ *right;
     struct free_tree_n_ *parent;
+    int balance; /* -1, 0, +1 for left heavy, balanced, right heavy */
     GImage pos;
     GImage len;
 } free_tree_n;
 
 typedef struct free_tree_ {
-    free_tree_n *tree;
+    free_tree_n *root;
     free_tree_n *rover;
     free_tree_n *largest;	/* The largest node in the tree */
+    free_tree_n *wilderness;
 
     free_tree_n **node_blocks; /* node block allocation system */
     int nblocks;
