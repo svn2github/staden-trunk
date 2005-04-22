@@ -5,24 +5,45 @@
 #include "g-os.h"
 
 typedef struct free_tree_n_ {
-    struct free_tree_n_ *left;
+    /* Tree node pointers */
+    struct free_tree_n_ *left; 
     struct free_tree_n_ *right;
     struct free_tree_n_ *parent;
-    int balance; /* -1, 0, +1 for left heavy, balanced, right heavy */
+
+    /* Linked lists threaded through the tree; groups nodes of similar size */
+    struct free_tree_n_ *next;
+    struct free_tree_n_ *prev;
+
+    /* AVL balance: -1, 0, +1 for left heavy, balanced, right heavy */
+    int balance;
+
+    /* The node contents themselves */
     GImage pos;
     GImage len;
 } free_tree_n;
 
 typedef struct free_tree_ {
     free_tree_n *root;
-    free_tree_n *rover;
-    free_tree_n *largest;	/* The largest node in the tree */
     free_tree_n *wilderness;
 
-    free_tree_n **node_blocks; /* node block allocation system */
+    free_tree_n **node_blocks;  /* node block allocation system */
     int nblocks;
+    free_tree_n *free_nodes;    /* follow left pointer for linked list */
 
-    free_tree_n *free_nodes; /* follow left pointer for linked list */
+    /*
+     * Maintain a series of linked lists containing blocks of specific ranges.
+     * In malloc library terms this is sometimes referred to as a
+     * "segregated fit".
+     * The first 57 lists are from 0 to 4080 inclusive in steps of
+     * 16 (initially), 32 and 64 at the end. 
+     * The remainder are 4096, 8192, 16384, ... in powers of 2.
+     */
+#define FBLOCKM 4095
+#define FBSZ 16
+#define NFBLOCK 57
+#define NFBLOCK2 (NFBLOCK+64)
+    int listsz[FBLOCKM/FBSZ+2];
+    free_tree_n *lists[NFBLOCK2];
 } free_tree;
 
 

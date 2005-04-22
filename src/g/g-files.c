@@ -357,6 +357,11 @@ GFile *g_open_file(char *fn, int read_only)
     
 #undef ABORT
 
+    /*
+      tree_print(gfile->freetree);
+      tree_print_lists(gfile->freetree);
+    */
+
     return gfile;
 }
 

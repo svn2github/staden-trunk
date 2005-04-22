@@ -50,8 +50,21 @@
  *   single tree in which multiple lists are threaded.
  */
 
-static free_tree *g;
-#define NUM(n) (n ? (int)find_node_addr(g,n) : 0)
+/* Turns size 'l' into an index to the free_tree->lists array. */
+#define SEGLISTNUM(t, l) (((l)<=FBLOCKM) \
+    ? (t)->listsz[((l)/FBSZ)] \
+    : (ilog2((l))-12+NFBLOCK))
+
+/*
+ * Returns the integer component of log2(len).
+ */
+static int ilog2(GImage len) {
+    int l = 0;
+    while (len >>= 1) l++;
+    return l;
+}
+
+
 
 /*
  * Allocates a new free_tree_n node.
@@ -82,6 +95,8 @@ static free_tree_n *new_node(free_tree *t) {
 	    n[i].left = prev;
 	    n[i].right = NULL;
 	    n[i].parent = NULL;
+	    n[i].prev = NULL;
+	    n[i].next = NULL;
 	    n[i].pos = 0;
 	    n[i].len = 0;
 	    n[i].balance = 0;
@@ -100,6 +115,8 @@ static free_tree_n *new_node(free_tree *t) {
     n->pos = 0;
     n->len = 0;
     n->balance = 0;
+    n->prev = NULL;
+    n->next = NULL;
 
     return n;
 }
@@ -108,6 +125,8 @@ static void del_node(free_tree *t, free_tree_n *n) {
     n->left = t->free_nodes;
     n->right = NULL;
     n->parent = NULL;
+    n->prev = NULL;
+    n->next = NULL;
     t->free_nodes = n;
 }
 
@@ -210,95 +229,33 @@ static free_tree_n *tree_find_pos_len(free_tree *ft, GImage pos,
 }
 
 
-/*
- * Search the tree for the first block greater than a particular length.
- * We scan the tree in an preorder fashion as it will on average visit less
- * nodes before finding a gap and the position ordering is not relevant.
- * We use a 'roving pointer' to remember the last place we searched in order
- * to try and reduce small blocks accumulating at the start.
- *
- * Complexity: O(N/f)? (f is some fragmentation value)
- *
- * Returns a free_tree_n pointer when one is found.
- *           NULL for failure
- */
-static free_tree_n *tree_find_len(free_tree *tr, GImage len) {
-    free_tree_n *root = tr->root;
-    free_tree_n *rover = tr->rover;
-    free_tree_n *t;
-    int i;
+static free_tree_n *tree_find_len(free_tree *t, GImage len) {
+    int sz;
+    free_tree_n *n;
+    /* int count = 0; */
 
-    /* Do we know the largest block? */
-    if (tr->largest) {
-	if (len <= tr->largest->len) {
-	    free_tree_n *ret = tr->largest;
-	    tr->largest = NULL;
-	    return tr->rover = ret;
-	} else {
-	    goto quick;
+    /*
+     * Loop through the free lists, starting with optimal size and working up.
+     */
+    for (sz = SEGLISTNUM(t, len); sz < NFBLOCK2; sz++) {
+	/* count++; */
+	for (n = t->lists[sz]; n; n = n->next) {
+	    if (n->len >= len) {
+		/* printf("tree_find_len %"PRIGImage" => %"PRIGImage
+		          " (%d searched)\n", len, n->len, count);*/
+		return n;
+	    }
+	    /* count++; */
 	}
     }
 
-    /* puts("============== TREE_FIND_LEN ================"); */
+    /*
+    printf("tree_find_len %"PRIGImage" => %"PRIGImage
+	   " (%d searched, got wilderness)\n",
+	   len, t->wilderness->len, count);
+    */
 
-    if (NULL == rover)
-	rover = tr->rover = root;
-
-    t = rover;
-
-    for (i=0; i < 2; i++) {
-	while (t) {
-	    if (t == rover && i == 1)
-		break;
-
-	    /* printf("pos=%d,len=%d\n", t->pos, t->len); */
-	    /* Check node */
-	    if (t->len >= len && t != tr->wilderness)
-		return tr->rover=t;
-
-	    /* Traverse left */
-	    if (t->left) {
-		t = t->left;
-		continue;
-	    }
-	    
-	    /* Traverse right */
-	    if (t->right) {
-		t = t->right;
-		continue;
-	    }
-	    
-	    /* Backtrack */
-	    while (t) {
-		if (t->parent && t->parent->left == t && t->parent->right) {
-		    t = t->parent->right;
-		    break;
-		}
-		
-		/* from left but no right, or from right */
-		t = t->parent;
-	    }
-	}
-	
-	/*
-	 * If we've fallen out of the above loop then it means we've hit the
-	 * root or the rover (second loop around).
-	 *
-	 * In the first case we scan the bit that starting from the rover
-	 * missed by now starting from the root node and rechecking everything
-	 * again (this time stopping at the rover).
-	 */
-	if (i == 1)
-	    break;
-	else 
-	    t = tr->root;
-    }
-
- quick:
-
-    fflush(stdout);
-    tr->rover = root;
-    return tr->wilderness->len >= len ? tr->wilderness : NULL;
+    return t->wilderness->len >= len ? t->wilderness : NULL;
 }
 
 
@@ -378,22 +335,48 @@ static int tree_print_r(free_tree_n *t) {
     }
     hl = tree_height(t->left);
     hr = tree_height(t->right);
-    printf("%.*s%p: l=%p r=%p p=%p hgt=%d/%d/%d %ld+%ld\n",
+    printf("%.*s%p: l=%p r=%p p=%p hgt=%d/%d/%d %"
+	   PRIGImage"+%"PRIGImage"\n",
 	   ABS(t->balance), t->balance+"--=+++"+2,
 	   t, t->left, t->right, t->parent,
 	   tree_height(t), hr - hl, t->balance,
-	   (long)t->pos, (long)t->len);
+	   t->pos, t->len);
 
     err |= (hr-hl != t->balance);
 
     tree_sum += t->pos;
     assert(t->pos > last_end);
+    assert(t->len > 0);
     last_end = t->pos + t->len;
     if (t->right) {
 	assert(t->right->parent == t);
 	err |= tree_print_r(t->right);
     }
     return err;
+}
+
+void tree_print_lists(free_tree *t) {
+    int i;
+    free_tree_n *n;
+
+    printf("============== FREETREE THREADED LISTS ============\n");
+    for (i = 0; i < NFBLOCK2; i++) {
+	int count;
+	printf(">>> list %d\n", i);
+	count = 0;
+	for (n = t->lists[i]; n; n = n->next) {
+	    printf("%"PRIGImage" ", n->len);
+	    assert(n->len > 0);
+	    if (n->prev == NULL)
+		assert(n == t->lists[i]);
+	    if (n->prev)
+		assert(n->prev->next == n);
+	    if (n->next)
+		assert(n->next->prev == n);
+	    count++;
+	}
+	printf(" => %d entries\n", count);
+    }
 }
 
 void tree_print(free_tree *t) {
@@ -484,57 +467,16 @@ void tree_print_ps(free_tree_n *t) {
 	    maxdepth = depth;
     }
     puts("stroke");
-    {double ypos = 10000;
-    for (yinc=10000,i=0; i < maxdepth; i++) {
-	printf("-100000 %f moveto 100000 %f lineto\n", ypos, ypos);
-	yinc *= yred;
-	ypos += yinc;
-    }
+    {
+	double ypos = 10000;
+	for (yinc=10000,i=0; i < maxdepth; i++) {
+	    printf("-100000 %f moveto 100000 %f lineto\n", ypos, ypos);
+	    yinc *= yred;
+	    ypos += yinc;
+	}
     }
     
     puts("stroke showpage");
-}
-
-
-int tree_total_depth(free_tree_n *t) {
-    int depth = 0, total_depth = 0;
-    int nodes = 0;
-
-    for (; t->parent;) {
-	/* Traverse left */
-	if (t->left) {
-	    depth++;
-	    t = t->left;
-	    continue;
-	}
-	
-	/* Traverse right */
-	if (t->right) {
-	    depth++;
-	    t = t->right;
-	    continue;
-	}
-	    
-	/* Backtrack */
-	for (;t->parent;) {
-	    /* from left, go to right */
-	    if (t->parent->left == t && t->parent->right) {
-		total_depth += depth;
-		nodes++;
-		t = t->parent->right;
-		break;
-	    }
-	    
-	    /* from left but no right, or from right */
-	    total_depth += depth;
-	    nodes++;
-	    t = t->parent;
-	    depth--;
-	}
-    }
-    printf("total depth=%d, nodes=%d\n", total_depth, nodes);
-
-    return total_depth;
 }
 
 
@@ -549,8 +491,6 @@ int tree_total_depth(free_tree_n *t) {
  */
 free_tree_n *tree_rotate_left(free_tree_n *A) {
     free_tree_n *B = A->right;
-
-    puts("rotate_left");
 
     B->parent = A->parent;
     if ((A->right = B->left))
@@ -574,8 +514,6 @@ free_tree_n *tree_rotate_left(free_tree_n *A) {
  */
 free_tree_n *tree_rotate_right(free_tree_n *A) {
     free_tree_n *B = A->left;
-
-    puts("rotate_right");
 
     B->parent = A->parent;
     if ((A->left = B->right))
@@ -652,7 +590,8 @@ free_tree_n *tree_rotate_right2(free_tree_n *A) {
 }
 
 /*
- * Rebalance the (sub)tree rooted at node 'n' if required.
+ * Rebalance the (sub)tree rooted at node 'n' if required. Called after
+ * an insertion.
  */
 void tree_rebalance(free_tree *t, free_tree_n *n) {
     free_tree_n *parent = n->parent;
@@ -700,6 +639,72 @@ void tree_rebalance(free_tree *t, free_tree_n *n) {
 }
 
 /*
+ * Insert node 'n' to the appropriate linked list blocked by n->len.
+ * It does this by inserting to the head of the list, as this means that reuse
+ * of blocks can be made to try and reuse blocks most recently freed (so that
+ * disk caching is optimised).
+ */
+static void list_insert_node(free_tree *t, free_tree_n *n) {
+    int sz = SEGLISTNUM(t, n->len);
+    assert(sz >= 0 && sz < NFBLOCK2);
+    if ((n->next = t->lists[sz]))
+	n->next->prev = n;
+    n->prev = NULL;
+    t->lists[sz] = n;
+}
+
+/*
+ * Deletes node 'n' from the linked lists, updating the master list pointer
+ * and linking left/right neighbours as appropriate.
+ */
+static void list_delete_node(free_tree *t, free_tree_n *n) {
+    int sz = SEGLISTNUM(t, n->len);
+    assert(sz >= 0 && sz < NFBLOCK2);
+
+    if (n->prev)
+	n->prev->next = n->next;
+    if (n->next)
+	n->next->prev = n->prev;
+    if (t->lists[sz] == n)
+	t->lists[sz] = n->next;
+    n->next = n->prev = NULL;
+}
+
+/*
+ * Handles resizing of node 'n' from size 'oldsz' to 'newsz' with regards to
+ * the linked list.
+ * This does NOT actually resize the node, but instead it makes sure that it
+ * is in the correct linked list.
+ */
+static void list_resize_node(free_tree *t, free_tree_n *n,
+			     GImage oldsz, GImage newsz) {
+    int bo = SEGLISTNUM(t, oldsz);
+    int bn = SEGLISTNUM(t, newsz);
+
+    assert(bo >= 0 && bo < NFBLOCK2);
+    assert(bn >= 0 && bn < NFBLOCK2);
+
+    /* Nothing to do? */
+    if (bo == bn)
+	return;
+
+    /* Otherwise remove from one list and insert to the other */
+    /* Remove */
+    if (n->prev)
+	n->prev->next = n->next;
+    if (n->next)
+	n->next->prev = n->prev;
+    if (t->lists[bo] == n)
+	t->lists[bo] = n->next;
+
+    /* Reinsert */
+    if ((n->next = t->lists[bn]))
+	n->next->prev = n;
+    n->prev = NULL;
+    t->lists[bn] = n;
+}
+
+/*
  * Inserts 'node' to be a child of 'parent' to either the left (direction = -1)
  * or right (direction = +1) child.
  */
@@ -707,9 +712,13 @@ static void tree_insert_node(free_tree *t,
 			     free_tree_n *parent,
 			     free_tree_n *node,
 			     int direction) {
-
+    /*
     printf("Insert node %p to %p dir %d\n",
 	   node, parent, direction);
+    */
+
+    /* Update the threaded linked-lists */
+    list_insert_node(t, node);
 
     /* Link it in */
     if (direction == -1) {
@@ -742,26 +751,19 @@ static void tree_insert_node(free_tree *t,
     parent->balance += (parent->left == node) ? -1 : +1;
 
     tree_rebalance(t, parent);
-
-    //tree_print(t);
-    //tree_print_dot(t);
 }
 
 /*
  * Deletes a node, maintaining AVL balance factors.
  */
 /*static*/ void tree_delete_node(free_tree *t, free_tree_n *n) {
-    free_tree_n **rover = &t->rover;
     free_tree_n *p = n->parent, *r = n->right, *s;
     int dir, sdir;
 
-    printf("Delete_node %p\n", n);
+    /* printf("Delete_node %p\n", n); */
 
-    if (n == *rover)
-	*rover = NULL;
-
-    if (n == t->largest)
-	t->largest = NULL;
+    /* Update the threaded linked-lists */
+    list_delete_node(t, n);
 
     if (p) {
 	dir = (p->left == n) ? -1 : +1;
@@ -919,8 +921,6 @@ static void tree_insert_node(free_tree *t,
 	s = s->parent;
     }
 
-    //tree_print(t);
-
     /* Deallocate the deleted node */
     del_node(t, n);
 }
@@ -944,12 +944,11 @@ static void tree_insert_node(free_tree *t,
  */
 free_tree *freetree_create(GImage pos, GImage len) {
     free_tree *t;
+    int i, j;
 
     if (NULL == (t = (free_tree *)xmalloc(sizeof(free_tree)))) {
 	return NULL;
     }
-
-    g = t;
 
     t->node_blocks = NULL;
     t->nblocks = 0;
@@ -962,11 +961,46 @@ free_tree *freetree_create(GImage pos, GImage len) {
     t->root->pos = pos;
     t->root->len = len;
 
-    t->rover = NULL;
-    t->largest = NULL;
     t->wilderness = t->root;
 
-    printf("Create tree with root %p\n", t->root);
+    for (i = 0; i < NFBLOCK2; i++) {
+	t->lists[i] = NULL;
+    }
+    /*
+     * For the first 4Kb, we use direct indexed lookups of all possible
+     * sizes of blocks. After that we use powers of 2.
+     */
+    for (i = j = 0; i <= 256/FBSZ; j++) {
+	t->listsz[i++] = j;
+    }
+    for (; i <= 512/FBSZ; j++) {
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+    }
+
+    for (; i <= 1024/FBSZ; j++) {
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+    }
+
+    for (; i <= FBLOCKM/FBSZ; j++) {
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+	t->listsz[i++] = j;
+    }
+
+    /*
+    for (i = 0; i <= FBLOCKM/FBSZ; i++) {
+	t->listsz[i] = i;
+    }
+    */
 
     return t;
 }
@@ -977,6 +1011,11 @@ free_tree *freetree_create(GImage pos, GImage len) {
  */
 void freetree_destroy(free_tree *t) {
     int i;
+
+    /*
+      tree_print(t);
+      tree_print_lists(t);
+    */
 
     if (!t)
 	return;
@@ -1007,7 +1046,8 @@ int freetree_register(free_tree *t, GImage pos, GImage len) {
     /* Find node for this position */
     n = tree_find_pos(t, pos);
 
-    /*printf("Register %ld+%ld => found %p (%ld+%ld)\n",
+    /*
+    printf("Register %ld+%ld => found %p (%ld+%ld)\n",
 	   (long)pos, (long)len, n, (long)n->pos, (long)n->len);
     */
 
@@ -1027,41 +1067,47 @@ int freetree_register(free_tree *t, GImage pos, GImage len) {
     if (pos == n->pos && len == n->len) {
 	tree_delete_node(t, n);
     } else if (pos == n->pos) {
+	list_resize_node(t, n, n->len, n->len-len);
 	n->len -= len;
 	n->pos += len;
 	assert(n->len > 0);
     } else if (pos + len == n->pos + n->len) {
+	list_resize_node(t, n, n->len, n->len-len);
 	n->len -= len;
 	assert(n->len > 0);
     } else {
+	free_tree_n *tmp;
+	GImage old_size;
+
 	if (NULL == (lnode = new_node(t))) {
 	    (void)gerr_set(TREE_OUT_OF_MEMORY);
 	    return -1;
 	}
-	
-	{
-	    free_tree_n *tmp;
 
-	    lnode->pos = n->pos;
-	    lnode->len = pos - n->pos;
-	    lnode->left = NULL;
-	    lnode->right = NULL;
-	    assert(lnode->pos >= 0);
-	    assert(lnode->len > 0);
+	/* Create new node (will be left hand end) */
+	lnode->pos = n->pos;
+	lnode->len = pos - n->pos;
+	lnode->left = NULL;
+	lnode->right = NULL;
+	assert(lnode->pos >= 0);
+	assert(lnode->len > 0);
 
-	    n->len = n->pos + n->len - (pos + len);
-	    n->pos = pos + len;
-	    assert(n->pos >= 0);
-	    assert(n->len > 0);
+	/* Shrink old node (right hand end) */
+	old_size = n->len;
+	n->len = n->pos + n->len - (pos + len);
+	n->pos = pos + len;
+	assert(n->pos >= 0);
+	assert(n->len > 0);
+	list_resize_node(t, n, old_size, n->len);
 
-	    if (n->left) {
-		for (tmp = n->left; tmp->right; tmp=tmp->right)
-		    ;
-
-		tree_insert_node(t, tmp, lnode, +1);
-	    } else {
-		tree_insert_node(t, n, lnode, -1);
-	    }
+	/* Insert to the tree */
+	if (n->left) {
+	    for (tmp = n->left; tmp->right; tmp=tmp->right)
+		;
+	    
+	    tree_insert_node(t, tmp, lnode, +1);
+	} else {
+	    tree_insert_node(t, n, lnode, -1);
 	}
     }
 
@@ -1098,8 +1144,7 @@ GImage freetree_allocate(free_tree *t, GImage len) {
     if (len == n->len) {
 	tree_delete_node(t, n);
     } else {
-	if (n == t->largest)
-	    t->largest = NULL;
+	list_resize_node(t, n, n->len, n->len - len);
 	n->pos += len;
 	n->len -= len;
 	assert(n->len > 0);
@@ -1141,9 +1186,6 @@ int freetree_reallocate(free_tree *t, GImage pos, GImage old_len,
 	    /* printf("Reallocated position %d by deleting node\n", pos); */
 	} else {
 	    GImage diff = pos + new_len - n->pos;
-
-	    if (n == t->largest)
-		t->largest = NULL;
 
 	    n->pos += diff;
 	    n->len -= diff;
@@ -1200,9 +1242,7 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	l->right = NULL;
 	l->pos   = pos;
 	l->len   = len;
-
-	if (!t->largest || l->len >= t->largest->len)
-	    t->largest = l;
+	assert(l->len > 0);
 
 	tree_insert_node(t, n, l, n->pos > pos ? -1 : +1);
 
@@ -1223,6 +1263,8 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	l = tree_walk_left(n);
 
 	if (l && l->pos + l->len == pos) {
+	    GImage old_len;
+
 	    /*
 	     * To join nodes we merge the left into the right and
 	     * delete the left. We don't need to worry about keeping
@@ -1231,11 +1273,10 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	     * between them or we'd have detected an overlap.
 	     */
 
+	    old_len = n->len;
 	    n->len = n->pos + n->len - l->pos;
 	    n->pos = l->pos;
-
-	    if (!t->largest || n->len >= t->largest->len)
-		t->largest = n;
+	    list_resize_node(t, n, old_len, n->len);
 
 	    assert(n->len > 0);
 	    assert(n->pos >= 0);
@@ -1245,11 +1286,10 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	     * Otherwise we simply update the len or pos+len pair to include
 	     * the newly unregistered item.
 	     */
+	    list_resize_node(t, n, n->len, n->len + len);
 	    n->pos -= len;
 	    n->len += len;
-
-	    if (!t->largest || n->len >= t->largest->len)
-		t->largest = n;
+	    assert(n->len > 0);
 	}
 
 	break;
@@ -1266,6 +1306,7 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	r = tree_walk_right(n);
 
 	if (r && r->pos == pos + len) {
+	    GImage old_len;
 	    /*
 	     * To join nodes we merge the left into the right and
 	     * delete the left. We don't need to worry about keeping
@@ -1274,11 +1315,10 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	     * between them or we'd have detected an overlap.
 	     */
 
+	    old_len = r->len;
 	    r->len = r->pos + r->len - n->pos;
 	    r->pos = n->pos;
-
-	    if (!t->largest || r->len >= t->largest->len)
-		t->largest = r;
+	    list_resize_node(t, r, old_len, r->len);
 
 	    assert(r->len > 0);
 	    assert(r->pos >= 0);
@@ -1288,10 +1328,9 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 	     * Otherwise we simply update the len or pos+len pair to include
 	     * the newly unregistered item.
 	     */
+	    list_resize_node(t, n, n->len, n->len + len);
 	    n->len += len;
-
-	    if (!t->largest || n->len >= t->largest->len)
-		t->largest = n;
+	    assert(n->len > 0);
 	}
 
 	break;
@@ -1302,11 +1341,28 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
 }
 
 /*
+ * NOTE: For now the code to read/write the cached freetree has been disabled.
+ * This is for several main reasons.
+ *
+ * 1. Old freetrees will be unbalanced, so loading from scratch with the AVL
+ *    balancing will improve performance.
+ *
+ * 2. Benchmarking shows that using the AVL code to initiate a new tree from
+ *    scratch is very close to the performance of loading a cached tree.
+ *
+ * 3. The format of the tree would need updating too, to store the balance
+ *    factors and the segregated lists.
+ */
+
+#if 0
+/*
  * ---------------------------------------------------------------------------
  * The code below is for saving and loading free_trees to disk.
  * This is used for fast database opening as it avoids the (expensive)
  * freetree_register function.
  */
+
+#define NUM(n) (n ? (int)find_node_addr(g,n) : 0)
 
 static int find_node_addr(free_tree *t, free_tree_n *n) {
     int k;
@@ -1372,7 +1428,6 @@ static int calc_crc(char *data, int len) {
     return crc;
 }
 
-#if 0
 #define TYPE int4
 #include "freetree-io.h"
 #undef TYPE
@@ -1380,7 +1435,6 @@ static int calc_crc(char *data, int len) {
 #define TYPE int8
 #include "freetree-io.h"
 #undef TYPE
-#endif
 
 free_tree *freetree_load_int4(int fd, int last_time) {
     return NULL;
@@ -1394,3 +1448,4 @@ int freetree_save_int4(free_tree *t, int fd, int last_time) {
 int freetree_save_int8(free_tree *t, int fd, int last_time) {
     return -1;
 }
+#endif
