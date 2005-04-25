@@ -191,6 +191,9 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
 void sheet_display(Sheet *sw) {
     XRectangle expose;
 
+    if (!Tk_IsMapped(sw->tkwin))
+	return;
+
     sw->window = Tk_WindowId(sw->tkwin);
 
     expose.x = 0;
@@ -512,6 +515,14 @@ static void _repaint_monochrome(Sheet *sw, int c, int r, int l, sheet_ink ink, c
 
 static void _repaint(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
 {
+    if (Tk_IsMapped(sw->tkwin) && !sw->window)
+	sw->window = Tk_WindowId(sw->tkwin);
+
+    if (!sw->window) {
+	printf("%p: Aborting as sw->window == %ld\n", sw, (long)sw->window);
+	return;
+    }
+
     if (ink->sh==sh_default) {
 	/* 7/1/99 johnt - Implement XDrawImageString Manually under Windows */
 #if !defined(_WIN32)
