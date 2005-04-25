@@ -92,6 +92,7 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len);
     ? ((len) - ((len) % (block_size)) + (block_size)) \
     : (len))
 
+#ifdef CACHE_FREETREE
 /*
  * Saves a freetree to disk at the end of the file pointed to by 'fd'.
  * To verify validity for subsequent reads, we also store the current global
@@ -119,5 +120,6 @@ int freetree_save_int8(free_tree *t, int fd, int last_time);
  */
 free_tree *freetree_load_int4(int fd, int last_time);
 free_tree *freetree_load_int8(int fd, int last_time);
-
 #endif
+
+#endif /* _FREE_TREE_H_ */

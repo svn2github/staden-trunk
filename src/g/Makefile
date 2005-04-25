@@ -10,7 +10,18 @@ SRCROOT=..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 
-CFLAGS += $(SHLIB_CFLAGS) $(G_DLL)
+# CACHE_FREETREE makes Gap4 append the freetree data structure to the end of
+# the .aux file when a database is shutdown. Similarly it's loaded on database
+# open.
+# For now this is disabled for several reasons:
+# 1. The format has changed (freelists, AVL balance factors) and the code has
+#    not yet been updated.
+# 2. The existing trees are unbalanced, so we want to force recomputing.
+# 3. The speed of recomputing from scratch when using a balanced tree seems
+#    to be only barely slower than loading a cached copy.
+
+#CFLAGS += $(SHLIB_CFLAGS) $(G_DLL) -DCACHE_FREETREE
+CFLAGS += $(SHLIB_CFLAGS) $(G_DLL) 
 
 # Optimise IO
 #COPTDEBUG=$(COPT)

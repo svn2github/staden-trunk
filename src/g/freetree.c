@@ -1354,7 +1354,7 @@ int freetree_unregister(free_tree *t, GImage pos, GImage len) {
  *    factors and the segregated lists.
  */
 
-#if 0
+#if CACHE_FREETREE
 /*
  * ---------------------------------------------------------------------------
  * The code below is for saving and loading free_trees to disk.

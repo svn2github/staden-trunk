@@ -257,10 +257,15 @@ GFile *g_open_file(char *fn, int read_only)
 	: sizeof(AuxIndex);
     lseek(gfile->fdaux, sizeof(AuxHeader) +
 	  gfile->header.num_records * recsize, SEEK_SET);
+#ifdef CACHE_FREETREE
     gfile->freetree = (gfile->header.format == G_32BIT)
 	? freetree_load_int4(gfile->fdaux, gfile->header.last_time)
 	: freetree_load_int8(gfile->fdaux, gfile->header.last_time);
     tree_init = gfile->freetree ? 1 : 0;
+#else
+    gfile->freetree = NULL;
+    tree_init = 0;
+#endif
 
     /* allocate freetree, if not loaded */
     if (!tree_init) {

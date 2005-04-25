@@ -121,14 +121,14 @@ void g_shutdown_database_(GDB *gdb)
 		: sizeof(AuxIndex);
 	    lseek(g->fdaux, sizeof(AuxHeader) +
 		  g->header.num_records * recsize, SEEK_SET);
-
+#ifdef CACHE_FREETREE
 	    /* Save a cached copy of the freetree for fast startup next time */
 	    if (g->header.format == G_32BIT)
 		freetree_save_int4(g->freetree, g->fdaux, g->header.last_time);
 	    else
 		freetree_save_int8(g->freetree, g->fdaux, g->header.last_time);
+#endif
 	}
-
     }
 
     g_free_gdb(gdb);
