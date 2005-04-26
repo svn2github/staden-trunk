@@ -1,3 +1,106 @@
+2005-04-26  jkbonfield  <jkbonfield>
+
+	* src/tk_utils/sheet.c:
+	(11:46:09) More checks for Tk_IsMapped. 
+
+	* src/Makefile:
+	(12:57:59) Fixed creation of lib/machine-binaries directories for
+	make dist 
+
+	* src/g/freetree.c:
+	(13:02:34) Corrected "to do" messages in the comments to reflect
+	the current state. 
+
+	* src/gap4/contigEditor.c,
+	* src/gap4/contig_editor.tcl:
+	* src/gap4/edInterface.c:
+	* src/gap4/edStructs.h:
+	* src/gap4/edUtils.h,
+	* src/gap4/tkEdNames.c,
+	* src/gap4/tkEdUtils.c:
+	* src/gap4/tkEditor.c,
+	* src/gap4/tkEditor.h:
+	(13:05:52) Improved the "sequence sets" support for the contig
+	editor. Sets may now be expanded or collapsed (they have +/- next
+	to their names). Sets are also now given background colours for
+	their sequence names. 
+
+	* src/haplo/haplo.tcl:
+	(13:07:11) Added a way to filter out known problematic templates.
+	Made "fast mode" the default as it generally seems to do almost as
+	well and is appropriate for a first pass too. 
+
+	* tables/Makefile:
+	(13:07:55) Added cp for haplorc. 
+
+2005-04-25  jkbonfield  <jkbonfield>
+
+	* src/g/Makefile,
+	* src/g/freetree.c,
+	* src/g/freetree.h,
+	* src/g/g-db.c,
+	* src/g/g-files.c:
+	(09:33:38) Made the caching of freetrees an option in the Makefile
+	and code that calls it. The freetree cache code is still out of
+	date (as it doesn't yet support avl balance factors or the
+	segregated lists) so for now it is disabled. 
+
+	* src/tk_utils/sheet.c:
+	(13:38:31) Added more Tk_IsMapped checks and assignments to
+	sw->window. This may (untested) cure the intermittent crashes
+	observed using redhat9 (with default? config of gnome + metacity)
+	when bringing up the join editor. 
+
+2005-04-22  jkbonfield  <jkbonfield>
+
+	* src/g/freetree.c,
+	* src/g/freetree.h,
+	* src/g/g-files.c:
+	(14:02:35) Added segregated lists to the freetree mechanism. This
+	basically means a totally new tree_find_len() function and extra
+	code to maintain the linked list segregations. Further
+	experimentation may be needed to optimise the block rangers used
+	within each list, but benchmarking shows this latest version to be
+	way ahead of previous revision with regards to CPU time and also
+	significantly less fragmentation (1/3rd less during assembly). 
+
+2005-04-18  jkbonfield  <jkbonfield>
+
+	* src/g/freetree.c,
+	* src/g/freetree.h:
+	(13:11:38) Added AVL tree balancing code. This increases
+	performance greatly for some worst-case scenarios. However
+	currently the freetree loading/saving code has been disabled as the
+	balance factors need adding in somewhere. How to do this in a
+	compatible way is unknown at present. 
+
+2005-04-08  jkbonfield  <jkbonfield>
+
+	* src/gap4/complement.c,
+	* src/gap4/legacy.f:
+	(13:53:02) Rewrote the fortran cmplmt (complement contig) in C and
+	replaced sqcom and sqrev with C stub functions to use
+	complement_dna and reverse_dna functions. 
+
+	* src/gap4/IO2.c,
+	* src/gap4/fort.h,
+	* src/gap4/oligo.c,
+	* src/gap4/probe.c,
+	* src/gap4/tagU1.c:
+	(13:55:14) Replaced calls to sqcom_ and sqrev_ with calls to
+	complement_seq. 
+
+2005-04-05  jkbonfield  <jkbonfield>
+
+	* src/gap4/newgap_cmds.c:
+	(15:35:22) Added get_template_num sub-command to db_info 
+
+2005-04-01  jkbonfield  <jkbonfield>
+
+	* src/gap4/contigEditor.c:
+	(11:14:44) Checked for sets being passed in as NULL (as is the case
+	when called from the sequence search, aka find_oligos, function). 
+
 2005-03-30  James Bonfield  <jkb>
 
 	TAG CODEBASE with rel-1-6-0b2

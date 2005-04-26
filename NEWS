@@ -1,3 +1,28 @@
+26 April 2005
+=============
+
+Gap4
+----
+
+* Substantial modifications to the gap4 I/O mechanisms (balancing the
+  "freetree"). The upshot of this is that the worst-case performance
+  is now dramatically improved and the average performance will be
+  slightly better too. Complementing a 10Mb contig dropped from about
+  50 minutes to 1.5 minutes.
+
+* The contig editor "sequence sets" are now coloured to aid
+  distinguishing.
+
+* The contig editor sets are now collapsible by clicking the "-"
+  next to their name. The sequence shown in this case is then the
+  consensus sequence, but note that is still WORK IN PROGRESS. The
+  display is correct in such cases, but when collapsed the status line
+  information will be wrong and editing may not work as expected.
+
+* Fixed bugs with X11 BadDrawable crashes (I hope).
+
+-----------------------------------------------------------------------------
+
 29 March 2005
 =============
 
