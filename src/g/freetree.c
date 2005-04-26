@@ -26,28 +26,12 @@
  * - Add check to tree_find_pos to error on cases where the block isn't there.
  *   This will spot the 'overlapping image' cases, I hope.
  *
- * - Remove requirement for parent? Or maybe use a threaded tree. To remove
- *   the parent we need to change some algorithms to be recursive. These
- *   appear to be not often ran algorithms except for the length search. This
- *   may be better done by searching the allocated blocks space as mentioned
- *   in the first optimisation above. The tree_delete_node() routine has to
- *   modify the left or right pointers of it's parent node, but this node is
- *   always known before calling tree_delete_node() so it isn't a problem.
- *   (We'd have to change the search functions to return the parent as well
- *   as the current node.)
- *
  * - Use hints from various malloc systems for improved performance.
  *   "Dynamic Storage Allocation: A Survey and Critical Review" is a good
  *   review article on such things.
  *
- * - The most obvious malloc-style improvement is the use of multiple
- *   lists with each list being a specific range of sizes. Given that#
- *   gap4 has specific sizes for many structures (eg GReadings, GContigs, etc)
- *   this could speed up the tree_find_len algorithm a lot.
- *   The linked lists could be circular (so we start anywhere and continue
- *   until we get back to the same point) and implemented directly within the 
- *   AVL tree itself via next (and maybe prev) pointers. Hence we have one
- *   single tree in which multiple lists are threaded.
+ * - Test use of rovers with the segregated freelist. This is "next fit" which
+ *   may turn out to cause fragmentation, but in theory it should be faster.
  */
 
 /* Turns size 'l' into an index to the free_tree->lists array. */
