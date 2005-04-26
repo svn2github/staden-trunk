@@ -50,6 +50,7 @@ dist:
 	-cp copy_readsrc $(DIST)/tables
 	-cp prefinishrc $(DIST)/tables
 	-cp config.prefinish $(DIST)/tables
+	-cp haplorc $(DIST)/tables 
 	-cp *.bmp $(DIST)/tables
 
 distsrc:
