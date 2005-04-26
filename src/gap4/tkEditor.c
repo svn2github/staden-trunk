@@ -122,6 +122,36 @@ static Tk_ConfigSpec configSpecs[] = {
     {TK_CONFIG_COLOR,
 	 "-tmplcolour5","tmplColour5",	"Background",	"lightblue",
 	 offset(tmpl_bg[5]),		0, NULL},
+    {TK_CONFIG_COLOR,
+	 "-setcolour0","setColour0",	"Background",	"white",
+	 offset(set_bg[0]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour1","setColour1",	"Background",	"#c8bfff",
+	 offset(set_bg[1]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour2","setColour2",	"Background",	"#c8bf98",
+	 offset(set_bg[2]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour3","setColour3",	"Background",	"#c6f3ad",
+	 offset(set_bg[3]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour4","setColour4",	"Background",	"#dbc6c2",
+	 offset(set_bg[4]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour5","setColour5",	"Background",	"#ffffa4",
+	 offset(set_bg[5]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour6","setColour6",	"Background",	"#add6da",
+	 offset(set_bg[6]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour7","setColour7",	"Background",	"#c1edf8",
+	 offset(set_bg[7]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour8","setColour8",	"Background",	"#b8cb7d",
+	 offset(set_bg[8]),		0, NULL},
+    {TK_CONFIG_COLOR,
+         "-setcolour9","setColour9",	"Background",	"#a8a8a4",
+	 offset(set_bg[9]),		0, NULL},
     {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
@@ -197,6 +227,8 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
 	ed->edit_bg[i] = NULL;
     for (i = 0; i < 6; i++)
 	ed->tmpl_bg[i] = NULL;
+    for (i = 0; i < 10; i++)
+	ed->set_bg[i] = NULL;
     ed->qual_below = NULL;
     ed->diff_bg    = NULL;
     ed->xScrollCmd = NULL;
@@ -2102,6 +2134,43 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edMoveSet(ed->xx, set, s_argc, s_argv);
 
 	Tcl_Free((char *)s_argv);
+
+    } else if ('c' == *argv[1] && strcmp(argv[1], "collapse_set") == 0) {
+	int set;
+
+	if (argc != 4 && argc != 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " collapse_set set_number ?1/0/-1?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &set);
+	if (argc == 3) {
+	    vTcl_SetResult(interp, "%d",
+			   ed->xx->set_collapsed
+			   ? ed->xx->set_collapsed[set]
+			   : 0);
+	} else {
+	    int mode;
+	    Tcl_GetInt(interp, argv[3], &mode);
+	    vTcl_SetResult(interp, "%d", edCollapseSet(ed->xx, set, mode));
+	}
+
+    } else if ('g' == *argv[1] && strcmp(argv[1], "get_set") == 0) {
+	int seq;
+
+	if (argc != 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_set seq_number\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &seq);
+	vTcl_SetResult(interp, "%d", edFindSet(ed->xx, seq));
 
     } else {
 	Tcl_AppendResult(interp, "bad option \"", argv[1], "\": must be FIXME",

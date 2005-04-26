@@ -357,6 +357,20 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    ed_set_nslider_pos(en->xx, en->xx->names_xpos);
 	}
 
+    } else if ('c' == *argv[1] && strcmp(argv[1], "coords") == 0) {
+	int x, y;
+	if (argc != 4) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " update_brief xpos ypos\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+	
+	sheet_arg_x(TKSHEET(en), argv[2], &x);
+	sheet_arg_y(TKSHEET(en), argv[3], &y); y++;
+
+	vTcl_SetResult(interp, "%d %d", x, y);
+
     } else {
 	Tcl_AppendResult(interp, "bad option \"", argv[1], "\": must be FIXME",
 			 NULL);

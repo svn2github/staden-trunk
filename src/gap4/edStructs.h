@@ -289,6 +289,7 @@ typedef struct _EdStruct {
     int show_edits;		/* Do we highlight edits? */
     int edit_bg[4];		/* Colours for edit types */
     int tmpl_bg[6];		/* Colours for template statuses */
+    int set_bg[10];		/* "Set" background colours */
     cursor_t *cursor;		/* Cursor structure */
     int names_xpos;		/* X position of names display */
     int default_conf_r;		/* Confidence for replace bases, -1 for old */
@@ -309,6 +310,8 @@ typedef struct _EdStruct {
     int template_names;		/* 1 == template names instead of read names */
     int *set;			/* Which subgroup/set the sequence is in */
     int curr_set;		/* Currently viewed set. 0 = all */
+    int nsets;			/* Max number of sets used */
+    int *set_collapsed;		/* Collapsed set => consensus only shown */
 } EdStruct;
 
 

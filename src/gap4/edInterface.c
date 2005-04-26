@@ -2796,6 +2796,78 @@ void edMoveSet(EdStruct *xx, int set_num, int nseqs, char **seqs) {
 	}
     }
 
+    /* Incase this expands (or shrinks) our set count, we recalloc */
+    if (set_num > xx->nsets) {
+	xx->set_collapsed = (int *)xrealloc(xx->set_collapsed,
+					    (set_num+1)*sizeof(int));
+	for (i = xx->nsets+1; i <= set_num; i++)
+	    xx->set_collapsed[i] = 0;
+	xx->nsets = set_num;
+    }
+
     xx->refresh_flags |= ED_DISP_ALL;
     redisplaySequences(xx, 0);
+}
+
+/*
+ * Set the set collapsed status.
+ * 0  => not collapsed
+ * 1  => collapsed
+ * -1 => toggle
+ *
+ * Returns the new status
+ */
+int edCollapseSet(EdStruct *xx, int set, int mode) {
+    switch (mode) {
+    case 0:
+	xx->set_collapsed[set] = 0;
+	break;
+    case 1:
+	xx->set_collapsed[set] = 1;
+	break;
+    case -1:
+	xx->set_collapsed[set] ^= 1;
+    }
+    xx->refresh_flags |= ED_DISP_ALL;
+    redisplaySequences(xx, 0);
+
+    return xx->set_collapsed[set];
+}
+
+/*
+ * Returns 0 if seq is not in a set.
+ * Returns <0 for the set number if seq is the "topmost" visible in that
+ * set.
+ * Returns >0 for the set number if seq is in a set, but isn't the topmost.
+ */
+int edFindSet(EdStruct *xx, int seq) {
+    int *seqList;
+    int pos = xx->displayPos;
+    int width = xx->displayWidth;
+    int lastset = 0, set;
+    int i, k;
+
+    /* Find out what's visible */
+    seqList = sequencesOnScreen(xx,pos, width);
+
+    for (i = xx->lines_per_seq-1; i < xx->displayHeight + xx->lines_per_seq-1;
+	 i+=xx->lines_per_seq) {
+	if (i < xx->displayHeight-1)
+	    k = i/xx->lines_per_seq + xx->displayYPos;
+	else
+	    k = (xx->totalHeight-1)/xx->lines_per_seq;
+
+
+	set = xx->set ? xx->set[seqList[k]] : 0;
+
+	if (set != lastset) {
+	    if (seqList[k] == seq)
+		return -set;
+	}
+	if (seqList[k] == seq)
+	    return set;
+	lastset = set;
+    }
+
+    return 0;
 }

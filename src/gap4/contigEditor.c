@@ -17,6 +17,7 @@
 #include "tclXkeylist.h"
 #include "select.h"
 #include "tman_interface.h"
+#include "list_proc.h"
 
 /*
  * ============================================================================
@@ -366,6 +367,7 @@ static void add_sets(Tcl_Interp *interp, GapIO *io,
     int argc;
     int i, j;
 
+    /* allocate readings to their sets */
     Tcl_SplitList(interp, sets, &argc, &argv);
     for (i = 0; i < argc; i++) {
 	int nreads;
@@ -382,6 +384,10 @@ static void add_sets(Tcl_Interp *interp, GapIO *io,
 	}
 	xfree(reads);
     }
+
+    /* initialise the set_collapsed data structures to expanded (0) */
+    xx->nsets = argc+1; /* set zero = all, +argc subsets */
+    xx->set_collapsed = (int *)xcalloc(argc+1, sizeof(int));
 
     Tcl_Free((char *)argv);
 }
@@ -475,6 +481,8 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	xx->edit_bg[i] = xx->ed->edit_bg[i]->pixel;
     for (i=0; i<6; i++)
 	xx->tmpl_bg[i] = xx->ed->tmpl_bg[i]->pixel;
+    for (i=0; i<10; i++)
+	xx->set_bg[i] = xx->ed->set_bg[i]->pixel;
     xx->qual_below = xx->ed->qual_below->pixel;
     xx->diff_bg = xx->ed->diff_bg->pixel;
 
@@ -695,6 +703,8 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
 	    xx[i]->edit_bg[j] = xx[i]->ed->edit_bg[j]->pixel;
 	for (j=0; j<4; j++)
 	    xx[i]->tmpl_bg[j] = xx[i]->ed->tmpl_bg[j]->pixel;
+	for (j=0; j<10; j++)
+	    xx[i]->set_bg[j] = xx[i]->ed->set_bg[j]->pixel;
 	xx[i]->qual_below = xx[i]->ed->qual_below->pixel;
 	xx[i]->diff_bg = xx[i]->ed->diff_bg->pixel;
 

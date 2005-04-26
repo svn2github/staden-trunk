@@ -148,7 +148,7 @@ proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
     global $ed.Sets
     set $ed.Sets $sets
     if {[llength $sets]} {
-	set $ed.Tlist [editor_tabs_create $tabs $sets $editor]
+	set $ed.Tlist [editor_tabs_create $tabs $editor $sets]
     } else {
 	set $ed.Tlist {}
     }
@@ -336,7 +336,7 @@ proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
 	-fg [keylget gap_defs CONTIG_EDITOR.BASE_COLOUR] \
 	-xscrollcommand "$namesx.s set" \
 	-bg [tk::Darken [. cget -bg] 115]
-
+    
     # STATUS: a brief status line at the bottom to report tag and reading info
     if {![winfo exists $status]} {
         frame $status -bd 2 -relief groove
@@ -492,7 +492,7 @@ proc create_editor_tabs_old {tabs sets editor} {
     pack $tabs -side bottom -fill both -expand 1
 }
 
-proc editor_tabs_create {t sets editor} {
+proc editor_tabs_create {t editor {sets NONE}} {
     if {[xtoplevel $t -resizable 1] == ""} {return}
     set l $t.list
     tablelist $t.list \
@@ -531,7 +531,9 @@ proc editor_tabs_create {t sets editor} {
 	"editor_tabs_select $editor %W %x %y"
 
     # Populate
-    editor_tabs_repopulate $t.list $sets
+    if {$sets != "NONE"} {
+	editor_tabs_repopulate $t.list $sets
+    }
 
     return $t.list
 }
@@ -1959,8 +1961,10 @@ proc ed_move_set {e list grp} {
     global $n.List
 
     if {$list == ""} {
-	set $ed.Tlist [editor_tabs_create $ed.tabs "" $e]
+	set $ed.Tlist [editor_tabs_create $ed.tabs $e ""]
 	set list [set $ed.Tlist]
+    } elseif {![winfo exists [set $ed.Tlist]]} {
+	set $ed.Tlist [editor_tabs_create $ed.tabs $e]
     }
 
     if {[info exists $n.List]} {
@@ -2752,6 +2756,16 @@ if {$licence(type) != "v"} {
 	{set_editor_write_mode %W [%W write_mode -1]}
 }
 
+proc editor_collapse {en x y} {
+    set ed [edname_to_editor $en]
+    incr y
+    set set [$ed get_set [$ed get_number $x $y]]
+    if {$set < 0} {
+	set set [expr {-$set}]
+	$ed collapse_set $set -1
+    }
+}
+
 bind Editor <Meta-Key-v>	{scroll_ll %W [editor_to_ed %W].scrollx;
 				 scroll_ll %W [editor_to_ed %W].scrollx}
 bind Editor <Alt-Key-v>		{scroll_ll %W [editor_to_ed %W].scrollx;
@@ -2783,7 +2797,14 @@ bind Editor <<copy>>		{
 bind Editor <<paste>>		{break;}
 
 #bind EdNames <<select>>		{%W highlight -1 @%x @%y}
-bind EdNames <<select>>		{editor_addlist %W @%x @%y}
+bind EdNames <<select>>		{
+    foreach {x y} [%W coords @%x @%y] break;
+    if {$x == 0} {
+	editor_collapse %W $x $y
+    } else {
+	editor_addlist %W @%x @%y
+    }
+}
 bind EdNames <<move>>		{editor_addlist %W @%x @%y}
 bind EdNames <<copy>>		{copy_name %W @%x @%y}
 bind EdNames <<menu>>		{ednames_menu %W %x %y %X %Y}
@@ -2861,3 +2882,4 @@ bind Editor <Control-Key-2> {set_mini_traces %W 2}
 bind Editor <Control-Key-3> {set_mini_traces %W 3}
 bind Editor <Control-Key-4> {set_mini_traces %W 4}
 bind Editor <Control-Key-5> {set_mini_traces %W 5}
+

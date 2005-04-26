@@ -545,7 +545,6 @@ static void tk_redisplaySeqScroll(EdStruct *xx, int status_depth_changed) {
 	(xx->refresh_flags & ED_DISP_HEIGHT)) {
 	TKSHEET(xx->ed)->divider=0;
 	TKSHEET(xx->names)->divider=0;
-
 	sheet_set_display_height(TKSHEET(xx->ed),
 				 xx->displayHeight + 1 + xx->status_depth);
 	sheet_set_display_height(TKSHEET(xx->names),
@@ -625,6 +624,7 @@ static char tk_redisplaySeqNotes(EdStruct *xx, int seq, XawSheetInk *ink) {
 static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
     XawSheetInk nsplodge[NAMELEN];
     int i, j, search;
+    int lastset = 0, set;
 
     /* all names, or just xx->refresh_seq ? */
     search = (xx->refresh_flags & ED_DISP_NAMES) ? 0 : 1;
@@ -648,18 +648,32 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	    i = xx->displayHeight-1;
 	}
 
-	if (search && seqList[k] != xx->refresh_seq)
-	    continue;
-
 	for (j=0 ; j < NAMELEN ; j++) {
 	    nsplodge[j].sh = sh_default;
 	    nsplodge[j].fg = 0; /* not used, but prevents warnings */
 	    nsplodge[j].bg = 0; /* not used, but prevents warnings */
 	}
 
+	/* "Set" colouring */
+	set = xx->set ? xx->set[seqList[k]] : 0;
+	*buf = ' ';
+	if (seqList[k] != 0) {
+	    for (j=DB_GELNOLEN+2 ; j < NAMELEN ; j++) {
+		nsplodge[j].sh |= sh_bg;
+		nsplodge[j].bg = xx->set_bg[set % 10];
+	    }
+	    if (set != lastset) {
+		*buf = "-+"[xx->set_collapsed && xx->set_collapsed[set]];
+	    }
+	    lastset = set;
+	}
+
+	if (search && seqList[k] != xx->refresh_seq)
+	    continue;
+
 	if (DB_Flags(xx, seqList[k]) & DB_FLAG_SELECTED) {
 	    for (j=DB_GELNOLEN+2 ; j < NAMELEN ; j++)
-		nsplodge[j].sh = sh_inverse;
+		nsplodge[j].sh |= sh_inverse;
 	}
 
 	if (DB_Flags(xx, seqList[k]) & DB_FLAG_TRACE_SHOWN) {
@@ -718,7 +732,7 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	}
 
 	/* Indicate whether notes are present */
-	buf[0] = tk_redisplaySeqNotes(xx, seqList[k],&nsplodge[0]);
+	buf[1] = tk_redisplaySeqNotes(xx, seqList[k],&nsplodge[0]);
 	XawSheetPutJazzyText(&xx->names->sw, 0, i, 1, buf, nsplodge);
 
 	/* Display the reading number and name */
@@ -945,6 +959,42 @@ static void tk_redisplaySeqReadQual(EdStruct *xx, XawSheetInk *splodge,
 }
 
 /*
+ * Colours "set" consensus according to their confidence values
+ */
+static void tk_redisplaySetQual(EdStruct *xx, XawSheetInk *splodge,
+				float *conf, int width) {
+    int q = xx->qual_cut;
+    int i;
+	    
+    for (i = 0; i < width; i++) {
+	if (conf[i] < q || (conf[i] == 0 && q != -1)) {
+	    if (xx->show_qual) {
+		if (!(splodge[i].sh & sh_bg))
+		    splodge[i].bg = xx->qual_bg[0];
+		splodge[i].sh |= sh_default | sh_bg | sh_fg;
+	    } else {
+		splodge[i].sh |= sh_default | sh_fg;
+	    }
+	    splodge[i].fg = xx->qual_below;
+	} else {
+	    int col;
+		    
+	    if (!xx->show_qual || splodge[i].sh & sh_bg)
+		continue;
+		    
+	    col = (10 * (conf[i] - q + 1)) / (100 - q + 1);
+	    if (col >= 10)
+		col = 9;
+	    if (col < 0)
+		col = 0;
+		    
+	    splodge[i].sh |= sh_default | sh_bg;
+	    splodge[i].bg = xx->qual_bg[col];
+	}
+    }
+}
+
+/*
  * Colours the consensus according to the confidence values.
  */
 static void tk_redisplaySeqConsQual(EdStruct *xx, XawSheetInk *splodge,
@@ -981,6 +1031,8 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
     int pos = xx->displayPos;
     int width = xx->displayWidth;
     int diff = 0;
+    float set_qual[MAX_DISPLAY_WIDTH+21];
+    int set_cons;
 
     /* Get the consensus sequence */
     if (xx->refresh_flags & ED_DISP_CONS) {
@@ -1010,7 +1062,7 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	int k;
 	char * ptr;
 	XawSheetInk splodge[MAX_DISPLAY_WIDTH+1];
-	
+
 	/* Initialise to prevent workshop warnings */
 	memset(splodge, 0, (MAX_DISPLAY_WIDTH+1) * sizeof(splodge[0]));
 	
@@ -1037,20 +1089,24 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	}
 
 	/* Get relevant portion of the sequence or consensus */
+	set_cons = 0;
 	if (seqList[k] == 0) {
 	    if (!(xx->refresh_flags & ED_DISP_CONS))
 		continue;
 	    
 	    ptr = xx->displayedConsensus;
 	} else {
+	    int set = xx->set ? xx->set[seqList[k]] : 0;
 	    if (search && seqList[k] != xx->refresh_seq)
 		continue;
 	    
 	    DBgetSequence(xx, seqList[k], pos-DB_RelPos(xx,seqList[k]),
 			  width, seq_str);
-	    /* FIXME: temporary hack */
-	    if (xx->set && xx->set[seqList[k]]) {
-		*seq_str = '0'+xx->set[seqList[k]];
+	    if (set) {
+		if (xx->set_collapsed && xx->set_collapsed[set]) {
+		    DBcalcSetConsensus(xx, pos, width, set, seq_str, set_qual);
+		    set_cons = 1;
+		}
 	    }
 	    ptr = seq_str;
 	}
@@ -1081,7 +1137,11 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
 	
 #ifdef SHOW_QUAL
 	if (seqList[k] != 0) {
-	    tk_redisplaySeqReadQual(xx, splodge, seqList[k], pos, width);
+	    if (set_cons) {
+		tk_redisplaySetQual(xx, splodge, set_qual, width);
+	    } else {
+		tk_redisplaySeqReadQual(xx, splodge, seqList[k], pos, width);
+	    }
 	} else {
 	    if (xx->show_cons_qual)
 		tk_redisplaySeqConsQual(xx, splodge, seqList[k],pos,width);
@@ -1100,6 +1160,7 @@ static void tk_redisplaySeqSequences(EdStruct *xx, int *seqList) {
     
     xx->refresh_flags &= ~(ED_DISP_SEQS | ED_DISP_SEQ);
 }
+
 
 /*
  * Redisplays the editor status lines (strands, translations)
@@ -1181,7 +1242,7 @@ void tk_redisplaySequences(EdStruct *xx) {
     int pos = xx->displayPos;
     int width = xx->displayWidth;
     int cur_depth;
-    
+
     if (!xx->ed || xx->editorState == StateDown)
 	return;
 
