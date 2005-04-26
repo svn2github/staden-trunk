@@ -64,9 +64,10 @@ namespace eval haplo {
     proc new {args} {
 	variable counter
 
-	set data [namespace current]::instance$counter
 	incr counter
+	set data [namespace current]::instance$counter
 
+	set ${data}(counter)	     $counter
 	set ${data}(-lreg)           0
 	set ${data}(-rreg)           0
 	set ${data}(-discrep_cutoff) 40
@@ -75,7 +76,7 @@ namespace eval haplo {
 	set ${data}(-snp_cutoff)     10
 	set ${data}(-minscore)       0
 	set ${data}(-twopass)        0
-	set ${data}(-fastmode)       0
+	set ${data}(-fastmode)       1
 	set ${data}(-addfake)        1
 
 	foreach {a b} $args {
@@ -136,7 +137,6 @@ proc haplo::toplevel {} {
     variable counter
 
     set t [keylget haplo_defs CANDIDATE_SNPS.WIN]$counter
-    incr counter
     xtoplevel $t
 
     return $t
@@ -210,12 +210,16 @@ proc haplo::create_display {d} {
 	-text "Fast mode" \
 	-variable ${d}(-fastmode)
 
+    button $w.templates \
+	-text "Filter templates" \
+	-command [list [namespace current]::FilterTemplatesUI $d]
+
     button $w.cluster \
 	-text "Cluster by SNPs" \
 	-command [list [namespace current]::ClusterSNP $d]
 
     pack $w.minscore $w.twopass $w.fast -side left -padx 10
-    pack $w.cluster -side right
+    pack $w.cluster $w.templates -side right
 
     # Splitting parameters
     set w [frame $f.control3 -bd 2 -relief raised]
@@ -1151,7 +1155,7 @@ proc haplo::templates_at_pos {io contig pos} {
 	} else {
 	    array set max {A 0 C 0 G 0 T 0 * 0 - 0}
 	    foreach {base qual} $tinfo($t) {
-		switch $base {
+		switch -- $base {
 		    "A" - "a" { set b A }
 		    "C" - "c" { set b C }
 		    "G" - "g" { set b G }
@@ -1342,10 +1346,131 @@ proc haplo::remove_snps {d} {
     redisplay $d 0
 }
 
+# Brings up the list editor on a list of templates to filter out.
+# The template list may contain either templates or readings, but in the case
+# of a name clash template name takes priority.
+proc haplo::FilterTemplatesUI {d} {
+    upvar $d data
+    global NGList
+    
+    set list templates$data(counter)
+    if {![ListExists2 $list]} {
+	ListCreate2 $list {}
+    }
+
+    # Create the text widget and scrollbars
+    set w $data(toplevel).$list
+    xtoplevel $w
+    text $w.list -width 30 -wrap none \
+	-xscrollcommand "$w.scrollx set" \
+	-yscrollcommand "$w.scrolly set"
+    scrollbar $w.scrollx -orient horiz -command "$w.list xview"
+    scrollbar $w.scrolly -orient verti -command "$w.list yview"
+    $w.list insert end [join [ListGet $list] "\n"]
+
+    grid columnconfigure $w 0 -weight 1
+    grid rowconfigure $w 0 -weight 1
+    grid $w.list $w.scrolly -sticky nsew
+    grid $w.scrollx -stick nsew
+
+    # Add command buttons
+    set b [frame $w.buttons]
+    grid $w.buttons -columnspan 2
+    button $b.ok \
+	-text "Ok" \
+	-command "ListCreate2 $list \[$w.list get 1.0 end\]; destroy $w"
+    button $b.clear \
+	-text "Clear" \
+	-command "ListClear $list"
+    button $b.edit \
+	-text "Invoke Contig Editor" \
+	-command "haplo::EditTemplateFilter $d $list"
+    grid $b.ok $b.clear $b.edit -sticky nsew
+
+    # Monitor changes to this list - subvert the "lists menu" editing code.
+    set c1 "ListEditUpdate $w.list $list"
+    trace variable NGList($list) w $c1
+    set c2 "destroy $w"
+    trace variable NGList($list) u $c2
+
+    # Tidy up traces etc upon window destroy
+    wm protocol $w WM_DELETE_WINDOW \
+	"trace vdelete NGList($list) w [list $c1]; \
+         trace vdelete NGList($list) u [list $c2]; \
+         destroy $w"
+}
+
+proc haplo::EditTemplateFilter {d list} {
+    upvar $d data
+
+    foreach a [winfo children .] {set x($a) 1}
+    edit_contig \
+	-io $data(-io) \
+	-contig $data(-contig) \
+	-reuse 0 \
+	-nojoin 1
+
+    # HACK! Work out the editor widget pathnames and set the appropriate
+    # global within it for adjusting the active list. To fix this the editor
+    # really needs a major rewrite at the tcl/tk level.
+    set ed ""
+    foreach a [winfo children .] {
+	if {![info exists x($a)]} {
+	    set ed $a
+	}
+    }
+    set n $ed.0.names.List
+    global $n
+    set $n $list
+}
+
+# Given a set of templates to exclude this produces a new data(snps) entry.
+proc haplo::FilterTemplates {d exclude} {
+    upvar $d data
+    
+    # The exclusion list may be either reading names or template names.
+    # Turn them entirely into template names.
+    set io $data(-io)
+    array set tnums ""
+    foreach t $exclude {
+	if {[set tnum [db_info get_template_num $io $t]] > 0} {
+	    set tnums($tnum) 1
+	} else {
+	    set rnum [db_info get_read_num $io $t]
+	    if {$rnum <= 0} continue
+	    set r [io_read_reading $io $rnum]
+	    set tnum [keylget r template]
+	    if {$tnum <= 0} continue
+	    set tnums($tnum) 1
+	}
+    }
+
+    # Remove templates from snps
+    set snps ""
+    foreach snp $data(snps) {
+	set pos [lindex $snp 0]
+	set score [lindex $snp 1]
+	set tlist {}
+	foreach t [lrange $snp 2 end] {
+	    if {![info exists tnums([lindex $t 0])]} {
+		lappend tlist $t
+	    }
+	}
+	lappend snps "$pos $score $tlist"
+    }
+
+    set data(snps) $snps
+}
+
 proc haplo::ClusterSNP {d} {
     upvar $d data
 
     snps_from_display $d
+
+    set list templates$data(counter)
+    if {[ListExists2 $list]} {
+	FilterTemplates $d [ListGet $list]
+    }
 
     set io $data(-io)
     set snps $data(snps)
