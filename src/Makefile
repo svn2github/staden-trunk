@@ -90,6 +90,7 @@ depend:
 
 # Installs newly built executables into $STADENROOT/$(MACHINE)-bin
 install:
+        -mkdir $(DIST)/lib/$(MACHINE)-binaries 
 	$(MAKE) $(FLAGS) JOB=install
 
 
@@ -105,6 +106,7 @@ install:
 # and will be copied over separately. This is because in some cases they will
 # have been manually hacked/bug fixed.
 distunix:
+        -mkdir $(DIST)/lib/$(MACHINE)-binaries 
 	-cp -R lib/$(MACHINE)-binaries/libpng* $(DIST)/lib/$(MACHINE)-binaries
 	-cp -R lib/$(MACHINE)-binaries/libtcl* $(DIST)/lib/$(MACHINE)-binaries
 	-cp -R lib/$(MACHINE)-binaries/libtk* $(DIST)/lib/$(MACHINE)-binaries
@@ -113,6 +115,7 @@ distunix:
 
 
 distwindows:
+        -mkdir $(DIST)/lib/$(MACHINE)-binaries 
 	-mkdir $(DIST)/src/composition/windows-binaries
 	-cp windows/run/Release/sprun.exe $(DIST)
 	-cp trev/trev.bat $(DIST)/windows-bin
