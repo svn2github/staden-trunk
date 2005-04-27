@@ -208,11 +208,11 @@ mutlib_result_t MutScanExecute( mutscan_t* ms )
     int                 n;
     tracealign_t        ta;
     mutlib_result_t     Result;
-    mutlib_strand_t     Strand;
+    mutlib_strand_t     Strand = MUTLIB_STRAND_FORWARD; // silence warning
     MutScanParameters   Parameter;
     Alignment           Aligner;
     MutScanAnalyser     Analyser;
-    int                 SamplesPerBase;
+    int                 SamplesPerBase    = 1;
     MutScanPreprocessor Preprocessor[2];
     Trace               AlignedTrace[2];
     int                 AlignedTraceClipL[2];

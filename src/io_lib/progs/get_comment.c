@@ -91,6 +91,9 @@ int main(int argc, char **argv) {
 	state = NAME;
 	ident = r->info;
 	found = 0;
+	/* Not needed, but avoids "might be used uninitialized" message */
+	value = NULL;
+	ident_len = value_len = 0;
 	for (i = 0; i <= len; i++) {
 	    switch (state) {
 	    case NAME:

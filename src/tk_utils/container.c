@@ -1611,7 +1611,7 @@ int add_result_to_element(element *e,
 void remove_result_from_element(element *e,
 				int result_id)
 {
-    int e_num;
+    int e_num = -1;
     int i;
 
     for (i = 0; i < e->num_results; i++) {
@@ -1619,6 +1619,11 @@ void remove_result_from_element(element *e,
 	    e_num = i;
 	    break;
 	}
+    }
+
+    if (e_num == -1) {
+	/* Error */
+	return;
     }
 
     if (e_num < e->num_results-1) {

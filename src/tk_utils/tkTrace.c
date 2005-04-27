@@ -502,7 +502,7 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
             Tcl_AppendResult( interp, ibuf, NULL );
 	}
     } else if (strcmp(argv[1], "xview") == 0) {
-	int offset, centre = 0;
+	int offset = 0, centre = 0;
 	int windowWidth;
 	double f1, f2;
 	int type, count;

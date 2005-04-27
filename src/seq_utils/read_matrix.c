@@ -27,7 +27,7 @@
 int **create_matrix(char *fn, char *base_order) {
     int **matrix;
     int len = strlen(base_order);
-    int i, j, ncols;
+    int i, j, ncols = 0;
     FILE *fp;
     signed char lookup[256];
     int first_line = 1;

@@ -56,7 +56,7 @@ void BaseCaller::MakeCall( Trace& Tr, SimpleMatrix<int>& Peak, int nPos, int nAm
     // Find biggest peaks position
     if( peaks > 0 )
     {
-        int max_sig;
+        int max_sig = 0;
         int max_amp = -1;
         for( int n=3; n>=0; n-- )
         {

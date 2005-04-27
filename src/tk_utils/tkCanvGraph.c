@@ -1000,7 +1000,7 @@ int b_search_nearest_line(int key,
 			  int num_pts)
 {
     int found = 0;
-    int middle, low, high, index;
+    int middle, low, high, index = 0;
     int min = INT_MAX;
     int dist;
 

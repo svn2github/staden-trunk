@@ -846,6 +846,8 @@ int edit_genetic_code(char *change) {
 	aa = cp+1;
 	if (*aa == '"')
 	    aa++;
+    } else {
+	return -1;
     }
 
     /* Check for valid nucleic acid codes */

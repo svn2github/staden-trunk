@@ -165,11 +165,11 @@ mutlib_result_t TraceAlignExecute( tracealign_t* ta )
            STATE_PREPROCESS_INPUT, STATE_SEQUENCE_ALIGN, STATE_SEQUENCE_OVERLAP,
            STATE_SEQUENCE_MAP, STATE_QUANTISE_ENVELOPE, STATE_ESTIMATE_BANDSIZE,
            STATE_ENVELOPE_ALIGN, STATE_TRACE_ALIGN, STATE_EXIT };
-    mutlib_strand_t         Strand;
+    mutlib_strand_t         Strand = MUTLIB_STRAND_FORWARD; // silence warning
     Alignment               Aligner;
     int                     AlignedSeqOverlap[2];
     DNAArray<char>          RefSeq;
-    TraceAlignPreprocessor* RefData;
+    TraceAlignPreprocessor* RefData = NULL;
     Trace                   RefTrace;
     SimpleArray<char>       RefEnvelope;
     SimpleArray<char>       RefEnvelopeAligned;

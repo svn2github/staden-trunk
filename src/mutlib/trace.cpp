@@ -482,8 +482,8 @@ int Trace::PosPeakFind( int n, int nBegin, int nEnd, int& nResume, int nSlopeCou
     enum { STATE_START, STATE_CLIMB, STATE_FLAT, STATE_DESCEND, STATE_PEAK, STATE_NOPEAK };
     int    nCtr;
     int    nSlope;
-    int    nZeros;
-    int    nPeak;
+    int    nZeros = 0;
+    int    nPeak = 0;
     int    k      = nBegin;
     TRACE* t      = m_pTrace[n];
     int    nState = STATE_START;
@@ -661,8 +661,8 @@ int Trace::NegPeakFind( int n, int nBegin, int nEnd, int& nResume, int nSlopeCou
     enum { STATE_START, STATE_CLIMB, STATE_FLAT, STATE_DESCEND, STATE_PEAK, STATE_NOPEAK };
     int    nCtr;
     int    nSlope;
-    int    nZeros;
-    int    nPeak;
+    int    nZeros = 0;
+    int    nPeak = 0;
     int    k      = nBegin;
     TRACE* t      = m_pTrace[n];
     int    nState = STATE_START;
