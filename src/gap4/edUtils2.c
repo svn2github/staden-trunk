@@ -230,6 +230,8 @@ static void destroyEdStruct(EdStruct *xx) {
 #endif
     if (xx->set)
 	xfree(xx->set);
+    if (xx->set_collapsed)
+	xfree(xx->set_collapsed);
 
     semaphoreRelease(activeLock);
 }
@@ -321,6 +323,8 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
 	xx->edit_bg[i] = 0;
     for (i=0; i<6; i++)
 	xx->tmpl_bg[i] = 0;
+    for (i=0; i<10; i++)
+	xx->set_bg[i] = 0;
     xx->names_xpos = 0;
     xx->default_conf_r = 100;
     xx->default_conf_n = 100;
@@ -337,6 +341,8 @@ void initEdStruct(EdStruct *xx, int flags, int displayWidth)
     xx->diff_trace_size = 0;
     xx->diff_qual = 0;
     xx->set = NULL;
+    xx->set_collapsed = NULL;
+    xx->nsets = 0;
 
     /* Set all tags to be displayed by default */
     if (NULL == (xx->tag_list = (int *)xmalloc(tag_db_count * sizeof(int))))
@@ -787,6 +793,18 @@ void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
 		xfree(dummy2);
 	}
     }
+}
+
+/*
+ * As for DBcalcConsensus, this computes the consensus but for a specific
+ * set only.
+ */
+void DBcalcSetConsensus(EdStruct *xx,int pos, int width, int set,
+			char *str, float *qual) {
+    int tmp_curr = xx->curr_set;
+    xx->curr_set = set;
+    DBcalcConsensus(xx, pos, width, str, qual, BOTH_STRANDS);
+    xx->curr_set = tmp_curr;
 }
 
 /*
@@ -1844,6 +1862,9 @@ void saveDB(EdStruct *xx, GapIO *io, int auto_save, int notify) {
 int linesInRegion(EdStruct *xx, int pos, int width)
 {
     int i, count;
+    int *sets = NULL;
+
+    sets = (int *)xcalloc(xx->nsets+1, sizeof(int));
     
     /* i = posToIndex(xx,pos - dbi_max_gel_len(DBI(xx),0)); */
     i = 1;
@@ -1851,8 +1872,11 @@ int linesInRegion(EdStruct *xx, int pos, int width)
     if (xx->reveal_cutoffs) {
 	for (count=0 ; i && i <= DBI_gelCount(xx); i++) {
 	    int p;
+	    int snum;
 
 	    p = DB_RelPos(xx, DBI_order(xx)[i]) - DB_Start(xx, DBI_order(xx)[i]);
+	    snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
+
 	    /*
 	    if (p >= pos + width + MAX_CUTOFF)
 		break;
@@ -1860,12 +1884,17 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 
 	    if (p + DB_Length2(xx,DBI_order(xx)[i]) > pos &&
 		p < pos + width && DB_Length(xx, DBI_order(xx)[i]) &&
-		(!xx->set ||
-		 xx->curr_set == 0 ||
-		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
-		    count++;
+		(!xx->set || xx->curr_set == 0 || snum == xx->curr_set)) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
+		sets[snum]++;
+		count++;
+	    }
 	}
     } else {
+	int snum;
+	snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
+
 	for (count=0 ;
 	     i &&
 	     i <= DBI_gelCount(xx) &&
@@ -1874,15 +1903,18 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 	    if (DB_RelPos(xx,DBI_order(xx)[i]) +
 		     DB_Length(xx,DBI_order(xx)[i]) > pos &&
 		DB_Length(xx,DBI_order(xx)[i]) &&
-		(!xx->set ||
-		 xx->curr_set == 0 ||
-		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
+		(!xx->set || xx->curr_set == 0 || snum == xx->curr_set)) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
+		sets[snum]++;
 		count++;
+	    }
 	}
     }
 
     count += xx->consensusDisplayed;
-    
+    xfree(sets);
+
     return count;
 }
 
@@ -1893,12 +1925,15 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 int linesOnScreen (EdStruct *xx, int pos, int width)
 {
     int i, count;
+    int *sets = NULL;
+    sets = (int *)xcalloc(xx->nsets+1, sizeof(int));
     
     /* i = posToIndex(xx,pos - dbi_max_gel_len(DBI(xx),0) - MAX_CUTOFF); */
     i = 1;
     for (count=0; i && i<=DBI_gelCount(xx); i++) {
 	int relPos, length;
 	int len_lcut, len_rcut;
+	int snum;
 	
 	if (xx->reveal_cutoffs) {
 	    len_lcut = lenLCut(xx,DBI_order(xx)[i]);
@@ -1912,15 +1947,20 @@ int linesOnScreen (EdStruct *xx, int pos, int width)
 	relPos = DB_RelPos(xx,DBI_order(xx)[i]) - len_lcut;
 	length = DB_Length(xx,DBI_order(xx)[i]) + len_lcut + len_rcut;
 
+	snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
+
         if (relPos < pos+width && relPos+length>pos) {
-	    if (!xx->set ||
-		xx->curr_set == 0 ||
-		(xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set))
+	    if (!xx->set || xx->curr_set == 0 || snum == xx->curr_set) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
+		sets[snum]++;
 		count++;
+	    }
 	}
     }
 
     count += xx->consensusDisplayed;
+    xfree(sets);
     
     return count;
 }
@@ -2186,6 +2226,7 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
 int *sequencesInRegion(EdStruct *xx,int pos, int width)
 {
     int i, count;
+    int *sets = (int *)xcalloc(xx->nsets+1, sizeof(int));
     
     /* i = posToIndex(xx,pos - dbi_max_gel_len(DBI(xx),0)); */
     i = 1;
@@ -2193,6 +2234,7 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
     if (xx->reveal_cutoffs) {
 	for (count=0 ; i && i <= DBI_gelCount(xx); i++) {
 	    int p;
+	    int snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
 
 	    p = DB_RelPos(xx, DBI_order(xx)[i]) - DB_Start(xx, DBI_order(xx)[i]);
 	    /*
@@ -2202,10 +2244,12 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 
 	    if (p + DB_Length2(xx,DBI_order(xx)[i]) > pos &&
 		p < pos + width && DB_Length(xx, DBI_order(xx)[i]) &&
-		(!xx->set ||
-		 xx->curr_set == 0 ||
-		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
+		(!xx->set || xx->curr_set == 0 || snum == xx->curr_set)) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
 		DBI_list(xx)[count++]=DBI_order(xx)[i];
+		sets[snum]++;
+	    }
 	}
     } else {
 	for (count=0 ;
@@ -2213,20 +2257,26 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 	     i <= DBI_gelCount(xx) &&
 	     DB_RelPos(xx, DBI_order(xx)[i]) < (pos+width) ;
 	     i++) {
+	    int snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
+
 	    if (DB_RelPos(xx,DBI_order(xx)[i]) +
 		DB_Length(xx,DBI_order(xx)[i]) > pos &&
 		DB_Length(xx,DBI_order(xx)[i]) &&
-		(!xx->set ||
-		 xx->curr_set == 0 ||
-		 (xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set)))
+		(!xx->set || xx->curr_set == 0 || snum == xx->curr_set)) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
 		DBI_list(xx)[count++]=DBI_order(xx)[i];
+		sets[snum]++;
+	    }
 	}
     }
 
     if (xx->group_mode)
 	sort_seq_list(xx, DBI_list(xx), count);
+    sort_seq_by_set(xx, DBI_list(xx), count);
 
     if (xx->consensusDisplayed) DBI_list(xx)[count++] = 0;
+    xfree(sets);
     
     return DBI_list(xx);
 }
@@ -2238,6 +2288,7 @@ int *sequencesInRegion(EdStruct *xx,int pos, int width)
 int *sequencesOnScreen(EdStruct *xx,int pos, int width)
 {
     int i, count;
+    int *sets = (int *)xcalloc(xx->nsets+1, sizeof(int));
     
     /* i = posToIndex(xx,pos - dbi_max_gel_len(DBI(xx),0) - MAX_CUTOFF); */
     i = 1;
@@ -2246,6 +2297,7 @@ int *sequencesOnScreen(EdStruct *xx,int pos, int width)
 
 	int relPos, length;
 	int len_lcut, len_rcut;
+	int snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
 	
 	if (xx->reveal_cutoffs) {
 	    len_lcut = lenLCut(xx,DBI_order(xx)[i]);
@@ -2260,17 +2312,21 @@ int *sequencesOnScreen(EdStruct *xx,int pos, int width)
 	length = DB_Length(xx,DBI_order(xx)[i]) + len_lcut + len_rcut;
 
         if (relPos < pos+width && relPos+length>pos) {
-	    if (!xx->set ||
-		xx->curr_set == 0 ||
-		(xx->set && xx->set[DBI_order(xx)[i]] == xx->curr_set))
+	    if (!xx->set || xx->curr_set == 0 || snum == xx->curr_set) {
+		if (xx->set_collapsed && xx->set_collapsed[snum] && sets[snum])
+		    continue;
+		sets[snum]++;
 		DBI_list(xx)[count++]=DBI_order(xx)[i];
+	    }
 	}
     }
 
     if (xx->group_mode)
 	sort_seq_list(xx, DBI_list(xx), count);
+    sort_seq_by_set(xx, DBI_list(xx), count);
 
     if (xx->consensusDisplayed) DBI_list(xx)[count++] = 0;
+    xfree(sets);
    
     return DBI_list(xx);
 }
