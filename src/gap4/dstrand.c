@@ -914,8 +914,6 @@ void dbl_complement(GapIO *io, int *lreg, int *rreg, int contig) {
     *lreg   = io_clength(io, contig) - tmp  + 1;
 
     complement_contig(io, contig);
-
-    xfree(gel);
 }
 
 /*
