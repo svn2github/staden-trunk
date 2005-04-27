@@ -215,7 +215,7 @@ mutlib_result_t TraceDiffExecute( tracediff_t* td, tracediff_algorithm_t a )
     enum { STATE_INITIALISE, STATE_VALIDATE_INPUT, STATE_TRACE_ALIGN,
            STATE_TRACE_DIFFERENCE, STATE_MUTATION_ANALYSIS, STATE_EXIT };
     int                 n;
-    mutlib_strand_t     Strand = 0;
+    mutlib_strand_t     Strand = MUTLIB_STRAND_FORWARD;
     TraceDiffParameters Parameter;
     Trace               AlignedTrace[2];
     int                 AlignedTraceClipL[2];
