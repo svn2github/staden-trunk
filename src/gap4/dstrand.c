@@ -32,6 +32,7 @@
 #include "dstrand.h"
 #include "FtoC.h"
 #include "IO2.h"
+#include "complement.h"
 
 /* Static global variables */
 static int last_gel;	/* remembers where we last were for		*/
@@ -482,8 +483,10 @@ static int patch(
 		cutlen = *gel_l; /* allocated length of cutbuf */
 		fail = (-1 == cgetext(io, cur_gel, cutbuf, &cutlen)) ? 1 : 0;
 		tgelend = gelend + cutlen;
-	    } else 
+	    } else {
 		fail = 1;
+		tgelend = 0; /* stops compiler warnings */
+	    }
 
 	    if (!fail && tgelend >= off) {
 
@@ -903,26 +906,14 @@ void dstrand_top(GapIO *io, int contig, int lreg, int rreg, int miscount,
 }
 
 void dbl_complement(GapIO *io, int *lreg, int *rreg, int contig) {
-    f_int cnum, llino;
     int tmp;
-    char *gel;
-    int max_len = find_max_gel_len(io, contig, 0) + 1;
-
-    gel = xmalloc(max_len);
-    if (!gel)
-	return;
 
     /* Complement - need to juggle the active region firstly */
     tmp     = *rreg;
     *rreg   = io_clength(io, contig) - *lreg + 1;
     *lreg   = io_clength(io, contig) - tmp  + 1;
 
-    cnum = io_dbsize(io) - contig;
-    llino = io_clnbr(io, contig);
-
-    cmplmt_(&io_relpos(io, 1), &io_length(io, 1), &io_lnbr(io, 1),
-	    &io_rnbr(io, 1), &NumReadings(io), &NumContigs(io), &cnum,
-	    &llino, gel, &io_dbsize(io), handle_io(io), &max_len, max_len);
+    complement_contig(io, contig);
 
     xfree(gel);
 }
