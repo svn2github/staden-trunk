@@ -10,6 +10,7 @@
 #include "fort.h"
 #include "tagUtils.h"
 #include "list_proc.h"
+#include "dna_utils.h"
 
 typedef struct {
     int position;
