@@ -158,6 +158,7 @@ static int next_word(FILE *fp)
 	    for(a=getc(fp);a!=EOF && a!='"';a=getc(fp)) {
 		if (a=='\n') lineno++;
 		if (a=='\\') {
+		    *s++ = a;
 		    if (EOF == (a=getc(fp)))
 			break;
 		}
