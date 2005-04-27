@@ -624,7 +624,7 @@ int best_intercept ( Hash *h, int *seq1_i, int *seq2_i ) {
      */
 
     double t, sum_scores, sum_moment, c_o_g, furthest;
-    int match_no, matches_left, outlier;
+    int match_no, matches_left, outlier = 0;
     sum_scores = sum_moment = 0.0;
 
     for(matches_left = h->matches; matches_left > 1; matches_left--) {

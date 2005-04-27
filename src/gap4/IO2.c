@@ -380,7 +380,7 @@ f_proc_ret stikit_(f_int *HANDLE,
     int err;
     int i,j;
     char namarc[F_NAMLEN+1], *name;
-    SeqInfo *si;
+    SeqInfo *si = NULL;
     GapIO *io;
     int gel_len;
 

@@ -28,7 +28,7 @@
 vcontig_t *new_vcontig(GapIO *io, int contig) {
     int rnum;
     vcontig_t *db;
-    vrseq_t *vrseq, *last;
+    vrseq_t *vrseq = NULL, *last;
 
     if (NULL == (db = (vcontig_t *)xmalloc(sizeof(*db))))
 	return NULL;
@@ -359,7 +359,7 @@ void link_vrseq(vcontig_t *vc, vrseq_t *vrseq, int position) {
 	qdist.n_items    = 4;
 	
 	vrseq->vseq->conf = (int1 *)xmalloc(sizeof(int1) * (len+1));
-	for (j = 0; j < qdist.n_items; j++) {
+	for (i = j = 0; j < qdist.n_items; j++) {
 	    int i_start, i_end;
 	    double q, q_inc;
 	    /*

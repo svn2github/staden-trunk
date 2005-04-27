@@ -273,7 +273,7 @@ update_contig_order(Tcl_Interp *interp,
     double wx, wy;
     int left_position;
     char cmd[1024];
-    int orig_pos;
+    int orig_pos = 0;
     reg_buffer_start rs;
     reg_buffer_end re;
     reg_order ro;

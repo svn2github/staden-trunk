@@ -570,7 +570,7 @@ static void do_report(GapIO *io, template_c **tarr, int *order) {
     GReadings r;
     item_t *item;
     char *mode;
-    int length;
+    int length = 0; /* init to avoid compiler warnings */
 
     for (i = 0; order[i]; i++) {
 	template_c *tc = tarr[order[i]];

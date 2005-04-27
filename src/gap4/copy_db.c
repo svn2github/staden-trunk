@@ -76,7 +76,7 @@ do { \
 
 #define VERB_NUM(num) \
 if (verbose) { \
-    printf("%.*s",back, "\b\b\b\b\b\b"); \
+    printf("%.*s",back, "\b\b\b\b\b\b\b\b\b\b\b\b"); \
     back = printf("%d", i); \
     fflush(stdout); \
 }
@@ -159,7 +159,7 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
     GTemplates t, tt;
     GClones s, st;
     GVectors v, vt;
-    int i, back, old;
+    int i, back = 0, old;
     int start_c, start_r, start_v, start_s, start_a, start_t, start_f;
     int start_n;
     int num_unknowns = 0;

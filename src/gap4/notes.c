@@ -503,7 +503,7 @@ int delete_note_list(GapIO *io, int nnum) {
 int dup_contig_notes(GapIO *io, int cfrom, int cto) {
     int first, new_first;
     int n_old, n_new;
-    int next;
+    int next = 0;
     GContigs c;
     GNotes n1, n2;
     int prev_note, prev_type;

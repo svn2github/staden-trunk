@@ -39,8 +39,8 @@ int do_it_fij ( char seq[], int seq_len,
     int seq1_start_f, seq2_start_f, seq1_start_r, seq1_end_r, seq2_start_r;
     double comp[5];
     int max_matches;
-    char *depad_seq1,    *depad_seq2;
-    int  *depad_to_pad1, *depad_to_pad2;
+    char *depad_seq1    = NULL, *depad_seq2    = NULL;
+    int  *depad_to_pad1 = NULL, *depad_to_pad2 = NULL;
     int edge_mode, job, seq1_start, seq2_start;
     int compare_method;
     Hash *h;

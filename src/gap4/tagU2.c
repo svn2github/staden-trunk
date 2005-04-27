@@ -647,8 +647,10 @@ void tagfil_(f_int *relpg, f_int *lngthg, f_int *lnbr, f_int *rnbr,
 
 		    len = r.length;
 		}
-	    } else
+	    } else {
 		gel_num = 0;
+		len = 0; /* avoids compiler warnings */
+	    }
 
 	    clen = strlen(&line[5]);
 	    if (clen >= comment_alloc) {

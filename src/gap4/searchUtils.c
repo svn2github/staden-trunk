@@ -200,7 +200,7 @@ static int findNextTagByType (EdStruct *xx, char *type)
     int fpos,fseq,i, seq;
     int fseqpos;
     int *seqList;
-    tagStruct *found_tag;
+    tagStruct *found_tag = NULL;
     
     seqList = sequencesInRegion(xx,spos, epos);
     fseq = -1;
@@ -280,7 +280,7 @@ static int findPrevTagByType (EdStruct *xx, char *type)
     int fpos,fseq,i;
     int fseqpos;
     int *seqList;
-    tagStruct *found_tag;
+    tagStruct *found_tag = NULL;
     int max_len = dbi_max_gel_len(DBI(xx),0);
     
     seqList = sequencesInRegion(xx,epos, spos);
@@ -648,7 +648,7 @@ static int findNextAnno(EdStruct *xx, char *anno)
     int *seqList;
     char *r_exp;
     char *find_all = "$";
-    tagStruct *found_tag;
+    tagStruct *found_tag = NULL;
     
     if (! *anno) anno = find_all;
     
@@ -753,7 +753,7 @@ static int findPrevAnno(EdStruct *xx, char *anno)
     int max_len = dbi_max_gel_len(DBI(xx),0);
     char *r_exp;
     char *find_all = "$";
-    tagStruct *found_tag;
+    tagStruct *found_tag = NULL;
     
     if (! *anno) anno = find_all;
     
@@ -1418,7 +1418,7 @@ static int findNextCop(EdStruct *xx, int mode) {
     int from, to;
     int from_p, to_p; /* these hold the last covered data for the plus */
     int from_m, to_m; /* and minus strands */
-    int fseq = -1, fseqpos;
+    int fseq = -1, fseqpos = 0;
     int bit_[3], *bit = &bit_[1];
 
     if (spos > epos)
@@ -1740,7 +1740,7 @@ static int findNextDiscrepancy (EdStruct *xx, int value)
     int spos = positionInContig(xx, xx->cursorSeq, xx->cursorPos)+1;
     int epos = DB_Length(xx, 0);
     int fpos,i, j;
-    int fseqpos;
+    int fseqpos = 0;
     int fseq = -1;
     int bestpos = epos+1;
     int *seqList;
@@ -1836,7 +1836,7 @@ static int findPrevDiscrepancy (EdStruct *xx, int value)
     int spos = positionInContig(xx, xx->cursorSeq, xx->cursorPos)+1;
     int epos = 1;
     int fpos,i, j;
-    int fseqpos;
+    int fseqpos = 0;
     int fseq = -1;
     int bestpos = epos-1;
     int *seqList;

@@ -886,9 +886,9 @@ int db_check_common(GapIO *io, int dbsize, int ngels, int nconts,
 		    int *relpg, int *lngthg, int *lnbr, int *rnbr) {
     int status = 0;
     int minor = 0;
-    int *gel_used;
-    int *tag_used;
-    int *note_used;
+    int *gel_used = NULL;
+    int *tag_used = NULL;
+    int *note_used = NULL;
 
     if (Nreadings(io) == 0 && Ncontigs(io) == 0)
 	return 0;

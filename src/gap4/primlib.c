@@ -229,8 +229,8 @@ static void primlib_set_arg_by_str(primlib_args *args,
  */
 primlib_args *primlib_str2args(char *str) {
     enum {name_start, name_end, value_start, value_end} state;
-    char *cp, *name, *value;
-    int name_len, value_len;
+    char *cp, *name = NULL, *value = NULL;
+    int name_len = 0, value_len = 0;
     primlib_args *args;
 
     if (NULL == (args = calloc(1, sizeof(*args))))

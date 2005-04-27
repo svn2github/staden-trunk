@@ -493,6 +493,7 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	prev_rnum = 0;
 	cstart = 1;
 	furthest = 1;
+	shift = 0;
 
 	while (rnum) {
 	    if (gel_read(io, rnum, r))
@@ -552,6 +553,7 @@ int remove_contig_holes(GapIO *io, int cnum) {
 	    rm_contig = cnum;
 	} else {
 	    rm_contig = 0;
+	    rm_left = rm_right = 0; /* avoids compiler warnings */
 	}
 
 	/* Update contig size etc */

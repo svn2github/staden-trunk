@@ -156,7 +156,7 @@ void print_entry(ft_entry *e) {
 static int parse_ft_location(ft_entry *entry, char *s) {
     int start, end;
     ft_location *loc;
-    ft_range *range;
+    ft_range *range = NULL;
     int complemented = 0;
 
     enum state_t {
@@ -496,8 +496,8 @@ void del_ft_qual_hash(ft_entry *e) {
  */
 void init_ft_qual_hash(ft_entry *e, char *str) {
     char *cp, *cp_alloc;
-    char *qualifier;
-    char *value;
+    char *qualifier = NULL;
+    char *value = NULL;
     int not_done = 1;
     enum state_t {
 	STATE_START,		/* start */

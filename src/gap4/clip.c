@@ -606,7 +606,7 @@ static void adjust_extensions(GapIO *io, int hole_start, int hole_end,
     int i;
     int h;
     int best_left, best_right;
-    int best_hole_left, best_hole_right, best_hole_pos;
+    int best_hole_left = 0, best_hole_right = 0, best_hole_pos;
     double best_left_val, best_right_val, best_hole_val;
     GReadings r;
     int hole_size = hole_end - hole_start + 1;

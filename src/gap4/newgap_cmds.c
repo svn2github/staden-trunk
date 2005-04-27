@@ -1080,7 +1080,7 @@ PrintTemplateReadings(ClientData clientData,
     Tcl_DString str;
     char tmp[100];
     item_t *it;
-    int in_contig_list;
+    int in_contig_list = 0;
 
     cli_args a[] = {
 	{"-io",	  ARG_IO,  1, NULL, offsetof(template_read_arg, io)},
@@ -2125,7 +2125,7 @@ PlotQuality(ClientData clientData,
 	    int argc,
 	    char *argv[])
 {
-    int handle;
+    int handle = -1;
     int i;
 
     vfuncheader("plot quality");
@@ -2141,6 +2141,9 @@ PlotQuality(ClientData clientData,
 	    handle = atoi(argv[i+1]);
 	}
     }
+
+    if (handle == -1)
+	return TCL_ERROR;
 
     if (plot_quality(handle, consensus_cutoff) < 0 ) {
 	verror(ERR_WARN, "Plot quality", "Failure in plot quality");
@@ -3944,6 +3947,7 @@ int tcl_add_tags(ClientData clientData, Tcl_Interp *interp,
 	return TCL_ERROR;
 
     last = 0;
+    cache_len = 0;
     for (i=0; i<num_tags; i++) {
 	int r, n, gellen, cnum;
 

@@ -2870,7 +2870,7 @@ display_reading_tags(Tcl_Interp *interp,
     int tag_num, tag_pos;
     int r_len, r_pos;
     int x1, x2;
-    int *r_offsets;
+    int *r_offsets = NULL;
     int c_index;
 
     if (!t->configs[READINGS] && !t->configs[RULER])
@@ -3285,7 +3285,7 @@ refresh_contig_order(Tcl_Interp *interp,
     t = result_data(io, template_id, 0);
 
     for (i = 1; i < t->num_contigs; i++) {
-
+	c_from = c_to = -1;
 	for (j = 0; j < NumContigs(io); j++) {
 	    if (order[j] == t->contig[i]) {
 		c_from = j;
@@ -3294,7 +3294,8 @@ refresh_contig_order(Tcl_Interp *interp,
 		c_to = j;
 	    }
 	}
-	ReOrder(io, order, c_from, c_to+1);
+	if (c_from != -1 && c_to != -1)
+	    ReOrder(io, order, c_from, c_to+1);
     }
 
     /* Notify of the start of the flurry of updates */

@@ -114,7 +114,7 @@ GraphSearch(Graph *g,
 {
     Queue Q, *q;
     int i;
-    AdjacencyRec *a,*x,*w, *p;
+    AdjacencyRec *a = NULL,*x,*w, *p;
 
 #ifdef DEBUG
     printf("GraphSearch\n");
@@ -663,7 +663,7 @@ TemplateDistance(GapIO *io,
 int
 template_direction(template_c *t)
 {
-    int direction;
+    int direction = 0; /* Default to zero in the unknown case */
     
     /* forward reading, guessed end */
     /*   ---->                      */
@@ -1046,7 +1046,7 @@ FindSpanningPath(Graph *g,
     int cnt;
     int num_contigs;
     int i;
-    int start;
+    int start = -1;
 
     /* select first non-visited vertex */
     for (i = 0; i < g->number_of_verts; i++) {
@@ -1055,6 +1055,8 @@ FindSpanningPath(Graph *g,
 	    break;
 	}
     }
+    if (start == -1)
+	return -1;
 
     /* from a random vertex create the first tree */
     (void) GraphSearch(g,  cur_sp, g->recs[start], &vout);

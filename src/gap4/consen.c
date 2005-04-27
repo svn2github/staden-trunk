@@ -859,6 +859,7 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
     }
 
     length_extension = 0;
+    start_hidden = best_length_hidden = 0; /* only set to avoid warnings */
 
     switch ( end ) {
 
@@ -1264,6 +1265,9 @@ int make_consensus( int task_mask, GapIO *io,
 	contig = contig_list[i].contig_number;
 	left_extension = 0;
 	right_extension = 0;
+	start  = contig_list[i].contig_start;
+	end    = contig_list[i].contig_end;
+	contig_length = end - start + 1;
 
 	if ( task_mask & ADDTITLE ) {
 
@@ -1285,10 +1289,6 @@ int make_consensus( int task_mask, GapIO *io,
 	contig_list[i].contig_start_offset = *consensus_length - consensus_start;
 
 	if ( task_mask & NORMALCONSENSUS ) {
-	    start  = contig_list[i].contig_start;
-	    end    = contig_list[i].contig_end;
-	    contig_length = end - start + 1;
-
 	    /* is there enough space left ? */
 
 	    if ( (*consensus_length + contig_length) > max_consensus ) {
@@ -1304,10 +1304,6 @@ int make_consensus( int task_mask, GapIO *io,
 	}
 
 	else if ( task_mask & SINGLESTRANDED ) {
-	    start  = contig_list[i].contig_start;
-	    end    = contig_list[i].contig_end;
-	    contig_length = end - start + 1;
-
 	    /* is there enough space left ? */
 
 	    if ( (*consensus_length + contig_length) > max_consensus ) {
@@ -1323,11 +1319,6 @@ int make_consensus( int task_mask, GapIO *io,
 	}
 
 	else if ( task_mask & QUALITYCODES ) {
-
-	    start  = contig_list[i].contig_start;
-	    end    = contig_list[i].contig_end;
-	    contig_length = end - start + 1;
-
 	    /* is there enough space left ? */
 
 	    if ( (*consensus_length + contig_length) > max_consensus ) {

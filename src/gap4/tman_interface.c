@@ -204,6 +204,8 @@ void tman_reposition_traces(EdStruct *xx, int pos, int mini_trace) {
 		end = 999999;
 		break;
 
+	    default:
+		continue;
 	    }
 
 
