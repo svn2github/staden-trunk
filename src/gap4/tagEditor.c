@@ -237,7 +237,6 @@ static int TagEdCommand(ClientData clientData, Tcl_Interp *interp,
 	    fprintf(stderr, "Error at %s:%d\n", __FILE__, __LINE__);
 
 	if (xx != te->xx) {
-	    printf("create undo in second contig\n");
 	    openUndo(DBI(te->xx));
 	}
 	TagEdSave(interp, te);
