@@ -2113,7 +2113,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	int set;
 	char **s_argv;
 	int s_argc;
-	int i;
 
 	if (argc < 3) {
 	    Tcl_ResetResult(interp);
@@ -2127,10 +2126,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	if (Tcl_SplitList(interp, argv[3], &s_argc, &s_argv) != TCL_OK)
 	    goto fail;
 
-	printf("Set %d:\n", set);
-	for (i = 0; i < s_argc; i++) {
-	    printf("    +%s\n", s_argv[i]);
-	}
 	edMoveSet(ed->xx, set, s_argc, s_argv);
 
 	Tcl_Free((char *)s_argv);
