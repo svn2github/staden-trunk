@@ -444,7 +444,6 @@ proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
    	    after 1000 {if {[winfo exists %W]} {wm geometry %W {}}}
    	}
     }
-
     SetDefaultTags CONTIG_EDITOR.TAGS $editor
     wm protocol $w WM_DELETE_WINDOW \
 	"editor_quit $w $ed $editor $buttons.quit"
@@ -2823,14 +2822,25 @@ catch {bind Editor <Control-Key-Begin>	{%W read_start2}}
 catch {bind Editor <Control-Key-End>	{%W read_end2}}
 
 # Mouse wheel support
-bind Editor <MouseWheel> {editor_mouse_wheel %W %D normal}
+bind Editor <MouseWheel>          {editor_mouse_wheel %W %D normal}
+bind Editor <Shift-MouseWheel>    {%W xview scroll %D units}
 if {[tk windowingsystem] eq "x11"} {
-    bind Editor <Shift-4>   {editor_mouse_wheel %W -200 slow}
-    bind Editor <4>         {editor_mouse_wheel %W -200 normal}
-    bind Editor <Control-4> {editor_mouse_wheel %W -200 fast}
-    bind Editor <Shift-5>   {editor_mouse_wheel %W +200 slow}
-    bind Editor <5>         {editor_mouse_wheel %W +200 normal}
-    bind Editor <Control-5> {editor_mouse_wheel %W +200 fast}
+    bind Editor <Control-4>       {editor_mouse_wheel %W -200 slow}
+    bind Editor <4>               {editor_mouse_wheel %W -200 normal}
+    bind Editor <Alt-4>           {editor_mouse_wheel %W -200 fast}
+    bind Editor <Option-4>        {editor_mouse_wheel %W -200 fast}
+    bind Editor <Control-5>       {editor_mouse_wheel %W +200 slow}
+    bind Editor <5>               {editor_mouse_wheel %W +200 normal}
+    bind Editor <Option-5>        {editor_mouse_wheel %W +200 fast}
+    bind Editor <Alt-5>           {editor_mouse_wheel %W +200 fast}
+    bind Editor <Shift-Control-4> {%W xview scroll -1 units}
+    bind Editor <Shift-Control-5> {%W xview scroll +1 units}
+    bind Editor <Shift-4>         {%W xview scroll -10 units}
+    bind Editor <Shift-5>         {%W xview scroll +10 units}
+    bind Editor <Shift-Alt-4>     {%W xview scroll -80 units}
+    bind Editor <Shift-Alt-5>     {%W xview scroll +80 units}
+    bind Editor <Shift-Option-4>  {%W xview scroll -80 units}
+    bind Editor <Shift-Option-5>  {%W xview scroll +80 units}
 }
 
 # Tag macros
