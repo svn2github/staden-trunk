@@ -194,6 +194,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 	}
 
 	"LENGTH" -
+	"COMPLEMENT" -
 	"JOIN_TO" {
 	    ListContigsRepopulate $io $w
 	}
