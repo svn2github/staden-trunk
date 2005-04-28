@@ -239,21 +239,6 @@ proc tag_editor_set_type {button w textwin data typeid} {
     set type $NGTag($typeid,tagtype)
     $button configure -text "Type:$type"
 
-    if {$NGTag($typeid,tagid) != $d(type)} {
-	# Changing tag types:
-	# Find out if the previous tag type was a GUI tag, if not reset to
-	# defaults
-	foreach t [array names NGTag] {
-	    if {[regexp {(.*),tagid} $t _ id] == 0} continue
-	    if {$NGTag($id,tagid) != $d(type)} continue
-	    if {[string match {#!acdtag:*} $NGTag($id,comment)] == 0} {
-		set d(default) 1
-		set d(anno) $NGTag($typeid,comment)
-	    }
-	    break
-	}
-    }
-
     if {[string match {#!acdtag:*} $NGTag($typeid,comment)]} {
 	pack forget $w.disp
 	catch {destroy $w.gui.f}
@@ -274,8 +259,6 @@ proc tag_editor_set_type {button w textwin data typeid} {
 	catch {destroy $w.gui.f}
 	pack forget $w.gui
 	pack $w.disp -side bottom -fill both -expand 1
-	$textwin delete 1.0 end
-	$textwin insert 1.0 $d(anno)
     }
 
     if {$d(default) == 1} {
