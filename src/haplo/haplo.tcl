@@ -304,7 +304,24 @@ proc haplo::create_display {d} {
     set xcoord(width)    430
 
     # scroll-wheel
-    bind $w <MouseWheel> {puts "%W yview scroll %D units";%W yview scroll %D units}
+    bind $w <MouseWheel>              {%W yview scroll %D units}
+    bind $w <Option-MouseWheel>       {%W yview scroll [expr {10 * %D}] units}
+    bind $w <Alt-MouseWheel>          {%W yview scroll [expr {10 * %D}] units}
+    bind $w <Shift-MouseWheel>        {%W xview scroll %D units}
+    bind $w <Shift-Option-MouseWheel> {%W xview scroll [expr {10 * %D}] units}
+    bind $w <Shift-Alt-MouseWheel>    {%W xview scroll [expr {10 * %D}] units} 
+    bind $w <4>                       {%W yview scroll  -1 units}
+    bind $w <Option-4>                {%W yview scroll -10 units}
+    bind $w <Alt-4>                   {%W yview scroll -10 units}
+    bind $w <5>                       {%W yview scroll  +1 units}
+    bind $w <Option-5>                {%W yview scroll +10 units}
+    bind $w <Alt-5>                   {%W yview scroll +10 units}
+    bind $w <Shift-4>                 {%W xview scroll  -1 units}
+    bind $w <Shift-Option-4>          {%W xview scroll -10 units}
+    bind $w <Shift-Alt-4>             {%W xview scroll -10 units}
+    bind $w <Shift-5>                 {%W xview scroll  +1 units}
+    bind $w <Shift-Option-5>          {%W xview scroll +10 units}
+    bind $w <Shift-Alt-5>             {%W xview scroll +10 units}
 
     # status display
     label $f.status -anchor w -textvariable ${d}(status_line)
