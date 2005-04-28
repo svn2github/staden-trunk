@@ -2797,12 +2797,14 @@ bind Editor <<paste>>		{break;}
 
 #bind EdNames <<select>>		{%W highlight -1 @%x @%y}
 bind EdNames <<select>>		{
-    foreach {x y} [%W coords @%x @%y] break;
-    if {$x == 0} {
-	editor_collapse %W $x $y
-    } else {
-	editor_addlist %W @%x @%y
-    }
+# Disable set collapsing for now as the display is not bug-free
+#    foreach {x y} [%W coords @%x @%y] break;
+#    if {$x == 0} {
+#	editor_collapse %W $x $y
+#    } else {
+#	editor_addlist %W @%x @%y
+#    }
+    editor_addlist %W @%x @%y
 }
 bind EdNames <<move>>		{editor_addlist %W @%x @%y}
 bind EdNames <<copy>>		{copy_name %W @%x @%y}

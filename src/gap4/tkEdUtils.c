@@ -662,9 +662,11 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 		nsplodge[j].sh |= sh_bg;
 		nsplodge[j].bg = xx->set_bg[set % 10];
 	    }
+#if 0
 	    if (set != lastset) {
 		*buf = "-+"[xx->set_collapsed && xx->set_collapsed[set]];
 	    }
+#endif
 	    lastset = set;
 	}
 
@@ -732,7 +734,7 @@ static void tk_redisplaySeqNames(EdStruct *xx, int *seqList) {
 	}
 
 	/* Indicate whether notes are present */
-	buf[1] = tk_redisplaySeqNotes(xx, seqList[k],&nsplodge[0]);
+	buf[0] = tk_redisplaySeqNotes(xx, seqList[k],&nsplodge[0]);
 	XawSheetPutJazzyText(&xx->names->sw, 0, i, 1, buf, nsplodge);
 
 	/* Display the reading number and name */
