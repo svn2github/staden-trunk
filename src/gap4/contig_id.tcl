@@ -125,7 +125,7 @@ proc contig_id {path args} {
 
     if {$range} {
 	#bindings
-	bind $path.ent.entry <Return> "contig_id_callback $io $path; $command"
+	bind $path.ent.entry <Return> "contig_id_callback $io %W $path; $command"
 	bind $path.ent.entry <Any-FocusOut> "contig_id_callback $io %W $path"
 	bind $path.ent.entry <Any-Leave> "contig_id_callback $io %W $path"
     }
