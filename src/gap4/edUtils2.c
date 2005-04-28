@@ -1892,14 +1892,12 @@ int linesInRegion(EdStruct *xx, int pos, int width)
 	    }
 	}
     } else {
-	int snum;
-	snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
-
 	for (count=0 ;
 	     i &&
 	     i <= DBI_gelCount(xx) &&
 	     DB_RelPos(xx,DBI_order(xx)[i]) < (pos+width) ;
 	     i++) {
+	    int snum = xx->set ? xx->set[DBI_order(xx)[i]] : 0;
 	    if (DB_RelPos(xx,DBI_order(xx)[i]) +
 		     DB_Length(xx,DBI_order(xx)[i]) > pos &&
 		DB_Length(xx,DBI_order(xx)[i]) &&

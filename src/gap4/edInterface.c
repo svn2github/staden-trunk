@@ -755,6 +755,7 @@ int edCursorDown(EdStruct *xx)
     posInContig = positionInContig(xx,xx->cursorSeq,xx->cursorPos);
     seqList = sequencesInRegion(xx,posInContig-1,2);
     seqCount = linesInRegion(xx,posInContig-1,2);
+
     if (seqCount == 1)
 	return 0;
 
@@ -910,20 +911,25 @@ int edSetCursor(EdStruct *xx, int x, int y) {
 		    xx->displayPos - DB_RelPos(xx,seqList[y]) + x + 1,
 		    seqList[y]);
 
-    if (xx->reveal_cutoffs) {
-	if (xx->cursorPos < -DB_Start(xx, xx->cursorSeq) + 1)
-	    setCursorPos(xx, -DB_Start(xx, xx->cursorSeq) + 1);
-	else
-	    if (xx->cursorPos + DB_Start(xx, xx->cursorSeq) >
-		DB_Length2(xx,xx->cursorSeq))
-		setCursorPos(xx, DB_Length2(xx,xx->cursorSeq)
-			     - DB_Start(xx, xx->cursorSeq) + 1);
-    } else {
-	if (xx->cursorPos<1)
-	    setCursorPos(xx, 1);
-	else
-	    if (xx->cursorPos > DB_Length(xx,xx->cursorSeq)+1)
-		setCursorPos(xx, DB_Length(xx,xx->cursorSeq)+1);
+    if (!(xx->set &&
+	  xx->set_collapsed &&
+	  xx->set[seqList[y]] &&
+	  xx->set_collapsed[xx->set[seqList[y]]])) {
+	if (xx->reveal_cutoffs) {
+	    if (xx->cursorPos < -DB_Start(xx, xx->cursorSeq) + 1)
+		setCursorPos(xx, -DB_Start(xx, xx->cursorSeq) + 1);
+	    else
+		if (xx->cursorPos + DB_Start(xx, xx->cursorSeq) >
+		    DB_Length2(xx,xx->cursorSeq))
+		    setCursorPos(xx, DB_Length2(xx,xx->cursorSeq)
+				 - DB_Start(xx, xx->cursorSeq) + 1);
+	} else {
+	    if (xx->cursorPos<1)
+		setCursorPos(xx, 1);
+	    else
+		if (xx->cursorPos > DB_Length(xx,xx->cursorSeq)+1)
+		    setCursorPos(xx, DB_Length(xx,xx->cursorSeq)+1);
+	}
     }
 
     positionCursor(xx, xx->cursorSeq, xx->cursorPos);
@@ -2791,7 +2797,6 @@ void edMoveSet(EdStruct *xx, int set_num, int nseqs, char **seqs) {
 	if (rnum > 0)
 	    rnum = rnum_to_edseq(xx, rnum);
 	if (rnum > 0) {
-	    printf("%d %d->%d\n", rnum, xx->set[rnum], set_num);
 	    xx->set[rnum] = set_num;
 	}
     }
