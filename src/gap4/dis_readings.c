@@ -219,6 +219,7 @@ static void copy_consensus_annotations(GapIO *io, int cfrom, int cto) {
 		last.position = a.position;
 		last.length = a.length;
 		last.type = a.type;
+		last.strand = a.strand;
 		last.next = 0;
 		if (a.annotation) {
 		    char *comment = get_comment(io, a.annotation);
