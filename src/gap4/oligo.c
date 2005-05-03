@@ -448,7 +448,8 @@ static char *generate_oligo_comment(EdStruct *xx, int oligo, char *tname)
     seq[len]='\0';
 
     
-    sprintf(s,"template=%s\nsequence=%s\nTm=%f\nGC%%=%f\nquality=%f\n",
+    sprintf(s,"serial#=\ntemplate=%s\nsequence=%s\nTm=%.2f\n"
+	    "GC%%=%.2f\nquality=%.2f\n",
 	    tname, seq, tm, gc, qual);
 
 #ifdef VERBOSENESS
