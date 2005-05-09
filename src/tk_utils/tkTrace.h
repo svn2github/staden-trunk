@@ -136,6 +136,11 @@ typedef struct {
     PS_TRACE		ps_trace;
 
     int trace_scale;		/* Height in trace coordinates. zero => auto */
+    int style;			/* 0=chromtogram
+				 * 1=filled chromatogram (not very useful)
+				 * 2=historgram (pyro)
+				 */
+
 } DNATrace;
 
 /* Flags */
@@ -165,6 +170,11 @@ typedef struct {
 
 /* Maximum number of edits */
 #define TRACE_EDITS 200
+
+/* Styles */
+#define STYLE_CHROMA 0
+#define STYLE_FILLED 1
+#define STYLE_PYRO   2
 
 /* ---- Prototypes ---- */
 extern int pixel_to_base(DNATrace *tracePtr, int pixel, int allow_end);

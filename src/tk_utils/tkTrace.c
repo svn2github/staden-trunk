@@ -100,6 +100,8 @@ static Tk_ConfigSpec configSpecs[] = {
     Tk_Offset(DNATrace, scale_conf), 0, NULL},
     {TK_CONFIG_INT, "-trace_scale", "traceScale", "traceScale", "0",
     Tk_Offset(DNATrace, trace_scale), 0, NULL},
+    {TK_CONFIG_INT, "-style", "style", "Style", "0",
+    Tk_Offset(DNATrace, style), 0, NULL},
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL, (char *) NULL,
 	 0, 0, NULL},
 };
@@ -595,8 +597,8 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	    if (new < 0)
 		new = 0;
-	    else if (new > 1000)
-		new = 1000;
+	    else if (new > 10000)
+		new = 10000;
 
 	    /* scale_x size when all samples are visible */
 	    /*
@@ -608,7 +610,7 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    min = ((double)width) / tracePtr->read->NPoints;
 	    new = new * (10 - min) / 1000 + min;
 	    */
-	    new = (new+10)/(100+10);
+	    new = (new+100)/(100+100);
 
 	    /* Shift disp_offset to keep centre of screen stationary */
 	    tracePtr->disp_offset -= ((int)((float)(width / new) + .999) -

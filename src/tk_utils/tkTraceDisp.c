@@ -160,6 +160,33 @@ static void trace_draw2(DNATrace *t, TRACE *tr, Display *d, Pixmap p, int max,
     xfree(xp);
 }
 
+/*
+ * Draws a segment of a single trace using histogram bars, suitable for
+ * pyrosequencing (eg 454, solexa). We draw 'samples' points from the 'tr'
+ * trace array to pixel coordinates (x,y) with scale xs, ys.
+ *
+ * The confidence display is quite wide, and draws more than x0-xn.
+ * To compensate, we need to increase x0-xn.
+ */
+static void trace_draw_hist(DNATrace *t, TRACE *tr, Display *d, Pixmap p,
+			    int max, GC gc, int x0, int xn, int yoff,
+			    int height, double ys, int off) {
+    int i, h = height-1, o;
+
+    if (xn <= 0)
+	return;
+
+    o = t->disp_offset * t->scale_x;
+
+    if (t->read->maxTraceVal)
+	h -= h*(double)off/t->read->maxTraceVal;
+    for (i = 0; i < xn; i++, tr++) {
+	int x = (int)((x0 + i) * t->scale_x) - o;
+	int y = h - ys * (*tr-off) + yoff;
+	XFillRectangle(d, p, gc, x, y, 3, h-y);
+    }
+}
+
 #if 0
 #define MAX4(t,i) ((t)[0][i].y > (t)[1][i].y \
     ? ((t)[2][i].y > (t)[3][i].y \
@@ -356,22 +383,42 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 	yscale = 0;
     }
 
+    switch (t->style) {
+    case STYLE_CHROMA:
+	trace_draw2(t, &t->read->traceA[x0], d, p, m,
+		    t->Agc, x0, xn, yoff, height, yscale,
+		    t->read->baseline, 1);
+	trace_draw2(t, &t->read->traceC[x0], d, p, m,
+		    t->Cgc, x0, xn, yoff, height, yscale,
+		    t->read->baseline, 1);
+	trace_draw2(t, &t->read->traceG[x0], d, p, m,
+		    t->Ggc, x0, xn, yoff, height, yscale,
+		    t->read->baseline, 1);
+	trace_draw2(t, &t->read->traceT[x0], d, p, m,
+		    t->Tgc, x0, xn, yoff, height, yscale,
+		    t->read->baseline, 1);
+	break;
 #if 0
-    trace_draw2filled(t, d, p, m,
-		      x0, xn, height, yscale, t->read->baseline);
-#else
-    trace_draw2(t, &t->read->traceA[x0], d, p, m,
-		t->Agc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
-
-    trace_draw2(t, &t->read->traceC[x0], d, p, m,
-		t->Cgc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
-
-    trace_draw2(t, &t->read->traceG[x0], d, p, m,
-		t->Ggc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
-
-    trace_draw2(t, &t->read->traceT[x0], d, p, m,
-		t->Tgc, x0, xn, yoff, height, yscale, t->read->baseline, 1);
+    case STYLE_FILLED:
+	trace_draw2filled(t, d, p, m, x0, xn, height, yscale,
+			  t->read->baseline);
+	break;
 #endif
+
+    case STYLE_PYRO:
+	trace_draw_hist(t, &t->read->traceA[x0], d, p, m,
+			t->Agc, x0, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceC[x0], d, p, m,
+			t->Cgc, x0, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceG[x0], d, p, m,
+			t->Ggc, x0, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceT[x0], d, p, m,
+			t->Tgc, x0, xn, yoff, height, yscale,
+			t->read->baseline);
+    }
 
     if (t->show_edits == 0) {
 	int pos;
@@ -427,8 +474,8 @@ void trace_draw_sequence(DNATrace *t, Display *d, Pixmap p,
 	}
 
 	/* XDrawString(d, p, gc, point_to_pixel(t, pos) - fw, fh, &base, 1); */
-	Tk_DrawChars(d, p, gc, t->font, &base, 1,
-		     point_to_pixel(t, pos) - fw, fh);
+	pos = point_to_pixel(t, pos) - fw;
+	Tk_DrawChars(d, p, gc, t->font, &base, 1, pos, fh);
 
 	ind++;
     }

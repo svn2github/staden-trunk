@@ -11,6 +11,7 @@
 #include "trace_print.h"
 
 static int trace_load_private(DNATrace *t);
+void trace_pyroalign(Read *r);
 
 void trace_unload(DNATrace *t) {
     if (t->read)
@@ -172,6 +173,9 @@ int trace_load(DNATrace *t, char *file, char *format) {
 	return -1;
     }
     read_experiment_redirect(tmp);
+
+    if (t->style == STYLE_PYRO)
+	trace_pyroalign(t->read);
 
     return trace_load_private(t);
 }
@@ -731,6 +735,57 @@ void trace_change(DNATrace *t, int pos, char base) {
 
 
 /*
- * Need to convert edPos to opos[]
- * Need to swap edBases and read->Bases during saving
+ * Takes a pyrosequencing style trace with a series of spikes and multiple
+ * bases positioned at the same spike, and realigns it so that basecalls are
+ * the primary spacing with one "x unit" per base-call or spike.
+ *
+ * It does this by editing the Read structure directly.
  */
+void trace_pyroalign(Read *r) {
+    int i, k, len = 0, last;
+    TRACE *out[4], *in[4];
+    int ip, op;
+
+    /* Compute size */
+    for (last = -1, i = 0; i < r->NBases; i++) {
+	if (r->basePos[i] == last)
+	    len++;
+	else
+	    len += r->basePos[i] - last;
+	last = r->basePos[i];
+    }
+    
+    /* Regenerate data */
+    out[0] = (TRACE *)xcalloc(len, sizeof(TRACE));
+    out[1] = (TRACE *)xcalloc(len, sizeof(TRACE));
+    out[2] = (TRACE *)xcalloc(len, sizeof(TRACE));
+    out[3] = (TRACE *)xcalloc(len, sizeof(TRACE));
+    in[0] = r->traceA;
+    in[1] = r->traceC;
+    in[2] = r->traceG;
+    in[3] = r->traceT;
+
+    for (k = op = ip = 0; ip < r->NPoints || k < r->NBases; ip++) {
+	out[0][op] = in[0][ip];
+	out[1][op] = in[1][ip];
+	out[2][op] = in[2][ip];
+	out[3][op] = in[3][ip];
+	if (r->basePos[k] == ip) {
+	    r->basePos[k] = op;
+	    for(k++; k < r->NBases && r->basePos[k] == ip; k++) {
+		r->basePos[k] = ++op;
+		out[0][op] = 0;
+		out[1][op] = 0;
+		out[2][op] = 0;
+		out[3][op] = 0;
+	    }
+	}
+	op++;
+    }
+
+    xfree(r->traceA); r->traceA = out[0];
+    xfree(r->traceC); r->traceC = out[1];
+    xfree(r->traceG); r->traceG = out[2];
+    xfree(r->traceT); r->traceT = out[3];
+    r->NPoints = op;
+}
