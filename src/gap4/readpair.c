@@ -209,28 +209,15 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 		pt1 = STRAND(r1);
 		pt2 = STRAND(r2);
 
-		/* Set position based on strand */
-		if (pt1 != pt2) {
-		    if (r1.sense == 0) {
-		        pos[0] = io_clength(template->io, ABS(obj->c1)) + 1;
-			pos[1] = 1;
-		    } else {
-			pos[0] = 1;
-		        pos[1] = io_clength(template->io, ABS(obj->c2)) + 1;
-		      }
+		llino[0] = obj->read1;
+		llino[1] = obj->read2;
+		if (r1.sense == 0) {
+		    pos[0] = (pt1 == pt2) ? 1 : r1.sequence_length;
+		    pos[1] = 1;
 		} else {
-		    if (pt1 == r1.sense) {
-		        pos[0] = 1;
-			pos[1] = 1;
-		    } else {
-		      pos[0] = io_clength(template->io, ABS(obj->c1)) + 1;
-		      pos[1] = io_clength(template->io, ABS(obj->c2)) + 1;
-		    }
+		    pos[0] = (pt1 == pt2) ? r1.sequence_length : 1;
+		    pos[1] = r2.sequence_length;
 		}
-
-		llino[0] = io_clnbr(template->io, cnum[0]);
-		llino[1] = io_clnbr(template->io, cnum[1]);
-
 		join_contig(GetInterp(), template->io, cnum, llino, pos,
 			    consensus_cutoff, quality_cutoff);
 		break;
