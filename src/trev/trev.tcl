@@ -855,16 +855,18 @@ proc CreateTraceWin { trace xmag ymag trace_scale} {
 	-showtrace $tdisp(t) \
 	-showconf $tdisp(c) \
 	-showends 0 \
-	-trace_scale $trace_scale
+	-trace_scale $trace_scale \
+	-style $tdisp(style)
     focus $trace.t
 
     scrollbar $trace.s -command "$trace.t xview" -orient horizontal
 
     frame $trace.xmag
     label $trace.xmag.l -text "X"
-    scale $trace.xmag.s -from 0 -to 1000 -command "$trace.t xmag" \
+    scale $trace.xmag.s -from 0 -to 3000 -command "$trace.t xmag" \
 	    -showvalue 0
     $trace.xmag.s set $xmag
+    after idle "$trace.t xview 0"
 
     frame $trace.ymag
     label $trace.ymag.l -text "Y"
@@ -1445,6 +1447,7 @@ proc InitGlobals { } {
     set tdisp(e) [keylget trev_defs SHOW_EDITS]
     set tdisp(t) [keylget trev_defs SHOW_TRACE]
     set tdisp(c) [keylget trev_defs SHOW_CONFIDENCE]
+    set tdisp(style) 0
     set pregap_mode 0
     set block_scf 1
     set history {}
@@ -1468,6 +1471,7 @@ load_package trev
 
 InitGlobals
 set xmag 150
+set xmag_changed 0
 set ymag 10
 set filename ""
 set informat Any
@@ -1490,6 +1494,7 @@ while {$argc >= 1} {
 	set block_scf 0
     } elseif {$arg == "-xmag"} {
 	set xmag [lindex $argv 1]
+	set xmag_changed 1
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-ymag"} {
@@ -1498,6 +1503,13 @@ while {$argc >= 1} {
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-trace_scale"} {
 	set trace_scale [lindex $argv 1]
+        incr argc -1
+	set argv [lrange $argv 1 end]
+    } elseif {$arg == "-style"} {
+	set tdisp(style) [lsearch {chroma filled pyro} [lindex $argv 1]]
+	if {[lindex $argv 1] == "pyro" && $xmag_changed == 0} {
+	    set xmag 2200
+	}
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-write_scf"} {
