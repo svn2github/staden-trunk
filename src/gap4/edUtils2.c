@@ -1043,8 +1043,13 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
     switch(jdata->job) {
     case REG_QUERY_NAME:
 	{
-	    sprintf(jdata->name.line, "Contig editor @ %d",
-		    _DB_Number(db, _DBI_order(db)[1]));
+	    if (_DBI_order(db)) {
+		sprintf(jdata->name.line, "Contig editor @ %d",
+			_DB_Number(db, _DBI_order(db)[1]));
+	    } else {
+		sprintf(jdata->name.line, "Contig editor @ =%d",
+			_DBI_contigNum(db));
+	    }
 
 	    return;
 	}
