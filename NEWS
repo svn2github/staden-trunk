@@ -1,5 +1,7 @@
-26 April 2005
-=============
+3 May 2005
+==========
+
+Internal Sanger test version rel-1-6-0b3 ("gap4 -test")
 
 Gap4
 ----
@@ -8,25 +10,24 @@ Gap4
   "freetree"). The upshot of this is that the worst-case performance
   is now dramatically improved and the average performance will be
   slightly better too. Complementing a 10Mb contig dropped from about
-  50 minutes to 1.5 minutes.
+  50 minutes to 1.5 minutes. Disassembling all readings (approx
+  175000) in this database went from ~3 hours to 2.5 minutes.
 
 * The contig editor "sequence sets" are now coloured to aid
   distinguishing.
 
-* The contig editor sets are now collapsible by clicking the "-"
-  next to their name. The sequence shown in this case is then the
-  consensus sequence, but note that is still WORK IN PROGRESS. The
-  display is correct in such cases, but when collapsed the status line
-  information will be wrong and editing may not work as expected.
-
 * Fixed bugs with X11 BadDrawable crashes (I hope).
+
+* Reverted the OLIGo tag back to using "serial=#" as the first line,
+  although the additional information is still kept (albeit in a
+  reduced precision format to make the tag shorter).
 
 -----------------------------------------------------------------------------
 
 29 March 2005
 =============
 
-Internal Sanger test version rel-1-6-0b2
+Internal Sanger test version rel-1-6-0b2 (the previous "gap4 -test")
 
 Gap4
 ----
