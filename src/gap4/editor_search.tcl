@@ -9,22 +9,22 @@
 #
 # Brings up a search window
 #
-# search_setup array contains use_text use_strand use_tag value1_name value2_name
-set search_setup(position)		"0 0 0 {padded position}"
-set search_setup(uposition)		"0 0 0 {unpadded position}"
-set search_setup(problem)		"0 0 0"
-set search_setup(anno)			"0 0 0 string"
-set search_setup(sequence)		"0 1 0 sequence {num. mismatches}"
-set search_setup(quality)		"0 0 0"
-set search_setup(consquality)		"0 0 0 value"
-set search_setup(file)			"1 0 0 filename"
-set search_setup(name)			"0 0 0 name"
-set search_setup(edit)			"0 0 0"
-set search_setup(verifyand)		"0 0 0"
-set search_setup(verifyor)		"0 0 0"
-set search_setup(discrepancy)		"0 0 0 value"
-set search_setup(consdiscrepancy)	"0 0 0 value"
-set search_setup(tag)			"0 0 1"
+# search_setup array contains use_text use_strand use_tag use_where value1_name value2_name
+set search_setup(position)		"0 0 0 0 {padded position}"
+set search_setup(uposition)		"0 0 0 0 {unpadded position}"
+set search_setup(problem)		"0 0 0 0"
+set search_setup(anno)			"0 0 0 0 string"
+set search_setup(sequence)		"0 1 0 1 sequence {num. mismatches}"
+set search_setup(quality)		"0 0 0 0"
+set search_setup(consquality)		"0 0 0 0 value"
+set search_setup(file)			"1 0 0 0 filename"
+set search_setup(name)			"0 0 0 0 name"
+set search_setup(edit)			"0 0 0 0"
+set search_setup(verifyand)		"0 0 0 0"
+set search_setup(verifyor)		"0 0 0 0"
+set search_setup(discrepancy)		"0 0 0 0 value"
+set search_setup(consdiscrepancy)	"0 0 0 0 value"
+set search_setup(tag)			"0 0 1 0"
 set search_setup(difference)		"0 0 0"
 
 proc create_search_win {w com {dir 0} {raise 1}} {
@@ -35,6 +35,7 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     global $w.Type
     global $w.Direction
     global $w.Tag
+    global $w.Where
     global $w.File $w.FileName
     global $w.Strand
 
@@ -95,12 +96,19 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 	set init_t 0
     }
 
+    if {![info exists $w.Where]} {
+	set init_w 1
+    } else {
+	set init_w 0
+    }
+
     if {[xtoplevel $w -resizable 0] == ""} return
     wm title $w "Search"
 
     # Also see search_setup and do_file_search - keep in sync
     set tf $w.type_frame
     set df $w.direction_frame
+    set wf $w.where_frame
     set of $w.option_frame
     set bf $w.button_frame
 
@@ -230,6 +238,19 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     pack $of.tag.label -side left
     pack $of.tag.button -side right -fill both -expand 1
 
+    # Options: where
+    set wf $of.where
+    frame $wf -bd 0
+    label $wf.label -text "Where"
+    radiobutton $wf.seq  -text "Sequence"  -variable $w.Where \
+	-relief flat -value 1
+    radiobutton $wf.cons -text "Consensus" -variable $w.Where \
+	-relief flat -value 2
+    radiobutton $wf.both -text "Both"      -variable $w.Where \
+	-relief flat -value 3
+    pack $wf.label -side left
+    pack $wf.both $wf.cons $wf.seq -side right
+
     # Buttons
     frame $bf -bd 2 -relief sunken
     button $bf.search -text "Search" -command "do_search $w \"$com\""
@@ -258,6 +279,9 @@ proc create_search_win {w com {dir 0} {raise 1}} {
     if {$init_t} {
 	set $w.Type [keylget gap_defs CONTIG_EDITOR.SEARCH.DEFAULT_TYPE]
     }
+    if {$init_w} {
+	set $w.Where [keylget gap_defs CONTIG_EDITOR.SEARCH.DEFAULT_WHERE]
+    }
     eval search_setup $w [set $w.Type]
 }
 
@@ -272,6 +296,7 @@ proc do_search {w com args} {
     global $w.Direction
     global $w.Type
     global $w.Tag
+    global $w.Where
     global $w.Strand
     global $w.LastTagWindow
     global .cedit.Defaults
@@ -279,6 +304,7 @@ proc do_search {w com args} {
     set dir	[set $w.Direction]
     set type	[set $w.Type]
     set tag	[set $w.Tag]
+    set where	[set $w.Where]
     set strand	[set $w.Strand]
 
     # Remember last search as the defaults for new editors.
@@ -304,7 +330,7 @@ proc do_search {w com args} {
     } elseif {$type == "uposition"} {
 	set r [eval $com $dir $strand position [list u$value1]]
     } elseif {$type == "sequence"} {
-	set r [eval $com $dir $strand $type [list $value1#$value2]]
+	set r [eval $com $dir $strand $type [list $value1#$value2#$where]]
     } elseif {$type == "tag"} {
         set r [eval $com $dir $strand $type $tag]
     } elseif {$type == "file"} {
@@ -411,7 +437,7 @@ proc do_file_search {w com dir type fname} {
 proc search_setup {w name} {
     global search_setup gap_defs
 
-    foreach {use_text use_strand use_tag val1_name val2_name} \
+    foreach {use_text use_strand use_tag use_where val1_name val2_name} \
 	$search_setup($name) {}
 
     # Keep these in sync with create_search_win
@@ -421,6 +447,7 @@ proc search_setup {w name} {
     set label2_win $w.option_frame.val2.label
     set text_win $w.option_frame.text
     set strand_win $w.option_frame.strand
+    set where_win $w.option_frame.where
     set tag_win $w.option_frame.tag
  
     global $w.Defaults .cedit.Defaults
@@ -474,6 +501,12 @@ proc search_setup {w name} {
 	grid $tag_win -row 2 -sticky nsew
     } else {
 	grid forget $tag_win
+    }
+
+    if {$use_where} {
+	grid $where_win -row 2 -sticky nsew
+    } else {
+	grid forget $where_win
     }
 
     if {$val1_name != ""} {
