@@ -193,6 +193,11 @@ static void copy_consensus_annotations(GapIO *io, int cfrom, int cto) {
 	return;
     tag_read(io, anno, a);
 
+    if (ct.annotations) {
+	verror(ERR_FATAL, "copy_consensus_annotations",
+	       "cto.annotations != NULL");
+    }
+
     /*
      * Walk along reading list in cto. For each reading, scan from
      * current 'anno' to beyond the end of this reading to see whether or

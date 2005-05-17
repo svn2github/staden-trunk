@@ -1199,6 +1199,11 @@ void split_contig_tags(GapIO *io, int cont1, int cont2, int posl, int posr) {
     if (c1.annotations == 0)
 	return;
 
+    if (c2.annotations) {
+	verror(ERR_FATAL, "split_contig_tags",
+	       "c2.annotations != NULL");
+    }
+
     /*
      * scan annotation list in c1.
      * (assume c2 has blank list - it's just been created we hope).

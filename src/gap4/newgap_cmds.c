@@ -2496,6 +2496,8 @@ BreakContig(ClientData clientData,
 
     xfree(readings);
 
+    db_check(args.io);
+
     return err ? TCL_ERROR : TCL_OK;
 } /* end BreakContig */
 
