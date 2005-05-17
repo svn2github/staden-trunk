@@ -151,7 +151,7 @@ int copy_read_name(GapIO *iof, GapIO *iot, int rnum, int start_r,
  *
  * If 'verbose' is set then a running summary of its actions is displayed.
  */
-int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
+int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs, int notags) {
     GReadings r, rt;
     GContigs c;
     GAnnotations a, at;
@@ -254,6 +254,8 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 	    rt.template += start_t;
 	if (rt.annotations)
 	    rt.annotations += start_a;
+	if (notags)
+	    rt.annotations = 0;
 	if (rt.notes)
 	    rt.notes += start_n;
 	
@@ -283,6 +285,8 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
 	}
 	if (c.annotations)
 	    c.annotations += start_a;
+	if (notags)
+	    c.annotations = 0;
 	if (c.notes)
 	    c.notes += start_n;
 	if (contig_write(iot, i + start_c, c) && errs) goto error;
@@ -298,6 +302,9 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
      * list are not necessary the end numbers. This in turn requires a lot
      * of annotation relinking and work with reading and contig structures.
      */
+    if (notags)
+	goto skip_tags; /* but think of the small diff! (yeah yeah, as if) */
+
     if (verbose) (printf("Copying annotation "), back = 0);
     fflush(stdout);
     if (io_init_annotations(iot, Nannotations(iof)+start_a) && errs)
@@ -346,6 +353,7 @@ int copy_database(GapIO *iof, GapIO *iot, int verbose, int errs) {
     }
     if (verbose) printf("\n");
 
+ skip_tags:
 
     /*
      * Write the GNotes structures
@@ -590,7 +598,7 @@ int copy_database_from(GapIO *iof, char *name, char *version) {
 	return -1;
     }
 
-    if (-1 == copy_database(iof, iot, 0, 1)) {
+    if (-1 == copy_database(iof, iot, 0, 1, 0)) {
 	close_db(iot);
 	return -1;
     }

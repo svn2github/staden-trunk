@@ -9,7 +9,12 @@
 #include "gap-create.h"
 
 static void usage(void) {
-    fprintf(stderr, "copy_db [-v] [-f] [-b 32/64] source ... destination\n");
+    fprintf(stderr, "copy_db [-v] [-f] [-b 32/64] [-T] source ... destination\n");
+    fprintf(stderr, "    -v     verbose\n");
+    fprintf(stderr, "    -f     fix problems\n");
+    fprintf(stderr, "    -b 32  32-bit format\n");
+    fprintf(stderr, "    -b 64  64-bit format\n");
+    fprintf(stderr, "    -T     remove tags (annotations)\n");
     exit(1);
 }
 
@@ -19,6 +24,7 @@ int main(int argc, char **argv) {
     int status, verbose = 0;
     int bitsize = G_32BIT;
     int c;
+    int notags = 0;
 
     extern int gap_fatal_errors;
     extern int maxdb;
@@ -27,7 +33,7 @@ int main(int argc, char **argv) {
 
     maxdb = 20000;
 
-    while ((c = getopt(argc, argv, "vfb:")) != -1) {
+    while ((c = getopt(argc, argv, "vfb:T")) != -1) {
 	switch (c) {
 	case 'v':
 	    verbose = 1;
@@ -43,6 +49,10 @@ int main(int argc, char **argv) {
 		usage();
 	    else
 		bitsize = (bitsize == 32) ? G_32BIT : G_64BIT;
+	    break;
+
+	case 'T':
+	    notags=1;
 	    break;
 
 	default:
@@ -110,7 +120,7 @@ int main(int argc, char **argv) {
 	    return 4;
 	}
 
-	if (-1 == copy_database(iof, iot, verbose, gap_fatal_errors)) {
+	if (-1 == copy_database(iof, iot, verbose, gap_fatal_errors, notags)) {
 	    fprintf(stderr, "Couldn't copy database\n");
 	    return 6;
 	}
