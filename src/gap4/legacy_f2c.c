@@ -1,6 +1,13 @@
-/* legacy.f -- translated by f2c (version 20030320).
-   You must link the resulting object file with the libraries:
-	-lf2c -lm   (in that order)
+/* legacy.f -- translated by f2c (version 20041007).
+   You must link the resulting object file with libf2c:
+	on Microsoft Windows system, link with libf2c.lib;
+	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
+	or, if you install libf2c.a in a standard place, with -lf2c -lm
+	-- in that order, at the end of the command line, as in
+		cc *.o -lf2c -lm
+	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,
+
+		http://www.netlib.org/f2c/libf2c.zip
 */
 
 #include "f2c.h"
@@ -72,14 +79,21 @@ static integer c__20 = 20;
     static char csen[1];
     static integer lreg, ilcr;
     extern /* Subroutine */ int info_(char *, ftnlen);
-    static integer mask, leno, rreg, ilct, ierr, cnum, idim1, idim2, iladd[1],
-	     iradd[1], ifail[2], igelc, idim22[2], kfail;
+    static integer mask, leno, rreg, ilct, ierr, cnum, idim1, idim2, iladd[1];
+    extern /* Subroutine */ int swrt1_(char *, char *, integer *, ftnlen, 
+	    ftnlen), swrt2_(char *, char *, integer *, integer *, ftnlen, 
+	    ftnlen);
+    static integer iradd[1], ifail[2];
+    extern /* Subroutine */ int swrt5_(char *, char *, integer *, char *, 
+	    real *, integer *, integer *, ftnlen, ftnlen, ftnlen);
+    static integer idim22[2], kfail;
     extern /* Subroutine */ int aline_(char *, char *, char *, char *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
 	    integer *, integer *, integer *, integer *, integer *, real *, 
 	    char *, integer *, real *, integer *, integer *, integer *, 
 	    integer *, ftnlen, ftnlen, ftnlen, ftnlen, ftnlen);
+    static integer igelc;
     static char infod[80];
     extern integer gclin_(integer *, integer *, integer *, integer *, integer 
 	    *, integer *, integer *, integer *);
@@ -102,7 +116,8 @@ static integer c__20 = 20;
 	    *, integer *, integer *, integer *), abedin_(integer *, integer *,
 	     integer *, integer *, integer *, integer *, char *, integer *, 
 	    integer *, char *, integer *, integer *, integer *, integer *, 
-	    integer *, ftnlen, ftnlen);
+	    integer *, ftnlen, ftnlen), swrt2b_(char *, char *, integer *, 
+	    char *, ftnlen, ftnlen, ftnlen);
     extern integer gnread_(char *, ftnlen);
     extern /* Subroutine */ int delcon_(char *, integer *, integer *, integer 
 	    *, ftnlen), addtit_(char *, char *, integer *, integer *, ftnlen, 
@@ -131,10 +146,10 @@ static integer c__20 = 20;
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
 	    ftnlen, ftnlen), erromf_(char *, ftnlen);
     static integer ngelsl, ncontl;
-    extern /* Subroutine */ int updout_(void), swritf_(), arrfio_(char *, 
-	    char *, integer *, integer *, integer *, ftnlen, ftnlen), aerror_(
-	    char *, char *, integer *, ftnlen, ftnlen), sqcopy_(char *, char *
-	    , integer *, ftnlen, ftnlen), autocn_(char *, integer *, char *, 
+    extern /* Subroutine */ int updout_(void), arrfio_(char *, char *, 
+	    integer *, integer *, integer *, ftnlen, ftnlen), aerror_(char *, 
+	    char *, integer *, ftnlen, ftnlen), sqcopy_(char *, char *, 
+	    integer *, ftnlen, ftnlen), autocn_(char *, integer *, char *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
 	    char *, integer *, integer *, integer *, integer *, integer *, 
@@ -418,17 +433,17 @@ L1:
 /*      WRITE(INFOD,1006)JGEL */
 /* 1006 FORMAT('Processing ',I8,' in batch') */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD,'Processing %8d in batch%!', JGEL) >*/
-    swritf_(infod, "Processing %8d in batch%!", &jgel, (ftnlen)80, (ftnlen)25)
-	    ;
+/*<       CALL SWRT1(INFOD,'Processing %8d in batch%!', JGEL) >*/
+    swrt1_(infod, "Processing %8d in batch%!", &jgel, (ftnlen)80, (ftnlen)25);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*       WRITE(INFOD,1007)NAMARC */
 /* 1007  FORMAT('File name ',A) */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD, 'File name %.*s%!', LEN(NAMARC), NAMARC) >*/
+/*<       CALL SWRT2B(INFOD, 'File name %.*s%!', LEN(NAMARC), NAMARC) >*/
     i__1 = i_len(namarc, namarc_len);
-    swritf_(infod, "File name %.*s%!", &i__1, namarc, (ftnlen)80, (ftnlen)16);
+    swrt2b_(infod, "File name %.*s%!", &i__1, namarc, (ftnlen)80, (ftnlen)16, 
+	    namarc_len);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /* Added by Simon 23-March-1993 */
@@ -447,8 +462,8 @@ L1:
 /*       WRITE(INFOD,1800)IDIM2 */
 /* 1800  FORMAT('Reading length ',I6) */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD,'Reading length %6d%!',IDIM2) >*/
-    swritf_(infod, "Reading length %6d%!", &idim2, (ftnlen)80, (ftnlen)20);
+/*<       CALL SWRT1(INFOD,'Reading length %6d%!',IDIM2) >*/
+    swrt1_(infod, "Reading length %6d%!", &idim2, (ftnlen)80, (ftnlen)20);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 
@@ -544,7 +559,7 @@ L1:
 /* 1022 FORMAT(A,F5.1,2I6) */
 /*<    >*/
 	i__1 = i_len(namarc, namarc_len);
-	swritf_(infoud, "%.*s%5.1f%6d%6d%!", &i__1, namarc, permis, &idim2, &
+	swrt5_(infoud, "%.*s%5.1f%6d%6d%!", &i__1, namarc, permis, &idim2, &
 		leno, (ftnlen)80, (ftnlen)17, namarc_len);
 /*<         CALL TOLIST(LIST,INFOUD) >*/
 	tolist_(list, infoud, list_len, (ftnlen)80);
@@ -714,8 +729,8 @@ L99:
 /*        WRITE(INFOD,10077)LLINO(I) */
 /* 10077   FORMAT(' Contig line for contig',I8,' not found!') */
 /*<    >*/
-	swritf_(infod, " Contig line for contig%8d not found!%!", &llino[i__ 
-		- 1], (ftnlen)80, (ftnlen)39);
+	swrt1_(infod, " Contig line for contig%8d not found!%!", &llino[i__ - 
+		1], (ftnlen)80, (ftnlen)39);
 /*<         CALL ERROMF(INFOD) >*/
 	erromf_(infod, (ftnlen)80);
 /*<         GO TO 900 >*/
@@ -736,9 +751,9 @@ L100:
 /*        WRITE(INFOD,1014)LLINO(1) */
 /* 1014    FORMAT('New reading overlaps contig',I8) */
 /* CHECKED */
-/*<         CALL SWRITF(INFOD,'New reading overlaps contig%8d%!',LLINO(1)) >*/
-	swritf_(infod, "New reading overlaps contig%8d%!", llino, (ftnlen)80, 
-		(ftnlen)32);
+/*<         CALL SWRT1(INFOD,'New reading overlaps contig%8d%!',LLINO(1)) >*/
+	swrt1_(infod, "New reading overlaps contig%8d%!", llino, (ftnlen)80, (
+		ftnlen)32);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
 /*<         IF(ITOTPG(1).GT.0) CALL CCTA(SEQG2(1,1),IDIM22(1)) >*/
@@ -796,7 +811,7 @@ L100:
 /* 1013  FORMAT('Overlap between contigs',I8,' and',I8) */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "Overlap between contigs%8d and%8d%!", llino, &llino[1], (
+    swrt2_(infod, "Overlap between contigs%8d and%8d%!", llino, &llino[1], (
 	    ftnlen)80, (ftnlen)35);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
@@ -818,7 +833,7 @@ L100:
 	}
 /*        WRITE(INFOD,1012)LLINO(IGOOD) */
 /*<    >*/
-	swritf_(infod, "Entering the new reading into contig%8d%!", &llino[
+	swrt1_(infod, "Entering the new reading into contig%8d%!", &llino[
 		igood - 1], (ftnlen)80, (ftnlen)41);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -878,7 +893,7 @@ L100:
 	}
 /*        WRITE(INFOD,1012)LLINO(IGOOD) */
 /*<    >*/
-	swritf_(infod, "Entering the new reading into contig%8d%!", &llino[
+	swrt1_(infod, "Entering the new reading into contig%8d%!", &llino[
 		igood - 1], (ftnlen)80, (ftnlen)41);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -928,7 +943,7 @@ L100:
 /* 1002  FORMAT('Length of overlap between the contigs',I6) */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "Length of overlap between the contigs%6d%!", &iover, (
+    swrt1_(infod, "Length of overlap between the contigs%6d%!", &iover, (
 	    ftnlen)80, (ftnlen)42);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
@@ -968,7 +983,7 @@ L100:
 	}
 /*        WRITE(INFOD,1012)LLINO(IGOOD) */
 /*<    >*/
-	swritf_(infod, "Entering the new reading into contig%8d%!", &llino[
+	swrt1_(infod, "Entering the new reading into contig%8d%!", &llino[
 		igood - 1], (ftnlen)80, (ftnlen)41);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -1008,15 +1023,15 @@ L100:
 	}
 /*        WRITE(INFOD,1020)LLINO */
 /*<    >*/
-	swritf_(infod, "Could not join contigs%8d and%8d%!", llino, &llino[1],
-		 (ftnlen)80, (ftnlen)34);
+	swrt2_(infod, "Could not join contigs%8d and%8d%!", llino, &llino[1], 
+		(ftnlen)80, (ftnlen)34);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
 /* 1020    FORMAT('Could not join contigs',I8,' and',I8) */
 /* 1021    FORMAT('Reading has been entered into contig',I8) */
 /*        WRITE(INFOD,1021)LLINO(IGOOD) */
 /*<    >*/
-	swritf_(infod, "Reading has been entered into contig%8d%!", &llino[
+	swrt1_(infod, "Reading has been entered into contig%8d%!", &llino[
 		igood - 1], (ftnlen)80, (ftnlen)41);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -1050,8 +1065,8 @@ L100:
 /*      WRITE(INFOD,1012)LLINO(LMOST) */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "Entering the new reading into contig%8d%!", &llino[lmost 
-	    - 1], (ftnlen)80, (ftnlen)41);
+    swrt1_(infod, "Entering the new reading into contig%8d%!", &llino[lmost - 
+	    1], (ftnlen)80, (ftnlen)41);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /* 1012  FORMAT('Entering the new reading into contig',I8) */
@@ -1191,8 +1206,8 @@ L100:
     if (itotpc[lmost - 1] > 0) {
 /*        WRITE(INFOD,1017)LLINO(LMOST) */
 /* CHECKED */
-/*<         CALL SWRITF(INFOD,'Editing contig%8d%!',LLINO(LMOST)) >*/
-	swritf_(infod, "Editing contig%8d%!", &llino[lmost - 1], (ftnlen)80, (
+/*<         CALL SWRT1(INFOD,'Editing contig%8d%!',LLINO(LMOST)) >*/
+	swrt1_(infod, "Editing contig%8d%!", &llino[lmost - 1], (ftnlen)80, (
 		ftnlen)19);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -1212,8 +1227,8 @@ L100:
     if (itotpc[rmost - 1] > 0) {
 /*        WRITE(INFOD,1017)LLINO(RMOST) */
 /* CHECKED */
-/*<         CALL SWRITF(INFOD,'Editing contig%8d%!',LLINO(RMOST)) >*/
-	swritf_(infod, "Editing contig%8d%!", &llino[rmost - 1], (ftnlen)80, (
+/*<         CALL SWRT1(INFOD,'Editing contig%8d%!',LLINO(RMOST)) >*/
+	swrt1_(infod, "Editing contig%8d%!", &llino[rmost - 1], (ftnlen)80, (
 		ftnlen)19);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -1233,7 +1248,7 @@ L100:
 /*      WRITE(INFOD,1018)LNBR(LINCON(LMOST)),LNBR(LINCON(RMOST)) */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "Completing the join between contigs%8d and%8d%!", &lnbr[
+    swrt2_(infod, "Completing the join between contigs%8d and%8d%!", &lnbr[
 	    lincon[lmost - 1]], &lnbr[lincon[rmost - 1]], (ftnlen)80, (ftnlen)
 	    47);
 /*<       CALL INFO(INFOD) >*/
@@ -1334,29 +1349,28 @@ L901:
 /*      WRITE(INFOD,1030)JGEL */
 /* 1030 FORMAT(I8,' sequences processed') */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD,'%8d sequences processed%!',JGEL) >*/
-    swritf_(infod, "%8d sequences processed%!", &jgel, (ftnlen)80, (ftnlen)25)
-	    ;
+/*<       CALL SWRT1(INFOD,'%8d sequences processed%!',JGEL) >*/
+    swrt1_(infod, "%8d sequences processed%!", &jgel, (ftnlen)80, (ftnlen)25);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*      WRITE(INFOD,1031)JNGEL */
 /* 1031 FORMAT(I8,' sequences entered into database') */
-/*<       CALL SWRITF(INFOD,'%8d sequences entered into database%!',JNGEL) >*/
-    swritf_(infod, "%8d sequences entered into database%!", &jngel, (ftnlen)
-	    80, (ftnlen)37);
+/*<       CALL SWRT1(INFOD,'%8d sequences entered into database%!',JNGEL) >*/
+    swrt1_(infod, "%8d sequences entered into database%!", &jngel, (ftnlen)80,
+	     (ftnlen)37);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*      WRITE(INFOD,1032)JNJOIN */
 /* 1032 FORMAT(I8,' joins made') */
-/*<       CALL SWRITF(INFOD,'%8d joins made%!',JNJOIN) >*/
-    swritf_(infod, "%8d joins made%!", &jnjoin, (ftnlen)80, (ftnlen)16);
+/*<       CALL SWRT1(INFOD,'%8d joins made%!',JNJOIN) >*/
+    swrt1_(infod, "%8d joins made%!", &jnjoin, (ftnlen)80, (ftnlen)16);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*      WRITE(INFOD,1033)JOINF */
 /* 1033 FORMAT(I8,' joins failed') */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD,'%8d joins failed%!',JOINF) >*/
-    swritf_(infod, "%8d joins failed%!", &joinf, (ftnlen)80, (ftnlen)18);
+/*<       CALL SWRT1(INFOD,'%8d joins failed%!',JOINF) >*/
+    swrt1_(infod, "%8d joins failed%!", &joinf, (ftnlen)80, (ftnlen)18);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*<       END >*/
@@ -1494,6 +1508,8 @@ L901:
     extern integer indb_(integer *, char *, char *, ftnlen, ftnlen);
     extern /* Subroutine */ int info_(char *, ftnlen);
     static integer itmp;
+    extern /* Subroutine */ int swrt1_(char *, char *, integer *, ftnlen, 
+	    ftnlen);
     static char namid[40], infod[80];
     extern /* Subroutine */ int sindb_(integer *, integer *, char *, char *, 
 	    integer *, ftnlen, ftnlen);
@@ -1507,7 +1523,7 @@ L901:
 	     integer *, integer *), shiftt_(integer *, integer *, integer *, 
 	    integer *), stikit_(integer *, char *, integer *, integer *, char 
 	    *, integer *, integer *, integer *, integer *, ftnlen, ftnlen), 
-	    swritf_(), writrn_(integer *, integer *, integer *);
+	    writrn_(integer *, integer *, integer *);
 
 /*   AUTHOR: RODGER STADEN */
 /*<       INTEGER  RELPG(IDBSIZ),X,Y >*/
@@ -1561,8 +1577,8 @@ L5:
 /*     +  ' Entry aborted') */
 /* CHECKED */
 /*<    >*/
-	swritf_(infod, "New reading already in database with number%8d Entry"
-		" aborted%!", &j, (ftnlen)80, (ftnlen)62);
+	swrt1_(infod, "New reading already in database with number%8d Entry "
+		"aborted%!", &j, (ftnlen)80, (ftnlen)62);
 /*<         CALL ERROMF(INFOD) >*/
 	erromf_(infod, (ftnlen)80);
 /*<         IFAIL=6 >*/
@@ -1589,8 +1605,8 @@ L5:
 /* 1003  FORMAT('This gel reading has been given the number ',I8) */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "This gel reading has been given the number %8d%!", ngels, 
-	    (ftnlen)80, (ftnlen)48);
+    swrt1_(infod, "This gel reading has been given the number %8d%!", ngels, (
+	    ftnlen)80, (ftnlen)48);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*   WRITE NAME OF ARCHIVE TO LIST OF ARCHIVES */
@@ -2714,7 +2730,9 @@ L50:
     /* Local variables */
     static integer i__, jlc[100];
     static char csen[1];
-    extern /* Subroutine */ int info_(char *, ftnlen);
+    extern /* Subroutine */ int info_(char *, ftnlen), swrt1_(char *, char *, 
+	    integer *, ftnlen, ftnlen), swrt4_(char *, char *, integer *, 
+	    integer *, integer *, integer *, ftnlen, ftnlen);
     static integer jfail, jdim22;
     extern /* Subroutine */ int aline_(char *, char *, char *, char *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
@@ -2751,7 +2769,7 @@ L50:
     extern /* Subroutine */ int mstlkl_(char *, integer *, ftnlen);
     static integer lenovr, jjoint, jtotpc, jtotpg;
     extern /* Subroutine */ int sqcopy_(char *, char *, integer *, ftnlen, 
-	    ftnlen), swritf_();
+	    ftnlen);
 
 /*   AUTHOR: RODGER STADEN */
 /*   changed 29-11-90 to make first in list of alignments the best */
@@ -2915,8 +2933,8 @@ L2:
 /*      WRITE(INFOD,1000)IMATC */
 /* 1000 FORMAT('Total matches found',I6) */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD, 'Total matches found%6d%!', IMATC) >*/
-    swritf_(infod, "Total matches found%6d%!", imatc, (ftnlen)80, (ftnlen)24);
+/*<       CALL SWRT1(INFOD, 'Total matches found%6d%!', IMATC) >*/
+    swrt1_(infod, "Total matches found%6d%!", imatc, (ftnlen)80, (ftnlen)24);
 /*<       CALL INFO(INFOD) >*/
     info_(infod, (ftnlen)80);
 /*<       IF(IMATC.EQ.0) THEN >*/
@@ -2939,8 +2957,8 @@ L2:
 /*     +  ' at position',I8) */
 /* CHECKED */
 /*<    >*/
-	swritf_(infod, "Contig%8d position%8d matches strand %2d at position"
-		"%8d%!", &jllino[i__ - 1], &jposc[i__ - 1], &jsense[i__ - 1], &
+	swrt4_(infod, "Contig%8d position%8d matches strand %2d at position%"
+		"8d%!", &jllino[i__ - 1], &jposc[i__ - 1], &jsense[i__ - 1], &
 		jposg[i__ - 1], (ftnlen)80, (ftnlen)57);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
@@ -2998,9 +3016,9 @@ L2:
 /*        WRITE(INFOD,1001)JLLINO(I) */
 /* 1001   FORMAT('Trying to align with contig ',I8) */
 /* CHECKED */
-/*<         CALL SWRITF(INFOD,'Trying to align with contig %8d%!',JLLINO(I)) >*/
-	swritf_(infod, "Trying to align with contig %8d%!", &jllino[i__ - 1], 
-		(ftnlen)80, (ftnlen)33);
+/*<         CALL SWRT1(INFOD,'Trying to align with contig %8d%!',JLLINO(I)) >*/
+	swrt1_(infod, "Trying to align with contig %8d%!", &jllino[i__ - 1], (
+		ftnlen)80, (ftnlen)33);
 /*<         CALL INFO(INFOD) >*/
 	info_(infod, (ftnlen)80);
 /*<    >*/
@@ -3251,7 +3269,11 @@ L100:
     static integer kc, lg;
     extern /* Subroutine */ int info_(char *, ftnlen);
     static char name1[15], name2[15];
-    static integer iendc, iendg;
+    extern /* Subroutine */ int swrt0_(char *, char *, ftnlen, ftnlen);
+    static integer iendc;
+    extern /* Subroutine */ int swrt3_(char *, char *, real *, integer *, 
+	    integer *, ftnlen, ftnlen);
+    static integer iendg;
     static char infod[80];
     extern integer forta_(char *, char *, integer *, char *, char *, integer *
 	    , integer *, integer *, char *, integer *, ftnlen, ftnlen, ftnlen,
@@ -3259,7 +3281,7 @@ L100:
     extern /* Subroutine */ int erromf_(char *, ftnlen);
     extern integer ctonum_(char *, ftnlen);
     extern /* Subroutine */ int mstlkl_(char *, integer *, ftnlen), sqcopy_(
-	    char *, char *, integer *, ftnlen, ftnlen), swritf_();
+	    char *, char *, integer *, ftnlen, ftnlen);
 
 /*   AUTHOR: RODGER STADEN */
 /*<       CHARACTER SEQC2(MAXGEL),SEQG2(MAXGEL),SEQ3(MAXGEL) >*/
@@ -3378,8 +3400,8 @@ L200:
 /*     +    ', pads in gel',I3) */
 /* CHECKED */
 /*<    >*/
-	    swritf_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads "
-		    "in gel%3d%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
+	    swrt3_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads i"
+		    "n gel%3d%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
 /*<           CALL INFO(INFOD) >*/
 	    info_(infod, (ftnlen)80);
 /*<         END IF >*/
@@ -3399,8 +3421,8 @@ L200:
 /*          WRITE(INFOD,1052)X,ITOTPC,ITOTPG */
 /* CHECKED */
 /*<    >*/
-	    swritf_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads "
-		    "in gel%3d%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
+	    swrt3_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads i"
+		    "n gel%3d%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
 /*<           CALL INFO(INFOD) >*/
 	    info_(infod, (ftnlen)80);
 /*<           RETURN >*/
@@ -3412,16 +3434,16 @@ L200:
 /*      WRITE(INFOD,1052)X,ITOTPC,ITOTPG */
 /* CHECKED */
 /*<    >*/
-    swritf_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads in gel%3"
-	    "d%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
+    swrt3_(infod, "Percent mismatch %4.1f, pads in contig%3d, pads in gel%3d"
+	    "%!", x, itotpc, itotpg, (ftnlen)80, (ftnlen)59);
 /*      WRITE(NAME2,1000)'     Consensus' */
 /*      WRITE(NAME1,1000)'       Reading' */
 /* 1000  FORMAT(A) */
 /* CHECKED */
-/*<       CALL SWRITF(NAME2, '    Consensus %!') >*/
-    swritf_(name2, "    Consensus %!", (ftnlen)15, (ftnlen)16);
-/*<       CALL SWRITF(NAME1, '      Reading %!') >*/
-    swritf_(name1, "      Reading %!", (ftnlen)15, (ftnlen)16);
+/*<       CALL SWRT0(NAME2, '    Consensus %!') >*/
+    swrt0_(name2, "    Consensus %!", (ftnlen)15, (ftnlen)16);
+/*<       CALL SWRT0(NAME1, '      Reading %!') >*/
+    swrt0_(name1, "      Reading %!", (ftnlen)15, (ftnlen)16);
 /*<    >*/
     i__1 = i_len(name1, (ftnlen)15);
     kc = forta_(seqc2 + 1, seqg2 + iendg, lo, name2, name1, &i__1, &iendc, &
@@ -4622,10 +4644,11 @@ L10:
     static integer j, l;
     extern /* Subroutine */ int info_(char *, ftnlen);
     static char infod[60];
-    extern /* Subroutine */ int erromf_(char *, ftnlen);
+    extern /* Subroutine */ int swrt2b_(char *, char *, integer *, char *, 
+	    ftnlen, ftnlen, ftnlen), swrt3b_(char *, char *, integer *, char *
+	    , integer *, ftnlen, ftnlen, ftnlen), erromf_(char *, ftnlen);
     static char errmsg[333];
-    extern /* Subroutine */ int swritf_(), tolist_(char *, char *, ftnlen, 
-	    ftnlen);
+    extern /* Subroutine */ int tolist_(char *, char *, ftnlen, ftnlen);
 
 /*<       CHARACTER LIST*(*),NAME*(*) >*/
 /*<       CHARACTER INFOD*60 >*/
@@ -4661,9 +4684,9 @@ L6:
 /*      WRITE(INFOD,1000)NAME(1:L),IERR */
 /* 1000 FORMAT(A,I2) */
 /* CHECKED */
-/*<       CALL SWRITF(INFOD,'%.*s%2d%!',LEN(NAME(1:L)),NAME(1:L),IERR) >*/
+/*<       CALL SWRT3B(INFOD,'%.*s%2d%!',LEN(NAME(1:L)),NAME(1:L),IERR) >*/
     i__1 = i_len(name__, l);
-    swritf_(infod, "%.*s%2d%!", &i__1, name__, ierr, (ftnlen)60, (ftnlen)9, l)
+    swrt3b_(infod, "%.*s%2d%!", &i__1, name__, ierr, (ftnlen)60, (ftnlen)9, l)
 	    ;
 /*      WRITE(ERRMSG,1010)'Failed file ',NAME(1:L), */
 /*     +     'written to error file' */
@@ -4671,7 +4694,7 @@ L6:
 /* CHECKED */
 /*<    >*/
     i__1 = i_len(name__, l);
-    swritf_(errmsg, "Failed file %.*swritten to error file%!", &i__1, name__, 
+    swrt2b_(errmsg, "Failed file %.*swritten to error file%!", &i__1, name__, 
 	    (ftnlen)333, (ftnlen)39, l);
 /*<       CALL ERROMF(ERRMSG) >*/
     erromf_(errmsg, (ftnlen)333);
@@ -5627,240 +5650,6 @@ integer randc_(integer *relpg, integer *lngthg, integer *lnbr, integer *rnbr,
     return ret_val;
 } /* randc_ */
 
-/*      CMPLMT */
-
-/*   SUBROUTINE TO REVERSE AND COMPLEMENT GELS AND DATA BASE */
-/*   THE POSITIONS OF THE RIGHT ENDS OF GELS ARE FIRST STORED */
-/*   IN RELPG THEN WE DO A BUBBLE SORT ON THESE POSITIONS */
-/*   UPDATING RELATIONSHIPS AS WE GO */
-/*   ALSO SEQUENCES ARE COMPLEMENTED, SIGNS OF LENGTH ARE */
-/*   MULTIPLIED BY -1 AND THE CONTIG LINE IS ALTERED */
-/*<    >*/
-/* Subroutine */ int cmplmt_(integer *relpg, integer *lngthg, integer *lnbr, 
-	integer *rnbr, integer *ngels, integer *nconts, integer *lincon, 
-	integer *llino, char *gel, integer *idbsiz, integer *idevr, integer *
-	maxgel, ftnlen gel_len)
-{
-    /* System generated locals */
-    integer i__1;
-
-    /* Local variables */
-    static integer m, n, x, i1, i2, nl;
-    extern /* Subroutine */ int info_(char *, ftnlen);
-    static char infod[30];
-    extern /* Subroutine */ int comtag_(integer *, integer *, integer *), 
-	    cplseq_(integer *, integer *, integer *), writec_(integer *, 
-	    integer *, integer *, integer *, integer *), writeg_(integer *, 
-	    integer *, integer *, integer *, integer *, integer *), swritf_();
-
-/*   AUTHOR: RODGER STADEN */
-/*<       INTEGER RELPG(IDBSIZ) >*/
-/*<       INTEGER LNGTHG(IDBSIZ),LNBR(IDBSIZ),RNBR(IDBSIZ) >*/
-/*<       CHARACTER GEL(MAXGEL) >*/
-/*<       CHARACTER INFOD*30 >*/
-/*<       INTEGER X >*/
-
-/*      WRITE(INFOD,1000)LLINO */
-/* 1000  FORMAT( 'Complementing contig',I8) */
-/* CHECKED */
-/*<       CALL SWRITF(INFOD, 'Complementing contig%8d%!',LLINO) >*/
-    /* Parameter adjustments */
-    --rnbr;
-    --lnbr;
-    --lngthg;
-    --relpg;
-    --gel;
-
-    /* Function Body */
-    swritf_(infod, "Complementing contig%8d%!", llino, (ftnlen)30, (ftnlen)25)
-	    ;
-/*<       CALL INFO(INFOD) >*/
-    info_(infod, (ftnlen)30);
-/*   CHAIN THRU AND PUT RIGHT ENDS IN RELPG */
-/*<       N=LLINO >*/
-    n = *llino;
-/*< 10    CONTINUE >*/
-L10:
-/*<       RELPG(N)=RELPG(N)+(ABS(LNGTHG(N)))-1 >*/
-    relpg[n] = relpg[n] + (i__1 = lngthg[n], abs(i__1)) - 1;
-/*<       IF(RNBR(N).EQ.0)GO TO 20 >*/
-    if (rnbr[n] == 0) {
-	goto L20;
-    }
-/*<       N=RNBR(N) >*/
-    n = rnbr[n];
-/*<       GO TO 10 >*/
-    goto L10;
-/*< 20    CONTINUE >*/
-L20:
-
-/*   NOW EFFECTIVELY BUBBLE SORT ON RELPG */
-/*<       N=RNBR(LINCON) >*/
-    n = rnbr[*lincon];
-/*<       GO TO 22 >*/
-    goto L22;
-/*< 21    CONTINUE >*/
-L21:
-/*<       N=NL >*/
-    n = nl;
-/*<       IF(I1.GT.0)N=I2 >*/
-    if (i1 > 0) {
-	n = i2;
-    }
-/*< 22    CONTINUE >*/
-L22:
-/*<       NL=LNBR(N) >*/
-    nl = lnbr[n];
-/*<       IF(NL.EQ.0)GO TO 30 >*/
-    if (nl == 0) {
-	goto L30;
-    }
-/*<       I1=0 >*/
-    i1 = 0;
-/*< 23    CONTINUE >*/
-L23:
-/*<       IF(RELPG(N).GE.RELPG(NL))GO TO 21 >*/
-    if (relpg[n] >= relpg[nl]) {
-	goto L21;
-    }
-/*   NOT IN CORRECT ORDER SO CHAIN ALONG UNTIL CORRECT,THEN COME */
-/*   BACK TO THIS POINT AND CONTINUE */
-/*   IF FIRST MOVE THIS LINE SET POINTER TO CURRENT POSITION */
-/*<       IF(I1.EQ.0)I2=N >*/
-    if (i1 == 0) {
-	i2 = n;
-    }
-/*<       I1=1 >*/
-    i1 = 1;
-
-/*   EXCHANGE NEIGHBOURS. CURRENTLY LOOKING AT N AND ITS LEFT */
-/*   NBR, AND THE LEFT NBR IS FURTHER RIGHT THAN N */
-/*   FIX UP POINTERS TO LEFT AND RIGHT OF THESE TWO */
-/*<       M=LNBR(NL) >*/
-    m = lnbr[nl];
-/*<       IF(M.NE.0)RNBR(M)=N >*/
-    if (m != 0) {
-	rnbr[m] = n;
-    }
-/*<       M=RNBR(N) >*/
-    m = rnbr[n];
-/*<       IF(M.NE.0)LNBR(M)=NL >*/
-    if (m != 0) {
-	lnbr[m] = nl;
-    }
-/*<       LNBR(N)=LNBR(NL) >*/
-    lnbr[n] = lnbr[nl];
-/*<       LNBR(NL)=N >*/
-    lnbr[nl] = n;
-/*<       RNBR(NL)=RNBR(N) >*/
-    rnbr[nl] = rnbr[n];
-/*<       RNBR(N)=NL >*/
-    rnbr[n] = nl;
-/*   CHAIN BACK THRU LIST WITH THIS LINE */
-/*<       N=RNBR(NL) >*/
-    n = rnbr[nl];
-/*<       IF(N.EQ.0)GO TO 21 >*/
-    if (n == 0) {
-	goto L21;
-    }
-/*   IE END MET */
-/*<       GO TO 23 >*/
-    goto L23;
-/*< 30    CONTINUE >*/
-L30:
-/*   FINISH WITH LEFT END IN N */
-/*< 40    CONTINUE >*/
-L40:
-/*   NOW REVERSE NBRS SO CHAIN BACK RIGHT */
-/*<       NL=RNBR(N) >*/
-    nl = rnbr[n];
-/*<       IF(NL.EQ.0)GO TO 50 >*/
-    if (nl == 0) {
-	goto L50;
-    }
-/*<       RNBR(N)=LNBR(N) >*/
-    rnbr[n] = lnbr[n];
-/*<       LNBR(N)=NL >*/
-    lnbr[n] = nl;
-/*<       N=NL >*/
-    n = nl;
-/*<       GO TO 40 >*/
-    goto L40;
-/*< 50    CONTINUE >*/
-L50:
-/*   NEED TO FIX UP NEW LEFT END */
-/*<       RNBR(N)=LNBR(N) >*/
-    rnbr[n] = lnbr[n];
-/*<       LNBR(N)=0 >*/
-    lnbr[n] = 0;
-/*   ALL POINTERS FIXED NOW DO RELATIVE POSITION */
-/*   FINISH WITH LEFT END IN N */
-/*   SO CHAIN BACK RIGHT */
-/*   SAVE RIGHT LINE NUMBER */
-/*<       NL=N >*/
-    nl = n;
-/*<       X=RELPG(N) >*/
-    x = relpg[n];
-/*< 60    CONTINUE >*/
-L60:
-/*<       RELPG(N)=1+(-1*(RELPG(N)-X)) >*/
-    relpg[n] = -(relpg[n] - x) + 1;
-/*<       IF(RNBR(N).EQ.0)GO TO 70 >*/
-    if (rnbr[n] == 0) {
-	goto L70;
-    }
-/*<       N=RNBR(N) >*/
-    n = rnbr[n];
-/*<       GO TO 60 >*/
-    goto L60;
-/*< 70    CONTINUE >*/
-L70:
-/*   NOW FIX CONTIG LINE */
-/*<       LNBR(LINCON)=NL >*/
-    lnbr[*lincon] = nl;
-/*<       RNBR(LINCON)=N >*/
-    rnbr[*lincon] = n;
-/*   WRITE NEW CONTIG LINE */
-/*<    >*/
-    i__1 = *idbsiz - *lincon;
-    writec_(idevr, &i__1, &relpg[*lincon], &lnbr[*lincon], &rnbr[*lincon]);
-/*   NOW REVERSE AND COMPLEMENT GELS */
-/*<       N=NL >*/
-    n = nl;
-/*< 80    CONTINUE >*/
-L80:
-/* Added by Simon 17-March-1993 */
-/*<       CALL CPLSEQ(IDEVR,N,MAXGEL) >*/
-    cplseq_(idevr, &n, maxgel);
-/*      READ(IDEVW,REC=N)GEL */
-/*      CALL READW(IDEVW,N,GEL,MAXGEL) */
-/*      M=ABS(LNGTHG(N)) */
-/*      CALL SQREV(GEL,M) */
-/*      CALL SQCOM(GEL,M) */
-/*      CALL WRITEW(IDEVW,N,GEL,MAXGEL) */
-/*   CHANGE SIGNS */
-/*<       LNGTHG(N)=-1*LNGTHG(N) >*/
-    lngthg[n] = -lngthg[n];
-/*   WRITE NEW GEL LINE */
-/*<    >*/
-    writeg_(idevr, &n, &relpg[n], &lngthg[n], &lnbr[n], &rnbr[n]);
-/*   ANY MORE? */
-/*<       N=RNBR(N) >*/
-    n = rnbr[n];
-/*<       IF(N.NE.0)GO TO 80 >*/
-    if (n != 0) {
-	goto L80;
-    }
-/*   NO MORE */
-/*   Now update consensus tag list */
-/*<       CALL COMTAG(IDEVR, IDBSIZ-LINCON, RELPG(LINCON)) >*/
-    i__1 = *idbsiz - *lincon;
-    comtag_(idevr, &i__1, &relpg[*lincon]);
-/*<       RETURN >*/
-    return 0;
-/*<       END >*/
-} /* cmplmt_ */
-
 /*<       SUBROUTINE INITS >*/
 /* Subroutine */ int inits_(void)
 {
@@ -6228,125 +6017,6 @@ L99:
 /*<       END >*/
     return 0;
 } /* busyf_ */
-
-/*     SQCOM */
-/*<       SUBROUTINE SQCOM(SEQ,IDIM) >*/
-/* Subroutine */ int sqcom_(char *seq, integer *idim, ftnlen seq_len)
-{
-    /* Initialized data */
-
-    static char list1[1*31] = "A" "C" "G" "T" "N" "-" "a" "c" "g" "t" "n" 
-	    "B" "D" "H" "K" "M" "R" "S" "V" "W" "Y" "b" "d" "h" "k" "m" "r" 
-	    "s" "v" "w" "y";
-    static char list2[1*31] = "T" "G" "C" "A" "N" "-" "t" "g" "c" "a" "n" 
-	    "V" "H" "D" "M" "K" "Y" "S" "B" "W" "R" "v" "h" "d" "m" "k" "y" 
-	    "s" "b" "w" "r";
-
-    /* System generated locals */
-    integer i__1;
-
-    /* Local variables */
-    static integer i__, j;
-    static char temp[1];
-
-/*   AUTHOR: RODGER STADEN */
-/*   CHANGE TO IUB CODES 21-1-98 */
-/*<       PARAMETER (MAXLST = 31) >*/
-/*<       CHARACTER SEQ(IDIM),LIST1(MAXLST),LIST2(MAXLST),TEMP >*/
-/*<       SAVE LIST1,LIST2 >*/
-/*<    >*/
-    /* Parameter adjustments */
-    --seq;
-
-    /* Function Body */
-/*<    >*/
-/*      DATA LIST1/ */
-/*     +'C','T','A','G', */
-/*     +'c','t','a','g', */
-/*     +'D','V','B','H', */
-/*     +'d','v','b','h', */
-/*     +'K','L','M','N', */
-/*     +'k','l','m','n', */
-/*     +'R','Y','U', */
-/*     +'r','y','u', */
-/*     +'1','2','3','4', */
-/*     +'5','6','7','8'/ */
-/*      DATA LIST2/ */
-/*     +'G','A','T','C', */
-/*     +'g','a','t','c', */
-/*     +'H','B','V','D', */
-/*     +'h','b','v','d', */
-/*     +'N','M','L','K', */
-/*     +'n','m','l','k', */
-/*     +'Y','R','A', */
-/*     +'y','r','a', */
-/*     +'4','3','2','1', */
-/*     +'6','5','7','8'/ */
-/*<       DO 100 I=1,IDIM >*/
-    i__1 = *idim;
-    for (i__ = 1; i__ <= i__1; ++i__) {
-/*<         TEMP = SEQ(I) >*/
-	*(unsigned char *)temp = *(unsigned char *)&seq[i__];
-/*<         DO 50 J=1,MAXLST >*/
-	for (j = 1; j <= 31; ++j) {
-/*<           IF(TEMP.EQ.LIST1(J))THEN >*/
-	    if (*(unsigned char *)temp == *(unsigned char *)&list1[j - 1]) {
-/*<             SEQ(I)=LIST2(J) >*/
-		*(unsigned char *)&seq[i__] = *(unsigned char *)&list2[j - 1];
-/*<             GO TO 99 >*/
-		goto L99;
-/*<           END IF >*/
-	    }
-/*< 50      CONTINUE >*/
-/* L50: */
-	}
-/*< 99      CONTINUE >*/
-L99:
-/*< 100   CONTINUE >*/
-/* L100: */
-	;
-    }
-/*<       END >*/
-    return 0;
-} /* sqcom_ */
-
-/*   SQREV */
-/*<       SUBROUTINE SQREV(SEQNCE,IDIM) >*/
-/* Subroutine */ int sqrev_(char *seqnce, integer *idim, ftnlen seqnce_len)
-{
-    /* System generated locals */
-    integer i__1;
-
-    /* Local variables */
-    static integer i__, iend;
-    static char temp[1];
-
-/*   AUTHOR: RODGER STADEN */
-/*<       CHARACTER SEQNCE(IDIM),TEMP >*/
-/*   REVERSE THE SEQUENCE */
-/*<       IEND=IDIM/2 >*/
-    /* Parameter adjustments */
-    --seqnce;
-
-    /* Function Body */
-    iend = *idim / 2;
-/*<       DO 100 I=1,IEND >*/
-    i__1 = iend;
-    for (i__ = 1; i__ <= i__1; ++i__) {
-/*<       TEMP=SEQNCE(I) >*/
-	*(unsigned char *)temp = *(unsigned char *)&seqnce[i__];
-/*<         SEQNCE(I)=SEQNCE(IDIM+1-I) >*/
-	*(unsigned char *)&seqnce[i__] = *(unsigned char *)&seqnce[*idim + 1 
-		- i__];
-/*<         SEQNCE(IDIM+1-I)=TEMP >*/
-	*(unsigned char *)&seqnce[*idim + 1 - i__] = *(unsigned char *)temp;
-/*< 100   CONTINUE >*/
-/* L100: */
-    }
-/*<       RETURN >*/
-    return 0;
-/*<       END >*/
-} /* sqrev_ */
 
 /*  ROUTINES TO CONTROL CHARACTER LOOKUP */
 /*  FOR BOTH DNA AND PROTEIN SEQUENCES */
