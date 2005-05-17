@@ -833,7 +833,7 @@ void verror(int priority, char *name, char *fmt, ...) {
 	fputc('\n', stderr);
     }
 
-    l = strlen(bufp);
+    l = strlen(bufp) - strlen(name) - 2; /* "%s: ",name */
     vsprintf(&bufp[l], fmt, args);
     log_file(NULL, &bufp[l]);
     strcat(&bufp[l], "\n");

@@ -1067,6 +1067,12 @@ int io_delete_contig(GapIO *io, int contig_num) {
     reg_delete rd;
     Array ar;
     int rnum;
+    char buf[1024];
+
+    /* Log file */
+    sprintf(buf, "> Delete contig. Renumber %d (last) to %d (deleting)",
+	    NumContigs(io), contig_num);
+    log_file(NULL, buf);
 
     /* remove annotations for contig contig_num */
     remove_contig_tags(io, contig_num, 0, 0);

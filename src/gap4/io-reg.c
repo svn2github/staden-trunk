@@ -112,9 +112,16 @@ int contig_register(GapIO *io, int contig,
 
     /* Log file */
     if (id != last_id) {
-	char buf[1024];
-	sprintf(buf, "> Register id=%d cnum=%d", id, contig);
-	log_file(NULL, buf);
+	char buf[1024], buf2[1024];
+	reg_query_name qn;
+
+	qn.job = REG_QUERY_NAME;
+	qn.line = buf;
+	buf[0] = 0;
+	func(io, contig, fdata, (reg_data *)&qn);
+	sprintf(buf2, "> Register id=%d cnum=%d func=%p data=%p :%.900s",
+		id, contig, func, fdata, buf);
+	log_file(NULL, buf2);
 	last_id = id;
     }
 
@@ -219,8 +226,8 @@ int contig_deregister(GapIO *io, int contig,
 	    qn.line = buf;
 	    buf[0] = 0;
 	    r[i-1].func(io, contig, r[i-1].fdata, (reg_data *)&qn);
-	    sprintf(buf2, "> Deregister id=%d cnum=%d: %.900s",
-		    r[i-1].id, contig, buf);
+	    sprintf(buf2, "> Deregister id=%d cnum=%d func=%p data=%p :%.900s",
+		    r[i-1].id, contig, r[i-1].func, r[i-1].fdata, buf);
 	    log_file(NULL, buf2);
 	    last_id = r[i-1].id;
 	}
@@ -396,11 +403,16 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
     contig_reg_t *r, *rto;
     cursor_t *gc;
     int offset = 0; /* HACK for now */
+    char buf[1024];
     
     /* copy list */
     a = io_reg(io, cfrom);
     ato = io_reg(io, cto);
     nto = io_Nreg(io, cto);
+
+    /* Log file */
+    sprintf(buf, "> Register_join cfrom=%d cto=%d\n", cfrom, cto);
+    log_file(NULL, buf);
 
     for (i = 0, n = io_Nreg(io, cfrom); i < n; i++) {
 	r = &arr(contig_reg_t, a, i);
@@ -471,6 +483,9 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 
     /* Flag update for result-manager */
     update_results(io);
+
+    sprintf(buf, "> Register_join done");
+    log_file(NULL, buf);
 
     return 0;
 }
