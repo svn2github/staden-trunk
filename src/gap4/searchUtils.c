@@ -342,16 +342,19 @@ static int findPrevTagByType (EdStruct *xx, char *type)
 }
 
 
-static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand)
+static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand,
+			    int where)
 /*
  * Search forwards from the cursor position until the sequence specified
  * is found. The cursor is positioned at the left end of the sequence,
  * if found.
  *
- * Observations:
- *   The search is done on a reading by reading basis, rather than from
- *   the consensus. 
- *   The search is not case sensitive.
+ * The search is made in the sequences and/or in the consensus.
+ * The search is not case sensitive.
+ *
+ * Where=1 => readings
+ * Where=2 => consensus
+ * where=3 => both
  */
 {
     int spos = positionInContig(xx,xx->cursorSeq,xx->cursorPos)+1;
@@ -362,106 +365,201 @@ static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand)
     char *reading;
     int maxlen;
     char *uppert, *upperb;
-    int len;
+    int patlen, len;
+    char *cons = NULL;
+    int cons_len = 0;
+    int wloop;
 
-    /* uppercase search string */
-    len = strlen(s);
-    depad_seq(s, &len, NULL);
-    if (NULL == (uppert = (char *)xmalloc(len + 1)))
+    /* uppercase search string and store fwd/rev copies */
+    patlen = strlen(s);
+    depad_seq(s, &patlen, NULL);
+    if (NULL == (uppert = (char *)xmalloc(patlen + 1)))
 	return 0;
-    if (NULL == (upperb = (char *)xmalloc(len + 1)))
+    if (NULL == (upperb = (char *)xmalloc(patlen + 1)))
 	return 0;
 
-    uppert[len] = upperb[len] = 0;
-    for (i = len-1; i >= 0; i--) {
+    uppert[patlen] = upperb[patlen] = 0;
+    for (i = patlen-1; i >= 0; i--) {
 	upperb[i] = uppert[i] = toupper(s[i]);
     }
-    complement_seq(upperb, len);
+    complement_seq(upperb, patlen);
    
     seqList = sequencesInRegion(xx,spos, epos);
-    fseq = 0;
+    fseq = -1;
     fseqpos = 0;
     fpos = INT_MAX;
     
-    
+    /* Identify maximum sequence length - we scan sequence by sequence */
     for (maxlen = 0, i=0; seqList[i] ; i++)
 	maxlen = max(maxlen, xx->reveal_cutoffs ? DB_Length2(xx,seqList[i])
 		     : DB_Length(xx,seqList[i]));
 
     if (NULL == (reading = (char *)xmalloc(maxlen+1)))
 	return 0;
-    
-    for (i=0; seqList[i] && DB_RelPos(xx,seqList[i]) < fpos ; i++) {
+
+    /*
+     * Note, bailing out of the search early is not possible due to
+     * the fact that the sequences are sorted by "used" start position and
+     * not cutoff start position.
+     * Eg:
+     * A ---------------------X-----------......
+     * B                ...X....-----------------................
+     * C                           .....-------------------...........
+     * D           ....X...................----------.....
+     *
+     * We find A first, then B, but C looks tempting to abort the search on.
+     * However then we'd miss D.
+     */
+    for (i=0; seqList[i]; i++) {
 	/* search through tag list for sequence */
 	int seq = seqList[i];
 	char *str;
 	char *indt, *indb, *ind;
 	int offset;
+	int diff;
+	int cpos;
 	
-	str = DBgetSeq(DBI(xx),seq);
-	offset = 0;
+	/* readings vs consensus */
+	for (wloop = 0; wloop < 2; wloop++) {
+	    char *data = NULL;
 
-	/*
-	 * Fill reading[] array with sequence, including cutoffs if shown.
-	 * Set 'str' to point to used sequence position in reading[].
-	 */
-	if (xx->reveal_cutoffs) {
-	    char *lower = DB_Seq(xx, seq);
-	    len = DB_Length2(xx, seq);
-	    reading[len] = '\0';
-	    /* strncpy(reading, DB_Seq(xx, seq), DB_Length2(xx, seq)); */
-	    for (len--; len >= 0; len--) {
-		reading[len] = toupper(lower[len]);
+	    if (0 == wloop && 0 == (where & 1))
+		continue;
+
+	    if (1 == wloop && 0 == (where & 2))
+		continue;
+
+	    /* Search readings */
+	    if (wloop == 0) {
+		if (DB_RelPos(xx, seq) - DB_Start(xx, seq) > fpos)
+		    continue;
+
+		str = DBgetSeq(DBI(xx),seq);
+		offset = 0;
+
+		/*
+		 * Fill reading[] array with sequence, including cutoffs if
+		 * shown. Set 'str' to point to used sequence position
+		 * in reading[].
+		 */
+		if (xx->reveal_cutoffs) {
+		    char *lower = DB_Seq(xx, seq);
+		    len = DB_Length2(xx, seq);
+		    reading[len] = '\0';
+		    for (len--; len >= 0; len--) {
+			reading[len] = toupper(lower[len]);
+		    }
+
+		    str = reading + DB_Start(xx, seq);
+
+		    if (in_interval(-DB_Start(xx, seq) + 1,
+				    DB_Length2(xx, seq),
+				    spos - DB_RelPos(xx, seq) + 1))
+			offset = spos - (DB_RelPos(xx, seq)
+				      - DB_Start(xx, seq));
+		} else {
+		    len = DB_Length(xx, seq);
+		    reading[len] = '\0';
+		    /* strncpy(reading,str,DB_Length(xx,seq)); */
+		    for (len--; len >= 0; len--) {
+			reading[len] = toupper(str[len]);
+		    }
+
+		    str = reading;
+
+		    if (in_interval(1, DB_Length(xx,seq),
+				    spos - DB_RelPos(xx,seq)+1))
+			offset = spos - DB_RelPos(xx, seq);
+		}
+
+		data = reading + offset;
 	    }
 
-	    str = reading + DB_Start(xx, seq);
+	    /* Also search consensus from this relpos to next relpos */
+	    else if (wloop == 1) {
+		int npads = 0;
+		int toadd = 10;
 
-	    if (in_interval(-DB_Start(xx, seq) + 1, DB_Length2(xx, seq),
-			    spos - DB_RelPos(xx, seq) + 1))
-		offset = spos - (DB_RelPos(xx, seq) - DB_Start(xx, seq));
-	} else {
-	    len = DB_Length(xx, seq);
-	    reading[len] = '\0';
-	    /* strncpy(reading,str,DB_Length(xx,seq)); */
-	    for (len--; len >= 0; len--) {
-		reading[len] = toupper(str[len]);
+		if (DB_RelPos(xx, seq) > fpos)
+		    continue;
+
+		do {
+		    int p;
+
+		    cpos = MAX(spos, DB_RelPos(xx, seqList[i]));
+		    npads = toadd*2;
+		    diff = patlen + (seqList[i+1]
+				     ?  DB_RelPos(xx, seqList[i+1])
+				     : DB_Length(xx, 0))
+			          - DB_RelPos(xx, seq) + npads;
+		    if (cons_len < diff) {
+			cons_len = diff;
+			cons = (char *)xrealloc(cons, cons_len+1);
+		    }
+		    DBcalcConsensus(xx, cpos, diff, cons,
+				    NULL,BOTH_STRANDS);
+		    cons[diff] = 0;
+
+		    /*
+		     * Count pads. Imagine a contig like this:
+		     * R1        ------------
+		     * R2                  -------------
+		     * pattern            xxxx
+		     * search    ..............
+		     * 
+		     * The search range is the distance from R1 to R2 plus
+		     * the pattern length, so that patterns overlapping
+		     * sequences are found.
+		     * But the search length needs to overlap R2 by "patlen"
+		     * real bases (excluding pads). We cycle around
+		     * hoping to get this many.
+		     */
+		    for (toadd = 0, p = diff - patlen - npads; cons[p]; p++) {
+			if (cons[p] == '*')
+			    toadd++;
+		    }
+		} while (npads < toadd);
+
+		data = cons;
 	    }
 
-	    str = reading;
-
-	    if (in_interval(1,DB_Length(xx,seq),spos - DB_RelPos(xx,seq)+1))
-		offset = spos - DB_RelPos(xx, seq);
-	}
+	    indb = indt = NULL;
+	    if (strand == '+' || strand == '=')
+		indt = pstrstr_inexact(data, uppert, mismatches, NULL);
+	    if (strand == '-' || strand == '=')
+		indb = pstrstr_inexact(data, upperb, mismatches, NULL);
 	
-	indb = indt = NULL;
-	if (strand == '+' || strand == '=')
-	    indt = pstrstr_inexact(reading + offset, uppert, mismatches, NULL);
-	if (strand == '-' || strand == '=')
-	    indb = pstrstr_inexact(reading + offset, upperb, mismatches, NULL);
-	
-	if (indt && indb)
-	    ind = MIN(indt, indb);
-	else if (indt)
-	    ind = indt;
-	else if (indb)
-	    ind = indb;
-	else
-	    ind = NULL;
-
-	if (ind != NULL) {
-	    int pos;
-	    pos = positionInContig(xx,seq,(int) (ind - str) + 1);
-	    if (in_interval(spos,fpos,pos)) {
-		fseqpos = (int) (ind - str) + 1;
-		fpos = pos;
-		fseq = seq;
-	    }
+	    if (indt && indb)
+		ind = MIN(indt, indb);
+	    else if (indt)
+		ind = indt;
+	    else if (indb)
+		ind = indb;
+	    else
+		ind = NULL;
 	    
+	    if (ind != NULL) {
+		int pos;
+		if (wloop == 0) {
+		    pos = positionInContig(xx,seq,(int) (ind - str) + 1);
+		    if (in_interval(spos,fpos,pos)) {
+			fseqpos = (int) (ind - str) + 1;
+			fpos = pos;
+			fseq = seq;
+		    }
+		} else {
+		    pos = ind - cons + cpos;
+		    if (in_interval(spos,fpos,pos)) {
+			fseqpos = pos;
+			fpos = pos;
+			fseq = 0;
+		    }
+		}
+	    }
 	}
-	
     }
     
-    if (fseq) {
+    if (fseq != -1) {
 	setCursorPosSeq(xx, fseqpos, fseq);
 	REDISPLAY(xx);
     }
@@ -469,7 +567,9 @@ static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand)
     xfree(reading);
     xfree(uppert);
     xfree(upperb);
-    return fseq;
+    xfree(cons);
+
+    return fseq != -1;
 }
 
 
@@ -497,16 +597,19 @@ static void reverse_str(char *s, int len)
 
 
 
-static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand)
+static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand,
+			    int where)
 /*
  * Search backwards from the cursor position until the sequence specified
  * is found. The cursor is positioned at the left end of the sequence,
  * if found.
  *
- * Observations:
- *   The search is done on a reading by reading basis, rather than from
- *   the consensus.
- *   The search is not case sensitive.
+ * The search is made in the sequences and/or in the consensus.
+ * The search is not case sensitive.
+ *
+ * Where=1 => readings
+ * Where=2 => consensus
+ * where=3 => both
  */
 {
     int spos;
@@ -517,105 +620,198 @@ static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand)
     char *reading;
     char *uppert, *upperb;
     int maxlen;
-    int plen;
+    int patlen;
+    int len;
+    char *cons = NULL;
+    int cons_len = 0;
     
-    /* remove pads from s */
-    plen = strlen(s);
-    depad_seq(s, &plen, NULL);
+    /* uppercase search string and store fwd/rev copies */
+    patlen = strlen(s);
+    depad_seq(s, &patlen, NULL);
+    if (NULL == (uppert = (char *)xmalloc(patlen + 1)))
+	return 0;
+    if (NULL == (upperb = (char *)xmalloc(patlen + 1)))
+	return 0;
+
+    uppert[patlen] = upperb[patlen] = 0;
+    for (i = patlen-1; i >= 0; i--) {
+	upperb[i] = uppert[i] = toupper(s[i]);
+    }
+    complement_seq(upperb, patlen);
     
     spos = positionInContig(xx,xx->cursorSeq,xx->cursorPos)+strlen(s)-2;
-
-    uppert = (char *)strdup(s);
-    upperb = (char *)strdup(s);
-
-    reverse_str(uppert, plen);
-    reverse_str(upperb, plen);
-    complement_seq(upperb, plen);
     
     seqList = sequencesInRegion(xx,epos, spos);
-    fseq = 0;
+    fseq = -1;
     fseqpos = 0;
     fpos = -INT_MAX;
-    
-    
+     
+    /* Identify maximum sequence length - we scan sequence by sequence */
     for (maxlen = 0, i=0; seqList[i] ; i++)
 	maxlen = max(maxlen, xx->reveal_cutoffs ? DB_Length2(xx,seqList[i])
 		     : DB_Length(xx,seqList[i]));
 
-    if (NULL == (reading = (char *)xmalloc(maxlen+1)))
+    if (NULL == (reading = (char *)xmalloc(maxlen+2)))
 	return 0;
-    
+
     for (i=0; seqList[i]; i++) ;
-    for (i--; i>=0 && DB_RelPos(xx,seqList[i])+DB_Length(xx,seqList[i]) > fpos ; i--) {
+    for (i--; i>=0; i--) {
 	/* search through tag list for sequence */
 	int seq = seqList[i];
 	char *str;
 	char *indt, *indb, *ind;
-	int offset;
+	int wloop;
+	int cpos, diff;
 	
-	str = DBgetSeq(DBI(xx),seq);
-	offset = 0;
+	for (wloop = 0; wloop < 2; wloop++) {
+	    char *data = NULL;
 
-	/*
-	 * Fill reading[] array with sequence, including cutoffs if shown.
-	 */
-	if (xx->reveal_cutoffs) {
-	    strncpy(reading, DB_Seq(xx, seq), DB_Length2(xx, seq));
-	    reading[DB_Length2(xx, seq)] = '\0';
-	    reverse_str(reading,DB_Length2(xx, seq));
+	    if (0 == wloop && 0 == (where & 1))
+		continue;
 
-	    if (in_interval(-DB_Start(xx, seq) + 1, DB_Length2(xx, seq),
-			    spos - DB_RelPos(xx, seq) + 1))
-		offset = DB_Length2(xx, seq) - (spos - (DB_RelPos(xx, seq) -
-							DB_Start(xx, seq))+1);
-	} else {
-	    strncpy(reading,str,DB_Length(xx,seq));
-	    reading[DB_Length(xx,seq)] = '\0';
-	    reverse_str(reading,DB_Length(xx,seq));
-
-	    if (in_interval(1,DB_Length(xx,seq),spos - DB_RelPos(xx,seq)+1))
-		offset = DB_Length(xx, seq) - (spos - DB_RelPos(xx, seq) + 1);
-	}
-
-	indb = indt = NULL;
-	if (strand == '+' || strand == '=')
-	    indt = pstrstr_inexact(reading + offset, uppert, mismatches, NULL);
-	if (strand == '-' || strand == '=')
-	    indb = pstrstr_inexact(reading + offset, upperb, mismatches, NULL);
-	
-	if (indt && indb)
-	    ind = MIN(indt, indb);
-	else if (indt)
-	    ind = indt;
-	else if (indb)
-	    ind = indb;
-	else
-	    ind = NULL;
-
-	if (ind != NULL) {
-	    int pos;
-
-	    if (xx->reveal_cutoffs) {
-		pos = positionInContig(xx, seq,
-				       DB_Length2(xx,seq) - DB_Start(xx, seq) -
-				       ((int)(ind - reading) + plen) + 1);
-	    } else {
-		pos = positionInContig(xx, seq,
-				       DB_Length (xx, seq) - 
-				       ((int)(ind - reading) + plen) + 1);
-	    }
-
-	    if (in_interval(spos,fpos,pos)) {
-		fseqpos = pos - DB_RelPos(xx,seq) + 1;
-		fpos = pos;
-		fseq = seq;
-	    }
+	    if (1 == wloop && 0 == (where & 2))
+		continue;
 	    
+
+	    /* Search readings */
+	    if (wloop == 0) {
+		if (xx->reveal_cutoffs) {
+		    if (DB_RelPos(xx, seq) - DB_Start(xx, seq)
+			+ DB_Length2(xx, seq) <= fpos)
+			continue;
+		} else {
+		    if (DB_RelPos(xx, seq) + DB_Length(xx, seq) <= fpos)
+			continue;
+		}
+
+		str = DBgetSeq(DBI(xx),seq);
+
+		/*
+		 * Fill reading[] array with sequence, including
+		 * cutoffs if shown. We null terminate it if it overlaps
+		 * our search right-end position (spos).
+		 */
+		if (xx->reveal_cutoffs) {
+		    char *lower = DB_Seq(xx, seq);
+		    len = DB_Length2(xx, seq);
+		    reading[len] = '\0';
+		    for (len--; len >= 0; len--) {
+			reading[len] = toupper(lower[len]);
+		    }
+
+		    str = reading + DB_Start(xx, seq);
+
+		    if (in_interval(1, DB_Length2(xx, seq),
+				    spos+1 - (DB_RelPos(xx, seq)
+					      - DB_Start(xx, seq))))
+			reading[spos+1 - (DB_RelPos(xx, seq)
+					- DB_Start(xx, seq))] = 0;
+		} else {
+		    len = DB_Length(xx, seq);
+		    reading[len] = '\0';
+		    for (len--; len >= 0; len--) {
+			reading[len] = toupper(str[len]);
+		    }
+
+		    str = reading;
+
+		    if (in_interval(1, DB_Length(xx, seq),
+				    spos+1 - DB_RelPos(xx, seq)))
+			reading[spos+1 - DB_RelPos(xx, seq)] = 0;
+		}
+
+		data = reading;
+	    }
+
+	    /* Search consensus */
+	    else if (wloop == 1) {
+		int npads = 0;
+		int toadd = 10;
+		
+		cpos = seqList[i+1]
+		    ? DB_RelPos(xx, seqList[i+1])
+		    : DB_Length(xx, 0);
+		if (cpos < fpos)
+		    continue;
+
+		do {
+		    int p;
+		    
+		    npads = toadd*2;
+		    diff = MIN(spos+1, patlen + cpos + npads)
+			- DB_RelPos(xx, seqList[i]);
+		    if (diff <= 0)
+			break;
+		    if (cons_len < diff) {
+			cons_len = diff;
+			cons = (char *)xrealloc(cons, cons_len+1);
+		    }
+		    DBcalcConsensus(xx, DB_RelPos(xx, seqList[i]), diff, cons,
+				    NULL,BOTH_STRANDS);
+		    cons[diff] = 0;
+
+		    /*
+		     * Count pads. Imagine a contig like this:
+		     * R1        ------------
+		     * R2                  -------------
+		     * pattern            xxxx
+		     * search    ..............
+		     * 
+		     * The search range is the distance from R1 to R2 plus
+		     * the pattern length, so that patterns overlapping
+		     * sequences are found.
+		     * But the search length needs to overlap R2 by "patlen"
+		     * real bases (excluding pads). We cycle around
+		     * hoping to get this many.
+		     */
+		    for (toadd = 0, p = diff - patlen - npads; cons[p]; p++) {
+			if (cons[p] == '*')
+			    toadd++;
+		    }
+		} while (npads < toadd);
+		if (diff <= 0)
+		    continue;
+
+		data = cons;
+	    }
+
+	    indb = indt = NULL;
+	    if (strand == '+' || strand == '=')
+		indt = prstrstr_inexact(data, uppert, mismatches, NULL);
+	    if (strand == '-' || strand == '=')
+		indb = prstrstr_inexact(data, upperb, mismatches, NULL);
+	    
+	    if (indt && indb)
+		ind = MAX(indt, indb);
+	    else if (indt)
+		ind = indt;
+	    else if (indb)
+		ind = indb;
+	    else
+		ind = NULL;
+
+	    if (ind != NULL) {
+		int pos;
+		if (wloop == 0) {
+		    pos = positionInContig(xx,seq,(int) (ind - str) + 1);
+		    if (in_interval(spos,fpos,pos)) {
+			fseqpos = (int) (ind - str) + 1;
+			fpos = pos;
+			fseq = seq;
+		    }
+		} else {
+		    pos = ind - cons + DB_RelPos(xx, seq);
+		    if (in_interval(spos,fpos,pos)) {
+			fseqpos = pos;
+			fpos = pos;
+			fseq = 0;
+		    }
+		}
+	    }
 	}
-	
     }
     
-    if (fseq) {
+    if (fseq != -1) {
 	setCursorPosSeq(xx, fseqpos, fseq);
 	REDISPLAY(xx);
     }
@@ -623,7 +819,7 @@ static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand)
     xfree(reading);
     xfree(uppert);
     xfree(upperb);
-    return fseq;
+    return fseq != -1;
 }
 
 
@@ -1955,13 +2151,18 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 	else if (strcmp(type, "sequence") == 0) {
 	    char *p = strchr(value, '#');
 	    int mismatches = 0;
+	    int where = 3;
 
 	    if (p) {
 		mismatches = atoi(p+1);
 		*p = 0;
 	    }
+	    p = strchr(p+1, '#');
+	    if (p) {
+		where = atoi(p+1);
+	    }
 
-	    found = findNextSequence(xx, value, mismatches, strand);
+	    found = findNextSequence(xx, value, mismatches, strand, where);
 	}
 
 	else if (strcmp(type, "tag") == 0)
@@ -2004,13 +2205,18 @@ int edDoSearch(EdStruct *xx, int forwards, int strand, char *type, char *value)
 	else if (strcmp(type, "sequence") == 0) {
 	    char *p = strchr(value, '#');
 	    int mismatches = 0;
+	    int where = 3;
 
 	    if (p) {
 		mismatches = atoi(p+1);
 		*p = 0;
 	    }
+	    p = strchr(p+1, '#');
+	    if (p) {
+		where = atoi(p+1);
+	    }
 
-	    found = findPrevSequence(xx, value, mismatches, strand);
+	    found = findPrevSequence(xx, value, mismatches, strand, where);
 	}
 
 	else if (strcmp(type, "tag") == 0)
