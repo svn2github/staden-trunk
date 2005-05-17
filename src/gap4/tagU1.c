@@ -1510,7 +1510,7 @@ tagStruct *readTagList(DBInfo *db, int seq, int ref)
 	    /*
 	     * The tag should never run off the end of the gel
 	     */
-	    verror(ERR_WARN, "writeTagList",  "INVALID TAG POSITION "
+	    verror(ERR_WARN, "readTagList",  "INVALID TAG POSITION "
 		   "seq=%d (%s) tagpos=%d taglen=%d gellen=%d\n",
 		    ref,
 		    DBgetName(db,ref),
@@ -1522,7 +1522,7 @@ tagStruct *readTagList(DBInfo *db, int seq, int ref)
 	    /*
 	     * Tag should never be out of ordeer
 	     */
-	    verror(ERR_WARN, "writeTagList",  "TAG OUT OF ORDER "
+	    verror(ERR_WARN, "readTagList",  "TAG OUT OF ORDER "
 		   "seq=%d (%s) tagpos=%d taglen=%d\n",
 		    ref,
 		    DBgetName(db,ref),
