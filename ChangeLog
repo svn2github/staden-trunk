@@ -44,8 +44,9 @@
 	Also added the ability to search in the consensus sequence. This is
 	required for alignments like:
 	
-	seq1 AT-A	   seq1  GATATTA seq2 A-TA    or    seq2     
-	TTAGGA cons ATTA	  cons	GATATTAGGA
+	 seq1 AT-A          seq1  GATATTA
+	 seq2 A-TA    or    seq2      TTAGGA
+	 cons ATTA          cons  GATATTAGGA
 	
 	In both cases searching for ATTA needs to check the consensus (for
 	different reasons). 

@@ -1,3 +1,27 @@
+17 May 2005 (& more - add to this until new release)
+===========
+
+Gap4
+----
+
+* The join editor invoked from Find Read Pairs plot now brings up the
+  editors at the start/end of the sequences forming the read-pair
+  instead of the start/end of the two contigs.
+
+* Search by sequence in the editor now finds consensus matches
+  too. Also fixed some bugs where cutoff data matches were not always
+  found and in some cases (reverse search) non-cutoff matches could be
+  missed.
+
+Trev
+----
+
+* Added a "-style pyro" option to request histogram based
+  pyrosequencing data.
+
+
+-----------------------------------------------------------------------------
+
 3 May 2005
 ==========
 
