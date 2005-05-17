@@ -164,7 +164,7 @@ char *pstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis) {
 	m = 0;
 
 	/* remove leading pads */
-	while (*text == '*')
+	while (*text && *text == '*')
 	    text++;
 
 	text_p = text;
@@ -190,5 +190,65 @@ char *pstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis) {
     } while (*text && *++text);
 
     return NULL;
+}
+
+/*
+ * A version of strnstr with inexact string matching, but finding the LAST
+ * copy of pattern in text.
+ * (Done correctly this would do a reverse search, but this is coded for
+ * simplicitly at the moment.)
+ *
+ * Finds matches between pattern 'p' and text 't' with at most 'm' mismatches.
+ * Padding characters are ignored, but this isn't an alignment algorithm - it
+ * will not introduce gaps to get a better match.
+ *
+ * This searches from the end of the string rather than the start, so it
+ * will return the last copy of pattern in text.
+ */
+char *prstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis) {
+    char *text_p, *patt_p;
+    int m;
+    char *match = NULL;
+    char match_mis = 0;
+
+    if (n_mis)
+	*n_mis = 0;
+
+    /*
+     * Simplest implementation.
+     * Not an efficient search, but easy to understand.
+     */
+    do {
+	m = 0;
+
+	/* remove leading pads */
+	while (*text && *text == '*')
+	    text++;
+
+	text_p = text;
+	patt_p = pattern;
+	while (*patt_p && *text_p) {
+	    if (*text_p == '*')
+		text_p++;
+	    else {
+		if (*text_p != *patt_p) {
+		    if (m++ == mismatches)
+			break;
+		}
+		text_p++;
+		patt_p++;
+	    }
+	}
+	if (*patt_p == 0) {
+	    match_mis = m;
+	    match = text;
+	}
+
+    } while (*text && *++text);
+
+    if (n_mis)
+	*n_mis = match_mis;
+
+    return match;
 }
 

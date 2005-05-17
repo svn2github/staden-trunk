@@ -55,4 +55,7 @@ char *pstrstr(char *text, char *pattern);
  */
 char *pstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis);
 
+/* As pstrstr_inexact, but finding the last occurance of pattern */
+char *prstrstr_inexact(char *text, char *pattern, int mismatches, int *n_mis);
+
 #endif /* _SEARCH_UTILS_H_ */
