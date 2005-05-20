@@ -358,7 +358,7 @@ int write_aux_index_swapped64_(int fd, void *idxv, int num)
 int read_aux_index32_(int fd, void *recv, int num)
 {
     AuxIndex *idx = recv;
-    AuxIndex rec32;
+    AuxIndex32 rec32;
     int i;
 
     for (i = 0; i < num; i++) {
