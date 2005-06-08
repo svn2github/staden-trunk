@@ -27,6 +27,7 @@
 #include "misc.h"
 #include "tar_format.h"
 #include "compress.h"
+#include "hash_table.h"
 
 /*
  * Supported compression extensions. See the magics array in compress.c for
@@ -114,7 +115,7 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
     if (name_len > 100)
 	return NULL;
 
-    /* Search the index file */
+    /* Search the .index file */
     sprintf(path, "%s.index", tarname);
     if (file_exists(path)) {
 	FILE *fpind = fopen(path, "r");
@@ -208,6 +209,65 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
 
     fclose(fp);
     return NULL;
+}
+
+/*
+ * Reads a hash file to look for a filename. The hash file contains the
+ * (relative) pathname for the file it is an index for along with the
+ * positions and sizes of each file contained within it. The file format
+ * of the archive itself is irrelevant provided that the data is not
+ * internally compressed in some manner specific to that archive.
+ *
+ * Return FILE pointer if found
+ *        NULL if not
+ */
+FILE *find_file_hash(char *file, char *hashfile) {
+    uint64_t pos;
+    uint32_t size;
+    FILE *fpout;
+    int found;
+    char *fname;
+    static HashFile *hf = NULL;
+    static char hf_name[1024];
+
+    /* Cache an open HashFile for fast accesing */
+    if (strcmp(hashfile, hf_name) != 0) {
+	if (hf)
+	    HashFileClose(hf);
+	hf = HashFileOpen(hashfile);
+
+	if (!hf)
+	    return NULL;
+	strcpy(hf_name, hashfile);
+    }
+
+    /* Search */
+    found = HashFileQuery(hf, (uint8_t *)file, strlen(file), &pos, &size);
+    if (-1 == found)
+	return NULL;
+
+    /* Found, so copy the contents out and reopen - yuk */
+    fname = tempnam(NULL, NULL);
+    if (NULL == (fpout = fopen(fname, "wb+"))) {
+	remove(fname);
+	free(fname);
+	return NULL;
+    }
+    remove(fname);
+    free(fname);
+
+    fseek(hf->afp, pos, SEEK_SET);
+    do {
+	char buf[8192];
+	int sz = size >= 8192 ? 8192 : size;
+	int got = fread(buf, 1, sz, hf->afp);
+	fwrite(buf, 1, sz, fpout);
+	size -= got;
+    } while (size);
+
+    fseek(fpout, 0, SEEK_SET);
+
+    return fpout;
 }
 
 #ifdef TRACE_ARCHIVE
@@ -434,6 +494,12 @@ FILE *open_trace_file(char *file, char *relative_to) {
     for (ele = newsearch; *ele; ele += strlen(ele)+1) {
 	if (0 == strncmp(ele, "TAR=", 4)) {
 	    if (fp = find_file_tar(file, ele+4, 0)) {
+		free(newsearch);
+		return fp;
+	    }
+
+	} else if (0 == strncmp(ele, "HASH=", 5)) {
+	    if (fp = find_file_hash(file, ele+5)) {
 		free(newsearch);
 		return fp;
 	    }
