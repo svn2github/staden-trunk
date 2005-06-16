@@ -1023,6 +1023,12 @@ proc haplo::set_menu {d setnum x y} {
     $w.menu add command \
 	-label "Save consensus for selected sets" \
 	-command "haplo::save_consensus $d"
+    $w.menu add command \
+	-label "Produce fofn for this set" \
+	-command "haplo::save_fofn $d $setnum"
+    $w.menu add command \
+	-label "Produce fofn for this selected sets" \
+	-command "haplo::save_fofn $d"
 
     tk_popup $w.menu $x $y
 }
@@ -1070,10 +1076,74 @@ proc haplo::merge_sets {d} {
     redisplay $d
 }
 
+proc haplo::save_fofn {d {sets {}}} {
+    upvar $d data
+    global haplo_defs
+
+    set f $data(toplevel).fofn
+    if {[xtoplevel $f -resizable 0] == ""} return
+    wm title $f "Save set fofn"
+
+    if {$sets == ""} {
+	set setnum 0
+	foreach g $data(sets) {
+	    if {$data(set_selected,$setnum)} {
+		lappend sets $setnum
+	    }
+	    incr setnum
+	}
+    }
+    set setplus1 {}
+    foreach s $sets {
+	lappend setplus1 [expr {$s+1}]
+    }
+    xentry $f.sets \
+	-label "Set numbers (0 => ungrouped)" \
+	-width 10 \
+	-bd 2 -relief groove
+    $f.sets insert end $setplus1
+
+    lorf_out $f.outfile [keylget haplo_defs FOFN] \
+	{} -bd 2 -relief groove
+
+    okcancelhelp $f.ok_cancel \
+	    -ok_command "haplo::save_fofn_ok $f $d $f.sets $f.outfile" \
+	    -cancel_command "destroy $f" \
+	    -help_command "show_help gap4 {FIXME}" \
+	    -bd 2 \
+	    -relief groove
+
+    pack $f.outfile $f.sets $f.ok_cancel -side top -fill x
+}
+
+proc haplo::save_fofn_ok {f d sets outfile} {
+    upvar $d data
+
+    if {[set out    [lorf_out_name $outfile]] == ""} {bell; return}
+    if {[set format [lorf_out_get  $outfile]] == ""} {bell; return}
+    if {[set sets   [$sets get]]              == ""} {bell; return}
+
+    destroy $f
+    foreach set $sets {
+	if {$set > 0} {
+	    set g [lindex $data(sets) [expr {$set-1}]]
+	} else {
+	    set g $data(ungrouped)
+	}
+
+	set r [templates2readings $data(-io) $data(-contig) $g]
+
+	ListCreate2 ${out}_$set $r
+	if {$format == 2} {
+	    lorf_out_save ${out}_$set
+	}
+    }
+}
+
 # Saves the consensus for one or all selected sets
 proc haplo::save_consensus {d {sets {}}} {
     upvar $d data
-    global gap_defs
+    global haplo_defs
 
     set f $data(toplevel).consensus
     if {[xtoplevel $f -resizable 0] == ""} return
@@ -1107,9 +1177,8 @@ proc haplo::save_consensus {d {sets {}}} {
 	-orient horizontal \
 	-default 1
 
-    keylset op OUTPUT [keylget gap_defs CONSENSUS.OUTPUT]
-    getFname $f.output [keylget op OUTPUT.NAME] save {} \
-	[keylget op OUTPUT.VALUE]
+    getFname $f.output [keylget haplo_defs SAVE_CONSENSUS.NAME] save {} \
+	[keylget haplo_defs SAVE_CONSENSUS.VALUE]
 
     okcancelhelp $f.ok_cancel \
 	    -ok_command "haplo::save_consensus_ok $f $d \
@@ -1119,7 +1188,7 @@ proc haplo::save_consensus {d {sets {}}} {
 	    -bd 2 \
 	    -relief groove
 
-    pack $f.sets $f.pads $f.ungrouped $f.output $f.ok_cancel -side top -fill x
+    pack $f.output $f.sets $f.pads $f.ungrouped $f.ok_cancel -side top -fill x
 }
 
 proc haplo::write_fasta_seq {fd name seq} {
