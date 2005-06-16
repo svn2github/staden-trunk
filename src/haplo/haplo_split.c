@@ -1183,6 +1183,18 @@ static dstring_t *list_groups(graph *g) {
 
     ds = dstring_create(NULL);
 
+    /* Ungrouped nodes form their own list */
+    dstring_appendf(ds, "{");
+    for (i = 0; i < g->nodes->nnodes; i++) {
+	if (!(n = g->nodes->node[i]))
+	    continue;
+	if (n->merged)
+	    continue;
+	dstring_appendf(ds, " %s", n->tname);
+    }
+    dstring_appendf(ds, "} ");
+
+    /* We follow this by each group of nodes */
     for (i = 0; i < g->nodes->nnodes; i++) {
 	if (!(n = g->nodes->node[i]))
 	    continue;

@@ -875,10 +875,9 @@ proc haplo::display_sets {d xpos} {
     set io $data(-io)
     set snps $data(snps)
     set contig $data(cnum)
-    set sets $data(cons)
     set w $data(canvas)
 
-    puts "Drawing [llength $sets] sets"
+    puts "Drawing [llength $data(sets)] sets"
 
     # Create sets
     set snum 0
@@ -886,9 +885,9 @@ proc haplo::display_sets {d xpos} {
     foreach snp $snps {
 	set ypos $data(ypos,$snum)
 	set setnum 0
-	foreach g $sets {
-	    set cons [lindex $g 1]
-	    set qual [lindex $g 2]
+	foreach g $data(sets) {
+	    set cons $data(cons,$setnum)
+	    set qual $data(qual,$setnum)
 	    set ind [expr {[lindex $snp 0]-1}]
 	    set base [string index $cons $ind]
 	    binary scan [string index $qual $ind] c q
@@ -919,17 +918,15 @@ proc haplo::display_sets {d xpos} {
 
     # Set menus
     set setnum 0
-    foreach g $sets {
+    foreach g $data(sets) {
 	$w bind set_$setnum <<menu>> "haplo::set_menu $d $setnum %X %Y"
-	$w bind set_$setnum <Enter> \
-	    "set ${d}(status_line) \"Set $setnum: [llength [lindex $g 0]] templates\""
 	incr setnum
     }
 
     # Set checkbuttons
     set setnum 0
     set y $ycoord(setchk)
-    foreach g $sets {
+    foreach g $data(sets) {
 	set x [expr {$xpos + $setnum*$xcoord(sets+)-4}]
 	catch {checkbutton $w.set_$setnum -padx 0 -pady 0 \
 		   -variable ${d}(set_selected,$setnum)}
@@ -993,13 +990,16 @@ proc haplo::update_status {d snum setnum} {
     upvar $d data
     set f $data(toplevel).status
     set snp [lindex $data(snps) $snum]
-    set set [lindex $data(cons) $setnum]
+    set cons $data(cons,$setnum)
+    set qual $data(qual,$setnum)
     
     set pos [expr {[lindex $snp 0]-1}]
-    set base [string index [lindex $set 1] $pos]
-    binary scan [string index [lindex $set 2] $pos] c qual
+    set base [string index $cons $pos]
+    binary scan [string index $qual $pos] c qual
 
-    $f configure -text "Pos:[expr {$pos+1}] Cons:$base Qual:$qual"
+    set nt [llength [lindex $data(sets) $setnum]]
+    incr setnum
+    set data(status_line) "Set $setnum: $nt templates.  Base pos:[expr {$pos+1}] cons:$base qual:$qual"
 }
 
 
@@ -1017,6 +1017,12 @@ proc haplo::set_menu {d setnum x y} {
     $w.menu add command \
 	-label "Merge selected sets" \
 	-command "haplo::merge_sets $d"
+    $w.menu add command \
+	-label "Save this consensus" \
+	-command "haplo::save_consensus $d $setnum"
+    $w.menu add command \
+	-label "Save consensus for selected sets" \
+	-command "haplo::save_consensus $d"
 
     tk_popup $w.menu $x $y
 }
@@ -1064,6 +1070,141 @@ proc haplo::merge_sets {d} {
     redisplay $d
 }
 
+# Saves the consensus for one or all selected sets
+proc haplo::save_consensus {d {sets {}}} {
+    upvar $d data
+    global gap_defs
+
+    set f $data(toplevel).consensus
+    if {[xtoplevel $f -resizable 0] == ""} return
+    wm title $f "Save set consensus"
+
+    if {$sets == ""} {
+	set setnum 0
+	foreach g $data(sets) {
+	    if {$data(set_selected,$setnum)} {
+		lappend sets $setnum
+	    }
+	    incr setnum
+	}
+    }
+    set setplus1 {}
+    foreach s $sets {
+	lappend setplus1 [expr {$s+1}]
+    }
+    xentry $f.sets \
+	-label "Set numbers" \
+	-width 10
+    $f.sets insert end $setplus1
+
+    yes_no $f.pads \
+	-title "Strip pads" \
+	-orient horizontal \
+	-default 0
+
+    yes_no $f.ungrouped \
+	-title "Incorporate ungrouped templates" \
+	-orient horizontal \
+	-default 1
+
+    keylset op OUTPUT [keylget gap_defs CONSENSUS.OUTPUT]
+    getFname $f.output [keylget op OUTPUT.NAME] save {} \
+	[keylget op OUTPUT.VALUE]
+
+    okcancelhelp $f.ok_cancel \
+	    -ok_command "haplo::save_consensus_ok $f $d \
+			     $f.sets $f.pads $f.ungrouped $f.output" \
+	    -cancel_command "destroy $f" \
+	    -help_command "show_help gap4 {FIXME}" \
+	    -bd 2 \
+	    -relief groove
+
+    pack $f.sets $f.pads $f.ungrouped $f.output $f.ok_cancel -side top -fill x
+}
+
+proc haplo::write_fasta_seq {fd name seq} {
+    puts $fd ">$name"
+    set len [string length $seq]
+    for {set i 0} {$i < $len} {incr i 60} {
+	puts $fd [string range $seq $i [expr {$i+59 > $len ? $len : $i+59}]]
+    }
+}
+
+proc haplo::write_fasta_qual {fd name qual} {
+    puts $fd ">$name"
+    set len [string length $qual]
+    for {set i 0} {$i < $len} {incr i 20} {
+	set st [string range $qual $i [expr {$i+19 > $len ? $len : $i+19}]]
+	binary scan $st c[string length $st] q
+	puts $fd $q
+    }
+}
+
+proc haplo::strip_pads {cons qual new_cons_var new_qual_var} {
+    upvar $new_cons_var new_cons
+    upvar $new_qual_var new_qual
+
+    set new_cons ""
+    set new_qual ""
+    set pos 0
+    foreach c [split $cons *] {
+        #set new_cons $new_cons$c
+        set length [string length $c]
+        set new_cons $new_cons$c
+        set new_qual $new_qual[string range $qual $pos [expr $pos+$length-1]]
+        incr pos [expr $length+1]
+    }
+}
+
+proc haplo::save_consensus_ok {f d sets pads ungrouped output} {
+    upvar $d data
+
+    set sets [$sets get]
+    set strip_pads [yes_no_get $pads]
+    set output [getFname_in_name $output]
+    set ungrouped [yes_no_get $ungrouped]
+
+    destroy $f
+
+    set fd_seq  [open $output w]
+    set fd_qual [open $output.qual w]
+
+    foreach set $sets {
+	set setnum [expr {$set-1}]
+	if {$setnum < 0 || $setnum >= [llength $data(sets)]} {
+	    continue
+	}
+	# Recompute if we're adding in the ungrouped data
+	if {$ungrouped} {
+	    set g "[lindex $data(sets) $setnum] $data(ungrouped)"
+	    foreach {cons qual} [haplo consensus \
+				     -io $data(-io) \
+				     -templates $g \
+				     -contig =$data(cnum) \
+				] {break}
+	} else {
+	    set cons $data(cons,$setnum)
+	    set qual $data(qual,$setnum)
+	}
+
+	if {$strip_pads} {
+	    puts "Stripping pads"
+	    strip_pads $cons $qual cons2 qual2
+	    set cons $cons2
+	    set qual $qual2
+	}
+
+	regsub -all -- - $cons N cons
+	regsub -all {\*} $cons - cons
+	write_fasta_seq  $fd_seq  "Set_$set" $cons
+	write_fasta_qual $fd_qual "Set_$set" $qual
+    }
+
+    close $fd_seq
+    close $fd_qual
+}
+
+
 # Creates sets of readings based on the existing sets of templates
 # No check is done regarding whether either set happens to span contigs.
 proc haplo::compute_rsets {d} {
@@ -1081,8 +1222,15 @@ proc haplo::compute_set_cons {d} {
 
     set snps $data(snps)
     set contig $data(cnum)
-    set gdata {}
     set tot [llength $data(sets)]
+
+    foreach {c q} [haplo consensus \
+		       -io $data(-io) \
+		       -templates $data(ungrouped) \
+		       -contig =$contig] {break;}
+    set data(cons,ungrouped) $c
+    set data(qual,ungrouped) $q
+
     set n 0
     foreach g $data(sets) {
 	set data(status_line) "Computing consensus $n / $tot"
@@ -1091,7 +1239,6 @@ proc haplo::compute_set_cons {d} {
 			   -io $data(-io) \
 			   -templates $g \
 			   -contig =$contig] {break;}
-	lappend gdata [list $g $c $q]
 	set data(cons,$n) $c
 	set data(qual,$n) $q
 	incr n
@@ -1100,7 +1247,6 @@ proc haplo::compute_set_cons {d} {
 	    append snp_data($pos) [string index $c [expr {$pos-1}]]
 	}
     }
-    set data(cons) $gdata
 }
 
 #-----------------------------------------------------------------------------
@@ -1516,7 +1662,8 @@ proc haplo::ClusterSNP {d} {
 			  -twopass $data(-twopass) \
 			  -fast $data(-fastmode)]
     ClearBusy
-    set data(sets) [sort_sets $data(sets)]
+    set data(ungrouped) [lindex $data(sets) 0]
+    set data(sets) [sort_sets [lrange $data(sets) 1 end]]
     set data(status_line) "Obtaining reading lists"
     update idletasks
     compute_rsets $d
@@ -1581,10 +1728,9 @@ proc haplo::templates2readings {io contig templates} {
 }
 
 # Creates a fake reading and links it on to the start of contig $contig
-proc haplo::add_fake {io cnum rname} {
+proc haplo::add_fake {io cnum rname seq} {
     set c [io_read_contig $io $cnum]
     set clen [keylget c length]
-    set seq [string repeat "-" $clen]
 
     # Create the reading structure
     set rnum [io_add_reading $io]
@@ -1645,7 +1791,7 @@ proc haplo::MoveContigs {d} {
     # Add a fake sequence to ensure that the "remainder" is held together.
     set ng 0
     if {$data(-addfake)} {
-	add_fake $io $contig fake-$ng
+	add_fake $io $contig fake-$ng $data(cons,ungrouped)
     }
 
     foreach reads $rsets {
@@ -1655,7 +1801,7 @@ proc haplo::MoveContigs {d} {
 	}
 	incr ng
 	if {$data(-addfake)} {
-	    add_fake $io $contig fake-$ng
+	    add_fake $io $contig fake-$ng $data(cons,ungrouped)
 	    set reads [linsert $reads 0 fake-$ng]
 	}
 	disassemble_readings -io $io -readings $reads -move 2 -duplicate_tags 0
