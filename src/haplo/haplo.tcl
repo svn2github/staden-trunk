@@ -1694,6 +1694,35 @@ proc haplo::FilterTemplates {d exclude} {
     set data(snps) $snps
 }
 
+# Checks the d(sets) template lists to work out which templates are
+# missing from a contig.
+proc haplo::find_ungrouped {d} {
+    upvar $d data
+    set io $data(-io)
+    set contig $data(cnum)
+
+    # Find all template names in the contig
+    array set tnames ""
+    set c [io_read_contig $io $contig]
+    for {set rnum [keylget c left]} {$rnum} {set rnum [keylget r right]} {
+	set r [io_read_reading $io $rnum]
+	if {[set tnum [keylget r template]] == 0} continue
+	set t [io_read_template $io $tnum]
+	set tname [io_read_text $io [keylget t name]]
+	set tnames($tname) 1
+    }
+
+    # Strike out the template names we've assigned to a set
+    foreach g $data(sets) {
+	foreach tname $g {
+	    unset tnames($tname)
+	}
+    }
+
+    parray tnames
+    return [array names tnames]
+}
+
 proc haplo::ClusterSNP {d} {
     upvar $d data
 
@@ -1731,8 +1760,8 @@ proc haplo::ClusterSNP {d} {
 			  -twopass $data(-twopass) \
 			  -fast $data(-fastmode)]
     ClearBusy
-    set data(ungrouped) [lindex $data(sets) 0]
-    set data(sets) [sort_sets [lrange $data(sets) 1 end]]
+    set data(ungrouped) [haplo::find_ungrouped $d]
+    set data(sets) [sort_sets $data(sets)]
     set data(status_line) "Obtaining reading lists"
     update idletasks
     compute_rsets $d
