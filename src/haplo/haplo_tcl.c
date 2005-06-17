@@ -316,11 +316,16 @@ static int haplo_consensus_cmd(Tcl_Interp *interp,
     if (TCL_OK != Tcl_SplitList(interp, args.tlist, &rargc, &rargv))
 	return TCL_ERROR;
 
-    templates = (int *)xmalloc(rargc * sizeof(int *));
-    for (i = 0; i < rargc; i++) {
-	templates[i] = template_name_to_number(args.io, rargv[i]);
+    if (rargc) {
+	templates = (int *)xmalloc(rargc * sizeof(int *));
+	for (i = 0; i < rargc; i++) {
+	    templates[i] = template_name_to_number(args.io, rargv[i]);
+	}
+    } else {
+	templates = NULL;
     }
-    Tcl_Free((char *)rargv);
+    if (rargv)
+	Tcl_Free((char *)rargv);
 
     clen = io_clength(args.io, cnum);
     calc_template_consensus(args.io, cnum, 1, clen, templates, rargc,
@@ -337,7 +342,8 @@ static int haplo_consensus_cmd(Tcl_Interp *interp,
     xfree(cons);
     xfree(qual);
     xfree(qual_str);
-    xfree(templates);
+    if (templates)
+	xfree(templates);
 
     return TCL_OK;
 }

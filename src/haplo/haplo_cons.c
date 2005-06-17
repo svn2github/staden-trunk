@@ -73,11 +73,17 @@ int calc_template_consensus(GapIO *io, int contig,
 
     vc = vcontig_from_templates(io, contig, templates, ntemplates);
 
-    calc_consensus(contig, start, end, CON_SUM,
-		   *cons, NULL, qual ? *qual : NULL, NULL,
-		   gap4_global_get_consensus_cutoff(),
-		   gap4_global_get_quality_cutoff(),
-		   virtual_info_func, (void *)vc);
+    if (vc->left && vc->right) {
+	calc_consensus(contig, start, end, CON_SUM,
+		       *cons, NULL, qual ? *qual : NULL, NULL,
+		       gap4_global_get_consensus_cutoff(),
+		       gap4_global_get_quality_cutoff(),
+		       virtual_info_func, (void *)vc);
+    } else {
+	memset(*cons, '-', end-start+1);
+	if (qual)
+	    memset(*qual, 0, end-start+1);
+    }
     (*cons)[clen] = 0;
 
     del_vcontig(vc);
