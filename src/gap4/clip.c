@@ -1076,8 +1076,8 @@ void quality_clip_ends(GapIO *io, int contig, int avg_qual)
     for (i = 0; i < r.length/2; i++) {
 	int tmp;
 	tmp = conf[i];
-	conf[i] = conf[r.length-i];
-	conf[r.length-i] = tmp;
+	conf[i] = conf[r.length-1-i];
+	conf[r.length-1-i] = tmp;
     }
 
     /* Compute clip point (in original orientation) */
