@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "os.h"
+#include "mFILE.h"
 
 /**********************************************************************/
 /* IO for big-endian files                                            */
@@ -47,32 +48,32 @@
 /*
  * Write a big-endian int_1
  */
-extern int be_write_int_1(FILE *fp, uint_1 *i1);
+extern int be_write_int_1(mFILE *fp, uint_1 *i1);
 
 /*
  * Write a big-endian int_2
  */
-extern int be_write_int_2(FILE *fp, uint_2 *i2);
+extern int be_write_int_2(mFILE *fp, uint_2 *i2);
 
 /*
  * Write a big-endian int_4
  */
-extern int be_write_int_4(FILE *fp, uint_4 *i4);
+extern int be_write_int_4(mFILE *fp, uint_4 *i4);
 
 /*
  * Read a big-endian int_1
  */
-extern int be_read_int_1(FILE *fp, uint_1 *i1);
+extern int be_read_int_1(mFILE *fp, uint_1 *i1);
 
 /*
  * Read a big-endian int_2
  */
-extern int be_read_int_2(FILE *fp, uint_2 *i2);
+extern int be_read_int_2(mFILE *fp, uint_2 *i2);
 
 /*
  * Read a big-endian int_4
  */
-extern int be_read_int_4(FILE *fp, uint_4 *i4);
+extern int be_read_int_4(mFILE *fp, uint_4 *i4);
 
 /**********************************************************************/
 /* IO for little-endian files                                         */
@@ -81,32 +82,32 @@ extern int be_read_int_4(FILE *fp, uint_4 *i4);
 /*
  * Write a little-endian int_1
  */
-extern int le_write_int_1(FILE *fp, uint_1 *i1);
+extern int le_write_int_1(mFILE *fp, uint_1 *i1);
 
 /*
  * Write a little-endian int_2
  */
-extern int le_write_int_2(FILE *fp, uint_2 *i2);
+extern int le_write_int_2(mFILE *fp, uint_2 *i2);
 
 /*
  * Write a little-endian int_4
  */
-extern int le_write_int_4(FILE *fp, uint_4 *i4);
+extern int le_write_int_4(mFILE *fp, uint_4 *i4);
 
 /*
  * Read a little-endian int_1
  */
-extern int le_read_int_1(FILE *fp, uint_1 *i1);
+extern int le_read_int_1(mFILE *fp, uint_1 *i1);
 
 /*
  * Read a little-endian int_2
  */
-extern int le_read_int_2(FILE *fp, uint_2 *i2);
+extern int le_read_int_2(mFILE *fp, uint_2 *i2);
 
 /*
  * Read a little-endian int_4
  */
-extern int le_read_int_4(FILE *fp, uint_4 *i4);
+extern int le_read_int_4(mFILE *fp, uint_4 *i4);
 
 
 #endif /* _mach_io_h */

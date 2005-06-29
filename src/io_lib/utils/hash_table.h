@@ -7,10 +7,6 @@
 typedef union {
     uint64_t i;
     void *p;
-    struct {
-	uint64_t pos;
-	uint32_t len;
-    } idx;
 } HashData;
 
 /* A hash item with "next" pointer to use in a linked list */
@@ -33,17 +29,48 @@ typedef struct {
 /* File format: the hash table header */
 typedef struct {
     char magic[4];
-    char vers[3];
+    char vers[4];
     char hfunc;
+    unsigned char nheaders;
+    unsigned char nfooters;
+    char reserved; /* 0 */
     uint32_t nbuckets;
     uint32_t size;
 } HashFileHeader;
 
+/* The data block attached to the hash table */
 typedef struct {
-    HashFileHeader h;
-    FILE *hfp;		/* hash FILE */
-    FILE *afp;		/* archive FILE */
-    int header_size;	/* size of header + archive filename */
+    uint64_t pos;
+    uint32_t size;
+    unsigned char header; /* zero if not set */
+    unsigned char footer; /* zero if not set */
+} HashFileItem;
+
+/* Common headers or footers to prepend to the archive contents */
+typedef struct {
+    uint64_t pos;
+    uint32_t size;
+    unsigned char *cached_data;
+} HashFileSection;
+
+/*
+ * The main structure for the HashFile functions.
+ *
+ * We obtain an existing HashFile by opening a stored hash file or by
+ * loading the entire thing.
+ * New empty ones can be created using HashFileCreate.
+ */
+typedef struct {
+    HashFileHeader hh;		/* on-disk file header */
+    HashTable *h;		/* the in-memory hash table */
+    int nheaders;		/* number of common file headers */
+    HashFileSection *headers;	/* on-disk common file headers struct */
+    int nfooters;		/* number of common file footers */
+    HashFileSection *footers;	/* on-disk common file footers struct */
+    FILE *hfp;			/* hash FILE */
+    FILE *afp;			/* archive FILE */
+    char *archive;		/* archive filename */
+    int header_size;		/* size of header + filename + N(head/feet) */
 } HashFile;
 
 /* Functions to to use HashTable.options */
@@ -56,6 +83,7 @@ typedef struct {
 #define HASH_NONVOLATILE_KEYS (1<<3)
 #define HASH_ALLOW_DUP_KEYS   (1<<4)
 #define HASH_DYNAMIC_SIZE     (1<<5)
+#define HASH_OWN_KEYS	      (1<<6)
 
 /* Hashing prototypes */
 uint32_t hash(int func, uint8_t *key, int key_len);
@@ -65,19 +93,25 @@ uint32_t HashHsieh(uint8_t *k, int length);
 
 /* HashTable management prototypes */
 HashTable *HashTableCreate(int size, int options);
-void HashTableDestroy(HashTable *h);
+void HashTableDestroy(HashTable *h, int deallocate_date);
+int HashTableResize(HashTable *h, int newsize);
 HashItem *HashTableAdd(HashTable *h, char *key, int key_len,
 		       HashData data, int *new);
 HashItem *HashTableSearch(HashTable *h, char *key, int key_len);
+HashItem *HashTableNext(HashItem *hi, char *key, int key_len);
+
 void HashTableStats(HashTable *h, FILE *fp);
+void HashTableDump(HashTable *h, FILE *fp);
 
 /* HashFile prototypes */
-void HashFileSave(HashTable *h, FILE *fp, char *archive);
-HashTable *HashFileLoad(FILE *fp);
-int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
-		  uint64_t *r_pos, uint32_t *r_size);
+void HashFileSave(HashFile *hf, FILE *fp);
+HashFile *HashFileLoad(FILE *fp);
+int HashFileQuery(HashFile *hf, uint8_t *key, int key_len, HashFileItem *item);
+char *HashFileExtract(HashFile *hf, char *fname, size_t *len);
 
+
+HashFile *HashFileCreate(int size, int options);
+void HashFileDestroy(HashFile *hf);
 HashFile *HashFileOpen(char *fname);
-void HashFileClose(HashFile *hf);
 
 #endif /* _HASH_TABLE_H_ */

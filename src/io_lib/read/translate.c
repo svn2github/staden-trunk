@@ -20,6 +20,8 @@
 
 #include <stdio.h>
 #include <assert.h>
+
+#include "stdio_hack.h"
 #include "misc.h"
 #include "scf.h"
 #include "Read.h"

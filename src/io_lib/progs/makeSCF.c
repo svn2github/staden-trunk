@@ -316,7 +316,7 @@ void rescale_heights(Read *r) {
     }
 }
 
-static int convert(char *in, FILE *ofp, char *out, int format, int prec,
+static int convert(char *in, mFILE *ofp, char *out, int format, int prec,
 		   int comp, int normalise) {
     Read *r;
 
@@ -337,7 +337,7 @@ static int convert(char *in, FILE *ofp, char *out, int format, int prec,
 
     if (comp != -1)
 	set_compression_method(comp);
-    if (0 != (fwrite_reading(ofp, r, TT_SCF))) {
+    if (0 != (mfwrite_reading(ofp, r, TT_SCF))) {
 	fprintf(stderr, "%s: failed to write\n", out);
 	read_deallocate(r);
 	return 1;
@@ -365,7 +365,7 @@ int main(int argc, char **argv) {
     int compress_mode = -1;
     char *inf = NULL;
     char *outf = NULL;
-    FILE *ofp = stdout;
+    mFILE *ofp = mstdout();
     int normalise = 0;
 
     for (argc--, argv++; argc > 0; argc--, argv++) {
@@ -426,7 +426,7 @@ int main(int argc, char **argv) {
     if(!argc) {
 	/* original calling syntax */
 	if (outf) {
-	    ofp = fopen(outf, "wb+");
+	    ofp = mfopen(outf, "wb+");
 	    if (NULL == ofp) {
 		perror(outf);
 		return 1;
@@ -434,7 +434,7 @@ int main(int argc, char **argv) {
 	}
 
 	r = convert(inf, ofp, outf, format, prec, compress_mode, normalise);
-	fclose(ofp);
+	mfclose(ofp);
 
 	return r;
 
@@ -448,7 +448,7 @@ int main(int argc, char **argv) {
 	    if (inf) {
 		/* got infile, so get outfile and process */
 		outf= *argv;
-		ofp = fopen(outf, "wb+");
+		ofp = mfopen(outf, "wb+");
 		
 		if (NULL == ofp) {
 		    perror(outf);
@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
 		}
 		r = convert(inf, ofp, outf, format, prec, compress_mode,
 			    normalise);
-		fclose(ofp);
+		mfclose(ofp);
 		if(!result) /* keep track of the first error */
 		    result=r;
 	      

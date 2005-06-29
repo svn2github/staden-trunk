@@ -69,6 +69,16 @@ int getABIIndexEntryLW(FILE *fp, off_t indexO,
 		       uint_4 *val);
 
 /*
+ * From the ABI results file connected to `fp' whose index starts
+ * at byte offset `indexO', return in `val' the `sw'th short word
+ * from the `count'th entry labelled `label'.
+ * The result is 0 for failure, or index offset for success.
+ */
+int getABIIndexEntrySW(FILE *fp, off_t indexO,
+		       uint_4 label, uint_4 count, int sw,
+		       uint_2 *val);
+
+/*
  * Gets the offset of the ABI index.
  * Returns -1 for failure, 0 for success.
  */
@@ -84,6 +94,43 @@ int getABIIndexOffset(FILE *fp, uint_4 *indexO);
  */
 int getABIString(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
 		 char *string);
+
+/*
+ * Get an "ABI Int_1". This is raw 1-byte integer data pointed to by the
+ * offset, or held in the offset itself when the data is <= 4 characters.
+ *
+ * If indexO is 0 then we do not search for (or indeed use) label and count,
+ * but simply assume that we are already at the correct offset and read from
+ * here. (NB: This negates the length <= 4 check.)
+ *
+ * Returns -1 for failure, length desired for success (it'll only fill out
+ * up to max_data_len elements, but it gives an indication of whether there
+ * was more to come).
+ */
+int getABIint1(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
+	       uint_1 *data, int max_data_len);
+
+/*
+ * Get an "ABI Int_2". This is raw 2-byte integer data pointed to by the
+ * offset, or held in the offset itself when the data is <= 4 characters.
+ *
+ * Returns -1 for failure, length desired for success (it'll only fill out
+ * up to max_data_len elements, but it gives an indication of whether there
+ * was more to come).
+ */
+int getABIint2(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
+	       uint_2 *data, int max_data_len);
+
+/*
+ * Get an "ABI Int_4". This is raw 4-byte integer data pointed to by the
+ * offset, or held in the offset itself when the data is <= 4 characters.
+ *
+ * Returns -1 for failure, length desired for success (it'll only fill out
+ * up to max_data_len elements, but it gives an indication of whether there
+ * was more to come).
+ */
+int getABIint4(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
+	       uint_4 *data, int max_data_len);
 
 int dump_labels(FILE *fp, off_t indexO);
 

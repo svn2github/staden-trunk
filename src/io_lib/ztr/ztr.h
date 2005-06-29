@@ -33,6 +33,7 @@ typedef struct {
 #define ZTR_FORM_RAW		0
 #define ZTR_FORM_RLE		1
 #define ZTR_FORM_ZLIB		2
+#define ZTR_FORM_XRLE		3
 #define ZTR_FORM_DELTA1		64
 #define ZTR_FORM_DELTA2		65
 #define ZTR_FORM_DELTA4		66
@@ -71,6 +72,8 @@ typedef struct {
 #define ZTR_TYPE_CLIP	0x434c4950
 #define ZTR_TYPE_COMM	0x434f4d4d
 #define ZTR_TYPE_CR32	0x43523332
+#define ZTR_TYPE_FLWO	0x464c574f
+#define ZTR_TYPE_FLWC	0x464c5743
 
 /* A text segment consists of identifier and value */
 typedef struct {
@@ -94,7 +97,9 @@ typedef struct {
 } ztr_t;
 
 int fwrite_ztr(FILE *fp, ztr_t *ztr);
+int mfwrite_ztr(mFILE *fp, ztr_t *ztr);
 ztr_t *fread_ztr(FILE *fp);
+ztr_t *mfread_ztr(mFILE *fp);
 Read *ztr2read(ztr_t *ztr);
 ztr_t *read2ztr(Read *r);
 int compress_ztr(ztr_t *ztr, int level);

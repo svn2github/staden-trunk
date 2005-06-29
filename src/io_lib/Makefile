@@ -9,11 +9,12 @@ PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 SRCROOT=..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
-CFLAGS += $(SHLIB_CFLAGS) -Iinclude
+INCLUDES_S += -Iinclude
+CFLAGS += $(SHLIB_CFLAGS)
 #COPTDEBUG=-O -g3
 
 %/$(O)/.dir:
-	-mkdir $(@D)
+	-@mkdir $(@D) 2>/dev/null
 	touch $@
 
 dirs:	read/$(O)/.dir \
@@ -28,7 +29,7 @@ dirs:	read/$(O)/.dir \
 	ztr/$(O)/.dir
 
 %.o:	../%.c
-	-mkdir $(@D)
+	-@mkdir $(@D) 2>/dev/null
 	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
@@ -47,13 +48,17 @@ UTILSOBJS=\
 	utils/$(O)/traceType.o \
 	utils/$(O)/read_alloc.o \
 	utils/$(O)/compress.o \
-	utils/$(O)/open_trace_file.o
+	utils/$(O)/open_trace_file.o \
+	utils/$(O)/hash_table.o \
+	utils/$(O)/mFILE.o\
+	utils/$(O)/vlen.o
 
 # Deleted from Staden Package Makefile only due to duplicates in Misc
 #	utils/$(O)/error.o 
 #	utils/$(O)/files.o 
 #	utils/$(O)/array.o 
 #	utils/$(O)/xalloc.o
+#	utils/$(O)/vlen.o
 
 OBJS	= $(READOBJS) $(UTILSOBJS)
 

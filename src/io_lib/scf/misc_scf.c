@@ -30,6 +30,8 @@
 #include "mach-io.h"
 #include "xalloc.h"
 
+#include "stdio_hack.h"
+
 float scf_version_str2float(char version[])
 {
     char v[5];

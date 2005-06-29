@@ -57,6 +57,8 @@ static int scf_version = 3;
 #include "mach-io.h"  /* IMPORT: be_write_int_1, be_write_int_2, be_write_int_4 */
 #include "xalloc.h"
 
+#include "stdio_hack.h"
+
 /* ---- Exports ---- */
 
 

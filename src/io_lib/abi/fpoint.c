@@ -12,9 +12,12 @@
  * MRC disclaims all warranties with regard to this software.
  */
 
-/*#include <math.h>*/
+#include <math.h>
+#include "fpoint.h"
+/*
 extern double log ( double x ) ;
 extern double exp ( double x ) ;
+*/
 #define IEEE
 
 float int_to_float(int in)

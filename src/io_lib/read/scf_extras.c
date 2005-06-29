@@ -23,12 +23,14 @@
 
 #include <stdlib.h>
 
+#include "stdio_hack.h"
 #include "compress.h"
 #include "misc.h"
 #include "scf.h"
 #include "expFileIO.h"
 #include "traceType.h"
 #include "open_trace_file.h"
+#include "scf_extras.h"
 
 /*
  * ---------------------------------------------------------------------------

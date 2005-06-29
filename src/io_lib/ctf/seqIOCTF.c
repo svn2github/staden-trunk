@@ -22,6 +22,7 @@
 #include "abi.h"
 #include "mach-io.h"
 #include "xalloc.h"
+#include "stdio_hack.h"
 
 /* ---- Constants ---- */
 

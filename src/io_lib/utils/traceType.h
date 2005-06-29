@@ -32,7 +32,7 @@
 #include <string.h>     /* IMPORT: isprint*/
 
 #include "Read.h"	/* IMPORT: TT_xxx defines */
-
+#include "mFILE.h"
 
 /*
  * Determine the trace type for file 'fn'.
@@ -52,7 +52,7 @@ extern int determine_trace_type(char *fn);
  *     TT_UNK for unknown type.
  *     TT_ERR for error.
  */
-extern int fdetermine_trace_type(FILE *fp);
+extern int fdetermine_trace_type(mFILE *fp);
 
 /*
  * Returns a statically declared string containing a 3 character

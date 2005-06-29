@@ -42,6 +42,7 @@
 
 #include "os.h"
 #include "scf.h"
+#include "mFILE.h"
 
 /*
  * The autoconf setup doesn't use options.mk as the Makefile is rebuilt.
@@ -140,6 +141,12 @@ typedef struct
 
     char       *ident;	     /* Seq id, NULL for unknown. Malloced data.
 				Owned and freed by io_lib. */
+
+    /* Pyrosequencing "peaks" (more like spikes). NULL if not used */
+    int          nflows;     /* Number of "flows" */
+    char        *flow_order; /* Bases flowed across */
+    float       *flow;       /* Processed to be 1 base unit oriented */
+    unsigned int*flow_raw;   /* Unprocessed data */
 } Read;
 
 
@@ -162,6 +169,7 @@ typedef struct
  */
 Read *read_reading(char *fn, int format);
 Read *fread_reading(FILE *fp, char *fn, int format);
+Read *mfread_reading(mFILE *fp, char *fn, int format);
 
 
 /*
@@ -174,6 +182,7 @@ Read *fread_reading(FILE *fp, char *fn, int format);
  */
 int write_reading(char *fn, Read *read, int format);
 int fwrite_reading(FILE *fp, Read *read, int format);
+int mfwrite_reading(mFILE *fp, Read *read, int format);
 
 
 /* ----- Utility routines ----- */
@@ -214,23 +223,31 @@ int remove_file(char *fn);
 
 Read *read_abi(char *fn);
 Read *fread_abi(FILE *fp);
+Read *mfread_abi(mFILE *fp);
 int write_abi(char *fn, Read *read);
 int fwrite_abi(FILE *fp, Read *read);
+int mfwrite_abi(mFILE *fp, Read *read);
 
 int write_alf(char *fn, Read *read);
 int fwrite_alf(FILE *fp, Read *read);
+int mfwrite_alf(mFILE *fp, Read *read);
 Read *read_alf(char *fn);
 Read *fread_alf(FILE *fp);
+Read *mfread_alf(mFILE *fp);
 
 int write_pln(char *fn, Read *read);
 int fwrite_pln(FILE *fp, Read *read);
+int mfwrite_pln(mFILE *fp, Read *read);
 Read *read_pln(char *fn);
 Read *fread_pln(FILE *fp);
+Read *mfread_pln(mFILE *fp);
 
 Read *read_ctf(char *fn);
 Read *fread_ctf(FILE *fp);
+Read *mfread_ctf(mFILE *fp);
 int write_ctf(char *fn, Read *read);
 int fwrite_ctf(FILE *fp, Read *read);
+int mfwrite_ctf(mFILE *fp, Read *read);
 
 int read_sections(int sec);
 

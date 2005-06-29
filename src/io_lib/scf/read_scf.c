@@ -42,6 +42,8 @@
 #include "compress.h"
 #include "Read.h"
 
+#include "stdio_hack.h"
+
 /* SunOS4 has it's definitions in unistd, which we won't include for compat. */
 #ifndef SEEK_SET
 #define SEEK_SET 0

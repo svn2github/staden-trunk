@@ -28,6 +28,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+#include "stdio_hack.h"
+
 #include "traceType.h"
 #include "Read.h"
 #include "open_trace_file.h"

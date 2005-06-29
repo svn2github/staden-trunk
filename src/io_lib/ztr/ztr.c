@@ -4,17 +4,18 @@
 
 /* #include <fcntl.h> */
 
+#include "ztr.h"
 #include "xalloc.h"
 #include "Read.h"
-#include "ztr.h"
 #include "compression.h"
+#include "stdio_hack.h"
 
 /*
  * ---------------------------------------------------------------------------
  * Internal prototypes for forward references.
  * ---------------------------------------------------------------------------
  */
-int uncompress_chunk(ztr_chunk_t *chunk);
+static int uncompress_chunk(ztr_chunk_t *chunk);
 
 /*
  * ---------------------------------------------------------------------------
@@ -37,7 +38,7 @@ int uncompress_chunk(ztr_chunk_t *chunk);
  *	Success:  0
  *	Failure: -1
  */
-int ztr_write_header(FILE *fp, ztr_header_t *h) {
+static int ztr_write_header(FILE *fp, ztr_header_t *h) {
     if (1 != fwrite(h, sizeof(*h), 1, fp))
 	return -1;
 
@@ -57,7 +58,7 @@ int ztr_write_header(FILE *fp, ztr_header_t *h) {
  *	Success:  0
  *	Failure: -1
  */
-int ztr_write_chunk(FILE *fp, ztr_chunk_t *chunk) {
+static int ztr_write_chunk(FILE *fp, ztr_chunk_t *chunk) {
     int4 bei4;
 
     /*
@@ -160,7 +161,7 @@ int fwrite_ztr(FILE *fp, ztr_t *ztr) {
  *	Success:  0
  *	Failure: -1
  */
-int ztr_read_header(FILE *fp, ztr_header_t *h) {
+static int ztr_read_header(FILE *fp, ztr_header_t *h) {
     if (1 != fread(h, sizeof(*h), 1, fp))
 	return -1;
 
@@ -179,7 +180,7 @@ int ztr_read_header(FILE *fp, ztr_header_t *h) {
  *	Success: a chunk pointer (malloced)
  *	Failure: NULL
  */
-ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
+static ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
     int4 bei4;
     ztr_chunk_t *chunk;
 
@@ -369,6 +370,8 @@ ztr_t *fread_ztr(FILE *fp) {
 	    break;
 
 	case ZTR_TYPE_CLIP:
+	case ZTR_TYPE_FLWO:
+	case ZTR_TYPE_FLWC:
 	    break;
 
 	default:
@@ -472,7 +475,8 @@ ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p) {
  * Compresses an individual chunk using a specific format. The format is one
  * of the 'format' fields listed in the spec; one of the ZTR_FORM_ macros.
  */
-int compress_chunk(ztr_chunk_t *chunk, int format, int option) {
+static int compress_chunk(ztr_chunk_t *chunk, int format, int option,
+			  int option2) {
     char *new_data = NULL;
     int new_len;
 
@@ -482,6 +486,10 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option) {
 
     case ZTR_FORM_RLE:
 	new_data = rle(chunk->data, chunk->dlength, option, &new_len);
+	break;
+
+    case ZTR_FORM_XRLE:
+	new_data = xrle(chunk->data, chunk->dlength, option,option2, &new_len);
 	break;
 
     case ZTR_FORM_ZLIB:
@@ -509,15 +517,15 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option) {
 	break;
 
     case ZTR_FORM_16TO8:
-	new_data = shrink_16to8(chunk->data, chunk->dlength, option, &new_len);
+	new_data = shrink_16to8(chunk->data, chunk->dlength, &new_len);
 	break;
 
     case ZTR_FORM_32TO8:
-	new_data = shrink_32to8(chunk->data, chunk->dlength, option, &new_len);
+	new_data = shrink_32to8(chunk->data, chunk->dlength, &new_len);
 	break;
 
     case ZTR_FORM_FOLLOW1:
-	new_data = follow1(chunk->data, chunk->dlength, option, &new_len);
+	new_data = follow1(chunk->data, chunk->dlength, &new_len);
 	break;
 
     case ZTR_FORM_ICHEB:
@@ -544,7 +552,7 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option) {
 /*
  * Uncompresses an individual chunk from all levels of compression.
  */
-int uncompress_chunk(ztr_chunk_t *chunk) {
+static int uncompress_chunk(ztr_chunk_t *chunk) {
     char *new_data = NULL;
     int new_len;
 
@@ -552,6 +560,10 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
 	switch (chunk->data[0]) {
 	case ZTR_FORM_RLE:
 	    new_data = unrle(chunk->data, chunk->dlength, &new_len);
+	    break;
+
+	case ZTR_FORM_XRLE:
+	    new_data = unxrle(chunk->data, chunk->dlength, &new_len);
 	    break;
 
 	case ZTR_FORM_ZLIB:
@@ -670,64 +682,77 @@ int compress_ztr(ztr_t *ztr, int level) {
 	switch(ztr->chunk[i].type) {
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
-	    if (level <= 2) {
-		/*
-		 * Experiments show that typically a double delta does
-		 * better than a single delta for 8-bit data, and the other
-		 * way around for 16-bit data
-		 */
-		compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA2,
-			       ztr->delta_level);
+	    if (ztr->chunk[i].mdlength == 4 &&
+		(memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0 ||
+		 memcmp(ztr->chunk[i].mdata, "PYNO", 4) == 0)) {
+		if (level > 1)
+		    compress_chunk(&ztr->chunk[i],
+				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    } else {
-		compress_chunk(&ztr->chunk[i], ZTR_FORM_ICHEB,  0);
-	    }
-	    
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_16TO8,  0);
-	    if (level > 1) {
-		compress_chunk(&ztr->chunk[i], ZTR_FORM_FOLLOW1,0);
-		/*
-		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
-		*/
-		compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  150);
-		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+		if (level <= 2) {
+		    /*
+		     * Experiments show that typically a double delta does
+		     * better than a single delta for 8-bit data, and the other
+		     * way around for 16-bit data
+		     */
+		    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA2,
+				   ztr->delta_level, 0);
+		} else {
+		    compress_chunk(&ztr->chunk[i], ZTR_FORM_ICHEB,  0, 0);
+		}
+		
+		compress_chunk(&ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
+		if (level > 1) {
+		    compress_chunk(&ztr->chunk[i], ZTR_FORM_FOLLOW1,0, 0);
+		    /*
+		      compress_chunk(&ztr->chunk[i],
+		      ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+		    */
+		    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  150, 0);
+		    compress_chunk(&ztr->chunk[i],
+				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
+		}
 	    }
 	    break;
 
 	case ZTR_TYPE_BASE:
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 	    break;
 
 	case ZTR_TYPE_CNF1:
 	case ZTR_TYPE_CNF4:
 	case ZTR_TYPE_CSID:
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA1, 1);
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77);
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA1, 1, 0);
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 	    break;
 
 	case ZTR_TYPE_BPOS:
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA4, 1);
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_32TO8,  0);
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 	    break;
 
 	case ZTR_TYPE_TEXT:
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
-			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 	    break;
+
+	case ZTR_TYPE_FLWO:
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_XRLE, 0, 4);
+	    break;
+
 	}
 
 	/*
@@ -757,3 +782,4 @@ int uncompress_ztr(ztr_t *ztr) {
 
     return 0;
 }
+

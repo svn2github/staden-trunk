@@ -1,5 +1,8 @@
-			    IO_LIB VERSION 1.8.12
+			    IO_LIB VERSION 1.9.0 - test
 			    =====================
+
+This is a test version for 1.9.0. A few things may change a bit before
+an official 1.9.0 release is made.
 
 Io_lib is a library of file reading and writing code to provide a general
 purpose trace file (and Experiment File) reading interface. The programmer
@@ -7,7 +10,7 @@ simply calls the (eg) read_reading to create a "Read" C structure with the
 data loaded into memory. It has been compiled and tested on:
 
 Compaq Tru64 Unix 5.1B (formerly Digital Unix)
-RedHat Linux 9.0
+Debian GNU/Linux 3.1 (2.6.8 kernel)
 
 In addition to the above, the code has previously (but not tested with this
 release) been compiled and used on MacOS X, Solaris, Irix and MS
@@ -25,9 +28,21 @@ following file formats:
 	ZTR trace files
 
 In addition, a library is used for bringing all these together into a single
-library so that only a single function call (read_reading or write_reading)
-is required to access the file, regardless of the file type it uses. See the
-file include/Read.h for the generic 'Read' structure.
+library so that only a single function call (read_reading and
+write_reading, their file pointer equivalents fread_reading and
+fwrite_reading, or the newer memory-file versions of mfread_reading
+and mfwrite_reading) is required to access the file, regardless of the
+file type it uses. See the file include/Read.h for the generic 'Read'
+structure.
+
+The latest version has been sped up dramatically by using in-memory
+encoding and decoding where possible. For example previously reading
+an ABI file would require lots of file seeking and file read
+requests. Now it reads the entire file into memory (into an "mFILE"
+structure) and performs the same operations on a block of memory
+instead. The old interfaces of fread_reading and fwrite_reading still
+exist, but it is recommended for maximum speed that people switch to
+mfread_reading and mfwrite_reading instead.
 
 
 Unix - autoconf

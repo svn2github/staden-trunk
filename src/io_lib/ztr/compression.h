@@ -40,9 +40,12 @@ char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len);
  * Run length encoding.
  *
  * Any run of 3 or more identical characters (up to 255 in a row) are replaced
- * by "255" followed by the number of characters followed by the character
- * value itself.
- * Any single 255 values are escaped using 255 255.
+ * by a 'guard' byte followed by the number of characters followed by
+ * the character value itself.
+ * Any single guard value in the input is escaped using 'guard 0'.
+ *
+ * Specifying guard as -1 will automatically pick one of the least used
+ * characters in the input as the guard.
  *
  * Arguments:
  *	uncomp		Input data
@@ -69,6 +72,44 @@ char *rle(char *uncomp, int uncomp_len, int guard, int *comp_len);
  *	NULL if not successful
  */
 char *unrle(char *comp, int comp_len, int *uncomp_len);
+
+/*
+ * Mutli-byte run length encoding.
+ *
+ * Any run of 3 or more identical characters (up to 255 in a row) are replaced
+ * by a 'guard' byte followed by the number of characters followed by
+ * the character value itself.
+ * Any single guard value in the input is escaped using 'guard 0'.
+ *
+ * Specifying guard as -1 will automatically pick one of the least used
+ * characters in the input as the guard.
+ *
+ * Arguments:
+ *	uncomp		Input data
+ *	uncomp_len	Length of input data 'uncomp'
+ *	guard		Guard byte - used to encode "N" copies of data
+ *      rsz             Size of blocks to compare for run checking.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data if successful
+ *	NULL if not successful
+ */
+char *xrle(char *uncomp, int uncomp_len, int guard, int rsz, int *comp_len);
+
+/*
+ * Reverses multi-byte run length encoding.
+ *
+ * Arguments:
+ *	comp		Compressed input data
+ *	comp_len	Length of comp data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *unxrle(char *comp, int comp_len, int *uncomp_len);
 
 /*
  * decorrelate1()
@@ -187,7 +228,7 @@ char *recorrelate4(char *comp, int comp_len, int *uncomp_len);
  *	Success: An 8-bit array (malloced)
  *	Failure: NULL
  */
-char *shrink_16to8(char *uncomp, int uncomp_len, int level, int *comp_len);
+char *shrink_16to8(char *uncomp, int uncomp_len, int *comp_len);
 
 /*
  * expand_8to16()
@@ -220,7 +261,7 @@ char *expand_8to16(char *comp, int comp_len, int *uncomp_len);
  *	Success: An 8-bit array (malloced)
  *	Failure: NULL
  */
-char *shrink_32to8(char *uncomp, int uncomp_len, int level, int *comp_len);
+char *shrink_32to8(char *uncomp, int uncomp_len, int *comp_len);
 
 /*
  * expand_8to32()
@@ -239,7 +280,6 @@ char *expand_8to32(char *comp, int comp_len, int *uncomp_len);
 
 char *follow1(char *s_uncomp,
 	      int uncomp_len,
-	      int level,
 	      int *comp_len);
 
 char *unfollow1(char *s_comp,

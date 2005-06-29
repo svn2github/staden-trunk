@@ -27,6 +27,8 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+
+#include "mFILE.h"
 #include "os.h"
 
 /*
@@ -164,7 +166,7 @@ typedef struct {
  *    0 - success
  *   -1 - failure
  */
-int read_scf_header(FILE *fp, Header *h);
+int read_scf_header(mFILE *fp, Header *h);
 
 /*
  * Read a single 8bit sample
@@ -172,7 +174,7 @@ int read_scf_header(FILE *fp, Header *h);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_sample1(FILE *fp, Samples1 *s);
+int read_scf_sample1(mFILE *fp, Samples1 *s);
 
 /*
  * Read several 8bit samples
@@ -180,7 +182,7 @@ int read_scf_sample1(FILE *fp, Samples1 *s);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_samples1(FILE *fp, Samples1 *s, size_t num_samples);
+int read_scf_samples1(mFILE *fp, Samples1 *s, size_t num_samples);
 
 /*
  * Read several 8bit samples in delta_delta format
@@ -188,7 +190,7 @@ int read_scf_samples1(FILE *fp, Samples1 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples);
+int read_scf_samples31(mFILE *fp, Samples1 *s, size_t num_samples);
 
 /*
  * Read a single 16bit sample
@@ -196,7 +198,7 @@ int read_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_sample2(FILE *fp, Samples2 *s);
+int read_scf_sample2(mFILE *fp, Samples2 *s);
 
 /*
  * Read several 16bit samples
@@ -204,7 +206,7 @@ int read_scf_sample2(FILE *fp, Samples2 *s);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_samples2(FILE *fp, Samples2 *s, size_t num_samples);
+int read_scf_samples2(mFILE *fp, Samples2 *s, size_t num_samples);
 
 /*
  * Read several 16bit samples in delta_delta format
@@ -212,7 +214,7 @@ int read_scf_samples2(FILE *fp, Samples2 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples);
+int read_scf_samples32(mFILE *fp, Samples2 *s, size_t num_samples);
 
 /*
  * Read a single Bases structure
@@ -220,7 +222,7 @@ int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_base(FILE *fp, Bases *b);
+int read_scf_base(mFILE *fp, Bases *b);
 
 /*
  * Read several Bases structures consecutively
@@ -228,7 +230,7 @@ int read_scf_base(FILE *fp, Bases *b);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_bases(FILE *fp, Bases *b, size_t num_bases);
+int read_scf_bases(mFILE *fp, Bases *b, size_t num_bases);
 
 /*
  * Read Bases, peak_indexes and probs
@@ -236,7 +238,7 @@ int read_scf_bases(FILE *fp, Bases *b, size_t num_bases);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_bases3(FILE *fp, Bases *b, size_t num_bases);
+int read_scf_bases3(mFILE *fp, Bases *b, size_t num_bases);
 
 /*
  * Read the SCF Comments.
@@ -244,7 +246,7 @@ int read_scf_bases3(FILE *fp, Bases *b, size_t num_bases);
  *    0 - success
  *   -1 - failure
  */
-int read_scf_comment(FILE *fp, Comments *c, size_t l);
+int read_scf_comment(mFILE *fp, Comments *c, size_t l);
 
 /*
  * Reads a whole SCF file into a Scf structure. This memory for this
@@ -257,6 +259,7 @@ int read_scf_comment(FILE *fp, Comments *c, size_t l);
  */
 Scf *read_scf(char *fn);
 Scf *fread_scf(FILE *fp);
+Scf *mfread_scf(mFILE *fp);
 
 
 /*
@@ -270,7 +273,7 @@ Scf *fread_scf(FILE *fp);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_header(FILE *fp, Header *h);
+int write_scf_header(mFILE *fp, Header *h);
 
 /*
  * Write a single 8bit sample
@@ -278,7 +281,7 @@ int write_scf_header(FILE *fp, Header *h);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_sample1(FILE *fp, Samples1 *s);
+int write_scf_sample1(mFILE *fp, Samples1 *s);
 
 /*
  * Write several 8bit samples
@@ -286,7 +289,7 @@ int write_scf_sample1(FILE *fp, Samples1 *s);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_samples1(FILE *fp, Samples1 *s, size_t num_samples);
+int write_scf_samples1(mFILE *fp, Samples1 *s, size_t num_samples);
 
 /*
  * Write several 8bit samples in delta_delta format
@@ -294,7 +297,7 @@ int write_scf_samples1(FILE *fp, Samples1 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples);
+int write_scf_samples31(mFILE *fp, Samples1 *s, size_t num_samples);
 
 /*
  * Write 16bit samples
@@ -302,7 +305,7 @@ int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_sample2(FILE *fp, Samples2 *s);
+int write_scf_sample2(mFILE *fp, Samples2 *s);
 
 /*
  * Write several 16bit samples
@@ -310,7 +313,7 @@ int write_scf_sample2(FILE *fp, Samples2 *s);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_samples2(FILE *fp, Samples2 *s, size_t num_samples);
+int write_scf_samples2(mFILE *fp, Samples2 *s, size_t num_samples);
 
 /*
  * Write several 16bit samples in delta_delta format
@@ -318,7 +321,7 @@ int write_scf_samples2(FILE *fp, Samples2 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples);
+int write_scf_samples32(mFILE *fp, Samples2 *s, size_t num_samples);
 
 /*
  * Write the Bases structure
@@ -326,7 +329,7 @@ int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_base(FILE *fp, Bases *b);
+int write_scf_base(mFILE *fp, Bases *b);
 
 /*
  * Write the several Bases structures consecutively
@@ -334,7 +337,7 @@ int write_scf_base(FILE *fp, Bases *b);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_bases(FILE *fp, Bases *b, size_t num_bases);
+int write_scf_bases(mFILE *fp, Bases *b, size_t num_bases);
 
 /*
  * Write the bases, then peak indexes, then probs
@@ -342,7 +345,7 @@ int write_scf_bases(FILE *fp, Bases *b, size_t num_bases);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_bases3(FILE *fp, Bases *b, size_t num_bases);
+int write_scf_bases3(mFILE *fp, Bases *b, size_t num_bases);
 
 /*
  * Write the SCF Comments.
@@ -350,7 +353,7 @@ int write_scf_bases3(FILE *fp, Bases *b, size_t num_bases);
  *    0 - success
  *   -1 - failure
  */
-int write_scf_comment(FILE *fp, Comments *c, size_t l);
+int write_scf_comment(mFILE *fp, Comments *c, size_t l);
 
 
 /*
@@ -369,6 +372,7 @@ int write_scf_comment(FILE *fp, Comments *c, size_t l);
  */
 int write_scf(Scf *scf, char *fn);
 int fwrite_scf(Scf *scf, FILE *fp);
+int mfwrite_scf(Scf *scf, mFILE *fp);
 
 /*
  * Request which (major) version of scf to use when writing.

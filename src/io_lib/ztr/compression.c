@@ -10,9 +10,9 @@
 #  define M_PI 3.14159265358979323846
 #endif
 
+#include "ztr.h"
 #include "os.h"
 #include "compression.h"
-#include "ztr.h"
 #include "xalloc.h"
 
 #ifndef NDEBUG 
@@ -170,9 +170,12 @@ char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len) {
  * Run length encoding.
  *
  * Any run of 3 or more identical characters (up to 255 in a row) are replaced
- * by "255" followed by the number of characters followed by the character
- * value itself.
- * Any single 255 values are escaped using 255 255.
+ * by a 'guard' byte followed by the number of characters followed by
+ * the character value itself.
+ * Any single guard value in the input is escaped using 'guard 0'.
+ *
+ * Specifying guard as -1 will automatically pick one of the least used
+ * characters in the input as the guard.
  *
  * Arguments:
  *	uncomp		Input data
@@ -185,7 +188,7 @@ char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len) {
  *	NULL if not successful
  */
 char *rle(char *uncomp, int uncomp_len, int guard, int *comp_len) {
-    int i, j, k, c_len = 0;
+    int i, k, c_len = 0;
     char *comp = xmalloc(2 * uncomp_len + 6);
     char *out = comp + 6;
 
@@ -209,7 +212,7 @@ char *rle(char *uncomp, int uncomp_len, int guard, int *comp_len) {
 	}
     }
 
-    for (j = i = 0; i < uncomp_len; i=k) {
+    for (i = 0; i < uncomp_len; i=k) {
 	/*
 	 * Detect blocks of up identical bytes up to 255 bytes long.
 	 */
@@ -268,6 +271,7 @@ char *rle(char *uncomp, int uncomp_len, int guard, int *comp_len) {
  *	Uncompressed data if successful
  *	NULL if not successful
  */
+/* ARGSUSED */
 char *unrle(char *comp, int comp_len, int *uncomp_len) {
     int in_i, out_i, i, val, count, out_len;
     char *uncomp;
@@ -311,6 +315,149 @@ char *unrle(char *comp, int comp_len, int *uncomp_len) {
 
     if (uncomp_len)
 	*uncomp_len = out_len;
+
+    return uncomp;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * ZTR_FORM_XRLE
+ * ---------------------------------------------------------------------------
+ */
+
+/*
+ * Mutli-byte run length encoding.
+ *
+ * Any run of 3 or more identical characters (up to 255 in a row) are replaced
+ * by a 'guard' byte followed by the number of characters followed by
+ * the character value itself.
+ * Any single guard value in the input is escaped using 'guard 0'.
+ *
+ * Specifying guard as -1 will automatically pick one of the least used
+ * characters in the input as the guard.
+ *
+ * Arguments:
+ *	uncomp		Input data
+ *	uncomp_len	Length of input data 'uncomp'
+ *	guard		Guard byte - used to encode "N" copies of data
+ *      rsz             Size of blocks to compare for run checking.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data if successful
+ *	NULL if not successful
+ */
+char *xrle(char *uncomp, int uncomp_len, int guard, int rsz, int *comp_len) {
+    char *comp = (char *)malloc(2 * uncomp_len + 3);
+    char *out = comp;
+    int i, j, k;
+
+    /* A guard of -1 implies to search for the least frequent symbol */
+    if (guard == -1) {
+	int cnt[256];
+	int bestcnt = uncomp_len + 1;
+
+	for (i = 0; i < 256; i++)
+	    cnt[i] = 0;
+
+	for (i = 0; i < uncomp_len; i++) {
+	    cnt[(unsigned char)uncomp[i]]++;
+	}
+
+	for (i = 0; i < 256; i++) {
+	    if (cnt[i] < bestcnt) {
+		bestcnt = cnt[i];
+		guard = i;
+	    }
+	}
+    }
+
+    *out++ = ZTR_FORM_XRLE;
+    *out++ = rsz;
+    *out++ = guard;
+
+    for (i = 0; i < uncomp_len; i = k) {
+	/* Count repeats */
+	k = i + rsz;
+	while (k < uncomp_len + rsz && !memcmp(&uncomp[i], &uncomp[k], rsz))
+	       k += rsz;
+
+	if (k-i > rsz) {
+	    /* Duplicates, so RLE */
+	    *out++ = guard;
+	    *out++ = (k-i)/rsz;
+	    for (j = 0; j < rsz; j++)
+		*out++ = uncomp[i+j];
+	} else {
+	    /* No dups, store as is escaping guarding as appropriate */
+	    if ((unsigned char)(uncomp[i]) == guard) {
+		*out++ = guard;
+		*out++ = 0;
+	    } else {
+		*out++ = uncomp[i];
+	    }
+	    k = i+1;
+	}
+    }
+
+    *comp_len = out-comp;
+
+    return comp;
+}
+
+/*
+ * Reverses multi-byte run length encoding.
+ *
+ * Arguments:
+ *	comp		Compressed input data
+ *	comp_len	Length of comp data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *unxrle(char *comp, int comp_len, int *uncomp_len) {
+    char *uncomp;
+    char *out;
+    int rsz = (unsigned char)comp[1];
+    int guard = (unsigned char)comp[2];
+    unsigned char *in;
+    int unclen = 0, cpos, len;
+    
+    /* Calculate uncompressed length */
+    for (in = (unsigned char *)comp, cpos = 3; cpos < comp_len; unclen++) {
+	if (in[cpos++] == guard) {
+	    if ((len = in[cpos++])) {
+		cpos += rsz;
+		unclen += len*rsz -1;
+	    }
+	}
+    }
+    *uncomp_len = unclen;
+
+    /* Expand */
+    uncomp = out = (char *)malloc(unclen+1);
+    for (in = (unsigned char *)comp, cpos = 3; cpos < comp_len;) {
+	char c;
+	if ((c = in[cpos++]) != guard) {
+	    *out++ = c;
+	} else {
+	    int len = in[cpos++];
+	    if (len) {
+		int i, j;
+		for (i = 0; i < len; i++) {
+		    for (j = 0; j < rsz; j++) {
+			*out++ = in[cpos+j];
+		    }
+		}
+		cpos += rsz;
+	    } else {
+		*out++ = guard;
+	    }
+	}
+    }
+    *out++ = 0;
 
     return uncomp;
 }
@@ -893,7 +1040,7 @@ char *recorrelate4(char *x_comp,
  *	Success: An 8-bit array (malloced)
  *	Failure: NULL
  */
-char *shrink_16to8(char *x_uncomp, int uncomp_len, int level, int *comp_len) {
+char *shrink_16to8(char *x_uncomp, int uncomp_len, int *comp_len) {
     char *comp;
     int i, j, i16;
     signed char *s_uncomp = (signed char *)x_uncomp;
@@ -1002,7 +1149,7 @@ char *expand_8to16(char *x_comp, int comp_len, int *uncomp_len) {
  *	Success: An 8-bit array (malloced)
  *	Failure: NULL
  */
-char *shrink_32to8(char *x_uncomp, int uncomp_len, int level, int *comp_len) {
+char *shrink_32to8(char *x_uncomp, int uncomp_len, int *comp_len) {
     char *comp;
     int i, j, i32;
     signed char *s_uncomp = (signed char *)x_uncomp;
@@ -1087,7 +1234,6 @@ char *expand_8to32(char *comp, int comp_len, int *uncomp_len) {
 static int follow_tab[256][256];
 char *follow1(char *x_uncomp,
 	      int uncomp_len,
-	      int level,
 	      int *comp_len) {
     char *comp = (char *)xmalloc(uncomp_len + 256 + 1);
     unsigned char *u_uncomp = (unsigned char *)x_uncomp;
@@ -1617,3 +1763,72 @@ char *ichebuncomp(char *comp, int comp_len, int *uncomp_len)
     *uncomp_len = nwords*2;
     return (char *)data;
 }
+
+/*
+ * Predefined huffman tables for optimal compression of small
+ * segments? The benefit is that for short (eg 30bp) sequences we can
+ * avoid the overhead of storing the huffman dictionary. Typically
+ * this is a matter of storing the maximum bit-length and then the
+ * symbols with how many bits are needed. A cononical tree generator
+ * will then reassign the actual bit patterns themselves.
+ * So eg the No-Ns one would take maybe 4+4*(8+2) bits = 6bytes. The
+ * Ambig ones would take 4+15*(8+3) = 22bytes
+ *
+ * As these are hard coded they should be implemented as a
+ * hand-crafted state machine and therefore be very quick to execute.
+ *
+ * Or... the trees could be considered to be the starting point for an
+ * adpatic huffman compression algorithm. This makes it harder to port
+ * this to other systems though.
+ *
+ * No-Ns
+ * A=00
+ * C=01
+ * G=10
+ * T=11
+ *
+ * Case sensitive - even weight for all
+ * A=000
+ * C=001
+ * G=010
+ * T=011
+ * a=100
+ * c=101
+ * g=110
+ * t=111
+ *
+ * Ambig (GC rich)
+ * A=00
+ * C=01
+ * G=10
+ * T=110
+ * N=1110
+ * R=1111000       AG
+ * Y=1111001       CT
+ * M=1111010       AC
+ * W=1111011       AT
+ * S=1111100       CG
+ * K=1111101       GT
+ * B=11111100      CGT
+ * D=11111101      AGT
+ * H=11111110      ACT
+ * V=11111111      ACG
+ *
+ * Ambig (AT rich)
+ * A=00
+ * T=01
+ * C=10
+ * G=110
+ * N=1110
+ * R=1111000       AG
+ * Y=1111001       CT
+ * M=1111010       AC
+ * W=1111011       AT
+ * S=1111100       CG
+ * K=1111101       GT
+ * B=11111100      CGT
+ * D=11111101      AGT
+ * H=11111110      ACT
+ * V=11111111      ACG
+ *
+ */

@@ -36,6 +36,7 @@
  */
 
 #include <stdio.h>
+#include "stdio_hack.h"
 #include "mach-io.h"
 
 

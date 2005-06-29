@@ -40,10 +40,10 @@ The basic structure of a ZTR file is (header,chunk*) - ie header followed by
 zero or more chunks. Each chunk consists of a type, some meta-data and some
 data, along with the lengths of both the meta-data and data.
 
-Byte number   0  1  2  3  4  5  6  7  8  9
-            +--+--+--+--+---+---+---+---+--+--+  -  +--+--+--+--+--+--  -  --+
+Byte number   0  1  2  3   4    5    6   7   8  9
+            +--+--+--+--+----+----+----+---+--+  -  +--+--+--+--+--+--  -  --+
 Hex values  |   type    |meta-data length  | meta-data |data length| data .. |
-            +--+--+--+--+---+---+---+---+--+--+  -  +--+--+--+--+--+--  -  --+
+            +--+--+--+--+----+----+----+---+--+  -  +--+--+--+--+--+--  -  --+
 
 
 Ie in C:
@@ -121,6 +121,37 @@ encoded using a variety of methods (LZ77, Huffman), but zlib will
 automatically determine the format itself. Often using zlib mode
 Z_HUFFMAN_ONLY will provide best compression when combined with other
 filtering techniques.
+
+
+Data format 3 - multi-byte run length encoding
+-------------
+
+Byte number   0    1     2     3  4  5                N
+            +--+------+-------+--+--+--+--  -  --+--+--+
+Hex values  | 1| size | guard | run length encoded data|
+            +--+------+-------+--+--+--+--  -  --+--+--+
+
+Much standard RLE, but this mechanism has a byte to specify the length
+of the data item we compare to check for runs. It is not restricted to
+spotted runs aligned on 'size' byte boundaries either.
+
+No uncompressed length is encoded here as technically this is not
+required (although it does make decoding a bit slower). The compressed
+length alone is sufficient to work out the uncompressed length after
+decompressing.
+
+Guard bytes in the input stream are 'escaped' by the replacing the
+guard byte followed by zero. Guard bytes in a parameterised run (ie X
+copies of Y where Y contains the guard) do not need to be 'escaped'
+
+Input data:
+10 12 12 13 12 13 12 13 12 13 14
+
+Output data:
+3				(xrle format)
+2				(size of blocks to compare)
+12			        (guard, 12 is a bad choice but illustrative)
+10 12 0 12 4 12 13 14           (rle data)
 
 
 Data format 64/0x40 - 8-bit delta

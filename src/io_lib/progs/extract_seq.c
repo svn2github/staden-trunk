@@ -16,13 +16,13 @@
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "Read.h"
 #include "traceType.h"
 #include "expFileIO.h"
 #include "open_trace_file.h"
 
-extern char *optarg;
-extern int optind;
+/* #include "stdio_hack.h" */
 
 #define LINE_LENGTH 60
 
@@ -106,10 +106,11 @@ static int do_trans(FILE *infp, char *in_file, FILE *outfp, int format,
 		r->base[i] = 'N';
 	}
     }
-    fwrite_pln(outfp, r);
+    fwrite_reading(outfp, r, TT_PLN);
 
     r->base = tmp_base;
     read_deallocate(r);
+    fflush(outfp);
 
     return 0;
 }

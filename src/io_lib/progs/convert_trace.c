@@ -293,11 +293,11 @@ void rescale_heights(Read *r, int min_marker) {
 }
 
 
-int convert(FILE *infp, FILE *outfp, char *infname, char *outfname,
+int convert(mFILE *infp, mFILE *outfp, char *infname, char *outfname,
 	    struct opts *opts) {
     Read *r;
 
-    if (NULL == (r = fread_reading(infp, infname, opts->in_format))) {
+    if (NULL == (r = mfread_reading(infp, infname, opts->in_format))) {
 	fprintf(stderr, "failed to read file %s\n", infname);
 	return 1;
     }
@@ -348,7 +348,7 @@ int convert(FILE *infp, FILE *outfp, char *infname, char *outfname,
     if (opts->compress_mode != -1)
 	set_compression_method(opts->compress_mode);
 
-    if (0 != (fwrite_reading(outfp, r, opts->out_format))) {
+    if (0 != (mfwrite_reading(outfp, r, opts->out_format))) {
 	fprintf(stderr, "failed to write file %s\n", outfname);
 	read_deallocate(r);
 	return 1;
@@ -483,11 +483,11 @@ int main(int argc, char **argv) {
     }
 
     if (!opts.fofn) {
-	return convert(stdin, stdout, "(stdin)", "(stdout)", &opts);
+	return convert(mstdin(), mstdout(), "(stdin)", "(stdout)", &opts);
     }
 
     /* else */ {
-	FILE *fpin, *fpout;
+	mFILE *fpin, *fpout;
 	FILE *fppassed = NULL, *fpfailed = NULL;
 	char *infname, *outfname;
 	int ret, ret_all = 0;
@@ -530,7 +530,7 @@ int main(int argc, char **argv) {
 	    infname = line2;
 
 	    /* Open input and output files */
-	    if (NULL == (fpin = fopen(infname, "rb"))) {
+	    if (NULL == (fpin = mfopen(infname, "rb"))) {
 		char buf[2048];
 		sprintf(buf, "ERROR %s", infname);
 		perror(buf);
@@ -544,11 +544,11 @@ int main(int argc, char **argv) {
 	    }
 
 	    if (outfname) {
-		if (NULL == (fpout = fopen(outfname, "wb+"))) {
+		if (NULL == (fpout = mfopen(outfname, "wb+"))) {
 		    char buf[2048];
 		    sprintf(buf, "ERROR %s", outfname);
 		    perror(buf);
-		    fclose(fpin);
+		    mfclose(fpin);
 		    if (opts.dots) {
 			fputc('!', stdout);
 			fflush(stdout);
@@ -559,7 +559,7 @@ int main(int argc, char **argv) {
 		}
 	    } else {
 		outfname = "(stdout)";
-		fpout = stdout;
+		fpout = mstdout();
 	    }
 
 	    /* Convert */
@@ -578,9 +578,9 @@ int main(int argc, char **argv) {
 	    }
 
 	    /* Tidy up */
-	    fclose(fpin);
-	    if (fpout != stdout)
-		fclose(fpout);
+	    mfclose(fpin);
+	    if (fpout != mstdout())
+		mfclose(fpout);
 	}
 
 	fclose(fofn_fp);

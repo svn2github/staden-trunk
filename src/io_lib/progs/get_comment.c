@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "Read.h"
 
@@ -27,8 +28,11 @@
 #  define DLL_IMPORT
 #endif
 
+/*
+ * From unistd.h
 extern DLL_IMPORT char *optarg;
 extern DLL_IMPORT int optind;
+*/
 
 void usage(void) {
     puts("Usage:");

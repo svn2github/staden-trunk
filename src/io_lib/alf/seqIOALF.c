@@ -77,9 +77,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "stdio_hack.h"
+
 #include "Read.h"
 #include "mach-io.h"
 #include "xalloc.h"
+#include "stdio_hack.h"
 
 /* ---- Constants ---- */
 

@@ -41,6 +41,7 @@ int main(int argc, char **argv)
     printf("%d\t\t# format\n",          read->format);
     printf("%d\t\t# NPoints\n",         read->NPoints);
     printf("%d\t\t# NBases\n",          read->NBases);
+    printf("%d\t\t# NFlows\n",          read->nflows);
     printf("%d\t\t# maxTraceVal\n",     (int)read->maxTraceVal);
     printf("%d\t\t# baseline\n",        read->baseline);
     printf("%d\t\t# leftCutoff\n",      read->leftCutoff);
@@ -58,24 +59,39 @@ int main(int argc, char **argv)
            i);
     }
 
-    puts("\n[A_Trace]");
-    for(i = 0; i < read->NPoints; i++)
-    printf("%d\t#%5d\n", (int)read->traceA[i], i);
+    if (read->NPoints) {
+	puts("\n[A_Trace]");
+	for(i = 0; i < read->NPoints; i++)
+	    printf("%d\t#%5d\n", (int)read->traceA[i], i);
 
-    puts("\n[C_Trace]");
-    for(i = 0; i < read->NPoints; i++)
-    printf("%d\t#%5d\n", (int)read->traceC[i], i);
+	puts("\n[C_Trace]");
+	for(i = 0; i < read->NPoints; i++)
+	    printf("%d\t#%5d\n", (int)read->traceC[i], i);
 
-    puts("\n[G_Trace]");
-    for(i = 0; i < read->NPoints; i++)
-    printf("%d\t#%5d\n", (int)read->traceG[i], i);
+	puts("\n[G_Trace]");
+	for(i = 0; i < read->NPoints; i++)
+	    printf("%d\t#%5d\n", (int)read->traceG[i], i);
 
-    puts("\n[T_Trace]");
-    for(i = 0; i < read->NPoints; i++)
-    printf("%d\t#%5d\n", (int)read->traceT[i], i);
+	puts("\n[T_Trace]");
+	for(i = 0; i < read->NPoints; i++)
+	    printf("%d\t#%5d\n", (int)read->traceT[i], i);
+    }
 
-    puts("\n[Info]");
-    printf("%s\n", read->info);
+    if (read->flow_order) {
+	puts("\n[Flows]");
+	for (i = 0; i < read->nflows; i++) {
+	    printf("%c %5.2f  %u\t#%5d\n",
+		   read->flow_order[i],
+		   read->flow ? read->flow[i] : 0,
+		   read->flow_raw ? read->flow_raw[i] : 0,
+		   i);
+	}
+    }
+
+    if (read->info) {
+	puts("\n[Info]");
+	printf("%s\n", read->info);
+    }
 
     read_deallocate(read);
 

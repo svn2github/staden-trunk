@@ -71,6 +71,7 @@
 #include "expFileIO.h"
 #include "xalloc.h"
 #include "misc.h"
+#include "stdio_hack.h"
 
 /* Fixup for broken SunOS 4.x systems */
 #ifndef FOPEN_MAX
@@ -155,7 +156,7 @@ char eflt_feature_ids[MAXIMUM_EFLTS][MAXIMUM_EFLT_LENGTH+1] = {
  * Output/update lines
  *************************************************************/
 
-int exp_print_line_(FILE *fp, char *eflt, char *entry)
+static int exp_print_line_(FILE *fp, char *eflt, char *entry)
 /*
  * Output an experiment file line
  */

@@ -4,7 +4,8 @@
 
 include ../options.mk
 
-PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump
+PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump \
+	$(O)/hash_tar
 
 ifdef IOLIB_PLN
 PROGS += $(O)/extract_seq
@@ -36,6 +37,7 @@ ZDOBJS=$(O)/ztr_dump.o
 MSOBJS=$(O)/makeSCF.o
 CTOBJS=$(O)/convert_trace.o
 ITOBJS=$(O)/index_tar.o
+HTOBJS=$(O)/hash_tar.o
 GCOBJS=$(O)/get_comment.o
 
 PLIBS=$(LINK_LIBFLAG)read$(LIB_EXT) $(LIBSC) $(LINK_LIBFLAG)misc$(LIB_EXT)
@@ -69,6 +71,9 @@ $(O)/convert_trace: 	$(CTOBJS)
 
 $(O)/index_tar:		$(ITOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ITOBJS) $(PLIBS)
+
+$(O)/hash_tar:		$(HTOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HTOBJS) $(PLIBS)
 
 DEPEND_OBJ = $(ESOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(GCOBJS)
 

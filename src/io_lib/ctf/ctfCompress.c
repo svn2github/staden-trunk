@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "seqIOCTF.h"
+#include "stdio_hack.h"
+
 #define ACEDB4
 
 #define A_ 1
@@ -52,7 +55,7 @@
 #define PREDICTIONMODE 3  /* predictor degree */
 #define COMPRESSIONMODE 3 /* compressor version */
 
-char *ctfType = 0 ;
+static char *ctfType = 0 ;
 
 /**********************************************************/
 /**********************************************************/
@@ -329,7 +332,7 @@ static Array ctfDecompress2 (int dataMax, int shMax,
 /* create a code for the 125 most frequent words */
 static void ctfCompress3Init (Array *aap, int **lp, int **mp, int *maxCodep)
 {
-  short *sp ; int  i, j, k, n ;
+  short *sp ; int  i, j, k ;
   static int lng[128], mark[128], maxCode = 0 ;
   static Array aa = 0 ; 
 
@@ -342,7 +345,7 @@ static void ctfCompress3Init (Array *aap, int **lp, int **mp, int *maxCodep)
   j = 0 ;
 
   i = 0 ;  /* empty word */
-  mark[i] = j ; n  = 0 ; j += lng[i] ; 
+  mark[i] = j ; j += lng[i] ; 
   
   /* single values up to +- 8 */
   for (k = 1 ; i < 126 && k < 12 ; k++)
@@ -741,7 +744,7 @@ static Array ctfCompress (int compressionMode, Array a)
 /**********************************************************/
 /* called by saucisse fill, a system to test the efficiency of the system */
 
-Array ctfDecorrelate (Read *read, int predictionMode)
+static Array ctfDecorrelate (Read *read, int predictionMode)
 {
   int j, j1, u1, u2, u3, u4 ;
   short *zp, z = 0 ;
@@ -868,7 +871,6 @@ static int ctfProbInfoLevel  (Read *read, unsigned char *mixProb)
 
 static Array  ctfPackTraces (Read *read)
 { 
-  TRACE *tt[4] ;
   signed int x, dx;
   int section, sectionLength ;
   int i, n, dataMax, probInfoLevel, 
@@ -885,10 +887,6 @@ static Array  ctfPackTraces (Read *read)
   ctfTracePeakValue (read) ; /* sets read-> maxTraceVal */
   mixProb = (unsigned char *) malloc (read->NBases) ;
 
-  tt[0] = read->traceA ;
-  tt[1] = read->traceG ;
-  tt[2] = read->traceC ;
-  tt[3] = read->traceT ;
   probInfoLevel = ctfProbInfoLevel (read, mixProb) ;
 
 lao:  /* the idea is that i will never have to loop */

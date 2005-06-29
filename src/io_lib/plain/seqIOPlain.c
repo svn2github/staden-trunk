@@ -58,6 +58,7 @@
 #include "xalloc.h"
 #include "traceType.h"
 
+#include "stdio_hack.h"
 /* ---- Constants ---- */
 
 #define BasesPerLine 50 /* For output formatting */
@@ -247,3 +248,4 @@ int write_pln(char *fn, Read *read) {
     fclose(fp);
     return 0;
 }
+

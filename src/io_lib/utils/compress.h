@@ -17,6 +17,8 @@
 
 #include <stdio.h>
 
+#include "mFILE.h"
+
 /*
  * Compress a file using the method set in the compression_used value
  * (set by set_compression_method and fopen_compressed).
@@ -26,7 +28,7 @@
  * When compression_used is 0 no compression is done.
  */
 int compress_file(char *file);
-int fcompress_file(FILE *fp);
+int fcompress_file(mFILE *fp);
 
 /*
  * Returns a file pointer of an uncompressed copy of 'file'.
@@ -37,7 +39,7 @@ int fcompress_file(FILE *fp);
  * (opened for update) to allow writing back to the original file. In cases
  * of uncompressed data this is the same as the returned file pointer.
  */
-FILE *fopen_compressed(char *file, FILE **ofp);
+mFILE *fopen_compressed(char *file, mFILE **ofp);
 
 /*
  * Returns a file pointer of an uncompressed copy of 'fp'.
@@ -46,7 +48,7 @@ FILE *fopen_compressed(char *file, FILE **ofp);
  * (opened for update) to allow writing back to the original file. In cases
  * of uncompressed data this is the same as the returned file pointer.
  */
-FILE *freopen_compressed(FILE *fp, FILE **ofp);
+mFILE *freopen_compressed(mFILE *fp, mFILE **ofp);
 
 /*
  * Sets the desired compression method. The below macros relate to entries
@@ -60,12 +62,36 @@ int get_compression_method(void);
  */
 int compress_str2int(char *mode);
 
+/*
+ * Converts compress mode numbers to strings (eg "gzip").
+ */
+char *compress_int2str(int mode);
+
 #define COMP_METHOD_NONE	0
 #define COMP_METHOD_BZIP	1
 #define COMP_METHOD_GZIP	2
 #define COMP_METHOD_COMPRESS	3
-#define COMP_METHOD_PACK	4
 #define COMP_METHOD_BZIP2	5
 #define COMP_METHOD_SZIP	6
+
+/*
+ * In memory gzip and gunzip using zlib. In each case data is the input
+ * data (with 'size') and the returned value is the output data along with
+ * [cu]data_size being the returned data size.
+ *
+ * Both return NULL on failure
+ */
+char *memgzip(char *data, size_t size, size_t *cdata_size);
+char *memgunzip(char *data, size_t size, size_t *udata_size);
+
+/*
+ * This pipes 'input' data of length 'size' into a unix 'command'.
+ * The output is then returned as an allocated block of memory. It is the
+ * caller's responsibility to free this data.
+ *
+ * Returns malloc()ed data on success
+ *         NULL on failure
+ */
+char *pipe2(const char *command, char *input, size_t insize, size_t *outsize);
 
 #endif /* _COMPRESS_H */

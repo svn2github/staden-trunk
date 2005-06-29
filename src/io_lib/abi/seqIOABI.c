@@ -82,6 +82,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "stdio_hack.h"
+
 #include "seqIOABI.h"
 #include "Read.h"
 #include "abi.h"
@@ -89,6 +91,7 @@
 #include "mach-io.h"
 #include "xalloc.h"
 #include "misc.h"
+#include "stdio_hack.h"
 
 /* ---- Constants ---- */
 
@@ -279,7 +282,7 @@ int getABIString(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
 	return -1;
 }
 
-void replace_nl(char *string) {
+static void replace_nl(char *string) {
     char *cp;
 
     for (cp = string; *cp; cp++) {
@@ -301,7 +304,7 @@ void replace_nl(char *string) {
  * was more to come).
  */
 int getABIint1(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
-		 uint_1 *data, int max_data_len) {
+	       uint_1 *data, int max_data_len) {
     uint_4 off;
     uint_4 len, len2;
 
@@ -339,7 +342,7 @@ int getABIint1(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
  * was more to come).
  */
 int getABIint2(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
-		 uint_2 *data, int max_data_len) {
+	       uint_2 *data, int max_data_len) {
     int len, l2;
     int i;
 
@@ -365,7 +368,7 @@ int getABIint2(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
  * was more to come).
  */
 int getABIint4(FILE *fp, off_t indexO, uint_4 label, uint_4 count,
-		 uint_4 *data, int max_data_len) {
+	       uint_4 *data, int max_data_len) {
     int len, l2;
     int i;
 
@@ -735,7 +738,6 @@ Read *fread_abi(FILE *fp) {
 	    char buffer_s[1025];
 	    char buffer_e[1025];
 	    struct tm t;
-	    time_t tsec;
 	    uint_4 rund_s, rund_e, runt_s, runt_e;
 
 	    rund_s = offset;
@@ -762,7 +764,7 @@ Read *fread_abi(FILE *fp) {
 	     * the conversion process will update the tm_wday element of
 	     * struct tm.
 	     */
-	    tsec = mktime(&t);
+	    mktime(&t);
 	    strftime(buffer_s, 1024, "%a %d %b %H:%M:%S %Y", &t);
 
 	    t.tm_mday = rund_e & 0xff;
@@ -777,7 +779,7 @@ Read *fread_abi(FILE *fp) {
 	     * the conversion process will update the tm_wday element of
 	     * struct tm.
 	     */
-	    tsec = mktime(&t);
+	    mktime(&t);
 	    strftime(buffer_e, 1024, "%a %d %b %H:%M:%S %Y", &t);
 
 	    sprintf(line, "DATE=%s to %s\nRUND=%s\n",

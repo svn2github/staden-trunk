@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 
+#include "mFILE.h"
 #include "array.h"
 #include "os.h"
 
@@ -44,7 +45,7 @@ typedef Array Exp_entries;
 typedef struct {
     Array entries[MAXIMUM_EFLTS]; /* array of array of entries */
     int Nentries[MAXIMUM_EFLTS];
-    FILE *fp;
+    mFILE *fp;
 } Exp_info;
 
 #define NULL_Exp_info ( (Exp_info *) NULL )
@@ -141,12 +142,17 @@ extern char *exp_create_range(char *str, int start, int end);
  */
 extern int exp_extract_range(char *str, int *start, int *end);
 
-extern int exp_print_line(FILE *fp, Exp_info *e, int eflt, int i);
 /*
  * Output an experiment file line
  */
+extern int exp_print_line(mFILE *fp, Exp_info *e, int eflt, int i);
 
-extern int exp_print_seq(FILE *fp, Exp_info *e, int eflt, int i);
+/*
+ * Output an experiment file multi-line
+ */
+extern int exp_print_mline(mFILE *fp, Exp_info *e, int eflt, int i);
+
+extern int exp_print_seq(mFILE *fp, Exp_info *e, int eflt, int i);
 /*
  * Output an experiment file multi line
  */
@@ -174,6 +180,7 @@ extern Exp_info *exp_create_info(void);
 
 
 extern Exp_info *exp_fread_info(FILE *fp);
+extern Exp_info *exp_mfread_info(mFILE *fp);
 extern Exp_info *exp_read_info(char *file);
 /*
  * Read in an experiment file and return handle
@@ -314,6 +321,7 @@ extern f_int expws_(f_int *le, f_int *id, char *s, f_implicit s_l);
 
 
 extern void exp_print_file(FILE *fp, Exp_info *e);
+extern void exp_print_mfile(mFILE *fp, Exp_info *e);
 
 /*
  * FORTRAN interface to exp_create_range()

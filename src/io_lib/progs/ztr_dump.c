@@ -11,6 +11,7 @@ static char *format2str(int format) {
     switch (format) {
     case ZTR_FORM_RAW:     return "raw";
     case ZTR_FORM_RLE:     return "rle";
+    case ZTR_FORM_XRLE:    return "xrle";
     case ZTR_FORM_ZLIB:    return "zlib";
     case ZTR_FORM_DELTA1:  return "delta1";
     case ZTR_FORM_DELTA2:  return "delta2";
@@ -80,6 +81,10 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 	    new_data = unrle(chunk->data, chunk->dlength, &new_len);
 	    break;
 
+	case ZTR_FORM_XRLE:
+	    new_data = unxrle(chunk->data, chunk->dlength, &new_len);
+	    break;
+
 	case ZTR_FORM_ZLIB:
 	    new_data = zlib_dehuff(chunk->data, chunk->dlength, &new_len);
 	    break;
@@ -133,19 +138,19 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 
 int main(int argc, char **argv) {
     ztr_t *ztr;
-    FILE *fp;
+    mFILE *fp;
     int i;
 
     if (argc >= 2) {
-	if (NULL == (fp = fopen(argv[1], "rb"))) {
+	if (NULL == (fp = mfopen(argv[1], "rb"))) {
 	    perror(argv[1]);
 	    return 1;
 	}
     } else {
-	fp = stdin;
+	fp = mstdin();
     }
 
-    if (NULL == (ztr = fread_ztr(fp))) {
+    if (NULL == (ztr = mfread_ztr(fp))) {
 	perror("fread_ztr");
 	return 1;
     }

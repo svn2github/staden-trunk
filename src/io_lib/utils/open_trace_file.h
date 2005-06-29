@@ -1,6 +1,8 @@
 #ifndef _OPEN_TRACE_FILE_H_
 #define _OPEN_TRACE_FILE_H_
 
+#include "mFILE.h"
+
 /*
  * Opens a trace file named 'file'. This is initially looked for as a
  * pathname relative to a file named "relative_to". This may (for
@@ -12,28 +14,11 @@
  * 'file' is looked for at relative_to, then the current directory, and then
  * all of the locations listed in RAWDATA (which is a colon separated list).
  *
- * Returns a FILE pointer when found.
+ * Returns a mFILE pointer when found.
  *           NULL otherwise.
  */
+mFILE *open_trace_mfile(char *file, char *relative_to);
 FILE *open_trace_file(char *file, char *relative_to);
 
-
-/*
- * Searches for file in the tar pointed to by tarname. If it finds it, it
- * copies it out and returns a file pointer to the temporary file,
- * otherwise we return NULL.
- *
- * If 'tarname'.index exists we will use this as a fast lookup method,
- * otherwise we just do a sequential search through the tar.
- *
- * Offset specifies a starting search position. Set this to zero if you want
- * to search through the entire tar file, otherwise set it to the byte offset
- * into the file of the tar header block for the desired file to extract.
- * (Note that the tar index file overrides this value.)
- *
- * Returns FILE pointer if found
- *         NULL if not.
- */
-FILE *find_file_tar(char *file, char *tarname, size_t offset);
 
 #endif /* _OPEN_TRACE_FILE_H_ */

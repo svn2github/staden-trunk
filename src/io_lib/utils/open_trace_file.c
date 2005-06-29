@@ -23,6 +23,7 @@
 #  define PATH_MAX 1024
 #endif
 
+#include "os.h"
 #include "open_trace_file.h"
 #include "misc.h"
 #include "tar_format.h"
@@ -61,11 +62,7 @@ static char *tokenise_search_path(char *searchpath) {
     if (!newsearch)
 	return NULL;
 
-    newsearch[0] = '.';
-    newsearch[1] = '/';
-    newsearch[2] = '\0';
-
-    for (i = 0, j = 3; i < len; i++) {
+    for (i = 0, j = 0; i < len; i++) {
 	if (i < len-1 && searchpath[i] == ':' && searchpath[i+1] == ':') {
 	    newsearch[j++] = ':';
 	    i++;
@@ -81,6 +78,10 @@ static char *tokenise_search_path(char *searchpath) {
 	}
     }
 
+    if (j)
+	newsearch[j++] = 0;
+    newsearch[j++] = '.';
+    newsearch[j++] = '/';
     newsearch[j++] = 0;
     newsearch[j++] = 0;
     
@@ -100,10 +101,10 @@ static char *tokenise_search_path(char *searchpath) {
  * into the file of the tar header block for the desired file to extract.
  * (Note that the tar index file overrides this value.)
  *
- * Returns FILE pointer if found
+ * Returns mFILE pointer if found
  *         NULL if not.
  */
-FILE *find_file_tar(char *file, char *tarname, size_t offset) {
+static mFILE *find_file_tar(char *file, char *tarname, size_t offset) {
     int num_magics = sizeof(magics) / sizeof(*magics);
     char path[PATH_MAX+101];
     FILE *fp;
@@ -163,12 +164,11 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
 	if (!blk.header.name[0])
 	    break;
 
+	size = strtol(blk.header.size, NULL, 8);
+
 	/* start with the same name... */
 	if (strncmp(blk.header.name, file, name_len) == 0) {
-	    int len;
-	    char data[8192];
-	    FILE *fpout;
-	    char *fname;
+	    char *data;
 	    int i;
 
 	    /* ... but does it end with a known compression extension? */
@@ -181,29 +181,16 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
 	    if (i == num_magics)
 		continue;
 
-	    /* Found it - copy out the data to a temporary file */
-	    fname = tempnam(NULL, NULL);
-	    if (NULL == (fpout = fopen(fname, "wb+"))) {
-		remove(fname);
-		free(fname);
-		fclose(fp);
+	    /* Found it - copy out the data to an mFILE */
+	    if (NULL == (data = (char *)malloc(size)))
+		return NULL;
+	    if (size != fread(data, 1, size, fp)) {
+		free(data);
 		return NULL;
 	    }
-	    remove(fname);
-	    free(fname);
-
-	    size = strtol(blk.header.size, NULL, 8);
-	    while ((len = fread(data, 1, size > 8192 ? 8192 : size, fp)) > 0) {
-		fwrite(data, 1, len, fpout);
-		size -= len;
-	    } 
-	    
-	    fclose(fp);
-	    fseek(fpout, 0, SEEK_SET);
-	    return fpout;
+	    return mfcreate(data, size);
 	}
 
-	size = strtol(blk.header.size, NULL, 8);
 	fseek(fp, TBLOCK*((size+TBLOCK-1)/TBLOCK), SEEK_CUR);
     }
 
@@ -218,22 +205,19 @@ FILE *find_file_tar(char *file, char *tarname, size_t offset) {
  * of the archive itself is irrelevant provided that the data is not
  * internally compressed in some manner specific to that archive.
  *
- * Return FILE pointer if found
+ * Return mFILE pointer if found
  *        NULL if not
  */
-FILE *find_file_hash(char *file, char *hashfile) {
-    uint64_t pos;
-    uint32_t size;
-    FILE *fpout;
-    int found;
-    char *fname;
+static mFILE *find_file_hash(char *file, char *hashfile) {
+    size_t size;
     static HashFile *hf = NULL;
     static char hf_name[1024];
+    char *data;
 
     /* Cache an open HashFile for fast accesing */
     if (strcmp(hashfile, hf_name) != 0) {
 	if (hf)
-	    HashFileClose(hf);
+	    HashFileDestroy(hf);
 	hf = HashFileOpen(hashfile);
 
 	if (!hf)
@@ -242,32 +226,11 @@ FILE *find_file_hash(char *file, char *hashfile) {
     }
 
     /* Search */
-    found = HashFileQuery(hf, (uint8_t *)file, strlen(file), &pos, &size);
-    if (-1 == found)
+    if (NULL == (data = HashFileExtract(hf, file, &size)))
 	return NULL;
 
-    /* Found, so copy the contents out and reopen - yuk */
-    fname = tempnam(NULL, NULL);
-    if (NULL == (fpout = fopen(fname, "wb+"))) {
-	remove(fname);
-	free(fname);
-	return NULL;
-    }
-    remove(fname);
-    free(fname);
-
-    fseek(hf->afp, pos, SEEK_SET);
-    do {
-	char buf[8192];
-	int sz = size >= 8192 ? 8192 : size;
-	int got = fread(buf, 1, sz, hf->afp);
-	fwrite(buf, 1, sz, fpout);
-	size -= got;
-    } while (size);
-
-    fseek(fpout, 0, SEEK_SET);
-
-    return fpout;
+    /* Found, so copy the contents to a fake FILE pointer */
+    return mfcreate(data, size);
 }
 
 #ifdef TRACE_ARCHIVE
@@ -278,11 +241,11 @@ FILE *find_file_hash(char *file, char *hashfile) {
  *
  * Arcname has the form address:port, eg "titan/22100"
  *
- * Returns FILE pointer if found
+ * Returns mFILE pointer if found
  *         NULL if not.
  */
 #define RDBUFSZ 8192
-FILE *find_file_archive(char *file, char *arcname) {
+static mFILE *find_file_archive(char *file, char *arcname) {
     char server[1024], *cp;
     int port;
     struct hostent *host;
@@ -291,8 +254,7 @@ FILE *find_file_archive(char *file, char *arcname) {
     char msg[1024];
     ssize_t msg_len;
     char buf[RDBUFSZ];
-    char *fname;
-    FILE *fpout;
+    mFILE *fpout;
     int block_count;
 
     /* Split arc name into server and port */
@@ -333,19 +295,9 @@ FILE *find_file_archive(char *file, char *arcname) {
     }
 
     /*
-     * Create a temporary file, open it, and unlink it so that on a crash
-     * or close disk space is freed.
+     * Create a fake FILE (mFILE) and write to it.
      */
-    fname = tempnam(NULL, NULL);
-    if (NULL == (fpout = fopen(fname, "wb+"))) {
-	remove(fname);
-	free(fname);
-	fclose(fpout);
-	close(s);
-	return NULL;
-    }
-    remove(fname);
-    free(fname);
+    fpout = mfcreate(NULL, 0);
 
     /*
      * Read the data back, in multiple blocks if necessary and write it
@@ -362,25 +314,25 @@ FILE *find_file_archive(char *file, char *arcname) {
 	   (errno == EWOULDBLOCK && --block_count)) {
 	errno = 0;
 	if (msg_len > 0)
-	    fwrite(buf, 1, msg_len, fpout);
+	    mfwrite(buf, 1, msg_len, fpout);
     }
     close(s);
 
     if (!block_count) {
-	fclose(fpout);
+	mfclose(fpout);
 	return NULL;
     }
 
-    rewind(fpout);
+    mrewind(fpout);
 
     return fpout;
 }
 #endif
 
 #ifdef USE_WGET
-FILE *find_file_url(char *file, char *url) {
+static mFILE *find_file_url(char *file, char *url) {
     char buf[8192], *cp;
-    FILE *fp;
+    mFILE *fp;
     int pid;
     int maxlen = 8190 - strlen(file);
     char *fname = tempnam(NULL, NULL);
@@ -405,7 +357,7 @@ FILE *find_file_url(char *file, char *url) {
     }
 
     /* Return a filepointer to the result (if it exists) */
-    fp = !status ? fopen(fname, "rb+") : NULL;
+    fp = !status ? mfopen(fname, "rb+") : NULL;
     remove(fname);
     free(fname);
 
@@ -418,10 +370,10 @@ FILE *find_file_url(char *file, char *url) {
  * it. This also searches for compressed versions of the file in dirname
  * too.
  *
- * Returns FILE pointer if found
+ * Returns mFILE pointer if found
  *         NULL if not
  */
-static FILE *find_file_dir(char *file, char *dirname) {
+static mFILE *find_file_dir(char *file, char *dirname) {
     char path[PATH_MAX+1], path2[PATH_MAX+1];
     size_t len = strlen(dirname);
     int num_magics = sizeof(magics) / sizeof(*magics);
@@ -441,6 +393,7 @@ static FILE *find_file_dir(char *file, char *dirname) {
 	sprintf(path2, "%s%s", path, magics[i]);
 	if (file_exists(path2)) {
 	    return fopen_compressed(path2, NULL);
+	    /* return mfopen(path2, "rb"); */
 	}
     }
 
@@ -463,13 +416,65 @@ static FILE *find_file_dir(char *file, char *dirname) {
  * 'file' is looked for at relative_to, then the current directory, and then
  * all of the locations listed in RAWDATA (which is a colon separated list).
  *
- * Returns a FILE pointer when found.
+ * Returns a mFILE pointer when found.
  *           NULL otherwise.
  */
-FILE *open_trace_file(char *file, char *relative_to) {
+mFILE *open_trace_mfile(char *file, char *relative_to) {
     char *newsearch;
     char *ele;
-    FILE *fp;
+    mFILE *fp;
+
+    /* Use RAWDATA first */
+    if (NULL == (newsearch = tokenise_search_path(getenv("RAWDATA"))))
+	return NULL;
+    
+    /*
+     * Step through the search path testing out each component.
+     * We now look through each path element treating some prefixes as
+     * special, otherwise we treat the element as a directory.
+     */
+    for (ele = newsearch; *ele; ele += strlen(ele)+1) {
+	int i;
+	char *suffix[6] = {"", ".gz", ".bz2", ".sz", ".Z", ".bz2"};
+	for (i = 0; i < 6; i++) {
+	    char file2[1024];
+	    sprintf(file2, "%s%s", file, suffix[i]);
+
+	    if (0 == strncmp(ele, "TAR=", 4)) {
+		if (fp = find_file_tar(file2, ele+4, 0)) {
+		    free(newsearch);
+		    return fp;
+		}
+
+	    } else if (0 == strncmp(ele, "HASH=", 5)) {
+		if (fp = find_file_hash(file2, ele+5)) {
+		    free(newsearch);
+		    return fp;
+		}
+#ifdef TRACE_ARCHIVE
+	    } else if (0 == strncmp(ele, "ARC=", 4)) {
+		if (fp = find_file_archive(file2, ele+4)) {
+		    free(newsearch);
+		    return fp;
+		}
+#endif
+#ifdef USE_WGET
+	    } else if (0 == strncmp(ele, "URL=", 4)) {
+		if (fp = find_file_url(file2, ele+4)) {
+		    free(newsearch);
+		    return fp;
+		}
+#endif
+	    } else {
+		if (fp = find_file_dir(file2, ele)) {
+		    free(newsearch);
+		    return fp;
+		}
+	    }
+	}
+    }
+
+    free(newsearch);
 
     /* Look in the same location as the incoming 'relative_to' filename */
     if (relative_to) {
@@ -482,50 +487,34 @@ FILE *open_trace_file(char *file, char *relative_to) {
 	    return fp;
     }
 
-    /* Not found it yet? use RAWDATA then */
-    if (NULL == (newsearch = tokenise_search_path(getenv("RAWDATA"))))
-	return NULL;
-    
-    /*
-     * Step through the search path testing out each component.
-     * We now look through each path element treating some prefixes as
-     * special, otherwise we treat the element as a directory.
-     */
-    for (ele = newsearch; *ele; ele += strlen(ele)+1) {
-	if (0 == strncmp(ele, "TAR=", 4)) {
-	    if (fp = find_file_tar(file, ele+4, 0)) {
-		free(newsearch);
-		return fp;
-	    }
-
-	} else if (0 == strncmp(ele, "HASH=", 5)) {
-	    if (fp = find_file_hash(file, ele+5)) {
-		free(newsearch);
-		return fp;
-	    }
-#ifdef TRACE_ARCHIVE
-	} else if (0 == strncmp(ele, "ARC=", 4)) {
-	    if (fp = find_file_archive(file, ele+4)) {
-		free(newsearch);
-		return fp;
-	    }
-#endif
-#ifdef USE_WGET
-	} else if (0 == strncmp(ele, "URL=", 4)) {
-	    if (fp = find_file_url(file, ele+4)) {
-		free(newsearch);
-		return fp;
-	    }
-#endif
-	} else {
-	    if (fp = find_file_dir(file, ele)) {
-		free(newsearch);
-		return fp;
-	    }
-	}
-    }
-
-    free(newsearch);
-
     return NULL;
+}
+
+
+FILE *open_trace_file(char *file, char *relative_to) {
+    mFILE *mf = open_trace_mfile(file, relative_to);
+    FILE *fp;
+    char *fname;
+
+    if (mf->fp)
+	return mf->fp;
+
+    /* Otherwise create a temporary file and write the trace out */
+    /* Use tempnam() to force the use of TMP environment variable on Windows */
+    if (NULL == (fname=tempnam(NULL, NULL)))
+	return 0;
+    if (NULL == (fp = fopen(fname, "wb+"))){
+	remove(fname);
+	free(fname);
+	return 0;
+    }
+    remove(fname);
+    free(fname);
+
+    /* Copy the data */
+    fwrite(mf->data, 1, mf->size, fp);
+    rewind(fp);
+    mfclose(mf);
+
+    return fp;
 }

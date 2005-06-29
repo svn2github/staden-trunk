@@ -5,22 +5,14 @@
 
 /* Copies a single named file to stdout */
 void extract(HashFile *hf, char *file) {
-    uint64_t pos;
-    uint32_t size;
+    size_t len;
     char *data;
 
-    // printf("==== %s ====\n", file);
-
-    /* Obtain the pos+size */
-    if (-1 == HashFileQuery(hf, (uint8_t *)file, strlen(file), &pos, &size))
-	return;
-
-    /* Copy the data to stdout */
-    data = (char *)malloc(size);
-    fseek(hf->afp, pos, SEEK_SET);
-    fread(data, size, 1, hf->afp);
-    fwrite(data, size, 1, stdout);
-    free(data);
+    if (data = HashFileExtract(hf, file, &len)) {
+	fwrite(data, len, 1, stdout);
+	free(data);
+    }
+    return;
 }
 
 int main(int argc, char **argv) {
@@ -81,7 +73,7 @@ int main(int argc, char **argv) {
 	extract(hf, *argv);
     }
 
-    HashFileClose(hf);
+    HashFileDestroy(hf);
 
     return 0;
 }

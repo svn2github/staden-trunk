@@ -38,6 +38,7 @@
 #include <unistd.h>
 
 #include "Read.h"
+#include "mFILE.h"
 
 #ifdef IOLIB_ABI
 # include "abi.h"
@@ -79,7 +80,7 @@
  */
 Read *read_reading(char *fn, int format) {
     Read *read;
-    FILE *fp;
+    mFILE *fp;
 
 #ifdef USE_BIOLIMS
     if( !strncmp(fn,BIOLIMS_TAG,strlen(BIOLIMS_TAG))){
@@ -87,141 +88,15 @@ Read *read_reading(char *fn, int format) {
    }
 #endif
 
-    if (NULL == (fp = open_trace_file(fn, NULL))) {
+    if (NULL == (fp = open_trace_mfile(fn, NULL))) {
 	errout("'%s': couldn't open\n", fn);
 	return NULL;
     }
 
-    read = fread_reading(fp, fn, format);
-    fclose(fp);
+    read = mfread_reading(fp, fn, format);
+    mfclose(fp);
 
     return read;
-}
-
-/*
- * Write a sequence to a file "fn" of format "format". If "format" is 0,
- * we choose our favourite - SCF.
- *
- * Returns:
- *   0 for success
- *  -1 for failure
- */
-int write_reading(char *fn, Read *read, int format) {
-    Scf *scf;
-    int ret;
-
-    switch (format) {
-    default:
-	/* Defaults to SCF type */
-
-#ifdef IOLIB_SCF
-    case TT_SCF:
-	scf = read2scf(read);
-	ret = write_scf(scf, fn);
-	scf_deallocate(scf);
-	break;
-#endif
-
-#ifdef IOLIB_CTF
-    case TT_CTF: {
-	FILE *fp = fopen(fn, "wb");
-	if (!fp)
-	    return -1;
-	ret = fwrite_ctf(fp, read); 
-	fclose(fp);
-	break;
-    }
-#endif
-
-#ifdef IOLIB_ZTR
-    case TT_ZTR:
-    case TT_ZTR2: {
-        ztr_t *ztr;
-	FILE *fp = fopen(fn, "wb");
-	if (!fp)
-	    return -1;
-	ztr = read2ztr(read);
-	compress_ztr(ztr, 2);
-	ret = fwrite_ztr(fp, ztr); 
-	delete_ztr(ztr);
-	fclose(fp);
-	break;
-    }
-    case TT_ZTR1: {
-        ztr_t *ztr;
-	FILE *fp = fopen(fn, "wb");
-	if (!fp)
-	    return -1;
-	ztr = read2ztr(read);
-	compress_ztr(ztr, 1);
-	ret = fwrite_ztr(fp, ztr); 
-	delete_ztr(ztr);
-	fclose(fp);
-	break;
-    }
-    case TT_ZTR3: {
-        ztr_t *ztr;
-	FILE *fp = fopen(fn, "wb");
-	if (!fp)
-	    return -1;
-	ztr = read2ztr(read);
-	compress_ztr(ztr, 3);
-	ret = fwrite_ztr(fp, ztr); 
-	delete_ztr(ztr);
-	fclose(fp);
-	break;
-    }
-#endif
-
-#ifdef IOLIB_ABI
-    case TT_ABI:
-	ret = write_abi(fn, read);
-	break;
-#endif
-
-#ifdef IOLIB_ALF
-    case TT_ALF:
-	ret = write_alf(fn, read);
-	break;
-#endif
-
-#ifdef IOLIB_EXP
-    case TT_EXP: {
-	Exp_info *e = read2exp(read, fn);
-	
-	if (NULL == e) {
-	    fprintf(stderr, "Failed to create experiment file.\n");
-	    return -1;
-	} else {
-	    FILE *fp;
-
-	    if (NULL == (fp = fopen(fn, "w"))) {
-		fprintf(stderr, "Couldn't open file '%s'\n", fn);
-		return -1;
-	    }
-
-	    exp_print_file(fp, e);
-	    fclose(fp);
-	    exp_destroy_info(e);
-
-	    ret = 0;
-	}
-
-	break;
-    }
-#endif
-	
-#ifdef IOLIB_PLN
-    case TT_PLN:
-	ret = write_pln(fn, read);
-	break;
-#endif
-    }
-
-    if (ret == 0)
-	compress_file(fn);
-
-    return ret;
 }
 
 /*
@@ -237,9 +112,9 @@ int write_reading(char *fn, Read *read, int format) {
  *   Read *   for success
  *   NULLRead for failure
  */
-Read *fread_reading(FILE *fp, char *fn, int format) {
+Read *mfread_reading(mFILE *fp, char *fn, int format) {
     Read *read;
-    FILE *newfp;
+    mFILE *newfp;
 
     if (!fn)
 	fn = "(unknown)";
@@ -267,7 +142,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
 
     if (format == TT_ANY) {
 	format = fdetermine_trace_type(fp);
-	rewind(fp);
+	mrewind(fp);
     }
 
     switch (format) {
@@ -280,7 +155,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
 #ifdef IOLIB_SCF
     case TT_SCF: {
         Scf *scf;
-	scf = fread_scf(fp);
+	scf = mfread_scf(fp);
 
 	if (scf) {
 	    read = scf2read(scf);
@@ -294,7 +169,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
 
 #ifdef IOLIB_CTF
     case TT_CTF:
-	read = fread_ctf(fp);
+	read = mfread_ctf(fp);
 	break;
 #endif
 
@@ -305,7 +180,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
     case TT_ZTR3: {
         ztr_t *ztr;
 
-	if ((ztr = fread_ztr(fp))) {
+	if ((ztr = mfread_ztr(fp))) {
 	    uncompress_ztr(ztr);
 	    read = ztr2read(ztr);
 	    delete_ztr(ztr);
@@ -318,20 +193,20 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
 
 #ifdef IOLIB_ABI
     case TT_ABI:
-	read = fread_abi(fp);
+	read = mfread_abi(fp);
 	break;
 #endif
 
 #ifdef IOLIB_ALF
     case TT_ALF:
-	read = fread_alf(fp);
+	read = mfread_alf(fp);
 	break;
 #endif
 
 #ifdef IOLIB_EXP
     case TT_EXP: {
 	/* FIXME: we shouldn't redirect like this */
-	Exp_info *e = exp_fread_info(fp);
+	Exp_info *e = exp_mfread_info(fp);
 	
 	read = e ? exp2read(e,fn) : NULLRead;
 	break;
@@ -340,7 +215,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
 
 #ifdef IOLIB_PLN
     case TT_PLN:
-	read = fread_pln(fp);
+	read = mfread_pln(fp);
 	break;
 #endif
 
@@ -352,9 +227,13 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
     if (read != NULLRead && (read->trace_name = (char *)xmalloc(strlen(fn)+1)))
 	strcpy(read->trace_name, fn);
 
-    if (newfp) fclose(newfp);
+    if (newfp) mfclose(newfp);
 
     return read;
+}
+
+Read *fread_reading(FILE *fp, char *fn, int format) {
+    return mfread_reading(mfreopen(fn, "r", fp), fn, format);
 }
 
 /*
@@ -365,7 +244,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
  *   0 for success
  *  -1 for failure
  */
-int fwrite_reading(FILE *fp, Read *read, int format) {
+int mfwrite_reading(mFILE *fp, Read *read, int format) {
     int r = -1;
 
 #ifdef _WIN32
@@ -390,7 +269,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
     case TT_SCF: {
         Scf *scf;
 	scf = read2scf(read);
-	r = fwrite_scf(scf, fp);
+	r = mfwrite_scf(scf, fp);
 	scf_deallocate(scf);
 	break;
     }
@@ -398,7 +277,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
 
 #ifdef IOLIB_CTF
     case TT_CTF:
-	r = fwrite_ctf(fp, read); 
+	r = mfwrite_ctf(fp, read); 
 	break;
 #endif
 
@@ -408,7 +287,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
         ztr_t *ztr;
 	ztr = read2ztr(read);
 	compress_ztr(ztr, 2);
-	r = fwrite_ztr(fp, ztr); 
+	r = mfwrite_ztr(fp, ztr); 
 	delete_ztr(ztr);
 	break;
     }
@@ -416,7 +295,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
         ztr_t *ztr;
 	ztr = read2ztr(read);
 	compress_ztr(ztr, 1);
-	r = fwrite_ztr(fp, ztr); 
+	r = mfwrite_ztr(fp, ztr); 
 	delete_ztr(ztr);
 	break;
     }
@@ -424,7 +303,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
         ztr_t *ztr;
 	ztr = read2ztr(read);
 	compress_ztr(ztr, 3);
-	r = fwrite_ztr(fp, ztr); 
+	r = mfwrite_ztr(fp, ztr); 
 	delete_ztr(ztr);
 	break;
     }
@@ -432,13 +311,13 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
 
 #ifdef IOLIB_ABI
     case TT_ABI:
-	/*return fwrite_abi(fp, read); */
+	/*return mfwrite_abi(fp, read); */
 	break;
 #endif
 
 #ifdef IOLIB_ALF
     case TT_ALF:
-	/* return fwrite_alf(fp, read); */
+	/* return mfwrite_alf(fp, read); */
 	break;
 #endif
 
@@ -450,7 +329,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
 	    fprintf(stderr, "Failed to create experiment file.\n");
 	    r = -1;
 	} else {
-	    exp_print_file(fp, e);
+	    exp_print_mfile(fp, e);
 	    exp_destroy_info(e);
 	    r = 0;
 	}
@@ -460,7 +339,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
 
 #ifdef IOLIB_PLN
     case TT_PLN:
-	r = fwrite_pln(fp, read);
+	r = mfwrite_pln(fp, read);
 	break;
 #endif
     }
@@ -468,6 +347,135 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
     if (r == 0) {
 	fcompress_file(fp);
     }
+    mfflush(fp);
 
     return r;
 }
+
+int fwrite_reading(FILE *fp, Read *read, int format) {
+    return mfwrite_reading(mfreopen(NULL, "w", fp), read, format);
+}
+
+/*
+ * Write a sequence to a file "fn" of format "format". If "format" is 0,
+ * we choose our favourite - SCF.
+ *
+ * Returns:
+ *   0 for success
+ *  -1 for failure
+ */
+int write_reading(char *fn, Read *read, int format) {
+    mFILE *fp = mfopen(fn, "wb");
+    if (!fp)
+	return -1;
+    
+    return mfwrite_reading(fp, read, format);
+}
+
+/*
+ * Old style stub interfaces implemented simply as redirection through
+ * fread_reading and frwrite_reading.
+ */
+
+Read *fread_abi(FILE *fp) {
+    return fread_reading(fp, NULL, TT_ABI);
+}
+
+int fwrite_abi(FILE *fp, Read *read) {
+    return fwrite_reading(fp, read, TT_ABI);
+}
+
+Read *fread_alf(FILE *fp) {
+    return fread_reading(fp, NULL, TT_ALF);
+}
+
+int fwrite_alf(FILE *fp, Read *read) {
+    return fwrite_reading(fp, read, TT_ALF);
+}
+
+Read *fread_ctf(FILE *fp) {
+    return fread_reading(fp, NULL, TT_CTF);
+}
+
+int fwrite_ctf(FILE *fp, Read *read) {
+    return fwrite_reading(fp, read, TT_CTF);
+}
+
+Read *fread_pln(FILE *fp) {
+    return fread_reading(fp, NULL, TT_PLN);
+}
+
+int fwrite_pln(FILE *fp, Read *read) {
+    return fwrite_reading(fp, read, TT_PLN);
+}
+
+ztr_t *fread_ztr(FILE *fp) {
+    ztr_t *z;
+    mFILE *mf;
+
+    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+	return NULL;
+
+    z = mfread_ztr(mf);
+    mfclose(mf);
+    return z;
+}
+
+int fwrite_ztr(FILE *fp, ztr_t *z) {
+    mFILE *mf;
+    int r;
+
+    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+	return -1;
+
+    r = mfwrite_ztr(mf, z);
+    mfclose(mf);
+    return r;
+}
+
+Scf *fread_scf(FILE *fp) {
+    Scf *s;
+    mFILE *mf;
+
+    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+	return NULL;
+
+    s = mfread_scf(mf);
+    mfclose(mf);
+    return s;
+}
+
+int fwrite_scf(Scf *s, FILE *fp) {
+    mFILE *mf;
+    int r;
+
+    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+	return -1;
+
+    r = mfwrite_scf(s, mf);
+    mfclose(mf);
+    return r;
+}
+
+Exp_info *exp_fread_info(FILE *fp) {
+    Exp_info *e;
+    mFILE *mf;
+
+    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+	return NULL;
+
+    e = exp_mfread_info(mf);
+    mfclose(mf);
+    return e;
+}
+
+void exp_print_file(FILE *fp, Exp_info *e) {
+    mFILE *mf;
+
+    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+	return;
+
+    exp_print_mfile(mf, e);
+    mfclose(mf);
+}
+

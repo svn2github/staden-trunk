@@ -27,26 +27,286 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "os.h" /* for ftruncate() under WINNT */
 
 #include "compress.h"
 
-#if defined(__sgi)
-/* SGIs do not define tempnam unless we also define _XOPEN4 && _NO_ANSIMODE */
-extern char	*tempnam(const char *, const char *);
-#endif
-
 #ifdef USE_CORBA
 #include "stcorba.h"
 #endif
+
+#define HAVE_ZLIB
 
 #ifdef HAVE_ZLIB
 #include "zlib.h"
 #endif
 
-#ifndef MAC
+/* ------------------------------------------------------------------------- */
+/* GZIP reading and writing code via ZLIB. */
+
 #define BS 8192
+
+#define MAX_WBITS 15
+
+#define FTEXT    (1<<0)
+#define FHCRC    (1<<1)
+#define FEXTRA   (1<<2)
+#define FNAME    (1<<3)
+#define FCOMMENT (1<<4)
+/* Given a gzip file this returns the size of the gzip header */
+static int gzheadersize(unsigned char *data) {
+    int offset = 10;
+    int flags = data[3];
+
+    if (flags & FEXTRA)
+	offset += 2 + data[offset] + data[offset+1]*256;
+
+    if (flags & FNAME)
+	while (data[offset++]);
+
+    if (flags & FCOMMENT)
+	while (data[offset++]);
+
+    if (flags & FHCRC)
+	offset += 2;
+
+    return offset;
+}
+
+char *memgunzip(char *data, size_t size, size_t *udata_size) {
+    int gzheader;
+    z_stream s;
+    char *udata = NULL;
+    int udata_alloc = 0;
+    int udata_pos = 0;
+
+    /* Compute gzip header size */
+    gzheader = gzheadersize((unsigned char *)data);
+
+    /* Initialise zlib stream starting after the header */
+    s.zalloc = (alloc_func)0;
+    s.zfree = (free_func)0;
+    s.opaque = (voidpf)0;
+    s.next_in = (unsigned char *)data + gzheader;
+    s.avail_in = size - gzheader;
+    inflateInit2(&s, -MAX_WBITS);
+
+    /* Decode to 'udata' array */
+    for (;;) {
+	int err;
+	if (udata_alloc - udata_pos < 1) {
+	    udata_alloc = udata_alloc ? udata_alloc * 2 : 256;
+	    udata = realloc(udata, udata_alloc);
+	}
+	s.next_out = (unsigned char *)&udata[udata_pos];
+	s.avail_out = udata_alloc - udata_pos;
+	err = inflate(&s, Z_NO_FLUSH);
+	udata_pos = udata_alloc - s.avail_out;
+	if (err) {
+	    if (err == Z_STREAM_END) {
+		break;
+	    } else {
+		inflateEnd(&s);
+		return NULL;
+	    }
+	}
+    }
+
+    inflateEnd(&s);
+    *udata_size = udata_pos;
+
+    return udata;
+}
+
+
+char *memgzip(char *data, size_t size, size_t *cdata_size) {
+    z_stream s;
+    char *cdata = NULL;
+    int cdata_alloc = 0;
+    int cdata_pos = 0;
+    int err;
+    uint32_t i32;
+
+    /* Create a minimal gzip header */
+    cdata = malloc(cdata_alloc = size*1.02+10+8);
+    memcpy(cdata, "\037\213\010\000\000\000\000\000\000\377", 10);
+    cdata_pos = 10;
+
+    /* Initialise zlib stream starting after the header */
+    s.zalloc = (alloc_func)0;
+    s.zfree = (free_func)0;
+    s.opaque = (voidpf)0;
+    s.next_in = (unsigned char *)data;
+    s.avail_in = size;
+
+    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, -MAX_WBITS,
+		       9 /* DEF_MEM_LEVEL */, Z_DEFAULT_STRATEGY);
+
+    /* Encode to 'cdata' array */
+    for (;s.avail_in;) {
+	s.next_out = (unsigned char *)&cdata[cdata_pos];
+	s.avail_out = cdata_alloc - cdata_pos;
+	if (cdata_alloc - cdata_pos <= 0) {
+	    fprintf(stderr, "Gzip produced larger output than expected. Abort\n"); 
+	    return NULL;
+	}
+	err = deflate(&s, Z_NO_FLUSH);
+	cdata_pos = cdata_alloc - s.avail_out;
+	if (err != Z_OK)
+	    break;
+    }
+    deflate(&s, Z_FINISH);
+    cdata_pos = 10 + s.total_out;
+
+    i32 = crc32(0L, (unsigned char *)data, size);
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+
+    i32 = size;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+    cdata[cdata_pos++] = (int)(i32 & 0xff); i32 >>= 8;
+
+    deflateEnd(&s);
+    *cdata_size = cdata_pos;
+
+    return cdata;
+}
+
+/* ------------------------------------------------------------------------- */
+/* pipe2 - for piping via compression and decompression tools */
+
+/*
+ * This pipes 'input' data of length 'size' into a unix 'command'.
+ * The output is then returned as an allocated block of memory. It is the
+ * caller's responsibility to free this data.
+ *
+ * Returns malloc()ed data on success
+ *         NULL on failure
+ */
+#define PIPEBS 8192
+char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
+    char *output = NULL;
+    int output_alloc = 0;
+    int output_used = 0;
+    int fdp[2][2];
+    fd_set rdfds, wrfds;
+    int n = 0;
+    char buf[PIPEBS];
+    int len;
+    int eof_rd = 0, eof_wr = 0;
+
+    /*
+     * Make the connections:
+     *
+     * fdp[0] is stdin for the child
+     * fdp[1] is stdout for the child
+     * fdp[x][0] is the read end, and fdp[x][1] is the write end.
+     * Hence:
+     *     fdp[0][1] (parent's output) ->  (child's stdin) fdp[0][0]
+     *     fdp[1][1] (child's stdout)  -> (parent's input) fdp[1][0]
+     */
+
+    if (-1 == pipe(fdp[0]))
+        return NULL;
+
+    if (-1 == pipe(fdp[1])) {
+        close(fdp[0][0]);
+        close(fdp[0][1]);
+        return NULL;
+    }
+
+    if (n < fdp[1][0] + 1)
+	n = fdp[1][0] + 1;
+    if (n < fdp[0][1] + 1)
+	n = fdp[0][1] + 1;
+
+    switch(fork()) {
+    case 0: /* child */
+        dup2(fdp[0][0], 0);
+        dup2(fdp[1][1], 1);
+        close(fdp[0][1]);
+        close(fdp[1][0]);
+
+        execlp("sh", "sh", "-c", command, NULL);
+        exit(1);
+
+    default: /* parent */
+        close(fdp[0][0]);
+        close(fdp[1][1]);
+        break;
+
+    case -1: /* error */
+	return NULL;
+    }
+
+    /*
+     * Set both parent ends to be non blocking. Deadlock can not be
+     * completely avoided in a double pipe, so if something's going to
+     * break we want to make sure it'll be the child, not the parent.
+     */
+    (void)fcntl(fdp[0][1], F_SETFL, O_NONBLOCK);
+    (void)fcntl(fdp[1][0], F_SETFL, O_NONBLOCK);
+
+    do {
+	struct timeval tv;
+	int r;
+
+	FD_ZERO(&rdfds);
+	FD_ZERO(&wrfds);
+	if (!eof_wr)
+	    FD_SET(fdp[0][1], &wrfds);
+	if (!eof_rd)
+	    FD_SET(fdp[1][0], &rdfds);
+
+	tv.tv_sec = 1;
+	tv.tv_usec = 0;
+	if (-1 == (r = select(n, &rdfds, &wrfds, NULL, &tv)))
+	    /* Handle EINTR etc... */
+	    break;
+
+	if (r) {
+	    if (FD_ISSET(fdp[1][0], &rdfds)) {
+		len = read(fdp[1][0], buf, PIPEBS);
+		if (len > 0) {
+		    while (output_used + len > output_alloc) {
+			output_alloc = output_alloc ? output_alloc*2 : PIPEBS;
+			output = realloc(output, output_alloc);
+		    }
+		    memcpy(&output[output_used], buf, len);
+		    output_used += len;
+		} else {
+		    close(fdp[1][0]);
+		    eof_rd = 1;
+		}
+	    }
+	    if (FD_ISSET(fdp[0][1], &wrfds)) {
+		len = write(fdp[0][1], input, insize>PIPEBS ? PIPEBS : insize);
+		if (len > 0) {
+		    input += len;
+		    insize -= len;
+
+		    if (insize == 0) {
+			close(fdp[0][1]);
+			eof_wr = 1;
+		    }
+		}
+	    }
+	}
+	
+    } while(!eof_rd || !eof_wr);
+
+    *outsize = output_used;
+    return output;
+}
+
+/* ------------------------------------------------------------------------- */
+/* The main external routines for io_lib */
 
 /*
  * This contains the last used compression method.
@@ -55,7 +315,7 @@ static int compression_used = 0;
 
 typedef struct {
     unsigned char magic[3];
-    long int offset;
+    int magicl;
     char *compress;
     char *uncompress;
     char *extension;
@@ -72,17 +332,13 @@ typedef struct {
  * szip is definitely the best in compression ratios, and is faster than bzip.
  * However it's still slower than gzip. For comparable ratios, but much faster,
  * see the ztr format.
- *
- * ">progname" implies that the program outputs the compressed data to stdout
- * instead of renaming the input file to input.compressed_extension.
  */
 static Magics magics[] = {
-    {{'B',   'Z',    '0'},	0,	"bzip",		"bzip -d <",   ".bz"},
-    {{'\037', 0213, '\0'},	0,	"gzip",		"gzip -d <",   ".gz"},
-    {{'\037', 0235, '\0'},	0,	"compress",	"uncompress <",".Z"},
-    {{'\037','\036','\0'},	0,	"pack",		"pcat",	       ".z"},
-    {{'B',   'Z',    'h'},	0,	"bzip2",	"bzip2 -d <",  ".bz2"},
-    {{'S',   'Z',   '\n'},	0,	">szip",	"szip -d <",   ".sz"},
+    {{'B',   'Z',    '0'},	3,	"bzip",		"bzip -d",   ".bz"},
+    {{'\037', 0213, '\0'},	2,	"gzip",		"gzip -d",   ".gz"},
+    {{'\037', 0235, '\0'},	2,	"compress",	"uncompress",".Z"},
+    {{'B',   'Z',    'h'},	3,	"bzip2",	"bzip2 -d",  ".bz2"},
+    {{'S',   'Z',   '\n'},	3,	"szip",	        "szip -d",   ".sz"},
 };
 
 void set_compression_method(int method) {
@@ -105,15 +361,13 @@ int compress_str2int(char *mode) {
 	return COMP_METHOD_GZIP;
     else if (strcmp(mode, "compress") == 0)
 	return COMP_METHOD_COMPRESS;
-    else if (strcmp(mode, "pack") == 0)
-	return COMP_METHOD_PACK;
     else if (strcmp(mode, "szip") == 0)
 	return COMP_METHOD_SZIP;
     else return 0;
-}
 
+}
 /*
- * Converts compress mode strings (eg "gzip") to numbers.
+ * Converts compress mode numbers to strings (eg "gzip").
  */
 char *compress_int2str(int mode) {
     switch (mode) {
@@ -121,7 +375,6 @@ char *compress_int2str(int mode) {
     case COMP_METHOD_GZIP:      return "gzip";
     case COMP_METHOD_BZIP2:     return "bzip2";
     case COMP_METHOD_COMPRESS:  return "compress";
-    case COMP_METHOD_PACK:      return "pack";
     case COMP_METHOD_SZIP:      return "szip";
     }
     return "none";
@@ -136,9 +389,41 @@ char *compress_int2str(int mode) {
  * When compression_used is 0 no compression is done.
  */
 int compress_file(char *file) {
-    int ret;
-    char buf[2048];
-    struct stat statbuf;
+    char fname[2048];
+    mFILE *mf;
+    FILE *fp;
+
+    /* Do nothing unless requested */
+    if (compression_used == 0)
+	return 0;
+
+    mf = mfopen(file, "r");
+    fcompress_file(mf);
+
+    sprintf(fname, "%s%s", file, magics[compression_used-1].extension);
+    if (NULL == (fp = fopen(fname, "wb")))
+	return -1;
+
+    fwrite(mf->data, 1, mf->size, fp);
+    fclose(fp);
+    mfclose(mf);
+
+
+    return 0;
+}
+
+/*
+ * Compress an mFILE using the method set in the compression_used value
+ * (set by set_compression_method and fopen_compressed). This is done
+ * in-memory by using a pipe to and from the compression program, or zlib
+ * if we want to use gzip.
+ *
+ * When compression_used is 0 no compression is done.
+ */
+int fcompress_file(mFILE *fp) {
+    mFILE *mf2;
+    size_t size;
+    char *data;
 
     /* Do nothing unless requested */
     if (compression_used == 0)
@@ -150,158 +435,22 @@ int compress_file(char *file) {
      * saving starting up a separate process. This is substantially faster.
      */
     if (compression_used == 2) {
-	FILE *fp;
-	gzFile gzfp;
-	int len;
-	char data[8192];
-
-	if (NULL == (fp = fopen(file, "rb+"))) {
-	    return 1;
-	}
-
-	sprintf(buf, "%s%s", file, magics[compression_used-1].extension);
-	/* fprintf(stderr, "Using Zlib to %s %s to %s\n",magics[compression_used-1].compress, file, buf); */
-	if (NULL == (gzfp = gzopen(buf, "wb+"))) {
-	    fprintf(stderr, "error gzopen'ing %s\n", buf);
-	    fclose(fp);
-	    remove(buf);
-	    return 1;
-	}
-
-	while ((len = fread(data, 1, 8192, fp)) > 0) {
-	    gzwrite(gzfp, data, len);
-	} 
-
-	fclose(fp);
-	gzclose(gzfp);
-
-	/*fprintf(stderr, "%s'ed %s\n", magics[compression_used-1].compress, file);*/
-	/* need to unlink the original file so the compressed file is renamed */
-	unlink(file);
-    } else {
+	data = memgzip(fp->data, fp->size, &size);
+    } else
 #endif
-
-    /* Execute the compression program */
-#ifdef _WIN32
-    /*
-     * 15/2/99 johnt - don't have /dev/null on windows NT,
-     * can't multi redirect on Win95
-     */
-    if (magics[compression_used-1].compress[0] == '>')
-	sprintf(buf, "%s %s > %s%s",
-		magics[compression_used-1].compress+1, file,
-		file, magics[compression_used-1].extension);
-    else
-	sprintf(buf, "%s %s >nul",
-		magics[compression_used-1].compress, file);
-#else
-    if (magics[compression_used-1].compress[0] == '>')
-	sprintf(buf, "%s %s 1>%s%s 2>/dev/null",
-		magics[compression_used-1].compress+1, file,
-		file, magics[compression_used-1].extension);
-    else
-	sprintf(buf, "%s %s 1>/dev/null 2>/dev/null",
-		magics[compression_used-1].compress, file);
-#endif
-
-    if ((ret = system(buf)) != 0) {
-	if (ret == -1)
-	    perror(buf);
-	else
-	    fprintf(stderr, "%s: compression failed\n", file);
-	return 1;
+    {
+	/*
+	 * We have to pipe the data via an external tool, avoiding temporary
+	 * files for speed.
+	 */
+	data = pipe2(magics[compression_used-1].compress,
+		     fp->data, fp->size, &size);
     }
 
-#ifdef HAVE_ZLIB
-    }
-#endif
+    mf2 = mfcreate(data, size);
+    free(fp->data);
+    *fp = *mf2;
 
-    if (magics[compression_used-1].compress[0] == '>') {
-	unlink(file);
-    }
-
-    /* Rename the file back */
-    if (-1 == stat(file, &statbuf) && errno == ENOENT) {
-	sprintf(buf, "%s%s", file, magics[compression_used-1].extension);
-	rename(buf, file);
-    }
-
-    return 0;
-}
-
-/*
- * Compress a file using the method set in the compression_used value
- * (set by set_compression_method and fopen_compressed).
- *
- * If compression succeeds, we rename the file back its original name.
- *
- * When compression_used is 0 no compression is done.
- */
-int fcompress_file(FILE *fp) {
-    char buf[BS];
-    char *fname;
-    FILE *newfp;
-    int len;
-
-    /* Do nothing unless requested */
-    if (compression_used == 0)
-	return 0;
-
-    /* It's also impossible if it's stdout as we can't rewind */
-    if (fp == stdout)
-	return 0;
-
-    /* Copy the file pointer to a temporary file */
-    /* Use tempnam() to force the use of TMP environment variable on Windows */
-    if (NULL == (fname=tempnam(NULL, NULL)))
-	return 0;
-    if (NULL == (newfp = fopen(fname, "wb+"))){
-	remove(fname);
-	free(fname);
-	return 0;
-    }
-    fflush(fp);
-    rewind(fp);
-    do {
-	len = fread(buf, 1, BS, fp);
-	if (len > 0)
-	    fwrite(buf, 1, len, newfp);
-	else if (len == -1) {
-	    perror("fcompress_file()");
-	    remove(fname);
-	    free(fname);
-	    return 0;
-	}
-    } while (!feof(fp));
-    fflush(newfp);
-    fclose(newfp);
-
-    /* Compress it */
-    if (compress_file(fname)) {
-	remove(fname);
-	free(fname);
-	return 0;
-    }
-
-    /* Copy it back */
-    if (NULL == (newfp = fopen(fname, "rb"))){
-	remove(fname);
-	free(fname);
-	return 0;
-    }
-
-    rewind(fp);
-    do {
-	int len = fread(buf, 1, BS, newfp);
-	if (len > 0)
-	    fwrite(buf, 1, len, fp);
-    } while (!feof(newfp));
-    ftruncate(fileno(fp), ftell(fp));
-
-    remove(fname);
-    free(fname);
-    fclose(newfp);
-    
     return 0;
 }
 
@@ -315,19 +464,16 @@ int fcompress_file(FILE *fp) {
  * (opened for update) to allow writing back to the original file. In cases
  * of uncompressed data this is the same as the returned file pointer.
  */
-FILE *fopen_compressed(char *file, FILE **ofp) {
-#ifdef USE_CORBA
-    int corba = 0;
-#endif
+mFILE *fopen_compressed(char *file, mFILE **ofp) {
     int num_magics = sizeof(magics) / sizeof(*magics);
-    int i, ret, fd, tryit, do_del = 1;
-    char buf[2048], fext[1024];
-    unsigned char mg[3];
-    char *fname, *fptr;
-    FILE *fp;
+    int i;
+    char fext[1024];
+    mFILE *fp;
 
-    if (NULL == (fname = tempnam(NULL, NULL)))
-	return NULL;
+    if (ofp) {
+	fprintf(stderr, "ofp not supported in fopen_compressed() yet\n");
+	*ofp = NULL;
+    }
 
     /*
      * Try opening the file and reading the magic number.
@@ -335,294 +481,58 @@ FILE *fopen_compressed(char *file, FILE **ofp) {
      * the original name which has been renamed due to compression.
      * (eg file.gz).
      */
-/* 24/03/98 johnt - added corba support */
-#ifdef USE_CORBA
-    if (! strncmp(CORBATAG,file,strlen(CORBATAG)) ){
-       tryit=0;
-       corba = 1;
-       fd=corba_open(file+strlen(CORBATAG),&fptr);
-
-       if (fd != -1) {
-	  if (3 != read(fd, mg, 3)){
-	     remove(fname);
-	     free(fname);
-	     close(fd);
-	     return NULL;
-	  }
-       }
-       else{
-	 return NULL;
-       }
-     } else {
-#endif
-       tryit = 1;
-       fd = open(file, O_RDONLY);
-
-       if (fd != -1) {
-	 if (3 != read(fd, mg, 3)) {
-	     close(fd);
-	 } else {
-	     tryit = 0;
-	     fptr = file;
-	 }
-       }
-#ifdef USE_CORBA
-    }
-#endif
-    for (i = 0; i < num_magics; i++) {
-	/* If necessary, try opening the file as 'file'.extension */
-	if (tryit) {
-	    sprintf(fext, "%s%s", file, magics[i].extension);
-	    fptr = fext;
-	    if (-1 == (fd = open(fext, O_RDONLY)))
+    for (i = -1; i < num_magics; i++) {
+	if (i == -1) {
+	    if (NULL == (fp = mfopen(file, "rb")))
 		continue;
-	    
-	    if (3 != read(fd, mg, 3)) {
-		close(fd);
-		continue;
-	    }
-	}
-	
-	/* Check the magic numbers */
-	if (mg[0] == magics[i].magic[0] && mg[1] == magics[i].magic[1] &&
-	    (magics[i].magic[2] ? (mg[2] == magics[i].magic[2]) : 1)) {
-
-#ifdef HAVE_ZLIB
-	    if (i == 1) {
-		int len;
-		char data[8192];
-		gzFile gzfp;
-		/*fprintf(stderr, "Using Zlib to %s %s\n",magics[i].uncompress, fptr); */
-		lseek(fd, 0, 0 /* SEEK_CURR */);
-		if (NULL == (gzfp = gzdopen(fd, "rb"))) {
-		    close(fd);
-		    return NULL;
-		}
-		gzrewind(gzfp);
-
-		if (NULL == (fp = fopen(fname, "wb+"))) {
-		    remove(fname);
-		    free(fname);
-		    gzclose(gzfp);
-		    close(fd);
-		    return NULL;
-		}
-
-		while ((len = gzread(gzfp, data, 8192)) > 0) {
-		    fwrite(data, 1, len, fp);
-		} 
-
-		gzclose(gzfp);
-		fclose(fp);
-
-		compression_used = i+1;
-		break;
-	    } else {
-#endif
-
-#ifdef _WIN32 /* 15/2/99 johnt - don't have /dev/null on windows NT, can't multi redirect on Win 95 */
-	    sprintf(buf, "%s %s >%s",
-		    magics[i].uncompress, fptr, fname);
-#else
-	    sprintf(buf, "%s %s 1>%s 2>/dev/null",
-		    magics[i].uncompress, fptr, fname);
-#endif
-	    if ((ret = system(buf)) == 0) {
-		compression_used = i+1;
-		break;
-	    }
-
-#ifdef HAVE_ZLIB
-	    }
-#endif
-
-	}
-	
-	if (tryit && fd != -1)
-	    close(fd);
-    }
-    
-    if (fd != -1) close(fd); 
-
-    if (i == num_magics) {
-	/*
-	 * It's only an error if the file couldn't be found. If it
-	 * exists then we'll assume that it doesn't need uncompressing.
-	 */
-	if (tryit) {
-	    remove(fname);
-	    free(fname);
-	    return NULL;
 	} else {
-	    do_del = 0;
-	    compression_used = 0;
-	    remove(fname);
-	    free(fname);
-	    fname = fptr;
+	    sprintf(fext, "%s%s", file, magics[i].extension);
+	    if (NULL == (fp = mfopen(fext, "rb")))
+		continue;
 	}
+
+	fp = freopen_compressed(fp, NULL);
+	if (fp)
+	    return fp;
     }
 
-    /*
-     * We've now got the temporary file. Open it and unlink it.
-     * We can also keep the original fp open for those who need to
-     * write back to it.
-     */
-/* 24/3/99 johnt - added corba support */
-#ifdef USE_CORBA
-    if( corba ){
-      /* corba possibly has TWO temporary files
-	 1 created by corba_open, and 1 created by the decompression
-      */
-      if (NULL == (fp = fopen(fname, "r+b")))
-	if (NULL == (fp = fopen(fname, "rb"))){
-	  remove(fname);
-	  free(fname);
-	  unlink(fptr); 
-	  return NULL;
-	}
-      if (ofp) {
-	if (compression_used)
-	  *ofp = fopen(fptr, "r+b");
-	else
-	  *ofp = fp;
-      }
-      unlink(fptr); /* corba temp file will be held until ofp/fp closed */
-    } else {
-#endif
-    if (NULL == (fp = fopen(fname, "r+b"))){
-	if (NULL == (fp = fopen(fname, "rb"))){
-	    remove(fname);
-	    free(fname);
-	    return NULL;
-	}
-    }
-
-    if (ofp) {
-	if (compression_used)
-	    *ofp = fopen(tryit ? fext : file, "r+b");
-	else
-	    *ofp = fp;
-    }
-#ifdef USE_CORBA
-  }
-#endif
-
-    if (do_del) {
-      remove(fname);
-      free(fname);
-    }
-    return fp;
+    return NULL;
 }
 
 /*
  * Returns a file pointer of an uncompressed copy of 'fp'.
- *
- * If ofp is non NULL then the original file pointer will also be returned
- * (opened for update) to allow writing back to the original file. In cases
- * of uncompressed data this is the same as the returned file pointer.
  */
-FILE *freopen_compressed(FILE *fp, FILE **ofp) {
+mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
     int num_magics = sizeof(magics) / sizeof(*magics);
-    char *fname;
-    char buf[BS];
     unsigned char mg[3];
-    FILE *newfp;
     int i;
+    char *udata;
+    size_t usize;
 
-    /* Test that it's compressed with 1 byte of magic (can't ungetc more) */
-    mg[0] = fgetc(fp);
-    ungetc(mg[0], fp);
-    for (i = 0; i < num_magics; i++) {
-	if (mg[0] == magics[i].magic[0]) {
-	    break;
-	}
-    }
-    if (i == num_magics) {
-	return fp;
+    if (ofp) {
+	fprintf(stderr, "ofp not supported in fopen_compressed() yet\n");
+	*ofp = NULL;
     }
 
-    fname=tempnam(NULL, NULL);
-
-    /* Copy the file to newfp */
-    newfp = fopen(fname, "wb+");
-    if (NULL == newfp){
-	remove(fname);
-	free(fname);
-	return fp;
-    }
-
-    do {
-	int len = fread(buf, 1, BS, fp);
-	if (len > 0)
-	    fwrite(buf, 1, len, newfp);
-    } while (!feof(fp));
-    fflush(newfp);
-    rewind(newfp);
-    rewind(fp);
-    
     /* Test that it's compressed with full magic number */
-    fread(mg, 1, 2, newfp);
-    rewind(newfp);
+    mfread(mg, 1, 3, fp);
+    mrewind(fp);
     for (i = 0; i < num_magics; i++) {
-	if (mg[0] == magics[i].magic[0] && mg[1] == magics[i].magic[1]) {
+	if (0 == memcmp(mg, magics[i].magic, magics[i].magicl))
 	    break;
-	}
     }
     if (i == num_magics) {
-	/* Uncompressed, just return fp */
-	remove(fname);
-	free(fname);
-	fclose(newfp);
 	return fp;
     }
 
-#ifdef NOTDEF
-    /* It's compressed, so we use fopen_compressed on fname */
-    fp = fopen_compressed(fname, ofp);
-    remove(fname);
-    if (newfp != NULL) {
-	return fp;
-    } else {
-	return newfp;
-    }
-#else
-/* 24/03/99 johnt - After much consideration - this is what we think the
-   above code is supposed to do ! */
-   fclose(newfp);
-   fp = fopen_compressed(fname,ofp);
-   remove(fname);	/* ofp will hold this open if we still need it */
-   free(fname);
-   return fp;
+#ifdef HAVE_ZLIB
+    if (i == 1) {
+	udata = memgunzip(fp->data, fp->size, &usize);
+    } else
 #endif
+    {
+	udata = pipe2(magics[i].uncompress, fp->data, fp->size, &usize);
+    }
+
+    return mfcreate(udata, usize);
 }
-
-#else /* MAC */
-
-/* Dummy routines for MAC where compression isn't supported */
-
-void set_compression_method(int method) {}
-int get_compression_method(void) { return 0; }
-int compress_file(char *file) { return 0; }
-int fcompress_file(FILE *fp) { return 0; }
-
-FILE *fopen_compressed(char *file, FILE **ofp) {
-    FILE *fp;
-
-    if (NULL == (fp = fopen(file, "rb+")))
-	if (NULL == (fp = fopen(file, "rb")))
-	    return NULL;
-
-    if (ofp)
-	*ofp = fp;
-
-    return fp;
-}
-
-FILE *freopen_compressed(FILE *fp, FILE **ofp) {
-    if (ofp)
-	*ofp = fp;
-    
-    return fp;
-}
-
-#endif /* MAC */

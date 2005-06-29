@@ -33,19 +33,4 @@
 #include "Read.h"
 
 
-/* ---- Exports ---- */
-
-
-/*
- * Read the plain format sequence with name `fn' into a Read structure.
- * All printing characters (as defined by ANSII C `isprint')
- * are accepted, but `N's are translated to `-'s.
- *
- * Returns:
- *   Read *     - Success, the Read structure read.
- *   NULLRead   - Failure.
- */
-extern Read *read_pln(char *fn);
-extern Read *fread_pln(FILE *fp);
-
 #endif  /*_seqIOPlain_h*/
