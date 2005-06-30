@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "mFILE.h"
 #include "scf.h"
 #include "xalloc.h"
 #include "compress.h"
@@ -78,7 +79,7 @@ int main(int argc, char **argv) {
 
 
 static int do_it(char *file, int argc, char **argv) {
-    FILE *fp;
+    mFILE *fp;
     Header h;
     char *c, *p, *p2;
     int all = 0;
@@ -102,7 +103,7 @@ static int do_it(char *file, int argc, char **argv) {
     if (NULL == (c = (char *)xmalloc(h.comments_size + 1)))
 	return 2;
     
-    if (-1 == fseek(fp, h.comments_offset, SEEK_SET)) {
+    if (-1 == mfseek(fp, h.comments_offset, SEEK_SET)) {
 	if (!silent)
 	    perror("seek()");
 	return 2;
