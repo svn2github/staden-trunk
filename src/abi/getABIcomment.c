@@ -1,31 +1,30 @@
 #include <stdio.h>
 #include <errno.h>
-#include <sys/types.h>
 
-#include "seqIOABI.h"
+#include "abiIO.h"
 
 int main(int argc, char **argv) {
-    FILE *fp;
-    uint_4 indexO;
-    char comment[256];
+    abi_t *abi;
+    abi_index_t *ind;
 
     if (argc != 2) {
 	fprintf(stderr, "Usage: %s file\n", argv[0]);
 	return 1;
     }
     
-    if (NULL == (fp = fopen(argv[1], "rb"))) {
+    if (NULL == (abi = read_abi(argv[1]))) {
 	perror(argv[1]);
 	return 2;
     }
 
-    if (-1 == getABIIndexOffset(fp, &indexO)) {
-	fprintf(stderr, "Couldn't find ABI file index\n");
+    if (NULL == (ind = find_abi_index(abi, ABI_LABEL("CMNT"), 1))) {
+	fprintf(stderr, "Couldn't find CMNT label\n");
 	return 3;
     }
 
-    if (-1 != getABIString(fp, (off_t)indexO, CMNTLabel, 1, comment))
-	puts(comment);
+    printf("%.*s\n", *ind->data, ind->data + 1);
+
+    del_abi_t(abi);
 
     return 0;
 }
