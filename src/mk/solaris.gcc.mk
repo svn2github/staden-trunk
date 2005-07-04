@@ -35,8 +35,8 @@ RANLIB		= /bin/true
 # need to edit global.mk to uncomment the "BIOLIMS=1" line. (For technical
 # reasons it doesn't work if defined here.)
 # Also see io_lib/options.mk
-BIOLIMS_LIB  = $(LINK_LIBFLAG)biolimsio$(LIB_EXT)
-BIOGAP_LIB   = $(LINK_LIBFLAG)biolimsgap$(LIB_EXT)
+#BIOLIMS_LIB  = $(LINK_LIBFLAG)biolimsio$(LIB_EXT)
+#BIOGAP_LIB   = $(LINK_LIBFLAG)biolimsgap$(LIB_EXT)
 
 
 #------------------------------------------------------------------------------
