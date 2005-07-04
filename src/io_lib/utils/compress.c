@@ -24,24 +24,24 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/time.h>
 
 #include "os.h" /* for ftruncate() under WINNT */
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "compress.h"
-
-#ifdef USE_CORBA
-#include "stcorba.h"
-#endif
 
 #define HAVE_ZLIB
 
 #ifdef HAVE_ZLIB
 #include "zlib.h"
-#endif
+
 
 /* ------------------------------------------------------------------------- */
 /* GZIP reading and writing code via ZLIB. */
@@ -177,6 +177,7 @@ char *memgzip(char *data, size_t size, size_t *cdata_size) {
 
     return cdata;
 }
+#endif
 
 /* ------------------------------------------------------------------------- */
 /* pipe2 - for piping via compression and decompression tools */
@@ -197,8 +198,9 @@ char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
     int fdp[2][2];
     fd_set rdfds, wrfds;
     int n = 0;
+    pid_t pid;
     char buf[PIPEBS];
-    int len;
+    int len, status;
     int eof_rd = 0, eof_wr = 0;
 
     /*
@@ -226,7 +228,7 @@ char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
     if (n < fdp[0][1] + 1)
 	n = fdp[0][1] + 1;
 
-    switch(fork()) {
+    switch(pid = fork()) {
     case 0: /* child */
         dup2(fdp[0][0], 0);
         dup2(fdp[1][1], 1);
@@ -300,6 +302,10 @@ char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
 	}
 	
     } while(!eof_rd || !eof_wr);
+
+    close(fdp[0][1]);   /* should be closed already, but being doubly- */
+    close(fdp[1][0]);   /* sure in case of error */
+    waitpid(pid, &status, 0);
 
     *outsize = output_used;
     return output;
@@ -421,7 +427,6 @@ int compress_file(char *file) {
  * When compression_used is 0 no compression is done.
  */
 int fcompress_file(mFILE *fp) {
-    mFILE *mf2;
     size_t size;
     char *data;
 
@@ -447,9 +452,8 @@ int fcompress_file(mFILE *fp) {
 		     fp->data, fp->size, &size);
     }
 
-    mf2 = mfcreate(data, size);
-    free(fp->data);
-    *fp = *mf2;
+    mfrecreate(fp, data, size);
+    mfseek(fp, size, SEEK_SET);
 
     return 0;
 }
@@ -533,6 +537,8 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
     {
 	udata = pipe2(magics[i].uncompress, fp->data, fp->size, &usize);
     }
+
+    compression_used = i+1;
 
     return mfcreate(udata, usize);
 }
