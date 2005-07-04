@@ -246,6 +246,7 @@ Read *fread_reading(FILE *fp, char *fn, int format) {
  */
 int mfwrite_reading(mFILE *fp, Read *read, int format) {
     int r = -1;
+    int no_compress = 0;
 
 #ifdef _WIN32
     /*
@@ -263,23 +264,7 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 
     switch (format) {
     default:
-	/* Defaults to SCF type */
-
-#ifdef IOLIB_SCF
-    case TT_SCF: {
-        Scf *scf;
-	scf = read2scf(read);
-	r = mfwrite_scf(scf, fp);
-	scf_deallocate(scf);
-	break;
-    }
-#endif
-
-#ifdef IOLIB_CTF
-    case TT_CTF:
-	r = mfwrite_ctf(fp, read); 
-	break;
-#endif
+	/* Defaults to ZTR type */
 
 #ifdef IOLIB_ZTR
     case TT_ZTR:
@@ -289,6 +274,7 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 	compress_ztr(ztr, 2);
 	r = mfwrite_ztr(fp, ztr); 
 	delete_ztr(ztr);
+	no_compress = 1;
 	break;
     }
     case TT_ZTR1: {
@@ -305,8 +291,25 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 	compress_ztr(ztr, 3);
 	r = mfwrite_ztr(fp, ztr); 
 	delete_ztr(ztr);
+	no_compress = 1;
 	break;
     }
+#endif
+
+#ifdef IOLIB_SCF
+    case TT_SCF: {
+        Scf *scf;
+	scf = read2scf(read);
+	r = mfwrite_scf(scf, fp);
+	scf_deallocate(scf);
+	break;
+    }
+#endif
+
+#ifdef IOLIB_CTF
+    case TT_CTF:
+	r = mfwrite_ctf(fp, read); 
+	break;
 #endif
 
 #ifdef IOLIB_ABI
@@ -344,7 +347,8 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 #endif
     }
 
-    if (r == 0) {
+    mftruncate(fp, -1);
+    if (r == 0 && !no_compress) {
 	fcompress_file(fp);
     }
     mfflush(fp);
