@@ -2,6 +2,9 @@
 # This Makefile downloads, configures, compiles and where necessary installs
 # the libraries into the Staden compilation tree.
 #
+#
+# Solaris 9 and SUN Forte users. Search for SOLARIS9 in this file.
+#
 
 all:	zlib png tcl tk itcl iwidgets
 
@@ -68,8 +71,12 @@ endif
 ifeq ($(MACHINE),alpha)
 PN$(MAKE)=dec
 endif
+# SOLARIS9 and Sun FORTE cc users, use the so9 makefile instead of "solaris"
+# You may also need to edit libpng-$(PNG_VERS)/scripts/makefile.so9
+# and change CFLAGS to use -O instead of -O3.
 ifeq ($(MACHINE),solaris)
 PN$(MAKE)=solaris
+#PN$(MAKE)=so9
 endif
 ifeq ($(MACHINE),macosx)
 PN$(MAKE)=freebsd
