@@ -1,16 +1,77 @@
-Version 1.9.0-test
+Version 1.9.0
 
+* ***INCOMPATIBILITIES*** to 1.8.12
+
+  - The Exp_info structure now internally contains an "mFILE *" member
+    instead of "FILE *" member. If you use the experiment file functions
+    for I/O then hopefully it'll still work. However if you directly
+    manipulated the Exp_info yourself using fprintf etc then you will
+    need to modify your code.
+  
+  - Some functions no longer have external scope. Most of these did not
+    previously have external function prototypes. If you have a burning
+    need to use one of these, please contact me directly via sourceforge.
+    The full list is:
+  
+      ctfType (global variable)            ztr_encode_samples_C         
+      replace_nl                           ztr_encode_samples_G    
+      ctfDecorrelate                       ztr_encode_samples_T    
+      exp_print_line_                      ztr_decode_samples              
+      find_file_tar                        ztr_encode_bases                
+      find_file_archive                    ztr_decode_bases                
+      find_file_url                        ztr_encode_positions    
+      ztr_write_header                     ztr_decode_positions    
+      ztr_write_chunk                      ztr_encode_confidence_1         
+      ztr_read_header                      ztr_decode_confidence_1         
+      ztr_read_chunk_hdr                   ztr_encode_confidence_4         
+      compress_chunk                       ztr_decode_confidence_4         
+      uncompress_chunk                     ztr_encode_text                 
+      ztr_encode_samples_4                 ztr_decode_text                 
+      ztr_decode_samples_4                 ztr_encode_clips                
+      ztr_encode_samples_common            ztr_decode_clips                
+      ztr_encode_samples_A                                         
+  
+  - Some external functions have changed prototypes to use mFILE instead
+    of FILE. Most cases of these I've put in place a wrapper function
+    with the old name, but not yet all. Functions changed are:
+  
+      ctfFRead                             write_scf_samples32       
+      ctfFWrite                            write_scf_base       
+      exp_print_line                       write_scf_bases      
+      exp_print_mline                      write_scf_bases3     
+      exp_print_seq                        write_scf_comment            
+      read_scf_header                      fcompress_file       
+      read_scf_sample1                     fopen_compressed     
+      read_scf_samples1                    freopen_compressed           
+      read_scf_samples31                   be_write_int_1       
+      read_scf_sample2                     be_write_int_2       
+      read_scf_samples2                    be_write_int_4       
+      read_scf_samples32                   be_read_int_1                
+      read_scf_base                        be_read_int_2                
+      read_scf_bases                       be_read_int_4                
+      read_scf_bases3                      le_write_int_1       
+      read_scf_comment                     le_write_int_2       
+      write_scf_header                     le_write_int_4       
+      write_scf_sample1                    le_read_int_1                
+      write_scf_samples1                   le_read_int_2                
+      write_scf_samples31                  le_read_int_4                
+      write_scf_samples2                   fdetermine_trace_type        
+  
+  - Removed support for the OLD unix "pack" program as a valid trace
+    compression algorithm.
+  
+  - Removed CORBA support. (It wasn't enabled and I've no idea if it
+    even worked as I cannot test it.)
+  
+  - The default search order for RAWDATA now has the current working
+    directory at the end of RAWDATA instead of the start.
+  
 * Significant speed ups, particularly when dealing with reading
   gzipped files or when extracting data from tar files.
 
 * New external functions for faster access via mFILE (memory-file)
   structs. These mimic the fread/fwrite calls, but with mfread/mfwrite
   etc.
-
-* Some functions previously available in external scope, but not
-  defined in header files, have now been made internal only
-  ("static"). Please contact me if you were using these and have a
-  burning need for them to remain external.
 
 * Numerous minor tweaks and updates to fix compiler warnings on more
   stricter modes of the Intel C Compiler.
@@ -42,22 +103,6 @@ Version 1.9.0-test
   mechanism but it copes with run length encoding of items larger than
   a single byte. It's current use is for storing the 4-base repeating
   flow order in 454 data.
-
-* Potential incompatibilities:
-
-  - The Exp_info structure now has an "mFILE *fp" member instead of
-    "FILE *fp".
-
-  - As mentioned above, some functions are no longer external. These
-    include many ctf functions, ztr_(de)compress,
-    ztr_chunk_(read/write), be_read_*, be_write_*,
-
-  - The default search order for RAWDATA is that the current directory
-    is searched after the rest of rawdata instead of before.
-
-  - Removed support for the old unix "pack" program as a compression
-    tool.
-
 
 Version 1.8.12
 

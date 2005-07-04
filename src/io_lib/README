@@ -1,8 +1,5 @@
-			    IO_LIB VERSION 1.9.0 - test
-			    =====================
-
-This is a test version for 1.9.0. A few things may change a bit before
-an official 1.9.0 release is made.
+			    IO_LIB VERSION 1.9.0
+			    ====================
 
 Io_lib is a library of file reading and writing code to provide a general
 purpose trace file (and Experiment File) reading interface. The programmer
@@ -44,6 +41,20 @@ instead. The old interfaces of fread_reading and fwrite_reading still
 exist, but it is recommended for maximum speed that people switch to
 mfread_reading and mfwrite_reading instead.
 
+See the mFILE section below for more details
+
+Incompatibilities with 1.8.12
+-----------------------------
+
+Due to the change of I/O to use memory instead of file access where
+possible some prototypes have changed. There is a list in the CHANGES
+file of prototypes now removed and prototypes that still exist but
+whih differ.
+
+I've also removed some code that I did not wish to keep maintained,
+but hopefully this is sufficiently old and dead that it doesn't
+matter.
+
 
 Unix - autoconf
 ---------------
@@ -71,6 +82,74 @@ This will build the sources.
 
 The default installation location is /usr/local/bin and /usr/local/lib. These
 can be changed with the --prefix option to "configure".
+
+
+mFILE: mapping FILE pointers to memory
+--------------------------------------
+
+To speed up the I/O mechanisms ideally needs a full rewrite so that
+we have functions to decode a block of memory to a Read structure (and
+vice versa) and other functions to read and write the block of memory
+for the encoded trace. For io_lib 2.0 I plan a major overhaul of such
+things, but it will likely be totally incompatible at the API level.
+
+Unfortunatly we have existing APIs that take a FILE pointer as input
+and we have lots of existing code that I do not (yet) have the time to
+rewrite from scratch.
+
+The solution is to produce a faked up FILE pointer that is infact a
+block of memory and an offset into it so we can "seek". I call these
+"mFILE"s (memory files). Many, but not all, stdio functions have
+equivalent memory functions associated with them. The prototypes for
+these are in mFILE.h:
+
+mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
+mFILE *mfopen(const char *path, const char *mode);
+int mfclose(mFILE *mf);
+int mfseek(mFILE *mf, long offset, int whence);
+long mftell(mFILE *mf);
+void mrewind(mFILE *mf);
+int mfeof(mFILE *mf);
+size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf);
+size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf);
+int mfgetc(mFILE *mf);
+int mungetc(int c, mFILE *mf);
+mFILE *mfcreate(char *data, int size);
+char *mfgets(char *s, int size, mFILE *mf);
+int mfflush(mFILE *mf);
+int mfprintf(mFILE *mf, char *fmt, ...);
+mFILE *mstdin(void);
+mFILE *mstdout(void);
+mFILE *mstderr(void);
+
+The last three are equivalents for stdio's global stdin, stdout and
+stderr FILE pointers. In this case they are functions which read all
+of stdin into a memory buffer (on the first attempted mfread, mfgets,
+etc) or write all of stdout/stderr when the mfclose or mfflush gets
+called. Also not that you'll need an explicit mfclose on other mFILE
+operations too as these "files" will not be flushed and closed by the
+operating system when the program exits.
+
+Internally io_lib uses a mixture of these calls directly and in some
+cases a hideous bunch of #defines to directly map stdio calls to mFILE
+calls, thus meaning that there's a minimal amount of code to
+rewrite. The brave and foolhardy may wish to use this mapping on your
+own code, which can be done by adding "#include <stdio_hack.h>" to
+your code.
+
+Note though that some internal io_lib functions now take different
+arguments. Where possible I've kept both the FILE* and mFILE*
+versions (with the FILE* one being a wrapper), but there have
+inevitably been some which are now incompatible.
+
+The benefits of using mFILEs are considerable. Internally
+fetching a trace out of a tar file, uncompressing it and then decoding
+to 'Read' used to do multiple read and writes to disk: read from
+tar -> write to a temporary file -> read from temp file -> write to
+uncompressed temp file -> read from uncompressed temp file -> decode.
+Now this is replaced with entirely in-memory uncompression and
+decoding. Benchmarking this showed approximately 10-15 fold speed
+increases.
 
 
 History
