@@ -1780,10 +1780,10 @@ void write_tags(GapIO *io, char *fname, int num_tags,
 		int *read1, int *pos1, int *read2, int *pos2, int *length) {
     register int n = num_tags, i;
     char buf[100], com[100], n1[DB_NAMELEN+1], n2[DB_NAMELEN+1];
-    FILE *fp;
+    mFILE *fp;
     Exp_info *e;
 
-    if (NULL == (fp = fopen(fname, "w"))) {
+    if (NULL == (fp = mfopen(fname, "w"))) {
 	verror(ERR_WARN, "write_tag", "Failed to open file %s\n", fname);
 	return;
     }

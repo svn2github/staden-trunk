@@ -119,12 +119,12 @@ static int combined[] = {
  * infp and outfp maybe the same FILE *, so we need to fseek between reading
  * and writing.
  */
-static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
+static int do_it(mFILE *infp, mFILE *outfp, int in_f, int out_f, char *fn,
 		 int phred_scale, int avg_qual, int filtered,
 		 int non_filtered, int offset, int dump) {
     Read *r, *rf;
 
-    if (NULL == (r = fread_reading(infp, fn, in_f))) {
+    if (NULL == (r = mfread_reading(infp, fn, in_f))) {
 	fprintf(stderr, "Couldn't read reading file\n");
 	return 1;
     }
@@ -202,8 +202,8 @@ static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
 	read_deallocate(rf);
     }
 
-    rewind(outfp);
-    if (r->format == TT_CTF || r->format == TT_ZTR)
+    mrewind(outfp);
+    if (r->format == TT_CTF || r->format == TT_ZTR || r->format == TT_SCF)
 	out_f = r->format;
 
     if (dump) {
@@ -253,14 +253,16 @@ static int do_it(FILE *infp, FILE *outfp, int in_f, int out_f, char *fn,
 	    putchar('\n');
 
     } else {
-	if (-1 == (fwrite_reading(outfp, r, out_f))) {
+	if (-1 == (mfwrite_reading(outfp, r, out_f))) {
 	    fprintf(stderr, "Couldn't write reading file\n");
 	    read_deallocate(r);
 	    return 1;
 	}
 
-	ftruncate(fileno(outfp), ftell(outfp));
+	mftruncate(outfp, -1);
     }
+
+    mfclose(outfp);
 
     read_deallocate(r);
 
@@ -289,8 +291,8 @@ static void usage(void) {
  * to discriminate better for poor data and not so well on very good data.
  */
 int main(int argc, char **argv) {
-    FILE *ifp = stdin;
-    FILE *ofp = stdout;
+    mFILE *ifp = mstdin();
+    mFILE *ofp = mstdout();
     char *fn;
     int in_type = TT_ANY, out_type = TT_ANY;
     int phred_scale = 1;
@@ -340,7 +342,12 @@ int main(int argc, char **argv) {
 	break;
     }
     case 1: {
-	ifp = fopen_compressed(argv[a], &ofp);
+	/*
+	 * Read and write same file, but we open for update and truncate the
+	 * file after writing a new trace incase it is shorter.
+	 */
+	ofp = mfopen(argv[a], "r+");
+	ifp = open_trace_mfile(argv[a], NULL);
 	if (ifp == NULL) {
 	    perror(argv[a]);
 	    return 1;

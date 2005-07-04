@@ -592,10 +592,10 @@ SeqInfo *read_sequence_details(char *filename, int ignore_vec)
 	break;
     case TT_EXP:
 	{
-	    FILE *fp = open_trace_file(filename, NULL);
+	    mFILE *fp = open_trace_mfile(filename, NULL);
 	    if (fp) {
-		e = exp_fread_info(fp);
-		fclose(fp);
+		e = exp_mfread_info(fp);
+		mfclose(fp);
 		if (e)
 		    exp_close(e);
 	    } else {

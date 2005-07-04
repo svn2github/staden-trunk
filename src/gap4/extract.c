@@ -309,7 +309,7 @@ static int create_exp_file(GapIO *io, char *name, int format,
     GClones c;
     Exp_info *e;
     int err = 0, tmp;
-    FILE *fp;
+    mFILE *fp;
     int1 *conf = NULL;
     int2 *opos = NULL;
     char *seq = NULL;
@@ -325,7 +325,7 @@ static int create_exp_file(GapIO *io, char *name, int format,
     if (NULL == (buf = (char *)xmalloc(buf_size))) 
 	goto error;
 
-    if (NULL == (fp = fopen(name, "w"))) {
+    if (NULL == (fp = mfopen(name, "w"))) {
 	perror(name);
 	goto error;
     }

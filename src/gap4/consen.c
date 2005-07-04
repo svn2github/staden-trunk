@@ -1591,7 +1591,7 @@ int fasta_fmt_output ( FILE *fp, char *seq, int seq_len, char *entry_name,
  * Returns 0 for success, -1 for failure.
  */
 
-int expt_fmt_output(GapIO *io, FILE *fp, char *seq, float *qual,
+int expt_fmt_output(GapIO *io, mFILE *fp, char *seq, float *qual,
 		    int left_read, int lreg, int rreg,
 		    int gel_anno, int truncate, int gel_notes, int nopads) {
     GContigs c;
@@ -1774,6 +1774,7 @@ int write_consensus (GapIO *io, FILE *fp,
 #define INTERNAL_FORMAT 4
 
     int contig_index, number_of_contigs, *contig_ends, *contig_numbers;
+    mFILE *mf = NULL;
 
     contig_ends    = (int *) malloc ( max_contigs * sizeof ( int ) );
     contig_numbers = (int *) malloc ( max_contigs * sizeof ( int ) );
@@ -1838,8 +1839,9 @@ int write_consensus (GapIO *io, FILE *fp,
 		goto error;
 
 	} else if ( output_format == EXPT_FORMAT ) {
-	    
-	    if( expt_fmt_output( io, fp,
+	    if (!mf)
+		mf = mfreopen(NULL, "w", fp);
+	    if( expt_fmt_output( io, mf,
 				&seq[contig_ends[contig_index]+20],
 				qual ? &qual[contig_ends[contig_index]+20]
 				     : NULL,
@@ -1850,6 +1852,12 @@ int write_consensus (GapIO *io, FILE *fp,
 		goto error;
 	}
     }
+
+    if (mf) {
+	mfflush(mf);
+	mfdestroy(mf);
+    }
+    
     free ( contig_ends );
     free ( contig_numbers );
     return 0;
