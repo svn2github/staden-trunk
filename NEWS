@@ -1,4 +1,4 @@
-17 May 2005 (& more - add to this until new release)
+4 July 2005 (& more - add to this until new release)
 ===========
 
 Gap4
@@ -13,11 +13,36 @@ Gap4
   found and in some cases (reverse search) non-cutoff matches could be
   missed.
 
+* The SNP Candidates plot now allows for the consensus to be saved
+  directly from this window. The consensus and fake sequences added
+  when a real split is requested now includes the "unsplit" readings
+  from regions which apparently contained no SNPs (and therefore
+  belong to all split contigs).
+
 Trev
 ----
 
 * Added a "-style pyro" option to request histogram based
   pyrosequencing data.
+
+Io_lib
+------
+
+* Added "HASH=hashfile" component of RAWDATA search path along with
+  hash_tar and hash_extract tools. These operate like index_tar but
+  provide true fast random access into tar files (or other formats if
+  needed).
+
+* Major update of I/O mechanisms to use in-memory equivalents of the
+  files being read from or written to. This has lead to some
+  incompatibilities (see src/io_lib/CHANGES), but is also an order of
+  magnitude faster in many cases.
+
+Misc
+----
+
+* Removed some redundant old ABI utilities: getABIfloat, getABIhex,
+  getABIraw, getABIstring. All of these can be achieved via getABIfield.
 
 
 -----------------------------------------------------------------------------

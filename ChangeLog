@@ -1,3 +1,323 @@
+2005-07-04  jkbonfield  <jkbonfield>
+
+	* src/Makefile.thirdparty:
+	(09:21:27) Switch to using a different zlib/png sub-makefile for
+	solaris9. 
+
+	* src/gap4/IO2.c:
+	(09:23:11) Added include to get log_file prototype. 
+
+	* src/eba/qual.c:
+	* src/gap4/consen.c,
+	* src/gap4/extract.c,
+	* src/gap4/seqInfo.c,
+	* src/gap4/tagU2.c:
+	(09:24:31) Updates to use the new mFILE based I/O of io_lib. 
+
+	* src/io_lib/README:
+	(09:24:49) *** empty log message *** 
+
+	* src/io_lib/CHANGES:
+	(09:24:50) *** empty log message *** 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/read/Makefile.am,
+	* src/io_lib/scf/Makefile.am,
+	* src/io_lib/utils/Makefile.am:
+	(09:25:34) Adjusted EXTRA_DIST definitions to only include files we
+	still appear to have! 
+
+	* src/io_lib/Makefile.in,
+	* src/io_lib/progs/Makefile.in:
+	* src/io_lib/read/Makefile.in,
+	* src/io_lib/scf/Makefile.in,
+	* src/io_lib/utils/Makefile.in:
+	* src/io_lib/config.h.in,
+	* src/io_lib/configure:
+	(09:26:33) (rebuilt) 
+
+	* src/io_lib/configure.in:
+	(09:27:05) Updated to use newer AC_INIT syntax. 
+
+	* src/io_lib/read/Read.c:
+	(10:21:50) Made the default output format ZTR. Do not compress
+	output (via gzip for example) if ZTR2 or ZTR3 is used. 
+
+	* src/io_lib/utils/compress.c:
+	(10:25:19) If HAVE_ZLIB isn't defined then the memgzip/memgunzip
+	functions are now also not built (and hence removes compilation
+	errors).
+	
+	The pipe2 function now uses waitpid to avoid zombies. 
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(10:29:41) Added mfrecreate() function to	change an existing
+	mFILE to point to new data. Better handling of append mode in
+	mfreopen. Fixed mf->fname such that it's now always a pointer to
+	malloced data. Added mfdestroy to deallocate memory, but without
+	flushing or closing file descriptors. Changed mfflush to write data
+	regardless of whether it's stdin/stdout. This means that
+	mfflush+mfdestroy can be used to close	 an mFILE without closing
+	the underlying FILE pointer used. Added mftruncate. Rewrote mfread
+	to do a single memcpy instead of   looped  memcpys. 
+
+	* src/mk/global.mk:
+	(10:30:24) The .dir target is now hopefully more silent in
+	operation. 
+
+	* src/mk/solaris.cc.mk,
+	* src/mk/solaris.gcc.mk:
+	(10:31:14) Disabled BIOLIMS support by default. 
+
+	* src/tk_utils/tkTrace.c,
+	* src/tk_utils/tkTrace.h,
+	* src/tk_utils/tkTraceDisp.c:
+	(10:32:33) Added a -yticks option to draw lines at set intervals
+	along the Y axis (ie horizontal lines). 
+
+	* src/tk_utils/tkTraceIO.c:
+	(10:33:46) Improved pyrosequencing re-alignment code. Use new mFILE
+	io_lib structs. 
+
+2005-07-01  jkbonfield  <jkbonfield>
+
+	* src/abi/Attic/2rs.c,
+	* src/abi/Attic/README,
+	* src/abi/Attic/getABIfloat.c,
+	* src/abi/Attic/getABIhex.c,
+	* src/abi/Attic/getABIraw.c,
+	* src/abi/Attic/getABIstring.c:
+	(09:05:51) Removed junk that's either now irrelevant or replaced by
+	getABIfield. 
+
+	* src/abi/abiIO.c,
+	* src/abi/abiIO.h:
+	(09:08:18) Moved portions from getABIfield.c into this new file so
+	that other tools can link with it. Ultimately this'll replace
+	seqIOABI.c in io_lib. 
+
+	* src/abi/Makefile,
+	* src/abi/getABISampleName.c,
+	* src/abi/getABIcomment.c,
+	* src/abi/getABIdate.c,
+	* src/abi/getABIfield.c:
+	(09:09:04) Updated getABIfield to use abiIO.c (split off from it)
+	and totally rewrote getABISampleName, getABIcomment and getABIdate
+	to also use abiIO.c. 
+
+2005-06-30  jkbonfield  <jkbonfield>
+
+	* demo/gap4/DEMO.0:
+	* demo/gap4/DEMO.0.aux:
+	(09:36:56) Updated to use HASH= instead of TAR= for rawdata. 
+
+	* demo/gap4/traces.tar.hash,
+	* demo/gap4/Attic/traces.tar.index:
+	(09:40:36) Replaced the .index with a .hash file (created via
+	hash_tar). 
+
+	* src/get_scf_field/get_scf_field.c:
+	(13:23:11) Updated to use mFILE and the new io_lib. 
+
+2005-06-29  jkbonfield  <jkbonfield>
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/Makefile,
+	* src/io_lib/README,
+	* src/io_lib/dependencies:
+	* src/io_lib/abi/abi.h,
+	* src/io_lib/abi/fpoint.c,
+	* src/io_lib/abi/seqIOABI.c,
+	* src/io_lib/abi/seqIOABI.h,
+	* src/io_lib/alf/alf.h,
+	* src/io_lib/alf/seqIOALF.c,
+	* src/io_lib/ctf/ctfCompress.c,
+	* src/io_lib/ctf/seqIOCTF.c,
+	* src/io_lib/ctf/seqIOCTF.h,
+	* src/io_lib/exp_file/expFileIO.c,
+	* src/io_lib/exp_file/expFileIO.h,
+	* src/io_lib/include/os.h,
+	* src/io_lib/plain/plain.h:
+	* src/io_lib/plain/seqIOPlain.c,
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/convert_trace.c,
+	* src/io_lib/progs/extract_seq.c,
+	* src/io_lib/progs/get_comment.c,
+	* src/io_lib/progs/hash_extract.c,
+	* src/io_lib/progs/hash_tar.c,
+	* src/io_lib/progs/makeSCF.c,
+	* src/io_lib/progs/trace_dump.c,
+	* src/io_lib/progs/ztr_dump.c,
+	* src/io_lib/read/Read.c,
+	* src/io_lib/read/Read.h,
+	* src/io_lib/read/scf_extras.c,
+	* src/io_lib/read/translate.c,
+	* src/io_lib/scf/misc_scf.c,
+	* src/io_lib/scf/read_scf.c,
+	* src/io_lib/scf/scf.h,
+	* src/io_lib/scf/write_scf.c,
+	* src/io_lib/utils/compress.c,
+	* src/io_lib/utils/compress.h,
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h,
+	* src/io_lib/utils/mach-io.c,
+	* src/io_lib/utils/mach-io.h,
+	* src/io_lib/utils/open_trace_file.c,
+	* src/io_lib/utils/open_trace_file.h,
+	* src/io_lib/utils/read_alloc.c,
+	* src/io_lib/utils/traceType.c,
+	* src/io_lib/utils/traceType.h,
+	* src/io_lib/ztr/FORMAT,
+	* src/io_lib/ztr/compression.c,
+	* src/io_lib/ztr/compression.h,
+	* src/io_lib/ztr/ztr.c,
+	* src/io_lib/ztr/ztr.h,
+	* src/io_lib/ztr/ztr_translate.c:
+	(13:33:33) Version 1.9.0-test
+	
+	- Significant speed ups, particularly when dealing with reading  
+	gzipped files or when extracting data from tar files.
+	
+	- New external functions for faster access via mFILE (memory-file) 
+	 structs. These mimic the fread/fwrite calls, but with
+	mfread/mfwrite	 etc.
+	
+	- Some functions previously available in external scope, but not  
+	defined in header files, have now been made internal only  
+	("static"). Please contact me if you were using these and have a  
+	burning need for them to remain external.
+	
+	- Numerous minor tweaks and updates to fix compiler warnings on
+	more   stricter modes of the Intel C Compiler.
+	
+	- Preliminary support for storing pyrosequencing style traces. This
+	  has been modeled on the flowgram data from 454, but should be  
+	applicable to other platforms. ZTR has been updated to incorporate 
+	 this too.
+	
+	  The Read structure also has flow, flow_order, nflows and flow_raw
+	  elements too. Code to convert these into the more usual
+	traceA/C/G/T   arrays exists currently as part of Trev (in tk_utils
+	in the Staden	Package), but this may move into io_lib for the
+	next official	release.
+	
+	- New hash_tar and hash_extract programs. These replace the
+	index_tar   program for rast random access. For RAWDATA include
+	"HASH=hashfile"   as an element to get io_lib to use the archive
+	hash. It's possible   to create hash files of most archive formats
+	as the hash itself   contains the offset and size of each item in
+	the archive. This means   that extracting an item does not need to
+	know the format of the	 original archive.
+	
+	  Some benchmarks show that on ext3 it's actually faster to extract
+	  files from the hash than directly via the directory. This was  
+	testing with ~200,000 files, whereupon directory lookups become  
+	slow. I'd imagine ResierFS or similar to be faster.
+	
+	- Added an XRLE encoding for ZTR. This is similar to the existing
+	RLE   mechanism but it copes with run length encoding of items
+	larger than   a single byte. It's current use is for storing the
+	4-base repeating   flow order in 454 data.
+	
+	- Potential incompatibilities:
+	
+	  - The Exp_info structure now has an "mFILE *fp" member instead of
+	    "FILE *fp".
+	
+	  - As mentioned above, some functions are no longer external.
+	These	  include many ctf functions, ztr_(de)compress,    
+	ztr_chunk_(read/write), be_read_*, be_write_*,
+	
+	  - The default search order for RAWDATA is that the current
+	directory     is searched after the rest of rawdata instead of
+	before.
+	
+	  - Removed support for the old unix "pack" program as a
+	compression	tool. 
+
+	* src/io_lib/utils/vlen.c,
+	* src/io_lib/utils/vlen.h:
+	(13:35:42) vlen/vflen functions to estimate the maximum data size
+	written out by a printf style function. This is used by the new
+	mFILE functions. 
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	* src/io_lib/utils/stdio_hack.h:
+	(13:39:13) mFILE struct support. This is basically a set of
+	functions to similulate stdio file support on a block of memory
+	instead of a file, for purposes of speed and to avoid the need of
+	writing data out to a file only to be opened and read back in again
+	(which happened a lot before).
+	
+	stdio_hack.h is, like it says, a hacky bunch of #defines to turn
+	stdio functions and io_lib functions into their mFILE equivalents.
+	It is used internally to convert old code (eg ABI file reading) to
+	use mFILE structures, but can also be used by the brave to update
+	their own code. Use with extreme caution. 
+
+2005-06-17  jkbonfield  <jkbonfield>
+
+	* src/haplo/haplo_cons.c:
+	* src/haplo/haplo_tcl.c:
+	(13:46:39) Handle asking for the consensus from zero templates. 
+
+	* src/haplo/haplo.tcl,
+	* src/haplo/haplo_split.c:
+	(13:48:20) Moved the generation of "ungrouped" templates from C to
+	Tcl (haplo::find_ungrouped). The reason is that in C we just have a
+	list of templates covering the candidate SNPs and not a list of all
+	the templates in the contig. 
+
+	* src/gap4/clip.c:
+	(15:53:41) Removed a 1-byte buffer overrun in the quality clip
+	contig ends function. 
+
+2005-06-16  jkbonfield  <jkbonfield>
+
+	* src/haplo/haplo.tcl,
+	* src/haplo/haplo_split.c:
+	(13:20:09) The splitting code now returns a list of the templates
+	should didn't make it into any group. This is now used by the tcl
+	split-to-contigs code to produce a better "fake" sequence that
+	includes these ungrouped readings.
+	
+	Also added a save consensus option to the right-click set menus.
+	This saves the consensus of one or more groups and so removes the
+	*requirement* to split contigs if you wish to just obtain the
+	consensus. The ungrouped readings can optionally be included in
+	that consensus output too. 
+
+	* src/haplo/haplo.tcl:
+	(14:26:25) Added an option to save a fofn for reading names in a
+	set. 
+
+	* tables/haplorc:
+	(14:27:18) Added fofn/consensus saving defs. 
+
+2005-06-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/hash_table.c:
+	* src/io_lib/utils/hash_table.h:
+	* src/io_lib/progs/hash_extract.c,
+	* src/io_lib/progs/hash_tar.c:
+	(08:37:23) Added some simple hash table functions. Layered on top
+	of these are HashFiles, which allow hash table indexing of files to
+	be stored on disk. hash_tar and hash_extract test programs
+	illustrate its use on tar files, much like index_tar does. 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(08:38:22) Added support for integrating the new hashfile code via
+	a "HASH=hashfile" RAWDATA setting. 
+
+2005-05-20  jkbonfield  <jkbonfield>
+
+	* src/g/g-io.c:
+	(11:19:29) Fixed 32-bit file reading code for big-endian machines
+	(eg Sun SPARC). 
+
 2005-05-17  jkbonfield  <jkbonfield>
 
 	* NEWS:
