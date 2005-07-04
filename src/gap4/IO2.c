@@ -32,6 +32,7 @@
 #include "clones.h"
 #include "notes.h"
 #include "dna_utils.h"
+#include "text_output.h"
 
 /*************************************************************
  * Sequence manipulation routines
