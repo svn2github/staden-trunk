@@ -108,8 +108,8 @@ INCLUDES = \
 	-I${top_srcdir}/utils
 
 
-EXTRA_DIST = README SCF3.00 SCF3.10
 
+#EXTRA_DIST = README SCF3.00 SCF3.10
 pkginclude_HEADERS = \
 	scf.h
 
@@ -144,7 +144,7 @@ CFLAGS = @CFLAGS@
 DIST_SOURCES = $(libscf_la_SOURCES)
 HEADERS = $(pkginclude_HEADERS)
 
-DIST_COMMON = README $(pkginclude_HEADERS) Makefile.am Makefile.in
+DIST_COMMON = $(pkginclude_HEADERS) Makefile.am Makefile.in
 SOURCES = $(libscf_la_SOURCES)
 
 all: all-am

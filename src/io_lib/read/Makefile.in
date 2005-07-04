@@ -128,8 +128,6 @@ pkginclude_HEADERS = \
 	scf_extras.h \
 	translate.h
 
-
-EXTRA_DIST = README
 subdir = read
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
@@ -165,7 +163,7 @@ CFLAGS = @CFLAGS@
 DIST_SOURCES = $(libread_la_SOURCES)
 HEADERS = $(pkginclude_HEADERS)
 
-DIST_COMMON = README $(pkginclude_HEADERS) Makefile.am Makefile.in
+DIST_COMMON = $(pkginclude_HEADERS) Makefile.am Makefile.in
 SOURCES = $(libread_la_SOURCES)
 
 all: all-am
@@ -413,6 +411,8 @@ uninstall-am: uninstall-info-am uninstall-libLTLIBRARIES \
 	tags uninstall uninstall-am uninstall-info-am \
 	uninstall-libLTLIBRARIES uninstall-pkgincludeHEADERS
 
+
+#EXTRA_DIST = README
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
