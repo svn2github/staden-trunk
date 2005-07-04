@@ -20,7 +20,14 @@ libutils_la_SOURCES = \
 	traceType.c \
 	traceType.h \
 	xalloc.c \
-	xalloc.h
+	xalloc.h \
+	vlen.c \
+	vlen.h \
+	hash_table.c \
+	hash_table.h \
+	mFILE.c \
+	mFILE.h \
+	stdio_hack.h
 
 INCLUDES = \
 	-I${top_srcdir} \
@@ -35,8 +42,6 @@ INCLUDES = \
 	-I${top_srcdir}/exp_file \
 	-I${top_srcdir}/utils
 
-EXTRA_DIST = README
-
 pkginclude_HEADERS = \
 	array.h \
 	compress.h \
@@ -46,4 +51,9 @@ pkginclude_HEADERS = \
 	open_trace_file.h \
 	tar_format.h \
 	traceType.h \
-	xalloc.h
+	xalloc.h \
+	mFILE.h \
+	stdio_hack.h \
+	vlen.h \
+	hash_table.h \
+	os.h

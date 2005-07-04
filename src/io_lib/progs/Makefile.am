@@ -1,4 +1,4 @@
-bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment
+bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract
 
 convert_trace_SOURCES = convert_trace.c
 convert_trace_LDADD = $(top_builddir)/read/libread.la
@@ -22,6 +22,12 @@ scf_info_LDADD = $(top_builddir)/read/libread.la
 
 scf_update_SOURCES = scf_update.c
 scf_update_LDADD = $(top_builddir)/read/libread.la
+
+hash_tar_SOURCES = hash_tar.c
+hash_tar_LDADD = $(top_builddir)/read/libread.la
+
+hash_extract_SOURCES = hash_extract.c
+hash_extract_LDADD = $(top_builddir)/read/libread.la
 
 INCLUDES= \
 	-I${top_srcdir} \

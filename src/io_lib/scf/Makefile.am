@@ -19,7 +19,7 @@ INCLUDES = \
 	-I${top_srcdir}/exp_file \
 	-I${top_srcdir}/utils
 
-EXTRA_DIST = README SCF3.00 SCF3.10
+#EXTRA_DIST = README SCF3.00 SCF3.10
 
 pkginclude_HEADERS = \
 	scf.h

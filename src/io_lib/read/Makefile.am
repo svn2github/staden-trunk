@@ -38,4 +38,4 @@ pkginclude_HEADERS = \
 	scf_extras.h \
 	translate.h
 
-EXTRA_DIST = README
+#EXTRA_DIST = README

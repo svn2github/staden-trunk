@@ -22,4 +22,4 @@ man_MANS = \
 	man/man3/write_scf.3 \
 	man/man3/write_scf_header.3
 
-EXTRA_DIST = os.h COPYRIGHT CHANGES man options.mk bootstrap
+EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap
