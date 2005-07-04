@@ -10,6 +10,8 @@
 #include "postscript.h"
 #include "trace_print.h"
 
+#define PYRO_SCALE 1000
+
 static int trace_load_private(DNATrace *t);
 void trace_pyroalign(Read *r);
 
@@ -174,8 +176,10 @@ int trace_load(DNATrace *t, char *file, char *format) {
     }
     read_experiment_redirect(tmp);
 
-    if (t->style == STYLE_PYRO)
+    if (t->style == STYLE_PYRO) {
 	trace_pyroalign(t->read);
+	t->yticks = PYRO_SCALE;
+    }
 
     return trace_load_private(t);
 }
@@ -345,7 +349,7 @@ static int trace_save_as_experiment_file( DNATrace* t, char* file )
 {
     int       i;
     Exp_info* e;
-    FILE*     fp;
+    mFILE*     fp;
     char*     _base;
     int       _NBases;
     char*     buf = 0;
@@ -375,7 +379,7 @@ static int trace_save_as_experiment_file( DNATrace* t, char* file )
 
 
     /* Create the output file */
-    fp = fopen( file, "w" );
+    fp = mfopen( file, "w" );
     if( !fp )
 	goto cleanup_and_exit;
     e->fp = fp;
@@ -415,7 +419,7 @@ static int trace_save_as_experiment_file( DNATrace* t, char* file )
 	    e->Nentries[EFLT_AV] = 0;
 	}
 
-	exp_print_file( fp, e );
+	exp_print_mfile( fp, e );
 	opos2str( (int_2*) t->edPos, _NBases, buf );
 	exp_put_str( e, EFLT_ON, buf, strlen(buf) );
 	conf2str( t->edConf, _NBases, buf );
@@ -423,7 +427,7 @@ static int trace_save_as_experiment_file( DNATrace* t, char* file )
     }
     else
     {
-	exp_print_file( fp, e );
+	exp_print_mfile( fp, e );
     }
 
 
@@ -446,7 +450,7 @@ static int trace_save_as_experiment_file( DNATrace* t, char* file )
     /* Exit */
     cleanup_and_exit:
     if(buf)   xfree( buf );
-    if(e->fp) fclose( e->fp );
+    if(e->fp) mfclose( e->fp );
     e->fp = NULL;
     exp_destroy_info( e );
     return ret;
@@ -739,12 +743,16 @@ void trace_change(DNATrace *t, int pos, char base) {
  * bases positioned at the same spike, and realigns it so that basecalls are
  * the primary spacing with one "x unit" per base-call or spike.
  *
- * It does this by editing the Read structure directly.
+ * The traceA, traceC, traceG and traceT channels are created from an
+ * alignment of the sequencing to the flow/flow_order data.
+ *
+ * This means that the standard trace viewing code works as expected.
  */
 void trace_pyroalign(Read *r) {
     int i, k, len = 0, last;
-    TRACE *out[4], *in[4];
+    TRACE *out[4];
     int ip, op;
+    int lookup[256];
 
     /* Compute size */
     for (last = -1, i = 0; i < r->NBases; i++) {
@@ -755,37 +763,73 @@ void trace_pyroalign(Read *r) {
 	last = r->basePos[i];
     }
     
-    /* Regenerate data */
-    out[0] = (TRACE *)xcalloc(len, sizeof(TRACE));
-    out[1] = (TRACE *)xcalloc(len, sizeof(TRACE));
-    out[2] = (TRACE *)xcalloc(len, sizeof(TRACE));
-    out[3] = (TRACE *)xcalloc(len, sizeof(TRACE));
-    in[0] = r->traceA;
-    in[1] = r->traceC;
-    in[2] = r->traceG;
-    in[3] = r->traceT;
+    out[0] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
+    out[1] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
+    out[2] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
+    out[3] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
+    memset(lookup, 0, 256*sizeof(lookup[0]));
+    lookup['A'] = lookup['a'] = 0;
+    lookup['C'] = lookup['c'] = 1;
+    lookup['G'] = lookup['g'] = 2;
+    lookup['T'] = lookup['t'] = 3;
 
-    for (k = op = ip = 0; ip < r->NPoints || k < r->NBases; ip++) {
-	out[0][op] = in[0][ip];
-	out[1][op] = in[1][ip];
-	out[2][op] = in[2][ip];
-	out[3][op] = in[3][ip];
-	if (r->basePos[k] == ip) {
+    r->maxTraceVal = 1;
+    for (k = ip = 0, op = 1; ip < r->NPoints || k < r->NBases; ip++) {
+	int v;
+	v = out[lookup[(r->flow_order[ip])]][op] =
+	    MAX(r->flow[ip] * PYRO_SCALE, 1);
+	if (r->maxTraceVal < v)
+	    r->maxTraceVal = v;
+	if (r->basePos[k] == ip+1) {
 	    r->basePos[k] = op;
-	    for(k++; k < r->NBases && r->basePos[k] == ip; k++) {
+	    for(k++; k < r->NBases && r->basePos[k] == ip+1; k++) {
 		r->basePos[k] = ++op;
-		out[0][op] = 0;
-		out[1][op] = 0;
-		out[2][op] = 0;
-		out[3][op] = 0;
 	    }
 	}
 	op++;
     }
 
-    xfree(r->traceA); r->traceA = out[0];
-    xfree(r->traceC); r->traceC = out[1];
-    xfree(r->traceG); r->traceG = out[2];
-    xfree(r->traceT); r->traceT = out[3];
+    if (r->traceA) xfree(r->traceA); r->traceA = out[0];
+    if (r->traceC) xfree(r->traceC); r->traceC = out[1];
+    if (r->traceG) xfree(r->traceG); r->traceG = out[2];
+    if (r->traceT) xfree(r->traceT); r->traceT = out[3];
     r->NPoints = op;
+
+    r->maxTraceVal = PYRO_SCALE * (int)((r->maxTraceVal+PYRO_SCALE-1) /
+					PYRO_SCALE);
+
+#if 0
+    /*
+     * This works as a way to inline edit the flow and flow_order arrays,
+     * but it breaks lots of code elsewhere that looks in NPoints, traceA,
+     * etc.
+     */
+    /* Regenerate data */
+    out_flow = (char *)xcalloc(len, sizeof(float));
+    in_flow  = r->flow_order;
+    out_proc = (float *)xcalloc(len, sizeof(float));
+    in_proc  = r->flow;
+
+    for (k = op = ip = 0; ip < r->nflows && k < r->NBases; ip++) {
+	out_proc[op] = in_proc[ip];
+	out_flow[op] = in_flow[ip];
+	if (r->basePos[k] == ip+1) {
+	    printf("1:r->basePos[%d] = %d -> %d\n",
+		   k, ip+1, op+1);
+	    r->basePos[k] = op+1;
+	    for(k++; k < r->NBases && r->basePos[k] == ip+1; k++) {
+		printf("2:r->basePos[%d] = %d -> %d\n",
+		       k, ip+1, 1+op+1);
+		r->basePos[k] = ++op+1;
+		out_proc[op] = 0.5;
+		out_flow[op] = '-';
+	    }
+	}
+	op++;
+    }
+
+    xfree(r->flow); r->flow = out_proc;
+    xfree(r->flow_order); r->flow_order = out_flow;
+    r->nflows = op;
+#endif
 }
