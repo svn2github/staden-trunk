@@ -128,6 +128,21 @@ mFILE *mfcreate(char *data, int size) {
     return mf;
 }
 
+/*
+ * Recreate an existing mFILE to house new data/size.
+ * It also rewinds the file.
+ */
+void mfrecreate(mFILE *mf, char *data, int size) {
+    if (mf->data)
+	free(mf->data);
+    mf->data = data;
+    mf->size = size;
+    mf->alloced = size;
+    mf->eof = 0;
+    mf->offset = 0;
+    mf->flush_pos = 0;
+}
+
 
 /*
  * Converts a FILE * to an mFILE *.
@@ -159,6 +174,8 @@ mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
 	mf = mfcreate(NULL, 0);
 	mf->data = mfload(fp, path, &mf->size);
 	mf->alloced = mf->size;
+	if (!a)
+	    fseek(fp, 0, SEEK_SET);
     } else {
 	/* Write - initialise the data structures */
 	mf = mfcreate(NULL, 0);
@@ -166,7 +183,7 @@ mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
     mf->fp = fp;
 
     if (w)
-	mf->fname = strdup(path);
+	mf->fname = strdup(path ? path : "?");
 
     if (a)
 	mf->offset = mf->size;
@@ -194,26 +211,33 @@ mFILE *mfopen(const char *path, const char *mode) {
  * Stdout is handled by calling mfflush which writes to stdout if appropriate.
  */
 int mfclose(mFILE *mf) {
-    int ret = 0;
-
     if (!mf)
 	return -1;
 
     mfflush(mf);
 
-    /* fname => opened in write mode */
-    if (mf->fname) {
-	fwrite(mf->data, 1, mf->size, mf->fp);
-	free(mf->fname);
-    }
-
-    if (mf->data)
-	free(mf->data);
     if (mf->fp)
 	fclose(mf->fp);
+
+    mfdestroy(mf);
+
+    return 0;
+}
+
+/*
+ * Destroys an mFILE structure but does not flush or close it
+ */
+int mfdestroy(mFILE *mf) {
+    if (!mf)
+	return -1;
+
+    if (mf->fname)
+	free(mf->fname);
+    if (mf->data)
+	free(mf->data);
     free(mf);
 
-    return ret;
+    return 0;
 }
 
 /*
@@ -248,6 +272,20 @@ void mrewind(mFILE *mf) {
     mf->offset = 0;
 }
 
+/*
+ * mftruncate is not directly a translation of ftruncate as the latter
+ * takes a file descriptor instead of a FILE *. It performs the analogous
+ * role though.
+ *
+ * If offset is -1 then the file is truncated to be the current file
+ * offset.
+ */
+void mftruncate(mFILE *mf, long offset) {
+    mf->size = offset != -1 ? offset : mf->offset;
+    if (mf->offset > mf->size)
+	mf->offset = mf->size;
+}
+
 int mfeof(mFILE *mf) {
     return mf->eof;
 }
@@ -257,25 +295,26 @@ int mfeof(mFILE *mf) {
  * into memcpy statements, with appropriate memory handling for writing.
  */
 size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
-    size_t i, len;
+    size_t len;
     char *cptr = (char *)ptr;
-
+    
     if (mf == m_channel[0]) init_mstdin();
-    for (i = 0; i < nmemb; i++) {
-	len = size <= mf->size - mf->offset
-	    ? size
-	    : mf->size - mf->offset;
-	memcpy(cptr, &mf->data[mf->offset], len);
-	mf->offset += len;
-	cptr += len;
 
-	if (len != size) {
-	    mf->eof = 1;
-	    break;
-	}
+    if (mf->size <= mf->offset)
+	return 0;
+
+    len = size * nmemb <= mf->size - mf->offset
+	? size * nmemb
+	: mf->size - mf->offset;
+    memcpy(cptr, &mf->data[mf->offset], len);
+    mf->offset += len;
+    cptr += len;
+    
+    if (len != size * nmemb) {
+	mf->eof = 1;
     }
 
-    return i;
+    return len / size;
 }
 
 size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
@@ -347,13 +386,21 @@ int mfflush(mFILE *mf) {
 	return 0;
 
     /* FIXME: only do this when opened in write mode */
+    if (mf == m_channel[1] || mf == m_channel[2]) {
+	fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
+	mf->flush_pos = mf->size;
+	fflush(mf->fp);
 
-    fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
-    mf->flush_pos = mf->size;
-    fflush(mf->fp);
+	/* Stdout & stderr are non-seekable streams so throw away the data */
+	mf->offset = mf->size = mf->flush_pos = 0;
+    }
 
-    /* Stdout & stderr are non-seekable streams so we throw away the data */
-    mf->offset = mf->size = mf->flush_pos = 0;
+    /* fname => opened in write mode */
+    if (mf->fname) {
+	fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
+	ftruncate(fileno(mf->fp), ftell(mf->fp));
+	mf->flush_pos = mf->size;
+    }
 
     return 0;
 }

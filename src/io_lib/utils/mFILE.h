@@ -17,15 +17,18 @@ typedef struct {
 mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
 mFILE *mfopen(const char *path, const char *mode);
 int mfclose(mFILE *mf);
+int mfdestroy(mFILE *mf);
 int mfseek(mFILE *mf, long offset, int whence);
 long mftell(mFILE *mf);
 void mrewind(mFILE *mf);
+void mftruncate(mFILE *mf, long offset);
 int mfeof(mFILE *mf);
 size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf);
 size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf);
 int mfgetc(mFILE *mf);
 int mungetc(int c, mFILE *mf);
 mFILE *mfcreate(char *data, int size);
+void mfrecreate(mFILE *mf, char *data, int size);
 char *mfgets(char *s, int size, mFILE *mf);
 int mfflush(mFILE *mf);
 int mfprintf(mFILE *mf, char *fmt, ...);
