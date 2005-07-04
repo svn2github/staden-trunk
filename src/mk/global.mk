@@ -393,11 +393,11 @@ $(MUTBIN)/%.a: $(MUTSRC)/%.cpp
 
 # Automatically make $(MACHINE)-binaries output directories
 $(O)/.dir:
-	-mkdir $(O)
+	-@mkdir $(O)
 	touch $(O)/.dir
 
 $(L)/.dir:
-	-mkdir $(L)
+	-@mkdir $(L)
 	touch $(L)/.dir
 
 #
