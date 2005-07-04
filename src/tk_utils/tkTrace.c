@@ -226,6 +226,7 @@ static int TraceCmd(ClientData clientData, Tcl_Interp *interp,
     tracePtr->tracePos = NULL;
     tracePtr->tracePosE = NULL;
     tracePtr->visible = VisibilityFullyObscured;
+    tracePtr->yticks = 0;
 
     tracePtr->ps_options.orientation = NULL;
     tracePtr->ps_options.font_type = NULL;
@@ -1255,8 +1256,8 @@ static void get_pixmap(Display *d, Drawable w, DNATrace *tracePtr, int num,
 		       Tk_Window tkwin) {
     int ql, qr, l0, r0, t, sl, sr;
 
-    sl = ql = l0 = point_to_pixel(tracePtr, disp_offset);
-    sr = qr = r0 = point_to_pixel(tracePtr, disp_offset + disp_width);
+    sl = ql = l0 = point_to_pixel(tracePtr, disp_offset-.3);
+    sr = qr = r0 = point_to_pixel(tracePtr, disp_offset + disp_width+.3);
 
     if (tracePtr->read->leftCutoff) {
 	if (tracePtr->read->leftCutoff == tracePtr->Ned)
@@ -1266,7 +1267,7 @@ static void get_pixmap(Display *d, Drawable w, DNATrace *tracePtr, int num,
 		 trace_get_pos(tracePtr, tracePtr->read->leftCutoff)) / 2;
 
 	if (t > disp_offset) {
-	    ql = point_to_pixel(tracePtr, t);
+	    ql = point_to_pixel(tracePtr, t-.3);
 
 	    if (ql > r0)
 		ql = r0;
@@ -1280,7 +1281,7 @@ static void get_pixmap(Display *d, Drawable w, DNATrace *tracePtr, int num,
 	    t = ((trace_get_pos(tracePtr, tracePtr->read->rightCutoff-1) +
 		  trace_get_pos(tracePtr, tracePtr->read->rightCutoff-2)) / 2);
 	if (t < disp_offset + disp_width) {
-	    qr = point_to_pixel(tracePtr, t);
+	    qr = point_to_pixel(tracePtr, t+.3);
 
 	    if (qr < l0)
 		qr = l0;
@@ -1297,7 +1298,7 @@ static void get_pixmap(Display *d, Drawable w, DNATrace *tracePtr, int num,
 		 trace_get_pos(tracePtr, tracePtr->leftVector)) / 2;
 
 	if (t > disp_offset) {
-	    sl = point_to_pixel(tracePtr, t);
+	    sl = point_to_pixel(tracePtr, t-.3);
 
 	    if (sl > r0)
 		sl = r0;
@@ -1311,7 +1312,7 @@ static void get_pixmap(Display *d, Drawable w, DNATrace *tracePtr, int num,
 	    t = ((trace_get_pos(tracePtr, tracePtr->rightVector-1) +
 		  trace_get_pos(tracePtr, tracePtr->rightVector-2)) / 2);
 	if (t < disp_offset + disp_width) {
-	    sr = point_to_pixel(tracePtr, t);
+	    sr = point_to_pixel(tracePtr, t+.3);
 
 	    if (sr < l0)
 		sr = l0;

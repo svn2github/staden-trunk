@@ -140,6 +140,7 @@ typedef struct {
 				 * 1=filled chromatogram (not very useful)
 				 * 2=historgram (pyro)
 				 */
+    int yticks;			/* Horizontal lines in plot. zero => none */
 
 } DNATrace;
 

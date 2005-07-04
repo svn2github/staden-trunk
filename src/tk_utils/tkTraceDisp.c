@@ -172,6 +172,7 @@ static void trace_draw_hist(DNATrace *t, TRACE *tr, Display *d, Pixmap p,
 			    int max, GC gc, int x0, int xn, int yoff,
 			    int height, double ys, int off) {
     int i, h = height-1, o;
+    int x, y;
 
     if (xn <= 0)
 	return;
@@ -181,8 +182,79 @@ static void trace_draw_hist(DNATrace *t, TRACE *tr, Display *d, Pixmap p,
     if (t->read->maxTraceVal)
 	h -= h*(double)off/t->read->maxTraceVal;
     for (i = 0; i < xn; i++, tr++) {
+	x = (int)((x0 + i) * t->scale_x) - o;
+	y = h - ys * (*tr-off) + yoff;
+	XFillRectangle(d, p, gc, x-1, y, 3, h-y);
+    }
+
+}
+
+static void trace_draw_yticks(DNATrace *t, Display *d, Pixmap p, GC gc,
+			      int x0, int xn, int yoff, int height,
+			      double ys, int off) {
+    int i, h = height-1, o;
+    int x1, x2, y;
+
+    if (xn <= 0)
+	return;
+
+    o = t->disp_offset * t->scale_x;
+
+    y = h - ys * (0*t->yticks-off) + yoff;
+    x1 = (int)(x0 * t->scale_x) - o;
+    x2 = (int)((x0+xn) * t->scale_x) - o;
+    i = 0;
+    do {
+	XDrawLine(d, p, gc, x1, y, x2, y);
+	y = h - ys * (++i*t->yticks-off) + yoff;
+    } while (y >= 0);
+}
+
+static void trace_draw_pyro(DNATrace *t, Display *d, Pixmap p,
+			    int x0, int xn, int yoff,
+			    int height, double ys) {
+    int i, h = height-1, o;
+
+    if (xn <= 0)
+	return;
+
+    o = t->disp_offset * t->scale_x;
+    ys = 30;
+
+    printf("drawing %d to %d (%.*s)\n", x0, x0+xn, xn, &t->read->flow_order[x0]);
+
+    for (i = 0; i < xn; i++) {
 	int x = (int)((x0 + i) * t->scale_x) - o;
-	int y = h - ys * (*tr-off) + yoff;
+	int inrange = (x0+i >= 0 && x0+i < t->read->nflows);
+	float y =  inrange ? t->read->flow[x0+i] : 0;
+	char base = inrange ? t->read->flow_order[x0+i] : 0;
+	GC gc;
+	    
+	printf("%d/%d: %c %f\n", x0+i, x, base, y);
+	if (y < .05)
+	    y = .05;
+	y = h - ys * y + yoff;
+	switch (base) {
+	case 'A':
+	case 'a':
+	    gc = t->Agc;
+	    break;
+	case 'C':
+	case 'c':
+	    gc = t->Cgc;
+	    break;
+	case 'G':
+	case 'g':
+	    gc = t->Ggc;
+	    break;
+	case 'T':
+	case 't':
+	    gc = t->Tgc;
+	    break;
+	default:
+	    gc = t->CursorGC;
+	}
+	
 	XFillRectangle(d, p, gc, x, y, 3, h-y);
     }
 }
@@ -418,7 +490,12 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 	trace_draw_hist(t, &t->read->traceT[x0], d, p, m,
 			t->Tgc, x0, xn, yoff, height, yscale,
 			t->read->baseline);
+	/* trace_draw_pyro(t, d, p, x0, xn, yoff, height, yscale); */
     }
+
+    if (t->yticks)
+	trace_draw_yticks(t, d, p, t->CursorGC, x0, xn, yoff, height,
+			  yscale, t->read->baseline);
 
     if (t->show_edits == 0) {
 	int pos;
