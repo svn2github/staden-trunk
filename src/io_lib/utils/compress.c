@@ -24,7 +24,10 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+#ifdef HAVE_SYS_WAIT_H
+#    include <sys/wait.h>
+#    define DO_PIPE2
+#endif
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
@@ -179,6 +182,7 @@ char *memgzip(char *data, size_t size, size_t *cdata_size) {
 }
 #endif
 
+#ifdef DO_PIPE2
 /* ------------------------------------------------------------------------- */
 /* pipe2 - for piping via compression and decompression tools */
 
@@ -310,6 +314,7 @@ char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
     *outsize = output_used;
     return output;
 }
+#endif /* DO_PIPE2 */
 
 /* ------------------------------------------------------------------------- */
 /* The main external routines for io_lib */
@@ -444,12 +449,16 @@ int fcompress_file(mFILE *fp) {
     } else
 #endif
     {
+#ifdef DO_PIPE2
 	/*
 	 * We have to pipe the data via an external tool, avoiding temporary
 	 * files for speed.
 	 */
 	data = pipe2(magics[compression_used-1].compress,
 		     fp->data, fp->size, &size);
+#else
+	return -1;
+#endif
     }
 
     mfrecreate(fp, data, size);
@@ -535,7 +544,11 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
     } else
 #endif
     {
+#ifdef DO_PIPE2
 	udata = pipe2(magics[i].uncompress, fp->data, fp->size, &usize);
+#else
+	return NULL;
+#endif
     }
 
     compression_used = i+1;
