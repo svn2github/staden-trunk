@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <limits.h>
+#include "os.h"
 #ifdef TRACE_ARCHIVE
 #  include <sys/socket.h>
 #  include <netinet/in.h>
@@ -23,7 +24,6 @@
 #  define PATH_MAX 1024
 #endif
 
-#include "os.h"
 #include "open_trace_file.h"
 #include "misc.h"
 #include "tar_format.h"
@@ -495,6 +495,9 @@ FILE *open_trace_file(char *file, char *relative_to) {
     mFILE *mf = open_trace_mfile(file, relative_to);
     FILE *fp;
     char *fname;
+
+    if (!mf)
+	return NULL;
 
     if (mf->fp)
 	return mf->fp;
