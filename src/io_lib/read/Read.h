@@ -61,7 +61,9 @@
 
 /* Only add ZTR support if we've got ZLIB installed */
 #ifdef HAVE_ZLIB
-#  define IOLIB_ZTR
+#  ifndef IOLIB_ZTR
+#    define IOLIB_ZTR
+#  endif
 #endif
 
 /*
