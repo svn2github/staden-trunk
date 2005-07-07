@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign no-dependencies
 
-SUBDIRS = utils abi alf ctf exp_file plain scf ztr read progs
+SUBDIRS = read progs
 
 man_MANS = \
 	man/man3/exp2read.3 \
@@ -22,4 +22,35 @@ man_MANS = \
 	man/man3/write_scf.3 \
 	man/man3/write_scf_header.3
 
-EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap
+pkginclude_HEADERS = \
+	read/Read.h \
+	read/scf_extras.h \
+	read/translate.h
+	abi/abi.h \
+	abi/fpoint.h \
+	abi/seqIOABI.h \
+	alf/alf.h \
+	ctf/seqIOCTF.h \
+	exp_file/expFileIO.h \
+	plain/plain.h \
+	scf/scf.h \
+	utils/array.h \
+	utils/compress.h \
+	utils/error.h \
+	utils/mach-io.h \
+	utils/misc.h \
+	utils/open_trace_file.h \
+	utils/tar_format.h \
+	utils/traceType.h \
+	utils/xalloc.h \
+	utils/mFILE.h \
+	utils/stdio_hack.h \
+	utils/vlen.h \
+	utils/hash_table.h \
+	utils/os.h \
+	ztr/compression.h \
+	ztr/ztr.h
+
+EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap \
+	ztr/FORMAT
+
