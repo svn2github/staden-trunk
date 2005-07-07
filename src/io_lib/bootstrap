@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# If this doesn't work, you may wish to try running "autoreconf" instead.
+
+set -x
+rm -rf install-sh missing mkinstalldirs depcomp aclocal.m4 config.cache config.log config.status configure autom4te.cache config.h.in
+#libtoolize --force --copy && \
+aclocal && \
+autoheader && \
+automake --foreign --add-missing --copy && \
+autoconf
