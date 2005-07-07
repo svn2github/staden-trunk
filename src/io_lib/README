@@ -8,6 +8,7 @@ data loaded into memory. It has been compiled and tested on:
 
 Compaq Tru64 Unix 5.1B (formerly Digital Unix)
 Debian GNU/Linux 3.1 (2.6.8 kernel)
+Windows XP Professional
 
 In addition to the above, the code has previously (but not tested with this
 release) been compiled and used on MacOS X, Solaris, Irix and MS
