@@ -136,8 +136,8 @@ Read *mfread_reading(mFILE *fp, char *fn, int format) {
      * told otherwise, and it can only be told otherwise by using non-ansi
      * windows-specific function calls.
      */
-    if (format != TT_EXP && format != TT_PLN)
-	_setmode(_fileno(fp), _O_BINARY);
+    if (format != TT_EXP && format != TT_PLN && fp->fp)
+	_setmode(_fileno(fp->fp), _O_BINARY);
 #endif
 
     if (format == TT_ANY) {
@@ -258,8 +258,8 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
      * told otherwise, and it can only be told otherwise by using non-ansi
      * windows-specific function calls.
      */
-    if (format != TT_EXP && format != TT_PLN)
-	_setmode(_fileno(fp), _O_BINARY);
+    if (format != TT_EXP && format != TT_PLN && fp->fp)
+	_setmode(_fileno(fp->fp), _O_BINARY);
 #endif
 
     switch (format) {
@@ -380,7 +380,7 @@ int write_reading(char *fn, Read *read, int format) {
  * Old style stub interfaces implemented simply as redirection through
  * fread_reading and frwrite_reading.
  */
-
+#ifdef IO_LIB_ABI
 Read *fread_abi(FILE *fp) {
     return fread_reading(fp, NULL, TT_ABI);
 }
@@ -388,7 +388,9 @@ Read *fread_abi(FILE *fp) {
 int fwrite_abi(FILE *fp, Read *read) {
     return fwrite_reading(fp, read, TT_ABI);
 }
+#endif
 
+#ifdef IO_LIB_ALF
 Read *fread_alf(FILE *fp) {
     return fread_reading(fp, NULL, TT_ALF);
 }
@@ -396,7 +398,9 @@ Read *fread_alf(FILE *fp) {
 int fwrite_alf(FILE *fp, Read *read) {
     return fwrite_reading(fp, read, TT_ALF);
 }
+#endif
 
+#ifdef IO_LIB_CTF
 Read *fread_ctf(FILE *fp) {
     return fread_reading(fp, NULL, TT_CTF);
 }
@@ -404,7 +408,9 @@ Read *fread_ctf(FILE *fp) {
 int fwrite_ctf(FILE *fp, Read *read) {
     return fwrite_reading(fp, read, TT_CTF);
 }
+#endif
 
+#ifdef IO_LIB_PLN
 Read *fread_pln(FILE *fp) {
     return fread_reading(fp, NULL, TT_PLN);
 }
@@ -412,7 +418,9 @@ Read *fread_pln(FILE *fp) {
 int fwrite_pln(FILE *fp, Read *read) {
     return fwrite_reading(fp, read, TT_PLN);
 }
+#endif
 
+#ifdef IO_LIB_ZTR
 ztr_t *fread_ztr(FILE *fp) {
     ztr_t *z;
     mFILE *mf;
@@ -436,7 +444,9 @@ int fwrite_ztr(FILE *fp, ztr_t *z) {
     mfclose(mf);
     return r;
 }
+#endif
 
+#ifdef IO_LIB_SCF
 Scf *fread_scf(FILE *fp) {
     Scf *s;
     mFILE *mf;
@@ -460,7 +470,9 @@ int fwrite_scf(Scf *s, FILE *fp) {
     mfclose(mf);
     return r;
 }
+#endif
 
+#ifdef IO_LIB_EXP
 Exp_info *exp_fread_info(FILE *fp) {
     Exp_info *e;
     mFILE *mf;
@@ -482,4 +494,4 @@ void exp_print_file(FILE *fp, Exp_info *e) {
     exp_print_mfile(mf, e);
     mfclose(mf);
 }
-
+#endif
