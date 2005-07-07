@@ -40,8 +40,6 @@
 
 #include "compress.h"
 
-#define HAVE_ZLIB
-
 #ifdef HAVE_ZLIB
 #include "zlib.h"
 

@@ -17,6 +17,13 @@
 #include <limits.h>
 #include <inttypes.h>
 
+/*
+ * Emulation of config.h stuff when not using autoconf
+ */
+#ifndef HAVE_CONFIG_H
+#    define HAVE_ZLIB
+#    define HAVE_SYS_WAIT_H
+#endif
 
 /*
  *-----------------------------------------------------------------------------
@@ -89,6 +96,7 @@ typedef int mode_t;
 #define NOLOCKF
 #define NOSTRCASECMP
 #define NO_STRPTIME
+#undef HAVE_SYS_WAIT_H
 #endif
 
 
@@ -103,6 +111,7 @@ typedef int mode_t;
 #define NO_STRPTIME
 #define sysconf(x) 512
 #define ftruncate(fd,len) _chsize(fd,len)
+#undef HAVE_SYS_WAIT_H
 #endif
 
 /*
