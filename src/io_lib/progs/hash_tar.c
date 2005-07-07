@@ -2,6 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "tar_format.h"
 #include "hash_table.h"
 
@@ -247,6 +248,9 @@ int main(int argc, char **argv) {
    
     HashTableStats(hf->h, stderr);
     hf->archive = strdup(archive);
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
     HashFileSave(hf, stdout);
     HashFileDestroy(hf);
 
