@@ -4,9 +4,11 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
 
+#include "os.h"
 #include "mFILE.h"
 #include "vlen.h"
 
@@ -38,6 +40,10 @@ static char *mfload(FILE *fp, const char *fn, size_t *size) {
     char *data = NULL;
     size_t allocated = 0, used = 0;
     int bufsize = 8192;
+
+#ifdef _WIN32
+    _setmode(_fileno(fp), _O_BINARY);
+#endif
 
     if (fn && -1 != stat(fn, &sb)) {
 	data = malloc(allocated = sb.st_size);
