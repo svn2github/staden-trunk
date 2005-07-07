@@ -25,7 +25,7 @@ man_MANS = \
 pkginclude_HEADERS = \
 	read/Read.h \
 	read/scf_extras.h \
-	read/translate.h
+	read/translate.h \
 	abi/abi.h \
 	abi/fpoint.h \
 	abi/seqIOABI.h \
