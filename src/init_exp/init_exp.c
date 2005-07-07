@@ -12,6 +12,7 @@
 #include "errno.h"
 #include "misc.h"
 #include "open_trace_file.h"
+#include "mFILE.h"
 
 double avg_qual(Read *r) {
     double aq = 0.0;
@@ -53,7 +54,7 @@ double avg_qual(Read *r) {
     return aq;
 }
 
-int convert(char *file, int format, FILE *ofp, char *name, int output_conf) {
+int convert(char *file, int format, mFILE *ofp, char *name, int output_conf) {
     Read *r;
     Exp_info *e;
     char buf[50];
@@ -86,7 +87,7 @@ int convert(char *file, int format, FILE *ofp, char *name, int output_conf) {
 
     sprintf(buf, "%f", aq = avg_qual(r));
     exp_set_entry(e, EFLT_AQ, buf);
-    exp_print_file(ofp, e);
+    exp_print_mfile(ofp, e);
 
     if (output_conf && aq != 0) {
         char *cstr;
@@ -132,6 +133,8 @@ int convert(char *file, int format, FILE *ofp, char *name, int output_conf) {
     read_deallocate(r);
     exp_destroy_info(e);
 
+    mfflush(ofp);
+
     return 0;
 }
 
@@ -146,7 +149,7 @@ void usage(void) {
 int main(int argc, char **argv) {
     int a = 1;
     int format = TT_ANY;
-    FILE *ofp = stdout;
+    mFILE *ofp = mstdout();
     char *name = NULL, *oname = NULL;
     int output_conf = 0;
 
@@ -175,7 +178,7 @@ int main(int argc, char **argv) {
             if (a == argc)
                 usage();
 
-            ofp = fopen(oname = argv[++a], "wb");
+            ofp = mfopen(oname = argv[++a], "wb");
             if (NULL == ofp) {
                 perror(argv[a]);
                 return 1;
