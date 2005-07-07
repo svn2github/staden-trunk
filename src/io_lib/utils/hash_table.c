@@ -622,7 +622,7 @@ void HashTableStats(HashTable *h, FILE *fp) {
 void HashFileSave(HashFile *hf, FILE *fp) {
     int i;
     HashItem *hi;
-    uint64_t *bucket_pos;
+    uint32_t *bucket_pos;
     uint64_t offset = 0;
     HashTable *h = hf->h;
 
@@ -637,7 +637,7 @@ void HashFileSave(HashFile *hf, FILE *fp) {
 	offset += 12;
     for (i = 0; i < hf->nfooters; i++)		/* footers */
 	offset += 12;
-    bucket_pos = (uint64_t *)calloc(h->nbuckets, sizeof(uint64_t));
+    bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
     for (i = 0; i < h->nbuckets; i++) {
 	bucket_pos[i] = offset;
 
@@ -745,7 +745,7 @@ HashFile *HashFileLoad(FILE *fp) {
     HashTable *h;
     HashItem *hi;
     HashFile *hf;
-    uint64_t *bucket_pos;
+    uint32_t *bucket_pos;
     unsigned char *htable;
     int htable_pos;
     int fnamelen;
@@ -762,7 +762,7 @@ HashFile *HashFileLoad(FILE *fp) {
     hf->hh.nbuckets = be_int4(hf->hh.nbuckets);
     hf->hh.size = be_int4(hf->hh.size);
     h = HashTableCreate(hf->hh.nbuckets, hf->hh.hfunc);
-    bucket_pos = (uint64_t *)calloc(h->nbuckets, sizeof(uint64_t));
+    bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
 
     /* Load the archive filename */
     fnamelen = fgetc(fp);
