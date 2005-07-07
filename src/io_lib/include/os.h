@@ -97,7 +97,7 @@ typedef int mode_t;
  */
 #if defined(__MINGW32__)
 #define SP_LITTLE_ENDIAN
-#define mkdir(filename,mode) mkdir((filename))
+/* #define mkdir(filename,mode) mkdir((filename)) */
 #define NOPIPE
 #define NOLOCKF
 #define NO_STRPTIME
