@@ -110,9 +110,11 @@ void g_shutdown_database_(GDB *gdb)
 
     /* Save the freetree, as long as we opened in read-write mode */
     if (g = gdb->gfile) {
+#ifndef _WIN32
 	/* LOW LEVEL IO HERE */
 	int mode = fcntl(g->fdaux, F_GETFL, 0);
 	if ((mode & O_ACCMODE) & O_RDWR) {
+#endif
 	    int recsize;
 
 	    /* LOW LEVEL IO HERE */
@@ -128,7 +130,9 @@ void g_shutdown_database_(GDB *gdb)
 	    else
 		freetree_save_int8(g->freetree, g->fdaux, g->header.last_time);
 #endif
+#ifndef _WIN32
 	}
+#endif
     }
 
     g_free_gdb(gdb);
