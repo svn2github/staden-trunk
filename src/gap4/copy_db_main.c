@@ -8,6 +8,15 @@
 #include "licence.h"
 #include "gap-create.h"
 
+#ifdef _MSC_VER
+#  define DLL_IMPORT __declspec(dllimport)
+#else
+#  define DLL_IMPORT
+#endif
+ 
+extern DLL_IMPORT char *optarg;
+extern DLL_IMPORT int optind;
+
 static void usage(void) {
     fprintf(stderr, "copy_db [-v] [-f] [-b 32/64] [-T] source ... destination\n");
     fprintf(stderr, "    -v     verbose\n");
