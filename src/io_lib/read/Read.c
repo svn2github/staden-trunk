@@ -380,7 +380,7 @@ int write_reading(char *fn, Read *read, int format) {
  * Old style stub interfaces implemented simply as redirection through
  * fread_reading and frwrite_reading.
  */
-#ifdef IO_LIB_ABI
+#ifdef IOLIB_ABI
 Read *fread_abi(FILE *fp) {
     return fread_reading(fp, NULL, TT_ABI);
 }
@@ -390,7 +390,7 @@ int fwrite_abi(FILE *fp, Read *read) {
 }
 #endif
 
-#ifdef IO_LIB_ALF
+#ifdef IOLIB_ALF
 Read *fread_alf(FILE *fp) {
     return fread_reading(fp, NULL, TT_ALF);
 }
@@ -400,7 +400,7 @@ int fwrite_alf(FILE *fp, Read *read) {
 }
 #endif
 
-#ifdef IO_LIB_CTF
+#ifdef IOLIB_CTF
 Read *fread_ctf(FILE *fp) {
     return fread_reading(fp, NULL, TT_CTF);
 }
@@ -410,7 +410,7 @@ int fwrite_ctf(FILE *fp, Read *read) {
 }
 #endif
 
-#ifdef IO_LIB_PLN
+#ifdef IOLIB_PLN
 Read *fread_pln(FILE *fp) {
     return fread_reading(fp, NULL, TT_PLN);
 }
@@ -420,7 +420,7 @@ int fwrite_pln(FILE *fp, Read *read) {
 }
 #endif
 
-#ifdef IO_LIB_ZTR
+#ifdef IOLIB_ZTR
 ztr_t *fread_ztr(FILE *fp) {
     ztr_t *z;
     mFILE *mf;
@@ -446,7 +446,7 @@ int fwrite_ztr(FILE *fp, ztr_t *z) {
 }
 #endif
 
-#ifdef IO_LIB_SCF
+#ifdef IOLIB_SCF
 Scf *fread_scf(FILE *fp) {
     Scf *s;
     mFILE *mf;
@@ -472,7 +472,7 @@ int fwrite_scf(Scf *s, FILE *fp) {
 }
 #endif
 
-#ifdef IO_LIB_EXP
+#ifdef IOLIB_EXP
 Exp_info *exp_fread_info(FILE *fp) {
     Exp_info *e;
     mFILE *mf;
