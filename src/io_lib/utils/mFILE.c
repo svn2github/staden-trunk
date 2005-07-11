@@ -312,6 +312,9 @@ size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
     len = size * nmemb <= mf->size - mf->offset
 	? size * nmemb
 	: mf->size - mf->offset;
+    if (!size)
+	return 0;
+
     memcpy(cptr, &mf->data[mf->offset], len);
     mf->offset += len;
     cptr += len;
