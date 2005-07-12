@@ -767,7 +767,7 @@ proc emboss_init {} {
 	    set env(EMBOSS_DATA) $dir
 	}
     }
-
+    regsub -all {\\} $env(EMBOSS_DATA) / env(EMBOSS_DATA)
    
     if {![info exists env(EMBOSS_DATA)] || $env(EMBOSS_DATA) == ""} {
         set ::EMBOSS::init 0
