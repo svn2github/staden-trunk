@@ -374,12 +374,14 @@ ztr_t *fread_ztr(FILE *fp) {
 	case ZTR_TYPE_FLWC:
 	    break;
 
+	    /*
 	default:
 	    fprintf(stderr, "Unknown chunk type '%s': skipping\n",
 		    ZTR_BE2STR(chunk->type,str));
 	    fseek(fp, chunk->dlength, SEEK_CUR);
 	    xfree(chunk);
 	    continue;
+	    */
 	}
 
 	chunk->data = (char *)xmalloc(chunk->dlength);
