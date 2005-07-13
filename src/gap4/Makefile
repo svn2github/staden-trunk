@@ -232,7 +232,7 @@ DEPEND_OBJ = $(GAPOBJS) $(COPYDBOBJS)
 
 install:
 	cp $(O)/copy_db $(INSTALLBIN)
-	cp gap4 $(INSTALLSCRIPT)
+	-cp gap4 $(INSTALLSCRIPT)
 	-mkdir $(INSTALLLIB)/gap
 	cp *.tcl tclIndex $(INSTALLLIB)/gap
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)

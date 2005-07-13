@@ -45,7 +45,7 @@ distsrc: distsrc_dirs
 
 install:
 #	cp $(PROGS) $(INSTALLBIN)
-	cp trev $(INSTALLSCRIPT)
+	-cp trev $(INSTALLSCRIPT)
 	-mkdir $(INSTALLLIB)/trev
 	cp trev.tcl $(INSTALLLIB)/trev
 

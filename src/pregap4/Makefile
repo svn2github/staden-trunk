@@ -32,7 +32,7 @@ distsrc:
 	cp naming_schemes/*.p4t $(DIRNAME)/naming_schemes
 
 install:
-	cp pregap4 $(INSTALLBIN)/pregap4
+	-cp pregap4 $(INSTALLBIN)/pregap4
 	-mkdir $(INSTALLLIB)/pregap4
 	cp *.tcl widget_licence tclIndex pregap4 $(INSTALLLIB)/pregap4
 	-mkdir $(INSTALLLIB)/pregap4/modules

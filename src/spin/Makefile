@@ -96,7 +96,7 @@ distsrc: distsrc_dirs
 		$(DIRNAME)
 
 install:
-	cp spin $(INSTALLSCRIPT)
+	-cp spin $(INSTALLSCRIPT)
 	-mkdir $(INSTALLLIB)/spin
 	cp *.tcl *.itk tclIndex $(INSTALLLIB)/spin
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
