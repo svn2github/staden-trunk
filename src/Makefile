@@ -116,8 +116,12 @@ distunix:
 
 distwindows:
 	-mkdir $(DIST)/lib/$(MACHINE)-binaries 
-	-mkdir $(DIST)/src/composition/windows-binaries
-	-cp windows/run/Release/sprun.exe $(DIST)
+	-cp lib/windows-binaries/* $(DIST)/lib/windows-binaries
+	-cp windows/Release/sprun.exe $(DIST)/windows-bin/gap.exe
+	-cp windows/Release/sprun.exe $(DIST)/windows-bin/pregap4.exe
+	-cp windows/Release/sprun.exe $(DIST)/windows-bin/trev.exe
+	-cp windows/Release/sprun.exe $(DIST)/windows-bin/spin.exe
+	-cp tk8.4.6/win/wish84.exe $(DIST)/windows-bin/wish.exe
 	-cp trev/trev.bat $(DIST)/windows-bin
 	-cp gap4/gap4.bat $(DIST)/windows-bin
 	-cp spin/spin.bat $(DIST)/windows-bin
