@@ -78,7 +78,7 @@ int expandpath(char *namein, char *nameout) {
     char tempbuf[FILENAME_MAX+1], tempb[FILENAME_MAX+1];
     char *tokptr, *strptr = tempbuf, *slash;
     char *nameoutp = nameout;
-    int len = FILENAME_MAX, tmp;
+    int len = FILENAME_MAX, tmp, i;
 
     if ( namein == NULL ) return 0;
 
@@ -89,10 +89,9 @@ int expandpath(char *namein, char *nameout) {
     /* nasty special case: namein starts with  "/" and it
        gets lost so stick it in nameout */
     
-    if ( namein[0] == '/' ) {
-      strcpy ( nameout, "/");
-      nameoutp++;
-      len--;
+    for (i = 0; namein[i] == '/'; i++) {
+	*nameoutp++ = '/';
+	len--;
     }
     while ( len > 0 && ( tokptr = strtok ( strptr, "/" )) ) {
 	if ( expandname ( tempb, tokptr ) == 0 ) return 0;
