@@ -122,6 +122,7 @@ distwindows: distcommon
 	cd course; $(MAKE) $(SUBFLAGS) distwindows
 	cd doc; $(MAKE) $(SUBFLAGS) distwindows
 	cd src; $(MAKE) $(SUBFLAGS) distwindows
+	cp LICENCE.rtf $(DIST)
 
 #
 # Creates a distribution of the source code suitable for sending to third
