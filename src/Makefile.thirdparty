@@ -6,7 +6,7 @@
 # Solaris 9 and SUN Forte users. Search for SOLARIS9 in this file.
 #
 
-all:	zlib png tcl tk itcl iwidgets
+all:	zlib png tcl tk itcl itk iwidgets
 
 # Where to obtain distributions from:
 WGET=wget
@@ -117,7 +117,7 @@ $(PNG_SRC).tar.gz:
 
 #-----------------------------------------------------------------------------
 # Tcl
-TCL_VERS=8.4.6
+TCL_VERS=8.4.11
 TCL_SRC=tcl$(TCL_VERS)
 
 .PHONY: tcl tcl-install tcl-build
@@ -151,7 +151,7 @@ $(TCL_SRC)-src.tar.gz:
 
 #-----------------------------------------------------------------------------
 # Tk
-TK_VERS=8.4.6
+TK_VERS=8.4.11
 TK_SRC=tk$(TK_VERS)
 
 .PHONY: tk tk-install tk-build
@@ -184,8 +184,8 @@ $(TK_SRC)-src.tar.gz:
 
 #-----------------------------------------------------------------------------
 # Incr Tcl
-ITCL_VERS=3.3cvs
-ITCL_SRC=itcl-$(ITCL_VERS)
+ITCL_VERS=3.3
+ITCL_SRC=itcl$(ITCL_VERS)
 
 .PHONY: itcl itcl-install itcl-build
 
@@ -194,7 +194,7 @@ itcl: itcl-build itcl-install
 itcl-install: libdir $(L)/.itcl
 
 $(L)/.itcl: $(ITCL_SRC)/.built-$(O)
-	cp $(ITCL_SRC)/*/*.so $(L)
+	cp $(ITCL_SRC)/*.so $(L)
 	touch $@
 
 itcl-build: $(ITCL_SRC)/.built-$(O)
@@ -202,15 +202,49 @@ itcl-build: $(ITCL_SRC)/.built-$(O)
 $(ITCL_SRC)/.built-$(O): $(ITCL_SRC)/.unpacked
 	-(cd $(ITCL_SRC); $(MAKE) distclean)
 	cd $(ITCL_SRC); \
-	sh ./configure --enable-shared --with-itcl=`pwd`/itcl; \
+	sh ./configure --enable-shared; \
 	make
 	touch $@
 
-$(ITCL_SRC)/.unpacked:
-	echo "/1 :pserver:anonymous@cvs.sourceforge.net:2401/cvsroot/incrtcl A" > .cvspass; \
-	CVS_PASSFILE=.cvspass cvs -z3 -d:pserver:anonymous@cvs.sourceforge.net:/cvsroot/incrtcl co -D 2003-12-23 incrTcl
-	mv incrTcl $(ITCL_SRC)
+$(ITCL_SRC)/.unpacked: $(ITCL_SRC).tar.gz
+	gzip -cd $< | tar xf -
+	ln -s $(ITCL_SRC) itcl
 	touch $@
+
+$(ITCL_SRC).tar.gz:
+	$(WGET) $(SFMIRROR)/incrtcl/$(ITCL_SRC).tar.gz
+
+#-----------------------------------------------------------------------------
+# Incr Tk
+ITK_VERS=3.3
+ITK_SRC=itk$(ITK_VERS)
+
+.PHONY: itk itk-install itk-build
+
+itk: itk-build itk-install
+
+itk-install: libdir $(L)/.itk
+
+$(L)/.itk: $(ITK_SRC)/.built-$(O)
+	cp $(ITK_SRC)/*.so $(L)
+	touch $@
+
+itk-build: $(ITK_SRC)/.built-$(O)
+
+$(ITK_SRC)/.built-$(O): $(ITK_SRC)/.unpacked
+	-(cd $(ITK_SRC); $(MAKE) distclean)
+	cd $(ITK_SRC); \
+	sh ./configure --enable-shared --with-itcl=../$(ITCL_SRC); \
+	make
+	touch $@
+
+$(ITK_SRC)/.unpacked: $(ITK_SRC).tar.gz
+	gzip -cd $< | tar xf -
+	ln -s $(ITK_SRC) itk
+	touch $@
+
+$(ITK_SRC).tar.gz:
+	$(WGET) $(SFMIRROR)/incrtcl/$(ITK_SRC).tar.gz
 
 #-----------------------------------------------------------------------------
 # Iwidgets
@@ -224,10 +258,8 @@ iwidgets: iwidgets-build iwidgets-install
 iwidgets-install: libdir $(L)/.iwidgets
 
 $(L)/.iwidgets: $(IWIDGETS_SRC)/.built
-#	cd $(IWIDGETS_SRC); \
-#	make install-libraries
-#	-rm lib/iwidgets
-#	mv lib/$(IWIDGETS_SRC) lib/iwidgets
+	cd $(IWIDGETS_SRC); \
+	make install-libraries
 	touch $@
 
 iwidgets-build: $(IWIDGETS_SRC)/.built
@@ -235,14 +267,18 @@ iwidgets-build: $(IWIDGETS_SRC)/.built
 $(IWIDGETS_SRC)/.built: $(IWIDGETS_SRC)/.unpacked
 	-(cd $(IWIDGETS_SRC); $(MAKE) distclean)
 	cd $(IWIDGETS_SRC); \
-	touch ../$(ITCL_SRC)/config/mkinstalldirs; \
-	./configure --enable-shared --with-itcl=../$(ITCL_SRC) --prefix=../..; \
+	autoconf; \
+	./configure --enable-shared --prefix=`pwd | sed 's:\(.*\)/[^/]*/[^/]*:\1:'`; \
 	make
 	touch $@
 
 $(IWIDGETS_SRC)/.unpacked: $(IWIDGETS_SRC).tar.gz
 	gzip -cd $< | tar xf -
 	ln -s $(IWIDGETS_SRC) iwidgets
+	@# Nasty! Apply a patch to fix the configure process
+	wget -O $(IWIDGETS_SRC)/patch 'http://sourceforge.net/tracker/download.php?group_id=13244&atid=313244&file_id=141316&aid=1234710'; 
+	cd $(IWIDGETS_SRC); (cat patch | sed 's:\*/:*/.:'; echo) | patch
+	cd $(IWIDGETS_SRC); chmod a+xr install-sh
 	touch $@
 
 $(IWIDGETS_SRC).tar.gz:
