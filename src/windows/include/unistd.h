@@ -8,10 +8,12 @@
  */
 
 /* access */
-#define access _access
-#define F_OK 0
-#define X_OK 1 /* not available */
-#define R_OK 2
-#define W_OK 4
+/* #define access _access */
+#ifndef F_OK
+#  define F_OK 0
+#  define X_OK 1 /* not available */
+#  define R_OK 2
+# define W_OK 4
+#endif
 
 #endif
