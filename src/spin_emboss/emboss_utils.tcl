@@ -11,6 +11,7 @@ namespace eval ::EMBOSS {
 # If this is not the case then enclose the children within a single frame.
 proc resizebook {book} {
     update idletasks
+    update
     set bd [expr {2*[$book cget -borderwidth]}]
     set maxheight 0
     set maxwidth [expr {int(ceil([lindex [[$book component tabset] bbox] 2]))}]
@@ -767,12 +768,12 @@ proc emboss_init {} {
 	    set env(EMBOSS_DATA) $dir
 	}
     }
-    regsub -all {\\} $env(EMBOSS_DATA) / env(EMBOSS_DATA)
-   
+  
     if {![info exists env(EMBOSS_DATA)] || $env(EMBOSS_DATA) == ""} {
         set ::EMBOSS::init 0
     } else {
         set ::EMBOSS::init 4
+	regsub -all {\\} $env(EMBOSS_DATA) / env(EMBOSS_DATA)
     }
 }
 
