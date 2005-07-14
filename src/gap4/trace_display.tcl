@@ -654,8 +654,9 @@ proc new_trace_create2 {w e title allow_diff} {
 	"$w.info.l configure -text \[%W base_info @%x\]"
 
     # Mouse-wheel support
+    focus $tf_r.trace
     bind $tf_r.trace <MouseWheel> \
-	"$w.traces.c yview scroll \[expr {%D/120}\] units"
+	"$w.traces.c yview scroll \[expr {-(%D)/120}\] units"
     if {[tk windowingsystem] eq "x11"} {
 	foreach c {trace name} {
 	    bind $tf_r.$c <4> "$w.traces.c yview scroll -1 units"

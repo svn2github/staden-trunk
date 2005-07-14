@@ -2824,8 +2824,8 @@ catch {bind Editor <Control-Key-Begin>	{%W read_start2}}
 catch {bind Editor <Control-Key-End>	{%W read_end2}}
 
 # Mouse wheel support
-bind Editor <MouseWheel>          {editor_mouse_wheel %W %D normal}
-bind Editor <Shift-MouseWheel>    {%W xview scroll %D units}
+bind Editor <MouseWheel>          {editor_mouse_wheel %W [expr {-(%D)}] normal}
+bind Editor <Shift-MouseWheel>    {%W xview scroll [expr {-(%D)}] units}
 if {[tk windowingsystem] eq "x11"} {
     bind Editor <Control-4>       {editor_mouse_wheel %W -200 slow}
     bind Editor <4>               {editor_mouse_wheel %W -200 normal}
