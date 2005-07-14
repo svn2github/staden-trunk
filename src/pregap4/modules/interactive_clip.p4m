@@ -38,17 +38,17 @@ proc run {files} {
 
     if {$tcl_platform(os) == "Darwin" && 0} {
         # Disabled for now as the above is only needed in aqua l&f
-	if {[catch {set fd [open "| [list $env(STADENROOT)/Applications/Trev.app/Contents/MacOS/launcher] -pregap_mode -editscf -fofn $fofn.tmp"]} var]} {
+	if {[catch {set fd [open "| [list $env(STADENROOT)/Applications/Trev.app/Contents/MacOS/launcher] -pregap_mode -editscf -fofn [list $fofn.tmp]"]} var]} {
 	    append report "ERR: trev failed with error message '$var'.\n"
 	    return $files
 	}
     } elseif {$tcl_platform(platform) == "windows"} {
-	if {[catch {set fd [open "|wish [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn $fofn.tmp"]} var]} {
+	if {[catch {set fd [open "|wish [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
 	    append report "ERR: trev failed with error message '$var'.\n"
 	    return $files
 	}
     } else {
-	if {[catch {set fd [open "|stash [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn $fofn.tmp"]} var]} {
+	if {[catch {set fd [open "|stash [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
 	    append report "ERR: trev failed with error message '$var'.\n"
 	    return $files
 	}
