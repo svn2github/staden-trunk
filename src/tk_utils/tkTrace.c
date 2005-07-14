@@ -2067,7 +2067,16 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
      * The pixmap is in the server-side. Create a client side XImage and
      * copy the pixmap over to it.
      */
+#ifdef _WIN32
+    /*
+     * Tk's tkWinImage.c implementation of XGetImage only supports
+     * plane_mask == 1. Consequently we have to put up with black and
+     * white images under windows.
+     */
+    i = XGetImage(disp, d, xoff, yoff, width, height, 1, XYPixmap);
+#else
     i = XGetImage(disp, d, xoff, yoff, width, height, AllPlanes, XYPixmap);
+#endif
     if (!i)
 	goto error;
 
