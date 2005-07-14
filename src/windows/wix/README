@@ -1,0 +1,8 @@
+1. Produce the distribution directory
+
+2. perl /c/jkb/staden/src/windows/wix/generate_wxs.pl /c/jkb/staden/distrib/windows-rel-1-5-3 > staden_files.wxi
+
+3. DISTROOT=/c/jkb/staden/distrib/windows-rel-1-5-3 candle staden.wxs
+
+4. light staden.wixobj
+
