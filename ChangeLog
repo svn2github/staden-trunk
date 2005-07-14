@@ -1,3 +1,209 @@
+2005-07-14  jkbonfield  <jkbonfield>
+
+	* src/pregap4/modules/interactive_clip.p4m:
+	(08:33:57) Fix for when the file of filenames contains space, so
+	pregap4 works in the default windows install path. 
+
+	* src/mutscan/main.cpp:
+	(11:34:57) Fixed a bug in filter_tags. It now protects against
+	MUT/HET tags being outside of the MCOV tag range. 
+
+	* Version:
+	(13:51:17) *** empty log message *** 
+
+	* src/Makefile.thirdparty:
+	(13:52:37) Updated to use tcl/tk 8.4.11 and a more official
+	itcl/itk release (instead of a dated CVS checkout). 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/trace_display.tcl:
+	(13:53:08) Fixed MS Windows mouse wheel support 
+
+	* src/io_lib/exp_file/expFileIO.c:
+	(13:53:45) Commenting only 
+
+	* src/io_lib/read/Read.c,
+	* src/io_lib/utils/mFILE.c:
+	(13:54:54) mfopen now honours binary verses ascii differences (and
+	so updated Read.c calls accordingly) so that Windows works better.
+	
+	Also improved append mode of opening. 
+
+	* src/spin_emboss/emboss_utils.tcl:
+	(13:56:02) Added an update call to resizebook; fixes dialogue size
+	issues on Windows.
+	
+	Moved EMBOSS_DATA \ for / fix so that it doesn't error when
+	EMBOSS_DATA is undefined. 
+
+	* src/tk_utils/tkTrace.c:
+	(13:57:16) Use XGetImage with plane_mask as 1 (instead of
+	AllPlanes) when on Windows. It gives b/w images, but prevents error
+	dialogues commenting on "not implemented". 
+
+	* src/windows/include/unistd.h:
+	(13:58:03) Newer mingw seems better behaved, so the definitions of
+	access *_OK macros are not protected around #ifdefs. 
+
+2005-07-13  jkbonfield  <jkbonfield>
+
+	* Makefile:
+	(08:33:12) Added LICENCE.rtf to distwindows 
+
+	* src/Makefile:
+	(08:38:54) distwindows updates 
+
+	* src/copy_reads/Makefile,
+	* src/gap4/Makefile:
+	(08:40:18) Minor updates so that "make install" works on windows;
+	basically allow for errors to be ignored. 
+
+	* src/pregap4/Makefile,
+	* src/spin/Makefile,
+	* src/spin2/Makefile,
+	* src/trev/Makefile:
+	(08:40:19) Minor updates so that "make install" works on windows;
+	basically allow for errors to be ignored. 
+
+	* src/io_lib/ztr/ztr.c:
+	(08:41:16) Removed the warning for unknown chunk types. It now just
+	silently stores them in memory. 
+
+	* src/Misc/getfile.c:
+	(11:20:08) Fixed expandpath() to not change //foo/bar to /foo/bar
+	so that UNC pathnames work under Windows. 
+
+2005-07-12  jkbonfield  <jkbonfield>
+
+	* src/spin_emboss/emboss_utils.tcl:
+	(11:13:41) Replace \ with / in EMBOSS_DATA path so that the
+	environment set up by the default installation of EMBOSSwin works
+	with Spin. 
+
+2005-07-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/mFILE.c:
+	(14:01:50) Fixed divide-by-zero buf when calling mfread for zero
+	bytes. 
+
+	* src/io_lib/read/Read.c:
+	(16:07:38) Fixed IO_LIB_* macros to be IOLIB_* macros. 
+
+	* src/gap4/copy_db_main.c:
+	(16:13:28) Added optarg/optind DLL waffle for windows. 
+
+2005-07-08  jkbonfield  <jkbonfield>
+
+	* src/g/g-db.c:
+	(16:01:49) Put _WIN32 checks around the fcntl call in
+	g_shutdown_database_. 
+
+	* src/mk/global.mk:
+	(16:27:58) Removed rogue ^M 
+
+2005-07-07  jkbonfield  <jkbonfield>
+
+	* src/io_lib/Makefile.am:
+	* src/io_lib/progs/Makefile.am:
+	* src/io_lib/configure.in:
+	(09:02:07) Removed use of libtool. 
+
+	* src/io_lib/Attic/Makefile.in,
+	* src/io_lib/abi/Attic/Makefile.in:
+	* src/io_lib/alf/Attic/Makefile.in,
+	* src/io_lib/ctf/Attic/Makefile.in:
+	* src/io_lib/exp_file/Attic/Makefile.in,
+	* src/io_lib/plain/Attic/Makefile.in:
+	* src/io_lib/progs/Attic/Makefile.in,
+	* src/io_lib/read/Attic/Makefile.in,
+	* src/io_lib/scf/Attic/Makefile.in:
+	* src/io_lib/utils/Attic/Makefile.in,
+	* src/io_lib/ztr/Attic/Makefile.in:
+	* src/io_lib/Attic/config.h.in:
+	* src/io_lib/Attic/configure:
+	* src/io_lib/Attic/depcomp,
+	* src/io_lib/Attic/install-sh,
+	* src/io_lib/Attic/ltmain.sh,
+	* src/io_lib/Attic/missing:
+	(09:07:40) Removed as these are generated rather than pure source. 
+
+	* src/io_lib/abi/Attic/Makefile.am,
+	* src/io_lib/alf/Attic/Makefile.am,
+	* src/io_lib/ctf/Attic/Makefile.am:
+	* src/io_lib/exp_file/Attic/Makefile.am,
+	* src/io_lib/plain/Attic/Makefile.am,
+	* src/io_lib/scf/Attic/Makefile.am,
+	* src/io_lib/utils/Attic/Makefile.am,
+	* src/io_lib/ztr/Attic/Makefile.am:
+	(09:09:50) Removed as these have now been collapsed into the
+	read/Makefile.am. 
+
+	* src/io_lib/README:
+	(09:10:19) *** empty log message *** 
+
+	* src/io_lib/include/Attic/os.h:
+	(09:11:21) Removed the mkdir macro as it seems the current mingw
+	has proper support for this. 
+
+	* src/io_lib/read/Makefile.am:
+	(09:12:18) Subsumed the other */Makefile.am files. 
+
+	* src/io_lib/progs/hash_tar.c:
+	(09:12:48) On Windows, set stdout to be _O_BINARY. 
+
+	* src/io_lib/read/Read.c:
+	(09:13:22) Fixed the _O_BINARY setting code on windows to check for
+	fp being valid and to use the mf->fp instead of fp. 
+
+	* src/io_lib/utils/compress.c:
+	(09:15:30) Added checks for HAVE_SYS_WAIT_H for Windows handling. 
+
+	* src/io_lib/utils/compress.c:
+	(09:20:04) Moved HAVE_ZLIB_H from compress.c and put in os.h (when
+	autoconf is not in use). 
+
+	* src/io_lib/include/Attic/os.h:
+	(09:20:05) Moved HAVE_ZLIB_H from compress.c and put in os.h (when
+	autoconf is not in use). 
+
+	* src/io_lib/utils/hash_table.c:
+	(09:21:45) Changed bucket_pos from int64_t to int32_t (as was
+	intended) so it works on windows correctly. 
+
+	* src/io_lib/utils/mFILE.c:
+	(09:22:50) Added more _O_BINARY checks for windows. 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(09:23:28) Added error checking in open_trace_file(). 
+
+	* src/io_lib/bootstrap:
+	(10:28:38) Added to simplify initialisation of the autoconf system. 
+
+	* src/io_lib/include/Attic/os.h,
+	* src/io_lib/utils/os.h:
+	(10:34:54) Moved os.h from include to utils. 
+
+	* src/io_lib/Makefile.am:
+	(10:49:17) Fixed missing backslash in pkginclude_HEADERS. 
+
+	* src/io_lib/Attic/config.guess,
+	* src/io_lib/Attic/config.sub,
+	* src/io_lib/Attic/ltconfig,
+	* src/io_lib/Attic/mkinstalldirs,
+	* src/io_lib/Attic/stamp-h.in:
+	(10:55:09) Removed more auto-generated files from CVS tree. 
+
+	* src/io_lib/read/Read.h:
+	(14:28:29) *** empty log message *** 
+
+	* src/init_exp/init_exp.c:
+	(15:46:19) Switched to use exp_print_mfile and mFILE. 
+
+	* src/text_utils/Makefile,
+	* src/tk_utils/Makefile:
+	(15:57:33) Made the .links "ln" commands not be fatal when erroring
+	(when for example the files already exist). 
+
 2005-07-04  jkbonfield  <jkbonfield>
 
 	* src/Makefile.thirdparty:

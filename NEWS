@@ -1,5 +1,7 @@
-4 July 2005 (& more - add to this until new release)
-===========
+14th July 2005 (& more - add to this until new release)
+==============
+
+Tagged as Release 1.6.0b4
 
 Gap4
 ----
@@ -28,6 +30,8 @@ Trev
 Io_lib
 ------
 
+* New release - 1.9.0. No longer uses libtool in configuration.
+
 * Added "HASH=hashfile" component of RAWDATA search path along with
   hash_tar and hash_extract tools. These operate like index_tar but
   provide true fast random access into tar files (or other formats if
@@ -37,6 +41,18 @@ Io_lib
   files being read from or written to. This has lead to some
   incompatibilities (see src/io_lib/CHANGES), but is also an order of
   magnitude faster in many cases.
+
+Spin
+----
+
+* Under MS Windows spin and EMBOSSwin should coexist happily to the
+  extent that Spin will spot the EMBOSSwin installation and use it.
+
+Pregap4
+-------
+
+* Fixed various space-in-pathname bugs (most prevalent on MS Windows).
+
 
 Misc
 ----
