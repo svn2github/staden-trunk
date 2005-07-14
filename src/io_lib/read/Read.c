@@ -233,7 +233,7 @@ Read *mfread_reading(mFILE *fp, char *fn, int format) {
 }
 
 Read *fread_reading(FILE *fp, char *fn, int format) {
-    return mfread_reading(mfreopen(fn, "r", fp), fn, format);
+    return mfread_reading(mfreopen(fn, "rb", fp), fn, format);
 }
 
 /*
@@ -357,7 +357,7 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 }
 
 int fwrite_reading(FILE *fp, Read *read, int format) {
-    return mfwrite_reading(mfreopen(NULL, "w", fp), read, format);
+    return mfwrite_reading(mfreopen(NULL, "wb", fp), read, format);
 }
 
 /*
@@ -425,7 +425,7 @@ ztr_t *fread_ztr(FILE *fp) {
     ztr_t *z;
     mFILE *mf;
 
-    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+    if (NULL == (mf = mfreopen(NULL, "rb", fp)))
 	return NULL;
 
     z = mfread_ztr(mf);
@@ -437,7 +437,7 @@ int fwrite_ztr(FILE *fp, ztr_t *z) {
     mFILE *mf;
     int r;
 
-    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+    if (NULL == (mf = mfreopen(NULL, "wb", fp)))
 	return -1;
 
     r = mfwrite_ztr(mf, z);
@@ -451,7 +451,7 @@ Scf *fread_scf(FILE *fp) {
     Scf *s;
     mFILE *mf;
 
-    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+    if (NULL == (mf = mfreopen(NULL, "rb", fp)))
 	return NULL;
 
     s = mfread_scf(mf);
@@ -463,7 +463,7 @@ int fwrite_scf(Scf *s, FILE *fp) {
     mFILE *mf;
     int r;
 
-    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+    if (NULL == (mf = mfreopen(NULL, "wb", fp)))
 	return -1;
 
     r = mfwrite_scf(s, mf);
@@ -477,7 +477,7 @@ Exp_info *exp_fread_info(FILE *fp) {
     Exp_info *e;
     mFILE *mf;
 
-    if (NULL == (mf = mfreopen(NULL, "r", fp)))
+    if (NULL == (mf = mfreopen(NULL, "rb", fp)))
 	return NULL;
 
     e = exp_mfread_info(mf);
@@ -488,7 +488,7 @@ Exp_info *exp_fread_info(FILE *fp) {
 void exp_print_file(FILE *fp, Exp_info *e) {
     mFILE *mf;
 
-    if (NULL == (mf = mfreopen(NULL, "w", fp)))
+    if (NULL == (mf = mfreopen(NULL, "wb", fp)))
 	return;
 
     exp_print_mfile(mf, e);

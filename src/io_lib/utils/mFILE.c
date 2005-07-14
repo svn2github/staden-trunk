@@ -35,14 +35,17 @@ static mFILE *m_channel[3];  /* stdin, stdout and stderr fakes */
  * Returns a malloced buffer on success of length *size
  *         NULL on failure
  */
-static char *mfload(FILE *fp, const char *fn, size_t *size) {
+static char *mfload(FILE *fp, const char *fn, size_t *size, int binary) {
     struct stat sb;
     char *data = NULL;
     size_t allocated = 0, used = 0;
     int bufsize = 8192;
 
 #ifdef _WIN32
-    _setmode(_fileno(fp), _O_BINARY);
+    if (binary)
+	_setmode(_fileno(fp), _O_BINARY);
+    else 
+	_setmode(_fileno(fp), _O_TEXT);
 #endif
 
     if (fn && -1 != stat(fn, &sb)) {
@@ -85,7 +88,7 @@ static void init_mstdin(void) {
     if (done_stdin)
 	return;
 
-    m_channel[0]->data = mfload(stdin, NULL, &m_channel[0]->size);
+    m_channel[0]->data = mfload(stdin, NULL, &m_channel[0]->size, 1);
     done_stdin = 1;
 }
 
@@ -157,7 +160,7 @@ void mfrecreate(mFILE *mf, char *data, int size) {
  */
 mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
     mFILE *mf;
-    int r = 0, w = 0, a = 0;
+    int r = 0, w = 0, a = 0, b = 0;
 
     /* Parse mode:
      * r = read file contents (if truncated => don't read)
@@ -170,6 +173,8 @@ mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
 	w = 1;
     if (strchr(mode, 'a'))
 	w = a = 1;
+    if (strchr(mode, 'b'))
+	b = 1;
     if (strchr(mode, '+')) {
         w = 1;
 	if (a)
@@ -178,7 +183,7 @@ mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
     
     if (r) {
 	mf = mfcreate(NULL, 0);
-	mf->data = mfload(fp, path, &mf->size);
+	mf->data = mfload(fp, path, &mf->size, b);
 	mf->alloced = mf->size;
 	if (!a)
 	    fseek(fp, 0, SEEK_SET);
@@ -191,8 +196,10 @@ mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
     if (w)
 	mf->fname = strdup(path ? path : "?");
 
-    if (a)
+    if (a) {
 	mf->offset = mf->size;
+	fseek(fp, 0, SEEK_END);
+    }
 
     return mf;
 }
@@ -407,6 +414,7 @@ int mfflush(mFILE *mf) {
     /* fname => opened in write mode */
     if (mf->fname) {
 	fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
+	fflush(mf->fp);
 	ftruncate(fileno(mf->fp), ftell(mf->fp));
 	mf->flush_pos = mf->size;
     }
