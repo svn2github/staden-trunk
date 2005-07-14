@@ -108,6 +108,8 @@ void filter_tags ( mutscan_t& ms, int nTags, int threshold ) {
     for (int i=0; i < nTags; i++) {
 	mutlib_tag_t* pTag = MutScanGetTag( &ms, i );
 	int pos = pTag->Position[0];
+	if (pos < 0) pos = 0;
+	if (pos > cov_end) pos = cov_end;
 
 	scores[pos] += win_len+1;
 	for (int j=1; j<=win_len; j++) {
