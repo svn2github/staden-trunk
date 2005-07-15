@@ -369,11 +369,14 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
  *  -1 for failure
  */
 int write_reading(char *fn, Read *read, int format) {
+    int ret;
     mFILE *fp = mfopen(fn, "wb");
     if (!fp)
 	return -1;
     
-    return mfwrite_reading(fp, read, format);
+    ret = mfwrite_reading(fp, read, format);
+    mfclose(fp);
+    return ret;
 }
 
 /*
