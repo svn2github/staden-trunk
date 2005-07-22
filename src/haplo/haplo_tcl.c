@@ -359,7 +359,7 @@ static int haplo_tdepth_cmd(Tcl_Interp *interp,
 			    Tcl_Obj *CONST objv[]) {
     int rargc, i, j, start, end, last, depth;
     contig_list_t *rargv;
-    snp_arg args;
+    tdepth_arg args;
     cli_args a[] = {
 	{"-io",		ARG_IO,  1, NULL,  offsetof(tdepth_arg, io)},
 	{"-contig",	ARG_STR, 1, NULL,  offsetof(tdepth_arg, inlist)},
