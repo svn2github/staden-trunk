@@ -1,5 +1,42 @@
 /* Copyright Genome Research Limited (GRL). All rights reserved */
 
+/*
+ * TODO:
+ * 
+ * ----------------------------------------------------------------------
+ * Allow sequences to move. Often we have alignments ending or starting like:
+ *
+ *  ACGGG
+ *  AC*GGGTA
+ *  AC*GGGTA
+ *  ACGGGGTA
+ *  AC*GGGTA
+ *
+ * The first sequence is reinforcing there being 4 Gs, but it actually only
+ * has 3. The problem is that it cannot insert the pad as that changes the
+ * sequence length.
+ *
+ * ----------------------------------------------------------------------
+ * Investigate 454 rate of miscall vs indel. Seems maybe we need to mirror
+ * this and get the pad penalty much lower than a mismatch.
+ *
+ * ----------------------------------------------------------------------
+ * Investigate the issue of reassigning confidence values during runs of
+ * bases for 454 data. AGGGT may have confidence X 40 30 10 X if in the +ve
+ * direction but X 10 30 40 X if in the -ve direction. After pad shuffling
+ * we need to have the pads aligned against the low quality bases and not
+ * the high quality ones. This means several things:
+ *
+ * 1. Reording the confidence of base-calls in a run
+ * 2. Making sure the pads always end up at the same end (needs another
+ *    algorithm after this one to do that).
+ * 3. The pad confidence value cannot now just be the average of the two
+ *    surrounding bases. Maybe the preceeding base confidence works.
+ *
+ * ----------------------------------------------------------------------
+ */
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -9,200 +46,9 @@
 #include "dna_utils.h"
 #include "align_lib.h"
 
-#define DEBUG
-#define CHECKING
+void print_malign(MALIGN *malign);
+void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset);
 
-/*
- * Converts a basecall into 0-4 inclusive for A,C,G,T,*,-.
- * Anything else is treated as '-'.
- */
-static int base2ind(char base) {
-    switch(base) {
-    case 'a':
-    case 'A':
-	return 0;
-
-    case 'c':
-    case 'C':
-	return 1;
-
-    case 'g':
-    case 'G':
-	return 2;
-
-    case 't':
-    case 'T':
-	return 3;
-
-    case '*':
-	return 4;
-    }
-
-    return 5;
-}
-
-
-/*
- * Adds a single sequence to the vector array
- */
-static void add_to_vector(FastInt (*vec)[6], char *seq, int pos, int len) {
-    int i;
-    for (i = 0; i < len; i++, pos++) {
-	vec[pos][base2ind(seq[i])]++;
-    }
-}
-
-/*
- * Removes a single sequence from the vector array
- */
-static void remove_from_vector(FastInt (*vec)[6], char *seq, int pos, int len)
-{
-    int i;
-    for (i = 0; i < len; i++, pos++) {
-	if (--vec[pos][base2ind(seq[i])] < 0) {
-	    printf("ERROR: negative item in vector at pos %d\n", pos);
-	}
-    }
-}
-
-void dump_vector(FastInt (*vec)[6], int len) {
-    int i, j;
-    char line[6][80];
-
-    for (i = 0; i < len; i++) {
-	if ((i % 60) == 0) {
-	    puts("");
-	    for (j = 0; j < 6; j++) {
-		if (i)
-		    printf("%.60s\n", line[j]);
-		memset(line[j], 0, 80);
-	    }
-	}
-	for (j = 0; j < 6; j++)
-	    line[j][i%60] = vec[i][j]+'0';
-    }
-
-    puts("");
-    for (j = 0; j < 6; j++)
-	printf("%.*s\n", len%60, line[j]);
-}
-
-
-/*
- * Builds an array of 6-wide vectors of A,C,G,T,*,- for each consensus
- * position in the specified contig.
- *
- * Returns vectors on success.
- *         NULL on failure.
- */
-FastInt (*build_vector(int contig,
-		       int (*info_func)(int         job,
-					void       *mydata,
-					info_arg_t *theirdata),
-		       void *info_data))[6] {
-    info_arg_t info, iseq;
-    FastInt (*c6)[6];
-    int c6_len;
-
-    /* Get contig info */
-    info.contig_info.contig = contig;
-    info_func(GET_CONTIG_INFO, info_data, &info);
-
-    c6_len = info.contig_info.length;
-    c6 = (FastInt (*)[6])xcalloc(c6_len, 6*sizeof(FastInt));
-#ifdef DEBUG
-    printf("Contig %d, len %d\n",
-	   info.contig_info.contig,
-	   info.contig_info.length);
-#endif
-
-    /* Loop through all sequences in the contig */
-    info.gel_info.gel = info.contig_info.leftgel;
-    do {
-	/* Get sequence and add it to the consensus vector */
-	info_func(GET_GEL_INFO, info_data, &info);
-
-	iseq.gel_seq.gel = info.gel_info.gel;
-	info_func(GET_SEQ, info_data, &iseq);
-	
-	add_to_vector(c6, &iseq.gel_seq.gel_seq[iseq.gel_seq.gel_start],
-		      info.gel_info.position-1, info.gel_info.length);
-	
-	info_func(DEL_SEQ, info_data, &iseq);
-	
-    } while (info.gel_info.gel = info.gel_info.next_right);
-
-    /* dump_vector(c6, c6_len); */
-
-    return c6;
-}
-
-int edit_mseqs_old(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
-    int i, j, poso, posn, len;
-    char *oseq;
-    char *cp;
-    int leno, lenn;
-
-    printf("EDIT_MSEQS, s1_len=%d s2_len=%d\n",
-	   o->s1_len, o->s2_len);
-
-    /* Cons vector */
-    for (poso = i = 0; i < o->s1_len; i++) {
-	if (o->S1[i] < 0) {
-	    printf("S1:Ins %d pads as pos %d\n",
-		   -o->S1[i], poso);
-	} else {
-	    poso += o->S1[i];
-	}
-    }
-
-    /* sequence */
-    xfree(cl->mseg->seq);
-    cl->mseg->seq = strdup(o->seq2_out);
-
-#if 0
-    /* NOT NEEDED. we just replace verbatim with the newly aligned seq. */
-
-    /*
-     * Now compare sequence to old sequence working out whether the pads added
-     * are new or not.
-     */
-    for (i = 0; i < o->seq_out_len; i++)
-	if (o->seq2_out[i] == '.')
-	    o->seq2_out[i] = '*';
-
-    /*    for (i = j = 0; i < poso && j < posn; i++, j++) {*/
-    leno = cl->mseg->length;
-    lenn = o->seq_out_len;
-    cl->mseg->seq = (char *)xrealloc(cl->mseg->seq, MAX(lenn, leno)+2);
-    for (i = leno-1, j = lenn-1; i >= 0 && j >= 0; i--, j--) {
-	while (o->seq2_out[j] != cl->mseg->seq[i] && i >= 0 && j >= 0) {
-	    if (cl->mseg->seq[i] == '*') {
-		printf("EDIT: deletion at %d\n", j);
-		memmove(&cl->mseg->seq[j], &cl->mseg->seq[j+1], leno-(j+1));
-		leno--;
-		i--;
-		printf("mseg now %s\n", cl->mseg->seq);
-	    } else if (o->seq2_out[j] == '*') {
-		printf("EDIT: insertion at %d\n", j);
-		memmove(&cl->mseg->seq[j+1], &cl->mseg->seq[j], leno-j);
-		cl->mseg->seq[j] = '+';
-		leno++;
-		j--;
-		printf("mseg now %s\n", cl->mseg->seq);
-	    } else {
-		printf("EDIT: unknown diff at %d, %c/%c\n", j,
-		       o->seq2_out[j], cl->mseg->seq[i]);
-		break;
-	    }
-	}
-    }
-
-    printf("Nseq = %s %d %d\n", cl->mseg->seq, leno, lenn);
-#endif
-
-    return 0;
-}
 
 /*
  * Insert 'size' pads into a contig at position 'pos'.
@@ -231,28 +77,21 @@ void malign_padcon(MALIGN *malign, int pos, int size) {
 	memset(&cl->mseg->seq[pos - cl->mseg->offset], '*', size);
 	cl->mseg->seq[cl->mseg->length] = 0;
     }
-
-    /* Update malign... */
-    /* TODO */
-    /* malign->length += size; */
 }
 
 /*
  * Returns the number of consensus pads added or -1 for error.
  */
 int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
-    int i, j, poso, posn, len;
-    char *oseq, *cp;
-    int leno, lenn, npads;
+    int i, npads, poso;
+    char *cp;
 
-    printf("EDIT_MSEQS, s1_len=%d s2_len=%d\n",
-	   o->s1_len, o->s2_len);
     /* Cons vector */
     npads = 0;
     for (poso = i = 0; i < o->s1_len; i++) {
 	if (o->S1[i] < 0) {
-	    printf("S1:Ins %d pads at pos %d+%d=%d\n",
-		   -o->S1[i], poso, cons_pos, poso+cons_pos);
+	    /*printf("S1:Ins %d pads at pos %d+%d=%d\n",
+	      -o->S1[i], poso, cons_pos, poso+cons_pos);*/
 	    malign_padcon(malign, poso+cons_pos+npads, -o->S1[i]);
 	    npads += -o->S1[i];
 	} else {
@@ -271,165 +110,6 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
     return npads;
 }
 
-/*
- * Given an alignment of the depadded sequence to the consensus vector, this
- * compares the edits back ot the unpadded sequence and makes any edits to the
- * sequence and/or consensus as appropriate.
- *
- * seq1 and seq2, with lengths len1 and len2, were the inputs to the
- * alignment algorithm, which returned S as the edit buffer.
- * gel_info and gel_seq contain information about the original sequence
- * before unpadded (eg as it is currently held in the database).
- *
- * Returns the number of additional bases in the consensus.
- */
-int edit_seqs(int contig,
-	      int cons_pos,
-	      FastInt (**seq2_ptr)[6],
-	      int *seq2_len,
-	      char *seq1,
-	      FastInt (*seq2)[6],
-	      int len1,
-	      int len2,
-	      align_int *S,
-	      info_arg_t *gel_info,
-	      info_arg_t *gel_seq,
-	      int (*info_func)(int         job,
-			       void       *mydata,
-			       info_arg_t *theirdata),
-	      void *info_data) {
-    int s1pos, s2pos;
-    int o1pos;
-    int op = 0;
-    char *oseq;
-    int offset = 0;
-    info_arg_t info;
-    int cons_pads = 0;
-
-    s1pos = s2pos = 0;
-    o1pos = gel_info->gel_info.start;
-    oseq = gel_seq->gel_seq.gel_seq;
-
-    while (s1pos < len1 && s2pos < len2) {
-	if (op == 0)
-	    op = *S++;
-
-	if (op == 0) {
-	    /*
-	     * No insertion between seq and consensus, but if there was a pad
-	     * in the original sequence then we need to delete it.
-	     */
-	    while (oseq[o1pos] == '*') {
-#ifdef DEBUG
-		printf("Del at pos %d\n", o1pos-(gel_info->gel_info.start-1));
-#endif
-		info.seq_del.gel = gel_info->gel_info.gel;
-		info.seq_del.length = 1;
-		info.seq_del.position = o1pos+offset-gel_info->gel_info.start+1;
-		info_func(SEQ_DEL, info_data, &info);
-		offset--;
-		o1pos++;
-	    }
-	    /*
-#ifdef DEBUG
-	    printf("%d %d %c(%c) %d%d%d%d%d%d\n",
-		   s1pos, s2pos, seq1[s1pos], oseq[o1pos],
-		   seq2[s2pos][0], seq2[s2pos][1], seq2[s2pos][2], 
-		   seq2[s2pos][3], seq2[s2pos][4], seq2[s2pos][5]);
-#endif
-	    */
-	    o1pos++;
-	    s1pos++;
-	    s2pos++;
-	} else if (op > 0) {
-	    /*
-	     * Insertion to sequence. If there's not already a pad at this
-	     * point in the original sequence then we add one.
-	     */
-
-	    /*
-#ifdef DEBUG
-	    printf("%d %d +(%c) %d%d%d%d%d%d\n",
-		   s1pos, s2pos, oseq[o1pos],
-		   seq2[s2pos][0], seq2[s2pos][1], seq2[s2pos][2], 
-		   seq2[s2pos][3], seq2[s2pos][4], seq2[s2pos][5]);
-#endif
-	    */
-	    s2pos++;
-	    if (oseq[o1pos] != '*') {
-#ifdef DEBUG
-		printf("Ins at pos %d\n", o1pos-(gel_info->gel_info.start-1));
-#endif
-		info.seq_ins.gel = gel_info->gel_info.gel;
-		info.seq_ins.bases = "*";
-		info.seq_ins.length = 1;
-		info.seq_ins.position = o1pos+offset-gel_info->gel_info.start+1;
-		info_func(SEQ_INS, info_data, &info);
-		offset++;
-	    } else {
-		o1pos++;
-	    }
-	    op--;
-	} else {
-	    /*
-	     * Insertion to consensus.
-	     * This is tricky to handle - we need to pad the consensus (moving
-	     * sequences as required, but that is handled for us), but delete
-	     * the pad from the sequence being aligned.
-	     * We also need to keep the 6-wide consensus vector up to date.
-	     */
-	    int depth;
-	    int cpos;
-	    int b;
-	    off_t dist;
-
-#ifdef DEBUG
-	    printf("%d %d %c(%c) ++++++\n",
-		   s1pos, s2pos, seq1[s1pos], oseq[o1pos]);
-#endif
-
-	    info.cons_ins.contig = contig;
-	    info.cons_ins.bases = "*";
-	    info.cons_ins.length = 1;
-	    info.cons_ins.position = (cpos = s2pos + cons_pos+1) ;
-	    info_func(CONS_INS, info_data, &info);
-	    cons_pads++;
-
-	    /* Also remove pad from sequence - we were padding all others */
-	    info.seq_del.gel = gel_info->gel_info.gel;
-	    info.seq_del.length = 1;
-	    info.seq_del.position = cpos-gel_info->gel_info.position+1;
-	    info_func(SEQ_DEL, info_data, &info);
-
-	    /* Also update 'c6' with insertion */
-	    *seq2_len = *seq2_len+1;
-	    dist = seq2 - *seq2_ptr;
-	    *seq2_ptr = (FastInt (*)[6])xrealloc(*seq2_ptr,
-						 *seq2_len * 6 *
-						 sizeof(FastInt));
-	    cpos--; /* our arrays count from zero */
-	    seq2 = *seq2_ptr + dist;
-	    for (b = depth = 0; b < 6; b++)
-		depth += (*seq2_ptr)[cpos][b];
-	    memmove(&((*seq2_ptr)[cpos+1]),
-		    &((*seq2_ptr)[cpos]),
-		    (*seq2_len-1 - cpos) * 6 * sizeof(FastInt));
-	    for (b = 0; b < 6; b++)
-		(*seq2_ptr)[cpos][b] = 0;
-	    (*seq2_ptr)[cpos][4] = depth;
-	    
-
-	    o1pos++;
-	    s1pos++;
-	    op++;
-	}
-    }
-
-#ifdef DEBUG
-    printf("Added %d pads\n", cons_pads);
-#endif
-    return cons_pads;
-}
 
 /*
  * Iterates through all sequences in a contig realigning them against the
@@ -440,209 +120,11 @@ int edit_seqs(int contig,
  * To do this we may need to shuffle the start position of sequences
  * downstream, and hence also move consensus tags.
  */
-void realign_seqs_old(int contig,
-		  FastInt (*c6)[6], 
-		  int (*info_func)(int         job,
-				   void       *mydata,
-				   info_arg_t *theirdata),
-		  void *info_data,
-		  MALIGN *malign) {
-    info_arg_t info, iseq, cinfo;
-    int c6_len;
-    int len;
-    int cons_pos, cons_len;
-    int pads;
-    static int Wmat[128][128];
-    static int Wmat_init = 0;
-    static int **nt_matrix = NULL;
-    static char *nt_order = "ACGTURYMWSKDHVB-*";
-    CONTIGL *cl = malign->contigl;
-
-    if (!Wmat_init) {
-	char buf[1024];
-	char *env = getenv("STADTABL");
-
-	sprintf(buf, "%s/shuffle_pads_matrix", env);
-	nt_matrix = create_matrix(buf, nt_order);
-	if (nt_matrix)
-	    init_align_mat(nt_matrix, nt_order, 0, Wmat);
-	else
-	    verror(ERR_FATAL, "init_globals",
-		   "%s: file not found", buf);
-	
-	Wmat_init = 1;
-    }
-
-    /* Get contig info */
-    cinfo.contig_info.contig = contig;
-    info_func(GET_CONTIG_INFO, info_data, &cinfo);
-
-    c6_len = cinfo.contig_info.length;
-
-    /* Loop through all sequences in the contig */
-    info.gel_info.gel = cinfo.contig_info.leftgel;
-    do {
-	align_int *alignment;
-	char *depadded_seq;
-	int *depad_to_pad;
-	
-	/* Get and depad the sequence */
-	info_func(GET_GEL_INFO, info_data, &info);
-	if (info.gel_info.next_right == 0 &&
-	    cinfo.contig_info.leftgel == info.gel_info.gel) {
-#ifdef DEBUG
-	    printf("Gel %d is a single read contig; skipping.\n",
-		   info.gel_info.gel);
-#endif
-	    break;
-	}
-
-#ifdef DEBUG
-	printf("Gel %d, pos %d, len %d, seq ",
-	       info.gel_info.gel,
-	       info.gel_info.position,
-	       info.gel_info.length);
-#endif
-
-	iseq.gel_seq.gel = info.gel_info.gel;
-	info_func(GET_SEQ, info_data, &iseq);
-	{
-	    int i;
-	    for (i = 0; i < info.gel_info.unclipped_len; i++) {
-		iseq.gel_seq.gel_seq[i] = toupper(iseq.gel_seq.gel_seq[i]);
-	    }
-	}
-#ifdef DEBUG
-	printf("%.*s\n",
-	       MIN(20, iseq.gel_info.length),
-	       &iseq.gel_seq.gel_seq[iseq.gel_seq.gel_start]);
-#endif
-	
-	len = info.gel_info.length;
-#if 0
-	cons_pos = MAX(info.gel_info.position-3,0);
-	cons_len = info.gel_info.position + len-1 + 3;
-	if (cons_len >= c6_len)
-	    cons_len = c6_len-1;
-	cons_len = cons_len - cons_pos;
-#endif
-	cons_pos = info.gel_info.position-1;
-	cons_len = len;
-
-	depad_to_pad = (int *)xmalloc((len+1)*sizeof(int));
-	depadded_seq = (char *)xmalloc(len+1);
-	strncpy(depadded_seq,
-		&iseq.gel_seq.gel_seq[iseq.gel_seq.gel_start], len);
-	depadded_seq[len] = 0;
-	depad_seq(depadded_seq, &len, depad_to_pad);
-
-	/* Take seq out of consensus vector and realign it */
-	remove_from_vector(c6, &iseq.gel_seq.gel_seq[iseq.gel_seq.gel_start],
-			   info.gel_info.position-1, info.gel_info.length);
-
-	alignment = (align_int *)xmalloc((cons_len*2+1)*sizeof(align_int));
-	calignm(depadded_seq, &c6[cons_pos], len, cons_len,
-		NULL, NULL, NULL, NULL,
-		-10, +10, 1, 8,
-		ALIGN_J_SV | ALIGN_GAP_S1 | ALIGN_GAP_E1 | ALIGN_GAP_S2 |
-		ALIGN_GAP_E2,
-		0, alignment, Wmat);
-
-	/*
-	 * If the first value in the alignment is padding, then we need to
-	 * shift the seq left or right appropriately instead of adding a
-	 * bunch of pads.
-	 * 
-	 * FIXME: still need to implement this.
-	 */
-
-#ifdef DEBUG
-	vmessage("Seq %d at pos %d\n", info.gel_info.gel, cons_pos);
-	cdisplay(depadded_seq, &c6[cons_pos], len, cons_len, ALIGN_J_SV,
-		 alignment, 0, 0);
-#endif
-
-	pads = edit_seqs(contig, cons_pos, &c6, &c6_len,
-			 depadded_seq, &c6[cons_pos], len, cons_len,
-			 alignment, &info, &iseq, info_func, info_data);
-
-	xfree(alignment);
-	xfree(depadded_seq);
-	xfree(depad_to_pad);
-	info_func(DEL_SEQ, info_data, &iseq);
-
-	/* Contig length may have changed */
-	cinfo.contig_info.contig = contig;
-	info_func(GET_CONTIG_INFO, info_data, &cinfo);
-	if (c6_len < cinfo.contig_info.length+1) {
-	    c6_len = cinfo.contig_info.length+1;
-	    c6 = (FastInt (*)[6])xrealloc(c6, c6_len * 6 * sizeof(FastInt));
-	}
-
-
-	/* edit_seqs may have changed it, so read new before adding back */
-	info_func(GET_GEL_INFO, info_data, &info);
-	iseq.gel_seq.gel = info.gel_info.gel;
-	info_func(GET_SEQ, info_data, &iseq);
-	add_to_vector(c6, &iseq.gel_seq.gel_seq[iseq.gel_seq.gel_start],
-		      info.gel_info.position-1, info.gel_info.length);
-	info_func(DEL_SEQ, info_data, &iseq);
-
-	/* FIXME - hideously slow, but a test for where the bug is */
-	if (1) {
-	    info_arg_t c;
-	    FastInt (*c6v2)[6];
-
-	    c.contig_info.contig = contig;
-	    info_func(GET_CONTIG_INFO, info_data, &c);
-
-	    c6_len = c.contig_info.length;
-	    c6v2 = build_vector(contig, info_func, info_data);
-
-#ifdef CHECKING	    
-	    {
-		int i, j;
-		for (i = 0; i < c6_len; i++) {
-		    for (j = 0; j < 6; j++) {
-			if (c6[i][j] != c6v2[i][j]) {
-			    printf("Diff at pos %d: ", i);
-			    for (j = 0; j < 6; j++) {
-				printf("%d/%d ",
-				       c6[i][j],
-				       c6v2[i][j]);
-			    }
-			    putchar('\n');
-			    break;
-			}
-		    }
-		}
-	    }
-#endif
-	    xfree(c6);
-	    c6 = c6v2;
-	}
-
-	info_func(IF_FLUSH, info_data, NULL);
-
-	cl = cl->next;
-	
-    } while (info.gel_info.gel = info.gel_info.next_right);
-}
-
-/*
- * Iterates through all sequences in a contig realigning them against the
- * consensus vector.
- *
- * It then adds the newly aligned sequence back into the consensus, editing the
- * sequence and tag positions/lengths too.
- * To do this we may need to shuffle the start position of sequences
- * downstream, and hence also move consensus tags.
- */
-void realign_seqs(int contig,
-		  MALIGN *malign) {
+MALIGN *realign_seqs(int contig, MALIGN *malign) {
     CONTIGL *lastl = NULL, *contigl;
     int nsegs;
     int seg_num = 0;
+    int old_start, old_end, new_start, new_end;
 
     for (contigl = malign->contigl, nsegs = 0; contigl; nsegs++)
 	contigl = contigl->next;
@@ -658,7 +140,7 @@ void realign_seqs(int contig,
 	int cons_pos;
 	int npads, band;
 
-	printf("Seq %d/%d, contigl = %p\n", seg_num++, nsegs, contigl);
+	printf("Seq %d/%d\r", seg_num++, nsegs);
 
 	/* Obtain a depadded copy of this mseg */
 	len = contigl->mseg->length;
@@ -678,19 +160,19 @@ void realign_seqs(int contig,
 	} else {
 	    malign->contigl = contigl->next;
 	}
-#endif
 
 	/* Recalc scores (create_malign_counts) and rescale
 	 * (scale_malign_scores) over the region we have changed.
 	 * FIXME: TODO
 	 */
+#endif
 
 	/* Align sequence to malign */
 	p = create_align_params();
 	set_align_params (p,
 			  band, /*band*/
-			  1, /*gap_open*/
-			  8, /*gap_extend*/
+			  4, /*gap_open*/
+			  4, /*gap_extend*/
 			  EDGE_GAPS_COUNT,
 			  /* EDGE_GAPS_ZERO | BEST_EDGE_TRACE, */
 			  RETURN_EDIT_BUFFERS | RETURN_SEQ |
@@ -711,17 +193,73 @@ void realign_seqs(int contig,
 	malign->consensus += cons_pos;
 	malign->scores += cons_pos;
 	    
-	printf("RESULT=%d\n", affine_malign(o, p));
-	printf("score= %f\n", o->score);
+	affine_malign(o, p); /* o->score = alignment score */
 
-	
+	if (o->score >= 1e6) {
+	    puts("REJECT");
+	    print_moverlap(malign, o, cons_pos);
+	    goto cack_alignment; /* yeah yeah.. I know! */
+	}
+
+
 	malign->consensus -= cons_pos;
 	malign->scores -= cons_pos;
 
+	/* Edit the sequence with the alignment */
+	old_start = contigl->mseg->offset;
+	old_end   = contigl->mseg->offset + contigl->mseg->length-1;
 	edit_mseqs(malign, contigl, o, cons_pos);
+	new_start = contigl->mseg->offset;
+	new_end   = contigl->mseg->offset + contigl->mseg->length-1;
 
-	print_moverlap(malign, o, cons_pos);
-	print_malign(malign);
+	/* Update the malign structure */
+	if (new_start-new_end != old_start-old_end)
+	    malign_insert_scores(malign, old_end,
+				 (new_end-new_start) - (old_end-old_start));
+	malign_recalc_scores(malign,
+			     MIN(old_start, new_start),
+			     MAX(old_end, new_end));
+
+	/* TODO:
+	 *
+	 * X Realloc malign->consensus / malign->score
+	 * X Move malign->consensus from here to end right by npads.
+	 * X Move malign->score      " ...
+	 * X Update malign->length
+	 * X Recompute consensus and score over the length of this reading.
+	 *
+	 * If contigl was doubly linked (sorted on left and right ends
+	 * separately) then we could chain left/right to only update
+	 * those readings which overlap this region. For now we can
+	 * just chain from left each time.  Not optimal (O(N^2) for
+	 * full realignment method then) but workable perhaps.
+	 *
+	 * See get_malign_counts, scale_malign_scores and get_malign_consensus
+	 */
+
+
+	/*
+	 * Check if the short-cut method gives the same result as rebuilding
+	 * from scratch.
+	 */
+	if (0) {
+	    int i, j;
+	    MALIGN *copy;
+	    copy = contigl_to_malign(malign->contigl, -4, -4);
+
+	    for (i = 0; i < copy->length; i++) {
+		for (j = 0; j < copy->charset_size+2; j++) {
+		    if (copy->scores[i][j] != malign->scores[i][j]) {
+			printf("[%d][%d] = %d (should be %d)\n",
+			       i, j,
+			       malign->scores[i][j],
+			       copy->scores[i][j]);
+		    }
+		}
+	    }
+	    copy->contigl = NULL;
+	    destroy_malign(copy, 0);
+	}
 
 #if 0
 	/* Put sequence back */
@@ -732,25 +270,7 @@ void realign_seqs(int contig,
 	}
 #endif
 
-	/* Memory leak, slow, etc etc etc, but a test */
-	{
-	    if ( malign->msegs ) xfree ( malign->msegs );
-	    if ( malign->consensus ) xfree ( malign->consensus );
-	    destroy_malign_counts(malign->matrix,
-				  malign->charset_size,
-				  malign->charset_size);
-	    destroy_malign_counts(malign->scores,
-				  malign->length,
-				  malign->charset_size);
-	    xfree ( malign );
-	}
-	malign = contigl_to_malign(malign->contigl);
-
-	if (0) {
-	    /* new consensus - is this used? */
-	    malign->length = contigl_length(malign->contigl);
-	    get_malign_consensus(malign);
-	}
+    cack_alignment:
 
 	destroy_moverlap(o);
 	destroy_alignment_params(p); 
@@ -761,8 +281,9 @@ void realign_seqs(int contig,
 	lastl = contigl;
 	contigl = contigl->next;
     }
+    puts("");
 
-    print_malign(malign);
+    return malign;
 }
 
 /**
@@ -794,10 +315,10 @@ MALIGN *build_malign(GapIO *io, int cnum) {
 	last_contig = contig;
     }
 
-    return contigl_to_malign(first_contig);
+    return contigl_to_malign(first_contig, -8, -8);
 }
 
-#define LLEN 60
+#define LLEN 80
 struct clist {
     char *seq;
     int len;
@@ -810,6 +331,7 @@ void print_malign(MALIGN *malign) {
     int ndepth = 0;
     CONTIGL *cl = malign->contigl;
 
+    puts("MALIGN OUTPUT");
     for (i = 0; i < malign->length; i++) {
 	/* Maintain a list of CONTIGLs covering this point */
 
@@ -939,31 +461,282 @@ void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset) {
     free(depth);
 }
 
-int shuffle_contigs_io(GapIO *io) {
-    int cnum;
-    FastInt (*c6)[6];
-    MALIGN *malign;
+#include <ctype.h>
+int malign_diffs(MALIGN *malign, int *tot) {
+    CONTIGL *cl;
+    int diff_count = 0, tot_count = 0;
+    int end_gaps = 0;
+
+    /* printf("%.*s\n", malign->length, malign->consensus); */
+    for (cl = malign->contigl; cl; cl = cl->next) {
+	int i;
+
+	for (i = 0; i < cl->mseg->length; i++, end_gaps++) {
+	    if (cl->mseg->seq[i] != '*')
+		break;
+	}
+	for (i = cl->mseg->length-1; i >= 0; i--, end_gaps++) {
+	    if (cl->mseg->seq[i] != '*')
+		break;
+	}
+
+	for (i = 0; i < cl->mseg->length; i++) {
+	    char c = toupper(malign->consensus[i+cl->mseg->offset]);
+	    char s = toupper(cl->mseg->seq[i]);
+	    if (c == '-')
+		c = '*';
+
+	    /*printf("%c", c==s ? '.' : s);*/
+	    if (s != c)
+		diff_count++;
+	    tot_count++;
+	}
+    }
+
+    printf("ENDGAPS = %d\n", end_gaps);
+
+    if (tot)
+	*tot = tot_count;
+    return diff_count;
+}
+
+/*
+ * Takes a multiple alignment and updates the on-disk data structures to
+ * match. This needs to correct confidence values, original positions and
+ * tags too.
+ */
+void update_io(GapIO *io, int cnum, MALIGN *malign) {
+    GContigs c;
+    GReadings r;
+    int rnum;
+    CONTIGL *cl;
+
+    contig_read(io, cnum, c);
+    for (rnum = c.left, cl = malign->contigl;
+	 rnum;
+	 rnum = r.right, cl = cl->next) {
+	char *seq;
+	gel_read(io, rnum, r);
+	seq = TextAllocRead(io, r.sequence);
+	if (memcmp(seq+r.start, cl->mseg->seq, cl->mseg->length) != 0) {
+	    /* Sequence differs,  so we assign a new one */
+	    int newlen = r.start + (r.length+1 - r.end) + cl->mseg->length;
+	    int i, j;
+	    int1 *conf;
+	    int2 *opos;
+	    char *newseq  = (char *)malloc(newlen+1);
+	    int1 *newconf = (int1 *)malloc(newlen+1);
+	    int2 *newopos = (int2 *)malloc((newlen+1)*2);
+
+	    conf = DataAllocRead(io, r.confidence,     1);
+	    opos = DataAllocRead(io, r.orig_positions, 2);
+
+	    /* Copy from 1 to r.start (base coords) */
+	    for (j = 0; j < r.start; j++) {
+		newseq[j]  = seq[j];
+		newconf[j] = conf[j];
+		newopos[j] = opos[j];
+	    }
+	    memcpy(&newseq[j], cl->mseg->seq, cl->mseg->length);
+
+	    /*
+	     * Step through both old and new sequences working out how
+	     * they differ. This will (*should*) be entire pad movements.
+	     * i = index to old seq
+	     * j = index to new seq
+	     */
+	    for (i = j; i < r.length && j < r.start + cl->mseg->length;) {
+		if (newseq[j] == seq[i]) {
+		    newconf[j] = conf[i];
+		    newopos[j] = opos[i];
+		    i++, j++;
+		    continue;
+		}
+
+		/* Pad removed */
+		if (seq[i] == '*') {
+		    i++;
+		    continue;
+		}
+
+		/* Pad created */
+		if (newseq[j] == '*') {
+		    int k;
+		    int cl = 0, cr = 0;
+		    for (k = i-1; k >= 0; k--) {
+			if (seq[k] != '*') {
+			    cl = conf[k];
+			    break;
+			}
+		    }
+		    for (k = i+1; k < r.length; k++) {
+			if (seq[k] != '*') {
+			    cr = conf[k];
+			    break;
+			}
+		    }
+		    newconf[j] = MIN(cl, cr); /* min conf of neighbours */
+		    newopos[j] = 0;
+		    j++;
+		    continue;
+		}
+
+		fprintf(stderr, "Alignment introduced non-pad character");
+		abort();
+	    }
+
+	    /* Should only be pads remaining in newseq, if anything */
+	    for (; j < r.start + cl->mseg->length; j++) {
+		if (newseq[j] != '*') {
+		    fprintf(stderr, "Alignment introduced non-pad character");
+		    abort();
+		}
+		newconf[j] = 0;
+		newopos[j] = 0;
+	    }
+
+	    /* Append on the right hand cutoff data */
+	    for (; i < r.length; i++, j++) {
+		newseq[j]  = seq[i];
+		newconf[j] = conf[i];
+		newopos[j] = opos[i];
+	    }
+	    if (j != newlen) {
+		abort();
+	    }
+	    r.length = j;
+
+	    /* TODO: Fix sequence and consensus tags too */
+	    TextWrite(io, r.sequence,       newseq,  r.length);
+	    DataWrite(io, r.confidence,     newconf, r.length, 1);
+	    DataWrite(io, r.orig_positions, newopos, r.length * 2, 2);
+
+	    xfree(conf);
+	    xfree(newconf);
+	    xfree(opos);
+	    xfree(newopos);
+	    xfree(newseq);
+	}
+
+	r.position = cl->mseg->offset + 1;
+	r.sequence_length = cl->mseg->length;
+	r.end = r.start + r.sequence_length + 1;
+	gel_write(io, rnum, r);
+
+	xfree(seq);
+    }
+}
+
+static int isort(const void *vp1, const void *vp2) {
+    return *(const int *)vp2 - *(const int *)vp1;
+}
+
+/*
+ * Specifically for 454 data this reassigns confidence values to bases in
+ * a run of the same base type.
+ * It also reassigns confidence values of pads to be the minimum confidence
+ * of the surrounding base call.
+ */
+void reassign_confidence_values(GapIO *io, int cnum) {
+    GContigs c;
+    GReadings r;
+    int rnum;
+    int scores[1000]; /* FIXME: check if we overflow! */
+
+    contig_read(io, cnum, c);
+    for (rnum = c.left; rnum; rnum = r.right) {
+	char last = 0;
+	char *seq;
+	int1 *conf;
+	int i, j, k;
+	int cl, cr;
+
+	gel_read(io, rnum, r);
+	seq = TextAllocRead(io, r.sequence);
+	conf = DataAllocRead(io, r.confidence, 1);
+
+	/* Rearrange confidence in runs of bases */
+	for (i = 0; i < r.length; i++) {
+	    /* Find first non-pad, at 'i' */
+	    while (i < r.length && seq[i] == '*')
+		i++;
+	    k = 0;
+	    scores[k++] = conf[i];
+	    last = seq[i];
+
+	    /* Count how many there are. First diff base at 'j' */
+	    j = i+1;
+	    while (j < r.length && (seq[j] == '*' || seq[j] == last)) {
+		if (seq[j] != '*')
+		    scores[k++] = conf[j];
+		j++;
+	    }
+		   
+	    if (k != 1) {
+		/* We have a run of k items (from >='i' and <'j') */
+		qsort(scores, k, sizeof(*scores), isort);
+		
+		/* Reassign */
+		j = i; k = 0;
+		while (j < r.length && (seq[j] == '*' || seq[j] == last)) {
+		    if (seq[j] != '*')
+			conf[j] = scores[k++];
+		    j++;
+		}
+	    }
+
+	    i = j-1;
+	}
+
+	/* Reassign confidences to pads */
+	cl = 0;
+	for (i = 0; i < r.length; i++) {
+	    if (seq[i] == '*') {
+		for (j = i+1; j < r.length && seq[j] == '*'; j++)
+		    ;
+		cr = j < r.length ? conf[j] : 0;
+		/* conf[i] = MIN(cl, cr); */
+		conf[i] = (cl+cr)/2;
+	    } else {
+		cl = conf[i];
+	    }
+	}
+
+	DataWrite(io, r.confidence, conf, r.length, 1);
+	xfree(seq);
+	xfree(conf);
+    }
+}
+
+int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
+    int i;
     
     set_malign_lookup(5);
-    set_alignment_matrix("nuc_matrix", "ACGTURYMWSKDHVB-*");
+    set_alignment_matrix("/tmp/nuc_matrix", "ACGTURYMWSKDHVB-*");
 
-#if 0
-    for (cnum = 1; cnum <= NumContigs(io); cnum++) {
-	malign = build_malign(io, cnum);
-	print_malign_seqs(malign);
-	/* print_malign(malign); */
-	c6 = build_vector(cnum, database_info, (void *)io);
-	realign_seqs(cnum, c6,  database_info, (void *)io, malign);
+    for (i = 0; i < ncontigs; i++) {
+	int cnum = contigs[i].contig;
+	int old_score, new_score, tot_score;
+	MALIGN *malign = build_malign(io, cnum);
 
-	/* xfree(c6);*/
-    }
-#endif
+	print_malign(malign);
+	new_score = malign_diffs(malign, &tot_score);
+	printf("CONTIG =%d START %d (of %d)\n",
+	       contigs[i].contig, new_score, tot_score);
+	do {
+	    old_score = new_score;
+	    malign = realign_seqs(cnum, malign);
+	    print_malign(malign);
+	    new_score = malign_diffs(malign, &tot_score);
+	    printf("Contig diff count=%d (of %d)\n", new_score, tot_score);
+	} while (new_score < old_score);
+	printf("CONTIG =%d END %d (of %d)\n",
+	       contigs[i].contig, new_score, tot_score);
 
-    for (cnum = 1; cnum <= NumContigs(io); cnum++) {
-	malign = build_malign(io, cnum);
-	/* print_malign_seqs(malign); */
-	puts("==PASS 1==");
-	realign_seqs(cnum, malign);
+	update_io(io, cnum, malign);
+	destroy_malign(malign, 1);
+
+	/* reassign_confidence_values(io, cnum); */
     }
 
     return 0;
