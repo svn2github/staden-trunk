@@ -17,15 +17,16 @@ CONTIGL *create_contig_link(void);
 void print_contig_links(CONTIGL *contigl);
 
 typedef struct Malign {
-  char *charset;
-  int charset_size;
-  int  nseqs;
-  int  length;
-  int  **matrix;
-  CONTIGL *contigl;
-  MSEG **msegs;
-  char *consensus;
-  int **scores;
+    char *charset;
+    int charset_size;
+    int  nseqs;
+    int  length;
+    int  **matrix;
+    CONTIGL *contigl;
+    char *consensus;
+    int **scores;
+    int gap_open;
+    int gap_extend;
 } MALIGN;
 
 MSEG **get_malign_segs(CONTIGL *contigl);
@@ -36,7 +37,7 @@ int set_malign_charset(MALIGN *malign, char *charset);
 
 int **create_malign_counts(int length, int depth);
 
-void get_malign_counts(MALIGN *malign);
+void get_malign_counts (MALIGN *malign, int start, int end);
 
 void print_malign_counts(MALIGN *malign);
 
@@ -48,7 +49,9 @@ void print_contig_links (CONTIGL *contigl);
 
 int contigl_length (CONTIGL *contigl);
 
-MALIGN *contigl_to_malign(CONTIGL *contigl);
+MALIGN *contigl_to_malign(CONTIGL *contigl, int gap_open, int gap_extend);
+
+void destroy_malign (MALIGN *malign, int contigl_too);
 
 MSEG *create_mseg(void);
 
@@ -56,9 +59,13 @@ void init_mseg (MSEG *mseg, char *seq, int length, int offset);
 
 void destroy_mseg (MSEG *mseg);
 
-void get_malign_consensus (MALIGN *malign);
+void get_malign_consensus(MALIGN *malign, int start, int end);
 
 void set_malign_lookup (int charset_size);
+
+void malign_insert_scores(MALIGN *malign, int pos, int size);
+
+void malign_recalc_scores(MALIGN *malign, int start, int end);
 
 typedef struct Moverlap {
     double	percent;

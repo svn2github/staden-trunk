@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
+#include <math.h>
 #include "os.h"
 #include "align_lib.h"
 #include "misc.h"
@@ -108,7 +109,6 @@ static int malign_lookup[256];
 static int W128[128][128];
 
 
-
 /*
  * Initialise 128x128 weight matrix from our score matrix
  */
@@ -139,6 +139,9 @@ void init_W128(int **matrix,
 #else
 extern int W128[128][128];
 #endif
+
+void destroy_malign_counts(int **matrix, int length, int depth);
+void scale_malign_scores(MALIGN *malign, int start, int end);
 
 /*
  * Initialise malign matrix from our score matrix
@@ -213,13 +216,8 @@ int set_alignment_matrix ( char *fn, char *base_order ) {
 }
 
 int set_malign_charset(MALIGN *malign, char *charset) {
-
-  if(NULL == (malign->charset = (char *) xmalloc(sizeof(charset)+1))) {
-    verror(ERR_WARN, "set_malign_charset", "xmalloc failed");
-    return -1;
-  }
-  strcpy(malign->charset,charset);
-  return 0;
+    malign->charset = strdup(charset);
+    return 0;
 }
 
 void print_malign_matrix(MALIGN *malign) {
@@ -294,6 +292,17 @@ CONTIGL *create_contig_link(void) {
     return contigl;
 }
 
+void destroy_contig_link(CONTIGL *contigl, int do_mesg) {
+    if (!contigl)
+	return;
+
+    if (contigl->mseg)
+	destroy_mseg(contigl->mseg);
+
+    xfree(contigl);
+    return;
+}
+
 MALIGN *create_malign(void) {
     MALIGN *malign;
 
@@ -303,7 +312,6 @@ MALIGN *create_malign(void) {
     }
 
     malign->contigl = NULL;
-    malign->msegs = NULL;
     malign->nseqs = 0;
     malign->consensus = NULL;
     malign->scores = NULL;
@@ -312,29 +320,36 @@ MALIGN *create_malign(void) {
     return malign;
 }
 
-void destroy_malign (MALIGN *malign) {
-  if ( malign ) {
-    if ( malign->contigl ) xfree ( malign->contigl );
-    if ( malign->msegs ) xfree ( malign->msegs );
-    if ( malign->consensus ) xfree ( malign->consensus );
-    if ( malign->scores ) xfree ( malign->scores );
-    if ( malign->matrix ) xfree ( malign->matrix );
-    xfree ( malign );
-  }
-}
 void free_malign (MALIGN *malign) {
   if ( malign ) {
-    if ( malign->contigl ) xfree ( malign->contigl );
-    if ( malign->msegs ) xfree ( malign->msegs );
-    if ( malign->consensus ) xfree ( malign->consensus );
-    if ( malign->scores ) xfree ( malign->scores );
+    if ( malign->scores ) destroy_malign_counts( malign->scores,
+						 malign->length,
+						 malign->charset_size + 2);
+    if ( malign->matrix ) destroy_malign_counts( malign->matrix,
+						 malign->charset_size,
+						 malign->charset_size);
+    if (malign->consensus) xfree(malign->consensus);
+    if (malign->charset) xfree(malign->charset);
   }
   malign->contigl = NULL;
-  malign->msegs = NULL;
   malign->consensus = NULL;
   malign->scores = NULL;
 }
 
+void destroy_malign (MALIGN *malign, int contig_links_too) {
+    if ( malign ) {
+	if (contig_links_too && malign->contigl) {
+	    CONTIGL *cl, *next;
+	    for (cl = malign->contigl; cl; cl = next) {
+		next = cl->next;
+		destroy_contig_link(cl, 1);
+	    }
+	}
+
+	free_malign(malign);
+	xfree (malign);
+    }
+}
 
 void set_malign_lookup(int charset_size) {
 
@@ -355,6 +370,14 @@ void set_malign_lookup(int charset_size) {
     malign_lookup['*'] = 4;
 }
 
+void destroy_malign_counts(int **matrix, int length, int depth) {
+    int i;
+    for (i = 0; i < length; i++) {
+	free(matrix[i]);
+    }
+    free(matrix);
+}
+
 int **create_malign_counts(int length, int depth) {
   /* length is contig length, depth charset_size */
   int **counts;
@@ -366,31 +389,93 @@ int **create_malign_counts(int length, int depth) {
   }
   return counts;
 }
- 
-void get_malign_counts (MALIGN *malign) {
-  CONTIGL *t;
-  int i,j,k,l;
 
-  t = malign->contigl;
-  while(t) {
-    for(j=0,k=t->mseg->offset;j<t->mseg->length;j++,k++) {
-      l = malign_lookup[(int)(t->mseg->seq[j])];
-      malign->scores[k][l]++;
+/*
+ * Inserts size columns into the malign->score array at position pos.
+ * The columns are initialised to zeros.
+ */
+void malign_insert_scores(MALIGN *malign, int pos, int size) {
+    int i;
+
+    /* -ve size indicates a deletion. Can it ever occur? */
+
+    /* printf("\nConsensus insert at %d + %d\n", pos, size); */
+
+    /* Shuffle along scores */
+    if (pos >= malign->length) {
+	size += pos - malign->length + 1;
+	pos = malign->length-1;
     }
-    t = t->next;
-  }
-  /* put the totals in the rows for gap open and gap extend */
-  k = malign->charset_size;
-  l = k + 1;
-  for(i=0;i<malign->length;i++) {
-    for(j=0;j<malign->charset_size;j++) {
-      malign->scores[i][k] += malign->scores[i][j];
-      malign->scores[i][l] += malign->scores[i][j];
+    malign->scores = (int **)realloc(malign->scores,
+				     (malign->length+size) * sizeof(int *));
+    memmove(&malign->scores[pos+size], &malign->scores[pos],
+	    sizeof(malign->scores[0]) * (malign->length - pos));
+    for (i = pos; i < pos + size; i++) {
+	malign->scores[i] = (int *)calloc(malign->charset_size+2, sizeof(int));
     }
-  }
+
+    /* Shuffle along consensus */
+    malign->consensus = (char *)realloc(malign->consensus,
+					malign->length+size);
+    memmove(&malign->consensus[pos+size], &malign->consensus[pos],
+	    malign->length - pos);
+    for (i = pos; i < pos + size; i++)
+	malign->consensus[i] = '-';
+
+    malign->length += size;
 }
 
-void get_malign_consensus(MALIGN *malign) {
+void malign_recalc_scores(MALIGN *malign, int start, int end) {
+    /* Recompute scores */
+    get_malign_counts(malign, start, end);
+
+    /* Recompute consensus */
+    get_malign_consensus(malign, start, end);
+
+    /* Scale scores */
+    scale_malign_scores(malign, start, end);
+}
+ 
+/*
+ * Fill out malign->scores[] from start to end inclusively.
+ */
+void get_malign_counts (MALIGN *malign, int start, int end) {
+    CONTIGL *t;
+    int i,j,k,l;
+
+    /* Zero */
+    for (i=start; i<=end; i++) {
+	for (j=0; j<malign->charset_size+2; j++) {
+	    malign->scores[i][j] = 0;
+	}
+    }
+
+    /* Accumulate */
+    for (t = malign->contigl; t && t->mseg->offset <= end; t=t->next) {
+	if (t->mseg->offset + t->mseg->length-1 < start)
+	    continue;
+	for(j=0,k=t->mseg->offset;j<t->mseg->length;j++,k++) {
+	    if (k < start)
+		continue;
+	    if (k > end)
+		break;
+	    l = malign_lookup[(int)(t->mseg->seq[j])];
+	    malign->scores[k][l]++;
+	}
+    }
+
+    /* put the totals in the rows for gap open and gap extend */
+    k = malign->charset_size;
+    l = k + 1;
+    for(i=start;i<=end;i++) {
+	for(j=0;j<malign->charset_size;j++) {
+	    malign->scores[i][k] += malign->scores[i][j];
+	    malign->scores[i][l] += malign->scores[i][j];
+	}
+    }
+}
+
+void get_malign_consensus(MALIGN *malign, int start, int end) {
   int i,j,k;
   char *s;
 
@@ -400,29 +485,39 @@ void get_malign_consensus(MALIGN *malign) {
 
   s = malign->consensus;
   k = malign->charset_size;
-  for(i=0;i<malign->length;i++) {
-    s[i] = '-';
-    for(j=0;j<malign->charset_size;j++) {
-      if(malign->scores[i][j] == malign->scores[i][k]) {
-	s[i] = malign->charset[j];
-	break;
+  for(i=start;i<=end;i++) {
+      int top = 0;
+      s[i] = '-';
+      for(j=0;j<malign->charset_size;j++) {
+	  int sc;
+	  /*
+	    if(malign->scores[i][j] > malign->scores[i][k]) {
+	      s[i] = malign->charset[j];
+	      break;
+	    }
+	  */
+	  /* Most common base call becomes the consensus */
+	  sc = malign->scores[i][j];
+	  if (top < sc) {
+	      top = sc;
+	      s[i] = malign->charset[j];
+	  }
       }
-    }
   }
 }
 
 void print_malign_scores(MALIGN *malign) {
   int i,j;
-  for(j=0;j<malign->charset_size+2;j++) {
-    for(i=0;i<malign->length;i++) {
-      printf(" %d ",malign->scores[i][j]);
-    }
-    printf("\n");
+  for(i=0;i<malign->length;i++) {
+      for(j=0;j<malign->charset_size+2;j++) {
+	  printf(" %+4d ",malign->scores[i][j]);
+      }
+      printf("\n");
   }
   printf("\n");
 }
 
-void scale_malign_scores(MALIGN *malign, int gap_open, int gap_extend) {
+void scale_malign_scores(MALIGN *malign, int start, int end) {
   int i,j,k,l;
   /* in the alignment routine all these values are added:
    * ie score is score + malign->scores[i][j];
@@ -431,14 +526,14 @@ void scale_malign_scores(MALIGN *malign, int gap_open, int gap_extend) {
    */
 
   /* do the characters which are non-zero */
-  for(i=0;i<malign->length;i++) {
+  for(i=start;i<=end;i++) {
     for(j=0;j<malign->charset_size;j++) {
       malign->scores[i][j] *= malign->matrix[j][j];
     }
   }
   /* do the characters which are zero */
   k = malign->matrix[0][1];
-  for(i=0;i<malign->length;i++) {
+  for(i=start;i<=end;i++) {
     l = malign->scores[i][malign->charset_size];
     for(j=0;j<malign->charset_size;j++) {
       if (!(malign->scores[i][j])) malign->scores[i][j] = k*l;
@@ -446,9 +541,9 @@ void scale_malign_scores(MALIGN *malign, int gap_open, int gap_extend) {
   }
   /* set the gap_open and gap_extend elements */
   j = malign->charset_size;
-  for(i=0;i<malign->length;i++) {
-    malign->scores[i][j]*=gap_open;
-    malign->scores[i][j+1]*=gap_extend;
+  for(i=start;i<=end;i++) {
+    malign->scores[i][j]*=malign->gap_open;
+    malign->scores[i][j+1]*=malign->gap_extend;
   }
 }
 
@@ -526,14 +621,10 @@ void print_malign_seqs(MALIGN *malign) {
   }
 }
 
-MALIGN *contigl_to_malign(CONTIGL *contigl_in) {
-
+MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   MALIGN *malign;
   CONTIGL *contigl;
   int i;
-  int gap_open, gap_extend;
-  gap_open = -12;
-  gap_extend = -4;
 
   /* get it started */
 
@@ -560,7 +651,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in) {
   /* get the initial scores from the alignment */
 
   malign->scores = create_malign_counts(malign->length,malign->charset_size+2);
-  get_malign_counts(malign);
+  get_malign_counts(malign, 0, malign->length-1);
 
 
   /*print_malign_scores(malign);*/
@@ -568,13 +659,15 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in) {
   /* make a 100% consensus for the alignment */
 
   malign->consensus = (char *) malloc(malign->length);
-  get_malign_consensus(malign);
-  printf("      %s\n",malign->consensus);
+  get_malign_consensus(malign, 0, malign->length-1);
+  /* printf("      %s\n",malign->consensus); */
 
   /* scale the scores with the gap penalties and the external score matrix */
 
-  scale_malign_scores(malign,gap_open,gap_extend);
-  print_malign_scores(malign);
+  malign->gap_open = gap_open;
+  malign->gap_extend = gap_extend;
+  scale_malign_scores(malign, 0, malign->length-1);
+  /* print_malign_scores(malign); */
 
   /* FIXME put in error checking for failed mallocs etc */
   return malign;
@@ -5236,32 +5329,32 @@ int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 
   /* init tables */
 
-  if(!(F1 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(F1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for F1");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
   }
-  if(!(F2 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(F2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for F2");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
   }
-  if(!(G1 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(G1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for G1");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
   }
-  if(!(G2 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(G2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for G2");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
   }
-  if(!(H1 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(H1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for H1");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
   }
-  if(!(H2 = (int *) xmalloc(sizeof(int) * (seq1_len + 2)))) {
+  if(!(H2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
     verror(ERR_WARN, "affine_align", "xmalloc failed for H2");
     destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
     return -1;
@@ -5630,7 +5723,6 @@ int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	  }
 
 	  row_index = malign_lookup[(int)seq2[row-1]];
-
 	  
 	  if ( seq2[row-1] != OLD_PAD_SYM ) {
 	    gap_open_x = gap_open_index;
