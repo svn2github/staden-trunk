@@ -5048,7 +5048,6 @@ int tcl_set_db_bitsize(ClientData clientData, Tcl_Interp *interp,
 }
 
 
-#if 0
 int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 		     int objc, Tcl_Obj *CONST objv[])
 {
@@ -5058,15 +5057,19 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 	{"-contigs",	ARG_STR, 1, "*",  offsetof(list2_arg, inlist)},
 	{NULL,	    0,	     0, NULL, 0}
     };
+    int rargc;
+    contig_list_t *rargv;
     
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
-    shuffle_contigs_io(args.io);
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    shuffle_contigs_io(args.io, rargc, rargv);
+
+    xfree(rargv);
 
     return TCL_OK;
 }
-#endif
 
 
 /* set up tcl commands which call C procedures */
@@ -5464,11 +5467,8 @@ NewGap_Init(Tcl_Interp *interp) {
 			 tcl_allelic_discreps, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "set_db_bitsize",
 			 tcl_set_db_bitsize, (ClientData)NULL, NULL);
-    
-#if 0
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
 			 (ClientData) NULL, NULL);
-#endif
 
     return TCL_OK;
 
