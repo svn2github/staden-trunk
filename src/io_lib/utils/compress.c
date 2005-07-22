@@ -533,6 +533,7 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
 	    break;
     }
     if (i == num_magics) {
+	compression_used = 0;
 	return fp;
     }
 
