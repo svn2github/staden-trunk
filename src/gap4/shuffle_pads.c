@@ -45,6 +45,7 @@
 #include "align.h"
 #include "dna_utils.h"
 #include "align_lib.h"
+#include "text_output.h"
 
 void print_malign(MALIGN *malign);
 void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset);
@@ -123,7 +124,7 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
 MALIGN *realign_seqs(int contig, MALIGN *malign) {
     CONTIGL *lastl = NULL, *contigl;
     int nsegs;
-    int seg_num = 0;
+    /* int seg_num = 0; */
     int old_start, old_end, new_start, new_end;
 
     for (contigl = malign->contigl, nsegs = 0; contigl; nsegs++)
@@ -140,7 +141,7 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	int cons_pos;
 	int npads, band;
 
-	printf("Seq %d/%d\r", seg_num++, nsegs);
+	/* printf("Seq %d/%d\r", seg_num++, nsegs); */
 
 	/* Obtain a depadded copy of this mseg */
 	len = contigl->mseg->length;
@@ -194,13 +195,6 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	malign->scores += cons_pos;
 	    
 	affine_malign(o, p); /* o->score = alignment score */
-
-	if (o->score >= 1e6) {
-	    puts("REJECT");
-	    print_moverlap(malign, o, cons_pos);
-	    goto cack_alignment; /* yeah yeah.. I know! */
-	}
-
 
 	malign->consensus -= cons_pos;
 	malign->scores -= cons_pos;
@@ -270,8 +264,6 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	}
 #endif
 
-    cack_alignment:
-
 	destroy_moverlap(o);
 	destroy_alignment_params(p); 
 
@@ -281,7 +273,6 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	lastl = contigl;
 	contigl = contigl->next;
     }
-    puts("");
 
     return malign;
 }
@@ -315,7 +306,7 @@ MALIGN *build_malign(GapIO *io, int cnum) {
 	last_contig = contig;
     }
 
-    return contigl_to_malign(first_contig, -8, -8);
+    return contigl_to_malign(first_contig, -9, -9);
 }
 
 #define LLEN 80
@@ -465,12 +456,12 @@ void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset) {
 int malign_diffs(MALIGN *malign, int *tot) {
     CONTIGL *cl;
     int diff_count = 0, tot_count = 0;
-    int end_gaps = 0;
 
     /* printf("%.*s\n", malign->length, malign->consensus); */
     for (cl = malign->contigl; cl; cl = cl->next) {
 	int i;
 
+	/*
 	for (i = 0; i < cl->mseg->length; i++, end_gaps++) {
 	    if (cl->mseg->seq[i] != '*')
 		break;
@@ -479,6 +470,7 @@ int malign_diffs(MALIGN *malign, int *tot) {
 	    if (cl->mseg->seq[i] != '*')
 		break;
 	}
+	*/
 
 	for (i = 0; i < cl->mseg->length; i++) {
 	    char c = toupper(malign->consensus[i+cl->mseg->offset]);
@@ -492,8 +484,6 @@ int malign_diffs(MALIGN *malign, int *tot) {
 	    tot_count++;
 	}
     }
-
-    printf("ENDGAPS = %d\n", end_gaps);
 
     if (tot)
 	*tot = tot_count;
@@ -623,8 +613,15 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 	r.end = r.start + r.sequence_length + 1;
 	gel_write(io, rnum, r);
 
+	io_relpos(io, rnum) = r.position;
+	io_length(io, rnum) = io_length(io, rnum) < 0 ? -r.sequence_length
+	                                              : +r.sequence_length;
 	xfree(seq);
     }
+    c.length = malign->length;
+    contig_write(io, cnum, c);
+
+    io_clength(io, cnum) = c.length;
 }
 
 static int isort(const void *vp1, const void *vp2) {
@@ -716,25 +713,33 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
 
     for (i = 0; i < ncontigs; i++) {
 	int cnum = contigs[i].contig;
-	int old_score, new_score, tot_score;
+	int old_score, new_score, tot_score, orig_score;
 	MALIGN *malign = build_malign(io, cnum);
 
-	print_malign(malign);
-	new_score = malign_diffs(malign, &tot_score);
-	printf("CONTIG =%d START %d (of %d)\n",
-	       contigs[i].contig, new_score, tot_score);
+	vmessage("Shuffling pads for contig %s\n", get_contig_name(io, cnum));
+	/* print_malign(malign); */
+	orig_score = new_score = malign_diffs(malign, &tot_score);
+	vmessage("Initial score %.2f%% mismatches\n",
+		 (100.0 * orig_score)/tot_score);
+	UpdateTextOutput();
 	do {
 	    old_score = new_score;
 	    malign = realign_seqs(cnum, malign);
-	    print_malign(malign);
+	    /* print_malign(malign); */
 	    new_score = malign_diffs(malign, &tot_score);
-	    printf("Contig diff count=%d (of %d)\n", new_score, tot_score);
+	    vmessage("  Number of differences to consensus: %d\n", new_score);
+	    UpdateTextOutput();
 	} while (new_score < old_score);
-	printf("CONTIG =%d END %d (of %d)\n",
-	       contigs[i].contig, new_score, tot_score);
 
-	update_io(io, cnum, malign);
+	if (new_score < orig_score) {
+	    update_io(io, cnum, malign);
+	} else {
+	    vmessage("Could not reduce number of consensus differences.\n");
+	}
 	destroy_malign(malign, 1);
+
+	vmessage("Final score %.2f%% mismatches\n",
+		 (100.0 * new_score)/tot_score);
 
 	/* reassign_confidence_values(io, cnum); */
     }
