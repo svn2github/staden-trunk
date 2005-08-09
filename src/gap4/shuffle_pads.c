@@ -16,6 +16,12 @@
  * has 3. The problem is that it cannot insert the pad as that changes the
  * sequence length.
  *
+ * Solution. Let X be a specific base call (one of A, C, G, T, but always the
+ * same member of that set).  X(n) is a run of 1 or more X.
+ * Find cases where we have sequence*X(n) or X(n)*sequence.
+ * Check the malign vector at the * to see if it also contains X. If so
+ * trim * and X(n).
+ *
  * ----------------------------------------------------------------------
  * Investigate 454 rate of miscall vs indel. Seems maybe we need to mirror
  * this and get the pad penalty much lower than a mismatch.
@@ -40,6 +46,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <time.h>
 #include "qual.h"
 #include "IO.h"
 #include "align.h"
@@ -78,6 +85,8 @@ void malign_padcon(MALIGN *malign, int pos, int size) {
 	memset(&cl->mseg->seq[pos - cl->mseg->offset], '*', size);
 	cl->mseg->seq[cl->mseg->length] = 0;
     }
+
+    printf("PADCON %d %+d\n", pos, size);
 }
 
 /*
@@ -101,16 +110,129 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
     }
 
     /* sequence */
+    /* Trim leading pads */
+    cp = o->seq2_out;
+    while(*cp == '.') {
+	cp++;
+	cl->mseg->offset++;
+    }
+
     xfree(cl->mseg->seq);
-    cl->mseg->seq = strdup(o->seq2_out);
+    cl->mseg->seq = strdup(cp);
     for (cp = cl->mseg->seq; *cp; cp++) {
 	if (*cp == '.')
 	    *cp = '*';
     }
 
+    /* Back off trailing pads */
+    while (*(cp-1) == '*')
+	cp--;
+
+    cl->mseg->length = cp-cl->mseg->seq;
+
+    /*
+    printf("cl->mseg->seq=%.*s (len %d)\n",
+	   cl->mseg->length, cl->mseg->seq, cl->mseg->length);
+    */
+
     return npads;
 }
 
+/*
+ * Realigning the sequences may change their start positions and hence break
+ * the sorted-on-position property.
+ * We make sure this is maintained here.
+ */
+static void resort_contigl(MALIGN *malign) {
+    CONTIGL *lastl, *cl;
+    int swapped;
+
+    /* The list is very close to being sorted, so this is not too inefficient */
+    do {
+	swapped = 0;
+	lastl = NULL;
+	for (cl = malign->contigl; cl && cl->next; lastl = cl, cl = cl->next) {
+	    if (cl->mseg->offset > cl->next->mseg->offset) {
+		CONTIGL *n = cl->next;
+
+		/* Swap cl & cl->next */
+		if (lastl)
+		    lastl->next = n;
+		else
+		    malign->contigl = n;
+		cl->next = n->next;
+		n->next = cl;
+		cl = lastl ? lastl : malign->contigl;
+		swapped = 1;
+	    }
+	}
+    } while (swapped);
+}
+
+typedef struct {
+    CONTIGL *cl;
+    int offset;
+    struct cl_list *next;
+} cl_list;
+
+static void remove_pads(MALIGN *malign) {
+    int i, removed = 0;
+    CONTIGL *cl = malign->contigl;
+    cl_list *head = NULL, *c2, *last, *next;
+    int npads, depth;
+
+    for (i = 0; i < malign->length; i++) {
+	/* Add new seqs to the depth array as we meet them */
+	while (cl && cl->mseg->offset == i+removed) {
+	    c2 = (cl_list *)xmalloc(sizeof(cl_list));
+	    c2->next = head;
+	    c2->offset = 0;
+	    c2->cl = cl;
+	    head = c2;
+	    cl->mseg->offset -= removed;
+	    cl = cl->next;
+	}
+
+	/* Remove any sequences we've now passed, also counting pads */
+	npads = 0;
+	depth = 0;
+	last = NULL;
+	for (c2 = head; c2; c2 = next) {
+	    next = c2->next;
+	    if (c2->offset == c2->cl->mseg->length) {
+		if (last)
+		    last->next = c2->next;
+		else
+		    head = c2->next;
+		xfree(c2);
+		continue;
+	    }
+	    last = c2;
+	    if (c2->cl->mseg->seq[c2->offset++] == '*')
+		npads++;
+	    depth++;
+	}
+
+	if (npads != depth)
+	    continue;
+
+	/* We have a column of pads, so remove it */
+	for (c2 = head; c2; c2 = c2->next) {
+	    c2->offset--;
+	    c2->cl->mseg->length--;
+	    memmove(&c2->cl->mseg->seq[c2->offset],
+		    &c2->cl->mseg->seq[c2->offset+1],
+		    c2->cl->mseg->length - c2->offset);
+	}
+	printf("PADCON %d -1\n", i);
+	removed++;
+	malign->length--;
+	i--;
+    }
+
+    printf("REMOVED %d PADS\n", removed);
+    malign_recalc_scores(malign, 0, malign->length-1);
+}
 
 /*
  * Iterates through all sequences in a contig realigning them against the
@@ -124,9 +246,16 @@ int edit_mseqs(MALIGN *malign, CONTIGL *cl, MOVERLAP *o, int cons_pos) {
 MALIGN *realign_seqs(int contig, MALIGN *malign) {
     CONTIGL *lastl = NULL, *contigl;
     int nsegs;
-    /* int seg_num = 0; */
+    int seg_num = 0;
     int old_start, old_end, new_start, new_end;
+    clock_t time_in_x[10];
+    clock_t clock1, clock2;
 
+    {
+	int i;
+	for (i = 0; i < 10; i++)
+	    time_in_x[i] = 0;
+    }
     for (contigl = malign->contigl, nsegs = 0; contigl; nsegs++)
 	contigl = contigl->next;
 
@@ -141,41 +270,70 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	int cons_pos;
 	int npads, band;
 
-	/* printf("Seq %d/%d\r", seg_num++, nsegs); */
+	clock1 = clock();
+	if ((seg_num++ % 13000) == 0) {
+	    printf("Seq %d/%d (%d in func: %d %d %d %d %d %d)\n",
+		   seg_num, nsegs,
+		   (int)(time_in_x[0] / 10000),
+		   (int)(time_in_x[1] / 10000),
+		   (int)(time_in_x[2] / 10000),
+		   (int)(time_in_x[3] / 10000),
+		   (int)(time_in_x[4] / 10000),
+		   (int)(time_in_x[5] / 10000),
+		   (int)(time_in_x[6] / 10000));
+	    fflush(stdout);
+    {
+	int i;
+	for (i = 0; i < 10; i++)
+	    time_in_x[i] = 0;
+    }
+	}
 
 	/* Obtain a depadded copy of this mseg */
+	clock2 = clock();
 	len = contigl->mseg->length;
 	depad_to_pad = (int *)xmalloc((len+1)*sizeof(int));
 	depadded_seq = (char *)xmalloc(len+1);
 	strncpy(depadded_seq, contigl->mseg->seq, len);
 	depadded_seq[len] = 0;
-	depad_seq(depadded_seq, &len, depad_to_pad);
+	//depad_seq(depadded_seq, &len, depad_to_pad);
 	npads = contigl->mseg->length - len;
-	band = MAX(20, npads);
+	band = MAX(20, npads+6);
 	band = MIN(1000, band);
+	time_in_x[3] += clock() - clock2;
 
-#if 0
+	//printf("IN %d %.*s\n",  contigl->id, len, depadded_seq);
+
+#if 1
 	/* Remove sequence from malign */
+
+	clock2 = clock();
+	malign_remove_contigl(malign, lastl, contigl);
+	time_in_x[1] += clock() - clock2;
+
+	/*
 	if (lastl) {
 	    lastl->next = contigl->next;
 	} else {
 	    malign->contigl = contigl->next;
 	}
 
-	/* Recalc scores (create_malign_counts) and rescale
-	 * (scale_malign_scores) over the region we have changed.
-	 * FIXME: TODO
-	 */
+	malign_recalc_scores(malign,
+			     contigl->mseg->offset,
+			     contigl->mseg->offset + contigl->mseg->length-1);
+	*/
+
 #endif
 
 	/* Align sequence to malign */
+	clock2 = clock();
 	p = create_align_params();
 	set_align_params (p,
-			  band, /*band*/
-			  4, /*gap_open*/
-			  4, /*gap_extend*/
-			  EDGE_GAPS_COUNT,
-			  /* EDGE_GAPS_ZERO | BEST_EDGE_TRACE, */
+			  8, //band, /*band*/
+			  8, /*gap_open*/
+			  8, /*gap_extend*/
+			  //EDGE_GAPS_COUNT,
+			  EDGE_GAPS_ZEROX | BEST_EDGE_TRACE,
 			  RETURN_EDIT_BUFFERS | RETURN_SEQ |
 			  RETURN_NEW_PADS,
 			  0,  /*seq1_start*/
@@ -186,34 +344,88 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 
 	o = create_moverlap();
 	init_moverlap(o, malign, depadded_seq, malign->length, len);
+	//printf("Seq='%.*s'\n", len, depadded_seq);
+	time_in_x[4] += clock() - clock2;
 
 	cons_pos = contigl->mseg->offset;
 	o->malign_len = malign->length - cons_pos;
+#if 1
+	/* 3 bases overhang to the right */
+	if (o->malign_len > contigl->mseg->length+3)
+	    o->malign_len = contigl->mseg->length+3;
+
+	/* And 3 to the left */
+	if (cons_pos > 3) {
+	    cons_pos -= 3;
+	    o->malign_len += 3;
+	    contigl->mseg->offset -= 3;
+	}
+#else
 	if (o->malign_len > contigl->mseg->length)
 	    o->malign_len = contigl->mseg->length;
-	malign->consensus += cons_pos;
-	malign->scores += cons_pos;
-	    
-	affine_malign(o, p); /* o->score = alignment score */
+#endif
 
-	malign->consensus -= cons_pos;
-	malign->scores -= cons_pos;
+	{
+	    char *old_cons   = malign->consensus;
+	    int **old_scores = malign->scores;
+	    int **old_counts = malign->counts;
+
+	    malign->consensus += cons_pos;
+	    malign->counts    += cons_pos;
+	    malign->scores    += cons_pos;
+
+	    //fixed_malign(o, p); /* o->score = alignment score */
+	    clock2 = clock();
+	    realigner_malign(o, p); /* o->score = alignment score */
+	    time_in_x[5] += clock() - clock2;
+
+	    //print_moverlap(malign, o, cons_pos);
+
+	    malign->consensus = old_cons;
+	    malign->counts    = old_counts;
+	    malign->scores    = old_scores;
+	}
+
+	//printf("OUT %d %.*s\n", contigl->id, o->seq_out_len, o->seq2_out);
 
 	/* Edit the sequence with the alignment */
 	old_start = contigl->mseg->offset;
 	old_end   = contigl->mseg->offset + contigl->mseg->length-1;
-	edit_mseqs(malign, contigl, o, cons_pos);
+	clock2 = clock();
+	npads = edit_mseqs(malign, contigl, o, cons_pos);
+	time_in_x[2] += clock() - clock2;
 	new_start = contigl->mseg->offset;
 	new_end   = contigl->mseg->offset + contigl->mseg->length-1;
 
-	/* Update the malign structure */
-	if (new_start-new_end != old_start-old_end)
-	    malign_insert_scores(malign, old_end,
-				 (new_end-new_start) - (old_end-old_start));
-	malign_recalc_scores(malign,
-			     MIN(old_start, new_start),
-			     MAX(old_end, new_end));
+	if (npads > 0) {
+	    malign_insert_scores(malign, old_end, npads);
+	}
 
+#if 1
+	/* Put sequence back */
+	clock2 = clock();
+	malign_add_contigl(malign, lastl, contigl);
+	time_in_x[1] += clock() - clock2;
+
+	/*
+	if (lastl) {
+	    lastl->next = contigl;
+	} else {
+	    malign->contigl = contigl;
+	}
+	*/
+#endif
+
+	/* Update the malign structure */
+	if (npads > 0) {
+	    //printf("Seq %d: npads %d\n", seg_num, npads);
+	    clock2 = clock();
+	    malign_recalc_scores(malign,
+				 MIN(old_start, new_start),
+				 MAX(old_end, new_end));
+	    time_in_x[1] += clock() - clock2;
+	}
+	    
 	/* TODO:
 	 *
 	 * X Realloc malign->consensus / malign->score
@@ -255,24 +467,23 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	    destroy_malign(copy, 0);
 	}
 
-#if 0
-	/* Put sequence back */
-	if (lastl) {
-	    lastl->next = contigl;
-	} else {
-	    malign->contigl = contigl;
-	}
-#endif
-
+	clock2 = clock();
 	destroy_moverlap(o);
 	destroy_alignment_params(p); 
+	time_in_x[6] += clock() - clock2;
 
 	xfree(depadded_seq);
 	xfree(depad_to_pad);
 
 	lastl = contigl;
 	contigl = contigl->next;
+
+	time_in_x[0] += clock() - clock1;
     }
+    puts("");
+
+    resort_contigl(malign);
+    remove_pads(malign);
 
     return malign;
 }
@@ -292,6 +503,7 @@ MALIGN *build_malign(GapIO *io, int cnum) {
 	char *seq;
 	gel_read(io, rnum, r);
 	contig = create_contig_link();
+	contig->id = rnum;
 	contig->mseg = create_mseg();
 	seq = TextAllocRead(io, r.sequence);
 	seq[r.start + r.sequence_length] = 0;
@@ -306,7 +518,8 @@ MALIGN *build_malign(GapIO *io, int cnum) {
 	last_contig = contig;
     }
 
-    return contigl_to_malign(first_contig, -9, -9);
+    /* for 454 data -6 to -10 seem to work fine */
+    return contigl_to_malign(first_contig, -7, -7);
 }
 
 #define LLEN 80
@@ -334,6 +547,9 @@ void print_malign(MALIGN *malign) {
 		abort();
 	    depth = (struct clist *)realloc(depth, ndepth * sizeof(*depth));
 	    depth[ndepth-1].seq = cl->mseg->seq;
+	    *depth[ndepth-1].seq = tolower(*depth[ndepth-1].seq);
+	    depth[ndepth-1].seq[cl->mseg->length-1] =
+		tolower(depth[ndepth-1].seq[cl->mseg->length-1]);
 	    depth[ndepth-1].len = cl->mseg->length;
 	    memset(depth[ndepth-1].line, ' ', LLEN);
 	    cl = cl->next;
@@ -497,21 +713,35 @@ int malign_diffs(MALIGN *malign, int *tot) {
  */
 void update_io(GapIO *io, int cnum, MALIGN *malign) {
     GContigs c;
-    GReadings r;
-    int rnum;
+    GReadings r, lastr;
     CONTIGL *cl;
+    int lastrnum = 0;
+    int rnum;
 
     contig_read(io, cnum, c);
-    for (rnum = c.left, cl = malign->contigl;
-	 rnum;
-	 rnum = r.right, cl = cl->next) {
+    for (cl = malign->contigl; cl; cl = cl->next) {
 	char *seq;
+
+	rnum = cl->id;
 	gel_read(io, rnum, r);
 	seq = TextAllocRead(io, r.sequence);
+
+	/* Link this->left and this->left->right. Save this->left */
+	io_lnbr(io, rnum) = lastrnum;
+	r.left = lastrnum;
+	if (lastrnum) {
+	    io_rnbr(io, lastrnum) = rnum;
+	    lastr.right = rnum;
+	    gel_write(io, lastrnum, lastr);
+	} else {
+	    io_clnbr(io, cnum) = rnum;
+	    c.left = rnum;
+	}
+
+	/* Check if sequence has changed. If so assign a new one */
 	if (memcmp(seq+r.start, cl->mseg->seq, cl->mseg->length) != 0) {
-	    /* Sequence differs,  so we assign a new one */
 	    int newlen = r.start + (r.length+1 - r.end) + cl->mseg->length;
-	    int i, j;
+	    int i, j, np;
 	    int1 *conf;
 	    int2 *opos;
 	    char *newseq  = (char *)malloc(newlen+1);
@@ -534,9 +764,11 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 	     * they differ. This will (*should*) be entire pad movements.
 	     * i = index to old seq
 	     * j = index to new seq
+	     * np = number of pads added minus removed from old seq.
 	     */
+	    np = 0;
 	    for (i = j; i < r.length && j < r.start + cl->mseg->length;) {
-		if (newseq[j] == seq[i]) {
+		if (toupper(newseq[j]) == toupper(seq[i])) {
 		    newconf[j] = conf[i];
 		    newopos[j] = opos[i];
 		    i++, j++;
@@ -546,6 +778,7 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 		/* Pad removed */
 		if (seq[i] == '*') {
 		    i++;
+		    tag_shift_for_delete(io, rnum, i+np--);
 		    continue;
 		}
 
@@ -568,6 +801,7 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 		    newconf[j] = MIN(cl, cr); /* min conf of neighbours */
 		    newopos[j] = 0;
 		    j++;
+		    tag_shift_for_insert(io, rnum, i+np++);
 		    continue;
 		}
 
@@ -596,7 +830,6 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 	    }
 	    r.length = j;
 
-	    /* TODO: Fix sequence and consensus tags too */
 	    TextWrite(io, r.sequence,       newseq,  r.length);
 	    DataWrite(io, r.confidence,     newconf, r.length, 1);
 	    DataWrite(io, r.orig_positions, newopos, r.length * 2, 2);
@@ -611,17 +844,32 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 	r.position = cl->mseg->offset + 1;
 	r.sequence_length = cl->mseg->length;
 	r.end = r.start + r.sequence_length + 1;
-	gel_write(io, rnum, r);
+	
+	lastr = r;
+	lastrnum = rnum;
 
 	io_relpos(io, rnum) = r.position;
 	io_length(io, rnum) = io_length(io, rnum) < 0 ? -r.sequence_length
 	                                              : +r.sequence_length;
 	xfree(seq);
     }
+
+    if (lastrnum) {
+	io_rnbr(io, lastrnum) = 0;
+	lastr.right = 0;
+	gel_write(io, lastrnum, lastr);
+    }
+
     c.length = malign->length;
+    c.right = lastrnum;
+    io_clength(io, cnum) = c.left;
+    io_crnbr(io, cnum) = c.right;
     contig_write(io, cnum, c);
 
     io_clength(io, cnum) = c.length;
+
+    /* TODO: Fix consensus tags too */
+    /* Need to maintain a mapping of consensus adding/removal */
 }
 
 static int isort(const void *vp1, const void *vp2) {
@@ -717,22 +965,22 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
 	MALIGN *malign = build_malign(io, cnum);
 
 	vmessage("Shuffling pads for contig %s\n", get_contig_name(io, cnum));
-	/* print_malign(malign); */
+	//print_malign(malign);
 	orig_score = new_score = malign_diffs(malign, &tot_score);
-	vmessage("Initial score %.2f%% mismatches\n",
-		 (100.0 * orig_score)/tot_score);
+	vmessage("Initial score %.2f%% mismatches (%d mismatches)\n",
+		 (100.0 * orig_score)/tot_score, orig_score);
 	UpdateTextOutput();
 	do {
 	    old_score = new_score;
 	    malign = realign_seqs(cnum, malign);
-	    /* print_malign(malign); */
+	    //print_malign(malign);
 	    new_score = malign_diffs(malign, &tot_score);
 	    vmessage("  Number of differences to consensus: %d\n", new_score);
 	    UpdateTextOutput();
 	} while (new_score < old_score);
 
 	if (new_score < orig_score) {
-	    update_io(io, cnum, malign);
+	    //update_io(io, cnum, malign);
 	} else {
 	    vmessage("Could not reduce number of consensus differences.\n");
 	}

@@ -277,9 +277,9 @@ void destroy_mseg (MSEG *mseg) {
 }
 
 void init_mseg (MSEG *mseg, char *seq, int length, int offset) {
-  mseg->seq = seq;
-  mseg->length = length;
-  mseg->offset = offset;
+    mseg->seq = seq;
+    mseg->length = length;
+    mseg->offset = offset;
 }
 
 CONTIGL *create_contig_link(void) {
@@ -289,6 +289,7 @@ CONTIGL *create_contig_link(void) {
 	return NULL;
     }
     contigl->next = NULL;
+    contigl->id = 0;
     return contigl;
 }
 
@@ -312,8 +313,8 @@ MALIGN *create_malign(void) {
     }
 
     malign->contigl = NULL;
-    malign->nseqs = 0;
     malign->consensus = NULL;
+    malign->counts = NULL;
     malign->scores = NULL;
     malign->matrix = NULL;
     malign->charset_size = 6; /*  a,c,g,t,*,n */
@@ -322,9 +323,12 @@ MALIGN *create_malign(void) {
 
 void free_malign (MALIGN *malign) {
   if ( malign ) {
+    if ( malign->counts ) destroy_malign_counts( malign->counts,
+						 malign->length,
+						 malign->charset_size);
     if ( malign->scores ) destroy_malign_counts( malign->scores,
 						 malign->length,
-						 malign->charset_size + 2);
+						 malign->charset_size);
     if ( malign->matrix ) destroy_malign_counts( malign->matrix,
 						 malign->charset_size,
 						 malign->charset_size);
@@ -333,6 +337,7 @@ void free_malign (MALIGN *malign) {
   }
   malign->contigl = NULL;
   malign->consensus = NULL;
+  malign->counts = NULL;
   malign->scores = NULL;
 }
 
@@ -371,10 +376,7 @@ void set_malign_lookup(int charset_size) {
 }
 
 void destroy_malign_counts(int **matrix, int length, int depth) {
-    int i;
-    for (i = 0; i < length; i++) {
-	free(matrix[i]);
-    }
+    free(matrix[0]);
     free(matrix);
 }
 
@@ -384,8 +386,9 @@ int **create_malign_counts(int length, int depth) {
   int i;
 
   counts = (int **)malloc(length*sizeof(int *));
-  for(i=0;i<length;i++) {
-    counts[i] = (int *)calloc(depth,sizeof(int));
+  counts[0] = (int *)calloc(depth * length, sizeof(int));
+  for(i=1;i<length;i++) {
+      counts[i] = counts[0] + depth*i;
   }
   return counts;
 }
@@ -401,17 +404,27 @@ void malign_insert_scores(MALIGN *malign, int pos, int size) {
 
     /* printf("\nConsensus insert at %d + %d\n", pos, size); */
 
-    /* Shuffle along scores */
     if (pos >= malign->length) {
 	size += pos - malign->length + 1;
 	pos = malign->length-1;
     }
+
+    /* Shuffle along counts */
+    malign->counts = (int **)realloc(malign->counts,
+				     (malign->length+size) * sizeof(int *));
+    memmove(&malign->counts[pos+size], &malign->counts[pos],
+	    sizeof(malign->counts[0]) * (malign->length - pos));
+    for (i = pos; i < pos + size; i++) {
+	malign->counts[i] = (int *)calloc(malign->charset_size, sizeof(int));
+    }
+
+    /* Shuffle along scores */
     malign->scores = (int **)realloc(malign->scores,
 				     (malign->length+size) * sizeof(int *));
     memmove(&malign->scores[pos+size], &malign->scores[pos],
 	    sizeof(malign->scores[0]) * (malign->length - pos));
     for (i = pos; i < pos + size; i++) {
-	malign->scores[i] = (int *)calloc(malign->charset_size+2, sizeof(int));
+	malign->scores[i] = (int *)calloc(malign->charset_size, sizeof(int));
     }
 
     /* Shuffle along consensus */
@@ -423,6 +436,58 @@ void malign_insert_scores(MALIGN *malign, int pos, int size) {
 	malign->consensus[i] = '-';
 
     malign->length += size;
+}
+
+/*
+ * Removes 'del' from the contigl list. The previous contigl will be previous
+ * or NULL if del is the first. (Knowing this info speeds up this function
+ * so it is mandatory.)
+ */
+void malign_remove_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *del) {
+    int i, j;
+    int start, end;
+    char *seq;
+
+    start = del->mseg->offset;
+    end = del->mseg->offset + del->mseg->length-1;
+    seq = del->mseg->seq;
+
+    if (previous)
+	previous->next = del->next;
+    else
+	malign->contigl = del->next;
+
+    for (j = start, i = 0; j <= end; i++, j++) {
+	int c = malign_lookup[seq[i]];
+	malign->counts[j][c]--;
+    }
+
+    get_malign_consensus(malign, start, end);
+    scale_malign_scores(malign, start, end);
+}
+
+void malign_add_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *add) {
+    int i, j;
+    int start, end;
+
+    start = add->mseg->offset;
+    end = add->mseg->offset + add->mseg->length-1;
+
+    if (previous) {
+	add->next = previous->next;
+	previous->next = add;
+    } else {
+	add->next = malign->contigl;
+	malign->contigl = add;
+    }
+
+    for (j = start, i = 0; i < add->mseg->length; i++, j++) {
+	int c = malign_lookup[add->mseg->seq[i]];
+	malign->counts[j][c]++;
+    }
+    
+    get_malign_consensus(malign, start, end);
+    scale_malign_scores(malign, start, end);
 }
 
 void malign_recalc_scores(MALIGN *malign, int start, int end) {
@@ -438,6 +503,17 @@ void malign_recalc_scores(MALIGN *malign, int start, int end) {
  
 /*
  * Fill out malign->scores[] from start to end inclusively.
+ *
+ * FIXME: This gets called a lot with various start and end ranges.
+ * We need a way to track which sequences overlap specific regions so
+ * we do not have to loop through the entire contig chaining along the
+ * linked list each time. Over half of all the cpu time on a small 454
+ * project (14000 reads) is spent in this function.
+ *
+ * We wouldn't need this for every possible value of start, just maybe
+ * start/100 or something, so that we can limit the search to be within
+ * a 100 bp of start rather than from the contig start. NB. How to keep this
+ * up to date when moving or lengthening sequences?
  */
 void get_malign_counts (MALIGN *malign, int start, int end) {
     CONTIGL *t;
@@ -445,8 +521,8 @@ void get_malign_counts (MALIGN *malign, int start, int end) {
 
     /* Zero */
     for (i=start; i<=end; i++) {
-	for (j=0; j<malign->charset_size+2; j++) {
-	    malign->scores[i][j] = 0;
+	for (j=0; j<malign->charset_size; j++) {
+	    malign->counts[i][j] = 0;
 	}
     }
 
@@ -460,17 +536,7 @@ void get_malign_counts (MALIGN *malign, int start, int end) {
 	    if (k > end)
 		break;
 	    l = malign_lookup[(int)(t->mseg->seq[j])];
-	    malign->scores[k][l]++;
-	}
-    }
-
-    /* put the totals in the rows for gap open and gap extend */
-    k = malign->charset_size;
-    l = k + 1;
-    for(i=start;i<=end;i++) {
-	for(j=0;j<malign->charset_size;j++) {
-	    malign->scores[i][k] += malign->scores[i][j];
-	    malign->scores[i][l] += malign->scores[i][j];
+	    malign->counts[k][l]++;
 	}
     }
 }
@@ -479,25 +545,16 @@ void get_malign_consensus(MALIGN *malign, int start, int end) {
   int i,j,k;
   char *s;
 
-  /* must be run after get_malign_scores
-   * and before scale_malign_scores ! 
-   */
+  /* must be run after get_malign_scores */
 
   s = malign->consensus;
   k = malign->charset_size;
   for(i=start;i<=end;i++) {
       int top = 0;
       s[i] = '-';
-      for(j=0;j<malign->charset_size;j++) {
-	  int sc;
-	  /*
-	    if(malign->scores[i][j] > malign->scores[i][k]) {
-	      s[i] = malign->charset[j];
-	      break;
-	    }
-	  */
+      for(j = 0; j < k; j++) {
 	  /* Most common base call becomes the consensus */
-	  sc = malign->scores[i][j];
+	  int sc = malign->counts[i][j];
 	  if (top < sc) {
 	      top = sc;
 	      s[i] = malign->charset[j];
@@ -509,7 +566,7 @@ void get_malign_consensus(MALIGN *malign, int start, int end) {
 void print_malign_scores(MALIGN *malign) {
   int i,j;
   for(i=0;i<malign->length;i++) {
-      for(j=0;j<malign->charset_size+2;j++) {
+      for(j=0;j<malign->charset_size;j++) {
 	  printf(" %+4d ",malign->scores[i][j]);
       }
       printf("\n");
@@ -518,33 +575,62 @@ void print_malign_scores(MALIGN *malign) {
 }
 
 void scale_malign_scores(MALIGN *malign, int start, int end) {
-  int i,j,k,l;
+  int i,j,k;
   /* in the alignment routine all these values are added:
    * ie score is score + malign->scores[i][j];
    * even when scores[i][j] is a gap penalty.
    * to calculate the score j = seq2[row-1]
    */
 
-  /* do the characters which are non-zero */
-  for(i=start;i<=end;i++) {
-    for(j=0;j<malign->charset_size;j++) {
-      malign->scores[i][j] *= malign->matrix[j][j];
-    }
-  }
-  /* do the characters which are zero */
+  /* An update on Rodger's where the score incorporates positive from match
+   * with negative from mismatches
+   */
+#if 0
   k = malign->matrix[0][1];
   for(i=start;i<=end;i++) {
-    l = malign->scores[i][malign->charset_size];
-    for(j=0;j<malign->charset_size;j++) {
-      if (!(malign->scores[i][j])) malign->scores[i][j] = k*l;
-    }
+      for (l=j=0;j<malign->charset_size;j++) {
+	  l += malign->counts[i][j];
+      }
+      for(j=0;j<malign->charset_size;j++) {
+	  if (malign->counts[i][j]) {
+	      malign->scores[i][j] =
+		  malign->counts[i][j] * malign->matrix[j][j] +
+		  k*(l - malign->counts[i][j]);
+	  } else {
+	      malign->scores[i][j] = k*l;
+	  }
+      }
   }
-  /* set the gap_open and gap_extend elements */
-  j = malign->charset_size;
+#endif
+
+
+  /* Simple unit based scores with 0 = perfect 1 = wrong. Based on ReAligner */
+  /* Scale by 100 to fit in integers */
+#if 1
+  k = malign->matrix[0][1];
   for(i=start;i<=end;i++) {
-    malign->scores[i][j]*=malign->gap_open;
-    malign->scores[i][j+1]*=malign->gap_extend;
+      int t = 0;
+      double s = 0;
+      int max = 0;
+      for (j = 0; j < malign->charset_size; j++) {
+	  t += malign->counts[i][j];
+	  if (max < malign->counts[i][j])
+	      max = malign->counts[i][j];
+      }
+      if (t) {
+	  for(j=0;j<malign->charset_size;j++) {
+	      s = 0.5 * (1 - malign->counts[i][j] / (double)t);
+	      if (malign->counts[i][j] != max)
+		  s += 0.5;
+	      malign->scores[i][j] = s * 100;
+	  }
+      } else {
+	  for(j=0;j<malign->charset_size;j++) {
+	      malign->scores[i][j] = 0;
+	  }
+      }
   }
+#endif
 }
 
 void print_contig_links (CONTIGL *contigl) {
@@ -580,27 +666,6 @@ int contigl_elements (CONTIGL *contigl) {
     t = t->next;
   }
   return elements;
-}
-
-MSEG **get_malign_segs(CONTIGL *contigl) {
-
-  CONTIGL *t;
-  MSEG **msegs;
-  MSEG *mseg;
-
-  int i,nseqs;
-
-  nseqs = contigl_elements(contigl);
-  msegs = (MSEG **)malloc(nseqs*sizeof(MSEG *));
-  t = contigl;
-  i = 0;
-  while(t) {
-    mseg = create_mseg();
-    init_mseg(mseg,t->mseg->seq,t->mseg->length,t->mseg->offset);
-    msegs[i++] = mseg;
-    t = t->next;
-  }
-  return msegs;
 }
 
 void print_malign_seqs(MALIGN *malign) {
@@ -646,15 +711,15 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   /*print_malign_matrix(malign);*/
 
   malign->length = contigl_length(contigl);
-  malign->nseqs = contigl_elements(contigl);
 
   /* get the initial scores from the alignment */
 
-  malign->scores = create_malign_counts(malign->length,malign->charset_size+2);
+  malign->counts = create_malign_counts(malign->length,malign->charset_size);
+  malign->scores = create_malign_counts(malign->length,malign->charset_size);
   get_malign_counts(malign, 0, malign->length-1);
 
 
-  /*print_malign_scores(malign);*/
+  //print_malign_scores(malign);
 
   /* make a 100% consensus for the alignment */
 
@@ -667,7 +732,7 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   malign->gap_open = gap_open;
   malign->gap_extend = gap_extend;
   scale_malign_scores(malign, 0, malign->length-1);
-  /* print_malign_scores(malign); */
+  //print_malign_scores(malign);
 
   /* FIXME put in error checking for failed mallocs etc */
   return malign;
@@ -1611,8 +1676,18 @@ int do_trace_back_bits ( unsigned char *bit_trace, char *seq1, char *seq2,
     }
     else if(trace_byte == BYTE_DOWN) {
       r--;
-      seq1_out--;
-      *(seq2_out--) = seq2[r];
+      /*
+       * Only gap the consensus vector if the single sequence is not a pad
+       * itself. Otherwise we consider this to be a non-edit. Why? Because
+       * we left seq2 padded and an insertion to seq1 is effectively removing
+       * the pad from seq2. Not depadding seq2 means that realigning data
+       * previously aligned and padded can be done with a narrow band around
+       * the diagonal.
+       */
+      if (seq2[r] != '*') {
+	  seq1_out--;
+	  *(seq2_out--) = seq2[r];
+      }
     }
     else {
       c--;
@@ -1748,8 +1823,18 @@ int do_trace_back ( unsigned char *bit_trace, char *seq1, char *seq2,
     }
     else if(trace_byte == BYTE_DOWN) {
       r--;
-      seq1_out--;
-      *(seq2_out--) = seq2[r];
+      /*
+       * Only gap the consensus vector if the single sequence is not a pad
+       * itself. Otherwise we consider this to be a non-edit. Why? Because
+       * we left seq2 padded and an insertion to seq1 is effectively removing
+       * the pad from seq2. Not depadding seq2 means that realigning data
+       * previously aligned and padded can be done with a narrow band around
+       * the diagonal.
+       */
+      if (seq2[r] != '*') {
+	  seq1_out--;
+	  *(seq2_out--) = seq2[r];
+      }
     }
     else {
       c--;
@@ -5154,249 +5239,260 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
   return 0;
 }
 
-int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
+#if 0
+/*
+ * Uses fixed weights instead of affine weights.
+ * FIXME: banded mode not updated in this code yet
+ */
+int fixed_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 
-  char *seq1, *seq2;
-  int seq1_len, seq2_len, seq_out_len;
-  int edge_inc;
-  int i,j;
-  int s;
-  char *seq1_out, *seq2_out;
-  int b_c, b_r;
+    char *seq1, *seq2;
+    int seq1_len, seq2_len, seq_out_len;
+    int edge_inc;
+    int i,j;
+    int s;
+    char *seq1_out, *seq2_out;
+    int b_c, b_r;
 
-  int t,big_neg,b_s,e,b_e;
-  int *F1, *F2, *G1, *G2, *H1, *H2;
-  int *pF1, *pF2, *pG1, *pG2, *pH1, *pH2;
-  int *t_pF2, *t_pG2, *t_pH2;
-  int best_F1, best_G1, best_H1, V_diag, V_extx, V_exty, V_insx, V_insy;
-  int E_gap, F_gap;
-  int edge_mode, best_edge_score;
+    int t,big_neg,b_s,e,b_e;
+    int *F1, *F2, *G1, *G2, *H1, *H2;
+    int *pF1, *pF2, *pG1, *pG2, *pH1, *pH2;
+    int *t_pF2, *t_pG2, *t_pH2;
+    int best_F1, best_G1, best_H1, V_diag, V_extx, V_insx, V_insy;
+    int E_gap, F_gap;
+    int edge_mode, best_edge_score;
 
-  int band, band_length, two_band, band_left, band_right, first_band_left=0;
-  int off_set, guard_offset, *pF_guard, *pG_guard, *pH_guard;
-  int row, first_row, max_row, column, max_col;
-  unsigned char *bit_trace;
-  int byte, nibble, e_row, e_col, size_mat;
-  char OLD_PAD_SYM, NEW_PAD_SYM;
-  int gap_open_x, gap_extend_x;
-  int row_index, gap_open_index, gap_extend_index, gap_match_index;
-  int gap_open_score, gap_extend_score, gap_pen;
-  int **scores;
-  MALIGN *malign;
-
-
-  /*
-   *    Three possible alignment cases:
-   *    IGAxi   AIGAHxi   GAxi--
-   *    LGVyj   GVyj--    SLGVHyj
-   *       F      G            H
-   *    i.e. xi aligned with yj, xi aligned opposite a gap y,
-   *    or yi aligned opposite a gap in x
-   *    below these cases are contained in the recurrence relations
-   *    for F, G and H respectively
-   *    s(xi,yj) is score matrix
-   *    d is gap_open
-   *    e is gap extend
-   *
-   *                   F(i-1,j-1) + s(xi,yi)
-   *    F(i,j)  = max  H(i-1,j-1) + s(xi,yi)      \  no gap
-   *                   G(i-1,j-1) + s(xi,yi)
-   *
-   *                   F(i,j-1)   - d
-   *    G(i,j) = max   G(i,j-1)   - e             |  gap in y
-   *
-   *                   F(i-1,j)   - d
-   *    H(i,j) = max   H(i-1,j)   - e             -  gap in x
-   *                  
-   *              
-   *    Find MAX(F(i,j),G(i,j),H(i,j)) and set trace accordingly:
-   *                \     |      -
-   *
-   *    if gaps at left edge count:
-   *    G(0,i) = G(i,0) = H(0,i) = H(i,0) = - d - e * i
-   *    F(1,i) = F(i,1) = - d - e * i;
-   *    F(0,0) = 0;
-   *    otherwise all set to 0;
-   *    if right end gaps count the best score is at (seq1_len,seq2_len)
-   *    otherwise find the best score along the two edges
-   *    trace back accordingly
-   *
-   *    store 2 rows for each of F, G, H
-   *    use p_F1, p_G1, p_G1 to point to previous row
-   *    p_F2, p_G2, p_H2 for current row being built
-   *    at the start of a new row:
-   *
-   *    rows have length seq1_len, columns seq2_len
-   *    i.e.
-   *    rows: 1 - seq1_len, columns 1 - seq2_len
-   *    seq1xxxxxxxxxxxxxxx
-   *   s
-   *   e
-   *   q
-   *   2
-   *   y
-   *   y
-   *   y
-   *
-   *   multiple sequence alignment version.
-   * 
-   *   compare a multiple sequence alignment (malign) against a single seq (seq)
-   *
-   *   Want the scoring to be compatible with the standard scoring matrix used
-   *   for aligning pairs of sequences and to use affine gap weighting scheme.
-   *   The malign can have ragged ends - ie different depths and the scores
-   *   should reflect this.
-   *
-   *   Let gap_open = d, gap_extend = e, depth of malign at i is n(i)
-   *   character type k has count C(i,k) at position i
-   *   score matrix value for character types j,k = M(j,k)
-   *
-   *   score for character types j,k at i = n(i).C(i,j).M(j,k) if C(i,j) !=0
-   *                                      = n(i).M(j,k)        if C(i,j) =0
-   *   ie if the character in seq occurs in malign +ve score
-   *      if not mismatch score, in both cases score multiplied by depth.
-   *
-   *   score for introducing gap in seq   = n(i).C(i,j).M(j,k) if C(i,'*') !=0
-   *                                      = n(i).d             if C(i,'*') =0
-   *   score for extending gap in seq     = n(i).C(i,j).M(j,k) if C(i,'*') !=0
-   *                                      = n(i).e             if C(i,'*') =0
-   *   ditto for gaps in malign.
-   *   NB i thought that gaps in malign should be weighted to reflect the
-   *   depth so that we would favour gaps in malign over gaps in seq, but
-   *   this resulted in too many gaps in seq:
-   *   eg match = 4, mismatch -8, d -12, e -4, 2 sequences in malign
-   *   1 gap  in seq(-12) > 1 mismatch(-16) > 1 gap in malign(-24)
-   *   6 gaps in seq(-32) = 2 mismatch(-32) < 1 gap in malign(-24)
-   *   so they gaps in seq and malign are scored the same
-   *
-   *   Implementation
-   *   
-   *   precompute the malign scores (scores[][]) for every position
-   *   add two extra rows to this matrix: one for gap_open, one for gap_extend
-   *   these are precomputed. scores[malign_length][charset_size+2]
-   *   If edge gaps count, fill the edges with the values from the gap_open
-   *   and gap_extend scores. ie correctly reflect the depth of the malign
-   *   throughout its length.
-   *
-   *   gap_open_index and gap_extend_index are indices to the gap_open and
-   *   gap_extend elements of the malign score matrix, gap_match_index to
-   *   the elements containing the scores for padding characters
-   *
-   *   In the recurrence, for each row, we check the sequence character type:
-   *   if it is not a pad we set
-   *              gap_open_x   = gap_open_index
-   *              gap_extend_x = gap_extend_index
-   *          else{
-   *              gap_open_x = gap_extend_x = gap_match_index
-   *
-   *   this enables us to set the appropriate costs for introducing or aligning
-   *   gaps: if the seq contains a pad it gets a scores dependent on the number
-   *   of pads in the malign at that point; if it does not contain a pad it gets
-   *   the appropriate gap penalties.
-   *
-   *   For each column:
-   *
-   *          gap_open_score   = scores[column-1][gap_open_x]
-   *          gap_extend_score = scores[column-1][gap_extend_x]
-   */
-
-  malign = moverlap->malign;
-  scores = malign->scores;
-  gap_open_index = malign->charset_size;
-  gap_extend_index = gap_open_index + 1;
-  gap_match_index = malign->charset_size - 2;
-
-  F1 = F2 = G1 = G2 = H1 = H2 = NULL;
-  bit_trace = NULL;
-  seq1_out = seq2_out = NULL;
-  big_neg = INT_MIN/2;
-  best_edge_score = big_neg;
-
-  seq1 = moverlap->malign->consensus;
-  seq2 = moverlap->seq2;
-  seq1_len = moverlap->malign_len;
-  seq2_len = moverlap->seq2_len;
-
-  edge_mode = params->edge_mode;
-
-  OLD_PAD_SYM = params->old_pad_sym;
-  NEW_PAD_SYM = params->new_pad_sym;
-  band = params->band;
-  first_row = params->first_row;
-  band_left = params->band_left;
-  band_right = params->band_right;
+    int band, band_length, two_band, band_left, band_right, first_band_left=0;
+    int off_set, guard_offset, *pF_guard;
+    int row, first_row, max_row, column, max_col;
+    unsigned char *bit_trace;
+    int byte, nibble, size_mat;
+    char OLD_PAD_SYM, NEW_PAD_SYM;
+    int gap_open_x, gap_extend_x;
+    int row_index, gap_open_index, gap_extend_index, gap_match_index;
+    int gap_open_score, gap_extend_score, gap_pen;
+    int **scores;
+    MALIGN *malign;
 
 
-  /* init tables */
+    /*
+     *    Three possible alignment cases:
+     *    IGAxi   AIGAHxi   GAxi--
+     *    LGVyj   GVyj--    SLGVHyj
+     *       F      G            H
+     *    i.e. xi aligned with yj, xi aligned opposite a gap y,
+     *    or yi aligned opposite a gap in x
+     *    below these cases are contained in the recurrence relations
+     *    for F, G and H respectively
+     *    s(xi,yj) is score matrix
+     *    d is gap_open
+     *    e is gap extend
+     *
+     *                   F(i-1,j-1) + s(xi,yi)
+     *    F(i,j)  = max  H(i-1,j-1) + s(xi,yi)      \  no gap
+     *                   G(i-1,j-1) + s(xi,yi)
+     *
+     *                   F(i,j-1)   - d
+     *    G(i,j) = max   G(i,j-1)   - e             |  gap in y
+     *
+     *                   F(i-1,j)   - d
+     *    H(i,j) = max   H(i-1,j)   - e             -  gap in x
+     *                  
+     *              
+     *    Find MAX(F(i,j),G(i,j),H(i,j)) and set trace accordingly:
+     *                \     |      -
+     *
+     *    if gaps at left edge count:
+     *    G(0,i) = G(i,0) = H(0,i) = H(i,0) = - d - e * i
+     *    F(1,i) = F(i,1) = - d - e * i;
+     *    F(0,0) = 0;
+     *    otherwise all set to 0;
+     *    if right end gaps count the best score is at (seq1_len,seq2_len)
+     *    otherwise find the best score along the two edges
+     *    trace back accordingly
+     *
+     *    store 2 rows for each of F, G, H
+     *    use p_F1, p_G1, p_G1 to point to previous row
+     *    p_F2, p_G2, p_H2 for current row being built
+     *    at the start of a new row:
+     *
+     *    rows have length seq1_len, columns seq2_len
+     *    i.e.
+     *    rows: 1 - seq1_len, columns 1 - seq2_len
+     *    seq1xxxxxxxxxxxxxxx
+     *   s
+     *   e
+     *   q
+     *   2
+     *   y
+     *   y
+     *   y
+     *
+     *   multiple sequence alignment version.
+     * 
+     *   compare a multiple sequence alignment (malign) against a single seq (seq)
+     *
+     *   Want the scoring to be compatible with the standard scoring matrix used
+     *   for aligning pairs of sequences and to use affine gap weighting scheme.
+     *   The malign can have ragged ends - ie different depths and the scores
+     *   should reflect this.
+     *
+     *   Let gap_open = d, gap_extend = e, depth of malign at i is n(i)
+     *   character type k has count C(i,k) at position i
+     *   score matrix value for character types j,k = M(j,k)
+     *
+     *   score for character types j,k at i = n(i).C(i,j).M(j,k) if C(i,j) !=0
+     *                                      = n(i).M(j,k)        if C(i,j) =0
+     *   ie if the character in seq occurs in malign +ve score
+     *      if not mismatch score, in both cases score multiplied by depth.
+     *
+     *   score for introducing gap in seq   = n(i).C(i,j).M(j,k) if C(i,'*') !=0
+     *                                      = n(i).d             if C(i,'*') =0
+     *   score for extending gap in seq     = n(i).C(i,j).M(j,k) if C(i,'*') !=0
+     *                                      = n(i).e             if C(i,'*') =0
+     *   ditto for gaps in malign.
+     *   NB i thought that gaps in malign should be weighted to reflect the
+     *   depth so that we would favour gaps in malign over gaps in seq, but
+     *   this resulted in too many gaps in seq:
+     *   eg match = 4, mismatch -8, d -12, e -4, 2 sequences in malign
+     *   1 gap  in seq(-12) > 1 mismatch(-16) > 1 gap in malign(-24)
+     *   6 gaps in seq(-32) = 2 mismatch(-32) < 1 gap in malign(-24)
+     *   so they gaps in seq and malign are scored the same
+     *
+     *   Implementation
+     *   
+     *   precompute the malign scores (scores[][]) for every position
+     *   add two extra rows to this matrix: one for gap_open, one for gap_extend
+     *   these are precomputed. scores[malign_length][charset_size+2]
+     *   If edge gaps count, fill the edges with the values from the gap_open
+     *   and gap_extend scores. ie correctly reflect the depth of the malign
+     *   throughout its length.
+     *
+     *   gap_open_index and gap_extend_index are indices to the gap_open and
+     *   gap_extend elements of the malign score matrix, gap_match_index to
+     *   the elements containing the scores for padding characters
+     *
+     *   In the recurrence, for each row, we check the sequence character type:
+     *   if it is not a pad we set
+     *              gap_open_x   = gap_open_index
+     *              gap_extend_x = gap_extend_index
+     *          else{
+     *              gap_open_x = gap_extend_x = gap_match_index
+     *
+     *   this enables us to set the appropriate costs for introducing or aligning
+     *   gaps: if the seq contains a pad it gets a scores dependent on the number
+     *   of pads in the malign at that point; if it does not contain a pad it gets
+     *   the appropriate gap penalties.
+     *
+     *   For each column:
+     *
+     *          gap_open_score   = scores[column-1][gap_open_x]
+     *          gap_extend_score = scores[column-1][gap_extend_x]
+     */
 
-  if(!(F1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for F1");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
-  if(!(F2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for F2");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
-  if(!(G1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for G1");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
-  if(!(G2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for G2");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
-  if(!(H1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for H1");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
-  if(!(H2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
-    verror(ERR_WARN, "affine_align", "xmalloc failed for H2");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
+    malign = moverlap->malign;
+    scores = malign->scores;
+    gap_open_index = malign->charset_size;
+    gap_extend_index = gap_open_index + 1;
+    gap_match_index = malign->charset_size - 2;
 
-  /* do recurrence */
+    F1 = F2 = G1 = G2 = H1 = H2 = NULL;
+    bit_trace = NULL;
+    seq1_out = seq2_out = NULL;
+    big_neg = INT_MIN/2;
+    best_edge_score = big_neg;
 
-  if ( edge_mode & EDGE_GAPS_COUNT ) {
-    F1[0] = 0;
-    E_gap = scores[0][gap_open_index];
-    H1[0] = G1[0] = E_gap;
-    for(i = 1; i < seq1_len; i++) {
-      F1[i] = E_gap;
-      E_gap += scores[i][gap_extend_index];
-      H1[i] = E_gap;
-      G1[i] = E_gap;
+    seq1 = moverlap->malign->consensus;
+    seq2 = moverlap->seq2;
+    seq1_len = moverlap->malign_len;
+    seq2_len = moverlap->seq2_len;
+
+    edge_mode = params->edge_mode;
+
+    OLD_PAD_SYM = params->old_pad_sym;
+    NEW_PAD_SYM = params->new_pad_sym;
+    band = params->band;
+    first_row = params->first_row;
+    band_left = params->band_left;
+    band_right = params->band_right;
+
+
+    /* init tables */
+
+    if(!(F1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for F1");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
     }
-    E_gap = scores[0][gap_open_index] + scores[0][gap_extend_index];
-    F_gap = F1[0];
-    edge_inc = 1;
-  }
-  else if ( edge_mode & EDGE_GAPS_ZERO ) {
-    for(i = 0; i <= seq1_len; i++) F1[i] = 0;
-    for(i = 0; i <= seq1_len; i++) G1[i] = 0;
-    for(i = 0; i <= seq1_len; i++) H1[i] = 0;
-    edge_inc = 0;
-    E_gap = 0;
-    F_gap = 0;
-  }
-  else {
-    printf("scream: unknown gaps mode\n");
-    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-    return -1;
-  }
+    if(!(F2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for F2");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    if(!(G1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for G1");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    if(!(G2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for G2");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    if(!(H1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for H1");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    if(!(H2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for H2");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+
+    /* do recurrence */
+
+    if ( edge_mode & EDGE_GAPS_COUNT ) {
+	F1[0] = 0;
+	E_gap = scores[0][gap_open_index];
+	H1[0] = G1[0] = E_gap;
+	for(i = 1; i < seq1_len; i++) {
+	    F1[i] = E_gap;
+	    E_gap += scores[i][gap_extend_index];
+	    H1[i] = E_gap;
+	    G1[i] = E_gap;
+	}
+	E_gap = scores[0][gap_open_index] + scores[0][gap_extend_index];
+	/* F_gap = F1[0]; */
+	F_gap = scores[0][gap_open_index];
+	edge_inc = 1;
+    }
+    else if ( edge_mode & EDGE_GAPS_ZERO ) {
+	for(i = 0; i <= seq1_len; i++) F1[i] = 0;
+	for(i = 0; i <= seq1_len; i++) G1[i] = 0;
+	for(i = 0; i <= seq1_len; i++) H1[i] = 0;
+	edge_inc = 0;
+	E_gap = 0;
+	F_gap = 0;
+
+	/* FIXME - so we insert pads in X but not Y */
+	edge_inc = 1;
+	E_gap = scores[0][gap_open_index] + scores[0][gap_extend_index];
+	F_gap = scores[0][gap_open_index];
+    }
+    else {
+	printf("scream: unknown gaps mode\n");
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
   
-  /* process each row. i.e. each character of seq2 */
+    /* process each row. i.e. each character of seq2 */
 
-  b_s = big_neg;
-  b_e = b_r = b_c = 0;
-  t = 0;
+    b_s = big_neg;
+    b_e = b_r = b_c = 0;
+    t = 0;
 
-  if ( band ) {
+    if ( band ) {
 	/*
 	 * If band is set we restrict the search to band elements either side
 	 * of the main diagonal. This gives a band length of (2 * band) + 1.
@@ -5413,10 +5509,10 @@ int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	 * of the two sequences.
 	 */
 	size_mat = (MIN(seq1_len - band_left, seq2_len - first_row) + 1) 
-	            * band_length;
+	    * band_length;
 
 	if(!(bit_trace = (unsigned char *) 
-	    xmalloc(1 + sizeof(char) * size_mat / 4))) {
+	     xmalloc(1 + sizeof(char) * size_mat / 4))) {
 	    verror(ERR_WARN, "affine_align", "xmalloc failed for bit_trace");
 	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, 
 			     seq1_out, seq2_out );
@@ -5436,75 +5532,50 @@ int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 
 	for(row = first_row; row <= max_row; row++, band_left++, band_right++) {
 
-	  guard_offset = band_left + two_band;
+	    guard_offset = band_left + two_band;
 
-	  if(t == 0) {
-	    pF1   = F1;
-	    pF2   = F2;
-	    pG1   = G1;
-	    pG2   = G2;
-	    pH1   = H1;
-	    pH2   = H2;
-	    pF_guard = F1 + guard_offset;
-	    pG_guard = G1 + guard_offset;
-	    pH_guard = H1 + guard_offset;
-	    F2[0] = F_gap;
-	    H2[0] = E_gap;
-	    G2[0] = E_gap;
-	    t = 1;
-	  } else {
-	    pF1   = F2;
-	    pF2   = F1;
-	    pG1   = G2;
-	    pG2   = G1;
-	    pH1   = H2;
-	    pH2   = H1;
-	    pF_guard = F2 + guard_offset;
-	    pG_guard = G2 + guard_offset;
-	    pH_guard = H2 + guard_offset;
-	    F1[0] = F_gap;
-	    H1[0] = E_gap;
-	    G1[0] = E_gap;
-	    t = 0;
-	  }
-	  if ( (off_set = band_left - 1 ) > 0 ) {
-	    pF1 += off_set;
-	    pF2 += off_set;
-	    pG1 += off_set;
-	    pG2 += off_set;
-	    pH1 += off_set;
-	    pH2 += off_set;
-	    *pF2 = big_neg;
-	    *pG2 = big_neg;
-	    *pH2 = big_neg;
-	  }
-	  t_pF2 = pF2;
-	  t_pG2 = pG2;
-	  t_pH2 = pH2;
+	    if(t == 0) {
+		pF1   = F1;
+		pF2   = F2;
+		pF_guard = F1 + guard_offset;
+		t = 1;
+	    } else {
+		pF1   = F2;
+		pF2   = F1;
+		pF_guard = F2 + guard_offset;
+		t = 0;
+	    }
+	    pF2[0] = F_gap;
 
-	  if ( band_right <= seq1_len ) {
-	    *pF_guard = big_neg;
-	    *pG_guard = big_neg;
-	    *pH_guard = big_neg;
-	  }
-	  gap_pen = scores[MIN(row-1,seq1_len-1)][gap_extend_index];
-	  if(edge_inc) {
-	    E_gap += gap_pen;
-	    F_gap += gap_pen;
-	  }
-	  row_index = malign_lookup[(int)seq2[row-1]];
+	    if ( (off_set = band_left - 1 ) > 0 ) {
+		pF1 += off_set;
+		pF2 += off_set;
+		*pF2 = big_neg;
+	    }
+	    t_pF2 = pF2;
 
-	  /* FIXME: got the axes switched for the single sequence methods
-	   * what is the correct thing to do here????
-	   */
+	    if ( band_right <= seq1_len ) {
+		*pF_guard = big_neg;
+	    }
+	    gap_pen = scores[MIN(row-1,seq1_len-1)][gap_extend_index];
+	    if(edge_inc) {
+		E_gap += gap_pen;
+		F_gap += gap_pen;
+	    }
+	    row_index = malign_lookup[(int)seq2[row-1]];
 
-	  if ( seq2[row-1] != OLD_PAD_SYM ) {
-	    gap_open_x = gap_open_index;
-	    gap_extend_x = gap_extend_index;
-	  }
-	  else {
-	    gap_open_x = gap_extend_x = gap_match_index;
-	  }
+	    /* FIXME: got the axes switched for the single sequence methods
+	     * what is the correct thing to do here????
+	     */
+
+	    /* Always use the score matrix for pads */
+	    if ( seq2[row-1] != OLD_PAD_SYM && 0) {
+		gap_open_x = gap_open_index;
+		gap_extend_x = gap_extend_index;
+	    }
+	    else {
+		gap_open_x = gap_extend_x = gap_match_index;
+	    }
 	    /*
 	     * Need to prevent the possibility of certain transitions
 	     * at the ends of each band; column-1 should not be allowed at
@@ -5524,398 +5595,713 @@ int affine_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
 	     * and initialising the left edges where required.   
 	     */
 
-	  /* process each column. i.e. each character of seq1 */
+	    /* process each column. i.e. each character of seq1 */
 	  
-	  max_col = MIN(seq1_len, band_right);
-	  for(column = MAX(1, band_left);
+	    max_col = MIN(seq1_len, band_right);
+	    for(column = MAX(1, band_left);
 		column <= max_col;
 		column++, pF1++, pF2++, pG1++, pG2++, pH1++, pH2++) {
 
-	    /* move diagonally? */
-	    s = scores[column-1][row_index];
-	    gap_open_score = scores[column-1][gap_open_x];
-	    gap_extend_score = scores[column-1][gap_extend_x];
+		byte = e / 4;
+		nibble = 2 * (e % 4);
 
-	    V_diag = *pF1 + s;
-	    V_insx = *pH1 + s;
-	    V_insy = *pG1 + s;
+		s = scores[column-1][row_index];
 
-	    if ( V_insx > V_diag ) {
-	      if ( V_insx > V_insy ) {
-		best_F1 = V_insx;
-	      }
-	      else {
-		best_F1 = V_insy;
-	      }
-	    }
-	    else {
-	      if ( V_diag > V_insy ) {
-		best_F1 = V_diag;
-	      }
-	      else {
-		best_F1 = V_insy;
-	      }
-	    }
-	    *(pF2+1) = best_F1;
 
-	    /* gap in x? */
-	    V_diag =  *pF2 + gap_open_score;
-	    V_extx =  *pH2 + gap_extend_score;
-	    if ( V_diag > V_extx ) {
-	      best_H1 = V_diag;
-	    }
-	    else {
-	      best_H1 = V_extx;
-	    }
-	    *(pH2+1) = best_H1;
+		V_diag = *pF1 + s;
+		V_insx = *pH1 + s;
+		V_insy = *pG1 + s;
 
-	    /* gap in y? */
-	    V_diag = *(pF1+1) + gap_open_score;
-	    V_exty = *(pG1+1) + gap_extend_score;
-	    if ( V_diag > V_exty ) {
-	      best_G1 = V_diag;
-	    }
-	    else {
-	      best_G1 = V_exty;
-	    }
-	    *(pG2+1) = best_G1;
+		V_diag = pF1[0] + s;
+		V_insx = pF2[0] + scores[column-1][gap_match_index];
+		V_insy = pF1[-1] + scores[column-1][gap_open_index];
 
-	    e_row = (row - first_row + 1) * band_length;
-	    e_col = column - band_left + 1;
-	    e = e_row + e_col;
-	    byte = e / 4;
-	    nibble = 2 * (e % 4);
-	    
-	    /* find the best move */
-	    if ( best_H1 > best_F1 ) {
-	      if ( best_H1 > best_G1 ) {
-		bit_trace[byte] |= BYTE_ACROSS << nibble;
-		b_s = best_H1;
-	      }
-	      else {
-		bit_trace[byte] |= BYTE_DOWN << nibble;
-		b_s = best_G1;
-	      }
+		if ( V_insx > V_diag ) {
+		    if ( V_insx > V_insy ) {
+			best_F1 = V_insx;
+			bit_trace[byte] |= BYTE_ACROSS << nibble;
+			b_s = V_insx;
+		    }
+		    else {
+			best_F1 = V_insy;
+			bit_trace[byte] |= BYTE_DOWN << nibble;
+			b_s = V_insy;
+		    }
+		}
+		else {
+		    if ( V_diag > V_insy ) {
+			best_F1 = V_diag;
+			bit_trace[byte] |= BYTE_DIAGONAL << nibble;
+			b_s = V_diag;
+		    }
+		    else {
+			best_F1 = V_insy;
+			bit_trace[byte] |= BYTE_DOWN << nibble;
+			b_s = V_insy;
+		    }
+		}
+		*(pF2+1) = best_F1;
+
+		/* gap in x? */
+		V_diag =  *pF2 + gap_open_score;
+		V_extx =  *pH2 + gap_extend_score;
+		if ( V_diag > V_extx ) {
+		    best_H1 = V_diag;
+		}
+		else {
+		    best_H1 = V_extx;
+		}
+		*(pH2+1) = best_H1;
 	    }
-	    else {
-	      if ( best_F1 > best_G1 ) {
-		bit_trace[byte] |= BYTE_DIAGONAL << nibble;
-		b_s = best_F1;
-	      }
-	      else {
-		bit_trace[byte] |= BYTE_DOWN << nibble;
-		b_s = best_G1;
-	      }
-	    }
-	  }
 	  
-	  if ( column > seq1_len ) {
-	    if ( edge_mode & BEST_EDGE_TRACE ) {
-	      best_H1 = MAX(best_H1,best_G1);
-	      best_F1 = MAX(best_H1,best_F1);
-	      if ( best_F1 > best_edge_score ) {
-		best_edge_score = best_F1;
-		b_r = row;
-		b_e = ((row - first_row + 1) * band_length) + 
-		       (seq1_len - band_left + 1);
-	      }
+	    if ( column > seq1_len ) {
+		if ( edge_mode & BEST_EDGE_TRACE ) {
+		    best_H1 = MAX(best_H1,best_G1);
+		    best_F1 = MAX(best_H1,best_F1);
+		    if ( best_F1 > best_edge_score ) {
+			best_edge_score = best_F1;
+			b_r = row;
+			b_e = ((row - first_row + 1) * band_length) + 
+			    (seq1_len - band_left + 1);
+		    }
+		}
 	    }
-	  }
-	  /*    
-		for(q=0;q<seq1_len;q++)printf(" %3d ",pF2[q]);
-		printf("\n");
+	    /*    
+		  for(q=0;q<seq1_len;q++)printf(" %3d ",pF2[q]);
+		  printf("\n");
 		
-		for(q=0;q<seq1_len;q++)printf(" %3d ",pG2[q]);
-		printf("\n");
-		for(q=0;q<seq1_len;q++)printf(" %3d ",pH2[q]);
-		printf("\n");
-	  */
+		  for(q=0;q<seq1_len;q++)printf(" %3d ",pG2[q]);
+		  printf("\n");
+		  for(q=0;q<seq1_len;q++)printf(" %3d ",pH2[q]);
+		  printf("\n");
+	    */
 	  
-      }
+	}
 	
 	
         row--;
 	band_left--;
 	band_right--;
 	if ( edge_mode & BEST_EDGE_TRACE ) {
-	  b_c = seq1_len;
+	    b_c = seq1_len;
 
-	  pF2 = t_pF2+1;
-	  pG2 = t_pG2+1;
-	  pH2 = t_pH2+1;
-	  max_col = MIN(seq1_len, band_right);
-	  for(column = MAX(1, band_left);
-	      column <= max_col;
-	      column++, pF2++, pG2++, pH2++) {
-	    best_F1 = *pF2;
-	    best_G1 = *pG2;
-	    best_H1 = *pH2;
-	    best_H1 = MAX(best_H1,best_G1);
-	    best_F1 = MAX(best_H1,best_F1);
-	    if ( best_F1 > best_edge_score ) {
-	      best_edge_score = best_F1;
-	      b_c = column;
-	      b_r = seq2_len;
-	      b_e = ((row - first_row + 1) * band_length) + 
-		     (column - band_left + 1);
+	    pF2 = t_pF2+1;
+	    pG2 = t_pG2+1;
+	    pH2 = t_pH2+1;
+	    max_col = MIN(seq1_len, band_right);
+	    for(column = MAX(1, band_left);
+		column <= max_col;
+		column++, pF2++, pG2++, pH2++) {
+		best_F1 = *pF2;
+		best_G1 = *pG2;
+		best_H1 = *pH2;
+		best_H1 = MAX(best_H1,best_G1);
+		best_F1 = MAX(best_H1,best_F1);
+		if ( best_F1 > best_edge_score ) {
+		    best_edge_score = best_F1;
+		    b_c = column;
+		    b_r = seq2_len;
+		    b_e = ((row - first_row + 1) * band_length) + 
+			(column - band_left + 1);
+		}
 	    }
-	  }
-      }
+	}
 	if ( edge_mode & FULL_LENGTH_TRACE ) {
 	    b_r = seq2_len;
-	  b_c = seq1_len;
-	  b_e = ((b_r - first_row + 1) * band_length) + 
-		 (b_c - band_left + 1);
-	  best_edge_score = b_s;
+	    b_c = seq1_len;
+	    b_e = ((b_r - first_row + 1) * band_length) + 
+		(b_c - band_left + 1);
+	    best_edge_score = b_s;
 	}
 	if ( !(edge_mode & BEST_EDGE_TRACE) ) { /* fall back */
-	  b_r = seq2_len;
-	  b_c = seq1_len;
-	  b_e = ((b_r - first_row + 1) * band_length) + 
-		 (b_c - band_left + 1);
-	  best_edge_score = b_s;
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = ((b_r - first_row + 1) * band_length) + 
+		(b_c - band_left + 1);
+	    best_edge_score = b_s;
         }
 
-  }
-  else {
-
+    } else {
 	/* Initialise the bit trace */
 	size_mat = (seq1_len + 1) * (seq2_len + 1);
-	if(!(bit_trace = (unsigned char *) xmalloc(1 + sizeof(char) * size_mat / 4))) {
+	if(!(bit_trace = (unsigned char *)xmalloc(1 +  size_mat / 4))) {
 	    verror(ERR_WARN, "affine_align", "xmalloc failed for bit_trace");
-	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	    destroy_af_mem ( F1, F2, G1, G2, H1, H2,
+			     bit_trace, seq1_out, seq2_out );
 	    return -1;
 	}
 	j = 1 + size_mat / 4;
 	for(i = 0; i < j; i++) {
 	    bit_trace[i] = 0;
 	}
+
+	/* Step through rows, where a row is a consensus vector */
 	for(row = 1, e = seq1_len + 2; row <= seq2_len; row++, e++) {
+	    if(t == 0) {
+		pF1 = F1;
+		pF2 = F2;
+		t = 1;
+	    } else {
+		pF1 = F2;
+		pF2 = F1;
+		t = 0;
+	    }
 
-	  if(t == 0) {
-	    pF1   = F1;
-	    pF2   = F2;
-	    pG1   = G1;
-	    pG2   = G2;
-	    pH1   = H1;
-	    pH2   = H2;
-	    F2[0] = F_gap;
-	    H2[0] = E_gap;
-	    G2[0] = E_gap;
-	    t = 1;
-	  } else {
-	    pF1   = F2;
-	    pF2   = F1;
-	    pG1   = G2;
-	    pG2   = G1;
-	    pH1   = H2;
-	    pH2   = H1;
-	    F1[0] = F_gap;
-	    H1[0] = E_gap;
-	    G1[0] = E_gap;
-	    t = 0;
-	  }
+	    pF2[0] = F_gap;
 	  
-	  gap_pen = scores[MIN(row-1,seq1_len-1)][gap_extend_index];
-	  if(edge_inc) {
-	    E_gap += gap_pen;
-	    F_gap += gap_pen;
-	  }
+	    if (0) {
+		int i;
+		printf("F Row %d:", row-1);
+		for (i = 0; i <= seq1_len; i++) {
+		    printf(" %+4d", pF1[i]);
+		}
+		puts("");
+	    }
 
-	  row_index = malign_lookup[(int)seq2[row-1]];
+	    gap_pen = scores[MIN(row-1,seq1_len-1)][gap_extend_index];
+	    if(edge_inc) {
+		F_gap += gap_pen;
+	    }
+
+	    row_index = malign_lookup[(int)seq2[row-1]];
 	  
-	  if ( seq2[row-1] != OLD_PAD_SYM ) {
-	    gap_open_x = gap_open_index;
-	    gap_extend_x = gap_extend_index;
-	  }
-	  else {
-	    gap_open_x = gap_extend_x = gap_match_index;
-	  }
+	    /* process each column. i.e. each character of seq1 */
+	    for(column = 1; column <= seq1_len; column++, e++) {
+		byte = e / 4;
+		nibble = 2 * (e % 4);
 
+		s = scores[column-1][row_index];
 
-	  /* process each column. i.e. each character of seq1 */
+		V_diag = pF1[column-1] + s;
+		V_insx = pF2[column-1] + scores[column-1][gap_match_index];
+		V_insy = pF1[column] + scores[column-1][gap_open_index];
+
+		if ( V_insx > V_diag ) {
+		    if ( V_insx > V_insy ) {
+			best_F1 = V_insx;
+			bit_trace[byte] |= BYTE_ACROSS << nibble;
+		    } else {
+			best_F1 = V_insy;
+			bit_trace[byte] |= BYTE_DOWN << nibble;
+		    }
+		} else {
+		    if ( V_diag > V_insy ) {
+			best_F1 = V_diag;
+			bit_trace[byte] |= BYTE_DIAGONAL << nibble;
+		    } else {
+			best_F1 = V_insy;
+			bit_trace[byte] |= BYTE_DOWN << nibble;
+		    }
+		}
+		pF2[column] = best_F1;
+	    }
 	  
-	  for(column = 1; column <= seq1_len; column++, e++) {
-	    /* move diagonally? */
-	    s = scores[column-1][row_index];
-	    gap_open_score = scores[column-1][gap_open_x];
-	    gap_extend_score = scores[column-1][gap_extend_x];
-
-	    V_diag = pF1[column-1] + s;
-	    V_insx = pH1[column-1] + s;
-	    V_insy = pG1[column-1] + s;
-	    if ( V_insx > V_diag ) {
-	      if ( V_insx > V_insy ) {
-		best_F1 = V_insx;
-	      }
-	      else {
-		best_F1 = V_insy;
-	      }
+	    if ( edge_mode & BEST_EDGE_TRACE ) {
+		/* best right edge score */
+		if ( best_F1 > best_edge_score ) {
+		    best_edge_score = best_F1;
+		    b_r = row;
+		    b_e = (row + 1) * (seq1_len + 1) - 1;
+		}
 	    }
-	    else {
-	      if ( V_diag > V_insy ) {
-		best_F1 = V_diag;
-	      }
-	      else {
-		best_F1 = V_insy;
-	      }
+	}
+	if (0) {
+	    int i;
+	    printf("F Row %d:", row-1);
+	    for (i = 0; i <= seq1_len; i++) {
+		printf(" %+4d", pF2[i]);
 	    }
-	    pF2[column] = best_F1;
-
-	    /* gap in x? */
-	    V_diag =  pF2[column-1] + gap_open_score;
-	    V_extx =  pH2[column-1] + gap_extend_score;
-	    if ( V_diag > V_extx ) {
-	      best_H1 = V_diag;
-	    }
-	    else {
-	      best_H1 = V_extx;
-	    }
-	    pH2[column] = best_H1;
-	    
-	    /* gap in y? */
-	    V_diag =  pF1[column] + gap_open_score;
-	    V_exty = pG1[column] + gap_extend_score;
-	    if ( V_diag > V_exty ) {
-	      best_G1 = V_diag;
-	    }
-	    else {
-	      best_G1 = V_exty;
-	    }
-	    pG2[column] = best_G1;
-
-	    byte = e / 4;
-	    nibble = 2 * (e % 4);
-
-	    /* choose best move */
-	    if ( best_H1 > best_F1 ) {
-	      if ( best_H1 > best_G1 ) {
-		bit_trace[byte] |= BYTE_ACROSS << nibble;
-		b_s = best_H1;
-	      }
-	      else {
-		bit_trace[byte] |= BYTE_DOWN << nibble;
-		b_s = best_G1;
-	      }
-	    }
-	    else {
-	      if ( best_F1 > best_G1 ) {
-		bit_trace[byte] |= BYTE_DIAGONAL << nibble;
-		b_s = best_F1;
-	      }
-	      else {
-		bit_trace[byte] |= BYTE_DOWN << nibble;
-		b_s = best_G1;
-	      }
-	    }
-	    /*
-	    if (( best_H1 > best_F1 ) && ( best_H1 > best_G1 )) {
-	      bit_trace[byte] |= BYTE_ACROSS << nibble;
-	      b_s = best_H1;
-	    }
-	    else if (( best_G1 > best_F1 ) && ( best_G1 > best_H1 )) {
-	      bit_trace[byte] |= BYTE_DOWN << nibble;
-	      b_s = best_G1;
-	    }
-	    else {
-	      bit_trace[byte] |= BYTE_DIAGONAL << nibble;
-	      b_s = best_F1;
-	    }
-	    */
-	  }
-	  
-	  if ( edge_mode & BEST_EDGE_TRACE ) {
-	    /* best right edge score */
-	    best_H1 = MAX(best_H1,best_G1);
-	    best_F1 = MAX(best_H1,best_F1);
-	    if ( best_F1 > best_edge_score ) {
-	      best_edge_score = best_F1;
-	      b_r = row;
-	      b_e = (row + 1) * (seq1_len + 1) - 1;
-	    }
-	  }
+	    puts("");
 	}
 	
 	if ( edge_mode & BEST_EDGE_TRACE ) {
-	  /* best bottom edge score */
-	  b_c = seq1_len;
-	  for(column = 1; column <= seq1_len; column++) {
-	    best_F1 = pF2[column];
-	    best_G1 = pG2[column];
-	    best_H1 = pH2[column];
-	    best_H1 = MAX(best_H1,best_G1);
-	    best_F1 = MAX(best_H1,best_F1);
-	    if ( best_F1 > best_edge_score ) {
-	      best_edge_score = best_F1;
-	      b_c = column;
-	      b_r = seq2_len;
-	      b_e = (row - 1) * (seq1_len + 1) + column;
+	    /* FIXME: only find exit point along bottom and not right edge */
+	    best_edge_score = big_neg;
+
+	    /* best bottom edge score */
+	    b_c = seq1_len;
+	    for(column = 1; column <= seq1_len; column++) {
+		best_F1 = pF2[column];
+		if ( best_F1 > best_edge_score ) {
+		    best_edge_score = best_F1;
+		    b_c = column;
+		    b_r = seq2_len;
+		    b_e = (row - 1) * (seq1_len + 1) + column;
+		}
 	    }
-	  }
 	}
 	if ( edge_mode & FULL_LENGTH_TRACE ) {
-	  b_r = seq2_len;
-	  b_c = seq1_len;
-	  b_e = seq2_len * (seq1_len + 1) + seq1_len;
-	  best_edge_score = b_s;
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = seq2_len * (seq1_len + 1) + seq1_len;
+	    best_edge_score = b_s;
 	}
 	if ( !(edge_mode & BEST_EDGE_TRACE) ) { /* fall back */
-	  b_r = seq2_len;
-	  b_c = seq1_len;
-	  b_e = seq2_len * (seq1_len + 1) + seq1_len;
-	  best_edge_score = b_s;
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = seq2_len * (seq1_len + 1) + seq1_len;
+	    best_edge_score = b_s;
+	}
+    }
+
+
+    /* do traceback */
+
+    moverlap->score = best_edge_score;
+
+    if( i = do_trace_back_bits ( bit_trace, seq1, seq2, seq1_len, seq2_len,
+				 &seq1_out, &seq2_out, &seq_out_len, b_r, b_c, b_e,
+				 band, first_band_left, first_row, band_length, NEW_PAD_SYM)) {
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    /*
+      printf("%s\n",seq1_out);
+      printf("%s\n",seq2_out);
+    */
+    moverlap->seq1_out = seq1_out;
+    moverlap->seq2_out = seq2_out;
+    moverlap->seq_out_len = seq_out_len;
+
+    if ( i = seq_to_moverlap (moverlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+
+    if ( params->job & RETURN_EDIT_BUFFERS ) {
+	if (seq_to_edit ( seq1_out,seq_out_len,&moverlap->S1,&moverlap->s1_len,NEW_PAD_SYM)) {
+	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	    return -1;
+	}
+	if (seq_to_edit ( seq2_out,seq_out_len,&moverlap->S2,&moverlap->s2_len,NEW_PAD_SYM)) {
+	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	    return -1;
+	}
+    }
+
+    if ( params->job & RETURN_SEQ ) {
+	if ( !(params->job & RETURN_NEW_PADS) ) {
+	    old_pads_for_new(seq1_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
+	    old_pads_for_new(seq2_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
+	}
+	seq1_out = seq2_out = NULL; /* stop them being freed! */
+    }
+    else {
+	moverlap->seq1_out = moverlap->seq2_out = NULL;
+	/* ie we let destroy_af_mem free the memory, but we must
+	 * ensure that othr routines do not try to free it too 
+	 */
+    }
+    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+
+    return 0;
+}
+#endif
+
+/*
+ * Realigns an MALIGN using ReAligner (Anson & Myers) scoring functions.
+ * This basically scores 0 for a match or a number <= 1 for a mismatch or
+ * pad. Pad costs are looked up in the score matrix just like a mismatch is
+ * as costs are position specific.
+ *
+ * This code also scores zero for introducing a pad in the consensus vector
+ * such that it will align against an existing pad in the sequence. The reason
+ * for this is so that we can leave pads in the sequence (ie do not depad it)
+ * and if sequence was already aligned against the vector then the band can
+ * be centred perfectly on the main diagonal of the matrix. This allows us to
+ * get away with very small bands in order to realign sequences with the
+ * minimal amount of effort.
+ */
+int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
+    char *seq1, *seq2;
+    int seq1_len, seq2_len, seq_out_len;
+    int edge_inc;
+    int i,j;
+    char *seq1_out, *seq2_out;
+    int b_c, b_r;
+
+    int t,big_neg,b_s,e,b_e;
+    int *F1, *F2;
+    int *pF1, *pF2;
+    int *t_pF2;
+    int E_gap, edge_mode, best_edge_score;
+
+    int band, band_length, two_band, band_left, band_right, first_band_left=0;
+    int row, first_row, max_row, column, max_col;
+    unsigned char *bit_trace;
+    int byte, nibble, size_mat;
+    char OLD_PAD_SYM, NEW_PAD_SYM;
+    int row_index, gap_match_index;
+    int **scores;
+    MALIGN *malign;
+
+
+    malign = moverlap->malign;
+    scores = malign->scores;
+    gap_match_index = malign_lookup['*'];
+
+    F1 = F2 = NULL;
+    bit_trace = NULL;
+    seq1_out = seq2_out = NULL;
+    big_neg = INT_MAX/2;
+    best_edge_score = big_neg;
+
+    seq1 = moverlap->malign->consensus;
+    seq2 = moverlap->seq2;
+    seq1_len = moverlap->malign_len;
+    seq2_len = moverlap->seq2_len;
+
+    edge_mode = params->edge_mode;
+
+    OLD_PAD_SYM = params->old_pad_sym;
+    NEW_PAD_SYM = params->new_pad_sym;
+    band = params->band;
+    first_row = params->first_row;
+    band_left = params->band_left;
+    band_right = params->band_right;
+
+
+    /* init tables */
+    if(!(F1 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for F1");
+	destroy_af_mem ( F1, F2, 0, 0, 0, 0, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+    if(!(F2 = (int *) xcalloc(seq1_len + 2, sizeof(int)))) {
+	verror(ERR_WARN, "affine_align", "xmalloc failed for F2");
+	destroy_af_mem ( F1, F2, 0, 0, 0, 0, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+
+    /* do recurrence */
+    if ( edge_mode & EDGE_GAPS_COUNT ) {
+	for(E_gap = 0, i = 0; i < seq1_len; i++) {
+	    F1[i] = E_gap;
+	    E_gap += 100;
+	}
+	E_gap = 100;
+	edge_inc = 1;
+    } else if ( edge_mode & EDGE_GAPS_ZEROX ) {
+	/* ZEROX means we penalise in Y but not X */
+	for(i = 0; i <= seq1_len; i++)
+	    F1[i] = 0;
+	edge_inc = 1;
+	E_gap = 100;
+    } else {
+	printf("scream: unknown gaps mode\n");
+	destroy_af_mem ( F1, F2, 0, 0, 0, 0, bit_trace, seq1_out, seq2_out );
+	return -1;
+    }
+  
+    /* process each row. i.e. each character of seq2 */
+    b_s = big_neg;
+    b_e = b_r = b_c = 0;
+    t = 0;
+
+    if (band) {
+	int off_set, guard_offset, *pF_guard;
+
+	/*
+	 * If band is set we restrict the search to band elements either side
+	 * of the main diagonal. This gives a band length of (2 * band) + 1.
+	 * It is necessary to know what happened in the elements to the left
+	 * and above the current one, and therefore need to add another 2 to
+	 * the band length.
+	 */
+	band_length = (2 * band) + 3;
+
+	/*
+	 * Need to add one to first_row, first_column, band_left and
+	 * band_right because the alignment matrix has an extra row
+	 * and an extra column over the number given by the lengths
+	 * of the two sequences.
+	 */
+	size_mat = (MIN(seq1_len - band_left, seq2_len - first_row) + 1) 
+	    * band_length;
+
+	if(!(bit_trace = (unsigned char *) 
+	     xmalloc(1 + sizeof(char) * size_mat / 4))) {
+	    verror(ERR_WARN, "affine_align", "xmalloc failed for bit_trace");
+	    destroy_af_mem ( F1, F2, 0, 0, 0, 0, bit_trace, 
+			     seq1_out, seq2_out );
+	    return -1;
+	}
+	j = 1 + size_mat / 4;
+	for(i = 0; i < j; i++) {
+	    bit_trace[i] = 0;
+	}
+	first_row++;
+	band_left++;
+	band_right++;
+	first_band_left = band_left;
+
+	two_band = band * 2;
+	max_row = MIN(seq2_len, first_row + seq1_len - band_left + 1);
+
+	for(row = first_row; row <= max_row; row++, band_left++, band_right++) {
+	    int e_row, e_col, insy_cost;
+
+	    guard_offset = band_left + two_band;
+
+	    if(t == 0) {
+		pF1 = F1;
+		pF2 = F2;
+	    } else {
+		pF1 = F2;
+		pF2 = F1;
+	    }
+	    t ^= 1;
+	    pF_guard = pF1 + guard_offset;
+
+	    /*
+	     * Need to prevent the possibility of certain transitions
+	     * at the ends of each band; column-1 should not be allowed at
+	     * the left-hand end of a band, and row-1 should not be
+	     * allowed at the right-hand end. Such transitions would
+	     * take the trace-back out of the the parts of the 
+	     * alignment matrix that are covered by the band.
+	     *
+	     *      0 1 2 3 4 5 6
+	     *    0   _ _ _           For example, shouldn't consider
+	     *    1  |_|_|_|_         column-1 at position (row = 3, col = 3)
+	     *    2    |_|_|_|_       so give (3, 2) a very bad score.
+	     *    3      |_|_|_|_     Likewise, shouldn't consider row-1
+	     *    4        |_|_|_|    at position (3, 5), so give (2, 5)
+	     *    5          |_|_|    a very bad score.
+	     * this is done using the guard pointers at the right edge
+	     * and initialising the left edges where required.   
+	     */
+	    pF2[0] = E_gap;
+	    if ( (off_set = band_left - 1 ) >= 0 ) {
+		pF1 += off_set;
+		pF2 += off_set;
+		*pF2 = big_neg;
+	    }
+	    t_pF2 = pF2;
+
+	    if ( band_right <= seq1_len ) {
+		*pF_guard = big_neg;
+	    }
+
+	    if(edge_inc) {
+		E_gap += scores[MIN(row-1,seq1_len-1)][gap_match_index];
+	    }
+	    row_index = malign_lookup[(int)seq2[row-1]];
+
+	    /* process each column. i.e. each character of seq1 */
+	    max_col = MIN(seq1_len, band_right);
+	    column = MAX(1, band_left);
+	    e_row = (row - first_row + 1) * band_length;
+	    e_col = column - band_left + 1;
+	    e = e_row + e_col;
+	    insy_cost = (seq2[row-1] == '*' ? 0 : 100);
+
+	    for(; column <= max_col; e++, column++, pF1++, pF2++) {
+		int V_diag, V_insx, V_insy;
+
+		byte = e / 4;
+		nibble = 2 * (e % 4);
+
+		V_diag = pF1[0] + scores[column-1][row_index];
+		V_insx = pF2[0] + scores[column-1][gap_match_index];
+		V_insy = pF1[1] + insy_cost;
+
+		if (V_diag <= V_insx && V_diag <= V_insy) {
+		    b_s = V_diag;
+		    bit_trace[byte] |= BYTE_DIAGONAL << nibble;
+		} else if (V_insx <= V_insy) {
+		    b_s = V_insx;
+		    bit_trace[byte] |= BYTE_ACROSS << nibble;
+		} else {
+		    b_s = V_insy;
+		    bit_trace[byte] |= BYTE_DOWN << nibble;
+		}
+
+		*(pF2+1) = b_s;
+	    }
+	}
+	
+	
+        row--;
+	band_left--;
+	band_right--;
+	if ( edge_mode & BEST_EDGE_TRACE ) {
+	    /* Only find exit point along bottom and not right edge */
+	    best_edge_score = big_neg;
+
+	    /* best bottom edge score */
+	    b_c = seq1_len;
+	    pF2 = t_pF2+1;
+	    max_col = MIN(seq1_len, band_right);
+	    for(column = MAX(1, band_left);
+		column <= max_col;
+		column++, pF2++) {
+		if (best_edge_score > *pF2) {
+		    best_edge_score = *pF2;
+		    b_c = column;
+		    b_r = seq2_len;
+		    b_e = ((row - first_row + 1) * band_length) + 
+			(column - band_left + 1);
+		}
+	    }
+	}
+
+	if ( edge_mode & FULL_LENGTH_TRACE ) {
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = ((b_r - first_row + 1) * band_length) + 
+		(b_c - band_left + 1);
+	    best_edge_score = b_s;
+	}
+	if ( !(edge_mode & BEST_EDGE_TRACE) ) { /* fall back */
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = ((b_r - first_row + 1) * band_length) + 
+		(b_c - band_left + 1);
+	    best_edge_score = b_s;
         }
+    } else {
+	/* NON-BANDED code */
+
+	/* Initialise the bit trace */
+	size_mat = (seq1_len + 1) * (seq2_len + 1);
+	if(!(bit_trace = (unsigned char *)xmalloc(1 +  size_mat / 4))) {
+	    verror(ERR_WARN, "affine_align", "xmalloc failed for bit_trace");
+	    destroy_af_mem ( F1, F2, 0, 0, 0, 0,
+			     bit_trace, seq1_out, seq2_out );
+	    return -1;
+	}
+	j = 1 + size_mat / 4;
+	for(i = 0; i < j; i++) {
+	    bit_trace[i] = 0;
+	}
+
+	/* Step through rows, where a row is a consensus vector */
+	for(row = 1, e = seq1_len + 2; row <= seq2_len; row++, e++) {
+	    int insy_cost;
+
+	    if(t == 0) {
+		pF1 = F1;
+		pF2 = F2;
+	    } else {
+		pF1 = F2;
+		pF2 = F1;
+	    }
+	    t ^= 1;
+
+	    pF2[0] = E_gap;
+	  
+	    if(edge_inc) {
+		E_gap += scores[MIN(row-1,seq1_len-1)][gap_match_index];
+	    }
+	    row_index = malign_lookup[(int)seq2[row-1]];
+
+	    insy_cost = (seq2[row-1] == '*' ? 0 : 100);
+	  
+	    /* process each column. i.e. each character of seq1 */
+	    for(column = 1; column <= seq1_len; column++, e++) {
+		int V_diag, V_insx, V_insy;
+
+		byte = e / 4;
+		nibble = 2 * (e % 4);
+
+
+		V_diag = pF1[column-1] + scores[column-1][row_index];
+		V_insx = pF2[column-1] + scores[column-1][gap_match_index];
+		V_insy = pF1[column] + insy_cost;
+
+		if (V_diag <= V_insx && V_diag <= V_insy) {
+		    b_s = V_diag;
+		    bit_trace[byte] |= BYTE_DIAGONAL << nibble;
+		} else if (V_insx <= V_insy) {
+		    b_s = V_insx;
+		    bit_trace[byte] |= BYTE_ACROSS << nibble;
+		} else {
+		    b_s = V_insy;
+		    bit_trace[byte] |= BYTE_DOWN << nibble;
+		}
+
+		pF2[column] = b_s;
+	    }
+	}
+	
+	if ( edge_mode & BEST_EDGE_TRACE ) {
+	    /* Only find exit point along bottom and not right edge */
+	    best_edge_score = big_neg;
+
+	    /* best bottom edge score */
+	    b_c = seq1_len;
+	    for(column = 1; column <= seq1_len; column++) {
+		if (best_edge_score > pF2[column]) {
+		    best_edge_score = pF2[column];
+		    b_c = column;
+		    b_r = seq2_len;
+		    b_e = (row - 1) * (seq1_len + 1) + column;
+		}
+	    }
+	}
+	if ( edge_mode & FULL_LENGTH_TRACE ) {
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = seq2_len * (seq1_len + 1) + seq1_len;
+	    best_edge_score = b_s;
+	}
+	if ( !(edge_mode & BEST_EDGE_TRACE) ) { /* fall back */
+	    b_r = seq2_len;
+	    b_c = seq1_len;
+	    b_e = seq2_len * (seq1_len + 1) + seq1_len;
+	    best_edge_score = b_s;
+	}
     }
 
 
-  /* do traceback */
+    /* do traceback */
 
-  moverlap->score = best_edge_score;
+    moverlap->score = best_edge_score;
 
-  if( i = do_trace_back_bits ( bit_trace, seq1, seq2, seq1_len, seq2_len,
-		      &seq1_out, &seq2_out, &seq_out_len, b_r, b_c, b_e,
-		      band, first_band_left, first_row, band_length, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-      return -1;
-  }
-  /*
-  printf("%s\n",seq1_out);
-  printf("%s\n",seq2_out);
-  */
-  moverlap->seq1_out = seq1_out;
-  moverlap->seq2_out = seq2_out;
-  moverlap->seq_out_len = seq_out_len;
-
-  if ( i = seq_to_moverlap (moverlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-      return -1;
-  }
-
-  if ( params->job & RETURN_EDIT_BUFFERS ) {
-    if (seq_to_edit ( seq1_out,seq_out_len,&moverlap->S1,&moverlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-      return -1;
+    if( i = do_trace_back_bits ( bit_trace, seq1, seq2, seq1_len, seq2_len,
+				 &seq1_out, &seq2_out, &seq_out_len, b_r, b_c, b_e,
+				 band, first_band_left, first_row, band_length, NEW_PAD_SYM)) {
+	destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	return -1;
     }
-    if (seq_to_edit ( seq2_out,seq_out_len,&moverlap->S2,&moverlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
-      return -1;
-    }
-  }
+    /*
+      printf("%s\n",seq1_out);
+      printf("%s\n",seq2_out);
+    */
+    moverlap->seq1_out = seq1_out;
+    moverlap->seq2_out = seq2_out;
+    moverlap->seq_out_len = seq_out_len;
 
-  if ( params->job & RETURN_SEQ ) {
-    if ( !(params->job & RETURN_NEW_PADS) ) {
-      old_pads_for_new(seq1_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
-      old_pads_for_new(seq2_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
+    if ( i = seq_to_moverlap (moverlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
+	destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	return -1;
     }
-    seq1_out = seq2_out = NULL; /* stop them being freed! */
-  }
-  else {
-    moverlap->seq1_out = moverlap->seq2_out = NULL;
-    /* ie we let destroy_af_mem free the memory, but we must
-     * ensure that othr routines do not try to free it too 
-     */
-  }
-  destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
 
-  return 0;
+    if ( params->job & RETURN_EDIT_BUFFERS ) {
+	if (seq_to_edit ( seq1_out,seq_out_len,&moverlap->S1,&moverlap->s1_len,NEW_PAD_SYM)) {
+	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	    return -1;
+	}
+	if (seq_to_edit ( seq2_out,seq_out_len,&moverlap->S2,&moverlap->s2_len,NEW_PAD_SYM)) {
+	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	    return -1;
+	}
+    }
+
+    if ( params->job & RETURN_SEQ ) {
+	if ( !(params->job & RETURN_NEW_PADS) ) {
+	    old_pads_for_new(seq1_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
+	    old_pads_for_new(seq2_out,seq_out_len,OLD_PAD_SYM,NEW_PAD_SYM);
+	}
+	seq1_out = seq2_out = NULL; /* stop them being freed! */
+    } else {
+	moverlap->seq1_out = moverlap->seq2_out = NULL;
+	/* ie we let destroy_af_mem free the memory, but we must
+	 * ensure that othr routines do not try to free it too 
+	 */
+    }
+    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+
+    return 0;
 }

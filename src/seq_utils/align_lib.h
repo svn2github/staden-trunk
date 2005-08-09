@@ -10,6 +10,7 @@ typedef struct Mseg {
 typedef struct Contigl {
   MSEG *mseg;
   struct Contigl *next;
+  int id;
 }CONTIGL;
 
 CONTIGL *create_contig_link(void);
@@ -19,11 +20,11 @@ void print_contig_links(CONTIGL *contigl);
 typedef struct Malign {
     char *charset;
     int charset_size;
-    int  nseqs;
     int  length;
     int  **matrix;
     CONTIGL *contigl;
     char *consensus;
+    int **counts;
     int **scores;
     int gap_open;
     int gap_extend;
@@ -314,6 +315,7 @@ typedef struct Overlap {
 #define EDGE_GAPS_ZERO    2
 #define FULL_LENGTH_TRACE 4
 #define BEST_EDGE_TRACE   8
+#define EDGE_GAPS_ZEROX   16
 
 typedef struct Align_params {
     int gap_open;
