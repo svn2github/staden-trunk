@@ -650,8 +650,14 @@ static void html_mutation_summary(dstring_t *html,
     int fseq;
     int rseq;
 
-    fseq = mcov[seq].fwd ? seq : mcov[seq].sibling;
-    rseq = mcov[seq].fwd ? mcov[seq].sibling : seq;
+    if (mcov) {
+	fseq = mcov[seq].fwd ? seq : mcov[seq].sibling;
+	rseq = mcov[seq].fwd ? mcov[seq].sibling : seq;
+    } else {
+	fseq = seq;
+	rseq = 0;
+	print_ranges = 0;
+    }
 
     dstring_appendf(html,
 		    "    <tr bgcolor=\"%s\">\n"
@@ -677,10 +683,10 @@ static void html_mutation_summary(dstring_t *html,
 			"      <td></td>\n"
 			"      <td>%d - %d</td>\n"
 			"    </tr>\n",
-			mcov[fseq].ref_start,
-			mcov[fseq].ref_end,
-			mcov[rseq].ref_start,
-			mcov[rseq].ref_end);
+			mcov ? mcov[fseq].ref_start : 0,
+			mcov ? mcov[fseq].ref_end : 0,
+			mcov ? mcov[rseq].ref_start : 0,
+			mcov ? mcov[rseq].ref_end : 0);
 	return;
     }
 
@@ -739,9 +745,14 @@ static void html_mutation_summary(dstring_t *html,
     dstring_append(html, "      <td></td>\n");
 
 			
-    covered = (pos >= mcov[fseq].ref_start && pos <= mcov[fseq].ref_end);
+    covered = mcov
+	? (pos >= mcov[fseq].ref_start && pos <= mcov[fseq].ref_end)
+	: 0;
     fwd_str = (muts[seq][pos]->strands & 1) ? "yY"[covered] : "-N"[covered];
-    covered = (pos >= mcov[rseq].ref_start && pos <= mcov[rseq].ref_end);
+	
+    covered = mcov
+	? (pos >= mcov[rseq].ref_start && pos <= mcov[rseq].ref_end)
+	: 0;
     rev_str = (muts[seq][pos]->strands & 2) ? "yY"[covered] : "-N"[covered];
 
     if (muts[seq][pos]->conflict) {
