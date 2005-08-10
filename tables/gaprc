@@ -382,7 +382,8 @@ set_def DUMP_CONTIG.WIN		.dump_contig
 set_def SAVE_CON_TRACE.WIN	.consensus_trace
 set_def FINDOLIGO.WIN		.find_oligos
 set_def FIND_PROBES.WIN		.suggest_probes
-set_def LIST_CONFIDENCE.WIN		.list_confidence
+set_def LIST_CONFIDENCE.WIN	.list_confidence
+set_def SHUFFLE_PADS.WIN	.shuffle_pads
 
 #-----------------------------------------------------------------------------
 # Tag type lists.
@@ -958,6 +959,9 @@ set_def CHECK_ASSEMBLY.USED.WINSIZE.NAME	"Window size for used data"
 set_def CHECK_ASSEMBLY.USED.WINSIZE.MIN		1
 set_def CHECK_ASSEMBLY.USED.WINSIZE.MAX		1000
 set_def CHECK_ASSEMBLY.USED.WINSIZE.VALUE	50
+
+# Shuffle Pads
+set_def SHUFFLE_PADS.INFILE		$defs_c_in
 
 # Find oligos
 set_def FINDOLIGO.INFILE		$defs_c_in
