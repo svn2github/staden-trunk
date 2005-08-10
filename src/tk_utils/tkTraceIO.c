@@ -176,6 +176,10 @@ int trace_load(DNATrace *t, char *file, char *format) {
     }
     read_experiment_redirect(tmp);
 
+    if (t->read->flow_order && t->read->flow && t->read->nflows) {
+	t->style = STYLE_PYRO;
+    }
+
     if (t->style == STYLE_PYRO) {
 	trace_pyroalign(t->read);
 	t->yticks = PYRO_SCALE;

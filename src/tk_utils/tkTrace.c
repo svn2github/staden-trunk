@@ -601,6 +601,9 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    else if (new > 10000)
 		new = 10000;
 
+	    if (tracePtr->style == STYLE_PYRO)
+		new *= 10;
+
 	    /* scale_x size when all samples are visible */
 	    /*
 	     * min is the minimum pixels/sample ratio.
