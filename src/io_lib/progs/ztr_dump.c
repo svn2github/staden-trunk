@@ -169,6 +169,12 @@ int main(int argc, char **argv) {
 	printf("SUMMARY %s  mlen %3d, dlen %6d, rawlen %6d, ratio %f\n",
 	       str, ztr->chunk[i].mdlength,
 	       complen, rawlen, (double)complen/rawlen);
+#if 0
+	fflush(stdout);
+	puts("\n========================================");
+	write(1, ztr->chunk[i].data, ztr->chunk[i].dlength);
+	puts("\n========================================");
+#endif
     }
 
     delete_ztr(ztr);
