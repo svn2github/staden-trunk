@@ -417,7 +417,6 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	lastl = contigl;
 	contigl = contigl->next;
     }
-    puts("");
 
     resort_contigl(malign);
     remove_pads(malign);
