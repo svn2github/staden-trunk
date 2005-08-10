@@ -73,6 +73,7 @@
 #include "reading_coverage.h"
 #include "strand_coverage.h"
 #include "allelic_discreps.h"
+#include "shuffle_pads.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -5062,6 +5063,8 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
+
+    vfuncheader("Shuffle Pads");
 
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
     shuffle_contigs_io(args.io, rargc, rargv);
