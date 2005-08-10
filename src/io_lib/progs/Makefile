@@ -5,7 +5,7 @@
 include ../options.mk
 
 PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump \
-	$(O)/hash_tar
+	$(O)/hash_tar $(O)/hash_extract
 
 ifdef IOLIB_PLN
 PROGS += $(O)/extract_seq
@@ -38,6 +38,7 @@ MSOBJS=$(O)/makeSCF.o
 CTOBJS=$(O)/convert_trace.o
 ITOBJS=$(O)/index_tar.o
 HTOBJS=$(O)/hash_tar.o
+HEOBJS=$(O)/hash_extract.o
 GCOBJS=$(O)/get_comment.o
 
 PLIBS=$(LINK_LIBFLAG)read$(LIB_EXT) $(LIBSC) $(LINK_LIBFLAG)misc$(LIB_EXT)
@@ -75,7 +76,10 @@ $(O)/index_tar:		$(ITOBJS)
 $(O)/hash_tar:		$(HTOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HTOBJS) $(PLIBS)
 
-DEPEND_OBJ = $(ESOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(GCOBJS)
+$(O)/hash_extract:	$(HEOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HEOBJS) $(PLIBS)
+
+DEPEND_OBJ = $(ESOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(GCOBJS) $(HTOBJS) $(HEOBJS)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
