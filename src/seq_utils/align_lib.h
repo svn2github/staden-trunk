@@ -17,6 +17,11 @@ CONTIGL *create_contig_link(void);
 
 void print_contig_links(CONTIGL *contigl);
 
+/*
+ * FIXME: See shuffle_pads.c header for possibile ways to improve the
+ * multiple alignment code here.
+ */
+
 typedef struct Malign {
     char *charset;
     int charset_size;
@@ -24,8 +29,12 @@ typedef struct Malign {
     int  **matrix;
     CONTIGL *contigl;
     char *consensus;
+    int *orig_pos;
     int **counts;
     int **scores;
+    int *orig_counts;
+    int *orig_scores;
+    int orig_length;
     int gap_open;
     int gap_extend;
 } MALIGN;
@@ -65,6 +74,10 @@ void get_malign_consensus(MALIGN *malign, int start, int end);
 void set_malign_lookup (int charset_size);
 
 void malign_insert_scores(MALIGN *malign, int pos, int size);
+
+void malign_remove_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *del);
+
+void malign_add_contigl(MALIGN *malign, CONTIGL *previous, CONTIGL *add);
 
 void malign_recalc_scores(MALIGN *malign, int start, int end);
 
@@ -369,6 +382,9 @@ int affine_align(OVERLAP *overlap,
 
 int affine_malign(MOVERLAP *moverlap,
 	     ALIGN_PARAMS *params);
+
+int realigner_malign(MOVERLAP *moverlap,
+		     ALIGN_PARAMS *params);
 
 int seq_to_edit ( char *seq, int seq_len, int **S_out, int *S_len,
 		 char PAD_SYM);

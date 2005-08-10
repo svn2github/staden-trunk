@@ -140,7 +140,8 @@ void init_W128(int **matrix,
 extern int W128[128][128];
 #endif
 
-void destroy_malign_counts(int **matrix, int length, int depth);
+void destroy_malign_counts(int **matrix, int length, int depth,
+			   int *orig_matrix, int orig_length);
 void scale_malign_scores(MALIGN *malign, int start, int end);
 
 /*
@@ -314,6 +315,7 @@ MALIGN *create_malign(void) {
 
     malign->contigl = NULL;
     malign->consensus = NULL;
+    malign->orig_pos = NULL;
     malign->counts = NULL;
     malign->scores = NULL;
     malign->matrix = NULL;
@@ -325,18 +327,25 @@ void free_malign (MALIGN *malign) {
   if ( malign ) {
     if ( malign->counts ) destroy_malign_counts( malign->counts,
 						 malign->length,
-						 malign->charset_size);
+						 malign->charset_size,
+						 malign->orig_counts,
+						 malign->orig_length);
     if ( malign->scores ) destroy_malign_counts( malign->scores,
 						 malign->length,
-						 malign->charset_size);
+						 malign->charset_size,
+						 malign->orig_scores,
+						 malign->orig_length);
     if ( malign->matrix ) destroy_malign_counts( malign->matrix,
 						 malign->charset_size,
-						 malign->charset_size);
+						 malign->charset_size,
+						 NULL, 0);
     if (malign->consensus) xfree(malign->consensus);
+    if (malign->orig_pos) xfree(malign->orig_pos);
     if (malign->charset) xfree(malign->charset);
   }
   malign->contigl = NULL;
   malign->consensus = NULL;
+  malign->orig_pos = NULL;
   malign->counts = NULL;
   malign->scores = NULL;
 }
@@ -375,8 +384,40 @@ void set_malign_lookup(int charset_size) {
     malign_lookup['*'] = 4;
 }
 
-void destroy_malign_counts(int **matrix, int length, int depth) {
-    free(matrix[0]);
+/*
+ * WARNING: This is deeply horrid code and also technically illegal C due
+ * to pointer arithmetic outside of the bounds of an array of single allocated
+ * object. However practically speaking it'll work OK.
+ *
+ * The original malign->scores and malign->counts matrices are allocated as
+ * an array of rows (int **) and a single array of int * to which all columns
+ * are addresses within. This reduces malloc overhead dramatically and probably
+ * increases cache hit rates.
+ *
+ * However for speed we then subsequently insert additional rows and allocate
+ * their own private blocks of memory (see malign_insert_scores).
+ * Consequently when deallocating some matrix[i]'s will be to malloced
+ * blocks but most will be just pointers into various locations within
+ * the original single large block. We use orig/orig_length to point to the
+ * original single block (incase matrix[0] was inserted to).
+ *
+ * The nasties come from how to distinguish one type of matrix[i] from another.
+ * My cheat here is simply to see if it is in the range of the original block.
+ * If not then it's obviously been allocated later, so free it.
+ */
+void destroy_malign_counts(int **matrix, int length, int depth,
+			   int *orig, int orig_length) {
+    int i;
+    if (orig) {
+	for (i = 0; i < length; i++) {
+	    if (matrix[i] < orig ||
+		matrix[i] > &orig[orig_length * depth])
+		free(matrix[i]);
+	}
+	free(orig);
+    } else {
+	free(matrix[0]);
+    }
     free(matrix);
 }
 
@@ -385,7 +426,7 @@ int **create_malign_counts(int length, int depth) {
   int **counts;
   int i;
 
-  counts = (int **)malloc(length*sizeof(int *));
+  counts = (int **)calloc(length,sizeof(int *));
   counts[0] = (int *)calloc(depth * length, sizeof(int));
   for(i=1;i<length;i++) {
       counts[i] = counts[0] + depth*i;
@@ -432,8 +473,14 @@ void malign_insert_scores(MALIGN *malign, int pos, int size) {
 					malign->length+size);
     memmove(&malign->consensus[pos+size], &malign->consensus[pos],
 	    malign->length - pos);
-    for (i = pos; i < pos + size; i++)
+    malign->orig_pos = (int *)realloc(malign->orig_pos,
+				      sizeof(int) * (malign->length+size));
+    memmove(&malign->orig_pos[pos+size], &malign->orig_pos[pos],
+	    sizeof(int) * (malign->length - pos));
+    for (i = pos; i < pos + size; i++) {
 	malign->consensus[i] = '-';
+	malign->orig_pos[i] = 0;
+    }
 
     malign->length += size;
 }
@@ -716,6 +763,9 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
 
   malign->counts = create_malign_counts(malign->length,malign->charset_size);
   malign->scores = create_malign_counts(malign->length,malign->charset_size);
+  malign->orig_counts = malign->counts[0];
+  malign->orig_scores = malign->scores[0];
+  malign->orig_length = malign->length;
   get_malign_counts(malign, 0, malign->length-1);
 
 
@@ -724,6 +774,10 @@ MALIGN *contigl_to_malign(CONTIGL *contigl_in, int gap_open, int gap_extend) {
   /* make a 100% consensus for the alignment */
 
   malign->consensus = (char *) malloc(malign->length);
+  malign->orig_pos = (int *) malloc(malign->length * sizeof(int));
+  for (i = 0; i < malign->length; i++) {
+      malign->orig_pos[i] = i+1;
+  }
   get_malign_consensus(malign, 0, malign->length-1);
   /* printf("      %s\n",malign->consensus); */
 
