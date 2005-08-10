@@ -1507,9 +1507,6 @@ while {$argc >= 1} {
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-style"} {
 	set tdisp(style) [lsearch {chroma filled pyro} [lindex $argv 1]]
-	if {[lindex $argv 1] == "pyro" && $xmag_changed == 0} {
-	    set xmag 2200
-	}
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-write_scf"} {
