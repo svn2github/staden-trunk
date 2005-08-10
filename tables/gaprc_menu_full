@@ -103,6 +103,7 @@ add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
 add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
 add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
 add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
+add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
 add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
 add_separator	{Edit.S1} e
 add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} e
@@ -270,7 +271,7 @@ add_command     {Commands.Report Mutations}	1 0 \
 add_separator	{Commands.S3}
 add_command	{Commands.Select Primer}	1 0 {select_oligos $e}
 add_command	{Commands.Align}		3 2 {$e align}
-add_command	{Commands.Shuffle Pads}		3 2 {editor_shuffle_pads $e}
+#add_command	{Commands.Shuffle Pads}		3 2 {editor_shuffle_pads $e}
 add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
 add_separator	{Commands.S4}
 add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}

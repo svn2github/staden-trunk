@@ -242,7 +242,7 @@ add_command     {Commands.Report Mutations}	1 0 \
 add_separator	{Commands.S3}
 add_command	{Commands.Select Primer}	1 0 {select_oligos $e} {em e}
 add_command	{Commands.Align}		3 2 {$e align}
-add_command	{Commands.Shuffle Pads}		3 2 {editor_shuffle_pads $e}
+#add_command	{Commands.Shuffle Pads}		3 2 {editor_shuffle_pads $e}
 add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
 add_separator	{Commands.S4}
 add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
