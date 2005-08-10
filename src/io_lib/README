@@ -1,4 +1,4 @@
-			    IO_LIB VERSION 1.9.0
+			    IO_LIB VERSION 1.9.1
 			    ====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -21,9 +21,10 @@ following file formats:
 	ABI trace files
 	ALF trace files
 	CTF trace files
+	ZTR trace files
+	SFF trace files
 	Experiment files
 	Plain text files
-	ZTR trace files
 
 In addition, a library is used for bringing all these together into a single
 library so that only a single function call (read_reading and

@@ -26,7 +26,8 @@ dirs:	read/$(O)/.dir \
 	plain/$(O)/.dir \
 	progs/$(O)/.dir \
 	scf/$(O)/.dir \
-	ztr/$(O)/.dir
+	ztr/$(O)/.dir \
+	sff/$(O)/.dir
 
 %.o:	../%.c
 	-@mkdir $(@D) 2>/dev/null
@@ -103,6 +104,11 @@ OBJS	+=\
 	ztr/$(O)/compression.o\
 	ztr/$(O)/ztr_translate.o\
 	ztr/$(O)/ztr.o
+endif
+
+ifdef IOLIB_ZTR
+OBJS	+=\
+	sff/$(O)/sff.o
 endif
 
 #-----------------------------------------------------------------------------

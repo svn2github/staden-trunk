@@ -14,6 +14,7 @@ IOLIB_ABI=1
 IOLIB_ALF=1
 IOLIB_CTF=1
 IOLIB_ZTR=1
+IOLIB_SFF=1
 
 #-----------------------------------------------------------------------------
 # Optional defines - do not edit this bit
@@ -45,6 +46,10 @@ ifdef IOLIB_ZTR
 DEFINES += -DIOLIB_ZTR
 RLIBS	+= $(ZLIB_LIB)
 CFLAGS	+= $(ZLIB_INC)
+endif
+
+ifdef IOLIB_SFF
+DEFINES += -DIOLIB_SFF
 endif
 
 ifdef BIOLIMS

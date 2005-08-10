@@ -88,6 +88,7 @@
 #define TT_ZTR2 9
 #define TT_ZTR3 10
 #define TT_BIO 11
+#define TT_SFF 12
 #define TT_ANY TT_UNK
 
 #define READ_BASES	(1<<0)

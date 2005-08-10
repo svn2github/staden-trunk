@@ -56,6 +56,7 @@ static struct {
 	{ TT_ABI, 128, "ABIF" } ,
 	{ TT_ALF, 518, "ALF " } ,
 	{ TT_SCF, 0,   "\234\330\300\000" }, /* Amersham variant */
+	{ TT_SFF, 0,   ".sff" } ,
 	{ TT_EXP, 0,	"ID   " } ,
 	{ TT_ALF, 0,   "ALF " } , /* Added by newer alfsplit programs */
 	{ TT_ALF, 0,   "\021G\021G" } , /* Pharmacia's alfsplit equiv */
@@ -166,6 +167,8 @@ int determine_trace_type(char *fn)
 int trace_type_str2int(char *str) {
     if (strcmp(str, "SCF") == 0 || strcmp(str, "scf") == 0)
 	return TT_SCF;
+    else if (strcmp(str, "SFF") == 0 || strcmp(str, "sff") == 0)
+        return TT_SFF;   /* 454 */
     else if (strcmp(str, "CTF") == 0 || strcmp(str, "ctf") == 0)
         return TT_CTF;   /* mieg */
     else if (strcmp(str, "ZTR") == 0 || strcmp(str, "ztr") == 0)
@@ -198,6 +201,7 @@ char *trace_type_int2str(int type) {
 
     switch(type) {
     case TT_SCF: t = "SCF"; break;
+    case TT_SFF: t = "SFF"; break;  /* 454 */
     case TT_CTF: t = "CTF"; break;  /* mieg */
     case TT_ZTR: t = "ZTR";break;
     case TT_ZTR1: t = "ZTR1";break;

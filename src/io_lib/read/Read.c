@@ -58,6 +58,9 @@
 #ifdef IOLIB_CTF
 # include "seqIOCTF.h"
 #endif
+#ifdef IOLIB_SFF
+# include "sff.h"
+#endif
 #ifdef IOLIB_EXP
 # include "expFileIO.h"
 #endif
@@ -170,6 +173,12 @@ Read *mfread_reading(mFILE *fp, char *fn, int format) {
 #ifdef IOLIB_CTF
     case TT_CTF:
 	read = mfread_ctf(fp);
+	break;
+#endif
+
+#ifdef IOLIB_SFF
+    case TT_SFF:
+	read = mfread_sff(fp);
 	break;
 #endif
 
@@ -315,6 +324,12 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 #ifdef IOLIB_ABI
     case TT_ABI:
 	/*return mfwrite_abi(fp, read); */
+	break;
+#endif
+
+#ifdef IOLIB_SFF
+    case TT_SFF:
+	/*return mfwrite_sff(fp, read); */
 	break;
 #endif
 
