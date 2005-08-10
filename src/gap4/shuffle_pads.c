@@ -780,6 +780,14 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 		newopos[j] = 0;
 	    }
 
+	    /* Same for remaining data in seq - only pads */
+	    for (; i < r.end-1; i++) {
+		if (seq[i] != '*') {
+		    fprintf(stderr, "Alignment skipped non-pad character");
+		    abort();
+		}
+	    }
+
 	    /* Append on the right hand cutoff data */
 	    for (; i < r.length; i++, j++) {
 		newseq[j]  = seq[i];
