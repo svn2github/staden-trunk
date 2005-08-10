@@ -498,13 +498,13 @@ proc search_setup {w name} {
     }
 
     if {$use_tag} {
-	grid $tag_win -row 2 -sticky nsew
+	grid $tag_win -row 4 -sticky nsew
     } else {
 	grid forget $tag_win
     }
 
     if {$use_where} {
-	grid $where_win -row 2 -sticky nsew
+	grid $where_win -row 5 -sticky nsew
     } else {
 	grid forget $where_win
     }
