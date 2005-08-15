@@ -761,7 +761,7 @@ HashFile *HashFileLoad(FILE *fp) {
     memcpy(&hf->hh, htable, sizeof(hf->hh));
     hf->hh.nbuckets = be_int4(hf->hh.nbuckets);
     hf->hh.size = be_int4(hf->hh.size);
-    h = HashTableCreate(hf->hh.nbuckets, hf->hh.hfunc);
+    hf->h = h = HashTableCreate(hf->hh.nbuckets, hf->hh.hfunc);
     bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
 
     /* Load the archive filename */
@@ -776,7 +776,8 @@ HashFile *HashFileLoad(FILE *fp) {
     htable_pos = sizeof(hf->hh) + fnamelen + 1;
     if (NULL == (htable = (unsigned char *)realloc(htable, hf->hh.size)))
 	return NULL;
-    if (hf->hh.size != fread(&htable[htable_pos], 1, hf->hh.size, fp))
+    if (hf->hh.size-htable_pos !=
+	fread(&htable[htable_pos], 1, hf->hh.size-htable_pos, fp))
 	return NULL;
 
     /* Read the header / footer items */
