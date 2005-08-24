@@ -10,7 +10,7 @@ _split()
 * Consistency-ReadPairCov:: Read-Pair Coverage Histogram
 * Consistency-StrandCov::   Strand Coverage
 * Consistency-2ndHighest::  2nd-Highest Confidence
-* Consistency-Discrepancy:: Discrepancy Graph
+* Consistency-Diploid::     Diploid Graph
 @end menu
 
 The Consistency Display provides plots designed to highlight 
@@ -157,9 +157,9 @@ second highest confidence value can be used as a measure of how strong
 the conflict could be. It is this value is plotted.
 
 _split()
-@node Consistency-Discrepancy
-@subsection Discrepancy Graph
-@cindex Discrepancy Graph
+@node Consistency-Diploid
+@subsection Diploid Graph
+@cindex Diploid Graph
 
 At present this is a rather specialist function written for a
 particular in-house purpose. This plot relates very closely to the

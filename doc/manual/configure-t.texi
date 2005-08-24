@@ -368,17 +368,54 @@ For example, on windows to specify two directories, use (eg)
 "@code{F::\tfiles1:G::\tfiles2}".
 
 In addition to specifying directories, RAWDATA may also be used to indicate
-that the trace files are contained within a @i{tar} file. The syntax for
-RAWDATA is then @code{TAR=}@i{filename}. This can be combined with
-directories if desired (for example,
-@code{.:/traces/online:TAR=/traces/archive.tar}). In order to speed up
-accessing of traces within the tar file a command line utility named
-@code{index_tar} may be used. This produces a text index containing the
-filenames held within the tar and their offsets within it. Programs will then
-use this index file to provide a fast way of accessing the trace. The syntax
-for @code{index_tar} is: @code{index_tar} @i{tar_filename} @code{>}
-@i{tar_filename}@code{.index}. (For example "@code{index_tar traces.tar >
-traces.tar.index}".)
+that the trace files come from a variety of other sources using the
+general format SOURCETYPE=path. These can be combined with directories
+if desired. For example ``@code{.:/trace_cache:TAR=/traces/archived.tar}''.
+
+@table @code
+@cindex TAR= RAWDATA accessor
+@item TAR=filename.tar
+Searches for the trace name in the Unix tar archive named
+@i{filename.tar}. 
+
+If @i{filename.tar.index} exists and is of the format created using
+the @code{index_tar} program then the trace name will be looked up in
+the index instead of sequentially scanning through the tar file. In
+order to speed up accessing of traces within the tar file a command
+line utility named @code{index_tar} may be used. This produces a text
+index containing the filenames held within the tar and their offsets
+within it. Programs will then use this index file to provide a fast
+way of accessing the trace. The syntax for @code{index_tar} is:
+@code{index_tar} @i{tar_filename} @code{>}
+@i{tar_filename}@code{.index}. (For example "@code{index_tar
+traces.tar > traces.tar.index}".)
+
+@cindex HASH= RAWDATA accessor
+@item HASH=archive.hash
+
+This method supersedes the TAR= accessor. Tar files may be ``hashed''
+using the @code{hash_tar} tool. Similarly 454 TVF archives may be
+hashed using @code{hash_tvf}. In theory any type of archive may be
+indexed as a ``.hash'' provided that the traces are stored
+uncompressed (or compressed only using their own methods, such as with
+ZTR) so that random access is possible within the archive.
+
+The Hash file contains a precomputed binary index of all the traces
+contained within it stored in such a way that random access is very
+fast.
+
+@cindex URL= RAWDATA accessor
+@item URL=url
+
+This uses the external @code{wget} tool (@strong{not} supplied as part of the
+Staden Package) to fetch a given url. Anywhere that @code{%s} occurs
+within the specified @i{url} will be replaced by the trace
+name. Hence, for example,
+@code{URL=http://trace.server.org/cgi-bin/lookup.pl?trace=%s} could be
+used to fetch named traces from a remote site. There are plans for
+such URL access to be made available via the Ensembl TraceArchive.
+@end table
+
 
 If the gap4 database has been opened with write-access this directory
 location will be stored as a database @code{RAWD} note

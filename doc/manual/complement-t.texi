@@ -53,3 +53,66 @@ ID   zf48g3.s1
 TC   REPT b 953..981
 TC        Repeats with contig zf48g3.s1, offset 1102
 @end example
+
+_split()
+@node Shuffle Pads
+@section Shuffle Pads
+@cindex pads: realigning
+@cindex realigning sequences
+@cindex shuffle pads
+
+This function realigns all of the sequences within a contig to improve
+pad placement. This can be considered as the replacement to the old
+Shuffle Pads command within the contig editor. (Being outside of the
+editor allows this to be autoamtically scripted.) The contigs to
+realign are specified as either a single contig, all contigs or to
+input a contig names from a file or a gap4 list. Currently the entire
+contig will be shuffled, which can take some time on large contigs. In
+future we plan to allow regions to be specified.
+
+Padding (gapping) problems originate in many sequence assembly
+algorithms, including gap4's, where sequences are aligned against a
+consensus rather than a profile. As an example let us consider
+aligning @code{TCAAGAC} (Sequence4) to the following contig:
+
+@example
+Sequence1:    GATTCAAAGAC
+Sequence2:      TTCAA*GACGG
+Sequence3:        CAAAGACGGATC
+
+Consensus:    GATTCAAAGACGGATC
+@end example
+
+The consensus contains a triple A because that is the most likely
+sequence, however we have three possible ways to align a sequence
+containing double A:
+
+@example
+alignment1:      TCAA*GAC
+alignment1:      TCA*AGAC
+alignment1:      TC*AAGAC
+Consensus:    GATTCAAAGACGGATC
+@end example
+
+All of these have identical alignment scores because the cost of
+inserting a gap into the sequence is identical at all
+points. Alignment algorithms typically always pick the same end to
+place pads (ie left end or right end), but after contigs get
+complemented and more data inserted this often yields pads at both as,
+as follows:
+
+@example
+Sequence1:    GATTCAAAGAC
+Sequence2:      TTCAA*GACGG
+Sequence3:        CAAAGACGGATC
+Sequence4:       TC*AAGAC
+Consensus:    GATTCAAAGACGGATC
+@end example
+
+The new Shuffle Pads algorithm implements the same ideas put forward
+by Anson and Myers in ReAligner. It aligns each sequence against a
+consensus vector where the entire column of bases in the consensus are
+used to compute match, mismatch and indel scores. The result is that
+pads generally get shuffled to the same end (not necessarily always
+left or always right) and the total number of disagreements to the
+consensus reduces.

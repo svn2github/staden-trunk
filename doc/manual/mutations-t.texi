@@ -188,9 +188,7 @@ reference files and databases for any project. The two main programs are
 pregap4 and gap4. Pregap4 (_fpref(Pregap4-Introduction, Pregap4 introduction, pregap4))
 prepares data for gap4 by automatically using
 a variety of smaller programs, including those used to search for mutations:
-tracediff (_fpref(Pregap4-Modules-Trace Difference, Trace Difference,t))
- and hetscan
-(_fpref(Pregap4-Modules-Heterozygote Scanner, Heterozygote Scanner,t)).
+mutscan (_fpref(Pregap4-Modules-Mutation Scanner, Mutation Scanner, t).
 Gap4 (_fpref(Gap4-Introduction, Gap4 introduction, gap4))
 is used to store the aligned readings, to view the sequences and
 traces, and to produce a report listing the observed mutations.
@@ -203,21 +201,17 @@ bases marked.  Secondly,  the data  is transfered into a gap4 database
 from  where  users can   visually check   the differences between  the
 reference and patient traces.
 
-The programs 
-tracediff (_fpref(Pregap4-Modules-Trace Difference, Trace Difference,t))
- and hetscan
-(_fpref(Pregap4-Modules-Heterozygote Scanner, Heterozygote Scanner,t)),
-can
-automatically compare patient and reference traces to find point mutations
-and heterozygous bases. 
-Users can set parameters which control the sensistivity
-of the algorithms (and hence which determine the ratio of false negative and
-positive results). Tracediff adds tags of type "mutation" to the 
-patient
-files, and hetscan of type "heterozygous". The tags contain the numerical scores achieved
-at the site of the reported base changes, and they can be viewed via the gap4 editor(_fpref(Editor, Editing in gap4, contig_editor)).
-Tracediff and hetscan are normally run via pregap4
-(_fpref(Pregap4-Introduction, Pregap4 introduction, pregap4)).
+The program mutscan (_fpref(Pregap4-Modules-Mutation Scanner, Mutation
+Scanner,t)) can automatically compare patient and reference traces to
+find point mutations and heterozygous bases.  Users can set parameters
+which control the sensistivity of the algorithms (and hence which
+determine the ratio of false negative and positive results). Mutscan
+adds tags of type ``mutation'' or ``heterozygous'' to the patient
+files. The tags contain the numerical scores achieved at the site of
+the reported base changes, and they can be viewed via the gap4
+editor(_fpref(Editor, Editing in gap4, contig_editor)).  Mutscan is
+normally run via pregap4 (_fpref(Pregap4-Introduction, Pregap4
+introduction, pregap4)).
 
 The description of the programs given below is presented in reverse order of
 use i.e. gap4 then pregap4, but first we give further details about the use
@@ -283,11 +277,9 @@ appear labelled "S" at the left edge of the editor.
 @cindex reference traces
 @cindex mutation detection: reference traces
 
-References traces are used by the automatic mutation detection programs
-tracediff (_fpref(Pregap4-Modules-Trace Difference, Trace Difference,t))
- and hetscan
-(_fpref(Pregap4-Modules-Heterozygote Scanner, Heterozygote Scanner,t)),
-, and by the trace difference display in the gap4
+References traces are used by the automatic mutation detection program
+mutscan (_fpref(Pregap4-Modules-Mutation Scanner, Mutation Scanner,
+t), and by the trace difference display in the gap4
 editor(_fpref(Editor, Editing in gap4, contig_editor)).  
 Ideally forward and reverse reference traces should be
 available and should be obtained using the same primers and sequencing

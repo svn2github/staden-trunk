@@ -95,6 +95,7 @@ _split()
 @menu
 * Complement::    Complement a contig
 * Enter Tags::    Entering Files of Tags into a Database
+* Shuffle Pads:: Shuffle Pads
 * Show Relationships:: List Reading and Contig Information
 * Find Oligos::   Sequence Search
 * Auto Clipping:: Automatic Clipping by Quality and Sequence Similarity
@@ -189,6 +190,28 @@ _split()
 @cindex Command line arguments
 
 @table @code
+@cindex -bitsize 
+@cindex bitsize (command line option)
+@cindex 64-bit Gap4 databases
+@item -bitsize
+Specifies whether the database file size is 32-bit or
+64-bit. Practically speaking due to the use of signed numbers in
+places and the restriction of 32-bit for the number of records in a
+database (even when using @code{-bitsize 64} for 64-bit file offsets)
+the practical limits are 2Gb filesize for @code{-bitsize 32} and
+somewhere around about 100-million sequences for @code{-bitsize 64}. 
+
+Gap4 only needs this option for creating new databases. The bit-size
+of existing databases is automatically detected when they are opened.
+
+Databases produced in 64-bit format are not compatible with older
+versions of Gap4, but old and newly created 32-bit databases still work with
+the 64-bit Gap4 (and are maintained in 32-bit format so editing them
+will not invalidate their use by older Gap4s). The @code{copy_db}
+program (_fpref(Man-copy_db, Copy_db, manpages)) can be used to
+convert file formats.
+
+@sp 1
 @cindex -maxdb
 @cindex maxdb (command line option)
 @item -maxdb

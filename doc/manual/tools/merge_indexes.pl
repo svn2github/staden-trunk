@@ -38,7 +38,7 @@ print TOCL <<EOH;
 <H1>Master Table of Contents</H1>
 <H3>For $package_version</H3>
 For the most recent version of this documentation see the package
-<a href="http://www.mrc-lmb.cam.ac.uk/pubseq">home page</a>.
+<a href="http://staden.sourceforge.net/documentation.html">home page</a>.
 EOH
 
 print TOCS <<EOH;
@@ -54,7 +54,7 @@ print TOCS <<EOH;
 <H1>Master Table of Contents (Brief)</H1>
 <H3>For $package_version</H3>
 For the most recent version of this documentation see the package
-<a href="http://www.mrc-lmb.cam.ac.uk/pubseq">home page</a>.
+<a href="http://staden.sourceforge.net/documentation.html">home page</a>.
 <HR>
 <P>
 EOH

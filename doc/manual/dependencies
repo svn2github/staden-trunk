@@ -313,9 +313,13 @@ template-t.texi: template.display.unix.pdf
 template-t.texi: template.display.unix.pdf
 template-t.texi: template.quality.unix.pdf
 template-t.texi: template.restriction.unix.pdf
+template-t.texi: snp_candidates1.unix.pdf
+template-t.texi: snp_candidates2.unix.pdf
+template-t.texi: contig_editor_sets.unix.pdf
 trev_mini-t.texi: trev_pic.unix.pdf
 trev_mini-t.texi: trace_print_trace1.unix.pdf
 trev_mini-t.texi: trev_conf_trace.unix.pdf
+trev_mini-t.texi: trev_pyro_trace.unix.pdf
 trev-t.texi: trace_print_menu.unix.pdf
 trev-t.texi: trace_print_page_dialogue.unix.pdf
 trev-t.texi: trace_print_trace_dialogue.unix.pdf

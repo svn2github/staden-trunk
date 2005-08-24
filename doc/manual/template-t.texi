@@ -7,6 +7,7 @@
 * Template-Quality::            Quality Plot
 * Template-Restriction::        Restriction Enzyme Plot
 * Consistency-Display::         Consistency Display
+* SNP-Candidates::              SNP Candidates
 @end menu
 
 _split()
@@ -539,3 +540,209 @@ chosen sites in the information line. This figure is also displayed in the box
 at the top right hand corner of the template display.
 
 _include(consistency_display-t.texi)
+
+_split
+@node SNP-Candidates
+@section SNP Candidates
+@cindex SNP candidates
+@cindex Haplotype assignment
+
+The 2nd-Highest Confidence (_fpref(Consistency-2ndHighest, 2nd-Highest
+Confidence, 2nd-Highest Confidence)) and the Diploid Graph
+(_fpref(Consistency-Diploid, Diploid Graph, Diploid Graph) both plot
+indicators of how likely an alignment column is to be made up of 2 or
+more sequence populations.
+
+By studying these in further detail we should be able to spot
+correlated differences and to start assigning haplotypes. The SNP
+Candidate plot initially brings up a dialogue asking for a single
+contig and range. After selecting this a window is displayed showing
+the likely locations of SNPs as seen below.
+
+_lpicture(snp_candidates1)
+
+The top row of this has controls to define how the 2nd-Highest
+Confidence or Diploid Graph results are analysed in order to pick
+candidate locations for SNPs.
+
+Going from right to left, the ``2 alleles only'' toggle switches
+between the two algorithms; when enabled it uses the additional
+assumption coded into the Diploid Graph of their being only two
+populations in approximately 50:50 ratio. Next the minimum base
+quality may be adjusted. Any difference with a poorer quality than
+this is completely ignored. The minimum discrepancy score is a
+threshold (with high indicating a strong SNP) applied to the results
+of the consistency plot results. A spike in this plot needs to be at
+least as high as this score to be accepted. This score is then
+adjusted for immediate proximity to other SNPs (e.g. it forms a run of
+bases) and this adjusted score is compared against the minimum SNP
+score parameter. Typically this can be left low. If any of these
+parameters are modified press the ``Recalculate candidate SNPs''
+button to recompute.
+
+The large central panel contains a vertically scrolled representation
+of the candidate SNPs found. By default the left-most plot contains a
+pictorial view of the sequence depth. Next to this is a vertical ruler
+showing the relative positions of candidate SNPs. Both of these two
+plots are to scale based on the sequence itself. To the right of these
+come a series of text based items with one row per candidate
+SNP. Initially this consists only of a check button (``Use''),
+Position, Score and the frequency of base types observed at that
+consensus column. Double clicking on any row will bring up the contig
+editor at that position showing the potential SNP. You may manually
+curate which ones you consider to be true or not by enabling or
+disabling it use the ``Use'' checkbox on that row. The score may also
+be manually adjusted allowing certain differences to be forced apart
+by using a very high score.
+
+The second row from the top contains a row of options controlling how
+the correlation between candidate SNPs is used to assign
+haplotypes. For every template in the contig the algorithm produces a
+fake sequence consistencing only of the bases considered to be a
+candidate SNP and enabled by having the ``Use'' checkbox set. These
+fake sequences are then clustered to form groups. No re-alignment is
+performed as the existing multiple alignment has already been made
+(although you may wish to run the Shuffle Pads algorithm before hand
+if the existing sequence alignment is poor).
+
+This is a fairly standard clustering algorithm that starts with each
+sequence being the sole member of a set. All sets are compared with
+each other and then the overlaps are ranked by score. The best scoring
+sets are then merged together. If Fast Mode is not being used the
+merged set is then compared against everything else once more to
+obtain new scores, otherwise a simple adjustment is guessed
+at. Skipping this step speeds up the algorithm considerably and
+generally gives sufficient results; hence the Fast Mode toggle. This
+process is repeated until no two sets have an overlap score of greater
+than or equal to the ``Minimum merge score''.
+
+The Filter Templates button brings up a new dialogue box containing an
+editable list (initially blank) of template names. Adding a template
+name here will force this template to be ignored by the clustering
+algorithm. You may also enter reading names here too and they will be
+automatically converted to template names, hence filtering out all
+other readings from the same template. If you or suspect specific
+templates from being chimeric then this is where they should be listed.
+
+The Cluster by SNPs button starts the clustering process running. It
+cannot be interrupted and may take a few minutes. After completion the
+``Sets'' component (rightmost) of the central plot is updated as seen
+in the below screenshot. Each set is a group of templates clustered
+together based on the candidate SNPs. They are sorted in left to right
+order such that the left-most set contains the most number of
+templates and the right most set contains the fewest. The consensus
+for members of that set is displayed in each square and the quality of
+the consensus is shown in a similar fashion to the contig editor, with
+white being good quality and dark grey being poor (usually due to
+being low coverage within that set).
+
+The background to the entire row is also shaded to indicate the
+observed quality of that SNP in the context of this clustering. A
+white background indicates that two or more sets exist with high
+quality consensus bases (>= quality 90) that differ. A light grey
+background is used where the consensus bases differ but not with high
+quality bases. A dark grey background is used to indicate that the
+consensus in all sets covering that SNP candidate agree. This
+typically happens when either the clustering has failed or when a
+candidate SNP is not a real indicator of which haplotype a sequence
+belongs to, such as a base calling error or a random fluctuation in
+homopolymer length. If you wish to force this SNP to be used for
+clustering then try increasing its score and re-clustering again.
+
+_lpicture(snp_candidates2)
+
+Hence in the above example we see two distinct good quality sets made
+from the SNPs between 1503 and 2334 and two more good quality sets
+from 12039 onwards. This indicates that we have no templates where one
+end spans SNPs in the 1503-2334 region and the other end spans SNPs in
+the 12039 onwards region. We also have a series of smaller sets which
+probably arise due to incorrect base calls or more rarely due to
+chimeras.
+
+Now if we double click to get the contig editor up it will display an
+additional window labelled ``Tabs''. NOTE: this does not happen if a
+contig editor for this contig is already being displayed. If so shut
+that one down first. Notice that the sequence names are also
+coloured. This indicates the set the sequence has been assigned
+to. The picture below also has the ``Highlight Disagreements'' mode
+enabled with a difference quality cutoff sufficient set to match the
+one used in the SNP Candidates plot. Two clear SNP positions can be
+seen.
+
+_lpicture(contig_editor_sets)
+
+The tabs window lists the set numbers and their size (except for
+``All''). Selecting a set will show just sequences from that set. This
+allows for the set consensus and quality values to be viewed. The
+editor also allows for sequences to be moved from one set to another,
+but for now this is purely serves a visual purpose and the movements
+are not passed back to the main SNP candidates window (although this
+is an obvious change to make).
+
+Moving back to the main SNP Candidates window note that we have a
+series of selection buttons at the bottom of the window. These control
+automatic selection of rows (SNPs) based on their quality assigned by
+observing the set consensus sequences. The clustering algorithm only
+works on selected sets so this allows for poor quality SNPs to be
+removed from further calculations. Additionally to simplify the view
+unselected SNPs may be removed by pressing the ``Remove unselected'' button.
+
+Above each set has a checkbutton above it (not visible in the
+screenshot). Initially these are not enabled, but they indicate which
+sets certain operations should be performed on. Pressing the right
+mouse button over a set (or a set checkbox) brings up a menu
+indicating the following operations.
+
+@table @strong
+@item Delete set
+@itemx Merge selected sets
+This removes either the clicked upon set or all enabled sets (those
+that have their checkbox set) from the display.
+@sp 1
+@item Save this consensus
+@itemx Save consensus for selected sets
+This brings up a dialogue box allowing the consensus for a single or
+selected sets to be saved in FASTA format. The set numbers is a space
+separated list of numbers representing the sets to save, starting
+with the leftmost set being numbered as 1. Initially this is either
+the one you clicked on or all the selected ones, but it may be edited
+in this dialogue too prior to saving. Strip pads removes padding
+characters ('*') from the consensus.
+
+``Incorporate ungrouped templates'' controls how template sequences
+that were not assigned to at least one set are dealt with. It could be
+considered that sequences covering regions where no SNPs have been
+detected should be included when computing the consensus, and this is
+the default action. However this can be disabled such that only
+sequences that were specifically used for breaking the assembly apart
+into sets form the consensus.
+@sp 1
+@item Produce fofn for this set
+@itemx Produce fofn for selected sets
+These options allow a file or list of reading names to be
+saved. A single fofn is produced but multiple sets may be grouped
+together in one fofn. Here the set number ``0'' is a placeholder for
+all of the sequences that were not assigned to a set.
+@end table
+
+The final set of controls to discuss in the SNP Candidates window
+control the splitting of sets into contigs. This is a one-way action
+which cannot be undone, so make sure you backup the database using
+Copy Database before hand.
+
+The ``Split sets to contigs'' button moves the readings in each
+selected set to its own contig. In some cases a set may be
+non-contiguous. Remember that templates are assigned to sets, but a
+template may often only have the end sequence known with the middle
+portion being unsequenced. Gap4 does not currently handle scaffolds
+and super-contigs so in order to keep such sets held together in a
+single contig the ``Add fake consensus'' option may be used. This adds
+an additional sequence to the contig that contains the consensus for
+the set (including from readings that were unassigned). This also
+handily means that new contigs produced from multiple sets are already
+aligned and base coordinates are directly comparable. Hence two such sets may
+be viewed in the Join Editor by typing their names into the main Join
+Contigs dialogue. (Find Internal Joins will attempt to realign the
+contigs and often fails if the set contains many regions of unknown
+consensus.)
+

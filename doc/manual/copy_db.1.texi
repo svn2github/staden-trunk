@@ -5,7 +5,8 @@ copy_db --- a garbage collecting gap4 database copier and merger
 
 @unnumberedsec SYNOPSIS
 
-@code{copy_db} [@code{-v}] @i{from.vers} ... @i{to.vers}
+@code{copy_db} [@code{-v}] [@code{-f}] [@code {-b} @i{32/64}] [@code
+{-T}] @i{from.vers} ... @i{to.vers}
 
 @unnumberedsec DESCRIPTION
 
@@ -30,6 +31,18 @@ information is performed either.
 @item @code{-v}
      Enable verbose output. This gives a running summary of the current piece
      of information being copied.
+
+@item @code{-f}
+     Attempts to spot and fix various database corruptions. A
+     corrupted gap4 database may not be corruption free after this,
+     but there's more chance of being able to recover data.
+
+@item -T
+     Removes annotation tags while copying. (Of limited use.)
+
+@item -b @i{bitsize}
+     Generates the new database using a given bitsize, where
+     @i{bitsize} is either @code{32} or @code{64}.
 @end table
 
 @unnumberedsec EXAMPLES

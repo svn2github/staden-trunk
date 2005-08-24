@@ -138,12 +138,10 @@ Another option is to search the readings for families of known repeats
 regions which are found to match known repeats.
 
 Some groups are using the package for mutation studies and 
-the final pregap4 option, prior to assembly is to use the tracediff and hetscan programs
+the final pregap4 option, prior to assembly is to use the mutation scanner program
 (_fpref(Mutation-Detection-Introduction, Introduction to mutation
 detection, mutations)) to search the readings for mutations
-(_fpref(Pregap4-Modules-Trace Difference, Trace
-Difference,t) and _fpref(Pregap4-Modules-Heterozygote Scanner, Heterozygote
-Scanner,t)).
+(_fpref(Pregap4-Modules-Mutation Scanner, Mutation Scanner, t).
 
 Pregap4 can also be used to assemble the readings into a gap4 database
 (_fpref(Pregap4-Modules-Gap4 Assembly, Gap4 Shotgun Assembly, t)), or

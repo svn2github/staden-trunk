@@ -36,6 +36,18 @@ from the View Menu.
 
 _lpicture(trev_conf_trace)
 
+Trev uses ``io_lib'' for handling the various sequencing instrument
+file formats. This means it has support for ABI, MegaBace (when saved
+in ABI format), SCF (used by LiCor and some other manufacturers), ZTR
+and SFF (454).
+
+The above pictures all come from instruments using the Sanger
+sequencing method, however more recently support has been added for
+pyrosequencing methods (as used by 454 Life Sciences amongst
+others). An example of this is below.
+
+_lpicture(trev_pyro_trace)
+
 Trev can be used to produce postscript
 files of the traces so that they can be printed. The colours, line
 widths, etc are configurable. An example is shown in the figure below.

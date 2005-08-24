@@ -971,9 +971,9 @@ tags, use ``Search by Annotation Comments'', with an empty text box.
 This positions the cursor at the start of the next segment of
 sequence that matches the value specified in the text box.
 The search is case insensitive, ignores pads, and can allow a specified
-number of mismatches. It is performed on the readings, not on the consensus
-sequence, and can be either forwards or backwards from the current
-cursor position.
+number of mismatches. It may be performed on sequence only, consensus
+only or both. It also operates either forwards or backwards from the
+current editing cursor position.
 
 @node Editor-Search-Qual
 @subsection Search by Quality
@@ -1128,7 +1128,6 @@ options (which are described in greater detail below).
 * Editor-Comm-Report-Mutations:: Report Mutations
 * Editor-Comm-Primer Selection:: Select Primer
 * Editor-Comm-Align::           Align
-* Editor-Comm-Shuffle::         Shuffle Pads
 * Editor-Comm-Remove Reading::  Reading reading
 * Editor-Comm-Break Contig::    Break Contig
 @end menu
@@ -1301,23 +1300,6 @@ small section of the good quality non-cutoff data. Then select the align
 command and adjust the cutoff point as desired.  Pads are inserted in the
 consensus and readings as necessary, although pads will not be inserted in the
 cutoff data of other sequences.
-
-@node Editor-Comm-Shuffle
-@subsection Shuffle Pads
-@cindex Contig Editor: shuffle Pads
-@cindex Shuffle Pads: contig editor
-@cindex pad shuffling: contig editor
-@cindex aligning pads: contig editor
-@cindex pad alignment: contig editor
-
-One weakness of the alignment strategy used in the current shotgun assembly
-algorithm is that padding characters are not always aligned with one
-another. 
-This Contig Editor Commands menu function
-attempts to align padding characters using a very
-simply strategy. It does not solve all pad alignment problems but is a
-useful first step during cleaning-up operations. After
-shuffling, all columns consisting entirely of pads are removed.
 
 @node Editor-Comm-Remove Reading
 @subsection Remove Reading
@@ -1634,13 +1616,21 @@ are highlighted. It makes scanning for problems by eye much easier.
 
 Several modes of highlighting are available: ``By dots'' will only display the
 bases that differ from the consensus, displaying all other bases as full
-stops. The base colours are as normal (ie reflecting tags and quality). ``By
-foreground colour'' and ``By background colour'' displays all base characters,
-but colours those that differ from the consensus. This allows easier visual
-scanning of the context that a difference occurs in, but it may be wise to
-disable the displaying of tags. Finally the ``Case sensitive'' toggle controls
-whether upper and lower case bases of the same base type should be considered
-differences.
+stops if they match or colons if they mismatch but are poor
+quality. The definition of poor quality here can be adjusted using the
+``Set quality threshold'' option of the Settings menu. The base
+colours are as normal (ie reflecting tags and quality).
+
+Highlight disagreements ``By foreground colour'' and ``By background
+colour'' displays all base characters, but colours those that differ
+from the consensus. Bases which differ by are below the
+difference quality threshold are not coloured. This allows easier
+visual scanning of the context that a difference occurs in, but it may
+be wise to disable the displaying of tags (hint: control-Q toggles
+tags on and off).
+
+Finally the ``Case sensitive'' toggle controls whether upper and lower
+case bases of the same base type should be considered as differences.
 
 @node Editor-Compare
 @subsection Compare Strands
@@ -2583,7 +2573,7 @@ conjunction with ``Auto-display traces'' (_fpref(Editor-Trace Display, Trace
 Display Settings, contig_editor)) this will automatically bring up a set of
 traces that are likely to be of assistance in resolving the problem. Prior to
 working on a contig it can be helpful to use ``Shuffle Pads'' to try to align
-padding characters _oxref(Editor-Comm-Shuffle, Shuffle Pads).
+padding characters. _fxref(Shuffle Pads, Shuffle Pads, shuffle_pads).
 
 
 _split()

@@ -46,7 +46,7 @@ $TODAY = &pretty_date;			# like "20 September 1993"
 $SPLITTAG = "<!-- SPLIT HERE -->\n";	# tag to know where to split
 $PROTECTTAG = "_ThisIsProtected_";	# tag to recognize protected sections
 $html2_doctype = '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0 Strict Level 2//EN">';
-$http_prefix = "http://www.mrc-lmb.cam.ac.uk/pubseq/manual";
+$http_prefix = "http://staden.sourceforge.net/manual";
 
 #
 # language dependent constants
