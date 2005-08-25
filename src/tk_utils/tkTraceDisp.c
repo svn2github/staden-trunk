@@ -491,6 +491,7 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 			t->Tgc, x0, xn, yoff, height, yscale,
 			t->read->baseline);
 	/* trace_draw_pyro(t, d, p, x0, xn, yoff, height, yscale); */
+	break;
     }
 
     if (t->yticks)
