@@ -1877,6 +1877,11 @@ static void process_frags_5(seq_frag *frag, int *num_frags, int from, int to,
  * If 1 consensus sequence is give, but 2 quality arrays exist then the
  * second quality array is filled out to contain consensus discrepancy
  * values.
+ *
+ * NB: Second highest confidence is much the same as calling process_discrep
+ * and using just the one confidence. Indeed the algorithms seem to be
+ * identical except when pads exist. Therefore for now the 2nd highest
+ * confidence code in this function is likely to be unused.
  */
 static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 			  int start, char *con1, float *qual1,
