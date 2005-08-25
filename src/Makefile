@@ -115,17 +115,18 @@ distunix:
 
 
 distwindows:
-	-mkdir $(DIST)/lib/$(MACHINE)-binaries 
+	-mkdir $(DIST)/lib/windows-binaries 
 	-cp lib/windows-binaries/* $(DIST)/lib/windows-binaries
-	-cp windows/Release/sprun.exe $(DIST)/windows-bin/gap.exe
-	-cp windows/Release/sprun.exe $(DIST)/windows-bin/pregap4.exe
-	-cp windows/Release/sprun.exe $(DIST)/windows-bin/trev.exe
-	-cp windows/Release/sprun.exe $(DIST)/windows-bin/spin.exe
+	-cp windows/run/sprun.exe $(DIST)/windows-bin/
+	-cp windows/run/sprun.exe $(DIST)/windows-bin/gap.exe
+	-cp windows/run/sprun.exe $(DIST)/windows-bin/pregap4.exe
+	-cp windows/run/sprun.exe $(DIST)/windows-bin/spin.exe
+	-cp windows/run/sprun.exe $(DIST)/windows-bin/trev.exe
 	-cp tk8.4.6/win/wish84.exe $(DIST)/windows-bin/wish.exe
-	-cp trev/trev.bat $(DIST)/windows-bin
-	-cp gap4/gap4.bat $(DIST)/windows-bin
-	-cp spin/spin.bat $(DIST)/windows-bin
-	-cp pregap4/pregap4.bat $(DIST)/windows-bin
+	#-cp trev/trev.bat $(DIST)/windows-bin
+	#-cp gap4/gap4.bat $(DIST)/windows-bin
+	#-cp spin/spin.bat $(DIST)/windows-bin
+	#-cp pregap4/pregap4.bat $(DIST)/windows-bin
 	-cp ../windows-bin/*.exe $(DIST)/windows-bin
 	-cp scripts/splitseq_da $(DIST)/windows-bin
 
