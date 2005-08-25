@@ -56,7 +56,7 @@ proc ConfidenceGraph { io mode } {
     } elseif {$mode == "second"} {
 	wm title $f "2nd-highest confidence graph"
     } else {
-	wm title $f "discrepancy graph"
+	wm title $f "diploid graph"
     }
 
     contig_id $f.id \
@@ -217,14 +217,6 @@ proc CreateConfidenceGraph {io mode cons_id c_win} {
     update_geom $c_win $conf_win
 
     #register quality graph and do first display
-    if {$mode == "conf"} {
-	set cmd confidence_graph
-    } elseif {$mode == "second"} {
-	set cmd second_confidence_graph
-    } else {
-	set cmd discrepancy_graph
-    }
-
     switch $mode {
 	"conf" {
 	    set $conf_win.conf_id [confidence_graph \

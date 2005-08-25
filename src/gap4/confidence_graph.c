@@ -152,8 +152,9 @@ int calc_confidence(GapIO *io,
     if (!con)
         return -1;
 
-    if (mode == CONFIDENCE_GRAPH_DISCREP ||
-	mode == CONFIDENCE_GRAPH_DISCREP2) {
+    switch (mode) {
+    case CONFIDENCE_GRAPH_DISCREP:
+    case CONFIDENCE_GRAPH_DISCREP2: {
 	float *qual1 = (float *)xmalloc((end - start + 1) * sizeof(float));
 	float *qual2 = (float *)xmalloc((end - start + 1) * sizeof(float));
 	int i;
@@ -168,13 +169,27 @@ int calc_confidence(GapIO *io,
 	}
 	xfree(qual1);
 	xfree(qual2);
-    } else {
+	break;
+    }
+
+    case CONFIDENCE_GRAPH_QUALITY:
+    case CONFIDENCE_GRAPH_SECOND:
+	/* SECOND is much the same as DISCREP, so not used now */
 	calc_consensus(contig, start, end,
 		       CON_SUM, con, NULL,
 		       mode == CONFIDENCE_GRAPH_SECOND ? NULL : qual,
 		       mode == CONFIDENCE_GRAPH_SECOND ? qual : NULL,
 		       consensus_cutoff, quality_cutoff,
 		       database_info, (void *)io);
+	break;
+
+    case CONFIDENCE_GRAPH_DNP:
+	/*
+	calc_DNP(contig, start, end, qual1, qual2,
+		 consensus_cutoff, quality_cutoff,
+		 database_info, (void *)io);
+	*/
+	break;
     }
     
     for (i = 0; i < end - start + 1; i++) {
