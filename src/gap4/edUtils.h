@@ -292,8 +292,10 @@ extern int createEdDisplay(EdStruct *xx, int seq, int pos);
 extern int calculate_consensus_length(EdStruct *xx);
 extern void calculateConsensusLength(EdStruct *xx);
 extern int contEd_info(int job, void *mydata, info_arg_t *theirdata);
-extern void DBcalcConsensus (EdStruct *xx,int pos, int width, char *str,
-			     float *qual, int mode);
+extern void DBcalcConsensus(EdStruct *xx, int pos, int width, char *str,
+			    float *qual, int mode);
+extern void DBcalcSetConsensus(EdStruct *xx, int pos, int width, int set,
+				char *str, float *qual);
 extern void DBcalcDiscrepancies(EdStruct *xx,int pos, int width, float *qual);
 extern char *DBgetSeq(DBInfo *db, int seq);
 extern tagStruct *DBgetTags (DBInfo *db, int seq);
