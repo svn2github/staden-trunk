@@ -17,7 +17,6 @@ LIBSF	= $(F77_DEP)
 # introduced by -Wall
 CC = gcc
 CXX = g++
-COPT += -Wuninitialized 
 GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
 	      -Wstrict-prototypes
 CFLAGS	+= $(GCCWARNINGS)

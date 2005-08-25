@@ -236,7 +236,7 @@ void rescale_heights(Read *r) {
     int total = 0;
     int max, max2;
     int i, j, k;
-    double max_val = 0, rescale;
+    double max_val = 0, rescale = 1.0;
     TRACE *ta, *tc, *tg, *tt;
 
     ta = r->traceA;

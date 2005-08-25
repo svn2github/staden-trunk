@@ -328,9 +328,9 @@ ztr_t *fread_ztr(FILE *fp) {
 
     /* Load chunks */
     while (chunk = ztr_read_chunk_hdr(fp)) {
+	/*
 	char str[5];
 
-	/*
 	fprintf(stderr, "Read chunk %.4s %08x length %d\n",
 		ZTR_BE2STR(chunk->type, str), chunk->type, chunk->dlength);
 	*/
