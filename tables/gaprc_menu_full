@@ -126,8 +126,8 @@ add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$
 add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
 add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
 add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
-add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io second}
-add_command	{View.Discrepancy graph}	 8 10 {ConfidenceGraph \$io discrep}
+add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io discrep}
+add_command	{View.Diploid graph}	 	 8 10 {ConfidenceGraph \$io discrep2}
 add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
 add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
@@ -571,8 +571,6 @@ add_check {View.Ruler ticks} 	1 0 {config$t.ticks} \
 add_command {View.Confidence graph} 	1 0 \
 	{CreateConfidenceGraph $io conf \[set $t.cons_id\] $t}
 add_command {View.2nd-Highest Confidence} 	1 0 \
-	{CreateConfidenceGraph $io second \[set $t.cons_id\] $t}
-add_command {View.Discrepancy graph} 	1 0 \
 	{CreateConfidenceGraph $io discrep \[set $t.cons_id\] $t}
 add_command {View.Diploid graph} 	1 0 \
 	{CreateConfidenceGraph $io discrep2 \[set $t.cons_id\] $t}
