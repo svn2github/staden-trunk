@@ -1,10 +1,13 @@
-14th July 2005 (& more - add to this until new release)
-==============
-
-Tagged as Release 1.6.0b4
+24th August 2005
+================
 
 Gap4
 ----
+
+* Rewrote the Shuffle Pads algorithm to be more like ReAligner. It can
+  introduce new pads and remove old ones as necessary in order to
+  optimise the alignments. It has also moved from inside the contig
+  editor to part of the main menu so that it can be scripted easier.
 
 * The join editor invoked from Find Read Pairs plot now brings up the
   editors at the start/end of the sequences forming the read-pair
@@ -21,11 +24,16 @@ Gap4
   from regions which apparently contained no SNPs (and therefore
   belong to all split contigs).
 
+* Report Mutations bug fix. Producing HTML output now works (albeit
+  with less content) when asking for SNPs to be derived from
+  "differences" instead of tags.
+
 Trev
 ----
 
-* Added a "-style pyro" option to request histogram based
-  pyrosequencing data.
+* Pyrosequencing data (eg 454 flowgrams) are now supported. Trev
+  auto-senses the type and views accordingly. Added format for 454's
+  SFF standard too.
 
 Io_lib
 ------

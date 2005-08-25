@@ -1,3 +1,213 @@
+2005-08-24  jkbonfield  <jkbonfield>
+
+	* doc/manual/complement-t.texi,
+	* doc/manual/configure-t.texi,
+	* doc/manual/consistency_display-t.texi,
+	* doc/manual/contig_editor-t.texi,
+	* doc/manual/contig_editor_sets.small.unix.png,
+	* doc/manual/contig_editor_sets.unix.png,
+	* doc/manual/copy_db.1.texi,
+	* doc/manual/dependencies,
+	* doc/manual/gap4-t.texi,
+	* doc/manual/mutations-t.texi,
+	* doc/manual/pregap4_mini-t.texi,
+	* doc/manual/snp_candidates1.small.unix.png,
+	* doc/manual/snp_candidates1.unix.png,
+	* doc/manual/snp_candidates2.small.unix.png,
+	* doc/manual/snp_candidates2.unix.png,
+	* doc/manual/spin_codon_usage_aaonly.small.unix.png,
+	* doc/manual/spin_plot.small.unix.png,
+	* doc/manual/spin_translate_t.small.unix.png,
+	* doc/manual/template-t.texi,
+	* doc/manual/template.display.small.unix.png,
+	* doc/manual/template.quality.small.unix.png,
+	* doc/manual/trev_mini-t.texi,
+	* doc/manual/trev_pyro_trace.unix.png,
+	* doc/manual/tools/merge_indexes.pl,
+	* doc/manual/tools/texi2html:
+	(13:17:37) Various doc updates including pyrosequencing and the SNP
+	candidates plot. 
+
+2005-08-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/hash_table.c:
+	(15:25:18) Fixed HashTableLoad so it correctly stores the HashTable
+	in the HashFile structure. It also now checks for the correct size
+	of file to load. 
+
+	* src/io_lib/sff/sff.c,
+	* src/io_lib/sff/sff.h:
+	(15:25:44) Added SFF (454 flowgram) file reading support. 
+
+2005-08-10  jkbonfield  <jkbonfield>
+
+	* src/gap4/shuffle_pads.c,
+	* src/seq_utils/align_lib.c,
+	* src/seq_utils/align_lib.h:
+	(10:55:24) More fixes to shuffle pads. Removed memory leaks. Added
+	code to keep tag positions up to date. Hopefully this now means all
+	the known bugs and missing features have been dealt with. 
+
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/shuffle_pads.h:
+	(10:55:57) Added header file for shuffle pads prototypes. 
+
+	* src/gap4/edCommands.c:
+	(14:30:18) Removed Shuffle Pads from the editor menus. However I
+	also put back the old shuffle pads code (which worked better) so
+	that the gaprc file can be edited to reenable it still if desired.
+	It's been removed from the menu due to being superseded by the new
+	re-alignment method. 
+
+	* tables/gaprc_menu_full,
+	* tables/gaprc_menu_mito:
+	(14:30:19) Removed Shuffle Pads from the editor menus. However I
+	also put back the old shuffle pads code (which worked better) so
+	that the gaprc file can be edited to reenable it still if desired.
+	It's been removed from the menu due to being superseded by the new
+	re-alignment method. 
+
+	* src/gap4/editor_search.tcl:
+	(14:31:09) Fixed search by sequence to reenable the 'where' clause
+	(sequence or consensus). This was accidentally disabled. 
+
+	* src/gap4/shuffle_pads.c:
+	(14:31:30) Removed debugging output. 
+
+	* src/gap4/shuffle_pads.tcl,
+	* src/gap4/tclIndex,
+	* tables/gaprc:
+	(14:32:30) Added shuffle pads tcl/tk dialogue. 
+
+	* src/io_lib/Makefile,
+	* src/io_lib/README,
+	* src/io_lib/options.mk:
+	(15:15:24) Added draft SFF format support. I need to verify if the
+	example data files I tested this with are correct or if the SFF
+	draft spec is correct (as they differ marginally in places). Hence
+	this format may change soon. 
+
+	* src/io_lib/read/Read.c,
+	* src/io_lib/read/Read.h,
+	* src/io_lib/utils/traceType.c:
+	(15:15:25) Added draft SFF format support. I need to verify if the
+	example data files I tested this with are correct or if the SFF
+	draft spec is correct (as they differ marginally in places). Hence
+	this format may change soon. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(15:16:31) Added (commented out) code for extra debugging. 
+
+	* src/io_lib/progs/Makefile:
+	(15:16:48) Added hash_extract to the Makefile. 
+
+	* src/tk_utils/tkTrace.c,
+	* src/tk_utils/tkTraceIO.c:
+	(15:17:43) Improved pyrosequencing style trace support by
+	auto-scaling. 
+
+	* src/trev/trev.tcl:
+	(15:18:17) Changed the default scale when displaying pyrosequencing
+	traces. 
+
+	* src/gap4/shuffle_pads.c:
+	(16:02:52) Fixed a bug where sequences originally ending in pads
+	but not after realignment would cause a fatal error to be reported
+	(wrongly) due to apparently having data missing after the
+	alignment. 
+
+2005-08-09  jkbonfield  <jkbonfield>
+
+	* src/gap4/edMutations.c:
+	(09:28:54) Fixed crashes with using Report Mutations in HTML mode
+	and finding mutations by base call differences rather than tags. 
+
+	* src/gap4/shuffle_pads.c:
+	(13:38:03) Further work on shuffle pads. This latest code is
+	substantially faster than before and also seems to work well except
+	for currently not updating consensus annotations. 
+
+	* src/seq_utils/align_lib.c,
+	* src/seq_utils/align_lib.h:
+	(13:38:30) Further work on shuffle pads. This latest code is
+	substantially faster than before and also seems to work well except
+	for currently not updating consensus annotations. 
+
+2005-07-25  jkbonfield  <jkbonfield>
+
+	* src/gap4/shuffle_pads.c:
+	(15:36:17) Fixed bug with not updating the in-memory
+	io_relpos/io_length arrays. Removed debugging & general tidy up.
+	Changed gap penalties from -8 to -9. 
+
+2005-07-22  jkbonfield  <jkbonfield>
+
+	* src/gap4/Makefile:
+	(15:46:18) Added back the shuffle_pads code to the compilation. 
+
+	* src/gap4/newgap_cmds.c:
+	(15:47:45) Reenabled the shuffle_pads command. 
+
+	* src/gap4/shuffle_pads.c:
+	(15:49:41) Removed the old shuffle pads by align_sv code, but kept
+	the interface to Rodger's malign code.
+	
+	Sped up the editing section by keeping the malign data up to date
+	as we go instead of rebuilding after each pad. This has a massive
+	speed improvement.
+	
+	Added code to write the new alignments back to the database. 
+
+	* src/haplo/haplo_tcl.c:
+	(15:50:51) Fixed arg structure used (flukily worked before). 
+
+	* src/io_lib/utils/compress.c:
+	(15:52:07) Unset compression_used when opening uncompressed files
+	instead of leaving as the last value. 
+
+	* src/seq_utils/align_lib.c:
+	(15:57:10) Added destroy_malign_counts, malign_insert_scores and
+	malign_recalc_scores functions. The latter of these allow for
+	updating of the malign scores and consensus elements after a
+	contigl list has been updated. Used as a fast alternative to
+	rebuilding from scratch.
+	
+	Removed unused msegs element of MALIGN struct.
+	
+	Allow for gap_open and gap_extend to be passed in when building an
+	MALIGN. These are then used instead of the previous hardwired
+	settings.
+	
+	Fixed a bug in affine_malign where the first rows of the F and G
+	matrix were undefined meaning that the computation of G (gap in Y)
+	used uninitialised data. This was the cause of sometimes giving
+	daft alignments. The same bug probably exists in all the other
+	alignment functions here, but has not been checked or fixed. 
+
+	* src/seq_utils/align_lib.h:
+	(15:57:12) Added destroy_malign_counts, malign_insert_scores and
+	malign_recalc_scores functions. The latter of these allow for
+	updating of the malign scores and consensus elements after a
+	contigl list has been updated. Used as a fast alternative to
+	rebuilding from scratch.
+	
+	Removed unused msegs element of MALIGN struct.
+	
+	Allow for gap_open and gap_extend to be passed in when building an
+	MALIGN. These are then used instead of the previous hardwired
+	settings.
+	
+	Fixed a bug in affine_malign where the first rows of the F and G
+	matrix were undefined meaning that the computation of G (gap in Y)
+	used uninitialised data. This was the cause of sometimes giving
+	daft alignments. The same bug probably exists in all the other
+	alignment functions here, but has not been checked or fixed. 
+
+2005-07-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/read/Read.c:
+	(15:16:58) Removed file descriptor 'leak' in write_reading(). 
+
 2005-07-14  jkbonfield  <jkbonfield>
 
 	* src/pregap4/modules/interactive_clip.p4m:

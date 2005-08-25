@@ -6,7 +6,8 @@ copy_db \- a garbage collecting gap4 database copier and merger
 .SH "SYNOPSIS"
 .PP
 
-\fBcopy_db\fP [\fB-v\fP] \fIfrom.vers\fP ... \fIto.vers\fP
+\fBcopy_db\fP [\fB-v\fP] [\fB-f\fP] [@code {-b} \fI32/64\fP] [@code
+{-T}] \fIfrom.vers\fP ... \fIto.vers\fP
 
 .SH "DESCRIPTION"
 .PP
@@ -33,6 +34,21 @@ information is performed either.
 \fB-v\fP
 Enable verbose output. This gives a running summary of the current piece
 of information being copied.
+
+.TP
+\fB-f\fP
+Attempts to spot and fix various database corruptions. A
+corrupted gap4 database may not be corruption free after this,
+but there's more chance of being able to recover data.
+
+.TP
+-T
+Removes annotation tags while copying. (Of limited use.)
+
+.TP
+-b \fIbitsize\fP
+Generates the new database using a given bitsize, where
+\fIbitsize\fP is either \fB32\fP or \fB64\fP.
 .TE
 .SH "EXAMPLES"
 .PP
