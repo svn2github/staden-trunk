@@ -52,6 +52,38 @@ static void oppInitialize(void)
     opp['8'] = '8';
 }
 
+/*
+ * An uncomplemented pyrosequencing trace has blank trace samples after a
+ * tall peak in order to fit the subsequent base calls in.
+ * When complemented the blank samples will be on the left of a run and the
+ * peak on the right, so we shuffle the peaks back to maintain their order.
+ */
+static void shift_pyro_peaks(Read *r) {
+    int i;
+
+    for (i = r->NBases - 2; i >= 0; i--) {
+	int j1;
+	int j2;
+
+	if (r->base[i] != r->base[i+1])
+	    continue;
+
+	j1 = r->basePos[i];
+	j2 = r->basePos[i+1];
+
+	if (r->traceA[j1] == 0 &&
+	    r->traceC[j1] == 0 &&
+	    r->traceG[j1] == 0 &&
+	    r->traceT[j1] == 0) {
+	    TRACE t;
+	    t=r->traceA[j1]; r->traceA[j1]=r->traceA[j2]; r->traceA[j2]=t;
+	    t=r->traceC[j1]; r->traceC[j1]=r->traceC[j2]; r->traceC[j2]=t;
+	    t=r->traceG[j1]; r->traceG[j1]=r->traceG[j2]; r->traceG[j2]=t;
+	    t=r->traceT[j1]; r->traceT[j1]=r->traceT[j2]; r->traceT[j2]=t;
+	}
+    }
+}
+
 
 /* ---- Exports ---- */
 
@@ -109,6 +141,11 @@ void complement_read(Read *read, int len)
 	swap(read->prob_C[i], read->prob_C[read->NBases-i-1], temp_char);
 	swap(read->prob_G[i], read->prob_G[read->NBases-i-1], temp_char);
 	swap(read->prob_T[i], read->prob_T[read->NBases-i-1], temp_char);
+    }
+
+    /* Always keep peaks in pyrosequencing to the "left" */
+    if (read->traceA && read->flow) {
+	shift_pyro_peaks(read);
     }
 
     /* swap cutoffs */
