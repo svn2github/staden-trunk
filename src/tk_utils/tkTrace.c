@@ -2003,21 +2003,39 @@ static int resample(DNATrace *t, int spacing) {
 	    right_samp = r->NPoints-2;
 
 	/* Iterate around samples for this peak */
-	xpos = left_samp;
-	ratio = (right_samp - left_samp) / (spacing);
-	for (sample = 0; sample < spacing; sample++) {
-	    int l;
-	    double fl, fr;
-	    l = (int)xpos;
-	    fl = 1-(xpos-l);
-	    fr = 1-(l+1-xpos);
-
-	    traceA[nsamples] = fl * r->traceA[l] + fr * r->traceA[l+1];
-	    traceC[nsamples] = fl * r->traceC[l] + fr * r->traceC[l+1];
-	    traceG[nsamples] = fl * r->traceG[l] + fr * r->traceG[l+1];
-	    traceT[nsamples] = fl * r->traceT[l] + fr * r->traceT[l+1];
-	    nsamples++;
-	    xpos += ratio;
+	if (!r->flow) {
+	    xpos = left_samp;
+	    ratio = (right_samp - left_samp) / (spacing);
+	    for (sample = 0; sample < spacing; sample++) {
+		int l;
+		double fl, fr;
+		l = (int)xpos;
+		fl = 1-(xpos-l);
+		fr = 1-(l+1-xpos);
+		
+		traceA[nsamples] = fl * r->traceA[l] + fr * r->traceA[l+1];
+		traceC[nsamples] = fl * r->traceC[l] + fr * r->traceC[l+1];
+		traceG[nsamples] = fl * r->traceG[l] + fr * r->traceG[l+1];
+		traceT[nsamples] = fl * r->traceT[l] + fr * r->traceT[l+1];
+		nsamples++;
+		xpos += ratio;
+	    }
+	} else {
+	    for (sample = 0; sample < spacing; sample++) {
+		int bp = r->basePos[base];
+		if (sample == spacing/2) {
+		    traceA[nsamples] = bp ? r->traceA[bp] : 0;
+		    traceC[nsamples] = bp ? r->traceC[bp] : 0;
+		    traceG[nsamples] = bp ? r->traceG[bp] : 0;
+		    traceT[nsamples] = bp ? r->traceT[bp] : 0;
+		} else {
+		    traceA[nsamples] = 0;
+		    traceC[nsamples] = 0;
+		    traceG[nsamples] = 0;
+		    traceT[nsamples] = 0;
+		}
+		nsamples++;
+	    }
 	}
     }
 
