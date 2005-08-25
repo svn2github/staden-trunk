@@ -413,11 +413,11 @@ static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand,
     for (i=0; seqList[i]; i++) {
 	/* search through tag list for sequence */
 	int seq = seqList[i];
-	char *str;
+	char *str = NULL;
 	char *indt, *indb, *ind;
 	int offset;
 	int diff;
-	int cpos;
+	int cpos = 0;
 	
 	/* readings vs consensus */
 	for (wloop = 0; wloop < 2; wloop++) {
@@ -572,31 +572,6 @@ static int findNextSequence(EdStruct *xx, char *s, int mismatches, int strand,
     return fseq != -1;
 }
 
-
-
-
-static void reverse_str(char *s, int len)
-/*
- * Reverse and uppercase the character sequence of a string
- */
-{
-    int i;
-    char temp;
-    
-    for (i=0; i < len/2; i++) {
-	temp = s[i];
-	s[i] = toupper(s[len-i-1]);
-	s[len-i-1] = toupper(temp);
-    }
-
-    if (i*2 != len)
-	s[i] = toupper(s[i]);
-    
-}
-
-
-
-
 static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand,
 			    int where)
 /*
@@ -658,7 +633,7 @@ static int findPrevSequence(EdStruct *xx, char *s, int mismatches, int strand,
     for (i--; i>=0; i--) {
 	/* search through tag list for sequence */
 	int seq = seqList[i];
-	char *str;
+	char *str = NULL;
 	char *indt, *indb, *ind;
 	int wloop;
 	int cpos, diff;

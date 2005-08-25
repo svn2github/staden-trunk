@@ -428,7 +428,7 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
  * Builds and returns MALIGN from a Gap4 IO handle for the contig 'cnum'.
  */
 MALIGN *build_malign(GapIO *io, int cnum) {
-    CONTIGL *contig, *first_contig, *last_contig = NULL;
+    CONTIGL *contig, *first_contig = NULL, *last_contig = NULL;
     GContigs c;
     GReadings r;
     int rnum;
