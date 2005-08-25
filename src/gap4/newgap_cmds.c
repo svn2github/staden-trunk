@@ -72,7 +72,6 @@
 #include "readpair_coverage.h"
 #include "reading_coverage.h"
 #include "strand_coverage.h"
-#include "allelic_discreps.h"
 #include "shuffle_pads.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
@@ -4988,48 +4987,6 @@ tcl_save_contig_order(ClientData clientData,
     return TCL_OK;
 }
 
-int tcl_allelic_discreps(ClientData clientData, Tcl_Interp *interp,
-			 int objc, Tcl_Obj *CONST objv[])
-{
-    list2_arg args;
-    contig_list_t *contig_array = NULL;
-    int num_contigs = 0;
-    int i;
-    dstring_t *ds;
-
-    /* Parse arguments */
-    cli_args a[] = {
-	{"-io",	         ARG_IO,  1, NULL, offsetof(list2_arg, io)},
-	{"-contigs",     ARG_STR, 1, NULL, offsetof(list2_arg, inlist)},
-	{NULL,	    0,	     0, NULL, 0}
-    };
-
-    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
-	return TCL_ERROR;
-
-    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
-    if (num_contigs == 0) {
-	if (contig_array)
-	    xfree(contig_array);
-	return TCL_OK;
-    }
-
-    ds = dstring_create(NULL);
-    for (i = 0; i < num_contigs; i++) {
-	dstring_t *ds2;
-	ds2 = allelic_discreps(args.io, contig_array[i].contig);
-	dstring_appendf(ds, "{%s} ", dstring_str(ds2));
-	dstring_destroy(ds2);
-    }
-
-    xfree(contig_array);
-
-    Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
-    dstring_destroy(ds);
-
-    return TCL_OK;
-}
-
 int tcl_set_db_bitsize(ClientData clientData, Tcl_Interp *interp,
 		       int objc, Tcl_Obj *CONST objv[])
 {
@@ -5466,8 +5423,6 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "save_contig_order", tcl_save_contig_order,
 		      (ClientData) NULL,
 		      NULL);
-    Tcl_CreateObjCommand(interp, "allelic_discreps",
-			 tcl_allelic_discreps, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "set_db_bitsize",
 			 tcl_set_db_bitsize, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
