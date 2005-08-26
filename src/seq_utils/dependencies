@@ -1,48 +1,59 @@
 
-# DO NOT DELETE
-$O/align.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/align.o: align_lib_old.h
-$O/align.o: $(SRCROOT)/Misc/os.h align.h
-$O/align_lib.o: $(SRCROOT)/Misc/xalloc.h dna_utils.h read_matrix.h
-$O/align_lib.o: $(SRCROOT)/Misc/os.h
-$O/align_lib.o: align_lib.h $(SRCROOT)/Misc/misc.h
-$O/align_lib_old.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/align_lib_old.o: align.h $(SRCROOT)/Misc/os.h
 $O/align_lib_old.o: $(SRCROOT)/Misc/xalloc.h align_lib_old.h
-$O/align_lib_old.o: align.h
-$O/align_ss.o: $(SRCROOT)/Misc/xalloc.h
-$O/align_ss.o: align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
-$O/align_ss.o: align_lib_old.h
-$O/align_ss2.o: $(SRCROOT)/Misc/xalloc.h
-$O/align_ss2.o: align.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/misc.h
+$O/align_lib_old.o: $(SRCROOT)/Misc/misc.h
+$O/align_lib.o: $(SRCROOT)/Misc/misc.h
+$O/align_lib.o: $(SRCROOT)/Misc/os.h
+$O/align_lib.o: $(SRCROOT)/Misc/xalloc.h dna_utils.h read_matrix.h
+$O/align_lib.o: align_lib.h
+$O/align.o: $(SRCROOT)/Misc/os.h
+$O/align.o: align.h $(SRCROOT)/Misc/misc.h
+$O/align.o: align_lib_old.h
+$O/align.o: $(SRCROOT)/Misc/xalloc.h
+$O/align_ss2.o: align.h $(SRCROOT)/Misc/os.h
+$O/align_ss2.o: $(SRCROOT)/Misc/misc.h
 $O/align_ss2.o: align_lib_old.h
-$O/align_sv.o: $(SRCROOT)/Misc/xalloc.h align_lib_old.h uascii.gbl
+$O/align_ss2.o: $(SRCROOT)/Misc/xalloc.h
+$O/align_ss.o: align.h $(SRCROOT)/Misc/os.h
+$O/align_ss.o: $(SRCROOT)/Misc/misc.h
+$O/align_ss.o: align_lib_old.h
+$O/align_ss.o: $(SRCROOT)/Misc/xalloc.h
 $O/align_sv.o: $(SRCROOT)/Misc/misc.h
+$O/align_sv.o: align_lib_old.h uascii.gbl
 $O/align_sv.o: align.h $(SRCROOT)/Misc/os.h
-$O/base_comp.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/align_sv.o: $(SRCROOT)/Misc/xalloc.h
 $O/base_comp.o: $(SRCROOT)/Misc/xalloc.h
-$O/base_comp.o: dna_utils.h
 $O/base_comp.o: base_comp.h edge.h
-$O/dna_utils.o: $(SRCROOT)/Misc/FtoC.h dna_utils.h $(SRCROOT)/Misc/misc.h
-$O/dna_utils.o: $(SRCROOT)/Misc/xalloc.h
+$O/base_comp.o: dna_utils.h $(SRCROOT)/Misc/misc.h
+$O/base_comp.o: $(SRCROOT)/Misc/os.h
+$O/dna_utils.o: dna_utils.h $(SRCROOT)/Misc/misc.h
+$O/dna_utils.o: $(SRCROOT)/Misc/FtoC.h
 $O/dna_utils.o: $(SRCROOT)/Misc/os.h
-$O/edge.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h dna_utils.h
+$O/dna_utils.o: $(SRCROOT)/Misc/xalloc.h
+# DO NOT DELETE
+$O/edge.o: dna_utils.h
 $O/edge.o: $(SRCROOT)/Misc/misc.h
-$O/genetic_code.o: dna_utils.h $(SRCROOT)/Misc/array_arith.h
-$O/genetic_code.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/genetic_code.o: genetic_code.h $(SRCROOT)/text_utils/text_output.h $(SRCROOT)/Misc/misc.h
-$O/open_reading_frames.o: $(SRCROOT)/Misc/array_arith.h genetic_code.h
+$O/edge.o: $(SRCROOT)/Misc/xalloc.h
+$O/edge.o: $(SRCROOT)/Misc/os.h
+$O/genetic_code.o: dna_utils.h $(SRCROOT)/Misc/array_arith.h genetic_code.h
+$O/genetic_code.o: $(SRCROOT)/Misc/xalloc.h
+$O/genetic_code.o: $(SRCROOT)/text_utils/text_output.h $(SRCROOT)/Misc/misc.h
+$O/genetic_code.o: $(SRCROOT)/Misc/os.h
+$O/open_reading_frames.o: dna_utils.h $(SRCROOT)/Misc/array_arith.h genetic_code.h
+$O/open_reading_frames.o: $(SRCROOT)/Misc/os.h
+$O/open_reading_frames.o: $(SRCROOT)/Misc/xalloc.h
 $O/open_reading_frames.o: $(SRCROOT)/text_utils/text_output.h $(SRCROOT)/Misc/misc.h
-$O/open_reading_frames.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
-$O/open_reading_frames.o: dna_utils.h
-$O/read_matrix.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/read_matrix.o: read_matrix.h $(SRCROOT)/Misc/misc.h
 $O/read_matrix.o: $(SRCROOT)/Misc/xalloc.h
-$O/read_matrix.o: read_matrix.h
-$O/renz_utils.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
-$O/renz_utils.o: $(SRCROOT)/Misc/xalloc.h dna_utils.h
-$O/renz_utils.o: renz_utils.h $(SRCROOT)/Misc/getfile.h
+$O/read_matrix.o: $(SRCROOT)/Misc/os.h
+$O/renz_utils.o: dna_utils.h
+$O/renz_utils.o: $(SRCROOT)/Misc/getfile.h $(SRCROOT)/Misc/misc.h
+$O/renz_utils.o: $(SRCROOT)/Misc/xalloc.h
+$O/renz_utils.o: renz_utils.h
+$O/renz_utils.o: $(SRCROOT)/Misc/os.h
 $O/scramble.o: sequence_formats.h
 $O/search_utils.o: search_utils.h
-$O/sequence_formats.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
-$O/sequence_formats.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/sequence_formats.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/getfile.h
-$O/sequence_formats.o: sequence_formats.h
+$O/sequence_formats.o: $(SRCROOT)/Misc/getfile.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/sequence_formats.o: $(SRCROOT)/Misc/misc.h
+$O/sequence_formats.o: $(SRCROOT)/Misc/os.h
+$O/sequence_formats.o: $(SRCROOT)/Misc/xalloc.h sequence_formats.h

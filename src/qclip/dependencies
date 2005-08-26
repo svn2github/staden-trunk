@@ -1,14 +1,17 @@
 
-# DO NOT DELETE
-$O/consen.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/Misc/xalloc.h
-$O/consen.o: consen.h
+$O/consen.o: $(SRCROOT)/io_lib/include/os.h
 $O/consen.o: $(SRCROOT)/Misc/misc.h
-$O/qclip.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h consen.h
-$O/qclip.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/tk_utils/licence.h
-$O/qclip.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/qclip.o: seqInfo.h $(SRCROOT)/Misc/array.h
-$O/seqInfo.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
-$O/seqInfo.o: $(SRCROOT)/io_lib/include/expFileIO.h $(SRCROOT)/io_lib/include/os.h
-$O/seqInfo.o: $(SRCROOT)/io_lib/include/scf_extras.h
-$O/seqInfo.o: $(SRCROOT)/Misc/xerror.h
-$O/seqInfo.o: seqInfo.h $(SRCROOT)/Misc/array.h
+$O/consen.o: consen.h
+$O/consen.o: $(SRCROOT)/Misc/xalloc.h
+# DO NOT DELETE
+$O/qclip.o: $(SRCROOT)/io_lib/include/mFILE.h $(SRCROOT)/io_lib/include/os.h
+$O/qclip.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/qclip.o: $(SRCROOT)/Misc/misc.h
+$O/qclip.o: $(SRCROOT)/Misc/xalloc.h consen.h
+$O/qclip.o: seqInfo.h
+$O/qclip.o: $(SRCROOT)/tk_utils/licence.h
+$O/seqInfo.o: $(SRCROOT)/io_lib/include/mFILE.h $(SRCROOT)/io_lib/include/os.h
+$O/seqInfo.o: $(SRCROOT)/io_lib/include/scf_extras.h $(SRCROOT)/Misc/misc.h
+$O/seqInfo.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/seqInfo.o: seqInfo.h
+$O/seqInfo.o: $(SRCROOT)/Misc/xalloc.h

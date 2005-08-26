@@ -1,14 +1,12 @@
 
+$O/abiIO.o: $(SRCROOT)/io_lib/include/fpoint.h
+$O/abiIO.o: $(SRCROOT)/Misc/os.h
+$O/abiIO.o: abiIO.h
 # DO NOT DELETE
-$O/getABISampleName.o: $(SRCROOT)/io_lib/include/seqIOABI.h $(SRCROOT)/io_lib/include/os.h
-$O/getABIcomment.o: $(SRCROOT)/io_lib/include/seqIOABI.h $(SRCROOT)/io_lib/include/os.h
-$O/getABIdate.o: $(SRCROOT)/io_lib/include/mach-io.h $(SRCROOT)/io_lib/include/os.h
-$O/getABIfloat.o: $(SRCROOT)/io_lib/include/mach-io.h
-$O/getABIfloat.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/io_lib/include/fpoint.h
-$O/getABIfloat.o: $(SRCROOT)/io_lib/include/seqIOABI.h
-$O/getABIhex.o: $(SRCROOT)/io_lib/include/os.h $(SRCROOT)/io_lib/include/mach-io.h
-$O/getABIhex.o: $(SRCROOT)/io_lib/include/seqIOABI.h
-$O/getABIraw.o: $(SRCROOT)/io_lib/include/mach-io.h
-$O/getABIraw.o: $(SRCROOT)/io_lib/include/seqIOABI.h $(SRCROOT)/io_lib/include/os.h
-$O/getABIstring.o: $(SRCROOT)/io_lib/include/os.h
-$O/getABIstring.o: $(SRCROOT)/io_lib/include/seqIOABI.h
+$O/getABIcomment.o: $(SRCROOT)/io_lib/include/fpoint.h
+$O/getABIcomment.o: abiIO.h $(SRCROOT)/Misc/os.h
+$O/getABIdate.o: $(SRCROOT)/io_lib/include/fpoint.h
+$O/getABIdate.o: abiIO.h $(SRCROOT)/Misc/os.h
+$O/getABISampleName.o: $(SRCROOT)/io_lib/include/fpoint.h
+$O/getABISampleName.o: $(SRCROOT)/Misc/os.h
+$O/getABISampleName.o: abiIO.h

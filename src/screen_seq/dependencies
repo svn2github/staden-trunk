@@ -1,7 +1,9 @@
 
 # DO NOT DELETE
-$O/screen_seq.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
-$O/screen_seq.o: $(SRCROOT)/io_lib/include/array.h
-$O/screen_seq.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/screen_seq.o: $(SRCROOT)/text_utils/licence.h $(SRCROOT)/Misc/getfile.h
+$O/screen_seq.o: $(SRCROOT)/io_lib/include/array.h $(SRCROOT)/text_utils/licence.h
+$O/screen_seq.o: $(SRCROOT)/io_lib/include/mFILE.h $(SRCROOT)/io_lib/include/expFileIO.h
+$O/screen_seq.o: $(SRCROOT)/Misc/getfile.h
+$O/screen_seq.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/scf.h
 $O/screen_seq.o: $(SRCROOT)/Misc/misc.h
+$O/screen_seq.o: $(SRCROOT)/Misc/xalloc.h
+$O/screen_seq.o: $(SRCROOT)/Misc/os.h

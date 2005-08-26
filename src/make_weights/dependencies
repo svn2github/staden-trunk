@@ -1,5 +1,6 @@
 
 # DO NOT DELETE
-$O/make_weights.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/text_utils/licence.h
+$O/make_weights.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/make_weights.o: $(SRCROOT)/text_utils/licence.h
 $O/make_weights.o: $(SRCROOT)/Misc/misc.h
-$O/make_weights.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/xalloc.h
+$O/make_weights.o: $(SRCROOT)/Misc/os.h

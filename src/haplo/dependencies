@@ -1,0 +1,49 @@
+
+# DO NOT DELETE
+$O/haplo_cons.o: $(SRCROOT)/gap4/gap-dbstruct.h
+$O/haplo_cons.o: $(SRCROOT)/gap4/io_utils.h
+$O/haplo_cons.o: $(SRCROOT)/gap4/qual.h $(SRCROOT)/gap4/gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/haplo_cons.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/haplo_cons.o: $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
+$O/haplo_cons.o: haplo.h $(SRCROOT)/gap4/IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
+$O/haplo_cons.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
+$O/haplo_cons.o: $(SRCROOT)/Misc/dstring.h $(SRCROOT)/gap4/vseqs.h
+$O/haplo_cons.o: $(SRCROOT)/Misc/xalloc.h
+$O/haplo_cons.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/haplo_cons.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/gap4/io_handle.h
+$O/haplo_cons.o: $(SRCROOT)/g/g-os.h $(SRCROOT)/gap4/gap-if.h
+$O/haplo_snps.o: $(SRCROOT)/gap4/gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h
+$O/haplo_snps.o: $(SRCROOT)/gap4/IO.h $(SRCROOT)/g/g-defs.h $(SRCROOT)/Misc/os.h
+$O/haplo_snps.o: $(SRCROOT)/gap4/io_utils.h
+$O/haplo_snps.o: $(SRCROOT)/gap4/qual.h $(SRCROOT)/gap4/gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/haplo_snps.o: $(SRCROOT)/gap4/template.h $(SRCROOT)/gap4/list.h $(SRCROOT)/Misc/dstring.h haplo.h
+$O/haplo_snps.o: $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/haplo_snps.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/haplo_snps.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h $(SRCROOT)/gap4/gap-dbstruct.h
+$O/haplo_snps.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/haplo_snps.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/gap4/io_handle.h
+$O/haplo_snps.o: $(SRCROOT)/Misc/array.h
+$O/haplo_snps.o: $(SRCROOT)/g/g-os.h
+$O/haplo_split.o: $(SRCROOT)/gap4/gap-if.h $(SRCROOT)/g/g-struct.h $(SRCROOT)/g/freetree.h
+$O/haplo_split.o: $(SRCROOT)/gap4/io_utils.h
+$O/haplo_split.o: $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/haplo_split.o: $(SRCROOT)/Misc/dstring.h $(SRCROOT)/Misc/xalloc.h
+$O/haplo_split.o: $(SRCROOT)/Misc/os.h
+$O/haplo_split.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h $(SRCROOT)/gap4/gap-dbstruct.h
+$O/haplo_split.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/haplo_split.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/gap4/io_handle.h
+$O/haplo_split.o: haplo.h
+$O/haplo_split.o: $(SRCROOT)/gap4/IO.h $(SRCROOT)/g/g-defs.h
+$O/haplo_split.o: $(SRCROOT)/Misc/array.h
+$O/haplo_split.o: $(SRCROOT)/g/g-os.h
+$O/haplo_tcl.o: $(SRCROOT)/gap4/gap_cli_arg.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/gap4/list_proc.h
+$O/haplo_tcl.o: $(SRCROOT)/gap4/gap-dbstruct.h
+$O/haplo_tcl.o: $(SRCROOT)/gap4/io_handle.h $(SRCROOT)/gap4/io_utils.h
+$O/haplo_tcl.o: $(SRCROOT)/g/freetree.h $(SRCROOT)/g/g-error.h $(SRCROOT)/g/g-filedefs.h
+$O/haplo_tcl.o: haplo.h $(SRCROOT)/Misc/dstring.h $(SRCROOT)/Misc/xalloc.h
+$O/haplo_tcl.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/bitmap.h
+$O/haplo_tcl.o: $(SRCROOT)/Misc/os.h
+$O/haplo_tcl.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/haplo_tcl.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/haplo_tcl.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/gap4/IO.h $(SRCROOT)/g/g-defs.h
+$O/haplo_tcl.o: $(SRCROOT)/g/g-os.h $(SRCROOT)/gap4/gap-if.h $(SRCROOT)/g/g-struct.h
