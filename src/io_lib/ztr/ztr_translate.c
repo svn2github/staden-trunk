@@ -775,7 +775,7 @@ static char *ztr_encode_flow_raw(Read *r, int *nbytes, char **mdata,
     int i, j;
     unsigned int *data;
 
-    if (!r->flow_order || !r->nflows)
+    if (!r->flow_raw || !r->nflows)
 	return NULL;
 
     data = r->flow_raw;

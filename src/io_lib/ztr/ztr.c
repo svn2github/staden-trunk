@@ -685,11 +685,15 @@ int compress_ztr(ztr_t *ztr, int level) {
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
 	    if (ztr->chunk[i].mdlength == 4 &&
-		(memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0 ||
-		 memcmp(ztr->chunk[i].mdata, "PYNO", 4) == 0)) {
-		if (level > 1)
+		memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0) {
+		/* Raw data is not really compressable */
+	    } else if (ztr->chunk[i].mdlength == 4 &&
+		memcmp(ztr->chunk[i].mdata, "PYNO", 4) == 0) {
+		if (level > 1) {
+		    compress_chunk(&ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
 		    compress_chunk(&ztr->chunk[i],
 				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
+		}
 	    } else {
 		if (level <= 2) {
 		    /*
