@@ -42,6 +42,8 @@ int main(int argc, char **argv) {
     int found_header, found_footer;
     int basename = 0;
     char *archive = NULL;
+    int append_mode = 0;
+    int prepend_mode = 0;
 
     files = (tar_file *)malloc(nfiles * sizeof(tar_file));
 
@@ -57,6 +59,12 @@ int main(int argc, char **argv) {
 	    argv++;
 	    argc--;
 	}
+
+	if (strcmp(*argv, "-A") == 0)
+	    append_mode = 1;
+
+	if (strcmp(*argv, "-O") == 0)
+	    prepend_mode = 1;
 
 	if (strcmp(*argv, "-d") == 0)
 	    directories = 1;
@@ -93,6 +101,8 @@ int main(int argc, char **argv) {
     if (argc != 1 && !archive) {
 	fprintf(stderr, "Usage: hash_tar [options] [tarfile] > tarfile.hash\n");
 	fprintf(stderr, "    -a fname  Tar archive filename: use if reading from stdin\n");
+	fprintf(stderr, "    -A        Force no archive name (eg will concat to archive itself)\n");
+	fprintf(stderr, "    -O        Set arc. offset to size of hash (use when prepending)\n");
 	fprintf(stderr, "    -v        Verbose mode\n");
 	fprintf(stderr, "    -d        Index directory names (useless?)\n");
 	fprintf(stderr, "    -h name   Set tar entry 'name' to be a file header\n");
@@ -247,11 +257,13 @@ int main(int argc, char **argv) {
     fclose(fp);
    
     HashTableStats(hf->h, stderr);
-    hf->archive = strdup(archive);
+    if (!append_mode)
+	hf->archive = strdup(archive);
+	
 #ifdef _WIN32
     _setmode(_fileno(stdout), _O_BINARY);
 #endif
-    HashFileSave(hf, stdout);
+    HashFileSave(hf, stdout, prepend_mode ? HASHFILE_PREPEND : 0);
     HashFileDestroy(hf);
 
     free(files);

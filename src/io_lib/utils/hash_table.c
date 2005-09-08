@@ -368,7 +368,7 @@ int HashTableResize(HashTable *h, int newsize) {
     HashTable *h2;
     int i;
 
-    fprintf(stderr, "Resizing to %d\n", newsize);
+    /* fprintf(stderr, "Resizing to %d\n", newsize); */
 
     /* Create a new hash table and rehash everything into it */
     h2 = HashTableCreate(newsize, h->options);
@@ -582,13 +582,14 @@ void HashTableStats(HashTable *h, FILE *fp) {
  * This consists of the following format:
  * Header:
  *    ".hsh" (magic numebr)
- *    x4     (1-bytes of version code, eg "0.00")
+ *    x4     (1-bytes of version code, eg "1.00")
  *    x1     (HASH_FUNC_? function used)
  *    x1     (number of file headers: FH. These count from 1 to FH inclusive)
  *    x1     (number of file footers: FF. These count from 1 to FF inclusive)
  *    x1     (reserved - zero for now)
  *    x4     (4-bytes big-endian; number of hash buckets)
- *    x4     (4-bytes big-endian; number of bytes in stored hash, inc. header)
+ *    x8     (offset to add to item positions. eg size of this index)
+ *    x4     (4-bytes big-endian; number of bytes in hash file, inc. header)
  * Archive name:
  *    x1     (length, zero => no name)
  *    ?      (archive filename)
@@ -607,66 +608,61 @@ void HashTableStats(HashTable *h, FILE *fp) {
  *    x0.5   (File footer to use. zero => none) bottom 4 bits
  *    x8     (position)
  *    x4     (size)
- * Padding...
- * Header again
- *     A duplicate of above. The padding should be such that the header ends
- *     on a 512-byte boundary. This means we can either read the index from
- *     the start of a file or from the last entry in a tar file, meaning that
- *     we can (for example) just index a tar and add the index to the tar
- *     file itself.
+ * ... arbitrary gap (but likely none)
+ * Index footer:
+ *    ".hsh" (magic number)
+ *    x8     (offset to Hash Header. +ve = absolute, -ve = relative to end)
  *
  * It is designed such that on-disk querying of the hash table can be done
  * purely by forward seeks. (This is generally faster due to pre-fetching of
  * the subsequent blocks by many disk controllers.)
  */
-void HashFileSave(HashFile *hf, FILE *fp) {
+void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
     int i;
     HashItem *hi;
     uint32_t *bucket_pos;
-    uint64_t offset = 0;
+    uint64_t hfsize = 0;
     HashTable *h = hf->h;
-
+    HashFileFooter foot;
    
     /* Compute the coordinates of the hash items */
-    offset = sizeof(hf->hh);			/* header */
-    offset += 1 + (hf->archive
+    hfsize = sizeof(hf->hh);			/* header */
+    hfsize += 1 + (hf->archive
 		   ? strlen(hf->archive)
 		   : 0);			/* filename */
-    offset += h->nbuckets * 4; 			/* buckets */
+    hfsize += h->nbuckets * 4; 			/* buckets */
     for (i = 0; i < hf->nheaders; i++)		/* headers */
-	offset += 12;
+	hfsize += 12;
     for (i = 0; i < hf->nfooters; i++)		/* footers */
-	offset += 12;
+	hfsize += 12;
     bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
     for (i = 0; i < h->nbuckets; i++) {
-	bucket_pos[i] = offset;
+	bucket_pos[i] = hfsize;
 
 	if (!(hi = h->bucket[i]))
 	    continue;
 	for (; hi; hi = hi->next) {
-	    offset += 1 + 1 + hi->key_len + 8 + 4; /* keys, pos, size */
+	    hfsize += 1 + 1 + hi->key_len + 8 + 4; /* keys, pos, size */
 	}
-	offset++;				/* list-end marker */
+	hfsize++;				/* list-end marker */
     }
+    hfsize += sizeof(foot);
 
     /* Write the header: */
-    hf->hh.magic[0] = '.';
-    hf->hh.magic[1] = 'h';
-    hf->hh.magic[2] = 's';
-    hf->hh.magic[3] = 'h';
-    hf->hh.vers[0]  = '0';
-    hf->hh.vers[1]  = '.';
-    hf->hh.vers[2]  = '0';
-    hf->hh.vers[3]  = '0';
+    memcpy(hf->hh.magic, HASHFILE_MAGIC, 4);
+    memcpy(hf->hh.vers,  HASHFILE_VERSION, 4);
     hf->hh.hfunc    = h->options & HASH_FUNC_MASK;
     hf->hh.nheaders = hf->nheaders;
     hf->hh.nfooters = hf->nfooters;
     hf->hh.nbuckets = be_int4(h->nbuckets);
-    hf->hh.size     = be_int4(offset);
+    hf->hh.offset   = offset == HASHFILE_PREPEND
+	? be_int8(hfsize) /* archive will be append to this file */
+	: be_int8(offset);
+    hf->hh.size     = be_int4(hfsize);
     fwrite(&hf->hh, sizeof(hf->hh), 1, fp);
 
     /* Write the archive filename, if known */
-    if (hf->archive) {
+    if (hf->archive && *hf->archive) {
 	fputc(strlen(hf->archive), fp);
 	fputs(hf->archive, fp);
     } else {
@@ -706,7 +702,7 @@ void HashFileSave(HashFile *hf, FILE *fp) {
     free(bucket_pos);
 
     /*
-     * Finally write the hash_item linked lists. The first item is the
+     * Write the hash_item linked lists. The first item is the
      * hash key length. We append a zero to the end of the list so we
      * can check this key length to determine the end of this hash
      * item list.
@@ -731,6 +727,11 @@ void HashFileSave(HashFile *hf, FILE *fp) {
 	}
         fputc(0, fp);
     }
+
+    /* Finally write the footer referencing back to the header start */
+    memcpy(foot.magic, HASHFILE_MAGIC, 4);
+    foot.offset = be_int8(-hfsize);
+    fwrite(&foot, sizeof(foot), 1, fp);
 }
 
 /*
@@ -740,7 +741,7 @@ void HashFileSave(HashFile *hf, FILE *fp) {
  *    A filled out HashTable pointer on success
  *    NULL on failure   
  */
-HashFile *HashFileLoad(FILE *fp) {
+HashFile *HashFileLoad_old(FILE *fp) {
     int i;
     HashTable *h;
     HashItem *hi;
@@ -752,7 +753,7 @@ HashFile *HashFileLoad(FILE *fp) {
 
     if (NULL == (hf = (HashFile *)calloc(1, sizeof(HashFile))))
 	return NULL;
-    if (NULL == (htable = (unsigned char *)malloc(20)))
+    if (NULL == (htable = (unsigned char *)malloc(sizeof(hf->hh))))
 	return NULL;
 
     /* Read and create the hash table header */
@@ -760,6 +761,7 @@ HashFile *HashFileLoad(FILE *fp) {
 	return NULL;
     memcpy(&hf->hh, htable, sizeof(hf->hh));
     hf->hh.nbuckets = be_int4(hf->hh.nbuckets);
+    hf->hh.offset = be_int8(hf->hh.offset);
     hf->hh.size = be_int4(hf->hh.size);
     hf->h = h = HashTableCreate(hf->hh.nbuckets, hf->hh.hfunc);
     bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
@@ -770,9 +772,13 @@ HashFile *HashFileLoad(FILE *fp) {
 	hf->archive = (char *)malloc(fnamelen+1);
 	fread(hf->archive, 1, fnamelen, fp);
 	hf->archive[fnamelen] = 0;
+	if (hf->archive[0] == 0) {
+	    free(hf->archive);
+	    hf->archive = NULL;
+	}
     }
 
-    /* Load the rest of the hast table to memory */
+    /* Load the rest of the hash table to memory */
     htable_pos = sizeof(hf->hh) + fnamelen + 1;
     if (NULL == (htable = (unsigned char *)realloc(htable, hf->hh.size)))
 	return NULL;
@@ -822,7 +828,7 @@ HashFile *HashFileLoad(FILE *fp) {
 	    /* pos */
 	    memcpy(&pos, &htable[htable_pos], 8);
 	    htable_pos += 8;
-	    hfi->pos = be_int8(pos);
+	    hfi->pos = be_int8(pos) + hf->hh.offset;
 
 	    /* size */
 	    memcpy(&size, &htable[htable_pos], 4);
@@ -855,22 +861,47 @@ HashFile *HashFileLoad(FILE *fp) {
  * Returns the HashFile pointer on success
  *         NULL on failure
  */
-HashFile *HashFileOpen(char *fname) {
+HashFile *HashFileFopen(FILE *fp) {
     HashFile *hf = HashFileCreate(0, 0);
     int archive_len;
     int i;
 
-    hf->hfp = hf->afp = NULL;
-
-    /* Open the hash and read the header */
-    if (NULL == (hf->hfp = fopen(fname, "rb")))
-	return NULL;
+    /* Read the header */
+    hf->hfp = fp;
+    hf->afp = NULL;
 
     if (sizeof(hf->hh) != fread(&hf->hh, 1, sizeof(hf->hh), hf->hfp)) {
 	HashFileDestroy(hf);
 	return NULL;
     }
+    if (memcmp(HASHFILE_MAGIC, &hf->hh, 4) != 0) {
+	HashFileFooter foot;
+	/* Invalid magic number, try other end of file! */
+	fseek(hf->hfp, -sizeof(HashFileFooter), SEEK_END);
+	if (sizeof(foot) != fread(&foot, 1, sizeof(foot), hf->hfp)) {
+	    HashFileDestroy(hf);
+	    return NULL;
+	}
+	if (memcmp(HASHFILE_MAGIC, &foot.magic, 4) != 0) {
+	    HashFileDestroy(hf);
+	    return NULL;
+	}
+	foot.offset = be_int8(foot.offset);
+	fseek(hf->hfp, foot.offset, SEEK_CUR);
+	hf->hf_start = ftell(hf->hfp);
+	if (sizeof(hf->hh) != fread(&hf->hh, 1, sizeof(hf->hh), hf->hfp)) {
+	    HashFileDestroy(hf);
+	    return NULL;
+	}
+    }
+    if (memcmp(hf->hh.vers, HASHFILE_VERSION, 4) != 0) {
+	/* incorrect version */
+	HashFileDestroy(hf);
+	return NULL;
+    }
+    
     hf->hh.nbuckets = be_int4(hf->hh.nbuckets);
+    hf->hh.offset   = be_int8(hf->hh.offset);
     hf->hh.size     = be_int4(hf->hh.size);
 
     /* Load the main archive filename */
@@ -878,6 +909,10 @@ HashFile *HashFileOpen(char *fname) {
 	hf->archive = (char *)malloc(archive_len+1);
 	fread(hf->archive, 1, archive_len, hf->hfp);
 	hf->archive[archive_len] = 0;
+	if (hf->archive[0] == 0) {
+	    free(hf->archive);
+	    hf->archive = NULL;
+	}
     }
 
     hf->header_size = sizeof(hf->hh) + 1 + archive_len +
@@ -892,7 +927,7 @@ HashFile *HashFileOpen(char *fname) {
     for (i = 0; i < hf->nheaders; i++) {
 	fread(&hf->headers[i].pos,  8, 1, hf->hfp);
 	fread(&hf->headers[i].size, 4, 1, hf->hfp);
-	hf->headers[i].pos  = be_int8(hf->headers[i].pos);
+	hf->headers[i].pos  = be_int8(hf->headers[i].pos) + hf->hh.offset;
 	hf->headers[i].size = be_int4(hf->headers[i].size);
 	hf->headers[i].cached_data = NULL;
     }
@@ -903,10 +938,24 @@ HashFile *HashFileOpen(char *fname) {
     for (i = 0; i < hf->nfooters; i++) {
 	fread(&hf->footers[i].pos,  8, 1, hf->hfp);
 	fread(&hf->footers[i].size, 4, 1, hf->hfp);
-	hf->footers[i].pos  = be_int8(hf->footers[i].pos);
+	hf->footers[i].pos  = be_int8(hf->footers[i].pos) + hf->hh.offset;
 	hf->footers[i].size = be_int4(hf->footers[i].size);
 	hf->footers[i].cached_data = NULL;
     }
+
+    return hf;
+}
+
+HashFile *HashFileOpen(char *fname) {
+    FILE *fp;
+    HashFile *hf;
+
+    /* Open the hash and read the header */
+    if (NULL == (fp = fopen(fname, "rb")))
+	return NULL;
+
+    if (!(hf = HashFileFopen(fp)))
+	return NULL;
 
     /* Open the main archive too */
     if (hf->archive) {
@@ -931,6 +980,100 @@ HashFile *HashFileOpen(char *fname) {
     return hf;
 }
 
+HashFile *HashFileLoad(FILE *fp) {
+    HashFile *hf;
+    char *htable;
+    int htable_pos, i;
+    HashItem *hi;
+    HashTable *h;
+    uint32_t *bucket_pos;
+
+    /* Open the hash table */
+    fseek(fp, 0, SEEK_SET);
+    if (NULL == (hf = HashFileFopen(fp)))
+	return NULL;
+
+    HashTableDestroy(hf->h, 1);
+    h = hf->h = HashTableCreate(hf->hh.nbuckets, hf->hh.hfunc);
+    bucket_pos = (uint32_t *)calloc(h->nbuckets, sizeof(uint32_t));
+
+    /* Also load in the entire thing to memory */
+    htable = (char *)malloc(hf->hh.size);
+    fseek(fp, hf->hf_start, SEEK_SET);
+    if (hf->hh.size != fread(htable, 1, hf->hh.size, fp)) {
+	free(htable);
+	return NULL;
+    }
+
+    /*
+     * HashFileOpen has already decoded the headers up to and including the
+     * individual file header/footer sections, but not the buckets and item
+     * lists, so we start from there.
+     */
+    htable_pos = hf->header_size;
+    
+    /* Identify the "bucket pos". Detemines which buckets have data */
+    for (i = 0; i < h->nbuckets; i++) {
+	memcpy(&bucket_pos[i], &htable[htable_pos], 4);
+	bucket_pos[i] = be_int4(bucket_pos[i]);
+	htable_pos += 4;
+    }
+
+    /* Read the hash table items */
+    for (i = 0; i < h->nbuckets; i++) {
+	if (!bucket_pos[i])
+	    continue;
+	for (;;) {
+	    int c;
+	    unsigned char uc;
+	    char key[256];
+	    uint64_t pos;
+	    uint32_t size;
+	    HashFileItem *hfi;
+
+	    c = htable[htable_pos++];
+	    if (c == EOF || !c)
+		break;
+
+	    /* key */
+	    memcpy(key, &htable[htable_pos], c);
+	    htable_pos += c;
+
+	    /* header/footer */
+	    uc = htable[htable_pos++];
+	    hfi = (HashFileItem *)malloc(sizeof(*hfi));
+	    hfi->header = (uc >> 4) & 0xf;
+	    hfi->footer = uc & 0xf;
+
+	    /* pos */
+	    memcpy(&pos, &htable[htable_pos], 8);
+	    htable_pos += 8;
+	    hfi->pos = be_int8(pos) + hf->hh.offset;
+
+	    /* size */
+	    memcpy(&size, &htable[htable_pos], 4);
+	    htable_pos += 4;
+	    hfi->size = be_int4(size);
+
+	    /* Add to the hash table */
+	    hi = HashItemCreate(h);
+	    hi->next = h->bucket[i];
+	    h->bucket[i] = hi;
+	    hi->key_len = c;
+	    hi->key = (char *)malloc(c+1);
+	    memcpy(hi->key, key, c);
+	    hi->key[c] = 0; /* For debugging convenience only */
+	    hi->data.p = hfi;
+	}
+    }
+
+    fprintf(stderr, "done\n");
+    fflush(stderr);
+    free(bucket_pos);
+
+    return hf;
+}
+
 /*
  * Searches the named HashFile for a specific key.
  * When found it returns the position and size of the object in pos and size.
@@ -950,7 +1093,7 @@ int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
     hval = hash(hf->hh.hfunc, key, key_len) & (hf->hh.nbuckets-1);
 
     /* Read the bucket to find the first linked list item location */
-    if (-1 == fseek(hf->hfp, 4*hval + hf->header_size, SEEK_SET))
+    if (-1 == fseek(hf->hfp, hf->hf_start + 4*hval + hf->header_size,SEEK_SET))
 	return -1;
     if (4 != fread(&pos, 1, 4, hf->hfp))
 	return -1;
@@ -972,7 +1115,7 @@ int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
 	item->header = (headfoot >> 4) & 0xf;
 	item->footer = headfoot & 0xf;
 	fread(&pos, 8, 1, hf->hfp);
-	pos = be_int8(pos);
+	pos = be_int8(pos) + hf->hh.offset;
 	fread(&size, 4, 1, hf->hfp);
 	size = be_int4(size);
 	if (klen == key_len && 0 == memcmp(key, k, key_len)) {
@@ -1073,7 +1216,7 @@ char *HashFileExtract(HashFile *hf, char *fname, size_t *len) {
 
     /* Footer */
     if (foot) {
-	fseek(hf->afp,foot->pos, SEEK_SET);
+	fseek(hf->afp, foot->pos, SEEK_SET);
 	fread(&data[pos], foot->size, 1, hf->afp);
 	pos += foot->size;
     }

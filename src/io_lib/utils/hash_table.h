@@ -26,6 +26,10 @@ typedef struct {
     HashItem **bucket;  /* The bucket "list heads" themselves */
 } HashTable;
 
+#define HASHFILE_MAGIC ".hsh"
+#define HASHFILE_VERSION "1.00"
+#define HASHFILE_PREPEND -1
+
 /* File format: the hash table header */
 typedef struct {
     char magic[4];
@@ -35,8 +39,14 @@ typedef struct {
     unsigned char nfooters;
     char reserved; /* 0 */
     uint32_t nbuckets;
+    int64_t offset;
     uint32_t size;
 } HashFileHeader;
+
+typedef struct {
+    char magic[4];
+    int64_t offset;
+} HashFileFooter;
 
 /* The data block attached to the hash table */
 typedef struct {
@@ -71,6 +81,7 @@ typedef struct {
     FILE *afp;			/* archive FILE */
     char *archive;		/* archive filename */
     int header_size;		/* size of header + filename + N(head/feet) */
+    long hf_start;		/* location of HashFile header in file */
 } HashFile;
 
 /* Functions to to use HashTable.options */
@@ -104,7 +115,7 @@ void HashTableStats(HashTable *h, FILE *fp);
 void HashTableDump(HashTable *h, FILE *fp);
 
 /* HashFile prototypes */
-void HashFileSave(HashFile *hf, FILE *fp);
+void HashFileSave(HashFile *hf, FILE *fp, int64_t offset);
 HashFile *HashFileLoad(FILE *fp);
 int HashFileQuery(HashFile *hf, uint8_t *key, int key_len, HashFileItem *item);
 char *HashFileExtract(HashFile *hf, char *fname, size_t *len);
