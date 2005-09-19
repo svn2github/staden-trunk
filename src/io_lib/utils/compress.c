@@ -512,6 +512,7 @@ mFILE *fopen_compressed(char *file, mFILE **ofp) {
 
 /*
  * Returns a file pointer of an uncompressed copy of 'fp'.
+ * If this differs to the original fp then the original fp is closed.
  */
 mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
     int num_magics = sizeof(magics) / sizeof(*magics);
@@ -552,5 +553,6 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
 
     compression_used = i+1;
 
+    mfclose(fp);
     return mfcreate(udata, usize);
 }
