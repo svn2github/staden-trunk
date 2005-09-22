@@ -1329,7 +1329,7 @@ static int findPrevQualProb (EdStruct *xx)
  */
 static int is_edit(EdStruct *xx, int seq, int pos, int dir, int comp) {
     static int last;
-    int c1, o1, o2, tmp = last;
+    int c1, o1, o2 = 0, tmp = last;
     char b1;
     
     if (!xx) {
@@ -1344,24 +1344,26 @@ static int is_edit(EdStruct *xx, int seq, int pos, int dir, int comp) {
     if (ABS(DB_Length2(xx, seq)) >= 32768)
 	return 0;
 
-    c1 = DB_Conf(xx, seq)[pos];
+    if (pos >= 0 && pos < DB_Length2(xx, seq)) {
+	c1 = DB_Conf(xx, seq)[pos];
 
-    /* remember last non zero original position */
-    o1 = DB_Opos(xx, seq)[pos];
-    if (o1) last = o1;
+	/* remember last non zero original position */
+	o1 = DB_Opos(xx, seq)[pos];
+	if (o1) last = o1;
     
-    b1 = DB_Seq(xx, seq)[pos];
+	b1 = DB_Seq(xx, seq)[pos];
 
-    if (pos + dir >= 0 && pos + dir < DB_Length2(xx, seq)) {
+	if (pos + dir >= 0 && pos + dir < DB_Length2(xx, seq)) {
     
-	/* last non zero orig position doesn't tally with next base */
-	o2 = DB_Opos(xx, seq)[pos+dir];
+	    /* last non zero orig position doesn't tally with next base */
+	    o2 = DB_Opos(xx, seq)[pos+dir];
     
-	/* if both bases are non zero - next base must tally with us */
-	if (o1 && o2 && o1 != o2 + comp) {
-	    vmessage("%d base(s) to the right of the cursor deleted\n",
-		    abs(o1 - (o2 + comp)));
-	    return 1;
+	    /* if both bases are non zero - next base must tally with us */
+	    if (o1 && o2 && o1 != o2 + comp) {
+		vmessage("%d base(s) to the right of the cursor deleted\n",
+			 abs(o1 - (o2 + comp)));
+		return 1;
+	    }
 	}
 	
 	if (!o1) {

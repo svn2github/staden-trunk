@@ -55,25 +55,27 @@ static int is_edit(EdStruct *xx, int seq, int pos, int dir, int comp) {
     if (ABS(DB_Length2(xx, seq)) >= 32768)
 	return 0;
 
-    c1 = DB_Conf(xx, seq)[pos];
+    if (pos >= 0 && pos < DB_Length2(xx, seq)) {
+	c1 = DB_Conf(xx, seq)[pos];
 
-    /* remember last non zero original position */
-    o1 = DB_Opos(xx, seq)[pos];
-    if (o1) {
-	last = o1;
-	last_pos = pos;
-    }
-    
-    b1 = DB_Seq(xx, seq)[pos];
-
-    if (pos + dir >= 0 && pos + dir < DB_Length2(xx, seq)) {
-	o2 = DB_Opos(xx, seq)[pos+dir];
-    
-	/* Hmm! Checks for a deletion */
-	if (tmpp && (comp * ((last-tmpl) - comp*(tmpp-last_pos))) < 0) {
-	    return 1;
+	/* remember last non zero original position */
+	o1 = DB_Opos(xx, seq)[pos];
+	if (o1) {
+	    last = o1;
+	    last_pos = pos;
 	}
 	
+	b1 = DB_Seq(xx, seq)[pos];
+	
+	if (pos + dir >= 0 && pos + dir < DB_Length2(xx, seq)) {
+	    o2 = DB_Opos(xx, seq)[pos+dir];
+    
+	    /* Hmm! Checks for a deletion */
+	    if (tmpp && (comp * ((last-tmpl) - comp*(tmpp-last_pos))) < 0) {
+		return 1;
+	    }
+	}
+	    
 	/* treat pads as a different status to other bases */
 	if (!o1)
 	    return (b1 == '*') ? 3 /* pad */ : 2; /* base */
@@ -797,8 +799,8 @@ static void tk_redisplaySeqEdits(EdStruct *xx, XawSheetInk *splodge,
 	    istart = -cstart;
 	    cstart = 0;
 	}
-	if (cend > DB_Length2(xx, seq)) {
-	    iend -= (cend - DB_Length2(xx, seq));
+	if (cend-1 > DB_Length2(xx, seq)) {
+	    iend -= (cend-1 - DB_Length2(xx, seq));
 	}
 		    
 	m = cstart;
@@ -810,8 +812,8 @@ static void tk_redisplaySeqEdits(EdStruct *xx, XawSheetInk *splodge,
 	    istart = -cstart;
 	    cstart = 0;
 	}
-	if (cend > DB_Length(xx, seq)) {
-	    iend -= (cend - DB_Length(xx, seq));
+	if (cend-1 > DB_Length(xx, seq)) {
+	    iend -= (cend-1 - DB_Length(xx, seq));
 	}
 		    
 	m = cstart + DB_Start(xx, seq);
