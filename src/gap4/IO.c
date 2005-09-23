@@ -1164,8 +1164,7 @@ int io_read_rd(GapIO *io,	/*  */
 	err = TextRead(io,r.trace_name,file,filelen);
 
     if (r.trace_type==0) {
-	memset(type,' ',typelen);
-	ret = 1;
+	strncpy(type, "ANY", typelen);
     } else
 	err = TextRead(io,r.trace_type,type,typelen);
 
