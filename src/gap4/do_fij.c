@@ -348,8 +348,16 @@ int do_it_fij ( char seq[], int seq_len,
 
                             seq1_start_r = depad_to_pad1[overlap->left2]
 			        - contig_list[contig1_num].contig_right_extension + 1 ; 
-                            seq1_end_r = depad_to_pad1[overlap->left2+overlap->length-1]
-			        - contig_list[contig1_num].contig_right_extension + 1 ; 
+			    {
+				int p = overlap->left2 + overlap->length - 1;
+				int diff = 0;
+				if (p > seq1_len-1) {
+				    diff = p - (seq1_len-1);
+				    p = seq1_len-1;
+				}
+				seq1_end_r = depad_to_pad1[p] + diff;
+			    }
+			    
 		            seq2_start_r = depad_to_pad2[overlap->left1]
 			        - contig_list[contig2_num].contig_left_extension + 1 ; 
 			
@@ -377,8 +385,10 @@ int do_it_fij ( char seq[], int seq_len,
 			    }
 			
 			    buffij(
-				   -contig_list[contig1_num].contig_left_gel,seq2_start_r,
-				   contig_list[contig2_num].contig_left_gel,seq1_end_r,
+				   -contig_list[contig1_num].contig_left_gel,
+				   seq2_start_r,
+				   contig_list[contig2_num].contig_left_gel,
+				   seq1_end_r,
 				   overlap->length,percent_mismatch);
 			}
 		    }
