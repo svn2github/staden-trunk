@@ -553,6 +553,10 @@ int main( int argc, char* argv[] )
                 std::fflush( stderr );
                 continue;
             }
+	    if ( !pInputTrace->NPoints ) {
+		std::fprintf(stderr, "No trace data found in trace file %s, skipping.\n", pBuffer);
+		continue;
+	    }
 
 
 
