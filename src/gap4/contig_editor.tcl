@@ -1130,7 +1130,7 @@ proc set_differences_quality {e} {
     okcancelhelp $t.ok \
 	-ok_command "keylset gap_defs CONTIG_EDITOR.DISAGREE_QUAL \[$e set_disagreement_cutoff\]; destroy $t" \
 	-cancel_command "$e set_disagreement_cutoff $start; destroy $t" \
-        -help_command "show_help gap4 {Editor-Differences QUality}"
+        -help_command "show_help gap4 {Editor-Differences Quality}"
 
     pack $t.qual $t.ok -side top -fill both
 }
@@ -2112,15 +2112,26 @@ proc report_mutations_dialog {e} {
     if {[xtoplevel $w -resizable 0] == ""} {return}
     wm title $w "Report Mutations"
 
+    scalebox $w.conf \
+	-title "Minimum quality" \
+	-orient horizontal \
+	-from 0 \
+	-to 100 \
+	-width 5 \
+	-default [keylget gap_defs CONTIG_EDITOR.MUTATIONS_MINQUAL] \
+	-type CheckInt
+
     radiolist $w.tags \
 	-title "Find mutations by" \
-	-bd 2 -relief groove -orient horizontal \
+	-bd 0 -relief groove -orient horizontal \
 	-default [keylget gap_defs CONTIG_EDITOR.MUTATIONS_TAGGED] \
-	-buttons {{Tags} {Differences}}
-
+	-buttons "
+	    {Tags -command {scalebox_configure $w.conf -state disabled}}
+	    {Differences -command {scalebox_configure $w.conf -state normal}}"
+    
     radiolist $w.position \
 	-title "Sort by" \
-	-bd 2 -relief groove -orient horizontal \
+	-bd 0 -relief groove -orient horizontal \
 	-default [keylget gap_defs CONTIG_EDITOR.MUTATIONS_SORT] \
 	-buttons {{Position} {Sequence}}
 
@@ -2145,7 +2156,7 @@ proc report_mutations_dialog {e} {
 	-bd 2 \
 	-relief groove
 
-    pack $w.tags $w.position $w.directory -fill both -expand 1
+    pack $w.tags $w.conf $w.position $w.directory -fill both -expand 1
     pack $w.detailed -anchor w
     pack $w.ok -fill both -expand 1
 }
@@ -2154,6 +2165,7 @@ proc report_mutations_dialog2 {w e tags pos} {
     global $w.Detailed
     set detailed [set $w.Detailed]
     set dir [$w.directory get]
+    set conf [scalebox_get $w.conf]
     if {$dir == "" && [$w.directory get2] != ""} {
 	bell
 	return
@@ -2170,7 +2182,7 @@ proc report_mutations_dialog2 {w e tags pos} {
     }
 
     destroy $w
-    if {[catch {set html [$e report_mutations $tags $pos $dir $detailed]} err]} {
+    if {[catch {set html [$e report_mutations $tags $pos $dir $detailed $conf]} err]} {
 	tk_messageBox \
 	    -icon error \
 	    -message $err \

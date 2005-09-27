@@ -1394,7 +1394,7 @@ void find_exons(EdStruct *xx, int pos, int width, int generate) {
  * Mutations here are identified by their difference to the reference sequence.
  * MUTA and HETE tags are ignored.
  */
-static mutation_t ***allocate_mutations_diff(EdStruct *xx) {
+static mutation_t ***allocate_mutations_diff(EdStruct *xx, int min_conf) {
     int seq, refseq, reflen;
     mutation_t ***muts;
     char *bases, *refbases;
@@ -1420,8 +1420,10 @@ static mutation_t ***allocate_mutations_diff(EdStruct *xx) {
     refbases = DBgetSeq(DBI(xx), refseq);
     for (seq = 1; seq <= DBI_gelCount(xx); seq++) {
 	int start_ref, start_seq, len; /* positions and length */
+	int1 *conf;
 
 	bases = DBgetSeq(DBI(xx), seq);
+	conf = DB_Conf(xx, seq) + DB_Start(xx, seq);
 	if (DB_RelPos(xx, seq) >= DB_RelPos(xx, refseq)) {
 	    start_seq = 0;
 	    start_ref = DB_RelPos(xx, seq) - DB_RelPos(xx, refseq);
@@ -1439,7 +1441,8 @@ static mutation_t ***allocate_mutations_diff(EdStruct *xx) {
 
 	for (; len; start_ref++, start_seq++, len--) {
 	    if (toupper(refbases[start_ref]) !=
-		toupper(bases[start_seq])) {
+		toupper(bases[start_seq]) &&
+		conf[start_seq] >= min_conf) {
 		muts[seq][start_ref] = new_mutation_t();
 		muts[seq][start_ref]->nucleotide_from =
 		    toupper(refbases[start_ref]);
@@ -1579,7 +1582,8 @@ static mutation_t ***allocate_mutations_tagged(EdStruct *xx,
  * we also report if it is a silent mutation.
  *
  * diffs_tagged is true when we only want to report mutations where HETE and
- * MUTA tags exist, otherwise base call differences are used instead.
+ * MUTA tags exist, otherwise differences between base calls (with confidence
+ * >= min_conf) and the consensus are used instead.
  *
  * sort_by_position, when true, outputs mutations column-by-column instead of
  * sequence by sequence.
@@ -1589,8 +1593,8 @@ static mutation_t ***allocate_mutations_tagged(EdStruct *xx,
  *	    NULL if failed, and sets err_msg pointer to an error string.
  */
 dstring_t *report_mutations(EdStruct *xx, int diffs_tagged,
-			    int sort_by_position, 
-			    char *dir, int detail, char **err_msg) {
+			    int sort_by_position, char *dir, int detail,
+			    int min_conf, char **err_msg) {
     Array fta;
     int i;
     int seq;
@@ -1609,7 +1613,7 @@ dstring_t *report_mutations(EdStruct *xx, int diffs_tagged,
     if (diffs_tagged)
 	muts = allocate_mutations_tagged(xx, &mut_coverage);
     else
-	muts = allocate_mutations_diff(xx);
+	muts = allocate_mutations_diff(xx, min_conf);
 
     /* Regenerate the feature table structures from tag comments */
     fta = get_ft_entries(xx, seq, 1);

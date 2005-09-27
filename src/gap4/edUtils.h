@@ -656,7 +656,8 @@ void find_exons(EdStruct *xx, int pos, int width, int generate);
  * we also report if it is a silent mutation.
  *
  * diffs_tagged is true when we only want to report mutations where HETE and
- * MUTA tags exist, otherwise base call differences are used instead.
+ * MUTA tags exist, otherwise differences between base calls (with confidence
+ * >= min_conf) and the consensus are used instead.
  *
  * sort_by_position, when true, outputs mutations column-by-column instead of
  * sequence by sequence.
@@ -667,7 +668,7 @@ void find_exons(EdStruct *xx, int pos, int width, int generate);
  */
 dstring_t *report_mutations(EdStruct *xx, int diffs_tagged,
 			    int sort_by_position, char *dir, int detailed,
-			    char **err_msg);
+			    int min_conf, char **err_msg);
 
 /* Returns the character underneath the editor cursor */
 int edGetChar(EdStruct *xx);

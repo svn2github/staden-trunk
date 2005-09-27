@@ -240,6 +240,7 @@ if {"$tcl_platform(platform)" == "windows"} {
 set_def CONTIG_EDITOR.STORE_UNDO        1 
 set_def CONTIG_EDITOR.MUTATIONS_TAGGED  1
 set_def CONTIG_EDITOR.MUTATIONS_SORT	1
+set_def CONTIG_EDITOR.MUTATIONS_MINQUAL 20
 set_def JOIN_EDITOR.STORE_UNDO          1
 set_def CONTIG_EDITOR.MOUSEWHEEL_SPEED  4
 

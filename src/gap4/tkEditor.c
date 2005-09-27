@@ -1987,6 +1987,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	dstring_t *html;
 	int detail = 2; /* 0 == no html, 1 == basic html, 2 == full html */
 	char *dir = NULL;
+	int minconf = 15;
 
 	if (argc >= 3)
 	    Tcl_GetInt(interp, argv[2], &mode);
@@ -1996,9 +1997,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    dir = argv[4];
 	if (argc >= 6)
 	    Tcl_GetInt(interp, argv[5], &detail);
+	if (argc >= 7)
+	    Tcl_GetInt(interp, argv[6], &minconf);
 
 	Tcl_ResetResult(interp);
-	html = report_mutations(ed->xx, mode, sort_by, dir, detail, &err);
+	html = report_mutations(ed->xx, mode, sort_by, dir, detail,
+				minconf, &err);
 	if (err) {
 	    Tcl_SetResult(interp, err, TCL_VOLATILE);
 	    goto fail;
