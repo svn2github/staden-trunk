@@ -766,6 +766,7 @@ void trace_pyroalign(Read *r) {
 	    len += r->basePos[i] - last;
 	last = r->basePos[i];
     }
+    len += r->nflows - last;
     
     out[0] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
     out[1] = (TRACE *)xcalloc(len+1, sizeof(TRACE));
@@ -778,16 +779,18 @@ void trace_pyroalign(Read *r) {
     lookup['T'] = lookup['t'] = 3;
 
     r->maxTraceVal = 1;
-    for (k = ip = 0, op = 1; ip < r->NPoints || k < r->NBases; ip++) {
+    for (k = ip = 0, op = 1; ip < r->nflows || k < r->NBases; ip++) {
 	int v;
 	v = out[lookup[(r->flow_order[ip])]][op] =
 	    MAX(r->flow[ip] * PYRO_SCALE, 1);
 	if (r->maxTraceVal < v)
 	    r->maxTraceVal = v;
-	if (r->basePos[k] == ip+1) {
-	    r->basePos[k] = op;
-	    for(k++; k < r->NBases && r->basePos[k] == ip+1; k++) {
-		r->basePos[k] = ++op;
+	if (k < r->NBases) {
+	    if (r->basePos[k] == ip+1) {
+		r->basePos[k] = op;
+		for(k++; k < r->NBases && r->basePos[k] == ip+1; k++) {
+		    r->basePos[k] = ++op;
+		}
 	    }
 	}
 	op++;
