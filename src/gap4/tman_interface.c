@@ -1400,7 +1400,7 @@ static void trace_report_table(dstring_t *html, EdStruct *xx,
 		int type = traces[row][col]->type;
 		int ncols = 1;
 		if (type == TRACE_TYPE_NEG_CONTROL) {
-		    if (col < ncolumns+1 && traces[row][col+1]->type == type) {
+		    if (col+1 < ncolumns && traces[row][col+1]->type == type) {
 			col++;
 			ncols++;
 		    }
@@ -1492,6 +1492,7 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
     int tmp_dts;
     int tmp_seq;
     int tmp_lps;
+    int tmp_diff;
     int ncolumns;
     int row, col;
     dstring_t *seqname;
@@ -1516,7 +1517,9 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
     xx->cursorPos = pos;
     xx->cursorSeq = 0;
     tmp_dts = xx->diff_trace_size;
+    tmp_diff = xx->diff_traces;
     xx->diff_trace_size = 10; /* speeds up differencing */
+    xx->diff_traces = 1;
     tmp_lps = xx->lines_per_seq;
     xx->lines_per_seq = 1;
     auto_diff(xx, seq, pos);
@@ -1525,6 +1528,7 @@ int save_trace_images(dstring_t *html, EdStruct *xx, int seq, int pos,
     xx->cursorSeq = tmp_seq;
     xx->diff_trace_size = tmp_dts;
     xx->lines_per_seq = tmp_lps;
+    xx->diff_traces = tmp_diff;
 
     /* Count how many traces there are, to work out the number of columns */
     ncolumns = 0;
