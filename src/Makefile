@@ -44,7 +44,8 @@ DIRS =	Misc\
 	spin2_emboss\
 	copy_reads\
 	hetins\
-	mutscan
+	mutscan\
+	convert
 
 #	seqed\
 #	spin2
