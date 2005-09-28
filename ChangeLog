@@ -1,3 +1,161 @@
+2005-09-27  jkbonfield  <jkbonfield>
+
+	* src/gap4/tman_interface.c:
+	(10:43:49) Fixed a bug in Report Mutations causing potential
+	crashes and/or a lack of images in the HTML report. 
+
+	* src/gap4/contig_editor.tcl,
+	* src/gap4/edMutations.c,
+	* src/gap4/edUtils.h:
+	* tables/gaprc:
+	* src/gap4/tkEditor.c:
+	(10:47:30) Added a minimum quality slider to the Report Mutations
+	"by differences" mode. 
+
+	* src/mutscan/main.cpp:
+	(10:48:21) Removed crash when inputting data that does not have
+	trace points. Allows importing mixed trace + consensus/reference
+	sequence files. 
+
+	* src/tk_utils/tkTraceIO.c:
+	(10:49:09) Fixed trace_pyroalign(). 
+
+2005-09-26  jkbonfield  <jkbonfield>
+
+	* src/gap4/do_fij.c:
+	(15:54:28) Fixed the computation of the re-padded coordinates for
+	alignments made when the first sequence were complemented.
+	Previously this could overstep an array bounding and hence gaves
+	erratic positions. (Rarely seen, but easier to trigger using probe
+	with single sequence.) 
+
+2005-09-23  jkbonfield  <jkbonfield>
+
+	* src/gap4/IO.c:
+	(13:22:07) Changed the default trace type from " " to "ANY" for
+	readings with no trace type record. 
+
+2005-09-22  jkbonfield  <jkbonfield>
+
+	* src/gap4/searchUtils.c,
+	* src/gap4/tkEdUtils.c:
+	(14:33:11) Fixed displaying and searching of edits when they happen
+	to be the last base in a sequence. 
+
+2005-09-19  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/compress.c:
+	(13:58:02) Fixed a file descriptor (and some memory) leak in
+	freopen_compressed. (Bug ID #1289095) 
+
+2005-09-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/ztr/ztr.c,
+	* src/io_lib/ztr/ztr_translate.c:
+	(11:29:06) Don't try to compress SAMP chunks with meta-data PYRW as
+	the raw pyrosequencing data from 454 doesn't compress. 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/hash_tar.c,
+	* src/io_lib/utils/Hash_File_Format,
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h:
+	(11:30:56) Changed the HashFile format slightly. It's now format
+	1.00.
+	
+	The key difference is that it has a file footer pointing back to
+	the hashfile header (so the hashfile can be appended to an archive)
+	and it also has an offset in the header to apply to all seeks
+	within the archive itself, so it can be prepending to an archive
+	that's already been indexed without breaking the offsets.
+	
+	Extended the hash_tar program to allow control over these header
+	options. 
+
+2005-08-26  jkbonfield  <jkbonfield>
+
+	* src/abi/dependencies:
+	* src/alf/dependencies,
+	* src/copy_reads/dependencies,
+	* src/eba/dependencies,
+	* src/find_renz/dependencies,
+	* src/g/dependencies,
+	* src/gap4/dependencies,
+	* src/get_scf_field/dependencies:
+	* src/Misc/dependencies,
+	* src/haplo/dependencies,
+	* src/init_exp/dependencies,
+	* src/io_lib/dependencies,
+	* src/make_weights/dependencies,
+	* src/mutlib/dependencies,
+	* src/polyA_clip/dependencies,
+	* src/prefinish/dependencies:
+	* src/qclip/dependencies,
+	* src/screen_seq/dependencies,
+	* src/seq_utils/dependencies,
+	* src/spin/dependencies,
+	* src/stops/dependencies,
+	* src/text_utils/dependencies,
+	* src/vector_clip/dependencies:
+	(08:24:33) Rebuilt 
+
+2005-08-25  jkbonfield  <jkbonfield>
+
+	* ChangeLog,
+	* NEWS:
+	* doc/manual/man/man1/copy_db.1:
+	(10:00:48) *** empty log message *** 
+
+	* src/Makefile:
+	(10:01:15) distwindows target updates 
+
+	* src/gap4/confidence_graph.c,
+	* src/gap4/confidence_graph.h,
+	* src/gap4/confidence_graph.tcl:
+	(10:02:35) Renaming of consistency plots: discrepancy -> second
+	highest. Also added stubs for DNP method, but it's not implemented
+	yet and not visible in the GUI. 
+
+	* src/gap4/qual.c:
+	(10:03:09) Added comment regarding the old 2nd-highest confidence
+	value method (now unused). 
+
+	* src/tk_utils/tkTrace.c:
+	(10:03:47) Fixed the resample method so that it works for 454 data. 
+
+	* src/tk_utils/tkTraceComp.c:
+	(10:04:26) Complementing pyrosequencing traces now maintains the
+	peak as always on the left end, instead of lowest numbered base. 
+
+	* src/tk_utils/tkTraceDisp.c:
+	(10:04:58) Added a 'break'; stylistic change only with no effect. 
+
+	* src/windows/include/unistd.h:
+	(10:05:31) Formatting tidyup. 
+
+	* tables/gaprc_menu_demo,
+	* tables/gaprc_menu_full:
+	(10:06:11) Renamed various consistency plot options. 
+
+	* src/gap4/Attic/allelic_discreps.c,
+	* src/gap4/Attic/allelic_discreps.h,
+	* src/gap4/newgap_cmds.c:
+	(10:09:52) Removed allelic_discreps haplotype splitting code. The
+	haplo package does a much better job. 
+
+	* src/gap4/Makefile:
+	(10:20:49) Removed allelic_discreps (replaced by haplo package). 
+
+	* src/gap4/edUtils.h:
+	(10:21:16) Added DBcalcSetConsensus prototype. 
+
+	* src/gap4/searchUtils.c,
+	* src/gap4/shuffle_pads.c:
+	* src/io_lib/progs/makeSCF.c,
+	* src/io_lib/ztr/ztr.c,
+	* src/mk/linux.mk:
+	(10:22:20) General code tidyup to prevent warnings. 
+
 2005-08-24  jkbonfield  <jkbonfield>
 
 	* doc/manual/complement-t.texi,
@@ -53,12 +211,6 @@
 	(10:55:57) Added header file for shuffle pads prototypes. 
 
 	* src/gap4/edCommands.c:
-	(14:30:18) Removed Shuffle Pads from the editor menus. However I
-	also put back the old shuffle pads code (which worked better) so
-	that the gaprc file can be edited to reenable it still if desired.
-	It's been removed from the menu due to being superseded by the new
-	re-alignment method. 
-
 	* tables/gaprc_menu_full,
 	* tables/gaprc_menu_mito:
 	(14:30:19) Removed Shuffle Pads from the editor menus. However I
@@ -82,11 +234,6 @@
 	* src/io_lib/Makefile,
 	* src/io_lib/README,
 	* src/io_lib/options.mk:
-	(15:15:24) Added draft SFF format support. I need to verify if the
-	example data files I tested this with are correct or if the SFF
-	draft spec is correct (as they differ marginally in places). Hence
-	this format may change soon. 
-
 	* src/io_lib/read/Read.c,
 	* src/io_lib/read/Read.h,
 	* src/io_lib/utils/traceType.c:
@@ -123,10 +270,6 @@
 	and finding mutations by base call differences rather than tags. 
 
 	* src/gap4/shuffle_pads.c:
-	(13:38:03) Further work on shuffle pads. This latest code is
-	substantially faster than before and also seems to work well except
-	for currently not updating consensus annotations. 
-
 	* src/seq_utils/align_lib.c,
 	* src/seq_utils/align_lib.h:
 	(13:38:30) Further work on shuffle pads. This latest code is
@@ -166,24 +309,6 @@
 	instead of leaving as the last value. 
 
 	* src/seq_utils/align_lib.c:
-	(15:57:10) Added destroy_malign_counts, malign_insert_scores and
-	malign_recalc_scores functions. The latter of these allow for
-	updating of the malign scores and consensus elements after a
-	contigl list has been updated. Used as a fast alternative to
-	rebuilding from scratch.
-	
-	Removed unused msegs element of MALIGN struct.
-	
-	Allow for gap_open and gap_extend to be passed in when building an
-	MALIGN. These are then used instead of the previous hardwired
-	settings.
-	
-	Fixed a bug in affine_malign where the first rows of the F and G
-	matrix were undefined meaning that the computation of G (gap in Y)
-	used uninitialised data. This was the cause of sometimes giving
-	daft alignments. The same bug probably exists in all the other
-	alignment functions here, but has not been checked or fixed. 
-
 	* src/seq_utils/align_lib.h:
 	(15:57:12) Added destroy_malign_counts, malign_insert_scores and
 	malign_recalc_scores functions. The latter of these allow for
@@ -265,9 +390,6 @@
 
 	* src/copy_reads/Makefile,
 	* src/gap4/Makefile:
-	(08:40:18) Minor updates so that "make install" works on windows;
-	basically allow for errors to be ignored. 
-
 	* src/pregap4/Makefile,
 	* src/spin/Makefile,
 	* src/spin2/Makefile,
@@ -753,10 +875,6 @@
 	broken is horrendously messed up tags. 
 
 	* src/gap4/dis_readings.c:
-	(09:32:51) Better error checking in code used by disassemble
-	readings and break contig. I've seen a couple tag corruptions
-	recently that I've been unable to pin down - maybe this'll spot it! 
-
 	* src/gap4/newgap_cmds.c,
 	* src/gap4/tagU2.c:
 	(09:32:52) Better error checking in code used by disassemble
@@ -807,16 +925,6 @@
 2005-05-09  jkbonfield  <jkbonfield>
 
 	* src/tk_utils/tkTrace.c:
-	(13:28:37) Added a STYLE parameter to control the display style for
-	the trace. A new style known as PYRO is now present. This handles
-	pyrosequencing traces whereby a single spike is present for each
-	flash generated by incorporating 1 or more bases of a specific
-	type.
-	
-	Due to this causing multiple bases at the same base, the
-	trace_pyroalign function can x-scale the trace so that each base
-	call has a separate column. 
-
 	* src/tk_utils/tkTrace.h,
 	* src/tk_utils/tkTraceDisp.c,
 	* src/tk_utils/tkTraceIO.c:
@@ -920,12 +1028,6 @@
 	* src/gap4/IO2.c,
 	* src/gap4/clip.c,
 	* src/gap4/consen.c:
-	(16:15:10) Removed "might be used uninitialised" messages. Most of
-	these are incorrect, but it can be useful to get the compiler to
-	spot these things so initialising stuff to shut it up can be handy.
-	In a couple places the error is real, but only when handling a
-	severe error (such as malloc returning NULL). 
-
 	* src/gap4/contig_order.c,
 	* src/gap4/contig_selector.c,
 	* src/gap4/copy_db.c,
@@ -950,36 +1052,15 @@
 	severe error (such as malloc returning NULL). 
 
 	* src/io_lib/progs/get_comment.c:
-	(16:15:51) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/mutlib/caller_base.cpp,
 	* src/mutlib/mutscan.cpp:
-	(16:16:10) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/mutlib/read_matrix.cpp:
-	(16:16:11) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/mutlib/sp_align_lib.cpp:
-	(16:16:12) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/mutlib/trace.cpp,
 	* src/mutlib/tracealign.cpp,
 	* src/mutlib/tracediff.cpp:
-	(16:16:13) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/seq_utils/genetic_code.c:
-	(16:16:39) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/seq_utils/read_matrix.c:
-	(16:17:03) Removed "might be used uninitialised" warning messages
-	from the compiler. 
-
 	* src/tk_utils/container.c,
 	* src/tk_utils/tkCanvGraph.c,
 	* src/tk_utils/tkTrace.c:
@@ -987,8 +1068,6 @@
 	from the compiler. 
 
 	* src/gap4/dstrand.c:
-	(16:19:29) Quick fix to previous edit! 
-
 	* src/mutlib/tracediff.cpp:
 	(16:22:56) Quick fix to previous edit. 
 
@@ -1455,14 +1534,6 @@
 	* src/g/freetree.c,
 	* src/g/freetree.h,
 	* src/g/g-db.c:
-	(09:49:40) Added support for 64-bit offsets in AUX files. This
-	means that Gap4 databases can be larger than 2Gb. Support for
-	32-bit is still maintained for backwards compatibility.
-	
-	The main heart of this is to redefine the GImage data type to be an
-	8-byte integer and to split the functions in g-io pointed to by
-	low_level_vectors into 32-bit and 64-bit versions. 
-
 	* src/g/g-debug.c,
 	* src/g/g-error.c,
 	* src/g/g-error.h,

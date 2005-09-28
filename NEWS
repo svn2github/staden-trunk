@@ -1,3 +1,34 @@
+27th September 2005
+===================
+
+Gap4
+----
+
+* Renamed the discrepancy plot to be second highest confidence plot.
+
+* Fixed some (apparently rare) find internal joins crashes.
+
+* Added a minimum quality slider to the Report Mutations "by
+  differences" mode. Also fixed crashes and missing pictures in the
+  HTML report.
+
+io_lib
+------
+
+* Changed the HashFile format and updated it to be official version
+  1.00.
+
+  The key difference is that there's now a footer pointing back into
+  the hashfile header allowing for the index to simply be appended to
+  a (e.g. tar) archive.
+
+* Improved handling of 454 data in ZTR; it no longer attempts to
+  compress raw pyrosequencing data as this was not working well.
+
+* Fixed Bug ID 1289095 (file descriptor leak).
+
+-----------------------------------------------------------------------------
+
 24th August 2005
 ================
 
