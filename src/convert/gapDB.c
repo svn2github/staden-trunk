@@ -116,13 +116,13 @@ void gap_open_for_write(List *l) {
 void gap_write_header(List *l) {
     char *cp;
 
-    if (cp == assoc(l, db_data_class))
+    if (cp = assoc(l, db_data_class))
 	io->db.data_class = atoi(cp);
 
-    if (cp == assoc(l, db_max_gel_length))
+    if (cp = assoc(l, db_max_gel_length))
 	io->db.max_gel_len = atoi(cp);
 
-    if (cp == assoc(l, db_max_db_size) && atoi(cp) > io->db.maximum_db_size) {
+    if (cp = assoc(l, db_max_db_size) && atoi(cp) > io->db.maximum_db_size) {
 	io->db.maximum_db_size = io->db.actual_db_size = atoi(cp);
     }
 
