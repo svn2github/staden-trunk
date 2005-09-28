@@ -1,0 +1,81 @@
+	    Converting xdap databases to xbap databases to
+		      xgap database (and more).
+				   
+			      Simon Dear
+			   18 November 1992
+
+			    James Bonfield
+			    15 August 1994
+
+0. Introduction
+
+The Staden package (version 1994.2 or greater) now includes the
+sequence assembly program Gap. Gap cannot be used with databases
+created by the sequence assembly programs Dap and Bap. Similarly, Bap cannot use Dap database files.
+
+People wanting to switch to using the new software will need to
+convert their old databases. The program `convert' is provided for
+this purpose.
+
+1. The conversion program
+
+`convert' (version 1.1) is an interactive program for converting
+sequence assembly data between various formats. With it, it is
+possible to convert data in any of the formats:
+
+	text file (created by convert)
+	xdap database
+	xbap database
+
+to any of the following formats:
+
+	text file (created by convert)
+	xbap database
+	xgap database
+
+
+2. Converting databases
+
+The program takes no command line arguments. First, you are prompted
+for the format, name and version of the database you wish to convert.
+If the source is an xdap or xbap database, ensure that the name and
+version are in uppercase. If the source is a text file, the version is
+prompted for but it is ignored. Second, you are prompted for the
+format, name and version of the database you wish to create. Ensure
+that names and versions are in the appropriate case and that the files
+do already exist.
+
+After this, the programs converts the database. This may take some
+time. The next message to appear on the terminal is a message to
+indicate the conversion has successfully completed.
+
+3. Example
+
+Here is a log of a typical conversion session:
+
+    Covert Project Database
+    Version 1.1, 27 July 1994
+    Please enter database to convert:
+
+    Available types are:
+    0. Flat file - created with this program
+    1. xdap database
+    2. xbap database
+
+    Database type? 2
+    Database name? ZK643
+    Database version? 0
+
+    Please enter database to create:
+
+    Available types are:
+    0. Flat file - created with this program
+    1. xbap database
+    2. xgap database
+
+    Database type? 2
+    Database name? ZK643
+    Database version? 1
+
+    Conversion completed
+
