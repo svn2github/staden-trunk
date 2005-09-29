@@ -26,3 +26,26 @@ available in both postscript and PDF format
 	mini_*.pdf
 	scripting.pdf
 	scripting.ps.gz
+
+Building
+========
+
+Windows:
+
+Check out from CVS (Use MSDOS for this as it fails under msys shell).
+Unpack tcl-8.4.6 tree to src
+Unpack tk-8.4.6 tree to src
+Unpack libpng into src
+Build and copy third party libraries to src/lib/windows-binaries
+Build everything else
+
+cd windows/run
+Copy mingw's windres.exe to the local directory (if mingw has a space
+in the pathname, like /c/program files).
+Make
+
+cd back to staden root.
+make distwindows
+cd to src/windows/wix
+Follow notes in README file
+
