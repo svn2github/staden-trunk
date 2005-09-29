@@ -119,10 +119,11 @@ distmacosx: distcommon
 
 distwindows: distcommon
 	-mkdir $(DIST)/windows-bin
+	cp LICENCE.rtf $(DIST)
 	cd course; $(MAKE) $(SUBFLAGS) distwindows
 	cd doc; $(MAKE) $(SUBFLAGS) distwindows
 	cd src; $(MAKE) $(SUBFLAGS) distwindows
-	cp LICENCE.rtf $(DIST)
+	cd lib; $(MAKE) $(SUBFLAGS) distwindows
 
 #
 # Creates a distribution of the source code suitable for sending to third
