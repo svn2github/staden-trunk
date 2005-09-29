@@ -925,7 +925,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
     int i;
     
     set_malign_lookup(5);
-    set_alignment_matrix("/tmp/nuc_matrix", "ACGTURYMWSKDHVB-*");
+    /* set_alignment_matrix("/tmp/nuc_matrix", "ACGTURYMWSKDHVB-*"); */
 
     for (i = 0; i < ncontigs; i++) {
 	int cnum = contigs[i].contig;
