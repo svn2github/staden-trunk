@@ -42,64 +42,8 @@ distmacosx: distcommon
 	cp -R macosx-binaries $(DIST)/lib
 
 distwindows: distcommon
-	-mkdir $(DIST)/lib/gap
-	cp ../lib/gap/*.tcl $(DIST)/lib/gap
-	cp ../lib/gap/tclIndex $(DIST)/lib/gap
-	-mkdir $(DIST)/lib/pregap4
-	-mkdir $(DIST)/lib/pregap4/modules
-	-mkdir $(DIST)/lib/pregap4/templates
-	-mkdir $(DIST)/lib/pregap4/naming_schemes
-	cp ../lib/pregap4/widget_licence $(DIST)/lib/pregap4
-	cp ../lib/pregap4/*.tcl $(DIST)/lib/pregap4
-	cp ../lib/pregap4/pregap4 $(DIST)/lib/pregap4
-	cp ../lib/pregap4/tclIndex $(DIST)/lib/pregap4
-	cp ../lib/pregap4/modules/*.p4m $(DIST)/lib/pregap4/modules
-	cp ../lib/pregap4/naming_schemes/*.p4t $(DIST)/lib/pregap4/naming_schemes
-	-mkdir $(DIST)/lib/spin
-	cp ../lib/spin/*.tcl $(DIST)/lib/spin
-	cp ../lib/spin/*.itk $(DIST)/lib/spin
-	cp ../lib/spin/tclIndex $(DIST)/lib/spin
-	-mkdir $(DIST)/lib/spin2
-	cp ../lib/spin2/*.tcl $(DIST)/lib/spin2
-	cp ../lib/spin2/*.itk $(DIST)/lib/spin2
-	cp ../lib/spin2/tclIndex $(DIST)/lib/spin2
-	-mkdir $(DIST)/lib/seqed
-	cp ../lib/seqed/*.tcl $(DIST)/lib/seqed
-	cp ../lib/seqed/*.itcl $(DIST)/lib/seqed
-	cp ../lib/seqed/*.itk $(DIST)/lib/seqed
-	cp ../lib/seqed/*.gif $(DIST)/lib/seqed
-	cp ../lib/seqed/tclIndex $(DIST)/lib/seqed
-	-mkdir $(DIST)/lib/spin_emboss
-	cp -r ../lib/spin_emboss/acdtcl $(DIST)/lib/spin_emboss
-	cp ../lib/spin_emboss/*.tcl $(DIST)/lib/spin_emboss
-	cp ../lib/spin_emboss/tclIndex $(DIST)/lib/spin_emboss
-	-mkdir $(DIST)/lib/spin2_emboss
-	cp -r ../lib/spin2_emboss/acdtcl $(DIST)/lib/spin2_emboss
-	cp ../lib/spin2_emboss/*.tcl $(DIST)/lib/spin2_emboss
-	cp ../lib/spin2_emboss/tclIndex $(DIST)/lib/spin2_emboss
-	-mkdir $(DIST)/lib/tk_utils
-	cp ../lib/tk_utils/*.tcl $(DIST)/lib/tk_utils
-	cp ../lib/tk_utils/tclIndex $(DIST)/lib/tk_utils
-	-mkdir $(DIST)/lib/trev
-	cp ../lib/trev/*.tcl $(DIST)/lib/trev
-	-mkdir $(DIST)/lib/prefinish
-	-mkdir $(DIST)/lib/prefinish/rules
-	cp ../lib/prefinish/*.tcl $(DIST)/lib/prefinish
-	cp ../lib/prefinish/*.itcl $(DIST)/lib/prefinish
-	cp ../lib/prefinish/*.itk $(DIST)/lib/prefinish
-	cp ../lib/prefinish/tclIndex $(DIST)/lib/prefinish
-	cp ../lib/prefinish/config.prefinish $(DIST)/lib/prefinish
-	cp ../lib/prefinish/args.template $(DIST)/lib/prefinish
-	cp ../lib/prefinish/help $(DIST)/lib/prefinish
-	cp ../lib/prefinish/README $(DIST)/lib/prefinish
-	cp ../lib/prefinish/CHEMISTRY $(DIST)/lib/prefinish
-	cp ../lib/prefinish/METHODS $(DIST)/lib/prefinish
-	cp ../lib/prefinish/rules/*.rule $(DIST)/lib/prefinish/rules
-	-mkdir $(DIST)/lib/copy_reads
-	cp ../lib/copy_reads/*.tcl $(DIST)/lib/copy_reads
-	cp ../lib/copy_reads/tclIndex $(DIST)/lib/copy_reads
-	-mkdir $(DIST)/lib/windows-binaries
-	cp ../lib/windows-binaries/*.dll $(DIST)/lib/windows-binaries
+	mv $(DIST)/lib/windows-binaries/itcl33.dll $(DIST)/lib/itcl3.3
+	mv $(DIST)/lib/windows-binaries/itk33.dll $(DIST)/lib/itk3.3
 
 distsrc:
 	-mkdir $(DISTSRC)/lib

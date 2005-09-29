@@ -129,7 +129,13 @@ distwindows:
 	#-cp spin/spin.bat $(DIST)/windows-bin
 	#-cp pregap4/pregap4.bat $(DIST)/windows-bin
 	-cp ../windows-bin/*.exe $(DIST)/windows-bin
-	-cp scripts/splitseq_da $(DIST)/windows-bin
+	$(MAKE) STADENROOT=$(DIST) MACHINE=windows install
+	-rm $(DIST)/windows-bin/gap4
+	-rm $(DIST)/windows-bin/spin
+	-rm $(DIST)/windows-bin/trev
+	-rm $(DIST)/windows-bin/pregap4
+	-rm $(DIST)/windows-bin/assemble4
+	-rm $(DIST)/windows-bin/finish_sanger
 
 
 
