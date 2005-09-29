@@ -43,9 +43,12 @@ typedef struct {
     uint32_t size;
 } HashFileHeader;
 
+/* sizeof(HashFileHeader) minus terminal padding */
+#define HHSIZE 28
+
 typedef struct {
     char magic[4];
-    int64_t offset;
+    char offset[8];
 } HashFileFooter;
 
 /* The data block attached to the hash table */

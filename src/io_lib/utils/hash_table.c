@@ -626,7 +626,7 @@ void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
     HashFileFooter foot;
    
     /* Compute the coordinates of the hash items */
-    hfsize = sizeof(hf->hh);			/* header */
+    hfsize = HHSIZE;				/* header */
     hfsize += 1 + (hf->archive
 		   ? strlen(hf->archive)
 		   : 0);			/* filename */
@@ -659,7 +659,7 @@ void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
 	? be_int8(hfsize) /* archive will be append to this file */
 	: be_int8(offset);
     hf->hh.size     = be_int4(hfsize);
-    fwrite(&hf->hh, sizeof(hf->hh), 1, fp);
+    fwrite(&hf->hh, HHSIZE, 1, fp);
 
     /* Write the archive filename, if known */
     if (hf->archive && *hf->archive) {
@@ -730,7 +730,8 @@ void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
 
     /* Finally write the footer referencing back to the header start */
     memcpy(foot.magic, HASHFILE_MAGIC, 4);
-    foot.offset = be_int8(-hfsize);
+    hfsize = be_int8(-hfsize);
+    memcpy(foot.offset, &hfsize, 8);
     fwrite(&foot, sizeof(foot), 1, fp);
 }
 
@@ -753,13 +754,13 @@ HashFile *HashFileLoad_old(FILE *fp) {
 
     if (NULL == (hf = (HashFile *)calloc(1, sizeof(HashFile))))
 	return NULL;
-    if (NULL == (htable = (unsigned char *)malloc(sizeof(hf->hh))))
+    if (NULL == (htable = (unsigned char *)malloc(HHSIZE)))
 	return NULL;
 
     /* Read and create the hash table header */
-    if (sizeof(hf->hh) != fread(htable, 1, sizeof(hf->hh), fp))
+    if (HHSIZE != fread(htable, 1, HHSIZE, fp))
 	return NULL;
-    memcpy(&hf->hh, htable, sizeof(hf->hh));
+    memcpy(&hf->hh, htable, HHSIZE);
     hf->hh.nbuckets = be_int4(hf->hh.nbuckets);
     hf->hh.offset = be_int8(hf->hh.offset);
     hf->hh.size = be_int4(hf->hh.size);
@@ -779,7 +780,7 @@ HashFile *HashFileLoad_old(FILE *fp) {
     }
 
     /* Load the rest of the hash table to memory */
-    htable_pos = sizeof(hf->hh) + fnamelen + 1;
+    htable_pos = HHSIZE + fnamelen + 1;
     if (NULL == (htable = (unsigned char *)realloc(htable, hf->hh.size)))
 	return NULL;
     if (hf->hh.size-htable_pos !=
@@ -870,12 +871,14 @@ HashFile *HashFileFopen(FILE *fp) {
     hf->hfp = fp;
     hf->afp = NULL;
 
-    if (sizeof(hf->hh) != fread(&hf->hh, 1, sizeof(hf->hh), hf->hfp)) {
+    if (HHSIZE != fread(&hf->hh, 1, HHSIZE, hf->hfp)) {
 	HashFileDestroy(hf);
 	return NULL;
     }
     if (memcmp(HASHFILE_MAGIC, &hf->hh, 4) != 0) {
 	HashFileFooter foot;
+	int64_t offset;
+
 	/* Invalid magic number, try other end of file! */
 	fseek(hf->hfp, -sizeof(HashFileFooter), SEEK_END);
 	if (sizeof(foot) != fread(&foot, 1, sizeof(foot), hf->hfp)) {
@@ -886,10 +889,11 @@ HashFile *HashFileFopen(FILE *fp) {
 	    HashFileDestroy(hf);
 	    return NULL;
 	}
-	foot.offset = be_int8(foot.offset);
-	fseek(hf->hfp, foot.offset, SEEK_CUR);
+	memcpy(&offset, foot.offset, 8);
+	offset = be_int8(offset);
+	fseek(hf->hfp, offset, SEEK_CUR);
 	hf->hf_start = ftell(hf->hfp);
-	if (sizeof(hf->hh) != fread(&hf->hh, 1, sizeof(hf->hh), hf->hfp)) {
+	if (HHSIZE != fread(&hf->hh, 1, HHSIZE, hf->hfp)) {
 	    HashFileDestroy(hf);
 	    return NULL;
 	}
@@ -915,7 +919,7 @@ HashFile *HashFileFopen(FILE *fp) {
 	}
     }
 
-    hf->header_size = sizeof(hf->hh) + 1 + archive_len +
+    hf->header_size = HHSIZE + 1 + archive_len +
 	12 * (hf->hh.nheaders + hf->hh.nfooters);
     hf->nheaders = hf->hh.nheaders;
     hf->nfooters = hf->hh.nfooters;
