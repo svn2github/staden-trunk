@@ -121,7 +121,6 @@ proc haplo::snps {d {snp_cutoff {}} {discrep_cutoff {}}} {
     set status {}
     set num 0
     foreach snp $data(snps) {
-	puts "SNP $num = $snp"
 	lappend status unknown
 	set data(selected,$num) 1
 	incr num
@@ -348,9 +347,12 @@ proc haplo::create_display {d} {
     button $f.buttons.cancel \
 	-text Cancel \
 	-command "haplo::shutdown $d"
+    button $f.buttons.help \
+	-text Help \
+	-command "show_help gap4 {SNP-Candidates}"
 
     grid $f.buttons -sticky nsew -columnspan 2
-    grid $f.buttons.cancel -sticky ew -padx 10
+    grid $f.buttons.cancel $f.buttons.help -sticky ew -padx 10
 
     wm protocol $data(toplevel) WM_DELETE_WINDOW "haplo::shutdown $d"
 
@@ -373,8 +375,6 @@ proc haplo::create_display {d} {
 }
 
 proc haplo::reg_callback {d id type args} {
-    if {[catch {
-
     upvar $d data
     switch $id {
 	"QUERY_NAME" {
@@ -470,10 +470,6 @@ proc haplo::reg_callback {d id type args} {
 		}
 	    }
 	}
-    }
-
-    } err]} {
-	puts err=$err
     }
 
     return ""
@@ -679,7 +675,7 @@ proc haplo::display_depth {d xpos} {
     variable xcoord
 
     set depth [haplo tdepth -io $data(-io) -contig $data(-contig)]
-    set max [lindex $depth 0]; puts depth=$max
+    set max [lindex $depth 0];
     set max [expr {int(($max+9)/10) * 10}]
     set xscale [expr {($xcoord(depth)-20) / double($max)}]
     set w $data(canvas)
@@ -870,14 +866,10 @@ proc haplo::display_sets {d xpos} {
     variable xcoord
     variable ycoord
 
-    puts [info level [info level]]
-
     set io $data(-io)
     set snps $data(snps)
     set contig $data(cnum)
     set w $data(canvas)
-
-    puts "Drawing [llength $data(sets)] sets"
 
     # Create sets
     set snum 0
@@ -1109,7 +1101,7 @@ proc haplo::save_fofn {d {sets {}}} {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "haplo::save_fofn_ok $f $d $f.sets $f.outfile" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {FIXME}" \
+	    -help_command "show_help gap4 {SNP-Candidates}" \
 	    -bd 2 \
 	    -relief groove
 
@@ -1184,7 +1176,7 @@ proc haplo::save_consensus {d {sets {}}} {
 	    -ok_command "haplo::save_consensus_ok $f $d \
 			     $f.sets $f.pads $f.ungrouped $f.output" \
 	    -cancel_command "destroy $f" \
-	    -help_command "show_help gap4 {FIXME}" \
+	    -help_command "show_help gap4 {SNP-Candidates}" \
 	    -bd 2 \
 	    -relief groove
 
@@ -1257,7 +1249,6 @@ proc haplo::save_consensus_ok {f d sets pads ungrouped output} {
 	}
 
 	if {$strip_pads} {
-	    puts "Stripping pads"
 	    strip_pads $cons $qual cons2 qual2
 	    set cons $cons2
 	    set qual $qual2
@@ -1475,7 +1466,6 @@ proc haplo::set_report {d} {
 		    set snpa($p2) [lreplace $snpa($p2) 0 0 hq]
 		    #set snpa($p2) [lreplace $snpa($p2) 3 3 300]
 		} else {
-		    puts "+++ New snp at $p2: $q, $hq"
 		    set tlist [templates_at_pos $io $contig $p2]
 		    set snpa($p2) "hq 0 $p2 300 $tlist"
 		}
@@ -1494,7 +1484,6 @@ proc haplo::set_report {d} {
 	    }
 	}
     }
-    puts "    $count HQ differences"
 
     # Turn snp array back into data(snps) list. Filter out existing SNPs
     # that were not confirmed as real.
@@ -1503,7 +1492,6 @@ proc haplo::set_report {d} {
     set snum 0
     foreach p [lsort -integer [array names snpa]] {
 	if {![info exists confirmed($p)]} {
-	    puts "--- Unconfirmed SNP at $p"
 	    lappend status notfound
 	} else {
 	    lappend status [lindex $snpa($p) 0]
@@ -1516,22 +1504,22 @@ proc haplo::set_report {d} {
     set data(snp_status) $status
 
     # Display contig plot
-    puts "Contig overlap positions:"
-    for {set units 1000000} {$units >= 1} {set units [expr {$units / 10}]} {
-	puts -nonewline "     "
-	for {set j 0} {$j < $count} {incr j} {
-	    puts -nonewline [expr {(($snp($j)+1) / $units) % 10}]
-	}
-	puts ""
-    }
-    
-    for {set i 0} {$i < $nsets} {incr i} {
-	puts -nonewline [format "\#%3d " $i]
-	for {set j 0} {$j < $count} {incr j} {
-	    puts -nonewline "[string index $data(cons,$i) $snp($j)]"
-	}
-	puts ""
-    }
+    # vmessage "Contig overlap positions:"
+    # for {set units 1000000} {$units >= 1} {set units [expr {$units / 10}]} {
+    #	vmessage -nonewline "     "
+    #	for {set j 0} {$j < $count} {incr j} {
+    #	    vmessage -nonewline [expr {(($snp($j)+1) / $units) % 10}]
+    #	}
+    #	vmessage ""
+    # }
+    # 
+    # for {set i 0} {$i < $nsets} {incr i} {
+    #	vmessage -nonewline [format "\#%3d " $i]
+    #	for {set j 0} {$j < $count} {incr j} {
+    #	    vmessage -nonewline "[string index $data(cons,$i) $snp($j)]"
+    #	}
+    #	vmessage ""
+    # }
 }
 
 # Filters snps to only those that are "selected" in data(selected,$num)
@@ -1719,7 +1707,6 @@ proc haplo::find_ungrouped {d} {
 	}
     }
 
-    parray tnames
     return [array names tnames]
 }
 
@@ -1748,14 +1735,10 @@ proc haplo::ClusterSNP {d} {
     SetBusy
     set data(status_line) "Producing splits"
     update idletasks
-    puts "========" 
-    puts "-minscore $data(-minscore)"
-    puts "-twopass $data(-twopass)"
-    puts "-fast $data(-fastmode)"
     set data(sets) [haplo split \
 			  -io $io \
 			  -snps $snps \
-			  -verbosity 1 \
+			  -verbosity 0 \
 			  -minscore $data(-minscore) \
 			  -twopass $data(-twopass) \
 			  -fast $data(-fastmode)]
@@ -1765,7 +1748,7 @@ proc haplo::ClusterSNP {d} {
     set data(status_line) "Obtaining reading lists"
     update idletasks
     compute_rsets $d
-    dump_sets $data(sets)
+    # dump_sets $data(sets)
 
     compute_set_cons $d
 
@@ -1969,7 +1952,7 @@ proc CandidateSNPs {io} {
     okcancelhelp $t.ok \
 	-ok_command "CandidateSNPs2 $io $t $t.id" \
 	-cancel_command "destroy $t" \
-	-help_command "show_help gap4 {FIXME}" \
+	-help_command "show_help gap4 {SNP-Candidates}" \
 	-bd 2 -relief groove
 
     pack $t.id $t.ok -side top -fill x

@@ -40,7 +40,6 @@ static int haplo_snp_cmd(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
     ds = dstring_create(NULL);
     for (i = 0; i < rargc; i++) {
 	dstring_t *ds2;
-	printf("Contig %d from %d to %d\n", rargv[i].contig, rargv[i].start, rargv[i].end);
 	ds2 = haplo_snps(args.io,
 			 rargv[i].contig, rargv[i].start, rargv[i].end,
 			 args.discrep_cutoff, args.snp_cutoff,
@@ -230,8 +229,6 @@ static int haplo_split_cmd(Tcl_Interp *interp,
 		goto error;
 	    cp += index;
 
-	    printf("%d\t%d\t%f\t", count++, pos, score);
-
 	    state = SNP_TEMPLATE;
 	    /* flow through */
 	}
@@ -248,8 +245,6 @@ static int haplo_split_cmd(Tcl_Interp *interp,
 			    &tnum, &tscore, &base, &conf, &index))
 		goto error;
 	    cp += index;
-
-	    printf(" %d,%f,%c,%d", tnum, tscore, base, conf);
 
 	    while (*cp && isspace(*cp))
 		cp++;
