@@ -482,7 +482,7 @@ proc SetTemplateStatusConfig {} {
 	-ok_command "SetTemplateStatusConfig2 $w 0" \
 	-perm_command "SetTemplateStatusConfig2 $w 1" \
 	-cancel_command "destroy $w" \
-	-help_command "show_help gap4 FIXME"
+	-help_command "show_help gap4 {Conf-Template Status}"
 
     pack $w.size $w.vector -side top -fill both
     pack $w.ignore_all_ptype $w.ignore_custom_ptype -side top -fill both -expand 1
