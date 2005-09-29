@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2003/01/wi">
-  <Product Id="FFFFFFFF-FF01-4001-BFEA-0008028F89FC" Name="Staden Package" Language="2057" Version="1.6.0" Manufacturer="MRC/WTSI">
+  <Product Id="FFFFFFFF-FF03-4002-BFEA-0008028F89FC" Name="Staden Package" Language="2057" Version="1.6.0" Manufacturer="MRC/WTSI">
     <Package Description="Staden package Installer" Compressed="yes" Id="????????-????-????-????-????????????"/>
     <Media Id="1" Cabinet="Data1.cab" EmbedCab="yes" CompressionLevel="high"/>
     <?include staden_files.wxi ?>
