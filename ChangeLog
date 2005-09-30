@@ -1,3 +1,94 @@
+2005-09-29  jkbonfield  <jkbonfield>
+
+	* lib/itcl3.3/pkgIndex.tcl:
+	* lib/itk3.3/pkgIndex.tcl:
+	(10:58:02) Auto-detect windows vs unix dll name. 
+
+	* demo/gap4/DEMO.0,
+	* demo/gap4/DEMO.0.aux,
+	* demo/gap4/traces.tar,
+	* demo/gap4/Attic/traces.tar.hash:
+	(13:24:44) Appended the traces.tar.hash to traces.tar (using the
+	new hash format) and updated the search path in the gapdb
+	accordingly. 
+
+	* Makefile:
+	(13:34:29) Added use of lib subdir for distwindows 
+
+	* Version:
+	(13:34:54) *** empty log message *** 
+
+	* doc/README:
+	(13:35:24) Added windows building hints 
+
+	* lib/Makefile:
+	* src/Makefile:
+	(13:36:41) Updated distwindows target 
+
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h:
+	(16:04:06) Fixed the hash file saving and loading so that it works
+	on all platforms instead of just x86 linux. There were bugs in
+	assuming the size of structures. The assumptions are still there in
+	that I assume they pad the same internally (for ease of coding - we
+	can change it when we finally see a system which operates
+	differently), but the final "boundary" padding has been resolved. 
+
+	* src/gap4/shuffle_pads.c:
+	(16:20:45) Removed load of /tmp/nuc_matrix. The default one in
+	tables will have already been loaded and is sufficient (I hope...
+	the one in /tmp long bit the dust!) 
+
+	* src/gap4/configure.tcl:
+	(16:49:32) Added help link 
+
+	* src/haplo/haplo.tcl,
+	* src/haplo/haplo_tcl.c:
+	(16:49:52) Removed debugging info. 
+
+2005-09-28  jkbonfield  <jkbonfield>
+
+	* doc/ReleaseNotes:
+	* ChangeLog,
+	* NEWS:
+	* src/io_lib/progs/hash_list.c:
+	(10:16:49) *** empty log message *** 
+
+	* src/convert/Makefile,
+	* src/convert/bapDB.c,
+	* src/convert/bapDB.h,
+	* src/convert/bapIO.c,
+	* src/convert/bapIO.h,
+	* src/convert/convert.doc,
+	* src/convert/dapDB.c,
+	* src/convert/dapDB.h,
+	* src/convert/dapIO.c,
+	* src/convert/dapIO.h,
+	* src/convert/dependencies,
+	* src/convert/flat_sd.c,
+	* src/convert/flat_sd.h,
+	* src/convert/gapDB.c,
+	* src/convert/gapDB.h,
+	* src/convert/list.c,
+	* src/convert/list.h,
+	* src/convert/main.c,
+	* src/convert/newtypes.h,
+	* src/convert/process.c,
+	* src/convert/process.h,
+	* src/convert/sap2dap.c:
+	(10:20:37) Added back the old "convert" program to migrate bap/dap
+	databases to gap4. Also included a fixed sap2dap program (not
+	compiled by default) for conversion of those REALLY old databases. 
+
+	* src/convert/gapDB.c:
+	(10:24:43) Fixed ancient bug in gap_write_header. 
+
+	* src/Makefile:
+	(10:24:53) Added convert 
+
+	* src/convert/gapDB.c:
+	(10:26:22) 2nd fix... 
+
 2005-09-27  jkbonfield  <jkbonfield>
 
 	* src/gap4/tman_interface.c:
