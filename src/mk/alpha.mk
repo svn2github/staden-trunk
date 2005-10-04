@@ -73,7 +73,7 @@ SHLIB_LD      		= ld
 # Don't bother with maintaining our own so_locations file. It does reduce
 # library relocation, but the overhead is minimal compared to the typical
 # length of time that the apps run for.
-SHLIB_LDFLAGS 		= -L$(L) $(SHLIB_STRIP) \
+SHLIB_LDFLAGS 		= -L -L$(L) -L/usr/shlib $(SHLIB_STRIP) \
 			  -shared -expect_unresolved "*" -lots -o
 
 SHLIB_PREFIX		= lib
