@@ -428,15 +428,14 @@ WeightMatrixCounts *read_weight_matrix ( FILE *file_p, int char_set ) {
   WeightMatrixCounts *w = NULL;
 
 /* deal with charsetsize */
-  if ( char_set = 5 ) {
-    depth = 4;
-  }
-  else {
-    depth = 22;
+  if ( 5 == char_set ) {
+      depth = 4;
+  } else {
+      depth = 22;
   }
 
   /* read and discard title */
-      if ( ( fscanf (file_p, "%[^\n]\n", line) == 0 ) ) return NULL;
+  if ( ( fscanf (file_p, "%[^\n]\n", line) == 0 ) ) return NULL;
 
   /* printf("%s\n",line); */
 
