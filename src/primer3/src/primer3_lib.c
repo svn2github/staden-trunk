@@ -2877,8 +2877,7 @@ const primer_args *pa;
  * know the postion of the start codon relative to s.
  */
 static int
-find_stop_codon(s, start, direction)
-  const char* s;
+find_stop_codon(const char *s, int start, int direction)
 {
   const char *p, *q;
   int increment = 3 * direction;
