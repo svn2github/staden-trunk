@@ -74,12 +74,14 @@ endif
 # SOLARIS9 and Sun FORTE cc users, use the so9 makefile instead of "solaris"
 # You may also need to edit libpng-$(PNG_VERS)/scripts/makefile.so9
 # and change CFLAGS to use -O instead of -O3.
+SO=so
 ifeq ($(MACHINE),solaris)
 PN$(MAKE)=solaris
 #PN$(MAKE)=so9
 endif
 ifeq ($(MACHINE),macosx)
-PN$(MAKE)=freebsd
+PN$(MAKE)=darwin
+SO=dylib
 endif
 ifeq ($(MACHINE),windows)
 PN$(MAKE)=gcc
@@ -95,7 +97,7 @@ png: png-build png-install
 png-install: libdir $(L)/.png
 
 $(L)/.png: $(PNG_SRC)/.built-$(O)
-	cp -R $(PNG_SRC)/libpng12.so* $(L)
+	cp -R $(PNG_SRC)/libpng12.$(SO)* $(L)
 	touch $@
 
 png-build: $(PNG_SRC)/.built-$(O)
@@ -117,7 +119,7 @@ $(PNG_SRC).tar.gz:
 
 #-----------------------------------------------------------------------------
 # Tcl
-TCL_VERS=8.4.11
+TCL_VERS=8.4.6
 TCL_SRC=tcl$(TCL_VERS)
 
 .PHONY: tcl tcl-install tcl-build
@@ -127,7 +129,7 @@ tcl: tcl-build tcl-install
 tcl-install: libdir $(L)/.tcl
 
 $(L)/.tcl: $(TCL_SRC)/.built-$(O)
-	cp $(TCL_SRC)/unix/libtcl8.4.so $(L)
+	cp $(TCL_SRC)/unix/libtcl8.4.$(SO) $(L)
 	touch $@
 
 tcl-build: $(TCL_SRC)/.built-$(O)
@@ -151,7 +153,7 @@ $(TCL_SRC)-src.tar.gz:
 
 #-----------------------------------------------------------------------------
 # Tk
-TK_VERS=8.4.11
+TK_VERS=8.4.6
 TK_SRC=tk$(TK_VERS)
 
 .PHONY: tk tk-install tk-build
@@ -161,7 +163,7 @@ tk: tk-build tk-install
 tk-install: libdir $(L)/.tk
 
 $(L)/.tk: $(TK_SRC)/.built-$(O)
-	cp $(TK_SRC)/unix/libtk8.4.so $(L)
+	cp $(TK_SRC)/unix/libtk8.4.$(SO) $(L)
 	touch $@
 
 tk-build: $(TK_SRC)/.built-$(O)
@@ -194,7 +196,7 @@ itcl: itcl-build itcl-install
 itcl-install: libdir $(L)/.itcl
 
 $(L)/.itcl: $(ITCL_SRC)/.built-$(O)
-	cp $(ITCL_SRC)/*.so $(L)
+	cp $(ITCL_SRC)/*.$(SO) $(L)
 	touch $@
 
 itcl-build: $(ITCL_SRC)/.built-$(O)
@@ -226,7 +228,7 @@ itk: itk-build itk-install
 itk-install: libdir $(L)/.itk
 
 $(L)/.itk: $(ITK_SRC)/.built-$(O)
-	cp $(ITK_SRC)/*.so $(L)
+	cp $(ITK_SRC)/*.$(SO) $(L)
 	touch $@
 
 itk-build: $(ITK_SRC)/.built-$(O)
