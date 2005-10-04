@@ -191,7 +191,8 @@ distsrc: FORCE
 	cpd read; \
 	cpd scf; \
 	cpd utils; \
-	cpd ztr
+	cpd ztr; \
+	cpd sff;
 	-cp -R CHANGES COPYRIGHT Makefile README options.mk include man mk \
 	    $(DIRNAME)
 	-cp -R ztr/FORMAT $(DIRNAME)/ztr
