@@ -971,7 +971,7 @@ HashFile *HashFileOpen(char *fname) {
 		HashFileDestroy(hf);
 		return NULL;
 	    }
-	    sprintf(aname, "%.*s%s", cp-fname+1, fname, hf->archive);
+	    sprintf(aname, "%.*s%s", (int)(cp-fname+1), fname, hf->archive);
 	    if (NULL == (hf->afp = fopen(aname, "rb"))) {
 
 		return NULL;
