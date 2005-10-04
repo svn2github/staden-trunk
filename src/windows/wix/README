@@ -1,3 +1,6 @@
+0. Edit staden.wxs to produce a new Product Id and to update the
+   version number accordingly.
+
 1. Produce the distribution directory
 
 2. perl /c/jkb/staden/src/windows/wix/generate_wxs.pl /c/jkb/staden/distrib/windows-rel-1-5-3 > staden_files.wxi
