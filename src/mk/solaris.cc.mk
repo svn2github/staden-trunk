@@ -27,6 +27,17 @@ TT_LIBRARY	= -ltt
 # Ranlib functionality is folded into ar
 RANLIB		= /bin/true
 
+
+FLD=$(CLD)
+
+# Fortran code only really still exists in Gap4's legacy and repe.
+# We've previously hacked these to be C versions.
+F77_DEP =
+F77_INC =
+
+GAP4_LEGACY	= legacy_f2c.o
+REPE_OBJ	= repe_f2c.o
+
 #------------------------------------------------------------------------------
 #24/5/00 johnt - added Biolims support whe BIOLIMS defined
 # BIOLIMS=1
@@ -97,7 +108,7 @@ SHLIB_DEP		= -Bdynamic -ldl -lresolv
 CLDFLAGS_E	       += -R $(INSTALLLIB)
 FLDFLAGS_E	       += -R $(INSTALLLIB)
 CXX_DEP			= -L/opt/SUNWspro/WS6U1/lib/ -Bstatic -lCstd -Bdynamic -lCrun
-F77_DEP			= -L/opt/SUNWspro/WS6U1/lib/ -Bstatic -lF77 -lM77 -lm -lsunmath -Bdynamic
+#F77_DEP			= -L/opt/SUNWspro/WS6U1/lib/ -Bstatic -lF77 -lM77 -lm -lsunmath -Bdynamic
 
 # To link statically instead of dynamically uncomment these lines.
 #L = $(SRCROOT)/lib-static/$(O)
