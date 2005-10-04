@@ -16,11 +16,6 @@
 #include "seqed_restriction_enzymes.h"
 #include "seqed_search.h"
 
-void bell(void)
-{
-    Tcl_Eval( GetInterp(), "bell");
-}
-
 /* ---- Local defines ---- */
 #define offset(field) Tk_Offset(tkSeqed, field)
 

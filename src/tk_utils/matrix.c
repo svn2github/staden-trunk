@@ -20,17 +20,6 @@ void print_coords(m_coords *coords[],
     }
 }
 
-void print_matrix(double S[3][3]) {
-    int i,j;
-    
-    for (i = 0; i < 3; i++) {
-	for (j = 0; j < 3; j++) {
-	    printf("%f ",S[i][j]);
-	}
-	printf("\n");
-    }
-}
-
 void make_zoom_matrix(double M[3][3], 
 		      ZoomValues *z) 
 {  
