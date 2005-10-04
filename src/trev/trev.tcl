@@ -1391,9 +1391,9 @@ proc CheckSaved {} {
 		file?"]
 
 	if {[string compare $response "yes"] ==0 } {
-	    if {[CheckSaveFormat [$trace format]]} {
+	    if {[CheckSaveFormat [$trace orig_format]]} {
 		#Save
-		SaveFile 0 [$trace format]
+		SaveFile 0 [$trace orig_format]
 	    } else {
 		#Save As
 		SaveFile 1 ZTR
