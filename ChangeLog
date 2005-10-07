@@ -1,3 +1,55 @@
+2005-10-07  James Bonfield  <jkb>
+
+	TAG CODEBASE with rel-1-6-0
+
+2005-10-04  jkbonfield  <jkbonfield>
+
+	* src/Makefile.thirdparty:
+	(08:54:07) Changed .so for .dylib under Darwin 
+
+	* src/io_lib/Makefile:
+	(08:54:30) Added sff to make distsrc 
+
+	* src/mk/alpha.mk:
+	(08:55:44) Use /usr/shlib when linking dynamic libraries. 
+
+	* src/mk/linux-ia64.mk:
+	* src/mk/solaris.cc.mk:
+	(08:58:12) *** empty log message *** 
+
+	* src/spin/tkSeqed.c,
+	* src/tk_utils/matrix.c:
+	(09:01:05) removed duplicated function names. bell() is same code.
+	print_matrix() was different, but debugging.
+	
+	Reason is to prevent compilation issues under macosx 
+
+	* src/windows/wix/README:
+	(09:08:24) *** empty log message *** 
+
+	* src/io_lib/utils/hash_table.c:
+	(11:34:03) Cast ptrdiff_t value to int for %.*s argument. 
+
+	* src/make_weights/make_weights.c:
+	(11:34:31) Fixed = vs == bug so that char_set was always treated as
+	DNA. 
+
+	* src/primer3/src/primer3_lib.c:
+	(11:35:04) Tidied up prototype of find_stop_codon to prevent icc
+	warnings. 
+
+	* src/trev/trev.tcl:
+	(15:59:25) Use 'orig_format' instead of 'format' method for saving
+	a trace when exiting trev or using next/prev. This fixes a bug
+	where interactive clipping (among other places) would create ztr
+	files after clipping. 
+
+2005-09-30  jkbonfield  <jkbonfield>
+
+	* ChangeLog:
+	* NEWS:
+	(09:00:55) *** empty log message *** 
+
 2005-09-29  jkbonfield  <jkbonfield>
 
 	* lib/itcl3.3/pkgIndex.tcl:
