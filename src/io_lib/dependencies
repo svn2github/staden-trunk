@@ -72,7 +72,8 @@ $O/scf/write_scf.o: include/mFILE.h include/os.h
 $O/scf/write_scf.o: include/scf.h
 $O/scf/write_scf.o: include/stdio_hack.h
 $O/scf/write_scf.o: utils/mach-io.h include/xalloc.h
-$O/sff/sff.o: include/compress.h include/xalloc.h include/sff.h
+$O/sff/sff.o: include/compress.h include/xalloc.h include/sff.h utils/mach-io.h
+$O/sff/sff.o: include/misc.h
 $O/sff/sff.o: include/os.h
 $O/sff/sff.o: read/translate.h include/expFileIO.h include/array.h
 $O/sff/sff.o: include/scf.h
@@ -91,10 +92,12 @@ $O/utils/mach-io.o: include/stdio_hack.h
 $O/utils/mFILE.o: include/os.h
 $O/utils/mFILE.o: include/mFILE.h
 $O/utils/mFILE.o: utils/vlen.h
-$O/utils/open_trace_file.o: include/compress.h utils/hash_table.h
+$O/utils/open_trace_file.o: include/compress.h utils/hash_table.h include/sff.h
+$O/utils/open_trace_file.o: include/expFileIO.h include/array.h
 $O/utils/open_trace_file.o: include/misc.h include/xalloc.h utils/tar_format.h
 $O/utils/open_trace_file.o: include/open_trace_file.h include/mFILE.h
 $O/utils/open_trace_file.o: include/os.h
+$O/utils/open_trace_file.o: read/Read.h include/scf.h read/translate.h
 $O/utils/read_alloc.o: include/array.h include/compress.h
 $O/utils/read_alloc.o: include/mFILE.h read/translate.h include/expFileIO.h
 $O/utils/read_alloc.o: include/xalloc.h read/Read.h include/scf.h
