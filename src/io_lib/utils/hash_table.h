@@ -118,7 +118,7 @@ void HashTableStats(HashTable *h, FILE *fp);
 void HashTableDump(HashTable *h, FILE *fp);
 
 /* HashFile prototypes */
-void HashFileSave(HashFile *hf, FILE *fp, int64_t offset);
+uint64_t HashFileSave(HashFile *hf, FILE *fp, int64_t offset);
 HashFile *HashFileLoad(FILE *fp);
 int HashFileQuery(HashFile *hf, uint8_t *key, int key_len, HashFileItem *item);
 char *HashFileExtract(HashFile *hf, char *fname, size_t *len);
@@ -127,5 +127,6 @@ char *HashFileExtract(HashFile *hf, char *fname, size_t *len);
 HashFile *HashFileCreate(int size, int options);
 void HashFileDestroy(HashFile *hf);
 HashFile *HashFileOpen(char *fname);
+HashFile *HashFileFopen(FILE *fp);
 
 #endif /* _HASH_TABLE_H_ */

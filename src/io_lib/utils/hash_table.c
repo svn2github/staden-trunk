@@ -616,12 +616,15 @@ void HashTableStats(HashTable *h, FILE *fp) {
  * It is designed such that on-disk querying of the hash table can be done
  * purely by forward seeks. (This is generally faster due to pre-fetching of
  * the subsequent blocks by many disk controllers.)
+ *
+ * Returns: the number of bytes written on success
+ *         -1 for error
  */
-void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
+uint64_t HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
     int i;
     HashItem *hi;
     uint32_t *bucket_pos;
-    uint64_t hfsize = 0;
+    uint64_t hfsize = 0, be_hfsize;
     HashTable *h = hf->h;
     HashFileFooter foot;
    
@@ -730,9 +733,11 @@ void HashFileSave(HashFile *hf, FILE *fp, int64_t offset) {
 
     /* Finally write the footer referencing back to the header start */
     memcpy(foot.magic, HASHFILE_MAGIC, 4);
-    hfsize = be_int8(-hfsize);
-    memcpy(foot.offset, &hfsize, 8);
+    be_hfsize = be_int8(-hfsize);
+    memcpy(foot.offset, &be_hfsize, 8);
     fwrite(&foot, sizeof(foot), 1, fp);
+
+    return hfsize;
 }
 
 /*
@@ -869,7 +874,8 @@ HashFile *HashFileFopen(FILE *fp) {
 
     /* Read the header */
     hf->hfp = fp;
-    hf->afp = NULL;
+    hf->afp = fp;
+    hf->hf_start = ftell(hf->hfp);
 
     if (HHSIZE != fread(&hf->hh, 1, HHSIZE, hf->hfp)) {
 	HashFileDestroy(hf);
@@ -1170,7 +1176,7 @@ void HashFileDestroy(HashFile *hf) {
 
     if (hf->afp)
 	fclose(hf->afp);
-    if (hf->hfp)
+    if (hf->hfp && hf->hfp != hf->afp)
 	fclose(hf->hfp);
 
     free(hf);
