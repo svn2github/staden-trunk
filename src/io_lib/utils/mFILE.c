@@ -458,3 +458,26 @@ int mfprintf(mFILE *mf, char *fmt, ...) {
     return ret;
 }
 
+/*
+ * Converts an mFILE from binary to ascii mode by replacing all
+ * cr-nl with nl.
+ *
+ * Primarily used on windows when we've uncompressed a binary file which
+ * happens to be a text file (eg Experiment File). Previously we would have
+ * seeked back to the start and used _setmode(fileno(fp), _O_TEXT).
+ *
+ * Side effect: resets offset and flush_pos back to the start.
+ */
+void mfascii(mFILE *mf) {
+    size_t p1, p2;
+
+    for (p1 = p2 = 1; p1 < mf->size; p1++, p2++) {
+	if (mf->data[p1] == '\n' && mf->data[p1-1] == '\r') {
+	    p2--; /* delete the \r */
+	}
+	mf->data[p2] = mf->data[p1];
+    }
+    mf->size = p2;
+
+    mf->offset = mf->flush_pos = 0;
+}

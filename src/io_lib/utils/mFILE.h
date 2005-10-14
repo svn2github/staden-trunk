@@ -35,5 +35,6 @@ int mfprintf(mFILE *mf, char *fmt, ...);
 mFILE *mstdin(void);
 mFILE *mstdout(void);
 mFILE *mstderr(void);
+void mfascii(mFILE *mf);
 
 #endif /* _MFILE_H_ */
