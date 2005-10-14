@@ -1,3 +1,50 @@
+Version 1.9.1
+
+* Implemented the SFF (454) file structure, currently as read-only.
+  This is supported both as an archive containing multiple files and
+  also as a single SFF entry.
+
+* Allow for SFF=? components in RAWDATA search path.
+
+* Tar files, SFF archives and hashed archives (eg hashed tar, sff, or
+  "solid" archives) may now be used as part of a pathname. Eg if a
+  tar file foo.tar contains entry xyzzy.ztr then we can ask to fetch
+  trace foo.tar/xyzzy.ztr instead of requiring setting of the
+  RAWDATA environment variable.
+
+* Changed the HashFile format slightly. It's now format 1.00.
+	
+  The key difference is that it has a file footer pointing back to the
+  hashfile header (so the hashfile can be appended to an archive) and
+  it also has an offset in the header to apply to all seeks within the
+  archive itself, so it can be prepending to an archive that's already
+  been indexed without breaking the offsets.
+
+  Extended the hash_tar program to allow control over these header options.
+
+* Fixed divide-by-zero buf when calling mfread for zero
+
+* Removed the warning for unknown ZTR chunk types. It now just
+  silently stores them in memory. 
+
+* mfopen now honours binary verses ascii differences (and so updated
+  Read.c calls accordingly) so that Windows works better.
+
+* Removed file descriptor 'leak' in write_reading(). 
+
+* Unset compression_used when opening uncompressed files instead of
+  leaving as the last value.
+
+* Fixed a file descriptor (and some memory) leak in
+  freopen_compressed. (Bug ID #1289095) 
+
+* Fixed the hash file saving and loading so that it works on all
+  platforms instead of just x86 linux. There were bugs in assuming the
+  size of structures. The assumptions are still there in that I assume
+  they pad the same internally (for ease of coding - we can change it
+  when we finally see a system which operates differently), but the
+  final "boundary" padding has been resolved.
+
 Version 1.9.0
 
 * ***INCOMPATIBILITIES*** to 1.8.12
