@@ -26,130 +26,172 @@
 #include "Read.h"
 #include "xalloc.h"
 #include "sff.h"
+#include "mach-io.h"
+#include "misc.h"
 
-#define SFF_MAGIC_NUMBER (((unsigned int) '.') << 24) + \
-                         (((unsigned int) 's') << 16) + \
-                         (((unsigned int) 'f') << 8) + \
-                         ((unsigned int) 'f')
-#define SFF_VERSION "1.00"
-
-/*
- * getuint2
- *
- * A function to convert a 2-byte TVF/SFF value into an integer.
- */
-unsigned int getuint2(unsigned char *b)
-{
-    return ((unsigned int) b[0]) * 256 + ((unsigned int) b[1]);
+void free_sff_common_header(sff_common_header *h) {
+    if (!h)
+	return;
+    if (h->flow)
+	xfree(h->flow);
+    if (h->key)
+	xfree(h->key);
+    xfree(h);
 }
 
-/*
- * getuint4
- *
- * A function to convert a 4-byte TVF/SFF value into an integer.
- */
-static unsigned int getuint4(unsigned char *b)
-{
-    return
-        ((unsigned int) b[0]) * 256 * 256 * 256 +
-        ((unsigned int) b[1]) * 256 * 256 +
-        ((unsigned int) b[2]) * 256 +
-        ((unsigned int) b[3]);
-}
+sff_common_header *read_sff_common_header(mFILE *mf) {
+    sff_common_header *h;
 
+    if (NULL == (h = (sff_common_header *)xcalloc(1, sizeof(*h))))
+	return NULL;
 
-Read *sff2read(unsigned char *buf, size_t buflen) {
-    int i;
-    unsigned int signal, *flowSignals, *flowIndexes;
-    unsigned int pos, magicNumber, numFlows, numBases, trimStart, trimEnd;
-    unsigned int signalFormatCode, flowgramFormatCode;
-    float *flowgram;
-    char *bases, *flowChars, sffVersion[10];
-    unsigned char *scores;
-    Read *r = read_allocate(0,0);
+    if (!be_read_int_4(mf, &h->magic))
+	return free_sff_common_header(h), NULL;
+    if (4 != mfread(h->version, 1, 4, mf))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_8(mf, &h->index_offset))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_4(mf, &h->index_len))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_4(mf, &h->nreads))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_2(mf, &h->header_len))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_2(mf, &h->key_len))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_2(mf, &h->flow_len))
+	return free_sff_common_header(h), NULL;
+    if (!be_read_int_1(mf, &h->flowgram_format))
+	return free_sff_common_header(h), NULL;
 
-    /*
-     * Parse the SFF header bytes.
-     */
-    magicNumber = getuint4(buf);
-    if (magicNumber != SFF_MAGIC_NUMBER) {
-        fprintf(stderr, "Error:  Invalid SFF file format.\n");
+    if (h->magic != SFF_MAGIC) {
+	xfree(h);
 	return NULL;
     }
-
-    strncpy(sffVersion, (char *)buf+4, 4);
-    sffVersion[4] = '\0';
-    if (strcmp(sffVersion, SFF_VERSION) != 0) {
-        fprintf(stderr, "Error: Unsupported SFF version:  %s\n", sffVersion);
-	return NULL;
-    }
-
-    numFlows = getuint4(buf+8);
-
-    signalFormatCode = getuint4(buf+12);
-    flowgramFormatCode = getuint4(buf+16);
-
-    flowChars = malloc(numFlows + 1);
-    strncpy(flowChars, (char *)buf+20, numFlows);
-    flowChars[numFlows] = '\0';
-
-    /*
-     * Parse out the SFF body values.
-     */
-    pos = 20 + numFlows;
-
-    numBases = getuint4(buf + pos);
-    pos += 4;
-    trimStart = getuint2(buf + pos);
-    pos += 2;
-    trimEnd = getuint2(buf + pos);
-    pos += 2;
-
-    if (pos + numFlows * 4 + numBases * 4 != buflen) {
-	fprintf(stderr, "Error:  Invalid SFF file format.\n");
-	return NULL;
-    }
-
-    flowSignals = malloc(numFlows * sizeof(unsigned int));
-    for (i=0; i < numFlows; i++) {
-        flowSignals[i] = getuint2(buf + pos);
-        pos += 2;
-    }
-
-    flowgram = malloc(numFlows * sizeof(float));
-    for (i=0; i < numFlows; i++) {
-        signal = getuint2(buf + pos);
-        pos += 2;
-        flowgram[i] = signal * 0.01;
-    }
-
-    flowIndexes = malloc(numBases * sizeof(unsigned int));
-    for (i=0; i < numBases; i++) {
-        flowIndexes[i] = getuint2(buf + pos);
-        pos += 2;
-    }
-
-    bases = malloc(numBases + 1);
-    scores = malloc(numBases);
-
-    strncpy(bases, (char *)buf + pos, numBases);
-    bases[numBases] = '\0';
-    pos += numBases;
-
-    strncpy((char *)scores, (char *)buf + pos, numBases);
-    pos += numBases;
-
-    /*
-     * Output the SFF information.
-     */
-    r->nflows = numFlows;
-    r->flow_order = flowChars;
-    r->flow_raw = (unsigned int *)malloc(numFlows * sizeof(int));
-    r->flow = (float *)malloc(numFlows * sizeof(float));
     
-    r->leftCutoff = trimStart;
-    r->rightCutoff = trimEnd;
+    if (NULL == (h->flow = (char *)xmalloc(h->flow_len)))
+	return free_sff_common_header(h), NULL;
+    if (NULL == (h->key  = (char *)xmalloc(h->key_len)))
+	return free_sff_common_header(h), NULL;
+    if (h->flow_len != mfread(h->flow, 1, h->flow_len, mf))
+	return free_sff_common_header(h), NULL;
+    if (h->key_len != mfread(h->key , 1, h->key_len,  mf))
+	return free_sff_common_header(h), NULL;
 
+    /* Pad to 8 chars */
+    mfseek(mf, (mftell(mf) + 7)& ~7, SEEK_SET);
+
+    return h;
+}
+
+void free_sff_read_header(sff_read_header *h) {
+    if (!h)
+	return;
+    if (h->name)
+	xfree(h->name);
+    free(h);
+}
+
+sff_read_header *read_sff_read_header(mFILE *mf) {
+    sff_read_header *h;
+
+    if (NULL == (h = (sff_read_header *)xcalloc(1, sizeof(*h))))
+	return NULL;
+
+    if (!be_read_int_2(mf, &h->header_len))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_2(mf, &h->name_len))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_4(mf, &h->nbases))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_2(mf, &h->clip_qual_left))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_2(mf, &h->clip_qual_right))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_2(mf, &h->clip_adapter_left))
+	return free_sff_read_header(h), NULL;
+    if (!be_read_int_2(mf, &h->clip_adapter_right))
+	return free_sff_read_header(h), NULL;
+    if (NULL == (h->name  = (char *)xmalloc(h->name_len)))
+	return free_sff_read_header(h), NULL;
+    if (h->name_len != mfread(h->name, 1, h->name_len, mf))
+	return free_sff_read_header(h), NULL;
+    
+    /* Pad to 8 chars */
+    mfseek(mf, (mftell(mf) + 7)& ~7, SEEK_SET);
+
+    return h;
+}
+
+void free_sff_read_data(sff_read_data *d) {
+    if (!d)
+	return;
+    if (d->flowgram)
+	xfree(d->flowgram);
+    if (d->flow_index)
+	xfree(d->flow_index);
+    if (d->bases)
+	xfree(d->bases);
+    if (d->quality)
+	xfree(d->quality);
+    xfree(d);
+}
+
+sff_read_data *read_sff_read_data(mFILE *mf, int nflows, int nbases) {
+    sff_read_data *d;
+    int i;
+
+    if (NULL == (d = (sff_read_data *)xcalloc(1, sizeof(*d))))
+	return NULL;
+
+    if (NULL == (d->flowgram = (uint16_t *)xcalloc(nflows, 2)))
+	return free_sff_read_data(d), NULL;
+    if (nflows != mfread(d->flowgram, 2, nflows, mf))
+	return free_sff_read_data(d), NULL;
+    for (i = 0; i < nflows; i++)
+	d->flowgram[i] = be_int2(d->flowgram[i]);
+
+    if (NULL == (d->flow_index = (uint8_t*)xmalloc(nbases)))
+	return free_sff_read_data(d), NULL;
+    if (nbases != mfread(d->flow_index, 1, nbases, mf))
+	return free_sff_read_data(d), NULL;
+
+    if (NULL == (d->bases = (uint8_t*)xmalloc(nbases)))
+	return free_sff_read_data(d), NULL;
+    if (nbases != mfread(d->bases, 1, nbases, mf))
+	return free_sff_read_data(d), NULL;
+
+    if (NULL == (d->quality = (uint8_t*)xmalloc(nbases)))
+	return free_sff_read_data(d), NULL;
+    if (nbases != mfread(d->quality, 1, nbases, mf))
+	return free_sff_read_data(d), NULL;
+
+    return d;
+}
+
+
+Read *mfread_sff(mFILE *mf) {
+    int i, bpos;
+    Read *r;
+    sff_common_header *ch;
+    sff_read_header *rh;
+    sff_read_data *rd;
+
+    /* Load the SFF contents */
+    if (NULL == (ch = read_sff_common_header(mf)))
+	return NULL;
+    if (NULL == (rh = read_sff_read_header(mf))) {
+	free_sff_common_header(ch);
+	return NULL;
+    }
+    if (NULL == (rd = read_sff_read_data(mf, ch->flow_len, rh->nbases))) {
+	free_sff_common_header(ch);
+	free_sff_read_header(rh);
+	return NULL;
+    }
+
+    /* Convert to Read struct */
+    r = read_allocate(0,0);
     if (r->basePos) free(r->basePos);
     if (r->base)    free(r->base);
     if (r->prob_A)  free(r->prob_A);
@@ -157,21 +199,24 @@ Read *sff2read(unsigned char *buf, size_t buflen) {
     if (r->prob_G)  free(r->prob_G);
     if (r->prob_T)  free(r->prob_T);
 
-    r->NBases  = numBases;
-    r->basePos = (uint_2 *)calloc(numBases, 2);
-    r->base    = (char *)calloc(numBases, 1);
-    r->prob_A  = (char *)calloc(numBases, 1);
-    r->prob_C  = (char *)calloc(numBases, 1);
-    r->prob_G  = (char *)calloc(numBases, 1);
-    r->prob_T  = (char *)calloc(numBases, 1);
-
-    for (i=0; i < numFlows; i++) {
-	r->flow_raw[i] = flowSignals[i];
-	r->flow[i] = flowgram[i];
+    r->nflows = ch->flow_len;
+    r->flow_order = ch->flow; ch->flow = NULL;
+    r->flow_raw = NULL;
+    r->flow = (float *)malloc(r->nflows * sizeof(float));
+    for (i = 0; i < r->nflows; i++) {
+	r->flow[i] = rd->flowgram[i] / 100.0;
     }
 
-    for (i=0; i < numBases; i++) {
-	r->base[i] = bases[i];
+    r->NBases = rh->nbases;
+    r->basePos = (uint_2 *)calloc(r->NBases, 2);
+    r->base    = rd->bases; rd->bases = NULL;
+    r->prob_A  = (char *)calloc(r->NBases, 1);
+    r->prob_C  = (char *)calloc(r->NBases, 1);
+    r->prob_G  = (char *)calloc(r->NBases, 1);
+    r->prob_T  = (char *)calloc(r->NBases, 1);
+
+    bpos = 0;
+    for (i=0; i < r->NBases; i++) {
 	r->prob_A[i] = 0;
 	r->prob_C[i] = 0;
 	r->prob_G[i] = 0;
@@ -179,34 +224,37 @@ Read *sff2read(unsigned char *buf, size_t buflen) {
 	switch (r->base[i]) {
 	case 'A':
 	case 'a':
-	    r->prob_A[i] = scores[i];
+	    r->prob_A[i] = rd->quality[i];
 	    break;
 	case 'C':
 	case 'c':
-	    r->prob_C[i] = scores[i];
+	    r->prob_C[i] = rd->quality[i];
 	    break;
 	case 'G':
 	case 'g':
-	    r->prob_G[i] = scores[i];
+	    r->prob_G[i] = rd->quality[i];
 	    break;
 	case 'T':
 	case 't':
-	    r->prob_T[i] = scores[i];
+	    r->prob_T[i] = rd->quality[i];
 	    break;
 	}
 
-	r->basePos[i] = flowIndexes[i];
+	bpos += rd->flow_index[i];
+	r->basePos[i] = bpos;
     }
 
-    free(flowSignals);
-    free(flowgram);
-    free(flowIndexes);
-    free(bases);
-    free(scores);
+    r->leftCutoff = MAX(rh->clip_qual_left, rh->clip_adapter_left);
+    r->rightCutoff = MIN(rh->clip_qual_right
+			 ? rh->clip_qual_right
+			 : r->NBases+1,
+			 rh->clip_adapter_right
+			 ? rh->clip_adapter_right
+			 : r->NBases+1);
+
+    free_sff_common_header(ch);
+    free_sff_read_header(rh);
+    free_sff_read_data(rd);
 
     return r;
-}
-
-Read *mfread_sff(mFILE *mf) {
-    return sff2read((unsigned char *)mf->data, mf->size);
 }
