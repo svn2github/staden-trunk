@@ -20,15 +20,19 @@
  *     be_write_int_1()
  *     be_write_int_2()
  *     be_write_int_4()
+ *     be_write_int_8()
  *     be_read_int_1()
  *     be_read_int_2()
  *     be_read_int_4()
+ *     be_read_int_8()
  *     le_write_int_1()
  *     le_write_int_2()
  *     le_write_int_4()
+ *     le_write_int_8()
  *     le_read_int_1()
  *     le_read_int_2()
  *     le_read_int_4()
+ *     le_read_int_8()
  *
  * All routine return:
  *    0 - an error has occurred during io operation
@@ -47,55 +51,67 @@
 /**********************************************************************/
 
 /*
- * Write a big-endian int_1
+ * Write a big-endian int1
  */
-int be_write_int_1(FILE *fp, uint_1 *i1)
+int be_write_int_1(FILE *fp, uint1 *i1)
 {
-    if (fwrite(i1, sizeof(uint_1), 1, fp) != 1) return (0);
+    if (fwrite(i1, sizeof(uint1), 1, fp) != 1) return (0);
     return (1);
 }
 
 
 /*
-* Write a big-endian int_2
+* Write a big-endian int2
 */
-int be_write_int_2(FILE *fp, uint_2 *i2)
+int be_write_int_2(FILE *fp, uint2 *i2)
 {
-    uint_2 i = be_int2(*i2);
+    uint2 i = be_int2(*i2);
     
     if (fwrite(&i, 2, 1, fp) != 1) return (0);
     return (1);
 }
 
 /*
- * Write a big-endian int_4
+ * Write a big-endian int4
  */
-int be_write_int_4(FILE *fp, uint_4 *i4)
+int be_write_int_4(FILE *fp, uint4 *i4)
 {
-    uint_4 i = be_int4(*i4);
+    uint4 i = be_int4(*i4);
     
     if (fwrite(&i, 4, 1, fp) != 1) return (0);
 
     return (1);
 }
 
-
 /*
- * Read a big-endian int_1
+ * Write a big-endian int8
  */
-int be_read_int_1(FILE *fp, uint_1 *i1)
+int be_write_int_8(FILE *fp, uint8 *i8)
 {
-    if (fread(i1, sizeof(uint_1), 1, fp) != 1) return (0);
+    uint8 i = be_int8(*i8);
+    
+    if (fwrite(&i, 8, 1, fp) != 1) return (0);
+
     return (1);
 }
 
 
 /*
- * Read a big-endian int_2
+ * Read a big-endian int1
  */
-int be_read_int_2(FILE *fp, uint_2 *i2)
+int be_read_int_1(FILE *fp, uint1 *i1)
 {
-    uint_2 i;
+    if (fread(i1, sizeof(uint1), 1, fp) != 1) return (0);
+    return (1);
+}
+
+
+/*
+ * Read a big-endian int2
+ */
+int be_read_int_2(FILE *fp, uint2 *i2)
+{
+    uint2 i;
     
     if (fread(&i, 2, 1, fp) != 1) return (0);
     *i2 = be_int2(i);
@@ -105,14 +121,28 @@ int be_read_int_2(FILE *fp, uint_2 *i2)
 
 
 /*
- * Read a big-endian int_4
+ * Read a big-endian int4
  */
-int be_read_int_4(FILE *fp, uint_4 *i4)
+int be_read_int_4(FILE *fp, uint4 *i4)
 {
-    uint_4 i;
+    uint4 i;
     
     if (fread(&i, 4, 1, fp) != 1) return (0);
     *i4 = be_int4(i);
+
+    return (1);
+}
+
+
+/*
+ * Read a big-endian int8
+ */
+int be_read_int_8(FILE *fp, uint8 *i8)
+{
+    uint8 i;
+    
+    if (fread(&i, 8, 1, fp) != 1) return (0);
+    *i8 = be_int8(i);
 
     return (1);
 }
@@ -126,21 +156,21 @@ int be_read_int_4(FILE *fp, uint_4 *i4)
 /**********************************************************************/
 
 /*
- * Write a little-endian int_1
+ * Write a little-endian int1
  */
-int le_write_int_1(FILE *fp, uint_1 *i1)
+int le_write_int_1(FILE *fp, uint1 *i1)
 {
-    if (fwrite(i1, sizeof(uint_1), 1, fp) != 1) return (0);
+    if (fwrite(i1, sizeof(uint1), 1, fp) != 1) return (0);
     return (1);
 }
 
 
 /*
- * Write a little-endian int_2
+ * Write a little-endian int2
  */
-int le_write_int_2(FILE *fp, uint_2 *i2)
+int le_write_int_2(FILE *fp, uint2 *i2)
 {
-    uint_2 i = le_int2(*i2);
+    uint2 i = le_int2(*i2);
     
     if (fwrite(&i, 2, 1, fp) != 1) return (0);
 
@@ -149,11 +179,11 @@ int le_write_int_2(FILE *fp, uint_2 *i2)
 
 
 /*
- * Write a little-endian int_4
+ * Write a little-endian int4
  */
-int le_write_int_4(FILE *fp, uint_4 *i4)
+int le_write_int_4(FILE *fp, uint4 *i4)
 {
-    uint_4 i = le_int4(*i4);
+    uint4 i = le_int4(*i4);
     
     if (fwrite(&i, 4, 1, fp) != 1) return (0);
 
@@ -162,21 +192,34 @@ int le_write_int_4(FILE *fp, uint_4 *i4)
 
 
 /*
- * Read a little-endian int_1
+ * Write a little-endian int8
  */
-int le_read_int_1(FILE *fp, uint_1 *i1)
+int le_write_int_8(FILE *fp, uint8 *i8)
 {
-    if (fread(i1, sizeof(uint_1), 1, fp) != 1) return (0);
+    uint8 i = le_int8(*i8);
+    
+    if (fwrite(&i, 8, 1, fp) != 1) return (0);
+
     return (1);
 }
 
 
 /*
- * Read a little-endian int_2
+ * Read a little-endian int1
  */
-int le_read_int_2(FILE *fp, uint_2 *i2)
+int le_read_int_1(FILE *fp, uint1 *i1)
 {
-    uint_2 i;
+    if (fread(i1, sizeof(uint1), 1, fp) != 1) return (0);
+    return (1);
+}
+
+
+/*
+ * Read a little-endian int2
+ */
+int le_read_int_2(FILE *fp, uint2 *i2)
+{
+    uint2 i;
     
     if (fread(&i, 2, 1, fp) != 1) return (0);
     *i2 = le_int2(i);
@@ -185,14 +228,28 @@ int le_read_int_2(FILE *fp, uint_2 *i2)
 }
 
 /*
- * Read a little-endian int_4
+ * Read a little-endian int4
  */
-int le_read_int_4(FILE *fp, uint_4 *i4)
+int le_read_int_4(FILE *fp, uint4 *i4)
 {
-    uint_4 i;
+    uint4 i;
     
     if (fread(&i, 4, 1, fp) != 1) return (0);
     *i4 = le_int4(i);
+
+    return (1);
+}
+
+
+/*
+ * Read a little-endian int8
+ */
+int le_read_int_8(FILE *fp, uint8 *i8)
+{
+    uint8 i;
+    
+    if (fread(&i, 8, 1, fp) != 1) return (0);
+    *i8 = le_int8(i);
 
     return (1);
 }

@@ -46,68 +46,87 @@
 /**********************************************************************/
 
 /*
- * Write a big-endian int_1
+ * Write a big-endian int1
  */
-extern int be_write_int_1(mFILE *fp, uint_1 *i1);
+extern int be_write_int_1(mFILE *fp, uint1 *i1);
 
 /*
- * Write a big-endian int_2
+ * Write a big-endian int2
  */
-extern int be_write_int_2(mFILE *fp, uint_2 *i2);
+extern int be_write_int_2(mFILE *fp, uint2 *i2);
 
 /*
- * Write a big-endian int_4
+ * Write a big-endian int4
  */
-extern int be_write_int_4(mFILE *fp, uint_4 *i4);
+extern int be_write_int_4(mFILE *fp, uint4 *i4);
 
 /*
- * Read a big-endian int_1
+ * Write a big-endian int8
  */
-extern int be_read_int_1(mFILE *fp, uint_1 *i1);
+extern int be_write_int_8(mFILE *fp, uint8 *i8);
 
 /*
- * Read a big-endian int_2
+ * Read a big-endian int1
  */
-extern int be_read_int_2(mFILE *fp, uint_2 *i2);
+extern int be_read_int_1(mFILE *fp, uint1 *i1);
 
 /*
- * Read a big-endian int_4
+ * Read a big-endian int2
  */
-extern int be_read_int_4(mFILE *fp, uint_4 *i4);
+extern int be_read_int_2(mFILE *fp, uint2 *i2);
+
+/*
+ * Read a big-endian int4
+ */
+extern int be_read_int_4(mFILE *fp, uint4 *i4);
+
+/*
+ * Read a big-endian int8
+ */
+extern int be_read_int_8(mFILE *fp, uint8 *i8);
 
 /**********************************************************************/
 /* IO for little-endian files                                         */
 /**********************************************************************/
 
 /*
- * Write a little-endian int_1
+ * Write a little-endian int1
  */
-extern int le_write_int_1(mFILE *fp, uint_1 *i1);
+extern int le_write_int_1(mFILE *fp, uint1 *i1);
 
 /*
- * Write a little-endian int_2
+ * Write a little-endian int2
  */
-extern int le_write_int_2(mFILE *fp, uint_2 *i2);
+extern int le_write_int_2(mFILE *fp, uint2 *i2);
 
 /*
- * Write a little-endian int_4
+ * Write a little-endian int4
  */
-extern int le_write_int_4(mFILE *fp, uint_4 *i4);
+extern int le_write_int_4(mFILE *fp, uint4 *i4);
 
 /*
- * Read a little-endian int_1
+ * Write a little-endian int8
  */
-extern int le_read_int_1(mFILE *fp, uint_1 *i1);
+extern int le_write_int_8(mFILE *fp, uint8 *i8);
 
 /*
- * Read a little-endian int_2
+ * Read a little-endian int1
  */
-extern int le_read_int_2(mFILE *fp, uint_2 *i2);
+extern int le_read_int_1(mFILE *fp, uint1 *i1);
 
 /*
- * Read a little-endian int_4
+ * Read a little-endian int2
  */
-extern int le_read_int_4(mFILE *fp, uint_4 *i4);
+extern int le_read_int_2(mFILE *fp, uint2 *i2);
 
+/*
+ * Read a little-endian int4
+ */
+extern int le_read_int_4(mFILE *fp, uint4 *i4);
+
+/*
+ * Read a little-endian int8
+ */
+extern int le_read_int_8(mFILE *fp, uint8 *i8);
 
 #endif /* _mach_io_h */
