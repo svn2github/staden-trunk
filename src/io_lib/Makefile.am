@@ -34,6 +34,7 @@ pkginclude_HEADERS = \
 	exp_file/expFileIO.h \
 	plain/plain.h \
 	scf/scf.h \
+	sff/sff.h \
 	utils/array.h \
 	utils/compress.h \
 	utils/error.h \

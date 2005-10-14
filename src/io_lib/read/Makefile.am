@@ -30,6 +30,8 @@ libread_a_SOURCES = \
 	../scf/read_scf.c \
 	../scf/scf.h \
 	../scf/write_scf.c \
+	../sff/sff.c \
+	../sff/sff.h \
 	../utils/array.c \
 	../utils/array.h \
 	../utils/compress.c \
@@ -72,6 +74,7 @@ INCLUDES = \
 	-I${top_srcdir}/ztr \
 	-I${top_srcdir}/plain \
 	-I${top_srcdir}/scf \
+	-I${top_srcdir}/sff \
 	-I${top_srcdir}/exp_file \
 	-I${top_srcdir}/utils
 
