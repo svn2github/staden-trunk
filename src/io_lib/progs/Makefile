@@ -5,7 +5,7 @@
 include ../options.mk
 
 PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump \
-	$(O)/hash_tar $(O)/hash_extract $(O)/hash_list
+	$(O)/hash_tar $(O)/hash_extract $(O)/hash_list $(O)/hash_sff
 
 ifdef IOLIB_PLN
 PROGS += $(O)/extract_seq
@@ -38,6 +38,7 @@ MSOBJS=$(O)/makeSCF.o
 CTOBJS=$(O)/convert_trace.o
 ITOBJS=$(O)/index_tar.o
 HTOBJS=$(O)/hash_tar.o
+HSOBJS=$(O)/hash_sff.o
 HEOBJS=$(O)/hash_extract.o
 HLOBJS=$(O)/hash_list.o
 GCOBJS=$(O)/get_comment.o
@@ -76,6 +77,9 @@ $(O)/index_tar:		$(ITOBJS)
 
 $(O)/hash_tar:		$(HTOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HTOBJS) $(PLIBS)
+
+$(O)/hash_sff:		$(HSOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HSOBJS) $(PLIBS)
 
 $(O)/hash_extract:	$(HEOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HEOBJS) $(PLIBS)
