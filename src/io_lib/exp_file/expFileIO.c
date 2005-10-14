@@ -602,9 +602,10 @@ Exp_info *exp_fread_info(FILE *fp)
      * No longer has an effect due to mFILE already being loaded. Ifdef not
      * triggered under mingw anyway.
      */
-#ifdef _MSC_VER
+#ifdef _WIN32
     /* 6/1/99 johnt - need to ensure text mode to translate \r\n to \n */
-    _setmode(fileno(fp),_O_TEXT);
+    /* _setmode(fileno(fp),_O_TEXT); */
+    mfascii(fp);
 #endif
     
     /*
