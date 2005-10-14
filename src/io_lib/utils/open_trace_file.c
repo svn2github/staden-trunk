@@ -29,6 +29,7 @@
 #include "tar_format.h"
 #include "compress.h"
 #include "hash_table.h"
+#include "sff.h"
 
 /*
  * Supported compression extensions. See the magics array in compress.c for
@@ -366,6 +367,156 @@ static mFILE *find_file_url(char *file, char *url) {
 #endif
 
 /*
+ * Takes an SFF file in 'data' and edits the header to ensure
+ * that it has no index listed and only claims to contain a single entry.
+ * This isn't strictly necessary for the sff/sff.c reading code, but it is
+ * the 'Right Thing' to do.
+ *
+ * Returns an mFILE on success or NULL on failure.
+ */
+static mFILE *sff_single(char *data, size_t size) {
+    *(uint64_t *)(data+8)  = be_int8(0); /* index offset */
+    *(uint32_t *)(data+16) = be_int4(0); /* index size */
+    *(uint32_t *)(data+20) = be_int4(1); /* number of reads */
+
+    return mfcreate(data, size);
+}
+
+/*
+ * This returns an mFILE containing an SFF entry.
+ *
+ * This does the minimal decoding necessary to skip through the SFF
+ * container to find an entry. In this respect it is a semi-duplication
+ * of sff/sff.[ch], but implemented for efficiency.
+ *
+ * Having found an entry it packs the common header, the read specific
+ * header and the read data into a single block of memory and returns this
+ * as an mFILE. In essence it produces a single-read SFF archive. This
+ * is then decoded by the normal sff parsing code representing a small
+ * amount of redundancy, but one which is swamped by the I/O time.
+ */
+static mFILE *find_file_sff(char *entry, char *sff) {
+    FILE *fp;
+    char chdr[65536], rhdr[65536]; /* generous, but worst case */
+    uint32_t nkey, nflows, chdrlen, rhdrlen, dlen, index_length, magic;
+    uint64_t index_offset, file_pos;
+    uint32_t nreads, i;
+    size_t entry_len = strlen(entry);
+    int bytes_per_flow = 2;
+    char *fake_file;
+
+    /* Read the common header */
+    if (NULL == (fp = fopen(sff, "rb")))
+	return NULL;
+    if (31 != fread(chdr, 1, 31, fp))
+	return NULL;
+
+    /* Check magic & vers: TODO */
+    magic = be_int4(*(uint32_t *)chdr);
+    if (magic != SFF_MAGIC)
+	return NULL;
+    if (memcmp(chdr+4, SFF_VERSION, 4) != 0)
+	return NULL;
+
+    /* If we have an index, use it, otherwise search linearly */
+    index_offset = be_int8(*(uint64_t *)(chdr+8));
+    index_length = be_int4(*(uint32_t *)(chdr+16));
+    if (index_length != 0) {
+	char index_format[4];
+	long orig_pos = ftell(fp);
+	fseek(fp, index_offset, SEEK_SET);
+	fread(index_format, 1, 4, fp);
+
+	if (memcmp(index_format, ".hsh", 4) == 0) {
+	    /* HASH index */
+	    HashFile *hf;
+	    char *data;
+	    size_t size;
+
+	    fseek(fp, -4, SEEK_CUR);
+	    hf = HashFileFopen(fp);
+	    data = HashFileExtract(hf, entry, &size);
+	    HashFileDestroy(hf); /* closes fp */
+
+	    return data ? sff_single(data, size) : NULL;
+
+	} else {
+	    /* Unknown index: revert back to a slow linear scan */
+	    fseek(fp, orig_pos, SEEK_SET);
+	}
+    }
+
+    nreads  = be_int4(*(uint32_t *)(chdr+20));
+    chdrlen = be_int2(*(uint16_t *)(chdr+24));
+    nkey    = be_int2(*(uint16_t *)(chdr+26));
+    nflows  = be_int2(*(uint16_t *)(chdr+28));
+
+    /* Read the remainder of the header */
+    if (chdrlen-31 != fread(chdr+31, 1, chdrlen-31, fp))
+	return NULL;
+
+    file_pos = chdrlen;
+
+    /* Loop until we find the correct entry */
+    for (i = 0; i < nreads; i++) {
+	uint16_t name_len;
+	uint32_t nbases;
+
+	/* Index could be between common header and first read - skip */
+	if (file_pos == index_offset) {
+	    fseek(fp, index_length, SEEK_CUR);
+	    file_pos += index_length;
+	}
+
+	/* Read 16 bytes to get name length */
+	if (16 != fread(rhdr, 1, 16, fp))
+	    return NULL;
+	rhdrlen   = be_int2(*(uint16_t *)rhdr);
+	name_len = be_int2(*(uint16_t *)(rhdr+2));
+	nbases   = be_int4(*(uint32_t *)(rhdr+4));
+
+	/* Read the rest of the header */
+	if (rhdrlen-16 != fread(rhdr+16, 1, rhdrlen-16, fp))
+	    return NULL;
+
+	file_pos += rhdrlen;
+
+	dlen = (nflows * bytes_per_flow + nbases * 3 + 7) & ~7;
+
+	if (name_len == entry_len  && 0 == memcmp(rhdr+16, entry, entry_len))
+	    break;
+
+	/* This is not the read you are looking for... */
+	fseek(fp, dlen, SEEK_CUR);
+    }
+
+    if (i == nreads) {
+	/* Not found */
+	return NULL;
+    }
+
+    /*
+     * Although we've decoded some bits already, we take the more modular
+     * approach of packing the sections together and passing the entire
+     * data structure off as a single-read SFF file to be decoded fully
+     * by the sff reading code.
+     */
+    if (NULL == (fake_file = (char *)xmalloc(chdrlen + rhdrlen + dlen)))
+	return NULL;
+
+    memcpy(fake_file, chdr, chdrlen);
+    memcpy(fake_file+chdrlen, rhdr, rhdrlen);
+    if (dlen != fread(fake_file+chdrlen+rhdrlen, 1, dlen, fp)) {
+	xfree(fake_file);
+	return NULL;
+    }
+
+    /* Convert to an mFILE and return */
+    fclose(fp);
+    return sff_single(fake_file, chdrlen+rhdrlen+dlen);
+}
+
+/*
  * Searches for file in the directory 'dirname'. If it finds it, it opens
  * it. This also searches for compressed versions of the file in dirname
  * too.
@@ -378,6 +529,7 @@ static mFILE *find_file_dir(char *file, char *dirname) {
     size_t len = strlen(dirname);
     int num_magics = sizeof(magics) / sizeof(*magics);
     int i;
+    char *cp;
 
     if (dirname[len-1] == '/')
 	len--;
@@ -387,6 +539,67 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	sprintf(path, "%s", file);
     else 
 	sprintf(path, "%.*s/%s", (int)len, dirname, file);
+
+    /*
+     * Given a pathname /a/b/c if a/b is a file and not a directory then
+     * we'd get an ENOTDIR error. Instead we assume that a/b is an archive
+     * and we attempt to work out what type by reading the first and last
+     * bits of the file.
+     */
+    if (cp = strrchr(file, '/')) {
+	strcpy(path2, path); /* path contains / too as it's from file */
+	*strrchr(path2, '/') = 0;
+
+	if (is_file(path2)) {
+	    /* Open the archive to test for magic numbers */
+	    char magic[6];
+	    FILE *fp;
+	    enum archive_type_t {
+		NONE, HASH, TAR, SFF
+	    } type = NONE;
+
+	    if (NULL == (fp = fopen(path2, "rb")))
+		return NULL;
+	    memcpy(magic, "\0\0\0\0\0\0", 4);
+	    fread(magic, 1, 4, fp);
+
+	    /* .hsh or .sff at start */
+	    if (memcmp(magic, ".hsh", 4) == 0)
+		type = HASH;
+	    else if (memcmp(magic, ".sff", 4) == 0)
+		type = SFF;
+
+	    /* Or .hsh at the end */
+	    if (NONE == type) {
+		fseek(fp, -12, SEEK_END);
+		fread(magic, 1, 4, fp);
+		if (memcmp(magic, ".hsh", 4) == 0)
+		    type = HASH;
+	    }
+
+	    /* or ustar 257 bytes in to indicate un-hashed tar */
+	    if (NONE == type) {
+		fseek(fp, 257, SEEK_SET);
+		fread(magic, 1, 6, fp);
+		if (memcmp(magic, "ustar\0", 6) == 0)
+		    type = TAR;
+	    }
+	    fclose(fp);
+
+	    switch (type) {
+	    case HASH:
+		return find_file_hash(cp+1, path2);
+	    case TAR:
+		return find_file_tar(cp+1, path2, 0);
+	    case SFF:
+		return find_file_sff(cp+1, path2);
+	    case NONE:
+		break;
+	    }
+
+	    return NULL;
+	}
+    }
 
     /* Is it lurking under another, compressed, name? */
     for (i = 0; i < num_magics; i++) {
@@ -465,6 +678,11 @@ mFILE *open_trace_mfile(char *file, char *relative_to) {
 		    return fp;
 		}
 #endif
+	    } else if (0 == strncmp(ele, "SFF=", 4)) {
+		if (fp = find_file_sff(file2, ele+4)) {
+		    free(newsearch);
+		    return fp;
+		}
 	    } else {
 		if (fp = find_file_dir(file2, ele)) {
 		    free(newsearch);
