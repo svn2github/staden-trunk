@@ -180,11 +180,8 @@ typedef int mode_t;
 /*
  * One byte integers
  */ 
-/*
-typedef unsigned char	uint1;
-typedef signed char	uint1;
-*/
 typedef unsigned char	int1;
+typedef unsigned char	uint1;
 
 /*
  * Two byte integers
