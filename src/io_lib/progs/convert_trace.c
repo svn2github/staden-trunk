@@ -5,6 +5,7 @@
 #include "Read.h"
 #include "traceType.h"
 #include "seqIOABI.h"
+#include "open_trace_file.h"
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -530,7 +531,7 @@ int main(int argc, char **argv) {
 	    infname = line2;
 
 	    /* Open input and output files */
-	    if (NULL == (fpin = mfopen(infname, "rb"))) {
+	    if (NULL == (fpin = open_trace_mfile(infname, NULL))) {
 		char buf[2048];
 		sprintf(buf, "ERROR %s", infname);
 		perror(buf);
