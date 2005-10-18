@@ -61,8 +61,10 @@ typedef struct {
 /*
  * Low level functions to decode SFF internals
  */
+sff_common_header *decode_sff_common_header(unsigned char *buf);
 sff_common_header *read_sff_common_header(mFILE *mf);
 void free_sff_common_header(sff_common_header *h);
+sff_read_header *decode_sff_read_header(unsigned char *buf);
 void free_sff_read_header(sff_read_header *h);
 sff_read_header *read_sff_read_header(mFILE *mf);
 void free_sff_read_data(sff_read_data *d);

@@ -26,53 +26,63 @@
 #include "Read.h"
 #include "xalloc.h"
 #include "sff.h"
-#include "mach-io.h"
 #include "misc.h"
 
-void free_sff_common_header(sff_common_header *h) {
-    if (!h)
-	return;
-    if (h->flow)
-	xfree(h->flow);
-    if (h->key)
-	xfree(h->key);
-    xfree(h);
-}
+/* -------------------------------------------------------------------------*/
+/* General purpose decoding and mFILE reading functions */
 
-sff_common_header *read_sff_common_header(mFILE *mf) {
+/*
+ * Unpacks the 31-byte fixed size part of the SFF common header.
+ * It allocates memory for this and for the flow order and key, but does
+ * not read the flow & key information (as this may not be in buf).
+ * It also checks that the MAGIC and VERSION match as expected.
+ *
+ * Returns sff_common_header* on success
+ *         NULL on failure
+ */
+sff_common_header *decode_sff_common_header(unsigned char *buf) {
     sff_common_header *h;
 
     if (NULL == (h = (sff_common_header *)xcalloc(1, sizeof(*h))))
 	return NULL;
 
-    if (!be_read_int_4(mf, &h->magic))
-	return free_sff_common_header(h), NULL;
-    if (4 != mfread(h->version, 1, 4, mf))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_8(mf, &h->index_offset))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_4(mf, &h->index_len))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_4(mf, &h->nreads))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_2(mf, &h->header_len))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_2(mf, &h->key_len))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_2(mf, &h->flow_len))
-	return free_sff_common_header(h), NULL;
-    if (!be_read_int_1(mf, &h->flowgram_format))
-	return free_sff_common_header(h), NULL;
+    h->magic           = be_int4(*(uint32_t *)(buf+0));
+    memcpy(h->version, buf+4, 4);
+    h->index_offset    = be_int8(*(uint64_t *)(buf+8));
+    h->index_len       = be_int4(*(uint32_t *)(buf+16));
+    h->nreads          = be_int4(*(uint32_t *)(buf+20));
+    h->header_len      = be_int2(*(uint16_t *)(buf+24));
+    h->key_len         = be_int2(*(uint16_t *)(buf+26));
+    h->flow_len        = be_int2(*(uint16_t *)(buf+28));
+    h->flowgram_format = be_int1(*(uint8_t  *)(buf+30));
 
-    if (h->magic != SFF_MAGIC) {
+    if (h->magic != SFF_MAGIC || memcmp(h->version, SFF_VERSION, 4)) {
 	xfree(h);
 	return NULL;
     }
-    
+
     if (NULL == (h->flow = (char *)xmalloc(h->flow_len)))
 	return free_sff_common_header(h), NULL;
     if (NULL == (h->key  = (char *)xmalloc(h->key_len)))
 	return free_sff_common_header(h), NULL;
+
+    return h;
+}
+
+/*
+ * Reads a common header (including variable length components) from an mFILE.
+ *
+ * Returns the a pointer to the header on success
+ *         NULL on failure
+ */
+sff_common_header *read_sff_common_header(mFILE *mf) {
+    sff_common_header *h;
+    unsigned char chdr[31];
+
+    if (31 != mfread(chdr, 1, 31, mf))
+	return NULL;
+    h = decode_sff_common_header(chdr);
+
     if (h->flow_len != mfread(h->flow, 1, h->flow_len, mf))
 	return free_sff_common_header(h), NULL;
     if (h->key_len != mfread(h->key , 1, h->key_len,  mf))
@@ -84,36 +94,61 @@ sff_common_header *read_sff_common_header(mFILE *mf) {
     return h;
 }
 
-void free_sff_read_header(sff_read_header *h) {
+/*
+ * Deallocates memory used by an SFF common header.
+ */
+void free_sff_common_header(sff_common_header *h) {
     if (!h)
 	return;
-    if (h->name)
-	xfree(h->name);
-    free(h);
+    if (h->flow)
+	xfree(h->flow);
+    if (h->key)
+	xfree(h->key);
+    xfree(h);
 }
 
-sff_read_header *read_sff_read_header(mFILE *mf) {
+/*
+ * Unpacks the 16-byte fixed size part of the SFF read header.
+ * It allocates memory for this and for the base calls, but does not
+ * unpack these.
+ *
+ * Returns sff_read_header* on success
+ *         NULL on failure
+ */
+sff_read_header *decode_sff_read_header(unsigned char *buf) {
     sff_read_header *h;
 
     if (NULL == (h = (sff_read_header *)xcalloc(1, sizeof(*h))))
 	return NULL;
 
-    if (!be_read_int_2(mf, &h->header_len))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_2(mf, &h->name_len))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_4(mf, &h->nbases))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_2(mf, &h->clip_qual_left))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_2(mf, &h->clip_qual_right))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_2(mf, &h->clip_adapter_left))
-	return free_sff_read_header(h), NULL;
-    if (!be_read_int_2(mf, &h->clip_adapter_right))
-	return free_sff_read_header(h), NULL;
+    h->header_len         = be_int2(*(uint16_t *)(buf+0));
+    h->name_len           = be_int2(*(uint16_t *)(buf+2));
+    h->nbases             = be_int4(*(uint32_t *)(buf+4));
+    h->clip_qual_left     = be_int2(*(uint16_t *)(buf+8));
+    h->clip_qual_right    = be_int2(*(uint16_t *)(buf+10));
+    h->clip_adapter_left  = be_int2(*(uint16_t *)(buf+12));
+    h->clip_adapter_right = be_int2(*(uint16_t *)(buf+14));
+
     if (NULL == (h->name  = (char *)xmalloc(h->name_len)))
 	return free_sff_read_header(h), NULL;
+
+    return h;
+}
+
+/*
+ * Reads a read header (including variable length components) from an mFILE.
+ *
+ * Returns the a pointer to the header on success
+ *         NULL on failure
+ */
+sff_read_header *read_sff_read_header(mFILE *mf) {
+    sff_read_header *h;
+    unsigned char rhdr[16];
+
+    if (16 != mfread(rhdr, 1, 16, mf))
+	return NULL;
+    h = decode_sff_read_header(rhdr);
+
     if (h->name_len != mfread(h->name, 1, h->name_len, mf))
 	return free_sff_read_header(h), NULL;
     
@@ -123,20 +158,24 @@ sff_read_header *read_sff_read_header(mFILE *mf) {
     return h;
 }
 
-void free_sff_read_data(sff_read_data *d) {
-    if (!d)
+/*
+ * Deallocates memory used by an SFF read header
+ */
+void free_sff_read_header(sff_read_header *h) {
+    if (!h)
 	return;
-    if (d->flowgram)
-	xfree(d->flowgram);
-    if (d->flow_index)
-	xfree(d->flow_index);
-    if (d->bases)
-	xfree(d->bases);
-    if (d->quality)
-	xfree(d->quality);
-    xfree(d);
+    if (h->name)
+	xfree(h->name);
+    free(h);
 }
 
+/*
+ * Reads a read data block from an mFILE given a count of the number of
+ * flows and basecalls (from the common header and read headers).
+ *
+ * Returns the a pointer to sff_read_data on success
+ *         NULL on failure
+ */
 sff_read_data *read_sff_read_data(mFILE *mf, int nflows, int nbases) {
     sff_read_data *d;
     int i;
@@ -151,17 +190,17 @@ sff_read_data *read_sff_read_data(mFILE *mf, int nflows, int nbases) {
     for (i = 0; i < nflows; i++)
 	d->flowgram[i] = be_int2(d->flowgram[i]);
 
-    if (NULL == (d->flow_index = (uint8_t*)xmalloc(nbases)))
+    if (NULL == (d->flow_index = (uint8_t *)xmalloc(nbases)))
 	return free_sff_read_data(d), NULL;
     if (nbases != mfread(d->flow_index, 1, nbases, mf))
 	return free_sff_read_data(d), NULL;
 
-    if (NULL == (d->bases = (uint8_t*)xmalloc(nbases)))
+    if (NULL == (d->bases = (char *)xmalloc(nbases)))
 	return free_sff_read_data(d), NULL;
     if (nbases != mfread(d->bases, 1, nbases, mf))
 	return free_sff_read_data(d), NULL;
 
-    if (NULL == (d->quality = (uint8_t*)xmalloc(nbases)))
+    if (NULL == (d->quality = (uint8_t *)xmalloc(nbases)))
 	return free_sff_read_data(d), NULL;
     if (nbases != mfread(d->quality, 1, nbases, mf))
 	return free_sff_read_data(d), NULL;
@@ -169,7 +208,32 @@ sff_read_data *read_sff_read_data(mFILE *mf, int nflows, int nbases) {
     return d;
 }
 
+/*
+ * Deallocates memory used by an SFF read data block
+ */
+void free_sff_read_data(sff_read_data *d) {
+    if (!d)
+	return;
+    if (d->flowgram)
+	xfree(d->flowgram);
+    if (d->flow_index)
+	xfree(d->flow_index);
+    if (d->bases)
+	xfree(d->bases);
+    if (d->quality)
+	xfree(d->quality);
+    xfree(d);
+}
 
+
+/* -------------------------------------------------------------------------*/
+
+/*
+ * Reads an SFF file from an mFILE and decodes it to a Read struct.
+ *
+ * Returns Read* on success
+ *         NULL on failure
+ */
 Read *mfread_sff(mFILE *mf) {
     int i, bpos;
     Read *r;
