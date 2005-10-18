@@ -382,6 +382,207 @@ static mFILE *sff_single(char *data, size_t size) {
     return mfcreate(data, size);
 }
 
+/* Hash (.hsh) format index searching for SFF files */
+static mFILE *sff_hash_query(char *sff, char *entry, FILE *fp) {
+    static HashFile *hf = NULL;
+    static char sff_copy[1024];
+    static FILE *fp_copy = NULL;
+    char *data;
+    size_t size;
+
+    /* Cache an open HashFile for fast accessing */
+    if (strcmp(sff, sff_copy) != 0) {
+	if (hf) {
+	    hf->afp = hf->hfp = NULL; /* will be closed by our parent */
+	    HashFileDestroy(hf);
+	}
+	fseek(fp, -4, SEEK_CUR);
+	if (NULL == (hf = HashFileFopen(fp)))
+	    return NULL;
+
+	strcpy(sff_copy, sff);
+	fp_copy = fp;
+    }
+
+    data = HashFileExtract(hf, entry, &size);
+    
+    return data ? sff_single(data, size) : NULL;
+}
+
+
+/*
+ * getuint4_255
+ *
+ * A function to convert a 4-byte TVF/SFF value into an integer, where
+ * the bytes are base 255 numbers.  This is used to store the index offsets.
+ */
+static unsigned int getuint4_255(unsigned char *b)
+{
+    return
+        ((unsigned int) b[0]) * 255 * 255 * 255 +
+        ((unsigned int) b[1]) * 255 * 255 +
+        ((unsigned int) b[2]) * 255 +
+        ((unsigned int) b[3]);
+}
+
+/*
+ * 454 sorted format (.srt) index searching for SFF files.
+ * Uses a binary search.
+ * This function and getuint4_255 above are taken with permission
+ * from 454's getsff.c with the following licence:
+ *
+ * Copyright (c)[2001-2005] 454 Life Sciences Corporation. All Rights Reserved.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. 
+ *
+ * IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE.
+ */
+static mFILE *sff_sorted_query(char *sff, char *accno, FILE *fp,
+			       uint32_t index_length) {
+    static unsigned char *index;
+    static char sff_copy[1024];
+    unsigned char *us;
+    uint32_t start, end;
+    uint32_t offset;
+    char *data = NULL;
+    static char chdr[1024];
+    static int chdrlen = 0, nflows = 0;
+    char rhdr[1024];
+    int rhdrlen;
+    int nbases, dlen;
+    int bytes_per_flow = 2;
+
+    /* Cache index if we're querying the same SFF file */
+    if (strcmp(sff_copy, sff) != 0) {
+	if (index)
+	    xfree(index);
+	if (NULL == (index = (unsigned char *)xmalloc(index_length)))
+	    return NULL;
+
+	if (index_length != fread(index, 1, index_length, fp)) {
+	    xfree(index);
+	    return NULL;
+	}
+	strcpy(sff_copy, sff);
+
+	/* Read the common header too - minimal decoding necessary */
+	fseek(fp, 0, SEEK_SET);
+	if (31 != fread(chdr, 1, 31, fp))
+	    return NULL;
+	chdrlen = be_int2(*(uint16_t *)(chdr+24));
+	nflows  = be_int2(*(uint16_t *)(chdr+28));
+	if (chdrlen-31 != fread(chdr+31, 1, chdrlen-31, fp))
+	    return NULL;
+    }
+
+    /*
+     * Perform a binary search of the index, stopping when the search
+     * region becomes relatively small.  This assumes that no accession
+     * number is near 200 characters.
+     */
+    start = 0;
+    end = index_length;
+    while (end - start > 200) {
+	uint32_t mid;
+	int val;
+        mid = (start + end) / 2;
+
+        /*
+         * From the byte midpoint, scan backwards to the beginning of the
+         * index record that covers that byte midpoint.
+         */
+        while (mid > start && index[mid-1] != 255) {
+            mid--;
+        }
+        val = strcmp(accno, (char *)(index+mid));
+
+        if (val == 0) {
+            break;
+        } else if (val < 0) {
+            end = mid;
+        } else {
+            start = mid;
+        }
+    }
+
+    /*
+     * Scan through the small search region, looking for the accno.
+     */
+    while (start < end) {
+        if (strcmp(accno, (char *)(index+start)) == 0) {
+            /*
+             * If the accno is found, skip the accno characters,
+             * then get the record offset.
+             */
+            for (us=index+start; *us; us++,start++) ;
+            us++;
+            start++;
+
+            offset = getuint4_255(us);
+            if (us[4] != 255) {
+		return NULL;
+            }
+
+	    /*
+	     * The original getsff.c here computed the record size by
+	     * looking at the next index item and comparing it's offset to
+	     * this one, or the end of file position if this is the last
+	     * item. This has two problems:
+	     * 1: It means the index itself cannot be added to the end of
+	     *    the file.
+	     * 2: It means that we cannot simply add an index to a SFF
+	     *    file without also reordering all of the items within it.
+	     *
+	     * We solve this by reading the read header to work out the
+	     * object size instead.
+	     */
+	    break;
+        }
+
+        /*
+         * Skip to the beginning of the next index element.
+         */
+        while (start < end && index[start] != 255) {
+            start++;
+        }
+        start++;
+    }
+
+    /*
+     * Now offset indicates the position of the SFF entry. Read and decode
+     * header to get data length. Then read this too.
+     */
+    fseek(fp, offset, SEEK_SET);
+    if (16 != fread(rhdr, 1, 16, fp))
+	return NULL;
+
+    rhdrlen   = be_int2(*(uint16_t *)rhdr);
+    nbases   = be_int4(*(uint32_t *)(rhdr+4));
+    
+    if (rhdrlen-16 != fread(rhdr+16, 1, rhdrlen-16, fp))
+	return NULL;
+    dlen = (nflows * bytes_per_flow + nbases * 3 + 7) & ~7;
+
+    /* Built up the fake SFF entry */
+    if (NULL == (data = (char *)xmalloc(chdrlen + rhdrlen + dlen)))
+	return NULL;
+
+    memcpy(data, chdr, chdrlen);
+    memcpy(data + chdrlen, rhdr, rhdrlen);
+    if (dlen != fread(data + chdrlen + rhdrlen, 1, dlen, fp)) {
+	xfree(data);
+	return NULL;
+    }
+
+    /* Convert to mFILE */
+    return sff_single(data, chdrlen + rhdrlen + dlen);
+}
+
+
 /*
  * This returns an mFILE containing an SFF entry.
  *
@@ -396,14 +597,39 @@ static mFILE *sff_single(char *data, size_t size) {
  * amount of redundancy, but one which is swamped by the I/O time.
  */
 static mFILE *find_file_sff(char *entry, char *sff) {
-    FILE *fp;
+    static FILE *fp = NULL;
+    static char sff_copy[1024];
     char chdr[65536], rhdr[65536]; /* generous, but worst case */
-    uint32_t nkey, nflows, chdrlen, rhdrlen, dlen, index_length, magic;
-    uint64_t index_offset, file_pos;
+    uint32_t nkey, nflows, chdrlen, rhdrlen, dlen, magic;
+    uint64_t file_pos;
+    static uint64_t index_offset = 0;
+    static uint32_t index_length = 0;
+    static char index_format[8];
     uint32_t nreads, i;
     size_t entry_len = strlen(entry);
     int bytes_per_flow = 2;
     char *fake_file;
+
+    /*
+     * Check cached information so rapid queries to the same archive are
+     * fast.
+     * ASSUMPTION: we won't externally replace the sff file with another of
+     * the same name.
+     */
+    if (strcmp(sff, sff_copy) == 0) {
+	if (memcmp(index_format, ".hsh1.00", 8) == 0) {
+	    return sff_hash_query(sff, entry, fp);
+	} else if (memcmp(index_format, ".srt1.00", 8) == 0) {
+	    return sff_sorted_query(sff, entry, fp, index_length-8);
+	}
+    }
+
+    if (fp)
+	fclose(fp);
+
+    strcpy(sff_copy, sff);
+    *index_format = 0;
+
 
     /* Read the common header */
     if (NULL == (fp = fopen(sff, "rb")))
@@ -422,24 +648,17 @@ static mFILE *find_file_sff(char *entry, char *sff) {
     index_offset = be_int8(*(uint64_t *)(chdr+8));
     index_length = be_int4(*(uint32_t *)(chdr+16));
     if (index_length != 0) {
-	char index_format[4];
 	long orig_pos = ftell(fp);
 	fseek(fp, index_offset, SEEK_SET);
-	fread(index_format, 1, 4, fp);
+	fread(index_format, 1, 8, fp);
 
-	if (memcmp(index_format, ".hsh", 4) == 0) {
-	    /* HASH index */
-	    HashFile *hf;
-	    char *data;
-	    size_t size;
+	if (memcmp(index_format, ".hsh1.00", 8) == 0) {
+	    /* HASH index v1.00 */
+	    return sff_hash_query(sff, entry, fp);
 
-	    fseek(fp, -4, SEEK_CUR);
-	    hf = HashFileFopen(fp);
-	    data = HashFileExtract(hf, entry, &size);
-	    HashFileDestroy(hf); /* closes fp */
-
-	    return data ? sff_single(data, size) : NULL;
-
+	} else if (memcmp(index_format, ".srt1.00", 8) == 0) {
+	    /* 454 sorted v1.00 */
+	    return sff_sorted_query(sff, entry, fp, index_length-8);
 	} else {
 	    /* Unknown index: revert back to a slow linear scan */
 	    fseek(fp, orig_pos, SEEK_SET);
@@ -512,7 +731,6 @@ static mFILE *find_file_sff(char *entry, char *sff) {
     }
 
     /* Convert to an mFILE and return */
-    fclose(fp);
     return sff_single(fake_file, chdrlen+rhdrlen+dlen);
 }
 
@@ -735,6 +953,7 @@ FILE *open_trace_file(char *file, char *relative_to) {
     /* Copy the data */
     fwrite(mf->data, 1, mf->size, fp);
     rewind(fp);
+    printf("Closing mf (fp %p)\n", mf->fp);
     mfclose(mf);
 
     return fp;
