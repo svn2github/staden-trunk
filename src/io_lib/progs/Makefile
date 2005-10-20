@@ -5,7 +5,8 @@
 include ../options.mk
 
 PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump \
-	$(O)/hash_tar $(O)/hash_extract $(O)/hash_list $(O)/hash_sff
+	$(O)/hash_tar $(O)/hash_extract $(O)/hash_list $(O)/hash_sff \
+	$(O)/append_sff
 
 ifdef IOLIB_PLN
 PROGS += $(O)/extract_seq
@@ -41,6 +42,7 @@ HTOBJS=$(O)/hash_tar.o
 HSOBJS=$(O)/hash_sff.o
 HEOBJS=$(O)/hash_extract.o
 HLOBJS=$(O)/hash_list.o
+ASOBJS=$(O)/append_sff.o
 GCOBJS=$(O)/get_comment.o
 
 PLIBS=$(LINK_LIBFLAG)read$(LIB_EXT) $(LIBSC) $(LINK_LIBFLAG)misc$(LIB_EXT)
@@ -86,6 +88,10 @@ $(O)/hash_extract:	$(HEOBJS)
 
 $(O)/hash_list:	$(HLOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(HLOBJS) $(PLIBS)
+
+$(O)/append_sff:	$(ASOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ASOBJS) $(PLIBS)
+
 
 DEPEND_OBJ = $(ESOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(GCOBJS) $(HTOBJS) $(HEOBJS)
 
