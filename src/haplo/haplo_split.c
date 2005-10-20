@@ -73,6 +73,7 @@ typedef struct _graph {
     double *snp_scores;
     int nsnps;
     int ntemplates;
+    double correlation_offset;
 } graph;
 
 #ifndef ABS
@@ -402,6 +403,7 @@ graph *graph_create(void) {
     g->matrix = NULL;
     g->nsnps = 0;
     g->ntemplates = 0;
+    g->correlation_offset = 0.9;
 
     return g;
 }
@@ -770,14 +772,12 @@ edge *best_edge(graph *g) {
  * together to produce the overall edge score.
  */
 double calc_edge_score(int (*M1)[6], int (*M2)[6], double *scores,
-		    int nsnps, int *countp) {
+		    int nsnps, int *countp, double offset) {
     int i, j, count = 0;
     double score = 0;
 
     for (i = 0; i < nsnps; i++) {
 	double avg1, avg2;
-	double offset = 0.6; /* threshold before correlation is
-				acceptable */
 
 	/* Compute correlation between M1[i] to M2[i] */
 	avg1 = (M1[i][1] + M1[i][2] + M1[i][3] + M1[i][4] + M1[i][5]) / 5.0;
@@ -922,7 +922,7 @@ void merge_node(graph *g, edge *e) {
 
 	e->edge_score =
 	    calc_edge_score(e->n1->matrix, e->n2->matrix, g->snp_scores,
-			    g->nsnps, NULL);
+			    g->nsnps, NULL, g->correlation_offset);
     }
 }
 
@@ -1038,7 +1038,7 @@ static int int_compare(const void *vp1, const void *vp2) {
 /**
  * Builds a snp graph from the snps array
  */
-graph *graph_from_snps(GapIO *io, snp_t *snp, int nsnps) {
+graph *graph_from_snps(GapIO *io, snp_t *snp, int nsnps, double c_offset) {
     graph *g = NULL;
     int i, j;
     int ntemplates, *templates = NULL;
@@ -1058,6 +1058,7 @@ graph *graph_from_snps(GapIO *io, snp_t *snp, int nsnps) {
     lookup['*'] = 5;
 
     g = graph_create();
+    g->correlation_offset = c_offset;
 
     /*
      * Obtain a list of unique template numbers, by collecting and sorting.
@@ -1150,7 +1151,8 @@ void graph_add_edges(graph *g) {
 	    n2 = g->nodes->node[j];
 
 	    score = calc_edge_score(n1->matrix, n2->matrix,
-				    g->snp_scores, g->nsnps, &count);
+				    g->snp_scores, g->nsnps, &count,
+				    g->correlation_offset);
 	    if (count) {
 		graph_add_edge(g, g->nodes->node[i], g->nodes->node[j], score);
 	    }
@@ -1197,13 +1199,14 @@ static dstring_t *list_groups(graph *g) {
 }
 
 dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbose,
-		       double min_score, int two_pass, int fast_mode) {
+		       double min_score, int two_pass, int fast_mode,
+		       double c_offset) {
     graph *g;
     edge *e;
     dstring_t *ds;
 
     verbosity = verbose;
-    g = graph_from_snps(io, snp, nsnps);
+    g = graph_from_snps(io, snp, nsnps, c_offset);
     if (verbosity >= 3)
 	print_matrix(g);
 
@@ -1243,12 +1246,12 @@ dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbose,
 	while ((e = best_edge(g)) && (e->linkage_score > min_score)) {
 	    merge_node(g, e);
 	    graph_calc_link_scores(g, fast_mode ? 0 : 1);
-	    //graph_print(g, 1);
+	    /* graph_print(g, 1); */
 	}
-	//graph_print(g, 1);
+	/* graph_print(g, 1); */
     }
 
-    /* print_groups(g);*/
+    /* print_groups(g); */
 
     ds = list_groups(g);
     graph_destroy(g);

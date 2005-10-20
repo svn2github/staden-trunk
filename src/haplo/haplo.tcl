@@ -24,7 +24,11 @@
 # -snp_cutoff		Minimum SNP score after adjustments (pad, polyX, etc)?
 # -two_alleles		Boolean: whether to adjust snp scores for diploid orgs.
 
-# -min_score		Minimum score acceptable during cluster merges
+# -minscore		Minimum score acceptable during cluster merges
+# -correlation_offset	Baseline adjustment for the pearson correlation used
+#                       to compute edge weights during clustering. An offset
+#                       of 0.8 means .8 correlation has zero score. > 0.8 has
+#                       a positive effect on an edge. < 0.8 has -ve effect.
 # -twopass		Boolean: whether to add zero-cost edges and recompute
 #			during clustering algorithm
 # -fastmode		Boolean: fast mode param and also checkbox variable
@@ -67,17 +71,18 @@ namespace eval haplo {
 	incr counter
 	set data [namespace current]::instance$counter
 
-	set ${data}(counter)	     $counter
-	set ${data}(-lreg)           0
-	set ${data}(-rreg)           0
-	set ${data}(-discrep_cutoff) 40
-	set ${data}(-min_base_qual)  15
-	set ${data}(-two_alleles)    1
-	set ${data}(-snp_cutoff)     10
-	set ${data}(-minscore)       0
-	set ${data}(-twopass)        0
-	set ${data}(-fastmode)       1
-	set ${data}(-addfake)        1
+	set ${data}(counter)	         $counter
+	set ${data}(-lreg)               0
+	set ${data}(-rreg)               0
+	set ${data}(-discrep_cutoff)     40
+	set ${data}(-min_base_qual)      15
+	set ${data}(-two_alleles)        1
+	set ${data}(-snp_cutoff)         10
+	set ${data}(-minscore)           0
+	set ${data}(-correlation_offset) 0.9
+	set ${data}(-twopass)            0
+	set ${data}(-fastmode)           1
+	set ${data}(-addfake)            1
 
 	foreach {a b} $args {
 	    set ${data}($a) $b
@@ -195,11 +200,17 @@ proc haplo::create_display {d} {
     set w [frame $f.control2 -bd 2 -relief raised]
     grid $w -sticky nsew -columnspan 2
 
+    xentry $w.correlation_offset \
+	-label "Correlation offset" \
+	-textvariable ${d}(-correlation_offset) \
+	-width 6 \
+	-type "double -1 +1"
+
     xentry $w.minscore \
 	-label "Min. merge score" \
 	-textvariable ${d}(-minscore) \
 	-width 4 \
-	-type "int 0"
+	-type "double 0"
 
     checkbutton $w.twopass \
 	-text "2nd inference pass" \
@@ -217,7 +228,8 @@ proc haplo::create_display {d} {
 	-text "Cluster by SNPs" \
 	-command [list [namespace current]::ClusterSNP $d]
 
-    pack $w.minscore $w.twopass $w.fast -side left -padx 10
+    pack $w.correlation_offset $w.minscore $w.twopass $w.fast \
+	-side left -padx 10
     pack $w.cluster $w.templates -side right
 
     # Splitting parameters
@@ -1741,7 +1753,8 @@ proc haplo::ClusterSNP {d} {
 			  -verbosity 0 \
 			  -minscore $data(-minscore) \
 			  -twopass $data(-twopass) \
-			  -fast $data(-fastmode)]
+			  -fast $data(-fastmode) \
+			  -correlation_offset $data(-correlation_offset)]
     ClearBusy
     set data(ungrouped) [haplo::find_ungrouped $d]
     set data(sets) [sort_sets $data(sets)]

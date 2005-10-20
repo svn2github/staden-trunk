@@ -67,6 +67,7 @@ typedef struct {
     double minscore;
     int twopass;
     int fast;
+    double correlation_offset;
 } iolist_arg;
 
 
@@ -86,6 +87,9 @@ static int haplo_split_cmd(Tcl_Interp *interp,
 	{"-minscore",   ARG_DOUBLE, 1, "0",  offsetof(iolist_arg, minscore)},
 	{"-twopass",    ARG_INT,    1, "0",  offsetof(iolist_arg, twopass)},
 	{"-fast",       ARG_INT,    1, "0",  offsetof(iolist_arg, fast)},
+	{"-correlation_offset",
+	                ARG_DOUBLE, 1, ".9", offsetof(iolist_arg,
+						      correlation_offset)},
 	{NULL,	    0,	     0, NULL, 0}
     };
     int robjc, i, j;
@@ -173,7 +177,7 @@ static int haplo_split_cmd(Tcl_Interp *interp,
     }
 
     ds = haplo_split(args.io, snp, nsnps, args.verbosity, args.minscore,
-		     args.twopass, args.fast);
+		     args.twopass, args.fast, args.correlation_offset);
     Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
 
     dstring_destroy(ds);
