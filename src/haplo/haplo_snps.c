@@ -18,6 +18,7 @@
 #include "template.h"
 #include "dstring.h"
 #include "haplo.h"
+#include "notes.h"
 
 /* ------------------------------------------------------------------------ */
 /**
@@ -153,6 +154,10 @@ static seq_base_t *seqs_at_region(GapIO *io, int contig, template_c **tarr,
 	    break;
 
 	if (io_relpos(io, rnum) + ABS(io_length(io, rnum)) <= pos)
+	    continue;
+
+	/* Skip if it's a reference sequence */
+	if (find_note(io, rnum, "REFS"))
 	    continue;
 
 	/* Read reading and sequence details */
