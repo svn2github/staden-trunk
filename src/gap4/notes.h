@@ -77,4 +77,11 @@ int str2note(/* INPUT */
  */
 int create_note_for_gel(GapIO *io, int rnum, char *str);
 
+/*
+ * Searches for a note of a given type.
+ * Returns note first number found of that type
+ *         0 if not found.
+ */
+int find_note(GapIO *io, int rnum, char *str_type);
+
 #endif /* _NOTES_H_ */

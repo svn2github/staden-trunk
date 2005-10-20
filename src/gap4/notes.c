@@ -1090,3 +1090,24 @@ int create_note_for_gel(GapIO *io, int rnum, char *str) {
 
     return 0;
 }
+
+/*
+ * Searches for a note of a given type.
+ * Returns note first number found of that type
+ *         0 if not found.
+ */
+int find_note(GapIO *io, int rnum, char *str_type) {
+    GReadings r;
+    GNotes n;
+    int nn;
+    int itype = str2type(str_type);
+
+    gel_read(io, rnum, r);
+    for (nn = r.notes; nn; nn = n.next) {
+	note_read(io, nn, n);
+	if (n.type == itype)
+	    return nn;
+    }
+
+    return 0;
+}
