@@ -70,6 +70,32 @@ sff_common_header *decode_sff_common_header(unsigned char *buf) {
 }
 
 /*
+ * Encodes the data in 'h' to the file SFF representation. Buf should be
+ * allocated to be 31 + h->flow_len + h->key_len + 8.
+ *
+ * Returns: the written length of buf
+ */
+int encode_sff_common_header(sff_common_header *h, unsigned char *buf) {
+    int end;
+
+    *(uint32_t *)(buf+0)  = be_int4(h->magic);
+    memcpy(buf+4, h->version, 4);
+    *(uint64_t *)(buf+8)  = be_int8(h->index_offset);
+    *(uint32_t *)(buf+16) = be_int4(h->index_len);
+    *(uint32_t *)(buf+20) = be_int4(h->nreads);
+    *(uint16_t *)(buf+24) = be_int2(h->header_len);
+    *(uint16_t *)(buf+26) = be_int2(h->key_len);
+    *(uint16_t *)(buf+28) = be_int2(h->flow_len);
+    *(uint8_t  *)(buf+30) = be_int1(h->flowgram_format);
+    memcpy(buf+31, h->flow, h->flow_len);
+    memcpy(buf+31+h->flow_len, h->key, h->key_len);
+    end = 31+h->flow_len+h->key_len;
+    memcpy(buf+end, "\0\0\0\0\0\0\0\0", ((end+7)&~7)-end);
+    
+    return (end+7)&~7;
+}
+
+/*
  * Reads a common header (including variable length components) from an mFILE.
  *
  * Returns the a pointer to the header on success
@@ -133,6 +159,29 @@ sff_read_header *decode_sff_read_header(unsigned char *buf) {
 	return free_sff_read_header(h), NULL;
 
     return h;
+}
+
+/*
+ * Encodes the data in 'h' to the file SFF representation. Buf should be
+ * allocated to be 16 + h->name_len + 8.
+ *
+ * Returns: the written length of buf
+ */
+int encode_sff_read_header(sff_read_header *h, unsigned char *buf) {
+    int end;
+
+    *(uint16_t *)(buf+0)  = be_int2(h->header_len);
+    *(uint16_t *)(buf+2)  = be_int2(h->name_len);
+    *(uint32_t *)(buf+4)  = be_int4(h->nbases);
+    *(uint16_t *)(buf+8)  = be_int2(h->clip_qual_left);
+    *(uint16_t *)(buf+10) = be_int2(h->clip_qual_right);
+    *(uint16_t *)(buf+12) = be_int2(h->clip_adapter_left);
+    *(uint16_t *)(buf+14) = be_int2(h->clip_adapter_right);
+    memcpy(buf+16, h->name, h->name_len);
+    end = 16+h->name_len;
+    memcpy(buf+end, "\0\0\0\0\0\0\0\0", ((end+7)&~7)-end);
+    
+    return (end+7)&~7;
 }
 
 /*
