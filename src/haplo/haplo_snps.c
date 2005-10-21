@@ -132,7 +132,7 @@ static snp_t *candidate_snps(GapIO *io, int contig, int start, int end,
  *            NULL on failure
  */
 static seq_base_t *seqs_at_region(GapIO *io, int contig, template_c **tarr,
-				  int pos, int *nseqs_p) {
+				  int pos, int *nseqs_p, int min_qual) {
     int rnum;
     seq_base_t *seqs = NULL;
     int nseqs = 0;
@@ -177,7 +177,7 @@ static seq_base_t *seqs_at_region(GapIO *io, int contig, template_c **tarr,
 	seq = SeqReadStatic(io, r.sequence, r.length);
 
 	/* Filter out sequences of poor quality */
-	if (conf < quality_cutoff)
+	if (conf < min_qual)
 	    continue;
 
 	if (!r.template)
@@ -216,22 +216,65 @@ static seq_base_t *seqs_at_region(GapIO *io, int contig, template_c **tarr,
      */
     for (i = 0; i < nseqs; i++) {
 	int t = seqs[i].tmplate;
+	int A = 0, C = 0, G = 0, T = 0, X = 0;
 
-	for (j = i+1; j < nseqs; j++) {
+	if (!seqs[i].tscore)
+	    continue;
+
+	/*
+	 * Compute a simple consensus + score.
+	 */
+	for (j = i; j < nseqs; j++) {
 	    if (seqs[j].tmplate == t) {
-		if (seqs[i].base == seqs[j].base) {
-		    if (seqs[i].conf > seqs[j].conf)
-			seqs[j].tscore = 0;
-		    else
-			seqs[i].tscore = 0;
-		} else {
-		    /* Disagreement, both with conf > quality_cutoff. */
-		    /* => reject this template */
-		    seqs[i].tscore = 0;
-		    seqs[j].tscore = 0;
+		switch (seqs[j].base) {
+		case 'A': case 'a':
+		    A += seqs[j].conf;
+		    break;
+		case 'C': case 'c':
+		    C += seqs[j].conf;
+		    break;
+		case 'G': case 'g':
+		    G += seqs[j].conf;
+		    break;
+		case 'T': case 't':
+		    T += seqs[j].conf;
+		    break;
+		case '*':
+		    X += seqs[j].conf;
+		    break;
 		}
+		/* Mark all other uses of this template as to be filtered */
+		if (j > i)
+		    seqs[j].tscore = 0;
 	    }
 	}
+
+	/* And update first occurance of this template */
+	if (A -C-G-T-X > 0) {
+	    seqs[i].base = 'A';
+	    seqs[i].conf = A-C-G-T-X;
+	} else if (C -A-G-T-X > 0) {
+	    seqs[i].base = 'C';
+	    seqs[i].conf = C-A-G-T-X;
+	} else if (G -A-C-T-X > 0) {
+	    seqs[i].base = 'G';
+	    seqs[i].conf = G-A-C-T-X;
+	} else if (T -A-C-G-X > 0) {
+	    seqs[i].base = 'T';
+	    seqs[i].conf = T-A-C-G-X;
+	} else if (X -A-C-G-T > 0) {
+	    seqs[i].base = '*';
+	    seqs[i].conf = X-A-C-G-T;
+	} else {
+	    seqs[i].tscore = 0;
+	}
+
+	if (seqs[i].conf < min_qual)
+	    seqs[i].tscore = 0;
+	/*
+	printf("Pos %d Template %d A%d C%d G%d T%d X%d =>%c %d\n",
+	       pos, t, A, C, G, T, X, seqs[i].base, seqs[i].conf);
+	*/
     }
 
     /* Finally remove the templates with tscore == 0 */
@@ -252,12 +295,13 @@ static seq_base_t *seqs_at_region(GapIO *io, int contig, template_c **tarr,
  * base position.
  */
 static void add_snp_bases(GapIO *io, int contig, template_c **tarr,
-			  snp_t *snp, int nsnps) {
+			  snp_t *snp, int nsnps, int min_qual) {
     int i;
 
     for (i = 0; i < nsnps; i++) {
 	int nseqs;
-	snp[i].seqs  = seqs_at_region(io, contig, tarr, snp[i].pos, &nseqs);
+	snp[i].seqs  = seqs_at_region(io, contig, tarr, snp[i].pos, &nseqs,
+				      min_qual);
 	snp[i].nseqs = nseqs;
     }
 }
@@ -436,7 +480,7 @@ dstring_t *haplo_snps(GapIO *io, int contig, int start, int end,
     check_all_templates(io, tarr);
 
     /* Identify template basecalls at each snp site */
-    add_snp_bases(io, contig, tarr, snps, nsnps);
+    add_snp_bases(io, contig, tarr, snps, nsnps, min_base_qual);
 
     /* Adjust scores in mononucleotide runs */
     mononucleotide_scores(io, contig, snps, nsnps);
