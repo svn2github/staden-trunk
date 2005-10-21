@@ -798,8 +798,8 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	    /* or ustar 257 bytes in to indicate un-hashed tar */
 	    if (NONE == type) {
 		fseek(fp, 257, SEEK_SET);
-		fread(magic, 1, 6, fp);
-		if (memcmp(magic, "ustar\0", 6) == 0)
+		fread(magic, 1, 5, fp);
+		if (memcmp(magic, "ustar", 5) == 0)
 		    type = TAR;
 	    }
 	    fclose(fp);
@@ -953,7 +953,6 @@ FILE *open_trace_file(char *file, char *relative_to) {
     /* Copy the data */
     fwrite(mf->data, 1, mf->size, fp);
     rewind(fp);
-    printf("Closing mf (fp %p)\n", mf->fp);
     mfclose(mf);
 
     return fp;
