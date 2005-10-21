@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#define NDEBUG /* disable assertions */
 #include <assert.h>
 
 #include "stdio_hack.h"
