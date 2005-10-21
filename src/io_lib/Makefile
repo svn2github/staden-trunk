@@ -106,7 +106,7 @@ OBJS	+=\
 	ztr/$(O)/ztr.o
 endif
 
-ifdef IOLIB_ZTR
+ifdef IOLIB_SFF
 OBJS	+=\
 	sff/$(O)/sff.o
 endif
