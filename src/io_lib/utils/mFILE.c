@@ -352,7 +352,7 @@ size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
 int mfgetc(mFILE *mf) {
     if (mf == m_channel[0]) init_mstdin();
     if (mf->offset < mf->size) {
-	return mf->data[mf->offset++];
+	return (unsigned char)mf->data[mf->offset++];
     }
 
     mf->eof = 1;
