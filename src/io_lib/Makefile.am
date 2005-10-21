@@ -50,7 +50,8 @@ pkginclude_HEADERS = \
 	utils/hash_table.h \
 	utils/os.h \
 	ztr/compression.h \
-	ztr/ztr.h
+	ztr/ztr.h \
+	io_lib_config.h
 
 EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap \
 	ztr/FORMAT

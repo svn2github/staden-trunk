@@ -35,7 +35,7 @@
 
 #include "os.h" /* for ftruncate() under WINNT */
 #ifdef HAVE_CONFIG_H
-#include "config.h"
+#include "io_lib_config.h"
 #endif
 
 #include "compress.h"
