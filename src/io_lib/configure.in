@@ -10,11 +10,6 @@ AC_PROG_RANLIB
 
 AH_TEMPLATE([HAVE_ZLIB], [Define if zlib is installed])
 
-dnl Handling shared libraries
-dnl AC_ENABLE_SHARED
-dnl SC_CONFIG_SHLIB_FLAGS
-dnl AC_PROG_LIBTOOL
-
 dnl Check for zlib. If not found then we won't include ZTR support
 AC_CHECK_LIB(z,main,LIBZ='-lz';AC_DEFINE(HAVE_ZLIB),
              AC_MSG_WARN(*** zlib not found; hence no ZTR support))
@@ -42,8 +37,7 @@ dnl AC_TYPE_SIZE_T
 dnl AC_STRUCT_TM
 
 dnl Checks for library functions.
-AC_CHECK_LIBM
-AC_SUBST(LIBM)
+AC_SEARCH_LIBS(cos, m)
 dnl AC_FUNC_MEMCMP
 dnl AC_FUNC_STRFTIME
 dnl AC_FUNC_VPRINTF
