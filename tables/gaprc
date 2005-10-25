@@ -218,14 +218,6 @@ set_def CONTIG_EDITOR.STATUS_FRAME2M	0
 set_def CONTIG_EDITOR.STATUS_FRAME3M	0
 set_def CONTIG_EDITOR.STATUS_AUTO_TRANSLATE	0
 
-# Modifying these will control when shuffle pads thinks an "entire column of
-# pads" really is one. This allows it to be fooled into deleted columns that
-# are almost pads. It's definition is - calculate the consensus and if it's a
-# pad then it's an entire column. The consensus_mode 0 (frequency) and cutoff
-# 1 (100%) are the defaults, which therefore really do mean entirely pads.
-set_def CONTIG_EDITOR.SHUFFLE_PADS.CONSENSUS_MODE       0
-set_def CONTIG_EDITOR.SHUFFLE_PADS.CONSENSUS_CUTOFF     1
-
 # This controls whether the Delete key deletes to the right, as in Motif
 # and Windows styles, or deletes to the left like Backspace.
 if {"$tcl_platform(platform)" == "windows"} {
@@ -963,6 +955,7 @@ set_def CHECK_ASSEMBLY.USED.WINSIZE.VALUE	50
 
 # Shuffle Pads
 set_def SHUFFLE_PADS.INFILE		$defs_c_in
+set_def SHUFFLE_PADS.BAND_SIZE		8
 
 # Find oligos
 set_def FINDOLIGO.INFILE		$defs_c_in
