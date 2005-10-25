@@ -5009,10 +5009,11 @@ int tcl_set_db_bitsize(ClientData clientData, Tcl_Interp *interp,
 int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
 		     int objc, Tcl_Obj *CONST objv[])
 {
-    list2_arg args;
+    shuffle_arg args;
     cli_args a[] = {
-	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
-	{"-contigs",	ARG_STR, 1, "*",  offsetof(list2_arg, inlist)},
+	{"-io",		ARG_IO,  1, NULL,  offsetof(shuffle_arg, io)},
+	{"-contigs",	ARG_STR, 1, "*",   offsetof(shuffle_arg, inlist)},
+	{"-band",	ARG_INT, 1, "8",   offsetof(shuffle_arg, band)},
 	{NULL,	    0,	     0, NULL, 0}
     };
     int rargc;
@@ -5024,7 +5025,7 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     vfuncheader("Shuffle Pads");
 
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
-    shuffle_contigs_io(args.io, rargc, rargv);
+    shuffle_contigs_io(args.io, rargc, rargv, args.band);
 
     xfree(rargv);
 

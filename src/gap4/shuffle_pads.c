@@ -268,7 +268,7 @@ static void remove_pads(MALIGN *malign) {
  * To do this we may need to shuffle the start position of sequences
  * downstream, and hence also move consensus tags.
  */
-MALIGN *realign_seqs(int contig, MALIGN *malign) {
+MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
     CONTIGL *lastl = NULL, *contigl;
     int nsegs;
     int old_start, old_end, new_start, new_end;
@@ -296,7 +296,7 @@ MALIGN *realign_seqs(int contig, MALIGN *malign) {
 	/* Align sequence to malign */
 	p = create_align_params();
 	set_align_params (p,
-			  8, /*band*/
+			  band,
 			  8, /*gap_open*/
 			  8, /*gap_extend*/
 			  /* EDGE_GAPS_COUNT, */
@@ -652,7 +652,7 @@ static void update_consensus_tags(GapIO *io, int cnum, MALIGN *malign) {
 	} else {
 	    if (p-last != 1) {
 		/* Deletion */
-		shift_contig_tags(io, cnum, i+1, -1);
+		shift_contig_tags(io, cnum, i+1, 1-(p-last));
 	    }
 	    last = p;
 	}
@@ -732,7 +732,7 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 		if (seq[i] == '*') {
 		    i++;
 		    if (io_length(io, rnum) < 0) {
-			tag_shift_for_delete(io, rnum, r.length - (i+np--) + 1);
+			tag_shift_for_delete(io, rnum, r.length - i + 1);
 		    } else {
 			tag_shift_for_delete(io, rnum, i+np--);
 		    }
@@ -759,15 +759,30 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 		    newopos[j] = 0;
 		    j++;
 		    if (io_length(io, rnum) < 0) {
-			tag_shift_for_insert(io, rnum, r.length - (i+np++) + 1);
+			tag_shift_for_insert(io, rnum, r.length - i + 1);
 		    } else {
-			tag_shift_for_insert(io, rnum, i+np++);
+			tag_shift_for_insert(io, rnum, i+ ++np);
 		    }
 		    continue;
 		}
 
 		fprintf(stderr, "Alignment introduced non-pad character");
 		abort();
+	    }
+
+	    /* Pads previously at the end of the reading & now removed */
+	    for (; i < r.start + r.sequence_length;) {
+		if (seq[i] == '*') {
+		    i++;
+		    if (io_length(io, rnum) < 0) {
+			tag_shift_for_delete(io, rnum, r.length - i + 1);
+		    } else {
+			tag_shift_for_delete(io, rnum, i+np--);
+		    }
+		} else {
+		    /* Error: clipped data that wasn't a pad */
+		    abort();
+		}
 	    }
 
 	    /* Should only be pads remaining in newseq, if anything */
@@ -921,7 +936,8 @@ void reassign_confidence_values(GapIO *io, int cnum) {
     }
 }
 
-int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
+int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
+		       int band) {
     int i;
     
     set_malign_lookup(5);
@@ -940,7 +956,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs) {
 	UpdateTextOutput();
 	do {
 	    old_score = new_score;
-	    malign = realign_seqs(cnum, malign);
+	    malign = realign_seqs(cnum, malign, band);
 	    /* print_malign(malign); */
 	    new_score = malign_diffs(malign, &tot_score);
 	    vmessage("  Number of differences to consensus: %d\n", new_score);

@@ -579,6 +579,12 @@ typedef struct {
     int problems;
 } strand_arg;
 
+typedef struct {
+    GapIO *io;
+    char *inlist;
+    int band;
+} shuffle_arg;
+
 #ifdef USE_BIOLIMS
 typedef struct {
   GapIO *io;

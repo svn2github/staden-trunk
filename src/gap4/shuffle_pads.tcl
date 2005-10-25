@@ -12,15 +12,19 @@ proc ShufflePads {io} {
 	 {contig_id_configure $t.id -state disabled}\
 	 {contig_id_configure $t.id -state normal}" -bd 2 -relief groove
 
+    xentry $t.band_size \
+	-label "Band size" \
+	-default [keylget gap_defs SHUFFLE_PADS.BAND_SIZE]
+
     okcancelhelp $t.ok \
-	-ok_command "ShufflePads2 $io $t $t.infile $t.id" \
+	-ok_command "ShufflePads2 $io $t $t.infile $t.id $t.band_size" \
 	-cancel_command "destroy $t" \
 	-bd 2 -relief groove
 
-    pack $t.infile $t.id  $t.ok -side top -fill x
+    pack $t.infile $t.id $t.band_size $t.ok -side top -fill x
 }
 
-;proc ShufflePads2 {io t infile id} {
+;proc ShufflePads2 {io t infile id band_size} {
     if {[lorf_in_get $infile] == 4} {
 	set list [list [contig_id_gel $id]]
     } elseif {[lorf_in_get $infile] == 3} {
@@ -28,10 +32,14 @@ proc ShufflePads {io} {
     } else {
 	set list [lorf_get_list $infile]
     }
+    if {[set band_size [$band_size get]] < 0} {
+	bell
+	return
+    }
 
     destroy $t
 
     SetBusy
-    shuffle_pads -io $io -contigs $list
+    shuffle_pads -io $io -contigs $list -band $band_size
     ClearBusy
 }
