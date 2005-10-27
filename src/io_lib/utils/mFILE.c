@@ -62,7 +62,7 @@ static char *mfload(FILE *fp, const char *fn, size_t *size, int binary) {
 	len = fread(data + used, 1, allocated - used, fp);
 	if (len > 0)
 	    used += len;
-    } while (!feof(fp));
+    } while (!feof(fp) && (fn == NULL || used < sb.st_size));
 
     *size = used;
 
