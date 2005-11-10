@@ -1110,6 +1110,10 @@ int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
     pos = be_int4(pos);
     cur_offset = 4*hval + 4 + hf->header_size;
 
+    if (0 == pos)
+	/* No bucket pos => key not present */
+	return -1;
+
     /* Jump to the HashItems list and look through for key */
     if (-1 == fseek(hf->hfp, pos - cur_offset, SEEK_CUR))
 	return -1;
