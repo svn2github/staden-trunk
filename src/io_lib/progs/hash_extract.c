@@ -3,22 +3,28 @@
 #include <stdlib.h>
 #include "hash_table.h"
 
-/* Copies a single named file to stdout */
-void extract(HashFile *hf, char *file) {
+/*
+ * Copies a single named file to stdout.
+ * Returns 0 on success
+ *         1 on failure
+ */
+int extract(HashFile *hf, char *file) {
     size_t len;
     char *data;
 
     if (data = HashFileExtract(hf, file, &len)) {
 	fwrite(data, len, 1, stdout);
 	free(data);
+	return 0;
     }
-    return;
+    return 1;
 }
 
 int main(int argc, char **argv) {
     char *fofn = NULL;
     char *hash;
     HashFile *hf;
+    int ret = 0;
 
     /* process command line arguments of the form -arg */
     for (argc--, argv++; argc > 0; argc--, argv++) {
@@ -63,17 +69,17 @@ int main(int argc, char **argv) {
 	    if (c = strchr(file, '\n'))
 		*c = 0;
 
-	    extract(hf, file);
+	    ret |= extract(hf, file);
 	}
 
 	fclose(fofnfp);
     }
 
     for (; argc; argc--, argv++) {
-	extract(hf, *argv);
+	ret |= extract(hf, *argv);
     }
 
     HashFileDestroy(hf);
 
-    return 0;
+    return ret;
 }
