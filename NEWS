@@ -1,4 +1,60 @@
 -----------------------------------------------------------------------------
+15th November 2005
+==================
+
+
+Gap4
+----
+
+* Improved the SNP Candidates plot; it now generates consensus
+  sequence per template when trying to identify candidate snps, rather
+  than simply throwing out locations where conflicts exist within a
+  template.
+
+* Shuffle pads now has a configurable "band size" parameter. Also
+  fixed a tag corruption bug in it.
+
+* The contig editor shuffle pads command is back in a minimal form. It
+  turns out that people rather liked its ability to remove entire
+  columns of pads, so that particular feature of it is available once
+  more.
+
+
+io_lib
+------
+
+* Added append_sff program for merging 454's SFF archives.
+
+* Various bug fixes with the mFILE support.
+
+-----------------------------------------------------------------------------
+20th October 2005
+=================
+
+Internal Sanger test version rel-1-6-0 ("gap4 -test")
+(Ok so it's slightly newer than the official 1.6.0..)
+
+Gap4
+----
+
+* SNP Candidates now has a 'correlation offset' parameter. This
+  modifies the average correlation score required to give a positive
+  impact on the edge scores.
+
+io_lib
+------
+
+* Complete rewrite of the SFF format handling and replaced TVF with
+  SFF archvies. New programs to manipulate SFF archives too: hash_sff
+  and append_sff. Sorted and hash indices are supported in SFF archives.
+
+* Added SFF= format for the RAWDATA search path.
+
+* Allow archive/entry for use with SFF, TAR and HASH.
+  Eg "extract_seq foo.tar/xyzzy.ztr" will work without setting
+  RAWDATA.
+
+-----------------------------------------------------------------------------
 30th September 2005
 ===================
 

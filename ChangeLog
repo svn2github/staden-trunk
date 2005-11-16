@@ -1,3 +1,242 @@
+2005-11-16  jkbonfield  <jkbonfield>
+
+	* src/gap4/contig_editor.tcl:
+	(14:12:58) Removed dead shuffle pads code, but reenabled the
+	removal of columns of pads in the contig editor by changing the old
+	editor shuffle_pads command to be strip_pads. 
+
+	* src/gap4/edCommands.c,
+	* src/gap4/edCommands.h,
+	* src/gap4/tkEditor.c:
+	(14:12:59) Removed dead shuffle pads code, but reenabled the
+	removal of columns of pads in the contig editor by changing the old
+	editor shuffle_pads command to be strip_pads. 
+
+	* src/haplo/haplo_tcl.c:
+	(14:13:34) Fixed crash when the number of snps found was zero. 
+
+	* src/io_lib/progs/extract_seq.c:
+	(14:14:16) Used open_trace_mfile instead of open_trace_file to
+	avoid the need for temporary files and hence speeds this up. 
+
+	* src/io_lib/read/Read.c:
+	(14:23:23) fwrite_reading now frees the temporary mFILE it created. 
+
+	* src/io_lib/read/Read.h,
+	* src/io_lib/read/translate.c:
+	(14:45:41) Added private_data and private_size to the Read
+	structure & populate from SCF. 
+
+	* src/io_lib/utils/compress.c:
+	(14:48:51) mfreopen_compressed no longer closes the original FILE*.
+	This makes it backwards compatible once more with the original
+	version and also cures a bug whereby the old file pointer was often
+	left open, leading to running out of file descriptors. 
+
+	* src/io_lib/utils/mFILE.c:
+	(15:05:51) Fixed uninitialised check when filename was specified
+	but not found in mfload. 
+
+	* src/io_lib/utils/read_alloc.c:
+	(15:17:01) Added private_data to read struct 
+
+	* tables/gaprc,
+	* tables/gaprc_menu_full:
+	(15:19:39) Added strip pads (aka pad column removal) defaults 
+
+2005-11-10  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/hash_extract.c:
+	(11:32:06) Now returns an error code (to the calling process) if it
+	failed to extract a sequence. 
+
+	* src/io_lib/utils/hash_table.c:
+	(11:33:07) Fixed problem in hashquery when searching for something
+	that has a hash key not present (ie empty hash bucket). 
+
+2005-10-27  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/mFILE.c:
+	(15:46:45) Fixed hang in mfload when given zero length files. 
+
+2005-10-25  jkbonfield  <jkbonfield>
+
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h,
+	* src/gap4/shuffle_pads.c,
+	* src/gap4/shuffle_pads.h,
+	* src/gap4/shuffle_pads.tcl:
+	(08:19:41) Made the band size a configurable parameter.
+	
+	Also fixed a bug with tag corruptions on both complemented readings
+	and on the consensus. 
+
+	* src/io_lib/read/translate.c:
+	(08:20:26) NDEBUG checks 
+
+	* tables/gaprc:
+	(08:20:56) Added band size parameter for shuffle pads. Removed old
+	contig editor shuffle pads settings. 
+
+2005-10-21  jkbonfield  <jkbonfield>
+
+	* src/io_lib/bootstrap:
+	(09:15:23) Removed more auto-generated files. 
+
+	* src/io_lib/configure.in,
+	* src/io_lib/progs/Makefile.am:
+	(09:16:43) Further removal of libtool specific bits (AC_CHECK_LIB). 
+
+	* src/haplo/haplo_snps.c:
+	(16:02:59) Improved how the SNP base calls are computed for each
+	template. We now compute a simple consensus for the template rather
+	than just throwing out that SNP position on a template if there are
+	mismatches within the template. The template consensus has to be
+	above the minimum quality threshold to be accepted. 
+
+	* src/io_lib/Makefile:
+	(16:03:35) Fixed bug with IOLIB_ZTR vs IOLIB_SFF macro. 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/bootstrap,
+	* src/io_lib/configure.in,
+	* src/io_lib/read/Read.h,
+	* src/io_lib/utils/compress.c:
+	(16:04:48) Replaced automake's generated config.h file
+	io_lib_config and allow for it to be installed with "make install". 
+
+	* src/io_lib/progs/Makefile.am:
+	(16:05:19) Added append_sff to the targets. 
+
+	* src/io_lib/read/translate.c:
+	(16:05:42) Disabled asserts 
+
+	* src/io_lib/utils/mFILE.c:
+	(16:06:25) Fixed bug in mfgetc when dealing with 8-bit data. It
+	always now returns unsigned values except when EOF 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(16:07:20) Updated TAR magic number to be just the 5 first bytes as
+	the 6th differs between systems (space vs nul). 
+
+2005-10-20  jkbonfield  <jkbonfield>
+
+	* src/gap4/notes.c,
+	* src/gap4/notes.h:
+	(13:27:37) Added a find_note function to check if a specific note
+	type is attached to a given reading. 
+
+	* src/haplo/haplo_snps.c:
+	(13:29:10) Now skips reference sequences (note "REFS") from SNP
+	detection. 
+
+	* src/haplo/haplo.h,
+	* src/haplo/haplo.tcl,
+	* src/haplo/haplo_split.c,
+	* src/haplo/haplo_tcl.c:
+	(13:30:30) Made the arbitrary "0.6" figure in the calc_edge_score
+	function a configurable parameter (-correlation_offset), all the
+	way back to the GUI. The default is now 0.9 too which works much
+	better when >2 haplotypes are present. 
+
+	* src/io_lib/sff/sff.c:
+	(13:31:22) Split the read functions into read & decode functions so
+	that we can unpack SFF structs from other sources. 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/append_sff.c:
+	(13:31:58) Added an append_sff.c program, to combine multiple SFF
+	archives into a single archive. 
+
+2005-10-18  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/convert_trace.c:
+	(16:41:44) Modified to check RAWDATA search path when loading
+	traces. 
+
+	* src/io_lib/progs/hash_sff.c:
+	(16:42:58) Major overhaul to not load the entire SFF file into
+	memory. It also handles copying the SFF file to a new file and
+	adding an index to an SFF archive that already has an index. 
+
+	* src/io_lib/sff/sff.c,
+	* src/io_lib/sff/sff.h:
+	(16:44:31) Restructured read functions to load & decode functions
+	so we can decode SFF data blocks obtained via other means (eg as
+	used in the indexing code). 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(16:45:42) Added SFF "sorted index" code, based on 454's getsff.c
+	implementation. Also restructured the SFF querying code a bit so
+	that it caches this data. 
+
+2005-10-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/CHANGES:
+	(16:07:36) *** empty log message *** 
+
+	* src/io_lib/exp_file/expFileIO.c:
+	(16:08:32) Renamed _MSV_VER to _WIN32 so that the binary/ascii
+	conversions for experiment file IO works once more under Windows. 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/hash_sff.c:
+	(16:09:08) Added hash_sff program. This adds a .hsh format index to
+	the SFF container. 
+
+	* src/io_lib/sff/sff.c,
+	* src/io_lib/sff/sff.h:
+	(16:10:10) A total rewrite of the SFF code due to the recent
+	changes in file format. This code handles access of a *single* SFF
+	entry. The code to manipulate multi-file SFF (ie the container) is
+	in open_trace_file.c. 
+
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h:
+	(16:11:33) HashFileSave now returns the length of the saved hash.
+	
+	HashFileFopen now sets afp by default to be the same as hfp. Extra
+	checking has been added when closing these file pointers to ensure
+	we don't close twice if they point to the same FILE*. 
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(16:12:58) Added an mfascii() function. This allows for changing
+	from binary to ascii after a file has been opened. It should be
+	called in place of where the windows-specific _set_mode() function
+	would be used.
+	
+	There is currently no analagous ascii-to-binary conversion, but I
+	have not yet found a need for it either. 
+
+	* src/io_lib/utils/mach-io.c,
+	* src/io_lib/utils/mach-io.h:
+	(16:13:29) Added [bl]e_{read,write}_int_8 functions for use with
+	8-byte data types found in SFF. 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(16:14:55) Added a SFF= format for the RAWDATA search path. This
+	handles the SFF container in much the same way that TAR= and HASH=
+	works.
+	
+	Also for all three of these types you can now do archive/entry
+	instead. Eg "extract_seq traces.tar/xyz.ztr" will work and it'll
+	even look for traces.tar in RAWDATA if required. 
+
+	* src/io_lib/utils/os.h:
+	(16:15:19) Added a uint1 typedef for completeness. 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/read/Makefile.am:
+	(16:16:06) Makefile support for new sff.c files. 
+
+	* src/io_lib/dependencies:
+	(16:16:23) *** empty log message *** 
+
+	* src/io_lib/configure.in:
+	(16:16:43) Updated to version 1.9.1. 
+
 2005-10-07  James Bonfield  <jkb>
 
 	TAG CODEBASE with rel-1-6-0
