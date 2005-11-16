@@ -372,7 +372,17 @@ int mfwrite_reading(mFILE *fp, Read *read, int format) {
 }
 
 int fwrite_reading(FILE *fp, Read *read, int format) {
-    return mfwrite_reading(mfreopen(NULL, "wb", fp), read, format);
+    int ret;
+    mFILE *mf = mfreopen(NULL, "wb", fp);
+    if (mf) {
+	ret = mfwrite_reading(mf, read, format);
+	mf->fp = NULL; /* Don't want this closed here */
+	mfclose(mf);
+    } else {
+	return -1;
+    }
+
+    return ret;
 }
 
 /*
