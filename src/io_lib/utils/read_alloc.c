@@ -120,6 +120,9 @@ Read *read_allocate(int num_points, int num_bases) {
     seq->flow_order = NULL;
     seq->flow = NULL;
     seq->flow_raw = NULL;
+
+    seq->private_data = NULL;
+    seq->private_size = 0;
     
     return seq;
 }
@@ -166,6 +169,9 @@ void read_deallocate(Read *read)
 	xfree(read->flow);
     if (read->flow_raw)
 	xfree(read->flow_raw);
+
+    if (read->private_data)
+	xfree(read->private_data);
 
     xfree(read);
 }
