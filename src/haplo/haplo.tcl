@@ -1452,7 +1452,7 @@ proc haplo::set_report {d} {
     array set confirmed {}
     for {set pos 0} {$pos < $clen} {incr pos} {
 	catch {unset vector}
-	array set vector {A 0 C 0 G 0 T 0 - 0 * 0}
+	array set vector {A 0 C 0 G 0 T 0 - 0 * 0 M 0 R 0 S 0 V 0 W 0 Y 0 H 0 K 0 D 0 B 0 N 0}
 	for {set i 0} {$i < $nsets} {incr i} {
 	    incr vector([string index $data(cons,$i) $pos])
 	}
