@@ -865,7 +865,7 @@ proc init_editor_states {w e dbptr} {
 # -------------------------- #
 #   Select Primer	     #
 #   Align		     #
-#   Shuffle Pads	     #
+#   Remove Pad Columns	     #
 #   Remove reading	     #
 #   Break contig	     #
 # ========================== #
@@ -2409,12 +2409,12 @@ proc set_editor_write_mode {e mode} {
     }
 }
 
-proc editor_shuffle_pads {e} {
+proc editor_strip_pads {e} {
     global gap_defs
 
-    $e shuffle_pads \
-	    [keylget gap_defs CONTIG_EDITOR.SHUFFLE_PADS.CONSENSUS_MODE] \
-	    [keylget gap_defs CONTIG_EDITOR.SHUFFLE_PADS.CONSENSUS_CUTOFF]
+    $e strip_pads \
+	    [keylget gap_defs CONTIG_EDITOR.STRIP_PADS.CONSENSUS_MODE] \
+	    [keylget gap_defs CONTIG_EDITOR.STRIP_PADS.CONSENSUS_CUTOFF]
 }
 
 proc editor_set_status_line {e text {delay 0}} {

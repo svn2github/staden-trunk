@@ -1318,7 +1318,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    goto fail;
 	}
 
-    } else if ('s' == *argv[1] && strcmp(argv[1], "shuffle_pads") == 0) {
+    } else if ('s' == *argv[1] && strcmp(argv[1], "strip_pads") == 0) {
 	int sp_consensus_mode;
 	float sp_consensus_cutoff;
 
@@ -1327,7 +1327,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	if (argc != 4 && argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " shuffle_pads ?consensus_mode "
+			     argv[0], " strip_pads ?consensus_mode "
 			     "consensus_cutoff(fraction)?\"", (char *) NULL);
 	    goto fail;
 	}
@@ -1341,7 +1341,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    Tcl_GetDouble(interp, argv[3], &tmp);
 	    sp_consensus_cutoff = tmp;
 	}
-	shuffle_pads(ed->xx, sp_consensus_mode, sp_consensus_cutoff);
+	strip_pads(ed->xx, sp_consensus_mode, sp_consensus_cutoff);
 
     } else if ('g' == *argv[1] && strcmp(argv[1], "get_number") == 0) {
 	char buf[10];

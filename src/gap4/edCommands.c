@@ -337,62 +337,18 @@ int align_read(EdStruct *xx) {
 }
 
 
-#if 1
-
 /*
  *----------------------------------------------------------------------------
- * The pad shuffle command
+ * The strip pads command
  *---------------------------------------------------------------------------
  */
 
-/*
- * NOTE: This version has now been superseded by the shuffle_pads.c version.
- * However that code operates outside of the contig editor. In future it would
- * be good to have an in-editor version too that operates on a selected region
- * only.
- */
-
-/*
- * Shuffles the pads in the whole of the contig.
- * Returns:
- *	0 - OK
- *	1 - Error
-       cover lreg - rreg with segments of size window_length (overlapping
-       by say 20). For each window get all the relevent gels, calc their
-       base freqs, then shuffle till nothing moves.
-       process only the relevent segments of each read: cases:
-
-            pos                          pos+window_len-1
-	       |                           |
- *************************************************
-   **********
-       *************
-                  *********************
-                    ********************************
-                          ***********
-	       |                           |
-            pos                          pos+window_len-1
-
-
-	    Note need to be consistent about element numbering: start
-	    at 0 or 1? Gel and contig numbering from 1 freqs from 0.
-
-	    swap if 
-		seqp[gel_pos] is *
-		seqp[gel_pos-1] is !*
-		theres more than one seq covering this spot
-		theres at least one seqp[gel_pos-1] at gel_pos
-		or seqp[gel_pos-1] is -
-
-       at present we are doing the whole contig, but later we 
-       could use lreg,rreg
-    */
-
-static char *qual_char = "ACGTacgt*";
-static int qual_ind[] = {0,1,2,3, 0,1,2,3, 4};
 
 /*
  * Removes consensus pads where there is a COMPLETE column of pads.
+ *
+ * Returns the number of pads removed
+ *         -1 for error.
  */
 static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
 			      float sp_consensus_cutoff) {
@@ -400,6 +356,7 @@ static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
     char buffer[CHUNKSIZE+1];
     int i, j, width, count=0;
     int tmp;
+    int npads = 0;
 
     xx->cursorPos = positionInContig(xx, xx->cursorSeq, xx->cursorPos);
     xx->cursorSeq = 0;
@@ -414,6 +371,7 @@ static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
 
 	for (j = width-1; j >= 0; j--) {
 	    if (buffer[j] == '*') {
+		npads++;
 		deleteBasesConsensus(xx, i-width+1 + j, 1);
 
 		if (i-width+1+j < xx->cursorPos)  count--;
@@ -423,7 +381,7 @@ static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
     }
 
     U_adjust_cursor(xx, count);
-    return 0;
+    return npads;
 }
 
 /*
@@ -433,374 +391,23 @@ static int remove_pad_columns(EdStruct *xx, int sp_consensus_mode,
  * see pad shuffling happen inside the editor. In time this needs to
  * be replaced by the same re-alignment code.
  */
-int shuffle_pads(EdStruct *xx, int sp_consensus_mode,
-		 float sp_consensus_cutoff)
+int strip_pads(EdStruct *xx, int sp_consensus_mode,
+	       float sp_consensus_cutoff)
 {
-#define PAD 4
-#define DASH 5
-    int max_len,lreg,rreg;
-    int try_pos;
-    int ind,pos;
-    int i,j;
-    int gel_rel_pos;
-    int gel_pos;
-    int gel_len;
-    int freq_pos;
-    int window_length, max_window_length = 1000;
-    int overlap = 20;
-    int not_done;
-    int **freqs;
-    char *seqp,*cp;
-    int b,c,number_of_swaps;
-
-    if (!(DBI_flags(xx) & DB_ACCESS_UPDATE)) {
-	verror(ERR_WARN, "contig_editor", "Editor is in read-only mode");
-	return 1;
-    }
-
-    max_len = max_gel_len(DBI_io(xx));
-
-    lreg = 1;
-    rreg = DB_Length(xx,0);
-
-    /* sanity check */
-
-    if (rreg-lreg < 1) return 1;
-    pos = lreg;
-    not_done = rreg-pos+1;
-
-    if (NULL == (freqs = (int **)xmalloc(7 * sizeof(int *))))
-	return 1;
-    for (i=0;i<7;i++) {
-	if (NULL == (freqs[i] = (int *)xmalloc(max_window_length * sizeof(int))))
-	    return 1;
-    }
-
-    /* deal with undo list */
+    int npads;
 
     openUndo(DBI(xx));
+    npads = remove_pad_columns(xx, sp_consensus_mode, sp_consensus_cutoff);
+    if (npads > 0) {
+	invalidate_consensus(xx);
 
-    while ( not_done ) {
-
-	window_length = MIN ( not_done, max_window_length );
-	try_pos = pos - max_len;
-	ind = posToIndex(xx,try_pos);
-	if (!ind) {
-	    for (i=0;i<7;i++) {
-		xfree(freqs[i]);
-	    }
-	    xfree(freqs);
-	    closeUndo(xx,DBI(xx));
-	    return 1;
-	}
-
-	gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[ind]);
-	gel_len =  DB_Length(xx,DBI_order(xx)[ind]);
-
-	for (i=0;i<window_length;i++) {
-	    for (j=0;j<7;j++) {
-		freqs[j][i] = 0;
-	    }
-	}
-	for (i=ind;
-	     i <= DBI_gelCount(xx) && 
-	     DB_RelPos(xx,DBI_order(xx)[i]) <= (pos + window_length - 1) ;
-	     i++) {
-	    gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[i]);
-	    gel_len =  DB_Length(xx,DBI_order(xx)[i]);
-	    seqp = DBgetSeq(DBI(xx),i);
-
-	    for ( gel_pos = MAX ( 0,pos - gel_rel_pos +1),
-		 freq_pos = gel_pos + gel_rel_pos - pos - 1;
-		 gel_pos < MIN ( (pos + window_length - gel_rel_pos),
-				gel_len) &&
-		 freq_pos < window_length; gel_pos++, freq_pos++ ) {
-
-		cp = strchr(qual_char, seqp[gel_pos]);
-		c = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-		freqs[c][freq_pos]+=1;
-		freqs[6][freq_pos]+=1;
-	    }
-	}
-
-        do {
-	    number_of_swaps = 0;
-
-	    for (i=ind;
-		 i <= DBI_gelCount(xx) && 
-		 DB_RelPos(xx,DBI_order(xx)[i]) <= (pos + window_length - 1) ;
-		 i++) {
-		gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[i]);
-		gel_len =  DB_Length(xx,DBI_order(xx)[i]);
-		seqp = DBgetSeq(DBI(xx),i);
-
-		for ( gel_pos = MAX ( 1,pos - gel_rel_pos +1),
-		     freq_pos = gel_pos + gel_rel_pos - pos - 1;
-		     gel_pos < MIN ( (pos + window_length - gel_rel_pos),
-				    gel_len) &&
-		     freq_pos < window_length; gel_pos++, freq_pos++ ) {
-
-		    if (freq_pos <= 0)
-			continue;
-
-		    cp = strchr(qual_char, seqp[gel_pos]);
-		    c = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-		    cp = strchr(qual_char, seqp[gel_pos-1]);
-		    b = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-
-		    if ((PAD==c) && (PAD!=b) && (freqs[6][freq_pos]>1) &&
-			((freqs[b][freq_pos]) || (DASH==b)) ) {
-
-			U_transpose_bases(xx, i, gel_pos-1);
-			freqs[c][freq_pos-1]++;
-			freqs[c][freq_pos]--;
-			freqs[b][freq_pos-1]--;
-			freqs[b][freq_pos]++;
-			number_of_swaps = 1;
-		    }
-		}
-	    }
-	} while ( number_of_swaps );
-	pos = pos + max_window_length - overlap;
-	not_done = MAX ( 0, rreg - pos );
+	xx->refresh_flags |= ED_DISP_ALL;
+	redisplaySequences(xx, 0);
     }
-    for (i=0;i<7;i++) {
-	xfree(freqs[i]);
-    }
-    xfree(freqs);
-
-    /* Now tidy up the places with only pads left */
-    remove_pad_columns(xx, sp_consensus_mode, sp_consensus_cutoff);
-
-    invalidate_consensus(xx);
-
-    xx->refresh_flags |= ED_DISP_ALL;
-    redisplaySequences(xx, 0);
     closeUndo(xx,DBI(xx));
+
+    if (npads <= 0)
+	undoLastCommand(xx);
 
     return 0;
 }
-#endif
-
-/*
- * This is a newer version, but although it works in some nasty tricky cases
- * it has many simple cases where it appears to do nothing!
- */
-#if 0
-int shuffle_pads(EdStruct *xx, int sp_consensus_mode,
-		 float sp_consensus_cutoff)
-{
-#define PAD 4
-#define DASH 5
-    int max_len,lreg,rreg;
-    int try_pos;
-    int ind,pos;
-    int i;
-    int gel_rel_pos;
-    int gel_pos;
-    int gel_len;
-    int freq_pos;
-    int window_length, max_window_length = 1000;
-    int overlap = 20;
-    int not_done;
-    int **freqs, *freqs2;
-    char *seqp,*cp;
-    int b,c,a,number_of_swaps;
-    int max_cycles;
-    int s1;
-
-    if (!(DBI_flags(xx) & DB_ACCESS_UPDATE)) {
-	verror(ERR_WARN, "contig_editor", "Editor is in read-only mode");
-	return 1;
-    }
-
-    max_len = dbi_max_gel_len(DBI(xx), 0);
-
-    lreg = 1;
-    rreg = DB_Length(xx,0);
-
-    /* sanity check */
-
-    if (rreg-lreg < 1) return 1;
-    pos = lreg;
-    not_done = rreg-pos+1;
-
-    /* Freqs[]:
-     * [0] A a
-     * [1] C c
-     * [2] G g
-     * [3] T t
-     * [4] *
-     * [5] other (-, N, etc)
-     * [6] Total of above
-     */
-    if (NULL == (freqs = (int **)xmalloc(max_window_length * sizeof(int *))))
-	return 1;
-    if (NULL == (freqs2 = (int *)xmalloc(7 * max_window_length * sizeof(int))))
-	return 1;
-    for (i = 0; i < max_window_length; i++) {
-	freqs[i] = freqs2 + i*7;
-    }
-
-    /* deal with undo list */
-
-    openUndo(DBI(xx));
-
-    while ( not_done ) {
-
-	window_length = MIN ( not_done, max_window_length );
-	try_pos = pos - max_len;
-	ind = posToIndex(xx,try_pos);
-	if (!ind) {
-	    xfree(freqs2);
-	    xfree(freqs);
-	    closeUndo(xx,DBI(xx));
-	    return 1;
-	}
-
-	gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[ind]);
-	gel_len =  DB_Length(xx,DBI_order(xx)[ind]);
-
-	memset(freqs2, 0, 7*max_window_length*sizeof(int));
-
-	for (i=ind;
-	     i <= DBI_gelCount(xx) && 
-	     DB_RelPos(xx,DBI_order(xx)[i]) <= (pos + window_length - 1) ;
-	     i++) {
-	    gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[i]);
-	    gel_len =  DB_Length(xx,DBI_order(xx)[i]);
-	    seqp = DBgetSeq(DBI(xx),i);
-
-	    for ( gel_pos = MAX ( 0,pos - gel_rel_pos +1),
-		 freq_pos = gel_pos + gel_rel_pos - pos - 1;
-		 gel_pos < MIN ( (pos + window_length - gel_rel_pos),
-				gel_len) &&
-		 freq_pos < window_length; gel_pos++, freq_pos++ ) {
-
-		cp = strchr(qual_char, seqp[gel_pos]);
-		c = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-		freqs[freq_pos][c]+=1;
-		freqs[freq_pos][6]+=1;
-	    }
-	}
-
-	max_cycles = 20;
-	b = 5; /* '-' */
-        do {
-	    number_of_swaps = 0;
-	    s1 = -100;
-
-	    for (i=ind;
-		 i <= DBI_gelCount(xx) && 
-		 DB_RelPos(xx,DBI_order(xx)[i]) <= (pos + window_length - 1) ;
-		 i++) {
-		double prev_move_score;
-		gel_rel_pos = DB_RelPos(xx,DBI_order(xx)[i]);
-		gel_len =  DB_Length(xx,DBI_order(xx)[i]);
-		seqp = DBgetSeq(DBI(xx),i);
-		prev_move_score = -1000;
-
-		for ( gel_pos = MAX ( 1,pos - gel_rel_pos +1),
-		     freq_pos = gel_pos + gel_rel_pos - pos - 1;
-		     gel_pos < MIN ( (pos + window_length - gel_rel_pos),
-				    gel_len) - 1&&
-		     freq_pos < window_length - 1; gel_pos++, freq_pos++ ) {
-
-		    if (freq_pos <= 0)
-			continue;
-
-		    /* c = base call at current base */
-		    /* b = base call at previous base */
-		    /* Check to see if swap current with previous */
-		    cp = strchr(qual_char, seqp[gel_pos]);
-		    c = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-		    a = b;
-		    cp = strchr(qual_char, seqp[gel_pos-1]);
-		    b = cp ? qual_ind[cp - qual_char] : 5 /*'-'*/;
-
-		    if (( ((PAD==c) && (PAD!=b)) ||
-			  ((PAD==b) && (PAD!=c)) ) &&
-			(freqs[freq_pos][6]>1) &&
-			(freqs[freq_pos-1][6]>1))
-		    {
-			double c_curr, c_move; /* scores */
-			double b_curr, b_move;
-			double swap_score;
-
-			c_curr = (freqs[freq_pos][c] - 1.0) /
-			    (freqs[freq_pos][6] - 1);
-			c_move = (double)freqs[freq_pos-1][c] /
-			    (freqs[freq_pos-1][6] - 1);
-			b_curr = (freqs[freq_pos-1][b] - 1.0) /
-			    (freqs[freq_pos-1][6] - 1);
-			b_move = (double)freqs[freq_pos][b] /
-			    (freqs[freq_pos][6] - 1);
-
-			swap_score = (c_move - c_curr) + (b_move - b_curr);
-
-			if ( prev_move_score > -1000 && 
-			    swap_score >= prev_move_score &&
-			     ((swap_score >  0 && c == PAD) ||
-			      (swap_score >= 0 && b == PAD)) &&
-			     !(b == PAD && s1 == pos + freq_pos - 1) &&
-			     !(c == PAD && s1 == pos + freq_pos)) {
-			    s1 = pos + freq_pos - (b == PAD ? 0 : 1);
-			    U_transpose_bases(xx, i, gel_pos-1);
-			    freqs[freq_pos-1][c]++;
-			    freqs[freq_pos][c]--;
-			    freqs[freq_pos-1][b]--;
-			    freqs[freq_pos][b]++;
-			    number_of_swaps = 1;
-			    prev_move_score = -1000;
-			} else if (prev_move_score >= 0 &&
-				   !(b == PAD && s1 == pos + freq_pos-1) &&
-				   !(b != PAD && s1 == pos + freq_pos-2)) {
-			    s1 = pos + freq_pos-1 - (b == PAD ? 1 : 0);
-			    U_transpose_bases(xx, i, gel_pos-2);
-			    freqs[freq_pos-2][b]++;
-			    freqs[freq_pos-1][b]--;
-			    freqs[freq_pos-2][a]--;
-			    freqs[freq_pos-1][a]++;
-			    number_of_swaps = 1;
-			    prev_move_score = -1000;
-			} else {
-			    prev_move_score = swap_score;
-			}
-		    } else {
-			if (c == PAD && b == PAD)
-			    prev_move_score = -999;
-			else
-			    prev_move_score = -1000;
-		    }
-		}
-	    }
-	    max_cycles--;
-	} while ( number_of_swaps && max_cycles);
-#if 0
-	if (number_of_swaps && !max_cycles) {
-	    /*
-	     * Loops often occur, but they are not problems as the real
-	     * problems will have been solved by this stage and we are just
-	     * left with neutral move-back-n-forth problems.
-	     */
-	    verror(ERR_WARN, "shuffle_pads", "Possible loop avoided");
-	}
-#endif
-	pos = pos + max_window_length - overlap;
-	not_done = MAX ( 0, rreg - pos );
-    }
-    xfree(freqs2);
-    xfree(freqs);
-
-    /* Now tidy up the places with only pads left */
-    remove_pad_columns(xx, sp_consensus_mode, sp_consensus_cutoff);
-
-    invalidate_consensus(xx);
-
-    xx->refresh_flags |= ED_DISP_ALL;
-    redisplaySequences(xx, 0);
-    closeUndo(xx,DBI(xx));
-
-    return 0;
-}
-#endif
