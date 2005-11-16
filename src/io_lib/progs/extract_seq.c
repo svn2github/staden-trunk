@@ -26,13 +26,13 @@
 
 #define LINE_LENGTH 60
 
-static int do_trans(FILE *infp, char *in_file, FILE *outfp, int format,
+static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format,
 		    int good_only, int clip_cosmid, int fasta_out) {
     Read *r;
     char *tmp_base;
 
     read_sections(READ_BASES);
-    if (NULL == (r = fread_reading(infp, in_file, format))) {
+    if (NULL == (r = mfread_reading(infp, in_file, format))) {
 	fprintf(stderr, "Failed to read file '%s'\n", in_file);
 	return 1;
     }
@@ -124,7 +124,7 @@ static void usage(void) {
 
 int main(int argc, char **argv) {
     int from_stdin = 1;
-    FILE *infp = stdin;
+    mFILE *infp = mstdin();
     FILE *outfp = stdout;
     int format = TT_ANY;
     int redirect = 1;
@@ -188,26 +188,26 @@ int main(int argc, char **argv) {
 		    char *cp;
 		    if (cp = strchr(line, '\n'))
 			*cp = 0;
-		    if (NULL == (infp = open_trace_file(line, NULL))) {
+		    if (NULL == (infp = open_trace_mfile(line, NULL))) {
 			perror(line);
 			ret = 1;
 		    } else {
 			ret |= do_trans(infp, line, outfp, format, good_only,
 					clip_cosmid, fasta_out);
-			fclose(infp);
+			mfclose(infp);
 		    }
 		}
 		fclose(fofn_fp);
 	    }
 	}
 	for (;argc > 0; argc--, argv++) {
-	    if (NULL == (infp = open_trace_file(*argv, NULL))) {
+	    if (NULL == (infp = open_trace_mfile(*argv, NULL))) {
 		perror(*argv);
 		ret = 1;
 	    } else {
 		ret |= do_trans(infp, *argv, outfp, format, good_only,
 				clip_cosmid, fasta_out);
-		fclose(infp);
+		mfclose(infp);
 	    }
 	}
     } else {
