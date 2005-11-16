@@ -106,6 +106,11 @@ static int haplo_split_cmd(Tcl_Interp *interp,
     
     /* Allocate SNP memory */
     nsnps = robjc;
+    if (!nsnps) {
+	Tcl_ResetResult(interp);
+	return TCL_OK;
+    }
+
     if (NULL == (snp = (snp_t *)xmalloc(nsnps * sizeof(*snp))))
 	return TCL_ERROR;
 
