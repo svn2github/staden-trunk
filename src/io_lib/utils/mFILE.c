@@ -51,6 +51,8 @@ static char *mfload(FILE *fp, const char *fn, size_t *size, int binary) {
     if (fn && -1 != stat(fn, &sb)) {
 	data = malloc(allocated = sb.st_size);
 	bufsize = sb.st_size;
+    } else {
+	fn = NULL;
     }
 
     do {
