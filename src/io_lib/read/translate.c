@@ -134,6 +134,11 @@ Read *scf2read(Scf *scf) {
     read->rightCutoff = read->NBases - scf->header.bases_right_clip + 1;
     read->format = TT_SCF;
 
+    if (scf->private_data) {
+	read->private_data = xmalloc(scf->header.private_size);
+	memcpy(read->private_data,scf->private_data, scf->header.private_size);
+    }
+
     return read;
 }
 

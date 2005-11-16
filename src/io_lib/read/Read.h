@@ -151,6 +151,9 @@ typedef struct
     char        *flow_order; /* Bases flowed across */
     float       *flow;       /* Processed to be 1 base unit oriented */
     unsigned int*flow_raw;   /* Unprocessed data */
+
+    void *private_data;	     /* The 'private data' block and size from SCF, */
+    int private_size;        /*         NULL & 0 if not present.            */
 } Read;
 
 
