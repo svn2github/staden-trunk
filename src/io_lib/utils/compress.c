@@ -471,6 +471,7 @@ int fcompress_file(mFILE *fp) {
  * 'file' need not exist if 'file'.ext (eg file.gz)
  * exists and can be uncompressed.
  *
+ * NO LONGER SUPPORTED:-
  * If ofp is non NULL then the original file pointer will also be returned
  * (opened for update) to allow writing back to the original file. In cases
  * of uncompressed data this is the same as the returned file pointer.
@@ -479,7 +480,6 @@ mFILE *fopen_compressed(char *file, mFILE **ofp) {
     int num_magics = sizeof(magics) / sizeof(*magics);
     int i;
     char fext[1024];
-    mFILE *fp;
 
     if (ofp) {
 	fprintf(stderr, "ofp not supported in fopen_compressed() yet\n");
@@ -493,6 +493,8 @@ mFILE *fopen_compressed(char *file, mFILE **ofp) {
      * (eg file.gz).
      */
     for (i = -1; i < num_magics; i++) {
+	mFILE *fp, *newfp;
+
 	if (i == -1) {
 	    if (NULL == (fp = mfopen(file, "rb")))
 		continue;
@@ -502,9 +504,14 @@ mFILE *fopen_compressed(char *file, mFILE **ofp) {
 		continue;
 	}
 
-	fp = freopen_compressed(fp, NULL);
-	if (fp)
-	    return fp;
+	newfp = freopen_compressed(fp, NULL);
+	if (fp != newfp)
+	    /* Was compressed, so free compressed copy & return uncompressed */
+	    mfclose(fp);
+
+	if (newfp) {
+	    return newfp;
+	}
     }
 
     return NULL;
@@ -512,7 +519,10 @@ mFILE *fopen_compressed(char *file, mFILE **ofp) {
 
 /*
  * Returns a file pointer of an uncompressed copy of 'fp'.
- * If this differs to the original fp then the original fp is closed.
+ * This may be the input fp or it may be a new fp.
+ * The input fp is not modified and is left open. Therefore it is left up
+ * to the caller to close the input fp and to check whether the returned fp
+ * differs, and if so to close that too.
  */
 mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
     int num_magics = sizeof(magics) / sizeof(*magics);
@@ -553,6 +563,5 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
 
     compression_used = i+1;
 
-    mfclose(fp);
     return mfcreate(udata, usize);
 }
