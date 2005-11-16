@@ -236,6 +236,14 @@ set_def CONTIG_EDITOR.MUTATIONS_MINQUAL 20
 set_def JOIN_EDITOR.STORE_UNDO          1
 set_def CONTIG_EDITOR.MOUSEWHEEL_SPEED  4
 
+# Modifying these will control when strip pads thinks an "entire column of
+# pads" really is one. This allows it to be fooled into deleted columns that
+# are almost pads. It's definition is - calculate the consensus and if it's a
+# pad then it's an entire column. The consensus_mode 0 (frequency) and cutoff
+# 1 (100%) are the defaults, which therefore really do mean entirely pads.
+set_def CONTIG_EDITOR.STRIP_PADS.CONSENSUS_MODE 0
+set_def CONTIG_EDITOR.STRIP_PADS.CONSENSUS_CUTOFF 1
+
 set_def TRACE_DISPLAY.CUTOFF_COLOUR	grey70
 set_def TRACE_DISPLAY.BACKGROUND	white
 set_def TRACE_DISPLAY.XMAG		150
