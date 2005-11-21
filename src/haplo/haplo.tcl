@@ -29,6 +29,9 @@
 #                       to compute edge weights during clustering. An offset
 #                       of 0.8 means .8 correlation has zero score. > 0.8 has
 #                       a positive effect on an edge. < 0.8 has -ve effect.
+# -max_sets		The maximum number of sets to return. If after merging
+# 			we still have more then it'll start arbitrarily
+#			merging until we hit this limit.
 # -twopass		Boolean: whether to add zero-cost edges and recompute
 #			during clustering algorithm
 # -fastmode		Boolean: fast mode param and also checkbox variable
@@ -80,6 +83,7 @@ namespace eval haplo {
 	set ${data}(-snp_cutoff)         10
 	set ${data}(-minscore)           0
 	set ${data}(-correlation_offset) 0.9
+	set ${data}(-max_sets)           99
 	set ${data}(-twopass)            0
 	set ${data}(-fastmode)           1
 	set ${data}(-addfake)            1
@@ -212,6 +216,12 @@ proc haplo::create_display {d} {
 	-width 4 \
 	-type "double 0"
 
+    xentry $w.max_sets \
+	-label "Max \# sets" \
+	-textvariable ${d}(-max_sets) \
+	-width 3 \
+	-type "int 1 99999"
+
     checkbutton $w.twopass \
 	-text "2nd inference pass" \
 	-variable ${d}(-twopass)
@@ -228,7 +238,7 @@ proc haplo::create_display {d} {
 	-text "Cluster by SNPs" \
 	-command [list [namespace current]::ClusterSNP $d]
 
-    pack $w.correlation_offset $w.minscore $w.twopass $w.fast \
+    pack $w.correlation_offset $w.minscore $w.max_sets $w.twopass $w.fast \
 	-side left -padx 10
     pack $w.cluster $w.templates -side right
 
@@ -1754,7 +1764,8 @@ proc haplo::ClusterSNP {d} {
 			  -minscore $data(-minscore) \
 			  -twopass $data(-twopass) \
 			  -fast $data(-fastmode) \
-			  -correlation_offset $data(-correlation_offset)]
+			  -correlation_offset $data(-correlation_offset) \
+		          -max_sets $data(-max_sets)]
     ClearBusy
     set data(ungrouped) [haplo::find_ungrouped $d]
     set data(sets) [sort_sets $data(sets)]

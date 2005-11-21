@@ -741,7 +741,7 @@ void graph_calc_link_scores(graph *g, int recalc) {
  * Finds the edge with the highest linkage score and returns it.
  */
 edge *best_edge(graph *g) {
-    int i, best_score = 0;
+    int i, best_score = -1e6;
     edge *best_edge = NULL;
 
     for (i = 0; i < g->edges->nedges; i++) {
@@ -1198,9 +1198,24 @@ static dstring_t *list_groups(graph *g) {
     return ds;
 }
 
+int count_groups(graph *g) {
+    int i;
+    int ngroups = 0;
+
+    /* We follow this by each group of nodes */
+    for (i = 0; i < g->nodes->nnodes; i++) {
+	if (!g->nodes->node[i])
+	    continue;
+
+	ngroups++;
+    }
+
+    return ngroups;
+}
+
 dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbose,
 		       double min_score, int two_pass, int fast_mode,
-		       double c_offset) {
+		       double c_offset, int max_sets) {
     graph *g;
     edge *e;
     dstring_t *ds;
@@ -1240,7 +1255,8 @@ dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbose,
 	/* Add fake zero-score edges if we want just 2-haplotypes */
 	add_zero_edges(g);
 	graph_calc_link_scores(g, 1);
-	graph_print(g, 1);
+	if (verbosity >= 4)
+	    graph_print(g, 1);
 
 	puts("===pass 2===");
 	while ((e = best_edge(g)) && (e->linkage_score > min_score)) {
@@ -1249,6 +1265,21 @@ dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbose,
 	    /* graph_print(g, 1); */
 	}
 	/* graph_print(g, 1); */
+    }
+
+    /* Force number of groups to be X? */
+    if (max_sets) {
+	int ngroups = count_groups(g);
+	add_zero_edges(g);
+	for (; ngroups > max_sets; ngroups--) {
+	    e = best_edge(g);
+	    if (!e) {
+		printf("Bailed out as no edge connecting groups\n");
+		break;
+	    }
+	    merge_node(g, e);
+	    graph_calc_link_scores(g, fast_mode ? 0 : 1);
+	}
     }
 
     /* print_groups(g); */

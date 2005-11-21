@@ -27,7 +27,7 @@ void free_snps(snp_t *snps, int nsnps);
 
 dstring_t *haplo_split(GapIO *io, snp_t *snp, int nsnps, int verbosity,
 		       double min_score, int two_pass, int fast_mode,
-		       double correlation_offset);
+		       double correlation_offset, int max_sets);
 
 int calc_template_consensus(GapIO *io, int contig,
 			    int start, int end,
