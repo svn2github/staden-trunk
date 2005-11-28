@@ -831,9 +831,11 @@ proc haplo::display_bases {d xpos} {
 
     set num 0
     foreach snp $snps {
- 	array set basea [list A 0 C 0 G 0 T 0 - 0 * 0]
+ 	array set basea [list A 0 C 0 G 0 T 0 * 0]
  	foreach b [lrange $snp 2 end] {
- 	    incr basea([lindex $b 2])
+	    if {[info exists basea([lindex $b 2])]} {
+		incr basea([lindex $b 2])
+	    }
  	}
 	set xpos2 $xpos
  	foreach b {A C G T *} {
