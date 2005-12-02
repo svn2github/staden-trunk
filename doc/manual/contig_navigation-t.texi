@@ -33,8 +33,20 @@ The reset button will clear the table and re-read the data from
 file.
 Auto-close editors is set on by default. It closes any un-needed 
 editors when the user selects a region on a different contig. 
+The Show Traces mode will automatically display some traces based on
+the same mechanisms used in the editors 'Auto-display Traces' option
+(_fpref(Editor-Trace Display, Trace Display Settings, contig_editor)).
 Save will save the table list, including all rows previously marked
 as selected, back to the file. If this file is re-read at a later stage
 then the table will have the same sort order and tagging as when saved. 
 
+The format of the input file is as follows:
 
+@i{contig_identifier} @i{position} @i{comment}
+
+If the comment contains ``@code{To:}'' and a number then the region
+indicator at the bottom of the navigator window updates to show the
+size of the element, otherwise it just has a line showing the position
+of the start. Finally the comment may end in the 'nul' character to
+indicate that it has already been visited. (This is utilised by the
+Save command.)
