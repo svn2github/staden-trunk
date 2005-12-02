@@ -2171,6 +2171,21 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_GetInt(interp, argv[2], &seq);
 	vTcl_SetResult(interp, "%d", edFindSet(ed->xx, seq));
 
+    } else if ('s' == *argv[1] && strcmp(argv[1], "show_problem_traces") == 0) {
+	int pos;
+
+	if (argc != 3) {
+	    Tcl_ResetResult(interp);
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " show_problem_traces position\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &pos);
+	tman_problem_traces(ed->xx, pos);
+	Tcl_SetResult(interp, "0", TCL_STATIC);
+
     } else {
 	Tcl_AppendResult(interp, "bad option \"", argv[1], "\": must be FIXME",
 			 NULL);
