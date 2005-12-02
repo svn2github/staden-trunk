@@ -486,6 +486,9 @@ proc ListEdit {name {read_only 0}} {
 		-text Print \
 		-command "ListPrint [list $name]"
 	}
+	button $t.mbar.save \
+	    -text Save \
+	    -command "SaveThisListDialog [list $name] $t.save"
 	button $t.mbar.browse \
 	    -text Browse \
 	    -command "ListEditBrowse $t [list $name]"
@@ -513,10 +516,10 @@ proc ListEdit {name {read_only 0}} {
 
 	if { $tcl_platform(platform) != "windows" } {
 	    pack $t.mbar.quit $t.mbar.clear $t.mbar.search $t.mbar.print \
-		$t.mbar.browse -side left
+		$t.mbar.save $t.mbar.browse -side left
 	} else {
 	    pack $t.mbar.quit $t.mbar.clear $t.mbar.search $t.mbar.browse \
-		-side left
+		$t.mbar.save -side left
 	}
         pack $t.mbar -side top -fill x
     
@@ -746,15 +749,21 @@ proc SaveList2 {t file name} {
     if {[ListSave $file $name]} {destroy $t}
 }
 
-proc SaveListDialog {} {
+proc SaveListDialog {{t {}} {listname {}}} {
     global gap_defs
 
-    set t [keylget gap_defs SAVE_LIST.WIN]
+    if {$t == ""} {
+	set t [keylget gap_defs SAVE_LIST.WIN]
+    }
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Save list"
 
     getLname $t.list [keylget gap_defs SAVE_LIST.LISTNAME] read
     getFname $t.file [keylget gap_defs SAVE_LIST.FILENAME] save
+
+    if {$listname != ""} {
+	$t.list.entry.entry insert end $listname
+    }
 
     okcancelhelp $t.ok \
         -ok_command "SaveList2 $t \[entrybox_get $t.file.entry\] \
@@ -764,6 +773,27 @@ proc SaveListDialog {} {
         -bd 2 -relief groove
 
     pack $t.list $t.file $t.ok -side top -fill both
+} 
+
+proc SaveThisListDialog {listname {t {}}} {
+    global gap_defs
+
+    if {$t == ""} {
+	set t [keylget gap_defs SAVE_LIST.WIN]
+    }
+    if {[xtoplevel $t -resizable 0] == ""} return
+    wm title $t "Save list"
+
+    getFname $t.file [keylget gap_defs SAVE_LIST.FILENAME] save
+
+    okcancelhelp $t.ok \
+        -ok_command "SaveList2 $t \[entrybox_get $t.file.entry\] \
+		              [list $listname]" \
+        -cancel_command "destroy $t" \
+	-help_command "show_help gap4 {List-Commands}" \
+        -bd 2 -relief groove
+
+    pack $t.file $t.ok -side top -fill both
 } 
 
 #
