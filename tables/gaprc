@@ -1257,6 +1257,10 @@ set_def SEARCH_LIST_SEQUENCE sequence_id
 set_def SEARCH_LIST_TEMPLATE template 
 set_def SEARCH_LIST_ANNOTATION tags 
 
+# Contig navigator
+set_def CONTIG_NAVIGATOR.AUTO_CLOSE 1
+set_def CONTIG_NAVIGATOR.SHOW_TRACES 1
+
 # Prefinish
 set_def PREFINISH.CONFIG_FILE $env(STADTABL)/config.prefinish
 
