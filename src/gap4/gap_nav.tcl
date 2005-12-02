@@ -59,12 +59,26 @@ proc OpenNavFile { io w } {
     vfuncheader "Contig Navigation"
 }
 
+# Call this from FocusOut events.
+# When window 'w' loses focus it checks if the mouse window is still in the
+# window. If it is then it means the window manager stole our focus by moving
+# it another window (probably a new one - gnome wm's love to grant focus to
+# any newly created window), and in this case we simply take focus back again.
+proc keep_focus {w} {
+    set x [winfo pointerx .]
+    set y [winfo pointery .]
+    if {$w == [winfo containing $x $y]} {
+	after idle "focus $w"
+    }
+}
+
 proc CreateTableList { io t } {
     package require Tablelist
     
-    global gap_defs $t.File $t.Auto $t.Edwin
+    global gap_defs $t.File $t.Auto $t.Edwin $t.Traces
 
-    set $t.Auto 1 
+    set $t.Auto   [keylget gap_defs CONTIG_NAVIGATOR.AUTO_CLOSE] 
+    set $t.Traces [keylget gap_defs CONTIG_NAVIGATOR.SHOW_TRACES] 
 
     if {[xtoplevel $t] == ""} return
     wm title $t "Navigate Regions"
@@ -134,16 +148,25 @@ proc CreateTableList { io t } {
     button $t.b.reset -text "Reset"  -command "ResetTable $tbl $t"
     button $t.b.prev -text "  <<-  " -command "PrevProblem $io $tbl $t" 
     button $t.b.next -text "  ->>  " -command "NextProblem $io $tbl $t" 
-    checkbutton $t.b.auto -text "auto-close editors" \
+    bind $body <Key-p> "PrevProblem $io $tbl $t" 
+    bind $body <Key-n> "NextProblem $io $tbl $t" 
+    bind $body <Key-Page_Up> "PrevProblem $io $tbl $t;break" 
+    bind $body <Key-Page_Down> "NextProblem $io $tbl $t;break" 
+    focus $body
+    bind $body <Any-FocusOut> {keep_focus %W}
+    checkbutton $t.b.auto -text "Auto-close editors" \
         -variable $t.Auto -offvalue 0 -onvalue 1
+    checkbutton $t.b.traces -text "Show traces" \
+	-variable $t.Traces -offvalue 0 -onvalue 1
         
-    pack $t.b.reset -side left  -padx 10
-    pack $t.b.prev -side left
-    pack $t.b.next -side left
-    pack $t.b.auto -side left   -padx 10
-    pack $t.b.help -side right  -padx 10
-    pack $t.b.close -side right -padx 10
-    pack $t.b.save -side right  -padx 10
+    pack $t.b.reset  -side left  -padx 10
+    pack $t.b.prev   -side left
+    pack $t.b.next   -side left
+    pack $t.b.auto   -side left  -padx 10
+    pack $t.b.traces -side left  -padx 10
+    pack $t.b.help   -side right -padx 10
+    pack $t.b.close  -side right -padx 10
+    pack $t.b.save   -side right -padx 10
     
     pack $t.f -side top -expand yes -fill both -padx 5 -pady 5
 }
@@ -239,7 +262,7 @@ proc ResetTable { tbl w } {
 
 proc RaiseAndMoveContig {io tbl w} {
     
-    global gap_defs $w.Edwin $w.Auto 
+    global gap_defs $w.Edwin $w.Auto $w.Traces
     
     set sel [$tbl curselection]
     set ctg [$tbl cellcget [$tbl curselection],0 -text]
@@ -257,7 +280,8 @@ proc RaiseAndMoveContig {io tbl w} {
     
     if {[expr {[set $w.Auto] == 1}]} {
         if {[info exists $w.Edwin] && [expr {[set $w.Edwin] != $ed}]} {
-            catch { destroy [winfo toplevel [set $w.Edwin]] }
+	    raise [winfo toplevel [set $w.Edwin]]
+	    editor_quit [winfo toplevel [set $w.Edwin]] [winfo parent [set $w.Edwin]] [set $w.Edwin] $w
         }
         set $w.Edwin $ed
     }
@@ -268,18 +292,18 @@ proc RaiseAndMoveContig {io tbl w} {
     set ctg_len [c_length $io $ctgnum]
     $w.s.info configure -text "$ctg_len bp"
    
-
-    if {[regexp {Quality value} $com _dummy_] == 1} {
-        set end $pos
-    } else {
-        regexp {To:([0-9]+)\)$} $com _dummy_ end
+    if {[regexp {To:([0-9]+)$} $com _dummy_ end] != 1} {
+	set end $pos
     }
+
     $w.s.can delete POS
     set pstart [expr {int((400.0 * $pos)/$ctg_len)}]
     set pend   [expr {int((400.0 * $end)/$ctg_len)}]
     $w.s.can create rectangle $pstart 10 $pend 20 -fill red -width 0 -tags POS
 
-
+    if {[set $w.Traces] == 1} {
+	$ed show_problem_traces $pos
+    }
 }
 
 proc compareAsSet {item1 item2} {
