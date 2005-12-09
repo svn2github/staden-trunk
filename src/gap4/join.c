@@ -51,7 +51,7 @@ static void add_pads(EdStruct *xx, int pos, int num)
 	insertBasesConsensus(xx, pos, rem, pads);
 }
 
-int align_contigs (OVERLAP *overlap) {
+int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
 
 #define DO_BLOCKS 100
 #define OK_MATCH 80
@@ -70,7 +70,8 @@ int align_contigs (OVERLAP *overlap) {
     gap_extend = 4;
     job = RETURN_SEQ | RETURN_NEW_PADS;
 
-    edge_mode = EDGE_GAPS_ZERO | BEST_EDGE_TRACE;
+    edge_mode  = fixed_left  ? EDGE_GAPS_COUNT   : EDGE_GAPS_ZERO;
+    edge_mode |= fixed_right ? FULL_LENGTH_TRACE : BEST_EDGE_TRACE;
 
     longest_diagonal = MAX(overlap->seq1_len,overlap->seq2_len);
     shortest_diagonal = MIN(overlap->seq1_len,overlap->seq2_len);
@@ -314,7 +315,8 @@ rsalign2myers(char *seq1, int len1, char *seq2, int len2, char pad_sym) {
 }
 
 static int align(EdStruct *xx0, int pos0, int len0,
-		 EdStruct *xx1, int pos1, int len1)
+		 EdStruct *xx1, int pos1, int len1,
+		 int fixed_left, int fixed_right)
 {
 
     char *ol0,*ol1, *cons0, *cons1;
@@ -352,7 +354,7 @@ static int align(EdStruct *xx0, int pos0, int len0,
     if (NULL == (overlap = create_overlap())) return -1;
     init_overlap (overlap, ol0, ol1, len0, len1);
 
-    if(-1 == (ierr =  align_contigs (overlap))) {
+    if(-1 == (ierr =  align_contigs (overlap, fixed_left, fixed_right))) {
 	xfree(ol0);
 	xfree(ol1);
 	destroy_overlap(overlap);
@@ -679,7 +681,7 @@ static int align_old(EdStruct *xx0, int pos0, int len0,
  *	0 - aligned ok
  *	1 - not ok
  */
-int alignOverlap(EdStruct *xx[2])
+int alignOverlap(EdStruct *xx[2], int fixed_left, int fixed_right)
 {
     int left0,right0;
     int left1/*,right1*/;
@@ -692,16 +694,39 @@ int alignOverlap(EdStruct *xx[2])
 
     if (! inJoinMode(xx[0])) return 1;
 
+
     /* Compute overlap position and sizes */
+    length0 = DB_Length(xx[0],0);
+    length1 = DB_Length(xx[1],0);
     if (offset < 0) {
 	left0 = 1-offset;
 	left1 = 1;
+
+	if (fixed_left) {
+	    int d = DB_RelPos(xx[1], DBI_order(xx[1])[xx[1]->cursorSeq])-1
+		+ xx[1]->cursorPos - 1;
+	    left0 += d;
+	    left1 += d;
+	}
     } else {
 	left0 = 1;
 	left1 = 1+offset;
+
+	if (fixed_left) {
+	    int d = DB_RelPos(xx[0], DBI_order(xx[0])[xx[0]->cursorSeq])-1
+		+ xx[0]->cursorPos - 1;
+	    left0 += d;
+	    left1 += d;
+	}
     }
-    length0 = DB_Length(xx[0],0);
-    length1 = DB_Length(xx[1],0);
+
+    if (fixed_right) {
+	length0 = DB_RelPos(xx[0], DBI_order(xx[0])[xx[0]->cursorSeq])-1
+	    + xx[0]->cursorPos;
+	length1 = DB_RelPos(xx[1], DBI_order(xx[1])[xx[1]->cursorSeq])-1
+	    + xx[1]->cursorPos;
+    }
+
     if (offset+length0 < length1) {
 	right0 = length0;
     } else {
@@ -714,10 +739,16 @@ int alignOverlap(EdStruct *xx[2])
 
     /* Add on extra data either end to allow for padding */
 #define XTRA_PERC 0.30
-    left0 -= (int)(overlapLength * XTRA_PERC);
-    left1 -= (int)(overlapLength * XTRA_PERC);
-    len0  += (int)(overlapLength * XTRA_PERC * 2);
-    len1  += (int)(overlapLength * XTRA_PERC * 2);
+    if (!fixed_left) {
+	left0 -= (int)(overlapLength * XTRA_PERC);
+	left1 -= (int)(overlapLength * XTRA_PERC);
+	len0  += (int)(overlapLength * XTRA_PERC);
+	len1  += (int)(overlapLength * XTRA_PERC);
+    }
+    if (!fixed_right) {
+	len0  += (int)(overlapLength * XTRA_PERC);
+	len1  += (int)(overlapLength * XTRA_PERC);
+    }
 
     xx0_dp = xx[0]->displayPos;
     xx1_dp = xx[1]->displayPos;
@@ -752,7 +783,8 @@ int alignOverlap(EdStruct *xx[2])
     openUndo(DBI(xx[1]));
 
     /* Do the actual alignment */
-    ret = align(xx[0], left0, len0, xx[1], left1, len1);
+    ret = align(xx[0], left0, len0, xx[1], left1, len1,
+		fixed_left, fixed_right);
 
     if (ret) {
 	/* Alignment failed - put back display positions before returning */

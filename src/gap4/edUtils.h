@@ -435,7 +435,7 @@ extern void edSetQCutoff(EdStruct *xx, int value);
 extern void edSetDifferenceQuality(EdStruct *xx, int value);
 extern int edSetJoinLock(EdStruct *xx, int value);
 extern void edJoin(EdStruct *xx);
-extern void edJoinAlign(EdStruct *xx);
+extern void edJoinAlign(EdStruct *xx, int fixed_left, int fixed_right);
 extern void edSetActiveAnnos(EdStruct *xx, int argc, char **argv);
 extern void edSetMiniTraces(EdStruct *xx, int height);
 extern void edNextDifference(EdStruct *xx, int fwd);
@@ -539,7 +539,7 @@ int linesOnScreen (EdStruct *xx, int pos, int width);
  *	0 - aligned ok
  *	1 - not ok
  */
-int alignOverlap(EdStruct *xx[2]);
+int alignOverlap(EdStruct *xx[2], int fixed_left, int fixed_right);
 
 /*
  * -- from tkEdUtils.c --

@@ -855,8 +855,7 @@ int set_band_blocks(int seq1_len, int seq2_len) {
 }
 
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
-
-
+    int edge_mode = params->edge_mode;
     int i, s1, s2;
     int len_seq;
     int band, band_in;
@@ -946,7 +945,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	   overlap->seq1, overlap->seq2);
     */
 
-    params->edge_mode = 6;
+    params->edge_mode = (edge_mode & ~BEST_EDGE_TRACE) | FULL_LENGTH_TRACE;
     if ( band_in) band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
     set_align_params (params, band, 0,0,0,0, s1, s2,0,0,1);
 
@@ -968,7 +967,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     }
     s1 = h->block_match[0].pos_seq1 + h->block_match[0].length;
     s2 = h->block_match[0].pos_seq2 + h->block_match[0].length;
-    params->edge_mode = 5;
+    params->edge_mode = EDGE_GAPS_COUNT | FULL_LENGTH_TRACE;
     for(i=1;i<h->matches;i++) {
 	overlap->seq1_len = h->block_match[i].pos_seq1 - s1;
 	overlap->seq2_len = h->block_match[i].pos_seq2 - s2;
@@ -1019,7 +1018,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 
     if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
     set_align_params (params, band, 0,0,0,0, 0,0,0,0,1);
-    params->edge_mode = 9;
+    params->edge_mode = (edge_mode & ~EDGE_GAPS_ZERO) | EDGE_GAPS_COUNT;
     if (align_bit ( params, overlap, edit_pair)) {
 	verror(ERR_WARN, "align_wrap", "failed in align_bit");
 	destroy_edit_pair(edit_pair);
@@ -1089,7 +1088,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
     destroy_edit_pair(edit_pair);
 
     /* when we enter seq_to_overlap from here the overlap score is not set */
-    overlap_out->score = 0;
+    overlap_out->score = 0; /* assigned by seq_to_overlap */
     if( i = seq_to_overlap(overlap_out,OLD_PAD_SYM,NEW_PAD_SYM)) {
 	return -1;
     }
@@ -1099,7 +1098,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 	old_pads_for_new(overlap_out->seq2_out,overlap_out->seq_out_len,
 			 OLD_PAD_SYM,NEW_PAD_SYM);
     }
-    overlap_out->score = overlap_out->percent;
+    /*overlap_out->score = overlap_out->percent; */
     overlap_out->qual  = overlap_out->percent;
     return 0;
 }

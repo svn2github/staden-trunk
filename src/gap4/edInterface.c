@@ -1218,14 +1218,14 @@ void edJoin(EdStruct *xx) {
 /*
  * Perform an alignment in the join editor
  */
-void edJoinAlign(EdStruct *xx) {
+void edJoinAlign(EdStruct *xx, int fixed_left, int fixed_right) {
     if (xx->editorState == StateDown)
 	return;
 
     if (!xx->link)
 	return;
 
-    if (alignOverlap(xx->link->xx)) {
+    if (alignOverlap(xx->link->xx, fixed_left, fixed_right)) {
 	bell();
     } else {
 	xx->link->xx[0]->refresh_flags |= ED_DISP_ALL;

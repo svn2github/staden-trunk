@@ -1695,14 +1695,20 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_AppendResult(interp, buf, NULL);
 
     } else if ('j' == *argv[1] && strcmp(argv[1], "join_align") == 0) {
-	if (argc != 2) {
+	int fixed_left = 0, fixed_right = 0;
+	if (argc != 2 && argc != 4) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " join_align\"",
+			     argv[0], " join_align ?fixed-left fixed-right?\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	edJoinAlign(ed->xx);
+	if (argc == 4) {
+	    Tcl_GetInt(interp, argv[2], &fixed_left);
+	    Tcl_GetInt(interp, argv[3], &fixed_right);
+	}
+
+	edJoinAlign(ed->xx, fixed_left, fixed_right);
 
     } else if ('j' == *argv[1] && strcmp(argv[1], "join") == 0) {
 	if (argc != 2) {

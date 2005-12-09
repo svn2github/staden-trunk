@@ -240,6 +240,14 @@ proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
 	    -text "Align" \
 	    -command "SetBusy; catch {$editor join_align}; ClearBusy" \
 	    -padx 2
+        button $buttons.alignL \
+	    -text "<" \
+	    -command "SetBusy; catch {$editor join_align 0 1}; ClearBusy" \
+	    -padx 2
+        button $buttons.alignR \
+	    -text ">" \
+	    -command "SetBusy; catch {$editor join_align 1 0}; ClearBusy" \
+	    -padx 2
     }
     xmenubutton $buttons.commands -text "Commands >>" \
 	-menu $buttons.commands.menu.commands -padx 2
@@ -357,7 +365,8 @@ proc create_editor {w edname join reveal ccut qcut dbptr {sets {}}} {
         pack $buttons.reveal $buttons.next -side left -fill both;
     }
     if "$join" {
-        pack $buttons.lock $buttons.align -side left -fill both -padx 1
+        pack $buttons.lock $buttons.alignL $buttons.align $buttons.alignR \
+	    -side left -fill both -padx 1
     }
     pack $buttons.commands $buttons.settings -side left -fill both
 
