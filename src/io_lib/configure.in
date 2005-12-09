@@ -15,6 +15,12 @@ AC_CHECK_LIB(z,main,LIBZ='-lz';AC_DEFINE(HAVE_ZLIB),
              AC_MSG_WARN(*** zlib not found; hence no ZTR support))
 AC_SUBST(LIBZ)
 
+dnl Socket support for Solaris (et al)
+AC_SEARCH_LIBS([gethostbyname], [nsl])
+AC_SEARCH_LIBS([socket], [socket], [],
+    [AC_CHECK_LIB([socket], [socket],
+                  [LIBS="-lsocket -lnsl $LIBS"], [], [-lnsl])])
+
 AM_CONDITIONAL(HAVE_ZLIB, test x$ac_cv_lib_z_main = xyes)
 
 dnl Checks for header files.
