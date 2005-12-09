@@ -1423,7 +1423,7 @@ void old_pads_for_new ( char *seq, int seq_len, char OLD_PAD_SYM, char NEW_PAD_S
 
 int seq_to_overlap ( OVERLAP *overlap, char OLD_PAD_SYM, char NEW_PAD_SYM) {
 
-  int i,j;
+  int i,j, score;
 
   if ( i = overlap_ends(overlap->seq1_out, overlap->seq_out_len,
 			NEW_PAD_SYM, &overlap->left1, &overlap->right1)) {
@@ -1485,13 +1485,22 @@ int seq_to_overlap ( OVERLAP *overlap, char OLD_PAD_SYM, char NEW_PAD_SYM) {
   
   overlap->length = overlap->right - overlap->left + 1;
   
+  score = 0;
   for(i=overlap->left,j=0;i<=overlap->right;i++) {
-      if(SEQ_MATCH((int) overlap->seq1_out[i], (int) overlap->seq2_out[i])) j++;
-      if( (overlap->seq1_out[i] == NEW_PAD_SYM) && (overlap->seq2_out[i] == OLD_PAD_SYM)) j++;
+      score -= 4;
+      if(SEQ_MATCH((int) overlap->seq1_out[i], (int) overlap->seq2_out[i])) {
+	  j++;
+	  score+=5;
+      }
+      if( (overlap->seq1_out[i] == NEW_PAD_SYM) && (overlap->seq2_out[i] == OLD_PAD_SYM)) {
+	  j++;
+	  score+=5;
+      }
   }
 
   if(overlap->length) {
       overlap->percent = 100.0 * j / overlap->length;
+      overlap->score = score;
   }
 
   overlap->qual = overlap->score;
