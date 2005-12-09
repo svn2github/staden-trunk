@@ -25,7 +25,7 @@ set search_setup(verifyor)		"0 0 0 0"
 set search_setup(discrepancy)		"0 0 0 0 value"
 set search_setup(consdiscrepancy)	"0 0 0 0 value"
 set search_setup(tag)			"0 0 1 0"
-set search_setup(difference)		"0 0 0"
+set search_setup(difference)		"0 0 0 0"
 
 proc create_search_win {w com {dir 0} {raise 1}} {
      global NGTag gap_defs search_setup
