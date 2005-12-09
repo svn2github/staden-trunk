@@ -514,6 +514,9 @@ int inexact_pad_match(char *seq,
     for (i = string_len-1; i >= 0; i--) {
 	uppert[i] = toupper(string[i]);
     }
+    for (i = 0; i < seq_len; i++) {
+	seq[i] = toupper(seq[i]);
+    }
     pos = NULL;
 
     n_matches = 0;
