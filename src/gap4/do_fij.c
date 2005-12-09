@@ -21,7 +21,7 @@
 extern DLL_IMPORT int unknown_char;
 
 void buffij(int left_gel1, int seq2_start, int left_gel2, int seq1_start,
-	    int len_align, double percent_mismatch);
+	    int len_align, int score, double percent_mismatch);
 
 int do_it_fij ( char seq[], int seq_len,
 		int word_len, int min_overlap,
@@ -208,6 +208,7 @@ int do_it_fij ( char seq[], int seq_len,
 		    else {
 			ret = compare_a ( h, params, overlap );
 		    }
+
 		    if ( ret < 0 ) {
 			verror(ERR_WARN, "find internal joins", "hashing" ); 
 			continue;
@@ -260,7 +261,8 @@ int do_it_fij ( char seq[], int seq_len,
 			    buffij(
 				   contig_list[contig1_num].contig_left_gel,seq2_start_f,
 				   contig_list[contig2_num].contig_left_gel,seq1_start_f,
-				   overlap->length,percent_mismatch);
+				   overlap->length, (int)overlap->score,
+				   percent_mismatch);
 			}
 		    }
 		}
@@ -389,7 +391,8 @@ int do_it_fij ( char seq[], int seq_len,
 				   seq2_start_r,
 				   contig_list[contig2_num].contig_left_gel,
 				   seq1_end_r,
-				   overlap->length,percent_mismatch);
+				   overlap->length, (int)overlap->score,
+				   percent_mismatch);
 			}
 		    }
 		}

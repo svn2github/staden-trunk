@@ -36,6 +36,7 @@
  * ============================================================================
  */
 struct mobj_repeat_t;
+struct mobj_fij_t;
 
 /*
  * ============================================================================
@@ -48,7 +49,7 @@ struct mobj_repeat_t;
  * find repeats.
  */
 typedef struct obj_match_t {
-    /* The following are shared between obj_match and obj_read_pair */
+    /* The following are shared between obj_match, obj_read_pair and obj_fij */
     void *(*func)(int job,
 		  void *jdata,
 		  struct obj_match_t *obj,
@@ -78,7 +79,7 @@ typedef struct obj_match_t {
  * data to plot in the future that doesn't have c1, c2, (etc) ?
  */
 typedef struct obj_read_pair_t {
-    /* The following are shared between obj_match and obj_read_pair */
+    /* The following are shared between obj_match, obj_read_pair and obj_fij */
     void *(*func)(int job,
 		  void *jdata,
 		  struct obj_match_t *obj,
@@ -96,6 +97,32 @@ typedef struct obj_read_pair_t {
 } obj_read_pair;
 
 /*
+ * An individual match returned by find internal joins.
+ * ASSUMPTION: The start is as per obj_match (see the comments within that
+ * structure). Maybe these common bits should be folded into part of
+ * obj_generic. Will we really have data to plot in the future that doesn't
+ * have c1, c2, (etc) ?
+ */
+typedef struct obj_fij_t {
+    /* The following are shared between obj_match, obj_read_pair and obj_fij */
+    void *(*func)(int job,
+		  void *jdata,
+		  struct obj_fij_t *obj,
+		  struct mobj_fij_t *data);
+    struct mobj_fij_t *data;
+
+    int inum;
+    int c1, c2;
+    int pos1, pos2;
+    int length;
+    int flags;
+
+    /* Below here are local to this strucure only */
+    int score;
+    int percent; /* *10000 */
+} obj_fij;
+
+/*
  * The generic object - a union of specific objects. All specific objects
  * contain func() and data as the first two fields. To use these in
  * conjunction with calling a job we use (eg):
@@ -109,6 +136,7 @@ typedef union {
 
     obj_match     match;
     obj_read_pair read_pair;
+    obj_fij	  fij;
 } obj_generic;
 
 /*
@@ -136,7 +164,23 @@ typedef struct mobj_repeat_t {
     int match_type;
     void (*reg_func)(GapIO *io, int contig, void *fdata,
 		     reg_data *jdata);
-} mobj_repeat, mobj_fij, mobj_template, mobj_find_oligo;
+} mobj_repeat, mobj_template, mobj_find_oligo;
+
+typedef struct mobj_fij_t {
+    int num_match;
+    obj_fij *match;
+    char tagname[20];
+    int linewidth;
+    char colour[COLOUR_LEN];
+    char *params;
+    int all_hidden;
+    int current;
+
+    GapIO *io;
+    int match_type;
+    void (*reg_func)(GapIO *io, int contig, void *fdata,
+		     reg_data *jdata);
+} mobj_fij;
 
 typedef struct mobj_checkass_t {
     int num_match;

@@ -20,7 +20,7 @@ static int counter;
 static int counter_max;
 static mobj_fij *global_match;
 
-void *fij_obj_func(int job, void *jdata, obj_match *obj,
+void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		      mobj_fij *fij) {
     static char buf[80];
     obj_cs *cs;
@@ -54,13 +54,13 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 	    vmessage("    With contig %s(#%d) at %d\n",
 		     get_contig_name(fij->io, ABS(obj->c2)),
 		     io_clnbr(fij->io, ABS(obj->c2)), obj->pos2);
-	    vmessage("    Length %d, mismatch %2.2f%%\n\n",
-		     obj->length, ((float)obj->score)/10000);
+	    vmessage("    Length %d, score %d, mismatch %2.2f%%\n\n",
+		     obj->length, obj->score, ((float)obj->percent)/10000);
 	    end_message(cs->window);
 	    break;
 
 	case 1: /* Hide */
-	    obj_hide(GetInterp(), cs->window, obj,
+	    obj_hide(GetInterp(), cs->window, (obj_match *)obj,
 		     (mobj_repeat *)fij, csplot_hash);
 	    break;
 
@@ -69,7 +69,7 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 	    int cnum[2], llino[2], pos[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
-	    fij->current = obj - fij->match;
+	    fij->current = obj - (obj_fij *)fij->match;
 	    Tcl_VarEval(GetInterp(), "CSLastUsed ", CPtr2Tcl(fij), NULL);
 
 	    cnum[0] = abs(obj->c1);
@@ -139,7 +139,7 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 	}
 
 	case 4: /* Remove */
-	    obj_remove(GetInterp(), cs->window, obj,
+	    obj_remove(GetInterp(), cs->window, (obj_match *)obj,
 		       (mobj_repeat *)fij, csplot_hash);
 	    break;
 
@@ -148,12 +148,12 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 
     case OBJ_GET_BRIEF:
 	sprintf(buf,
-		"FIJ: %c#%d@%d with %c#%d@%d, len %d, mis %2.2f%%",
+		"FIJ: %c#%d@%d with %c#%d@%d, len %d, score %d, mis %2.2f%%",
 		obj->c1 > 0 ? '+' : '-',
 		io_clnbr(fij->io, ABS(obj->c1)), obj->pos1,
 		obj->c2 > 0 ? '+' : '-',
 		io_clnbr(fij->io, ABS(obj->c2)), obj->pos2,
-		obj->length, ((float)obj->score)/10000);
+		obj->length, obj->score, ((float)obj->percent)/10000);
 	return buf;
     }
 
@@ -161,8 +161,8 @@ void *fij_obj_func(int job, void *jdata, obj_match *obj,
 }
 
 static int sort_func(const void *p1, const void *p2) {
-    obj_match *m1 = (obj_match *)p1, *m2 = (obj_match *)p2;
-    return m1->score - m2->score;
+    obj_fij *m1 = (obj_fij *)p1, *m2 = (obj_fij *)p2;
+    return m2->score - m1->score;
 }
 
 /*
@@ -194,7 +194,8 @@ void fij_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 
     case REG_COMPLEMENT:
 
-	csmatch_complement(io, contig, r, csplot_hash, cs->window);
+	csmatch_complement(io, contig, (mobj_repeat *)r,
+			   csplot_hash, cs->window);
 	break;
 
 
@@ -235,7 +236,7 @@ void fij_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 			   csplot_hash);
 	    break;
 	case 6: /* Sort */
-	    qsort(r->match, r->num_match, sizeof(obj_match), sort_func);
+	    qsort(r->match, r->num_match, sizeof(obj_fij), sort_func);
 	    csmatch_reset_hash(csplot_hash, (mobj_repeat *)r);
 	    r->current = -1;
 	    break;
@@ -362,8 +363,8 @@ fij(GapIO *io,
     }
 
     counter_max = 14;
-    if (NULL == (FIJMatch->match = (obj_match *)xmalloc(counter_max *
-							sizeof(obj_match)))) {
+    if (NULL == (FIJMatch->match = (obj_fij *)xmalloc(counter_max *
+						      sizeof(obj_fij)))) {
 	xfree ( consensus );
 	xfree(FIJMatch);
 	return -1;
@@ -446,7 +447,7 @@ fij(GapIO *io,
     FIJMatch->match_type = REG_TYPE_FIJ;
 
     for (i = 0; i < counter; i++){
-	obj_match *match = &FIJMatch->match[i];
+	obj_fij *match = &FIJMatch->match[i];
 
 	if (match->c1 < 0) {
 	    match->c1 =  rnumtocnum(io, ABS(match->c1)) * -1;
@@ -463,9 +464,9 @@ fij(GapIO *io,
     }
 
     /* Sort matches */
-    qsort(FIJMatch->match, FIJMatch->num_match, sizeof(obj_match), sort_func);
+    qsort(FIJMatch->match, FIJMatch->num_match, sizeof(obj_fij), sort_func);
 
-    PlotRepeats(io, FIJMatch);
+    PlotRepeats(io, (mobj_repeat *)FIJMatch);
     Tcl_VarEval(GetInterp(), "CSLastUsed ", CPtr2Tcl(FIJMatch), NULL);
 
     /*
@@ -494,7 +495,8 @@ buffij(int c1,
 	int c2,
 	int pos2,
 	int len,
-	double score)
+        int score,
+        double percent)
 {
     global_match->match[counter].func = fij_obj_func;
     global_match->match[counter].data = global_match;
@@ -504,14 +506,15 @@ buffij(int c1,
     global_match->match[counter].c2 = c2;
     global_match->match[counter].pos2 = pos1;
     global_match->match[counter].length = len;
-    global_match->match[counter].score = 10000 * score;
+    global_match->match[counter].score = score;
+    global_match->match[counter].percent = 10000 * percent;
     global_match->match[counter].flags = 0;
 
     if (++counter >= counter_max) {
 	counter_max *= 2;
-	global_match->match = (obj_match *)xrealloc(global_match->match,
+	global_match->match = (obj_fij *)xrealloc(global_match->match,
 						    counter_max *
-						    sizeof(obj_match));
+						    sizeof(obj_fij));
     }
 
 }
