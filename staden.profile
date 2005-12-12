@@ -13,13 +13,13 @@
 #
 #echo 'Setting up the Staden software environment...'
 
-STADENROOT_1_5=$STADENROOT
-export STADENROOT_1_5
+STADENROOT_1_6=$STADENROOT
+export STADENROOT_1_6
 
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux/macosx.
 #
-MACHINE=`uname -srm | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*alpha/alpha/;s/Linux.*i.86/linux/;s/Linux.*ia64/linux-ia64/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
+MACHINE=`uname -srm | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*alpha/alpha/;s/Linux.*i.86/linux/;s/Linux.*ia64/linux-ia64/;s/Linux.*/linux/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
 export MACHINE
 
 
