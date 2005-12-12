@@ -1,4 +1,37 @@
 -----------------------------------------------------------------------------
+12th December 2005
+==================
+
+Gap4
+----
+
+* Find Internal Joins now ranks hits in the contig comparator by
+  alignment score rather than percentage identity. This change does
+  not alter the hits found; just their ordering.
+
+* The Join Editor now as align left and align right buttons ("<" and
+  ">" either side of "align"). These anchor one end of the alignment
+  at the editor cursor position and allow the other end to move to
+  accommodate padding. The old align button works as previously.
+
+* Added an option to force the maximum number of groups formed in the
+  SNP Candidates window, even if this means arbitrarily picking groups
+  to merge. Also added protection against non-ACGT characters in sequences.
+
+* Added a Save button to the "list" viewer/editor.
+
+* The Contig Navigator window now has page-up and page-down
+  keybindings and a new checkbutton to automatically display a
+  selection of traces.
+
+Misc
+----
+
+* Rewrote the startup scripts (gap4, spin, pregap4, trev, ...) to
+  source staden.profile (only when appropriate) instead of duplicating
+  much of the functionality there.
+
+-----------------------------------------------------------------------------
 15th November 2005
 ==================
 
