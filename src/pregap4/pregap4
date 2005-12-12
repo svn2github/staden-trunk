@@ -74,7 +74,7 @@ if [ "x$STADENROOT_1_6" = "x" ]
 then
     STADENROOT=`find_dir $0`/..
     export STADENROOT
-    source $STADENROOT/staden.profile
+    . $STADENROOT/staden.profile
 fi
 
 #
