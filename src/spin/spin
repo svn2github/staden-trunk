@@ -67,54 +67,14 @@ find_dir() {
     echo $dir
 }
 
-STADENROOT=${STADENROOT_1_5:-`find_dir $0`/..}
-
 #
-# Set up base locations
+# Set up the environment if not already done
 #
-STADENROOT=$STADENROOT;			export STADENROOT
-STADTABL=$STADENROOT/tables;		export STADTABL
-STADLIB=$STADENROOT/lib;		export STADLIB
-TCL_LIBRARY=$STADLIB/tcl;		export TCL_LIBRARY
-TK_LIBRARY=$STADLIB/tk;			export TK_LIBRARY
-
-#
-# set MACHINE to one of alpha/sun/solaris/sgi/linux.
-#
-MACHINE=`uname -srm | sed 's/ /-/g;s/SunOS-4.*/sun/;s/IRIX.*/sgi/;s/SunOS-5.*/solaris/;s/OSF.*alpha/alpha/;s/Linux.*i.86/linux/;s/Linux.*ia64/linux-ia64/;s/FreeBSD.*/linux/;s/Darwin.*/macosx/'`
-export MACHINE
-
-#
-# The Digital Unix version is compiled on Digital Unix V4.0. This causes
-# problems for the few people using Digital Unix 3.0 and 3.2, but these can
-# be worked around by preloading the re-entrant copy of the C library.
-#
-if [ "`uname -sr | sed 's/\..*//'`" = "OSF1 V3" ]
+if [ "x$STADENROOT_1_6" = "x" ]
 then
-    echo "------------------------------------------------------------------"
-    echo "This version of the Staden Package was built on Digital Unix 4.0."
-    echo "You may experience problems on this older OS version, but I am"
-    echo "setting the _RLD_LIST environment variable in an attempt to solve"
-    echo "the known problems."
-    echo "------------------------------------------------------------------"
-    _RLD_LIST=/shlib/libc_r.so:DEFAULT; export _RLD_LIST
-fi
-
-#
-# Set up PATH and LD_LIBRARY_PATH
-#
-PATH=$STADENROOT/$MACHINE-bin:$PATH
-export PATH
-STADLIBBIN=$STADLIB/$MACHINE-binaries
-export STADLIBBIN
-
-if [ "$MACHINE" = "macosx" ]
-then
-    DYLD_LIBRARY_PATH=$STADLIBBIN${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
-    export DYLD_LIBRARY_PATH
-else
-    LD_LIBRARY_PATH=$STADLIBBIN${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
-    export LD_LIBRARY_PATH
+    STADENROOT=`find_dir $0`/..
+    export STADENROOT
+    source $STADENROOT/staden.profile
 fi
 
 #
