@@ -1,3 +1,41 @@
+Version 1.9.2 (14th December 2005)
+
+* Added AC_CHECK_LIB calls for the nsl and socket libraries
+  (gethostbyname / socket functions). Needed for Solaris compilations.
+
+* In extract_seq, used open_trace_mfile instead of
+  open_trace_file. Functionally this is the same, but it is faster.
+
+* fwrite_reading() now frees the temporary mFILE it created.
+
+* mfreopen_compressed() no longer closes the original FILE
+  pointer. This brings it back into line with the original
+  functionality provided in 1.8.x. It also cures a bug where the old
+  file pointer was often left opening meaning operates on many files
+  could could cause a resource leak ending in the inability to open
+  more trace files.
+
+* Added private_data and private_size to the Read struct. Populate
+  these when reading SCF files.
+
+* Hash_extract now returns an error code to the calling process upon
+  failure.
+
+* Major overhaul of hash_sff. It no longer loads the entire file into
+  memory. It can now cope with adding a hash index to an archive that
+  already contains an index.
+
+* Added support for 454's "sorted index" code. NB this is based on the
+  extraction code from their getsff.c code and has not been tested
+  with a genuine indexed SFF file yet.
+
+* Fixed an uninitialised memory access in mfload().
+
+* Fixed a bug where hash query searches for items that do not exist
+  and map to an empty bucket could cause hangs or crashes.
+
+* Fixed a hang in mfload() when reading a zero length file.
+
 Version 1.9.1
 
 * Implemented the SFF (454) file structure, currently as read-only.
