@@ -270,7 +270,7 @@ static void remove_pads(MALIGN *malign) {
  */
 MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
     CONTIGL *lastl = NULL, *contigl;
-    int nsegs;
+    int nsegs, r;
     int old_start, old_end, new_start, new_end;
 
     for (contigl = malign->contigl, nsegs = 0; contigl; nsegs++)
@@ -340,9 +340,14 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
 	    malign->scores    += cons_pos;
 
 	    /* fixed_malign(o, p); */
-	    realigner_malign(o, p); /* o->score = alignment score */
-
-	    /* print_moverlap(malign, o, cons_pos); */
+	    r = realigner_malign(o, p); /* o->score = alignment score */
+	    
+	    /*
+	    if (!r)
+		print_moverlap(malign, o, cons_pos);
+	    else
+		puts("FAILED");
+	    */
 
 	    malign->consensus = old_cons;
 	    malign->counts    = old_counts;
@@ -352,7 +357,8 @@ MALIGN *realign_seqs(int contig, MALIGN *malign, int band) {
 	/* Edit the sequence with the alignment */
 	old_start = contigl->mseg->offset;
 	old_end   = contigl->mseg->offset + contigl->mseg->length-1;
-	npads = edit_mseqs(malign, contigl, o, cons_pos);
+	if (r == 0 && o->S1)
+	    npads = edit_mseqs(malign, contigl, o, cons_pos);
 	new_start = contigl->mseg->offset;
 	new_end   = contigl->mseg->offset + contigl->mseg->length-1;
 
@@ -972,6 +978,15 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 
 	vmessage("Final score %.2f%% mismatches\n",
 		 (100.0 * new_score)/tot_score);
+
+	/*
+	 * Sequences like
+	 *   AGCT**GATGC
+	 *             TGGATCGA
+	 * can end up causing holes. We break the contig in this case to
+	 * avoid minor database inconsistencies.
+	 */
+	remove_contig_holes(io, cnum);
 
 	/* reassign_confidence_values(io, cnum); */
     }
