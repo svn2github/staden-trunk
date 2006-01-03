@@ -233,13 +233,14 @@ write_sequence(char *line,
 
     for (j = 0; j < MAX_SEQ_LINE && line[j]; j++) {
 	if ( isalpha ( (int) line[j]) || (int) line[j] == '-') {
-	    if ( *seq_len >= (*buf_size)) {
+	    if ( *seq_len+1 >= (*buf_size)) {
 		realloc_sequence(seq, buf_size, increment);
 	    }
 	    (*seq)[*seq_len] = line[j];
 	    *seq_len += 1;
 	}
     }
+    (*seq)[*seq_len] = 0; /* nul terminate */
 }
 
 
@@ -293,9 +294,12 @@ int get_fasta_format_seq ( char **seq, int max_len, int *seq_len, FILE *fp,
     char line[MAX_SEQ_LINE];
     int looking_for_sequence, looking_for_entry, expecting_sequence;
     int buf_size = 0;
+    char *local_id;
 
     *seq_len = 0;
 
+    if (!identifier)
+	identifier = &local_id;
     if(NULL == (*identifier = (char *)xmalloc((MAX_SEQ_LINE) * sizeof(char))))
        return -1;
 
@@ -344,6 +348,10 @@ int get_fasta_format_seq ( char **seq, int max_len, int *seq_len, FILE *fp,
 	    write_sequence(line, seq, seq_len, &buf_size);
 	}
     }
+
+    if (identifier == &local_id)
+	xfree(*identifier);
+
     return 0;  
 }
 
