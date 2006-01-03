@@ -17,6 +17,7 @@
 #include "tclXkeylist.h"
 #include "template_display.h"
 #include "search_utils.h"
+#include "sequence_formats.h"
 
 #define TAG 0
 #define SEQUENCE 1
@@ -1034,3 +1035,58 @@ find_oligos(GapIO *io,
 }
 
 
+/*
+ * Wrapper around find_oligos() to look for all oligos listed in a FASTA file.
+ */
+int
+find_oligo_file(GapIO *io,
+		int num_contigs,
+		contig_list_t *contig_array,
+		float mis_match,
+		char *file,
+		int consensus_only,
+		int in_cutoff)
+{
+    char **ids;
+    int nids;
+    char line[8192];
+    int i;
+    int r = 0; /* ret. code */
+
+    /* Use seq_utils to parse the input file */
+    if (0 != get_identifiers(file, &ids, &nids))
+	return -1;
+
+    for (i = 0; i < nids; i++) {
+	char *seq;
+	int seq_len;
+
+	seq = NULL;
+	seq_len = 0;
+
+	if (0 != get_seq(&seq, maxseq, &seq_len, file, ids[i]))
+	    continue;
+
+	if (seq_len == 0 || !seq || *seq == 0) {
+	    if (seq)
+		xfree(seq);
+	    continue;
+	}
+
+	vmessage("Sequence search for ID '%s'\n", ids[i]);
+	r |= find_oligos(io, num_contigs, contig_array, mis_match,
+			 seq, consensus_only, in_cutoff);
+	vmessage("\n");
+
+	if (seq)
+	    xfree(seq);
+    }
+
+    /* Tidy up memory */
+    for (i = 0; i < nids; i++) {
+	xfree(ids[i]);
+    }
+    xfree(ids);
+
+    return r;
+}

@@ -407,6 +407,7 @@ typedef struct {
     char *seq;
     int   consensus_only;
     int   cutoffs;
+    char *file;
 } oligo_arg;
 
 typedef struct {

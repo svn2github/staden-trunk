@@ -3855,6 +3855,7 @@ FindOligo(ClientData clientData,
 	{"-consensus_only",
 	                ARG_INT,  1, "0",   offsetof(oligo_arg, consensus_only)},
 	{"-cutoffs",    ARG_INT,  1, "0",   offsetof(oligo_arg, cutoffs)},
+	{"-file",	ARG_STR,  1, "",    offsetof(oligo_arg, file)},
 	{NULL,		0,	  0, NULL,  0}
     };
 
@@ -3880,6 +3881,8 @@ FindOligo(ClientData clientData,
 
     if (*args.seq) {
 	vTcl_DStringAppend(&input_params, "Sequence: %s\n", args.seq);
+    } else if (*args.file) {
+	vTcl_DStringAppend(&input_params, "File: %s\n", args.file);
     } else {
 	vTcl_DStringAppend(&input_params, "Tags: %s\n", args.tag_list);
     }
@@ -3900,10 +3903,17 @@ FindOligo(ClientData clientData,
 	return TCL_ERROR;
     }
 
-    if (-1 == find_oligos(args.io, num_contigs, contig_array,
-			  args.mis_match, args.seq,
-			  args.consensus_only, args.cutoffs))
-	verror(ERR_FATAL, "find oligos", "out of memory");
+    if (args.file) {
+	if (-1 == find_oligo_file(args.io, num_contigs, contig_array,
+				  args.mis_match, args.file,
+				  args.consensus_only, args.cutoffs))
+	    verror(ERR_FATAL, "find oligos", "could not search");
+    } else {
+	if (-1 == find_oligos(args.io, num_contigs, contig_array,
+			      args.mis_match, args.seq,
+			      args.consensus_only, args.cutoffs))
+	    verror(ERR_FATAL, "find oligos", "out of memory");
+    }
 
     SetActiveTags("");
     if (contig_array)

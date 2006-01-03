@@ -45,6 +45,7 @@ proc FindOligos { io } {
     keylset ms MATCHSEQ [keylget gap_defs FINDOLIGO.MATCHSEQ]
     set b1 [keylget sm SELMODE.BUTTON.1]
     set b2 [keylget sm SELMODE.BUTTON.2]
+    set b3 [keylget sm SELMODE.BUTTON.3]
     frame $f.sel_mode -bd 2 -relief groove
     frame $f.sel_mode.l
     frame $f.sel_mode.r
@@ -52,10 +53,13 @@ proc FindOligos { io } {
 	    -text "Select consensus tags" \
 	    -command "TagDialog FINDOLIGO.TAGS \
 			$f[keylget gap_defs SELECT_TAGS.WIN] {}"
-    entrybox $f.sel_mode.r.seq \
-	    -width 30 \
-	    -default [keylget ms MATCHSEQ.VALUE] \
-	    -type CheckString
+    xentry $f.sel_mode.r.seq \
+	-width 30 \
+	-default [keylget ms MATCHSEQ.VALUE]
+
+    xget_fname $f.sel_mode.r.fasta \
+	-type load \
+	-default [keylget ms MATCHSEQ.FASTA]
 
     radiolist $f.cons_or_seq \
 	-orient horizontal \
@@ -74,15 +78,36 @@ proc FindOligos { io } {
 	    -orient vertical\
 	    -default [keylget sm SELMODE.VALUE]\
 	    -buttons [format { \
-	    { %s -command { %s configure -state normal; \
-	    SetDefaultTags %s; \
-	    entrybox_configure %s -state disabled }} \
-	    {%s -command { %s configure -state disabled;\
-	    entrybox_configure %s -state normal}}} \
-	    [list $b1] [list $f.sel_mode.r.but] FINDOLIGO.TAGS \
-		[list $f.sel_mode.r.seq]\
-	    [list $b2] [list $f.sel_mode.r.but] [list $f.sel_mode.r.seq]]
+	    { %s -command { \
+		SetDefaultTags FINDOLIGO.TAGS; \
+	        %s configure -state normal; \
+		%s configure -state disabled; \
+		%s configure -state disabled }\
+	    } \
+	    { %s -command { \
+		%s configure -state disabled;\
+		%s configure -state normal;\
+		%s configure -state disabled }\
+	    } \
+	    { %s -command { \
+		%s configure -state disabled;\
+		%s configure -state disabled;\
+		%s configure -state normal }\
+	    }} \
+	    [list $b1] \
+	        [list $f.sel_mode.r.but] \
+		[list $f.sel_mode.r.seq] \
+		[list $f.sel_mode.r.fasta] \
+	    [list $b2] \
+	        [list $f.sel_mode.r.but] \
+		[list $f.sel_mode.r.seq] \
+		[list $f.sel_mode.r.fasta] \
+	    [list $b3] \
+	        [list $f.sel_mode.r.but] \
+		[list $f.sel_mode.r.seq] \
+		[list $f.sel_mode.r.fasta]]
     pack $f.sel_mode.l.rl
+    pack $f.sel_mode.r.fasta -side bottom
     pack $f.sel_mode.r.seq -side bottom
     pack $f.sel_mode.r.but -side bottom -anchor e
     pack $f.sel_mode.l -side left
@@ -93,7 +118,7 @@ proc FindOligos { io } {
     okcancelhelp $f.ok_cancel \
 	    -ok_command "FindOligo_OK_Pressed $io $f $f.infile $f.id \
 	    		 $f.sel_mode.l.rl $f.mis_match $f.sel_mode.r.seq \
-			 $f.cons_or_seq $f.hidden_data" \
+			 $f.cons_or_seq $f.hidden_data $f.sel_mode.r.fasta" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Find Oligos}" \
 	    -bd 2 \
@@ -110,7 +135,7 @@ proc FindOligos { io } {
     pack $f.ok_cancel -side top -fill both
 }
 
-proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hidden} {
+proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hidden fasta} {
     global CurContig
     global NGRec
     global LREG
@@ -134,13 +159,21 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
 	
     set tags [radiolist_get $sel_mode]
     set sequence {}
+    set fastafn {}
     #if tags mode is 1 (use tags)
     #if tags mode is 2 (use sequence)
+    #if tags mode is 3 (use fasta file)
     if {($tags == 1)} {
 	set active_tags [GetDefaultTags FINDOLIGO.TAGS]
     } elseif {$tags == 2} {
-	set sequence [entrybox_get $seq]
+	set sequence [$seq get]
 	set sequence [string map {{*} {}} $sequence]
+    } elseif {$tags == 3} {
+	set fastafn [$fasta get]
+	if {$fastafn == ""} {
+	    bell
+	    return
+	}
     }
 
     if {$tags == 1 && $active_tags == ""} {
@@ -155,7 +188,6 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
 	set re_enter 0
 	tk_messageBox -icon error -type ok -title "No search sequence" \
 		-message "No sequence has been entered"
-	entrybox_focus $seq
 	bell
 	#wait forever...
 	tkwait variable re_enter
@@ -173,10 +205,11 @@ proc FindOligo_OK_Pressed {io f infile id sel_mode mis_match seq cons_or_seq hid
     # If repeats are found, this also sets the tag_list variable
     SetBusy
     find_oligo -io $io \
-            -min_pmatch $mis_match] \
+            -min_pmatch $mis_match \
 	    -contigs $list \
 	    -seq $sequence \
 	    -tag_types $active_tags \
+	    -file $fastafn \
     	    -consensus_only $cons_only \
     	    -cutoffs $use_hidden
     ClearBusy
