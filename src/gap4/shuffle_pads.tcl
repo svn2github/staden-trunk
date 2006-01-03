@@ -37,9 +37,17 @@ proc ShufflePads {io} {
 	return
     }
 
+    if {![quit_displays $io "disassemble_readings"]} {
+	# Someone's too busy to shutdown?
+	return
+    }
+
     destroy $t
 
     SetBusy
     shuffle_pads -io $io -contigs $list -band $band_size
     ClearBusy
+
+    ContigInitReg $io
+    InitContigGlobals $io
 }
