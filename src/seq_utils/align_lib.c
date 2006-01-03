@@ -1959,8 +1959,6 @@ void destroy_af_mem ( int *F1, int *F2, int *G1, int *G2, int *H1, int *H2,
     if ( bit_trace ) xfree ( bit_trace);
     if ( seq1_out ) xfree ( seq1_out);
     if ( seq2_out ) xfree ( seq2_out);
-    seq1_out = NULL;
-    seq2_out = NULL;
 }
 
 
@@ -2606,17 +2604,17 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
   overlap->seq_out_len = seq_out_len;
 
   if ( i = seq_to_overlap (overlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
   }
 
   if ( params->job & RETURN_EDIT_BUFFERS ) {
     if (seq_to_edit ( seq1_out,seq_out_len,&overlap->S1,&overlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
     if (seq_to_edit ( seq2_out,seq_out_len,&overlap->S2,&overlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
   }
@@ -3345,17 +3343,17 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
   overlap->seq_out_len = seq_out_len;
 
   if ( i = seq_to_overlap (overlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
   }
 
   if ( params->job & RETURN_EDIT_BUFFERS ) {
     if (seq_to_edit ( seq1_out,seq_out_len,&overlap->S1,&overlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
     if (seq_to_edit ( seq2_out,seq_out_len,&overlap->S2,&overlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
   }
@@ -4088,17 +4086,17 @@ int affine_align_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
   overlap->seq_out_len = seq_out_len;
 
   if ( i = seq_to_overlap (overlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
   }
 
   if ( params->job & RETURN_EDIT_BUFFERS ) {
     if (seq_to_edit ( seq1_out,seq_out_len,&overlap->S1,&overlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
     if (seq_to_edit ( seq2_out,seq_out_len,&overlap->S2,&overlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
   }
@@ -4671,17 +4669,17 @@ int affine_align2_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
   overlap->seq_out_len = seq_out_len;
 
   if ( i = seq_to_overlap (overlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
   }
 
   if ( params->job & RETURN_EDIT_BUFFERS ) {
     if (seq_to_edit ( seq1_out,seq_out_len,&overlap->S1,&overlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
     if (seq_to_edit ( seq2_out,seq_out_len,&overlap->S2,&overlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
   }
@@ -5269,17 +5267,17 @@ int affine_align2_big(OVERLAP *overlap, ALIGN_PARAMS *params) {
   overlap->seq_out_len = seq_out_len;
 
   if ( i = seq_to_overlap (overlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
   }
 
   if ( params->job & RETURN_EDIT_BUFFERS ) {
     if (seq_to_edit ( seq1_out,seq_out_len,&overlap->S1,&overlap->s1_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
     if (seq_to_edit ( seq2_out,seq_out_len,&overlap->S2,&overlap->s2_len,NEW_PAD_SYM)) {
-      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+      destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
       return -1;
     }
   }
@@ -5927,17 +5925,17 @@ int fixed_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     moverlap->seq_out_len = seq_out_len;
 
     if ( i = seq_to_moverlap (moverlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
 	return -1;
     }
 
     if ( params->job & RETURN_EDIT_BUFFERS ) {
 	if (seq_to_edit ( seq1_out,seq_out_len,&moverlap->S1,&moverlap->s1_len,NEW_PAD_SYM)) {
-	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
 	    return -1;
 	}
 	if (seq_to_edit ( seq2_out,seq_out_len,&moverlap->S2,&moverlap->s2_len,NEW_PAD_SYM)) {
-	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, seq1_out, seq2_out );
+	    destroy_af_mem ( F1, F2, G1, G2, H1, H2, bit_trace, NULL, NULL );
 	    return -1;
 	}
     }
@@ -6337,17 +6335,17 @@ int realigner_malign(MOVERLAP *moverlap, ALIGN_PARAMS *params) {
     moverlap->seq_out_len = seq_out_len;
 
     if ( i = seq_to_moverlap (moverlap, OLD_PAD_SYM, NEW_PAD_SYM)) {
-	destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, NULL, NULL);
 	return -1;
     }
 
     if ( params->job & RETURN_EDIT_BUFFERS ) {
 	if (seq_to_edit ( seq1_out,seq_out_len,&moverlap->S1,&moverlap->s1_len,NEW_PAD_SYM)) {
-	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, NULL, NULL );
 	    return -1;
 	}
 	if (seq_to_edit ( seq2_out,seq_out_len,&moverlap->S2,&moverlap->s2_len,NEW_PAD_SYM)) {
-	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, seq1_out, seq2_out );
+	    destroy_af_mem ( F1, F2, 0,0,0,0, bit_trace, NULL, NULL );
 	    return -1;
 	}
     }
