@@ -111,6 +111,8 @@ void HashTableDestroy(HashTable *h, int deallocate_date);
 int HashTableResize(HashTable *h, int newsize);
 HashItem *HashTableAdd(HashTable *h, char *key, int key_len,
 		       HashData data, int *new);
+int HashTableDel(HashTable *h, HashItem *hi, int deallocate_data);
+int HashTableRemove(HashTable *h, char *key, int key_len, int deallocate_data);
 HashItem *HashTableSearch(HashTable *h, char *key, int key_len);
 HashItem *HashTableNext(HashItem *hi, char *key, int key_len);
 

@@ -4,13 +4,6 @@
 #include "os.h"
 #include "hash_table.h"
 
-/*
- * TO DO
- *
- * - HashItemRemove
- *   Remove single or remove all if HASH_ALLOW_DUP_KEYS is used.
- */
-
 
 /* =========================================================================
  * TCL's hash function. Basically hash*9 + char.
@@ -261,6 +254,9 @@ static HashItem *HashItemCreate(HashTable *h) {
 
 /*
  * Deallocates a HashItem created via HashItemCreate.
+ *
+ * This function will not remove the item from the HashTable so be sure to
+ * call HashTableDel() first if appropriate.
  */
 static void HashItemDestroy(HashTable *h, HashItem *hi, int deallocate_data) {
     if (!(h->options & (HASH_NONVOLATILE_KEYS | HASH_OWN_KEYS)) && hi->key)
@@ -448,7 +444,8 @@ HashItem *HashTableAdd(HashTable *h, char *key, int key_len, HashData data,
     if (h->options & HASH_NONVOLATILE_KEYS)
 	hi->key = key;
     else {
-	hi->key = strdup(key);
+	hi->key = (char *)malloc(key_len);
+	memcpy(hi->key, key, key_len);
     }
     hi->key_len = key_len;
     hi->data = data;
@@ -462,6 +459,104 @@ HashItem *HashTableAdd(HashTable *h, char *key, int key_len, HashData data,
     if (new) *new = 1;
 
     return hi;
+}
+
+
+/*
+ * Removes a specified HashItem from the HashTable. (To perform this it needs
+ * to rehash based on the hash key as hash_item only has a next pointer and
+ * not a previous pointer.)
+ * 
+ * The HashItem itself is also destroyed (by an internal call to
+ * HashItemDestroy). The deallocate_data parameter controls whether the data
+ * associated with the HashItem should also be free()d.
+ *
+ * See also the HashTableRemove() function to remove by key instead of
+ * HashItem.
+ *
+ * Returns 0 on success
+ *        -1 on failure (eg HashItem not in the HashTable);
+ */
+int HashTableDel(HashTable *h, HashItem *hi, int deallocate_data) {
+    uint32_t hv;
+    HashItem *next, *last;
+
+    hv = hash(h->options & HASH_FUNC_MASK,
+	      (uint8_t *)hi->key, hi->key_len) & h->mask;
+
+    for (last = NULL, next = h->bucket[hv]; next;
+	 last = next, next = next->next) {
+	if (next == hi) {
+	    /* Link last to next->next */
+	    if (last)
+		last->next = next->next;
+	    else
+		h->bucket[hv] = next->next;
+
+	    HashItemDestroy(h, hi, deallocate_data);
+
+	    return 0;
+	}
+    }
+
+    return -1;
+}
+
+
+/*
+ * Searches the HashTable for the data registered with 'key' and removes
+ * these items from the HashTable. In essence this is a combination of
+ * HashTableSearch and HashTableDel functions.
+ *
+ * If HASH_ALLOW_DUP_KEYS is used this will remove all items matching 'key',
+ * otherwise just a single item will be removed.
+ *
+ * If 'deallocate_data' is true the data associated with the HashItem will
+ * be free()d.
+ *
+ * Returns
+ *    0 on success (at least one item found)
+ *   -1 on failure (no items found).
+ */
+int HashTableRemove(HashTable *h, char *key, int key_len,
+		    int deallocate_data) {
+    uint32_t hv;
+    HashItem *last, *next, *hi;
+    int retval = -1;
+
+    if (!key_len)
+	key_len = strlen(key);
+
+    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+
+    last = NULL;
+    next = h->bucket[hv];
+
+    while (next) {
+	hi = next;
+	if (key_len == hi->key_len &&
+	    memcmp(key, hi->key, key_len) == 0) {
+	    /* An item to remove, adjust links and destroy */
+	    if (last)
+		last->next = hi->next;
+	    else
+		h->bucket[hv] = hi->next;
+
+	    next = hi->next;
+	    HashItemDestroy(h, hi, deallocate_data);
+
+	    retval = 0;
+	    if (!(h->options & HASH_ALLOW_DUP_KEYS))
+		break;
+
+	} else {
+	    /* We only update last when it's something we haven't destroyed */
+	    last = hi;
+	    next = hi->next;
+	}
+    }
+
+    return retval;
 }
 
 /*
