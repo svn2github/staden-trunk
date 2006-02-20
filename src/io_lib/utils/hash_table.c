@@ -444,8 +444,9 @@ HashItem *HashTableAdd(HashTable *h, char *key, int key_len, HashData data,
     if (h->options & HASH_NONVOLATILE_KEYS)
 	hi->key = key;
     else {
-	hi->key = (char *)malloc(key_len);
+	hi->key = (char *)malloc(key_len+1);
 	memcpy(hi->key, key, key_len);
+	hi->key[key_len] = 0; /* null terminate incase others print keys */
     }
     hi->key_len = key_len;
     hi->data = data;
