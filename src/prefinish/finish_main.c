@@ -1310,8 +1310,12 @@ void implement_solutions(Tcl_Interp *interp, finish_t *fin) {
 		printf("--- Failed to find solution for position %d..%d\n",
 		       i, cover_end ? cover_end : i);
 
-	    if (cover_end)
+	    if (cover_end) {
+		if (cover_end > i + fin->opts.reseq_length)
+		    cover_end = i + fin->opts.reseq_length;
+
 		i = cover_end-1;
+	    }
 	}
 
 	if (exp)
