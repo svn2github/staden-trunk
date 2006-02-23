@@ -227,9 +227,7 @@ Read* read_dup( Read* src, const char* new_name )
 	
     /* Copy over info */
     if( src->info ) {
-	dst->info = (char*) xmalloc( strlen(src->info)+1 );
-	if( !dst->info )
-	    goto error;
+	dst->fino = strdup(src->info);
     }
 
 
