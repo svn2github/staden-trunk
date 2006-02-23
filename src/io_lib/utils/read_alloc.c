@@ -227,7 +227,7 @@ Read* read_dup( Read* src, const char* new_name )
 	
     /* Copy over info */
     if( src->info ) {
-	dst->fino = strdup(src->info);
+	dst->info = strdup(src->info);
     }
 
 
