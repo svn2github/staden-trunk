@@ -108,5 +108,7 @@ ztr_t *new_ztr(void);
 void delete_ztr(ztr_t *ztr);
 ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p);
 void ztr_process_text(ztr_t *ztr);
+int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2);
+int uncompress_chunk(ztr_chunk_t *chunk);
 
 #endif /* _ZTR_H */

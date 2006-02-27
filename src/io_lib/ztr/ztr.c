@@ -10,12 +10,6 @@
 #include "compression.h"
 #include "stdio_hack.h"
 
-/*
- * ---------------------------------------------------------------------------
- * Internal prototypes for forward references.
- * ---------------------------------------------------------------------------
- */
-static int uncompress_chunk(ztr_chunk_t *chunk);
 
 /*
  * ---------------------------------------------------------------------------
@@ -477,8 +471,7 @@ ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p) {
  * Compresses an individual chunk using a specific format. The format is one
  * of the 'format' fields listed in the spec; one of the ZTR_FORM_ macros.
  */
-static int compress_chunk(ztr_chunk_t *chunk, int format, int option,
-			  int option2) {
+int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
     char *new_data = NULL;
     int new_len;
 
@@ -554,7 +547,7 @@ static int compress_chunk(ztr_chunk_t *chunk, int format, int option,
 /*
  * Uncompresses an individual chunk from all levels of compression.
  */
-static int uncompress_chunk(ztr_chunk_t *chunk) {
+int uncompress_chunk(ztr_chunk_t *chunk) {
     char *new_data = NULL;
     int new_len;
 
