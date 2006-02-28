@@ -379,7 +379,7 @@ char *xrle(char *uncomp, int uncomp_len, int guard, int rsz, int *comp_len) {
     for (i = 0; i < uncomp_len; i = k) {
 	/* Count repeats */
 	k = i + rsz;
-	while (k < uncomp_len + rsz && !memcmp(&uncomp[i], &uncomp[k], rsz))
+	while (k <= uncomp_len - rsz && !memcmp(&uncomp[i], &uncomp[k], rsz))
 	       k += rsz;
 
 	if (k-i > rsz) {
