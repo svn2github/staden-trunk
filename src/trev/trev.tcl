@@ -1506,7 +1506,7 @@ while {$argc >= 1} {
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-style"} {
-	set tdisp(style) [lsearch {chroma filled pyro} [lindex $argv 1]]
+	set tdisp(style) [lsearch {chroma filled pyro stick} [lindex $argv 1]]
         incr argc -1
 	set argv [lrange $argv 1 end]
     } elseif {$arg == "-write_scf"} {
