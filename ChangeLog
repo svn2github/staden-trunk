@@ -1,3 +1,118 @@
+2006-04-12  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/gap4/newgap_cmds.c:
+	(10:51:56) Fixed find_oligo (aka Sequence Search) when given blank
+	filenames. 
+
+	* src/io_lib/read/Read.c:
+	(10:53:27) Changed various fwrite_* functions to not close the FILE
+	pointer given to them. 
+
+	* src/prefinish/Makefile:
+	(10:53:49) Make install updates 
+
+	* src/tk_utils/tkTrace.c,
+	* src/tk_utils/tkTrace.h,
+	* src/tk_utils/tkTraceDisp.c,
+	* src/tk_utils/tkTraceIO.c:
+	(10:56:53) Added a "stick" style so that Solexa data can be viewed.
+	This also shows 4 confidence values in log-odds format (+ve and -ve
+	values).
+	
+	Maybe also fixed a display glitch in drawing traces too. The
+	visible extents of the region to redraw is now computed in its own
+	function and hopefully therefore called in all cases rather than
+	just some. 
+
+	* src/trev/trev.tcl:
+	(10:57:19) Added -style stick as an option. 
+
+2006-02-28  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/ztr/compression.c:
+	(17:10:36) Fixed bug reading past memory in xrle(). (Thanks to
+	Kathryn Beal for identifying this.) 
+
+2006-02-27  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/ztr/ztr.c,
+	* src/io_lib/ztr/ztr.h:
+	(14:40:06) Removed static from compress_chunk and uncompress_chunk.
+	Added prototypes to ztr.h. 
+
+2006-02-23  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/utils/read_alloc.c:
+	(15:08:36) Fixed a bug in read_dup and not initialising read->info. 
+
+	* src/io_lib/utils/read_alloc.c:
+	(16:00:44) Fixed typo. 
+
+2006-02-22  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/prefinish/finish.c,
+	* src/prefinish/finish_main.c:
+	(11:27:20) Minor fix to implement_solutions so that when finding
+	solutions but all solutions fail the experiment scores then it now
+	jumps on one reading length instead of to the end of the problem
+	region. 
+
+2006-02-20  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/utils/hash_table.c:
+	(12:16:50) Allow HashTableAdd to take a non-string for the key. 
+
+2006-01-26  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h:
+	(09:37:02) Fixed HashTableAdd with non-string keys and without
+	HASH_NONVOLATILE_KEYS defined. It used strdup, but now allocates
+	and memcpys.
+	
+	Added HashTableDel and HashTableRemove functions. HashTableDel
+	removes and destroys a specified HashItem. HashTableRemove removes
+	and destroys all items attached to a given key. 
+
+2006-01-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/gap4/shuffle_pads.tcl:
+	(14:31:54) Shut down open displays before editing. 
+
+	* src/gap4/shuffle_pads.c:
+	(14:32:51) Added check for validity of alignment (to avoid
+	crashes). Check for gaps in contigs and break contig when suitable. 
+
+	* src/seq_utils/align_lib.c:
+	(14:33:34) Fixed memory corruption (double free) when dealing with
+	alignments that fail. 
+
+	* src/gap4/find_oligo.c,
+	* src/gap4/find_oligo.h,
+	* src/gap4/find_oligo.tcl,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	(17:07:57) Added an option to search for matches from a file (FASTA
+	format preferably). 
+
+	* tables/gaprc:
+	(17:07:58) Added an option to search for matches from a file (FASTA
+	format preferably). 
+
+	* src/seq_utils/sequence_formats.c:
+	(17:09:35) Fixed write_sequence (used in reading, not writing!) to
+	nul terminate strings.
+	
+	Fixed get_fasta_format_seq to allow the identifier to be passed as
+	NULL (as it is when called via get_seq instead of get_seq_ft). 
+
+2005-12-14  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/README,
+	* src/io_lib/configure.in:
+	(14:35:00) Update for 1.9.2 
+
 2005-12-12  jkbonfield  <jkbonfield>
 
 	* staden.login,

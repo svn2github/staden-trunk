@@ -1,4 +1,19 @@
 -----------------------------------------------------------------------------
+12th April 2006
+===============
+
+Gap4/Trev
+---------
+
+* Solexa data should now be viewable using a stick-style plot.
+  The 4 log-odds scaled confidence values are also now visible.
+
+* Sequence Search can now search for matches listed in a file.
+
+* Bug fixes to the Shuffle Pads algorithm.
+
+
+-----------------------------------------------------------------------------
 12th December 2005
 ==================
 
