@@ -176,6 +176,7 @@ int trace_load(DNATrace *t, char *file, char *format) {
     }
     read_experiment_redirect(tmp);
 
+    /* Auto-detect pyrosequencing by presence of flows */
     if (t->read->flow_order && t->read->flow && t->read->nflows) {
 	t->style = STYLE_PYRO;
     }
@@ -183,6 +184,12 @@ int trace_load(DNATrace *t, char *file, char *format) {
     if (t->style == STYLE_PYRO) {
 	trace_pyroalign(t->read);
 	t->yticks = PYRO_SCALE;
+    }
+
+
+    /* Auto-detect solexa style sequences by 1 base per sample */
+    if (t->read->NBases == t->read->NPoints && t->read->NBases != 0) {
+	t->style = STYLE_STICK;
     }
 
     return trace_load_private(t);

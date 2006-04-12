@@ -64,17 +64,58 @@ int pixel_to_base(DNATrace *tracePtr, int pixel, int allow_end) {
     return nearest;
 }
 
-void trace_draw_confidence(DNATrace *t, Display *d, Pixmap p,
-			   int x0, int xn, int height,
-			   int *new_x0, int *new_xn) {
-    int ind, pos, x1, fw, fh, cfw, cfh;
-    char b[5];
+void trace_update_extents(DNATrace *t, int *x0p, int *xnp) {
+    int ind, pos, x1, fw, cfw, new_x1;
     int min =  999999;
     int max = -999999;
+    int x0 = *x0p, xn = *xnp;
+    int new_x0, new_xn;
+    
+    if (t->Ned <= 0)
+	return;
 
-    /* Defaults incase of early return */
-    *new_x0 = x0;
-    *new_xn = xn;
+    x1 = x0 + xn < t->read->NPoints ? x0+xn : t->read->NPoints - 1;
+    x1 = t->tracePos[x1] + 1;
+    if (x1 >= t->read->NBases) x1--;
+    x1 = t->read->basePos[x1];
+    ind = t->tracePosE[x0];       /* Index of first base on screen */
+
+    fw = t->font_width/2 + 1;
+    cfw = t->conf_font_width;
+
+    while (ind < t->read->NBases && (pos = trace_get_pos(t, ind)) <= x1) {
+	pos = point_to_pixel(t, pos) - fw;
+	if (pos < min)
+	    min = pos;
+	if (pos + cfw > max)
+	    max = pos + cfw;
+	ind++;
+    }
+
+    new_x0 = (int)pixel_to_point(t, min-cfw/2-1);
+    new_xn = (int)pixel_to_point(t, max+cfw/2+1) - new_x0;
+
+    x1 = x0 + xn;
+    new_x1 = new_x0 + new_xn;
+    x0 = MIN(x0, new_x0);
+    x1 = MAX(x1, new_x1);
+    xn = x1 - x0;
+
+    if (x0 < 0) {
+	xn += x0;
+	x0 = 0;
+    }
+    if (x0 + xn > t->read->NPoints)
+	xn = t->read->NPoints - x0;
+
+    *x0p = x0;
+    *xnp = xn;
+}
+
+void trace_draw_confidence(DNATrace *t, Display *d, Pixmap p,
+			   int x0, int xn, int height) {
+    int ind, pos, x1, fw, cfw, cfh;
+    char b[5];
 
     if (!p || t->Ned <= 0)
 	return;
@@ -86,7 +127,6 @@ void trace_draw_confidence(DNATrace *t, Display *d, Pixmap p,
     ind = t->tracePosE[x0];       /* Index of first base on screen */
 
     fw = t->font_width/2 + 1;
-    fh = t->fm.ascent;
     cfh = t->conf_font_height;
     cfw = t->conf_font_width;
 
@@ -100,21 +140,91 @@ void trace_draw_confidence(DNATrace *t, Display *d, Pixmap p,
 	    strcpy(b, "XX");
 
 	pos = point_to_pixel(t, pos) - fw;
-	if (pos < min)
-	    min = pos;
-	if (pos + cfw > max)
-	    max = pos + cfw;
 	XFillRectangle(d, p, t->ConfGC, pos, cfh,
 		       cfw, (int)(conf * t->scale_conf));
 
 	Tk_DrawChars(d, p, t->ConfGC, t->conf_font, b, 2,
 		     pos, cfh);
+	ind++;
+    }
+}
+
+/*
+ * Draws the 4 confidence values produced by Solexa in their +/- log-odds
+ * encoding.
+ *
+ * NB: Only works when trace editing hasn't been performed
+ */
+void trace_draw_confidence4(DNATrace *t, Display *d, Pixmap p,
+			    int x0, int xn, int height) {
+    int ind, x1, fw, cfh, cfw;
+    char b[5];
+    double pos;
+
+    if (!p || t->Ned <= 0)
+	return;
+
+    x1 = x0 + xn < t->read->NPoints ? x0+xn : t->read->NPoints - 1;
+    x1 = t->tracePos[x1] + 1;
+    if (x1 >= t->read->NBases) x1--;
+    x1 = t->read->basePos[x1];
+    ind = t->tracePosE[x0];       /* Index of first base on screen */
+
+    fw = t->font_width/2 + 1;
+    cfh = t->conf_font_height;
+    cfw = t->conf_font_width;
+
+    while (ind < t->read->NBases && (pos = trace_get_pos(t, ind)) <= x1) {
+	int conf;
+	int edind;
+	double xoff;
+
+	/* Called confidence value */
+	conf = (signed char)(t->edConf[ind]);
+	if (conf < 100)
+	    sprintf(b, "%02d", conf);
+	else 
+	    strcpy(b, "XX");
+
+	xoff = 0;
+	switch (t->read->base[ind]) {
+	case 'A': case 'a': xoff = 0.00; break;
+	case 'C': case 'c': xoff = 0.15; break;
+	case 'G': case 'g': xoff = 0.30; break;
+	case 'T': case 't': xoff = 0.45; break;
+	}
+
+	Tk_DrawChars(d, p, t->ConfGC, t->conf_font, b, 2,
+		     point_to_pixel(t, pos + xoff)-fw, cfh);
+
+	/* Graphics bars for 4 confidence values */
+	edind = t->edPos[ind];
+	pos = point_to_pixel(t, pos);
+	if (edind) {
+	    int i;
+	    for (i = 0; i < 4; i++, pos += .15 * t->scale_x) {
+		int v;
+		switch(i) {
+		case 0: v = t->read->prob_A[ind]; break;
+		case 1: v = t->read->prob_C[ind]; break;
+		case 2: v = t->read->prob_G[ind]; break;
+		case 3: v = t->read->prob_T[ind]; break;
+		}
+		if (v >= 0)
+		    XFillRectangle(d, p, t->ConfGC, pos-fw, cfh+30-v, cfw, v);
+		else
+		    XFillRectangle(d, p, t->ConfNegGC, pos, cfh+30, 3, -v);
+		/*
+		if (v >= 0)
+		    XFillRectangle(d, p, t->ConfGC, pos-1, cfh, 5, v);
+		else
+		    XFillRectangle(d, p, t->ConfNegGC, pos, cfh, 3, -v);
+		*/
+	    }
+	}
 
 	ind++;
     }
-
-    *new_x0 = (int)pixel_to_point(t, min-cfw/2-1);
-    *new_xn = (int)pixel_to_point(t, max+cfw/2+1) - *new_x0;
 }
 
 /*
@@ -169,7 +279,7 @@ static void trace_draw2(DNATrace *t, TRACE *tr, Display *d, Pixmap p, int max,
  * To compensate, we need to increase x0-xn.
  */
 static void trace_draw_hist(DNATrace *t, TRACE *tr, Display *d, Pixmap p,
-			    int max, GC gc, int x0, int xn, int yoff,
+			    int max, GC gc, double x0, int xn, int yoff,
 			    int height, double ys, int off) {
     int i, h = height-1, o;
     int x, y;
@@ -421,35 +531,23 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
     if (x0 + xn > t->read->NPoints)
 	xn = t->read->NPoints - x0;
 
+    trace_update_extents(t, &x0, &xn);
+    if (xn <= 0)
+	return;
+
     if (t->show_conf) {
-	int new_x0, new_xn;
-	int x1, new_x1;
-
-	trace_draw_confidence(t, d, p, x0, xn, height, &new_x0, &new_xn);
-	x1 = x0 + xn;
-	new_x1 = new_x0 + new_xn;
-	x0 = MIN(x0, new_x0);
-	x1 = MAX(x1, new_x1);
-	xn = x1 - x0;
+	if (t->style == STYLE_STICK)
+	    trace_draw_confidence4(t, d, p, x0, xn, height);
+	else
+	    trace_draw_confidence(t, d, p, x0, xn, height);
     }
-
-    if (x0 < 0) {
-	xn += x0;
-	x0 = 0;
-
-	if (xn <= 0)
-	    return;
-    }
-
-    if (x0 + xn > t->read->NPoints)
-	xn = t->read->NPoints - x0;
-
 
     if (t->read->traceA == 0 || p == 0)
 	return;
 
     if (t->read->maxTraceVal) {
-	yscale = (double)(t->scale_y * (height-1)) /
+	int c = (t->show_conf && t->style == STYLE_STICK) ? 20 : 0;
+	yscale = (double)(t->scale_y * (height-1-c)) /
 	    (double)(t->trace_scale ? t->trace_scale : t->read->maxTraceVal);
     } else {
 	yscale = 0;
@@ -490,6 +588,21 @@ void trace_draw_trace(DNATrace *t, Display *d, Pixmap p,
 	trace_draw_hist(t, &t->read->traceT[x0], d, p, m,
 			t->Tgc, x0, xn, yoff, height, yscale,
 			t->read->baseline);
+	break;
+
+    case STYLE_STICK:
+	trace_draw_hist(t, &t->read->traceA[x0], d, p, m,
+			t->Agc, x0, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceC[x0], d, p, m,
+			t->Cgc, x0+.15, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceG[x0], d, p, m,
+			t->Ggc, x0+.3, xn, yoff, height, yscale,
+			t->read->baseline);
+	trace_draw_hist(t, &t->read->traceT[x0], d, p, m,
+			t->Tgc, x0+.45, xn, yoff, height, yscale,
+			t->read->baseline);
 	/* trace_draw_pyro(t, d, p, x0, xn, yoff, height, yscale); */
 	break;
     }
@@ -529,6 +642,7 @@ void trace_draw_sequence(DNATrace *t, Display *d, Pixmap p,
     while (ind < t->read->NBases && (pos = t->read->basePos[ind]) <= x1) {
 	char base = t->read->base[ind];
 	GC gc;
+	double xoff = 0;
 
 	switch (base) {
 	case 'A':
@@ -538,21 +652,26 @@ void trace_draw_sequence(DNATrace *t, Display *d, Pixmap p,
 	case 'C':
 	case 'c':
 	    gc = t->Cgc;
+	    xoff = 0.15;
 	    break;
 	case 'G':
 	case 'g':
 	    gc = t->Ggc;
+	    xoff = 0.3;
 	    break;
 	case 'T':
 	case 't':
 	    gc = t->Tgc;
+	    xoff = 0.45;
 	    break;
 	default:
 	    gc = t->CursorGC;
 	}
 
 	/* XDrawString(d, p, gc, point_to_pixel(t, pos) - fw, fh, &base, 1); */
-	pos = point_to_pixel(t, pos) - fw;
+	if (t->style != STYLE_STICK)
+	    xoff = 0;
+	pos = point_to_pixel(t, (double)pos + xoff) - fw;
 	Tk_DrawChars(d, p, gc, t->font, &base, 1, pos, fh);
 
 	ind++;
@@ -567,6 +686,7 @@ void trace_draw_numbers(DNATrace *t, Display *d, Pixmap p,
     int ind, pos, x1, fh, i;
     float fwid, fw;
     char number[10];
+    double xoff;
 
     if (!p)
 	return;
@@ -601,11 +721,20 @@ void trace_draw_numbers(DNATrace *t, Display *d, Pixmap p,
 		fw = fwid * .5;
 	    }
 
+	    /* Stick plots have A,C,G,T separated out, so move the number */
+	    xoff = 0;
+	    if (t->style == STYLE_STICK) {
+		switch (t->read->base[ind-1]) {
+		case 'A': case 'a': xoff = 0.00; break;
+		case 'C': case 'c': xoff = 0.15; break;
+		case 'G': case 'g': xoff = 0.30; break;
+		case 'T': case 't': xoff = 0.45; break;
+		}
+	    }
+
 	    sprintf(number, "%d", cind);
-	    /* XDrawString(d, p, t->CursorGC, point_to_pixel(t, pos) - fw, fh,
-			number, strlen(number)); */
 	    Tk_DrawChars(d, p, t->CursorGC, t->font, number, strlen(number),
-			 point_to_pixel(t, pos) - fw, fh);
+			 point_to_pixel(t, pos + xoff) - fw, fh);
 	}
 
 	ind++;

@@ -64,11 +64,13 @@ typedef struct {
     XColor *CutoffCol;
     XColor *VectorCol;
     XColor *ConfCol;
+    XColor *ConfNegCol;
     GC Agc, Cgc, Ggc, Tgc;
     GC CursorGC;
     GC CutoffGC;
     GC VectorGC;
     GC ConfGC;
+    GC ConfNegGC;
     Pixmap stipple;
     GC QualVecGC;
     int disp_offset;		/* Sample coordinates */
@@ -139,6 +141,7 @@ typedef struct {
     int style;			/* 0=chromtogram
 				 * 1=filled chromatogram (not very useful)
 				 * 2=historgram (pyro)
+				 * 3=stick chart (Solexa etc)
 				 */
     int yticks;			/* Horizontal lines in plot. zero => none */
 
@@ -176,6 +179,7 @@ typedef struct {
 #define STYLE_CHROMA 0
 #define STYLE_FILLED 1
 #define STYLE_PYRO   2
+#define STYLE_STICK  3
 
 /* ---- Prototypes ---- */
 extern int pixel_to_base(DNATrace *tracePtr, int pixel, int allow_end);

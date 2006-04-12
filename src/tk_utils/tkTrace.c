@@ -74,6 +74,8 @@ static Tk_ConfigSpec configSpecs[] = {
     Tk_Offset(DNATrace, VectorCol), 0, NULL},
     {TK_CONFIG_COLOR, "-conf_colour", "confColour", "ConfColour", "skyblue3",
     Tk_Offset(DNATrace, ConfCol), 0, NULL},
+    {TK_CONFIG_COLOR, "-conf_neg_colour", "confColour", "ConfColour","pink1",
+    Tk_Offset(DNATrace, ConfNegCol), 0, NULL},
     {TK_CONFIG_STRING, "-xscrollcommand", "xScrollCommand", "ScrollCommand",
     "", Tk_Offset(DNATrace, xScrollCmd), TK_CONFIG_NULL_OK, NULL},
     {TK_CONFIG_BOOLEAN, "-shownumbers", "showNumbers", "ShowNumbers", "1",
@@ -175,6 +177,7 @@ static int TraceCmd(ClientData clientData, Tcl_Interp *interp,
     tracePtr->VectorGC = NULL;
     tracePtr->QualVecGC = NULL;
     tracePtr->ConfGC = NULL;
+    tracePtr->ConfNegGC = NULL;
     tracePtr->Acol = NULL;
     tracePtr->Ccol = NULL;
     tracePtr->Gcol = NULL;
@@ -183,6 +186,7 @@ static int TraceCmd(ClientData clientData, Tcl_Interp *interp,
     tracePtr->CutoffCol = NULL;
     tracePtr->VectorCol = NULL;
     tracePtr->ConfCol = NULL;
+    tracePtr->ConfNegCol = NULL;
     tracePtr->border = NULL;
     tracePtr->borderWidth = 0;
     tracePtr->relief = TK_RELIEF_FLAT;
@@ -299,6 +303,7 @@ static int TraceConfigure(Tcl_Interp *interp, DNATrace *tracePtr,
 	Tk_FreeGC(tracePtr->display, tracePtr->VectorGC);
 	Tk_FreeGC(tracePtr->display, tracePtr->QualVecGC);
 	Tk_FreeGC(tracePtr->display, tracePtr->ConfGC);
+	Tk_FreeGC(tracePtr->display, tracePtr->ConfNegGC);
 	tracePtr->Agc = NULL;
     }
 
@@ -335,6 +340,11 @@ static int TraceConfigure(Tcl_Interp *interp, DNATrace *tracePtr,
 	gcv.foreground = tracePtr->ConfCol->pixel;
 	gcv.line_width = 0;
 	tracePtr->ConfGC = Tk_GetGC(tracePtr->tkwin, mask, &gcv);
+
+	gcv.font = Tk_FontId(tracePtr->conf_font);
+	gcv.foreground = tracePtr->ConfNegCol->pixel;
+	gcv.line_width = 0;
+	tracePtr->ConfNegGC = Tk_GetGC(tracePtr->tkwin, mask, &gcv);
 
 	gcv.foreground = tracePtr->VectorCol->pixel;
 	gcv.background = tracePtr->CutoffCol->pixel;
@@ -603,6 +613,8 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	    if (tracePtr->style == STYLE_PYRO)
 		new *= 10;
+	    else if (tracePtr->style == STYLE_STICK)
+		new *= 30;
 
 	    /* scale_x size when all samples are visible */
 	    /*
@@ -1890,6 +1902,9 @@ void TraceDestroy(char *clientData) {
     if (tracePtr->ConfGC != NULL)
 	Tk_FreeGC(tracePtr->display, tracePtr->ConfGC);
 
+    if (tracePtr->ConfNegGC != NULL)
+	Tk_FreeGC(tracePtr->display, tracePtr->ConfNegGC);
+
     trace_unload(tracePtr);
 
     xfree(tracePtr);
@@ -2127,7 +2142,7 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
 		 PNG_FILTER_TYPE_DEFAULT);
 
     /* Create the palette */
-    palette = (png_colorp)png_malloc(png_ptr, 7 * sizeof(*palette));
+    palette = (png_colorp)png_malloc(png_ptr, 8 * sizeof(*palette));
 #define SET_PALETTE(palette,xcol) \
 	(palette).red   = (xcol)->red   / 256; \
 	(palette).green = (xcol)->green / 256; \
@@ -2141,7 +2156,8 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
     SET_PALETTE(palette[4], t->Tcol);
     SET_PALETTE(palette[5], t->CursorCol);
     SET_PALETTE(palette[6], t->ConfCol);
-    png_set_PLTE(png_ptr, info_ptr, palette, 7);
+    SET_PALETTE(palette[7], t->ConfNegCol);
+    png_set_PLTE(png_ptr, info_ptr, palette, 8);
 
     /* Write PNG info, including palette */
     png_write_info(png_ptr, info_ptr);
@@ -2169,6 +2185,8 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
 		value = 5;
 	    } else if (pixel == t->ConfCol->pixel) {
 		value = 6;
+	    } else if (pixel == t->ConfNegCol->pixel) {
+		value = 7;
 	    } else {
 		value = 0;
 	    }
