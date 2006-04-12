@@ -80,7 +80,7 @@ install:
 	cp config.prefinish $(INSTALLLIB)/prefinish
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
 	cp prefinish finish_sanger finish_cDNA finish_cDNA_ends_only \
-	    $(INSTALLBIN)
+	    finish_refseq $(INSTALLBIN)
 	-mkdir $(INSTALLLIB)/prefinish/rules
 	cp rules/*.rule $(INSTALLLIB)/prefinish/rules
 
