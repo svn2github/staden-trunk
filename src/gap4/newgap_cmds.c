@@ -3903,7 +3903,7 @@ FindOligo(ClientData clientData,
 	return TCL_ERROR;
     }
 
-    if (args.file) {
+    if (args.file && *args.file) {
 	if (-1 == find_oligo_file(args.io, num_contigs, contig_array,
 				  args.mis_match, args.file,
 				  args.consensus_only, args.cutoffs))
