@@ -376,6 +376,7 @@ int fwrite_reading(FILE *fp, Read *read, int format) {
     mFILE *mf = mfreopen(NULL, "wb", fp);
     if (mf) {
 	ret = mfwrite_reading(mf, read, format);
+	mfflush(mf);
 	mf->fp = NULL; /* Don't want this closed here */
 	mfclose(mf);
     } else {
@@ -469,6 +470,8 @@ int fwrite_ztr(FILE *fp, ztr_t *z) {
 	return -1;
 
     r = mfwrite_ztr(mf, z);
+    mfflush(mf);
+    mf->fp = NULL; /* Don't want this closed here */
     mfclose(mf);
     return r;
 }
@@ -483,6 +486,7 @@ Scf *fread_scf(FILE *fp) {
 	return NULL;
 
     s = mfread_scf(mf);
+    mf->fp = NULL; /* Don't want this closed here */
     mfclose(mf);
     return s;
 }
@@ -495,6 +499,8 @@ int fwrite_scf(Scf *s, FILE *fp) {
 	return -1;
 
     r = mfwrite_scf(s, mf);
+    mfflush(mf);
+    mf->fp = NULL; /* Don't want this closed here */
     mfclose(mf);
     return r;
 }
@@ -509,6 +515,7 @@ Exp_info *exp_fread_info(FILE *fp) {
 	return NULL;
 
     e = exp_mfread_info(mf);
+    mf->fp = NULL; /* Don't want this closed here */
     mfclose(mf);
     return e;
 }
@@ -520,6 +527,8 @@ void exp_print_file(FILE *fp, Exp_info *e) {
 	return;
 
     exp_print_mfile(mf, e);
+    mfflush(mf);
+    mf->fp = NULL; /* Don't want this closed here */
     mfclose(mf);
 }
 #endif
