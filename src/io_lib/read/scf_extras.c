@@ -69,7 +69,7 @@ int get_read_conf(Exp_info *e, int length, int2 *opos, int1 *conf) {
 	int sec = read_sections(0);
 	read_sections(READ_BASES);
 
-	if (NULL == (r = read_reading(exp_get_entry(e,EFLT_LN), TT_ANY))) {
+	if (NULL == (r = read_reading(exp_get_entry(e,EFLT_LN), TT_ANYTR))) {
 	    read_sections(sec);
 	    return -1;
 	}

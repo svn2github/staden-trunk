@@ -531,7 +531,12 @@ int main(int argc, char **argv) {
 	    infname = line2;
 
 	    /* Open input and output files */
-	    if (NULL == (fpin = open_trace_mfile(infname, NULL))) {
+	    if (opts.in_format == TT_EXP) {
+		fpin = open_exp_mfile(infname, NULL);
+	    } else {
+		fpin = open_trace_mfile(infname, NULL);
+	    }
+	    if (NULL == fpin) {
 		char buf[2048];
 		sprintf(buf, "ERROR %s", infname);
 		perror(buf);

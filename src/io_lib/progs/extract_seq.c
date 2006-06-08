@@ -188,7 +188,12 @@ int main(int argc, char **argv) {
 		    char *cp;
 		    if (cp = strchr(line, '\n'))
 			*cp = 0;
-		    if (NULL == (infp = open_trace_mfile(line, NULL))) {
+		    if (format == TT_EXP) {
+			infp = open_exp_mfile(line, NULL);
+		    } else {
+			infp = open_trace_mfile(line, NULL);
+		    }
+		    if (NULL == infp) {
 			perror(line);
 			ret = 1;
 		    } else {
@@ -201,7 +206,12 @@ int main(int argc, char **argv) {
 	    }
 	}
 	for (;argc > 0; argc--, argv++) {
-	    if (NULL == (infp = open_trace_mfile(*argv, NULL))) {
+	    if (format == TT_EXP) {
+		infp = open_exp_mfile(*argv, NULL);
+	    } else {
+		infp = open_trace_mfile(*argv, NULL);
+	    }
+	    if (NULL == infp) {
 		perror(*argv);
 		ret = 1;
 	    } else {

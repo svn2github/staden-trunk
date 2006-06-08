@@ -91,9 +91,30 @@ Read *read_reading(char *fn, int format) {
    }
 #endif
 
-    if (NULL == (fp = open_trace_mfile(fn, NULL))) {
-	errout("'%s': couldn't open\n", fn);
-	return NULL;
+    /*
+     * If we're asking for an Experiment file, read it.
+     * If the format is ANY then attempt EXP first following by trace.
+     * Otherwise use the trace search mechanism.
+     *
+     * Note this is purely for locating files and not for forcing the file
+     * format. It's here so that experiment files and trace files may be
+     * given identical names but accessed through different search paths
+     * (as is the case with the trace server).
+     */
+    if (format == TT_EXP) {
+	if (NULL == (fp = open_exp_mfile(fn, NULL))) {
+	    errout("'%s': couldn't open\n", fn);
+	    return NULL;
+	}
+    } else {
+	fp = NULL;
+	if (format == TT_ANY)
+	    fp = open_exp_mfile(fn, NULL);
+
+	if (!fp && NULL == (fp = open_trace_mfile(fn, NULL))) {
+	    errout("'%s': couldn't open\n", fn);
+	    return NULL;
+	}
     }
 
     read = mfread_reading(fp, fn, format);
@@ -143,7 +164,7 @@ Read *mfread_reading(mFILE *fp, char *fn, int format) {
 	_setmode(_fileno(fp->fp), _O_BINARY);
 #endif
 
-    if (format == TT_ANY) {
+    if (format == TT_ANY || format == TT_ANYTR) {
 	format = fdetermine_trace_type(fp);
 	mrewind(fp);
     }

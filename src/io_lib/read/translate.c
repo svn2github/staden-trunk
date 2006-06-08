@@ -303,7 +303,7 @@ Exp_info *read2exp(Read *read, char *EN) {
 	    strcpy(exp_get_entry(e, EFLT_LN), cp);
 	}
 
-	if (read->format != TT_ANY) {
+	if (read->format != TT_ANY && read->format != TT_ANYTR) {
 	    extend(e, EFLT_LT, strlen(t)+1);
 	    strcpy(exp_get_entry(e, EFLT_LT), t);
 	}
@@ -641,7 +641,7 @@ Read *exp2read(Exp_info *e, char *fn) {
     } else {
 	/* Read the trace component of the experiment file */
 	ttype = exp_Nentries(e,EFLT_LT)
-	    ? trace_type_str2int(exp_get_entry(e, EFLT_LT)) : TT_ANY;
+	    ? trace_type_str2int(exp_get_entry(e, EFLT_LT)) : TT_ANYTR;
 
 	if (fp = open_trace_file(exp_get_entry(e, EFLT_LN), fn)) {
 	    if (NULLRead == (r = fread_reading(fp, NULL, ttype)))

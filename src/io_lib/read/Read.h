@@ -91,6 +91,8 @@
 #define TT_BIO 11
 #define TT_SFF 12
 #define TT_ANY TT_UNK
+/* ANYTR is specifically any *trace* type and not EXP or PLN format */
+#define TT_ANYTR 13
 
 #define READ_BASES	(1<<0)
 #define READ_SAMPLES	(1<<1)
