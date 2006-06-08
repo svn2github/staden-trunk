@@ -99,7 +99,7 @@ void freeSeqInfo(SeqInfo *si)
  * Staden format files
  *************************************************************/
 
-Exp_info *exp_read_staden_info(char *filename)
+Exp_info *exp_read_staden_info(mFILE *fp, char *filename)
 /*
  * Read a staden file into an Exp_info data structure
  */
@@ -114,244 +114,249 @@ Exp_info *exp_read_staden_info(char *filename)
     
     
     if ( (e = exp_create_info()) != NULL ) {
-	FILE *fp;
 	char line[128];
-	
-	if ( (fp = fopen(filename,"r")) == NULL) {
-	    exp_destroy_info(e);
-	    e = NULL;
-	} else {
-	    /* an upper limit for the file size */
-	    int max_seq_size = file_size(filename);
-	    int left, right, len, i;
-	    int lineno;
-	    int formatIsBap;
-	    int CS_from, CS_to;
-	    int SR;
+	/* an upper limit for the file size */
+	int max_seq_size = file_size(filename);
+	int left, right, len, i;
+	int lineno;
+	int formatIsBap;
+	int CS_from, CS_to;
+	int SR;
 
-	    CS_from = CS_to = SR = 0;
+	CS_from = CS_to = SR = 0;
 
-	    /*ID*/
-	    (void)ArrayRef(e->entries[EFLT_ID],e->Nentries[EFLT_ID]++);
-	    exp_get_entry(e,EFLT_ID) = (char *)strdup(fn);
+	/*ID*/
+	(void)ArrayRef(e->entries[EFLT_ID],e->Nentries[EFLT_ID]++);
+	exp_get_entry(e,EFLT_ID) = (char *)strdup(fn);
 
-	    /*EN*/
-	    (void)ArrayRef(e->entries[EFLT_EN],e->Nentries[EFLT_EN]++);
-	    exp_get_entry(e,EFLT_EN) = (char *)strdup(fn);
+	/*EN*/
+	(void)ArrayRef(e->entries[EFLT_EN],e->Nentries[EFLT_EN]++);
+	exp_get_entry(e,EFLT_EN) = (char *)strdup(fn);
 
-	    /*CC*/
-	    (void)ArrayRef(e->entries[EFLT_CC],e->Nentries[EFLT_CC]++);
-	    exp_get_entry(e,EFLT_CC) = (char *)strdup("Created from a staden format sequence assembly file");
+	/*CC*/
+	(void)ArrayRef(e->entries[EFLT_CC],e->Nentries[EFLT_CC]++);
+	exp_get_entry(e,EFLT_CC) = (char *)strdup("Created from a staden format sequence assembly file");
 
-	    seq = (char *) xmalloc(max_seq_size+1);
-	    if (!seq)
-		return NULL;
+	seq = (char *) xmalloc(max_seq_size+1);
+	if (!seq)
+	    return NULL;
 
-	    left = 0;
-	    right = 0;
-	    len = 0;
+	left = 0;
+	right = 0;
+	len = 0;
 	    
-	    lineno = 0;
-	    formatIsBap = 1;
-	    while (fgets(line,sizeof(line),fp)!=NULL) {
-		char *s;
-		lineno++;
-		if (lineno == 1) {
-		    int pos, ret;
-		    /*
-		     * This maybe a file created from 'output consensus',
-		     * in which case it'll have the Staden format style of:
-		     * " <-----T2.00047----->" header on the first line.
-		     *
-		     * We strip this off. Argh - why don't Suns have the
-		     * ANSI function memmove() ?
+	lineno = 0;
+	formatIsBap = 1;
+	while (mfgets(line,sizeof(line),fp)!=NULL) {
+	    char *s;
+	    lineno++;
+	    if (lineno == 1) {
+		int pos, ret;
+		/*
+		 * This maybe a fasta format file.
+		 */
+		if (line[0] == '>') {
+		    if (strchr(line, ' '))
+			*line = 0;
+		    if (strchr(line, '\t'))
+			*line = 0;
+		    if (strchr(line, '\n'))
+			*line = 0;
+		    exp_set_entry(e, EFLT_ID, strdup(line+1));
+		    exp_set_entry(e, EFLT_EN, strdup(line+1));
+		    continue;
+		}
+
+		/*
+		 * This maybe a file created from 'output consensus',
+		 * in which case it'll have the Staden format style of:
+		 * " <-----T2.00047----->" header on the first line.
+		 *
+		 * We strip this off. Argh - why don't Suns have the
+		 * ANSI function memmove() ?
+		 */
+		ret = sscanf(line, " <%*18s>%n", &pos);
+		if (ret && pos == 21) {
+		    int i, e = sizeof(line)-21;
+
+		    for (i=0; i < e; i++)
+			line[i] = line[i+21];
+		    /* memmove((void *)line,
+		     *	(void *)(line + 21),
+		     *	sizeof(line)-21); 
 		     */
-		    ret = sscanf(line, " <%*18s>%n", &pos);
-		    if (ret && pos == 21) {
-			int i, e = sizeof(line)-21;
-
-			for (i=0; i < e; i++)
-			    line[i] = line[i+21];
-			/* memmove((void *)line,
-			 *	(void *)(line + 21),
-			 *	sizeof(line)-21); 
-			 */
-		    }
 		}
-		if (line[0] == ';') {
-		    /********************************************
-		     * Title line parsing
-		     *******************************************/
-		    if (lineno==1 &&
-			!(line[1] == ';' || line[1] == '<' || line[1] == '>')
-			) {
-			/* format of line is:
-			 * <ln> ::= ;<i6><i6><i6><c4><c+>
-			 * <i6> ::= <s><s><s><s><s><d> | ... <d><d><d><d><d><d>
-			 * <c4> ::= <C><C><C><s>
-			 * <c+> ::= <a><c+> | <a>
-			 * <a> is [a-zA-Z0-9.]
-			 * <s> is ' '
-			 * <d> is [0-9]
-			 * <C> is [A-Z]
-			 */
-			int d;
-			if (sscanf(line,";%6d%6d%6d",&d,&d,&d)==3 &&
-			    strlen(line)>23) {
-			    /* trim off trailing white space */
-			    trim_white_space(line+23);
-			    /*LN*/
-			    (void)ArrayRef(e->entries[EFLT_LN],e->Nentries[EFLT_LN]++);
-			    exp_get_entry(e,EFLT_LN) = (char *)strdup(line+23); line[23]='\0';
-			    /*LT*/
-			    (void)ArrayRef(e->entries[EFLT_LT],e->Nentries[EFLT_LT]++);
-			    /* trim off trace type white space */
-			    trim_white_space(line+19);
-			    exp_get_entry(e,EFLT_LT) = (char *)strdup(line+19);
+	    }
+	    if (line[0] == ';') {
+		/********************************************
+		 * Title line parsing
+		 *******************************************/
+		if (lineno==1 &&
+		    !(line[1] == ';' || line[1] == '<' || line[1] == '>')
+		    ) {
+		    /* format of line is:
+		     * <ln> ::= ;<i6><i6><i6><c4><c+>
+		     * <i6> ::= <s><s><s><s><s><d> | ... <d><d><d><d><d><d>
+		     * <c4> ::= <C><C><C><s>
+		     * <c+> ::= <a><c+> | <a>
+		     * <a> is [a-zA-Z0-9.]
+		     * <s> is ' '
+		     * <d> is [0-9]
+		     * <C> is [A-Z]
+		     */
+		    int d;
+		    if (sscanf(line,";%6d%6d%6d",&d,&d,&d)==3 &&
+			strlen(line)>23) {
+			/* trim off trailing white space */
+			trim_white_space(line+23);
+			/*LN*/
+			(void)ArrayRef(e->entries[EFLT_LN],e->Nentries[EFLT_LN]++);
+			exp_get_entry(e,EFLT_LN) = (char *)strdup(line+23); line[23]='\0';
+			/*LT*/
+			(void)ArrayRef(e->entries[EFLT_LT],e->Nentries[EFLT_LT]++);
+			/* trim off trace type white space */
+			trim_white_space(line+19);
+			exp_get_entry(e,EFLT_LT) = (char *)strdup(line+19);
+		    }
+		} else if (formatIsBap) {
+		    switch (line[1]) {
+		    case '<':
+			for(s=&line[2];*s;s++) {
+			    if(!isspace(*s) && isprint(*s))
+				seq[left++] = *s;
 			}
-		    } else if (formatIsBap) {
-			switch (line[1]) {
-			case '<':
-			    for(s=&line[2];*s;s++) {
-				if(!isspace(*s) && isprint(*s))
-				    seq[left++] = *s;
-			    }
-			    break;
-			case '>':
-			    for(s=&line[2];*s;s++) {
-				if(!isspace(*s) && isprint(*s))
-				    seq[max_seq_size-right++] = *s;
-			    }
-			    break;
-			case ';':
-			    /*TG*/
+			break;
+		    case '>':
+			for(s=&line[2];*s;s++) {
+			    if(!isspace(*s) && isprint(*s))
+				seq[max_seq_size-right++] = *s;
+			}
+			break;
+		    case ';':
+			/*TG*/
 #if 0
-			    trim_white_space(line);
-			    (void)ArrayRef(e->entries[EFLT_TG],e->Nentries[EFLT_TG]++);
-			    /* convert format from Staden format to
-			     * Experiment file format
+			trim_white_space(line);
+			(void)ArrayRef(e->entries[EFLT_TG],e->Nentries[EFLT_TG]++);
+			/* convert format from Staden format to
+			 * Experiment file format
+			 */
+			{
+			    char *cp;
+			    int pos, len;
+			    char type[5];
+
+			    cp = (char *)xmalloc(strlen(line)+20);
+			    if (cp == NULL)
+				break;
+
+			    sscanf(line, ";;%4s %6d %6d",
+				   type, &pos, &len);
+			    /*
+			     * Need to add 'left' to each start position
+			     * in tag. ASSUMPTION: 'left' has already been
+			     * defined. Ie that the ;< lines are before
+			     * any ;; lines.
 			     */
-			    {
-				char *cp;
-				int pos, len;
-				char type[5];
+			    pos += left;
+			    values2tag(cp, type, pos, pos + len - 1,
+				       2, &line[20]);
 
-				cp = (char *)xmalloc(strlen(line)+20);
-				if (cp == NULL)
-				    break;
-
-				sscanf(line, ";;%4s %6d %6d",
-				       type, &pos, &len);
-				/*
-				 * Need to add 'left' to each start position
-				 * in tag. ASSUMPTION: 'left' has already been
-				 * defined. Ie that the ;< lines are before
-				 * any ;; lines.
-				 */
-				pos += left;
-				values2tag(cp, type, pos, pos + len - 1,
-					   2, &line[20]);
-
-				exp_get_entry(e,EFLT_TG) = cp;
-			    }
-
-			    if (strncmp(line+2,"IGNC",4)==0 ||
-				strncmp(line+2,"CVEC",4)==0) {
-				CS_from = atoi(&line[2+4+1]);
-			    } else if (strncmp(line+2,"IGNS",4)== 0 ||
-				       strncmp(line+2,"SVEC",4)== 0) {
-				SR = 1;
-			    }
-#endif
-			    break;
-
-			default:
-			    break;
+			    exp_get_entry(e,EFLT_TG) = cp;
 			}
+
+			if (strncmp(line+2,"IGNC",4)==0 ||
+			    strncmp(line+2,"CVEC",4)==0) {
+			    CS_from = atoi(&line[2+4+1]);
+			} else if (strncmp(line+2,"IGNS",4)== 0 ||
+				   strncmp(line+2,"SVEC",4)== 0) {
+			    SR = 1;
+			}
+#endif
+			break;
+
+		    default:
+			break;
 		    }
-		} else {
-		    /********************************************
-		     * The actual sequence bit
-		     *******************************************/
-		    formatIsBap = 0; /* turn off title line parsing stuff */
-		    for (s=line;*s;s++) {
-			if(!isspace(*s) && isprint(*s))
-			    seq[left+len++] = *s;
-		    }
+		}
+	    } else {
+		/********************************************
+		 * The actual sequence bit
+		 *******************************************/
+		formatIsBap = 0; /* turn off title line parsing stuff */
+		for (s=line;*s;s++) {
+		    if(!isspace(*s) && isprint(*s))
+			seq[left+len++] = *s;
+		}
 		    
-		}
 	    }
+	}
 
-	    /*
-	     * The right cutoff has been stashed into the end of the array
-	     * Move to correct place
-	     */
-	    for(i=(max_seq_size-(left+len))/2;i>=0;i--) {
-		char temp;
-		/* swap */
-		temp = seq[left+len+i];
-		seq[left+len+i] = seq[max_seq_size-i];
-		seq[max_seq_size-i] = temp;
+	/*
+	 * The right cutoff has been stashed into the end of the array
+	 * Move to correct place
+	 */
+	for(i=(max_seq_size-(left+len))/2;i>=0;i--) {
+	    char temp;
+	    /* swap */
+	    temp = seq[left+len+i];
+	    seq[left+len+i] = seq[max_seq_size-i];
+	    seq[max_seq_size-i] = temp;
+	}
+	/* null terminate */
+	seq[left+len+right] = '\0';
+
+	/*SQ*/
+	(void)ArrayRef(e->entries[EFLT_SQ],e->Nentries[EFLT_SQ]++);
+	exp_get_entry(e,EFLT_SQ) = seq;
+
+	/*SL*/
+	sprintf(line,"%d",left);
+	(void)ArrayRef(e->entries[EFLT_SL],e->Nentries[EFLT_SL]++);
+	exp_get_entry(e,EFLT_SL) = (char *)strdup(line);
+
+	/*SR*/
+	if (SR) {
+	    sprintf(line,"%d",left+len+1);
+	    (void)ArrayRef(e->entries[EFLT_SR],e->Nentries[EFLT_SR]++);
+	    exp_get_entry(e,EFLT_SR) = (char *)strdup(line);
+	}
+
+	/*CS*/
+	if (CS_from) {
+	    if (CS_from == 1) {
+		CS_to = left;
+	    } else {
+		CS_from = left + len + 1;
+		CS_to = left + len + right;
 	    }
-	    /* null terminate */
-	    seq[left+len+right] = '\0';
+	    sprintf(line,"%d..%d",CS_from,CS_to);
+	    (void)ArrayRef(e->entries[EFLT_CS],e->Nentries[EFLT_CS]++);
+	    exp_get_entry(e,EFLT_CS) = (char *)strdup(line);
+	}
 
-	    /*SQ*/
-	    (void)ArrayRef(e->entries[EFLT_SQ],e->Nentries[EFLT_SQ]++);
-	    exp_get_entry(e,EFLT_SQ) = seq;
-
-	    /*SL*/
-	    sprintf(line,"%d",left);
-	    (void)ArrayRef(e->entries[EFLT_SL],e->Nentries[EFLT_SL]++);
-	    exp_get_entry(e,EFLT_SL) = (char *)strdup(line);
-
-	    /*SR*/
-	    if (SR) {
-		sprintf(line,"%d",left+len+1);
-		(void)ArrayRef(e->entries[EFLT_SR],e->Nentries[EFLT_SR]++);
-		exp_get_entry(e,EFLT_SR) = (char *)strdup(line);
-	    }
-
-	    /*CS*/
-	    if (CS_from) {
-		if (CS_from == 1) {
-		    CS_to = left;
-		} else {
-		    CS_from = left + len + 1;
-		    CS_to = left + len + right;
-		}
-		sprintf(line,"%d..%d",CS_from,CS_to);
-		(void)ArrayRef(e->entries[EFLT_CS],e->Nentries[EFLT_CS]++);
-		exp_get_entry(e,EFLT_CS) = (char *)strdup(line);
-	    }
-
-	    /*QR*/
-	    if (!SR && !CS_from) {
-		sprintf(line,"%d",left+len+1);
-		(void)ArrayRef(e->entries[EFLT_QR],e->Nentries[EFLT_QR]++);
-		exp_get_entry(e,EFLT_QR) = (char *)strdup(line);
-	    }
+	/*QR*/
+	if (!SR && !CS_from) {
+	    sprintf(line,"%d",left+len+1);
+	    (void)ArrayRef(e->entries[EFLT_QR],e->Nentries[EFLT_QR]++);
+	    exp_get_entry(e,EFLT_QR) = (char *)strdup(line);
+	}
 
 #if 0
-	    /*TG*/
-	    {
-		int i;
-		/* need to add LEFT to each start position in tag */
-		for(i=0;i<e->Nentries[EFLT_TG];i++) {
-		    sprintf(line,"%4.4s %6d%s",
-			    arr(char *,e->entries[EFLT_TG],i),
-			    atoi(arr(char *,e->entries[EFLT_TG],i)+5)+left,
-			    arr(char *,e->entries[EFLT_TG],i)+11);
-		    xfree(arr(char *,e->entries[EFLT_TG],i));
-		    arr(char *,e->entries[EFLT_TG],i) = (char *)strdup(line);
+	/*TG*/
+	{
+	    int i;
+	    /* need to add LEFT to each start position in tag */
+	    for(i=0;i<e->Nentries[EFLT_TG];i++) {
+		sprintf(line,"%4.4s %6d%s",
+			arr(char *,e->entries[EFLT_TG],i),
+			atoi(arr(char *,e->entries[EFLT_TG],i)+5)+left,
+			arr(char *,e->entries[EFLT_TG],i)+11);
+		xfree(arr(char *,e->entries[EFLT_TG],i));
+		arr(char *,e->entries[EFLT_TG],i) = (char *)strdup(line);
 
-		}
 	    }
-#endif
-
-	    fclose(fp);
 	}
-	
+#endif
     }
     return e;
 }
@@ -582,41 +587,45 @@ SeqInfo *read_sequence_details(char *filename, int ignore_vec)
 {
     SeqInfo *si = NULL;
     Exp_info *e;
+    mFILE *fp;
+    int format;
 
     /*
      * read sequence details into experiment file format
      */
-    switch(determine_trace_type(filename)) {
+    if (NULL == (fp = open_exp_mfile(filename, NULL)))
+	return NULL;
+
+    format = fdetermine_trace_type(fp);
+    mrewind(fp);
+    switch(format) {
     case TT_PLN:
-	e = exp_read_staden_info(filename);
+	e = exp_read_staden_info(fp, filename);
+	mfclose(fp);
 	break;
     case TT_EXP:
-	{
-	    mFILE *fp = open_trace_mfile(filename, NULL);
-	    if (fp) {
-		e = exp_mfread_info(fp);
-		mfclose(fp);
-		if (e)
-		    exp_close(e);
-	    } else {
-		e = NULL;
-	    }
-	}
+	e = exp_mfread_info(fp);
+	mfclose(fp);
+	if (e)
+	    exp_close(e);
 	break;
 #ifdef USE_BIOLIMS
     case TT_BIO:
         e = spBiolims2exp(filename);
+	mfclose(fp);
 	break;
 #endif
     case TT_ERR:
 	verror(ERR_WARN, "read_sequence_details",
 	       "Failed to read file %s", filename);
 	e = NULL;
+	mfclose(fp);
 	break;
     default:
 	verror(ERR_WARN, "read_sequence_details",
 	       "File %s is not in plain or Experiment File format", filename);
 	e = NULL;
+	mfclose(fp);
 	break;
     }
 
