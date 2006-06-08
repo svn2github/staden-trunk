@@ -152,6 +152,23 @@ int calc_reading_coverage(GapIO *io,
     /* always set minimum to 0 */
     *min = 0;
 
+#if 0
+    /* Log plot for deep cases - experimental */
+    *max = 0;
+    for (i = 1; i <= io_clength(io, contig); i++) {
+	if (i < start)
+	    continue;
+	if (i > end)
+	    break;
+	/* histogram[i-start] = 10*log(histogram[i-start]+1); */
+	if (histogram[i-start] > 150) {
+	    histogram[i-start] = 150;
+	}
+	if (*max < histogram[i-start])
+	    *max = histogram[i-start];
+    }
+#endif
+
 #ifdef DEBUG
     printf("min %d max %d\n", *min, *max);
 #endif
