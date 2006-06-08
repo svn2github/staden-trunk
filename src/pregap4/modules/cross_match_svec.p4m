@@ -70,6 +70,18 @@ proc run {files} {
 	    catch {unset e}
 	    array set e [read_exp_file $f]
 	    set seq [query_exp_file e SQ]
+	    set QL [query_exp_file e QL]
+	    set QR [query_exp_file e QR]
+	    if {$QL != ""} {
+		set ql($f) $QL
+	    } else {
+		set ql($f) 1
+	    }
+	    if {$QR != ""} {
+		set qr($f) $QR
+	    } else {
+		set qr($f) [string length $seq]
+	    }
 	    regsub -all {[-]} $seq N seq
 	    if {$seq == ""} {
 		set file_error($f) "cross_match: malformed experiment file"
@@ -186,17 +198,18 @@ proc run {files} {
 
 	# Produce SL, SR or TG lines
 	set seq_len [string length $seq]
+
 	foreach r $ranges {
 	    set start [expr [lindex $r 0]+1]
 	    set end [expr [lindex $r 1]+1]
 	    append report "SEQ $name: masked $start to $end\n"
 	    set sl -1
 	    set sr -1
-	    if {$start <= 5} {
+	    if {$start <= $ql($name) || $start <= $gap_size} {
 		set sl $end
 	    }
-	    if {$end >= [expr $seq_len+1-5]} {
-		set sr $start
+	    if {$end >= $qr($name) || $end >= [expr {$seq_len+1-$gap_size}]} {
+		set sr [expr {$start > $sl ? $start : ($sl+1)}]
 	    }
 	    if {$sl != -1 && $sr != -1} {
 		set file_error($name) "cross_match: entirely vector"
@@ -210,8 +223,8 @@ proc run {files} {
 	    }
 	}
 
+	write_exp_file exp_file $name
 	if {!$failed} {
-	    write_exp_file exp_file $name
 	    lappend new_files $name
 	    vmessage -nonewline .
 	} else {
