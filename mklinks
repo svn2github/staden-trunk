@@ -29,6 +29,7 @@ do
 	cd ..
 
 	# Programs
+	mkdir $i-bin
 	cd $i-bin
 	ln -s ../src/eba/$i-binaries/eba .
 	ln -s ../src/find_renz/$i-binaries/find_renz .
