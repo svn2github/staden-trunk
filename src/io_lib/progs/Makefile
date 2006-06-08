@@ -9,7 +9,7 @@ PROGS = $(O)/convert_trace $(O)/index_tar $(O)/get_comment $(O)/trace_dump \
 	$(O)/append_sff $(O)/hash_exp
 
 ifdef IOLIB_PLN
-PROGS += $(O)/extract_seq
+PROGS += $(O)/extract_seq $(O)/extract_fastq
 endif
 
 ifdef IOLIB_SCF
@@ -30,6 +30,7 @@ INCLUDES_X += -I$(IOLIBSRC)/include
 CLDFLAGS   += $(LINK_PATHFLAG)$(IOLIBBIN)
 
 ESOBJS=$(O)/extract_seq.o
+EFOBJS=$(O)/extract_fastq.o
 SUOBJS=$(O)/scf_update.o
 SIOBJS=$(O)/scf_info.o
 STOBJS=$(O)/scf_dump.o
@@ -50,6 +51,9 @@ PLIBS=$(LINK_LIBFLAG)read$(LIB_EXT) $(LIBSC) $(LINK_LIBFLAG)misc$(LIB_EXT)
 
 $(O)/extract_seq:	$(ESOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ESOBJS) $(PLIBS)
+
+$(O)/extract_fastq:	$(EFOBJS)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(EFOBJS) $(PLIBS)
 
 $(O)/get_comment:	$(GCOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(GCOBJS) $(PLIBS)
@@ -97,7 +101,9 @@ $(O)/append_sff:	$(ASOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ASOBJS) $(PLIBS)
 
 
-DEPEND_OBJ = $(ESOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(GCOBJS) $(HTOBJS) $(HEOBJS)
+DEPEND_OBJ = $(ESOBJS) $(EFOBJS) $(SUOBJS) $(SIOBJS) $(STOBJS) $(TDOBJS) \
+	     $(ZDOBJS) $(MSOBJS) $(CTOBJS) $(ITOBJS) $(HTOBJS) $(HXOBJS) \
+	     $(HSOBJS) $(HEOBJS) $(HLOBJS) $(ASOBJS) $(GCOBJS) 
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
