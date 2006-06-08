@@ -49,7 +49,6 @@ extern void freeSeqInfo(SeqInfo *si);
 
 extern SeqInfo *read_sequence_details(char *filename, int ignore_vec);
 
-extern Exp_info *exp_read_staden_info(char *filename);
 /*
  * Read a staden file into an Exp_info data structure
  */
