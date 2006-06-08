@@ -10,7 +10,7 @@ SRCROOT=..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 INCLUDES_S += -Iinclude
-CFLAGS += $(SHLIB_CFLAGS)
+CFLAGS += $(SHLIB_CFLAGS) $(shell curl-config --cflags)
 #COPTDEBUG=-O -g3
 
 %/$(O)/.dir:
@@ -114,7 +114,7 @@ endif
 #-----------------------------------------------------------------------------
 # Build rules
 
-RLIBS += $(MISC_LIB)
+RLIBS += $(MISC_LIB) $(shell curl-config --libs)
 
 $(LIBS): include/.links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@

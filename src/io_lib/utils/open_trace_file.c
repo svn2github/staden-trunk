@@ -1,6 +1,10 @@
+#define USE_LIBCURL
+
 #if !(defined(_MSC_VER) || defined(__MINGW32__))
-#define TRACE_ARCHIVE
-#define USE_WGET
+#  define TRACE_ARCHIVE
+#  ifndef USE_LIBCURL
+#    define USE_WGET
+#  endif
 #endif
 
 #include <stdlib.h>
@@ -22,6 +26,9 @@
 #endif
 #ifndef PATH_MAX
 #  define PATH_MAX 1024
+#endif
+#ifdef USE_LIBCURL
+#  include <curl/curl.h>
 #endif
 
 #include "open_trace_file.h"
@@ -331,6 +338,7 @@ static mFILE *find_file_archive(char *file, char *arcname) {
 #endif
 
 #ifdef USE_WGET
+/* NB: non-reentrant due to reuse of handle */
 static mFILE *find_file_url(char *file, char *url) {
     char buf[8192], *cp;
     mFILE *fp;
@@ -358,11 +366,103 @@ static mFILE *find_file_url(char *file, char *url) {
     }
 
     /* Return a filepointer to the result (if it exists) */
-    fp = !status ? mfopen(fname, "rb+") : NULL;
+    fp = (!status && file_size(fname) != 0) ? mfopen(fname, "rb+") : NULL;
     remove(fname);
     free(fname);
 
     return fp;
+}
+#endif
+
+#ifdef USE_LIBCURL
+static mFILE *find_file_url(char *file, char *url) {
+    char buf[8192], *cp;
+    mFILE *mf = NULL, *headers = NULL;
+    int maxlen = 8190 - strlen(file);
+    static CURL *handle = NULL;
+    static int curl_init = 0;
+    char errbuf[CURL_ERROR_SIZE];
+
+    *errbuf = 0;
+
+    if (!curl_init) {
+	if (curl_global_init(CURL_GLOBAL_ALL))
+	    return NULL;
+
+	if (NULL == (handle = curl_easy_init()))
+	    goto error;
+
+	curl_init = 1;
+    }
+
+    /* Expand %s for the trace name */
+    for (cp = buf; *url && cp - buf < maxlen; url++) {
+	if (*url == '%' && *(url+1) == 's') {
+	    url++;
+	    cp += strlen(strcpy(cp, file));
+	} else {
+	    *cp++ = *url;
+	}
+    }
+    *cp++ = 0;
+
+    /* Setup the curl */
+    if (NULL == (mf = mfcreate(NULL, 0)) ||
+	NULL == (headers = mfcreate(NULL, 0)))
+	return NULL;
+
+    if (0 != curl_easy_setopt(handle, CURLOPT_URL, buf))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_TIMEOUT, 10L))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, mfwrite))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_WRITEDATA, mf))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_HEADERFUNCTION, mfwrite))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_WRITEHEADER, headers))
+	goto error;
+    if (0 != curl_easy_setopt(handle, CURLOPT_ERRORBUFFER, errbuf))
+	goto error;
+    
+    /* Fetch! */
+    if (0 != curl_easy_perform(handle))
+	goto error;
+    
+    /* Report errors is approproate. 404 is silent as it may have just been
+     * a search via RAWDATA path, everything else is worth reporting.
+     */
+    {
+	float version;
+	int response;
+	char nul = 0;
+	mfwrite(&nul, 1, 1, headers);
+	if (2 == sscanf(headers->data, "HTTP/%f %d", &version, &response)) {
+	    if (response != 200) {
+		if (response != 404)
+		    fprintf(stderr, "%.*s\n", headers->size, headers->data);
+		goto error;
+	    }
+	}
+    }
+
+    if (mftell(mf) == 0)
+	goto error;
+
+    mfdestroy(headers);
+
+    mrewind(mf);
+    return mf;
+
+ error:
+    if (mf)
+	mfdestroy(mf);
+    if (headers)
+	mfdestroy(headers);
+    if (*errbuf)
+	fprintf(stderr, "%s\n", errbuf);
+    return NULL;
 }
 #endif
 
@@ -745,8 +845,6 @@ static mFILE *find_file_sff(char *entry, char *sff) {
 static mFILE *find_file_dir(char *file, char *dirname) {
     char path[PATH_MAX+1], path2[PATH_MAX+1];
     size_t len = strlen(dirname);
-    int num_magics = sizeof(magics) / sizeof(*magics);
-    int i;
     char *cp;
 
     if (dirname[len-1] == '/')
@@ -819,15 +917,6 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	}
     }
 
-    /* Is it lurking under another, compressed, name? */
-    for (i = 0; i < num_magics; i++) {
-	sprintf(path2, "%s%s", path, magics[i]);
-	if (file_exists(path2)) {
-	    return fopen_compressed(path2, NULL);
-	    /* return mfopen(path2, "rb"); */
-	}
-    }
-
     return NULL;
 }
 
@@ -845,18 +934,21 @@ static mFILE *find_file_dir(char *file, char *dirname) {
  * the experiment file. Relative_to may be supplied as NULL.
  *
  * 'file' is looked for at relative_to, then the current directory, and then
- * all of the locations listed in RAWDATA (which is a colon separated list).
+ * all of the locations listed in 'path' (which is a colon separated list).
+ * If 'path' is NULL it uses the RAWDATA environment variable instead.
  *
  * Returns a mFILE pointer when found.
  *           NULL otherwise.
  */
-mFILE *open_trace_mfile(char *file, char *relative_to) {
+mFILE *open_path_mfile(char *file, char *path, char *relative_to) {
     char *newsearch;
     char *ele;
     mFILE *fp;
 
-    /* Use RAWDATA first */
-    if (NULL == (newsearch = tokenise_search_path(getenv("RAWDATA"))))
+    /* Use path first */
+    if (!path)
+	path = getenv("RAWDATA");
+    if (NULL == (newsearch = tokenise_search_path(path)))
 	return NULL;
     
     /*
@@ -869,40 +961,55 @@ mFILE *open_trace_mfile(char *file, char *relative_to) {
 	char *suffix[6] = {"", ".gz", ".bz2", ".sz", ".Z", ".bz2"};
 	for (i = 0; i < 6; i++) {
 	    char file2[1024];
+	    char *ele2;
+	    int valid = 1;
+
+	    /*
+	     * '|' prefixing a path component indicates that we do not
+	     * wish to perform the compression extension searching in that
+	     * location.
+	     */
+	    if (*ele == '|') {
+		ele2 = ele+1;
+		valid = (i == 0);
+	    } else {
+		ele2 = ele;
+	    }
+
 	    sprintf(file2, "%s%s", file, suffix[i]);
 
-	    if (0 == strncmp(ele, "TAR=", 4)) {
-		if (fp = find_file_tar(file2, ele+4, 0)) {
+	    if (0 == strncmp(ele2, "TAR=", 4)) {
+		if (valid && (fp = find_file_tar(file2, ele2+4, 0))) {
 		    free(newsearch);
 		    return fp;
 		}
 
-	    } else if (0 == strncmp(ele, "HASH=", 5)) {
-		if (fp = find_file_hash(file2, ele+5)) {
+	    } else if (0 == strncmp(ele2, "HASH=", 5)) {
+		if (valid && (fp = find_file_hash(file2, ele2+5))) {
 		    free(newsearch);
 		    return fp;
 		}
 #ifdef TRACE_ARCHIVE
-	    } else if (0 == strncmp(ele, "ARC=", 4)) {
-		if (fp = find_file_archive(file2, ele+4)) {
+	    } else if (0 == strncmp(ele2, "ARC=", 4)) {
+		if (valid && (fp = find_file_archive(file2, ele2+4))) {
 		    free(newsearch);
 		    return fp;
 		}
 #endif
-#ifdef USE_WGET
-	    } else if (0 == strncmp(ele, "URL=", 4)) {
-		if (fp = find_file_url(file2, ele+4)) {
+#if defined(USE_WGET) || defined(USE_LIBCURL)
+	    } else if (0 == strncmp(ele2, "URL=", 4)) {
+		if (valid && (fp = find_file_url(file2, ele2+4))) {
 		    free(newsearch);
 		    return fp;
 		}
 #endif
-	    } else if (0 == strncmp(ele, "SFF=", 4)) {
-		if (fp = find_file_sff(file2, ele+4)) {
+	    } else if (0 == strncmp(ele2, "SFF=", 4)) {
+		if (valid && (fp = find_file_sff(file2, ele2+4))) {
 		    free(newsearch);
 		    return fp;
 		}
 	    } else {
-		if (fp = find_file_dir(file2, ele)) {
+		if (valid && (fp = find_file_dir(file2, ele2))) {
 		    free(newsearch);
 		    return fp;
 		}
@@ -926,9 +1033,8 @@ mFILE *open_trace_mfile(char *file, char *relative_to) {
     return NULL;
 }
 
-
-FILE *open_trace_file(char *file, char *relative_to) {
-    mFILE *mf = open_trace_mfile(file, relative_to);
+FILE *open_path_file(char *file, char *path, char *relative_to) {
+    mFILE *mf = open_path_mfile(file, path, relative_to);
     FILE *fp;
     char *fname;
 
@@ -957,3 +1063,38 @@ FILE *open_trace_file(char *file, char *relative_to) {
 
     return fp;
 }
+
+static char *exp_path = NULL;
+static char *trace_path = NULL;
+
+void  iolib_set_trace_path(char *path) { trace_path = path; }
+char *iolib_get_trace_path(void)       { return trace_path; }
+void  iolib_set_exp_path  (char *path) { exp_path = path; }
+char *iolib_get_exp_path  (void)       { return exp_path; }
+
+/*
+ * Trace file functions: uses TRACE_PATH environment variable.
+ */
+mFILE *open_trace_mfile(char *file, char *rel_to) {
+    return open_path_mfile(file, trace_path ? trace_path
+			                    : getenv("TRACE_PATH"), rel_to);
+}
+
+FILE *open_trace_file(char *file, char *rel_to) {
+    return open_path_file(file, trace_path ? trace_path
+			                   : getenv("TRACE_PATH"), rel_to);
+}
+
+/*
+ * Trace file functions: uses EXP_PATH environment variable.
+ */
+mFILE *open_exp_mfile(char *file, char *relative_to) {
+    return open_path_mfile(file, exp_path ? exp_path
+			                  : getenv("EXP_PATH"), relative_to);
+}
+
+FILE *open_exp_file(char *file, char *relative_to) {
+    return open_path_file(file, exp_path ? exp_path
+			                 : getenv("EXP_PATH"), relative_to);
+}
+
