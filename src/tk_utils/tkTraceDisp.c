@@ -74,6 +74,8 @@ void trace_update_extents(DNATrace *t, int *x0p, int *xnp) {
     if (t->Ned <= 0)
 	return;
 
+    if (x0 < 0) x0 = 0;
+    if (x0 >= t->read->NPoints) x0 = t->read->NPoints-1;
     x1 = x0 + xn < t->read->NPoints ? x0+xn : t->read->NPoints - 1;
     x1 = t->tracePos[x1] + 1;
     if (x1 >= t->read->NBases) x1--;
