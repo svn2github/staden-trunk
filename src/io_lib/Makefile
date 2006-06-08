@@ -143,7 +143,7 @@ include dependencies
 .PRECIOUS: include/.links
 include/.links:
 	cd include; \
-	for i in abi alf ctf exp_file plain read scf utils ztr;	\
+	for i in abi alf ctf exp_file plain read scf sff utils ztr;	\
 	do \
 	    ln -s ../$$i/*.h .;\
 	done
