@@ -119,6 +119,7 @@ int fdetermine_trace_type(FILE *fp)
 	    if ( (isprint(c) && isascii(c)) || isspace(c) ) ps++;
 	}
     }
+    fseek(fp, 0, 0);
     /*YUK! 75% of characters printable means text*/
     if ( 100 * (size_t)ps > 75 * len ) {
 	/*YUK! 75% of printables ACGTN means plain*/
