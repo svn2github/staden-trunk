@@ -276,6 +276,7 @@ int mfseek(mFILE *mf, long offset, int whence) {
 	return -1;
     }
 
+    mf->eof = 0;
     return 0;
 }
 
@@ -285,6 +286,7 @@ long mftell(mFILE *mf) {
 
 void mrewind(mFILE *mf) {
     mf->offset = 0;
+    mf->eof = 0;
 }
 
 /*
