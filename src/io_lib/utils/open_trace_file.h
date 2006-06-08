@@ -19,6 +19,12 @@
  */
 mFILE *open_trace_mfile(char *file, char *relative_to);
 FILE *open_trace_file(char *file, char *relative_to);
+mFILE *open_exp_mfile(char *file, char *relative_to);
+FILE *open_exp_file(char *file, char *relative_to);
 
+void  iolib_set_trace_path(char *path);
+char *iolib_get_trace_path(void);
+void  iolib_set_exp_path  (char *path);
+char *iolib_get_exp_path  (void);
 
 #endif /* _OPEN_TRACE_FILE_H_ */
