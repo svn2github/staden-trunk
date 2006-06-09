@@ -441,7 +441,8 @@ static mFILE *find_file_url(char *file, char *url) {
 	if (2 == sscanf(headers->data, "HTTP/%f %d", &version, &response)) {
 	    if (response != 200) {
 		if (response != 404)
-		    fprintf(stderr, "%.*s\n", headers->size, headers->data);
+		    fprintf(stderr, "%.*s\n",
+			    (int)headers->size, headers->data);
 		goto error;
 	    }
 	}
@@ -851,10 +852,14 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	len--;
 
     /* Special case for "./" */
-    if (len==1 && *dirname == '.')
+    if (*file == '/' || (len==1 && *dirname == '.'))
 	sprintf(path, "%s", file);
-    else 
+    else
 	sprintf(path, "%.*s/%s", (int)len, dirname, file);
+
+    if (is_file(path)) {
+	return mfopen(path, "rb+");
+    }
 
     /*
      * Given a pathname /a/b/c if a/b is a file and not a directory then
