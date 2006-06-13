@@ -1,4 +1,139 @@
-2006-04-12  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-06-13  jkbonfield  <jkbonfield>
+
+	* staden.login,
+	* staden.profile:
+	(11:44:50) Added linux-x86_64 MACHINE definition. 
+
+	* src/gap4/hash_lib.c,
+	* src/gap4/join.c:
+	(11:50:17) Made the hashing code automatically realloc some of its
+	memory structures. This cures a problem where with some highly
+	repetitive elements the join editor would fail in the fast
+	"compare_b" hashed alignment method as the number of word hits >
+	length of sequence.
+	
+	Also upped the maximum length of the fallback dynamic alignment
+	strategy from 2Kb to 10Kb. It'll be slow and memory hungry at 10Kb,
+	but with modern CPUs it's not not so bad.
+	
+	Finally fixed a bug in the alignment printing code; it now clips
+	the right hand overhang correctly. 
+
+	* src/io_lib/progs/Makefile:
+	(11:50:47) Added ZLIB_INC include path. 
+
+	* tables/shlib.conf:
+	(12:42:30) Added linux-x86_64 definition 
+
+2006-06-09  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/open_trace_file.c:
+	(08:53:24) Somewhere along the line I managed to break the most
+	common of all search mechanisms; local filenames on disk! Fixed
+	find_file_dir(). 
+
+2006-06-08  jkbonfield  <jkbonfield>
+
+	* src/Misc/os.h:
+	(13:10:56) Added back uint1 definition. Not sure why it was
+	removed. 
+
+	* src/gap4/reading_coverage.c:
+	(13:12:08) No effect; Added some "#if 0"ed out code for doing hacky
+	log plots of the reading depth as it was useful for debugging
+	something. 
+
+	* src/gap4/seqInfo.c:
+	(13:14:55) Overhaul of exp_read_staden_info function, including
+	changing the prototype. It no longer users fopen and takes an mFILE
+	instead (meaning it will work via io_lib and remote file accesses). 
+
+	* src/gap4/seqInfo.h:
+	(13:15:25) New prototype for read_sequence_details(). 
+
+	* src/mk/global.mk:
+	(13:15:58) Use mkdir "-p" option when creating new directories so
+	../lib/alpha-binaries for example will create ../lib too. 
+
+	* src/io_lib/Makefile,
+	* src/io_lib/utils/open_trace_file.c:
+	(13:21:59) Added libcurl support and made this the default instead
+	of using WGET for URL based accesses. Fixed a bug in the old wget
+	code also though involving handling of zero-sized replies.
+	
+	Removed the compressed file extension iteration code in
+	find_file_dir as it's now included in the master open_trace_file
+	function instead (and so was yielding stats on fubar.scf.gz.bz2 and
+	similar). It's also now possible to turn off the compressed file
+	extension iteration code by prefixing a search path element with a
+	"|" symbol.
+	
+	Replaced RAWDATA environment with EXP_PATH and TRACE_PATH. These
+	default back to RAWDATA when not defined. Created new functions
+	named open_exp_file and open_exp_mfile which use EXP_PATH instead
+	of TRACE_PATH. These allow for experiment files and trace files to
+	share the same names (as is the case in external "trace servers")
+	but use different accessor routes to return the data. 
+
+	* src/io_lib/utils/open_trace_file.h:
+	(13:22:40) New prototypes or the open_exp_{file,mfile} code and
+	iolib_[sg]et_{trace,exp}_path calls. 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/hash_exp.c:
+	(13:25:15) New program hash_exp. This allows for multiple
+	experiment files to be concatenated together instead a single
+	multi-sequence file and then be indexed (using hash_exp) to allow
+	for a HASH=... EXP_PATH element to extract the data back out again. 
+
+	* src/io_lib/progs/convert_trace.c,
+	* src/io_lib/progs/extract_seq.c,
+	* src/io_lib/read/Read.c,
+	* src/io_lib/read/Read.h,
+	* src/io_lib/read/scf_extras.c,
+	* src/io_lib/read/translate.c:
+	(13:28:29) Make use of open_exp_mfile instead of open_trace_mfile
+	when we know we've explicitly requested a file in EXP format. This
+	ensures we'll use the correct search path where appropriate.
+	
+	Also defined an ANYTR trace format which is identical to the old
+	ANY format except that it excludes EXP and PLN (ie "ANY TRace").
+	Again this is used internally to ensure we pick the correct search
+	path when dealing with fetching traces and/or experiment files. 
+
+	* src/io_lib/utils/mFILE.c:
+	(13:29:23) Fixed a bug in mfseek and mrewind. Both now clear the
+	EOF flag. 
+
+	* src/io_lib/utils/traceType.c:
+	(13:33:16) Bug fix to fdetermine_trace_type: now rewinds back. 
+
+	* src/pregap4/modules/cross_match_svec.p4m:
+	(13:34:29) Improved detection of vector running to the end; it now
+	checks if it is close to the quality clip point rather than the
+	absolute sequence end point. 
+
+	* src/tk_utils/tkTraceDisp.c:
+	(13:35:17) Added extra array bounds checking in the determine
+	extents code. 
+
+	* mklinks:
+	(14:01:25) It now creates the $MACHINE-bin directories 
+
+	* src/io_lib/Makefile:
+	(15:21:02) Fixed the include/.links target (added sff) 
+
+	* src/io_lib/progs/Makefile,
+	* src/io_lib/progs/extract_fastq.c:
+	(15:22:24) Added extract_fastq program. 
+
+2006-05-30  jkbonfield  <jkbonfield>
+
+	* src/io_lib/ztr/compression.c:
+	(08:46:57) Fixed a bug in xrle(); it now correctly handles runs of
+	256 or more. 
+
+2006-04-12  jkbonfield  <jkbonfield>
 
 	* src/gap4/newgap_cmds.c:
 	(10:51:56) Fixed find_oligo (aka Sequence Search) when given blank
@@ -27,20 +162,20 @@
 	* src/trev/trev.tcl:
 	(10:57:19) Added -style stick as an option. 
 
-2006-02-28  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-02-28  jkbonfield  <jkbonfield>
 
 	* src/io_lib/ztr/compression.c:
 	(17:10:36) Fixed bug reading past memory in xrle(). (Thanks to
 	Kathryn Beal for identifying this.) 
 
-2006-02-27  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-02-27  jkbonfield  <jkbonfield>
 
 	* src/io_lib/ztr/ztr.c,
 	* src/io_lib/ztr/ztr.h:
 	(14:40:06) Removed static from compress_chunk and uncompress_chunk.
 	Added prototypes to ztr.h. 
 
-2006-02-23  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-02-23  jkbonfield  <jkbonfield>
 
 	* src/io_lib/utils/read_alloc.c:
 	(15:08:36) Fixed a bug in read_dup and not initialising read->info. 
@@ -48,7 +183,7 @@
 	* src/io_lib/utils/read_alloc.c:
 	(16:00:44) Fixed typo. 
 
-2006-02-22  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-02-22  jkbonfield  <jkbonfield>
 
 	* src/prefinish/finish.c,
 	* src/prefinish/finish_main.c:
@@ -57,12 +192,12 @@
 	jumps on one reading length instead of to the end of the problem
 	region. 
 
-2006-02-20  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-02-20  jkbonfield  <jkbonfield>
 
 	* src/io_lib/utils/hash_table.c:
 	(12:16:50) Allow HashTableAdd to take a non-string for the key. 
 
-2006-01-26  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-01-26  jkbonfield  <jkbonfield>
 
 	* src/io_lib/utils/hash_table.c,
 	* src/io_lib/utils/hash_table.h:
@@ -74,7 +209,7 @@
 	removes and destroys a specified HashItem. HashTableRemove removes
 	and destroys all items attached to a given key. 
 
-2006-01-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+2006-01-03  jkbonfield  <jkbonfield>
 
 	* src/gap4/shuffle_pads.tcl:
 	(14:31:54) Shut down open displays before editing. 
@@ -106,7 +241,7 @@
 	Fixed get_fasta_format_seq to allow the identifier to be passed as
 	NULL (as it is when called via get_seq instead of get_seq_ft). 
 
-2005-12-14  jkbonfield  <jkbonfield@sanger.ac.uk>
+2005-12-14  jkbonfield  <jkbonfield>
 
 	* src/io_lib/CHANGES,
 	* src/io_lib/README,
