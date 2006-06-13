@@ -26,7 +26,7 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 CFLAGS += -I../include
 
 IOLIBBIN=$(L)
-INCLUDES_X += -I$(IOLIBSRC)/include
+INCLUDES   += -I$(IOLIBSRC)/include $(ZLIB_INC)
 CLDFLAGS   += $(LINK_PATHFLAG)$(IOLIBBIN)
 
 ESOBJS=$(O)/extract_seq.o
