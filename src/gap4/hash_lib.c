@@ -1467,9 +1467,10 @@ int compare_seqs(Hash *h, int *seq1_match_pos, int *seq2_match_pos,
 		for (j=0,pw1=h->last_word[word];j<ncw;j++) {
 		    diag_pos = h->seq1_len - pw1 + pw2 - 1;
 		    if ( h->diag[diag_pos] < pw2 ) {
-			if ((match_size = match_len ( 
-						       h->seq1, pw1, h->seq1_len,
-						       h->seq2, pw2, h->seq2_len))
+			if ((match_size = match_len (h->seq1,
+						     pw1, h->seq1_len,
+						     h->seq2,
+						     pw2, h->seq2_len))
 			    >= h->min_match ) {
 			    h->matches++;
 			    if(h->max_matches == h->matches) {
@@ -1563,8 +1564,15 @@ int compare_a(Hash *h,
 		h->matches++;
 		/*printf("match %d %d %e %e\n",i,j,h->hist[i],h->expected_scores[j]);*/
 		if(h->max_matches == h->matches) {
-		    printf("too many matches %d\n",h->max_matches);
-		    return -5;
+		    h->max_matches *= 2;
+		    h->diag_match =
+			(Diag_Match *)xrealloc(h->diag_match,
+					       sizeof(Diag_Match) *
+					       h->max_matches);
+		    if (NULL == h->diag_match) {
+			printf("too many matches %d\n",h->max_matches);
+			return -5;
+		    }
 		}
 		h->diag_match[h->matches].pos = i;
 		h->diag_match[h->matches].prob = h->hist[i] / (double)j;
@@ -1631,7 +1639,13 @@ int compare_b(Hash *h,
 			    >= h->min_match ) {
 			    h->matches++;
 			    if(h->max_matches == h->matches) {
-				return -5;
+				h->max_matches *= 2;
+				h->block_match = (Block_Match *)
+				    xrealloc(h->block_match,
+					     sizeof(Block_Match) *
+					     h->max_matches);
+				if (NULL == h->block_match)
+				    return -5;
 			    }
 
 			    h->block_match[h->matches].pos_seq1 = pw1;

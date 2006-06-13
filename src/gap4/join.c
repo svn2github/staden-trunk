@@ -55,7 +55,7 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
 
 #define DO_BLOCKS 100
 #define OK_MATCH 80
-#define TOO_LONG_FOR_2ND_TRY 2000
+#define TOO_LONG_FOR_2ND_TRY 10000
     int ierr;
     ALIGN_PARAMS *params;
     Hash *h;
@@ -110,8 +110,7 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
 	return ierr; /* Correct or failure */
     }
 
-    max_seq = MAX(overlap->seq1_len,overlap->seq2_len);
-    max_matches = max_seq;
+    max_matches = 100; /* dynamically grows as needed */
     word_len = 8;
 
     compare_method = 31;
@@ -158,6 +157,10 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
     }
     /* if block alignment fails, try straight dynamic programming */
 
+
+    verror(ERR_WARN, "align_contigs",
+	   "Fast hashing alignment algorithm failed, "
+	   "attempting full dynanic programming instead");
 
     if(longest_diagonal < TOO_LONG_FOR_2ND_TRY) {
 	band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
@@ -401,7 +404,7 @@ static int align(EdStruct *xx0, int pos0, int len0,
 	    if (*s < 0) {
 		pos0 -= *s;
 	    } else if (*s > 0) {
-		pos0 += *s;
+		pos1 += *s;
 	    } else {
 		pos0++;
 		pos1++;
