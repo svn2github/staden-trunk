@@ -257,9 +257,9 @@ IWIDGETS_SRC=iwidgets$(IWIDGETS_VERS)
 
 iwidgets: iwidgets-build iwidgets-install
 
-iwidgets-install: libdir $(L)/.iwidgets
+iwidgets-install: libdir $(L)/../.iwidgets
 
-$(L)/.iwidgets: $(IWIDGETS_SRC)/.built
+$(L)/../.iwidgets: $(IWIDGETS_SRC)/.built
 	cd $(IWIDGETS_SRC); \
 	make install-libraries
 	touch $@
