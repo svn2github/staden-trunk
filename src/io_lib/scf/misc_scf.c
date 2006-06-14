@@ -152,7 +152,7 @@ int is_scf(char *fn)
     return ok;
 }
 
-void delta_samples1 ( int1 samples[], int num_samples, int job) {
+void scf_delta_samples1 ( int1 samples[], int num_samples, int job) {
 
     /* If job == DELTA_IT:
        change a series of sample points to a series of delta delta values:
@@ -216,7 +216,7 @@ void delta_samples1 ( int1 samples[], int num_samples, int job) {
     }
 }
 
-void delta_samples2 ( uint_2 samples[], int num_samples, int job) {
+void scf_delta_samples2 ( uint_2 samples[], int num_samples, int job) {
 
     /* If job == DELTA_IT:
        change a series of sample points to a series of delta delta values:

@@ -154,7 +154,7 @@ int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_A;
     }
-    delta_samples1 ( samples_out, num_samples, 1);
+    scf_delta_samples1 ( samples_out, num_samples, 1);
     if (num_samples != fwrite(samples_out, 1, num_samples, fp)) {
 	xfree(samples_out);
 	return -1;
@@ -163,7 +163,7 @@ int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_C;
     }
-    delta_samples1 ( samples_out, num_samples, 1);
+    scf_delta_samples1 ( samples_out, num_samples, 1);
     if (num_samples != fwrite(samples_out, 1, num_samples, fp)) {
 	xfree(samples_out);
 	return -1;
@@ -172,7 +172,7 @@ int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_G;
     }
-    delta_samples1 ( samples_out, num_samples, 1);
+    scf_delta_samples1 ( samples_out, num_samples, 1);
     if (num_samples != fwrite(samples_out, 1, num_samples, fp)) {
 	xfree(samples_out);
 	return -1;
@@ -181,7 +181,7 @@ int write_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_T;
     }
-    delta_samples1 ( samples_out, num_samples, 1);
+    scf_delta_samples1 ( samples_out, num_samples, 1);
     if (num_samples != fwrite(samples_out, 1, num_samples, fp)) {
 	xfree(samples_out);
 	return -1;
@@ -206,7 +206,7 @@ int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_A;
     }
-    delta_samples2 ( samples_out, num_samples, 1);
+    scf_delta_samples2 ( samples_out, num_samples, 1);
 #ifdef SP_LITTLE_ENDIAN
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = be_int2(samples_out[i]);
@@ -218,7 +218,7 @@ int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_C;
     }
-    delta_samples2 ( samples_out, num_samples, 1);
+    scf_delta_samples2 ( samples_out, num_samples, 1);
 #ifdef SP_LITTLE_ENDIAN
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = be_int2(samples_out[i]);
@@ -230,7 +230,7 @@ int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_G;
     }
-    delta_samples2 ( samples_out, num_samples, 1);
+    scf_delta_samples2 ( samples_out, num_samples, 1);
 #ifdef SP_LITTLE_ENDIAN
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = be_int2(samples_out[i]);
@@ -242,7 +242,7 @@ int write_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = (&s[i])->sample_T;
     }
-    delta_samples2 ( samples_out, num_samples, 1);
+    scf_delta_samples2 ( samples_out, num_samples, 1);
 #ifdef SP_LITTLE_ENDIAN
     for (i = 0; i < num_samples; i++) {
 	samples_out[i] = be_int2(samples_out[i]);

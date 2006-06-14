@@ -428,12 +428,12 @@ int is_scf(char *fn);
 /*
  * Change sample points to delta_delta values for uint1
  */
-void delta_samples1 ( int1 samples[], int num_samples, int job);
+void scf_delta_samples1 ( int1 samples[], int num_samples, int job);
 
 /*
  * Change sample points to delta_delta values for uint2
  */
-void delta_samples2 ( uint2 samples[], int num_samples, int job);
+void scf_delta_samples2 ( uint2 samples[], int num_samples, int job);
 
 #endif /*_SCF_H_*/
 

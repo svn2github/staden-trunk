@@ -155,7 +155,7 @@ int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
 	samples_out[i] = be_int2(samples_out[i]);
     }
 #endif
-    delta_samples2 ( samples_out, num_samples, 0);
+    scf_delta_samples2 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_A = samples_out[i];
     }
@@ -166,7 +166,7 @@ int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
 	samples_out[i] = be_int2(samples_out[i]);
     }
 #endif
-    delta_samples2 ( samples_out, num_samples, 0);
+    scf_delta_samples2 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_C = samples_out[i];
     }
@@ -177,7 +177,7 @@ int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
 	samples_out[i] = be_int2(samples_out[i]);
     }
 #endif
-    delta_samples2 ( samples_out, num_samples, 0);
+    scf_delta_samples2 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_G = samples_out[i];
     }
@@ -188,7 +188,7 @@ int read_scf_samples32(FILE *fp, Samples2 *s, size_t num_samples) {
 	samples_out[i] = be_int2(samples_out[i]);
     }
 #endif
-    delta_samples2 ( samples_out, num_samples, 0);
+    scf_delta_samples2 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_T = samples_out[i];
     }
@@ -208,25 +208,25 @@ int read_scf_samples31(FILE *fp, Samples1 *s, size_t num_samples) {
     }
 
     if (num_samples != fread(samples_out, 1, num_samples, fp)) return -1;
-    delta_samples1 ( samples_out, num_samples, 0);
+    scf_delta_samples1 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_A = samples_out[i];
     }
 
     if (num_samples != fread(samples_out, 1, num_samples, fp)) return -1;
-    delta_samples1 ( samples_out, num_samples, 0);
+    scf_delta_samples1 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_C = samples_out[i];
     }
 
     if (num_samples != fread(samples_out, 1, num_samples, fp)) return -1;
-    delta_samples1 ( samples_out, num_samples, 0);
+    scf_delta_samples1 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_G = samples_out[i];
     }
 
     if (num_samples != fread(samples_out, 1, num_samples, fp)) return -1;
-    delta_samples1 ( samples_out, num_samples, 0);
+    scf_delta_samples1 ( samples_out, num_samples, 0);
     for (i = 0; i < num_samples; i++) {
 	(&s[i])->sample_T = samples_out[i];
     }
