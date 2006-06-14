@@ -851,7 +851,7 @@ static mFILE *find_file_dir(char *file, char *dirname) {
     if (dirname[len-1] == '/')
 	len--;
 
-    /* Special case for "./" */
+    /* Special case for "./" or absolute filenames */
     if (*file == '/' || (len==1 && *dirname == '.'))
 	sprintf(path, "%s", file);
     else
