@@ -1,8 +1,10 @@
-#define USE_LIBCURL
+#ifdef HAVE_CONFIG_H
+#  include "io_lib_config.h"
+#endif
 
 #if !(defined(_MSC_VER) || defined(__MINGW32__))
 #  define TRACE_ARCHIVE
-#  ifndef USE_LIBCURL
+#  ifndef HAVE_LIBCURL
 #    define USE_WGET
 #  endif
 #endif
@@ -27,7 +29,7 @@
 #ifndef PATH_MAX
 #  define PATH_MAX 1024
 #endif
-#ifdef USE_LIBCURL
+#ifdef HAVE_LIBCURL
 #  include <curl/curl.h>
 #endif
 
@@ -374,7 +376,7 @@ static mFILE *find_file_url(char *file, char *url) {
 }
 #endif
 
-#ifdef USE_LIBCURL
+#ifdef HAVE_LIBCURL
 static mFILE *find_file_url(char *file, char *url) {
     char buf[8192], *cp;
     mFILE *mf = NULL, *headers = NULL;
@@ -1001,7 +1003,7 @@ mFILE *open_path_mfile(char *file, char *path, char *relative_to) {
 		    return fp;
 		}
 #endif
-#if defined(USE_WGET) || defined(USE_LIBCURL)
+#if defined(USE_WGET) || defined(HAVE_LIBCURL)
 	    } else if (0 == strncmp(ele2, "URL=", 4)) {
 		if (valid && (fp = find_file_url(file2, ele2+4))) {
 		    free(newsearch);

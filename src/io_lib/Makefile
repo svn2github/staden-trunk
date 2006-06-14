@@ -31,7 +31,7 @@ dirs:	read/$(O)/.dir \
 
 %.o:	../%.c
 	-@mkdir $(@D) 2>/dev/null
-	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
+	$(CC) $(CFLAGS) -DHAVE_LIBCURL $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
 include options.mk
