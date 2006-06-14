@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include "Read.h"
 #include "traceType.h"
 #include "seqIOABI.h"
 #include "open_trace_file.h"
+
+static char const rcsid[] = "$Id: convert_trace.c,v 1.8 2006-06-14 08:53:43 jkbonfield Exp $";
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -14,6 +18,7 @@ struct opts {
     char *fofn;
     char *passed;
     char *failed;
+    char *error;
     int in_format;
     int out_format;
     int scale;
@@ -368,6 +373,7 @@ void usage(void) {
     puts("\t-out_format format        Format for output (default ztr)");
     puts("\t-fofn file_of_filenames   Get \"Input Output\" names from a fofn");
     puts("\t-passed fofn              Output fofn of passed names");  
+    puts("\t-error errorfn            Redirect stderr to file stderrfn (default is stderr)");
     puts("\t-failed fofn              Output fofn of failed names");  
     puts("\t-name id                  ID line for experiment file output");
     puts("\t-subtract_background      Auto-subtracts the trace background");
@@ -397,6 +403,7 @@ int main(int argc, char **argv) {
     opts.fofn = NULL;
     opts.passed = NULL;
     opts.failed = NULL;
+    opts.error = NULL;
     
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	if (**argv != '-')
@@ -416,6 +423,10 @@ int main(int argc, char **argv) {
 
 	} else if (strcmp(*argv, "-failed") == 0) {
 	    opts.failed = *++argv;
+	    argc--;
+
+	} else if (strcmp(*argv, "-error") == 0) {
+	    opts.error = *++argv;
 	    argc--;
 
 	} else if (strcmp(*argv, "-subtract_background") == 0) {
@@ -483,6 +494,22 @@ int main(int argc, char **argv) {
 	usage();
     }
 
+
+    /*
+     * Added by SAK: Allow redirection of error output to file, due to
+     * problems with Java exec
+     */
+    if (NULL != opts.error) {
+	int fd;
+
+	fprintf(stderr,"* Redirecting stderr to %s\n", opts.error);
+
+	close(2); /* close fd with stderr */
+	if (-1 == (fd = creat(opts.error, 0666))) {
+	    exit(1);
+	}
+    }
+
     if (!opts.fofn) {
 	return convert(mstdin(), mstdout(), "(stdin)", "(stdout)", &opts);
     }
@@ -513,7 +540,7 @@ int main(int argc, char **argv) {
 
 	while (fgets(line, 8192, fofn_fp) != NULL) {
 	    int i, j, len;
-
+	    
 	    /* Find input and output name, escaping spaces as needed */
 	    len = strlen(line);
 	    outfname = NULL;
@@ -529,6 +556,15 @@ int main(int argc, char **argv) {
 	    }
 	    line2[j] = 0;
 	    infname = line2;
+
+	    /* Don't clobber input */
+	    if (!strcmp(infname, outfname)) {
+		fprintf(stderr,"* Inputfn %s == Outputfn %s ...skipping\n",
+			infname, outfname);
+		if (fpfailed)
+		    fprintf(fpfailed, "%s\n", infname);
+		continue;
+	    }
 
 	    /* Open input and output files */
 	    if (opts.in_format == TT_EXP) {
