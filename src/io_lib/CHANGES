@@ -1,4 +1,71 @@
+Version 1.10.0 (15th June 2006)
+--------------
+
+* Two new environment variables are used, EXP_PATH and TRACE_PATH, to
+  replace RAWDATA. EXP_PATH is used when the new open_exp_mfile()
+  function is called and TRACE_PATH is used when open_trace_mfile() is
+  called. Both default to using RAWDATA when EXP or TRACE env is now
+  found. Also defined a trace type TT_ANYTR which is analogous to the
+  existing TT_ANY except it will not look for experiment or plain
+  format files.
+
+  Modified the various example programs to use the appropriate open
+  call. This allows for traces and experiment files to have identical
+  names, such as is usually the case when querying named trace objects
+  from a trace server.
+
+* New program: extract_fastq to generate FASTQ output format.
+
+* New program: hash_exp. This allows multiple experiment files to be
+  contatenated together and then indexed so io_lib can still treat
+  them as single files.
+
+* The URL based search path mechanism now by default uses libcurl
+  instead of wget. This makes it considerably faster.
+
+* If an element in RAWDATA, EXP_PATH or TRACE_PATH now starts with the
+  pipe symbol ("|") then the compressed file extension code is negated
+  for that search element. (This prevents looking for foo.gz, foo.Z,
+  foo.bz2, etc if it fails to find foo.)
+
+* Added HashTableDel() and HashTableRemove() functions to take items
+  out of a hash table.
+
+* ZTR's compress_chunk() and uncompress_chunk() functions are now
+  externally callable.
+
+* New program io_lib-config. This has --version, --cflags and --libs
+  options to query the appropriate configuration when compiling and
+  linking against io_lib. There's also a new io_lib.m4 file which
+  provides an AC_CHECK_IO_LIB autoconf macro to use io_lib-config and
+  generate appropriate Makefile substitutions.
+
+* Updated the autoconf code to support libcurl searching.
+
+* Renamed SCF's delta_samples[12] functions to be
+  scf_delta_samples[12]. (From Saul Kravitz)
+
+* Added a '-error filename' option to convert_trace. (From Saul Kravitz)
+
+* Bug fix: HashTableAdd() now works properly with non-string keys.
+
+* Bug fix to read_dup().
+
+* Bug fix to xrle which could read past the array bounds. It also now
+  handles run-lengths of 256 or more.
+
+* Bug fix: the fwrite_* functions no longer close the FILE pointer
+  given to them.
+
+* Bug fix to fdetermine_trace_type(); it now rewinds the file back.
+
+* Bug fix to mfseek and mrewind; they both now clear the EOF flag.
+
+* Bug fix to find_file_dir().
+
+
 Version 1.9.2 (14th December 2005)
+-------------
 
 * Added AC_CHECK_LIB calls for the nsl and socket libraries
   (gethostbyname / socket functions). Needed for Solaris compilations.
@@ -36,7 +103,9 @@ Version 1.9.2 (14th December 2005)
 
 * Fixed a hang in mfload() when reading a zero length file.
 
+
 Version 1.9.1
+-------------
 
 * Implemented the SFF (454) file structure, currently as read-only.
   This is supported both as an archive containing multiple files and
@@ -83,7 +152,9 @@ Version 1.9.1
   when we finally see a system which operates differently), but the
   final "boundary" padding has been resolved.
 
+
 Version 1.9.0
+-------------
 
 * ***INCOMPATIBILITIES*** to 1.8.12
 
@@ -189,7 +260,9 @@ Version 1.9.0
   a single byte. It's current use is for storing the 4-base repeating
   flow order in 454 data.
 
+
 Version 1.8.12
+--------------
 
 * The ABI format code now reads the confidence values from KB (via
   PCON field).
@@ -232,7 +305,9 @@ Version 1.8.12
 
 * Zero memory used in read_alloc(). Fixes to read_dup().
 
+
 Version 1.8.11
+--------------
 
 * Rewrote the background subtraction in convert_trace to deal with each
   channel independently.
@@ -268,7 +343,9 @@ Version 1.8.11
 
 * Fixed memory leak in ztr (ztr->text_segments).
 
+
 Version 1.8.10
+--------------
 
 * Added Steven Leonard's changes to index_tar. It no longer adds index entries
   for directories, unless -d is specified. It also now supports longer names
@@ -284,6 +361,7 @@ Version 1.8.10
 
 
 Version 1.8.9
+-------------
 
 Sorry this isn't a proper changes-by-source listing. Any suggestions for how I 
 collate the 'cvs log' output into something more concise? The below text is

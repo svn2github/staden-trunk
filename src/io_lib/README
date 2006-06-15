@@ -1,18 +1,11 @@
-			    IO_LIB VERSION 1.9.2
-			    ====================
+			    IO_LIB VERSION 1.10.0
+			    =====================
 
 Io_lib is a library of file reading and writing code to provide a general
 purpose trace file (and Experiment File) reading interface. The programmer
 simply calls the (eg) read_reading to create a "Read" C structure with the
-data loaded into memory. It has been compiled and tested on:
-
-Compaq Tru64 Unix 5.1B (formerly Digital Unix)
-Debian GNU/Linux 3.1 (2.6.8 kernel)
-Windows XP Professional
-
-In addition to the above, the code has previously (but not tested with this
-release) been compiled and used on MacOS X, Solaris, Irix and MS
-Windows NT.
+data loaded into memory. It has been compiled and tested on a variety
+of unix systems, MacOS X and MS Windows.
 
 The directories below here contain the io_lib code. These support the
 following file formats:
@@ -26,24 +19,19 @@ following file formats:
 	Experiment files
 	Plain text files
 
-In addition, a library is used for bringing all these together into a single
-library so that only a single function call (read_reading and
-write_reading, their file pointer equivalents fread_reading and
-fwrite_reading, or the newer memory-file versions of mfread_reading
-and mfwrite_reading) is required to access the file, regardless of the
-file type it uses. See the file include/Read.h for the generic 'Read'
-structure.
+These link together to form a single "libread" library supporting all
+the file formats via a single read_reading (or fread_reading or
+mfread_reading) function call and analogous write_reading functions
+too. See the file include/Read.h for the generic 'Read' structure.
 
-The latest version has been sped up dramatically by using in-memory
-encoding and decoding where possible. For example previously reading
-an ABI file would require lots of file seeking and file read
-requests. Now it reads the entire file into memory (into an "mFILE"
-structure) and performs the same operations on a block of memory
-instead. The old interfaces of fread_reading and fwrite_reading still
-exist, but it is recommended for maximum speed that people switch to
-mfread_reading and mfwrite_reading instead.
+The big change this release is with RAWDATA being replaced by EXP_PATH
+and TRACE_PATH. Also the URL= RAWDATA component is now handled using
+libcurl instead of wget and so is much more efficient. See the CHANGES
+for file full details.
 
-See the mFILE section below for more details
+
+Important changes added with 1.9.2
+==================================
 
 Incompatibilities with 1.8.12
 -----------------------------
@@ -153,9 +141,4 @@ Now this is replaced with entirely in-memory uncompression and
 decoding. Benchmarking this showed approximately 10-15 fold speed
 increases.
 
-
-History
--------
-				    
-See CHANGES file
 
