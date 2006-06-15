@@ -25,9 +25,6 @@ AC_DEFUN([AC_CHECK_IO_LIB],
       else
         _io_lib_config=
       fi
-      # defaults incase io_lib-config isn't found
-      IO_LIB_CPPFLAGS="-I$withval/include"
-      IO_LIB_LDFLAGS="-L$withval/lib -lread"
     else
       AC_PATH_PROG([_io_lib_config], [io_lib-config])
     fi
@@ -64,8 +61,12 @@ AC_DEFUN([AC_CHECK_IO_LIB],
       # Configure IO_LIB_CPPFLAGS and IO_LIB_LDFLAGS
       if test x$_io_lib_config != "x"
       then
-	test x"$IO_LIB_CPPFLAGS" = "x" && IO_LIB_CPPFLAGS=`$_io_lib-config --cflags`
-        test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS=`$_io_lib-config --libs`
+	test x"$IO_LIB_CPPFLAGS" = "x" && IO_LIB_CPPFLAGS=`$_io_lib_config --cflags`
+        test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS=`$_io_lib_config --libs`
+      else
+        # defaults when io_lib-config isn't found
+        test x"$IO_LIB_CPPFLAGS" = "x" && IO_LIB_CPPFLAGS="-I$withval/include"
+        test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS="-L$withval/lib -lread"
       fi
       AC_DEFINE(HAVE_IO_LIB, 1, [Define to 1 if you have a working io_lib])
       AC_SUBST(IO_LIB_CPPFLAGS)
