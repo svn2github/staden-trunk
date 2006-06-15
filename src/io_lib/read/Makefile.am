@@ -61,6 +61,7 @@ libread_a_SOURCES = \
 	../utils/os.h \
 	../utils/stdio_hack.h
 
+libread_a_CPPFLAGS = @LIBCURL_CPPFLAGS@
 
 #libread_a_LDFLAGS = -avoid-version
 
@@ -77,4 +78,3 @@ INCLUDES = \
 	-I${top_srcdir}/sff \
 	-I${top_srcdir}/exp_file \
 	-I${top_srcdir}/utils
-
