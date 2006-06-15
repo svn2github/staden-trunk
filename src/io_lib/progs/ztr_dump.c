@@ -24,6 +24,7 @@ static char *format2str(int format) {
     case ZTR_FORM_FOLLOW1: return "follow1";
     case ZTR_FORM_CHEB445: return "cheb445";
     case ZTR_FORM_ICHEB:   return "icheb";
+    case ZTR_FORM_LOG2:    return "log2";
     }
 
     sprintf(unk, "?%d?\n", format);
@@ -115,6 +116,10 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 
 	case ZTR_FORM_ICHEB:
 	    new_data = ichebuncomp(chunk->data, chunk->dlength, &new_len);
+	    break;
+
+	case ZTR_FORM_LOG2:
+	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
 
 	default:
