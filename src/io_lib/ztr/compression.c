@@ -1768,6 +1768,70 @@ char *ichebuncomp(char *comp, int comp_len, int *uncomp_len)
 }
 
 /*
+ * ---------------------------------------------------------------------------
+ * ZTR_FORM_LOG
+ * ---------------------------------------------------------------------------
+ */
+
+/*
+ * This is a LOSSY compression. It replaces N with 10 * log2(N).
+ * (Just an idea, and not a great one it seems.)
+ */
+char *log2_data(char *x_uncomp,
+		int uncomp_len,
+		int *comp_len) {
+    int i, u1, l1;
+    char *comp = (char *)xmalloc(uncomp_len + 2);
+    unsigned char *u_uncomp = (unsigned char *)x_uncomp;
+    
+    if (!comp)
+	return NULL;
+
+    comp+=2;
+    for (i = 0; i < uncomp_len; i+=2) {
+	u1 =(u_uncomp[i  ] <<  8) +
+	    (u_uncomp[i+1] <<  0);
+	l1 = (int)(10 * log(u1+1) / log(2));
+	comp[i  ] = (l1 >> 8) & 0xff;
+	comp[i+1] = (l1 >> 0) & 0xff;
+    }
+
+    comp-=2;
+    comp[0] = ZTR_FORM_LOG2;
+    comp[1] = 0; /* dummy - to align on 2-byte boundary */
+
+    *comp_len = uncomp_len+2;
+
+    return comp;
+}
+
+char *unlog2_data(char *x_comp,
+		  int comp_len,
+		  int *uncomp_len) {
+    int i, u1, l1;
+    char *uncomp;
+    unsigned char *u_comp = (unsigned char *)x_comp;
+
+    uncomp = (char *)xmalloc(comp_len-2);
+    if (!uncomp)
+	return NULL;
+
+    u_comp+=2;
+    comp_len-=2;
+    *uncomp_len = comp_len;
+
+    for (i = 0; i < comp_len; i+=2) {
+	l1 = ((u_comp[i  ] << 8) |
+	      (u_comp[i+1] << 0));
+	u1 = (int)pow(2.0, l1/10.0)-1;
+	uncomp[i  ] = (u1 >> 8) & 0xff;
+	uncomp[i+1] = (u1 >> 0) & 0xff;
+    }
+
+    return uncomp;
+}
+
+/*
  * Predefined huffman tables for optimal compression of small
  * segments? The benefit is that for short (eg 30bp) sequences we can
  * avoid the overhead of storing the huffman dictionary. Typically

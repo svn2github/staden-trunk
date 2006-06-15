@@ -526,6 +526,10 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
     case ZTR_FORM_ICHEB:
 	new_data = ichebcomp(chunk->data, chunk->dlength, &new_len);
 	break;
+
+    case ZTR_FORM_LOG2:
+	new_data = log2_data(chunk->data, chunk->dlength, &new_len);
+	break;
     }
 
     if (!new_data) {
@@ -591,6 +595,10 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
 
 	case ZTR_FORM_ICHEB:
 	    new_data = ichebuncomp(chunk->data, chunk->dlength, &new_len);
+	    break;
+
+	case ZTR_FORM_LOG2:
+	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
 
 	default:

@@ -45,6 +45,7 @@ typedef struct {
 #define ZTR_FORM_FOLLOW1	72
 #define ZTR_FORM_CHEB445	73
 #define ZTR_FORM_ICHEB		74
+#define ZTR_FORM_LOG2		75
 
 /* Converts a C string to a big-endian 4-byte int */
 #define ZTR_STR2BE(str) (((str)[0] << 24) + \

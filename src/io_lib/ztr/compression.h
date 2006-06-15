@@ -294,4 +294,15 @@ char *ichebuncomp(char *comp,
 		  int comp_len,
 		  int *uncomp_len);
 
+/*
+ * This is a LOSSY compression. It replaces N with 10 * log2(N).
+ */
+char *log2_data(char *x_uncomp,
+		int uncomp_len,
+		int *comp_len);
+
+char *unlog2_data(char *x_comp,
+		  int comp_len,
+		  int *uncomp_len);
+
 #endif /* _COMPRESSION_H_ */
