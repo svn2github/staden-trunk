@@ -53,6 +53,8 @@ pkginclude_HEADERS = \
 	ztr/ztr.h \
 	io_lib_config.h
 
+bin_SCRIPTS = io_lib-config
+
 EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap \
-	ztr/FORMAT
+	ztr/FORMAT io_lib-config.in
 
