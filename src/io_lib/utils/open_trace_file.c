@@ -368,7 +368,7 @@ static mFILE *find_file_url(char *file, char *url) {
     }
 
     /* Return a filepointer to the result (if it exists) */
-    fp = (!status && file_size(fname) != 0) ? mfopen(fname, "rb+") : NULL;
+    fp = (!status && file_size(fname) != 0) ? mfopen(fname, "rb") : NULL;
     remove(fname);
     free(fname);
 
@@ -860,7 +860,7 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	sprintf(path, "%.*s/%s", (int)len, dirname, file);
 
     if (is_file(path)) {
-	return mfopen(path, "rb+");
+	return mfopen(path, "rb");
     }
 
     /*
