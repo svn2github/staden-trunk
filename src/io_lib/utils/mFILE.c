@@ -160,46 +160,49 @@ void mfrecreate(mFILE *mf, char *data, int size) {
  * Use this for wrapper functions to turn external prototypes requring
  * FILE * as an argument into internal code using mFILE *.
  */
-mFILE *mfreopen(const char *path, const char *mode, FILE *fp) {
+mFILE *mfreopen(const char *path, const char *mode_str, FILE *fp) {
     mFILE *mf;
-    int r = 0, w = 0, a = 0, b = 0;
+    int r = 0, w = 0, a = 0, b = 0, mode = 0;
 
     /* Parse mode:
      * r = read file contents (if truncated => don't read)
      * w = write on close
      * a = position at end of buffer
      */
-    if (strchr(mode, 'r'))
-	r = 1;
-    if (strchr(mode, 'w'))
-	w = 1;
-    if (strchr(mode, 'a'))
-	w = a = 1;
-    if (strchr(mode, 'b'))
-	b = 1;
-    if (strchr(mode, '+')) {
-        w = 1;
+    if (strchr(mode_str, 'r'))
+	r = 1, mode |= MF_READ;
+    if (strchr(mode_str, 'w'))
+	w = 1, mode |= MF_WRITE | MF_TRUNC;
+    if (strchr(mode_str, 'a'))
+	w = a = 1, mode |= MF_WRITE | MF_APPEND;
+    if (strchr(mode_str, 'b'))
+	b = 1, mode |= MF_BINARY;
+    if (strchr(mode_str, '+')) {
+        w = 1, mode |= MF_READ | MF_WRITE;
 	if (a)
 	    r = 1;
     }
-    
+
     if (r) {
 	mf = mfcreate(NULL, 0);
-	mf->data = mfload(fp, path, &mf->size, b);
-	mf->alloced = mf->size;
-	if (!a)
-	    fseek(fp, 0, SEEK_SET);
+	if (!(mode & MF_TRUNC)) {
+	    mf->data = mfload(fp, path, &mf->size, b);
+	    mf->alloced = mf->size;
+	    if (!a)
+		fseek(fp, 0, SEEK_SET);
+	}
     } else {
 	/* Write - initialise the data structures */
 	mf = mfcreate(NULL, 0);
     }
     mf->fp = fp;
-
+    mf->mode = mode;
+    
     if (w)
 	mf->fname = strdup(path ? path : "?");
 
     if (a) {
-	mf->offset = mf->size;
+	mf->flush_pos = mf->size;
 	fseek(fp, 0, SEEK_END);
     }
 
@@ -338,11 +341,22 @@ size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
 }
 
 size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf) {
+    if (!(mf->mode & MF_WRITE))
+	return 0;
+
+    /* Append mode => forced all writes to end of file */
+    if (mf->mode & MF_APPEND)
+	mf->offset = mf->size;
+
     /* Make sure we have enough room */
     while (size * nmemb + mf->offset > mf->alloced) {
 	mf->alloced = mf->alloced ? mf->alloced * 2 : 1024;
 	mf->data = (void *)realloc(mf->data, mf->alloced);
     }
+
+    /* Record where we need to reflush from */
+    if (mf->offset < mf->flush_pos)
+	mf->flush_pos = mf->offset;
 
     /* Copy the data over */
     memcpy(&mf->data[mf->offset], ptr, size * nmemb);
@@ -396,7 +410,9 @@ char *mfgets(char *s, int size, mFILE *mf) {
 /*
  * Flushes an mFILE. If this is a real open of a file in write mode then
  * mFILE->fp will be set. We then write out any new data in mFILE since the
- * last flush.
+ * last flush. We cannot tell what may have been modified as we don't keep
+ * track of that, so we typically rewrite out the entire file contents between
+ * the last flush_pos and the end of file.
  *
  * For stderr/stdout we also reset the offsets so we cannot modify things
  * we've already output.
@@ -408,7 +424,6 @@ int mfflush(mFILE *mf) {
     /* FIXME: only do this when opened in write mode */
     if (mf == m_channel[1] || mf == m_channel[2]) {
 	fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
-	mf->flush_pos = mf->size;
 	fflush(mf->fp);
 
 	/* Stdout & stderr are non-seekable streams so throw away the data */
@@ -417,8 +432,12 @@ int mfflush(mFILE *mf) {
 
     /* fname => opened in write mode */
     if (mf->fname) {
-	fwrite(mf->data + mf->flush_pos, 1, mf->size - mf->flush_pos, mf->fp);
-	fflush(mf->fp);
+	if (mf->flush_pos < mf->size) {
+	    fseek(mf->fp, mf->flush_pos, SEEK_SET);
+	    fwrite(mf->data + mf->flush_pos, 1,
+		   mf->size - mf->flush_pos, mf->fp);
+	    fflush(mf->fp);
+	}
 	ftruncate(fileno(mf->fp), ftell(mf->fp));
 	mf->flush_pos = mf->size;
     }

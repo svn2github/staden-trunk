@@ -12,7 +12,14 @@ typedef struct {
     size_t size;
     size_t offset;
     size_t flush_pos;
+    int mode; /* open mode in MF_?? define bit pattern */
 } mFILE;
+
+#define MF_READ    1
+#define MF_WRITE   2
+#define MF_APPEND  4
+#define MF_BINARY  8
+#define MF_TRUNC  16
 
 mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
 mFILE *mfopen(const char *path, const char *mode);
