@@ -91,6 +91,7 @@ static void init_mstdin(void) {
 	return;
 
     m_channel[0]->data = mfload(stdin, NULL, &m_channel[0]->size, 1);
+    m_channel[0]->mode = MF_READ;
     done_stdin = 1;
 }
 
@@ -105,6 +106,7 @@ mFILE *mstdout(void) {
 
     m_channel[1] = mfcreate(NULL, 0);
     m_channel[1]->fp = stdout;
+    m_channel[1]->mode = MF_WRITE;
     return m_channel[1];
 }
 
@@ -119,6 +121,7 @@ mFILE *mstderr(void) {
 
     m_channel[2] = mfcreate(NULL, 0);
     m_channel[2]->fp = stderr;
+    m_channel[2]->mode = MF_WRITE;
     return m_channel[2];
 }
 
