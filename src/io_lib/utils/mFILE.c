@@ -131,7 +131,6 @@ mFILE *mstderr(void) {
  */
 mFILE *mfcreate(char *data, int size) {
     mFILE *mf = (mFILE *)malloc(sizeof(*mf));
-    mf->fname = NULL;
     mf->fp = NULL;
     mf->data = data;
     mf->alloced = size;
@@ -139,6 +138,7 @@ mFILE *mfcreate(char *data, int size) {
     mf->eof = 0;
     mf->offset = 0;
     mf->flush_pos = 0;
+    mf->mode = MF_READ | MF_WRITE;
     return mf;
 }
 
@@ -201,9 +201,6 @@ mFILE *mfreopen(const char *path, const char *mode_str, FILE *fp) {
     mf->fp = fp;
     mf->mode = mode;
     
-    if (w)
-	mf->fname = strdup(path ? path : "?");
-
     if (a) {
 	mf->flush_pos = mf->size;
 	fseek(fp, 0, SEEK_END);
@@ -246,14 +243,30 @@ int mfclose(mFILE *mf) {
 }
 
 /*
+ * Closes the file pointer contained within the mFILE without destroying
+ * the in-memory data.
+ */
+int mfdetatch(mFILE *mf) {
+    if (!mf)
+	return -1;
+
+    mfflush(mf);
+
+    if (mf->fp) {
+	fclose(mf->fp);
+	mf->fp = NULL;
+    }
+
+    return 0;
+}
+
+/*
  * Destroys an mFILE structure but does not flush or close it
  */
 int mfdestroy(mFILE *mf) {
     if (!mf)
 	return -1;
 
-    if (mf->fname)
-	free(mf->fname);
     if (mf->data)
 	free(mf->data);
     free(mf);
@@ -433,8 +446,8 @@ int mfflush(mFILE *mf) {
 	mf->offset = mf->size = mf->flush_pos = 0;
     }
 
-    /* fname => opened in write mode */
-    if (mf->fname) {
+    /* only flush when opened in write mode */
+    if (mf->mode & MF_WRITE) {
 	if (mf->flush_pos < mf->size) {
 	    fseek(mf->fp, mf->flush_pos, SEEK_SET);
 	    fwrite(mf->data + mf->flush_pos, 1,

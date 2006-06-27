@@ -4,15 +4,14 @@
 #include <stdio.h>
 
 typedef struct {
-    char *fname;
     FILE *fp;
     char *data;
     size_t alloced;
     int eof;
+    int mode; /* open mode in MF_?? define bit pattern */
     size_t size;
     size_t offset;
     size_t flush_pos;
-    int mode; /* open mode in MF_?? define bit pattern */
 } mFILE;
 
 #define MF_READ    1
@@ -23,6 +22,7 @@ typedef struct {
 
 mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
 mFILE *mfopen(const char *path, const char *mode);
+int mfdetatch(mFILE *mf);
 int mfclose(mFILE *mf);
 int mfdestroy(mFILE *mf);
 int mfseek(mFILE *mf, long offset, int whence);
