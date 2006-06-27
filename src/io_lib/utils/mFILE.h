@@ -22,7 +22,7 @@ typedef struct {
 
 mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
 mFILE *mfopen(const char *path, const char *mode);
-int mfdetatch(mFILE *mf);
+int mfdetach(mFILE *mf);
 int mfclose(mFILE *mf);
 int mfdestroy(mFILE *mf);
 int mfseek(mFILE *mf, long offset, int whence);

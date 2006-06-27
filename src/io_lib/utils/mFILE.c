@@ -246,7 +246,7 @@ int mfclose(mFILE *mf) {
  * Closes the file pointer contained within the mFILE without destroying
  * the in-memory data.
  */
-int mfdetatch(mFILE *mf) {
+int mfdetach(mFILE *mf) {
     if (!mf)
 	return -1;
 
