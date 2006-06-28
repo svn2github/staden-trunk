@@ -7,7 +7,7 @@
 # Lib tcl files. Point to src.
 cd lib
 ln -s ../src/copy_reads .
-ln -s ../src/gap4 .
+ln -s ../src/gap4 ./gap
 ln -s ../src/prefinish .
 ln -s ../src/pregap4 .
 ln -s ../src/seqed .
@@ -21,7 +21,7 @@ cd ..
 
 # Binary links to allow running of programs within the source tree without
 # the need to explicitly build a distribution or do a make install
-for i in alpha linux solaris sgi macosx
+for i in alpha linux solaris sgi macosx linux-x86_64 linux-ia64
 do
 	# Run-time libraries
 	cd lib
