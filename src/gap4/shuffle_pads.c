@@ -437,7 +437,7 @@ MALIGN *build_malign(GapIO *io, int cnum) {
     CONTIGL *contig, *first_contig = NULL, *last_contig = NULL;
     GContigs c;
     GReadings r;
-    int rnum;
+    int rnum, i;
 
     /* Generate contigl linked list */
     contig_read(io, cnum, c);
@@ -449,6 +449,13 @@ MALIGN *build_malign(GapIO *io, int cnum) {
 	contig->mseg = create_mseg();
 	seq = TextAllocRead(io, r.sequence);
 	seq[r.start + r.sequence_length] = 0;
+
+	/* Protect against the sequence containing "." which is our pad sym */
+	for (i = 0; i < r.length; i++) {
+	    if (seq[i] == '.')
+		seq[i] =  'N';
+	}
+
 	init_mseg(contig->mseg, strdup(seq+r.start),
 		  r.sequence_length, r.position-1);
 	xfree(seq);
@@ -727,7 +734,8 @@ void update_io(GapIO *io, int cnum, MALIGN *malign) {
 	     */
 	    np = 0;
 	    for (i = j; i < r.length && j < r.start + cl->mseg->length;) {
-		if (toupper(newseq[j]) == toupper(seq[i])) {
+		if (toupper(newseq[j]) == toupper(seq[i]) ||
+		    (seq[i] == '.' && newseq[j] == 'N')) {
 		    newconf[j] = conf[i];
 		    newopos[j] = opos[i];
 		    i++, j++;
