@@ -17,6 +17,7 @@ ln -s ../src/spin2_emboss .
 ln -s ../src/spin_emboss .
 ln -s ../src/tk_utils .
 ln -s ../src/trev .
+ln -s ../src/haplo .
 cd ..
 
 # Binary links to allow running of programs within the source tree without
