@@ -71,6 +71,13 @@ endif
 ifeq ($(MACHINE),alpha)
 PN$(MAKE)=dec
 endif
+ifeq ($(MACHINE), linux-x86_64)
+PN$(MAKE)=linux
+endif
+ifeq ($(MACHINE), linux-ia64)
+PN$(MAKE)=linux
+endif
+
 # SOLARIS9 and Sun FORTE cc users, use the so9 makefile instead of "solaris"
 # You may also need to edit libpng-$(PNG_VERS)/scripts/makefile.so9
 # and change CFLAGS to use -O instead of -O3.
