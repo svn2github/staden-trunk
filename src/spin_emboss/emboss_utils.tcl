@@ -682,7 +682,7 @@ proc data_dir {} {
 
     set data_dir ""
     if {[catch {
-	set fd [open "|embossdata 2>/dev/null"]
+	set fd [open "|embossdata 2>/dev/null </dev/null"]
 	set out [read $fd]
 	close $fd
     }]} {
@@ -709,7 +709,7 @@ proc data_dir {} {
 # is a sibling of this.
 proc acd_dir {} {
     set acd_dir ""
-    set fd [open "|embossdata 2>/dev/null"]
+    set fd [open "|embossdata 2>/dev/null </dev/null"]
     set out [read $fd]
     close $fd
     foreach line [split $out "\n"] {
