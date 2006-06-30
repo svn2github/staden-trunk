@@ -1272,7 +1272,7 @@ set_def PREFINISH.CONFIG_FILE $env(STADTABL)/config.prefinish
 # names not listed here, but containing an EventHandler function will still be
 # listed.
 # Eg "set_def GAP_SEND_TO {{Prog1 prog1} {Prog2 {/bin/prog2 -s}}}"
-# set_def GAP_SEND_TO {{Nip4 nip4} {Sip4 sip4}}
+# set_def GAP_SEND_TO {{Spin spin}}
 
 load_menus
 set_menu gap_menu
