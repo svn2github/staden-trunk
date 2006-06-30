@@ -1,287 +1,92 @@
-			Staden Package v1.6.0
+			Staden Package v1.7.0
 			=====================
 
-The main changes in this release, in addition to the usual round of
-bug fixes, are the support in Gap4 for very large databases, for
-traces from the "454" instrument and for a new SNP Candidates plot.
-In addition to these substantial speed improvments have been made.
+This is the first release to provide prebuilt binaries for linux on
+x86-64 (eg AMD Opterons). We do not have a windows system on this
+architecture, although the 32-bit version should still work.
+
+On the Gap4 front there have been several minor joining related
+improvements in how it scores joins in Find Internal Joins and the
+functionality of the align button in the Join Editor.
+
+Also of consequence to gap4 are the various changes to io_lib (the
+library for all I/O to various trace file formats). With the addition
+of a new hash_exp program it now allows for experiment files to be
+concatenated together and indexed. The list of experiment file names
+should stil be supplied to gap4, but provided the EXP_PATH environment
+variable has been set correctly gap4 will be able to fetch individual
+sequences out of the concatenated experiment file
+archive. Improvements to the user interface for this still need to be
+made.
+
+454 SFF archives are now better supported. The defsult 454 indices
+now work, although the hash_sff program can be used to provide an
+alternative indexing strategy (possibly faster in some cases).
+
+Gap4 and trev also have another trace display style for traces that
+have 1 sample scan (x4 channels) per base call. In this case it can
+also draw 4 confidence values instead of 1 per base. These abilities
+will allow better integration of Solexa traces when more readily
+available.
+
+Plus of course the usual mix of bug fixes and minor tweaks. See the
+full change log for details (via the SourceForge site).
 
 
-64-bit file size support
-------------------------
-
-With databases getting ever bigger we finally reached the point where
-the gap4 database files needed to be larger than 2Gb in filesize. This
-posed a problem for the old 32-bit file offset code (mandated by the
-format of the .aux file) so we have made Gap4 64-bit aware.
-
-Firstly note that Gap4 still uses 32-bit file sizes by default and so
-is fully backwards compatible. Gap4 may create 64-bit databases by
-specifying the "-bitsize 64" command line option. Gap4 will
-automatically detect the format on subsequent opens so this option
-only need to be specified at creation time. However note that 64-bit
-databases are incompatible with the old 32-bit ones and so will not be
-read by older Gap4s. Fortunately copy_db has also been modified to
-support conversion between 32-bit to 64-bit and vice versa (assuming
-the database isn't too large to fit in 32-bits).
-
-Dealing with such massive databases also showed a number of areas
-where the speed was too slow. We've made considerable improvements
-across multiple places and these changes should also help speed up
-normal 32-bit usage too.
-
-
-The SNP Candidates plot
------------------------
-
-This new plot has been designed to graphically show the locations
-where a consensus column has a strong chance of being made up of
-multiple sequences, eg due to it being a SNP or a variance in a
-collapsed repeat.
-
-Stage 2 of this plot is to cluster the differences to attempt to pull
-apart the sequencing into a sets where each set has no or few internal
-differences. These sets may then be viewed directly in the contig
-editor by colour coding and sorting the sequences. The editor also has
-manual control over moving sequences from one set to another, but
-currently saving of edits made this data is not supported.
-
-Finally the consensus sequence for each set may be saved or
-alternatively the sets may be split apart to form multiple contigs.
-
-
-The 454 sequencing machine
---------------------------
-
-This new instrument by 454 Life Sciences is based on pyrosequencing
-techniques and so produces a very different style of trace to
-traditional Sanger sequencing. The 454 machine SFF format is now
-natively supported as is a prototype for the TVF archive (although
-both of these format have not been finalised yet and so may be subject
-to change). Trev and Gap4 support viewing of "454 flowgrams".
-
-The new flowgrams are substantially smaller than traditional traces
-which gives rise to a number of interesting issues with file
-management. To compensate for this there are now a variety of tools
-for packing multiple small traces into a single large archive. This
-can be either a unix tar file (with a faster indexing method than
-before) or a new ZTA (ZTR Archive) file. See the io_lib package for
-more details and related tools.
-
-We are aware that there are a number of issues to still address with
-incorporating pyrosequencing data with traditional Sanger sequencing
-data. There is a new replacement for Shuffle Pads which greatly
-improves alignments of 454 data produced by Gap4 or Phrap (but isn't
-needed if you use 454's own assembler), but there are still issues to
-resolve with the use of confidence values. We expect to be
-concentrating on this in the oncoming months.
-
-
-Detailed list of changes:
+Other notable changes
+=====================
 
 Gap4
-====
+----
 
-* 64-bit database size support. Gap4 databases may now grow beyond the
-  2Gb limit (we've tested 6Gb and in theory it should handle
-  terabytes, albeit slower). Old 32-bit databases are still supported
-  and are still the default output format, for backwards
-  compatibility. Specify "-bitsize 64" on the command line to force
-  Gap4 to create 64-bit databases.
+* Various SNP Candidates improvements. The "correlation offset" is now
+  adjustable (this controls the average correlation score needed
+  before groups are considered for automatic merging). SNP base calls
+  now work by generating a consensus rather than requiring 100%
+  identity. it now skips sequences containing a REFS note. Merging can
+  be forced until the number of groups is less than or equal to a
+  predetermined amount (NB: not usually ideal).
 
-* A new (experimental) plot labelled SNP Candidates. It identifies and
-  plots likely locations when multiple sequences may have been
-  assembled together (either SNPs or collapsed repeats) and provides
-  tools to pull these apart.
+* Shuffle pads now has a "band size" parameter for the alignments.
+  Also bug fixed in various places.
 
-* The contig editor now has the notion of "sets". A set is basically a
-  sub-group of a contig, which is useful for exploring the outcome
-  within a conti of pulling apart a collapsed repeat without actually
-  doing it. The editor is automatically invoked in this manner by the
-  SNP candidates output. This is largely experimental, but there are a
-  number of potential ways to improve interaction. Ideas on a postcard
-  please!
+* The old editor shuffle command has been replaced by strip pads. It
+  now only removes entire columns of pads and does no pad movement at
+  all.
 
-* The editor's Shuffle Pads algorithm has been moved to the main gap4
-  menu (so it can be scripted non-interactively) and it now does a
-  substantially better job too (as it is based on the same techniques
-  used in ReAligner).
+* The join editor align button will now cope better with handling long
+  alignments in repeated data, hopefully avoiding the "too long for
+  practical use of dynamic programming" message in such cases.
 
-* Lots of speedups (primarily for the huge 64-bit databases):
-  - Drawing of some consistency graphs;
-  - Experiment file reading on large files (1000 fold on a 1Mb
-    sequence);
-  - Dealing with lists of contigs (eg "all contigs") is now O(N)
-    complexity instead of O(N^2) (On databases with 50K contigs and
-    2.6million reads this has changed some operations that would take
-    hours to taking a couple of seconds);
-  - (De)selecting contigs in the contig selector is now much much
-    faster.
+  It also now has "<" and ">" buttons either side of the "Align"
+  button. These anchor one end of the alignment to the current overlap
+  position and then only align from that point leftwards or
+  rightwards. This helps to force an alignment to anchor at a specific
+  location which is useful when aligning data consisting of multiple
+  repeat elements.
 
-* Substantial modifications to the gap4 I/O mechanisms (balancing the
-  "freetree"). The upshot of this is that the worst-case performance
-  is now dramatically improved and the average performance will be
-  slightly better too. Complementing a 10Mb contig dropped from about
-  50 minutes to 1.5 minutes. Disassembling all readings (approx
-  175000) in this database went from ~3 hours to 2.5 minutes.
+* Alignments found by Find Internal Joins now take into account the
+  alignment score in addition to the percentage identity. This means
+  that no longer will a 100bp overlap at 100% identity be considered
+  as a better overlap than a 2kb overlap at 99% identity.
 
-* Substantial speed up of the contig selector with large databases.
+* The Contig Navigation window now has Page Up and Page Down
+  keybindings for previous and next match. It also has the ability to
+  automatically display traces at the appropriate regions using the
+  contig editors "Auto-display traces" functionality.
 
-* The confidence plot is now substantially faster to plot (typically
-  10-20 fold).
-
-* The contig editor Report Mutations now has a confidence scale for
-  the "by difference" option.
-
-* The editor Search by Sequence now finds consensus matches too.
-
-* Improved mousewheel support in the editor; shift + wheel performs
-  horizontal movements.
-
-* Dragging a selection in the contig editor now auto-scrolls the
-  display as appropriate.
-
-* Highlight Disagreements now uses ":" to display bases which differ
-  to the contig but have a low quality value.
-
-
-Trev
-====
-
-* Now shows pyrosequencing traces. Eg those from 454.
-
-* A new "-trace_scale" option may be used to force a particular Y
-  scaling instead of auto-scaling. This can be useful when comparing
-  absolute trace heights across multiple files.
-
-
-Copy_db
-=======
-
-* Added a -b option to switch between 32 and 64-bit database sizes.
-
+* The "View List" window now has a Save button.
 
 Io_lib
-======
+------
 
-* Substantial speed ups, particularly when dealing with gzipped files
-  or when extracting data from tar files. This is primarily due to
-  performing decoding in memory instead of from the disk structures,
-  but experiment file I/O has had additional (and substantial)
-  improvements when dealing with very long files (approx 1000 fold
-  speed increase for reading a 1Mb sequence on the Alpha).
+* New programs: hash_exp, hash_sff, append_sff, extract_fastq.
 
-  *INCOMPATIBILITY*
-  - The Exp_info structure now has an "mFILE *fp" member instead of
-    "FILE *fp".
+* Added TRACE_PATH and EXP_PATH environment variables to use in
+  preference to RAWDATA (when defined).
 
-  - Some functions are no longer external.
-    These include many ctf functions, ztr_(de)compress,    
-    ztr_chunk_(read/write), be_read_*, be_write_*,
-
-  - The default search order for RAWDATA is that the current
-    directory is searched after the rest of rawdata instead of
-    before.
-
-  - Removed support for the old unix "pack" program as a
-    compression tool. 
-
-* Preliminary support for 454 flowgrams, including the SFF format.
-
-* Added support for hash indexing of tar files or creation of "solid"
-  archives. This allows traces to be packed into a single archive with
-  a fast index for extraction. Replaces the old index_tar program.
-  New programs hash_tar and hash_extract.
-
-* Reenabled gzip compression on Windows.
-
-Spin
-====
-
-* Under MS Windows spin and EMBOSSwin should coexist happily to the
-  extent that Spin will spot the EMBOSSwin installation and use it.
+* Now uses libcurl instead of wget for much faster web based trace
+  fetching.
 
 
-Misc
-====
 
-* Removed some redundant old ABI utilities: getABIfloat, getABIhex,
-  getABIraw, getABIstring. All of these can be achieved via
-  getABIfield.
-
-
-Bug fixes
-=========
-
-- #1104446 Gap4: user-defined contig editor widths sometimes cause
-   display bugs.
-
-- #1104453 Gap4: 2nd-highest confidence plot failing when the
-   consensus algorithm is not the phred-style confidence mode.
-
-- #1105931 Gap4: crash when invoking the join editor.
-
-- #1183748 Gap4: break contig can reset the strand of consensus tags.
-
-- #1289095 io_lib: file descriptor leak when opening compressed files.
-
-- Gap4: race condition in destroying a sheet widget (eg the editor);
-  triggerable only by scripts?
-
-- Gap4: Report Mutations crashes.
-
-- Gap4: rare Find Internal Joins crash.
-
-- Gap4: the last base in a sequence was being missed by show edits and
-  search by edits.
-
-- Gap4: mousewheel support on MS Windows.
-
-- Gap4: Buffer over-run in the Quality Clip Contig Ends function.
-
-- Gap4: editor Search by Sequence sometimes missed matches when the
-  sequence lengths varied greatly.
-
-- Gap4: list contigs windows redisplays after complement contig.
-
-- Gap4: display of "editor embedded traces" in the Join Editor.
-
-- Gap4: rare corruption in contig joining when joining the last contig
-  in the database to another.
-
-- Gap4: seqInfo (I/O) memory leak.
-
-- Gap4: use of memcpy instead of memmove in io_delete_contig(). Was
-  still working OK, but is compiler dependent.
-
-- Gap4: Attempting to free memory twice in Find Internal Joins.
-
-- Gap4: Tcl syntax error in Enter Tags.
-
-- Gap4: Consensus tags in Enter Tags are not honouring the unpadded
-  positions option.
-
-- Gap4: rounding errors causing display position bugs when lots of
-  zooming / unzooming is performed in template display, confidence and
-  consistency plots.
-
-- Gap4: stop codons at the ends of contigs (beyond the "unpadded
-  contig length" position) are displayed in the wrong place.
-
-- Gap4: cannot plot more than 10000 stop codons (now essentially
-  limitless).
-
-- Pregap4: Interactive clipping and pathnames containing spaces.
-
-- Mutscan: crashes when inputting text sequence files.
-
-- Mutscan: protection against MUT/HET tags occuring outside of MCOV
-  tag range.
-
-- Spin: "\" vs "/" in EMBOSS_DATA path.
-
-- General: windows UNC pathname bugs where //foo/bar was interpreted
-  as /foo/bar
-
-- General: some strings in ABI files (eg MODL records) have the first
-  character missed so 3730 is reported as "730".
