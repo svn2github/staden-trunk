@@ -151,19 +151,19 @@ proc LoadSequence {seq name} {
     }
 
     #loading seq from sequence
-    set seq_id [sip_set_sequence -sequence $seq -entry $name \
+    set seq_id [read_sequence -sequence $seq -entry $name \
 		    -direction $cur_dir]
 
     set $w.success_h $seq_id
 
     if {[set $w.success_h] != -1} {
-	if {[llength [sip_sequence_names]] < 1} {
-	    SipActivateMenu_Initial
-	} elseif {[llength [sip_sequence_names]] == 1} {
-	    #SipActivateMenu_Open1
-	    SipActivateMenu_Open
+	if {[llength [sequence_names]] < 1} {
+	    SeqActivateMenu_Initial
+	} elseif {[llength [sequence_names]] == 1} {
+	    #SeqActivateMenu_Open1
+	    SeqActivateMenu_Open
 	} else {
-	    SipActivateMenu_Open
+	    SeqActivateMenu_Open
 	}
     }
 
