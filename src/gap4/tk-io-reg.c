@@ -1299,7 +1299,7 @@ static char *reg_get_arg(char *name)
 	    return arg_values[i];
     }
 
-    return NULL;
+    return "";
 }
 
 typedef struct {
