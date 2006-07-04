@@ -159,6 +159,28 @@ void mfrecreate(mFILE *mf, char *data, int size) {
 
 
 /*
+ * Creates a new mFILE to contain the contents of the FILE pointer.
+ * This mFILE is purely for in-memory operations and has no links to the
+ * original FILE* it came from. It also doesn't close the FILE pointer.
+ * Consider using mfreopen() is you need different behaviour.
+ *
+ * Returns mFILE * on success
+ *         NULL on failure.
+ */ 
+mFILE *mfcreate_from(const char *path, const char *mode_str, FILE *fp) {
+   mFILE *mf; 
+
+    /* Open using mfreopen() */
+    if (NULL == (mf = mfreopen(path, mode_str, fp)))
+	return NULL;
+    
+    /* Disassociate from the input stream */
+    mf->fp = NULL;
+
+    return mf;
+}
+
+/*
  * Converts a FILE * to an mFILE *.
  * Use this for wrapper functions to turn external prototypes requring
  * FILE * as an argument into internal code using mFILE *.

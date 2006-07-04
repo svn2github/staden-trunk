@@ -35,6 +35,7 @@ size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf);
 int mfgetc(mFILE *mf);
 int mungetc(int c, mFILE *mf);
 mFILE *mfcreate(char *data, int size);
+mFILE *mfcreate_from(const char *path, const char *mode_str, FILE *fp);
 void mfrecreate(mFILE *mf, char *data, int size);
 char *mfgets(char *s, int size, mFILE *mf);
 int mfflush(mFILE *mf);
