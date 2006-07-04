@@ -24,7 +24,8 @@
 
 static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format) {
     Read *r;
-    char *tmp_base;
+    char *p = strrchr(in_file, '/');
+    int i;
 
     read_sections(READ_BASES);
     if (NULL == (r = mfread_reading(infp, in_file, format))) {
@@ -32,44 +33,39 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format) {
 	return 1;
     }
 
-    {
-	char *p = strrchr(in_file, '/');
-	int i;
+    if (NULL == p)
+	p = in_file;
+    else
+	p++;
 
-	if (NULL == p)
-	    p = in_file;
-	else
-	    p++;
-
-	fprintf(outfp, "@%s\n", p);
-	fprintf(outfp, "%.*s", r->NBases, r->base);
-	fprintf(outfp, "+%s\n", p);
-	for (i = 0; i < r->NBases; i++) {
-	    int qual;
-	    switch (r->base[i]) {
-	    case 'A':
-	    case 'a':
-		qual = r->prob_A[i];
-		break;
-	    case 'C':
-	    case 'c':
-		qual = r->prob_C[i];
-		break;
-	    case 'G':
-	    case 'g':
-		qual = r->prob_G[i];
-		break;
-	    case 'T':
-	    case 't':
-		qual = r->prob_T[i];
-		break;
-	    default:
-		qual = 0;
-	    }
-	    fputc(qual + 33, outfp);
+    fprintf(outfp, "@%s\n", p);
+    fprintf(outfp, "%.*s", r->NBases, r->base);
+    fprintf(outfp, "+%s\n", p);
+    for (i = 0; i < r->NBases; i++) {
+	int qual;
+	switch (r->base[i]) {
+	case 'A':
+	case 'a':
+	    qual = r->prob_A[i];
+	    break;
+	case 'C':
+	case 'c':
+	    qual = r->prob_C[i];
+	    break;
+	case 'G':
+	case 'g':
+	    qual = r->prob_G[i];
+	    break;
+	case 'T':
+	case 't':
+	    qual = r->prob_T[i];
+	    break;
+	default:
+	    qual = 0;
 	}
-	fputc('\n', outfp);
+	fputc(qual + 33, outfp);
     }
+    fputc('\n', outfp);
 
     read_deallocate(r);
     fflush(outfp);
@@ -102,6 +98,10 @@ int main(int argc, char **argv) {
             format = TT_EXP;
         } else if (strcasecmp(*argv, "-pln") == 0) {
             format = TT_PLN;
+        } else if (strcasecmp(*argv, "-ztr") == 0) {
+            format = TT_ZTR;
+        } else if (strcasecmp(*argv, "-ctf") == 0) {
+            format = TT_CTF;
 	} else if (strcmp(*argv, "-fofn") == 0) {
 	    fofn = *++argv;
 	    argc--;
