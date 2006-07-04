@@ -45,13 +45,19 @@ int main(int argc, char **argv) {
     }
     if (argc >= 2) {
 	fp = fopen(argv[1], "rb");
+	if (NULL == fp) {
+	    perror(argv[1]);
+	    return 1;
+	}
     } else {
 	fp = stdin;
     }
 
     hf = HashFileLoad(fp);
-    HashTableLongDump(hf->h, stdout, long_format);
-    HashFileDestroy(hf);
+    if (hf) {
+	HashTableLongDump(hf->h, stdout, long_format);
+	HashFileDestroy(hf);
+    }
 
     return 0;
 }
