@@ -116,3 +116,8 @@ used to compute match, mismatch and indel scores. The result is that
 pads generally get shuffled to the same end (not necessarily always
 left or always right) and the total number of disagreements to the
 consensus reduces.
+
+For speed we acknowledge that the new alignment will only deviate
+slightly from the old one and so a narrow ``band size'' is used. This
+paramater may be adjusted if required, but at the expense of speed.
+
