@@ -390,12 +390,18 @@ way of accessing the trace. The syntax for @code{index_tar} is:
 @i{tar_filename}@code{.index}. (For example "@code{index_tar
 traces.tar > traces.tar.index}".)
 
+@cindex SFF= RAWDATA accessor
+@item SFF=filename.sff
+Searches for the trace name in a 454 SFF archive named @i{filename.sff}. 
+SFF files have their own binary-sorted index which allows for random
+access.
+
 @cindex HASH= RAWDATA accessor
 @item HASH=archive.hash
 
 This method supersedes the TAR= accessor. Tar files may be ``hashed''
-using the @code{hash_tar} tool. Similarly 454 TVF archives may be
-hashed using @code{hash_tvf}. In theory any type of archive may be
+using the @code{hash_tar} tool. Similarly 454 SFF archives may be
+hashed using @code{hash_sff}. In theory any type of archive may be
 indexed as a ``.hash'' provided that the traces are stored
 uncompressed (or compressed only using their own methods, such as with
 ZTR) so that random access is possible within the archive.
