@@ -147,6 +147,10 @@ int main(int argc, char **argv) {
             format = TT_EXP;
         } else if (strcasecmp(*argv, "-pln") == 0) {
             format = TT_PLN;
+        } else if (strcasecmp(*argv, "-ztr") == 0) {
+            format = TT_ZTR;
+        } else if (strcasecmp(*argv, "-ctf") == 0) {
+            format = TT_CTF;
         } else if (strcasecmp(*argv, "-good_only") == 0) {
 	    good_only = 1;
         } else if (strcasecmp(*argv, "-clip_cosmid") == 0) {

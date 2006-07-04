@@ -391,6 +391,10 @@ int main(int argc, char **argv) {
 	    format = TT_SCF;
 	    inf = *++argv;
 	    argc--;
+	} else if (strcasecmp(*argv, "-ztr") == 0) {
+	    format = TT_ZTR;
+	    inf = *++argv;
+	    argc--;
 	} else if (strcasecmp(*argv, "-any") == 0) {
 	    format = TT_ANY;
 	    inf = *++argv;
