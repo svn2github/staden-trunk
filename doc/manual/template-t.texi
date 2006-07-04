@@ -607,7 +607,9 @@ if the existing sequence alignment is poor).
 
 This is a fairly standard clustering algorithm that starts with each
 sequence being the sole member of a set. All sets are compared with
-each other and then the overlaps are ranked by score. The best scoring
+each other based on the correlation between sets using an adjusted
+correlation score (achieved by subtracting ``Correlation offset'') and
+then the overlaps are ranked by score. The best scoring 
 sets are then merged together. If Fast Mode is not being used the
 merged set is then compared against everything else once more to
 obtain new scores, otherwise a simple adjustment is guessed
