@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 	}
     }
 
-    if (argc < 2) {
+    if (argc < 2 && !fofn) {
 	fprintf(stderr, "Usage: hash_extract [-I fofn] hashfile [name ...]\n");
 	return 1;
     }
