@@ -1301,6 +1301,14 @@ command and adjust the cutoff point as desired.  Pads are inserted in the
 consensus and readings as necessary, although pads will not be inserted in the
 cutoff data of other sequences.
 
+The ``<'' and ``>'' buttons either side of the ``Align'' button
+perform the alignment from the editing cursor to the start of the
+contig and and from the cursor to the end of the contig
+only. Alignment end-gaps are penalised at the curosr position but not
+for the alignment end at the contig start/end position. These buttons
+are useful for when multiple alignment positions may be valid, such as
+is the case with an overlap consisting entirely of a STR.
+
 @node Editor-Comm-Remove Reading
 @subsection Remove Reading
 
