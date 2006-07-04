@@ -1,0 +1,33 @@
+@cindex hash_exp: man page
+@unnumberedsec NAME
+
+hash_exp --- produces an index for a file of concatenated experiment files.
+
+@unnumberedsec SYNOPSIS
+
+@code{hash_exp} @i{exp_archive}
+
+@unnumberedsec DESCRIPTION
+
+@code{hash_exp} adds a hash-table index on to the end of a
+concatenated file of experiment files. It's purpose is simply to
+provide random access to experiment files while also reducing the
+number of separate disk files.
+
+The @code{hash_list} program will list the contents of the hashed
+archive. The entry names stored in the archive are taken from the
+@code{ID} lines in the experiment files rather than their original
+filenames.
+
+Within Gap4 you can assemble a hashed experiment file archive and it will
+automatically assemble all files within it. For finer grain control
+use @code{hash_list} to produce a file of filenames and then edit this
+accordingly before supplying it as a ``fofn'' to gap4. In this case
+you will also need to configure Gap4 to set the @code{EXP_PATH}
+environment variable to contain @code{HASH=}@i{exp_archive_filename}.
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Man-hash_list, hash_list(1), hash_list.1)
+@code{Read}(4)

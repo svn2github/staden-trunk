@@ -1,0 +1,29 @@
+@cindex hash_list: man page
+@unnumberedsec NAME
+
+hash_list --- lists the contents of a hashed archive.
+
+@unnumberedsec SYNOPSIS
+
+@code{hash_list} [@code{-l}] @i{exp_archive}
+
+@unnumberedsec DESCRIPTION
+
+@code{hash_list} lists the contents of a hashed file. It may be used
+to produce a file of filenames to supply to other tools, such as gap4
+or convert_trace.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-l}
+    ``Long'' format: also reports the position and size of each file
+    in the archive.
+@end table
+
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Man-hash_extract, hash_extract(1), hash_extract.1)
+@code{Read}(4)

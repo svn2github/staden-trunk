@@ -1,0 +1,30 @@
+@cindex hash_extract: man page
+@unnumberedsec NAME
+
+hash_extract --- Extracts entries from a hashed archive
+
+@unnumberedsec SYNOPSIS
+
+@code{hash_extract} [@code{-I} @i{fofn}] @i{archive} [@i{filename} ...]
+
+@unnumberedsec DESCRIPTION
+
+@code{hash_extract} outputs to stdout the specified filenames from a
+hashed archive file (regardless of whether it was a tar file, SFF
+file, exp file or some other original format). If multiple filenames
+are specified they are concatenated together.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-I} @i{fofn}
+    Specifies a file of filenames to extract instead of reading from
+    the argument list.
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Man-hash_list, hash_list(1), hash_list.1)
+_fxref(Man-hash_tar, hash_tar(1), hash_tar.1)
+@code{Read}(4)

@@ -6,7 +6,7 @@ extract_seq --- extracts sequence from a trace or experiment file.
 @unnumberedsec SYNOPSIS
 
 @code{extract_seq} [@code{-r}]
-[@code{-}(@code{abi}|@code{alf}|@code{scf}|@code{exp}|@code{pln})]
+[@code{-}(@code{abi}|@code{alf}|@code{scf}|@code{ztr}|@code{exp}|@code{pln})]
 [@code{-good_only}] [@code{-clip_cosmid}] [@code{-fasta_out}]
 [@code{-output} @i{output_name}] [@i{input_name}] @code{...}
 
@@ -29,7 +29,7 @@ characters each.
     output is that listed in the Experiment File. This option has no effect
     for other input format types.
 
-@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-exp}, @code{-pln}
+@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-ztr}, @code{-exp}, @code{-pln}
     Specify an input file format. This is not usually required as
     @code{extract_seq} will automatically determine the correct input file
     type. This option is supplied incase the automatic determination is
@@ -58,4 +58,5 @@ characters each.
 
 _fxref(Formats-Exp, ExperimentFile(4), formats)
 _fxref(Formats-Scf, scf(4), formats)
+_fxref(Man-extract_fastq extract_fastq(1), extract_fastq.1)
 @code{Read}(4)

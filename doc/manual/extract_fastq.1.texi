@@ -1,0 +1,44 @@
+@cindex extract_fastq: man page
+@unnumberedsec NAME
+
+extract_fastq --- extracts sequence and quality from a trace or experiment file.
+
+@unnumberedsec SYNOPSIS
+
+@code{extract_fastq}
+[@code{-}(@code{abi}|@code{alf}|@code{scf}|@code{ztr}|@code{exp}|@code{pln})]
+[@code{-good_only}] [@code{-clip_cosmid}] [@code{-fasta_out}]
+[@code{-output} @i{output_name}] [@i{input_name}] @code{...}
+
+@unnumberedsec DESCRIPTION
+
+@code{extract_fastq} extracts the sequence and quality information
+from binary trace files or Experiment files. The input can be read
+either from standard input or read from files listed directly as
+arguments or contained within a ``file of filenames''. Output is
+either sent to standard output or a named file. It contains the
+sequence and confidence stored in single-line fastq format.
+
+@unnumberedsec OPTIONS
+
+@table @asis
+@item @code{-abi}, @code{-alf}, @code{-scf}, @code{-ztr}, @code{-exp}, @code{-pln}
+    Specify an input file format. This is not usually required as
+    @code{extract_seq} will automatically determine the correct input file
+    type. This option is supplied incase the automatic determination is
+    incorrect (which is possible, but has never been observed).
+
+@item @code{-output} @i{file}
+    The sequence will be written to @i{file} instead of standard
+    output.
+
+@item @code{-fofn} @i{file_of_filenames}
+    Read the reading names from @i{file_of_filenames} with one per line.
+@end table
+
+@unnumberedsec SEE ALSO
+
+_fxref(Formats-Exp, ExperimentFile(4), formats)
+_fxref(Formats-Scf, scf(4), formats)
+_fxref(Man-extract_seq extract_seq(1), extract_seq.1)
+@code{Read}(4)
