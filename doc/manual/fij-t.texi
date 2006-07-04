@@ -173,10 +173,13 @@ optimal alignment. Again a banded dynamic algorithm can be selected, but as
 this only applies to the chunks between matching segments, which for good
 alignments will be very short, it should make little difference to the speed.
 
-After the search the results will be sorted so that the best matches are
-at the top of a list. This list can be stepped through, one result at a
-time using the Contig Joining Editor, by clicking on the "Next" button
-at the top left of the Contig Comparator.
+After the search the results will be sorted so that the best matches
+are at the top of a list where best is defined as a combination of
+alignment length and alignment percent identity (in some earlier Gap4
+releases this was scored purely on percent identity). This list can be
+stepped through, one result at a time using the Contig Joining Editor,
+by clicking on the "Next" button at the top left of the Contig
+Comparator.
 
 @cindex error messages: find internal joins
 @cindex error messages: maxseq
