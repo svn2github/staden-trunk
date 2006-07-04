@@ -20,14 +20,13 @@ loaded into a table for viewing.
 _picture(contig_navigation_table)
 
 The table has three fixed headers, contigID, Position and Problem
-Type. Clicking on any of these cause the whole table to be sorted
-on that column.
-The regions can be viewed by either randomly double clicking on a row 
-or selecting a row and using the next (->>) and previous (<<-) buttons 
-at the bottom. The corresponding contig editor will be opened and 
-moved to the position indicated.
-Once a row has been clicked on it's background will be changed to 
-highlight that it has been visited. 
+Type. Clicking on any of these cause the whole table to be sorted on
+that column.  The regions can be viewed by either randomly double
+clicking on a row , by selecting a row and using the next (->>) and
+previous (<<-) buttons at the bottom, or by pressing the Page Up and
+Page Down keys.  The corresponding contig editor will be opened and
+moved to the position indicated.  Once a row has been clicked on it's
+background will be changed to highlight that it has been visited.
 
 The reset button will clear the table and re-read the data from 
 file.
