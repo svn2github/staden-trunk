@@ -63,13 +63,19 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "Usage: hash_exp exp_file_ball > exp.hash\n");
 	return 1;
     }
-    if (NULL == (fp = fopen(argv[1], "r"))) {
+    if (NULL == (fp = fopen(argv[1], "r+"))) {
 	perror(argv[1]);
 	return 1;
     }
 
     hf = build_index(fp);
-    hf->archive = strdup(argv[1]);
-    HashFileSave(hf, stdout, 0);
+    hf->archive = NULL;
+
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
+
+    HashFileSave(hf, fp, 0);
+
     return 0;
 }
