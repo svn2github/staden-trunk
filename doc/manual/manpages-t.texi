@@ -29,6 +29,11 @@ _include(eba.1.texi)
 _include(extract_seq.1.texi)
 
 @page
+@node Man-extract_fastq
+@chapter Extract_fastq
+_include(extract_fastq.1.texi)
+
+@page
 @node Man-find_renz
 @chapter Find_renz
 _include(find_renz.1.texi)
@@ -49,9 +54,29 @@ _include(get_comment.1.texi)
 _include(get_scf_field.1.texi)
 
 @page
-@node Man-init_exp
-@chapter Init_exp
-_include(init_exp.1.texi)
+@node Man-hash_exp
+@chapter Hash_exp
+_include(hash_exp.1.texi)
+
+@page
+@page
+@node Man-hash_extract
+@chapter Hash_extract
+_include(hash_extract.1.texi)
+
+@page
+@node Man-hash_list
+@chapter Hash_list
+_include(hash_list.1.texi)
+
+@node Man-hash_tar
+@chapter Hash_tar
+_include(hash_tar.1.texi)
+
+@page
+@node Man-init_tar
+@chapter Init_tar
+_include(init_tar.1.texi)
 
 @page
 @node Man-makeSCF

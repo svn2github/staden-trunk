@@ -7,7 +7,7 @@ extract_seq \- extracts sequence from a trace or experiment file.
 .PP
 
 \fBextract_seq\fP [\fB-r\fP]
-[\fB-\fP(\fBabi\fP|\fBalf\fP|\fBscf\fP|\fBexp\fP|\fBpln\fP)]
+[\fB-\fP(\fBabi\fP|\fBalf\fP|\fBscf\fP|\fBztr\fP|\fBexp\fP|\fBpln\fP)]
 [\fB-good_only\fP] [\fB-clip_cosmid\fP] [\fB-fasta_out\fP]
 [\fB-output\fP \fIoutput_name\fP] [\fIinput_name\fP] \fB...\fP
 
@@ -33,7 +33,7 @@ output is that listed in the Experiment File. This option has no effect
 for other input format types.
 
 .TP
-\fB-abi\fP, \fB-alf\fP, \fB-scf\fP, \fB-exp\fP, \fB-pln\fP
+\fB-abi\fP, \fB-alf\fP, \fB-scf\fP, \fB-ztr\fP, \fB-exp\fP, \fB-pln\fP
 Specify an input file format. This is not usually required as
 \fBextract_seq\fP will automatically determine the correct input file
 type. This option is supplied incase the automatic determination is
@@ -66,4 +66,5 @@ output.
 
 \fBExperimentFile\fR(4)
 \fBscf\fR(4)
+_fxref(Man-extract_fastq extract_fastq(1), extract_fastq.1)
 \fBRead\fP(4)
