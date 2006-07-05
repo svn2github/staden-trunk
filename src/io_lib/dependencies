@@ -1,133 +1,130 @@
 
-$O/abi/fpoint.o: abi/fpoint.h
-$O/abi/seqIOABI.o: include/array.h include/compress.h include/abi.h abi/fpoint.h
-$O/abi/seqIOABI.o: include/scf.h read/translate.h include/expFileIO.h
-$O/abi/seqIOABI.o: include/stdio_hack.h include/mFILE.h abi/seqIOABI.h
-$O/abi/seqIOABI.o: read/Read.h
-$O/abi/seqIOABI.o: include/os.h
-$O/abi/seqIOABI.o: utils/mach-io.h include/xalloc.h include/misc.h
-$O/alf/seqIOALF.o: include/expFileIO.h include/array.h include/compress.h
-$O/alf/seqIOALF.o: read/Read.h include/os.h
-$O/alf/seqIOALF.o: include/scf.h
-$O/alf/seqIOALF.o: include/stdio_hack.h include/mFILE.h
-$O/alf/seqIOALF.o: read/translate.h
-$O/alf/seqIOALF.o: utils/mach-io.h include/xalloc.h
-$O/ctf/ctfCompress.o: include/expFileIO.h include/array.h include/compress.h
-$O/ctf/ctfCompress.o: include/os.h
-$O/ctf/ctfCompress.o: include/scf.h
-$O/ctf/ctfCompress.o: include/stdio_hack.h
-$O/ctf/ctfCompress.o: include/seqIOCTF.h read/Read.h
-$O/ctf/ctfCompress.o: include/mFILE.h read/translate.h
-$O/ctf/seqIOCTF.o: include/compress.h include/seqIOCTF.h include/abi.h
-$O/ctf/seqIOCTF.o: read/translate.h include/expFileIO.h include/array.h
-$O/ctf/seqIOCTF.o: include/scf.h
-$O/ctf/seqIOCTF.o: read/Read.h include/os.h
-$O/ctf/seqIOCTF.o: include/mFILE.h
-$O/ctf/seqIOCTF.o: utils/mach-io.h include/xalloc.h include/stdio_hack.h
+abi/$O/fpoint.o: abi/fpoint.h
+abi/$O/seqIOABI.o: include/array.h include/compress.h include/abi.h abi/fpoint.h
+abi/$O/seqIOABI.o: include/scf.h read/translate.h include/expFileIO.h
+abi/$O/seqIOABI.o: include/stdio_hack.h include/mFILE.h abi/seqIOABI.h
+abi/$O/seqIOABI.o: read/Read.h
+abi/$O/seqIOABI.o: include/os.h
+abi/$O/seqIOABI.o: utils/mach-io.h include/xalloc.h include/misc.h
+alf/$O/seqIOALF.o: include/expFileIO.h include/array.h include/compress.h
+alf/$O/seqIOALF.o: read/Read.h include/os.h
+alf/$O/seqIOALF.o: include/scf.h
+alf/$O/seqIOALF.o: include/stdio_hack.h include/mFILE.h
+alf/$O/seqIOALF.o: read/translate.h
+alf/$O/seqIOALF.o: utils/mach-io.h include/xalloc.h
+ctf/$O/ctfCompress.o: include/expFileIO.h include/array.h include/compress.h
+ctf/$O/ctfCompress.o: include/os.h
+ctf/$O/ctfCompress.o: include/scf.h
+ctf/$O/ctfCompress.o: include/stdio_hack.h
+ctf/$O/ctfCompress.o: include/seqIOCTF.h read/Read.h
+ctf/$O/ctfCompress.o: include/mFILE.h read/translate.h
+ctf/$O/seqIOCTF.o: include/compress.h include/seqIOCTF.h include/abi.h
+ctf/$O/seqIOCTF.o: read/translate.h include/expFileIO.h include/array.h
+ctf/$O/seqIOCTF.o: include/scf.h
+ctf/$O/seqIOCTF.o: read/Read.h include/os.h
+ctf/$O/seqIOCTF.o: include/mFILE.h
+ctf/$O/seqIOCTF.o: utils/mach-io.h include/xalloc.h include/stdio_hack.h
 # DO NOT DELETE
-$O/exp_file/expFileIO.o: include/mFILE.h include/array.h include/os.h
-$O/exp_file/expFileIO.o: include/stdio_hack.h
-$O/exp_file/expFileIO.o: include/xalloc.h include/misc.h
-$O/exp_file/expFileIO.o: include/expFileIO.h
-$O/plain/seqIOPlain.o: include/compress.h include/traceType.h
-$O/plain/seqIOPlain.o: include/stdio_hack.h
-$O/plain/seqIOPlain.o: include/xalloc.h include/plain.h
-$O/plain/seqIOPlain.o: read/Read.h include/scf.h include/mFILE.h
-$O/plain/seqIOPlain.o: read/translate.h include/expFileIO.h include/array.h
-$O/plain/seqIOPlain.o: include/misc.h
-$O/plain/seqIOPlain.o: include/os.h
-$O/read/Read.o: include/array.h include/compress.h include/abi.h include/alf.h
-$O/read/Read.o: include/mFILE.h read/translate.h include/expFileIO.h
-$O/read/Read.o: include/open_trace_file.h
-$O/read/Read.o: include/plain.h include/ztr.h include/seqIOCTF.h include/sff.h
-$O/read/Read.o: include/xalloc.h include/traceType.h
-$O/read/Read.o: read/Read.h include/os.h
-$O/read/Read.o: include/misc.h
-$O/read/Read.o: include/scf.h
-$O/read/scf_extras.o: include/array.h include/traceType.h
-$O/read/scf_extras.o: include/compress.h include/misc.h
-$O/read/scf_extras.o: include/open_trace_file.h read/scf_extras.h
-$O/read/scf_extras.o: include/stdio_hack.h
-$O/read/scf_extras.o: include/xalloc.h include/scf.h include/expFileIO.h
-$O/read/scf_extras.o: include/mFILE.h
-$O/read/scf_extras.o: read/Read.h read/translate.h
-$O/read/scf_extras.o: include/os.h
-$O/read/translate.o: include/array.h include/compress.h include/traceType.h
-$O/read/translate.o: include/open_trace_file.h
-$O/read/translate.o: include/stdio_hack.h include/mFILE.h include/misc.h
-$O/read/translate.o: include/xalloc.h include/scf.h
-$O/read/translate.o: read/Read.h read/translate.h include/expFileIO.h
-$O/read/translate.o: include/os.h
-$O/scf/misc_scf.o: include/xalloc.h include/stdio_hack.h
-$O/scf/misc_scf.o: utils/mach-io.h
-$O/scf/misc_scf.o: include/scf.h
-$O/scf/misc_scf.o: include/mFILE.h include/os.h
-$O/scf/read_scf.o: include/mFILE.h include/os.h
-$O/scf/read_scf.o: include/stdio_hack.h
-$O/scf/read_scf.o: include/xalloc.h include/compress.h read/Read.h
-$O/scf/read_scf.o: read/translate.h include/expFileIO.h include/array.h
-$O/scf/read_scf.o: utils/mach-io.h
-$O/scf/read_scf.o: include/scf.h
-$O/scf/write_scf.o: include/mFILE.h include/os.h
-$O/scf/write_scf.o: include/scf.h
-$O/scf/write_scf.o: include/stdio_hack.h
-$O/scf/write_scf.o: utils/mach-io.h include/xalloc.h
-$O/sff/sff.o: include/compress.h include/xalloc.h include/sff.h utils/mach-io.h
-$O/sff/sff.o: include/misc.h
-$O/sff/sff.o: include/os.h
-$O/sff/sff.o: read/translate.h include/expFileIO.h include/array.h
-$O/sff/sff.o: include/scf.h
-$O/sff/sff.o: read/Read.h
-$O/sff/sff.o: include/mFILE.h
-$O/utils/compress.o: include/compress.h include/mFILE.h include/zlib.h
-$O/utils/compress.o: include/os.h
-$O/utils/compress.o: include/zconf.h
-$O/utils/find.o: include/misc.h
-$O/utils/find.o: include/xalloc.h
-$O/utils/find.o: include/os.h
-$O/utils/hash_table.o: include/os.h
-$O/utils/hash_table.o: utils/hash_table.h
-$O/utils/mach-io.o: include/mFILE.h utils/mach-io.h include/os.h
-$O/utils/mach-io.o: include/stdio_hack.h
-$O/utils/mFILE.o: include/os.h
-$O/utils/mFILE.o: include/mFILE.h
-$O/utils/mFILE.o: utils/vlen.h
-$O/utils/open_trace_file.o: include/compress.h utils/hash_table.h include/sff.h
-$O/utils/open_trace_file.o: include/expFileIO.h include/array.h
-$O/utils/open_trace_file.o: include/misc.h include/xalloc.h utils/tar_format.h
-$O/utils/open_trace_file.o: include/open_trace_file.h include/mFILE.h
-$O/utils/open_trace_file.o: include/os.h
-$O/utils/open_trace_file.o: read/Read.h include/scf.h read/translate.h
-$O/utils/read_alloc.o: include/array.h include/compress.h
-$O/utils/read_alloc.o: include/mFILE.h read/translate.h include/expFileIO.h
-$O/utils/read_alloc.o: include/xalloc.h read/Read.h include/scf.h
-$O/utils/read_alloc.o: include/misc.h
-$O/utils/read_alloc.o: include/os.h
-$O/utils/traceType.o: include/compress.h include/open_trace_file.h
-$O/utils/traceType.o: include/mFILE.h include/traceType.h
-$O/utils/traceType.o: include/scf.h
-$O/utils/traceType.o: read/translate.h include/expFileIO.h include/array.h
-$O/utils/traceType.o: include/stdio_hack.h
-$O/utils/traceType.o: read/Read.h include/os.h
-$O/utils/vlen.o: utils/vlen.h
-$O/ztr/compression.o: include/array.h include/compress.h ztr/compression.h
-$O/ztr/compression.o: include/mFILE.h read/translate.h include/expFileIO.h
-$O/ztr/compression.o: include/os.h
-$O/ztr/compression.o: include/scf.h
-$O/ztr/compression.o: include/xalloc.h
-$O/ztr/compression.o: include/zconf.h
-$O/ztr/compression.o: include/ztr.h read/Read.h
-$O/ztr/compression.o: include/zlib.h
-$O/ztr/ztr.o: include/compress.h include/xalloc.h
-$O/ztr/ztr.o: include/os.h
-$O/ztr/ztr.o: include/stdio_hack.h
-$O/ztr/ztr.o: read/translate.h include/expFileIO.h include/array.h
-$O/ztr/ztr.o: include/ztr.h read/Read.h
-$O/ztr/ztr.o: include/scf.h
-$O/ztr/ztr.o: include/mFILE.h
-$O/ztr/ztr.o: ztr/compression.h include/zlib.h include/zconf.h
-$O/ztr/ztr_translate.o: include/expFileIO.h include/array.h include/compress.h
-$O/ztr/ztr_translate.o: include/scf.h
-$O/ztr/ztr_translate.o: include/xalloc.h
-$O/ztr/ztr_translate.o: include/ztr.h read/Read.h include/os.h
-$O/ztr/ztr_translate.o: include/mFILE.h read/translate.h
+exp_file/$O/expFileIO.o: include/mFILE.h include/array.h include/os.h
+exp_file/$O/expFileIO.o: include/stdio_hack.h
+exp_file/$O/expFileIO.o: include/xalloc.h include/misc.h
+exp_file/$O/expFileIO.o: include/expFileIO.h
+plain/$O/seqIOPlain.o: include/compress.h include/traceType.h
+plain/$O/seqIOPlain.o: include/stdio_hack.h
+plain/$O/seqIOPlain.o: include/xalloc.h include/plain.h
+plain/$O/seqIOPlain.o: read/Read.h include/scf.h include/mFILE.h
+plain/$O/seqIOPlain.o: read/translate.h include/expFileIO.h include/array.h
+plain/$O/seqIOPlain.o: include/misc.h
+plain/$O/seqIOPlain.o: include/os.h
+read/$O/Read.o: include/array.h include/compress.h include/abi.h include/alf.h
+read/$O/Read.o: include/mFILE.h read/translate.h include/expFileIO.h
+read/$O/Read.o: include/open_trace_file.h
+read/$O/Read.o: include/plain.h include/ztr.h include/seqIOCTF.h include/sff.h
+read/$O/Read.o: include/xalloc.h include/traceType.h
+read/$O/Read.o: read/Read.h include/os.h
+read/$O/Read.o: include/misc.h
+read/$O/Read.o: include/scf.h
+read/$O/scf_extras.o: include/array.h include/traceType.h
+read/$O/scf_extras.o: include/compress.h include/misc.h
+read/$O/scf_extras.o: include/open_trace_file.h read/scf_extras.h
+read/$O/scf_extras.o: include/stdio_hack.h
+read/$O/scf_extras.o: include/xalloc.h include/scf.h include/expFileIO.h
+read/$O/scf_extras.o: include/mFILE.h
+read/$O/scf_extras.o: read/Read.h read/translate.h
+read/$O/scf_extras.o: include/os.h
+read/$O/translate.o: include/array.h include/compress.h include/traceType.h
+read/$O/translate.o: include/open_trace_file.h
+read/$O/translate.o: include/stdio_hack.h include/mFILE.h include/misc.h
+read/$O/translate.o: include/xalloc.h include/scf.h
+read/$O/translate.o: read/Read.h read/translate.h include/expFileIO.h
+read/$O/translate.o: include/os.h
+scf/$O/misc_scf.o: include/xalloc.h include/stdio_hack.h
+scf/$O/misc_scf.o: utils/mach-io.h
+scf/$O/misc_scf.o: include/scf.h
+scf/$O/misc_scf.o: include/mFILE.h include/os.h
+scf/$O/read_scf.o: include/mFILE.h include/os.h
+scf/$O/read_scf.o: include/stdio_hack.h
+scf/$O/read_scf.o: include/xalloc.h include/compress.h read/Read.h
+scf/$O/read_scf.o: read/translate.h include/expFileIO.h include/array.h
+scf/$O/read_scf.o: utils/mach-io.h
+scf/$O/read_scf.o: include/scf.h
+scf/$O/write_scf.o: include/mFILE.h include/os.h
+scf/$O/write_scf.o: include/scf.h
+scf/$O/write_scf.o: include/stdio_hack.h
+scf/$O/write_scf.o: utils/mach-io.h include/xalloc.h
+sff/$O/sff.o: include/compress.h include/xalloc.h include/sff.h include/misc.h
+sff/$O/sff.o: include/os.h
+sff/$O/sff.o: read/translate.h include/expFileIO.h include/array.h
+sff/$O/sff.o: include/scf.h
+sff/$O/sff.o: read/Read.h
+sff/$O/sff.o: include/mFILE.h
+utils/$O/compress.o: include/compress.h include/mFILE.h $(SRCROOT)/zlib/zlib.h
+utils/$O/compress.o: include/os.h
+utils/$O/compress.o: $(SRCROOT)/zlib/zconf.h
+utils/$O/find.o: include/misc.h
+utils/$O/find.o: include/xalloc.h
+utils/$O/find.o: include/os.h
+utils/$O/hash_table.o: include/os.h
+utils/$O/hash_table.o: utils/hash_table.h
+utils/$O/mach-io.o: include/mFILE.h utils/mach-io.h include/os.h
+utils/$O/mach-io.o: include/stdio_hack.h
+utils/$O/mFILE.o: include/os.h
+utils/$O/mFILE.o: include/mFILE.h
+utils/$O/mFILE.o: utils/vlen.h
+utils/$O/open_trace_file.o: include/compress.h utils/hash_table.h include/sff.h
+utils/$O/open_trace_file.o: include/expFileIO.h include/array.h
+utils/$O/open_trace_file.o: include/misc.h include/xalloc.h utils/tar_format.h
+utils/$O/open_trace_file.o: include/open_trace_file.h include/mFILE.h
+utils/$O/open_trace_file.o: include/os.h
+utils/$O/open_trace_file.o: read/Read.h include/scf.h read/translate.h
+utils/$O/read_alloc.o: include/array.h include/compress.h
+utils/$O/read_alloc.o: include/mFILE.h read/translate.h include/expFileIO.h
+utils/$O/read_alloc.o: include/xalloc.h read/Read.h include/scf.h
+utils/$O/read_alloc.o: include/misc.h
+utils/$O/read_alloc.o: include/os.h
+utils/$O/traceType.o: include/compress.h include/open_trace_file.h
+utils/$O/traceType.o: include/mFILE.h include/traceType.h
+utils/$O/traceType.o: include/scf.h
+utils/$O/traceType.o: read/translate.h include/expFileIO.h include/array.h
+utils/$O/traceType.o: include/stdio_hack.h
+utils/$O/traceType.o: read/Read.h include/os.h
+utils/$O/vlen.o: utils/vlen.h
+ztr/$O/compression.o: include/expFileIO.h include/array.h include/compress.h
+ztr/$O/compression.o: include/scf.h include/mFILE.h read/translate.h
+ztr/$O/compression.o: include/ztr.h read/Read.h include/os.h
+ztr/$O/compression.o: $(SRCROOT)/zlib/zlib.h
+ztr/$O/compression.o: $(SRCROOT)/zlib/zconf.h
+ztr/$O/compression.o: ztr/compression.h include/xalloc.h
+ztr/$O/ztr.o: include/compress.h include/xalloc.h
+ztr/$O/ztr.o: include/os.h
+ztr/$O/ztr.o: read/translate.h include/expFileIO.h include/array.h
+ztr/$O/ztr.o: include/stdio_hack.h
+ztr/$O/ztr.o: include/ztr.h read/Read.h
+ztr/$O/ztr.o: include/scf.h
+ztr/$O/ztr.o: include/mFILE.h
+ztr/$O/ztr.o: ztr/compression.h $(SRCROOT)/zlib/zlib.h $(SRCROOT)/zlib/zconf.h
+ztr/$O/ztr_translate.o: include/expFileIO.h include/array.h include/compress.h
+ztr/$O/ztr_translate.o: include/scf.h
+ztr/$O/ztr_translate.o: include/xalloc.h
+ztr/$O/ztr_translate.o: include/ztr.h read/Read.h include/os.h
+ztr/$O/ztr_translate.o: include/mFILE.h read/translate.h

@@ -139,7 +139,7 @@ endif
 DEPEND_OBJ = $(OBJS)
 include dependencies
 
-.PHONY:	progs
+.PHONY:	progs dirs
 .PRECIOUS: include/.links
 include/.links:
 	cd include; \
@@ -198,3 +198,13 @@ distsrc: FORCE
 	-cp -R ztr/FORMAT $(DIRNAME)/ztr
 	-cp -R progs/Makefile $(DIRNAME)/progs
 
+depend:
+	-DEPEND_SRC=`echo $(DEPEND_OBJ:.o=.c) $(DEPEND_OBJ:.o=.cpp) \
+	| sed 's/$(O)\///g'`; \
+	touch ./dependencies.tmp; \
+	makedepend -f ./dependencies.tmp -- $(CFLAGS) -- $$DEPEND_SRC 2>&-
+	sort < ./dependencies.tmp | uniq | sed -e 's; /usr/[^ ]*;;g' \
+	  -e "s;`echo $(SRCROOT)|sed 's/\\./\\\\./g'`;\$$(SRCROOT);g" \
+	  -e '/:/s;^[^/]*;&/$$O;' | \
+	  grep -v '^[^:]*:[     ]*$$' > ./dependencies
+	-rm ./dependencies.tmp*
