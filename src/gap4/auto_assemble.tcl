@@ -212,6 +212,10 @@ proc OK_Pressed1 { io f masking disp_mode match infile fails \
 	# Someone's too busy to shutdown?
 	return
     }
+
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set inlist [expand_hash_archives $inlist]
+
     SetBusy
     set result [assemble_shotgun \
 	-io $io \
@@ -229,6 +233,8 @@ proc OK_Pressed1 { io f masking disp_mode match infile fails \
     destroy $f
     update idletasks
     ClearBusy
+
+    reset_exp_path
 
     #write failures to list or file
     if {"$format" == 2} {
@@ -326,6 +332,10 @@ proc OK_Pressed2 { io f masking disp_mode match save_align infile} {
 	# Someone's too busy to shutdown?
 	#return
     #}
+
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set inlist [expand_hash_archives $inlist]
+
     SetBusy
     set result [assemble_screen -io $io \
 	-files $inlist \
@@ -340,6 +350,8 @@ proc OK_Pressed2 { io f masking disp_mode match save_align infile} {
     destroy $f
     update idletasks
     ClearBusy
+
+    reset_exp_path
 
     #write alignments to list or file
     if {"$format" == 2} {
@@ -395,6 +407,10 @@ proc OK_Pressed3 { io f infile fails option mode} {
 	# Someone's too busy to shutdown?
 	return
     }
+
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set inlist [expand_hash_archives $inlist]
+
     SetBusy
     set result [assemble_$mode -io $io\
 	-files $inlist]
@@ -403,6 +419,8 @@ proc OK_Pressed3 { io f infile fails option mode} {
     destroy $f
     update idletasks
     ClearBusy
+
+    reset_exp_path
 
     #write alignments to list or file
     if {"$format" == 2} {
@@ -532,6 +550,10 @@ proc OK_Pressed5 { io f disp_mode match infile fails \
 	# Someone's too busy to shutdown?
 	return
     }
+ 
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set inlist [expand_hash_archives $inlist]
+
     SetBusy
     set result [assemble_single_strand -io $io \
 	    -files $inlist \
@@ -546,6 +568,8 @@ proc OK_Pressed5 { io f disp_mode match infile fails \
     destroy $f
     update idletasks
     ClearBusy
+
+    reset_exp_path
 
     #write failures to list or file
     if {"$format" == 2} {
@@ -664,6 +688,10 @@ proc OK_Pressed6 { io f masking disp_mode match infile fails \
 	# Someone's too busy to shutdown?
 	return
     }
+
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set inlist [expand_hash_archives $inlist]
+
     SetBusy
     set result [assemble_independent -io $io \
 	-files $inlist \
@@ -679,6 +707,8 @@ proc OK_Pressed6 { io f masking disp_mode match infile fails \
     destroy $f
     update idletasks
     ClearBusy
+
+    reset_exp_path
 
     #write failures to list or file
     if {"$format" == 2} {
@@ -698,5 +728,50 @@ proc OK_Pressed6 { io f masking disp_mode match infile fails \
     	ContigInitReg $io
     	raise $cs_win
         }
+    }
+}
+
+#############################################################################
+# Checks the files named in $inlist to see if any appear to be an
+# hashed archive.
+# If so it expands them up to contain the contents
+proc expand_hash_archives {inlist} {
+    global env old_exp_path
+
+    set outlist {}
+    if {[info exists env(EXP_PATH)]} {
+	set old_exp_path $env(EXP_PATH)
+    }
+
+    foreach f $inlist {
+	set fd [open [list "|hash_list" $f]]
+	set hl [read $fd]
+	catch {close $fd}
+	set done 0
+	foreach newfile $hl {
+	    if {$newfile != {}} {
+		lappend outlist $newfile
+		set done 1
+	    }
+	}
+	if {!$done} {
+	    lappend outlist $f
+	} else {
+	    if {[info exists env(EXP_PATH)]} {
+		set env(EXP_PATH) $env(EXP_PATH):HASH=$f
+	    } else {
+		set env(EXP_PATH) HASH=$f
+	    }
+	}
+    }
+
+    return $outlist
+}
+
+proc reset_exp_path {} {
+    global env old_exp_path
+    if {[info exists old_exp_path]} {
+	set env(EXP_PATH) $old_exp_path
+	unset old_exp_path
     }
 }

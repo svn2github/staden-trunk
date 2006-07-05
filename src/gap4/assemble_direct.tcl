@@ -90,6 +90,10 @@ proc DirectAssembly2 {io t infile outfile mism_w display failure_mode
         # Someone's too busy to shutdown?
         return
     }
+
+    # Expand $inlist to include sub-files if input is a hashed archive.
+    set lin [expand_hash_archives $lin]
+
     SetBusy
 
     destroy $t
@@ -106,6 +110,8 @@ proc DirectAssembly2 {io t infile outfile mism_w display failure_mode
 	-enter_failures [expr [radiolist_get $failure_mode]-1] \
 	-ignore_vec $ignore_vec]
     ClearBusy
+
+    reset_exp_path
 
     if {[lorf_out_get $outfile] == 2} {
 	lorf_out_save $lout

@@ -16,6 +16,7 @@ set auto_index(OneContig) [list source [file join $dir auto_assemble.tcl]]
 set auto_index(NewContig) [list source [file join $dir auto_assemble.tcl]]
 set auto_index(SSAssemble) [list source [file join $dir auto_assemble.tcl]]
 set auto_index(IgnorePrev) [list source [file join $dir auto_assemble.tcl]]
+set auto_index(expand_hash_archives) [list source [file join $dir auto_assemble.tcl]]
 
 set auto_index(BreakContig) [list source [file join $dir break_contig.tcl]]
 
