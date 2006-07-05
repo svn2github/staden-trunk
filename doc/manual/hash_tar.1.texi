@@ -111,6 +111,8 @@ hash_tar -f exp_foot -A file.tar >> file.tar
 # Now test:
 hash_extract file.tar xyzzy.exp > xyzzy.exp
 tail -2 xyzzy.exp
+@end example
+
 @unnumberedsec SEE ALSO
 
 _fxref(Formats-Exp, ExperimentFile(4), formats)
