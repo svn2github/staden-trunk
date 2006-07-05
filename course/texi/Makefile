@@ -58,10 +58,8 @@
 all: unix windows
 
 unix: course_unix.ps course_unix.pdf
-	cp course_unix.ps course_unix.pdf ../unix_docs
 
 windows: course_windows.ps course_windows.pdf
-	cp course_windows.ps course_windows.pdf ../windows_docs
 
 clean:
 	-rm *.aux *.cp *.fn *.ky *.log *.pg *.toc *.tp *.vr *.cps
