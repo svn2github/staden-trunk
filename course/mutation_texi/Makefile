@@ -30,6 +30,12 @@
 	m4 -Uunix -D_windows -D_tex -D_html < $< > $@.tmp
 	makeinfo --no-validate -E $@ $@.tmp
 
+%.texinfo:	%.texi
+	cp $< $@
+
+%.pdf: %.gif
+	convert $< $@
+
 # How to build .dvi files from our macro-expanded .texinfo
 # files
 %.dvi:	%.texinfo
@@ -46,8 +52,11 @@
 %.ps:	%.dvi
 	dvips -t a4 -Ppdf -o $@ $<
 
-%.pdf:	%.ps
-	PATH=$$PATH:/usr/local/bin ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
+%.pdf:	%.texinfo
+	texi2pdf $<
+
+#%.pdf:	%.ps
+#	PATH=$$PATH:/usr/local/bin ps2pdf -dPDFSETTINGS=/prepress -dEncodeColorImages=false $<
 
 # Converts an A4 formatted .texi file into a US-letter formatted file.
 %_us.texinfo: %.texinfo
@@ -55,14 +64,10 @@
 
 #-----------------------------------------------------------------------------
 # The main make targets.
+all: pdfimages notes.ps notes.pdf
 
-all: notes.ps
-
-unix: course_unix.ps course_unix.pdf
-#	cp course_unix.ps course_unix.pdf ../unix_docs
-
-windows: course_windows.ps course_windows.pdf
-#	cp course_windows.ps course_windows.pdf ../windows_docs
+pdfimages: gap4-1.pdf  gap4-3.pdf  gap4-5.pdf  pregap4-1.pdf \
+	   gap4-2.pdf  gap4-4.pdf  gap4-6.pdf  pregap4-2.pdf
 
 clean:
 	-rm *.aux *.cp *.fn *.ky *.log *.pg *.toc *.tp *.vr *.cps
