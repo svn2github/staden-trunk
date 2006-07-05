@@ -11,11 +11,19 @@ distcommon:
 
 
 distunix: distcommon
-	-cp -R unix_docs $(DIST)/course
+	mkdir $(DIST)/course/unix_docs
+	-cp -R texi/course_unix.pdf $(DIST)/course/unix_docs
+	-cp -R texi/course_unix.ps $(DIST)/course/unix_docs
+	-cp -R mutation_texi/notes.ps $(DIST)/course/unix_docs/mutation_notes.ps
+	-cp -R mutation_texi/notes.pdf $(DIST)/course/unix_docs/mutation_notes.pdf
 
 
 distwindows: distcommon
-	-cp -R windows_docs $(DIST)/course
+	mkdir $(DIST)/course/windows_docs
+	-cp -R texi/course_windows.pdf $(DIST)/course/windows_docs
+	-cp -R texi/course_windows.ps $(DIST)/course/windows_docs
+	-cp -R mutation_texi/notes.ps $(DIST)/course/windows_docs/mutation_notes.ps
+	-cp -R mutation_texi/notes.pdf $(DIST)/course/windows_docs/mutation_notes.pdf
 
 distsrc:
 	-mkdir $(DISTSRC)/course
