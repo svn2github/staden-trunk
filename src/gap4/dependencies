@@ -639,6 +639,7 @@ $O/find_oligo.o: list.h undo.h edUtils.h qual.h tman_display.h
 $O/find_oligo.o: $(SRCROOT)/Misc/bitmap.h
 $O/find_oligo.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/seq_utils/dna_utils.h
 $O/find_oligo.o: ruler_display.h $(SRCROOT)/seq_utils/search_utils.h
+$O/find_oligo.o: $(SRCROOT)/seq_utils/sequence_formats.h
 $O/find_oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/find_oligo.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h io_handle.h tagdb.h
 $O/find_oligo.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tk8.4.6/generic/tkDecls.h
