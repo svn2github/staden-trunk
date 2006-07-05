@@ -102,19 +102,17 @@ distunix: distcommon
 
 distmacosx: distcommon
 	cp staden.login staden.profile $(DIST)
-
 	# cp install $(DIST)
 	cp README $(DIST)
-
 	cd course; $(MAKE) $(SUBFLAGS) distunix
 	cd doc; $(MAKE) $(SUBFLAGS) distunix
 	cd man; $(MAKE) $(SUBFLAGS) distunix
 	cd src; $(MAKE) $(SUBFLAGS) distunix
-
 	-mkdir $(DIST)/macosx-bin
 	cd src; $(MAKE) STADENROOT=$(DIST) MACHINE=macosx install
-
 	cd src/macosx; $(MAKE) $(SUBFLAGS) MACHINE=macosx install
+	# Tidy up CVS files accidentally copied over
+	(cd $(DIST); find . -name CVS -exec rm -rf {} \;)
 
 
 distwindows: distcommon
@@ -124,6 +122,8 @@ distwindows: distcommon
 	cd doc; $(MAKE) $(SUBFLAGS) distwindows
 	cd src; $(MAKE) $(SUBFLAGS) distwindows
 	cd lib; $(MAKE) $(SUBFLAGS) distwindows
+	# Tidy up CVS files accidentally copied over
+	(cd $(DIST); find . -name CVS -exec rm -rf {} \;)
 
 #
 # Creates a distribution of the source code suitable for sending to third
