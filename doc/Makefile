@@ -13,12 +13,11 @@ distcommon:
 	-cp -R scripting_manual/i $(DIST)/doc/scripting_manual/i
 	-cp scripting_manual/*.html $(DIST)/doc/scripting_manual
 	-cp Acknowledgements $(DIST)/doc
-	-cp Copyright $(DIST)/doc
-	-cp LICENCE $(DIST)/doc
 	-cp README $(DIST)/doc
 	-cp gkb547_gml.pdf $(DIST)/doc
 	-cp scripting_manual/*.pdf $(DIST)/doc
 	-cp emboss.txt $(DIST)/doc
+	-cp ReleaseNotes $(DIST)/doc
 	-cp *.gif $(DIST)/doc
 
 
