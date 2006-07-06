@@ -1,3 +1,268 @@
+2006-07-06  jkbonfield  <jkbonfield>
+
+	TAG CODEBASE with rel-1-7-0
+
+2006-07-06  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/hash_exp.c:
+	(08:45:18) Use binary mode, for windows. 
+
+	* src/io_lib/progs/hash_exp.c:
+	(09:20:20) Remove control-M from end of line when indexing ID
+	lines. 
+
+	* src/io_lib/progs/hash_exp.c:
+	(09:22:52) Oops; removal of debugging info 
+
+	* src/gap4/gap.tcl:
+	(10:39:19) Update the v4.11 
+
+	* src/pregap4/gui.tcl:
+	(10:40:00) Update to v1.6 
+
+2006-07-05  jkbonfield  <jkbonfield>
+
+	* doc/manual/hash_tar.1.texi:
+	(10:17:56) Fixed missing @end example. 
+
+2006-07-04  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(13:43:28) Added mfcreate_from(). It has a usage syntax identical
+	to mfreopen(), but unlike mfreopen() it doesn't do anything with
+	the file pointer (neither closing ie or remembering it in the
+	structure). 
+
+	* doc/manual/extract_fastq.1.texi,
+	* doc/manual/extract_seq.1.texi,
+	* doc/manual/hash_exp.1.texi,
+	* doc/manual/hash_extract.1.texi:
+	* doc/manual/hash_list.1.texi,
+	* doc/manual/hash_tar.1.texi:
+	(16:14:58) New man pages for various hash-archive based io_lib
+	tools 
+
+	* doc/manual/complement-t.texi:
+	(16:15:58) Band size for shuffle pads 
+
+	* doc/manual/configure-t.texi:
+	(16:16:25) RAWDATA bits. 
+
+	* doc/manual/contig_editor-t.texi:
+	(16:16:48) The "<" and ">" align buttons in the join editor. 
+
+	* doc/manual/contig_navigation-t.texi:
+	(16:17:04) Mention page up/down keybindings. 
+
+	* doc/manual/fij-t.texi:
+	(16:17:25) Change in scoring function for FIJ 
+
+	* doc/manual/manpages-t.texi:
+	(16:17:37) *** empty log message *** 
+
+	* doc/manual/template-t.texi:
+	(16:18:05) SNP Candidates and correlation offset entrybox. 
+
+	* doc/manual/man/man1/extract_seq.1:
+	(16:18:33) *** empty log message *** 
+
+	* src/io_lib/progs/extract_fastq.c:
+	(16:19:30) Pathname hacking and listed -ztr on command line. 
+
+	* doc/manual/snp_candidates1.unix.png,
+	* doc/manual/snp_candidates2.unix.png:
+	(16:19:39) *** empty log message *** 
+
+	* src/io_lib/progs/extract_seq.c,
+	* src/io_lib/progs/makeSCF.c:
+	(16:20:17) Added -ztr as a command line option. 
+
+	* src/io_lib/progs/hash_exp.c:
+	(16:21:14) Hash_exp now outputs to the same file containing the
+	experiment files (in appended hash-table mode). 
+
+	* src/io_lib/progs/hash_extract.c:
+	(16:21:53) Bug fix: now only needs at least 1 filename specified
+	when fofn mode is not in use. 
+
+	* src/io_lib/progs/hash_list.c:
+	(16:22:40) error detection and protection 
+
+2006-06-30  jkbonfield  <jkbonfield>
+
+	* doc/ReleaseNotes:
+	(09:20:34) Preparation for 1.7.0 
+
+	* src/gap4/tk-io-reg.c:
+	(09:22:23) reg_get_arg() now returns "" instead of NULL in error
+	case, which means all the code which never bothers to check the
+	return code now gracefully brushes past any problems. (Not ideal I
+	know...) 
+
+	* src/spin/sip_sendto.tcl:
+	(09:23:20) Updated to work with Spin calls instead of Sip calls.
+	It's not being used, but in testing with Gap4 (temporarily
+	reenabled) it's now working again. 
+
+	* src/spin2_emboss/emboss_utils.tcl,
+	* src/spin_emboss/emboss_utils.tcl:
+	(09:24:14) Newer embossdata expect something on stdin, so we give
+	it some. This fixes a hang when starting spin. 
+
+	* tables/gaprc:
+	(09:24:48) Nip/Sip -> Spin (A change in commented out code only.) 
+
+	* src/windows/wix/banner.bmp:
+	* src/windows/wix/new.bmp,
+	* src/windows/wix/splash.bmp:
+	(10:53:37) Marked as binary 
+
+2006-06-28  jkbonfield  <jkbonfield>
+
+	* src/gap4/shuffle_pads.c:
+	(12:14:58) Fixed a bug when aligning sequences containing "."
+	characters. 
+
+	* mklinks:
+	(15:51:59) Added lib/haplo 
+
+2006-06-28  awhitwham  <awhitwham>
+
+	* src/Makefile.thirdparty:
+	(08:18:10) Added opteron and itanium support 
+
+	* mklinks:
+	(08:46:01) Added new binary links and fixed gap4 link name 
+
+2006-06-27  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/mFILE.c:
+	(11:16:21) Bug fix to the previous change: mstdin(), mstdout() and
+	mstderr() now correctly mark their streams and read and write
+	capable. 
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(15:48:15) Added mfdetach() to allow the file pointer to be closed
+	without deallocating the mFILE structure.
+	
+	Also removed the mFILE->fname component and replaced uses with
+	checks to mode & MF_WRITE. 
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(15:58:52) Corrected duff spelling! 
+
+2006-06-26  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/mFILE.c,
+	* src/io_lib/utils/mFILE.h:
+	(16:47:30) Fixed a bug in mfflush whereby it could attempt to write
+	HUGE amounts of data (-ve size) when files are truncated before
+	flushing; it now fseeks before doing the write and checks if the
+	size is +ve.
+	
+	Also fixed mfwrite to correctly reset the flush_pos record.
+	
+	Added a mode field to the mFILE structure so we can keep track of
+	append and read-only flags. These are checked for in the mfwrite
+	function so mfwrite now writes to the correct location when append
+	mode is used (ie forced to the end of file) and it now returns 0
+	when attempting to write to a read-only mFILE. 
+
+2006-06-20  awhitwham  <awhitwham>
+
+	* src/io_lib/utils/open_trace_file.c:
+	(11:37:24) Changed to open trace files as read only 
+
+	* src/io_lib/configure.in:
+	(13:42:57) Updated to version 1.10.1 
+
+2006-06-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib.m4:
+	(10:58:46) First working(?) version; testing on the Internal Trace
+	Server. 
+
+	* src/io_lib/io_lib.m4:
+	(11:18:39) bug fix IO_LIB_CPPFLAGS & IO_LIB_LDFLAGS initialisation" 
+
+	* src/io_lib/Makefile.am:
+	(11:25:57) Added io_lib-config to install scripts 
+
+	* src/io_lib/progs/Makefile.am:
+	(11:26:28) Added LIBCURL flags 
+
+	* src/io_lib/read/Makefile.am:
+	(11:26:54) Added LIBCURL_CPPFLAGS usage. 
+
+	* src/io_lib/CHANGES:
+	(15:40:12) *** empty log message *** 
+
+	* src/io_lib/progs/Makefile.am:
+	(15:40:28) Added ztr_dump to the list of progs. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(15:41:05) Support for log2 format. 
+
+	* src/io_lib/ztr/compression.c,
+	* src/io_lib/ztr/compression.h,
+	* src/io_lib/ztr/ztr.c:
+	* src/io_lib/ztr/ztr.h:
+	(15:42:06) Added a ZTR_FORM_LOG2 compression technique. It's an
+	experimental lossy compression and is turned off right now; the
+	space saving was only about 10% and if we go lossy I want big
+	changes not small ones. 
+
+	* src/io_lib/README:
+	(15:43:46) *** empty log message *** 
+
+2006-06-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/convert_trace.c:
+	(08:53:43) Added a -error option to request stderr goes to a file
+	instead of stderr. (from Saul Kravitz) 
+
+	* src/io_lib/scf/misc_scf.c,
+	* src/io_lib/scf/read_scf.c,
+	* src/io_lib/scf/write_scf.c:
+	(08:58:12) Renamed delta_samples[12] to be scf_delta_samples[12].
+	(patch supplied by Saul Kravitz) 
+
+	* src/io_lib/scf/scf.h:
+	(08:58:29) Renamed delta_samples[12] to be scf_delta_samples[12].
+	(patch supplied by Saul Kravitz) 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(08:58:55) Comment update 
+
+	* src/mk/linux-x86_64.mk:
+	(10:57:07) Config for AMD Opterons 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(16:28:28) Renamed USE_LIBCURL to be HAVE_LIBCURL to make it
+	compatible with autoconf. 
+
+	* src/io_lib/Makefile:
+	(16:28:29) Renamed USE_LIBCURL to be HAVE_LIBCURL to make it
+	compatible with autoconf. 
+
+	* src/io_lib/bootstrap:
+	(16:28:56) Added removal of io_lib-config 
+
+	* src/io_lib/acinclude.m4,
+	* src/io_lib/configure.in:
+	(16:29:55) Added libcurl checking code (in acinclude.m4). 
+
+	* src/io_lib/io_lib-config.in:
+	(16:31:18) New io_lib-config program to query the compile and link
+	parameters needed when using io_lib. 
+
+	* src/io_lib/io_lib.m4:
+	(16:46:32) Initial draft (unchecked) of autoconf macros for use by
+	packages (in configure.in) that want to make use of io_lib. 
+
 2006-06-13  jkbonfield  <jkbonfield>
 
 	* staden.login,
