@@ -38,9 +38,13 @@ HashFile *build_index(FILE *fp) {
 
 	    /* Remember this ID line for when we meet the next */
 	    if (c) {
-		char *nl = strchr(c, '\n');
-		if (nl)
+		char *nl;
+		if ((nl = strchr(c, '\n')))
 		    *nl = 0;
+		if ((nl = strchr(c, '\r')))
+		    *nl = 0;
+
+		printf("rname='%s'\n", c+5);
 
 		strcpy(rname, c+5);
 	    }
