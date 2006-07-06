@@ -44,8 +44,6 @@ HashFile *build_index(FILE *fp) {
 		if ((nl = strchr(c, '\r')))
 		    *nl = 0;
 
-		printf("rname='%s'\n", c+5);
-
 		strcpy(rname, c+5);
 	    }
 
