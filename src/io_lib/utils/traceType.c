@@ -190,6 +190,8 @@ int trace_type_str2int(char *str) {
 	return TT_EXP;
     else if (strcmp(str, "BIO") == 0 || strcmp(str, "bio") == 0)
         return TT_BIO;
+    else if (strcmp(str, "ANYTR") == 0 || strcmp(str, "anytr") == 0)
+        return TT_ANYTR;
     else
 	return TT_UNK;
 }
@@ -213,6 +215,7 @@ char *trace_type_int2str(int type) {
     case TT_PLN: t = "PLN"; break;
     case TT_EXP: t = "EXP"; break;
     case TT_BIO: t = "BIO"; break;
+    case TT_ANYTR: t="ANYTR"; break;
     default:
     case TT_UNK: t = "UNK"; break;
     }
