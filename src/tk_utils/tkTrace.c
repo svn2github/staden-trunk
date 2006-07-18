@@ -441,7 +441,7 @@ static int TraceWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	nativepath = Tcl_UtfToExternalDString(NULL, argv[2], -1, &dstr);
 
 	if (-1 == trace_load(tracePtr, (char *)nativepath,
-			     argc == 4 ? argv[3] : "")) {
+			     argc == 4 ? argv[3] : "anytr")) {
 	    Tcl_AppendResult(interp, "Failed to load trace", NULL);
 
 	    Tcl_DStringFree(&dstr);
