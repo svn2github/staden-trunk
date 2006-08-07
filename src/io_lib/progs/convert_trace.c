@@ -9,7 +9,7 @@
 #include "seqIOABI.h"
 #include "open_trace_file.h"
 
-static char const rcsid[] = "$Id: convert_trace.c,v 1.8 2006-06-14 08:53:43 jkbonfield Exp $";
+static char const rcsid[] = "$Id: convert_trace.c,v 1.9 2006-08-07 14:12:39 jkbonfield Exp $";
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -28,7 +28,97 @@ struct opts {
     int min_normalise;
     int compress_mode;
     int dots;
+    int noneg;
+    int signed_trace;
 };
+
+/*
+ * Removes any negative values from a trace by moving each channel
+ * independently so that its lowest value is 0.
+ */
+void noneg(Read *r) {
+    int i, j, k;
+    signed int min;
+    TRACE *t;
+
+    /* Find the real end of the data */
+    for (k = r->NPoints-1; k >= 0; k--)
+	if (r->traceA[k] ||
+	    r->traceC[k] ||
+	    r->traceG[k] ||
+	    r->traceT[k])
+	    break;
+
+    for (j = 0; j < 4; j++) {
+	switch(j) {
+	case 0:
+	    t = r->traceA;
+	    break;
+	case 1:
+	    t = r->traceC;
+	    break;
+	case 2:
+	    t = r->traceG;
+	    break;
+	case 3:
+	    t = r->traceT;
+	    break;
+	}
+
+	/* Find the lowest -ve value per lane */
+	for (min = i = 0; i <= k; i++) {
+	    if (min > ((int16_t *)t)[i])
+		min = ((int16_t *)t)[i];
+	}
+
+	/* And shift everything back up */
+	for (i = 0; i <= k; i++) {
+	    t[i] -= min;
+	}
+    }
+}
+
+
+/*
+ * Removes any negative values from a trace by moving the trace up so that
+ * the lowest overall value is 0. This differs to noneg above by using
+ * a global shift for all channels and also setting the read 'baseline'.
+ */
+void signed_trace(Read *r) {
+    int i, j, k;
+    signed int min;
+    TRACE *t;
+
+    /* Find the real end of the data */
+    for (k = r->NPoints-1; k >= 0; k--)
+	if (r->traceA[k] ||
+	    r->traceC[k] ||
+	    r->traceG[k] ||
+	    r->traceT[k])
+	    break;
+
+    /* Find the lowest -ve value per lane */
+    for (min = i = 0; i <= k; i++) {
+	if (min > ((int16_t *)(r->traceA))[i])
+	    min = ((int16_t *)(r->traceA))[i];
+	if (min > ((int16_t *)(r->traceC))[i])
+	    min = ((int16_t *)(r->traceC))[i];
+	if (min > ((int16_t *)(r->traceG))[i])
+	    min = ((int16_t *)(r->traceG))[i];
+	if (min > ((int16_t *)(r->traceT))[i])
+	    min = ((int16_t *)(r->traceT))[i];
+    }
+
+    r->baseline = -min;
+
+    /* And shift everything back up */
+    for (i = 0; i <= k; i++) {
+	r->traceA[i] -= min;
+	r->traceC[i] -= min;
+	r->traceG[i] -= min;
+	r->traceT[i] -= min;
+    }
+}
 
 /*
  * Scales trace values from 0 to scale, but only if they are larger.
@@ -308,6 +398,12 @@ int convert(mFILE *infp, mFILE *outfp, char *infname, char *outfname,
 	return 1;
     }
 
+    if (opts->noneg)
+	noneg(r);
+
+    if (opts->signed_trace)
+	signed_trace(r);
+
     if (opts->subtract) {
 	int i;
 	for (i = 0; i < r->NPoints; i++) {
@@ -369,21 +465,23 @@ void usage(void) {
     puts("Usage: convert_trace [options] [informat outformat] < in > out");
     puts("Or     convert_trace [options] -fofn file_of_filenames");
     puts("\nOptions are:");
-    puts("\t-in_format format         Format for input (defaults to any");
-    puts("\t-out_format format        Format for output (default ztr)");
-    puts("\t-fofn file_of_filenames   Get \"Input Output\" names from a fofn");
-    puts("\t-passed fofn              Output fofn of passed names");  
-    puts("\t-error errorfn            Redirect stderr to file stderrfn (default is stderr)");
-    puts("\t-failed fofn              Output fofn of failed names");  
-    puts("\t-name id                  ID line for experiment file output");
-    puts("\t-subtract_background      Auto-subtracts the trace background");
-    puts("\t-subtract amount          Subtracts a specified background amount");
-    puts("\t-normalise                Normalises peak heights");
-    puts("\t-min_normalise            Minimum trace amp for normalising");
-    puts("\t-scale range              Downscales peaks to 0-range");
-    puts("\t-compress mode            Compress file output (not if stdout)");
-    puts("\t-abi_data counts	      ABI DATA lanes to copy: eg 9,10,11,12");
-    puts("\t--                        Explicitly state end of options");
+    puts("    -in_format format         Format for input (defaults to any");
+    puts("    -out_format format        Format for output (default ztr)");
+    puts("    -fofn file_of_filenames   Get \"Input Output\" names from a fofn");
+    puts("    -passed fofn              Output fofn of passed names");  
+    puts("    -error errs               Redirect stderr to file \"errs\"");
+    puts("    -failed fofn              Output fofn of failed names");  
+    puts("    -name id                  ID line for experiment file output");
+    puts("    -subtract_background      Auto-subtracts the trace background");
+    puts("    -subtract amount          Subtracts a specified background amount");
+    puts("    -normalise                Normalises peak heights");
+    puts("    -min_normalise            Minimum trace amp for normalising");
+    puts("    -scale range              Downscales peaks to 0-range");
+    puts("    -compress mode            Compress file output (not if stdout)");
+    puts("    -abi_data counts          ABI DATA lanes to copy: eg 9,10,11,12");
+    puts("    -signed                   Apply global shift to avoid negative values");
+    puts("    -noneg                    Shift each channel independently to avoid -ve");
+    puts("    --                        Explicitly state end of options");
     exit(1);
 }
 
@@ -400,6 +498,8 @@ int main(int argc, char **argv) {
     opts.name = NULL;
     opts.compress_mode = -1;
     opts.dots = 0;
+    opts.noneg = 0;
+    opts.signed_trace = 0;
     opts.fofn = NULL;
     opts.passed = NULL;
     opts.failed = NULL;
@@ -445,6 +545,12 @@ int main(int argc, char **argv) {
 
 	} else if (strcmp(*argv, "-dots") == 0) {
 	    opts.dots = 1;
+
+	} else if (strcmp(*argv, "-noneg") == 0) {
+	    opts.noneg = 1;
+
+	} else if (strcmp(*argv, "-signed") == 0) {
+	    opts.signed_trace = 1;
 
 	} else if (strcmp(*argv, "-in_format") == 0) {
 	    argv++;
