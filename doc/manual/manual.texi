@@ -24,10 +24,6 @@ include(header.m4)
 @page
 @vskip 0pt plus 1filll
 _include(copyright.texi)
-Permission is given to duplicate this manual in both paper and electronic
-forms. If you wish to charge more than the duplication costs, or wish to make
-edits to the manual, please contact the authors by email to
-@code{staden-package@@mrc-lmb.cam.ac.uk}.
 @end titlepage
 
 @node Top
