@@ -13,7 +13,7 @@
 #
 #echo 'Setting up the Staden software environment...'
 
-setenv STADENROOT_1_6 "$STADENROOT"
+setenv STADENROOT_1_7 "$STADENROOT"
 
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux.
