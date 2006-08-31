@@ -13,8 +13,8 @@
 #
 #echo 'Setting up the Staden software environment...'
 
-STADENROOT_1_6=$STADENROOT
-export STADENROOT_1_6
+STADENROOT_1_7=$STADENROOT
+export STADENROOT_1_7
 
 #
 # set MACHINE to one of alpha/sun/solaris/sgi/linux/macosx.
@@ -74,7 +74,11 @@ export TCL_LIBRARY TK_LIBRARY
 #
 # Not explicitly needed - defaults to $STADTABL/GTAGDB
 #
-GTAGDB="GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB";	export GTAGDB
+if [ "$GTAGDB" = "" ]
+then
+    GTAGDB="GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB";
+fi
+export GTAGDB
 
 #
 # Find manual pages
