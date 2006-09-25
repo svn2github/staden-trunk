@@ -152,16 +152,17 @@ Exp_info *exp_read_staden_info(mFILE *fp, char *filename)
 	    lineno++;
 	    if (lineno == 1) {
 		int pos, ret;
+		char *cp;
 		/*
 		 * This maybe a fasta format file.
 		 */
 		if (line[0] == '>') {
-		    if (strchr(line, ' '))
-			*line = 0;
-		    if (strchr(line, '\t'))
-			*line = 0;
-		    if (strchr(line, '\n'))
-			*line = 0;
+		    if (cp = strchr(line, ' '))
+			*cp = 0;
+		    if (cp = strchr(line, '\t'))
+			*cp = 0;
+		    if (cp = strchr(line, '\n'))
+			*cp = 0;
 		    exp_set_entry(e, EFLT_ID, strdup(line+1));
 		    exp_set_entry(e, EFLT_EN, strdup(line+1));
 		    continue;
