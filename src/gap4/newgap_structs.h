@@ -593,4 +593,11 @@ typedef struct {
 } biolims_io_arg;
 #endif
 
+typedef struct {
+    GapIO *io;
+    char *inlist;
+    float score;
+    int by_consensus;
+} abreak_arg;
+
 #endif /* _NEWGAP_STRUCTS_H */

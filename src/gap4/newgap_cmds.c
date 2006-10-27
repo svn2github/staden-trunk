@@ -73,6 +73,7 @@
 #include "reading_coverage.h"
 #include "strand_coverage.h"
 #include "shuffle_pads.h"
+#include "auto_break.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -5042,6 +5043,60 @@ int tcl_shuffle_pads(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int tcl_auto_break(ClientData clientData, Tcl_Interp *interp,
+		   int objc, Tcl_Obj *CONST objv[])
+{
+    abreak_arg args;
+    cli_args a[] = {
+	{"-io",	     ARG_IO,    1, NULL,  offsetof(abreak_arg, io)},
+	{"-contigs", ARG_STR,   1, NULL,  offsetof(abreak_arg, inlist)},
+	{"-score",   ARG_FLOAT, 1, "2.0", offsetof(abreak_arg, score)},
+	{"-by_consensus", ARG_INT,1, "1", offsetof(abreak_arg, by_consensus)},
+	{NULL,	     0,	      0, NULL, 0}
+    };
+    int rargc;
+    contig_list_t *rargv;
+    dstring_t *ds;
+    
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    vfuncheader("Auto-break");
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    ds = auto_break_contigs(args.io, rargc, rargv, args.score,
+			    args.by_consensus);
+
+    xfree(rargv);
+    if (NULL != ds) {
+	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	dstring_destroy(ds);
+    }
+
+    return TCL_OK;
+}
+
+int
+tcl_template_stats(ClientData clientData, Tcl_Interp *interp,
+		   int objc, Tcl_Obj *CONST objv[])
+{
+    io_arg args;
+    cli_args a[] = {
+	{"-io",	  ARG_IO,  1, NULL, offsetof(io_arg, io)},
+	{NULL,	  0,	   0, NULL, 0}
+    };
+    int valid, invalid;
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    template_stats(args.io, &valid, &invalid);
+
+    vTcl_SetResult(interp, "%d %d", valid, invalid);
+
+    return TCL_OK;
+}
+
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -5438,6 +5493,10 @@ NewGap_Init(Tcl_Interp *interp) {
 			 tcl_set_db_bitsize, (ClientData)NULL, NULL);
     Tcl_CreateObjCommand(interp, "shuffle_pads", tcl_shuffle_pads,
 			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "auto_break", tcl_auto_break,
+			 (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "template_stats", tcl_template_stats,
+			 (ClientData)NULL, NULL);
 
     return TCL_OK;
 
