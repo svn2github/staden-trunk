@@ -22,7 +22,6 @@
 #include "IO2.h"
 #include "xalloc.h"
 #include "io_handle.h"
-#include "io-reg.h"
 #include "active_tags.h"
 #include "gap_globals.h"
 #include "notes.h"
@@ -1137,8 +1136,7 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 
 		/* Find edstruct and check if it's a join editor */
 		for (x = 0; x < MAX_DISP_PROCS; x++) {
-		    if ((void *)_DBI_dispFunc(db)[x] ==
-			(void *)db_callback_tk) {
+		    if (_DBI_dispFunc(db)[x] == db_callback_tk) {
 		        EdStruct *xx = (EdStruct *)(_DBI_dispData(db)[x]);
 			if (xx->link &&
 			    (DBI_edits_made(xx->link->xx[0]) ||
@@ -1188,8 +1186,7 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		 * is not saved, then we also clear the write lock.
 		 */
 		for (x = 0; x < MAX_DISP_PROCS; x++) {
-		    if ((void *)_DBI_dispFunc(db)[x] ==
-			(void *)db_callback_tk) {
+		    if (_DBI_dispFunc(db)[x] == db_callback_tk) {
 		        EdStruct *xx = (EdStruct *)(_DBI_dispData(db)[x]);
 			if (xx->link &&
 			    (DBI_edits_made(xx->link->xx[0]) ||
@@ -1262,10 +1259,10 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		/* Find edstruct */
 		EdStruct *xx = NULL;
 		int x;
+		task_editor_getcon *tc;
 
 		for (x = 0; x < MAX_DISP_PROCS; x++) {
-		    if ((void *)_DBI_dispFunc(db)[x] ==
-			(void *)db_callback_tk) {
+		    if (_DBI_dispFunc(db)[x] == db_callback_tk) {
 		        xx = (EdStruct *)(_DBI_dispData(db)[x]);
 			break;
 		    }
@@ -1279,8 +1276,7 @@ void DBi_reg(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		 * and rreg. (If lreg and rreg are both 0 then this is all
 		 * of the contig.)
 		 */
-		task_editor_getcon *tc =
-		    (task_editor_getcon *)jdata->generic.data;
+		tc = (task_editor_getcon *)jdata->generic.data;
 
 		if (!tc->lreg && !tc->rreg) {
 		    tc->lreg = 1;
