@@ -173,4 +173,21 @@ int template_covered(GapIO *io, template_c *t, int c,
 void template_check_set_flags(GapIO *io, template_c **tarr,
 			      int set, int clr);
 
+/*
+ * Checks a single template_c structure for consistency.
+ *
+ * Returns the new consistency value (-1 for error).
+ */
+int check_template_c(GapIO *io, template_c *t);
+
+
+/* Debug output */
+void dump_template(template_c *t);
+
+/*
+ * Displays some basic template reliability statistics.
+ * Returns the count of valid and invalid templates in validp/invalidp
+ */
+void template_stats(GapIO *io, int *validp, int *invalidp);
+
 #endif /* _TEMPLATE_H */
