@@ -599,7 +599,7 @@ proc new_trace_create2 {w e title allow_diff} {
     $tf_l.xmag.s set [keylget dt XMAG]
     frame $tf_l.ymag
     label $tf_l.ymag.l -text "Y"
-    scale $tf_l.ymag.s -from 10 -to 100 -showvalue 0 \
+    scale $tf_l.ymag.s -from 10 -to 500 -showvalue 0 \
 	-command "trace_yscale $tf_r.trace"
     $tf_l.ymag.s set $ymag
     if {[set $w.Trace_Compact_Mode]} {
