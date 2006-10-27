@@ -413,11 +413,14 @@ int PlotTempMatches(GapIO *io, template_c **tarr) {
 
 		contig_tmp = gc->contig;
 		gc->contig = -gc->contig;
+
+#ifndef SHOW_INTERNAL_RP
 		for (it = item->next; it; it = it->next) {
 		    gc = (gel_cont_t *)(item->data);
 		    if (gc->contig == contig_tmp)
 			gc->contig = -gc->contig;
 		}
+#endif
 
 		/*
 		 * check that count is less than Ncontigs
@@ -453,9 +456,11 @@ int PlotTempMatches(GapIO *io, template_c **tarr) {
 		     * check that individual pairs of contigs are in different
 		     * contigs
 		     */
+#ifndef SHOW_INTERNAL_RP
 		    if (contig[j] == contig[k]) {
 			continue;
 		    }
+#endif
 		    matches[n_matches].func =
 			(void *(*)(int, void *, struct obj_match_t *,
 				   struct mobj_repeat_t *))readpair_obj_func;
@@ -678,7 +683,9 @@ int find_read_pairs(GapIO *io, int num_contigs, int *contig_array) {
     do_report(io, tarr, order);
 
     /* Find only those templates spanning multiple contigs and plot them. */
+#ifndef SHOW_INTERNAL_RP
     contig_spanning_templates(io, tarr);
+#endif
     PlotTempMatches(io, tarr);
 
     /* Tidy up */
