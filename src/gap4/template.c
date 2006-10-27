@@ -6,6 +6,17 @@
 #include "gap_globals.h"
 
 /*
+ * As our libraries are typically made from running out on a gel and cutting
+ * a band to match the desired insert size, small fragments have passed
+ * through the band already and large fragments haven't got to that point.
+ * This means we can end up with a significant population of much smaller 
+ * fragments still as they may have simply got stuck during the gel
+ * migration. This define disables the check for templates being too small
+ * except for -ve size.
+ */
+#define TOO_SMALL_IS_OK
+
+/*
  * Lookup tables to calculate the primer and strand values. We have two
  * primer tables, one where we always make a best guess and never return
  * UNKNOWN.
@@ -299,20 +310,30 @@ static void check_template_strand(GapIO *io, template_c *t) {
 
 	    gel_read(io, gc->read, r);
 	    
-	    sense = r.sense == GAP_SENSE_ORIGINAL ? 0 : 1;
-	    strand = (PRIMER_TYPE_GUESS(r) == GAP_PRIMER_FORWARD ||
-		      PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR) ? 0 : 1;
+	    if (t->oflags & TEMP_OFLAG_IGNORE_PTYPE) {
+		/* IGNORE_PTYPE => all + reads are fwd and
+		 * all - reads are rev
+		 */
+		if (r.sense == GAP_SENSE_ORIGINAL)
+		    dir_plus++;
+		else
+		    dir_minus++;
+	    } else {
+		sense = r.sense == GAP_SENSE_ORIGINAL ? 0 : 1;
+		strand = (PRIMER_TYPE_GUESS(r) == GAP_PRIMER_FORWARD ||
+			  PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR) ? 0 : 1;
 
-	    /* Skip checks if TEMP_OFLAG_IGNORE_PTYPE34 is set */
-	    if (t->oflags & TEMP_OFLAG_IGNORE_PTYPE34 &&
-		(PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR ||
-		 PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTREV))
-		continue;
+		/* Skip checks if TEMP_OFLAG_IGNORE_PTYPE34 is set */
+		if (t->oflags & TEMP_OFLAG_IGNORE_PTYPE34 &&
+		    (PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTFOR ||
+		     PRIMER_TYPE_GUESS(r) == GAP_PRIMER_CUSTREV))
+		    continue;
 	    
-	    if (sense == strand)
-		dir_plus++;
-	    else
-		dir_minus++;
+		if (sense == strand)
+		    dir_plus++;
+		else
+		    dir_minus++;
+	    }
 
 	    gc->contig = -gc->contig;
 	}
@@ -572,7 +593,10 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	case GAP_PRIMER_CUSTFOR:
 	    orient = r.sense == GAP_SENSE_ORIGINAL ? 1 : -1;
 	    found_for = 1;
-	    if (temp_start != UNKNOWN_POS && st != UNKNOWN_POS) {
+	    if (temp_start == UNKNOWN_POS && tag_start) {
+		temp_start = st;
+		t->flags |= TEMP_FLAG_VEC_START;
+	    } else if (temp_start != UNKNOWN_POS && st != UNKNOWN_POS) {
 		/* Already exists - is custom leftwards of univeral? */
 		if (r.sense == GAP_SENSE_ORIGINAL) {
 		    if (st + standard_primer_tol < temp_start)
@@ -629,7 +653,10 @@ static int get_template_positions2(GapIO *io, template_c *t, int contig,
 	case GAP_PRIMER_CUSTREV:
 	    orient = r.sense == GAP_SENSE_REVERSE ? 1 : -1;
 	    found_rev = 1;
-	    if (temp_end != UNKNOWN_POS && end != UNKNOWN_POS) {
+	    if (temp_end == UNKNOWN_POS && tag_end) {
+		temp_end = end;
+		t->flags |= TEMP_FLAG_VEC_END;
+	    } else if (temp_end != UNKNOWN_POS && end != UNKNOWN_POS) {
 		/* Already exists - is custom rightwards of universal? */
 		if (r.sense == GAP_SENSE_REVERSE) {
 		    if (end - standard_primer_tol > temp_end)
@@ -819,11 +846,18 @@ static void check_template_position(GapIO *io, template_c *t) {
 	 * Check the primer size is within range.
 	 */
 	template_read(io, t->num, te);
+#ifdef TOO_SMALL_IS_OK
+	if ((ABS(t->end - t->start) < 1) ||
+	    (ABS(t->end - t->start) >
+	         te.insert_length_max * template_size_tolerance))
+	    t->consistency |= TEMP_CONSIST_DIST;
+#else
 	if ((ABS(t->end - t->start) <
 	         te.insert_length_min / template_size_tolerance) ||
 	    (ABS(t->end - t->start) >
 	         te.insert_length_max * template_size_tolerance))
 	    t->consistency |= TEMP_CONSIST_DIST;
+#endif
 	
 	if (t->max - t->min > te.insert_length_max * template_size_tolerance)
 	    t->consistency |= TEMP_CONSIST_DIST;
@@ -923,8 +957,13 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
     if (t->computed_length > te.insert_length_max * template_size_tolerance)
 	t->consistency |= TEMP_CONSIST_DIST;
 
+#ifdef TOO_SMALL_IS_OK
+    if (t->computed_length < 1)
+	t->consistency |= TEMP_CONSIST_DIST;
+#else
     if (t->computed_length < te.insert_length_min / template_size_tolerance)
 	t->consistency |= TEMP_CONSIST_DIST;
+#endif
 
     if (!(t->flags & TEMP_FLAG_SPANNING) ||
 	(t->oflags & TEMP_OFLAG_INTERDIST) == 0)
@@ -940,10 +979,27 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
     for (item = head(t->gel_cont); item; item = item->next) {
 	gel_cont_t *gc = (gel_cont_t *)item->data;
 	int tmp_distf, tmp_distr;
+	GContigs c;
 
 	if (!c1)
 	    c1 = gc->contig;
 	else if (gc->contig == c1)
+	    continue;
+
+	/*
+	 * Allow for possible contig containment, where one contig is
+	 * tiny and is contained entirely within the other contig.
+	 * This represents an undetected join, but this does often
+	 * happen when the contig is basically a set of junk basecalls
+	 * from a single reading.  We simplify things here by only
+	 * bothering to check distances when a contig contains > 1
+	 * reading and is longer than 2kb.
+	 */
+	contig_read(io, gc->contig, c);
+	if (c.left == c.right || c.length < 2000)
+	    continue;
+	contig_read(io, c1, c);
+	if (c.left == c.right || c.length < 2000)
 	    continue;
 
 	gel_read(io, gc->read, r);
@@ -959,6 +1015,10 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 		? r.position + r.sequence_length - 1
 		: io_clength(io, gc->contig) - r.position + 1;
 	    distf = MAX(distf, tmp_distf);
+	    if (distf > io_clength(io, gc->contig))
+		distf = io_clength(io, gc->contig);
+	    if (distf > io_clength(io, c1))
+		distf = io_clength(io, c1);
 	    break;
 
 	case GAP_PRIMER_REVERSE:
@@ -968,6 +1028,10 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 		? r.position + r.sequence_length - 1
 		: io_clength(io, gc->contig) - r.position + 1;
 	    distr = MAX(distr, tmp_distr);
+	    if (distr > io_clength(io, gc->contig))
+		distr = io_clength(io, gc->contig);
+	    if (distr > io_clength(io, c1))
+		distr = io_clength(io, c1);
 	}
     }
 
@@ -980,10 +1044,12 @@ void check_template_length(GapIO *io, template_c *t, int overlap) {
 	if (length > te.insert_length_max * template_size_tolerance) {
 	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
+#ifndef TOO_SMALL_IS_OK
 	if (overlap > 0 &&
 	    length < te.insert_length_min / template_size_tolerance) {
 	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
+#endif
     }
 }
 
@@ -1046,10 +1112,16 @@ void check_template_length_overlap(GapIO *io, template_c *t,
 
 	template_read(io, t->num, te);
 	t->computed_length = length;
+#ifdef TOO_SMALL_IS_OK
+	if (length > te.insert_length_max * template_size_tolerance) {
+	    t->consistency |= TEMP_CONSIST_INTERDIST;
+	}
+#else
 	if (length > te.insert_length_max * template_size_tolerance ||
 	    length < te.insert_length_min / template_size_tolerance) {
 	    t->consistency |= TEMP_CONSIST_INTERDIST;
 	}
+#endif
     }
 
     /*
@@ -1126,7 +1198,7 @@ int check_template_c(GapIO *io, template_c *t) {
     t->consistency = 0;
     check_template_strand(io, t);
     check_template_position(io, t);
-    check_template_length(io, t, 0);
+    check_template_length(io, t, 100);
     score_template(io, t);
 
     return t->consistency;
@@ -1257,9 +1329,9 @@ int sort_template_func(const void *vi, const void *vj) {
 void dump_template(template_c *t) {
     item_t *it;
 
-    printf("%3d: %04d-%04d, %04d-%04d, 0x%02x, 0x%x:", 
+    printf("%3d: %04d-%04d, %04d-%04d, 0x%02x, 0x%x, %+05d, %4.3f:", 
 	   t->num, t->start, t->end, t->min, t->max,
-	   t->consistency, t->flags);
+	   t->consistency, t->flags, t->computed_length, t->score);
     
     for (it = head(t->gel_cont); it; it=it->next) {
 	gel_cont_t *gc = (gel_cont_t *)(it->data);
@@ -1331,20 +1403,72 @@ int template_covered(GapIO *io, template_c *t, int c,
 
 	gel_read(io, gc->read, r);
 
+	/* all */
 	if (r.position <= range_start &&
 	    r.position + r.sequence_length >= range_end) {
-	    covered = range_end - range_start + 1; /* all */
+	    covered = range_end - range_start + 1;
 	    break;
 	}
 
+	/* contained within */
+	if (r.position <= range_end &&
+	    r.position + r.sequence_length >= range_start) {
+	    covered += r.sequence_length;
+	    continue;
+	}
+
+	/* overlap start */
 	if (r.position <= range_start &&
 	    r.position + r.sequence_length >= range_start)
 	    covered += r.position + r.sequence_length - range_start + 1;
 
+	/* overlap end */
 	if (r.position <= range_end &&
 	    r.position + r.sequence_length >= range_end)
 	    covered += range_end - r.position + 1;
     }
 
     return covered;
+}
+
+/*
+ * Displays some basic template reliability statistics.
+ * Returns the count of valid and invalid templates in validp/invalidp
+ */
+void template_stats(GapIO *io, int *validp, int *invalidp) {
+    template_c **tarr;
+    int *cnums, i;
+    int valid, invalid;
+
+    cnums = (int *)xmalloc(NumContigs(io) * sizeof(int));
+    for (i = 1; i <= NumContigs(io); i++)
+	cnums[i-1] = i;
+    tarr = init_template_checks(io, NumContigs(io), cnums, 1);
+
+    for (i = 0; i <= Ntemplates(io); i++) {
+	if (!tarr[i])
+	    continue;
+
+	tarr[i]->oflags |= TEMP_OFLAG_IGNORE_PTYPE34 | TEMP_OFLAG_INTERDIST;
+    }
+
+    check_all_templates(io, tarr);
+
+    for (valid = invalid = i = 0; i <= Ntemplates(io); i++) {
+	if (!tarr[i])
+	    continue;
+
+	if (tarr[i]->consistency &~ TEMP_CONSIST_UNKNOWN)
+	    invalid++;
+	else
+	    valid++;
+    }
+
+    if (validp)
+	*validp = valid;
+    if (invalidp)
+	*invalidp = invalid;
+
+    uninit_template_checks(io, tarr);
+    xfree(cnums);
 }
