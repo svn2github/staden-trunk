@@ -34,7 +34,8 @@ OBJS = \
 	$(SEQUTILSBIN)/edge.o\
 	$(SEQUTILSBIN)/search_utils.o\
 	$(SEQUTILSBIN)/align_lib.o\
-	$(SEQUTILSBIN)/read_matrix.o
+	$(SEQUTILSBIN)/read_matrix.o\
+	$(SEQUTILSBIN)/filter_words.o
 
 
 SU_LIBS = \
