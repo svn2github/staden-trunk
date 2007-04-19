@@ -29,6 +29,10 @@
 /* 12/1/99 johnt - use stddef.h not sys/types.h for size_t */
 #include <stddef.h>		/* IMPORT: size_t */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     int size;			/* element size */
     int dim;			/* allocated number of elements */
@@ -81,5 +85,9 @@ extern int ArrayError;
 
 extern char *ArrayErrorString(int error);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_ARRAY_H_*/

@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This file will define many of the stdio functions to use the
  * in-memory versions here. These are sufficient to allow the abi,
@@ -62,5 +66,9 @@
 #define open_trace_file open_trace_mfile
 #define fread_reading mfread_reading
 #define fwrite_reading mfwrite_reading
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _STDIO_HACK_H_ */

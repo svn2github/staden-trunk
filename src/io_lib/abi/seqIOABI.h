@@ -18,6 +18,10 @@
 #include <sys/types.h> /* off_t */
 #include "os.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * The ABI magic number - "ABIF"
  */
@@ -143,5 +147,9 @@ void abi_set_data_counts(int f, int w, int o, int _);
  * Put the DATA counts back to their defaults.
  */
 void abi_reset_data_counts(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _seqIOABI_h_ */

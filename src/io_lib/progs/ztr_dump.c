@@ -25,6 +25,7 @@ static char *format2str(int format) {
     case ZTR_FORM_CHEB445: return "cheb445";
     case ZTR_FORM_ICHEB:   return "icheb";
     case ZTR_FORM_LOG2:    return "log2";
+    case ZTR_FORM_STHUFF:  return "sthuff";
     }
 
     sprintf(unk, "?%d?\n", format);
@@ -88,6 +89,10 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 
 	case ZTR_FORM_ZLIB:
 	    new_data = zlib_dehuff(chunk->data, chunk->dlength, &new_len);
+	    break;
+
+	case ZTR_FORM_STHUFF:
+	    new_data = decode_memory(chunk->data, chunk->dlength, &new_len);
 	    break;
 
 	case ZTR_FORM_DELTA1:

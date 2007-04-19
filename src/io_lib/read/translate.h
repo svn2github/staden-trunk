@@ -19,6 +19,10 @@
 #include "Read.h"
 #include "expFileIO.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Translates an Scf structure into a Read structure.
  * The Scf structure is left unchanged.
@@ -123,5 +127,9 @@ void read_update_confidence_values( int Ned, char* edBases, int1* edConf,
  *    NULLRead upon failure.
  */
 Read *exp2read(Exp_info *e, char *fn);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -44,6 +44,10 @@
 #include "scf.h"
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * The autoconf setup doesn't use options.mk as the Makefile is rebuilt.
  * I haven't worked out how to do the analogous via autoconf, so for now
@@ -262,5 +266,9 @@ int read_sections(int sec);
 
 #include "translate.h"
 #include "compress.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _Read_h_ */

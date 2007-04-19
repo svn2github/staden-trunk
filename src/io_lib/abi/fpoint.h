@@ -15,6 +15,14 @@
 #ifndef _fpoint_h
 #define _fpoint_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern float int_to_float(int in);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _fpoint_h */

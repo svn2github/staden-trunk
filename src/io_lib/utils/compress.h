@@ -19,6 +19,10 @@
 
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Compress a file using the method set in the compression_used value
  * (set by set_compression_method and fopen_compressed).
@@ -93,5 +97,9 @@ char *memgunzip(char *data, size_t size, size_t *udata_size);
  *         NULL on failure
  */
 char *pipe2(const char *command, char *input, size_t insize, size_t *outsize);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _COMPRESS_H */

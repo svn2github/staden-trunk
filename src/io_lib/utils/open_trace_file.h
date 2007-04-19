@@ -3,6 +3,10 @@
 
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Opens a trace file named 'file'. This is initially looked for as a
  * pathname relative to a file named "relative_to". This may (for
@@ -26,5 +30,9 @@ void  iolib_set_trace_path(char *path);
 char *iolib_get_trace_path(void);
 void  iolib_set_exp_path  (char *path);
 char *iolib_get_exp_path  (void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _OPEN_TRACE_FILE_H_ */

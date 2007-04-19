@@ -2,6 +2,12 @@
 #define _HASH_TABLE_H_
 
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* The data referenced by the hash table */
 typedef union {
@@ -84,7 +90,7 @@ typedef struct {
     FILE *afp;			/* archive FILE */
     char *archive;		/* archive filename */
     int header_size;		/* size of header + filename + N(head/feet) */
-    long hf_start;		/* location of HashFile header in file */
+    off_t hf_start;		/* location of HashFile header in file */
 } HashFile;
 
 /* Functions to to use HashTable.options */
@@ -110,7 +116,7 @@ HashTable *HashTableCreate(int size, int options);
 void HashTableDestroy(HashTable *h, int deallocate_date);
 int HashTableResize(HashTable *h, int newsize);
 HashItem *HashTableAdd(HashTable *h, char *key, int key_len,
-		       HashData data, int *new);
+		       HashData data, int *added);
 int HashTableDel(HashTable *h, HashItem *hi, int deallocate_data);
 int HashTableRemove(HashTable *h, char *key, int key_len, int deallocate_data);
 HashItem *HashTableSearch(HashTable *h, char *key, int key_len);
@@ -130,5 +136,9 @@ HashFile *HashFileCreate(int size, int options);
 void HashFileDestroy(HashFile *hf);
 HashFile *HashFileOpen(char *fname);
 HashFile *HashFileFopen(FILE *fp);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _HASH_TABLE_H_ */

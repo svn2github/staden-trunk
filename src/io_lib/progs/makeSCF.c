@@ -22,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <strings.h>
 #include "Read.h"
 #include "traceType.h"
 #include "xalloc.h"

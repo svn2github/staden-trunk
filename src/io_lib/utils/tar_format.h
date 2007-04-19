@@ -1,6 +1,10 @@
 #ifndef _TAR_FORMAT_H
 #define _TAR_FORMAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Our own tar block defines - we cannot rely on UNIX to provide these for us
  * as the sun tar.h is minimal and Alliant's does not even exist.
@@ -44,5 +48,9 @@ typedef union hblock {
 	char prefix[155];
     } header;
 } tar_block;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

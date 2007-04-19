@@ -15,7 +15,15 @@
 #ifndef _ERROR_H_
 #define _ERROR_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void error(char *fmt, ...);
 extern void errout(char *fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_GAP_ERROR_H_*/

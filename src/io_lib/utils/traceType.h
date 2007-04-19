@@ -34,6 +34,10 @@
 #include "Read.h"	/* IMPORT: TT_xxx defines */
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Determine the trace type for file 'fn'.
  *
@@ -72,5 +76,9 @@ extern int trace_type_str2int(char *str);
  */
 char *trace_type_int2str(int type);
 
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_traceType_h*/

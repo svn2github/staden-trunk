@@ -9,7 +9,7 @@
 #include "seqIOABI.h"
 #include "open_trace_file.h"
 
-static char const rcsid[] = "$Id: convert_trace.c,v 1.9 2006-08-07 14:12:39 jkbonfield Exp $";
+static char const rcsid[] = "$Id: convert_trace.c,v 1.10 2007-04-19 16:27:20 jkbonfield Exp $";
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -30,6 +30,9 @@ struct opts {
     int dots;
     int noneg;
     int signed_trace;
+    int skipx;
+    int start;
+    int end;
 };
 
 /*
@@ -85,9 +88,8 @@ void noneg(Read *r) {
  * a global shift for all channels and also setting the read 'baseline'.
  */
 void signed_trace(Read *r) {
-    int i, j, k;
+    int i, k;
     signed int min;
-    TRACE *t;
 
     /* Find the real end of the data */
     for (k = r->NPoints-1; k >= 0; k--)
@@ -388,6 +390,38 @@ void rescale_heights(Read *r, int min_marker) {
     r->maxTraceVal = mtv;
 }
 
+/* Removes every other sample as a crude way to reduce file size */
+void skipx(Read *r) {
+    int i, j;
+    for (i = j = 0; j < r->NPoints/2; i+=2, j++) {
+	r->traceA[j] = (r->traceA[i] + r->traceA[i+1]) / 2;
+	r->traceC[j] = (r->traceC[i] + r->traceC[i+1]) / 2;
+	r->traceG[j] = (r->traceG[i] + r->traceG[i+1]) / 2;
+	r->traceT[j] = (r->traceT[i] + r->traceT[i+1]) / 2;
+    }
+    r->NPoints = j;
+
+    for (i = 0; i < r->NBases; i++) {
+	r->basePos[i] /= 2;
+    }
+}
+
+void clip_range(Read *r, int left, int right) {
+    int i, j;
+    if (left != -1) {
+	for (i = 0, j = left; j < r->NPoints; i++, j++) {
+	    r->traceA[i] = r->traceA[j];
+	    r->traceC[i] = r->traceC[j];
+	    r->traceG[i] = r->traceG[j];
+	    r->traceT[i] = r->traceT[j];
+	}
+	right -= left;
+    }
+    if (right > 0) {
+	r->NPoints = right;
+    }
+}
+
 
 int convert(mFILE *infp, mFILE *outfp, char *infname, char *outfname,
 	    struct opts *opts) {
@@ -396,6 +430,13 @@ int convert(mFILE *infp, mFILE *outfp, char *infname, char *outfname,
     if (NULL == (r = mfread_reading(infp, infname, opts->in_format))) {
 	fprintf(stderr, "failed to read file %s\n", infname);
 	return 1;
+    }
+
+    if (opts->start != -1 || opts->end != -1)
+	clip_range(r, opts->start, opts->end);
+
+    if (opts->skipx) {
+	skipx(r);
     }
 
     if (opts->noneg)
@@ -504,12 +545,23 @@ int main(int argc, char **argv) {
     opts.passed = NULL;
     opts.failed = NULL;
     opts.error = NULL;
+    opts.skipx = 0;
+    opts.start = -1;
+    opts.end = -1;
     
     for (argc--, argv++; argc > 0; argc--, argv++) {
 	if (**argv != '-')
 	    break;
 
-	if (strcmp(*argv, "-scale") == 0) {
+	if (strcmp(*argv, "-start") == 0) {
+	    opts.start = atoi(*++argv);
+	    argc--;
+
+	} else if (strcmp(*argv, "-end") == 0) {
+	    opts.end = atoi(*++argv);
+	    argc--;
+
+	} else if (strcmp(*argv, "-scale") == 0) {
 	    opts.scale = atoi(*++argv);
 	    argc--;
 
@@ -552,6 +604,9 @@ int main(int argc, char **argv) {
 	} else if (strcmp(*argv, "-signed") == 0) {
 	    opts.signed_trace = 1;
 
+	} else if (strcmp(*argv, "-skipx") == 0) {
+	    opts.skipx = 1;
+
 	} else if (strcmp(*argv, "-in_format") == 0) {
 	    argv++;
 	    argc--;
@@ -568,7 +623,7 @@ int main(int argc, char **argv) {
 	    if (TT_UNK == (opts.out_format = trace_type_str2int(*argv)))
 		opts.out_format = atoi(*argv);
 
-	} else if (strcasecmp(*argv, "-compress") == 0) {
+	} else if (strcmp(*argv, "-compress") == 0) {
 	    opts.compress_mode = compress_str2int(*++argv);
 	    argc--;
 

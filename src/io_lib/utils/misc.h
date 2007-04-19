@@ -8,6 +8,10 @@
 #include "os.h"
 #include "xalloc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int is_directory(char * fn);
 extern int is_file(char * fn);
 extern int file_exists(char * fn);
@@ -102,5 +106,9 @@ void vfuncheader(char *fmt, ...);
  * As vfuncheader, but only outputting when necessary.
  */
 void vfuncgroup(int group, char *fmt, ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_misc_h*/

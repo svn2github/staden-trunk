@@ -45,6 +45,10 @@ dnl AC_TYPE_OFF_T
 dnl AC_TYPE_SIZE_T
 dnl AC_STRUCT_TM
 
+dnl Large file support
+AC_SYS_LARGEFILE
+AC_FUNC_FSEEKO
+
 dnl Checks for library functions.
 AC_SEARCH_LIBS(cos, m)
 dnl AC_FUNC_MEMCMP

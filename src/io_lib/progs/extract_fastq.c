@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <strings.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "Read.h"
@@ -39,7 +40,7 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format) {
 	p++;
 
     fprintf(outfp, "@%s\n", p);
-    fprintf(outfp, "%.*s", r->NBases, r->base);
+    fprintf(outfp, "%.*s\n", r->NBases, r->base);
     fprintf(outfp, "+%s\n", p);
     for (i = 0; i < r->NBases; i++) {
 	int qual;

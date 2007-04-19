@@ -41,6 +41,10 @@
 #include "os.h"
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**********************************************************************/
 /* IO for big-endian files                                            */
 /**********************************************************************/
@@ -128,5 +132,9 @@ extern int le_read_int_4(mFILE *fp, uint4 *i4);
  * Read a little-endian int8
  */
 extern int le_read_int_8(mFILE *fp, uint8 *i8);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _mach_io_h */

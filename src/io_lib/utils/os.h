@@ -14,8 +14,28 @@
 #ifndef _OS_H_
 #define _OS_H_
 
+/*
+ * The autoconf setup doesn't use options.mk as the Makefile is rebuilt.
+ * I haven't worked out how to do the analogous via autoconf, so for now
+ * I take the easy approach and hard-code all formats to be enabled
+ */
+#ifdef HAVE_CONFIG_H
+#include "io_lib_config.h"
+#define IOLIB_ABI
+#define IOLIB_SCF
+#define IOLIB_ALF
+#define IOLIB_PLN
+#define IOLIB_CTF
+#define IOLIB_EXP
+#define IOLIB_SFF
+#endif
+
 #include <limits.h>
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /*
  * Emulation of config.h stuff when not using autoconf
@@ -351,6 +371,10 @@ typedef int4 int_fl;		/* f_implicit */
 #ifdef SP_LITTLE_ENDIAN
 #error Must only define one of SP_BIG_ENDIAN and SP_LITTLE_ENDIAN in Makefile
 #endif
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /*_OS_H_*/

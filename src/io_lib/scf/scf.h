@@ -31,6 +31,10 @@
 #include "mFILE.h"
 #include "os.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  *-----------------------------------------------------------------------------
  * Macros
@@ -434,6 +438,10 @@ void scf_delta_samples1 ( int1 samples[], int num_samples, int job);
  * Change sample points to delta_delta values for uint2
  */
 void scf_delta_samples2 ( uint2 samples[], int num_samples, int job);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*_SCF_H_*/
 

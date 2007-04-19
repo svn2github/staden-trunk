@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
     HashFile *hf;
     sff_common_header *ch;
     sff_read_header *rh;
-    int i, dot;
+    int i, dot, arg;
     char *sff;
     char hdr[31];
     uint64_t index_offset;
@@ -81,128 +81,151 @@ int main(int argc, char **argv) {
 	argc -= 2;
 	argv += 2;
     }
-    if (argc != 2) {
-	fprintf(stderr, "Usage: hash_sff [-o outfile] sff_file\n");
-	return 1;
-    }
-
-    /* open (and read) the entire sff file */
-    sff = argv[1];
-
-    printf("Indexing %s:\n", sff);
-
-    if (fpout) {
-	if (NULL == (fp = fopen(sff, "rb"))) {
-	    perror(sff);
-	    return 1;
-	}
-    } else {
-	if (NULL == (fp = fopen(sff, "rb+"))) {
-	    perror(sff);
-	    return 1;
-	}
-    }
-
-    /* Read the common header */
-    ch = fread_sff_common_header(fp);
-
-    if (ch->index_len && !fpout) {
-	fprintf(stderr, "Archive already contains index.\n"
-		"Replacing the index requires the \"-o outfile\" option.\n");
+    if (argc < 2) {
+	fprintf(stderr, "Usage: hash_sff [-o outfile] sff_file ...\n");
 	return 1;
     }
 
     /* Create the hash table */
     hf = HashFileCreate(0, HASH_DYNAMIC_SIZE);
+    hf->nheaders = 0;
+    hf->headers = NULL;
 
-    /* Add the SFF common header as a hash file-header */
-    hf->headers = (HashFileSection *)malloc(sizeof(*hf->headers));
-    hf->nheaders = 1;
-    hf->headers[0].pos = 0;
-    hf->headers[0].size = ch->header_len;
-    hf->headers[0].cached_data = NULL;
+    for (arg = 1; arg < argc; arg++) {
+	/* open (and read) the entire sff file */
+	sff = argv[arg];
 
-    /* Read the index items, adding to the hash */
-    index_skipped = 0;
-    dot = 0;
-    printf("                                                                       |\r|");
-    for (i = 0; i < ch->nreads; i++) {
-	int dlen;
-	uint32_t offset;
-	HashData hd;
-	HashFileItem *hfi;
+	printf("Indexing %s:\n", sff);
 
-	if (i >= dot * (ch->nreads/69)) {
-	    putchar('.');
-	    fflush(stdout);
-	    dot++;
-	}
-
-	/* Skip old index if present */
-	offset = ftell(fp);
-	if (offset == ch->index_offset) {
-	    fseek(fp, ch->index_len, SEEK_CUR);
-	    index_skipped = ch->index_len;
-	    continue;
-	}
-
-	hfi = (HashFileItem *)calloc(1, sizeof(*hfi));
-	rh = fread_sff_read_header(fp);
-	dlen = (2*ch->flow_len + 3*rh->nbases + 7) & ~7;
-	fseek(fp, dlen, SEEK_CUR);
-	
-	hfi->header = hf->nheaders;
-	hfi->footer = 0;
-	hfi->pos = offset - index_skipped;
-	hfi->size = (ftell(fp) - index_skipped) - hfi->pos;
-	hd.p = hfi;
-
-	HashTableAdd(hf->h, rh->name, rh->name_len, hd, NULL);
-    }
-    printf("\n");
-    HashTableStats(hf->h, stdout);
-
-    index_offset = ftell(fp) - index_skipped;
-
-    /* Copy the archive if needed, minus the old index */
-    if (fpout) {
-	char block[8192];
-	size_t len;
-	uint64_t pos = 0;
-
-	printf("\nCopying archive\n");
-
-	fseek(fp, 0, SEEK_SET);
-	while (len = fread(block, 1, 8192, fp)) {
-	    /* Skip previous index */
-	    if (pos < ch->index_offset && pos+len > ch->index_offset) {
-		len = ch->index_offset - pos;
-		fseek(fp, ch->index_offset + ch->index_len, SEEK_SET);
-	    }
-	    if (len && len != fwrite(block, 1, len, fpout)) {
-		fprintf(stderr, "Failed to output new archive\n");
+	if (fpout) {
+	    if (NULL == (fp = fopen(sff, "rb"))) {
+		perror(sff);
 		return 1;
 	    }
-	    pos += len;
+	} else {
+	    if (NULL == (fp = fopen(sff, "rb+"))) {
+		perror(sff);
+		return 1;
+	    }
 	}
+
+	/* Read the common header */
+	ch = fread_sff_common_header(fp);
+
+	if (ch->index_len && !fpout) {
+	    fprintf(stderr, "Archive already contains index.\nReplacing the"
+		    " index requires the \"-o outfile\" option.\n");
+	    return 1;
+	}
+
+	/* Add the SFF common header as a hash file-header */
+	hf->nheaders++;
+	hf->headers = (HashFileSection *)realloc(hf->headers, hf->nheaders *
+						 sizeof(*hf->headers));
+	hf->headers[hf->nheaders-1].pos = 0;
+	hf->headers[hf->nheaders-1].size = ch->header_len;
+	hf->headers[hf->nheaders-1].cached_data = NULL;
+
+	/* Read the index items, adding to the hash */
+	index_skipped = 0;
+	dot = 0;
+	printf("                                                                       |\r|");
+	for (i = 0; i < ch->nreads; i++) {
+	    int dlen;
+	    uint32_t offset;
+	    HashData hd;
+	    HashFileItem *hfi;
+	    
+	    if (i >= dot * (ch->nreads/69)) {
+		putchar('.');
+		fflush(stdout);
+		dot++;
+	    }
+
+	    /* Skip old index if present */
+	    offset = ftell(fp);
+	    if (offset == ch->index_offset) {
+		fseek(fp, ch->index_len, SEEK_CUR);
+		index_skipped = ch->index_len;
+		continue;
+	    }
+
+	    hfi = (HashFileItem *)calloc(1, sizeof(*hfi));
+	    rh = fread_sff_read_header(fp);
+	    dlen = (2*ch->flow_len + 3*rh->nbases + 7) & ~7;
+	    fseek(fp, dlen, SEEK_CUR);
+	
+	    hfi->header = hf->nheaders;
+	    hfi->footer = 0;
+	    hfi->pos = offset - index_skipped;
+	    hfi->size = (ftell(fp) - index_skipped) - hfi->pos;
+	    hd.p = hfi;
+
+	    HashTableAdd(hf->h, rh->name, rh->name_len, hd, NULL);
+	}
+	printf("\n");
+	HashTableStats(hf->h, stdout);
+
+	index_offset = ftell(fp) - index_skipped;
+
+	/* Copy the archive if needed, minus the old index */
+	if (fpout) {
+	    char block[8192];
+	    size_t len;
+	    uint64_t pos = 0;
+
+	    printf("\nCopying archive\n");
+
+	    fseek(fp, 0, SEEK_SET);
+	    while (len = fread(block, 1, 8192, fp)) {
+		/* Skip previous index */
+		if (pos < ch->index_offset && pos+len > ch->index_offset) {
+		    len = ch->index_offset - pos;
+		    fseek(fp, ch->index_offset + ch->index_len, SEEK_SET);
+	    }
+		if (len && len != fwrite(block, 1, len, fpout)) {
+		    fprintf(stderr, "Failed to output new archive\n");
+		    return 1;
+		}
+		pos += len;
+	    }
+	    fclose(fp);
+	}
+	
+	if (!fpout) {
+	    /* Save the hash */
+	    printf("Saving index\n");
+	    fseek(fp, 0, SEEK_END);
+	    index_size = HashFileSave(hf, fp, 0);
+	    HashFileDestroy(hf);
+
+	    /* Update the common header */
+	    fseek(fp, 0, SEEK_SET);
+	    fread(hdr, 1, 31, fp);
+	    *(uint64_t *)(hdr+8)  = be_int8(index_offset);
+	    *(uint32_t *)(hdr+16) = be_int4(index_size);
+	    fseek(fp, 0, SEEK_SET);
+	    fwrite(hdr, 1, 31, fp);
+	}
+
 	fclose(fp);
-	fp = fpout;
     }
 
-    /* Save the hash */
-    printf("Saving index\n");
-    fseek(fp, 0, SEEK_END);
-    index_size = HashFileSave(hf, fp, 0);
-    HashFileDestroy(hf);
+    if (fpout) {
+	/* Save the hash */
+	printf("Saving index\n");
+	fseek(fpout, 0, SEEK_END);
+	index_size = HashFileSave(hf, fpout, 0);
+	HashFileDestroy(hf);
 
-    /* Update the common header */
-    fseek(fp, 0, SEEK_SET);
-    fread(hdr, 1, 31, fp);
-    *(uint64_t *)(hdr+8)  = be_int8(index_offset);
-    *(uint32_t *)(hdr+16) = be_int4(index_size);
-    fseek(fp, 0, SEEK_SET);
-    fwrite(hdr, 1, 31, fp);
+	/* Update the common header to indicate index location */
+	fseek(fpout, 0, SEEK_SET);
+	fread(hdr, 1, 31, fpout);
+	*(uint64_t *)(hdr+8)  = be_int8(index_offset);
+	*(uint32_t *)(hdr+16) = be_int4(index_size);
+	fseek(fpout, 0, SEEK_SET);
+	fwrite(hdr, 1, 31, fpout);
+    }
 
-    fclose(fp);
     return 0;
 }

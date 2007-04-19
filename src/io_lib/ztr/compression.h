@@ -4,6 +4,10 @@
 #include "os.h"
 #include "zlib.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * zlib_huff()
  *
@@ -304,5 +308,9 @@ char *log2_data(char *x_uncomp,
 char *unlog2_data(char *x_comp,
 		  int comp_len,
 		  int *uncomp_len);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _COMPRESSION_H_ */

@@ -5,6 +5,10 @@
 #include "os.h"
 #include "mFILE.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * This mirrors the order that the SFF header has on disc. We have one of
  * these only.
@@ -75,5 +79,9 @@ sff_read_data *read_sff_read_data(mFILE *mf, int nflows, int nbases);
  * Loads the first SFF sequence from an SFF container and returns as a Read.
  */
 Read *mfread_sff(mFILE *mf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SFF_H_ */

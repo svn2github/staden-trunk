@@ -17,8 +17,17 @@
 
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern void *xmalloc(size_t size);
 extern void *xrealloc(void *ptr, size_t size);
 extern void *xcalloc(size_t num, size_t size);
 extern void xfree(void *ptr);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

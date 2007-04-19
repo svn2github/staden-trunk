@@ -18,6 +18,14 @@
 
 #include "expFileIO.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int get_read_conf(Exp_info *e, int length, int2 *opos, int1 *conf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _SCFBITS_H_ */

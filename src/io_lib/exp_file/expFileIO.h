@@ -32,6 +32,10 @@
 #include "array.h"
 #include "os.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
  * Definitions
  */
@@ -332,6 +336,10 @@ extern void expcr_(char *str, f_int *start, f_int *end, f_implicit str_l);
  * FORTRAN interface to exp_extract_range()
  */
 extern f_int exper_(char *str, f_int *start, f_int *end, f_implicit str_l);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _EXPFILEIO_H_ */
 

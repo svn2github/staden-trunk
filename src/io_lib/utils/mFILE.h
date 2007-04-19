@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     FILE *fp;
     char *data;
@@ -44,5 +48,9 @@ mFILE *mstdin(void);
 mFILE *mstdout(void);
 mFILE *mstderr(void);
 void mfascii(mFILE *mf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _MFILE_H_ */
