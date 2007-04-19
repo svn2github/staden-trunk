@@ -259,8 +259,9 @@ static HashItem *HashItemCreate(HashTable *h) {
  * call HashTableDel() first if appropriate.
  */
 static void HashItemDestroy(HashTable *h, HashItem *hi, int deallocate_data) {
-    if (!(h->options & (HASH_NONVOLATILE_KEYS | HASH_OWN_KEYS)) && hi->key)
-	free(hi->key);
+    if (!(h->options & HASH_NONVOLATILE_KEYS) || (h->options & HASH_OWN_KEYS))
+	if (hi->key)
+	    free(hi->key);
 
     if (deallocate_data && hi->data.p)
 	free(hi->data.p);
@@ -968,10 +969,12 @@ HashFile *HashFileFopen(FILE *fp) {
     int archive_len;
     int i;
 
+    /* Set the stdio buffer to be small to avoid massive I/O wastage */
+
     /* Read the header */
     hf->hfp = fp;
     hf->afp = fp;
-    hf->hf_start = ftell(hf->hfp);
+    hf->hf_start = ftello(hf->hfp);
 
     if (HHSIZE != fread(&hf->hh, 1, HHSIZE, hf->hfp)) {
 	HashFileDestroy(hf);
@@ -982,7 +985,7 @@ HashFile *HashFileFopen(FILE *fp) {
 	int64_t offset;
 
 	/* Invalid magic number, try other end of file! */
-	fseek(hf->hfp, -sizeof(HashFileFooter), SEEK_END);
+	fseeko(hf->hfp, -(off_t)sizeof(HashFileFooter), SEEK_END);
 	if (sizeof(foot) != fread(&foot, 1, sizeof(foot), hf->hfp)) {
 	    HashFileDestroy(hf);
 	    return NULL;
@@ -993,8 +996,8 @@ HashFile *HashFileFopen(FILE *fp) {
 	}
 	memcpy(&offset, foot.offset, 8);
 	offset = be_int8(offset);
-	fseek(hf->hfp, offset, SEEK_CUR);
-	hf->hf_start = ftell(hf->hfp);
+	fseeko(hf->hfp, offset, SEEK_CUR);
+	hf->hf_start = ftello(hf->hfp);
 	if (HHSIZE != fread(&hf->hh, 1, HHSIZE, hf->hfp)) {
 	    HashFileDestroy(hf);
 	    return NULL;
@@ -1089,13 +1092,15 @@ HashFile *HashFileOpen(char *fname) {
 HashFile *HashFileLoad(FILE *fp) {
     HashFile *hf;
     char *htable;
-    int htable_pos, i;
+    off_t htable_pos;
+    int i;
     HashItem *hi;
     HashTable *h;
     uint32_t *bucket_pos;
+    uint32_t hsize;
 
     /* Open the hash table */
-    fseek(fp, 0, SEEK_SET);
+    fseeko(fp, 0, SEEK_SET);
     if (NULL == (hf = HashFileFopen(fp)))
 	return NULL;
 
@@ -1105,8 +1110,9 @@ HashFile *HashFileLoad(FILE *fp) {
 
     /* Also load in the entire thing to memory */
     htable = (char *)malloc(hf->hh.size);
-    fseek(fp, hf->hf_start, SEEK_SET);
-    if (hf->hh.size != fread(htable, 1, hf->hh.size, fp)) {
+    fseeko(fp, hf->hf_start, SEEK_SET);
+    hsize = fread(htable, 1, hf->hh.size, fp);
+    if (hf->hh.size != hsize) {
 	free(htable);
 	return NULL;
     }
@@ -1173,7 +1179,6 @@ HashFile *HashFileLoad(FILE *fp) {
 	}
     }
 
-    fprintf(stderr, "done\n");
     fflush(stderr);
     free(bucket_pos);
 
@@ -1199,7 +1204,7 @@ int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
     hval = hash(hf->hh.hfunc, key, key_len) & (hf->hh.nbuckets-1);
 
     /* Read the bucket to find the first linked list item location */
-    if (-1 == fseek(hf->hfp, hf->hf_start + 4*hval + hf->header_size,SEEK_SET))
+    if (-1 == fseeko(hf->hfp, hf->hf_start + 4*hval + hf->header_size,SEEK_SET))
 	return -1;
     if (4 != fread(&pos, 1, 4, hf->hfp))
 	return -1;
@@ -1211,7 +1216,7 @@ int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
 	return -1;
 
     /* Jump to the HashItems list and look through for key */
-    if (-1 == fseek(hf->hfp, pos - cur_offset, SEEK_CUR))
+    if (-1 == fseeko(hf->hfp, pos - cur_offset, SEEK_CUR))
 	return -1;
 
     for (klen = fgetc(hf->hfp); klen; klen = fgetc(hf->hfp)) {
@@ -1314,19 +1319,19 @@ char *HashFileExtract(HashFile *hf, char *fname, size_t *len) {
     /* Header */
     pos = 0;
     if (head) {
-	fseek(hf->afp, head->pos, SEEK_SET);
+	fseeko(hf->afp, head->pos, SEEK_SET);
 	fread(&data[pos], head->size, 1, hf->afp);
 	pos += head->size;
     }
 
     /* Main file */
-    fseek(hf->afp, hfi.pos, SEEK_SET);
+    fseeko(hf->afp, hfi.pos, SEEK_SET);
     fread(&data[pos], hfi.size, 1, hf->afp);
     pos += hfi.size;
 
     /* Footer */
     if (foot) {
-	fseek(hf->afp, foot->pos, SEEK_SET);
+	fseeko(hf->afp, foot->pos, SEEK_SET);
 	fread(&data[pos], foot->size, 1, hf->afp);
 	pos += foot->size;
     }
