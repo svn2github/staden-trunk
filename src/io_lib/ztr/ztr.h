@@ -3,6 +3,10 @@
 
 #include "Read.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* The header */
 typedef struct {
     unsigned char  magic[8];	  /* 0xae5a54520d0a1a0a (be) */
@@ -46,6 +50,7 @@ typedef struct {
 #define ZTR_FORM_CHEB445	73
 #define ZTR_FORM_ICHEB		74
 #define ZTR_FORM_LOG2		75
+#define ZTR_FORM_STHUFF		76
 
 /* Converts a C string to a big-endian 4-byte int */
 #define ZTR_STR2BE(str) (((str)[0] << 24) + \
@@ -111,5 +116,9 @@ ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p);
 void ztr_process_text(ztr_t *ztr);
 int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2);
 int uncompress_chunk(ztr_chunk_t *chunk);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _ZTR_H */

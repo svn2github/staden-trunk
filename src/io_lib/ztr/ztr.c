@@ -9,7 +9,9 @@
 #include "Read.h"
 #include "compression.h"
 #include "stdio_hack.h"
+#include "huffman_static.h"
 
+/* #define SOLEXA */
 
 /*
  * ---------------------------------------------------------------------------
@@ -474,6 +476,7 @@ ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p) {
 int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
     char *new_data = NULL;
     int new_len;
+    double entropy(unsigned char *data, int len);
 
     switch (format) {
     case ZTR_FORM_RAW:
@@ -481,6 +484,10 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
 
     case ZTR_FORM_RLE:
 	new_data = rle(chunk->data, chunk->dlength, option, &new_len);
+	if (entropy(new_data,new_len) >= entropy(chunk->data,chunk->dlength)) {
+	    xfree(new_data);
+	    return 0;
+	}
 	break;
 
     case ZTR_FORM_XRLE:
@@ -529,6 +536,10 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
 
     case ZTR_FORM_LOG2:
 	new_data = log2_data(chunk->data, chunk->dlength, &new_len);
+	break;
+
+    case ZTR_FORM_STHUFF:
+	new_data = encode_memory(chunk->data, chunk->dlength, &new_len,option);
 	break;
     }
 
@@ -601,6 +612,10 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
 	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
 
+	case ZTR_FORM_STHUFF:
+	    new_data = decode_memory(chunk->data, chunk->dlength, &new_len);
+	    break;
+
 	default:
 	    return -1;
 	}
@@ -621,7 +636,7 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
     return 0;
 }
 
-#if 0
+#if 1
 /*
  * Shannon showed that for storage in base 'b' with alphabet symbols 'a' having
  * a probability of ocurring in any context of 'Pa' we should encode
@@ -685,6 +700,9 @@ int compress_ztr(ztr_t *ztr, int level) {
 	switch(ztr->chunk[i].type) {
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
+#ifdef SOLEXA
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_TRACES, 0);
+#else
 	    if (ztr->chunk[i].mdlength == 4 &&
 		memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0) {
 		/* Raw data is not really compressable */
@@ -720,24 +738,34 @@ int compress_ztr(ztr_t *ztr, int level) {
 				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 		}
 	    }
+#endif
 	    break;
 
 	case ZTR_TYPE_BASE:
+#ifdef SOLEXA
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_DNA, 0);
+#else
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
+#endif
 	    break;
 
 	case ZTR_TYPE_CNF1:
 	case ZTR_TYPE_CNF4:
 	case ZTR_TYPE_CSID:
+#ifdef SOLEXA
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
+	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_CONF_RLE, 0);
+#else
 	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA1, 1, 0);
 	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
+#endif
 	    break;
 
 	case ZTR_TYPE_BPOS:
@@ -750,10 +778,13 @@ int compress_ztr(ztr_t *ztr, int level) {
 	    break;
 
 	case ZTR_TYPE_TEXT:
+#ifdef SOLEXA
+#else
 	    if (level > 1) {
 		compress_chunk(&ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
+#endif
 	    break;
 
 	case ZTR_TYPE_FLWO:
