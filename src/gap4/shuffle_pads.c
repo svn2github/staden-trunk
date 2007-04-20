@@ -999,5 +999,7 @@ int shuffle_contigs_io(GapIO *io, int ncontigs, contig_list_t *contigs,
 	/* reassign_confidence_values(io, cnum); */
     }
 
+    flush2t(io);
+
     return 0;
 }
