@@ -71,36 +71,38 @@ static void tidyUpTagDBFields(int tag)
 
 void readInTagDB(void)
 {
-    char *path, *p;
-    char tmp_path[2000];
+    const char *path;
+    char *p, tmp_path[2000];
     int i;
     int gotfile=0;
 
     /* 22/1/99 johnt - fallback to to use STADTABL is GTAGDB isn't defined */
     if (NULL == (path = (char *)getenv(TAGDB))){
         if(getenv("STADTABL")) {
-	   strcpy(tmp_path,getenv("STADTABL"));
-           strcat(tmp_path,"/");
-	   strcat(tmp_path,TAGDB);
-           path = tmp_path;
+	    sprintf(tmp_path, "%s/TAGDB", getenv("STADTABL"));
 	} else {
-	    path = TAGDB;
+	    strcpy(tmp_path, "GTAGDB");
 	}
+    } else {
+	strncpy(tmp_path, path, 2000);
+	tmp_path[1999] = 0;
     }
 
+    /* Tokenise temporary copy as we don't want to modify the real thing */
     do {
-	p = strrchr(path, PATHSEP); /* 22/1/99 johnt - path seperator now macro to allow WINNT support */
+	p = strrchr(tmp_path, PATHSEP);
 	if (p) {
 	    *p = 0;
 	    p++;
-	} else
-	    p = path;
+	} else {
+	    p = tmp_path;
+	}
 	    
 	if (file_exists(p)) {
 	    tagdb_parse(p);
             gotfile++;
 	}
-    } while (p != path);
+    } while (p != tmp_path);
 
     for (i = 0; i < tag_db_count; i++) {
 	tidyUpTagDBFields(i);
