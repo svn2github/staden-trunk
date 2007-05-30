@@ -30,7 +30,7 @@ case "$1" in
     echo "-I@includedir@"
     ;;
 --libs)
-    echo "-L@libdir@ -lread @LDFLAGS@ @LIBS@ @LIBCURL@"
+    echo "-L@libdir@ -lread @LDFLAGS@ @LIBS@ @LIBCURL@ @LIBZ@"
     ;;
 --version)
     echo @VERSION@
