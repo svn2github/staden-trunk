@@ -182,14 +182,13 @@ int main(int argc, char **argv) {
 		if (pos < ch->index_offset && pos+len > ch->index_offset) {
 		    len = ch->index_offset - pos;
 		    fseek(fp, ch->index_offset + ch->index_len, SEEK_SET);
-	    }
+		}
 		if (len && len != fwrite(block, 1, len, fpout)) {
 		    fprintf(stderr, "Failed to output new archive\n");
 		    return 1;
 		}
 		pos += len;
 	    }
-	    fclose(fp);
 	}
 	
 	if (!fpout) {
@@ -225,7 +224,8 @@ int main(int argc, char **argv) {
 	*(uint32_t *)(hdr+16) = be_int4(index_size);
 	fseek(fpout, 0, SEEK_SET);
 	fwrite(hdr, 1, 31, fpout);
+	fclose(fpout);
     }
-
+    
     return 0;
 }
