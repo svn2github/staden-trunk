@@ -470,13 +470,50 @@ ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p) {
 }
 
 /*
+ * Shannon showed that for storage in base 'b' with alphabet symbols 'a' having
+ * a probability of ocurring in any context of 'Pa' we should encode
+ * symbol 'a' to have a storage width of -logb(Pa).
+ *
+ * Eg. b = 26, P(e) = .22. => width .4647277.
+ *
+ * We use this to calculate the entropy of a signal by summing over all letters
+ * in the signal. In this case, our storage has base 256.
+ */
+#define EBASE 256
+static double entropy(unsigned char *data, int len) {
+    double E[EBASE];
+    double P[EBASE];
+    double e;
+    int i;
+    
+    for (i = 0; i < EBASE; i++)
+        P[i] = 0;
+
+    for (i = 0; i < len; i++)
+        P[data[i]]++;
+
+    for (i = 0; i < EBASE; i++) {
+        if (P[i]) {
+            P[i] /= len;
+            E[i] = -(log(P[i])/log(EBASE));
+        } else {
+            E[i] = 0;
+        }
+    }
+
+    for (e = i = 0; i < len; i++)
+        e += E[data[i]];
+
+    return e;
+}
+
+/*
  * Compresses an individual chunk using a specific format. The format is one
  * of the 'format' fields listed in the spec; one of the ZTR_FORM_ macros.
  */
 int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
     char *new_data = NULL;
     int new_len;
-    double entropy(unsigned char *data, int len);
 
     switch (format) {
     case ZTR_FORM_RAW:
@@ -635,46 +672,6 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
 
     return 0;
 }
-
-#if 1
-/*
- * Shannon showed that for storage in base 'b' with alphabet symbols 'a' having
- * a probability of ocurring in any context of 'Pa' we should encode
- * symbol 'a' to have a storage width of -logb(Pa).
- *
- * Eg. b = 26, P(e) = .22. => width .4647277.
- *
- * We use this to calculate the entropy of a signal by summing over all letters
- * in the signal. In this case, our storage has base 256.
- */
-#define EBASE 256
-double entropy(unsigned char *data, int len) {
-    double E[EBASE];
-    double P[EBASE];
-    double e;
-    int i;
-    
-    for (i = 0; i < EBASE; i++)
-        P[i] = 0;
-
-    for (i = 0; i < len; i++)
-        P[data[i]]++;
-
-    for (i = 0; i < EBASE; i++) {
-        if (P[i]) {
-            P[i] /= len;
-            E[i] = -(log(P[i])/log(EBASE));
-        } else {
-            E[i] = 0;
-        }
-    }
-
-    for (e = i = 0; i < len; i++)
-        e += E[data[i]];
-
-    return e;
-}
-#endif
 
 /*
  * Compresses a ztr (in memory).
