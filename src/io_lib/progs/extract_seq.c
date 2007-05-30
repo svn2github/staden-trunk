@@ -117,7 +117,7 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format,
 }
 
 static void usage(void) {
-    fprintf(stderr, "Usage: extract_seq [-r] [-(abi|alf|scf|exp|pln)]\n"
+    fprintf(stderr, "Usage: extract_seq [-r] [-(abi|alf|scf|exp|pln|ctf|ztr)]\n"
 	    "                   [-good_only] [-clip_cosmid] [-fasta_out]\n"
 	    "                   [-output output_name] [input_name] ...\n");
     exit(1);
