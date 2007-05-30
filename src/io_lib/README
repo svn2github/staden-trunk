@@ -1,4 +1,4 @@
-			    IO_LIB VERSION 1.10.0
+			    IO_LIB VERSION 1.10.2
 			    =====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -24,10 +24,8 @@ the file formats via a single read_reading (or fread_reading or
 mfread_reading) function call and analogous write_reading functions
 too. See the file include/Read.h for the generic 'Read' structure.
 
-The big change this release is with RAWDATA being replaced by EXP_PATH
-and TRACE_PATH. Also the URL= RAWDATA component is now handled using
-libcurl instead of wget and so is much more efficient. See the CHANGES
-for file full details.
+This release is primarily a bug-fix over 1.10.1. The main change is to
+support compiling/linking against C++ code.
 
 
 Important changes added with 1.9.2

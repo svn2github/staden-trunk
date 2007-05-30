@@ -1,3 +1,42 @@
+Version 1.10.2 (30th May 2007)
+--------------
+
+Primarily this is a bug fix release.
+
+* Convert_trace now has -signed and -noneg options to control signed
+  vs unsigned issues when shifting trace data about.
+
+* Include files now have C++ extern "C" style guards around them.
+
+* Various programs now accept -ztr command line arguments to force ZTR
+  format reading. This is for consistencies sake only and it is
+  recommended that users simply let the programs automatically detect
+  the file formats.
+
+* Hash_exp now outputs to the same file containing the experiment
+  files (in appended hash-table mode). It also has better Windows
+  handling (stripping ^M and using binary mode).
+
+* hash_extract bug fix: now only needs at least 1 filename specified
+  when fofn mode is not in use.
+
+* mFILE emulation: bug fixes when dealing with ftruncate, append mode,
+  checking for read/write flags, new mfcreate_from() function.
+
+* ZTR: added an experimental ZTR_FORM_STHUFF compression scheme. This
+  uses static huffman encoding on a predefined hard-coded set of
+  huffman tables. The purpose (as yet not put into action) is to allow
+  efficient compression of very small data sets for Illumina, AB
+  SOLiD, etc style traces.
+
+
+Version 1.10.1 (20th June 2006)
+--------------
+
+* Trace files are now opened in read-only mode by default
+  (open_trace_file func).
+
+
 Version 1.10.0 (15th June 2006)
 --------------
 
