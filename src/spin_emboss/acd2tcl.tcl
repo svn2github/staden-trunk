@@ -505,6 +505,12 @@ proc default_float {dname prefix} {
     set data($prefix.default)     "0.0"
 }
 
+proc default_array {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) $prefix
+    set data($prefix.default)     "0.0"
+}
+
 proc default_dirlist {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Directory name"
@@ -530,6 +536,11 @@ proc default_infile {dname prefix} {
 proc default_directory {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Input directory"
+}
+
+proc default_outdir {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Output directory"
 }
 
 proc default_seqoutall {dname prefix} {
@@ -560,6 +571,12 @@ proc default_featout {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Feature output filename"
     set data($prefix.default)     "feature%C.out"
+}
+
+proc default_outcodon {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Codon output filename"
+    set data($prefix.default)     "codon%C.out"
 }
 
 proc default_report {dname prefix} {
@@ -938,8 +955,20 @@ proc generate_string {dname name args} {
 }
 
 # Treat as generate_string for now
+proc generate_array {dname name args} {
+    uplevel generate_string [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_string for now
 proc generate_regexp {dname name args} {
     uplevel generate_string [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_regexp for now
+proc generate_pattern {dname name args} {
+    uplevel generate_regexp [list $dname] [list $name] $args
     return 1
 }
 
@@ -1198,6 +1227,12 @@ proc generate_outfile {dname name args} {
 }
 
 # Treat as generate_outfile for now
+proc generate_outdir {dname name args} {
+    uplevel generate_outfile [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_outfile for now
 proc generate_featout {dname name args} {
     uplevel generate_outfile [list $dname] [list $name] $args
     return 1
@@ -1211,6 +1246,12 @@ proc generate_report {dname name args} {
 
 # Treat as generate_outfile for now
 proc generate_align {dname name args} {
+    uplevel generate_outfile [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_outfile for now
+proc generate_outcodon {dname name args} {
     uplevel generate_outfile [list $dname] [list $name] $args
     return 1
 }

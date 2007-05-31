@@ -505,6 +505,12 @@ proc default_float {dname prefix} {
     set data($prefix.default)     "0.0"
 }
 
+proc default_array {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) $prefix
+    set data($prefix.default)     "0.0"
+}
+
 proc default_dirlist {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Directory name"
@@ -525,6 +531,16 @@ proc default_datafile {dname prefix} {
 proc default_infile {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Input filename"
+}
+
+proc default_directory {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Input directory"
+}
+
+proc default_outdir {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Output directory"
 }
 
 proc default_seqoutall {dname prefix} {
@@ -555,6 +571,12 @@ proc default_featout {dname prefix} {
     upvar $dname data
     set data($prefix.information) "Feature output filename"
     set data($prefix.default)     "feature%C.out"
+}
+
+proc default_outcodon {dname prefix} {
+    upvar $dname data
+    set data($prefix.information) "Codon output filename"
+    set data($prefix.default)     "codon%C.out"
 }
 
 proc default_report {dname prefix} {
@@ -627,6 +649,12 @@ proc default_boolean {dname prefix} {
     set data($prefix.information) {boolean}
 }
 
+proc default_toggle {dname prefix} {
+    upvar $dname data
+    set data($prefix.default)     0
+    set data($prefix.information) {toggle}
+}
+
 #-----------------------------------------------------------------------------
 # Code generation for each specific ACD type. These have a one-to-one mapping
 # with standard widgets or mega-widgets.
@@ -684,6 +712,7 @@ proc generate_application {dname name args} {
     append cstr "    wm title \$w {EMBOSS - $data(appl)}\n"
     append cstr "    label \$w._title -text [list $data($name.documentation)]\n"
     append cstr "    pack \$w._title -side top -fill both\n"
+    append cstr "    ::EMBOSS::init_dialogue \[namespace current\]\n"
     return 1
 }
 
@@ -710,29 +739,17 @@ proc generate_end {dname} {
 }
 
 proc generate_sequence {dname name args} {
-    global cstr HORIZONTAL VERTICAL
-
+    global cstr
     upvar $dname data
-
-    #FIXME - these are really in tkutilsrc
-    set HORIZONTAL 1
-    set VERTICAL   2
-
     if {![info exists data(_seqid_count)]} {
-	set data(_seqid_count) $HORIZONTAL
+	set data(_seqid_count) 0
     } else {
-	#set data(_seqid_count) [expr {$data(_seqid_count) ? $HORIZONTAL : $VERTICAL}]
-	if {$data(_seqid_count) == $HORIZONTAL} {
-	    set data(_seqid_count) $VERTICAL
-	} else {
-	    set data(_seqid_count) $HORIZONTAL
-	}
-
+	set data(_seqid_count) [expr {$data(_seqid_count) ? 0 : 1}]
     }
     append cstr "\n"
     append cstr "    lappend arguments $name\n"
     append cstr "    set vars($name)       \[get_active_seq_id $data(_seqid_count)\]\n"
-    append cstr "    if {\$vars($name) == -1} {set vars($name) \[get_active_seq_id $HORIZONTAL\]}\n"
+    append cstr "    if {\$vars($name) == -1} {set vars($name) \[get_active_seq_id 0\]}\n"
     append cstr "    set vars($name.name)  \[seq_info \$vars($name) name\]\n"
     append cstr "    sequence_changed \[namespace current\] $name\n"
     append cstr "    set vars($name.type) [expand data $name type]\n"
@@ -938,8 +955,20 @@ proc generate_string {dname name args} {
 }
 
 # Treat as generate_string for now
+proc generate_array {dname name args} {
+    uplevel generate_string [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_string for now
 proc generate_regexp {dname name args} {
     uplevel generate_string [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_regexp for now
+proc generate_pattern {dname name args} {
+    uplevel generate_regexp [list $dname] [list $name] $args
     return 1
 }
 
@@ -1198,6 +1227,12 @@ proc generate_outfile {dname name args} {
 }
 
 # Treat as generate_outfile for now
+proc generate_outdir {dname name args} {
+    uplevel generate_outfile [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_outfile for now
 proc generate_featout {dname name args} {
     uplevel generate_outfile [list $dname] [list $name] $args
     return 1
@@ -1211,6 +1246,12 @@ proc generate_report {dname name args} {
 
 # Treat as generate_outfile for now
 proc generate_align {dname name args} {
+    uplevel generate_outfile [list $dname] [list $name] $args
+    return 1
+}
+
+# Treat as generate_outfile for now
+proc generate_outcodon {dname name args} {
     uplevel generate_outfile [list $dname] [list $name] $args
     return 1
 }
@@ -1317,6 +1358,14 @@ proc generate_seqset {dname name args} {
 
 # treat as generate_infile for now
 proc generate_filelist {dname name args} {
+    global cstr
+    upvar $dname data
+
+    uplevel generate_infile [list $dname] [list $name] $args
+    return 1
+}
+
+proc generate_directory {dname name args} {
     global cstr
     upvar $dname data
 
@@ -1435,6 +1484,11 @@ proc generate_boolean {dname name args} {
 }
 
 proc generate_bool {dname name args} {
+    uplevel generate_boolean [list $dname] [list $name] $args
+    return 1
+}
+
+proc generate_toggle {dname name args} {
     uplevel generate_boolean [list $dname] [list $name] $args
     return 1
 }
@@ -1566,6 +1620,7 @@ proc generate_pass2 {aname {prefix {}} {level 0}} {
 }
 
 #-----------------------------------------------------------------------------
+
 set f [open $argv]
 set acd [read $f]
 close $f
