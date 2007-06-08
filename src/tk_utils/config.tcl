@@ -413,7 +413,7 @@ proc display_config {cf} {
 
 proc write_config {cf file} {
     catch {file rename -force $file $file.bak}
-    if {[catch {set fd [open $file w]}]} {
+    if {[catch {set fd [open $file w 0644]}]} {
 	puts "Couldn't save config to $file"
 	return
     }

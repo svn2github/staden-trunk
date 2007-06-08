@@ -32,6 +32,7 @@ proc modal {w args} {
 
     # Create the window
     eval toplevel $w $args
+    wm group $w [winfo parent $w]
 
     if {$resizable == 0} {
 	wm resizable $w 0 0
@@ -127,6 +128,7 @@ proc xtoplevel {w args} {
 
     # Create the window
     eval toplevel $w $args
+    wm group $w [winfo parent $w]
 
     if {$resizable == 0} {
 	wm resizable $w 0 0
