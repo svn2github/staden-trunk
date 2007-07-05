@@ -27,6 +27,7 @@
   and AUTO_CLIP
   08.09.94 JKB Plain files now also uses the ';<' and ';>' lines.
   09.09.94 JKB Update to use Read instead of Seq library.
+  01.06.07 JKB Supports single-read fasta files; about time too!
   */
 
 
@@ -112,7 +113,18 @@ Read *fread_pln(FILE *fp) {
     read->format = TT_PLN;
 
     while ((ch = fgetc(fp)) != EOF) {
-        if (ch==';') {
+	if (ch == '>') {
+	    /* Fasta format file - skip the header and load the first
+	     * fasta sequence only. We don't even attempt to worry about
+	     * multi-sequence file formats for now.
+	     */
+	    if (!first)
+		break;
+
+	    while(ch != '\n' && ch != EOF)
+		ch = fgetc(fp);
+
+	}  else if (ch==';') {
 	    /*
 	     * ;< is left cutoff,
 	     * ;> is right cutoff.
