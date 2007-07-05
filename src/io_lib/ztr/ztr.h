@@ -2,6 +2,7 @@
 #define _ZTR_H
 
 #include "Read.h"
+#include "huffman_static.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,7 +51,7 @@ typedef struct {
 #define ZTR_FORM_CHEB445	73
 #define ZTR_FORM_ICHEB		74
 #define ZTR_FORM_LOG2		75
-#define ZTR_FORM_STHUFF		76
+#define ZTR_FORM_STHUFF	        77
 
 /* Converts a C string to a big-endian 4-byte int */
 #define ZTR_STR2BE(str) (((str)[0] << 24) + \
@@ -80,12 +81,18 @@ typedef struct {
 #define ZTR_TYPE_CR32	0x43523332
 #define ZTR_TYPE_FLWO	0x464c574f
 #define ZTR_TYPE_FLWC	0x464c5743
+#define ZTR_TYPE_HUFF   0x48554646
 
 /* A text segment consists of identifier and value */
 typedef struct {
     char *ident; /* Pointer to identifier */
     char *value; /* Pointer to value */
 } ztr_text_t;
+
+typedef struct {
+    int ztr_owns; /* true is ZTR is to free the data later */
+    huffman_codes_t *codes;
+} ztr_hcode_t;
 
 /* The main ZTR structure, which holds the entire file contents */
 typedef struct {
@@ -100,6 +107,11 @@ typedef struct {
 
     /* 'Hint' for delta of SAMP and SMP4 */
     int delta_level;
+
+    /* Cached huffman encoding/decoding tables for STHUFF format */
+    ztr_hcode_t *hcodes;
+    int nhcodes;
+    int hcodes_checked;
 } ztr_t;
 
 int fwrite_ztr(FILE *fp, ztr_t *ztr);
@@ -114,8 +126,12 @@ ztr_t *new_ztr(void);
 void delete_ztr(ztr_t *ztr);
 ztr_chunk_t **ztr_find_chunks(ztr_t *ztr, uint4 type, int *nchunks_p);
 void ztr_process_text(ztr_t *ztr);
-int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2);
-int uncompress_chunk(ztr_chunk_t *chunk);
+int compress_chunk(ztr_t *ztr, ztr_chunk_t *chunk, int format,
+		   int option, int option2);
+int uncompress_chunk(ztr_t *ztr, ztr_chunk_t *chunk);
+void ztr_add_hcode(ztr_t *ztr, huffman_codes_t *codes, int ztr_owns);
+int ztr_store_hcodes(ztr_t *ztr);
+huffman_codes_t *ztr_find_hcode(ztr_t *ztr, int code_set);
 
 #ifdef __cplusplus
 }

@@ -243,7 +243,7 @@ void ztr_process_text(ztr_t *ztr) {
 	char *ident, *value;
 
 	/* Make sure it's not compressed */
-	uncompress_chunk(text_chunks[i]);
+	uncompress_chunk(ztr, text_chunks[i]);
 
 	data = text_chunks[i]->data;
 	length = text_chunks[i]->dlength;
@@ -410,6 +410,7 @@ ztr_t *fread_ztr(FILE *fp) {
  */
 ztr_t *new_ztr(void) {
     ztr_t *ztr;
+
     /* Allocate */
     if (NULL == (ztr = (ztr_t *)xmalloc(sizeof(*ztr))))
 	return NULL;
@@ -419,6 +420,10 @@ ztr_t *new_ztr(void) {
     ztr->text_segments = NULL;
     ztr->ntext_segments = 0;
     ztr->delta_level = 3;
+
+    ztr->nhcodes = 0;
+    ztr->hcodes = NULL;
+    ztr->hcodes_checked = 0;
 
     return ztr;
 }
@@ -435,6 +440,14 @@ void delete_ztr(ztr_t *ztr) {
 		xfree(ztr->chunk[i].data);
 	}
 	xfree(ztr->chunk);
+    }
+
+    if (ztr->hcodes) {
+	for (i = 0; i < ztr->nhcodes; i++) {
+	    if (ztr->hcodes[i].codes && ztr->hcodes[i].ztr_owns)
+		huffman_codes_destroy(ztr->hcodes[i].codes);
+	}
+	free(ztr->hcodes);
     }
 
     if (ztr->text_segments)
@@ -508,10 +521,98 @@ static double entropy(unsigned char *data, int len) {
 }
 
 /*
+ * Adds a user-defined huffman_codes_t code-set to the available code sets
+ * used by huffman_encode or huffman_decode.
+ *
+ * Note that the 'codes' memory is then "owned" by the ztr object if "ztr_owns"
+ * is true and will be deallocated when the ztr object is destroyed. Otherwise
+ * freeing the ztr object will not touch the passed in codes.
+ */
+void ztr_add_hcode(ztr_t *ztr, huffman_codes_t *codes, int ztr_owns) {
+    if (!codes)
+	return;
+
+    ztr->hcodes = realloc(ztr->hcodes, (ztr->nhcodes+1)*sizeof(*ztr->hcodes));
+    ztr->hcodes[ztr->nhcodes].codes = codes;
+    ztr->hcodes[ztr->nhcodes++].ztr_owns = ztr_owns;
+}
+
+/*
+ * Searches through the cached huffman_codes_t tables looking for a stored
+ * huffman code of type 'code_set'.
+ * NB: only code_sets >= CODE_USER will be stored here.
+ *
+ * Returns codes on success,
+ *         NULL on failure
+ */
+huffman_codes_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
+    int i;
+
+    if (code_set < CODE_USER)
+	return NULL; /* computed on-the-fly or use a hard-coded set */
+
+    /* Check through chunks for undecoded HUFF chunks */
+    if (!ztr->hcodes_checked) {
+	for (i = 0; i < ztr->nchunks; i++) {
+	    if (ztr->chunk[i].type == ZTR_TYPE_HUFF) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		ztr_add_hcode(ztr, restore_codes((unsigned char *)
+						 ztr->chunk[i].data, NULL), 1);
+	    }
+	}
+	ztr->hcodes_checked = 1;
+    }
+
+    /* Check cached copies */
+    for (i = 0; i < ztr->nhcodes; i++) {
+	if (ztr->hcodes[i].codes->code_set == code_set)
+	    return ztr->hcodes[i].codes;
+    }
+
+    return NULL;
+}
+
+/*
+ * Stores held ztr huffman_codes as ZTR chunks.
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int ztr_store_hcodes(ztr_t *ztr) {
+    int i;
+    ztr_chunk_t *chunks;
+    int nchunks;
+
+    if (ztr->nhcodes == 0)
+	return 0;
+
+    /* Extend chunks array */
+    nchunks = ztr->nchunks + ztr->nhcodes;
+    chunks = (ztr_chunk_t *)realloc(ztr->chunk, nchunks * sizeof(*chunks));
+    if (!chunks)
+	return -1;
+    ztr->chunk = chunks;
+
+    /* Encode */
+    for (i = 0; i < ztr->nhcodes; i++) {
+	int j = ztr->nchunks;
+	ztr->chunk[j].type = ZTR_TYPE_HUFF;
+	ztr->chunk[j].mdata = 0;
+	ztr->chunk[j].mdlength = 0;
+	ztr->chunk[j].data = (char *)store_codes(ztr->hcodes[i].codes,
+						 &ztr->chunk[j].dlength);
+	if (ztr->chunk[j].data)
+	    ztr->nchunks++;
+    }
+
+    return ztr->nchunks == nchunks ? 0 : -1;
+}
+
+/*
  * Compresses an individual chunk using a specific format. The format is one
  * of the 'format' fields listed in the spec; one of the ZTR_FORM_ macros.
  */
-int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
+int compress_chunk(ztr_t *ztr, ztr_chunk_t *chunk, int format,
+		   int option, int option2) {
     char *new_data = NULL;
     int new_len;
 
@@ -521,7 +622,8 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
 
     case ZTR_FORM_RLE:
 	new_data = rle(chunk->data, chunk->dlength, option, &new_len);
-	if (entropy(new_data,new_len) >= entropy(chunk->data,chunk->dlength)) {
+	if (entropy((unsigned char *)new_data, new_len) >=
+	    entropy((unsigned char *)chunk->data, chunk->dlength)) {
 	    xfree(new_data);
 	    return 0;
 	}
@@ -576,7 +678,9 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
 	break;
 
     case ZTR_FORM_STHUFF:
-	new_data = encode_memory(chunk->data, chunk->dlength, &new_len,option);
+	new_data = (char *)huffman_encode(ztr_find_hcode(ztr, option), option,
+					  (unsigned char *)chunk->data,
+					  chunk->dlength, &new_len);
 	break;
     }
 
@@ -599,7 +703,7 @@ int compress_chunk(ztr_chunk_t *chunk, int format, int option, int option2) {
 /*
  * Uncompresses an individual chunk from all levels of compression.
  */
-int uncompress_chunk(ztr_chunk_t *chunk) {
+int uncompress_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
     char *new_data = NULL;
     int new_len;
 
@@ -649,9 +753,17 @@ int uncompress_chunk(ztr_chunk_t *chunk) {
 	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
 
-	case ZTR_FORM_STHUFF:
-	    new_data = decode_memory(chunk->data, chunk->dlength, &new_len);
+	case ZTR_FORM_STHUFF: {
+	    huffman_codes_t *c = NULL;
+
+	    if ((unsigned char)(chunk->data[1]) >= CODE_USER) {
+		/* Scans through HUFF chunks */
+		c = ztr_find_hcode(ztr, (unsigned char)(chunk->data[1]));
+	    }
+	    new_data = (char *)huffman_decode(c, (unsigned char *)chunk->data,
+					      chunk->dlength, &new_len);
 	    break;
+	}
 
 	default:
 	    return -1;
@@ -698,7 +810,8 @@ int compress_ztr(ztr_t *ztr, int level) {
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
 #ifdef SOLEXA
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_TRACES, 0);
+	    compress_chunk(ztr, &ztr->chunk[i],
+			   ZTR_FORM_STHUFF, CODE_TRACES, 0);
 #else
 	    if (ztr->chunk[i].mdlength == 4 &&
 		memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0) {
@@ -706,8 +819,8 @@ int compress_ztr(ztr_t *ztr, int level) {
 	    } else if (ztr->chunk[i].mdlength == 4 &&
 		memcmp(ztr->chunk[i].mdata, "PYNO", 4) == 0) {
 		if (level > 1) {
-		    compress_chunk(&ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
-		    compress_chunk(&ztr->chunk[i],
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
+		    compress_chunk(ztr, &ztr->chunk[i],
 				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 		}
 	    } else {
@@ -717,21 +830,21 @@ int compress_ztr(ztr_t *ztr, int level) {
 		     * better than a single delta for 8-bit data, and the other
 		     * way around for 16-bit data
 		     */
-		    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA2,
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA2,
 				   ztr->delta_level, 0);
 		} else {
-		    compress_chunk(&ztr->chunk[i], ZTR_FORM_ICHEB,  0, 0);
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_ICHEB,  0, 0);
 		}
 		
-		compress_chunk(&ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
+		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
 		if (level > 1) {
-		    compress_chunk(&ztr->chunk[i], ZTR_FORM_FOLLOW1,0, 0);
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_FOLLOW1,0, 0);
 		    /*
-		      compress_chunk(&ztr->chunk[i],
-		      ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
+		      compress_chunk(ztr, &ztr->chunk[i],
+		                     ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY);
 		    */
-		    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  150, 0);
-		    compress_chunk(&ztr->chunk[i],
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_RLE,  150, 0);
+		    compress_chunk(ztr, &ztr->chunk[i],
 				   ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 		}
 	    }
@@ -740,10 +853,10 @@ int compress_ztr(ztr_t *ztr, int level) {
 
 	case ZTR_TYPE_BASE:
 #ifdef SOLEXA
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_DNA, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_STHUFF, CODE_DNA, 0);
 #else
 	    if (level > 1) {
-		compress_chunk(&ztr->chunk[i],
+		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 #endif
@@ -753,23 +866,24 @@ int compress_ztr(ztr_t *ztr, int level) {
 	case ZTR_TYPE_CNF4:
 	case ZTR_TYPE_CSID:
 #ifdef SOLEXA
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_STHUFF, CODE_CONF_RLE, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
+	    compress_chunk(ztr, &ztr->chunk[i],
+			   ZTR_FORM_STHUFF, CODE_CONF_RLE, 0);
 #else
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA1, 1, 0);
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA1, 1, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
 	    if (level > 1) {
-		compress_chunk(&ztr->chunk[i],
+		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 #endif
 	    break;
 
 	case ZTR_TYPE_BPOS:
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
 	    if (level > 1) {
-		compress_chunk(&ztr->chunk[i],
+		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 	    break;
@@ -778,14 +892,14 @@ int compress_ztr(ztr_t *ztr, int level) {
 #ifdef SOLEXA
 #else
 	    if (level > 1) {
-		compress_chunk(&ztr->chunk[i],
+		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
 	    }
 #endif
 	    break;
 
 	case ZTR_TYPE_FLWO:
-	    compress_chunk(&ztr->chunk[i], ZTR_FORM_XRLE, 0, 4);
+	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE, 0, 4);
 	    break;
 
 	}
@@ -812,7 +926,7 @@ int uncompress_ztr(ztr_t *ztr) {
 		    ZTR_BE2STR(ztr->chunk[i].type,str));
 	}
 	*/
-	uncompress_chunk(&ztr->chunk[i]);
+	uncompress_chunk(ztr, &ztr->chunk[i]);
     }
 
     return 0;
