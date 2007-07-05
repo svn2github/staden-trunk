@@ -14,9 +14,7 @@ extern "C" {
 #define CODE_DNA_C	  3   
 #define CODE_DNA_G	  4   
 #define CODE_DNA_T	  5   
-#define CODE_SOLEXA_TRACE 6
-#define CODE_CONF	  7
-#define CODE_CONF_RLE	  8
+#define CODE_ENGLISH      6
 
 /* predefined elsewhere in HUFF chunks, 128 onwards */
 #define CODE_USER	  128 
