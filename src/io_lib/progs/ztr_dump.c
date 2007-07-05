@@ -4,6 +4,7 @@
 #include "ztr.h"
 #include "compression.h"
 #include "xalloc.h"
+#include "huffman_static.h"
 
 static char *format2str(int format) {
     static char unk[100];
@@ -71,7 +72,7 @@ double entropy(unsigned char *data, int len) {
 }
 
 /* Debug version of the ztr.c uncompress_chunk function. */
-static int explode_chunk(ztr_chunk_t *chunk) {
+static int explode_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
     char *new_data = NULL;
     int new_len;
 
@@ -89,10 +90,6 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 
 	case ZTR_FORM_ZLIB:
 	    new_data = zlib_dehuff(chunk->data, chunk->dlength, &new_len);
-	    break;
-
-	case ZTR_FORM_STHUFF:
-	    new_data = decode_memory(chunk->data, chunk->dlength, &new_len);
 	    break;
 
 	case ZTR_FORM_DELTA1:
@@ -126,6 +123,18 @@ static int explode_chunk(ztr_chunk_t *chunk) {
 	case ZTR_FORM_LOG2:
 	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
+
+	case ZTR_FORM_STHUFF: {
+	    huffman_codes_t *c = NULL;
+
+	    if ((unsigned char)(chunk->data[1]) >= CODE_USER) {
+		/* Scans through HUFF chunks */
+		c = ztr_find_hcode(ztr, (unsigned char)(chunk->data[1]));
+	    }
+	    new_data = huffman_decode(c, chunk->data, chunk->dlength,
+				      &new_len);
+	    break;
+	}
 
 	default:
 	    return -1;
@@ -174,7 +183,7 @@ int main(int argc, char **argv) {
 	(void)ZTR_BE2STR(ztr->chunk[i].type, str);
 	complen = ztr->chunk[i].dlength;
 	printf("-- %s --\n", str);
-	explode_chunk(&ztr->chunk[i]);
+	explode_chunk(ztr, &ztr->chunk[i]);
 	rawlen = ztr->chunk[i].dlength;
 	printf("SUMMARY %s  mlen %3d, dlen %6d, rawlen %6d, ratio %f\n",
 	       str, ztr->chunk[i].mdlength,
