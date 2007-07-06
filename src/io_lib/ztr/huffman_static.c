@@ -395,19 +395,9 @@ huffman_codes_t *generate_code_set(int code_set, unsigned char *data, int len,
 	    c->ncodes = sizeof(codes_dna_t)/sizeof(*c->codes);
 	    break;
 
-	case CODE_SOLEXA_TRACE:
-	    c->codes = codes_solexa_trace;
-	    c->ncodes = sizeof(codes_solexa_trace)/sizeof(*c->codes);
-	    break;
-
-	case CODE_CONF:
-	    c->codes = codes_conf;
-	    c->ncodes = sizeof(codes_conf)/sizeof(*c->codes);
-	    break;
-
-	case CODE_CONF_RLE:
-	    c->codes = codes_conf_rle;
-	    c->ncodes = sizeof(codes_conf_rle)/sizeof(*c->codes);
+	case CODE_ENGLISH:
+	    c->codes = codes_english;
+	    c->ncodes = sizeof(codes_english)/sizeof(*c->codes);
 	    break;
 
 	default:
@@ -435,9 +425,7 @@ void huffman_codes_destroy(huffman_codes_t *c) {
 
     switch(c->code_set) {
     case CODE_DNA:
-    case CODE_SOLEXA_TRACE:
-    case CODE_CONF:
-    case CODE_CONF_RLE:
+    case CODE_ENGLISH:
 	/* All these use static tables */
 	break;
 
