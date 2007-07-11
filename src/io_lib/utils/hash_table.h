@@ -97,6 +97,7 @@ typedef struct {
 #define HASH_FUNC_HSIEH       0
 #define HASH_FUNC_TCL         1
 #define HASH_FUNC_JENKINS     2
+#define HASH_FUNC_JENKINS3    3
 #define HASH_FUNC_MASK        7
 
 /* Other HashTable.options values */
@@ -107,6 +108,7 @@ typedef struct {
 
 /* Hashing prototypes */
 uint32_t hash(int func, uint8_t *key, int key_len);
+uint64_t hash64(int func, uint8_t *key, int key_len);
 uint32_t HashJenkins(uint8_t *k, int length);
 uint32_t HashTcl(uint8_t *data, int len);
 uint32_t HashHsieh(uint8_t *k, int length);

@@ -51,6 +51,7 @@ UTILSOBJS=\
 	utils/$(O)/compress.o \
 	utils/$(O)/open_trace_file.o \
 	utils/$(O)/hash_table.o \
+	utils/$(O)/jenkins_lookup3.o \
 	utils/$(O)/mFILE.o\
 	utils/$(O)/vlen.o
 

@@ -58,6 +58,8 @@ libread_a_SOURCES = \
 	../utils/vlen.h \
 	../utils/hash_table.c \
 	../utils/hash_table.h \
+	../utils/jenkins_lookup3.c \
+	../utils/jenkins_lookup3.h \
 	../utils/mFILE.c \
 	../utils/mFILE.h \
 	../utils/os.h \

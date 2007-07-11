@@ -48,6 +48,7 @@ pkginclude_HEADERS = \
 	utils/stdio_hack.h \
 	utils/vlen.h \
 	utils/hash_table.h \
+	utils/jenkins_lookup3.h \
 	utils/os.h \
 	ztr/compression.h \
 	ztr/ztr.h \

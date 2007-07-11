@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "os.h"
 #include "hash_table.h"
-
+#include "jenkins_lookup3.h"
 
 /* =========================================================================
  * TCL's hash function. Basically hash*9 + char.
@@ -85,6 +85,9 @@ uint32_t HashHsieh(uint8_t *data, int len) {
 /* =========================================================================
  * Bob Jenkins' hash function
  * http://burtleburtle.net/bob/hash/doobs.html
+ *
+ * See jenkins_lookup3.c for a new version of this that has good hash
+ * characteristics for a full 64-bit hash value.
  * =========================================================================
  */
 
@@ -215,9 +218,44 @@ uint32_t hash(int func, uint8_t *key, int key_len) {
 	
     case HASH_FUNC_JENKINS:
 	return HashJenkins(key, key_len);
+
+    case HASH_FUNC_JENKINS3:
+      {
+	uint32_t pc, pb;
+	HashJenkins3(key, key_len, &pc, &pb);
+	return pc;
+      }
     }
     
     return 0;
+}
+
+/*
+ * As per hash() above but returns a 64-bit key. For 32-bit hash functions
+ * this is simply a duplication of the 32-bit value.
+ */
+uint64_t hash64(int func, uint8_t *key, int key_len) {
+    uint32_t pc = 0, pb = 0;
+
+    switch (func) {
+    case HASH_FUNC_HSIEH:
+	pb = pc = HashHsieh(key, key_len);
+	break;
+
+    case HASH_FUNC_TCL:
+	pb = pc = HashTcl(key, key_len);
+	break;
+	
+    case HASH_FUNC_JENKINS:
+	pb = pc = HashJenkins(key, key_len);
+	break;
+
+    case HASH_FUNC_JENKINS3:
+	HashJenkins3(key, key_len, &pc, &pb);
+	break;
+    }
+    
+    return pc + (((uint64_t)pb)<<32);
 }
 
 /* =========================================================================
@@ -373,8 +411,8 @@ int HashTableResize(HashTable *h, int newsize) {
     for (i = 0; i < h->nbuckets; i++) {
 	HashItem *hi, *next;
 	for (hi = h->bucket[i]; hi; hi = next) {
-	    uint32_t hv = hash(h2->options & HASH_FUNC_MASK,
-			       (uint8_t *)hi->key, hi->key_len) & h2->mask;
+	    uint64_t hv = hash64(h2->options & HASH_FUNC_MASK,
+				 (uint8_t *)hi->key, hi->key_len) & h2->mask;
 	    next = hi->next;
 	    hi->next = h2->bucket[hv];
 	    h2->bucket[hv] = hi;
@@ -419,13 +457,14 @@ int HashTableResize(HashTable *h, int newsize) {
  */
 HashItem *HashTableAdd(HashTable *h, char *key, int key_len, HashData data,
 		       int *new) {
-    uint32_t hv;
+    uint64_t hv;
     HashItem *hi;
 
     if (!key_len)
 	key_len = strlen(key);
 
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hash64(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len)
+	& h->mask;
 
     /* Already exists? */
     if (!(h->options & HASH_ALLOW_DUP_KEYS)) {
@@ -480,11 +519,11 @@ HashItem *HashTableAdd(HashTable *h, char *key, int key_len, HashData data,
  *        -1 on failure (eg HashItem not in the HashTable);
  */
 int HashTableDel(HashTable *h, HashItem *hi, int deallocate_data) {
-    uint32_t hv;
+    uint64_t hv;
     HashItem *next, *last;
 
-    hv = hash(h->options & HASH_FUNC_MASK,
-	      (uint8_t *)hi->key, hi->key_len) & h->mask;
+    hv = hash64(h->options & HASH_FUNC_MASK,
+		(uint8_t *)hi->key, hi->key_len) & h->mask;
 
     for (last = NULL, next = h->bucket[hv]; next;
 	 last = next, next = next->next) {
@@ -522,14 +561,15 @@ int HashTableDel(HashTable *h, HashItem *hi, int deallocate_data) {
  */
 int HashTableRemove(HashTable *h, char *key, int key_len,
 		    int deallocate_data) {
-    uint32_t hv;
+    uint64_t hv;
     HashItem *last, *next, *hi;
     int retval = -1;
 
     if (!key_len)
 	key_len = strlen(key);
 
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hash64(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len)
+	& h->mask;
 
     last = NULL;
     next = h->bucket[hv];
@@ -571,13 +611,14 @@ int HashTableRemove(HashTable *h, char *key, int key_len,
  *    NULL if not found
  */
 HashItem *HashTableSearch(HashTable *h, char *key, int key_len) {
-    uint32_t hv;
+    uint64_t hv;
     HashItem *hi;
 
     if (!key_len)
 	key_len = strlen(key);
 
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hash64(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len)
+	& h->mask;
     for (hi = h->bucket[hv]; hi; hi = hi->next) {
 	if (key_len == hi->key_len &&
 	    memcmp(key, hi->key, key_len) == 0)
@@ -1195,13 +1236,13 @@ HashFile *HashFileLoad(FILE *fp) {
  */
 int HashFileQuery(HashFile *hf, uint8_t *key, int key_len,
 		  HashFileItem *item) {
-    uint32_t hval;
+    uint64_t hval;
     uint32_t pos;
     int klen;
     int cur_offset = 0;
 
     /* Hash 'key' to compute the bucket number */
-    hval = hash(hf->hh.hfunc, key, key_len) & (hf->hh.nbuckets-1);
+    hval = hash64(hf->hh.hfunc, key, key_len) & (hf->hh.nbuckets-1);
 
     /* Read the bucket to find the first linked list item location */
     if (-1 == fseeko(hf->hfp, hf->hf_start + 4*hval + hf->header_size,SEEK_SET))
