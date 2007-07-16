@@ -102,3 +102,91 @@ char *read_fofn(FILE *fp) {
 void close_fofn(FILE *fp) {
   fclose(fp);
 }
+
+
+/*
+ * ---------------------------------------------------------------------------
+ * Temporary file handling.
+ */
+
+#ifdef _WIN32
+/*
+ * On UNIX systems we use tmpfile().
+ *
+ * On windows this is broken because it always attempts to create files in
+ * the root directory of the current drive, and fails if the user does not
+ * have write permission.
+ *
+ * We can't wrap up mkstemp() either as that doesn't exist under windows.
+ * Instead we roll our own tmpfile() using the native windows API.
+ */
+#include <windows.h>
+#include <winbase.h>
+#include <stdio.h>
+#include <io.h>
+#include <fcntl.h>
+#define _POSIX_ /* needed to get PATH_MAX */
+#include <limits.h>
+
+static void display_win_error(char *msg) {
+    LPVOID lpMsgBuf;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+    	          FORMAT_MESSAGE_FROM_SYSTEM |
+    	          FORMAT_MESSAGE_IGNORE_INSERTS,
+    	          NULL,
+    	          GetLastError(),
+    	          0,                 /* Default language */
+    	          (LPTSTR)&lpMsgBuf, /* Got to love void* to str casts! */
+    	          0, NULL);
+    fprintf(stderr, "%s: error #%d, %s", msg, GetLastError(), lpMsgBuf);
+    LocalFree(lpMsgBuf);
+}
+
+/*
+ * Creates a temporary file and returns a FILE pointer to it.
+ * The file will be automatically deleted when it is closed or the
+ * applicaton exits.
+ *
+ * Returns NULL on failure.
+ */
+FILE *tmpfile(void) {
+    DWORD ret;
+    char tmp_path[PATH_MAX], shrt_path[PATH_MAX];
+    int fd;
+    FILE *fp;
+
+    /* The Windows Way: get the temp directory and a file within it */
+    ret = GetTempPath(PATH_MAX, tmp_path);
+    if (ret == 0 || ret > PATH_MAX) {
+	display_win_error("GetTempPath()");
+        return NULL;
+    }
+
+    if (0 == GetTempFileName(tmp_path, "fubar", 0, shrt_path)) {
+	display_win_error("GetTempFileName()");
+	return NULL;
+    }
+
+    /*
+     * O_TRUNC incase anyone has managed to inject data in the newly created
+     * file already via race-conditions.
+     *
+     * O_EXCL to (in theory) stop anyone else opening it and to die if someone
+     * beat us to it - although this appears to not actually work on Windows.
+     *
+     * O_TEMPORARY so that the file is removed on close.
+     */
+    if (-1 == (fd = _open(shrt_path, O_RDWR | O_TRUNC | O_EXCL |
+			  O_BINARY | O_TEMPORARY, 0600))) {
+	perror(shrt_path);
+    }
+
+    /* Replace fd with FILE*. No need to close fd */
+    if (NULL == (fp = _fdopen(fd, "r+b"))) {
+	perror(shrt_path);
+    }
+
+    return fp;
+}
+
+#endif /* _WIN32 */

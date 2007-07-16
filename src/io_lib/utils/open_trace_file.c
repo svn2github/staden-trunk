@@ -1043,7 +1043,6 @@ mFILE *open_path_mfile(char *file, char *path, char *relative_to) {
 FILE *open_path_file(char *file, char *path, char *relative_to) {
     mFILE *mf = open_path_mfile(file, path, relative_to);
     FILE *fp;
-    char *fname;
 
     if (!mf)
 	return NULL;
@@ -1051,17 +1050,9 @@ FILE *open_path_file(char *file, char *path, char *relative_to) {
     if (mf->fp)
 	return mf->fp;
 
-    /* Otherwise create a temporary file and write the trace out */
-    /* Use tempnam() to force the use of TMP environment variable on Windows */
-    if (NULL == (fname=tempnam(NULL, NULL)))
-	return 0;
-    if (NULL == (fp = fopen(fname, "wb+"))){
-	remove(fname);
-	free(fname);
-	return 0;
-    }
-    remove(fname);
-    free(fname);
+    /* Secure temporary file generation */
+    if (NULL == (fp = tmpfile()))
+	return NULL;
 
     /* Copy the data */
     fwrite(mf->data, 1, mf->size, fp);
