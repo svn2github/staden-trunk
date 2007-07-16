@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT(io_lib, 1.10.2)
+AC_INIT(io_lib, 1.10.3b1)
 AM_CONFIG_HEADER(io_lib_config.h)
 AM_INIT_AUTOMAKE
 
@@ -8,15 +8,9 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_RANLIB
 
-AH_TEMPLATE([HAVE_ZLIB], [Define if zlib is installed])
-
-dnl Check for zlib. If not found then we won't include ZTR support
-AC_CHECK_LIB(z,main,LIBZ='-lz';AC_DEFINE(HAVE_ZLIB),
-             AC_MSG_WARN(*** zlib not found; hence no ZTR support))
-AC_SUBST(LIBZ)
-
-dnl Check for libcurl
+dnl Check for libcurl and zlib
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
+ZLIB_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
 
 dnl Socket support for Solaris (et al)
 AC_SEARCH_LIBS([gethostbyname], [nsl])
@@ -24,13 +18,10 @@ AC_SEARCH_LIBS([socket], [socket], [],
     [AC_CHECK_LIB([socket], [socket],
                   [LIBS="-lsocket -lnsl $LIBS"], [], [-lnsl])])
 
-AM_CONDITIONAL(HAVE_ZLIB, test x$ac_cv_lib_z_main = xyes)
-
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(fcntl.h limits.h unistd.h)
-CPPFLAGS="${CPPFLAGS} -I/usr/local/include"
 AC_CHECK_HEADER(zlib.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
