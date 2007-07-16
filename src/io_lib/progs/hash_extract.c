@@ -75,6 +75,9 @@ int main(int argc, char **argv) {
 	fclose(fofnfp);
     }
 
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
     for (; argc; argc--, argv++) {
 	ret |= extract(hf, *argv);
     }
