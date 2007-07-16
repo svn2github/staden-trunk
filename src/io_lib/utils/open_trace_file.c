@@ -47,11 +47,8 @@
 static char *magics[] = {"", ".bz", ".gz", ".Z", ".z", ".bz2", ".sz"};
 
 /*
- * Initially produce a new search path where all "::"s are replaced with
- * a single ":". This is because on windows we need to include colons in
- * the search path, but colon is also our component separator.
- *
- * We explicitly add a "./" to the start of the search path
+ * Tokenises the search path splitting on colons (unix) or semicolons (windows).
+ * We also  explicitly add a "./" to the end of the search path
  *
  * Returns: A new search path with items separated by nul chars. Two nul
  *          chars in a row represent the end of the tokenised path.
@@ -64,6 +61,11 @@ static char *tokenise_search_path(char *searchpath) {
     char *newsearch;
     unsigned int i, j;
     size_t len;
+#ifdef _WIN32
+    char *path_sep = ';';
+#else
+    char *path_sep = ':';
+#endif
 
     if (!searchpath)
 	searchpath="";
@@ -73,13 +75,7 @@ static char *tokenise_search_path(char *searchpath) {
 	return NULL;
 
     for (i = 0, j = 0; i < len; i++) {
-	if (i < len-1 && searchpath[i] == ':' && searchpath[i+1] == ':') {
-	    newsearch[j++] = ':';
-	    i++;
-	    continue;
-	}
-
-	if (searchpath[i] == ':') {
+	if (searchpath[i] == path_sep) {
 	    /* Skip blank path components */
 	    if (j && newsearch[j-1] != 0)
 		newsearch[j++] = 0;
