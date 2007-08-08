@@ -52,6 +52,7 @@
 #include <signal.h>
 #include <sys/types.h>
 #include <math.h>
+#include <float.h>
 #include "qual.h"
 #include "qualP.h"
 #include "misc.h"
@@ -250,7 +251,8 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		} else {
 		    if (conq[5]) {
 			qual_p = Q_OK;
-			if ((float)conq[base_p]/conq[5] < cons_cutoff)
+			if ((float)conq[base_p]/conq[5] - cons_cutoff
+			    < FLT_EPSILON)
 			    qual_p = Q_POOR_DATA;
 		    } else
 			qual_p = Q_POOR_DATA;
@@ -299,7 +301,8 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		} else {
 		    if (conq2[5]) {
 			qual_n = Q_OK;
-			if ((float)conq2[base_n]/conq2[5] < cons_cutoff)
+			if ((float)conq2[base_n]/conq2[5] - cons_cutoff
+			    < FLT_EPSILON)
 			    qual_n = Q_POOR_DATA;
 		    } else
 			qual_n = Q_POOR_DATA;
@@ -461,10 +464,10 @@ int next_hole(int contig,
 }
 
 /* Anything not in here (eg IUB codes) are treated as dashes */
-static char qual_char[]={'C','T','A','G',
+static char qual_char[]={
+    'C','T','A','G',
     'c','t','a','g',
-    '*',',',
-    '-','\0'};
+    '*',',','-','\0'};
 
 static char qual_ind[sizeof(qual_char)]={
     1,3,0,2,
@@ -476,10 +479,12 @@ static char qual_ind[sizeof(qual_char)]={
  * that qual_ind and once to index 5 as the running total). So we halve these
  * values.
  */
+/* #define N_SCORE 5 */
+#define N_SCORE 0
 static char qual_val[sizeof(qual_char)]={
      99, 99, 99, 99,
      99, 99, 99, 99,
-     99, 99,  5,  5};
+     99, 99,  N_SCORE, N_SCORE};
 
 static void init_clookup(void) {
     int i;
@@ -492,8 +497,8 @@ static void init_clookup(void) {
     /* Unknowns are -1 as we treat them specially (add part to all) */
     for (i=0; i<256; i++) {
 	clookup[i] = -1;
-	clookup_old[i] = 5;
-	vlookup_old[i] = 5; /* => quality 10 as it's added twice */
+	clookup_old[i] = N_SCORE;
+	vlookup_old[i] = N_SCORE; /* => 2*N_SCORE as it's added twice */
     }
     for (i=0; i<9; i++)
 	clookup[(unsigned char)"ACGT*acgt"[i]] = i%5;
@@ -620,9 +625,8 @@ static int calc_contig_info(int contig, int start, int end, int both,
      */
     max_len = info_func(GET_GEL_LEN, info_data, &info);
     if (max_len > end - start + 1)
-	max_len2 = max_len = end - start + 1;
-    else
-	max_len2 = max_len * 2;
+	max_len = end - start + 1;
+    max_len2 = max_len * 2;
 
     info.contig_info.contig = contig;
     info_func(GET_CONTIG_INFO, info_data, &info);
@@ -660,6 +664,24 @@ static int calc_contig_info(int contig, int start, int end, int both,
     buffer_pos = start-1;
     buffer_ind = 0;
 
+    /*
+     * Yes I know this is hideous. It fixes a bug where given illegal data
+     * (contigs with holes in it) we will want to run the 'eval_func' on
+     * our empty buffers until we've got to the region where the next
+     * sequence is visible, otherwise the first sequence (aka
+     * info.gel_info.gel) may get shunted down to appear in an incorrect
+     * portion of the consensus.
+     *
+     * Ie we want to do B AB AB AB AB AB and so we goto the B section to start
+     * the ball rolling. Alternatives are simply to duplicate the code or to
+     * put it in its own function, although it's have rather a lot of
+     * pass-by-reference parameters.
+     *
+     * I also toyed with Duff's Device, but this made the code even more
+     * obscure. At least this way it's self documenting :-)
+     */
+    goto process_buffers;
+
     do {
 	if (info.gel_info.gel == 0)
 	    break;
@@ -695,6 +717,7 @@ static int calc_contig_info(int contig, int start, int end, int both,
 	    not_comp = !comp;
 	}
 	i_end -= i_start;
+
 	if (comp) {
 	    for (i = 0, j = i_start + info.gel_info.position - start;
 		 i < i_end; i++, j++) {
@@ -769,8 +792,7 @@ static int calc_contig_info(int contig, int start, int end, int both,
 
 	xfree(gel_qual);
 
-	fetch_next:
-
+    fetch_next:
 	/*
 	 * fetch next gel
 	 */
@@ -778,11 +800,12 @@ static int calc_contig_info(int contig, int start, int end, int both,
 	if (info.gel_info.gel)
 	    info_func(GET_GEL_INFO, info_data, &info);
 
+    process_buffers:
 	/*
 	 * If we've filled up one buffer load, then call our evaluation
 	 * function.
 	 */
-	if (info.gel_info.position > buffer_pos + max_len) {
+	while (info.gel_info.position > buffer_pos + max_len) {
 	    eval_func(&contig_qual[buffer_ind],
 		      contig_qual2 ? &contig_qual2[buffer_ind] : NULL,
 		      end - buffer_pos > max_len ? max_len : end - buffer_pos,
@@ -894,13 +917,17 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		if (conq[5] > 0) {
 		    if (consensus_iub) {
 			t = 0;
-			if ((float)conq[0]/conq[5] >= cons_cutoff)
+			if ((float)conq[0]/conq[5] - cons_cutoff
+			    >= -FLT_EPSILON)
 			    t |= 1;
-			if ((float)conq[1]/conq[5] >= cons_cutoff)
+			if ((float)conq[1]/conq[5] - cons_cutoff
+			    >= -FLT_EPSILON)
 			    t |= 2;
-			if ((float)conq[2]/conq[5] >= cons_cutoff)
+			if ((float)conq[2]/conq[5] - cons_cutoff
+			    >= -FLT_EPSILON)
 			    t |= 4;
-			if ((float)conq[3]/conq[5] >= cons_cutoff)
+			if ((float)conq[3]/conq[5] - cons_cutoff
+			    >= -FLT_EPSILON)
 			    t |= 8;
 			base = 6 + t;
 			val = 0;
@@ -913,7 +940,8 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 			if (t < conq[3]) t = conq[3], base = 3;
 			if (t < conq[4]) t = conq[4], base = 4;
 
-			if ((val = (float)conq[base]/conq[5]) < cons_cutoff)
+			if ((val = (float)conq[base]/conq[5]) - cons_cutoff
+			    < FLT_EPSILON)
 			    base = 5;
 		    }
 		} else {
@@ -1611,7 +1639,7 @@ static void process_frags_6(seq_frag *frag, int *num_frags, int from, int to,
 	    err = 999;
 
 	/* Now store the results in con and qual */
-	if (err >= cons_cutoff100)
+	if (err - cons_cutoff100 >= -FLT_EPSILON)
 	    *con++ = "ACGT*-"[highest_type];
 	else
 	    *con++ = '-';
@@ -1842,7 +1870,7 @@ static void process_frags_5(seq_frag *frag, int *num_frags, int from, int to,
 	    err = 999;
 
 	/* Now store the results in con and qual */
-	if (err >= cons_cutoff100)
+	if (err - cons_cutoff100 >= -FLT_EPSILON)
 	    *con++ = "ACGT*-"[highest_type];
 	else
 	    *con++ = '-';
@@ -2139,7 +2167,7 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 		    err = 99.4;
 		
 		/* Now store the results in con and qual */
-		if (err >= cons_cutoff100) {
+		if (err - cons_cutoff100 >= -FLT_EPSILON) {
 		    *conp = "ACGT*-"[highest_type];
 		} else {
 		    *conp = '-';
@@ -2645,7 +2673,7 @@ static void process_frags_7(seq_frag *frag, int *num_frags, int from, int to,
 			err = 999;
 		    
 		    /* Now store the results in con and qual */
-		    if (err >= cons_cutoff100)
+		    if (err - cons_cutoff100 >= -FLT_EPSILON)
 			*conp = "ACGT*-"[highest_type];
 		    else
 			*conp = '-';
@@ -2660,7 +2688,7 @@ static void process_frags_7(seq_frag *frag, int *num_frags, int from, int to,
 	    } else { /* base_prob < 0.5 */
 		err = -10.0 * log10(base_prob);
 
-		*conp = (err >= cons_cutoff100) ? '*' : '-';
+		*conp = (err - cons_cutoff100 >= -FLT_EPSILON) ? '*' : '-';
 		if (qualp)
 		    *qualp = err > 99 ? 99 : err;
 	    }
@@ -2830,7 +2858,7 @@ static void process_frags_8(seq_frag *frag, int *num_frags, int from, int to,
 	    else
 		qual = 99;
 	    
-	    if (qual >= cons_cutoff100)
+	    if (qual - cons_cutoff100 >= -FLT_EPSILON)
 		*conp = "ACGT*-"[highest_type];
 	    else
 		*conp = '-';
@@ -2997,7 +3025,7 @@ static void process_frags_9(seq_frag *frag, int *num_frags, int from, int to,
 	    else
 		qual = 99;
 	    
-	    if (qual >= cons_cutoff100)
+	    if (qual - cons_cutoff100 >= -FLT_EPSILON)
 		*conp = "ACGT*-"[highest_type];
 	    else
 		*conp = '-';
@@ -3246,7 +3274,7 @@ static void process_frags_old(seq_frag *frag, int *num_frags, int from, int to,
 	    if (t < conq[4]) t = conq[4], base = 4;
 	    
 	    if (conq[5] > 0) {
-		if ((float)conq[base]/conq[5] < cons_cutoff)
+		if ((float)conq[base]/conq[5] - cons_cutoff < FLT_EPSILON)
 		    base = 5;
 	    } else {
 		base = 5;
