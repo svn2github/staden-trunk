@@ -1037,7 +1037,7 @@ static int tcl_finish_configure(finish_t *fin, Tcl_Interp *interp,
 
 
     /* Filter out fake-looking templates (consensus imports, etc) */
-    if (TCL_OK != skip_fake_templates(fin))
+    if (fin->io && TCL_OK != skip_fake_templates(fin))
 	return TCL_ERROR;
 
 
