@@ -252,7 +252,7 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		    if (conq[5]) {
 			qual_p = Q_OK;
 			if ((float)conq[base_p]/conq[5] - cons_cutoff
-			    < FLT_EPSILON)
+			    < -FLT_EPSILON)
 			    qual_p = Q_POOR_DATA;
 		    } else
 			qual_p = Q_POOR_DATA;
@@ -302,7 +302,7 @@ static void quality_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 		    if (conq2[5]) {
 			qual_n = Q_OK;
 			if ((float)conq2[base_n]/conq2[5] - cons_cutoff
-			    < FLT_EPSILON)
+			    < -FLT_EPSILON)
 			    qual_n = Q_POOR_DATA;
 		    } else
 			qual_n = Q_POOR_DATA;
@@ -941,7 +941,7 @@ static void consensus_func(int (*c_qual1)[7], int (*c_qual2)[7], int len,
 			if (t < conq[4]) t = conq[4], base = 4;
 
 			if ((val = (float)conq[base]/conq[5]) - cons_cutoff
-			    < FLT_EPSILON)
+			    < -FLT_EPSILON)
 			    base = 5;
 		    }
 		} else {
@@ -3274,7 +3274,7 @@ static void process_frags_old(seq_frag *frag, int *num_frags, int from, int to,
 	    if (t < conq[4]) t = conq[4], base = 4;
 	    
 	    if (conq[5] > 0) {
-		if ((float)conq[base]/conq[5] - cons_cutoff < FLT_EPSILON)
+		if ((float)conq[base]/conq[5] - cons_cutoff < -FLT_EPSILON)
 		    base = 5;
 	    } else {
 		base = 5;
