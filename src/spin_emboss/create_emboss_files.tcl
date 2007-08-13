@@ -21,7 +21,7 @@ wm withdraw .
 # is a sibling of this.
 proc acd_dir {} {
     set acd_dir ""
-    set fd [open "|embossdata 2>/dev/null"]
+    set fd [open "|embossdata . 2>/dev/null"]
     set out [read $fd]
     close $fd
     foreach line [split $out "\n"] {
