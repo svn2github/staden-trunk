@@ -479,8 +479,7 @@ static char qual_ind[sizeof(qual_char)]={
  * that qual_ind and once to index 5 as the running total). So we halve these
  * values.
  */
-/* #define N_SCORE 5 */
-#define N_SCORE 0
+#define N_SCORE 5
 static char qual_val[sizeof(qual_char)]={
      99, 99, 99, 99,
      99, 99, 99, 99,
