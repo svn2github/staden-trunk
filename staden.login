@@ -39,16 +39,16 @@ setenv STADTABL	$STADENROOT/tables
 setenv STADLIB  $STADENROOT/lib
 
 # Set up PATHS
-set path = ($STADENROOT/$MACHINE-bin $path)
+set path = ($path $STADENROOT/$MACHINE-bin)
 if ( "$MACHINE" == "macosx" ) then
 if ($?DYLD_LIBRARY_PATH) then
-    setenv DYLD_LIBRARY_PATH "${STADLIB}/${MACHINE}-binaries:${DYLD_LIBRARY_PATH}"
+    setenv DYLD_LIBRARY_PATH "${DYLD_LIBRARY_PATH}:${STADLIB}/${MACHINE}-binaries"
 else
     setenv DYLD_LIBRARY_PATH "${STADLIB}/${MACHINE}-binaries"
 endif
 else
 if ($?LD_LIBRARY_PATH) then
-    setenv LD_LIBRARY_PATH "${STADLIB}/${MACHINE}-binaries:${LD_LIBRARY_PATH}"
+    setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:${STADLIB}/${MACHINE}-binaries"
 else
     setenv LD_LIBRARY_PATH "${STADLIB}/${MACHINE}-binaries"
 endif

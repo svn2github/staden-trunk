@@ -44,13 +44,13 @@ STADTABL=$STADENROOT/tables;	export STADTABL
 STADLIB=$STADENROOT/lib;	export STADLIB
 
 # Set up PATHS
-PATH=$STADENROOT/$MACHINE-bin:$PATH
+PATH=$PATH:$STADENROOT/$MACHINE-bin
 export PATH
 if [ "$MACHINE" = "macosx" ]
 then
     if [ "$DYLD_LIBRARY_PATH" != "" ]
     then
-        DYLD_LIBRARY_PATH=$STADLIB/$MACHINE-binaries:$DYLD_LIBRARY_PATH
+        DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:$STADLIB/$MACHINE-binaries
     else
         DYLD_LIBRARY_PATH=$STADLIB/$MACHINE-binaries
     fi
@@ -58,16 +58,12 @@ then
 else
     if [ "$LD_LIBRARY_PATH" != "" ]
     then
-        LD_LIBRARY_PATH=$STADLIB/$MACHINE-binaries:$LD_LIBRARY_PATH
+        LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$STADLIB/$MACHINE-binaries
     else
         LD_LIBRARY_PATH=$STADLIB/$MACHINE-binaries
     fi
     export LD_LIBRARY_PATH
 fi
-
-TCL_LIBRARY=$STADLIB/tcl
-TK_LIBRARY=$STADLIB/tk
-export TCL_LIBRARY TK_LIBRARY
 
 #
 # files for gap4
