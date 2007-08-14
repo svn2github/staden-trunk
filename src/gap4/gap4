@@ -77,6 +77,12 @@ then
     . $STADENROOT/staden.profile
 fi
 
+# Define TCL/TK config - not defined in staden.profile as it may break
+# some other applications the user wishes to use.
+TCL_LIBRARY=$STADLIB/tcl
+TK_LIBRARY=$STADLIB/tk
+export TCL_LIBRARY TK_LIBRARY
+
 #
 # Run it!
 #
