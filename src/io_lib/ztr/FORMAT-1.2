@@ -1,0 +1,761 @@
+				ZTR SPEC v1.2
+				=============
+
+Header
+======
+
+The header consists of an 8 byte magic number (see below), followed by a 1-byte
+major version number and 1-byte minor version number.
+
+Changes in minor numbers should not cause problems for parsers. It indicates
+a change in chunk types (different contents), but the file format is the
+same.
+
+The major number is reserved for any incompatible file format changes (which
+hopefully should be never).
+
+/* The header */
+typedef struct {
+    unsigned char  magic[8];	  /* 0xae5a54520d0a1a0a (be) */
+    unsigned char  version_major; /* 1 */
+    unsigned char  version_minor; /* 2 */
+} ztr_header_t;
+
+/* The ZTR magic numbers */
+#define ZTR_MAGIC		"\256ZTR\r\n\032\n"
+#define ZTR_VERSION_MAJOR	1
+#define ZTR_VERSION_MINOR	2
+
+So the total header will consist of:
+
+Byte number   0  1  2  3  4  5  6  7  8  9
+            +--+--+--+--+--+--+--+--+--+--+
+Hex values  |ae 5a 54 52 0d 0a 1a 0d|01 02|
+            +--+--+--+--+--+--+--+--+--+--+
+
+Chunk format
+============
+
+The basic structure of a ZTR file is (header,chunk*) - ie header followed by
+zero or more chunks. Each chunk consists of a type, some meta-data and some
+data, along with the lengths of both the meta-data and data.
+
+Byte number   0  1  2  3   4    5    6   7   8  9
+            +--+--+--+--+----+----+----+---+--+  -  +--+--+--+--+--+--  -  --+
+Hex values  |   type    |meta-data length  | meta-data |data length| data .. |
+            +--+--+--+--+----+----+----+---+--+  -  +--+--+--+--+--+--  -  --+
+
+
+Ie in C:
+
+typedef struct {
+    uint4 type;			/* chunk type (be) */
+    uint4 mdlength;		/* length of meta-data field (be) */
+    char *mdata;		/* meta data */
+    uint4 dlength;		/* length of data field (be) */
+    char *data;			/* a format byte and the data itself */
+} ztr_chunk_t;
+
+All 2 and 4-byte integer values are stored in big endian format.
+
+The meta-data is uncompressed (and so it does not start with a format
+byte). The format of the meta-data is chunk specific, and many chunk types
+will have no meta-data. In this case the meta-data length field will be zero
+and this will be followed immediately by the data-length field.
+
+The data length is the length in bytes of the entire 'data' block, including
+the format information held within it.
+
+The first byte of the data consists of a format byte. The most basic format is
+zero - indicating that the data is "as is"; it's the real thing. Other formats
+exist in order to encode various filtering and compression techniques. The
+information encoded in the next bytes will depend on the format byte.
+
+
+Data format 0 - Raw
+-------------
+
+Byte number   0 1  2       N
+            +--+--+--  -  --+
+Hex values  | 0|  raw data  |
+            +--+--+--  -  --+
+
+Raw data has no compression or filtering. It just contains the unprocessed
+data. It consists of a one byte header (0) indicating raw format followed by N 
+bytes of data.
+
+
+Data format 1 - Run Length Encoding
+-------------
+
+Byte number   0  1    2     3     4      5     6  7  8               N
+            +--+----+----+-----+-----+-------+--+--+--+--  -  --+--+--+
+Hex values  | 1| Uncompressed length | guard | run length encoded data|
+            +--+----+----+-----+-----+-------+--+--+--+--  -  --+--+--+
+
+Run length encoding replaces stretches of N identical bytes (with value V)
+with the guard byte G followed by N and V. All other byte values are stored 
+as normal, except for occurrences of the guard byte, which is stored as G 0.
+For example with a guard value of 8:
+
+Input data:
+	20 9 9 9 9 9 10 9 8 7
+
+Output data:
+	1			(rle format)
+	0 0 0 10		(original length)
+	8			(guard)
+	20 8 5 9 10 9 8 0 7	(rle data)
+
+
+Data format 2 - ZLIB
+-------------
+
+Byte number   0  1    2     3     4    5  6  7         N
+            +--+----+----+-----+-----+--+--+--+--  -  --+
+Hex values  | 2| Uncompressed length | Zlib encoded data|
+            +--+----+----+-----+-----+--+--+--+--  -  --+
+
+This uses the zlib code to compress a data stream. The ZLIB data may itself be 
+encoded using a variety of methods (LZ77, Huffman), but zlib will
+automatically determine the format itself. Often using zlib mode
+Z_HUFFMAN_ONLY will provide best compression when combined with other
+filtering techniques.
+
+
+Data format 3 - multi-byte run length encoding
+-------------
+
+Byte number   0    1     2     3  4  5                N
+            +--+------+-------+--+--+--+--  -  --+--+--+
+Hex values  | 1| size | guard | run length encoded data|
+            +--+------+-------+--+--+--+--  -  --+--+--+
+
+Much standard RLE, but this mechanism has a byte to specify the length
+of the data item we compare to check for runs. It is not restricted to
+spotted runs aligned on 'size' byte boundaries either.
+
+No uncompressed length is encoded here as technically this is not
+required (although it does make decoding a bit slower). The compressed
+length alone is sufficient to work out the uncompressed length after
+decompressing.
+
+Guard bytes in the input stream are 'escaped' by the replacing the
+guard byte followed by zero. Guard bytes in a parameterised run (ie X
+copies of Y where Y contains the guard) do not need to be 'escaped'
+
+Input data:
+10 12 12 13 12 13 12 13 12 13 14
+
+Output data:
+3				(xrle format)
+2				(size of blocks to compare)
+12			        (guard, 12 is a bad choice but illustrative)
+10 12 0 12 4 12 13 14           (rle data)
+
+
+Data format 64/0x40 - 8-bit delta
+-------------------
+
+Byte number   0       1        2      N 
+            +--+-------------+--  -  --+
+Hex values  |40| Delta level |   data  |
+            +--+-------------+--  -  --+
+
+This technique replaces successive bytes with their differences. The level
+indicates how many rounds of differencing to apply, which should be between 1
+and 3. For determining the first difference we compare against zero. All
+differences are internally performed using unsigned values with automatic an
+wrap-around (taking the bottom 8-bits). Hence 2-1 is 1 and 1-2 is 255.
+
+For example, with level set to 1:
+
+Input data:
+      10 20 10 200 190 5
+
+Output data:
+       1			(delta1 format)
+       1			(level)
+       10 10 246 190 246 71	(delta data)
+
+For level set to 2:
+       
+Input data:
+      10 20 10 200 190 5
+
+Output data:
+       1			(delta1 format)
+       2			(level)
+       10 0 236 200 56 81	(delta data)
+
+
+Data format 65/0x41 - 16-bit delta
+-------------------
+
+Byte number   0       1        2      N 
+            +--+-------------+--  -  --+
+Hex values  |41| Delta level |   data  |
+            +--+-------------+--  -  --+
+
+This format is as data format 64 except that the input data is read in 2-byte
+values, so we take the difference between successive 16-bit numbers. For
+example "0x10 0x20 0x30 0x10" (4 8-bit numbers; 2 16-bit numbers) yields "0x10
+0x20 0x1f 0xf0". All 16-bit input data is assumed to be aligned to the start
+of the buffer and is assumed to be in big-endian format.
+
+
+Data format 66/0x42 - 32-bit delta
+-------------------
+
+Byte number   0       1        2  3  4      N 
+            +--+-------------+--+--+--  -  --+
+Hex values  |42| Delta level | 0| 0|   data  |
+            +--+-------------+--+--+--  -  --+
+
+
+This format is as data formats 64 and 65 except that the input data is read in
+4-byte values, so we take the difference between successive 32-bit numbers.
+
+Two padding bytes (2 and 3) should always be set to zero. Their purpose is to
+make sure that the compressed block is still aligned on a 4-byte boundary
+(hence making it easy to pass straight into the 32to8 filter).
+
+
+Data format 67-69/0x43-0x45 - reserved
+---------------------------
+
+At present these are reserved for dynamic differencing where the 'level' field 
+varies - applying the appropriate level for each section of data. Experimental 
+at present...
+
+
+Data format 70/0x46 - 16 to 8 bit conversion
+-------------------
+
+Byte number   0
+            +--+--  -  --+
+Hex values  |46|   data  |
+            +--+--  -  --+
+
+This method assumes that the input data is a series of big endian 2-byte
+signed integer values. If the value is in the range of -127 to +127 inclusive
+then it is written as a single signed byte in the output stream, otherwise we
+write out -128 followed by the 2-byte value (in big endian format). This
+method works well following one of the delta techniques as most of the 16-bit
+values are typically then small enough to fit in one byte.
+
+Example input data:
+	0 10 0 5 -1 -5 0 200 -4 -32 (bytes)
+	(As 16-bit big-endian values: 10 5 -5 200 -800)
+
+Output data:
+       70			(16-to-8 format)
+       10 5 -5 -128 0 200 -128 -4 -32
+
+
+Data format 71/0x47 - 32 to 8 bit conversion
+-------------------
+
+Byte number   0
+            +--+--  -  --+
+Hex values  |47|   data  |
+            +--+--  -  --+
+
+This format is similar to format 70, but we are reducing 32-bit numbers (big
+endian) to 8-bit numbers.
+
+
+Data format 72/0x48 - "follow" predictor
+-------------------
+
+Byte number   0  1     FF 100  101   N
+            +--+--  -  -  - --+-- - --+
+Hex values  |48| follow bytes |  data |
+            +--+--  -  -  - --+-- - --+
+
+For each symbol we compute the most frequent symbol following it. This is
+stored in the "follow bytes" block (256 bytes). The first character in the
+data block is stored as-is. Then for each subsequent character we store the
+difference between the predicted character value (obtained by using
+follow[previous_character]) and the real value. This is a very crude, but
+fast, method of removing some residual non-randomness in the input data and so 
+will reduce the data entropy. It is best to use this prior to entropy encoding 
+(such as huffman encoding).
+
+
+Data format 73/0x49 - floating point 16-bit chebyshev polynomial predictor
+-------------------
+Version 1.1 only.
+Replaced by format 74 in Version 1.2.
+
+WARNING: This method was experimental and have been replaced with an
+integer equivalent. The floating point method may give system specific
+results.
+
+Byte number   0  1  2      N
+            +--+--+--  -  --+
+Hex values  |49| 0|   data  |
+            +--+--+--  -  --+
+
+This method takes big-endian 16-bit data and attempts to curve-fit it using
+chebyshev polynomials. The exact method employed uses the 4 preceeding values
+to calculate chebyshev polynomials with 5 coefficents. Of these 5 coefficients
+only 4 are used to predict the next value. Then we store the difference
+between the predicted value and the real value. This procedure is repeated
+throughout each 16-bit value in the data. The first four 16-bit values are
+stored with a simple 1-level 16-bit delta function. Reversing the predictor
+follows the same procedure, except now adding the differences between stored
+value and predicted value to get the real value.
+
+
+Data format 74/0x4A - integer based 16-bit chebyshev polynomial predictor
+-------------------
+Version 1.2 onwards
+This replaces the floating point code in ZTR v1.1.
+
+
+Byte number   0  1  2      N
+            +--+--+--  -  --+
+Hex values  |4A| 0|   data  |
+            +--+--+--  -  --+
+
+This method takes big-endian 16-bit data and attempts to curve-fit it using
+chebyshev polynomials. The exact method employed uses the 4 preceeding values
+to calculate chebyshev polynomials with 5 coefficents. Of these 5 coefficients
+only 4 are used to predict the next value. Then we store the difference
+between the predicted value and the real value. This procedure is repeated
+throughout each 16-bit value in the data. The first four 16-bit values are
+stored with a simple 1-level 16-bit delta function. Reversing the predictor
+follows the same procedure, except now adding the differences between stored
+value and predicted value to get the real value.
+
+Data format 77/0x4D - Static huffman encoded data
+-------------------
+Version 1.3 onwards
+
+Byte number   0  1  2      N
+            +--+--+-- - - - - - --+-- - - --+
+Hex values  |4D| C| huffman codes |  data   |
+            +--+--+-- - - - - - --+-- - - --+
+
+This compresses data using static huffman encoding. It is analogous
+to the Z_HUFFMAN_ONLY format in zlib compression. However it has a few
+tweaks for optimal compression of very small data sets.
+
+'C' above is a code-set number. If it is zero the the huffman codes to
+uncompress 'data' are next, followed by the compressed data. Otherwise
+no huffman codes are stored in this chunk and the compressed data
+immediately follows the code-set byte. In this case the location of
+the huffman codes to use depends on 'C'. For 'C' >= 128 the code-sets
+will be defined in a HUFF chunk present earlier in this ZTR file. For
+'C' >= 1 and <= 127 some predefined huffman codes are used
+instead. These are always general purpose as they can not be readily
+subject to change in format updates; eg for english text and DNA
+sequences.
+
+TODO: define the format of the stored "huffman codes". (This is
+subject to change still in this beta release.)
+
+TODO: define the preset huffman codes.
+
+Chunk types
+===========
+
+As described above, each chunk has a type. The format of the data contained in 
+the chunk data field (when written in format 0) is described below.
+Note that no chunks are mandatory. It is valid to have no chunks at all.
+However some chunk types may depend on the existance of others. This will be
+indicated below, where applicable.
+
+Each chunk type is stored as a 4-byte value. Bit 5 of the first byte is used
+to indicate whether the chunk type is part of the public ZTR spec (bit 5 of
+first byte == 0) or is a private/custom type (bit 5 of first byte == 1). Bit
+5 of the remaining 3 bytes is reserved - they must always be set to zero.
+
+Practically speaking this means that public chunk types consist entirely of
+upper case letters (eg TEXT) whereas private chunk types start with a
+lowercase letter (eg tEXT). Note that in this example TEXT and tEXT are
+completely independent types and they may have no more relationship with each
+other than (for example) TEXT and BPOS types.
+
+It is valid to have multiples of some chunks (eg text chunks), but not for
+others (such as base calls). The order of chunks does not matter unless
+explicitly specified.
+
+A chunk may have meta-data associated with it. This is data about the data
+chunk. For example the data chunk could be a series of 16-bit trace samples,
+while the meta-data could be a label attached to that trace (to distinguish
+trace A from traces C, G and T). Meta-data is typically very small and so it
+is never need be compressed in any of the public chunk types (although
+meta-data is specific to each chunk type and so it would be valid to have
+private chunks with compressed meta-data if desirable).
+
+The first byte of each chunk data when uncompressed must be zero, indicating
+raw format. If, having read the chunk data, this is not the case then the
+chunk needs decompressing or reverse filtering until the first byte is
+zero. There may be a few padding bytes between the format byte and the first
+element of real data in the chunk. This is to make file processing simpler
+when the chunk data consists of 16 or 32-bit words; the padding bytes ensure
+that the data is aligned to the appropriate word size. Any padding bytes
+required will be listed in the appopriate chunk definition below.
+
+
+The following lists the chunk types available in 32-bit big-endian format.
+In all cases the data is presented in the uncompressed form, starting with the 
+raw format byte and any appropriate padding.
+
+SAMP
+----
+
+Meta-data:
+Byte number   0  1  2  3
+            +--+--+--+--+
+Hex values  | data name |
+            +--+--+--+--+
+
+Data:
+Byte number   0  1  2  3  4  5  6  7       N
+            +--+--+--+--+--+--+--+--+-     -+
+Hex values  | 0| 0| data| data| data|   -   |
+            +--+--+--+--+--+--+--+--+-     -+
+
+This encodes a series of 16-bit trace samples. The first data byte is the
+format (raw); the second data byte is present for padding purposes only. After 
+that comes a series of 16-bit big-endian values.
+
+The meta-data for this chunk contains a 4-byte name associated with the
+trace. If a name is shorter than 4 bytes then it should be right padded with
+nul characters to 4 bytes. For sequencing traces the four lanes representig A, 
+C, G and T signals have names "A\0\0\0", "C\0\0\0", "G\0\0\0" and "T\0\0\0".
+
+At present other names are not reserved, but it is recommended that (for
+consistency with elsewhere) you label private trace arrays with names starting 
+in a lowercase letter (specifically, bit 5 is 1).
+
+For sequencing traces it is expected that there will be four SAMP chunks,
+although the order is not specified.
+
+
+SMP4
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1  2  3  4  5  6  7       N
+            +--+--+--+--+--+--+--+--+-     -+
+Hex values  | 0| 0| data| data| data|   -   |
+            +--+--+--+--+--+--+--+--+-     -+
+
+
+The first byte is 0 (raw format). Next is a single padding byte (also 0).
+Then follows a series of 2-byte big-endian trace samples for the "A" trace,
+followed by a series of 2-byte big-endian traces samples for the "C" trace,
+also followed by the "G" and "T" traces (in that order). The assumption is
+made that there is the same number of data points for all traces and hence the 
+length of each trace is simply the number of data elements divided by four.
+
+This chunk is mutually exclusive with the SAMP chunks. If both sets are
+defined then the last found in the file should be used. Experimentation has
+shown that this gives around 3% saving over 4 separate SAMP chunks, but it
+lacks in 
+
+BASE
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1  2  3      N  
+            +--+--+--+--  -  --+
+Hex values  | 0| base calls    |
+            +--+--+--+--  -  --+
+
+The first byte is 0 (raw format). This is followed by the base calls in ASCII
+format (one base per byte). The base call case an encoding set should be IUPAC
+characters [1].
+
+BPOS
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1  2  3  4  5  6  7       
+            +--+--+--+--+--+--+--+--+-     -+--+--+--+--+
+Hex values  | 0| padding|   data    |   -   |    data   |
+            +--+--+--+--+--+--+--+--+-     -+--+--+--+--+
+
+This chunk contains the mapping of base call (BASE) numbers to sample (SAMP)
+numbers; it defines the position of each base call in the trace data. The
+position here is defined as the numbering of the 16-bit positions held in the
+SAMP array, counting zero as the first value.
+
+The format is 0 (raw format) followed by three padding bytes (all 0). Next
+follows a series of 4-byte big-endian numbers specifying the position of each
+base call as an index into the sample arrays (when considered as a 2-byte
+array with the format header stripped off).
+
+Excluding the format and padding bytes, the number of 4-byte elements should
+be identical to the number of base calls. All sample numbers are counted from
+zero. No sample number in BPOS should be beyond the end of the SAMP arrays
+(although it should not be assumed that the SAMP chunks will be before this
+chunk). Note that the BPOS elements may not be totally in sorted order as
+the base calls may be shifted relative to one another due to compressions.
+
+CNF4
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1              N              4N
+            +--+--+--   -   --+--+----- -  -----+
+Hex values  | 0| call confidence | A/C/G/T conf |
+            +--+--+--   -   --+--+----- -  -----+
+
+(N == number of bases in BASE chunk)
+
+The first byte of this chunk is 0 (raw format). This is then followed by a
+series confidence values for the called base. Next comes all the remaining
+confidence values for A, C, G and T excluding those that have already been
+written (ie the called base). So for a sequence AGT we would store confidences
+A1 G2 T3 C1 G1 T1 A2 C2 T2 A3 C3 G3.
+
+The purpose of this is to group the (likely) highest confidence value (those
+for the called base) at the start of the chunk followed by the remaining
+values. Hence if phred confidence values are written in a CNF4 chunk the first
+quarter of chunk will consist of phred confidence values and the last three
+quarters will (assuming no ambiguous base calls) consist entirely of zeros.
+
+For the purposes of storage the confidence value for a base call that is not
+A, C, G or T (in any case) is stored as if the base call was T.
+
+The confidence values should be from the "-10 * log10 (1-probability)". These
+values are then converted to their nearest integral value.
+If a program wishes to store confidence values in a different range then this
+should be stored in a different chunk type.
+
+If this chunk exists it must exist after a BASE chunk.
+
+TEXT
+----
+
+Meta-data: none present
+
+Data:	      0 
+            +--+-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+--+
+Hex values  | 0| ident | 0| value | 0|   -   | ident | 0| value | 0| 0|
+            +--+-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+--+
+
+This contains a series of "identifier\0value\0" pairs.
+
+The identifiers and values may be any length and may contain any data except
+the nul character. The nul character marks the end of the identifier or the
+end of the value. Multiple identifier-value pairs are allowable, with a double 
+nul character marking the end of the list.
+
+Identifiers starting with bit 5 clear (uppercase) are part of the public ZTR
+spec. Any public identifier not listed as part of this spec should be
+considered as reserved. Identifiers that have bit 6 set (lowercase) are for
+private use and no restriction is placed on these.
+
+See below for the text identifier list.
+
+CLIP
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1  2  3  4  5  6  7  8
+            +--+--+--+--+--+--+--+--+--+
+Hex values  | 0| left clip | right clip|
+            +--+--+--+--+--+--+--+--+--+
+
+This contains suggested quality clip points. These are stored as zero (raw
+data) followed by a 4-byte big endian value for the left clip point and a
+4-byte big endian value for the right clip point. Clip points are defined in
+units of base calls, starting from 0. (Q: is that correct!?)
+
+
+
+CR32
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1  2  3  4 
+            +--+--+--+--+--+
+Hex values  | 0|   CRC-32  |
+            +--+--+--+--+--+
+
+This chunk is always just 4 bytes of data containing a CRC-32 checksum,
+computed according to the widely used ANSI X3.66 standard. If present, the
+checksum will be a check of all of the data since the last CR32 chunk.
+This will include checking the header if this is the first CR32 chunk, and
+including the previous CRC32 chunk if it is not. Obviously the checksum will
+not include checks on this CR32 chunk.
+
+
+COMM
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1        N
+            +--+--   -   --+
+Hex values  | 0| free text |
+            +--+--   -   --+
+
+This allows arbitrary textual data to be added. It does not require a
+identifier-value pairing or any nul termination.
+
+
+HUFF
+----
+
+Meta-data: none present
+
+Data:
+Byte number   0  1         2         3  4               N
+            +--+--+---------+---------+--  -  -  -  -  --+
+Hex values  | 0| C| SYM_ANY | SYM_EOF | Other symbols... |
+            +--+--+---------+---------+--  -  -  -  -  --+
+
+This stores a set of huffman codes to be used in the static huffman
+(77/0x4d) compression format. 'C' is the code-set number referred to
+within that compression method. It should be 128 onwards.
+
+TODO: The encoding format for this is still in flux
+
+
+Text Identifiers
+================
+
+These are for use in the TEXT segments. None are required, but if any of these
+identifiers are present they must confirm to the description below. Much
+(currently all) of this list has been taken from the NCBI Trace Archive [2]
+documentation. It is duplicated here as the ZTR spec is not tied to the same
+revision schedules as the NCBI trace archive (although it is intended that any
+suitable updates to the trace archive should be mirrored in this ZTR spec).
+
+The Trace Archive specifies a maximum length of values. The ZTR spec does not
+have length limitations, but for compatibility these sizes should still be
+observed.
+
+The Trace Archive also states some identifiers are mandatory; these are marked
+by asterisks below. These identifiers are not mandatory in the ZTR spec (but
+clearly they need to exist if the data is to be submitted to the NCBI).
+
+Finally, some fields are not appropriate for use in the ZTR spec, such as
+BASE_FILE (the name of a file containing the base calls). Such fields are
+included only for compatibility with the Trace Arhive. It is not expected that 
+use of ZTR would allow for the base calls to be read from an external file
+instead of the ZTR BASE chunk.
+
+[ Quoted from TraceArchiveRFC v1.17 ]
+
+Identifier      Size       Meaning			 Example value(s)
+----------      -----      ----------------------------  -----------------
+TRACE_NAME *      250      name of the trace             HBBBA1U2211
+                           as used at the center
+                           unique within the center
+                           but not among centers.
+                           
+SUBMISSION_TYPE *   -      type of submission
+                           
+CENTER_NAME *     100      name of center                BCM
+CENTER_PROJECT    200      internal project name         HBBB
+                           used within the center
+                           
+TRACE_FILE *      200      file name of the trace	 ./traces/TRACE001.scf
+                           relative to the top of
+                           the volume.
+                           
+TRACE_FORMAT *     20      format of the tracefile
+                           
+SOURCE_TYPE *       -      source of the read
+                           
+INFO_FILE         200      file name of the info file
+INFO_FILE_FORMAT   20        
+                           
+BASE_FILE         200      file name of the base calls
+QUAL_FILE         200      file name of the base calls
+                           
+                           
+TRACE_DIRECTION     -      direction of the read
+TRACE_END           -      end of the template
+PRIMER            200      primer sequence
+PRIMER_CODE                which primer was used
+                           
+STRATEGY            -      sequencing strategy
+TRACE_TYPE_CODE     -      purpose of trace
+                           
+PROGRAM_ID         100     creator of trace file         phred-0.990722.h
+                           program-version
+                           
+TEMPLATE_ID         20     used for read pairing         HBBBA2211
+                           
+CHEMISTRY_CODE       -     code of the chemistry         (see below)
+ITERATION            -     attempt/redo                  1
+                           (int 1 to 255)
+                           
+CLIP_QUALITY_LEFT          left clip of the read in bp due to quality
+CLIP_QUALITY_RIGHT         right " " " " "
+CLIP_VECTOR_LEFT           left clip of the read in bp due to vector
+CLIP_VECTOR_RIGHT          right " " " " "
+
+                           
+SVECTOR_CODE        40     sequencing vector used        (in table)
+SVECTOR_ACCESSION   40     sequencing vector used        (in table)
+CVECTOR_CODE        40     clone vector used             (in table)
+CVECTOR_ACCESSION   40     clone vector used             (in table)
+                           
+INSERT_SIZE          -     expected size of insert       2000,10000
+                           in base pairs (bp)
+                           (int 1 to 2^32)
+                           
+PLATE_ID            32     plate id at the center          
+WELL_ID                    well                          1-384
+
+
+SPECIES_CODE *       -     code for species
+SUBSPECIES_ID       40     name of the subspecies
+                           Is this the same as strain
+
+CHROMOSOME           8     name of the chromosome        ChrX, Chr01, Chr09
+                           
+                           
+LIBRARY_ID          30     the source library of the clone
+CLONE_ID            30     clone id                      RPCI11-1234 
+ 
+ACCESSION           30     NCBI accession number         AC00001
+                           
+PICK_GROUP_ID       30     an id to group traces picked
+                           at the same time.
+PREP_GROUP_ID       30     an id to group traces prepared
+                           at the same time
+                           
+                           
+RUN_MACHINE_ID      30     id of sequencing machine
+RUN_MACHINE_TYPE    30     type/model of machine
+RUN_LANE            30     lane or capillary of the trace
+RUN_DATE             -     date of run
+RUN_GROUP_ID        30     an identifier to group traces
+                           run on the same machine
+
+[ End of quote from TraceArchiveRFC ]
+
+More detailed information on the format of these values should be obtained
+from the Trace Archive RFC [2].
+
+
+References
+==========
+[1] IUPAC: http://www.chem.qmw.ac.uk/iubmb/misc/naseq.html
+
+[2] http://www.ncbi.nlm.nih.gov/Traces/TraceArchiveRFC.html
+
