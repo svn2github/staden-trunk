@@ -43,7 +43,7 @@ typedef struct {
     int ncodes;
     int code_set; /* (128-255) The user specified number for this encoding */
     decode_t d_tab[258]; /* indexed by symbol encoding bit-lengths */
-    huffman_code_t *lookup[258]; /* Mapping of symbol character to code */
+    huffman_code_t lookup[258]; /* Mapping of symbol character to code */
 } huffman_codes_t;
 
 unsigned char *huffman_encode(huffman_codes_t *c, int code_set,
