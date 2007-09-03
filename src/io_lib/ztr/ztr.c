@@ -9,7 +9,7 @@
 #include "Read.h"
 #include "compression.h"
 #include "stdio_hack.h"
-#include "huffman_static.h"
+#include "deflate_simple.h"
 
 /* #define SOLEXA */
 
@@ -572,6 +572,27 @@ huffman_codes_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
     return NULL;
 }
 
+ztr_chunk_t *ztr_find_hcode_chunk(ztr_t *ztr, int code_set) {
+    int i;
+
+    if (code_set < CODE_USER)
+	return NULL; /* computed on-the-fly or use a hard-coded set */
+
+    /* Check through chunks for undecoded HUFF chunks */
+    for (i = 0; i < ztr->nchunks; i++) {
+	if (ztr->chunk[i].type == ZTR_TYPE_HUFF) {
+	    uncompress_chunk(ztr, &ztr->chunk[i]);
+	    if (ztr->chunk[i].dlength >= 2 &&
+		(unsigned char)ztr->chunk[i].data[1] == code_set)
+		return &ztr->chunk[i];
+	}
+    }
+
+    return NULL;
+}
+
+
+
 /*
  * Stores held ztr huffman_codes as ZTR chunks.
  * Returns 0 for success
@@ -594,14 +615,28 @@ int ztr_store_hcodes(ztr_t *ztr) {
 
     /* Encode */
     for (i = 0; i < ztr->nhcodes; i++) {
+	block_t *blk = block_create(2);
 	int j = ztr->nchunks;
+	unsigned char bytes[2];
+
 	ztr->chunk[j].type = ZTR_TYPE_HUFF;
 	ztr->chunk[j].mdata = 0;
 	ztr->chunk[j].mdlength = 0;
-	ztr->chunk[j].data = (char *)store_codes(ztr->hcodes[i].codes,
-						 &ztr->chunk[j].dlength);
-	if (ztr->chunk[j].data)
+	bytes[0] = 0;
+	bytes[1] = ztr->hcodes[i].codes->code_set;
+	store_bytes(blk, bytes, 2);
+	if (0 == store_codes(blk, ztr->hcodes[i].codes, 1)) {
+	    /* Last byte is always merged with first of stream */
+	    if (blk->bit == 0) {
+		char zero = 0;
+		store_bytes(blk, &zero, 1);
+	    }
+
+	    ztr->chunk[j].data = blk->data;
+	    ztr->chunk[j].dlength = blk->byte + (blk->bit != 0);
+	    block_destroy(blk, 1);
 	    ztr->nchunks++;
+	}
     }
 
     return ztr->nchunks == nchunks ? 0 : -1;
@@ -677,11 +712,55 @@ int compress_chunk(ztr_t *ztr, ztr_chunk_t *chunk, int format,
 	new_data = log2_data(chunk->data, chunk->dlength, &new_len);
 	break;
 
-    case ZTR_FORM_STHUFF:
-	new_data = (char *)huffman_encode(ztr_find_hcode(ztr, option), option,
-					  (unsigned char *)chunk->data,
-					  chunk->dlength, &new_len);
+    case ZTR_FORM_STHUFF: {
+	block_t *blk = block_create(2);
+	unsigned char bytes[2];
+	huffman_codes_t *c = NULL;
+
+	if (option >= CODE_USER)
+	    c = ztr_find_hcode(ztr, option);
+	else if (option != CODE_INLINE)
+	    c = generate_code_set(option, NULL, 0, 1, MAX_CODE_LEN, 0);
+
+	if (!c) {
+	    /* Inline codes, so generate and store them */
+	    option = 0;
+	    c = generate_code_set(0, chunk->data, chunk->dlength,
+				  1, MAX_CODE_LEN, 0);
+	}
+
+	bytes[0] = ZTR_FORM_STHUFF;
+	bytes[1] = option;
+	store_bytes(blk, bytes, 2);
+
+	store_codes(blk, c, 1);
+
+	/*
+	option =  0;
+	blk->data[1] = 0;
+	*/
+
+	/*
+	 * Unless CODE_INLINE, all we wanted to know is what bit number
+	 * to start on. The above is therefore somewhat inefficient.
+	 */
+	if (option != 0) {
+	    blk->byte = 2;
+	    blk->data[2] = 0;
+	}
+
+	if (0 == huffman_encode(blk, c, option,
+				(unsigned char *)chunk->data,
+				chunk->dlength)) {
+	    new_data = blk->data;
+	    new_len = blk->byte + (blk->bit != 0);
+	    block_destroy(blk, 1);
+	}
+
+	if (option == 0)
+	    huffman_codes_destroy(c);
 	break;
+    }
     }
 
     if (!new_data) {
@@ -754,18 +833,46 @@ int uncompress_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
 	    break;
 
 	case ZTR_FORM_STHUFF: {
-	    huffman_codes_t *c = NULL;
+	    unsigned char *data = NULL, *free_me = NULL;
+	    unsigned int dlen = 0;
+	    int cset = (unsigned char)(chunk->data[1]);
 
-	    if ((unsigned char)(chunk->data[1]) >= CODE_USER) {
+	    if (cset >= CODE_USER) {
 		/* Scans through HUFF chunks */
-		c = ztr_find_hcode(ztr, (unsigned char)(chunk->data[1]));
+		ztr_chunk_t *hchunk = ztr_find_hcode_chunk(ztr, cset);
+		if (!hchunk)
+		    return -1;
+		data = hchunk->data+2;
+		dlen = hchunk->dlength-2;
+	    } else if (cset > 0) {
+		huffman_codes_t *c;
+		block_t *out = block_create(1000);
+		/* Create some temporary huffman_codes to stringify */
+		c = generate_code_set((unsigned char)(chunk->data[1]),
+				      NULL, 0, 1, MAX_CODE_LEN, 0);
+		if (!c)
+		    return -1;
+		store_codes(out, c, 1);
+		data = out->data;
+		dlen = out->byte + 1;
+		if (out->bit == 0)
+		    out->data[dlen-1] = 0;
+
+		free_me = data;
+		block_destroy(out, 1);
+		huffman_codes_destroy(c);
 	    }
-	    new_data = (char *)huffman_decode(c, (unsigned char *)chunk->data,
-					      chunk->dlength, &new_len);
+	    new_data = zlib_dehuff2(data, dlen,
+				    chunk->data+2, chunk->dlength-2,
+				    &new_len);
+	    if (free_me)
+		free(free_me);
+
 	    break;
 	}
 
 	default:
+	    fprintf(stderr, "Unknown encoding format %d\n", chunk->data[0]);
 	    return -1;
 	}
 	    

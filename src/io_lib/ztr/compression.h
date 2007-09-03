@@ -41,6 +41,36 @@ char *zlib_huff(char *uncomp, int uncomp_len, int strategy, int *comp_len);
 char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len);
 
 /*
+ * zlib_dehuff2()
+ *
+ * Uncompresses data using huffman encoding, as implemented by zlib.
+ * Similar to zlib_dehuff above, but with the following differences:
+ *
+ * 1) It pastes together the zlib stream from two components; comp1+comp2
+ *    with the last byte of comp1 overlapping (ORed) with the first byte
+ *    of comp2. This allows for separation of the huffman codes from
+ *    the compressed data itself.
+ * 2) It uses the raw Deflate format rather than Zlib's wrapping of it.
+ * 3) It uses an EOF symbol to mark the end rather than encoding the
+ *    uncompressed size in the header
+ * 
+ *
+ * Arguments:
+ *	comp1		Compressed input data part 1
+ *	comp1_len	Length of comp1 data
+ *	comp2		Compressed input data part 2
+ *	comp2_len	Length of comp2 data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *zlib_dehuff2(char *comp1, int comp1_len,
+		   char *comp2, int comp2_len,
+		   int *uncomp_len);
+
+/*
  * Run length encoding.
  *
  * Any run of 3 or more identical characters (up to 255 in a row) are replaced

@@ -2,7 +2,7 @@
 #define _ZTR_H
 
 #include "Read.h"
-#include "huffman_static.h"
+#include "deflate_simple.h"
 
 #ifdef __cplusplus
 extern "C" {

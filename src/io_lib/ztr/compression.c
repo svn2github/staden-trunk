@@ -161,6 +161,92 @@ char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len) {
 
 
 /*
+ * zlib_dehuff2()
+ *
+ * Uncompresses data using huffman encoding, as implemented by zlib.
+ * Similar to zlib_dehuff above, but with the following differences:
+ *
+ * 1) It pastes together the zlib stream from two components; comp1+comp2
+ *    with the last byte of comp1 overlapping (ORed) with the first byte
+ *    of comp2. This allows for separation of the huffman codes from
+ *    the compressed data itself.
+ * 2) It uses the raw Deflate format rather than Zlib's wrapping of it.
+ * 3) It uses an EOF symbol to mark the end rather than encoding the
+ *    uncompressed size in the header
+ * 
+ *
+ * Arguments:
+ *	comp1		Compressed input data part 1
+ *	comp1_len	Length of comp1 data
+ *	comp2		Compressed input data part 2
+ *	comp2_len	Length of comp2 data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *zlib_dehuff2(char *comp1, int comp1_len,
+		   char *comp2, int comp2_len,
+		   int *uncomp_len) {
+    unsigned char *data, *outp;
+    unsigned int dlen;
+    block_t *out;
+    z_stream zstr;
+    int err;
+#define ZD2_BLKSZ 65536
+    char block[ZD2_BLKSZ];
+
+    if (comp1 && comp1_len) {
+	data = malloc(comp1_len + comp2_len);
+	memcpy(data, comp1, comp1_len);
+	data[comp1_len-1] |= comp2[0];
+	memcpy(data + comp1_len, comp2+1, comp2_len-1);
+	dlen = comp1_len + comp2_len - 1;
+    } else {
+	data = comp2;
+	dlen = comp2_len;
+    }
+
+    out = block_create(dlen);
+    zstr.zalloc = (alloc_func)0;
+    zstr.zfree = (free_func)0;
+    zstr.opaque = (voidpf)0;
+    zstr.next_in = data;
+    zstr.avail_in = dlen;
+
+    if ((err = inflateInit2(&zstr, -15)) != Z_OK) {
+	fprintf(stderr, "zlib errror in inflateInit2(): %d/%s\n",
+		err, zstr.msg);
+	return NULL;
+    }
+
+    do {
+	zstr.next_out = block;
+	zstr.avail_out = ZD2_BLKSZ;
+
+	err = inflate(&zstr, Z_FINISH);
+	if (err == Z_STREAM_END || err == Z_OK || err == Z_BUF_ERROR) {
+	    store_bytes(out, block, zstr.total_out);
+	    zstr.total_out = 0;
+	} else {
+	    fprintf(stderr, "zlib errror in inflate(): %d/%s\n",
+		    err, zstr.msg);
+	    return NULL;
+	}
+    } while (err != Z_FINISH && err != Z_STREAM_END);
+
+    store_bytes(out, block, zstr.total_out);
+
+    inflateEnd(&zstr);
+    outp = out->data;
+    *uncomp_len = out->byte;
+    block_destroy(out, 1);
+
+    return outp;
+}
+
+/*
  * ---------------------------------------------------------------------------
  * ZTR_FORM_RLE
  * ---------------------------------------------------------------------------
