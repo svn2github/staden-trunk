@@ -4,7 +4,7 @@
 #include "ztr.h"
 #include "compression.h"
 #include "xalloc.h"
-#include "huffman_static.h"
+#include "deflate_simple.h"
 
 static char *format2str(int format) {
     static char unk[100];
