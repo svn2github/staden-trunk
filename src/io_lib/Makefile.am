@@ -52,7 +52,7 @@ pkginclude_HEADERS = \
 	utils/os.h \
 	ztr/compression.h \
 	ztr/ztr.h \
-	ztr/huffman_static.h \
+	ztr/deflate_simple.h \
 	io_lib_config.h
 
 bin_SCRIPTS = io_lib-config

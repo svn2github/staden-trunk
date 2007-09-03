@@ -104,7 +104,7 @@ ifdef IOLIB_ZTR
 OBJS	+=\
 	ztr/$(O)/compression.o\
 	ztr/$(O)/ztr_translate.o\
-	ztr/$(O)/huffman_static.o\
+	ztr/$(O)/deflate_simple.o\
 	ztr/$(O)/ztr.o
 endif
 

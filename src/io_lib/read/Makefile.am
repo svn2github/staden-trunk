@@ -12,8 +12,8 @@ libread_a_SOURCES = \
 	../ztr/ztr.c \
 	../ztr/ztr.h \
 	../ztr/ztr_translate.c \
-	../ztr/huffman_static.c \
-	../ztr/huffman_static.h \
+	../ztr/deflate_simple.c \
+	../ztr/deflate_simple.h \
 	../abi/abi.h \
 	../abi/fpoint.c \
 	../abi/fpoint.h \
