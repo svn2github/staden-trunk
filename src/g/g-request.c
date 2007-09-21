@@ -1479,6 +1479,17 @@ int g_unlock_file_N_(GDB *gdb, GClient c, GFileN file_N)
     gfile->flock_view = -1;
 
 
+    /*
+     * This should force propagation over NFS to be faster. We only do this
+     * here as this function is called by Gap4's flush2t(io) call. We're
+     * only interested in keeping the remote end consistent when Gap4
+     * itself is committing a set of consistent changes to the DB.
+     */
+
+    /* LOW LEVEL IO HERE */
+    fsync(gfile->fd);
+    fsync(gfile->fdaux);
+
     return 0;
 }
 
