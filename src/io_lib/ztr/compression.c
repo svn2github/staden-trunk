@@ -513,11 +513,12 @@ char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len) {
 
 	if (run_len >= 2) {
 	    /* Count remaining copies */
-	    for (k = i+rsz; k < uncomp_len; k += rsz) {
+	    for (k = i+rsz; k < uncomp_len && run_len < 257; k += rsz) {
 		if (memcmp(last, &uncomp[k], rsz) != 0)
 		    break;
+		run_len++;
 	    }
-	    run_len = (k-i) / rsz -1;
+	    run_len -= 2;
 
 	    *out++ = run_len;
 	    for (j = 1; j < rsz; j++) {
@@ -527,6 +528,9 @@ char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len) {
 		*out++ = last[j];
 	    }
 	    i = k-rsz;
+
+	    last = out-rsz;
+	    run_len = 0;
 	}
     }
 
@@ -548,8 +552,8 @@ char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len) {
  *	NULL if not successful
  */
 char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
-    char *out;
-    int out_len, out_alloc, rsz, i, j, run_len, last;
+    char *out, *last;
+    int out_len, out_alloc, rsz, i, j, run_len;
 
     out_alloc = comp_len*2; /* just an estimate */
     out_len = 0;
@@ -569,7 +573,7 @@ char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
     
     /* Uncompress */
     run_len = 0;
-    last = 0;
+    last = comp;
     for (i = 0; i < comp_len;) {
 	while (out_len + rsz > out_alloc) {
 	    out_alloc *= 2;
@@ -578,7 +582,7 @@ char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
 	}
 	memcpy(&out[out_len], &comp[i], rsz);
 
-	if (memcmp(&out[out_len], &out[last], rsz) == 0) {
+	if (memcmp(&out[out_len], last, rsz) == 0) {
 	    run_len++;
 	} else {
 	    run_len = 1;
@@ -589,7 +593,7 @@ char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
 
 	if (run_len >= 2) {
 	    /* Count remaining copies */
-	    run_len = comp[i];
+	    run_len = (unsigned char)comp[i];
 	    i += rsz;
 
 	    while (out_len + run_len * rsz > out_alloc) {
@@ -599,12 +603,13 @@ char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
 	    }
 
 	    for (j = 0; j < run_len; j++) {
-		memcpy(&out[out_len], &out[last], rsz);
+		memcpy(&out[out_len], last, rsz);
 		out_len += rsz;
 	    }
+	    run_len = 0;
 	}
 
-	last = out_len-rsz;
+	last = &comp[i-rsz];
     }
 
     /* Shrink back down to avoid excessive memory usage */
