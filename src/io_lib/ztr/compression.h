@@ -146,6 +146,42 @@ char *xrle(char *uncomp, int uncomp_len, int guard, int rsz, int *comp_len);
 char *unxrle(char *comp, int comp_len, int *uncomp_len);
 
 /*
+ * Mutli-byte run length encoding.
+ *
+ * Steps along in words of size 'rsz'. Unlike XRLE above this does run-length
+ * encoding by writing out an additional "length" word every time 2 or more
+ * words in a row are spotted. This removes the need for a guard byte.
+ *
+ * Additionally this method ensures that both input and output formats remain
+ * aligned on words of size 'rsz'.
+ *
+ * Arguments:
+ *	uncomp		Input data
+ *	uncomp_len	Length of input data 'uncomp'
+ *      rsz             Size of blocks to compare for run checking.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data if successful
+ *	NULL if not successful
+ */
+char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len);
+
+/*
+ * Reverses multi-byte run length encoding (xrle_new).
+ *
+ * Arguments:
+ *	comp		Compressed input data
+ *	comp_len	Length of comp data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *unxrle2(char *comp, int comp_len, int *uncomp_len);
+
+/*
  * decorrelate1()
  *
  * Produce successive deltas from a 1-byte array.
@@ -338,6 +374,71 @@ char *log2_data(char *x_uncomp,
 char *unlog2_data(char *x_comp,
 		  int comp_len,
 		  int *uncomp_len);
+
+/*
+ * Implements compression using a set of static huffman codes stored using
+ * the Deflate algorithm (and so in this respect it's similar to zlib).
+ *
+ * The huffman codes though can be previously stored in the ztr object
+ * using ztr_add_hcode(). "cset" indicates which numbered stored huffman
+ * code set is to be used, or passing zero will use inline codes (ie they
+ * are stored in the data stream itself, just as in standard deflate).
+ *
+ * Arguments:
+ *	ztr		ztr_t pointer; used to find stored code-sets
+ *	uncomp		The uncompressed input data
+ *	uncomp_len	Length of uncomp
+ *	cset		Stored code-set number, zero for inline
+ *	recsz		Record size - only used when cset == 0.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data stream if successful + comp_len
+ *      NULL on failure
+ */
+char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len, 
+	     int cset, int recsz, int *comp_len);
+char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len);
+
+/*
+ * Reorders quality data from its RAW format to an interleaved 4-byte
+ * aligned format.
+ *
+ * Starting with sequence A1 C2 G3 the raw format is quality of called
+ * bases followed by quality of remaining bases:
+ * 0 (RAW format)
+ * Q(A1) Q(C2) Q(G3)
+ * Q(C2) Q(A2) Q(A3) 
+ * Q(G2) Q(G2) Q(C3) 
+ * Q(T2) Q(T2) Q(T3) 
+ *
+ * We reorder it to:
+ * ZTR_FORM_QSHIFT <any> <any> 0(raw)
+ * Q(A1) Q(C1) Q(G1) Q(T1)
+ * Q(C2) Q(A2) Q(G2) Q(T2)
+ * Q(G3) Q(A3) Q(C3) Q(T3)
+ * 
+ * Returns shifted data on success
+ *         NULL on failure
+ */
+char *qshift(char *qold, int qlen, int *new_len);
+char *unqshift(char *qold, int qlen, int *new_len);
+
+/*
+ * Given a sequence ACTG this shifts trace data from the order:
+ *
+ *     A1A2A3A4 C1C2C3C4 G1G2G3G4 T1T2T3T4
+ *
+ * to
+ *
+ *     A1C1G1T1 C2A2G2T2 T3A3C3G3 G4C4C4T4
+ *
+ * Ie for each base it ouputs the signal for the called base first
+ * followed by the remaining 3 signals in A,C,G,T order (minus the
+ * called signal already output).
+ */
+char *tshift(ztr_t *ztr, char *told_c, int tlen, int *new_len);
+char *untshift(ztr_t *ztr, char *told_c, int tlen, int *new_len);
 
 #ifdef __cplusplus
 }

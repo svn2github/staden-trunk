@@ -4,7 +4,6 @@
 #include "ztr.h"
 #include "compression.h"
 #include "xalloc.h"
-#include "deflate_simple.h"
 
 static char *format2str(int format) {
     static char unk[100];
@@ -124,17 +123,9 @@ static int explode_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
 	    new_data = unlog2_data(chunk->data, chunk->dlength, &new_len);
 	    break;
 
-	case ZTR_FORM_STHUFF: {
-	    huffman_codes_t *c = NULL;
-
-	    if ((unsigned char)(chunk->data[1]) >= CODE_USER) {
-		/* Scans through HUFF chunks */
-		c = ztr_find_hcode(ztr, (unsigned char)(chunk->data[1]));
-	    }
-	    new_data = huffman_decode(c, chunk->data, chunk->dlength,
-				      &new_len);
+	case ZTR_FORM_STHUFF:
+	    new_data = unsthuff(ztr, chunk->data, chunk->dlength, &new_len);
 	    break;
-	}
 
 	default:
 	    return -1;

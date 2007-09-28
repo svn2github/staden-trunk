@@ -12,8 +12,8 @@ libread_a_SOURCES = \
 	../ztr/ztr.c \
 	../ztr/ztr.h \
 	../ztr/ztr_translate.c \
-	../ztr/deflate_simple.c \
-	../ztr/deflate_simple.h \
+	../ztr/deflate_interlaced.c \
+	../ztr/deflate_interlaced.h \
 	../abi/abi.h \
 	../abi/fpoint.c \
 	../abi/fpoint.h \
@@ -34,6 +34,8 @@ libread_a_SOURCES = \
 	../scf/write_scf.c \
 	../sff/sff.c \
 	../sff/sff.h \
+	../srf/srf.c \
+	../src/srf.h \
 	../utils/array.c \
 	../utils/array.h \
 	../utils/compress.c \

@@ -1,4 +1,4 @@
-bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract trace_dump hash_sff append_sff ztr_dump
+bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract trace_dump hash_sff append_sff ztr_dump solexa2srf srf2solexa srf_dump_all srf_index_hash srf_extract_linear
 
 convert_trace_SOURCES = convert_trace.c
 convert_trace_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
@@ -41,6 +41,21 @@ trace_dump_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
 ztr_dump_SOURCES = ztr_dump.c
 ztr_dump_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
 
+solexa2srf_SOURCES = solexa2srf.c
+solexa2srf_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
+srf2solexa_SOURCES = srf2solexa.c
+srf2solexa_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
+srf_dump_all_SOURCES = srf_dump_all.c
+srf_dump_all_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
+srf_extract_linear_SOURCES = srf_extract_linear.c
+srf_extract_linear_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
+srf_index_hash_SOURCES = srf_index_hash.c
+srf_index_hash_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
 INCLUDES= \
 	-I${top_srcdir} \
 	-I${top_srcdir}/read \
@@ -52,4 +67,5 @@ INCLUDES= \
 	-I${top_srcdir}/scf \
 	-I${top_srcdir}/sff \
 	-I${top_srcdir}/exp_file \
-	-I${top_srcdir}/utils
+	-I${top_srcdir}/utils \
+	-I${top_srcdir}/srf

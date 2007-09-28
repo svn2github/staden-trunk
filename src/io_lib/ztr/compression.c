@@ -161,92 +161,6 @@ char *zlib_dehuff(char *comp, int comp_len, int *uncomp_len) {
 
 
 /*
- * zlib_dehuff2()
- *
- * Uncompresses data using huffman encoding, as implemented by zlib.
- * Similar to zlib_dehuff above, but with the following differences:
- *
- * 1) It pastes together the zlib stream from two components; comp1+comp2
- *    with the last byte of comp1 overlapping (ORed) with the first byte
- *    of comp2. This allows for separation of the huffman codes from
- *    the compressed data itself.
- * 2) It uses the raw Deflate format rather than Zlib's wrapping of it.
- * 3) It uses an EOF symbol to mark the end rather than encoding the
- *    uncompressed size in the header
- * 
- *
- * Arguments:
- *	comp1		Compressed input data part 1
- *	comp1_len	Length of comp1 data
- *	comp2		Compressed input data part 2
- *	comp2_len	Length of comp2 data
- *	uncomp_len	Output: length of uncompressed data
- *
- * Returns:
- *	Uncompressed data if successful
- *	NULL if not successful
- */
-char *zlib_dehuff2(char *comp1, int comp1_len,
-		   char *comp2, int comp2_len,
-		   int *uncomp_len) {
-    unsigned char *data, *outp;
-    unsigned int dlen;
-    block_t *out;
-    z_stream zstr;
-    int err;
-#define ZD2_BLKSZ 65536
-    char block[ZD2_BLKSZ];
-
-    if (comp1 && comp1_len) {
-	data = malloc(comp1_len + comp2_len);
-	memcpy(data, comp1, comp1_len);
-	data[comp1_len-1] |= comp2[0];
-	memcpy(data + comp1_len, comp2+1, comp2_len-1);
-	dlen = comp1_len + comp2_len - 1;
-    } else {
-	data = comp2;
-	dlen = comp2_len;
-    }
-
-    out = block_create(dlen);
-    zstr.zalloc = (alloc_func)0;
-    zstr.zfree = (free_func)0;
-    zstr.opaque = (voidpf)0;
-    zstr.next_in = data;
-    zstr.avail_in = dlen;
-
-    if ((err = inflateInit2(&zstr, -15)) != Z_OK) {
-	fprintf(stderr, "zlib errror in inflateInit2(): %d/%s\n",
-		err, zstr.msg);
-	return NULL;
-    }
-
-    do {
-	zstr.next_out = block;
-	zstr.avail_out = ZD2_BLKSZ;
-
-	err = inflate(&zstr, Z_FINISH);
-	if (err == Z_STREAM_END || err == Z_OK || err == Z_BUF_ERROR) {
-	    store_bytes(out, block, zstr.total_out);
-	    zstr.total_out = 0;
-	} else {
-	    fprintf(stderr, "zlib errror in inflate(): %d/%s\n",
-		    err, zstr.msg);
-	    return NULL;
-	}
-    } while (err != Z_FINISH && err != Z_STREAM_END);
-
-    store_bytes(out, block, zstr.total_out);
-
-    inflateEnd(&zstr);
-    outp = out->data;
-    *uncomp_len = out->byte;
-    block_destroy(out, 1);
-
-    return outp;
-}
-
-/*
  * ---------------------------------------------------------------------------
  * ZTR_FORM_RLE
  * ---------------------------------------------------------------------------
@@ -494,6 +408,7 @@ char *xrle(char *uncomp, int uncomp_len, int guard, int rsz, int *comp_len) {
     return comp;
 }
 
+
 /*
  * Reverses multi-byte run length encoding.
  *
@@ -550,6 +465,155 @@ char *unxrle(char *comp, int comp_len, int *uncomp_len) {
 
     return uncomp;
 }
+
+/*
+ * Mutli-byte run length encoding.
+ *
+ * Steps along in words of size 'rsz'. Unlike XRLE above this does run-length
+ * encoding by writing out an additional "length" word every time 2 or more
+ * words in a row are spotted. This removes the need for a guard byte.
+ *
+ * Additionally this method ensures that both input and output formats remain
+ * aligned on words of size 'rsz'.
+ *
+ * Arguments:
+ *	uncomp		Input data
+ *	uncomp_len	Length of input data 'uncomp'
+ *      rsz             Size of blocks to compare for run checking.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data if successful
+ *	NULL if not successful
+ */
+char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len) {
+    char *comp = (char *)malloc(1.4*uncomp_len + rsz);
+    char *last = uncomp;
+    char *out = comp;
+    int i, j, k, run_len = 0;
+
+    *out++ = ZTR_FORM_XRLE2;
+    *out++ = rsz;
+    for (i = 2; i < rsz; i++)
+	*out++ = -40;
+
+    /* FIXME: how to deal with uncomp_len not being a multiple of rsz */
+    for (i = 0; i < uncomp_len; i += rsz) {
+	/* FIXME: use inline #def versions of memcmp/memcpy for speed? */
+	memcpy(out,  &uncomp[i], rsz);
+	out += rsz;
+
+	if (memcmp(last, &uncomp[i], rsz) == 0) {
+	    run_len++;
+	} else {
+	    run_len = 1;
+	    last = &uncomp[i];
+	}
+
+
+	if (run_len >= 2) {
+	    /* Count remaining copies */
+	    for (k = i+rsz; k < uncomp_len; k += rsz) {
+		if (memcmp(last, &uncomp[k], rsz) != 0)
+		    break;
+	    }
+	    run_len = (k-i) / rsz -1;
+
+	    *out++ = run_len;
+	    for (j = 1; j < rsz; j++) {
+		/* Padding with last reduces entropy compared to padding
+		 * with copies of run_len
+		 */
+		*out++ = last[j];
+	    }
+	    i = k-rsz;
+	}
+    }
+
+    *comp_len = out-comp;
+
+    return comp;
+}
+
+/*
+ * Reverses multi-byte run length encoding (xrle_new).
+ *
+ * Arguments:
+ *	comp		Compressed input data
+ *	comp_len	Length of comp data
+ *	uncomp_len	Output: length of uncompressed data
+ *
+ * Returns:
+ *	Uncompressed data if successful
+ *	NULL if not successful
+ */
+char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
+    char *out;
+    int out_len, out_alloc, rsz, i, j, run_len, last;
+
+    out_alloc = comp_len*2; /* just an estimate */
+    out_len = 0;
+    if (NULL == (out = (char *)malloc(out_alloc)))
+	return NULL;
+
+    if (*comp++ != ZTR_FORM_XRLE2)
+	return NULL;
+
+    /* Read rsz and swallow padding */
+    rsz = *comp++;
+    comp_len -= 2;
+    for (i = 2; i < rsz; i++) {
+	comp++;
+	comp_len--;
+    }
+    
+    /* Uncompress */
+    run_len = 0;
+    last = 0;
+    for (i = 0; i < comp_len;) {
+	while (out_len + rsz > out_alloc) {
+	    out_alloc *= 2;
+	    if (NULL == (out = (char *)realloc(out, out_alloc)))
+		return NULL;
+	}
+	memcpy(&out[out_len], &comp[i], rsz);
+
+	if (memcmp(&out[out_len], &out[last], rsz) == 0) {
+	    run_len++;
+	} else {
+	    run_len = 1;
+	}
+
+	i += rsz;
+	out_len += rsz;
+
+	if (run_len >= 2) {
+	    /* Count remaining copies */
+	    run_len = comp[i];
+	    i += rsz;
+
+	    while (out_len + run_len * rsz > out_alloc) {
+		out_alloc *= 2;
+		if (NULL == (out = (char *)realloc(out, out_alloc)))
+		    return NULL;
+	    }
+
+	    for (j = 0; j < run_len; j++) {
+		memcpy(&out[out_len], &out[last], rsz);
+		out_len += rsz;
+	    }
+	}
+
+	last = out_len-rsz;
+    }
+
+    /* Shrink back down to avoid excessive memory usage */
+    out = realloc(out, out_len);
+    *uncomp_len = out_len;
+
+    return out;
+}
+
 
 /*
  * ---------------------------------------------------------------------------
@@ -1917,3 +1981,486 @@ char *unlog2_data(char *x_comp,
     return uncomp;
 }
 
+/*
+ * ---------------------------------------------------------------------------
+ * ZTR_FORM_STHUFF
+ * ---------------------------------------------------------------------------
+ */
+
+/*
+ * Implements compression using a set of static huffman codes stored using
+ * the Deflate algorithm (and so in this respect it's similar to zlib).
+ *
+ * The huffman codes though can be previously stored in the ztr object
+ * using ztr_add_hcode(). "cset" indicates which numbered stored huffman
+ * code set is to be used, or passing zero will use inline codes (ie they
+ * are stored in the data stream itself, just as in standard deflate).
+ *
+ * Arguments:
+ *	ztr		ztr_t pointer; used to find stored code-sets
+ *	uncomp		The uncompressed input data
+ *	uncomp_len	Length of uncomp
+ *	cset		Stored code-set number, zero for inline
+ *	recsz		Record size - only used when cset == 0.
+ *	comp_len	Output: length of compressed data
+ *
+ * Returns:
+ *	Compressed data stream if successful + comp_len
+ *      NULL on failure
+ */
+char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len, 
+	     int cset, int recsz, int *comp_len) {
+    block_t *blk = block_create(NULL, 2);
+    unsigned char bytes[2];
+    huffman_codeset_t *c = NULL;
+    unsigned char *comp = NULL;
+
+    if (cset >= CODE_USER)
+	c = ztr_find_hcode(ztr, cset);
+    else if (cset != CODE_INLINE)
+	c = generate_code_set(cset, 1, NULL, 0, 1, MAX_CODE_LEN, 0);
+
+    if (!c) {
+	/* No cached ones found, so inline some instead */
+	cset = 0;
+	c = generate_code_set(0, recsz, uncomp, uncomp_len, 1,
+			      MAX_CODE_LEN, 0);
+    }
+
+    bytes[0] = ZTR_FORM_STHUFF;
+    bytes[1] = cset;
+    store_bytes(blk, bytes, 2);
+
+    store_codes(blk, c, 1);
+
+    /*
+    {int i;
+    for (i = 0; i < c->ncodes; i++) {
+	output_code_set(stderr, c->codes[i]);
+    }}
+    */
+
+
+    /*
+     * Unless CODE_INLINE, all we wanted to know is what bit number
+     * to start on. The above is therefore somewhat inefficient.
+     */
+    if (cset != 0) {
+	blk->byte = 2;
+	memset(&blk->data[2], 0, blk->alloc - 2);
+    }
+
+    if (0 == huffman_multi_encode(blk, c, cset,
+			    (unsigned char *)uncomp, uncomp_len)) {
+	comp = blk->data;
+	*comp_len = blk->byte + (blk->bit != 0);
+	block_destroy(blk, 1);
+    }
+
+    if (cset == 0)
+	huffman_codeset_destroy(c);
+
+    return comp;
+}
+
+char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
+    int cset = (unsigned char)(comp[1]);
+    huffman_codeset_t *cs = NULL;
+    block_t *blk_in = block_create(NULL, comp_len),
+	*blk_out = block_create(NULL, 1000);
+    int bfinal;
+    char *uncomp;
+
+    if (cset >= CODE_USER) {
+	/* Scans through HUFF chunks */
+	ztr_chunk_t *hchunk = ztr_find_hcode_chunk(ztr, cset);
+	if (!hchunk)
+	    return NULL;
+
+	store_bytes(blk_in, hchunk->data+2, hchunk->dlength-2);
+	blk_in->byte--; /* we desire overlap of the last byte */
+    } else if (cset > 0) {
+	/* Create some temporary huffman_codes to stringify */
+	cs = generate_code_set(cset, 1, NULL, 0, 1, MAX_CODE_LEN, 0);
+	if (!cs)
+	    return NULL;
+
+	store_codes(blk_in, cs, 1);
+    } /* else inline codes */
+
+    /*
+     * Merge the first byte comp+2 with the last byte in blk_in, then
+     * append the rest.
+     */
+    blk_in->data[blk_in->byte++] |= *(comp+2);
+    store_bytes(blk_in, comp+3, comp_len-3);
+
+    /* Rewind */
+    blk_in->byte = 0;
+    blk_in->bit = 0;
+
+    do {
+	block_t *out;
+	if (!cs)
+	    if (NULL == (cs = restore_codes(blk_in, &bfinal)))
+		return NULL;
+
+	/*
+	{int i;
+	for (i = 0; i < cs->ncodes; i++) {
+	    output_code_set(stderr, cs->codes[i]);
+	}}
+	*/
+
+	if (NULL == (out = huffman_multi_decode(blk_in, cs))) {
+	    huffman_codeset_destroy(cs);
+	    return NULL;
+	}
+
+	/* Could optimise this for the common case of only 1 block */
+	store_bytes(blk_out, out->data, out->byte);
+	block_destroy(out, 0);
+	huffman_codeset_destroy(cs);
+	cs = NULL;
+    } while (!bfinal);
+
+    *uncomp_len = blk_out->byte;
+    uncomp = blk_out->data;
+
+    block_destroy(blk_in, 0);
+    block_destroy(blk_out, 1);
+
+    return uncomp;
+}
+
+
+#define SYM_EOF 256
+static void output_code_set(FILE *fp, huffman_codes_t *cds) {
+    int i, j;
+    int nbits_in = 0, nbits_out = 0;
+    huffman_code_t *codes = cds->codes;
+    int ncodes = cds->ncodes;
+
+    fprintf(fp, "static huffman_code_t codes_FIXME[] = {\n");
+    for (i = j = 0; i < ncodes; i++) {
+	nbits_out += codes[i].nbits * codes[i].freq;
+	nbits_in  += 8*codes[i].freq;
+	if (j == 0)
+	    fprintf(fp, "    ");
+	if (codes[i].symbol == SYM_EOF) {
+	    fprintf(fp, "{SYM_EOF,%3d}, ", codes[i].nbits);
+	    j = 10;
+	} else {
+	    if (isalnum(codes[i].symbol)) {
+		fprintf(fp, "{'%c',%3d}, ", codes[i].symbol, codes[i].nbits);
+	    } else {
+		fprintf(fp, "{%3d,%3d}, ", codes[i].symbol, codes[i].nbits);
+	    }
+	}
+	j++;
+	
+	if (j >= 6) {
+	    fputc('\n', fp);
+	    j = 0;
+	}
+    }
+    if (j)
+	fputc('\n', fp);
+    fprintf(fp, "};\n");
+    fprintf(fp, "/* Expected compression to %f of input */\n",
+	    (double)nbits_out/nbits_in);
+}
+
+
+/*
+ * Reorders quality data from its RAW format to an interleaved 4-byte
+ * aligned format.
+ *
+ * Starting with sequence A1 C2 G3 the raw format is quality of called
+ * bases followed by quality of remaining bases in triplets per base:
+ * 0 (RAW format)
+ * Q(A1) Q(C2) Q(G3)
+ * Q(C1) Q(G1) Q(T1) 
+ * Q(A2) Q(G2) Q(T2) 
+ * Q(A3) Q(C3) Q(T3) 
+ *
+ * We reorder it to:
+ * ZTR_FORM_QSHIFT <any> <any> 0(raw)
+ * Q(A1) Q(C1) Q(G1) Q(T1)
+ * Q(C2) Q(A2) Q(G2) Q(T2)
+ * Q(G3) Q(A3) Q(C3) Q(T3)
+ * 
+ * Returns shifted data on success
+ *         NULL on failure
+ */
+char *qshift(char *qold, int qlen, int *new_len) {
+    int i, j;
+    char *qnew;
+    int nbases;
+
+    /*
+     * Correct input is raw encoding + 4x nbases bytes
+     */
+    if ((qlen-1)%4 != 0 || *qold != 0)
+	return NULL;
+
+    nbases = (qlen-1)/4;
+    qnew = (unsigned char *)malloc((nbases+1)*4);
+    qnew[0] = ZTR_FORM_QSHIFT; /* reorder code */
+    qnew[1] = -40;  /* pad */
+    qnew[2] = -40;  /* pad */
+    qnew[3] = qold[0];
+
+    for (i = 0, j = 4; i < nbases; i++) {
+	qnew[j++] = qold[1+i];
+	qnew[j++] = qold[1+nbases+i*3];
+	qnew[j++] = qold[1+nbases+i*3+1];
+	qnew[j++] = qold[1+nbases+i*3+2];
+    }
+
+    *new_len = (nbases+1)*4;
+    return qnew;
+}
+
+/*
+ * The opposite transform from qshift() above.
+ *
+ * Returns unshifted data on success
+ *         NULL on failure.
+ */
+char *unqshift(char *qold, int qlen, int *new_len) {
+    int i, j;
+    char *qnew;
+    int nbases;
+
+    /*
+     * Correct input is 4x (nbases+1) bytes
+     */
+    if (qlen%4 != 0 || *qold != ZTR_FORM_QSHIFT)
+	return NULL;
+
+    nbases = qlen/4-1;
+    qnew = (unsigned char *)malloc(nbases*4+1);
+    qnew[0] = 0; /* raw byte */
+
+    for (i = 0, j = 4; i < nbases; i++) {
+	qnew[1+i]            = qold[j++];
+	qnew[1+nbases+i*3]   = qold[j++];
+	qnew[1+nbases+i*3+1] = qold[j++];
+	qnew[1+nbases+i*3+2] = qold[j++];
+    }
+
+    *new_len = nbases*4+1;
+    return qnew;
+}
+
+/*
+ * Given a sequence ACTG this shifts trace data from the order:
+ *
+ *     A1A2A3A4 C1C2C3C4 G1G2G3G4 T1T2T3T4
+ *
+ * to
+ *
+ *     A1C1G1T1 C2A2G2T2 T3A3C3G3 G4C4C4T4
+ *
+ * Ie for each base it ouputs the signal for the called base first
+ * followed by the remaining 3 signals in A,C,G,T order (minus the
+ * called signal already output).
+ */
+
+/*
+ * NCBI uses a rotation mechanism. Thus instead of converting acGt (G
+ * called) to Gact they produce Gtac.
+ *
+ * Given 4 columns of data the two schemes produce value orderings as:
+ *
+ * Rotate: Acgt       Shift: Acgt
+ *         Cgta              Cagt
+ *         Gtac              Gact
+ *         Tacg              Tacg
+ *
+ * As a consequence any channel bias for a/c/g/t is better preserved
+ * by shifting than it is by rotating as each column (except #1) are
+ * only populated by two base types and 2 of those columns are on a
+ * 3:1 ratio.
+ */
+/* #define ROTATE_INSTEAD */
+char *tshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
+    int nc, i, j;
+    ztr_chunk_t **base = ztr_find_chunks(ztr, ZTR_TYPE_BASE, &nc);
+    char *bases;
+    int nbases;
+    unsigned short *tnew, *told;
+
+    if (nc == 0)
+	return NULL;
+
+    if (*told_c != 0)
+	return NULL; /* assume RAW format trace input */
+
+    /* Use last BASE chunk if multiple are present */
+    /* FIXME: ensure uncompressed first */
+    bases  = base[nc-1]->data+1;
+    nbases = base[nc-1]->dlength-1;
+
+    if (nbases != (tlen-2)/8) {
+	fprintf(stderr, "Mismatch in number of base calls to samples\n");
+	return NULL;
+    }
+
+    /* Allocate and initialise header */
+    told = ((unsigned short *)told_c) + 1;
+    *new_len = (nbases*4+4) * sizeof(*tnew);
+    tnew = (unsigned short *)malloc(*new_len);
+    for (i = 1; i < 4; i++) {
+	tnew[i] = 0;
+    }
+    ((char *)tnew)[0] = ZTR_FORM_TSHIFT;
+
+#ifdef ROTATE_INSTEAD
+    /* Reorder */
+    for (i = 0; i < nbases; i++) {
+	switch(bases[i]) {
+	case 'T':
+	    tnew[4+i*4+0] = told[3*nbases+i]; /* TACG */
+	    tnew[4+i*4+1] = told[0*nbases+i];
+	    tnew[4+i*4+2] = told[1*nbases+i];
+	    tnew[4+i*4+3] = told[2*nbases+i];
+	    break;
+	case 'G':
+	    tnew[4+i*4+0] = told[2*nbases+i]; /* GTAC */
+	    tnew[4+i*4+1] = told[3*nbases+i];
+	    tnew[4+i*4+2] = told[0*nbases+i];
+	    tnew[4+i*4+3] = told[1*nbases+i];
+	    break;
+	case 'C':
+	    tnew[4+i*4+0] = told[1*nbases+i]; /* CGTA */
+	    tnew[4+i*4+1] = told[2*nbases+i];
+	    tnew[4+i*4+2] = told[3*nbases+i];
+	    tnew[4+i*4+3] = told[0*nbases+i];
+	    break;
+	default:
+	    tnew[4+i*4+0] = told[0*nbases+i]; /* ACGT */
+	    tnew[4+i*4+1] = told[1*nbases+i];
+	    tnew[4+i*4+2] = told[2*nbases+i];
+	    tnew[4+i*4+3] = told[3*nbases+i];
+	    break;
+	}
+    }
+#else
+    /* Reorder */
+    for (i = 0; i < nbases; i++) {
+	switch(bases[i]) {
+	case 'T':
+	    tnew[4+i*4+0] = told[3*nbases+i]; /* TACG */
+	    tnew[4+i*4+1] = told[0*nbases+i];
+	    tnew[4+i*4+2] = told[1*nbases+i];
+	    tnew[4+i*4+3] = told[2*nbases+i];
+	    break;
+	case 'G':
+	    tnew[4+i*4+0] = told[2*nbases+i]; /* GACT */
+	    tnew[4+i*4+1] = told[0*nbases+i];
+	    tnew[4+i*4+2] = told[1*nbases+i];
+	    tnew[4+i*4+3] = told[3*nbases+i];
+	    break;
+	case 'C':
+	    tnew[4+i*4+0] = told[1*nbases+i]; /* CAGT */
+	    tnew[4+i*4+1] = told[0*nbases+i];
+	    tnew[4+i*4+2] = told[2*nbases+i];
+	    tnew[4+i*4+3] = told[3*nbases+i];
+	    break;
+	default:
+	    tnew[4+i*4+0] = told[0*nbases+i]; /* ACGT */
+	    tnew[4+i*4+1] = told[1*nbases+i];
+	    tnew[4+i*4+2] = told[2*nbases+i];
+	    tnew[4+i*4+3] = told[3*nbases+i];
+	    break;
+	}
+    }
+#endif
+
+    xfree(base);
+
+    return (char *)tnew;
+}
+
+char *untshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
+    unsigned short *tnew, *told = (unsigned short *)told_c;
+    int nc, nbases, i;
+    char *bases;
+    ztr_chunk_t **base = ztr_find_chunks(ztr, ZTR_TYPE_BASE, &nc);
+
+    /* Use last BASE chunk if multiple are present */
+    uncompress_chunk(ztr, base[nc-1]);
+    bases  = base[nc-1]->data+1;
+    nbases = base[nc-1]->dlength-1;
+
+    *new_len = 2 + nbases*4 * sizeof(*tnew);
+    tnew = (unsigned short *)malloc(*new_len);
+    tnew[0] = 0;
+    told += 4;
+
+#ifdef ROTATE_INSTEAD
+    /* Reorder */
+    for (i = 0; i < nbases; i++) {
+	switch(bases[i]) {
+	case 'T':
+	    tnew[1+3*nbases+i] = *told++; /* TACG */
+	    tnew[1+0*nbases+i] = *told++;
+	    tnew[1+1*nbases+i] = *told++;
+	    tnew[1+2*nbases+i] = *told++;
+	    break;
+	case 'G':
+	    tnew[1+2*nbases+i] = *told++; /* GTAC */
+	    tnew[1+3*nbases+i] = *told++;
+	    tnew[1+0*nbases+i] = *told++;
+	    tnew[1+1*nbases+i] = *told++;
+	    break;
+	case 'C':
+	    tnew[1+1*nbases+i] = *told++; /* CGTA */
+	    tnew[1+2*nbases+i] = *told++;
+	    tnew[1+3*nbases+i] = *told++;
+	    tnew[1+0*nbases+i] = *told++;
+	    break;
+	default:
+	    tnew[1+0*nbases+i] = *told++; /* ACGT */
+	    tnew[1+1*nbases+i] = *told++;
+	    tnew[1+2*nbases+i] = *told++;
+	    tnew[1+3*nbases+i] = *told++;
+	    break;
+	}
+    }
+#else
+    /* Reorder */
+    for (i = 0; i < nbases; i++) {
+	switch(bases[i]) {
+	case 'T':
+	    tnew[1+3*nbases+i] = *told++; /* TACG */
+	    tnew[1+0*nbases+i] = *told++;
+	    tnew[1+1*nbases+i] = *told++;
+	    tnew[1+2*nbases+i] = *told++;
+	    break;
+	case 'G':
+	    tnew[1+2*nbases+i] = *told++; /* GACT */
+	    tnew[1+0*nbases+i] = *told++;
+	    tnew[1+1*nbases+i] = *told++;
+	    tnew[1+3*nbases+i] = *told++;
+	    break;
+	case 'C':
+	    tnew[1+1*nbases+i] = *told++; /* CAGT */
+	    tnew[1+0*nbases+i] = *told++;
+	    tnew[1+2*nbases+i] = *told++;
+	    tnew[1+3*nbases+i] = *told++;
+	    break;
+	default:
+	    tnew[1+0*nbases+i] = *told++; /* ACGT */
+	    tnew[1+1*nbases+i] = *told++;
+	    tnew[1+2*nbases+i] = *told++;
+	    tnew[1+3*nbases+i] = *told++;
+	    break;
+	}
+    }
+#endif
+
+    return (char *)tnew;
+}

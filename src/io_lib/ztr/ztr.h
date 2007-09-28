@@ -2,7 +2,7 @@
 #define _ZTR_H
 
 #include "Read.h"
-#include "deflate_simple.h"
+#include "deflate_interlaced.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,6 +39,7 @@ typedef struct {
 #define ZTR_FORM_RLE		1
 #define ZTR_FORM_ZLIB		2
 #define ZTR_FORM_XRLE		3
+#define ZTR_FORM_XRLE2		4
 #define ZTR_FORM_DELTA1		64
 #define ZTR_FORM_DELTA2		65
 #define ZTR_FORM_DELTA4		66
@@ -52,6 +53,8 @@ typedef struct {
 #define ZTR_FORM_ICHEB		74
 #define ZTR_FORM_LOG2		75
 #define ZTR_FORM_STHUFF	        77
+#define ZTR_FORM_QSHIFT		79
+#define ZTR_FORM_TSHIFT		80
 
 /* Converts a C string to a big-endian 4-byte int */
 #define ZTR_STR2BE(str) (((str)[0] << 24) + \
@@ -91,7 +94,7 @@ typedef struct {
 
 typedef struct {
     int ztr_owns; /* true is ZTR is to free the data later */
-    huffman_codes_t *codes;
+    huffman_codeset_t *codes;
 } ztr_hcode_t;
 
 /* The main ZTR structure, which holds the entire file contents */
@@ -129,9 +132,10 @@ void ztr_process_text(ztr_t *ztr);
 int compress_chunk(ztr_t *ztr, ztr_chunk_t *chunk, int format,
 		   int option, int option2);
 int uncompress_chunk(ztr_t *ztr, ztr_chunk_t *chunk);
-void ztr_add_hcode(ztr_t *ztr, huffman_codes_t *codes, int ztr_owns);
+void ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes, int ztr_owns);
 int ztr_store_hcodes(ztr_t *ztr);
-huffman_codes_t *ztr_find_hcode(ztr_t *ztr, int code_set);
+huffman_codeset_t *ztr_find_hcode(ztr_t *ztr, int code_set);
+ztr_chunk_t *ztr_find_hcode_chunk(ztr_t *ztr, int code_set);
 
 #ifdef __cplusplus
 }

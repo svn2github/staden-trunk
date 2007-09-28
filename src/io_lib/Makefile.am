@@ -52,7 +52,8 @@ pkginclude_HEADERS = \
 	utils/os.h \
 	ztr/compression.h \
 	ztr/ztr.h \
-	ztr/deflate_simple.h \
+	ztr/deflate_interlaced.h \
+	srf/srf.h \
 	io_lib_config.h
 
 bin_SCRIPTS = io_lib-config
