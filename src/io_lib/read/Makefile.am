@@ -35,7 +35,7 @@ libread_a_SOURCES = \
 	../sff/sff.c \
 	../sff/sff.h \
 	../srf/srf.c \
-	../src/srf.h \
+	../srf/srf.h \
 	../utils/array.c \
 	../utils/array.h \
 	../utils/compress.c \
