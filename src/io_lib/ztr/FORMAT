@@ -56,6 +56,12 @@ means about 10 bytes wasted per chunk, or maybe 5-10% of the total
 file size. Changing this would be a radical departure from ZTR; is it
 justified given the savings? (est. 4.8% for 74bp reads, 8.4% for 27bp
 reads).
+One idea if to consider a ZTR file (the non "block" components at
+least) to be a series of huffman codes, by default all 8-bit long and
+matching their ASCII codes. Then a dedicate chunk could be used to
+adjust these default codes. It's therefore backwards compatible, but
+is that also overkill? (NB, this looks like it'd save 6% on the
+overall file size.)
 
 Ie in C:
 
@@ -1165,6 +1171,9 @@ References
 [1] IUPAC: http://www.chem.qmw.ac.uk/iubmb/misc/naseq.html
 
 [2] http://www.ncbi.nlm.nih.gov/Traces/TraceArchiveRFC.html
+
+[3] J.Bonfield and R.Staden, "ZTR: a new format for DNA sequence trace
+data". Bioinformatics Vol. 18 no. 1 2002. 
 
 
 FIXME: As an aside, not doing the final entropy encoding steps (zlib,

@@ -1,5 +1,5 @@
-			    IO_LIB VERSION 1.10.2
-			    =====================
+		       IO_LIB VERSION 1.10.3b1
+		       =======================
 
 Io_lib is a library of file reading and writing code to provide a general
 purpose trace file (and Experiment File) reading interface. The programmer
@@ -24,8 +24,11 @@ the file formats via a single read_reading (or fread_reading or
 mfread_reading) function call and analogous write_reading functions
 too. See the file include/Read.h for the generic 'Read' structure.
 
-This release is primarily a bug-fix over 1.10.1. The main change is to
-support compiling/linking against C++ code.
+What's new in this release?
+===========================
+
+This is a beta-test release to demonstrate and test the new HUFF chunk
+and STHUFF compression format. 
 
 
 Important changes added with 1.9.2
