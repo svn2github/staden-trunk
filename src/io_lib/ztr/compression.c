@@ -2317,7 +2317,7 @@ char *tshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
     told = ((unsigned short *)told_c) + 1;
     *new_len = (nbases*4+4) * sizeof(*tnew);
     tnew = (unsigned short *)malloc(*new_len);
-    for (i = 1; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
 	tnew[i] = 0;
     }
     ((char *)tnew)[0] = ZTR_FORM_TSHIFT;
@@ -2466,6 +2466,8 @@ char *untshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
 	}
     }
 #endif
+
+    xfree(base);
 
     return (char *)tnew;
 }
