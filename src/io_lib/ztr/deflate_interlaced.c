@@ -808,7 +808,7 @@ void store_bytes(block_t *block, unsigned char *val, int nbytes) {
     }
 
     /* Resize */
-    block_resize(block, block->byte + nbytes);
+    block_resize(block, block->byte + nbytes + 1);
 
     /* Store */
     memcpy(&block->data[block->byte], val, nbytes);
