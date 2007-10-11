@@ -50,6 +50,11 @@ void srf_destroy(srf_t *srf, int auto_close) {
     if (!srf)
 	return;
     
+    if (srf->th.trace_hdr) {
+	free(srf->th.trace_hdr);
+	srf->th.trace_hdr = NULL;
+    }
+
     if (auto_close && srf->fp)
 	fclose(srf->fp);
 
@@ -433,6 +438,8 @@ int srf_write_trace_body(srf_t *srf, srf_trace_body_t *tb) {
  *        -1 for failure
  */
 int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
+    int c;
+
     /* Check block type */
     if (EOF == (tb->block_type = fgetc(srf->fp)))
 	return -1;
@@ -443,8 +450,10 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
     if (srf_read_pstring(srf, tb->read_id) < 0)
 	return -1;
 
-    if (EOF == (tb->flags = fgetc(srf->fp)))
+    if (EOF == (c = fgetc(srf->fp)))
 	return -1;
+    else
+	tb->flags = c;
 
     /* The trace data itself */
     if (0 != srf_read_uint32(srf, &tb->trace_size))
@@ -582,6 +591,11 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 	    break;
 
 	case SRFB_TRACE_HEADER:
+	    if (srf->th.trace_hdr) {
+		free(srf->th.trace_hdr);
+		srf->th.trace_hdr = NULL;
+	    }
+
 	    if (0 != srf_read_trace_hdr(srf, &srf->th))
 		return NULL;
 
@@ -601,6 +615,9 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 		mfwrite(srf->th.trace_hdr, 1, srf->th.trace_hdr_size, mf);
 	    if (tb.trace_size)
 		mfwrite(tb.trace, 1, tb.trace_size, mf);
+	    if (tb.trace)
+		free(tb.trace);
+
 	    mrewind(mf);
 	    return mf;
 	}
@@ -671,7 +688,7 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	srf_trace_body_t tb;
 
 	/* Inefficient, but it'll do for testing purposes */
-	if (0 != srf_read_trace_body(srf, &tb, 0))
+	if (0 != srf_read_trace_body(srf, &tb, 1))
 	    return -2;
 
 	if (name)

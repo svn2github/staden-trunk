@@ -128,6 +128,8 @@ int main(int argc, char **argv) {
     fclose(fp_seq);
     fclose(fp_sig2);
     fclose(fp_prb);
+
+    srf_destroy(srf, 1);
     
     return 0;
 }

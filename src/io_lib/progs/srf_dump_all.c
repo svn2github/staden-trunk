@@ -135,5 +135,7 @@ int main(int argc, char **argv) {
 	mfclose(mf);
     }
 
+    srf_destroy(srf, 1);
+
     return 0;
 }
