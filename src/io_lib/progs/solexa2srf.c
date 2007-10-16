@@ -215,6 +215,208 @@ static int ztr_mwrite_chunk(mFILE *fp, ztr_chunk_t *chunk) {
     return 0;
 }
 
+
+char *parse_4_int(char *str, int *val) {
+    int minus = 0, count = 0;
+    char c;
+    enum state_t {BEFORE_NUM, IN_NUM} state = BEFORE_NUM;
+
+    val[0] = val[1] = val[2] = val[3] = 0;
+
+    do {
+	c = *str++;
+	switch (state) {
+	case BEFORE_NUM:
+	    switch(c) {
+	    case '\0':
+		return NULL;
+
+	    case '\n': case '\r': case '\t': case ' ':
+		break;
+
+	    default:
+		state = IN_NUM;
+		str--; /* reuse same character */
+	    }
+	    break;
+
+	case IN_NUM:
+	    switch(c) {
+	    case '-':
+		minus = 1;
+		break;
+
+	    case '+':
+		minus = 0;
+		break;
+
+	    case '0': case '1': case '2': case '3': case '4': 
+	    case '5': case '6': case '7': case '8': case '9':
+		*val = *val * 10 + c-'0';
+		break;
+
+	    case '\n': case '\r': case '\t': case ' ': case '\0':
+		if (minus)
+		    *val = -*val;
+
+		minus = 0;
+		*val++;
+
+		if (++count == 4) {
+		    return str;
+		} else {
+		    state = BEFORE_NUM;
+		}
+		break;
+
+	    default:
+		goto error;
+	    }
+	    break;
+	}
+
+    } while (c);
+
+    /*
+     * If we get here we've run out of input before processing 4 values
+     * (the while command terminated) or we've found malformed data and
+     * jumped here directly.
+     */
+    
+ error:
+    fprintf(stderr, "Error: unexpected character '%c' during parsing\n", c);
+    return NULL;
+}
+
+/*
+ * Fast lookup table to convert integer fraction value to a floating point
+ * value. This allows floats to be parsed to 2 decimal points with no
+ * logs or divisions anywhere. Over-optimising? Maybe, but I have the bit
+ * between my teeth and am running with it :-)
+ */
+static float f_lookup[100] = {
+    0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+    0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19,
+    0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29,
+    0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39,
+    0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49,
+    0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59,
+    0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69,
+    0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79,
+    0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89,
+    0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
+};
+
+char *parse_4_float(char *str, float *val) {
+    int minus = 0, count = 0;
+    char c;
+    enum state_t {BEFORE_NUM, BEFORE_POINT, AFTER_POINT} state = BEFORE_NUM;
+    double fval = 0;
+    int ival1 = 0, ival2 = 0;
+
+    val[0] = val[1] = val[2] = val[3] = 0;
+
+    do {
+	c = *str++;
+	switch (state) {
+	case BEFORE_NUM:
+	    switch(c) {
+	    case '\n': case '\r': case '\t': case ' ':
+		break;
+
+	    case '\0':
+		return NULL;
+
+	    default:
+		state = BEFORE_POINT;
+		str--; /* reuse same character */
+	    }
+	    break;
+
+	case BEFORE_POINT:
+	    switch(c) {
+	    case '-':
+		minus = 1;
+		break;
+
+	    case '+':
+		minus = 0;
+		break;
+
+	    case '0': case '1': case '2': case '3': case '4': 
+	    case '5': case '6': case '7': case '8': case '9':
+		ival1 = ival1 * 10 + c-'0';
+		break;
+
+	    case '.':
+		state = AFTER_POINT;
+		break;
+
+	    case '\n': case '\r': case '\t': case ' ': case '\0':
+		if (minus)
+		    ival1 = -ival1;
+
+		minus = 0;
+		*val++ = ival1;
+		ival1 = 0;
+
+		if (++count == 4) {
+		    return str;
+		} else {
+		    state = BEFORE_NUM;
+		}
+		break;
+
+	    default:
+		goto error;
+	    }
+	    break;
+	
+	case AFTER_POINT:
+	    switch(c) {
+	    case '0': case '1': case '2': case '3': case '4': 
+	    case '5': case '6': case '7': case '8': case '9':
+		ival2 = ival2 * 10 + c-'0';
+		break;
+
+	    case '\n': case '\r': case '\t': case ' ': case '\0':
+		while (ival2 >= 100)
+		    ival2 /= 10;
+		fval = ival1 + f_lookup[ival2];
+
+		if (minus)
+		    fval = -fval;
+
+		minus = 0;
+		*val++ = fval;
+		ival1 = ival2 = 0;
+
+		if (++count == 4) {
+		    return str;
+		} else {
+		    state = BEFORE_NUM;
+		}
+		break;
+		
+	    default:
+		goto error;
+	    }
+	    break;
+	}
+
+    } while (c);
+
+    /*
+     * If we get here we've run out of input before processing 4 values
+     * (the while command terminated) or we've found malformed data and
+     * jumped here directly.
+     */
+    
+ error:
+    fprintf(stderr, "Error: unexpected character '%c' during parsing\n", c);
+    return NULL;
+}
+
 /*
  * Fetches a sequence from a *_*_*_seq.txt file. The format is lines of:
  *
@@ -230,19 +432,29 @@ static int ztr_mwrite_chunk(mFILE *fp, ztr_chunk_t *chunk) {
  */
 char *get_seq(FILE *fp, int trim, int *lane, int *tile, int *x, int *y) {
     static char line[1024];
-    char *cp;
+    char *cp, *end;
+    int i4[4];
 
     if (NULL == fgets(line, 1023, fp))
 	return NULL;
 
-    if ((cp = strchr(line, '\n')))
-	*cp = 0;
-    cp = strrchr(line, '\t');
+    /* First 4 values */
+    cp = parse_4_int(line, i4);
+    *lane = i4[0];
+    *tile = i4[1];
+    *x    = i4[2];
+    *y    = i4[3];
 
-    if (4 != sscanf(line, "%d %d %d %d", lane, tile, x, y))
-	return NULL;
+    /* Followed by the sequence */
+    while (isspace(*cp))
+	cp++;
 
-    return cp ? cp + 1 + trim : NULL;
+    end = cp;
+    while (*end && !isspace(*end))
+	end++;
+    *end = 0;
+
+    return cp + trim;
 }
 
 /*
@@ -260,21 +472,17 @@ int (*get_prb(FILE *fp, int trim))[4] {
     char line[MAX_CYCLES*20 +1];
     static int prb[MAX_CYCLES][4];
     char *cp;
-    int c; /* cycle */
+    int c = 0; /* cycle */
 
     if (NULL == fgets(line, MAX_CYCLES*20, fp))
 	return NULL;
 
-    for (c = -trim, cp = strtok(line, "\t"); cp;
-	 cp = strtok(NULL, "\t"), c++) {
-	if (c < 0)
-	    continue;
-	if (4 != sscanf(cp, "%d %d %d %d",
-			&prb[c][0], &prb[c][1], &prb[c][2], &prb[c][3]))
-	    return NULL;
+    cp = line;
+    while (cp = parse_4_int(cp, prb[c])) {
+	c++;
     }
-    
-    return prb;
+
+    return &prb[trim];
 }
 
 /*
@@ -290,24 +498,21 @@ int (*get_prb(FILE *fp, int trim))[4] {
  */
 float (*get_sig(FILE *fp, int trim))[4] {
     char line[MAX_CYCLES*30 +1];
-    static float sig[MAX_CYCLES][4];
+    int i4[4];
     char *cp;
-    int c, i, j; /* cycle */
+    int c = 0;
+    static float sig[MAX_CYCLES][4];
 
     if (NULL == fgets(line, MAX_CYCLES*30, fp))
 	return NULL;
 
-    for (c = -4-trim, cp = strtok(line, "\t"); cp;
-	 cp = strtok(NULL, "\t"), c++) {
-	if (c < 0)
-	    continue;
-
-	if (4 != sscanf(cp, "%f %f %f %f",
-			&sig[c][0], &sig[c][1], &sig[c][2], &sig[c][3]))
-	    return NULL;
+    /* Skip first 4 values */
+    cp = parse_4_int(line, i4);
+    while (cp = parse_4_float(cp, sig[c])) {
+	c++;
     }
 
-    return sig;
+    return &sig[trim];
 }
 
 /*
