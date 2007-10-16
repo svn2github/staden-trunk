@@ -132,9 +132,9 @@ void ztr_process_text(ztr_t *ztr);
 int compress_chunk(ztr_t *ztr, ztr_chunk_t *chunk, int format,
 		   int option, int option2);
 int uncompress_chunk(ztr_t *ztr, ztr_chunk_t *chunk);
-void ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes, int ztr_owns);
+ztr_hcode_t *ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes, int ztr_owns);
 int ztr_store_hcodes(ztr_t *ztr);
-huffman_codeset_t *ztr_find_hcode(ztr_t *ztr, int code_set);
+ztr_hcode_t *ztr_find_hcode(ztr_t *ztr, int code_set);
 ztr_chunk_t *ztr_find_hcode_chunk(ztr_t *ztr, int code_set);
 
 #ifdef __cplusplus

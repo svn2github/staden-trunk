@@ -367,6 +367,7 @@ static int canonical_codes(huffman_codes_t *c) {
 	if (c->codes[i].nbits > c->max_code_len)
 	    break;
     }
+
     /*
      * From here on we shrink the length of the current code by increasing
      * the length of an earlier symbol, at last_code.
@@ -478,6 +479,22 @@ static int node_compar(const void *vp1, const void *vp2) {
 	return n2->sym - n1->sym;
 }
 
+static int node_compar2(const void *vp1, const void *vp2) {
+    const node_t *n1 = *(const node_t **)vp1;
+    const node_t *n2 = *(const node_t **)vp2;
+
+    /*
+     * The sort order is vital here. This needs to return the same collating
+     * order on all systems so that differing qsort() functions will not
+     * swap around symbols with the same bit lengths, hence we sort by both
+     * fields to force a unique stable ordering.
+     */
+    if (n1->count != n2->count)
+	return n1->count - n2->count;
+    else
+	return n2->sym - n1->sym;
+}
+
 /*
  * Computes the huffman bit-lengths for a data set. We don't care
  * about the actual tree, just how deep the symbols end up.
@@ -499,7 +516,7 @@ static int node_compar(const void *vp1, const void *vp2) {
  * Returns huffman_codes_t* on success
  *         NULL on failure
  */
-huffman_codes_t *calc_bit_lengths(unsigned char *data, int len,
+huffman_codes_t *calc_bit_lengths_old(unsigned char *data, int len,
 				  int eof, int max_code_len, int all_codes,
 				  int start, int skip) {
     int i, ncodes, node_start;
@@ -604,6 +621,126 @@ huffman_codes_t *calc_bit_lengths(unsigned char *data, int len,
     return c;
 }
 
+
+huffman_codes_t *calc_bit_lengths(unsigned char *data, int len,
+				  int eof, int max_code_len, int all_codes,
+				  int start, int skip) {
+    int i, ncodes;
+    node_t nodes[258+257], *head, *new = &nodes[258];
+    node_t *n2[258+257];
+    int map[258];
+    huffman_codes_t *c;
+    int hist[256];
+
+    if (NULL == (c = (huffman_codes_t *)malloc(sizeof(*c))))
+	return NULL;
+    c->codes_static = 0;
+    c->max_code_len = max_code_len;
+
+    /* Count frequencies of symbols */
+    memset(hist, 0, 256*sizeof(*hist));
+    /* Calc freqs */
+    for (i = start; i < len; i+=skip) {
+	hist[data[i]]++;
+    }
+
+
+    /*
+     * Initialise nodes. We build a map of ASCII character code to node
+     * number. (By default it's a simple 1:1 mapping unless legal_chars is
+     * defined.)
+     */
+    ncodes = 0;
+    if (eof) {
+	nodes[ncodes].sym = SYM_EOF;
+	nodes[ncodes].count = eof;
+	nodes[ncodes].parent = NULL;
+	n2[ncodes] = &nodes[ncodes];
+	map[SYM_EOF] = ncodes++;
+    }
+
+    /* All 256 chars existing at a minimal level */
+    if (all_codes) {
+	for (i = 0; i < 256; i++) {
+	    nodes[ncodes].sym = i;
+	    nodes[ncodes].count = hist[i];
+	    nodes[ncodes].parent = NULL;
+	    n2[ncodes] = &nodes[ncodes];
+	    map[i] = ncodes++;
+	}
+    } else {
+	/* Only include non-zero symbols */
+	for (i = 0; i < 256; i++) {
+	    if (hist[i] == 0)
+		continue;
+	    nodes[ncodes].sym = i;
+	    nodes[ncodes].count = hist[i];
+	    nodes[ncodes].parent = NULL;
+	    n2[ncodes] = &nodes[ncodes];
+	    map[i] = ncodes++;
+	}
+    }
+
+    /* Sort by counts, smallest first and form a sorted linked list */
+    qsort(n2, ncodes, sizeof(*n2), node_compar2);
+
+    /* Skip symbols that do not occur, unless all_codes is true */
+    for (i = 0; i < ncodes; i++) {
+	n2[i]->next = i+1 < ncodes ? n2[i+1] : NULL;
+    }
+
+    /* Repeatedly merge two smallest values */
+    head = n2[0];
+    while (head && head->next) {
+	node_t *after = head->next, *n;
+	int sum = head->count + head->next->count;
+	
+	for (n = head->next->next; n; after = n, n = n->next) {
+	    if (sum < n->count)
+		break;
+	}
+
+	/* Produce a new summation node and link it in place */
+	after->next = new;
+	new->next = n;
+	new->sym = '?';
+	new->count = sum;
+	new->parent = NULL;
+	head->parent = new;
+	head->next->parent = new;
+	head = head->next->next;
+
+	new++;
+    }
+
+    /* Walk up tree computing the bit-lengths for our symbols */
+    c->ncodes = ncodes;
+    c->codes = (huffman_code_t *)malloc(c->ncodes * sizeof(*c->codes));
+    if (NULL == c->codes) {
+	free(c);
+	return NULL;
+    }
+
+    for (i = 0; i < ncodes; i++) {
+	int len = 0;
+	node_t *n;
+	for (n = n2[i]->parent; n; n = n->parent) {
+	    len++;
+	}
+
+	c->codes[i].symbol = n2[i]->sym;
+	c->codes[i].freq   = n2[i]->count;
+	c->codes[i].nbits  = len ? len : 1; /* special case, nul input */
+    }
+
+    if (0 != canonical_codes(c)) {
+	free(c);
+	return NULL;
+    }
+
+    return c;
+}
+
 /*
  * Initialises and returns a huffman_codes_t struct from a specified code_set.
  * If code_set is not one of the standard predefined values then the
@@ -632,6 +769,7 @@ huffman_codeset_t *generate_code_set(int code_set, int ncodes,
     cs->code_set = code_set;
     cs->ncodes = ncodes;
     cs->codes = (huffman_codes_t **)malloc(cs->ncodes * sizeof(*cs->codes));
+    cs->blk = NULL;
 
     if (code_set >= 128 || code_set == CODE_INLINE) { 
 	int i;
@@ -707,6 +845,8 @@ void huffman_codeset_destroy(huffman_codeset_t *cs) {
 	huffman_codes_destroy(cs->codes[i]);
     if (cs->codes)
 	free(cs->codes);
+    if (cs->blk)
+	block_destroy(cs->blk, 0);
 
     free(cs);
 }

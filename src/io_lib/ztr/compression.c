@@ -2019,11 +2019,15 @@ char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len,
     unsigned char bytes[2];
     huffman_codeset_t *c = NULL;
     unsigned char *comp = NULL;
+    ztr_hcode_t *hc = NULL;
 
-    if (cset >= CODE_USER)
-	c = ztr_find_hcode(ztr, cset);
-    else if (cset != CODE_INLINE)
+    if (cset >= CODE_USER) {
+	if (NULL == (hc = ztr_find_hcode(ztr, cset)))
+	    return NULL;
+	c = hc->codes;
+    } else if (cset != CODE_INLINE) {
 	c = generate_code_set(cset, 1, NULL, 0, 1, MAX_CODE_LEN, 0);
+    }
 
     if (!c) {
 	/* No cached ones found, so inline some instead */
@@ -2036,7 +2040,15 @@ char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len,
     bytes[1] = cset;
     store_bytes(blk, bytes, 2);
 
-    store_codes(blk, c, 1);
+    if (hc) {
+	if (!c->blk) {
+	    c->blk = block_create(NULL, 2);
+	    store_codes(c->blk, c, 1);
+	}
+	blk->bit = c->blk->bit;
+    } else {
+	store_codes(blk, c, 1);
+    }
 
     /*
     {int i;

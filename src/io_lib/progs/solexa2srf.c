@@ -62,10 +62,13 @@
 
 #include "srf.h"
 
-//#define SINGLE_HUFF
+/* #define SINGLE_HUFF */
+/* #define DEBUG_OUT */
+
+/* #define NO_ENTROPY_ENCODING */
 
 /* A model saves approx 2% data size, vs 1.3% saving for delta */
-//#define USE_MODEL
+/* #define USE_MODEL */
 
 #define N_TR_CODE 8
 #define SHIFT_BY 32768
@@ -733,6 +736,7 @@ static double entropy8(unsigned char *data, int len) {
     return e * log(EBASE8)/log(256);
 }
 
+#ifdef DEBUG_OUT
 #define FD_TRACE_RAW 0
 #define FD_TRACE_ORD 1
 #define FD_TRACE_CMP 2
@@ -743,6 +747,7 @@ static double entropy8(unsigned char *data, int len) {
 #define FD_BASE_RAW 7
 #define FD_BASE_CMP 8
 int fds[10];
+#endif
 
 /*
  * Applies compression to ZTR chunks in a Solexa appropriate manner.
@@ -756,8 +761,10 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	switch(ztr->chunk[i].type) {
 	case ZTR_TYPE_SMP4:
 	    if (level == 0) {
+#ifdef DEBUG_OUT
 		write(fds[FD_TRACE_RAW],
 		      ztr->chunk[i].data+2, ztr->chunk[i].dlength-2);
+#endif
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_TSHIFT, 0, 0);
 		/* delta_called(ztr, &ztr->chunk[i]); */
 #ifdef USE_MODEL
@@ -765,30 +772,46 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 #endif
 	    }
 	    if (level == 1) {
+#ifdef DEBUG_OUT
 		write(fds[FD_TRACE_ORD],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
+#ifndef NO_ENTROPY_ENCODING
 		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_STHUFF, SMP4_CODE, 0);
+#endif
+#ifdef DEBUG_OUT
 		write(fds[FD_TRACE_CMP],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 	    }
 	    break;
 
 	case ZTR_TYPE_CNF4:
 	    if (level == 0) {
+#ifdef DEBUG_OUT
 		write(fds[FD_QUAL_RAW],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_QSHIFT, 0, 0);
+#ifdef DEBUG_OUT
 		write(fds[FD_QUAL_ORD],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE2, 4, 0);
+#ifdef DEBUG_OUT
 		write(fds[FD_QUAL_RLE],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 	    } else {
+#ifndef NO_ENTROPY_ENCODING
 		compress_chunk(ztr, &ztr->chunk[i],
 			       ZTR_FORM_STHUFF, CNF4_CODE, 0);
+#endif
+#ifdef DEBUG_OUT
 		write(fds[FD_QUAL_CMP],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 	    }
 	    break;
 
@@ -796,20 +819,28 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    if (level == 0) {
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
-		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_RLE,   -1, 0);
+		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE2,   1, 0);
 	    } else {
+#ifndef NO_ENTROPY_ENCODING
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
+#endif
 	    }
 	    break;
 
 	case ZTR_TYPE_BASE:
 	    if (level == 1) {
+#ifdef DEBUG_OUT
 		write(fds[FD_BASE_RAW],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
+#ifndef NO_ENTROPY_ENCODING
 		compress_chunk(ztr, &ztr->chunk[i],
 		               ZTR_FORM_STHUFF, BASE_CODE, 0);
+#endif
+#ifdef DEBUG_OUT
 		write(fds[FD_BASE_CMP],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
 	    }
 	    break;
 	}
@@ -821,13 +852,18 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
  * The 'footer' parameter, if supplied as non-NULL, is filled out with
  * the location 14 bytes into the SMP4 chunk or 0 if not found.
  *
+ * If no_hcodes is true then we omit storing the interleaved deflate huffman
+ * codes. In this case footer will be incorrect, but this is done for speed
+ * purposes.
+ *
  * returns NULL on failure
  */
-mFILE *encode_ztr(ztr_t *ztr, int *footer) {
+mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
     mFILE *mf = mfcreate(NULL, 0);
     int pos, i;
 
-    ztr_store_hcodes(ztr);
+    if (!no_hcodes)
+	ztr_store_hcodes(ztr);
     reorder_ztr(ztr);
     ztr_mwrite_header(mf, &ztr->header);
 
@@ -883,6 +919,8 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     huffman_codeset_t *base_cds = NULL;
     huffman_codeset_t *trace_cds = NULL;
     huffman_codeset_t *conf_cds = NULL;
+    ztr_hcode_t *hcodes = NULL;
+    int nhcodes = 0;
 
     /* open all 3 filenames */
     if (NULL == (cp = strrchr(seq_file, '_')))
@@ -954,6 +992,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     subtract_models(za);
 #endif
 
+#ifndef NO_ENTROPY_ENCODING
     /*
      * Compute averaged frequency metrics for HUFF encoding
      * For the 16-bit trace data we break this down into 1st and 2nd byte of
@@ -968,6 +1007,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     conf_cds  = ztr2codes(za, CNF4_CODE, 4,         ZTR_TYPE_CNF4);
     trace_cds = ztr2codes(za, SMP4_CODE, N_TR_CODE, ZTR_TYPE_SMP4);
 #endif
+#endif
 
     /* Output traces */
     for (seq_num = 0; seq_num < nreads; seq_num++) {
@@ -978,23 +1018,34 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	ztr_t *z = arr(ztr_t *, za, seq_num);
 	l = arr(loc_t, la, seq_num);
 
+	/*
+	 * FIXME: copy chunks from one ztr file to the next, rather than
+	 * re-encoding the HUFF chunks over and over again
+	 */
+
+#ifndef NO_ENTROPY_ENCODING
 	ztr_add_hcode(z, base_cds, 0);
 	ztr_add_hcode(z, trace_cds, 0);
 	ztr_add_hcode(z, conf_cds, 0);
+#endif
 
 	srf_compress_ztr(z, 1);
-	mf = encode_ztr(z, &footer);
-	delete_ztr(z);
 
 	format_name(prefix, prefix_fmt, l.lane, l.tile, l.x, l.y, seq_num);
 	if (strcmp(prefix, last_prefix)) {
 	    /* Prefix differs, so generate a new data block header */
 	    srf_trace_hdr_t th;
 	    strcpy(last_prefix, prefix);
+
+	    mf = encode_ztr(z, &footer, 0);
 	    srf_construct_trace_hdr(&th, prefix, mf->data, footer);
 	    if (-1 == srf_write_trace_hdr(srf, &th))
 		return -1;
+	} else {
+	    mf = encode_ztr(z, &footer, 1);
 	}
+
+	delete_ztr(z);
 
 	/* Write out the variable element of a ZTR file */
 	format_name(name, name_fmt, l.lane, l.tile, l.x, l.y, seq_num);
@@ -1083,6 +1134,7 @@ int main(int argc, char **argv) {
 	}
     }
 
+#ifdef DEBUG_OUT
     fds[FD_TRACE_RAW]=open("/tmp/srf_trace_raw",O_CREAT|O_RDWR|O_TRUNC, 0666);
     fds[FD_TRACE_ORD]=open("/tmp/srf_trace_ord",O_CREAT|O_RDWR|O_TRUNC, 0666);
     fds[FD_TRACE_CMP]=open("/tmp/srf_trace_cmp",O_CREAT|O_RDWR|O_TRUNC, 0666);
@@ -1092,6 +1144,7 @@ int main(int argc, char **argv) {
     fds[FD_QUAL_CMP] =open("/tmp/srf_qual_cmp", O_CREAT|O_RDWR|O_TRUNC, 0666);
     fds[FD_BASE_RAW] =open("/tmp/srf_base_raw", O_CREAT|O_RDWR|O_TRUNC, 0666);
     fds[FD_BASE_CMP] =open("/tmp/srf_base_cmp", O_CREAT|O_RDWR|O_TRUNC, 0666);
+#endif
 
     if (NULL == (outfp = fopen(outfn, "wb"))) {
 	perror(outfn);
@@ -1121,6 +1174,7 @@ int main(int argc, char **argv) {
 
     srf_destroy(srf, 1);
 
+#ifdef DEBUG_OUT
     close(fds[FD_TRACE_RAW]);
     close(fds[FD_TRACE_ORD]);
     close(fds[FD_TRACE_CMP]);
@@ -1130,6 +1184,7 @@ int main(int argc, char **argv) {
     close(fds[FD_QUAL_CMP]);
     close(fds[FD_BASE_RAW]);
     close(fds[FD_BASE_CMP]);
+#endif
 
     return ret;
 }

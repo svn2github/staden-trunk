@@ -528,13 +528,16 @@ static double entropy(unsigned char *data, int len) {
  * is true and will be deallocated when the ztr object is destroyed. Otherwise
  * freeing the ztr object will not touch the passed in codes.
  */
-void ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes, int ztr_owns) {
+ztr_hcode_t *ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes,
+			   int ztr_owns) {
     if (!codes)
-	return;
+	return NULL;
 
     ztr->hcodes = realloc(ztr->hcodes, (ztr->nhcodes+1)*sizeof(*ztr->hcodes));
     ztr->hcodes[ztr->nhcodes].codes = codes;
-    ztr->hcodes[ztr->nhcodes++].ztr_owns = ztr_owns;
+    ztr->hcodes[ztr->nhcodes].ztr_owns = ztr_owns;
+
+    return &ztr->hcodes[ztr->nhcodes++];
 }
 
 /*
@@ -545,7 +548,7 @@ void ztr_add_hcode(ztr_t *ztr, huffman_codeset_t *codes, int ztr_owns) {
  * Returns codes on success,
  *         NULL on failure
  */
-huffman_codeset_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
+ztr_hcode_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
     int i;
 
     if (code_set < CODE_USER)
@@ -569,7 +572,7 @@ huffman_codeset_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
     /* Check cached copies */
     for (i = 0; i < ztr->nhcodes; i++) {
 	if (ztr->hcodes[i].codes->code_set == code_set)
-	    return ztr->hcodes[i].codes;
+	    return &ztr->hcodes[i];
     }
 
     return NULL;
@@ -628,6 +631,7 @@ int ztr_store_hcodes(ztr_t *ztr) {
 	bytes[0] = 0;
 	bytes[1] = ztr->hcodes[i].codes->code_set;
 	store_bytes(blk, bytes, 2);
+	/* FIXME: Now already cached in ztr_hcode_t */
 	if (0 == store_codes(blk, ztr->hcodes[i].codes, 1)) {
 	    /* Last byte is always merged with first of stream */
 	    if (blk->bit == 0) {

@@ -39,13 +39,6 @@ typedef struct {
     int max_code_len;
 } huffman_codes_t;
 
-/* A collection of huffman_codes_t, for use with the multi-code codec */
-typedef struct {
-    huffman_codes_t **codes;
-    int ncodes;
-    int code_set; /* (128-255) The user specified number for this encoding */
-} huffman_codeset_t;
-
 /* Use for store_bits() and get_bits() */
 typedef struct block {
     unsigned char *data;
@@ -53,6 +46,14 @@ typedef struct block {
     size_t byte;
     int bit;
 } block_t;
+
+/* A collection of huffman_codes_t, for use with the multi-code codec */
+typedef struct {
+    huffman_codes_t **codes;
+    int ncodes;
+    int code_set; /* (128-255) The user specified number for this encoding */
+    block_t *blk; /* Cached binary version of codeset, assumes last block */
+} huffman_codeset_t;
 
 block_t *block_create(unsigned char *data, size_t size);
 void block_destroy(block_t *blk, int keep_data);
