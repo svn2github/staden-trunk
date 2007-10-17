@@ -1025,10 +1025,6 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE2,   1, 0);
-	    } else {
-#ifndef NO_ENTROPY_ENCODING
-		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_ZLIB, Z_HUFFMAN_ONLY, 0);
-#endif
 	    }
 	    break;
 
