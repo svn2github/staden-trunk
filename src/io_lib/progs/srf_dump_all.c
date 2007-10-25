@@ -38,6 +38,43 @@
 /* ------------------------------------------------------------------------ */
 
 /*
+ * If this program or something akin to it is every seriously used in earnest
+ * rather than just an example/debugging tool then note that printf is indeed
+ * something like 78% of the entire CPU time.
+ *
+ * Not worth the hassle probably, but here's an example of a faster printf
+ * style function to replace printf("%5d", i) with fast_printf(buf, i, 5, ' ').
+ */
+#if 0
+static char *fast_printf(char *buf, int val, int prec, char padding) {
+    int digits[100];
+    int i;
+
+    if (val < 0) {
+	val = -val;
+	*buf++ = '-';
+    }
+
+    if (val) {
+	for (i = 0; val; val /= 10)
+	    digits[i++] = val % 10;
+    } else {
+	digits[0] = 0;
+	i = 1;
+    }
+
+    for (; prec > i; prec--)
+	*buf++ = padding;
+
+    for (; i-- > 0;)
+	*buf++ = digits[i] + '0';
+    *buf++ = 0;
+
+    return buf-1;
+}
+#endif
+
+/*
  * Ripped out of io_lib's trace_dump program.
  * It reformats a trace to as printable ASCII.
  */
