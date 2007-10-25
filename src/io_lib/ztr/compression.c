@@ -2094,9 +2094,6 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
 	if (!hc)
 	    return NULL;
 
-	//store_codes(blk_in, hc->codes, 1);
-	//fprintf(stderr, "SByte=%d Sbit=%d\n", blk_in->byte, blk_in->bit);
-
 	cs = hc->codes;
 	bit_num = cs->bit_num;
 	blk_in->bit = 0;
@@ -2106,7 +2103,8 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
 	if (!cs)
 	    return NULL;
 
-	store_codes(blk_in, cs, 1);
+	bit_num = cs->bit_num;
+	blk_in->bit = 0;
     } /* else inline codes */
 
     /*

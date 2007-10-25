@@ -699,16 +699,19 @@ huffman_codeset_t *generate_code_set(int code_set, int ncodes,
 	case CODE_DNA:
 	    c->codes = codes_dna;
 	    c->ncodes = sizeof(codes_dna)/sizeof(*c->codes);
+	    cs->bit_num = 5;
 	    break;
 
 	case CODE_DNA_AMBIG:
 	    c->codes = codes_dna_ambig;
 	    c->ncodes = sizeof(codes_dna_ambig)/sizeof(*c->codes);
+	    cs->bit_num = 1;
 	    break;
 
 	case CODE_ENGLISH:
 	    c->codes = codes_english;
 	    c->ncodes = sizeof(codes_english)/sizeof(*c->codes);
+	    cs->bit_num = 1;
 	    break;
 
 	default:
