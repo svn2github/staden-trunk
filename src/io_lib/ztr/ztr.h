@@ -32,6 +32,7 @@ typedef struct {
     char *mdata;		/* meta data */
     uint4 dlength;		/* length of data field (be) */
     char *data;			/* a format byte and the data itself */
+    int   ztr_owns;		/* boolean: true if we can free (meta)data */
 } ztr_chunk_t;
 
 /* Format types */
@@ -116,6 +117,9 @@ typedef struct {
     int nhcodes;
     int hcodes_checked;
 } ztr_t;
+
+int ztr_read_header(mFILE *fp, ztr_header_t *h);
+ztr_chunk_t *ztr_read_chunk_hdr(mFILE *fp);
 
 int fwrite_ztr(FILE *fp, ztr_t *ztr);
 int mfwrite_ztr(mFILE *fp, ztr_t *ztr);

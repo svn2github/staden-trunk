@@ -41,9 +41,12 @@
  * Ripped out of io_lib's trace_dump program.
  * It reformats a trace to as printable ASCII.
  */
-void dump(mFILE *mf, char *name) {
-    Read *read = mfread_reading(mf, name, TT_ZTR);
+void dump(ztr_t *z, char *name) {
+    Read *read;
     int i;
+
+    uncompress_ztr(z);
+    read = ztr2read(z); /* Inefficient; can do direct */
 
     if (read == NULL) {
 	fprintf(stderr, "Tracedump was unable to open file %s\n", name );
@@ -51,7 +54,7 @@ void dump(mFILE *mf, char *name) {
     }
 
     printf("[Trace]\n");
-    printf("%s\n", read->trace_name);
+    printf("%s\n", name);
 
     printf("\n[Header]\n");
     printf("%d\t\t# format\n",          read->format);
@@ -118,6 +121,7 @@ int main(int argc, char **argv) {
     mFILE *mf;
     srf_t *srf;
     char name[512];
+    ztr_t *ztr;
 
     if (argc != 2) {
 	fprintf(stderr, "Usage: srf_dump archive_name\n");
@@ -130,9 +134,9 @@ int main(int argc, char **argv) {
 	return 4;
     }
 
-    while (NULL != (mf = srf_next_trace(srf, name))) {
-	dump(mf, name);
-	mfclose(mf);
+    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	dump(ztr, name);
+	delete_ztr(ztr);
     }
 
     srf_destroy(srf, 1);

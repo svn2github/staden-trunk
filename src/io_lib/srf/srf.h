@@ -1,17 +1,14 @@
 #ifndef _SRF_H_
 #define _SRF_H_
 
-#include <inttypes.h>
-#include "mFILE.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <ztr.h>
+#include <mFILE.h>
 
 #define SRF_MAGIC		"SSRF"
 #define SRF_VERSION             "1.1"
 
 #define SRFB_CONTAINER 		'S'
+#define SRFB_XML		'X'
 #define SRFB_TRACE_HEADER	'H'
 #define SRFB_TRACE_BODY		'R'
 #define SRFB_INDEX		'I'
@@ -20,7 +17,6 @@ extern "C" {
 
 /* Container header - several per file */
 typedef struct {
-    uint32_t next_block_offset;
     char block_type;
     char version[256];
     char container_type;
@@ -30,15 +26,16 @@ typedef struct {
 
 /* Trace header - several per container */
 typedef struct {
-    char block_type;
+    char block_type; 
+    char read_prefix_type;
     char id_prefix[256];
+    uint32_t counter_start;
     uint32_t trace_hdr_size;
     unsigned char *trace_hdr;
 } srf_trace_hdr_t;
 
 /* Trace body - several per trace header */
 typedef struct {
-    uint32_t next_block_offset;
     char block_type;
     char read_id[256];
     unsigned char flags;
@@ -46,7 +43,15 @@ typedef struct {
     unsigned char *trace;
 } srf_trace_body_t;
 
-#define SRF_READ_FLAG_BAD (1<<0)
+/* XML - NCBI TraceInfo data block */
+typedef struct {
+    uint32_t xml_len;
+    char *xml;
+} srf_xml_t;
+
+#define SRF_READ_FLAG_BAD_MASK       (1<<0)
+#define SRF_READ_FLAG_WITHDRAWN_MASK (1<<1)
+#define SRF_READ_FLAG_USER_MASK      (7<<5)
 
 /* Index - one per file */
 typedef struct {
@@ -57,9 +62,10 @@ typedef struct {
 /* Master SRF object */
 typedef struct {
     FILE *fp;
-    srf_cont_hdr_t    ch; /* Cached copies of the most recent container, */
-    srf_trace_hdr_t   th; /*   trace header */
-    srf_trace_body_t  tb; /*   and trace body blocks */
+    srf_cont_hdr_t    ch;  /* Cached copies of the most recent container, */
+    srf_trace_hdr_t   th;  /*   trace header, */
+    srf_trace_body_t  tb;  /*   trace body */
+    srf_xml_t         xml; /*   and xml blocks */
 } srf_t;
 
 /* Indexing */
@@ -102,6 +108,9 @@ void srf_destroy_cont_hdr(srf_cont_hdr_t *ch);
 int srf_read_cont_hdr(srf_t *srf, srf_cont_hdr_t *ch);
 int srf_write_cont_hdr(srf_t *srf, srf_cont_hdr_t *ch);
 
+int srf_read_xml(srf_t *srf, srf_xml_t *xml);
+int srf_write_xml(srf_t *srf, srf_xml_t *xml);
+
 srf_trace_hdr_t *srf_construct_trace_hdr(srf_trace_hdr_t *th,
 					 char *prefix,
 					 unsigned char *header,
@@ -123,15 +132,12 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
 
 /*--- Higher level I/O functions */
 mFILE *srf_next_trace(srf_t *srf, char *name);
+ztr_t *srf_next_ztr(srf_t *srf, char *name);
 
 int srf_next_block_type(srf_t *srf); /* peek ahead */
 int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name);
 
 int srf_find_trace(srf_t *srf, char *trace,
 		   uint64_t *cpos, uint64_t *hpos, uint64_t *dpos);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* _SRF_H_ */

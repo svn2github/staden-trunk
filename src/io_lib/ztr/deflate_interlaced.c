@@ -516,112 +516,6 @@ static int node_compar2(const void *vp1, const void *vp2) {
  * Returns huffman_codes_t* on success
  *         NULL on failure
  */
-huffman_codes_t *calc_bit_lengths_old(unsigned char *data, int len,
-				  int eof, int max_code_len, int all_codes,
-				  int start, int skip) {
-    int i, ncodes, node_start;
-    node_t nodes[258+257], *head, *new = &nodes[258];
-    int map[258];
-    huffman_codes_t *c;
-
-    if (NULL == (c = (huffman_codes_t *)malloc(sizeof(*c))))
-	return NULL;
-    c->codes_static = 0;
-    c->max_code_len = max_code_len;
-
-    /*
-     * Initialise nodes. We build a map of ASCII character code to node
-     * number. (By default it's a simple 1:1 mapping unless legal_chars is
-     * defined.)
-     */
-    ncodes = 0;
-    if (eof) {
-	nodes[ncodes].sym = SYM_EOF;
-	nodes[ncodes].count = eof;
-	nodes[ncodes].parent = NULL;
-	map[SYM_EOF] = ncodes++;
-    }
-
-    /* All 256 chars existing at a minimal level */
-    for (i = 0; i < 256; i++) {
-	nodes[ncodes].sym = i;
-	nodes[ncodes].count = 0;
-	nodes[ncodes].parent = NULL;
-	map[i] = ncodes++;
-    }
-
-    /* Calc freqs */
-    for (i = start; i < len; i+=skip) {
-	nodes[map[data[i]]].count++;
-    }
-
-    /* Sort by counts, smallest first and form a sorted linked list */
-    qsort(nodes, ncodes, sizeof(*nodes), node_compar);
-    for (i = 0; i < ncodes; i++) {
-	nodes[i].next = i+1 < ncodes ? &nodes[i+1] : NULL;
-    }
-
-    /* Skip symbols that do not occur, unless all_codes is true */
-    node_start = 0;
-    if (!all_codes) {
-	while (node_start < ncodes && nodes[node_start].count == 0)
-	    node_start++;
-	ncodes -= node_start;
-    }
-
-    /* Repeatedly merge two smallest values */
-    head = &nodes[node_start];
-    while (head && head->next) {
-	node_t *after = head->next, *n;
-	int sum = head->count + head->next->count;
-	
-	for (n = head->next->next; n; after = n, n = n->next) {
-	    if (sum < n->count)
-		break;
-	}
-
-	/* Produce a new summation node and link it in place */
-	after->next = new;
-	new->next = n;
-	new->sym = '?';
-	new->count = sum;
-	new->parent = NULL;
-	head->parent = new;
-	head->next->parent = new;
-	head = head->next->next;
-
-	new++;
-    }
-
-    /* Walk up tree computing the bit-lengths for our symbols */
-    c->ncodes = ncodes;
-    c->codes = (huffman_code_t *)malloc(c->ncodes * sizeof(*c->codes));
-    if (NULL == c->codes) {
-	free(c);
-	return NULL;
-    }
-
-    for (i = 0; i < ncodes; i++) {
-	int len = 0;
-	node_t *n;
-	for (n = nodes[i + node_start].parent; n; n = n->parent) {
-	    len++;
-	}
-
-	c->codes[i].symbol = nodes[i + node_start].sym;
-	c->codes[i].freq   = nodes[i + node_start].count;
-	c->codes[i].nbits  = len ? len : 1; /* special case, nul input */
-    }
-
-    if (0 != canonical_codes(c)) {
-	free(c);
-	return NULL;
-    }
-
-    return c;
-}
-
-
 huffman_codes_t *calc_bit_lengths(unsigned char *data, int len,
 				  int eof, int max_code_len, int all_codes,
 				  int start, int skip) {
@@ -770,6 +664,9 @@ huffman_codeset_t *generate_code_set(int code_set, int ncodes,
     cs->ncodes = ncodes;
     cs->codes = (huffman_codes_t **)malloc(cs->ncodes * sizeof(*cs->codes));
     cs->blk = NULL;
+    cs->bit_num = 0;
+    cs->decode_t = NULL;
+    cs->decode_J4 = NULL;
 
     if (code_set >= 128 || code_set == CODE_INLINE) { 
 	int i;
@@ -847,6 +744,10 @@ void huffman_codeset_destroy(huffman_codeset_t *cs) {
 	free(cs->codes);
     if (cs->blk)
 	block_destroy(cs->blk, 0);
+    if (cs->decode_t)
+	free(cs->decode_t);
+    if (cs->decode_J4)
+	free(cs->decode_J4);
 
     free(cs);
 }
@@ -1329,6 +1230,10 @@ huffman_codeset_t *restore_codes(block_t *block, int *bfinal) {
 
     cs = (huffman_codeset_t *)malloc(sizeof(*cs));
     cs->code_set = 0;
+    cs->blk = NULL;
+    cs->bit_num = 0;
+    cs->decode_t = NULL;
+    cs->decode_J4 = NULL;
 
     if (btype == 2) {
 	/* Standard Deflate algorithm */
@@ -1349,6 +1254,8 @@ huffman_codeset_t *restore_codes(block_t *block, int *bfinal) {
 		"BTYPE == DYNAMIC HUFFMAN and INTERLACED HUFFMAN\n");
 	return NULL;
     }
+
+    cs->bit_num = block->bit;
 
     return cs;
 }
@@ -1435,20 +1342,6 @@ int huffman_multi_encode(block_t *blk, huffman_codeset_t *cs,
 
     return 0;
 }
-
-typedef struct {
-    /* Graph construction */
-    unsigned short c[2]; /* child node */
-      signed short l[2]; /* symbol to emit on transition. -1 => none */
-} htree_t;
-
-typedef struct {
-    /* Byte-wise jumping table */
-    unsigned short jump;
-    unsigned char symbol[4];
-    unsigned char nsymbols;
-    unsigned char top_bit;   /* bit 9 of symbol[] */
-} h_jump4_t;
 
 /*
  * The opposite of huffman_encode().
@@ -1650,43 +1543,13 @@ block_t *huffman_decode(block_t *in, huffman_codes_t *c) {
     return NULL;
 }
 
-/*
- * The opposite of huffman_encode().
- * Decode a huffman stream from 'block' using huffman codes 'c'.
- *
- * Returns: allocated block_t pointer on success
- *          NULL on failure.
- *
- * Method 1
- * --------
- *
- * At any node in our tree we can precompute a lookup table so that upon
- * reading the next 'k' bits we know the new node we'd end up in and what
- * symbols to export.
- * Then decoding simply works in fixed sets of k bits at a time.
- *
- * We use k=4 for efficient table space (they fit neatly in cache) and ease
- * of decoding 4-bits at a time. k=8 is about 20% faster as reading the input
- * byte by byte is easy, but the setup time is substantially longer
- * (16x at a guess) and the lookup tables no longer fit in the L1 cache.
- *
- * NB: This version also handles multiple interleaved huffman codes as
- * this support doesn't really slow down the decoding process.
- */
-block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
-    block_t *out = NULL;
-    htree_t *t = NULL;
-    int i, j, n, rec;
-    int private_codes = 0;
-    int new_node, node_num;
-    h_jump4_t (*J4)[16] = NULL;
-    unsigned char *cp;
-    int nnodes;
+int init_decode_tables(huffman_codeset_t *cs) {
+    int nnodes, i, j, n, nc;
     huffman_codes_t **c;
-    int nc;
-
-    if (!cs)
-	return NULL;
+    int new_node, rec;
+    h_jump4_t (*J4)[16];
+    htree_t *t;
+    
     c = cs->codes;
     nc = cs->ncodes;
 
@@ -1700,10 +1563,6 @@ block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
 
     if (NULL == (J4 = (h_jump4_t (*)[16])malloc(nnodes * sizeof(*J4))))
 	goto error;
-
-    if (NULL == (out = block_create(NULL, 9*(in->alloc+1)))) {
-	goto error;
-    }
 
     /*
      * Construct the tree from the codes.
@@ -1777,6 +1636,75 @@ block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
 		   n, j, hj->nsymbols, hj->symbol, n2);
 	    */
 	}
+    }
+
+    cs->decode_t = t;
+    cs->decode_J4 = J4;
+
+    return 0;
+
+ error:
+    if (t)
+	free(t);
+
+    if (J4)
+	free(J4);
+
+    cs->decode_t = NULL;
+    cs->decode_J4 = NULL;
+
+    return -1;
+}
+
+/*
+ * The opposite of huffman_encode().
+ * Decode a huffman stream from 'block' using huffman codes 'c'.
+ *
+ * Returns: allocated block_t pointer on success
+ *          NULL on failure.
+ *
+ * Method 1
+ * --------
+ *
+ * At any node in our tree we can precompute a lookup table so that upon
+ * reading the next 'k' bits we know the new node we'd end up in and what
+ * symbols to export.
+ * Then decoding simply works in fixed sets of k bits at a time.
+ *
+ * We use k=4 for efficient table space (they fit neatly in cache) and ease
+ * of decoding 4-bits at a time. k=8 is about 20% faster as reading the input
+ * byte by byte is easy, but the setup time is substantially longer
+ * (16x at a guess) and the lookup tables no longer fit in the L1 cache.
+ *
+ * NB: This version also handles multiple interleaved huffman codes as
+ * this support doesn't really slow down the decoding process.
+ */
+block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
+    block_t *out = NULL;
+    int i, j;
+    int private_codes = 0;
+    int node_num;
+    unsigned char *cp;
+    huffman_codes_t **c;
+    int nc;
+    h_jump4_t (*J4)[16];
+    htree_t *t;
+
+    if (!cs)
+	return NULL;
+    c = cs->codes;
+    nc = cs->ncodes;
+
+    /* Ensure precomputed lookup tables exist */
+    if (!cs->decode_t || !cs->decode_J4)
+	if (-1 == init_decode_tables(cs))
+	    return NULL;
+
+    t  = cs->decode_t;
+    J4 = cs->decode_J4;
+
+    if (NULL == (out = block_create(NULL, 9*(in->alloc+1)))) {
+	goto error;
     }
 
     /*
@@ -1879,23 +1807,11 @@ block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
      }
 
  success:
-    if (t)
-	free(t);
-
-    if (J4)
-	free(J4);
-
     return out;
 
  error:
     if (out)
 	block_destroy(out, 0);
-
-    if (t)
-	free(t);
-
-    if (J4)
-	free(J4);
 
     return NULL;
 }

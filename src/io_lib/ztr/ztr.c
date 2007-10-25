@@ -157,7 +157,7 @@ int fwrite_ztr(FILE *fp, ztr_t *ztr) {
  *	Success:  0
  *	Failure: -1
  */
-static int ztr_read_header(FILE *fp, ztr_header_t *h) {
+int ztr_read_header(FILE *fp, ztr_header_t *h) {
     if (1 != fread(h, sizeof(*h), 1, fp))
 	return -1;
 
@@ -176,7 +176,7 @@ static int ztr_read_header(FILE *fp, ztr_header_t *h) {
  *	Success: a chunk pointer (malloced)
  *	Failure: NULL
  */
-static ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
+ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
     int4 bei4;
     ztr_chunk_t *chunk;
 
@@ -198,9 +198,12 @@ static ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
     chunk->mdlength = be_int4(bei4);
 
     /* metadata */
+    chunk->ztr_owns = 1;
     if (chunk->mdlength) {
-	if (NULL == (chunk->mdata = (char *)xmalloc(chunk->mdlength)))
+	if (NULL == (chunk->mdata = (char *)xmalloc(chunk->mdlength))) {
+	    xfree(chunk);
 	    return NULL;
+	}
 	if (chunk->mdlength != fread(chunk->mdata, 1, chunk->mdlength, fp)) {
 	    xfree(chunk->mdata);
 	    xfree(chunk);
@@ -212,7 +215,8 @@ static ztr_chunk_t *ztr_read_chunk_hdr(FILE *fp) {
 
     /* data length */
     if (1 != fread(&bei4, 4, 1, fp)) {
-	xfree(chunk->mdata);
+	if (chunk->mdata)
+	    xfree(chunk->mdata);
 	xfree(chunk);
 	return NULL;
     }
@@ -380,9 +384,12 @@ ztr_t *fread_ztr(FILE *fp) {
 	    */
 	}
 
+	chunk->ztr_owns = 1;
 	chunk->data = (char *)xmalloc(chunk->dlength);
-	if (chunk->dlength != fread(chunk->data, 1, chunk->dlength, fp))
+	if (chunk->dlength != fread(chunk->data, 1, chunk->dlength, fp)) {
+	    delete_ztr(ztr);
 	    return NULL;
+	}
             
 	ztr->nchunks++;
 	ztr->chunk = (ztr_chunk_t *)xrealloc(ztr->chunk, ztr->nchunks *
@@ -436,7 +443,7 @@ void delete_ztr(ztr_t *ztr) {
 
     if (ztr->chunk) {
 	for (i = 0; i < ztr->nchunks; i++) {
-	    if (ztr->chunk[i].data)
+	    if (ztr->chunk[i].data && ztr->chunk[i].ztr_owns)
 		xfree(ztr->chunk[i].data);
 	}
 	xfree(ztr->chunk);
@@ -559,10 +566,17 @@ ztr_hcode_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
 	for (i = 0; i < ztr->nchunks; i++) {
 	    if (ztr->chunk[i].type == ZTR_TYPE_HUFF) {
 		block_t *blk;
+		huffman_codeset_t *cs;
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		blk = block_create(ztr->chunk[i].data,
-				   ztr->chunk[i].dlength);
-		ztr_add_hcode(ztr, restore_codes(blk, NULL), 1);
+		blk = block_create(ztr->chunk[i].data+2,
+				   ztr->chunk[i].dlength-2);
+		cs = restore_codes(blk, NULL);
+		if (!cs) {
+		    block_destroy(blk, 1);
+		    return NULL;
+		}
+		cs->code_set = (unsigned char)(ztr->chunk[i].data[1]);
+		ztr_add_hcode(ztr, cs, 1);
 		block_destroy(blk, 1);
 	    }
 	}

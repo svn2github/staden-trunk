@@ -2082,23 +2082,27 @@ char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len,
 
 char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
     int cset = (unsigned char)(comp[1]);
-    huffman_codeset_t *cs = NULL;
+    huffman_codeset_t *cs = NULL, *cs_free = NULL;
     block_t *blk_in = block_create(NULL, comp_len),
 	*blk_out = block_create(NULL, 1000);
-    int bfinal;
+    int bfinal = 1, bit_num = 0;
     char *uncomp;
 
     if (cset >= CODE_USER) {
 	/* Scans through HUFF chunks */
-	ztr_chunk_t *hchunk = ztr_find_hcode_chunk(ztr, cset);
-	if (!hchunk)
+	ztr_hcode_t *hc = ztr_find_hcode(ztr, cset);
+	if (!hc)
 	    return NULL;
 
-	store_bytes(blk_in, hchunk->data+2, hchunk->dlength-2);
-	blk_in->byte--; /* we desire overlap of the last byte */
+	//store_codes(blk_in, hc->codes, 1);
+	//fprintf(stderr, "SByte=%d Sbit=%d\n", blk_in->byte, blk_in->bit);
+
+	cs = hc->codes;
+	bit_num = cs->bit_num;
+	blk_in->bit = 0;
     } else if (cset > 0) {
 	/* Create some temporary huffman_codes to stringify */
-	cs = generate_code_set(cset, 1, NULL, 0, 1, MAX_CODE_LEN, 0);
+	cs_free = cs = generate_code_set(cset, 1, NULL, 0, 1, MAX_CODE_LEN, 0);
 	if (!cs)
 	    return NULL;
 
@@ -2106,20 +2110,29 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
     } /* else inline codes */
 
     /*
-     * Merge the first byte comp+2 with the last byte in blk_in, then
-     * append the rest.
+     * We need to know at what bit the huffman codes would have ended on
+     * so we can store our huffman encoded symbols immediately following it.
+     * For speed though this bit-number is cached.
      */
     blk_in->data[blk_in->byte++] |= *(comp+2);
     store_bytes(blk_in, comp+3, comp_len-3);
 
+
     /* Rewind */
     blk_in->byte = 0;
-    blk_in->bit = 0;
+    blk_in->bit = bit_num;
 
     do {
 	block_t *out;
+
+	/*
+	 * We're either at the start of a block with codes to restore
+	 * (cset == INLINE or the 2nd onwards block) or we've already
+	 * got some codes in cs and we're at the position where huffman
+	 * encoded symbols are stored. 
+	 */
 	if (!cs)
-	    if (NULL == (cs = restore_codes(blk_in, &bfinal)))
+	    if (NULL == (cs = cs_free = restore_codes(blk_in, &bfinal)))
 		return NULL;
 
 	/*
@@ -2137,8 +2150,9 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
 	/* Could optimise this for the common case of only 1 block */
 	store_bytes(blk_out, out->data, out->byte);
 	block_destroy(out, 0);
-	huffman_codeset_destroy(cs);
-	cs = NULL;
+	if (cs_free)
+	    huffman_codeset_destroy(cs_free);
+	cs = cs_free = NULL;
     } while (!bfinal);
 
     *uncomp_len = blk_out->byte;

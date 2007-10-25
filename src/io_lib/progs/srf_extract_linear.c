@@ -55,6 +55,12 @@ mFILE *find_reading(srf_t *srf, char *tr_name) {
 		return NULL;
 	    break;
 
+	case SRFB_XML:
+	    if (0 != srf_read_xml(srf, &srf->xml))
+		return NULL;
+	    break;
+	    
+
 	case SRFB_TRACE_HEADER: {
 	    off_t pos = ftell(srf->fp);
 

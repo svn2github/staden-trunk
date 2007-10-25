@@ -47,12 +47,35 @@ typedef struct block {
     int bit;
 } block_t;
 
+/* Tree and jump-table data structures used for fast decoding. */
+typedef struct {
+    /* Graph construction */
+    unsigned short c[2]; /* child node */
+      signed short l[2]; /* symbol to emit on transition. -1 => none */
+} htree_t;
+
+typedef struct {
+    /* Byte-wise jumping table */
+    unsigned short jump;
+    unsigned char symbol[4];
+    unsigned char nsymbols;
+    unsigned char top_bit;   /* bit 9 of symbol[] */
+} h_jump4_t;
+
+
 /* A collection of huffman_codes_t, for use with the multi-code codec */
 typedef struct {
     huffman_codes_t **codes;
     int ncodes;
     int code_set; /* (128-255) The user specified number for this encoding */
-    block_t *blk; /* Cached binary version of codeset, assumes last block */
+
+    /* Cached binary version of codeset, assumes last block */
+    block_t *blk;
+    int      bit_num; /* if 1st block, which bit will stored codes end on */
+
+    /* Cache huffman_multi_decode parameters */
+    h_jump4_t (*decode_J4)[16];
+    htree_t *decode_t;
 } huffman_codeset_t;
 
 block_t *block_create(unsigned char *data, size_t size);
