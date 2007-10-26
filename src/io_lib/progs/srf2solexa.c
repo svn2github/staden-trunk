@@ -40,10 +40,13 @@
  * Ripped out of io_lib's trace_dump program.
  * It reformats a trace to as printable ASCII.
  */
-void dump(mFILE *mf, char *name, FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb) {
-    Read *read = mfread_reading(mf, name, TT_ZTR);
+void dump(ztr_t *z, char *name, FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb) {
+    Read *read;
     int i;
     int lane=1, tile=1, x=1, y=1;
+
+    uncompress_ztr(z);
+    read = ztr2read(z); /* Inefficient; can do direct */
 
     if (read == NULL) {
 	fprintf(stderr, "Tracedump was unable to open file %s\n", name );
@@ -85,7 +88,7 @@ void dump(mFILE *mf, char *name, FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb) {
 /* ------------------------------------------------------------------------ */
 int main(int argc, char **argv) {
     char *ar_name;
-    mFILE *mf;
+    ztr_t *ztr;
     srf_t *srf;
     char name[512];
     char *prefix = "s_lane_tile_";
@@ -120,9 +123,9 @@ int main(int argc, char **argv) {
 	return 5;
     }
 
-    while (NULL != (mf = srf_next_trace(srf, name))) {
-	dump(mf, name, fp_seq, fp_sig2, fp_prb);
-	mfclose(mf);
+    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	dump(ztr, name, fp_seq, fp_sig2, fp_prb);
+	delete_ztr(ztr);
     }
 
     fclose(fp_seq);
