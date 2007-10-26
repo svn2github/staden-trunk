@@ -1,3 +1,73 @@
+Version 1.11.0b4 (26th October 2007)
+----------------
+
+* The SRF format now supported adheres to version 1.2.
+
+* More speedups, in particular focusing on uncompression this time, so
+  srf2solexa is an order of magnitude faster.
+
+* ztr2read() now honours the read_sections() options and so is much
+  faster when only decoding (say) base and quality values.
+
+* New program srf2fastq.
+
+
+Version 1.11.0b3 (16th October 2007)
+----------------
+
+* Major speed improvements for compression. solexa2srf is now 30-35x faster.
+
+* Fixed various buffer overruns and memory leaks reported by valgrind
+  in the new deflate interlaced and SRF code.
+
+
+Version 1.11.0b2 (2nd October 2007)
+----------------
+
+* Minor version change to fix typoes in Makefile system.
+
+
+Version 1.11.0b1 (28th September 2007)
+----------------
+
+Beta release 1.
+
+* Added preliminary SRF support. This consists of a new	subdirectory
+ 'srf' (yes these all really need merging into a single directory,
+ but that's a later task), a substantial update to ZTR and a variety
+ of SRF tools in progs.
+
+ The old huffman_static.[ch] files were renamed and substantially
+ worked upon to create deflate_interlaced.[ch].
+
+ Added new compression types. xrle2, tshift and qshift. The latter two
+ of these are very specific to trace and quality packings. May need to
+ rename to be more generic.
+
+
+Version 1.10.3 (???)
+--------------
+
+* The HashTable interface now also allows for Bob Jenkins' lookup3
+  64-bit hash function. This allows for substantially larger hash
+  tables.
+
+* Replaced tempnam() with tmpfile(). On systems without tmpfile
+  (Windows) this is simply a wrapper to use the old tempnam calls.
+
+* hash_extract bug fix for windows: now operates in binary mode.
+
+* INCOMPATIBLE CHANGE: On windows we now use semi-colon as the path
+  separator. The reason is that with the MinGW getenv() seems to do
+  "clever things" with PATH variables and consequently ends up
+  corrupting our clumsy attempt of escaping colons in paths.
+
+* Fasta format is semi-supported in "plain" format. It returns the
+  first entry when reading.
+
+* Experimental support for static huffman (STHUFF) compression type.
+
+
 Version 1.10.2 (30th May 2007)
 --------------
 

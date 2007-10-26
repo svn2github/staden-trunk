@@ -1,4 +1,4 @@
-		       IO_LIB VERSION 1.11.0b2
+		       IO_LIB VERSION 1.11.0b4
 		       =======================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -27,24 +27,12 @@ too. See the file include/Read.h for the generic 'Read' structure.
 What's new in this release?
 ===========================
 
-This is a beta-test release to demonstrate and test the new HUFF chunk
-and STHUFF compression format. 
+This is a beta-test release to demonstrate the short-read-format (SRF)
+file support, along with some example tools for converting to and from
+the native solexa instrument formats.
 
-
-Important changes added with 1.9.2
-==================================
-
-Incompatibilities with 1.8.12
------------------------------
-
-Due to the change of I/O to use memory instead of file access where
-possible some prototypes have changed. There is a list in the CHANGES
-file of prototypes now removed and prototypes that still exist but
-whih differ.
-
-I've also removed some code that I did not wish to keep maintained,
-but hopefully this is sufficiently old and dead that it doesn't
-matter.
+Tightly coupled with SRF development are updates to the ZTR format,
+now at v1.3.
 
 
 Unix - autoconf
