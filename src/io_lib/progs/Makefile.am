@@ -1,4 +1,4 @@
-bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract trace_dump hash_sff append_sff ztr_dump solexa2srf srf2solexa srf_dump_all srf_index_hash srf_extract_linear
+bin_PROGRAMS = convert_trace makeSCF extract_seq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract trace_dump hash_sff append_sff ztr_dump solexa2srf srf2solexa srf_dump_all srf_index_hash srf_extract_linear srf2fastq
 
 convert_trace_SOURCES = convert_trace.c
 convert_trace_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
@@ -46,6 +46,9 @@ solexa2srf_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
 
 srf2solexa_SOURCES = srf2solexa.c
 srf2solexa_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
+
+srf2fastq_SOURCES = srf2fastq.c
+srf2fastq_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
 
 srf_dump_all_SOURCES = srf_dump_all.c
 srf_dump_all_LDADD = $(top_builddir)/read/libread.a @LIBZ@ @LIBCURL@
