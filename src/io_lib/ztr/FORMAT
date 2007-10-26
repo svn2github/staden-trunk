@@ -1,9 +1,196 @@
-1.3 draft 2 (28 Sep 2007)
+CHANGE (since 1.2):
+SAMP and SMP4 now has meta data fields indicating the zero base-line.
+
+CLARIFICATION
+The specification now explicitly states that trace samples are
+unsigned, although the new OFFS meta-data can be used to turn these
+into signed values.
+
+CLARIFICATION
+We explicitly state that multiple TEXT chunks maybe present in the ZTR
+file and will be concatenated together. Also the trailing (nul) byte
+is now optional.
+
+CHANGE
+Added CSET (character set) meta-data for BASEs so ABI SOLID encoding
+can be used. This removes the requirement of IUPAC characters only.
+
+CHANGE
+Added XRLE2, QSHIFT, TSHIFT and STHUFF compression types.
+
+INCOMPATIBLE CHANGE:
+I propose for this version to make all meta-data adhere to a specific
+format rather than adhoc. It'll consist of zero or more copies of
+'identifier nul value nul'. See the format below for details.
+
+The only use of meta-data in 1.2 was for SAMP (not SMP4) chunks to
+indicate the channel the data came from. From now on file readers will
+need to check the version number in the header to determine how to
+parse the SAMP meta-data.
+
+
+[Search for "FIXME" for my comments / questions to be answered. They
+elaborate on the summary below and provide more context.]
+
+
+QUESTION1:
+Should we adapt ZTR to not be so inefficient with regards
+to tiny chunks. Specifically a 5 byte chunk size, 4 byte meta-data
+size (normally zero anyway) and 4 byte data length is all
+wasteful. These combined comprise 5-10% of the total SRF size. Note
+that changing this would break backwards compatibility.
+
+QUESTION2:
+Do I need a means too specify the "default meta-data". Specifically if
+we have lots of SAMP chunks (for example) and every single one is
+stating that the zero "offset" value is 32768 then we may want a
+mechanism of specifying that the default OFFS value is 32768 for all
+subsequent SAMP chunks.
+
+One possible way to do this is to have a new chunk type which sets the
+default. Eg for the SAMP chunk we could define a SaMP chunk to modify
+the default for SAMP. This seems oddly named, but it's utilising the
+bit5 of the 2nd byte which so far has been reserved as zero. (In the
+first byte bit 5 set => private namespace and not part of the public spec.)
+
+For now I'm just ignoring this issue though.
+
+QUESTION3:
+I've defined new transforms named TSHIFT and QSHIFT specifically
+designed for adjusting the layout of CND4 and SMP4 chunk types to an
+order more amenable for compression by interlaced deflate. They do the
+job, but I'm wondering if it's better to simply redefine the input
+data to be a more consistent ordering so that we can define more
+general purpose transforms rather than one dedicated to the original
+trace layout and one for the quality layout.
+
+I'm ignoring this for now as it would break backwards compatibility.
+
+QUESTION4:
+For the OFFS meta-data in SMP4 and SAMP chunks I have a 16-bit offset
+to specify the zero position.  Ie OFFS of 10000 means a sample of 9000
+becomes -1000 after processing.
+
+Should it be a signed or unsigned 16-bit value. Signed means we could
+encode values ranging from 10000 to 70000 by specify OFFS as -10000.
+
+Should it be 32-bit instead? Should we have OFFI and OFFF for integer
+and floating point equivalents?
+
+QUESTION5:
+For region encoding where should the region name belong - the
+meta-data section or the REGION_LIST TEXT identifier? It's currently
+in both places. My gut instinct tells me it belongs in the meta-data
+for the REGION_LIST chunk itself.
+
+QUESTION6:
+Can we have clarification on what the region code types mean,
+specifically "tech read".
+
+QUESTION7:
+Should we add SAMP/SMP4 meta-data indicating a down-scale factor? For
+454 data this could be 100, so we know value 123 is really 1.23. Note
+this is maybe better implemented below using fixed-point precision.
+
+QUESTION8:
+How do we deal with floating point values?
+
+I think the chunk meta-data should detail the format of the data block
+itself (as it is strictly speaking data about the data so it fits
+there well). A lack of meta data should imply the usual unsigned
+16-bit quantities.
+
+There's two main ways to encode fractions:
+
+Floating point where we have a mantissa and an exponent.
+	- See http://en.wikipedia.org/wiki/IEEE_floating-point_standard
+	- large dynamic range
+	- fixed number of significant bits
+	- varying "resolution". Ie can represent tiny differences
+	  between two very small floating point numbers, but not
+	  between two very large floating point numbers.
+
+Fixed point where we have a fixed number of bits for the component
+before and after the decimal point.
+	- See http://en.wikipedia.org/wiki/Q_%28number_format%29
+	- constant resolution
+	- effectively used by SFF (specified to 2 decimal places)
+	- easy to treat as integers so can be fast and dealt with by
+	  small embedded CPUs without FPUs.
+
+
+Floating point maybe appropriate as effectively it's the same as
+logging your signals and storing those. It offers large dynamic range
+so can cope with abnormally large values (at the expense of precision)
+while retaining lots of variation at the low end to distinguish small
+values. However it's CPU intensive to cope with anything other than
+the CPU provided 32-bit and 64-bit floating point formats.
+
+Single precision 32-bit floats in IEEE-754 have:
+ 1 bit  (31):    Sign
+ 8 bits (23-30): Exponent (bias 127, so stroring 100 => -27)
+23 bits (0-22):  Mantissa 
+
+Effectively we store any binary value as a normalised expression:
+
+                    <exponent>
+    1.<mantissa> * 2
+
+
+Eg 1732.5:
+
+=> 11011000100.1 (binary)
+=> 1.10110001001 (binary) * 2^10
+
+Exponent+127 => 137 => 10001001 (binary)
+
+sign  exponent  mantissa
+   0  10001001  10110001001000000000000
+
+(17325 => 0x43ad  => 0x0010001110101101
+
+However we probably want 16-bit and 24-bit floating point types for
+efficiencies sake. Do we go with some fixed predefined floating point
+formats for 8-bit, 16-bit, 24-bit and 32-bit layouts (with 32-bit
+being identical to IEEE754) or do we allow for specification of the
+mantissa and exponent Eg FLOAT=23.8, FLOAT=17.6 or FLOAT=5.2 in the
+meta-data block?
+
+FLOAT=17.6 (24-bit) gives ranges +/- 8.6*10^9
+FLOAT=5.2  (8-bit)  gives ranges +/- 64 (I think).
+
+Alternatively if we restrict ourselves to only using the most
+significant 14 bits of the mantissa then storing as standard 32-bit
+floats implies 1 in every 4 bytes is zero. This may provide for a
+very crude, but fast way to implement reduced size floating point
+values - ie FLOAT=15.8 (24-bit signed).
+
+For fixed point (as in SFF values) there's already a draft standard
+for implementation in C (ISO/IEC TR 18037:2004).
+
+One benefit of fixed point over floating point is speed of
+implementation. Fixed point numbers can just be dealt with as
+integers. Eg subtracting two fixed point 16-bit values can be done in
+integers using a-b and the result is the same as if we'd done all the
+bit twiddling and maths directly simulating a real fixed-point unit.
+
+My gut feeling is that we'd want to explicitly declare the number of
+bits for integral and fractional components in the meta-data block.
+
+Comments?
+
+James
+
+PS. The latest (only minor tweaks from before) ZTR draft spec
+follows.
+
+
+
+
+1.3 draft 3 (19 Oct 2007)
 
 				ZTR SPEC v1.3
 				=============
-
-Search for "FIXME" for my comments / questions to be answered.
 
 Header
 ======
@@ -87,9 +274,9 @@ this will be followed immediately by the data-length field.
 Ie all meta-data adheres to the following structure:
 
 Meta-data: (version 1.3 onwards only)
-            +--+-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+
-Hex values  | 0| ident | 0| value | 0|   -   | ident | 0| value | 0|
-            +--+-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+
+            +-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+
+Hex values  | ident | 0| value | 0|   -   | ident | 0| value | 0|
+            +-  -  -+--+-  -  -+--+-     -+-  -  -+--+-  -  -+--+
 
 FIXME: Can we have specify the meta-data once per ZTR file and omit it
 in subsequent chunks? Eg a blank chunk with meta-data only in the
@@ -722,13 +909,6 @@ Ident	 Meaning         Value(s)
 ---------------------------------------------------------------------
 CSET     Character-set   'I' (ASCII #73) => IUPAC ("ACGTUMRWSYKVHDBN")
 			 '0' (ASCII #49) => ABI SOLiD ("0123N")
-
-FIXME: An additional ~5% can be saved by mixing two compressed streams
-each with their own huffman codes and context switching based on
-whether the trace sample matches the called base or not. This means
-the stream is not uncompressable using zlib though as it is a
-departure from Deflate. It also means the compression of the trace
-file is dependent on knowledge of the base-calling (which is doable).
 
 BPOS
 ----
