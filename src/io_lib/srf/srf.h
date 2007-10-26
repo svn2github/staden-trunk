@@ -62,10 +62,17 @@ typedef struct {
 /* Master SRF object */
 typedef struct {
     FILE *fp;
-    srf_cont_hdr_t    ch;  /* Cached copies of the most recent container, */
-    srf_trace_hdr_t   th;  /*   trace header, */
-    srf_trace_body_t  tb;  /*   trace body */
-    srf_xml_t         xml; /*   and xml blocks */
+
+    /* Cached copies of each of the most recent chunk types loaded */
+    srf_cont_hdr_t    ch;
+    srf_trace_hdr_t   th;
+    srf_trace_body_t  tb;
+    srf_xml_t         xml;
+
+    /* Private: cached data for use by srf_next_ztr */
+    ztr_t *ztr;
+    mFILE *mf;
+    long mf_pos, mf_end;
 } srf_t;
 
 /* Indexing */

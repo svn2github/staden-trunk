@@ -850,10 +850,6 @@ ztr_t *ztr_dup(ztr_t *src) {
  *         NULL on failure.
  */
 ztr_t *srf_next_ztr(srf_t *srf, char *name) {
-    static ztr_t *ztr = NULL; /* FIXME: store in srf object instead */
-    static mFILE *mf = NULL;    /* FIXME: store in srf object instead */
-    static long mf_pos, mf_end;
-
     do {
 	int type;
 
@@ -877,19 +873,19 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 		return NULL;
 
 	    /* Decode ZTR chunks in the header */
-	    if (mf)
-		mfdestroy(mf);
+	    if (srf->mf)
+		mfdestroy(srf->mf);
 
-	    mf = mfcreate(NULL, 0);
+	    srf->mf = mfcreate(NULL, 0);
 	    if (srf->th.trace_hdr_size)
-		mfwrite(srf->th.trace_hdr, 1, srf->th.trace_hdr_size, mf);
-	    if (ztr)
-		delete_ztr(ztr);
-	    mrewind(mf);
-	    ztr = partial_decode_ztr(srf, mf, NULL);
-	    mf_pos = mftell(mf);
-	    mfseek(mf, 0, SEEK_END);
-	    mf_end = mftell(mf);
+		mfwrite(srf->th.trace_hdr, 1, srf->th.trace_hdr_size, srf->mf);
+	    if (srf->ztr)
+		delete_ztr(srf->ztr);
+	    mrewind(srf->mf);
+	    srf->ztr = partial_decode_ztr(srf, srf->mf, NULL);
+	    srf->mf_pos = mftell(srf->mf);
+	    mfseek(srf->mf, 0, SEEK_END);
+	    srf->mf_end = mftell(srf->mf);
 
 	    break;
 
@@ -897,23 +893,23 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 	    srf_trace_body_t tb;
 	    ztr_t *ztr_tmp;
 
-	    if (!mf || 0 != srf_read_trace_body(srf, &tb, 0))
+	    if (!srf->mf || 0 != srf_read_trace_body(srf, &tb, 0))
 		return NULL;
 
 	    if (name)
 		sprintf(name, "%s%s", srf->th.id_prefix, tb.read_id);
 
-	    mfseek(mf, mf_end, SEEK_SET);
+	    mfseek(srf->mf, srf->mf_end, SEEK_SET);
 	    if (tb.trace_size) {
-		mfwrite(tb.trace, 1, tb.trace_size, mf);
+		mfwrite(tb.trace, 1, tb.trace_size, srf->mf);
 		free(tb.trace);
 		tb.trace = NULL;
 	    }
-	    mftruncate(mf, mftell(mf));
-	    mfseek(mf, mf_pos, SEEK_SET);
+	    mftruncate(srf->mf, mftell(srf->mf));
+	    mfseek(srf->mf, srf->mf_pos, SEEK_SET);
 
-	    ztr_tmp = ztr_dup(ztr); /* inefficient, but simple */
-	    return partial_decode_ztr(srf, mf, ztr_tmp);
+	    ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
+	    return partial_decode_ztr(srf, srf->mf, ztr_tmp);
 	}
 
 	case SRFB_INDEX: {
