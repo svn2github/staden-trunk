@@ -12,6 +12,7 @@ extern "C" {
 #define CODE_DNA	  1   /* DNA, uppercase only */
 #define CODE_DNA_AMBIG	  2   /* DNA, uc with ambiguity codes */
 #define CODE_ENGLISH      3   /* English text */
+#define NCODES_STATIC     4   /* Cheat, but we count from 0 for ease */
 
 /* predefined elsewhere in HUFF chunks, 128 onwards */
 #define CODE_USER	  128 

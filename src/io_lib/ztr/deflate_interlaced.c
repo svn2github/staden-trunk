@@ -219,6 +219,8 @@ static huffman_code_t codes_english[] = {
     {252, 15}, {253, 15}, {254, 15}, {255, 15}, {SYM_EOF, 15},
 };
 
+static huffman_codeset_t *static_codeset[NCODES_STATIC];
+
 /*
  * ---------------------------------------------------------------------------
  * Block_t structure support
@@ -657,19 +659,24 @@ huffman_codeset_t *generate_code_set(int code_set, int ncodes,
 				     int all_codes) {
     huffman_codeset_t *cs;
 
-    if (NULL == (cs = (huffman_codeset_t *)malloc(sizeof(*cs))))
-	return NULL;
-
-    cs->code_set = code_set;
-    cs->ncodes = ncodes;
-    cs->codes = (huffman_codes_t **)malloc(cs->ncodes * sizeof(*cs->codes));
-    cs->blk = NULL;
-    cs->bit_num = 0;
-    cs->decode_t = NULL;
-    cs->decode_J4 = NULL;
-
+    /*
+     * Either INLINE or a CODE_USER+ set of codes.
+     * => analyse the data and compute a new set of bit-lengths & codes.
+     */
     if (code_set >= 128 || code_set == CODE_INLINE) { 
 	int i;
+
+	if (NULL == (cs = (huffman_codeset_t *)malloc(sizeof(*cs))))
+	    return NULL;
+
+	cs->code_set = code_set;
+	cs->ncodes = ncodes;
+	cs->codes = (huffman_codes_t **)malloc(cs->ncodes*sizeof(*cs->codes));
+	cs->blk = NULL;
+	cs->bit_num = 0;
+	cs->decode_t = NULL;
+	cs->decode_J4 = NULL;
+
 	for (i = 0; i < ncodes; i++) {
 	    /*
 	     * If requested, include EOF all code sets, but at a
@@ -688,38 +695,66 @@ huffman_codeset_t *generate_code_set(int code_set, int ncodes,
 
 	    canonical_codes(cs->codes[i]);
 	}
+
+    /*
+     * Otherwise we use the determined codes at the top of this file, such
+     * as codes_dna and codes_english.
+     */
     } else {
-	huffman_codes_t *c = (huffman_codes_t *)malloc(sizeof(*c));
-	cs->codes[0] = c;
-	cs->ncodes = 1; /* FORCE, regardless of input param */
-	c->codes_static = 1;
-	c->max_code_len = MAX_CODE_LEN;
-
-	switch(code_set) {
-	case CODE_DNA:
-	    c->codes = codes_dna;
-	    c->ncodes = sizeof(codes_dna)/sizeof(*c->codes);
-	    cs->bit_num = 5;
-	    break;
-
-	case CODE_DNA_AMBIG:
-	    c->codes = codes_dna_ambig;
-	    c->ncodes = sizeof(codes_dna_ambig)/sizeof(*c->codes);
-	    cs->bit_num = 1;
-	    break;
-
-	case CODE_ENGLISH:
-	    c->codes = codes_english;
-	    c->ncodes = sizeof(codes_english)/sizeof(*c->codes);
-	    cs->bit_num = 1;
-	    break;
-
-	default:
+	if (code_set < 1 || code_set >= NCODES_STATIC) {
 	    fprintf(stderr, "Unknown huffman code set '%d'\n", code_set);
 	    return NULL;
 	}
 
-	canonical_codes(c);
+	/* If our global codeset hasn't been initialised yet, do so */
+	if (!static_codeset[code_set]) {
+	    huffman_codes_t *c = (huffman_codes_t *)malloc(sizeof(*c));
+
+	    if (NULL == (cs = (huffman_codeset_t *)malloc(sizeof(*cs))))
+		return NULL;
+
+	    cs->codes = (huffman_codes_t **)malloc(sizeof(*cs->codes));
+	    cs->codes[0] = c;
+	    cs->ncodes = 1;
+	    cs->code_set = code_set;
+	    cs->blk = NULL;
+	    cs->bit_num = 0;
+	    cs->decode_t = NULL;
+	    cs->decode_J4 = NULL;
+
+	    c->codes_static = 1;
+	    c->max_code_len = MAX_CODE_LEN;
+
+	    switch(code_set) {
+	    case CODE_DNA:
+		c->codes = codes_dna;
+		c->ncodes = sizeof(codes_dna)/sizeof(*c->codes);
+		cs->bit_num = 5;
+		break;
+
+	    case CODE_DNA_AMBIG:
+		c->codes = codes_dna_ambig;
+		c->ncodes = sizeof(codes_dna_ambig)/sizeof(*c->codes);
+		cs->bit_num = 1;
+		break;
+
+	    case CODE_ENGLISH:
+		c->codes = codes_english;
+		c->ncodes = sizeof(codes_english)/sizeof(*c->codes);
+		cs->bit_num = 1;
+		break;
+
+	    default:
+		fprintf(stderr, "Unknown huffman code set '%d'\n", code_set);
+		return NULL;
+	    }
+
+	    canonical_codes(c);
+
+	    static_codeset[code_set] = cs;
+	}
+
+	cs = static_codeset[code_set];
     }
 
     return cs;
@@ -739,6 +774,10 @@ void huffman_codeset_destroy(huffman_codeset_t *cs) {
     int i;
 
     if (!cs)
+	return;
+
+    /* If this codeset is one of the predefined global ones we do nothing */
+    if (cs->ncodes == 1 && cs->codes[0]->codes_static)
 	return;
 
     for (i = 0; i < cs->ncodes; i++)
