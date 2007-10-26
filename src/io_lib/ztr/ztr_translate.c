@@ -944,6 +944,7 @@ Read *ztr2read(ztr_t *ztr) {
     Read *r;
     int i;
     int done_conf = 0;
+    int sections = read_sections(0);
 
     /* Allocate */
     r = read_allocate(0, 0);
@@ -952,46 +953,85 @@ Read *ztr2read(ztr_t *ztr) {
 	return NULLRead;
 
     /* Proces text chunks - makes conversion easier */
-    ztr_process_text(ztr);
-    ztr_decode_text(r, ztr);
+    if (sections & READ_COMMENTS) {
+	ztr_process_text(ztr);
+	ztr_decode_text(r, ztr);
+    }
 
     /* Iterate around each known chunk type turning into the Read elements */
     for (i = 0; i < ztr->nchunks; i++) {
-	int dlen     = ztr->chunk[i].dlength;
-	char *data   = ztr->chunk[i].data;
-	int mdlen    = ztr->chunk[i].mdlength;
-	char *mdata  = ztr->chunk[i].mdata;
+	int dlen, mdlen;
+	char *data, *mdata;
+
 
 	switch (ztr->chunk[i].type) {
 	case ZTR_TYPE_SMP4:
-	    ztr_decode_samples_4(r, data, dlen);
+	    if (sections & READ_SAMPLES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_samples_4(r, data, dlen);
+	    }
 	    break;
 
 	case ZTR_TYPE_SAMP:
-	    if (mdlen == 4 && 0 == memcmp(mdata, "PYRW", 4))
-		ztr_decode_flow_raw(r, mdata, mdlen, data, dlen);
-	    else if (mdlen == 4 && 0 == memcmp(mdata, "PYNO", 4))
-		ztr_decode_flow_proc(r, mdata, mdlen, data, dlen);
-	    else 
-		ztr_decode_samples(r, mdata, mdlen, data, dlen);
+	    if (sections & READ_SAMPLES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+		mdlen = ztr->chunk[i].mdlength;
+		mdata = ztr->chunk[i].mdata;
+
+		if (mdlen == 4 && 0 == memcmp(mdata, "PYRW", 4))
+		    ztr_decode_flow_raw(r, mdata, mdlen, data, dlen);
+		else if (mdlen == 4 && 0 == memcmp(mdata, "PYNO", 4))
+		    ztr_decode_flow_proc(r, mdata, mdlen, data, dlen);
+		else 
+		    ztr_decode_samples(r, mdata, mdlen, data, dlen);
+	    }
 	    break;
 
 	case ZTR_TYPE_BASE:
-	    ztr_decode_bases(r, data, dlen);
+	    if (sections & READ_BASES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_bases(r, data, dlen);
+	    }
 	    break;
 
 	case ZTR_TYPE_BPOS:
-	    ztr_decode_positions(r, data, dlen);
+	    if (sections & READ_BASES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_positions(r, data, dlen);
+	    }
 	    break;
 
 	case ZTR_TYPE_CNF4:
-	    ztr_decode_confidence_4(r, data, dlen);
-	    done_conf++;
+	    if (sections & READ_BASES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_confidence_4(r, data, dlen);
+		done_conf++;
+	    }
 	    break;
 
 	case ZTR_TYPE_CNF1:
-	    ztr_decode_confidence_1(r, data, dlen);
-	    done_conf++;
+	    if (sections & READ_BASES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_confidence_1(r, data, dlen);
+		done_conf++;
+	    }
 	    break;
 
 	case ZTR_TYPE_TEXT:
@@ -999,11 +1039,23 @@ Read *ztr2read(ztr_t *ztr) {
 	    break;
 
 	case ZTR_TYPE_CLIP:
-	    ztr_decode_clips(r, data, dlen);
+	    if (sections & READ_BASES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_clips(r, data, dlen);
+	    }
 	    break;
 
 	case ZTR_TYPE_FLWO:
-	    ztr_decode_flow_order(r, data, dlen);
+	    if (sections & READ_SAMPLES) {
+		uncompress_chunk(ztr, &ztr->chunk[i]);
+		dlen  = ztr->chunk[i].dlength;
+		data  = ztr->chunk[i].data;
+
+		ztr_decode_flow_order(r, data, dlen);
+	    }
 	    break;
 	}
     }
