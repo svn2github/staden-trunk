@@ -41,7 +41,7 @@ wasteful. These combined comprise 5-10% of the total SRF size. Note
 that changing this would break backwards compatibility.
 
 QUESTION2:
-Do I need a means too specify the "default meta-data". Specifically if
+Do I need a means to specify the "default meta-data". Specifically if
 we have lots of SAMP chunks (for example) and every single one is
 stating that the zero "offset" value is 32768 then we may want a
 mechanism of specifying that the default OFFS value is 32768 for all
@@ -283,6 +283,10 @@ in subsequent chunks? Eg a blank chunk with meta-data only in the
 header. Chunks in the body then specify meta-data length as 0xFFFFFFFF
 as an indicator meaning "use the last meta-data defined for this chunk
 type". Useful when split in two, as in SRF?
+
+Note that this means both ident and values must not themselves contain
+the zero byte (a nul character), hence we generally store ident-value
+pairs in ASCII string forms.
 
 The data length ("dlength") is the length in bytes of the entire
 'data' block, including the format information held within it.
@@ -828,8 +832,9 @@ Valid identifiers for the meta-data (version 1.3 onwards) are:
 
 Ident	     Value(s)
 ---------------------------------------------------------------------
-TYPE	     "A", "C", "G" or "T"
-OFFS         16-bit signed integer representing the 'zero' position
+TYPE	     "A", "C", "G", "T", "PYNO" or "PYRW"
+OFFS         16-bit signed integer representing the 'zero' position,
+	     in ASCII.
 
 [ FIXME: signed or unsigned? Signed means we couldn't store data in
 the range from -48K to +16K. Unsigned means we couldn't store data in
@@ -838,13 +843,14 @@ instead? ]
 
 Versions prior to 1.3 specified meta-data consisted of a single 4-byte
 block containing a 4-byte name associated with the trace. If a
-data-name is shorter than 4 bytes then it should be right padded with
+type-name is shorter than 4 bytes then it should be right padded with
 nul characters to 4 bytes. For sequencing traces the four lanes
 representig A, C, G and T signals have names "A\0\0\0", "C\0\0\0",
-"G\0\0\0" and "T\0\0\0". At present other names are not reserved, but
-it is recommended that (for consistency with elsewhere) you label
-private trace arrays with names starting in a lowercase letter
-(specifically, bit 5 is 1).
+"G\0\0\0" and "T\0\0\0". PYNO and PYRW refer to normalised and raw
+pyrogram data (eg from 454 instruments). At present other names are
+not reserved, but it is recommended that (for consistency with
+elsewhere) you label private trace arrays with names starting in a
+lowercase letter (specifically, bit 5 is 1).
 
 For the purposes of backwards compatibility, readers should check the
 version number in the ZTR header to determine whether the old or new

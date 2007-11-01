@@ -664,6 +664,64 @@ int ztr_store_hcodes(ztr_t *ztr) {
 }
 
 /*
+ * Given a ZTR chunk this searches through the meta-data key/value pairings
+ * to return the corresponding value.
+ *
+ * Returns a pointer into the mdata on success (nul-terminated)
+ *         NULL on failure.
+ */
+char *ztr_lookup_mdata_value(ztr_t *z, ztr_chunk_t *chunk, char *key) {
+    if (z->header.version_major > 1 ||
+	z->header.version_minor >= 2) {
+	/* ZTR format 1.2 onwards */
+	char *cp = chunk->mdata;
+	int32_t dlen = chunk->mdlength;
+
+	/*
+	 * NB: we may wish to rewrite this using a dedicated state machine
+	 * instead of strlen/strcmp as this currently assumes the meta-
+	 * data is correctly formatted, which we cannot assume as the 
+	 * metadata is external and outside of our control.
+	 * Passing in non-nul terminated strings could crash this code.
+	 */
+	while (dlen > 0) {
+	    size_t l;
+
+	    /* key */
+	    l = strlen(cp);
+	    int found = strcmp(cp, key) == 0;
+	    cp += l+1;
+	    dlen -= l+1;
+
+	    /* value */
+	    if (found)
+		return cp;
+	    l = strlen(cp);
+	    cp += l+1;
+	    dlen -= l+1;
+	}
+	return NULL;
+
+    } else {
+	/* v1.1 and before only supported a few types, specifically coded
+	 * per chunk type.
+	 */
+	switch (chunk->type) {
+	case ZTR_TYPE_SAMP:
+	case ZTR_TYPE_SMP4:
+	    if (strcmp(key, "TYPE"))
+		return chunk->mdata;
+	    break;
+
+	default:
+	    break;
+	}
+    }
+
+    return NULL;
+}
+
+/*
  * Compresses an individual chunk using a specific format. The format is one
  * of the 'format' fields listed in the spec; one of the ZTR_FORM_ macros.
  */
@@ -879,17 +937,17 @@ int compress_ztr(ztr_t *ztr, int level) {
 	*/
 
 	switch(ztr->chunk[i].type) {
+	    char *type;
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
 #ifdef SOLEXA
 	    compress_chunk(ztr, &ztr->chunk[i],
 			   ZTR_FORM_STHUFF, CODE_TRACES, 0);
 #else
-	    if (ztr->chunk[i].mdlength == 4 &&
-		memcmp(ztr->chunk[i].mdata, "PYRW", 4) == 0) {
+	    type = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
+	    if (type && 0 == strcmp(type, "PYRW")) {
 		/* Raw data is not really compressable */
-	    } else if (ztr->chunk[i].mdlength == 4 &&
-		memcmp(ztr->chunk[i].mdata, "PYNO", 4) == 0) {
+	    } else if (type && 0 == strcmp(type, "PYNO")) {
 		if (level > 1) {
 		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_16TO8,  0, 0);
 		    compress_chunk(ztr, &ztr->chunk[i],

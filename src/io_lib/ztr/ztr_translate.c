@@ -6,7 +6,8 @@
 #include "Read.h"
 
 /* Return the A,C,G,T samples */
-static char *ztr_encode_samples_4(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_samples_4(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
     char *bytes;
     int i, j, t;
@@ -45,11 +46,12 @@ static char *ztr_encode_samples_4(Read *r, int *nbytes, char **mdata,
     return bytes;
 }
 
-static void ztr_decode_samples_4(Read *r, char *s_bytes, int nbytes) {
+static void ztr_decode_samples_4(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
     int maxTraceVal = 0;
     TRACE sample;
-    unsigned char *bytes = (unsigned char *)s_bytes;
+    unsigned char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
 
     bytes+=2;
     nbytes-=2;
@@ -94,7 +96,8 @@ static void ztr_decode_samples_4(Read *r, char *s_bytes, int nbytes) {
 }
 
 /* Return the [A,C,G,T] samples */
-static char *ztr_encode_samples_common(char ident[4], Read *r, TRACE *data,
+static char *ztr_encode_samples_common(ztr_t *z,
+				       char ident[4], Read *r, TRACE *data,
 				       int *nbytes, char **mdata,
 				       int *mdbytes) {
     char *bytes;
@@ -103,12 +106,20 @@ static char *ztr_encode_samples_common(char ident[4], Read *r, TRACE *data,
     if (!r->NPoints)
 	return NULL;
 
-    *mdata = (char *)malloc(4);
-    *mdbytes = 4;
-    (*mdata)[0] = ident[0];
-    (*mdata)[1] = ident[1];
-    (*mdata)[2] = ident[2];
-    (*mdata)[3] = ident[3];
+    if (z->header.version_major > 1 ||
+	z->header.version_minor >= 2) {
+	/* 1.2 onwards */
+	*mdata = (char *)malloc(10);
+	*mdbytes = 10;
+	sprintf(*mdata, "TYPE%c%.*s", 0, ident);
+    } else {
+	*mdata = (char *)malloc(4);
+	*mdbytes = 4;
+	(*mdata)[0] = ident[0];
+	(*mdata)[1] = ident[1];
+	(*mdata)[2] = ident[2];
+	(*mdata)[3] = ident[3];
+    }
 
     bytes = (char *)xmalloc(r->NPoints * sizeof(TRACE) + 2);
     for (i = 0, j = 2; i < r->NPoints; i++) {
@@ -124,44 +135,49 @@ static char *ztr_encode_samples_common(char ident[4], Read *r, TRACE *data,
 }
 
 
-static char *ztr_encode_samples_A(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_samples_A(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
-    return ztr_encode_samples_common("A\0\0", r, r->traceA,
+    return ztr_encode_samples_common(z, "A\0\0", r, r->traceA,
 				     nbytes, mdata, mdbytes);
 }
 
-static char *ztr_encode_samples_C(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_samples_C(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
-    return ztr_encode_samples_common("C\0\0", r, r->traceC,
+    return ztr_encode_samples_common(z, "C\0\0", r, r->traceC,
 				     nbytes, mdata, mdbytes);
 }
 
-static char *ztr_encode_samples_G(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_samples_G(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
-    return ztr_encode_samples_common("G\0\0", r, r->traceG,
+    return ztr_encode_samples_common(z, "G\0\0", r, r->traceG,
 				     nbytes, mdata, mdbytes);
 }
 
-static char *ztr_encode_samples_T(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_samples_T(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
-    return ztr_encode_samples_common("T\0\0", r, r->traceT,
+    return ztr_encode_samples_common(z, "T\0\0", r, r->traceT,
 				     nbytes, mdata, mdbytes);
 }
 
 /* ARGSUSED */
-static void ztr_decode_samples(Read *r,
-			       char *mdata, int mdlen,
-			       char *data,  int dlen) {
+static void ztr_decode_samples(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
     int maxTraceVal = 0;
     TRACE sample;
-    unsigned char *bytes = (unsigned char *)data;
+    unsigned char *bytes = chunk->data;
+    char *mdata = chunk->mdata;
+    int dlen = chunk->dlength, mdlen = chunk->mdlength;
     TRACE **lane, *lanex;
-
-    if (!mdata)
+    char *type = ztr_lookup_mdata_value(z, chunk, "TYPE");
+    
+    if (!type)
 	return;
 
-    switch(mdata[0]) {
+    switch(type[0]) {
     case 'A':
 	lane = &r->traceA;
 	break;
@@ -199,7 +215,8 @@ static void ztr_decode_samples(Read *r,
 }
 
 /* Encode the the base calls */
-static char *ztr_encode_bases(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_bases(ztr_t *z,
+			      Read *r, int *nbytes, char **mdata,
 			      int *mdbytes) {
     char *bytes;
 
@@ -217,7 +234,10 @@ static char *ztr_encode_bases(Read *r, int *nbytes, char **mdata,
     return bytes;
 }
 
-static void ztr_decode_bases(Read *r, char *bytes, int nbytes) {
+static void ztr_decode_bases(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
+    char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
+
     nbytes--;
     bytes++;
 
@@ -233,7 +253,8 @@ static void ztr_decode_bases(Read *r, char *bytes, int nbytes) {
 }
 
 /* Encode the base positions as 4 byte values */
-static char *ztr_encode_positions(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_positions(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
     char *bytes;
     int i, j;
@@ -267,9 +288,10 @@ static char *ztr_encode_positions(Read *r, int *nbytes, char **mdata,
     return (char *)bytes;
 }
 
-static void ztr_decode_positions(Read *r, char *s_bytes, int nbytes) {
+static void ztr_decode_positions(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
-    unsigned char *bytes = (unsigned char *)s_bytes;
+    unsigned char *bytes = (unsigned char *)chunk->data;
+    int nbytes = chunk->dlength;
 
     bytes+=4;
     nbytes-=4;
@@ -288,7 +310,8 @@ static void ztr_decode_positions(Read *r, char *s_bytes, int nbytes) {
 }
 
 /* Encode the main base confidence (called base) */
-static char *ztr_encode_confidence_1(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_confidence_1(ztr_t *z,
+				     Read *r, int *nbytes, char **mdata,
 				     int *mdbytes)
 {
     char *bytes;
@@ -352,7 +375,9 @@ static char *ztr_encode_confidence_1(Read *r, int *nbytes, char **mdata,
     return bytes;
 }
 
-static int ztr_decode_confidence_1(Read *r, char *bytes, int nbytes) {
+static int ztr_decode_confidence_1(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
+    char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
     int i;
     
     bytes++;
@@ -413,7 +438,8 @@ static int ztr_decode_confidence_1(Read *r, char *bytes, int nbytes) {
 }
 
 /* Encode the four main base confidences */
-static char *ztr_encode_confidence_4(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_confidence_4(ztr_t *z,
+				     Read *r, int *nbytes, char **mdata,
 				     int *mdbytes)
 {
     char *bytes;
@@ -485,7 +511,9 @@ static char *ztr_encode_confidence_4(Read *r, int *nbytes, char **mdata,
     return bytes;
 }
 
-static int ztr_decode_confidence_4(Read *r, char *bytes, int nbytes) {
+static int ztr_decode_confidence_4(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
+    char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
     int i, j;
     
     bytes++;
@@ -541,7 +569,8 @@ static int ztr_decode_confidence_4(Read *r, char *bytes, int nbytes) {
 }
 
 /* Encode the textual comments */
-static char *ztr_encode_text(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_text(ztr_t *z,
+			     Read *r, int *nbytes, char **mdata,
 			     int *mdbytes) {
     char *bytes;
     int len, alen;
@@ -643,7 +672,8 @@ static void ztr_decode_text(Read *r, ztr_t *ztr) {
 }
 
 /* Encode the clip points */
-static char *ztr_encode_clips(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_clips(ztr_t *z,
+			      Read *r, int *nbytes, char **mdata,
 			      int *mdbytes) {
     char *bytes;
 
@@ -675,7 +705,10 @@ static char *ztr_encode_clips(Read *r, int *nbytes, char **mdata,
 }
 
 /* ARGSUSED */
-static void ztr_decode_clips(Read *r, char *bytes, int nbytes) {
+static void ztr_decode_clips(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
+    char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
+
     r->leftCutoff =
 	(((unsigned char)bytes[1]) << 24) +
 	(((unsigned char)bytes[2]) << 16) +
@@ -690,7 +723,8 @@ static void ztr_decode_clips(Read *r, char *bytes, int nbytes) {
 }
 
 /* ARGSUSED */
-static char *ztr_encode_flow_order(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_flow_order(ztr_t *z,
+				   Read *r, int *nbytes, char **mdata,
 				   int *mdbytes) {
     char *bytes;
 
@@ -706,7 +740,10 @@ static char *ztr_encode_flow_order(Read *r, int *nbytes, char **mdata,
     return bytes;
 }
 
-static void ztr_decode_flow_order(Read *r, char *bytes,  int nbytes) {
+static void ztr_decode_flow_order(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
+    char *bytes = chunk->data;
+    int nbytes = chunk->dlength;
+
     nbytes--;
     bytes++;
 
@@ -716,7 +753,8 @@ static void ztr_decode_flow_order(Read *r, char *bytes,  int nbytes) {
     r->flow_order[r->nflows] = 0;
 }
 
-static char *ztr_encode_flow_proc(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_flow_proc(ztr_t *z,
+				  Read *r, int *nbytes, char **mdata,
 				  int *mdbytes) {
     char *bytes;
     int i, j;
@@ -728,12 +766,20 @@ static char *ztr_encode_flow_proc(Read *r, int *nbytes, char **mdata,
     data = r->flow;
 
     /* Meta-data */
-    *mdata = (char *)malloc(4);
-    *mdbytes = 4;
-    (*mdata)[0] = 'P';
-    (*mdata)[1] = 'Y';
-    (*mdata)[2] = 'N';
-    (*mdata)[3] = 'O';
+    if (z->header.version_major > 1 ||
+	z->header.version_minor >= 2) {
+	/* 1.2 onwards */
+	*mdata = (char *)malloc(10);
+	*mdbytes = 10;
+	sprintf(*mdata, "TYPE%cPYNO", 0);
+    } else {
+	*mdata = (char *)malloc(4);
+	*mdbytes = 4;
+	(*mdata)[0] = 'P';
+	(*mdata)[1] = 'Y';
+	(*mdata)[2] = 'N';
+	(*mdata)[3] = 'O';
+    }
 
     /* floats themselves, scaled */
     bytes = (char *)xmalloc(r->nflows*2+2);
@@ -751,11 +797,10 @@ static char *ztr_encode_flow_proc(Read *r, int *nbytes, char **mdata,
 }
 
 /* ARGSUSED */
-static void ztr_decode_flow_proc(Read *r,
-				 char *mdata, int mdlen,
-				 char *data,  int dlen) {
+static void ztr_decode_flow_proc(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
-    unsigned char *bytes = (unsigned char *)data;
+    unsigned char *bytes = (unsigned char *)chunk->data;
+    int dlen = chunk->dlength;
 
     bytes+=2;
     dlen-=2;
@@ -769,7 +814,8 @@ static void ztr_decode_flow_proc(Read *r,
     }
 }
 
-static char *ztr_encode_flow_raw(Read *r, int *nbytes, char **mdata,
+static char *ztr_encode_flow_raw(ztr_t *z,
+				 Read *r, int *nbytes, char **mdata,
 				 int *mdbytes) {
     char *bytes;
     int i, j;
@@ -781,12 +827,20 @@ static char *ztr_encode_flow_raw(Read *r, int *nbytes, char **mdata,
     data = r->flow_raw;
 
     /* Meta-data */
-    *mdata = (char *)malloc(4);
-    *mdbytes = 4;
-    (*mdata)[0] = 'P';
-    (*mdata)[1] = 'Y';
-    (*mdata)[2] = 'R';
-    (*mdata)[3] = 'W';
+    if (z->header.version_major > 1 ||
+	z->header.version_minor >= 2) {
+	/* 1.2 onwards */
+	*mdata = (char *)malloc(10);
+	*mdbytes = 10;
+	sprintf(*mdata, "TYPE%c%PYRW", 0);
+    } else {
+	*mdata = (char *)malloc(4);
+	*mdbytes = 4;
+	(*mdata)[0] = 'P';
+	(*mdata)[1] = 'Y';
+	(*mdata)[2] = 'R';
+	(*mdata)[3] = 'W';
+    }
 
     /* floats themselves, scaled */
     bytes = (char *)xmalloc(r->nflows*2+2);
@@ -804,11 +858,10 @@ static char *ztr_encode_flow_raw(Read *r, int *nbytes, char **mdata,
 }
 
 /* ARGSUSED */
-static void ztr_decode_flow_raw(Read *r,
-				char *mdata, int mdlen,
-				char *data,  int dlen) {
+static void ztr_decode_flow_raw(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
-    unsigned char *bytes = (unsigned char *)data;
+    unsigned char *bytes = (unsigned char *)chunk->data;
+    int dlen = chunk->dlength;
 
     bytes+=2;
     dlen-=2;
@@ -861,7 +914,7 @@ ztr_t *read2ztr(Read *r) {
 	ZTR_TYPE_SAMP,
     };
 
-    char *(*chunk_func[])(Read *r, int *nbytes, char **mdata, int *mdbytes) = {
+    char *(*chunk_func[])(ztr_t *z, Read *r, int *nbytes, char **mdata, int *mdbytes) = {
 #ifdef DO_SMP4
 	ztr_encode_samples_4,
 #else
@@ -900,7 +953,7 @@ ztr_t *read2ztr(Read *r) {
     for (j = i = 0; i < ztr->nchunks; i++) {
 	/* char str[5]; */
 
-	bytes = chunk_func[i](r, &nbytes, &mdata, &mdbytes);
+	bytes = chunk_func[i](ztr, r, &nbytes, &mdata, &mdbytes);
 	if (!bytes)
 	    continue;
 
@@ -960,65 +1013,53 @@ Read *ztr2read(ztr_t *ztr) {
 
     /* Iterate around each known chunk type turning into the Read elements */
     for (i = 0; i < ztr->nchunks; i++) {
-	int dlen, mdlen;
-	char *data, *mdata;
-
-
 	switch (ztr->chunk[i].type) {
 	case ZTR_TYPE_SMP4:
 	    if (sections & READ_SAMPLES) {
+		char *offs = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "OFFS");
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
+		ztr_decode_samples_4(ztr, &ztr->chunk[i], r);
 
-		ztr_decode_samples_4(r, data, dlen);
+		if (offs)
+		    r->baseline = atoi(offs);
 	    }
 	    break;
 
-	case ZTR_TYPE_SAMP:
+	case ZTR_TYPE_SAMP: 
 	    if (sections & READ_SAMPLES) {
+		char *type = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
+		char *offs = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "OFFS");
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-		mdlen = ztr->chunk[i].mdlength;
-		mdata = ztr->chunk[i].mdata;
-
-		if (mdlen == 4 && 0 == memcmp(mdata, "PYRW", 4))
-		    ztr_decode_flow_raw(r, mdata, mdlen, data, dlen);
-		else if (mdlen == 4 && 0 == memcmp(mdata, "PYNO", 4))
-		    ztr_decode_flow_proc(r, mdata, mdlen, data, dlen);
+		if (type && 0 == strcmp(type, "PYRW"))
+		    ztr_decode_flow_raw(ztr, &ztr->chunk[i], r);
+		else if (type && 0 == strcmp(type, "PYNO"))
+		    ztr_decode_flow_proc(ztr, &ztr->chunk[i], r);
 		else 
-		    ztr_decode_samples(r, mdata, mdlen, data, dlen);
+		    ztr_decode_samples(ztr, &ztr->chunk[i], r);
+
+		if (offs)
+		    r->baseline = atoi(offs);
 	    }
 	    break;
 
 	case ZTR_TYPE_BASE:
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_bases(r, data, dlen);
+		ztr_decode_bases(ztr, &ztr->chunk[i], r);
 	    }
 	    break;
 
 	case ZTR_TYPE_BPOS:
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_positions(r, data, dlen);
+		ztr_decode_positions(ztr, &ztr->chunk[i], r);
 	    }
 	    break;
 
 	case ZTR_TYPE_CNF4:
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_confidence_4(r, data, dlen);
+		ztr_decode_confidence_4(ztr, &ztr->chunk[i], r);
 		done_conf++;
 	    }
 	    break;
@@ -1026,10 +1067,7 @@ Read *ztr2read(ztr_t *ztr) {
 	case ZTR_TYPE_CNF1:
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_confidence_1(r, data, dlen);
+		ztr_decode_confidence_1(ztr, &ztr->chunk[i], r);
 		done_conf++;
 	    }
 	    break;
@@ -1041,20 +1079,14 @@ Read *ztr2read(ztr_t *ztr) {
 	case ZTR_TYPE_CLIP:
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_clips(r, data, dlen);
+		ztr_decode_clips(ztr, &ztr->chunk[i], r);
 	    }
 	    break;
 
 	case ZTR_TYPE_FLWO:
 	    if (sections & READ_SAMPLES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		dlen  = ztr->chunk[i].dlength;
-		data  = ztr->chunk[i].data;
-
-		ztr_decode_flow_order(r, data, dlen);
+		ztr_decode_flow_order(ztr, &ztr->chunk[i], r);
 	    }
 	    break;
 	}
