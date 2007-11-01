@@ -50,8 +50,10 @@ void srf_destroy(srf_t *srf, int auto_close) {
     if (!srf)
 	return;
     
-    if (auto_close && srf->fp)
-	fclose(srf->fp);
+    if (auto_close && srf->fp) {
+	if (-1 == fclose(srf->fp))
+	    perror("fclose(srf->fp)");
+    }
 
     free(srf);
 }
@@ -270,7 +272,7 @@ int srf_write_cont_hdr(srf_t *srf, srf_cont_hdr_t *ch) {
     if (srf_write_pstring(srf, ch->base_caller_version) < 0)
 	return -1;
 
-    return 0;
+    return ferror(srf->fp) ? -1 : 0;
 }
 
 /*
@@ -316,7 +318,7 @@ int srf_write_xml(srf_t *srf, srf_xml_t *xml) {
     if (xml->xml_len != fwrite(xml->xml, 1, xml->xml_len, srf->fp))
 	return -1;
 
-    return 0;
+    return ferror(srf->fp) ? -1 : 0;
 }
 
 /*
@@ -435,7 +437,7 @@ int srf_write_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
 	fwrite(th->trace_hdr, 1, th->trace_hdr_size, srf->fp))
 	return -1;
 
-    return 0;
+    return ferror(srf->fp) ? -1 : 0;
 }
 
 
@@ -491,7 +493,7 @@ int srf_write_trace_body(srf_t *srf, srf_trace_body_t *tb) {
     if (tb->trace_size != fwrite(tb->trace, 1, tb->trace_size, srf->fp))
 	return -1;
 
-    return 0;
+    return ferror(srf->fp) ? -1 : 0;
 }
 
 /*
@@ -627,7 +629,7 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
     if (1 != fwrite(&hdr->hash_func, 1, 1, srf->fp))
 	return -1;
 
-    return 0;
+    return ferror(srf->fp) ? -1 : 0;
 }
 
 
