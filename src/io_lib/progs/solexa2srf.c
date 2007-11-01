@@ -915,7 +915,7 @@ void rescale_trace(ztr_t *ztr, ztr_chunk_t *chunk, int min, int max) {
     sprintf(buf, "%d", -min);
     chunk->mdata = realloc(chunk->mdata, chunk->mdlength + strlen(buf) + 6);
     chunk->mdlength +=
-	sprintf(chunk->mdata+chunk->mdlength, "OFFS%c%s", 0, buf);
+	sprintf(chunk->mdata+chunk->mdlength, "OFFS%c%s", 0, buf) + 1;
 }
 
 void rescale_traces(Array za, int min, int max) {
@@ -1256,16 +1256,24 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
      * which case we have no choice but to warn and truncate.
      */
     if (max_val > 65535) {
-	fprintf(stderr, "%s: Warning  max value > 65535. Truncating",
-		seq_file);
+	fprintf(stderr, "%s: Warning  max value (%d) > 65535. Truncating",
+		seq_file, max_val);
 	min_val = 0;
 	max_val = 65535;
     }
 
     if (max_val - min_val > 65535) {
-	fprintf(stderr, "%s: Warning range from min to max values > 65535. "
-		"Truncating noise signal\n", seq_file);
-	min_val = 65535 - max_val;
+	fprintf(stderr, "%s: Warning range from min(%d) to max(%d) values"
+		" > 65535. Truncating noise signal\n",
+		seq_file, min_val, max_val);
+	min_val = max_val - 65535;
+	/* FIXME: these mean our Read struct is already corrupt due to
+	 * wrapped around values.
+	 * We need to handle the read creation in three steps:
+	 * 1) load the seq,prb,sig2
+	 * 2) analyse ranges
+	 * 3) create Read utilising range knowledge 
+	 */
     }
 
     rescale_traces(za, min_val, max_val);
