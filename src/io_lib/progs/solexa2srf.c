@@ -71,7 +71,6 @@
 /* #define USE_MODEL */
 
 #define N_TR_CODE 8
-#define SHIFT_BY 32768
 
 #define BASE_CODE (CODE_USER)
 #define SMP4_CODE (CODE_USER+1)
@@ -307,7 +306,7 @@ static float f_lookup[100] = {
     0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
 };
 
-char *parse_4_float(char *str, float *val) {
+char *parse_4_float(char *str, float *val, float *minf, float *maxf) {
     int minus = 0, count = 0;
     char c;
     enum state_t {BEFORE_NUM, BEFORE_POINT, AFTER_POINT} state = BEFORE_NUM;
@@ -358,6 +357,8 @@ char *parse_4_float(char *str, float *val) {
 
 		minus = 0;
 		*val++ = ival1;
+		if (*minf > ival1) *minf = ival1;
+		if (*maxf < ival1) *maxf = ival1;
 		ival1 = 0;
 
 		if (++count == 4) {
@@ -389,6 +390,8 @@ char *parse_4_float(char *str, float *val) {
 
 		minus = 0;
 		*val++ = fval;
+		if (*minf > fval) *minf = fval;
+		if (*maxf < fval) *maxf = fval;
 		ival1 = ival2 = 0;
 
 		if (++count == 4) {
@@ -496,11 +499,12 @@ int (*get_prb(FILE *fp, int trim))[4] {
  * Returns point to Nx4 array of ints holding the signal strengths.
  *         NULL on failure
  */
-float (*get_sig(FILE *fp, int trim))[4] {
+float (*get_sig(FILE *fp, int trim, float *min, float *max))[4] {
     char line[MAX_CYCLES*30 +1];
     int i4[4];
     char *cp;
     int c = 0;
+    float minf = 1e10, maxf = -1e10;
     static float sig[MAX_CYCLES][4];
 
     if (NULL == fgets(line, MAX_CYCLES*30, fp))
@@ -508,9 +512,12 @@ float (*get_sig(FILE *fp, int trim))[4] {
 
     /* Skip first 4 values */
     cp = parse_4_int(line, i4);
-    while (cp = parse_4_float(cp, sig[c])) {
+    while (cp = parse_4_float(cp, sig[c], &minf, &maxf)) {
 	c++;
     }
+
+    *min = minf;
+    *max = maxf;
 
     return &sig[trim];
 }
@@ -546,10 +553,10 @@ Read *create_read(char *seq, int (*prb)[4], float (*sig)[4]) {
 #endif
 
 	/* Traces */
-	if ((r->traceA[i] = (int)sig[i][0] + SHIFT_BY) > max) max = sig[i][0];
-	if ((r->traceC[i] = (int)sig[i][1] + SHIFT_BY) > max) max = sig[i][1];
-	if ((r->traceG[i] = (int)sig[i][2] + SHIFT_BY) > max) max = sig[i][2];
-	if ((r->traceT[i] = (int)sig[i][3] + SHIFT_BY) > max) max = sig[i][3];
+	if ((r->traceA[i] = (int)sig[i][0]) > max) max = sig[i][0];
+	if ((r->traceC[i] = (int)sig[i][1]) > max) max = sig[i][1];
+	if ((r->traceG[i] = (int)sig[i][2]) > max) max = sig[i][2];
+	if ((r->traceT[i] = (int)sig[i][3]) > max) max = sig[i][3];
 
 	/* Sequence & position */
 	r->base[i] = seq[i];
@@ -759,7 +766,7 @@ int add_to_model(ztr_t *ztr, ztr_chunk_t *chunk) {
     sum[0] = sum[1] = sum[2] = sum[3] = 0;
     for (i = 0; i < nb; i++) {
 	for (j = 0; j < 4; j++) {
-	    sum[j] += be_int2(*tr)-SHIFT_BY;
+	    sum[j] += be_int2(*tr);
 	    tr++;
 	}
     }
@@ -783,7 +790,7 @@ int add_to_model(ztr_t *ztr, ztr_chunk_t *chunk) {
     tr = ((unsigned short *)chunk->data)+4;
     for (i = 0; i < MAX_BASES && i < nb; i++) {
 	for (j = 0; j < 4; j++) {
-	    double val = (be_int2(*tr)-SHIFT_BY);
+	    double val = (be_int2(*tr));
 	    val *= r[j];
 	    model[i][j] += val;
 	    tr++;
@@ -826,7 +833,7 @@ int subtract_model(ztr_t *ztr, ztr_chunk_t *chunk) {
     sum[0] = sum[1] = sum[2] = sum[3] = 0;
     for (i = 0; i < nb; i++) {
 	for (j = 0; j < 4; j++) {
-	    sum[j] += be_int2(*tr)-SHIFT_BY;
+	    sum[j] += be_int2(*tr);
 	    tr++;
 	}
     }
@@ -861,10 +868,10 @@ int subtract_model(ztr_t *ztr, ztr_chunk_t *chunk) {
     tr = ((unsigned short *)chunk->data)+4;
     for (i = 0; i < MAX_BASES && i < nb; i++) {
 	for (j = 0; j < 4; j++) {
-	    double val = (be_int2(*tr)-SHIFT_BY);
+	    double val = (be_int2(*tr));
 	    val -= model[i][j] / r[j];
 	    if (j == 0) /* experiment - better model only of called peak? */
-		*tr = be_int2((int)(val+SHIFT_BY));
+		*tr = be_int2((int)(val));
 	    tr++;
 	}
     }
@@ -884,6 +891,49 @@ void subtract_models(Array za) {
     }
 }
 #endif
+
+void rescale_trace(ztr_t *ztr, ztr_chunk_t *chunk, int min, int max) {
+    int i, j;
+    unsigned short *tr;
+    int nb;
+    char buf[256];
+
+    nb = (chunk->dlength-2)/8;
+    tr = ((unsigned short *)chunk->data)+4;
+
+    /* Shift trace data by -min */
+    for (i = 0; i < nb; i++) {
+	for (j = 0; j < 4; j++) {
+	    int v = (int16_t)be_int2(*tr);
+	    v -= min;
+	    if (v > 65535) v = 65535;
+	    *tr++ = be_int2(v);
+	}
+    }
+
+    /* Add meta-data field */
+    sprintf(buf, "%d", -min);
+    chunk->mdata = realloc(chunk->mdata, chunk->mdlength + strlen(buf) + 6);
+    chunk->mdlength +=
+	sprintf(chunk->mdata+chunk->mdlength, "OFFS%c%s", 0, buf);
+}
+
+void rescale_traces(Array za, int min, int max) {
+    int i, j;
+    int nreads = ArrayMax(za);
+
+    if (min == 0)
+	return;
+
+    for (i = 0; i < nreads; i++) {
+	ztr_t *z = arr(ztr_t *, za, i);
+	for (j = 0; j < z->nchunks; j++) {
+	    if (z->chunk[j].type == ZTR_TYPE_SMP4) {
+		rescale_trace(z, &z->chunk[j], min, max);
+	    }
+	}
+    }
+}
 
 #define EBASE 65536
 static double entropy16(unsigned short *data, int len) {
@@ -1076,7 +1126,8 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
 	pos = mftell(mf);
 	ztr_mwrite_chunk(mf, &ztr->chunk[i]);
 	if (ztr->chunk[i].type == ZTR_TYPE_SMP4 && footer) {
-	    *footer = pos + 10; /* allows traces up to 64k */
+	    /* allows traces up to 64k */
+	    *footer = pos + 10 + ztr->chunk[i].mdlength;
 	}
     }
 
@@ -1122,6 +1173,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     huffman_codeset_t *conf_cds = NULL;
     ztr_hcode_t *hcodes = NULL;
     int nhcodes = 0;
+    int min_val = 0, max_val = 0;
 
     /* open all 3 filenames */
     if (NULL == (cp = strrchr(seq_file, '_')))
@@ -1166,8 +1218,9 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 
     /* Cache all reads in memory */
     while ((seq = get_seq(fp_seq, skip, &l.lane, &l.tile, &l.x, &l.y))) {
+	float min, max;
 	int   (*prb)[4] = get_prb(fp_prb, skip);
-	float (*sig)[4] = get_sig(fp_sig, skip);
+	float (*sig)[4] = get_sig(fp_sig, skip, &min, &max);
 	Read *r;
 
 	if (!prb || !sig) {
@@ -1175,6 +1228,10 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 		    seq_file, seq_num);
 	    continue;
 	}
+
+	if (min_val > min) min_val = min;
+	if (max_val < max) max_val = max;
+
 
 	/* Create the ZTR file and output, if needed, the common header */
 	if (NULL == (r = create_read(seq, prb, sig)))
@@ -1187,6 +1244,31 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 
 	nreads++;
     }
+
+    /*
+     * Now we have min_val and max_val as the minimum and maximum values
+     * observed in the trace data.
+     * There's a chance that the full dynamic range is greater than 16-bit,
+     * so in this case we truncate the bottom end as we're not so
+     * interested in a perfect representation of spikes in the noise.
+     *
+     * There's an even smaller chance our positive data is > 65535, in
+     * which case we have no choice but to warn and truncate.
+     */
+    if (max_val > 65535) {
+	fprintf(stderr, "%s: Warning  max value > 65535. Truncating",
+		seq_file);
+	min_val = 0;
+	max_val = 65535;
+    }
+
+    if (max_val - min_val > 65535) {
+	fprintf(stderr, "%s: Warning range from min to max values > 65535. "
+		"Truncating noise signal\n", seq_file);
+	min_val = 65535 - max_val;
+    }
+
+    rescale_traces(za, min_val, max_val);
 
 #ifdef USE_MODEL
     average_model();
@@ -1311,9 +1393,7 @@ int main(int argc, char **argv) {
 		skip = atoi(argv[++i]);
 	    }
 	} else {
-	    fprintf(stderr, "Usage: solexa2ztr [-r] [-p] [-q] [-o file] "
-		    "[-s n_bases] [-n name_format] [-N name_prefix_format] *_seq.txt ...\n");
-	    fprintf(stderr, "Usage: solexa2ztr [options] *_seq.txt ...\n");
+	    fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
 	    fprintf(stderr, "Options:\n");
 	    fprintf(stderr, "    -r       Raw_mode (use ../*_int.txt)\n");
 	    fprintf(stderr, "    -p       Phase corrected (use *_sig2.txt) - default\n");

@@ -98,7 +98,7 @@ void dump(ztr_t *z, char *name) {
     printf("%d\t\t# NPoints\n",         read->NPoints);
     printf("%d\t\t# NBases\n",          read->NBases);
     printf("%d\t\t# NFlows\n",          read->nflows);
-    printf("%d\t\t# maxTraceVal\n",     (int)read->maxTraceVal);
+    printf("%d\t\t# maxTraceVal\n",     (int)read->maxTraceVal-read->baseline);
     printf("%d\t\t# baseline\n",        read->baseline);
     printf("%d\t\t# leftCutoff\n",      read->leftCutoff);
     printf("%d\t\t# rightCutoff\n",     read->rightCutoff);
@@ -118,19 +118,19 @@ void dump(ztr_t *z, char *name) {
     if (read->NPoints) {
 	puts("\n[A_Trace]");
 	for(i = 0; i < read->NPoints; i++)
-	    printf("%d\t#%5d\n", (int)read->traceA[i]-32768, i);
+	    printf("%d\t#%5d\n", (int)read->traceA[i] - read->baseline, i);
 
 	puts("\n[C_Trace]");
 	for(i = 0; i < read->NPoints; i++)
-	    printf("%d\t#%5d\n", (int)read->traceC[i]-32768, i);
+	    printf("%d\t#%5d\n", (int)read->traceC[i] - read->baseline, i);
 
 	puts("\n[G_Trace]");
 	for(i = 0; i < read->NPoints; i++)
-	    printf("%d\t#%5d\n", (int)read->traceG[i]-32768, i);
+	    printf("%d\t#%5d\n", (int)read->traceG[i] - read->baseline, i);
 
 	puts("\n[T_Trace]");
 	for(i = 0; i < read->NPoints; i++)
-	    printf("%d\t#%5d\n", (int)read->traceT[i]-32768, i);
+	    printf("%d\t#%5d\n", (int)read->traceT[i] - read->baseline, i);
     }
 
     if (read->flow_order) {
