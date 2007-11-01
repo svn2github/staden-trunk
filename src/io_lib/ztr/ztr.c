@@ -445,6 +445,8 @@ void delete_ztr(ztr_t *ztr) {
 	for (i = 0; i < ztr->nchunks; i++) {
 	    if (ztr->chunk[i].data && ztr->chunk[i].ztr_owns)
 		xfree(ztr->chunk[i].data);
+	    if (ztr->chunk[i].mdata && ztr->chunk[i].ztr_owns)
+		xfree(ztr->chunk[i].mdata);
 	}
 	xfree(ztr->chunk);
     }
@@ -642,6 +644,7 @@ int ztr_store_hcodes(ztr_t *ztr) {
 	ztr->chunk[j].type = ZTR_TYPE_HUFF;
 	ztr->chunk[j].mdata = 0;
 	ztr->chunk[j].mdlength = 0;
+	ztr->chunk[j].ztr_owns = 1;
 	bytes[0] = 0;
 	bytes[1] = ztr->hcodes[i].codes->code_set;
 	store_bytes(blk, bytes, 2);

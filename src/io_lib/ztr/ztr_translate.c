@@ -966,6 +966,7 @@ ztr_t *read2ztr(Read *r) {
 	ztr->chunk[j].mdata    = mdata;
 	ztr->chunk[j].dlength  = nbytes;
 	ztr->chunk[j].data     = bytes;
+	ztr->chunk[j].ztr_owns = 1;
 
 	j++;
     }
