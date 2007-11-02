@@ -505,7 +505,10 @@ float (*get_sig(FILE *fp, int trim, float *min, float *max))[4] {
     char *cp;
     int c = 0;
     float minf = 1e10, maxf = -1e10;
-    static float sig[MAX_CYCLES][4];
+    float (*sig)[4];
+
+    if (NULL == (sig = malloc(MAX_CYCLES * sizeof(*sig))))
+	return NULL;
 
     if (NULL == fgets(line, MAX_CYCLES*30, fp))
 	return NULL;
@@ -525,6 +528,9 @@ float (*get_sig(FILE *fp, int trim, float *min, float *max))[4] {
 /*
  * Creates an io_lib Read object from sequence, probabilities and signal
  * strengths.
+ * Note: we keep the signal values as floats in the private segment of the
+ * read object as we'll adjust them later to generate the traceA/C/G/T
+ * arrays.
  *
  * Returns: allocated Read on success
  *	    NULL on failure
@@ -553,10 +559,15 @@ Read *create_read(char *seq, int (*prb)[4], float (*sig)[4]) {
 #endif
 
 	/* Traces */
+	r->private_data = sig;
+	r->private_size = nbases * sizeof(*sig);
+
+	/*
 	if ((r->traceA[i] = (int)sig[i][0]) > max) max = sig[i][0];
 	if ((r->traceC[i] = (int)sig[i][1]) > max) max = sig[i][1];
 	if ((r->traceG[i] = (int)sig[i][2]) > max) max = sig[i][2];
 	if ((r->traceT[i] = (int)sig[i][3]) > max) max = sig[i][3];
+	*/
 
 	/* Sequence & position */
 	r->base[i] = seq[i];
@@ -697,6 +708,7 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type) {
     free(buf);
     return cds;
 }
+
 
 /*
  * Reorders a ZTR file so that the chunks we wish to be in the common
@@ -892,47 +904,29 @@ void subtract_models(Array za) {
 }
 #endif
 
-void rescale_trace(ztr_t *ztr, ztr_chunk_t *chunk, int min, int max) {
-    int i, j;
-    unsigned short *tr;
-    int nb;
-    char buf[256];
+void rescale_trace(Read *r, int min, int max) {
+    int i, j, mtv = 0;
+    float (*sig)[4] = (float (*)[4])r->private_data;
 
-    nb = (chunk->dlength-2)/8;
-    tr = ((unsigned short *)chunk->data)+4;
+    for (i = 0; i < r->NPoints; i++) {
+	if (sig[i][0] < min) sig[i][0] = min;
+	if (sig[i][1] < min) sig[i][1] = min;
+	if (sig[i][2] < min) sig[i][2] = min;
+	if (sig[i][3] < min) sig[i][3] = min;
 
-    /* Shift trace data by -min */
-    for (i = 0; i < nb; i++) {
-	for (j = 0; j < 4; j++) {
-	    int v = (int16_t)be_int2(*tr);
-	    v -= min;
-	    if (v > 65535) v = 65535;
-	    *tr++ = be_int2(v);
-	}
+	if (sig[i][0] > max) sig[i][0] = max;
+	if (sig[i][1] > max) sig[i][1] = max;
+	if (sig[i][2] > max) sig[i][2] = max;
+	if (sig[i][3] > max) sig[i][3] = max;
+
+	if ((r->traceA[i] = (int)(sig[i][0] - min)) > mtv) mtv = r->traceA[i];
+	if ((r->traceC[i] = (int)(sig[i][1] - min)) > mtv) mtv = r->traceC[i];
+	if ((r->traceG[i] = (int)(sig[i][2] - min)) > mtv) mtv = r->traceG[i];
+	if ((r->traceT[i] = (int)(sig[i][3] - min)) > mtv) mtv = r->traceT[i];
     }
 
-    /* Add meta-data field */
-    sprintf(buf, "%d", -min);
-    chunk->mdata = realloc(chunk->mdata, chunk->mdlength + strlen(buf) + 6);
-    chunk->mdlength +=
-	sprintf(chunk->mdata+chunk->mdlength, "OFFS%c%s", 0, buf) + 1;
-}
-
-void rescale_traces(Array za, int min, int max) {
-    int i, j;
-    int nreads = ArrayMax(za);
-
-    if (min == 0)
-	return;
-
-    for (i = 0; i < nreads; i++) {
-	ztr_t *z = arr(ztr_t *, za, i);
-	for (j = 0; j < z->nchunks; j++) {
-	    if (z->chunk[j].type == ZTR_TYPE_SMP4) {
-		rescale_trace(z, &z->chunk[j], min, max);
-	    }
-	}
-    }
+    r->baseline = -min;
+    r->maxTraceVal = mtv;
 }
 
 #define EBASE 65536
@@ -1071,11 +1065,16 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    break;
 
 	case ZTR_TYPE_BPOS:
+	    /*
+	     * Skip compression of BPOS as it leads to memory leaks and
+	     * inefficiencies due to being part of the block header.
+	     *
 	    if (level == 0) {
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_DELTA4, 1, 0);
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_32TO8,  0, 0);
 		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE2,   1, 0);
 	    }
+	    */
 	    break;
 
 	case ZTR_TYPE_BASE:
@@ -1134,6 +1133,7 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
     return mf;
 }
 
+
 /*
  * Takes a s_*_*_seq.txt file as input and creates a ZTR file as output.
  * It uses the associated prb and sig files too to do this.
@@ -1164,7 +1164,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     char *seq;
     int seq_num = 0;
     char last_prefix[1024] = {'\0'};
-    Array za, la;
+    Array za, la, ra;
     loc_t l;
     int nreads = 0;
     int t;
@@ -1203,6 +1203,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 
     za = ArrayCreate(sizeof(ztr_t *), 0);
     la = ArrayCreate(sizeof(loc_t), 0);
+    ra = ArrayCreate(sizeof(Read *), 0);
 
     /* Fetch sequence */
     /*
@@ -1237,10 +1238,8 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	if (NULL == (r = create_read(seq, prb, sig)))
 	    continue;
 
-	ARR(ztr_t *, za, nreads) = read2ztr(r);
+	ARR(Read *, ra, nreads) = r;
 	ARR(loc_t, la, nreads) = l;
-	srf_compress_ztr(arr(ztr_t *, za, nreads), 0);
-	read_deallocate(r);
 
 	nreads++;
     }
@@ -1267,16 +1266,20 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 		" > 65535. Truncating noise signal\n",
 		seq_file, min_val, max_val);
 	min_val = max_val - 65535;
-	/* FIXME: these mean our Read struct is already corrupt due to
-	 * wrapped around values.
-	 * We need to handle the read creation in three steps:
-	 * 1) load the seq,prb,sig2
-	 * 2) analyse ranges
-	 * 3) create Read utilising range knowledge 
-	 */
     }
 
-    rescale_traces(za, min_val, max_val);
+    /*
+     * Now we know the min_val and max_val we can turn our float arrays in
+     * the Read struct into integers and convert to ZTR.
+     */
+    for (seq_num = 0; seq_num < nreads; seq_num++) {
+	Read *r = arr(Read *, ra, seq_num);
+
+	rescale_trace(r, min_val, max_val);
+	ARR(ztr_t *, za, seq_num) = read2ztr(r);
+	srf_compress_ztr(arr(ztr_t *, za, seq_num), 0);
+	read_deallocate(r);
+    }
 
 #ifdef USE_MODEL
     average_model();
@@ -1351,6 +1354,7 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     huffman_codeset_destroy(trace_cds);
     huffman_codeset_destroy(conf_cds);
 
+    ArrayDestroy(ra);
     ArrayDestroy(za);
     ArrayDestroy(la);
     fclose(fp_seq);
