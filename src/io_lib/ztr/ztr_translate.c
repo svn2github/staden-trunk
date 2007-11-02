@@ -15,8 +15,18 @@ static char *ztr_encode_samples_4(ztr_t *z,
     if (!r->NPoints)
 	return NULL;
 
-    *mdata = NULL;
-    *mdbytes = 0;
+    if ((z->header.version_major > 1 ||
+	z->header.version_minor >= 2) && r->baseline) {
+	/* 1.2 onwards */
+	char buf[256];
+	int blen;
+	blen = sprintf(buf, "%d", r->baseline);
+	*mdata = (char *)malloc(6+blen);
+	*mdbytes = sprintf(*mdata, "OFFS%c%s", 0, buf) + 1;
+    } else {
+	*mdata = NULL;
+	*mdbytes = 0;
+    }
 
     bytes = (char *)xmalloc(r->NPoints * sizeof(TRACE)*4 + 2);
     for (i = 0, j = 2; i < r->NPoints; i++) {
@@ -97,9 +107,9 @@ static void ztr_decode_samples_4(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
 
 /* Return the [A,C,G,T] samples */
 static char *ztr_encode_samples_common(ztr_t *z,
-				       char ident[4], Read *r, TRACE *data,
-				       int *nbytes, char **mdata,
-				       int *mdbytes) {
+				       char ident[4], Read *r,
+				       TRACE *data, int *nbytes,
+				       char **mdata, int *mdbytes) {
     char *bytes;
     int i, j, t;
 
@@ -109,9 +119,18 @@ static char *ztr_encode_samples_common(ztr_t *z,
     if (z->header.version_major > 1 ||
 	z->header.version_minor >= 2) {
 	/* 1.2 onwards */
-	*mdata = (char *)malloc(10);
-	*mdbytes = 10;
-	sprintf(*mdata, "TYPE%c%.*s", 0, ident);
+	char buf[256];
+	int blen;
+	if (r->baseline) {
+	    blen = sprintf(buf, "%d", r->baseline);
+	    *mdata = (char *)malloc(16+blen);
+	    *mdbytes = sprintf(*mdata, "TYPE%c%.*s%cOFFS%c%s",
+			       0, 4, ident, 0,
+			       0, buf) + 1;
+	} else {
+	    *mdata = (char *)malloc(10);
+	    *mdbytes = sprintf(*mdata, "TYPE%c%.*s", 0, 4, ident) + 1;
+	}
     } else {
 	*mdata = (char *)malloc(4);
 	*mdbytes = 4;
