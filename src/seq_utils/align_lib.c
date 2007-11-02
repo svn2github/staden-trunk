@@ -4705,18 +4705,23 @@ int affine_align2_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 int affine_align(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
     /* decide which algorithm to use */
-#define MAX_MEMORY 10000000
+#define MAX_MEMORY1 5000000
+#define MAX_MEMORY2 20000000
 
-    int mem;
+    double mem;
 
     if (params->band) {
-	mem = 2 * params->band * MIN(overlap->seq1_len,overlap->seq2_len);
+	mem = 2.0 * params->band * MIN(overlap->seq1_len,overlap->seq2_len);
     }
     else {
-	mem = overlap->seq1_len * overlap->seq2_len;
+	mem = (double)overlap->seq1_len * overlap->seq2_len;
     }
-    if (mem > MAX_MEMORY) {
-	return affine_align_bits(overlap,params);
+    if (mem > MAX_MEMORY1) {
+	if (mem > MAX_MEMORY2) {
+	    return -1;
+	} else {
+	    return affine_align_bits(overlap,params);
+	}
     }
     return affine_align_big(overlap,params);
 }

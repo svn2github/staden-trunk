@@ -202,11 +202,22 @@ int do_it_fij ( char seq[], int seq_len,
 
 		    /*printf("%d %d\n",contig_list[contig1_num].contig_left_gel,contig_list[contig2_num].contig_left_gel);*/
 				    
-		    if ( compare_method == 17 ) {
-			ret = compare_b ( h, params, overlap );
-		    }
-		    else {
+		    ret = 0;
+		    if ( compare_method != 17 ) {
+			/*
+			 * Accept that some matches may just be too slow
+			 * or memory hungry for sensitive mode, so we fall
+			 * back to fast methods when this fails.
+			 */
 			ret = compare_a ( h, params, overlap );
+			if (ret < 0) {
+			    verror(ERR_WARN, "find internal joins",
+				   "alignment too large for sensitive mode;"
+				   " falling back to quick alignment"); 
+			}
+		    }
+		    if ( ret < 0 || compare_method == 17 ) {
+			ret = compare_b ( h, params, overlap );
 		    }
 
 		    if ( ret < 0 ) {
