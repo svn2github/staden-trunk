@@ -43,6 +43,15 @@ fi
 STADTABL=$STADENROOT/tables;	export STADTABL
 STADLIB=$STADENROOT/lib;	export STADLIB
 
+if [ x"$STADEN_PREPEND" != "x" ]
+then
+    # Setting STADEN_PREPEND forces us to prepend to our paths; useful for
+    # debugging purposes
+    _PATH=$PATH; PATH=
+    _MANPATH=$MANPATH; MANPATH=
+    _LD_LIBRARY_PATH=$LD_LIBRARY_PATH; LD_LIBRARY_PATH=
+fi
+
 # Set up PATHS
 PATH=$PATH:$STADENROOT/$MACHINE-bin
 export PATH
@@ -100,3 +109,13 @@ then
 fi
 # Finally add our own component in
 MANPATH=$MANPATH:$STADENROOT/man
+
+if [ x"$STADEN_PREPEND" != "x" ]
+then
+    PATH=$PATH:$_PATH
+    MANPATH=$MANPATH:$_MANPATH
+    LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$_LD_LIBRARY_PATH
+    unset _PATH
+    unset _MANPATH
+    unset _LD_LIBRARY_PATH
+fi

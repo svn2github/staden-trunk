@@ -67,15 +67,9 @@ find_dir() {
     echo $dir
 }
 
-#
-# Set up the environment if not already done
-#
-if [ "x$STADENROOT_1_7" = "x" ]
-then
-    STADENROOT=`find_dir $0`/..
-    export STADENROOT
-    . $STADENROOT/staden.profile
-fi
+STADENROOT=`find_dir $0`/..
+export STADENROOT
+STADEN_PREPEND=1 . $STADENROOT/staden.profile
 
 # Define TCL/TK config - not defined in staden.profile as it may break
 # some other applications the user wishes to use.
