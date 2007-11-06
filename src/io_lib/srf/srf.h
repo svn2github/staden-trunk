@@ -5,7 +5,7 @@
 #include <mFILE.h>
 
 #define SRF_MAGIC		"SSRF"
-#define SRF_VERSION             "1.1"
+#define SRF_VERSION             "1.2"
 
 #define SRFB_CONTAINER 		'S'
 #define SRFB_XML		'X'
