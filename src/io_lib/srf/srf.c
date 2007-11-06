@@ -1,3 +1,5 @@
+#include <io_lib_config.h>
+
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
