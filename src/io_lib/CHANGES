@@ -1,3 +1,15 @@
+Version 1.11.0b5 (6th November 2007)
+----------------
+
+* Fixed memory leaks in ZTR code
+
+* Various SRF bug fixes and better support for sample OFFS metadata in
+  both ZTR/ZTR.
+
+* Added srf_extract_hash program to perform random-access on a hash
+  indexed SRF archive.
+
+
 Version 1.11.0b4 (26th October 2007)
 ----------------
 
@@ -10,6 +22,9 @@ Version 1.11.0b4 (26th October 2007)
   faster when only decoding (say) base and quality values.
 
 * New program srf2fastq.
+
+* Internal changes to various ztr data structures. If you use these
+  yourself take note of the new ztr_owns fields to avoid memory leaks.
 
 
 Version 1.11.0b3 (16th October 2007)
