@@ -48,4 +48,4 @@ dnl AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(strdup)
 dnl AC_CHECK_FUNCS(mktime strspn strstr strtol)
 
-AC_OUTPUT(Makefile read/Makefile progs/Makefile io_lib-config)
+AC_OUTPUT(Makefile io_lib/Makefile progs/Makefile io_lib-config)

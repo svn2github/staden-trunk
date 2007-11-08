@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign no-dependencies
 
-SUBDIRS = read progs
+SUBDIRS = io_lib progs
 
 man_MANS = \
 	man/man3/exp2read.3 \
@@ -23,41 +23,41 @@ man_MANS = \
 	man/man3/write_scf_header.3
 
 pkginclude_HEADERS = \
-	read/Read.h \
-	read/scf_extras.h \
-	read/translate.h \
-	abi/abi.h \
-	abi/fpoint.h \
-	abi/seqIOABI.h \
-	alf/alf.h \
-	ctf/seqIOCTF.h \
-	exp_file/expFileIO.h \
-	plain/plain.h \
-	scf/scf.h \
-	sff/sff.h \
-	utils/array.h \
-	utils/compress.h \
-	utils/error.h \
-	utils/mach-io.h \
-	utils/misc.h \
-	utils/open_trace_file.h \
-	utils/tar_format.h \
-	utils/traceType.h \
-	utils/xalloc.h \
-	utils/mFILE.h \
-	utils/stdio_hack.h \
-	utils/vlen.h \
-	utils/hash_table.h \
-	utils/jenkins_lookup3.h \
-	utils/os.h \
-	ztr/compression.h \
-	ztr/ztr.h \
-	ztr/deflate_interlaced.h \
-	srf/srf.h \
+	io_lib/Read.h \
+	io_lib/scf_extras.h \
+	io_lib/translate.h \
+	io_lib/abi.h \
+	io_lib/fpoint.h \
+	io_lib/seqIOABI.h \
+	io_lib/alf.h \
+	io_lib/seqIOCTF.h \
+	io_lib/expFileIO.h \
+	io_lib/plain.h \
+	io_lib/scf.h \
+	io_lib/sff.h \
+	io_lib/array.h \
+	io_lib/compress.h \
+	io_lib/error.h \
+	io_lib/mach-io.h \
+	io_lib/misc.h \
+	io_lib/open_trace_file.h \
+	io_lib/tar_format.h \
+	io_lib/traceType.h \
+	io_lib/xalloc.h \
+	io_lib/mFILE.h \
+	io_lib/stdio_hack.h \
+	io_lib/vlen.h \
+	io_lib/hash_table.h \
+	io_lib/jenkins_lookup3.h \
+	io_lib/os.h \
+	io_lib/compression.h \
+	io_lib/ztr.h \
+	io_lib/deflate_interlaced.h \
+	io_lib/srf.h \
 	io_lib_config.h
 
 bin_SCRIPTS = io_lib-config
 
-EXTRA_DIST = README COPYRIGHT CHANGES man options.mk bootstrap \
-	ztr/FORMAT io_lib-config.in
+EXTRA_DIST = README COPYRIGHT ChangeLog CHANGES man options.mk bootstrap \
+	docs/ZTR_format docs/Hash_File_Format io_lib-config.in
 
