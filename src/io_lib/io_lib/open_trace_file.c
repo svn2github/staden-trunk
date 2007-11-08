@@ -62,9 +62,9 @@ static char *tokenise_search_path(char *searchpath) {
     unsigned int i, j;
     size_t len;
 #ifdef _WIN32
-    char path_sep = ';';
+    char *path_sep = ';';
 #else
-    char path_sep = ':';
+    char *path_sep = ':';
 #endif
 
     if (!searchpath)
