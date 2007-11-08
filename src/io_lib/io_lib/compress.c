@@ -33,16 +33,16 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "os.h" /* for ftruncate() under WINNT */
+#include "io_lib/os.h" /* for ftruncate() under WINNT */
+
 #ifdef HAVE_CONFIG_H
 #include "io_lib_config.h"
 #endif
 
-#include "compress.h"
+#include "io_lib/compress.h"
 
 #ifdef HAVE_ZLIB
-#include "zlib.h"
-
+#include <zlib.h>
 
 /* ------------------------------------------------------------------------- */
 /* GZIP reading and writing code via ZLIB. */
@@ -120,7 +120,6 @@ char *memgunzip(char *data, size_t size, size_t *udata_size) {
 
     return udata;
 }
-
 
 char *memgzip(char *data, size_t size, size_t *cdata_size) {
     z_stream s;

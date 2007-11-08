@@ -5,8 +5,8 @@
 #include <stdarg.h>  /* varargs needed for v*printf() prototypes */
 #include <sys/types.h>
 
-#include "os.h"
-#include "xalloc.h"
+#include "io_lib/os.h"
+#include "io_lib/xalloc.h"
 
 #ifdef __cplusplus
 extern "C" {

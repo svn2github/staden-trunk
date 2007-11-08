@@ -24,14 +24,14 @@
 #endif
 #include <assert.h>
 
-#include "stdio_hack.h"
-#include "misc.h"
-#include "scf.h"
-#include "Read.h"
-#include "expFileIO.h"
-#include "traceType.h"
-#include "translate.h"
-#include "open_trace_file.h"
+#include "io_lib/stdio_hack.h"
+#include "io_lib/misc.h"
+#include "io_lib/scf.h"
+#include "io_lib/Read.h"
+#include "io_lib/expFileIO.h"
+#include "io_lib/traceType.h"
+#include "io_lib/translate.h"
+#include "io_lib/open_trace_file.h"
 #ifdef USE_BIOLIMS
 #include "spBiolims.h"
 #endif

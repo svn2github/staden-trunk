@@ -53,13 +53,13 @@
 #include <ctype.h>      /* IMPORT: isprint */
 #include <string.h>
 
-#include "misc.h"
-#include "plain.h"
-#include "Read.h"
-#include "xalloc.h"
-#include "traceType.h"
+#include "io_lib/misc.h"
+#include "io_lib/plain.h"
+#include "io_lib/Read.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/traceType.h"
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
 /* ---- Constants ---- */
 
 #define BasesPerLine 50 /* For output formatting */

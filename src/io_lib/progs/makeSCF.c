@@ -23,9 +23,9 @@
 
 #include <stdio.h>
 #include <strings.h>
-#include "Read.h"
-#include "traceType.h"
-#include "xalloc.h"
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
+#include <io_lib/xalloc.h>
 
 /*
  * Add our comments.

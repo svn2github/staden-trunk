@@ -34,7 +34,7 @@
 #include <assert.h>
 #include <unistd.h>
 
-#include "deflate_interlaced.h"
+#include "io_lib/deflate_interlaced.h"
 
 #ifndef MIN
 #    define MIN(a,b) ((a) < (b) ? (a) : (b))

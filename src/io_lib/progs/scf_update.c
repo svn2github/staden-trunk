@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "scf.h"
+#include <io_lib/scf.h>
 
 /*
  * Update a v2.x SCF files to a v3.x SCF files.

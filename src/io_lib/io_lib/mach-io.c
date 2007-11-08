@@ -40,8 +40,8 @@
  */
 
 #include <stdio.h>
-#include "stdio_hack.h"
-#include "mach-io.h"
+#include "io_lib/stdio_hack.h"
+#include "io_lib/mach-io.h"
 
 
 

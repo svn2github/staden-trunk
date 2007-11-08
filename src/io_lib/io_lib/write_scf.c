@@ -53,11 +53,11 @@ static int scf_version = 3;
 #include <stdio.h>    /* IMPORT: fopen, fclose, fseek, ftell, fgetc,
 		                 EOF */
 #include <string.h>
-#include "scf.h"      /* IMPORT: scf structures */
-#include "mach-io.h"  /* IMPORT: be_write_int_1, be_write_int_2, be_write_int_4 */
-#include "xalloc.h"
+#include "io_lib/scf.h"      /* IMPORT: scf structures */
+#include "io_lib/mach-io.h"  /* IMPORT: be_write_int_1, be_write_int_2, be_write_int_4 */
+#include "io_lib/xalloc.h"
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
 
 /* ---- Exports ---- */
 

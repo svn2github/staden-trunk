@@ -13,7 +13,7 @@
  */
 
 #include <math.h>
-#include "fpoint.h"
+#include "io_lib/fpoint.h"
 /*
 extern double log ( double x ) ;
 extern double exp ( double x ) ;

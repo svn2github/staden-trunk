@@ -37,42 +37,42 @@
 #include <fcntl.h> /* Only need on windows for _O_BINARY */
 #include <unistd.h>
 
-#include "Read.h"
-#include "mFILE.h"
+#include "io_lib/Read.h"
+#include "io_lib/mFILE.h"
 
 #ifdef IOLIB_ABI
-# include "abi.h"
+# include "io_lib/abi.h"
 #endif
 #ifdef IOLIB_SCF
-# include "scf.h"
+# include "io_lib/scf.h"
 #endif
 #ifdef IOLIB_ALF
-# include "alf.h"
+# include "io_lib/alf.h"
 #endif
 #ifdef IOLIB_PLN
-# include "plain.h"
+# include "io_lib/plain.h"
 #endif
 #ifdef IOLIB_ZTR
-# include "ztr.h"
+# include "io_lib/ztr.h"
 #endif
 #ifdef IOLIB_CTF
-# include "seqIOCTF.h"
+# include "io_lib/seqIOCTF.h"
 #endif
 #ifdef IOLIB_SFF
-# include "sff.h"
+# include "io_lib/sff.h"
 #endif
 #ifdef IOLIB_EXP
-# include "expFileIO.h"
+# include "io_lib/expFileIO.h"
 #endif
 #ifdef USE_BIOLIMS
 # include "spBiolims.h"
 #endif
 
-#include "xalloc.h"
-#include "translate.h"
-#include "traceType.h"
-#include "misc.h"
-#include "open_trace_file.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/translate.h"
+#include "io_lib/traceType.h"
+#include "io_lib/misc.h"
+#include "io_lib/open_trace_file.h"
 
 /*
  * Read a sequence from a file "fnin" of format "format". If "format" is 0

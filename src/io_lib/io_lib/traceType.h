@@ -31,8 +31,8 @@
 #include <ctype.h>      
 #include <string.h>     /* IMPORT: isprint*/
 
-#include "Read.h"	/* IMPORT: TT_xxx defines */
-#include "mFILE.h"
+#include "io_lib/Read.h"	/* IMPORT: TT_xxx defines */
+#include "io_lib/mFILE.h"
 
 #ifdef __cplusplus
 extern "C" {

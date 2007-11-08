@@ -27,8 +27,8 @@
 #include <sys/types.h>
 #include <limits.h>    /* IMPORT: INT_MAX */
 
-#include "array.h"
-#include "xalloc.h"
+#include "io_lib/array.h"
+#include "io_lib/xalloc.h"
 
 
 /*

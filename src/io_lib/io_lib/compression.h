@@ -1,8 +1,8 @@
 #ifndef _COMPRESSION_H_
 #define _COMPRESSION_H_
 
-#include "os.h"
-#include "zlib.h"
+#include "io_lib/os.h"
+#include <zlib.h>
 
 #ifdef __cplusplus
 extern "C" {

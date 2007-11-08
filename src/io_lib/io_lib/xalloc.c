@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
-#include "error.h"
+#include "io_lib/error.h"
 
 void *xmalloc(size_t size) {
     void *c = malloc(size);

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "os.h"
-#include "hash_table.h"
-#include "jenkins_lookup3.h"
+#include "io_lib/os.h"
+#include "io_lib/hash_table.h"
+#include "io_lib/jenkins_lookup3.h"
 
 /* =========================================================================
  * TCL's hash function. Basically hash*9 + char.

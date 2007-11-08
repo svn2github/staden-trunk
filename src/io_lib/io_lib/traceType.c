@@ -29,11 +29,11 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
 
-#include "traceType.h"
-#include "Read.h"
-#include "open_trace_file.h"
+#include "io_lib/traceType.h"
+#include "io_lib/Read.h"
+#include "io_lib/open_trace_file.h"
 
 #ifdef USE_BIOLIMS
 #include "spBiolims.h"

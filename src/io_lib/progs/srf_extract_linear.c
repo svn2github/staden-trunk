@@ -31,10 +31,10 @@
 
 #include <stdio.h>
 #include <string.h>
-#include "Read.h"
-#include "misc.h"
-#include "ztr.h"
-#include "srf.h"
+#include <io_lib/Read.h>
+#include <io_lib/misc.h>
+#include <io_lib/ztr.h>
+#include <io_lib/srf.h>
 
 /* ------------------------------------------------------------------------ */
 /*

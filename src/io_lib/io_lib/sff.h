@@ -1,9 +1,9 @@
 #ifndef _SFF_H_
 #define _SFF_H_
 
-#include "Read.h"
-#include "os.h"
-#include "mFILE.h"
+#include "io_lib/Read.h"
+#include "io_lib/os.h"
+#include "io_lib/mFILE.h"
 
 #ifdef __cplusplus
 extern "C" {

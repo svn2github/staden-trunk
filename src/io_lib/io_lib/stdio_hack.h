@@ -2,7 +2,7 @@
 #define _STDIO_HACK_H_
 
 #include <stdio.h>
-#include "mFILE.h"
+#include "io_lib/mFILE.h"
 
 #ifdef __cplusplus
 extern "C" {

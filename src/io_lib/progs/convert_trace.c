@@ -4,12 +4,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "Read.h"
-#include "traceType.h"
-#include "seqIOABI.h"
-#include "open_trace_file.h"
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
+#include <io_lib/seqIOABI.h>
+#include <io_lib/open_trace_file.h>
 
-static char const rcsid[] = "$Id: convert_trace.c,v 1.10 2007-04-19 16:27:20 jkbonfield Exp $";
+static char const rcsid[] = "$Id: convert_trace.c,v 1.11 2007-11-08 17:24:15 jkbonfield Exp $";
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 

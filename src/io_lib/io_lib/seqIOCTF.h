@@ -1,7 +1,7 @@
 #ifndef _seqIOCTF_h_
 #define _seqIOCTF_h_
 
-#include "Read.h"
+#include "io_lib/Read.h"
 
 #ifdef __cplusplus
 extern "C" {

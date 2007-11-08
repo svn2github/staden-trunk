@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <limits.h>
-#include "os.h"
+#include "io_lib/os.h"
 #ifdef TRACE_ARCHIVE
 #  include <sys/socket.h>
 #  include <netinet/in.h>
@@ -33,12 +33,12 @@
 #  include <curl/curl.h>
 #endif
 
-#include "open_trace_file.h"
-#include "misc.h"
-#include "tar_format.h"
-#include "compress.h"
-#include "hash_table.h"
-#include "sff.h"
+#include "io_lib/open_trace_file.h"
+#include "io_lib/misc.h"
+#include "io_lib/tar_format.h"
+#include "io_lib/compress.h"
+#include "io_lib/hash_table.h"
+#include "io_lib/sff.h"
 
 /*
  * Supported compression extensions. See the magics array in compress.c for
@@ -62,9 +62,9 @@ static char *tokenise_search_path(char *searchpath) {
     unsigned int i, j;
     size_t len;
 #ifdef _WIN32
-    char *path_sep = ';';
+    char path_sep = ';';
 #else
-    char *path_sep = ':';
+    char path_sep = ':';
 #endif
 
     if (!searchpath)

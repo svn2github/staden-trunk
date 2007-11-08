@@ -26,11 +26,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "scf.h"
-#include "mach-io.h"
-#include "xalloc.h"
+#include "io_lib/scf.h"
+#include "io_lib/mach-io.h"
+#include "io_lib/xalloc.h"
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
 
 float scf_version_str2float(char version[])
 {

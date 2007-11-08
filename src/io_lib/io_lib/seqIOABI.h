@@ -16,7 +16,7 @@
 #define _seqIOABI_h_
 
 #include <sys/types.h> /* off_t */
-#include "os.h"
+#include "io_lib/os.h"
 
 #ifdef __cplusplus
 extern "C" {

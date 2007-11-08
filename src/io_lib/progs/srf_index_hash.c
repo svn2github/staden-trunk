@@ -10,10 +10,10 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "hash_table.h"
-#include "os.h"
-#include "array.h"
-#include "srf.h"
+#include <io_lib/hash_table.h>
+#include <io_lib/os.h>
+#include <io_lib/array.h>
+#include <io_lib/srf.h>
 
 
 /*

@@ -15,9 +15,9 @@
 #ifndef _TRANSLATE_H_
 #define _TRANSLATE_H_
 
-#include "scf.h"
-#include "Read.h"
-#include "expFileIO.h"
+#include "io_lib/scf.h"
+#include "io_lib/Read.h"
+#include "io_lib/expFileIO.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -36,13 +36,14 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "scf.h"      /* SCF structures */
-#include "mach-io.h"
-#include "xalloc.h"
-#include "compress.h"
-#include "Read.h"
+#include "io_lib/mach-io.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/compress.h"
+#include "io_lib/Read.h"
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
+#include "io_lib/scf.h"      /* SCF structures */
+
 
 /* SunOS4 has it's definitions in unistd, which we won't include for compat. */
 #ifndef SEEK_SET

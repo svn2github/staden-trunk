@@ -23,10 +23,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "Read.h"
-#include "xalloc.h"
-#include "sff.h"
-#include "misc.h"
+#include "io_lib/Read.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/sff.h"
+#include "io_lib/misc.h"
 
 /* -------------------------------------------------------------------------*/
 /* General purpose decoding and mFILE reading functions */

@@ -1,8 +1,8 @@
 #ifndef _SRF_H_
 #define _SRF_H_
 
-#include <ztr.h>
-#include <mFILE.h>
+#include "io_lib/ztr.h"
+#include "io_lib/mFILE.h"
 
 #define SRF_MAGIC		"SSRF"
 #define SRF_VERSION             "1.2"

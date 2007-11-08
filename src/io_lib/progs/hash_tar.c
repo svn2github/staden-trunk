@@ -3,8 +3,8 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <fcntl.h>
-#include "tar_format.h"
-#include "hash_table.h"
+#include <io_lib/tar_format.h>
+#include <io_lib/hash_table.h>
 
 typedef struct {
     char member[256];

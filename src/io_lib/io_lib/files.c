@@ -12,7 +12,7 @@
  * MRC disclaims all warranties with regard to this software.
  */
 
-#include "misc.h"
+#include "io_lib/misc.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

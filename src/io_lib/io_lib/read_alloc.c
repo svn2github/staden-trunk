@@ -36,8 +36,8 @@
 #include <string.h>
 #include <assert.h>
 
-#include "misc.h"
-#include "Read.h"
+#include "io_lib/misc.h"
+#include "io_lib/Read.h"
 
 /*
  * Allocate a new sequence, with the given sizes.

@@ -1,14 +1,14 @@
-#include <io_lib_config.h>
+#include "io_lib_config.h"
 
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <Read.h>
-#include <misc.h>
-#include <ztr.h>
-#include <hash_table.h>
+#include "io_lib/Read.h"
+#include "io_lib/misc.h"
+#include "io_lib/ztr.h"
+#include "io_lib/hash_table.h"
 
-#include "srf.h"
+#include "io_lib/srf.h"
 
 /*
  * ---------------------------------------------------------------------------

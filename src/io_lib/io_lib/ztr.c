@@ -4,12 +4,12 @@
 
 /* #include <fcntl.h> */
 
-#include "ztr.h"
-#include "xalloc.h"
-#include "Read.h"
-#include "compression.h"
-#include "stdio_hack.h"
-#include "deflate_interlaced.h"
+#include "io_lib/ztr.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/Read.h"
+#include "io_lib/compression.h"
+#include "io_lib/stdio_hack.h"
+#include "io_lib/deflate_interlaced.h"
 
 /* #define SOLEXA */
 

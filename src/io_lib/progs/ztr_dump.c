@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <errno.h>
 #include <math.h>
-#include "ztr.h"
-#include "compression.h"
-#include "xalloc.h"
+#include <io_lib/ztr.h>
+#include <io_lib/compression.h>
+#include <io_lib/xalloc.h>
 
 static char *format2str(int format) {
     static char unk[100];

@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ztr.h"
-#include "xalloc.h"
-#include "Read.h"
+#include "io_lib/ztr.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/Read.h"
 
 /* Return the A,C,G,T samples */
 static char *ztr_encode_samples_4(ztr_t *z,

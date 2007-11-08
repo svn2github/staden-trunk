@@ -17,12 +17,12 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "Read.h"
-#include "seqIOCTF.h"
-#include "abi.h"
-#include "mach-io.h"
-#include "xalloc.h"
-#include "stdio_hack.h"
+#include "io_lib/Read.h"
+#include "io_lib/seqIOCTF.h"
+#include "io_lib/abi.h"
+#include "io_lib/mach-io.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/stdio_hack.h"
 
 /* ---- Constants ---- */
 

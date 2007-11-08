@@ -38,8 +38,8 @@
  */
 
 #include <stdio.h>
-#include "os.h"
-#include "mFILE.h"
+#include "io_lib/os.h"
+#include "io_lib/mFILE.h"
 
 #ifdef __cplusplus
 extern "C" {

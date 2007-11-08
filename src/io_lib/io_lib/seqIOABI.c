@@ -82,16 +82,15 @@
 #include <string.h>
 #include <time.h>
 
-#include "stdio_hack.h"
+#include "io_lib/stdio_hack.h"
 
-#include "seqIOABI.h"
-#include "Read.h"
-#include "abi.h"
-#include "fpoint.h"    /* IMPORT: int_to_float */
-#include "mach-io.h"
-#include "xalloc.h"
-#include "misc.h"
-#include "stdio_hack.h"
+#include "io_lib/seqIOABI.h"
+#include "io_lib/Read.h"
+#include "io_lib/abi.h"
+#include "io_lib/fpoint.h"    /* IMPORT: int_to_float */
+#include "io_lib/mach-io.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/misc.h"
 
 /* ---- Constants ---- */
 

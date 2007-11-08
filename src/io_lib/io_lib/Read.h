@@ -40,9 +40,9 @@
  * an undefined sequence.
  */
 
-#include "os.h"
-#include "scf.h"
-#include "mFILE.h"
+#include "io_lib/os.h"
+#include "io_lib/scf.h"
+#include "io_lib/mFILE.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -264,8 +264,8 @@ int mfwrite_ctf(mFILE *fp, Read *read);
 
 int read_sections(int sec);
 
-#include "translate.h"
-#include "compress.h"
+#include "io_lib/translate.h"
+#include "io_lib/compress.h"
 
 #ifdef __cplusplus
 }

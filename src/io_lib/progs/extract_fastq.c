@@ -18,10 +18,10 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "Read.h"
-#include "traceType.h"
-#include "expFileIO.h"
-#include "open_trace_file.h"
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
+#include <io_lib/expFileIO.h>
+#include <io_lib/open_trace_file.h>
 
 static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format) {
     Read *r;

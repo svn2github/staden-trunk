@@ -8,9 +8,9 @@
 #include <unistd.h>
 #include <stdarg.h>
 
-#include "os.h"
-#include "mFILE.h"
-#include "vlen.h"
+#include "io_lib/os.h"
+#include "io_lib/mFILE.h"
+#include "io_lib/vlen.h"
 
 /*
  * This file contains memory-based versions of the most commonly used

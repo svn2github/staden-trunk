@@ -1,8 +1,8 @@
 #ifndef _ZTR_H
 #define _ZTR_H
 
-#include "Read.h"
-#include "deflate_interlaced.h"
+#include "io_lib/Read.h"
+#include "io_lib/deflate_interlaced.h"
 
 #ifdef __cplusplus
 extern "C" {

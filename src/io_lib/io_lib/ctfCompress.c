@@ -5,8 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "seqIOCTF.h"
-#include "stdio_hack.h"
+#include "io_lib/seqIOCTF.h"
+#include "io_lib/stdio_hack.h"
 
 #define ACEDB4
 
@@ -19,8 +19,8 @@
 #include "keyset.h"
 #include "dna.h"
 */
-#include "array.h"
-#include "Read.h"
+#include "io_lib/array.h"
+#include "io_lib/Read.h"
 
 /*
  * #defines to modify this file to compile easily as part of the Staden

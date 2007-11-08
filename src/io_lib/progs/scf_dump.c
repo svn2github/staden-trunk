@@ -13,7 +13,7 @@
  */
 
 #include <stdio.h>
-#include "scf.h"
+#include <io_lib/scf.h>
 
 int main(int argc, char **argv) {
     Scf *scf;

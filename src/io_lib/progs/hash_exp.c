@@ -2,9 +2,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "hash_table.h"
-#include "os.h"
-#include "mFILE.h"
+#include <io_lib/hash_table.h>
+#include <io_lib/os.h>
+#include <io_lib/mFILE.h>
 
 HashFile *build_index(FILE *fp) {
     char line[8192];

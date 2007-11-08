@@ -16,7 +16,7 @@
 #ifndef _SCFBITS_H_
 #define _SCFBITS_H_
 
-#include "expFileIO.h"
+#include "io_lib/expFileIO.h"
 
 #ifdef __cplusplus
 extern "C" {

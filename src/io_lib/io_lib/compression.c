@@ -10,10 +10,10 @@
 #  define M_PI 3.14159265358979323846
 #endif
 
-#include "ztr.h"
-#include "os.h"
-#include "compression.h"
-#include "xalloc.h"
+#include "io_lib/ztr.h"
+#include "io_lib/os.h"
+#include "io_lib/compression.h"
+#include "io_lib/xalloc.h"
 
 #ifndef NDEBUG 
 #  define NDEBUG 

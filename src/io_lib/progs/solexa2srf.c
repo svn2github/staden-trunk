@@ -53,14 +53,13 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <fcntl.h>
-
-#include "Read.h"
-#include "misc.h"
-#include "ztr.h"
-#include "array.h"
 #include <zlib.h>
 
-#include "srf.h"
+#include <io_lib/Read.h>
+#include <io_lib/misc.h>
+#include <io_lib/ztr.h>
+#include <io_lib/array.h>
+#include <io_lib/srf.h>
 
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */

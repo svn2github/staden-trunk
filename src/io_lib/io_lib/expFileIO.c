@@ -68,10 +68,10 @@
 #  include <fcntl.h>
 #endif
 
-#include "expFileIO.h"
-#include "xalloc.h"
-#include "misc.h"
-#include "stdio_hack.h"
+#include "io_lib/expFileIO.h"
+#include "io_lib/xalloc.h"
+#include "io_lib/misc.h"
+#include "io_lib/stdio_hack.h"
 
 /* Fixup for broken SunOS 4.x systems */
 #ifndef FOPEN_MAX

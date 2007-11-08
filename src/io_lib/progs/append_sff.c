@@ -10,8 +10,8 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
-#include "sff.h"
-#include "os.h"
+#include <io_lib/sff.h>
+#include <io_lib/os.h>
 
 #define BSIZE 1024*1024
 

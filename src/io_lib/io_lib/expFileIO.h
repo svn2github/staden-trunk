@@ -28,9 +28,9 @@
 
 #include <stdio.h>
 
-#include "mFILE.h"
-#include "array.h"
-#include "os.h"
+#include "io_lib/mFILE.h"
+#include "io_lib/array.h"
+#include "io_lib/os.h"
 
 #ifdef __cplusplus
 extern "C" {

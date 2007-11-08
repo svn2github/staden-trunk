@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <hash_table.h>
-#include <srf.h>
+#include <io_lib/hash_table.h>
+#include <io_lib/srf.h>
 
 int main(int argc, char **argv) {
     srf_t *srf;

@@ -2,8 +2,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "hash_table.h"
-#include "os.h"
+#include <io_lib/hash_table.h>
+#include <io_lib/os.h>
 
 /*
  * Dumps a textual represenation of the hash table to stdout.
