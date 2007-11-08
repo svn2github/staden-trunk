@@ -75,6 +75,13 @@ static char *tokenise_search_path(char *searchpath) {
 	return NULL;
 
     for (i = 0, j = 0; i < len; i++) {
+	/* "::" => ":". Used for escaping colons in http://foo */
+	if (i < len-1 && searchpath[i] == ':' && searchpath[i+1] == ':') {
+	    newsearch[j++] = ':';
+	    i++;
+	    continue;
+	}
+
 	if (searchpath[i] == path_sep) {
 	    /* Skip blank path components */
 	    if (j && newsearch[j-1] != 0)
