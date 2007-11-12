@@ -1,5 +1,9 @@
-Version 1.11.0b5 (6th November 2007)
+Version 1.11.0b5 (8th November 2007)
 ----------------
+
+* Major reorganisation of directories. All library code is in subdir
+  "io_lib". The code now uses "io_lib/xxx.h" in all include statements
+  too.
 
 * Fixed memory leaks in ZTR code
 

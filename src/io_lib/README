@@ -34,6 +34,9 @@ the native solexa instrument formats.
 Tightly coupled with SRF development are updates to the ZTR format,
 now at v1.3.
 
+Finally the directory layout have been greatly simplified with the
+merging of all the format directories into a single "io_lib" directory.
+
 
 Unix - autoconf
 ---------------
