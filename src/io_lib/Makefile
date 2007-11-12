@@ -17,17 +17,8 @@ CFLAGS += $(SHLIB_CFLAGS) $(shell curl-config --cflags)
 	-@mkdir $(@D) 2>/dev/null
 	touch $@
 
-dirs:	read/$(O)/.dir \
-	utils/$(O)/.dir \
-	abi/$(O)/.dir \
-	alf/$(O)/.dir \
-	ctf/$(O)/.dir \
-	exp_file/$(O)/.dir \
-	plain/$(O)/.dir \
-	progs/$(O)/.dir \
-	scf/$(O)/.dir \
-	ztr/$(O)/.dir \
-	sff/$(O)/.dir
+dirs:	io_lib/$(O)/.dir \
+	progs/$(O)/.dir
 
 %.o:	../%.c
 	-@mkdir $(@D) 2>/dev/null
@@ -38,79 +29,68 @@ include options.mk
 
 #-----------------------------------------------------------------------------
 # Mandatory object files
-READOBJS=\
-	read/$(O)/Read.o \
-	read/$(O)/translate.o \
-	read/$(O)/scf_extras.o
-
-UTILSOBJS=\
-	utils/$(O)/find.o \
-	utils/$(O)/mach-io.o \
-	utils/$(O)/traceType.o \
-	utils/$(O)/read_alloc.o \
-	utils/$(O)/compress.o \
-	utils/$(O)/open_trace_file.o \
-	utils/$(O)/hash_table.o \
-	utils/$(O)/jenkins_lookup3.o \
-	utils/$(O)/mFILE.o\
-	utils/$(O)/vlen.o
-
-# Deleted from Staden Package Makefile only due to duplicates in Misc
-#	utils/$(O)/error.o 
-#	utils/$(O)/files.o 
-#	utils/$(O)/array.o 
-#	utils/$(O)/xalloc.o
-#	utils/$(O)/vlen.o
-
-OBJS	= $(READOBJS) $(UTILSOBJS)
+OBJS=\
+	io_lib/$(O)/Read.o \
+	io_lib/$(O)/translate.o \
+	io_lib/$(O)/scf_extras.o \
+	io_lib/$(O)/find.o \
+	io_lib/$(O)/mach-io.o \
+	io_lib/$(O)/traceType.o \
+	io_lib/$(O)/read_alloc.o \
+	io_lib/$(O)/compress.o \
+	io_lib/$(O)/open_trace_file.o \
+	io_lib/$(O)/hash_table.o \
+	io_lib/$(O)/jenkins_lookup3.o \
+	io_lib/$(O)/mFILE.o\
+	io_lib/$(O)/vlen.o
 
 #-----------------------------------------------------------------------------
 # Optional objects, depending on above IOLIB_* definitions
 ifdef IOLIB_SCF
 OBJS	+=\
-	scf/$(O)/read_scf.o \
-	scf/$(O)/write_scf.o \
-	scf/$(O)/misc_scf.o
+	io_lib/$(O)/read_scf.o \
+	io_lib/$(O)/write_scf.o \
+	io_lib/$(O)/misc_scf.o
 endif
 
 ifdef IOLIB_EXP
 OBJS	+=\
-	exp_file/$(O)/expFileIO.o
+	io_lib/$(O)/expFileIO.o
 endif
 
 ifdef IOLIB_PLN
 OBJS	+=\
-	plain/$(O)/seqIOPlain.o
+	io_lib/$(O)/seqIOPlain.o
 endif
 
 ifdef IOLIB_ABI
 OBJS	+=\
-	abi/$(O)/fpoint.o \
-	abi/$(O)/seqIOABI.o
+	io_lib/$(O)/fpoint.o \
+	io_lib/$(O)/seqIOABI.o
 endif
 
 ifdef IOLIB_ALF
 OBJS	+=\
-	alf/$(O)/seqIOALF.o
+	io_lib/$(O)/seqIOALF.o
 endif
 
 ifdef IOLIB_CTF
 OBJS	+=\
-	ctf/$(O)/ctfCompress.o \
-	ctf/$(O)/seqIOCTF.o
+	io_lib/$(O)/ctfCompress.o \
+	io_lib/$(O)/seqIOCTF.o
 endif
 
 ifdef IOLIB_ZTR
 OBJS	+=\
-	ztr/$(O)/compression.o\
-	ztr/$(O)/ztr_translate.o\
-	ztr/$(O)/deflate_simple.o\
-	ztr/$(O)/ztr.o
+	io_lib/$(O)/compression.o\
+	io_lib/$(O)/ztr_translate.o\
+	io_lib/$(O)/deflate_interlaced.o\
+	io_lib/$(O)/ztr.o
 endif
 
 ifdef IOLIB_SFF
 OBJS	+=\
-	sff/$(O)/sff.o
+	io_lib/$(O)/sff.o
 endif
 
 #-----------------------------------------------------------------------------
@@ -118,7 +98,7 @@ endif
 
 RLIBS += $(MISC_LIB) $(shell curl-config --libs)
 
-$(LIBS): include/.links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+$(LIBS): $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): dirs $(OBJS) $(DEF_FILE)
@@ -141,15 +121,10 @@ endif
 DEPEND_OBJ = $(OBJS)
 include dependencies
 
-.PHONY:	progs dirs
-.PRECIOUS: include/.links
-include/.links:
-	cd include; \
-	for i in abi alf ctf exp_file plain read scf sff utils ztr;	\
-	do \
-	    ln -s ../$$i/*.h .;\
-	done
-	touch include/.links
+.PHONY:	progs io_lib
+
+io_lib:
+	cd $@ && $(MAKE)
 
 progs:
 	cd $@ && $(MAKE)
@@ -184,20 +159,11 @@ distsrc: FORCE
 	    mkdir $(DIRNAME)/$$1/linux-binaries; \
 	    cp -R $$1/*.[ch] $(DIRNAME)/$$1; \
 	}; \
-	cpd abi; \
-	cpd alf; \
-	cpd ctf; \
-	cpd exp_file; \
-	cpd plain; \
 	cpd progs; \
-	cpd read; \
-	cpd scf; \
-	cpd utils; \
-	cpd ztr; \
-	cpd sff;
+	cpd io_lib; \
+	cpd docs
 	-cp -R CHANGES COPYRIGHT Makefile README options.mk include man mk \
 	    $(DIRNAME)
-	-cp -R ztr/FORMAT $(DIRNAME)/ztr
 	-cp -R progs/Makefile $(DIRNAME)/progs
 
 depend:

@@ -23,10 +23,9 @@ endif
 SRCROOT=../..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
-CFLAGS += -I../include
 
 IOLIBBIN=$(L)
-INCLUDES   += -I$(IOLIBSRC)/include $(ZLIB_INC)
+INCLUDES   += -I$(IOLIBSRC) $(ZLIB_INC)
 CLDFLAGS   += $(LINK_PATHFLAG)$(IOLIBBIN)
 
 ESOBJS=$(O)/extract_seq.o
