@@ -201,7 +201,7 @@ ITK_INC		= -I$(ITKSRC) -I$(ITCLSRC) $(X_INC)
 X_INC		= $(XSRC:%=-I%)
 XAW_INC		= $(XSRC:%=-I%)
 TT_INC		= $(TTSRC:%=-I%)
-IOLIB_INC	= -I$(IOLIBSRC)/include
+IOLIB_INC	= -I$(IOLIBSRC) -I$(IOLIBSRC)/io_lib
 IOUTILS_INC	= -I$(IOLIBSRC)/include
 SCF_INC		= -I$(IOLIBSRC)/include
 EXP_INC		= -I$(IOLIBSRC)/include

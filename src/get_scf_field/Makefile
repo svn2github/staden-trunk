@@ -9,7 +9,7 @@ SRCROOT=..
 include $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 
-INCLUDES_E += $(SCF_INC)
+INCLUDES_E += $(IOLIB_INC)
 
 SCFFIELDSRC=$(O)
 

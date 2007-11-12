@@ -24,7 +24,7 @@ extern "C" {
 
 #include <Misc/misc.h>
 #include <seq_utils/dna_utils.h>
-#include <io_lib/include/Read.h>
+#include <io_lib/Read.h>
 
 
 #ifdef __cplusplus
