@@ -5,7 +5,7 @@
 #include "io_lib/mFILE.h"
 
 #define SRF_MAGIC		"SSRF"
-#define SRF_VERSION             "1.2"
+#define SRF_VERSION             "1.3"
 
 #define SRFB_CONTAINER 		'S'
 #define SRFB_XML		'X'
@@ -29,7 +29,6 @@ typedef struct {
     char block_type; 
     char read_prefix_type;
     char id_prefix[256];
-    uint32_t counter_start;
     uint32_t trace_hdr_size;
     unsigned char *trace_hdr;
 } srf_trace_hdr_t;
@@ -82,13 +81,16 @@ typedef struct {
     uint64_t size;
     uint32_t n_container;
     uint32_t n_data_block_hdr;
-    uint32_t n_buckets;
-    uint8_t  hash_func;
+    uint64_t n_buckets;
+    int8_t   index_type;
+    int8_t   dbh_pos_stored_sep;
+    char    *dbh_file;
+    char    *cont_file;
+    int      index_hdr_sz; /* size of the above data on disk */
 } srf_index_hdr_t;
 
-#define SRF_INDEX_HDR_SIZE 29 /* size of the above struct when on disk */
 #define SRF_INDEX_MAGIC    "Ihsh"
-#define SRF_INDEX_VERSION  "1.00"
+#define SRF_INDEX_VERSION  "1.01"
 
 
 /*--- Initialisation */

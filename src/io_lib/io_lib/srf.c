@@ -344,7 +344,6 @@ srf_trace_hdr_t *srf_construct_trace_hdr(srf_trace_hdr_t *th,
     th->trace_hdr_size = header_sz;
     th->trace_hdr = header;
     th->read_prefix_type = 'E';
-    th->counter_start = 0;
 
     return th;
 }
@@ -384,8 +383,6 @@ int srf_read_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
     if ((z = srf_read_pstring(srf, th->id_prefix)) < 0)
 	return -1;
     th->trace_hdr_size -= z+1;
-    if (0 != srf_read_uint32(srf, &th->counter_start))
-	return -1;
 
     /* The data header itself */
     if (th->trace_hdr_size) {
@@ -430,8 +427,6 @@ int srf_write_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
     if (EOF == fputc(th->read_prefix_type, srf->fp))
 	return -1;
     if (-1 == srf_write_pstring(srf, th->id_prefix))
-	return -1;
-    if (-1 == srf_write_uint32(srf, th->counter_start))
 	return -1;
 
     /* The ztr header blob itself... */
@@ -557,6 +552,8 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
  *         -1 on failure
  */
 int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
+    int sz, z;
+
     /* Load footer */
     if (0 != fseeko(srf->fp, -16, SEEK_END))
 	return -1;
@@ -583,19 +580,35 @@ int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
 	return -1;
     if (0 != srf_read_uint64(srf, &hdr->size))
 	return -1;
-    if (0 != srf_read_uint32(srf, &hdr->n_container))
-	return -1;
-    if (0 != srf_read_uint32(srf, &hdr->n_data_block_hdr))
-	return -1;
-    if (0 != srf_read_uint32(srf, &hdr->n_buckets))
-	return -1;
-    if (1 != fread(&hdr->hash_func, 1, 1, srf->fp))
-	return -1;
 
     /* Check once more */
     if (memcmp(hdr->magic,   SRF_INDEX_MAGIC,   4) ||
 	memcmp(hdr->version, SRF_INDEX_VERSION, 4))
 	return -1;
+
+    /* And finally the remainder of the index header details */
+    if (EOF == (hdr->index_type         = fgetc(srf->fp)))
+	return -1;
+    if (EOF == (hdr->dbh_pos_stored_sep = fgetc(srf->fp)))
+	return -1;
+
+    if (0 != srf_read_uint32(srf, &hdr->n_container))
+	return -1;
+    if (0 != srf_read_uint32(srf, &hdr->n_data_block_hdr))
+	return -1;
+    if (0 != srf_read_uint64(srf, &hdr->n_buckets))
+	return -1;
+
+    sz = 34; /* fixed size of the above records */
+
+    if ((z = srf_read_pstring(srf, hdr->dbh_file)) < 0)
+	return -1;
+    sz += z;
+    if ((z = srf_read_pstring(srf, hdr->cont_file)) < 0)
+	return -1;
+    sz += z;
+
+    hdr->index_hdr_sz = sz;
 
     return 0;
 }
@@ -607,10 +620,15 @@ int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
  *   x4    magic number, starting with 'I'.
  *   x4    version code (eg "1.00")
  *   x8    index size
+ *   x1    index type ('E' normally)
+ *   x1    dbh_pos_stored_sep (indicates if the item list contains the
+ *         "data block header" index number).
  *   x4    number of containers
  *   x4    number of DBHs
- *   x4    number of hash buckets (~10 billion traces per file is enough).
- *   x1    hash function (see hash_table.h)
+ *   x8    number of hash buckets
+ *
+ *   x*    dbhFile  p-string (NULL if held within the same file)
+ *   x*    contFile p-string (NULL if held within the same file)
  *
  * Returns 0 on success
  *        -1 on failure
@@ -622,16 +640,396 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
 	return -1;
     if (0 != srf_write_uint64(srf, hdr->size))
 	return -1;
+
+    if (EOF == fputc(hdr->index_type, srf->fp))
+	return -1;
+    if (EOF == fputc(hdr->dbh_pos_stored_sep, srf->fp))
+	return -1;
+
     if (0 != srf_write_uint32(srf, hdr->n_container))
 	return -1;
     if (0 != srf_write_uint32(srf, hdr->n_data_block_hdr))
 	return -1;
-    if (0 != srf_write_uint32(srf, hdr->n_buckets))
+    if (0 != srf_write_uint64(srf, hdr->n_buckets))
 	return -1;
-    if (1 != fwrite(&hdr->hash_func, 1, 1, srf->fp))
+
+    if (-1 == srf_write_pstring(srf, hdr->dbh_file))
+	return -1;
+    if (-1 == srf_write_pstring(srf, hdr->cont_file))
 	return -1;
 
     return ferror(srf->fp) ? -1 : 0;
+}
+
+/*
+ * ---------------------------------------------------------------------------
+ * Trace name codec details.
+ */
+
+/*
+ * Reads up to 32-bits worth of data and returns. Updates the block
+ * byte and bit values to indicate the current 'read' position.
+ *
+ * Returns unsigned value on success (>=0)
+ *         -1 on failure
+ */
+static uint32_t get_hi_bits(block_t *block, int nbits) {
+    unsigned int val, bnum = 0;
+
+    if (block->byte*8 + block->bit + nbits > block->alloc * 8)
+        return -1;
+
+    /* Fetch the partial byte of data */
+    val = (block->data[block->byte]) & (1<<(8-block->bit))-1;
+    bnum = 8 - block->bit;
+
+    if (bnum >= nbits) {
+	val >>= bnum-nbits;
+	val &= (1<<nbits)-1;
+	block->bit += nbits;
+	return val;
+    }
+
+    /* And additional entire bytes worth as required */
+    while (bnum+8 <= nbits && bnum+8 < 32) {
+	val <<= 8;
+        val |= block->data[++block->byte];
+        bnum += 8;
+    }
+
+    /* The remaining partial byte */
+    val <<= nbits-bnum;
+    val |= (block->data[++block->byte] >> (8-(nbits-bnum)))
+	& (1<<(nbits-bnum))-1;
+    block->bit = nbits-bnum;
+
+    printf("nbits=%d, val=%x\n", nbits, val);
+
+    return val;
+}
+
+/*
+ * Stores up to 32-bits of data in a block
+ */
+static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
+    unsigned int curr = block->data[block->byte];
+    int nb = 0;
+    
+    /* Pack first partial byte */
+    if (nbits > 8-block->bit) {
+	curr |= val >> (nbits -= 8-block->bit);
+	block->data[block->byte] = curr;
+	block->data[++block->byte] = 0;
+	block->bit = 0;
+    } else {
+	curr |= val << (8-block->bit - nbits);
+	block->data[block->byte] = curr;
+	if ((block->bit += nbits) == 8) {
+	    block->bit = 0;
+	    block->data[++block->byte] = 0;
+	}
+	return;
+    }
+
+    /* Handle whole bytes worth */
+    while (nbits > 8) {
+	block->data[block->byte++] = (val >> (nbits-=8)) & 0xff;
+    }
+
+    /* And finally any remaining bits left */
+    block->data[block->byte] = (val & ((1<<nbits) - 1)) << (8-nbits);
+    block->bit = nbits;
+}
+
+
+/*
+ * Formats are specified embedded in 'fmt' using a percent-rule, much
+ * like printf().
+ *
+ * Both fmt and suffix are pascal style strings with the length parameter
+ * encoded as the first byte.
+ *
+ * The format consists of:
+ *
+ * '%' <field-width> <bits-used> <format-code>
+ *
+ * Field-width is a numerical value indicating the number of characters we
+ * wish to print. It is optional as without specifying this we emit as
+ * many characters as are needed to describe the data. If specified the
+ * output is padded to be at least field-width in size. The padding character
+ * may vary on the otuput format, but will typically be '0'.
+ *
+ * Bits-used consists of '.' (a full stop) followed by a numerical value
+ * indicating the number of bits to read from the suffix, starting from
+ * bit 0 or the next free bit following a previous format. If not specified
+ * generally all bits are used (8 * suffix_len) unless otherwise indicated
+ * below.
+ * 
+ * Format-code may be one of:
+ *    'd' decimal values (0-9)
+ *    'o' octal values (0-7)
+ *    'x' hexidecimal values, lowercase
+ *    'X' hexidecimal values, uppercase
+ *    'j' base-36 encoding, lowercase
+ *    'J' base-36 encoding, uppercase (454)
+ *    'c' a single character (default bits used = 8)
+ *    's' string (all bits used, treated as ascii)
+ *    '%' a literal percent character (no bits used).
+ *
+ * Returns the number of bytes written to 'name' on success
+ *         -1 on failure
+ */
+#define emit(c) \
+    if (out_pos < name_len-1) \
+        name[out_pos++] = (c); \
+    else \
+        return name_len;
+
+int construct_trace_name(char *p_fmt, unsigned char *suffix,
+			 char *name, int name_len) {
+    block_t *blk = block_create(suffix+1, *suffix);
+    int out_pos = 0;
+    int percent = 0;
+    char fmt_a[257], *fmt = fmt_a;
+
+    /* Default nul-terminate for abort cases */
+    name[name_len-1] = '\0';
+
+    /* Pascal to C string conversion */
+    memcpy(fmt, p_fmt+1, *p_fmt);
+    fmt[*p_fmt] = 0;
+
+    for(; *fmt; fmt++) {
+	switch(*fmt) {
+
+	/* A format specifier */
+	case '%': {
+	    int width = 0;
+	    int bits = 0;
+	    uint32_t val;
+
+	    fmt++;
+	    percent++;
+
+	    /* Width specifier */
+	    if (0 == (width = strtol(fmt, &fmt, 10)))
+		width = 1; /* minimum width */
+
+	    /* Bit size specifier */
+	    if ('.' == *fmt) {
+		fmt++;
+		bits = strtol(fmt, &fmt, 10);
+	    }
+
+	    /* The format code */
+	    switch (*fmt) {
+		int i;
+
+	    case '%':
+		for (i = 0; i < width; i++) {
+		    emit('%');
+		}
+		break;
+
+	    case 'o':
+	    case 'd':
+	    case 'x':
+	    case 'X':
+	    case 'j':
+	    case 'J': {
+		/* One of the integer encoding formats */
+		char *digits = "0123456789abcdef";
+		int d, tmp_ind = 0;
+		char tmp[1024];
+
+		switch(*fmt) {
+		case 'o': d=8;  break;
+		case 'd': d=10; break;
+		case 'x': d=16; break;
+
+		case 'X':
+		    d=16;
+		    digits = "0123456789ABCDEF";
+		    break;
+
+		case 'j':
+		    d=36;
+		    digits = "abcdefghijklmnopqrstuvwxyz0123456789";
+		    break;
+		    
+		case 'J': /* Used by 454 */
+		    d=36;
+		    digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+		    break;
+		}
+
+		while (bits > 0) {
+		    int32_t sv;
+		    int nb = bits > 32 ? 32 : bits;
+		    if (-1 == (sv = get_hi_bits(blk, nb)))
+			return -1;
+		    val = sv;
+
+		    do {
+			tmp[tmp_ind++] = digits[val % d];
+			val /= d;
+		    } while (val != 0);
+
+		    bits -= nb;
+		}
+
+		/* Pad to requested size */
+		for (i = width; i > tmp_ind; i--)
+		    emit(*digits);
+
+		/* Output the formatted value itself */
+		do {
+		    emit(tmp[--tmp_ind]);
+		} while (tmp_ind != 0);
+
+		break;
+	    }
+
+	    case 'c':
+		/* A single n-bit character */
+		if (!bits)
+		    bits = 8;
+		if (-1 == (val = get_hi_bits(blk, bits)))
+		    return -1;
+
+		emit(val);
+		break;
+
+	    case 's': {
+		/* A string, to the end of suffix, of n-bit characters */
+		if (!bits)
+		    bits = 8;
+		/* Reading n-bits at a time to produce a string */
+		while (-1 != (val = get_hi_bits(blk, bits)))
+		    emit(val);
+		break;
+	    }
+
+	    default:
+		fprintf(stderr, "Unknown arg: %c\n", *fmt);
+	    }
+	    
+	}
+
+	case '\0':
+	    break;
+
+	default:
+	    emit(*fmt);
+	}
+    }
+
+    /*
+     * No percent rule found implies the name is a simple string
+     * concatenation of prefix and suffix
+     */
+    if (!percent) {
+	int i;
+
+	/* A strncpy would be more efficient here */
+	for (i = 1; i <= *suffix; i++) {
+	    emit(suffix[i]);
+	}
+    }
+
+    emit('\0');
+
+    return out_pos;
+}
+
+/*
+ * The opposite of above.
+ * Given a format and a set of arguments packs the values into the
+ * supplied 'suffix' string. This should be 256 characters long and the
+ * first byte will consist of the real length.
+ *
+ * Returns 0 on success
+ *        -1 on failuare
+ */
+int pack_trace_suffix(unsigned char *suffix, char *fmt, ...) {
+    block_t *blk = block_create(NULL, 256);
+    va_list args;
+
+    va_start(args, fmt);
+
+    for(; *fmt; fmt++) {
+	switch(*fmt) {
+
+	/* A format specifier */
+	case '%': {
+	    int width = 0;
+	    int bits = 0;
+	    signed int val;
+
+	    fmt++;
+
+	    /* Width specifier - ignore this */
+	    width = strtol(fmt, &fmt, 10);
+
+	    /* Bit size specifier */
+	    if ('.' == *fmt) {
+		fmt++;
+		bits = strtol(fmt, &fmt, 10);
+	    }
+
+	    /* The format code */
+	    switch (*fmt) {
+		int i;
+
+	    case '%':
+		/* A literal percent */
+		break;
+
+	    case 'o':
+	    case 'd':
+	    case 'x':
+	    case 'X':
+	    case 'j':
+	    case 'J':
+		/* A numeric value - it doesn't matter what format it
+		 * is specified as, just how many bits.
+		 */
+		val = (uint32_t)va_arg(args, int);
+		set_hi_bits(blk, val, bits);
+		break;
+
+	    case 'c':
+		if (!bits)
+		    bits = 8;
+		val = (unsigned char)va_arg(args, int);
+		set_hi_bits(blk, val, bits);
+		break;
+
+	    case 's': {
+		char *s = (char *)va_arg(args, char *);
+		if (!bits)
+		    bits = 8;
+
+		for (; *s; s++) {
+		    set_hi_bits(blk, *s, bits);
+		}
+		break;
+	    }
+
+	    default:
+		fprintf(stderr, "Unknown arg: %c\n", *fmt);
+	    }
+	}
+	}
+    }
+
+    if (blk->byte >= 256)
+	return -1;
+
+    *suffix = blk->byte + (blk->bit > 0);
+    memcpy(suffix+1, blk->data, *suffix);
+
+    return 0;
 }
 
 
@@ -1079,8 +1477,9 @@ int srf_find_trace(srf_t *srf, char *tname,
 		   uint64_t *cpos, uint64_t *hpos, uint64_t *dpos) {
     srf_index_hdr_t hdr;
     uint64_t hval, bnum;
-    uint32_t bucket_pos;
+    uint64_t bucket_pos;
     off_t ipos, skip;
+    int item_sz = 8;
 
     /* Check for valid index */
     if (0 != srf_read_index_hdr(srf, &hdr)) {
@@ -1088,14 +1487,16 @@ int srf_find_trace(srf_t *srf, char *tname,
     }
     ipos = ftello(srf->fp);
     skip = hdr.n_container * 8 + hdr.n_data_block_hdr * 8;
+    if (hdr.dbh_pos_stored_sep)
+	item_sz += 4;
 
     /* Hash and load the bucket */
-    hval = hash64(hdr.hash_func, (unsigned char *)tname, strlen(tname));
+    hval = hash64(HASH_FUNC_JENKINS3, (unsigned char *)tname, strlen(tname));
     bnum = hval & (hdr.n_buckets - 1);
-    if (-1 == fseeko(srf->fp, ipos + skip + bnum * 4, SEEK_SET))
+    if (-1 == fseeko(srf->fp, ipos + skip + bnum * 8, SEEK_SET))
 	return -1;
 
-    if (0 != srf_read_uint32(srf, &bucket_pos))
+    if (0 != srf_read_uint64(srf, &bucket_pos))
 	return -1;
     if (!bucket_pos)
 	return -2;
@@ -1104,11 +1505,13 @@ int srf_find_trace(srf_t *srf, char *tname,
     hval >>= 57;
 
     /* Jump to the item list */
-    if (-1 == fseeko(srf->fp, ipos-SRF_INDEX_HDR_SIZE + bucket_pos, SEEK_SET))
+    if (-1 == fseeko(srf->fp, ipos-hdr.index_hdr_sz + bucket_pos, SEEK_SET))
 	return -1;
     for (;;) {
+	char name[1024];
 	int h = fgetc(srf->fp);
 	off_t saved_pos;
+	int64_t dbh_ind = 0;
 	
 	if ((h & 0x7f) != hval) {
 	    if (h & 0x80)
@@ -1118,7 +1521,7 @@ int srf_find_trace(srf_t *srf, char *tname,
 	     * Use fread instead as it's likely already cached and linux
 	     * fseeko involves a real system call (lseek).
 	     */
-	    fread(dpos, 1, 8, srf->fp);
+	    fread(dpos, 1, item_sz, srf->fp);
 	    continue;
 	}
 
@@ -1126,42 +1529,56 @@ int srf_find_trace(srf_t *srf, char *tname,
 	/* Seek to dpos and get trace id suffix. Compare to see if valid */
 	if (0 != srf_read_uint64(srf, dpos))
 	    return -1;
+	if (hdr.dbh_pos_stored_sep) {
+	    if (0 != srf_read_uint64(srf, &dbh_ind))
+		return -1;
+	}
 	saved_pos = ftello(srf->fp);
 	if (-1 == fseeko(srf->fp, (off_t)*dpos, SEEK_SET))
 	    return -1;
 	if (0 != srf_read_trace_body(srf, &srf->tb, 0))
 	    return -1;
-	if (strcmp(tname + strlen(tname) - strlen(srf->tb.read_id),
-		   srf->tb.read_id)) {
-	    if (-1 == fseeko(srf->fp, saved_pos, SEEK_SET))
+
+	/* Identify the matching hpos (trace header) for this trace body */
+	if (hdr.dbh_pos_stored_sep) {
+	    /* Hack for now - binary scan through 1 object */
+	    if (0 != binary_scan(srf, 1,
+				 ipos + hdr.n_container * 8 + dbh_ind * 8,
+				 *dpos, hpos))
 		return -1;
-	    continue;
+	} else {
+	    if (0 != binary_scan(srf, hdr.n_data_block_hdr,
+				 ipos + hdr.n_container * 8,
+				 *dpos, hpos))
+		return -1;
 	}
 
-	/* Binary search the index to identify the matching cpos & hpos */
-	if (0 != binary_scan(srf, hdr.n_container,
-			     ipos, *dpos, cpos))
-	    return -1;
-
-	if (0 != binary_scan(srf, hdr.n_data_block_hdr,
-			     ipos + hdr.n_container * 8,
-			     *dpos, hpos))
-	    return -1;
-
-	/* Check trace id prefix matches */
+	/* Check the trace name matches */
 	if (-1 == fseeko(srf->fp, *hpos, SEEK_SET))
 	    return -1;
 	if (0 != srf_read_trace_hdr(srf, &srf->th))
 	    return -1;
-	if (strncmp(tname, srf->th.id_prefix, strlen(srf->th.id_prefix))) {
+
+	if (-1 == construct_trace_name(srf->th.id_prefix, srf->tb.read_id,
+					name, 1024))
+	    return -1;
+
+	if (strcmp(name, tname)) {
+	    /* Not found, continue with next item in list */
+	    if (h & 80)
+		return -2;
 	    if (-1 == fseeko(srf->fp, saved_pos, SEEK_SET))
 		return -1;
 	    continue;
 	}
+	
+	/* Matches, so fetch the container data and return out trace */
+	if (0 != binary_scan(srf, hdr.n_container,
+			     ipos, *dpos, cpos))
+	    return -1;
 
 	/* FIXME: what to do with base-caller and cpos */
 
-	/* Found it! */
 	break;
     }
 

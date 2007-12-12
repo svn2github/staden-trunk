@@ -15,6 +15,10 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
+typedef struct {
+    uint64_t pos;
+    uint32_t dbh;
+} pos_dbh;
 
 /*
  * Writes the HashTable structures to 'fp'.
@@ -25,10 +29,17 @@
  *   x4    magic number, starting with 'I'.
  *   x4    version code (eg "1.00")
  *   x8    index size (should be x4 as we assume bucket locs are x4?)
+ *
+ *   x1    index type ('E' normally)
+ *   x1    dbh_pos_stored_sep (indicates if the item list contains the
+ *         "data block header" index number).
+ *
  *   x4    number of containers
  *   x4    number of DBHs
- *   x4    number of hash buckets (~10 billion traces per file is enough).
- *   x1    hash function (should be a 64-bit one)
+ *   x8    number of hash buckets
+ *
+ *   x*    dbhFile  p-string (NULL if held within the same file)
+ *   x*    contFile p-string (NULL if held within the same file)
  *
  * Containers: (1 entry per container)
  *   x8    file position of container header
@@ -37,35 +48,36 @@
  *   x8    file position of container header
  *
  * Buckets: (1 entry per bucket)
- *   x4    4-byte offset of linked list pos,  rel. to the start of the hdr
+ *   x8    8-byte offset of linked list pos,  rel. to the start of the hdr
  *
  * Items: (1 per trace)
  *   x1    name disambiguation hash, top-most bit set => last item in list
  *   x8    data position
+ *  (x4)  (dbh_index - optional; present if dbh_pos_stored_sep is 1)
  *
  * Footer:
  *   x4    magic number
  *   x4    version
  *   x8    index size
  *
- * It is designed such that on-disk querying of the hash table can be done
- * purely by forward seeks. (This is generally faster due to pre-fetching of
- * the subsequent blocks by many disk controllers.)
- *
  * Returns: the number of bytes written on success
  *         -1 for error
  */
-int HFSave(Array ch_pos, Array th_pos, HashTable *h, srf_t *srf) {
+int HFSave(char *ch_file, Array ch_pos,
+	   char *th_file, Array th_pos,
+	   int dbh_pos_stored_sep,
+	   HashTable *h, srf_t *srf) {
     unsigned int i, j;
     srf_index_hdr_t hdr;
     uint64_t *bucket_pos;
+    int item_sz;
+
+    /* Option: whether to store dbh positions directly in the index */
+    hdr.dbh_pos_stored_sep = dbh_pos_stored_sep;
 
     /* Compute index size and bucket offsets */
-    hdr.size = SRF_INDEX_HDR_SIZE;
-    hdr.size += ArrayMax(ch_pos) * 8;
-    hdr.size += ArrayMax(th_pos) * 8;
-    hdr.size += h->nbuckets * 4;
-    hdr.hash_func = h->options & HASH_FUNC_MASK;
+    hdr.size = 34 + 1+strlen(ch_file) + 1+strlen(th_file);
+    hdr.size += 8*(ArrayMax(ch_pos) + ArrayMax(th_pos) + h->nbuckets);
     if (NULL == (bucket_pos = (uint64_t *)calloc(h->nbuckets,
 						 sizeof(*bucket_pos))))
 	return -1;
@@ -74,14 +86,16 @@ int HFSave(Array ch_pos, Array th_pos, HashTable *h, srf_t *srf) {
 	if (!(hi = h->bucket[i]))
 	    continue;
 	bucket_pos[i] = hdr.size;
+	item_sz = 1 + 8 + (hdr.dbh_pos_stored_sep ? 4 : 0);
 	for (; hi; hi = hi->next)
-	    hdr.size += 9;
+	    hdr.size += item_sz;
     }
     hdr.size += 16; /* footer */
 
     /* Construct and write out the index header */
     memcpy(hdr.magic,   SRF_INDEX_MAGIC,   4);
     memcpy(hdr.version, SRF_INDEX_VERSION, 4);
+    hdr.index_type = 'E';
     hdr.n_container = ArrayMax(ch_pos);
     hdr.n_data_block_hdr = ArrayMax(th_pos);
     hdr.n_buckets = h->nbuckets;
@@ -103,7 +117,7 @@ int HFSave(Array ch_pos, Array th_pos, HashTable *h, srf_t *srf) {
 
     /* Write out buckets */
     for (i = 0; i < h->nbuckets; i++) {
-	if (0 != srf_write_uint32(srf, bucket_pos[i]))
+	if (0 != srf_write_uint64(srf, bucket_pos[i]))
 	    return -1;
     }
 
@@ -117,11 +131,21 @@ int HFSave(Array ch_pos, Array th_pos, HashTable *h, srf_t *srf) {
 	if (!(hi = h->bucket[i]))
 	    continue;
 	for (; hi; hi = hi->next) {
-	    uint64_t pos = hi->data.i;
+	    uint64_t pos;
+	    uint32_t dbh;
 	    uint32_t h7;
 
+	    if (hdr.dbh_pos_stored_sep) {
+		pos_dbh *pdbh = (pos_dbh *)hi->data.p;
+		pos = pdbh->pos;
+		dbh = pdbh->dbh;
+	    } else {
+		pos = hi->data.i;
+	    }
+
 	    /* Rehash key in 7 bits;  */
-	    h7 = hash64(hdr.hash_func, (uint8_t *)hi->key, hi->key_len) >> 57;
+	    h7 = hash64(h->options & HASH_FUNC_MASK,
+			(uint8_t *)hi->key, hi->key_len) >> 57;
 	    if (!hi->next)
 		h7 |= 0x80;
 	    /*
@@ -132,6 +156,10 @@ int HFSave(Array ch_pos, Array th_pos, HashTable *h, srf_t *srf) {
 		return -1;
 	    if (0 != srf_write_uint64(srf, pos))
 		return -1;
+
+	    if (hdr.dbh_pos_stored_sep)
+		if (0 != srf_write_uint32(srf, dbh))
+		    return -1;
 	}
     }
 
@@ -154,6 +182,8 @@ int main(int argc, char **argv) {
     char *archive;
     HashTable *db_hash;
     Array ch_pos, th_pos;
+    int dbh_pos_stored_sep = 0;
+    pos_dbh *pdbh;
     
     if (argc != 2) {
 	fprintf(stderr, "Usage: hash_srf srf_file\n");
@@ -190,7 +220,15 @@ int main(int argc, char **argv) {
 	    break;
 
 	case SRFB_TRACE_BODY:
-	    hd.i = pos;
+	    if (dbh_pos_stored_sep) {
+		if (NULL == (pdbh = (pos_dbh *)malloc(sizeof(*pdbh))))
+		    return 1;
+		pdbh->pos = pos;
+		pdbh->dbh = ArrayMax(th_pos);
+		hd.p = pdbh;
+	    } else {
+		hd.i = pos;
+	    }
 	    HashTableAdd(db_hash, name, strlen(name), hd, NULL);
 	    break;
 
@@ -201,7 +239,10 @@ int main(int argc, char **argv) {
 
     /* Write out the index */
     HashTableStats(db_hash, stderr);
-    HFSave(ch_pos, th_pos, db_hash, srf);
+    HFSave(NULL, ch_pos,
+	   NULL, th_pos,
+	   dbh_pos_stored_sep,
+	   db_hash, srf);
 
     HashTableDestroy(db_hash, 0);
     ArrayDestroy(ch_pos);
