@@ -703,8 +703,6 @@ static uint32_t get_hi_bits(block_t *block, int nbits) {
 	& (1<<(nbits-bnum))-1;
     block->bit = nbits-bnum;
 
-    printf("nbits=%d, val=%x\n", nbits, val);
-
     return val;
 }
 
