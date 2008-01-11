@@ -570,7 +570,7 @@ ztr_hcode_t *ztr_find_hcode(ztr_t *ztr, int code_set) {
 		block_t *blk;
 		huffman_codeset_t *cs;
 		uncompress_chunk(ztr, &ztr->chunk[i]);
-		blk = block_create(ztr->chunk[i].data+2,
+		blk = block_create((unsigned char *)(ztr->chunk[i].data+2),
 				   ztr->chunk[i].dlength-2);
 		cs = restore_codes(blk, NULL);
 		if (!cs) {
@@ -652,11 +652,11 @@ int ztr_store_hcodes(ztr_t *ztr) {
 	if (0 == store_codes(blk, ztr->hcodes[i].codes, 1)) {
 	    /* Last byte is always merged with first of stream */
 	    if (blk->bit == 0) {
-		char zero = 0;
+		unsigned char zero = 0;
 		store_bytes(blk, &zero, 1);
 	    }
 
-	    ztr->chunk[j].data = blk->data;
+	    ztr->chunk[j].data = (char *)blk->data;
 	    ztr->chunk[j].dlength = blk->byte + (blk->bit != 0);
 	    block_destroy(blk, 1);
 	    ztr->nchunks++;

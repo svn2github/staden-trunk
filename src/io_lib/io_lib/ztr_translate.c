@@ -60,7 +60,7 @@ static void ztr_decode_samples_4(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
     int maxTraceVal = 0;
     TRACE sample;
-    unsigned char *bytes = chunk->data;
+    unsigned char *bytes = (unsigned char *)chunk->data;
     int nbytes = chunk->dlength;
 
     bytes+=2;
@@ -187,7 +187,7 @@ static void ztr_decode_samples(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int i, j;
     int maxTraceVal = 0;
     TRACE sample;
-    unsigned char *bytes = chunk->data;
+    unsigned char *bytes = (unsigned char *)chunk->data;
     char *mdata = chunk->mdata;
     int dlen = chunk->dlength, mdlen = chunk->mdlength;
     TRACE **lane, *lanex;

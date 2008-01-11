@@ -62,6 +62,7 @@ typedef struct node {
 
 static void output_code_set(FILE *fp, huffman_codes_t *codes);
 static void output_code_set2(FILE *fp, huffman_codes_t *codes);
+int next_symbol(block_t *in, int *htab);
 
 /*
  * ---------------------------------------------------------------------------

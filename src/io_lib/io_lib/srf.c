@@ -1519,7 +1519,7 @@ int srf_find_trace(srf_t *srf, char *tname,
 	char name[1024];
 	int h = fgetc(srf->fp);
 	off_t saved_pos;
-	int64_t dbh_ind = 0;
+	uint64_t dbh_ind = 0;
 	
 	if ((h & 0x7f) != hval) {
 	    if (h & 0x80)
@@ -1567,8 +1567,9 @@ int srf_find_trace(srf_t *srf, char *tname,
 	if (0 != srf_read_trace_hdr(srf, &srf->th))
 	    return -1;
 
-	if (-1 == construct_trace_name(srf->th.id_prefix, srf->tb.read_id,
-					name, 1024))
+	if (-1 == construct_trace_name(srf->th.id_prefix,
+				       (unsigned char *)srf->tb.read_id,
+				       name, 1024))
 	    return -1;
 
 	if (strcmp(name, tname)) {

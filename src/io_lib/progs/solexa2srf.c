@@ -54,6 +54,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <zlib.h>
+#include <math.h>
 
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
@@ -1331,7 +1332,8 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	    strcpy(last_prefix, prefix);
 
 	    mf = encode_ztr(z, &footer, 0);
-	    srf_construct_trace_hdr(&th, prefix, mf->data, footer);
+	    srf_construct_trace_hdr(&th, prefix, (unsigned char *)mf->data,
+				    footer);
 	    if (-1 == srf_write_trace_hdr(srf, &th))
 		return -1;
 	} else {
@@ -1342,7 +1344,8 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 
 	/* Write out the variable element of a ZTR file */
 	format_name(name, name_fmt, l.lane, l.tile, l.x, l.y, seq_num);
-	srf_construct_trace_body(&tb, name, mf->data+footer, mf->size-footer);
+	srf_construct_trace_body(&tb, name, (unsigned char *)mf->data+footer,
+				 mf->size-footer);
 	if (-1 == srf_write_trace_body(srf, &tb))
 	    return -1;
 

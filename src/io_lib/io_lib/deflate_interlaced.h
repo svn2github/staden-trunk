@@ -82,6 +82,7 @@ typedef struct {
 block_t *block_create(unsigned char *data, size_t size);
 void block_destroy(block_t *blk, int keep_data);
 int block_resize(block_t *blk, size_t size);
+void store_bytes(block_t *block, unsigned char *val, int nbytes);
 
 
 int huffman_encode(block_t *blk, huffman_codes_t *c, int code_set,
@@ -104,6 +105,7 @@ int store_codes(block_t *out,
 		int last_block);
 huffman_codeset_t *restore_codes(block_t *block, int *bfinal);
 void huffman_codes_destroy(huffman_codes_t *c);
+void huffman_codeset_destroy(huffman_codeset_t *cs);
 
 #ifdef __cplusplus
 }

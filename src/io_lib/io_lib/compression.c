@@ -5,6 +5,7 @@
 #include <zlib.h>
 #include <assert.h>
 #include <math.h>
+#include <ctype.h>
 
 #ifndef M_PI
 #  define M_PI 3.14159265358979323846
@@ -2032,7 +2033,7 @@ char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len,
     if (!c) {
 	/* No cached ones found, so inline some instead */
 	cset = 0;
-	c = generate_code_set(0, recsz, uncomp, uncomp_len, 1,
+	c = generate_code_set(0, recsz, (unsigned char *)uncomp, uncomp_len, 1,
 			      MAX_CODE_LEN, 0);
     }
 
@@ -2077,7 +2078,7 @@ char *sthuff(ztr_t *ztr, char *uncomp, int uncomp_len,
     if (cset == 0)
 	huffman_codeset_destroy(c);
 
-    return comp;
+    return (char *)comp;
 }
 
 char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
@@ -2113,7 +2114,7 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
      * For speed though this bit-number is cached.
      */
     blk_in->data[blk_in->byte++] |= *(comp+2);
-    store_bytes(blk_in, comp+3, comp_len-3);
+    store_bytes(blk_in, (unsigned char *)comp+3, comp_len-3);
 
 
     /* Rewind */
@@ -2154,7 +2155,7 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
     } while (!bfinal);
 
     *uncomp_len = blk_out->byte;
-    uncomp = blk_out->data;
+    uncomp = (char *)blk_out->data;
 
     block_destroy(blk_in, 0);
     block_destroy(blk_out, 1);
@@ -2234,7 +2235,7 @@ char *qshift(char *qold, int qlen, int *new_len) {
 	return NULL;
 
     nbases = (qlen-1)/4;
-    qnew = (unsigned char *)malloc((nbases+1)*4);
+    qnew = (char *)malloc((nbases+1)*4);
     qnew[0] = ZTR_FORM_QSHIFT; /* reorder code */
     qnew[1] = -40;  /* pad */
     qnew[2] = -40;  /* pad */
@@ -2269,7 +2270,7 @@ char *unqshift(char *qold, int qlen, int *new_len) {
 	return NULL;
 
     nbases = qlen/4-1;
-    qnew = (unsigned char *)malloc(nbases*4+1);
+    qnew = (char *)malloc(nbases*4+1);
     qnew[0] = 0; /* raw byte */
 
     for (i = 0, j = 4; i < nbases; i++) {
