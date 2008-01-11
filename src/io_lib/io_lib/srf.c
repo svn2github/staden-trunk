@@ -375,7 +375,7 @@ int srf_read_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
 	return -1;
     if (0 != srf_read_uint32(srf, &th->trace_hdr_size))
 	return -1;
-    th->trace_hdr_size -= 10;
+    th->trace_hdr_size -= 1 + 4 + 1;
 
     /* Read-id prefix */
     if (EOF == (th->read_prefix_type = fgetc(srf->fp)))
@@ -417,7 +417,7 @@ int srf_write_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
 	return -1;
 
     /* Size */
-    sz = 10
+    sz = 1 + 4 + 1
 	+ (th->id_prefix ? strlen(th->id_prefix) : 0) + 1
 	+ th->trace_hdr_size;
     if (-1 == srf_write_uint32(srf, sz))
@@ -1282,10 +1282,16 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 	    if (srf->ztr)
 		delete_ztr(srf->ztr);
 	    mrewind(srf->mf);
-	    srf->ztr = partial_decode_ztr(srf, srf->mf, NULL);
-	    srf->mf_pos = mftell(srf->mf);
-	    mfseek(srf->mf, 0, SEEK_END);
-	    srf->mf_end = mftell(srf->mf);
+
+	    if (NULL != (srf->ztr = partial_decode_ztr(srf, srf->mf, NULL))) {
+		srf->mf_pos = mftell(srf->mf);
+		mfseek(srf->mf, 0, SEEK_END);
+		srf->mf_end = mftell(srf->mf);
+	    } else {
+		/* Maybe not enough to decode or no headerBlob. */
+		/* So delay until decoding the body. */
+		srf->mf_pos = srf->mf_end = 0;
+	    }
 
 	    break;
 
@@ -1308,7 +1314,11 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 	    mftruncate(srf->mf, mftell(srf->mf));
 	    mfseek(srf->mf, srf->mf_pos, SEEK_SET);
 
-	    ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
+	    if (srf->ztr)
+		ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
+	    else
+		ztr_tmp = NULL;
+
 	    return partial_decode_ztr(srf, srf->mf, ztr_tmp);
 	}
 
