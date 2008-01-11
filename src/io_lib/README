@@ -1,4 +1,4 @@
-		       IO_LIB VERSION 1.11.0b6
+		       IO_LIB VERSION 1.11.0b7
 		       =======================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -26,6 +26,10 @@ too. See the file include/Read.h for the generic 'Read' structure.
 
 What's new in this release?
 ===========================
+
+IMPORTANT bug fix in 1.11.0b7 over 1.11.0b6. The previous release
+produced invalid SRF v1.3 files (the Data Block Header "blockSize"
+field was 4 bytes too large).
 
 This is a beta-test release to demonstrate the short-read-format (SRF)
 file support, along with some example tools for converting to and from

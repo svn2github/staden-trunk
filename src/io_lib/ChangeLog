@@ -1,3 +1,22 @@
+2008-01-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/srf.c:
+	(11:35:09) IMPORTANT BUG FIX: The SRF Data Block Header
+	had the blockSize field 4 bytes too large, so SRF files produced
+	did not conform to the standard.
+	Also fixed SRF reading support for when headerBlob is zero length.
+	We then delay ztr decoding until we've read the actual data blob.
+
+	* io_lib/compression.c,
+	* io_lib/deflate_interlaced.c,
+	* io_lib/deflate_interlaced.h,
+	* io_lib/srf.c,
+	* io_lib/ztr.c,
+	* io_lib/ztr_translate.c,
+	* progs/solexa2srf.c:
+	(12:26:11) Added missing prototypes and fixed various signed vs
+	unsigned assignments, as spotted by the Intel C Compiler.
+
 2008-01-02  James Bonfield  <jkb@sanger.ac.uk>
 
 	* Tagged iolib-1-11-0b6
@@ -1417,7 +1436,7 @@
 	* dependencies:
 	(13:33:14) Version 1.9.0-test
 	
-	* Significant speed ups, particularly when dealing with reading  
+	* Significant speed ups, particularly when dealing with reading	 
 	gzipped files or when extracting data from tar files.
 	
 	* New external functions for faster access via mFILE (memory-file) 
@@ -1433,7 +1452,7 @@
 	more   stricter modes of the Intel C Compiler.
 	
 	* Preliminary support for storing pyrosequencing style traces. This
-	  has been modeled on the flowgram data from 454, but should be  
+	  has been modeled on the flowgram data from 454, but should be	 
 	applicable to other platforms. ZTR has been updated to incorporate 
 	 this too.
 	
@@ -1445,15 +1464,15 @@
 	
 	* New hash_tar and hash_extract programs. These replace the
 	index_tar   program for rast random access. For RAWDATA include
-	"HASH=hashfile"   as an element to get io_lib to use the archive
+	"HASH=hashfile"	  as an element to get io_lib to use the archive
 	hash. It's possible   to create hash files of most archive formats
 	as the hash itself   contains the offset and size of each item in
-	the archive. This means   that extracting an item does not need to
+	the archive. This means	  that extracting an item does not need to
 	know the format of the	 original archive.
 	
 	  Some benchmarks show that on ext3 it's actually faster to extract
-	  files from the hash than directly via the directory. This was  
-	testing with ~200,000 files, whereupon directory lookups become  
+	  files from the hash than directly via the directory. This was	 
+	testing with ~200,000 files, whereupon directory lookups become	 
 	slow. I'd imagine ResierFS or similar to be faster.
 	
 	* Added an XRLE encoding for ZTR. This is similar to the existing
@@ -1467,7 +1486,7 @@
 	    "FILE *fp".
 	
 	  - As mentioned above, some functions are no longer external.
-	These	  include many ctf functions, ztr_(de)compress,    
+	These	  include many ctf functions, ztr_(de)compress,	   
 	ztr_chunk_(read/write), be_read_*, be_write_*,
 	
 	  - The default search order for RAWDATA is that the current
@@ -1491,7 +1510,7 @@
 	* plain/plain.h:
 	(13:33:32) Version 1.9.0-test
 	
-	* Significant speed ups, particularly when dealing with reading  
+	* Significant speed ups, particularly when dealing with reading	 
 	gzipped files or when extracting data from tar files.
 	
 	* New external functions for faster access via mFILE (memory-file) 
@@ -1507,7 +1526,7 @@
 	more   stricter modes of the Intel C Compiler.
 	
 	* Preliminary support for storing pyrosequencing style traces. This
-	  has been modeled on the flowgram data from 454, but should be  
+	  has been modeled on the flowgram data from 454, but should be	 
 	applicable to other platforms. ZTR has been updated to incorporate 
 	 this too.
 	
@@ -1519,15 +1538,15 @@
 	
 	* New hash_tar and hash_extract programs. These replace the
 	index_tar   program for rast random access. For RAWDATA include
-	"HASH=hashfile"   as an element to get io_lib to use the archive
+	"HASH=hashfile"	  as an element to get io_lib to use the archive
 	hash. It's possible   to create hash files of most archive formats
 	as the hash itself   contains the offset and size of each item in
-	the archive. This means   that extracting an item does not need to
+	the archive. This means	  that extracting an item does not need to
 	know the format of the	 original archive.
 	
 	  Some benchmarks show that on ext3 it's actually faster to extract
-	  files from the hash than directly via the directory. This was  
-	testing with ~200,000 files, whereupon directory lookups become  
+	  files from the hash than directly via the directory. This was	 
+	testing with ~200,000 files, whereupon directory lookups become	 
 	slow. I'd imagine ResierFS or similar to be faster.
 	
 	* Added an XRLE encoding for ZTR. This is similar to the existing
@@ -1541,7 +1560,7 @@
 	    "FILE *fp".
 	
 	  - As mentioned above, some functions are no longer external.
-	These	  include many ctf functions, ztr_(de)compress,    
+	These	  include many ctf functions, ztr_(de)compress,	   
 	ztr_chunk_(read/write), be_read_*, be_write_*,
 	
 	  - The default search order for RAWDATA is that the current
@@ -1588,7 +1607,7 @@
 	* ztr/ztr_translate.c:
 	(13:33:33) Version 1.9.0-test
 	
-	* Significant speed ups, particularly when dealing with reading  
+	* Significant speed ups, particularly when dealing with reading	 
 	gzipped files or when extracting data from tar files.
 	
 	* New external functions for faster access via mFILE (memory-file) 
@@ -1604,7 +1623,7 @@
 	more   stricter modes of the Intel C Compiler.
 	
 	* Preliminary support for storing pyrosequencing style traces. This
-	  has been modeled on the flowgram data from 454, but should be  
+	  has been modeled on the flowgram data from 454, but should be	 
 	applicable to other platforms. ZTR has been updated to incorporate 
 	 this too.
 	
@@ -1616,15 +1635,15 @@
 	
 	* New hash_tar and hash_extract programs. These replace the
 	index_tar   program for rast random access. For RAWDATA include
-	"HASH=hashfile"   as an element to get io_lib to use the archive
+	"HASH=hashfile"	  as an element to get io_lib to use the archive
 	hash. It's possible   to create hash files of most archive formats
 	as the hash itself   contains the offset and size of each item in
-	the archive. This means   that extracting an item does not need to
+	the archive. This means	  that extracting an item does not need to
 	know the format of the	 original archive.
 	
 	  Some benchmarks show that on ext3 it's actually faster to extract
-	  files from the hash than directly via the directory. This was  
-	testing with ~200,000 files, whereupon directory lookups become  
+	  files from the hash than directly via the directory. This was	 
+	testing with ~200,000 files, whereupon directory lookups become	 
 	slow. I'd imagine ResierFS or similar to be faster.
 	
 	* Added an XRLE encoding for ZTR. This is similar to the existing
@@ -1638,7 +1657,7 @@
 	    "FILE *fp".
 	
 	  - As mentioned above, some functions are no longer external.
-	These	  include many ctf functions, ztr_(de)compress,    
+	These	  include many ctf functions, ztr_(de)compress,	   
 	ztr_chunk_(read/write), be_read_*, be_write_*,
 	
 	  - The default search order for RAWDATA is that the current
