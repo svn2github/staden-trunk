@@ -84,8 +84,8 @@ typedef struct {
     uint64_t n_buckets;
     int8_t   index_type;
     int8_t   dbh_pos_stored_sep;
-    char    *dbh_file;
-    char    *cont_file;
+    char     dbh_file[256];
+    char     cont_file[256];
     int      index_hdr_sz; /* size of the above data on disk */
 } srf_index_hdr_t;
 

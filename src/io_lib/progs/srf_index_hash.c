@@ -1,5 +1,5 @@
 /*
- * This adds a hash table index (".hsh" v1.00 format) to an SRF archive.
+ * This adds a hash table index (".hsh" v1.01 format) to an SRF archive.
  * It does this either inline on the file itself (provided it doesn't already
  * have an index) or by producing an external index file.
  */
@@ -76,7 +76,9 @@ int HFSave(char *ch_file, Array ch_pos,
     hdr.dbh_pos_stored_sep = dbh_pos_stored_sep;
 
     /* Compute index size and bucket offsets */
-    hdr.size = 34 + 1+strlen(ch_file) + 1+strlen(th_file);
+    hdr.size = 34 +
+	1 + (ch_file ? strlen(ch_file) : 0) +
+	1 + (th_file ? strlen(th_file) : 0);
     hdr.size += 8*(ArrayMax(ch_pos) + ArrayMax(th_pos) + h->nbuckets);
     if (NULL == (bucket_pos = (uint64_t *)calloc(h->nbuckets,
 						 sizeof(*bucket_pos))))
@@ -99,6 +101,14 @@ int HFSave(char *ch_file, Array ch_pos,
     hdr.n_container = ArrayMax(ch_pos);
     hdr.n_data_block_hdr = ArrayMax(th_pos);
     hdr.n_buckets = h->nbuckets;
+    if (th_file)
+	strncpy(hdr.dbh_file,  th_file, 255);
+    else
+	hdr.dbh_file[0] = 0;
+    if (ch_file)
+	strncpy(hdr.cont_file, ch_file, 255);
+    else
+	hdr.cont_file[0] = 0;
     if (0 != srf_write_index_hdr(srf, &hdr))
 	return -1;
 

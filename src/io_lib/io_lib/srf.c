@@ -603,10 +603,10 @@ int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
 
     if ((z = srf_read_pstring(srf, hdr->dbh_file)) < 0)
 	return -1;
-    sz += z;
+    sz += z+1;
     if ((z = srf_read_pstring(srf, hdr->cont_file)) < 0)
 	return -1;
-    sz += z;
+    sz += z+1;
 
     hdr->index_hdr_sz = sz;
 
@@ -744,8 +744,7 @@ static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
  * Formats are specified embedded in 'fmt' using a percent-rule, much
  * like printf().
  *
- * Both fmt and suffix are pascal style strings with the length parameter
- * encoded as the first byte.
+ * Both fmt and suffix are C-style nul terminated strings.
  *
  * The format consists of:
  *
@@ -783,19 +782,14 @@ static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
     else \
         return name_len;
 
-int construct_trace_name(char *p_fmt, unsigned char *suffix,
+int construct_trace_name(char *fmt, unsigned char *suffix,
 			 char *name, int name_len) {
-    block_t *blk = block_create(suffix+1, *suffix);
+    block_t *blk = block_create(suffix, strlen(suffix));
     int out_pos = 0;
     int percent = 0;
-    char fmt_a[257], *fmt = fmt_a;
 
     /* Default nul-terminate for abort cases */
     name[name_len-1] = '\0';
-
-    /* Pascal to C string conversion */
-    memcpy(fmt, p_fmt+1, *p_fmt);
-    fmt[*p_fmt] = 0;
 
     for(; *fmt; fmt++) {
 	switch(*fmt) {
@@ -930,7 +924,7 @@ int construct_trace_name(char *p_fmt, unsigned char *suffix,
 	int i;
 
 	/* A strncpy would be more efficient here */
-	for (i = 1; i <= *suffix; i++) {
+	for (i = 0; suffix[i]; i++) {
 	    emit(suffix[i]);
 	}
     }
