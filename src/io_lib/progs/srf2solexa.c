@@ -63,10 +63,10 @@ void dump(ztr_t *z, char *name, FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb) {
     fprintf(fp_sig2, "%d\t%d\t%d\t%d", lane, tile, x, y);
     for (i = 0; i < read->NBases; i++) {
 	fprintf(fp_sig2, "\t%d %d %d %d",
-		(int)read->traceA[i] - 32768,
-		(int)read->traceC[i] - 32768,
-		(int)read->traceG[i] - 32768,
-		(int)read->traceT[i] - 32768);
+		(int)read->traceA[i] - read->baseline,
+		(int)read->traceC[i] - read->baseline,
+		(int)read->traceG[i] - read->baseline,
+		(int)read->traceT[i] - read->baseline);
     }
     fprintf(fp_sig2, "\n");
 
