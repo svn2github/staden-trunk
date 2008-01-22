@@ -194,6 +194,7 @@ int main(int argc, char **argv) {
     Array ch_pos, th_pos;
     int dbh_pos_stored_sep = 0;
     pos_dbh *pdbh;
+    off_t old_index = 0;
     
     if (argc != 2) {
 	fprintf(stderr, "Usage: hash_srf srf_file\n");
@@ -220,6 +221,9 @@ int main(int argc, char **argv) {
     while ((type = srf_next_block_details(srf, &pos, name)) >= 0) {
 	HashData hd;
 
+	/* Only want this set if the last block in the file is an index */
+	old_index = 0;
+
 	switch (type) {
 	case SRFB_CONTAINER:
 	    ARR(uint64_t, ch_pos, ArrayMax(ch_pos)) = pos;
@@ -242,17 +246,28 @@ int main(int argc, char **argv) {
 	    HashTableAdd(db_hash, name, strlen(name), hd, NULL);
 	    break;
 
+	case SRFB_INDEX:
+	    /* An old index */
+	    old_index = pos;
+	    break;
+
 	default:
 	    abort();
 	}
     }
 
     /* Write out the index */
+    if (old_index)
+	fseeko(srf->fp, old_index, SEEK_SET);
+
     HashTableStats(db_hash, stderr);
     HFSave(NULL, ch_pos,
 	   NULL, th_pos,
 	   dbh_pos_stored_sep,
 	   db_hash, srf);
+
+    /* Truncate incase we've somehow overwritten an old longer index */
+    ftruncate(fileno(srf->fp), ftello(srf->fp));
 
     HashTableDestroy(db_hash, 0);
     ArrayDestroy(ch_pos);
