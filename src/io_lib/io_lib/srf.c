@@ -547,33 +547,38 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
 
 /*
  * Reads a SRF index header. See srf_write_index_hdr for the format.
+ * If no_seek is true it reads the header starting at the current file
+ * offset, otherwise it seeks to the end of the file and reads that
+ * header instead.
  *
  * Returns 0 on success and fills out *hdr
  *         -1 on failure
  */
-int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
+int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr, int no_seek) {
     int sz, z;
 
     /* Load footer */
-    if (0 != fseeko(srf->fp, -16, SEEK_END))
-	return -1;
+    if (!no_seek) {
+	if (0 != fseeko(srf->fp, -16, SEEK_END))
+	    return -1;
 
-    if (4 != fread(hdr->magic,   1, 4, srf->fp))
-	return -1;
-    if (4 != fread(hdr->version, 1, 4, srf->fp))
-	return -1;
-    if (0 != srf_read_uint64(srf, &hdr->size))
-	return -1;
+	if (4 != fread(hdr->magic,   1, 4, srf->fp))
+	    return -1;
+	if (4 != fread(hdr->version, 1, 4, srf->fp))
+	    return -1;
+	if (0 != srf_read_uint64(srf, &hdr->size))
+	    return -1;
 
-    /* Check for validity */
-    if (memcmp(hdr->magic,   SRF_INDEX_MAGIC,   4) ||
-	memcmp(hdr->version, SRF_INDEX_VERSION, 4))
-	return -1;
+	/* Check for validity */
+	if (memcmp(hdr->magic,   SRF_INDEX_MAGIC,   4) ||
+	    memcmp(hdr->version, SRF_INDEX_VERSION, 4))
+	    return -1;
 
-    /* Seek to index header and re-read */
-    if (0 != fseeko(srf->fp, -hdr->size, SEEK_END))
-	return -1;
-    
+	/* Seek to index header and re-read */
+	if (0 != fseeko(srf->fp, -hdr->size, SEEK_END))
+	    return -1;
+    }
+
     if (4 != fread(hdr->magic,   1, 4, srf->fp))
 	return -1;
     if (4 != fread(hdr->version, 1, 4, srf->fp))
@@ -1083,11 +1088,10 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 
 	case SRFB_INDEX: {
 	    off_t pos = ftell(srf->fp);
-	    srf_index_hdr_t hdr;
-	    srf_read_index_hdr(srf, &hdr);
+	    srf_read_index_hdr(srf, &srf->hdr, 1);
 
 	    /* Skip the index body */
-	    fseeko(srf->fp, pos + hdr.size, SEEK_SET);
+	    fseeko(srf->fp, pos + srf->hdr.size, SEEK_SET);
 	    break;
 	}
 
@@ -1318,11 +1322,10 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 
 	case SRFB_INDEX: {
 	    off_t pos = ftell(srf->fp);
-	    srf_index_hdr_t hdr;
-	    srf_read_index_hdr(srf, &hdr);
+	    srf_read_index_hdr(srf, &srf->hdr, 1);
 
 	    /* Skip the index body */
-	    fseeko(srf->fp, pos + hdr.size, SEEK_SET);
+	    fseeko(srf->fp, pos + srf->hdr.size, SEEK_SET);
 	    break;
 	}
 
@@ -1391,14 +1394,12 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	break;
     }
 
-    case SRFB_INDEX: {
-	srf_index_hdr_t hdr;
-	srf_read_index_hdr(srf, &hdr);
+    case SRFB_INDEX:
+	srf_read_index_hdr(srf, &srf->hdr, 1);
 
 	/* Skip the index body */
-	fseeko(srf->fp, *pos + hdr.size, SEEK_SET);
+	fseeko(srf->fp, *pos + srf->hdr.size, SEEK_SET);
 	break;
-    }
 
 
     default:
@@ -1484,7 +1485,7 @@ int srf_find_trace(srf_t *srf, char *tname,
     int item_sz = 8;
 
     /* Check for valid index */
-    if (0 != srf_read_index_hdr(srf, &hdr)) {
+    if (0 != srf_read_index_hdr(srf, &hdr, 0)) {
 	return -1;
     }
     ipos = ftello(srf->fp);

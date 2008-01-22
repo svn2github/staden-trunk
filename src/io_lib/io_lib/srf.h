@@ -58,22 +58,6 @@ typedef struct {
     char block_type;
 } srf_index_t;
 
-/* Master SRF object */
-typedef struct {
-    FILE *fp;
-
-    /* Cached copies of each of the most recent chunk types loaded */
-    srf_cont_hdr_t    ch;
-    srf_trace_hdr_t   th;
-    srf_trace_body_t  tb;
-    srf_xml_t         xml;
-
-    /* Private: cached data for use by srf_next_ztr */
-    ztr_t *ztr;
-    mFILE *mf;
-    long mf_pos, mf_end;
-} srf_t;
-
 /* Indexing */
 typedef struct {
     char     magic[4];
@@ -88,6 +72,23 @@ typedef struct {
     char     cont_file[256];
     int      index_hdr_sz; /* size of the above data on disk */
 } srf_index_hdr_t;
+
+/* Master SRF object */
+typedef struct {
+    FILE *fp;
+
+    /* Cached copies of each of the most recent chunk types loaded */
+    srf_cont_hdr_t    ch;
+    srf_trace_hdr_t   th;
+    srf_trace_body_t  tb;
+    srf_xml_t         xml;
+    srf_index_hdr_t   hdr;
+
+    /* Private: cached data for use by srf_next_ztr */
+    ztr_t *ztr;
+    mFILE *mf;
+    long mf_pos, mf_end;
+} srf_t;
 
 #define SRF_INDEX_MAGIC    "Ihsh"
 #define SRF_INDEX_VERSION  "1.01"
@@ -136,7 +137,7 @@ void srf_destroy_trace_body(srf_trace_body_t *th);
 int srf_write_trace_body(srf_t *srf, srf_trace_body_t *th);
 int srf_read_trace_body(srf_t *srf, srf_trace_body_t *th, int no_trace);
 
-int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
+int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr, int no_seek);
 int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
 
 /*--- Higher level I/O functions */
