@@ -170,10 +170,15 @@ int main(int argc, char **argv) {
 	char str[5];
 	int complen;
 	int rawlen;
+	char *val;
 
 	(void)ZTR_BE2STR(ztr->chunk[i].type, str);
 	complen = ztr->chunk[i].dlength;
-	printf("-- %s --\n", str);
+	val = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
+	if (val)
+	    printf("-- %s (%s) --\n", str, val);
+	else
+	    printf("-- %s --\n", str);
 	explode_chunk(ztr, &ztr->chunk[i]);
 	rawlen = ztr->chunk[i].dlength;
 	printf("SUMMARY %s  mlen %3d, dlen %6d, rawlen %6d, ratio %f\n",
