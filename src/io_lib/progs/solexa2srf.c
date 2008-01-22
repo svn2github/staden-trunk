@@ -41,10 +41,11 @@
 
 /*
  * Author: James Bonfield, March 2006
- * Updated April 2007 to add a format string for naming samples.
- * Updated June 2007 to wrap the output format in SRF (example).
+ * Updated April 2007:added a format string for naming samples.
+ * Updated June 2007: wrapped the output format in SRF (example).
+ * Updated January 2008: support for chastity filters via quahog files.
  *
- * This code converts _sig, _prb and _seq files to ZTR files held within
+ * This code converts _sig2, _prb and _seq files to ZTR files held within
  * an SRF container.
  */
 
@@ -73,8 +74,98 @@
 #define N_TR_CODE 8
 
 #define BASE_CODE (CODE_USER)
-#define SMP4_CODE (CODE_USER+1)
+#define SIG4_CODE (CODE_USER+1)
 #define CNF4_CODE (CODE_USER+2)
+#define INT4_CODE (CODE_USER+3)
+#define NSE4_CODE (CODE_USER+4)
+
+/*
+ * io_lib is still based around the Read struct at its heart rather than
+ * a more general ZTR style, so we have to shoehorn things in via
+ * the private_data block.
+ */
+#define SIG_SIG 0
+#define SIG_INT 1
+#define SIG_NSE 2
+typedef struct {
+    float (*signal[3])[4]; /* raw intensities */
+    int baseline[3];
+} read_pd;
+
+/* --- Some wrappers around FILE * vs gzFile *, allowing for either --- */
+/*
+ * gzopen() works on both compressed and uncompressed data, but it has
+ * a significant performance hit even for uncompressed data (tested as
+ * 25s using FILE* to 46s via gzOpen and 66s via gzOpen when gzipped).
+ *
+ * Hence we use our own wrapper 'zfp' which is a FILE* when uncompressed
+ * and gzFile* when compressed. This also means we could hide bzopen in
+ * there too if desired.
+ */
+
+/*
+ * Either a gzFile or a FILE.
+ */
+typedef struct {
+    FILE   *fp;
+    gzFile *gz;
+} zfp;
+
+/*
+ * A wrapper for either fgets or gzgets depending on what has been
+ * opened.
+ */
+char *zfgets(char *line, int size, zfp *zf) {
+    if (zf->fp)
+	return fgets(line, size, zf->fp);
+    else
+	return gzgets(zf->gz, line, size);
+}
+
+/* A replacement for either fopen or gzopen */
+zfp *zfopen(const char *path, const char *mode) {
+    size_t len;
+    char path2[1024];
+    zfp *zf;
+
+    if (!(zf = (zfp *)malloc(sizeof(*zf))))
+	return NULL;
+    zf->fp = NULL;
+    zf->gz = NULL;
+
+    /* Try normal fopen */
+    if (zf->fp = fopen(path, mode)) {
+	unsigned char magic[2];
+	fread(magic, 1, 2, zf->fp);
+	if (!(magic[0] == 0x1f &&
+	      magic[1] == 0x8b)) {
+	    fseek(zf->fp, 0, SEEK_SET);
+	    return zf;
+	}
+
+	fclose(zf->fp);
+	zf->fp = NULL;
+    }
+
+    /* Gzopen instead */
+    if (zf->gz = gzopen(path, mode))
+	return zf;
+
+    sprintf(path2, "%.*s.gz", 1020, path);
+    if (zf->gz = gzopen(path2, mode))
+	return zf;
+
+    return NULL;
+}
+
+int zfclose(zfp *zf) {
+    if (zf->fp)
+	return fclose(zf->fp);
+    else
+	return gzclose(zf->gz);
+}
+
+/* --- */
 
 void delta_called(ztr_t *ztr, ztr_chunk_t *chunk) {
     int nc, nbases, i;
@@ -214,6 +305,75 @@ static int ztr_mwrite_chunk(mFILE *fp, ztr_chunk_t *chunk) {
     return 0;
 }
 
+static char *ztr_encode_float_4(ztr_t *z, char *type,  int npoints,
+				float (*sig)[4], int baseline,
+				int *nbytes, char **mdata, int *mdbytes) {
+    char *bytes;
+    int i, j, k, t;
+
+    if ((z->header.version_major > 1 ||
+	z->header.version_minor >= 2) && baseline) {
+	/* 1.2 onwards */
+	char buf[256];
+	int blen;
+	blen = sprintf(buf, "%d", baseline);
+	if (type) {
+	    *mdata = (char *)malloc(6+blen+6+strlen(type));
+	    *mdbytes = sprintf(*mdata, "TYPE%c%s%cOFFS%c%s",
+			       0, type, 0,
+			       0, buf) + 1;
+	} else {
+	    *mdata = (char *)malloc(6+blen);
+	    *mdbytes = sprintf(*mdata, "OFFS%c%s", 0, buf) + 1;
+	}
+    } else {
+	if (type) {
+	    *mdata = (char *)malloc(6+strlen(type));
+	    *mdbytes = sprintf(*mdata, "TYPE%c%s",
+			       0, type) + 1;
+	} else {
+	    *mdata = NULL;
+	    *mdbytes = 0;
+	}
+    }
+
+    bytes = (char *)xmalloc(npoints * sizeof(TRACE)*4 + 2);
+    for (k = 0, j = 2; k < 4; k++) {
+	for (i = 0; i < npoints; i++) {
+	    t = (int)sig[i][k];
+	    bytes[j++] = (t >> 8) & 0xff;
+	    bytes[j++] = (t >> 0) & 0xff;
+	}
+    }
+    *nbytes = 4 * npoints * sizeof(TRACE) + 2;
+
+    bytes[0] = ZTR_FORM_RAW;
+    bytes[1] = 0;
+    return bytes;
+}
+
+int add_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
+	       int baseline) {
+    ztr_chunk_t *zc;
+    char *data, *mdata;
+    int dlen, mdlen;
+    
+    z->chunk = (ztr_chunk_t *)realloc(z->chunk,
+				      ++z->nchunks * sizeof(ztr_chunk_t));
+
+    zc = &z->chunk[z->nchunks-1];
+    data = ztr_encode_float_4(z, type, npoints, sig, baseline,
+			     &dlen, &mdata, &mdlen);
+    zc->type = ZTR_TYPE_SMP4;
+    zc->mdlength = mdlen;
+    zc->mdata    = mdata;
+    zc->dlength  = dlen;
+    zc->data     = data;
+    zc->ztr_owns = 1;
+
+    return 0;
+}
+
 
 char *parse_4_int(char *str, int *val) {
     int minus = 0, count = 0;
@@ -306,7 +466,8 @@ static float f_lookup[100] = {
     0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99,
 };
 
-char *parse_4_float(char *str, float *val, float *minf, float *maxf) {
+char *parse_4_float(char *str, float *val, int *bin)
+{
     int minus = 0, count = 0;
     char c;
     enum state_t {BEFORE_NUM, BEFORE_POINT, AFTER_POINT} state = BEFORE_NUM;
@@ -357,8 +518,16 @@ char *parse_4_float(char *str, float *val, float *minf, float *maxf) {
 
 		minus = 0;
 		*val++ = ival1;
-		if (*minf > ival1) *minf = ival1;
-		if (*maxf < ival1) *maxf = ival1;
+
+		if (bin) {
+		    if (ival1 > 65535)
+			bin[65535]++;
+		    else if (ival1 < -65535)
+			bin[-65535]++;
+		    else
+			bin[ival1]++;
+		}
+
 		ival1 = 0;
 
 		if (++count == 4) {
@@ -390,9 +559,16 @@ char *parse_4_float(char *str, float *val, float *minf, float *maxf) {
 
 		minus = 0;
 		*val++ = fval;
-		if (*minf > fval) *minf = fval;
-		if (*maxf < fval) *maxf = fval;
 		ival1 = ival2 = 0;
+
+		if (bin) {
+		    if (fval > 65535)
+			bin[65535]++;
+		    else if (fval < -65535)
+			bin[-65535]++;
+		    else
+			bin[(int)fval]++;
+		}
 
 		if (++count == 4) {
 		    return str;
@@ -433,12 +609,12 @@ char *parse_4_float(char *str, float *val, float *minf, float *maxf) {
  * Returns: Seq on success (static, non-reentrant)
  *          NULL on fialure
  */
-char *get_seq(FILE *fp, int trim, int *lane, int *tile, int *x, int *y) {
+char *get_seq(zfp *fp, int trim, int *lane, int *tile, int *x, int *y) {
     static char line[1024];
     char *cp, *end;
     int i4[4];
 
-    if (NULL == fgets(line, 1023, fp))
+    if (NULL == zfgets(line, 1023, fp))
 	return NULL;
 
     /* First 4 values */
@@ -471,13 +647,13 @@ char *get_seq(FILE *fp, int trim, int *lane, int *tile, int *x, int *y) {
  * Returns point to Nx4 array of ints holding the log-odds scores.
  *         NULL on failure
  */
-int (*get_prb(FILE *fp, int trim))[4] {
+int (*get_prb(zfp *fp, int trim))[4] {
     char line[MAX_CYCLES*20 +1];
     static int prb[MAX_CYCLES][4];
     char *cp;
     int c = 0; /* cycle */
-
-    if (NULL == fgets(line, MAX_CYCLES*20, fp))
+    
+    if (NULL == zfgets(line, MAX_CYCLES*20, fp))
 	return NULL;
 
     cp = line;
@@ -496,33 +672,66 @@ int (*get_prb(FILE *fp, int trim))[4] {
  * The data returned is statically allocated, so it should not be freed and
  * the function is not rentrant.
  *
+ * If 'bin' is true then we build a histogram of signal values truncated at
+ * -65535 to +65535
+ *
  * Returns point to Nx4 array of ints holding the signal strengths.
  *         NULL on failure
  */
-float (*get_sig(FILE *fp, int trim, float *min, float *max))[4] {
+float (*get_sig(zfp *fp, int trim, int *bin))[4] {
     char line[MAX_CYCLES*30 +1];
     int i4[4];
     char *cp;
-    int c = 0;
-    float minf = 1e10, maxf = -1e10;
+    int c = 0, j;
     float (*sig)[4];
 
     if (NULL == (sig = malloc(MAX_CYCLES * sizeof(*sig))))
 	return NULL;
 
-    if (NULL == fgets(line, MAX_CYCLES*30, fp))
+    if (NULL == zfgets(line, MAX_CYCLES*30, fp))
 	return NULL;
 
     /* Skip first 4 values */
     cp = parse_4_int(line, i4);
-    while (cp = parse_4_float(cp, sig[c], &minf, &maxf)) {
+    while (cp = parse_4_float(cp, sig[c], bin)) {
 	c++;
     }
 
-    *min = minf;
-    *max = maxf;
-
+    /* NOTE: Free using free(&sig[-trim]) */
     return &sig[trim];
+}
+
+/*
+ * Extracts and purity and chastity values from a quahog output file.
+ * The format is:
+ * lane tile x y purity chastity similarity distance neighbours
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int get_chastity(zfp *fp,
+		 float *purity, float *chastity,
+		 float *similarity, float *distance) {
+    char line[MAX_CYCLES*30 +1];
+    int i4[4];
+    char *cp;
+    float scores[4];
+
+    if (NULL == zfgets(line, MAX_CYCLES*30, fp))
+	return -1;
+
+    /* Skip first 4 values */
+    if (NULL == (cp = parse_4_int(line, i4)))
+	return -1;
+    if (NULL == parse_4_float(cp, scores, NULL))
+	return -1;
+
+    if (purity)     *purity     = scores[0];
+    if (chastity)   *chastity   = scores[1];
+    if (similarity) *similarity = scores[2];
+    if (distance)   *distance   = scores[3];
+
+    return 0;
 }
 
 /*
@@ -535,7 +744,7 @@ float (*get_sig(FILE *fp, int trim, float *min, float *max))[4] {
  * Returns: allocated Read on success
  *	    NULL on failure
  */
-Read *create_read(char *seq, int (*prb)[4], float (*sig)[4]) {
+Read *create_read(char *seq, int (*prb)[4], read_pd *pd) {
     size_t nbases = strlen(seq), i;
     Read *r;
     int max = 0;
@@ -559,19 +768,32 @@ Read *create_read(char *seq, int (*prb)[4], float (*sig)[4]) {
 #endif
 
 	/* Traces */
-	r->private_data = sig;
-	r->private_size = nbases * sizeof(*sig);
-
-	/*
-	if ((r->traceA[i] = (int)sig[i][0]) > max) max = sig[i][0];
-	if ((r->traceC[i] = (int)sig[i][1]) > max) max = sig[i][1];
-	if ((r->traceG[i] = (int)sig[i][2]) > max) max = sig[i][2];
-	if ((r->traceT[i] = (int)sig[i][3]) > max) max = sig[i][3];
-	*/
+	r->private_data = pd;
+	r->private_size = sizeof(*pd);
 
 	/* Sequence & position */
 	r->base[i] = seq[i];
 	r->basePos[i] = i;
+    }
+
+    if (!pd->signal[SIG_SIG]) {
+	if (r->traceA) {
+	    free(r->traceA);
+	    r->traceA = NULL;
+	}
+	if (r->traceC) {
+	    free(r->traceC);
+	    r->traceC = NULL;
+	}
+	if (r->traceG) {
+	    free(r->traceG);
+	    r->traceG = NULL;
+	}
+	if (r->traceT) {
+	    free(r->traceT);
+	    r->traceT = NULL;
+	}
+	r->NPoints = 0;
     }
 
     r->maxTraceVal = max;
@@ -635,62 +857,80 @@ void format_name(char *name, char *fmt, int lane, int tile, int x, int y,
  * Given one or two ZTR chunk types this aggregates all together and
  * computes a set of huffman codes matching data from those chunk types.
  *
+ * key/value are optional (may be NULL). When specified they further
+ * restrict the chunks to process to those containing a specific meta-data
+ * key/value pair.
+ * A key/value pair with NULL value is taken as implying that the key must
+ * not exist.
+ *
  * Returns huffman_code_t on success
  *         NULL on failure
  */
-huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type) {
+huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
+			     char *key, char *value) {
     unsigned char *buf = NULL;
     size_t sz = 0, alloc = 0;
     int nreads = ArrayMax(za);
     int i, j, skip;
     huffman_codeset_t *cds;
-
+ 
     /* Accumulated concatenated blocks of data from all ZTR files */
     for (i = 0; i < nreads; i++) {
 	ztr_t *z = arr(ztr_t *, za, i);
 	for (j = 0; j < z->nchunks; j++) {
 	    int pos, len;
 
-	    if (z->chunk[j].type == type) {
+	    if (z->chunk[j].type != type)
+		continue;
+
+	    /* Check meta-data if required */
+	    if (key && value) {
+		char *v = ztr_lookup_mdata_value(z, &z->chunk[j], key);
+		if (!v || 0 != strcmp(v, value))
+		    continue;
+	    } else if (key) {
+		if (ztr_lookup_mdata_value(z, &z->chunk[j], key))
+		    continue;
+	    }
+
 #if 0
-		/*
-		 * Optimisation for base calls: only use huffman
-		 * compression on data that is not pure A,C,G,T.
-		 *
-		 * For pure ACGT we could use an additional ZTR format that
-		 * utilises 2-bit encodings. I predict this would reduce the
-		 * space taken up by BASE data blocks by 22% (although this
-		 * is overall only 1% of the total file size).
-		 */
-		if (z->chunk[j].type == ZTR_TYPE_BASE) {
-		    int k, l = z->chunk[j].dlength;
-		    for (k = 1; k < l; k++) {
-			if (z->chunk[j].data[k] != 'A' &&
-			    z->chunk[j].data[k] != 'C' &&
-			    z->chunk[j].data[k] != 'G' &&
-			    z->chunk[j].data[k] != 'T')
-			    break;
-		    }
-
-		    if (k == l)
-			continue;
+	    /*
+	     * Optimisation for base calls: only use huffman
+	     * compression on data that is not pure A,C,G,T.
+	     *
+	     * For pure ACGT we could use an additional ZTR format that
+	     * utilises 2-bit encodings. I predict this would reduce the
+	     * space taken up by BASE data blocks by 22% (although this
+	     * is overall only 1% of the total file size).
+	     */
+	    if (z->chunk[j].type == ZTR_TYPE_BASE) {
+		int k, l = z->chunk[j].dlength;
+		for (k = 1; k < l; k++) {
+		    if (z->chunk[j].data[k] != 'A' &&
+			z->chunk[j].data[k] != 'C' &&
+			z->chunk[j].data[k] != 'G' &&
+			z->chunk[j].data[k] != 'T')
+			break;
 		}
+
+		if (k == l)
+		    continue;
+	    }
 #endif
-		len = (int)((z->chunk[j].dlength + nc-1)/nc) * nc;
-		while (len + sz > alloc) {
-		    alloc += 65536;
-		    if (!(buf = (unsigned char *)realloc(buf, alloc)))
-			return NULL;
-		}
+	    len = (int)((z->chunk[j].dlength + nc-1)/nc) * nc;
+	    while (len + sz > alloc) {
+		alloc += 65536;
+		if (!(buf = (unsigned char *)realloc(buf, alloc)))
+		    return NULL;
+	    }
 
-		memcpy(&buf[sz], z->chunk[j].data, z->chunk[j].dlength);
-		sz += z->chunk[j].dlength;
+	    memcpy(&buf[sz], z->chunk[j].data, z->chunk[j].dlength);
+	    sz += z->chunk[j].dlength;
 
-		/* Pad out to ensure data copied is a multiple of nc */
-		if (len > z->chunk[j].dlength) {
-		    memset(&buf[sz], 0, len - z->chunk[j].dlength);
-		    sz += len - z->chunk[j].dlength;
-		}
+	    /* Pad out to ensure data copied is a multiple of nc */
+	    if (len > z->chunk[j].dlength) {
+		memset(&buf[sz], 0, len - z->chunk[j].dlength);
+		sz += len - z->chunk[j].dlength;
 	    }
 	}
     }
@@ -904,29 +1144,86 @@ void subtract_models(Array za) {
 }
 #endif
 
-void rescale_trace(Read *r, int min, int max) {
-    int i, j, mtv = 0;
-    float (*sig)[4] = (float (*)[4])r->private_data;
+/*
+ * We have a histogram in 'bin' of values from -65536 to +65535.
+ * From this we work out the optimal baseline value that trims the least
+ * amount of data.
+ *
+ * Returns: baseline value.
+ */
+int compute_baseline(int quiet, int *bin) {
+    int min_val = -65536, min_count = 0;
+    int max_val = +65536, max_count = 0;
 
-    for (i = 0; i < r->NPoints; i++) {
-	if (sig[i][0] < min) sig[i][0] = min;
-	if (sig[i][1] < min) sig[i][1] = min;
-	if (sig[i][2] < min) sig[i][2] = min;
-	if (sig[i][3] < min) sig[i][3] = min;
+    /* Find used extents */
+    while (!bin[++min_val]);
+    while (!bin[--max_val]);
 
-	if (sig[i][0] > max) sig[i][0] = max;
-	if (sig[i][1] > max) sig[i][1] = max;
-	if (sig[i][2] > max) sig[i][2] = max;
-	if (sig[i][3] > max) sig[i][3] = max;
-
-	if ((r->traceA[i] = (int)(sig[i][0] - min)) > mtv) mtv = r->traceA[i];
-	if ((r->traceC[i] = (int)(sig[i][1] - min)) > mtv) mtv = r->traceC[i];
-	if ((r->traceG[i] = (int)(sig[i][2] - min)) > mtv) mtv = r->traceG[i];
-	if ((r->traceT[i] = (int)(sig[i][3] - min)) > mtv) mtv = r->traceT[i];
+    /* Trim off both ends until extents fit in range */
+    while (max_val - min_val > 65535) {
+	if (max_count <= min_count) {
+	    max_count += bin[max_val];
+	    while (!bin[--max_val]);
+	} else {
+	    min_count += bin[min_val];
+	    while (!bin[++min_val]);
+	}
     }
 
-    r->baseline = -min;
-    r->maxTraceVal = mtv;
+    if (!quiet)
+	printf("Trimmed %d min, %d max => dynamic range is %d..%d inclusive\n",
+	       min_count, max_count, min_val, max_val);
+
+    return -min_val;
+}
+
+/*
+ * Applies a baseline correction to an array of signal values, trimming
+ * anything remaining outside of 0 to 65535.
+ */
+void rescale_trace(Read *r, int sig_num, int baseline) {
+    int i, j, mtv = 0;
+    read_pd *pd = (read_pd *)r->private_data;
+    float (*sig)[4] = NULL;
+
+    if (!(sig = pd->signal[sig_num]))
+	return;
+
+    for (i = 0; i < r->NBases; i++) {
+	sig[i][0] += baseline;
+	sig[i][1] += baseline;
+	sig[i][2] += baseline;
+	sig[i][3] += baseline;
+
+	if (sig[i][0] < 0) sig[i][0] = 0;
+	if (sig[i][1] < 0) sig[i][1] = 0;
+	if (sig[i][2] < 0) sig[i][2] = 0;
+	if (sig[i][3] < 0) sig[i][3] = 0;
+
+	if (sig[i][0] > 65535) sig[i][0] = 65535;
+	if (sig[i][1] > 65535) sig[i][1] = 65535;
+	if (sig[i][2] > 65535) sig[i][2] = 65535;
+	if (sig[i][3] > 65535) sig[i][3] = 65535;
+
+	if (sig_num != SIG_SIG)
+	    continue;
+
+	r->traceA[i] = (int)sig[i][0];
+	r->traceC[i] = (int)sig[i][1];
+	r->traceG[i] = (int)sig[i][2];
+	r->traceT[i] = (int)sig[i][3];
+
+	if (mtv < sig[i][0]) mtv = sig[i][0];
+	if (mtv < sig[i][1]) mtv = sig[i][1];
+	if (mtv < sig[i][2]) mtv = sig[i][2];
+	if (mtv < sig[i][3]) mtv = sig[i][3];
+    }
+
+    pd->baseline[sig_num] = baseline;
+    if (sig_num == SIG_SIG) {
+	r->baseline = baseline;
+	r->maxTraceVal = mtv;
+    }
 }
 
 #define EBASE 65536
@@ -1008,9 +1305,12 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
     int i;
     for (i = 0; i < ztr->nchunks; i++) {
 	switch(ztr->chunk[i].type) {
+	    char *key;
 	case ZTR_TYPE_SMP4:
+	    key = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
 	    if (level == 0) {
 #ifdef DEBUG_OUT
+		if (!key)
 		write(fds[FD_TRACE_RAW],
 		      ztr->chunk[i].data+2, ztr->chunk[i].dlength-2);
 #endif
@@ -1022,14 +1322,23 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    }
 	    if (level == 1) {
 #ifdef DEBUG_OUT
+		if (key && 0 == strcmp(key, "SLXN"))
 		write(fds[FD_TRACE_ORD],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
 #ifndef NO_ENTROPY_ENCODING
-		compress_chunk(ztr, &ztr->chunk[i],
-			       ZTR_FORM_STHUFF, SMP4_CODE, 0);
+		if (key && 0 == strcmp(key, "SLXI"))
+		    compress_chunk(ztr, &ztr->chunk[i],
+				   ZTR_FORM_STHUFF, INT4_CODE, 0);
+		else if (key && 0 == strcmp(key, "SLXN"))
+		    compress_chunk(ztr, &ztr->chunk[i],
+				   ZTR_FORM_STHUFF, NSE4_CODE, 0);
+		else
+		    compress_chunk(ztr, &ztr->chunk[i],
+				   ZTR_FORM_STHUFF, SIG4_CODE, 0);
 #endif
 #ifdef DEBUG_OUT
+		if (key && 0 == strcmp(key, "SLXN"))
 		write(fds[FD_TRACE_CMP],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
@@ -1124,7 +1433,7 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
     for (i = 0; i < ztr->nchunks; i++) {
 	pos = mftell(mf);
 	ztr_mwrite_chunk(mf, &ztr->chunk[i]);
-	if (ztr->chunk[i].type == ZTR_TYPE_SMP4 && footer) {
+	if (ztr->chunk[i].type == ZTR_TYPE_SMP4 && footer && !*footer) {
 	    /* allows traces up to 64k */
 	    *footer = pos + 10 + ztr->chunk[i].mdlength;
 	}
@@ -1153,53 +1462,77 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
  * Skip indicates how many bases to remove from the front of the trace.
  * FIXME: Maybe this should not be remove, but mark as clipped instead.
  *
- * Returns: 0 for success
+ * Returns: 0 written for success
  *	   -1 for failure
  */
-int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
-	   int phased, char *name_fmt, char *prefix_fmt) {
+int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
+	   int phased, float chastity, int quiet,
+	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
     char *cp;
-    char prb_file[1024], sig_file[1024];
-    FILE *fp_seq, *fp_prb, *fp_sig;
+    char prb_file[1024], sig_file[1024], qhg_file[1024];
+    char int_file[1024], nse_file[1024];
+    zfp *fp_seq = NULL, *fp_prb = NULL;
+    zfp *fp_sig = NULL, *fp_qhg = NULL;
+    zfp *fp_int = NULL, *fp_nse = NULL;
     char *seq;
     int seq_num = 0;
     char last_prefix[1024] = {'\0'};
-    Array za, la, ra;
+    Array za = NULL, la = NULL, ra = NULL;
     loc_t l;
-    int nreads = 0;
-    int t;
-    huffman_codeset_t *base_cds = NULL;
-    huffman_codeset_t *trace_cds = NULL;
-    huffman_codeset_t *conf_cds = NULL;
+    int nreads = 0, filtered = 0, t;
     ztr_hcode_t *hcodes = NULL;
     int nhcodes = 0;
-    int min_val = 0, max_val = 0;
+    int err = -1;
+    huffman_codeset_t *seq_cds = NULL;
+    huffman_codeset_t *prb_cds = NULL;
+    huffman_codeset_t *sig_cds = NULL;
+    huffman_codeset_t *int_cds = NULL;
+    huffman_codeset_t *nse_cds = NULL;
+    int sig_bin_a[65536*2], *sig_bin = &sig_bin_a[65536];
+    int int_bin_a[65536*2], *int_bin = &int_bin_a[65536];
+    int nse_bin_a[65536*2], *nse_bin = &nse_bin_a[65536];
+    int sig_baseline, int_baseline, nse_baseline;
 
-    /* open all 3 filenames */
+    memset(sig_bin_a, 0, 65536*2 * sizeof(*sig_bin_a));
+    memset(int_bin_a, 0, 65536*2 * sizeof(*int_bin_a));
+    memset(nse_bin_a, 0, 65536*2 * sizeof(*nse_bin_a));
+
+    /* open the required files */
     if (NULL == (cp = strrchr(seq_file, '_')))
 	return -1;
 
     sprintf(prb_file, "%.*s_prb.txt", (int)(cp-seq_file), seq_file);
-    if (raw_mode)
-	sprintf(sig_file, "../%.*s_int.txt", (int)(cp-seq_file), seq_file);
-    else if (phased)
+    sprintf(qhg_file, "%.*s_qhg.txt", (int)(cp-seq_file), seq_file);
+    sprintf(int_file, "../%.*s_int.txt", (int)(cp-seq_file), seq_file);
+    sprintf(nse_file, "../%.*s_nse.txt", (int)(cp-seq_file), seq_file);
+
+    if (phased) {
 	sprintf(sig_file, "%.*s_sig2.txt", (int)(cp-seq_file), seq_file);
-    else
+    } else {
 	sprintf(sig_file, "%.*s_sig.txt", (int)(cp-seq_file), seq_file);
-
-    if (NULL == (fp_seq = fopen(seq_file, "r"))) {
-	return -1;
-    }
-    if (NULL == (fp_prb = fopen(prb_file, "r"))) {
-	fclose(fp_seq);
-	return -1;
-    }
-    if (NULL == (fp_sig = fopen(sig_file, "r"))) {
-	fclose(fp_seq);
-	fclose(fp_prb);
-	return -1;
     }
 
+    if (NULL == (fp_seq = zfopen(seq_file, "r")))
+	goto error;
+    if (NULL == (fp_prb = zfopen(prb_file, "r")))
+	goto error;
+
+    if (proc) {
+	if (NULL == (fp_sig = zfopen(sig_file, "r")))
+	    goto error;
+    }
+
+    if (raw) {
+	if (NULL == (fp_int = zfopen(int_file, "r")))
+	    goto error;
+	if (NULL == (fp_nse = zfopen(nse_file, "r")))
+	    goto error;
+    }
+
+    if (chastity > 0) {
+	if (NULL == (fp_qhg = zfopen(qhg_file, "r")))
+	    goto error;
+    }
 
     za = ArrayCreate(sizeof(ztr_t *), 0);
     la = ArrayCreate(sizeof(loc_t), 0);
@@ -1219,23 +1552,52 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 
     /* Cache all reads in memory */
     while ((seq = get_seq(fp_seq, skip, &l.lane, &l.tile, &l.x, &l.y))) {
-	float min, max;
-	int   (*prb)[4] = get_prb(fp_prb, skip);
-	float (*sig)[4] = get_sig(fp_sig, skip, &min, &max);
+	read_pd *pd = (read_pd *)calloc(1, sizeof(*pd));
+	int   (*prb)[4];
 	Read *r;
+	float c;
 
-	if (!prb || !sig) {
-	    fprintf(stderr, "Couldn't load prb/sig for %s/%d\n",
+	if (!(prb = get_prb(fp_prb, skip))) {
+	    fprintf(stderr, "Couldn't load prb for %s/%d\n",
 		    seq_file, seq_num);
 	    continue;
 	}
 
-	if (min_val > min) min_val = min;
-	if (max_val < max) max_val = max;
+	if (fp_sig) {
+	    if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
+		fprintf(stderr, "Couldn't load sig for %s/%d\n",
+			seq_file, seq_num);
+		continue;
+	    }
+	}
 
+	if (fp_int) {
+	    if (!(pd->signal[SIG_INT] = get_sig(fp_int, skip, int_bin))) {
+		fprintf(stderr, "Couldn't load int for %s/%d\n",
+			seq_file, seq_num);
+		continue;
+	    }
+	}
+
+	if (fp_nse) {
+	    if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
+		fprintf(stderr, "Couldn't load nse for %s/%d\n",
+			seq_file, seq_num);
+		continue;
+	    }
+	}
+
+	/* Filter last - to ensure we keep in sync on all files */
+	if (fp_qhg) {
+	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
+	    if (c < chastity) {
+		filtered++;
+		continue;
+	    }
+	}
 
 	/* Create the ZTR file and output, if needed, the common header */
-	if (NULL == (r = create_read(seq, prb, sig)))
+	if (NULL == (r = create_read(seq, prb, pd)))
 	    continue;
 
 	ARR(Read *, ra, nreads) = r;
@@ -1244,40 +1606,47 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	nreads++;
     }
 
-    /*
-     * Now we have min_val and max_val as the minimum and maximum values
-     * observed in the trace data.
-     * There's a chance that the full dynamic range is greater than 16-bit,
-     * so in this case we truncate the bottom end as we're not so
-     * interested in a perfect representation of spikes in the noise.
-     *
-     * There's an even smaller chance our positive data is > 65535, in
-     * which case we have no choice but to warn and truncate.
-     */
-    if (max_val > 65535) {
-	fprintf(stderr, "%s: Warning  max value (%d) > 65535. Truncating",
-		seq_file, max_val);
-	min_val = 0;
-	max_val = 65535;
-    }
+    if (nf)
+	*nf = filtered;
+    if (nr)
+	*nr = nreads;
 
-    if (max_val - min_val > 65535) {
-	fprintf(stderr, "%s: Warning range from min(%d) to max(%d) values"
-		" > 65535. Truncating noise signal\n",
-		seq_file, min_val, max_val);
-	min_val = max_val - 65535;
-    }
+    if (!nreads)
+	goto skip;
 
+    if (fp_sig)
+	sig_baseline = compute_baseline(quiet, sig_bin);
+    if (fp_int)
+	int_baseline = compute_baseline(quiet, int_bin);
+    if (fp_nse)
+	nse_baseline = compute_baseline(quiet, nse_bin);
+    
     /*
-     * Now we know the min_val and max_val we can turn our float arrays in
+     * Now we know the min_sig and max_sig we can turn our float arrays in
      * the Read struct into integers and convert to ZTR.
      */
     for (seq_num = 0; seq_num < nreads; seq_num++) {
+	ztr_t *z;
 	Read *r = arr(Read *, ra, seq_num);
+	read_pd *pd = (read_pd *)r->private_data;
 
-	rescale_trace(r, min_val, max_val);
-	ARR(ztr_t *, za, seq_num) = read2ztr(r);
+	rescale_trace(r, SIG_SIG, sig_baseline);
+	rescale_trace(r, SIG_INT, int_baseline);
+	rescale_trace(r, SIG_NSE, nse_baseline);
+
+	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
+	if (pd->signal[SIG_INT])
+	    add_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
+		      pd->baseline[SIG_INT]);
+	if (pd->signal[SIG_NSE])
+	    add_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
+		      pd->baseline[SIG_NSE]);
+		      
 	srf_compress_ztr(arr(ztr_t *, za, seq_num), 0);
+
+	if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+	if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+	if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
 	read_deallocate(r);
     }
 
@@ -1286,20 +1655,33 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
     subtract_models(za);
 #endif
 
-#ifndef NO_ENTROPY_ENCODING
     /*
      * Compute averaged frequency metrics for HUFF encoding
      * For the 16-bit trace data we break this down into 1st and 2nd byte of
      * each value => trac1 and trac2 code sets.
      */
-    base_cds  = ztr2codes(za, BASE_CODE, 1, ZTR_TYPE_BASE);
+#ifndef NO_ENTROPY_ENCODING
+    seq_cds = ztr2codes(za, BASE_CODE, 1, ZTR_TYPE_BASE, NULL,   NULL);
 
 #ifdef SINGLE_HUFF
-    conf_cds  = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4);
-    trace_cds = ztr2codes(za, SMP4_CODE, 1, ZTR_TYPE_SMP4);
+    prb_cds = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4, NULL,   NULL);
+    if (fp_sig)
+	sig_cds = ztr2codes(za, SIG4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", NULL);
+    if (fp_int)
+	int_cds = ztr2codes(za, INT4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXI");
+    if (fp_nse)
+	nse_cds = ztr2codes(za, NSE4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXN");
 #else
-    conf_cds  = ztr2codes(za, CNF4_CODE, 4,         ZTR_TYPE_CNF4);
-    trace_cds = ztr2codes(za, SMP4_CODE, N_TR_CODE, ZTR_TYPE_SMP4);
+    prb_cds = ztr2codes(za, CNF4_CODE, 4,         ZTR_TYPE_CNF4, NULL, NULL);
+    if (fp_sig)
+	sig_cds = ztr2codes(za, SIG4_CODE, N_TR_CODE,
+			    ZTR_TYPE_SMP4, "TYPE", NULL);
+    if (fp_int)
+	int_cds = ztr2codes(za, INT4_CODE, N_TR_CODE,
+			    ZTR_TYPE_SMP4, "TYPE", "SLXI");
+    if (fp_nse)
+	nse_cds = ztr2codes(za, NSE4_CODE, N_TR_CODE,
+			    ZTR_TYPE_SMP4, "TYPE", "SLXN");
 #endif
 #endif
 
@@ -1318,9 +1700,14 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	 */
 
 #ifndef NO_ENTROPY_ENCODING
-	ztr_add_hcode(z, base_cds, 0);
-	ztr_add_hcode(z, trace_cds, 0);
-	ztr_add_hcode(z, conf_cds, 0);
+	ztr_add_hcode(z, seq_cds, 0);
+	ztr_add_hcode(z, prb_cds, 0);
+	if (sig_cds)
+	    ztr_add_hcode(z, sig_cds, 0);
+	if (int_cds)
+	    ztr_add_hcode(z, int_cds, 0);
+	if (nse_cds)
+	    ztr_add_hcode(z, nse_cds, 0);
 #endif
 
 	srf_compress_ztr(z, 1);
@@ -1352,24 +1739,41 @@ int append(srf_t *srf, char *seq_file, int raw_mode, int skip,
 	mfdestroy(mf);
     }
 
-    huffman_codeset_destroy(base_cds);
-    huffman_codeset_destroy(trace_cds);
-    huffman_codeset_destroy(conf_cds);
+    huffman_codeset_destroy(seq_cds);
+    huffman_codeset_destroy(sig_cds);
+    huffman_codeset_destroy(prb_cds);
 
-    ArrayDestroy(ra);
-    ArrayDestroy(za);
-    ArrayDestroy(la);
-    fclose(fp_seq);
-    fclose(fp_prb);
-    fclose(fp_sig);
+ skip:
+    err = 0;
+ error:
 
-    return 0;
+    if (ra)
+	ArrayDestroy(ra);
+    if (za)
+	ArrayDestroy(za);
+    if (la)
+	ArrayDestroy(la);
+
+    if (fp_seq)
+	zfclose(fp_seq);
+    if (fp_prb)
+	zfclose(fp_prb);
+    if (fp_sig)
+	zfclose(fp_sig);
+    if (fp_int)
+	zfclose(fp_int);
+    if (fp_nse)
+	zfclose(fp_nse);
+    if (fp_qhg)
+	zfclose(fp_qhg);
+
+    return err;
 }
 
 int main(int argc, char **argv) {
     int i, ret = 0;
     FILE *outfp;
-    int raw_mode = 0;
+    int raw_mode = 0, proc_mode = 1;
     char *outfn = "traces.srf";
     int skip = 0;
     int phased = 1;
@@ -1379,6 +1783,8 @@ int main(int argc, char **argv) {
     char *prefix_fmt = "s_%l_%t_";
     srf_t *srf;
     srf_cont_hdr_t *ch;
+    float chastity = 0;
+    int nreads = 0, nfiltered = 0;
 
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -1386,8 +1792,12 @@ int main(int argc, char **argv) {
 	    break;
 	} else if (!strcmp(argv[i], "-r")) {
 	    raw_mode = 1;
+	} else if (!strcmp(argv[i], "-R")) {
+	    raw_mode = 0;
 	} else if (!strcmp(argv[i], "-p")) {
-	    phased = 1;
+	    proc_mode = 1;
+	} else if (!strcmp(argv[i], "-P")) {
+	    proc_mode = 0;
 	} else if (!strcmp(argv[i], "-u")) {
 	    phased = 0;
 	} else if (!strcmp(argv[i], "-q")) {
@@ -1406,12 +1816,20 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		skip = atoi(argv[++i]);
 	    }
+	} else if (!strcmp(argv[i], "-c")) {
+	    if (i < argc) {
+		chastity = atof(argv[++i]);
+	    }
 	} else {
 	    fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
 	    fprintf(stderr, "Options:\n");
-	    fprintf(stderr, "    -r       Raw_mode (use ../*_int.txt)\n");
-	    fprintf(stderr, "    -p       Phase corrected (use *_sig2.txt) - default\n");
-	    fprintf(stderr, "    -u       Phase uncorrected (use *_sig.txt)\n");
+	    fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
+	    fprintf(stderr, "    -R       Skip raw data:       ../_*{int,nse}.txt - default\n");
+	    fprintf(stderr, "    -p       Add processed data:  *sig2.txt - default\n");
+	    fprintf(stderr, "    -P       Skip processed data: *sig2.txt\n");
+	    fprintf(stderr, "    -u       Use phase uncorrected data (sig vs sig2)\n");
+
+	    fprintf(stderr, "    -c float Chastity filter (>= float)\n");
 	    fprintf(stderr, "    -d       Output 'dots' (default off)\n");
 	    fprintf(stderr, "    -q       Quiet\n");
 	    fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
@@ -1454,10 +1872,15 @@ int main(int argc, char **argv) {
     /* Loop through remaining files appending to the archive */
     for (; i < argc; i++) {
 	char c = '.';
-	if (-1 == append(srf, argv[i], raw_mode, skip, phased, name_fmt,
-			 prefix_fmt)) {
+	int nr, nf;
+	if (-1 == append(srf, argv[i], raw_mode, proc_mode,
+			 skip, phased, chastity, quiet,
+			 name_fmt, prefix_fmt, &nr, &nf)) {
 	    c = '!';
 	    ret = 1;
+	} else {
+	    nreads += nr;
+	    nfiltered += nf;
 	}
 	if (!quiet && dots) {
 	    putchar(c);
@@ -1480,6 +1903,12 @@ int main(int argc, char **argv) {
     close(fds[FD_BASE_RAW]);
     close(fds[FD_BASE_CMP]);
 #endif
+
+    if (!quiet) {
+	printf("Filtered %8d traces\n", nfiltered);
+	printf("Wrote    %8d traces\n", nreads);
+	printf("=>       %6.2f%% passed\n", 100.0*nreads/(nfiltered+nreads));
+    }
 
     return ret;
 }
