@@ -103,13 +103,11 @@ mFILE *find_reading(srf_t *srf, char *tr_name) {
 	}
 
 	case SRFB_INDEX: {
-	    srf_index_hdr_t hdr;
-	    off_t pos = ftell(srf->fp);
+	    off_t pos = ftello(srf->fp);
+	    srf_read_index_hdr(srf, &srf->hdr, 1);
 
-	    srf_read_index_hdr(srf, &hdr);
-	    
 	    /* Skip the index body */
-	    fseeko(srf->fp, pos + hdr.size, SEEK_SET);
+	    fseeko(srf->fp, pos + srf->hdr.size, SEEK_SET);
 	    break;
 	}
 
