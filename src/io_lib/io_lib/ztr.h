@@ -141,6 +141,10 @@ int ztr_store_hcodes(ztr_t *ztr);
 ztr_hcode_t *ztr_find_hcode(ztr_t *ztr, int code_set);
 ztr_chunk_t *ztr_find_hcode_chunk(ztr_t *ztr, int code_set);
 char *ztr_lookup_mdata_value(ztr_t *z, ztr_chunk_t *chunk, char *key);
+ztr_chunk_t *ztr_new_chunk(ztr_t *ztr, uint4 type,
+			   char *data,  uint4 dlength,
+			   char *mdata, uint4 mdlength);
+ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch, char *key, char *value);
 
 #ifdef __cplusplus
 }

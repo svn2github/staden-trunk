@@ -613,6 +613,105 @@ ztr_chunk_t *ztr_find_hcode_chunk(ztr_t *ztr, int code_set) {
     return NULL;
 }
 
+/*
+ * Adds a new chunk to a ztr file and returns the chunk pointer.
+ * The data and mdata fields can be NULL and the chunk will not be
+ * initialised.
+ *
+ * Returns new chunk ptr on success.
+ *         NULL on failure.
+ */
+ztr_chunk_t *ztr_new_chunk(ztr_t *ztr, uint4 type,
+			   char *data,  uint4 dlength,
+			   char *mdata, uint4 mdlength) {
+    ztr_chunk_t *chunks, *c;
+
+    /* Grow the chunk array */
+    chunks = (ztr_chunk_t *)realloc(ztr->chunk,
+				    (ztr->nchunks+1) * sizeof(*chunks));
+    if (!chunks)
+	return NULL;
+    ztr->chunk = chunks;
+
+    /* Initialise */
+    c = &ztr->chunk[ztr->nchunks++];
+    c->type     = type;
+    c->data     = data;
+    c->dlength  = dlength;
+    c->mdata    = mdata;
+    c->mdlength = mdlength;
+    c->ztr_owns = 1;
+
+    return c;
+}
+
+/*
+ * Adds a key/value pair to a ztr TEXT chunk.
+ * The 'ch' chunk may be explicitly specified in which case the text
+ * is added to that chunk or it may be specified as NULL in which case
+ * the key/value pair are added to the first available TEXT chunk,
+ * possibly creating a new one if required.
+ *
+ * NOTE: If the key already exists in the text chunk this appends a new
+ * copy; it does not overwrite the old one.
+ *
+ * Returns ztr text chunk ptr for success
+ *        NULL for failure
+ */
+ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch, char *key, char *value) {
+    ztr_chunk_t **text_chunks = NULL;
+    int ntext_chunks;
+    size_t key_len, value_len;
+    char *cp;
+
+    /* Find/create the appropriate chunk */
+    if (!ch) {
+	text_chunks = ztr_find_chunks(z, ZTR_TYPE_TEXT, &ntext_chunks);
+	if (!text_chunks) {
+	    ch = ztr_new_chunk(z, ZTR_TYPE_TEXT, NULL, 0, NULL, 0);
+	} else {
+	    ch = text_chunks[0];
+	    xfree(text_chunks);
+	}
+    }
+
+    if (ch->type != ZTR_TYPE_TEXT)
+	return NULL;
+
+    /* Make sure it's not compressed */
+    uncompress_chunk(z, ch);
+
+    /* Append key\0value\0 */
+    key_len = strlen(key);
+    value_len = strlen(value);
+    cp = ch->data;
+    if (cp) {
+	/* Set ch->dlength to the last non-nul byte of the previous value */
+	while (ch->dlength && ch->data[ch->dlength-1] == 0)
+	    ch->dlength--;
+    }
+
+    cp = realloc(ch->data, 1 + ch->dlength + key_len + value_len + 2);
+    if (NULL == cp)
+	return NULL;
+    else
+	ch->data = cp;
+
+    cp = &ch->data[ch->dlength];
+
+    /*
+     * Note this is a bit cryptic, but it works.
+     * When appending to an existing text chunk we write a preceeding nul
+     * to mark the end of the previous value (we rewound above specifically
+     * for this case).
+     * When creating a new chunk we still write a nul, but in this case it's
+     * the RAW format byte.
+     */    
+    ch->dlength += 1+sprintf(cp, "%c%s%c%s", 0, key, 0, value);
+
+    return ch;
+}
+
 
 
 /*
