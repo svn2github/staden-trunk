@@ -63,6 +63,8 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
+#define S2S_VERSION "1.3"
+
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
 
@@ -155,14 +157,14 @@ zfp *zfopen(const char *path, const char *mode) {
     if (zf->gz = gzopen(path2, mode))
 	return zf;
 
+    free(zf);
     return NULL;
 }
 
 int zfclose(zfp *zf) {
-    if (zf->fp)
-	return fclose(zf->fp);
-    else
-	return gzclose(zf->gz);
+    int r = (zf->fp) ? fclose(zf->fp) : gzclose(zf->gz);
+    free(zf);
+    return r;
 }
 
 /* --- */
@@ -754,18 +756,10 @@ Read *create_read(char *seq, int (*prb)[4], read_pd *pd) {
 
     for (i = 0; i < nbases; i++) {
 	/* Confidence values */
-#if 0
-	/* FIXME: for now we don't have -ve confidences */
-	r->prob_A[i] = MAX(prb[i][0], 0);
-	r->prob_C[i] = MAX(prb[i][1], 0);
-	r->prob_G[i] = MAX(prb[i][2], 0);
-	r->prob_T[i] = MAX(prb[i][3], 0);
-#else
 	r->prob_A[i] = prb[i][0];
 	r->prob_C[i] = prb[i][1];
 	r->prob_G[i] = prb[i][2];
 	r->prob_T[i] = prb[i][3];
-#endif
 
 	/* Traces */
 	r->private_data = pd;
@@ -959,6 +953,7 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
  *     HUFF chunks
  *     BPOS chunk
  *     CLIP chunk
+ *     TEXT chunk (matrix, parameters, etc)
  *     SMP4 chunk header (type codes, but not data itself)
  * Footer:
  *     SMP4 data
@@ -969,8 +964,12 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
 static void reorder_ztr(ztr_t *ztr) {
     int i, j, cnum;
     ztr_chunk_t tmp;
-    int headers[] = {ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP,
-		     ZTR_TYPE_SMP4};
+    int headers[] = {
+	/* header */
+	ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP, ZTR_TYPE_TEXT,
+	/* footer */
+	ZTR_TYPE_SMP4, ZTR_TYPE_BASE, ZTR_TYPE_CNF4
+    };
 
     /* Reorder */
     for (cnum = j = 0; j < sizeof(headers)/sizeof(*headers); j++) {
@@ -1442,6 +1441,64 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
     return mf;
 }
 
+/*
+ * Slurps the entirety of a file into a malloced buffer and returns a pointer
+ * to it.
+ *
+ * Returns: malloced buffer on success, *lenp equal to length
+ *          NULL on failure
+ */
+static unsigned char *load(char *fn, int *lenp) {
+    unsigned char *data = NULL;
+    int dsize = 0;
+    int dcurr = 0, len;
+    int fd = 0;
+
+    if (fn) {
+	if (-1 == (fd = open(fn, O_RDONLY, 0))) {
+	    perror(fn);
+	    return NULL;
+	}
+    }
+
+    do {
+	if (dsize - dcurr < 8192) {
+	    dsize = dsize ? dsize * 2 : 8192;
+	    if (NULL == (data = realloc(data, dsize))) {
+		if (fd)
+		    close(fd);
+		return NULL;
+	    }
+	}
+
+	len = read(fd, data + dcurr, 8192);
+	if (len > 0)
+	    dcurr += len;
+    } while (len > 0);
+
+    if (len == -1) {
+	perror("read");
+	if (fd)
+	    close(fd);
+	return NULL;
+    }
+
+    if (fd)
+	close(fd);
+
+    /* nul terminate; but not included in length */
+    if (dsize - dcurr < 1) {
+	dsize++;
+	if (NULL == (data = realloc(data, dsize)))
+	    return NULL;
+    }
+    data[dcurr] = 0;
+
+    if (lenp)
+	*lenp = dcurr;
+
+    return data;
+}
 
 /*
  * Takes a s_*_*_seq.txt file as input and creates a ZTR file as output.
@@ -1468,7 +1525,7 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
 int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	   int phased, float chastity, int quiet,
 	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
-    char *cp;
+    char *cp, *matrix = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
     zfp *fp_seq = NULL, *fp_prb = NULL;
@@ -1492,6 +1549,7 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
     int int_bin_a[65536*2], *int_bin = &int_bin_a[65536];
     int nse_bin_a[65536*2], *nse_bin = &nse_bin_a[65536];
     int sig_baseline, int_baseline, nse_baseline;
+    int last_lane = 0;
 
     memset(sig_bin_a, 0, 65536*2 * sizeof(*sig_bin_a));
     memset(int_bin_a, 0, 65536*2 * sizeof(*int_bin_a));
@@ -1550,12 +1608,49 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
     init_model();
 #endif
 
+    params = load("../.params", NULL);
+
     /* Cache all reads in memory */
     while ((seq = get_seq(fp_seq, skip, &l.lane, &l.tile, &l.x, &l.y))) {
 	read_pd *pd = (read_pd *)calloc(1, sizeof(*pd));
 	int   (*prb)[4];
 	Read *r;
 	float c;
+
+	if (fp_qhg) {
+	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
+	    if (c < chastity) {
+		char dummy[10240];
+
+		/*
+		 * To keep in sync we still need to read from the other files,
+		 * but we don't need to parse them. So we duplicate the work
+		 * a bit here for efficiencies sake.
+		 */
+		if (fp_prb) zfgets(dummy, 10240, fp_prb);
+		if (fp_sig) zfgets(dummy, 10240, fp_sig);
+		if (fp_int) zfgets(dummy, 10240, fp_int);
+		if (fp_nse) zfgets(dummy, 10240, fp_nse);
+
+		filtered++;
+		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		free(pd);
+
+		continue;
+	    }
+	}
+
+	/* ASSUMPTION: lane is constant through input file */
+	if (l.lane != last_lane) {
+	    char fn[100];
+	    if (matrix)
+		free(matrix);
+	    sprintf(fn, "matrix%d.txt", l.lane);
+	    last_lane = l.lane;
+	    matrix = load(fn, NULL);
+	}
 
 	if (!(prb = get_prb(fp_prb, skip))) {
 	    fprintf(stderr, "Couldn't load prb for %s/%d\n",
@@ -1583,15 +1678,6 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	    if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
 		fprintf(stderr, "Couldn't load nse for %s/%d\n",
 			seq_file, seq_num);
-		continue;
-	    }
-	}
-
-	/* Filter last - to ensure we keep in sync on all files */
-	if (fp_qhg) {
-	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
-	    if (c < chastity) {
-		filtered++;
 		continue;
 	    }
 	}
@@ -1627,6 +1713,7 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
      */
     for (seq_num = 0; seq_num < nreads; seq_num++) {
 	ztr_t *z;
+	ztr_chunk_t *tc;
 	Read *r = arr(Read *, ra, seq_num);
 	read_pd *pd = (read_pd *)r->private_data;
 
@@ -1634,14 +1721,47 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	rescale_trace(r, SIG_INT, int_baseline);
 	rescale_trace(r, SIG_NSE, nse_baseline);
 
+	/* Standard conversion - seq, qual, processed trace */
 	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
+
+	/* Plus raw traces if desired */
 	if (pd->signal[SIG_INT])
 	    add_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
 		      pd->baseline[SIG_INT]);
 	if (pd->signal[SIG_NSE])
 	    add_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
 		      pd->baseline[SIG_NSE]);
-		      
+
+	/* Miscellaneous text fields - only stored once per header */
+	tc = ztr_add_text(z, NULL, "PROGRAM_ID", "solexa2srf v" S2S_VERSION);
+	if (NULL == tc) {
+	    fprintf(stderr, "Failed to add to TEXT chunk\n");
+	    return -1;
+	}
+
+	if (matrix) {
+	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX", matrix)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
+	if (chastity > 0) {
+	    char chas[100];
+	    sprintf(chas, "%f", chastity);
+	    if (NULL == ztr_add_text(z, tc, "SOLEXA_CHASTITY", chas)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
+	if (params) {
+	    if (NULL == ztr_add_text(z, tc, "SOLEXA_PARAMS", params)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
 	srf_compress_ztr(arr(ztr_t *, za, seq_num), 0);
 
 	if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
@@ -1766,8 +1886,40 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	zfclose(fp_nse);
     if (fp_qhg)
 	zfclose(fp_qhg);
+    if (matrix)
+	free(matrix);
+    if (params)
+	free(params);
 
     return err;
+}
+
+void usage(int code) {
+    fprintf(stderr, "Solexa2srf v" S2S_VERSION "\n\n");
+    fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
+    fprintf(stderr, "    -R       Skip raw data:       ../_*{int,nse}.txt - default\n");
+    fprintf(stderr, "    -p       Add processed data:  *sig2.txt - default\n");
+    fprintf(stderr, "    -P       Skip processed data: *sig2.txt\n");
+    fprintf(stderr, "    -u       Use phase uncorrected data (sig vs sig2)\n");
+
+    fprintf(stderr, "    -c float Chastity filter (>= float)\n");
+    fprintf(stderr, "    -d       Output 'dots' (default off)\n");
+    fprintf(stderr, "    -q       Quiet\n");
+    fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
+    fprintf(stderr, "    -s sk    Skips 'sk' bases from start of each sequence - default 0\n");
+    fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
+    fprintf(stderr, "             %%l = lane number\n");
+    fprintf(stderr, "             %%t = tile number\n");
+    fprintf(stderr, "             %%x = x coordinate\n");
+    fprintf(stderr, "             %%y = y coordinate\n");
+    fprintf(stderr, "             %%c = counter into file\n");
+    fprintf(stderr, "             %%L/%%T/%%X/%%Y/%%C = as above, but in hex.\n\n");
+    fprintf(stderr, "    -N fmt   Format name prefix; as above\n");
+    fprintf(stderr, "             eg \"-N Run10_%%l_%%t_ -n %%3X:%%3Y\"\n");
+
+    exit(code);
 }
 
 int main(int argc, char **argv) {
@@ -1820,32 +1972,15 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		chastity = atof(argv[++i]);
 	    }
+	} else if (!strcmp(argv[i], "-h")) {
+	    usage(0);
 	} else {
-	    fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
-	    fprintf(stderr, "Options:\n");
-	    fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
-	    fprintf(stderr, "    -R       Skip raw data:       ../_*{int,nse}.txt - default\n");
-	    fprintf(stderr, "    -p       Add processed data:  *sig2.txt - default\n");
-	    fprintf(stderr, "    -P       Skip processed data: *sig2.txt\n");
-	    fprintf(stderr, "    -u       Use phase uncorrected data (sig vs sig2)\n");
-
-	    fprintf(stderr, "    -c float Chastity filter (>= float)\n");
-	    fprintf(stderr, "    -d       Output 'dots' (default off)\n");
-	    fprintf(stderr, "    -q       Quiet\n");
-	    fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
-	    fprintf(stderr, "    -s sk    Skips 'sk' bases from start of each sequence - default 0\n");
-	    fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
-	    fprintf(stderr, "             %%l = lane number\n");
-	    fprintf(stderr, "             %%t = tile number\n");
-	    fprintf(stderr, "             %%x = x coordinate\n");
-	    fprintf(stderr, "             %%y = y coordinate\n");
-	    fprintf(stderr, "             %%c = counter into file\n");
-	    fprintf(stderr, "             %%L/%%T/%%X/%%Y/%%C = as above, but in hex.\n\n");
-	    fprintf(stderr, "    -N fmt   Format name prefix; as above\n");
-	    fprintf(stderr, "             eg \"-N Run10_%%l_%%t_ -n %%3X:%%3Y\"\n");
-	    return 1;
+	    usage(1);
 	}
     }
+
+    if (i == argc)
+	usage(0);
 
 #ifdef DEBUG_OUT
     fds[FD_TRACE_RAW]=open("/tmp/srf_trace_raw",O_CREAT|O_RDWR|O_TRUNC, 0666);
