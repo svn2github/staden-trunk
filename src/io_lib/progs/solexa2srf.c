@@ -1448,8 +1448,8 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
  * Returns: malloced buffer on success, *lenp equal to length
  *          NULL on failure
  */
-static unsigned char *load(char *fn, int *lenp) {
-    unsigned char *data = NULL;
+static char *load(char *fn, int *lenp) {
+    char *data = NULL;
     int dsize = 0;
     int dcurr = 0, len;
     int fd = 0;

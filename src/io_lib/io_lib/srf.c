@@ -789,7 +789,7 @@ static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
 
 int construct_trace_name(char *fmt, unsigned char *suffix,
 			 char *name, int name_len) {
-    block_t *blk = block_create(suffix, strlen(suffix));
+    block_t *blk = block_create(suffix, strlen((char *)suffix));
     int out_pos = 0;
     int percent = 0;
 
