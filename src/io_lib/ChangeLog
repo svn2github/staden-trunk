@@ -1,4 +1,95 @@
+2008-01-25  James Bonfield  <jkb@sanger.ac.uk>
+
+	* Tagged iolib-1-11-0b8
+
+        * progs/solexa2srf.c:
+        (11:38:34) Fixed small memory leak in zfopen/zfclose.
+
+        Fixed a bug where reorder_ztr could put CNF4 before BASE,
+        breaking
+        the decoding.
+
+        Added support for loading solexa matrix and params files into
+        appropriately named TEXT key/value pairs. It also adds the
+        PROGRAM_ID there now too.
+
+        Sped up chastity filtering. We now only read the line of text
+        rather than decode it for data that is filtered.
+
+        Minor tweaks to program usage output.
+
+        * progs/trace_dump.c:
+        (11:39:09) Updated output to be more inline with
+        srf_dump_all. Also
+        now supports baseline properly.
+
+        * progs/ztr_dump.c:
+        (11:39:34) Added ZTR_FORM_XRLE2, ZTR_FORM_QSHIFT and
+        ZTR_FORM_TSHIFT.
+
+2008-01-24  James Bonfield  <jkb@sanger.ac.uk>
+
+        * io_lib/ztr.c,
+        * io_lib/ztr.h:
+        (17:17:52) Two new utility functions that are *long* overdue.
+
+        ztr_new_chunk() - creates and initialises a new chunk in a ztr
+        struct.
+
+        ztr_add_text() - adds arbitrary key/value pairs to the TEXT
+        chunk,
+                     creating it if required.
+
+2008-01-22  James Bonfield  <jkb@sanger.ac.uk>
+
+        * io_lib/srf.c,
+        * io_lib/srf.h:
+        (11:07:40) Allow for srf_read_index_hdr() to be used to read
+        an index internal to the file rather than at the end of the
+	file. To accommodate this an extra "no_seek" argument has been
+	added.
+
+        * progs/solexa2srf.c:
+        (11:10:56) Support multiple trace channels (raw "int" & noise,
+        in addition to or instead of the processed data).
+
+        Input data may now optionally be compressed.
+
+        Added a -c option to do chastity filtering via the .qhg files.
+
+        Improved the dynamic range filtering. We no longer trim all
+	negative values in preference for high positive values. Instead we
+	set the clip points to trim the least number of total values.
+
+        * progs/srf2solexa.c:
+        (11:11:35) Fixed the baseline subtraction. It now uses the
+        correct value instead of a hardcoded 32768.
+
+        * progs/srf_extract_linear.c:
+        (11:12:15) Changed to use the new srf_read_index_hdr arguments.
+
+        * progs/srf_index_hash.c:
+        (11:13:12) Improved index support when the input is
+        concatenated SRF files already containing indices. It now
+	overwrites the last index.
+
+        * progs/ztr_dump.c:
+        (11:13:47) Added display of meta-data TYPE field for trace
+        sample chunks.
+
+2008-01-14  James Bonfield  <jkb@sanger.ac.uk>
+
+        * io_lib/srf.c,
+        * io_lib/srf.h,
+        * progs/srf_index_hash.c:
+        (16:57:36) Bug fixes to do with reading and writing the index
+        format. We incorrectly handled having null dbhFile and
+        containerFile elements, plus also computed the index size wrong
+	for these fields too.
+
 2008-01-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.0b7 released.
 
 	* io_lib/srf.c:
 	(11:35:09) IMPORTANT BUG FIX: The SRF Data Block Header

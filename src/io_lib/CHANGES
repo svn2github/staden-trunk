@@ -1,4 +1,32 @@
-Version 1.11.0b6 (2nd January 2007)
+Version 1.11.0b8 (25th January 2008)
+----------------
+
+(Hopefully final beta test of SRF code before official 1.11.0 release.)
+
+* Bug fixed the index format. We incorrectly handled null dbhFile and
+  containerFile elements plus incorrectly computing the index size.
+
+* Improvements for solexa2srf code.
+  - Can store raw vs processed data
+  - Stores matrix and .params contents.
+  - Optional chastity filtering.
+  - Input data may now be gzipped.
+
+* Minor fixes to output of trace_dump and ztr_dump.
+
+* Minor srf_index_hash bug fixes (when dealing with concatenated
+  indexed files).
+
+
+Version 1.11.0b7 (11th January 2008)
+----------------
+
+* IMPORTANT bug fix to the SRF format. The Data Block Header had the
+  blocksize field 4 bytes too large. Now fixed. Old SRF files will not
+  be readable by this new code (as they were in error).
+
+
+Version 1.11.0b6 (2nd January 2008)
 ----------------
 
 * Changes to adhere to SRF v1.3:

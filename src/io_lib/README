@@ -1,4 +1,4 @@
-		       IO_LIB VERSION 1.11.0b7
+		       IO_LIB VERSION 1.11.0b8
 		       =======================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -26,6 +26,10 @@ too. See the file include/Read.h for the generic 'Read' structure.
 
 What's new in this release?
 ===========================
+
+1.11.0b8 introduces a few bug fixes in SRF indexing support and some
+additional improvements to the solexa2srf code. It is expected that
+this will be the last beta release prior to the official 1.11.0 release.
 
 IMPORTANT bug fix in 1.11.0b7 over 1.11.0b6. The previous release
 produced invalid SRF v1.3 files (the Data Block Header "blockSize"
