@@ -12,6 +12,7 @@ static char *format2str(int format) {
     case ZTR_FORM_RAW:     return "raw";
     case ZTR_FORM_RLE:     return "rle";
     case ZTR_FORM_XRLE:    return "xrle";
+    case ZTR_FORM_XRLE2:   return "xrle2";
     case ZTR_FORM_ZLIB:    return "zlib";
     case ZTR_FORM_DELTA1:  return "delta1";
     case ZTR_FORM_DELTA2:  return "delta2";
@@ -26,6 +27,8 @@ static char *format2str(int format) {
     case ZTR_FORM_ICHEB:   return "icheb";
     case ZTR_FORM_LOG2:    return "log2";
     case ZTR_FORM_STHUFF:  return "sthuff";
+    case ZTR_FORM_QSHIFT:  return "qshift";
+    case ZTR_FORM_TSHIFT:  return "tshift";
     }
 
     sprintf(unk, "?%d?\n", format);
@@ -87,6 +90,10 @@ static int explode_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
 	    new_data = unxrle(chunk->data, chunk->dlength, &new_len);
 	    break;
 
+	case ZTR_FORM_XRLE2:
+	    new_data = unxrle2(chunk->data, chunk->dlength, &new_len);
+	    break;
+
 	case ZTR_FORM_ZLIB:
 	    new_data = zlib_dehuff(chunk->data, chunk->dlength, &new_len);
 	    break;
@@ -126,13 +133,25 @@ static int explode_chunk(ztr_t *ztr, ztr_chunk_t *chunk) {
 	case ZTR_FORM_STHUFF:
 	    new_data = unsthuff(ztr, chunk->data, chunk->dlength, &new_len);
 	    break;
+	    
+	case ZTR_FORM_QSHIFT:
+	    new_data = unqshift(chunk->data, chunk->dlength, &new_len);
+	    break;
+
+	case ZTR_FORM_TSHIFT:
+	    new_data = untshift(ztr, chunk->data, chunk->dlength, &new_len);
+	    break;
 
 	default:
+	    fprintf(stderr, "Unknown encoding format %d\n", chunk->data[0]);
 	    return -1;
 	}
 	    
-	if (!new_data)
+	if (!new_data) {
+	    fprintf(stderr, "Failed to decode chunk with format %s\n",
+		    format2str(chunk->data[0]));
 	    return -1;
+	}
 
 	printf("    format %8s => %6d to %6d, entropy %8.1f to %8.1f\n",
 	       format2str(chunk->data[0]), chunk->dlength, new_len,
