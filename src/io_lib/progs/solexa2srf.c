@@ -157,6 +157,8 @@ zfp *zfopen(const char *path, const char *mode) {
     if (zf->gz = gzopen(path2, mode))
 	return zf;
 
+    perror(path);
+
     free(zf);
     return NULL;
 }
@@ -376,11 +378,11 @@ int add_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
     return 0;
 }
 
-
 char *parse_4_int(char *str, int *val) {
     int minus = 0, count = 0;
     char c;
     enum state_t {BEFORE_NUM, IN_NUM} state = BEFORE_NUM;
+    int ival = 0;
 
     val[0] = val[1] = val[2] = val[3] = 0;
 
@@ -388,40 +390,31 @@ char *parse_4_int(char *str, int *val) {
 	c = *str++;
 	switch (state) {
 	case BEFORE_NUM:
-	    switch(c) {
-	    case '\0':
+	    while (isspace(c))
+	        c = *str++;
+	    if (!c)
 		return NULL;
-
-	    case '\n': case '\r': case '\t': case ' ':
-		break;
-
-	    default:
-		state = IN_NUM;
-		str--; /* reuse same character */
-	    }
-	    break;
+	    state = IN_NUM;
 
 	case IN_NUM:
+	    if (c == '-' || c == '+') {
+		minus = c == '-';
+		c = *str++;
+	    }
+	    
+	    while (c >= '0' && c <= '9') {
+		ival = ival * 10 + c-'0';
+		c = *str++;
+	    }
+
 	    switch(c) {
-	    case '-':
-		minus = 1;
-		break;
-
-	    case '+':
-		minus = 0;
-		break;
-
-	    case '0': case '1': case '2': case '3': case '4': 
-	    case '5': case '6': case '7': case '8': case '9':
-		*val = *val * 10 + c-'0';
-		break;
-
 	    case '\n': case '\r': case '\t': case ' ': case '\0':
 		if (minus)
-		    *val = -*val;
+		    ival = -ival;
 
 		minus = 0;
-		*val++;
+		*val++ = ival;
+		ival = 0;
 
 		if (++count == 4) {
 		    return str;
@@ -482,38 +475,29 @@ char *parse_4_float(char *str, float *val, int *bin)
 	c = *str++;
 	switch (state) {
 	case BEFORE_NUM:
-	    switch(c) {
-	    case '\n': case '\r': case '\t': case ' ':
-		break;
-
-	    case '\0':
+	    while (isspace(c))
+	        c = *str++;
+	    if (!c)
 		return NULL;
-
-	    default:
-		state = BEFORE_POINT;
-		str--; /* reuse same character */
-	    }
-	    break;
+	    state = BEFORE_POINT;
 
 	case BEFORE_POINT:
-	    switch(c) {
-	    case '-':
-		minus = 1;
-		break;
+	    if (c == '-' || c == '+') {
+		minus = c == '-';
+		c = *str++;
+	    }
 
-	    case '+':
-		minus = 0;
-		break;
-
-	    case '0': case '1': case '2': case '3': case '4': 
-	    case '5': case '6': case '7': case '8': case '9':
+	    while (c >= '0' && c <= '9') {
 		ival1 = ival1 * 10 + c-'0';
-		break;
+		c = *str++;
+	    }
 
-	    case '.':
+	    if (c == '.') {
 		state = AFTER_POINT;
 		break;
+	    }
 
+	    switch(c) {
 	    case '\n': case '\r': case '\t': case ' ': case '\0':
 		if (minus)
 		    ival1 = -ival1;
@@ -545,42 +529,39 @@ char *parse_4_float(char *str, float *val, int *bin)
 	    break;
 	
 	case AFTER_POINT:
-	    switch(c) {
-	    case '0': case '1': case '2': case '3': case '4': 
-	    case '5': case '6': case '7': case '8': case '9':
+	    while (c >= '0' && c <= '9') {
 		ival2 = ival2 * 10 + c-'0';
-		break;
+		c = *str++;
+	    }
 
-	    case '\n': case '\r': case '\t': case ' ': case '\0':
-		while (ival2 >= 100)
-		    ival2 /= 10;
-		fval = ival1 + f_lookup[ival2];
+	    while (ival2 >= 100)
+		ival2 /= 10;
 
-		if (minus)
-		    fval = -fval;
-
-		minus = 0;
-		*val++ = fval;
-		ival1 = ival2 = 0;
-
-		if (bin) {
-		    if (fval > 65535)
-			bin[65535]++;
-		    else if (fval < -65535)
-			bin[-65535]++;
-		    else
-			bin[(int)fval]++;
-		}
-
-		if (++count == 4) {
-		    return str;
-		} else {
-		    state = BEFORE_NUM;
-		}
-		break;
+	    fval = ival1 + f_lookup[ival2];
 		
-	    default:
-		goto error;
+	    if (minus) {
+		fval = -fval;
+		ival1 = -ival1;
+	    }
+
+	    minus = 0;
+	    *val++ = fval;
+
+	    if (bin) {
+		if (ival1 > 65535)
+		    bin[65535]++;
+		else if (ival1 < -65535)
+		    bin[-65535]++;
+		else
+		    bin[ival1]++;
+	    }
+
+	    ival1 = ival2 = 0;
+
+	    if (++count == 4) {
+		return str;
+	    } else {
+		state = BEFORE_NUM;
 	    }
 	    break;
 	}
