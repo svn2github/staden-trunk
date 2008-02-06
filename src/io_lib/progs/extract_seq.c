@@ -107,6 +107,7 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format,
 		r->base[i] = 'N';
 	}
     }
+    set_compression_method(0); /* We don't want to gzip the output */
     fwrite_reading(outfp, r, TT_PLN);
 
     r->base = tmp_base;
