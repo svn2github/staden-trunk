@@ -850,8 +850,13 @@ EDIT_PAIR *create_edit_pair(int size) {
     return edit_pair;
 }
 
+/*
+ * Designed with affine_align() in mind to ensure we don't go over
+ * the MAX_MEMORY2 limit.
+ */
 int set_band_blocks(int seq1_len, int seq2_len) {
-    return MIN(5000, MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
+    return MIN(9990000.0/MIN(seq1_len,seq2_len),
+	       MAX(30,(MIN(seq1_len,seq2_len)*0.35)));
 }
 
 int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
@@ -985,6 +990,7 @@ int align_wrap ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap_out) {
 
 	    if(band_in)band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
 	    set_align_params (params, band, 0,0,0,0,0,0,0,0,1);
+
 	    if (align_bit ( params, overlap, edit_pair)) {
 		verror(ERR_WARN, "align_wrap", "failed in align_bit");
 		destroy_edit_pair(edit_pair);
@@ -1212,11 +1218,25 @@ int align_blocks ( Hash *h, ALIGN_PARAMS *params, OVERLAP *overlap ) {
     for (i=1;i<h->matches;i++) {
 	for(j=i-1;j>-1;j--) {
 
-# define MAX_BLOCK_OVERLAP 20
+	    /*
+	     * This code aims to only stitching together of blocks that
+	     * overlap by <= MAX_BLOCK_OVERLAP.
+	     * Fundamentallty it's the wrong thing to do though. If we limit
+	     * this anywhere it should be in the computed diag_shift
+	     * (consider the case of 1kb of TA repeat shifted by 20 bases,
+	     * giving 980k overlap by 20 base diag).
+	     *
+	     * For now let's just assume it comes out in the score and
+	     * always compute the score rather than pre-filtering.
+	     */
+	    /*
+	    # define MAX_BLOCK_OVERLAP 20
 	    if( ((h->block_match[j].pos_seq1 + h->block_match[j].length)
 		 <= h->block_match[i].pos_seq1 + MAX_BLOCK_OVERLAP)
 		&& ((h->block_match[j].pos_seq2 + h->block_match[j].length)
 		 <= h->block_match[i].pos_seq2) + MAX_BLOCK_OVERLAP) {
+	    */
+	    if (1) {
 		int len = h->block_match[j].length;
 		int dist;
 
