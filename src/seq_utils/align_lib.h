@@ -341,6 +341,8 @@ typedef struct Align_params {
     int job;
     char old_pad_sym;
     char new_pad_sym;
+    int seq1_start;
+    int seq2_start;
 } ALIGN_PARAMS;
 
 

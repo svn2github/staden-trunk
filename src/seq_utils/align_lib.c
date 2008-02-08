@@ -966,6 +966,15 @@ int set_align_params (ALIGN_PARAMS *params, int band, int gap_open,
   int d, first_column;
   /*printf("band %d gap %d gap %d edge %d job %d s1 %d s2 %d pad %c\n",
 	 band,gap_open,gap_extend,edge_mode,job,seq1_start,seq2_start,pad_sym);*/
+  if (seq1_start == -1 && seq2_start == -1) {
+      seq1_start = params->seq1_start;
+      seq2_start = params->seq2_start;
+  } else {
+      params->seq1_start = seq1_start;
+      params->seq2_start = seq2_start;
+  }
+  
+
   if( set_job ) {
     /* only set parameters related to band:
      * need band and start positions,
@@ -2882,6 +2891,8 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	for(row = first_row; row <= max_row; row++, band_left++, band_right++) {
 
 	  guard_offset = band_left + two_band;
+	  if (guard_offset < 0)
+	      abort();
 
 	  if(t == 0) {
 	    pF1   = F1;
@@ -4710,6 +4721,7 @@ int affine_align(OVERLAP *overlap, ALIGN_PARAMS *params) {
 
     double mem;
 
+ band_hack:
     if (params->band) {
 	mem = 2.0 * params->band * MIN(overlap->seq1_len,overlap->seq2_len);
     }
@@ -4718,7 +4730,17 @@ int affine_align(OVERLAP *overlap, ALIGN_PARAMS *params) {
     }
     if (mem > MAX_MEMORY1) {
 	if (mem > MAX_MEMORY2) {
-	    return -1;
+	    if (params->band > 5) {
+		set_align_params(params, params->band/2,
+				 0, 0, 0, 0, /* ignored */
+				 -1, -1,
+				 0, 0,       /* also ignored */
+				 1           /* because 'set_job' is 1 */);
+		params->band /= 2;
+		goto band_hack;
+	    } else {
+		return -1;
+	    }
 	} else {
 	    return affine_align_bits(overlap,params);
 	}
