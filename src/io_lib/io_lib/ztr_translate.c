@@ -1037,11 +1037,14 @@ Read *ztr2read(ztr_t *ztr) {
 	case ZTR_TYPE_SMP4:
 	    if (sections & READ_SAMPLES) {
 		char *offs = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "OFFS");
-		uncompress_chunk(ztr, &ztr->chunk[i]);
-		ztr_decode_samples_4(ztr, &ztr->chunk[i], r);
+		char *type = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
+		if (!type || 0 == strcmp(type, "PROC")) {
+		    uncompress_chunk(ztr, &ztr->chunk[i]);
+		    ztr_decode_samples_4(ztr, &ztr->chunk[i], r);
 
-		if (offs)
-		    r->baseline = atoi(offs);
+		    if (offs)
+			r->baseline = atoi(offs);
+		}
 	    }
 	    break;
 
@@ -1054,11 +1057,16 @@ Read *ztr2read(ztr_t *ztr) {
 		    ztr_decode_flow_raw(ztr, &ztr->chunk[i], r);
 		else if (type && 0 == strcmp(type, "PYNO"))
 		    ztr_decode_flow_proc(ztr, &ztr->chunk[i], r);
-		else 
+		else if (type &&
+			 (0 == strcmp(type, "A") ||
+			  0 == strcmp(type, "C") ||
+			  0 == strcmp(type, "G") ||
+			  0 == strcmp(type, "T"))) {
 		    ztr_decode_samples(ztr, &ztr->chunk[i], r);
 
-		if (offs)
-		    r->baseline = atoi(offs);
+		    if (offs)
+			r->baseline = atoi(offs);
+		}
 	    }
 	    break;
 
