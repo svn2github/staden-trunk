@@ -1290,11 +1290,12 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    key = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
 	    if (level == 0) {
 #ifdef DEBUG_OUT
-		if (!key)
+		if (key && 0 == strcmp(key, "SLXN"))
 		write(fds[FD_TRACE_RAW],
 		      ztr->chunk[i].data+2, ztr->chunk[i].dlength-2);
 #endif
-		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_TSHIFT, 0, 0);
+		if (!key || 0 != strcmp(key, "SLXN"))
+		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_TSHIFT, 0, 0);
 		/* delta_called(ztr, &ztr->chunk[i]); */
 #ifdef USE_MODEL
 		add_to_model(ztr, &ztr->chunk[i]);
@@ -1781,7 +1782,7 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	int_cds = ztr2codes(za, INT4_CODE, N_TR_CODE,
 			    ZTR_TYPE_SMP4, "TYPE", "SLXI");
     if (fp_nse)
-	nse_cds = ztr2codes(za, NSE4_CODE, N_TR_CODE,
+	nse_cds = ztr2codes(za, NSE4_CODE, 2,
 			    ZTR_TYPE_SMP4, "TYPE", "SLXN");
 #endif
 #endif
