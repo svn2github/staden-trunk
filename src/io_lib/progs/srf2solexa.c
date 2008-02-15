@@ -28,6 +28,10 @@
  * of SRF files.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "io_lib_config.h"
+#endif
+
 #include <stdio.h>
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>

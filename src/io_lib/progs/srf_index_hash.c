@@ -6,10 +6,16 @@
 
 /* ---------------------------------------------------------------------- */
 
+#ifdef HAVE_CONFIG_H
+#include "io_lib_config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
 #include <io_lib/hash_table.h>
 #include <io_lib/os.h>
 #include <io_lib/array.h>
