@@ -532,12 +532,15 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
 	    if (tb->trace_size != fread(tb->trace, 1, tb->trace_size,
 					srf->fp)) {
 		free(tb->trace);
+		tb->trace = NULL;
 		return -1;
 	    }
 	} else {
 	    tb->trace = NULL;
 	}
     } else {
+	/* Skip */
+	fseeko(srf->fp, tb->trace_size, SEEK_CUR);
 	tb->trace = NULL;
     }
 
@@ -1071,6 +1074,7 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 	case SRFB_TRACE_BODY: {
 	    mFILE *mf = mfcreate(NULL, 0);
 	    srf_trace_body_t tb;
+	    tb.trace = NULL;
 
 	    if (!mf || 0 != srf_read_trace_body(srf, &tb, 0))
 		return NULL;
@@ -1082,6 +1086,10 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 		mfwrite(srf->th.trace_hdr, 1, srf->th.trace_hdr_size, mf);
 	    if (tb.trace_size)
 		mfwrite(tb.trace, 1, tb.trace_size, mf);
+
+	    if (tb.trace)
+		free(tb.trace);
+
 	    mrewind(mf);
 	    return mf;
 	}
@@ -1385,7 +1393,7 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	srf_trace_body_t tb;
 
 	/* Inefficient, but it'll do for testing purposes */
-	if (0 != srf_read_trace_body(srf, &tb, 0))
+	if (0 != srf_read_trace_body(srf, &tb, 1))
 	    return -2;
 
 	if (name)
