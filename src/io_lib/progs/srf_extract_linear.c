@@ -29,6 +29,10 @@
  * to use, but as a test and benchmark statistic.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "io_lib_config.h"
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <io_lib/Read.h>
@@ -90,14 +94,20 @@ mFILE *find_reading(srf_t *srf, char *tr_name) {
 		return NULL;
 
 	    sprintf(name, "%s%s", srf->th.id_prefix, tb.read_id);
-	    if (strcmp(name, tr_name))
+	    if (strcmp(name, tr_name)) {
+		mfdestroy(mf);
+		if (tb.trace)
+		    free(tb.trace);
 		continue;
+	    }
 
 	    if (srf->th.trace_hdr_size)
 		mfwrite(srf->th.trace_hdr, 1,
 			srf->th.trace_hdr_size, mf);
 	    if (tb.trace_size)
 		mfwrite(tb.trace, 1, tb.trace_size, mf);
+	    if (tb.trace)
+		free(tb.trace);
 	    mrewind(mf);
 	    return mf;
 	}
