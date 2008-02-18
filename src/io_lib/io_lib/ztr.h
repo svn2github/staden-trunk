@@ -86,6 +86,7 @@ typedef struct {
 #define ZTR_TYPE_FLWO	0x464c574f
 #define ZTR_TYPE_FLWC	0x464c5743
 #define ZTR_TYPE_HUFF   0x48554646
+#define ZTR_TYPE_REGN   0x5245474e
 
 /* A text segment consists of identifier and value */
 typedef struct {
