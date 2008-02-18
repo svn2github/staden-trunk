@@ -63,7 +63,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define S2S_VERSION "1.3"
+#define S2S_VERSION "1.4"
 
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
@@ -93,6 +93,7 @@ typedef struct {
     float (*signal[3])[4]; /* raw intensities */
     int baseline[3];
 } read_pd;
+
 
 /* --- Some wrappers around FILE * vs gzFile *, allowing for either --- */
 /*
@@ -376,6 +377,32 @@ int add_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
     zc->ztr_owns = 1;
 
     return 0;
+}
+
+/*
+ * Adds a ZTR REGN chunk describing the paired-end structure. Ie which bit
+ * is which. This is a simplified form of the more generic REGN contents.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int add_readpair_region(ztr_t *z, unsigned int cycle) {
+    char *mdata = malloc(100);
+    unsigned char *data = malloc(5);
+    int mdlen;
+
+    if (!data || !mdata)
+	return -1;
+
+    data[0] = 0;
+    cycle--; /* we count from 0 */
+    data[1] = (cycle >> 24) & 0xff;
+    data[2] = (cycle >> 16) & 0xff;
+    data[3] = (cycle >>  8) & 0xff;
+    data[4] = (cycle >>  0) & 0xff;
+    
+    mdlen = sprintf(mdata, "NAME%cforward:P;reverse:P%c",0,0);
+    return ztr_new_chunk(z, ZTR_TYPE_REGN, data, 5, mdata, mdlen) ? 0 : -1;
 }
 
 char *parse_4_int(char *str, int *val) {
@@ -934,6 +961,7 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
  *     HUFF chunks
  *     BPOS chunk
  *     CLIP chunk
+ *     REGN chunk
  *     TEXT chunk (matrix, parameters, etc)
  *     SMP4 chunk header (type codes, but not data itself)
  * Footer:
@@ -947,7 +975,8 @@ static void reorder_ztr(ztr_t *ztr) {
     ztr_chunk_t tmp;
     int headers[] = {
 	/* header */
-	ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP, ZTR_TYPE_TEXT,
+	ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP,
+	ZTR_TYPE_REGN, ZTR_TYPE_TEXT,
 	/* footer */
 	ZTR_TYPE_SMP4, ZTR_TYPE_BASE, ZTR_TYPE_CNF4
     };
@@ -1505,9 +1534,9 @@ static char *load(char *fn, int *lenp) {
  *	   -1 for failure
  */
 int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
-	   int phased, float chastity, int quiet,
+	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
-    char *cp, *matrix = NULL, *params = NULL;
+    char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
     zfp *fp_seq = NULL, *fp_prb = NULL;
@@ -1627,11 +1656,21 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	/* ASSUMPTION: lane is constant through input file */
 	if (l.lane != last_lane) {
 	    char fn[100];
-	    if (matrix)
-		free(matrix);
-	    sprintf(fn, "matrix%d.txt", l.lane);
+
+	    if (matrix1)
+		free(matrix1);
+	    sprintf(fn, "../Matrix/s_%d_02_matrix.txt", l.lane);
 	    last_lane = l.lane;
-	    matrix = load(fn, NULL);
+	    matrix1 = load(fn, NULL);
+
+	    if (matrix2)
+		free(matrix2);
+	    if (rev_cycle) {
+		sprintf(fn, "../Matrix/s_%d_%02d_matrix.txt",
+			l.lane, rev_cycle+1);
+		last_lane = l.lane;
+		matrix2 = load(fn, NULL);
+	    }
 	}
 
 	if (!(prb = get_prb(fp_prb, skip))) {
@@ -1706,6 +1745,10 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	/* Standard conversion - seq, qual, processed trace */
 	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
 
+	/* REGN chunk if needed */
+	if (rev_cycle)
+	    add_readpair_region(z, rev_cycle);
+
 	/* Plus raw traces if desired */
 	if (pd->signal[SIG_INT])
 	    add_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
@@ -1721,8 +1764,15 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	    return -1;
 	}
 
-	if (matrix) {
-	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX", matrix)) {
+	if (matrix1) {
+	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX_FWD", matrix1)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
+	if (matrix2) {
+	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX_REV", matrix2)) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
@@ -1868,8 +1918,10 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	zfclose(fp_nse);
     if (fp_qhg)
 	zfclose(fp_qhg);
-    if (matrix)
-	free(matrix);
+    if (matrix1)
+	free(matrix1);
+    if (matrix2)
+	free(matrix2);
     if (params)
 	free(params);
 
@@ -1891,6 +1943,7 @@ void usage(int code) {
     fprintf(stderr, "    -q       Quiet\n");
     fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
     fprintf(stderr, "    -s sk    Skips 'sk' bases from start of each sequence - default 0\n");
+    fprintf(stderr, "    -2 cyc   The cycle number for the 2nd pair\n");
     fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
     fprintf(stderr, "             %%l = lane number\n");
     fprintf(stderr, "             %%t = tile number\n");
@@ -1919,6 +1972,7 @@ int main(int argc, char **argv) {
     srf_cont_hdr_t *ch;
     float chastity = 0;
     int nreads = 0, nfiltered = 0;
+    int rev_cycle = 0;
 
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -1949,6 +2003,10 @@ int main(int argc, char **argv) {
 	} else if (!strcmp(argv[i], "-s")) {
 	    if (i < argc) {
 		skip = atoi(argv[++i]);
+	    }
+	} else if (!strcmp(argv[i], "-2")) {
+	    if (i < argc) {
+		rev_cycle = atoi(argv[++i]);
 	    }
 	} else if (!strcmp(argv[i], "-c")) {
 	    if (i < argc) {
@@ -1991,7 +2049,7 @@ int main(int argc, char **argv) {
 	char c = '.';
 	int nr, nf;
 	if (-1 == append(srf, argv[i], raw_mode, proc_mode,
-			 skip, phased, chastity, quiet,
+			 skip, phased, chastity, quiet, rev_cycle,
 			 name_fmt, prefix_fmt, &nr, &nf)) {
 	    c = '!';
 	    ret = 1;
