@@ -58,7 +58,7 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format,
 		    int good_only, int clip_cosmid, int fasta_out) {
     Read *r;
     char *tmp_prob_A, *tmp_prob_C, *tmp_prob_G, *tmp_prob_T;
-    char *cstr;
+    char *cstr = NULL;
 
     read_sections(READ_BASES);
     if (NULL == (r = mfread_reading(infp, in_file, format))) {
@@ -212,8 +212,6 @@ static int do_trans(mFILE *infp, char *in_file, FILE *outfp, int format,
 
     if (fasta_out) {
 	char *p = strrchr(in_file, '/');
-	int i;
-
 	/* Add header */
 	if (NULL == p)
 	    p = in_file;

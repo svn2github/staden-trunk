@@ -721,7 +721,6 @@ static uint32_t get_hi_bits(block_t *block, int nbits) {
  */
 static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
     unsigned int curr = block->data[block->byte];
-    int nb = 0;
     
     /* Pack first partial byte */
     if (nbits > 8-block->bit) {
@@ -841,7 +840,7 @@ int construct_trace_name(char *fmt, unsigned char *suffix,
 	    case 'J': {
 		/* One of the integer encoding formats */
 		char *digits = "0123456789abcdef";
-		int d, tmp_ind = 0;
+		int d = 0, tmp_ind = 0;
 		char tmp[1024];
 
 		switch(*fmt) {
@@ -981,8 +980,6 @@ int pack_trace_suffix(unsigned char *suffix, char *fmt, ...) {
 
 	    /* The format code */
 	    switch (*fmt) {
-		int i;
-
 	    case '%':
 		/* A literal percent */
 		break;

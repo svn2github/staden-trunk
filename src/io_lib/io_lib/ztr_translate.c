@@ -188,8 +188,7 @@ static void ztr_decode_samples(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     int maxTraceVal = 0;
     TRACE sample;
     unsigned char *bytes = (unsigned char *)chunk->data;
-    char *mdata = chunk->mdata;
-    int dlen = chunk->dlength, mdlen = chunk->mdlength;
+    int dlen = chunk->dlength;
     TRACE **lane, *lanex;
     char *type = ztr_lookup_mdata_value(z, chunk, "TYPE");
     
@@ -726,7 +725,6 @@ static char *ztr_encode_clips(ztr_t *z,
 /* ARGSUSED */
 static void ztr_decode_clips(ztr_t *z, ztr_chunk_t *chunk, Read *r) {
     char *bytes = chunk->data;
-    int nbytes = chunk->dlength;
 
     r->leftCutoff =
 	(((unsigned char)bytes[1]) << 24) +
@@ -851,7 +849,7 @@ static char *ztr_encode_flow_raw(ztr_t *z,
 	/* 1.2 onwards */
 	*mdata = (char *)malloc(10);
 	*mdbytes = 10;
-	sprintf(*mdata, "TYPE%c%PYRW", 0);
+	sprintf(*mdata, "TYPE%cPYRW", 0);
     } else {
 	*mdata = (char *)malloc(4);
 	*mdbytes = 4;

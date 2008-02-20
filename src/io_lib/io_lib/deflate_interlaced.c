@@ -466,22 +466,6 @@ static int canonical_codes(huffman_codes_t *c) {
     return 0;
 }
 
-static int node_compar(const void *vp1, const void *vp2) {
-    const node_t *n1 = (const node_t *)vp1;
-    const node_t *n2 = (const node_t *)vp2;
-
-    /*
-     * The sort order is vital here. This needs to return the same collating
-     * order on all systems so that differing qsort() functions will not
-     * swap around symbols with the same bit lengths, hence we sort by both
-     * fields to force a unique stable ordering.
-     */
-    if (n1->count != n2->count)
-	return n1->count - n2->count;
-    else
-	return n2->sym - n1->sym;
-}
-
 static int node_compar2(const void *vp1, const void *vp2) {
     const node_t *n1 = *(const node_t **)vp1;
     const node_t *n2 = *(const node_t **)vp2;
@@ -1410,7 +1394,6 @@ block_t *huffman_decode(block_t *in, huffman_codes_t *c) {
     block_t *out;
     htree_t t[513]; /* number of internal nodes */
     int i, j, n;
-    int private_codes = 0;
     int new_node, node_num;
     h_jump4_t J4[513][16];
     unsigned char *cp;
@@ -1590,7 +1573,7 @@ int init_decode_tables(huffman_codeset_t *cs) {
     int nnodes, i, j, n, nc;
     huffman_codes_t **c;
     int new_node, rec;
-    h_jump4_t (*J4)[16];
+    h_jump4_t (*J4)[16] = NULL;
     htree_t *t;
     
     c = cs->codes;
@@ -1725,7 +1708,6 @@ int init_decode_tables(huffman_codeset_t *cs) {
 block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs) {
     block_t *out = NULL;
     int i, j;
-    int private_codes = 0;
     int node_num;
     unsigned char *cp;
     huffman_codes_t **c;
@@ -1865,7 +1847,6 @@ block_t *huffman_multi_decode(block_t *in, huffman_codes_t **c, int nc) {
     block_t *out;
     htree_t (*t)[513]; /* number of internal nodes */
     int i, j, n, rec;
-    int private_codes = 0;
     int new_node, node_num;
     unsigned char *cp;
     int bC; /* byte count */

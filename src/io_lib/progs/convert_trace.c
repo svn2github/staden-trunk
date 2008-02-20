@@ -9,7 +9,7 @@
 #include <io_lib/seqIOABI.h>
 #include <io_lib/open_trace_file.h>
 
-static char const rcsid[] = "$Id: convert_trace.c,v 1.11 2007-11-08 17:24:15 jkbonfield Exp $";
+static char const rcsid[] = "$Id: convert_trace.c,v 1.12 2008-02-20 16:07:44 jkbonfield Exp $";
 
 #define MAX(a,b) ((a)>(b)?(a):(b))
 
@@ -64,6 +64,7 @@ void noneg(Read *r) {
 	    t = r->traceG;
 	    break;
 	case 3:
+	default:
 	    t = r->traceT;
 	    break;
 	}
@@ -251,11 +252,11 @@ void trace_freq(TRACE *data, int ndata) {
  * A test matrix for the 373. Taken from the BASS distribution.
  */
 double matrix[5][4] = {
-   0.002439782,        -0.0015053751,       0.00011857301,    2.8906948e-06,
-  -0.00075353298,       0.0032971052,      -0.006198165,      0.00014828549,
-   0.00020249287,      -0.0017620348,       0.010530438,     -0.0020235507,
-  -0.001144423,        -4.857673e-06,      -0.0018845701,     0.00395431,
-  -0.12451385,          0.368916,          -2.928292,        -3.3142638
+  { 0.002439782,        -0.0015053751,       0.00011857301,    2.8906948e-06},
+  {-0.00075353298,       0.0032971052,      -0.006198165,      0.00014828549},
+  { 0.00020249287,      -0.0017620348,       0.010530438,     -0.0020235507 },
+  {-0.001144423,        -4.857673e-06,      -0.0018845701,     0.00395431   },
+  {-0.12451385,          0.368916,          -2.928292,        -3.3142638    }
 };
 void separate_dyes(Read *r, double M[][4]) {
     int i, j;

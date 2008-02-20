@@ -2164,6 +2164,7 @@ char *unsthuff(ztr_t *ztr, char *comp, int comp_len, int *uncomp_len) {
 }
 
 
+#ifndef NDEBUG
 #define SYM_EOF 256
 static void output_code_set(FILE *fp, huffman_codes_t *cds) {
     int i, j;
@@ -2200,7 +2201,7 @@ static void output_code_set(FILE *fp, huffman_codes_t *cds) {
     fprintf(fp, "/* Expected compression to %f of input */\n",
 	    (double)nbits_out/nbits_in);
 }
-
+#endif
 
 /*
  * Reorders quality data from its RAW format to an interleaved 4-byte
@@ -2316,7 +2317,7 @@ char *unqshift(char *qold, int qlen, int *new_len) {
  */
 /* #define ROTATE_INSTEAD */
 char *tshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
-    int nc, i, j;
+    int nc, i;
     ztr_chunk_t **base = ztr_find_chunks(ztr, ZTR_TYPE_BASE, &nc);
     char *bases;
     int nbases;

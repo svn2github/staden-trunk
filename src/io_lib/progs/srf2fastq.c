@@ -101,7 +101,6 @@ void ztr2fastq(ztr_t *z, char *name) {
 /* ------------------------------------------------------------------------ */
 int main(int argc, char **argv) {
     char *ar_name;
-    mFILE *mf;
     srf_t *srf;
     char name[512];
     ztr_t *ztr;

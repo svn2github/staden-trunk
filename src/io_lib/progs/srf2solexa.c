@@ -33,6 +33,11 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+#include <ctype.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
 #include <io_lib/ztr.h>
@@ -201,7 +206,6 @@ void dump(ztr_t *z,
     if (fp_sig2) {
 	chunks = ztr_find_chunks(z, ZTR_TYPE_SMP4, &nc);
 	for (i = 0; i < nc; i++) {
-	    int baseline = 0;
 	    char *key = ztr_lookup_mdata_value(z, chunks[i], "TYPE");
 	    if (!key || 0 == strcmp(key, "PROC")) {
 		key = ztr_lookup_mdata_value(z, chunks[i], "OFFS");
@@ -215,7 +219,6 @@ void dump(ztr_t *z,
     if (fp_int) {
 	chunks = ztr_find_chunks(z, ZTR_TYPE_SMP4, &nc);
 	for (i = 0; i < nc; i++) {
-	    int baseline = 0;
 	    char *key = ztr_lookup_mdata_value(z, chunks[i], "TYPE");
 	    if (key && 0 == strcmp(key, "SLXI")) {
 		key = ztr_lookup_mdata_value(z, chunks[i], "OFFS");
@@ -229,7 +232,6 @@ void dump(ztr_t *z,
     if (fp_nse) {
 	chunks = ztr_find_chunks(z, ZTR_TYPE_SMP4, &nc);
 	for (i = 0; i < nc; i++) {
-	    int baseline = 0;
 	    char *key = ztr_lookup_mdata_value(z, chunks[i], "TYPE");
 	    if (key && 0 == strcmp(key, "SLXN")) {
 		key = ztr_lookup_mdata_value(z, chunks[i], "OFFS");

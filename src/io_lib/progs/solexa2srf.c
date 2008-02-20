@@ -127,7 +127,6 @@ char *zfgets(char *line, int size, zfp *zf) {
 
 /* A replacement for either fopen or gzopen */
 zfp *zfopen(const char *path, const char *mode) {
-    size_t len;
     char path2[1024];
     zfp *zf;
 
@@ -692,7 +691,7 @@ float (*get_sig(zfp *fp, int trim, int *bin))[4] {
     char line[MAX_CYCLES*30 +1];
     int i4[4];
     char *cp;
-    int c = 0, j;
+    int c = 0;
     float (*sig)[4];
 
     if (NULL == (sig = malloc(MAX_CYCLES * sizeof(*sig))))
@@ -873,14 +872,14 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
     unsigned char *buf = NULL;
     size_t sz = 0, alloc = 0;
     int nreads = ArrayMax(za);
-    int i, j, skip;
+    int i, j;
     huffman_codeset_t *cds;
  
     /* Accumulated concatenated blocks of data from all ZTR files */
     for (i = 0; i < nreads; i++) {
 	ztr_t *z = arr(ztr_t *, za, i);
 	for (j = 0; j < z->nchunks; j++) {
-	    int pos, len;
+	    int len;
 
 	    if (z->chunk[j].type != type)
 		continue;
@@ -1191,7 +1190,7 @@ int compute_baseline(int quiet, int *bin) {
  * anything remaining outside of 0 to 65535.
  */
 void rescale_trace(Read *r, int sig_num, int baseline) {
-    int i, j, mtv = 0;
+    int i, mtv = 0;
     read_pd *pd = (read_pd *)r->private_data;
     float (*sig)[4] = NULL;
 
@@ -1547,9 +1546,7 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
     char last_prefix[1024] = {'\0'};
     Array za = NULL, la = NULL, ra = NULL;
     loc_t l;
-    int nreads = 0, filtered = 0, t;
-    ztr_hcode_t *hcodes = NULL;
-    int nhcodes = 0;
+    int nreads = 0, filtered = 0;
     int err = -1;
     huffman_codeset_t *seq_cds = NULL;
     huffman_codeset_t *prb_cds = NULL;
@@ -1738,9 +1735,12 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	Read *r = arr(Read *, ra, seq_num);
 	read_pd *pd = (read_pd *)r->private_data;
 
-	rescale_trace(r, SIG_SIG, sig_baseline);
-	rescale_trace(r, SIG_INT, int_baseline);
-	rescale_trace(r, SIG_NSE, nse_baseline);
+	if (fp_sig)
+	    rescale_trace(r, SIG_SIG, sig_baseline);
+	if (fp_int)
+	    rescale_trace(r, SIG_INT, int_baseline);
+	if (fp_nse)
+	    rescale_trace(r, SIG_NSE, nse_baseline);
 
 	/* Standard conversion - seq, qual, processed trace */
 	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
