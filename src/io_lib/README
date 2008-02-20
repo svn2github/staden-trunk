@@ -84,5 +84,5 @@ can be changed with the --prefix option to "configure".
 
 
 Under Microsoft Windows we recommend the use of MSYS and MINGW as a
-build environment. This should contain enough tools to use the
-autoconf file too (albeit tested only on a previous release).
+build environment. These contain enough tools to build using the
+configure script.
