@@ -1419,7 +1419,7 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 /*
  * Encodes a ztr file into an mFILE structure.
  * The 'footer' parameter, if supplied as non-NULL, is filled out with
- * the location 14 bytes into the SMP4 chunk or 0 if not found.
+ * the location several bytes into the SMP4 chunk or 0 if not found.
  *
  * If no_hcodes is true then we omit storing the interleaved deflate huffman
  * codes. In this case footer will be incorrect, but this is done for speed
@@ -1444,8 +1444,8 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
 	pos = mftell(mf);
 	ztr_mwrite_chunk(mf, &ztr->chunk[i]);
 	if (ztr->chunk[i].type == ZTR_TYPE_SMP4 && footer && !*footer) {
-	    /* allows traces up to 64k */
-	    *footer = pos + 10 + ztr->chunk[i].mdlength;
+	    /* allows meta-data up to 64k */
+	    *footer = pos + 6;
 	}
     }
 
