@@ -36,7 +36,7 @@
 #include <io_lib/ztr.h>
 #include <io_lib/srf.h>
 
-static int qlookup[256];
+static char qlookup[256];
 void init_qlookup(void) {
     int i;
     for (i = -128; i < 128; i++) {
@@ -48,70 +48,54 @@ void init_qlookup(void) {
 
 #define MAX_READ_LEN 1024
 void ztr2fastq(ztr_t *z, char *name) {
-    Read *read;
-    int i;
+    int i, nc, seq_len;
     char buf[MAX_READ_LEN*2 + 512 + 6];
-    char *seq, *qual;
+    char *seq, *qual, *sdata, *qdata;
+    ztr_chunk_t **chunks;
 
-    read = ztr2read(z); /* Inefficient; can do direct */
-
-    if (read == NULL) {
-	fprintf(stderr, "Tracedump was unable to open file %s\n", name );
+    /* Extract the sequence only */
+    chunks = ztr_find_chunks(z, ZTR_TYPE_BASE, &nc);
+    if (nc != 1) {
+	fprintf(stderr, "Zero or greater than one BASE chunks found.\n");
 	return;
     }
-    if (read->NBases > MAX_READ_LEN) {
-	fprintf(stderr, "Recompiler with larger MAX_READ_LEN (%d)\n",
-		read->NBases);
+    uncompress_chunk(z, chunks[0]);
+    sdata = chunks[0]->data+1;
+    seq_len = chunks[0]->dlength-1;
+
+    /* Extract the quality */
+    chunks = ztr_find_chunks(z, ZTR_TYPE_CNF4, &nc);
+    if (nc != 1) {
+	fprintf(stderr, "Zero or greater than one CNF chunks found.\n");
 	return;
     }
+    uncompress_chunk(z, chunks[0]);
+    qdata = chunks[0]->data+1;
 
-    /* Copy name and leave seq ptr at place to store sequence */
+    /* Construct fastq entry */
     seq = buf;
     *seq++ = '@';
     while (*name)
 	*seq++ = *name++;
     *seq++ = '\n';
 
-    /* Set qual at place to store quality */
-    qual = seq + read->NBases;
+    qual = seq + seq_len;
     *qual++ = '\n';
     *qual++ = '+';
     *qual++ = '\n';
-    qual[read->NBases] = '\n';
 
-    /* Decode and copy */
-    for (i = 0; i < read->NBases; i++) {
-	switch (read->base[i]) {
-	case 'A': case 'a':
-	    qual[i] = qlookup[read->prob_A[i]+128];
-	    seq[i] = 'A';
-	    break;
-
-	case 'C': case 'c':
-	    qual[i] = qlookup[read->prob_C[i]+128];
-	    seq[i] = 'C';
-	    break;
-
-	case 'G': case 'g':
-	    qual[i] = qlookup[read->prob_G[i]+128];
-	    seq[i] = 'G';
-	    break;
-
-	case 'T': case 't':
-	    qual[i] = qlookup[read->prob_T[i]+128];
-	    seq[i] = 'T';
-	    break;
-
-	default:
-	    qual[i] = qlookup[read->prob_A[i]+128];
-	    seq[i] = 'N';
-	    break;
+    for (i = 0; i < seq_len; i++) {
+	if (*sdata != '.') {
+	    *seq++ = *sdata++;
+	} else {
+	    *seq++ = 'N';
+	    sdata++;
 	}
+	*qual++ = qlookup[*qdata++ + 128];
     }
+    *qual++ = '\n';
 
-    fwrite(buf, 1, qual+read->NBases+1 - buf, stdout);
-
-    read_deallocate(read);
+    fwrite(buf, 1, qual - buf, stdout);
 }
 
 /* ------------------------------------------------------------------------ */
