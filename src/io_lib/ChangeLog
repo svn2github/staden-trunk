@@ -1,3 +1,86 @@
+2008-02-20  James Bonfield  <jkb@sanger.ac.uk>
+
+        * progs/srf2fastq.c:
+	(12:49:09) Removed the ztr2read conversion and operate
+	directly on
+	the ztr struct. This is now 25% faster.
+		
+        * progs/srf2fasta.c:
+        (12:49:30) New program - trivially modelled on srf2fastq.c
+	
+	* progs/solexa2srf.c:
+	(10:33:36) Altered the header/footer split for ZTR to stop just
+	before the metadata part of a SMP4 chunk. Previously it was after
+	this and just before the data, but now we can have multiple SMP4
+	chunks in a single ZTR file this was breaking things. 
+
+2008-02-18  James Bonfield <jkb@sanger.ac.uk>
+
+	* io_lib/ztr.h:
+	(16:53:52) Added ZTR_TYPE_REGN definition. We have no explicit code
+	to implement this yet in ztr.c, but for now it's in solexa2srf. 
+
+	* progs/solexa2srf.c:
+	(16:55:38) Added support for specifying the start coord for the 2nd
+	read in a paired-read run (solexa2srf -2 <cycle.no.>). This also
+	adds a REGN chunk to the ZTR file and stores the second matrix file
+	too. 
+
+	* progs/srf2solexa.c:
+	(16:56:39) Major overhaul to support raw data as well as processed
+	data. Still to-do: write out .params and the two matrix files. 
+
+2008-02-15  James Bonfield <jkb@sanger.ac.uk>
+
+	* io_lib/srf.c:
+	(10:05:54) Fixed memory leak in srf_read_trace_body usage. This was
+	primarily visible from within srf_index_hash. 
+
+	* progs/srf2solexa.c,
+	* io_lib/srf.c,
+	* progs/srf_index_hash.c,
+	* progs/srf_extract_hash.c:
+	(12:35:19) Added include of io_lib-config.h to ensure picking up
+	the correct compiler definitions for 64-bit file size support. 
+
+	* progs/srf_extract_linear.c:
+	(12:40:55) Fixed memory leaks. 
+
+2008-02-14  James Bonfield <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(17:02:42) Don't bother performing ZTR_FORM_TSHIFT transformation
+	on the solexa noise data as it doesn't help it at all. Also hard
+	coded the interlaced huffman to operate in batches of 2 instead of
+	8 for noise data for the same reason. 
+
+	* io_lib/ztr_translate.c:
+	(17:07:15) ztr2read() now correctly handles translation of ZTR
+	files with multiple samples in. Specifically it only sets the Read
+	struct baseline and trace[ACGT] arrays when the TYPE meta-data
+	field is blank, PROC or A,C,G T.
+	
+	This fixes trace_dump etc on solexa srf files, (note that the srf
+	files themselves were perfect valid anyway). 
+
+2008-02-06  James Bonfield <jkb@sanger.ac.uk>
+
+	* progs/extract_seq.c:
+	(11:04:38) Use set_compression_method to explicitly disable gzipped
+	output from extract_seq (which is by default on if the input is
+	gzipped). 
+
+	* io_lib/Makefile.in,
+	* progs/Makefile.am,
+	* progs/extract_qual.c:
+	(11:04:59) Added Steven Leonard's extract_qual program (derived
+	from extract_seq). 
+
+2008-01-28  James Bonfield <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(09:47:42) Sped up parse_4_int and parse_4_float substantially. 
+
 2008-01-25  James Bonfield  <jkb@sanger.ac.uk>
 
 	* Tagged iolib-1-11-0b8

@@ -1,3 +1,33 @@
+Version 1.11.0 (20th February 2008)
+--------------
+
+First official release of v1.11.0 and SRF support.
+
+* Further speed improvements to solexa2srf.
+
+* Added extract_qual program (analogous to extract_seq).
+
+* Added new srf2fasta program and also sped up srf2fastq by 25%.
+
+* Solexa2srf now supports storing the raw .int/.nse trace data instead
+  of or in addition to the processed .sig2 data. 
+
+* Solexa2srf now stores enough to reproduce sufficient firecrest
+  output to rerun the solexa basecaller. Specifically that's a couple
+  matrix files and 'region' data for paired end runs.
+
+* Minor changes / bug fixes:
+
+  - extract_seq no longer attempts to gzip the output by default if
+    the input was gzipped
+
+  - ztr2read conversion (eg visible in trace_dump) now correctly
+    handles ZTR files with multiple SMP4 chunks.
+
+  - Fixed memory leaks in various bits of SRF code (srf_extract_linear
+    mainly and srf_index_hash).
+
+
 Version 1.11.0b8 (25th January 2008)
 ----------------
 

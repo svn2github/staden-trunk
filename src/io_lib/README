@@ -1,5 +1,5 @@
-		       IO_LIB VERSION 1.11.0b8
-		       =======================
+			IO_LIB VERSION 1.11.0
+			=====================
 
 Io_lib is a library of file reading and writing code to provide a general
 purpose trace file (and Experiment File) reading interface. The programmer
@@ -15,7 +15,8 @@ following file formats:
 	ALF trace files
 	CTF trace files
 	ZTR trace files
-	SFF trace files
+	SFF trace archives
+	SRF trace archives
 	Experiment files
 	Plain text files
 
@@ -24,34 +25,39 @@ the file formats via a single read_reading (or fread_reading or
 mfread_reading) function call and analogous write_reading functions
 too. See the file include/Read.h for the generic 'Read' structure.
 
+
 What's new in this release?
 ===========================
 
-1.11.0b8 introduces a few bug fixes in SRF indexing support and some
-additional improvements to the solexa2srf code. It is expected that
-this will be the last beta release prior to the official 1.11.0 release.
+Compared to 1.10.x this release introduces support for the new
+short-read file format: SRF (Sequence Read Format). Tightly coupled
+with SRF development are updates to the ZTR format, which is now at
+v1.3. 
 
-IMPORTANT bug fix in 1.11.0b7 over 1.11.0b6. The previous release
-produced invalid SRF v1.3 files (the Data Block Header "blockSize"
-field was 4 bytes too large).
+For the SRF v1.3 format specification see:
 
-This is a beta-test release to demonstrate the short-read-format (SRF)
-file support, along with some example tools for converting to and from
-the native solexa instrument formats.
+http://www.bcgsc.ca/pipermail/ssrformat/attachments/20071209/b0f865a0/ShortSequenceFormatDec9th_v_1_3-0001.doc
 
-Tightly coupled with SRF development are updates to the ZTR format,
-now at v1.3.
+The ZTR specification changes involve adding some new compression
+types (the general purpose XRLE2 plus some more solexa specific TSHIT
+and QSHIFT methods), a region chunk (REGN) to indicate the location of
+paired-end data stored in a single trace, improved meta-data support
+for SMP4/SAMP chunks including specifying the baseline (OFFS meta-data
+tag) and various minor tweaks. There's still a few questions in the
+ZTR format itself (pending feedback), but what is implemented
+currently is also what has been described in the docs/ZTR_format
+file.
 
-Finally the directory layout have been greatly simplified with the
-merging of all the format directories into a single "io_lib" directory.
+Finally the directory layout has been greatly simplified with the
+merging of all the format directories into a single "io_lib"
+directory and the programs utilising it remaining in the "progs"
+subdirectory.
 
 
-Unix - autoconf
----------------
+Building
+========
 
-We now have a GNU autoconf build mechanism, but this is not without problems
-(mainly the difficulty in debugging and development when using libtool and the
-lack of MS Windows support). It's much easier for general building though.
+We use the GNU autoconf build mechanism.
 
 To build:
 
@@ -68,77 +74,15 @@ Eg (in sh or bash):
 
 This will build the sources.
 
+CFLAGS may also be changed a build time using (eg):
+    make 'CFLAGS=-g ...'
+
 3. make install
 
 The default installation location is /usr/local/bin and /usr/local/lib. These
 can be changed with the --prefix option to "configure".
 
 
-mFILE: mapping FILE pointers to memory
---------------------------------------
-
-To speed up the I/O mechanisms ideally needs a full rewrite so that
-we have functions to decode a block of memory to a Read structure (and
-vice versa) and other functions to read and write the block of memory
-for the encoded trace. For io_lib 2.0 I plan a major overhaul of such
-things, but it will likely be totally incompatible at the API level.
-
-Unfortunatly we have existing APIs that take a FILE pointer as input
-and we have lots of existing code that I do not (yet) have the time to
-rewrite from scratch.
-
-The solution is to produce a faked up FILE pointer that is infact a
-block of memory and an offset into it so we can "seek". I call these
-"mFILE"s (memory files). Many, but not all, stdio functions have
-equivalent memory functions associated with them. The prototypes for
-these are in mFILE.h:
-
-mFILE *mfreopen(const char *path, const char *mode, FILE *fp);
-mFILE *mfopen(const char *path, const char *mode);
-int mfclose(mFILE *mf);
-int mfseek(mFILE *mf, long offset, int whence);
-long mftell(mFILE *mf);
-void mrewind(mFILE *mf);
-int mfeof(mFILE *mf);
-size_t mfread(void *ptr, size_t size, size_t nmemb, mFILE *mf);
-size_t mfwrite(void *ptr, size_t size, size_t nmemb, mFILE *mf);
-int mfgetc(mFILE *mf);
-int mungetc(int c, mFILE *mf);
-mFILE *mfcreate(char *data, int size);
-char *mfgets(char *s, int size, mFILE *mf);
-int mfflush(mFILE *mf);
-int mfprintf(mFILE *mf, char *fmt, ...);
-mFILE *mstdin(void);
-mFILE *mstdout(void);
-mFILE *mstderr(void);
-
-The last three are equivalents for stdio's global stdin, stdout and
-stderr FILE pointers. In this case they are functions which read all
-of stdin into a memory buffer (on the first attempted mfread, mfgets,
-etc) or write all of stdout/stderr when the mfclose or mfflush gets
-called. Also not that you'll need an explicit mfclose on other mFILE
-operations too as these "files" will not be flushed and closed by the
-operating system when the program exits.
-
-Internally io_lib uses a mixture of these calls directly and in some
-cases a hideous bunch of #defines to directly map stdio calls to mFILE
-calls, thus meaning that there's a minimal amount of code to
-rewrite. The brave and foolhardy may wish to use this mapping on your
-own code, which can be done by adding "#include <stdio_hack.h>" to
-your code.
-
-Note though that some internal io_lib functions now take different
-arguments. Where possible I've kept both the FILE* and mFILE*
-versions (with the FILE* one being a wrapper), but there have
-inevitably been some which are now incompatible.
-
-The benefits of using mFILEs are considerable. Internally
-fetching a trace out of a tar file, uncompressing it and then decoding
-to 'Read' used to do multiple read and writes to disk: read from
-tar -> write to a temporary file -> read from temp file -> write to
-uncompressed temp file -> read from uncompressed temp file -> decode.
-Now this is replaced with entirely in-memory uncompression and
-decoding. Benchmarking this showed approximately 10-15 fold speed
-increases.
-
-
+Under Microsoft Windows we recommend the use of MSYS and MINGW as a
+build environment. This should contain enough tools to use the
+autoconf file too (albeit tested only on a previous release).
