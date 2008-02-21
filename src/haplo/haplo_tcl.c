@@ -45,7 +45,7 @@ static int haplo_snp_cmd(Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 			 args.discrep_cutoff, args.snp_cutoff,
 			 args.min_base_qual, args.two_alleles);
 
-	if (ds2) {
+	if (ds2 && dstring_str(ds2)) {
 	    dstring_appendf(ds, "{%s} ", dstring_str(ds2));
 	}
 
