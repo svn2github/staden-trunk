@@ -10,7 +10,7 @@ AC_PROG_RANLIB
 
 dnl Check for libcurl and zlib
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
-ZLIB_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
+ZLIB_CHECK_CONFIG(,,[have_zlib=yes], [have_zlib=no])
 
 dnl Socket support for Solaris (et al)
 AC_SEARCH_LIBS([gethostbyname], [nsl])

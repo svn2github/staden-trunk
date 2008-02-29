@@ -248,21 +248,14 @@ AC_DEFUN([ZLIB_CHECK_CONFIG],
 	      AC_HELP_STRING([--with-zlib=DIR],[look for zlib in DIR]),
 	      [_zlib_with=$withval],[_zlib_with="no"])
 
-  # Check standard locations too
   ZLIB_ROOT=""
-  for dir in $_zlib_with /usr /usr/local
-  do
-     if test -f "$dir/include/zlib.h"
+  if test "$_zlib_with" != "no"
+  then
+     if test -f "$_zlib_with/include/zlib.h"
      then
-         ZLIB_ROOT=$dir
-	 break
+         ZLIB_ROOT=$_zlib_with
      fi
-     if test "$_zlib_with" != "no"
-     then
-	 # Should have found it if the user specified a loc, so fail now
-         break
-     fi
-  done
+  fi
 
   # Check if it's a working library
   zlib_ok=no
@@ -282,19 +275,28 @@ AC_DEFUN([ZLIB_CHECK_CONFIG],
         # Backout and whinge
         CPPFLAGS=$_cppflags
         LDFLAGS=$_ldflags
-        AC_MSG_WARN("zlib specified/found, but non functioning")
+        AC_MSG_WARN("--with-zlib specified, but non functioning")
     fi
 
   else
-    AC_MSG_WARN("zlib not found")
+    # Maybe it works "out of the box"?
+    AC_CHECK_LIB(z, inflateEnd,
+	[AC_CHECK_HEADER(zlib.h, zlib_ok=yes, zlib_ok=no)])
   fi
 
   if test "$zlib_ok" = "yes"
   then
       AC_DEFINE(HAVE_ZLIB, 1,
          [Define to 1 if you have a functional libz.])
-      LIBZ="-L${ZLIB_ROOT}/lib -lz"
+      if test "$ZLIB_ROOT" != ""
+      then
+          LIBZ="-L${ZLIB_ROOT}/lib -lz"
+      else
+          LIBZ=-lz
+      fi
       AC_SUBST(LIBZ)
+  else
+    AC_MSG_WARN("No functioning zlib found")
   fi
 
   # Not sure how many of these are needed, but it's belt-and-braces mode
