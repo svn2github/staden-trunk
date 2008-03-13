@@ -63,7 +63,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define S2S_VERSION "1.4"
+#define S2S_VERSION "1.5"
 
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
@@ -742,6 +742,35 @@ int get_chastity(zfp *fp,
 
     return 0;
 }
+
+/*
+ * Extracts the next sequence/quality from a fastq file.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int get_fastq_entry(zfp *fp, char *name, char *seq, char *qual) {
+    char name1[80], name2[80], *cp;
+
+    if (NULL == zfgets(name1, 80, fp))
+	return -1;
+
+    if (cp = strrchr(name1, '/'))
+	*cp = 0;
+    if (cp = strrchr(name1, '\n'))
+	*cp = 0;
+    strcpy(name, name1+1);
+
+    if (NULL == zfgets(seq, MAX_CYCLES, fp))
+	return -1;
+    if (NULL == zfgets(name2, 80, fp))
+	return -1;
+    if (NULL == zfgets(qual, MAX_CYCLES, fp))
+	return -1;
+
+    return 0;
+}
+
 
 /*
  * Creates an io_lib Read object from sequence, probabilities and signal
@@ -1532,7 +1561,8 @@ static char *load(char *fn, int *lenp) {
  * Returns: 0 written for success
  *	   -1 for failure
  */
-int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
+int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
+	   int raw, int proc, int skip,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
     char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
@@ -1541,7 +1571,8 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
     zfp *fp_seq = NULL, *fp_prb = NULL;
     zfp *fp_sig = NULL, *fp_qhg = NULL;
     zfp *fp_int = NULL, *fp_nse = NULL;
-    char *seq;
+    zfp *fp_qf  = NULL, *fp_qr  = NULL;
+    char *seq, *slash;
     int seq_num = 0;
     char last_prefix[1024] = {'\0'};
     Array za = NULL, la = NULL, ra = NULL;
@@ -1558,10 +1589,21 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
     int nse_bin_a[65536*2], *nse_bin = &nse_bin_a[65536];
     int sig_baseline, int_baseline, nse_baseline;
     int last_lane = 0;
+    int next_fastq = 1;
+    char full_fmt[1024], fastq_name[1024];
+
+    sprintf(full_fmt, "%s%s", prefix_fmt, name_fmt);
 
     memset(sig_bin_a, 0, 65536*2 * sizeof(*sig_bin_a));
     memset(int_bin_a, 0, 65536*2 * sizeof(*int_bin_a));
     memset(nse_bin_a, 0, 65536*2 * sizeof(*nse_bin_a));
+
+    /* Handle full pathnames by cd to the directory first */
+    if (slash = strrchr(seq_file, '/')) {
+	*slash = 0;
+	chdir(seq_file);
+	seq_file = slash+1;
+    }
 
     /* open the required files */
     if (NULL == (cp = strrchr(seq_file, '_')))
@@ -1600,6 +1642,16 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	    goto error;
     }
 
+    if (fwd_fastq) {
+	if (NULL == (fp_qf = zfopen(fwd_fastq, "r")))
+	    goto error;
+    }
+
+    if (rev_fastq) {
+	if (NULL == (fp_qr = zfopen(rev_fastq, "r")))
+	    goto error;
+    }
+
     za = ArrayCreate(sizeof(ztr_t *), 0);
     la = ArrayCreate(sizeof(loc_t), 0);
     ra = ArrayCreate(sizeof(Read *), 0);
@@ -1624,6 +1676,46 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	int   (*prb)[4];
 	Read *r;
 	float c;
+	char fastq_seq[MAX_CYCLES+1];
+	char fastq_qual[MAX_CYCLES+1];
+
+	/*
+	 * If we're storing calibrated GERALD quality values instead of
+	 * Bustard base-call output then we need to read the fwd and rev
+	 * fastq files.
+	 *
+	 * There's probably a different number of entries in these though
+	 * than there is in the *seq.txt (etc) files, so we need to skip
+	 * entries
+	 */
+	if (fp_qf) {
+	    char name[1024];
+
+	    format_name(name, full_fmt, l.lane, l.tile, l.x, l.y, seq_num);
+
+	    if (next_fastq)
+		get_fastq_entry(fp_qf, fastq_name, fastq_seq, fastq_qual);
+	    if (strcmp(fastq_name, name)) {
+		char dummy[10240];
+		next_fastq = 0;
+
+		if (fp_qhg) zfgets(dummy, 10240, fp_prb);
+		if (fp_prb) zfgets(dummy, 10240, fp_prb);
+		if (fp_sig) zfgets(dummy, 10240, fp_sig);
+		if (fp_int) zfgets(dummy, 10240, fp_int);
+		if (fp_nse) zfgets(dummy, 10240, fp_nse);
+
+		filtered++;
+		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		free(pd);
+		continue;
+
+	    } else {
+		next_fastq = 1;
+	    }
+	}
 
 	if (fp_qhg) {
 	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
@@ -1675,6 +1767,14 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 		    seq_file, seq_num);
 	    continue;
 	}
+
+	/* FIXME:
+	 * What to do about fastq_seq and fastq_qual here now?
+	 * Do we store yet another seq/qual channel or replace the previous
+	 * ones?
+	 * Note that we have one quality instead of 4 for the processed
+	 * data too.
+	 */
 
 	if (fp_sig) {
 	    if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
@@ -1918,6 +2018,11 @@ int append(srf_t *srf, char *seq_file, int raw, int proc, int skip,
 	zfclose(fp_nse);
     if (fp_qhg)
 	zfclose(fp_qhg);
+    if (fp_qf)
+	zfclose(fp_qf);
+    if (fp_qr)
+	zfclose(fp_qr);
+    
     if (matrix1)
 	free(matrix1);
     if (matrix2)
@@ -1944,6 +2049,15 @@ void usage(int code) {
     fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
     fprintf(stderr, "    -s sk    Skips 'sk' bases from start of each sequence - default 0\n");
     fprintf(stderr, "    -2 cyc   The cycle number for the 2nd pair\n");
+    /*
+     * Unfinished code, so don't admit to its existance yet
+     */
+#if 0
+    fprintf(stderr, "    -qf fn   Get forward read calibrated quality from fastq file 'fn'\n");
+    fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
+    fprintf(stderr, "    -qr fn   Get reverse read calibrated quality from fastq file 'fn'\n");
+    fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
+#endif
     fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
     fprintf(stderr, "             %%l = lane number\n");
     fprintf(stderr, "             %%t = tile number\n");
@@ -1973,6 +2087,7 @@ int main(int argc, char **argv) {
     float chastity = 0;
     int nreads = 0, nfiltered = 0;
     int rev_cycle = 0;
+    char *fwd_fastq = NULL, *rev_fastq = NULL;
 
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -2011,6 +2126,14 @@ int main(int argc, char **argv) {
 	} else if (!strcmp(argv[i], "-c")) {
 	    if (i < argc) {
 		chastity = atof(argv[++i]);
+	    }	
+	} else if (!strcmp(argv[i], "-qf")) {
+	    if (i < argc) {
+		fwd_fastq = argv[++i];
+	    }
+	} else if (!strcmp(argv[i], "-qr")) {
+	    if (i < argc) {
+		rev_fastq = argv[++i];
 	    }
 	} else if (!strcmp(argv[i], "-h")) {
 	    usage(0);
@@ -2048,9 +2171,9 @@ int main(int argc, char **argv) {
     for (; i < argc; i++) {
 	char c = '.';
 	int nr, nf;
-	if (-1 == append(srf, argv[i], raw_mode, proc_mode,
-			 skip, phased, chastity, quiet, rev_cycle,
-			 name_fmt, prefix_fmt, &nr, &nf)) {
+	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq,
+			 raw_mode, proc_mode, skip, phased, chastity,
+			 quiet, rev_cycle, name_fmt, prefix_fmt, &nr, &nf)) {
 	    c = '!';
 	    ret = 1;
 	} else {
