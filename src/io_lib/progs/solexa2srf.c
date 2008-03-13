@@ -50,6 +50,7 @@
  */
 
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -236,7 +237,7 @@ typedef struct {
     int lane;
 } loc_t;
 
-#define MAX_CYCLES 100
+#define MAX_CYCLES 120
 
 /*
  * ztr_mwrite_header
@@ -706,6 +707,37 @@ float (*get_sig(zfp *fp, int trim, int *bin))[4] {
 	c++;
     }
 
+    /* NOTE: Free using free(&sig[-trim]) */
+    return &sig[trim];
+}
+
+float (*get_ipar_sig(float **ipar_data, int trim, int cluster,
+		     int numberOfCycles, int *bin))[4] {
+    float (*sig)[4] = malloc(MAX_CYCLES * sizeof(*sig));
+    int cycle;
+
+    if (NULL == sig)
+    {
+        return NULL;
+    }
+    for (cycle = 0; cycle < numberOfCycles; ++cycle)
+    {
+        int channel;
+        for (channel = 0; channel < 4; ++channel)
+        {
+            sig[cycle][channel] = ipar_data[cycle][cluster * 4 + channel];
+            if (bin)
+            {
+                int ival1 = trunc(sig[cycle][channel]);
+                if (ival1 > 65535)
+                    bin[65535]++;
+                else if (ival1 < -65535)
+                    bin[-65535]++;
+                else
+                    bin[ival1]++;
+            }
+        }
+    }
     /* NOTE: Free using free(&sig[-trim]) */
     return &sig[trim];
 }
@@ -1352,7 +1384,9 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 		      ztr->chunk[i].data+2, ztr->chunk[i].dlength-2);
 #endif
 		if (!key || 0 != strcmp(key, "SLXN"))
-		    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_TSHIFT, 0, 0);
+		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					     ZTR_FORM_TSHIFT, 0, 0))
+			exit(1);
 		/* delta_called(ztr, &ztr->chunk[i]); */
 #ifdef USE_MODEL
 		add_to_model(ztr, &ztr->chunk[i]);
@@ -1366,14 +1400,17 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 #endif
 #ifndef NO_ENTROPY_ENCODING
 		if (key && 0 == strcmp(key, "SLXI"))
-		    compress_chunk(ztr, &ztr->chunk[i],
-				   ZTR_FORM_STHUFF, INT4_CODE, 0);
+		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					     ZTR_FORM_STHUFF, INT4_CODE, 0))
+			exit(2);
 		else if (key && 0 == strcmp(key, "SLXN"))
-		    compress_chunk(ztr, &ztr->chunk[i],
-				   ZTR_FORM_STHUFF, NSE4_CODE, 0);
+		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					     ZTR_FORM_STHUFF, NSE4_CODE, 0))
+			exit(3);
 		else
-		    compress_chunk(ztr, &ztr->chunk[i],
-				   ZTR_FORM_STHUFF, SIG4_CODE, 0);
+		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					     ZTR_FORM_STHUFF, SIG4_CODE, 0))
+			exit(4);
 #endif
 #ifdef DEBUG_OUT
 		if (key && 0 == strcmp(key, "SLXN"))
@@ -1389,20 +1426,25 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 		write(fds[FD_QUAL_RAW],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
-		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_QSHIFT, 0, 0);
+		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					 ZTR_FORM_QSHIFT, 0, 0))
+		    exit(5);
 #ifdef DEBUG_OUT
 		write(fds[FD_QUAL_ORD],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
-		compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_XRLE2, 4, 0);
+		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					 ZTR_FORM_XRLE2, 4, 0))
+		    exit(6);
 #ifdef DEBUG_OUT
 		write(fds[FD_QUAL_RLE],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
 	    } else {
 #ifndef NO_ENTROPY_ENCODING
-		compress_chunk(ztr, &ztr->chunk[i],
-			       ZTR_FORM_STHUFF, CNF4_CODE, 0);
+		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					 ZTR_FORM_STHUFF, CNF4_CODE, 0))
+		    exit(7);
 #endif
 #ifdef DEBUG_OUT
 		write(fds[FD_QUAL_CMP],
@@ -1431,8 +1473,9 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
 #ifndef NO_ENTROPY_ENCODING
-		compress_chunk(ztr, &ztr->chunk[i],
-		               ZTR_FORM_STHUFF, BASE_CODE, 0);
+		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					 ZTR_FORM_STHUFF, BASE_CODE, 0))
+		    exit(8);
 #endif
 #ifdef DEBUG_OUT
 		write(fds[FD_BASE_CMP],
@@ -1540,6 +1583,174 @@ static char *load(char *fn, int *lenp) {
 }
 
 /*
+ * Parameters:
+ * - ipar_file (in): the name of the file, without the .gz extension
+ *   (_int.txt.p or _nse.txt.p)
+ * - bin (in): the bin used in parse_4_floats
+ * - numberOfChannels (out): read from the IPAR file (supported only for
+ *   4 channels)
+ * - numberOfClusters (out): read from the IPAR file
+ * - numberOfCycles   (out): inferred from reading the IPAR file
+ *
+ * Returns an array of cycle data. Each cycle data stores all the
+ *            intensities for all the available clusters.
+ * Returns NULL (and numberOfCycles == 0) on failure.
+ */
+#define BUFFER_SIZE (MAX_CYCLES*100)
+float **load_ipar_data(char *ipar_file, int *bin, int *numberOfChannels,
+		       int *numberOfClusters, int *numberOfCycles)
+{
+    zfp *file = NULL;
+    float **result = NULL;
+    char buffer[BUFFER_SIZE];
+    char *getsResult = NULL;
+    int resultCapacity   = 0;
+
+    *numberOfChannels = 0;
+    *numberOfClusters = 0;
+    *numberOfCycles   = 0;
+
+    if (NULL == (file = zfopen(ipar_file, "r")))
+    {
+        char errorMessage[1000];
+        sprintf(errorMessage, "Failed to open %s.gz: errno: %d",
+		ipar_file, errno);
+        perror(errorMessage);
+        return result;
+    }
+
+    /* get the layout of the data */
+    if (NULL != (getsResult = zfgets(buffer, BUFFER_SIZE, file)) &&
+        2 == sscanf(buffer, "#CH%d:OBJ%d",numberOfChannels,numberOfClusters) &&
+        4 == *numberOfChannels)
+    {
+	int loadError;
+        char errorMessage[4000];
+
+        getsResult = zfgets(buffer, BUFFER_SIZE, file);
+
+        /* skip comment lines and empty lines */
+        while (NULL != getsResult &&
+	       ('#' == buffer[0] || '\n' == buffer[0] || '\0' == buffer[0]))
+        {
+            getsResult = zfgets(buffer, BUFFER_SIZE, file);
+        }
+
+	/* we are expecting at least one cycle */
+        loadError = (NULL == getsResult);
+        errorMessage[0] = '\0';
+
+        /* iterate over all the available cycles */
+        while (!loadError && NULL != getsResult)
+        {
+	    float *currentCycle;
+            unsigned int cluster;
+
+            /* resize the result if necessary */
+            if ( (*numberOfCycles) == resultCapacity)
+            {
+		float **tmp;
+
+                resultCapacity += MAX_CYCLES;
+		tmp = (float **)malloc(resultCapacity * sizeof(*result));
+
+                if (NULL == tmp)
+                {
+                    loadError = 1;
+                    strcpy(errorMessage, "Failed to allocate memory while "
+			   "loading IPAR data");
+                    getsResult = NULL;
+                    break;
+                }
+                else
+                {
+                    unsigned int cycle = 0;
+                    while (cycle < resultCapacity) 
+                    {
+                        tmp[cycle] = cycle < (*numberOfCycles)
+			    ? result[cycle]
+			    : NULL;
+                        ++cycle;
+                    }
+                    free(result);
+                    result = tmp;
+                }
+            }
+            /* allocate the storage for the current cycle */
+            currentCycle = malloc( (*numberOfChannels) *
+				   (*numberOfClusters) *
+				   sizeof(*currentCycle ));
+            if (NULL == currentCycle)
+            {
+                loadError = 1;
+                strcpy(errorMessage, "Failed to allocate memory while "
+		       "loading IPAR data");
+                getsResult = NULL;
+                break;
+            }
+
+            /* store the data for all the clusters */
+            for (cluster = 0; cluster < *numberOfClusters; ++cluster)
+            {
+		float *vals = currentCycle + ( (*numberOfChannels) * cluster);
+                if (NULL == parse_4_float(getsResult, vals, NULL))
+                {
+                    free(currentCycle);
+                    loadError = 1;
+                    sprintf(errorMessage, "Failed to parse 4 floats from: %s",
+			    ipar_file);
+                    getsResult = NULL;
+                    break;
+                }
+                getsResult = zfgets(buffer, BUFFER_SIZE, file);
+            }
+
+            /* skip the comment lines and empty lines */
+            while (NULL != getsResult
+		   && ('#'  == buffer[0] ||
+		       '\n' == buffer[0] ||
+		       '\0' == buffer[0]))
+            {
+                getsResult = zfgets(buffer, BUFFER_SIZE, file);
+            }
+
+            result[*numberOfCycles] = currentCycle;
+            ++(*numberOfCycles);
+        }
+
+        if (loadError)
+        {
+            unsigned int cycle = 0;
+            for (cycle = 0; cycle < (*numberOfCycles); ++cycle)
+            {
+                free (result[cycle]);
+                result[cycle] = NULL;
+            }
+            free (result);
+            result = NULL;
+            resultCapacity = 0;
+            perror(errorMessage);
+            *numberOfCycles   = 0;
+        }
+    }
+    else
+    {
+        char s[1000] = "load_ipar_data: unknown error";
+        if (NULL == getsResult)
+            sprintf(s, "couldn't read IPAR file %s", ipar_file);
+        else if (0 == (*numberOfChannels) * (*numberOfClusters) )
+            sprintf(s, "%s: invalid layout: %s", ipar_file, buffer);
+        else if (4 != (*numberOfChannels))
+            sprintf(s, "this application supports only 4 channels: %d",
+		    *numberOfChannels);
+        perror(s);
+    }
+
+    zfclose(file);
+    return result;
+}
+
+/*
  * Takes a s_*_*_seq.txt file as input and creates a ZTR file as output.
  * It uses the associated prb and sig files too to do this.
  *
@@ -1562,12 +1773,13 @@ static char *load(char *fn, int *lenp) {
  *	   -1 for failure
  */
 int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
-	   int raw, int proc, int skip,
+	   int ipar, int raw, int proc, int skip,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
     char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
+    char ipar_int_file[1024], ipar_nse_file[1024];
     zfp *fp_seq = NULL, *fp_prb = NULL;
     zfp *fp_sig = NULL, *fp_qhg = NULL;
     zfp *fp_int = NULL, *fp_nse = NULL;
@@ -1591,6 +1803,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     int last_lane = 0;
     int next_fastq = 1;
     char full_fmt[1024], fastq_name[1024];
+    float **ipar_int_data = NULL;
+    float **ipar_nse_data = NULL;
+    int numberOfCycles; /* only for ipar */
 
     sprintf(full_fmt, "%s%s", prefix_fmt, name_fmt);
 
@@ -1613,6 +1828,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     sprintf(qhg_file, "%.*s_qhg.txt", (int)(cp-seq_file), seq_file);
     sprintf(int_file, "../%.*s_int.txt", (int)(cp-seq_file), seq_file);
     sprintf(nse_file, "../%.*s_nse.txt", (int)(cp-seq_file), seq_file);
+    sprintf(ipar_int_file, "../%.*s_int.txt.p", (int)(cp-seq_file), seq_file);
+    sprintf(ipar_nse_file, "../%.*s_nse.txt.p", (int)(cp-seq_file), seq_file);
 
     if (phased) {
 	sprintf(sig_file, "%.*s_sig2.txt", (int)(cp-seq_file), seq_file);
@@ -1631,10 +1848,30 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     }
 
     if (raw) {
-	if (NULL == (fp_int = zfopen(int_file, "r")))
-	    goto error;
-	if (NULL == (fp_nse = zfopen(nse_file, "r")))
-	    goto error;
+        if (ipar)
+        {
+            int numberOfChannels, numberOfClusters;
+	    ipar_int_data = load_ipar_data(ipar_int_file,
+					   int_bin,
+					   &numberOfChannels,
+					   &numberOfClusters,
+					   &numberOfCycles);
+	    ipar_nse_data = load_ipar_data(ipar_nse_file,
+					   nse_bin,
+					   &numberOfChannels,
+					   &numberOfClusters,
+					   &numberOfCycles);
+
+            if (NULL == ipar_int_data || NULL == ipar_nse_data)
+                goto error;
+        }
+        else
+        {
+            if (NULL == (fp_int = zfopen(int_file, "r")))
+	        goto error;
+            if (NULL == (fp_nse = zfopen(nse_file, "r")))
+	        goto error;
+        }
     }
 
     if (chastity > 0) {
@@ -1792,6 +2029,16 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    }
 	}
 
+        if (ipar_int_data) {
+	    if (!(pd->signal[SIG_INT] = get_ipar_sig(ipar_int_data, skip,
+						     nreads, numberOfCycles,
+						     int_bin))) {
+		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
+			ipar_int_file, nreads);
+		continue;
+	    }            
+        }
+
 	if (fp_nse) {
 	    if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
 		fprintf(stderr, "Couldn't load nse for %s/%d\n",
@@ -1799,6 +2046,17 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		continue;
 	    }
 	}
+
+
+        if (ipar_nse_data) {
+	    if (!(pd->signal[SIG_NSE] = get_ipar_sig(ipar_nse_data, skip,
+						     nreads, numberOfCycles,
+						     nse_bin))) {
+		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
+			ipar_nse_file, nreads);
+		continue;
+	    }            
+        }
 
 	/* Create the ZTR file and output, if needed, the common header */
 	if (NULL == (r = create_read(seq, prb, pd)))
@@ -1820,9 +2078,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
     if (fp_sig)
 	sig_baseline = compute_baseline(quiet, sig_bin);
-    if (fp_int)
+    if (fp_int || ipar_int_data)
 	int_baseline = compute_baseline(quiet, int_bin);
-    if (fp_nse)
+    if (fp_nse || ipar_nse_data)
 	nse_baseline = compute_baseline(quiet, nse_bin);
     
     /*
@@ -1837,9 +2095,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	if (fp_sig)
 	    rescale_trace(r, SIG_SIG, sig_baseline);
-	if (fp_int)
+	if (fp_int || ipar_int_data)
 	    rescale_trace(r, SIG_INT, int_baseline);
-	if (fp_nse)
+	if (fp_nse || ipar_nse_data)
 	    rescale_trace(r, SIG_NSE, nse_baseline);
 
 	/* Standard conversion - seq, qual, processed trace */
@@ -1919,19 +2177,19 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     prb_cds = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4, NULL,   NULL);
     if (fp_sig)
 	sig_cds = ztr2codes(za, SIG4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", NULL);
-    if (fp_int)
+    if (fp_int || ipar_int_data)
 	int_cds = ztr2codes(za, INT4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXI");
-    if (fp_nse)
+    if (fp_nse || ipar_nse_data)
 	nse_cds = ztr2codes(za, NSE4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXN");
 #else
     prb_cds = ztr2codes(za, CNF4_CODE, 4,         ZTR_TYPE_CNF4, NULL, NULL);
     if (fp_sig)
 	sig_cds = ztr2codes(za, SIG4_CODE, N_TR_CODE,
 			    ZTR_TYPE_SMP4, "TYPE", NULL);
-    if (fp_int)
+    if (fp_int || ipar_int_data)
 	int_cds = ztr2codes(za, INT4_CODE, N_TR_CODE,
 			    ZTR_TYPE_SMP4, "TYPE", "SLXI");
-    if (fp_nse)
+    if (fp_nse || ipar_nse_data)
 	nse_cds = ztr2codes(za, NSE4_CODE, 2,
 			    ZTR_TYPE_SMP4, "TYPE", "SLXN");
 #endif
@@ -2030,6 +2288,30 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     if (params)
 	free(params);
 
+    if (ipar_int_data)
+    {
+        unsigned int cycle = 0;
+        for (cycle = 0; cycle < numberOfCycles; ++cycle) 
+        {
+            free(ipar_int_data[cycle]);
+            ipar_int_data[cycle] = NULL;
+        }
+        free(ipar_int_data);
+        ipar_int_data = NULL;
+    }
+
+    if (ipar_nse_data)
+    {
+        unsigned int cycle = 0;
+        for (cycle = 0; cycle < numberOfCycles; ++cycle)
+        {
+            free(ipar_nse_data[cycle]);
+            ipar_nse_data[cycle] = NULL;
+        }
+        free(ipar_nse_data);
+        ipar_nse_data = NULL;
+    }
+
     return err;
 }
 
@@ -2037,6 +2319,7 @@ void usage(int code) {
     fprintf(stderr, "Solexa2srf v" S2S_VERSION "\n\n");
     fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
     fprintf(stderr, "Options:\n");
+    fprintf(stderr, "    -I       IPAR format for raw data\n");
     fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
     fprintf(stderr, "    -R       Skip raw data:       ../_*{int,nse}.txt - default\n");
     fprintf(stderr, "    -p       Add processed data:  *sig2.txt - default\n");
@@ -2074,7 +2357,7 @@ void usage(int code) {
 int main(int argc, char **argv) {
     int i, ret = 0;
     FILE *outfp;
-    int raw_mode = 0, proc_mode = 1;
+    int ipar_mode = 0, raw_mode = 0, proc_mode = 1;
     char *outfn = "traces.srf";
     int skip = 0;
     int phased = 1;
@@ -2093,6 +2376,8 @@ int main(int argc, char **argv) {
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
 	if (!strcmp(argv[i], "-")) {
 	    break;
+	} else if (!strcmp(argv[i], "-I")) {
+	    ipar_mode = 1;
 	} else if (!strcmp(argv[i], "-r")) {
 	    raw_mode = 1;
 	} else if (!strcmp(argv[i], "-R")) {
@@ -2171,7 +2456,7 @@ int main(int argc, char **argv) {
     for (; i < argc; i++) {
 	char c = '.';
 	int nr, nf;
-	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq,
+	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, &nr, &nf)) {
 	    c = '!';
