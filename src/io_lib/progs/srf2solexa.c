@@ -258,6 +258,32 @@ FILE *fopen_slx(char *dir, char *type, int lane, int tile) {
     return fp;
 }
 
+int dump_text(char *dir, int lane, ztr_chunk_t **chunks)
+{
+    char fn[1024];
+    FILE *fp;
+    int j=0, k=0, key=0;
+    for (j = 0; j < chunks[0]->dlength; j++) {
+        if(chunks[0]->data[j] == 0) {
+            ++k;
+            if(!(k % 2)) {
+                sprintf(fn, "%s/%d_%s.txt", dir, lane, chunks[0]->data + key + 1);
+                if (NULL == (fp = fopen(fn, "w+"))) {
+                    perror(fn);
+                    return -1;
+                } else {
+                    fprintf(fp, "%s", chunks[0]->data + j + 1);
+                    fclose(fp);
+                }
+            } else {
+                key = j;
+            }
+        }
+    }
+
+    return 0;
+}
+
 int process_srf(char *file, char *dir, int mode) {
     srf_t *srf;
     char name[1024], dir2[1024];
@@ -286,6 +312,16 @@ int process_srf(char *file, char *dir, int mode) {
     while (NULL != (ztr = srf_next_ztr(srf, name))) {
 	int lane, tile, x, y;
 	parse_name(name, &lane, &tile, &x, &y);
+
+	if (last_lane != lane) {
+	    int nc;
+	    ztr_chunk_t **chunks;
+
+	    /* Text chunks */
+	    uncompress_ztr(ztr);
+	    chunks = ztr_find_chunks(ztr, ZTR_TYPE_TEXT, &nc);
+	    dump_text(dir2, lane, chunks);
+	}
 
 	if (last_lane != lane || last_tile != tile) {
 	    fprintf(stderr, "New tile: %d/%d\n", lane, tile);
