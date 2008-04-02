@@ -342,7 +342,7 @@ void dump_text(ztr_t *z, char *name, char mode, FILE **files) {
     fprintf(files[0], "%d\t\t# leftCutoff\n",      read->leftCutoff);
     fprintf(files[0], "%d\t\t# rightCutoff\n",     read->rightCutoff);
 
-    fputs("\n[Bases]", files[0]);
+    fputs("\n[Bases]\n", files[0]);
     for (i = 0; i < read->NBases; i++) {
         fprintf(files[0], "%c %05d %+03d %+03d %+03d %+03d #%3d\n",
 		read->base[i],
@@ -355,25 +355,25 @@ void dump_text(ztr_t *z, char *name, char mode, FILE **files) {
     }
 
     if (read->NPoints) {
-	fputs("\n[A_Trace]", files[0]);
+	fputs("\n[A_Trace]\n", files[0]);
 	for(i = 0; i < read->NPoints; i++)
 	    fprintf(files[0], "%d\t#%5d\n", (int)read->traceA[i] - read->baseline, i);
 
-	fputs("\n[C_Trace]", files[0]);
+	fputs("\n[C_Trace]\n", files[0]);
 	for(i = 0; i < read->NPoints; i++)
 	    fprintf(files[0], "%d\t#%5d\n", (int)read->traceC[i] - read->baseline, i);
 
-	fputs("\n[G_Trace]", files[0]);
+	fputs("\n[G_Trace]\n", files[0]);
 	for(i = 0; i < read->NPoints; i++)
 	    fprintf(files[0], "%d\t#%5d\n", (int)read->traceG[i] - read->baseline, i);
 
-	fputs("\n[T_Trace]", files[0]);
+	fputs("\n[T_Trace]\n", files[0]);
 	for(i = 0; i < read->NPoints; i++)
 	    fprintf(files[0], "%d\t#%5d\n", (int)read->traceT[i] - read->baseline, i);
     }
 
     if (read->flow_order) {
-        fputs("\n[Flows]", files[0]);
+        fputs("\n[Flows]\n", files[0]);
         for (i = 0; i < read->nflows; i++) {
             fprintf(files[0], "%c %5.2f  %u\t#%5d\n",
 		    read->flow_order[i],
@@ -384,7 +384,7 @@ void dump_text(ztr_t *z, char *name, char mode, FILE **files) {
     }
 
     if (read->info) {
-        fputs("\n[Info]", files[0]);
+        fputs("\n[Info]\n", files[0]);
         fprintf(files[0], "%s\n", read->info);
     }
 
