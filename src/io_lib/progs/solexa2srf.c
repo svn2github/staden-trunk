@@ -64,7 +64,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define S2S_VERSION "1.5"
+#define S2S_VERSION "1.6"
 
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
@@ -1776,7 +1776,9 @@ float **load_ipar_data(char *ipar_file, int *bin, int *numberOfChannels,
 int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   int ipar, int raw, int proc, int skip,
 	   int phased, float chastity, int quiet, int rev_cycle,
-	   char *name_fmt, char *prefix_fmt, int *nr, int *nf) {
+	   char *name_fmt, char *prefix_fmt,
+	   char *matrix_f_name, char *matrix_r_name,
+	   int *nr, int *nf) {
     char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
@@ -1986,14 +1988,14 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	    if (matrix1)
 		free(matrix1);
-	    sprintf(fn, "../Matrix/s_%d_02_matrix.txt", l.lane);
+	    sprintf(fn, matrix_f_name, l.lane);
 	    last_lane = l.lane;
 	    matrix1 = load(fn, NULL);
 
 	    if (matrix2)
 		free(matrix2);
 	    if (rev_cycle) {
-		sprintf(fn, "../Matrix/s_%d_%02d_matrix.txt",
+		sprintf(fn, matrix_r_name,
 			l.lane, rev_cycle+1);
 		last_lane = l.lane;
 		matrix2 = load(fn, NULL);
@@ -2348,9 +2350,15 @@ void usage(int code) {
     fprintf(stderr, "             %%x = x coordinate\n");
     fprintf(stderr, "             %%y = y coordinate\n");
     fprintf(stderr, "             %%c = counter into file\n");
-    fprintf(stderr, "             %%L/%%T/%%X/%%Y/%%C = as above, but in hex.\n\n");
+    fprintf(stderr, "             %%L/%%T/%%X/%%Y/%%C = as above, but in hex.\n");
     fprintf(stderr, "    -N fmt   Format name prefix; as above\n");
     fprintf(stderr, "             eg \"-N Run10_%%l_%%t_ -n %%3X:%%3Y\"\n");
+    fprintf(stderr, "    -mf name Name of the 1st pair matrix file.  By default\n"
+	            "             ../Matrix/s_%%d_02_matrix.txt, where %%d is the lane.\n");
+    fprintf(stderr, "    -mr name Name of the 2ndt pair matrix file.  By default\n"
+	            "             ../Matrix/s_%%d_%%02d_matrix.txt, where %%d is the lane\n"
+	            "             and %%02d is the first cycle in the 2nd pair.\n");
+    fprintf(stderr, "\n");
 
     exit(code);
 }
@@ -2372,6 +2380,8 @@ int main(int argc, char **argv) {
     int nreads = 0, nfiltered = 0;
     int rev_cycle = 0;
     char *fwd_fastq = NULL, *rev_fastq = NULL;
+    char *matrix_f_name = "../Matrix/s_%d_02_matrix.txt";
+    char *matrix_r_name = "../Matrix/s_%d_%02d_matrix.txt";
 
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -2421,6 +2431,14 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		rev_fastq = argv[++i];
 	    }
+	} else if (!strcmp(argv[i], "-mf")) {
+	    if (i < argc) {
+		matrix_f_name = argv[++i];
+	    }
+	} else if (!strcmp(argv[i], "-mr")) {
+	    if (i < argc) {
+		matrix_r_name = argv[++i];
+	    }
 	} else if (!strcmp(argv[i], "-h")) {
 	    usage(0);
 	} else {
@@ -2459,7 +2477,8 @@ int main(int argc, char **argv) {
 	int nr, nf;
 	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
-			 quiet, rev_cycle, name_fmt, prefix_fmt, &nr, &nf)) {
+			 quiet, rev_cycle, name_fmt, prefix_fmt, 
+			 matrix_f_name, matrix_f_name, &nr, &nf)) {
 	    c = '!';
 	    ret = 1;
 	} else {
