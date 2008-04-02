@@ -1514,7 +1514,8 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
     for (i = 0; i < ztr->nchunks; i++) {
 	pos = mftell(mf);
 	ztr_mwrite_chunk(mf, &ztr->chunk[i]);
-	if (ztr->chunk[i].type == ZTR_TYPE_SMP4 && footer && !*footer) {
+	if ((ztr->chunk[i].type == ZTR_TYPE_SMP4 ||
+	     ztr->chunk[i].type == ZTR_TYPE_BASE) && footer && !*footer) {
 	    /* allows meta-data up to 64k */
 	    *footer = pos + 6;
 	}
