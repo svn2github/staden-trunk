@@ -824,7 +824,7 @@ int process_srf_to_solexa_files(char *ar_name, char chunk_mode, int num_reads_on
     /*               seq   prb   sig2  int   nse */
     FILE *files[] = {NULL, NULL, NULL, NULL, NULL};
 
-    if (NULL == (srf = srf_open(ar_name, "r"))) {
+    if (NULL == (srf = srf_open(ar_name, "rb"))) {
 	perror(ar_name);
 	return 1;
     }
@@ -925,7 +925,7 @@ int process_srf_to_text_files(char *ar_name, char chunk_mode, int num_reads_only
     /*               dump */
     FILE *files[] = {NULL};
 
-    if (NULL == (srf = srf_open(ar_name, "r"))) {
+    if (NULL == (srf = srf_open(ar_name, "rb"))) {
 	perror(ar_name);
 	return 1;
     }
@@ -1115,7 +1115,7 @@ int main(int argc, char **argv) {
     }
 
     if(destination_mode & NONE_DEST) {
-	if (NULL == (srf = srf_open(ar_name, "r"))) {
+	if (NULL == (srf = srf_open(ar_name, "rb"))) {
 	    perror(ar_name);
 	    return 1;
 	}
@@ -1139,7 +1139,7 @@ int main(int argc, char **argv) {
 	    files[i] = stdout;
 	}
 
-	if (NULL == (srf = srf_open(ar_name, "r"))) {
+	if (NULL == (srf = srf_open(ar_name, "rb"))) {
 	    perror(ar_name);
 	    return 1;
 	}

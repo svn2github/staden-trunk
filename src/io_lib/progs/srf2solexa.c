@@ -295,7 +295,7 @@ int process_srf(char *file, char *dir, int mode) {
     FILE *fp_prb = NULL;
     FILE *fp_sig = NULL;
 
-    if (NULL == (srf = srf_open(file, "r"))) {
+    if (NULL == (srf = srf_open(file, "rb"))) {
 	perror(file);
 	return 1;
     }
