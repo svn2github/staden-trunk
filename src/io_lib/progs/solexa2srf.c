@@ -60,6 +60,9 @@
 
 #define S2S_VERSION "1.6"
 
+/* Move to autoconf */
+#define HAVE_POPEN
+
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
 
@@ -147,6 +150,24 @@ zfp *zfopen(const char *path, const char *mode) {
 	zf->fp = NULL;
     }
 
+#ifdef HAVE_POPEN
+    /*
+     * I've no idea why, by gzgets is VERY slow, maybe because it handles
+     * arbitrary seeks.
+     * popen to gzip -cd is 3 times faster though.
+     */
+    if (access(path, R_OK) == 0) {
+	sprintf(path2, "gzip -cd < %.*s", 1000, path);
+	if (zf->fp = popen(path2, "r"))
+	    return zf;
+    }
+
+    sprintf(path2, "gzip -cd < %.*s.gz", 1000, path);
+    if (zf->fp = popen(path2, "r"))
+	return zf;
+
+    printf("Failed on %s\n", path);
+#else
     /* Gzopen instead */
     if (zf->gz = gzopen(path, mode))
 	return zf;
@@ -154,6 +175,7 @@ zfp *zfopen(const char *path, const char *mode) {
     sprintf(path2, "%.*s.gz", 1020, path);
     if (zf->gz = gzopen(path2, mode))
 	return zf;
+#endif
 
     perror(path);
 
