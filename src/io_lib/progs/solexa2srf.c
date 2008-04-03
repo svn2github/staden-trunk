@@ -1,18 +1,8 @@
-/* TODO:
- * Define a skip-pattern (e.g) 0/1/1/1 to indicate how many huffman codes
- * we need and what order they get used in. In the above case for each set of
- * 4 bytes the first byte uses the 1st stored set of huffman codes and
- * the last 3 bytes use the 2nd set. For 16-bit trace data we'd use "0/1".
+/* TO-DO:
  *
- * This can be passed into calc_bit_lengths, generate_codes, etc. So the
- * huffman_codes_t struct needs multiple code arrays.
- *
- * Also they get serialised into a single stream for Deflate, so we can
- * inline multiple codes too. The only difference I think is a wrapper
- * around the outside to indicate a skip-pattern. It defaults "0" (each
- * byte using the same set).
- *
- * Skip EOF symbol in code_sets that do not need it? No difference I'd guess
+ * Replace the use of io_lib's Read struct in here with direct control of
+ * ztr_t objects instead. This avoids needlessly calling read2ztr and it
+ * should speed up the code somewhat.
  */
 
 /*
@@ -41,12 +31,16 @@
 
 /*
  * Author: James Bonfield, March 2006
- * Updated April 2007:added a format string for naming samples.
- * Updated June 2007: wrapped the output format in SRF (example).
- * Updated January 2008: support for chastity filters via quahog files.
+ * Updated April 2007:   Added a format string for naming samples.
+ * Updated June 2007:    Wrapped the output format in SRF (example).
+ * Updated January 2008: Support for chastity filters via quahog files.
+ * Updated April 2008:   Added -mf/-mr params from Camil Toma
+ *                       Support for calibrated fastq (-qf/-qr).
  *
- * This code converts _sig2, _prb and _seq files to ZTR files held within
- * an SRF container.
+ * This code converts Solexa (aka Illumina) format text files into ZTR
+ * format traces held within an SRF container. It reads (optionally) from
+ * the *sig2.txt, *prb.txt, *seq.txt, *qhg.txt, *nse.txt, *int.txt and
+ * calibrarted fastq solexa files.
  */
 
 #include <stdio.h>
@@ -72,6 +66,7 @@
 /* #define NO_ENTROPY_ENCODING */
 
 /* A model saves approx 2% data size, vs 1.3% saving for delta */
+/* Neither are used in the official SRF spec though. */
 /* #define USE_MODEL */
 
 #define N_TR_CODE 8
@@ -81,6 +76,7 @@
 #define CNF4_CODE (CODE_USER+2)
 #define INT4_CODE (CODE_USER+3)
 #define NSE4_CODE (CODE_USER+4)
+#define CNF1_CODE (CODE_USER+5)
 
 /*
  * io_lib is still based around the Read struct at its heart rather than
@@ -92,6 +88,7 @@
 #define SIG_NSE 2
 typedef struct {
     float (*signal[3])[4]; /* raw intensities */
+    char *prc;             /* Calibrated single confidence values */
     int baseline[3];
 } read_pd;
 
@@ -232,6 +229,9 @@ static void output_code_set(FILE *fp, huffman_codes_t *cds) {
 
 /* Internal struct used during parsing */
 typedef struct {
+    char date[99];
+    char machine[99];
+    int run;
     int x, y;
     int tile;
     int lane;
@@ -357,8 +357,8 @@ static char *ztr_encode_float_4(ztr_t *z, char *type,  int npoints,
     return bytes;
 }
 
-int add_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
-	       int baseline) {
+int add_smp4_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
+		   int baseline) {
     ztr_chunk_t *zc;
     char *data, *mdata;
     int dlen, mdlen;
@@ -377,6 +377,72 @@ int add_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
     zc->ztr_owns = 1;
 
     return 0;
+}
+
+static char *ztr_encode_qual(ztr_t *z, int nbase, char *qual, char *scale,
+			    int *nbytes, char **mdata, int *mdbytes) {
+    char *bytes;
+    int i;
+
+    if (NULL == (bytes = xmalloc(1 + nbase)))
+	return NULL;
+
+    bytes[0] = ZTR_FORM_RAW;
+    memcpy(&bytes[1], qual, nbase);
+
+    /* Meta data, if appropriate */
+    if (scale) {
+	*mdbytes = strlen(scale) + 7;
+	*mdata = (char *)malloc(*mdbytes);
+	sprintf(*mdata, "SCALE%c%s", 0, scale);
+    } else {
+	*mdbytes = 0;
+	*mdata = NULL;
+    }
+
+    *nbytes = 1+nbase;
+
+    return bytes;
+}
+
+int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, char *scale) {
+    ztr_chunk_t *zc;
+    char *data, *mdata;
+    int dlen, mdlen;
+    
+    z->chunk = (ztr_chunk_t *)realloc(z->chunk,
+				      ++z->nchunks * sizeof(ztr_chunk_t));
+
+    zc = &z->chunk[z->nchunks-1];
+    data = ztr_encode_qual(z, nbase, qual, scale, &dlen, &mdata, &mdlen);
+    zc->type = ZTR_TYPE_CNF1;
+    zc->mdlength = mdlen;
+    zc->mdata    = mdata;
+    zc->dlength  = dlen;
+    zc->data     = data;
+    zc->ztr_owns = 1;
+
+    return 0;
+}
+
+int set_cnf4_metadata(ztr_t *z, char *scale) {
+    int i;
+
+    /* Find the chunk type */
+    for (i = 0; i < z->nchunks; i++) {
+	if (z->chunk[i].type == ZTR_TYPE_CNF4) {
+	    break;
+	}
+    }
+    if (i == z->nchunks)
+	return -1;
+
+    /* Reset the meta-data */
+    if (z->chunk[i].mdata)
+	free(z->chunk[i].mdata);
+    z->chunk[i].mdlength = strlen(scale) + 7;
+    z->chunk[i].mdata = (char *)malloc(z->chunk[i].mdlength);
+    sprintf(z->chunk[i].mdata, "SCALE%c%s", 0, scale);    
 }
 
 /*
@@ -675,6 +741,86 @@ int (*get_prb(zfp *fp, int trim))[4] {
 }
 
 /*
+ * Generates data as per get_prb above but extracting it from a fastq
+ * sequence and quality string already loaded to memory instead of a
+ * _prb.txt file.  The scores returned are calibrated in the phred
+ * scale with one value per base. For compatibility we still return 4
+ * values per cycle (the remaining 3 being set to zero), hence the
+ * requirement for the sequence to be known too.
+ *
+ * Returns point to Nx4 array of ints holding the scores.
+ *         NULL on failure
+ */
+/* UNUSED */
+int (*fastq_to_prb4(char *seq, char *qual, int trim))[4] {
+    size_t nc = strlen(seq), i;
+    static int prb[MAX_CYCLES][4];
+    int qc, qo;
+
+    for (i = 0; i < nc; i++) {
+	switch(seq[i]) {
+	case 'a': case 'A':
+	    qc = prb[i][0] = qual[i] - 64;
+	    /* FIXME: use a precomputed lookup table instead */
+	    qo = -10 * log(3*(1+pow(10, qc/10.0))-1)/log(10) - 0.5;
+	    prb[i][1] = prb[i][2] = prb[i][3] = qo;
+	    break;
+
+	case 'c': case 'C':
+	    qc = prb[i][1] = qual[i] - 64;
+	    qo = -10 * log(3*(1+pow(10, qc/10.0))-1)/log(10) - 0.5;
+	    prb[i][0] = prb[i][2] = prb[i][3] = qo;
+	    break;
+
+	case 'g': case 'G':
+	    qc = prb[i][2] = qual[i] - 64;
+	    qo = -10 * log(3*(1+pow(10, qc/10.0))-1)/log(10) - 0.5;
+	    prb[i][0] = prb[i][1] = prb[i][3] = qo;
+	    break;
+
+	case 't': case 'T':
+	    qc = prb[i][3] = qual[i] - 64;
+	    qo = -10 * log(3*(1+pow(10, qc/10.0))-1)/log(10) - 0.5;
+	    prb[i][0] = prb[i][1] = prb[i][2] = qo;
+	    break;
+
+	default:
+	    prb[i][0] = prb[i][1] = prb[i][2] = prb[i][3] = -5; /* -4.77 */
+	    break;
+
+	}
+    }
+
+    return &prb[trim];
+}
+
+/*
+ * As for fastq_to_prb4, but instead using 1 quality value scaled in
+ * the phred scale instead of log-odds scale.
+ */
+char *fastq_to_prb1(char *seq, unsigned char *qual, int trim) {
+    size_t nc = strlen(seq), i;
+    int j;
+    signed char *prb;
+    static int qlookup[256];
+    static int qlookup_done = 0;
+
+    if (!qlookup_done) {
+	for (j = 0; j < 255; j++) {
+	    qlookup[j] = (int)((10*log(1+pow(10, (j-64)/10.0))/log(10)+.499));
+	}
+	qlookup_done = 1;
+    }
+
+    prb = (signed char *)malloc(nc);
+    for (i = 0; i < nc; i++) {
+	prb[i] = qlookup[qual[i]];
+    }
+
+    return &prb[trim];
+}
+
+/*
  * Fetches the signal strength arrays as an Nx4 array from the *_sig.txt file.
  * The format of the lines is a series of 4-tuples (4 floating point numbers,
  * themselves separated by spaced) which are separated by tabs.
@@ -791,7 +937,15 @@ int get_fastq_entry(zfp *fp, char *name, char *seq, char *qual) {
 	*cp = 0;
     if (cp = strrchr(name1, '\n'))
 	*cp = 0;
-    strcpy(name, name1+1);
+
+    /* Copy name fixing "-0". Why minus zero as a coordinate? */
+    cp = name1+1;
+    while (*cp) {
+	if (*cp == '-' && *(cp+1) == '0')
+	    cp++;
+	*name++ = *cp++;
+    }
+    *name++ = 0;
 
     if (NULL == zfgets(seq, MAX_CYCLES, fp))
 	return -1;
@@ -867,8 +1021,7 @@ Read *create_read(char *seq, int (*prb)[4], read_pd *pd) {
     return r;
 }
 
-void format_name(char *name, char *fmt, int lane, int tile, int x, int y,
-		 int count) {
+void format_name(char *name, char *fmt, loc_t *l, int count) {
     int n;
 
     for (; *fmt; fmt++) {
@@ -877,32 +1030,43 @@ void format_name(char *name, char *fmt, int lane, int tile, int x, int y,
 	/* A format specifier */
 	case '%': {
 	    char *endp;
-	    int l1 = 0, val = 0;
+	    int l1 = 0;
+	    char *fmt2;
 
 	    /* Precision specifier */
 	    l1 = strtol(++fmt, &endp, 10);
 	    fmt = endp;
+	    fmt2 = isupper(*fmt) ? "%0*x" : "%0*d";
 
 	    switch(tolower(*fmt)) {
+	    case 'd':
+		n = sprintf(name, "%.*s", l1 ? l1 : 99, l->date);
+		break;
+	    case 'm':
+		n = sprintf(name, "%.*s", l1 ? l1 : 99, l->machine);
+		break;
+	    case 'r':
+		n = sprintf(name, fmt2, l1, l->run);
+		break;
 	    case 'l':
-		val = lane;
+		n = sprintf(name, fmt2, l1, l->lane);
 		break;
 	    case 't':
-		val = tile;
+		n = sprintf(name, fmt2, l1, l->tile);
 		break;
 	    case 'x':
-		val = x;
+		n = sprintf(name, fmt2, l1, l->x);
 		break;
 	    case 'y':
-		val = y;
+		n = sprintf(name, fmt2, l1, l->y);
 		break;
 	    case 'c':
-		val = count;
+		n = sprintf(name, fmt2, l1, count);
 		break;
 	    default:
 		fprintf(stderr, "Invalid %% rule '%%%c'\n", *fmt);
+		n = 0;
 	    }
-	    n = sprintf(name, isupper(*fmt) ? "%0*x" : "%0*d", l1, val);
 	    name += n;
 	    break;
 	}
@@ -1028,6 +1192,7 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
  *     SMP4 data
  *     BASE chunk
  *     CNF4 chunk
+ *     CNF1 chunk
  *     ...
  */
 static void reorder_ztr(ztr_t *ztr) {
@@ -1038,7 +1203,8 @@ static void reorder_ztr(ztr_t *ztr) {
 	ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP,
 	ZTR_TYPE_REGN, ZTR_TYPE_TEXT,
 	/* footer */
-	ZTR_TYPE_SMP4, ZTR_TYPE_BASE, ZTR_TYPE_CNF4
+	ZTR_TYPE_SMP4, ZTR_TYPE_BASE, ZTR_TYPE_CNF4,
+	ZTR_TYPE_CNF1
     };
 
     /* Reorder */
@@ -1421,6 +1587,7 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    break;
 
 	case ZTR_TYPE_CNF4:
+	    /* uncalibrated 4x confidence values */
 	    if (level == 0) {
 #ifdef DEBUG_OUT
 		write(fds[FD_QUAL_RAW],
@@ -1480,6 +1647,17 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 #ifdef DEBUG_OUT
 		write(fds[FD_BASE_CMP],
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
+#endif
+	    }
+	    break;
+
+	case ZTR_TYPE_CNF1:
+	    /* calibrated 1x confidence values */
+	    if (level == 1) {
+#ifndef NO_ENTROPY_ENCODING
+		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
+					 ZTR_FORM_STHUFF, CNF1_CODE, 0))
+		    exit(10);
 #endif
 	    }
 	    break;
@@ -1752,6 +1930,68 @@ float **load_ipar_data(char *ipar_file, int *bin, int *numberOfChannels,
 }
 
 /*
+ * Looks at the current working directory in an attempt to guess the
+ * date and run name from the run root.
+ */
+void parse_directory(loc_t *l) {
+    char cwd[8192], *cp, *underscore;
+
+    /* Defaults for when we fail */
+    strcpy(l->date, "?");
+    strcpy(l->machine, "?");
+
+    if (NULL == getcwd(cwd, 8192))
+	return;
+
+    /* hop up three dirs from Bustard to root */
+    if ((cp = strrchr(cwd, '/')))
+	*cp = 0;
+    if ((cp = strrchr(cwd, '/')))
+	*cp = 0;
+    if ((cp = strrchr(cwd, '/')))
+	*cp = 0;
+    if (!(cp = strrchr(cwd, '/')))
+	return;
+
+    /* cp is now the root dir. name */
+    cp++;
+    if ((underscore = strchr(cp, '_'))) {
+	*underscore = 0;
+	strncpy(l->date, cp, 99);
+	cp = underscore+1;
+	if ((underscore = strchr(cp, '_'))) {
+	    *underscore = 0;
+	    strncpy(l->machine, cp, 99);
+	    cp = underscore+1;
+	    l->run = atoi(cp);
+	}
+    }
+}
+
+/*
+ * Takes a fastq name from gerald s_*_sequence.txt and extracts the lane
+ * and tile number.
+ *
+ * Returns 0 (setting *lane, *tile) on success
+ *        -1 on failure
+ */
+int get_tile_from_name(char *name, int *lane, int *tile) {
+    char *cp;
+
+    if (NULL == (cp = strchr(name, ':')))
+	return -1;
+    cp++;
+    *lane = atoi(cp);
+
+    if (NULL == (cp = strchr(cp, ':')))
+	return -1;
+    cp++;
+    *tile = atoi(cp);
+
+    return 0;
+}
+
+/*
  * Takes a s_*_*_seq.txt file as input and creates a ZTR file as output.
  * It uses the associated prb and sig files too to do this.
  *
@@ -1796,6 +2036,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     int err = -1;
     huffman_codeset_t *seq_cds = NULL;
     huffman_codeset_t *prb_cds = NULL;
+    huffman_codeset_t *prc_cds = NULL;
     huffman_codeset_t *sig_cds = NULL;
     huffman_codeset_t *int_cds = NULL;
     huffman_codeset_t *nse_cds = NULL;
@@ -1822,6 +2063,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	chdir(seq_file);
 	seq_file = slash+1;
     }
+
+    /* put run date, machine and run number in 'l' */
+    parse_directory(&l);
 
     /* open the required files */
     if (NULL == (cp = strrchr(seq_file, '_')))
@@ -1918,6 +2162,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	float c;
 	char fastq_seq[MAX_CYCLES+1];
 	char fastq_qual[MAX_CYCLES+1];
+	int eof = 0;
 
 	/*
 	 * If we're storing calibrated GERALD quality values instead of
@@ -1926,20 +2171,52 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	 *
 	 * There's probably a different number of entries in these though
 	 * than there is in the *seq.txt (etc) files, so we need to skip
-	 * entries
+	 * entries. Logically speaking we'd be looping over the fastq
+	 * data and then searching for the next sequence to match in
+	 * the *seq.txt files, but the history of this code is such
+	 * that the loop is the other way around. Hence for the odd
+	 * use of a next_fastq variable.
 	 */
-	if (fp_qf) {
+	if (fp_qf || fp_qr) {
 	    char name[1024];
 
-	    format_name(name, full_fmt, l.lane, l.tile, l.x, l.y, seq_num);
+	    format_name(name, full_fmt, &l, seq_num);
 
-	    if (next_fastq)
-		get_fastq_entry(fp_qf, fastq_name, fastq_seq, fastq_qual);
+	    while (next_fastq) {
+		int c = 0;
+		int fq_lane, fq_tile;
+
+		if (fp_qf) {
+		    if (-1 == get_fastq_entry(fp_qf, fastq_name,
+					      fastq_seq,
+					      fastq_qual)) {
+			eof=1;
+			break;
+		    }
+		    c = strlen(fastq_seq);
+		}
+		if (fp_qr) {
+		    if (-1 == get_fastq_entry(fp_qr, fastq_name,
+					      &fastq_seq[c],
+					      &fastq_qual[c])) {
+			eof=1;
+			break;
+		    }
+		}
+
+		if (-1 == get_tile_from_name(fastq_name, &fq_lane, &fq_tile)) {
+		    fprintf(stderr, "Couldn't parse name '%s'\n", fastq_name); 
+		}
+		if (l.lane == fq_lane && l.tile == fq_tile)
+		    next_fastq = 0;
+	    }
+
 	    if (strcmp(fastq_name, name)) {
 		char dummy[10240];
 		next_fastq = 0;
-
-		if (fp_qhg) zfgets(dummy, 10240, fp_prb);
+		
+		/* Skip our other files to keep all in sync */
+		if (fp_qhg) zfgets(dummy, 10240, fp_qhg);
 		if (fp_prb) zfgets(dummy, 10240, fp_prb);
 		if (fp_sig) zfgets(dummy, 10240, fp_sig);
 		if (fp_int) zfgets(dummy, 10240, fp_int);
@@ -1949,13 +2226,18 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
 		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		if (pd->prc) free(&pd->prc[-skip]);
 		free(pd);
 		continue;
 
 	    } else {
+
 		next_fastq = 1;
 	    }
 	}
+
+	if (eof)
+	    break;
 
 	if (fp_qhg) {
 	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
@@ -1976,13 +2258,14 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
 		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		if (pd->prc) free(&pd->prc[-skip]);
 		free(pd);
 
 		continue;
 	    }
 	}
 
-	/* ASSUMPTION: lane is constant through input file */
+	/* Load the approprate matrix file whenever changing lanes */
 	if (l.lane != last_lane) {
 	    char fn[100];
 
@@ -2002,19 +2285,25 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    }
 	}
 
+	/*
+	 * We *either* read calibrated quality from the fastq file *or*
+	 * from the prb.txt files.
+	 */
+	if (fp_qf || fp_qr) {
+	    if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
+		fprintf(stderr, "Failed to generate prb from fastq\n");
+		continue;
+	    }
+	} else {
+	    pd->prc = NULL;
+	}
+
 	if (!(prb = get_prb(fp_prb, skip))) {
 	    fprintf(stderr, "Couldn't load prb for %s/%d\n",
 		    seq_file, seq_num);
 	    continue;
 	}
 
-	/* FIXME:
-	 * What to do about fastq_seq and fastq_qual here now?
-	 * Do we store yet another seq/qual channel or replace the previous
-	 * ones?
-	 * Note that we have one quality instead of 4 for the processed
-	 * data too.
-	 */
 
 	if (fp_sig) {
 	    if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
@@ -2105,6 +2394,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	/* Standard conversion - seq, qual, processed trace */
 	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
+	set_cnf4_metadata(z, "LO");
 
 	/* REGN chunk if needed */
 	if (rev_cycle)
@@ -2112,11 +2402,17 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	/* Plus raw traces if desired */
 	if (pd->signal[SIG_INT])
-	    add_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
-		      pd->baseline[SIG_INT]);
+	    add_smp4_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
+			   pd->baseline[SIG_INT]);
 	if (pd->signal[SIG_NSE])
-	    add_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
-		      pd->baseline[SIG_NSE]);
+	    add_smp4_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
+			   pd->baseline[SIG_NSE]);
+
+	if (pd->prc)
+	    add_cnf1_chunk(z, r->NBases, pd->prc, "PH");
+
+	/* Calibrated confidence values too */
+
 
 	/* Miscellaneous text fields - only stored once per header */
 	tc = ztr_add_text(z, NULL, "PROGRAM_ID", "solexa2srf v" S2S_VERSION);
@@ -2160,6 +2456,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
 	if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 	if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+	if (pd->prc) free(&pd->prc[-skip]);
 	read_deallocate(r);
     }
 
@@ -2175,6 +2472,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
      */
 #ifndef NO_ENTROPY_ENCODING
     seq_cds = ztr2codes(za, BASE_CODE, 1, ZTR_TYPE_BASE, NULL,   NULL);
+    prc_cds = ztr2codes(za, CNF1_CODE, 1, ZTR_TYPE_CNF1, NULL,   NULL);
 
 #ifdef SINGLE_HUFF
     prb_cds = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4, NULL,   NULL);
@@ -2214,7 +2512,10 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 #ifndef NO_ENTROPY_ENCODING
 	ztr_add_hcode(z, seq_cds, 0);
-	ztr_add_hcode(z, prb_cds, 0);
+	if (prb_cds)
+	    ztr_add_hcode(z, prb_cds, 0);
+	if (prc_cds)
+	    ztr_add_hcode(z, prc_cds, 0);
 	if (sig_cds)
 	    ztr_add_hcode(z, sig_cds, 0);
 	if (int_cds)
@@ -2225,7 +2526,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	srf_compress_ztr(z, 1);
 
-	format_name(prefix, prefix_fmt, l.lane, l.tile, l.x, l.y, seq_num);
+	format_name(prefix, prefix_fmt, &l, seq_num);
 	if (strcmp(prefix, last_prefix)) {
 	    /* Prefix differs, so generate a new data block header */
 	    srf_trace_hdr_t th;
@@ -2243,7 +2544,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	delete_ztr(z);
 
 	/* Write out the variable element of a ZTR file */
-	format_name(name, name_fmt, l.lane, l.tile, l.x, l.y, seq_num);
+	format_name(name, name_fmt, &l, seq_num);
 	srf_construct_trace_body(&tb, name, (unsigned char *)mf->data+footer,
 				 mf->size-footer);
 	if (-1 == srf_write_trace_body(srf, &tb))
@@ -2252,9 +2553,12 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	mfdestroy(mf);
     }
 
-    huffman_codeset_destroy(seq_cds);
-    huffman_codeset_destroy(sig_cds);
-    huffman_codeset_destroy(prb_cds);
+    if (seq_cds) huffman_codeset_destroy(seq_cds);
+    if (sig_cds) huffman_codeset_destroy(sig_cds);
+    if (prb_cds) huffman_codeset_destroy(prb_cds);
+    if (prc_cds) huffman_codeset_destroy(prc_cds);
+    if (int_cds) huffman_codeset_destroy(int_cds);
+    if (nse_cds) huffman_codeset_destroy(nse_cds);
 
  skip:
     err = 0;
@@ -2335,16 +2639,14 @@ void usage(int code) {
     fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
     fprintf(stderr, "    -s sk    Skips 'sk' bases from start of each sequence - default 0\n");
     fprintf(stderr, "    -2 cyc   The cycle number for the 2nd pair\n");
-    /*
-     * Unfinished code, so don't admit to its existance yet
-     */
-#if 0
     fprintf(stderr, "    -qf fn   Get forward read calibrated quality from fastq file 'fn'\n");
     fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
     fprintf(stderr, "    -qr fn   Get reverse read calibrated quality from fastq file 'fn'\n");
     fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
-#endif
     fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
+    fprintf(stderr, "             %%d = date (from run pwd)\n");
+    fprintf(stderr, "             %%m = machine name (from run pwd)\n");
+    fprintf(stderr, "             %%r = run number (from run pwd)\n");
     fprintf(stderr, "             %%l = lane number\n");
     fprintf(stderr, "             %%t = tile number\n");
     fprintf(stderr, "             %%x = x coordinate\n");
@@ -2372,8 +2674,8 @@ int main(int argc, char **argv) {
     int phased = 1;
     int quiet = 0;
     int dots = 0;
-    char *name_fmt = "%x_%y";
-    char *prefix_fmt = "s_%l_%t_";
+    char *name_fmt = "%x:%y";
+    char *prefix_fmt = "%m_%r:%l:%t:";
     srf_t *srf;
     srf_cont_hdr_t *ch;
     float chastity = 0;
@@ -2475,6 +2777,9 @@ int main(int argc, char **argv) {
     for (; i < argc; i++) {
 	char c = '.';
 	int nr, nf;
+	if (!quiet) {
+	    printf("Processing tile %s\n", argv[i]);
+	}
 	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
