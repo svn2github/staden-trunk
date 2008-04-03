@@ -47,7 +47,7 @@ void init_qlookup(void) {
 /* ------------------------------------------------------------------------ */
 
 #define MAX_READ_LEN 1024
-void ztr2fastq(ztr_t *z, char *name) {
+void ztr2fastq(ztr_t *z, char *name, int calibrated) {
     int i, nc, seq_len;
     char buf[MAX_READ_LEN*2 + 512 + 6];
     char *seq, *qual, *sdata, *qdata;
@@ -64,7 +64,11 @@ void ztr2fastq(ztr_t *z, char *name) {
     seq_len = chunks[0]->dlength-1;
 
     /* Extract the quality */
-    chunks = ztr_find_chunks(z, ZTR_TYPE_CNF4, &nc);
+    if (calibrated)
+	chunks = ztr_find_chunks(z, ZTR_TYPE_CNF1, &nc);
+    else
+	chunks = ztr_find_chunks(z, ZTR_TYPE_CNF4, &nc);
+
     if (nc != 1) {
 	fprintf(stderr, "Zero or greater than one CNF chunks found.\n");
 	return;
@@ -91,7 +95,9 @@ void ztr2fastq(ztr_t *z, char *name) {
 	    *seq++ = 'N';
 	    sdata++;
 	}
-	*qual++ = qlookup[*qdata++ + 128];
+	*qual++ = calibrated
+	    ? *qdata++ + '!'
+	    : qlookup[*qdata++ + 128];
     }
     *qual++ = '\n';
 
@@ -100,31 +106,44 @@ void ztr2fastq(ztr_t *z, char *name) {
 
 /* ------------------------------------------------------------------------ */
 int main(int argc, char **argv) {
-    char *ar_name;
-    srf_t *srf;
-    char name[512];
-    ztr_t *ztr;
+    int calibrated = 0;
+    int i, arg = 1;
 
-    if (argc != 2) {
-	fprintf(stderr, "Usage: srf2fastq archive_name\n");
+    if (argc < 2) {
+	fprintf(stderr, "Usage: srf2fastq [-c] archive_name ...\n");
 	return 1;
     }
-    ar_name = argv[1];
 
-    if (NULL == (srf = srf_open(ar_name, "r"))) {
-	perror(ar_name);
-	return 4;
+    arg = 1;
+    if (strcmp(argv[arg], "-c") == 0) {
+	calibrated = 1;
+	arg++;
     }
 
     read_sections(READ_BASES);
     init_qlookup();
 
-    while (NULL != (ztr = srf_next_ztr(srf, name))) {
-	ztr2fastq(ztr, name);
-	delete_ztr(ztr);
-    }
+    for (i = arg; arg < argc; arg++) {
+	char *ar_name;
+	srf_t *srf;
+	char name[512];
+	ztr_t *ztr;
 
-    srf_destroy(srf, 1);
+	ar_name = argv[arg];
+
+	if (NULL == (srf = srf_open(ar_name, "r"))) {
+	    perror(ar_name);
+	    return 4;
+	}
+
+
+	while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	    ztr2fastq(ztr, name, calibrated);
+	    delete_ztr(ztr);
+	}
+
+	srf_destroy(srf, 1);
+    }
 
     return 0;
 }
