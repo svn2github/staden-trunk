@@ -857,7 +857,7 @@ char *fastq_to_prb1(char *seq, unsigned char *qual, int trim) {
  *         NULL on failure
  */
 float (*get_sig(zfp *fp, int trim, int *bin))[4] {
-    char line[MAX_CYCLES*30 +1];
+    char line[MAX_CYCLES*40 +1];
     int i4[4];
     char *cp;
     int c = 0;
@@ -866,7 +866,7 @@ float (*get_sig(zfp *fp, int trim, int *bin))[4] {
     if (NULL == (sig = malloc(MAX_CYCLES * sizeof(*sig))))
 	return NULL;
 
-    if (NULL == zfgets(line, MAX_CYCLES*30, fp))
+    if (NULL == zfgets(line, MAX_CYCLES*40, fp))
 	return NULL;
 
     /* Skip first 4 values */
