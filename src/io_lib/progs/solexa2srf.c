@@ -1061,6 +1061,10 @@ void format_name(char *name, char *fmt, loc_t *l, int count) {
 	    fmt2 = isupper(*fmt) ? "%0*x" : "%0*d";
 
 	    switch(tolower(*fmt)) {
+	    case '%':
+		*name = '%';
+		n = 1;
+		break;
 	    case 'd':
 		n = sprintf(name, "%.*s", l1 ? l1 : 99, l->date);
 		break;
@@ -1587,18 +1591,19 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 		      ztr->chunk[i].data, ztr->chunk[i].dlength);
 #endif
 #ifndef NO_ENTROPY_ENCODING
-		if (key && 0 == strcmp(key, "SLXI"))
+		if (key && 0 == strcmp(key, "SLXI")) {
 		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
 					     ZTR_FORM_STHUFF, INT4_CODE, 0))
 			exit(2);
-		else if (key && 0 == strcmp(key, "SLXN"))
+		} else if (key && 0 == strcmp(key, "SLXN")) {
 		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
 					     ZTR_FORM_STHUFF, NSE4_CODE, 0))
 			exit(3);
-		else
+		} else {
 		    if (-1 == compress_chunk(ztr, &ztr->chunk[i],
 					     ZTR_FORM_STHUFF, SIG4_CODE, 0))
 			exit(4);
+		}
 #endif
 #ifdef DEBUG_OUT
 		if (key && 0 == strcmp(key, "SLXN"))
