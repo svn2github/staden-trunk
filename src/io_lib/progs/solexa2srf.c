@@ -2053,7 +2053,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     zfp *fp_seq = NULL, *fp_prb = NULL;
     zfp *fp_sig = NULL, *fp_qhg = NULL;
     zfp *fp_int = NULL, *fp_nse = NULL;
-    zfp *fp_qf  = NULL, *fp_qr  = NULL;
+    static zfp *fp_qf  = NULL, *fp_qr  = NULL;
     char *seq, *slash;
     int seq_num = 0;
     char last_prefix[1024] = {'\0'};
@@ -2153,12 +2153,12 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    goto error;
     }
 
-    if (fwd_fastq) {
+    if (fwd_fastq && !fp_qf) {
 	if (NULL == (fp_qf = zfopen(fwd_fastq, "r")))
 	    goto error;
     }
 
-    if (rev_fastq) {
+    if (rev_fastq && !fp_qr) {
 	if (NULL == (fp_qr = zfopen(rev_fastq, "r")))
 	    goto error;
     }
@@ -2610,10 +2610,6 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	zfclose(fp_nse);
     if (fp_qhg)
 	zfclose(fp_qhg);
-    if (fp_qf)
-	zfclose(fp_qf);
-    if (fp_qr)
-	zfclose(fp_qr);
     
     if (matrix1)
 	free(matrix1);
