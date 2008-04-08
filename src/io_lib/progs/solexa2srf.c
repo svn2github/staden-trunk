@@ -115,6 +115,15 @@ typedef struct {
     gzFile *gz;
 } zfp;
 
+off_t zftello(zfp *zf) {
+    return zf->fp ? ftello(zf->fp) : -1;
+}
+
+int zfseeko(zfp *zf, off_t offset, int whence) {
+    return zf->fp ? fseeko(zf->fp, offset, whence) : -1;
+}
+
+
 /*
  * A wrapper for either fgets or gzgets depending on what has been
  * opened.
@@ -2206,12 +2215,16 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	 */
 	if (fp_qf || fp_qr) {
 	    char name[1024];
+	    off_t last_name_f = 0, last_name_r = 0;
 
 	    format_name(name, full_fmt, &l, seq_num);
 
 	    while (next_fastq) {
 		int c = 0;
 		int fq_lane, fq_tile;
+
+		if (fp_qf) last_name_f = zftello(fp_qf);
+		if (fp_qr) last_name_r = zftello(fp_qr);
 
 		if (fp_qf) {
 		    if (-1 == get_fastq_entry(fp_qf, fastq_name,
@@ -2236,6 +2249,14 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		}
 		if (l.lane == fq_lane && l.tile == fq_tile)
 		    next_fastq = 0;
+
+		if (fq_tile != l.tile) {
+		    puts("End of tile");
+		    eof = 1;
+		    if (fp_qf) zfseeko(fp_qf, last_name_f, SEEK_SET);
+		    if (fp_qr) zfseeko(fp_qr, last_name_r, SEEK_SET);
+		    break;
+		}
 	    }
 
 	    if (strcmp(fastq_name, name)) {
@@ -2572,7 +2593,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	/* Write out the variable element of a ZTR file */
 	format_name(name, name_fmt, &l, seq_num);
-	srf_construct_trace_body(&tb, name, (unsigned char *)mf->data+footer,
+	srf_construct_trace_body(&tb, name, -1,
+				 (unsigned char *)mf->data+footer,
 				 mf->size-footer);
 	if (-1 == srf_write_trace_body(srf, &tb))
 	    return -1;
