@@ -84,6 +84,20 @@ int srf_write_pstring(srf_t *srf, char *str) {
 }
 
 /*
+ * As per srf_write_pstring but 'str' may hold binary data including nul
+ * chars, hence we pass over length as a separate paremeter.
+ */
+int srf_write_pstringb(srf_t *srf, char *str, int length) {
+    if (length > 255 || length < 0)
+	return -1;
+
+    if (length)
+	return fprintf(srf->fp, "%c%s", (int)length, str);
+    else
+	return fprintf(srf->fp, "%c", (int)length);
+}
+
+/*
  * Reads a pascal-style string from the srf file.
  * 'str' passed in needs to be at least 256 bytes long. The string read
  * will be stored there and nul terminated.
@@ -442,6 +456,7 @@ int srf_write_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
 
 srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *tb,
 					   char *suffix,
+					   int suffix_len,
 					   unsigned char *body,
 					   uint32_t body_size) {
     if (!tb) {
@@ -449,7 +464,15 @@ srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *tb,
 	    return NULL;
     }
     tb->block_type = SRFB_TRACE_BODY;
-    strncpy(tb->read_id, suffix, 255);
+    if (suffix_len == -1) {
+	suffix_len = strlen(suffix);
+	if (suffix_len > 255)
+	    suffix_len = 255;
+    }
+    memcpy(tb->read_id, suffix, suffix_len);
+    tb->read_id[suffix_len] = 0;
+    tb->read_id_length = suffix_len;
+
     tb->trace = body;
     tb->trace_size = body_size;
     tb->flags = 0;
@@ -478,14 +501,14 @@ int srf_write_trace_body(srf_t *srf, srf_trace_body_t *tb) {
 	return -1;
 
     /* Size */
-    sz = 6 + (tb->read_id ? strlen(tb->read_id) : 0)+1 + tb->trace_size;
+    sz = 6 + tb->read_id_length+1 + tb->trace_size;
     if (0 != srf_write_uint32(srf, sz))
 	return -1;
 
     /* Flags and name */
     if (EOF == (fputc(tb->flags, srf->fp)))
 	return -1;
-    if (-1 == srf_write_pstring(srf, tb->read_id))
+    if (-1 == srf_write_pstringb(srf, tb->read_id, tb->read_id_length))
 	return -1;
 
     /* Tbe ztr footer blob itself... */
@@ -524,6 +547,7 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *tb, int no_trace) {
     /* Read-id suffix */
     if ((z = srf_read_pstring(srf, tb->read_id)) < 0)
 	return -1;
+    tb->read_id_length = z;
     tb->trace_size -= z+1;
 
     /* The trace data itself */
@@ -575,7 +599,7 @@ int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr, int no_seek) {
 	    return -1;
 
 	/* Check for validity */
-	if (memcmp(hdr->magic,   SRF_INDEX_MAGIC,   4) ||
+        if (memcmp(hdr->magic,	 SRF_INDEX_MAGIC,   4) ||
 	    memcmp(hdr->version, SRF_INDEX_VERSION, 4))
 	    return -1;
 
@@ -791,9 +815,10 @@ static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
     else \
         return name_len;
 
-int construct_trace_name(char *fmt, unsigned char *suffix,
+int construct_trace_name(char *fmt,
+			 unsigned char *suffix, int suffix_len,
 			 char *name, int name_len) {
-    block_t *blk = block_create(suffix, strlen((char *)suffix));
+    block_t *blk = block_create(suffix, suffix_len);
     int out_pos = 0;
     int percent = 0;
 
@@ -844,7 +869,7 @@ int construct_trace_name(char *fmt, unsigned char *suffix,
 		char tmp[1024];
 
 		switch(*fmt) {
-		case 'o': d=8;  break;
+		case 'o': d=8;	break;
 		case 'd': d=10; break;
 		case 'x': d=16; break;
 
@@ -1078,8 +1103,14 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 	    if (!mf || 0 != srf_read_trace_body(srf, &tb, 0))
 		return NULL;
 
-	    if (name)
-		sprintf(name, "%s%s", srf->th.id_prefix, tb.read_id);
+	    if (name) {
+		if (-1 == construct_trace_name(srf->th.id_prefix,
+					       (unsigned char *)tb.read_id,
+					       tb.read_id_length,
+					       name, 512)) {
+		    return NULL;
+		}
+	    }
 
 	    if (srf->th.trace_hdr_size)
 		mfwrite(srf->th.trace_hdr, 1, srf->th.trace_hdr_size, mf);
@@ -1168,7 +1199,7 @@ static ztr_t *partial_decode_ztr(srf_t *srf, mFILE *mf, ztr_t *z) {
 	chunk->data = (char *)xmalloc(chunk->dlength);
 	if (chunk->dlength != mfread(chunk->data, 1, chunk->dlength, mf))
 	    break;
-            
+
 	ztr->nchunks++;
 	ztr->chunk = (ztr_chunk_t *)xrealloc(ztr->chunk, ztr->nchunks *
 					     sizeof(ztr_chunk_t));
@@ -1307,8 +1338,14 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 	    if (!srf->mf || 0 != srf_read_trace_body(srf, &tb, 0))
 		return NULL;
 
-	    if (name)
-		sprintf(name, "%s%s", srf->th.id_prefix, tb.read_id);
+	    if (name) {
+		if (-1 == construct_trace_name(srf->th.id_prefix,
+					       (unsigned char *)tb.read_id,
+					       tb.read_id_length,
+					       name, 512)) {
+		    return NULL;
+		}
+	    }
 
 	    mfseek(srf->mf, srf->mf_end, SEEK_SET);
 	    if (tb.trace_size) {
@@ -1395,8 +1432,14 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	if (0 != srf_read_trace_body(srf, &tb, 1))
 	    return -2;
 
-	if (name)
-	    sprintf(name, "%s%s", srf->th.id_prefix, tb.read_id);
+	if (name) {
+	     if (-1 == construct_trace_name(srf->th.id_prefix,
+					    (unsigned char *)tb.read_id,
+					    tb.read_id_length,
+					    name, 512)) {
+		 return -2;
+	    }
+	}
 	
 	break;
     }
@@ -1571,6 +1614,7 @@ int srf_find_trace(srf_t *srf, char *tname,
 
 	if (-1 == construct_trace_name(srf->th.id_prefix,
 				       (unsigned char *)srf->tb.read_id,
+				       srf->tb.read_id_length,
 				       name, 1024))
 	    return -1;
 

@@ -36,6 +36,7 @@ typedef struct {
 /* Trace body - several per trace header */
 typedef struct {
     char block_type;
+    int read_id_length;
     char read_id[256];
     unsigned char flags;
     uint32_t trace_size;
@@ -102,6 +103,7 @@ void srf_destroy(srf_t *srf, int auto_close);
 /*--- Base type I/O methods */
 
 int srf_write_pstring(srf_t *srf, char *str);
+int srf_write_pstringb(srf_t *srf, char *str, int length);
 int srf_read_pstring(srf_t *srf, char *str);
 
 int srf_read_uint32(srf_t *srf, uint32_t *val);
@@ -131,6 +133,7 @@ int srf_write_trace_hdr(srf_t *srf, srf_trace_hdr_t *th);
 
 srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *th,
 					   char *suffix,
+					   int suffix_len,
 					   unsigned char *body,
 					   uint32_t body_size);
 void srf_destroy_trace_body(srf_trace_body_t *th);
