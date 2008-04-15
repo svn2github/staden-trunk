@@ -225,7 +225,7 @@ uint32_t hash(int func, uint8_t *key, int key_len) {
 
     case HASH_FUNC_JENKINS3:
       {
-	uint32_t pc, pb;
+	uint32_t pc = 0, pb = 0;
 	HashJenkins3(key, key_len, &pc, &pb);
 	return pc;
       }
