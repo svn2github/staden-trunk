@@ -293,10 +293,14 @@ static void trace_draw_hist(DNATrace *t, TRACE *tr, Display *d, Pixmap p,
 
     if (t->read->maxTraceVal)
 	h -= h*(double)off/t->read->maxTraceVal;
+
     for (i = 0; i < xn; i++, tr++) {
 	x = (int)((x0 + i) * t->scale_x) - o;
 	y = h - ys * (*tr-off) + yoff;
-	XFillRectangle(d, p, gc, x-1, y, 3, h-y);
+	if (h >= y)
+	    XFillRectangle(d, p, gc, x-1, y, 3, h-y);
+	else
+	    XFillRectangle(d, p, gc, x-1, h, 3, y-h);
     }
 
 }

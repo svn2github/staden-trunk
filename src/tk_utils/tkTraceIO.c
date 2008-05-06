@@ -190,9 +190,43 @@ int trace_load(DNATrace *t, char *file, char *format) {
     /* Auto-detect solexa style sequences by 1 base per sample */
     if (t->read->NBases == t->read->NPoints && t->read->NBases != 0) {
 	t->style = STYLE_STICK;
+	trace_recalc_baseline(t);
     }
 
     return trace_load_private(t);
+}
+
+/*
+ * Some solexa data has extreme outliers and so an entire tile may get encoded
+ * with a DC offset which is inappropriate for each trace as a whole.
+ * Here we re-encode using the minimum range needed.
+ */
+int trace_recalc_baseline(DNATrace *t) {
+    Read *r = t->read;
+    int i;
+    int min_val = INT_MAX, max_val = 0;
+
+    /* Identify the real dynamic range and offset */
+    for (i = 0; i < r->NPoints; i++) {
+	if (min_val > r->traceA[i]) min_val = r->traceA[i];
+	if (min_val > r->traceC[i]) min_val = r->traceC[i];
+	if (min_val > r->traceG[i]) min_val = r->traceG[i];
+	if (min_val > r->traceT[i]) min_val = r->traceT[i];
+	if (max_val < r->traceA[i]) max_val = r->traceA[i];
+	if (max_val < r->traceC[i]) max_val = r->traceC[i];
+	if (max_val < r->traceG[i]) max_val = r->traceG[i];
+	if (max_val < r->traceT[i]) max_val = r->traceT[i];
+    }
+
+    /* Shift it down */
+    for (i = 0; i < r->NPoints; i++) {
+	r->traceA[i] -= min_val;
+	r->traceC[i] -= min_val;
+	r->traceG[i] -= min_val;
+	r->traceT[i] -= min_val;
+    }
+    r->baseline    -= min_val;
+    r->maxTraceVal -= min_val;
 }
 
 /*
