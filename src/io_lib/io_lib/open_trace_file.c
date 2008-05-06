@@ -39,6 +39,7 @@
 #include "io_lib/compress.h"
 #include "io_lib/hash_table.h"
 #include "io_lib/sff.h"
+#include "io_lib/srf.h"
 
 /*
  * Supported compression extensions. See the magics array in compress.c for
@@ -244,6 +245,36 @@ static mFILE *find_file_hash(char *file, char *hashfile) {
 
     /* Found, so copy the contents to a fake FILE pointer */
     return mfcreate(data, size);
+}
+
+/*
+ * Extracts a single trace from an SRF file.
+ *
+ * Return mFILE pointer if found
+ *        NULL if not
+ */
+static mFILE *find_file_srf(char *tname, char *srffile) {
+    srf_t *srf;
+    uint64_t cpos, hpos, dpos;
+    mFILE *mf;
+
+    if (NULL == (srf = srf_open(srffile, "r")))
+	return NULL;
+
+    if (0 == srf_find_trace(srf, tname, &cpos, &hpos, &dpos)) {
+	char *data = malloc(srf->th.trace_hdr_size + srf->tb.trace_size);
+	if (!data) {
+	    srf_destroy(srf, 1);
+	    return NULL;
+	}
+	memcpy(data, srf->th.trace_hdr, srf->th.trace_hdr_size);
+	memcpy(data + srf->th.trace_hdr_size,
+	       srf->tb.trace, srf->tb.trace_size);
+	mf = mfcreate(data, srf->th.trace_hdr_size + srf->tb.trace_size);
+    }
+
+    srf_destroy(srf, 1);
+    return mf;
 }
 
 #ifdef TRACE_ARCHIVE
@@ -878,10 +909,10 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 
 	if (is_file(path2)) {
 	    /* Open the archive to test for magic numbers */
-	    char magic[6];
+	    char magic[8];
 	    FILE *fp;
 	    enum archive_type_t {
-		NONE, HASH, TAR, SFF
+		NONE, HASH, TAR, SFF, SRF
 	    } type = NONE;
 
 	    if (NULL == (fp = fopen(path2, "rb")))
@@ -895,12 +926,14 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 	    else if (memcmp(magic, ".sff", 4) == 0)
 		type = SFF;
 
-	    /* Or .hsh at the end */
+	    /* Or .hsh or Ihsh at the end */
 	    if (NONE == type) {
-		fseek(fp, -12, SEEK_END);
-		fread(magic, 1, 4, fp);
-		if (memcmp(magic, ".hsh", 4) == 0)
+		fseek(fp, -16, SEEK_END);
+		fread(magic, 1, 8, fp);
+		if (memcmp(magic+4, ".hsh", 4) == 0)
 		    type = HASH;
+		else if (memcmp(magic, "Ihsh", 4) == 0)
+		    type = SRF;
 	    }
 
 	    /* or ustar 257 bytes in to indicate un-hashed tar */
@@ -919,6 +952,8 @@ static mFILE *find_file_dir(char *file, char *dirname) {
 		return find_file_tar(cp+1, path2, 0);
 	    case SFF:
 		return find_file_sff(cp+1, path2);
+	    case SRF:
+		return find_file_srf(cp+1, path2);
 	    case NONE:
 		break;
 	    }
@@ -1018,6 +1053,13 @@ mFILE *open_path_mfile(char *file, char *path, char *relative_to) {
 		    free(newsearch);
 		    return fp;
 		}
+
+	    } else if (0 == strncmp(ele2, "SRF=", 4)) {
+		if (valid && (fp = find_file_srf(file2, ele2+4))) {
+		    free(newsearch);
+		    return fp;
+		}
+
 	    } else {
 		if (valid && (fp = find_file_dir(file2, ele2))) {
 		    free(newsearch);
