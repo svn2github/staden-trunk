@@ -221,7 +221,7 @@ So the total header will consist of:
 
 Byte number   0  1  2  3  4  5  6  7  8  9
             +--+--+--+--+--+--+--+--+--+--+
-Hex values  |ae 5a 54 52 0d 0a 1a 0d|01 02|
+Hex values  |ae 5a 54 52 0d 0a 1a 0a|01 03|
             +--+--+--+--+--+--+--+--+--+--+
 
 Chunk format
@@ -245,7 +245,7 @@ justified given the savings? (est. 4.8% for 74bp reads, 8.4% for 27bp
 reads).
 One idea if to consider a ZTR file (the non "block" components at
 least) to be a series of huffman codes, by default all 8-bit long and
-matching their ASCII codes. Then a dedicate chunk could be used to
+matching their ASCII codes. Then a dedicated chunk could be used to
 adjust these default codes. It's therefore backwards compatible, but
 is that also overkill? (NB, this looks like it'd save 6% on the
 overall file size.)
