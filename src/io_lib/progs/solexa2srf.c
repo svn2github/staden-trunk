@@ -1,3 +1,9 @@
+/* 
+ * IMPORTANT NOTE: This file differs from the original software created by
+ * Genome Research Limited (GRL). It has been modified by Illumina for
+ * integration with Illumina's Genome Analyzer data analysis pipeline.
+ */
+
 /* TO-DO:
  *
  * Replace the use of io_lib's Read struct in here with direct control of
@@ -58,7 +64,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define S2S_VERSION "1.6"
+#define I2S_VERSION "1.6"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -92,6 +98,8 @@
 typedef struct {
     float (*signal[3])[4]; /* raw intensities */
     char *prc;             /* Calibrated single confidence values */
+    char *qcal_1;          /* qcal values for the first read*/
+    char *qcal_2;          /* qcal values for the second read*/
     int baseline[3];
 } read_pd;
 
@@ -454,6 +462,36 @@ int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, char *scale) {
     zc->ztr_owns = 1;
 
     return 0;
+}
+
+int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
+    int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
+    int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
+    ztr_chunk_t *zc;
+    char *data, *mdata;
+    int dlen, mdlen;
+    
+    z->chunk = (ztr_chunk_t *)realloc(z->chunk,
+				      ++z->nchunks * sizeof(ztr_chunk_t));
+
+    zc = &z->chunk[z->nchunks-1];
+    if (NULL == (data = xmalloc(2 + nbase_1 + nbase_2)))
+	return -1;
+    data[0] = ZTR_FORM_RAW;
+    memcpy(data+1, qcal_1, nbase_1);
+    *(data + 1 + nbase_1) = 0;
+    if (NULL != qcal_2) {
+        memcpy(data + 2 + nbase_1, qcal_2, nbase_2);
+    }
+    zc->type = ZTR_TYPE_CNF1;
+    zc->mdlength = 0;
+    zc->mdata    = NULL;
+    zc->dlength  = nbase_1 + nbase_2 + 2;
+    zc->data     = data;
+    zc->ztr_owns = 1;
+
+    return 0;
+
 }
 
 int set_cnf4_metadata(ztr_t *z, char *scale) {
@@ -828,6 +866,8 @@ int (*fastq_to_prb4(char *seq, char *qual, int trim))[4] {
 /*
  * As for fastq_to_prb4, but instead using 1 quality value scaled in
  * the phred scale instead of log-odds scale.
+ * This seems to work for qcal files as well, as long as the qcal 
+ * values are extended for the missing bases.
  */
 char *fastq_to_prb1(char *seq, unsigned char *qual, int trim) {
     size_t nc = strlen(seq), i;
@@ -848,6 +888,14 @@ char *fastq_to_prb1(char *seq, unsigned char *qual, int trim) {
 	prb[i] = qlookup[qual[i]];
     }
 
+    return &prb[trim];
+}
+
+char *qcal_to_prb1(unsigned char *qcal, int trim) {
+    size_t nc = strlen(qcal);
+    signed char *prb;
+    prb = (signed char *)malloc(nc+1);
+    memcpy(prb, qcal, nc + 1);
     return &prb[trim];
 }
 
@@ -905,7 +953,8 @@ float (*get_ipar_sig(float **ipar_data, int trim, int cluster,
             sig[cycle][channel] = ipar_data[cycle][cluster * 4 + channel];
             if (bin)
             {
-                int ival1 = trunc(sig[cycle][channel]);
+                //int ival1 = trunc(sig[cycle][channel]);
+                int ival1 = (int)(sig[cycle][channel]);
                 if (ival1 > 65535)
                     bin[65535]++;
                 else if (ival1 < -65535)
@@ -988,6 +1037,23 @@ int get_fastq_entry(zfp *fp, char *name, char *seq, char *qual) {
     return 0;
 }
 
+/*
+ * Get one qcal sequence from the two qcal files of the lane and the corresponding use_bases
+ */
+char *get_qcal_seq1(zfp *fp, int trim, char *qcal_seq)
+{
+    *qcal_seq = 0;
+    if (NULL != fp) {
+        char *end = qcal_seq;
+        if (NULL == zfgets(qcal_seq, MAX_CYCLES, fp)) {
+            return NULL;
+        }
+        while (*end && !isspace(*end))
+            ++end;
+        *end = 0;
+    }
+    return qcal_seq + trim;
+}
 
 /*
  * Creates an io_lib Read object from sequence, probabilities and signal
@@ -2050,11 +2116,11 @@ int get_tile_from_name(char *name, int *lane, int *tile) {
  *	   -1 for failure
  */
 int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
-	   int ipar, int raw, int proc, int skip,
+	   char *dir_qcal, int ipar, int raw, int proc, int skip,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt,
 	   char *matrix_f_name, char *matrix_r_name,
-	   int *nr, int *nf) {
+	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1]) {
     char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
@@ -2062,6 +2128,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     zfp *fp_seq = NULL, *fp_prb = NULL;
     zfp *fp_sig = NULL, *fp_qhg = NULL;
     zfp *fp_int = NULL, *fp_nse = NULL;
+    zfp *fp_qcal[2] = {NULL, NULL};
     static zfp *fp_qf  = NULL, *fp_qr  = NULL;
     char *seq, *slash;
     int seq_num = 0;
@@ -2172,6 +2239,30 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    goto error;
     }
 
+    if (dir_qcal && !fp_qcal[0] && !fp_qcal[1]) {
+        int i;
+        char qcal_file[1024];
+        /* 
+         * If rev_cycle == 0, then it is a single read and there is only one qcal file.
+         * Else, it is a paired ends analysis and there are two qcal files
+         */
+        if (0 == rev_cycle)
+        {
+            sprintf(qcal_file, "%s/%.*s_qcal.txt", dir_qcal, (int)(cp-seq_file), seq_file);
+            if (NULL == (fp_qcal[0] = zfopen(qcal_file, "r")))
+                goto error;
+        }
+        else
+        {
+            for (i = 0; 2 > i; ++i)
+            { 
+                sprintf(qcal_file, "%s/%.*s_%d_qcal.txt", dir_qcal, (int)(cp-seq_file), seq_file, i+1);
+                if (NULL == (fp_qcal[i] = zfopen(qcal_file, "r")))
+                    goto error;
+            }
+        }
+    }
+
     za = ArrayCreate(sizeof(ztr_t *), 0);
     la = ArrayCreate(sizeof(loc_t), 0);
     ra = ArrayCreate(sizeof(Read *), 0);
@@ -2198,6 +2289,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	float c;
 	char fastq_seq[MAX_CYCLES+1];
 	char fastq_qual[MAX_CYCLES+1];
+        char qcal_seq[2][MAX_CYCLES+1];
 	int eof = 0;
 
 	/*
@@ -2275,6 +2367,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
 		if (pd->prc) free(&pd->prc[-skip]);
+		if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+		if (pd->qcal_2) free(&pd->qcal_2[-skip]);
 		free(pd);
 		continue;
 
@@ -2301,17 +2395,30 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		if (fp_sig) zfgets(dummy, 10240, fp_sig);
 		if (fp_int) zfgets(dummy, 10240, fp_int);
 		if (fp_nse) zfgets(dummy, 10240, fp_nse);
-
+                if (fp_qcal[0]) zfgets(dummy, 10240, fp_qcal[0]);
+                if (fp_qcal[1]) zfgets(dummy, 10240, fp_qcal[1]);
 		filtered++;
 		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
 		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
 		if (pd->prc) free(&pd->prc[-skip]);
+		if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+		if (pd->qcal_2) free(&pd->qcal_2[-skip]);
 		free(pd);
 
 		continue;
 	    }
 	}
+
+        if (fp_qcal[0]) {
+            char *use_bases = (all_use_bases[l.lane][0] ? all_use_bases[l.lane] : all_use_bases[0]);
+            qcal_seq[0][0] = 0;
+            qcal_seq[1][0] = 0;
+            get_qcal_seq1(fp_qcal[0], skip, qcal_seq[0]);
+            if (fp_qcal[1]) {
+                get_qcal_seq1(fp_qcal[1], skip, qcal_seq[1]);
+            }
+        }
 
 	/* Load the approprate matrix file whenever changing lanes */
 	if (l.lane != last_lane) {
@@ -2334,15 +2441,28 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	}
 
 	/*
-	 * We *either* read calibrated quality from the fastq file *or*
-	 * from the prb.txt files.
+	 * We *either* read calibrated quality from the fastq file *xor*
+	 * from the qcal files *xor* from the prb.txt files.
 	 */
 	if (fp_qf || fp_qr) {
 	    if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
 		fprintf(stderr, "Failed to generate prb from fastq\n");
 		continue;
 	    }
-	} else {
+	} else if (fp_qcal[0]) {
+            pd->qcal_1 = NULL;
+            pd->qcal_2 = NULL;
+	    if (!(pd->qcal_1 = qcal_to_prb1(qcal_seq[0], skip))) {
+		fprintf(stderr, "Failed to generate qcal_1 from qcal_seq\n");
+		continue;
+	    }
+            if (fp_qcal[1]){
+                if (!(pd->qcal_2 = qcal_to_prb1(qcal_seq[1], skip))) {
+                    fprintf(stderr, "Failed to generate qcal_2 from qcal_seq\n");
+                    continue;
+                }
+            }
+        } else {
 	    pd->prc = NULL;
 	}
 
@@ -2459,25 +2579,28 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (pd->prc)
 	    add_cnf1_chunk(z, r->NBases, pd->prc, "PH");
 
+	if (pd->qcal_1 || pd->qcal_2)
+	    add_qcal_chunk(z, pd->qcal_1, pd->qcal_2);
+
 	/* Calibrated confidence values too */
 
 
 	/* Miscellaneous text fields - only stored once per header */
-	tc = ztr_add_text(z, NULL, "PROGRAM_ID", "solexa2srf v" S2S_VERSION);
+	tc = ztr_add_text(z, NULL, "PROGRAM_ID", "illumina2srf v" I2S_VERSION);
 	if (NULL == tc) {
 	    fprintf(stderr, "Failed to add to TEXT chunk\n");
 	    return -1;
 	}
 
 	if (matrix1) {
-	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX_FWD", matrix1)) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_FWD", matrix1)) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
 	}
 
 	if (matrix2) {
-	    if (NULL == ztr_add_text(z, tc, "SOLEXA_MATRIX_REV", matrix2)) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_REV", matrix2)) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
@@ -2486,14 +2609,14 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (chastity > 0) {
 	    char chas[100];
 	    sprintf(chas, "%f", chastity);
-	    if (NULL == ztr_add_text(z, tc, "SOLEXA_CHASTITY", chas)) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_CHASTITY", chas)) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
 	}
 
 	if (params) {
-	    if (NULL == ztr_add_text(z, tc, "SOLEXA_PARAMS", params)) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS", params)) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
@@ -2505,6 +2628,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
 	if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
 	if (pd->prc) free(&pd->prc[-skip]);
+	if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+	if (pd->qcal_2) free(&pd->qcal_2[-skip]);
 	read_deallocate(r);
     }
 
@@ -2668,8 +2793,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 }
 
 void usage(int code) {
-    fprintf(stderr, "Solexa2srf v" S2S_VERSION "\n\n");
-    fprintf(stderr, "Usage: solexa2srf [options] *_seq.txt ...\n");
+    fprintf(stderr, "Illumina2srf v" I2S_VERSION "\n\n");
+    fprintf(stderr, "Usage: illumina2srf [options] *_seq.txt ...\n");
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "    -I       IPAR format for raw data\n");
     fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
@@ -2688,6 +2813,9 @@ void usage(int code) {
     fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
     fprintf(stderr, "    -qr fn   Get reverse read calibrated quality from fastq file 'fn'\n");
     fprintf(stderr, "             (By default *_prb.txt is used instead)\n");
+    fprintf(stderr, "    -qc dir  Get both qcal data from the given (GERALD) 'directory dir'\n");
+    fprintf(stderr, "             (This requires tile-based qcal files -- as produced in release 1.0)\n");
+    fprintf(stderr, "             Note: this option can't be used together with fastq files\n");
     fprintf(stderr, "    -n fmt   Format name suffix using the 'fmt' expansion rule as follows:\n");
     fprintf(stderr, "             %%d = date (from run pwd)\n");
     fprintf(stderr, "             %%m = machine name (from run pwd)\n");
@@ -2727,6 +2855,8 @@ int main(int argc, char **argv) {
     int nreads = 0, nfiltered = 0;
     int rev_cycle = 0;
     char *fwd_fastq = NULL, *rev_fastq = NULL;
+    char *dir_qcal  = NULL;
+    char all_use_bases[9][MAX_CYCLES+1];
     char *matrix_f_name = "../Matrix/s_%d_02_matrix.txt";
     char *matrix_r_name = "../Matrix/s_%d_%02d_matrix.txt";
 
@@ -2778,6 +2908,10 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		rev_fastq = argv[++i];
 	    }
+	} else if (!strcmp(argv[i], "-qc")) {
+	    if (i < argc) {
+		dir_qcal = argv[++i];
+	    }
 	} else if (!strcmp(argv[i], "-mf")) {
 	    if (i < argc) {
 		matrix_f_name = argv[++i];
@@ -2792,6 +2926,9 @@ int main(int argc, char **argv) {
 	    usage(1);
 	}
     }
+
+    if ((fwd_fastq ||rev_fastq) && dir_qcal)
+        usage(1);
 
     if (i == argc)
 	usage(0);
@@ -2818,6 +2955,66 @@ int main(int argc, char **argv) {
     srf_write_cont_hdr(srf, ch);
     srf_destroy_cont_hdr(ch);
 
+    /* USE_BASES if needed */
+    if (dir_qcal) {
+        int i;
+        int SIZE = 4095;
+        char config_xml[SIZE+1];
+        char line[SIZE+1];
+        zfp *file;
+        for (i = 0; 9 > i; ++i)
+            all_use_bases[i][0] = 0;
+        strcpy(config_xml, dir_qcal);
+        strcat(config_xml, "/config.xml");
+        if (NULL == (file = zfopen(config_xml, "r"))) {
+            char errorMessage[1000];
+            sprintf(errorMessage, "Failed to open %s.gz: errno: %d", config_xml, errno);
+            perror(errorMessage);
+            return (1);
+        }
+        while (NULL != (zfgets(line, SIZE, file))) {
+            int lane = 0;
+            int in_use_bases = 0;
+            int get_use_base_string = 0;
+            char *start = line;
+            char buffer[SIZE+1];
+            buffer[0] = 0;
+            while (*start && isspace(*start)) 
+                ++start;
+            if (0==strncpy(line, "</USE_BASES>", 12)) {
+                in_use_bases = 0;
+            }
+            if (0==strncpy(line, "<USE_BASES>", 11)) {
+                start += 11;
+                if ('n' == *start || 'N' == *start || 'y' == *start || 'Y' == *start) {
+                    get_use_base_string = 1;
+                } else {
+                    in_use_bases = 1;
+                    continue;
+                }
+            }
+            if (in_use_bases && 0 == strncpy(line, "<s_", 3)) {
+                start += 3;
+                lane = *start - '0';
+                start += 2;
+                get_use_base_string = 1;
+            }
+            if (get_use_base_string) {
+                char *use_bases = all_use_bases[lane];
+                char * end = buffer;
+                while(*end && ('y' == *end || 'Y' == *end || 'n' == *end || 'N' == *end)) {
+                    *use_bases = *end;
+                    ++use_bases;
+                    ++end;
+                }
+                *use_bases = 0;
+                if ('<' != *end)
+                    fprintf(stderr, "Error while reading config.xml: %s: %d: %s\n", line, lane, buffer);
+            }
+        }
+        zfclose(file);
+    }
+
     /* Loop through remaining files appending to the archive */
     for (; i < argc; i++) {
 	char c = '.';
@@ -2825,10 +3022,10 @@ int main(int argc, char **argv) {
 	if (!quiet) {
 	    printf("Processing tile %s\n", argv[i]);
 	}
-	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, ipar_mode,
+	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, dir_qcal, ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
-			 matrix_f_name, matrix_f_name, &nr, &nf)) {
+			 matrix_f_name, matrix_f_name, &nr, &nf, all_use_bases)) {
 	    c = '!';
 	    ret = 1;
 	} else {

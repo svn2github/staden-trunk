@@ -11,7 +11,8 @@
 #include "io_lib/stdio_hack.h"
 #include "io_lib/deflate_interlaced.h"
 
-/* #define SOLEXA */
+/* Deprecated #define - see solexa2srf for the more up to date code */
+/* #define ILLUMINA_GA */
 
 /*
  * ---------------------------------------------------------------------------
@@ -1042,7 +1043,7 @@ int compress_ztr(ztr_t *ztr, int level) {
 	    char *type;
 	case ZTR_TYPE_SAMP:
 	case ZTR_TYPE_SMP4:
-#ifdef SOLEXA
+#ifdef ILLUMINA_GA
 	    compress_chunk(ztr, &ztr->chunk[i],
 			   ZTR_FORM_STHUFF, CODE_TRACES, 0);
 #else
@@ -1084,7 +1085,7 @@ int compress_ztr(ztr_t *ztr, int level) {
 	    break;
 
 	case ZTR_TYPE_BASE:
-#ifdef SOLEXA
+#ifdef ILLUMINA_GA
 	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_STHUFF, CODE_DNA, 0);
 #else
 	    if (level > 1) {
@@ -1097,7 +1098,7 @@ int compress_ztr(ztr_t *ztr, int level) {
 	case ZTR_TYPE_CNF1:
 	case ZTR_TYPE_CNF4:
 	case ZTR_TYPE_CSID:
-#ifdef SOLEXA
+#ifdef ILLUMINA_GA
 	    compress_chunk(ztr, &ztr->chunk[i], ZTR_FORM_RLE,  77, 0);
 	    compress_chunk(ztr, &ztr->chunk[i],
 			   ZTR_FORM_STHUFF, CODE_CONF_RLE, 0);
@@ -1121,7 +1122,7 @@ int compress_ztr(ztr_t *ztr, int level) {
 	    break;
 
 	case ZTR_TYPE_TEXT:
-#ifdef SOLEXA
+#ifdef ILLUMINA_GA
 #else
 	    if (level > 1) {
 		compress_chunk(ztr, &ztr->chunk[i],

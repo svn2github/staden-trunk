@@ -1,3 +1,9 @@
+/* 
+ * IMPORTANT NOTE: This file differs from the original software created by
+ * Genome Research Limited (GRL). It has been modified by Illumina for
+ * integration with Illumina's Genome Analyzer data analysis pipeline.
+ */
+
 /*
  * ======================================================================
  * This software has been created by Genome Research Limited (GRL).
@@ -161,6 +167,24 @@ void dump_conf4(FILE *fp, char *seq, signed char *bytes, int nbytes) {
     fprintf(fp, "\n");
 }
 
+void dump_qcal(FILE *fp[], signed char *bytes, int nbytes) {
+    int read_1 = strlen(bytes);
+    int i = 0;
+    while (read_1 > i) {
+        fprintf(fp[0], "%c", (char)(*(bytes+i)));
+        ++i;
+    }
+    fprintf(fp[0], "\n");
+    if (NULL != fp[1]) {
+        ++i; /* skip the 0 */
+        while (nbytes > i) {
+            fprintf(fp[1], "%c", (char)(*(bytes+i)));
+            ++i;
+        }
+        fprintf(fp[1], "\n");
+    }
+}
+
 /*
  * Ripped out of io_lib's trace_dump program.
  * It reformats a trace to as printable ASCII.
@@ -168,7 +192,7 @@ void dump_conf4(FILE *fp, char *seq, signed char *bytes, int nbytes) {
 void dump(ztr_t *z,
 	  int lane, int tile, int x, int y,
 	  FILE *fp_int, FILE *fp_nse,
-	  FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb) {
+	  FILE *fp_seq, FILE *fp_sig2, FILE *fp_prb, FILE *fp_qcal[]) {
     int i, nc;
     ztr_chunk_t **chunks;
     char *seq;
@@ -200,6 +224,17 @@ void dump(ztr_t *z,
 	}
 
 	dump_conf4(fp_prb, seq, chunks[0]->data+1, chunks[0]->dlength-1);
+    }
+
+    /* QCal */
+    if (fp_qcal[0]) {
+	chunks = ztr_find_chunks(z, ZTR_TYPE_CNF1, &nc);
+	if (nc != 1) {
+	    fprintf(stderr, "Zero or greater than one CNF chunks found.\n");
+	    return;
+	}
+
+	dump_qcal(fp_qcal, chunks[0]->data+1, chunks[0]->dlength-1);
     }
 
     /* Traces */
@@ -284,7 +319,7 @@ int dump_text(char *dir, int lane, ztr_chunk_t **chunks)
     return 0;
 }
 
-int process_srf(char *file, char *dir, int mode) {
+int process_srf(char *file, char *dir, int mode, int qcal) {
     srf_t *srf;
     char name[1024], dir2[1024];
     ztr_t *ztr;
@@ -294,6 +329,7 @@ int process_srf(char *file, char *dir, int mode) {
     FILE *fp_seq = NULL;
     FILE *fp_prb = NULL;
     FILE *fp_sig = NULL;
+    FILE *fp_qcal[2] = {NULL, NULL};
 
     if (NULL == (srf = srf_open(file, "rb"))) {
 	perror(file);
@@ -333,6 +369,8 @@ int process_srf(char *file, char *dir, int mode) {
 	    if (fp_seq) { fclose(fp_seq); fp_seq = NULL; }
 	    if (fp_prb) { fclose(fp_prb); fp_prb = NULL; }
 	    if (fp_sig) { fclose(fp_sig); fp_sig = NULL; }
+	    if (fp_qcal[0]) { fclose(fp_qcal[0]); fp_qcal[0] = NULL; }
+	    if (fp_qcal[1]) { fclose(fp_qcal[1]); fp_qcal[1] = NULL; }
 
 	    if (mode & RAW) {
 		fp_int = fopen_slx(dir2, "int", lane, tile);
@@ -343,8 +381,15 @@ int process_srf(char *file, char *dir, int mode) {
 		fp_prb = fopen_slx(dir2, "prb", lane, tile);
 		fp_sig = fopen_slx(dir2, "sig2", lane, tile);
 	    }
+            if (qcal == 1) {
+		fp_qcal[0] = fopen_slx(dir2, "qcal", lane, tile);
+            }
+            if (qcal ==2) {
+		fp_qcal[0] = fopen_slx(dir2, "1_qcal", lane, tile);
+		fp_qcal[1] = fopen_slx(dir2, "2_qcal", lane, tile);
+            }
 	}
-	dump(ztr, lane, tile, x, y, fp_int, fp_nse, fp_seq, fp_sig, fp_prb);
+	dump(ztr, lane, tile, x, y, fp_int, fp_nse, fp_seq, fp_sig, fp_prb, fp_qcal);
 	delete_ztr(ztr);
     }
 
@@ -353,6 +398,8 @@ int process_srf(char *file, char *dir, int mode) {
     if (fp_seq) fclose(fp_seq);
     if (fp_prb) fclose(fp_prb);
     if (fp_sig) fclose(fp_sig);
+    if (fp_qcal[0]) fclose(fp_qcal[0]);
+    if (fp_qcal[1]) fclose(fp_qcal[1]);
 
     srf_destroy(srf, 1);
     return 0;
@@ -360,16 +407,18 @@ int process_srf(char *file, char *dir, int mode) {
 
 /* ------------------------------------------------------------------------ */
 void usage(void) {
-    printf("Usage: srf2solexa [options]\n\n");
+    printf("Usage: srf2illumina [options]\n\n");
     printf(" Options:\n");
     printf("    -r       Output raw (.int/.nse) data only\n");
     printf("    -p       Output processed (.sig2/.seq/.prb) data only\n");
+    printf("    -q num   QCal values, with num (1 or 2) reads\n");
     printf("    -d dir   Set the output directory to 'dir'\n");
     exit(0);
 }
 
 int main(int argc, char **argv) {
     int mode = RAW | PROCESSED;
+    int qcal = 0;
     char *dir = NULL;
     int i;
 
@@ -381,6 +430,8 @@ int main(int argc, char **argv) {
 	    mode = RAW;
 	} else if (!strcmp(argv[i], "-p")) {
 	    mode = PROCESSED;
+	} else if (!strcmp(argv[i], "-q")) {
+	    qcal = atoi(argv[++i]);
 	} else if (!strcmp(argv[i], "-d")) {
 	    dir = argv[++i];
 	} else {
@@ -392,7 +443,7 @@ int main(int argc, char **argv) {
 	usage();
 
     for (; i < argc; i++) {
-	if (process_srf(argv[i], dir, mode)) {
+	if (process_srf(argv[i], dir, mode, qcal)) {
 	    perror(argv[i]);
 	    return 1;
 	}
