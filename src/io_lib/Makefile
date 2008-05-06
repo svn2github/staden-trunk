@@ -42,7 +42,8 @@ OBJS=\
 	io_lib/$(O)/hash_table.o \
 	io_lib/$(O)/jenkins_lookup3.o \
 	io_lib/$(O)/mFILE.o\
-	io_lib/$(O)/vlen.o
+	io_lib/$(O)/vlen.o\
+	io_lib/$(O)/srf.o
 
 #-----------------------------------------------------------------------------
 # Optional objects, depending on above IOLIB_* definitions
