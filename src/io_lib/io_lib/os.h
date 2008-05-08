@@ -165,7 +165,9 @@ typedef int mode_t;
  * Linux on AMD64 also needs to use va_copy()
  */
 #if defined(__linux__) && defined(__amd64__)
-#  define NEED_VA_COPY
+#  ifndef NEED_VA_COPY
+#    define NEED_VA_COPY
+#  endif
 #endif
 
 /*
