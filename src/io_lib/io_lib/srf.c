@@ -590,7 +590,7 @@ int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr, int no_seek) {
     if (!no_seek) {
 	if (0 != fseeko(srf->fp, -16, SEEK_END))
 	    return -1;
-
+	
 	if (4 != fread(hdr->magic,   1, 4, srf->fp))
 	    return -1;
 	if (4 != fread(hdr->version, 1, 4, srf->fp))
@@ -1620,7 +1620,7 @@ int srf_find_trace(srf_t *srf, char *tname,
 
 	if (strcmp(name, tname)) {
 	    /* Not found, continue with next item in list */
-	    if (h & 80)
+	    if (h & 0x80)
 		return -2;
 	    if (-1 == fseeko(srf->fp, saved_pos, SEEK_SET))
 		return -1;
