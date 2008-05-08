@@ -256,10 +256,14 @@ static mFILE *find_file_hash(char *file, char *hashfile) {
 static mFILE *find_file_srf(char *tname, char *srffile) {
     srf_t *srf;
     uint64_t cpos, hpos, dpos;
-    mFILE *mf;
+    mFILE *mf = NULL;
+    char *cp;
 
     if (NULL == (srf = srf_open(srffile, "r")))
 	return NULL;
+
+    if (NULL != (cp = strrchr(tname, '/')))
+    	tname = cp+1;
 
     if (0 == srf_find_trace(srf, tname, &cpos, &hpos, &dpos)) {
 	char *data = malloc(srf->th.trace_hdr_size + srf->tb.trace_size);
