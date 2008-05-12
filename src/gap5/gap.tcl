@@ -378,14 +378,14 @@ proc ChangeDirectory2 { dir} {
 ##############################################################################
 #The exit command
 proc Gap_Exit { io } {
-    if {$io > 0} {
-        if {![quit_displays $io "exit"]} {
+    if {$io != ""} {
+        if {![quit_displays -io $io -msg "exit"]} {
 	    bell
 	    tk_messageBox -icon warning -type ok -title "Database in use" \
 		    -message "Please shut down any editing displays before quitting"
 	    return
         }
-	close_db -io $io
+	$io close
     }
     exit
 }
@@ -532,7 +532,7 @@ global maxseq
 global maxdb
 global db_namelen
 set db_namelen 40; #Also see IO.h and legacy.f
-set io -1
+set io ""
 set create 0
 set access "rw"
 set read_only 0
@@ -698,7 +698,7 @@ InitListTrace
 CreateMain
 
 #display contig selector and menus if opened database on command line
-if {$io > 0} {
+if {$io != ""} {
     if {$read_only} {
 	set extras "     *READ-ONLY*"
     } else {

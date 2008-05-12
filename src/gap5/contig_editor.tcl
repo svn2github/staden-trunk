@@ -2,12 +2,11 @@
 # User dialogue for starting up the editors
 #-----------------------------------------------------------------------------
 proc EditContig2 {io t id} {
-    if {[set reading [contig_id_gel $id]] == ""} {
-	return
-    }
+    if {[set reading [contig_id_gel $id]] == ""} return
+    if {[set crec [contig_id_rec $id]] == ""} return
 
     destroy $t
-    edit_contig -io $io -contig $reading -reading $reading
+    edit_contig -io $io -contig $crec -reading $reading
     SetContigGlobals $io $reading
 }
 
@@ -29,11 +28,12 @@ proc EditContig {io} {
 proc JoinContig2 {io t id1 id2} {
     if {[set read1 [contig_id_gel $id1]] == ""} return
     if {[set read2 [contig_id_gel $id2]] == ""} return
+    if {[set crec1 [contig_id_rec $id]] == ""} return
+    if {[set crec2 [contig_id_rec $id]] == ""} return
 
     destroy $t
     join_contig -io $io \
-	-contig1 $read1 -reading1 $read1 -pos1 1 \
-	-contig2 $read2 -reading2 $read2 -pos2 1
+	-contig1 $crec1 -reading1 $read1 -pos1 1 -contig2 $crec2 -pos2 1
     SetContigGlobals $io $read1
 }
 

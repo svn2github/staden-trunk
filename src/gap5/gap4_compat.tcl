@@ -40,12 +40,11 @@ proc io_read_contig {io cnum} {
 
 # Currently brute force search
 proc cname2crec {io name} {
-    puts [info level [info level]]
     set nc [$io num_contigs]
     for {set i 0} {$i < $nc} {incr i} {
 	set crec [$io contig_order $i]
 	set c [$io get_contig $crec]
-	if {[string match $name [$c get_name]] == 0} {
+	if {[string match $name [$c get_name]]} {
 	    return $crec
 	}
     }

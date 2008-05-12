@@ -9,9 +9,9 @@
 proc DBClose {} {
     global io
 
-    if {$io > 0} {
-	close_db -io $io
-	set io 0
+    if {$io != ""} {
+	$io close
+	set io ""
     }
 
     DisableMenu_Open
@@ -20,7 +20,7 @@ proc DBClose {} {
 proc InitOpenAnotherDB {} {
     global gap5_defs io
 
-    if {$io > 0 && ![quit_displays $io "open_database"]} {
+    if {$io != "" && ![quit_displays -io $io -msg "open_database"]} {
 	# Someone's too busy to shutdown?
 	return 0
     }
@@ -35,8 +35,8 @@ proc NewFile {} {
     global gap5_defs io
     
     # Shut down any existing displays.
-    if {$io > 0} {
-	if {![quit_displays $io "create new database"]} {
+    if {$io != ""} {
+	if {![quit_displays -io $io -msg "create new database"]} {
 	    # Someone's too busy to shutdown?
 	    return
 	}
@@ -219,7 +219,7 @@ proc DB_Load { file } {
 		-message "Database is busy. Opened in read-only mode." \
 		-type okcancel]
 	if {$ret == "cancel"} {
-	    close_db -io $new_io
+	    $new_io close
 	    return
 	}
     }

@@ -223,6 +223,26 @@ proc contig_id_gel {path} {
 }
 
 #
+#Return the contig record number
+#
+proc contig_id_rec {path} {
+    global $path.Io
+
+    set r [cname2crec [set $path.Io] [entrybox_get $path.ent]]
+    if {"$r" != ""} {
+	if [winfo exists $path.lreg] {
+	    SetContigGlobals [set $path.Io] $r \
+		[contig_id_lreg $path] \
+		[contig_id_rreg $path]
+	} else {
+	    SetContigGlobals [set $path.Io] $r
+	}
+    }
+
+    return $r
+}
+
+#
 #Return the lreg value
 #
 proc contig_id_lreg {path} {

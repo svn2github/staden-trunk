@@ -260,7 +260,7 @@ int tcl_quit_displays(ClientData clientData, Tcl_Interp *interp,
         {NULL,        0,       0, NULL, 0}
     };
     reg_quit rq;
-    int ret;
+    int ret = 1;
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
         return TCL_ERROR;
