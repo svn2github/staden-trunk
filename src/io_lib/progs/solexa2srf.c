@@ -1796,8 +1796,8 @@ mFILE *encode_ztr(ztr_t *ztr, int *footer, int no_hcodes) {
 	ztr_mwrite_chunk(mf, &ztr->chunk[i]);
 	if ((ztr->chunk[i].type == ZTR_TYPE_SMP4 ||
 	     ztr->chunk[i].type == ZTR_TYPE_BASE) && footer && !*footer) {
-	    /* allows meta-data up to 64k */
-	    *footer = pos + 6;
+            /* allows traces up to 64k */
+	    *footer = pos + 10 + ztr->chunk[i].mdlength;
 	}
     }
 
