@@ -80,17 +80,33 @@ void ztr2fasta(ztr_t *z, char *name) {
 }
 
 /* ------------------------------------------------------------------------ */
+void usage(void) {
+    fprintf(stderr, "Usage: srf2fasta [-C] archive_name\n");
+    exit(0);
+}
+
 int main(int argc, char **argv) {
     char *ar_name;
     srf_t *srf;
     char name[512];
     ztr_t *ztr;
+    int mask = 0, i;
 
-    if (argc != 2) {
-	fprintf(stderr, "Usage: srf2fasta archive_name\n");
-	return 1;
+    /* Parse args */
+    for (i = 1; i < argc && argv[i][0] == '-'; i++) {
+	if (!strcmp(argv[i], "-")) {
+	    break;
+	} else if (!strcmp(argv[i], "-C")) {
+	    mask = SRF_READ_FLAG_BAD_MASK;
+	} else {
+	    usage();
+	}
+    }    
+
+    if (i == argc) {
+	usage();
     }
-    ar_name = argv[1];
+    ar_name = argv[i];
 
     if (NULL == (srf = srf_open(ar_name, "r"))) {
 	perror(ar_name);
@@ -99,7 +115,7 @@ int main(int argc, char **argv) {
 
     read_sections(READ_BASES);
 
-    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+    while (NULL != (ztr = srf_next_ztr(srf, name, mask))) {
 	ztr2fasta(ztr, name);
 	delete_ztr(ztr);
     }

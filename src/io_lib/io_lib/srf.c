@@ -458,7 +458,8 @@ srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *tb,
 					   char *suffix,
 					   int suffix_len,
 					   unsigned char *body,
-					   uint32_t body_size) {
+					   uint32_t body_size,
+					   unsigned char flags) {
     if (!tb) {
 	if (NULL == (tb = (srf_trace_body_t *)calloc(1, sizeof(*tb))))
 	    return NULL;
@@ -475,7 +476,7 @@ srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *tb,
 
     tb->trace = body;
     tb->trace_size = body_size;
-    tb->flags = 0;
+    tb->flags = flags;
 
     return tb;
 }
@@ -1282,10 +1283,13 @@ ztr_t *ztr_dup(ztr_t *src) {
  * Name, if defined (which should be a buffer of at least 512 bytes long)
  * will be filled out to contain the read name.
  *
+ * filter_mask should consist of zero or more SRF_READ_FLAG_* bits.
+ * Reads with one or more flags matching these bits will be skipped over.
+ *
  * Returns ztr_t * on success
  *         NULL on failure.
  */
-ztr_t *srf_next_ztr(srf_t *srf, char *name) {
+ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
     do {
 	int type;
 
@@ -1361,7 +1365,11 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name) {
 	    else
 		ztr_tmp = NULL;
 
-	    return partial_decode_ztr(srf, srf->mf, ztr_tmp);
+	    if (tb.flags & filter_mask) {
+		break; /* Filtered, so skip it */
+	    } else {
+		return partial_decode_ztr(srf, srf->mf, ztr_tmp);
+	    }
 	}
 
 	case SRFB_INDEX: {

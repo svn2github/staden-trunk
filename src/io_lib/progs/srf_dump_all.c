@@ -834,7 +834,7 @@ int process_srf_to_solexa_files(char *ar_name, char chunk_mode, int num_reads_on
     sprintf(dir2, "%s.run", ar_name);
     mkdir(dir2, 0777);
 
-    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+    while (NULL != (ztr = srf_next_ztr(srf, name, 0))) {
 	int lane, tile, x, y;
 
 	parse_name(name, &lane, &tile, &x, &y);
@@ -935,7 +935,7 @@ int process_srf_to_text_files(char *ar_name, char chunk_mode, int num_reads_only
     sprintf(dir2, "%s.run", ar_name);
     mkdir(dir2, 0777);
 
-    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+    while (NULL != (ztr = srf_next_ztr(srf, name, 0))) {
 	int lane, tile, x, y;
 
 	parse_name(name, &lane, &tile, &x, &y);
@@ -1120,7 +1120,7 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
 
-	while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	while (NULL != (ztr = srf_next_ztr(srf, name, 0))) {
 	    if(!num_reads_only_mode) {
 		if(!filter_mode || (filter_mode && check_read_name(read_filter, name))) {
 		    ++num_reads;
@@ -1144,7 +1144,7 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
 
-	while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	while (NULL != (ztr = srf_next_ztr(srf, name, 0))) {
 	    if(!num_reads_only_mode) {
 		if(!filter_mode || (filter_mode && check_read_name(read_filter, name))) {
 		    if(type_mode & SOLEXA) {

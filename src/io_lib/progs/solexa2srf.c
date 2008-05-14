@@ -9,6 +9,10 @@
  * Replace the use of io_lib's Read struct in here with direct control of
  * ztr_t objects instead. This avoids needlessly calling read2ztr and it
  * should speed up the code somewhat.
+ *
+ * Argument parsing needs tidying up. It should use optarg maybe and should
+ * make use of a struct for all the options instead of an ever increasing
+ * number of arguments to append().
  */
 
 /*
@@ -64,7 +68,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.6"
+#define I2S_VERSION "1.7"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -276,7 +280,7 @@ typedef struct {
     int lane;
 } loc_t;
 
-#define MAX_CYCLES 120
+#define MAX_CYCLES 200
 
 /*
  * ztr_mwrite_header
@@ -600,7 +604,8 @@ char *parse_4_int(char *str, int *val) {
      */
     
  error:
-    fprintf(stderr, "Error: unexpected character '%c' during parsing\n", c);
+    fprintf(stderr, "Error: unexpected character '%c' during parsing "
+	    "of string \"%s\" and value \"%d\"\n", c, str, *val);
     return NULL;
 }
 
@@ -737,7 +742,8 @@ char *parse_4_float(char *str, float *val, int *bin)
      */
     
  error:
-    fprintf(stderr, "Error: unexpected character '%c' during parsing\n", c);
+    fprintf(stderr, "Error: unexpected character '%c' during parsing "
+	    "of string \"%s\", value \"%f\"\n", c, str, *val);
     return NULL;
 }
 
@@ -2119,7 +2125,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt,
 	   char *matrix_f_name, char *matrix_r_name,
-	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1]) {
+	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1],
+	   int include_failed_reads) {
     char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
@@ -2132,7 +2139,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     char *seq, *slash;
     int seq_num = 0;
     char last_prefix[1024] = {'\0'};
-    Array za = NULL, la = NULL, ra = NULL;
+    Array za = NULL, la = NULL, ra = NULL, fa = NULL;
     loc_t l;
     int nreads = 0, filtered = 0;
     int err = -1;
@@ -2152,6 +2159,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     float **ipar_int_data = NULL;
     float **ipar_nse_data = NULL;
     int numberOfCycles; /* only for ipar */
+    int flags;
 
     sprintf(full_fmt, "%s%s", prefix_fmt, name_fmt);
 
@@ -2265,6 +2273,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     za = ArrayCreate(sizeof(ztr_t *), 0);
     la = ArrayCreate(sizeof(loc_t), 0);
     ra = ArrayCreate(sizeof(Read *), 0);
+    fa = ArrayCreate(sizeof(unsigned char), 0);
 
     /* Fetch sequence */
     /*
@@ -2380,9 +2389,10 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (eof)
 	    break;
 
+	flags = 0;
 	if (fp_qhg) {
 	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
-	    if (c < chastity) {
+	    if (c < chastity && !include_failed_reads) {
 		char dummy[10240];
 
 		/*
@@ -2406,6 +2416,11 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		free(pd);
 
 		continue;
+	    }
+
+	    if (c < chastity) {
+		/* But we still want to keep them */
+		flags = SRF_READ_FLAG_BAD_MASK;
 	    }
 	}
 
@@ -2523,6 +2538,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	ARR(Read *, ra, nreads) = r;
 	ARR(loc_t, la, nreads) = l;
+	ARR(unsigned char, fa, nreads) = flags;
 
 	nreads++;
     }
@@ -2676,6 +2692,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	srf_trace_body_t tb;
 	ztr_t *z = arr(ztr_t *, za, seq_num);
 	l = arr(loc_t, la, seq_num);
+	flags = ARR(unsigned char, fa, seq_num);
 
 	/*
 	 * FIXME: copy chunks from one ztr file to the next, rather than
@@ -2719,7 +2736,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	format_name(name, name_fmt, &l, seq_num);
 	srf_construct_trace_body(&tb, name, -1,
 				 (unsigned char *)mf->data+footer,
-				 mf->size-footer);
+				 mf->size-footer, flags);
 	if (-1 == srf_write_trace_body(srf, &tb))
 	    return -1;
 
@@ -2743,6 +2760,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	ArrayDestroy(za);
     if (la)
 	ArrayDestroy(la);
+    if (fa)
+	ArrayDestroy(fa);
 
     if (fp_seq)
 	zfclose(fp_seq);
@@ -2802,7 +2821,8 @@ void usage(int code) {
     fprintf(stderr, "    -P       Skip processed data: *sig2.txt\n");
     fprintf(stderr, "    -u       Use phase uncorrected data (sig vs sig2)\n");
 
-    fprintf(stderr, "    -c float Chastity filter (>= float)\n");
+    fprintf(stderr, "    -c float Chastity filter (reads < float filtered out)\n");
+    fprintf(stderr, "    -C float Chastity filter (reads < float marked as bad)\n");
     fprintf(stderr, "    -d       Output 'dots' (default off)\n");
     fprintf(stderr, "    -q       Quiet\n");
     fprintf(stderr, "    -o file  Outputs to 'file' - default 'traces.srf'\n");
@@ -2851,6 +2871,7 @@ int main(int argc, char **argv) {
     srf_t *srf;
     srf_cont_hdr_t *ch;
     float chastity = 0;
+    int include_failed_reads = 0;
     int nreads = 0, nfiltered = 0;
     int rev_cycle = 0;
     char *fwd_fastq = NULL, *rev_fastq = NULL;
@@ -2896,9 +2917,36 @@ int main(int argc, char **argv) {
 		rev_cycle = atoi(argv[++i]);
 	    }
 	} else if (!strcmp(argv[i], "-c")) {
+	    /* Exclusive with -C. */
+	    if (include_failed_reads) {
+		fprintf(stdout, "WARNING: -c option is incompatible with -C. "
+			"Ignoring -C\n");
+		include_failed_reads = 0;
+	    }
+
 	    if (i < argc) {
 		chastity = atof(argv[++i]);
+	    } else {
+		fprintf(stderr,
+			"No chastity threshold specified for -c option.\n");
+		usage(1);
 	    }	
+	} else if (!strcmp(argv[i], "-C")) {
+	    include_failed_reads = 1;
+
+	    /* Exclusive with -c. */
+	    if (chastity > 0) {
+		fprintf(stdout, "WARNING: -C option is incompatible with -c. "
+			"Ignoring -c\n");
+	    }
+	    
+	    if (i < argc) {
+		chastity = atof(argv[++i]);
+	    } else {
+		fprintf(stderr,
+			"No chastity threshold specified for -C option.\n");
+		usage(1);
+	    }
 	} else if (!strcmp(argv[i], "-qf")) {
 	    if (i < argc) {
 		fwd_fastq = argv[++i];
@@ -3021,10 +3069,12 @@ int main(int argc, char **argv) {
 	if (!quiet) {
 	    printf("Processing tile %s\n", argv[i]);
 	}
-	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, dir_qcal, ipar_mode,
+	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, dir_qcal,
+			 ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
-			 matrix_f_name, matrix_f_name, &nr, &nf, all_use_bases)) {
+			 matrix_f_name, matrix_f_name, &nr, &nf,
+			 all_use_bases, include_failed_reads)) {
 	    c = '!';
 	    ret = 1;
 	} else {

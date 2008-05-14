@@ -319,7 +319,8 @@ int dump_text(char *dir, int lane, ztr_chunk_t **chunks)
     return 0;
 }
 
-int process_srf(char *file, char *dir, int mode, int qcal) {
+int process_srf(char *file, char *dir, int mode, int qcal,
+		int filter_mask) {
     srf_t *srf;
     char name[1024], dir2[1024];
     ztr_t *ztr;
@@ -345,7 +346,7 @@ int process_srf(char *file, char *dir, int mode, int qcal) {
     }
     mkdir(dir2, 0777);
 
-    while (NULL != (ztr = srf_next_ztr(srf, name))) {
+    while (NULL != (ztr = srf_next_ztr(srf, name, filter_mask))) {
 	int lane, tile, x, y;
 	parse_name(name, &lane, &tile, &x, &y);
 
@@ -413,12 +414,14 @@ void usage(void) {
     printf("    -p       Output processed (.sig2/.seq/.prb) data only\n");
     printf("    -q num   QCal values, with num (1 or 2) reads\n");
     printf("    -d dir   Set the output directory to 'dir'\n");
+    printf("    -C       Filter out reads marked as bad.\n");
     exit(0);
 }
 
 int main(int argc, char **argv) {
     int mode = RAW | PROCESSED;
     int qcal = 0;
+    int filter_mask = 0;
     char *dir = NULL;
     int i;
 
@@ -434,6 +437,8 @@ int main(int argc, char **argv) {
 	    qcal = atoi(argv[++i]);
 	} else if (!strcmp(argv[i], "-d")) {
 	    dir = argv[++i];
+	} else if (!strcmp(argv[i], "-C")) {
+	    filter_mask = SRF_READ_FLAG_BAD_MASK;
 	} else {
 	    usage();
 	}
@@ -443,7 +448,7 @@ int main(int argc, char **argv) {
 	usage();
 
     for (; i < argc; i++) {
-	if (process_srf(argv[i], dir, mode, qcal)) {
+	if (process_srf(argv[i], dir, mode, qcal, filter_mask)) {
 	    perror(argv[i]);
 	    return 1;
 	}

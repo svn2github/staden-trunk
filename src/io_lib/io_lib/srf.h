@@ -135,7 +135,8 @@ srf_trace_body_t *srf_construct_trace_body(srf_trace_body_t *th,
 					   char *suffix,
 					   int suffix_len,
 					   unsigned char *body,
-					   uint32_t body_size);
+					   uint32_t body_size,
+					   unsigned char flags);
 void srf_destroy_trace_body(srf_trace_body_t *th);
 int srf_write_trace_body(srf_t *srf, srf_trace_body_t *th);
 int srf_read_trace_body(srf_t *srf, srf_trace_body_t *th, int no_trace);
@@ -145,7 +146,7 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
 
 /*--- Higher level I/O functions */
 mFILE *srf_next_trace(srf_t *srf, char *name);
-ztr_t *srf_next_ztr(srf_t *srf, char *name);
+ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask);
 
 int srf_next_block_type(srf_t *srf); /* peek ahead */
 int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name);

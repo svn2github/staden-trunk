@@ -105,31 +105,42 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated) {
 }
 
 /* ------------------------------------------------------------------------ */
+void usage(void) {
+    fprintf(stderr, "Usage: srf2fastq [-c] [-C] archive_name ...\n");
+    exit(0);
+}
+
 int main(int argc, char **argv) {
     int calibrated = 0;
-    int i, arg = 1;
+    int mask = 0, i;
 
-    if (argc < 2) {
-	fprintf(stderr, "Usage: srf2fastq [-c] archive_name ...\n");
-	return 1;
-    }
+    /* Parse args */
+    for (i = 1; i < argc && argv[i][0] == '-'; i++) {
+	if (!strcmp(argv[i], "-")) {
+	    break;
+	} else if (!strcmp(argv[i], "-C")) {
+	    mask = SRF_READ_FLAG_BAD_MASK;
+	} else if (!strcmp(argv[i], "-c")) {
+	    calibrated = 1;
+	} else {
+	    usage();
+	}
+    }    
 
-    arg = 1;
-    if (strcmp(argv[arg], "-c") == 0) {
-	calibrated = 1;
-	arg++;
+    if (i == argc) {
+	usage();
     }
 
     read_sections(READ_BASES);
     init_qlookup();
 
-    for (i = arg; arg < argc; arg++) {
+    for (; i < argc; i++) {
 	char *ar_name;
 	srf_t *srf;
 	char name[512];
 	ztr_t *ztr;
 
-	ar_name = argv[arg];
+	ar_name = argv[i];
 
 	if (NULL == (srf = srf_open(ar_name, "r"))) {
 	    perror(ar_name);
@@ -137,7 +148,7 @@ int main(int argc, char **argv) {
 	}
 
 
-	while (NULL != (ztr = srf_next_ztr(srf, name))) {
+	while (NULL != (ztr = srf_next_ztr(srf, name, mask))) {
 	    ztr2fastq(ztr, name, calibrated);
 	    delete_ztr(ztr);
 	}
