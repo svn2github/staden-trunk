@@ -953,7 +953,6 @@ float (*get_ipar_sig(float **ipar_data, int trim, int cluster,
             sig[cycle][channel] = ipar_data[cycle][cluster * 4 + channel];
             if (bin)
             {
-                //int ival1 = trunc(sig[cycle][channel]);
                 int ival1 = (int)(sig[cycle][channel]);
                 if (ival1 > 65535)
                     bin[65535]++;
@@ -1544,10 +1543,10 @@ void rescale_trace(Read *r, int sig_num, int baseline) {
 	if (sig_num != SIG_SIG)
 	    continue;
 
-	r->traceA[i] = (int)sig[i][0];
-	r->traceC[i] = (int)sig[i][1];
-	r->traceG[i] = (int)sig[i][2];
-	r->traceT[i] = (int)sig[i][3];
+	r->traceA[i] = (int)(sig[i][0] + ((sig[i][0] > 0) ? 0.5 : -0.5));
+	r->traceC[i] = (int)(sig[i][1] + ((sig[i][1] > 0) ? 0.5 : -0.5));
+	r->traceG[i] = (int)(sig[i][2] + ((sig[i][2] > 0) ? 0.5 : -0.5));
+	r->traceT[i] = (int)(sig[i][3] + ((sig[i][3] > 0) ? 0.5 : -0.5));
 
 	if (mtv < sig[i][0]) mtv = sig[i][0];
 	if (mtv < sig[i][1]) mtv = sig[i][1];
