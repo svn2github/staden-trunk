@@ -811,10 +811,12 @@ static void set_hi_bits(block_t *block, uint32_t val, int nbits) {
  *         -1 on failure
  */
 #define emit(c) \
-    if (out_pos < name_len-1) \
+    if (out_pos < name_len-1) { \
         name[out_pos++] = (c); \
-    else \
-        return name_len;
+    } else { \
+        block_destroy(blk, 1);\
+        return name_len; \
+    }
 
 int construct_trace_name(char *fmt,
 			 unsigned char *suffix, int suffix_len,
@@ -966,6 +968,7 @@ int construct_trace_name(char *fmt,
 
     emit('\0');
 
+    block_destroy(blk, 1);
     return out_pos;
 }
 
