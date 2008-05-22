@@ -541,6 +541,7 @@ set do_csel     [keylget gap5_defs CONTIG_SEL.DISPLAY_AT_STARTUP]
 set logging [keylget gap5_defs LOGGING]
 set exec_notes 0
 set rawdata_note 1
+set maxseq 10000000
 
 set GAP_VERSION "4.11"
 
