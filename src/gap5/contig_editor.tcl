@@ -589,11 +589,16 @@ bind Editor <Any-Motion> {
     global %W
 
     foreach {type rec pos} [%W get_number @%x @%y] break
-    if {[info exists type] && $type == 18} {
-	set msg [%W get_seq_status $rec $pos \
-		     [keylget gap5_defs READ_BRIEF_FORMAT]]
+    if {![info exists type]} {
+	return
+    }
+
+    if {$type == 18} {
+	set msg [%W get_seq_status $type $rec $pos \
+		     [keylget gap5_defs BASE_BRIEF_FORMAT1]]
     } else {
-	set msg ""
+	set msg [%W get_seq_status $type $rec $pos \
+		     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
     }
 
     set w [set %W(top)]
