@@ -88,6 +88,7 @@ GAP5=\
 	$(GAP4BIN)/contig_selector.o\
 	$(GAP4BIN)/cs-object.o\
 	$(GAP4BIN)/find_repeats.o\
+	$(GAP4BIN)/consensus.o\
 	$(CEDITOR)
 
 GAP5SH_LIBS=\
