@@ -5,6 +5,7 @@
 #include "tkSheet.h"
 #include "tkEditor.h"
 #include "tkEdNames.h"
+#include "consensus.h"
 
 #define MAX_DISPLAY_WIDTH 1000
 #define WIN_NAME_SIZE 100
@@ -74,7 +75,8 @@ typedef struct _edview {
     int refresh_seq;
 
     /* Cached data */
-    char displayedConsensus[MAX_DISPLAY_WIDTH];
+    char        displayedConsensus[MAX_DISPLAY_WIDTH];
+    consensus_t cachedConsensus[MAX_DISPLAY_WIDTH];
 
     /* Cursor coordinates, sequence number and position in seq */
     int cursor_type;
@@ -122,6 +124,13 @@ int set_displayPos(edview *xx, int pos);
  * string where certain % rules are replaced by appropriate components.
  */
 char *edGetBriefSeq(edview *xx, int seq, int pos, char *format);
+
+/*
+ * Formats consensus information for the status line.
+ * This is done using a format string where certain % rules are replaced by
+ * appropriate components.
+ */
+char *edGetBriefCon(edview *xx, int crec, int pos, char *format);
 
 /*
  * Given an X,Y coordinate return the reading id under this position.

@@ -624,14 +624,27 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     case _GET_SEQ_STATUS: {
 	char *msg;
 
-	if (argc != 5) {
+	if (argc != 6) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " get_seq_status rec_no position\"",
+			     argv[0], " get_seq_status rec_type rec_no"
+			              " position format\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	msg = edGetBriefSeq(ed->xx, atoi(argv[2]), atoi(argv[3]), argv[4]);
+	switch (atoi(argv[2])) {
+	case GT_Seq:
+	    msg = edGetBriefSeq(ed->xx, atoi(argv[3]), atoi(argv[4]), argv[5]);
+	    break;
+
+	case GT_Contig:
+	    msg = edGetBriefCon(ed->xx, atoi(argv[3]), atoi(argv[4]), argv[5]);
+	    break;
+
+	default:
+	    msg = "";
+	    break;
+	}
 	Tcl_SetResult(interp, msg, TCL_VOLATILE);
 	break;
     }

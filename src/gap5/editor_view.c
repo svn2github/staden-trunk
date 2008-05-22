@@ -10,6 +10,7 @@
 #include "qual.h"
 #include "tg_gio.h"
 #include "misc.h"
+#include "consensus.h"
 
 /*
  * Allocates and initialises a new edview
@@ -144,6 +145,8 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * %Cn	Clone name (Raw: clone number)
  * %C#	Clone number
  * %Cv	Clone vector (Raw: clone vector number)
+ * %b   Base call
+ * %c   Base confidence
  *
  * Additionally specifying %<number><format> forces AT MOST that many
  * characters to be displayed.
@@ -255,10 +258,214 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'c':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		if (raw) {
-		    add_number(status_buf, &j, l1, l2, s->conf[pos]);
-		} else {
 		    add_double(status_buf, &j, l1, l2,
 			       1 - pow(10, s->conf[pos]/-10.0));
+		} else {
+		    add_number(status_buf, &j, l1, l2, s->conf[pos]);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	default:
+	    status_buf[j++] = format[i];
+	}
+    }
+    status_buf[j] = 0;
+
+    return status_buf;
+}
+
+/*
+ * Formats consensus information for the status line.
+ * This is done using a format string where certain % rules are replaced by
+ * appropriate components.
+ *
+ * %%	Single % sign
+ * %n	Contig name
+ * %#	Contig number
+ * %p	Position
+ * %l	Length
+ * %s	Start of clip
+ * %e	End of clip
+ * %b   Base call
+ * %c   Base confidence log-odds (raw for probability value)
+ * %A   A confidence log-odds (raw for probability value)
+ * %C   C confidence log-odds (raw for probability value)
+ * %G   G confidence log-odds (raw for probability value)
+ * %T   T confidence log-odds (raw for probability value)
+ * %*   * (gap) confidence
+ *
+ * Additionally specifying %<number><format> forces AT MOST that many
+ * characters to be displayed.
+ * Specifying %R<format> (or %<number>R<format>) requests the raw data to
+ * be displayed. This only works for some fields. Eg %Rp displays 0 to 4, but
+ * %p displays, for instance, "forward universal"
+ */
+char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
+    static char status_buf[8192]; /* NB: no bounds checking! */
+    int i, j, l1, l2, raw;
+    char *cp;
+    
+    for (i = j = 0; format[i]; i++) {
+	if (format[i] != '%') {
+	    status_buf[j++] = format[i];
+	    continue;
+	}
+
+	l1 = strtol(&format[++i], &cp, 10);
+	i = cp - format;
+	if (format[i] == '.') {
+	    l2 = strtol(&format[++i], &cp, 10);
+	    i = cp - format;
+	} else {
+	    l2 = 0;
+	}
+	if (format[i] == 'R') {
+	    raw = 1;
+	    i++;
+	} else {
+	    raw = 0;
+	}
+
+	switch(format[i]) {
+	case '%':
+	    status_buf[j++] = '%';
+	    break;
+
+	case '#':
+	    add_number(status_buf, &j, l1, l2, crec);
+	    break;
+
+	case 'n':
+	    if (raw)
+		add_number(status_buf, &j, l1, l2, crec);
+	    else
+		add_string(status_buf, &j, l1, l2,
+			   contig_get_name(&xx->contig));
+	    break;
+
+	case 'p': {
+	    add_number(status_buf, &j, l1, l2, pos);
+	    break;
+	}
+
+	case 'l':
+	    add_number(status_buf, &j, l1, l2, contig_get_length(&xx->contig));
+	    break;
+
+	case 's':
+	    add_number(status_buf, &j, l1, l2, contig_get_start(&xx->contig));
+	    break;
+
+	case 'e':
+	    add_number(status_buf, &j, l1, l2, contig_get_end(&xx->contig));
+	    break;
+
+	case 'b':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		char base[2];
+		base[0] =  xx->displayedConsensus[pos - xx->displayPos];
+		base[1] = 0;
+		add_string(status_buf, &j, l1, l2, base);
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'c':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q =
+		    xx->cachedConsensus[p].scores[xx->cachedConsensus[p].call];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'A':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[0];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'C':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[1];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'G':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[2];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'T':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[3];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case '*':
+	    if (pos >= xx->displayPos &&
+		pos < xx->displayPos + xx->displayWidth) {
+		int p = pos - xx->displayPos;
+		double q = xx->cachedConsensus[p].scores[4];
+		if (raw) {
+		    add_double(status_buf, &j, l1, l2,
+			       pow(10, q/10.0) / (1 + pow(10, q/10.0)));
+		} else {
+		    add_double(status_buf, &j, l1, l2, q);
 		}
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
@@ -615,13 +822,41 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
     int pos = xx->displayPos;
     int wid =  xx->displayWidth;
     char name[] = " Consensus";
+    int i;
 
     /* Names panel */
     XawSheetPutText(&xx->names->sw, 0, xx->y_cons, strlen(name), name);
 
     /* Editor panel */
-    calc_cons(xx->io, r, nr, pos, wid, xx->displayedConsensus);
-    XawSheetPutText(&xx->ed->sw, 0, xx->y_cons, wid, xx->displayedConsensus);
+    //calc_cons(xx->io, r, nr, pos, wid, xx->displayedConsensus);
+    /*
+    calculate_consensus_simple(xx->io, xx->cnum, pos, pos+wid,
+			       xx->displayedConsensus, xx->displayedQual);
+    */
+
+    calculate_consensus(xx->io, xx->cnum, pos, pos+wid, xx->cachedConsensus);
+    for (i = 0; i < wid; i++) {
+	xx->displayedConsensus[i] = "ACGT*N"[xx->cachedConsensus[i].call];
+    }
+
+    if (xx->ed->display_quality) {
+	int i, qbin;
+	XawSheetInk ink[MAX_DISPLAY_WIDTH];
+	memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
+
+	for (i = 0; i < wid; i++) {
+	    qbin = xx->cachedConsensus[i].phred/10;
+	    if (qbin < 0) qbin = 0;
+	    if (qbin > 9) qbin = 9;
+	    ink[i].sh |= sh_bg;
+	    ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+	}
+	XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_cons, wid,
+			     xx->displayedConsensus, ink);
+    } else {
+	XawSheetPutText(&xx->ed->sw, 0, xx->y_cons, wid,
+			xx->displayedConsensus);
+    }
 }
 
 /*

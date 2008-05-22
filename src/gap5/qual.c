@@ -1019,6 +1019,9 @@ int calc_consensus(int   contig,
 	? qual_cutoff_def : qual_cutoff;
 
     if (CONSENSUS_MODE_CONFIDENCE == consensus_mode) {
+	return calculate_consensus_simple(info_data, contig, start, end,
+					  con, qual);
+	/*
 	if (-1 ==calc_contig_info_phred(contig, start, end,
 					con, qual, con2, qual2,
 					cons_cutoff, qual_cutoff_tmp,
@@ -1028,6 +1031,7 @@ int calc_consensus(int   contig,
 	}
 
 	return 0;
+	*/
     }
 
     /* Old algorithms - CONSENSUS_MODE_FREQ and CONSENSUS_MODE_WEIGHTED */
