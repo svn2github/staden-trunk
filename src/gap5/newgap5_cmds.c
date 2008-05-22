@@ -664,6 +664,227 @@ FindRepeats(ClientData clientData,
 
 } /* end FindRepeats */
 
+int tcl_list_confidence(ClientData clientData, Tcl_Interp *interp,
+			int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list_conf_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list_conf_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list_conf_arg, inlist)},
+	{"-summary",    ARG_INT, 1, "1",   offsetof(list_conf_arg, summary)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int i, j;
+    int *freqs;
+    int freqs_tot[101];
+    int length_tot;
+
+    vfuncheader("list confidence");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    for (j = 0; j <= 100; j++) freqs_tot[j] = 0;
+    length_tot = 0;
+    for (i = 0; i < rargc; i++) {
+	freqs = count_confidence(args.io, rargv[i].contig, rargv[i].start,
+				 rargv[i].end);
+	if (!freqs) {
+	    verror(ERR_WARN, "list_confidence",
+		   "Failed in count confidence frequencies");
+	    continue;
+	}
+	for (j = 0; j <= 100; j++) freqs_tot[j] += freqs[j];
+	if (!args.summary) {
+	    vmessage("---Contig %s---\n",
+		     get_contig_name(args.io, rargv[i].contig));
+	    list_confidence(freqs, rargv[i].end - rargv[i].start + 1);
+	}
+	length_tot += rargv[i].end - rargv[i].start + 1;
+    }
+
+    if (rargc > 1 || args.summary) {
+	vmessage("---Combined totals---\n");
+	list_confidence(freqs_tot, length_tot);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+int tcl_list_base_confidence(ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list_conf_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list_conf_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list_conf_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+    int freqmat[256], freqmis[256];
+    int i;
+
+    vfuncheader("list base confidence");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    memset(freqmat, 0, 256 * sizeof(int));
+    memset(freqmis, 0, 256 * sizeof(int));
+
+    for (i = 0; i < rargc; i++) {
+	if (-1 == get_base_confidences(args.io, rargv[i].contig,
+				       freqmat, freqmis)) {
+	    verror(ERR_WARN, "list_base_confidence",
+		   "Failed to get base confidences");
+	    continue;
+	}
+
+    }
+
+    vTcl_SetResult(interp, "%f",
+		   list_base_confidence(freqmat, freqmis)
+		   );
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+int tcl_calc_consensus(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    if (rargc >= 1) {
+	char *buf;
+
+	if (NULL == (buf = (char *)ckalloc(rargv[0].end - rargv[0].start + 2)))
+	    return TCL_OK;
+
+	calculate_consensus_simple(args.io, rargv[0].contig, rargv[0].start,
+				   rargv[0].end, buf, NULL);
+	buf[rargv[0].end - rargv[0].start + 1] = 0;
+	Tcl_SetResult(interp, buf, TCL_DYNAMIC);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
+		     int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    if (rargc >= 1) {
+	char *buf;
+	float *flt;
+	int len = rargv[0].end - rargv[0].start + 2;
+	int i;
+	
+	if (NULL == (flt = (float *)xmalloc(len * sizeof(float))))
+	    return TCL_ERROR;
+	if (NULL == (buf = (char *)xmalloc(len)))
+	    return TCL_ERROR;
+
+	calculate_consensus_simple(args.io, rargv[0].contig, rargv[0].start,
+				   rargv[0].end, NULL, flt);
+	for (i = 0; i < len; i++) {
+	    int q = rint(flt[i]);
+	    if (q < -127) q = -127;
+	    if (q > 127) q = 127;
+	    buf[i] = q;
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, len));
+
+	xfree(flt);
+	xfree(buf);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+int tcl_calc_consensus_full(ClientData clientData, Tcl_Interp *interp,
+			    int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    if (rargc >= 1) {
+	Tcl_Obj *cons = Tcl_NewListObj(0, NULL);
+	consensus_t *c;
+	int len = rargv[0].end - rargv[0].start + 2;
+	int i;
+	
+	if (NULL == (c = (consensus_t *)xcalloc(len, sizeof(*c))))
+	    return TCL_ERROR;
+
+	calculate_consensus(args.io, rargv[0].contig, rargv[0].start,
+			    rargv[0].end, c);
+	for (i = 0; i < len; i++) {
+	    Tcl_Obj *items[6], *list;
+	    int j;
+
+	    items[0] = Tcl_NewIntObj(c[i].call);
+	    for (j = 0; j < 5; j++)
+		items[j+1] = Tcl_NewIntObj(rint(c[i].scores[j]));
+	    list = Tcl_NewListObj(6, items);
+	    Tcl_ListObjAppendElement(interp, cons, list);
+	}
+
+	Tcl_SetObjResult(interp, cons);
+
+	xfree(c);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -782,6 +1003,17 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "find_repeats", FindRepeats,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "list_confidence",
+			 tcl_list_confidence, (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "list_base_confidence",
+			 tcl_list_base_confidence, (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "calc_consensus", tcl_calc_consensus,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "calc_quality", tcl_calc_quality,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "calc_consensus_full",
+			 tcl_calc_consensus_full,
+			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);
     Editor_Init(interp);

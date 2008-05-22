@@ -181,7 +181,7 @@ int *count_confidence(GapIO *io, int contig, int start, int end)
 
     for (i = 0; i < end - start + 1; i++) {
 	if (qual[i] < 0) qual[i] = 0;
-	if (qual[i] > 100) qual[i] = 100;
+	if (qual[i] >= 100) qual[i] = 99;
 	freqs[(int)(qual[i] + 0.499)]++;
     }
 
