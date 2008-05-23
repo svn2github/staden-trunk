@@ -882,17 +882,20 @@ also followed by the "G" and "T" traces (in that order). The assumption is
 made that there is the same number of data points for all traces and hence the 
 length of each trace is simply the number of data elements divided by four.
 
-This chunk is mutually exclusive with the SAMP chunks. If both sets are
-defined then the last found in the file should be used. Experimentation has
-shown that this gives around 3% saving over 4 separate SAMP chunks, but it
-lacks in flexibility.
+Experimentation has shown that this gives around 3% saving over 4
+separate SAMP chunks, but it lacks in flexibility.
 
 Valid identifiers for the meta-data are:
 
 Ident	     Value(s)
 ---------------------------------------------------------------------
 OFFS         16-bit signed integer representing the 'zero' position
-
+TYPE         The type of data-set encoded. Values can be:
+             "PROC" - processed data for viewing, also the default
+                      when no type field is found.
+             "SLXI" - Illumina GA raw intensities (.int.txt files)
+             "SLXN" - Illumina GA noise intensities (.nse.txt files)
+	      
 
 BASE
 ----
@@ -944,10 +947,40 @@ zero. No sample number in BPOS should be beyond the end of the SAMP arrays
 chunk). Note that the BPOS elements may not be totally in sorted order as
 the base calls may be shifted relative to one another due to compressions.
 
+
+CNF1
+----
+
+Meta-data: optional - see below
+
+Data:
+Byte number   0  1              N 
+            +--+--+--   -   --+--+
+Hex values  | 0| call confidence |
+            +--+--+--   -   --+--+
+
+(N == number of bases in BASE chunk)
+
+Valid identifiers for the meta-data are:
+
+Ident	 Value(s)   Meaning
+---------------------------------------------------------------------
+SCALE    PH         Phred-scaled confidence values. (Default). i.e. for
+                    a call with probability p:  -10*log10(1-p)
+         LO         Log-odds scaled values. ie:  10*log10(p/(1-p))
+	
+
+The first byte of this chunk is 0 (raw format). This is then followed by a
+series signed 8-bit confidence values for the called bases.
+
+Either phred or log-odds (as used by the Illumina GA) scale ranges are
+appropriate.
+
+
 CNF4
 ----
 
-Meta-data: none present
+Meta-data: optional - see below
 
 Data:
 Byte number   0  1              N              4N
@@ -957,11 +990,21 @@ Hex values  | 0| call confidence | A/C/G/T conf |
 
 (N == number of bases in BASE chunk)
 
+Valid identifiers for the meta-data are:
+
+Ident	 Value(s)   Meaning
+---------------------------------------------------------------------
+SCALE    PH         Phred-scaled confidence values. i.e. for a call
+		    with probability p:  -10*log10(1-p)	 
+		    (NB: default, but often inappropriate.)
+         LO         Log-odds scaled values. ie:  10*log10(p/(1-p))
+	
+
 The first byte of this chunk is 0 (raw format). This is then followed by a
-series confidence values for the called base. Next comes all the remaining
-confidence values for A, C, G and T excluding those that have already been
-written (ie the called base). So for a sequence AGT we would store confidences
-A1 G2 T3 C1 G1 T1 A2 C2 T2 A3 C3 G3.
+series signed 8-bit confidence values for the called base. Next comes
+all the remaining confidence values for A, C, G and T excluding those
+that have already been written (ie the called base). So for a sequence
+AGT we would store confidences A1 G2 T3 C1 G1 T1 A2 C2 T2 A3 C3 G3.
 
 The purpose of this is to group the (likely) highest confidence value (those
 for the called base) at the start of the chunk followed by the remaining
@@ -972,12 +1015,16 @@ quarters will (assuming no ambiguous base calls) consist entirely of zeros.
 For the purposes of storage the confidence value for a base call that is not
 A, C, G or T (in any case) is stored as if the base call was T.
 
-The confidence values should be from the "-10 * log10 (1-probability)". These
-values are then converted to their nearest integral value.
-If a program wishes to store confidence values in a different range then this
-should be stored in a different chunk type.
+If only one confidence value exists per base then either the phred or
+log-odds scales work well. The first N bytes will be the called bases
+and the remaining 3*N will be zero (optimal for run-length-encoding), 
+but consider using the CNF1 chunk type instead in this situation.
 
-If this chunk exists it must exist after a BASE chunk.
+If all 4 base types have their own confidence value then the log-odds
+scale will work well. In this case the phred scale is an inappropriate
+choice as it cannot encode both very likely and very unlikely events.
+
+Note: if this chunk exists it must exist after a BASE chunk.
 
 TEXT
 ----
