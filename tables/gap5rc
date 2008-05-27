@@ -83,7 +83,7 @@ set_def TAG_BRIEF_FORMAT  \
 #	{Reading:%n(#%Rn)   Length:%l(%L)   Vector:%Tv   Clone:%Cn   Chemistry:%a   Primer:%P  Tstat:%Tc %c}
 #set_def READ_BRIEF_FORMAT  \
 #	{%n(#%Rn) Clone:%Cn Vector:%Tv Type:%P;%a Tmpl:%Tc %c}
-set_def READ_BRIEF_FORMAT {Base:%b Conf:%Rc(%6.4c) Seq:%n(%#) Len:%L/%l Strand:%S}
+set_def READ_BRIEF_FORMAT {Reading:%n(#%Rn)  Length:%l(%L)  MappingQ:%m}
 
 set_def CONTIG_BRIEF_FORMAT  \
 	{Contig:%n(#%Rn)   Length:%l   %c}
@@ -167,15 +167,15 @@ set_def CONTIG_EDITOR.TEMP_END_COLOUR     "#dddddd"
 set_def CONTIG_EDITOR.TEMP_ENDSPAN_COLOUR "#dd55dd"
 
 #set_def CONTIG_EDITOR.QUAL0_COLOUR	"#494949"
-#set_def CONTIG_EDITOR.QUAL1_COLOUR	"#595959"
-#set_def CONTIG_EDITOR.QUAL2_COLOUR	"#696969"
-#set_def CONTIG_EDITOR.QUAL3_COLOUR	"#797979"
-#set_def CONTIG_EDITOR.QUAL4_COLOUR	"#898989"
-#set_def CONTIG_EDITOR.QUAL5_COLOUR	"#999999"
-#set_def CONTIG_EDITOR.QUAL6_COLOUR	"#a9a9a9"
-#set_def CONTIG_EDITOR.QUAL7_COLOUR	"#b9b9b9"
-#set_def CONTIG_EDITOR.QUAL8_COLOUR	"#cfcfcf"
-#set_def CONTIG_EDITOR.QUAL9_COLOUR	"#d9d9d9"
+#set_def CONTIG_EDITOR.QUAL1_COLOUR	"#696969"
+#set_def CONTIG_EDITOR.QUAL2_COLOUR	"#898989"
+#set_def CONTIG_EDITOR.QUAL3_COLOUR	"#999999"
+#set_def CONTIG_EDITOR.QUAL4_COLOUR	"#a9a9a9"
+#set_def CONTIG_EDITOR.QUAL5_COLOUR     "#b8b8b8"
+#set_def CONTIG_EDITOR.QUAL6_COLOUR	"#c0c0c0"
+#set_def CONTIG_EDITOR.QUAL7_COLOUR	"#c8c8c8"
+#set_def CONTIG_EDITOR.QUAL8_COLOUR	"#d0d0d0"
+#set_def CONTIG_EDITOR.QUAL9_COLOUR	"#d8d8d8"
 
 # Better for phred values
 set_def CONTIG_EDITOR.QUAL0_COLOUR     "#494949"
@@ -480,7 +480,7 @@ set_defx defs_f_or_l_out	NAME.VALUE	""
 
 set_defx defs_format	NAME		"Select format"
 set_defx defs_format	VALUE		2
-set_defx defs_format	BUTTON.1	staden
+set_defx defs_format	BUTTON.1	fastq
 set_defx defs_format	BUTTON.2	fasta
 set_defx defs_format	BUTTON.3	experiment
 

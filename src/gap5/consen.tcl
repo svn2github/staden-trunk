@@ -544,3 +544,63 @@ proc Quality_OK_Pressed {f io id infile format output} {
     ClearBusy
     destroy $f
 }
+
+proc get_consensus {args} {
+    foreach {key value} $args {
+	set opt($key) $value
+    }
+    set io $opt(-io)
+
+    parray opt
+
+    if {[catch {set fd [open $opt(-outfile) w]} err]} {
+	tk_messageBox \
+	    -message "Failed to write to $opt(-outfile)" \
+	    -icon error \
+	    -type ok
+	return
+    }
+    puts $fd
+
+    foreach contig $opt(-contigs) {
+	foreach {id start end} $contig {
+	    set crec [cname2crec $io $id]
+	    set c [$io get_contig $crec]
+	    if {$start == ""} {set start [$c get_start]}
+	    if {$end   == ""} {set end   [$c get_end]}
+
+	    set cons [calc_consensus -io $io -contigs =$crec]
+	    regsub -all "(.{60})" $cons "\\1\n" c60
+	    switch $opt(-format) {
+		1 {
+		    # Fastq
+		    set qual [calc_quality -io $io -contigs =$crec]
+		    for {set i 0} {$i < 255} {incr i} {
+			if {$i < 93} {
+			    lappend l [binary format c $i] \
+				[binary format c [expr {$i+33}]]
+			} else {
+			    lappend l [binary format c $i] ~
+			}
+		    }
+		    puts $fd @$id
+		    puts $fd $c60
+		    puts $fd +
+		    regsub -all "(.{60})" [string map $l $qual] "\\1\n" q60
+		    puts $fd $q60
+		}
+
+		2 {
+		    # Fasta
+		    puts $fd ">$id"
+		    puts $fd $c60
+		}
+
+		3 {
+		    # Experiment File
+		    puts "Experiment file format not supported yet"
+		}
+	    }
+	}
+    }
+}
