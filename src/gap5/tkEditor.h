@@ -33,6 +33,7 @@ typedef struct {
     /* Display options */
     int display_cutoffs;
     int display_quality;
+    int display_mapping_quality;
     int display_differences; /* 0 = no, 1, 2, 3 = display modes */
     int display_differences_case;
     int display_differences_qual;

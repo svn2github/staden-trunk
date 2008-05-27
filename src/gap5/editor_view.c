@@ -130,6 +130,7 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * %L	Total length
  * %s	Start of clip
  * %e	End of clip
+ * %m   Mapping quality
  * %S   Sense (whether complemented, +/-, Raw: 0/1)
  * %a	Chemistry (primer/terminator, Raw: integer)
  * %d	Strand (+/-, Raw 0/1)
@@ -267,6 +268,16 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 		add_string(status_buf, &j, l1, l2, "-");
 	    }
 	    break;
+
+	case 'm':
+	    if (raw) {
+		add_double(status_buf, &j, l1, l2,
+			   1 - pow(10, s->mapping_qual/-10.0));
+	    } else {
+		add_number(status_buf, &j, l1, l2, s->mapping_qual);
+	    }
+	    break;
+	    
 
 	default:
 	    status_buf[j++] = format[i];
@@ -783,6 +794,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	/* Name */
 	if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
 	    char name[1024];
+	    XawSheetInk ink[1024];
 	    int nl = s->name_len - xx->names_xPos;
 	    int ncol = xx->names->sw.columns;
 	    
@@ -790,7 +802,19 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    name[0] = dir;
 	    if (nl > 0)
 		memcpy(&name[1], s->name + xx->names_xPos, nl);
-	    XawSheetPutText(&xx->names->sw, 0, j, ncol, name);
+	    if (xx->ed->display_mapping_quality) {
+		int i, qbin;
+		qbin = s->mapping_qual / 10;
+		if (qbin < 0) qbin = 0;
+		if (qbin > 9) qbin = 9;
+		for (i = 0; i < ncol && i < 1024; i++) {
+		    ink[i].sh = sh_bg;
+		    ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+		}
+		XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name, ink);
+	    } else {
+		XawSheetPutText(&xx->names->sw, 0, j, ncol, name);
+	    }
 	}
 
 	cache_decr(xx->io, sorig);

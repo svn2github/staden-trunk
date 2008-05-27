@@ -254,7 +254,8 @@ proc editor_pane {top w above arg_array} {
     $w add $w.name $w.seq
 
     # Names panel
-    ednames $w.name.sheet \
+    set edname $w.name.sheet
+    ednames $edname \
 	-width 15 \
 	-height 16 \
 	-xscrollcommand "$w.name.x set" \
@@ -304,12 +305,13 @@ proc editor_pane {top w above arg_array} {
 
     # Initialise with an IO and link name/seq panel together
     $ed init $opt(-io) $opt(contig) $w.name.sheet
-    global $ed
+    global $ed $edname
     set ${ed}(parent) $w
     set ${ed}(top) $top
     set ${ed}(Undo) ""
     set ${ed}(Redo) ""
-    parray $ed
+    set ${edname}(ed) $ed
+    parray $edname
 
     # Force new style mode
     $w.name.x set 0.0 0.1
@@ -415,6 +417,7 @@ proc editor_quality {w} {
 
     set ed $opt(curr_editor)
     $ed configure -display_quality $opt(Quality)
+    $ed configure -display_mapping_quality $opt(Quality)
     $ed redraw
 }
 
@@ -584,6 +587,25 @@ bind Editor <Any-Enter> {
     focus %W
 }
 
+bind EdNames <Any-Motion> {
+    global gap5_defs
+    global %W
+
+    set ed [set %W(ed)]
+    foreach {type rec pos} [$ed get_number @%x @%y] break
+    if {![info exists type]} {
+	return
+    }
+
+    if {$type == 18} {
+	set msg [$ed get_seq_status $type $rec $pos \
+		     [keylget gap5_defs READ_BRIEF_FORMAT]]
+    }
+
+    set w [set ${ed}(top)]
+    set ${w}(Status) $msg
+}
+
 bind Editor <Any-Motion> {
     global gap5_defs
     global %W
@@ -664,7 +686,8 @@ bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 
 # MouseWheel scrolling
-bind Editor <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
+bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
+bind EdNames <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
 if {[tk windowingsystem] eq "x11"} {
     bind Editor <4>               {%W yview scroll  -1 units}
     bind Editor <5>               {%W yview scroll  +1 units}
@@ -675,4 +698,12 @@ if {[tk windowingsystem] eq "x11"} {
     bind Editor <Shift-5>         {%W xview scroll  +1 units}
     bind Editor <Shift-Control-4> {%W xview scroll -10 units}
     bind Editor <Shift-Control-5> {%W xview scroll +10 units}
+
+    bind EdNames <4>               {%W yview scroll  -1 units}
+    bind EdNames <5>               {%W yview scroll  +1 units}
+    bind EdNames <Control-4>       {%W yview scroll -10 units}
+    bind EdNames <Control-5>       {%W yview scroll +10 units}
+
+    bind EdNames <Shift-4>         {%W xview scroll  -1 units}
+    bind EdNames <Shift-5>         {%W xview scroll  +1 units}
 }
