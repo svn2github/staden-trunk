@@ -627,6 +627,24 @@ bind Editor <Any-Motion> {
     set ${w}(Status) $msg
 }
 
+# Jump to read-pair
+bind EdNames <3> {
+    global %W
+
+    set ed [set %W(ed)]
+    foreach {type rec pos} [$ed get_number @%x @%y] break
+    if {![info exists type]} {
+	return
+    }
+
+    if {$type == 18} {
+	set other_end [$ed get_template_seqs $rec]
+	if {[llength $other_end] != 1} return
+	set s [[$ed io] get_seq $other_end]
+	$ed set_cursor 18 $other_end 1
+    }
+}
+
 bind Editor <1> {
     focus %W
     set io [%W io]

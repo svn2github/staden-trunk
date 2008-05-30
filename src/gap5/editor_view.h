@@ -165,4 +165,14 @@ int inJoinMode(edview *xx);
 void edDisplayTrace(edview *xx);
 
 
+/*
+ * Given a sequence record number this identifies all other sequence
+ * records from the same template. The returned array is malloced and should
+ * be freed by the caller once finished with.
+ *
+ * Returns pointer to array of records of size *nrec on success
+ *         NULL on failure (or zero found)
+ */
+int *edGetTemplateReads(edview *xx, int seqrec, int *nrec);
+
 #endif /* _EDITOR_VIEW_H_ */

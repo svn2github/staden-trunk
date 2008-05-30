@@ -1073,6 +1073,22 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
     int do_y = 0;
     int nr;
 
+    /* X position */
+    if (!x_safe) {
+	int w = xx->displayWidth > 10 ? 10 : xx->displayWidth;
+	if (xx->cursor_apos < xx->displayPos) {
+	    xx->displayPos = xx->cursor_apos + 1 - w;
+	    do_x = 1;
+	}
+	if (xx->cursor_apos >= xx->displayPos + xx->displayWidth) {
+	    xx->displayPos = xx->cursor_apos - xx->displayWidth + w;
+	    do_x = 1;
+	}
+    }
+
+    if (do_x)
+	y_safe = 0;
+
     /* Y position */
     if (!y_safe && xx->cursor_type != GT_Contig) {
 	rangec_t *r;
@@ -1102,18 +1118,6 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 	if (y_pos >= xx->displayYPos + sheight) {
 	    xx->displayYPos = y_pos - sheight + 1;
 	    do_y = 1;
-	}
-    }
-
-    /* X position */
-    if (!x_safe) {
-	if (xx->cursor_apos < xx->displayPos) {
-	    xx->displayPos = xx->cursor_apos;
-	    do_x = 1;
-	}
-	if (xx->cursor_apos >= xx->displayPos + xx->displayWidth) {
-	    xx->displayPos = xx->cursor_apos - xx->displayWidth+1;
-	    do_x = 1;
 	}
     }
 
@@ -1601,4 +1605,33 @@ void edDisplayTrace(edview *xx) {
     }
 
     tman_reposition_traces(xx, xx->cursor_apos, 0);
+}
+
+/*
+ * Given a sequence record number this identifies all other sequence
+ * records from the same template. The returned array is malloced and should
+ * be freed by the caller once finished with.
+ *
+ * Returns pointer to array of records of size *nrec on success
+ *         NULL on failure (or zero found)
+ */
+int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
+    seq_t *s = get_seq(xx->io, seqrec);
+    int *r = NULL;
+
+    if (!s)
+	return NULL;
+
+    /* FIXME: support s->parent_rec and s->parent_type */
+
+    /* Solexa data is easy: we have just one other end */
+    if (s->other_end) {
+	*nrec = 1;
+	r = (int *)malloc(sizeof(*r));
+	*r = s->other_end;
+    } else {
+	*nrec = 0;
+    }
+
+    return r;
 }

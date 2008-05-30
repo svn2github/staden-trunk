@@ -380,6 +380,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"display_trace", "delete_trace", "trace_scroll",
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
+	"get_template_seqs",
 	NULL
     };
     enum options {
@@ -389,6 +390,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_DISPLAY_TRACE,  _DELETE_TRACE,  _TRACE_SCROLL,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
+	_GET_TEMPLATE_SEQS,
     };
 
     if (argc < 2) {
@@ -651,6 +653,25 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 	Tcl_SetResult(interp, msg, TCL_VOLATILE);
 	break;
+    }
+
+    case _GET_TEMPLATE_SEQS: {
+	int nrec, *rec, i;
+	dstring_t *ds = dstring_create(NULL);
+
+	if (argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_template_seqs rec.no.\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	rec = edGetTemplateReads(ed->xx, atoi(argv[2]), &nrec);	
+	for (i = 0; i < nrec; i++) {
+	    dstring_appendf(ds, "%d ", rec[i]);
+	}
+	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
+	dstring_destroy(ds);
     }
     }
 
