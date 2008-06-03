@@ -308,6 +308,7 @@ int srf_read_xml(srf_t *srf, srf_xml_t *xml) {
 
     if (0 != srf_read_uint32(srf, &xml->xml_len))
 	return -1;
+    xml->xml_len -= 5;
 
     if (NULL == (xml->xml = (char *)realloc(xml->xml, xml->xml_len+1)))
 	return -1;
