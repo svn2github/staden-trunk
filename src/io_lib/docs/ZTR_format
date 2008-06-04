@@ -1,3 +1,180 @@
+Notes: 28th May 2008
+
+For version 2.0 consider the following:
+
+1) Remove defunct or useless chunk types and compression formats.
+2) Rationalise inconsitent behaviour (eg endianness on zlib chunk).
+3) Support split header/data formats for SRF
+4) Formalise meta-data use better.
+5) More pie-in-the-sky ideas?
+
+What we've described so far could easily be said to be v1.4. It's
+backwards compatible and fairly minor is change. If we truely want to
+go for version 2 then taking the chance to remove all those niggles
+that we've kept purely for backwards compatibility would be good.
+
+In more detail:
+
+1) Removal of RLE and floating point chebyshev polynomials. Mark XRLE
+   as deprecated?
+
+   We may wish to add an extra option to XRLE2 to indicate the repeat
+   count before specifying the remaining run-length. This breaks the
+   format though. (Or add XRLE3 to allow such control?)
+
+2) Strange things I can see are:
+
+   2.1) All chunks use big-endian data except for zlib which has a
+        little-endian length.
+
+   2.2) The order that data is stored in differs per chunk type. For
+        trace data we store all As, then all Cs, all Gs and finally
+        all Ts. For confidence values we store called first followed
+        by remaining. Both SMP4 and CNF4 essentially hold 1 piece of
+        data per base type per base position, it's just the word size
+        and packing order that differs.
+
+	This means TSHIFT and QSHIFT compression types are tied very
+	much to trace and quality value chunks, rather than being
+	generic transforms. Maybe we should always have the same
+	encoding order and some standard compression/transformations
+	to reorder as desired.
+
+	An example:
+	All data related per call is stored in the natural order
+	produced. (eg as utilised in CNF1, BPOS).
+
+	All data related per base-type per call is stored in the order
+	produced: A, C, G, T for the first base position, A, C, G, T
+	for the second position, and so on.
+
+	Then we have standard filters that can swap between
+	ACGTACGTACGT... and AAA...CCC...GGG...TTT... or to
+	<called><non-called * 3>... order (which requires a BASE chunk
+	present to encode/decode). We'd have 1, 2 and 4 byte variants
+	of such filters. They do not need to understand the nature of
+	the data they're manipulating, just the word size and a
+	predetermined order to shuffle the data around in.
+
+	For CNF4 a combination of {ACGT}* to {<called><non-called*3>}*
+	followed by {ACGT}* to A*C*G*T* ordering would end up with all
+	<called> followed by all 3 remaining non-called. Ie as it is
+	now (which we then promptly "undo" in solexa data by using
+	TSHIFT).a
+	
+3) I'm wondering if there's mileage here in having negative lengths to
+   indicate constant data + variable data further on.
+
+   Eg length -10 means the next 10 bytes are the start of the data for
+   this chunk. Some stage later we'll read a 4-byte length followed by
+   the remaining data for this chunk.
+
+   Rationale: often we end up with many identical bytes at the start
+   of a chunk. For example, we take a solexa trace (0 0 value...), run
+   it through TSHIFT (80 0 0 0 previous data => 80 0 0 0 0 0 value ...)
+   and then through STHUFF (77 80(eg) data), but data is the
+   compressed stream always starting with 80 0 0 0 0 0 so typically it's
+   always the same starting string.
+
+   Tested on an SRF file I see SMP4 always starting with the same 9
+   bytes of data, BASE starting with the same 3 bytes and CNF4 always
+   starting with the same 7 bytes. Hence we'd have lengths -9, -3 and
+   -7 in the chunk headers and move that common data to the header
+   block too. That's approx 3% of the size of our SRF file.
+
+4) I propose *all* chunks have some standard meta-data fields
+   available for use. These can be:
+
+   4.1) GROUP - all chunks sharing the same GROUP value are considered
+        as being related to one another. This provides a mechanism for
+        multiple base-call, base position and confidence value chunks
+        while still knowing which confidence values belong to which
+        call. It also allows for multiple SAMP chunks (instead of the
+        SMP4 chunk) to be collated together if desired.
+
+	I don't expect many ZTR files to contain calls from multiple
+	base-callers, but it's maybe a nice extension and seems quite
+	a simple/clean use of meta-data.
+
+   4.2) ENCODING - the default encoding for the chunk data is as
+        described in the chunk. We may however wish to override this
+        and, for example, store SMP4 data as 32-bit floating point
+        values instead of 16-bit integers. This specifies that.
+
+	Question: do we want this available universally everywhere? If
+	not, we should at least use the same meta-data keyword for all
+	occurrences.
+
+   4.3)	TRANSFORM - a simple transformation description. This is
+        essentially a mini-formula. It replaces the OFFS meta-data
+        used in SMP4 which is simply a transform of X+value.
+
+5) There are more generic ways to save storage by removing redundancy.
+
+   Most probably they're not worth it, but I list them here for
+   discussion still.
+
+   5.1) Use 7-bit variable sized encodings for values instead of fixed
+        32-bit sizes.
+
+	Eg instead of storing 1000 as 0x3*0x100 + 0xe8 (00 00 03 e8)
+	we could store it as 0x7*0x80 + 0x68 (80|07 68). The logic
+	here being setting the top bit implies this isn't the final
+	value and more data follows. It allows for variable sized
+	fields so that small numbers take up fewer bytes. The same can
+	be applied to data in SRF structs too.
+
+	Realistically it saves 2 bytes per record in SRF and an
+	unknown amount for ZTR - estimated 8 or so (3 for cnf4/base
+	and 2 for smp4). It's only 1.5% saving though in total.
+
+   5.2) A general purpose dictionary system. Instead of attempting to
+        move headers to one area and data somewhere else, possibly
+        also taking common portions of data and putting that somewhere
+        too, we could provide a dictionary system whereby we
+        previously remove redundancy by replacing all occurrences of a
+	particular byte pattern with a new shorter code. (We'd need an
+        escape mechanism for when it occurs by chance.) The dictionary
+        can then be specified in it's own chunk which is stored in the
+        header portion.
+
+	This then works for portions of chunk header (eg if the
+	meta-data changes) rather than full headers, where the data
+	blocks always start with the same text, or where we want to
+	have sensible names in text fields but don't like them taking
+	up too much space.
+
+	It's maybe a bit messy though and complex to implement, plus
+	it's unknown how big an impact having to escape accidental
+	dictionary codes from appearing in real data. The more formal
+	way of removing redundancy is probably better.
+
+    5.3) Lossy compression. I believe there's still room for this,
+         although it needs careful thought.
+
+	 The floating point format really isn't an ideal way to do it
+	 though, so I'd much rather have an encoding system that uses
+	 N*log(signal/M+1) plus a sign bit, stored in integers.
+
+	 As we store data in integers the value of N combined with the
+	 maximum value for log(signal/M+1) gives us the number of bits
+	 we wish to encode to. Essentially we're storing the log value
+	 to a fixed point precision.
+
+	 The value of M dictates the slope of the errors we get from
+	 logging. It's hard to describe, but basically as signal gets
+	 larger our average error in storing the signal also gets
+	 larger. That's true for floating point values too as there's
+	 a fixed number of bits and they're being used to represent
+	 larger and larger values, meaning the resolution drops.
+
+	 I have various test code and graphs showing error profiles
+	 for logs vs fixed point vs floating point. Logs or fixed
+	 point are nearly always preferable to a floating point format
+	 for size vs accuracy.
+
+-----------------------------------------------------------------------------
+
 CHANGE (since 1.2):
 SAMP and SMP4 now has meta data fields indicating the zero base-line.
 
