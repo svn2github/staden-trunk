@@ -1,3 +1,77 @@
+Version 1.11.2 (4th June 2008)
+--------------
+
+* solexa2srf/srf2solexa changes:
+
+  - Renamed to illumina2srf/srf2illumina.
+
+  - Incorporated support the IPAR format (Come Raczy, Illumina).
+
+  - Added support for qcal format data (Come Raczy).
+
+  - Added -C option to tag data as failing the chastity filter, but it
+    is still included in the SRF output (Camil Toma).
+
+  - Many more additional features added to srf_dump_all provided by
+    Camil Toma. It somewhat overlaps srf2solexa now, but may still
+    have it's own use.
+
+  - Ztr TEXT chunks now output in srf2solexa.
+
+  - Improved ways to specify matrices (-mf/-mr) in solexa2srf.
+
+  - solexa2srf is substantially faster when reading gzipped files.
+
+  - The -N/-n naming scheme options for solexa2srf now default to the
+    same conventions used by GERALD. Added additional %d, %m and %r
+    format rules too.
+
+  - Calibrated confidence values are now output if -qf or -qr
+    paramaters are used, in addition to uncalibrated ones. These are
+    stored in phred scale in a CNF1 ZTR chunk.
+
+* srf2fastq now has a -c option to output calibrated confidence values
+  (if present). It also supports multiple archives on the command line.
+
+* SRF fixes:
+
+  - Better handling of full pathnames in solexa2srf.
+
+  - Use binary IO mode; fixes bugs on Windows.
+
+  - Fixed an error where some chunks were not compressed properly
+    (valid still, just not compressed).
+
+  - Removed memory corruption in solexa2srf (in rare cases).
+
+  - Fixed bug with binary formatted read_id suffixes (fixed by
+    Cristian Goina).
+
+  - Initialised memory in hash table code (used in indexing amongst
+    other things).
+
+  - Indexes very occasionally failed to find a trace that did infact
+    exist. 
+
+  - Removed memory leak in construct_trace_name (patch from John
+    Emhoff, Helicos).
+
+  - Fixed reading of XML block in srf_read_xml(). From John Emhoff.
+
+
+* Added SRF= format string to TRACE_PATH to facilitate on-the-fly
+  extraction from indexed SRF files. This means io_lib can now
+  transparently pull traces from an archive or treat it as if it was a
+  directory - eg "foo.srf/IL15_..._123:456".
+
+* Bug fix (SF-1898427) - now builds on Fedora.
+
+* Better handling of 64-bit file size sensing in autoconf.
+
+
+Version 1.11.1 (not officially released - internal testing only)
+--------------
+
 Version 1.11.0 (20th February 2008)
 --------------
 

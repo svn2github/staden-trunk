@@ -1,4 +1,4 @@
-			IO_LIB VERSION 1.11.0
+			IO_LIB VERSION 1.11.2
 			=====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -52,6 +52,8 @@ Finally the directory layout has been greatly simplified with the
 merging of all the format directories into a single "io_lib"
 directory and the programs utilising it remaining in the "progs"
 subdirectory.
+
+See CHANGES and ChangeLog for more detailed change information.
 
 
 Building

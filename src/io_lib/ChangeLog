@@ -1,3 +1,266 @@
+2008-06-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.2 released.
+
+2008-06-04  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* docs/ZTR_format:
+	(13:06:36) Added some text regarding *ideas* for version 2. These
+	are not officially part of any stanard yet. 
+
+	* io_lib/compression.c:
+	(13:06:54) Comment change only. 
+
+2008-06-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/srf.c:
+	(16:23:50) Applied bug fix from John Emhoff: srf_read_xml was
+	incorrectly interpreting the XML length as the length of the XML
+	string rather than the entire SRF block itself including header. It
+	now agrees with srf_write_xml, which interpreted this correctly. 
+
+2008-05-23  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* docs/ZTR_format:
+	(08:38:05) Documented TYPE meta-data for SMP4 and removed the
+	comment about being mutually exclusive with SAMP.
+	
+	Added explanation of log-odds vs phred scales.
+	
+	Added CNF1 chunk type (how did I miss this before?). 
+
+2008-05-21  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/srf.c:
+	(09:12:23) Fixed memory leak in construct_trace_name. (Patch from
+	John Emhoff at Heliocos.) 
+
+2008-05-14  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(13:08:34) Fixed floating point to integer rounding of trace data
+	to round to closest instead of floor(value). 
+
+	* io_lib/srf.c,
+	* io_lib/srf.h,
+	* progs/solexa2srf.c,
+	* progs/srf2fasta.c,
+	* progs/srf2fastq.c,
+	* progs/srf2solexa.c,
+	* progs/srf_dump_all.c:
+	(14:13:15) Added changes from Camil Toma (albeit modified here and
+	there) to incorporate the -C option to various tools. This allows
+	for chastity filtered data to be stored in SRF, but tagged as being
+	bad data. We then get the option to filter it on extraction
+	instead. 
+
+2008-05-13  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(14:25:53) Reverted the footer position change in encode_ztr() back
+	(to the 20th February 2008) to taking out the meta-data into the
+	header block too. Although this contains variable data (OFFS=value)
+	it's the same for all members of a tile. 
+
+2008-05-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/open_trace_file.c:
+	(11:06:53) Sped up searching in SRF files by stripping off the
+	directory name when calling srf_find_trace(). (It got to this
+	before eventually, but only after searching various false
+	combinations.)
+
+	* io_lib/os.h:
+	(11:07:31) Minor change to prevent errors when compiling within the
+	Staden Package. No impact for autoconf version. 
+
+	* io_lib/srf.c:
+	(11:08:18) Fixed bug in srf_find_trace that caused it to rarely
+	fail to find a trace when querying the hash table. 
+
+2008-05-06  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* docs/ZTR_format:
+	(11:44:51) Fixed error in the pictoral diagram describing the magic
+	number. (It is correct everywhere else.) 
+
+	* io_lib/open_trace_file.c:
+	(14:27:24) Added SRF interfaces to open_trace_file meaning we can
+	now try specifying traces file fubar.srf/tname or
+	TRACE_PATH=SRF=fubar.srf and tname. 
+
+	* configure.in,
+	* io_lib/ztr.c,
+	* progs/Makefile.am,
+	* progs/solexa2srf.c,
+	* progs/srf2solexa.c:
+	(15:35:36) Implemented Come Raczy's (Illumina) changes. These
+	involved renaming the solexa2srf and srf2solexa tools to be
+	illumina2srf and srf2illumina and the addition of qcal support in
+	preparation for the GA v1.0 release.
+	
+	Note that currently the filenames are the same as before, in order
+	to preserve change history. 
+
+	* Makefile:
+	(15:43:33) Added srf.o to the Staden Package Makefile (NB: not part
+	of the autoconf system.) 
+
+2008-04-15  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/hash_table.c:
+	(15:09:41) Initialises pb and pc in hash() function when using
+	HASH_FUNC_JENKINS3. Bug reported by Cristian Goina. 
+
+2008-04-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(11:22:33) Fixed a code inefficiency when using -qf and -qr. 
+
+	* io_lib/srf.c,
+	* io_lib/srf.h:
+	(16:16:55) Fixed bugs regarding binary format read_id suffixes,
+	reported and mostly patched by Cristian Goina.
+	
+	The srf_trace_body_t struct now has a read_id_length field.
+	
+	The srf_construct_trace_body() function has an extra argument to
+	pass in the length, or -1 if unknown (it'll use strlen then).
+	
+	New function srf_write_pstringb to write binary pstrings, avoiding
+	the requirement for strlen(). 
+
+	* progs/solexa2srf.c:
+	(16:21:57) Added extra arg to srf_construct_trace_body call (see
+	srf.c change log).
+	
+	Fixed a bug introduced in the recent efficiency improvements for
+	-qf/-qr. These meant that many sequences were incorrectly skipped. 
+
+2008-04-07  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(08:54:06) Increased the estimation of number of bytes per cycle in
+	the allocation in get_sig(). 
+
+	* progs/solexa2srf.c:
+	(15:11:06) Fixed error that crept in when error checking was added
+	to compress_chunk calls. Missing curly braces meant that some
+	chunks were not compressed while other chunks got needless
+	additional layers of compression. 
+
+2008-04-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(15:57:06) The defaults for -N and -n are now using the same naming
+	conventions used in Gerald during the fastq generation steps. To do
+	this is looks at the run folder root directory name to get the run
+	date, machine name and run number. (These are available for use as
+	%d, %m and %r in the format strings.)
+	
+	Calibrated confidence values are now automatically included if the
+	-qf or -qr parameters are used (specifying the fastq filename).
+	Note this only works currently if the number of bases after
+	calibration is the same as the number before. The calibrated
+	confidence values are written in a CNF1 ztr chunk (in addition to
+	the existing CNF4 chunk for uncalibrated values) and are rescaled
+	to adhere to the phred scale (-10 * log10(1-P)).
+	
+	Added meta-data to the confidence chunks (CNF1 and CNF4) with a
+	SCALE key. The value is either LO (log-odds) or PH (phred). This
+	increases file size somewhat as it's written once per trace, but
+	the long-term goal is to upgrade ZTR to support the ability to
+	specific default meta-data keys/values. 
+
+	* progs/srf2fastq.c:
+	(15:57:58) Added a -c option to output calibrated confidence values
+	instead of uncalibrated ones.
+	
+	Plus additionally it should be able to handle multiple archives on
+	the command line instead of a single one. 
+
+	* progs/solexa2srf.c:
+	(17:00:28) Added support for using popen() to gzip -cd instead of
+	using gzopen. The reason is that it's between 3 and 5 times faster
+	doing that. I'm unsure why, but overall it sped up solexa2srf -r 3
+	fold when the Firecrest data is gzipped. 
+
+2008-04-02  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(09:14:45) Fixed the footer(aka body) position calculation so it
+	works still on trace files containing no trace data at all. Ie
+	solexa2srf -P. 
+
+	* progs/solexa2srf.c:
+	(09:28:02) Added Camil Toma's (Broad) changes to support -mf and
+	-mr paremeters. These provide finer grained control over the
+	filenames of the forward and reverse matrices. 
+
+	* progs/srf2solexa.c:
+	(09:29:04) Added Camil Toma's (Broad) changes to extract text files
+	embedded in ZTR TEXT chunks. 
+
+	* progs/srf_dump_all.c:
+	(10:54:29) Added Camil Toma's (Broad) changes to srf_dump_all.
+	These add multiple new features, increasing the source length 7
+	fold.
+
+	* progs/srf2solexa.c,
+	* progs/srf_dump_all.c:
+	(10:56:06) Fixed bug reported by Cristian Goina (JCVI): we now use
+	srf_open with mode "rb" instead of "r". This resolves an issue on
+	Windows/DOS when dealing with binary data including ^Z characters
+	being interpreted as EOF. 
+
+	* progs/srf_dump_all.c:
+	(11:05:25) Fixed missing newlines in the standard "dump" format. 
+
+2008-03-20  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/hash_table.c,
+	* progs/hash_list.c:
+	(09:45:07) Added more includes of io_lib_config.h to ensure 64-bit
+	file support works correctly. 
+
+2008-03-13  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(09:32:15) Fixed an error when passing in fully qualified
+	pathnames. We now chdir() to the directory containing the seq.txt
+	file and work from there.
+	
+	Also some functions involved in supporting fastq files with
+	callibrated confidence values. This is unfinished and needs more
+	work, specifically it doesn't do anything with the sequence/qual
+	yet (just parses it) and the entire operation should probably work
+	from the GERALD directory instead of the Bustard directory. Hence
+	for now the -qf and -qr options are undocumented. 
+
+	* progs/solexa2srf.c:
+	(11:53:32) Incorporated Come Razy's changes to solexa2srf, with a
+	few modifications to adhere to C89 instead of C9X C standards.
+	
+	These add support for the new Illumina IPAR file format via the -I
+	command line option. 
+
+2008-02-29  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* acinclude.m4,
+	* configure.in:
+	(14:10:53) Fixed autoconf build environment for Fedora. We no
+	longer assume /usr/lib is a valid default for zlib, instead relying
+	on either the compiler to find it or an explicit --with-zlib
+	option.
+	
+	See SF bug 1898427
+	https://sourceforge.net/tracker/index.php?func=detail&aid=1898427&g
+	roup_id=100316&atid=627058 
+
+2008-02-20  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.0 released.
+
 2008-02-20  James Bonfield  <jkb@sanger.ac.uk>
 
         * progs/srf2fastq.c:
