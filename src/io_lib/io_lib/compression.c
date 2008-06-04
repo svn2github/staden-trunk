@@ -511,7 +511,7 @@ char *xrle2(char *uncomp, int uncomp_len, int rsz, int *comp_len) {
 	    last = &uncomp[i];
 	}
 
-
+	/* NB: >= 3 is more optimal in many cases */
 	if (run_len >= 2) {
 	    /* Count remaining copies */
 	    for (k = i+rsz; k < uncomp_len && run_len < 257; k += rsz) {
@@ -592,6 +592,7 @@ char *unxrle2(char *comp, int comp_len, int *uncomp_len) {
 	i += rsz;
 	out_len += rsz;
 
+	/* NB: >= 3 is more optimal in many cases */
 	if (run_len >= 2) {
 	    /* Count remaining copies */
 	    run_len = (unsigned char)comp[i];
