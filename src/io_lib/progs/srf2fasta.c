@@ -49,6 +49,8 @@ void ztr2fasta(ztr_t *z, char *name) {
     chunks = ztr_find_chunks(z, ZTR_TYPE_BASE, &nc);
     if (nc != 1) {
 	fprintf(stderr, "Zero or greater than one BASE chunks found.\n");
+	if (chunks)
+	    free(chunks);
 	return;
     }
 
@@ -76,6 +78,8 @@ void ztr2fasta(ztr_t *z, char *name) {
     *seq++ = '\n';
 
     fwrite(buf, 1, seq - buf, stdout);
+    free(chunks);
+
     return;
 }
 

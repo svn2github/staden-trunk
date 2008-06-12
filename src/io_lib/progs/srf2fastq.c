@@ -57,6 +57,8 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated) {
     chunks = ztr_find_chunks(z, ZTR_TYPE_BASE, &nc);
     if (nc != 1) {
 	fprintf(stderr, "Zero or greater than one BASE chunks found.\n");
+	if (chunks)
+	    free(chunks);
 	return;
     }
     uncompress_chunk(z, chunks[0]);
@@ -64,6 +66,7 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated) {
     seq_len = chunks[0]->dlength-1;
 
     /* Extract the quality */
+    free(chunks);
     if (calibrated)
 	chunks = ztr_find_chunks(z, ZTR_TYPE_CNF1, &nc);
     else
@@ -71,6 +74,8 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated) {
 
     if (nc != 1) {
 	fprintf(stderr, "Zero or greater than one CNF chunks found.\n");
+	if (chunks)
+	    free(chunks);
 	return;
     }
     uncompress_chunk(z, chunks[0]);
@@ -102,6 +107,7 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated) {
     *qual++ = '\n';
 
     fwrite(buf, 1, qual - buf, stdout);
+    free(chunks);
 }
 
 /* ------------------------------------------------------------------------ */
