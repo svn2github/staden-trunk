@@ -2174,6 +2174,9 @@ static void process_frags(seq_frag *frag, int *num_frags, int from, int to,
 
 		if (consensus_iub) {
 		    *conp = "NACMGRSVTWYHKDBN"[iub];
+		    if (iub == 0 && highest_type == 4) {
+			*conp = '*';
+		    }
 		}
 
 		if (qualp)
