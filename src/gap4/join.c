@@ -160,7 +160,7 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
 
     verror(ERR_WARN, "align_contigs",
 	   "Fast hashing alignment algorithm failed, "
-	   "attempting full dynanic programming instead");
+	   "attempting full dynamic programming instead");
 
     if(longest_diagonal < TOO_LONG_FOR_2ND_TRY) {
 	band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
