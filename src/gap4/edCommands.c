@@ -396,6 +396,13 @@ int strip_pads(EdStruct *xx, int sp_consensus_mode,
 {
     int npads;
 
+    /* Don't attempt to store undo data for large contigs. */
+    if (DB_Length2(xx, 0) > 100000) {
+	verror(ERR_WARN, "contig_editor",
+	       "Disabling undo data as pad stripping produces too many edits");
+	DBI_store_undo(xx) = 0;
+    }
+
     openUndo(DBI(xx));
     npads = remove_pad_columns(xx, sp_consensus_mode, sp_consensus_cutoff);
     if (npads > 0) {
