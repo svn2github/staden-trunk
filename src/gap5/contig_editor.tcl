@@ -549,12 +549,40 @@ proc editor_edit_base {w call where} {
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
 	foreach {old_call old_conf} [$seq get_base $pos] break
-	$seq replace_base $pos $call 100
+	$seq replace_base $pos $call 30
 	$w cursor_right
 	store_undo $w \
 	    "$seq replace_base $pos $old_call $old_conf; $w cursor_left" \
-	    "$seq replace_base $pos $call 100; $w cursor_right"
+	    "$seq replace_base $pos $call 30; $w cursor_right"
     }
+
+    $w redraw
+}
+
+proc editor_insert_gap {w where} {
+    upvar $w opt
+
+    set io [$w io]
+
+    if {$where == ""} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+    if {$type != 17} {
+	# Consensus only currently
+	bell
+	return
+    }
+    set contig [$io get_contig $rec]
+
+    $contig insert_base $pos
+    $w cursor_right
+    
+    store_undo $w \
+	"$contig delete_base $pos; $w cursor_left" \
+	"$contig insert_base $pos; $w cursor_right"
 
     $w redraw
 }
@@ -702,6 +730,7 @@ bind Editor <Key-a> {editor_edit_base %W a [%W get_number]}
 bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
+bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
 
 # MouseWheel scrolling
 bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
