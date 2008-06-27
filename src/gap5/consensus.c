@@ -4,6 +4,8 @@
 #include <string.h>
 #include <float.h>
 
+/* See consensus.txt for discussions on these algorithms */
+
 #include <tg_gio.h>
 
 #include "consensus.h"
@@ -128,10 +130,16 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     rangec_t *r;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
     int len = end - start + 1;
-    double (*cvec)[6];
+    double slx_overcall_prob = 0.01;
+    double slx_undercall_prob = 0.01;
+
+    double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
+    double (*pvec)[2]; /* pvec[0] = base, pvec[1] = gap */
 
     /* Initialise */
-    if (NULL == (cvec = (double (*)[6])calloc(len, 6 * sizeof(double))))
+    if (NULL == (cvec = (double (*)[4])calloc(len, 4 * sizeof(double))))
+	return -1;
+    if (NULL == (pvec = (double (*)[2])calloc(len, 2 * sizeof(double))))
 	return -1;
 
     if (!lookup_done) {
@@ -144,7 +152,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	lookup['C'] = lookup['c'] = 1;
 	lookup['G'] = lookup['g'] = 2;
 	lookup['T'] = lookup['t'] = 3;
-	lookup['*'] = lookup[','] = 4;
+	lookup['*'] = 4;
 
 	/* Log odds value to log(P) */
 	for (i = -128; i < 128; i++) {
@@ -158,7 +166,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     /* Find sequences visible */
     r = contig_seqs_in_range(io, &c, start, end, &nr);
 
-    /* Accumulate... */
+    /* Accumulate... (computes the products via sum of logs) */
     for (i = 0; i < nr; i++) {
 	int sp = r[i].start;
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r[i].rec);
@@ -208,6 +216,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2r[q];
+		pvec[sp-start+j][0] += log(slx_overcall_prob); /* cache */
+		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
 		break;
 
 	    case 1:
@@ -215,6 +225,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2l[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2r[q];
+		pvec[sp-start+j][0] += log(slx_overcall_prob);
+		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
 		break;
 
 	    case 2:
@@ -222,6 +234,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2l[q];
 		cvec[sp-start+j][3] += lo2r[q];
+		pvec[sp-start+j][0] += log(slx_overcall_prob);
+		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
 		break;
 
 	    case 3:
@@ -229,6 +243,18 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2l[q];
+		pvec[sp-start+j][0] += log(slx_overcall_prob);
+		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		break;
+
+	    case 4:
+		pvec[sp-start+j][0] += log(1-slx_undercall_prob);
+		pvec[sp-start+j][1] += log(slx_undercall_prob);
+		break;
+
+	    default: /* 5 */
+		pvec[sp-start+j][0] += log(slx_overcall_prob);
+		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
 		break;
 	    }
 	}
@@ -241,51 +267,73 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 
     /* and speculate */
     for (i = 0; i < len; i++) {
-	double probs[6], tot, tot2[4], max;
+	double probs[6], tot2[4], max;
+	double pad_prob, base_prob;
 	int j;
 
-	tot = 0;
+	/* Gap or base? Work out pad probability initially */
+	/* For this the sum differences is basically the log-odds score */
+	cons[i].scores[4] = 10*(pvec[i][0] - pvec[i][1]);
+	pad_prob = pow(10, cons[i].scores[4] / 10.0) /
+	    (pow(10, cons[i].scores[4] / 10.0) + 1);
+	base_prob = 1-pad_prob;
+
+	/*
+	 * And now which base type it may be.
+	 * Here probs[] hold the numerators with the denominators being
+	 * sum(probs[0..4]). It cancels out though so we don't need it.
+	 */
 	for (j = 0; j < 4; j++) {
 	    probs[j] = exp(cvec[i][j]);
-	    tot += probs[j];
 	    tot2[j] = 0;
 	}
+
+	/*
+	 * tot2 here is for computing 1-prob without hitting rounding
+	 * issues caused by 1/<some small number>.
+	 *
+	 * If prob is a/(a+b+c+d) then 1-a/(a+b+c+d) = (b+c+d)/(a+b+c+d).
+	 * Factoring in the base_prob B then prob is B.a/(a+b+c+d).
+	 * Hence 1-prob = (a.(1-B)+b+c+d)/(a+b+c+d).
+	 */
 	for (j = 0; j < 4; j++) {
 	    int k;
 	    for (k = 0; k < 4; k++)
 		if (j != k)
 		    tot2[k] += probs[j];
+		else
+		    tot2[k] += probs[j] * pad_prob;
 	}
 
-	/* Normalise  */
+	/*
+	 * Normalise.
+	 * We compute p as probs[j]/total_prob.
+	 * Then turn this into a log-odds via log(p/(1-p)).
+	 * 1-p has some precision issues in floating point, so we use tot2
+	 * as described above as an alternative way of computing it. This
+	 * gives:
+	 *
+	 * log(p/(1-p)) = log( (probs[j]/total) / (tot2[j] / total))
+	 *              = log(probs[j]/tot2[j])
+	 *              = log(probs[j]) - log(tot2[j])
+	 */
 	for (j = 0; j < 4; j++) {
-	    double p, omp; /* omp = 1- p */
-
-	    p = probs[j] = tot > 0 ? probs[j] / tot : 0;
-	    omp = tot2[j] / tot;
-
-	    cons[i].scores[j] = 10 * log(p / omp) / log(10);
+	    cons[i].scores[j] = 10 / log(10) *
+		(log(base_prob * probs[j]) - log(tot2[j]));
 	}
-#if 0
-	/* Normalise  */
-	for (j = 0; j < 4; j++) {
-	    double p = probs[j] = tot > 0 ? probs[j] / tot : 0;
-	    if (1-p < DBL_EPSILON)
-		p = 1-DBL_EPSILON;
-	    cons[i].scores[j] = 10 * log(p / (1-p)) / log(10);
-	}
-#endif
-	
-	cons[i].scores[4] = -99; /* FIXME: gap probability */
 
 	/* And call */
-	max = -4.7;
-	cons[i].call = 5; /* N */
-	cons[i].scores[5] = -99;
-	for (j = 0; j < 5; j++) {
-	    if (max < cons[i].scores[j]) {
-		max = cons[i].scores[j];
-		cons[i].call = j;
+	if (cons[i].scores[4] > 0) {
+	    cons[i].call = 4;
+	    max = cons[i].scores[4];
+	} else {
+	    max = -4.7; /* Consensus cutoff */
+	    cons[i].call = 5; /* N */
+	    for (j = 0; j < 4; j++) {
+		if (max < cons[i].scores[j]) {
+		    max = cons[i].scores[j];
+		    cons[i].call = j;
+		}
 	    }
 	}
 
