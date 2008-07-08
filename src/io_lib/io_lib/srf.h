@@ -13,6 +13,9 @@
 #define SRFB_TRACE_BODY		'R'
 #define SRFB_INDEX		'I'
 
+/* Lack of index => 8 zero bytes at end of file to indicate zero length */
+#define SRFB_NULL_INDEX		'\0'
+
 /*--- Public structures */
 
 /* Container header - several per file */

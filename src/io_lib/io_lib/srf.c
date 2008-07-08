@@ -1084,6 +1084,20 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
 	    /* EOF */
 	    return NULL;
 
+	case SRFB_NULL_INDEX: {
+	    /*
+	     * Maybe the last 8 bytes of a the file (or previously was
+	     * last 8 bytes prior to concatenating SRF files together).
+	     * If so it's the index length and should always be 8 zeros.
+	     */
+	    uint64_t ilen;
+	    if (1 != fread(&ilen, 8, 1, srf->fp))
+		return NULL;
+	    if (ilen != 0)
+		return NULL;
+	    break;
+	}
+
 	case SRFB_CONTAINER:
 	    if (0 != srf_read_cont_hdr(srf, &srf->ch))
 		return NULL;
@@ -1302,6 +1316,20 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
 	    /* EOF */
 	    return NULL;
 
+	case SRFB_NULL_INDEX: {
+	    /*
+	     * Maybe the last 8 bytes of a the file (or previously was
+	     * last 8 bytes prior to concatenating SRF files together).
+	     * If so it's the index length and should always be 8 zeros.
+	     */
+	    uint64_t ilen;
+	    if (1 != fread(&ilen, 8, 1, srf->fp))
+		return NULL;
+	    if (ilen != 0)
+		return NULL;
+	    break;
+	}
+
 	case SRFB_CONTAINER:
 	    if (0 != srf_read_cont_hdr(srf, &srf->ch))
 		return NULL;
@@ -1425,6 +1453,20 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
     case -1:
 	/* EOF */
 	return -1;
+
+    case SRFB_NULL_INDEX: {
+	/*
+	 * Maybe the last 8 bytes of a the file (or previously was
+	 * last 8 bytes prior to concatenating SRF files together).
+	 * If so it's the index length and should always be 8 zeros.
+	 */
+	uint64_t ilen;
+	if (1 != fread(&ilen, 8, 1, srf->fp))
+	    return NULL;
+	if (ilen != 0)
+	    return NULL;
+	break;
+    }
 
     case SRFB_CONTAINER:
 	if (0 != srf_read_cont_hdr(srf, &srf->ch))
