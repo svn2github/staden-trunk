@@ -61,6 +61,7 @@
 #include <fcntl.h>
 #include <zlib.h>
 #include <math.h>
+#include <assert.h>
 
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
@@ -68,7 +69,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.7"
+#define I2S_VERSION "1.8"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -1303,7 +1304,7 @@ huffman_codeset_t *ztr2codes(Array za, int code_set, int nc, int type,
  */
 static void reorder_ztr(ztr_t *ztr) {
     int i, j, cnum;
-    ztr_chunk_t tmp;
+    ztr_chunk_t *tmp;
     int headers[] = {
 	/* header */
 	ZTR_TYPE_HUFF, ZTR_TYPE_BPOS, ZTR_TYPE_CLIP,
@@ -1313,17 +1314,29 @@ static void reorder_ztr(ztr_t *ztr) {
 	ZTR_TYPE_CNF1
     };
 
-    /* Reorder */
+    /* Take temporary copy */
+    tmp = (ztr_chunk_t *)malloc(sizeof(*tmp) * ztr->nchunks);
+    for (i = 0; i < ztr->nchunks; i++)
+	tmp[i] = ztr->chunk[i];
+
+    /* Copy back in our desired order */
     for (cnum = j = 0; j < sizeof(headers)/sizeof(*headers); j++) {
 	for (i = 0; i < ztr->nchunks; i++) {
-	    if (ztr->chunk[i].type == headers[j]) {
-		/* Swap */
-		tmp = ztr->chunk[cnum];
-		ztr->chunk[cnum++] = ztr->chunk[i];
-		ztr->chunk[i] = tmp;
+	    if (tmp[i].type == headers[j]) {
+		ztr->chunk[cnum++] = tmp[i];
+		tmp[i].type = 0;
 	    }
 	}
     }
+
+    /* And finally add any other chunk types we don't know about */
+    for (i = 0; i < ztr->nchunks; i++) {
+	if (tmp[i].type != 0) {
+	    ztr->chunk[cnum++] = tmp[i];
+	}
+    }
+    assert(cnum == ztr->nchunks);
+    free(tmp);
 }
 
 #ifdef USE_MODEL
@@ -2937,7 +2950,7 @@ int main(int argc, char **argv) {
 	    /* Exclusive with -c. */
 	    if (chastity > 0) {
 		fprintf(stdout, "WARNING: -C option is incompatible with -c. "
-			"Ignoring -c\n");
+			"Ignoring -c.\n");
 	    }
 	    
 	    if (i < argc) {
@@ -2972,6 +2985,11 @@ int main(int argc, char **argv) {
 	} else {
 	    usage(1);
 	}
+    }
+
+    if (include_failed_reads && fwd_fastq) {
+	fprintf(stderr, "WARNING: -C option is incompatible with -qf. "
+		"Ignoring -C.\n");
     }
 
     if ((fwd_fastq ||rev_fastq) && dir_qcal)
