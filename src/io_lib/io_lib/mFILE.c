@@ -187,12 +187,13 @@ mFILE *mfcreate_from(const char *path, const char *mode_str, FILE *fp) {
  */
 mFILE *mfreopen(const char *path, const char *mode_str, FILE *fp) {
     mFILE *mf;
-    int r = 0, w = 0, a = 0, b = 0, mode = 0;
+    int r = 0, w = 0, a = 0, b = 0, x = 0, mode = 0;
 
     /* Parse mode:
      * r = read file contents (if truncated => don't read)
      * w = write on close
      * a = position at end of buffer
+     * x = position at same location as the original fp
      */
     if (strchr(mode_str, 'r'))
 	r = 1, mode |= MF_READ;
@@ -202,6 +203,8 @@ mFILE *mfreopen(const char *path, const char *mode_str, FILE *fp) {
 	w = a = 1, mode |= MF_WRITE | MF_APPEND;
     if (strchr(mode_str, 'b'))
 	b = 1, mode |= MF_BINARY;
+    if (strchr(mode_str, 'x'))
+	x = 1;
     if (strchr(mode_str, '+')) {
         w = 1, mode |= MF_READ | MF_WRITE;
 	if (a)
@@ -222,6 +225,12 @@ mFILE *mfreopen(const char *path, const char *mode_str, FILE *fp) {
     }
     mf->fp = fp;
     mf->mode = mode;
+
+    if (x) {
+	if (ftello(fp) != -1) {
+	    mf->mode |= MF_MODEX;
+	}
+    }
     
     if (a) {
 	mf->flush_pos = mf->size;
@@ -471,7 +480,8 @@ int mfflush(mFILE *mf) {
     /* only flush when opened in write mode */
     if (mf->mode & MF_WRITE) {
 	if (mf->flush_pos < mf->size) {
-	    fseek(mf->fp, mf->flush_pos, SEEK_SET);
+	    if (!mf->mode & MF_MODEX)
+		fseek(mf->fp, mf->flush_pos, SEEK_SET);
 	    fwrite(mf->data + mf->flush_pos, 1,
 		   mf->size - mf->flush_pos, mf->fp);
 	    fflush(mf->fp);
