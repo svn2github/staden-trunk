@@ -69,7 +69,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.8"
+#define I2S_VERSION "1.9"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -389,7 +389,7 @@ static char *ztr_encode_float_4(ztr_t *z, char *type,  int npoints,
     bytes = (char *)xmalloc(npoints * sizeof(TRACE)*4 + 2);
     for (k = 0, j = 2; k < 4; k++) {
 	for (i = 0; i < npoints; i++) {
-	    t = (int)sig[i][k];
+	    t = (int)rint(sig[i][k]);
 	    bytes[j++] = (t >> 8) & 0xff;
 	    bytes[j++] = (t >> 0) & 0xff;
 	}
@@ -1562,10 +1562,10 @@ void rescale_trace(Read *r, int sig_num, int baseline) {
 	if (sig_num != SIG_SIG)
 	    continue;
 
-	r->traceA[i] = (int)(sig[i][0] + ((sig[i][0] > 0) ? 0.5 : -0.5));
-	r->traceC[i] = (int)(sig[i][1] + ((sig[i][1] > 0) ? 0.5 : -0.5));
-	r->traceG[i] = (int)(sig[i][2] + ((sig[i][2] > 0) ? 0.5 : -0.5));
-	r->traceT[i] = (int)(sig[i][3] + ((sig[i][3] > 0) ? 0.5 : -0.5));
+	r->traceA[i] = (int)rint(sig[i][0]);
+	r->traceC[i] = (int)rint(sig[i][1]);
+	r->traceG[i] = (int)rint(sig[i][2]);
+	r->traceT[i] = (int)rint(sig[i][3]);
 
 	if (mtv < sig[i][0]) mtv = sig[i][0];
 	if (mtv < sig[i][1]) mtv = sig[i][1];
