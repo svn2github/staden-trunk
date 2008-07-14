@@ -12,6 +12,16 @@
 
 #define CONS_BLOCK_SIZE 1024
 
+/*
+ * Empirically derived constants for various sequencing technologies, with
+ * caveats from local alignment artifacts and gap penalties:
+ *
+ * Solexa overcall:  1/43406
+ * Solexa undercall: 1/28135
+ * Solexa subst:     1/28.74 (96.5% accurate)
+ */
+
+
 static unsigned char lookup[256], lookup_done = 0;
 
 static double logodds2log[256];
@@ -130,11 +140,17 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     rangec_t *r;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
     int len = end - start + 1;
-    double slx_overcall_prob = 0.01;
-    double slx_undercall_prob = 0.01;
+    double slx_overcall_prob  = 1.0/43500, lover,  lomover;
+    double slx_undercall_prob = 1.0/28000, lunder, lomunder;
 
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
-    double (*pvec)[2]; /* pvec[0] = base, pvec[1] = gap */
+    double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
+
+    /* log overcall, log one minus overcall, etc */
+    lover    = log(slx_overcall_prob);
+    lomover  = log(1-slx_overcall_prob);
+    lunder   = log(slx_undercall_prob);
+    lomunder = log(1-slx_undercall_prob);
 
     /* Initialise */
     if (NULL == (cvec = (double (*)[4])calloc(len, 4 * sizeof(double))))
@@ -216,8 +232,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2r[q];
-		pvec[sp-start+j][0] += log(slx_overcall_prob); /* cache */
-		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		pvec[sp-start+j][0] += lover;
+		pvec[sp-start+j][1] += lomover;
 		break;
 
 	    case 1:
@@ -225,8 +241,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2l[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2r[q];
-		pvec[sp-start+j][0] += log(slx_overcall_prob);
-		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		pvec[sp-start+j][0] += lover;
+		pvec[sp-start+j][1] += lomover;
 		break;
 
 	    case 2:
@@ -234,8 +250,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2l[q];
 		cvec[sp-start+j][3] += lo2r[q];
-		pvec[sp-start+j][0] += log(slx_overcall_prob);
-		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		pvec[sp-start+j][0] += lover;
+		pvec[sp-start+j][1] += lomover;
 		break;
 
 	    case 3:
@@ -243,18 +259,18 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		cvec[sp-start+j][1] += lo2r[q];
 		cvec[sp-start+j][2] += lo2r[q];
 		cvec[sp-start+j][3] += lo2l[q];
-		pvec[sp-start+j][0] += log(slx_overcall_prob);
-		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		pvec[sp-start+j][0] += lover;
+		pvec[sp-start+j][1] += lomover;
 		break;
 
 	    case 4:
-		pvec[sp-start+j][0] += log(1-slx_undercall_prob);
-		pvec[sp-start+j][1] += log(slx_undercall_prob);
+		pvec[sp-start+j][0] += lomunder;
+		pvec[sp-start+j][1] += lunder;
 		break;
 
 	    default: /* 5 */
-		pvec[sp-start+j][0] += log(slx_overcall_prob);
-		pvec[sp-start+j][1] += log(1-slx_overcall_prob);
+		pvec[sp-start+j][0] += lover;
+		pvec[sp-start+j][1] += lomover;
 		break;
 	    }
 	}
