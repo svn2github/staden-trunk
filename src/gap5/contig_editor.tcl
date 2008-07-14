@@ -570,19 +570,53 @@ proc editor_insert_gap {w where} {
     }
 
     foreach {type rec pos} $where break;
-    if {$type != 17} {
-	# Consensus only currently
+    if {$type == 18} {
+	set seq [$io get_sequence $rec]
+	$seq insert_base $pos * 20
+
+	store_undo $w \
+	    "$seq delete_base $pos; $w cursor_left" \
+	    "$seq insert_base $pos * 20; $w cursor_right"
+    } else {
+	set contig [$io get_contig $rec]
+
+	$contig insert_base $pos
+
+	store_undo $w \
+	    "$contig delete_base $pos; $w cursor_left" \
+	    "$contig insert_base $pos; $w cursor_right"
+    }
+    $w cursor_right
+    
+    $w redraw
+}
+
+proc editor_move_seq {w where direction} {
+    upvar $w opt
+
+    set io [$w io]
+
+    if {$where == ""} {
 	bell
 	return
     }
-    set contig [$io get_contig $rec]
 
-    $contig insert_base $pos
-    $w cursor_right
-    
-    store_undo $w \
-	"$contig delete_base $pos; $w cursor_left" \
-	"$contig insert_base $pos; $w cursor_right"
+    foreach {type rec pos} $where break;
+    if {$type != 18} {
+	# sequences only
+	bell
+	return
+    }
+
+    set seq  [$io get_sequence $rec]
+    set cnum [$seq get_contig]
+    set pos  [$seq get_position]
+
+    puts "Moving $rec in $pos@$cnum by $direction"
+    set c [$io get_contig $cnum]
+    $c remove_sequence $rec
+    incr pos $direction
+    $c add_sequence $rec $pos
 
     $w redraw
 }
@@ -731,6 +765,9 @@ bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
+
+bind Editor <Control-Key-Left>  {editor_move_seq %W [%W get_number] -1}
+bind Editor <Control-Key-Right> {editor_move_seq %W [%W get_number]  1}
 
 # MouseWheel scrolling
 bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
