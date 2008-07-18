@@ -607,7 +607,7 @@ char *parse_4_int(char *str, int *val) {
  error:
     fprintf(stderr, "Error: unexpected character '%c' during parsing "
 	    "of string \"%s\" and value \"%d\"\n", c, str, *val);
-    return NULL;
+    exit(1);
 }
 
 /*
@@ -745,7 +745,7 @@ char *parse_4_float(char *str, float *val, int *bin)
  error:
     fprintf(stderr, "Error: unexpected character '%c' during parsing "
 	    "of string \"%s\", value \"%f\"\n", c, str, *val);
-    return NULL;
+    exit(1);
 }
 
 /*
@@ -1172,7 +1172,7 @@ void format_name(char *name, char *fmt, loc_t *l, int count) {
 		break;
 	    default:
 		fprintf(stderr, "Invalid %% rule '%%%c'\n", *fmt);
-		n = 0;
+		exit(1);
 	    }
 	    name += n;
 	    break;
@@ -2359,6 +2359,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 		if (-1 == get_tile_from_name(fastq_name, &fq_lane, &fq_tile)) {
 		    fprintf(stderr, "Couldn't parse name '%s'\n", fastq_name); 
+		    return -1;
 		}
 		if (l.lane == fq_lane && l.tile == fq_tile)
 		    next_fastq = 0;
@@ -2474,19 +2475,19 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (fp_qf || fp_qr) {
 	    if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
 		fprintf(stderr, "Failed to generate prb from fastq\n");
-		continue;
+		return -1;
 	    }
 	} else if (fp_qcal[0]) {
             pd->qcal_1 = NULL;
             pd->qcal_2 = NULL;
 	    if (!(pd->qcal_1 = qcal_to_prb1(qcal_seq[0], skip))) {
 		fprintf(stderr, "Failed to generate qcal_1 from qcal_seq\n");
-		continue;
+		return -1;
 	    }
             if (fp_qcal[1]){
                 if (!(pd->qcal_2 = qcal_to_prb1(qcal_seq[1], skip))) {
                     fprintf(stderr, "Failed to generate qcal_2 from qcal_seq\n");
-                    continue;
+		    return -1;
                 }
             }
         } else {
@@ -2496,7 +2497,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	if (!(prb = get_prb(fp_prb, skip))) {
 	    fprintf(stderr, "Couldn't load prb for %s/%d\n",
 		    seq_file, seq_num);
-	    continue;
+	    return -1;
 	}
 
 
@@ -2504,7 +2505,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
 		fprintf(stderr, "Couldn't load sig for %s/%d\n",
 			seq_file, seq_num);
-		continue;
+		return -1;
 	    }
 	}
 
@@ -2512,7 +2513,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    if (!(pd->signal[SIG_INT] = get_sig(fp_int, skip, int_bin))) {
 		fprintf(stderr, "Couldn't load int for %s/%d\n",
 			seq_file, seq_num);
-		continue;
+		return -1;
 	    }
 	}
 
@@ -2522,7 +2523,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 						     int_bin))) {
 		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
 			ipar_int_file, nreads);
-		continue;
+		return -1;
 	    }            
         }
 
@@ -2530,7 +2531,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
 		fprintf(stderr, "Couldn't load nse for %s/%d\n",
 			seq_file, seq_num);
-		continue;
+		return -1;
 	    }
 	}
 
@@ -2541,7 +2542,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 						     nse_bin))) {
 		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
 			ipar_nse_file, nreads);
-		continue;
+		return -1;
 	    }            
         }
 
@@ -3073,8 +3074,10 @@ int main(int argc, char **argv) {
                     ++end;
                 }
                 *use_bases = 0;
-                if ('<' != *end)
+                if ('<' != *end) {
                     fprintf(stderr, "Error while reading config.xml: %s: %d: %s\n", line, lane, buffer);
+		    return 1;
+		}
             }
         }
         zfclose(file);
@@ -3095,6 +3098,7 @@ int main(int argc, char **argv) {
 			 all_use_bases, include_failed_reads)) {
 	    c = '!';
 	    ret = 1;
+	    exit(1);
 	} else {
 	    nreads += nr;
 	    nfiltered += nf;
