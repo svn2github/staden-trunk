@@ -2868,17 +2868,40 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
  * Returns 0 on success
  *        -1 on failure (name/version undefined)
  */
-int get_base_caller(char *name, int nsize, char *version, int vsize) {
-    char cwd[8192], *cp;
+int get_base_caller(char *seq_path,
+		    char *name, int nsize,
+		    char *version, int vsize) {
+    char cwd[8192], tmp[8192], *cp;
     int i;
 
-    if (NULL == getcwd(cwd, 8192))
-	return -1;
+    /* Find the directory of the sequence files */
+    strcpy(tmp, seq_path);
+    if (cp = strrchr(tmp, '/')) {
+	char oldwd[8192];
+	if (NULL == getcwd(oldwd, 8192))
+	    return -1;
+	*cp = 0;
+	chdir(tmp);
 
+	if (NULL == getcwd(cwd, 8192)) {
+	    chdir(oldwd);
+	    return -1;
+	}
+
+	chdir(oldwd);
+    } else {
+	if (NULL == getcwd(cwd, 8192))
+	    return -1;
+    }
+
+
+    /* Basename it */
     if (NULL == (cp = strrchr(cwd, '/')))
 	return -1;
     cp++;
 
+
+    /* And extract base-caller name and version strings */
     i = 0;
     while (*cp && !isdigit(*cp) && i++ < nsize-1)
 	*name++ = *cp++;
@@ -3104,7 +3127,9 @@ int main(int argc, char **argv) {
     srf = srf_create(outfp);
 
     /* FIXME: how to get this for real */
-    if (-1 == get_base_caller(base_caller_name, 256, base_caller_vers, 256)) {
+    if (-1 == get_base_caller(argv[i],
+			      base_caller_name, 256,
+			      base_caller_vers, 256)) {
 	strcpy(base_caller_name, "Unknown");
 	strcpy(base_caller_vers, "Unknown");
     }
