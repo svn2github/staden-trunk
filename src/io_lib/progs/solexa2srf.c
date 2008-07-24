@@ -69,7 +69,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.9"
+#define I2S_VERSION "1.10"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -2138,9 +2138,12 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt,
 	   char *matrix_f_name, char *matrix_r_name,
+	   char *phasing_f_name, char *phasing_r_name,
 	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1],
 	   int include_failed_reads) {
-    char *cp, *matrix1 = NULL, *matrix2 = NULL, *params = NULL;
+    char *cp, *params = NULL;
+    char *matrix1  = NULL, *matrix2  = NULL;
+    char *phasing1 = NULL, *phasing2 = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
     char int_file[1024], nse_file[1024];
     char ipar_int_file[1024], ipar_nse_file[1024];
@@ -2466,6 +2469,21 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		last_lane = l.lane;
 		matrix2 = load(fn, NULL);
 	    }
+
+	    if (phasing1)
+		free(phasing1);
+	    sprintf(fn, phasing_f_name, l.lane);
+	    last_lane = l.lane;
+	    phasing1 = load(fn, NULL);
+
+	    if (phasing2)
+		free(phasing2);
+	    if (rev_cycle) {
+		sprintf(fn, phasing_r_name,
+			l.lane, rev_cycle);
+		last_lane = l.lane;
+		phasing2 = load(fn, NULL);
+	    }
 	}
 
 	/*
@@ -2635,6 +2653,20 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    }
 	}
 
+	if (phasing1) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_FWD", phasing1)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
+	if (phasing2) {
+	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_REV", phasing2)) {
+		fprintf(stderr, "Failed to add to TEXT chunk\n");
+		return -1;
+	    }
+	}
+
 	if (chastity > 0) {
 	    char chas[100];
 	    sprintf(chas, "%f", chastity);
@@ -2794,6 +2826,10 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	free(matrix1);
     if (matrix2)
 	free(matrix2);
+    if (phasing1)
+	free(phasing1);
+    if (phasing2)
+	free(phasing2);
     if (params)
 	free(params);
 
@@ -2822,6 +2858,38 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     }
 
     return err;
+}
+
+/*
+ * Attempts to obtain the Bustard version number using a very crude
+ * method of parsing the directory name. nsize/vsize indicate the size of the
+ * supplied name and version buffers.
+ *
+ * Returns 0 on success
+ *        -1 on failure (name/version undefined)
+ */
+int get_base_caller(char *name, int nsize, char *version, int vsize) {
+    char cwd[8192], *cp;
+    int i;
+
+    if (NULL == getcwd(cwd, 8192))
+	return -1;
+
+    if (NULL == (cp = strrchr(cwd, '/')))
+	return -1;
+    cp++;
+
+    i = 0;
+    while (*cp && !isdigit(*cp) && i++ < nsize-1)
+	*name++ = *cp++;
+    *name++ = 0;
+
+    i = 0;
+    while (*cp && (isdigit(*cp) || *cp == '.') && i++ < vsize-1)
+	*version++ = *cp++;
+    *version++ = 0;
+
+    return 0;
 }
 
 void usage(int code) {
@@ -2863,9 +2931,14 @@ void usage(int code) {
     fprintf(stderr, "             eg \"-N Run10_%%l_%%t_ -n %%3X:%%3Y\"\n");
     fprintf(stderr, "    -mf name Name of the 1st pair matrix file.  By default\n"
 	            "             ../Matrix/s_%%d_02_matrix.txt, where %%d is the lane.\n");
-    fprintf(stderr, "    -mr name Name of the 2ndt pair matrix file.  By default\n"
+    fprintf(stderr, "    -mr name Name of the 2nd pair matrix file.  By default\n"
 	            "             ../Matrix/s_%%d_%%02d_matrix.txt, where %%d is the lane\n"
-	            "             and %%02d is the first cycle in the 2nd pair.\n");
+	            "             and %%02d is the 2nd cycle in the 2nd pair.\n");
+    fprintf(stderr, "    -pf name Name of the 1st pair phasing file.  By default\n"
+	            "             Phasing/s_%%d_01_phasing.xml, where %%d is the lane.\n");
+    fprintf(stderr, "    -pr name Name of the 2nd pair phasing file.  By default\n"
+	            "             Phasing/s_%%d_%%02d_phasing.xml, where %%d is the lane\n"
+	            "             and %%02d is the 1st cycle in the 2nd pair.\n");
     fprintf(stderr, "\n");
 
     exit(code);
@@ -2893,6 +2966,10 @@ int main(int argc, char **argv) {
     char all_use_bases[9][MAX_CYCLES+1];
     char *matrix_f_name = "../Matrix/s_%d_02_matrix.txt";
     char *matrix_r_name = "../Matrix/s_%d_%02d_matrix.txt";
+    char *phasing_f_name = "Phasing/s_%d_01_phasing.xml";
+    char *phasing_r_name = "Phasing/s_%d_%02d_phasing.xml";
+    char base_caller_name[256];
+    char base_caller_vers[256];
 
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -2981,6 +3058,14 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		matrix_r_name = argv[++i];
 	    }
+	} else if (!strcmp(argv[i], "-pf")) {
+	    if (i < argc) {
+		phasing_f_name = argv[++i];
+	    }
+	} else if (!strcmp(argv[i], "-pr")) {
+	    if (i < argc) {
+		phasing_r_name = argv[++i];
+	    }
 	} else if (!strcmp(argv[i], "-h")) {
 	    usage(0);
 	} else {
@@ -3017,7 +3102,13 @@ int main(int argc, char **argv) {
 
     /* SRF file header */
     srf = srf_create(outfp);
-    ch = srf_construct_cont_hdr(NULL, "Bustard", "1.8.28");
+
+    /* FIXME: how to get this for real */
+    if (-1 == get_base_caller(base_caller_name, 256, base_caller_vers, 256)) {
+	strcpy(base_caller_name, "Unknown");
+	strcpy(base_caller_vers, "Unknown");
+    }
+    ch = srf_construct_cont_hdr(NULL, base_caller_name, base_caller_vers);
     srf_write_cont_hdr(srf, ch);
     srf_destroy_cont_hdr(ch);
 
@@ -3094,8 +3185,9 @@ int main(int argc, char **argv) {
 			 ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
-			 matrix_f_name, matrix_f_name, &nr, &nf,
-			 all_use_bases, include_failed_reads)) {
+			 matrix_f_name, matrix_f_name,
+			 phasing_f_name, phasing_r_name,
+			 &nr, &nf, all_use_bases, include_failed_reads)) {
 	    c = '!';
 	    ret = 1;
 	    exit(1);
