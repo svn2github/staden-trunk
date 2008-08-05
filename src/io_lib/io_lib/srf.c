@@ -1392,14 +1392,14 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
 	    mftruncate(srf->mf, mftell(srf->mf));
 	    mfseek(srf->mf, srf->mf_pos, SEEK_SET);
 
-	    if (srf->ztr)
-		ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
-	    else
-		ztr_tmp = NULL;
-
 	    if (tb.flags & filter_mask) {
 		break; /* Filtered, so skip it */
 	    } else {
+		if (srf->ztr)
+		    ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
+		else
+		    ztr_tmp = NULL;
+
 		return partial_decode_ztr(srf, srf->mf, ztr_tmp);
 	    }
 	}
