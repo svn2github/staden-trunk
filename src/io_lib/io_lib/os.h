@@ -30,6 +30,13 @@
 #define IOLIB_SFF
 #endif
 
+/* For when built as part of autoconf */
+#ifdef WORDS_BIGENDIAN
+#    define SP_BIG_ENDIAN
+#else
+#    define SP_LITTLE_ENDIAN
+#endif
+
 #include <limits.h>
 #include <inttypes.h>
 
@@ -99,7 +106,6 @@ extern "C" {
 #  define IMAGEDISPLAY 
 #  define NOSTRDUP 
 #endif 
-
 
 /*
  * Microsoft Visual C++
