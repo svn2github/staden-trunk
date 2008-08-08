@@ -80,6 +80,8 @@
 /* #define SINGLE_HUFF */
 /* #define DEBUG_OUT */
 
+#define MAX_READS_PER_DBH 10000
+
 /* #define NO_ENTROPY_ENCODING */
 
 /* A model saves approx 2% data size, vs 1.3% saving for delta */
@@ -2174,7 +2176,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     char last_prefix[1024] = {'\0'};
     Array za = NULL, la = NULL, ra = NULL, fa = NULL;
     loc_t l;
-    int nreads = 0, filtered = 0;
+    int nreads = 0, filtered = 0, nreads_this_block;
     int err = -1;
     huffman_codeset_t *seq_cds = NULL;
     huffman_codeset_t *prb_cds = NULL;
@@ -2192,13 +2194,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
     float **ipar_int_data = NULL;
     float **ipar_nse_data = NULL;
     int numberOfCycles; /* only for ipar */
-    int flags;
+    int flags, finished;
 
     sprintf(full_fmt, "%s%s", prefix_fmt, name_fmt);
-
-    memset(sig_bin_a, 0, 65536*2 * sizeof(*sig_bin_a));
-    memset(int_bin_a, 0, 65536*2 * sizeof(*int_bin_a));
-    memset(nse_bin_a, 0, 65536*2 * sizeof(*nse_bin_a));
 
     /* Handle full pathnames by cd to the directory first */
     if (slash = strrchr(seq_file, '/')) {
@@ -2283,8 +2281,9 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
         int i;
         char qcal_file[1024];
         /* 
-         * If rev_cycle == 0, then it is a single read and there is only one qcal file.
-         * Else, it is a paired ends analysis and there are two qcal files
+         * If rev_cycle == 0, then it is a single read and there is
+         * only one qcal file.  Else, it is a paired ends analysis and
+         * there are two qcal files
          */
         if (0 == rev_cycle)
         {
@@ -2303,576 +2302,620 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
         }
     }
 
-    za = ArrayCreate(sizeof(ztr_t *), 0);
-    la = ArrayCreate(sizeof(loc_t), 0);
-    ra = ArrayCreate(sizeof(Read *), 0);
-    fa = ArrayCreate(sizeof(unsigned char), 0);
-
-    /* Fetch sequence */
-    /*
-     * Arguable we could claim that the first base is like a vector or adapter
-     * sequence and should be included in the trace, but marked as clipped.
-     * For now we simply omit this, but it's something to consider for the
-     * next version.
-     */
+    params = load("../.params", NULL);
 
 #ifdef USE_MODEL
     init_model();
 #endif
 
-    params = load("../.params", NULL);
+    do {
+	memset(sig_bin_a, 0, 65536*2 * sizeof(*sig_bin_a));
+	memset(int_bin_a, 0, 65536*2 * sizeof(*int_bin_a));
+	memset(nse_bin_a, 0, 65536*2 * sizeof(*nse_bin_a));
 
-    /* Cache all reads in memory */
-    while ((seq = get_seq(fp_seq, skip, &l.lane, &l.tile, &l.x, &l.y))) {
-	read_pd *pd = (read_pd *)calloc(1, sizeof(*pd));
-	int   (*prb)[4];
-	Read *r;
-	float c;
-	char fastq_seq[MAX_CYCLES+1];
-	char fastq_qual[MAX_CYCLES+1];
-        char qcal_seq[2][MAX_CYCLES+1];
-	int eof = 0;
+	matrix1 = matrix2 = NULL;
+	phasing1 = phasing2 = NULL;
+	params = NULL;
+	*last_prefix = '\0';
+	last_lane = 0;
+	seq_cds = prb_cds = prc_cds = sig_cds = int_cds = nse_cds = NULL;
 
+	finished = 1;
+	nreads_this_block = 0;
+
+	za = ArrayCreate(sizeof(ztr_t *), 0);
+	la = ArrayCreate(sizeof(loc_t), 0);
+	ra = ArrayCreate(sizeof(Read *), 0);
+	fa = ArrayCreate(sizeof(unsigned char), 0);
+
+	/* Fetch sequence */
 	/*
-	 * If we're storing calibrated GERALD quality values instead of
-	 * Bustard base-call output then we need to read the fwd and rev
-	 * fastq files.
-	 *
-	 * There's probably a different number of entries in these though
-	 * than there is in the *seq.txt (etc) files, so we need to skip
-	 * entries. Logically speaking we'd be looping over the fastq
-	 * data and then searching for the next sequence to match in
-	 * the *seq.txt files, but the history of this code is such
-	 * that the loop is the other way around. Hence for the odd
-	 * use of a next_fastq variable.
+	 * Arguable we could claim that the first base is like a
+	 * vector or adapter sequence and should be included in the
+	 * trace, but marked as clipped.  For now we simply omit this,
+	 * but it's something to consider for the next version.
 	 */
-	if (fp_qf || fp_qr) {
-	    char name[1024];
-	    off_t last_name_f = 0, last_name_r = 0;
 
-	    format_name(name, full_fmt, &l, seq_num);
+	/* Cache all reads in memory */
+	while ((seq = get_seq(fp_seq, skip, &l.lane, &l.tile, &l.x, &l.y))) {
+	    read_pd *pd = (read_pd *)calloc(1, sizeof(*pd));
+	    int   (*prb)[4];
+	    Read *r;
+	    float c;
+	    char fastq_seq[MAX_CYCLES+1];
+	    char fastq_qual[MAX_CYCLES+1];
+	    char qcal_seq[2][MAX_CYCLES+1];
+	    int eof = 0;
 
-	    while (next_fastq) {
-		int c = 0;
-		int fq_lane, fq_tile;
+	    /*
+	     * If we're storing calibrated GERALD quality values instead of
+	     * Bustard base-call output then we need to read the fwd and rev
+	     * fastq files.
+	     *
+	     * There's probably a different number of entries in these though
+	     * than there is in the *seq.txt (etc) files, so we need to skip
+	     * entries. Logically speaking we'd be looping over the fastq
+	     * data and then searching for the next sequence to match in
+	     * the *seq.txt files, but the history of this code is such
+	     * that the loop is the other way around. Hence for the odd
+	     * use of a next_fastq variable.
+	     */
+	    if (fp_qf || fp_qr) {
+		char name[1024];
+		off_t last_name_f = 0, last_name_r = 0;
 
-		if (fp_qf) last_name_f = zftello(fp_qf);
-		if (fp_qr) last_name_r = zftello(fp_qr);
+		format_name(name, full_fmt, &l, seq_num);
 
-		if (fp_qf) {
-		    if (-1 == get_fastq_entry(fp_qf, fastq_name,
-					      fastq_seq,
-					      fastq_qual)) {
-			eof=1;
+		while (next_fastq) {
+		    int c = 0;
+		    int fq_lane, fq_tile;
+
+		    if (fp_qf) last_name_f = zftello(fp_qf);
+		    if (fp_qr) last_name_r = zftello(fp_qr);
+
+		    if (fp_qf) {
+			if (-1 == get_fastq_entry(fp_qf, fastq_name,
+						  fastq_seq,
+						  fastq_qual)) {
+			    eof=1;
+			    break;
+			}
+			c = strlen(fastq_seq);
+		    }
+		    if (fp_qr) {
+			if (-1 == get_fastq_entry(fp_qr, fastq_name,
+						  &fastq_seq[c],
+						  &fastq_qual[c])) {
+			    eof=1;
+			    break;
+			}
+		    }
+
+		    if (-1 == get_tile_from_name(fastq_name, &fq_lane,
+						 &fq_tile)) {
+			fprintf(stderr, "Couldn't parse name '%s'\n",
+				fastq_name); 
+			return -1;
+		    }
+		    if (l.lane == fq_lane && l.tile == fq_tile)
+			next_fastq = 0;
+
+		    if (fq_tile > l.tile) {
+			puts("End of tile");
+			eof = 1;
+			if (fp_qf) zfseeko(fp_qf, last_name_f, SEEK_SET);
+			if (fp_qr) zfseeko(fp_qr, last_name_r, SEEK_SET);
 			break;
 		    }
-		    c = strlen(fastq_seq);
-		}
-		if (fp_qr) {
-		    if (-1 == get_fastq_entry(fp_qr, fastq_name,
-					      &fastq_seq[c],
-					      &fastq_qual[c])) {
-			eof=1;
-			break;
-		    }
 		}
 
-		if (-1 == get_tile_from_name(fastq_name, &fq_lane, &fq_tile)) {
-		    fprintf(stderr, "Couldn't parse name '%s'\n", fastq_name); 
-		    return -1;
-		}
-		if (l.lane == fq_lane && l.tile == fq_tile)
+		if (strcmp(fastq_name, name)) {
+		    char dummy[10240];
 		    next_fastq = 0;
+		
+		    /* Skip our other files to keep all in sync */
+		    if (fp_qhg) zfgets(dummy, 10240, fp_qhg);
+		    if (fp_prb) zfgets(dummy, 10240, fp_prb);
+		    if (fp_sig) zfgets(dummy, 10240, fp_sig);
+		    if (fp_int) zfgets(dummy, 10240, fp_int);
+		    if (fp_nse) zfgets(dummy, 10240, fp_nse);
 
-		if (fq_tile != l.tile) {
-		    puts("End of tile");
-		    eof = 1;
-		    if (fp_qf) zfseeko(fp_qf, last_name_f, SEEK_SET);
-		    if (fp_qr) zfseeko(fp_qr, last_name_r, SEEK_SET);
-		    break;
+		    filtered++;
+		    if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+		    if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+		    if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		    if (pd->prc) free(&pd->prc[-skip]);
+		    if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+		    if (pd->qcal_2) free(&pd->qcal_2[-skip]);
+		    free(pd);
+		    continue;
+
+		} else {
+
+		    next_fastq = 1;
 		}
 	    }
 
-	    if (strcmp(fastq_name, name)) {
-		char dummy[10240];
-		next_fastq = 0;
-		
-		/* Skip our other files to keep all in sync */
-		if (fp_qhg) zfgets(dummy, 10240, fp_qhg);
-		if (fp_prb) zfgets(dummy, 10240, fp_prb);
-		if (fp_sig) zfgets(dummy, 10240, fp_sig);
-		if (fp_int) zfgets(dummy, 10240, fp_int);
-		if (fp_nse) zfgets(dummy, 10240, fp_nse);
+	    if (eof)
+		break;
 
-		filtered++;
-		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
-		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
-		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
-		if (pd->prc) free(&pd->prc[-skip]);
-		if (pd->qcal_1) free(&pd->qcal_1[-skip]);
-		if (pd->qcal_2) free(&pd->qcal_2[-skip]);
-		free(pd);
-		continue;
+	    flags = 0;
+	    if (fp_qhg) {
+		get_chastity(fp_qhg, NULL, &c, NULL, NULL);
+		if (c < chastity && !include_failed_reads) {
+		    char dummy[10240];
 
-	    } else {
+		    /*
+		     * To keep in sync we still need to read from the
+		     * other files, but we don't need to parse
+		     * them. So we duplicate the work a bit here for
+		     * efficiencies sake.
+		     */
+		    if (fp_prb) zfgets(dummy, 10240, fp_prb);
+		    if (fp_sig) zfgets(dummy, 10240, fp_sig);
+		    if (fp_int) zfgets(dummy, 10240, fp_int);
+		    if (fp_nse) zfgets(dummy, 10240, fp_nse);
+		    if (fp_qcal[0]) zfgets(dummy, 10240, fp_qcal[0]);
+		    if (fp_qcal[1]) zfgets(dummy, 10240, fp_qcal[1]);
+		    filtered++;
+		    if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+		    if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+		    if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+		    if (pd->prc) free(&pd->prc[-skip]);
+		    if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+		    if (pd->qcal_2) free(&pd->qcal_2[-skip]);
+		    free(pd);
 
-		next_fastq = 1;
-	    }
-	}
+		    continue;
+		}
 
-	if (eof)
-	    break;
-
-	flags = 0;
-	if (fp_qhg) {
-	    get_chastity(fp_qhg, NULL, &c, NULL, NULL);
-	    if (c < chastity && !include_failed_reads) {
-		char dummy[10240];
-
-		/*
-		 * To keep in sync we still need to read from the other files,
-		 * but we don't need to parse them. So we duplicate the work
-		 * a bit here for efficiencies sake.
-		 */
-		if (fp_prb) zfgets(dummy, 10240, fp_prb);
-		if (fp_sig) zfgets(dummy, 10240, fp_sig);
-		if (fp_int) zfgets(dummy, 10240, fp_int);
-		if (fp_nse) zfgets(dummy, 10240, fp_nse);
-                if (fp_qcal[0]) zfgets(dummy, 10240, fp_qcal[0]);
-                if (fp_qcal[1]) zfgets(dummy, 10240, fp_qcal[1]);
-		filtered++;
-		if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
-		if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
-		if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
-		if (pd->prc) free(&pd->prc[-skip]);
-		if (pd->qcal_1) free(&pd->qcal_1[-skip]);
-		if (pd->qcal_2) free(&pd->qcal_2[-skip]);
-		free(pd);
-
-		continue;
+		if (c < chastity) {
+		    /* But we still want to keep them */
+		    flags = SRF_READ_FLAG_BAD_MASK;
+		}
 	    }
 
-	    if (c < chastity) {
-		/* But we still want to keep them */
-		flags = SRF_READ_FLAG_BAD_MASK;
+	    if (fp_qcal[0]) {
+		char *use_bases = (all_use_bases[l.lane][0]
+				   ? all_use_bases[l.lane] : all_use_bases[0]);
+		qcal_seq[0][0] = 0;
+		qcal_seq[1][0] = 0;
+		get_qcal_seq1(fp_qcal[0], skip, qcal_seq[0]);
+		if (fp_qcal[1]) {
+		    get_qcal_seq1(fp_qcal[1], skip, qcal_seq[1]);
+		}
 	    }
-	}
 
-        if (fp_qcal[0]) {
-            char *use_bases = (all_use_bases[l.lane][0] ? all_use_bases[l.lane] : all_use_bases[0]);
-            qcal_seq[0][0] = 0;
-            qcal_seq[1][0] = 0;
-            get_qcal_seq1(fp_qcal[0], skip, qcal_seq[0]);
-            if (fp_qcal[1]) {
-                get_qcal_seq1(fp_qcal[1], skip, qcal_seq[1]);
-            }
-        }
+	    /* Load the approprate matrix file whenever changing lanes */
+	    if (l.lane != last_lane) {
+		char fn[100];
 
-	/* Load the approprate matrix file whenever changing lanes */
-	if (l.lane != last_lane) {
-	    char fn[100];
-
-	    if (matrix1)
-		free(matrix1);
-	    sprintf(fn, matrix_f_name, l.lane);
-	    last_lane = l.lane;
-	    matrix1 = load(fn, NULL);
-
-	    if (matrix2)
-		free(matrix2);
-	    if (rev_cycle) {
-		sprintf(fn, matrix_r_name,
-			l.lane, rev_cycle+1);
+		if (matrix1)
+		    free(matrix1);
+		sprintf(fn, matrix_f_name, l.lane);
 		last_lane = l.lane;
-		matrix2 = load(fn, NULL);
-	    }
+		matrix1 = load(fn, NULL);
 
-	    if (phasing1)
-		free(phasing1);
-	    sprintf(fn, phasing_f_name, l.lane);
-	    last_lane = l.lane;
-	    phasing1 = load(fn, NULL);
+		if (matrix2)
+		    free(matrix2);
+		if (rev_cycle) {
+		    sprintf(fn, matrix_r_name,
+			    l.lane, rev_cycle+1);
+		    last_lane = l.lane;
+		    matrix2 = load(fn, NULL);
+		}
 
-	    if (phasing2)
-		free(phasing2);
-	    if (rev_cycle) {
-		sprintf(fn, phasing_r_name,
-			l.lane, rev_cycle);
+		if (phasing1)
+		    free(phasing1);
+		sprintf(fn, phasing_f_name, l.lane);
 		last_lane = l.lane;
-		phasing2 = load(fn, NULL);
-	    }
-	}
+		phasing1 = load(fn, NULL);
 
-	/*
-	 * We *either* read calibrated quality from the fastq file *xor*
-	 * from the qcal files *xor* from the prb.txt files.
-	 */
-	if (fp_qf || fp_qr) {
-	    if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
-		fprintf(stderr, "Failed to generate prb from fastq\n");
-		return -1;
+		if (phasing2)
+		    free(phasing2);
+		if (rev_cycle) {
+		    sprintf(fn, phasing_r_name,
+			    l.lane, rev_cycle);
+		    last_lane = l.lane;
+		    phasing2 = load(fn, NULL);
+		}
 	    }
-	} else if (fp_qcal[0]) {
-            pd->qcal_1 = NULL;
-            pd->qcal_2 = NULL;
-	    if (!(pd->qcal_1 = qcal_to_prb1(qcal_seq[0], skip))) {
-		fprintf(stderr, "Failed to generate qcal_1 from qcal_seq\n");
-		return -1;
-	    }
-            if (fp_qcal[1]){
-                if (!(pd->qcal_2 = qcal_to_prb1(qcal_seq[1], skip))) {
-                    fprintf(stderr, "Failed to generate qcal_2 from qcal_seq\n");
+
+	    /*
+	     * We *either* read calibrated quality from the fastq file *xor*
+	     * from the qcal files *xor* from the prb.txt files.
+	     */
+	    if (fp_qf || fp_qr) {
+		if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
+		    fprintf(stderr, "Failed to generate prb from fastq\n");
 		    return -1;
-                }
-            }
-        } else {
-	    pd->prc = NULL;
-	}
+		}
+	    } else if (fp_qcal[0]) {
+		pd->qcal_1 = NULL;
+		pd->qcal_2 = NULL;
+		if (!(pd->qcal_1 = qcal_to_prb1(qcal_seq[0], skip))) {
+		    fprintf(stderr, "Failed to generate qcal_1 from "
+			    "qcal_seq\n");
+		    return -1;
+		}
+		if (fp_qcal[1]){
+		    if (!(pd->qcal_2 = qcal_to_prb1(qcal_seq[1], skip))) {
+			fprintf(stderr, "Failed to generate qcal_2 from "
+				"qcal_seq\n");
+			return -1;
+		    }
+		}
+	    } else {
+		pd->prc = NULL;
+	    }
 
-	if (!(prb = get_prb(fp_prb, skip))) {
-	    fprintf(stderr, "Couldn't load prb for %s/%d\n",
-		    seq_file, seq_num);
-	    return -1;
-	}
-
-
-	if (fp_sig) {
-	    if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
-		fprintf(stderr, "Couldn't load sig for %s/%d\n",
+	    if (!(prb = get_prb(fp_prb, skip))) {
+		fprintf(stderr, "Couldn't load prb for %s/%d\n",
 			seq_file, seq_num);
 		return -1;
 	    }
-	}
 
-	if (fp_int) {
-	    if (!(pd->signal[SIG_INT] = get_sig(fp_int, skip, int_bin))) {
-		fprintf(stderr, "Couldn't load int for %s/%d\n",
-			seq_file, seq_num);
-		return -1;
+
+	    if (fp_sig) {
+		if (!(pd->signal[SIG_SIG] = get_sig(fp_sig, skip, sig_bin))) {
+		    fprintf(stderr, "Couldn't load sig for %s/%d\n",
+			    seq_file, seq_num);
+		    return -1;
+		}
+	    }
+
+	    if (fp_int) {
+		if (!(pd->signal[SIG_INT] = get_sig(fp_int, skip, int_bin))) {
+		    fprintf(stderr, "Couldn't load int for %s/%d\n",
+			    seq_file, seq_num);
+		    return -1;
+		}
+	    }
+
+	    if (ipar_int_data) {
+		if (!(pd->signal[SIG_INT] = get_ipar_sig(ipar_int_data, skip,
+							 nreads,
+							 numberOfCycles,
+							 int_bin))) {
+		    fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
+			    ipar_int_file, nreads);
+		    return -1;
+		}            
+	    }
+
+	    if (fp_nse) {
+		if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
+		    fprintf(stderr, "Couldn't load nse for %s/%d\n",
+			    seq_file, seq_num);
+		    return -1;
+		}
+	    }
+
+
+	    if (ipar_nse_data) {
+		if (!(pd->signal[SIG_NSE] = get_ipar_sig(ipar_nse_data, skip,
+							 nreads,
+							 numberOfCycles,
+							 nse_bin))) {
+		    fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
+			    ipar_nse_file, nreads);
+		    return -1;
+		}            
+	    }
+
+	    /* Create the ZTR file and output, if needed, the common header */
+	    if (NULL == (r = create_read(seq, prb, pd)))
+		continue;
+
+	    ARR(Read *, ra, nreads_this_block) = r;
+	    ARR(loc_t, la, nreads_this_block) = l;
+	    ARR(unsigned char, fa, nreads_this_block) = flags;
+
+	    nreads++;
+
+	    if (++nreads_this_block == MAX_READS_PER_DBH) {
+		finished = 0;
+		break;
 	    }
 	}
 
-        if (ipar_int_data) {
-	    if (!(pd->signal[SIG_INT] = get_ipar_sig(ipar_int_data, skip,
-						     nreads, numberOfCycles,
-						     int_bin))) {
-		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
-			ipar_int_file, nreads);
-		return -1;
-	    }            
-        }
+	if (nf)
+	    *nf = filtered;
+	if (nr)
+	    *nr = nreads;
 
-	if (fp_nse) {
-	    if (!(pd->signal[SIG_NSE] = get_sig(fp_nse, skip, nse_bin))) {
-		fprintf(stderr, "Couldn't load nse for %s/%d\n",
-			seq_file, seq_num);
-		return -1;
-	    }
+	if (!nreads_this_block) {
+	    finished = 1;
+	    goto skip;
 	}
-
-
-        if (ipar_nse_data) {
-	    if (!(pd->signal[SIG_NSE] = get_ipar_sig(ipar_nse_data, skip,
-						     nreads, numberOfCycles,
-						     nse_bin))) {
-		fprintf(stderr, "Couldn't allocate memory for %s/%d\n",
-			ipar_nse_file, nreads);
-		return -1;
-	    }            
-        }
-
-	/* Create the ZTR file and output, if needed, the common header */
-	if (NULL == (r = create_read(seq, prb, pd)))
-	    continue;
-
-	ARR(Read *, ra, nreads) = r;
-	ARR(loc_t, la, nreads) = l;
-	ARR(unsigned char, fa, nreads) = flags;
-
-	nreads++;
-    }
-
-    if (nf)
-	*nf = filtered;
-    if (nr)
-	*nr = nreads;
-
-    if (!nreads)
-	goto skip;
-
-    if (fp_sig)
-	sig_baseline = compute_baseline(quiet, sig_bin);
-    if (fp_int || ipar_int_data)
-	int_baseline = compute_baseline(quiet, int_bin);
-    if (fp_nse || ipar_nse_data)
-	nse_baseline = compute_baseline(quiet, nse_bin);
-    
-    /*
-     * Now we know the min_sig and max_sig we can turn our float arrays in
-     * the Read struct into integers and convert to ZTR.
-     */
-    for (seq_num = 0; seq_num < nreads; seq_num++) {
-	ztr_t *z;
-	ztr_chunk_t *tc;
-	Read *r = arr(Read *, ra, seq_num);
-	read_pd *pd = (read_pd *)r->private_data;
 
 	if (fp_sig)
-	    rescale_trace(r, SIG_SIG, sig_baseline);
+	    sig_baseline = compute_baseline(quiet, sig_bin);
 	if (fp_int || ipar_int_data)
-	    rescale_trace(r, SIG_INT, int_baseline);
+	    int_baseline = compute_baseline(quiet, int_bin);
 	if (fp_nse || ipar_nse_data)
-	    rescale_trace(r, SIG_NSE, nse_baseline);
+	    nse_baseline = compute_baseline(quiet, nse_bin);
+    
+	/*
+	 * Now we know the min_sig and max_sig we can turn our float arrays in
+	 * the Read struct into integers and convert to ZTR.
+	 */
+	for (seq_num = 0; seq_num < nreads_this_block; seq_num++) {
+	    ztr_t *z;
+	    ztr_chunk_t *tc;
+	    Read *r = arr(Read *, ra, seq_num);
+	    read_pd *pd = (read_pd *)r->private_data;
 
-	/* Standard conversion - seq, qual, processed trace */
-	z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
-	set_cnf4_metadata(z, "LO");
+	    if (fp_sig)
+		rescale_trace(r, SIG_SIG, sig_baseline);
+	    if (fp_int || ipar_int_data)
+		rescale_trace(r, SIG_INT, int_baseline);
+	    if (fp_nse || ipar_nse_data)
+		rescale_trace(r, SIG_NSE, nse_baseline);
 
-	/* REGN chunk if needed */
-	if (rev_cycle)
-	    add_readpair_region(z, rev_cycle);
+	    /* Standard conversion - seq, qual, processed trace */
+	    z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
+	    set_cnf4_metadata(z, "LO");
 
-	/* Plus raw traces if desired */
-	if (pd->signal[SIG_INT])
-	    add_smp4_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
-			   pd->baseline[SIG_INT]);
-	if (pd->signal[SIG_NSE])
-	    add_smp4_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
-			   pd->baseline[SIG_NSE]);
+	    /* REGN chunk if needed */
+	    if (rev_cycle)
+		add_readpair_region(z, rev_cycle);
 
-	if (pd->prc)
-	    add_cnf1_chunk(z, r->NBases, pd->prc, "PH");
+	    /* Plus raw traces if desired */
+	    if (pd->signal[SIG_INT])
+		add_smp4_chunk(z, "SLXI", r->NBases, pd->signal[SIG_INT],
+			       pd->baseline[SIG_INT]);
+	    if (pd->signal[SIG_NSE])
+		add_smp4_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
+			       pd->baseline[SIG_NSE]);
 
-	if (pd->qcal_1 || pd->qcal_2)
-	    add_qcal_chunk(z, pd->qcal_1, pd->qcal_2);
+	    if (pd->prc)
+		add_cnf1_chunk(z, r->NBases, pd->prc, "PH");
 
-	/* Calibrated confidence values too */
+	    if (pd->qcal_1 || pd->qcal_2)
+		add_qcal_chunk(z, pd->qcal_1, pd->qcal_2);
+
+	    /* Calibrated confidence values too */
 
 
-	/* Miscellaneous text fields - only stored once per header */
-	tc = ztr_add_text(z, NULL, "PROGRAM_ID", "illumina2srf v" I2S_VERSION);
-	if (NULL == tc) {
-	    fprintf(stderr, "Failed to add to TEXT chunk\n");
-	    return -1;
-	}
-
-	if (matrix1) {
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_FWD", matrix1)) {
+	    /* Miscellaneous text fields - only stored once per header */
+	    tc = ztr_add_text(z, NULL, "PROGRAM_ID",
+			      "illumina2srf v" I2S_VERSION);
+	    if (NULL == tc) {
 		fprintf(stderr, "Failed to add to TEXT chunk\n");
 		return -1;
 	    }
-	}
 
-	if (matrix2) {
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_REV", matrix2)) {
-		fprintf(stderr, "Failed to add to TEXT chunk\n");
-		return -1;
+	    if (matrix1) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_FWD",
+					 matrix1)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
 	    }
-	}
 
-	if (phasing1) {
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_FWD", phasing1)) {
-		fprintf(stderr, "Failed to add to TEXT chunk\n");
-		return -1;
+	    if (matrix2) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_MATRIX_REV",
+					 matrix2)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
 	    }
-	}
 
-	if (phasing2) {
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_REV", phasing2)) {
-		fprintf(stderr, "Failed to add to TEXT chunk\n");
-		return -1;
+	    if (phasing1) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_FWD",
+					 phasing1)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
 	    }
-	}
 
-	if (chastity > 0) {
-	    char chas[100];
-	    sprintf(chas, "%f", chastity);
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_CHASTITY", chas)) {
-		fprintf(stderr, "Failed to add to TEXT chunk\n");
-		return -1;
+	    if (phasing2) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PHASING_REV",
+					 phasing2)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
 	    }
-	}
 
-	if (params) {
-	    if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS", params)) {
-		fprintf(stderr, "Failed to add to TEXT chunk\n");
-		return -1;
+	    if (chastity > 0) {
+		char chas[100];
+		sprintf(chas, "%f", chastity);
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_CHASTITY",
+					 chas)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
 	    }
+
+	    if (params) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS", params)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
+	    }
+
+	    srf_compress_ztr(arr(ztr_t *, za, seq_num), 0);
+
+	    if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
+	    if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
+	    if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
+	    if (pd->prc) free(&pd->prc[-skip]);
+	    if (pd->qcal_1) free(&pd->qcal_1[-skip]);
+	    if (pd->qcal_2) free(&pd->qcal_2[-skip]);
+	    read_deallocate(r);
 	}
-
-	srf_compress_ztr(arr(ztr_t *, za, seq_num), 0);
-
-	if (pd->signal[SIG_SIG]) free(&pd->signal[SIG_SIG][-skip]);
-	if (pd->signal[SIG_INT]) free(&pd->signal[SIG_INT][-skip]);
-	if (pd->signal[SIG_NSE]) free(&pd->signal[SIG_NSE][-skip]);
-	if (pd->prc) free(&pd->prc[-skip]);
-	if (pd->qcal_1) free(&pd->qcal_1[-skip]);
-	if (pd->qcal_2) free(&pd->qcal_2[-skip]);
-	read_deallocate(r);
-    }
 
 #ifdef USE_MODEL
-    average_model();
-    subtract_models(za);
+	average_model();
+	subtract_models(za);
 #endif
-
-    /*
-     * Compute averaged frequency metrics for HUFF encoding
-     * For the 16-bit trace data we break this down into 1st and 2nd byte of
-     * each value => trac1 and trac2 code sets.
-     */
-#ifndef NO_ENTROPY_ENCODING
-    seq_cds = ztr2codes(za, BASE_CODE, 1, ZTR_TYPE_BASE, NULL,   NULL);
-    prc_cds = ztr2codes(za, CNF1_CODE, 1, ZTR_TYPE_CNF1, NULL,   NULL);
-
-#ifdef SINGLE_HUFF
-    prb_cds = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4, NULL,   NULL);
-    if (fp_sig)
-	sig_cds = ztr2codes(za, SIG4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", NULL);
-    if (fp_int || ipar_int_data)
-	int_cds = ztr2codes(za, INT4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXI");
-    if (fp_nse || ipar_nse_data)
-	nse_cds = ztr2codes(za, NSE4_CODE, 1, ZTR_TYPE_SMP4, "TYPE", "SLXN");
-#else
-    prb_cds = ztr2codes(za, CNF4_CODE, 4,         ZTR_TYPE_CNF4, NULL, NULL);
-    if (fp_sig)
-	sig_cds = ztr2codes(za, SIG4_CODE, N_TR_CODE,
-			    ZTR_TYPE_SMP4, "TYPE", NULL);
-    if (fp_int || ipar_int_data)
-	int_cds = ztr2codes(za, INT4_CODE, N_TR_CODE,
-			    ZTR_TYPE_SMP4, "TYPE", "SLXI");
-    if (fp_nse || ipar_nse_data)
-	nse_cds = ztr2codes(za, NSE4_CODE, 2,
-			    ZTR_TYPE_SMP4, "TYPE", "SLXN");
-#endif
-#endif
-
-    /* Output traces */
-    for (seq_num = 0; seq_num < nreads; seq_num++) {
-	char name[1024], prefix[1024];
-	int footer;
-	mFILE *mf;
-	srf_trace_body_t tb;
-	ztr_t *z = arr(ztr_t *, za, seq_num);
-	l = arr(loc_t, la, seq_num);
-	flags = ARR(unsigned char, fa, seq_num);
 
 	/*
-	 * FIXME: copy chunks from one ztr file to the next, rather than
-	 * re-encoding the HUFF chunks over and over again
+	 * Compute averaged frequency metrics for HUFF encoding For
+	 * the 16-bit trace data we break this down into 1st and 2nd
+	 * byte of each value => trac1 and trac2 code sets.
 	 */
-
 #ifndef NO_ENTROPY_ENCODING
-	ztr_add_hcode(z, seq_cds, 0);
-	if (prb_cds)
-	    ztr_add_hcode(z, prb_cds, 0);
-	if (prc_cds)
-	    ztr_add_hcode(z, prc_cds, 0);
-	if (sig_cds)
-	    ztr_add_hcode(z, sig_cds, 0);
-	if (int_cds)
-	    ztr_add_hcode(z, int_cds, 0);
-	if (nse_cds)
-	    ztr_add_hcode(z, nse_cds, 0);
+	seq_cds = ztr2codes(za, BASE_CODE, 1, ZTR_TYPE_BASE, NULL,   NULL);
+	prc_cds = ztr2codes(za, CNF1_CODE, 1, ZTR_TYPE_CNF1, NULL,   NULL);
+
+#ifdef SINGLE_HUFF
+	prb_cds = ztr2codes(za, CNF4_CODE, 1, ZTR_TYPE_CNF4, NULL,   NULL);
+	if (fp_sig)
+	    sig_cds = ztr2codes(za, SIG4_CODE, 1, ZTR_TYPE_SMP4,
+				"TYPE", NULL);
+	if (fp_int || ipar_int_data)
+	    int_cds = ztr2codes(za, INT4_CODE, 1, ZTR_TYPE_SMP4,
+				"TYPE", "SLXI");
+	if (fp_nse || ipar_nse_data)
+	    nse_cds = ztr2codes(za, NSE4_CODE, 1, ZTR_TYPE_SMP4,
+				"TYPE", "SLXN");
+#else
+	prb_cds = ztr2codes(za, CNF4_CODE, 4, ZTR_TYPE_CNF4, NULL, NULL);
+	if (fp_sig)
+	    sig_cds = ztr2codes(za, SIG4_CODE, N_TR_CODE,
+				ZTR_TYPE_SMP4, "TYPE", NULL);
+	if (fp_int || ipar_int_data)
+	    int_cds = ztr2codes(za, INT4_CODE, N_TR_CODE,
+				ZTR_TYPE_SMP4, "TYPE", "SLXI");
+	if (fp_nse || ipar_nse_data)
+	    nse_cds = ztr2codes(za, NSE4_CODE, 2,
+				ZTR_TYPE_SMP4, "TYPE", "SLXN");
+#endif
 #endif
 
-	srf_compress_ztr(z, 1);
+	/* Output traces */
+	for (seq_num = 0; seq_num < nreads_this_block; seq_num++) {
+	    char name[1024], prefix[1024];
+	    int footer;
+	    mFILE *mf;
+	    srf_trace_body_t tb;
+	    ztr_t *z = arr(ztr_t *, za, seq_num);
+	    l = arr(loc_t, la, seq_num);
+	    flags = ARR(unsigned char, fa, seq_num);
 
-	format_name(prefix, prefix_fmt, &l, seq_num);
-	if (strcmp(prefix, last_prefix)) {
-	    /* Prefix differs, so generate a new data block header */
-	    srf_trace_hdr_t th;
-	    strcpy(last_prefix, prefix);
+	    /*
+	     * FIXME: copy chunks from one ztr file to the next, rather than
+	     * re-encoding the HUFF chunks over and over again
+	     */
 
-	    mf = encode_ztr(z, &footer, 0);
-	    srf_construct_trace_hdr(&th, prefix, (unsigned char *)mf->data,
-				    footer);
-	    if (-1 == srf_write_trace_hdr(srf, &th))
+#ifndef NO_ENTROPY_ENCODING
+	    ztr_add_hcode(z, seq_cds, 0);
+	    if (prb_cds)
+		ztr_add_hcode(z, prb_cds, 0);
+	    if (prc_cds)
+		ztr_add_hcode(z, prc_cds, 0);
+	    if (sig_cds)
+		ztr_add_hcode(z, sig_cds, 0);
+	    if (int_cds)
+		ztr_add_hcode(z, int_cds, 0);
+	    if (nse_cds)
+		ztr_add_hcode(z, nse_cds, 0);
+#endif
+
+	    srf_compress_ztr(z, 1);
+
+	    format_name(prefix, prefix_fmt, &l, seq_num);
+	    if (strcmp(prefix, last_prefix)) {
+		/* Prefix differs, so generate a new data block header */
+		srf_trace_hdr_t th;
+		strcpy(last_prefix, prefix);
+
+		mf = encode_ztr(z, &footer, 0);
+		srf_construct_trace_hdr(&th, prefix, (unsigned char *)mf->data,
+					footer);
+		if (-1 == srf_write_trace_hdr(srf, &th))
+		    return -1;
+	    } else {
+		mf = encode_ztr(z, &footer, 1);
+	    }
+
+	    delete_ztr(z);
+
+	    /* Write out the variable element of a ZTR file */
+	    format_name(name, name_fmt, &l, seq_num);
+	    srf_construct_trace_body(&tb, name, -1,
+				     (unsigned char *)mf->data+footer,
+				     mf->size-footer, flags);
+	    if (-1 == srf_write_trace_body(srf, &tb))
 		return -1;
-	} else {
-	    mf = encode_ztr(z, &footer, 1);
+
+	    mfdestroy(mf);
 	}
 
-	delete_ztr(z);
+	if (seq_cds) huffman_codeset_destroy(seq_cds);
+	if (sig_cds) huffman_codeset_destroy(sig_cds);
+	if (prb_cds) huffman_codeset_destroy(prb_cds);
+	if (prc_cds) huffman_codeset_destroy(prc_cds);
+	if (int_cds) huffman_codeset_destroy(int_cds);
+	if (nse_cds) huffman_codeset_destroy(nse_cds);
 
-	/* Write out the variable element of a ZTR file */
-	format_name(name, name_fmt, &l, seq_num);
-	srf_construct_trace_body(&tb, name, -1,
-				 (unsigned char *)mf->data+footer,
-				 mf->size-footer, flags);
-	if (-1 == srf_write_trace_body(srf, &tb))
-	    return -1;
+    skip:
+	err = 0;
+    error:
 
-	mfdestroy(mf);
-    }
+	if (err)
+	    finished = 1;
 
-    if (seq_cds) huffman_codeset_destroy(seq_cds);
-    if (sig_cds) huffman_codeset_destroy(sig_cds);
-    if (prb_cds) huffman_codeset_destroy(prb_cds);
-    if (prc_cds) huffman_codeset_destroy(prc_cds);
-    if (int_cds) huffman_codeset_destroy(int_cds);
-    if (nse_cds) huffman_codeset_destroy(nse_cds);
+	if (ra)
+	    ArrayDestroy(ra);
+	if (za)
+	    ArrayDestroy(za);
+	if (la)
+	    ArrayDestroy(la);
+	if (fa)
+	    ArrayDestroy(fa);
 
- skip:
-    err = 0;
- error:
-
-    if (ra)
-	ArrayDestroy(ra);
-    if (za)
-	ArrayDestroy(za);
-    if (la)
-	ArrayDestroy(la);
-    if (fa)
-	ArrayDestroy(fa);
-
-    if (fp_seq)
-	zfclose(fp_seq);
-    if (fp_prb)
-	zfclose(fp_prb);
-    if (fp_sig)
-	zfclose(fp_sig);
-    if (fp_int)
-	zfclose(fp_int);
-    if (fp_nse)
-	zfclose(fp_nse);
-    if (fp_qhg)
-	zfclose(fp_qhg);
+	if (finished && fp_seq)
+	    zfclose(fp_seq);
+	if (finished && fp_prb)
+	    zfclose(fp_prb);
+	if (finished && fp_sig)
+	    zfclose(fp_sig);
+	if (finished && fp_int)
+	    zfclose(fp_int);
+	if (finished && fp_nse)
+	    zfclose(fp_nse);
+	if (finished && fp_qhg)
+	    zfclose(fp_qhg);
     
-    if (matrix1)
-	free(matrix1);
-    if (matrix2)
-	free(matrix2);
-    if (phasing1)
-	free(phasing1);
-    if (phasing2)
-	free(phasing2);
-    if (params)
-	free(params);
+	if (matrix1)
+	    free(matrix1);
+	if (matrix2)
+	    free(matrix2);
+	if (phasing1)
+	    free(phasing1);
+	if (phasing2)
+	    free(phasing2);
+	if (params)
+	    free(params);
 
-    if (ipar_int_data)
-    {
-        unsigned int cycle = 0;
-        for (cycle = 0; cycle < numberOfCycles; ++cycle) 
-        {
-            free(ipar_int_data[cycle]);
-            ipar_int_data[cycle] = NULL;
-        }
-        free(ipar_int_data);
-        ipar_int_data = NULL;
-    }
+	if (finished && ipar_int_data)
+	    {
+		unsigned int cycle = 0;
+		for (cycle = 0; cycle < numberOfCycles; ++cycle) 
+		    {
+			free(ipar_int_data[cycle]);
+			ipar_int_data[cycle] = NULL;
+		    }
+		free(ipar_int_data);
+		ipar_int_data = NULL;
+	    }
 
-    if (ipar_nse_data)
-    {
-        unsigned int cycle = 0;
-        for (cycle = 0; cycle < numberOfCycles; ++cycle)
-        {
-            free(ipar_nse_data[cycle]);
-            ipar_nse_data[cycle] = NULL;
-        }
-        free(ipar_nse_data);
-        ipar_nse_data = NULL;
-    }
+	if (finished && ipar_nse_data)
+	    {
+		unsigned int cycle = 0;
+		for (cycle = 0; cycle < numberOfCycles; ++cycle)
+		    {
+			free(ipar_nse_data[cycle]);
+			ipar_nse_data[cycle] = NULL;
+		    }
+		free(ipar_nse_data);
+		ipar_nse_data = NULL;
+	    }
+
+    } while (!finished);
 
     return err;
 }
