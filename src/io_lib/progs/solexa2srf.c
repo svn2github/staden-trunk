@@ -63,6 +63,9 @@
 #include <math.h>
 #include <assert.h>
 
+/* To turn off assert for a small speed gain, uncomment this line */
+/* #define NDEBUG */
+
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
 #include <io_lib/ztr.h>
@@ -616,8 +619,18 @@ char *parse_4_int(char *str, int *val) {
  * logs or divisions anywhere. Over-optimising? Maybe, but I have the bit
  * between my teeth and am running with it :-)
  */
-static float f_lookup[100] = {
-    0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90,
+static float f_lookup[200] = {
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    /* Filler */ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09,
     0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19,
     0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29,
     0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39,
@@ -635,7 +648,7 @@ char *parse_4_float(char *str, float *val, int *bin)
     char c;
     enum state_t {BEFORE_NUM, BEFORE_POINT, AFTER_POINT} state = BEFORE_NUM;
     double fval = 0;
-    int ival1 = 0, ival2 = 0;
+    int ival1 = 0, ival2 = 1;
 
     val[0] = val[1] = val[2] = val[3] = 0;
 
@@ -702,8 +715,11 @@ char *parse_4_float(char *str, float *val, int *bin)
 		c = *str++;
 	    }
 
-	    while (ival2 >= 100)
+	    while (ival2 >= 1000)
 		ival2 /= 10;
+
+	    assert((ival2 >=  10 && ival2 <  20) ||
+		   (ival2 >= 100 && ival2 < 200));
 
 	    fval = ival1 + f_lookup[ival2];
 		
@@ -724,7 +740,8 @@ char *parse_4_float(char *str, float *val, int *bin)
 		    bin[ival1]++;
 	    }
 
-	    ival1 = ival2 = 0;
+	    ival1 = 0;
+	    ival2 = 1;
 
 	    if (++count == 4) {
 		return str;
