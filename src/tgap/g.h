@@ -1,0 +1,10 @@
+#include <g-struct.h>
+#include <g-db.h>
+#include <g-os.h>
+#include <g-filedefs.h>
+#include <g-error.h>
+#include <g-defs.h>
+#include <g-misc.h>
+#include <g-io.h>
+#include <g-request.h>
+#include <g-connect.h>
