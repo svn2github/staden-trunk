@@ -140,7 +140,7 @@ GFile *g_open_file(char *fn, int read_only)
     GFile *gfile;
     char fnaux[1024];
     AuxIndex *idx_arr = NULL;
-    int recsize;
+    int64_t recsize;
 
     /* g_dump_file(fn); */
 
@@ -246,8 +246,9 @@ GFile *g_open_file(char *fn, int read_only)
     recsize = (gfile->header.format == G_32BIT)
 	? sizeof(AuxIndex32)
 	: sizeof(AuxIndex);
-    lseek(gfile->fdaux, sizeof(AuxHeader) +
-	  gfile->header.num_records * recsize, SEEK_SET);
+    lseek(gfile->fdaux,
+	  sizeof(AuxHeader) + gfile->header.num_records * recsize,
+	  SEEK_SET);
 
     /* Initialise the dheap */
     gfile->dheap = heap_fdload(gfile->fd);
@@ -473,7 +474,7 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
     AuxIndex idx;
     int fdaux = gfile->fdaux;
     int check;
-    int recsize;
+    int64_t recsize;
     Index *ind = g_read_index(gfile, rec);
 
     assert(ind->aux_image >= -1 && ind->aux_image < 0x7effffffffffffff);
