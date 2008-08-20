@@ -106,6 +106,8 @@ proc contig_editor {w args} {
     set opt(DisagreeCase)  1
     set opt(Status)        "--- Status info here ---"
 
+    set opt(-io) [$opt(-io) child]
+
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
     puts w=$w
@@ -130,7 +132,7 @@ proc contig_editor {w args} {
     button $tool.undo    -text Undo -command "editor_undo $w" -state disabled
     button $tool.redo    -text Redo -command "editor_redo $w" -state disabled
     button $tool.search  -text Search
-    button $tool.save -text Save
+    button $tool.save -text Save -command "editor_save $w"
     button $tool.exit -text Exit -command "editor_exit $w"
     pack $tool.undo $tool.redo $tool.search $tool.cutoffs $tool.quality \
 	-side left
@@ -211,6 +213,12 @@ proc contig_editor {w args} {
 
 
     $e redraw
+}
+
+proc editor_save {w} {
+    global $w
+    set ed [set ${w}(curr_editor)]
+    $ed save
 }
 
 proc editor_exit {w} {
@@ -305,6 +313,8 @@ proc editor_pane {top w above arg_array} {
 
     # Initialise with an IO and link name/seq panel together
     $ed init $opt(-io) $opt(contig) $w.name.sheet
+    puts "$ed init $opt(-io) $opt(contig) $w.name.sheet"
+
     global $ed $edname
     set ${ed}(parent) $w
     set ${ed}(top) $top
@@ -534,9 +544,6 @@ proc editor_redo {top} {
 proc editor_edit_base {w call where} {
     upvar $w opt
 
-    puts [info level [info level]]
-    parray opt
-
     #set io $opt(-io)
     set io [$w io]
 
@@ -709,7 +716,6 @@ bind EdNames <3> {
 
 bind Editor <1> {
     focus %W
-    set io [%W io]
     set d [%W get_number @%x @%y]
     if {$d == ""} {
 	return
