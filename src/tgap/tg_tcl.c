@@ -123,14 +123,14 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     static const char *options[] = {
 	"flush",
 	"close",       "get_contig",   "get_sequence", "get_database",
-	"contig_order","num_contigs",  "seq_name2rec",
+	"contig_order","num_contigs",  "seq_name2rec", "child",
 	(char *)NULL,
     };
 
     enum options {
 	IO_FLUSH,
 	IO_CLOSE,     IO_CONTIG,      IO_SEQUENCE,    IO_DATABASE,
-	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC
+	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
     };
 
     if (objc < 2) {
@@ -174,6 +174,29 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     case SEQ_NAME2REC: {
 	char *seq = Tcl_GetStringFromObj(objv[2], NULL);
 	vTcl_SetResult(interp, "%d", sequence_index_query(io, seq));
+	break;
+    }
+
+    case IO_CHILD: {
+	GapIO *child;
+	Tcl_Obj *iobj;
+
+	if (!(child = gio_child(io)))
+	    return TCL_ERROR;
+	if (NULL == (iobj = Tcl_NewObj()))
+	    return TCL_ERROR;
+
+	iobj->internalRep.otherValuePtr = child;
+	iobj->typePtr = &io_obj_type;
+	io_update_string(iobj);
+	
+	/* Register the string form as a new command */
+	if (NULL == Tcl_CreateObjCommand(interp, iobj->bytes, io_cmd,
+					 (ClientData)child,
+					 (Tcl_CmdDeleteProc *)NULL))
+	    return TCL_ERROR;
+	
+	Tcl_SetObjResult(interp, iobj);
 	break;
     }
     }
@@ -576,7 +599,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
 	GET_CONF,       GET_CONTIG,     GET_POSITION,
 
-	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE
+	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
     };
 
     if (objc < 2) {
