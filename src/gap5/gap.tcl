@@ -11,10 +11,10 @@
 # tkinit strips off -h from argv and produces help messages. We'd rather handle
 # this ourselves before it goes that far.
 
-proc gap4_usage {} {
-    verror ERR_FATAL "Gap4" {Usage: gap4 [-ro] [-maxseq <number>] [-maxdb <number>] [-skip_notes] [NAME.V]}
-    verror ERR_FATAL "Gap4" {
-Usage: gap4 [options] [DATABASE_NAME.V]
+proc gap5_usage {} {
+    verror ERR_FATAL "Gap5" {Usage: gap5 [-ro] [-maxseq <number>] [-maxdb <number>] [-skip_notes] [NAME.V]}
+    verror ERR_FATAL "Gap5" {
+Usage: gap5 [options] [DATABASE_NAME.V]
 Options:
     -ro                Read-only
     -maxseq N          Initial maximum total consensus length
@@ -32,7 +32,7 @@ Options:
 }
 
 if {[lindex $argv 0] == "-h" || [lindex $argv 1] == "-help" || [lindex $argv 1] == "--help"} {
-    gap4_usage
+    gap5_usage
 }
 
 if {[catch tkinit err]} {
@@ -157,7 +157,7 @@ proc CopyDatabase {io} {
 	-ok_command "CopyDatabase2 $t \[set $t.GCollect\] $io \
 		     \[entrybox_get $t.entry\]" \
 	-cancel_command "unset $t.GCollect;destroy $t" \
-	-help_command "show_help gap4 {GapDB-CopyDatabase}"
+	-help_command "show_help gap5 {GapDB-CopyDatabase}"
 
     if {$licence(type) == "f"} {
 	pack $t.entry $t.collect $t.ok -side top -fill both
@@ -356,7 +356,7 @@ proc ChangeDirectory { } {
     okcancelhelp $t.ok -bd 2 -relief groove \
 	-ok_command "ChangeDirectory2 \[expandpath \[entrybox_get $t.entry\]\]; destroy $t" \
 	-cancel_command "destroy $t"\
-	-help_command "show_help gap4 {GapDB-Directories}"
+	-help_command "show_help gap5 {GapDB-Directories}"
 
     pack $t.entry $t.ok -side top -fill both
 }
@@ -436,7 +436,7 @@ proc CreateMain { } {
 	    set mode [lindex $m 0]
 	}
     }
-    vmessage "Gap4 has started up in '$mode' mode. To select another menu level," 
+    vmessage "Gap5 has started up in '$mode' mode. To select another menu level," 
     vmessage "please use the 'Configure menus' command in the 'Options' menu."
 }
 #end CreateMain
@@ -501,15 +501,17 @@ load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
 load_package tk_utils
 tk_utils_init
 load_package gap5
-load /nfs/team71/psg/jkb/work/tgap/libtgap.so g5
+load libtgap.so g5
+
+#db_info foo
 
 if {[keylget gap5_defs BACKGROUNDS] != ""} {
-    if {[tk appname Gap4] != "Gap4"} {
+    if {[tk appname Gap5] != "Gap5"} {
         set app [tk appname]
-        # Multiple gap4s - recolour!
+        # Multiple gap5s - recolour!
         set gnum 2
         foreach col [keylget gap5_defs BACKGROUNDS] {
-	    set "colours(Gap4 #$gnum)" $col
+	    set "colours(Gap5 #$gnum)" $col
 	    incr gnum
         }
         keylset tk_utils_defs FOREGROUND black
@@ -525,7 +527,7 @@ if {[keylget gap5_defs BACKGROUNDS] != ""} {
 }
 
 if {$licence(type) == "d"} {
-    LicenceSplash Gap4 3
+    LicenceSplash Gap5 3
 }
 
 global maxseq
@@ -543,7 +545,7 @@ set exec_notes 0
 set rawdata_note 1
 set maxseq 10000000
 
-set GAP_VERSION "4.11"
+set GAP_VERSION "5.00"
 
 switch $licence(type) {
     f		{}
@@ -571,7 +573,7 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
             incr argc -1
 	    set maxseq [lindex $argv 0]
 	} else {
-	    gap4_usage
+	    gap5_usage
 	}
 
     } elseif {$arg == "-maxdb"} {
@@ -580,7 +582,7 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
             incr argc -1
 	    set maxdb [lindex $argv 0]
 	} else {
-	    gap4_usage
+	    gap5_usage
 	}
 
     } elseif {$arg == "-nocheck" || $arg == "-no_check"} {
@@ -614,14 +616,14 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 	    set bitsize [lindex $argv 0]
 	    set_db_bitsize $bitsize
 	} else {
-	    gap4_usage
+	    gap5_usage
 	}
 
     } elseif {$arg == "-h" || $arg == "-help" || $arg == "--help"} {
-	gap4_usage
+	gap5_usage
     } else {
-	verror ERR_WARN "Gap4" "ERROR: Invalid argument \"$arg\""
-	gap4_usage
+	verror ERR_WARN "Gap5" "ERROR: Invalid argument \"$arg\""
+	gap5_usage
     }
 
     set argv [lrange $argv 1 $argc]
@@ -632,7 +634,7 @@ if {$argc == 1} {
 #    scan [lindex $argv 0] "%s.%d" db_name version_num
     set a [lindex $argv 0]
     if {[regexp {(.*)\.(.)(\.aux)?$} $a tmp db_name version_num] == 0} {
-	verror ERR_FATAL "Gap4" "ERROR: Invalid database name '$a'"
+	verror ERR_FATAL "Gap5" "ERROR: Invalid database name '$a'"
 	exit
     }
 
@@ -644,13 +646,7 @@ if {$argc == 1} {
     set io [g5::open_database -name "$db_name.$version_num" -access $access]
 
     if {"$io" == ""} {
-#	puts "ERROR: Couldn't open the database '$db_name.$version_num' - exiting."
-#	6/1/99 johnt - use verror so message is shown with Windows NT
-	if {$licence(type) == "d"} {
-	    verror ERR_FATAL "Gap4" "ERROR: Demonstration mode could not open this database. Try \"gap4viewer\" instead."
-	} else {	
-	    verror ERR_FATAL "Gap4" "ERROR: Couldn't open the database '$db_name.$version_num' - exiting."
-	}
+	verror ERR_FATAL "Gap5" "ERROR: Couldn't open the database '$db_name.$version_num' - exiting."
 	
 	exit
     }
@@ -669,7 +665,7 @@ if {$argc == 1} {
     }
 
 } elseif {$argc > 1} {
-    gap4_usage
+    gap5_usage
 }
 
 set consensus_mode          [keylget gap5_defs CONSENSUS_MODE]
