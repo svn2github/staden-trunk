@@ -474,6 +474,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
 
     if (ci) {
 	ret = g_write(io, ci->view, data, len);
+	g_flush(io, v);
     } else {
 	if (-1 == (v = lock(io, n->rec, G_LOCK_EX))) {
 	    fprintf(stderr, "Failed to lock btree node %d\n", n->rec);
@@ -910,6 +911,7 @@ static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
 	return -1;
     }
 
+    g_flush(io, v);
     free(ch);
     return 0;
 }
@@ -1173,6 +1175,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.track       = bin->track_rec;
 
 	err |= g_write(io, v, &g, sizeof(g));
+	g_flush(io, v);
     }
 
     return err;
@@ -1282,6 +1285,7 @@ static int io_track_write_view(g_io *io, track_t *track, GView v) {
 	       track->item_size * track->nitems);
     
     err |= g_write(io, v, h, sizeof(*h) + track->item_size * track->nitems);
+    g_flush(io, v);
     free(data);
 
     return err;
@@ -1564,6 +1568,7 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     //    printf("Write rec %d len %d %.*s:%d\n", rec, cp-cpstart,
     //	   seq->name_len, seq->name, seq->mapping_qual);
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
+    g_flush(io, v);
 
     if (cpstart != block)
 	free(cpstart);
