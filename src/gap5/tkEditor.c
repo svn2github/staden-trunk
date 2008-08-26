@@ -380,7 +380,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"display_trace", "delete_trace", "trace_scroll", "save",
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
-	"get_template_seqs",
+	"get_template_seqs", "edits_made",
 	NULL
     };
     enum options {
@@ -390,7 +390,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_DISPLAY_TRACE,  _DELETE_TRACE,  _TRACE_SCROLL,  _SAVE,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
-	_GET_TEMPLATE_SEQS,
+	_GET_TEMPLATE_SEQS, _EDITS_MADE,
     };
 
     if (argc < 2) {
@@ -433,6 +433,15 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     /* Save contig */
     case _SAVE:
 	result = cache_flush(xx->io);
+	vTcl_SetResult(interp, "%d", result);
+	break;
+
+    /* Query: have we been editing? */
+    case _EDITS_MADE:
+	result = cache_updated(xx->io);
+	vTcl_SetResult(interp, "%d", result);
+	if (result != -1)
+	    result = 0;
 	break;
 
     /* Refresh display after external changes */

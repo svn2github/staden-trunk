@@ -110,8 +110,6 @@ proc contig_editor {w args} {
 
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
-    puts w=$w
-    parray opt
 
     # Create the window layout
     if {![winfo exists $w]} {
@@ -133,10 +131,10 @@ proc contig_editor {w args} {
     button $tool.redo    -text Redo -command "editor_redo $w" -state disabled
     button $tool.search  -text Search
     button $tool.save -text Save -command "editor_save $w"
-    button $tool.exit -text Exit -command "editor_exit $w"
+    wm protocol $w WM_DELETE_WINDOW "editor_exit $w"
     pack $tool.undo $tool.redo $tool.search $tool.cutoffs $tool.quality \
 	-side left
-    pack $tool.save $tool.exit -side right
+    pack $tool.save -side right
 
     # The editor(s) itself
     if {$join} {
@@ -145,7 +143,6 @@ proc contig_editor {w args} {
     }
     set pane1 $w.ed1
     set e [editor_pane $w $pane1 0 opt]
-    parray opt
 
     # Difference bar for the join editor
     if {$join} {
@@ -218,10 +215,31 @@ proc contig_editor {w args} {
 proc editor_save {w} {
     global $w
     set ed [set ${w}(curr_editor)]
-    $ed save
+    if {[$ed save] != 0} {
+	bell
+    }
 }
 
 proc editor_exit {w} {
+    global $w
+    set ed [set ${w}(curr_editor)]
+    if {[$ed edits_made]} {
+	set ret [tk_messageBox \
+		     -icon question \
+		     -title "Save changes" \
+		     -message "Edits have been made. Save changes?" \
+		     -type yesnocancel \
+		     -parent $w]
+	if {$ret == "cancel"} {
+	    return
+	} elseif {$ret == "yes"} {
+	    if {[$ed save] != 0} {
+		bell
+		return
+	    }
+	}
+    }
+
     destroy $w
 }
 
@@ -313,15 +331,12 @@ proc editor_pane {top w above arg_array} {
 
     # Initialise with an IO and link name/seq panel together
     $ed init $opt(-io) $opt(contig) $w.name.sheet
-    puts "$ed init $opt(-io) $opt(contig) $w.name.sheet"
-
     global $ed $edname
     set ${ed}(parent) $w
     set ${ed}(top) $top
     set ${ed}(Undo) ""
     set ${ed}(Redo) ""
     set ${edname}(ed) $ed
-    parray $edname
 
     # Force new style mode
     $w.name.x set 0.0 0.1
@@ -404,7 +419,6 @@ proc sync_panes {w proxy args} {
 proc editor_goto {ed w} {
     upvar \#0 $ed eopt
 
-    parray eopt
     set pos $eopt(displayPos)
 
     if {[regexp {^[-+]?[0-9]+$} $pos] == 1} {
@@ -496,8 +510,6 @@ proc store_undo {w cmdu cmdr} {
     set top [set ${w}(top)]
     $top.toolbar.undo configure -state normal
     $top.toolbar.redo configure -state disabled
-
-    parray $w
 }
 
 proc editor_undo {top} {
@@ -515,7 +527,6 @@ proc editor_undo {top} {
     }
     $top.toolbar.redo configure -state normal
 
-    parray $w
     $w redraw
 }
 
@@ -534,7 +545,6 @@ proc editor_redo {top} {
     }
     $top.toolbar.undo configure -state normal
 
-    parray $w
     $w redraw
 } 
 
@@ -669,6 +679,8 @@ bind EdNames <Any-Motion> {
     if {$type == 18} {
 	set msg [$ed get_seq_status $type $rec $pos \
 		     [keylget gap5_defs READ_BRIEF_FORMAT]]
+    } else {
+	set msg ""
     }
 
     set w [set ${ed}(top)]
