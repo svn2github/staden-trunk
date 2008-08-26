@@ -60,6 +60,7 @@ int gio_read_contig(GapIO *io, int cnum, contig_t **c);
 int cache_create(GapIO *io);
 void cache_destroy(GapIO *io);
 int cache_flush(GapIO *io);
+int cache_updated(GapIO *io);
 void *cache_search(GapIO *io, int type, int GRec);
 int cache_upgrade(GapIO *io, cached_item *ci, int mode);
 void *cache_lock(GapIO *io, int type, GRec rec, int mode);

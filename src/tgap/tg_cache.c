@@ -439,12 +439,64 @@ void *cache_lock(GapIO *io, int type, GRec rec, int mode) {
 }
 
 /*
+ * qsort callback.
+ * Sorts cached_item * on view number.
+ */
+int qsort_ci_view(const void *p1, const void *p2) {
+    cached_item **c1 = (cached_item **)p1;
+    cached_item **c2 = (cached_item **)p2;
+
+    return (*c1)->view - (*c2)->view;
+}
+
+/*
  * Flushes changes in the cache back to disk.
  */
 int cache_flush(GapIO *io) {
     int i, ret = 0;
     HacheTable *h = io->cache;
+    Array to_flush;
+    int nflush = 0;
 
+    /*
+     * If this is a derived io then we need to pass these items up to
+     * our parent, remove them from this io and call cache_flush on the
+     * parent instead (possibly recursively).
+     */
+    if (io->base) {
+	for (i = 0; i < h->nbuckets; i++) {
+	    HacheItem *hi, *next;
+	    for (hi = h->bucket[i]; hi; hi = next) {
+		HacheData data;
+
+		cached_item *ci = hi->data.p;
+		next = hi->next;
+
+		if (!ci->updated)
+		    continue;
+
+		/* Purge from parent */
+		HacheTableRemove(io->base->cache,
+				 ci->hi->key, ci->hi->key_len, 0);
+		/* FIXME: search for parent ci first and deallocate after */
+
+		/* Move this item to parent */
+		data.p = ci;
+		ci->hi = HacheTableAdd(io->base->cache, 
+				       ci->hi->key, ci->hi->key_len,
+				       data, NULL);
+
+		/* Remove from this hache */
+		HacheTableRemove(io->cache, ci->hi->key, ci->hi->key_len, 0);
+	    }
+	}
+
+	return cache_flush(io->base);
+    }
+
+    to_flush = ArrayCreate(sizeof(cached_item *), 8192);
+
+    /* Identify the list of items that need flushing */
     //fprintf(stderr, "\n");
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
@@ -453,48 +505,81 @@ int cache_flush(GapIO *io) {
 	    //fprintf(stderr, "Item %d, type %d, updated %d\n",
 	    //    ci->view, ci->type, ci->updated);
 	    if (ci->updated) {
-		switch (ci->type) {
-		case GT_Database:
-		    ret = io->iface->database.write(io->dbh, ci);
-		    break;
-
-		case GT_Contig:
-		    ret = contig_write(io, ci);
-		    break;
-
-		case GT_Seq:
-		    ret = seq_write(io, ci);
-		    break;
-
-		case GT_Bin:
-		    ret = bin_write(io, ci);
-		    break;
-
-		case GT_Track:
-		    ret = track_write(io, ci);
-		    break;
-
-		case GT_RecArray:
-		    ret = array_write(io, ci);
-		    break;
-
-		default:
-		    fprintf(stderr, "Unable to write object of type %d\n",
-			    ci->type);
-		    ret = -1;
-		}
-
-		if (ret == 0) {
-		    ci->updated = 0;
-		    HacheTableDecRef(io->cache, ci->hi);
-		}
+		arr(cached_item *, to_flush, nflush++) = ci;
 	    }
 	}
     }
 
+    /* Sort them by view number, which is likely to be approx on-disk order */
+    qsort(ArrayBase(cached_item *, to_flush), nflush, sizeof(cached_item *),
+	  qsort_ci_view);
+
+    /* Flush them out */
+    for (i = 0; i < nflush; i++) {
+	cached_item *ci = arr(cached_item *, to_flush, i);
+	switch (ci->type) {
+	case GT_Database:
+	    ret = io->iface->database.write(io->dbh, ci);
+	    break;
+
+	case GT_Contig:
+	    ret = contig_write(io, ci);
+	    break;
+
+	case GT_Seq:
+	    ret = seq_write(io, ci);
+	    break;
+
+	case GT_Bin:
+	    ret = bin_write(io, ci);
+	    break;
+
+	case GT_Track:
+	    ret = track_write(io, ci);
+	    break;
+
+	case GT_RecArray:
+	    ret = array_write(io, ci);
+	    break;
+
+	default:
+	    fprintf(stderr, "Unable to write object of type %d\n",
+		    ci->type);
+	    ret = -1;
+	}
+
+	if (ret == 0) {
+	    ci->updated = 0;
+	    HacheTableDecRef(io->cache, ci->hi);
+	}
+    }
+
+    ArrayDestroy(to_flush);
+
     io->iface->commit(io->dbh);
 
     return ret;
+}
+
+/*
+ * Returns true or false depending on whether the cache has unsaved data in
+ * it.
+ */
+int cache_updated(GapIO *io) {
+    int i;
+    HacheTable *h = io->cache;
+
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi;
+	for (hi = h->bucket[i]; hi; hi = hi->next) {
+	    cached_item *ci = hi->data.p;
+	    if (ci->updated) {
+		return 1;
+	    }
+	}
+    }
+
+    return 0;
 }
 
 /*
