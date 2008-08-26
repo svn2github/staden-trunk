@@ -2160,7 +2160,7 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   char *phasing_f_name, char *phasing_r_name,
 	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1],
 	   int include_failed_reads) {
-    char *cp, *params = NULL;
+    char *cp, *params = NULL, *params2 = NULL;
     char *matrix1  = NULL, *matrix2  = NULL;
     char *phasing1 = NULL, *phasing2 = NULL;
     char prb_file[1024], sig_file[1024], qhg_file[1024];
@@ -2302,7 +2302,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
         }
     }
 
-    params = load("../.params", NULL);
+    params  = load("../.params", NULL);
+    params2 = load("../../.params", NULL);
 
 #ifdef USE_MODEL
     init_model();
@@ -2315,7 +2316,6 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 
 	matrix1 = matrix2 = NULL;
 	phasing1 = phasing2 = NULL;
-	params = NULL;
 	*last_prefix = '\0';
 	last_lane = 0;
 	seq_cds = prb_cds = prc_cds = sig_cds = int_cds = nse_cds = NULL;
@@ -2728,8 +2728,15 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		}
 	    }
 
-	    if (params) {
+	    if (params && !seq_num) {
 		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS", params)) {
+		    fprintf(stderr, "Failed to add to TEXT chunk\n");
+		    return -1;
+		}
+	    }
+
+	    if (params2 && !seq_num) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS2", params2)) {
 		    fprintf(stderr, "Failed to add to TEXT chunk\n");
 		    return -1;
 		}
@@ -2888,8 +2895,10 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    free(phasing1);
 	if (phasing2)
 	    free(phasing2);
-	if (params)
+	if (finished && params)
 	    free(params);
+	if (finished && params2)
+	    free(params2);
 
 	if (finished && ipar_int_data)
 	    {
