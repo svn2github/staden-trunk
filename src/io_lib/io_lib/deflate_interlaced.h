@@ -95,6 +95,8 @@ int huffman_multi_encode(block_t *blk, huffman_codeset_t *cs,
 
 block_t *huffman_multi_decode(block_t *in, huffman_codeset_t *cs);
 
+huffman_codeset_t *codes2codeset(huffman_code_t *codes, int ncodes,
+				 int code_num);
 huffman_codeset_t *generate_code_set(int code_set, int ncodes,
 				     unsigned char *data, int len,
 				     int eof, int max_code_len,
