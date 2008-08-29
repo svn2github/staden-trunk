@@ -505,7 +505,7 @@ int cache_flush(GapIO *io) {
 	    //fprintf(stderr, "Item %d, type %d, updated %d\n",
 	    //    ci->view, ci->type, ci->updated);
 	    if (ci->updated) {
-		arr(cached_item *, to_flush, nflush++) = ci;
+		ARR(cached_item *, to_flush, nflush++) = ci;
 	    }
 	}
     }
