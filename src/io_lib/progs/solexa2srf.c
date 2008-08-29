@@ -2729,14 +2729,14 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    }
 
 	    if (params && !seq_num) {
-		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS", params)) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_BUSTARD_PARAMS", params)) {
 		    fprintf(stderr, "Failed to add to TEXT chunk\n");
 		    return -1;
 		}
 	    }
 
 	    if (params2 && !seq_num) {
-		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_PARAMS2", params2)) {
+		if (NULL == ztr_add_text(z, tc, "ILLUMINA_GA_FIRECREST_PARAMS", params2)) {
 		    fprintf(stderr, "Failed to add to TEXT chunk\n");
 		    return -1;
 		}
