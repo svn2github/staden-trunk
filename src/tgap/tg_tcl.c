@@ -341,6 +341,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     tcl_contig *tc = (tcl_contig *)clientData;
 
     static const char *options[] = {
+	"delete",       "io",
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
@@ -348,6 +349,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     };
 
     enum options {
+	DELETE,         IO,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE
@@ -364,6 +366,15 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     switch ((enum options)index) {
+    case DELETE:
+	Tcl_DeleteCommandFromToken(interp,
+				   Tcl_GetCommandFromObj(interp, objv[0]));
+	break;
+
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(tc->io) , TCL_VOLATILE);
+	break;
+
     case GET_REC:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), ci_ptr(tc->contig)->rec);
 	break;
@@ -470,6 +481,12 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+static void _cmd_delete(ClientData clientData) {
+    /* Could be any of the types in this file as they're compatible structs */
+    tcl_contig *tc = (tcl_contig *)clientData;
+    cache_decr(tc->io, tc->contig);
+}
+
 static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 			   int objc, Tcl_Obj *CONST objv[]) {
     contig_t *c;
@@ -503,9 +520,10 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
     contig_update_string(res);
 
     /* Register the string form as a new command */
+    cache_incr(io, c);
     if (NULL == Tcl_CreateObjCommand(interp, res->bytes, contig_cmd,
 				     (ClientData)tc,
-				     (Tcl_CmdDeleteProc *)NULL))
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
 	return TCL_ERROR;
 
     Tcl_SetObjResult(interp, res);
@@ -586,7 +604,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
     tcl_sequence *ts = (tcl_sequence *)clientData;
 
     static const char *options[] = {
-	"get_rec",      "get_len",      "get_length",
+	"delete",       "io",
+	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
 	"get_conf",	"get_contig",   "get_position",
 
@@ -595,7 +614,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
     };
 
     enum options {
-	GET_REC,        GET_LEN,        GET_LENGTH,
+	DELETE,         IO,
+	GET_REC,        GET_LEN,        GET_LENGTH,     GET_PAIR,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
 	GET_CONF,       GET_CONTIG,     GET_POSITION,
 
@@ -613,6 +633,15 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
     }
 
     switch ((enum options)index) {
+    case DELETE:
+	Tcl_DeleteCommandFromToken(interp,
+				   Tcl_GetCommandFromObj(interp, objv[0]));
+	break;
+
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(ts->io) , TCL_VOLATILE);
+	break;
+
     case GET_REC:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), ci_ptr(ts->seq)->rec);
 	break;
@@ -659,6 +688,13 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
 	break;
     }
+
+    case GET_PAIR:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp),
+		      ts->seq->other_end
+		      ? ts->seq->other_end
+		      : 0);
+	break;
 
     case GET_BASE: {
 	char base;
@@ -762,9 +798,10 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
     sequence_update_string(res);
 
     /* Register the string form as a new command */
+    cache_incr(io, s);
     if (NULL == Tcl_CreateObjCommand(interp, res->bytes, sequence_cmd,
 				     (ClientData)ts,
-				     (Tcl_CmdDeleteProc *)NULL))
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
 	return TCL_ERROR;
 
     Tcl_SetObjResult(interp, res);
@@ -929,7 +966,7 @@ static int tcl_open_database(ClientData clientData, Tcl_Interp *interp,
     /* Register the string form as a new command */
     if (NULL == Tcl_CreateObjCommand(interp, iobj->bytes, io_cmd,
 				     (ClientData)io,
-				     (Tcl_CmdDeleteProc *)NULL))
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
 	return TCL_ERROR;
 
     Tcl_SetObjResult(interp, iobj);
