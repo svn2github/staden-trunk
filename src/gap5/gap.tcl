@@ -631,22 +631,17 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 }
 
 if {$argc == 1} {
-#    scan [lindex $argv 0] "%s.%d" db_name version_num
-    set a [lindex $argv 0]
-    if {[regexp {(.*)\.(.)(\.aux)?$} $a tmp db_name version_num] == 0} {
-	verror ERR_FATAL "Gap5" "ERROR: Invalid database name '$a'"
-	exit
-    }
+    set db_name [lindex $argv 0]
 
     cd [file dirname $db_name]
     set db_name [file tail $db_name]
 
     #open database 
     set origtype $licence(type)
-    set io [g5::open_database -name "$db_name.$version_num" -access $access]
+    set io [g5::open_database -name "$db_name" -access $access]
 
     if {"$io" == ""} {
-	verror ERR_FATAL "Gap5" "ERROR: Couldn't open the database '$db_name.$version_num' - exiting."
+	verror ERR_FATAL "Gap5" "ERROR: Couldn't open the database '$db_name' - exiting."
 	
 	exit
     }
