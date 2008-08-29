@@ -422,6 +422,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
     bin_index_t *bin = get_bin(io, bin_num);
     range_t *l;
 
+    cache_incr(io, bin);
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
     }
@@ -472,6 +473,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	}
     }
 
+    cache_decr(io, bin);
     return count;
 }
 
