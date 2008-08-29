@@ -623,6 +623,48 @@ huffman_codes_t *calc_bit_lengths(unsigned char *data, int len,
 }
 
 /*
+ * A special case of the generate_code_set() function below, but for
+ * creating predefined code sets from bit-length arrays. Useful for
+ * code that wants to use a predetermined huffman tree.
+ *
+ *
+ * Returns huffman_codes_t* on success; free using huffman_codes_destroy().
+ *         NULL on failure.
+ */
+huffman_codeset_t *codes2codeset(huffman_code_t *codes, int ncodes,
+				 int code_num) {
+    huffman_codeset_t *cs;
+    huffman_codes_t *c;
+
+    if (NULL == (cs = (huffman_codeset_t *)malloc(sizeof(*cs))))
+	return NULL;
+
+    cs->codes = (huffman_codes_t **)malloc(sizeof(*cs->codes));
+    cs->codes[0] = c;
+    cs->ncodes = 1;
+    cs->code_set = code_num;
+    cs->blk = NULL;
+    cs->bit_num = 0;
+    cs->decode_t = NULL;
+    cs->decode_J4 = NULL;
+    
+    if (NULL == (c = (huffman_codes_t *)malloc(sizeof(*c))))
+	return NULL;
+
+    c->codes_static = 1;
+    c->max_code_len = MAX_CODE_LEN;
+
+    c->codes = codes;
+    c->ncodes = ncodes;
+
+    cs->bit_num = 0; /* FIXME: need to know this */
+
+    canonical_codes(c);
+
+    return cs;
+}
+
+/*
  * Initialises and returns a huffman_codes_t struct from a specified code_set.
  * If code_set is not one of the standard predefined values then the
  * input data is analysed using calc_bit_lengths() above to produce the
