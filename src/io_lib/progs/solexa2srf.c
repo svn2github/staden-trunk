@@ -3279,7 +3279,7 @@ int main(int argc, char **argv) {
 			 ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
-			 matrix_f_name, matrix_f_name,
+			 matrix_f_name, matrix_r_name,
 			 phasing_f_name, phasing_r_name,
 			 &nr, &nf, all_use_bases, include_failed_reads)) {
 	    c = '!';
