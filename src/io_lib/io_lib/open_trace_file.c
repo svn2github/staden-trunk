@@ -581,6 +581,10 @@ static unsigned int getuint4_255(unsigned char *b)
  * IN NO EVENT SHALL LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE.
+ *
+ * Permission to use, copy, modify and distribute this software and its
+ * documentation for any purpose is hereby granted without fee, provided
+ * that this copyright and notice appears in all copies.
  */
 static mFILE *sff_sorted_query(char *sff, char *accno, FILE *fp,
 			       uint32_t index_length) {
