@@ -1,7 +1,9 @@
 # LIBCURL_CHECK_CONFIG ([DEFAULT-ACTION], [MINIMUM-VERSION],
 #                       [ACTION-IF-YES], [ACTION-IF-NO])
 # ----------------------------------------------------------
-#      David Shaw <dshaw@jabberwocky.com <mailto:dshaw@jabberwocky.com>>   May-09-2006
+# David Shaw <dshaw@jabberwocky.com <mailto:dshaw@jabberwocky.com>> May-09-2006
+# Modified by Rob to deal with curl-config linking against more libraries than
+# strictly necessary.
 #
 # Checks for libcurl.  DEFAULT-ACTION is the string yes or no to
 # specify whether to default to --with-libcurl or --without-libcurl.
@@ -101,7 +103,42 @@ AC_DEFUN([LIBCURL_CHECK_CONFIG],
               LIBCURL_CPPFLAGS=`$_libcurl_config --cflags`
            fi
            if test x"$LIBCURL" = "x" ; then
-              LIBCURL=`$_libcurl_config --libs`
+	      # libcurl-config --libs gives a ridiculous number of libraries
+	      # check to see if we can actually link just using -lcurl
+
+	      LIBCURL=${LIBCURL-"$_libcurl_ldflags -lcurl"}
+
+	      AC_CACHE_CHECK([whether libcurl just needs -lcurl],
+		[libcurl_cv_lib_curl_only_needs_minus_l_curl],
+		[
+		_libcurl_save_cppflags=$CPPFLAGS
+           	CPPFLAGS="$LIBCURL_CPPFLAGS $CPPFLAGS"
+           	_libcurl_save_libs=$LIBS
+           	LIBS="$LIBCURL $LIBS"
+		
+		AC_LINK_IFELSE(AC_LANG_PROGRAM([#include <curl/curl.h>],[
+/* Try and use a few common options to force a failure if we are
+   missing symbols or can't link. */
+int x;
+curl_easy_setopt(NULL,CURLOPT_URL,NULL);
+x=CURL_ERROR_SIZE;
+x=CURLOPT_WRITEFUNCTION;
+x=CURLOPT_FILE;
+x=CURLOPT_ERRORBUFFER;
+x=CURLOPT_STDERR;
+x=CURLOPT_VERBOSE;
+]),libcurl_cv_lib_curl_only_needs_minus_l_curl=yes,libcurl_cv_lib_curl_only_needs_minus_l_curl=no)
+
+          	CPPFLAGS=$_libcurl_save_cppflags
+           	LIBS=$_libcurl_save_libs
+           	unset _libcurl_save_cppflags
+           	unset _libcurl_save_libs
+           	])
+
+
+		if test "x$libcurl_cv_lib_curl_only_needs_minus_l_curl" != xyes ; then
+                   LIBCURL=`$_libcurl_config --libs`
+		fi
 
               # This is so silly, but Apple actually has a bug in their
 	      # curl-config script.  Fixed in Tiger, but there are still
@@ -237,7 +274,6 @@ x=CURLOPT_VERBOSE;
 
   unset _libcurl_with
 ])dnl
-
 
 # ZLIB_CHECK_CONFIG ([DEFAULT-ACTION] [MINIMUM-VERSION],
 #                    [ACTION-IF-YES], [ACTION-IF-NO])
