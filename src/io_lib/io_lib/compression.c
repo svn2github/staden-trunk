@@ -2226,7 +2226,7 @@ static void output_code_set(FILE *fp, huffman_codes_t *cds) {
  *         NULL on failure
  */
 char *qshift(char *qold, int qlen, int *new_len) {
-    int i, j;
+    int i, j, k;
     char *qnew;
     int nbases;
 
@@ -2243,11 +2243,11 @@ char *qshift(char *qold, int qlen, int *new_len) {
     qnew[2] = -40;  /* pad */
     qnew[3] = qold[0];
 
-    for (i = 0, j = 4; i < nbases; i++) {
-	qnew[j++] = qold[1+i];
-	qnew[j++] = qold[1+nbases+i*3];
-	qnew[j++] = qold[1+nbases+i*3+1];
-	qnew[j++] = qold[1+nbases+i*3+2];
+    for (i = 0, j = 4, k = nbases; i < nbases; i++, j+=4, k+=3) {
+	qnew[j  ] = qold[1+i  ];
+	qnew[j+1] = qold[1+k  ];
+	qnew[j+2] = qold[1+k+1];
+	qnew[j+3] = qold[1+k+2];
     }
 
     *new_len = (nbases+1)*4;
@@ -2261,7 +2261,7 @@ char *qshift(char *qold, int qlen, int *new_len) {
  *         NULL on failure.
  */
 char *unqshift(char *qold, int qlen, int *new_len) {
-    int i, j;
+    int i, j, k;
     char *qnew;
     int nbases;
 
@@ -2275,11 +2275,11 @@ char *unqshift(char *qold, int qlen, int *new_len) {
     qnew = (char *)malloc(nbases*4+1);
     qnew[0] = 0; /* raw byte */
 
-    for (i = 0, j = 4; i < nbases; i++) {
-	qnew[1+i]            = qold[j++];
-	qnew[1+nbases+i*3]   = qold[j++];
-	qnew[1+nbases+i*3+1] = qold[j++];
-	qnew[1+nbases+i*3+2] = qold[j++];
+    for (i = 0, j = 4, k = nbases; i < nbases; i++, j+=4, k+=3) {
+	qnew[1+i  ] = qold[j  ];
+	qnew[1+k  ] = qold[j+1];
+	qnew[1+k+1] = qold[j+2];
+	qnew[1+k+2] = qold[j+3];
     }
 
     *new_len = nbases*4+1;
