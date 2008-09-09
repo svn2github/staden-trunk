@@ -151,10 +151,17 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
 mFILE *srf_next_trace(srf_t *srf, char *name);
 ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask);
 
+ztr_t *partial_decode_ztr(srf_t *srf, mFILE *mf, ztr_t *z);
+ztr_t *ztr_dup(ztr_t *src);
+
 int srf_next_block_type(srf_t *srf); /* peek ahead */
 int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name);
 
 int srf_find_trace(srf_t *srf, char *trace,
 		   uint64_t *cpos, uint64_t *hpos, uint64_t *dpos);
+
+int construct_trace_name(char *fmt,
+			 unsigned char *suffix, int suffix_len,
+			 char *name, int name_len);
 
 #endif /* _SRF_H_ */

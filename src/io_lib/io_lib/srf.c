@@ -1174,7 +1174,7 @@ mFILE *srf_next_trace(srf_t *srf, char *name) {
  * Otherwise we'll leave the file pointer at the start of the next 
  * partial chunk (or EOF if none) and return the ztr_t pointer.
  */
-static ztr_t *partial_decode_ztr(srf_t *srf, mFILE *mf, ztr_t *z) {
+ztr_t *partial_decode_ztr(srf_t *srf, mFILE *mf, ztr_t *z) {
     ztr_t *ztr;
     ztr_chunk_t *chunk;
     long pos = 0;
@@ -1462,9 +1462,9 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	 */
 	uint64_t ilen;
 	if (1 != fread(&ilen, 8, 1, srf->fp))
-	    return NULL;
+	    return -2;
 	if (ilen != 0)
-	    return NULL;
+	    return -2;
 	break;
     }
 
