@@ -190,29 +190,56 @@ int HFSave(char *ch_file, Array ch_pos,
     return 0;
 }
 
+/* ------------------------------------------------------------------------ */
+void usage(int code) {
+    printf("Usage: srf_index_hash [-c] srf_file\n");
+    printf(" Options:\n");
+    printf("    -c       check an existing index, don't re-index\n");
+    exit(code);
+}
+
 int main(int argc, char **argv) {
     srf_t *srf;
     uint64_t pos;
     char name[512];
-    int type;
+    int i, type, new;
     char *archive;
     HashTable *db_hash;
     Array ch_pos, th_pos;
     int dbh_pos_stored_sep = 0;
     pos_dbh *pdbh;
+    int check = 0;
     off_t old_index = 0;
     
-    if (argc != 2) {
-	fprintf(stderr, "Usage: hash_srf srf_file\n");
+    /* Parse args */
+    for (i = 1; i < argc && argv[i][0] == '-'; i++) {
+	if (!strcmp(argv[i], "-")) {
+	    break;
+	} else if (!strcmp(argv[i], "-c")) {
+	    check = 1;
+	} else if (!strcmp(argv[i], "-h")) {
+	    usage(0);
+	} else {
+	    usage(1);
+	}
+    }
+
+    if (argc != (i+1)) {
+      usage(1);
+    }
+
+    archive = argv[i];
+
+    if( check ){
+        srf = srf_open(archive, "rb");
+    } else {
+        srf = srf_open(archive, "r+b");
+    }
+    if (NULL == srf ){
+ 	perror(argv[i]);
 	return 1;
     }
-    archive = argv[1];
-
-    if (NULL == (srf = srf_open(archive, "r+b"))) {
-	perror(argv[1]);
-	return 1;
-    }
-
+    
     /* Create the arrays and hash table */
     if (!(ch_pos = ArrayCreate(sizeof(uint64_t), 0)))
 	return 1;
@@ -249,7 +276,11 @@ int main(int argc, char **argv) {
 	    } else {
 		hd.i = pos;
 	    }
-	    HashTableAdd(db_hash, name, strlen(name), hd, NULL);
+	    HashTableAdd(db_hash, name, strlen(name), hd, &new);
+            if (0 == new) {
+              fprintf(stderr, "duplicate read name %s\n", name);
+              return 1;
+            }
 	    break;
 
 	case SRFB_INDEX:
@@ -257,9 +288,30 @@ int main(int argc, char **argv) {
 	    old_index = pos;
 	    break;
 
+        case SRFB_NULL_INDEX:
+            break;
+
 	default:
 	    abort();
 	}
+    }
+
+    /* the type should be -1 (EOF) */
+    if( type != -1 )
+        abort();
+
+    /* are we really at the end of the srf file */
+    pos = ftell(srf->fp);
+    fseek(srf->fp, 0, SEEK_END);
+    if( pos != ftell(srf->fp) ){
+        fprintf(stderr, "srf file is corrupt\n");
+	return 1;
+    }
+    
+    if( check ){
+      ArrayDestroy(th_pos);
+      srf_destroy(srf, 1);
+      return 0;
     }
 
     /* Write out the index */
