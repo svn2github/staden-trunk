@@ -31,6 +31,8 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
+
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
 #include <io_lib/ztr.h>
