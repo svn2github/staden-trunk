@@ -66,7 +66,7 @@ mFILE *find_reading(srf_t *srf, char *tr_name) {
 	    
 
 	case SRFB_TRACE_HEADER: {
-	    off_t pos = ftell(srf->fp);
+	    /* off_t pos = ftell(srf->fp); */
 
 	    if (0 != srf_read_trace_hdr(srf, &srf->th))
 		return NULL;
@@ -120,6 +120,9 @@ mFILE *find_reading(srf_t *srf, char *tr_name) {
 	    fseeko(srf->fp, pos + srf->hdr.size, SEEK_SET);
 	    break;
 	}
+
+ 	case SRFB_NULL_INDEX:
+ 	    break;
 
 	default:
 	    fprintf(stderr, "Block of unknown type '%c'. Aborting\n", type);
