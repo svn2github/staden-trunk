@@ -53,10 +53,15 @@
  * calibrarted fastq solexa files.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "io_lib_config.h"
+#endif
+
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <zlib.h>
@@ -241,6 +246,7 @@ void delta_called(ztr_t *ztr, ztr_chunk_t *chunk) {
     }
 }
 
+#if 0
 #define SYM_EOF 256
 static void output_code_set(FILE *fp, huffman_codes_t *cds) {
     int i, j;
@@ -275,6 +281,7 @@ static void output_code_set(FILE *fp, huffman_codes_t *cds) {
     fprintf(fp, "};\n");
     fprintf(fp, "/* Tested on %d bits of compressed data */\n", nbits);
 }
+#endif
 
 /* Internal struct used during parsing */
 typedef struct {
@@ -431,7 +438,6 @@ int add_smp4_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
 static char *ztr_encode_qual(ztr_t *z, int nbase, char *qual, char *scale,
 			    int *nbytes, char **mdata, int *mdbytes) {
     char *bytes;
-    int i;
 
     if (NULL == (bytes = xmalloc(1 + nbase)))
 	return NULL;
@@ -478,8 +484,7 @@ int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
     int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
     int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
     ztr_chunk_t *zc;
-    char *data, *mdata;
-    int dlen, mdlen;
+    char *data;
     
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
 				      ++z->nchunks * sizeof(ztr_chunk_t));
@@ -522,6 +527,8 @@ int set_cnf4_metadata(ztr_t *z, char *scale) {
     z->chunk[i].mdlength = strlen(scale) + 7;
     z->chunk[i].mdata = (char *)malloc(z->chunk[i].mdlength);
     sprintf(z->chunk[i].mdata, "SCALE%c%s", 0, scale);    
+    
+    return 0;
 }
 
 /*
@@ -1599,62 +1606,6 @@ void rescale_trace(Read *r, int sig_num, int baseline) {
     }
 }
 
-#define EBASE 65536
-static double entropy16(unsigned short *data, int len) {
-    double E[EBASE];
-    double P[EBASE];
-    double e;
-    int i;
-    
-    for (i = 0; i < EBASE; i++)
-        P[i] = 0;
-
-    for (i = 0; i < len; i++)
-        P[data[i]]++;
-
-    for (i = 0; i < EBASE; i++) {
-        if (P[i]) {
-            P[i] /= len;
-            E[i] = -(log(P[i])/log(EBASE));
-        } else {
-            E[i] = 0;
-        }
-    }
-
-    for (e = i = 0; i < len; i++)
-        e += E[data[i]];
-
-    return e * log(EBASE)/log(256);
-}
-
-#define EBASE8 256
-static double entropy8(unsigned char *data, int len) {
-    double E[EBASE8];
-    double P[EBASE8];
-    double e;
-    int i;
-    
-    for (i = 0; i < EBASE8; i++)
-        P[i] = 0;
-
-    for (i = 0; i < len; i++)
-        P[data[i]]++;
-
-    for (i = 0; i < EBASE8; i++) {
-        if (P[i]) {
-            P[i] /= len;
-            E[i] = -(log(P[i])/log(EBASE8));
-        } else {
-            E[i] = 0;
-        }
-    }
-
-    for (e = i = 0; i < len; i++)
-        e += E[data[i]];
-
-    return e * log(EBASE8)/log(256);
-}
-
 #ifdef DEBUG_OUT
 #define FD_TRACE_RAW 0
 #define FD_TRACE_ORD 1
@@ -2476,8 +2427,6 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    }
 
 	    if (fp_qcal[0]) {
-		char *use_bases = (all_use_bases[l.lane][0]
-				   ? all_use_bases[l.lane] : all_use_bases[0]);
 		qcal_seq[0][0] = 0;
 		qcal_seq[1][0] = 0;
 		get_qcal_seq1(fp_qcal[0], skip, qcal_seq[0]);
