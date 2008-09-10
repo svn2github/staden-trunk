@@ -1,5 +1,5 @@
 #!/bin/sh
-slx_out=$top_srcdir/tests/data/slx_out
+slx_out=$srcdir/data/slx_out
 
 # Extract an entry using srf_extract_linear
 $top_builddir/progs/srf_extract_linear $outdir/proc.srf test_run:4:134:369:182 > $outdir/_.srf
@@ -7,7 +7,7 @@ cmp $outdir/_.srf $slx_out/test_run:4:134:369:182.srf || exit 1
 
 # Extract using the hash table method - should fail
 $top_builddir/progs/srf_extract_hash $outdir/proc.srf test_run:4:134:369:182 > $outdir/_.srf
-[ $? == 1 ] || exit 1
+[ $? = 1 ] || exit 1
 
 # Index it
 $top_builddir/progs/srf_index_hash $outdir/proc.srf
@@ -15,9 +15,9 @@ cmp $outdir/proc.srf $slx_out/proc.srf.indexed || exit 1
 
 # Extract using the hash table method
 $top_builddir/progs/srf_extract_hash $outdir/proc.srf test_run:4:134:369:182 > $outdir/_.srf
-[ $? == 0 ] || exit 1
+[ $? = 0 ] || exit 1
 
 # Check the archive/name access method too
 seq=`$top_builddir/progs/extract_seq $outdir/proc.srf/test_run:4:134:369:182 | tr -d '\012'`
-[ "$seq" == "GGTAGAGATTCTCTTGTTGACATTTTAAAAGAGCGTGTCTGGAAACGTACGGATTGTTCAGTAACTTGACTCAT" ] || exit 1
+[ "$seq" = "GGTAGAGATTCTCTTGTTGACATTTTAAAAGAGCGTGTCTGGAAACGTACGGATTGTTCAGTAACTTGACTCAT" ] || exit 1
 

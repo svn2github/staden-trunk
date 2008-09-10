@@ -7,7 +7,6 @@ test_outdir              = test.out
 
 TESTS_ENVIRONMENT       = \
 			top_builddir=$(top_builddir) \
-			top_srcdir=$(top_srcdir) \
 			outdir=$(test_outdir)
 
 TESTS                   = \

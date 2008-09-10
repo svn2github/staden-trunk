@@ -1,5 +1,5 @@
 #!/bin/sh
-slx_out=$top_srcdir/tests/data/slx_out
+slx_out=$srcdir/data/slx_out
 
 $top_builddir/progs/srf2fasta $outdir/proc.srf > $outdir/slx.fasta
 cmp $outdir/slx.fasta $slx_out/slx.fasta || exit 1

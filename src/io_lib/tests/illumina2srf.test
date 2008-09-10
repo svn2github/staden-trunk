@@ -2,8 +2,8 @@
 
 mkdir $outdir
 
-slx_in=$top_srcdir/tests/data/slx_in/Bustard1.9.5_28-08-2008_auto
-slx_out=$top_srcdir/tests/data/slx_out
+slx_in=$srcdir/data/slx_in/Bustard1.9.5_28-08-2008_auto
+slx_out=$srcdir/data/slx_out
 
 $top_builddir/progs/illumina2srf -p -R -C 0.6 \
     -N test_run:%l:%t: -n %x:%y \
