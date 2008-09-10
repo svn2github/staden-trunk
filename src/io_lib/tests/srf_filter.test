@@ -1,0 +1,32 @@
+#!/bin/sh
+slx_out=$top_srcdir/tests/data/slx_out
+
+# Filter both to raw and compare against srf2illumina on raw
+$top_builddir/progs/srf_filter -m SLXI,SLXN both.srf f_raw.srf
+$top_builddir/progs/srf2illumina f_raw.srf
+data=`cat f_raw.run/*sig2.txt`
+if [ "x$data" != "x" ]
+then
+   echo FAIL: srf2illumina sig2.txt not empty
+   exit 1
+fi
+rm f_raw.run/*sig2.txt
+(cd f_raw.run; for i in *
+do
+    cmp $i ../$slx_out/both.run/$i || exit 1
+done)
+
+# Filter both to proc and compare against srf2illumina on proc
+$top_builddir/progs/srf_filter -m PROC both.srf f_proc.srf
+$top_builddir/progs/srf2illumina f_proc.srf
+data=`cat f_proc.run/*{int,nse}.txt`
+if [ "x$data" != "x" ]
+then
+   echo FAIL: srf2illumina int/nse.txt not empty
+   exit 1
+fi
+rm f_proc.run/*{int,nse}.txt
+(cd f_proc.run; for i in *
+do
+    cmp $i ../$slx_out/both.run/$i || exit 1
+done)

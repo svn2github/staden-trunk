@@ -1,0 +1,12 @@
+#!/bin/sh
+slx_out=$top_srcdir/tests/data/slx_out
+
+$top_builddir/progs/srf_info proc.srf > proc.info
+cmp proc.info $slx_out/proc.info || exit 1
+
+$top_builddir/progs/srf_info raw.srf > raw.info
+cmp raw.info $slx_out/raw.info || exit 1
+
+$top_builddir/progs/srf_info both.srf > both.info
+cmp both.info $slx_out/both.info || exit 1
+
