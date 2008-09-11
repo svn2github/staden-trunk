@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+#include <fcntl.h>
 
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
@@ -120,6 +121,10 @@ int main(int argc, char **argv) {
     }
 
     read_sections(READ_BASES);
+
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
 
     while (NULL != (ztr = srf_next_ztr(srf, name, mask))) {
 	ztr2fasta(ztr, name);

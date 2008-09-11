@@ -42,7 +42,22 @@ srf_t *srf_create(FILE *fp) {
  */
 srf_t *srf_open(char *fn, char *mode) {
     FILE *fp;
+    char bmode[11];
+    size_t l, i;
 
+    /* Enforce binary mode for windows */
+    if ((l = strlen(mode)) < 9) {
+	int binary = 0;
+	for (i = 0; i < l; i++) {
+	    if ('b' == (bmode[i] = mode[i]))
+		binary=1;
+	}
+	if (!binary)
+	    bmode[i++] = 'b';
+	bmode[i] = 0;
+	mode = bmode;
+    }
+    
     return (fp = fopen(fn, mode)) ? srf_create(fp) : NULL;
 }
 

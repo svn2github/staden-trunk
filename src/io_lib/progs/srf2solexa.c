@@ -49,6 +49,11 @@
 #include <io_lib/ztr.h>
 #include <io_lib/srf.h>
 
+/* Fix MinGW's mkdir which only accepts one argument */
+#if defined(__MINGW32__)
+#    define mkdir(filename,mode) mkdir((filename))
+#endif
+
 #define RAW       (1<<0)
 #define PROCESSED (1<<1)
 
@@ -285,7 +290,7 @@ FILE *fopen_slx(char *dir, char *type, int lane, int tile) {
     FILE *fp;
 
     sprintf(fn, "%s/s_%d_%04d_%s.txt", dir, lane, tile, type);
-    if (NULL == (fp = fopen(fn, "w+"))) {
+    if (NULL == (fp = fopen(fn, "wb+"))) {
 	perror(fn);
 	return NULL;
     }
@@ -303,7 +308,7 @@ int dump_text(char *dir, int lane, ztr_chunk_t **chunks)
             ++k;
             if(!(k % 2)) {
                 sprintf(fn, "%s/%d_%s.txt", dir, lane, chunks[0]->data + key + 1);
-                if (NULL == (fp = fopen(fn, "w+"))) {
+                if (NULL == (fp = fopen(fn, "wb+"))) {
                     perror(fn);
                     return -1;
                 } else {

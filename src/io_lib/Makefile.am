@@ -61,3 +61,6 @@ bin_SCRIPTS = io_lib-config
 EXTRA_DIST = README COPYRIGHT ChangeLog CHANGES man options.mk bootstrap \
 	docs/ZTR_format docs/Hash_File_Format io_lib-config.in
 
+
+dist-hook:
+	rm -rf `find $(distdir)/man -name CVS`

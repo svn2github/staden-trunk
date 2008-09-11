@@ -2914,8 +2914,12 @@ int get_base_caller(char *seq_path,
 
 
     /* Basename it */
-    if (NULL == (cp = strrchr(cwd, '/')))
-	return -1;
+    if (NULL == (cp = strrchr(cwd, '/'))) {
+#ifdef _WIN32
+	if (NULL == (cp = strrchr(cwd, '\\')))
+#endif
+	    return -1;
+    }
     cp++;
 
 

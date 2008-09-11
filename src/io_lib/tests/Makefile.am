@@ -18,6 +18,9 @@ TESTS                   = \
 			srf_filter.test \
 			srf_index.test
 
+dist-hook:
+	rm -rf `find $(distdir)/data -name CVS`
+
 distclean-local:
 	-rm -rf $(test_outdir)
 

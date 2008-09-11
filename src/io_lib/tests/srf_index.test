@@ -18,6 +18,6 @@ $top_builddir/progs/srf_extract_hash $outdir/proc.srf test_run:4:134:369:182 > $
 [ $? = 0 ] || exit 1
 
 # Check the archive/name access method too
-seq=`$top_builddir/progs/extract_seq $outdir/proc.srf/test_run:4:134:369:182 | tr -d '\012'`
+seq=`$top_builddir/progs/extract_seq $outdir/proc.srf/test_run:4:134:369:182 | tr -d '\012\015'`
 [ "$seq" = "GGTAGAGATTCTCTTGTTGACATTTTAAAAGAGCGTGTCTGGAAACGTACGGATTGTTCAGTAACTTGACTCAT" ] || exit 1
 

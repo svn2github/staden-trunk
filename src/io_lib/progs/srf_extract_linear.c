@@ -35,6 +35,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <fcntl.h>
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
 #include <io_lib/ztr.h>
@@ -155,6 +156,10 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "%s not found in archive\n", tr_name);
 	return 3;
     }
+
+#ifdef _WIN32
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
 
     fwrite(mf->data, 1, mf->size, stdout);
     return 0;

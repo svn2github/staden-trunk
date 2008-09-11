@@ -40,6 +40,11 @@
 #include <io_lib/ztr.h>
 #include <io_lib/srf.h>
 
+/* Fix MinGW's mkdir which only accepts one argument */
+#if defined(__MINGW32__)
+#    define mkdir(filename,mode) mkdir((filename))
+#endif
+
 #define CR 13            /* Decimal code of Carriage Return char */
 #define LF 10            /* Decimal code of Line Feed char */
 #define EOF_MARKER 26    /* Decimal code of DOS end-of-file marker */
