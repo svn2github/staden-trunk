@@ -1,8 +1,343 @@
+2008-09-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.4 released.
+
+2008-09-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* Makefile.am:
+	(08:43:41) Updated for version number and inclusion of tests dir. 
+
+	* bootstrap,
+	* configure.in:
+	(08:43:42) Updated for version number and inclusion of tests dir. 
+
+	* io_lib/Attic/Makefile.in:
+	(08:43:55) Removed due to being auto-generated from Makefile.am 
+
+	* io_lib/os.h:
+	(08:44:56) Tidy up of endianness detection. I split apart the
+	endian step from the os-components (no strdup, etc). Also changed
+	the order so that when using autoconf the automatically detected
+	settings override any existing assumptions from os.h. 
+
+	* io_lib/hash_table.h:
+	(08:46:10) Included sys/types.h for off_t type. 
+
+2008-09-10  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tests/Makefile.am,
+	* tests/illumina2srf.test,
+	* tests/srf2fasta.test,
+	* tests/srf2fastq.test,
+	* tests/srf2illumina.test,
+	* tests/srf_filter.test,
+	* tests/srf_index.test,
+	* tests/srf_info.test,
+	* tests/data/.params,
+	* tests/data/slx_in/.params,
+	* tests/data/slx_in/s_4_0133_int.txt.gz,
+	* tests/data/slx_in/s_4_0133_nse.txt.gz,
+	* tests/data/slx_in/s_4_0134_int.txt.gz,
+	* tests/data/slx_in/s_4_0134_nse.txt.gz,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0133_prb.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0133_qhg.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0133_seq.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0133_sig2.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0134_prb.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0134_qhg.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0134_seq.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/s_4_0134_sig2.txt,
+	* tests/data/slx_in/Bustard1.9.5_28-08-2008_auto/Phasing/s_4_01_phasing.xml,
+	* tests/data/slx_in/Matrix/s_4_02_matrix.txt,
+	* tests/data/slx_out/both.info,
+	* tests/data/slx_out/both.srf,
+	* tests/data/slx_out/proc.info,
+	* tests/data/slx_out/proc.srf,
+	* tests/data/slx_out/proc.srf.indexed,
+	* tests/data/slx_out/raw.info,
+	* tests/data/slx_out/raw.srf,
+	* tests/data/slx_out/slx-C.fasta,
+	* tests/data/slx_out/slx-C.fastq,
+	* tests/data/slx_out/slx.fasta,
+	* tests/data/slx_out/slx.fastq,
+	* tests/data/slx_out/test_run:4:134:369:182.srf,
+	* tests/data/slx_out/traces.srf,
+	* tests/data/slx_out/both.run/4_ILLUMINA_GA_BUSTARD_PARAMS.txt,
+	* tests/data/slx_out/both.run/4_ILLUMINA_GA_CHASTITY.txt:
+	(15:53:41) First pass at a "make check" target. Currently this is
+	centred around the newer code, specifically SRF support. 
+
+	* tests/data/slx_out/both.run/4_ILLUMINA_GA_FIRECREST_PARAMS.txt,
+	* tests/data/slx_out/both.run/4_ILLUMINA_GA_MATRIX_FWD.txt,
+	* tests/data/slx_out/both.run/4_ILLUMINA_GA_PHASING_FWD.txt,
+	* tests/data/slx_out/both.run/4_PROGRAM_ID.txt,
+	* tests/data/slx_out/both.run/s_4_0133_int.txt,
+	* tests/data/slx_out/both.run/s_4_0133_nse.txt,
+	* tests/data/slx_out/both.run/s_4_0133_prb.txt,
+	* tests/data/slx_out/both.run/s_4_0133_seq.txt,
+	* tests/data/slx_out/both.run/s_4_0133_sig2.txt,
+	* tests/data/slx_out/both.run/s_4_0134_int.txt,
+	* tests/data/slx_out/both.run/s_4_0134_nse.txt,
+	* tests/data/slx_out/both.run/s_4_0134_prb.txt,
+	* tests/data/slx_out/both.run/s_4_0134_seq.txt,
+	* tests/data/slx_out/both.run/s_4_0134_sig2.txt:
+	(15:53:42) First pass at a "make check" target. Currently this is
+	centred around the newer code, specifically SRF support. 
+
+	* tests/Makefile.am,
+	* tests/illumina2srf.test,
+	* tests/srf2fasta.test,
+	* tests/srf2fastq.test,
+	* tests/srf2illumina.test,
+	* tests/srf_filter.test,
+	* tests/srf_index.test,
+	* tests/srf_info.test:
+	(16:13:19) Fixed tests to use $outdir for output directory so we
+	can neatly tidy it up for make distclean. Without this make
+	distcheck fails. 
+
+	* tests/Makefile.am,
+	* tests/illumina2srf.test,
+	* tests/srf2fasta.test,
+	* tests/srf2fastq.test,
+	* tests/srf2illumina.test,
+	* tests/srf_filter.test,
+	* tests/srf_index.test,
+	* tests/srf_info.test:
+	(16:43:33) Fixed some bashisms and switched to make use of srcdir
+	instead of top_srcdir/tests. 
+
+2008-09-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* acinclude.m4:
+	(13:27:35) Fixed the LIBCURL_CHECK_CONFIG code to not believe the
+	output from "curl-config --libs". We try -lcurl first off to see if
+	that also works. The reason is simply that curl-config --libs
+	typically loves to explicitly specify all the implicit
+	dependencies, such as -lssl -lcrypto -ldl, etc. This in turn locks
+	compiled io_lib libraries and binaries into requiring very specific
+	version of system libraries. 
+
+	* io_lib/Attic/Makefile.in:
+	(13:27:57) *** empty log message *** 
+
+	* io_lib/compression.c:
+	(13:30:24) Minor speed tweaks to qshift and unqshift 
+
+	* io_lib/mFILE.c,
+	* progs/solexa2srf.c:
+	(13:31:41) Added include of io_lib_config.h for autoconf builds so
+	that the ftello and similar functions get the correct prototypes. 
+
+	* io_lib/srf.c,
+	* io_lib/srf.h:
+	(13:32:44) Made partial_decode_ztr non-static and added it, along
+	with ztr_dup and construct_trace_name to the external header file
+	for use in other parts of io_lib. 
+
+	* progs/Makefile.am,
+	* progs/srf_filter.c,
+	* progs/srf_info.c:
+	(13:36:40) Added two new programs from Steven Leonard.
+	
+	srf_info: dumps out basic information on the contents of an SRF    
+	      file, including the read name prefixes used, how many	   
+	  DBs per DBH and frequencies of ZTR chunk and meta-data	 
+	strings.
+	
+	srf_filter: a tool to produce new srf files by filtering in or out 
+		data from an existing srf file. This can be performed	   
+	    either at the entire trace level (eg tagged as good or	   
+	bad) or also at individual ZTR chunk levels (eg processed      
+	data only). 
+
+	* progs/srf2fasta.c,
+	* progs/srf2fastq.c:
+	(13:37:37) Include string.h for additional prototypes (for -Wall
+	-Wno-paranthesis compilations). 
+
+	* progs/srf_extract_hash.c:
+	(13:38:47) Major overhaul from Steven Leonard. It now supports a
+	-fastq option to output fastq instead of ZTR files and optionally
+	can use calibrated or non-calibrated confidence values too. 
+
+	* progs/srf_extract_linear.c:
+	(13:39:44) Added support for SRFB_NULL_INDEX so that srf files with
+	a blank index do not causes crashes. 
+
+	* progs/srf_index_hash.c:
+	(13:40:44) Added extra error checking from Steven Leonard to spot
+	duplicate read names. The new -c option also allows checking of an
+	existing srf file without attempting to write a new index. 
+
+2008-09-08  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(08:40:20) Fixed bug reported by Robert Sanders. The fwd matrix was
+	being written twice on paired-end runs instead of fwd+reverse. 
+
+	* COPYRIGHT,
+	* io_lib/open_trace_file.c,
+	* io_lib/sff.c:
+	(10:56:46) Updated 454's copyright notice (following correspondence
+	from Jim Knight at 454) to explicitly include permission to modify
+	and redistribute the code.
+	
+	Also updated the GRL licence to be explicit rather than just an
+	implied BSD style. 
+
+2008-08-29  James Bonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/deflate_interlaced.c:
+	(09:00:39) Added external codes2codeset() function to turn
+	bit-length arrays into codesets. Useful for tools that wish to use
+	this code to use their own precomputed huffman trees. 
+
+	* io_lib/deflate_interlaced.h:
+	(09:00:53) *** empty log message *** 
+
+	* progs/solexa2srf.c:
+	(09:01:21) Renamed ILLUMINA_GA_PARAMS and ILLUMINA_GA_PARAMS2 to
+	ILLUMINA_GA_BUSTARD_PARAMS and ILLUMINA_GA_FIRECREST_PARAMS. 
+
+2008-08-26  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(11:07:09) Added the second .params file (Data directory).
+	
+	Major reduction in memory usage when adding the .params files; we
+	only hold this in memory for the first ZTR file per DBH as it ends
+	up in the header anyway. (This also speeds things up too.) 
+
+2008-08-08  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(10:21:28) Fixed a bug in parse_4_float when handling strings with
+	leading zeroes after the point, eg "17.04". Fortunately this is
+	never triggered in the solexa data as it's always one single value
+	after the decimal point. 
+
+	* configure.in,
+	* io_lib/os.h:
+	(10:33:29) Applied Chris Saunders' patch to use autoconf for
+	checking machine endianness. 
+
+	* progs/solexa2srf.c:
+	(16:52:10) Added a MAX_READS_PER_DBH #define to solexa2srf
+	(defaults at 10000) to reduce the maximum number of traces per tile
+	we process between SRF data block headers. This helps reduce the
+	maximum memory usage which is especially important on dense GA2
+	runs where 200,000 clusters in a tile can be achieved.
+	
+	Also fixed a bug with using -qf/-qr when not supplying a list of
+	tiles consecutively starting with tile 1. 
+
+2008-08-05  James Bonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/srf.c:
+	(08:18:14) Fixed memory leak in srf_next_ztr reported by Rob Egan.
+	Triggered by srf2fastq -C. 
+
+2008-07-24  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(15:47:32) Updated version to v1.10
+	
+	Added -pf/-pr parameters to allow the phasing files to be stored.
+	By default it attempts to derive these filenames from the fwd/rev
+	cycle numbers.
+	
+	Auto-compute the basecaller name and version string from the
+	directory name. 
+
+	* progs/solexa2srf.c:
+	(15:58:15) Bug fix to get_base_caller() so that it can identify the
+	directory when given a full pathname to elsewhere other than the
+	cwd. 
+
+2008-07-18  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(15:54:51) No longer iterate through tiles printing up . or !
+	depending on whether we encounter an error. Now it just aborts at
+	the point of failure.
+	
+	Also made the parsing code more robust as in a couple specific
+	cases it only wrote to stderr without actually generating a
+	non-zero exit code.
+	
+	These mean the tool is more amenable to running in a production
+	pipeline. If it gets any error at all it'll be more obvious and
+	forces attention. 
+
+2008-07-11  James Bonfield  <jkb@sanger.ac.uk>
+
+	* progs/solexa2srf.c:
+	(11:35:28) Updated the rounding of int/nse/sig2 to all use the
+	rint() function to round to closest integer value. Previously
+	int/nse rounded down and sig2 rounded closest. (Although the
+	rounding on sig2 was via +/- 0.5 and so the half-way cases
+	sometimes give different answers to the new code using rint()).
+	
+	It has a very minor impact overall, but it is now consistent. 
+
+2008-07-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.3 released.
+
+2008-07-09  jkbonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/mFILE.c:
+	* io_lib/Read.c,
+	* io_lib/mFILE.h:
+	(13:54:59) Fixed a bug visible with "extract_seq -fasta_out -fofn f
+	-output f.fasta" whereby only the last file was visible. This is
+	due to the mFILE mechanism and an explicit fseek upon writing each
+	file. Fixed this by using an extended freopen option ("wbx" instead
+	of "wb") to override this feature. It's not ideal, but gets the job
+	done - I hope. 
+
+2008-07-08  jkbonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/srf.c,
+	* io_lib/srf.h:
+	(13:22:57) Added SRFB_NULL_INDEX as an SRF block type. It's
+	essentially type 0 and is defined to be 8 long (with 7 more zeros).
+	The purpose is to transparently gloss over the 8-zeros that may be
+	on the end of some files indicating a missing index block. 
+
+	* progs/solexa2srf.c:
+	(13:34:40) MAJOR BUG FIX!
+	
+	Fixed a bug in reorder_ztr() whereby the sorted order of multiple
+	chunks of the same chunk type were not "stable". The result of this
+	is that 3 SMP4 chunks (say A, B, C) may end up sorted A, B, C with
+	nchunks==9 and C, A, B with nchunks==15. Given that an optimisation
+	means that we change the number of chunks depending on whether
+	we've encoded HUFF chunks this causes a "corruption" in as far as
+	the correct data is stored but with potentially an incorrect
+	meta-data block for the first SMP4 chunk.
+	
+	See srf_fix.c to reverse this problem.
+	
+	Also added a warning regarding the -C option and -qf option. These
+	are inherently incompatible (right now) as purity filtered data is
+	not calibrated.
+	
+	Updated version to v1.8 
+
+2008-06-12  jkbonfield  <jkb@sanger.ac.uk>
+
+	* progs/srf2fasta.c,
+	* progs/srf2fastq.c:
+	(10:44:23) Removed memory leaks from using ztr_find_chunks and not
+	freeing the result. 
+
 2008-06-04  James Bonfield  <jkb@sanger.ac.uk>
 
 	* 1.11.2 released.
 
-2008-06-04  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-06-04  jkbonfield  <jkb@sanger.ac.uk>
 
 	* docs/ZTR_format:
 	(13:06:36) Added some text regarding *ideas* for version 2. These
@@ -11,7 +346,7 @@
 	* io_lib/compression.c:
 	(13:06:54) Comment change only. 
 
-2008-06-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-06-03  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/srf.c:
 	(16:23:50) Applied bug fix from John Emhoff: srf_read_xml was
@@ -19,7 +354,7 @@
 	string rather than the entire SRF block itself including header. It
 	now agrees with srf_write_xml, which interpreted this correctly. 
 
-2008-05-23  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-23  jkbonfield  <jkb@sanger.ac.uk>
 
 	* docs/ZTR_format:
 	(08:38:05) Documented TYPE meta-data for SMP4 and removed the
@@ -29,13 +364,13 @@
 	
 	Added CNF1 chunk type (how did I miss this before?). 
 
-2008-05-21  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-21  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/srf.c:
 	(09:12:23) Fixed memory leak in construct_trace_name. (Patch from
 	John Emhoff at Heliocos.) 
 
-2008-05-14  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-14  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(13:08:34) Fixed floating point to integer rounding of trace data
@@ -54,7 +389,7 @@
 	bad data. We then get the option to filter it on extraction
 	instead. 
 
-2008-05-13  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-13  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(14:25:53) Reverted the footer position change in encode_ztr() back
@@ -62,7 +397,7 @@
 	header block too. Although this contains variable data (OFFS=value)
 	it's the same for all members of a tile. 
 
-2008-05-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-08  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/open_trace_file.c:
 	(11:06:53) Sped up searching in SRF files by stripping off the
@@ -78,7 +413,7 @@
 	(11:08:18) Fixed bug in srf_find_trace that caused it to rarely
 	fail to find a trace when querying the hash table. 
 
-2008-05-06  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-05-06  jkbonfield  <jkb@sanger.ac.uk>
 
 	* docs/ZTR_format:
 	(11:44:51) Fixed error in the pictoral diagram describing the magic
@@ -106,13 +441,13 @@
 	(15:43:33) Added srf.o to the Staden Package Makefile (NB: not part
 	of the autoconf system.) 
 
-2008-04-15  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-04-15  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/hash_table.c:
 	(15:09:41) Initialises pb and pc in hash() function when using
 	HASH_FUNC_JENKINS3. Bug reported by Cristian Goina. 
 
-2008-04-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-04-08  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(11:22:33) Fixed a code inefficiency when using -qf and -qr. 
@@ -137,7 +472,7 @@
 	Fixed a bug introduced in the recent efficiency improvements for
 	-qf/-qr. These meant that many sequences were incorrectly skipped. 
 
-2008-04-07  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-04-07  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(08:54:06) Increased the estimation of number of bytes per cycle in
@@ -149,7 +484,7 @@
 	chunks were not compressed while other chunks got needless
 	additional layers of compression. 
 
-2008-04-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-04-03  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(15:57:06) The defaults for -N and -n are now using the same naming
@@ -185,7 +520,7 @@
 	doing that. I'm unsure why, but overall it sped up solexa2srf -r 3
 	fold when the Firecrest data is gzipped. 
 
-2008-04-02  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-04-02  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(09:14:45) Fixed the footer(aka body) position calculation so it
@@ -216,14 +551,14 @@
 	* progs/srf_dump_all.c:
 	(11:05:25) Fixed missing newlines in the standard "dump" format. 
 
-2008-03-20  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-03-20  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/hash_table.c,
 	* progs/hash_list.c:
 	(09:45:07) Added more includes of io_lib_config.h to ensure 64-bit
 	file support works correctly. 
 
-2008-03-13  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-03-13  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(09:32:15) Fixed an error when passing in fully qualified
@@ -244,7 +579,7 @@
 	These add support for the new Illumina IPAR file format via the -I
 	command line option. 
 
-2008-02-29  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-02-29  jkbonfield  <jkb@sanger.ac.uk>
 
 	* acinclude.m4,
 	* configure.in:

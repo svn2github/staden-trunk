@@ -1,4 +1,4 @@
-			IO_LIB VERSION 1.11.2
+			IO_LIB VERSION 1.11.4
 			=====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -29,6 +29,19 @@ too. See the file include/Read.h for the generic 'Read' structure.
 What's new in this release?
 ===========================
 
+There are two new SRF tools; srf_info and srf_filter.
+Srf_info provides some basic metrics on the contents of an SRF file -
+how many reads there are and what sort of data they contain.
+Srf_filter takes an SRF file and produces a new one containing just
+certain types of data (eg processed vs raw) or certain reads
+(good/bad or matching specific name patterns).
+
+In addition to this there's the usual clutch of bug fixes, again
+mainly centred around SRF support.
+
+See CHANGES and ChangeLog for full details.
+
+
 Compared to 1.10.x this release introduces support for the new
 short-read file format: SRF (Sequence Read Format). Tightly coupled
 with SRF development are updates to the ZTR format, which is now at
@@ -52,8 +65,6 @@ Finally the directory layout has been greatly simplified with the
 merging of all the format directories into a single "io_lib"
 directory and the programs utilising it remaining in the "progs"
 subdirectory.
-
-See CHANGES and ChangeLog for more detailed change information.
 
 
 Building

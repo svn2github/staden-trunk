@@ -1,3 +1,82 @@
+Version 1.11.4 (11th September 2008)
+--------------
+
+* New "make check" build target to perform some automated tested.
+  Currently limited to testing the SRF tools.
+
+* Fixed machine endianness issues. Specifically this resolves known Intel
+  MacOS-X problems.
+
+* New SRF tools
+
+  - srf_info: reports simple metrics on the contents of an SRF file.
+
+  - srf_filter: slices and dices the SRF file to produce a new one
+    with various types of data removed.
+
+* illumina2srf
+
+  - Minor float/int rounding change when storing int/nse/sig2 data.
+
+  - Improved error detection such that it returns a failure code more
+    often given a parsing issue.
+
+  - Added -pf/pr parameters for storing Phasing files.
+
+  - Reduced memory usage, especially on large numbers of clusters per
+    tile. We may now produce multiple DBH blocks per tile. Also major
+    reduction to memory when handling the .params files.
+
+  - Added storage of 2nd .params file (firecrest).
+
+  - Fixed bug in the automatic base-call version identification.
+
+  - Fixed a bug with using -qf/qr when not providing all tiles (ie not
+    starting from tile number 1).
+
+  - Bug fix with storing the reverse matrix file in paired-end runs; a
+    duplicate of the forward one was being used instead.
+
+* General SRF
+
+  - Improved error checking in srf_index_hash. It now spots duplicate
+    reads and also has a -c option to check an existing SRF file
+    without writing the index.
+
+  - Fixed a memory leak in srf_next_ztr(), triggered in srf2fastq -C.
+
+Version 1.11.3 (9th July 2008)
+--------------
+
+* illumina2srf change:
+
+  - IMPORTANT bug fix to illumina2srf when using the "-r" flag to
+    store raw (.int and .nse) data. This could often result in
+    corrupting the data ZTR meta-data for the SMP4 chunks resulting in
+    confusion over which trace channels are raw and which are
+    processed.
+
+    Fortunately the corruption is reversable. For more details and a
+    fix see the ssrformat announcement of the issue:
+
+    http://www.bcgsc.ca/pipermail/ssrformat/2008-July/000531.html
+
+* General SRF changes:
+
+  - Removed a memory leak in ztr_find_chunks().
+
+  - Added SRFB_NULL_INDEX as an SRF block type. This provides a more
+    transparent way to skip over the 8 zero value bytes that may exist
+    at the end of an SRF file missing an index block.
+
+* Other changes
+
+  - Fixed a bug in extract_seq when operating on multiple files and
+    outputting to a file rather than a pipe. An erroneous seek in the
+    mFILE code lead to it repeatedly truncating the output, resulting
+    in one sequence file at the end instead of multiple files.
+
+
 Version 1.11.2 (4th June 2008)
 --------------
 
