@@ -20,7 +20,7 @@
 
 /* Container header - several per file */
 typedef struct {
-    char block_type;
+    int block_type;
     char version[256];
     char container_type;
     char base_caller[256];
@@ -29,7 +29,7 @@ typedef struct {
 
 /* Trace header - several per container */
 typedef struct {
-    char block_type; 
+    int block_type; 
     char read_prefix_type;
     char id_prefix[256];
     uint32_t trace_hdr_size;
@@ -38,7 +38,7 @@ typedef struct {
 
 /* Trace body - several per trace header */
 typedef struct {
-    char block_type;
+    int block_type;
     int read_id_length;
     char read_id[256];
     unsigned char flags;
