@@ -2,6 +2,7 @@
 #define _HASH_TABLE_H_
 
 #include <inttypes.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 
