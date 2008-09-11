@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign no-dependencies
 
-SUBDIRS = io_lib progs
+SUBDIRS = io_lib progs tests
 
 man_MANS = \
 	man/man3/exp2read.3 \
