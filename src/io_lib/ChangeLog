@@ -4,9 +4,7 @@
 
 2008-09-11  James Bonfield  <jkb@sanger.ac.uk>
 
-	* Makefile.am:
-	(08:43:41) Updated for version number and inclusion of tests dir. 
-
+	* Makefile.am,
 	* bootstrap,
 	* configure.in:
 	(08:43:42) Updated for version number and inclusion of tests dir. 
@@ -22,6 +20,38 @@
 
 	* io_lib/hash_table.h:
 	(08:46:10) Included sys/types.h for off_t type. 
+
+	* CHANGES,
+	* ChangeLog,
+	* README:
+	(10:25:27) Final tweaks for preparing 1.11.4 
+
+	* io_lib/srf.h:
+	(10:52:37) Changed block_type from char to int. This cures a
+	problem on PowerMac (PPC) running Debian where char is by default
+	an unsigned type, meaning it cannot be compared to EOF (-1). 
+
+	* tests/srf_index.test,
+	* tests/data/slx_out/Attic/test_run:4:134:369:182.srf,
+	* tests/data/slx_out/test_run_4_134_369_182.srf:
+	(11:09:11) Renamed test_run:4:134:369:182.srf to
+	test_run_4_134_369_182.srf as Windows cannot cope with colons in
+	filenames, causing the tar file to fail to unpack. Grrr. 
+
+	* Makefile.am,
+	* io_lib/srf.c,
+	* progs/solexa2srf.c,
+	* progs/srf2fasta.c,
+	* progs/srf2fastq.c,
+	* progs/srf2solexa.c,
+	* progs/srf_dump_all.c,
+	* progs/srf_extract_linear.c,
+	* tests/Makefile.am,
+	* tests/srf_index.test,
+	* tests/srf_info.test:
+	(15:25:29) A variety of changes to make the code work correctly
+	using msys/mingw on Windows. These mainly revolve around binary
+	mode and nl/cr issues. 
 
 2008-09-10  James Bonfield  <jkb@sanger.ac.uk>
 
