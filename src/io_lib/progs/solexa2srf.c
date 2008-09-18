@@ -2107,7 +2107,8 @@ int get_tile_from_name(char *name, int *lane, int *tile) {
  * Returns: 0 written for success
  *	   -1 for failure
  */
-int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
+int append(srf_t *srf, srf_index_t *idx,
+	   char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   char *dir_qcal, int ipar, int raw, int proc, int skip,
 	   int phased, float chastity, int quiet, int rev_cycle,
 	   char *name_fmt, char *prefix_fmt,
@@ -2785,6 +2786,8 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 		mf = encode_ztr(z, &footer, 0);
 		srf_construct_trace_hdr(&th, prefix, (unsigned char *)mf->data,
 					footer);
+		if (idx && srf_index_add_trace_hdr(idx, ftello(srf->fp)))
+			return -1;
 		if (-1 == srf_write_trace_hdr(srf, &th))
 		    return -1;
 	    } else {
@@ -2798,6 +2801,12 @@ int append(srf_t *srf, char *seq_file, char *fwd_fastq, char *rev_fastq,
 	    srf_construct_trace_body(&tb, name, -1,
 				     (unsigned char *)mf->data+footer,
 				     mf->size-footer, flags);
+	    if (idx) {
+		char full_name[1024];
+		sprintf(full_name, "%s%s", prefix, name);
+		if (srf_index_add_trace_body(idx, full_name, ftello(srf->fp)))
+		    return -1;
+	    }
 	    if (-1 == srf_write_trace_body(srf, &tb))
 		return -1;
 
@@ -2945,6 +2954,7 @@ void usage(int code) {
     fprintf(stderr, "Illumina2srf v" I2S_VERSION "\n\n");
     fprintf(stderr, "Usage: illumina2srf [options] *_seq.txt ...\n");
     fprintf(stderr, "Options:\n");
+    fprintf(stderr, "    -i       Create an index too\n");
     fprintf(stderr, "    -I       IPAR format for raw data\n");
     fprintf(stderr, "    -r       Add raw data:        ../_*{int,nse}.txt\n");
     fprintf(stderr, "    -R       Skip raw data:       ../_*{int,nse}.txt - default\n");
@@ -3005,6 +3015,7 @@ int main(int argc, char **argv) {
     char *name_fmt = "%x:%y";
     char *prefix_fmt = "%m_%r:%l:%t:";
     srf_t *srf;
+    srf_index_t *idx = NULL;
     srf_cont_hdr_t *ch;
     float chastity = 0;
     int include_failed_reads = 0;
@@ -3024,6 +3035,9 @@ int main(int argc, char **argv) {
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
 	if (!strcmp(argv[i], "-")) {
 	    break;
+	} else if (!strcmp(argv[i], "-i")) {
+	    if (NULL == (idx = srf_index_create(NULL, NULL, 0)))
+		return 1;
 	} else if (!strcmp(argv[i], "-I")) {
 	    ipar_mode = 1;
 	} else if (!strcmp(argv[i], "-r")) {
@@ -3160,6 +3174,8 @@ int main(int argc, char **argv) {
 	strcpy(base_caller_vers, "Unknown");
     }
     ch = srf_construct_cont_hdr(NULL, base_caller_name, base_caller_vers);
+    if (idx)
+	srf_index_add_cont_hdr(idx, ftello(srf->fp));
     srf_write_cont_hdr(srf, ch);
     srf_destroy_cont_hdr(ch);
 
@@ -3232,7 +3248,7 @@ int main(int argc, char **argv) {
 	if (!quiet) {
 	    printf("Processing tile %s\n", argv[i]);
 	}
-	if (-1 == append(srf, argv[i], fwd_fastq, rev_fastq, dir_qcal,
+	if (-1 == append(srf, idx, argv[i], fwd_fastq, rev_fastq, dir_qcal,
 			 ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
 			 quiet, rev_cycle, name_fmt, prefix_fmt, 
@@ -3253,6 +3269,16 @@ int main(int argc, char **argv) {
     }
     if (!quiet && dots)
 	putchar('\n');
+
+    /* Write the index */
+    if (idx) {
+	srf_index_stats(idx, NULL);
+	srf_index_write(srf, idx);
+	srf_index_destroy(idx);
+    } else {
+	/* index size zero => no index */
+	srf_write_uint64(srf, 0);
+    }
 
     srf_destroy(srf, 1);
 

@@ -712,6 +712,317 @@ int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr) {
     return ferror(srf->fp) ? -1 : 0;
 }
 
+/* Position in index - internal struct used for code below only */
+typedef struct {
+    uint64_t pos;
+    uint32_t dbh;
+} pos_dbh;
+
+/*
+ * This allocates and initialises an srf_index_t struct filling out the
+ * fields to default values or the supplied parameters. It does not
+ * actually write anything to disc itself.
+ *
+ * Note: non-NULL values for ch_file and th_file are not implemented yet.
+ *
+ * ch_file is the container header file. If specified as non-NULL it is the 
+ * name of the file storing the container and DB records (trace bodies).
+ * NULL implies all the data is in the same file.
+ *
+ * th_file is the filename where we store the DBH records (trace headers).
+ * NULL implies all the data is in the same file.
+ *
+ * dbh_sep is a boolean value used to indicate whether we store the
+ * location of DBH+DB per trace or just the DB record. The latter uses less
+ * space and is most generally used, but the former is required if DBH and DB
+ * are split apart into two files (ch_file and th_file).
+ *
+ * Returns srf_index_t pointer on success.
+ *         NULL on failure
+ */
+srf_index_t *srf_index_create(char *ch_file, char *th_file, int dbh_sep) {
+    srf_index_t *idx = (srf_index_t *)malloc(sizeof(srf_index_t));
+    if (!idx)
+	return NULL;
+
+    if (ch_file) {
+	strncpy(idx->ch_file, ch_file, PATH_MAX);
+	idx->ch_file[PATH_MAX] = 0;
+    } else {
+	idx->ch_file[0] = 0;
+    }
+
+    if (th_file) {
+	strncpy(idx->th_file, th_file, PATH_MAX);
+	idx->th_file[PATH_MAX] = 0;
+    } else {
+	idx->th_file[0] = 0;
+    }
+
+    idx->dbh_pos_stored_sep = dbh_sep;
+
+    /* Create the arrays and hash table */
+    if (!(idx->ch_pos = ArrayCreate(sizeof(uint64_t), 0)))
+	return NULL;
+
+    if (!(idx->th_pos = ArrayCreate(sizeof(uint64_t), 0)))
+	return NULL;
+
+    if (!(idx->db_hash = HashTableCreate(0, HASH_DYNAMIC_SIZE |
+					    HASH_FUNC_JENKINS3)))
+	return NULL;
+
+    return idx;
+}
+
+
+/*
+ * Deallocates memory used by an srf_index_t structure.
+ */
+void srf_index_destroy(srf_index_t *idx) {
+    if (!idx)
+	return;
+
+    if (idx->db_hash)
+	HashTableDestroy(idx->db_hash, 0);
+    if (idx->ch_pos)
+	ArrayDestroy(idx->ch_pos);
+    if (idx->th_pos)
+	ArrayDestroy(idx->th_pos);
+
+    free(idx);
+}
+
+
+/*
+ * Dumps out some statistics on the index to fp, or stderr if fp
+ * is NULL.
+ */
+void srf_index_stats(srf_index_t *idx, FILE *fp) {
+    HashTableStats(idx->db_hash, fp ? fp : stderr);
+}
+
+
+/*
+ * Adds a container header (CH block) to the srf index.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int srf_index_add_cont_hdr(srf_index_t *idx, uint64_t pos) {
+    uint64_t *ip = ARRP(uint64_t, idx->ch_pos, ArrayMax(idx->ch_pos));
+    return ip ? (*ip = pos, 0) : -1;
+}
+
+
+/*
+ * Adds a trace header (DBH block) to the srf index.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int srf_index_add_trace_hdr(srf_index_t *idx, uint64_t pos) {
+    uint64_t *ip = ARRP(uint64_t, idx->th_pos, ArrayMax(idx->th_pos));
+    return ip ? (*ip = pos, 0) : -1;
+}
+
+
+/*
+ * Adds a trace body (DB block) to the srf index.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int srf_index_add_trace_body(srf_index_t *idx, char *name, uint64_t pos) {
+    HashData hd;
+    pos_dbh *pdbh;
+    int new;
+
+    if (idx->dbh_pos_stored_sep) {
+	if (NULL == (pdbh = (pos_dbh *)malloc(sizeof(*pdbh))))
+	    return -1;
+	pdbh->pos = pos;
+	pdbh->dbh = ArrayMax(idx->th_pos);
+	hd.p = pdbh;
+    } else {
+	hd.i = pos;
+    }
+    HashTableAdd(idx->db_hash, name, strlen(name), hd, &new);
+    if (0 == new) {
+	fprintf(stderr, "duplicate read name %s\n", name);
+	return -1;
+    }
+
+    return 0;
+}
+
+
+/*
+ * Writes the HashTable structures to 'fp'.
+ * This is a specialisation of the HashTable where the HashData is a
+ * position,size tuple.
+ *
+ * Header:
+ *   x4    magic number, starting with 'I'.
+ *   x4    version code (eg "1.00")
+ *   x8    index size (should be x4 as we assume bucket locs are x4?)
+ *
+ *   x1    index type ('E' normally)
+ *   x1    dbh_pos_stored_sep (indicates if the item list contains the
+ *         "data block header" index number).
+ *
+ *   x4    number of containers
+ *   x4    number of DBHs
+ *   x8    number of hash buckets
+ *
+ *   x*    dbhFile  p-string (NULL if held within the same file)
+ *   x*    contFile p-string (NULL if held within the same file)
+ *
+ * Containers: (1 entry per container)
+ *   x8    file position of container header
+ *
+ * Data Block Headers: (1 entry per DBH)
+ *   x8    file position of container header
+ *
+ * Buckets: (1 entry per bucket)
+ *   x8    8-byte offset of linked list pos,  rel. to the start of the hdr
+ *
+ * Items: (1 per trace)
+ *   x1    name disambiguation hash, top-most bit set => last item in list
+ *   x8    data position
+ *  (x4)  (dbh_index - optional; present if dbh_pos_stored_sep is 1)
+ *
+ * Footer:
+ *   x4    magic number
+ *   x4    version
+ *   x8    index size
+ *
+ * Returns: the number of bytes written on success
+ *         -1 for error
+ */
+int srf_index_write(srf_t *srf, srf_index_t *idx) {
+    unsigned int i, j;
+    srf_index_hdr_t hdr;
+    uint64_t *bucket_pos;
+    int item_sz;
+    HashTable *h = idx->db_hash;
+
+    /* Option: whether to store dbh positions directly in the index */
+    hdr.dbh_pos_stored_sep = idx->dbh_pos_stored_sep;
+
+    /* Compute index size and bucket offsets */
+    hdr.size = 34 +
+	1 + (idx->ch_file ? strlen(idx->ch_file) : 0) +
+	1 + (idx->th_file ? strlen(idx->th_file) : 0);
+    hdr.size += 8*(ArrayMax(idx->ch_pos) +
+		   ArrayMax(idx->th_pos) +
+		   h->nbuckets);
+    if (NULL == (bucket_pos = (uint64_t *)calloc(h->nbuckets,
+						 sizeof(*bucket_pos))))
+	return -1;
+    for (i = 0; i < h->nbuckets; i++) {
+	HashItem *hi;
+	if (!(hi = h->bucket[i]))
+	    continue;
+	bucket_pos[i] = hdr.size;
+	item_sz = 1 + 8 + (hdr.dbh_pos_stored_sep ? 4 : 0);
+	for (; hi; hi = hi->next)
+	    hdr.size += item_sz;
+    }
+    hdr.size += 16; /* footer */
+
+    /* Construct and write out the index header */
+    memcpy(hdr.magic,   SRF_INDEX_MAGIC,   4);
+    memcpy(hdr.version, SRF_INDEX_VERSION, 4);
+    hdr.index_type = 'E';
+    hdr.n_container = ArrayMax(idx->ch_pos);
+    hdr.n_data_block_hdr = ArrayMax(idx->th_pos);
+    hdr.n_buckets = h->nbuckets;
+    if (idx->th_file)
+	strncpy(hdr.dbh_file,  idx->th_file, 255);
+    else
+	hdr.dbh_file[0] = 0;
+    if (idx->ch_file)
+	strncpy(hdr.cont_file, idx->ch_file, 255);
+    else
+	hdr.cont_file[0] = 0;
+    if (0 != srf_write_index_hdr(srf, &hdr))
+	return -1;
+
+    /* Write the container and data block header arrays */
+    j = ArrayMax(idx->ch_pos);
+    for (i = 0; i < j; i++) {
+	if (0 != srf_write_uint64(srf, arr(uint64_t, idx->ch_pos, i)))
+	    return -1;
+    }
+
+    j = ArrayMax(idx->th_pos);
+    for (i = 0; i < j; i++) {
+	if (0 != srf_write_uint64(srf, arr(uint64_t, idx->th_pos, i)))
+	    return -1;
+    }
+
+    /* Write out buckets */
+    for (i = 0; i < h->nbuckets; i++) {
+	if (0 != srf_write_uint64(srf, bucket_pos[i]))
+	    return -1;
+    }
+
+    /* Write out the trace locations themselves */
+    for (i = 0; i < h->nbuckets; i++) {
+	HashItem *hi;
+	/*
+	fprintf(stderr, "Bucket %d offset %lld vs %lld\n",
+		i, ftell(srf->fp), bucket_pos[i]);
+	*/
+	if (!(hi = h->bucket[i]))
+	    continue;
+	for (; hi; hi = hi->next) {
+	    uint64_t pos;
+	    uint32_t dbh = 0;
+	    uint32_t h7;
+
+	    if (hdr.dbh_pos_stored_sep) {
+		pos_dbh *pdbh = (pos_dbh *)hi->data.p;
+		pos = pdbh->pos;
+		dbh = pdbh->dbh;
+	    } else {
+		pos = hi->data.i;
+	    }
+
+	    /* Rehash key in 7 bits;  */
+	    h7 = hash64(h->options & HASH_FUNC_MASK,
+			(uint8_t *)hi->key, hi->key_len) >> 57;
+	    if (!hi->next)
+		h7 |= 0x80;
+	    /*
+	    fprintf(stderr, "\t%.*s => %x @ %lld\n",
+		    hi->key_len, hi->key, h7, pos);
+	    */
+	    if (fputc(h7, srf->fp) < 0)
+		return -1;
+	    if (0 != srf_write_uint64(srf, pos))
+		return -1;
+
+	    if (hdr.dbh_pos_stored_sep)
+		if (0 != srf_write_uint32(srf, dbh))
+		    return -1;
+	}
+    }
+
+    /* Footer */
+    if (4 != fwrite(hdr.magic,   1, 4, srf->fp))
+	return -1;
+    if (4 != fwrite(hdr.version, 1, 4, srf->fp))
+	return -1;
+    if (0 != srf_write_uint64(srf, hdr.size))
+	return -1;
+
+    free(bucket_pos);
+
+    return 0;
+}
+
 /*
  * ---------------------------------------------------------------------------
  * Trace name codec details.

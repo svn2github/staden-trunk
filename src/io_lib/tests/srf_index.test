@@ -6,6 +6,7 @@ $top_builddir/progs/srf_extract_linear $outdir/proc.srf test_run:4:134:369:182 >
 cmp $outdir/_.srf $slx_out/test_run_4_134_369_182.srf || exit 1
 
 # Extract using the hash table method - should fail
+echo "NB: The next line is expected to be an error message" 1>&2
 $top_builddir/progs/srf_extract_hash $outdir/proc.srf test_run:4:134:369:182 > $outdir/_.srf
 [ $? = 1 ] || exit 1
 

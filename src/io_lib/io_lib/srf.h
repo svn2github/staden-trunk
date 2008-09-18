@@ -1,6 +1,7 @@
 #ifndef _SRF_H_
 #define _SRF_H_
 
+#include "io_lib/hash_table.h"
 #include "io_lib/ztr.h"
 #include "io_lib/mFILE.h"
 
@@ -56,12 +57,6 @@ typedef struct {
 #define SRF_READ_FLAG_WITHDRAWN_MASK (1<<1)
 #define SRF_READ_FLAG_USER_MASK      (7<<5)
 
-/* Index - one per file */
-typedef struct {
-    uint32_t next_block_offset;
-    char block_type;
-} srf_index_t;
-
 /* Indexing */
 typedef struct {
     char     magic[4];
@@ -76,6 +71,16 @@ typedef struct {
     char     cont_file[256];
     int      index_hdr_sz; /* size of the above data on disk */
 } srf_index_hdr_t;
+
+/* In-memory index itself */
+typedef struct {
+    char ch_file[PATH_MAX+1];
+    char th_file[PATH_MAX+1];
+    Array ch_pos;
+    Array th_pos;
+    int dbh_pos_stored_sep;
+    HashTable *db_hash;
+} srf_index_t;
 
 /* Master SRF object */
 typedef struct {
@@ -115,6 +120,7 @@ int srf_write_uint32(srf_t *srf, uint32_t val);
 int srf_read_uint64(srf_t *srf, uint64_t *val);
 int srf_write_uint64(srf_t *srf, uint64_t val);
 
+
 /*--- Mid level I/O - srf block */
 srf_cont_hdr_t *srf_construct_cont_hdr(srf_cont_hdr_t *ch,
 				       char *bc,
@@ -146,6 +152,13 @@ int srf_read_trace_body(srf_t *srf, srf_trace_body_t *th, int no_trace);
 
 int srf_read_index_hdr(srf_t *srf, srf_index_hdr_t *hdr, int no_seek);
 int srf_write_index_hdr(srf_t *srf, srf_index_hdr_t *hdr);
+srf_index_t *srf_index_create(char *ch_file, char *th_file, int dbh_sep);
+void srf_index_destroy(srf_index_t *idx);
+void srf_index_stats(srf_index_t *idx, FILE *fp);
+int srf_index_add_cont_hdr(srf_index_t *idx, uint64_t pos);
+int srf_index_add_trace_hdr(srf_index_t *idx, uint64_t pos);
+int srf_index_add_trace_body(srf_index_t *idx, char *name, uint64_t pos);
+int srf_index_write(srf_t *srf, srf_index_t *idx);
 
 /*--- Higher level I/O functions */
 mFILE *srf_next_trace(srf_t *srf, char *name);
