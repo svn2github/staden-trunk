@@ -2029,6 +2029,10 @@ void parse_directory(loc_t *l) {
     /* Defaults for when we fail */
     strcpy(l->date, "?");
     strcpy(l->machine, "?");
+    l->run = 0;
+    l->x = 0;
+    l->tile = 0;
+    l->lane = 0;
 
     if (NULL == getcwd(cwd, 8192))
 	return;
