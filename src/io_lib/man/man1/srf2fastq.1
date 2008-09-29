@@ -1,0 +1,47 @@
+.TH srf2fastq 1 "September 19" "" "Staden io_lib"
+
+.SH "NAME"
+
+.PP
+.BR srf2fastq
+\- Converts SRF files to Sanger fastq format
+
+.SH "SYNOPSIS"
+.PP
+\fBsrf2fastq\fR  [\fI-c\fR] [\fI-C\fR] \fIsrf_archive\fR ...
+
+.SH "DESCRIPTION"
+.PP
+\fBsrf2fastq\fR extracts sequences and qualities from one or more SRF
+archives and writes them in Sanger fastq format to stdout.
+.PP
+Note that Illumina
+also have a fastq format (used in the GERALD directories) which
+differs slightly in the use of log-odds scores for the quality
+values. The format described here is using the traditional \fIPhred\fR
+style of quality encoding.
+
+.SH "OPTIONS"
+.PP
+.TP
+\fB-c\fR
+Outputs calibrated confidence values using the ZTR \fBCNF1\fR
+chunk type for a single quality per base. Without this use the
+original Illumina \fI_prb.txt\fR files consisting of four quality
+values per base, stored in the ZTR \fBCNF4\fR chunks.
+.TP
+\fB-C\fR
+Masks out sequences tagged as bad quality.
+
+.SH "EXAMPLES"
+.PP
+To extract only the good quality sequences from all srf files in the
+current directory using calibrated confidence values (if available).
+.PP
+.nf
+    srf2fastq -c -C *.srf > runX.fastq
+.fi
+
+.SH "AUTHOR"
+.PP
+James Bonfield, Wellcome Trust Sanger Institute
