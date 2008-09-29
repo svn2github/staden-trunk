@@ -1,4 +1,4 @@
-bin_PROGRAMS = convert_trace makeSCF extract_seq extract_qual index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract hash_list trace_dump hash_sff append_sff ztr_dump illumina2srf srf2illumina srf_dump_all srf_index_hash srf_extract_linear srf_extract_hash srf2fastq srf2fasta srf_filter srf_info
+bin_PROGRAMS = convert_trace makeSCF extract_seq extract_qual index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract hash_list trace_dump hash_sff append_sff ztr_dump illumina2srf srf2illumina srf_dump_all srf_index_hash srf_extract_linear srf_extract_hash srf2fastq srf2fasta srf_filter srf_info srf_list
 
 convert_trace_SOURCES = convert_trace.c
 convert_trace_LDADD = $(top_builddir)/io_lib/libread.a @LIBZ@ @LIBCURL@
@@ -76,5 +76,8 @@ srf_filter_LDADD = $(top_builddir)/io_lib/libread.a @LIBZ@ @LIBCURL@
 
 srf_info_SOURCES = srf_info.c
 srf_info_LDADD = $(top_builddir)/io_lib/libread.a @LIBZ@ @LIBCURL@
+
+srf_list_SOURCES = srf_list.c
+srf_list_LDADD = $(top_builddir)/io_lib/libread.a @LIBZ@ @LIBCURL@
 
 INCLUDES= -I${top_srcdir}
