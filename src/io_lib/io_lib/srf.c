@@ -1805,24 +1805,21 @@ int srf_next_block_details(srf_t *srf, uint64_t *pos, char *name) {
 	
 	break;
 
-    case SRFB_TRACE_BODY: {
-	srf_trace_body_t tb;
-
+    case SRFB_TRACE_BODY:
 	/* Inefficient, but it'll do for testing purposes */
-	if (0 != srf_read_trace_body(srf, &tb, 1))
+	if (0 != srf_read_trace_body(srf, &srf->tb, 1))
 	    return -2;
 
 	if (name) {
 	     if (-1 == construct_trace_name(srf->th.id_prefix,
-					    (unsigned char *)tb.read_id,
-					    tb.read_id_length,
+					    (unsigned char *)srf->tb.read_id,
+					    srf->tb.read_id_length,
 					    name, 512)) {
 		 return -2;
 	    }
 	}
 	
 	break;
-    }
 
     case SRFB_INDEX:
 	srf_read_index_hdr(srf, &srf->hdr, 1);
