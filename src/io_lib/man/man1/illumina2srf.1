@@ -101,7 +101,7 @@ assume they are tacked onto the end of the forward sequences specified
 in \fB-qf\fR. Like the former file, this should be in Illumina's
 fastq-like format.
 .TP
-.fB-qc\fR \fIdirectory\fR
+\fB-qc\fR \fIdirectory\fR
 This is an alternative to the \fB-qf\fR and \fB-qr\fR options above
 and is mutually exclusive with them. This specifies that the
 calibrated data should come from files named
@@ -172,11 +172,17 @@ All the above format strings have an optional numerical value between
 the percent and the format character. This is used to control the
 field width. For example to print the X and Y coordinates to 3
 hexidecimal places we could use \fB-n "%3X:%3Y"\fR.
+.PP
+The default format is "\fB%x:%y\fR".
 .RE
 .TP
 \fB-N\fR \fIformat\fR
+.RS
 Specifies the format string for encoding the reading name prefix. It
 follows the same formatting rules specified in the \fB-n\fR above.
+.PP
+The default format is "\fB%m_%r:%l:%t:\fR".
+.RE
 .SS "Ancillary data files"
 .PP
 These options govern the extra files stored per tile (or strictly
