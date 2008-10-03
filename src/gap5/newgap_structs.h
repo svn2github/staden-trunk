@@ -118,7 +118,7 @@ typedef struct {
 } break_contig_arg;
 
 typedef struct {
-    int handle;
+    GapIO *io;
     char *mask;
     char *mode;
     int min_overlap;
