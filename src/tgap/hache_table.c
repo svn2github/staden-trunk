@@ -950,6 +950,9 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
     fprintf(fp, "Cache hits= %d (%6.2f)%%\n",
 	    h->hits, 100.0*h->hits/h->searches);
 
+    /* Reset counters for next stats call */
+    h->hits = h->searches = 0; 
+
     for (i = 0; i <= maxlen; i++) {
 	fprintf(fp, "Chain %2d   = %d\n", i, clen[i]);
     }
