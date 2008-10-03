@@ -792,80 +792,32 @@ proc ReadingCoverage { io } {
 
     contig_id $f.id \
 	    -io $io \
-	    -range 1
+	    -range 0
     
-    lorf_in $f.infile [keylget gap5_defs READING_COVERAGE.INFILE] \
-	    "{contig_id_configure $f.id -state disabled} \
-	    {contig_id_configure $f.id -state disabled}\
-	    {contig_id_configure $f.id -state disabled}\
-	    {contig_id_configure $f.id -state normal}" -bd 2 -relief groove
-
-    ###########################################################################
-    #strand selection
-    keylset st STRAND [keylget gap5_defs READING_COVERAGE.STRAND]
-    set b1 [keylget st STRAND.BUTTON.1]
-    set b2 [keylget st STRAND.BUTTON.2]
-    set b3 [keylget st STRAND.BUTTON.3]
-    set b4 [keylget st STRAND.BUTTON.4]
-
-    radiolist $f.strand \
-	    -title [keylget st STRAND.NAME]\
-	    -bd 2 \
-	    -relief groove \
-	    -default [keylget st STRAND.VALUE] \
-	    -buttons [format { \
-	    { %s } { %s } { %s } { %s } } \
-	    [list $b1] [list $b2] [list $b3] [list $b4]]
-
-    ###########################################################################
     #OK and Cancel buttons
     okcancelhelp $f.ok_cancel \
-	    -ok_command "ReadingCoverage2 $io $f $f.id $f.infile $f.strand" \
+	    -ok_command "ReadingCoverage2 $io $f $f.id" \
 	    -cancel_command "destroy $f" \
 	    -help_command "show_help gap4 {Consistency-ReadingCov}" \
 	    -bd 2 \
 	    -relief groove
 
-    pack $f.infile $f.id $f.strand $f.ok_cancel -side top -fill both
+    pack $f.id $f.ok_cancel -side top -fill both
 }
 
 ##############################################################################
 #stand alone quality display
-proc ReadingCoverage2 { io f id infile strand} {
+proc ReadingCoverage2 { io f id} {
     
-    set contig_list ""
-    if {[lorf_in_get $infile] == 4} {
-	#single contig
-        if {[set contign [contig_id_gel $id]] == ""} {bell; return}
-       	if {[set lreg  [contig_id_lreg $id]] == ""} {bell; return}
-	if {[set rreg  [contig_id_rreg $id]] == ""} {bell; return}
-	set contig_list "{$contign $lreg $rreg}"
-	SetContigGlobals $io $contign
-    } elseif {[lorf_in_get $infile] == 3 } {
-	#all contigs
-	set contig_list [CreateAllContigList $io]
-    } else {
-	#list or file
-	set contig_list [lorf_get_list $infile]
-	set contig_list [remove_contig_duplicates -io $io -contigs $contig_list]
-    }
-
-    if {$contig_list == ""} {
-	raise $f
-	return
-    }
-
-    set str [radiolist_get $strand]
+    if {[set contign [contig_id_gel $id]] == ""} {bell; return}
+    SetContigGlobals $io $contign
 
     # stop windows from hiding the plot
     destroy $f
 
-    puts io=$io
-    puts contig_list=$contig_list
-    puts str=$str
 
     set pwin .read_depth
-    set cname [lindex [lindex $contig_list 0] 0]
+    set cname [lindex $contign 0]
     1.5Dplot $pwin $io [db_info get_contig_num $io $cname]
     add_plot $pwin seq_depth 50  -bd 2 -relief raised
     add_plot $pwin seq_seqs -200 -bd 2 -relief raised
