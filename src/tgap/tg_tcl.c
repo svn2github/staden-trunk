@@ -1,3 +1,5 @@
+/* See end for discussion on this code */
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -999,3 +1001,74 @@ int G5_SafeInit(Tcl_Interp *interp) {
     return G5_Init(interp);
 }
 
+
+
+
+/*
+
+Notes on the object system used here.
+
+We initially create an io object via:
+
+    set io [g5::open_database -name foo]
+
+We then run methods on io to obtain new objects:
+
+    set seq [$io get_sequence 10]
+    set cnt [$io get_contig 3]
+
+Finally we query sequence and contig objects to obtain data about them:
+
+    puts "sequence length = [$seq get_length]"
+    set s_ids [$cnt seqs_in_range 1 1000]
+
+Note that in all these cases the tcl object exists as both a function
+name at global scope and a scalar variable containing the name of that
+function. Eg:
+
+proc foo {} {
+    set seq [$io get_sequence 10]
+    puts seq=$seq
+}
+foo
+
+Running this may print up seq=0x276363, which is the contents of $seq
+and the name of the function.
+
+After foo exits seq is no longer in scope and is freed, but that's
+just a variable holding the name of the global function, which itself
+where the real data is held in memory. If this was interactive we
+could even type "seq=0x276363 get_length" now.
+
+To remove the memory leak and function pollution caused by this we
+have a remove method. Ie the above function should be:
+
+proc foo {} {
+    set seq [$io get_sequence 10]
+    puts seq=$seq
+    $seq delete
+}
+foo
+
+(At the time of writing this the delete method exists for sequences and
+contigs only.)
+
+
+
+Suggested change
+----------------
+
+A procedural method instead of object would work. Eg
+
+set seq [g5::io::get_sequence $io 10]
+puts "Length = [g5::sequence::get_length $seq]
+
+This is how perl works, but the addition of knowing which package a scalar is
+in (via the "bless" command) and the -> operator means that
+"$seq->get_length" is translated to "sequence::get_length($seq)" automatically.
+
+Is it possible to implement this in Tcl?
+
+
+
+*/
