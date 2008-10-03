@@ -114,26 +114,26 @@ add_separator	{View.S1}
 add_command	{View.Results manager}		 8 10 {ListResults \$io} e
 add_separator	{View.S2} e
 add_command	{View.Find internal joins}	 8 10 {FindInternalJoins \$io}
-add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
+#add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
 add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
-add_command	{View.Check assembly}		 8 10 {CheckAssembly \$io}
-add_command	{View.Sequence search}		 8 10 {FindOligos \$io}
+#add_command	{View.Check assembly}		 8 10 {CheckAssembly \$io}
+#add_command	{View.Sequence search}		 8 10 {FindOligos \$io}
 add_separator	{View.S3}
 add_command	{View.Database information}	 8 10 {PrintDatabaseInfo \$io}
-add_command	{View.Template Display}		 8 10 {TempDispDialog \$io}
-add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
-add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
-add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
-add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
-add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
-add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io discrep}
-add_command	{View.Diploid graph}	 	 8 10 {ConfidenceGraph \$io discrep2}
+#add_command	{View.Template Display}		 8 10 {TempDispDialog \$io}
+#add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
+#add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
+#add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
+#add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
+#add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io conf}
+#add_command	{View.2nd-highest Confidence graph} 8 10 {ConfidenceGraph \$io discrep}
+#add_command	{View.Diploid graph}	 	 8 10 {ConfidenceGraph \$io discrep2}
 add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
-add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
-add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
+#add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
+#add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
 add_command	{View.List Consensus Confidence} 8 10 {ListConfidence \$io}
 add_command	{View.List Base Confidence}	 8 10 {ListBaseConfidence \$io}
-add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
+#add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
 
 add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}
 add_command	{Options.Set maxseq/maxdb}	1 2 {SetMaxseq \$io}
@@ -221,7 +221,7 @@ add_menu Settings				1 0 left
 add_menu {Edit Modes}				1 0 left
 add_menu {Help}					1 0 right
 
-add_command {File.Exit} 1 0 {editor_exit $e $w}
+add_command {File.Exit} 1 0 {editor_exit $w}
 
 # Contig Editor Commands menu
 add_command	{Commands.Search}			1 0 \

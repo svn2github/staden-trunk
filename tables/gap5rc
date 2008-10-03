@@ -2,7 +2,6 @@
 # Packages required
 #-----------------------------------------------------------------------------
 load_package tk_utils
-load_package copy_reads
 if {[info commands tk] != ""} {
    load_package iwidgets
 }
@@ -1282,10 +1281,10 @@ set_def PREFINISH.CONFIG_FILE $env(STADTABL)/config.prefinish
 load_menus
 set_menu gap_menu
 
-if {[keylget gap5_defs MENU_FILE] != "viewer"} {
-    load_package %L/cap2	 {}	 cap2 0
-    load_package %L/cap3	 {}	 cap3 0
-    load_package %L/fak2	 {}	 fak2 0
-    load_package %L/phrap	 {}	 phrap 0
-}
-load_package haplo
+#if {[keylget gap5_defs MENU_FILE] != "viewer"} {
+#    load_package %L/cap2	 {}	 cap2 0
+#    load_package %L/cap3	 {}	 cap3 0
+#    load_package %L/fak2	 {}	 fak2 0
+#    load_package %L/phrap	 {}	 phrap 0
+#}
+#load_package haplo

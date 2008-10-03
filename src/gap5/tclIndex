@@ -264,3 +264,4 @@ set auto_index(check_database) [list source [file join $dir gap4_compat.tcl]]
 
 set auto_index(jog) [list source [file join $dir jog.tcl]]
 
+set auto_index(ReadingCoverage) [list source [file join $dir depth.tcl]]
