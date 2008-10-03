@@ -102,7 +102,6 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 				    c->rec);
 	    }
 	    cache_incr(io, c);
-	    cache_flush(io);
 	    curr_contig = m.seqid;
 	    fprintf(stderr, "++ Processing contig %d\n", m.seqid);
 	}

@@ -12,7 +12,7 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 # Local comment: Comment out next line for remote compilation
 TGAPBIN=$(O)
 
-INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC)
+INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For debugging g-alloc
@@ -71,6 +71,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(TGAPOBJS) $(DEF_FILE)
 TG_IND_OBJ = \
 	$(TG_IO) \
 	$(TGAPBIN)/tg_index.o \
+	$(TGAPBIN)/ace.o \
 	$(TGAPBIN)/maq.o \
 	$(TGAPBIN)/maqmap.o
 
@@ -81,6 +82,7 @@ TGILIBS = \
 	$(MISC_LIB) \
 	$(ZLIB_LIB) \
 	$(TKUTILS_LIB) \
+	$(SEQUTILS_LIB) \
 	$(TCL_LIB)
 
 $(O)/tg_index: $(TG_IND_OBJ)

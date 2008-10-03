@@ -19,6 +19,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <time.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
@@ -29,6 +31,7 @@
 #include "tg_gio.h"
 
 #include "maq.h"
+#include "ace.h"
 
 /* .dat version format to handle */
 #define DAT_VERSION 3
@@ -120,7 +123,7 @@ int parse_line(seq_t *s, char *line, char *contig) {
  *	  -1 on error
  */
 int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
-	       int merge_contigs) {
+	       int pair_reads, int merge_contigs) {
     int nseqs = 0;
     struct stat sb;
     FILE *dat_fp;
@@ -128,6 +131,8 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
     off_t pos;
     contig_t *c;
     char last_contig[MAX_LINE_LEN];
+    HacheTable *pair = NULL;
+    int ncontigs = 0;
 	
     *last_contig = 0;
     
@@ -136,6 +141,10 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	NULL == (dat_fp = fopen(dat_fn, "r"))) {
 	perror(dat_fn);
 	return -1;
+    }
+
+    if (pair_reads) {
+	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
     }
 
     /* Loop:
@@ -151,6 +160,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	int recno;
 	bin_index_t *bin;
 	char contig[MAX_LINE_LEN];
+	HacheItem *hi, *other_hi;
 
 	pos += strlen((char *)line);
 
@@ -160,7 +170,8 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	}
 
 	if (strcmp(last_contig, contig)) {
-	    printf("Processing contig %s\n", contig);
+	    /* printf("Processing contig %s\n", contig); */
+	    ncontigs++;
 	    strcpy(last_contig, contig);
 	    if (!merge_contigs ||
 		NULL == (c = find_contig_by_name(io, contig))) {
@@ -168,7 +179,6 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 		contig_index_update(io, contig, strlen(contig), c->rec);
 	    }
 	    cache_incr(io, c);
-	    cache_flush(io);
 	}
 
 	/* Create range */
@@ -179,15 +189,49 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	/* Add the range to a bin, and see which bin it was */
 	bin = bin_add_range(io, &c, &r, &r_out);
 
+	/* Find pair if appropriate */
+	if (pair) {
+	    int new = 0;
+	    HacheData hd;
+	    
+	    hd.i = 0;
+	    hi = HacheTableAdd(pair, seq.name, seq.name_len, hd, &new);
+
+	    /* Pair existed already */
+	    if (!new) {
+		seq.other_end = hi->data.i;
+
+		/* Link other end to 'us' too */
+		other_hi = hi;
+		hi = NULL;
+	    } else {
+		other_hi = NULL;
+	    }
+	} else {
+	    hi = NULL;
+	    other_hi = NULL;
+	}
+
 	/* Save sequence */
 	seq.bin = bin->rec;
 	recno = sequence_new_from(io, &seq);
+	if (hi)
+	    hi->data.i = recno;
+
 	if (!no_tree)
 	    sequence_index_update(io, seq.name, seq.name_len, recno);
 	free(seq.data);
 
 	/* Link bin back to sequence too before it gets flushed */
 	r_out->rec = recno;
+
+	/* Link other end of pair back to this recno if appropriate */
+	if (other_hi) {
+	    seq_t *other = (seq_t *)cache_search(io, GT_Seq, other_hi->data.i);
+	    sequence_set_other_end(io, &other, recno);
+	    HacheTableDel(pair, other_hi, 0);
+	}
+
 
 	nseqs++;
 	//cache_flush(io);
@@ -202,6 +246,27 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	    if (perc < 100.0 * pos / sb.st_size) {
 		perc = 100.0 * pos / sb.st_size;
 		printf("\r%d%%", perc);
+		//HacheTableStats(io->cache, stdout);
+		//HacheTableStats(((GDB **)io->dbh)[0]->gfile->idx_hash, stdout);
+		{
+		    static struct timeval last, curr;
+		    static int first = 1;
+		    static int last_contig = 0;
+		    long delta;
+
+		    gettimeofday(&curr, NULL);
+		    if (first) {
+			last = curr;
+			first = 0;
+		    }
+
+		    delta = (curr.tv_sec - last.tv_sec) * 1000000
+			+ (curr.tv_usec - last.tv_usec);
+		    printf(" - %g sec %d contigs\n", delta/1000000.0,
+			   ncontigs - last_contig);
+		    last = curr;
+		    last_contig = ncontigs;
+		}
 		fflush(stdout);
 	    }
 	}
@@ -221,6 +286,9 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
     cache_flush(io);
     fclose(dat_fp);
 
+    if (pair)
+	HacheTableDestroy(pair, 0);
+
     return 0;
 }
 
@@ -230,6 +298,7 @@ void usage() {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");
+    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
     fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
@@ -238,7 +307,7 @@ void usage() {
 int main(int argc, char **argv) {
     unsigned int max_size = 63;
     GapIO *io;
-    int opt, is_maq = 0;
+    int opt, fmt = 'a' /*aln */;
     char *out_fn = "g_db";
     int no_tree=0, pair_reads=0, append=0, merge_contigs=1;
 
@@ -247,7 +316,7 @@ int main(int argc, char **argv) {
     printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aThmo:pn")) != -1) {
+    while ((opt = getopt(argc, argv, "aThAmo:pn")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -258,7 +327,8 @@ int main(int argc, char **argv) {
 	    break;
 
 	case 'm':
-	    is_maq = 1;
+	case 'A':
+	    fmt = opt;
 	    break;
 
 	case 'o':
@@ -301,11 +371,21 @@ int main(int argc, char **argv) {
 
     /* File processing loop */
     while (optind < argc) {
-	if (is_maq)
+	switch (fmt) {
+	case 'm':
 	    parse_maqmap(io, max_size, argv[optind++], no_tree, pair_reads,
 			 merge_contigs);
-	else
-	    parse_file(io, max_size, argv[optind++], no_tree, merge_contigs);
+	    break;
+
+	case 'A':
+	    parse_ace(io, max_size, argv[optind++], no_tree, pair_reads,
+		      merge_contigs);
+	    break;
+
+	default:
+	    parse_file(io, max_size, argv[optind++], no_tree, pair_reads,
+		       merge_contigs);
+	}
     }
 
     /* system("ps lx"); */
