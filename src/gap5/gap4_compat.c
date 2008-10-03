@@ -314,7 +314,12 @@ void invalidate_rnumtocnum(GapIO *io, int disable) {
 int get_contig_num(GapIO *io, char *gel_name, int is_name) {
     int gel;
 
-    /* Get the gel number */
+    /* Look for contig name first */
+    gel = contig_name_to_number(io, gel_name);
+    if (gel)
+	return gel;
+
+    /* Otherwise we assume it is a reading name */
     gel = get_gel_num(io, gel_name, is_name);
     if (gel == -1)
 	return -1;
@@ -485,7 +490,7 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
     }
 
     /* Remove duplicates? */
-    fprintf(stderr, "FIXME: remove duplicates in lget_contig_num");
+    //fprintf(stderr, "FIXME: remove duplicates in lget_contig_num");
     /* FIXME: to do */
 
     /*
