@@ -308,6 +308,19 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
     char line[1024], *lp;
     char cons[1024];
     int attr;
+    static int lookup_1conf[256];
+    static int lookup_4conf[256];
+    static int lookup_init = 0;
+
+    if (!lookup_init) {
+	for (i = 0; i < 256; i++)
+	    lookup_1conf[i] = lookup_4conf[0] = 0;
+
+	lookup_4conf['a'] = lookup_4conf['A'] = 0;
+	lookup_4conf['c'] = lookup_4conf['C'] = 1;
+	lookup_4conf['g'] = lookup_4conf['G'] = 2;
+	lookup_4conf['t'] = lookup_4conf['T'] = 3;
+    }
 
     wid -= MAX_NAME_LEN+2;
 
@@ -358,6 +371,8 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	int j, dir = '+';
 	int left, right;
 	char *conf;
+	int nc = s->format == SEQ_FORMAT_CNF4 ? 4 : 1;
+	int *L = s->format == SEQ_FORMAT_CNF4 ? lookup_4conf : lookup_1conf;
 
 	/* Complement data on-the-fly */
 	if ((s->len < 0) ^ r[i].comp) {
@@ -378,7 +393,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 
 	if (sp < xpos) {
 	    seq   += xpos - sp;
-	    conf  += xpos - sp;
+	    conf  += nc * (xpos - sp);
 	    l     -= xpos - sp;
 	    left  -= xpos - sp;
 	    right -= xpos - sp;
@@ -413,7 +428,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	    if (j < left-1 || j > right-1)
 		seq[j] = (mode & DISPLAY_CUTOFFS) ? tolower(seq[j]) : ' ';
 
-	    if (conf[j] >= qual_cutoff && mode & DISPLAY_QUAL) {
+	    if (conf[j*nc+L[seq[j]]] >= qual_cutoff && mode & DISPLAY_QUAL) {
 		attr |= A_BOLD;
 	    }
 

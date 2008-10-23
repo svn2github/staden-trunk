@@ -428,7 +428,6 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
 	return NULL;
 
     if (NULL == (buf = g_read_alloc(io, v, &len))) {
-	free(ci);
 	return NULL;
     }
 
@@ -474,7 +473,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
 
     if (ci) {
 	ret = g_write(io, ci->view, data, len);
-	g_flush(io, v);
+	g_flush(io, ci->view);
     } else {
 	if (-1 == (v = lock(io, n->rec, G_LOCK_EX))) {
 	    fprintf(stderr, "Failed to lock btree node %d\n", n->rec);
@@ -1379,7 +1378,8 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     nlen = *cp++;
 
     /* Generate in-memory data structure */
-    slen = sizeof(seq_t) + nlen + 1 + 2*seq_len;
+    slen = sizeof(seq_t) + nlen + 1 + 2*seq_len +
+	(format == SEQ_FORMAT_CNF4 ? 3*seq_len : 0);
 
     if (!(ci = cache_new(GT_Seq, 0, 0, NULL, slen)))
         return NULL;
@@ -1423,6 +1423,20 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
 	for (i = 0; i < seq_len; i++) {
 	    seq->conf[i] = cp[i];
 	}
+	break;
+
+    case SEQ_FORMAT_CNF4:
+	for (i = 0; i < seq_len; i++) {
+	    seq->seq[i] = cp[i];
+	}
+	cp += seq_len;
+	for (i = 0; i < seq_len*4; i++) {
+	    seq->conf[i] = cp[i];
+	}
+	break;
+
+    default:
+	fprintf(stderr, "Unknown sequence format '%d'\n", seq->format);
 	break;
     }
 
@@ -1487,12 +1501,14 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     seq_len = ABS(seq->len);
 
     /* Auto-detect format where possible */
-    seq->format = SEQ_FORMAT_MAQ;
-    for (i = 0; i < seq_len; i++) {
-	if (seq->seq[i] != 'A' && seq->seq[i] != 'C' &&
-	    seq->seq[i] != 'G' && seq->seq[i] != 'T') {
-	    seq->format = SEQ_FORMAT_CNF1;
-	    break;
+    if (seq->format == 0) {
+	seq->format = SEQ_FORMAT_MAQ;
+	for (i = 0; i < seq_len; i++) {
+	    if (seq->seq[i] != 'A' && seq->seq[i] != 'C' &&
+		seq->seq[i] != 'G' && seq->seq[i] != 'T') {
+		seq->format = SEQ_FORMAT_CNF1;
+		break;
+	    }
 	}
     }
 
@@ -1562,6 +1578,19 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->conf[i];
 	}
+	break;
+
+    case SEQ_FORMAT_CNF4:
+	for (i = 0; i < seq_len; i++) {
+	    *cp++ = seq->seq[i];
+	}
+	for (i = 0; i < seq_len*4; i++) {
+	    *cp++ = seq->conf[i];
+	}
+	break;
+
+    default:
+	fprintf(stderr, "Unknown sequence format '%d'\n", seq->format);
 	break;
     }
 

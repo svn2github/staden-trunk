@@ -53,8 +53,9 @@
   */
 int parse_line(seq_t *s, char *line, char *contig) {
     char name[MAX_LINE_LEN], seq[MAX_LINE_LEN], conf[MAX_LINE_LEN];
-    int start, end, dir, cleft, cright, ind, i;
+    int start, end, dir, cleft, cright, ind, i, qb;
     size_t len;
+    char *cp;
 
 #if DAT_VERSION==1
 #    define TEMPLATE "%s %s %d %d %d %d %d %*d %*d %s %n"
@@ -75,12 +76,30 @@ int parse_line(seq_t *s, char *line, char *contig) {
 
         for (i = 0; i < len; i++) {
             conf[i] = strtol(line, &line, 10);
-	    if (conf[i] == 0)
-		conf[i] = 1; /* conf 0 implies N */
-	    if (seq[i] != 'A' && seq[i] != 'C' &&
-		seq[i] != 'G' && seq[i] != 'T')
-		conf[i] = 0;
         }
+
+	/* possibly 4 confidence values per base instead */
+	strtol(line, &cp, 10);
+	if (line != cp) {
+	    for (; i < len*4; i++) {
+		conf[i] = strtol(line, &line, 10);
+	    }
+
+	    qb = 4;
+	    s->format = SEQ_FORMAT_CNF4;
+	} else {
+	    qb = 1;
+	    s->format = SEQ_FORMAT_MAQ; /* pack bytes */
+
+	    /* In MAQ style padding conf 0 implies N */
+	    for (i = 0; i < len; i++) {
+		if (conf[i] == 0)
+		    conf[i] = 1;
+		if (seq[i] != 'A' && seq[i] != 'C' &&
+		    seq[i] != 'G' && seq[i] != 'T')
+		    conf[i] = 0;
+	    }
+	}
 
         s->pos = start;
         s->len = dir * len;
@@ -103,12 +122,13 @@ int parse_line(seq_t *s, char *line, char *contig) {
 	*/
 
 	s->name_len = strlen(name);
-	s->name = s->data = (char *)malloc(s->name_len+2*len);
+	s->name = s->data = (char *)malloc(s->name_len+len+qb*len);
 	s->seq = s->data + s->name_len;
 	s->conf = s->seq + len;
         strcpy(s->name, name);
         memcpy(s->seq, seq, len);
-        memcpy(s->conf, conf, len);
+        memcpy(s->conf, conf,
+	       (s->format == SEQ_FORMAT_CNF4 ? 4 : 1) * len);
         return 0;
     }
 

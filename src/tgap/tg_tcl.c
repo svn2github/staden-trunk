@@ -609,7 +609,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"delete",       "io",
 	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
-	"get_conf",	"get_contig",   "get_position",
+	"get_conf",	"get_conf4",    "get_contig",   "get_position",
 
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	(char *)NULL,
@@ -619,7 +619,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,         IO,
 	GET_REC,        GET_LEN,        GET_LENGTH,     GET_PAIR,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
-	GET_CONF,       GET_CONTIG,     GET_POSITION,
+	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
 
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
     };
@@ -672,8 +672,81 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case GET_CONF:
-	Tcl_SetStringObj(Tcl_GetObjResult(interp),
-			 ts->seq->conf, ABS(ts->seq->len));
+	if (ts->seq->format != SEQ_FORMAT_CNF4) {
+	    Tcl_SetStringObj(Tcl_GetObjResult(interp),
+			     ts->seq->conf, ABS(ts->seq->len));
+	} else {
+	    int len = ABS(ts->seq->len);
+	    char *buf = malloc(len);
+	    int i;
+	    for (i = 0; i < len; i++) {
+		switch(ts->seq->seq[i]) {
+		case 'A': case 'a':
+		    buf[i] = ts->seq->conf[i*4+0];
+		    break;
+		case 'C': case 'c':
+		    buf[i] = ts->seq->conf[i*4+1];
+		    break;
+		case 'G': case 'g':
+		    buf[i] = ts->seq->conf[i*4+2];
+		    break;
+		case 'T': case 't':
+		    buf[i] = ts->seq->conf[i*4+3];
+		    break;
+		default:
+		    buf[i] = -5;
+		}
+	    }
+	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, len);
+	    free(buf);
+	}
+	break;
+
+    case GET_CONF4:
+	if (ts->seq->format == SEQ_FORMAT_CNF4) {
+	    Tcl_SetStringObj(Tcl_GetObjResult(interp),
+			     ts->seq->conf, ABS(ts->seq->len)*4);
+	} else {
+	    int len = ABS(ts->seq->len);
+	    char *buf = malloc(len*4);
+	    int i;
+	    for (i = 0; i < len; i++) {
+		/* Hack for now */
+		switch(ts->seq->seq[i]) {
+		case 'A': case 'a':
+		    buf[i*4+0] = ts->seq->conf[i];
+		    buf[i*4+1] = 0;
+		    buf[i*4+2] = 0;
+		    buf[i*4+3] = 0;
+		    break;
+		case 'C': case 'c':
+		    buf[i*4+0] = 0;
+		    buf[i*4+1] = ts->seq->conf[i];
+		    buf[i*4+2] = 0;
+		    buf[i*4+3] = 0;
+		    break;
+		case 'G': case 'g':
+		    buf[i*4+0] = 0;
+		    buf[i*4+1] = 0;
+		    buf[i*4+2] = ts->seq->conf[i];
+		    buf[i*4+3] = 0;
+		    break;
+		case 'T': case 't':
+		    buf[i*4+0] = 0;
+		    buf[i*4+1] = 0;
+		    buf[i*4+2] = 0;
+		    buf[i*4+3] = ts->seq->conf[i];
+		    break;
+		default:
+		    buf[i*4+0] = -5;
+		    buf[i*4+1] = -5;
+		    buf[i*4+2] = -5;
+		    buf[i*4+3] = -5;
+		}
+	    }
+	    Tcl_SetStringObj(Tcl_GetObjResult(interp), buf, len*4);
+	    free(buf);
+	}
 	break;
 
     case GET_CONTIG: {

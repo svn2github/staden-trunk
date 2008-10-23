@@ -72,13 +72,15 @@ char *seq_conf(GapIO *io, int rec);
 /*
  * Reverses and complements a piece of DNA
  */
-void complement_seq_conf(char *seq, char *conf, int seq_len);
+void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf);
 
 seq_t *dup_seq(seq_t *s);
 
 void complement_seq_t(seq_t *s);
 
 int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf);
+int sequence_get_base4(GapIO *io, seq_t **s, int pos,
+		       char *base, double *conf);
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf);
 
 #endif /* _TG_SEQUENCE_H_ */

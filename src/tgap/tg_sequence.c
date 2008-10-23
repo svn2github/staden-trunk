@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include "tg_gio.h"
 
@@ -194,6 +195,12 @@ int sequence_set_seq_tech(GapIO *io, seq_t **s, int value) {
 }
 
 /*
+ * Returns the size needed to store confidence values in this sequence.
+ * Ie 1 or 4 per base.
+ */
+#define sequence_conf_size(s) ((s)->format == SEQ_FORMAT_CNF4 ? 4 : 1)
+
+/*
  * Sets a sequence name.
  *
  * Returns 0 on success
@@ -205,7 +212,8 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    n = cache_item_resize(n, sizeof(*n) + strlen(name)+1 + 2*ABS(n->len));
+    n = cache_item_resize(n, sizeof(*n) + strlen(name)+1 +
+			  ABS(n->len)*(1+sequence_conf_size(n)));
     if (NULL == n)
 	return -1;
 
@@ -237,7 +245,7 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
 	return -1;
 
     n = cache_item_resize(n, sizeof(*n) + 1+n->name_len
-			  + 2*(ABS(n->len)+1));
+			  + (ABS(n->len)+1)*(1+sequence_conf_size(n)));
     if (NULL == n)
 	return -1;
 
@@ -253,7 +261,11 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
     /* Shift */
     memmove(&n->seq[p2+1], &n->seq[p2], alen-p2+alen);
     n->conf++;
-    memmove(&n->conf[p2+1], &n->conf[p2], alen-p2);
+    if (n->format == SEQ_FORMAT_CNF4) {
+	memmove(&n->conf[(p2+1)*4], &n->conf[p2*4], (alen-p2)*4);
+    } else {
+	memmove(&n->conf[p2+1], &n->conf[p2], alen-p2);
+    }
 
     if (n->len < 0)
 	n->len--;
@@ -262,7 +274,43 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
 
     /* Set */
     n->seq [p2] = base;
-    n->conf[p2] = conf;
+    if (n->format == SEQ_FORMAT_CNF4) {
+	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
+	switch (base) {
+	case 'A': case 'a':
+	    n->conf[p2*4+0] = conf;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'C': case 'c':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = conf;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'G': case 'g':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = conf;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'T': case 't':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = conf;
+	    break;
+	default:
+	    n->conf[p2*4+0] = -5;
+	    n->conf[p2*4+1] = -5;
+	    n->conf[p2*4+2] = -5;
+	    n->conf[p2*4+3] = -5;
+	    break;
+	}
+    } else {
+	n->conf[p2] = conf;
+    }
 
     if (p2 < n->left)
 	n->left++;
@@ -305,7 +353,11 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos) {
     /* Shift */
     memmove(&n->seq[p2], &n->seq[p2+1], alen-p2+alen-1);
     n->conf--;
-    memmove(&n->conf[p2], &n->conf[p2+1], alen-1-p2);
+    if (n->format == SEQ_FORMAT_CNF4) {
+	memmove(&n->conf[p2*4], &n->conf[(p2+1)*4], (alen-1-p2)*4);
+    } else {
+	memmove(&n->conf[p2], &n->conf[p2+1], alen-1-p2);
+    }
 
     return 0;
 }
@@ -360,9 +412,9 @@ char *seq_conf(GapIO *io, int rec) {
  * Reverses and complements a piece of DNA
  */
 static int complementary_base[256];
-void complement_seq_conf(char *seq, char *conf, int seq_len) {
+void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
     int i, middle, j;
-    char temp;
+    char temp, t[4];
     static int init = 0;
 
     if (!init) {
@@ -407,13 +459,35 @@ void complement_seq_conf(char *seq, char *conf, int seq_len) {
     }
 
     middle = seq_len/2;
-    for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
-	temp = complementary_base [ (unsigned char) seq[i] ];
-	seq[i] = complementary_base [ (unsigned char) seq[j] ];
-	seq[j] = temp;
-	temp = conf[i];
-	conf[i] = conf[j];
-	conf[j] = temp;
+    if (nconf == 1) {
+	for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
+	    temp = complementary_base [ (unsigned char) seq[i] ];
+	    seq[i] = complementary_base [ (unsigned char) seq[j] ];
+	    seq[j] = temp;
+	    temp = conf[i];
+	    conf[i] = conf[j];
+	    conf[j] = temp;
+	}
+    } else if (nconf == 4) {
+	for ( i = 0, j = seq_len-1; i < middle; i++, j--) {
+	    temp = complementary_base [ (unsigned char) seq[i] ];
+	    seq[i] = complementary_base [ (unsigned char) seq[j] ];
+	    seq[j] = temp;
+	    t[0] = conf[i*4+0];
+	    t[1] = conf[i*4+1];
+	    t[2] = conf[i*4+2];
+	    t[3] = conf[i*4+3];
+	    conf[i*4+0] = conf[j*4+3];
+	    conf[i*4+1] = conf[j*4+2];
+	    conf[i*4+2] = conf[j*4+1];
+	    conf[i*4+3] = conf[j*4+0];
+	    conf[j*4+0] = t[3];
+	    conf[j*4+1] = t[2];
+	    conf[j*4+2] = t[1];
+	    conf[j*4+3] = t[0];
+	}
+    } else {
+	fprintf(stderr, "Unsupported number of confidence values per base\n");
     }
 
     if ( seq_len % 2 )
@@ -421,7 +495,8 @@ void complement_seq_conf(char *seq, char *conf, int seq_len) {
 }
 
 seq_t *dup_seq(seq_t *s) {
-    size_t len = sizeof(seq_t) - sizeof(char *) + s->name_len+1 + 2*ABS(s->len);
+    size_t len = sizeof(seq_t) - sizeof(char *) + s->name_len+1 +
+	(ABS(s->len)+1)*(1+sequence_conf_size(s));
     seq_t *d = (seq_t *)calloc(1, len);
 
     memcpy(d, s, len);
@@ -436,7 +511,8 @@ void complement_seq_t(seq_t *s) {
     int tmp, alen;
 
     alen = ABS(s->len);
-    complement_seq_conf(s->seq, s->conf, alen);
+    complement_seq_conf(s->seq, s->conf, alen,
+			s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
     s->len *= -1;
 
     tmp = s->left;
@@ -536,6 +612,24 @@ int sequence_get_contig(GapIO *io, GRec snum) {
  * Base editing functions
  */
 
+#define MAX4(ip)         \
+((ip)[0] > (ip)[1]       \
+ ? ((ip)[0] > (ip)[2]    \
+    ? ((ip)[0] > (ip)[3] \
+       ? (ip)[0]         \
+       : (ip)[3])        \
+    : ((ip)[2] > (ip)[3] \
+       ? (ip)[2]         \
+       : (ip)[3]))       \
+ : ((ip)[1] > (ip)[2]    \
+    ? ((ip)[1] > (ip)[3] \
+       ? (ip)[1]         \
+       : (ip)[3])        \
+    : ((ip)[2] > (ip)[3] \
+       ? (ip)[2]         \
+       : (ip)[3])))
+
+
 /*
  * Operates on position 'pos' in the displayed orientation rather than the
  * stored orientation.
@@ -547,11 +641,221 @@ int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf) {
 	return -1;
 
     if (n->len > 0) {
-	*base = n->seq[pos];
-	*conf = n->conf[pos];
+	if (base)
+	    *base = n->seq[pos];
+	if (conf) {
+	    if (n->format != SEQ_FORMAT_CNF4) {
+		*conf = n->conf[pos];
+	    } else {
+		*conf = MAX4(&n->conf[pos*4]);
+	    }
+	}
     } else {
-	*base = complementary_base[(int)(n->seq[-n->len-1 - pos])];
-	*conf = n->conf[-n->len-1 - pos];
+	if (base)
+	    *base = complementary_base[(int)(n->seq[-n->len-1 - pos])];
+	if (conf) {
+	    if (n->format != SEQ_FORMAT_CNF4) {
+		*conf = n->conf[-n->len-1 - pos];
+	    } else {
+		*conf = MAX4(&n->conf[(-n->len-1 - pos)*4]);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+static double logodds2log[256];
+static double *lo2l = logodds2log+128;
+
+static double logodds2remainder[256];
+static double *lo2r = logodds2remainder+128;
+
+static unsigned char logodds2phred[256];
+static unsigned char *lo2ph = logodds2phred+128;
+
+static int lookup_init = 0;
+
+/*
+ * A recalibration table for solexa log-odds scores.
+ * Derived by looking at a lane of PhiX control data, but not rigorously
+ * tested yet.
+ */
+static int recalibrate[81] = {
+    /*-40 */ -35.5156,
+    /*-39 */ -30.2016,
+    /*-38 */ -29.808,
+    /*-37 */ -30.0427,
+    /*-36 */ -30.3126,
+    /*-35 */ -28.956,
+    /*-34 */ -28.3991,
+    /*-33 */ -29.4153,
+    /*-32 */ -28.9522,
+    /*-31 */ -28.9222,
+    /*-30 */ -27.8603,
+    /*-29 */ -28.0694,
+    /*-28 */ -27.0335,
+    /*-27 */ -26.5597,
+    /*-26 */ -27.4361,
+    /*-25 */ -26.33,
+    /*-24 */ -25.8657,
+    /*-23 */ -24.935,
+    /*-22 */ -24.391,
+    /*-21 */ -24.114,
+    /*-20 */ -23.4288,
+    /*-19 */ -22.4242,
+    /*-18 */ -22.0634,
+    /*-17 */ -21.4384,
+    /*-16 */ -20.5132,
+    /*-15 */ -19.6556,
+    /*-14 */ -19.2086,
+    /*-13 */ -17.9905,
+    /*-12 */ -16.8977,
+    /*-11 */ -15.7831,
+    /*-10 */ -15.1582,
+    /* -9 */ -13.7783,
+    /* -8 */ -12.4399,
+    /* -7 */ -11.1721,
+    /* -6 */ -10.09,
+    /* -5 */ -6.78853,
+    /* -4 */ -6.6224,
+    /* -3 */ -4.41534,
+    /* -2 */ -2.83268,
+    /* -1 */ -1.3449,
+    /*  0 */ 1.0271,
+    /*  1 */ 3.4759,
+    /*  2 */ 4.6632,
+    /*  3 */ 6.0888,
+    /*  4 */ 7.4930,
+    /*  5 */ 8.7698,
+    /*  6 */ 10.208,
+    /*  7 */ 11.143,
+    /*  8 */ 12.224,
+    /*  9 */ 13.530,
+    /* 10 */ 14.604,
+    /* 11 */ 15.313,
+    /* 12 */ 16.249,
+    /* 13 */ 17.304,
+    /* 14 */ 18.278,
+    /* 15 */ 18.681,
+    /* 16 */ 19.367,
+    /* 17 */ 20.487,
+    /* 18 */ 20.53,
+    /* 19 */ 21.029,
+    /* 20 */ 21.694,
+    /* 21 */ 22.679,
+    /* 22 */ 22.689,
+    /* 23 */ 22.79,
+    /* 24 */ 23.809,
+    /* 25 */ 24.230,
+    /* 26 */ 25.431,
+    /* 27 */ 24.551,
+    /* 28 */ 25.035,
+    /* 29 */ 25.411,
+    /* 30 */ 25.155,
+    /* 31 */ 25.84,
+    /* 32 */ 26.471,
+    /* 33 */ 25.897,
+    /* 34 */ 25.9,
+    /* 35 */ 26.689,
+    /* 36 */ 26.846,
+    /* 37 */ 27.288,
+    /* 38 */ 26.707,
+    /* 39 */ 26.671,
+    /* 40 */ 30.590,
+};
+
+/*
+ * Operates on position 'pos' in the displayed orientation rather than the
+ * stored orientation.
+ *
+ * As per sequence_get_base but conf is an array of 4 confidence values
+ * returned as log(probabilities).
+ * If only one is present it is taken to be a phred score and we compute
+ * the remainder using (1-p)/3. Otherwise we assume we store 4 log-odds
+ * scores instead.
+ */
+int sequence_get_base4(GapIO *io, seq_t **s, int pos,
+		       char *base, double *conf) {
+    seq_t *n = *s;
+
+    if (!lookup_init) {
+	int i;
+	lookup_init = 1;
+
+	/* Log odds value to log(P) */
+	for (i = -128; i < 128; i++) {
+	    double p = 1 / (1 + pow(10, -i / 10.0));
+	    lo2l[i] = log(p);
+	    lo2r[i] = log((1-p)/3);
+	    lo2ph[i] = 10*log(1+pow(10, i/10.0))/log(10)+0.4999;
+	}
+    }
+
+    if (pos < 0 || pos >= ABS(n->len))
+	return -1;
+
+    if (base) {
+	if (n->len > 0)
+	    *base = n->seq[pos];
+	else
+	    *base = complementary_base[(int)(n->seq[-n->len-1 - pos])];
+    }
+
+    if (conf) {
+	if (n->len < 0)
+	    pos = -n->len-1 - pos;
+
+	if (n->format != SEQ_FORMAT_CNF4) {
+	    switch(n->seq[pos]) {
+	    case 'A': case 'a':
+		conf[0] = lo2l[n->conf[pos]];
+		conf[1] = lo2r[n->conf[pos]];
+		conf[2] = lo2r[n->conf[pos]];
+		conf[3] = lo2r[n->conf[pos]];
+		break;
+	    case 'C': case 'c':
+		conf[0] = lo2r[n->conf[pos]];
+		conf[1] = lo2l[n->conf[pos]];
+		conf[2] = lo2r[n->conf[pos]];
+		conf[3] = lo2r[n->conf[pos]];
+		break;
+	    case 'G': case 'g':	
+		conf[0] = lo2r[n->conf[pos]];
+		conf[1] = lo2r[n->conf[pos]];
+		conf[2] = lo2l[n->conf[pos]];
+		conf[3] = lo2r[n->conf[pos]];
+		break;
+	    case 'T': case 't':
+		conf[0] = lo2r[n->conf[pos]];
+		conf[1] = lo2r[n->conf[pos]];
+		conf[2] = lo2r[n->conf[pos]];
+		conf[3] = lo2l[n->conf[pos]];
+		break;
+	    default:
+		conf[0] = 0;
+		conf[1] = 0;
+		conf[2] = 0;
+		conf[3] = 0;
+		break;
+	    }
+	} else {
+	    int i;
+	    for (i = 0; i < 4; i++) {
+		//double p = pow(10, n->conf[pos*4+i]/10.0);
+		//conf[n->len < 0 ? 4-i : i] = p/(1+p);
+		double p = n->conf[pos*4+i];
+		//p = recalibrate[(int)(p+40+.49)] / 10.0;
+		p /= 10.0;
+		conf[i] = p*log(10) - log(1+pow(10, p));
+	    }
+	}
+
+	if (n->len < 0) {
+	    double tmp;
+	    tmp = conf[0]; conf[0] = conf[3]; conf[3] = tmp;
+	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
+	}
     }
 
     return 0;
@@ -566,12 +870,54 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
-    if (n->len > 0) {
-	n->seq[pos] = base;
-	n->conf[pos] = conf;
+    if (n->format != SEQ_FORMAT_CNF4) {
+	if (n->len > 0) {
+	    n->seq[pos] = base;
+	    n->conf[pos] = conf;
+	} else {
+	    n->seq[-n->len-1 - pos] = complementary_base[(unsigned char)base];
+	    n->conf[-n->len-1 - pos] = conf;
+	}
     } else {
-	n->seq[-n->len-1 - pos] = complementary_base[(unsigned char)base];
-	n->conf[-n->len-1 - pos] = conf;
+	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
+	int p2 = n->len > 0 ? pos : -n->len-1 -pos;
+
+	n->seq[p2] = n->len > 0
+	    ? base
+	    : complementary_base[(unsigned char)base];
+
+	switch(base) {
+	case 'A': case 'a':
+	    n->conf[p2*4+0] = conf;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'C': case 'c':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = conf;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'G': case 'g':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = conf;
+	    n->conf[p2*4+3] = remainder;
+	    break;
+	case 'T': case 't':
+	    n->conf[p2*4+0] = remainder;
+	    n->conf[p2*4+1] = remainder;
+	    n->conf[p2*4+2] = remainder;
+	    n->conf[p2*4+3] = conf;
+	    break;
+	default:
+	    n->conf[p2*4+0] = -5;
+	    n->conf[p2*4+1] = -5;
+	    n->conf[p2*4+2] = -5;
+	    n->conf[p2*4+3] = -5;
+	    break;
+	}
     }
 
     *s = n;
