@@ -62,6 +62,11 @@ static sff_common_header *fread_sff_common_header(FILE *fp) {
     return h;
 }
 
+void usage(void) {
+    fprintf(stderr, "Usage: hash_sff [-o outfile] [-t] sff_file ...\n");
+    exit(1);
+}
+
 int main(int argc, char **argv) {
     HashFile *hf;
     sff_common_header *ch;
@@ -69,20 +74,39 @@ int main(int argc, char **argv) {
     int i, dot, arg;
     char *sff;
     char hdr[31];
-    uint64_t index_offset;
+    uint64_t index_offset = 0;
     uint32_t index_size, index_skipped;
     FILE *fp, *fpout = NULL;
+    int copy_archive = 1;
     
-    if (argc >= 3 && strcmp(argv[1], "-o") == 0) {
-	if (NULL == (fpout = fopen(argv[2], "wb+"))) {
-	    perror(argv[2]);
-	    return 1;
+
+    /* process command line arguments of the form -arg */
+    for (argc--, argv++; argc > 0; argc--, argv++) {
+	if (**argv != '-' || strcmp(*argv, "--") == 0)
+	    break;
+
+	if (strcmp(*argv, "-o") == 0 && argc > 1) {
+	    if (NULL == (fpout = fopen(argv[1], "wb+"))) {
+		perror(argv[1]);
+		return 1;
+	    }
+	    argv++;
+	    argc--;
+
+	} else if (strcmp(*argv, "-t") == 0) {
+	    copy_archive = 0;
+
+	} else if (**argv == '-') {
+	    usage();
 	}
-	argc -= 2;
-	argv += 2;
+
     }
-    if (argc < 2) {
-	fprintf(stderr, "Usage: hash_sff [-o outfile] sff_file ...\n");
+
+    if (argc < 1)
+	usage();
+
+    if (copy_archive == 0 && argc != 1) {
+	fprintf(stderr, "-t option only supported with a single sff argument\n");
 	return 1;
     }
 
@@ -91,18 +115,17 @@ int main(int argc, char **argv) {
     hf->nheaders = 0;
     hf->headers = NULL;
 
-    for (arg = 1; arg < argc; arg++) {
+    for (arg = 0; arg < argc; arg++) {
 	/* open (and read) the entire sff file */
 	sff = argv[arg];
 
 	printf("Indexing %s:\n", sff);
-
 	if (fpout) {
 	    if (NULL == (fp = fopen(sff, "rb"))) {
 		perror(sff);
 		return 1;
 	    }
-	} else {
+	} else { 
 	    if (NULL == (fp = fopen(sff, "rb+"))) {
 		perror(sff);
 		return 1;
@@ -169,7 +192,7 @@ int main(int argc, char **argv) {
 	index_offset = ftell(fp) - index_skipped;
 
 	/* Copy the archive if needed, minus the old index */
-	if (fpout) {
+	if (fpout && copy_archive) {
 	    char block[8192];
 	    size_t len;
 	    uint64_t pos = 0;
@@ -213,17 +236,25 @@ int main(int argc, char **argv) {
     if (fpout) {
 	/* Save the hash */
 	printf("Saving index\n");
+
+	if (!copy_archive) {
+	    hf->archive = strdup(argv[0]);
+	    index_offset = 0;
+	}
+
 	fseek(fpout, 0, SEEK_END);
 	index_size = HashFileSave(hf, fpout, 0);
 	HashFileDestroy(hf);
 
 	/* Update the common header to indicate index location */
-	fseek(fpout, 0, SEEK_SET);
-	fread(hdr, 1, 31, fpout);
-	*(uint64_t *)(hdr+8)  = be_int8(index_offset);
-	*(uint32_t *)(hdr+16) = be_int4(index_size);
-	fseek(fpout, 0, SEEK_SET);
-	fwrite(hdr, 1, 31, fpout);
+	if (copy_archive) {
+	    fseek(fpout, 0, SEEK_SET);
+	    fread(hdr, 1, 31, fpout);
+	    *(uint64_t *)(hdr+8)  = be_int8(index_offset);
+	    *(uint32_t *)(hdr+16) = be_int4(index_size);
+	    fseek(fpout, 0, SEEK_SET);
+	    fwrite(hdr, 1, 31, fpout);
+	}
 	fclose(fpout);
     }
     
