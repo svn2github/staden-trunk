@@ -226,6 +226,9 @@ static btree_node_t *btree_find_recurse(btree_t *t, char *str, int *index) {
 	    n = n->chld[i]
 		? btree_node_get(t->cd, n->chld[i])
 		: btree_node_get(t->cd, n->chld[i-1]);
+
+	if (!n)
+	    return NULL;
     }
 
     if (index)
