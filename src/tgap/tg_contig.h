@@ -40,6 +40,7 @@ int contig_delete_base(GapIO *io, contig_t **c, int pos);
 
 
 contig_t *find_contig_by_name(GapIO *io, char *name);
+GRec contig_index_query(GapIO *io, char *name);
 int contig_index_update(GapIO *io, char *name, int name_len, GRec rec);
 
 contig_t *contig_new(GapIO *io, char *name);

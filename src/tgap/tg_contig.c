@@ -393,6 +393,10 @@ contig_t *find_contig_by_name(GapIO *io, char *name) {
     return rec > 0 ? (contig_t *)cache_search(io, GT_Contig, rec) : NULL;
 }
 
+GRec contig_index_query(GapIO *io, char *name) {
+    return io->iface->contig.index_query(io->dbh, name);
+}
+
 int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
     char n2[1024];
     GRec r;
