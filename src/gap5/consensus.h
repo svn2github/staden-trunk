@@ -13,6 +13,9 @@ typedef struct {
 
     /* Single phred style call */
     unsigned char phred;
+
+    /* Sequence depth */
+    int depth;
 } consensus_t;
 
 /*
