@@ -36,6 +36,7 @@ static unsigned char *lo2ph = logodds2phred+128;
 static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 				   consensus_t *cons);
 
+
 /*
  * The consensus calculation function - rewritten for tgap style
  * databases.
@@ -75,7 +76,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	for (j = 0; j < en-st+1; j++) {
 	    if (q[j].scores[q[j].call] > Q_CUTOFF) {
 		if (con)
-		    con[i-start+j] = "ACGT*"[q[j].call];
+		    con[i-start+j] = "ACGT*N"[q[j].call];
 		if (qual)
 		    qual[i-start+j] = q[j].scores[q[j].call];
 	    } else {
@@ -140,11 +141,12 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     rangec_t *r;
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
     int len = end - start + 1;
-    double slx_overcall_prob  = 1.0/43500, lover,  lomover;
-    double slx_undercall_prob = 1.0/28000, lunder, lomunder;
+    double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
+    double slx_undercall_prob = 1.0/2800000, lunder, lomunder;
 
     double (*cvec)[4]; /* cvec[0-3] = A,C,G,T */
     double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
+    int *depth;
 
     /* log overcall, log one minus overcall, etc */
     lover    = log(slx_overcall_prob);
@@ -156,6 +158,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     if (NULL == (cvec = (double (*)[4])calloc(len, 4 * sizeof(double))))
 	return -1;
     if (NULL == (pvec = (double (*)[2])calloc(len, 2 * sizeof(double))))
+	return -1;
+    if (NULL == (depth = (int *)calloc(len, sizeof(int))))
 	return -1;
 
     if (!lookup_done) {
@@ -191,6 +195,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	unsigned char *seq;
 	int left, right;
 	char *conf;
+	int off = 0;
 
 	/* Complement data on-the-fly */
 	if ((s->len < 0) ^ r[i].comp) {
@@ -202,14 +207,11 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    sp += s->len+1;
 	}
 
-	seq = (unsigned char *)s->seq;
-	conf = s->conf;
 	left = s->left;
 	right = s->right;
 	
 	if (sp < start) {
-	    seq   += start - sp;
-            conf  += start - sp;
+	    off    = start - sp;
 	    l     -= start - sp;
 	    left  -= start - sp;
 	    right -= start - sp;
@@ -221,59 +223,39 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    left = 1;
 
 	for (j = left-1; j < right; j++) {
-	    int q = conf[j];
+	    char base;
+	    double q[4];
 
 	    if (sp+j > end)
 		continue;
 	    
-	    switch(lookup[seq[j]]) {
-	    case 0:
-		cvec[sp-start+j][0] += lo2l[q];
-		cvec[sp-start+j][1] += lo2r[q];
-		cvec[sp-start+j][2] += lo2r[q];
-		cvec[sp-start+j][3] += lo2r[q];
+	    sequence_get_base4(io, &s, j+off, &base, q);
+
+	    switch (lookup[base]) {
+	    case 0: case 1: case 2: case 3: /* ACGT */
+		cvec[sp-start+j][0] += q[0];
+		cvec[sp-start+j][1] += q[1];
+		cvec[sp-start+j][2] += q[2];
+		cvec[sp-start+j][3] += q[3];
+
+		/* Small boost for called base to resolve ties */
+		cvec[sp-start+j][lookup[base]] += 1e-5;
+
+		/* Fall through */
+	    default: /* N */
 		pvec[sp-start+j][0] += lover;
 		pvec[sp-start+j][1] += lomover;
 		break;
 
-	    case 1:
-		cvec[sp-start+j][0] += lo2r[q];
-		cvec[sp-start+j][1] += lo2l[q];
-		cvec[sp-start+j][2] += lo2r[q];
-		cvec[sp-start+j][3] += lo2r[q];
-		pvec[sp-start+j][0] += lover;
-		pvec[sp-start+j][1] += lomover;
-		break;
-
-	    case 2:
-		cvec[sp-start+j][0] += lo2r[q];
-		cvec[sp-start+j][1] += lo2r[q];
-		cvec[sp-start+j][2] += lo2l[q];
-		cvec[sp-start+j][3] += lo2r[q];
-		pvec[sp-start+j][0] += lover;
-		pvec[sp-start+j][1] += lomover;
-		break;
-
-	    case 3:
-		cvec[sp-start+j][0] += lo2r[q];
-		cvec[sp-start+j][1] += lo2r[q];
-		cvec[sp-start+j][2] += lo2r[q];
-		cvec[sp-start+j][3] += lo2l[q];
-		pvec[sp-start+j][0] += lover;
-		pvec[sp-start+j][1] += lomover;
-		break;
-
-	    case 4:
+	    case 4: /* gap */
 		pvec[sp-start+j][0] += lomunder;
 		pvec[sp-start+j][1] += lunder;
 		break;
-
-	    default: /* 5 */
-		pvec[sp-start+j][0] += lover;
-		pvec[sp-start+j][1] += lomover;
-		break;
 	    }
+
+	    depth[sp-start+j]++;
 	}
+
 	cache_decr(io, sorig);
 
 	if (s != sorig)
@@ -289,10 +271,15 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 
 	/* Gap or base? Work out pad probability initially */
 	/* For this the sum differences is basically the log-odds score */
-	cons[i].scores[4] = 10*(pvec[i][0] - pvec[i][1]);
-	pad_prob = pow(10, cons[i].scores[4] / 10.0) /
-	    (pow(10, cons[i].scores[4] / 10.0) + 1);
-	base_prob = 1-pad_prob;
+	if (pvec[i][0] && pvec[i][1]) {
+	    cons[i].scores[4] = 10*(pvec[i][0] - pvec[i][1]);
+	    pad_prob = pow(10, cons[i].scores[4] / 10.0) /
+		(pow(10, cons[i].scores[4] / 10.0) + 1);
+	    base_prob = 1-pad_prob;
+	} else {
+	    pad_prob = 0;
+	    base_prob = 1;
+	}
 
 	/*
 	 * And now which base type it may be.
@@ -356,8 +343,14 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	if (max >  99) max =  99;
 	if (max < -127) max = -127;
 	cons[i].phred = lo2ph[(int)max];
+
+	cons[i].depth = depth[i];
     }
 
     if (r) free(r);
+    free(cvec);
+    free(pvec);
+    free(depth);
+
     return 0;
 }
