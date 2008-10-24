@@ -638,6 +638,36 @@ proc editor_move_seq {w where direction} {
     $w redraw
 }
 
+# Updates the editor status line for editor $w.
+# x and y are optional, but if set specify the location to display (eg
+# for mouse motion events).
+proc update_brief {w {x {}} {y {}}} {
+    global gap5_defs
+    global $w
+
+    if {$x != "" && $y != ""} {
+	foreach {type rec pos} [$w get_number $x $y] break
+    } else {
+	foreach {type rec pos} [$w get_number] break
+    }
+
+    if {![info exists type]} {
+	return
+    }
+
+    if {$type == 18} {
+	set msg [$w get_seq_status $type $rec $pos \
+		     [keylget gap5_defs BASE_BRIEF_FORMAT1]]
+    } else {
+	set msg [$w get_seq_status $type $rec $pos \
+		     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
+    }
+
+    set w [set ${w}(top)]
+    global $w
+    set ${w}(Status) $msg
+}
+
 #-----------------------------------------------------------------------------
 # Trace display
 proc show_trace {w loc} {
@@ -666,26 +696,7 @@ bind Editor <Any-Enter> {
     focus %W
 }
 
-bind EdNames <Any-Motion> {
-    global gap5_defs
-    global %W
-
-    set ed [set %W(ed)]
-    foreach {type rec pos} [$ed get_number @%x @%y] break
-    if {![info exists type]} {
-	return
-    }
-
-    if {$type == 18} {
-	set msg [$ed get_seq_status $type $rec $pos \
-		     [keylget gap5_defs READ_BRIEF_FORMAT]]
-    } else {
-	set msg ""
-    }
-
-    set w [set ${ed}(top)]
-    set ${w}(Status) $msg
-}
+bind EdNames <Any-Motion> {update_brief [set %W(ed)] @%x @%y}
 
 bind Editor <Any-Motion> {
     global gap5_defs
@@ -705,6 +716,7 @@ bind Editor <Any-Motion> {
     }
 
     set w [set %W(top)]
+    global $w
     set ${w}(Status) $msg
 }
 
@@ -720,6 +732,7 @@ bind EdNames <3> {
 
     if {$type == 18} {
 	set other_end [$ed get_template_seqs $rec]
+	puts rec=$rec,other_end=$other_end
 	if {[llength $other_end] != 1} return
 	set s [[$ed io] get_seq $other_end]
 	$ed set_cursor 18 $other_end 1
@@ -736,43 +749,43 @@ bind Editor <1> {
     }
 }
 
-bind Editor <Key-Left>		{%W cursor_left; }
-bind Editor <Control-Key-b>	{%W cursor_left; }
+bind Editor <Key-Left>		{%W cursor_left; update_brief %W}
+bind Editor <Control-Key-b>	{%W cursor_left; update_brief %W}
 
-bind Editor <Key-Right>		{%W cursor_right;}
-bind Editor <Control-Key-f>	{%W cursor_right;}
+bind Editor <Key-Right>		{%W cursor_right; update_brief %W}
+bind Editor <Control-Key-f>	{%W cursor_right; update_brief %W}
 
-bind Editor <Key-Up>		{%W cursor_up;   }
-bind Editor <Control-Key-p>	{%W cursor_up;   }
+bind Editor <Key-Up>		{%W cursor_up;    update_brief %W}
+bind Editor <Control-Key-p>	{%W cursor_up;    update_brief %W}
 
-bind Editor <Key-Down>		{%W cursor_down; }
-bind Editor <Control-Key-n>	{%W cursor_down; }
+bind Editor <Key-Down>		{%W cursor_down;  update_brief %W}
+bind Editor <Control-Key-n>	{%W cursor_down;  update_brief %W}
 
 # Not all X11 servers have these keysyms
 catch {
-    bind Editor <Key-KP_Left>	{%W cursor_left; }
-    bind Editor <Key-KP_Right>	{%W cursor_right; }
-    bind Editor <Key-KP_Up>	{%W cursor_up; }
-    bind Editor <Key-KP_Down>	{%W cursor_down; }
+    bind Editor <Key-KP_Left>	{%W cursor_left;  update_brief %W}
+    bind Editor <Key-KP_Right>	{%W cursor_right; update_brief %W}
+    bind Editor <Key-KP_Up>	{%W cursor_up;    update_brief %W}
+    bind Editor <Key-KP_Down>	{%W cursor_down;  update_brief %W}
 }
 
-bind Editor <Control-Key-a>	{%W read_start}
-bind Editor <Alt-Key-a>		{%W read_start2}
-bind Editor <Meta-Key-a>	{%W read_start2}
-bind Editor <Escape><Key-a>	{%W read_start2}
+bind Editor <Control-Key-a>	{%W read_start;   update_brief %W}
+bind Editor <Alt-Key-a>		{%W read_start2;  update_brief %W}
+bind Editor <Meta-Key-a>	{%W read_start2;  update_brief %W}
+bind Editor <Escape><Key-a>	{%W read_start2;  update_brief %W}
 
-bind Editor <Control-Key-e>	{%W read_end}
-bind Editor <Alt-Key-e>		{%W read_end2}
-bind Editor <Meta-Key-e>	{%W read_end2}
-bind Editor <Escape><Key-e>	{%W read_end2}
+bind Editor <Control-Key-e>	{%W read_end;     update_brief %W}
+bind Editor <Alt-Key-e>		{%W read_end2;    update_brief %W}
+bind Editor <Meta-Key-e>	{%W read_end2;    update_brief %W}
+bind Editor <Escape><Key-e>	{%W read_end2;    update_brief %W}
 
-bind Editor <Alt-Key-comma>	{%W contig_start}
-bind Editor <Meta-Key-comma>	{%W contig_start}
-bind Editor <Escape><Key-comma>	{%W contig_start}
+bind Editor <Alt-Key-comma>	{%W contig_start; update_brief %W}
+bind Editor <Meta-Key-comma>	{%W contig_start; update_brief %W}
+bind Editor <Escape><Key-comma>	{%W contig_start; update_brief %W}
 
-bind Editor <Alt-Key-period>	{%W contig_end}
-bind Editor <Meta-Key-period>	{%W contig_end}
-bind Editor <Escape><Key-period> {%W contig_end}
+bind Editor <Alt-Key-period>	{%W contig_end;   update_brief %W}
+bind Editor <Meta-Key-period>	{%W contig_end;   update_brief %W}
+bind Editor <Escape><Key-period> {%W contig_end;  update_brief %W}
 
 bind Editor <Double-1> {%W display_trace}
 bind Editor <Control-Key-t> {%W display_trace}
