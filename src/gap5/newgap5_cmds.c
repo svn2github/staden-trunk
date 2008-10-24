@@ -28,6 +28,8 @@
 #include "find_repeats.h"
 #include "tkEditor.h"
 #include "tkEdNames.h"
+#include "read_depth.h"
+#include "fij.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -838,6 +840,11 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+/*
+ * Returns the full consensus information as a Tcl list of lists
+ * which each sub-list containing call; probabilities of A, C, G, T, *;
+ * and sequence depth.
+ */
 int tcl_calc_consensus_full(ClientData clientData, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *CONST objv[])
 {
@@ -867,13 +874,14 @@ int tcl_calc_consensus_full(ClientData clientData, Tcl_Interp *interp,
 	calculate_consensus(args.io, rargv[0].contig, rargv[0].start,
 			    rargv[0].end, c);
 	for (i = 0; i < len; i++) {
-	    Tcl_Obj *items[6], *list;
+	    Tcl_Obj *items[7], *list;
 	    int j;
 
 	    items[0] = Tcl_NewIntObj(c[i].call);
 	    for (j = 0; j < 5; j++)
 		items[j+1] = Tcl_NewIntObj(rint(c[i].scores[j]));
-	    list = Tcl_NewListObj(6, items);
+	    items[6] = Tcl_NewIntObj(c[i].depth);
+	    list = Tcl_NewListObj(7, items);
 	    Tcl_ListObjAppendElement(interp, cons, list);
 	}
 
@@ -885,6 +893,175 @@ int tcl_calc_consensus_full(ClientData clientData, Tcl_Interp *interp,
     xfree(rargv);
     return TCL_OK;
 }
+
+int tcl_sequence_depth(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc;
+    contig_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    if (rargc >= 1) {
+	min_max_avg_t *depth;
+	Tcl_Obj *l = Tcl_NewListObj(0, NULL);
+	int len = rargv[0].end - rargv[0].start + 1;
+	int i, start, end, inc;
+
+	depth = sequence_depth(args.io, rargv[0].contig,
+			       rargv[0].start, rargv[0].end,
+			       &start, &end, &inc);
+	if (!depth)
+	    return TCL_ERROR;
+
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(start));
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(end));
+	Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(inc));
+	len = (end-start)/inc+1;
+	for (i = 0; i < len; i++) {
+	    Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(depth[i].min));
+	    Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(depth[i].max));
+	    Tcl_ListObjAppendElement(interp, l, Tcl_NewIntObj(depth[i].avg));
+	}
+
+	Tcl_SetObjResult(interp, l);
+
+	xfree(depth);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
+/* FIXME: this entire function and below needs a complete rewrite */
+int
+tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
+			int objc, Tcl_Obj *CONST objv[])
+{
+    contig_list_t *contig_array = NULL;
+    int num_contigs = 0;
+    fij_arg args;
+    Tcl_DString input_params;
+    char *name1;
+    char *name2;
+    int mode = 0, mask = 0;
+
+    cli_args a[] = {
+	{"-io",		  ARG_IO,   1, NULL,      offsetof(fij_arg, io)},
+	{"-mask",	  ARG_STR,  1, "none",    offsetof(fij_arg, mask)},
+	{"-mode",	  ARG_STR,  1, "all_all", offsetof(fij_arg, mode)},
+	{"-min_overlap",  ARG_INT,  1, "20",   offsetof(fij_arg, min_overlap)},
+	{"-max_pmismatch",ARG_FLOAT,1, "30.0",    offsetof(fij_arg, max_mis)},
+	{"-word_length",  ARG_INT,  1, "4",	  offsetof(fij_arg, word_len)},
+	{"-max_prob",     ARG_FLOAT,  1, "1.0e-8",offsetof(fij_arg, max_prob)},
+	{"-min_match",    ARG_INT,  1, "20",	 offsetof(fij_arg, min_match)},
+	{"-band",         ARG_INT,  1, "10",     offsetof(fij_arg, band)},
+	{"-win_size",	  ARG_INT,  1, "0",       offsetof(fij_arg, win_size)},
+	{"-max_dashes",	  ARG_INT,  1, "0",       offsetof(fij_arg, dash)},
+	{"-min_conf",	  ARG_INT,  1, "8",       offsetof(fij_arg, min_conf)},
+	{"-tag_types",	  ARG_STR,  1, "",        offsetof(fij_arg, tag_list)},
+	{"-contigs",	  ARG_STR,  1, NULL,      offsetof(fij_arg, inlist)},
+	{"-use_conf",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_conf)},
+	{"-use_hidden",	  ARG_INT,  1, "1",	  offsetof(fij_arg, use_hidden)},
+	{"-max_display",  ARG_INT,  1, "0",       offsetof(fij_arg, max_display)},
+	{NULL,		  0,	    0, NULL,      0}
+    };
+
+    vfuncheader("find internal joins");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* Parse mode and mask */
+    if (strcmp(args.mask, "none") == 0)
+	mask = 1;
+    else if (strcmp(args.mask, "mark") == 0)
+	mask = 2;
+    else if (strcmp(args.mask, "mask") == 0)
+	mask = 3;
+    else {
+	Tcl_SetResult(interp, "invalid mask mode", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    if (strcmp(args.mode, "all_all") == 0)
+	mode = COMPARE_ALL;
+    else if (strcmp(args.mode, "segment") == 0)
+	mode = COMPARE_SINGLE;
+    else {
+	Tcl_SetResult(interp, "invalid fij mode", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+
+    /* create inputs parameters */
+    Tcl_DStringInit(&input_params);
+    vTcl_DStringAppend(&input_params, "Contigs: %s\n", args.inlist);
+
+    name1 = get_default_string(interp, gap5_defs,
+			       vw("FIJ.SELTASK.BUTTON.%d",
+				  mode == COMPARE_ALL ? 1 : 2));
+    vTcl_DStringAppend(&input_params, "%s\n", name1);
+
+    name1 = get_default_string(interp, gap5_defs, "FIJ.MINOVERLAP.NAME");
+    name2 = get_default_string(interp, gap5_defs, "FIJ.MAXMIS.NAME");
+    vTcl_DStringAppend(&input_params, "%s: %d\n%s: %f\n",
+		       name1, args.min_overlap,
+		       name2, args.max_mis);
+
+#if 0
+    /* FIXME: Disabled for now as WINSIZE.NAME no longer exists */
+    if ((args.win_size == 0) && (args.dash == 0)) {
+
+	Tcl_DStringAppend(&input_params, "Not using hidden data\n", -1);
+    } else {
+	name1 = get_default_string(interp, gap5_defs,
+				   "FIJ.HIDDEN.WINSIZE.NAME");
+	name2 = get_default_string(interp, gap5_defs,
+				   "FIJ.HIDDEN.MAXDASH.NAME");
+	vTcl_DStringAppend(&input_params, "Hidden data: %s: %d\n%s: %d\n",
+			   name1, args.win_size, name2, args.dash);
+    }
+#endif
+
+    name1 = get_default_string(interp, gap5_defs,
+			       vw("FIJ.SELMODE.BUTTON.%d", mask));
+    vTcl_DStringAppend(&input_params, "%s %s\n", name1, args.tag_list);
+
+    vfuncparams("%s", Tcl_DStringValue(&input_params));
+    Tcl_DStringFree(&input_params);
+
+    if (SetActiveTags(args.tag_list) == -1) {
+	return TCL_OK;
+    }
+
+    if (fij(args.io, mask, mode, args.min_overlap, (double)args.max_mis,
+	    args.word_len, (double)args.max_prob, args.min_match, args.band,
+	    args.win_size, args.dash, args.min_conf, args.use_conf,
+	    args.use_hidden, args.max_display,
+	    num_contigs, contig_array) < 0 ) {
+	verror(ERR_WARN, "Find internal joins", "Failure in Find Internal Joins");
+	SetActiveTags("");
+	return TCL_OK;
+    }
+
+    SetActiveTags("");
+    xfree(contig_array);
+
+    return TCL_OK;
+
+} /* end FIJ */
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -1013,6 +1190,14 @@ NewGap_Init(Tcl_Interp *interp) {
 			 (ClientData) NULL, NULL);
     Tcl_CreateObjCommand(interp, "calc_consensus_full",
 			 tcl_calc_consensus_full,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "find_internal_joins",
+			 tcl_find_internal_joins,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "sequence_depth",
+			 tcl_sequence_depth,
 			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);
