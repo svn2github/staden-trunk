@@ -238,16 +238,8 @@ int read_name_to_number(GapIO *io, char *gel_name) {
  *     0 for failure
  */
 int contig_name_to_number(GapIO *io, char *name) {
-    int i;
-    for (i = 0; i < NumContigs(io); i++) {
-	contig_t *c;
-	int crec = arr(GCardinal, io->contig_order, i);
-	c = (contig_t *)cache_search(io, GT_Contig, crec);
-	if (0 == strcmp(contig_get_name(&c), name))
-	    return crec;
-    }
-
-    return 0;
+    int n = contig_index_query(io, name);
+    return n > 0 ? n : 0;
 }
 
 /*
