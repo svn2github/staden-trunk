@@ -148,6 +148,10 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * %Cv	Clone vector (Raw: clone vector number)
  * %b   Base call
  * %c   Base confidence
+ * %A   A confidence log-odds (raw for probability value)
+ * %C   C confidence log-odds (raw for probability value)
+ * %G   G confidence log-odds (raw for probability value)
+ * %T   T confidence log-odds (raw for probability value)
  *
  * Additionally specifying %<number><format> forces AT MOST that many
  * characters to be displayed.
@@ -258,11 +262,72 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 
 	case 'c':
 	    if (pos >= 0 && pos < ABS(s->len)) {
+		int q;
+		sequence_get_base(xx->io, &s, pos, NULL, &q);
 		if (raw) {
-		    add_double(status_buf, &j, l1, l2,
-			       1 - pow(10, s->conf[pos]/-10.0));
+		    add_double(status_buf, &j, l1, l2, 1 - pow(10, q/-10.0));
 		} else {
-		    add_number(status_buf, &j, l1, l2, s->conf[pos]);
+		    add_number(status_buf, &j, l1, l2, q);
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'A':
+	    if (pos >= 0 && pos < ABS(s->len)) {
+		double q[4];
+		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		if (raw)
+		    add_double(status_buf, &j, l1, l2, exp(q[0]));
+		else {
+		    double p = exp(q[0]);
+		    add_double(status_buf, &j, l1, l2, 4.342945*log(p/(1-p)));
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'C':
+	    if (pos >= 0 && pos < ABS(s->len)) {
+		double q[4];
+		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		if (raw)
+		    add_double(status_buf, &j, l1, l2, exp(q[1]));
+		else {
+		    double p = exp(q[1]);
+		    add_double(status_buf, &j, l1, l2, 4.342945*log(p/(1-p)));
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'G':
+	    if (pos >= 0 && pos < ABS(s->len)) {
+		double q[4];
+		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		if (raw)
+		    add_double(status_buf, &j, l1, l2, exp(q[2]));
+		else {
+		    double p = exp(q[2]);
+		    add_double(status_buf, &j, l1, l2, 4.342945*log(p/(1-p)));
+		}
+	    } else {
+		add_string(status_buf, &j, l1, l2, "-");
+	    }
+	    break;
+
+	case 'T':
+	    if (pos >= 0 && pos < ABS(s->len)) {
+		double q[4];
+		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		if (raw)
+		    add_double(status_buf, &j, l1, l2, exp(q[3]));
+		else {
+		    double p = exp(q[3]);
+		    add_double(status_buf, &j, l1, l2, 4.342945*log(p/(1-p)));
 		}
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
@@ -677,7 +742,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	XawSheetInk ink[MAX_DISPLAY_WIDTH];
 	int dir = '+';
 	int left, right;
-	char *conf;
 	int seq_p = 0;
 
 	/* Optimisation for single sequence only */
@@ -703,7 +767,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	right = s->right;
 
 	memcpy(seq, s->seq, l);
-	conf = s->conf;
 
 	if (sp < xx->displayPos) {
 	    seq_p += xx->displayPos - sp;
@@ -726,10 +789,12 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    memset(line, ' ', MAX_DISPLAY_WIDTH);
 
 	    for (p2 = sp - xx->displayPos, p = 0; p < l; p++, p2++) {
-		char base = seq[p+seq_p];
-		int qual = conf[p+seq_p];
-		line[p2] = base;
+		char base;
+		int qual;
 
+		sequence_get_base(xx->io, &s, p+seq_p, &base, &qual);
+		line[p2] = base;
+		
 		/* Cutoffs */
 		if (p < left-1 || p > right-1) {
 		    if (xx->ed->display_cutoffs) {

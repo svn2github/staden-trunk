@@ -88,7 +88,7 @@ set_def CONTIG_BRIEF_FORMAT  \
 	{Contig:%n(#%Rn)   Length:%l   %c}
 
 set_def BASE_BRIEF_FORMAT1  \
-	{Base confidence:%4.1c (Prob. %Rc)   Position %p}
+	{Base confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %p}
 
 set_def BASE_BRIEF_FORMAT2  \
 	{Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1*  Position %p}
