@@ -410,7 +410,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	      s->name_len = sprintf(s->name, ":%d-%d:", p, p+ABS(s->len)-1);
 	    */
 	    mvaddch(lno, 0, dir);
-	    addnstr(s->name, s->name_len);
+	    addnstr(s->name, MIN(MAX_NAME_LEN, s->name_len));
 	    move(lno, MAX_NAME_LEN+2+sp-xpos);
 	} else {
 	    printf("%c%.*s%*s",
