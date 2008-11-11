@@ -32,6 +32,7 @@
 
 #include "maq.h"
 #include "ace.h"
+#include "baf.h"
 
 /* .dat version format to handle */
 #define DAT_VERSION 3
@@ -319,6 +320,7 @@ void usage() {
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");
     fprintf(stderr, "      -A			Input is ACE format (off)\n");
+    fprintf(stderr, "      -B			Input is BAF format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
     fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
@@ -336,7 +338,7 @@ int main(int argc, char **argv) {
     printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aThAmo:pn")) != -1) {
+    while ((opt = getopt(argc, argv, "aBThAmo:pn")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -348,6 +350,7 @@ int main(int argc, char **argv) {
 
 	case 'm':
 	case 'A':
+	case 'B':
 	    fmt = opt;
 	    break;
 
@@ -400,6 +403,10 @@ int main(int argc, char **argv) {
 	case 'A':
 	    parse_ace(io, max_size, argv[optind++], no_tree, pair_reads,
 		      merge_contigs);
+	    break;
+
+	case 'B':
+	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;
 
 	default:

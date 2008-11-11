@@ -72,6 +72,7 @@ TG_IND_OBJ = \
 	$(TG_IO) \
 	$(TGAPBIN)/tg_index.o \
 	$(TGAPBIN)/ace.o \
+	$(TGAPBIN)/baf.o \
 	$(TGAPBIN)/maq.o \
 	$(TGAPBIN)/maqmap.o
 

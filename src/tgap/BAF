@@ -1,0 +1,274 @@
+			Basic Assembly Format
+			=====================
+
+BAF, the basic assembly format, is a simple text file format for
+encoding sequence assemblies. It's not proposed to be a long term
+format but rather as a working format until CALF or SAM become
+standardised.
+
+The basic structure is a series of data blocks for contigs, libraries
+and sequences. Each block consists of key value pairs ending with a
+blank line to terminate the block, with considerable context taken
+into account. The order of items within a block and the order of
+blocks is significant in that sequences are within the most recently
+listed contig. This also allows for the use of default values where a
+contig may define sequence attributes (which make no sense to the
+contig itself) which in turn then provide default values for all
+subsequent sequences within that contig.
+
+Note there is *NO* line length limitation imposed. It is expected that
+some lines will be long, specifically those containing sequences or
+quality values. Code to allow this.
+
+Blank lines are permitted, but not required. They may be useful to
+make the output more humanly readable.
+
+The key value assignment is made with strictly one assignment per line
+and always two character keys. The assignment method may be either the
+equals sign or percent sign - see "Patterns" for more information.
+difference.
+
+Eg: "RD=foo"
+    "TR=foo.ztr"
+    "TR:${rd(1)}.ztr"
+
+Comments are permitted using the character '#'. It must occur as the
+first character on a line.
+
+Default values
+==============
+
+Although the things like the QL/QR quality clip points are a member of
+the sequence object, it is possible that these may be the same for
+every sequence in a contig. For this reason we allow these values to
+be specified higher up in the logical hierarchy.
+
+This is simply done by including the record under the CO block instead
+of a RD block.
+
+
+Patterns
+========
+
+The use of default values saves us space, but sometimes it's not
+sufficient for data that changes per read yet in a consistent manner.
+One example is the trace name which may always be the same as the
+reading name except with an added .scf or .ztr suffix.
+
+We allow for a simple regular expression to match data and to replace
+values. Patterns are always specified in lowercase instead of
+uppercase. Eg "rd ^([^.]+)\.(.)(.).*"
+
+This would reset variables rd(1) rd(2) and rd(3) every time a new RD
+line is parsed to contain the text matched in the three bracketted
+parts of the regular expression, and the "rd" variable to be the
+entire matched string. These variables can then be used within value
+definitions if the : assignment is used instead of the equals
+assignment.
+
+In : assignments a variable expansion is identified by use of the $
+symbol followed by a curly braced section using the syntax described
+below. This is loosly based on the Bourne shell syntax.
+
+${variable}
+	The contents of that variable
+
+${variable:-value}
+	The contents of that variable if set, or value if not.
+
+${variable:+value}
+	If variable is unset or blank returns nothing, otherwise value.
+
+${variable/from/to/...}
+	Match variable using a series of from/to pairs replacing
+	occurances of the 'from' string with the 'to' string. A '*'
+	symbol indicates that the end of this string can match
+	anything. Note '*' is not supported other than at the end of a
+	'from' value. A blank 'from' value (ie //) matches blank
+	variables.
+	
+	This is useful for turning naming schemes using one set of
+	character encodings to other formats used by this specification.
+	Eg "PR:${rd(2)/p1/1/q1/2/p*/3/q*/4/*/0}"
+
+${variable?value1:value2}
+	If variable is either a non-zero integer value or a non-zero
+	length string, we return value1 otherwise value2.
+
+
+
+Contigs: CO
+===========
+
+Mandatory fields
+----------------
+
+CO=<name>
+
+Optional fields
+---------------
+	
+LN=<length>
+SQ=<consensus sequence>
+FQ=<consensus fastq scores>
+
+
+DNA Sources: SO
+===============
+
+DNA sources should ideally occur just in time, shortly before the
+first sequence that uses them. We also provide source patterns where
+we do not explicitly specify information about a DNA source, rather a
+means of deriving it from the Sequence record (eg by read-name).
+
+
+Mandatory fields
+----------------
+
+SO=<name>
+
+
+Optional fields
+---------------
+
+ST=<source type>
+
+	Type is one of shotgun, SIL, TIL, PCR?>
+
+SV=<vector name>
+
+PA=<parent source>
+
+	Parent source should match a previously defined SO name.
+
+SI=<insert size mean>
+SS=<insert size standard deviation>
+
+
+Sequences: RD
+=============
+
+Mandatory fields
+----------------
+
+RD=<name>    (Must be first item)
+
+AP=<assembly position>
+SQ=<sequence>
+FQ=<fastq scores>
+
+Optional fields
+---------------
+
+TR=<trace name>
+
+QL=<left clip point>
+QR=<right clip point>
+	These count from base 1 and are inclusive for the clip.
+	Ie "QL 1" indicates base 1 is clipped, base 2 onwards is OK.
+
+TN=<template name>
+	In the general case this matches a name used in an SO(urce)
+	block type. However for many simple cases, such as solexa
+	read-pair libraries, it is sufficient just to permit TN to be
+	used as a shared key between readings in order to link pairs
+	together.
+
+DR=<direction>
+	Direction is 1 or -1 for forward or reverse and indicates
+	whether the read should be reverse-complemented.
+
+MQ=<qual>
+	MAQ style mapping quality
+
+AL=<alignment-string>
+	The alignment-string indicates a detailed mapping of base
+	coordinates to trace coordinates. It is used to dislay the
+	traces in register with the sequences even after clipping,
+	padding or manual editing has taken place. If unset it is
+	assumed that, excluding gaps, the sequences has a one to one
+	mapping with the trace file. Hence most sequences will not
+	need an AL string.
+
+	The format is a run-length encoding of a series of single
+	letters: M=match, E=edit, I=insertion, D=deletion. The
+	encoding is simply the letter followed by the number of
+	occurences in a row, with no white space. Eg a sequence 100
+	characters long with an insertion (eg a due to inserting
+	a padding character for alignment purposes) at base 50 would
+	be "M50I1M50". The E(dit) character is used to indicate both
+	sequence and trace have a base call at this position but the
+	sequence base has been edited and no longer matches the trace.
+
+
+Issues
+======
+
+- We don't want to have all the sources (aka templates) at the
+  front. Rather we want them along side the reads that use
+  them. Ideally we want to know when we no longer need them during
+  parsing. (Perhaps just cache so many and look-up when not cached, so
+  proximity helps.)
+
+- We may need to add library to sequences. Eg how to distinguish
+  between a short and long insert library - must identify which
+  library was in use. Also 454 paired ends have readings in the
+  same orientation while solexa have them in opposite
+  orientations so this also needs recording in a library.
+
+
+Examples
+========
+
+Basic example 1
+---------------
+
+CO=Contig6
+LN=2764
+
+RD=xb96d5.s1
+DR=1
+AP=0
+QL=24
+QR=296
+TN=xb96d5
+TR=xb96d5.s1.ztr
+SQ=GACAGGTCGACTCTAGAGGATCCCCAACATATTGTGCACCAAGAATTGATGCAGTTTTCCAGGTGAGACCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACG-ATCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGAACTTCCGAAGTGTTCAAATTTTAAAAACTTATTTGGGTACCGAGCTCGAATTCGTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCCACACAACATACGAGCCGGAAGCATAAAGTGTAAAGCCTGGGGTGCCTAATGAGTGAGCTAACTCCCTTAATTCCGTTGGTAAATGCCCTTTTTCCAGTGGGAAACTTTTGTGCCAGTGCTTTATGATTGGCCCCGGGGGGGAGGGCGTTTCTTTGGCCCGGGGGTTTTTGCCCGGGGGAACGTTTCCTCCCCGGTCCCTAGGGTTCAAAACGCCCCCTTTTTCCCGGGGAAATCTTTTTGGGCCCGAGAGAACCCTTTAAAAATCGCCAGTGGTTTTCTTTGAGGACCTTTAAGGGGCTTG
+FQ='')*.1-33>>DB>>>>>>ADDKKKKKIKKKKKC>8====DKB;77BEKIIIIG@E979?@B66**+89B??EHHDDFFFFIKKMQIFFFFFFDDDDDFKKIIIFF>D==9>>FIIFFIDDDDKHIFDDDDFIIGGIIIFIIIIIIIIDDDIIIKHH;DDDHIFIKKKKKB88664==DDFKKQPMFKKLKMKKKKOKKKKKYYYYIFFFFFIKKKMKKKKKKMMMMMMMMYKKYYYYYYKKFFFD??<OB99?BIFGKYYYYOIBA=>@1.'')1:AIIQIIIIIIYIIIIIBB=>><<6306:<AAABIIFIIIIIQAAA:97:@IIIIIEI<<:3.39AAIIII>99>0-**))+1285:7472228<:844855++**+-*//++,/-0)))+*)+452-***/,.)**)*)))-(())***,,'''')'())''*'''))****)(((((+)++1+,+**(())++)))')('**((()*++*)(**(())**+''''''))+((('''''''(*))+''''(.0-((((*.)))))+*(((()(().*.((((((*,,(((*****'''')))'''(((((+((+(+(/+,,)'+''',)))-,(((((**((((((****+//.*))''''''(.,/++(')))))*)'''*,)),-,))%%%
+  
+RD=xc04h1.s1
+DR=1
+AP=45
+QL=28
+QR=218
+TN=xc04h1
+TR=xc04h1.s1.ztr
+SQ=CGCTGCAGGTCGACTCTAGAGGATCCCCCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACGAGTCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGGACTTTCGAAGGTTCAAAATTTAAAAACTTTTTTAAAAATTTTTAATTTCTTCTTAAATTCCAGGGGTTTACCTCTTGGGCCTCAGCCTTTCCTGACGGGTTTCGTTGGGCTTTCCCCTGGGGTCAACTTTTTTATGGGGCAAATTTCCCGGGGGAAATTTGGTAAGGCCATTCTGGATACCCTCAAGGGTTTTGCCCAATATTTTGGTTCACTTGTGGGAGAATTGGGTTACCCAAATTTTTAAAAACTTTGCCCTCTAAATTTTTTCTTGAAAGCGCTGGGGGTTCCCTTTAAGAGGCCCCCTGGGGGGTTATAAGAGGCCCTGTCCCCGGTTTCCAGGGGGGTGTTCCCAGGGCTCTTGTAGGGTTTACTGGGGCCGCTGTTGTGC
+FQ='')*/7;;<@BFYMITIIIDDDDDIIGAA<<>KKKPYYYKKFFDDDFMMMMMMYYYYMMMQMMMYYLFFFFFGMMKKKKKKGGGDFFFFDDCCCCFFKMMIIIIIDDCCBBBAA>A..'')48AAABIIDDD>>:>>>>DDKKKK>AADECIBBB>>:9<:47:>IIIIII??DDBDIK@@3::??<///954++.,,42/++-4355:9585011652++,-/++++/.))++++))**,640+)))***.,04:6866-02,(('''(***(((((())()).+*)(((()+4,,*+)))))).)(++*((**+-+1-))((**++,+,-,+''''*(+))))((+*(('''*+()('*)**.*)(((,40++.+++-*-*)*+*)))''''''%%%)))(**-/-+/+*-(((('''''*..--,,*)))'''',(()((+,*()**))'(''',/6--*))++)*,0.0++(((,'('(--*))))))**+*'''))+)))+)(.()('''''')).('''((0++.+*(((((('(%)'''''')).)))')'')(/22'')))'(()*+(((((*))'''''.'''''(()((('''')%%*(
+
+
+Example 2
+---------
+
+CO=Contig6
+LN=2764
+rd=([^.]*)(.)(.*)
+TN:${rd(1)}
+TR:${rd}.ztr
+PR:${rd(2)/p/1/q/2/*/0}
+  
+RD=xb96d5.s1
+DR=1
+AP=0
+QL=24
+QR=296
+SQ=GACAGGTCGACTCTAGAGGATCCCCAACATATTGTGCACCAAGAATTGATGCAGTTTTCCAGGTGAGACCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACG-ATCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGAACTTCCGAAGTGTTCAAATTTTAAAAACTTATTTGGGTACCGAGCTCGAATTCGTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCCACACAACATACGAGCCGGAAGCATAAAGTGTAAAGCCTGGGGTGCCTAATGAGTGAGCTAACTCCCTTAATTCCGTTGGTAAATGCCCTTTTTCCAGTGGGAAACTTTTGTGCCAGTGCTTTATGATTGGCCCCGGGGGGGAGGGCGTTTCTTTGGCCCGGGGGTTTTTGCCCGGGGGAACGTTTCCTCCCCGGTCCCTAGGGTTCAAAACGCCCCCTTTTTCCCGGGGAAATCTTTTTGGGCCCGAGAGAACCCTTTAAAAATCGCCAGTGGTTTTCTTTGAGGACCTTTAAGGGGCTTG
+FQ='')*.1-33>>DB>>>>>>ADDKKKKKIKKKKKC>8====DKB;77BEKIIIIG@E979?@B66**+89B??EHHDDFFFFIKKMQIFFFFFFDDDDDFKKIIIFF>D==9>>FIIFFIDDDDKHIFDDDDFIIGGIIIFIIIIIIIIDDDIIIKHH;DDDHIFIKKKKKB88664==DDFKKQPMFKKLKMKKKKOKKKKKYYYYIFFFFFIKKKMKKKKKKMMMMMMMMYKKYYYYYYKKFFFD??<OB99?BIFGKYYYYOIBA=>@1.'')1:AIIQIIIIIIYIIIIIBB=>><<6306:<AAABIIFIIIIIQAAA:97:@IIIIIEI<<:3.39AAIIII>99>0-**))+1285:7472228<:844855++**+-*//++,/-0)))+*)+452-***/,.)**)*)))-(())***,,'''')'())''*'''))****)(((((+)++1+,+**(())++)))')('**((()*++*)(**(())**+''''''))+((('''''''(*))+''''(.0-((((*.)))))+*(((()(().*.((((((*,,(((*****'''')))'''(((((+((+(+(/+,,)'+''',)))-,(((((**((((((****+//.*))''''''(.,/++(')))))*)'''*,)),-,))%%%
+  
+RD=xc04h1.s1
+DR=1
+AP=45
+QL=28
+QR=218
+SQ=CGCTGCAGGTCGACTCTAGAGGATCCCCCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACGAGTCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGGACTTTCGAAGGTTCAAAATTTAAAAACTTTTTTAAAAATTTTTAATTTCTTCTTAAATTCCAGGGGTTTACCTCTTGGGCCTCAGCCTTTCCTGACGGGTTTCGTTGGGCTTTCCCCTGGGGTCAACTTTTTTATGGGGCAAATTTCCCGGGGGAAATTTGGTAAGGCCATTCTGGATACCCTCAAGGGTTTTGCCCAATATTTTGGTTCACTTGTGGGAGAATTGGGTTACCCAAATTTTTAAAAACTTTGCCCTCTAAATTTTTTCTTGAAAGCGCTGGGGGTTCCCTTTAAGAGGCCCCCTGGGGGGTTATAAGAGGCCCTGTCCCCGGTTTCCAGGGGGGTGTTCCCAGGGCTCTTGTAGGGTTTACTGGGGCCGCTGTTGTGC
+FQ='')*/7;;<@BFYMITIIIDDDDDIIGAA<<>KKKPYYYKKFFDDDFMMMMMMYYYYMMMQMMMYYLFFFFFGMMKKKKKKGGGDFFFFDDCCCCFFKMMIIIIIDDCCBBBAA>A..'')48AAABIIDDD>>:>>>>DDKKKK>AADECIBBB>>:9<:47:>IIIIII??DDBDIK@@3::??<///954++.,,42/++-4355:9585011652++,-/++++/.))++++))**,640+)))***.,04:6866-02,(('''(***(((((())()).+*)(((()+4,,*+)))))).)(++*((**+-+1-))((**++,+,-,+''''*(+))))((+*(('''*+()('*)**.*)(((,40++.+++-*-*)*+*)))''''''%%%)))(**-/-+/+*-(((('''''*..--,,*)))'''',(()((+,*()**))'(''',/6--*))++)*,0.0++(((,'('(--*))))))**+*'''))+)))+)(.()('''''')).('''((0++.+*(((((('(%)'''''')).)))')'')(/22'')))'(()*+(((((*))'''''.'''''(()((('''')%%*(
