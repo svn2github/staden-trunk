@@ -957,3 +957,42 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
 	fprintf(fp, "Chain %2d   = %d\n", i, clen[i]);
     }
 }
+
+/*
+ * Iterates through members of a hash table returning items sequentially.
+ *
+ * Returns the next HacheItem on success
+ *         NULL on failure.
+ */
+HacheItem *HacheTableIterNext(HacheTable *h, HacheIter *iter) {
+    do {
+	if (iter->hi == NULL) {
+	    if (++iter->bnum >= h->nbuckets)
+		break;
+	    iter->hi = h->bucket[iter->bnum];
+	} else {
+	    iter->hi = iter->hi->next;
+	}
+    } while (!iter->hi);
+    
+    return iter->hi;
+}
+
+void HacheTableIterReset(HacheIter *iter) {
+    if (iter) {
+	iter->bnum = -1;
+	iter->hi = NULL;
+    }
+}
+
+HacheIter *HacheTableIterCreate(void) {
+    HacheIter *iter = (HacheIter *)malloc(sizeof(*iter));
+
+    HacheTableIterReset(iter);
+    return iter;
+}
+
+void HacheTableIterDestroy(HacheIter *iter) {
+    if (iter)
+	free(iter);
+}

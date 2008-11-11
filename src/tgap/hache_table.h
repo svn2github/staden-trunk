@@ -49,6 +49,12 @@ typedef struct {
     int       hits;	/* number of cached queries */
 } HacheTable;
 
+/* An iterator on HacheTable items */
+typedef struct {
+    int bnum;
+    HacheItem *hi;
+} HacheIter;
+
 /* Functions to to use HacheTable.options */
 #define HASH_FUNC_HSIEH       0
 #define HASH_FUNC_TCL         1
@@ -89,5 +95,11 @@ void HacheTableDump(HacheTable *h, FILE *fp);
 void HacheOrderAccess(HacheTable *h, HacheItem *hi);
 void HacheOrderRemove(HacheTable *h, HacheItem *hi);
 int HacheOrderAdd(HacheTable *h, HacheItem *hi);
+
+/* Iterator prototypes */
+HacheIter *HacheTableIterCreate(void);
+void HacheTableIterDestroy(HacheIter *iter);
+HacheItem *HacheTableIterNext(HacheTable *h, HacheIter *iter);
+void HacheTableIterReset(HacheIter *iter);
 
 #endif /* _HACHE_TABLE_H_ */
