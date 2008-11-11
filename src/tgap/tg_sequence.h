@@ -13,6 +13,7 @@
 #define sequence_get_mapping_qual(s) ((*(s))->mapping_qual)
 #define sequence_get_name_len(s)     ((*(s))->name_len)
 #define sequence_get_name(s)         ((*(s))->name)
+#define sequence_get_trace_name(s)   ((*(s))->trace_name)
 #define sequence_get_seq(s)          ((*(s))->seq)
 #define sequence_get_conf(s)         ((*(s))->conf)
 #define sequence_get_flags(s)        ((*(s))->flags)
@@ -41,6 +42,7 @@ int sequence_set_flags       (GapIO *io, seq_t **s, int value);
 int sequence_set_seq_tech    (GapIO *io, seq_t **s, int value);
 int sequence_set_mapping_qual(GapIO *io, seq_t **s, uint8_t value);
 int sequence_set_name        (GapIO *io, seq_t **s, char *name);
+int sequence_set_trace_name  (GapIO *io, seq_t **s, char *trace_name);
 int sequence_set_seq         (GapIO *io, seq_t **s, char *seq);
 int sequence_set_conf        (GapIO *io, seq_t **s, char *conf);
 
@@ -66,6 +68,7 @@ int seq_left(GapIO *io, int rec);
 int seq_right(GapIO *io, int rec);
 int seq_mapping_qual(GapIO *io, int rec);
 char *seq_name(GapIO *io, int rec);
+char *seq_trace_name(GapIO *io, int rec);
 char *seq_seq(GapIO *io, int rec);
 char *seq_conf(GapIO *io, int rec);
 

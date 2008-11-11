@@ -207,29 +207,87 @@ int sequence_set_seq_tech(GapIO *io, seq_t **s, int value) {
  *        -1 on failure
  */
 int sequence_set_name(GapIO *io, seq_t **s, char *name) {
+    size_t extra_len;
     seq_t *n;
+    char *tmp, *cp;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    n = cache_item_resize(n, sizeof(*n) + strlen(name)+1 +
-			  ABS(n->len)*(1+sequence_conf_size(n)));
+    extra_len = strlen(name)+1 + n->trace_name_len+1 +
+	ABS(n->len)*(1+sequence_conf_size(n));
+    n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
 
     n->name = (char *)&n->data;
-    n->seq = n->name + n->name_len + 1;
+    n->trace_name = n->name + n->name_len + 1;
+    n->seq = n->trace_name + n->trace_name_len + 1;
     n->conf = n->seq + ABS(n->len);
 
     /* Shift and insert name */
-    /* FIXME: TO DO */
+    cp = tmp = malloc(extra_len);
+    n->name_len = strlen(name);
+    strcpy(cp, name);
+    cp += n->name_len+1;
+    if (n->trace_name)
+	strcpy(cp, n->trace_name);
+    cp += n->trace_name_len;
+    memcpy(cp, n->seq, n->len);
+    memcpy(cp, n->conf, n->len * sequence_conf_size(n));
+    memcpy(&n->data, tmp, extra_len);
+    free(tmp);
 
     *s = n;
     return 0;
 }
 
-int sequence_set_seq (GapIO *io, seq_t **s, char *seq) {return 0;}
-int sequence_set_conf(GapIO *io, seq_t **s, char *conf) {return 0;}
+/*
+ * Sets a trace name.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
+    size_t extra_len;
+    seq_t *n;
+    char *tmp, *cp;
+
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+
+    if (!trace_name || 0 == strcmp(n->name, trace_name))
+	trace_name = "";
+
+    extra_len = n->name_len+1 + strlen(trace_name)+1 +
+	ABS(n->len)*(1+sequence_conf_size(n));
+    n = cache_item_resize(n, extra_len);
+    if (NULL == n)
+	return -1;
+
+    n->name = (char *)&n->data;
+    n->trace_name = n->name + n->name_len + 1;
+    n->trace_name_len = strlen(trace_name);
+    n->seq = n->trace_name + n->trace_name_len + 1;
+    n->conf = n->seq + ABS(n->len);
+
+    /* Shift and insert name */
+    cp = tmp = malloc(extra_len);
+    strcpy(cp, n->name);
+    cp += n->name_len+1;
+    strcpy(cp, trace_name);
+    cp += strlen(trace_name);
+    memcpy(cp, n->seq, n->len);
+    memcpy(cp, n->conf, n->len * sequence_conf_size(n));
+    memcpy(&n->data, tmp, extra_len);
+    free(tmp);
+
+    *s = n;
+    return 0;
+}
+
+int sequence_set_seq (GapIO *io, seq_t **s, char *seq) {return -1;}
+int sequence_set_conf(GapIO *io, seq_t **s, char *conf) {return -1;}
 
 
 /*
@@ -244,13 +302,15 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    n = cache_item_resize(n, sizeof(*n) + 1+n->name_len
-			  + (ABS(n->len)+1)*(1+sequence_conf_size(n)));
+    n = cache_item_resize(n, sizeof(*n) + 1+n->name_len +
+			  strlen(n->trace_name)+1 +
+			  (ABS(n->len)+1)*(1+sequence_conf_size(n)));
     if (NULL == n)
 	return -1;
 
     n->name = (char *)&n->data;
-    n->seq = n->name + n->name_len + 1;
+    n->trace_name = n->name + n->name_len + 1;
+    n->seq = n->trace_name + strlen(n->trace_name) + 1;
     n->conf = n->seq + ABS(n->len);
 
     p2 = n->len < 0
@@ -496,12 +556,13 @@ void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
 
 seq_t *dup_seq(seq_t *s) {
     size_t len = sizeof(seq_t) - sizeof(char *) + s->name_len+1 +
-	(ABS(s->len)+1)*(1+sequence_conf_size(s));
+	s->trace_name_len+1 + (ABS(s->len)+1)*(1+sequence_conf_size(s));
     seq_t *d = (seq_t *)calloc(1, len);
 
     memcpy(d, s, len);
     d->name = (char *)&d->data;
-    d->seq = d->name + d->name_len + 1;
+    d->trace_name = d->name + d->name_len + 1;
+    d->seq = d->trace_name + d->trace_name_len + 1;
     d->conf = d->seq + ABS(d->len);
 
     return d;
@@ -856,9 +917,161 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
 	    tmp = conf[0]; conf[0] = conf[3]; conf[3] = tmp;
 	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
 	}
+
+	richard_munge_conf(conf);
+	//rob_munge_conf(conf);
     }
 
     return 0;
+}
+
+/*
+ * Simulates Richard's 4-confidence value system.
+ * This stores the top value as-is. The 3rd and 4th highest listed as a
+ * fraction of the 2nd highest and the 2nd highest value is implicit (1 minus
+ * the rest).
+ */
+void richard_munge_conf(double *lp) {
+    double p1 = -100, p2 = -100, p3 = -100, p4 = -100, p34;
+    int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
+    int i;
+    double r3, r4;
+
+    /* Sort */
+    for (i = 0; i < 4; i++) {
+	if (p1 < lp[i]) {
+	    p4 = p3;
+	    i4 = i3;
+	    p3 = p2;
+	    i3 = i2;
+	    p2 = p1;
+	    i2 = i1;
+	    p1 = lp[i];
+	    i1 = i;
+	} else if (p2 < lp[i]) {
+	    p4 = p3;
+	    i4 = i3;
+	    p3 = p2;
+	    i3 = i2;
+	    p2 = lp[i];
+	    i2 = i;
+	} else if (p3 < lp[i]) {
+	    p4 = p3;
+	    i4 = i3;
+	    p3 = lp[i];
+	    i3 = i;
+	} else if (p4 < lp[i]) {
+	    p4 = lp[i];
+	    i4 = i;
+	}
+    }
+
+    /* Rescale */
+    p1 = exp(p1);
+    p2 = exp(p2);
+    p3 = exp(p3);
+    p4 = exp(p4);
+
+    /* Simulate truncation using 3 bits for ratios */
+    r3 = -10*log(p3/p2)/log(10);
+    if      (r3 <  1.5) r3 = 0;
+    else if (r3 <  4.5) r3 = 3;
+    else if (r3 <  8.0) r3 = 6;
+    else if (r3 < 12.5) r3 = 10;
+    else if (r3 < 17.5) r3 = 15;
+    else if (r3 < 25.5) r3 = 20;
+    else if (r3 < 40.0) r3 = 30;
+    else r3 = 50;
+    r3 = pow(10,r3/-10.0);
+
+    r4 = -10*log(p4/p2)/log(10);
+    if      (r4 <  1.5) r4 = 0;
+    else if (r4 <  4.5) r4 = 3;
+    else if (r4 <  8.0) r4 = 6;
+    else if (r4 < 12.5) r4 = 10;
+    else if (r4 < 17.5) r4 = 15;
+    else if (r4 < 25.5) r4 = 20;
+    else if (r4 < 40.0) r4 = 30;
+    else r4 = 50;
+    r4 = pow(10,r4/-10.0);
+
+    /*
+     * From ratio r3 and r4 recompute p2, p3, and p4 using:
+     *    1-p1 = p2 + r3*p2 + r4*p3
+     *
+     * => p2(1+r3+r4) = 1-p1
+     * => p2 = (1-p1)/(1+r3+r4)
+     */
+    p2 = (1-p1)/(1+r3+r4);
+    p3 = r3*p2;
+    p4 = r4*p2;
+
+    /*
+    printf("%5.1f %5.1f %5.1f %5.1f => ",
+	   10 * log(exp(lp[0]) / (1-exp(lp[0]))) / log(10),
+	   10 * log(exp(lp[1]) / (1-exp(lp[1]))) / log(10),
+	   10 * log(exp(lp[2]) / (1-exp(lp[2]))) / log(10),
+	   10 * log(exp(lp[3]) / (1-exp(lp[3]))) / log(10));
+    */
+
+    lp[i1] = log(p1);
+    lp[i2] = log(p2);
+    lp[i3] = log(p3);
+    lp[i4] = log(p4);
+
+    /*
+    printf("%5.1f %5.1f %5.1f %5.1f\n",
+	   10 * log(exp(lp[0]) / (1-exp(lp[0]))) / log(10),
+	   10 * log(exp(lp[1]) / (1-exp(lp[1]))) / log(10),
+	   10 * log(exp(lp[2]) / (1-exp(lp[2]))) / log(10),
+	   10 * log(exp(lp[3]) / (1-exp(lp[3]))) / log(10));
+    */
+}
+
+/*
+ * Simulates Rob's 4-confidence value system.
+ * This basically has top two values and the remaining two set to the average.
+ */
+void rob_munge_conf(double *lp) {
+    double p1 = -100, p2 = -100, p3 = -100, p4 = -100, p34;
+    double i1 = 0, i2 = 0;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+	if (p1 < lp[i]) {
+	    p4 = p3;
+	    p3 = p2;
+	    p2 = p1;
+	    i2 = i1;
+	    p1 = lp[i];
+	    i1 = i;
+	} else if (p2 < lp[i]) {
+	    p4 = p3;
+	    p3 = p2;
+	    p2 = lp[i];
+	    i2 = i;
+	} else if (p3 < lp[i]) {
+	    p4 = p3;
+	    p3 = lp[i];
+	} else if (p4 < lp[i]) {
+	    p4 = lp[i];
+	}
+    }
+
+    p34 = log((1-((exp(p1)+exp(p2))/(exp(p1)+exp(p2)+exp(p3)+exp(p4))))/2.0);
+
+    //printf("%f %f %f %f => ", lp[0], lp[1], lp[2], lp[3]);
+
+    for (i = 0; i < 4; i++) {
+	if (i == i1)
+	    lp[i] = p1;
+	else if (i == i2)
+	    lp[i] = p2;
+	else
+	    lp[i] = p34;
+    }
+
+    //printf("%f %f %f %f\n", lp[0], lp[1], lp[2], lp[3]);
 }
 
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {

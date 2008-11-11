@@ -1347,7 +1347,9 @@ static int io_track_create(void *dbh, void *vfrom) {
  *      + format (2 top bits)
  * 1 byte mapping_quality
  * 1 byte name len L
+ * 1 byte trace name len T
  * L bytes name
+ * T names name
  * remainder is seq/qual (1 byte per).
  *
  * Returns a pointer to a seq_t struct
@@ -1358,7 +1360,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     unsigned char *cp, flags, mapping_qual, seq_tech, format;
     size_t slen, i;
     seq_t *seq;
-    uint32_t left, right, nlen, bin, seq_len;
+    uint32_t left, right, nlen, tnlen, bin, seq_len;
     int parent_type, parent_rec, other_end;
 
     cp = buf;
@@ -1376,9 +1378,11 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     format >>= 3;
     mapping_qual = *cp++;
     nlen = *cp++;
+    tnlen = flags & SEQ_TRACE_NAME ? cp[nlen] : 0;
+	
 
     /* Generate in-memory data structure */
-    slen = sizeof(seq_t) + nlen + 1 + 2*seq_len +
+    slen = sizeof(seq_t) + nlen + 1 + tnlen + 1 + 2*seq_len +
 	(format == SEQ_FORMAT_CNF4 ? 3*seq_len : 0);
 
     if (!(ci = cache_new(GT_Seq, 0, 0, NULL, slen)))
@@ -1404,7 +1408,16 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     seq->name[nlen] = 0;
     cp += nlen;
 
-    seq->seq = seq->name + nlen + 1;
+    seq->trace_name_len = tnlen;
+    seq->trace_name = seq->name + nlen + 1;
+    if (flags & SEQ_TRACE_NAME) {
+	cp++; /* Skip; tnlen already decoded */
+	memcpy(seq->trace_name, cp, tnlen);
+	cp += tnlen;
+    }
+    seq->trace_name[tnlen] = 0;
+
+    seq->seq = seq->trace_name + tnlen + 1;
     seq->conf = seq->seq + seq_len;
 
     switch (seq->format) {
@@ -1473,7 +1486,7 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
 /* See seq_decode for the storage format */
 static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     int err = 0;
-    int i, seq_len, name_len, data_len;
+    int i, seq_len, name_len, trace_name_len, data_len;
     unsigned char block[1024], *cp = block, *cpstart;
     static unsigned char base2val[256] = {
      /* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
@@ -1498,6 +1511,11 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     name_len = seq->name_len;
     if (name_len > 255)
 	name_len = 255;
+
+    trace_name_len = seq->trace_name_len;
+    if (trace_name_len > 255)
+	trace_name_len = 255;
+
     seq_len = ABS(seq->len);
 
     /* Auto-detect format where possible */
@@ -1525,6 +1543,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	+ 1 /* mapping_quality */
 	+ 1 /* name_len */
 	+ name_len
+	+ 1 /* trace_name_len */
+	+ trace_name_len
 	+ seq_len*4 + 2; /* deflate worst expansion? */
     if (data_len > 1024) {
 	if (NULL == (cp = (unsigned char *)malloc(data_len)))
@@ -1551,6 +1571,13 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     *cp++ = name_len;
     memcpy(cp, seq->name, name_len);
     cp += name_len;
+
+    /* Trace name */
+    if (seq->flags & SEQ_TRACE_NAME) {
+	*cp++ = trace_name_len;
+	memcpy(cp, seq->trace_name, trace_name_len);
+	cp += trace_name_len;
+    }
 
     /* Seq/Conf */
     switch (seq->format) {

@@ -85,8 +85,19 @@ typedef struct {
  * efficient to encode in a different format.
  *
  * (Also see bin_index_t from binning.h)
+ *
+ * The memory layout of the 'data' block is (eg seq_decode() in tg_iface_g.c)
+ *
+ * field	len
+ * ---------------------------------------------
+ * name         name_len    (at address &seq.data)
+ * nul          1
+ * trace_name   trace_name_len
+ * nul		1
+ * seq		ABS(len)
+ * conf		ABS(len)    (if format != SEQ_FORMAT_CNF4)
+ * conf		4*ABS(len)  (if format == SEQ_FORMAT_CNF4, in order ACGT,ACGT)
  */
-
 typedef struct {
     signed int  pos; /* left end, regardless of direction */
     signed int len; /* +ve or -ve indicates direction */
@@ -99,7 +110,9 @@ typedef struct {
     unsigned int format:2;
     uint8_t mapping_qual;
     int name_len;
+    int trace_name_len;
     char *name; /* also nul terminated */
+    char *trace_name; /* nul terminated trace name, blank => same as name */
     char *seq;
     char *conf;
     char *data; /* packed memory struct; name/seq/conf are here */
@@ -115,6 +128,8 @@ typedef struct {
 #define SEQ_COMPLEMENTED (1<<0)
 #define SEQ_CONF_PHRED   (1<<1) /* Confidence values in phred-scale?
 				   False => log-odds */
+#define SEQ_TRACE_NAME   (1<<2) /* Set if trace_name is present */
+
 #define SEQ_FORMAT_MAQ   0      /* 2-bit base, 6-bit conf */
 #define SEQ_FORMAT_CNF1  1      /* 8-bit base, 1 confidence values */
 #define SEQ_FORMAT_CNF4  2      /* 8-bit base, 4 confidence values */
@@ -150,6 +165,36 @@ typedef struct index {
 #define BIN_RANGE_UPDATED (1<<2)
 #define BIN_TRACK_UPDATED (1<<3)
 
+/*
+ * We may also wish to hold in range:
+ *     other_end (rec)
+ *     template (complex case).
+ *
+ * Eg consider:
+ *        
+ *           | VISIBLE PORTION VISIBLE PORTION |    
+ * A   >>>>--|---------------------------------|--<<<<
+ * B   >>>>--|-------------------<<<<          |
+ * C         | >>>>----------------------<<<<  |
+ * D         |         >>>>--------------------|--<<<<
+ *
+ * Template A is invisible as it has no end visible within our range query.
+ * We can address this partially by looking a certain distance either
+ * side of the visible portion, but most cases of type A will be
+ * chimeras and very far apart.
+ *
+ * Template B and D have one end only visible. We may still need to load the
+ * sequence struct to figure out where it is.
+ *
+ * Template C, hopefully the dominant case, will have both ends returned as
+ * range structs from a display query. We therefore can reindex the array
+ * in memory by record number and identify both ends and the extents of the
+ * line to draw. Hence we do not need to fetch the sequence structs directly.
+ *
+ * The more complex cases involving more than two reads requires a template
+ * record and proper two-way linkage. This is only needed for capillary
+ * style sequencing.
+ */
 typedef struct {
     int start;
     int end;
