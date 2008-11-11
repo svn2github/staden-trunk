@@ -15,18 +15,17 @@ GAP4SRC=$(SRCROOT)/gap5
 # Local comment: Comment out next line for remote compilation
 GAP4BIN=$(O)
 
-TGAP_INC=-I/nfs/team71/psg/jkb/work/tgap
+TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
-INCLUDES_E += -I$(HOME)/work/tgap \
-	      -I$(GAP4SRC) $(TAGP_INC) $(TK_INC) \
+INCLUDES_E += -I$(GAP4SRC) $(TGAP_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(MUT_INC) \
 	      $(F77_INC) $(P3_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 FFLAGS += $(SHLIB_FFLAGS)
 
 
-TGAP_LIB=-L/nfs/team71/psg/jkb/work/tgap -ltgap
+TGAP_LIB=-ltgap
 
 
 #
