@@ -304,6 +304,7 @@ proc new_trace_create2 {w e title allow_diff} {
     global trace_compact_mode $w.Trace_Compact_Mode
     global $w.Trace_Label_Width
 
+
     set dt [keylget gap5_defs TRACE_DISPLAY]
 
     # Create master trace window
@@ -466,6 +467,7 @@ proc new_trace_create2 {w e title allow_diff} {
 	set $w.HasConf($tf_r) 0
     } else {
         set tname [string tolower $title]
+	regsub -all {\.} $tname _ tname
 	set tit_name ""
 	set tit_num $title
 	set info_state normal
