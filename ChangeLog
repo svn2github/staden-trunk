@@ -1,3 +1,2515 @@
+2008-11-13  James Bonfield  <jkb@sanger.ac.uk>
+
+	INTERNAL RELEASE rel-1-7-3
+
+2008-11-13  James Bonfield  <jkb@sanger.ac.uk>
+
+	* src/g/g-request.c,
+	* src/g/g-io.c:
+	More int vs size_t/off_t changes to handle large .aux files.
+
+	* src/gap4/edUtils2.c,
+	* src/gap4/tman_display.c,
+	* src/gap4/tman_interface.c,
+	* src/gap4/trace_display.tcl:
+	Handle 454 traces where the sequence aligned against the trace is
+	(for read-pair data) just a portion of the entire trace. This
+	involves removing assumptions of origpos(xx,seq,1) being the first
+	trace coordinate.
+	
+
+2008-11-13  jkbonfield  <jkbonfield>
+
+	* src/Misc/array.c,
+	* src/Misc/array.h:
+	(11:39:05) Updated dimensions to be of type size_t so we can
+	allocate arrays larger than 2Gb. 
+
+	* src/g/g-files.c:
+	(11:39:58) Use off_t instead of int in expressions involving lseek.
+	This fixes a bug where .aux index files larger than 2Gb would fail. 
+
+2008-11-11  jkbonfield  <jkbonfield>
+
+	* src/tgap/BAF,
+	* src/tgap/Makefile,
+	* src/tgap/baf.c,
+	* src/tgap/baf.h,
+	* src/tgap/tg_index.c:
+	(15:09:12) Added (some) support for BAF - the basic assembly
+	format. This isn't intended to be a long-term file format but it
+	will serve as a working format until a strong contender emerges.
+	For now it's a replacement CAF to work around our current woes. 
+
+	* src/tgap/hache_table.c,
+	* src/tgap/hache_table.h:
+	(15:09:30) Added iterators to the HacheTable code. 
+
+	* src/tgap/tg_iface_g.c,
+	* src/tgap/tg_sequence.c,
+	* src/tgap/tg_sequence.h,
+	* src/tgap/tg_struct.h:
+	(15:11:12) Added trace_name to the sequence_t struct and a flag to
+	indicate if the field is present on disk. This allows us to add
+	explicit trace names only for cases where it differs to the
+	sequence name. 
+
+	* src/tgap/tg_view.c:
+	(15:11:29) Fixed a bug with long read names where they could
+	overlap the sequence. 
+
+	* src/gap5/Makefile:
+	(15:12:13) Fixed Makefile to not use ~jkb/work/tgap for the tgap
+	source - it now correctly uses the Staden local copy. Oops 
+
+	* src/gap5/trace_display.tcl:
+	(15:12:55) Protect against trace titles containing dots, which
+	previously broke the tk pathnames being generated. 
+
+2008-10-24  jkbonfield  <jkbonfield>
+
+	* src/gap5/consensus.c:
+	(09:05:18) Added depth to the consensus struct per base.
+	
+	Improved support for utilising all 4 confidence values when
+	available.
+	
+	Bug fixed some edge cases, such as zero depth regions. 
+
+	* src/gap5/consensus.h:
+	(09:05:31) Added depth to the consensus struct per base. 
+
+	* src/gap5/contig_editor.tcl:
+	(09:06:24) The status line updates quality information on keyboard
+	cursor movements now as well as mouse over events. 
+
+	* src/gap5/editor_view.c,
+	* tables/gap5rc:
+	(09:07:48) The editor "brief" status line format has been updated
+	to support reporting all 4 confidence values for a sequence base
+	call. 
+
+	* src/gap5/gap4_compat.c:
+	(09:08:23) contig_name_to_number now uses contig_index_query for
+	btree scanning rather than a brute force search. 
+
+	* src/gap5/newgap5_cmds.c:
+	(09:10:06) New function: tcl_sequence_depth, doing pretty much what
+	you expect.
+	
+	Start of tcl_find_internal_joins interface. Incomplete right now.
+	
+	tcl_calc_consensus_full now reports sequence depth too, incase
+	you're already calculating the consensus anyway. 
+
+2008-10-23  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/hash_sff.c:
+	(14:08:19) Added support for outputting only the table of contents
+	to a new file without copying the existing sff files. This is
+	useful if we have the original sff files in an archive that we
+	cannot modify. 
+
+	* src/tgap/b+tree2.c:
+	(14:09:23) Additional error checking in btree_find_recurse(). 
+
+	* src/tgap/tg_contig.c,
+	* src/tgap/tg_contig.h:
+	(14:09:50) Added a contig_index_query function, analogous to
+	sequence_index_query. 
+
+	* src/tgap/tg_iface_g.c,
+	* src/tgap/tg_index.c,
+	* src/tgap/tg_sequence.c,
+	* src/tgap/tg_sequence.h,
+	* src/tgap/tg_tcl.c,
+	* src/tgap/tg_view.c:
+	(14:29:43) Fixed bug in btree_load_cache. If it had an error
+	locking or reading data then it freed an uninitialised pointer.
+	
+	Fixed a view locking bug in btree_write().
+	
+	Added support for SEQ_FORMAT_CNF4 encoded sequences. These have 4
+	log-odds confidence values instead of the 1 phred value. 
+
+2008-10-07  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/Makefile.am:
+	(16:02:51) Added extract_fastq to the list of programs to build. 
+
+2008-10-03  jkbonfield  <jkbonfield>
+
+	* src/tgap/Makefile,
+	* src/tgap/ace.c,
+	* src/tgap/ace.h,
+	* src/tgap/maq.c,
+	* src/tgap/tg_index.c:
+	(16:12:13) Added support for loading (new format) ACE files in
+	tg_index.
+	
+	For all formats we no longer flush the cache after every contig as
+	this was a major speed hit when dealing with lots of small contigs.
+	
+	Added read-pairing support for the simple .aln format. If the name
+	matches it's assumed to be part of a pair. 
+
+	* src/tgap/hache_table.c:
+	(16:13:07) Minor changes to the HacheTableStats function. The
+	reporting number of cache hits/misses is now a delta from the last
+	time the stats function was called. 
+
+	* src/tgap/tg_tcl.c:
+	(16:13:49) Added comments regarding usage. No code change. 
+
+	* src/gap5/gap4_compat.c:
+	(16:23:56) Fixes in get_contig_num. (Done so long ago I forget what
+	the reasoning was - sorry!) 
+
+	* src/gap5/fij.c,
+	* src/gap5/fij.h,
+	* src/gap5/fij.tcl,
+	* src/gap5/newgap_structs.h:
+	(16:25:46) Added Find Internal Joins function. 
+
+	* src/gap5/depth.tcl,
+	* src/gap5/tclIndex,
+	* tables/gap5rc,
+	* tables/gap5rc_menu_full:
+	(16:26:50) Added the first draft of a read-depth and template
+	display. Also tidied up the menus to remove most of the unused
+	functions somewhat. 
+
+	* src/tgap/ace_reorder.pl:
+	(17:00:02) This attempts to reorder an ACE file so that the reads
+	within it are sorted in left to right order.
+	
+	The purpose for this is to improve efficiency when converting to a
+	Gap5 database. While it'll work regardless of the read order
+	(provided the reads are presented in the same order as listed int
+	he AF lines), it is inefficient if the reads for a small region are
+	spread throughout a large area of disk. 
+
+	* src/gap5/depth.tcl:
+	(17:56:15) Removed broken bits from the entry dialogue. The window
+	doesn't yet support multiple contigs anyway. 
+
+2008-09-29  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/srf_list.c:
+	(14:00:22) Added new program: srf_list. This lists or counts the
+	sequence names within an SRF file. 
+
+	* src/io_lib/io_lib/srf.c:
+	(14:01:38) The srf_next_block_details now uses the trace_body
+	struct held within the srf struct. This means it can be queried
+	after a successful call and is utilised by srf_list to obtain the
+	trace body size. 
+
+2008-09-18  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(12:59:37) Fixed a bug with parsing the directory name. If it fails
+	it left the run number in an inconsistent state.
+	
+	This shouldn't cause issues in production pipelines, but does if
+	you copy the files out of the run folders. 
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/progs/solexa2srf.c:
+	(16:33:45) Overhauled the SRF indexing code.
+	
+	Much of the indexing code in srf_index_hash.c has been moved over
+	to srf.c so it can be used by other programs.  An API has been
+	created too so it is now far easier to create, add to and save an
+	index.
+	
+	Added support for writing indexes in illumina2srf. Note that now if
+	no index is written we also write out 8 bytes of zero, indicating
+	the length of the index is zero. (This is required by more recent
+	versions of the SRF specification.)
+	
+	Still to do: tools such as srf_filter should be updating the index
+	(or at least removing the old ones). This will now be easier to do
+	with these code updates.
+	
+	Updated the tests to check the new illumina2srf -i option too. 
+
+	* src/io_lib/progs/srf_index_hash.c:
+	(16:33:46) Overhauled the SRF indexing code.
+	
+	Much of the indexing code in srf_index_hash.c has been moved over
+	to srf.c so it can be used by other programs.  An API has been
+	created too so it is now far easier to create, add to and save an
+	index.
+	
+	Added support for writing indexes in illumina2srf. Note that now if
+	no index is written we also write out 8 bytes of zero, indicating
+	the length of the index is zero. (This is required by more recent
+	versions of the SRF specification.)
+	
+	Still to do: tools such as srf_filter should be updating the index
+	(or at least removing the old ones). This will now be easier to do
+	with these code updates.
+	
+	Updated the tests to check the new illumina2srf -i option too. 
+
+2008-09-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/Makefile.am:
+	(08:43:41) Updated for version number and inclusion of tests dir. 
+
+	* src/io_lib/bootstrap,
+	* src/io_lib/configure.in:
+	(08:43:42) Updated for version number and inclusion of tests dir. 
+
+	* src/io_lib/io_lib/Attic/Makefile.in:
+	(08:43:55) Removed due to being auto-generated from Makefile.am 
+
+	* src/io_lib/io_lib/os.h:
+	(08:44:56) Tidy up of endianness detection. I split apart the
+	endian step from the os-components (no strdup, etc). Also changed
+	the order so that when using autoconf the automatically detected
+	settings override any existing assumptions from os.h. 
+
+	* src/io_lib/io_lib/hash_table.h:
+	(08:46:10) Included sys/types.h for off_t type. 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README:
+	(10:25:27) Final tweaks for preparing 1.11.4 
+
+	* src/io_lib/io_lib/srf.h:
+	(10:52:37) Changed block_type from char to int. This cures a
+	problem on PowerMac (PPC) running Debian where char is by default
+	an unsigned type, meaning it cannot be compared to EOF (-1). 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2fasta.c,
+	* src/io_lib/progs/srf2fastq.c,
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c,
+	* src/io_lib/progs/srf_extract_linear.c:
+	(15:25:29) A variety of changes to make the code work correctly
+	using msys/mingw on Windows. These mainly revolve around binary
+	mode and nl/cr issues. 
+
+	* src/io_lib/ChangeLog:
+	(15:32:21) *** empty log message *** 
+
+2008-09-09  jkbonfield  <jkbonfield>
+
+	* src/io_lib/acinclude.m4:
+	(13:27:35) Fixed the LIBCURL_CHECK_CONFIG code to not believe the
+	output from "curl-config --libs". We try -lcurl first off to see if
+	that also works. The reason is simply that curl-config --libs
+	typically loves to explicitly specify all the implicit
+	dependencies, such as -lssl -lcrypto -ldl, etc. This in turn locks
+	compiled io_lib libraries and binaries into requiring very specific
+	version of system libraries. 
+
+	* src/io_lib/io_lib/Attic/Makefile.in:
+	(13:27:57) *** empty log message *** 
+
+	* src/io_lib/io_lib/compression.c:
+	(13:30:24) Minor speed tweaks to qshift and unqshift 
+
+	* src/io_lib/io_lib/mFILE.c,
+	* src/io_lib/progs/solexa2srf.c:
+	(13:31:41) Added include of io_lib_config.h for autoconf builds so
+	that the ftello and similar functions get the correct prototypes. 
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h:
+	(13:32:44) Made partial_decode_ztr non-static and added it, along
+	with ztr_dup and construct_trace_name to the external header file
+	for use in other parts of io_lib. 
+
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/srf_filter.c,
+	* src/io_lib/progs/srf_info.c:
+	(13:36:40) Added two new programs from Steven Leonard.
+	
+	srf_info: dumps out basic information on the contents of an SRF    
+	      file, including the read name prefixes used, how many	   
+	  DBs per DBH and frequencies of ZTR chunk and meta-data	 
+	strings.
+	
+	srf_filter: a tool to produce new srf files by filtering in or out 
+		data from an existing srf file. This can be performed	   
+	    either at the entire trace level (eg tagged as good or	   
+	bad) or also at individual ZTR chunk levels (eg processed      
+	data only). 
+
+	* src/io_lib/progs/srf2fasta.c,
+	* src/io_lib/progs/srf2fastq.c:
+	(13:37:37) Include string.h for additional prototypes (for -Wall
+	-Wno-paranthesis compilations). 
+
+	* src/io_lib/progs/srf_extract_hash.c:
+	(13:38:47) Major overhaul from Steven Leonard. It now supports a
+	-fastq option to output fastq instead of ZTR files and optionally
+	can use calibrated or non-calibrated confidence values too. 
+
+	* src/io_lib/progs/srf_extract_linear.c:
+	(13:39:44) Added support for SRFB_NULL_INDEX so that srf files with
+	a blank index do not causes crashes. 
+
+	* src/io_lib/progs/srf_index_hash.c:
+	(13:40:44) Added extra error checking from Steven Leonard to spot
+	duplicate read names. The new -c option also allows checking of an
+	existing srf file without attempting to write a new index. 
+
+2008-09-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(08:40:20) Fixed bug reported by Robert Sanders. The fwd matrix was
+	being written twice on paired-end runs instead of fwd+reverse. 
+
+	* src/io_lib/COPYRIGHT,
+	* src/io_lib/io_lib/open_trace_file.c,
+	* src/io_lib/io_lib/sff.c:
+	(10:56:46) Updated 454's copyright notice (following correspondence
+	from Jim Knight at 454) to explicitly include permission to modify
+	and redistribute the code.
+	
+	Also updated the GRL licence to be explicit rather than just an
+	implied BSD style. 
+
+2008-08-29  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/deflate_interlaced.c:
+	(09:00:39) Added external codes2codeset() function to turn
+	bit-length arrays into codesets. Useful for tools that wish to use
+	this code to use their own precomputed huffman trees. 
+
+	* src/io_lib/io_lib/deflate_interlaced.h:
+	(09:00:53) *** empty log message *** 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(09:01:21) Renamed ILLUMINA_GA_PARAMS and ILLUMINA_GA_PARAMS2 to
+	ILLUMINA_GA_BUSTARD_PARAMS and ILLUMINA_GA_FIRECREST_PARAMS. 
+
+	* src/tgap/tg_cache.c:
+	(09:01:56) Bug fixed the new flush code. Using ARR instead of arr
+	macro auto-extends the array for us. 
+
+	* src/tgap/tg_contig.c:
+	(09:03:15) Added cache_incr/decr calls around contig_seqs_in_range2
+	so that the recursive nature of the function cannot push the bin
+	out of the cache. 
+
+	* src/tgap/tg_tcl.c:
+	(13:46:28) Overhauled the tcl objects somewhat. Contigs and
+	sequence (more to follow) sport an "io" and a "delete" method. This
+	comes about from the realisation that my object system doesn't
+	really fit in with Tcl.
+	
+	Consider:
+	
+	if {$condition} {    set r [$io get_sequence $seq_num]	  puts
+	length=[$r get_length] }
+	
+	This this we query the tg_cache to get a sequence object, we create
+	a Tcl_Obj associated with that too (stored in $r) and register a
+	*global* function named after the string form of $r. This allows us
+	to call it with "$r get_length" as technically objects are not
+	classes and cannot have methods invoked on them in their own right.
+	The names are globally unique though so there are no clashes.
+	
+	Hence when $r goes out of scope it destroys the reference to the
+	object but does not remove the function. We now have to explicitly
+	call "$r delete" to tidy up otherwise we end up with memory leaks
+	and global namespace pollution. ie:
+	
+	if {$condition} {    set r [$io get_sequence $seq_num]	  puts
+	length=[$r get_length]	  $r delete }
+	
+	It's not enough to track reference counts on $r either as the act
+	of calling it as a function ($r get_length) changes the type from
+	sequence to cmdName, decrementing the reference. We cannot remove
+	the memory yet though, so it's not possible to keep track it seems.
+	
+		   - -	- -  - -  - -  - -  - -  - -  - -  - -	- -
+	
+	Perhaps with hindsight we should use a procedural model instead:
+	
+	if {$condition} {    set r [g5::io::get_sequence $io $seq_num]	 
+	puts length=[g5::seq::get_length $r] }
+	
+	This way we do not create and remove procedures plus our data
+	automatically goes out of scope and is tidied up for us. The above
+	is essentially what happens in perl when io is blessed to be in
+	class g5::io or $r is blessed to be in class g5::seq. I guess
+	incrTcl has an equivalent mechanism. 
+
+	* src/gap5/gap.tcl:
+	(14:58:13) Removed requirement of database name being
+	"dbname.version". 
+
+2008-08-26  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:07:09) Added the second .params file (Data directory).
+	
+	Major reduction in memory usage when adding the .params files; we
+	only hold this in memory for the first ZTR file per DBH as it ends
+	up in the header anyway. (This also speeds things up too.) 
+
+	* src/tgap/tg_cache.c,
+	* src/tgap/tg_gio.h:
+	(13:28:23) Fixed the cache_flush code to hand over cache_items from
+	a "derived" io to the base io struct before running cache_flush on
+	the base.
+	
+	This ensures that the base io obtains copies of data from (for
+	example) the contig editor. 
+
+	* src/gap5/contig_editor.tcl,
+	* src/gap5/tkEditor.c:
+	(13:30:43) Added an "edits_made" sub-command of the editor. This is
+	used to implement a warning on editor exit to ask if changes should
+	be saved.
+	
+	Also fixed an error with a callback when highlighting non-sequence
+	objects in the names panel. 
+
+2008-08-20  jkbonfield  <jkbonfield>
+
+	* src/tgap/tg_iface_g.c:
+	(15:48:12) Added more automatic commiting of writes. I'm still not
+	sure if this is correct behaviour, but given our caching is now
+	held in the tg_cache layer instead of G library it serves the
+	purpose. 
+
+	* src/tgap/tg_tcl.c:
+	(15:49:01) Added a "child" subcommand of the io type. 
+
+	* src/gap5/Makefile:
+	(15:49:22) Tidyup to support tgap library being part of the staden
+	build system now. 
+
+	* src/gap5/contig_editor.tcl:
+	(15:50:59) Made the contig editor using a child io for editing in.
+	The save button now works.
+	
+	(Previously save/exit did the same thing as we edited the live io
+	instead of child io.) 
+
+	* src/gap5/gap.tcl:
+	(15:51:49) Minor tweaks to replace gap4 with gap5 in strings,
+	functions and version (gap v5.00 now) 
+
+	* src/gap5/tkEditor.c:
+	(15:52:29) Added Editor class save sub-command. 
+
+2008-08-19  jkbonfield  <jkbonfield>
+
+	* src/tgap/g-files.c:
+	(15:10:36) Fix issues with .aux files being > 2Gb in size. 
+
+2008-08-13  jkbonfield  <jkbonfield>
+
+	* src/tgap/Makefile,
+	* src/tgap/array.c,
+	* src/tgap/array.h,
+	* src/tgap/b+tree2.c,
+	* src/tgap/b+tree2.h,
+	* src/tgap/g-alloc.c,
+	* src/tgap/g-alloc.h,
+	* src/tgap/g-connect.c,
+	* src/tgap/g-connect.h,
+	* src/tgap/g-db.c,
+	* src/tgap/g-db.h,
+	* src/tgap/g-defs.h,
+	* src/tgap/g-error.c,
+	* src/tgap/g-error.h,
+	* src/tgap/g-filedefs.h,
+	* src/tgap/g-files.c,
+	* src/tgap/g-files.h,
+	* src/tgap/g-io.c,
+	* src/tgap/g-io.h,
+	* src/tgap/g-misc.h,
+	* src/tgap/g-os.h,
+	* src/tgap/g-request.c,
+	* src/tgap/g-request.h,
+	* src/tgap/g-struct.c,
+	* src/tgap/g-struct.h,
+	* src/tgap/g.h,
+	* src/tgap/gap_cli_arg.c,
+	* src/tgap/gap_cli_arg.h,
+	* src/tgap/hache_table.c,
+	* src/tgap/hache_table.h,
+	* src/tgap/libtgap.so,
+	* src/tgap/maq.c,
+	* src/tgap/maq.h,
+	* src/tgap/maqmap.c,
+	* src/tgap/maqmap.h,
+	* src/tgap/misc.h,
+	* src/tgap/mkdefs.c,
+	* src/tgap/tg_bin.c,
+	* src/tgap/tg_bin.h,
+	* src/tgap/tg_cache.c,
+	* src/tgap/tg_cache_item.h,
+	* src/tgap/tg_contig.c,
+	* src/tgap/tg_contig.h,
+	* src/tgap/tg_depth,
+	* src/tgap/tg_depth.c,
+	* src/tgap/tg_edit.c,
+	* src/tgap/tg_gio.c,
+	* src/tgap/tg_gio.h,
+	* src/tgap/tg_iface.h,
+	* src/tgap/tg_iface_g.c:
+	(14:18:07) Initial import of tgap. This is for use in Gap5 source
+	(which uses libtgap.so), but development on the test programs
+	tg_index and tg_view will now take place in this CVS tree instead
+	of Sanger's private SubVersion repository. 
+
+	* src/tgap/tg_iface_g.h,
+	* src/tgap/tg_index.c,
+	* src/tgap/tg_register.c,
+	* src/tgap/tg_register.h,
+	* src/tgap/tg_sequence.c,
+	* src/tgap/tg_sequence.h,
+	* src/tgap/tg_struct.h,
+	* src/tgap/tg_tcl.c,
+	* src/tgap/tg_tcl.h,
+	* src/tgap/tg_track.c,
+	* src/tgap/tg_track.h,
+	* src/tgap/tg_tracks.c,
+	* src/tgap/tg_tracks.h,
+	* src/tgap/tg_utils.c,
+	* src/tgap/tg_utils.h,
+	* src/tgap/tg_view.c,
+	* src/tgap/xalloc.h,
+	* src/tgap/xerror.c,
+	* src/tgap/xerror.h:
+	(14:18:08) Initial import of tgap. This is for use in Gap5 source
+	(which uses libtgap.so), but development on the test programs
+	tg_index and tg_view will now take place in this CVS tree instead
+	of Sanger's private SubVersion repository. 
+
+2008-08-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(10:21:28) Fixed a bug in parse_4_float when handling strings with
+	leading zeroes after the point, eg "17.04". Fortunately this is
+	never triggered in the solexa data as it's always one single value
+	after the decimal point. 
+
+	* src/io_lib/configure.in,
+	* src/io_lib/io_lib/os.h:
+	(10:33:29) Applied Chris Saunders' patch to use autoconf for
+	checking machine endianness. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(16:52:10) Added a MAX_READS_PER_DBH #define to solexa2srf
+	(defaults at 10000) to reduce the maximum number of traces per tile
+	we process between SRF data block headers. This helps reduce the
+	maximum memory usage which is especially important on dense GA2
+	runs where 200,000 clusters in a tile can be achieved.
+	
+	Also fixed a bug with using -qf/-qr when not supplying a list of
+	tiles consecutively starting with tile 1. 
+
+2008-08-05  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(08:18:14) Fixed memory leak in srf_next_ztr reported by Rob Egan.
+	Triggered by srf2fastq -C. 
+
+2008-07-24  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(15:47:32) Updated version to v1.10
+	
+	Added -pf/-pr parameters to allow the phasing files to be stored.
+	By default it attempts to derive these filenames from the fwd/rev
+	cycle numbers.
+	
+	Auto-compute the basecaller name and version string from the
+	directory name. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(15:58:15) Bug fix to get_base_caller() so that it can identify the
+	directory when given a full pathname to elsewhere other than the
+	cwd. 
+
+2008-07-18  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(15:54:51) No longer iterate through tiles printing up . or !
+	depending on whether we encounter an error. Now it just aborts at
+	the point of failure.
+	
+	Also made the parsing code more robust as in a couple specific
+	cases it only wrote to stderr without actually generating a
+	non-zero exit code.
+	
+	These mean the tool is more amenable to running in a production
+	pipeline. If it gets any error at all it'll be more obvious and
+	forces attention. 
+
+2008-07-14  jkbonfield  <jkbonfield>
+
+	* src/gap5/consensus.c:
+	(15:38:06) Fixes to the consensus algorithm for solexa reads -
+	specifically calling gaps. 
+
+	* src/gap5/contig_editor.tcl:
+	(15:39:22) Added more use of tg_tcl's interfaces - we can now move
+	reads around and insert/delete bases within readings (not just the
+	consensus). 
+
+2008-07-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:35:28) Updated the rounding of int/nse/sig2 to all use the
+	rint() function to round to closest integer value. Previously
+	int/nse rounded down and sig2 rounded closest. (Although the
+	rounding on sig2 was via +/- 0.5 and so the half-way cases
+	sometimes give different answers to the new code using rint()).
+	
+	It has a very minor impact overall, but it is now consistent. 
+
+2008-07-09  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/mFILE.c:
+	(13:54:59) Fixed a bug visible with "extract_seq -fasta_out -fofn f
+	-output f.fasta" whereby only the last file was visible. This is
+	due to the mFILE mechanism and an explicit fseek upon writing each
+	file. Fixed this by using an extended freopen option ("wbx" instead
+	of "wb") to override this feature. It's not ideal, but gets the job
+	done - I hope. 
+
+	* src/io_lib/io_lib/Read.c,
+	* src/io_lib/io_lib/mFILE.h:
+	(13:55:00) Fixed a bug visible with "extract_seq -fasta_out -fofn f
+	-output f.fasta" whereby only the last file was visible. This is
+	due to the mFILE mechanism and an explicit fseek upon writing each
+	file. Fixed this by using an extended freopen option ("wbx" instead
+	of "wb") to override this feature. It's not ideal, but gets the job
+	done - I hope. 
+
+2008-07-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h:
+	(13:22:57) Added SRFB_NULL_INDEX as an SRF block type. It's
+	essentially type 0 and is defined to be 8 long (with 7 more zeros).
+	The purpose is to transparently gloss over the 8-zeros that may be
+	on the end of some files indicating a missing index block. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(13:34:40) MAJOR BUG FIX!
+	
+	Fixed a bug in reorder_ztr() whereby the sorted order of multiple
+	chunks of the same chunk type were not "stable". The result of this
+	is that 3 SMP4 chunks (say A, B, C) may end up sorted A, B, C with
+	nchunks==9 and C, A, B with nchunks==15. Given that an optimisation
+	means that we change the number of chunks depending on whether
+	we've encoded HUFF chunks this causes a "corruption" in as far as
+	the correct data is stored but with potentially an incorrect
+	meta-data block for the first SMP4 chunk.
+	
+	See srf_fix.c to reverse this problem.
+	
+	Also added a warning regarding the -C option and -qf option. These
+	are inherently incompatible (right now) as purity filtered data is
+	not calibrated.
+	
+	Updated version to v1.8 
+
+2008-06-27  jkbonfield  <jkbonfield>
+
+	INTERNAL RELEASE rel-1-7-2b
+	
+2008-06-27  jkbonfield  <jkbonfield>
+
+	* src/gap5/consensus.c:
+	(16:23:43) Improved the consensus algorithm to handle pads. For now
+	all pads score a fixed amount and we compare them against bases
+	(any type) also at a fixed score. Having done that we then compute
+	the base-score from non-pad bases as before, factoring in the
+	probability of the base even existing right at the end.
+	
+	These fixed costs of overcall/undercall are reasonable for solexa
+	where such errors are due to PCR and not related to the data
+	quality.
+	
+	For capillary data we need more work to pick appropriate costs. 
+
+	* src/gap5/contig_editor.tcl:
+	(16:29:06) Added keybinding to use the new contig insert and delete
+	base method. (Used for inserting columns of pads.) 
+
+2008-06-25  jkbonfield  <jkbonfield>
+
+	* src/gap4/join.c:
+	(15:03:22) Fixed typo in error message. 
+
+	* src/gap4/qual.c:
+	(15:04:48) The IUB mode of the phred-style consensus algorithm no
+	longer treats * as N. 
+
+	* src/gap4/edCommands.c:
+	(15:05:39) Added code to disable storing of editor undo information
+	for "strip pads" on any contig longer than 100Kb. It's not the
+	ideal solution, but is a workaround to prevent potentially enormous
+	memory usage in certain situations. 
+
+2008-06-23  jkbonfield  <jkbonfield>
+
+	* tables/RENZYM.4,
+	* tables/RENZYM.ALL:
+	(13:24:04) Added BfuCI as an alternative to Sau3AI 
+
+2008-06-12  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/srf2fasta.c,
+	* src/io_lib/progs/srf2fastq.c:
+	(10:44:23) Removed memory leaks from using ztr_find_chunks and not
+	freeing the result. 
+
+2008-06-04  jkbonfield  <jkbonfield>
+
+	* src/io_lib/docs/ZTR_format:
+	(13:06:36) Added some text regarding *ideas* for version 2. These
+	are not officially part of any stanard yet. 
+
+	* src/io_lib/io_lib/compression.c:
+	(13:06:54) Comment change only. 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README:
+	(14:14:15) Doc updates 
+
+	* src/io_lib/configure.in:
+	(14:15:00) Bumped version to 1.11.2 
+
+2008-06-03  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(16:23:50) Applied bug fix from John Emhoff: srf_read_xml was
+	incorrectly interpreting the XML length as the length of the XML
+	string rather than the entire SRF block itself including header. It
+	now agrees with srf_write_xml, which interpreted this correctly. 
+
+2008-05-30  jkbonfield  <jkbonfield>
+
+	* src/gap5/contig_editor.tcl,
+	* src/gap5/editor_view.c,
+	* src/gap5/editor_view.h,
+	* src/gap5/tkEditor.c:
+	(14:22:00) Added code to support read-pair data. For now this is
+	just the right mouse click in the editor's read name as a proof of
+	concept.
+	
+	Fixed the "is the cursor visible?" code too so set X first, fixing
+	an error in working out the Y display point. 
+
+2008-05-27  jkbonfield  <jkbonfield>
+
+	* src/gap5/consen.tcl:
+	(16:25:11) Added code for Gap4's main output consensus function.
+	Right now it's in simple mode only with no marking or masking.
+	Formats supported are fastq and fasta, with experiment file to
+	follow maybe. 
+
+	* tables/gap5rc:
+	(16:25:25) Added code for Gap4's main output consensus function.
+	Right now it's in simple mode only with no marking or masking.
+	Formats supported are fastq and fasta, with experiment file to
+	follow maybe. 
+
+	* src/gap5/contig_editor.tcl,
+	* src/gap5/editor_view.c,
+	* src/gap5/tkEditor.c,
+	* src/gap5/tkEditor.h:
+	(16:28:21) Added display of mapping quality to the read-name
+	section. 
+
+2008-05-23  jkbonfield  <jkbonfield>
+
+	* src/io_lib/docs/ZTR_format:
+	(08:38:05) Documented TYPE meta-data for SMP4 and removed the
+	comment about being mutually exclusive with SAMP.
+	
+	Added explanation of log-odds vs phred scales.
+	
+	Added CNF1 chunk type (how did I miss this before?). 
+
+2008-05-22  jkbonfield  <jkbonfield>
+
+	* src/gap5/consen.tcl,
+	* src/gap5/consensus.c,
+	* src/gap5/qual.tcl:
+	(10:25:34) Implemented a new consensus algorithm using log-odds
+	scores. 
+
+	* src/gap5/consensus.h:
+	(10:25:35) Implemented a new consensus algorithm using log-odds
+	scores. 
+
+	* src/gap5/Makefile:
+	(10:26:40) *** empty log message *** 
+
+	* src/gap5/contig_editor.tcl,
+	* tables/gap5rc:
+	(10:27:55) Changed the mouse highlight on bases to use
+	BASE_BRIEF_FORMAT[12] instead of the READ_BRIEF_FORMAT format
+	string. 
+
+	* src/gap5/editor_view.c,
+	* src/gap5/editor_view.h:
+	(10:30:26) Make use of the new consensus algorithm, which gives
+	quality values so we can now grey-scale the consensus too.
+	
+	Improved the "brief" status line support, adding a new
+	edGetBriefCon for consensus status info too. 
+
+	* src/gap5/qual.c,
+	* src/gap5/tkEditor.c:
+	(10:30:30) Make use of the new consensus algorithm, which gives
+	quality values so we can now grey-scale the consensus too.
+	
+	Improved the "brief" status line support, adding a new
+	edGetBriefCon for consensus status info too. 
+
+	* src/gap5/newgap5_cmds.c:
+	(10:32:08) Added in List Consensus Confidence and List Base
+	Confidence functions (the latter still needs major bug fixes
+	though). 
+
+	* src/gap5/qualIO.c:
+	(10:32:09) Added in List Consensus Confidence and List Base
+	Confidence functions (the latter still needs major bug fixes
+	though). 
+
+	* src/gap5/gap.tcl:
+	(10:32:44) Temporary hack to change maxseq until I update the code
+	to automatically derive it. 
+
+2008-05-21  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(09:12:23) Fixed memory leak in construct_trace_name. (Patch from
+	John Emhoff at Heliocos.) 
+
+2008-05-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(13:08:34) Fixed floating point to integer rounding of trace data
+	to round to closest instead of floor(value). 
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2fasta.c,
+	* src/io_lib/progs/srf2fastq.c,
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(14:13:15) Added changes from Camil Toma (albeit modified here and
+	there) to incorporate the -C option to various tools. This allows
+	for chastity filtered data to be stored in SRF, but tagged as being
+	bad data. We then get the option to filter it on extraction
+	instead. 
+
+2008-05-13  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(14:25:53) Reverted the footer position change in encode_ztr() back
+	(to the 20th February 2008) to taking out the meta-data into the
+	header block too. Although this contains variable data (OFFS=value)
+	it's the same for all members of a tile. 
+
+2008-05-12  jkbonfield  <jkbonfield>
+
+	* tables/gap5rc,
+	* tables/gap5rc_menu_full:
+	(11:05:11) Initial Gap5 prototype checkin. This misses the tgap
+	distribution still, which will be added to sourceforge soon. (It's
+	currently locally in Sanger's SVN repository.) 
+
+	* src/gap5/IO.h,
+	* src/gap5/IO2.h,
+	* src/gap5/Makefile,
+	* src/gap5/actf.c,
+	* src/gap5/actf.h,
+	* src/gap5/active_tags.c,
+	* src/gap5/active_tags.h,
+	* src/gap5/complement.h,
+	* src/gap5/consen.c,
+	* src/gap5/consen.h,
+	* src/gap5/contig_editor.tcl,
+	* src/gap5/contig_id.tcl,
+	* src/gap5/contig_selector.c,
+	* src/gap5/contig_selector.h,
+	* src/gap5/contig_selector.tcl,
+	* src/gap5/cs-object.c,
+	* src/gap5/cs-object.h,
+	* src/gap5/dependencies,
+	* src/gap5/editor_view.c,
+	* src/gap5/editor_view.h,
+	* src/gap5/extract.h,
+	* src/gap5/find_repeats.c,
+	* src/gap5/find_repeats.h,
+	* src/gap5/find_repeats.tcl,
+	* src/gap5/fort.h,
+	* src/gap5/gap-dbstruct.h,
+	* src/gap5/gap-error.c,
+	* src/gap5/gap-error.h,
+	* src/gap5/gap-if.h,
+	* src/gap5/gap-tcl.h,
+	* src/gap5/gap.tcl,
+	* src/gap5/gap4_compat.c,
+	* src/gap5/gap4_compat.h,
+	* src/gap5/gap4_compat.tcl,
+	* src/gap5/gap_cli_arg.h,
+	* src/gap5/gap_globals.c,
+	* src/gap5/gap_globals.h,
+	* src/gap5/gap_hash.c,
+	* src/gap5/gap_hash.h,
+	* src/gap5/gap_utils.tcl,
+	* src/gap5/hash_lib.c,
+	* src/gap5/hash_lib.h,
+	* src/gap5/init.c,
+	* src/gap5/io-reg.h,
+	* src/gap5/io_handle.h,
+	* src/gap5/io_utils.h,
+	* src/gap5/jog.tcl,
+	* src/gap5/list.h,
+	* src/gap5/list_contigs.tcl,
+	* src/gap5/list_proc.c,
+	* src/gap5/list_proc.h,
+	* src/gap5/list_proc.tcl,
+	* src/gap5/newgap5_cmds.c,
+	* src/gap5/newgap_cmds.h,
+	* src/gap5/newgap_structs.h,
+	* src/gap5/ng_fb_cmds.tcl,
+	* src/gap5/notedb.c,
+	* src/gap5/notedb.h,
+	* src/gap5/qual.c,
+	* src/gap5/qual.h,
+	* src/gap5/qualIO.c,
+	* src/gap5/qualIO.h,
+	* src/gap5/qualP.h,
+	* src/gap5/search.tcl,
+	* src/gap5/sendto.tcl,
+	* src/gap5/stack_dump.c,
+	* src/gap5/stack_dump.h,
+	* src/gap5/tag_checklist.tcl,
+	* src/gap5/tagdb.c,
+	* src/gap5/tagdb.h,
+	* src/gap5/tclIndex,
+	* src/gap5/template_display.tcl,
+	* src/gap5/tk-io-reg.c,
+	* src/gap5/tk-io-reg.h,
+	* src/gap5/tkAppInit.c:
+	(11:26:37) Try v2. Initial checkin of gap5 source. Note this
+	requires the tgap source too, which will be added soon. (It
+	currently exists in Sanger's own SVN repository.) 
+
+	* src/gap5/tkEdNames.c,
+	* src/gap5/tkEdNames.h,
+	* src/gap5/tkEditor.c,
+	* src/gap5/tkEditor.h,
+	* src/gap5/tman_display.c,
+	* src/gap5/tman_display.h,
+	* src/gap5/tman_interface.c,
+	* src/gap5/tman_interface.h,
+	* src/gap5/trace_display.tcl:
+	(11:26:38) Try v2. Initial checkin of gap5 source. Note this
+	requires the tgap source too, which will be added soon. (It
+	currently exists in Sanger's own SVN repository.) 
+
+	* src/gap5/contig_editor.tcl,
+	* src/gap5/contig_id.tcl,
+	* src/gap5/gap.tcl,
+	* src/gap5/gap4_compat.tcl,
+	* src/gap5/ng_fb_cmds.tcl,
+	* src/gap5/select_contig.tcl:
+	(16:11:41) Minor tweaks to tidy up gap5 distrib. 
+
+	* src/gap5/tk-io-reg.c:
+	(16:11:42) Minor tweaks to tidy up gap5 distrib. 
+
+2008-05-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/open_trace_file.c:
+	(11:06:53) Sped up searching in SRF files by stripping off the
+	directory name when calling srf_find_trace(). (It got to this
+	before eventually, but only after searching various false
+	combinations.)
+	-------------------------------------------------------------------
+	--- io_lib/open_trace_file.c CVS:
+	-------------------------------------------------------------------
+	--- 
+
+	* src/io_lib/io_lib/os.h:
+	(11:07:31) Minor change to prevent errors when compiling within the
+	Staden Package. No impact for autoconf version. 
+
+	* src/io_lib/io_lib/srf.c:
+	(11:08:18) Fixed bug in srf_find_trace that caused it to rarely
+	fail to find a trace when querying the hash table. 
+
+2008-05-06  jkbonfield  <jkbonfield>
+
+	* src/io_lib/docs/ZTR_format:
+	(11:44:51) Fixed error in the pictoral diagram describing the magic
+	number. (It is correct everywhere else.) 
+
+	* src/io_lib/io_lib/open_trace_file.c:
+	(14:27:24) Added SRF interfaces to open_trace_file meaning we can
+	now try specifying traces file fubar.srf/tname or
+	TRACE_PATH=SRF=fubar.srf and tname. 
+
+	* src/io_lib/configure.in,
+	* src/io_lib/io_lib/ztr.c,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2solexa.c:
+	(15:35:36) Implemented Come Raczy's (Illumina) changes. These
+	involved renaming the solexa2srf and srf2solexa tools to be
+	illumina2srf and srf2illumina and the addition of qcal support in
+	preparation for the GA v1.0 release.
+	
+	Note that currently the filenames are the same as before, in order
+	to preserve change history. 
+
+	* src/io_lib/Makefile:
+	(15:43:33) Added srf.o to the Staden Package Makefile (NB: not part
+	of the autoconf system.) 
+
+	* src/tk_utils/tkTraceDisp.c,
+	* src/tk_utils/tkTraceIO.c:
+	(16:51:50) Fixed displaying of solexa style stick-plots. Negative
+	values display correctly now and we also recalculate the proper
+	baseline. 
+
+2008-04-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/hash_table.c:
+	(15:09:41) Initialises pb and pc in hash() function when using
+	HASH_FUNC_JENKINS3. Bug reported by Cristian Goina. 
+
+2008-04-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:22:33) Fixed a code inefficiency when using -qf and -qr. 
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h:
+	(16:16:55) Fixed bugs regarding binary format read_id suffixes,
+	reported and mostly patched by Cristian Goina.
+	
+	The srf_trace_body_t struct now has a read_id_length field.
+	
+	The srf_construct_trace_body() function has an extra argument to
+	pass in the length, or -1 if unknown (it'll use strlen then).
+	
+	New function srf_write_pstringb to write binary pstrings, avoiding
+	the requirement for strlen(). 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(16:21:57) Added extra arg to srf_construct_trace_body call (see
+	srf.c change log).
+	
+	Fixed a bug introduced in the recent efficiency improvements for
+	-qf/-qr. These meant that many sequences were incorrectly skipped. 
+
+2008-04-07  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(08:54:06) Increased the estimation of number of bytes per cycle in
+	the allocation in get_sig(). 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(15:11:06) Fixed error that crept in when error checking was added
+	to compress_chunk calls. Missing curly braces meant that some
+	chunks were not compressed while other chunks got needless
+	additional layers of compression. 
+
+2008-04-03  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(15:57:06) The defaults for -N and -n are now using the same naming
+	conventions used in Gerald during the fastq generation steps. To do
+	this is looks at the run folder root directory name to get the run
+	date, machine name and run number. (These are available for use as
+	%d, %m and %r in the format strings.)
+	
+	Calibrated confidence values are now automatically included if the
+	-qf or -qr parameters are used (specifying the fastq filename).
+	Note this only works currently if the number of bases after
+	calibration is the same as the number before. The calibrated
+	confidence values are written in a CNF1 ztr chunk (in addition to
+	the existing CNF4 chunk for uncalibrated values) and are rescaled
+	to adhere to the phred scale (-10 * log10(1-P)).
+	
+	Added meta-data to the confidence chunks (CNF1 and CNF4) with a
+	SCALE key. The value is either LO (log-odds) or PH (phred). This
+	increases file size somewhat as it's written once per trace, but
+	the long-term goal is to upgrade ZTR to support the ability to
+	specific default meta-data keys/values. 
+
+	* src/io_lib/progs/srf2fastq.c:
+	(15:57:58) Added a -c option to output calibrated confidence values
+	instead of uncalibrated ones.
+	
+	Plus additionally it should be able to handle multiple archives on
+	the command line instead of a single one. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(17:00:28) Added support for using popen() to gzip -cd instead of
+	using gzopen. The reason is that it's between 3 and 5 times faster
+	doing that. I'm unsure why, but overall it sped up solexa2srf -r 3
+	fold when the Firecrest data is gzipped. 
+
+2008-04-02  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(09:14:45) Fixed the footer(aka body) position calculation so it
+	works still on trace files containing no trace data at all. Ie
+	solexa2srf -P. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(09:28:02) Added Camil Toma's (Broad) changes to support -mf and
+	-mr paremeters. These provide finer grained control over the
+	filenames of the forward and reverse matrices. 
+
+	* src/io_lib/progs/srf2solexa.c:
+	(09:29:04) Added Camil Toma's (Broad) changes to extract text files
+	embedded in ZTR TEXT chunks. 
+
+	* src/io_lib/progs/srf_dump_all.c:
+	(10:54:29) Added Camil Toma's (Broad) changes to srf_dump_all.
+	These add multiple new features, increasing the source length 7
+	fold. From his email:
+	
+	> Usage: srf_dump_all [-c chunk_types] [-d destination_types]  [-f
+	> read_filter] [-n] [-o] [-t type_of_output] archive_name >
+	Options: >     -c chunk_types > 	      Chunk types to output
+	given as a comma delimited list of types. >		  The
+	following types are allowed: "all", "seq", "prb", >		 
+	"int", "nse", "sig2". > 	      The default is "all". >	 
+	-d destination_types >		     Distinations to output to. >  
+		    The following types are allowed: "console", "file",
+	"none". >		The default is "console".  Console and file
+	can be together, >		 but none is exclusive. >     -f
+	read_filter >		    The filter to apply to reads in the
+	archive.  If reads match >		 the >		     filter
+	they are dumped. >		 The filter takes the form of
+	<name>=<value>, where <name> can >		 be >		   
+	"read", "prefix", "file". >		  If the <name> is "read"
+	the value is represents the name of a > 	      read to dump.
+	 Only the matching read will be dumped. >		If the
+	<name> is "prefix" the value is represents the prefix of >	   
+	     the name of the reads to dump.  Only the matching reads will >
+		      be dumped. >		 If the <name> is "file"
+	the value is a file name where any >		   number of "read"
+	and "prefix" name value pairs can be >		     included, one
+	per line. >		  The default is no filter, which means all
+	reads are dumped. >		  -n Output the total number of
+	reads at the bottom. >	   -o	     Output the total number of
+	reads only.  Nothing else is output. >	   -t type_of_output >	   
+		 Type of output.  Only one value allowed. >		 
+	Currently "text" and "solexa" is supported. >		    The
+	default is "text". >	 -v	   Print verbose messages. > > > I
+	implemented this functionality so I have a way to extract
+	individual reads > from the SRF archive for the purpose of
+	validating an SRF.  Kind of a sanity > check before we delete the
+	Solexa data :-) > > So, for example, if I only want one read, I
+	specify: > > srf_dump_all -c "seq" -d "console" -f "read=<read_id>"
+	-t "solexa" > > If I want to dump 10 reads from the head, 10 from
+	the middle, and 10 from > the tail of a tile, I get those read ids
+	and put them in a file > ("reads.txt") with read=<read_id> per
+	line.  I can then run the same > command, with a file based filter:
+	> > srf_dump_all -c "seq" -d "console" -f "file=reads.txt" -t
+	"solexa" > > Anyway, I think this would probably be useful
+	functionality for others, but > I'm not really happy with the code
+	as it is now.  For one thing, the name of > the command is not
+	great.	For another, I've duplicated some code from > srf2solexa.
+	Also, there are some other commands, such as srf_extract_hash > and
+	srf_extract_linear, that this functionality relates to.  Anyway,
+	I've > attached the code, let me know what you want me to do with
+	it.
+	
+	Comments regarding happy with code noted. We'll see if people find
+	it useful and if not there's always the otion to back it out. 
+
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(10:56:06) Fixed bug reported by Cristian Goina (JCVI): we now use
+	srf_open with mode "rb" instead of "r". This resolves an issue on
+	Windows/DOS when dealing with binary data including ^Z characters
+	being interpreted as EOF. 
+
+	* src/io_lib/progs/srf_dump_all.c:
+	(11:05:25) Fixed missing newlines in the standard "dump" format. 
+
+2008-03-20  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/hash_table.c,
+	* src/io_lib/progs/hash_list.c:
+	(09:45:07) Added more includes of io_lib_config.h to ensure 64-bit
+	file support works correctly. 
+
+2008-03-13  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(09:32:15) Fixed an error when passing in fully qualified
+	pathnames. We now chdir() to the directory containing the seq.txt
+	file and work from there.
+	
+	Also some functions involved in supporting fastq files with
+	callibrated confidence values. This is unfinished and needs more
+	work, specifically it doesn't do anything with the sequence/qual
+	yet (just parses it) and the entire operation should probably work
+	from the GERALD directory instead of the Bustard directory. Hence
+	for now the -qf and -qr options are undocumented. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:53:32) Incorporated Come Razy's changes to solexa2srf, with a
+	few modifications to adhere to C89 instead of C9X C standards.
+	
+	These add support for the new Illumina IPAR file format via the -I
+	command line option. 
+
+2008-02-29  jkbonfield  <jkbonfield>
+
+	* src/io_lib/acinclude.m4,
+	* src/io_lib/configure.in:
+	(14:10:53) Fixed autoconf build environment for Fedora. We no
+	longer assume /usr/lib is a valid default for zlib, instead relying
+	on either the compiler to find it or an explicit --with-zlib
+	option.
+	
+	See SF bug 1898427
+	https://sourceforge.net/tracker/index.php?func=detail&aid=1898427&g
+	roup_id=100316&atid=627058 
+
+2008-02-21  jkbonfield  <jkbonfield>
+
+	* src/haplo/haplo_tcl.c:
+	(10:13:52) Fixed a crash when haplo_snps finds some snps but
+	they're all below the minimum score. 
+
+2008-02-20  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(10:33:36) Altered the header/footer split for ZTR to stop just
+	before the metadata part of a SMP4 chunk. Previously it was after
+	this and just before the data, but now we can have multiple SMP4
+	chunks in a single ZTR file this was breaking things. 
+
+	* src/io_lib/progs/srf2fastq.c:
+	(12:49:09) Removed the ztr2read conversion and operate directly on
+	the ztr struct. This is now 25% faster. 
+
+	* src/io_lib/progs/srf2fasta.c:
+	(12:49:30) New program - trivially modelled on srf2fastq.c 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README,
+	* src/io_lib/configure.in,
+	* src/io_lib/io_lib/Attic/Makefile.in,
+	* src/io_lib/progs/Makefile.am:
+	(14:06:15) Updated docs/versions in preparation for 1.11.0 release. 
+
+	* src/io_lib/io_lib/compression.c,
+	* src/io_lib/io_lib/deflate_interlaced.c,
+	* src/io_lib/io_lib/jenkins_lookup3.c,
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/ztr_translate.c,
+	* src/io_lib/progs/convert_trace.c,
+	* src/io_lib/progs/extract_qual.c,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2fasta.c,
+	* src/io_lib/progs/srf2fastq.c,
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(16:07:44) Updates to remove various warnings from gcc -Wall
+	(mostly unused variables as I'm ignoring the suggest parenthesis
+	winges). 
+
+	* src/io_lib/progs/hash_extract.c,
+	* src/io_lib/progs/srf_extract_hash.c:
+	(16:38:37) #include fcntl.h for Windows in order to pick up
+	_O_BINARY. 
+
+	* src/io_lib/README:
+	(16:39:25) *** empty log message *** 
+
+2008-02-18  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/ztr.h:
+	(16:53:52) Added ZTR_TYPE_REGN definition. We have no explicit code
+	to implement this yet in ztr.c, but for now it's in solexa2srf. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(16:55:38) Added support for specifying the start coord for the 2nd
+	read in a paired-read run (solexa2srf -2 <cycle.no.>). This also
+	adds a REGN chunk to the ZTR file and stores the second matrix file
+	too. 
+
+	* src/io_lib/progs/srf2solexa.c:
+	(16:56:39) Major overhaul to support raw data as well as processed
+	data. Still to-do: write out .params and the two matrix files. 
+
+2008-02-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(10:05:54) Fixed memory leak in srf_read_trace_body usage. This was
+	primarily visible from within srf_index_hash. 
+
+	* src/io_lib/io_lib/srf.c:
+	(12:35:18) Added include of io_lib-config.h to ensure picking up
+	the correct compiler definitions for 64-bit file size support. 
+
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_extract_hash.c:
+	(12:35:19) Added include of io_lib-config.h to ensure picking up
+	the correct compiler definitions for 64-bit file size support. 
+
+	* src/io_lib/progs/srf_index_hash.c:
+	(12:35:20) Added include of io_lib-config.h to ensure picking up
+	the correct compiler definitions for 64-bit file size support. 
+
+	* src/io_lib/progs/srf_extract_linear.c:
+	(12:40:55) Fixed memory leaks. 
+
+2008-02-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(17:02:42) Don't bother performing ZTR_FORM_TSHIFT transformation
+	on the solexa noise data as it doesn't help it at all. Also hard
+	coded the interlaced huffman to operate in batches of 2 instead of
+	8 for noise data for the same reason. 
+
+	* src/io_lib/io_lib/ztr_translate.c:
+	(17:07:15) ztr2read() now correctly handles translation of ZTR
+	files with multiple samples in. Specifically it only sets the Read
+	struct baseline and trace[ACGT] arrays when the TYPE meta-data
+	field is blank, PROC or A,C,G T.
+	
+	This fixes trace_dump etc on solexa srf files, (note that the srf
+	files themselves were perfect valid anyway). 
+
+2008-02-08  jkbonfield  <jkbonfield>
+
+	* src/seq_utils/align_lib.c,
+	* src/seq_utils/align_lib.h:
+	(17:16:41) Improved the memory allocate for affine_align. It now
+	dynamically shrinks the band to try and keep within it's memory
+	settings. I'm not 100% sure this works in all cases, but it seems
+	sound and works in the tests I've done. 
+
+	* src/gap4/hash_lib.c:
+	(17:20:43) Modified align_blocks() to no longer aggressively filter
+	overlapping blocks overlap < MAX_BLOCK_OVERLAP. This value is both
+	arbitrary and not necessary. Fundamentallty it's the wrong thing to
+	do. If we limit this anywhere it should be in the computed
+	diag_shift (consider the case of 1kb of TA repeat shifted by 20
+	bases, giving 980k overlap by 20 base diag).
+	
+	Also modified the band size computation upper limit. It was capped
+	at 5kb before, but now it's a variable size based on knowledge of
+	how much memory will be used up. This is cunningly designed in
+	order to not trigger the excessive memory code checks in
+	align_lib.c 
+
+2008-02-06  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/extract_seq.c:
+	(11:04:38) Use set_compression_method to explicitly disable gzipped
+	output from extract_seq (which is by default on if the input is
+	gzipped). 
+
+	* src/io_lib/io_lib/Attic/Makefile.in,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/extract_qual.c:
+	(11:04:59) Added Steven Leonard's extract_qual program (derived
+	from extract_seq). 
+
+2008-01-28  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(09:47:42) Sped up parse_4_int and parse_4_float substantially. 
+
+2008-01-25  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:38:34) Fixed small memory leak in zfopen/zfclose.
+	
+	Fixed a bug where reorder_ztr could put CNF4 before BASE, breaking
+	the decoding.
+	
+	Added support for loading solexa matrix and params files into
+	appropriately named TEXT key/value pairs. It also adds the
+	PROGRAM_ID there now too.
+	
+	Sped up chastity filtering. We now only read the line of text
+	rather than decode it for data that is filtered.
+	
+	Minor tweaks to program usage output. 
+
+	* src/io_lib/progs/trace_dump.c:
+	(11:39:09) Updated output to be more inline with srf_dump_all. Also
+	now supports baseline properly. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(11:39:34) Added ZTR_FORM_XRLE2, ZTR_FORM_QSHIFT and
+	ZTR_FORM_TSHIFT. 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README,
+	* src/io_lib/configure.in:
+	(12:02:03) Bumped release to 1.11.0b8 
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/progs/solexa2srf.c:
+	(12:23:38) Fixed whinges from icc regarding signed vs unsigned char
+	*. 
+
+2008-01-24  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/ztr.c,
+	* src/io_lib/io_lib/ztr.h:
+	(17:17:52) Two new utility functions that are *long* overdue.
+	
+	ztr_new_chunk() - creates and initialises a new chunk in a ztr
+	struct.
+	
+	ztr_add_text() - adds arbitrary key/value pairs to the TEXT chunk, 
+		     creating it if required. 
+
+2008-01-22  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h:
+	(11:07:40) Allow for srf_read_index_hdr() to be used to read an
+	index internal to the file rather than at the end of the file. To
+	accommodate this an extra "no_seek" argument has been added. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(11:10:56) Support multiple trace channels (raw "int" & noise, in
+	addition to or instead of the processed data).
+	
+	Input data may now optionally be compressed.
+	
+	Added a -c option to do chastity filtering via the .qhg files.
+	
+	Improved the dynamic range filtering. We no longer trim all
+	negative values in preference for high positive values. Instead we
+	set the clip points to trim the least number of total values. 
+
+	* src/io_lib/progs/srf2solexa.c:
+	(11:11:35) Fixed the baseline subtraction. It now uses the correct
+	value instead of a hardcoded 32768. 
+
+	* src/io_lib/progs/srf_extract_linear.c:
+	(11:12:15) Changed to use the new srf_read_index_hdr arguments. 
+
+	* src/io_lib/progs/srf_index_hash.c:
+	(11:13:12) Improved index support when the input is concatenated
+	SRF files already containing indices. It now overwrites the last
+	index. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(11:13:47) Added display of meta-data TYPE field for trace sample
+	chunks. 
+
+2008-01-14  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/progs/srf_index_hash.c:
+	(16:57:36) Bug fixes to do with reading and writing the index
+	format. We incorrectly handled having null dbhFile and
+	containerFile elements, plus also computed the index size wrong for
+	these fields too. 
+
+2008-01-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(11:35:09) IMPORTANT BUG FIX: The SRF Data Block Header had the
+	blockSize field 4 bytes too large, so SRF files produced did not
+	conform to the standard.
+	
+	Also fixed SRF reading support for when headerBlob is zero length.
+	We then delay ztr decoding until we've read the actual data blob. 
+
+	* src/io_lib/io_lib/compression.c,
+	* src/io_lib/io_lib/deflate_interlaced.c,
+	* src/io_lib/io_lib/deflate_interlaced.h,
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/ztr.c,
+	* src/io_lib/io_lib/ztr_translate.c,
+	* src/io_lib/progs/solexa2srf.c:
+	(12:26:11) Added missing prototypes and fixed various signed vs
+	unsigned assignments, as spotted by the Intel C Compiler. 
+
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README,
+	* src/io_lib/configure.in:
+	(12:44:15) Minor tweaks - preparations for v1.11.0b7 
+
+2008-01-02  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c:
+	(11:41:00) Removed some debugging output 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog:
+	(14:55:27) *** empty log message *** 
+
+	* src/io_lib/configure.in:
+	(14:57:38) Boosted version to 1.11.0b6 
+
+	* src/io_lib/README:
+	(14:58:12) *** empty log message *** 
+
+2007-12-12  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/progs/srf_index_hash.c:
+	(18:50:46) Updates to SRF 1.3. This includes removal of the readID
+	counter and added support for printf style formatting. It also has
+	some tweaks to the format for the index (32-bit vs 64-bit and
+	dbh/container file strings).
+	
+	Both versions have therefore been bumped (SRF 1.3 and index 1.01).
+	
+	TODO: support for extracting data from an SRF file that's split
+	with container headers, trace headers and trace bodies all in
+	separate files. 
+
+2007-11-12  jkbonfield  <jkbonfield>
+
+	INTERNAL RELEASE rel-1-7-1b
+	
+2007-11-12  jkbonfield  <jkbonfield>
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/ChangeLog,
+	* src/io_lib/README:
+	(12:29:04) *** empty log message *** 
+
+	* src/io_lib/io_lib/Attic/Makefile.in:
+	(14:36:30) *** empty log message *** 
+
+	* src/io_lib/Makefile,
+	* src/io_lib/dependencies,
+	* src/io_lib/progs/Makefile:
+	(16:19:13) Updates to the Makefiles for building within the Staden
+	Package build environment, rather than autoconf. 
+
+	* src/get_scf_field/Makefile,
+	* src/get_scf_field/dependencies,
+	* src/mk/global.mk,
+	* src/mutlib/Makefile,
+	* src/mutlib/dependencies,
+	* src/mutlib/staden.h,
+	* src/mutscan/staden.h,
+	* src/tracediff/staden.h:
+	(16:20:05) Minor tweaks to build with the new layout of io_lib
+	(mainly include path changes). 
+
+2007-11-08  jkbonfield  <jkbonfield>
+
+	* src/io_lib/io_lib/Read.c,
+	* src/io_lib/io_lib/Read.h,
+	* src/io_lib/io_lib/abi.h,
+	* src/io_lib/io_lib/alf.h,
+	* src/io_lib/io_lib/array.c,
+	* src/io_lib/io_lib/array.h,
+	* src/io_lib/io_lib/compress.c,
+	* src/io_lib/io_lib/compress.h,
+	* src/io_lib/io_lib/compression.c,
+	* src/io_lib/io_lib/compression.h,
+	* src/io_lib/io_lib/ctfCompress.c,
+	* src/io_lib/io_lib/deflate_interlaced.c,
+	* src/io_lib/io_lib/deflate_interlaced.h,
+	* src/io_lib/io_lib/error.c,
+	* src/io_lib/io_lib/error.h,
+	* src/io_lib/io_lib/expFileIO.c:
+	(14:58:12) Renamed files from
+	{abi,alf,ctf,exp_file,plain,read,scf,sff,srf,utils,ztr} subdirs to
+	a single io_lib subdir.
+	
+	The purpose of this is so that code can #include <io_lib/foo.h>
+	from both within this source tree and externally when compiling
+	against io_lib, resolving problems when including files that then
+	include other io_lib files. Plus it's simply tidier this way. 
+
+	* src/io_lib/io_lib/expFileIO.h,
+	* src/io_lib/io_lib/files.c,
+	* src/io_lib/io_lib/find.c,
+	* src/io_lib/io_lib/fpoint.c,
+	* src/io_lib/io_lib/fpoint.h,
+	* src/io_lib/io_lib/hash_table.c,
+	* src/io_lib/io_lib/hash_table.h,
+	* src/io_lib/io_lib/jenkins_lookup3.c,
+	* src/io_lib/io_lib/jenkins_lookup3.h,
+	* src/io_lib/io_lib/mFILE.c,
+	* src/io_lib/io_lib/mFILE.h,
+	* src/io_lib/io_lib/mach-io.c,
+	* src/io_lib/io_lib/mach-io.h,
+	* src/io_lib/io_lib/misc.h,
+	* src/io_lib/io_lib/misc_scf.c,
+	* src/io_lib/io_lib/open_trace_file.c,
+	* src/io_lib/io_lib/open_trace_file.h,
+	* src/io_lib/io_lib/os.h,
+	* src/io_lib/io_lib/plain.h,
+	* src/io_lib/io_lib/read_alloc.c,
+	* src/io_lib/io_lib/read_scf.c,
+	* src/io_lib/io_lib/scf.h,
+	* src/io_lib/io_lib/scf_extras.c,
+	* src/io_lib/io_lib/scf_extras.h,
+	* src/io_lib/io_lib/seqIOABI.c,
+	* src/io_lib/io_lib/seqIOABI.h,
+	* src/io_lib/io_lib/seqIOALF.c,
+	* src/io_lib/io_lib/seqIOCTF.c,
+	* src/io_lib/io_lib/seqIOCTF.h,
+	* src/io_lib/io_lib/seqIOPlain.c,
+	* src/io_lib/io_lib/sff.c,
+	* src/io_lib/io_lib/sff.h,
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/io_lib/stdio_hack.h,
+	* src/io_lib/io_lib/strings.c,
+	* src/io_lib/io_lib/tar_format.h,
+	* src/io_lib/io_lib/traceType.c,
+	* src/io_lib/io_lib/traceType.h,
+	* src/io_lib/io_lib/translate.c,
+	* src/io_lib/io_lib/translate.h:
+	(14:58:13) Renamed files from
+	{abi,alf,ctf,exp_file,plain,read,scf,sff,srf,utils,ztr} subdirs to
+	a single io_lib subdir.
+	
+	The purpose of this is so that code can #include <io_lib/foo.h>
+	from both within this source tree and externally when compiling
+	against io_lib, resolving problems when including files that then
+	include other io_lib files. Plus it's simply tidier this way. 
+
+	* src/io_lib/io_lib/Makefile.am,
+	* src/io_lib/io_lib/Attic/Makefile.in,
+	* src/io_lib/io_lib/vlen.c,
+	* src/io_lib/io_lib/vlen.h,
+	* src/io_lib/io_lib/write_scf.c,
+	* src/io_lib/io_lib/xalloc.c,
+	* src/io_lib/io_lib/xalloc.h,
+	* src/io_lib/io_lib/ztr.c,
+	* src/io_lib/io_lib/ztr.h,
+	* src/io_lib/io_lib/ztr_translate.c,
+	* src/io_lib/read/Attic/Makefile.am,
+	* src/io_lib/read/Attic/Read.c,
+	* src/io_lib/read/Attic/Read.h,
+	* src/io_lib/read/Attic/scf_extras.c,
+	* src/io_lib/read/Attic/scf_extras.h,
+	* src/io_lib/read/Attic/translate.c,
+	* src/io_lib/read/Attic/translate.h:
+	(14:58:14) Renamed files from
+	{abi,alf,ctf,exp_file,plain,read,scf,sff,srf,utils,ztr} subdirs to
+	a single io_lib subdir.
+	
+	The purpose of this is so that code can #include <io_lib/foo.h>
+	from both within this source tree and externally when compiling
+	against io_lib, resolving problems when including files that then
+	include other io_lib files. Plus it's simply tidier this way. 
+
+	* src/io_lib/io_lib/Read.c:
+	(17:24:14) Modify the include paths to use "io_lib/foo.h" instead
+	of "foo.h" or <foo.h>.
+	
+	The advantage of this is that the source for external programs
+	compiled and linked against io_lib can use exactly the same
+	#include statements as the progs/* files. 
+
+	* src/io_lib/io_lib/Read.h,
+	* src/io_lib/io_lib/abi.h,
+	* src/io_lib/io_lib/alf.h,
+	* src/io_lib/io_lib/array.c,
+	* src/io_lib/io_lib/compress.c,
+	* src/io_lib/io_lib/compress.h,
+	* src/io_lib/io_lib/compression.c,
+	* src/io_lib/io_lib/compression.h,
+	* src/io_lib/io_lib/ctfCompress.c,
+	* src/io_lib/io_lib/deflate_interlaced.c,
+	* src/io_lib/io_lib/expFileIO.c,
+	* src/io_lib/io_lib/expFileIO.h,
+	* src/io_lib/io_lib/files.c,
+	* src/io_lib/io_lib/find.c,
+	* src/io_lib/io_lib/fpoint.c,
+	* src/io_lib/io_lib/hash_table.c,
+	* src/io_lib/io_lib/jenkins_lookup3.c,
+	* src/io_lib/io_lib/mFILE.c,
+	* src/io_lib/io_lib/mach-io.c,
+	* src/io_lib/io_lib/mach-io.h,
+	* src/io_lib/io_lib/misc.h,
+	* src/io_lib/io_lib/misc_scf.c,
+	* src/io_lib/io_lib/open_trace_file.c,
+	* src/io_lib/io_lib/open_trace_file.h,
+	* src/io_lib/io_lib/plain.h,
+	* src/io_lib/io_lib/read_alloc.c,
+	* src/io_lib/io_lib/read_scf.c,
+	* src/io_lib/io_lib/scf.h,
+	* src/io_lib/io_lib/scf_extras.c,
+	* src/io_lib/io_lib/scf_extras.h,
+	* src/io_lib/io_lib/seqIOABI.c,
+	* src/io_lib/io_lib/seqIOABI.h,
+	* src/io_lib/io_lib/seqIOALF.c,
+	* src/io_lib/io_lib/seqIOCTF.c,
+	* src/io_lib/io_lib/seqIOCTF.h,
+	* src/io_lib/io_lib/seqIOPlain.c,
+	* src/io_lib/io_lib/sff.c,
+	* src/io_lib/io_lib/sff.h,
+	* src/io_lib/io_lib/srf.c,
+	* src/io_lib/io_lib/srf.h,
+	* src/io_lib/io_lib/stdio_hack.h,
+	* src/io_lib/io_lib/strings.c,
+	* src/io_lib/io_lib/traceType.c,
+	* src/io_lib/io_lib/traceType.h,
+	* src/io_lib/io_lib/translate.c,
+	* src/io_lib/io_lib/translate.h,
+	* src/io_lib/io_lib/vlen.c,
+	* src/io_lib/io_lib/write_scf.c,
+	* src/io_lib/io_lib/xalloc.c,
+	* src/io_lib/io_lib/ztr.c,
+	* src/io_lib/io_lib/ztr.h,
+	* src/io_lib/io_lib/ztr_translate.c,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/append_sff.c,
+	* src/io_lib/progs/convert_trace.c,
+	* src/io_lib/progs/extract_fastq.c,
+	* src/io_lib/progs/extract_seq.c,
+	* src/io_lib/progs/get_comment.c,
+	* src/io_lib/progs/hash_exp.c,
+	* src/io_lib/progs/hash_extract.c:
+	(17:24:15) Modify the include paths to use "io_lib/foo.h" instead
+	of "foo.h" or <foo.h>.
+	
+	The advantage of this is that the source for external programs
+	compiled and linked against io_lib can use exactly the same
+	#include statements as the progs/* files. 
+
+	* src/io_lib/progs/hash_list.c,
+	* src/io_lib/progs/hash_sff.c,
+	* src/io_lib/progs/hash_tar.c,
+	* src/io_lib/progs/index_tar.c,
+	* src/io_lib/progs/makeSCF.c,
+	* src/io_lib/progs/scf_dump.c,
+	* src/io_lib/progs/scf_info.c,
+	* src/io_lib/progs/scf_update.c,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2fastq.c,
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c,
+	* src/io_lib/progs/srf_extract_hash.c,
+	* src/io_lib/progs/srf_extract_linear.c,
+	* src/io_lib/progs/srf_index_hash.c,
+	* src/io_lib/progs/trace_dump.c,
+	* src/io_lib/progs/ztr_dump.c:
+	(17:24:16) Modify the include paths to use "io_lib/foo.h" instead
+	of "foo.h" or <foo.h>.
+	
+	The advantage of this is that the source for external programs
+	compiled and linked against io_lib can use exactly the same
+	#include statements as the progs/* files. 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/configure.in:
+	(17:37:00) Updated to handle the filename movements. 
+
+	* src/io_lib/docs/Hash_File_Format,
+	* src/io_lib/docs/ZTR_format:
+	(17:42:14) Moved from elsewhere 
+
+2007-11-06  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/Makefile.am:
+	(10:09:33) Added srf_extract_hash; demonstration of using
+	srf_find_trace to query a hash table index. 
+
+	* src/io_lib/progs/srf_extract_hash.c:
+	(10:09:34) Added srf_extract_hash; demonstration of using
+	srf_find_trace to query a hash table index. 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/README:
+	(10:16:12) *** empty log message *** 
+
+	* src/io_lib/ChangeLog:
+	(10:21:33) *** empty log message *** 
+
+	* src/io_lib/configure.in:
+	(10:22:14) Bumped version ready for 1.11.0b5 
+
+2007-11-05  jkbonfield  <jkbonfield>
+
+	* staden.profile,
+	* src/copy_reads/copy_reads,
+	* src/gap4/gap4,
+	* src/prefinish/finish_sanger,
+	* src/prefinish/prefinish,
+	* src/pregap4/pregap4,
+	* src/scripts/staden_help,
+	* src/spin/spin,
+	* src/spin_emboss/create_emboss_files,
+	* src/trev/trev:
+	(14:31:01) Changed how the STADENROOT is identified and applied.
+	The startup scripts now ignore the STADENROOT_1_7 environment
+	variable and always rerun the staden login scripts. Not so
+	efficient, but less prone to problems.
+	
+	If the STADEN_PREPEND environment variable is defined (and
+	non-blank) then we prepend path, manpath, ld_library_path. This is
+	used in the wrapper scripts to ensure we override any previous
+	staden.profile script. 
+
+2007-11-02  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(13:57:30) Improved handling of out-of-range data. Specifically
+	what happens when the minimum value in a trace is -40000 and the
+	maximum value is +50000. We now clip -ve values if the range
+	doesn't fit. 
+
+	* src/gap4/do_fij.c,
+	* src/seq_utils/align_lib.c:
+	(17:22:13) The affine_align function now correctly estimates memory
+	using a double instead of int (to avoid wraparound). When the
+	memory is too large it bails out too.
+	
+	The FIJ function now uses this as an indicator to fall back to
+	using the fast alignment method if the slow method has spotted
+	it'll take up too much memory/cpu. 
+
+2007-11-01  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(14:26:35) Improved support for ztr OFFS metadata and removed the
+	old crufty SHIFT_BY #define. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(17:35:58) Bug fix: we were missing the trailing nul of the trace
+	OFFS metadata value.
+	
+	Also the setting of min_val when the range is too high was invalid.
+	Note further work is needed here as we've already truncated to
+	16-bit making it impossible to tell where the wraparound occurs. 
+
+2007-10-26  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/srf2fastq.c:
+	(10:35:56) Added srf2fastq conversion to demonstrate usage of
+	read_sections() and as a benchmark for pure sequence+quality
+	extraction. (It appears to cope at about 100,000 sequences/second.) 
+
+	* src/io_lib/progs/srf2solexa.c:
+	(11:35:59) Switched to using srf_next_ztr() in order to avoid
+	repeated huffman codeset decoding. Now much faster. 
+
+	* src/io_lib/CHANGES:
+	(14:28:27) *** empty log message *** 
+
+	* src/io_lib/README,
+	* src/io_lib/configure.in:
+	(14:31:48) *** empty log message *** 
+
+2007-10-25  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/srf_dump_all.c,
+	* src/io_lib/progs/srf_extract_linear.c:
+	(14:21:16) Upgraded SRF to support v1.2 specification. NOTE: No
+	support is kept for v1.1!
+	
+	Dramatically improved the speed of sequential decoding (eg in
+	srf_dump_all) by use of caching huffman_codeset_t structs. 
+
+	* src/io_lib/progs/srf_dump_all.c:
+	(16:55:24) Added unused (#if-ed out) printf variant. It's for
+	possible efficiency gains, but ignoring for now. 
+
+2007-10-17  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(16:56:11) Dropped ZLIB compression of BPOS as A) it's tiny anyway
+	and B) we don't want to waste time compressing it over and over
+	again. (TODO: actually we don't need to encode it over and over
+	again either.) 
+
+2007-10-16  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/solexa2srf.c:
+	(08:36:05) Improvements to speed following code profiling. 
+
+	* src/io_lib/progs/solexa2srf.c:
+	(16:49:38) Major overhaul of parsing code. We now roll our own
+	specialist parser instead of using strtok and sscanf. This has
+	approximately doubled the speed (so maybe 4-5x faster in the
+	parsing component). 
+
+	* src/io_lib/configure.in:
+	(16:52:06) Boost version to 1.11.0b3 
+
+2007-10-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(13:37:29) Removed memory leaks. 
+
+2007-10-02  jkbonfield  <jkbonfield>
+
+	* src/io_lib/README:
+	(08:55:47) Minor doc updates 
+
+	* src/io_lib/read/Attic/Makefile.am:
+	(08:57:02) Fixed src vs srf typo. 
+
+	* src/io_lib/README:
+	(08:58:09) Version change 
+
+	* src/io_lib/configure.in:
+	(08:59:11) Version change 
+
+2007-09-28  jkbonfield  <jkbonfield>
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/configure.in,
+	* src/io_lib/progs/Makefile.am,
+	* src/io_lib/progs/solexa2srf.c,
+	* src/io_lib/progs/srf2solexa.c,
+	* src/io_lib/progs/srf_dump_all.c:
+	(11:07:15) File Edit Options Buffers Tools Help Version 1.11.0b1
+	
+	Added preliminary SRF support. This consists of a new subdirectory
+	'srf' (yes these all really need merging into a single directory,
+	but that's a later task), a substantial update to ZTR and a variety
+	of SRF tools in progs.
+	
+	The old huffman_static.[ch] files were renamed and substantially
+	worked upon to create deflate_interlaced.[ch].
+	
+	Added new compression types. xrle2, tshift and qshift. The latter
+	two of these are very specific to trace and quality packings. May
+	need to rename to be more generic. 
+
+	* src/io_lib/progs/srf_extract_linear.c,
+	* src/io_lib/progs/srf_index_hash.c,
+	* src/io_lib/progs/ztr_dump.c,
+	* src/io_lib/read/Attic/Makefile.am:
+	(11:07:16) File Edit Options Buffers Tools Help Version 1.11.0b1
+	
+	Added preliminary SRF support. This consists of a new subdirectory
+	'srf' (yes these all really need merging into a single directory,
+	but that's a later task), a substantial update to ZTR and a variety
+	of SRF tools in progs.
+	
+	The old huffman_static.[ch] files were renamed and substantially
+	worked upon to create deflate_interlaced.[ch].
+	
+	Added new compression types. xrle2, tshift and qshift. The latter
+	two of these are very specific to trace and quality packings. May
+	need to rename to be more generic. 
+
+2007-09-21  jkbonfield  <jkbonfield>
+
+	* src/g/g-request.c:
+	(16:11:54) Added fsync() calls in g_unlock_file_N_ (ie a full
+	commit). This should resolve some of the NFS delays. 
+
+2007-09-03  jkbonfield  <jkbonfield>
+
+	* src/io_lib/ztr/deflate_simple.c,
+	* src/io_lib/ztr/deflate_simple.h:
+	(11:11:12) Mostly a rename from huffman_static to deflate_simple,
+	but also a large overhaul and redesign. This code implements the
+	huffman component of the Deflate algorithm. 
+
+	* src/io_lib/ztr/compression.c,
+	* src/io_lib/ztr/compression.h,
+	* src/io_lib/ztr/ztr.c,
+	* src/io_lib/ztr/ztr.h:
+	(11:12:16) Updates to deal with the change from huffman_static to
+	deflate_simple. 
+
+	* src/io_lib/Makefile:
+	(11:34:09) Updates for renaming of huffman_static to
+	deflate_simple. 
+
+	* src/io_lib/Makefile.am,
+	* src/io_lib/read/Makefile.am:
+	(11:34:10) Updates for renaming of huffman_static to
+	deflate_simple. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(11:35:50) Update for rename of huffman_static.h to
+	deflate_simple.h 
+
+2007-08-15  jkbonfield  <jkbonfield>
+
+	* src/io_lib/ztr/compression.c,
+	* src/io_lib/ztr/huffman_static.c,
+	* src/io_lib/ztr/huffman_static.h:
+	(15:30:04) Major overhaul of huffman_static.c.
+	
+	It's been substantially tuned for speed and also has several bug
+	fixes to ensure we have a consistent sort function before applying
+	the canonical_codes function (which previously meant differing
+	qsort implementations would give different codes). 
+
+	* src/io_lib/ztr/FORMAT-1.2:
+	(15:31:58) Created a snapshot of FORMAT for ZTR v1.2 only 
+
+2007-08-14  jkbonfield  <jkbonfield>
+
+	* staden.login,
+	* staden.profile:
+	(09:29:46) We now append instead of prepend to paths. This may
+	cause problems in some cases, but it is better behaved when part of
+	a mixed environment of several packages as it gives control back to
+	the user for the order in which they want package paths defined.
+	
+	Also removed TCL_LIBRARY and TK_LIBRARY definitions (was not
+	present in csh version anyway) and added them to the various
+	wrapper scripts. This makes the package better behaved on systems
+	using tcl/tk for other purposes. 
+
+	* src/copy_reads/copy_reads,
+	* src/gap4/gap4,
+	* src/prefinish/finish_sanger,
+	* src/prefinish/prefinish,
+	* src/pregap4/pregap4,
+	* src/scripts/staden_help,
+	* src/spin/spin,
+	* src/spin_emboss/create_emboss_files,
+	* src/trev/trev:
+	(09:32:50) Added explicit TCL_LIBRARY and TK_LIBRARY definitions.
+	These were in the staden.profile, but for the sake of not trampling
+	over other applications by changing the global environment I made
+	these local to the wrapper scripts. 
+
+	* src/tk_utils/stash.c:
+	(13:50:06) Ensure environment is sane. Specifically if TCL_LIBRARY
+	and TK_LIBRARY haven't been defined then we default them to
+	$STADLIB/tcl and $STADLIB/tk 
+
+2007-08-13  jkbonfield  <jkbonfield>
+
+	* src/spin_emboss/create_emboss_files.tcl,
+	* src/spin_emboss/emboss_utils.tcl:
+	(10:28:53) Changed usage of embossdata so it works with 4.0
+	onwards. 
+
+	* src/gap4/qual.c:
+	(16:40:42) Reverted accidental change in the scoring of Ns when
+	using the frequency consensus mode. This was changed in 1.9 from
+	scoring 5 to scoring 0 (for some forgotten reason) and the change
+	was erroneously incorporated when adding the FLT_EPSILON fixes. 
+
+2007-08-09  jkbonfield  <jkbonfield>
+
+	* src/gap4/qual.c:
+	(10:26:05) Fixed sign of FLT_EPSILON (+ to -) for some checks. This
+	basically adjusts on which side of a comparison we want to adjust
+	for error.
+	
+	The change means that the old style consensus algorithm no longer
+	calls Ns on opterons when consensus cutoff is 100%. This also fixes
+	the "remove pad columns" function. 
+
+	* src/prefinish/finish.c:
+	(16:51:00) Added a guard against fin->io so "finish .f; .f version"
+	works. 
+
+2007-08-08  jkbonfield  <jkbonfield>
+
+	* src/gap4/qual.c:
+	(11:09:01) Protected against rounding errors so that checking
+	quality 1.9999999998 against a cutoff of 2 no longer fails. All
+	checks against cons_cutoff take heed of FLT_EPSILON. 
+
+2007-07-16  jkbonfield  <jkbonfield>
+
+	* src/io_lib/acinclude.m4,
+	* src/io_lib/configure.in:
+	(08:03:42) Updated configure.in to support --with-lib=DIR. 
+
+	* src/io_lib/utils/files.c:
+	(08:05:23) Switched from using tempnam() to tmpfile(). This meant
+	recreating tmpfile() wrapper on MS Windows to avoid bugs with it
+	always attempting to write to the root directory, regardless of
+	user privs. 
+
+	* src/io_lib/utils/open_trace_file.c,
+	* src/io_lib/utils/os.h:
+	(08:05:24) Switched from using tempnam() to tmpfile(). This meant
+	recreating tmpfile() wrapper on MS Windows to avoid bugs with it
+	always attempting to write to the root directory, regardless of
+	user privs. 
+
+	* src/io_lib/progs/hash_extract.c:
+	(09:01:39) Fixed bug on windows: we now set stdout to be binary
+	mode first. 
+
+	* src/io_lib/utils/open_trace_file.c:
+	(09:02:51) INCOMPATIBLE CHANGE: On windows we now use semi-colon as
+	the path separator. The reason is that with the MinGW getenv()
+	seems to do "clever things" with PATH variables and consequently
+	ends up corrupting our clumsy attempt of escaping colons in paths. 
+
+2007-07-11  jkbonfield  <jkbonfield>
+
+	* src/io_lib/Makefile,
+	* src/io_lib/Makefile.am,
+	* src/io_lib/read/Makefile.am,
+	* src/io_lib/utils/hash_table.c,
+	* src/io_lib/utils/hash_table.h,
+	* src/io_lib/utils/jenkins_lookup3.c,
+	* src/io_lib/utils/jenkins_lookup3.h:
+	(13:57:26) Added Bob Jenkins' lookup3.c code to the hash_table
+	support. It also now uses this for 64-bit hashing. 
+
+2007-07-06  jkbonfield  <jkbonfield>
+
+	* src/io_lib/ztr/huffman_static.c:
+	(09:06:46) Bug fix to last commit - finish adding the CODE_ENGLISH
+	and removal of other code sets. 
+
+2007-07-05  jkbonfield  <jkbonfield>
+
+	* src/io_lib/plain/seqIOPlain.c:
+	(08:27:43) For FASTA format files we now, eventually, read the
+	first sequence. 
+
+	* src/io_lib/ztr/FORMAT,
+	* src/io_lib/ztr/huffman_static.c,
+	* src/io_lib/ztr/huffman_static.h,
+	* src/io_lib/ztr/ztr.c,
+	* src/io_lib/ztr/ztr.h:
+	(08:28:30) Work-in-progress update to support HUFF chunks and
+	STHUFF (static huffman) compression methods. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(08:29:15) Updated to support the new static-huffman compression
+	method. 
+
+	* src/io_lib/ztr/huffman_static.c,
+	* src/io_lib/ztr/huffman_static.h:
+	(10:45:48) Removed potentially variable huffman trees (solexa
+	trace, confidence values) and added an english text tree. This was
+	based on War of the Worlds, The Gold Bug, 200000 Leagues Under the
+	Sea and the "man ascii" unix manual page for a bit of variety. It
+	also includes the SYM_ANY escape code for handling out-of-band
+	data. 
+
+2007-06-08  jkbonfield  <jkbonfield>
+
+	* src/tk_utils/config.tcl,
+	* src/tk_utils/xtoplevel.tcl:
+	(11:07:56) Added wm group commands so that toplevels correctly
+	supply parenting hints to the window manager. 
+
+2007-06-08  jkbonfield  <jkbonfield>
+
+	INTERNAL RELEASE rel-1-7-0b
+	
+2007-05-31  jkbonfield  <jkbonfield>
+
+	* src/spin2_emboss/acd2tcl.tcl,
+	* src/spin_emboss/acd2tcl.tcl:
+	(15:23:24) Added support for keywords in newer EMBOSS releases
+	(tested with 4.1.0). Specfically including outcodon, array, outdir
+	and pattern. 
+
+2007-05-30  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/extract_seq.c:
+	(11:10:59) Fixed usage string (added -ztr). 
+
+	* src/io_lib/io_lib-config.in:
+	(11:11:26) Added explicit @LIBZ@ to --libs. 
+
+	* src/io_lib/progs/hash_sff.c:
+	(11:12:07) Fixed FILE handling bug. 
+
+	* src/io_lib/ztr/ztr.c:
+	(11:13:07) Maded entropy() static to avoid clash with ztr_dump.c 
+
+	* src/io_lib/CHANGES,
+	* src/io_lib/README,
+	* src/io_lib/configure.in:
+	(11:34:53) Updated to version 1.10.2 
+
+2007-05-29  jkbonfield  <jkbonfield>
+
+	* src/gap4/tagdb.c:
+	(16:17:12) Fixed readInTagDB() so that it doesn't modify the string
+	returned by getenv() directly. 
+
+2007-04-20  jkbonfield  <jkbonfield>
+
+	* src/gap4/shuffle_pads.c:
+	(08:44:49) Added a missing flush2t call to the shuffle pads code. 
+
+2007-04-19  jkbonfield  <jkbonfield>
+
+	* src/io_lib/utils/hash_table.c:
+	(16:18:19) Fixed a memory leak and also changed to use off_t
+	instead of long for file offsets. 
+
+	* src/io_lib/ztr/huffman_static.c:
+	(16:21:48) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/ztr/huffman_static.h:
+	(16:21:50) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/ztr/ztr.c:
+	(16:21:52) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/ztr/ztr.h:
+	(16:21:54) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/Makefile:
+	(16:21:55) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/Makefile.am:
+	(16:21:57) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/read/Makefile.am:
+	(16:21:59) Added HUFFMAN_STATIC ZTR compression method. 
+
+	* src/io_lib/configure.in:
+	(16:27:15) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/abi/fpoint.h:
+	(16:27:16) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/abi/seqIOABI.h:
+	(16:27:17) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/ctf/seqIOCTF.h,
+	* src/io_lib/exp_file/expFileIO.h:
+	(16:27:18) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/progs/convert_trace.c,
+	* src/io_lib/progs/extract_fastq.c:
+	(16:27:20) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/progs/extract_seq.c:
+	(16:27:21) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/progs/hash_sff.c,
+	* src/io_lib/progs/makeSCF.c:
+	(16:27:23) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/progs/ztr_dump.c:
+	(16:27:24) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/read/Read.h:
+	(16:27:28) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/read/scf_extras.h:
+	(16:27:30) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/read/translate.h:
+	(16:27:31) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/scf/scf.h:
+	(16:27:33) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/sff/sff.h:
+	(16:27:44) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/array.h:
+	(16:29:28) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/compress.h:
+	(16:29:34) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/error.h:
+	(16:29:36) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/hash_table.h:
+	(16:29:40) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/mFILE.h:
+	(16:29:41) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/mach-io.h:
+	(16:29:44) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/misc.h:
+	(16:29:45) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/open_trace_file.h:
+	(16:29:48) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/os.h:
+	(16:29:51) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/stdio_hack.h:
+	(16:29:53) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/tar_format.h:
+	(16:29:58) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/traceType.h:
+	(16:30:01) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/vlen.h:
+	(16:30:06) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/utils/xalloc.h:
+	(16:30:10) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+	* src/io_lib/ztr/compression.h:
+	(16:30:14) Added extern "C" {...} guards around all header files to
+	ease use from within C++ source. 
+
+2007-01-31  jkbonfield  <jkbonfield>
+
+	* src/seq_utils/filter_words.c,
+	* src/seq_utils/filter_words.h:
+	(14:38:21) Oops, forgot to check this in! Needed for auto_break.c
+	in Gap4 and shared by the prefinish library. 
+
+2007-01-31  awhitwham  <awhitwham@sanger.ac.uk>
+
+	* src/seq_utils/Makefile:
+	(14:51:17) Added filter_words 
+
+2006-10-27  jkbonfield  <jkbonfield>
+
+	* src/gap4/auto_break.c,
+	* src/gap4/auto_break.h:
+	(13:18:34) New file to implement an experimental automatic assembly
+	breaker function.
+	
+	Specifically it looks for common "words" (in either sequences or
+	consensus) to identify repetitive sequence. It then uses these to
+	clip the ends of sequences to identify whether contigs are held
+	together entirely by sequence overlaps of repetitive elements. When
+	found it then verifies this "gap" by checking for valid vs invalid
+	read-pairs. 
+
+	* src/gap4/Makefile,
+	* src/gap4/newgap_cmds.c,
+	* src/gap4/newgap_structs.h:
+	(13:20:41) Interface for the new auto_break function. 
+
+	* src/gap4/edUtils2.c:
+	(13:22:06) Minor tidyup for c89 compliance instead of accidentally
+	using c9x features. 
+
+	* src/gap4/readpair.c:
+	(13:23:35) Added experimental compilation option to show internal
+	read-pairs when plotting in the contig selector. 
+
+	* src/gap4/template.c:
+	(13:25:17) Allow for templates to be too small and still be valid
+	(controlled at compilation time via #define). Rationale is that the
+	small fragments have already migrated through the band we cut out
+	on the gel and so there may be some residual left (stuck for some
+	reason). This is bourn out by the fact that our distribution is
+	rarely perfectly symmetrical. 
+
+	* src/gap4/template.h:
+	(13:25:42) Added missing prototypes. 
+
+	* src/gap4/trace_display.tcl:
+	(13:26:11) Increased the dynamic range for the Y scalebar. 
+
+2006-09-25  jkbonfield  <jkbonfield>
+
+	* src/gap4/seqInfo.c:
+	(12:40:54) Bug fixed the fasta header editing; it now correctly
+	trims newline, tabs and spaces. 
+
+2006-08-31  jkbonfield  <jkbonfield>
+
+	* staden.profile:
+	(09:03:01) Updated STADENROOT_1_6 to STADENROOT_1_7. Also only set
+	GTAGDB when not already set. 
+
+	* staden.login:
+	(09:03:17) Updated STADENROOT_1_6 to STADENROOT_1_7. 
+
+	* src/gap4/gap4:
+	(09:03:34) Updated STADENROOT_1_6 to STADENROOT_1_7. 
+
+	* src/pregap4/pregap4,
+	* src/spin/spin,
+	* src/trev/trev:
+	(09:03:35) Updated STADENROOT_1_6 to STADENROOT_1_7. 
+
+2006-08-24  jkbonfield  <jkbonfield>
+
+	* doc/manual/copyright.texi,
+	* doc/manual/manual.texi,
+	* doc/manual/mini_manual.texi:
+	(17:09:29) Update copyright notices 
+
+2006-08-11  jkbonfield  <jkbonfield>
+
+	* src/gap4/edInterface.c:
+	(11:23:25) Fixed buffer underrun in edNextDifference. 
+
+2006-08-07  jkbonfield  <jkbonfield>
+
+	* src/io_lib/progs/convert_trace.c:
+	(14:12:39) Added -signed and -noneg options to perform shifting of
+	trace data to avoid the unsigned issues for TRACE. 
+
+2006-07-18  jkbonfield  <jkbonfield>
+
+	* src/tk_utils/tkTrace.c:
+	(13:42:41) Default to anytr format instead of any. 
+
+	* src/io_lib/utils/traceType.c:
+	(13:44:13) Added support for anytr in str2int and int2str
+	conversions. 
+
 2006-07-06  jkbonfield  <jkbonfield>
 
 	TAG CODEBASE with rel-1-7-0

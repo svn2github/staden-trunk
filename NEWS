@@ -1,3 +1,82 @@
+27th Jube 2008 1.7.3 (internal release)
+====================
+
+Gap4
+----
+
+* Improved handling of large databases. The aux file can now grow
+  beyond 2Gb and the Array package supports arrays larger than 2Gb
+  too.
+
+* Better handling of 454 traces where the sequence aligned against the
+  trace is (for read-pair data) just a portion of the entire
+  trace. This involves removing assumptions of origpos(xx,seq,1) being
+  the first trace coordinate.
+
+
+27th Jube 2008 1.7.2b (internal release)
+==============
+
+io_lib
+------
+
+* Many changes, mostly related to solexa and SRF. See io_lib's own
+  Change Log.
+
+Gap5
+----
+
+* Very prototype code added. Not usable as a production (or even test)
+  version yet.
+
+Gap4
+----
+
+* Bug fix: The IUB code mode of the phred style confidence value
+  consensus algorithm no longer counts * as an N.
+
+-----------------------------------------------------------------------------
+12th November 2007 1.7.1b (internal release)
+==================
+
+io_lib
+------
+
+* Many changes, mostly related to solexa and SRF. See io_lib's own
+  Change Log.
+
+* New directory layout; all library code in io_lib subdirectory and
+  all programs in progs dir.
+
+Gap4
+----
+
+* Find Internal Joins should be better at telling when it is likely to
+  use an inordinately large amount of memory and switches to the
+  low-memory approximate alignment algorithms instead.
+
+* Fix issue on AMD Opterons and the "remove pad columns" function.
+  Caused by floating point rounding.
+
+Misc
+----
+
+* We append instead of prepend to PATH, MANPATH, LD_LIBRARY_PATH,
+  etc. Set the STADEN_PREPEND environment variable before sourcing any
+  login setup code if you wish to keep the old behaviour.
+
+-----------------------------------------------------------------------------
+8th June 2007 1.7.0b (internal release)
+=============
+
+Gap4
+----
+
+* Experimental "auto break" feature to look for misassemblies via
+  common repetitive words being the sole reason for joining sequences
+  with apparently inconsistent read-pairs. This is via the auto_break
+  Tcl command - currently no GUI.
+
 -----------------------------------------------------------------------------
 12th April 2006
 ===============
