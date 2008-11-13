@@ -385,7 +385,7 @@ int read_aux_index64_(int fd, void *recv, int num)
     AuxIndex *idx = recv;
     /* LOW LEVEL IO HERE */
     errno = 0;
-    return read(fd, idx, sizeof(*idx)*num) != (int)(sizeof(*idx)*num);
+    return read(fd, idx, sizeof(*idx)*num) != sizeof(*idx)*num;
 }
 
 
@@ -430,7 +430,7 @@ int read_aux_index_swapped64_(int fd, void *idxv, int num)
 
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if (err = (read(fd, idx, sizeof(*idx)*num) != (int)(sizeof(*idx)*num)))
+    if (err = (read(fd, idx, sizeof(*idx)*num) != sizeof(*idx)*num))
 	return err;
     
     for (i = 0; i < num; i++) {

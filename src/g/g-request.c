@@ -591,8 +591,8 @@ static void update_record(GFile *gfile, GCardinal rec, GImage image,
     /*
      * we may need to adjust the size of the file
      */
-    if (gfile->header.file_size < (GCardinal)image + (GCardinal)allocated) {
-	gfile->header.file_size = (GCardinal)image + (GCardinal)allocated;
+    if (gfile->header.file_size < image + (GCardinal)allocated) {
+	gfile->header.file_size = image + (GCardinal)allocated;
     }
     
     /*
