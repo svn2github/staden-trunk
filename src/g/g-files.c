@@ -141,7 +141,7 @@ GFile *g_open_file(char *fn, int read_only)
     GCardinal i;
     int tree_init;
     AuxIndex *idx_arr = NULL;
-    int recsize;
+    off_t recsize;
 
     /* g_dump_file(fn); */
 
@@ -515,7 +515,7 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
     AuxIndex idx;
     int fdaux = gfile->fdaux;
     int check;
-    int recsize;
+    off_t recsize;
     
     idx.image[0] = arr(Index,gfile->idx,rec).aux_image;
     idx.time [0] = arr(Index,gfile->idx,rec).aux_time;
