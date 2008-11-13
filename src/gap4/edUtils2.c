@@ -2959,11 +2959,6 @@ DisplayContext *showTrace(EdStruct *xx, int seq, int pos, int baseSpacing,
 			       baseSpacing, DBgetName(DBI(xx),seq),
 			       xx, seq, allow_dup, mini_trace);
     } else {
-	int t = origpos(xx, seq, 1);
-
-        baseNum = t - baseNum + 1;
-        t_lcut  = t - t_lcut  + 1;
-        t_rcut  = t - t_rcut  + 1;
 	dc = tman_manage_trace(t_type, fileName, baseNum -1, t_lcut,
 			       t_rcut - t_lcut + 1, /*complemented*/1,
 			       baseSpacing, DBgetName(DBI(xx),seq),
@@ -4749,17 +4744,13 @@ int origpos(EdStruct *xx, int seq, int pos)
      */
     if (DBgetSeq(DBI(xx),seq) == NULL) return 0;
 
-    if (pos < 1) {
-	if (DB_Comp(xx, seq) == UNCOMPLEMENTED)
-	    return 0;
-	else
-	    return DB_Length2(xx, seq)-1;
-    }
+    if (pos < 1)
+	pos = 1;
     if (pos > DB_Length2(xx, seq))
 	pos = DB_Length2(xx, seq);
 
     opos = DB_Opos(xx,seq);
-    
+
     /*
      * we have an immediate answer
      */

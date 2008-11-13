@@ -244,6 +244,11 @@ DisplayContext *manageTrace(EdStruct *xx,
 	Tcl_VarEval(interp, dc->path, " complement", NULL);
     dc->complemented = complemented;
 
+    if (complemented) {
+	leftCutOff = dc->tracePtr->Ned - (leftCutOff - 1);
+	cutLength = 2-cutLength;
+    }
+
     sprintf(buf, "%s left_cutoff %d", dc->path, leftCutOff);
     Tcl_Eval(interp, buf);
 
@@ -266,7 +271,7 @@ void repositionSeq(EdStruct *xx, DisplayContext *dc, int baseNum) {
 /* New style syntax */
 #if 1
     /* Convert base number into centred sample number */
-    if (dc->complemented != dc->tracePtr->comp)
+    if (dc->tracePtr->comp)
 	baseNum = dc->tracePtr->Ned - baseNum - 1;
     offset = trace_get_pos(dc->tracePtr, baseNum) -
 	TKSHEET(xx->ed)->sw.font_width / 2;

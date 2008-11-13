@@ -146,20 +146,26 @@ int tman_get_trace_position(EdStruct *xx, tman_dc *dc, int pos, int *end) {
     p = pos - DB_RelPos(xx, seq) + DB_Start(xx, seq) + 1;
     if (p < 1) {
 	/* best guess */
-	return p-1;
+	return tman_get_trace_position(xx, dc, 1 + DB_RelPos(xx,seq)
+				       - DB_Start(xx, seq) - 1, end) -
+	    (DB_Comp(xx, seq) != COMPLEMENTED ? 1-p : p-1);
     } else if (p > DB_Length2(xx, seq)) {
 	/* best guess */
 	int diff = p - DB_Length2(xx, seq);
 	pos = DB_Length2(xx, seq) + DB_RelPos(xx, seq) - DB_Start(xx, seq) - 1;
-	return tman_get_trace_position(xx, dc, pos, end) + diff;
+	return tman_get_trace_position(xx, dc, pos, end) +
+	    (DB_Comp(xx, seq) != COMPLEMENTED ? diff : -diff);
     }
     
     num = origpos(xx, seq, p) - 1;
-    
-    if (DB_Comp(xx, seq) == COMPLEMENTED)
-	num = origpos(xx, seq, 1) - num - 1;
-    
-    num -= dc->derivative_offset;
+
+    if (dc->derivative_offset && dc->derivative_seq) {
+	if (DB_Comp(xx, seq) == COMPLEMENTED) {
+	    /* Just trust me on this one! */
+	    num = DB_Length2(xx, seq) - num -2;
+	}
+	num -= dc->derivative_offset;
+    }
     
     if (end)
 	*end = DB_Length2(xx, seq);
@@ -195,7 +201,7 @@ void tman_reposition_traces(EdStruct *xx, int pos, int mini_trace) {
 	    case TRACE_TYPE_DIFF:
 		if (xx != yy || mini_trace)
 		    continue;
-		
+
 		num = tman_get_trace_position(xx, &edc[i], pos, &end);
 		break;
 

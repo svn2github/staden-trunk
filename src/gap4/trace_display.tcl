@@ -599,7 +599,7 @@ proc new_trace_create2 {w e title allow_diff} {
     $tf_l.xmag.s set [keylget dt XMAG]
     frame $tf_l.ymag
     label $tf_l.ymag.l -text "Y"
-    scale $tf_l.ymag.s -from 10 -to 500 -showvalue 0 \
+    scale $tf_l.ymag.s -from 10 -to 100 -showvalue 0 \
 	-command "trace_yscale $tf_r.trace"
     $tf_l.ymag.s set $ymag
     if {[set $w.Trace_Compact_Mode]} {
@@ -633,7 +633,13 @@ proc new_trace_create2 {w e title allow_diff} {
 	-column [expr {$tnum%$trace_columns}] -sticky nsew
 
     trace_highlight $tf_r
-    append $w.after_id [after idle "trace_reconfigure $w $w.traces.c $w.traces.s $tf_r"] " "
+
+    global $w.PendingReconfigure
+    if {![info exists $w.PendingReconfigure]} {
+	append $w.after_id [after idle "trace_reconfigure $w $w.traces.c $w.traces.s \[set $w.PendingReconfigure\]; unset $w.PendingReconfigure"] " "
+    }
+    set $w.PendingReconfigure $tf_r
+
 
     if {[keylget gap_defs TRACE_DISPLAY.FULL_NAME]} {
 	if {$tit_name != ""} {
