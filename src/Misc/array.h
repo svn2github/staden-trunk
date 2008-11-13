@@ -45,19 +45,19 @@
 #define aerr_set(e) ((e)?xerr_set((e), ArrayErrorString((e))):0)
 
 typedef struct {
-    int size;			/* element size */
-    int dim;			/* allocated number of elements */
-    int max;			/* elements accessed */
+    size_t size;			/* element size */
+    size_t dim;			/* allocated number of elements */
+    size_t max;			/* elements accessed */
     void *base;			/* base address of array */
 } ArrayStruct, *Array;
 
 
 
-extern Array ArrayCreate(size_t size, int dim);
+extern Array ArrayCreate(size_t size, size_t dim);
 
-extern int ArrayExtend(Array a, int dim);
+extern int ArrayExtend(Array a, size_t dim);
 
-extern void *ArrayRef(Array a, int i);
+extern void *ArrayRef(Array a, size_t i);
 
 extern int ArrayDestroy(Array a);
 

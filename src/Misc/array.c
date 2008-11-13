@@ -31,7 +31,6 @@
 
 #include <stdio.h>
 #include <sys/types.h>
-#include <limits.h>    /* IMPORT: INT_MAX */
 
 #include "array.h"
 #include "xalloc.h"
@@ -49,7 +48,7 @@ char *ArrayErrorString(int err)
     }
 }
 
-Array ArrayCreate(size_t size, int dim)
+Array ArrayCreate(size_t size, size_t dim)
 /*
  * create a new array
  */
@@ -78,12 +77,13 @@ Array ArrayCreate(size_t size, int dim)
 
 
 
-int ArrayExtend(Array a, int dim)
+int ArrayExtend(Array a, size_t dim)
 /*
  * extend array
  */
 {
     void *newbase;
+    size_t old_dim;
 
     if (a == NULL) {
 	return aerr_set(ARRAY_INVALID_ARGUMENTS);
@@ -93,15 +93,13 @@ int ArrayExtend(Array a, int dim)
 	return 0;
     }
 
+    old_dim = a->dim;
     while (dim >= a->dim) {
-	if (1.2 * a->dim + 1 >= INT_MAX) {
-	    return aerr_set(ARRAY_FULL);
-	} else {
-	    a->dim = (int)(a->dim * 1.2) + 1;
-	}
+	a->dim = a->dim * 1.2 + 1;
     }
 
     if ( (newbase = (void *)xrealloc(a->base, a->size * a->dim)) == NULL ) {
+	a->dim = old_dim;
 	return aerr_set(ARRAY_OUT_OF_MEMORY);
     } else {
 	a->base = newbase;
@@ -111,7 +109,7 @@ int ArrayExtend(Array a, int dim)
 }
 
 
-void *ArrayRef(Array a, int i)
+void *ArrayRef(Array a, size_t i)
 {
     if (a==NULL) {
 	(void)aerr_set(ARRAY_INVALID_ARGUMENTS);
