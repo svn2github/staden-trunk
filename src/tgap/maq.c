@@ -32,6 +32,7 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
     *s->trace_name = 0;
     s->trace_name_len = 0;
     s->alignment = s->trace_name + s->trace_name_len + 1;
+    *s->alignment = 0;
     s->alignment_len = 0;
     s->seq = s->alignment + s->alignment_len+1;
     s->conf = s->seq+m->size;
