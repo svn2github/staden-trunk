@@ -437,8 +437,8 @@ fij(GapIO *io,
 			  consensus_cutoff ) ) {
 
 	xfree ( consensus );
-	xfree(FIJMatch);
 	xfree(FIJMatch->match);
+	xfree(FIJMatch);
 	xfree(contig_list);
 	return -1;
     }
