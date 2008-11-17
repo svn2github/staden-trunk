@@ -26,9 +26,14 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
     s->parent_rec = 0;
     s->other_end = 0;
     s->name_len = strlen(m->name);
-    s->data = (char*)malloc(s->name_len + 2*m->size);
+    s->data = (char*)malloc(s->name_len + 3+ 2*m->size);
     s->name = s->data;
-    s->seq = s->data + s->name_len;
+    s->trace_name = s->name + s->name_len + 1;
+    *s->trace_name = 0;
+    s->trace_name_len = 0;
+    s->alignment = s->trace_name + s->trace_name_len + 1;
+    s->alignment_len = 0;
+    s->seq = s->alignment + s->alignment_len+1;
     s->conf = s->seq+m->size;
     //s->mapping_qual = m->map_qual;
     s->mapping_qual = m->seq[MAX_READLEN-1];

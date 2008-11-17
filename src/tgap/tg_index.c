@@ -122,12 +122,23 @@ int parse_line(seq_t *s, char *line, char *contig) {
 	       s->left, s->right);
 	*/
 
+	/* FIXME: use commands in tg_sequence.c instead */
 	s->name_len = strlen(name);
-	s->name = s->data = (char *)malloc(s->name_len+len+qb*len);
-	s->seq = s->data + s->name_len;
-	s->conf = s->seq + len;
+	s->name = s->data = (char *)malloc(s->name_len+3+len+qb*len);
         strcpy(s->name, name);
+
+	s->trace_name = s->name + s->name_len+1;
+	*s->trace_name = 0;
+	s->trace_name_len = 0;
+
+	s->alignment = s->trace_name + s->trace_name_len+1;
+	*s->alignment = 0;
+	s->alignment_len = 0;
+
+	s->seq = s->alignment + s->alignment_len+1;
         memcpy(s->seq, seq, len);
+
+	s->conf = s->seq + len;
         memcpy(s->conf, conf,
 	       (s->format == SEQ_FORMAT_CNF4 ? 4 : 1) * len);
         return 0;
@@ -315,7 +326,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 
 
 /* ------------------------------------------------------------------------ */
-void usage() {
+void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");

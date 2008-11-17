@@ -215,24 +215,26 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
 	return -1;
 
     extra_len = strlen(name)+1 + n->trace_name_len+1 +
-	ABS(n->len)*(1+sequence_conf_size(n));
+	n->alignment_len+1 + ABS(n->len)*(1+sequence_conf_size(n));
     n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
 
     n->name = (char *)&n->data;
+    n->name_len = strlen(name);
     n->trace_name = n->name + n->name_len + 1;
-    n->seq = n->trace_name + n->trace_name_len + 1;
+    n->alignment = n->trace_name + n->trace_name_len + 1;
+    n->seq = n->alignment + n->alignment_len + 1;
     n->conf = n->seq + ABS(n->len);
 
     /* Shift and insert name */
     cp = tmp = malloc(extra_len);
-    n->name_len = strlen(name);
     strcpy(cp, name);
     cp += n->name_len+1;
-    if (n->trace_name)
-	strcpy(cp, n->trace_name);
+    strcpy(cp, n->trace_name);
     cp += n->trace_name_len;
+    strcpy(cp, n->alignment);
+    cp += n->alignment_len;
     memcpy(cp, n->seq, n->len);
     memcpy(cp, n->conf, n->len * sequence_conf_size(n));
     memcpy(&n->data, tmp, extra_len);
@@ -260,7 +262,7 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
 	trace_name = "";
 
     extra_len = n->name_len+1 + strlen(trace_name)+1 +
-	ABS(n->len)*(1+sequence_conf_size(n));
+	n->alignment_len+1 + ABS(n->len)*(1+sequence_conf_size(n));
     n = cache_item_resize(n, extra_len);
     if (NULL == n)
 	return -1;
@@ -268,7 +270,8 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     n->name = (char *)&n->data;
     n->trace_name = n->name + n->name_len + 1;
     n->trace_name_len = strlen(trace_name);
-    n->seq = n->trace_name + n->trace_name_len + 1;
+    n->alignment = n->trace_name + n->trace_name_len + 1;
+    n->seq = n->alignment + n->alignment_len + 1;
     n->conf = n->seq + ABS(n->len);
 
     /* Shift and insert name */
@@ -276,7 +279,9 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     strcpy(cp, n->name);
     cp += n->name_len+1;
     strcpy(cp, trace_name);
-    cp += strlen(trace_name);
+    cp += n->trace_name_len;
+    strcpy(cp, n->alignment);
+    cp += n->alignment_len;
     memcpy(cp, n->seq, n->len);
     memcpy(cp, n->conf, n->len * sequence_conf_size(n));
     memcpy(&n->data, tmp, extra_len);
@@ -302,15 +307,18 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    n = cache_item_resize(n, sizeof(*n) + 1+n->name_len +
-			  strlen(n->trace_name)+1 +
+    n = cache_item_resize(n, sizeof(*n) + 
+			  n->name_len+1 +
+			  n->trace_name_len+1 +
+			  n->alignment_len+1 +
 			  (ABS(n->len)+1)*(1+sequence_conf_size(n)));
     if (NULL == n)
 	return -1;
 
     n->name = (char *)&n->data;
     n->trace_name = n->name + n->name_len + 1;
-    n->seq = n->trace_name + strlen(n->trace_name) + 1;
+    n->alignment = n->trace_name + n->trace_name_len + 1;
+    n->seq = n->alignment + n->alignment_len + 1;
     n->conf = n->seq + ABS(n->len);
 
     p2 = n->len < 0
@@ -556,13 +564,15 @@ void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
 
 seq_t *dup_seq(seq_t *s) {
     size_t len = sizeof(seq_t) - sizeof(char *) + s->name_len+1 +
-	s->trace_name_len+1 + (ABS(s->len)+1)*(1+sequence_conf_size(s));
+	s->trace_name_len+1 + s->alignment_len+1 +
+	(ABS(s->len)+1)*(1+sequence_conf_size(s));
     seq_t *d = (seq_t *)calloc(1, len);
 
     memcpy(d, s, len);
     d->name = (char *)&d->data;
     d->trace_name = d->name + d->name_len + 1;
-    d->seq = d->trace_name + d->trace_name_len + 1;
+    d->alignment = d->trace_name + d->trace_name_len + 1;
+    d->seq = d->alignment + d->alignment_len + 1;
     d->conf = d->seq + ABS(d->len);
 
     return d;

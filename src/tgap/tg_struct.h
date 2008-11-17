@@ -86,7 +86,11 @@ typedef struct {
  *
  * (Also see bin_index_t from binning.h)
  *
- * The memory layout of the 'data' block is (eg seq_decode() in tg_iface_g.c)
+ * Note that this object is one single block of memory *at least* as large
+ * as sizeof(seq_t). All the pointers in here (names, seq, conf) except for
+ * data are tacked onto the end of the struct. Quite literaly speaking
+ * the name starts at the &seq.data. The packing order is described as
+ * below. Also see seq_decode() in tg_iface_g.c.
  *
  * field	len
  * ---------------------------------------------
@@ -94,28 +98,33 @@ typedef struct {
  * nul          1
  * trace_name   trace_name_len
  * nul		1
+ * alignment    alignmen_len
+ * nul          1
  * seq		ABS(len)
- * conf		ABS(len)    (if format != SEQ_FORMAT_CNF4)
- * conf		4*ABS(len)  (if format == SEQ_FORMAT_CNF4, in order ACGT,ACGT)
+ * conf		ABS(len)    (iff format != SEQ_FORMAT_CNF4)
+ * conf		4*ABS(len)  (iff format == SEQ_FORMAT_CNF4, in order ACGT,ACGT)
  */
 typedef struct {
-    signed int  pos; /* left end, regardless of direction */
-    signed int len; /* +ve or -ve indicates direction */
+    signed int  pos;  /* left end, regardless of direction */
+    signed int len;   /* +ve or -ve indicates direction */
     int bin;
-    int left, right; /* clip left/right coordinates */
-    int parent_rec, parent_type; /* template info */
-    int other_end; /* recno of a seq_t, for simple read-pairs */
+    int left, right;  /* clip left/right coordinates */
+    int parent_rec;   /* template info */
+    int parent_type;  /* template info */
+    int other_end;    /* recno of a seq_t, for simple read-pairs */
     unsigned int seq_tech:3;
     unsigned int flags:3;
     unsigned int format:2;
     uint8_t mapping_qual;
     int name_len;
     int trace_name_len;
-    char *name; /* also nul terminated */
-    char *trace_name; /* nul terminated trace name, blank => same as name */
-    char *seq;
-    char *conf;
-    char *data; /* packed memory struct; name/seq/conf are here */
+    int alignment_len;
+    char *name;       /* nul terminated name */
+    char *trace_name; /* trace name; blank => same as name */
+    char *alignment;  /* alignment; blank => obvious guess from pads */
+    char *seq;        /* sequence in ASCII format */
+    char *conf;       /* 1 or 4 values per base depending on flags */
+    char *data;       /* packed memory struct; names/al/seq/conf are here */
 } seq_t;
 
 /* Sequencing technologies for seq_t.seq_tech */

@@ -1346,11 +1346,10 @@ static int io_track_create(void *dbh, void *vfrom) {
  *      + flags (3 next bits)
  *      + format (2 top bits)
  * 1 byte mapping_quality
- * 1 byte name len L
- * 1 byte trace name len T
- * L bytes name
- * T names name
- * remainder is seq/qual (1 byte per).
+ * ? bytes name, nul terminated
+ * ? byte trace name, nul terminated
+ * ? bytes alignment, nul terminated
+ * remainder is seq/qual (various formats).
  *
  * Returns a pointer to a seq_t struct
  *      or NULL on failure.
@@ -1358,9 +1357,10 @@ static int io_track_create(void *dbh, void *vfrom) {
 static cached_item *seq_decode(unsigned char *buf, size_t len) {
     cached_item *ci;
     unsigned char *cp, flags, mapping_qual, seq_tech, format;
-    size_t slen, i;
+    size_t slen;
+    signed int i, j;
     seq_t *seq;
-    uint32_t left, right, nlen, tnlen, bin, seq_len;
+    uint32_t left, right, bin, seq_len;
     int parent_type, parent_rec, other_end;
 
     cp = buf;
@@ -1377,13 +1377,11 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     flags = format & ((1<<3)-1);
     format >>= 3;
     mapping_qual = *cp++;
-    nlen = *cp++;
-    tnlen = flags & SEQ_TRACE_NAME ? cp[nlen] : 0;
-	
+    /* cp is now the variable sized section starting with reading name */
 
     /* Generate in-memory data structure */
-    slen = sizeof(seq_t) + nlen + 1 + tnlen + 1 + 2*seq_len +
-	(format == SEQ_FORMAT_CNF4 ? 3*seq_len : 0);
+    slen = sizeof(seq_t) + len - (cp-buf) +
+	seq_len * (1 + (format == SEQ_FORMAT_CNF4 ? 4 : 1));
 
     if (!(ci = cache_new(GT_Seq, 0, 0, NULL, slen)))
         return NULL;
@@ -1402,24 +1400,28 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     seq->len          = (seq->flags & SEQ_COMPLEMENTED)
 	                    ? -seq_len : seq_len;
 
-    seq->name_len = nlen;
+    memcpy(&seq->data, cp, len - (cp-buf));
+
+    /* Name */
     seq->name = (char *)&seq->data;
-    memcpy(seq->name, cp, nlen);
-    seq->name[nlen] = 0;
-    cp += nlen;
+    seq->name_len = strlen(seq->name);
+    cp += seq->name_len + 1;
 
-    seq->trace_name_len = tnlen;
-    seq->trace_name = seq->name + nlen + 1;
-    if (flags & SEQ_TRACE_NAME) {
-	cp++; /* Skip; tnlen already decoded */
-	memcpy(seq->trace_name, cp, tnlen);
-	cp += tnlen;
-    }
-    seq->trace_name[tnlen] = 0;
+    /* Trace name */
+    seq->trace_name = seq->name + seq->name_len + 1;
+    seq->trace_name_len = strlen(seq->trace_name);
+    cp += seq->trace_name_len + 1;
 
-    seq->seq = seq->trace_name + tnlen + 1;
+    /* Alignment */
+    seq->alignment = seq->trace_name + seq->trace_name_len + 1;
+    seq->alignment_len = strlen(seq->alignment);
+    cp += seq->alignment_len + 1;
+
+    /* Seq/Qual */
+    seq->seq = seq->alignment + seq->alignment_len + 1;
     seq->conf = seq->seq + seq_len;
 
+    /* cp is now at the encoded seq/qual area */
     switch (seq->format) {
     case SEQ_FORMAT_MAQ:
 	for (i = 0; i < seq_len; i++) {
@@ -1429,6 +1431,25 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
 	break;
 
     case SEQ_FORMAT_CNF1:
+#if 1
+	for (i = j = 0; i < seq_len;) {
+	    unsigned char c = cp[j++];
+	    seq->seq[i++] = "ACGTN*"[c%6]; c /= 6;
+	    if (i >= seq_len) break;
+	    seq->seq[i++] = "ACGTN*"[c%6]; c /= 6;
+	    if (i >= seq_len) break;
+	    seq->seq[i++] = "ACGTN*"[c%6];
+	}
+	cp += j;
+	for (i = j = 0; i < seq_len;) {
+	    seq->conf[i++] = *cp++;
+	    if (i+1 < seq_len && cp[-1] == cp[0]) {
+		unsigned char dup = *cp++;
+		for (j = *cp++; j >= 0; j--)
+		    seq->conf[i++] = dup;
+	    }
+	}
+#else
 	for (i = 0; i < seq_len; i++) {
 	    seq->seq[i] = cp[i];
 	}
@@ -1436,6 +1457,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
 	for (i = 0; i < seq_len; i++) {
 	    seq->conf[i] = cp[i];
 	}
+#endif
 	break;
 
     case SEQ_FORMAT_CNF4:
@@ -1452,6 +1474,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
 	fprintf(stderr, "Unknown sequence format '%d'\n", seq->format);
 	break;
     }
+
 
     return ci;
 }
@@ -1486,9 +1509,9 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
 /* See seq_decode for the storage format */
 static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     int err = 0;
-    int i, seq_len, name_len, trace_name_len, data_len;
+    int i, j, seq_len, name_len, trace_name_len, data_len;
     unsigned char block[1024], *cp = block, *cpstart;
-    static unsigned char base2val[256] = {
+    static unsigned char base2val_maq[256] = { /* ACGT => 0123, else 9 */
      /* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
 	9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, /* 00 */
 	9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, /* 10 */
@@ -1506,6 +1529,25 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, /* D0 */
 	9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9, /* E0 */
 	9,9,9,9,9,9,9,9,9,9,9,9,9,9,9,9  /* F0 */
+    };
+    static unsigned char base2val_cnf1[256] = { /* ACGTN* => 012345, else 4 */
+     /* 0 1 2 3 4 5 6 7 8 9 A B C D E F */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* 00 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* 10 */
+	4,4,4,4,4,4,4,4,4,4,5,4,4,4,4,4, /* 20 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* 30 */
+	4,0,4,1,4,4,4,2,4,4,4,4,4,4,4,4, /* 40 */
+	4,4,4,4,3,3,4,4,4,4,4,4,4,4,4,4, /* 50 */
+	4,0,4,1,4,4,4,2,4,4,4,4,4,4,4,4, /* 60 */
+	4,4,4,4,3,3,4,4,4,4,4,4,4,4,4,4, /* 70 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* 80 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* 20 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* A0 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* B0 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* C0 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* D0 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4, /* E0 */
+	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4  /* F0 */
     };
 
     name_len = seq->name_len;
@@ -1541,11 +1583,9 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	+ 1 /* parent_type */
 	+ 1 /* seq_tech/flags/format */
 	+ 1 /* mapping_quality */
-	+ 1 /* name_len */
-	+ name_len
-	+ 1 /* trace_name_len */
-	+ trace_name_len
-	+ seq_len*4 + 2; /* deflate worst expansion? */
+	+ name_len + 1 /* name */
+	+ trace_name_len + 1 /* trace name */
+	+ seq_len*5 + 2; /* deflate worst expansion? */
     if (data_len > 1024) {
 	if (NULL == (cp = (unsigned char *)malloc(data_len)))
 	    return -1;
@@ -1568,22 +1608,56 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     *cp++ = seq->mapping_qual;
 
     /* Name */
-    *cp++ = name_len;
-    memcpy(cp, seq->name, name_len);
-    cp += name_len;
+    strcpy(cp, seq->name);
+    cp += seq->name_len + 1;
 
     /* Trace name */
-    if (seq->flags & SEQ_TRACE_NAME) {
-	*cp++ = trace_name_len;
-	memcpy(cp, seq->trace_name, trace_name_len);
-	cp += trace_name_len;
+    strcpy(cp, seq->trace_name);
+    cp += seq->trace_name_len + 1;
+
+    /* Alignment */
+#if 0
+  {
+    char *al = seq->alignment;
+    /* Squashed format */
+    j = 0;
+    while (*al) {
+	unsigned int u = 0;
+	unsigned int v = 0;
+	switch (*al) {
+	case 'M':
+	    u = 0;
+	    break;
+	case 'I':
+	    u = 1;
+	    break;
+	case 'D':
+	    u = 2;
+	    break;
+	case 'E':
+	    u = 3;
+	    break;
+	default:
+	    fprintf(stderr, "Unknown alignment type '%c'\n",
+		    seq->alignment[i]);
+	    u = 3;
+	}
+	v = strtol(al+1, &al, 10);
+	u |= v << 2;
+	cp += int2u7(u, cp);
     }
+    cp += int2u7(0, cp); /* match of length zero */
+  }
+#else
+    strcpy(cp, seq->alignment);
+    cp += seq->alignment_len + 1;
+#endif
 
     /* Seq/Conf */
     switch (seq->format) {
     case SEQ_FORMAT_MAQ:
 	for (i = 0; i < seq_len; i++) {
-	    unsigned char v = base2val[((unsigned char *)seq->seq)[i]];
+	    unsigned char v = base2val_maq[((unsigned char *)seq->seq)[i]];
 	    if (v != 9) {
 		if (seq->conf[i] <= 0)
 		    v = 0;
@@ -1599,12 +1673,36 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	break;
 
     case SEQ_FORMAT_CNF1:
+#if 1
+	for (i = j = 0; i < seq_len; i+=3, j++) {
+	    unsigned char c1 = seq->seq[i];
+	    unsigned char c2 = i+1 < seq_len ? seq->seq[i+1] : 0;
+	    unsigned char c3 = i+2 < seq_len ? seq->seq[i+2] : 0;
+	    *cp++ = base2val_cnf1[c1] + base2val_cnf1[c2]*6 + base2val_cnf1[c3]*36;
+	}
+	if (1) {
+	    for (i = 0; i < seq_len; i = j) {
+		j = i+1;
+		while (j-i<257 && j < seq_len && seq->conf[i]==seq->conf[j])
+		    j++;
+
+		if (j-i == 1) {
+		    *cp++ = seq->conf[i];
+		} else {
+		    *cp++ = seq->conf[i];
+		    *cp++ = seq->conf[i];
+		    *cp++ = j-i-2;
+		}
+	    }  
+	}
+#else
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->seq[i];
 	}
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->conf[i];
 	}
+#endif
 	break;
 
     case SEQ_FORMAT_CNF4:

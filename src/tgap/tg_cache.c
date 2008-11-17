@@ -653,7 +653,9 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 	    /* reset internal name/seq/conf pointers */
 	    seq_t *s = (seq_t *)&ci_new->data;
 	    s->name = (char *)&s->data;
-	    s->seq = s->name + s->name_len + 1;
+	    s->trace_name = s->name + s->name_len + 1;
+	    s->alignment = s->trace_name + s->trace_name_len + 1;
+	    s->seq = s->alignment + s->alignment_len + 1;
 	    s->conf = s->seq + ABS(s->len);
 	    break;
 	}
