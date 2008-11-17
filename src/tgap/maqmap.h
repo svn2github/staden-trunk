@@ -57,7 +57,7 @@ typedef struct
 #ifdef __cplusplus
 extern "C" {
 #endif
-	maqmap_t *maq_new_maqmap();
+	maqmap_t *maq_new_maqmap(void);
 	void maq_delete_maqmap(maqmap_t *mm);
 	void maqmap_write_header(gzFile fp, const maqmap_t *mm);
 	maqmap_t *maqmap_read_header(gzFile fp);
