@@ -302,7 +302,7 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
 
     set ${t}(y1) $y1
     set y2 [expr {$y1+$h}]
-    set wid [set ${t}(width)]
+    set wid [set ${w}(width)]
 
     [set ${t}(canvas)] configure -scrollregion [list 0 $y1 $wid $y2]
     [set ${t}(ys)] set \
