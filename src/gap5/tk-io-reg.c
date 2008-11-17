@@ -256,7 +256,7 @@ int tcl_quit_displays(ClientData clientData, Tcl_Interp *interp,
     qd_arg args;
     cli_args a[] = {
         {"-io",       ARG_IO,  1, NULL, offsetof(qd_arg, io)},
-	{"-msg",      ARG_STR, 1, "?",  offsetof(qd_arg, io)},
+	{"-msg",      ARG_STR, 1, "?",  offsetof(qd_arg, msg)},
         {NULL,        0,       0, NULL, 0}
     };
     reg_quit rq;
