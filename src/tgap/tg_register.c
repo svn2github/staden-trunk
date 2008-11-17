@@ -778,19 +778,25 @@ void result_notify(GapIO *io, int id, reg_data *jdata, int all) {
  */
 int type_notify(GapIO *io, int type, reg_data *jdata) {
     contig_reg_t **res;
-    int nres, i;
+    int nres, i, ret = -1, changed;
 
-    res = get_reg_by_type(io, type, &nres);
-    if (!res)
-	return -1;
+    do {
+	if (NULL == (res = get_reg_by_type(io, type, &nres)))
+	    return ret;
 
-    for (i = 0; i < nres; i++) {
-	if (res[i]->flags & jdata->job) {
-	    res[i]->func(io, 0, res[i]->fdata, jdata);
+	changed = 0;
+	for (i = 0; i < nres; i++) {
+	    if (res[i]->flags & jdata->job) {
+		res[i]->func(io, 0, res[i]->fdata, jdata);
+		/* The callback function may have changed our arrays */
+		changed = 1;
+		break;
+	    }
 	}
-    }
 
-    free(res);
+	ret = 0;
+	free(res);
+    } while (changed);
 
     return 0;
 }
