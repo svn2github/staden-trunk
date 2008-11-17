@@ -25,6 +25,7 @@ enum line_type {
     DR=CC2('D','R'), /*    Direction, 1=>uncomp, -1=>complemented */
     TR=CC2('T','R'), /*    Trace name */
     MQ=CC2('M','Q'), /*    Mapping quality */
+    AL=CC2('A','L'), /*    Alignment */
 
     /* Regexp versions of the above */
     ln=CC2('l','n'),
@@ -42,6 +43,7 @@ enum line_type {
     dr=CC2('d','r'),
     tr=CC2('t','r'),
     mq=CC2('m','q'),
+    al=CC2('a','l'),
 };
 
 typedef struct {

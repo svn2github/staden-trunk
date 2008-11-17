@@ -176,7 +176,7 @@ char *baf_block_value(baf_block *b, int type) {
 int construct_seq_from_block(seq_t *s, baf_block *b) {
     int ap, dir, cleft, cright, i, qb, mq;
     size_t len;
-    char *cp, *seq, *qual, *name, *trace_name;
+    char *cp, *seq, *qual, *name, *trace_name, *alignment;
     
     /* Prevent valgrind from complaining about portions of seq being unset */
     memset(s, 0, sizeof(*s));
@@ -185,7 +185,10 @@ int construct_seq_from_block(seq_t *s, baf_block *b) {
     name = baf_block_value(b, RD);
     seq  = baf_block_value(b, SQ);
     qual = baf_block_value(b, FQ);
-    trace_name = baf_block_value(b, TR);
+    if (NULL == (trace_name = baf_block_value(b, TR)))
+	trace_name = "";
+    if (NULL == (alignment = baf_block_value(b, AL)))
+	alignment = "";
 
     if (!name || !seq || !qual)
 	return -1;
@@ -253,27 +256,22 @@ int construct_seq_from_block(seq_t *s, baf_block *b) {
 	s->pos -= -s->len - s->right;
 
     s->name_len = strlen(name);
-    s->trace_name_len = trace_name ? strlen(trace_name) : 0;
+    s->trace_name_len = strlen(trace_name);
+    s->alignment_len = strlen(alignment);
 
-    s->name = s->data = (char *)malloc(s->name_len+1+
-				       s->trace_name_len+1+
+    s->name = s->data = (char *)malloc(s->name_len+1 +
+				       s->trace_name_len+1 +
+				       s->alignment_len+1 +
 				       len+qb*len);
     strcpy(s->name, name);
 
-    if (trace_name) {
-	s->flags |= SEQ_TRACE_NAME;
-	s->trace_name = s->name + s->name_len+1;
-	strcpy(s->trace_name, trace_name);
-    } else {
-	s->trace_name = NULL;
-	s->trace_name_len = 0;
-    }
+    s->trace_name = s->name + s->name_len + 1;
+    strcpy(s->trace_name, trace_name);
 
-    if (trace_name) {
-	s->seq = s->trace_name + s->trace_name_len+1;
-    } else {
-	s->seq = s->name + s->name_len+1;
-    }
+    s->alignment = s->trace_name + s->trace_name_len + 1;
+    strcpy(s->alignment, alignment);
+
+    s->seq = s->alignment + s->alignment_len + 1;
     memcpy(s->seq, seq, len);
 
     s->conf = s->seq + len;
@@ -400,7 +398,12 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    }
 
 	    if ((++nseqs & 0x3fff) == 0) {
+		int perc = 0;
 		cache_flush(io);
+		pos = ftello(fp);
+		perc = 100.0 * pos / sb.st_size;
+		printf("\r%d%%", perc);
+		fflush(stdout);
 	    }
 	    
 	    break;
@@ -410,7 +413,13 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    printf("Unsupported block type %s\n",
 		   linetype2str(b->type));
 	}
+
+	if (!delay_destroy)
+	    baf_block_destroy(b);
+
     }
+    if (co)
+	baf_block_destroy(co);
 
 #if 0
 	if ((nseqs & 0x3fff) == 0) {
