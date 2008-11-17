@@ -277,6 +277,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 		(pow(10, cons[i].scores[4] / 10.0) + 1);
 	    base_prob = 1-pad_prob;
 	} else {
+	    cons[i].scores[4] = 0;
 	    pad_prob = 0;
 	    base_prob = 1;
 	}
@@ -320,6 +321,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	 *              = log(probs[j]/tot2[j])
 	 *              = log(probs[j]) - log(tot2[j])
 	 */
+	cons[i].scores[5] = 0;
 	for (j = 0; j < 4; j++) {
 	    cons[i].scores[j] = 10 / log(10) *
 		(log(base_prob * probs[j]) - log(tot2[j]));
