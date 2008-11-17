@@ -173,7 +173,7 @@ char *baf_block_value(baf_block *b, int type) {
 }
 
 
-int construct_seq_from_block(seq_t *s, baf_block *b) {
+int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     int ap, dir, cleft, cright, i, qb, mq;
     size_t len;
     char *cp, *seq, *qual, *name, *trace_name, *alignment;
@@ -199,6 +199,9 @@ int construct_seq_from_block(seq_t *s, baf_block *b) {
 	ap = atoi(cp);
     else
 	return -1;
+
+    if (NULL == (*tname = baf_block_value(b, TN)))
+	*tname = name;
 
     if ((cp = baf_block_value(b, QL)))
 	cleft = atoi(cp);
@@ -337,9 +340,10 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    int recno;
 	    bin_index_t *bin;
 	    HacheItem *hi, *other_hi;
+	    char *tname;
 
 	    /* Construct seq struct */
-	    if (-1 == construct_seq_from_block(&seq, b)) {
+	    if (-1 == construct_seq_from_block(&seq, b, &tname)) {
 		fprintf(stderr, "Failed to parse read block for seq %d\n",
 			nseqs);
 		break;
@@ -359,7 +363,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		HacheData hd;
 	    
 		hd.i = 0;
-		hi = HacheTableAdd(pair, seq.name, seq.name_len, hd, &new);
+		hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
 
 		/* Pair existed already */
 		if (!new) {
