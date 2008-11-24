@@ -1,0 +1,512 @@
+/*
+ * editor_join.c:
+ * Contains functions for the Join Editor "align" and "join" buttons.
+ */
+#include "editor_view.h"
+#include "align_lib.h"
+#include "hash_lib.h"
+#include "align.h"
+#include "dna_utils.h"
+
+/* Add 'num' pads into the consensus for editor 'xx' at position 'pos'. */
+static void add_pads(edview *xx, int pos, int num)
+{
+    int i, conf = 0;
+
+    if (num < 0)
+	return;
+
+    for (i = 0; i < num; i++)
+	contig_insert_base(xx->io, &xx->contig, pos, '*', conf);
+}
+
+/*
+ * Converts a couple of padded sequences output from Rodger Staden's
+ * alignment algorithms to an edit buffer in the same coding system as used
+ * in the Myers & Miller alignment routines.
+ * Basically a match is encoded as 0, N pads in sequence 1 are encoded as
+ * +N, N pads in sequence 2 are encoded as -N.
+ */
+static int *
+rsalign2myers(char *seq1, int len1, char *seq2, int len2, char pad_sym) {
+    int *res = (int *)calloc(len1 + len2 + 1, sizeof(int));
+    int i;
+    int *S = res;
+    int last_op = 0;
+
+    for (i = 0; i < len1 && i < len2; i++) {
+	if (seq1[i] != pad_sym && seq2[i] != pad_sym)
+	    last_op = *S++ = 0;
+	if (seq1[i] == pad_sym) {
+	    if (last_op != 1)
+		*S++ = 0;
+	    *(S-1) += 1;
+	    last_op = 1;
+	}
+	if (seq2[i] == pad_sym) {
+	    if (last_op != 2)
+		*S++ = 0;
+	    *(S-1) -= 1;
+	    last_op = 2;
+	}
+    }
+
+    return res;
+}
+
+int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
+
+#define DO_BLOCKS 100
+#define OK_MATCH 80
+#define TOO_LONG_FOR_2ND_TRY 10000
+    int ierr;
+    ALIGN_PARAMS *params;
+    Hash *h;
+    int word_len, max_matches;
+    int shortest_diagonal, longest_diagonal;
+    int gap_open, gap_extend, band, edge_mode, job, min_match;
+    int compare_method = 17;
+    char *env;
+
+    band = 1;
+    gap_open = 12;
+    gap_extend = 4;
+    job = RETURN_SEQ | RETURN_NEW_PADS;
+
+    edge_mode  = fixed_left  ? EDGE_GAPS_COUNT   : EDGE_GAPS_ZERO;
+    edge_mode |= fixed_right ? FULL_LENGTH_TRACE : BEST_EDGE_TRACE;
+
+    longest_diagonal = MAX(overlap->seq1_len,overlap->seq2_len);
+    shortest_diagonal = MIN(overlap->seq1_len,overlap->seq2_len);
+    min_match = MIN(20,(shortest_diagonal*0.1));
+
+    if (NULL == (env = getenv("STADTABL"))) {
+	verror(ERR_FATAL, "align_contigs",
+	       "STADTABL environment variable is not set.");
+	return -1;
+    }
+    else {
+	char buf[1024];
+
+	sprintf(buf, "%s/align_lib_nuc_matrix", env);
+	ierr = set_alignment_matrix(buf,"ACGTURYMWSKDHVB-*");
+	if (ierr) {
+	    verror(ERR_FATAL, "align_contigs",
+		   "%s: file not found", buf);
+	    return -1;
+	}
+    }
+    if (NULL == (params = create_align_params())) return -1;
+
+    band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+    
+    if (set_align_params (params, band, gap_open, gap_extend, edge_mode, job,
+			  0, 0, 0, 0,0)) {
+	destroy_alignment_params (params);
+	return -1;
+    };
+
+    if ( longest_diagonal < DO_BLOCKS ) {
+
+	ierr = affine_align(overlap,params);
+	destroy_alignment_params (params);
+	return ierr; /* Correct or failure */
+    }
+
+    max_matches = 100; /* dynamically grows as needed */
+    word_len = 8;
+
+    compare_method = 31;
+
+    if ( init_hash8n ( longest_diagonal, longest_diagonal,
+		     word_len, max_matches, min_match, compare_method, &h )) {
+	free_hash8n(h);
+	return -1;
+    }
+
+    h->seq1_len = overlap->seq1_len;
+    h->seq2_len = overlap->seq2_len;
+    h->seq1 = overlap->seq1;
+    h->seq2 = overlap->seq2;
+
+    if (hash_seqn(h, 1)) {
+	free_hash8n(h);
+      return -1;
+    }
+    
+    if (hash_seqn(h, 2)) {
+	free_hash8n(h);
+      return -1;
+    }
+
+    store_hashn ( h );
+
+    ierr = compare_b ( h, params, overlap );
+
+    free_hash8n(h);
+    if (ierr > 0) {
+	/*
+	 * need to check percentage.
+	 * We pass the alignment either if the match is better than OK_MATCH
+	 * (80% at the mo.) or if we cannot do banded alignment due to the
+	 * size. So poor alignments are allowed in this case as it's not up
+	 * to this code to decide what's good and what isn't.
+	 */
+	if(overlap->percent > OK_MATCH ||
+	   longest_diagonal >= TOO_LONG_FOR_2ND_TRY) {
+	    destroy_alignment_params (params);
+	    return 0;
+	}
+    }
+    /* if block alignment fails, try straight dynamic programming */
+
+
+    verror(ERR_WARN, "align_contigs",
+	   "Fast hashing alignment algorithm failed, "
+	   "attempting full dynamic programming instead");
+
+    if(longest_diagonal < TOO_LONG_FOR_2ND_TRY) {
+	band = set_band_blocks(overlap->seq1_len,overlap->seq2_len);
+	if (set_align_params (params, band, gap_open, gap_extend, edge_mode, job,
+			      0, 0, 0, 0,0)) {
+	    destroy_alignment_params (params);
+	    return -1;
+	};
+
+
+        free_overlap(overlap);
+	ierr = affine_align(overlap,params);
+
+	destroy_alignment_params (params);
+	return ierr;
+    }
+	
+    verror(ERR_WARN, "align_contigs",
+	   "Too large for practical use of dynamic programming");
+    destroy_alignment_params (params);
+    return -1;
+}
+
+/*
+ * The guts of the join editor "align" function.
+ */
+static int align(edview *xx0, int pos0, int len0,
+		 edview *xx1, int pos1, int len1,
+		 int fixed_left, int fixed_right)
+{
+
+    char *ol0,*ol1, *cons0, *cons1;
+    OVERLAP *overlap;
+    int ierr;
+    char PAD_SYM = '.';
+    int  *depad_to_pad0, *dp0, *depad_to_pad1, *dp1;
+    int *S, *res;
+    int off0 = 0, off1 = 0;
+    int left0 = 0, left1 = 0;
+
+    vfuncheader("Align contigs (join editor)");
+
+    /* Memory allocation */
+    ol0 = (char *) xmalloc(len0+1);
+    ol1 = (char *) xmalloc(len1+1);
+    cons0 = (char *) xmalloc(len0+1);
+    cons1 = (char *) xmalloc(len1+1);
+    dp0 = depad_to_pad0 = (int *)xmalloc((len0+1) * sizeof(int));
+    dp1 = depad_to_pad1 = (int *)xmalloc((len1+1) * sizeof(int));
+
+    /* Compute the consensus */
+    calculate_consensus_simple(xx0->io, xx0->cnum, pos0, pos0+len0, ol0, NULL);
+    calculate_consensus_simple(xx1->io, xx1->cnum, pos1, pos1+len1, ol1, NULL);
+
+    memcpy(cons0, ol0, len0+1);
+    memcpy(cons1, ol1, len1+1);
+
+    /* Strip the pads from the consensus */
+    depad_seq(ol0, &len0, depad_to_pad0);
+    depad_seq(ol1, &len1, depad_to_pad1);
+
+    if (NULL == (overlap = create_overlap())) return -1;
+    init_overlap (overlap, ol0, ol1, len0, len1);
+
+    if(-1 == (ierr =  align_contigs (overlap, fixed_left, fixed_right))) {
+	xfree(ol0);
+	xfree(ol1);
+	destroy_overlap(overlap);
+	return -1;
+    }
+
+    /*
+    overlap->seq1_out[overlap->right+1] = 0;
+    overlap->seq2_out[overlap->right+1] = 0;
+    */
+
+    S = res = rsalign2myers(overlap->seq1_out, strlen(overlap->seq1_out),
+			    overlap->seq2_out, strlen(overlap->seq2_out),
+			    PAD_SYM);
+
+    /* Clip left end */
+    if (*S != 0) {
+	/* Pad at start, so shift contigs */
+	if (*S < 0) {
+	    left0 = -*S; /* used for display only */
+	    depad_to_pad0 += -*S;
+	    off0 = depad_to_pad0[0];
+	    xx1->displayPos -= off0;
+	    pos0 += off0;
+	    len0 -= -*S;
+	} else {
+	    left1 = *S; /* used for display only */
+	    depad_to_pad1 += *S;
+	    off1 = depad_to_pad1[0];
+	    xx0->displayPos -= off1;
+	    pos1 += off1;
+	    len1 -= *S;
+	}
+	S++;
+	xx0->link->lockOffset = xx1->displayPos - xx0->displayPos;
+    }
+
+    /* Clip right end */
+    {
+	int pos0 = 0, pos1 = 0;
+	int *s = S;
+
+	while (pos0 < len0 && pos1 < len1) {
+	    if (*s < 0) {
+		pos0 -= *s;
+	    } else if (*s > 0) {
+		pos1 += *s;
+	    } else {
+		pos0++;
+		pos1++;
+	    }
+
+	    s++;
+	}
+
+	if (*s < 0)
+	    len0 += *s;
+	else if (*s > 0)
+	    len1 -= *s;
+    }
+
+    /* Display the alignment. */
+    {
+	char *exp0, *exp1;
+	int exp_len0, exp_len1;
+	char name0[100];
+	char name1[100];
+
+	exp0 = (char *) xmalloc(len0+len1+1);
+	exp1 = (char *) xmalloc(len0+len1+1);
+
+	sprintf(name0, "%d", xx0->cnum);
+	sprintf(name1, "%d", xx1->cnum);
+	cexpand(ol0+left0, ol1+left1, len0, len1,
+		exp0, exp1, &exp_len0, &exp_len1, 
+		ALIGN_J_SSH | ALIGN_J_PADS, S);
+	list_alignment(exp0, exp1, name0, name1, pos0, pos1, "");
+
+	xfree(exp0);
+	xfree(exp1);
+    }
+
+    /*************************************************************************/
+    /* Now actually make the edits, keeping track of old and new pads. */
+    {
+	int depad_pos0 = 0, depad_pos1 = 0;
+	int curr_pad0;  /* Current padded position in seq 0 */
+	int curr_pad1;  /* Current padded position in seq 1 */
+	int extra_pads; /* Difference between padded positions */
+	int last_pad0 = -1;
+	int last_pad1 = -1;
+	int inserted_bases0 = 0;
+	int inserted_bases1 = 0;
+
+
+	while (depad_pos0 < len0 && depad_pos1 < len1) {
+	    if (*S < 0) {
+		depad_pos0 -= *S;
+	    } else if (*S > 0) {
+		depad_pos1 += *S;
+	    }
+
+	    if (depad_pos0 >= len0 || depad_pos1 >= len1)
+		break;
+
+	    curr_pad0 = depad_to_pad0[depad_pos0]-off0;
+	    curr_pad1 = depad_to_pad1[depad_pos1]-off1;
+
+	    extra_pads = (curr_pad1 - last_pad1) - (curr_pad0 - last_pad0);
+
+	    if (extra_pads < 0) { /* Add to seq 0 */
+		add_pads(xx1, pos1 + curr_pad1 + inserted_bases1, -extra_pads);
+		inserted_bases1 -= extra_pads;
+	    } else if (extra_pads > 0) { /* Add to seq 1 */
+		add_pads(xx0, pos0 + curr_pad0 + inserted_bases0,  extra_pads);
+		inserted_bases0 += extra_pads;
+	    }
+	    
+	    last_pad0 = curr_pad0;
+	    last_pad1 = curr_pad1;
+
+	    if (*S == 0) {
+		depad_pos0++;
+		depad_pos1++;
+	    }
+
+	    S++;
+	}
+    }
+    /*************************************************************************/
+
+    xfree(res);
+    xfree(ol0);
+    xfree(ol1);
+    xfree(dp0);
+    xfree(dp1);
+    destroy_overlap(overlap);
+
+    return 0;
+}
+
+/*
+ * Handles the align button in the join editor
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
+    int left0,right0;
+    int left1/*,right1*/;
+    int length0,length1;
+    int offset, ret;
+    int overlapLength;
+    int len0,len1;
+    int xx0_dp, xx1_dp;
+    edview **xx2;
+
+    int l0, l1, r0, r1; /* contig used extents */
+
+    if (!xx->link)
+	return -1;
+    xx2 = xx->link->xx;
+    offset = xx2[1]->displayPos - xx2[0]->displayPos;
+
+    /* Compute overlap position and sizes */
+    consensus_valid_range(xx2[0]->io, xx2[0]->cnum, &l0, &r0);
+    consensus_valid_range(xx2[1]->io, xx2[1]->cnum, &l1, &r1);
+    length0 = r0-l0+1;
+    length1 = r1-l1+1;
+
+    if (offset < 0) {
+	/* -------------
+	 *         |||||
+	 *         --------------
+	 */
+	left0 = l0-offset;
+	left1 = l1;
+	if (fixed_left) {
+	    int d = xx2[1]->cursor_apos - l0;
+	    left0 += d;
+	    left1 += d;
+	}
+    } else {
+	/*         --------------
+	 *         |||||
+	 * -------------
+	 */
+	left0 = l0;
+	left1 = 11+offset;
+	if (fixed_left) {
+	    int d = xx2[0]->cursor_apos - l0;
+	    left0 += d;
+	    left1 += d;
+	}
+    }
+
+    if (fixed_right) {
+	length0 = xx2[0]->cursor_apos;
+	length1 = xx2[1]->cursor_apos;
+    }
+
+
+    if (offset+length0 < length1) {
+	right0 = length0;
+    } else {
+	right0 = length1-offset;
+    }
+    overlapLength = right0 - left0+1;
+    if (overlapLength <= 0) return -1;
+
+    len0 = len1 = overlapLength;
+
+    /* Add on extra data either end to allow for padding */
+#define XTRA_PERC 0.30
+    if (!fixed_left) {
+	left0 -= (int)(overlapLength * XTRA_PERC);
+	left1 -= (int)(overlapLength * XTRA_PERC);
+	len0  += (int)(overlapLength * XTRA_PERC);
+	len1  += (int)(overlapLength * XTRA_PERC);
+    }
+    if (!fixed_right) {
+	len0  += (int)(overlapLength * XTRA_PERC);
+	len1  += (int)(overlapLength * XTRA_PERC);
+    }
+
+    xx0_dp = xx2[0]->displayPos;
+    xx1_dp = xx2[1]->displayPos;
+
+    if (left0 < 1 && left1 < 1) {
+	xx2[0]->displayPos += MAX(left0, left1)-1;
+	xx2[1]->displayPos += MAX(left0, left1)-1;
+    }
+    if (left0 < 1) {
+	len0 -= 1-left0;
+	xx2[0]->displayPos += 1-left0;
+	left0 = 1;
+    }
+
+    if (left1 < 1) {
+	len1 -= 1-left1;
+	xx2[1]->displayPos += 1-left1;
+	left1 = 1;
+    }
+
+    if (len0 > length0 - left0 + 1) {
+	len0 = length0 - left0 + 1;
+    }
+    if (len1 > length1 - left1 + 1) {
+	len1 = length1 - left1 + 1;
+    }
+
+    if (len0 <= 0 || len1 <= 0)
+	return -1;
+
+    xx->link->lockOffset = xx2[1]->displayPos - xx2[0]->displayPos;
+
+    /* Do the actual alignment */
+    ret = align(xx2[0], left0, len0, xx2[1], left1, len1,
+		fixed_left, fixed_right);
+
+    if (ret) {
+	/* Alignment failed - put back display positions before returning */
+	xx2[0]->displayPos = xx0_dp;
+	xx2[1]->displayPos = xx1_dp;
+    } else {
+	if (xx0_dp != xx2[0]->displayPos) {
+	    xx2[0]->displayPos = xx0_dp;
+	}
+
+	if (xx1_dp != xx2[1]->displayPos) {
+	    xx2[1]->displayPos = xx1_dp;
+	}
+    }
+
+    xx2[0]->refresh_flags = ED_DISP_ALL;
+    edview_redraw(xx2[0]);
+
+    xx2[1]->refresh_flags = ED_DISP_ALL;
+    edview_redraw(xx2[1]);
+
+    return ret;
+}

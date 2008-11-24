@@ -37,6 +37,7 @@ TGAP_LIB=-ltgap
 #	$(GAP4BIN)/contig_editor.o
 CEDITOR = \
 	$(GAP4BIN)/editor_view.o \
+	$(GAP4BIN)/editor_join.o \
 	$(GAP4BIN)/tkEdNames.o\
 	$(GAP4BIN)/tkEditor.o\
 	$(GAP4BIN)/tman_interface.o\
