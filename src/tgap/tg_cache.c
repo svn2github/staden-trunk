@@ -678,6 +678,7 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 		       ArrayBase(GBinTrack, ob->track),
 		       ArrayMax(ob->track) * sizeof(GBinTrack));
 	    }
+	    break;
 	}
 
 	case GT_Track: {
@@ -691,6 +692,7 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 		       ArrayBase(char, ob->data),
 		       ArrayMax(ob->data) * nb->item_size);
 	    }
+	    break;
 	}
 	}
     }
