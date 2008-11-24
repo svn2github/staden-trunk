@@ -15,38 +15,11 @@
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
 #include "gap4_compat.h"
+#include "editor_view.h"
 
 static int counter;
 static int counter_max;
 static mobj_fij *global_match;
-
-/* FIXME: move to another file */
-/*
- * A C interface to the edit_contig and join_contig Tcl functions.
- */
-int edit_contig(GapIO *io, int cnum, int rnum, int pos) {
-    char cmd[1024];
-
-    sprintf(cmd, "edit_contig -io %s -contig %d -reading %d -pos %d\n",
-	    io_obj_as_string(io), cnum, rnum, pos);
-    return Tcl_Eval(GetInterp(), cmd);
-}
-
-int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]) {
-    char cmd[1024];
-    int ret;
-
-    sprintf(cmd, "join_contig -io %s -contig1 %d -reading1 %d -pos1 %d "
-	    "-contig2 %d -reading2 %d -pos2 %d",
-	    io_obj_as_string(io),
-	    cnum[0], rnum[0], pos[0],
-	    cnum[1], rnum[1], pos[1]);
-    ret = Tcl_Eval(GetInterp(), cmd);
-    if (ret != TCL_OK) {
-	fprintf(stderr, "%s\n", Tcl_GetStringResult(GetInterp()));
-    }
-    return ret;
-}
 
 void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		      mobj_fij *fij) {
@@ -98,7 +71,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	    break;
 	}
 
-	case -3: /* default */
+	case -2: /* default */
         case 3: /* Invoke join editor */ {
 	    int cnum[2], llino[2], pos[2];
 
@@ -143,10 +116,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 
 	    llino[0] = io_clnbr(fij->io, cnum[0]);
 	    llino[1] = io_clnbr(fij->io, cnum[1]);
-	    /*
-	    join_contig(GetInterp(), fij->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff);
-	    */
+
 	    join_contig(fij->io, cnum, llino, pos);
 	    break;
 	}
@@ -162,18 +132,11 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 		     obj->pos1 >= io_clength(fij->io, ABS(obj->c1)) ||
 		     obj->pos2 >= io_clength(fij->io, ABS(obj->c2))) ? 1 : 0;
 
-	    /*
-	    edit_contig(GetInterp(), fij->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, reveal, NULL);
-	    */
 	    edit_contig(fij->io, cnum, llino, pos);
+
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(fij->io, cnum);
 	    pos   = obj->pos2;
-	    /*
-	    edit_contig(GetInterp(), fij->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, reveal, NULL);
-	    */
 	    edit_contig(fij->io, cnum, llino, pos);
 	    break;
 	}

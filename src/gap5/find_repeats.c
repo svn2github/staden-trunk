@@ -12,6 +12,7 @@
 #include "consen.h"
 #include "gap_hash.h"
 #include "gap4_compat.h"
+#include "editor_view.h"
 
 /*
  * Match callback.
@@ -106,10 +107,7 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	    llino[0] = io_clnbr(repeat->io, cnum[0]);
 	    llino[1] = io_clnbr(repeat->io, cnum[1]);
 
-	    /*
-	    join_contig(GetInterp(), repeat->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff);
-	    */
+	    join_contig(repeat->io, cnum, llino, pos);
 	    break;
 	}
 
@@ -119,17 +117,12 @@ void *repeat_obj_func(int job, void *jdata, obj_match *obj,
 	    cnum  = ABS(obj->c1);
 	    llino = io_clnbr(repeat->io, cnum);
 	    pos   = obj->pos1;
-	    /*
-	    edit_contig(GetInterp(), repeat->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0, NULL);
-	    */
+	    edit_contig(repeat->io, cnum, llino, pos);
+    
 	    cnum  = ABS(obj->c2);
 	    llino = io_clnbr(repeat->io, cnum);
 	    pos   = obj->pos2;
-	    /*
-	    edit_contig(GetInterp(), repeat->io, cnum, llino, pos,
-			consensus_cutoff, quality_cutoff, 0, NULL);
-	    */
+	    edit_contig(repeat->io, cnum, llino, pos);
 	    break;
 	}
 
