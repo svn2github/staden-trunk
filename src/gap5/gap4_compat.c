@@ -7,6 +7,7 @@
 #include "gap4_compat.h"
 #include "misc.h"
 #include "io_utils.h"
+#include "consensus.h"
 
 #define unimp(m) (printf("%s(): unimplemented function\n", #m), -1)
 #define outmoded(m) printf("%s(): outmoded concept\n", #m);
@@ -17,7 +18,10 @@
  * functions, so we can replace them easily here.
  */
 
-/* Contig length */
+/*
+ * Contig length, but not quite in the tradtional 1..length sense of Gap4.
+ * Rather this is end-start+1 as start can be anywhere.
+ */
 int io_clength(GapIO *io, int cnum) {
     contig_t *c;
 
@@ -430,17 +434,17 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
 			  &(*rargv)[j].start,
 			  &(*rargv)[j].end)) {
 	    case 1:
-		(*rargv)[j].end = 0;
+		(*rargv)[j].end = INT_MAX;
 		break;
 	    case 0:
 	    case -1:
-		(*rargv)[j].start = 1;
-		(*rargv)[j].end = 0;
+		(*rargv)[j].start = INT_MAX;
+		(*rargv)[j].end = INT_MAX;
 	    }
 	} else {
 	    *p = 0;
-	    (*rargv)[j].start = 1;
-	    (*rargv)[j].end = 0;
+	    (*rargv)[j].start = INT_MAX;
+	    (*rargv)[j].end = INT_MAX;
 	}
 
 	/* If identifier is #num, then translation is trivial */
@@ -498,8 +502,16 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
 
     /* Set ranges */
     for (j=0; j<listArgc; j++) {
-	if ((*rargv)[j].end == 0)
-	    (*rargv)[j].end = ABS(io_clength(io, (*rargv)[j].contig));
+	int st, en;
+	if ((*rargv)[j].end == INT_MAX || (*rargv)[j].start == INT_MAX)
+	    consensus_valid_range(io, (*rargv)[j].contig,
+				  (*rargv)[j].start == INT_MAX ? &st : NULL,
+				  (*rargv)[j].end   == INT_MAX ? &en : NULL);
+	if ((*rargv)[j].start == INT_MAX)
+	    (*rargv)[j].start = st;
+
+	if ((*rargv)[j].end == INT_MAX)
+	    (*rargv)[j].end = en;
     }
 
     /* Check for failures */
