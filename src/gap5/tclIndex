@@ -54,6 +54,7 @@ set auto_index(consistency_zoom) [list source [file join $dir consistency_displa
 set auto_index(update_geom) [list source [file join $dir consistency_display.tcl]]
 
 set auto_index(edit_contig) [list source [file join $dir contig_editor.tcl]]
+set auto_index(join_contig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(create_editor) [list source [file join $dir contig_editor.tcl]]
 set auto_index(EditContig) [list source [file join $dir contig_editor.tcl]]
 set auto_index(JoinContig) [list source [file join $dir contig_editor.tcl]]
