@@ -356,3 +356,56 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 
     return 0;
 }
+
+
+/*
+ * Finds the portion of a contig that has non-clipped data.
+ * This is a somewhat crude method by just computing consensus at the ends
+ * and trimming back the zero-depth regions.
+ *
+ * Specify start and end as pointers for the results. Passing over NULL
+ * indicates that you are not interested in that end.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+#define CONS_SZ 1024
+int consensus_valid_range(GapIO *io, int contig, int *start, int *end) {
+    consensus_t cons[CONS_SZ];
+    signed int pos, i;
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, contig);
+    if (!c)
+	return -1;
+
+    if (start) {
+	pos = contig_get_start(&c);
+	do {
+	    if (-1 == calculate_consensus_bit(io, contig,
+					      pos, pos+CONS_SZ-1, &cons))
+		return -1;
+	    for (i = 0; i < CONS_SZ; i++, pos++) {
+		if (cons[i].depth)
+		    break;
+	    }
+	} while (i == CONS_SZ);
+
+	*start = pos;
+    }
+
+    if (end) {
+	pos = contig_get_end(&c);
+	do {
+	    if (-1 == calculate_consensus_bit(io, contig,
+					      pos-(CONS_SZ-1), pos, &cons))
+		return -1;
+	    for (i = CONS_SZ-1; i >= 0; i--, pos--) {
+		if (cons[i].depth)
+		    break;
+	    }
+	} while (i == 0);
+
+	*end = pos;
+    }
+
+    return 0;
+}

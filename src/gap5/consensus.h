@@ -52,4 +52,17 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 int calculate_consensus(GapIO *io, int contig, int start, int end,
 			consensus_t *cons);
 
+/*
+ * Finds the portion of a contig that has non-clipped data.
+ * This is a somewhat crude method by just computing consensus at the ends
+ * and trimming back the zero-depth regions.
+ *
+ * Specify start and end as pointers for the results. Passing over NULL
+ * indicates that you are not interested in that end.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+int consensus_valid_range(GapIO *io, int contig, int *start, int *end);
+
 #endif /* _CONSENSUS_H_ */
