@@ -37,6 +37,7 @@ typedef struct {
     int display_differences; /* 0 = no, 1, 2, 3 = display modes */
     int display_differences_case;
     int display_differences_qual;
+    int consensus_at_top; /* 0 => normal, 1 => flipped for join editor */
 } Editor;
 
 #define TKSHEET(ed)   ((tkSheet *)(ed))
