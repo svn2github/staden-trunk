@@ -178,6 +178,9 @@ static Tk_ConfigSpec configSpecs[] = {
          "-display_differences_quality", "displayDifferencesQuality",
          "DisplayDifferencesQuality",
          "0", offset(display_differences_qual), 0, NULL},
+    {TK_CONFIG_INT,
+         "-consensus_at_top", "consensusAtTop", "ConsensusAtTop",
+         "0", offset(consensus_at_top), 0, NULL},
     {TK_CONFIG_BOOLEAN,
          "-differences_case_sensitive", "differencesCaseSensitive",
          "DifferencesCaseSensitive",
@@ -212,9 +215,9 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
     Tcl_Obj *io_str;
     Tk_Window tkwin = ed->sw.tkwin;
 
-    if (argc != 5) {
+    if (argc != 7) {
 	Tcl_AppendResult(interp, "wrong # args: should be \"",
-			 argv[0], " init io contig_num name_pathane\"",
+			 argv[0], " init io contig_num cursor_rec cursor_pos name_path\"",
 			 (char *) NULL);
 	return TCL_ERROR;
     }
@@ -228,12 +231,12 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
 	return TCL_ERROR;
 
     /* Obtain seq and name sheet widget from the window pathnames */
-    if (0 == Tcl_GetCommandInfo(interp, argv[4], &cmdinfo)) {
+    if (0 == Tcl_GetCommandInfo(interp, argv[6], &cmdinfo)) {
 	return TCL_ERROR;
     }
     name_sheet = (edNames *)cmdinfo.clientData;
 
-    xx = edview_new(io, atoi(argv[3]),
+    xx = edview_new(io, atoi(argv[3]), atoi(argv[4]), atoi(argv[5]),
 		    ed, name_sheet,
 		    NULL);
     if (!xx) {
@@ -243,7 +246,7 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
     strncpy(xx->seq_win,  Tk_PathName(tkwin), WIN_NAME_SIZE);
     strncpy(xx->name_win, argv[4], WIN_NAME_SIZE);
     xx->interp = interp;
-	
+    
     ed->xx = xx;
     name_sheet->xx = xx;
     return TCL_OK;
@@ -380,7 +383,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"display_trace", "delete_trace", "trace_scroll", "save",
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
-	"get_template_seqs", "edits_made",
+	"get_template_seqs", "edits_made", "link_to",    "lock",
+	"join_align",
 	NULL
     };
     enum options {
@@ -390,7 +394,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_DISPLAY_TRACE,  _DELETE_TRACE,  _TRACE_SCROLL,  _SAVE,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
-	_GET_TEMPLATE_SEQS, _EDITS_MADE,
+	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
+	_JOIN_ALIGN,
     };
 
     if (argc < 2) {
@@ -576,11 +581,17 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     /* Cursor movement operations */
     case _CURSOR_UP:
-	edCursorUp(ed->xx);
+	if (xx->ed->consensus_at_top)
+	    edCursorUp(ed->xx);
+	else
+	    edCursorDown(ed->xx);
 	break;
 
     case _CURSOR_DOWN:
-	edCursorDown(ed->xx);
+	if (xx->ed->consensus_at_top)
+	    edCursorDown(ed->xx);
+	else
+	    edCursorUp(ed->xx);
 	break;
 
     case _CURSOR_LEFT:
@@ -686,6 +697,79 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 	Tcl_SetResult(interp, dstring_str(ds), TCL_VOLATILE);
 	dstring_destroy(ds);
+	break;
+    }
+
+    case _LINK_TO: {
+	Editor *ed1 = ed, *ed2;
+	tkSheet *diffs;
+	Tcl_CmdInfo cmdinfo;
+	
+	if (argc != 4) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " link_to ed2 diffs.\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (0 == Tcl_GetCommandInfo(interp, argv[2], &cmdinfo)) {
+	    return TCL_ERROR;
+	}
+	ed2 = (Editor *)cmdinfo.clientData;
+	
+	if (0 == Tcl_GetCommandInfo(interp, argv[3], &cmdinfo)) {
+	    return TCL_ERROR;
+	}
+	diffs = (tkSheet *)cmdinfo.clientData;
+
+	if (NULL == (ed1->xx->link = (EdLink *)malloc(sizeof(EdLink))))
+	    return TCL_ERROR;
+	ed2->xx->link = ed1->xx->link;
+	ed1->xx->link->xx[0] = ed1->xx;
+	ed1->xx->link->xx[1] = ed2->xx;
+	ed1->xx->link->diffs = diffs;
+	ed1->xx->link->locked = 1;
+	ed1->xx->link->lockOffset = ed2->xx->displayPos - ed1->xx->displayPos;
+	
+	break;
+    }
+
+    case _LOCK: {
+	int val;
+	if (argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " lock value\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	Tcl_GetInt(interp, argv[2], &val);
+	if (ed->xx->link) {
+	    ed->xx->link->locked = val;
+	    ed->xx->link->lockOffset = ed->xx->link->xx[1]->displayPos
+		- ed->xx->link->xx[0]->displayPos;
+	}
+	break;
+    }
+
+    case _JOIN_ALIGN: {
+	int fixed_left = 0;
+	int fixed_right = 0;
+	if (argc != 4 && argc != 2) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " join_align ?fixed_left fixed_right?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+	if (argc == 4) {
+	    Tcl_GetInt(interp, argv[2], &fixed_left);
+	    Tcl_GetInt(interp, argv[3], &fixed_right);
+	}
+
+	result = (0 == edJoinAlign(ed->xx, fixed_left, fixed_right))
+	    ? TCL_OK
+	    : TCL_ERROR;
+	break;
     }
     }
 
