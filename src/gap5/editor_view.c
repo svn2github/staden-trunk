@@ -13,9 +13,36 @@
 #include "consensus.h"
 
 /*
+ * A C interface to the edit_contig and join_contig Tcl functions.
+ */
+int edit_contig(GapIO *io, int cnum, int rnum, int pos) {
+    char cmd[1024];
+
+    sprintf(cmd, "edit_contig -io %s -contig %d -reading %d -pos %d\n",
+	    io_obj_as_string(io), cnum, rnum, pos);
+    return Tcl_Eval(GetInterp(), cmd);
+}
+
+int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]) {
+    char cmd[1024];
+    int ret;
+
+    sprintf(cmd, "join_contig -io %s -contig %d -reading %d -pos %d "
+	    "-contig2 %d -reading2 %d -pos2 %d",
+	    io_obj_as_string(io),
+	    cnum[0], rnum[0], pos[0],
+	    cnum[1], rnum[1], pos[1]);
+    ret = Tcl_Eval(GetInterp(), cmd);
+    if (ret != TCL_OK) {
+	fprintf(stderr, "%s\n", Tcl_GetStringResult(GetInterp()));
+    }
+    return ret;
+}
+
+/*
  * Allocates and initialises a new edview
  */
-edview *edview_new(GapIO *io, int contig,
+edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 		   Editor *ed, edNames *names,
 		   void (*dispFunc)(void *, int, int, int, void *))
 {
@@ -35,7 +62,6 @@ edview *edview_new(GapIO *io, int contig,
     cache_incr(xx->io, xx->contig);
 
     xx->ed = ed;
-    xx->displayPos = 1;
     xx->displayYPos = 0;
     xx->displayWidth = xx->ed->sw.columns;
     xx->displayHeight = xx->ed->sw.rows;
@@ -50,12 +76,19 @@ edview *edview_new(GapIO *io, int contig,
     xx->names = names;
     xx->names_xPos = 0;
 
-    xx->cursor_type = GT_Contig;
-    xx->cursor_rec  = contig;
-    xx->cursor_pos  = xx->displayPos;
-    xx->cursor_apos = xx->displayPos;
+    xx->cursor_pos  = cpos;
+    xx->cursor_type = (xx->cursor_rec == 0 || xx->cursor_rec == contig)
+	? GT_Contig : GT_Seq;
+    xx->cursor_rec  = crec ? crec : contig;
+    edSetApos(xx);
+    xx->displayPos = xx->cursor_apos;
 
     xx->trace_lock = 1;
+
+    if (!xx->ed->consensus_at_top) {
+	xx->ed->sw.yflip = 1;
+	xx->names->sw.yflip = 1;
+    }
 
     return xx;
 }
@@ -277,7 +310,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'A':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[0]));
 		else {
@@ -292,7 +325,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'C':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[1]));
 		else {
@@ -307,7 +340,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'G':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[2]));
 		else {
@@ -322,7 +355,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'T':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, &q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[3]));
 		else {
@@ -558,92 +591,6 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
 }
 
 /*
- * Compute a basic non-weighted consensus. We simply pick the basecall
- * most frequently used.
- *
- * FIXME: use a weighted sum based on confidence values instead?
- */
-int calc_cons(GapIO *io, rangec_t *r, int nr, int xpos, int wid,
-	      char *cons) {
-    int i, j;
-    int (*cvec)[6] = (int (*)[6])calloc(wid, 6 * sizeof(int));
-
-    if (!lookup_done) {
-	memset(lookup, 5, 256);
-	lookup_done = 1;
-	lookup['A'] = lookup['a'] = 0;
-	lookup['C'] = lookup['c'] = 1;
-	lookup['G'] = lookup['g'] = 2;
-	lookup['T'] = lookup['t'] = 3;
-	lookup['*'] = lookup[','] = 4;
-    }
-
-    /* Accumulate */
-    for (i = 0; i < nr; i++) {
-	int sp = r[i].start;
-	seq_t *s = get_seq(io, r[i].rec);
-	seq_t *sorig = s;
-	int l = s->len > 0 ? s->len : -s->len;
-	unsigned char *seq;
-	int left, right;
-
-	/* Complement data on-the-fly */
-	if ((s->len < 0) ^ r[i].comp) {
-	    s = dup_seq(s);
-	    complement_seq_t(s);
-	}
-
-	if (s->len < 0) {
-	    sp += s->len+1;
-	}
-
-	seq = (unsigned char *)s->seq;
-	left = s->left;
-	right = s->right;
-
-	if (sp < xpos) {
-	    seq   += xpos - sp;
-	    l     -= xpos - sp;
-	    left  -= xpos - sp;
-	    right -= xpos - sp;
-	    sp = xpos;
-	}
-	if (l > wid - (sp-xpos))
-	    l = wid - (sp-xpos);
-	if (left < 1)
-	    left = 1;
-
-	for (j = left-1; j < right; j++) {
-	    if (sp-xpos+j < wid)
-		cvec[sp-xpos+j][lookup[seq[j]]]++;
-	}
-	cache_decr(io, sorig);
-
-	if (s != sorig)
-	    free(s);
-    }
-
-    memset(cons, ' ', wid);
-
-    /* and speculate :-) */
-    for (i = 0; i < wid; i++) {
-	int max, max_base = 5;
-	for (max = j = 0; j < 6; j++) {
-	    if (max < cvec[i][j]) {
-		max = cvec[i][j];
-		max_base = j;
-	    }
-	}
-	cons[i] = "ACGT*N"[max_base];
-    }
-
-    free(cvec);
-
-    return 0;
-
-}
-
-/*
  * Given an X,Y coordinate return the reading id under this position.
  *
  * Returns record number on success
@@ -671,6 +618,8 @@ static int sort_range(const void *v1, const void *v2) {
 static int ed_set_xslider_pos(edview *xx, int offset) {
     char buf[100];
     double len = contig_get_length(&xx->contig);
+
+    offset -= contig_get_start(&xx->contig);
 
     sprintf(buf, " %.20f %.20f",
 	    offset / len,
@@ -917,11 +866,6 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
     XawSheetPutText(&xx->names->sw, 0, xx->y_cons, strlen(name), name);
 
     /* Editor panel */
-    //calc_cons(xx->io, r, nr, pos, wid, xx->displayedConsensus);
-    /*
-    calculate_consensus_simple(xx->io, xx->cnum, pos, pos+wid,
-			       xx->displayedConsensus, xx->displayedQual);
-    */
 
     calculate_consensus(xx->io, xx->cnum, pos, pos+wid, xx->cachedConsensus);
     for (i = 0; i < wid; i++) {
@@ -946,6 +890,33 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 	XawSheetPutText(&xx->ed->sw, 0, xx->y_cons, wid,
 			xx->displayedConsensus);
     }
+}
+
+/*
+ * Returns the other editor in a join-editor pair.
+ *         NULL if not joined.
+ */
+edview *linked_editor(edview *xx) {
+    if (!xx->link)
+	return NULL;
+    return xx->link->xx[0] == xx ? xx->link->xx[1] : xx->link->xx[0];
+}
+
+static int tk_redisplaySeqDiffs(edview *xx) {
+    char diff[MAX_DISPLAY_WIDTH+1];
+    edview *xx0, *xx1;
+    int i;
+
+    xx0 = xx->link->xx[0];
+    xx1 = xx->link->xx[1];
+
+    for (i = 0; i < xx->displayWidth; i++) {
+	diff[i] = xx0->displayedConsensus[i] == xx1->displayedConsensus[i]
+	    ? ' ' : '!';
+    }
+    XawSheetPutText(&xx->link->diffs->sw, 0, 0,
+		    xx->displayWidth, diff);
+    return 0;
 }
 
 /*
@@ -1142,11 +1113,11 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
     if (!x_safe) {
 	int w = xx->displayWidth > 10 ? 10 : xx->displayWidth;
 	if (xx->cursor_apos < xx->displayPos) {
-	    xx->displayPos = xx->cursor_apos + 1 - w;
+	    set_displayPos(xx, xx->cursor_apos + 1 - w);
 	    do_x = 1;
 	}
 	if (xx->cursor_apos >= xx->displayPos + xx->displayWidth) {
-	    xx->displayPos = xx->cursor_apos - xx->displayWidth + w;
+	    set_displayPos(xx, xx->cursor_apos - xx->displayWidth + w);
 	    do_x = 1;
 	}
     }
@@ -1205,13 +1176,37 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 
 int set_displayPos(edview *xx, int pos) {
     char buf[100];
-    xx->displayPos = pos;
+    int i, ret = 0;
+    int delta = pos - xx->displayPos;
+    edview *xx2[2];
 
-    sprintf(buf, "%d", pos);
-    Tcl_SetVar2(xx->interp, xx->edname, "displayPos", buf, TCL_GLOBAL_ONLY);
+    if (xx->link && xx->link->locked)
+	xx = xx->link->xx[0];
 
-    xx->refresh_flags = ED_DISP_XSCROLL;
-    return edview_redraw(xx);
+    for (i = 0; i < 2; i++) {
+	xx2[i] = xx;
+
+	if (!xx)
+	    break;
+
+	xx->displayPos += delta;
+
+	sprintf(buf, "%d", pos);
+	Tcl_SetVar2(xx->interp, xx->edname, "displayPos", buf,
+		    TCL_GLOBAL_ONLY);
+
+	xx->refresh_flags = ED_DISP_XSCROLL;
+	if (i == 1)
+	    xx->refresh_flags |= ED_DISP_NO_DIFFS;
+
+	xx = (xx->link && xx->link->locked)
+	    ? xx->link->xx[1] : NULL;
+    }
+
+    if (xx2[1]) ret |= edview_redraw(xx2[1]);
+    if (xx2[0]) ret |= edview_redraw(xx2[0]);
+
+    return ret;
 }
 
 /*
@@ -1572,6 +1567,9 @@ int edview_redraw(edview *xx) {
     }
 #endif
 
+    if (inJoinMode(xx) && !(xx->refresh_flags & ED_DISP_NO_DIFFS))
+	tk_redisplaySeqDiffs(xx);
+
     free(r);
 
 #if 0
@@ -1631,7 +1629,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
 }
 
 
-int inJoinMode(edview *xx) {return 0;}
+int inJoinMode(edview *xx) {
+    return xx->link ? 1 : 0;
+}
 
 void edDisplayTrace(edview *xx) {
     seq_t *s;

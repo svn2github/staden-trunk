@@ -28,12 +28,12 @@ proc EditContig {io} {
 proc JoinContig2 {io t id1 id2} {
     if {[set read1 [contig_id_gel $id1]] == ""} return
     if {[set read2 [contig_id_gel $id2]] == ""} return
-    if {[set crec1 [contig_id_rec $id]] == ""} return
-    if {[set crec2 [contig_id_rec $id]] == ""} return
+    if {[set crec1 [contig_id_rec $id1]] == ""} return
+    if {[set crec2 [contig_id_rec $id2]] == ""} return
 
     destroy $t
     join_contig -io $io \
-	-contig1 $crec1 -reading1 $read1 -pos1 1 -contig2 $crec2 -pos2 1
+	-contig $crec1 -reading $read1 -pos 1 -contig2 $crec2 -pos2 1
     SetContigGlobals $io $read1
 }
 
@@ -66,6 +66,11 @@ proc edit_contig {args} {
     eval contig_editor [next_editor] $args
 }
 
+# The top-level interface called from TCL
+proc join_contig {args} {
+    eval contig_editor [next_editor] $args
+}
+
 #-----------------------------------------------------------------------------
 # Internally usable functions.
 #-----------------------------------------------------------------------------
@@ -94,8 +99,6 @@ proc next_editor {} {
 proc contig_editor {w args} {
     upvar \#0 $w opt
 
-    set join 0
-
     # Initialise the $path global array - the instance data for this widget
     foreach {arg val} $args {
 	set opt($arg) $val
@@ -108,8 +111,17 @@ proc contig_editor {w args} {
 
     set opt(-io) [$opt(-io) child]
 
+    set join [info exists opt(-contig2)]
+
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
+    if {![info exists opt(-reading)]} { set opt(-reading) 0 }
+    if {![info exists opt(-pos)]}     { set opt(-pos) 1 }
+    if {$join} {
+	set opt(contig2) $opt(-contig2)
+	if {![info exists opt(-reading2)]} { set opt(-reading2) 0 }
+	if {![info exists opt(-pos2)]}     { set opt(-pos2) 1 }
+    }
 
     # Create the window layout
     if {![winfo exists $w]} {
@@ -136,17 +148,41 @@ proc contig_editor {w args} {
 	-side left
     pack $tool.save -side right
 
+    if {$join} {
+	set opt(Lock) 1; # See default in tkEditor.c link_to command
+	checkbutton $tool.lock \
+	    -variable ${w}(Lock) \
+	    -text Lock \
+	    -command "editor_lock $w"
+	pack $tool.lock -side left
+
+	button $tool.align \
+	    -text Align -padx 2 \
+	    -command "\[set ${w}(curr_editor)\] join_align"
+	button $tool.alignL \
+	    -text "<" -padx 2 \
+	    -command "\[set ${w}(curr_editor)\] join_align 0 1"
+	button $tool.alignR \
+	    -text ">" -padx 2 \
+	    -command "\[set ${w}(curr_editor)\] join_align 1 0"
+	pack $tool.alignL $tool.align $tool.alignR \
+	    -side left -fill both -padx 0
+    }
+
     # The editor(s) itself
     if {$join} {
 	set pane0 $w.ed0
-	set e [editor_pane $w $pane0 1 opt]
+	set e [editor_pane $w $pane0 1 2 opt]
+	set opt(editor2) $e
     }
     set pane1 $w.ed1
-    set e [editor_pane $w $pane1 0 opt]
+    set e [editor_pane $w $pane1 0 "" opt]
+    set opt(editor1) $e
 
     # Difference bar for the join editor
     if {$join} {
 	set diffs [diff_pane $w.diffs]
+	$e link_to $opt(editor2) $diffs.seq.sheet
     }
 
     # The bottom status line
@@ -176,26 +212,18 @@ proc contig_editor {w args} {
     grid $status -sticky nsew -row 4
 
     # Synchronised pane movement
+    set opt(panes) $pane1.pane
     if {$join} {
-	bind $pane0 <ButtonRelease-1> "+sync_panes %W $pane0 $diffs $pane1"
-	bind $diffs <ButtonRelease-1> "+sync_panes %W $pane0 $diffs $pane1"
-	bind $pane1 <ButtonRelease-1> "+sync_panes %W $pane0 $diffs $pane1"
-	bind $pane0 <ButtonRelease-2> "+sync_panes %W $pane0 $diffs $pane1"
-	bind $diffs <ButtonRelease-2> "+sync_panes %W $pane0 $diffs $pane1"
-	bind $pane1 <ButtonRelease-2> "+sync_panes %W $pane0 $diffs $pane1"
-
-	#sync_panes $pane0 $pane0 $diffs $pane1
-    } else {
-	bind $pane1.pane <ButtonPress-1> \
-	    "+global %W.oldx; set %W.oldx \[lindex \[%W sash coord 0\] 0\]"
-	bind $pane1.pane <ButtonPress-2> \
-	    "+global %W.oldx; set %W.oldx \[lindex \[%W sash coord 0\] 0\]"
-	bind $pane1.pane <ButtonRelease-1> "+sync_panes %W 1 $pane1"
-	bind $pane1.pane <ButtonRelease-2> "+sync_panes %W 0 $pane1"
-
-	#bind $pane1.pane <Any-B2-Motion> "+sync_panes %W 0 $pane1"
-	#sync_panes $pane1 $pane1
+	lappend opt(panes) $diffs $pane0.pane
     }
+
+    foreach p $opt(panes) {
+	bind $p <ButtonRelease-1> "+sync_panes %W $w 1 1"
+	bind $p <ButtonRelease-2> "+sync_panes %W $w 0 1"
+
+	bind $p <Any-B2-Motion> "+sync_panes %W $w 0 0"
+    }
+    sync_panes $pane1.pane opt 0 1
 
     # Grid control
     # In theory this should work, but in practice getting the panedwindow
@@ -210,6 +238,12 @@ proc contig_editor {w args} {
 
 
     $e redraw
+}
+
+proc editor_lock {w} {
+    global $w
+    set ed [set ${w}(curr_editor)]
+    $ed lock [set ${w}(Lock)]
 }
 
 proc editor_save {w} {
@@ -255,17 +289,21 @@ proc jog_editor {cmd dist} {
 # Lays out the editor pane, with options of the scrollbars being above or
 # below the editor (used in the join editor).
 # Above indicates whether the scrollbars are above the text panels or below.
-proc editor_pane {top w above arg_array} {
+proc editor_pane {top w above ind arg_array} {
     upvar $arg_array opt
     global gap5_defs
 
     if {$above != 0} {
 	set above 1
-	set textrow 1
-	set scrollrow 0
+	set jogrow 0
+	set scrollrow 1
+	set textrow 2
+	set cattop 0
     } else {
 	set textrow   0
 	set scrollrow 1
+	set jogrow 2
+	set cattop 1
     }
 
     set f $w
@@ -278,21 +316,6 @@ proc editor_pane {top w above arg_array} {
     frame $w.seq -bd 0 -highlightthickness 0
 
     $w add $w.name $w.seq
-
-    # Names panel
-    set edname $w.name.sheet
-    ednames $edname \
-	-width 15 \
-	-height 16 \
-	-xscrollcommand "$w.name.x set" \
-	-bd 0
-    scrollbar $w.name.x -orient horiz
-    grid rowconfigure $w.name $textrow -weight 1
-    grid columnconfigure $w.name 0 -weight 1
-    grid $w.name.sheet -row $textrow   -sticky nsew
-    grid $w.name.x     -row $scrollrow -sticky nsew
-
-    $w.name configure -width [expr {16*[font measure sheet_font A]}]
 
     # Seqs panel
     set ed $w.seq.sheet
@@ -317,20 +340,59 @@ proc editor_pane {top w above arg_array} {
 		-qualcolour7 [keylget gap5_defs CONTIG_EDITOR.QUAL7_COLOUR] \
 		-qualcolour8 [keylget gap5_defs CONTIG_EDITOR.QUAL8_COLOUR] \
 		-qualcolour9 [keylget gap5_defs CONTIG_EDITOR.QUAL9_COLOUR] \
-		-bd 0]
+		-bd 0 \
+	        -consensus_at_top $cattop]
     set opt(curr_editor) $ed
 
+    # X and y scrollbars
     scrollbar $w.seq.x -orient horiz -repeatinterval 30
     scrollbar $w.seq.y -orient vert 
+
+    # Names panel
+    set edname $w.name.sheet
+    ednames $edname \
+	-width 15 \
+	-height 16 \
+	-xscrollcommand "$w.name.x set" \
+	-bd 0
+
+    scrollbar $w.name.x -orient horiz
+
+    entry $w.name.pos \
+	-textvariable ${ed}(displayPos) \
+	-font {Helvetica -12} \
+	-width 15
+    bind $w.name.pos <Return> "editor_goto $ed $w.seq.sheet"
+
+    # The jog control for scrolling the editor
+    set posh [font metrics [$w.name.pos cget -font] -linespace]
+    incr posh -2
+    jog $w.seq.jog \
+	-orient horiz \
+	-command "jog_editor $w.seq.sheet" \
+	-repeatinterval 50 -width $posh
+
+    # Pack it all in the paned window
+    grid rowconfigure $w.name $textrow -weight 1
+    grid columnconfigure $w.name 0 -weight 1
+    grid $w.name.sheet -row $textrow   -sticky nsew
+    grid $w.name.x     -row $scrollrow -sticky nsew
+    grid $w.name.pos   -row $jogrow    -sticky nsew
+
+    $w.name configure -width [expr {16*[font measure sheet_font A]}]
+
     grid rowconfigure $w.seq $textrow -weight 1
     grid columnconfigure $w.seq 0 -weight 1
     grid $w.seq.sheet $w.seq.y -row $textrow   -sticky nsew
     grid $w.seq.x              -row $scrollrow -sticky nsew
+    grid $w.seq.jog            -row $jogrow -sticky nsew
 
     focus $w.seq.sheet
 
     # Initialise with an IO and link name/seq panel together
-    $ed init $opt(-io) $opt(contig) $w.name.sheet
+    puts "$ed init $opt(-io) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet"
+#    $ed init $opt(-io) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet
+    $ed init $opt(-io) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
     global $ed $edname
     set ${ed}(parent) $w
     set ${ed}(top) $top
@@ -347,22 +409,9 @@ proc editor_pane {top w above arg_array} {
     $w.seq.y configure -command "$w.seq.sheet yview"
     $w.name.x configure -command "$w.name.sheet xview"
 
-    # The jog control for scrolling the editor
-    entry $f.pos \
-	-textvariable ${ed}(displayPos) \
-	-font sheet_font \
-	-width 15
-    bind $f.pos <Return> "editor_goto $ed $w.seq.sheet"
-
-    jog $f.jog \
-	-orient horiz \
-	-command "jog_editor $w.seq.sheet" \
-	-repeatinterval 50
-
     grid rowconfigure $f 0 -weight 1
     grid columnconfigure $f 1 -weight 1
     grid $f.pane           -row 0 -columnspan 2 -sticky nsew
-    grid $f.pos $f.jog            -row 1 -sticky nsew
 
     # Force scrollbar to be set to the correct size.
     $w.name.sheet xview moveto 0.0
@@ -374,42 +423,46 @@ proc editor_pane {top w above arg_array} {
 proc diff_pane {w} {
     panedwindow $w -orient horiz -bd 2 -relief sunken
 
-    frame $w.name
-    frame $w.seq
-
-    $w add $w.name $w.seq
-    
+    frame $w.name -bd 0 -highlightthickness 0
     label $w.name.diff -text "Differences"
     pack $w.name.diff
 
+    frame $w.seq -bd 0 -highlightthickness 0
+    sheet $w.seq.sheet
+    pack $w.seq.sheet -fill both -expand 1
+
+    $w add $w.name $w.seq
+    
     return $w
 }
 
 # Synchronises the pane position between a list of panes
-proc sync_panes {w proxy args} {
-    global $w.oldx
-
-    return
+proc sync_panes {w arg_array proxy round} {
+    upvar $arg_array opt
 
     if {[winfo class $w] != "Panedwindow"} {
 	set w $w.pane
     }
 
-    set fs [font measure sheet_font A]
     if {$proxy} {
 	foreach {px y} [$w proxy coord] {}
     } else {
 	foreach {px y} [$w sash coord 0] {}
     }
-    set sx [set $w.oldx]
-    set diff [expr {$fs * (abs($px-$sx) / $fs)}]
 
-    set x [expr {$sx > $px ? $sx - $diff : $sx + $diff}]
+    if {$round} {
+	set fs [font measure sheet_font A]
+	set x [expr {int($px / $fs)*$fs+[$w cget -bd]+[$w cget -sashpad]+3}]
+    } else {
+	set x $px
+    }
 
-    foreach pane $args {
+    foreach pane $opt(panes) {
 	if {[winfo class $pane] != "Panedwindow"} {
 	    set pane $pane.pane
 	}
+
+	if {!$round && $pane == $w} continue
 
 	after idle "$pane sash place 0 $x $y"
     }

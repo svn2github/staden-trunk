@@ -104,9 +104,15 @@ typedef struct _EdLink {
 } EdLink;
 
 /*
+ * A C interface to the edit_contig and join_contig Tcl functions.
+ */
+int edit_contig(GapIO *io, int cnum, int rnum, int pos);
+int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]);
+
+/*
  * Allocates and initialises a new edview
  */
-edview *edview_new(GapIO *io, int contig,
+edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 		   Editor *ed, edNames *names,
 		   void (*dispFunc)(void *, int, int, int, void *));
 
@@ -149,6 +155,7 @@ int edGetGelNumber(edview *xx, int x, int y);
 int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos);
 
 /* Cursor movement control */
+void edSetApos(edview *xx);
 int edSetCursorPos(edview *xx, int type, int rec, int pos);
 int edCursorUp(edview *xx);
 int edCursorDown(edview *xx);
@@ -174,5 +181,12 @@ void edDisplayTrace(edview *xx);
  *         NULL on failure (or zero found)
  */
 int *edGetTemplateReads(edview *xx, int seqrec, int *nrec);
+
+/*
+ * Handles the align button in the join editor
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edJoinAlign(edview *xx, int fixed_left, int fixed_right);
 
 #endif /* _EDITOR_VIEW_H_ */
