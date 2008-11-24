@@ -928,7 +928,7 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
 	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
 	}
 
-	richard_munge_conf(conf);
+	//richard_munge_conf(conf);
 	//rob_munge_conf(conf);
     }
 
