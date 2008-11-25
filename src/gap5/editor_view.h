@@ -189,4 +189,11 @@ int *edGetTemplateReads(edview *xx, int seqrec, int *nrec);
  */
 int edJoinAlign(edview *xx, int fixed_left, int fixed_right);
 
+/*
+ * Perform the actual join process
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edJoin(edview *xx);
+
 #endif /* _EDITOR_VIEW_H_ */

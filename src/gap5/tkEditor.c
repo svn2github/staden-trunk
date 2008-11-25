@@ -384,7 +384,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
-	"join_align",
+	"join_align",	 "join",
 	NULL
     };
     enum options {
@@ -395,7 +395,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
-	_JOIN_ALIGN,
+	_JOIN_ALIGN,     _JOIN
     };
 
     if (argc < 2) {
@@ -771,6 +771,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    : TCL_ERROR;
 	break;
     }
+
+    case _JOIN:
+	result = edJoin(ed->xx) == 0 ? TCL_OK : TCL_ERROR;
+	break;
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

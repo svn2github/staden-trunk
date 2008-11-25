@@ -502,6 +502,8 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	}
     }
 
+    xx->link->lockOffset = xx2[1]->displayPos - xx2[0]->displayPos;
+
     xx2[0]->refresh_flags = ED_DISP_ALL;
     edview_redraw(xx2[0]);
 
@@ -509,4 +511,90 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     edview_redraw(xx2[1]);
 
     return ret;
+}
+
+/*
+ * Perform the actual join process
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edJoin(edview *xx) {
+    /* p=parent contig, l=left contig, r=right contig */
+    contig_t *cl, *cr;
+    GapIO *io = xx->io;
+    bin_index_t *binp, *binl, *binr;
+    int offset, binp_id;
+
+    if (!xx->link)
+	return -1;
+
+    if (xx->link->lockOffset > 0) {
+	cl = xx->link->xx[1]->contig;
+	cr = xx->link->xx[0]->contig;
+	offset = xx->link->lockOffset;
+    } else {
+	cl = xx->link->xx[0]->contig;
+	cr = xx->link->xx[1]->contig;
+	offset = -xx->link->lockOffset;
+    }
+
+    cache_flush(io);
+
+    /* Force joins at the top-level IO */
+    while (io->base)
+	io = io->base;
+
+    /* Object writeable copies of our objects */
+    binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
+    binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
+    binl = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cl));
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
+    cache_incr(io, binp);
+    cache_incr(io, binl);
+    cache_incr(io, binr);
+    cache_incr(io, cl);
+    cache_incr(io, cr);
+
+    cache_rw(io, binp);
+    cache_rw(io, binl);
+    cache_rw(io, binr);
+    cache_rw(io, cl);
+
+    /* Update the contig links */
+    contig_set_bin  (io, &cl, binp_id);
+    contig_set_start(io, &cl, MIN(contig_get_start(&cl),
+				  contig_get_start(&cr)+offset));
+    contig_set_end  (io, &cl, MAX(contig_get_end(&cl),
+				  contig_get_end(&cr)+offset));
+
+    /* Link the new bins together */
+    binp->child[0] = binl->rec;
+    binp->child[1] = binr->rec;
+    binp->pos = MIN(binl->pos, binr->pos + offset);
+    binp->size = MAX(binl->pos+binl->size, binr->pos+binr->size + offset)
+	- binp->pos + 1;
+    binp->flags |= BIN_BIN_UPDATED;
+
+    binl->parent = binp->rec;
+    binl->parent_type = GT_Bin;
+    binl->pos = binl->pos - binp->pos;
+    binl->flags |= BIN_BIN_UPDATED;
+
+    binr->parent = binp->rec;
+    binr->parent_type = GT_Bin;
+    binr->pos = binr->pos - binp->pos + offset;
+    binr->flags |= BIN_BIN_UPDATED;
+
+    cache_decr(io, binp);
+    cache_decr(io, binl);
+    cache_decr(io, binr);
+    cache_decr(io, cl);
+    cache_decr(io, cr);
+
+    /* Destroy the old right contig */
+    printf("Destroy contig rec %d\n", cr->rec);
+
+    cache_flush(io);
+
+    return 0;
 }
