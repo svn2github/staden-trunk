@@ -167,6 +167,9 @@ proc contig_editor {w args} {
 	    -command "\[set ${w}(curr_editor)\] join_align 1 0"
 	pack $tool.alignL $tool.align $tool.alignR \
 	    -side left -fill both -padx 0
+
+	button $tool.join -text Join -command "editor_join $w"
+	pack $tool.join -side right
     }
 
     # The editor(s) itself
@@ -174,10 +177,12 @@ proc contig_editor {w args} {
 	set pane0 $w.ed0
 	set e [editor_pane $w $pane0 1 2 opt]
 	set opt(editor2) $e
+	lappend opt(all_editors) $e
     }
     set pane1 $w.ed1
     set e [editor_pane $w $pane1 0 "" opt]
     set opt(editor1) $e
+    lappend opt(all_editors) $e
 
     # Difference bar for the join editor
     if {$join} {
@@ -247,11 +252,26 @@ proc editor_lock {w} {
 }
 
 proc editor_save {w} {
-    global $w
-    set ed [set ${w}(curr_editor)]
-    if {[$ed save] != 0} {
-	bell
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	if {[$ed save] != 0} {
+	    bell
+	}
     }
+}
+
+proc editor_join {w} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	if {[$ed save] != 0} {
+	    bell
+	    return
+	}
+    }
+
+    $ed join
 }
 
 proc editor_exit {w} {
@@ -483,19 +503,21 @@ proc editor_goto {ed w} {
 proc editor_cutoffs {w} {
     upvar \#0 $w opt
 
-    set ed $opt(curr_editor)
-    $ed configure -display_cutoffs $opt(Cutoffs)
-    $ed redraw
+    foreach ed $opt(all_editors) {
+	$ed configure -display_cutoffs $opt(Cutoffs)
+	$ed redraw
+    }
 }
 
 # Callback for quality button
 proc editor_quality {w} {
     upvar \#0 $w opt
 
-    set ed $opt(curr_editor)
-    $ed configure -display_quality $opt(Quality)
-    $ed configure -display_mapping_quality $opt(Quality)
-    $ed redraw
+    foreach ed $opt(all_editors) {
+	$ed configure -display_quality $opt(Quality)
+	$ed configure -display_mapping_quality $opt(Quality)
+	$ed redraw
+    }
 }
 
 proc editor_disagreements {w} {
@@ -694,7 +716,7 @@ proc editor_move_seq {w where direction} {
 # Updates the editor status line for editor $w.
 # x and y are optional, but if set specify the location to display (eg
 # for mouse motion events).
-proc update_brief {w {x {}} {y {}}} {
+proc update_brief {w {name 0} {x {}} {y {}}} {
     global gap5_defs
     global $w
 
@@ -708,12 +730,22 @@ proc update_brief {w {x {}} {y {}}} {
 	return
     }
 
-    if {$type == 18} {
-	set msg [$w get_seq_status $type $rec $pos \
-		     [keylget gap5_defs BASE_BRIEF_FORMAT1]]
+    if {$name} {
+	if {$type == 18} {
+	    set msg [$w get_seq_status $type $rec $pos \
+			 [keylget gap5_defs READ_BRIEF_FORMAT]]
+	} else {
+	    set msg [$w get_seq_status $type $rec $pos \
+			 [keylget gap5_defs CONTIG_BRIEF_FORMAT]]
+	}
     } else {
-	set msg [$w get_seq_status $type $rec $pos \
-		     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
+	if {$type == 18} {
+	    set msg [$w get_seq_status $type $rec $pos \
+			 [keylget gap5_defs BASE_BRIEF_FORMAT1]]
+	} else {
+	    set msg [$w get_seq_status $type $rec $pos \
+			 [keylget gap5_defs BASE_BRIEF_FORMAT2]]
+	}
     }
 
     set w [set ${w}(top)]
@@ -749,29 +781,9 @@ bind Editor <Any-Enter> {
     focus %W
 }
 
-bind EdNames <Any-Motion> {update_brief [set %W(ed)] @%x @%y}
+bind EdNames <Any-Motion> {update_brief [set %W(ed)] 1 @%x @%y}
 
-bind Editor <Any-Motion> {
-    global gap5_defs
-    global %W
-
-    foreach {type rec pos} [%W get_number @%x @%y] break
-    if {![info exists type]} {
-	return
-    }
-
-    if {$type == 18} {
-	set msg [%W get_seq_status $type $rec $pos \
-		     [keylget gap5_defs BASE_BRIEF_FORMAT1]]
-    } else {
-	set msg [%W get_seq_status $type $rec $pos \
-		     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
-    }
-
-    set w [set %W(top)]
-    global $w
-    set ${w}(Status) $msg
-}
+bind Editor <Any-Motion> {update_brief %W 0 @%x @%y}
 
 # Jump to read-pair
 bind EdNames <3> {
@@ -794,6 +806,11 @@ bind EdNames <3> {
 
 bind Editor <1> {
     focus %W
+    set w [winfo toplevel %W]
+    if {![string match [set ${w}(curr_editor)] %W]} {
+	puts "Change editor"
+	set ${w}(curr_editor) %W
+    }
     set d [%W get_number @%x @%y]
     if {$d == ""} {
 	return
