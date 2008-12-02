@@ -7,7 +7,6 @@
 #include "fort.h"
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
-#include "complement.h"
 #include "find_repeats.h"
 #include "consen.h"
 #include "gap_hash.h"
