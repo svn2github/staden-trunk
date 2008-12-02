@@ -1,8 +1,8 @@
 #ifndef _TG_BIN_H_
 #define _TG_BIN_H_
 
-/* #define MIN_BIN_SIZE 16 */
-#define MIN_BIN_SIZE 256
+/* #define MIN_BIN_SIZE 256 */
+#define MIN_BIN_SIZE 1024
 
 int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type);
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
