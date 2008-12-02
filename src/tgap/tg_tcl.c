@@ -170,7 +170,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case NUM_CONTIGS:
-	vTcl_SetResult(interp, "%d", ArrayMax(io->contig_order)-1);
+	vTcl_SetResult(interp, "%d", io->db->Ncontigs);
 	break;
 
     case SEQ_NAME2REC: {
@@ -759,7 +759,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
     case GET_POSITION: {
 	int rec = ci_ptr(ts->seq)->rec;
 	int cnum, pos;
-	sequence_get_position(ts->io, rec, &cnum, &pos);
+	sequence_get_position(ts->io, rec, &cnum, &pos, NULL);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
 	break;
     }
