@@ -249,6 +249,9 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	return NULL;
     }
 
+    if (!ci)
+	return NULL;
+
     hd.p = ci;
     ci->hi = hi;
 
@@ -446,7 +449,8 @@ int qsort_ci_view(const void *p1, const void *p2) {
     cached_item **c1 = (cached_item **)p1;
     cached_item **c2 = (cached_item **)p2;
 
-    return (*c1)->view - (*c2)->view;
+    /* FIXME: use c2-c1 if lock_file_N is used as it reverses the order */
+    return (*c2)->view - (*c1)->view;
 }
 
 /*
@@ -514,6 +518,9 @@ int cache_flush(GapIO *io) {
     qsort(ArrayBase(cached_item *, to_flush), nflush, sizeof(cached_item *),
 	  qsort_ci_view);
 
+
+    io_database_lock(io->dbh); /* FIXME: should be via iface */
+
     /* Flush them out */
     for (i = 0; i < nflush; i++) {
 	cached_item *ci = arr(cached_item *, to_flush, i);
@@ -556,6 +563,7 @@ int cache_flush(GapIO *io) {
 
     ArrayDestroy(to_flush);
 
+    io_database_unlock(io->dbh); /* FIXME: should be via iface */
     io->iface->commit(io->dbh);
 
     return ret;
