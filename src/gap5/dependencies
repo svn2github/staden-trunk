@@ -3,476 +3,543 @@
 $O/actf.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h $(SRCROOT)/Misc/xalloc.h
 $O/actf.o: $(SRCROOT)/Misc/misc.h actf.h $(SRCROOT)/tk_utils/text_output.h
 $O/actf.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/array.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/actf.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
-$O/actf.o: IO.h
+$O/actf.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/actf.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/actf.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/actf.o: $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/actf.o: $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h
+$O/actf.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h
+$O/actf.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/actf.o: $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/actf.o: IO.h $(SRCROOT)/tgap/tg_gio.h
 $O/actf.o: fort.h $(SRCROOT)/Misc/os.h
 $O/actf.o: io_utils.h
+$O/active_tags.o: $(SRCROOT)/Misc/os.h
 $O/active_tags.o: $(SRCROOT)/Misc/xalloc.h
-$O/active_tags.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/active_tags.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/active_tags.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/bitmap.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/active_tags.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/active_tags.o: $(SRCROOT)/tgap/g-alloc.h
+$O/active_tags.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/active_tags.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/active_tags.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/active_tags.o: $(SRCROOT)/tgap/hache_table.h
+$O/active_tags.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/active_tags.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/active_tags.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/active_tags.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/active_tags.o: list_proc.h io_utils.h
-$O/active_tags.o: IO.h
-$O/active_tags.o: $(SRCROOT)/Misc/array.h
+$O/active_tags.o: IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/active_tags.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/active_tags.o: tagdb.h
+$O/active_tags.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
 $O/active_tags.o: gap-dbstruct.h gap-if.h io_handle.h $(SRCROOT)/Misc/misc.h
-$O/contig_selector.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/consen.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/consen.o: $(SRCROOT)/io_lib/io_lib/mFILE.h $(SRCROOT)/io_lib/io_lib/array.h
+$O/consen.o: $(SRCROOT)/io_lib/io_lib/os.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h consen.h
+$O/consen.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/consen.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
+$O/consen.o: $(SRCROOT)/tgap/g-alloc.h
+$O/consen.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/consen.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/consen.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/consen.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/consen.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/consen.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/consen.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/consen.o: io_utils.h IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/consen.o: gap-if.h io_handle.h $(SRCROOT)/io_lib/io_lib/expFileIO.h
+$O/consen.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/consen.o: list_proc.h extract.h $(SRCROOT)/seq_utils/align_lib.h gap4_compat.h qual.h
+$O/consensus.o: $(SRCROOT)/Misc/xalloc.h
+$O/consensus.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/consensus.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h consensus.h
+$O/consensus.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/consensus.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/consensus.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/consensus.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/consensus.o: $(SRCROOT)/tgap/hache_table.h
+$O/consensus.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/consensus.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/consensus.o: $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
+$O/consensus.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/consensus.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/consensus.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/contig_selector.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
 $O/contig_selector.o: $(SRCROOT)/Misc/xalloc.h io-reg.h cs-object.h newgap_cmds.h list.h
 $O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
-$O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/contig_selector.o: $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/contig_selector.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/contig_selector.o: $(SRCROOT)/tgap/g-alloc.h
+$O/contig_selector.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/contig_selector.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/contig_selector.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/contig_selector.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/contig_selector.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/contig_selector.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/contig_selector.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/contig_selector.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
+$O/contig_selector.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/contig_selector.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
-$O/contig_selector.o: $(SRCROOT)/tk_utils/canvas_box.h IO.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
-$O/contig_selector.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
+$O/contig_selector.o: $(SRCROOT)/tk_utils/canvas_box.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/contig_selector.o: $(SRCROOT)/tk_utils/text_output.h
 $O/contig_selector.o: $(SRCROOT)/Misc/misc.h
+$O/contig_selector.o: $(SRCROOT)/tgap/g-db.h
 $O/contig_selector.o: active_tags.h $(SRCROOT)/tk_utils/tclXkeylist.h gap4_compat.h
-$O/contig_selector.o: complement.h tagdb.h
 $O/contig_selector.o: gap-dbstruct.h gap-if.h io_handle.h io_utils.h
 $O/contig_selector.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h contig_selector.h
-$O/editor_view.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
-$O/editor_view.o: $(SRCROOT)/Misc/dstring.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h
+$O/contig_selector.o: tagdb.h
+$O/cs-object.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h io_utils.h
+$O/cs-object.o: $(SRCROOT)/Misc/xalloc.h cs-object.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/cs-object.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h
+$O/cs-object.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/cs-object.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/cs-object.o: $(SRCROOT)/tgap/g-alloc.h
+$O/cs-object.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/cs-object.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
+$O/cs-object.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/cs-object.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/cs-object.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/cs-object.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/cs-object.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/cs-object.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/cs-object.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/cs-object.o: $(SRCROOT)/tk_utils/text_output.h contig_selector.h
+$O/cs-object.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h
+$O/cs-object.o: io-reg.h newgap_cmds.h
+$O/cs-object.o: tk-io-reg.h gap4_compat.h
+$O/cs-object.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
+$O/do_fij.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/do_fij.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/do_fij.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/do_fij.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
+$O/do_fij.o: $(SRCROOT)/tgap/g-alloc.h
+$O/do_fij.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/do_fij.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/do_fij.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/do_fij.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/do_fij.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/do_fij.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/do_fij.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/do_fij.o: fij.h io_utils.h IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/do_fij.o: gap-if.h io_handle.h consen.h hash_lib.h $(SRCROOT)/seq_utils/align_lib.h
+$O/editor_join.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/align_lib_old.h
+$O/editor_join.o: $(SRCROOT)/seq_utils/align_lib.h hash_lib.h $(SRCROOT)/seq_utils/align.h
+$O/editor_join.o: $(SRCROOT)/seq_utils/dna_utils.h
+$O/editor_join.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/editor_join.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/editor_join.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/editor_join.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/editor_join.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/editor_join.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/editor_join.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/editor_join.o: $(SRCROOT)/tgap/hache_table.h
+$O/editor_join.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/editor_join.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/editor_join.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/editor_join.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/editor_join.o: $(SRCROOT)/tk_utils/sheet.h
+$O/editor_join.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h consensus.h
+$O/editor_join.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkEditor.h
+$O/editor_join.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/editor_join.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/editor_join.o: editor_view.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
 $O/editor_view.o: $(SRCROOT)/Misc/xalloc.h
-$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/compress.h $(SRCROOT)/tk_utils/tkTrace.h
-$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/expFileIO.h $(SRCROOT)/io_lib/io_lib/array.h
-$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/scf.h $(SRCROOT)/io_lib/io_lib/mFILE.h
-$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/translate.h $(SRCROOT)/io_lib/io_lib/Read.h
-$O/editor_view.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/expFileIO.h
+$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/array.h $(SRCROOT)/io_lib/io_lib/compress.h
+$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/mFILE.h $(SRCROOT)/io_lib/io_lib/translate.h
+$O/editor_view.o: $(SRCROOT)/io_lib/io_lib/os.h $(SRCROOT)/io_lib/io_lib/scf.h
+$O/editor_view.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/editor_view.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/editor_view.o: $(SRCROOT)/tgap/g-alloc.h
+$O/editor_view.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/editor_view.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/editor_view.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/editor_view.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/editor_view.o: $(SRCROOT)/tgap/hache_table.h
+$O/editor_view.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/editor_view.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/editor_view.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/editor_view.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/editor_view.o: $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/editor_view.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
+$O/editor_view.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h gap_globals.h
 $O/editor_view.o: $(SRCROOT)/tk_utils/sheet.h
-$O/editor_view.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h tman_interface.h
+$O/editor_view.o: $(SRCROOT)/tk_utils/tcl_utils.h qualIO.h qual.h $(SRCROOT)/Misc/misc.h
+$O/editor_view.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h consensus.h
 $O/editor_view.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkEditor.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h
-$O/editor_view.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
+$O/editor_view.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
 $O/editor_view.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
-$O/editor_view.o: editor_view.h
-$O/editor_view.o: qualIO.h qual.h $(SRCROOT)/Misc/misc.h
-$O/editor_view.o: tman_display.h $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/os.h
+$O/editor_view.o: editor_view.h $(SRCROOT)/tgap/tg_gio.h
+$O/editor_view.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/editor_view.o: tman_interface.h tman_display.h $(SRCROOT)/io_lib/io_lib/Read.h
+$O/fij.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h fort.h
+$O/fij.o: $(SRCROOT)/Misc/os.h
+$O/fij.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/text_output.h $(SRCROOT)/tk_utils/tclXkeylist.h
+$O/fij.o: $(SRCROOT)/seq_utils/align_lib.h io-reg.h contig_selector.h cs-object.h
+$O/fij.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/fij.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/fij.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/fij.o: $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/fij.o: $(SRCROOT)/tgap/hache_table.h
+$O/fij.o: $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h
+$O/fij.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h
+$O/fij.o: $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/fij.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/fij.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h io_utils.h
+$O/fij.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/fij.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkEditor.h $(SRCROOT)/tk_utils/tkSheet_common.h
+$O/fij.o: newgap_cmds.h list.h $(SRCROOT)/Misc/misc.h
+$O/fij.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/fij.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/fij.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
+$O/fij.o: IO.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h
+$O/fij.o: gap4_compat.h editor_view.h $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/fij.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h fij.h consen.h hash_lib.h
+$O/fij.o: tkEdNames.h consensus.h
+$O/find_repeats.o: $(SRCROOT)/Misc/xalloc.h cs-object.h io-reg.h contig_selector.h
+$O/find_repeats.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/find_repeats.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/find_repeats.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/bitmap.h
+$O/find_repeats.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/find_repeats.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/find_repeats.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/find_repeats.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/find_repeats.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/find_repeats.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/find_repeats.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/find_repeats.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/find_repeats.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/find_repeats.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/find_repeats.o: $(SRCROOT)/tk_utils/sheet.h
+$O/find_repeats.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/find_repeats.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/find_repeats.o: $(SRCROOT)/tk_utils/text_output.h
+$O/find_repeats.o: $(SRCROOT)/Misc/array.h
+$O/find_repeats.o: IO.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
+$O/find_repeats.o: consensus.h
+$O/find_repeats.o: fort.h $(SRCROOT)/tk_utils/tclXkeylist.h find_repeats.h consen.h
+$O/find_repeats.o: gap-dbstruct.h gap-if.h io_handle.h io_utils.h
+$O/find_repeats.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
+$O/find_repeats.o: gap_hash.h gap4_compat.h editor_view.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/find_repeats.o: tkEditor.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
 $O/gap-error.o: $(SRCROOT)/Misc/bitmap.h stack_dump.h
-$O/gap-error.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/gap-error.o: /nfs/team71/psg/jkb/work/tgap/xerror.h $(SRCROOT)/Misc/array.h
 $O/gap-error.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/gap-error.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/array.h
 $O/gap-error.o: $(SRCROOT)/Misc/xalloc.h gap-error.h
-$O/gap4_compat.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
-$O/gap4_compat.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/gap4_compat.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/gap4_compat.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/xalloc.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h
-$O/gap4_compat.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/hache_table.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/gap4_compat.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/gap4_compat.o: IO.h $(SRCROOT)/Misc/bitmap.h
-$O/gap4_compat.o: gap-dbstruct.h gap-if.h io_handle.h
+$O/gap4_compat.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/gap4_compat.o: gap-dbstruct.h gap-if.h io_handle.h consensus.h
 $O/gap4_compat.o: gap4_compat.h $(SRCROOT)/Misc/misc.h io_utils.h
+$O/gap_globals.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
 $O/gap_globals.o: $(SRCROOT)/Misc/misc.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/align_lib.h hash_lib.h notedb.h
-$O/gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h consen.h IO.h
+$O/gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h consen.h IO.h $(SRCROOT)/tgap/tg_gio.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/seq_utils/align.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
 $O/gap_globals.o: $(SRCROOT)/seq_utils/read_matrix.h gap_globals.h $(SRCROOT)/Misc/os.h
-$O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tclXkeylist.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/array.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/gap_globals.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/gap_globals.o: $(SRCROOT)/tgap/g-alloc.h $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
+$O/gap_globals.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/gap_globals.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/gap_globals.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/gap_globals.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/gap_globals.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/gap_globals.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/gap_globals.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
 $O/gap_globals.o: fort.h
+$O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/gap_globals.o: $(SRCROOT)/tk_utils/tcl_utils.h
 $O/gap_globals.o: $(SRCROOT)/Misc/xalloc.h
 $O/gap_globals.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/gap_globals.o: gap-dbstruct.h gap-if.h io_handle.h io_utils.h
+$O/gap_hash.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h
+$O/gap_hash.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/seq_utils/dna_utils.h
+$O/gap_hash.o: $(SRCROOT)/Misc/os.h
+$O/gap_hash.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/gap_hash.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/gap_hash.o: $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/gap_hash.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/gap_hash.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h $(SRCROOT)/tgap/g-filedefs.h
+$O/gap_hash.o: $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/gap_hash.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/gap_hash.o: $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
+$O/gap_hash.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/gap_hash.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/gap_hash.o: fort.h
+$O/gap_hash.o: io_utils.h IO.h
+$O/gap_hash.o: gap_hash.h hash_lib.h $(SRCROOT)/seq_utils/align_lib.h
+$O/hash_lib.o: $(SRCROOT)/Misc/misc.h
+$O/hash_lib.o: $(SRCROOT)/Misc/os.h
+$O/hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
+$O/hash_lib.o: $(SRCROOT)/Misc/xalloc.h
+$O/hash_lib.o: hash_lib.h $(SRCROOT)/seq_utils/align_lib.h
+$O/init.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h io_utils.h
 $O/init.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/init.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/init.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/init.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/init.o: $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/init.o: $(SRCROOT)/tgap/hache_table.h
+$O/init.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/init.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/init.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/init.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
 $O/init.o: $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/init.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h IO.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/init.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h IO.h $(SRCROOT)/tgap/tg_gio.h
 $O/init.o: list.h
-$O/init.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/init.o: gap-dbstruct.h gap-if.h io_handle.h io_utils.h
 $O/init.o: gap-error.h
+$O/init.o: $(SRCROOT)/tgap/g-filedefs.h
 $O/init.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h gap-tcl.h active_tags.h tagdb.h
 $O/init.o: newgap_cmds.h
-$O/list_proc.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
-$O/list_proc.o: $(SRCROOT)/Misc/xalloc.h
+$O/list_proc.o: $(SRCROOT)/Misc/FtoC.h newgap_cmds.h $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/list_proc.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h
+$O/list_proc.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
 $O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
 $O/list_proc.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/list_proc.o: $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h
-$O/list_proc.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/list_proc.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h
-$O/list_proc.o: IO.h
+$O/list_proc.o: $(SRCROOT)/tgap/g-alloc.h
+$O/list_proc.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/list_proc.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/list_proc.o: $(SRCROOT)/tgap/hache_table.h
+$O/list_proc.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/list_proc.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/list_proc.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/list_proc.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/list_proc.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h list.h gap_globals.h
+$O/list_proc.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h
+$O/list_proc.o: IO.h $(SRCROOT)/tgap/tg_gio.h
+$O/list_proc.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
+$O/list_proc.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
 $O/list_proc.o: io_utils.h
-$O/list_proc.o: gap-dbstruct.h gap-if.h io_handle.h $(SRCROOT)/Misc/FtoC.h newgap_cmds.h
-$O/list_proc.o: gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/Misc/misc.h
+$O/newgap5_cmds.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/seq_utils/align_lib_old.h list_proc.h
+$O/newgap5_cmds.o: $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/newgap5_cmds.o: $(SRCROOT)/seq_utils/align_lib.h
+$O/newgap5_cmds.o: $(SRCROOT)/seq_utils/read_matrix.h $(SRCROOT)/seq_utils/genetic_code.h
+$O/newgap5_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/newgap5_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/g-alloc.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/newgap5_cmds.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tgap/tg_gio.h
+$O/newgap5_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
+$O/newgap5_cmds.o: $(SRCROOT)/tk_utils/sheet.h $(SRCROOT)/tk_utils/tkSheet_struct.h
+$O/newgap5_cmds.o: $(SRCROOT)/tk_utils/text_output.h active_tags.h $(SRCROOT)/Misc/xalloc.h
+$O/newgap5_cmds.o: $(SRCROOT)/tk_utils/tkSheet_common.h editor_view.h tkEdNames.h
+$O/newgap5_cmds.o: $(SRCROOT)/seq_utils/align.h
+$O/newgap5_cmds.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/newgap5_cmds.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
+$O/newgap5_cmds.o: IO.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h
+$O/newgap5_cmds.o: consensus.h read_depth.h fij.h consen.h hash_lib.h
+$O/newgap5_cmds.o: contig_selector.h cs-object.h io-reg.h
+$O/newgap5_cmds.o: find_repeats.h tkEditor.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/newgap5_cmds.o: gap4_compat.h io_utils.h
+$O/newgap5_cmds.o: gap_cli_arg.h $(SRCROOT)/tk_utils/cli_arg.h newgap_structs.h
+$O/newgap5_cmds.o: newgap_cmds.h list.h gap_globals.h tagdb.h
+$O/newgap5_cmds.o: tk-io-reg.h $(SRCROOT)/tk_utils/tcl_utils.h qual.h qualIO.h
 $O/notedb.o: $(SRCROOT)/Misc/parse_db.h notedb.h
 $O/notedb.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
 $O/notedb.o: $(SRCROOT)/Misc/xalloc.h
+$O/qual.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/qual.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/qual.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/qual.o: $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/qual.o: $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/qual.o: $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h
+$O/qual.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h
+$O/qual.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/qual.o: $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/qual.o: $(SRCROOT)/tk_utils/tcl_utils.h
+$O/qual.o: qual.h $(SRCROOT)/tgap/tg_gio.h
+$O/qual.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/qual.o: $(SRCROOT)/tgap/g-filedefs.h
+$O/qual.o: qualP.h $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h gap_globals.h
+$O/qualIO.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h gap4_compat.h
+$O/qualIO.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/qualIO.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/qualIO.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/os.h
+$O/qualIO.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/qualIO.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/array.h
+$O/qualIO.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/qualIO.o: $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/qualIO.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/qualIO.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/qualIO.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h
+$O/qualIO.o: $(SRCROOT)/tk_utils/tcl_utils.h IO.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h
+$O/qualIO.o: IO2.h qual.h qualP.h
+$O/qualIO.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/qualIO.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/qualIO.o: gap_globals.h
+$O/qualIO.o: gap-if.h io_handle.h io_utils.h
+$O/read_depth.o: $(SRCROOT)/Misc/xalloc.h
+$O/read_depth.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/read_depth.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h read_depth.h
+$O/read_depth.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/read_depth.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/read_depth.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/read_depth.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/read_depth.o: $(SRCROOT)/tgap/hache_table.h
+$O/read_depth.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/read_depth.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/read_depth.o: $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
+$O/read_depth.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/read_depth.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/read_depth.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
 $O/stack_dump.o: $(SRCROOT)/Misc/bitmap.h stack_dump.h
-$O/stack_dump.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/stack_dump.o: /nfs/team71/psg/jkb/work/tgap/xerror.h $(SRCROOT)/Misc/array.h
 $O/stack_dump.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
+$O/stack_dump.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/Misc/array.h
 $O/stack_dump.o: $(SRCROOT)/Misc/xalloc.h gap-error.h
 $O/tagdb.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/os.h
 $O/tagdb.o: $(SRCROOT)/Misc/parse_db.h
 $O/tagdb.o: $(SRCROOT)/Misc/xalloc.h
 $O/tagdb.o: tagdb.h
-$O/tk-io-reg.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/tk-io-reg.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
 $O/tk-io-reg.o: $(SRCROOT)/Misc/bitmap.h gap-dbstruct.h gap-if.h io_handle.h io_utils.h
 $O/tk-io-reg.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tclXkeylist.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/tk-io-reg.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h gap4_compat.h
+$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h tk-io-reg.h io-reg.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/g-alloc.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
 $O/tk-io-reg.o: $(SRCROOT)/tk_utils/canvas_box.h
 $O/tk-io-reg.o: $(SRCROOT)/tk_utils/tcl_utils.h newgap_structs.h $(SRCROOT)/Misc/misc.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h tk-io-reg.h io-reg.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
+$O/tk-io-reg.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tk-io-reg.o: list.h gap_globals.h
-$O/tk-io-reg.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tk-io-reg.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
 $O/tk-io-reg.o: $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/tk-io-reg.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
+$O/tk-io-reg.o: gap4_compat.h $(SRCROOT)/tgap/tg_gio.h
 $O/tk-io-reg.o: gap_cli_arg.h $(SRCROOT)/tk_utils/cli_arg.h newgap_cmds.h IO.h
-$O/tkEdNames.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/tkAppInit.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/tkAppInit.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tkAppInit.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/Misc/bitmap.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h
+$O/tkAppInit.o: $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkAppInit.o: $(SRCROOT)/tk8.4.6/generic/tk.h
+$O/tkAppInit.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
+$O/tkAppInit.o: IO.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h
+$O/tkAppInit.o: gap-dbstruct.h gap-if.h io_handle.h io_utils.h
+$O/tkAppInit.o: list.h gap_globals.h $(SRCROOT)/tk_utils/tcl_utils.h gap-tcl.h
+$O/tkAppInit.o: newgap_cmds.h
+$O/tkEdNames.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h
+$O/tkEdNames.o: $(SRCROOT)/Misc/os.h
 $O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
-$O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/tkEdNames.o: $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkEdNames.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h tkEditor.h consensus.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h $(SRCROOT)/tgap/tg_utils.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h $(SRCROOT)/tgap/tg_sequence.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tkEdNames.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tkEdNames.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/sheet.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tkSheet_common.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tkSheet_config.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tk_defs.h $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h tkEditor.h
-$O/tkEdNames.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
 $O/tkEdNames.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
-$O/tkEdNames.o: tkEdNames.h editor_view.h /nfs/team71/psg/jkb/work/tgap/tg_gio.h
+$O/tkEdNames.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
+$O/tkEdNames.o: tkEdNames.h editor_view.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h
 $O/tkEditor.o: $(SRCROOT)/Misc/xalloc.h $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tk_utils/licence.h
-$O/tkEditor.o: $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/os.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/io_lib/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/io_lib/expFileIO.h $(SRCROOT)/io_lib/io_lib/array.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/io_lib/scf.h $(SRCROOT)/io_lib/io_lib/mFILE.h
 $O/tkEditor.o: $(SRCROOT)/io_lib/io_lib/translate.h $(SRCROOT)/io_lib/io_lib/Read.h
-$O/tkEditor.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tkEditor.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/tkEditor.o: $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h $(SRCROOT)/tgap/g-io.h
+$O/tkEditor.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/os.h
+$O/tkEditor.o: $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h $(SRCROOT)/tgap/tg_iface.h
+$O/tkEditor.o: $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/tkEditor.o: $(SRCROOT)/tgap/hache_table.h
+$O/tkEditor.o: $(SRCROOT)/tgap/tg_cache_item.h $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/tkEditor.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/tkEditor.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
 $O/tkEditor.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/tk_utils/tkSheet.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tkEditor.o: $(SRCROOT)/tk_utils/tkSheet_struct.h $(SRCROOT)/tk_utils/tkSheet_common.h
-$O/tkEditor.o: $(SRCROOT)/tk_utils/tk_defs.h tman_interface.h tman_display.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h $(SRCROOT)/Misc/array.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h tkEdNames.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/tkEditor.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
 $O/tkEditor.o: tkEditor.h $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/tkEditor.o: editor_view.h /nfs/team71/psg/jkb/work/tgap/tg_gio.h
+$O/tkEditor.o: $(SRCROOT)/Misc/array.h $(SRCROOT)/Misc/xerror.h
+$O/tkEditor.o: $(SRCROOT)/tgap/g-db.h $(SRCROOT)/tgap/g-error.h
+$O/tkEditor.o: editor_view.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h
 $O/tkEditor.o: gap_globals.h gap4_compat.h $(SRCROOT)/tk_utils/tkSheet_config.h
-$O/tman_display.o: $(SRCROOT)/Misc/os.h
-$O/tman_display.o: $(SRCROOT)/Misc/xalloc.h
-$O/tman_display.o: $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/os.h
+$O/tkEditor.o: tkEdNames.h consensus.h $(SRCROOT)/tk_utils/tk_defs.h tman_interface.h
+$O/tkEditor.o: tman_display.h $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/os.h
+$O/tman_display.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h
 $O/tman_display.o: $(SRCROOT)/io_lib/io_lib/compress.h $(SRCROOT)/tk_utils/tkTrace.h
 $O/tman_display.o: $(SRCROOT)/io_lib/io_lib/expFileIO.h $(SRCROOT)/io_lib/io_lib/array.h
 $O/tman_display.o: $(SRCROOT)/io_lib/io_lib/scf.h $(SRCROOT)/io_lib/io_lib/mFILE.h
 $O/tman_display.o: $(SRCROOT)/io_lib/io_lib/translate.h $(SRCROOT)/io_lib/io_lib/Read.h
 $O/tman_display.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
-$O/tman_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
-$O/tman_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tman_display.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tman_display.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/tman_display.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h $(SRCROOT)/Misc/array.h
+$O/tman_display.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/tman_display.o: $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h $(SRCROOT)/tgap/g-alloc.h
+$O/tman_display.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/tman_display.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/tman_display.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/tman_display.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h $(SRCROOT)/tcl8.4.6/generic/tcl.h
+$O/tman_display.o: $(SRCROOT)/tk8.4.6/generic/tk.h
 $O/tman_display.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h $(SRCROOT)/Misc/misc.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/postscript.h $(SRCROOT)/tk_utils/cli_arg.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/sheet.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tcl_utils.h $(SRCROOT)/tk_utils/tclXkeylist.h
-$O/tman_display.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h tman_display.h
+$O/tman_display.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h consensus.h
 $O/tman_display.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkEditor.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/array.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h $(SRCROOT)/tk_utils/tkSheet.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/tman_display.o: /nfs/team71/psg/jkb/work/tgap/xerror.h
-$O/tman_display.o: editor_view.h /nfs/team71/psg/jkb/work/tgap/tg_gio.h
+$O/tman_display.o: $(SRCROOT)/Misc/os.h
+$O/tman_display.o: $(SRCROOT)/Misc/xalloc.h
+$O/tman_display.o: editor_view.h $(SRCROOT)/tgap/tg_gio.h $(SRCROOT)/tgap/tg_struct.h
+$O/tman_display.o: tman_display.h $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/os.h
 $O/tman_display.o: tman_interface.h $(SRCROOT)/Misc/dstring.h gap_globals.h
-$O/tman_interface.o: $(SRCROOT)/Misc/array.h /nfs/team71/psg/jkb/work/tgap/xerror.h
+$O/tman_interface.o: $(SRCROOT)/Misc/os.h
 $O/tman_interface.o: $(SRCROOT)/Misc/xalloc.h
+$O/tman_interface.o: $(SRCROOT)/Misc/xerror.h $(SRCROOT)/tgap/hache_table.h $(SRCROOT)/tgap/g-db.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/io_lib/Read.h $(SRCROOT)/io_lib/io_lib/expFileIO.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/io_lib/array.h $(SRCROOT)/io_lib/io_lib/compress.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/io_lib/mFILE.h $(SRCROOT)/io_lib/io_lib/translate.h
 $O/tman_interface.o: $(SRCROOT)/io_lib/io_lib/os.h $(SRCROOT)/io_lib/io_lib/scf.h
-$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h
-$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
-$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h
+$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tcl.h $(SRCROOT)/tcl8.4.6/generic/tclDecls.h
+$O/tman_interface.o: $(SRCROOT)/tcl8.4.6/generic/tclPlatDecls.h $(SRCROOT)/tk_utils/tkSheet.h
+$O/tman_interface.o: $(SRCROOT)/tgap/g-alloc.h
+$O/tman_interface.o: $(SRCROOT)/tgap/g-error.h $(SRCROOT)/tgap/g-defs.h $(SRCROOT)/tgap/g-misc.h
+$O/tman_interface.o: $(SRCROOT)/tgap/g-io.h $(SRCROOT)/tgap/g-request.h $(SRCROOT)/tgap/g-connect.h
+$O/tman_interface.o: $(SRCROOT)/tgap/tg_iface.h $(SRCROOT)/tgap/tg_cache_item.h
+$O/tman_interface.o: $(SRCROOT)/tgap/tg_register.h $(SRCROOT)/tgap/tg_contig.h
+$O/tman_interface.o: $(SRCROOT)/tgap/tg_sequence.h $(SRCROOT)/tgap/tg_bin.h $(SRCROOT)/tgap/tg_track.h
+$O/tman_interface.o: $(SRCROOT)/tgap/tg_struct.h $(SRCROOT)/tgap/g.h $(SRCROOT)/tgap/g-struct.h
+$O/tman_interface.o: $(SRCROOT)/tgap/tg_utils.h $(SRCROOT)/tgap/tg_tcl.h
+$O/tman_interface.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h editor_view.h $(SRCROOT)/tgap/tg_gio.h
 $O/tman_interface.o: $(SRCROOT)/tk_utils/cli_arg.h $(SRCROOT)/Misc/dstring.h $(SRCROOT)/Misc/misc.h
-$O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet.h $(SRCROOT)/tk_utils/sheet.h
+$O/tman_interface.o: $(SRCROOT)/tk_utils/sheet.h
+$O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h consensus.h
+$O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h tkEditor.h
 $O/tman_interface.o: $(SRCROOT)/tk_utils/tkTrace.h $(SRCROOT)/tk_utils/postscript.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-alloc.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-connect.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-db.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-defs.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-error.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-filedefs.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-io.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-misc.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-os.h $(SRCROOT)/Misc/os.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-request.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g-struct.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/g.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/hache_table.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_bin.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_cache_item.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_contig.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_iface.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_register.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_sequence.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_struct.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_tcl.h
-$O/tman_interface.o: /nfs/team71/psg/jkb/work/tgap/tg_utils.h
-$O/tman_interface.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
-$O/tman_interface.o: $(SRCROOT)/tk8.4.6/generic/tkDecls.h
 $O/tman_interface.o: $(SRCROOT)/tk8.4.6/generic/tk.h
-$O/tman_interface.o: editor_view.h /nfs/team71/psg/jkb/work/tgap/tg_gio.h
-$O/tman_interface.o: tkEditor.h $(SRCROOT)/tk_utils/tkSheet_common.h tkEdNames.h
+$O/tman_interface.o: $(SRCROOT)/Misc/array.h
+$O/tman_interface.o: $(SRCROOT)/tgap/g-filedefs.h $(SRCROOT)/tgap/g-os.h
 $O/tman_interface.o: tman_interface.h tman_display.h $(SRCROOT)/io_lib/io_lib/Read.h
