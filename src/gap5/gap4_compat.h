@@ -36,3 +36,10 @@ void bell(void);
 #define find_max_gel_len(io,a,b) 65536
 #define io_name(io) "FIXME"
 #define io_dbsize(io) 1
+
+/*
+ * Complements an individual contig.
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int complement_contig(GapIO *io, int crec);

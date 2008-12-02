@@ -1063,6 +1063,38 @@ tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
 
 } /* end FIJ */
 
+int tcl_complement_contig(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, i;
+    contig_list_t *rargv;
+    list2_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,  offsetof(list2_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,  offsetof(list2_arg, inlist)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    vfuncheader("complement contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+    if (rargc == 0) {
+        xfree(rargv);
+        return TCL_OK;
+    }
+
+    for (i = 0; i < rargc; i++) {
+	complement_contig(args.io, rargv[i].contig);
+    }
+
+    xfree(rargv);
+    return TCL_OK;
+}
+
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
 /*				   NewGap_Init				     */
@@ -1135,10 +1167,10 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "obj_get_brief", ObjGetBrief,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "complement_contig", tcl_complement_contig,
+			 (ClientData) NULL,
+			 NULL);
 #if 0
-    Tcl_CreateCommand(interp, "complement_contig", tk_complement_contig,
-		      (ClientData) NULL,
-		      NULL);
     Tcl_CreateObjCommand(interp, "cursor_ref", tk_cursor_ref,
 			 (ClientData) NULL,
 			 NULL);
