@@ -342,7 +342,7 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
     seq_t *s;
 
     s = (seq_t *)cache_search(io, GT_Seq, rec);
-    if (-1 == sequence_get_position(io, rec, &cnum, &pos))
+    if (-1 == sequence_get_position(io, rec, &cnum, &pos, NULL))
 	return -1;
 
     start = pos;

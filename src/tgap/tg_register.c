@@ -545,7 +545,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	    gc->abspos = gc->pos;
 	} else {
 	    int cnum, pos;
-	    sequence_get_position(io, gc->seq, &cnum, &pos);
+	    sequence_get_position(io, gc->seq, &cnum, &pos, NULL);
 	    gc->abspos = pos + gc->pos;
 	}
     }
