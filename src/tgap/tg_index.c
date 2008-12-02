@@ -273,7 +273,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	    exit(0);
 	*/
 
-	if ((nseqs & 0x3fff) == 0) {
+	if ((nseqs & 0x7fff) == 0) {
 	    static int perc = 0;
 	    if (perc < 100.0 * pos / sb.st_size) {
 		perc = 100.0 * pos / sb.st_size;
