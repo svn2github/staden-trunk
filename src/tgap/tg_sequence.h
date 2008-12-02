@@ -56,7 +56,8 @@ int sequence_new_from(GapIO *io, seq_t *s);
 GRec sequence_index_query(GapIO *io, char *name);
 int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec);
 
-int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos);
+int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
+			  int *orient);
 int sequence_get_contig(GapIO *io, GRec snum);
 
 /*
