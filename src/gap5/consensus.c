@@ -192,19 +192,13 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r[i].rec);
 	seq_t *sorig = s;
 	int l = s->len > 0 ? s->len : -s->len;
-	unsigned char *seq;
 	int left, right;
-	char *conf;
 	int off = 0;
 
 	/* Complement data on-the-fly */
 	if ((s->len < 0) ^ r[i].comp) {
 	    s = dup_seq(s);
 	    complement_seq_t(s);
-	}
-
-	if (s->len < 0) {
-	    sp += s->len+1;
 	}
 
 	left = s->left;
@@ -381,7 +375,7 @@ int consensus_valid_range(GapIO *io, int contig, int *start, int *end) {
 	pos = contig_get_start(&c);
 	do {
 	    if (-1 == calculate_consensus_bit(io, contig,
-					      pos, pos+CONS_SZ-1, &cons))
+					      pos, pos+CONS_SZ-1, cons))
 		return -1;
 	    for (i = 0; i < CONS_SZ; i++, pos++) {
 		if (cons[i].depth)
@@ -396,7 +390,7 @@ int consensus_valid_range(GapIO *io, int contig, int *start, int *end) {
 	pos = contig_get_end(&c);
 	do {
 	    if (-1 == calculate_consensus_bit(io, contig,
-					      pos-(CONS_SZ-1), pos, &cons))
+					      pos-(CONS_SZ-1), pos, cons))
 		return -1;
 	    for (i = CONS_SZ-1; i >= 0; i--, pos--) {
 		if (cons[i].depth)
