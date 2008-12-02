@@ -66,7 +66,7 @@ int io_length(GapIO *io, int rnum) {
 int io_relpos(GapIO *io, int rnum) {
     int cnum, pos;
 
-    sequence_get_position(io, rnum, &cnum, &pos);
+    sequence_get_position(io, rnum, &cnum, &pos, NULL);
     return pos;
 }
 
@@ -81,7 +81,7 @@ int io_lnbr(GapIO *io, int rnum) {
     if (ci == NULL || rnum != last_rnum || io != last_io) {
 	int cnum, pos;
 
-	sequence_get_position(io, rnum, &cnum, &pos);
+	sequence_get_position(io, rnum, &cnum, &pos, NULL);
 
 	if (ci)
 	    contig_iter_del(ci);
@@ -122,7 +122,7 @@ int io_rnbr(GapIO *io, int rnum) {
 
     if (ci == NULL || rnum != last_rnum || io != last_io) {
 	int cnum, pos;
-	sequence_get_position(io, rnum, &cnum, &pos);
+	sequence_get_position(io, rnum, &cnum, &pos, NULL);
 
 	if (ci)
 	    contig_iter_del(ci);
@@ -589,6 +589,32 @@ void bell(void) {
     Tcl_Eval(GetInterp(), "bell");
 }
 
-void complement_contig(void) {
-    puts("FIXME: complement_contig unimplemented");
+/*
+ * Complements an individual contig.
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int complement_contig(GapIO *io, int crec) {
+    contig_t *c;
+    bin_index_t *b;
+
+    if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
+	return -1;
+
+    /* Empty contig is special case */
+    if (!contig_get_bin(&c))
+	return 0;
+
+    if (!(b = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&c))))
+	return -1;
+
+    if (!(b = cache_rw(io, b)))
+	return -1;
+    
+    b->flags ^= BIN_COMPLEMENTED;
+    b->flags |= BIN_BIN_UPDATED;
+
+    cache_flush(io);
+
+    return 0;
 }
