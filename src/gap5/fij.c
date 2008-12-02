@@ -10,7 +10,6 @@
 #include "newgap_cmds.h" /* GetInterp() */
 #include "misc.h"
 #include "text_output.h"
-#include "complement.h"
 #include "consen.h"
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
@@ -74,6 +73,7 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	case -2: /* default */
         case 3: /* Invoke join editor */ {
 	    int cnum[2], llino[2], pos[2];
+	    int cl[2];
 
 	    obj->flags |= OBJ_FLAG_VISITED;
 	    fij->current = obj - (obj_fij *)fij->match;
@@ -111,8 +111,10 @@ void *fij_obj_func(int job, void *jdata, obj_fij *obj,
 	     * NB: obj->pos1 now may not be the same value as when this
 	     * function was entered, due to the complementing!
 	     */
-	    pos[0] = obj->pos1;
-	    pos[1] = obj->pos2;
+	    consensus_valid_range(fij->io, cnum[0], &cl[0], NULL);
+	    consensus_valid_range(fij->io, cnum[1], &cl[1], NULL);
+	    pos[0] = obj->pos1 + cl[0]-1;
+	    pos[1] = obj->pos2 + cl[1]-1;
 
 	    llino[0] = io_clnbr(fij->io, cnum[0]);
 	    llino[1] = io_clnbr(fij->io, cnum[1]);
