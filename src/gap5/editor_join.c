@@ -538,6 +538,8 @@ int edJoin(edview *xx) {
 	offset = -xx->link->lockOffset;
     }
 
+    offset += contig_offset(io, &cr) - contig_offset(io, &cl);
+
     cache_flush(io);
 
     /* Force joins at the top-level IO */
@@ -592,7 +594,7 @@ int edJoin(edview *xx) {
     cache_decr(io, cr);
 
     /* Destroy the old right contig */
-    printf("Destroy contig rec %d\n", cr->rec);
+    contig_destroy(io, cr->rec);
 
     cache_flush(io);
 
