@@ -9,6 +9,14 @@
 #    define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
+
+/*
+ * Returns the size needed to store confidence values in this sequence.
+ * Ie 1 or 4 per base.
+ */
+#define sequence_conf_size(s) ((s)->format == SEQ_FORMAT_CNF4 ? 4 : 1)
+
+
 /*
  * Given a seq_t struct this allocates a new sequence in the database
  * and copies the contents of 's' into it. If 's' is NULL it simply allocates
@@ -17,12 +25,46 @@
  * Returns the record number on success
  *        -1 on failure
  */
+#if 0
+int sequence_new_from(GapIO *io, seq_t *s) {
+    return io->iface->seq.create(io->dbh, s);
+}
+#else
 int sequence_new_from(GapIO *io, seq_t *s) {
     int rec;
+    seq_t *n;
+    size_t extra_len;
+
+    extra_len = strlen(s->name) + strlen(s->trace_name) +
+	strlen(s->alignment) + ABS(s->len)*(1+sequence_conf_size(s));
 
     rec = io->iface->seq.create(io->dbh, s);
+    n = (seq_t *)cache_search(io, GT_Seq, rec);
+    n = cache_rw(io, n);
+    n = cache_item_resize(n, sizeof(*n) + extra_len);
+
+    memcpy(n, s, sizeof(*s));
+    n->name = (char *)&n->data;
+    strcpy(n->name, s->name);
+    n->name_len = strlen(n->name);
+
+    n->trace_name = n->name + n->name_len + 1;
+    strcpy(n->trace_name, s->trace_name);
+    n->trace_name_len = strlen(n->trace_name);
+
+    n->alignment = n->trace_name + n->trace_name_len + 1;
+    strcpy(n->alignment, s->alignment);
+    n->alignment_len = strlen(n->alignment);
+
+    n->seq = n->alignment + n->alignment_len + 1;
+    memcpy(n->seq, s->seq, ABS(s->len));
+
+    n->conf = n->seq + ABS(n->len);
+    memcpy(n->conf, s->conf, ABS(s->len)*sequence_conf_size(s));
+
     return rec;
 }
+#endif
 
 /*
  * Sets the sequence position
@@ -195,12 +237,6 @@ int sequence_set_seq_tech(GapIO *io, seq_t **s, int value) {
 }
 
 /*
- * Returns the size needed to store confidence values in this sequence.
- * Ie 1 or 4 per base.
- */
-#define sequence_conf_size(s) ((s)->format == SEQ_FORMAT_CNF4 ? 4 : 1)
-
-/*
  * Sets a sequence name.
  *
  * Returns 0 on success
@@ -341,7 +377,7 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos,
 	n->len++;
 
     /* Set */
-    n->seq [p2] = base;
+    n->seq[p2] = base;
     if (n->format == SEQ_FORMAT_CNF4) {
 	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
 	switch (base) {
@@ -615,11 +651,13 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 /*
  * Finds the contig number and position of a sequence record number.
  */
-int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos) {
+int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
+			  int *orient) {
     bin_index_t *bin;
     int bnum, i;
-    int offset = 0, found = 0;
+    int offset1 = 0, offset2 = 0, found = 0;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
+    int comp = 0;
 
     /* Find the position of this sequence within the bin */
     bnum = s->bin;
@@ -628,7 +666,8 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos) {
         range_t *r = arrp(range_t, bin->rng, i);
 	if (r->rec == snum) {
 	    found = 1;
-	    offset = r->start;
+	    offset1 = r->start;
+	    offset2 = r->end;
 	    break;
 	}
     }
@@ -638,22 +677,44 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos) {
 
     /* FIXME: Complemented coordinates need more fixes here */
     if (bin->flags & BIN_COMPLEMENTED) {
-	offset = bin->size-1 - offset;
+	offset1 = bin->size-1 - offset1;
+	offset2 = bin->size-1 - offset2;
+	comp ^= 1;
     }
 
-    offset += bin->pos;
+    offset1 += bin->pos;
+    offset2 += bin->pos;
 
     /* Find the position of this bin relative to the contig itself */
     while (bin->parent_type == GT_Bin) {
 	bnum = bin->parent;
 	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-	offset += bin->pos;
+	if (bin->flags & BIN_COMPLEMENTED) {
+	    offset1 = bin->size-1 - offset1;
+	    offset2 = bin->size-1 - offset2;
+	    comp ^= 1;
+	}
+	offset1 += bin->pos;
+	offset2 += bin->pos;
+    }
+
+    /* Special case for root bin being complemented */
+    if ((bin->flags & BIN_COMPLEMENTED) && pos) {
+	contig_t *c = (contig_t *)cache_search(io, GT_Contig, bin->parent);
+	offset1 = bin->size-1 - (offset1 - bin->pos);
+	offset1 = c->end+c->start - (offset1 + bin->pos);
+	offset2 = bin->size-1 - (offset2 - bin->pos);
+	offset2 = c->end+c->start - (offset2 + bin->pos);
     }
     
     assert(bin->parent_type == GT_Contig);
-    *contig = bin->parent;
 
-    *pos = offset;
+    if (contig)
+	*contig = bin->parent;
+    if (pos)
+	*pos = offset1 < offset2 ? offset1 : offset2;
+    if (orient)
+	*orient = comp;
 
     return 0;
 }
@@ -711,25 +772,13 @@ int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf) {
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
-    if (n->len > 0) {
-	if (base)
-	    *base = n->seq[pos];
-	if (conf) {
-	    if (n->format != SEQ_FORMAT_CNF4) {
-		*conf = n->conf[pos];
-	    } else {
-		*conf = MAX4(&n->conf[pos*4]);
-	    }
-	}
-    } else {
-	if (base)
-	    *base = complementary_base[(int)(n->seq[-n->len-1 - pos])];
-	if (conf) {
-	    if (n->format != SEQ_FORMAT_CNF4) {
-		*conf = n->conf[-n->len-1 - pos];
-	    } else {
-		*conf = MAX4(&n->conf[(-n->len-1 - pos)*4]);
-	    }
+    if (base)
+	*base = n->seq[pos];
+    if (conf) {
+	if (n->format != SEQ_FORMAT_CNF4) {
+	    *conf = n->conf[pos];
+	} else {
+	    *conf = MAX4(&n->conf[pos*4]);
 	}
     }
 
@@ -867,16 +916,10 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
 	return -1;
 
     if (base) {
-	if (n->len > 0)
-	    *base = n->seq[pos];
-	else
-	    *base = complementary_base[(int)(n->seq[-n->len-1 - pos])];
+	*base = n->seq[pos];
     }
 
     if (conf) {
-	if (n->len < 0)
-	    pos = -n->len-1 - pos;
-
 	if (n->format != SEQ_FORMAT_CNF4) {
 	    switch(n->seq[pos]) {
 	    case 'A': case 'a':
@@ -913,19 +956,11 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
 	} else {
 	    int i;
 	    for (i = 0; i < 4; i++) {
-		//double p = pow(10, n->conf[pos*4+i]/10.0);
-		//conf[n->len < 0 ? 4-i : i] = p/(1+p);
 		double p = n->conf[pos*4+i];
 		//p = recalibrate[(int)(p+40+.49)] / 10.0;
 		p /= 10.0;
 		conf[i] = p*log(10) - log(1+pow(10, p));
 	    }
-	}
-
-	if (n->len < 0) {
-	    double tmp;
-	    tmp = conf[0]; conf[0] = conf[3]; conf[3] = tmp;
-	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
 	}
 
 	//richard_munge_conf(conf);
@@ -942,7 +977,7 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
  * the rest).
  */
 void richard_munge_conf(double *lp) {
-    double p1 = -100, p2 = -100, p3 = -100, p4 = -100, p34;
+    double p1 = -100, p2 = -100, p3 = -100, p4 = -100;
     int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
     int i;
     double r3, r4;
@@ -1086,6 +1121,9 @@ void rob_munge_conf(double *lp) {
 
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {
     seq_t *n;
+    int comp;
+
+    sequence_get_position(io, (*s)->rec, NULL, NULL, &comp);
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
@@ -1094,18 +1132,18 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {
 	return -1;
 
     if (n->format != SEQ_FORMAT_CNF4) {
-	if (n->len > 0) {
+	if ((n->len > 0) ^ comp) {
 	    n->seq[pos] = base;
 	    n->conf[pos] = conf;
 	} else {
-	    n->seq[-n->len-1 - pos] = complementary_base[(unsigned char)base];
-	    n->conf[-n->len-1 - pos] = conf;
+	    n->seq[ABS(n->len)-1 - pos] = complementary_base[(unsigned char)base];
+	    n->conf[ABS(n->len)-1 - pos] = conf;
 	}
     } else {
 	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
 	int p2 = n->len > 0 ? pos : -n->len-1 -pos;
 
-	n->seq[p2] = n->len > 0
+	n->seq[p2] = (n->len > 0) ^ comp
 	    ? base
 	    : complementary_base[(unsigned char)base];
 
