@@ -268,7 +268,7 @@ static int g_write_le4(g_io *io, GView v, void *buf, size_t len) {
 
     if (le != le_a)
 	free(le);
-    return ret;
+    return ret ? -1 : 0;
 }
 
 static int g_read(g_io *io, GView v, void *buf, size_t len) {
@@ -312,7 +312,7 @@ static int g_read_le4(g_io *io, GView v, void *buf, size_t len) {
 	le[j] = le_int4(((int32_t *)buf)[j]);
     }
 
-    return ret;
+    return ret ? -1 : 0;
 }
 
 static int g_flush(g_io *io, GView v) {
@@ -385,7 +385,7 @@ static int io_generic_write(void *dbh, cached_item *ci) {
 
     ret = g_write((g_io *)dbh, ci->view, &ci->data, ci->data_size);
     g_flush((g_io *)dbh, ci->view); /* Should we auto-flush? */
-    return ret;
+    return ret ? -1 : 0;
 }
 
 static int io_generic_info(void *dbh, GView v, GViewInfo *vi) {
@@ -489,7 +489,7 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	fprintf(stderr, "Failed to write btree node %d\n", n->rec);
     }
 
-    return ret;
+    return ret ? -1 : 0;
 }
 
 
@@ -676,7 +676,7 @@ static int io_database_create_files(char *fn) {
     /* LOW LEVEL IO HERE */
     if (NULL == (h = heap_create(fn)))
 	return gerr_set(GERR_CANT_CREATE);
-    // heap_destroy(h);
+    heap_destroy(h, 1);
 
     /* LOW LEVEL IO HERE */
     if ( (fd = creat(auxfn,G_DEF_PERMS)) == -1 ) return gerr_set(GERR_CANT_CREATE);
@@ -711,6 +711,9 @@ static void *io_database_connect(char *dbname, int ro) {
 
     io->gdb = g_open_database_(&dbname, 1, ro);
     io->client = g_connect_client_(io->gdb, 0, G_LOCK_EX, &io->mode);
+    
+    //g_lock_file_N_(io->gdb, io->client, 0);
+
 #ifdef INDEX_NAMES
     io->seq_name_hash = HacheTableCreate(10000,
 					 HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
@@ -743,12 +746,27 @@ static void *io_database_connect(char *dbname, int ro) {
     return io;
 }
 
+int io_database_lock(void *dbh) {
+    g_io *io = (g_io *)dbh;
+    g_lock_file_N_(io->gdb, io->client, 0);
+    return 0;
+}
+
+int io_database_unlock(void *dbh) {
+    g_io *io = (g_io *)dbh;
+    g_unlock_file_N_(io->gdb, io->client, 0);
+    return 0;
+}
+
 static int io_database_commit(void *dbh) {
     g_io *io = (g_io *)dbh;
 
     btree_flush(io, io->seq_name_hash);
     btree_flush(io, io->contig_name_hash);
     
+    //g_unlock_file_N_(io->gdb, io->client, 0);
+    //g_lock_file_N_(io->gdb, io->client, 0);
+
     return 0;
 }
 
@@ -804,6 +822,8 @@ static GRec io_database_create(void *dbh, void *from) {
 	return -1;
     g_flush(io, v);
     unlock(io, v);
+
+    io_database_commit(io);
    
     return 0;
 }
@@ -864,7 +884,6 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
 	return NULL;
 
     if (NULL == (ch = g_read_alloc(io, v, &len))) {
-	free(ci);
 	return NULL;
     }
 
@@ -1009,7 +1028,7 @@ static int io_array_write(void *dbh, cached_item *ci) {
 		   ArrayMax(ar) * sizeof(GCardinal));
     g_flush(io, ci->view);
 
-    return ret;
+    return ret ? -1 : 0;
 }
 
 
@@ -1354,7 +1373,7 @@ static int io_track_create(void *dbh, void *vfrom) {
  * Returns a pointer to a seq_t struct
  *      or NULL on failure.
  */
-static cached_item *seq_decode(unsigned char *buf, size_t len) {
+static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     cached_item *ci;
     unsigned char *cp, flags, mapping_qual, seq_tech, format;
     size_t slen;
@@ -1363,21 +1382,38 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
     uint32_t left, right, bin, seq_len;
     int parent_type, parent_rec, other_end;
 
-    cp = buf;
-    cp += u72int(cp, &bin);
-    cp += u72int(cp, &left);
-    cp += u72int(cp, &right);
-    cp += u72int(cp, &seq_len);
-    cp += u72int(cp, &other_end);
-    cp += u72int(cp, &parent_rec);
-    parent_type = *cp++;
-    format = *cp++;
-    seq_tech = format & ((1<<3)-1);
-    format >>= 3;
-    flags = format & ((1<<3)-1);
-    format >>= 3;
-    mapping_qual = *cp++;
-    /* cp is now the variable sized section starting with reading name */
+    if (len) {
+	cp = buf;
+	cp += u72int(cp, &bin);
+	cp += u72int(cp, &left);
+	cp += u72int(cp, &right);
+	cp += u72int(cp, &seq_len);
+	cp += u72int(cp, &other_end);
+	cp += u72int(cp, &parent_rec);
+	parent_type = *cp++;
+	format = *cp++;
+	seq_tech = format & ((1<<3)-1);
+	format >>= 3;
+	flags = format & ((1<<3)-1);
+	format >>= 3;
+	mapping_qual = *cp++;
+	/* cp is now the variable sized section starting with reading name */
+    } else {
+	/* new sequence */
+	bin = 0;
+	left = 0;
+	right = 0;
+	seq_len = 0;
+	other_end = 0;
+	parent_rec = 0;
+	parent_type = 0;
+	seq_tech = 0;
+	flags = 0;
+	mapping_qual = 0;
+	format = 0;
+	cp = buf = "\0\0\0"; /* seq name, trace name, alignment */
+	len = 3;
+    }
 
     /* Generate in-memory data structure */
     slen = sizeof(seq_t) + len - (cp-buf) +
@@ -1387,6 +1423,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len) {
         return NULL;
     seq = (seq_t *)&ci->data;
 
+    seq->rec          = rec;
     seq->bin          = bin;
     seq->left         = left;
     seq->right        = right;
@@ -1495,7 +1532,7 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
     if (!bloc)
 	return NULL;
 
-    ci = seq_decode(bloc, bloc_len);
+    ci = seq_decode(bloc, bloc_len, rec);
     free(bloc);
 
     if (!ci)
@@ -1738,6 +1775,7 @@ static int io_seq_write(void *dbh, cached_item *ci) {
     return io_seq_write_view(io, seq, ci->view, ci->rec);
 }
 
+#if 0
 static int io_seq_create(void *dbh, void *vfrom) {
     seq_t *from = vfrom;
     g_io *io = (g_io *)dbh;
@@ -1771,6 +1809,14 @@ static int io_seq_create(void *dbh, void *vfrom) {
 
     return rec;
 }
+#else
+static int io_seq_create(void *dbh, void *vfrom) {
+    g_io *io = (g_io *)dbh;
+    GRec rec;
+
+    return allocate(io);
+}
+#endif
 
 static GRec io_seq_index_query(void *dbh, char *name) {
     g_io *io = (g_io *)dbh;
