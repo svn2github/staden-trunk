@@ -187,7 +187,7 @@ static int check_record(GFile *gfile, GCardinal rec)
 
 	/* Create a new record */
 	idx = (Index *)xmalloc(sizeof(*idx));
-	idx->aux_image = 0;
+	idx->aux_image = G_NO_IMAGE;
 	idx->aux_time = 0;
 	idx->aux_used = 0;
 	idx->flags = G_INDEX_NEW;
@@ -774,38 +774,9 @@ static int g_unlock_views(GDB *gdb, GView v)
 	    arr(View,gdb->view,v).next = -1;
 	} else {
 	    
-	    
-	    /*
-	     * Restoring the lock on the record.
-	     * There may be a better way of doing this.
-	     */
-	    Index *ind = g_read_index(gfile, cache->rec);
-	    image = ind->aux_image;
-	    
 	    /* free view */
 	    g_free_view(gdb,v);
 	    
-	    /*
-	     * remove reference from cache
-	     * if refs==0 and its image is different from default for record
-	     *    freetree_unregister();
-	     */
-	    {
-		/* reclaim image if no references and it is no longer the default */
-		if ( cache->image != image && cache->image != G_NO_IMAGE ) {
-		    int err;
-		    err = heap_free(gfile->dheap, cache->image);
-		    if (err) {
-			gerr_set(err);
-			fprintf(stderr,"** SERIOUS PROBLEM - file %s\n",
-				g_filename(gfile));
-			fprintf(stderr,"** In g_unlock_views(): "
-				"heap_free returned error code %d.\n"
-				,err);
-			panic_shutdown();
-		    }
-		}
-	    }
 	}
 
 
@@ -916,7 +887,7 @@ int g_read_(GDB *gdb, GClient c, GView v, void *buf, GCardinal len)
     Cache *cache;
 
     /* check arguments */
-    if (gdb==NULL || buf==NULL || len<=0 || check_client(gdb,c) || check_view(gdb,v))
+    if (gdb==NULL || buf==NULL || len<0 || check_client(gdb,c) || check_view(gdb,v))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
 
     cache = &arr(View,gdb->view,v).lcache;
@@ -1112,7 +1083,7 @@ int g_write_(GDB *gdb, GClient c, GView v, void *buf, GCardinal len)
     int err;
 
     /* check arguments */
-    if (gdb==NULL || buf==NULL || len<=0 || check_client(gdb,c) || check_view(gdb,v))
+    if (gdb==NULL || buf==NULL || len<0 || check_client(gdb,c) || check_view(gdb,v))
 	return gerr_set(GERR_INVALID_ARGUMENTS);
 
     if (gdb->gfile->check_header) {
