@@ -10,7 +10,6 @@
 #include "cs-object.h"
 #include "newgap_cmds.h"
 #include "contig_selector.h"
-#include "complement.h"
 //#include "contigEditor.h"
 #include "gap_globals.h"
 #include "tagdb.h"
