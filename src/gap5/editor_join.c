@@ -538,7 +538,7 @@ int edJoin(edview *xx) {
 	offset = -xx->link->lockOffset;
     }
 
-    offset += contig_offset(io, &cr) - contig_offset(io, &cl);
+    //offset += contig_offset(io, &cr) - contig_offset(io, &cl);
 
     cache_flush(io);
 

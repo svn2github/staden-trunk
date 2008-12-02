@@ -91,11 +91,11 @@ int contig_offset(GapIO *io, contig_t **c) {
 						   contig_get_bin(c));
     int offset;
 
-    if (bin->flags & BIN_COMPLEMENTED) {
-	offset = ((*c)->end + (*c)->start) - (bin->pos + bin->size) + 1;
-    } else {
+    //    if (bin->flags & BIN_COMPLEMENTED) {
+    //	offset = ((*c)->end + (*c)->start) - (bin->pos + bin->size) + 1;
+    //    } else {
 	offset = bin->pos;
-    }
+	//    }
 
     return offset;
 }

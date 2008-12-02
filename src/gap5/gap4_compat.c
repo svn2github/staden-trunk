@@ -597,6 +597,7 @@ void bell(void) {
 int complement_contig(GapIO *io, int crec) {
     contig_t *c;
     bin_index_t *b;
+    int len;
 
     if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
 	return -1;
@@ -610,9 +611,19 @@ int complement_contig(GapIO *io, int crec) {
 
     if (!(b = cache_rw(io, b)))
 	return -1;
+    if (!(c = cache_rw(io, c)))
+	return -1;
     
     b->flags ^= BIN_COMPLEMENTED;
     b->flags |= BIN_BIN_UPDATED;
+
+    len = c->end - c->start + 1;
+    c->start = 2*b->pos + b->size - c->end;
+    c->end = c->start + len-1;
+    b->pos -= c->start-1;
+    c->start = 1;
+    c->end = len;
+    //b->pos = c->end - (b->pos + b->size);
 
     cache_flush(io);
 

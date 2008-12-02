@@ -675,20 +675,8 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
     if (!found)
 	return -1;
 
-    /* FIXME: Complemented coordinates need more fixes here */
-    if (bin->flags & BIN_COMPLEMENTED) {
-	offset1 = bin->size-1 - offset1;
-	offset2 = bin->size-1 - offset2;
-	comp ^= 1;
-    }
-
-    offset1 += bin->pos;
-    offset2 += bin->pos;
-
     /* Find the position of this bin relative to the contig itself */
-    while (bin->parent_type == GT_Bin) {
-	bnum = bin->parent;
-	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+    for (;;) {
 	if (bin->flags & BIN_COMPLEMENTED) {
 	    offset1 = bin->size-1 - offset1;
 	    offset2 = bin->size-1 - offset2;
@@ -696,17 +684,14 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
 	}
 	offset1 += bin->pos;
 	offset2 += bin->pos;
+
+	if (bin->parent_type != GT_Bin)
+	    break;
+
+	bnum = bin->parent;
+	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
     }
 
-    /* Special case for root bin being complemented */
-    if ((bin->flags & BIN_COMPLEMENTED) && pos) {
-	contig_t *c = (contig_t *)cache_search(io, GT_Contig, bin->parent);
-	offset1 = bin->size-1 - (offset1 - bin->pos);
-	offset1 = c->end+c->start - (offset1 + bin->pos);
-	offset2 = bin->size-1 - (offset2 - bin->pos);
-	offset2 = c->end+c->start - (offset2 + bin->pos);
-    }
-    
     assert(bin->parent_type == GT_Contig);
 
     if (contig)
