@@ -111,6 +111,7 @@ typedef struct {
     int left, right;  /* clip left/right coordinates */
     int parent_rec;   /* template info */
     int parent_type;  /* template info */
+    int rec;          /* recno of this seq_t */
     int other_end;    /* recno of a seq_t, for simple read-pairs */
     unsigned int seq_tech:3;
     unsigned int flags:3;
