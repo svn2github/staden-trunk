@@ -100,9 +100,6 @@ static void edview_destroy(edview *xx) {
     xfree(xx);
 }
 
-/* ACGT to 0123 conversion */
-static unsigned char lookup[256], lookup_done = 0;
-
 static seq_t *get_seq(GapIO *io, int rec) {
     return (seq_t *)cache_search(io, GT_Seq, rec);
 }
@@ -238,7 +235,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 
 	case 'p': {
 	    int cnum, cpos;
-	    sequence_get_position(xx->io, seq, &cnum, &cpos);
+	    sequence_get_position(xx->io, seq, &cnum, &cpos, NULL);
 	    add_number(status_buf, &j, l1, l2, cpos);
 	    break;
 	}
@@ -706,10 +703,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    dir = '-';
 	    s = dup_seq(s);
 	    complement_seq_t(s);
-	}
-
-	if (s->len < 0) {
-	    sp += s->len+1;
 	}
 
 	left = s->left;
@@ -1218,7 +1211,7 @@ void edSetApos(edview *xx) {
 	xx->cursor_apos = xx->cursor_pos;
     } else {
 	int cnum, cpos;
-	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos);
+	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos, NULL);
 	xx->cursor_apos = cpos + xx->cursor_pos;
     }
 }
