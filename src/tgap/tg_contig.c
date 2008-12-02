@@ -92,7 +92,7 @@ int contig_offset(GapIO *io, contig_t **c) {
     int offset;
 
     if (bin->flags & BIN_COMPLEMENTED) {
-	offset = ((*c)->end + (*c)->start) - (bin->pos + bin->size) + 2;
+	offset = ((*c)->end + (*c)->start) - (bin->pos + bin->size) + 1;
     } else {
 	offset = bin->pos;
     }
@@ -368,7 +368,7 @@ contig_t *contig_new(GapIO *io, char *name) {
     /* Initialise it */
     c = (contig_t *)cache_search(io, GT_Contig, rec);
     c = cache_rw(io, c);
-    c->bin = bin_new(io, 0, 16, rec, GT_Contig);
+    c->bin = bin_new(io, 0, MIN_BIN_SIZE, rec, GT_Contig);
     if (name)
 	contig_set_name(io, &c, name);
     else
@@ -448,14 +448,22 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		continue;
 	    if (NMAX(l->start, l->end) >= start
 		&& NMIN(l->start, l->end) <= end) {
+		int st, en;
 		if (count >= *alloc) {
 		    *alloc = *alloc ? *alloc * 2 : 16;
 		    *results = (rangec_t *)realloc(*results,
 						   *alloc * sizeof(rangec_t));
 		}
 		(*results)[count].rec   = l->rec;
-		(*results)[count].start = NORM(l->start);
-		(*results)[count].end   = NORM(l->end);
+		st = NORM(l->start);
+		en = NORM(l->end);
+		if (st <= en) {
+		    (*results)[count].start = st;
+		    (*results)[count].end   = en;
+		} else {
+		    (*results)[count].start = en;
+		    (*results)[count].end   = st;
+		}
 		(*results)[count].comp  = complement;
 		count++;
 	    }
@@ -572,6 +580,30 @@ rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
     return r;
 }
 
+
+static void contig_bin_dump2(GapIO *io, int bin_num, int level) {
+    int i;
+    bin_index_t *bin = get_bin(io, bin_num);
+
+    cache_incr(io, bin);
+
+    printf("%*sBin %d\tpos %d\tsize %d\tleft %d\tright %d\tflags %d\n", 
+	   level*4, "", bin->rec, bin->pos, bin->size,
+	   bin->child[0], bin->child[1], bin->flags);
+
+    for (i = 0; i < 2; i++) {
+	if (!bin->child[i])
+	    continue;
+	contig_bin_dump2(io, bin->child[i], level+1);
+    }
+
+    cache_decr(io, bin);
+}
+
+void contig_bin_dump(GapIO *io, int cnum) {
+    contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
+    contig_bin_dump2(io, contig_get_bin(&c), 0);
+}
 
 /* ---------------------------------------------------------------------- */
 /* iterators on a contig to allow scanning back and forth */
@@ -1022,4 +1054,35 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     free(tv);
 
     return t;
+}
+
+/*
+ * Destroys contig 'rec'.
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int contig_destroy(GapIO *io, int rec) {
+    int i, j;
+
+    printf("Destroy contig rec %d\n", rec);
+    io->contig_order = cache_rw(io, io->contig_order);
+    io->db = cache_rw(io, io->db);
+
+    for (i = j = 0; i < io->db->Ncontigs; i++) {
+	if (arr(GCardinal, io->contig_order, i) == rec) {
+	    continue;
+	}
+	arr(GCardinal, io->contig_order, j) =
+	    arr(GCardinal, io->contig_order, i);
+	j++;
+    }
+
+    if (i == j) {
+	fprintf(stderr, "Attempted to remove unknown contig, rec %d\n",
+		rec);
+	return -1;
+    }
+
+    io->db->Ncontigs--;
+    return 0;
 }
