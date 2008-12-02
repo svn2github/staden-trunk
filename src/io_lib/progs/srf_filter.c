@@ -765,7 +765,11 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
               exit(1);
             }
 
+	    mfdestroy(mf);
           }
+
+	  if( ztr_tmp )
+	      delete_ztr(ztr_tmp);
 
           break;
         }
