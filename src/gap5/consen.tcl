@@ -551,8 +551,6 @@ proc get_consensus {args} {
     }
     set io $opt(-io)
 
-    parray opt
-
     if {[catch {set fd [open $opt(-outfile) w]} err]} {
 	tk_messageBox \
 	    -message "Failed to write to $opt(-outfile)" \
@@ -560,7 +558,6 @@ proc get_consensus {args} {
 	    -type ok
 	return
     }
-    puts $fd
 
     foreach contig $opt(-contigs) {
 	foreach {id start end} $contig {
@@ -603,4 +600,5 @@ proc get_consensus {args} {
 	    }
 	}
     }
+    close $fd;
 }
