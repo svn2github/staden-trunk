@@ -417,14 +417,15 @@ int srf_read_trace_hdr(srf_t *srf, srf_trace_hdr_t *th) {
     th->trace_hdr_size -= z+1;
 
     /* The data header itself */
+    if (th->trace_hdr)
+	free(th->trace_hdr);
     if (th->trace_hdr_size) {
-	if (th->trace_hdr)
-	    free(th->trace_hdr);
 	if (NULL == (th->trace_hdr = malloc(th->trace_hdr_size)))
 	    return -1;
 	if (th->trace_hdr_size != fread(th->trace_hdr, 1,
 					  th->trace_hdr_size, srf->fp)) {
 	    free(th->trace_hdr);
+	    th->trace_hdr = NULL;
 	    return -1;
 	}
     } else {

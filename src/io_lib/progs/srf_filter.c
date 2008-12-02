@@ -628,6 +628,8 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
             exit(1);
           }
 
+	  mfdestroy(mf);
+
           break;
 
 	case SRFB_TRACE_BODY: {
