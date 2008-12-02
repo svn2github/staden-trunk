@@ -71,10 +71,6 @@ int calc_cons(GapIO *io, rangec_t *r, int nr, int xpos, int wid,
 	    complement_seq_t(s);
 	}
 
-	if (s->len < 0) {
-	    sp += s->len+1;
-	}
-
 	seq = (unsigned char *)s->seq;
 	left = s->left;
 	right = s->right;
@@ -381,10 +377,6 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
 	    complement_seq_t(s);
 	}
 
-	if (s->len < 0) {
-	    sp += s->len+1;
-	}
-
 	left = s->left;
 	right = s->right;
 
@@ -622,7 +614,7 @@ void curses_loop(GapIO *io, contig_t **cp, int xpos, int mode) {
 		    fflush(stdout);
 		} else {
 		    int c, x;
-		    sequence_get_position(io, n, &c, &x);
+		    sequence_get_position(io, n, &c, &x, NULL);
 		    /* FIXME: check c and *cp are same contig */
 		    xpos = x;
 		}
