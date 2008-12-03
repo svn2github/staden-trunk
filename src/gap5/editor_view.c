@@ -282,7 +282,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'b':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		char base[2];
-		base[0] = s->seq[pos];
+		sequence_get_base(xx->io, &s, pos, &base[0], NULL, 1);
 		base[1] = 0;
 		add_string(status_buf, &j, l1, l2, base);
 	    } else {
