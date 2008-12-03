@@ -464,7 +464,7 @@ int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, char *scale) {
     ztr_chunk_t *zc;
     char *data, *mdata;
     int dlen, mdlen;
-    
+
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
 				      ++z->nchunks * sizeof(ztr_chunk_t));
 
@@ -481,27 +481,40 @@ int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, char *scale) {
 }
 
 int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
+    static int qlookup[256];
+    static int qlookup_done = 0;
     int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
     int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
     ztr_chunk_t *zc;
     char *data;
-    
+    int i, j;
+
+    /*
+     * May wish to store in log-odds format instead? If so edit this
+     * and add SCALE=LO meta-data. 
+     */
+    if (!qlookup_done) {
+	for (j = 0; j < 255; j++) {
+	    qlookup[j] = (int)((10*log(1+pow(10, (j-64)/10.0))/log(10)+.499));
+	}
+	qlookup_done = 1;
+    }
+
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
 				      ++z->nchunks * sizeof(ztr_chunk_t));
 
     zc = &z->chunk[z->nchunks-1];
-    if (NULL == (data = xmalloc(2 + nbase_1 + nbase_2)))
+    if (NULL == (data = xmalloc(1 + nbase_1 + nbase_2)))
 	return -1;
     data[0] = ZTR_FORM_RAW;
-    memcpy(data+1, qcal_1, nbase_1);
-    *(data + 1 + nbase_1) = 0;
-    if (NULL != qcal_2) {
-        memcpy(data + 2 + nbase_1, qcal_2, nbase_2);
-    }
+    for (i = 1, j = 0; j < nbase_1; i++, j++)
+	data[i] = qlookup[qcal_1[j]];
+    for (j = 0; j < nbase_2; i++, j++)
+	data[i] = qlookup[qcal_2[j]];
     zc->type = ZTR_TYPE_CNF1;
     zc->mdlength = 0;
     zc->mdata    = NULL;
-    zc->dlength  = nbase_1 + nbase_2 + 2;
+    zc->dlength  = nbase_1 + nbase_2 + 1;
     zc->data     = data;
     zc->ztr_owns = 1;
 
@@ -1061,10 +1074,14 @@ int get_fastq_entry(zfp *fp, char *name, char *seq, char *qual) {
 
     if (NULL == zfgets(seq, MAX_CYCLES, fp))
 	return -1;
+    if (cp = strrchr(seq, '\n'))
+	*cp = 0;
     if (NULL == zfgets(name2, 80, fp))
 	return -1;
     if (NULL == zfgets(qual, MAX_CYCLES, fp))
 	return -1;
+    if (cp = strrchr(qual, '\n'))
+	*cp = 0;
 
     return 0;
 }
