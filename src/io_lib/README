@@ -1,4 +1,4 @@
-			IO_LIB VERSION 1.11.4
+			IO_LIB VERSION 1.11.5
 			=====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -26,18 +26,25 @@ mfread_reading) function call and analogous write_reading functions
 too. See the file include/Read.h for the generic 'Read' structure.
 
 
+Imminent removal of illumina2srf and srf2illumina
+=================================================
+
+I plan for the illumina2srf and srf2illumina tools to be removed from
+io_lib in a future release. Continued support for these programs is
+best done by Illumina themselves so they can tie in specific versions
+with specific pipeline releases.
+
+
 What's new in this release?
 ===========================
 
-There are two new SRF tools; srf_info and srf_filter.
-Srf_info provides some basic metrics on the contents of an SRF file -
-how many reads there are and what sort of data they contain.
-Srf_filter takes an SRF file and produces a new one containing just
-certain types of data (eg processed vs raw) or certain reads
-(good/bad or matching specific name patterns).
+The main reason for this release is an important bug-fix to
+illumina2srf. The quality values when using both -qf and -qr were
+shifted for the reverse read. (Using only -qf on a single-ended run or
+a concatenated paired-ended run was fine.)
 
-In addition to this there's the usual clutch of bug fixes, again
-mainly centred around SRF support.
+Similarly reading quality values from qcal files has been fixed, but I
+believe this was never fully implemented before.
 
 See CHANGES and ChangeLog for full details.
 

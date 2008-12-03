@@ -1,3 +1,30 @@
+Version 1.11.5 (3rd December 2008)
+--------------
+
+* Illumina2srf
+  - Fixed major bug with using *both* -qf and -qr together. The
+    quality values for the reverse strand were shifted by one
+    character.
+
+  - Fixed qcal quality values so they're not shifted down by 64
+    (illumina format fastq).
+
+  - Fixed bugs in parsing directory names if not matching the expected
+    format.
+
+* Removed major memory leaks from srf_filter.
+
+* hash_sff now has support for outputting the table of contents to a
+  new file rather than appending to an existing sff file or copying
+  the entire contents to a new file.
+
+* Various man pages have been added. The list is still incomplete
+  though. Additions are most welcome.
+
+* New program: srf_list. This lists and/or counts the number of
+  sequences within an SRF file.
+
+
 Version 1.11.4 (11th September 2008)
 --------------
 
