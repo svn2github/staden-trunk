@@ -77,7 +77,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.10"
+#define I2S_VERSION "1.11"
 
 /* Move to autoconf */
 #define HAVE_POPEN
