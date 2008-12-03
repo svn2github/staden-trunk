@@ -46,11 +46,6 @@ int sequence_set_trace_name  (GapIO *io, seq_t **s, char *trace_name);
 int sequence_set_seq         (GapIO *io, seq_t **s, char *seq);
 int sequence_set_conf        (GapIO *io, seq_t **s, char *conf);
 
-int sequence_insert_base(GapIO *io, seq_t **s, int pos,
-			 char base, char conf);
-
-int sequence_delete_base(GapIO *io, seq_t **s, int pos);
-
 int sequence_new_from(GapIO *io, seq_t *s);
 
 GRec sequence_index_query(GapIO *io, char *name);
@@ -82,9 +77,16 @@ seq_t *dup_seq(seq_t *s);
 
 void complement_seq_t(seq_t *s);
 
-int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf);
-int sequence_get_base4(GapIO *io, seq_t **s, int pos,
-		       char *base, double *conf);
-int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf);
+int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf,
+		      int contig_orient);
+int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
+		       int contig_orient);
+int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
+			  int contig_orient);
+int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
+			 int contig_orient);
+int sequence_delete_base(GapIO *io, seq_t **s, int pos,
+			 int contig_orient);
+
 
 #endif /* _TG_SEQUENCE_H_ */

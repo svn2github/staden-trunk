@@ -683,6 +683,41 @@ proc editor_insert_gap {w where} {
     $w redraw
 }
 
+proc editor_delete_base {w where} {
+    upvar $w opt
+
+    set io [$w io]
+
+    if {$where == ""} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+
+    $w cursor_left
+    incr pos -1
+
+    if {$type == 18} {
+	set seq [$io get_sequence $rec]
+	$seq delete_base $pos
+
+	store_undo $w \
+	    "$seq insert_base $pos * 20; $w cursor_right" \
+	    "$seq delete_base $pos; $w cursor_left"
+    } else {
+	set contig [$io get_contig $rec]
+
+	$contig delete_base $pos
+
+	store_undo $w \
+	    "$contig insert_base $pos; $w cursor_right" \
+	    "$contig delete_base $pos; $w cursor_left"
+    }
+    
+    $w redraw
+}
+
 proc editor_move_seq {w where direction} {
     upvar $w opt
 
@@ -866,6 +901,9 @@ bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
 bind Editor <Key-t> {editor_edit_base %W t [%W get_number]}
 bind Editor <Key-i> {editor_insert_gap %W [%W get_number]}
+bind Editor <Key-asterisk> {editor_insert_gap %W [%W get_number]}
+bind Editor <Key-Delete> {editor_delete_base %W [%W get_number]}
+bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
 
 bind Editor <Control-Key-Left>  {editor_move_seq %W [%W get_number] -1}
 bind Editor <Control-Key-Right> {editor_move_seq %W [%W get_number]  1}

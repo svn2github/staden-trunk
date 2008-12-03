@@ -293,7 +293,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'c':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		int q;
-		sequence_get_base(xx->io, &s, pos, NULL, &q);
+		sequence_get_base(xx->io, &s, pos, NULL, &q, 1);
 		if (raw) {
 		    add_double(status_buf, &j, l1, l2, 1 - pow(10, q/-10.0));
 		} else {
@@ -307,7 +307,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'A':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[0]));
 		else {
@@ -322,7 +322,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'C':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[1]));
 		else {
@@ -337,7 +337,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'G':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[2]));
 		else {
@@ -352,7 +352,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'T':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[3]));
 		else {
@@ -734,7 +734,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		char base;
 		int qual;
 
-		sequence_get_base(xx->io, &s, p+seq_p, &base, &qual);
+		sequence_get_base(xx->io, &s, p+seq_p, &base, &qual, 0);
 		line[p2] = base;
 		
 		/* Cutoffs */

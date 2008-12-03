@@ -331,141 +331,6 @@ int sequence_set_seq (GapIO *io, seq_t **s, char *seq) {return -1;}
 int sequence_set_conf(GapIO *io, seq_t **s, char *conf) {return -1;}
 
 
-/*
- * Insert into position 'pos' of a sequence, where pos starts from 0
- * (before first base).
- */
-int sequence_insert_base(GapIO *io, seq_t **s, int pos,
-			 char base, char conf) {
-    seq_t *n;
-    int p2, alen;
-
-    if (!(n = cache_rw(io, *s)))
-	return -1;
-
-    n = cache_item_resize(n, sizeof(*n) + 
-			  n->name_len+1 +
-			  n->trace_name_len+1 +
-			  n->alignment_len+1 +
-			  (ABS(n->len)+1)*(1+sequence_conf_size(n)));
-    if (NULL == n)
-	return -1;
-
-    n->name = (char *)&n->data;
-    n->trace_name = n->name + n->name_len + 1;
-    n->alignment = n->trace_name + n->trace_name_len + 1;
-    n->seq = n->alignment + n->alignment_len + 1;
-    n->conf = n->seq + ABS(n->len);
-
-    p2 = n->len < 0
-	? -n->len - pos
-	: pos;
-    alen = ABS(n->len);
-
-    /* Shift */
-    memmove(&n->seq[p2+1], &n->seq[p2], alen-p2+alen);
-    n->conf++;
-    if (n->format == SEQ_FORMAT_CNF4) {
-	memmove(&n->conf[(p2+1)*4], &n->conf[p2*4], (alen-p2)*4);
-    } else {
-	memmove(&n->conf[p2+1], &n->conf[p2], alen-p2);
-    }
-
-    if (n->len < 0)
-	n->len--;
-    else
-	n->len++;
-
-    /* Set */
-    n->seq[p2] = base;
-    if (n->format == SEQ_FORMAT_CNF4) {
-	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
-	switch (base) {
-	case 'A': case 'a':
-	    n->conf[p2*4+0] = conf;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = remainder;
-	    break;
-	case 'C': case 'c':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = conf;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = remainder;
-	    break;
-	case 'G': case 'g':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = conf;
-	    n->conf[p2*4+3] = remainder;
-	    break;
-	case 'T': case 't':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = conf;
-	    break;
-	default:
-	    n->conf[p2*4+0] = -5;
-	    n->conf[p2*4+1] = -5;
-	    n->conf[p2*4+2] = -5;
-	    n->conf[p2*4+3] = -5;
-	    break;
-	}
-    } else {
-	n->conf[p2] = conf;
-    }
-
-    if (p2 < n->left)
-	n->left++;
-
-    if (p2 < n->right)
-	n->right++;
-
-    return 0;
-}
-
-/*
- * Delete position 'pos' of a sequence, where pos starts from 0
- */
-int sequence_delete_base(GapIO *io, seq_t **s, int pos) {
-    seq_t *n;
-    int p2, alen;
-
-    if (!(n = cache_rw(io, *s)))
-	return -1;
-
-    if (n->len < 0)
-	n->len++;
-    else
-	n->len--;
-
-    if (p2 < n->left)
-	n->left--;
-
-    if (p2 < n->right)
-	n->right--;
-
-    p2 = n->len < 0
-	? -n->len - pos
-	: pos;
-    alen = ABS(n->len);
-
-    if (p2 >= alen)
-	return 0;
-
-    /* Shift */
-    memmove(&n->seq[p2], &n->seq[p2+1], alen-p2+alen-1);
-    n->conf--;
-    if (n->format == SEQ_FORMAT_CNF4) {
-	memmove(&n->conf[p2*4], &n->conf[(p2+1)*4], (alen-1-p2)*4);
-    } else {
-	memmove(&n->conf[p2], &n->conf[p2+1], alen-1-p2);
-    }
-
-    return 0;
-}
-
 /* ------------------------------------------------------------------------ 
  * Trivial one-off sequence query functions
  */
@@ -729,6 +594,23 @@ int sequence_get_contig(GapIO *io, GRec snum) {
  * Base editing functions
  */
 
+int sequence_orient_pos(GapIO *io, seq_t **s, int pos, int *comp) {
+    int swapped;
+    sequence_get_position(io, (*s)->rec, NULL, NULL, &swapped);
+
+    if (((*s)->len > 0) ^ swapped) {
+	swapped = 0;
+    } else {
+	pos = ABS((*s)->len)-1 - pos;
+	swapped = 1;
+    }
+
+    if (comp)
+	*comp = swapped;
+
+    return pos;
+}
+
 #define MAX4(ip)         \
 ((ip)[0] > (ip)[1]       \
  ? ((ip)[0] > (ip)[2]    \
@@ -751,14 +633,23 @@ int sequence_get_contig(GapIO *io, GRec snum) {
  * Operates on position 'pos' in the displayed orientation rather than the
  * stored orientation.
  */
-int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf) {
+int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf,
+		      int contig_orient) {
     seq_t *n = *s;
+    int comp = 0;
 
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
-    if (base)
-	*base = n->seq[pos];
+    if (contig_orient)
+	pos = sequence_orient_pos(io, s, pos, &comp);
+
+    if (base) {
+	if (comp)
+	    *base = complementary_base[(unsigned char)n->seq[pos]];
+	else
+	    *base = n->seq[pos];
+    }
     if (conf) {
 	if (n->format != SEQ_FORMAT_CNF4) {
 	    *conf = n->conf[pos];
@@ -880,9 +771,10 @@ static int recalibrate[81] = {
  * the remainder using (1-p)/3. Otherwise we assume we store 4 log-odds
  * scores instead.
  */
-int sequence_get_base4(GapIO *io, seq_t **s, int pos,
-		       char *base, double *conf) {
+int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
+		       int contig_orient) {
     seq_t *n = *s;
+    int comp = 0;
 
     if (!lookup_init) {
 	int i;
@@ -900,8 +792,14 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
+    if (contig_orient)
+	pos = sequence_orient_pos(io, s, pos, &comp);
+
     if (base) {
-	*base = n->seq[pos];
+	if (comp)
+	    *base = complementary_base[(unsigned char)n->seq[pos]];
+	else
+	    *base = n->seq[pos];
     }
 
     if (conf) {
@@ -950,6 +848,12 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos,
 
 	//richard_munge_conf(conf);
 	//rob_munge_conf(conf);
+
+	if (comp) {
+	    double tmp;
+	    tmp = conf[0]; conf[0] = conf[3]; conf[3] = tmp;
+	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
+	}
     }
 
     return 0;
@@ -1104,11 +1008,10 @@ void rob_munge_conf(double *lp) {
     //printf("%f %f %f %f\n", lp[0], lp[1], lp[2], lp[3]);
 }
 
-int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {
+int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
+			  int contig_orient) {
     seq_t *n;
-    int comp;
-
-    sequence_get_position(io, (*s)->rec, NULL, NULL, &comp);
+    int comp = 0;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
@@ -1116,57 +1019,207 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf) {
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
+    if (contig_orient)
+	pos = sequence_orient_pos(io, s, pos, &comp);
+
     if (n->format != SEQ_FORMAT_CNF4) {
-	if ((n->len > 0) ^ comp) {
-	    n->seq[pos] = base;
+	if (comp) {
+	    n->seq[pos] = complementary_base[(unsigned char)base];
 	    n->conf[pos] = conf;
 	} else {
-	    n->seq[ABS(n->len)-1 - pos] = complementary_base[(unsigned char)base];
-	    n->conf[ABS(n->len)-1 - pos] = conf;
+	    n->seq[pos] = base;
+	    n->conf[pos] = conf;
 	}
     } else {
 	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
-	int p2 = n->len > 0 ? pos : -n->len-1 -pos;
 
-	n->seq[p2] = (n->len > 0) ^ comp
-	    ? base
-	    : complementary_base[(unsigned char)base];
+	n->seq[pos] = comp ? complementary_base[(unsigned char)base] : base;
 
 	switch(base) {
 	case 'A': case 'a':
-	    n->conf[p2*4+0] = conf;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = remainder;
+	    n->conf[pos*4+0] = comp ? remainder : conf;
+	    n->conf[pos*4+1] = remainder;
+	    n->conf[pos*4+2] = remainder;
+	    n->conf[pos*4+3] = comp ? conf : remainder;
 	    break;
 	case 'C': case 'c':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = conf;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = remainder;
+	    n->conf[pos*4+0] = remainder;
+	    n->conf[pos*4+1] = comp ? remainder : conf;
+	    n->conf[pos*4+2] = comp ? conf : remainder;
+	    n->conf[pos*4+3] = remainder;
 	    break;
 	case 'G': case 'g':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = conf;
-	    n->conf[p2*4+3] = remainder;
+	    n->conf[pos*4+0] = remainder;
+	    n->conf[pos*4+1] = comp ? conf : remainder;
+	    n->conf[pos*4+2] = comp ? remainder : conf;
+	    n->conf[pos*4+3] = remainder;
 	    break;
 	case 'T': case 't':
-	    n->conf[p2*4+0] = remainder;
-	    n->conf[p2*4+1] = remainder;
-	    n->conf[p2*4+2] = remainder;
-	    n->conf[p2*4+3] = conf;
+	    n->conf[pos*4+0] = comp ? conf : remainder;
+	    n->conf[pos*4+1] = remainder;
+	    n->conf[pos*4+2] = remainder;
+	    n->conf[pos*4+3] = comp ? remainder : conf;
 	    break;
 	default:
-	    n->conf[p2*4+0] = -5;
-	    n->conf[p2*4+1] = -5;
-	    n->conf[p2*4+2] = -5;
-	    n->conf[p2*4+3] = -5;
+	    n->conf[pos*4+0] = -5;
+	    n->conf[pos*4+1] = -5;
+	    n->conf[pos*4+2] = -5;
+	    n->conf[pos*4+3] = -5;
 	    break;
 	}
     }
 
     *s = n;
+
+    return 0;
+}
+
+/*
+ * Insert into position 'pos' of a sequence, where pos starts from 0
+ * (before first base).
+ */
+int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
+			 int contig_orient) {
+    seq_t *n;
+    int alen;
+    int comp = 0;
+
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+
+    n = cache_item_resize(n, sizeof(*n) + 
+			  n->name_len+1 +
+			  n->trace_name_len+1 +
+			  n->alignment_len+1 +
+			  (ABS(n->len)+1)*(1+sequence_conf_size(n)));
+    if (NULL == n)
+	return -1;
+
+    if (contig_orient) {
+	pos = sequence_orient_pos(io, s, pos, &comp);
+	if (comp)
+	    pos++;
+    } else {
+	pos = n->len < 0
+	    ? -n->len - pos
+	    : pos;
+    }
+
+    n->name = (char *)&n->data;
+    n->trace_name = n->name + n->name_len + 1;
+    n->alignment = n->trace_name + n->trace_name_len + 1;
+    n->seq = n->alignment + n->alignment_len + 1;
+    n->conf = n->seq + ABS(n->len);
+
+    alen = ABS(n->len);
+
+    /* Shift */
+    memmove(&n->seq[pos+1], &n->seq[pos], alen-pos+alen);
+    n->conf++;
+    if (n->format == SEQ_FORMAT_CNF4) {
+	memmove(&n->conf[(pos+1)*4], &n->conf[pos*4], (alen-pos)*4);
+    } else {
+	memmove(&n->conf[pos+1], &n->conf[pos], alen-pos);
+    }
+
+    if (n->len < 0)
+	n->len--;
+    else
+	n->len++;
+
+    /* Set */
+    n->seq[pos] = comp ? complementary_base[(unsigned char)base] : base;
+    if (n->format == SEQ_FORMAT_CNF4) {
+	double remainder = -4.34294482*log(2+3*pow(10, conf/10.0));
+	switch (base) {
+	case 'A': case 'a':
+	    n->conf[pos*4+0] = comp ? remainder : conf;
+	    n->conf[pos*4+1] = remainder;
+	    n->conf[pos*4+2] = remainder;
+	    n->conf[pos*4+3] = comp ? conf : remainder;
+	    break;
+	case 'C': case 'c':
+	    n->conf[pos*4+0] = remainder;
+	    n->conf[pos*4+1] = comp ? remainder : conf;
+	    n->conf[pos*4+2] = comp ? conf : remainder;
+	    n->conf[pos*4+3] = remainder;
+	    break;
+	case 'G': case 'g':
+	    n->conf[pos*4+0] = remainder;
+	    n->conf[pos*4+1] = comp ? conf : remainder;
+	    n->conf[pos*4+2] = comp ? remainder : conf;
+	    n->conf[pos*4+3] = remainder;
+	    break;
+	case 'T': case 't':
+	    n->conf[pos*4+0] = comp ? conf : remainder;
+	    n->conf[pos*4+1] = remainder;
+	    n->conf[pos*4+2] = remainder;
+	    n->conf[pos*4+3] = comp ? remainder : conf;
+	    break;
+	default:
+	    n->conf[pos*4+0] = -5;
+	    n->conf[pos*4+1] = -5;
+	    n->conf[pos*4+2] = -5;
+	    n->conf[pos*4+3] = -5;
+	    break;
+	}
+    } else {
+	n->conf[pos] = conf;
+    }
+
+    if (pos < n->left)
+	n->left++;
+
+    if (pos < n->right)
+	n->right++;
+
+    return 0;
+}
+
+/*
+ * Delete position 'pos' of a sequence, where pos starts from 0
+ */
+int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
+    seq_t *n;
+    int alen;
+    int comp = 0;
+
+    if (!(n = cache_rw(io, *s)))
+	return -1;
+
+    if (n->len < 0)
+	n->len++;
+    else
+	n->len--;
+
+    if (contig_orient) {
+	pos = sequence_orient_pos(io, s, pos, &comp);
+	if (comp)
+	    pos++;
+    } else {
+	pos = n->len < 0
+	    ? -n->len - pos
+	    : pos;
+    }
+    alen = ABS(n->len);
+
+    if (pos < n->left)
+	n->left--;
+
+    if (pos < n->right)
+	n->right--;
+
+    if (pos >= alen)
+	return 0;
+
+    /* Shift */
+    memmove(&n->seq[pos], &n->seq[pos+1], alen-pos+alen-1);
+    n->conf--;
+    if (n->format == SEQ_FORMAT_CNF4) {
+	memmove(&n->conf[pos*4], &n->conf[(pos+1)*4], (alen-1-pos)*4);
+    } else {
+	memmove(&n->conf[pos], &n->conf[pos+1], alen-1-pos);
+    }
 
     return 0;
 }

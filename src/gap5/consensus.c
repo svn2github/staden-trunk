@@ -223,7 +223,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    if (sp+j > end)
 		continue;
 	    
-	    sequence_get_base4(io, &s, j+off, &base, q);
+	    sequence_get_base4(io, &s, j+off, &base, q, 0);
 
 	    switch (lookup[base]) {
 	    case 0: case 1: case 2: case 3: /* ACGT */

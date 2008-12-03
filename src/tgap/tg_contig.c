@@ -121,7 +121,7 @@ static int contig_insert_base2(GapIO *io, int bnum,
 
     /* Normalise pos for complemented bins */
     if (bin->flags & BIN_COMPLEMENTED) {
-	pos = offset + bin->size-1 - pos;
+	pos = offset + bin->size - pos;
     } else {
 	pos -= offset;
     }
@@ -140,7 +140,7 @@ static int contig_insert_base2(GapIO *io, int bnum,
 	    /* Insert */
 	    seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	    sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
-				 base, conf);
+				 base, conf, 0);
 	    
 	    r->end++;
 	    bin->flags |= BIN_RANGE_UPDATED;
@@ -179,7 +179,7 @@ static int contig_insert_base2(GapIO *io, int bnum,
 		contig_insert_base2(io, bin->child[i], pos,
 				    MIN(ch->pos, ch->pos + ch->size-1),
 				    base, conf);
-		break;
+		//break;
 	    }
 	}
 
@@ -256,7 +256,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
 
     /* Normalise pos for complemented bins */
     if (bin->flags & BIN_COMPLEMENTED) {
-	pos = offset + bin->size-1 - pos;
+	pos = offset + bin->size - pos - 1;
     } else {
 	pos -= offset;
     }
@@ -279,7 +279,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
 		r->start = r->end = -1;
 	    } else {
 		/* Delete */
-		sequence_delete_base(io, &s, pos - MIN(r->start, r->end));
+		sequence_delete_base(io, &s, pos - MIN(r->start, r->end), 0);
 	    
 		r->end--;
 		bin->flags |= BIN_RANGE_UPDATED;
@@ -323,7 +323,7 @@ static int contig_delete_base2(GapIO *io, int bnum,
 		pos <= MAX(ch->pos, ch->pos + ch->size-1)) {
 		contig_delete_base2(io, bin->child[i], pos,
 				    MIN(ch->pos, ch->pos + ch->size-1));
-		break;
+		//break;
 	    }
 	}
 
