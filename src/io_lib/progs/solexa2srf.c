@@ -486,12 +486,12 @@ int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
     int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
     int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
     ztr_chunk_t *zc;
-    char *data;
+    char *data, *mdata;
     int i, j;
 
     /*
      * May wish to store in log-odds format instead? If so edit this
-     * and add SCALE=LO meta-data. 
+     * and set meta-data to SCALE=LO instead.
      */
     if (!qlookup_done) {
 	for (j = 0; j < 255; j++) {
@@ -503,6 +503,9 @@ int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
 				      ++z->nchunks * sizeof(ztr_chunk_t));
 
+    mdata = (char *)malloc(9);
+    sprintf(mdata, "SCALE%cPH", 0);
+
     zc = &z->chunk[z->nchunks-1];
     if (NULL == (data = xmalloc(1 + nbase_1 + nbase_2)))
 	return -1;
@@ -512,8 +515,8 @@ int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
     for (j = 0; j < nbase_2; i++, j++)
 	data[i] = qlookup[qcal_2[j]];
     zc->type = ZTR_TYPE_CNF1;
-    zc->mdlength = 0;
-    zc->mdata    = NULL;
+    zc->mdlength = 9;
+    zc->mdata    = mdata;
     zc->dlength  = nbase_1 + nbase_2 + 1;
     zc->data     = data;
     zc->ztr_owns = 1;
