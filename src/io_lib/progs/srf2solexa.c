@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -58,6 +59,20 @@
 #define PROCESSED (1<<1)
 
 /* ------------------------------------------------------------------------ */
+
+static unsigned char ph2lo_print[256];
+static unsigned char lo2lo_print[256];
+
+/*
+ * Initialise the phred to printable log-odds lookup table
+ */
+void init_ph2lo(void) {
+    int i;
+    for (i = 0; i < 255; i++) {
+	ph2lo_print[i] = 10*log(pow(10, i/10.0)-1)/log(10) + 64;
+	lo2lo_print[i] = i + 64;
+    }
+}
 
 /*
  * Parses a name assuming it consists of:
@@ -172,21 +187,26 @@ void dump_conf4(FILE *fp, char *seq, signed char *bytes, int nbytes) {
     fprintf(fp, "\n");
 }
 
-void dump_qcal(FILE *fp[], signed char *bytes, int nbytes) {
-    int read_1 = strlen(bytes);
+void dump_qcal(FILE *fp[], signed char *bytes, int nbytes, int logodds,
+	       int pair) {
+    int read_1;
+    unsigned char *table = logodds ? ph2lo_print : lo2lo_print;
     int i = 0;
+
+    if (fp[1])
+	read_1 = pair ? pair : nbytes / 2; /* best guess */
+    else
+	read_1 = nbytes;
+
     while (read_1 > i) {
-        fprintf(fp[0], "%c", (char)(*(bytes+i)));
-        ++i;
+	putc(table[((unsigned char *)bytes)[i++]], fp[0]);
     }
-    fprintf(fp[0], "\n");
+    putc('\n', fp[0]);
     if (NULL != fp[1]) {
-        ++i; /* skip the 0 */
         while (nbytes > i) {
-            fprintf(fp[1], "%c", (char)(*(bytes+i)));
-            ++i;
+	    putc(table[((unsigned char *)bytes)[i++]], fp[1]);
         }
-        fprintf(fp[1], "\n");
+	putc('\n', fp[1]);
     }
 }
 
@@ -218,6 +238,7 @@ void dump(ztr_t *z,
 		    lane, tile, x, y,
 		    chunks[0]->dlength-1,
 		    chunks[0]->data+1);
+	free(chunks);
     }
 
     /* Confidence */
@@ -229,17 +250,33 @@ void dump(ztr_t *z,
 	}
 
 	dump_conf4(fp_prb, seq, chunks[0]->data+1, chunks[0]->dlength-1);
+	free(chunks);
     }
 
     /* QCal */
     if (fp_qcal[0]) {
+	char *key;
+	int lo, nregn, pair = 0;
+	ztr_chunk_t **regn;
+
+	regn = ztr_find_chunks(z, ZTR_TYPE_REGN, &nregn);
+	if (regn) {
+	    int32_t b;
+	    memcpy(&b, regn[0]->data+1, 4);
+	    pair = be_int4(b);
+	    free(regn);
+	}
+
 	chunks = ztr_find_chunks(z, ZTR_TYPE_CNF1, &nc);
 	if (nc != 1) {
 	    fprintf(stderr, "Zero or greater than one CNF chunks found.\n");
 	    return;
 	}
 
-	dump_qcal(fp_qcal, chunks[0]->data+1, chunks[0]->dlength-1);
+	key = ztr_lookup_mdata_value(z, chunks[0], "SCALE");
+	lo = (key && 0 == strcmp(key, "LO")) ? 1 : 0;
+	dump_qcal(fp_qcal, chunks[0]->data+1, chunks[0]->dlength-1, lo, pair);
+	free(chunks);
     }
 
     /* Traces */
@@ -254,6 +291,7 @@ void dump(ztr_t *z,
 		break;
 	    }
 	}
+	free(chunks);
     }
 
     if (fp_int) {
@@ -267,6 +305,7 @@ void dump(ztr_t *z,
 		break;
 	    }
 	}
+	free(chunks);
     }
 
     if (fp_nse) {
@@ -280,6 +319,7 @@ void dump(ztr_t *z,
 		break;
 	    }
 	}
+	free(chunks);
     }
 }
 
@@ -363,6 +403,7 @@ int process_srf(char *file, char *dir, int mode, int qcal,
 	    uncompress_ztr(ztr);
 	    chunks = ztr_find_chunks(ztr, ZTR_TYPE_TEXT, &nc);
 	    dump_text(dir2, lane, chunks);
+	    if (chunks) free(chunks);
 	}
 
 	if (last_lane != lane || last_tile != tile) {
@@ -451,6 +492,8 @@ int main(int argc, char **argv) {
 
     if (i == argc)
 	usage();
+
+    init_ph2lo();
 
     for (; i < argc; i++) {
 	if (process_srf(argv[i], dir, mode, qcal, filter_mask)) {
