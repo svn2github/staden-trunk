@@ -2422,6 +2422,9 @@ char *untshift(ztr_t *ztr, char *told_c, int tlen, int *new_len) {
     char *bases;
     ztr_chunk_t **base = ztr_find_chunks(ztr, ZTR_TYPE_BASE, &nc);
 
+    if (nc == 0)
+	return NULL;
+
     /* Use last BASE chunk if multiple are present */
     uncompress_chunk(ztr, base[nc-1]);
     bases  = base[nc-1]->data+1;
