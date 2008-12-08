@@ -74,6 +74,15 @@ void srf_destroy(srf_t *srf, int auto_close) {
 	    perror("fclose(srf->fp)");
     }
 
+    if(srf->th.trace_hdr)
+	free(srf->th.trace_hdr);
+
+    if (srf->mf)
+	mfdestroy(srf->mf);
+
+    if (srf->ztr)
+	delete_ztr(srf->ztr);
+
     free(srf);
 }
 
@@ -387,8 +396,11 @@ srf_trace_hdr_t *srf_construct_trace_hdr(srf_trace_hdr_t *th,
  * function.
  */
 void srf_destroy_trace_hdr(srf_trace_hdr_t *th) {
-    if (th)
+    if (th) {
+	if (th->trace_hdr)
+	    free(th->trace_hdr);
 	free(th);
+    }
 }
 
 /*
@@ -1631,10 +1643,14 @@ ztr_t *ztr_dup(ztr_t *src) {
  * filter_mask should consist of zero or more SRF_READ_FLAG_* bits.
  * Reads with one or more flags matching these bits will be skipped over.
  *
+ * flags, if non-NULL, is filled out on exit to contain the SRF flags
+ * from the Data Block structure.
+ *
  * Returns ztr_t * on success
  *         NULL on failure.
  */
-ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
+ztr_t *srf_next_ztr_flags(srf_t *srf, char *name, int filter_mask,
+			  int *flags) {
     do {
 	int type;
 
@@ -1722,6 +1738,8 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
 	    if (tb.flags & filter_mask) {
 		break; /* Filtered, so skip it */
 	    } else {
+		if (flags)
+		    *flags = tb.flags;
 		if (srf->ztr)
 		    ztr_tmp = ztr_dup(srf->ztr); /* inefficient, but simple */
 		else
@@ -1747,6 +1765,10 @@ ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
     } while (1);
 
     return NULL;
+}
+
+ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask) {
+    return srf_next_ztr_flags(srf, name, filter_mask, NULL);
 }
 
 /*

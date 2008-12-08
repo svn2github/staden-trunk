@@ -162,6 +162,7 @@ int srf_index_write(srf_t *srf, srf_index_t *idx);
 
 /*--- Higher level I/O functions */
 mFILE *srf_next_trace(srf_t *srf, char *name);
+ztr_t *srf_next_ztr_flags(srf_t *srf, char *name, int filter_mask, int *flags);
 ztr_t *srf_next_ztr(srf_t *srf, char *name, int filter_mask);
 
 ztr_t *partial_decode_ztr(srf_t *srf, mFILE *mf, ztr_t *z);
