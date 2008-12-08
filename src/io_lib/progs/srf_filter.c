@@ -478,6 +478,7 @@ void dump_mdata_mode(char mode) {
  * Note the generated srf file is NOT indexed
  *
  * Returns 0 on success.
+ *         1 on failure
  */
 int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, int filter_mode, read_filter_t *read_filter, int read_mask) {
     srf_t *in_srf;
@@ -489,296 +490,338 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
     }
 
     do {
-      int type;
-      ztr_chunk_t *chunk;
+	int type;
+	ztr_chunk_t *chunk;
 
-      switch(type = srf_next_block_type(in_srf)) {
+	switch(type = srf_next_block_type(in_srf)) {
 	case SRFB_CONTAINER:
-          if (0 != srf_read_cont_hdr(in_srf, &in_srf->ch)) {
-            fprintf(stderr, "Error reading container header.\nExiting.\n");
-	    exit(1);
-          }
-          if (0 != srf_write_cont_hdr(out_srf, &in_srf->ch)) {
-            fprintf(stderr, "Error writing container header.\nExiting.\n");
-	    exit(1);
-          }
-          break;
+	    if (0 != srf_read_cont_hdr(in_srf, &in_srf->ch)) {
+		fprintf(stderr, "Error reading container header.\nExiting.\n");
+		exit(1);
+	    }
+	    if (0 != srf_write_cont_hdr(out_srf, &in_srf->ch)) {
+		fprintf(stderr, "Error writing container header.\nExiting.\n");
+		exit(1);
+	    }
+	    break;
 
-        case SRFB_XML:
-          if (0 != srf_read_xml(in_srf, &in_srf->xml)) {
-            fprintf(stderr, "Error reading XML.\nExiting.\n");
-	    exit(1);
-          }
-          if (0 != srf_write_xml(out_srf, &in_srf->xml)) {
-            fprintf(stderr, "Error writing XML.\nExiting.\n");
-	    exit(1);
-          }
-          break;
+	case SRFB_XML:
+	    if (0 != srf_read_xml(in_srf, &in_srf->xml)) {
+		fprintf(stderr, "Error reading XML.\nExiting.\n");
+		exit(1);
+	    }
+	    if (0 != srf_write_xml(out_srf, &in_srf->xml)) {
+		fprintf(stderr, "Error writing XML.\nExiting.\n");
+		exit(1);
+	    }
+	    break;
 
 	case SRFB_TRACE_HEADER:
-          if (0 != srf_read_trace_hdr(in_srf, &in_srf->th)) {
-            fprintf(stderr, "Error reading trace header.\nExiting.\n");
-	    exit(1);
-          }
+	    if (0 != srf_read_trace_hdr(in_srf, &in_srf->th)) {
+		fprintf(stderr, "Error reading trace header.\nExiting.\n");
+		exit(1);
+	    }
 
 #if 1
-          if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
-            if (0 != srf_write_trace_hdr(out_srf, &in_srf->th)) {
-              fprintf(stderr, "Error writing trace header.\nExiting.\n");
-              exit(1);
-            }
-            break;
-          }
-#endif          
+	    if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
+		if (0 != srf_write_trace_hdr(out_srf, &in_srf->th)) {
+		    fprintf(stderr, "Error writing trace header.\nExiting.\n");
+		    exit(1);
+		}
+		break;
+	    }
+#endif		
       
-          /* Decode ZTR chunks in the header */
-          if (in_srf->mf)
-              mfdestroy(in_srf->mf);
+	    /* Decode ZTR chunks in the header */
+	    if (in_srf->mf)
+		mfdestroy(in_srf->mf);
 
-          in_srf->mf = mfcreate(NULL, 0);
-          if (in_srf->th.trace_hdr_size)
-            mfwrite(in_srf->th.trace_hdr, 1, in_srf->th.trace_hdr_size, in_srf->mf);
-          if (in_srf->ztr)
-            delete_ztr(in_srf->ztr);
-          mrewind(in_srf->mf);
+	    in_srf->mf = mfcreate(NULL, 0);
+	    if (in_srf->th.trace_hdr_size)
+		mfwrite(in_srf->th.trace_hdr, 1, in_srf->th.trace_hdr_size, in_srf->mf);
+	    if (in_srf->ztr)
+		delete_ztr(in_srf->ztr);
+	    mrewind(in_srf->mf);
 
-          /* create the trace header data */
-          mFILE *mf = mfcreate(NULL, 0);
+	    /* create the trace header data */
+	    mFILE *mf = mfcreate(NULL, 0);
 
-          if (NULL != (in_srf->ztr = partial_decode_ztr(in_srf, in_srf->mf, NULL))) {
-            in_srf->mf_pos = mftell(in_srf->mf);
-            mfseek(in_srf->mf, 0, SEEK_END);
-            in_srf->mf_end = mftell(in_srf->mf);
+	    if (NULL != (in_srf->ztr = partial_decode_ztr(in_srf, in_srf->mf, NULL))) {
+		in_srf->mf_pos = mftell(in_srf->mf);
+		mfseek(in_srf->mf, 0, SEEK_END);
+		in_srf->mf_end = mftell(in_srf->mf);
 
-            mfseek(in_srf->mf, 0, SEEK_SET);
-            mfwrite(in_srf->mf->data, 1, sizeof(ztr_header_t), mf);
-            mfseek(in_srf->mf, sizeof(ztr_header_t), SEEK_CUR);
+		mfseek(in_srf->mf, 0, SEEK_SET);
+		mfwrite(in_srf->mf->data, 1, sizeof(ztr_header_t), mf);
+		mfseek(in_srf->mf, sizeof(ztr_header_t), SEEK_CUR);
 
-            int pos = mftell(in_srf->mf);
-            while (chunk = ztr_read_chunk_hdr(in_srf->mf)) {
-              char *key = ztr_lookup_mdata_value(in_srf->ztr, chunk, "TYPE");
-              int flag = 0;
+		int pos = mftell(in_srf->mf);
+		while (chunk = ztr_read_chunk_hdr(in_srf->mf)) {
+		    char *key = ztr_lookup_mdata_value(in_srf->ztr, chunk, "TYPE");
+		    int flag = 0;
 
-              /* filter on chunk type */
-              switch (chunk->type) {
-	      case ZTR_TYPE_BASE:
-                if (chunk_mode & CHUNK_BASE)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_CNF1:
-                if (chunk_mode & CHUNK_CNF1)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_CNF4:
-                if (chunk_mode & CHUNK_CNF4)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_SAMP:
-                if (chunk_mode & CHUNK_SAMP) {
-                  if (mdata_mode == TYPE_ALL)
-                    flag = 1;
-                  if ((mdata_mode & TYPE_0FAM) && (key && 0 == strcmp(key, "0FAM")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_1CY3) && (key && 0 == strcmp(key, "1CY3")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_2TXR) && (key && 0 == strcmp(key, "2TXR")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_3CY5) && (key && 0 == strcmp(key, "3CY5")))
-                    flag = 1;
-                }
-	        break;
-              case ZTR_TYPE_SMP4:
-                if (chunk_mode & CHUNK_SMP4) {
-                  if (mdata_mode == TYPE_ALL)
-                    flag = 1;
-                  if ((mdata_mode & TYPE_PROC) && (NULL == key || 0 == strcmp(key, "PROC")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_SLXI) && (key && 0 == strcmp(key, "SLXI")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_SLXN) && (key && 0 == strcmp(key, "SLXN")))
-                    flag = 1;
-                }
-                break;
-              default:
-                flag = 1;
-                break;
-              }
+		    /* filter on chunk type */
+		    switch (chunk->type) {
+		    case ZTR_TYPE_BASE:
+			if (chunk_mode & CHUNK_BASE)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_CNF1:
+			if (chunk_mode & CHUNK_CNF1)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_CNF4:
+			if (chunk_mode & CHUNK_CNF4)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_SAMP:
+			if (chunk_mode & CHUNK_SAMP) {
+			    if (mdata_mode == TYPE_ALL)
+				flag = 1;
+			    if ((mdata_mode & TYPE_0FAM) && (key && 0 == strcmp(key, "0FAM")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_1CY3) && (key && 0 == strcmp(key, "1CY3")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_2TXR) && (key && 0 == strcmp(key, "2TXR")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_3CY5) && (key && 0 == strcmp(key, "3CY5")))
+				flag = 1;
+			}
+			break;
+		    case ZTR_TYPE_SMP4:
+			if (chunk_mode & CHUNK_SMP4) {
+			    if (mdata_mode == TYPE_ALL)
+				flag = 1;
+			    if ((mdata_mode & TYPE_PROC) && (NULL == key || 0 == strcmp(key, "PROC")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_SLXI) && (key && 0 == strcmp(key, "SLXI")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_SLXN) && (key && 0 == strcmp(key, "SLXN")))
+				flag = 1;
+			}
+			break;
+		    default:
+			flag = 1;
+			break;
+		    }
 
-              if (flag)
-                mfwrite(in_srf->mf->data+pos, 1, (4+4+chunk->mdlength+4+chunk->dlength), mf);
-              mfseek(in_srf->mf, chunk->dlength, SEEK_CUR);
-              pos = mftell(in_srf->mf);
+		    if (flag)
+			mfwrite(in_srf->mf->data+pos, 1, (4+4+chunk->mdlength+4+chunk->dlength), mf);
+		    mfseek(in_srf->mf, chunk->dlength, SEEK_CUR);
+		    pos = mftell(in_srf->mf);
 
-   	      if (chunk->mdata)
-	        xfree(chunk->mdata);
-  	      xfree(chunk);
-            }
+		    if (chunk->mdata)
+			xfree(chunk->mdata);
+		    xfree(chunk);
+		}
 
-          } else {
-            /* Maybe not enough to decode or no headerBlob. */
-            /* So delay until decoding the body. */
-            in_srf->mf_pos = in_srf->mf_end = 0;
-          }
+	    } else {
+		/* Maybe not enough to decode or no headerBlob. */
+		/* So delay until decoding the body. */
+		in_srf->mf_pos = in_srf->mf_end = 0;
+	    }
 
-          /* construct the new trace header */
-          srf_trace_hdr_t th;
-          srf_construct_trace_hdr(&th, in_srf->th.id_prefix, (unsigned char *)mf->data, mftell(mf));
-          if (0 != srf_write_trace_hdr(out_srf, &th)) {
-            fprintf(stderr, "Error writing trace header.\nExiting.\n");
-            exit(1);
-          }
-
-	  mfdestroy(mf);
-
-          break;
-
-	case SRFB_TRACE_BODY: {
-          srf_trace_body_t old_tb;
-          ztr_t *ztr_tmp;
-
-          if (0 != srf_read_trace_body(in_srf, &old_tb, 0)) {
-            fprintf(stderr, "Error reading trace body.\nExiting.\n");
-	    exit(1);
-          }
-          
-          if (-1 == construct_trace_name(in_srf->th.id_prefix,
-                                         (unsigned char *)old_tb.read_id,
-                                         old_tb.read_id_length,
-                                         name, 512)) {
-            fprintf(stderr, "Error constructing trace name.\nExiting.\n");
-	    exit(1);
-          }
-
-          if (old_tb.flags & read_mask)
-   	    break;
-
-          if(filter_mode && !check_read_name(read_filter, name))
-	    break;
-          
-#if 1
-          if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
-            if (0 != srf_write_trace_body(out_srf, &old_tb)) {
-              fprintf(stderr, "Error writing trace body.\nExiting.\n");
-              exit(1);
-            }
-            break;
-          }
-#endif          
-
-          if (!in_srf->mf) {
-            fprintf(stderr, "Error reading trace body.\nExiting.\n");
-	    exit(1);
-          }
-
-          mfseek(in_srf->mf, in_srf->mf_end, SEEK_SET);
-          if (old_tb.trace_size) {
-              mfwrite(old_tb.trace, 1, old_tb.trace_size, in_srf->mf);
-              free(old_tb.trace);
-              old_tb.trace = NULL;
-          }
-          mftruncate(in_srf->mf, mftell(in_srf->mf));
-          mfseek(in_srf->mf, in_srf->mf_pos, SEEK_SET);
-
-          if (in_srf->ztr)
-              ztr_tmp = ztr_dup(in_srf->ztr); /* inefficient, but simple */
-          else
-              ztr_tmp = NULL;
-
-          if (NULL != partial_decode_ztr(in_srf, in_srf->mf, ztr_tmp)) {
-
-            /* create the trace body data */
-            mFILE *mf = mfcreate(NULL, 0);
-
-            /* include the ztr header if it wasn't in the trace header block */
-            if( !in_srf->mf_pos ){
-              mfseek(in_srf->mf, 0, SEEK_SET);
-              mfwrite(in_srf->mf->data, 1, sizeof(ztr_header_t), mf);
-              mfseek(in_srf->mf, sizeof(ztr_header_t), SEEK_CUR);
-            }else{
-              mfseek(in_srf->mf, in_srf->mf_pos, SEEK_SET);
-            }
-
-            int pos = mftell(in_srf->mf);
-            while (chunk = ztr_read_chunk_hdr(in_srf->mf)) {
-              char *key = ztr_lookup_mdata_value(in_srf->ztr, chunk, "TYPE");
-              int flag = 0;
-
-              /* filter on chunk type */
-              switch (chunk->type) {
-	      case ZTR_TYPE_BASE:
-                if (chunk_mode & CHUNK_BASE)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_CNF1:
-                if (chunk_mode & CHUNK_CNF1)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_CNF4:
-                if (chunk_mode & CHUNK_CNF4)
-                  flag = 1;
-                break;
-	      case ZTR_TYPE_SAMP:
-                if (chunk_mode & CHUNK_SAMP) {
-                  if (mdata_mode == TYPE_ALL)
-                    flag = 1;
-                  if ((mdata_mode & TYPE_0FAM) && (key && 0 == strcmp(key, "0FAM")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_1CY3) && (key && 0 == strcmp(key, "1CY3")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_2TXR) && (key && 0 == strcmp(key, "2TXR")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_3CY5) && (key && 0 == strcmp(key, "3CY5")))
-                    flag = 1;
-                }
-	        break;
-              case ZTR_TYPE_SMP4:
-                if (chunk_mode & CHUNK_SMP4) {
-                  if (mdata_mode == TYPE_ALL)
-                    flag = 1;
-                  if ((mdata_mode & TYPE_PROC) && (NULL == key || 0 == strcmp(key, "PROC")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_SLXI) && (key && 0 == strcmp(key, "SLXI")))
-                    flag = 1;
-                  if ((mdata_mode & TYPE_SLXN) && (key && 0 == strcmp(key, "SLXN")))
-                    flag = 1;
-                }
-                break;
-              default:
-                flag = 1;
-                break;
-              }
-
-              if (flag)
-                mfwrite(in_srf->mf->data+pos, 1, (4+4+chunk->mdlength+4+chunk->dlength), mf);
-              mfseek(in_srf->mf, chunk->dlength, SEEK_CUR);
-              pos = mftell(in_srf->mf);
-
-   	      if (chunk->mdata)
-	        xfree(chunk->mdata);
-  	      xfree(chunk);
-            }
-
-            /* construct the new trace body */
-            srf_trace_body_t new_tb;
-            srf_construct_trace_body(&new_tb, name+strlen(in_srf->th.id_prefix), -1, mf->data, mf->size, old_tb.flags);
-
-            if (0 != srf_write_trace_body(out_srf, &new_tb)) {
-              fprintf(stderr, "Error writing trace body.\nExiting.\n");
-              exit(1);
-            }
+	    /* construct the new trace header */
+	    srf_trace_hdr_t th;
+	    srf_construct_trace_hdr(&th, in_srf->th.id_prefix, (unsigned char *)mf->data, mftell(mf));
+	    if (0 != srf_write_trace_hdr(out_srf, &th)) {
+		fprintf(stderr, "Error writing trace header.\nExiting.\n");
+		exit(1);
+	    }
 
 	    mfdestroy(mf);
-          }
 
-	  if( ztr_tmp )
-	      delete_ztr(ztr_tmp);
+	    break;
 
-          break;
-        }
-      }
+	case SRFB_TRACE_BODY: {
+	    srf_trace_body_t old_tb;
+	    ztr_t *ztr_tmp;
 
-      if( type == -1 || type == SRFB_INDEX || type == SRFB_NULL_INDEX )
-          break;
+	    if (0 != srf_read_trace_body(in_srf, &old_tb, 0)) {
+		fprintf(stderr, "Error reading trace body.\nExiting.\n");
+		exit(1);
+	    }
+	  
+	    if (-1 == construct_trace_name(in_srf->th.id_prefix,
+					   (unsigned char *)old_tb.read_id,
+					   old_tb.read_id_length,
+					   name, 512)) {
+		fprintf(stderr, "Error constructing trace name.\nExiting.\n");
+		exit(1);
+	    }
+
+	    if (old_tb.flags & read_mask)
+		break;
+
+	    if(filter_mode && !check_read_name(read_filter, name))
+		break;
+	  
+#if 1
+	    if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
+		if (0 != srf_write_trace_body(out_srf, &old_tb)) {
+		    fprintf(stderr, "Error writing trace body.\nExiting.\n");
+		    exit(1);
+		}
+		break;
+	    }
+#endif		
+
+	    if (!in_srf->mf) {
+		fprintf(stderr, "Error reading trace body.\nExiting.\n");
+		exit(1);
+	    }
+
+	    mfseek(in_srf->mf, in_srf->mf_end, SEEK_SET);
+	    if (old_tb.trace_size) {
+		mfwrite(old_tb.trace, 1, old_tb.trace_size, in_srf->mf);
+		free(old_tb.trace);
+		old_tb.trace = NULL;
+	    }
+	    mftruncate(in_srf->mf, mftell(in_srf->mf));
+	    mfseek(in_srf->mf, in_srf->mf_pos, SEEK_SET);
+
+	    if (in_srf->ztr)
+		ztr_tmp = ztr_dup(in_srf->ztr); /* inefficient, but simple */
+	    else
+		ztr_tmp = NULL;
+
+	    if (NULL != partial_decode_ztr(in_srf, in_srf->mf, ztr_tmp)) {
+
+		/* create the trace body data */
+		mFILE *mf = mfcreate(NULL, 0);
+
+		/* include the ztr header if it wasn't in the trace header block */
+		if( !in_srf->mf_pos ){
+		    mfseek(in_srf->mf, 0, SEEK_SET);
+		    mfwrite(in_srf->mf->data, 1, sizeof(ztr_header_t), mf);
+		    mfseek(in_srf->mf, sizeof(ztr_header_t), SEEK_CUR);
+		}else{
+		    mfseek(in_srf->mf, in_srf->mf_pos, SEEK_SET);
+		}
+
+		int pos = mftell(in_srf->mf);
+		while (chunk = ztr_read_chunk_hdr(in_srf->mf)) {
+		    char *key = ztr_lookup_mdata_value(ztr_tmp, chunk, "TYPE");
+		    int flag = 0;
+
+		    /* filter on chunk type */
+		    switch (chunk->type) {
+		    case ZTR_TYPE_BASE:
+			if (chunk_mode & CHUNK_BASE)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_CNF1:
+			if (chunk_mode & CHUNK_CNF1)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_CNF4:
+			if (chunk_mode & CHUNK_CNF4)
+			    flag = 1;
+			break;
+		    case ZTR_TYPE_SAMP:
+			if (chunk_mode & CHUNK_SAMP) {
+			    if (mdata_mode == TYPE_ALL)
+				flag = 1;
+			    if ((mdata_mode & TYPE_0FAM) && (key && 0 == strcmp(key, "0FAM")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_1CY3) && (key && 0 == strcmp(key, "1CY3")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_2TXR) && (key && 0 == strcmp(key, "2TXR")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_3CY5) && (key && 0 == strcmp(key, "3CY5")))
+				flag = 1;
+			}
+			break;
+		    case ZTR_TYPE_SMP4:
+			if (chunk_mode & CHUNK_SMP4) {
+			    if (mdata_mode == TYPE_ALL)
+				flag = 1;
+			    if ((mdata_mode & TYPE_PROC) && (NULL == key || 0 == strcmp(key, "PROC")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_SLXI) && (key && 0 == strcmp(key, "SLXI")))
+				flag = 1;
+			    if ((mdata_mode & TYPE_SLXN) && (key && 0 == strcmp(key, "SLXN")))
+				flag = 1;
+			}
+			break;
+		    default:
+			flag = 1;
+			break;
+		    }
+
+		    if (flag)
+			mfwrite(in_srf->mf->data+pos, 1, (4+4+chunk->mdlength+4+chunk->dlength), mf);
+		    mfseek(in_srf->mf, chunk->dlength, SEEK_CUR);
+		    pos = mftell(in_srf->mf);
+
+		    if (chunk->mdata)
+			xfree(chunk->mdata);
+		    xfree(chunk);
+		}
+
+		/* construct the new trace body */
+		srf_trace_body_t new_tb;
+		srf_construct_trace_body(&new_tb, name+strlen(in_srf->th.id_prefix), -1, mf->data, mf->size, old_tb.flags);
+
+		if (0 != srf_write_trace_body(out_srf, &new_tb)) {
+		    fprintf(stderr, "Error writing trace body.\nExiting.\n");
+		    exit(1);
+		}
+
+		mfdestroy(mf);
+	    }
+
+	    if( ztr_tmp )
+		delete_ztr(ztr_tmp);
+
+	    break;
+	}
+
+	case -1: {
+	    /* are we really at the end of the srf file */
+	    long pos = ftell(in_srf->fp);
+	    fseek(in_srf->fp, 0, SEEK_END);
+	    if( pos != ftell(in_srf->fp) ){
+		srf_destroy(in_srf, 1);
+		fprintf(stderr, "srf file is corrupt\n");
+		return 1;
+	    }
+	    srf_destroy(in_srf, 1);
+	    return 0;
+	}
+
+	case SRFB_NULL_INDEX: {
+	    /*
+	     * Maybe the last 8 bytes of a the file (or previously was
+	     * last 8 bytes prior to concatenating SRF files together).
+	     * If so it's the index length and should always be 8 zeros.
+	     */
+	    uint64_t ilen;
+	    if (1 != fread(&ilen, 8, 1, in_srf->fp))
+		srf_destroy(in_srf, 1);
+	    fprintf(stderr, "srf file is corrupt\n");
+	    return 1;
+	    if (ilen != 0)
+		srf_destroy(in_srf, 1);
+	    fprintf(stderr, "srf file is corrupt\n");
+	    return 1;
+	    break;
+	}
+
+	case SRFB_INDEX: {
+	    long pos = ftell(in_srf->fp);
+	    srf_read_index_hdr(in_srf, &in_srf->hdr, 1);
+
+	    /* Skip the index body */
+	    fseeko(in_srf->fp, pos + in_srf->hdr.size, SEEK_SET);
+	    break;
+	}
+
+	default:
+	    srf_destroy(in_srf, 1);
+	    fprintf(stderr, "Block of unknown type '%c'. Aborting\n", type);
+	    return 1;
+	}
 
     } while (1);
 
@@ -792,7 +835,7 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
  * Main method.
  */
 int main(int argc, char **argv) {
-  int nfiles, ifile;
+    int nfiles, ifile;
     int filter_mode = 0;
     char *input = NULL;
     char *output = NULL;
@@ -887,7 +930,11 @@ int main(int argc, char **argv) {
         input = argv[optind+ifile];
         printf("Reading archive %s.\n", input);
 
-        srf_filter(input, srf, chunk_mode, mdata_mode, filter_mode, read_filter, read_mask);
+        if (0 != srf_filter(input, srf, chunk_mode, mdata_mode, filter_mode, read_filter, read_mask)) {
+            srf_destroy(srf, 1);
+            remove(output);
+            return 1;
+	}
     }
 
     if(NULL != srf)

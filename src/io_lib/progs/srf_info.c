@@ -44,20 +44,21 @@
 #define LEVEL_READ  (1 << 0)
 #define LEVEL_CHUNK (1 << 1)
 #define LEVEL_NAME  (1 << 2)
-#define LEVEL_ALL   (LEVEL_READ | LEVEL_CHUNK | LEVEL_NAME);
+#define LEVEL_BASE  (1 << 3)
+#define LEVEL_ALL   (LEVEL_READ | LEVEL_CHUNK | LEVEL_NAME | LEVEL_BASE );
 
 /* only checks the first 10 traces */
 #define LEVEL_CHECK 255 
 
-#define READ_TOTAL 0
-#define READ_GOOD  1
-#define READ_BAD   2
+#define READ_GOOD  0
+#define READ_BAD   1
+#define READ_TOTAL 2
 
 #define NREADS 3
 
-#define READ_TOTAL_STR  "TOTAL"
 #define READ_GOOD_STR   "GOOD"
 #define READ_BAD_STR    "BAD"
+#define READ_TOTAL_STR  "TOTAL"
 
 /* see ztr.h for a list of all possible ztr chunk types */
 
@@ -113,18 +114,21 @@
 #define TYPE_2TXR_STR "2TXR"
 #define TYPE_3CY5_STR "3CY5"
 
+#define MAX_REGIONS   4
+
 /* regn chunk */
 typedef struct {
     char coord;
-    char *name;
-    uint4 *bndy;
-    int nbndy;
+    char *region_names;
+    int nregions;
+    char *name[MAX_REGIONS];
+    char code[MAX_REGIONS];
+    int start[MAX_REGIONS];
+    int length[MAX_REGIONS];
     int count;
 } regn_t;
 
-
 /* ------------------------------------------------------------------------ */
-
 /*
  * Print usage message to stderr and exit with the given \"code\".
  */
@@ -135,67 +139,145 @@ void usage(int code) {
     fprintf(stderr, "              1\tCount of good/bad reads.\n");
     fprintf(stderr, "              2\tCounts for selected chunk types.\n");
     fprintf(stderr, "              4\tTrace count and trace name prefix for each trace_header.\n");
+    fprintf(stderr, "              8\tBase count.\n");
     fprintf(stderr, "\n");
 
     exit(code);
 }
 
 /*
- * Parse the comma delimited list of chunk types and put them in the single character \"mode\".
+ * Parse the REGN chunk, add to regn HASH
  *
- * Returns 0 on success.
+ * Returns corresponding HashItem * from regn Hash
  */
-int parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
+HashItem *parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
     char key[1024];
     char *name;
     HashItem *hi;
+    regn_t *regn;
     
+    uncompress_chunk(z, chunk);
+
     /* the hash key is a combination of the region names and boundaries */
     name = ztr_lookup_mdata_value(z, chunk, "NAME");
-    sprintf(key, "%s+", name);
+    sprintf(key, "names=%s", name);
     if( chunk->dlength ){
-	int i,j;
-	for (i=1,j=strlen(key); i<chunk->dlength; i++, j++)
-	    if(chunk->data[i])
-		key[j] = chunk->data[i];
-	key[j] = '\0';
+        int nbndy = (chunk->dlength-1)/4;
+        uint4 *bndy = (uint4 *)(chunk->data+1);
+        int ibndy;
+	for (ibndy=0; ibndy<nbndy; ibndy++) {
+            char buf[12];
+            if( ibndy )
+                sprintf(buf, ";%d", be_int4(bndy[ibndy]));
+            else
+                sprintf(buf, " boundaries=%d", be_int4(bndy[ibndy]));
+            strcat(key, buf);
+        }
     }
-    
+
     if (NULL == (hi = (HashTableSearch(regn_hash, key, strlen(key))))) {
-	int nbndy = 0;
-	char *coord;
-	HashData hd;
-	regn_t *regn;
+        int iregion, nregions = 0;
+        char *coord;
+	char *cp1;
+        uint4 bndy[MAX_REGIONS];
+        int ibndy, nbndy = 0;
+        HashData hd;
 
-	if( chunk->dlength )
-	    nbndy = (chunk->dlength-1)/4;
+        if( NULL == (regn = (regn_t *)malloc(sizeof(regn_t)))) {
+	    return NULL;
+	}
+
 	coord = ztr_lookup_mdata_value(z, chunk, "COORD");
-
-	if( NULL == (regn = (regn_t *)malloc(sizeof(regn_t)))) {
-	    return 1;
-	}
 	regn->coord = (NULL == coord ? 'B' : *coord );
-	regn->name = strdup(name);
-	if( NULL == (regn->bndy = malloc(nbndy * sizeof(int4)))) {
-	    free(regn->name);
-	    free(regn);
-	    return 1;
+
+	regn->region_names = strdup(name);
+
+        cp1 = strtok (regn->region_names,";");
+        while(cp1) {
+            char *cp2;
+            if(NULL == (cp2 = strchr(cp1,':'))) {
+                fprintf(stderr, "Invalid region name/code pair %s\n", cp1);
+                return NULL;
+            }
+            *cp2++ = '\0';
+            regn->name[nregions] = cp1;
+            regn->code[nregions] = *cp2;
+            nregions++;
+            cp1 = strtok (NULL, ";");
+        }
+
+        regn->nregions = nregions;
+
+	if( chunk->dlength ) {
+            nbndy = (chunk->dlength-1)/4;
+            memcpy(bndy, chunk->data+1, chunk->dlength-1);
 	}
-	if( nbndy )
-	    memcpy(regn->bndy, chunk->data+1, nbndy*4);
-	regn->nbndy = nbndy;
-	regn->count = 1;
+
+        for( iregion=0, ibndy=0; iregion<nregions; iregion++) {
+            /* start = (start + length of previous region) or 0 if no previous region */
+            /* length = (next boundary - start of region) or -1 if no next boundary */
+            if( regn->code[iregion] == 'E' ){
+                /* no sequence, length = 0 */
+                regn->start[iregion] = (iregion ? (regn->start[iregion-1] + regn->length[iregion-1]) : 0);
+                regn->length[iregion] = 0;
+            }else{
+                if( ibndy > nbndy ){
+                    fprintf(stderr, "More name/code pairs than boundaries\n");
+                    return NULL;
+                }
+                regn->start[iregion] = (iregion ? (regn->start[iregion-1] + regn->length[iregion-1]) : 0);
+                regn->length[iregion] = (ibndy == nbndy ? -1 : (be_int4(bndy[ibndy])-regn->start[iregion]));
+                ibndy++;
+            }
+        }
+
+        regn->count = 1;
             
 	hd.p = regn;
 	if (NULL == (hi = HashTableAdd(regn_hash, key, strlen(key), hd, NULL))) {
-	    free(regn->bndy);
-	    free(regn->name);
+	    free(regn->region_names);
 	    free(regn);
-	    return 1;
+	    return NULL;
 	}
     } else {
-	regn_t *regn = (regn_t *)(hi->data.p);
+	regn = (regn_t *)(hi->data.p);
 	regn->count++;
+    }
+
+    return hi;
+}
+
+/*
+ * Parse the sequence
+ *
+ * Returns 0 on success.
+ */
+int parse_base(ztr_t *z, ztr_chunk_t *chunk, long *base_count) {
+    int i;
+    
+    uncompress_chunk(z, chunk);
+
+    for (i = 1; i < chunk->dlength; i++) {
+	char base = chunk->data[i];
+        uint1 key;
+	switch (base) {
+	case 'A': case 'a':
+            key = 0;
+            break;
+	case 'C': case 'c':
+            key = 1;
+            break;
+	case 'G': case 'g':
+            key = 2;
+            break;
+	case 'T': case 't':
+            key = 3;
+            break;
+	default:
+            key = 4;
+            break;
+	}
+        base_count[key]++;
     }
 
     return 0;
@@ -286,22 +368,23 @@ int count_mdata_keys(ztr_t *z, ztr_chunk_t *chunk, int ichunk, long key_count[NC
  *
  * Returns 0 on success.
  */
-int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, long key_count[NCHUNKS][NKEYS], long type_count[NCHUNKS][NTYPES], HashTable *regn_hash) {
+int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, long key_count[NCHUNKS][NKEYS], long type_count[NCHUNKS][NTYPES],
+             HashTable *regn_hash, long *base_count) {
     srf_t *srf;
-    char name[1024];
-    long trace_body_count = 0;
-
+    uint64_t pos;
+    int type;
     int count = 0;
-    
+    long trace_body_count = 0;
+    char name[1024];
+
     if (NULL == (srf = srf_open(input, "rb"))) {
 	perror(input);
 	return 1;
     }
 
-    do {
-	int type;
+    while ((type = srf_next_block_type(srf)) >= 0) {
 
-	switch(type = srf_next_block_type(srf)) {
+      switch (type) {
 	case SRFB_CONTAINER:
 	    if( trace_body_count ){
 		if( level_mode & LEVEL_NAME )
@@ -337,7 +420,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 		exit(1);
 	    }
 
-	    if( 0 == (level_mode & LEVEL_CHUNK) )
+	    if( 0 == (level_mode & (LEVEL_CHUNK | LEVEL_BASE)) )
 		break;
 
 	    /* Decode ZTR chunks in the header */
@@ -366,8 +449,9 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 	case SRFB_TRACE_BODY: {
 	    srf_trace_body_t old_tb;
 	    ztr_t *ztr_tmp;
+            int no_trace = (level_mode & (LEVEL_CHUNK | LEVEL_BASE) ? 0 : 1);
 
-	    if (0 != srf_read_trace_body(srf, &old_tb, 0)) {
+	    if (0 != srf_read_trace_body(srf, &old_tb, no_trace)) {
 		fprintf(stderr, "Error reading trace body.\nExiting.\n");
 		exit(1);
 	    }
@@ -394,7 +478,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 		read_count[READ_GOOD]++;
 	    }
           
-	    if( 0 == (level_mode & LEVEL_CHUNK) )
+	    if( 0 == (level_mode & (LEVEL_CHUNK | LEVEL_BASE)) )
 		break;
 
 	    if (!srf->mf) {
@@ -424,6 +508,10 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 		    switch (ztr_tmp->chunk[i].type) {
 		    case ZTR_TYPE_BASE:
 			ichunk = CHUNK_BASE;
+			if( parse_base(ztr_tmp, &ztr_tmp->chunk[i], base_count) ){
+			    delete_ztr(ztr_tmp);
+			    return 1;
+			}
 			break;
 		    case ZTR_TYPE_CNF1:
 			ichunk = CHUNK_CNF1;
@@ -439,7 +527,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 			break;
 		    case ZTR_TYPE_REGN:
 			ichunk = CHUNK_REGN;
-			if( parse_regn(srf->ztr, &ztr_tmp->chunk[i], regn_hash) ){
+			if( NULL == parse_regn(ztr_tmp, &ztr_tmp->chunk[i], regn_hash) ){
 			    delete_ztr(ztr_tmp);
 			    return 1;
 			}
@@ -450,7 +538,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 
 		    if( ichunk > -1 ) {
 			chunk_count[ichunk]++;
-			count_mdata_keys(srf->ztr, &ztr_tmp->chunk[i], ichunk, key_count, type_count);
+			count_mdata_keys(ztr_tmp, &ztr_tmp->chunk[i], ichunk, key_count, type_count);
 		    }
 		}
 
@@ -469,19 +557,76 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 	    break;
         }
 
-        default:
+	case SRFB_INDEX: {
+            off_t pos = ftell(srf->fp);
 	    if( trace_body_count ){
 		if( level_mode & LEVEL_NAME )
 		    printf( " ... %s x%ld\n", name+strlen(srf->th.id_prefix), trace_body_count);
+		trace_body_count = 0;
 	    }
-	    break;
+            printf( "Reading srf index block\n");
+	    if (0 != srf_read_index_hdr(srf, &srf->hdr, 1)) {
+		fprintf(stderr, "Error reading srf index block header.\nExiting.\n");
+		exit(1);
+	    }
+            /* Skip the index body */
+	    fseeko(srf->fp, pos + srf->hdr.size, SEEK_SET);
+
+            break;
+        }
+        
+	case SRFB_NULL_INDEX: {
+            uint64_t ilen;
+	    if( trace_body_count ){
+		if( level_mode & LEVEL_NAME )
+		    printf( " ... %s x%ld\n", name+strlen(srf->th.id_prefix), trace_body_count);
+		trace_body_count = 0;
+	    }
+            printf( "Reading srf null index block\n");
+	    /*
+	     * Maybe the last 8 bytes of a the file (or previously was
+	     * last 8 bytes prior to concatenating SRF files together).
+	     * If so it's the index length and should always be 8 zeros.
+	     */
+            if (1 != fread(&ilen, 8, 1, srf->fp)) {
+		fprintf(stderr, "Error reading srf null index block.\nExiting.\n");
+		exit(1);
+            }
+            if (ilen != 0) {
+		fprintf(stderr, "Invalid srf null index block.\nExiting.\n");
+		exit(1);
+            }
+
+            break;
+        }
+        
+        default:
+          fprintf(stderr, "Block of unknown type '%c'\nExiting.\n", type);
+	    exit(1);
 	}
 
-	if( type == -1 || type == SRFB_INDEX || type == SRFB_NULL_INDEX )
-	    break;
+    }
 
-    } while (1);
+    if( trace_body_count ){
+        if( level_mode & LEVEL_NAME )
+            printf( " ... %s x%ld\n", name+strlen(srf->th.id_prefix), trace_body_count);
+        trace_body_count = 0;
+    }
 
+    /* the type should be -1 (EOF) */
+    if( type != -1 ) {
+        fprintf(stderr, "Block of unknown type '%c'\nExiting.\n", type);
+	exit(1);
+    }
+
+    /* are we really at the end of the srf file */
+    pos = ftell(srf->fp);
+    fseek(srf->fp, 0, SEEK_END);
+    if( pos != ftell(srf->fp) ){
+        fprintf(stderr, "srf file is corrupt\n");
+	exit(1);
+    }
+    
     srf_destroy(srf, 1);
     return 0;
 }
@@ -503,7 +648,7 @@ int main(int argc, char **argv) {
     int level_mode = LEVEL_ALL;
 
     long read_count[NREADS];
-    char *read_str[] = {READ_TOTAL_STR, READ_GOOD_STR, READ_BAD_STR};
+    char *read_str[] = {READ_GOOD_STR, READ_BAD_STR, READ_TOTAL_STR};
     long chunk_count[NCHUNKS];
     uint4 chunk_type[] = {CHUNK_BASE_TYPE, CHUNK_CNF1_TYPE, CHUNK_CNF4_TYPE, CHUNK_SAMP_TYPE, CHUNK_SMP4_TYPE, CHUNK_REGN_TYPE};
     long key_count[NCHUNKS][NKEYS];
@@ -545,6 +690,8 @@ int main(int argc, char **argv) {
     
     for (ifile=0; ifile<nfiles; ifile++) {
         HashTable *regn_hash;
+        char bases[] = "ACGTN";
+        long base_count[5];
         char type[5];
 
         input = argv[optind+ifile];
@@ -568,7 +715,9 @@ int main(int argc, char **argv) {
 	    return 1;
         }
     
-        if( 0 == srf_info(input, level_mode, read_count, chunk_count, key_count, type_count, regn_hash) ){
+        memset(base_count, 0, 5 * sizeof(long));
+
+        if( 0 == srf_info(input, level_mode, read_count, chunk_count, key_count, type_count, regn_hash, base_count) ){
 
             /* read counts */
             if( level_mode & LEVEL_READ ) {
@@ -597,30 +746,7 @@ int main(int argc, char **argv) {
                                         HashItem *hi;
                                         for (hi = regn_hash->bucket[ibucket]; hi; hi = hi->next) {
                                             regn_t *regn = (regn_t *)hi->data.p;
-                                            printf("    boundaries: coord=%c name=", regn->coord);
-                                            if( regn->name ){
-                                                int count = 0;
-                                                char *type = strtok (regn->name,";");
-                                                while(type) {
-                                                    char *cp;
-                                                    if(NULL == (cp = strchr(type,':'))) {
-                                                        fprintf(stderr, "Invalid region name/code pair %s\n", type);
-                                                        return 1;
-                                                    }
-                                                    *cp++ = '\0';
-                                                    if( count ){
-                                                        if( count > regn->nbndy ){
-							    fprintf(stderr, "More name/code pairs than boundaries\n");
-							    return 1;
-                                                        }
-                                                        printf(" %d ", be_int4(regn->bndy[count-1]));
-                                                    }
-                                                    printf("%s:%s", type, cp);
-                                                    count++;
-                                                    type = strtok (NULL, ";");
-                                                }
-                                            }
-                                            printf(" x%d\n", regn->count);
+                                            printf("    %s x%d\n", hi->key, regn->count);
                                         }
                                     }
                                 }
@@ -628,6 +754,19 @@ int main(int argc, char **argv) {
                         }
                     }
                 }
+            }
+
+            /* base counts */
+            if( level_mode & LEVEL_BASE ) {
+                long total = 0;
+                int i;
+                for (i=0; i<5; i++) {
+                    if( base_count[i] ){
+                        printf("Bases: %c: %d\n", bases[i], base_count[i]);
+                        total += base_count[i];
+                    }
+                }
+                printf("Bases: TOTAL: %d\n", total);
             }
         }
     }
