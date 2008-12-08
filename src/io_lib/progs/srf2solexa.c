@@ -69,8 +69,8 @@ static unsigned char lo2lo_print[256];
 void init_ph2lo(void) {
     int i;
     for (i = 0; i < 255; i++) {
-	ph2lo_print[i] = 10*log(pow(10, i/10.0)-1)/log(10) + 64;
-	lo2lo_print[i] = i + 64;
+	ph2lo_print[i] = 10*log(pow(10, i/10.0)-1)/log(10) + 64.499;
+	lo2lo_print[i] = i + 64.499;
     }
 }
 
@@ -190,7 +190,7 @@ void dump_conf4(FILE *fp, char *seq, signed char *bytes, int nbytes) {
 void dump_qcal(FILE *fp[], signed char *bytes, int nbytes, int logodds,
 	       int pair) {
     int read_1;
-    unsigned char *table = logodds ? ph2lo_print : lo2lo_print;
+    unsigned char *table = logodds ? lo2lo_print : ph2lo_print;
     int i = 0;
 
     if (fp[1])
