@@ -98,6 +98,13 @@ char *memgunzip(char *data, size_t size, size_t *udata_size);
  */
 char *pipe2(const char *command, char *input, size_t insize, size_t *outsize);
 
+/*
+ * Given a filename remove a known compression extension
+ *
+ * Returns: None
+ */
+void remove_extension(char *file);
+
 #ifdef __cplusplus
 }
 #endif

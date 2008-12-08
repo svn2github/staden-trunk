@@ -564,3 +564,21 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
 
     return mfcreate(udata, usize);
 }
+
+/*
+ * Given a filename remove a known compression extension
+ *
+ * Returns: None
+ */
+void remove_extension(char *file) {
+    int num_magics = sizeof(magics) / sizeof(*magics);
+    int i;
+    for (i=0;i<num_magics;i++) {
+      char *cp = file+strlen(file)-strlen(magics[i].extension);
+      if (strcmp(cp, magics[i].extension) == 0) {
+            *cp = '\0';
+            return;
+        }
+    }
+    return;
+}
