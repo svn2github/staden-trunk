@@ -145,7 +145,8 @@ char *ztr_lookup_mdata_value(ztr_t *z, ztr_chunk_t *chunk, char *key);
 ztr_chunk_t *ztr_new_chunk(ztr_t *ztr, uint4 type,
 			   char *data,  uint4 dlength,
 			   char *mdata, uint4 mdlength);
-ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch, char *key, char *value);
+ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch,
+			  const char *key, const char *value);
 
 #ifdef __cplusplus
 }

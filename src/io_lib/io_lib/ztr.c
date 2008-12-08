@@ -659,7 +659,8 @@ ztr_chunk_t *ztr_new_chunk(ztr_t *ztr, uint4 type,
  * Returns ztr text chunk ptr for success
  *        NULL for failure
  */
-ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch, char *key, char *value) {
+ztr_chunk_t *ztr_add_text(ztr_t *z, ztr_chunk_t *ch,
+			  const char *key, const char *value) {
     ztr_chunk_t **text_chunks = NULL;
     int ntext_chunks;
     size_t key_len, value_len;
