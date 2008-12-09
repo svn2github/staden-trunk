@@ -1,1 +1,1 @@
-illumina2srf v1.11
+illumina2srf v1.12
