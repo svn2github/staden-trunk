@@ -6,6 +6,16 @@
 # notice for information on the restrictions for usage and distribution, and
 # for a disclaimer of all warranties.
 #
+
+##############################################################################
+#Arbitrary one-time counter
+set .counter 0
+proc counter {} {
+    global .counter
+    incr .counter
+    return [set .counter]
+}
+
 ##############################################################################
 #returns the length of a contig
 proc c_length { io contig_num } {
