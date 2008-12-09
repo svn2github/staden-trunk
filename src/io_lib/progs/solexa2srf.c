@@ -77,7 +77,7 @@
 #include <io_lib/array.h>
 #include <io_lib/srf.h>
 
-#define I2S_VERSION "1.11"
+#define I2S_VERSION "1.12"
 
 /* Move to autoconf */
 #define HAVE_POPEN
@@ -435,94 +435,69 @@ int add_smp4_chunk(ztr_t *z, char *type, int npoints, float (*sig)[4],
     return 0;
 }
 
-static char *ztr_encode_qual(ztr_t *z, int nbase, char *qual, char *scale,
-			    int *nbytes, char **mdata, int *mdbytes) {
-    char *bytes;
-
-    if (NULL == (bytes = xmalloc(1 + nbase)))
-	return NULL;
-
-    bytes[0] = ZTR_FORM_RAW;
-    memcpy(&bytes[1], qual, nbase);
-
+static void
+add_scale_metadata_to_chunk(ztr_chunk_t* zc, const char* scale){
     /* Meta data, if appropriate */
     if (scale) {
-	*mdbytes = strlen(scale) + 7;
-	*mdata = (char *)malloc(*mdbytes);
-	sprintf(*mdata, "SCALE%c%s", 0, scale);
+	zc->mdlength = strlen(scale) + 7;
+	if( NULL == (zc->mdata = (char*) malloc(zc->mdlength*sizeof(char)))){
+            fprintf(stderr,"ERROR: not enough memory for ztr chunk mdata\n");
+            exit(EXIT_FAILURE);
+        }
+	sprintf(zc->mdata, "SCALE%c%s", 0, scale);
     } else {
-	*mdbytes = 0;
-	*mdata = NULL;
+	zc->mdlength = 0;
+	zc->mdata = NULL;
     }
-
-    *nbytes = 1+nbase;
-
-    return bytes;
 }
 
-int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, char *scale) {
+int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, const char *scale) {
     ztr_chunk_t *zc;
-    char *data, *mdata;
-    int dlen, mdlen;
 
-    z->chunk = (ztr_chunk_t *)realloc(z->chunk,
-				      ++z->nchunks * sizeof(ztr_chunk_t));
+    z->chunk = (ztr_chunk_t *) realloc(z->chunk,
+                                       ++z->nchunks * sizeof(ztr_chunk_t));
 
     zc = &z->chunk[z->nchunks-1];
-    data = ztr_encode_qual(z, nbase, qual, scale, &dlen, &mdata, &mdlen);
+
     zc->type = ZTR_TYPE_CNF1;
-    zc->mdlength = mdlen;
-    zc->mdata    = mdata;
-    zc->dlength  = dlen;
-    zc->data     = data;
     zc->ztr_owns = 1;
+
+    zc->dlength = nbase+1;
+    if (NULL == (zc->data = (char*) malloc(zc->dlength*sizeof(char)))){
+	fprintf(stderr,"ERROR: not enough memory for ztr chunk data\n");
+        exit(EXIT_FAILURE);
+    }
+
+    zc->data[0] = ZTR_FORM_RAW;
+    memcpy(&zc->data[1], qual, nbase);
+
+    add_scale_metadata_to_chunk(zc,scale);
 
     return 0;
 }
 
-int add_qcal_chunk(ztr_t *z, char *qcal_1, char *qcal_2) {
-    static int qlookup[256];
-    static int qlookup_done = 0;
-    int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
-    int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
+static int add_qcal_chunk(ztr_t *z, const char *qcal_1, const char *qcal_2,
+			  const char *scale) {
+    const int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
+    const int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
     ztr_chunk_t *zc;
-    char *data, *mdata;
-    int i, j;
-
-    /*
-     * May wish to store in log-odds format instead? If so edit this
-     * and set meta-data to SCALE=LO instead.
-     */
-    if (!qlookup_done) {
-	for (j = 0; j < 255; j++) {
-	    qlookup[j] = (int)((10*log(1+pow(10, (j-64)/10.0))/log(10)+.499));
-	}
-	qlookup_done = 1;
-    }
 
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
 				      ++z->nchunks * sizeof(ztr_chunk_t));
 
-    mdata = (char *)malloc(9);
-    sprintf(mdata, "SCALE%cPH", 0);
-
     zc = &z->chunk[z->nchunks-1];
-    if (NULL == (data = xmalloc(1 + nbase_1 + nbase_2)))
+    zc->dlength = 1 + nbase_1 + nbase_2;
+    if (NULL == (zc->data = xmalloc(zc->dlength)))
 	return -1;
-    data[0] = ZTR_FORM_RAW;
-    for (i = 1, j = 0; j < nbase_1; i++, j++)
-	data[i] = qlookup[qcal_1[j]];
-    for (j = 0; j < nbase_2; i++, j++)
-	data[i] = qlookup[qcal_2[j]];
+    zc->data[0] = ZTR_FORM_RAW;
+    memcpy(zc->data+1, qcal_1, nbase_1);
+    if(nbase_2) memcpy(zc->data+1+nbase_1, qcal_2, nbase_2);
+
     zc->type = ZTR_TYPE_CNF1;
-    zc->mdlength = 9;
-    zc->mdata    = mdata;
-    zc->dlength  = nbase_1 + nbase_2 + 1;
-    zc->data     = data;
+    add_scale_metadata_to_chunk(zc,scale);
     zc->ztr_owns = 1;
 
     return 0;
-
 }
 
 int set_cnf4_metadata(ztr_t *z, char *scale) {
@@ -913,39 +888,17 @@ int (*fastq_to_prb4(char *seq, char *qual, int trim))[4] {
 }
 
 /*
- * As for fastq_to_prb4, but instead using 1 quality value scaled in
- * the phred scale instead of log-odds scale.
- * This seems to work for qcal files as well, as long as the qcal 
- * values are extended for the missing bases.
+ * As for fastq_to_prb4, but instead using 1 quality encoded as
+ * either phred or log-odds as indicated by the user elsewhere.
  */
-char *fastq_to_prb1(char *seq, unsigned char *qual, int trim) {
-    size_t nc = strlen(seq), i;
-    int j;
-    signed char *prb;
-    static int qlookup[256];
-    static int qlookup_done = 0;
-
-    if (!qlookup_done) {
-	for (j = 0; j < 255; j++) {
-	    qlookup[j] = (int)((10*log(1+pow(10, (j-64)/10.0))/log(10)+.499));
-	}
-	qlookup_done = 1;
-    }
-
-    prb = (signed char *)malloc(nc);
-    for (i = 0; i < nc; i++) {
-	prb[i] = qlookup[qual[i]];
-    }
-
-    return &prb[trim];
-}
-
-char *qcal_to_prb1(unsigned char *qcal, int trim) {
-    size_t nc = strlen(qcal);
-    signed char *prb;
-    prb = (signed char *)malloc(nc+1);
-    memcpy(prb, qcal, nc + 1);
-    return &prb[trim];
+static
+char *qual64_to_qual(const char *qual64, int trim) {
+    const size_t nc = strlen(qual64);
+    char *qual = (char *)malloc(nc+1);
+    int i;
+    for(i=0;i<nc;++i) qual[i] = qual64[i]-64;
+    qual[nc] = 0;
+    return &qual[trim];
 }
 
 /*
@@ -2130,8 +2083,8 @@ int get_tile_from_name(char *name, int *lane, int *tile) {
 int append(srf_t *srf, srf_index_t *idx,
 	   char *seq_file, char *fwd_fastq, char *rev_fastq,
 	   char *dir_qcal, int ipar, int raw, int proc, int skip,
-	   int phased, float chastity, int quiet, int rev_cycle,
-	   char *name_fmt, char *prefix_fmt,
+	   int phased, float chastity, int quiet, int is_qphred,
+	   int rev_cycle, char *name_fmt, char *prefix_fmt,
 	   char *matrix_f_name, char *matrix_r_name,
 	   char *phasing_f_name, char *phasing_r_name,
 	   int *nr, int *nf, char all_use_bases[][MAX_CYCLES+1],
@@ -2171,6 +2124,11 @@ int append(srf_t *srf, srf_index_t *idx,
     float **ipar_nse_data = NULL;
     int numberOfCycles; /* only for ipar */
     int flags, finished;
+    static const char phtag[] = "PH";
+    static const char lotag[] = "LO";
+    const char* qtag = lotag;
+
+    if(is_qphred) qtag = phtag;
 
     sprintf(full_fmt, "%s%s", prefix_fmt, name_fmt);
 
@@ -2500,20 +2458,20 @@ int append(srf_t *srf, srf_index_t *idx,
 	     * from the qcal files *xor* from the prb.txt files.
 	     */
 	    if (fp_qf || fp_qr) {
-		if (!(pd->prc = fastq_to_prb1(fastq_seq, fastq_qual, skip))) {
+		if (!(pd->prc = qual64_to_qual(fastq_qual, skip))) {
 		    fprintf(stderr, "Failed to generate prb from fastq\n");
 		    return -1;
 		}
 	    } else if (fp_qcal[0]) {
 		pd->qcal_1 = NULL;
 		pd->qcal_2 = NULL;
-		if (!(pd->qcal_1 = qcal_to_prb1(qcal_seq[0], skip))) {
+		if (!(pd->qcal_1 = qual64_to_qual(qcal_seq[0], skip))) {
 		    fprintf(stderr, "Failed to generate qcal_1 from "
 			    "qcal_seq\n");
 		    return -1;
 		}
 		if (fp_qcal[1]){
-		    if (!(pd->qcal_2 = qcal_to_prb1(qcal_seq[1], skip))) {
+		    if (!(pd->qcal_2 = qual64_to_qual(qcal_seq[1], skip))) {
 			fprintf(stderr, "Failed to generate qcal_2 from "
 				"qcal_seq\n");
 			return -1;
@@ -2629,7 +2587,10 @@ int append(srf_t *srf, srf_index_t *idx,
 
 	    /* Standard conversion - seq, qual, processed trace */
 	    z = ARR(ztr_t *, za, seq_num) = read2ztr(r);
-	    set_cnf4_metadata(z, "LO");
+	    if (-1 == set_cnf4_metadata(z, "LO")) {
+		fprintf(stderr,"WARNING: Can't find expected cnf4 (prb) "
+			"section in ztr\n");
+	    }
 
 	    /* REGN chunk if needed */
 	    if (rev_cycle)
@@ -2643,13 +2604,12 @@ int append(srf_t *srf, srf_index_t *idx,
 		add_smp4_chunk(z, "SLXN", r->NBases, pd->signal[SIG_NSE],
 			       pd->baseline[SIG_NSE]);
 
+	    /* Calibrated confidence values too */
 	    if (pd->prc)
-		add_cnf1_chunk(z, r->NBases, pd->prc, "PH");
+		add_cnf1_chunk(z, r->NBases, pd->prc, qtag);
 
 	    if (pd->qcal_1 || pd->qcal_2)
-		add_qcal_chunk(z, pd->qcal_1, pd->qcal_2);
-
-	    /* Calibrated confidence values too */
+		add_qcal_chunk(z, pd->qcal_1, pd->qcal_2, qtag);
 
 
 	    /* Miscellaneous text fields - only stored once per header */
@@ -3032,6 +2992,7 @@ int main(int argc, char **argv) {
     int phased = 1;
     int quiet = 0;
     int dots = 0;
+    int is_qphred = 0;
     char *name_fmt = "%x:%y";
     char *prefix_fmt = "%m_%r:%l:%t:";
     srf_t *srf;
@@ -3149,6 +3110,8 @@ int main(int argc, char **argv) {
 	    if (i < argc) {
 		phasing_r_name = argv[++i];
 	    }
+        } else if (!strcmp(argv[i], "-qphred")){
+            is_qphred=1;
 	} else if (!strcmp(argv[i], "-h")) {
 	    usage(0);
 	} else {
@@ -3271,7 +3234,7 @@ int main(int argc, char **argv) {
 	if (-1 == append(srf, idx, argv[i], fwd_fastq, rev_fastq, dir_qcal,
 			 ipar_mode,
 			 raw_mode, proc_mode, skip, phased, chastity,
-			 quiet, rev_cycle, name_fmt, prefix_fmt, 
+			 quiet, is_qphred, rev_cycle, name_fmt, prefix_fmt, 
 			 matrix_f_name, matrix_r_name,
 			 phasing_f_name, phasing_r_name,
 			 &nr, &nf, all_use_bases, include_failed_reads)) {
