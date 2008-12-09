@@ -1,3 +1,29 @@
+Version 1.11.6 (9th December 2008)
+--------------
+
+* illumina2srf, srf2illumina, srf2fastq
+  - We no longer change from log-odds to phred when storing data in
+    SRF, instead preferring to just mark it in correct input
+    scale. srf2fastq now honours this scale information and so the
+    conversion from log-odd to phred is done at the export stage
+    instead. (Chris Saunders)
+
+  - Bug fix to srf2illumina qcal conversion. Combined with above
+    changes the qcal output should now be 100% identical to the
+    original data input via illumina2srf.
+
+* API
+  - New function srf_next_ztr_flags. This is like srf_next_ztr but
+    also returns the SRF flags value (good/bad read, etc).
+
+* srf_filter, srf2fastq, srf_info (Steven Leonard)
+  - Improved support for multiple index blocks in SRF files, eg from
+    manually concatenated files.
+
+  - srf2fastq now sports options for splitting the output into
+    multiple fastq files when the input data is a paired-end run.
+
+
 Version 1.11.5 (3rd December 2008)
 --------------
 

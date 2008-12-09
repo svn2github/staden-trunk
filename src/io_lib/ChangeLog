@@ -1,4 +1,73 @@
-2008-12-03  James Bonfield  <jkb@sanger.ac.uk>
+2008-12-09  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* progs/srf2fastq.c:
+	(10:20:00) Fixed an error with split file mode - it read past the
+	end of an array.
+	
+	We now check the SCALE option on CNF4 and CNF1 chunks and convert
+	the data accordingly to phred. 
+
+	* progs/solexa2srf.c:
+	(10:23:31) Merged in some of the changes made by Chris Saunders
+	from Illumina.
+	
+	Most significantly this now stores CNF1 data in log-odds format and
+	sets SCALE meta-data accordingly. This makes srf2illumina work
+	better as it doesn't go from log-odds to phred back to log-odds,
+	destroying data in rounding. 
+
+	* tests/data/slx_out/both.info,
+	* tests/data/slx_out/both.srf,
+	* tests/data/slx_out/proc.info,
+	* tests/data/slx_out/proc.srf,
+	* tests/data/slx_out/proc.srf.indexed,
+	* tests/data/slx_out/raw.info,
+	* tests/data/slx_out/raw.srf,
+	* tests/data/slx_out/test_run_4_134_369_182.srf,
+	* tests/data/slx_out/both.run/4_PROGRAM_ID.txt:
+	(12:26:13) Updated to accommodate illumina2srf version string
+	change. 
+
+	* progs/srf_filter.c:
+	(12:28:30) Bad case of missing braces! 
+
+2008-12-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+	* io_lib/compression.c:
+	(12:32:38) Better error handling in tshift method 
+
+	* io_lib/compress.c,
+	* io_lib/compress.h:
+	(12:33:40) Added remove_extension() function. (Not yet used by
+	io_lib, but potentially handy and used by some external tools.)
+	(Steven Leonard) 
+
+	* progs/srf2solexa.c:
+	(12:34:38) Bug fixed the qcal conversion - now use the correct
+	lookup table and added .499 to match the rounding used in
+	solexa2srf.c. 
+
+	* progs/srf2fastq.c,
+	* progs/srf_filter.c,
+	* progs/srf_info.c:
+	(12:35:40) Merged in Steven Leonard's changes.
+	
+	These mainly involve better support for multiple index blocks in
+	SRF files (eg concatenated files), support for splitting output
+	files in srf2fastq, and extra reporting options in srf_info. 
+
+	* io_lib/ztr.c,
+	* io_lib/ztr.h:
+	(17:15:58) Added const to string params in ztr_add_text. 
+
+	* io_lib/srf.c,
+	* io_lib/srf.h:
+	(17:23:53) New function srf_next_ztr_flags. This is the same as the
+	old srf_next_ztr function except with the addition of an extra
+	argument into which the SRF Data Block 'flags' value is copied when
+	returning the next trace. 
+
+2008-12-04  James Bonfield  <jkb@sanger.ac.uk>
 
 	* 1.11.5 released.
 

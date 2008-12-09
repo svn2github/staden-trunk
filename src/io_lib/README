@@ -1,4 +1,4 @@
-			IO_LIB VERSION 1.11.5
+			IO_LIB VERSION 1.11.6
 			=====================
 
 Io_lib is a library of file reading and writing code to provide a general
@@ -37,14 +37,6 @@ with specific pipeline releases.
 
 What's new in this release?
 ===========================
-
-The main reason for this release is an important bug-fix to
-illumina2srf. The quality values when using both -qf and -qr were
-shifted for the reverse read. (Using only -qf on a single-ended run or
-a concatenated paired-ended run was fine.)
-
-Similarly reading quality values from qcal files has been fixed, but I
-believe this was never fully implemented before.
 
 See CHANGES and ChangeLog for full details.
 
