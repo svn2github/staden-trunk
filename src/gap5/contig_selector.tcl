@@ -1453,3 +1453,24 @@ proc remove_contig_duplicates {args} {
     puts "FIXME: remove_contig_duplicates unimplemented"
     return $a(-contigs)
 }
+
+#############################################################################
+# Functions moved over from the old template_display.tcl
+##############################################################################
+proc GetItemInfo {io plot nearest} {
+
+    foreach tag [$plot gettags $nearest] {
+	if {[string compare [string range $tag 0 1] r_] == 0} {
+	    set r_num [string trim $tag r_]
+	    return "Reading: [r_name $io $r_num] (#$r_num)   \
+		    Length: [r_length $io $r_num]"
+	} elseif {[string compare [string range $tag 0 2] te_] == 0} {
+	    set t_num [string trim $tag te_]
+	    return "Template: [t_name $io $t_num]"
+	} elseif {[string compare [string range $tag 0 3] num_] == 0} {
+	    set c_num [string trim $tag num_]
+	    set c [$io get_contig $c_num]
+	    return "Contig: [$c get_name]  Length: [$c get_length]"
+	}
+    }
+}
