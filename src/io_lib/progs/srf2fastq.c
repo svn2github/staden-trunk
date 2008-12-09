@@ -175,10 +175,11 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                int *nfiles_open, char **filenames, FILE **files) {
     int i, nc, seq_len, nfiles = *nfiles_open;
     char buf[MAX_READ_LEN*2 + 512 + 6];
-    char *seq, *qual, *sdata, *qdata;
+    char *seq, *qual, *sdata, *qdata, *key;
     ztr_chunk_t **chunks;
     HashItem *hi;
     regn_t *regn;
+    int logodds;
 
     if( split ){
         chunks = ztr_find_chunks(z, ZTR_TYPE_REGN, &nc);
@@ -200,7 +201,6 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
           for (iregion=0; iregion<regn->nregions; iregion++) {
                 char filename[FILENAME_MAX];
                 int ifile;
-                int match = 0;
                 if( regn->code[iregion] == 'E' ) {
                     regn->file[iregion] = NULL;
                 }else{
@@ -209,35 +209,37 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                     }else{
                         sprintf(filename, "%s_%s.fastq", root, regn->name[iregion]);
                     }
-                    for (ifile=0; ifile<=nfiles; ifile++) {
+                    for (ifile=0; ifile<nfiles; ifile++) {
                         if( 0 == strcmp(filename,filenames[ifile]) ){
                             regn->file[iregion] = files[ifile];
-                            match = 1;
+			    break;
                         }
                     }
-                    if( 0 == match ){
+                    if( ifile == nfiles ){
                         FILE *fp;
-                        if (ifile == MAX_REGIONS) {
+                        if (nfiles == MAX_REGIONS) {
                             fprintf(stderr, "Too many regions.\n");
                             if (chunks)
                                 free(chunks);
                             return;
                         }
                         printf("Opening file %s\n", filename);
-                        filenames[ifile] = strdup(filename);
+                        filenames[nfiles] = strdup(filename);
                         if (NULL == (fp = fopen(filename, "wb+"))) {
                             perror(filename);
                             if (chunks)
                                 free(chunks);
                             return;
                         }
-                        files[ifile] = fp;
+                        files[nfiles++] = fp;
                         regn->file[iregion] = fp;
-                        nfiles++;
                     }
                 }
             }
         }
+
+	if (chunks)
+	    free(chunks);
     }
 
     /* Extract the sequence only */
@@ -267,6 +269,8 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
     }
     uncompress_chunk(z, chunks[0]);
     qdata = chunks[0]->data+1;
+    key = ztr_lookup_mdata_value(z, chunks[0], "SCALE");
+    logodds = (key && 0 == strcmp(key, "LO")) ? 1 : 0;
 
     /* Construct fastq entry */
     if( split ){
@@ -319,9 +323,7 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                     *seq++ = 'N';
                     sdata++;
                 }
-                *qual++ = calibrated
-                    ? *qdata++ + '!'
-                    : qlookup[*qdata++ + 128];
+                *qual++ = logodds ? qlookup[*qdata++ + 128] : *qdata++ + '!';
             }
             *qual++ = '\n';
 
@@ -346,9 +348,7 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                 *seq++ = 'N';
                 sdata++;
             }
-            *qual++ = calibrated
-                ? *qdata++ + '!'
-                : qlookup[*qdata++ + 128];
+            *qual++ = logodds ? qlookup[*qdata++ + 128] : *qdata++ + '!';
         }
         *qual++ = '\n';
 
