@@ -784,7 +784,7 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 	    if( pos != ftell(in_srf->fp) ){
 		srf_destroy(in_srf, 1);
 		fprintf(stderr, "srf file is corrupt\n");
-		return 1;
+ 		return 1;
 	    }
 	    srf_destroy(in_srf, 1);
 	    return 0;
@@ -797,14 +797,16 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 	     * If so it's the index length and should always be 8 zeros.
 	     */
 	    uint64_t ilen;
-	    if (1 != fread(&ilen, 8, 1, in_srf->fp))
+	    if (1 != fread(&ilen, 8, 1, in_srf->fp)) {
 		srf_destroy(in_srf, 1);
-	    fprintf(stderr, "srf file is corrupt\n");
-	    return 1;
-	    if (ilen != 0)
+		fprintf(stderr, "srf file is corrupt\n");
+		return 1;
+	    }
+	    if (ilen != 0) {
 		srf_destroy(in_srf, 1);
-	    fprintf(stderr, "srf file is corrupt\n");
-	    return 1;
+		fprintf(stderr, "srf file is corrupt\n");
+		return 1;
+	    }
 	    break;
 	}
 
