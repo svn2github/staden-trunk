@@ -20,14 +20,11 @@ set max_template_display_width 500000
 # The 1.5Dplot passes high level events (like scroll in X) down to all
 # suitable child tracks.
 #
-proc 1.5Dplot {w io {cnum {}}} {
+proc 1.5Dplot {w io wid hei {cnum {}}} {
     global $w
 
     # Create the window
     if {[toplevel $w] == ""} return
-
-    set wid 800
-    set hei 600
 
     wm geometry $w ${wid}x${hei}
 
@@ -805,8 +802,6 @@ proc ReadingCoverage { io } {
     pack $f.id $f.ok_cancel -side top -fill both
 }
 
-##############################################################################
-#stand alone quality display
 proc ReadingCoverage2 { io f id} {
     
     if {[set contign [contig_id_gel $id]] == ""} {bell; return}
@@ -816,14 +811,60 @@ proc ReadingCoverage2 { io f id} {
     destroy $f
 
 
-    set pwin .read_depth
+    set pwin .read_depth[counter]
     set cname [lindex $contign 0]
-    1.5Dplot $pwin $io [db_info get_contig_num $io $cname]
+    1.5Dplot $pwin $io 800 300 [db_info get_contig_num $io $cname]
+    add_plot $pwin seq_depth 150  -bd 2 -relief raised
+    add_plot $pwin seq_ruler 50  -bd 2 -relief raised
+}
+
+##############################################################################
+#user interface dialog box for reading coverage histogram
+proc TemplateDisplay { io } {
+    global gap5_defs
+
+    set f [keylget gap5_defs READING_COVERAGE.WIN]
+    if {[xtoplevel $f -resizable 0] == ""} return
+    wm title $f "reading coverage"
+
+    contig_id $f.id \
+	    -io $io \
+	    -range 0
+    
+    #OK and Cancel buttons
+    okcancelhelp $f.ok_cancel \
+	    -ok_command "TemplateDisplay2 $io $f $f.id" \
+	    -cancel_command "destroy $f" \
+	    -help_command "show_help gap4 {Consistency-ReadingCov}" \
+	    -bd 2 \
+	    -relief groove
+
+    pack $f.id $f.ok_cancel -side top -fill both
+}
+
+proc TemplateDisplay2 { io f id} {
+    
+    if {[set contign [contig_id_gel $id]] == ""} {bell; return}
+    SetContigGlobals $io $contign
+
+    # stop windows from hiding the plot
+    destroy $f
+
+    set cname [lindex $contign 0]
+    set cnum [db_info get_contig_num $io $cname]
+    CreateTemplateDisplay $io $cnum
+}
+
+proc CreateTemplateDisplay {io cnum} {
+    set pwin .read_depth[counter]
+    1.5Dplot $pwin $io 800 600 $cnum
     add_plot $pwin seq_depth 50  -bd 2 -relief raised
     add_plot $pwin seq_seqs -200 -bd 2 -relief raised
     add_plot $pwin seq_ruler 50  -bd 2 -relief raised
 }
 
+
+##############################################################################
 # Test version when running as a script in its own right
 if {[string match "*depth.tcl" $argv0]} {
     source $env(STADTABL)/shlib.conf
@@ -843,7 +884,7 @@ if {[string match "*depth.tcl" $argv0]} {
 
     #add_plot $w bg_grid
     set pwin .plot
-    1.5Dplot $pwin $io
+    1.5Dplot $pwin $io 800 600
     add_plot $pwin seq_depth  50 -bd 2 -relief raised
     add_plot $pwin seq_seqs -200 -bd 2 -relief raised
     add_plot $pwin seq_ruler  50 -bd 2 -relief raised
