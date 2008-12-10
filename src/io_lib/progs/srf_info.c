@@ -566,6 +566,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 	    }
             printf( "Reading srf index block\n");
 	    if (0 != srf_read_index_hdr(srf, &srf->hdr, 1)) {
+		srf_destroy(srf, 1);
 		fprintf(stderr, "Error reading srf index block header.\nExiting.\n");
 		exit(1);
 	    }
@@ -589,10 +590,12 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 	     * If so it's the index length and should always be 8 zeros.
 	     */
             if (1 != fread(&ilen, 8, 1, srf->fp)) {
+		srf_destroy(srf, 1);
 		fprintf(stderr, "Error reading srf null index block.\nExiting.\n");
 		exit(1);
             }
             if (ilen != 0) {
+		srf_destroy(srf, 1);
 		fprintf(stderr, "Invalid srf null index block.\nExiting.\n");
 		exit(1);
             }
@@ -601,7 +604,8 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
         }
         
         default:
-          fprintf(stderr, "Block of unknown type '%c'\nExiting.\n", type);
+            srf_destroy(srf, 1);
+	    fprintf(stderr, "Block of unknown type '%c'\nExiting.\n", type);
 	    exit(1);
 	}
 
