@@ -1,4 +1,25 @@
-2008-12-09  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-12-10  James Bonfield  <jkb@sanger.ac.uk>
+
+	* 1.11.6 released.
+
+2008-12-10  jkbonfield  <jkb@sanger.ac.uk>
+
+	* man/man1/srf2fastq.1,
+	* man/man1/srf_info.1:
+	(10:17:27) Updated to reflect newly added options. 
+
+	* progs/srf2fastq.c:
+	(10:19:25) Merged in changes from Steven Leonard. - Extra options
+	were added to provide explicit control over the read   names
+	(whether to add /1, /2, ...) and filenames. - Renamed -p (primer)
+	as -e (explicit). 
+
+	* progs/srf_info.c:
+	(10:20:18) Merged in changes from Steven Leonard - Call srf_destroy
+	before exiting in various failure cases. This has   no real impact
+	except to make it easier to look for real memory leaks. 
+
+2008-12-09  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/srf2fastq.c:
 	(10:20:00) Fixed an error with split file mode - it read past the
@@ -31,7 +52,7 @@
 	* progs/srf_filter.c:
 	(12:28:30) Bad case of missing braces! 
 
-2008-12-08  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-12-08  jkbonfield  <jkb@sanger.ac.uk>
 
 	* io_lib/compression.c:
 	(12:32:38) Better error handling in tshift method 
@@ -71,7 +92,7 @@
 
 	* 1.11.5 released.
 
-2008-12-03  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-12-03  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(17:29:10) Fixed qcal format so it now correctly drops quality by
@@ -85,7 +106,7 @@
 	* progs/solexa2srf.c:
 	(17:29:56) Bumped version to 1.11 
 
-2008-12-02  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-12-02  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/srf_filter.c:
 	(14:38:58) Removed some major memory leaks. 
@@ -94,7 +115,7 @@
 	* progs/srf_filter.c:
 	(15:01:04) More memory leak fixed (although tiny). 
 
-2008-10-23  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-10-23  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/hash_sff.c:
 	(14:08:19) Added support for outputting only the table of contents
@@ -102,12 +123,12 @@
 	useful if we have the original sff files in an archive that we
 	cannot modify. 
 
-2008-10-07  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-10-07  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/Makefile.am:
 	(16:02:51) Added extract_fastq to the list of programs to build. 
 
-2008-09-29  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-09-29  jkbonfield  <jkb@sanger.ac.uk>
 
 	* man/man1/illumina2srf.1,
 	* man/man1/srf2fasta.1,
@@ -133,7 +154,7 @@
 	* man/man1/srf_index_hash.1:
 	(14:08:36) First draft of man page. 
 
-2008-09-18  jkbonfield  <jkbonfield@sanger.ac.uk>
+2008-09-18  jkbonfield  <jkb@sanger.ac.uk>
 
 	* progs/solexa2srf.c:
 	(12:59:37) Fixed a bug with parsing the directory name. If it fails
