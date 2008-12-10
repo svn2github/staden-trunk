@@ -115,6 +115,9 @@ typedef struct {
     char *prc;             /* Calibrated single confidence values */
     char *qcal_1;          /* qcal values for the first read*/
     char *qcal_2;          /* qcal values for the second read*/
+    int prc_len;
+    int qcal_1_len;
+    int qcal_2_len;
     int baseline[3];
 } read_pd;
 
@@ -476,10 +479,10 @@ int add_cnf1_chunk(ztr_t *z, int nbase, char *qual, const char *scale) {
     return 0;
 }
 
-static int add_qcal_chunk(ztr_t *z, const char *qcal_1, const char *qcal_2,
+static int add_qcal_chunk(ztr_t *z,
+			  const char *qcal_1, int nbase_1,
+			  const char *qcal_2, int nbase_2,
 			  const char *scale) {
-    const int nbase_1 = (qcal_1 != NULL ? strlen(qcal_1) : 0);
-    const int nbase_2 = (qcal_2 != NULL ? strlen(qcal_2) : 0);
     ztr_chunk_t *zc;
 
     z->chunk = (ztr_chunk_t *)realloc(z->chunk,
@@ -892,12 +895,12 @@ int (*fastq_to_prb4(char *seq, char *qual, int trim))[4] {
  * either phred or log-odds as indicated by the user elsewhere.
  */
 static
-char *qual64_to_qual(const char *qual64, int trim) {
+char *qual64_to_qual(const char *qual64, int trim, int *size) {
     const size_t nc = strlen(qual64);
-    char *qual = (char *)malloc(nc+1);
+    char *qual = (char *)malloc(nc);
     int i;
     for(i=0;i<nc;++i) qual[i] = qual64[i]-64;
-    qual[nc] = 0;
+    *size = nc;
     return &qual[trim];
 }
 
@@ -1718,6 +1721,9 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    /* calibrated 1x confidence values */
 	    if (level == 1) {
 #ifndef NO_ENTROPY_ENCODING
+		if (ztr->chunk[i].dlength == 46) {
+		    fprintf(stderr, "len 46\n");
+		}
 		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
 					 ZTR_FORM_STHUFF, CNF1_CODE, 0))
 		    exit(10);
@@ -2458,20 +2464,25 @@ int append(srf_t *srf, srf_index_t *idx,
 	     * from the qcal files *xor* from the prb.txt files.
 	     */
 	    if (fp_qf || fp_qr) {
-		if (!(pd->prc = qual64_to_qual(fastq_qual, skip))) {
+		if (!(pd->prc = qual64_to_qual(fastq_qual, skip,
+					       &pd->prc_len))) {
 		    fprintf(stderr, "Failed to generate prb from fastq\n");
 		    return -1;
 		}
 	    } else if (fp_qcal[0]) {
 		pd->qcal_1 = NULL;
 		pd->qcal_2 = NULL;
-		if (!(pd->qcal_1 = qual64_to_qual(qcal_seq[0], skip))) {
+		pd->qcal_1_len = 0;
+		pd->qcal_2_len = 0;
+		if (!(pd->qcal_1 = qual64_to_qual(qcal_seq[0], skip,
+						  &pd->qcal_1_len))) {
 		    fprintf(stderr, "Failed to generate qcal_1 from "
 			    "qcal_seq\n");
 		    return -1;
 		}
 		if (fp_qcal[1]){
-		    if (!(pd->qcal_2 = qual64_to_qual(qcal_seq[1], skip))) {
+		    if (!(pd->qcal_2 = qual64_to_qual(qcal_seq[1], skip,
+						  &pd->qcal_2_len))) {
 			fprintf(stderr, "Failed to generate qcal_2 from "
 				"qcal_seq\n");
 			return -1;
@@ -2609,8 +2620,11 @@ int append(srf_t *srf, srf_index_t *idx,
 		add_cnf1_chunk(z, r->NBases, pd->prc, qtag);
 
 	    if (pd->qcal_1 || pd->qcal_2)
-		add_qcal_chunk(z, pd->qcal_1, pd->qcal_2, qtag);
-
+		add_qcal_chunk(z,
+			       pd->qcal_1, pd->qcal_1_len,
+			       pd->qcal_2, pd->qcal_2_len,
+			       qtag);
+	    
 
 	    /* Miscellaneous text fields - only stored once per header */
 	    tc = ztr_add_text(z, NULL, "PROGRAM_ID",
