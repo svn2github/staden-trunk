@@ -1721,9 +1721,6 @@ static void srf_compress_ztr(ztr_t *ztr, int level) {
 	    /* calibrated 1x confidence values */
 	    if (level == 1) {
 #ifndef NO_ENTROPY_ENCODING
-		if (ztr->chunk[i].dlength == 46) {
-		    fprintf(stderr, "len 46\n");
-		}
 		if (-1 == compress_chunk(ztr, &ztr->chunk[i],
 					 ZTR_FORM_STHUFF, CNF1_CODE, 0))
 		    exit(10);
