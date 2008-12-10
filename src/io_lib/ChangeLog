@@ -4,6 +4,10 @@
 
 2008-12-10  jkbonfield  <jkb@sanger.ac.uk>
 
+	* progs/solexa2srf.c:
+	Fixed the add_qcal_chunk code so it doesn't assume that it can strlen
+	the binary quality string.
+	
 	* man/man1/srf2fastq.1,
 	* man/man1/srf_info.1:
 	(10:17:27) Updated to reflect newly added options. 
