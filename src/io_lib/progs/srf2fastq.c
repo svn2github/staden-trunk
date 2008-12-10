@@ -136,10 +136,10 @@ HashItem *parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
             /* start = (start + length of previous region) or 0 if no previous region */
             /* length = (next boundary - start of region) or -1 if no next boundary */
             if( regn->code[iregion] == 'E' ){
-                /* no sequence, length = 0 */
+                /* not in BASE chunk, no boundary, set length = 0 */
                 regn->start[iregion] = (iregion ? (regn->start[iregion-1] + regn->length[iregion-1]) : 0);
                 regn->length[iregion] = 0;
-            }else{
+            } else {
                 if( ibndy > nbndy ){
                     fprintf(stderr, "More name/code pairs than boundaries\n");
                     return NULL;
@@ -171,8 +171,9 @@ HashItem *parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
 /* ------------------------------------------------------------------------ */
 #define MAX_READ_LEN 1024
 void ztr2fastq(ztr_t *z, char *name, int calibrated,
-               int split, char *root, int numeric, int primer, HashTable *regn_hash,
-               int *nfiles_open, char **filenames, FILE **files) {
+               int split, char *root, int numeric, int append, int explicit,
+               HashTable *regn_hash, int *nfiles_open, char **filenames,
+	       FILE **files) {
     int i, nc, seq_len, nfiles = *nfiles_open;
     char buf[MAX_READ_LEN*2 + 512 + 6];
     char *seq, *qual, *sdata, *qdata, *key;
@@ -181,7 +182,7 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
     regn_t *regn;
     int logodds;
 
-    if( split ){
+    if ( split || explicit ) {
         chunks = ztr_find_chunks(z, ZTR_TYPE_REGN, &nc);
         if (nc != 1) {
             fprintf(stderr, "Zero or greater than one REGN chunks found.\n");
@@ -195,24 +196,27 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                 free(chunks);
             return;
         }
-	regn = (regn_t *)(hi->data.p);
+        regn = (regn_t *)(hi->data.p);
         if( regn->count == 1 ){
-          int iregion;
-          for (iregion=0; iregion<regn->nregions; iregion++) {
-                char filename[FILENAME_MAX];
-                int ifile;
+            int iregion;
+            for (iregion=0; iregion<regn->nregions; iregion++) {
                 if( regn->code[iregion] == 'E' ) {
+                    /* not in BASE chunk, the name of region IS the sequence, set file = NULL */
                     regn->file[iregion] = NULL;
-                }else{
+                } else if( split ){
+                    char filename[FILENAME_MAX];
+                    int ifile;
                     if( numeric ){
-                        sprintf(filename, "%s_%d.fastq", root, regn->index[iregion]);
-                    }else{
-                        sprintf(filename, "%s_%s.fastq", root, regn->name[iregion]);
+                        sprintf(filename, "%s_%d.fastq", root,
+				regn->index[iregion]);
+                    } else {
+                        sprintf(filename, "%s_%s.fastq", root,
+				regn->name[iregion]);
                     }
                     for (ifile=0; ifile<nfiles; ifile++) {
                         if( 0 == strcmp(filename,filenames[ifile]) ){
                             regn->file[iregion] = files[ifile];
-			    break;
+                            break;
                         }
                     }
                     if( ifile == nfiles ){
@@ -234,12 +238,14 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                         files[nfiles++] = fp;
                         regn->file[iregion] = fp;
                     }
+                } else {
+                    regn->file[iregion] = stdout;
                 }
             }
         }
 
-	if (chunks)
-	    free(chunks);
+        if (chunks)
+            free(chunks);
     }
 
     /* Extract the sequence only */
@@ -278,17 +284,26 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
         for (iregion=0; iregion<regn->nregions; iregion++) {
             char *cp = name;
             int start, length;
-            if( regn->file[iregion] == NULL )
-                /* we explictly assume there is NO sequence/quality values for
-                   this region so we don't need to skip any sdata or qdata */
+
+            if( regn->code[iregion] == 'E' ) {
+                /*
+		 * Not in BASE chunk, the sequence IS the name of the region
+		 * which may be pre-pended to the next region
+		 */
                 continue;
+            }
+            
+
             start = regn->start[iregion];
-            length = (regn->length[iregion] == -1 ? (seq_len-regn->start[iregion]) : regn->length[iregion]);
+            length = (regn->length[iregion] == -1
+		      ? (seq_len-regn->start[iregion])
+		      : regn->length[iregion]);
+
             seq = buf;
             *seq++ = '@';
             while (*cp)
                 *seq++ = *cp++;
-            if( numeric ){
+            if( append ){
                 int n = sprintf(seq,"/%d", regn->index[iregion]);
                 if( n < 0 ){
                     fprintf(stderr, "Unable to add index to read name\n");
@@ -299,21 +314,29 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
                 seq += n;
             }
             *seq++ = '\n';
+            qual = seq + length;
 
-            if( primer && iregion && regn->code[iregion-1] == 'E' ){
-                strcat(seq, regn->name[iregion-1]);
-                seq += strlen(regn->name[iregion-1]);
-                qual = seq + length;
-                *qual++ = '\n';
-                *qual++ = '+';
-                *qual++ = '\n';
-                strcat(qual, regn->name[iregion-1]);
+            if( explicit && iregion && regn->code[iregion-1] == 'E' ) {
+                /*
+		 * previous region not in BASE chunk, the name of region
+		 * IS the sequence which is pre-pended to this region
+		 */
                 qual += strlen(regn->name[iregion-1]);
-            }else{
-                qual = seq + length;
-                *qual++ = '\n';
-                *qual++ = '+';
-                *qual++ = '\n';
+            }
+
+            *qual++ = '\n';
+            *qual++ = '+';
+            *qual++ = '\n';
+            
+            if( explicit && iregion && regn->code[iregion-1] == 'E' ){
+                /*
+		 * previous region not in BASE chunk, the name of region
+		 * IS the sequence which is pre-pended to this region
+		 */
+                strcpy(seq, regn->name[iregion-1]);
+                seq += strlen(regn->name[iregion-1]);
+                strcpy(qual, regn->name[iregion-1]);
+                qual += strlen(regn->name[iregion-1]);
             }
             
             for (i = 0; i < length; i++) {
@@ -329,27 +352,73 @@ void ztr2fastq(ztr_t *z, char *name, int calibrated,
 
             fwrite(buf, 1, qual - buf, regn->file[iregion]);
         }
-    }else{
+    } else {
         seq = buf;
         *seq++ = '@';
         while (*name)
             *seq++ = *name++;
         *seq++ = '\n';
-
         qual = seq + seq_len;
+
+        if( explicit ){
+            int iregion;
+            for (iregion=0; iregion<regn->nregions; iregion++)
+                if( regn->code[iregion] == 'E' ) {
+                    /*
+		     * region not in BASE chunk, the name of region IS
+		     * the sequence
+		     */
+                    qual += strlen(regn->name[iregion]);
+                }
+        }
+
         *qual++ = '\n';
         *qual++ = '+';
         *qual++ = '\n';
 
-        for (i = 0; i < seq_len; i++) {
-            if (*sdata != '.') {
-                *seq++ = *sdata++;
-            } else {
-                *seq++ = 'N';
-                sdata++;
+        if( explicit ){
+            int iregion;
+            for (iregion=0; iregion<regn->nregions; iregion++) {
+                int start, length;
+                if( regn->code[iregion] == 'E' ){
+                    /*
+		     * region not in BASE chunk, the name of region IS
+		     * the sequence
+		     */
+                    strcpy(seq, regn->name[iregion]);
+                    seq += strlen(regn->name[iregion]);
+                    strcpy(qual, regn->name[iregion]);
+                    qual += strlen(regn->name[iregion]);
+                } else {
+                    start = regn->start[iregion];
+                    length = (regn->length[iregion] == -1
+			      ? (seq_len-regn->start[iregion])
+			      : regn->length[iregion]);
+                    for (i = 0; i < length; i++) {
+                        if (*sdata != '.') {
+                            *seq++ = *sdata++;
+                        } else {
+                            *seq++ = 'N';
+                            sdata++;
+                        }
+                        *qual++ = logodds
+			    ? qlookup[*qdata++ + 128]
+			    : *qdata++ + '!';
+                    }
+                }
             }
-            *qual++ = logodds ? qlookup[*qdata++ + 128] : *qdata++ + '!';
+        } else {
+            for (i = 0; i < seq_len; i++) {
+                if (*sdata != '.') {
+                    *seq++ = *sdata++;
+                } else {
+                    *seq++ = 'N';
+                    sdata++;
+                }
+                *qual++ = logodds ? qlookup[*qdata++ + 128] : *qdata++ + '!';
+            }
         }
+
         *qual++ = '\n';
 
         fwrite(buf, 1, qual - buf, stdout);
@@ -370,9 +439,12 @@ void usage(void) {
     fprintf(stderr, "       -s root  split the fastq files, one for each region     \n");
     fprintf(stderr, "                in the REGN chunk. The files are named         \n");
     fprintf(stderr, "                root_ + the name of the region                 \n");
-    fprintf(stderr, "       -n       ignore REGN names use root_1, root_2 ...       \n");
-    fprintf(stderr, "       -p       include primer, the name of the region of type \n");
-    fprintf(stderr, "                'E' immediately preceeding the region          \n");
+    fprintf(stderr, "       -n       ignore REGN names, use region index.           \n");
+    fprintf(stderr, "                i.e. root_1, root_2 etc.                       \n");
+    fprintf(stderr, "       -a       append region index to name                    \n");
+    fprintf(stderr, "                i.e. name/1, name/2 etc.                       \n");
+    fprintf(stderr, "       -e       include explicit sequence, the names of the    \n");
+    fprintf(stderr, "                regions of type 'E'                            \n");
     exit(0);
 }
 
@@ -381,11 +453,12 @@ int main(int argc, char **argv) {
     int mask = 0, i;
     int split = 0;
     int numeric = 0;
-    int primer = 0;
+    int append = 0;
+    int explicit = 0;
     char root[FILENAME_MAX];
+    int nfiles_open = 0;
     char *filenames[MAX_REGIONS];
     FILE *files[MAX_REGIONS];
-    int nfiles_open = 0;
     
     /* Parse args */
     for (i = 1; i < argc && argv[i][0] == '-'; i++) {
@@ -400,8 +473,10 @@ int main(int argc, char **argv) {
             strcpy(root, argv[++i]);
 	} else if (!strcmp(argv[i], "-n")) {
             numeric = 1;
-	} else if (!strcmp(argv[i], "-p")) {
-            primer = 1;
+	} else if (!strcmp(argv[i], "-a")) {
+            append = 1;
+	} else if (!strcmp(argv[i], "-e")) {
+            explicit = 1;
 	} else {
 	    usage();
 	}
@@ -432,12 +507,13 @@ int main(int argc, char **argv) {
 	    return 4;
 	}
 
-        if (NULL == (regn_hash = HashTableCreate(0, HASH_DYNAMIC_SIZE|HASH_FUNC_JENKINS3))) {
+        if (NULL == (regn_hash = HashTableCreate(0,HASH_DYNAMIC_SIZE|HASH_FUNC_JENKINS3))) {
 	    return 1;
         }
     
 	while (NULL != (ztr = srf_next_ztr(srf, name, mask))) {
-            ztr2fastq(ztr, name, calibrated, split, root, numeric, primer, regn_hash, &nfiles_open, filenames, files);
+            ztr2fastq(ztr, name, calibrated, split, root, numeric, append,
+		      explicit, regn_hash, &nfiles_open, filenames, files);
 	    delete_ztr(ztr);
 	}
 
