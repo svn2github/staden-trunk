@@ -1,5 +1,12 @@
 2008-12-10  James Bonfield  <jkb@sanger.ac.uk>
 
+	* 1.11.7 released.
+
+	* progs/solexa2srf.c:
+	Removal of debugging output.
+
+2008-12-10  James Bonfield  <jkb@sanger.ac.uk>
+
 	* 1.11.6 released.
 
 2008-12-10  jkbonfield  <jkb@sanger.ac.uk>
