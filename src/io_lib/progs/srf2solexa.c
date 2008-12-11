@@ -61,7 +61,6 @@
 /* ------------------------------------------------------------------------ */
 
 static unsigned char ph2lo_print[256];
-static unsigned char lo2lo_print[256];
 
 /*
  * Initialise the phred to printable log-odds lookup table
@@ -70,7 +69,6 @@ void init_ph2lo(void) {
     int i;
     for (i = 0; i < 255; i++) {
 	ph2lo_print[i] = 10*log(pow(10, i/10.0)-1)/log(10) + 64.499;
-	lo2lo_print[i] = i + 64.499;
     }
 }
 
@@ -190,7 +188,6 @@ void dump_conf4(FILE *fp, char *seq, signed char *bytes, int nbytes) {
 void dump_qcal(FILE *fp[], signed char *bytes, int nbytes, int logodds,
 	       int pair) {
     int read_1;
-    unsigned char *table = logodds ? lo2lo_print : ph2lo_print;
     int i = 0;
 
     if (fp[1])
@@ -199,12 +196,18 @@ void dump_qcal(FILE *fp[], signed char *bytes, int nbytes, int logodds,
 	read_1 = nbytes;
 
     while (read_1 > i) {
-	putc(table[((unsigned char *)bytes)[i++]], fp[0]);
+	if (logodds)
+	    putc(bytes[i++]+64, fp[0]);
+	else
+	    putc(ph2lo_print[((unsigned char *)bytes)[i++]], fp[0]);
     }
     putc('\n', fp[0]);
     if (NULL != fp[1]) {
         while (nbytes > i) {
-	    putc(table[((unsigned char *)bytes)[i++]], fp[1]);
+	    if (logodds)
+		putc(bytes[i++]+64, fp[1]);
+	    else
+		putc(ph2lo_print[((unsigned char *)bytes)[i++]], fp[1]);
         }
 	putc('\n', fp[1]);
     }
