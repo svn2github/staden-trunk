@@ -114,7 +114,8 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
-    char *reading;
+    int contig;
+    int pos;
 } break_contig_arg;
 
 typedef struct {

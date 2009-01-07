@@ -1095,6 +1095,34 @@ int tcl_complement_contig(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int
+tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[])
+{
+    break_contig_arg args;
+    int *readings;
+    int num_reads;
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(break_contig_arg, io)},
+	{"-contig", ARG_INT, 1, NULL, offsetof(break_contig_arg, contig)},
+	{"-pos",    ARG_INT, 1, NULL, offsetof(break_contig_arg, pos)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+    int crec;
+
+    vfuncheader("break contig");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (break_contig(args.io, args.contig, args.pos) != 0) {
+	Tcl_SetResult(interp, "Failure in Break Contig", TCL_STATIC);
+	return TCL_ERROR;
+    }
+
+    return TCL_OK;
+}
+
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
 /*				   NewGap_Init				     */
@@ -1226,6 +1254,9 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "find_internal_joins",
 			 tcl_find_internal_joins,
+			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "break_contig",
+			 tcl_break_contig,
 			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "sequence_depth",

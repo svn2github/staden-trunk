@@ -557,10 +557,10 @@ int edJoin(edview *xx) {
     cache_incr(io, cl);
     cache_incr(io, cr);
 
-    cache_rw(io, binp);
-    cache_rw(io, binl);
-    cache_rw(io, binr);
-    cache_rw(io, cl);
+    binp = cache_rw(io, binp);
+    binl = cache_rw(io, binl);
+    binr = cache_rw(io, binr);
+    cl   = cache_rw(io, cl);
 
     /* Update the contig links */
     contig_set_bin  (io, &cl, binp_id);
@@ -595,6 +595,323 @@ int edJoin(edview *xx) {
 
     /* Destroy the old right contig */
     contig_destroy(io, cr->rec);
+
+    cache_flush(io);
+
+    return 0;
+}
+
+#define NORM(x) (f_a * (x) + f_b)
+#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
+#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
+
+static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
+				 int pto, int pfrom, int child_no) {
+    /* Add to */
+    if (pto < 0) {
+	/* Parent is a contig */
+	contig_t *c;
+
+	if (!(c = (contig_t *)cache_search(io, GT_Contig, -pto)))
+	    return -1;
+	if (!(c = cache_rw(io, c)))
+	    return -1;
+	
+	c->bin = bin->rec;
+	c->start = 1;
+	c->end = bin->size;
+
+	bin->parent = c->rec;
+	bin->parent_type = GT_Contig;
+	bin->flags |= BIN_BIN_UPDATED;
+
+    } else {
+	/* Parent is a bin */
+	bin_index_t *pb;
+
+	if (!(pb = get_bin(io, pto)))
+	    return -1;
+	if (!(pb = cache_rw(io, pb)))
+	    return -1;
+
+	pb->child[child_no] = bin->rec;
+	pb->flags |= BIN_BIN_UPDATED;
+
+	bin->parent = pto;
+	bin->parent_type = GT_Bin;
+	bin->flags |= BIN_BIN_UPDATED;
+    }
+
+    /* Remove from: NB it may not exist? */
+    if (pfrom < 0) {
+	/* Parent is a contig */
+	contig_t *c;
+
+	if (!(c = (contig_t *)cache_search(io, GT_Contig, -pto)))
+	    return -1;
+
+	if (c->bin != bin->rec) {
+	    fprintf(stderr, "pfrom incorrect\n");
+	    return -1;
+	}
+
+	if (!(c = cache_rw(io, c)))
+	    return -1;
+
+	c->bin = 0;
+    } else if (pfrom > 0) {
+	/* Parent is a bin */
+	bin_index_t *pb;
+
+	if (!(pb = get_bin(io, pfrom)))
+	    return -1;
+	if (!(pb = cache_rw(io, pb)))
+	    return -1;
+
+	if (pb->child[0] != bin->rec && pb->child[1] != bin->rec) {
+	    fprintf(stderr, "pfrom incorrect\n");
+	    return -1;
+	}
+
+	if (!(pb = cache_rw(io, pb)))
+	    return -1;
+	
+	if (pb->child[0] == bin->rec)
+	    pb->child[0] = 0;
+	else
+	    pb->child[1] = 0;
+	pb->flags |= BIN_BIN_UPDATED;
+    }
+
+    return 0;
+}
+
+/*
+ * A recursive break contig function.
+ * bin_num	The current bin being moved or split.
+ * pos		The contig break point.
+ * offset	The absolute positional offset of this bin in original contig
+ * pleft	The parent bin/-contig in the left new contig
+ * pright	The parent bin/-contig in the right new contig
+ * child_no     0 or 1 - whether this bin is the left/right child of its parent
+ */
+static int break_contig_recurse(GapIO *io, int bin_num, int pos, int offset,
+				int level, int pleft, int pright,
+				int child_no, int complement,
+				int *left_end, int *right_start) {
+    int i, f_a, f_b, rbin;
+    bin_index_t *bin = get_bin(io, bin_num), *bin_dup;
+
+    cache_incr(io, bin);
+
+    if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+    }
+
+    if (complement) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    printf("%*sBin %d\tpos %d..%d %d..%d\n",
+	   level*4, "", bin->rec,
+	   offset, offset+bin->size-1,
+	   NMIN(bin->start_used, bin->end_used),
+	   NMAX(bin->start_used, bin->end_used));
+    /*
+    printf("%d %d moveto %d 0 rlineto 0 10 rlineto -%d 0 rlineto 0 -10 rlineto stroke\n",
+	   offset, level*14, bin->size, bin->size);
+
+    printf("%d %d moveto %d 0 rlineto 0 6 rlineto -%d 0 rlineto 0 -6 rlineto stroke\n",
+	   NMIN(bin->start_used, bin->end_used), level*14+2,
+	   NMAX(bin->start_used, bin->end_used) -
+	   NMIN(bin->start_used, bin->end_used),
+	   NMAX(bin->start_used, bin->end_used) -
+	   NMIN(bin->start_used, bin->end_used));
+    */
+
+    bin = cache_rw(io, bin);
+
+    /*
+     * Add to right parent if this bin is to the right of pos,
+     * or if the used portion is to the right and we have no left child.
+     */
+    if (NORM(0) >= pos ||
+	(NMIN(bin->start_used, bin->end_used) >= pos && !bin->child[0])) {
+	printf("%*sADD_TO_RIGHT pl=%d pr=%d\n", level*4, "", pleft, pright);
+	if (0 != break_contig_move_bin(io, bin, pright, pleft, child_no))
+	    return -1;
+
+	if (*right_start > NMIN(bin->start_used, bin->end_used))
+	    *right_start = NMIN(bin->start_used, bin->end_used);
+
+	cache_decr(io, bin);
+	return 0;
+    }
+
+    /*
+     * Add to left parent if this bin is entirely to the left of pos,
+     * or if the used portion is to the left and we have no right child.
+     */
+    if (NORM(bin->size) < pos ||
+	(NMAX(bin->start_used, bin->end_used) < pos && !bin->child[1])) {
+	printf("%*sADD_TO_LEFT\n", level*4, "");
+
+	//if (0 != break_contig_move_bin(io, bin, pleft, pright, child_no))
+	//return -1;
+	if (*left_end < NMAX(bin->start_used, bin->end_used))
+	    *left_end = NMAX(bin->start_used, bin->end_used);
+
+	cache_decr(io, bin);
+	return 0;
+    }
+
+    /*
+     * Otherwise duplicate
+     * The left contig gets the original bin while we produce a new
+     * bin (bin_dup) for the right contig.
+     *
+     * The range_t array within the bin either gets punted to the left or
+     * right contig, or sometimes it requires duplication and splitting
+     * itself.
+     */
+    rbin = bin_new(io, bin->pos, bin->size, ABS(pright),
+		   pright >= 0 ? GT_Bin : GT_Contig);
+    bin_dup = get_bin(io, rbin);
+    bin_dup = cache_rw(io, bin_dup);
+    bin_dup->flags = bin->flags | BIN_BIN_UPDATED;
+    bin_dup->start_used = bin->start_used;
+    bin_dup->end_used = bin->end_used;
+
+    break_contig_move_bin(io, bin_dup, pright, 0, child_no);
+
+    if (NMIN(bin->start_used, bin->end_used) >= pos) {
+	/* Move range to right contig */
+	printf("%*sDUP, MOVE Array to right\n", level*4, "");
+	bin_dup->rng = bin->rng;
+	bin_dup->rng_rec = bin->rng_rec;
+	if (bin_dup->rng_rec)
+	    bin_dup->flags |= BIN_RANGE_UPDATED;
+	bin->rng = NULL;
+	bin->rng_rec = 0;
+	bin->flags |= BIN_BIN_UPDATED;
+
+	if (*right_start > NMIN(bin->start_used, bin->end_used))
+	    *right_start = NMIN(bin->start_used, bin->end_used);
+
+    } else if (NMAX(bin->start_used, bin->end_used) < pos) {
+	/* Range array already in left contig, so do nothing */
+	printf("%*sDUP, MOVE Array to left\n", level*4, "");
+
+	if (*left_end < NMAX(bin->start_used, bin->end_used))
+	    *left_end = NMAX(bin->start_used, bin->end_used);
+
+    } else {
+	/* Range array covers pos, so split in two */
+	int i, j, n;
+	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
+	printf("%*sDUP, SPLIT array\n", level*4, "");
+
+	bin->flags |= BIN_RANGE_UPDATED;
+	bin_dup->flags |= BIN_RANGE_UPDATED;
+
+	bin_dup->rng = ArrayCreate(sizeof(range_t), 0);
+	n = ArrayMax(bin->rng);
+	for (i = j = 0; i < n; i++) {
+	    range_t *r = arrp(range_t, bin->rng, i), *r2;
+
+	    if (NMIN(r->start, r->end) >= pos)  {
+		r2 = (range_t *)ArrayRef(bin_dup->rng, ArrayMax(bin_dup->rng));
+		*r2 = *r;
+		if (rmin > r->start) rmin = r->start;
+		if (rmin > r->end)   rmin = r->end;
+		if (rmax < r->start) rmax = r->start;
+		if (rmax < r->end)   rmax = r->end;
+	    } else {
+		if (lmin > r->start) lmin = r->start;
+		if (lmin > r->end)   lmin = r->end;
+		if (lmax < r->start) lmax = r->start;
+		if (lmax < r->end)   lmax = r->end;
+
+		if (j != i) {
+		    r2 = arrp(range_t, bin->rng, j);
+		    *r2 = *r;
+		}
+		j++;
+	    }
+
+	}
+
+	ArrayMax(bin->rng) = j-1;
+
+	bin->start_used     = lmin;
+	bin->end_used       = lmax;
+	bin_dup->start_used = rmin;
+	bin_dup->end_used   = rmax;
+
+	if (*left_end < NMAX(bin->start_used, bin->end_used))
+	    *left_end = NMAX(bin->start_used, bin->end_used);
+	if (*right_start > NMIN(bin_dup->start_used, bin_dup->end_used))
+	    *right_start = NMIN(bin_dup->start_used, bin_dup->end_used);
+    }
+
+
+    /* Recurse */
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+	if (!bin->child[i])
+	    continue;
+
+	ch = get_bin(io, bin->child[i]);
+	if (0 != break_contig_recurse(io, bin->child[i], pos,
+				      NMIN(ch->pos, ch->pos + ch->size-1),
+				      level+1,
+				      bin->rec, bin_dup->rec,
+				      i, complement,
+				      left_end, right_start))
+	    return -1;
+    }
+
+    cache_decr(io, bin);
+    cache_decr(io, bin_dup);
+
+    return 0;
+}
+
+/*
+ * Breaks a contig in two such that snum is the right-most reading of
+ * a new contig.
+ */
+int break_contig(GapIO *io, int crec, int cpos) {
+    contig_t *cl = (contig_t *)cache_search(io, GT_Contig, crec);
+    contig_t *cr;
+    char *cname = "right";
+    int left_end, right_start;
+    bin_index_t *bin;
+
+    if (!(cr = contig_new(io, cname)))
+	return -1;
+    if (0 != contig_index_update(io, cname, strlen(cname), cr->rec))
+	return -1;
+
+    printf("Break in contig %d, pos %d\n", crec, cpos);
+
+    left_end = 0;
+    right_start = INT_MAX;
+    break_contig_recurse(io, contig_get_bin(&cl), cpos, contig_offset(io, &cl),
+			 0, -crec, -cr->rec, 0, 0, &left_end, &right_start);
+    printf("left_end = %d, right_start = %d\n", left_end, right_start);
+
+    /* Ensure start/end positions of contigs work out */
+    cr->start = 1;
+    cr->end = cl->end - right_start + 1;
+    bin = cache_rw(io, get_bin(io, cr->bin));
+    bin->pos = 1-right_start;
+    
+    cl->end = left_end;
 
     cache_flush(io);
 
