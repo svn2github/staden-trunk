@@ -235,8 +235,8 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 
 	case 'p': {
 	    int cnum, cpos;
-	    sequence_get_position(xx->io, seq, &cnum, &cpos, NULL);
-	    add_number(status_buf, &j, l1, l2, cpos);
+	    if (0 == sequence_get_position(xx->io, seq, &cnum, &cpos, NULL))
+		add_number(status_buf, &j, l1, l2, cpos);
 	    break;
 	}
 
