@@ -42,18 +42,30 @@ static void parse_args_obj_set(cli_args *a, char *store, Tcl_Obj *val) {
     } else if (a->type == ARG_INT) {
 	int i;
 
-	Tcl_GetIntFromObj(NULL, val, &i);
-	*((int *)&store[a->offset]) = i;
+	if (Tcl_GetIntFromObj(NULL, val, &i) == TCL_OK) {	
+	    *((int *)&store[a->offset]) = i;
+	} else {
+	    *((int *)&store[a->offset]) =
+		atoi(Tcl_GetStringFromObj(val, NULL));
+	}
     } else if (a->type == ARG_FLOAT) {
 	double d;
 
-	Tcl_GetDoubleFromObj(NULL, val, &d);
-	*((float *)&store[a->offset]) = d;
+	if (Tcl_GetDoubleFromObj(NULL, val, &d) == TCL_OK) {
+	    *((float *)&store[a->offset]) = d;
+	} else {
+	    *((float *)&store[a->offset]) =
+		atof(Tcl_GetStringFromObj(val, NULL));
+	}
     } else if (a->type == ARG_DOUBLE) {
 	double d;
 
-	Tcl_GetDoubleFromObj(NULL, val, &d);
-	*((double *)&store[a->offset]) = d;
+	if (Tcl_GetDoubleFromObj(NULL, val, &d) == TCL_OK) {
+	    *((double *)&store[a->offset]) = d;
+	} else {
+	    *((double *)&store[a->offset]) =
+		atof(Tcl_GetStringFromObj(val, NULL));
+	}
     } else {
 	fprintf(stderr, "Unknown argument type %d\n", a->type);
     }
