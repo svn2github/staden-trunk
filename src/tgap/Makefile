@@ -1,5 +1,6 @@
 LIBS = tgap
-PROGS = $(LIBS) $(O)/tg_index $(O)/tg_view
+PROGS = $(LIBS) $(PROGBINS)
+PROGBINS= $(O)/tg_index $(O)/tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=..
@@ -110,3 +111,6 @@ TGDLIBS = \
 $(O)/tg_depth: $(TG_DEPTH_OBJ)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_DEPTH_OBJ) $(TGDLIBS) $(LIBSC)
 
+install:
+	cp $(PROGBINS) $(INSTALLBIN)
+	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
