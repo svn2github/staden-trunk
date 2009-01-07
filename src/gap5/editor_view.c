@@ -1196,6 +1196,11 @@ int set_displayPos(edview *xx, int pos) {
 	    ? xx->link->xx[1] : NULL;
     }
 
+    if (xx2[0]->link)
+	xx2[0]->link->lockOffset =
+	    xx2[0]->link->xx[1]->displayPos - xx2[0]->link->xx[0]->displayPos;
+
+
     if (xx2[1]) ret |= edview_redraw(xx2[1]);
     if (xx2[0]) ret |= edview_redraw(xx2[0]);
 
