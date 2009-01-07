@@ -1178,18 +1178,26 @@ static void reg_init_args(char *args)
 
 	/* Point to name */
 	arg_names[arg_count] = targs;
-	while (*++targs != ' ');
+	while (*++targs && *targs != ' ');
 	*targs++ = 0;
 
 	/* Point to val */
-	arg_values[arg_count] = targs;
-	for (bcount = 1; bcount > 0; targs++) {
-	    if (*targs == '{')
-		bcount++;
-	    else if (*targs == '}')
-		bcount--;
+	while (*targs && *targs == ' ')
+	    targs++;
+	if (*targs == '{') {
+	    arg_values[arg_count] = targs+1;
+	    bcount = 1;
+	    while (bcount && *++targs) {
+		if (*targs == '{')
+		    bcount++;
+		else if (*targs == '}')
+		    bcount--;
+	    }
+	} else {
+	    arg_values[arg_count] = targs;
+	    while (*++targs && *targs != ' ' && *targs != '}');
 	}
-	*(targs-1)=0;
+	*targs++ = 0;
 
 	/* Skip any prevailing '}' */
 	while (*targs && *targs == '}')
