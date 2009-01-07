@@ -272,6 +272,7 @@ proc editor_join {w} {
     }
 
     $ed join
+    destroy $w
 }
 
 proc editor_exit {w} {
