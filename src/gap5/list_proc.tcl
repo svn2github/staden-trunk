@@ -362,13 +362,13 @@ proc ListNextEditor {} {
 
 # Does an editor for this list exist already?
 proc ListEditExists {name} {
-    global gap_defs
+    global gap5_defs
 
-    if {![winfo exists [keylget gap_defs EDIT_LIST.WIN]]} {
+    if {![winfo exists [keylget gap5_defs EDIT_LIST.WIN]]} {
 	return ""
     }
 	
-    foreach i [winfo children [keylget gap_defs EDIT_LIST.WIN]] {
+    foreach i [winfo children [keylget gap5_defs EDIT_LIST.WIN]] {
 	global $i.CurList
 	if {[info exists $i.CurList] && [set $i.CurList] == "$name"} {
 	    return $i	    
@@ -444,11 +444,11 @@ proc ListEditBrowse { t name } {
 }
 
 proc ListEdit {name {read_only 0}} {
-    global gap_defs NGList NGSpecial tcl_platform
+    global gap5_defs NGList NGSpecial tcl_platform
     
     if {![ListExists $name 0]} {bell; return 0}
 
-    if {![winfo exists [set w [keylget gap_defs EDIT_LIST.WIN]]]} {
+    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]]]} {
 	frame $w
     }
 
@@ -646,19 +646,19 @@ proc EditList2 {t name} {
 }
 
 proc EditListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    if {![winfo exists [set w [keylget gap_defs EDIT_LIST.WIN]]]} {
+    if {![winfo exists [set w [keylget gap5_defs EDIT_LIST.WIN]]]} {
 	frame $w
     }
 
-    set t [keylget gap_defs EDIT_LIST.WIN].dialog
+    set t [keylget gap5_defs EDIT_LIST.WIN].dialog
 
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Edit list"
 
     entrybox_configure [getLname $t.list \
-		 	    [keylget gap_defs EDIT_LIST.LISTNAME] edit] \
+		 	    [keylget gap5_defs EDIT_LIST.LISTNAME] edit] \
 	-command "EditList2 $t"
 
     okcancelhelp $t.ok \
@@ -679,13 +679,13 @@ proc PrintList2 {t list} {
 }
 
 proc PrintListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    set t [keylget gap_defs PRINT_LIST.WIN]
+    set t [keylget gap5_defs PRINT_LIST.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Print list"
 
-    getLname $t.list [keylget gap_defs PRINT_LIST.LISTNAME] read
+    getLname $t.list [keylget gap5_defs PRINT_LIST.LISTNAME] read
 
     okcancelhelp $t.ok \
         -ok_command "PrintList2 $t \[entrybox_get $t.list.entry\]" \
@@ -715,14 +715,14 @@ proc LoadList2 {t file name {tag {}}} {
 }
 
 proc LoadListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    set t [keylget gap_defs LOAD_LIST.WIN]
+    set t [keylget gap5_defs LOAD_LIST.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Load list"
 
-    getFname $t.file [keylget gap_defs LOAD_LIST.FILENAME] load
-    getLname $t.list [keylget gap_defs LOAD_LIST.LISTNAME] load
+    getFname $t.file [keylget gap5_defs LOAD_LIST.FILENAME] load
+    getLname $t.list [keylget gap5_defs LOAD_LIST.LISTNAME] load
     xyn $t.seqid -label "Reading list?"
 
     okcancelhelp $t.ok \
@@ -750,16 +750,16 @@ proc SaveList2 {t file name} {
 }
 
 proc SaveListDialog {{t {}} {listname {}}} {
-    global gap_defs
+    global gap5_defs
 
     if {$t == ""} {
-	set t [keylget gap_defs SAVE_LIST.WIN]
+	set t [keylget gap5_defs SAVE_LIST.WIN]
     }
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Save list"
 
-    getLname $t.list [keylget gap_defs SAVE_LIST.LISTNAME] read
-    getFname $t.file [keylget gap_defs SAVE_LIST.FILENAME] save
+    getLname $t.list [keylget gap5_defs SAVE_LIST.LISTNAME] read
+    getFname $t.file [keylget gap5_defs SAVE_LIST.FILENAME] save
 
     if {$listname != ""} {
 	$t.list.entry.entry insert end $listname
@@ -776,15 +776,15 @@ proc SaveListDialog {{t {}} {listname {}}} {
 } 
 
 proc SaveThisListDialog {listname {t {}}} {
-    global gap_defs
+    global gap5_defs
 
     if {$t == ""} {
-	set t [keylget gap_defs SAVE_LIST.WIN]
+	set t [keylget gap5_defs SAVE_LIST.WIN]
     }
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Save list"
 
-    getFname $t.file [keylget gap_defs SAVE_LIST.FILENAME] save
+    getFname $t.file [keylget gap5_defs SAVE_LIST.FILENAME] save
 
     okcancelhelp $t.ok \
         -ok_command "SaveList2 $t \[entrybox_get $t.file.entry\] \
@@ -806,14 +806,14 @@ proc DeleteList2 {t list} {
 }
 
 proc DeleteListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    set t [keylget gap_defs DELETE_LIST.WIN]
+    set t [keylget gap5_defs DELETE_LIST.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Delete list"
 
     entrybox_configure [getLname $t.list \
-		 	    [keylget gap_defs DELETE_LIST.LISTNAME] delete] \
+		 	    [keylget gap5_defs DELETE_LIST.LISTNAME] delete] \
 	-command "DeleteList2 $t"
 
     okcancelhelp $t.ok \
@@ -834,14 +834,14 @@ proc CreateList2 {t list} {
 }
 
 proc CreateListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    set t [keylget gap_defs CREATE_LIST.WIN]
+    set t [keylget gap5_defs CREATE_LIST.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Create list"
 
     entrybox_configure [getLname $t.list \
-			    [keylget gap_defs CREATE_LIST.LISTNAME] create] \
+			    [keylget gap5_defs CREATE_LIST.LISTNAME] create] \
 	-command "CreateList2 $t"
 
 
@@ -868,14 +868,14 @@ proc CopyList2 {t from to} {
 }
 
 proc CopyListDialog {} {
-    global gap_defs
+    global gap5_defs
 
-    set t [keylget gap_defs COPY_LIST.WIN]
+    set t [keylget gap5_defs COPY_LIST.WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Copy list"
 
-    getLname $t.from [keylget gap_defs COPY_LIST.FROMLIST] read
-    getLname $t.to   [keylget gap_defs COPY_LIST.TOLIST]   create
+    getLname $t.from [keylget gap5_defs COPY_LIST.FROMLIST] read
+    getLname $t.to   [keylget gap5_defs COPY_LIST.TOLIST]   create
 
     okcancelhelp $t.ok \
         -ok_command "CopyList2 $t \[entrybox_get $t.from.entry\] \
@@ -892,7 +892,7 @@ proc CopyListDialog {} {
 
 #list of left reading names of all contigs
 proc CreateAllContigListNumbers { io } {
-    global gap_defs
+    global gap5_defs
 
     set clist ""
     set num_contigs [$io num_contigs]
@@ -906,7 +906,7 @@ proc CreateAllContigListNumbers { io } {
 
 #list of left reading names of all contigs
 proc CreateAllContigList { io } {
-    global gap_defs
+    global gap5_defs
 
     set clist ""
 
@@ -916,7 +916,7 @@ proc CreateAllContigList { io } {
 	set c [$io get_contig $order]
 	lappend clist [$c get_name]
     }
-    #puts "LIST $clist"
+    puts "LIST $clist"
     return $clist
 }
 
@@ -1201,8 +1201,8 @@ proc ToggleReadingList { list } {
 #------------------------------------------------------------------------------
 
 proc ContigsToReadings {io} {
-    global gap_defs
-    set l [keylget gap_defs CONTIGS_TO_LIST]
+    global gap5_defs
+    set l [keylget gap5_defs CONTIGS_TO_LIST]
 
     set t [keylget l WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
@@ -1259,8 +1259,8 @@ proc ContigsToReadings2 {io t id infile outfile} {
 }
 
 proc MinimalCoverage {io} {
-    global gap_defs
-    set l [keylget gap_defs MINIMAL_COVERAGE]
+    global gap5_defs
+    set l [keylget gap5_defs MINIMAL_COVERAGE]
 
     set t [keylget l WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
@@ -1271,13 +1271,13 @@ proc MinimalCoverage {io} {
 	-io $io \
 	-range 0
 
-    lorf_in $t.infile [keylget gap_defs MINIMAL_COVERAGE.INFILE] \
+    lorf_in $t.infile [keylget gap5_defs MINIMAL_COVERAGE.INFILE] \
 	"{contig_id_configure $t.id -state disabled} \
 	 {contig_id_configure $t.id -state disabled}\
 	 {contig_id_configure $t.id -state disabled}\
 	 {contig_id_configure $t.id -state normal}" -bd 2 -relief groove
 
-    lorf_out $t.outfile [keylget gap_defs MINIMAL_COVERAGE.OUTFILE] \
+    lorf_out $t.outfile [keylget gap5_defs MINIMAL_COVERAGE.OUTFILE] \
 	{} -bd 2 -relief groove
 
     okcancelhelp $t.ok \
@@ -1314,14 +1314,14 @@ proc MinimalCoverage2 {io t id infile outfile} {
 }
 
 proc UnattachedReadings {io} {
-    global gap_defs
-    set l [keylget gap_defs UNATTACHED_READINGS]
+    global gap5_defs
+    set l [keylget gap5_defs UNATTACHED_READINGS]
 
     set t [keylget l WIN]
     if {[xtoplevel $t -resizable 0] == ""} return
     wm title $t "Unattached readings"
 
-    lorf_out $t.outfile [keylget gap_defs UNATTACHED_READINGS.OUTFILE] \
+    lorf_out $t.outfile [keylget gap5_defs UNATTACHED_READINGS.OUTFILE] \
 	{} -bd 2 -relief groove
 
     okcancelhelp $t.ok \
