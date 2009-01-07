@@ -1030,17 +1030,17 @@ int get_hidden(GapIO *io, int contig, int max_read_length,
 /************************************************************/
 
 int make_consensus( int task_mask, GapIO *io,
-		   char *consensus, float *quality,
+		   char **consensus2, float *quality,
 		   Contig_parms *contig_list, int number_of_contigs,
 		   int *consensus_length, int max_read_length,
-		   int max_consensus, Hidden_params p, float percd ) {
+		   Hidden_params p, float percd ) {
 		   
     int contig,left_gel_number,i,j, start, end;
     int contig_length, consensus_start, contig_start;
-    int left_extension, right_extension;
+    int left_extension, right_extension, max_consensus;
     char *hidden_seq,*t_hidden_seq;
     /*char hidden_seq[MAXGEL_PLUS],t_hidden_seq[MAXGEL_PLUS];*/
-    char *project_name;
+    char *project_name, *consensus = NULL;
 
 /* routine to handle all consensus calculations for the assembly program
 
@@ -1103,14 +1103,15 @@ int make_consensus( int task_mask, GapIO *io,
 	j += number_of_contigs * 20;
     }
 
-    if ( j > max_consensus ) {
-	if (hidden_seq) xfree(hidden_seq);
-	if (t_hidden_seq) xfree(t_hidden_seq);
+    max_consensus = j;
+    if (NULL == (consensus = (char *)malloc(j)))
 	return -1;
-    }
 
     if ( task_mask & SORTCONTIGS ) {
-	if ( i = sort_contigs ( contig_list, number_of_contigs ) ) return -2;
+	if ( i = sort_contigs ( contig_list, number_of_contigs ) ) {
+	    if (consensus) xfree(consensus);
+	    return -2;
+	}
     }
 
     consensus_start = *consensus_length; 
@@ -1130,8 +1131,10 @@ int make_consensus( int task_mask, GapIO *io,
 
 	    /* is there enough space left ? */
 	    if ( (*consensus_length + 20) > max_consensus ) {
+		/* This shouldn't occur now due to precomputing this */
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    left_gel_number = contig_list[i].contig_left_gel;
@@ -1151,6 +1154,7 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( (*consensus_length + contig_length) > max_consensus ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    calc_consensus(contig, start, end, CON_SUM,
@@ -1166,6 +1170,7 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( (*consensus_length + contig_length) > max_consensus ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    calc_consensus(contig, start, end, CON_WDET,
@@ -1181,6 +1186,7 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( (*consensus_length + contig_length) > max_consensus ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    /*
@@ -1214,12 +1220,14 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( left_extension < 0 ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -3;
 	    }
 	    /* is there enough space left ? */
 	    if ( (*consensus_length + left_extension) > max_consensus ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    (void) memmove ( &consensus[contig_start+left_extension],
@@ -1243,6 +1251,7 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( right_extension < 0 ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -3;
 	    }
 	    /* is there enough space left ? */
@@ -1250,6 +1259,7 @@ int make_consensus( int task_mask, GapIO *io,
 	    if ( (*consensus_length + right_extension) > max_consensus ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -1;
 	    }
 	    (void) memcpy ( &consensus[*consensus_length], hidden_seq,
@@ -1273,6 +1283,7 @@ int make_consensus( int task_mask, GapIO *io,
 			       contig, start, end, 1) ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -2;
 	    }
 	}
@@ -1285,6 +1296,7 @@ int make_consensus( int task_mask, GapIO *io,
 			       contig, start, end, 4) ) {
 		if (hidden_seq) xfree(hidden_seq);
 		if (t_hidden_seq) xfree(t_hidden_seq);
+		if (consensus) xfree(consensus);
 		return -2;
 	    }
 	}
@@ -1296,6 +1308,7 @@ int make_consensus( int task_mask, GapIO *io,
     }
     if (hidden_seq) xfree(hidden_seq);
     if (t_hidden_seq) xfree(t_hidden_seq);
+    *consensus2 = consensus;
     return 0;
 }
 
@@ -1723,200 +1736,5 @@ int write_consensus (GapIO *io, FILE *fp,
     free ( contig_ends );
     free ( contig_numbers );
     return 1;
-}
-#endif
-
-/*
- routine to calculate and write consensus sequence(s) to a file
-   in one of three formats: staden, fasta or expt. Several types
-   of consensus are possible:
-
-   job 1: normal
-       2: extended - ie with hidden data added to ends
-       3: unfinished - ie only regions that are not covered
-                       by good data on both strands are written as a,c,g,t
-		       the rest is "-".
-       4: quality codes - ie a consensus of quality codes. Previously these 
-                          have been 0,1,2,3,4,5,5,6,7, etc but for 
-			  compatibility with most? sequence reading routines 
-			  it is better to switch to a new character set of 
-			  a,b,c,d,e,f, etc. Note for fasta output we are
-			  currently changing characters to a,c,g,t,n!
-
-   Algorithm: get consensus for all contigs in internal format 
-   - ie <---lambda.0001--->acagatatattat< etc
-   Then process each contig and call the appropriate output routines. Note
-   that for expt output we may need to add in the tags etc.
-
-*/
-#if 0
-int make_consensus_files ( int task_mask, int output_format, int gel_anno,
-			  int truncate, int gel_notes, FILE *fp, 
-			  GapIO *io, char *consensus, float *quality,
-			  int database_size, int nconts,
-			  int *consensus_len, int max_read_length, 
-			  int max_consensus, Hidden_params p, float percd,
-			  int num_contigs, contig_list_t *contig_array,
-			  int nopads, int name_format)
-
-{
-
-    int consensus_length;
-    int max_contigs;
-    int success;
-    Contig_parms *contig_list;
-
-    /* fiddle the index to the consensus array: 
-       if consensus_length != 0 set it one back, otherwise leave it */
-
-    consensus_length = 0;
-    contig_list =  get_contig_list (database_size, io, num_contigs,
-				    contig_array);
-
-    if ( success =  make_consensus(task_mask, io, 
-				   consensus, quality, contig_list,
-				   num_contigs, 
-				   &consensus_length,
-				   max_read_length, max_consensus, p, percd)) {
-
-	free ( contig_list );
-	return success;
-    }
-    max_contigs = num_contigs + 1;
-
-    success = write_consensus (io, fp, output_format, 
-			       consensus, quality, consensus_length,
-			       max_contigs, gel_anno, truncate, gel_notes,
-			       num_contigs, contig_array, nopads,
-			       name_format);
-    free ( contig_list );
-    *consensus_len = consensus_length;
-    return success;
-}
-#endif
-
-
-#if 0
-int
-consensus_dialog (GapIO *io,
-		  int mask_or_mark,
-		  int consensus_type,
-		  int output_format,
-		  int gel_anno,
-		  int truncate,
-		  int gel_notes,
-		  int use_conf,
-		  int min_conf,
-		  int win_size,
-		  int dash,
-		  char *out_file,
-		  int num_contigs,
-		  contig_list_t *contig_array,
-		  int nopads,
-		  int name_format) 
-{
-    int task_mask;
-    int database_size, c_nconts;
-    int max_read_length, c_maxseq;
-    int success, consensus_length;
-    float c_percd;
-    int nconts;
-    char *seq1; /* MAXSEQ */
-    float *qual; /* MAXSEQ */
-    FILE *fp;
-    Hidden_params p;
-
-    if ((seq1 = (char *)xmalloc(maxseq * sizeof(char)))==NULL){
-	return(-1);
-    }
-    if (output_format == EXPT_FORMAT) {
-	if ((qual = (float *)xmalloc(maxseq * sizeof(float)))==NULL) {
-	    xfree(seq1);
-	    return(-1);
-	}
-    } else {
-	qual = NULL;
-    }
-
-    nconts = NumContigs(io);
-
-/*  the dialogue should supply: 
-    mask_or_mark 	1 means masking, 2 means mark, 0 means neither
-    consensus_type	1 normal, 2 extended, 3 unfinished, 4 quality
-    output_format	1 staden, 2 fasta, 3 experiment, 4 internal
-    gel_anno		1 for yes
-    truncate		1 for yes
-
-    if extended then win_size and dash
-    other items are set here by borrowing code from fij
-*/
-
-    p.min = p.max = p.verbose = p.qual_val = p.window_len =0;
-    p.test_mode = 0;
-    p.start = 0;
-    p.lwin1 = 0;
-    p.lcnt1 = 0;
-    p.rwin1 = 0;
-    p.rcnt1 = 0;
-
-    p.use_conf = use_conf;
-    p.qual_val = min_conf;
-    p.rwin1    = win_size;
-    p.window_len=win_size;
-    p.rcnt1    = dash;
-
-    p.band = 30; /* FIXME */
-
-    task_mask = 1;
-    if (mask_or_mark ) {
-	if ( 1 == mask_or_mark ) task_mask += MASKING;
-	else task_mask += MARKING;
-    }
-    if ( 1 == consensus_type ) task_mask += NORMALCONSENSUS;
-    if ( 2 == consensus_type ) task_mask += ADDHIDDENDATA + NORMALCONSENSUS;
-    if ( 3 == consensus_type ) task_mask += SINGLESTRANDED; /* = unfinished */
-    if ( 4 == consensus_type ) task_mask += QUALITYCODES;
-
-    database_size = io_dbsize(io);
-    c_nconts = nconts;
-    max_read_length = find_max_gel_len(io, 0, 0) + 1;
-    c_maxseq = maxseq;
-    c_percd = consensus_cutoff;
-
-    if (NULL == (fp = fopen(out_file, "w"))) {
-	verror(ERR_WARN, "consensus_dialogue", "%s: %s", out_file,
-	       strerror(errno));
-	xfree(seq1);
-	if (qual) xfree(qual);
-	return -1;
-    }
-
-    /* FIXME - file handling errors to be checked for */
-    success = make_consensus_files ( task_mask, output_format,
-				     gel_anno, truncate, gel_notes,
-				     fp, io,
-				     seq1, qual,
-				     database_size,
-				     c_nconts,
-				     &consensus_length,
-				     max_read_length,
-				     c_maxseq,
-				     p, c_percd,
-				     num_contigs, contig_array,
-				     nopads,
-				     name_format);
-
-    if (0 != success)
-	verror(ERR_WARN, "consensus_dialog",
-	       "couldn't create consensus: code %d", success);
-
-    /* now close the file */
-    fclose(fp);
-
-    xfree(seq1);
-    if (qual)
-	xfree(qual);
-
-    return 0;
 }
 #endif

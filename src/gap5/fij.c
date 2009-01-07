@@ -325,7 +325,6 @@ fij(GapIO *io,
     int i, id;
     char *val;
     int ret;
-    int max_consensus;
     Contig_parms *contig_list;
     int database_size, number_of_contigs;
     int task_mask;
@@ -354,23 +353,16 @@ fij(GapIO *io,
     p.gap_open = gopenval;
     p.gap_extend = gextendval;
     p.band = 30; /*FIXME: hardwired 30 bases band for aligning hidden data */
-    max_consensus = maxseq;  /* global! */
 
     max_read_length = find_max_gel_len(io, 0, 0);
 
-    if ((consensus = (char *)xmalloc(max_consensus * sizeof(char)))==NULL){
-	return(-1);
-    }
-
     if ((FIJMatch = (mobj_fij *)xmalloc(sizeof(mobj_fij)))==NULL){
-	xfree ( consensus );
 	return -1;
     }
 
     counter_max = 14;
     if (NULL == (FIJMatch->match = (obj_fij *)xmalloc(counter_max *
 						      sizeof(obj_fij)))) {
-	xfree ( consensus );
 	xfree(FIJMatch);
 	return -1;
     }
@@ -378,7 +370,6 @@ fij(GapIO *io,
     number_of_contigs = num_contigs;
     if ( ! (contig_list = get_contig_list ( database_size, io,
 			   number_of_contigs, contig_array ))) {
-	xfree ( consensus );
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);
 	return -5;
@@ -393,15 +384,13 @@ fij(GapIO *io,
     if ( p.do_it ) task_mask |= ADDHIDDENDATA;
 
     consensus_length = 0;
-    if ( ret = make_consensus ( task_mask, io, consensus, NULL,
+    if ( ret = make_consensus ( task_mask, io, &consensus, NULL,
 			  contig_list, number_of_contigs,
 			  &consensus_length,
 			  max_read_length,
-			  max_consensus,
 			  p,
 			  consensus_cutoff ) ) {
 
-	xfree ( consensus );
 	xfree(FIJMatch->match);
 	xfree(FIJMatch);
 	xfree(contig_list);

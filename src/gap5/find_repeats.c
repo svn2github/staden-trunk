@@ -368,10 +368,9 @@ find_repeats(GapIO *io,
 	     char *out_name)
 {
 
-    int *cends, *nends;
     int *sav1, *sav2, *sav3, *sav4, *sav5;
     char *consensus;
-    int max_consensus, max_read_length, database_size, number_of_contigs;
+    int max_read_length, database_size, number_of_contigs;
     int consensus_length, ret, task_mask;
     int max_matches;
     int i,j;
@@ -388,18 +387,11 @@ find_repeats(GapIO *io,
     p.rcnt1 = 0;
     p.do_it = 0;
 
-    max_consensus = maxseq;  /* global! */
-    max_matches = max_consensus / 20;
+    max_matches = 10000; /* FIXME: make this adjustable */
     consensus = NULL;
     contig_list = NULL;
-    cends = nends = sav1 = sav2 = sav3 = sav4 = sav5 = NULL;
+    sav1 = sav2 = sav3 = sav4 = sav5 = NULL;
 
-    if ((cends = (int *)xmalloc(max_consensus * sizeof(int)))==NULL){
-	goto bail_out;
-    }
-    if ((nends = (int *)xmalloc(max_consensus * sizeof(int)))==NULL){
-	goto bail_out;
-    }
     if ((sav2 = (int *)xmalloc(max_matches * sizeof(int)))==NULL){
 	goto bail_out;
     }
@@ -412,10 +404,6 @@ find_repeats(GapIO *io,
     }
 
     max_read_length = find_max_gel_len(io, 0, 0);
-
-    if ((consensus = (char *)xmalloc(max_consensus * sizeof(char)))==NULL){
-	goto bail_out;
-    }
 
     database_size = io_dbsize(io);
     number_of_contigs = num_contigs;
@@ -430,11 +418,10 @@ find_repeats(GapIO *io,
     consensus_length = 0;
 
 /*    printf("TASK mask %d mask %d mode %d\n",task_mask,mask,mode); */
-    if ( ret = make_consensus ( task_mask, io, consensus, NULL,
+    if ( ret = make_consensus ( task_mask, io, &consensus, NULL,
 			  contig_list, number_of_contigs,
 			  &consensus_length,
 			  max_read_length,
-			  max_consensus,
 			  p,
 			  consensus_cutoff ) ) {
 	goto bail_out;
@@ -508,8 +495,6 @@ find_repeats(GapIO *io,
 
     plot_rpt(io, num_f_matches+num_r_matches, sav1, sav2, sav3, sav4, sav5);
 
-	if ( cends ) xfree(cends);
-	if ( nends ) xfree(nends);
 	if ( sav1 ) xfree(sav1);
 	if ( sav2 ) xfree(sav2);
 	if ( sav3 ) xfree(sav3);
@@ -521,8 +506,6 @@ find_repeats(GapIO *io,
 	return 0;
  bail_out:
 
-	if ( cends ) xfree(cends);
-	if ( nends ) xfree(nends);
 	if ( sav1 ) xfree(sav1);
 	if ( sav2 ) xfree(sav2);
 	if ( sav3 ) xfree(sav3);

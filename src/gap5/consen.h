@@ -203,19 +203,11 @@ char *minimal_coverage(GapIO *io, int num_c, contig_list_t *contigs);
 		 -3 add hidden failed
 */
 int make_consensus( int task_mask, GapIO *io,
-		   char *consensus, float *quality,
+		   char **consensus, float *quality,
 		   Contig_parms *contig_list, int number_of_contigs,
 		   int *consensus_length, int max_read_length,
-		   int max_consensus, Hidden_params p, float percd );
+		   Hidden_params p, float percd );
 
-int make_consensus_files ( int task_mask, int output_format, int gel_anno,
-			  int truncate, int gel_notes, FILE *fp, 
-			  GapIO *io, char *consensus, float *quality,
-			  int database_size, int nconts,
-			  int *consensus_len, int max_read_length, 
-			  int max_consensus, Hidden_params p, float percd,
-			  int num_contigs, contig_list_t *contig_array,
-			  int nopads, int name_format);
 
 /* 
  * read through the consensus and find the ends of the contigs.
