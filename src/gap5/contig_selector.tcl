@@ -209,9 +209,8 @@ proc ContigComparator { io } {
     pack $csp_win -in $f.csp -padx 5 -pady 5 -fill both -expand yes
 
     #HACK - cp_id is never used
+    catch {tkwait visibility $csp_win}
     update idletasks
-
-    catch {tkwait visibility $csv_win}
 
     set cp_id [display_contig_comparator -io $io \
 	    -window $csp_win -win_vertical $csv_win -id [set $f.cs_id]]
@@ -1400,6 +1399,7 @@ proc resize_canvas {args} {
 }
 
 proc scroll_canvas {args} {
+    puts [info level [info level]]
     foreach {key val} $args {
 	set a($key) $val
     }
@@ -1409,7 +1409,7 @@ proc scroll_canvas {args} {
 	    -io $a(-io) \
 	    -id $a(-id) \
 	    -type GENERIC \
-	    -args "{task TASK_CANVAS_SCROLLX data $a(-xscrollcommand)}"
+	    -args "{task TASK_CANVAS_SCROLLX data [list $a(-xscrollcommand)]}"
     }
 
     if {[info exists a(-yscrollcommand)]} {
@@ -1417,7 +1417,7 @@ proc scroll_canvas {args} {
 	    -io $a(-io) \
 	    -id $a(-id) \
 	    -type GENERIC \
-	    -args "{task TASK_CANVAS_SCROLLY data $a(-yscrollcommand)}"
+	    -args "{task TASK_CANVAS_SCROLLY data [list $a(-yscrollcommand)]}"
     }
 }
 
@@ -1430,7 +1430,7 @@ proc draw_canvas_cursor_x {args} {
 	-io $a(-io) \
 	-id $a(-id) \
 	-type GENERIC \
-	-args "{task TASK_CANVAS_CURSOR_X data $a(-x)}"
+	-args "{task TASK_CANVAS_CURSOR_X data [list $a(-x)]}"
 }
 
 proc draw_canvas_cursor_y {args} {
@@ -1442,7 +1442,7 @@ proc draw_canvas_cursor_y {args} {
 	-io $a(-io) \
 	-id $a(-id) \
 	-type GENERIC \
-	-args "{task TASK_CANVAS_CURSOR_Y data $a(-y)}"
+	-args "{task TASK_CANVAS_CURSOR_Y data [list $a(-y)]}"
 }
 
 proc remove_contig_duplicates {args} {
