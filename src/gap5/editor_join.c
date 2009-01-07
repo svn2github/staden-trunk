@@ -687,6 +687,28 @@ static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
 }
 
 /*
+ * Given ranges contained within a bin this makes sure that all sequences
+ * referred to in these ranges have their parent listed as the new bin.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
+    int i, nr = ArrayMax(bin->rng);
+
+    for (i = 0; i < nr; i++) {
+	range_t *r = arrp(range_t, bin->rng, i);
+	seq_t *seq = (seq_t *)cache_search(io, GT_Seq, r->rec);
+	if (seq->bin != bin->rec) {
+	    seq = cache_rw(io, seq);
+	    seq->bin = bin->rec;
+	}
+    }
+
+    return 0;
+}
+
+/*
  * A recursive break contig function.
  * bin_num	The current bin being moved or split.
  * pos		The contig break point.
@@ -802,6 +824,8 @@ static int break_contig_recurse(GapIO *io, int bin_num, int pos, int offset,
 	if (*right_start > NMIN(bin->start_used, bin->end_used))
 	    *right_start = NMIN(bin->start_used, bin->end_used);
 
+	break_contig_reparent_seqs(io, bin_dup);
+
     } else if (NMAX(bin->start_used, bin->end_used) < pos) {
 	/* Range array already in left contig, so do nothing */
 	printf("%*sDUP, MOVE Array to left\n", level*4, "");
@@ -842,10 +866,11 @@ static int break_contig_recurse(GapIO *io, int bin_num, int pos, int offset,
 		}
 		j++;
 	    }
-
 	}
 
 	ArrayMax(bin->rng) = j-1;
+
+	break_contig_reparent_seqs(io, bin_dup);
 
 	bin->start_used     = lmin;
 	bin->end_used       = lmax;
@@ -910,7 +935,14 @@ int break_contig(GapIO *io, int crec, int cpos) {
     cr->end = cl->end - right_start + 1;
     bin = cache_rw(io, get_bin(io, cr->bin));
     bin->pos = 1-right_start;
-    
+
+    /*
+    cr->start = right_start;
+    cr->end = cl->end;
+    bin = cache_rw(io, get_bin(io, cr->bin));
+    bin->pos+=10;
+    */
+
     cl->end = left_end;
 
     cache_flush(io);
