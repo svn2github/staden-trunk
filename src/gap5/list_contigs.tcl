@@ -96,7 +96,7 @@ proc InitListContigs {io parent {csh_win {}}} {
 #
 # FIXME: rewrite the csh_win canvas stuff to call this menu code instead.
 ; proc ListContigsPopupMenu {io crec w X Y} {
-    global read_only gap_defs
+    global read_only gap5_defs
 
     create_popup $w.m "Contig Commands (\#$crec)"
     $w.m add command -label "Edit contig" \
