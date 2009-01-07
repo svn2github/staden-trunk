@@ -5,20 +5,20 @@ PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 SRCROOT=..
 #SRCROOT=/home5/pubseq/share/src
 #SRCROOT=/nfs/arran/home5/pubseq/share/src
-#REMOTESRC=$(GAP4SRC)
+#REMOTESRC=$(GAP5SRC)
 
 include	 $(SRCROOT)/mk/global.mk
 include $(SRCROOT)/mk/$(MACHINE).mk
 
-GAP4SRC=$(SRCROOT)/gap5
+GAP5SRC=$(SRCROOT)/gap5
 
 # Local comment: Comment out next line for remote compilation
-GAP4BIN=$(O)
+GAP5BIN=$(O)
 
 TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
-INCLUDES_E += -I$(GAP4SRC) $(TGAP_INC) $(TK_INC) \
+INCLUDES_E += -I$(GAP5SRC) $(TGAP_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(MUT_INC) \
 	      $(F77_INC) $(P3_INC)
 CFLAGS += $(SHLIB_CFLAGS)
@@ -34,61 +34,61 @@ TGAP_LIB=-ltgap
 # files and library files are generated using implicit rules.
 # We use the fortran compiler to do linking.
 #
-#	$(GAP4BIN)/contig_editor.o
+#	$(GAP5BIN)/contig_editor.o
 CEDITOR = \
-	$(GAP4BIN)/editor_view.o \
-	$(GAP4BIN)/editor_join.o \
-	$(GAP4BIN)/tkEdNames.o\
-	$(GAP4BIN)/tkEditor.o\
-	$(GAP4BIN)/tman_interface.o\
-	$(GAP4BIN)/tman_display.o
+	$(GAP5BIN)/editor_view.o \
+	$(GAP5BIN)/editor_join.o \
+	$(GAP5BIN)/tkEdNames.o\
+	$(GAP5BIN)/tkEditor.o\
+	$(GAP5BIN)/tman_interface.o\
+	$(GAP5BIN)/tman_display.o
 
 CEDITOR_SCRAP=\
-	$(GAP4BIN)/contigEditor.o\
-	$(GAP4BIN)/tkEditor.o\
-	$(GAP4BIN)/tkEdUtils.o\
-	$(GAP4BIN)/edInterface.o\
-	$(GAP4BIN)/edUtils2.o \
-	$(GAP4BIN)/tagU1.o\
-	$(GAP4BIN)/undo.o\
-	$(GAP4BIN)/edExtend.o\
-	$(GAP4BIN)/edCommands.o\
-	$(GAP4BIN)/edMutations.o\
-	$(GAP4BIN)/tagEditor.o\
-	$(GAP4BIN)/searchUtils.o\
-	$(GAP4BIN)/tman_interface.o\
-	$(GAP4BIN)/tman_display.o\
-	$(GAP4BIN)/tman_cons.o\
-	$(GAP4BIN)/tman_diff.o\
-	$(GAP4BIN)/join.o\
-	$(GAP4BIN)/oligo.o
+	$(GAP5BIN)/contigEditor.o\
+	$(GAP5BIN)/tkEditor.o\
+	$(GAP5BIN)/tkEdUtils.o\
+	$(GAP5BIN)/edInterface.o\
+	$(GAP5BIN)/edUtils2.o \
+	$(GAP5BIN)/tagU1.o\
+	$(GAP5BIN)/undo.o\
+	$(GAP5BIN)/edExtend.o\
+	$(GAP5BIN)/edCommands.o\
+	$(GAP5BIN)/edMutations.o\
+	$(GAP5BIN)/tagEditor.o\
+	$(GAP5BIN)/searchUtils.o\
+	$(GAP5BIN)/tman_interface.o\
+	$(GAP5BIN)/tman_display.o\
+	$(GAP5BIN)/tman_cons.o\
+	$(GAP5BIN)/tman_diff.o\
+	$(GAP5BIN)/join.o\
+	$(GAP5BIN)/oligo.o
 
 GAP5=\
-	$(GAP4BIN)/newgap5_cmds.o \
-	$(GAP4BIN)/gap4_compat.o \
-        $(GAP4BIN)/actf.o \
-	$(GAP4BIN)/gap_hash.o\
-	$(GAP4BIN)/hash_lib.o \
-	$(GAP4BIN)/qual.o \
-	$(GAP4BIN)/qualIO.o \
-	$(GAP4BIN)/gap_globals.o \
-	$(GAP4BIN)/tagdb.o\
-	$(GAP4BIN)/init.o \
-	$(GAP4BIN)/notedb.o\
-	$(GAP4BIN)/active_tags.o\
-	$(GAP4BIN)/list_proc.o\
-	$(GAP4BIN)/gap-error.o\
-	$(GAP4BIN)/stack_dump.o\
-	$(GAP4BIN)/tk-io-reg.o\
-	$(GAP4BIN)/tkAppInit.o \
-	$(GAP4BIN)/consen.o\
-	$(GAP4BIN)/contig_selector.o\
-	$(GAP4BIN)/cs-object.o\
-	$(GAP4BIN)/find_repeats.o\
-	$(GAP4BIN)/consensus.o\
-	$(GAP4BIN)/read_depth.o\
-	$(GAP4BIN)/fij.o\
-	$(GAP4BIN)/do_fij.o\
+	$(GAP5BIN)/newgap5_cmds.o \
+	$(GAP5BIN)/gap4_compat.o \
+        $(GAP5BIN)/actf.o \
+	$(GAP5BIN)/gap_hash.o\
+	$(GAP5BIN)/hash_lib.o \
+	$(GAP5BIN)/qual.o \
+	$(GAP5BIN)/qualIO.o \
+	$(GAP5BIN)/gap_globals.o \
+	$(GAP5BIN)/tagdb.o\
+	$(GAP5BIN)/init.o \
+	$(GAP5BIN)/notedb.o\
+	$(GAP5BIN)/active_tags.o\
+	$(GAP5BIN)/list_proc.o\
+	$(GAP5BIN)/gap-error.o\
+	$(GAP5BIN)/stack_dump.o\
+	$(GAP5BIN)/tk-io-reg.o\
+	$(GAP5BIN)/tkAppInit.o \
+	$(GAP5BIN)/consen.o\
+	$(GAP5BIN)/contig_selector.o\
+	$(GAP5BIN)/cs-object.o\
+	$(GAP5BIN)/find_repeats.o\
+	$(GAP5BIN)/consensus.o\
+	$(GAP5BIN)/read_depth.o\
+	$(GAP5BIN)/fij.o\
+	$(GAP5BIN)/do_fij.o\
 	$(CEDITOR)
 
 GAP5SH_LIBS=\
@@ -131,14 +131,13 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(GAP5)
 DEPEND_OBJ = $(GAP5)
 
 install:
-	cp $(O)/copy_db $(INSTALLBIN)
-	-cp gap4 $(INSTALLSCRIPT)
-	-mkdir $(INSTALLLIB)/gap
-	cp *.tcl tclIndex $(INSTALLLIB)/gap
+	-cp gap5 $(INSTALLSCRIPT)
+	-mkdir $(INSTALLLIB)/gap5
+	cp *.tcl tclIndex $(INSTALLLIB)/gap5
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
 
 distsrc: distsrc_dirs
-	-cp -R *.[chf] *.tcl tclIndex Makefile gap4 gap4viewer gap4.bat \
+	-cp -R *.[chf] *.tcl tclIndex Makefile gap5 gap5viewer gap5.bat \
 		dependencies $(DIRNAME)
 
 include dependencies
