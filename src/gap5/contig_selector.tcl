@@ -816,7 +816,10 @@ proc EditCSTagDetails { io canvas current } {
 proc UpdateContigId { io cs_h current } {
     global c_id_contig
     
-    set c_id_contig [GetContigNum $cs_h $current]
+    set cnum [GetContigNum $cs_h $current]
+    set c [$io get_contig $cnum]
+    set c_id_contig [$c get_name]
+    puts "c_id_contig = $c_id_contig"
 }
 
 ##############################################################################

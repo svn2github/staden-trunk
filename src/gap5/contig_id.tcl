@@ -76,12 +76,15 @@ proc contig_id {path args} {
 	}
     }
 
+
     if {$range} {
         set c_num [db_info get_contig_num $io $CurContig]
        	if {$c_num < 0} {
 	    InitContigGlobals $io
             set c_num [db_info get_contig_num $io $CurContig]
         }
+	puts c_num=$c_num
+	puts CurContig=$CurContig
         set length [c_length $io $c_num]
 	entrybox $path.ent \
 		-title "Contig identifier" \
@@ -112,7 +115,7 @@ proc contig_id {path args} {
     } else {
 	entrybox $path.ent \
 		-title "Contig identifier" \
-		-type "CheckContigName $io"\
+		-type "CheckContigName5 $io"\
 		-default $default \
 		-width $db_namelen \
 		-command "contig_id_callback2 [list $command]"
@@ -290,4 +293,18 @@ proc contig_id_callback {io entry path} {
 # Only called when "-range 0" is used.
 proc contig_id_callback2 {command args} {
     uplevel #0 $command
+}
+
+#------
+# Callback from entry box to check for valid names
+proc CheckContigName5 {io path } {
+    set name [$path.entry get]
+    if {[db_info get_contig_num $io $name] > 0} {
+	return 1
+    } else {
+	if {[db_info get_read_num $io $name] > 0} {
+	    return 1
+	}
+    }
+    return 0
 }
