@@ -30,13 +30,6 @@ static void extend_array (sheet_array *a, int r, int c);
 #define FONT_WIDTH(W) ((W)->font_width)
 #define FONT_HEIGHT(W) ((W)->fm.linespace)
 
-#define ROW_TO_BASELINE_PIXEL(W,R) \
-    ((W)->fm.linespace * (R) + (W)->border_width + \
-     (W)->fm.ascent)
-#define BASELINE_PIXEL_TO_ROW(W,P) \
-    (((long)(P) - (long)(W)->border_width - \
-      (long)(W)->fm.ascent) / (long)(W)->fm.linespace)
-
 #define GET_ARRAY_CELL(A,R,C)\
     ( &A->base[(R * A->cols + C)*A->size] )
 
@@ -105,6 +98,9 @@ void sheet_resize(Sheet *sw, int rows, int columns) {
  * and background colours.
  */
 void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
+    unsigned long valuemask;
+    XGCValues values;
+
     sw->light = light;
     sw->foreground = fg;
     sw->background = bg;
@@ -112,17 +108,25 @@ void sheet_config(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     /*
      * Change GC colours
      */
-    XSetForeground(sw->display, sw->normgc,  fg);
-    XSetBackground(sw->display, sw->normgc,  bg);
+    valuemask = GCFont | GCGraphicsExposures | GCForeground | GCBackground;
+    values.font = Tk_FontId(sw->font);
+    values.graphics_exposures = False;
 
-    XSetForeground(sw->display, sw->sparegc, bg);
-    XSetBackground(sw->display, sw->sparegc, bg);
+    values.foreground = fg;
+    values.background = bg;
+    sw->normgc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
-    XSetForeground(sw->display, sw->greygc,  fg);
-    XSetBackground(sw->display, sw->greygc,  bg);
+    values.foreground = bg;
+    values.background = bg;
+    sw->sparegc = Tk_GetGC(sw->tkwin, valuemask, &values);
 
-    XSetForeground(sw->display, sw->whitegc, bg);
-    XSetBackground(sw->display, sw->whitegc, fg);
+    values.foreground = light;
+    values.background = bg;
+    sw->greygc = Tk_GetGC(sw->tkwin, valuemask, &values);
+
+    values.foreground = bg;
+    values.background = fg;
+    sw->whitegc = Tk_GetGC(sw->tkwin, valuemask, &values);
 }
 
 
@@ -142,6 +146,7 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     sw->cursor_row = sw->cursor_column = -1;
     sw->display_cursor = 1;
     sw->window = 0;
+    sw->yflip = 0;
 
     sheet_resize(sw, 0, 0);
 
@@ -355,8 +360,12 @@ static GC setGC(Sheet *sw, sheet_ink ink_base)
 	    values.background = sw->background;
     }
 
+    /* FIXME:
+     * We never Tk_FreeGC so the reference count increases indefinitely
+     */
     return Tk_GetGC(sw->tkwin, valuemask, &values);
 }
+
 
 static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
 {
@@ -441,7 +450,6 @@ static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char 
 			  1, 2);
        }
    }
-
 }
 
 
@@ -524,6 +532,11 @@ static void _repaint(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
     /* Belt and braces mode, just incase! */
     if (!sw->window)
 	return;
+
+    /*
+    printf("Repaint %p => (%d,%d) len %d, ink->sh=%d, text=%.*s\n",
+	   sw, c, r, l, ink->sh, l, s);
+    */
 
     if (ink->sh==sh_default) {
 	/* 7/1/99 johnt - Implement XDrawImageString Manually under Windows */
@@ -661,7 +674,17 @@ static void redisplayRegion(Sheet *sw, XRectangle *expose)
     tlc = PIXEL_TO_COL(sw,expose->x);
     tlr = PIXEL_TO_ROW(sw,expose->y);
     brc = PIXEL_TO_COL(sw,expose->x+expose->width-1);
-    brr = PIXEL_TO_ROW(sw,expose->y+expose->height-1)+1;
+    brr = PIXEL_TO_ROW(sw,expose->y+expose->height-1);
+
+    if (tlr > brr) {
+	int tmp = tlr;
+	tlr = brr;
+	brr = tmp;
+    }
+    /* Adjust for potentially partial lines */
+    tlr--;
+    brr++;
+
     if (tlc < 0) tlc = 0;
     if (tlr < 0) tlr = 0;
     if (brc < 0) brc = 0;

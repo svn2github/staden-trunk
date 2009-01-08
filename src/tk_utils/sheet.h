@@ -77,6 +77,7 @@ typedef struct {
     Boolean        display_cursor;
     SheetRow       cursor_row;
     SheetColumn    cursor_column;
+    int            yflip;
 
     /* private state */
     sheet_array    paper;
@@ -109,12 +110,29 @@ extern void sheet_clear(Sheet *sw);
     (((long)(P) - (long)(W)->border_width) / \
      (long)(W)->font_width)
 #define PIXEL_TO_ROW(W,P) \
-    (((long)(P) - (long)(W)->border_width) / (long)(W)->fm.linespace)
+    ((W)->yflip \
+        ? ((W)->rows - (((long)(P) - (long)(W)->border_width) / (long)(W)->fm.linespace) -1) \
+        : (((long)(P) - (long)(W)->border_width) / (long)(W)->fm.linespace))
 
 #define COL_TO_PIXEL(W,C) \
     ((W)->font_width * (C) + (W)->border_width)
 #define ROW_TO_PIXEL(W,R) \
-    ((W)->fm.linespace * ((R)+1) + (W)->border_width)
+    ((W)->yflip \
+        ? ((W)->fm.linespace * ((W)->rows - ((R)+1)-1) + (W)->border_width) \
+        : ((W)->fm.linespace * ((R)+1) + (W)->border_width))
+
+#define ROW_TO_BASELINE_PIXEL(W,R) \
+    ((W)->yflip \
+        ? ((W)->fm.linespace * ((W)->rows - (R)-1) + (W)->border_width + \
+           (W)->fm.ascent) \
+        : ((W)->fm.linespace * (R) + (W)->border_width + \
+           (W)->fm.ascent))
+#define BASELINE_PIXEL_TO_ROW(W,P) \
+    ((W)->yflip \
+        ? (W)->rows - (((long)(P) - (long)(W)->border_width - \
+            (long)(W)->fm.ascent) / (long)(W)->fm.linespace) -1\
+        : (((long)(P) - (long)(W)->border_width - \
+            (long)(W)->fm.ascent) / (long)(W)->fm.linespace))
 
 void XawSheetPutText(Sheet *sw, SheetColumn c, SheetRow r, Dimension l,
 		     char *s);
