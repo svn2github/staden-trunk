@@ -60,6 +60,7 @@
  * Useful flags (musn't coincide with the job numbers)
  */
 #define REG_FLAG_INVIS	       (1<<30)
+#define REG_FLAG_INACTIVE      (1<<31)
 
 
 /*
@@ -262,6 +263,7 @@ typedef struct {
     int flags;
     int type;
     int uid; /* A _unique_ identifier for this contig_reg_t */
+    int ref_count; /* Auto destroy when this hits zero */
 } contig_reg_t;
 
 
