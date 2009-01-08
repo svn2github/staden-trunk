@@ -234,7 +234,12 @@ int repeat_search (
 	int p1, p2, p1_end;
 	p1 = depad_to_pad[(*seq1_match)[i]];
 	p2 = depad_to_pad[(*seq2_match)[i]];
-	p1_end = depad_to_pad[(*seq1_match)[i]+(*len_match)[i]-1];
+	if ((*seq1_match)[i]+(*len_match)[i] <= seq1_len) {
+	    p1_end = depad_to_pad[(*seq1_match)[i]+(*len_match)[i]-1];
+	} else {
+	    p1_end = (*seq1_match)[i]+(*len_match)[i] - seq1_len
+		+ depad_to_pad[seq1_len-1];
+	}
 
 	(*seq1_match)[i] = p1;
 	(*seq2_match)[i] = p2;
