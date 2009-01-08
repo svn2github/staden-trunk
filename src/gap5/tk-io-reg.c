@@ -1053,13 +1053,15 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
 	    break;
 	    
 	case TASK_CANVAS_CURSOR_X: {
-	    int x = atoi(reg_get_arg("data"));
+	    static int x;
+	    x = atoi(reg_get_arg("data"));
 	    rd->generic.data = (void *)&x;
 	    break;
 	  }
 
 	case TASK_CANVAS_CURSOR_Y: {
-	    int y = atoi(reg_get_arg("data"));
+	    static int y;
+	    y = atoi(reg_get_arg("data"));
 	    rd->generic.data = (void *)&y;
 	    break;
 	  }
