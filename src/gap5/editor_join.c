@@ -913,9 +913,17 @@ static int break_contig_recurse(GapIO *io, int bin_num, int pos, int offset,
 int break_contig(GapIO *io, int crec, int cpos) {
     contig_t *cl = (contig_t *)cache_search(io, GT_Contig, crec);
     contig_t *cr;
-    char *cname = "right";
+    int cid;
+    char cname[1024], *cname_end;
     int left_end, right_start;
     bin_index_t *bin;
+
+    strncpy(cname, contig_get_name(&cl), 1000);
+    cname_end = cname + strlen(cname);
+    cid = 1;
+    do {
+	sprintf(cname_end, "#%d", cid++);
+    } while (contig_index_query(io, cname) > 0);
 
     if (!(cr = contig_new(io, cname)))
 	return -1;
