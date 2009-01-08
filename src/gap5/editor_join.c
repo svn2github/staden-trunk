@@ -694,7 +694,7 @@ static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
  *        -1 on failure
  */
 static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
-    int i, nr = ArrayMax(bin->rng);
+    int i, nr = bin->rng ? ArrayMax(bin->rng) : 0;
 
     for (i = 0; i < nr; i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
