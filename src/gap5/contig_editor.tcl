@@ -109,6 +109,7 @@ proc contig_editor {w args} {
     set opt(DisagreeCase)  1
     set opt(Status)        "--- Status info here ---"
 
+    set opt(io_base) $opt(-io)
     set opt(-io) [$opt(-io) child]
 
     set join [info exists opt(-contig2)]
@@ -271,8 +272,15 @@ proc editor_join {w} {
 	}
     }
 
+    # Restart the contig selector.
+    # This is a temporary fix for now as we don't send over the proper
+    # events to force it to update the data structures.
+    quit_displays -io $opt(io_base) -msg "join contig"
+
     $ed join
     destroy $w
+
+    ContigSelector $opt(io_base)
 }
 
 proc editor_exit {w} {
