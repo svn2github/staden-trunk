@@ -127,6 +127,13 @@ proc contig_editor {w args} {
     # Create the window layout
     if {![winfo exists $w]} {
 	toplevel $w
+	set c [$opt(-io) get_contig $opt(contig)]
+	if {$join} {
+	    set c2 [$opt(-io) get_contig $opt(contig2)]
+	    wm title $w "Join: [$c get_name] / [$c2 get_name]"
+	} else {
+	    wm title $w "Edit: [$c get_name]"
+	}
     }
     wm resizable $w 1 1
 
