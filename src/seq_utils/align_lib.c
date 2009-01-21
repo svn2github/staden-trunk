@@ -2182,6 +2182,8 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	for(row = first_row; row <= max_row; row++, band_left++, band_right++) {
 
 	  guard_offset = band_left + two_band;
+	  if (guard_offset < 0)
+	      abort();
 
 	  if(t == 0) {
 	    pF1   = F1;
@@ -2350,6 +2352,10 @@ int affine_align3(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	      }
 	    }
 	  }
+
+	  *(pF2+1) = big_neg;
+	  *(pG2+1) = big_neg;
+	  *(pH2+1) = big_neg;
 	  
 	  if ( column > seq1_len ) {
 	    if ( edge_mode & BEST_EDGE_TRACE ) {
@@ -2882,9 +2888,15 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	first_row++;
 	band_left++;
 	band_right++;
+	two_band = band * 2;
+
+	if (band_left + two_band < 0) {
+	    first_row -= band_left + two_band;
+	    band_left -= band_left + two_band;
+	}
+
 	first_band_left = band_left;
 
-	two_band = band * 2;
 	max_row = MIN(seq2_len, first_row + seq1_len - band_left + 1);
 	last_row = 0;
 
@@ -3077,6 +3089,10 @@ int affine_align_bits(OVERLAP *overlap, ALIGN_PARAMS *params) {
 	      }
 	    }
 	  }
+
+	  *(pF2+1) = big_neg;
+	  *(pG2+1) = big_neg;
+	  *(pH2+1) = big_neg;
 	  
 	  if ( column > seq1_len ) {
 	    if ( edge_mode & BEST_EDGE_TRACE ) {
