@@ -2551,7 +2551,7 @@ plot_lines(Tcl_Interp *interp,
     for (i = 0; i < num; i++) {
 
 	len = flen("%s create line %d %d %d %d "
-		   "-fill %s -tags %s -width %d -arrow %s\n",
+		   "-fill {%s} -tags %s -width %d -arrow %s\n",
 		   win_name,
 		   array[i].l.x1,
 		   array[i].l.y1,
@@ -2569,7 +2569,7 @@ plot_lines(Tcl_Interp *interp,
 	}
 
 	sprintf(cmd, "%s create line %d %d %d %d "
-		"-fill %s -tags %s -width %d -arrow %s\n",
+		"-fill {%s} -tags %s -width %d -arrow %s\n",
 		win_name,
 		array[i].l.x1,
 		array[i].l.y1,
@@ -2810,7 +2810,7 @@ DrawReadingTags(Tcl_Interp *interp,                                    /* in */
     } /* end for */
 
     sprintf(cmd, "%s create rectangle %d %d %d %d "
-	    "-fill %s -tag %s -width %d -outline %s\n",
+	    "-fill {%s} -tag %s -width %d -outline {%s}\n",
 	    win_name, x1, y, x2, y, colour, type, line_width, colour);
 
     if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
