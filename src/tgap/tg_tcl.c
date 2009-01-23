@@ -343,7 +343,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     tcl_contig *tc = (tcl_contig *)clientData;
 
     static const char *options[] = {
-	"delete",       "io",
+	"delete",       "io",           "dump_ps",
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
@@ -351,7 +351,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     };
 
     enum options {
-	DELETE,         IO,
+	DELETE,         IO,     	DUMP_PS,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE
@@ -375,6 +375,18 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case IO:
 	Tcl_SetResult(interp, io_obj_as_string(tc->io) , TCL_VOLATILE);
+	break;
+
+    case DUMP_PS:
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s dump_ps filename\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+	contig_dump_ps(tc->io, &tc->contig,
+		       Tcl_GetStringFromObj(objv[2], NULL));
+	Tcl_ResetResult(interp);
 	break;
 
     case GET_REC:

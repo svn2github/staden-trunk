@@ -438,7 +438,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	f_a = +1;
 	f_b = offset;
     }
-
+    
     if (!(end < NMIN(bin->start_used, bin->end_used) ||
 	  start > NMAX(bin->start_used, bin->end_used))
 	&& bin->rng) {
@@ -1085,4 +1085,159 @@ int contig_destroy(GapIO *io, int rec) {
 
     io->db->Ncontigs--;
     return 0;
+}
+
+/*
+ * bin_num	The current bin being moved or split.
+ * pos		The contig break point.
+ * offset	The absolute positional offset of this bin in original contig
+ * pleft	The parent bin/-contig in the left new contig
+ * pright	The parent bin/-contig in the right new contig
+ * child_no     0 or 1 - whether this bin is the left/right child of its parent
+ */
+#define H 20
+#define G 20
+static int bin_dump_recurse(GapIO *io, contig_t **c,
+			    char *fn, int child,
+			    int bin_num, int offset,
+			    int level, int complement,
+			    double rootx, double rooty) {
+    int i, f_a, f_b;
+    bin_index_t *bin = get_bin(io, bin_num);
+    static FILE *gv = NULL;
+    static double scale = 0;
+    static double level_end[100];
+    static double level_st[100];
+    double g;
+
+    cache_incr(io, bin);
+
+    if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+    }
+
+    if (complement) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    if (!gv) {
+	int o = 20;
+	gv = fopen(fn, "w+");
+	scale = 800.0 / bin->size;
+	o -= offset * scale;
+	fprintf(gv, "%%!\n/Times-Roman findfont\n6 scalefont\nsetfont\n"
+		"90 %d translate\n90 rotate\nnewpath\n", o);
+
+	for (i = 0; i < 100; i++) {
+	    level_end[i] = -1e10;
+	    level_st[i] = 1e10;
+	}
+
+	fprintf(gv, "%f %d moveto (%d) show\n",
+		scale * (*c)->start, level*(H+G)+H+20+7, (*c)->start);
+	fprintf(gv, "%f %d moveto (%d) show\n",
+		scale * (*c)->end, level*(H+G)+H+20+7, (*c)->end);
+	fprintf(gv, "2 setlinewidth\n"
+		"%f %d moveto 0 3 rmoveto 0 -6 rlineto 0 3 rmoveto\n"
+		"%f %d lineto 0 3 rmoveto 0 -6 rlineto 0 3 rmoveto stroke\n"
+		"1 setlinewidth\n",
+		scale * (*c)->start, level*(H+G)+H+20,
+		scale * (*c)->end,    level*(H+G)+H+20);
+    }
+
+    for (i = -level; i < 100; i++) {
+	double p1 = scale * offset;
+	double p2 = scale * (offset + bin->size);
+	if (p1 >= level_end[i] || p2 <= level_st[i])
+	    break;
+    }
+    level = -i;
+
+    /* Inner grey box showing the used portion */
+    fprintf(gv, "0.8 setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
+	    scale * NMIN(bin->start_used, bin->end_used), level*(H+G)+3,
+	    scale * (NMAX(bin->start_used, bin->end_used) -
+		     NMIN(bin->start_used, bin->end_used)),
+	    H-6,
+	    scale * (NMAX(bin->start_used, bin->end_used) -
+		     NMIN(bin->start_used, bin->end_used)),
+	    H-6);
+
+    /* linking lines */
+    if (rootx || rooty) {
+	g = child == 0 ? 0.6 : 0.9;
+	fprintf(gv, "%f setgray %f %f moveto %f %d lineto stroke\n",
+		g, rootx, rooty,
+		scale*(offset+bin->size/2),
+		level*(H+G)+H);
+    }
+    rootx = scale*(offset+bin->size/2);
+    rooty = level*(H+G);
+
+    /* Outer bin bounding box */
+    g = complement ? 0.5 : 0;
+    fprintf(gv, "%f setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
+	    g, scale * offset, level*(H+G), scale * bin->size,
+	    H, scale * bin->size, H);
+
+    /* bin offset */
+    fprintf(gv, "%f %d moveto (%d) show\n",
+	    scale * offset, level*(H+G)-7, offset);
+
+    if (scale * offset < level_st[-level])
+	level_st[-level] = scale * offset;
+    if (scale * (offset + bin->size) > level_end[-level])
+	level_end[-level] = scale * (offset + bin->size);
+
+    /* bin start_used position */
+    if (bin->rng)
+	fprintf(gv, "%f %d moveto (%d) show\n",
+		scale * NMIN(bin->start_used, bin->end_used),
+		level*(H+G)+H+2,
+		NMIN(bin->start_used, bin->end_used));
+    else
+	fprintf(gv, "%f %d moveto (empty) show\n",
+		scale * offset,
+		level*(H+G)+H+2);
+
+    /* Bin record ID */
+    fprintf(gv, "%f %d moveto (#%d) show\n",
+	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec);
+
+    fflush(gv);
+
+    /* Recurse */
+    for (i = 0; i < 2; i++) {
+	bin_index_t *ch;
+	if (!bin->child[i])
+	    continue;
+
+	ch = get_bin(io, bin->child[i]);
+	if (0 != bin_dump_recurse(io, c, fn, i, bin->child[i],
+				  NMIN(ch->pos, ch->pos + ch->size-1),
+				  level-1, complement, rootx, rooty))
+	    return -1;
+    }
+
+    cache_decr(io, bin);
+
+    if (level == 0) {
+	fprintf(gv, "showpage\n");
+	fclose(gv);
+	gv = NULL;
+    }
+
+    return 0;
+}
+
+/*
+ * Produces a postscript file containing a plot of the contig bin structure.
+ */
+void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
+    bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
+		     contig_offset(io, c), 0, 0, 0.0, 0.0);
 }

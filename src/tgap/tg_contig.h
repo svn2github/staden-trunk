@@ -123,4 +123,9 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci);
 track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
 			  int type, double bpv);
 
+/*
+ * Produces a postscript file containing a plot of the contig bin structure.
+ */
+void contig_dump_ps(GapIO *io, contig_t **c, char *fn);
+
 #endif /* _TG_CONTIG_H_ */
