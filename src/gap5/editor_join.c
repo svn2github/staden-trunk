@@ -799,13 +799,23 @@ static int break_contig_recurse(GapIO *io,
 
 	rbin = 0;
 
-#if 0
 	/* Possibly steal left contig's bin */
-	if (pleft != cl->rec && NMIN(bin->start_used, bin->end_used) >= pos) {
-	    rbin = cr->bin;
-	    cr->bin = bin->child[0];
-	}
+	if (pleft == cl->rec && NMIN(bin->start_used, bin->end_used) >= pos) {
+#if 0
+	    /* Currently this doesn't always work */
+	    if (bin->child[1]) {
+		bin_index_t *ch = get_bin(io, bin->child[1]);
+		if (NMIN(ch->pos, ch->pos + ch->size-1) >= pos) {
+		    rbin = cl->bin;
+		    cl->bin = bin->child[0];
+		}
+	    }
+#else
+	    pleft = bin->rec;
 #endif
+	} else {
+	    pleft = bin->rec;
+	}
 
 	/* Create new bin, or use root of contig if it's unused so far */
 	if (!rbin && pright == cr->rec) {
@@ -841,6 +851,7 @@ static int break_contig_recurse(GapIO *io,
 	pright = bin_dup->rec;
     } else {
 	bin_dup = NULL;
+	pleft = bin->rec;
     }
 
     if (!bin->rng) {
@@ -861,9 +872,12 @@ static int break_contig_recurse(GapIO *io,
 	bin_dup->rng_rec = bin->rng_rec;
 	if (bin_dup->rng_rec)
 	    bin_dup->flags |= BIN_RANGE_UPDATED;
-	bin->rng = NULL;
-	bin->rng_rec = 0;
-	bin->flags |= BIN_BIN_UPDATED;
+
+	if (bin->rec != bin_dup->rec) {
+	    bin->rng = NULL;
+	    bin->rng_rec = 0;
+	    bin->flags |= BIN_BIN_UPDATED;
+	}
 
 	if (*right_start > NMIN(bin->start_used, bin->end_used))
 	    *right_start = NMIN(bin->start_used, bin->end_used);
@@ -977,8 +991,7 @@ static int break_contig_recurse(GapIO *io,
 	ch = get_bin(io, bin->child[i]);
 	if (0 != break_contig_recurse(io, cl, cr, bin->child[i], pos,
 				      NMIN(ch->pos, ch->pos + ch->size-1),
-				      level+1,
-				      bin->rec, pright,
+				      level+1, pleft, pright,
 				      i, complement,
 				      left_end, right_start))
 	    return -1;
@@ -987,6 +1000,33 @@ static int break_contig_recurse(GapIO *io,
     cache_decr(io, bin);
     if (bin_dup)
 	cache_decr(io, bin_dup);
+
+    return 0;
+}
+
+/*
+ * Looks for redundant bins at the root containing no data and just a single
+ * child.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int remove_redundant_bins(GapIO *io, contig_t *c) {
+    int bnum;
+
+    if (!(c = cache_rw(io, c)))
+	return -1;
+
+    for (bnum = c->bin; bnum;) {
+	bin_index_t *bin = get_bin(io, bnum);
+	if (bin->rng || (bin->child[0] && bin->child[1]))
+	    break;
+
+	/* Empty */
+	c->bin = bin->child[0] ? bin->child[0] : bin->child[1];
+	printf("Remove bin %d\n", bin->rec);
+	bnum = c->bin;
+    }
 
     return 0;
 }
@@ -1054,6 +1094,9 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     cl = cache_rw(io, cl);
     cl->end = left_end;
+
+    remove_redundant_bins(io, cl);
+    remove_redundant_bins(io, cr);
 
     cache_flush(io);
 
