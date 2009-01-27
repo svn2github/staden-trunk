@@ -513,6 +513,96 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     return ret;
 }
 
+#define NORM(x) (f_a * (x) + f_b)
+#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
+#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
+
+/*
+ * Given lbin and rbin as the root bins of the left and right contig,
+ * this looks for the optimal bin number to hang rbin off. If the bin
+ * we return has both left and right children, then we need to create
+ * a new parent containing rbin and the bin number returned, otherwise
+ * use the spare child.
+ *
+ * Returns bin record number on success
+ *         -1 on failure
+ */
+int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
+		  int junction) {
+    bin_index_t *binl, *binr;
+    int loffset = 0;
+    int complement = 0;
+    int i, f_a, f_b;
+    int start, end;
+    int bnum = lbin;
+
+    binr = (bin_index_t *)cache_search(io, GT_Bin, rbin);
+    binl = (bin_index_t *)cache_search(io, GT_Bin, lbin);
+
+    start = junction + binr->pos;
+    end   = junction + binr->pos + binr->size;
+
+    /* Check who is likely to contain who */
+    if (binr->size > binl->size) {
+	/* Swap */
+	lbin = binr->rec;
+	binr = binl;
+	rbin = binr->rec;
+	offset = offsetr;
+    }
+
+    do {
+	int child = -1;
+	int off_new;
+	bnum = lbin;
+
+	binl = (bin_index_t *)cache_search(io, GT_Bin, lbin);
+
+	if (binl->flags & BIN_COMPLEMENTED) {
+	    complement ^= 1;
+	}
+
+	if (complement) {
+	    f_a = -1;
+	    f_b = offset + binl->size-1;
+	} else {
+	    f_a = +1;
+	    f_b = offset;
+	}
+
+	for (i =0; i < 2; i++) {
+	    bin_index_t *ch;
+	    if (!binl->child[i])
+		continue;
+
+	    ch = get_bin(io, binl->child[i]);
+
+	    printf("Checking bin %d abs pos %d..%d vs %d..%d\n",
+		   ch->rec,
+		   NMIN(ch->pos, ch->pos+ch->size-1),
+		   NMAX(ch->pos, ch->pos+ch->size-1),
+		   start, end);
+
+	    if (NMIN(ch->pos, ch->pos+ch->size-1) <= start &&
+		NMAX(ch->pos, ch->pos+ch->size-1) >= end) {
+		child = i;
+		off_new = NMIN(ch->pos, ch->pos+ch->size-1);
+	    }
+	}
+
+	if (child >= 0) {
+	    lbin = binl->child[child];
+	    offset = off_new;
+	} else {
+	    lbin = 0;
+	}
+    } while (lbin);
+
+    printf("Optimal bin to insert is above %d\n", bnum);
+
+    return bnum;
+}
+
 /*
  * Perform the actual join process
  * Returns 0 for success
@@ -523,7 +613,7 @@ int edJoin(edview *xx) {
     contig_t *cl, *cr;
     GapIO *io = xx->io;
     bin_index_t *binp, *binl, *binr;
-    int offset, binp_id;
+    int offset, binp_id, above;
 
     if (!xx->link)
 	return -1;
@@ -546,6 +636,75 @@ int edJoin(edview *xx) {
     while (io->base)
 	io = io->base;
 
+    /* Find appropriate bin to insert our new contig above */
+    above = find_join_bin(io, contig_get_bin(&cl), contig_get_bin(&cr),
+			  contig_offset(io, &cl), contig_offset(io, &cr),
+			  offset);
+
+    if (above == -1)
+	above = contig_get_bin(&cl);
+
+    /* Ignore this for now */
+#if 0
+    /* Optimisation, hang binr off binl if it fits */
+    binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
+    binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
+    binl = (bin_index_t *)cache_search(io, GT_Bin, above);
+    binr = (bin_index_t *)cache_search(io, GT_Bin, contig_get_bin(&cr));
+    cache_incr(io, binp);
+    cache_incr(io, binl);
+    cache_incr(io, binr);
+    cache_incr(io, cl);
+    cache_incr(io, cr);
+    binp = cache_rw(io, binp);
+    binl = cache_rw(io, binl);
+    binr = cache_rw(io, binr);
+    cl   = cache_rw(io, cl);
+
+    /* Update the contig links */
+    if (above == contig_get_bin(&cl)) {
+	contig_set_bin  (io, &cl, binp_id);
+	contig_set_start(io, &cl, MIN(contig_get_start(&cl),
+				      contig_get_start(&cr)+offset));
+	contig_set_end  (io, &cl, MAX(contig_get_end(&cl),
+				      contig_get_end(&cr)+offset));
+    } else {
+	/* Or instead an internal bin */
+	bin_index_t *b2 = get_bin(io, binl->parent);
+	b2 = cache_rw(io, b2);
+	binp->parent = b2->rec;
+	binp->parent_type = GT_Bin;
+	if (b2->child[0] == binl->rec) {
+	    b2->child[0] = binp->rec;
+	} else if (b2->child[1] == binl->rec) {
+	    b2->child[1] = binp->rec;
+	} else {
+	    fprintf(stderr, "invalid bin relationship");
+	    abort();
+	}
+
+	/* Fix offset? */
+    }
+
+    /* Link the new bins together */
+    binp->child[0] = binl->rec;
+    binp->child[1] = binr->rec;
+    binp->pos = MIN(binl->pos, binr->pos + offset);
+    binp->size = MAX(binl->pos+binl->size, binr->pos+binr->size + offset)
+	- binp->pos + 1;
+    binp->flags |= BIN_BIN_UPDATED;
+
+    binl->parent = binp->rec;
+    binl->parent_type = GT_Bin;
+    binl->pos = binl->pos - binp->pos;
+    binl->flags |= BIN_BIN_UPDATED;
+
+    binr->parent = binp->rec;
+    binr->parent_type = GT_Bin;
+    binr->pos = binr->pos - binp->pos + offset;
+    binr->flags |= BIN_BIN_UPDATED;
+
+#else
     /* Object writeable copies of our objects */
     binp_id = bin_new(io, 0, 0, cl->rec, GT_Contig);
     binp = (bin_index_t *)cache_search(io, GT_Bin, binp_id);
@@ -586,6 +745,7 @@ int edJoin(edview *xx) {
     binr->parent_type = GT_Bin;
     binr->pos = binr->pos - binp->pos + offset;
     binr->flags |= BIN_BIN_UPDATED;
+#endif
 
     cache_decr(io, binp);
     cache_decr(io, binl);
@@ -600,10 +760,6 @@ int edJoin(edview *xx) {
 
     return 0;
 }
-
-#define NORM(x) (f_a * (x) + f_b)
-#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
-#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
 static int break_contig_move_bin(GapIO *io, bin_index_t *bin,
 				 contig_t *cfrom, int pfrom,
@@ -1076,21 +1232,22 @@ int break_contig(GapIO *io, int crec, int cpos) {
     printf("New left end = %d, right start = %d\n", left_end, right_start);
 
     /* Ensure start/end positions of contigs work out */
+    bin = cache_rw(io, get_bin(io, cr->bin));
+    //#define KEEP_POSITIONS 1
+#ifndef KEEP_POSITIONS
     cr->start = 1;
     cr->end = cl->end - right_start + 1;
-    bin = cache_rw(io, get_bin(io, cr->bin));
     bin->pos -= right_start-1;
+#endif
     if ((do_comp && !(bin->flags & BIN_COMPLEMENTED)) ||
 	(!do_comp && (bin->flags & BIN_COMPLEMENTED))) {
 	bin->flags ^= BIN_COMPLEMENTED;
     }
 
-    /*
+#ifdef KEEP_POSITIONS
     cr->start = right_start;
     cr->end = cl->end;
-    bin = cache_rw(io, get_bin(io, cr->bin));
-    bin->pos+=10;
-    */
+#endif
 
     cl = cache_rw(io, cl);
     cl->end = left_end;
