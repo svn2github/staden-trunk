@@ -145,6 +145,13 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 			   int *offset_r) {
     int offset;
     bin_index_t *bin = get_bin(io, contig_get_bin(c));
+
+    static int last_c = 0;
+    static GapIO *last_io = NULL;
+    static bin_index_t *last_bin = NULL;
+    static int last_start = 0, last_end = 0;
+    static int last_offset;
+
     //cache_incr(io, bin);
 
     /*
@@ -170,9 +177,33 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	//cache_incr(io, bin);
     }
 
+    /*
+     * In theory we can jump straight to a candidate starting bin, possibly
+     * even returning it right here if it's the min bin size, saving about
+     * 10% of our CPU time in this function
+     */
+#if 0
+    if (last_bin && last_c == (*c)->rec && last_io == io) {
+	if (start >= last_start && end <= last_end) {
+	    if (last_bin && last_bin->size == MIN_BIN_SIZE) {
+		/* leaf node, so we can return right now */
+		if (offset_r)
+		    *offset_r = last_offset;
+		return last_bin;
+	    }
+
+	    /* Maybe a smaller bin, but start the search from here on */
+	    bin = last_bin;
+	    offset = last_offset;
+	    cache_incr(io, bin);
+	    goto jump;
+	}
+    }
+#endif
+
     /* Now recurse down the bin hierachy searching for the smallest bin */
     offset = bin->pos;
-
+ jump:
     for (;;) {
 	int i;
 	bin_index_t *ch;
@@ -272,6 +303,13 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     if (offset_r)
 	*offset_r = offset;
+
+    last_io = io;
+    last_c = (*c)->rec;
+    last_bin = bin;
+    last_start = offset;
+    last_end = offset + bin->size-1;
+    last_offset = offset;
 
     cache_decr(io, bin);
     return bin;
