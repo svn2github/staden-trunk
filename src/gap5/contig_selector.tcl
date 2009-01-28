@@ -877,7 +877,7 @@ proc popup_cs_contig_3 {io canvas obj} {
     destroy $canvas.m
 
     complement_contig -io $io -contigs "=$c_num"
-    SetContigGlobals $io $c_num
+    #SetContigGlobals $io $c_num
 }
 
 proc popup_cs_contig_cnotes {io canvas obj} {

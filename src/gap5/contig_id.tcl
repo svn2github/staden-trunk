@@ -233,12 +233,15 @@ proc contig_id_rec {path} {
 
     set r [cname2crec [set $path.Io] [entrybox_get $path.ent]]
     if {"$r" != ""} {
+	set c [[set $path.Io] get_contig $r]
+	set cn [$c get_name]
+	if {$cn != ""} {set cn "=$r"}
 	if [winfo exists $path.lreg] {
-	    SetContigGlobals [set $path.Io] $r \
+	    SetContigGlobals [set $path.Io] $cn \
 		[contig_id_lreg $path] \
 		[contig_id_rreg $path]
 	} else {
-	    SetContigGlobals [set $path.Io] $r
+	    SetContigGlobals [set $path.Io] $cn
 	}
     }
 

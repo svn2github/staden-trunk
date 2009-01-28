@@ -40,6 +40,20 @@ proc io_read_contig {io cnum} {
 
 # Currently brute force search
 proc cname2crec {io name} {
+    # =contig_rec => rec
+    if {[string match "=*" $name]} {
+	return [string range $name 1 end]
+    }
+
+    # #sequence_rec => seq2contig conversion
+    if {[string match "\#*" $name]} {
+	set s [$io get_seq [string range $name 1 end]]
+	set cr [$s get_contig]
+	$s delete
+	return $cr
+    }
+
+    # else "contig_name"
     set nc [$io num_contigs]
     for {set i 0} {$i < $nc} {incr i} {
 	set crec [$io contig_order $i]
