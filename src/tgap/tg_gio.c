@@ -117,8 +117,12 @@ GapIO *gio_child(GapIO *io_p) {
  *        -1 on failure.
  */
 int gio_read_contig(GapIO *io, int cnum, contig_t **c) {
-    GRec crec = arr(GCardinal, io->contig_order, cnum);
-    
+    GRec crec;
+
+    if (!io->contig_order)
+	return -1;
+
+    crec = arr(GCardinal, io->contig_order, cnum);
     *c = (contig_t *)cache_search(io, GT_Contig, crec);
 
     cache_decr(io, *c);
