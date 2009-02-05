@@ -731,7 +731,6 @@ static int g_unlock_views(GDB *gdb, GView v)
     for(; v!=-1; v=nextv) {
 
 	Cache *cache;
-	GImage image; /* default image for record after unlock */
 
 	nextv = arr(View,gdb->view,v).next;
 	cache = &arr(View,gdb->view,v).lcache;
