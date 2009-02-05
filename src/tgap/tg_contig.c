@@ -1162,9 +1162,6 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     static double level_st[100];
     double g;
 
-    if (level == -6)
-	HacheTableRefInfo(io->cache, stdout);
-
     cache_incr(io, bin);
 
     if (bin->flags & BIN_COMPLEMENTED) {
@@ -1301,8 +1298,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
  * Produces a postscript file containing a plot of the contig bin structure.
  */
 void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
-    HacheTableRefInfo(io->cache, stdout);
+    //HacheTableRefInfo(io->cache, stdout);
     bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
 		     contig_offset(io, c), 0, 0, 0.0, 0.0);
-    HacheTableRefInfo(io->cache, stdout);
+    //HacheTableRefInfo(io->cache, stdout);
 }
