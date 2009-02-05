@@ -20,4 +20,14 @@ typedef struct {
 int *avg_sequence_depth(GapIO *io, int cnum, int start, int end,
 			int *start_out, int *end_out, int *inc_out);
 
+/*
+ * As per avg_sequence_depth but this returns a min_max_avg_t structure
+ * containing minimum, maximum and average depth values.
+ *
+ * Returns average sequence depth on success
+ *         NULL on failure
+ */
+min_max_avg_t *sequence_depth(GapIO *io, int cnum, int start, int end,
+			      int *start_out, int *end_out, int *inc_out);
+
 #endif /* _READ_DEPTH_H */

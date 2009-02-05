@@ -30,6 +30,7 @@
 #include "tkEdNames.h"
 #include "read_depth.h"
 #include "fij.h"
+#include "break_contig.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -1100,15 +1101,12 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
 		 int objc, Tcl_Obj *CONST objv[])
 {
     break_contig_arg args;
-    int *readings;
-    int num_reads;
     cli_args a[] = {
 	{"-io",	    ARG_IO,  1, NULL, offsetof(break_contig_arg, io)},
 	{"-contig", ARG_INT, 1, NULL, offsetof(break_contig_arg, contig)},
 	{"-pos",    ARG_INT, 1, NULL, offsetof(break_contig_arg, pos)},
 	{NULL,	 0,	  0, NULL, 0}
     };
-    int crec;
 
     vfuncheader("break contig");
 
