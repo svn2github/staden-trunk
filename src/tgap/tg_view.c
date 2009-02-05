@@ -132,7 +132,7 @@ void exit_curses(int sig) {
     exit(0);
 }
 
-void init_curses() {
+void init_curses(void) {
     signal(SIGINT, exit_curses);
 
     initscr();
@@ -839,7 +839,7 @@ static void test_mode3(GapIO *io, int cnum, int xpos) {
 }
 #endif
 /* ------------------------------------------------------------------------ */
-void usage() {
+void usage(void) {
     fprintf(stderr, "Usage: tg_view [options] dbname [position]\n");
     fprintf(stderr, "\t-h        This help\n");
     fprintf(stderr, "\t-d        Start in highlight-disagreements mode\n");
