@@ -122,7 +122,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     int index;
     GapIO *io = (GapIO *)clientData;
 
-    static const char *options[] = {
+    static char *options[] = {
 	"flush",
 	"close",       "get_contig",   "get_sequence", "get_database",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
@@ -284,13 +284,19 @@ static int tcl_contig_range(tcl_contig *tc, Tcl_Interp *interp,
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e4[4];
+	Tcl_Obj *ele, *e4[10];
 
 	e4[0] = Tcl_NewIntObj(r[i].start);
 	e4[1] = Tcl_NewIntObj(r[i].end);
 	e4[2] = Tcl_NewIntObj(r[i].rec);
-	e4[3] = Tcl_NewIntObj(r[i].comp);
-	ele = Tcl_NewListObj(4, e4);
+	e4[3] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
+	e4[4] = Tcl_NewIntObj(r[i].pair_start);
+	e4[5] = Tcl_NewIntObj(r[i].pair_end);
+	e4[6] = Tcl_NewIntObj(r[i].pair_rec);
+	e4[7] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
+	e4[8] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
+	e4[9] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
+	ele = Tcl_NewListObj(10, e4);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }
@@ -342,7 +348,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     int index;
     tcl_contig *tc = (tcl_contig *)clientData;
 
-    static const char *options[] = {
+    static char *options[] = {
 	"delete",       "io",           "dump_ps",
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
@@ -617,7 +623,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
     int index;
     tcl_sequence *ts = (tcl_sequence *)clientData;
 
-    static const char *options[] = {
+    static char *options[] = {
 	"delete",       "io",
 	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
@@ -778,9 +784,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_PAIR:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp),
-		      ts->seq->other_end
-		      ? ts->seq->other_end
-		      : 0);
+		      sequence_get_pair(ts->io, ts->seq));
 	break;
 
     case GET_BASE: {
@@ -945,7 +949,7 @@ static int database_cmd(ClientData clientData, Tcl_Interp *interp,
     int index;
     GapIO *io = (GapIO *)clientData;
 
-    static const char *options[] = {
+    static char *options[] = {
 	"get_num_contigs",  "flush",
 	(char *)NULL,
     };
