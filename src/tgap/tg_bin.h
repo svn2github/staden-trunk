@@ -2,7 +2,10 @@
 #define _TG_BIN_H_
 
 /* #define MIN_BIN_SIZE 256 */
-#define MIN_BIN_SIZE 1024
+#define MIN_BIN_SIZE 4096
+
+/* Size of bin to use for depth track */
+#define RD_ELEMENTS 8192
 
 int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type);
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
@@ -22,6 +25,15 @@ track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type);
  *         NULL on failure
  */
 track_t *track_create_fake(int type, int size);
+
+/*
+ * Some tracks are "official" cached objects and are deallocated as part of
+ * the tg_cache system. Others are temporary on-the-fly structs generated
+ * for the purpose of temporary display. These we need to free.
+ *
+ * This function knows which is which and does the appropriate thing.
+ */
+void track_free(track_t *t);
 
 /*
  * This finds a bin suitable for a given range. If such a bin doesn't

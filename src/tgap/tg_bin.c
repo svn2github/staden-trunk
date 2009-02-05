@@ -182,7 +182,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
      * even returning it right here if it's the min bin size, saving about
      * 10% of our CPU time in this function
      */
-#if 0
+#if 1
     if (last_bin && last_c == (*c)->rec && last_io == io) {
 	if (start >= last_start && end <= last_end) {
 	    if (last_bin && last_bin->size == MIN_BIN_SIZE) {
@@ -306,7 +306,10 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     last_io = io;
     last_c = (*c)->rec;
+    if (last_bin)
+	cache_decr(io, last_bin);
     last_bin = bin;
+    cache_incr(io, last_bin);
     last_start = offset;
     last_end = offset + bin->size-1;
     last_offset = offset;
@@ -587,7 +590,6 @@ track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type) {
  * Track handling
  */
 
-#define RD_ELEMENTS 1024
 track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
     int pos, cnum;
     track_t *track, *child;
