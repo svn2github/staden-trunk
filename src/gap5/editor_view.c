@@ -1680,21 +1680,24 @@ void edDisplayTrace(edview *xx) {
  */
 int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
     seq_t *s = get_seq(xx->io, seqrec);
-    int *r = NULL;
+    int *r = NULL, p;
 
     if (!s)
 	return NULL;
 
-    /* FIXME: support s->parent_rec and s->parent_type */
+    /* FIXME: support s->template_rec */
 
     /* Solexa data is easy: we have just one other end */
-    if (s->other_end) {
+    p = sequence_get_pair(xx->io, s);
+    if (p > 0) {
 	*nrec = 1;
 	r = (int *)malloc(sizeof(*r));
-	*r = s->other_end;
+	*r = p;
     } else {
 	*nrec = 0;
     }
+
+    cache_decr(xx->io, s);
 
     return r;
 }
