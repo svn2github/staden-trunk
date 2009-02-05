@@ -9,6 +9,13 @@
 #include "maqmap.h"
 #include "maq.h"
 
+typedef struct {
+    int rec;
+    int bin;
+    int idx;
+    int crec;
+} pair_loc_t;
+
 /* lh3: an analogy of parse_line() */
 static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
 {
@@ -24,7 +31,6 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
     s->right = m->size;
     s->parent_type = 0;
     s->parent_rec = 0;
-    s->other_end = 0;
     s->name_len = strlen(m->name);
     s->data = (char*)malloc(s->name_len + 3+ 2*m->size);
     s->name = s->data;
@@ -90,7 +96,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	range_t r, *r_out;
 	int recno;
 	bin_index_t *bin;
-	HacheItem *hi, *other_hi;
+	HacheItem *hi;
 
 	parse_maqmap_aux(&seq, &m, k++);
 
@@ -100,12 +106,19 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 		cache_decr(io, c);
 	    }
 	    if (!merge_contigs ||
-		NULL == (c = find_contig_by_name(io, mm->ref_name[m.seqid]))) {
-		c = contig_new(io, mm->ref_name[m.seqid]);
-		contig_index_update(io,
-				    mm->ref_name[m.seqid],
-				    strlen(mm->ref_name[m.seqid]),
-				    c->rec);
+		m.seqid >= mm->n_ref ||
+		!mm->ref_name[m.seqid] ||
+		(NULL == (c = find_contig_by_name(io, mm->ref_name[m.seqid])))) {
+		static int cnum=1;
+		char name[1024];
+
+		if (m.seqid < mm->n_ref && mm->ref_name[m.seqid]) {
+		    strcpy(name, mm->ref_name[m.seqid]);
+		} else {
+		    sprintf(name, "Contig=%d", cnum++);
+		}
+		c = contig_new(io, name);
+		contig_index_update(io, name, strlen(name), c->rec);
 	    }
 	    cache_incr(io, c);
 	    curr_contig = m.seqid;
@@ -116,37 +129,63 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	r.start = seq.pos;
 	r.end = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
 	r.rec = 0;
+	r.pair_rec = 0;
+	r.flags = GRANGE_FLAG_TYPE_SINGLE;
+	/* Guess work here. For now all <--- are rev, all ---> are fwd */
+	r.flags|= seq.len > 0
+	    ? GRANGE_FLAG_END_FWD
+	    : GRANGE_FLAG_END_REV;
+	if (seq.len < 0)
+	    r.flags |= GRANGE_FLAG_COMP1;
 
 	bin = bin_add_range(io, &c, &r, &r_out);
+
+	/* Save sequence */
+	seq.bin = bin->rec;
+	seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
+	recno = sequence_new_from(io, &seq);
 
 	/* Find pair if appropriate */
 	if (pair) {
 	    int new = 0;
 	    HacheData hd;
+	    pair_loc_t *pl;
 	    
-	    hd.i = 0;
+	    /* Add data for this end */
+	    pl = (pair_loc_t *)malloc(sizeof(*pl));
+	    pl->rec  = recno;
+	    pl->bin  = bin->rec;
+	    pl->crec = c->rec;
+	    pl->idx  = seq.bin_index;
+	    hd.p = pl;
+
 	    hi = HacheTableAdd(pair, seq.name, seq.name_len, hd, &new);
 
 	    /* Pair existed already */
 	    if (!new) {
-		seq.other_end = hi->data.i;
+		pair_loc_t *po = (pair_loc_t *)hi->data.p;
+		bin_index_t *bo;
+		range_t *ro;
+
+		/* We found one so update r_out now, before flush */
+		r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		r_out->pair_rec = po->rec;
 
 		/* Link other end to 'us' too */
-		other_hi = hi;
-		hi = NULL;
-	    } else {
-		other_hi = NULL;
-	    }
-	} else {
-	    hi = NULL;
-	    other_hi = NULL;
-	}
+		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		bo = cache_rw(io, bo);
+		bo->flags |= BIN_RANGE_UPDATED;
+		ro = arrp(range_t, bo->rng, po->idx);
+		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		ro->pair_rec = pl->rec;
 
-	/* Save sequence */
-	seq.bin = bin->rec;
-	recno = sequence_new_from(io, &seq);
-	if (hi)
-	    hi->data.i = recno;
+		/* And, making an assumption, remove from hache */
+		HacheTableDel(pair, hi, 1);
+		free(pl);
+	    }
+	}
 
 	if (!no_tree)
 	    sequence_index_update(io, seq.name, seq.name_len, recno);
@@ -155,21 +194,17 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	/* Link bin back to sequence too before it gets flushed */
 	r_out->rec = recno;
 
-	/* Link other end of pair back to this recno if appropriate */
-	if (other_hi) {
-	    seq_t *other = (seq_t *)cache_search(io, GT_Seq, other_hi->data.i);
-	    sequence_set_other_end(io, &other, recno);
-	    HacheTableDel(pair, other_hi, 0);
-	}
-
-
-	if (((j+1) & 0x3fff) == 0) {
+	if (((j+1) & 0x1fff) == 0) {
 	    fprintf(stderr, "-- %.2f%%\n", 100.0*(j+1)/mm->n_mapped_reads);
 
 	    cache_flush(io);
 	}
 
 	++j;
+
+	/* For benchmarking */
+	//if (j == 1000000)
+	//    break;
     }
 
     cache_flush(io);

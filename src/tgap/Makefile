@@ -72,11 +72,11 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(TGAPOBJS) $(DEF_FILE)
 TG_IND_OBJ = \
 	$(TG_IO) \
 	$(TGAPBIN)/tg_index.o \
-	$(TGAPBIN)/ace.o \
 	$(TGAPBIN)/baf.o \
 	$(TGAPBIN)/maq.o \
 	$(TGAPBIN)/maqmap.o
 
+#	$(TGAPBIN)/ace.o \
 #	mapass2.o
 
 TGILIBS = \

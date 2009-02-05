@@ -148,6 +148,33 @@ int parse_line(seq_t *s, char *line, char *contig) {
 }
 
 /*
+ * Called from pair Hache when querying a name that is not present.
+ */
+static HacheData *pair_load(void *clientdata, char *key, int key_len,
+			    HacheItem *hi) {
+    GapIO *io = (GapIO *)clientdata;
+    int rec;
+    static HacheData hd;
+
+    rec = sequence_index_query(io, key);
+    printf("Query %s => %d\n", key, rec);
+
+    if (!rec)
+	return NULL;
+
+    hd.i = rec;
+
+    return &hd;
+}
+
+typedef struct {
+    int rec;
+    int bin;
+    int idx;
+    int crec;
+} pair_loc_t;
+
+/*
  * Parses the .dat file passed in, writing sequences to 'io' and adding to
  * bins/ranges pointed to by 'index'.
  *
@@ -176,7 +203,11 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
     }
 
     if (pair_reads) {
-	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
+	pair = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
+	printf("Pair hache = %p\n", pair);
+	pair->clientdata = io;
+	pair->load = pair_load;
+	pair->del  = NULL;
     }
 
     /* Loop:
@@ -192,7 +223,8 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	int recno;
 	bin_index_t *bin;
 	char contig[MAX_LINE_LEN];
-	HacheItem *hi, *other_hi;
+	HacheItem *hi;
+	pair_loc_t *pl = NULL;
 
 	pos += strlen((char *)line);
 
@@ -217,38 +249,63 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	r.start = seq.pos;
 	r.end   = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
 	r.rec   = 0;
+	r.pair_rec = 0;
+	r.flags = GRANGE_FLAG_TYPE_SINGLE;
+	/* Guess work here. For now all <--- are rev, all ---> are fwd */
+	r.flags|= seq.len > 0
+	    ? GRANGE_FLAG_END_FWD
+	    : GRANGE_FLAG_END_REV;
+	if (seq.len < 0)
+	    r.flags |= GRANGE_FLAG_COMP1;
 
 	/* Add the range to a bin, and see which bin it was */
 	bin = bin_add_range(io, &c, &r, &r_out);
+
+	/* Save sequence */
+	seq.bin = bin->rec;
+	seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
+	recno = sequence_new_from(io, &seq);
 
 	/* Find pair if appropriate */
 	if (pair) {
 	    int new = 0;
 	    HacheData hd;
 	    
-	    hd.i = 0;
+	    /* Add data for this end */
+	    pl = (pair_loc_t *)malloc(sizeof(*pl));
+	    pl->rec  = recno;
+	    pl->bin  = bin->rec;
+	    pl->crec = c->rec;
+	    pl->idx  = seq.bin_index;
+	    hd.p = pl;
+
 	    hi = HacheTableAdd(pair, seq.name, seq.name_len, hd, &new);
 
 	    /* Pair existed already */
 	    if (!new) {
-		seq.other_end = hi->data.i;
+		pair_loc_t *po = (pair_loc_t *)hi->data.p;
+		bin_index_t *bo;
+		range_t *ro;
+
+		/* We found one so update r_out now, before flush */
+		r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		r_out->pair_rec = po->rec;
 
 		/* Link other end to 'us' too */
-		other_hi = hi;
-		hi = NULL;
-	    } else {
-		other_hi = NULL;
-	    }
-	} else {
-	    hi = NULL;
-	    other_hi = NULL;
-	}
+		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		bo = cache_rw(io, bo);
+		bo->flags |= BIN_RANGE_UPDATED;
+		ro = arrp(range_t, bo->rng, po->idx);
+		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		ro->pair_rec = pl->rec;
 
-	/* Save sequence */
-	seq.bin = bin->rec;
-	recno = sequence_new_from(io, &seq);
-	if (hi)
-	    hi->data.i = recno;
+		/* And, making an assumption, remove from hache */
+		HacheTableDel(pair, hi, 1);
+		free(pl);
+	    }
+	}
 
 	if (!no_tree)
 	    sequence_index_update(io, seq.name, seq.name_len, recno);
@@ -256,14 +313,6 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 
 	/* Link bin back to sequence too before it gets flushed */
 	r_out->rec = recno;
-
-	/* Link other end of pair back to this recno if appropriate */
-	if (other_hi) {
-	    seq_t *other = (seq_t *)cache_search(io, GT_Seq, other_hi->data.i);
-	    sequence_set_other_end(io, &other, recno);
-	    HacheTableDel(pair, other_hi, 0);
-	}
-
 
 	nseqs++;
 	//cache_flush(io);
@@ -310,7 +359,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	 * we just inserted a very long sequence and the next sequence is
 	 * very short.
 	 */
-	if ((nseqs & 0x3fff) == 0) {
+	if ((nseqs & 0xff) == 0) {
 	    cache_flush(io);
 	}
     }
@@ -330,7 +379,7 @@ void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");
-    fprintf(stderr, "      -A			Input is ACE format (off)\n");
+    //    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -B			Input is BAF format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
@@ -410,11 +459,12 @@ int main(int argc, char **argv) {
 	    parse_maqmap(io, max_size, argv[optind++], no_tree, pair_reads,
 			 merge_contigs);
 	    break;
-
+#if 0
 	case 'A':
 	    parse_ace(io, max_size, argv[optind++], no_tree, pair_reads,
 		      merge_contigs);
 	    break;
+#endif
 
 	case 'B':
 	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);

@@ -283,6 +283,13 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     return 0;
 }
 
+typedef struct {
+    int rec;
+    int bin;
+    int idx;
+    int crec;
+} pair_loc_t;
+
 int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	      int merge_contigs) {
     int nseqs = 0;
@@ -339,8 +346,9 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    range_t r, *r_out;
 	    int recno;
 	    bin_index_t *bin;
-	    HacheItem *hi, *other_hi;
+	    HacheItem *hi;
 	    char *tname;
+	    pair_loc_t *pl = NULL;
 
 	    /* Construct seq struct */
 	    if (-1 == construct_seq_from_block(&seq, b, &tname)) {
@@ -353,39 +361,71 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    r.start = seq.pos;
 	    r.end   = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
 	    r.rec   = 0;
+	    r.pair_rec = 0;
+	    r.flags = GRANGE_FLAG_TYPE_SINGLE;
+	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
+	    r.flags|= seq.len > 0
+		? GRANGE_FLAG_END_FWD
+		: GRANGE_FLAG_END_REV;
+	    if (seq.len < 0)
+		r.flags |= GRANGE_FLAG_COMP1;
 
 	    /* Add the range to a bin, and see which bin it was */
 	    bin = bin_add_range(io, &c, &r, &r_out);
+
+	    /* Save sequence */
+	    seq.bin = bin->rec;
+	    seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
+	    recno = sequence_new_from(io, &seq);
 
 	    /* Find pair if appropriate */
 	    if (pair) {
 		int new = 0;
 		HacheData hd;
-	    
-		hd.i = 0;
+
+		/* Add data for this end */
+		pl = (pair_loc_t *)malloc(sizeof(*pl));
+		pl->rec  = recno;
+		pl->bin  = bin->rec;
+		pl->crec = c->rec;
+		pl->idx  = seq.bin_index;
+		hd.p = pl;
+
 		hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
 
 		/* Pair existed already */
 		if (!new) {
-		    seq.other_end = hi->data.i;
+		    pair_loc_t *po = (pair_loc_t *)hi->data.p;
+		    bin_index_t *bo;
+		    range_t *ro;
+
+		    /* We found one so update r_out now, before flush */
+		    r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    r_out->pair_rec = po->rec;
 
 		    /* Link other end to 'us' too */
-		    other_hi = hi;
-		    hi = NULL;
-		} else {
-		    other_hi = NULL;
+		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		    bo = cache_rw(io, bo);
+		    bo->flags |= BIN_RANGE_UPDATED;
+		    ro = arrp(range_t, bo->rng, po->idx);
+		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    ro->pair_rec = pl->rec;
+
+#if 0
+		    if (c->rec == po->crec) {
+			ro->flags    |= GRANGE_FLAG_CONTIG;
+			r_out->flags |= GRANGE_FLAG_CONTIG;
+		    }
+#endif
+
+		    /* And, making an assumption, remove from hache */
+		    HacheTableDel(pair, hi, 1);
+		    free(pl);
 		}
-	    } else {
-		hi = NULL;
-		other_hi = NULL;
 	    }
 
-	    /* Save sequence */
-	    seq.bin = bin->rec;
-	    recno = sequence_new_from(io, &seq);
-	    if (hi)
-		hi->data.i = recno;
-	    
 	    if (!no_tree)
 		sequence_index_update(io, seq.name, seq.name_len, recno);
 	    free(seq.data);
@@ -393,14 +433,6 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    /* Link bin back to sequence too before it gets flushed */
 	    r_out->rec = recno;
 	    
-	    /* Link other end of pair back to this recno if appropriate */
-	    if (other_hi) {
-		seq_t *other = (seq_t *)cache_search(io, GT_Seq,
-						     other_hi->data.i);
-		sequence_set_other_end(io, &other, recno);
-		HacheTableDel(pair, other_hi, 0);
-	    }
-
 	    if ((++nseqs & 0x3fff) == 0) {
 		int perc = 0;
 		cache_flush(io);
@@ -461,7 +493,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
     fclose(fp);
 
     if (pair)
-	HacheTableDestroy(pair, 0);
+	HacheTableDestroy(pair, 1);
 
     return 0;
 }
