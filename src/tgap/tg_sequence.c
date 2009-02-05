@@ -151,18 +151,19 @@ int sequence_set_mapping_qual(GapIO *io, seq_t **s, uint8_t value) {
     return 0;
 }
 
+
 /*
- * Sets the record number of the sequence paired with this (0 => none)
+ * Sets the index into the bin ranges array referring to this seq.
  *
  * Returns 0 on success
  *        -1 on failure
  */
-int sequence_set_other_end(GapIO *io, seq_t **s, int value) {
+int sequence_set_bin_index(GapIO *io, seq_t **s, int value) {
     seq_t *n;
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    n->other_end = value;
+    n->bin_index = value;
     *s = n;
 
     return 0;
@@ -587,6 +588,31 @@ int sequence_get_contig(GapIO *io, GRec snum) {
 
     assert(bin->parent_type == GT_Contig);
     return bin->parent;
+}
+
+/*
+ * Given a sequence struct, this returns the record number for other end,
+ * if paired, or zero if not.
+ * Returns -1 on failure.
+ */
+int sequence_get_pair(GapIO *io, seq_t *s) {
+    bin_index_t *b;
+    range_t *r;
+
+    /* Get range struct for this seq */
+    if (!s->bin)
+	return -1;
+    if (NULL == (b = (bin_index_t *)cache_search(io, GT_Bin, s->bin)))
+	return -1;
+    if (!b->rng) {
+	cache_decr(io, b);
+	return -1;
+    }
+
+    /* Jump over to pair */
+    r = arrp(range_t, b->rng, s->bin_index);
+    cache_decr(io, b);
+    return r->pair_rec;
 }
 
 /*

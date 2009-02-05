@@ -17,7 +17,7 @@
 #define sequence_get_seq(s)          ((*(s))->seq)
 #define sequence_get_conf(s)         ((*(s))->conf)
 #define sequence_get_flags(s)        ((*(s))->flags)
-#define sequence_get_other_end(s)    ((*(s))->other_end)
+#define sequence_get_bin_index(s)    ((*(s))->bin_index)
 #define sequence_get_seq_tech(s)     ((*(s))->seq_tech)
 #define sequence_get_parent_type(s)  ((*(s))->parent_type)
 #define sequence_get_parent_rec(s)   ((*(s))->parent_rec)
@@ -35,7 +35,7 @@ int sequence_set_pos         (GapIO *io, seq_t **s, int value);
 int sequence_set_len         (GapIO *io, seq_t **s, int value);
 int sequence_set_left        (GapIO *io, seq_t **s, int value);
 int sequence_set_right       (GapIO *io, seq_t **s, int value);
-int sequence_set_other_end   (GapIO *io, seq_t **s, int value);
+int sequence_set_bin_index   (GapIO *io, seq_t **s, int value);
 int sequence_set_parent_type (GapIO *io, seq_t **s, int value);
 int sequence_set_parent_rec  (GapIO *io, seq_t **s, int value);
 int sequence_set_flags       (GapIO *io, seq_t **s, int value);
@@ -54,6 +54,7 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec);
 int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
 			  int *orient);
 int sequence_get_contig(GapIO *io, GRec snum);
+int sequence_get_pair(GapIO *io, seq_t *s);
 
 /*
  * Trivial one-off sequence query functions

@@ -715,7 +715,7 @@ static void *io_database_connect(char *dbname, int ro) {
     //g_lock_file_N_(io->gdb, io->client, 0);
 
 #ifdef INDEX_NAMES
-    io->seq_name_hash = HacheTableCreate(10000,
+    io->seq_name_hash = HacheTableCreate(256,
 					 HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
 
     if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
@@ -1354,13 +1354,13 @@ static int io_track_create(void *dbh, void *vfrom) {
  * Decodes an on-disk sequence structure into a malloced seq_t struct.
  *
  * On disc struct:
- * ? bytes bin record no.
+ * ? byte bin record no.
+ * ? byte bin index
  * ? byte 'left clip'
  * ? byte 'right clip'
  * ? byte sequence length
- * ? byte other_end (rec.no. of paired read)
- * ? byte parent_rec
- * 1 byte parent_type
+ * ? byte parent_rec;
+ * 1 byte parent_type;
  * 1 byte seq_tech (3 bottom bits)
  *      + flags (3 next bits)
  *      + format (2 top bits)
@@ -1380,15 +1380,15 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     signed int i, j;
     seq_t *seq;
     uint32_t left, right, bin, seq_len;
-    int parent_type, parent_rec, other_end;
+    int parent_rec, parent_type, bin_index;
 
     if (len) {
 	cp = buf;
 	cp += u72int(cp, &bin);
+	cp += u72int(cp, &bin_index);
 	cp += u72int(cp, &left);
 	cp += u72int(cp, &right);
 	cp += u72int(cp, &seq_len);
-	cp += u72int(cp, &other_end);
 	cp += u72int(cp, &parent_rec);
 	parent_type = *cp++;
 	format = *cp++;
@@ -1401,10 +1401,10 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     } else {
 	/* new sequence */
 	bin = 0;
+	bin_index = 0;
 	left = 0;
 	right = 0;
 	seq_len = 0;
-	other_end = 0;
 	parent_rec = 0;
 	parent_type = 0;
 	seq_tech = 0;
@@ -1425,11 +1425,11 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 
     seq->rec          = rec;
     seq->bin          = bin;
+    seq->bin_index    = bin_index;
     seq->left         = left;
     seq->right        = right;
     seq->parent_type  = parent_type;
     seq->parent_rec   = parent_rec;
-    seq->other_end    = other_end;
     seq->seq_tech     = seq_tech;
     seq->flags        = flags;
     seq->format       = format;
@@ -1612,10 +1612,10 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     /* Worst case */
     data_len =
 	  5 /* bin rec.no */
+	+ 5 /* bin index */
 	+ 5 /* left clip */
 	+ 5 /* right clip */
 	+ 5 /* seq len */
-	+ 5 /* other_end */
 	+ 5 /* parent_rec */
 	+ 1 /* parent_type */
 	+ 1 /* seq_tech/flags/format */
@@ -1631,12 +1631,12 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     /* Clips */
     cpstart = cp;
     cp += int2u7(seq->bin, cp);
+    cp += int2u7(seq->bin_index, cp);
     cp += int2u7(seq->left, cp);
     cp += int2u7(seq->right, cp);
     cp += int2u7(seq_len, cp);
 
     /* Read-pair info */
-    cp += int2u7(seq->other_end, cp);
     cp += int2u7(seq->parent_rec, cp);
     *cp++ = seq->parent_type;
 
@@ -1790,6 +1790,7 @@ static int io_seq_create(void *dbh, void *vfrom) {
     } else {
 	seq_t s;
 	s.bin = 0;
+	s.bin_index = 0;
 	s.pos = 0;
 	s.len = 0;
 	s.left = s.right = 0;
@@ -1797,7 +1798,6 @@ static int io_seq_create(void *dbh, void *vfrom) {
 	s.flags = 0;
 	s.parent_rec = 0;
 	s.parent_type = 0;
-	s.other_end = 0;
 	s.mapping_qual = 0;
 	s.name_len = 0;
 	s.name = NULL;
@@ -1812,8 +1812,6 @@ static int io_seq_create(void *dbh, void *vfrom) {
 #else
 static int io_seq_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
-    GRec rec;
-
     return allocate(io);
 }
 #endif

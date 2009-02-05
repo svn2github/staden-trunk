@@ -414,6 +414,51 @@ int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
     return 0;
 }
 
+/*
+ * Compute read-pairs for rangec_t structs, where viable.
+ * This means when we have both ends visible within our range, we link them
+ * together. When we don't we leave the pair information as unknown.
+ */
+void pair_rangec(rangec_t *r, int count) {
+    int i;
+    HacheTable *h;
+    HacheIter *iter;
+    HacheItem *hi;
+
+    /* Build a hash on record number */
+    h = HacheTableCreate(count, HASH_DYNAMIC_SIZE);
+    for (i = 0; i < count; i++) {
+	HacheData hd;
+	hd.i = i;
+	HacheTableAdd(h, (char *)&r[i].rec, sizeof(r[i].rec), hd, NULL);
+    }
+
+    /* Iterate through hash linking the pairs together */
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(h, iter)) {
+	HacheItem *pair;
+	int i = hi->data.i;
+	int p;
+	assert(i < count && i >= 0);
+
+	pair = HacheTableSearch(h, (char *)&r[i].pair_rec, sizeof(r[i].rec));
+	if (pair) {
+	    p = pair->data.i;
+	    assert(p < count && p >= 0);
+	    r[i].pair_start = r[p].start;
+	    r[i].pair_end   = r[p].end;
+	    if (r[p].flags &  GRANGE_FLAG_COMP1)
+		r[i].flags |= GRANGE_FLAG_COMP2;
+	    r[i].flags |= GRANGE_FLAG_CONTIG;
+	    r[p].flags |= GRANGE_FLAG_CONTIG;
+	}
+    }
+
+    /* Tidy up */
+    HacheTableIterDestroy(iter);
+    HacheTableDestroy(h, 0);
+}
+
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
@@ -465,6 +510,11 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		    (*results)[count].end   = st;
 		}
 		(*results)[count].comp  = complement;
+		(*results)[count].pair_rec = l->pair_rec;
+		(*results)[count].pair_start = 0;
+		(*results)[count].pair_end   = 0;
+
+		(*results)[count].flags = l->flags;
 		count++;
 	    }
 	}
@@ -498,7 +548,9 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     				   contig_offset(io, c), &r, &alloc, 0, 0);
     //*count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
     //                               0, &r, &alloc, 0, 0);
-    
+
+    pair_rangec(r, *count);
+
     return r;
 }
 
@@ -836,7 +888,7 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
 
     printf("%*scontig_get_track2 want %5.1f got ~%5.1f bin %d (%d+%d) l=%d r=%d\n",
 	   depth, "",
-	   bpv, bin->size / 1024.0, bin_num,  offset, bin->size,
+	   bpv, bin->size / (double)RD_ELEMENTS, bin_num,  offset, bin->size,
 	   bin->child[0], bin->child[1]);
 
     /*
@@ -846,7 +898,7 @@ static int contig_get_track2(GapIO *io, int bin_num, int start, int end,
      * isn't capable of holding the bpv required.
      */
     if (!(end < NMIN(0, bin->size-1) || start > NMAX(0, bin->size-1)) &&
-	!(bin->size / 1024 > bpv && bin->size > 1024)) {
+	!(bin->size / RD_ELEMENTS > bpv && bin->size > RD_ELEMENTS)) {
 	int i;
 	track_t *t;
 
@@ -1110,6 +1162,9 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     static double level_st[100];
     double g;
 
+    if (level == -6)
+	HacheTableRefInfo(io->cache, stdout);
+
     cache_incr(io, bin);
 
     if (bin->flags & BIN_COMPLEMENTED) {
@@ -1127,6 +1182,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     if (!gv) {
 	int o = 20;
 	gv = fopen(fn, "w+");
+	if (!gv)
+	    return -1;
 	scale = 800.0 / bin->size;
 	o -= offset * scale;
 	fprintf(gv, "%%!\n/Times-Roman findfont\n6 scalefont\nsetfont\n"
@@ -1157,15 +1214,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     }
     level = -i;
 
-    /* Inner grey box showing the used portion */
-    fprintf(gv, "0.8 setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
-	    scale * NMIN(bin->start_used, bin->end_used), level*(H+G)+3,
-	    scale * (NMAX(bin->start_used, bin->end_used) -
-		     NMIN(bin->start_used, bin->end_used)),
-	    H-6,
-	    scale * (NMAX(bin->start_used, bin->end_used) -
-		     NMIN(bin->start_used, bin->end_used)),
-	    H-6);
+    if (level < -12)
+	goto skip;
 
     /* linking lines */
     if (rootx || rooty) {
@@ -1178,15 +1228,27 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     rootx = scale*(offset+bin->size/2);
     rooty = level*(H+G);
 
+    if (level >= -8) {
+	/* Inner grey box showing the used portion */
+	fprintf(gv, "0.8 setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
+		scale * NMIN(bin->start_used, bin->end_used), level*(H+G)+3,
+		scale * (NMAX(bin->start_used, bin->end_used) -
+			 NMIN(bin->start_used, bin->end_used)),
+		H-6,
+		scale * (NMAX(bin->start_used, bin->end_used) -
+			 NMIN(bin->start_used, bin->end_used)),
+		H-6);
+	
+	/* bin offset */
+	fprintf(gv, "%f %d moveto (%d) show\n",
+		scale * offset, level*(H+G)-7, offset);
+    }
+
     /* Outer bin bounding box */
     g = complement ? 0.5 : 0;
     fprintf(gv, "%f setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
 	    g, scale * offset, level*(H+G), scale * bin->size,
 	    H, scale * bin->size, H);
-
-    /* bin offset */
-    fprintf(gv, "%f %d moveto (%d) show\n",
-	    scale * offset, level*(H+G)-7, offset);
 
     if (scale * offset < level_st[-level])
 	level_st[-level] = scale * offset;
@@ -1210,6 +1272,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 
     fflush(gv);
 
+ skip:
     /* Recurse */
     for (i = 0; i < 2; i++) {
 	bin_index_t *ch;
@@ -1238,6 +1301,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
  * Produces a postscript file containing a plot of the contig bin structure.
  */
 void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
+    HacheTableRefInfo(io->cache, stdout);
     bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
 		     contig_offset(io, c), 0, 0, 0.0, 0.0);
+    HacheTableRefInfo(io->cache, stdout);
 }

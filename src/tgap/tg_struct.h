@@ -43,7 +43,20 @@ typedef struct {
     GCardinal start;
     GCardinal end;
     GCardinal object; /* recno */
+    GCardinal pair_rec; /* paired end data */
+    GCardinal flags; /* see below */
 } GRange; /* An element of the bin->rng record */
+
+#define GRANGE_FLAG_TYPE_MASK (3<<0)
+#  define GRANGE_FLAG_TYPE_SINGLE  0
+#  define GRANGE_FLAG_TYPE_PAIRED  1
+#  define GRANGE_FLAG_TYPE_COMPLEX 2 /* > 2 or 2x forward, etc */
+#define GRANGE_FLAG_END_MASK (1<<2) /* only applicable if not TYPE_COMPLEX */
+#  define GRANGE_FLAG_END_FWD (0<<2)
+#  define GRANGE_FLAG_END_REV (1<<2)
+#define GRANGE_FLAG_CONTIG (1<<3) /* pair held within the same contig */
+#define GRANGE_FLAG_COMP1 (1<<4)  /* true if complemented */
+#define GRANGE_FLAG_COMP2 (1<<5)  /* true if complemented */
 
 typedef struct {
     GCardinal type;
@@ -108,11 +121,11 @@ typedef struct {
     signed int  pos;  /* left end, regardless of direction */
     signed int len;   /* +ve or -ve indicates direction */
     int bin;
+    int bin_index;    /* index to bin->rng array */
     int left, right;  /* clip left/right coordinates */
-    int parent_rec;   /* template info */
-    int parent_type;  /* template info */
+    int parent_rec;   /* template record */
+    int parent_type;  /* GT_Template, GT_Ligation, etc */
     int rec;          /* recno of this seq_t */
-    int other_end;    /* recno of a seq_t, for simple read-pairs */
     unsigned int seq_tech:3;
     unsigned int flags:3;
     unsigned int format:2;
@@ -210,12 +223,18 @@ typedef struct {
     int end;
     int rec;
     int comp; /* complemented y/n */
+    int pair_rec;
+    int pair_start;
+    int pair_end;
+    int flags;
 } rangec_t;
 
 typedef struct {
     int start;
     int end;
     int rec;
+    int pair_rec;
+    int flags;
 } range_t;
 
 /* Decoded from GTrack_header above */
