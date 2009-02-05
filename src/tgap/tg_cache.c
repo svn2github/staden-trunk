@@ -220,6 +220,8 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     cache_key_t *k = (cache_key_t *)key;
     static HacheData hd;
 
+    //printf("Cache load %d type %d\n", k->rec, k->type);
+
     switch (k->type) {
     case GT_Database:
 	ci = io->iface->database.read(io->dbh, k->rec);
@@ -265,6 +267,7 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
      * Finally it means we do not get issues when saving data as to whether
      * we need to decrement the reference count.
      */
+    //printf("1Dec rec %d => %d\n", ci->rec, hi->ref_count-1);
     HacheTableDecRef(io->cache, hi);
 
     return &hd;
@@ -274,6 +277,8 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 static void cache_unload(void *clientdata, HacheData hd) {
     GapIO *io = (GapIO *)clientdata;
     cached_item *ci = hd.p;
+
+    //printf("Cache unload %d\n", ci->rec);
 
     assert(ci->updated == 0);
 
@@ -462,6 +467,9 @@ int cache_flush(GapIO *io) {
     Array to_flush;
     int nflush = 0;
 
+    //printf(">>> cache flush <<<\n");
+    //HacheTableRefInfo(io->cache, stdout);
+
     /*
      * If this is a derived io then we need to pass these items up to
      * our parent, remove them from this io and call cache_flush on the
@@ -557,6 +565,7 @@ int cache_flush(GapIO *io) {
 
 	if (ret == 0) {
 	    ci->updated = 0;
+	    //printf("2Dec rec %d => %d\n", ci->rec, ci->hi->ref_count-1);
 	    HacheTableDecRef(io->cache, ci->hi);
 	}
     }
@@ -565,6 +574,9 @@ int cache_flush(GapIO *io) {
 
     io_database_unlock(io->dbh); /* FIXME: should be via iface */
     io->iface->commit(io->dbh);
+
+    //printf(">>> flush done <<<\n");
+    //HacheTableRefInfo(io->cache, stdout);
 
     return ret;
 }
@@ -619,12 +631,14 @@ void *cache_search(GapIO *io, int type, GRec rec) {
 
 void cache_incr(GapIO *io, void *data) {
     cached_item *ci = ci_ptr(data);
-    HacheTableIncRef(io->cache, ci->hi);
+    //printf("3Inc rec %d => %d\n", ci->rec, ci->hi->ref_count+1);
+    HacheTableIncRef(ci->hi->h, ci->hi);
 }
 
 void cache_decr(GapIO *io, void *data) {
     cached_item *ci = ci_ptr(data);
-    HacheTableDecRef(io->cache, ci->hi);
+    //printf("3Dec rec %d => %d\n", ci->rec, ci->hi->ref_count-1);
+    HacheTableDecRef(ci->hi->h, ci->hi);
 }
 
 /*
@@ -739,7 +753,8 @@ void *cache_rw(GapIO *io, void *data) {
     /* Also set updated flag to 1 and bump ref count if needed */
     if (!ci->updated) {
 	ci->updated = 1;
-	HacheTableIncRef(io->cache, ci->hi);
+	//printf("4Inc rec %d => %d\n", ci->rec, ci->hi->ref_count+1);
+	HacheTableIncRef(ci->hi->h, ci->hi);
     }
 
     return data;
