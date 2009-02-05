@@ -45,7 +45,7 @@ maqmap_t *maqmap_read_header(gzFile fp)
 		assert(mm->format == MAQMAP_FORMAT_NEW);
 	}
 	gzread(fp, &mm->n_ref, sizeof(int));
-	mm->ref_name = (char**)calloc(mm->n_ref, sizeof(char*));
+	mm->ref_name = (char**)calloc(mm->n_ref+1, sizeof(char*));
 	for (k = 0; k != mm->n_ref; ++k) {
 		gzread(fp, &len, sizeof(int));
 		mm->ref_name[k] = (char*)malloc(len * sizeof(char));
