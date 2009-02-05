@@ -13,6 +13,7 @@ typedef union {
 
 /* A hash item with "next" pointer to use in a linked list */
 typedef struct HacheItemStruct {
+    struct HacheTableStruct *h; /* For consistency checking */
     struct HacheItemStruct *next;
     HacheData data;        /* user defined data attached to this key */
     char    *key;         /* key we hashed on */
@@ -28,7 +29,7 @@ typedef struct HacheOrderStruct {
 } HacheOrder;
 
 /* The main hash table structure itself */
-typedef struct {
+typedef struct HacheTableStruct {
     int	      cache_size; /* Max size before purging cached entries */
     int       options;  /* HASH_FUNC & HASH_OPT macros */
     uint32_t  nbuckets; /* Number of hash buckets; power of 2 */
@@ -91,6 +92,7 @@ void HacheTableDecRef(HacheTable *h, HacheItem *hi);
 void HacheTablePurge(HacheTable *h);
 void HacheTableStats(HacheTable *h, FILE *fp);
 void HacheTableDump(HacheTable *h, FILE *fp);
+void HacheTableRefInfo(HacheTable *h, FILE *fp);
 
 void HacheOrderAccess(HacheTable *h, HacheItem *hi);
 void HacheOrderRemove(HacheTable *h, HacheItem *hi);

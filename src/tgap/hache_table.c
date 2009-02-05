@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <assert.h>
 #include "os.h"
 #include "hache_table.h"
 
@@ -250,8 +251,11 @@ static HacheItem *HacheItemCreate(HacheTable *h) {
     hi->key_len   = 0;
     hi->ref_count = 1;
     hi->order     = -1;
+    hi->h         = h;
 
     h->nused++;
+
+    //printf("Hash %p item %p\n", h, hi);
 
     return hi;
 }
@@ -263,6 +267,8 @@ static HacheItem *HacheItemCreate(HacheTable *h) {
  * call HacheTableDel() first if appropriate.
  */
 static void HacheItemDestroy(HacheTable *h, HacheItem *hi, int deallocate_data) {
+    assert(hi->h == h);
+
     if (!(h->options & HASH_NONVOLATILE_KEYS) || (h->options & HASH_OWN_KEYS))
 	if (hi->key)
 	    free(hi->key);
@@ -361,6 +367,7 @@ void HacheTableDestroy(HacheTable *h, int deallocate_data) {
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi = h->bucket[i], *next = NULL;
 	for (hi = h->bucket[i]; hi; hi = next) {
+	    assert(hi->h == h);
 	    next = hi->next;
 	    HacheItemDestroy(h, hi, deallocate_data);
 	}
@@ -395,7 +402,7 @@ int HacheTableResize(HacheTable *h, int newsize) {
     HacheTable *h2;
     int i;
 
-    fprintf(stderr, "Resizing HacheTable %p to %d\n", h, newsize);
+    fprintf(stdout, "Resizing HacheTable %p to %d\n", h, newsize);
 
     /* Create a new hash table and rehash everything into it */
     h2 = HacheTableCreate(newsize, h->options);
@@ -403,6 +410,7 @@ int HacheTableResize(HacheTable *h, int newsize) {
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi, *next;
 	for (hi = h->bucket[i]; hi; hi = next) {
+	    assert(hi->h == h);
 	    uint32_t hv = hash(h2->options & HASH_FUNC_MASK,
 			       (uint8_t *)hi->key, hi->key_len) & h2->mask;
 	    next = hi->next;
@@ -466,6 +474,8 @@ int HacheTableExpandCache(HacheTable *h) {
 void HacheOrderAccess(HacheTable *h, HacheItem *hi) {
     int i = hi->order;
 
+    assert(hi->h == h);
+
     if (i == -1)
 	return; /* presumably this is a locked item */
 
@@ -497,6 +507,8 @@ void HacheOrderAccess(HacheTable *h, HacheItem *hi) {
 void HacheOrderRemove(HacheTable *h, HacheItem *hi) {
     int i = hi->order;
     
+    assert(hi->h == h);
+
     if (hi->order == -1)
 	return;
 
@@ -525,6 +537,8 @@ void HacheOrderRemove(HacheTable *h, HacheItem *hi) {
  */
 int HacheOrderAdd(HacheTable *h, HacheItem *hi) {
     int i;
+
+    assert(hi->h == h);
 
     /* Free the oldest unused item if it's full */
     if (h->free == -1) {
@@ -557,6 +571,14 @@ int HacheOrderAdd(HacheTable *h, HacheItem *hi) {
     if (-1 == h->head)
 	h->head = i;
 
+    /*    
+    printf("hi=%p %p->ordering[%d]={%p,%d,%d}\n",
+	   hi, h, i,
+	   h->ordering[i].hi,
+	   h->ordering[i].next,
+	   h->ordering[i].prev);
+    */
+
     return i;
 }
 
@@ -570,6 +592,8 @@ void HacheOrderPurge(HacheTable *h) {
 }
 
 void HacheTableIncRef(HacheTable *h, HacheItem *hi) {
+    assert(hi->h == h);
+
     hi->ref_count++;
     if (hi->order != -1) {
 	HacheOrderRemove(h, hi);
@@ -578,6 +602,8 @@ void HacheTableIncRef(HacheTable *h, HacheItem *hi) {
 }
 
 void HacheTableDecRef(HacheTable *h, HacheItem *hi) {
+    assert(hi->h == h);
+
     if (hi && hi->ref_count > 0) {
 	if (--hi->ref_count <= 0) {
 	    hi->order = HacheOrderAdd(h, hi);
@@ -680,6 +706,8 @@ HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len, HacheData data,
 int HacheTableDel(HacheTable *h, HacheItem *hi, int deallocate_data) {
     uint32_t hv;
     HacheItem *next, *last;
+
+    assert(hi->h == h);
 
 #ifdef DEBUG
     printf("HacheTableDel %p %p\n", h, hi->data.p);
@@ -898,6 +926,39 @@ void HacheTableDump(HacheTable *h, FILE *fp) {
 }
 
 /*
+ * Reports how much data in the hache table is in use (reference count > 0)
+ * and how much is just cached data to be freed as and when needed.
+ */
+void HacheTableRefInfo(HacheTable *h, FILE *fp) {
+    int nr = 0, nu = 0, no = 0, nf = 0;
+    
+    int i;
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi;
+	for (hi = h->bucket[i]; hi; hi = hi->next) {
+	    if (hi->ref_count)
+		nr++;
+	    else
+		nu++;
+	    if (hi->order != -1)
+		no++;
+	}
+    }
+
+    for (i = h->free; i != -1; i = h->ordering[i].next)
+	nf++;
+
+    fprintf(fp, "Hache Table %p\n", h);
+    fprintf(fp, "    Cache size       %d\n", h->cache_size);
+    fprintf(fp, "    Refcount > 0     %d\n", nr);
+    fprintf(fp, "    Refcount = 0     %d\n", nu);
+    fprintf(fp, "    Items with order %d\n", no);
+    fprintf(fp, "    Items to reuse   %d\n", nf);
+    assert(no + nf == h->cache_size);
+    assert(no == nu);
+}
+
+/*
  * Produces some simple statistics on the hash table population.
  */
 void HacheTableStats(HacheTable *h, FILE *fp) {
@@ -916,6 +977,7 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
 	int len = 0;
 	HacheItem *hi;
 	for (hi = h->bucket[i]; hi; hi = hi->next) {
+	    assert(hi->h == h);
 	    len++;
 	}
 	if (len > 0) {
