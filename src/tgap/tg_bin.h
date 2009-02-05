@@ -19,6 +19,13 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type);
 
 /*
+ * Invalidates a track.
+ * Returns 0 on success
+ *        -1 on failure.
+ */
+int bin_invalidate_track(GapIO *io, bin_index_t *bin, int type);
+
+/*
  * Creates a fake track struct, to be freed with track_free
  *
  * Returns track_t on success

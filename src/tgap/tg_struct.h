@@ -250,6 +250,7 @@ typedef struct {
 
 /* Track types */
 #define TRACK_UNKNOWN    0
+#define TRACK_ALL        0
 #define TRACK_READ_DEPTH 1
 
 /* Track flag masks */

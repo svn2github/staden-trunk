@@ -535,7 +535,7 @@ int bin_add_track(GapIO *io, bin_index_t **bin, track_t *track) {
     /* Add the track pointer */
     bt = (GBinTrack *)ArrayRef(n->track, ArrayMax(n->track));
     bt->type = track->type;
-    bt->flags = 0;
+    bt->flags = 1;
     bt->rec = track->rec;
 
     return 0;
@@ -576,13 +576,39 @@ track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type) {
     if (bin->track) {
 	for (i = 0; i < ArrayMax(bin->track); i++) {
 	    GBinTrack *bt = arrp(GBinTrack, bin->track, i);
-	    if (bt->type == type /*&& (bt->flags&1) != 0*/)
+	    if (bt->type == type && (bt->flags & TRACK_FLAG_VALID))
 		return (track_t *)cache_search(io, GT_Track, bt->rec);
 	}
     }
 
     /* Otherwise generate and maybe cache */
     return bin_recalculate_track(io, bin, type);
+}
+
+/*
+ * Invalidates a track.
+ * Returns 0 on success
+ *        -1 on failure.
+ */
+int bin_invalidate_track(GapIO *io, bin_index_t *bin, int type) {
+    int i;
+
+    if (!bin->track)
+	return 0;
+
+    for (i = 0; i < ArrayMax(bin->track); i++) {
+	GBinTrack *bt = arrp(GBinTrack, bin->track, i);
+	if (bt->type == type || type == TRACK_ALL) {
+	    if (NULL == (bin = cache_rw(io, bin)))
+		return -1;
+	    printf("Update track for rec %d\n", bin->rec);
+	    bin->flags |= BIN_TRACK_UPDATED;
+	    bt = arrp(GBinTrack, bin->track, i);
+	    bt->flags &= ~TRACK_FLAG_VALID;
+	}
+    }
+
+    return 0;
 }
 
 /*
@@ -617,7 +643,7 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	track_t *fake;
 	int rec, *depth;
 	fake = track_create_fake(type, bin->size);
-	fake->flag = TRACK_FLAG_VALID | TRACK_FLAG_FREEME;
+	fake->flag = TRACK_FLAG_FREEME;
 
 	/* FIXME: type specific code here - or the size at least (int) */
 	switch (type) {
@@ -634,8 +660,8 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	rec = io->iface->track.create(io->dbh, fake);
 	track = (track_t *)cache_search(io, GT_Track, rec);
 
-	printf("Initialising track %d in bin %d at bpv of 1\n",
-	       rec, bin->rec);
+	printf("Initialising track %d flag %d in bin %d at bpv of 1\n",
+	       rec, track->flag, bin->rec);
 
 	bin_add_track(io, &bin, track);
 	track_free(fake);
@@ -656,7 +682,6 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	track = bin_create_track(io, bin, type);
 	bin_add_track(io, &bin, track);
     }
-    cache_incr(io, track);
 
     /* Copy child 'fake track' to our real track */
     track_set_data(io, &track, ArrayCreate(sizeof(int), nele));
@@ -666,8 +691,6 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
 	   nele * sizeof(int));
 
     track_free(child);
-
-    track->flag |= TRACK_FLAG_VALID;
     cache_decr(io, track);
 
     return track;

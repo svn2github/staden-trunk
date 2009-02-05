@@ -141,6 +141,7 @@ static int break_contig_recurse(GapIO *io,
 	   NMAX(bin->start_used, bin->end_used));
 
     bin = cache_rw(io, bin);
+    bin_invalidate_track(io, bin, TRACK_ALL);
 
     bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
     bin_max = bin->rng ? NMAX(bin->start_used, bin->end_used) : offset;

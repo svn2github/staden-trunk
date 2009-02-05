@@ -1165,15 +1165,17 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 	bin->flags &= ~BIN_TRACK_UPDATED;
 
-	if (!bin->track_rec) {
-	    bin->track_rec = allocate(io);
-	    bin->flags |= BIN_BIN_UPDATED;
-	}
+	if (bin->track) {
+	    if (!bin->track_rec) {
+		bin->track_rec = allocate(io);
+		bin->flags |= BIN_BIN_UPDATED;
+	    }
 
-	v = lock(io, bin->track_rec, G_LOCK_EX);
-	err |= g_write(io, v, ArrayBase(GBinTrack, bin->track),
-		       sizeof(GBinTrack) * ArrayMax(bin->track));
-	err |= unlock(io, v);
+	    v = lock(io, bin->track_rec, G_LOCK_EX);
+	    err |= g_write(io, v, ArrayBase(GBinTrack, bin->track),
+			   sizeof(GBinTrack) * ArrayMax(bin->track));
+	    err |= unlock(io, v);
+	}
     }
 
     /* Bin struct itself */
