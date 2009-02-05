@@ -65,6 +65,10 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     grid $w.xzoom -row 998 -sticky nsew
     grid rowconfigure $w 998 -weight 0
 
+# Benchmarking
+#    $w.xzoom set 80
+#    set ${w}(x1) 1000000
+
     # X scrollbar
     scrollbar $w.xscroll \
 	-command "scrollx1.5 $w" \
@@ -513,76 +517,111 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     #set reads [lrange $reads 0 10000]
     catch {unset done}
 
+    set t1 [clock clicks]
+    puts "  SEQS_FIND_START $t1"
+
+    # Setting accurate to zero means that when a read pair is in the same
+    # contig, but one end wasn't returned within the seqs_in_range query above
+    # then we just draw a dotted line to indicate the other end is present,
+    # but with unknown contig or position.
+    #
+    # Accurate mode does a get_position call on the sequence to find the
+    # true location. The upshot is that long templates are visible rather than
+    # "popping" to the top part of the screen only when entirely displayed.
+    # This could be alleviated somewhat using an over-sized range query, but
+    # too large and the overhead is more than that of accurate mode.
+    # Benchmarked at 8487 read/seeks accurate and 3078 inaccurate on EMU,
+    # which consists of lots of long and short insert sizes. It's less severe
+    # with all-short.
+    set accurate 1
+
     # Obtain the list of reads to plot and generate horizontal lines.
     # For now we have no X coordinates though
     set cn1 [set ${w}(cnum)]
     foreach r $reads {
-	foreach {st1 en1 rec comp} $r {break}
-	if {[info exists done($rec)]} continue
+	foreach {st1 en1 rec1 dir1 st2 en2 rec2 dir2 type same_c} $r {break}
+	if {[info exists done($rec1)]} {continue}
 
-	set unordered 0
-	set r1 [$io get_sequence $rec]
-	set done($rec) 1
+	# Don't need this? I think we only need to know the pair as rec
+	# should be unique from the seqs_in_range call.
+	#set done($rec1) 1
 
 	set xst1 [x2c $w $st1]
 	set xen1 [x2c $w $en1]
+	# Factored out for speed
+	#set xst1 [expr {($st1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
+	#set xen1 [expr {($en1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
 
-	set pair [$r1 get_pair]
-	set dir1 [expr {[$r1 get_length] >= 0 ? "f" : "r"}]
-	$r1 delete
+	if {!$rec2} {
+	    set line [list $xst1 $xen1 s $rec1]
+	    set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	    lappend lines_sz($sz) $line
+	    continue
+	}
+
+	set dir1 [expr {$dir1 ? "r" : "f"}]
 
 	# Paired end
-	if {$pair} {
+	set unordered 0
+	if {$rec2} {
 	    set line {}
-	    set r2 [$io get_sequence $pair]
-	    set st2 [$r2 get_position]
-	    set cn2 [$r2 get_contig]
-	    set en2 [expr {$st2+abs([$r2 get_length])-1}]
-	    set dir2 [expr {[$r2 get_length] >= 0 ? "f" : "r"}]
-	    $r2 delete
+	    if {$accurate && !($st2 || $en2)} {
+		# We want accurate plotting, but haven't observed the other
+		# end.
+		set r2 [$io get_sequence $rec2]
+		set st2 [$r2 get_position]
+		set cn2 [$r2 get_contig]
+		set en2 [expr {$st2+abs([$r2 get_length])-1}]
+		set dir2 [expr {[$r2 get_length] >= 0 ? "f" : "r"}]
+		$r2 delete
+		set xst2 [x2c $w $st2]
+		set xen2 [x2c $w $en2]
+	    } else {
+		# Otherwise, if we've observed the other end then
+		# we set the contig and st2/en2 in pxels, else leave
+		# contig as zero and plot a dotted line to indicate the
+		# other end is "somewhere" (unknown if this contig or
+		# another).
+		set cn2 [expr {$same_c ? $cn1 : 0}]
+		set dir2 [expr {$dir2 ? "r" : "f"}]
+		if {$st2 || $en2} {
+		    set xst2 [x2c $w $st2]
+		    set xen2 [x2c $w $en2]
+		}
+	    }
 
 	    # Temporary hack: only show long read-pairs
 	    #if {$en2 - $st1 < 10000} continue
 
-	    lappend line $xst1 $xen1 $dir1 $rec
-	    set done($pair) 1
+	    lappend line $xst1 $xen1 $dir1 $rec1
+	    set done($rec2) 1
 
 	    #if {$en2 >= $x1-100 && $st2 <= $x2+100 && $cn2 == $cn1} 
 	    if {$cn2 == $cn1} {
-		# Both semi-visible, so draw
-		if {$st2 >= $st1} {
-		    lappend line $xen1 [x2c $w $st2] t $rec
-		    lappend line [x2c $w $st2] [x2c $w $en2] $dir2 $rec
+		# Both in the same contig, so draw template line too.
+		if {$en2 >= $st1} {
+		    lappend line $xen1 $xst2 t $rec2
+		    lappend line $xst2 $xen2 $dir2 $rec2
 		} else {
-		    set line [concat [x2c $w $en2] $xst1 t $rec $line]
-		    # The read at the other end won't be visible anyway as
-		    # if it was then it'd have already processed it as
-		    # an 'r1' abiove.
-		    #lappend line [x2c $w $st2] [x2c $w $en2] $dir2 $rec
-		    
-		    # However in this case we won't be sorted in left to
-		    # right order either, so set a flag indicating as
-		    # such.
 		    set unordered 1
+		    set line [concat $xst2 $xen2 $dir2 $rec2 \
+				  $xen2 $xst1 t $rec2 $line]
 		}
 	    } else {
-		# Other end is invisible, so draw dotted line
-		if {$cn2 != $cn1} {
-		    set mode D
-		} else {
-		    set mode d
-		}
+		# Other end is invisible (either too far away or
+		# simply in another contig), so draw dotted line.
 		if {$dir1 == "f"} {
-		    lappend line $xen1 [expr {$xen1+20}] $mode $rec
+		    lappend line $xen1 [expr {$xen1+20}] d $rec2
 		} else {
-		    set line [concat [expr {$xst1-20}] $xst1 $mode $rec $line]
+		    set line [concat [expr {$xst1-20}] $xst1 d $rec2 $line]
 		}
 	    }
 
 	    # NB: line consists of multiple segments, but must be in
 	    # left to right order
 	} else {
-	    set line [list $xst1 $xen1 s $rec]
+	    # Singleton - the easy case.
+	    set line [list $xst1 $xen1 s $rec1]
 	}
 	set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
 	if {$unordered && [info exists lines_sz($sz)]} {
@@ -598,17 +637,24 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	}
     }
 
+    set t2 [clock clicks]
+    puts "  SEQS_FIND_END $t2 [expr {$t2-$t1}]"
+
     # Plot
+    set t1 [clock clicks]
+    puts "  SEQS_PLOT_START $t1"
     set y 3
     # Approx .3sec here
     set yoff [set ${t}(y1)]
 
-    set ysep [expr {10-log($x2-$x1)}]
+    set ysep [expr {10*(11-log($x2-$x1))}]
     set ysep [expr {2+($ysep > 0 ? int($ysep) : 0)}]
+    set ysep [expr {$ysep > 15 ? 15 : $ysep}]
 
     set ystart 0
     set ymax 0
     foreach sz [lsort -integer -decreasing [array names lines_sz]] {
+	# compute_max_y is about 30% of plotting time
 	set ymax [compute_max_y $w $lines_sz($sz)]
 	foreach l $lines_sz($sz) {
 	    set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
@@ -629,20 +675,18 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 1 -fill grey60 -dash . -tags rec_$rec}
-		    D {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 1 -fill orange -dash . -tags rec_$rec}
 		}
 	    }
 	    incr y
 	}
 	incr ystart $ymax
     }
+    set t2 [clock clicks]
+    puts "  SEQS_PLOT_END $t2 [expr {$t2-$t1}]"
 
     # Sync Y scrollbar
     set hei [expr {($ymax+$ystart)*$ysep+3.0}]
     set ${t}(scroll_height) $hei
-    puts "[set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]"
     [set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]
 
     puts SEQ_SEQS_DRAW_END
