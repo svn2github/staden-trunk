@@ -60,6 +60,20 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
 	}
     }
 
+    /* Paired end data ends with /1 or /2 */
+    s->flags &= ~SEQ_END_MASK;
+    if (s->name_len >= 2 && s->name[s->name_len-2] == '/') {
+	if (s->name[s->name_len-1] == '1')
+	    s->flags |= SEQ_END_FWD;
+	else if (s->name[s->name_len-1] == '2')
+	    s->flags |= SEQ_END_REV;
+	else
+	    fprintf(stderr, "Unknown name suffix for read %s\n",
+		    s->name);
+    } else {
+	s->flags |= SEQ_END_FWD;
+    }
+
     return 0;
 }
 
@@ -80,6 +94,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     int curr_contig = -1;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
+    char tname[1024];
 
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
     assert(dat_fp = gzopen(dat_fn, "r"));
@@ -97,6 +112,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	int recno;
 	bin_index_t *bin;
 	HacheItem *hi;
+	int paired;
 
 	parse_maqmap_aux(&seq, &m, k++);
 
@@ -131,10 +147,25 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	r.rec = 0;
 	r.pair_rec = 0;
 	r.flags = GRANGE_FLAG_TYPE_SINGLE;
-	/* Guess work here. For now all <--- are rev, all ---> are fwd */
-	r.flags|= seq.len > 0
-	    ? GRANGE_FLAG_END_FWD
-	    : GRANGE_FLAG_END_REV;
+
+	/* Get direction from name possibly */
+	strcpy(tname, seq.name);
+	if (seq.name_len >= 2 && seq.name[seq.name_len-2] == '/') {
+	    tname[seq.name_len-2] = 0;
+	    paired = 1;
+	} else {
+	    paired = 0;
+	}
+
+	if (paired)
+	    r.flags |= (seq.flags & SEQ_END_MASK) == SEQ_END_FWD
+		? GRANGE_FLAG_END_FWD
+		: GRANGE_FLAG_END_REV;
+	else
+	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
+	    r.flags |= seq.len > 0
+		? GRANGE_FLAG_END_FWD
+		: GRANGE_FLAG_END_REV;
 	if (seq.len < 0)
 	    r.flags |= GRANGE_FLAG_COMP1;
 
@@ -159,7 +190,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    pl->idx  = seq.bin_index;
 	    hd.p = pl;
 
-	    hi = HacheTableAdd(pair, seq.name, seq.name_len, hd, &new);
+	    hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
 
 	    /* Pair existed already */
 	    if (!new) {
