@@ -477,6 +477,14 @@ seq_t *dup_seq(seq_t *s) {
     d->seq = d->alignment + d->alignment_len + 1;
     d->conf = d->seq + ABS(d->len);
 
+    /* Dup the annotation */
+    if (s->anno) {
+	d->anno = ArrayCreate(sizeof(int), ArrayMax(s->anno));
+	memcpy(ArrayBase(int, d->anno),
+	       ArrayBase(int, s->anno),
+	       ArrayMax(s->anno) * sizeof(int));
+    }
+
     return d;
 }
 

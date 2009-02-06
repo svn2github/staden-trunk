@@ -42,21 +42,24 @@ typedef struct {
 typedef struct {
     GCardinal start;
     GCardinal end;
-    GCardinal object; /* recno */
+    GCardinal rec; /* recno */
     GCardinal pair_rec; /* paired end data */
     GCardinal flags; /* see below */
 } GRange; /* An element of the bin->rng record */
 
-#define GRANGE_FLAG_TYPE_MASK (3<<0)
+#define GRANGE_FLAG_TYPE_MASK  (3<<0)
 #  define GRANGE_FLAG_TYPE_SINGLE  0
 #  define GRANGE_FLAG_TYPE_PAIRED  1
-#  define GRANGE_FLAG_TYPE_COMPLEX 2 /* > 2 or 2x forward, etc */
-#define GRANGE_FLAG_END_MASK (1<<2) /* only applicable if not TYPE_COMPLEX */
-#  define GRANGE_FLAG_END_FWD (0<<2)
-#  define GRANGE_FLAG_END_REV (1<<2)
-#define GRANGE_FLAG_CONTIG (1<<3) /* pair held within the same contig */
-#define GRANGE_FLAG_COMP1 (1<<4)  /* true if complemented */
-#define GRANGE_FLAG_COMP2 (1<<5)  /* true if complemented */
+#  define GRANGE_FLAG_TYPE_COMPLEX 2  /* > 2 or 2x forward, etc */
+#define GRANGE_FLAG_END_MASK   (1<<2) /* only applicable if not TYPE_COMPLEX */
+#  define GRANGE_FLAG_END_FWD  (0<<2)
+#  define GRANGE_FLAG_END_REV  (1<<2)
+#define GRANGE_FLAG_PEND_MASK  (1<<6) /* as _END_MASK, but pair data */
+#  define GRANGE_FLAG_PEND_FWD (0<<6)
+#  define GRANGE_FLAG_PEND_REV (1<<6)
+#define GRANGE_FLAG_CONTIG     (1<<3) /* pair held within the same contig */
+#define GRANGE_FLAG_COMP1      (1<<4) /* true if complemented */
+#define GRANGE_FLAG_COMP2      (1<<5) /* true if complemented */
 
 typedef struct {
     GCardinal type;
@@ -133,6 +136,7 @@ typedef struct {
     int name_len;
     int trace_name_len;
     int alignment_len;
+    Array anno;       /* Annotations */
     char *name;       /* nul terminated name */
     char *trace_name; /* trace name; blank => same as name */
     char *alignment;  /* alignment; blank => obvious guess from pads */
@@ -146,12 +150,15 @@ typedef struct {
 #define STECH_SANGER  1
 #define STECH_SOLEXA  2
 #define STECH_SOLID   3
+#define STECH_454     4
 
 /* Sequence flags for seq_t.flags */
 #define SEQ_COMPLEMENTED (1<<0)
 #define SEQ_CONF_PHRED   (1<<1) /* Confidence values in phred-scale?
 				   False => log-odds */
-#define SEQ_TRACE_NAME   (1<<2) /* Set if trace_name is present */
+#define SEQ_END_MASK     (1<<2)
+#define SEQ_END_FWD      (0<<2)
+#define SEQ_END_REV      (1<<2)
 
 #define SEQ_FORMAT_MAQ   0      /* 2-bit base, 6-bit conf */
 #define SEQ_FORMAT_CNF1  1      /* 8-bit base, 1 confidence values */
@@ -256,5 +263,30 @@ typedef struct {
 /* Track flag masks */
 #define TRACK_FLAG_VALID  (1<<0)
 #define TRACK_FLAG_FREEME (1<<1)
+
+/*
+ * Annotations:
+ * These now have a two-way relationship. A sequence refers to an annotation
+ * struct. Likewise an annotation record consists of multiple fragments
+ * possibly spanning multiple reads. This means we can annotate pairs of reads
+ * that may link in some way with a single shared annotation, or disjoint 
+ * regions within a single sequence (eg gene structures).
+ */
+typedef struct {
+    char *comment; /* Possibly blank, but a per-region comment too */
+    int rec;       /* record */
+    int type;      /* type of object referred to by record */
+    int start;
+    int end;
+} anno_ele_t;
+
+typedef struct {
+    char *key;        /* the tag type and text */
+    char *value;
+    int rec;          /* rec of this anno */
+    int nele;
+    anno_ele_t *ele;  /* ele = &single if nele == 1 */
+    anno_ele_t single;
+} anno_t;
 
 #endif /* _TG_STRUCT_H_ */

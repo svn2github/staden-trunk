@@ -78,7 +78,12 @@ cached_item *cache_new(int type, GRec rec, GView v,
  * which in the context of this code means they have not been locked R/W.
  */
 static void seq_unload(GapIO *io, cached_item *ci) {
+    seq_t *s = (seq_t *)&ci->data;
     io->iface->seq.unlock(io->dbh, ci->view);
+
+    if (s->anno)
+	ArrayDestroy(s->anno);
+
     free(ci);
 }
 
@@ -673,12 +678,21 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 	switch(ci_new->type) {
 	case GT_Seq: {
 	    /* reset internal name/seq/conf pointers */
-	    seq_t *s = (seq_t *)&ci_new->data;
+	    seq_t *os = (seq_t *)&ci->data;
+	    seq_t *s  = (seq_t *)&ci_new->data;
 	    s->name = (char *)&s->data;
 	    s->trace_name = s->name + s->name_len + 1;
 	    s->alignment = s->trace_name + s->trace_name_len + 1;
 	    s->seq = s->alignment + s->alignment_len + 1;
 	    s->conf = s->seq + ABS(s->len);
+
+	    /* Duplicate the annotation Array */
+	    if (s->anno) {
+		s->anno = ArrayCreate(sizeof(int), ArrayMax(os->anno));
+		memcpy(ArrayBase(int, s->anno),
+		       ArrayBase(int, os->anno),
+		       ArrayMax(os->anno) * sizeof(int));
+	    }
 	    break;
 	}
 

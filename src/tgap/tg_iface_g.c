@@ -1315,8 +1315,6 @@ static int io_track_write(void *dbh, cached_item *ci) {
     g_io *io = (g_io *)dbh;
     track_t *track = (track_t *)&ci->data;
 
-    printf("Write track %d\n", ci->rec);
-
     assert(ci->lock_mode >= G_LOCK_RW);
     return io_track_write_view(io, track, ci->view);
 }
@@ -1367,6 +1365,8 @@ static int io_track_create(void *dbh, void *vfrom) {
  *      + flags (3 next bits)
  *      + format (2 top bits)
  * 1 byte mapping_quality
+ * ? byte Nanno (num. annotations)
+ * ? byte Annotation record numbers (Nanno copies of ? byte) 
  * ? bytes name, nul terminated
  * ? byte trace name, nul terminated
  * ? bytes alignment, nul terminated
@@ -1383,8 +1383,10 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     seq_t *seq;
     uint32_t left, right, bin, seq_len;
     int parent_rec, parent_type, bin_index;
+    Array anno;
 
     if (len) {
+	int Nanno;
 	cp = buf;
 	cp += u72int(cp, &bin);
 	cp += u72int(cp, &bin_index);
@@ -1399,6 +1401,15 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 	flags = format & ((1<<3)-1);
 	format >>= 3;
 	mapping_qual = *cp++;
+	cp += u72int(cp, &Nanno);
+	if (Nanno) {
+	    anno = ArrayCreate(sizeof(int), Nanno);
+	    for (i = 0; i < Nanno; i++) {
+		cp += u72int(cp, arrp(int, anno, i));
+	    }
+	} else {
+	    anno = NULL;
+	}
 	/* cp is now the variable sized section starting with reading name */
     } else {
 	/* new sequence */
@@ -1413,6 +1424,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 	flags = 0;
 	mapping_qual = 0;
 	format = 0;
+	anno = NULL;
 	cp = buf = "\0\0\0"; /* seq name, trace name, alignment */
 	len = 3;
     }
@@ -1436,6 +1448,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     seq->flags        = flags;
     seq->format       = format;
     seq->mapping_qual = mapping_qual;
+    seq->anno         = anno;
     seq->len          = (seq->flags & SEQ_COMPLEMENTED)
 	                    ? -seq_len : seq_len;
 
@@ -1622,6 +1635,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	+ 1 /* parent_type */
 	+ 1 /* seq_tech/flags/format */
 	+ 1 /* mapping_quality */
+	+ 5 /* Nanno */
+	+ 5*(seq->anno ? ArrayMax(seq->anno) : 0) /* anno rec.nos */
 	+ name_len + 1 /* name */
 	+ trace_name_len + 1 /* trace name */
 	+ seq_len*5 + 2; /* deflate worst expansion? */
@@ -1645,6 +1660,16 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     /* flags & m.quality */
     *cp++ = (seq->format << 6) | (seq->flags << 3) | seq->seq_tech;
     *cp++ = seq->mapping_qual;
+
+    /* Annotations */
+    if (seq->anno) {
+	cp += int2u7(ArrayMax(seq->anno), cp);
+	for (i = 0; i < ArrayMax(seq->anno); i++) {
+	    cp += int2u7(arr(int, seq->anno, i), cp);
+	}
+    } else {
+	cp += int2u7(0, cp);
+    }
 
     /* Name */
     strcpy(cp, seq->name);
@@ -1801,6 +1826,7 @@ static int io_seq_create(void *dbh, void *vfrom) {
 	s.parent_rec = 0;
 	s.parent_type = 0;
 	s.mapping_qual = 0;
+	s.anno = NULL;
 	s.name_len = 0;
 	s.name = NULL;
 	s.seq = NULL;
