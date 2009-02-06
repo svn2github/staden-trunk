@@ -419,7 +419,7 @@ int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
  * This means when we have both ends visible within our range, we link them
  * together. When we don't we leave the pair information as unknown.
  */
-void pair_rangec(rangec_t *r, int count) {
+void pair_rangec(GapIO *io, rangec_t *r, int count) {
     int i;
     HacheTable *h;
     HacheIter *iter;
@@ -445,12 +445,18 @@ void pair_rangec(rangec_t *r, int count) {
 	if (pair) {
 	    p = pair->data.i;
 	    assert(p < count && p >= 0);
+
 	    r[i].pair_start = r[p].start;
 	    r[i].pair_end   = r[p].end;
 	    if (r[p].flags &  GRANGE_FLAG_COMP1)
 		r[i].flags |= GRANGE_FLAG_COMP2;
 	    r[i].flags |= GRANGE_FLAG_CONTIG;
 	    r[p].flags |= GRANGE_FLAG_CONTIG;
+	    r[i].flags &= ~GRANGE_FLAG_PEND_MASK;
+	    if ((r[p].flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD)
+		r[i].flags |= GRANGE_FLAG_PEND_FWD;
+	    else
+		r[i].flags |= GRANGE_FLAG_PEND_REV;
 	}
     }
 
@@ -549,7 +555,7 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     //*count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
     //                               0, &r, &alloc, 0, 0);
 
-    pair_rangec(r, *count);
+    pair_rangec(io, r, *count);
 
     return r;
 }
