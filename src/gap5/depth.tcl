@@ -321,7 +321,7 @@ proc yscroll_plot_set {w t args} {
 # fires off the individual redraw functions registered.
 proc redraw_plot {w {track_types {}}} {
     global $w
-    parray $w
+    #parray $w
     
 
     set bd [set ${w}(border)]
@@ -332,11 +332,11 @@ proc redraw_plot {w {track_types {}}} {
     set x2 [set ${w}(x2)]
     set ${w}(xorigin) [expr $x1]
 
-    puts ""
-    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-    puts "xorigin=[set ${w}(xorigin)] xzoom=[set ${w}(xzoom)] yzoom=[set ${w}(yzoom)]"
-    puts "base coord=$x1..$x2   canvas coord=[x2c $w $x1]..[x2c $w $x2]"
-    puts ""
+#    puts ""
+#    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#    puts "xorigin=[set ${w}(xorigin)] xzoom=[set ${w}(xzoom)] yzoom=[set ${w}(yzoom)]"
+#    puts "base coord=$x1..$x2   canvas coord=[x2c $w $x1]..[x2c $w $x2]"
+#    puts ""
 
     if {$track_types != {}} {
 	set tracks {}
@@ -356,7 +356,7 @@ proc redraw_plot {w {track_types {}}} {
 	set t $w.track$id
 	global $t
 
-	parray $t
+	#parray $t
 
 	set d [set ${t}(canvas)]
 	$d delete all
@@ -539,7 +539,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     # For now we have no X coordinates though
     set cn1 [set ${w}(cnum)]
     foreach r $reads {
-	foreach {st1 en1 rec1 dir1 st2 en2 rec2 dir2 type same_c} $r {break}
+	foreach {st1 en1 rec1 comp1 dir1 st2 en2 rec2 comp2 dir2 type same_c} \
+	    $r {break}
 	if {[info exists done($rec1)]} {continue}
 
 	# Don't need this? I think we only need to know the pair as rec
@@ -572,7 +573,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		set st2 [$r2 get_position]
 		set cn2 [$r2 get_contig]
 		set en2 [expr {$st2+abs([$r2 get_length])-1}]
-		set dir2 [expr {[$r2 get_length] >= 0 ? "f" : "r"}]
+		set comp2 [expr {[$r2 get_length] >= 0 ? 0 : 1}] 
+		set dir2 [expr {$comp2 ? "f" : "r"}]
 		$r2 delete
 		set xst2 [x2c $w $st2]
 		set xen2 [x2c $w $en2]
@@ -593,19 +595,31 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    # Temporary hack: only show long read-pairs
 	    #if {$en2 - $st1 < 10000} continue
 
+	    # Consistency check
+	    set tcol t
+	    if {($st2 || $en2) && $cn1 == $cn2} {
+		if {$comp1 == $comp2 ||
+		    ($comp1 == 0 && $en2 < $st1) ||
+		    ($comp1 == 1 && $en1 < $st2)} {
+		    set dir1 x
+		    set dir2 x
+		    set tcol T
+		}
+	    }
+
 	    lappend line $xst1 $xen1 $dir1 $rec1
 	    set done($rec2) 1
 
 	    #if {$en2 >= $x1-100 && $st2 <= $x2+100 && $cn2 == $cn1} 
 	    if {$cn2 == $cn1} {
 		# Both in the same contig, so draw template line too.
-		if {$en2 >= $st1} {
-		    lappend line $xen1 $xst2 t $rec2
+		if {$st2 >= $st1} {
+		    lappend line $xen1 $xst2 $tcol $rec2
 		    lappend line $xst2 $xen2 $dir2 $rec2
 		} else {
 		    set unordered 1
 		    set line [concat $xst2 $xen2 $dir2 $rec2 \
-				  $xen2 $xst1 t $rec2 $line]
+				  $xen2 $xst1 $tcol $rec2 $line]
 		}
 	    } else {
 		# Other end is invisible (either too far away or
@@ -660,6 +674,9 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
 	    foreach {x1 x2 st rec} $l {
 		switch $st {
+		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
+			   -activewidth 4 -activefill white \
+			   -width 3 -fill yellow -tags rec_$rec}
 		    s {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 2 -fill black -tags rec_$rec}
@@ -672,6 +689,9 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    t {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 1 -fill grey60 -tags rec_$rec}
+		    T {$d create line $x1 $yp $x2 $yp -capstyle round \
+			   -activewidth 4 -activefill white \
+			   -width 2 -fill white -tags rec_$rec}
 		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 1 -fill grey60 -dash . -tags rec_$rec}
