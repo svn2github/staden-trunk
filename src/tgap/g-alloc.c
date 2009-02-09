@@ -65,12 +65,16 @@
 #include <assert.h>
 #include <string.h>
 
+#include <sys/time.h>
+#include <time.h>
+
 #include "g-alloc.h"
 #include "os.h"
 
 #define MIN_LEN 24
 
 //#define DEBUG
+//#define VALGRIND
 
 /* An allocated block on the heap */
 typedef struct {
@@ -263,10 +267,13 @@ static int unlink_block(dheap_t *h, block_t *b) {
 
     if (h->pool[p] == b->pos) {
 	/* Pool points to this item */
-	if (b->next == b->pos)
+	if (b->next == b->pos) {
 	    h->pool[p] = 0;
-	else 
+	    h->maxsz[p] = 0;
+	} else {
+	    /* maxsz is still a valid upper-bound */
 	    h->pool[p] = b->next;
+	}
 
 	write_pool(h, p);
     }
@@ -278,10 +285,14 @@ static int link_block(dheap_t *h, block_t *b) {
     int p = pool(b->len);
 
     b->free = 1;
+
+    if (h->maxsz[p] < b->len)
+	h->maxsz[p] = b->len;
+
     if (h->pool[p]) {
 	/* Link into existing ring */
 	block_t pb, nb;
-	    
+
 	if (-1 == get_block(h, h->pool[p], &pb))
 	    return -1;
 	if (-1 == get_block(h, pb.next, &nb))
@@ -296,10 +307,12 @@ static int link_block(dheap_t *h, block_t *b) {
 
 	put_block(h, &pb, 1, 0);
 	put_block(h, b,   0, 0);
+
 	if (pb.pos != nb.pos)
 	    put_block(h, &nb, 0, 0);
     } else {
 	/* No previous, so create a new ring */
+	h->timer++;
 	h->pool[p] = b->pos;
 	b->prev = b->pos;
 	b->next = b->pos;
@@ -335,6 +348,13 @@ dheap_t *heap_fdload(int fd) {
 	return NULL;
 
     h->wilderness = sb.st_size;
+
+    for (i = 0; i < NPOOLS; i++) {
+	h->next_free_pool[i] = 0;
+	h->next_free_time[i] = 0;
+	h->maxsz[i] = 0;
+    }
+    h->timer = 1;
 
     /* heap_check(h); */
 
@@ -413,7 +433,7 @@ static int64_t wilderness_allocate(dheap_t *h, uint32_t length) {
  *        -1 on failure
  */
 int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
-    int p;
+    int p, pred, porig, htime, hptime;
     uint64_t rover, orig;
 
     /* Round size to the next multiple of 8 after boundary tags */
@@ -430,10 +450,26 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 #endif
 
     /* Search for the first item in the pool that's big enough */
-    for (p = pool(length); p < NPOOLS; p++) {
+    porig = p = pool(length);
+    htime = h->timer;
+    hptime = h->next_free_time[p];
+    if (!h->pool[p] &&
+	h->next_free_pool[p] &&
+	h->next_free_time[p] == h->timer)
+	p = h->next_free_pool[p];
+    pred = p;
+
+    assert(pred >= porig);
+
+    for (p = porig; p < NPOOLS; p++) {
+    //for (; p < NPOOLS; p++) {
+	uint64_t ms = 0;
 	orig = rover = h->pool[p];
 
 	if (!rover)
+	    continue;
+
+	if (h->maxsz[p] && h->maxsz[p] < length)
 	    continue;
 
 	/* Found a pool with free blocks, so search for one large enough */
@@ -445,6 +481,8 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 		return -1;
 
 	    if (b.len >= length) {
+		assert(p >= pred);
+
 		unlink_block(h, &b);
 		b.free = 0;
 
@@ -455,9 +493,12 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 		 */
 		if (b.len - length < MIN_LEN) {
 		    put_block(h, &b, 0, 1);
+		    if (!h->pool[porig])
+			h->next_free_pool[porig] = p;
 		} else {
 		    block_t b2 = b;
 		    b.len = length;
+
 		    put_block(h, &b, 0, 1);
 
 		    b2.len -= length;
@@ -467,17 +508,33 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 			link_block(h, &b2);
 			put_block(h, &b2, 0, 0);
 		    }
+		    if (!h->pool[porig])
+			h->next_free_pool[porig] = pool(b2.len);
+		    if (h->next_free_pool[porig] <= porig)
+			h->next_free_pool[porig] = 0;
 		}
 
 #ifdef DEBUG
 		fprintf(stderr, "%ld\n", rover+4);
 #endif
+		h->next_free_time[porig] = h->timer;
+
 		return rover + 4;
 	    }
+
+	    if (ms < b.len)
+		ms = b.len;
+	    
 	    rover = b.next;
 	} while (rover != orig);
+	h->maxsz[p] = ms;
 
 	/* If still here then none was found, we try next pool */
+    }
+    
+    if (!h->pool[porig]) {
+	h->next_free_pool[porig] = NPOOLS;
+	h->next_free_time[porig] = h->timer;
     }
 
     /*
@@ -498,6 +555,8 @@ int heap_free(dheap_t *h, int64_t pos) {
 #ifdef DEBUG
     fprintf(stderr, "H-%p: heap_free %ld\n", h, pos);
 #endif
+
+    //h->timer++;
 
     if (-1 == get_block(h, pos-4, &b))
 	return -1;

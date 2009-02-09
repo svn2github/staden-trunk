@@ -7,15 +7,13 @@
 
 /* Our disk-heap struct */
 typedef struct {
-    int fd;                /* File descriptor to heap on disk */
-    /* FIXME:
-     * Add here a list of pool jumps to indicate the next pool with
-     * free data in.
-     * This prevents continuous scanning through all NPOOLS pools when
-     * we have no free fragments left apart from the wilderness.
-     */
-    uint64_t pool[NPOOLS]; /* A pointer to a free node, 0 if none */
-    uint64_t wilderness;   /* End of file marker */
+    int fd;                     /* File descriptor to heap on disk */
+    uint64_t pool[NPOOLS];      /* A pointer to a free node, 0 if none */
+    uint64_t maxsz[NPOOLS];	/* Maximum size of data in this pool */
+    int next_free_pool[NPOOLS]; /* A skip to the next pool with data */
+    int next_free_time[NPOOLS]; /* next_free_pool[x]==timer => cache valid */
+    int timer;			/* ++ when pool[] changes; invalidate cache */
+    uint64_t wilderness;        /* End of file marker */
 } dheap_t;
 
 
