@@ -461,8 +461,7 @@ int64_t heap_allocate(dheap_t *h, uint32_t length, uint32_t *allocated) {
 
     assert(pred >= porig);
 
-    for (p = porig; p < NPOOLS; p++) {
-    //for (; p < NPOOLS; p++) {
+    for (; p < NPOOLS; p++) {
 	uint64_t ms = 0;
 	orig = rover = h->pool[p];
 
