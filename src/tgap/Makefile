@@ -17,7 +17,7 @@ INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For debugging g-alloc
-CFLAGS += -DVALGRIND
+#CFLAGS += -DVALGRIND
 
 TGAP_LIB = -L$(L) -ltgap
 
