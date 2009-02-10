@@ -19,7 +19,7 @@ typedef struct {
 /* lh3: an analogy of parse_line() */
 static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
 {
-    int i;
+    int i, sz;
 
     memset(s, 0, sizeof(*s));
 
@@ -47,16 +47,18 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
 
     /* fill seq_t::seq && seq_t::conf */
     strcpy(s->name, m->name); /* lh3: read name */
-    for (i = 0; i != m->size; ++i) {
+    sz = m->size;
+    for (i = 0; i != sz; ++i) {
 	if (m->pos&1) {
 	    /* reverse strand */
 	    bit8_t c = m->seq[m->size-1-i];
-	    s->seq[i] = "ACGT"[(3 - (c>>6))];
+	    s->seq[i] = "TGCA"[c>>6];
 	    s->conf[i] = (c&0x3f);
 	} else {
 	    /* forward strand */
-	    s->seq[i] = "ACGT"[m->seq[i] >> 6];
-	    s->conf[i] = m->seq[i] & 0x3f;
+	    bit8_t c = m->seq[i];
+	    s->seq[i] = "ACGT"[c>>6];
+	    s->conf[i] = (c&0x3f);
 	}
     }
 
@@ -234,7 +236,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	++j;
 
 	/* For benchmarking */
-	//if (j == 1000000)
+	//if (j == 100000)
 	//    break;
     }
 
