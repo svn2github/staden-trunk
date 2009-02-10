@@ -33,10 +33,11 @@ typedef struct {
     GCardinal parent_type;   /* GT_Bin or GT_Contig */ // FIXME: to add
     GCardinal parent;   /* recno */                    // FIXME: to add
     GCardinal child[2]; /* recno */
-    GCardinal range;
+    GCardinal range;    /* recno */
     GCardinal id;
     GCardinal flags;
     GCardinal track;
+    GCardinal Nanno;    /* followed by Nanno record numbers */
 } GBin;
 
 typedef struct {
@@ -169,6 +170,7 @@ typedef struct {
     int rec;
     signed int start, end;
     unsigned int bin;
+    int anno_rec;
     char *name;
 } contig_t;
 
@@ -187,6 +189,7 @@ typedef struct index {
     int flags;
     Array track;    /* array of GTrack objects */
     int track_rec;
+    Array anno;     /* array of GAnno objects */
 } bin_index_t;
 
 /* Bit flags for bin_index_t.flags */
@@ -194,6 +197,7 @@ typedef struct index {
 #define BIN_BIN_UPDATED   (1<<1)
 #define BIN_RANGE_UPDATED (1<<2)
 #define BIN_TRACK_UPDATED (1<<3)
+#define BIN_ANNO_UPDATED  (1<<4)
 
 /*
  * We may also wish to hold in range:

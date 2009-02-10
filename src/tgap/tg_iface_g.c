@@ -916,7 +916,7 @@ static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
     ch = (GContig_header *)malloc(len);
     ch->start = le_int4(c->start);
     ch->end   = le_int4(c->end);
-    ch->bin = le_int4(c->bin);
+    ch->bin   = le_int4(c->bin);
     ((unsigned char *)ch)[sizeof(GContig_header)] =
 	c->name ? strlen(c->name) : 0;
     if (c->name)
@@ -1101,6 +1101,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     bin->rng         = NULL;
     bin->track_rec   = b->track;
     bin->track       = NULL;
+    bin->anno        = NULL;
 
     /* Load ranges */
     if (b->range) {
@@ -1132,6 +1133,11 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	g_read(io, v, ArrayBase(GBinTrack, bin->track),
 	       ntracks * sizeof(GBinTrack));
 	unlock(io, v);
+    }
+
+    /* Load annotations? */
+    if (b->Nanno) {
+	fprintf(stderr, "Bin annotations not yet supported\n");
     }
 
     free(buf);
@@ -1178,6 +1184,11 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	}
     }
 
+    /* Anno */
+    if (bin->flags & BIN_ANNO_UPDATED) {
+	fprintf(stderr, "Bin annotations not yet supported\n");
+    }
+
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
 	bin->flags &= ~BIN_BIN_UPDATED;
@@ -1193,6 +1204,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.child[1]    = bin->child[1];
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
+	g.Nanno       = bin->anno ? ArrayMax(bin->anno) : 0;
 
 	err |= g_write(io, v, &g, sizeof(g));
 	g_flush(io, v);
@@ -1236,6 +1248,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
 	b.track	      = NULL;
 	b.track_rec   = 0;
 	b.flags       = 0;
+	b.anno        = NULL;
 	io_bin_write_view(io, &b, v);
     }
     unlock(io, v);
