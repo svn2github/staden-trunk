@@ -508,7 +508,9 @@ GRec sequence_index_query(GapIO *io, char *name) {
 int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
     char n2[1024];
     GRec r;
-    sprintf(n2, "%.*s", name_len, name);
+    //sprintf(n2, "%.*s", name_len, name);
+    strncpy(n2, name, name_len > 1024 ? 1024 : name_len);
+    n2[1023] = 0;
 
     r = io->iface->seq.index_add(io->dbh, n2, rec);
     if (r == -1)
