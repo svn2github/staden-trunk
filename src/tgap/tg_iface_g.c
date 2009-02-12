@@ -888,7 +888,7 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
     }
 
     /* Generate in-memory data structure */
-    slen = sizeof(*ch) + sizeof(char *) + ((unsigned char *)(ch+1))[0];
+    slen = sizeof(*c) + sizeof(char *) + ((unsigned char *)(ch+1))[0] + 1;
     if (!(ci = cache_new(GT_Contig, rec, v, NULL, slen)))
 	return NULL;
 
@@ -1136,9 +1136,9 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     }
 
     /* Load annotations? */
-    if (b->Nanno) {
-	fprintf(stderr, "Bin annotations not yet supported\n");
-    }
+    //    if (b->Nanno) {
+    //	fprintf(stderr, "Bin read annotations not yet supported\n");
+    //    }
 
     free(buf);
     return ci;
@@ -1186,7 +1186,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
     /* Anno */
     if (bin->flags & BIN_ANNO_UPDATED) {
-	fprintf(stderr, "Bin annotations not yet supported\n");
+	fprintf(stderr, "Bin write annotations not yet supported\n");
     }
 
     /* Bin struct itself */
