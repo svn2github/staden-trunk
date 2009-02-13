@@ -238,6 +238,7 @@ typedef struct {
     int pair_start;
     int pair_end;
     int flags;
+    int y;    /* nominal display position, not stored on disc */
 } rangec_t;
 
 typedef struct {
