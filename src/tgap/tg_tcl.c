@@ -279,7 +279,9 @@ static int tcl_contig_range(tcl_contig *tc, Tcl_Interp *interp,
 
     Tcl_GetIntFromObj(interp, objv[1], &start);
     Tcl_GetIntFromObj(interp, objv[2], &end);
-    r = (rangec_t *)contig_seqs_in_range(io, &c, start, end, &nr);
+    r = (rangec_t *)contig_seqs_in_range(io, &c, start, end,
+					 CSIR_SORT_BY_X | CSIR_PAIR,
+					 &nr);
     qsort(r, nr, sizeof(*r), sort_range);
 
     items = Tcl_NewListObj(0, NULL);
@@ -630,7 +632,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
-
+	"get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	(char *)NULL,
     };
@@ -640,7 +642,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_REC,        GET_LEN,        GET_LENGTH,     GET_PAIR,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
-
+	GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
     };
 
@@ -783,6 +785,10 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
 	break;
     }
+
+    case GET_MAPPING_QUAL:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), ts->seq->mapping_qual);
+	break;
 
     case GET_PAIR:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp),
