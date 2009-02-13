@@ -284,13 +284,6 @@ void whelp(WINDOW *win) {
     wgetch(win);
 }
 
-/* Sort comparison function for range_t; sort by ascending position */
-static int sort_range(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    return r1->start - r2->start;
-}
-
 static void complement_bin(GapIO *io, int bnum) {
     bin_index_t *bin = get_bin(io, bnum);
     bin->flags ^= BIN_COMPLEMENTED;
@@ -326,8 +319,7 @@ static void display_gap(GapIO *io, contig_t **c, int xpos, int ypos,
     xpos -= wid/2;
 
     /* Query visible objects */
-    r = contig_seqs_in_range(io, c, xpos, xpos+wid-1, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    r = contig_seqs_in_range(io, c, xpos, xpos+wid-1, CSIR_SORT_BY_X, &nr);
 
     /* Consensus */
     calc_cons(io, r, nr, xpos, wid, cons);
@@ -749,8 +741,7 @@ static void test_mode(GapIO *io, contig_t **c, int xpos) {
     rangec_t *r;
     int nr, i;
 
-    r = contig_seqs_in_range(io, c, xpos, xpos+79, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    r = contig_seqs_in_range(io, c, xpos, xpos+79, CSIR_SORT_BY_X, &nr);
     for (i = 0; i < nr; i++) {
 	seq_t *s = get_seq(io, r[i].rec);
 	printf("%.*s: range %d..%d seq %d+%d st=%d en=%d %.*s\n", 
@@ -810,7 +801,7 @@ static void benchmark(GapIO *io, contig_t **c) {
 	int nr;
 	rangec_t *r;
 
-	r = contig_seqs_in_range(io, c, xpos, xpos+size, &nr);
+	r = contig_seqs_in_range(io, c, xpos, xpos+size, 0, &nr);
 	calc_cons(io, r, nr, xpos, size, cons);
 	printf("%.*s\n", size, cons);
 	fputc('.', stderr);
