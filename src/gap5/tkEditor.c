@@ -102,6 +102,9 @@ static Tk_ConfigSpec configSpecs[] = {
 	 "-diff2_fg","diff2Foreground",	"Foreground","green3",
 	 offset(diff2_fg),		0, NULL},
     {TK_CONFIG_COLOR,
+         "-stripe_bg","stripeBackground", "Background","#f0f0f0",
+	 offset(stripe_bg),		0, NULL},
+    {TK_CONFIG_COLOR,
 	 "-editcolour0","qualColour0",	"Background",	"red",
 	 offset(edit_bg[0]),		0, NULL},
     {TK_CONFIG_COLOR,
@@ -185,6 +188,12 @@ static Tk_ConfigSpec configSpecs[] = {
          "-differences_case_sensitive", "differencesCaseSensitive",
          "DifferencesCaseSensitive",
          "0", offset(display_differences_case), 0, NULL},
+    {TK_CONFIG_INT,
+         "-stripe_mode", "stripeMode", "StripeMode",
+         "0", offset(stripe_mode), 0, NULL},
+    {TK_CONFIG_INT,
+     "-stack_mode", "stackMode", "StackMode",
+         "0", offset(stack_mode), 0, NULL},
     {TK_CONFIG_END,
 	 (char *)NULL,	(char *)NULL,	(char *)NULL,	(char *) NULL,
          0,	0,	NULL},
@@ -313,6 +322,7 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
     ed->diff2_bg    = NULL;
     ed->diff1_fg    = NULL;
     ed->diff2_fg    = NULL;
+    ed->stripe_bg   = NULL;
     ed->xScrollCmd = NULL;
     ed->yScrollCmd = NULL;
     ed->highlight_cmd = NULL;
@@ -505,7 +515,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	/* Cache elsewhere - ie last number of seqs visible? */
 	r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-				 xx->displayPos + xx->displayWidth, &nr);
+				 xx->displayPos + xx->displayWidth,
+				 CSIR_COUNT_ONLY, &nr);
 	free(r);
 
 	//type = Tk_GetScrollInfoObj(interp, objc, objv, &f1, &count);

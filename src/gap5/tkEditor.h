@@ -22,6 +22,7 @@ typedef struct {
     XColor *edit_bg[4];
     XColor *tmpl_bg[6];
     XColor *set_bg[10];
+    XColor *stripe_bg;
     char *xScrollCmd;
     char *yScrollCmd;
     char *highlight_cmd;
@@ -38,6 +39,8 @@ typedef struct {
     int display_differences_case;
     int display_differences_qual;
     int consensus_at_top; /* 0 => normal, 1 => flipped for join editor */
+    int stripe_mode; /* 0 => no stripes, N => stripes every N bytes */
+    int stack_mode; /* 0 => 1 line per seq. 1 => multiples per line */
 } Editor;
 
 #define TKSHEET(ed)   ((tkSheet *)(ed))
