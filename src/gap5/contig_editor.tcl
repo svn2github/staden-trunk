@@ -107,6 +107,7 @@ proc contig_editor {w args} {
     set opt(Disagreements) 0
     set opt(DisagreeMode)  1
     set opt(DisagreeCase)  1
+    set opt(PackSequences) 0
     set opt(Status)        "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
@@ -128,6 +129,7 @@ proc contig_editor {w args} {
     if {![winfo exists $w]} {
 	toplevel $w
 	set c [$opt(-io) get_contig $opt(contig)]
+	#$c dump_ps /tmp/tree.ps
 	if {$join} {
 	    set c2 [$opt(-io) get_contig $opt(contig2)]
 	    wm title $w "Join: [$c get_name] / [$c2 get_name]"
@@ -366,6 +368,7 @@ proc editor_pane {top w above ind arg_array} {
 		-diff2_bg    [keylget gap5_defs CONTIG_EDITOR.DIFF2_BG] \
 		-diff1_fg    [keylget gap5_defs CONTIG_EDITOR.DIFF1_FG] \
 		-diff2_fg    [keylget gap5_defs CONTIG_EDITOR.DIFF2_FG] \
+		-stripe_bg   [keylget gap5_defs CONTIG_EDITOR.STRIPE_BG] \
 		-qualcolour0 [keylget gap5_defs CONTIG_EDITOR.QUAL0_COLOUR] \
 		-qualcolour1 [keylget gap5_defs CONTIG_EDITOR.QUAL1_COLOUR] \
 		-qualcolour2 [keylget gap5_defs CONTIG_EDITOR.QUAL2_COLOUR] \
@@ -547,6 +550,15 @@ proc editor_disagreements {w} {
     }
     $ed configure -differences_case_sensitive $opt(DisagreeCase)
     $ed redraw
+}
+
+proc set_editor_pack_sequences {w} {
+    upvar \#0 $w opt
+
+    set ed $opt(curr_editor)
+    $ed configure -stack_mode $opt(PackSequences)
+    $ed xview scroll 1 units
+    $ed xview scroll -1 units
 }
 
 proc set_differences_quality_callback {ed val} {
@@ -945,4 +957,3 @@ if {[tk windowingsystem] eq "x11"} {
 
     bind EdNames <Shift-4>         {%W xview scroll  -1 units}
     bind EdNames <Shift-5>         {%W xview scroll  +1 units}
-}

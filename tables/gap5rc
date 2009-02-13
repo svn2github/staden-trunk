@@ -85,10 +85,10 @@ set_def TAG_BRIEF_FORMAT  \
 set_def READ_BRIEF_FORMAT {Reading:%n(#%Rn)  Length:%l(%L)  MappingQ:%m}
 
 set_def CONTIG_BRIEF_FORMAT  \
-	{Contig:%n(#%Rn)   Length:%l   %c}
+	{Contig:%n(#%Rn)   Length:%l  Start:%s  End:%e}
 
 set_def BASE_BRIEF_FORMAT1  \
-	{Base confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %p}
+	{Base %b confidence:%4.1c (Prob. %Rc, raw %4.1A %4.1C %4.1G %4.1T)   Position %p}
 
 set_def BASE_BRIEF_FORMAT2  \
 	{Base confidence:%4.1c (Prob. %Rc)  A=%4.1A C=%4.1C G=%4.1G T=%4.1T *=%4.1*  Position %p}
@@ -187,6 +187,8 @@ set_def CONTIG_EDITOR.QUAL6_COLOUR     "#d9d9d9"
 set_def CONTIG_EDITOR.QUAL7_COLOUR     "#e0e0e0"
 set_def CONTIG_EDITOR.QUAL8_COLOUR     "#e8e8e8"
 set_def CONTIG_EDITOR.QUAL9_COLOUR     "#f0f0f0"
+
+set_def CONTIG_EDITOR.STRIPE_BG        "#e0e4e0"
 
 set_def CONTIG_EDITOR.QUAL_IGNORE	"#ff5050"
 

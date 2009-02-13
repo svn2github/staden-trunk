@@ -44,9 +44,9 @@ add_menu File		1 2 left
 add_menu Edit		1 2 left
 add_menu View		1 2 left
 add_menu Options	1 2 left
-add_menu Experiments	1 2 left
+#add_menu Experiments	1 2 left
 add_menu Lists		1 2 left
-add_menu Assembly	1 2 left
+#add_menu Assembly	1 2 left
 add_menu Help		1 0 right
 
 # In the following commands \$io is the global io variable, to be expanded
@@ -66,8 +66,8 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Import from BioLIMS}	12 22 {ImportBiolims \$io}
 }
 add_command	{File.Check database}		12 6 {check_database -io \$io}
-add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
-add_command	{File.Copy readings}		 8 26 {CopyReads \$io}
+#add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
+#add_command	{File.Copy readings}		 8 26 {CopyReads \$io}
 add_command	{File.Change directory}		 1 2 {ChangeDirectory} e
 #if {$tcl_platform(platform) == "unix"} {
 #    add_command	{File.Send to}			 8 10 {SendTo \$io} e
@@ -83,30 +83,30 @@ add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
 
 add_command	{File.Save consensus.normal}	8 10 \
 			{NormalDialog \$io}
-add_command	{File.Save consensus.extended}	8 10 \
-			{ExtendedDialog \$io} e
-add_command	{File.Save consensus.unfinished}	8 10 \
-			{UnfinishedDialog \$io} e
-add_command	{File.Save consensus.quality}	8 10 \
-			{QualityDialog \$io} e
+#add_command	{File.Save consensus.extended}	8 10 \
+#			{ExtendedDialog \$io} e
+#add_command	{File.Save consensus.unfinished}	8 10 \
+#			{UnfinishedDialog \$io} e
+#add_command	{File.Save consensus.quality}	8 10 \
+#			{QualityDialog \$io} e
 
 add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
-add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io} e
+add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io}
 add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io}
 add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
-add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
-add_command	{Edit.Save contig order}	 8 26 {SaveContigOrder \$io} e
-add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
-add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e
-add_command	{Edit.N-base Clip}		 8 26 {NClip \$io} e
-add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
-add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
-add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
-add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
-add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
-add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
-add_separator	{Edit.S1} e
-add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} e
+#add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io}
+#add_command	{Edit.Save contig order}	 8 26 {SaveContigOrder \$io} e
+#add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
+#add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} e
+#add_command	{Edit.N-base Clip}		 8 26 {NClip \$io} e
+#add_command	{Edit.Quality clip contig ends}	 8 26 {QClipEnds \$io} e
+#add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io}
+#add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io}
+#add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} e
+#add_command	{Edit.Shuffle pads}		 8 26 {ShufflePads \$io} e
+#add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
+#add_separator	{Edit.S1} e
+#add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} e
 
 add_command	{View.Contig selector}		 8 10 {ContigSelector \$io}
 add_command     {View.Contig list}		 8 10 {InitListContigs \$io ""}
@@ -120,7 +120,7 @@ add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
 #add_command	{View.Sequence search}		 8 10 {FindOligos \$io}
 add_separator	{View.S3}
 add_command	{View.Database information}	 8 10 {PrintDatabaseInfo \$io}
-#add_command	{View.Template Display}		 8 10 {TempDispDialog \$io}
+add_command	{View.Template Display}		 8 10 {TemplateDisplay \$io}
 #add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
 #add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
 #add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
@@ -136,7 +136,7 @@ add_command	{View.List Base Confidence}	 8 10 {ListBaseConfidence \$io}
 #add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
 
 add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}
-add_command	{Options.Set maxseq/maxdb}	1 2 {SetMaxseq \$io}
+#add_command	{Options.Set maxseq/maxdb}	1 2 {SetMaxseq \$io}
 add_command	{Options.Set fonts}		1 2 {SetFonts}
 if { $tcl_platform(platform) != "windows" } {
     add_command	{Options.Colours}		1 2 {ConfigureColours}
@@ -145,15 +145,15 @@ add_command	{Options.Configure menus}	1 2 {ConfigureMenus}
 add_command	{Options.Set genetic code}	1 2 {SetGeneticCode} {e}
 add_command	{Options.Alignment scores}	1 2 {SetAlignmentScores} {e}
 add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {e}
-add_command	{Options.Template Status} \
-			     		 1 2 {SetTemplateStatusConfig} {e}
+#add_command	{Options.Template Status} \
+#			     		 1 2 {SetTemplateStatusConfig} {e}
 
-add_command	{Experiments.Suggest long readings}  8 10 {LongGels \$io} e
-add_command	{Experiments.Compressions and Stops} 8 10 {TaqTerminator \$io} e
-add_command	{Experiments.Suggest primers}	     8 26 {SuggestPrimers \$io} e
-add_command	{Experiments.Suggest probes}	     8 10 {SuggestProbes \$io} e
-add_command	{Experiments.Prefinish}		     8 10 {prefinish \$io}
-add_command	{Experiments.Pick PCR Primers}	     8 10 {::pcr_primers::GUI \$io}
+#add_command	{Experiments.Suggest long readings}  8 10 {LongGels \$io} e
+#add_command	{Experiments.Compressions and Stops} 8 10 {TaqTerminator \$io} e
+#add_command	{Experiments.Suggest primers}	     8 26 {SuggestPrimers \$io} e
+#add_command	{Experiments.Suggest probes}	     8 10 {SuggestProbes \$io} e
+#add_command	{Experiments.Prefinish}		     8 10 {prefinish \$io}
+#add_command	{Experiments.Pick PCR Primers}	     8 10 {::pcr_primers::GUI \$io}
 
 add_command	{Lists.View/Edit}	        12 6 {EditListDialog}
 add_command	{Lists.Create}			12 6 {CreateListDialog}
@@ -164,31 +164,29 @@ add_command	{Lists.Save}			12 6 {SaveListDialog}
 if { $tcl_platform(platform) != "windows" } {
     add_command	{Lists.Print}			12 6 {PrintListDialog}
 }
-add_separator	{Lists.S1}
-add_command	{Lists.Highlight readings list}	 8 10 {InputSelectReadingList \$io}
-add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
-add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
-add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
-add_separator   {Lists.S2} 
-add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
-add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
-add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
+#add_separator	{Lists.S1}
+#add_command	{Lists.Highlight readings list}	 8 10 {InputSelectReadingList \$io}
+#add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
+#add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
+#add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
+#add_separator   {Lists.S2} 
+#add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
+#add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
+#add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
 
-add_command	{Assembly.Normal shotgun assembly} \
-			12 22 {AutoAssemble \$io 1}
-add_command	{Assembly.Assembly into single stranded regions} \
-			12 22 {AutoAssemble \$io 5} e
-add_command	{Assembly.Stack readings} \
-			12 22 {AutoAssemble \$io 3} e
-add_command	{Assembly.Put all readings in separate contigs} \
-			12 22 {AutoAssemble \$io 4} e
-add_command	{Assembly.Directed assembly} \
-			12 22 {DirectAssembly \$io}
-#add_command	{Assembly.Enter pre-assembled data} \
-#			12 22 {Preassemble \$io} e
-add_command	{Assembly.Screen only} \
-			8 10 {AutoAssemble \$io 2} e
-add_command	{Assembly.Assemble independently} \
+#add_command	{Assembly.Normal shotgun assembly} \
+#			12 22 {AutoAssemble \$io 1}
+#add_command	{Assembly.Assembly into single stranded regions} \
+#			12 22 {AutoAssemble \$io 5} e
+#add_command	{Assembly.Stack readings} \
+#			12 22 {AutoAssemble \$io 3} e
+#add_command	{Assembly.Put all readings in separate contigs} \
+#			12 22 {AutoAssemble \$io 4} e
+#add_command	{Assembly.Directed assembly} \
+#			12 22 {DirectAssembly \$io}
+#add_command	{Assembly.Screen only} \
+#			8 10 {AutoAssemble \$io 2} e
+#add_command	{Assembly.Assemble independently} \
 			12 22 {AutoAssemble \$io 6} e
 
 
@@ -216,37 +214,35 @@ add_command	{Help.Show Licence}	1 0 {ShowLicence}
 
 set_menu contig_editor_main_menu
 add_menu {File}					1 0 left
-add_menu Commands				1 0 left
+#add_menu Commands				1 0 left
 add_menu Settings				1 0 left
-add_menu {Edit Modes}				1 0 left
+#add_menu {Edit Modes}				1 0 left
 add_menu {Help}					1 0 right
 
 add_command {File.Exit} 1 0 {editor_exit $w}
 
 # Contig Editor Commands menu
-add_command	{Commands.Search}			1 0 \
-	{create_search_win $e.search {$e search}}
-add_separator	{Commands.S1}
-add_command	{Commands.Create Tag}		3 2 {$e create_anno}
-#add_command	{Commands.Edit Tag}		1 0 {$e select clear; $e edit_anno}
-#add_command	{Commands.Delete Tag}		3 2 {$e select clear; $e delete_anno}
-add_cascade	{Commands.Edit Tag}		1 0
-add_cascade	{Commands.Delete Tag}		3 2
-add_separator	{Commands.S2}
-add_command	{Commands.Save Contig}		3 2 {$e save}
-add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
-add_command	{Commands.Save Consensus Trace}	1 0 {consensus_trace_dialog $e} e
-add_command	{Commands.List Confidence}	1 0 \
-	{ed_list_confidence $e $e.list_confidence}
-add_command     {Commands.Report Mutations}	1 0 \
-	{report_mutations_dialog $e} 
-add_separator	{Commands.S3}
-add_command	{Commands.Select Primer}	1 0 {select_oligos $e}
-add_command	{Commands.Align}		3 2 {$e align}
-add_command	{Commands.Remove Pad Columns}	3 2 {editor_strip_pads $e}
-add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
-add_separator	{Commands.S4}
-add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
+#add_command	{Commands.Search}			1 0 \
+#	{create_search_win $e.search {$e search}}
+#add_separator	{Commands.S1}
+#add_command	{Commands.Create Tag}		3 2 {$e create_anno}
+#add_cascade	{Commands.Edit Tag}		1 0
+#add_cascade	{Commands.Delete Tag}		3 2
+#add_separator	{Commands.S2}
+#add_command	{Commands.Save Contig}		3 2 {$e save}
+#add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
+#add_command	{Commands.Save Consensus Trace}	1 0 {consensus_trace_dialog $e} e
+#add_command	{Commands.List Confidence}	1 0 \
+#	{ed_list_confidence $e $e.list_confidence}
+#add_command     {Commands.Report Mutations}	1 0 \
+#	{report_mutations_dialog $e} 
+#add_separator	{Commands.S3}
+#add_command	{Commands.Select Primer}	1 0 {select_oligos $e}
+#add_command	{Commands.Align}		3 2 {$e align}
+#add_command	{Commands.Remove Pad Columns}	3 2 {editor_strip_pads $e}
+#add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
+#add_separator	{Commands.S4}
+#add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
 
 # Contig Editor Settings menu
 # Contig Editor Settings -> Status menu
@@ -364,6 +360,9 @@ add_check	{Settings.    Case sensitive}		1 0 {${w}(DisagreeCase)} \
 add_command	{Settings.Set quality threshold}	1 0 \
 	{set_differences_quality $w}
 add_separator	{Settings.S2}
+add_check       {Settings.Pack Sequences}               1 0 {${w}(PackSequences)} \
+	{set_editor_pack_sequences $w}
+
 add_check	{Settings.Compare Strands}		1 0 \
 	{$w.CompareStrands} {$e compare_strands} e
 add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
