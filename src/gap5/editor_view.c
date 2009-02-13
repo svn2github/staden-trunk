@@ -90,6 +90,8 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 	xx->names->sw.yflip = 1;
     }
 
+    xx->r = NULL;
+
     return xx;
 }
 
@@ -97,6 +99,8 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
  * Deallocates an edview
  */
 static void edview_destroy(edview *xx) {
+    if (xx->r)
+	free(xx->r);
     xfree(xx);
 }
 
@@ -588,6 +592,31 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
 }
 
 /*
+ * Populates the cache of visible items in xx->r and xx->nr.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edview_visible_items(edview *xx, int start, int end) {
+    if (!xx->r || xx->r_start != start || xx->r_end != end) {
+	int mode = xx->ed->stack_mode
+	    ? CSIR_ALLOCATE_Y_MULTIPLE
+	    : CSIR_ALLOCATE_Y_SINGLE;
+
+	if (xx->r)
+	    free(xx->r);
+	xx->r_start = start;
+	xx->r_end = end;
+	xx->r = contig_seqs_in_range(xx->io, &xx->contig, start, end,
+				     CSIR_SORT_BY_Y | mode, &xx->nr);
+	if (!xx->r)
+	    return -1;
+    }
+
+    return 0;
+}
+
+/*
  * Given an X,Y coordinate return the reading id under this position.
  *
  * Returns record number on success
@@ -603,13 +632,6 @@ int edGetGelNumber(edview *xx, int x, int y) {
 
     puts("edGetGelNumber unimplemented");
     return 0;
-}
-
-/* Sort comparison function for range_t; sort by ascending position */
-static int sort_range(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    return r1->start - r2->start;
 }
 
 static int ed_set_xslider_pos(edview *xx, int offset) {
@@ -670,168 +692,202 @@ void ed_set_nslider_pos(edview *xx, int pos) {
 }
 
 static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
-    int i, j;
+    int i, j, k;
 
     /*
     sheet_clear(&xx->ed->sw);
     sheet_clear(&xx->names->sw);
     */
 
-    for (j = xx->y_seq_start, i = xx->displayYPos;
+    /* Work down the screen line by line */
+    for (j = xx->y_seq_start, i = 0;
 	 j < xx->displayHeight - xx->y_seq_end && i < nr;
-	 i++, j++) {
-	seq_t *s = get_seq(xx->io, r[i].rec);
-	seq_t *sorig = s;
-	int sp = r[i].start;
-	int l = s->len > 0 ? s->len : -s->len;
+	 j++) {
+	seq_t *s, *sorig;
+	int sp, l;
 	unsigned char seq_a[MAX_SEQ_LEN+1], *seq = seq_a;
 	XawSheetInk ink[MAX_DISPLAY_WIDTH];
-	int dir = '+';
+	char line[MAX_DISPLAY_WIDTH+1];
+	int dir;
 	int left, right;
-	int seq_p = 0;
+	int seq_p;
 
-	/* Optimisation for single sequence only */
-	if (xx->refresh_flags & ED_DISP_SEQ &&
-	    !(xx->refresh_flags & ED_DISP_SEQS)) {
-	    if (xx->refresh_seq != r[i].rec) {
-		continue;
-	    }
-	}
-	
-	/* Complement data on-the-fly */
-	if ((s->len < 0) ^ r[i].comp) {
-	    dir = '-';
-	    s = dup_seq(s);
-	    complement_seq_t(s);
-	}
-
-	left = s->left;
-	right = s->right;
-
-	memcpy(seq, s->seq, l);
-
-	if (sp < xx->displayPos) {
-	    seq_p += xx->displayPos - sp;
-	    //seq   += xx->displayPos - sp;
-	    //conf  += xx->displayPos - sp;
-	    l     -= xx->displayPos - sp;
-	    left  -= xx->displayPos - sp;
-	    right -= xx->displayPos - sp;
-	    sp = xx->displayPos;
-	}
-	if (l > xx->displayWidth - (sp-xx->displayPos))
-	    l = xx->displayWidth - (sp-xx->displayPos);
-
-	/* Sequence */
 	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ)) {
-	    char line[MAX_DISPLAY_WIDTH+1];
-	    int p, p2;
-
 	    memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
 	    memset(line, ' ', MAX_DISPLAY_WIDTH);
+	}
+	if (xx->ed->stripe_mode) {
+	    int n = xx->ed->stripe_mode;
+	    for (k = n-xx->displayPos%n; k < xx->displayWidth; k+=n) {
+		ink[k].sh |= sh_bg;
+		ink[k].bg = xx->ed->stripe_bg->pixel;
+	    }
+	}
 
-	    for (p2 = sp - xx->displayPos, p = 0; p < l; p++, p2++) {
-		char base;
-		int qual;
+	/* Iterate through all sequences on this line */
+	if (i >= nr || xx->r[i].y - xx->displayYPos > j - xx->y_seq_start)
+	    continue;
 
-		sequence_get_base(xx->io, &s, p+seq_p, &base, &qual, 0);
-		line[p2] = base;
-		
-		/* Cutoffs */
-		if (p < left-1 || p > right-1) {
-		    if (xx->ed->display_cutoffs) {
-			ink[p2].sh |= sh_light;
-			//seq[p+seq_p] = tolower(seq[p+seq_p]);
+	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
+	    if (xx->r[i].y - xx->displayYPos < j - xx->y_seq_start) {
+		i++;
+		continue;
+	    }
+
+	    s = sorig = get_seq(xx->io, r[i].rec);
+	    sp = r[i].start;
+	    l = s->len > 0 ? s->len : -s->len;
+	    seq_p = 0;
+	    dir = '+';
+
+	    /* Optimisation for single sequence only */
+	    if (xx->refresh_flags & ED_DISP_SEQ &&
+		!(xx->refresh_flags & ED_DISP_SEQS)) {
+		if (xx->refresh_seq != r[i].rec) {
+		    continue;
+		}
+	    }
+	
+	    /* Complement data on-the-fly */
+	    if ((s->len < 0) ^ r[i].comp) {
+		dir = '-';
+		s = dup_seq(s);
+		complement_seq_t(s);
+	    }
+
+	    left = s->left;
+	    right = s->right;
+
+	    memcpy(seq, s->seq, l);
+
+	    if (sp < xx->displayPos) {
+		seq_p += xx->displayPos - sp;
+		//seq   += xx->displayPos - sp;
+		//conf  += xx->displayPos - sp;
+		l     -= xx->displayPos - sp;
+		left  -= xx->displayPos - sp;
+		right -= xx->displayPos - sp;
+		sp = xx->displayPos;
+	    }
+	    if (l > xx->displayWidth - (sp-xx->displayPos))
+		l = xx->displayWidth - (sp-xx->displayPos);
+
+	    /* Sequence */
+	    if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ)) {
+		int p, p2;
+
+		for (p2 = sp - xx->displayPos, p = 0; p < l; p++, p2++) {
+		    char base;
+		    int qual;
+
+		    if (p+seq_p >= 0 && p+seq_p < ABS(s->len)) {
+			sequence_get_base(xx->io, &s, p+seq_p, &base, &qual,0);
+			//ink[p2].sh &= ~sh_bg;
 		    } else {
-			line[p2] = ' ';
+			base = ' ';
+			qual = 0;
 		    }
-		}
-
-		/* Quality values */
-		if (xx->ed->display_cutoffs || (p >= left-1 && p <= right-1)) {
-		    if (xx->ed->display_quality) {
-			int qbin = qual / 10;
-			if (qbin < 0) qbin = 0;
-			if (qbin > 9) qbin = 9;
-			ink[p2].sh |= sh_bg;
-			ink[p2].bg = xx->ed->qual_bg[qbin]->pixel;
-		    }
-		}
-
-		/* Highlight disagreements */
-		if (xx->ed->display_differences && line[p2] != ' ') {
-		    char ubase = xx->ed->display_differences_case
-			? base
-			: toupper(base);
-		    switch (xx->ed->display_differences) {
-		    case 1:
-			if (ubase == xx->displayedConsensus[p2])
-			    line[p2] = '.';
-			else if (qual < xx->ed->display_differences_qual)
-			    line[p2] = ':';
-			break;
-
-		    case 2:
-			if (ubase != xx->displayedConsensus[p2]) {
-			    ink[p2].sh |= sh_fg;
-			    if (qual >= xx->ed->display_differences_qual)
-				ink[p2].fg = xx->ed->diff2_fg->pixel;
-			    else
-				ink[p2].fg = xx->ed->diff1_fg->pixel;
+		    line[p2] = base;
+		
+		    /* Cutoffs */
+		    if (p < left-1 || p > right-1) {
+			if (xx->ed->display_cutoffs) {
+			    ink[p2].sh |= sh_light;
+			    //seq[p+seq_p] = tolower(seq[p+seq_p]);
+			} else {
+			    line[p2] = ' ';
 			}
-			break;
+		    }
 
-		    case 3:
-			if (ubase != xx->displayedConsensus[p2]) {
+		    /* Quality values */
+		    if (xx->ed->display_cutoffs ||
+			(p >= left-1 && p <= right-1)) {
+			if (xx->ed->display_quality) {
+			    int qbin = qual / 10;
+			    if (qbin < 0) qbin = 0;
+			    if (qbin > 9) qbin = 9;
 			    ink[p2].sh |= sh_bg;
-			    if (qual >= xx->ed->display_differences_qual)
-				ink[p2].bg = xx->ed->diff2_bg->pixel;
-			    else
-				ink[p2].bg = xx->ed->diff1_bg->pixel;
+			    ink[p2].bg = xx->ed->qual_bg[qbin]->pixel;
 			}
-			break;
+		    }
+
+		    /* Highlight disagreements */
+		    if (xx->ed->display_differences && line[p2] != ' ') {
+			char ubase = xx->ed->display_differences_case
+			    ? base
+			    : toupper(base);
+			switch (xx->ed->display_differences) {
+			case 1:
+			    if (ubase == xx->displayedConsensus[p2])
+				line[p2] = '.';
+			    else if (qual < xx->ed->display_differences_qual)
+				line[p2] = ':';
+			    break;
+
+			case 2:
+			    if (ubase != xx->displayedConsensus[p2]) {
+				ink[p2].sh |= sh_fg;
+				if (qual >= xx->ed->display_differences_qual)
+				    ink[p2].fg = xx->ed->diff2_fg->pixel;
+				else
+				    ink[p2].fg = xx->ed->diff1_fg->pixel;
+			    }
+			    break;
+
+			case 3:
+			    if (ubase != xx->displayedConsensus[p2]) {
+				ink[p2].sh |= sh_bg;
+				if (qual >= xx->ed->display_differences_qual)
+				    ink[p2].bg = xx->ed->diff2_bg->pixel;
+				else
+				    ink[p2].bg = xx->ed->diff1_bg->pixel;
+			    }
+			    break;
+			}
 		    }
 		}
 	    }
 
-	    XawSheetPutJazzyText(&xx->ed->sw, 0, j, xx->displayWidth,
-				 line, ink);
-	}
-
-	/* Name */
-	if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
-	    char name[1024];
-	    XawSheetInk ink[1024];
-	    int nl = s->name_len - xx->names_xPos;
-	    int ncol = xx->names->sw.columns;
+	    /* Name */
+	    if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
+		char name[1024];
+		XawSheetInk ink[1024];
+		int nl = s->name_len - xx->names_xPos;
+		int ncol = xx->names->sw.columns;
 	    
-	    memset(name, ' ', ncol);
-	    name[0] = dir;
-	    if (nl > 0)
-		memcpy(&name[1], s->name + xx->names_xPos, nl);
-	    if (xx->ed->display_mapping_quality) {
-		int i, qbin;
-		qbin = s->mapping_qual / 10;
-		if (qbin < 0) qbin = 0;
-		if (qbin > 9) qbin = 9;
-		for (i = 0; i < ncol && i < 1024; i++) {
-		    ink[i].sh = sh_bg;
-		    ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+		memset(name, ' ', ncol);
+		name[0] = dir;
+		if (nl > 0)
+		    memcpy(&name[1], s->name + xx->names_xPos, nl);
+		if (xx->ed->display_mapping_quality) {
+		    int i, qbin;
+		    qbin = s->mapping_qual / 10;
+		    if (qbin < 0) qbin = 0;
+		    if (qbin > 9) qbin = 9;
+		    for (i = 0; i < ncol && i < 1024; i++) {
+			ink[i].sh = sh_bg;
+			ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+		    }
+		    XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name,ink);
+		} else {
+		    XawSheetPutText(&xx->names->sw, 0, j, ncol, name);
 		}
-		XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name, ink);
-	    } else {
-		XawSheetPutText(&xx->names->sw, 0, j, ncol, name);
 	    }
+
+	    cache_decr(xx->io, sorig);
+
+	    if (s != sorig)
+		free(s);
+
+	    i++;
 	}
-
-	cache_decr(xx->io, sorig);
-
-	if (s != sorig)
-	    free(s);
+	
+	XawSheetPutJazzyText(&xx->ed->sw, 0, j, xx->displayWidth,
+			     line, ink);
     }
 
     /*
-     * Clear any blank region too.
+     * Clear any blank lines too.
      */
     if (xx->refresh_flags & ED_DISP_SEQS) {
 	char line[MAX_DISPLAY_WIDTH];
@@ -1100,7 +1156,6 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
     int y_pos = 0;
     int do_x = 0;
     int do_y = 0;
-    int nr;
 
     /* X position */
     if (!x_safe) {
@@ -1120,22 +1175,18 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 
     /* Y position */
     if (!y_safe && xx->cursor_type != GT_Contig) {
-	rangec_t *r;
 	int i;
 	int sheight = xx->displayHeight - xx->y_seq_end - xx->y_seq_start;
 	
-	/* Find out what's visible - cache this */
-	r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-				 xx->displayPos + xx->displayWidth, &nr);
-	qsort(r, nr, sizeof(*r), sort_range);
-	
-	for (i = 0; i < nr; i++) {
-	    if (r[i].rec == xx->cursor_rec) {
+	edview_visible_items(xx, xx->displayPos,
+			     xx->displayPos + xx->displayWidth);
+
+	for (i = 0; i < xx->nr; i++) {
+	    if (xx->r[i].rec == xx->cursor_rec) {
 		y_pos = i;
 		break;
 	    }
 	}
-	free(r);
 
 	/* If above, scroll so this is the first row */
 	if (y_pos < xx->displayYPos) {
@@ -1156,7 +1207,7 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 	ed_set_xslider_pos(xx, xx->displayPos);
 
     if (do_y)
-	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, nr);
+	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, xx->nr);
 
     if (do_x || do_y) {
 	xx->refresh_flags = ED_DISP_ALL;
@@ -1247,24 +1298,21 @@ int edSetCursorPos(edview *xx, int type, int rec, int pos) {
 
 
 int edCursorUp(edview *xx) {
-    int j, nr;
+    int j;
     int cpos = xx->cursor_apos;
-    rangec_t *r;
 
-    /* Find out what's visible - cache this*/
-    r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-			     xx->displayPos + xx->displayWidth, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
 
-    if (nr == 0)
+    if (xx->nr == 0)
 	return 0;
 
     /* Find the current sequence number */
     if (xx->cursor_type == GT_Contig) {
-	j = nr;
+	j = xx->nr;
     } else {
-	for (j = 0; j < nr; j++) {
-	    if (r[j].rec == xx->cursor_rec) {
+	for (j = 0; j < xx->nr; j++) {
+	    if (xx->r[j].rec == xx->cursor_rec) {
 		break;
 	    }
 	}
@@ -1272,10 +1320,10 @@ int edCursorUp(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j--; j >= 0; j--) {
-	if (r[j].start <= cpos && r[j].end >= cpos) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos) {
 	    xx->cursor_type = GT_Seq;
-	    xx->cursor_pos = cpos - r[j].start;
-	    xx->cursor_rec = r[j].rec;
+	    xx->cursor_pos = cpos - xx->r[j].start;
+	    xx->cursor_rec = xx->r[j].rec;
 	    break;
 	}
     }
@@ -1287,8 +1335,6 @@ int edCursorUp(edview *xx) {
 	xx->cursor_pos = cpos;
     }
 
-    free(r);
-
     if (!showCursor(xx, 1, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1298,16 +1344,13 @@ int edCursorUp(edview *xx) {
 }
 
 int edCursorDown(edview *xx) {
-    int j, nr;
+    int j;
     int cpos = xx->cursor_apos;
-    rangec_t *r;
 
-    /* Find out what's visible - cache this*/
-    r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-			     xx->displayPos + xx->displayWidth, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
 
-    if (nr == 0)
+    if (xx->nr == 0)
 	return 0;
 
     /* Find the current sequence number */
@@ -1315,32 +1358,30 @@ int edCursorDown(edview *xx) {
 	cpos = xx->cursor_pos;
 	j = -1;
     } else {
-	for (j = 0; j < nr; j++) {
-	    if (r[j].rec == xx->cursor_rec) {
-		cpos = r[j].start + xx->cursor_pos;
+	for (j = 0; j < xx->nr; j++) {
+	    if (xx->r[j].rec == xx->cursor_rec) {
+		cpos = xx->r[j].start + xx->cursor_pos;
 		break;
 	    }
 	}
     }
 
     /* Step up until we find something overlapping */
-    for (j++; j < nr; j++) {
-	if (r[j].start <= cpos && r[j].end >= cpos) {
+    for (j++; j < xx->nr; j++) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos) {
 	    xx->cursor_type = GT_Seq;
-	    xx->cursor_pos = cpos - r[j].start;
-	    xx->cursor_rec = r[j].rec;
+	    xx->cursor_pos = cpos - xx->r[j].start;
+	    xx->cursor_rec = xx->r[j].rec;
 	    break;
 	}
     }
 
     /* Otherwise we've hit the consensus */
-    if (j >= nr) {
+    if (j >= xx->nr) {
 	xx->cursor_type = GT_Contig;
 	xx->cursor_rec = xx->cnum;
 	xx->cursor_pos = cpos;
     }
-
-    free(r);
 
     if (!showCursor(xx, 1, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
@@ -1500,9 +1541,6 @@ int edContigEnd(edview *xx) {
  * The main editor redraw function
  */
 int edview_redraw(edview *xx) {
-    rangec_t *r;
-    int nr;
-
     if (!xx->ed || xx->editorState == StateDown)
 	return -1;
 
@@ -1522,21 +1560,19 @@ int edview_redraw(edview *xx) {
 #endif
 
     /* Find out what's visible */
-    /* FIXME: Cache this */
-    r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-			     xx->displayPos + xx->displayWidth, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
 
     /* Deal with ED_DISP_XSCROLL and ED_DISP_YSCROLL events */
     if (xx->refresh_flags & (ED_DISP_XSCROLL | ED_DISP_YSCROLL))
-	tk_redisplaySeqScroll(xx, r, nr);
+	tk_redisplaySeqScroll(xx, xx->r, xx->nr);
 
     /* Consensus emacs-style edit-status ----, -%%-, -**- */
     //tk_redisplaySeqEditStatus(xx);
 
     /* Redraw the consensus and/or numbers */
     if (xx->refresh_flags & ED_DISP_CONS) {
-	tk_redisplaySeqConsensus(xx, r, nr);
+	tk_redisplaySeqConsensus(xx, xx->r, xx->nr);
     }
     if (xx->refresh_flags & ED_DISP_RULER) {
 	tk_redisplaySeqNumbers(xx);
@@ -1545,12 +1581,12 @@ int edview_redraw(edview *xx) {
     /* Redraw the main sequences or names section */
     if (xx->refresh_flags & (ED_DISP_SEQS  | ED_DISP_SEQ |
 			     ED_DISP_NAMES | ED_DISP_NAME)) {
-	tk_redisplaySeqSequences(xx, r, nr);
+	tk_redisplaySeqSequences(xx, xx->r, xx->nr);
     }
 
     /* Editor cursor position */
     if (xx->refresh_flags & ED_DISP_CURSOR) {
-	tk_redisplayCursor(xx, r, nr);
+	tk_redisplayCursor(xx, xx->r, xx->nr);
     }
 
 #if 0
@@ -1567,8 +1603,6 @@ int edview_redraw(edview *xx) {
 
     if (inJoinMode(xx) && !(xx->refresh_flags & ED_DISP_NO_DIFFS))
 	tk_redisplaySeqDiffs(xx);
-
-    free(r);
 
 #if 0
     /* FIXME: only need to redraw here if major change => scrolling etc */
@@ -1591,8 +1625,7 @@ int edview_redraw(edview *xx) {
  *         -1 on failure (eg numbers, off screen, etc)
  */
 int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
-    rangec_t *r;
-    int nr, i, j;
+    int i, j;
     int type = -1;
 
     /* Special case - the reserve row numbers */
@@ -1606,23 +1639,21 @@ int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
 	return -1;
 
     /* A sequence, so find out what's visible */
-    r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-			     xx->displayPos + xx->displayWidth, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     for (j = xx->y_seq_start, i = xx->displayYPos;
-	 j < xx->displayHeight - xx->y_seq_end && i < nr;
+	 j < xx->displayHeight - xx->y_seq_end && i < xx->nr;
 	 i++, j++) {
 	if (j == row) {
-	    *rec = r[i].rec;
-	    *pos = col + xx->displayPos - r[i].start;
+	    *rec = xx->r[i].rec;
+	    *pos = col + xx->displayPos - xx->r[i].start;
 	    type = GT_Seq;
 	    break;
 	}
     }
 
-    free(r);
     return type;
 }
 
@@ -1652,9 +1683,10 @@ void edDisplayTrace(edview *xx) {
 	tman_shutdown_traces(xx, 2);
 
 	/* And display the new ones */
+	puts("FIXME: reuse existing cache of items");
 	r = contig_seqs_in_range(xx->io, &xx->contig,
-				 xx->cursor_apos, xx->cursor_apos, &nr);
-	qsort(r, nr, sizeof(*r), sort_range);
+				 xx->cursor_apos, xx->cursor_apos,
+				 CSIR_SORT_BY_X, &nr);
 
 	for (i = 0; i < nr; i++) {
 	    s = get_seq(xx->io, r[i].rec);
@@ -1665,6 +1697,7 @@ void edDisplayTrace(edview *xx) {
 			      sequence_get_name(&s),
 			      xx, r[i].rec, 0, 0);
 	}
+	free(r);
     }
 
     tman_reposition_traces(xx, xx->cursor_apos, 0);

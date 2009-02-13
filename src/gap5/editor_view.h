@@ -94,6 +94,11 @@ typedef struct _edview {
     struct _EdLink *link;
 
     int trace_lock;
+
+    /* Cached range query & Y position */
+    rangec_t *r;
+    int nr;
+    int r_start, r_end;
 } edview;
 
 typedef struct _EdLink {
