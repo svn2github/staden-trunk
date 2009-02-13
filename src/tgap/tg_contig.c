@@ -179,18 +179,15 @@ static int contig_insert_base2(GapIO *io, int bnum,
 		contig_insert_base2(io, bin->child[i], pos,
 				    MIN(ch->pos, ch->pos + ch->size-1),
 				    base, conf);
-		//break;
+	    /* All children to the right of this one need pos updating too */
+	    } else if (pos < MIN(ch->pos, ch->pos + ch->size-1)) {
+		ch = get_bin(io, bin->child[i]);
+		if (!(ch = cache_rw(io, ch)))
+		    return -1;
+
+		ch->pos++;
+		ch->flags |= BIN_BIN_UPDATED;
 	    }
-	}
-
-	/* All children to the right of this one need pos updating too */
-	if (i == 0 && bin->child[1-i]) {
-	    ch = get_bin(io, bin->child[1-i]);
-	    if (!(ch = cache_rw(io, ch)))
-		return -1;
-
-	    ch->pos++;
-	    ch->flags |= BIN_BIN_UPDATED;
 	}
     }
 
@@ -419,7 +416,7 @@ int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
  * This means when we have both ends visible within our range, we link them
  * together. When we don't we leave the pair information as unknown.
  */
-void pair_rangec(GapIO *io, rangec_t *r, int count) {
+static void pair_rangec(GapIO *io, rangec_t *r, int count) {
     int i;
     HacheTable *h;
     HacheIter *iter;
@@ -464,6 +461,67 @@ void pair_rangec(GapIO *io, rangec_t *r, int count) {
     HacheTableIterDestroy(iter);
     HacheTableDestroy(h, 0);
 }
+
+
+/* Sort comparison function for range_t; sort by ascending position */
+static int sort_range_by_x(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    return r1->start - r2->start;
+}
+
+
+/* Sort comparison function for range_t; sort by ascending position */
+static int sort_range_by_y(const void *v1, const void *v2) {
+    const rangec_t *r1 = (const rangec_t *)v1;
+    const rangec_t *r2 = (const rangec_t *)v2;
+    if (r1->y != r2->y)
+        return r1->y - r2->y;
+    return r1->start - r2->start;
+}
+
+
+/*
+ * Determines the Y position for a sequence to display in the contig editor.
+ * Returns 0 on success.
+ *        -1 on failure
+ */
+static int compute_ypos(rangec_t *r, int nr, int job) {
+    int i;
+
+    if (job & CSIR_ALLOCATE_Y_SINGLE) {
+	for (i = 0; i < nr; i++) {
+	    r[i].y = i;
+	}
+    } else {
+	/* CSIR_ALLOCATE_Y_MULTIPLE */
+	int *yend, j;
+	
+	if (NULL == (yend = (int *)malloc((nr+1) * sizeof(int))))
+	    return -1;
+	for (i = 0; i <= nr; i++) {
+	    yend[i] = -INT_MAX;
+	}
+
+	/*
+	 * O(N^2) in depth. Possibly want to keep an ordered list of the
+	 * line positions so we can find the next free line rapidly.
+	 */
+	for (i = 0; i < nr; i++) {
+	    for (j = 0; j < nr; j++) {
+		if (yend[j] < r[i].start && yend[j+1] < r[i].start) {
+		    r[i].y = j;
+		    yend[j] = r[i].end + 2;
+		    break;
+		}
+	    }
+	}
+	free(yend);
+    }
+
+    return 0;
+}
+
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
@@ -521,6 +579,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		(*results)[count].pair_end   = 0;
 
 		(*results)[count].flags = l->flags;
+		(*results)[count].y = 0;
 		count++;
 	    }
 	}
@@ -546,7 +605,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 }
 
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
-			       int *count) {
+			       int job, int *count) {
     rangec_t *r = NULL;
     int alloc = 0;
 
@@ -555,7 +614,17 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     //*count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
     //                               0, &r, &alloc, 0, 0);
 
-    pair_rangec(io, r, *count);
+    if (job & CSIR_PAIR)
+	pair_rangec(io, r, *count);
+
+    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	qsort(r, *count, sizeof(*r), sort_range_by_x);
+
+    if (job & CSIR_ALLOCATE_Y)
+	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+
+    if (job & CSIR_SORT_BY_Y)
+	qsort(r, *count, sizeof(*r), sort_range_by_y);
 
     return r;
 }
@@ -666,12 +735,6 @@ void contig_bin_dump(GapIO *io, int cnum) {
 /* ---------------------------------------------------------------------- */
 /* iterators on a contig to allow scanning back and forth */
 
-static int sort_range(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    return r1->start - r2->start;
-}
-
 /*
  * Populates a sequence iterator.
  * Returns 0 on success
@@ -713,9 +776,8 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     ci->cnum = cnum;
     ci->start = start;
     ci->end = end;
-    ci->r = contig_seqs_in_range(io, &c, start, end, &ci->nitems);
-    if (ci->r)
-	qsort(ci->r, ci->nitems, sizeof(*ci->r), sort_range);
+    ci->r = contig_seqs_in_range(io, &c, start, end,
+				 CSIR_SORT_BY_X, &ci->nitems);
     ci->index = 0;
     return 0;
 }
