@@ -319,7 +319,7 @@ proc yscroll_plot_set {w t args} {
 
 # The top-level redraw function. This works out what region is visible and
 # fires off the individual redraw functions registered.
-proc redraw_plot {w {track_types {}}} {
+proc redraw_plot {w {track_types {}} args} {
     global $w
     #parray $w
     
@@ -492,6 +492,25 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     global $w $t
     global max_template_display_width
 
+    if {![info exists ${t}(Init)]} {
+	set ${t}(Init) 1
+	set f [frame $w.controls]
+	set ${t}(YBySize) 0
+	set ${t}(Accurate) 0
+	set ${t}(YLog) 1
+	set ${t}(YScale) 20
+	checkbutton $f.ybs -text "Y by size" -variable ${t}(YBySize) \
+	    -command "redraw_plot $w seq_seqs"
+	checkbutton $f.acc -text "Slow but accurate" -variable ${t}(Accurate) \
+	    -command "redraw_plot $w seq_seqs"
+	checkbutton $f.log -text "Y-Log scale" -variable ${t}(YLog) \
+	    -command "redraw_plot $w seq_seqs"
+	scale $f.yscale -from 1 -to 100 -orient horiz \
+	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
+	pack $f.ybs $f.log $f.yscale $f.acc -side left
+	grid $f -row 0
+    }
+
     puts SEQ_SEQS_START,$y1..$y2
 
     set c    [set ${w}(contig)]
@@ -511,8 +530,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     if {[expr {$x2-$x1}] > $max_template_display_width} return
 
-    set reads [$c seqs_in_range [expr {int($x1)}] [expr {int($x2+0.999)}]]
-    puts "nreads between $x1..$x2=[llength $reads]"
+    set tm [time {set reads [$c seqs_in_range [expr {int($x1)}] [expr {int($x2+0.999)}]]}]
+    puts "nreads between $x1..$x2=[llength $reads] in $tm"
     puts SEQ_SEQS_DRAW_START
     #set reads [lrange $reads 0 10000]
     catch {unset done}
@@ -533,7 +552,13 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     # Benchmarked at 8487 read/seeks accurate and 3078 inaccurate on EMU,
     # which consists of lots of long and short insert sizes. It's less severe
     # with all-short.
-    set accurate 1
+    set accurate [set ${t}(Accurate)]
+
+    # ylength_view controls whether the y coordinate 
+    set ylength_view [set ${t}(YBySize)]
+
+    set yscale [set ${t}(YScale)]
+    set ylog   [set ${t}(YLog)]
 
     # Obtain the list of reads to plot and generate horizontal lines.
     # For now we have no X coordinates though
@@ -555,7 +580,11 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
 	if {!$rec2} {
 	    set line [list $xst1 $xen1 s $rec1]
-	    set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	    if {$ylength_view} {
+		set sz 0
+	    } else {
+		set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	    }
 	    lappend lines_sz($sz) $line
 	    continue
 	}
@@ -595,6 +624,14 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    # Temporary hack: only show long read-pairs
 	    #if {$en2 - $st1 < 10000} continue
 
+#	    set r1 [$io get_sequence $rec1]
+#	    set mq1 [$r1 get_mapping_qual]
+#	    $r1 delete
+#	    set r2 [$io get_sequence $rec2]
+#	    set mq2 [$r2 get_mapping_qual]
+#	    $r2 delete
+#	    set tcol t[expr {$mq1+$mq2}]
+	    
 	    # Consistency check
 	    set tcol t
 	    if {($st2 || $en2) && $cn1 == $cn2} {
@@ -637,7 +674,11 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    # Singleton - the easy case.
 	    set line [list $xst1 $xen1 s $rec1]
 	}
-	set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	if {$ylength_view} {
+	    set sz 0
+	} else {
+	    set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	}
 	if {$unordered && [info exists lines_sz($sz)]} {
 	    set p1 [lindex $line 0]
 	    set c 0
@@ -664,15 +705,27 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set ysep [expr {10*(11-log($x2-$x1))}]
     set ysep [expr {2+($ysep > 0 ? int($ysep) : 0)}]
     set ysep [expr {$ysep > 15 ? 15 : $ysep}]
+    set ysep [expr {$ysep * $yscale/20.0}]
 
     set ystart 0
     set ymax 0
     foreach sz [lsort -integer -decreasing [array names lines_sz]] {
-	# compute_max_y is about 30% of plotting time
-	set ymax [compute_max_y $w $lines_sz($sz)]
+	if {!$ylength_view} {
+	    # compute_max_y is about 30% of plotting time
+	    set ymax [compute_max_y $w $lines_sz($sz)]
+	}
 	foreach l $lines_sz($sz) {
-	    set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
+	    if {$ylength_view} {
+		if {$ylog} {
+		    set yp [expr {25+$yscale*log([lindex $l end-2]-[lindex $l 0])}]
+		} else {
+		    set yp [expr {25+0.05*$yscale*([lindex $l end-2]-[lindex $l 0])}]
+		}
+	    } else {
+		set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
+	    }
 	    foreach {x1 x2 st rec} $l {
+#		switch -glob $st 
 		switch $st {
 		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
@@ -686,12 +739,14 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    r {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 2 -fill red -tags rec_$rec}
-		    t {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 1 -fill grey60 -tags rec_$rec}
+		    t {
+			$d create line $x1 $yp $x2 $yp -capstyle round \
+			    -activewidth 4 -activefill white \
+			    -width 1 -fill grey60 -tags rec_$rec
+		    }
 		    T {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 2 -fill white -tags rec_$rec}
+			   -width 2 -fill orange -tags rec_$rec}
 		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 1 -fill grey60 -dash . -tags rec_$rec}
@@ -719,6 +774,7 @@ proc seq_seqs_bind {t w canvas} {
 
     # Find the current reading record number
     set tags [$canvas gettags current]
+    $canvas raise current
     set rec [lindex [regexp -inline {(^| )rec_([0-9]+)} $tags] 2]
     if {$rec == ""} return
 
@@ -728,7 +784,7 @@ proc seq_seqs_bind {t w canvas} {
     set c1 [$r1 get_contig]
     set p1 [$r1 get_position]
 
-    set info "[$r1 get_name] length [$r1 get_len]"
+    set info "[$r1 get_name] len [$r1 get_len] mq [$r1 get_mapping_qual]"
 
     set pair [$r1 get_pair]
     if {$pair} {
@@ -736,7 +792,7 @@ proc seq_seqs_bind {t w canvas} {
 	set c2 [$r2 get_contig]
 	set p2 [$r2 get_position]
 	set l2 [$r2 get_length]
-	append info ", pair [$r2 get_name] length $l2"
+	append info ", pair [$r2 get_name] len $l2 mq [$r2 get_mapping_qual]"
 	if {$c1 != $c2} {
 	    append info " (contig\#$c2)"
 	} else {
@@ -922,7 +978,7 @@ proc TemplateDisplay2 { io f id} {
 proc CreateTemplateDisplay {io cnum} {
     set pwin .read_depth[counter]
     1.5Dplot $pwin $io 800 600 $cnum
-    add_plot $pwin seq_depth 50  -bd 2 -relief raised
+#    add_plot $pwin seq_depth 50  -bd 2 -relief raised
     add_plot $pwin seq_seqs -200 -bd 2 -relief raised
     add_plot $pwin seq_ruler 50  -bd 2 -relief raised
 }
