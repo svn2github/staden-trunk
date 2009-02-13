@@ -2,13 +2,6 @@
 #include "tg_gio.h"
 #include "read_depth.h"
 
-/* Sort comparison function for range_t; sort by ascending position */
-static int sort_range(const void *v1, const void *v2) {
-    const rangec_t *r1 = (const rangec_t *)v1;
-    const rangec_t *r2 = (const rangec_t *)v2;
-    return r1->start - r2->start;
-}
-
 #define WIN_ITEMS 1024
 #define WIN_SZ2 7 /* half window size, +/- this value */
 
@@ -51,8 +44,7 @@ int *avg_sequence_depth(GapIO *io, int cnum, int start, int end,
 
     depth = xcalloc(len2+1, sizeof(*depth));
 
-    r = contig_seqs_in_range(io, &c, start, end, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
 
     for (i = 0; i < nr; i++) {
 	/* FIXME: care about clipped depth? */
@@ -108,8 +100,7 @@ min_max_avg_t *sequence_depth(GapIO *io, int cnum, int start, int end,
     depth = xcalloc(len+1, sizeof(*depth));
     mma_depth = xcalloc(len2+1, sizeof(*mma_depth));
 
-    r = contig_seqs_in_range(io, &c, start, end, &nr);
-    qsort(r, nr, sizeof(*r), sort_range);
+    r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
 
     /* Accumulate */
     for (i = 0; i < nr; i++) {

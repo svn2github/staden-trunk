@@ -224,7 +224,8 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	/* Cache elsewhere - ie last number of seqs visible? */
 	r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-				 xx->displayPos + xx->displayWidth, &nr);
+				 xx->displayPos + xx->displayWidth,
+				 CSIR_COUNT_ONLY, &nr);
 	free(r);
 
 	//type = Tk_GetScrollInfoObj(interp, objc, objv, &f1, &count);

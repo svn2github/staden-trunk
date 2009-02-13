@@ -109,7 +109,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 int calculate_consensus(GapIO *io, int contig, int start, int end,
 			consensus_t *cons) {
     int i;
-    
+
     /* Compute in small ranges */
     for (i = start; i < end; i += CONS_BLOCK_SIZE) {
 	int st = i;
@@ -184,7 +184,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     }
 
     /* Find sequences visible */
-    r = contig_seqs_in_range(io, &c, start, end, &nr);
+    r = contig_seqs_in_range(io, &c, start, end, 0, &nr);
 
     /* Accumulate... (computes the products via sum of logs) */
     for (i = 0; i < nr; i++) {
