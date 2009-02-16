@@ -286,21 +286,23 @@ static int tcl_contig_range(tcl_contig *tc, Tcl_Interp *interp,
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e4[12];
+	Tcl_Obj *ele, *e4[14];
 
-	e4[0] = Tcl_NewIntObj(r[i].start);
-	e4[1] = Tcl_NewIntObj(r[i].end);
-	e4[2] = Tcl_NewIntObj(r[i].rec);
-	e4[3] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
-	e4[4] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_END_MASK) ? 1 : 0);
-	e4[5] = Tcl_NewIntObj(r[i].pair_start);
-	e4[6] = Tcl_NewIntObj(r[i].pair_end);
-	e4[7] = Tcl_NewIntObj(r[i].pair_rec);
-	e4[8] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
-	e4[9] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
-	e4[10] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
-	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
-	ele = Tcl_NewListObj(12, e4);
+	e4[0]  = Tcl_NewIntObj(r[i].start);
+	e4[1]  = Tcl_NewIntObj(r[i].end);
+	e4[2]  = Tcl_NewIntObj(r[i].rec);
+	e4[3]  = Tcl_NewIntObj(r[i].mqual);
+	e4[4]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
+	e4[5]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_END_MASK) ? 1 : 0);
+	e4[6]  = Tcl_NewIntObj(r[i].pair_start);
+	e4[7]  = Tcl_NewIntObj(r[i].pair_end);
+	e4[8]  = Tcl_NewIntObj(r[i].pair_rec);
+	e4[9]  = Tcl_NewIntObj(r[i].pair_mqual);
+	e4[10] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
+	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
+	e4[12] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
+	e4[13] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
+	ele = Tcl_NewListObj(14, e4);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }

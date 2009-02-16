@@ -445,6 +445,7 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 
 	    r[i].pair_start = r[p].start;
 	    r[i].pair_end   = r[p].end;
+	    r[i].pair_mqual = r[p].mqual;
 	    if (r[p].flags &  GRANGE_FLAG_COMP1)
 		r[i].flags |= GRANGE_FLAG_COMP2;
 	    r[i].flags |= GRANGE_FLAG_CONTIG;
@@ -574,9 +575,11 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		    (*results)[count].end   = st;
 		}
 		(*results)[count].comp  = complement;
-		(*results)[count].pair_rec = l->pair_rec;
+		(*results)[count].mqual = l->mqual;
+		(*results)[count].pair_rec   = l->pair_rec;
 		(*results)[count].pair_start = 0;
 		(*results)[count].pair_end   = 0;
+		(*results)[count].pair_mqual = 0;
 
 		(*results)[count].flags = l->flags;
 		(*results)[count].y = 0;

@@ -362,6 +362,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    r.end   = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
 	    r.rec   = 0;
 	    r.pair_rec = 0;
+	    r.mqual = seq.mapping_qual;
 	    r.flags = GRANGE_FLAG_TYPE_SINGLE;
 	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
 	    r.flags|= seq.len > 0

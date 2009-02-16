@@ -148,6 +148,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	r.end = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
 	r.rec = 0;
 	r.pair_rec = 0;
+	r.mqual = seq.mapping_qual;
 	r.flags = GRANGE_FLAG_TYPE_SINGLE;
 
 	/* Get direction from name possibly */

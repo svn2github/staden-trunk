@@ -44,6 +44,7 @@ typedef struct {
     GCardinal start;
     GCardinal end;
     GCardinal rec; /* recno */
+    GCardinal mqual; /* mapping quality */
     GCardinal pair_rec; /* paired end data */
     GCardinal flags; /* see below */
 } GRange; /* An element of the bin->rng record */
@@ -127,8 +128,8 @@ typedef struct {
     int bin;
     int bin_index;    /* index to bin->rng array */
     int left, right;  /* clip left/right coordinates */
-    int parent_rec;   /* template record */
-    int parent_type;  /* GT_Template, GT_Ligation, etc */
+    int parent_rec;   /* template record or seq record if type == GT_Seq */
+    int parent_type;  /* GT_Seq, GT_Template, GT_Ligation, etc */
     int rec;          /* recno of this seq_t */
     unsigned int seq_tech:3;
     unsigned int flags:3;
@@ -233,18 +234,21 @@ typedef struct {
     int start;
     int end;
     int rec;
-    int comp; /* complemented y/n */
+    int mqual; /* Mapping qual */
+    int comp;  /* complemented y/n */
     int pair_rec;
     int pair_start;
     int pair_end;
+    int pair_mqual;
     int flags;
-    int y;    /* nominal display position, not stored on disc */
+    int y;     /* nominal display position, not stored on disc */
 } rangec_t;
 
 typedef struct {
     int start;
     int end;
     int rec;
+    int mqual; /* Mapping qual */
     int pair_rec;
     int flags;
 } range_t;
