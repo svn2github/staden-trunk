@@ -495,10 +495,13 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     if {![info exists ${t}(Init)]} {
 	set ${t}(Init) 1
 	set f [frame $w.controls]
-	set ${t}(YBySize) 0
-	set ${t}(Accurate) 0
+	set ${t}(YBySize) 1
+	set ${t}(Accurate) 1
 	set ${t}(YLog) 1
-	set ${t}(YScale) 20
+	set ${t}(YScale) 40
+	set ${t}(Simple) 0
+	checkbutton $f.mq -text "Show M.Qual" -variable ${t}(Simple) \
+	    -command "redraw_plot $w seq_seqs"
 	checkbutton $f.ybs -text "Y by size" -variable ${t}(YBySize) \
 	    -command "redraw_plot $w seq_seqs"
 	checkbutton $f.acc -text "Slow but accurate" -variable ${t}(Accurate) \
@@ -507,7 +510,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    -command "redraw_plot $w seq_seqs"
 	scale $f.yscale -from 1 -to 100 -orient horiz \
 	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
-	pack $f.ybs $f.log $f.yscale $f.acc -side left
+	pack $f.mq $f.ybs $f.log $f.yscale $f.acc -side left
 	grid $f -row 0
     }
 
@@ -559,12 +562,13 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     set yscale [set ${t}(YScale)]
     set ylog   [set ${t}(YLog)]
+    set simple [set ${t}(Simple)]
 
     # Obtain the list of reads to plot and generate horizontal lines.
     # For now we have no X coordinates though
     set cn1 [set ${w}(cnum)]
     foreach r $reads {
-	foreach {st1 en1 rec1 comp1 dir1 st2 en2 rec2 comp2 dir2 type same_c} \
+	foreach {st1 en1 rec1 mq1 comp1 dir1 st2 en2 rec2 mq2 comp2 dir2 type same_c} \
 	    $r {break}
 	if {[info exists done($rec1)]} {continue}
 
@@ -604,6 +608,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		set en2 [expr {$st2+abs([$r2 get_length])-1}]
 		set comp2 [expr {[$r2 get_length] >= 0 ? 0 : 1}] 
 		set dir2 [expr {$comp2 ? "f" : "r"}]
+		set mq2 [$r2 get_mapping_qual]
 		$r2 delete
 		set xst2 [x2c $w $st2]
 		set xen2 [x2c $w $en2]
@@ -623,15 +628,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
 	    # Temporary hack: only show long read-pairs
 	    #if {$en2 - $st1 < 10000} continue
-
-#	    set r1 [$io get_sequence $rec1]
-#	    set mq1 [$r1 get_mapping_qual]
-#	    $r1 delete
-#	    set r2 [$io get_sequence $rec2]
-#	    set mq2 [$r2 get_mapping_qual]
-#	    $r2 delete
-#	    set tcol t[expr {$mq1+$mq2}]
-	    
+    
 	    # Consistency check
 	    set tcol t
 	    if {($st2 || $en2) && $cn1 == $cn2} {
@@ -644,27 +641,41 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		}
 	    }
 
+	    if {$simple && $tcol == "t"} {
+		set tcol Y[expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
+	    }
+
 	    lappend line $xst1 $xen1 $dir1 $rec1
 	    set done($rec2) 1
 
 	    #if {$en2 >= $x1-100 && $st2 <= $x2+100 && $cn2 == $cn1} 
 	    if {$cn2 == $cn1} {
 		# Both in the same contig, so draw template line too.
-		if {$st2 >= $st1} {
-		    lappend line $xen1 $xst2 $tcol $rec2
-		    lappend line $xst2 $xen2 $dir2 $rec2
+		if {$simple} {
+		    if {$xen2 >= $xst1} {
+			set line [list $xst1 $xen2 $tcol $rec2]
+		    } else {
+			set line [list $xst2 $xen1 $tcol $rec2]
+		    }
 		} else {
-		    set unordered 1
-		    set line [concat $xst2 $xen2 $dir2 $rec2 \
-				  $xen2 $xst1 $tcol $rec2 $line]
+		    if {$st2 >= $st1} {
+			lappend line $xen1 $xst2 $tcol $rec2
+			lappend line $xst2 $xen2 $dir2 $rec2
+		    } else {
+			set unordered 1
+			set line [concat $xst2 $xen2 $dir2 $rec2 \
+				      $xen2 $xst1 $tcol $rec2 $line]
+		    }
 		}
 	    } else {
 		# Other end is invisible (either too far away or
 		# simply in another contig), so draw dotted line.
-		if {$dir1 == "f"} {
-		    lappend line $xen1 [expr {$xen1+20}] d $rec2
-		} else {
-		    set line [concat [expr {$xst1-20}] $xst1 d $rec2 $line]
+		if {!$simple} {
+		    if {$dir1 == "f"} {
+			lappend line $xen1 [expr {$xen1+20}] d $rec2
+		    } else {
+			set line [concat [expr {$xst1-20}] $xst1 d $rec2 $line]
+		    }
 		}
 	    }
 
@@ -699,7 +710,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set t1 [clock clicks]
     puts "  SEQS_PLOT_START $t1"
     set y 3
-    # Approx .3sec here
+
     set yoff [set ${t}(y1)]
 
     set ysep [expr {10*(11-log($x2-$x1))}]
@@ -716,15 +727,29 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	}
 	foreach l $lines_sz($sz) {
 	    if {$ylength_view} {
+		if {[catch {
 		if {$ylog} {
 		    set yp [expr {25+$yscale*log([lindex $l end-2]-[lindex $l 0])}]
 		} else {
 		    set yp [expr {25+0.05*$yscale*([lindex $l end-2]-[lindex $l 0])}]
 		}
+		} err]} {
+		    puts $err
+		    puts $l
+		}
 	    } else {
 		set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
 	    }
 	    foreach {x1 x2 st rec} $l {
+		if {[string match "Y*" $st]} {
+		    set col [expr {int(2*[string range $st 1 end])}]
+		    if {$col > 255} {set col 255}
+		    set tcol [format "\#%02x%02x%02x" $col $col $col]
+		    set st t
+		    #set yp [expr {$col*2}]
+		} else {
+		    set tcol grey60
+		}
 #		switch -glob $st 
 		switch $st {
 		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
@@ -742,7 +767,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    t {
 			$d create line $x1 $yp $x2 $yp -capstyle round \
 			    -activewidth 4 -activefill white \
-			    -width 1 -fill grey60 -tags rec_$rec
+			    -width 1 -fill $tcol -tags rec_$rec
 		    }
 		    T {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
