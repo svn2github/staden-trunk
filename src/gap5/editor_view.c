@@ -192,13 +192,18 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
  * Specifying %R<format> (or %<number>R<format>) requests the raw data to
  * be displayed. This only works for some fields. Eg %Rp displays 0 to 4, but
  * %p displays, for instance, "forward universal"
+ * Specying %*<format> indicates that the above formats should be applied to
+ * the other end of a read-pair instead of this read.
+ * The special format %** is used to terminate decoding of the format if
+ * the sequence is single-ended.
  */
 char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
     static char status_buf[8192]; /* NB: no bounds checking! */
     int i, j, l1, l2, raw;
     char *cp;
     GapIO *io = xx->io;
-    seq_t *s = get_seq(io, seq);
+    seq_t *s1 = get_seq(io, seq), *s2 = NULL, *s;
+    int pair = 0;
     
     for (i = j = 0; format[i]; i++) {
 	if (format[i] != '%') {
@@ -221,25 +226,41 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	    raw = 0;
 	}
 
+	if (format[i] == '*') {
+	    if (pair == 0)
+		pair = sequence_get_pair(io, s1);
+	    if (pair > 0 && !s2)
+		s2 = get_seq(io, pair);
+	    s = s2 ? s2 : s1;
+	    i++;
+	} else {
+	    s = s1;
+	}
+
 	switch(format[i]) {
 	case '%':
 	    status_buf[j++] = '%';
 	    break;
 
+	case '*':
+	    if (!s2)
+		goto bail_out;
+	    break;
+
 	case '#':
-	    add_number(status_buf, &j, l1, l2, seq);
+	    add_number(status_buf, &j, l1, l2, s->rec);
 	    break;
 
 	case 'n':
 	    if (raw)
-		add_number(status_buf, &j, l1, l2, seq);
+		add_number(status_buf, &j, l1, l2, s->rec);
 	    else
 		add_string(status_buf, &j, l1, l2, s->name);
 	    break;
 
 	case 'p': {
 	    int cnum, cpos;
-	    if (0 == sequence_get_position(xx->io, seq, &cnum, &cpos, NULL))
+	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL))
 		add_number(status_buf, &j, l1, l2, cpos);
 	    break;
 	}
@@ -382,6 +403,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	    status_buf[j++] = format[i];
 	}
     }
+ bail_out:
     status_buf[j] = 0;
 
     return status_buf;
@@ -859,19 +881,28 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		name[0] = dir;
 		if (nl > 0)
 		    memcpy(&name[1], s->name + xx->names_xPos, nl);
+		ink[0].sh = sh_bg;
+		if (r[i].pair_rec) {
+		    ink[0].bg = xx->ed->qual_bg[9]->pixel;
+		} else {
+		    ink[0].bg = xx->ed->qual_bg[0]->pixel;
+		}
 		if (xx->ed->display_mapping_quality) {
 		    int i, qbin;
 		    qbin = s->mapping_qual / 10;
 		    if (qbin < 0) qbin = 0;
 		    if (qbin > 9) qbin = 9;
-		    for (i = 0; i < ncol && i < 1024; i++) {
+		    for (i = 1; i < ncol && i < 1024; i++) {
 			ink[i].sh = sh_bg;
 			ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
 		    }
-		    XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name,ink);
 		} else {
-		    XawSheetPutText(&xx->names->sw, 0, j, ncol, name);
+		    int i;
+		    for (i = 1; i < ncol && i < 1024; i++) {
+			ink[i].sh = sh_default;
+		    }
 		}
+		XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name,ink);
 	    }
 
 	    cache_decr(xx->io, sorig);
