@@ -443,7 +443,7 @@ proc compute_max_y {w lines} {
     set n 1
     foreach l $lines {
 	# First and last coords represent the range of lines
-	set x1 [lindex $l 0]
+	set x1 [lindex $l 1]
 	set x2 [lindex $l end-2]
 
 	while {$x1 < [lindex $ymap [expr {$n%$ymax}]]} {
@@ -495,22 +495,31 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     if {![info exists ${t}(Init)]} {
 	set ${t}(Init) 1
 	set f [frame $w.controls]
-	set ${t}(YBySize) 1
 	set ${t}(Accurate) 1
 	set ${t}(YLog) 1
 	set ${t}(YScale) 40
 	set ${t}(Simple) 0
-	checkbutton $f.mq -text "Show M.Qual" -variable ${t}(Simple) \
-	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f.ybs -text "Y by size" -variable ${t}(YBySize) \
-	    -command "redraw_plot $w seq_seqs"
+	set ${t}(Y) "Template Size"
+	set ${t}(Colour) "Combined mapping quality"
+	tk_optionMenu $f.y ${t}(Y) \
+	    {Template Size} \
+	    Stacking \
+	    {Mapping quality}
+	tk_optionMenu $f.col ${t}(Colour) \
+	    {Combined mapping quality} \
+	    {Minimum mapping quality} \
+	    {Maximum mapping quality} \
+	    Reads
+	trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
+	trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
+	pack $f.y $f.col -side left
 	checkbutton $f.acc -text "Slow but accurate" -variable ${t}(Accurate) \
 	    -command "redraw_plot $w seq_seqs"
 	checkbutton $f.log -text "Y-Log scale" -variable ${t}(YLog) \
 	    -command "redraw_plot $w seq_seqs"
 	scale $f.yscale -from 1 -to 100 -orient horiz \
 	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
-	pack $f.mq $f.ybs $f.log $f.yscale $f.acc -side left
+	pack $f.log $f.yscale $f.acc -side left
 	grid $f -row 0
     }
 
@@ -558,11 +567,12 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set accurate [set ${t}(Accurate)]
 
     # ylength_view controls whether the y coordinate 
-    set ylength_view [set ${t}(YBySize)]
+    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
+		   [set ${t}(Y)]]
+    set cmode  [set ${t}(Colour)]
 
     set yscale [set ${t}(YScale)]
     set ylog   [set ${t}(YLog)]
-    set simple [set ${t}(Simple)]
 
     # Obtain the list of reads to plot and generate horizontal lines.
     # For now we have no X coordinates though
@@ -582,12 +592,17 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	#set xst1 [expr {($st1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
 	#set xen1 [expr {($en1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
 
+	set mq $mq1
 	if {!$rec2} {
-	    set line [list $xst1 $xen1 s $rec1]
-	    if {$ylength_view} {
+	    if {$ymode == 2} {
+		set line [list [expr {5*($mq1+0.1)}] $xst1 $xen1 s $rec1]
+	    } else {
+		set line [list [expr {$en1-$st1}] $xst1 $xen1 s $rec1]
+	    }
+	    if {$ymode != 1} {
 		set sz 0
 	    } else {
-		set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+		set sz [expr {int(10*log([lindex $line end-2]-[lindex $line 1]))}]
 	    }
 	    lappend lines_sz($sz) $line
 	    continue
@@ -641,41 +656,62 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		}
 	    }
 
-	    if {$simple && $tcol == "t"} {
-		set tcol Y[expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
+	    set mq [expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
+	    if {$tcol == "t"} {
+		switch $cmode {
+		    "Combined mapping quality" {
+			set tcol Y[expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
+		    }
+		    "Minimum mapping quality" {
+			set tcol Y[expr {$mq1 < $mq2 ? $mq1 : $mq2}]
+		    }
+		    "Maximum mapping quality" {
+			set tcol Y[expr {$mq1 > $mq2 ? $mq1 : $mq2}]
+		    }
+		    "Reads" {}
+		}
 	    }
 
-	    lappend line $xst1 $xen1 $dir1 $rec1
+	    lappend line [expr {$en1-$st1}] $xst1 $xen1 $dir1 $rec1
 	    set done($rec2) 1
 
 	    #if {$en2 >= $x1-100 && $st2 <= $x2+100 && $cn2 == $cn1} 
 	    if {$cn2 == $cn1} {
 		# Both in the same contig, so draw template line too.
-		if {$simple} {
+		if {$cmode != "Reads"} {
 		    if {$xen2 >= $xst1} {
-			set line [list $xst1 $xen2 $tcol $rec2]
+			set line [list [expr {$en2-$st1}] $xst1 $xen2 $tcol $rec2]
 		    } else {
-			set line [list $xst2 $xen1 $tcol $rec2]
+			set line [list [expr {$en1-$st2}] $xst2 $xen1 $tcol $rec2]
 		    }
 		} else {
 		    if {$st2 >= $st1} {
 			lappend line $xen1 $xst2 $tcol $rec2
 			lappend line $xst2 $xen2 $dir2 $rec2
+			set min $st1
+			set max $en2
 		    } else {
 			set unordered 1
-			set line [concat $xst2 $xen2 $dir2 $rec2 \
-				      $xen2 $xst1 $tcol $rec2 $line]
+			set line [linsert $line 1 $xst2 $xen2 $dir2 $rec2 \
+				      $xen2 $xst1 $tcol $rec2]
+			set min $st2
+			set max $en1
 		    }
+		    set line [lreplace $line 0 0 [expr {$max-$min}]]
 		}
 	    } else {
 		# Other end is invisible (either too far away or
 		# simply in another contig), so draw dotted line.
-		if {!$simple} {
+		if {$ymode == 1} {
 		    if {$dir1 == "f"} {
 			lappend line $xen1 [expr {$xen1+20}] d $rec2
 		    } else {
-			set line [concat [expr {$xst1-20}] $xst1 d $rec2 $line]
+			set line [concat 0 [expr {$xst1-20}] $xst1 d $rec2 \
+				      [lrange $line 1 end]]
+
 		    }
+		} else {
+		    set line [lreplace $line 3 3 D]
 		}
 	    }
 
@@ -683,18 +719,23 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    # left to right order
 	} else {
 	    # Singleton - the easy case.
-	    set line [list $xst1 $xen1 s $rec1]
+	    set line [list [expr {$en1-$st1}] $xst1 $xen1 s $rec1]
 	}
-	if {$ylength_view} {
+	
+	if {$ymode == 0} {
 	    set sz 0
+	} elseif {$ymode == 2} {
+	    set sz 0
+	    set line [lreplace $line 0 0 [expr {5*($mq+.1)}]]
 	} else {
-	    set sz [expr {int(log([lindex $line end-2]-[lindex $line 0]))}]
+	    set sz [expr {int(10*log([lindex $line end-2]-[lindex $line 1]))}]
 	}
+
 	if {$unordered && [info exists lines_sz($sz)]} {
-	    set p1 [lindex $line 0]
+	    set p1 [lindex $line 1]
 	    set c 0
 	    foreach l $lines_sz($sz) {
-		if {[lindex $l 0] > $p1} break;
+		if {[lindex $l 1] > $p1} break;
 		incr c
 	    }
 	    set lines_sz($sz) [linsert $lines_sz($sz) $c $line]
@@ -720,37 +761,32 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     set ystart 0
     set ymax 0
+    puts sz=[lsort -integer -decreasing [array names lines_sz]]
     foreach sz [lsort -integer -decreasing [array names lines_sz]] {
-	if {!$ylength_view} {
+	if {$ymode == 1} {
 	    # compute_max_y is about 30% of plotting time
 	    set ymax [compute_max_y $w $lines_sz($sz)]
 	}
 	foreach l $lines_sz($sz) {
-	    if {$ylength_view} {
-		if {[catch {
-		if {$ylog} {
-		    set yp [expr {25+$yscale*log([lindex $l end-2]-[lindex $l 0])}]
-		} else {
-		    set yp [expr {25+0.05*$yscale*([lindex $l end-2]-[lindex $l 0])}]
-		}
-		} err]} {
-		    puts $err
-		    puts $l
-		}
-	    } else {
+	    if {$ymode == 1} {
 		set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
+	    } else {
+		if {$ylog} {
+		    set yp [expr {25+log([lindex $l 0])*$yscale/2}]
+		} else {
+		    set yp [expr {25+[lindex $l 0]*$yscale/130.0}]
+		}
 	    }
-	    foreach {x1 x2 st rec} $l {
+	    foreach {x1 x2 st rec} [lrange $l 1 end] {
 		if {[string match "Y*" $st]} {
 		    set col [expr {int(2*[string range $st 1 end])}]
 		    if {$col > 255} {set col 255}
 		    set tcol [format "\#%02x%02x%02x" $col $col $col]
 		    set st t
-		    #set yp [expr {$col*2}]
 		} else {
 		    set tcol grey60
 		}
-#		switch -glob $st 
+
 		switch $st {
 		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
@@ -775,6 +811,9 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
 			   -width 1 -fill grey60 -dash . -tags rec_$rec}
+		    D {$d create line $x1 $yp $x2 $yp -capstyle round \
+			   -activewidth 4 -activefill white \
+			   -width 1 -fill purple -tags rec_$rec}
 		}
 	    }
 	    incr y
