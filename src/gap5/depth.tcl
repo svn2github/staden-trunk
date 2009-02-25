@@ -484,6 +484,21 @@ proc compute_max_y {w lines} {
     return $ymax
 }
 
+proc seq_seqs_canvas {w t} {
+    global $w $t
+
+    set d    [set ${t}(canvas)]
+    set rid  [set ${t}(R_id)]
+
+    if {![set ${t}(Canvas)]} {
+	$d move $rid -9999 -9999
+    } else {
+	$d move $rid 9999 9999
+    }
+
+    redraw_plot $w seq_seqs
+}
+
 #
 # Plots the sequence read depth.
 #
@@ -509,9 +524,14 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	set ${t}(Spread) 0
 
 	# Add raster component to canvas
-	#update idletasks
-	set r [raster $d.r -width [winfo width $d] -height [winfo height $d]]
+	update idletasks
+	puts 1:[winfo width $d]x[winfo height $d]
+	set r [raster $d.r \
+		   -width [winfo width $d] \
+		   -height [winfo height $d]\
+		   -bg skyblue3]
 	set rid [$d create window 0 0 -anchor nw -window $r]
+	set ${t}(Cavnas) 0
 	set ${t}(Raster) $r
 	set ${t}(R_id)   $rid
 	$d raise [set ${t}(R_id)]
@@ -520,7 +540,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 			     -cnum [set ${w}(cnum)] \
 			     -raster $r]
 	$r world_scroll 1 1 [set ${w}(length)] 10000
-	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] 3000
+	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
+	    [winfo height $d]
 	set ${t}(R_zoom) [set ${w}(xzoom)]
 
 	tk_optionMenu $f.y ${t}(Y) \
@@ -534,6 +555,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
 	trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
 	pack $f.y $f.col -side left
+	checkbutton $f.can -text "Canvas" -variable ${t}(Canvas) \
+	    -command "seq_seqs_canvas $w $t"
 	checkbutton $f.acc -text "Slow but accurate" -variable ${t}(Accurate) \
 	    -command "redraw_plot $w seq_seqs"
 	checkbutton $f.log -text "Y-Log scale" -variable ${t}(YLog) \
@@ -542,8 +565,10 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
 	scale $f.yspread -from 0 -to 250 -orient horiz \
 	    -variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
-	pack $f.log $f.yscale $f.yspread $f.acc -side left
+	pack $f.log $f.yscale $f.yspread $f.acc $f.can -side left
 	grid $f -row 0
+
+	$d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
     }
 
     set rid  [set ${t}(R_id)]
@@ -551,20 +576,16 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set td   [set ${t}(TDisp)]
 
     if {[info exists ${t}(width)]} {
-	$r configure -width [set ${t}(width)] -height [set ${t}(height)]
+	#$r configure -width [set ${t}(width)] -height [set ${t}(height)]
+	$r configure -width [winfo width $d] -height [winfo height $d]
     }
 
     if {[set ${t}(R_zoom)] != [set ${w}(xzoom)]} {
-	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] 3000
+	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] [winfo height $d]
 	set ${t}(R_zoom) [set ${w}(xzoom)]
     }
 
     puts SEQ_SEQS_START,$y1..$y2
-
-    if {![info exists ${w}(init)]} {
-	set ${w}(init) 1
-	$d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
-    }
 
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
@@ -580,19 +601,20 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		   [set ${t}(Y)]]
 
     # Forces a redraw too
-    $td configure \
-	-accuracy [set ${t}(Accurate)] \
-	-logy     [set ${t}(YLog)] \
-	-yzoom    [set ${t}(YScale)] \
-	-spread   [set ${t}(Spread)] \
-        -ymode    $ymode \
-	-cmode    $cmode
+    if {![set ${t}(Canvas)]} {
+	$td configure \
+	    -accuracy [set ${t}(Accurate)] \
+	    -logy     [set ${t}(YLog)] \
+	    -yzoom    [set ${t}(YScale)] \
+	    -spread   [set ${t}(Spread)] \
+	    -ymode    $ymode \
+	    -cmode    $cmode
+	return
+    }
 
-    #$td replot
-
-    return
-
-    $d delete all_plot
+    # ------------------------------------------------------------------
+    # Else slow canvas mode.
+    $d delete p
 
     if {[expr {$x2-$x1}] > $max_template_display_width} return
 
@@ -780,7 +802,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    set sz 0
 	} elseif {$ymode == 2} {
 	    set sz 0
-	    set line [lreplace $line 0 0 [expr {5*($mq+.1)}]]
+	    set line [lreplace $line 0 0 [expr {4*$mq}]]
 	} else {
 	    set sz [expr {int(10*log([lindex $line end-2]-[lindex $line 1]))}]
 	}
@@ -811,7 +833,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set ysep [expr {10*(11-log($x2-$x1))}]
     set ysep [expr {2+($ysep > 0 ? int($ysep) : 0)}]
     set ysep [expr {$ysep > 15 ? 15 : $ysep}]
-    set ysep [expr {$ysep * $yscale/20.0}]
+    set ysep [expr {$ysep * $yscale/60.0}]
 
     set ystart 0
     set ymax 0
@@ -825,10 +847,11 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    if {$ymode == 1} {
 		set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
 	    } else {
+		set yp [lindex $l 0]
 		if {$ylog} {
-		    set yp [expr {25+log([lindex $l 0])*$yscale/2}]
+		    set yp [expr {10+250*log($yp+1 < 0 ?1 :$yp+1)*$yscale/100}]
 		} else {
-		    set yp [expr {25+[lindex $l 0]*$yscale/130.0}]
+		    set yp [expr {10+$yp*$yscale/100.0}]
 		}
 	    }
 	    foreach {x1 x2 st rec} [lrange $l 1 end] {
@@ -844,30 +867,30 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		switch $st {
 		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 3 -fill yellow -tags rec_$rec}
+			   -width 3 -fill yellow -tags "rec_$rec p"}
 		    s {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 2 -fill black -tags rec_$rec}
+			   -width 2 -fill black -tags "rec_$rec p"}
 		    f {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 2 -fill blue -tags rec_$rec}
+			   -width 2 -fill blue -tags "rec_$rec p"}
 		    r {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 2 -fill red -tags rec_$rec}
+			   -width 2 -fill red -tags "rec_$rec p"}
 		    t {
 			$d create line $x1 $yp $x2 $yp -capstyle round \
 			    -activewidth 4 -activefill white \
-			    -width 1 -fill $tcol -tags rec_$rec
+			    -width 1 -fill $tcol -tags "rec_$rec p"
 		    }
 		    T {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 2 -fill orange -tags rec_$rec}
+			   -width 2 -fill orange -tags "rec_$rec p"}
 		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 1 -fill grey60 -dash . -tags rec_$rec}
+			   -width 1 -fill grey60 -dash . -tags "rec_$rec p"}
 		    D {$d create line $x1 $yp $x2 $yp -capstyle round \
 			   -activewidth 4 -activefill white \
-			   -width 1 -fill purple -tags rec_$rec}
+			   -width 1 -fill purple -tags "rec_$rec p"}
 		}
 	    }
 	    incr y
@@ -1097,7 +1120,7 @@ proc TemplateDisplay2 { io f id} {
 
 proc CreateTemplateDisplay {io cnum} {
     set pwin .read_depth[counter]
-    1.5Dplot $pwin $io 800 600 $cnum
+    1.5Dplot $pwin $io 900 600 $cnum
 #    add_plot $pwin seq_depth 50  -bd 2 -relief raised
     add_plot $pwin seq_seqs -200 -bd 2 -relief raised
     add_plot $pwin seq_ruler 50  -bd 2 -relief raised
