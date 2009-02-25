@@ -957,3 +957,4 @@ if {[tk windowingsystem] eq "x11"} {
 
     bind EdNames <Shift-4>         {%W xview scroll  -1 units}
     bind EdNames <Shift-5>         {%W xview scroll  +1 units}
+}
