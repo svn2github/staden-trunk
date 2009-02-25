@@ -31,6 +31,7 @@
 #include "read_depth.h"
 #include "fij.h"
 #include "break_contig.h"
+#include "template_display.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -943,6 +944,7 @@ int tcl_sequence_depth(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+
 /* FIXME: this entire function and below needs a complete rewrite */
 int
 tcl_find_internal_joins(ClientData clientData, Tcl_Interp *interp,
@@ -1264,6 +1266,7 @@ NewGap_Init(Tcl_Interp *interp) {
     //Ced_Init(interp);
     Editor_Init(interp);
     EdNames_Init(interp);
+    TDisp_Init(interp);
 
     return TCL_OK;
 
