@@ -60,7 +60,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     # X Zoom control
     scale $w.xzoom -from 1 -to 1000 -resolution 0.1 -orient horiz -label Zoom \
 	-command "set_zoom $w"
-    $w.xzoom set 16
+    $w.xzoom set 20
     grid columnconfigure $w 0 -weight 1
     grid $w.xzoom -row 998 -sticky nsew
     grid rowconfigure $w 998 -weight 0
@@ -359,7 +359,6 @@ proc redraw_plot {w {track_types {}} args} {
 	#parray $t
 
 	set d [set ${t}(canvas)]
-	$d delete all
 	set y1 [set ${t}(y1)]
 	set y2 [expr {[set ${t}(y1)]+[set ${t}(height)]}]
 	puts [time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
@@ -492,15 +491,38 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     global $w $t
     global max_template_display_width
 
+    set d    [set ${t}(canvas)]
+    set c    [set ${w}(contig)]
+    set wid  [set ${w}(width)]
+    set yz   [set ${w}(yzoom)]
+    set io   [set ${w}(io)]
+
     if {![info exists ${t}(Init)]} {
 	set ${t}(Init) 1
 	set f [frame $w.controls]
-	set ${t}(Accurate) 1
+	set ${t}(Accurate) 0
 	set ${t}(YLog) 1
-	set ${t}(YScale) 40
+	set ${t}(YScale) 20
 	set ${t}(Simple) 0
 	set ${t}(Y) "Template Size"
 	set ${t}(Colour) "Combined mapping quality"
+	set ${t}(Spread) 0
+
+	# Add raster component to canvas
+	#update idletasks
+	set r [raster $d.r -width [winfo width $d] -height [winfo height $d]]
+	set rid [$d create window 0 0 -anchor nw -window $r]
+	set ${t}(Raster) $r
+	set ${t}(R_id)   $rid
+	$d raise [set ${t}(R_id)]
+	set ${t}(TDisp) [g5::template_display \
+			     -io $io \
+			     -cnum [set ${w}(cnum)] \
+			     -raster $r]
+	$r world_scroll 1 1 [set ${w}(length)] 10000
+	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] 3000
+	set ${t}(R_zoom) [set ${w}(xzoom)]
+
 	tk_optionMenu $f.y ${t}(Y) \
 	    {Template Size} \
 	    Stacking \
@@ -508,8 +530,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	tk_optionMenu $f.col ${t}(Colour) \
 	    {Combined mapping quality} \
 	    {Minimum mapping quality} \
-	    {Maximum mapping quality} \
-	    Reads
+	    {Maximum mapping quality}
 	trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
 	trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
 	pack $f.y $f.col -side left
@@ -519,18 +540,27 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    -command "redraw_plot $w seq_seqs"
 	scale $f.yscale -from 1 -to 100 -orient horiz \
 	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
-	pack $f.log $f.yscale $f.acc -side left
+	scale $f.yspread -from 0 -to 250 -orient horiz \
+	    -variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
+	pack $f.log $f.yscale $f.yspread $f.acc -side left
 	grid $f -row 0
+    }
+
+    set rid  [set ${t}(R_id)]
+    set r    [set ${t}(Raster)]
+    set td   [set ${t}(TDisp)]
+
+    if {[info exists ${t}(width)]} {
+	$r configure -width [set ${t}(width)] -height [set ${t}(height)]
+    }
+
+    if {[set ${t}(R_zoom)] != [set ${w}(xzoom)]} {
+	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] 3000
+	set ${t}(R_zoom) [set ${w}(xzoom)]
     }
 
     puts SEQ_SEQS_START,$y1..$y2
 
-    set c    [set ${w}(contig)]
-    set d    [set ${t}(canvas)]
-    set wid  [set ${w}(width)]
-    set yz   [set ${w}(yzoom)]
-    set io   [set ${w}(io)]
-    
     if {![info exists ${w}(init)]} {
 	set ${w}(init) 1
 	$d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
@@ -539,6 +569,30 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
     set wid [expr {$wx2-$wx1+1}]
+    puts $x1..$x2,[expr {double($x1)/[set ${w}(length)]}]..[expr {double($x2)/[set ${w}(length)]}]
+    $r xview moveto [expr {double($x1)/[set ${w}(length)]}]
+    update idletasks 
+
+    set cmode [lsearch {{Combined mapping quality} \
+			    {Minimum mapping quality} \
+			    {Maximum mapping quality}} [set ${t}(Colour)]]
+    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
+		   [set ${t}(Y)]]
+
+    # Forces a redraw too
+    $td configure \
+	-accuracy [set ${t}(Accurate)] \
+	-logy     [set ${t}(YLog)] \
+	-yzoom    [set ${t}(YScale)] \
+	-spread   [set ${t}(Spread)] \
+        -ymode    $ymode \
+	-cmode    $cmode
+
+    #$td replot
+
+    return
+
+    $d delete all_plot
 
     if {[expr {$x2-$x1}] > $max_template_display_width} return
 
@@ -907,6 +961,8 @@ proc seq_ruler {w t x1 x2 y1 y2} {
     set h3 [expr {$y1+0.7*($y2-$y1)}]
     set h4 [expr {$y1+0.3*($y2-$y1)}]
     set h5 [expr {$y1+0.5*($y2-$y1)}]
+
+    $d delete all
 
     $d create rectangle $wx1 0 $wx2 $h -fill \#ffcccc
 
