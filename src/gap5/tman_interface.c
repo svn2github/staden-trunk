@@ -144,7 +144,7 @@ int tman_get_trace_position(edview *xx, tman_dc *dc, int pos, int *end) {
 
     seq = dc->derivative_seq ? dc->derivative_seq : dc->seq;
     
-    sequence_get_position(xx->io, seq, &cnum, &cpos, NULL);
+    sequence_get_position(xx->io, seq, &cnum, &cpos, NULL, NULL);
     s = (seq_t *)cache_search(xx->io, GT_Seq, seq);
     slen = sequence_get_len(&s);
     p = pos - cpos; /* relative position */

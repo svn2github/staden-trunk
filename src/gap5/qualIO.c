@@ -118,7 +118,7 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 
 	    if (NULL == (s = (seq_t *)cache_search(io, GT_Seq, gel_info->gel)))
 		return -1;
-	    if (-1 == sequence_get_position(io, gel_info->gel, &cnum, &pos, NULL))
+	    if (-1 == sequence_get_position(io, gel_info->gel, &cnum, &pos, NULL, NULL))
 		verror(ERR_FATAL, "database_info",
 		       "Cannot find bin for sequence %d", gel_info->gel);
 

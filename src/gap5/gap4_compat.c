@@ -66,7 +66,7 @@ int io_length(GapIO *io, int rnum) {
 int io_relpos(GapIO *io, int rnum) {
     int cnum, pos;
 
-    sequence_get_position(io, rnum, &cnum, &pos, NULL);
+    sequence_get_position(io, rnum, &cnum, &pos, NULL, NULL);
     return pos;
 }
 
@@ -81,7 +81,7 @@ int io_lnbr(GapIO *io, int rnum) {
     if (ci == NULL || rnum != last_rnum || io != last_io) {
 	int cnum, pos;
 
-	sequence_get_position(io, rnum, &cnum, &pos, NULL);
+	sequence_get_position(io, rnum, &cnum, &pos, NULL, NULL);
 
 	if (ci)
 	    contig_iter_del(ci);
@@ -122,7 +122,7 @@ int io_rnbr(GapIO *io, int rnum) {
 
     if (ci == NULL || rnum != last_rnum || io != last_io) {
 	int cnum, pos;
-	sequence_get_position(io, rnum, &cnum, &pos, NULL);
+	sequence_get_position(io, rnum, &cnum, &pos, NULL, NULL);
 
 	if (ci)
 	    contig_iter_del(ci);
