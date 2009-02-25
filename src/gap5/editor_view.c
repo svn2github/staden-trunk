@@ -260,7 +260,8 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 
 	case 'p': {
 	    int cnum, cpos;
-	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL))
+	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL,
+					   NULL))
 		add_number(status_buf, &j, l1, l2, cpos);
 	    break;
 	}
@@ -1298,7 +1299,8 @@ void edSetApos(edview *xx) {
 	xx->cursor_apos = xx->cursor_pos;
     } else {
 	int cnum, cpos;
-	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos, NULL);
+	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos, NULL,
+			      NULL);
 	xx->cursor_apos = cpos + xx->cursor_pos;
     }
 }
