@@ -638,9 +638,7 @@ if {$argc == 1} {
 
     #open database 
     set origtype $licence(type)
-    set io [g5::open_database -name "$db_name" -access $access]
-
-    if {"$io" == ""} {
+    if {[catch {set io [g5::open_database -name "$db_name" -access $access]}]} {
 	verror ERR_FATAL "Gap5" "ERROR: Couldn't open the database '$db_name' - exiting."
 	
 	exit
