@@ -42,7 +42,7 @@
  */
 
 /* Debugging aid */
-#define LOG_FILE
+//#define LOG_FILE
 static void log_file(FILE *fp, char *buf) {
     puts(buf);
 }
@@ -647,7 +647,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	    gc->abspos = gc->pos;
 	} else {
 	    int cnum, pos;
-	    sequence_get_position(io, gc->seq, &cnum, &pos, NULL);
+	    sequence_get_position(io, gc->seq, &cnum, &pos, NULL, NULL);
 	    gc->abspos = pos + gc->pos;
 	}
     }

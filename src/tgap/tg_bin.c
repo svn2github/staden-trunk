@@ -384,7 +384,7 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
     seq_t *s;
 
     s = (seq_t *)cache_search(io, GT_Seq, rec);
-    if (-1 == sequence_get_position(io, rec, &cnum, &pos, NULL))
+    if (-1 == sequence_get_position(io, rec, &cnum, &pos, NULL, NULL))
 	return -1;
 
     start = pos;
@@ -640,7 +640,7 @@ track_t *bin_recalculate_track(GapIO *io, bin_index_t *bin, int type) {
      * Bottom layer, so no point querying a child - we just create it
      * ourselves now.
      */
-    if (bpv <= 1) {
+    if (bpv <= 2) { /* FIXME: was 1, need 1 to stop aliasing? */
 	track_t *fake;
 	int rec, *depth;
 	fake = track_create_fake(type, bin->size);

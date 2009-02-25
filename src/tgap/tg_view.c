@@ -606,7 +606,7 @@ void curses_loop(GapIO *io, contig_t **cp, int xpos, int mode) {
 		    fflush(stdout);
 		} else {
 		    int c, x;
-		    sequence_get_position(io, n, &c, &x, NULL);
+		    sequence_get_position(io, n, &c, &x, NULL, NULL);
 		    /* FIXME: check c and *cp are same contig */
 		    xpos = x;
 		}

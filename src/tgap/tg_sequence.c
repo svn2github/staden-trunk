@@ -527,8 +527,8 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 /*
  * Finds the contig number and position of a sequence record number.
  */
-int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
-			  int *orient) {
+int sequence_get_position(GapIO *io, GRec snum, int *contig,
+			  int *start, int *end, int *orient) {
     bin_index_t *bin;
     int bnum, i;
     int offset1 = 0, offset2 = 0, found = 0;
@@ -572,8 +572,10 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig, int *pos,
 
     if (contig)
 	*contig = bin->parent;
-    if (pos)
-	*pos = offset1 < offset2 ? offset1 : offset2;
+    if (start)
+	*start = offset1 < offset2 ? offset1 : offset2;
+    if (end)
+	*end = offset1 > offset2 ? offset1 : offset2;
     if (orient)
 	*orient = comp;
 
@@ -632,7 +634,7 @@ int sequence_get_pair(GapIO *io, seq_t *s) {
 
 int sequence_orient_pos(GapIO *io, seq_t **s, int pos, int *comp) {
     int swapped;
-    sequence_get_position(io, (*s)->rec, NULL, NULL, &swapped);
+    sequence_get_position(io, (*s)->rec, NULL, NULL, NULL, &swapped);
 
     if (((*s)->len > 0) ^ swapped) {
 	swapped = 0;
