@@ -87,6 +87,7 @@ GAP5=\
 	$(GAP5BIN)/find_repeats.o\
 	$(GAP5BIN)/consensus.o\
 	$(GAP5BIN)/read_depth.o\
+	$(GAP5BIN)/template_display.o \
 	$(GAP5BIN)/fij.o\
 	$(GAP5BIN)/do_fij.o\
 	$(GAP5BIN)/break_contig.o \
