@@ -710,7 +710,11 @@ static void *io_database_connect(char *dbname, int ro) {
 	return NULL;
 
     io->gdb = g_open_database_(&dbname, 1, ro);
+    if (!io->gdb)
+	return NULL;
     io->client = g_connect_client_(io->gdb, 0, G_LOCK_EX, &io->mode);
+    if (io->client == -1)
+	return NULL;
     
     //g_lock_file_N_(io->gdb, io->client, 0);
 
