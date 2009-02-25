@@ -242,6 +242,7 @@ typedef struct {
     int pair_mqual;
     int flags;
     int y;     /* nominal display position, not stored on disc */
+    int pair_ind; /* -1 if not found, or index into array of rangec_t */
 } rangec_t;
 
 typedef struct {

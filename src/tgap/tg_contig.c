@@ -443,6 +443,8 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 	    p = pair->data.i;
 	    assert(p < count && p >= 0);
 
+	    r[i].pair_ind = p;
+	    r[p].pair_ind = i;
 	    r[i].pair_start = r[p].start;
 	    r[i].pair_end   = r[p].end;
 	    r[i].pair_mqual = r[p].mqual;
@@ -455,6 +457,8 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 		r[i].flags |= GRANGE_FLAG_PEND_FWD;
 	    else
 		r[i].flags |= GRANGE_FLAG_PEND_REV;
+	} else {
+	    r[i].pair_ind = -1;
 	}
     }
 
