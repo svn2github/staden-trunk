@@ -1,7 +1,10 @@
 #ifndef MAQMAP_H_
 #define MAQMAP_H_
 
-#define MAX_READLEN 64
+//#define MAX_READLEN 128
+//#define MAX_READLEN 64
+
+
 #define MAX_NAMELEN 36
 
 #define MAQMAP_FORMAT_OLD 0
@@ -37,22 +40,28 @@ typedef unsigned long long bit64_t;
  */
 typedef struct
 {
-	bit8_t seq[MAX_READLEN]; /* the last base is the single-end mapping quality. */
+	bit8_t seq[64]; /* the last base is the single-end mapping quality. */
 	bit8_t size, map_qual, i1, i2, c[2], flag, alt_qual;
 	bit32_t seqid, pos;
 	int dist;
 	char name[MAX_NAMELEN];
-} maqmap1_t;
+} maqmap64_t;
+
+typedef struct
+{
+	bit8_t seq[128]; /* the last base is the single-end mapping quality. */
+	bit8_t size, map_qual, i1, i2, c[2], flag, alt_qual;
+	bit32_t seqid, pos;
+	int dist;
+	char name[MAX_NAMELEN];
+} maqmap128_t;
 
 typedef struct
 {
 	int format, n_ref;
 	char **ref_name;
 	bit64_t n_mapped_reads;
-	maqmap1_t *mapped_reads;
 } maqmap_t;
-
-#define maqmap_read1(fp, m1) gzread((fp), (m1), sizeof(maqmap1_t))
 
 #ifdef __cplusplus
 extern "C" {
@@ -61,6 +70,8 @@ extern "C" {
 	void maq_delete_maqmap(maqmap_t *mm);
 	void maqmap_write_header(gzFile fp, const maqmap_t *mm);
 	maqmap_t *maqmap_read_header(gzFile fp);
+        int maq_detect_size(gzFile fp);
+
 #ifdef __cplusplus
 }
 #endif

@@ -17,7 +17,10 @@ typedef struct {
 } pair_loc_t;
 
 /* lh3: an analogy of parse_line() */
-static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
+static int parse_maqmap_aux(seq_t *s,
+			    const int m_sz,
+			    const maqmap128_t *m,
+			    int k)
 {
     int i, sz;
 
@@ -43,7 +46,7 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
     s->seq = s->alignment + s->alignment_len+1;
     s->conf = s->seq+m->size;
     //s->mapping_qual = m->map_qual;
-    s->mapping_qual = m->seq[MAX_READLEN-1];
+    s->mapping_qual = m->seq[m_sz-1];
 
     /* fill seq_t::seq && seq_t::conf */
     strcpy(s->name, m->name); /* lh3: read name */
@@ -87,16 +90,19 @@ static int parse_maqmap_aux(seq_t *s, const maqmap1_t *m, int k)
  * sequence names) and points them at each other.
  */
 int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
-		 int no_tree, int pair_reads, int merge_contigs)
+		 int no_tree, int pair_reads, int merge_contigs,
+		 int long_format)
 {
     gzFile dat_fp;
     maqmap_t *mm;
-    maqmap1_t m;
+    maqmap64_t m64;
+    maqmap128_t m128;
     int k = 0, j = 0;
     int curr_contig = -1;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
     char tname[1024];
+    int sz;
 
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
     assert(dat_fp = gzopen(dat_fn, "r"));
@@ -108,7 +114,17 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
     }
 
-    while (gzread(dat_fp, &m, sizeof(maqmap1_t))) {
+    if (long_format) {
+	sz = 128;
+    } else {
+	sz = maq_detect_size(dat_fp);
+	printf("Auto-detected maq sequence size as %d.\n", sz);
+	if (sz == -1)
+	    return -1;
+    }
+
+    while ((sz == 64 && gzread(dat_fp, &m64, sizeof(maqmap64_t)))
+	   || gzread(dat_fp, &m128, sizeof(maqmap128_t))) {
 	seq_t seq;
 	range_t r, *r_out;
 	int recno;
@@ -116,22 +132,40 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	HacheItem *hi;
 	int paired;
 
-	parse_maqmap_aux(&seq, &m, k++);
+	/* Convert m64 to m128 if needed */
+	if (sz == 64) {
+	    memcpy(m128.seq, m64.seq, 64);
+	    m128.seq[127] = m64.seq[63];
+	    m128.size     = m64.size;
+	    m128.map_qual = m64.map_qual;
+	    m128.i1	  = m64.i1;
+	    m128.i2	  = m64.i2;
+	    m128.c[0]	  = m64.c[0];
+	    m128.c[1]	  = m64.c[1];
+	    m128.flag	  = m64.flag;
+	    m128.alt_qual = m64.alt_qual;
+	    m128.seqid	  = m64.seqid;
+	    m128.pos	  = m64.pos;
+	    m128.dist	  = m64.dist;
+	    memcpy(m128.name, m64.name, MAX_NAMELEN);
+	}
+
+	parse_maqmap_aux(&seq, sz, &m128, k++);
 
 	/* Create new contig if required */
-	if (m.seqid != curr_contig) {
+	if (m128.seqid != curr_contig) {
 	    if (c) {
 		cache_decr(io, c);
 	    }
 	    if (!merge_contigs ||
-		m.seqid >= mm->n_ref ||
-		!mm->ref_name[m.seqid] ||
-		(NULL == (c = find_contig_by_name(io, mm->ref_name[m.seqid])))) {
+		m128.seqid >= mm->n_ref ||
+		!mm->ref_name[m128.seqid] ||
+		(NULL == (c = find_contig_by_name(io, mm->ref_name[m128.seqid])))) {
 		static int cnum=1;
 		char name[1024];
-
-		if (m.seqid < mm->n_ref && mm->ref_name[m.seqid]) {
-		    strcpy(name, mm->ref_name[m.seqid]);
+		
+		if (m128.seqid < mm->n_ref && mm->ref_name[m128.seqid]) {
+		    strcpy(name, mm->ref_name[m128.seqid]);
 		} else {
 		    sprintf(name, "Contig=%d", cnum++);
 		}
@@ -139,8 +173,8 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 		contig_index_update(io, name, strlen(name), c->rec);
 	    }
 	    cache_incr(io, c);
-	    curr_contig = m.seqid;
-	    fprintf(stderr, "++ Processing contig %d\n", m.seqid);
+	    curr_contig = m128.seqid;
+	    fprintf(stderr, "++ Processing contig %d\n", m128.seqid);
 	}
 
 	/* Create range */

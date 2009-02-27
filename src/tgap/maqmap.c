@@ -9,6 +9,7 @@ maqmap_t *maq_new_maqmap(void)
 	mm->format = MAQMAP_FORMAT_NEW;
 	return mm;
 }
+
 void maq_delete_maqmap(maqmap_t *mm)
 {
 	int i;
@@ -16,21 +17,9 @@ void maq_delete_maqmap(maqmap_t *mm)
 	for (i = 0; i < mm->n_ref; ++i)
 		free(mm->ref_name[i]);
 	free(mm->ref_name);
-	free(mm->mapped_reads);
 	free(mm);
 }
-void maqmap_write_header(gzFile fp, const maqmap_t *mm)
-{
-	int i, len;
-	gzwrite(fp, &mm->format, sizeof(int));
-	gzwrite(fp, &mm->n_ref, sizeof(int));
-	for (i = 0; i != mm->n_ref; ++i) {
-		len = strlen(mm->ref_name[i]) + 1;
-		gzwrite(fp, &len, sizeof(int));
-		gzwrite(fp, mm->ref_name[i], len);
-	}
-	gzwrite(fp, &mm->n_mapped_reads, sizeof(bit64_t));
-}
+
 maqmap_t *maqmap_read_header(gzFile fp)
 {
 	maqmap_t *mm;
@@ -56,41 +45,33 @@ maqmap_t *maqmap_read_header(gzFile fp)
 	return mm;
 }
 
-/* mapview */
+/*
+ * Auto detects size to distinguish between short and long maq variants
+ * Returns 64 for short
+ *         128 for long
+ *         -1 for error
+ */
+int maq_detect_size(gzFile fp) {
+    z_off_t curr = gztell(fp);
+    maqmap64_t m;
+    int i;
 
-static void mapview_core(FILE *fpout, gzFile fpin)
-{
-	bit64_t i, j;
-	maqmap_t *m = maqmap_read_header(fpin);
-	for (i = 0; i != m->n_mapped_reads; ++i) {
-		maqmap1_t *m1, mm1;
-		m1 = &mm1;
-		maqmap_read1(fpin, m1);
-		fprintf(fpout, "%s\t%s\t%d\t%c\t%d\t%u\t%d\t%d\t%d\t%d\t%d\t%d\t",
-				m1->name, m->ref_name[m1->seqid], (m1->pos>>1) + 1,
-				(m1->pos&1)? '-' : '+', m1->dist, m1->flag, m1->map_qual, m1->seq[MAX_READLEN-1],
-				m1->alt_qual, m1->i1>>5, m1->i2>>5, m1->size);
-		for (j = 0; j != m1->size; ++j) {
-			if (m1->seq[j] == 0) fputc('n', fpout);
-			else if ((m1->seq[j]&0x3f) < 27) fputc("acgt"[m1->seq[j]>>6&3], fpout);
-			else fputc("ACGT"[m1->seq[j]>>6&3], fpout);
-		}
-		fputc('\t', fpout);
-		for (j = 0; j != m1->size; ++j)
-			fputc((m1->seq[j]&0x3f) + 33, fpout);
-		fputc('\n', fpout);
-	}
-	maq_delete_maqmap(m);
-}
+    if (gzread(fp, &m, sizeof(maqmap64_t)) == -1)
+	return -1;
 
-int ma_mapview(int argc, char *argv[])
-{
-	if (argc == 1) {
-		fprintf(stderr, "Usage: maq mapview <in.map>\n");
-		return 1;
-	}
-	gzFile fp = (strcmp(argv[optind], "-") == 0)? gzdopen(STDIN_FILENO, "r") : gzopen(argv[optind], "r");
-	mapview_core(stdout, fp);
-	gzclose(fp);
-	return 0;
+    gzseek(fp, curr, SEEK_SET);
+
+    if (m.size > 64)
+	return 128;
+    if (m.size <= 0)
+	return 128;
+
+    for (i = 0; i < MAX_NAMELEN; i++) {
+	if (!m.name[i])
+	    break;
+	if (!isprint(m.name[i]))
+	    return 128;
+    }
+
+    return 64;
 }

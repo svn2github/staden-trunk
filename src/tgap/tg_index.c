@@ -380,6 +380,7 @@ void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");
+    fprintf(stderr, "      -M			Input is MAQ-long format (off)\n");
     //    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -B			Input is BAF format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together\n");
@@ -399,7 +400,7 @@ int main(int argc, char **argv) {
     printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBThAmo:pn")) != -1) {
+    while ((opt = getopt(argc, argv, "aBThAmMo:pn")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -410,6 +411,7 @@ int main(int argc, char **argv) {
 	    break;
 
 	case 'm':
+	case 'M':
 	case 'A':
 	case 'B':
 	    fmt = opt;
@@ -457,8 +459,9 @@ int main(int argc, char **argv) {
     while (optind < argc) {
 	switch (fmt) {
 	case 'm':
+	case 'M':
 	    parse_maqmap(io, max_size, argv[optind++], no_tree, pair_reads,
-			 merge_contigs);
+			 merge_contigs, fmt == 'M');
 	    break;
 #if 0
 	case 'A':
