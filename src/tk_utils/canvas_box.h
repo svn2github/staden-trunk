@@ -42,6 +42,23 @@ typedef struct plotrec {
     char arrow[6];      /* arrow type: none, first, last, both */
 } PlotRec;
 
+/* 'Double' version of Line */
+typedef struct dline {
+    double x1;
+    double x2;
+    double y1;
+    double y2;
+} DLine;
+
+/* 'Double' version of PlotRec */
+typedef struct dplotrec {
+    DLine l;		/* line structure */
+    int num;		/* index number */
+    char *type;	        /* line tags */
+    char *colour;	/* display colour */
+    char arrow[6];      /* arrow type: none, first, last, both */
+} DPlotRec;
+
 typedef struct coffset {
     int offset;
     int gap;
