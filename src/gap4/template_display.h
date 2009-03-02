@@ -87,7 +87,7 @@ typedef struct {
     WorldPtr *world;
     CanvasPtr *canvas;
     StackPtr *zoom;
-    PlotRec *readings;
+    DPlotRec *readings;
     int num_readings;
     PlotRec *ruler_coord;
     template_c **tarr;
@@ -191,6 +191,9 @@ void refresh_contig_order(Tcl_Interp *interp, GapIO *io, int template_id);
 
 void plot_lines(Tcl_Interp *interp, PlotRec *array, int num, char *win_name,
 		int line_width);
+
+void plot_dlines(Tcl_Interp *interp, DPlotRec *array, int num, char *win_name,
+		 int line_width);
 
 int template_find_left_position(GapIO *io, int *contig_array, int num_contigs,
 				c_offset *contig_offset, double wx);

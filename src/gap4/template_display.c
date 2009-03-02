@@ -117,7 +117,7 @@ CalcYDepth(int num,		                                       /* in */
 } /* end CalcYDepth */
 
 void CalcYDepthTemplate(int num,	                               /* in */
-			PlotRec **PArray,	                  /* in, out */
+			DPlotRec **PArray,	                  /* in, out */
 			int start_depth,                               /* in */
 			int max_depth,	                               /* in */
 			int *num_levels)	                      /* out */
@@ -182,7 +182,7 @@ void CalcYDepthTemplate(int num,	                               /* in */
  * calculate the y coords for each line segment
 */
 void CalcTemplateYCoords(int num,	                               /* in */
-			 PlotRec *PArray,                         /* in, out */
+			 DPlotRec *PArray,                        /* in, out */
 			 int depth,
 			 int height)                                   /* in */
 {
@@ -197,13 +197,13 @@ void CalcTemplateYCoords(int num,	                               /* in */
 
     for (i = 0; i < num; i++) {
 #ifdef DEBUG
-	printf("depth %d yincr %f y1 %d",
+	printf("depth %d yincr %f y1 %f",
 	       depth, yincr, PArray[i].l.y1);
 #endif
 	PArray[i].l.y1 = height - (yincr * PArray[i].l.y1);
 	PArray[i].l.y2 = height - (yincr * PArray[i].l.y2);
 #ifdef DEBUG
-	printf(" y2 %d \n", PArray[i].l.y1);
+	printf(" y2 %f \n", PArray[i].l.y1);
 #endif
     } /* end for */
 } /* end CalcYCoords */
@@ -220,7 +220,7 @@ void
 CalcReadingYDepth(GapIO *io,                                           /* in */
 		  int *contig_array,
 		  int num_contigs,
-		  PlotRec PArray[],	                          /* in, out */
+		  DPlotRec PArray[],	                          /* in, out */
 		  int *num_levels)	                              /* out */
 {
     int i, c;			                                  /* counter */
@@ -284,8 +284,8 @@ void
 CalcReadingYCoords(GapIO *io,                                          /* in */
 		   int *contig_array,                                  /* in */
 		   int num_contigs,
-		   PlotRec *RArray,	                               /* in */
-		   PlotRec *ReadArray,	                              /* out */
+		   DPlotRec *RArray,	                               /* in */
+		   DPlotRec *ReadArray,	                              /* out */
 		   int depth,
 		   int height,
 		   int *num_readings)                                 /* out */
@@ -1014,7 +1014,7 @@ CalcContigOffsets(GapIO *io,
 
 void
 templatePosition(template_c *t,
-		 PlotRec *TArray,
+		 DPlotRec *TArray,
 		 int t_num,
 		 int cnt,
 		 int c_num,
@@ -1023,10 +1023,10 @@ templatePosition(template_c *t,
 		 int end,
 		 int *min_x1,
 		 int *max_x2,
-		 PlotRec **TArray1, /* out */
-		 PlotRec **TArray2, /* out */
-		 int *cnt1,         /* out */
-		 int *cnt2)         /* out */
+		 DPlotRec **TArray1, /* out */
+		 DPlotRec **TArray2, /* out */
+		 int *cnt1,          /* out */
+		 int *cnt2)          /* out */
 
 {
     char *colour;
@@ -1157,7 +1157,7 @@ getStatus(template_c *t)
 }
 
 int
-comparePlotRec(PlotRec **r1, PlotRec **r2)
+comparePlotRec(DPlotRec **r1, DPlotRec **r2)
 {
     if ((*r1)->l.x1 < (*r2)->l.x1)
 	return (-1);
@@ -1185,11 +1185,11 @@ CalcTemplates(GapIO *io,	                                      /*  in */
 	      c_offset *contig_offset,
 	      int *contig_array,
 	      int num_contigs,	                                      /*  in */
-	      template_d *t_changes,                                   /* in */
-	      template_c **tarr,                                   /* out */
-	      PlotRec *TArray,	                                      /* out */
-	      PlotRec **TArray1,                                      /* out */
-	      PlotRec **TArray2,                                      /* out */
+	      template_d *t_changes,                                  /*  in */
+	      template_c **tarr,                                      /* out */
+	      DPlotRec *TArray,	                                      /* out */
+	      DPlotRec **TArray1,                                     /* out */
+	      DPlotRec **TArray2,                                     /* out */
 	      int *num_templates,                                     /* out */
 	      int *min_x1,	                                      /* out */
 	      int *max_x2,	                                      /* out */
@@ -1382,10 +1382,10 @@ CalcTemplates(GapIO *io,	                                      /*  in */
 
     *num_templates = cnt;
 
-    qsort((void *) TArray1, cnt1, sizeof(PlotRec*),
+    qsort((void *) TArray1, cnt1, sizeof(DPlotRec*),
 	  (int (*)(const void *, const void *))comparePlotRec);
 
-    qsort((void *) TArray2, cnt2, sizeof(PlotRec*),
+    qsort((void *) TArray2, cnt2, sizeof(DPlotRec*),
 	  (int (*)(const void *, const void *))comparePlotRec);
 
     max_depth = Ntemplates(io)+1;
@@ -1410,9 +1410,9 @@ CalcTemplates(GapIO *io,	                                      /*  in */
 void
 FindReadingYCoords(GapIO *io,	                                       /* in */
 		   template_c **tarr,
-		   PlotRec *TArray,                                   /* in */
-		   PlotRec *RArray,                                   /* in */
-		   PlotRec *ReadArray,                                /* out */
+		   DPlotRec *TArray,                                  /* in */
+		   DPlotRec *RArray,                                  /* in */
+		   DPlotRec *ReadArray,                               /* out */
 		   int *num_readings,                                 /* out */
 		   int num_templates)                                  /* in */
 {
@@ -1469,7 +1469,7 @@ CalcReadings(GapIO *io,		                                       /* in */
 	     int not_single,
 	     int read_pairs,
 	     int span_read_pairs,
-	     PlotRec *RArray,	                                      /* out */
+	     DPlotRec *RArray,	                                      /* out */
 	     int *max_x2,	                                      /* out */
 	     int *min_x1)	                                      /* out */
 {
@@ -1513,8 +1513,13 @@ CalcReadings(GapIO *io,		                                       /* in */
 	  continue;
 	}
 
-	CalcXCoords(reading.position + offset, reading.sequence_length,
-		    &RArray[i].l.x1, &RArray[i].l.x2);
+	{
+	    int tx1, tx2;
+	    CalcXCoords(reading.position + offset, reading.sequence_length,
+			&tx1, &tx2);
+	    RArray[i].l.x1 = tx1;
+	    RArray[i].l.x2 = tx2;
+	}
 	cnt++;
 	RArray[i].num = i;
 
@@ -2534,10 +2539,10 @@ int template_reg(Tcl_Interp *interp,
 
 void
 plot_lines(Tcl_Interp *interp,
-	    PlotRec *array,
-	    int num,
-	    char *win_name,
-	    int line_width)
+	   PlotRec *array,
+	   int num,
+	   char *win_name,
+	   int line_width)
 {
     char *cmd;
     int i;
@@ -2549,6 +2554,18 @@ plot_lines(Tcl_Interp *interp,
     }
 
     for (i = 0; i < num; i++) {
+
+	printf("%s create line %d %d %d %d "
+		   "-fill {%s} -tags %s -width %d -arrow %s\n",
+		   win_name,
+		   array[i].l.x1,
+		   array[i].l.y1,
+		   array[i].l.x2,
+		   array[i].l.y2,
+		   array[i].colour,
+		   array[i].type,
+		   line_width,
+		   array[i].arrow);
 
 	len = flen("%s create line %d %d %d %d "
 		   "-fill {%s} -tags %s -width %d -arrow %s\n",
@@ -2588,6 +2605,62 @@ plot_lines(Tcl_Interp *interp,
     xfree(cmd);
 }
 
+void
+plot_dlines(Tcl_Interp *interp,
+	    DPlotRec *array,
+	    int num,
+	    char *win_name,
+	    int line_width)
+{
+    char *cmd;
+    int i;
+    int len, alen;
+
+    alen = 1024;
+    if (NULL == (cmd = (char *)xmalloc(alen * sizeof(char)))) {
+	return;
+    }
+
+    for (i = 0; i < num; i++) {
+
+	len = flen("%s create line %f %f %f %f "
+		   "-fill {%s} -tags %s -width %d -arrow %s\n",
+		   win_name,
+		   array[i].l.x1,
+		   array[i].l.y1,
+		   array[i].l.x2,
+		   array[i].l.y2,
+		   array[i].colour,
+		   array[i].type,
+		   line_width,
+		   array[i].arrow);
+
+	if (len > alen) {
+	    alen = len;
+	    if (NULL == (cmd = (char *)xrealloc(cmd, alen * sizeof(char))))
+		return;
+	}
+
+	sprintf(cmd, "%s create line %f %f %f %f "
+		"-fill {%s} -tags %s -width %d -arrow %s\n",
+		win_name,
+		array[i].l.x1,
+		array[i].l.y1,
+		array[i].l.x2,
+		array[i].l.y2,
+		array[i].colour,
+		array[i].type,
+		line_width,
+		array[i].arrow);
+
+	Tcl_Eval(interp, cmd);
+#ifdef DEBUG
+	printf("%s\n", cmd);
+#endif
+    }
+    xfree(cmd);
+}
+
 int
 display_templates(Tcl_Interp *interp,
 		  GapIO *io,
@@ -2602,9 +2675,9 @@ display_templates(Tcl_Interp *interp,
     int t_y2 = 0;
     int r_y2 = 0;
     int i;
-    PlotRec *TArray, **TArray1, **TArray2;
-    PlotRec *RArray;
-    PlotRec *ReadArray;
+    DPlotRec *TArray, **TArray1, **TArray2;
+    DPlotRec *RArray;
+    DPlotRec *ReadArray;
     int num_readings, check;
     int depth;                         /* depth of templates in y direction */
     char cmd[1024];
@@ -2639,20 +2712,20 @@ display_templates(Tcl_Interp *interp,
 
     num_readings = NumReadings(io);
 
-    if ((RArray = (PlotRec *)xcalloc((num_readings+1), sizeof(PlotRec)))==NULL){
+    if ((RArray = (DPlotRec *)xcalloc((num_readings+1), sizeof(DPlotRec)))==NULL){
 	return -1;
     }
-    if ((TArray = (PlotRec *)xcalloc((ntemplates+1),
-				      sizeof(PlotRec))) ==NULL){
+    if ((TArray = (DPlotRec *)xcalloc((ntemplates+1),
+				      sizeof(DPlotRec))) ==NULL){
 	return -1;
     }
-    if ((TArray1 = (PlotRec **)xcalloc((ntemplates+1),
-				     sizeof(PlotRec*))) == NULL){
+    if ((TArray1 = (DPlotRec **)xcalloc((ntemplates+1),
+				     sizeof(DPlotRec*))) == NULL){
 	return -1;
     }
 
-    if ((TArray2 = (PlotRec **)xcalloc((Ntemplates(io)+1),
-				     sizeof(PlotRec*))) ==NULL){
+    if ((TArray2 = (DPlotRec **)xcalloc((Ntemplates(io)+1),
+				     sizeof(DPlotRec*))) ==NULL){
 	return -1;
     }
     TArray1[0] = &TArray[0];
@@ -2684,14 +2757,14 @@ display_templates(Tcl_Interp *interp,
 	    printf("ERROR: in calctemplates \n");
 	    return -1;
 	}
-	plot_lines(interp, TArray, num_templates, t->window, t->line_width);
+	plot_dlines(interp, TArray, num_templates, t->window, t->line_width);
     } /* end if */
 
     /* display readings */
     if (t->configs[READINGS]){
 
-	if ((ReadArray = (PlotRec *)xcalloc((num_readings+1),
-					    sizeof(PlotRec)))==NULL) {
+	if ((ReadArray = (DPlotRec *)xcalloc((num_readings+1),
+					     sizeof(DPlotRec)))==NULL) {
 	    return -1;
 	}
 
@@ -2733,7 +2806,7 @@ display_templates(Tcl_Interp *interp,
 	}
 	t->readings = ReadArray;
 	t->num_readings = num_readings;
-	plot_lines(interp, ReadArray, num_readings, t->window, t->line_width);
+	plot_dlines(interp, ReadArray, num_readings, t->window, t->line_width);
 
 	/* highlight reading list */
 	sprintf(cmd, "SelectReadingList %d ", *handle_io(io));
