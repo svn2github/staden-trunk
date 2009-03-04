@@ -1700,13 +1700,13 @@ ztr_t *srf_next_ztr_flags(srf_t *srf, char *name, int filter_mask,
 
 	    if (NULL != (srf->ztr = partial_decode_ztr(srf, srf->mf, NULL))) {
 		srf->mf_pos = mftell(srf->mf);
-		mfseek(srf->mf, 0, SEEK_END);
-		srf->mf_end = mftell(srf->mf);
 	    } else {
 		/* Maybe not enough to decode or no headerBlob. */
 		/* So delay until decoding the body. */
-		srf->mf_pos = srf->mf_end = 0;
+		srf->mf_pos = 0;
 	    }
+	    mfseek(srf->mf, 0, SEEK_END);
+	    srf->mf_end = mftell(srf->mf);
 
 	    break;
 
