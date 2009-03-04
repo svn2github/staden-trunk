@@ -436,13 +436,13 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 
 	    if (NULL != (srf->ztr = partial_decode_ztr(srf, srf->mf, NULL))) {
 		srf->mf_pos = mftell(srf->mf);
-		mfseek(srf->mf, 0, SEEK_END);
-		srf->mf_end = mftell(srf->mf);
 	    } else {
 		/* Maybe not enough to decode or no headerBlob. */
 		/* So delay until decoding the body. */
-		srf->mf_pos = srf->mf_end = 0;
+		srf->mf_pos = 0;
 	    }
+	    mfseek(srf->mf, 0, SEEK_END);
+	    srf->mf_end = mftell(srf->mf);
 
 	    break;
 
@@ -501,7 +501,7 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 	    else
 		ztr_tmp = NULL;
 
-	    if (NULL != partial_decode_ztr(srf, srf->mf, ztr_tmp)) {
+	    if ((ztr_tmp = partial_decode_ztr(srf, srf->mf, ztr_tmp))) {
 		int i;
 		for (i=0; i<ztr_tmp->nchunks; i++) {
 		    int ichunk = -1;
