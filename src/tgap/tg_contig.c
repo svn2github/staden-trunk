@@ -486,13 +486,16 @@ static int sort_range_by_y(const void *v1, const void *v2) {
 }
 
 
-/*
- * Determines the Y position for a sequence to display in the contig editor.
- * Returns 0 on success.
- *        -1 on failure
- */
+typedef struct {
+    int x;
+    int y;
+} ye2;
+
+#define X_GAP 2
 static int compute_ypos(rangec_t *r, int nr, int job) {
-    int i;
+    int i, j, k;
+    ye2 *yend = NULL;
+    int yn = 0, ya = 0;
 
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = 0; i < nr; i++) {
@@ -500,30 +503,57 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 	}
     } else {
 	/* CSIR_ALLOCATE_Y_MULTIPLE */
-	int *yend, j;
-	
-	if (NULL == (yend = (int *)malloc((nr+1) * sizeof(int))))
-	    return -1;
-	for (i = 0; i <= nr; i++) {
-	    yend[i] = -INT_MAX;
-	}
-
-	/*
-	 * O(N^2) in depth. Possibly want to keep an ordered list of the
-	 * line positions so we can find the next free line rapidly.
-	 */
 	for (i = 0; i < nr; i++) {
-	    for (j = 0; j < nr; j++) {
-		if (yend[j] < r[i].start && yend[j+1] < r[i].start) {
-		    r[i].y = j;
-		    yend[j] = r[i].end + 2;
+
+	    //	    printf("=== read %d, pos %d..%d ===\n",
+	    //		   i, r[i].start, r[i].end);
+
+	    if (yn && r[i].start >= yend[0].x) {
+		int miny = yn;
+		j = 0;
+
+		/* Or a more optimal find */
+		for (k = 0; k < yn; k++) {
+		    if (r[i].start < yend[k].x)
+			break;
+		    if (yend[k].y < miny) {
+			j = k;
+			miny = yend[k].y;
+		    }
+		}
+	    } else {
+		if (++yn >= ya) {
+		    ya += 1000;
+		    yend = (ye2 *)xrealloc(yend, ya * sizeof(*yend));
+		}
+		j = yn-1;
+		yend[j].y = yn-1;
+	    }
+
+	    //	    for (k = 0; k < yn; k++) {
+	    //		printf("%3d = %3d,%d %c\n",
+	    //		       k, yend[k].x, yend[k].y, j == k ? '*' : ' ');
+	    //	    }
+
+	    yend[j].x = r[i].end + X_GAP;
+	    r[i].y = yend[j].y;
+
+	    /* Ensure it's shuffled to the correct location */
+	    for (k = j+1; k < yn; k++, j++) {
+		if (yend[j].x >= yend[k].x) {
+		    ye2 tmp = yend[j];
+		    yend[j] = yend[k];
+		    yend[k] = tmp;
+		} else {
 		    break;
 		}
 	    }
 	}
-	free(yend);
-    }
 
+	if (yend)
+	    free(yend);
+    }
+    
     return 0;
 }
 
