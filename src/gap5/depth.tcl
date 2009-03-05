@@ -285,7 +285,8 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
     puts [info level [info level]]
 
     set y1 [set ${t}(y1)]
-    set h  [set ${t}(height)]
+    #set h  [set ${t}(height)]
+    set h [winfo height [set ${t}(canvas)]]
     switch $cmd {
 	scroll {
 	    set y1 [set ${t}(y1)]
@@ -360,7 +361,7 @@ proc redraw_plot {w {track_types {}} args} {
 
 	set d [set ${t}(canvas)]
 	set y1 [set ${t}(y1)]
-	set y2 [expr {[set ${t}(y1)]+[set ${t}(height)]}]
+	set y2 [expr {[set ${t}(y1)]+[winfo height [set ${t}(canvas)]]}]
 	puts [time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
     }
 
@@ -515,21 +516,29 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     if {![info exists ${t}(Init)]} {
 	set ${t}(Init) 1
 	set f [frame $w.controls]
+	set f1 [frame $f.l1]
+	set f2 [frame $f.l2]
+	pack $f1 $f2 -side top -fill both -expand 1
+	grid $f -row 0
+
 	set ${t}(Accurate) 0
 	set ${t}(YLog) 1
 	set ${t}(YScale) 20
+	set ${t}(YOffset) 50
 	set ${t}(Simple) 0
 	set ${t}(Y) "Template Size"
 	set ${t}(Colour) "Combined mapping quality"
 	set ${t}(Spread) 0
+	set ${t}(SeparateStrands) 1
 
 	# Add raster component to canvas
 	update idletasks
 	puts 1:[winfo width $d]x[winfo height $d]
 	set r [raster $d.r \
 		   -width [winfo width $d] \
-		   -height [winfo height $d]\
-		   -bg skyblue3]
+		   -height [winfo height $d] \
+		   -bg black]
+#		   -bg \#e0ffe0]
 	set rid [$d create window 0 0 -anchor nw -window $r]
 	set ${t}(Cavnas) 0
 	set ${t}(Raster) $r
@@ -544,31 +553,48 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    [winfo height $d]
 	set ${t}(R_zoom) [set ${w}(xzoom)]
 
-	tk_optionMenu $f.y ${t}(Y) \
+	tk_optionMenu $f1.y ${t}(Y) \
 	    {Template Size} \
 	    Stacking \
 	    {Mapping quality}
-	tk_optionMenu $f.col ${t}(Colour) \
+	tk_optionMenu $f1.col ${t}(Colour) \
 	    {Combined mapping quality} \
 	    {Minimum mapping quality} \
-	    {Maximum mapping quality}
+	    {Maximum mapping quality} \
+	    {Reads}
 	trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
 	trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
-	pack $f.y $f.col -side left
-	checkbutton $f.can -text "Canvas" -variable ${t}(Canvas) \
+	pack $f1.y $f1.col -side left
+	checkbutton $f1.can -text "Canvas" -variable ${t}(Canvas) \
 	    -command "seq_seqs_canvas $w $t"
-	checkbutton $f.acc -text "Slow but accurate" -variable ${t}(Accurate) \
+	checkbutton $f1.acc -text ">>Acc" -variable ${t}(Accurate) \
 	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f.log -text "Y-Log scale" -variable ${t}(YLog) \
+	checkbutton $f1.reads -text "Reads" -variable ${t}(ReadsOnly) \
 	    -command "redraw_plot $w seq_seqs"
-	scale $f.yscale -from 1 -to 100 -orient horiz \
+	checkbutton $f1.log -text "Y-Log scale" -variable ${t}(YLog) \
+	    -command "redraw_plot $w seq_seqs"
+	checkbutton $f1.sep_strands -text "Separate strands" \
+	    -variable ${t}(SeparateStrands) \
+	    -command "redraw_plot $w seq_seqs"
+	pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.can -side left
+
+	label $f2.l_yscale -text "    YScale:"
+	scale $f2.yscale -from 1 -to 250 -orient horiz\
 	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
-	scale $f.yspread -from 0 -to 250 -orient horiz \
+	label $f2.l_yoffset -text "    YOffset:"
+	scale $f2.yoffset -from 0 -to 250 -orient horiz \
+	    -variable ${t}(YOffset) -command "redraw_plot $w seq_seqs"
+	label $f2.l_yspread -text "    YSpread:"
+	scale $f2.yspread -from 0 -to 250 -orient horiz \
 	    -variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
-	pack $f.log $f.yscale $f.yspread $f.acc $f.can -side left
-	grid $f -row 0
+	pack $f2.l_yscale  $f2.yscale  -side left
+	pack $f2.l_yoffset $f2.yoffset -side left
+	pack $f2.l_yspread $f2.yspread -side left
 
 	$d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
+
+	bind $r <ButtonPress-1> {puts b1-down}
+	bind $r <ButtonRelease-1> {puts b1-up}
     }
 
     set rid  [set ${t}(R_id)]
@@ -596,19 +622,27 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
-			    {Maximum mapping quality}} [set ${t}(Colour)]]
+			    {Maximum mapping quality} \
+			    {Reads}} [set ${t}(Colour)]]
     set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
 		   [set ${t}(Y)]]
 
     # Forces a redraw too
     if {![set ${t}(Canvas)]} {
 	$td configure \
-	    -accuracy [set ${t}(Accurate)] \
-	    -logy     [set ${t}(YLog)] \
-	    -yzoom    [set ${t}(YScale)] \
-	    -spread   [set ${t}(Spread)] \
-	    -ymode    $ymode \
-	    -cmode    $cmode
+	    -accuracy   [set ${t}(Accurate)] \
+	    -logy       [set ${t}(YLog)] \
+	    -yzoom      [set ${t}(YScale)] \
+	    -yoffset    [set ${t}(YOffset)] \
+	    -spread     [set ${t}(Spread)] \
+	    -ymode      $ymode \
+	    -cmode      $cmode \
+	    -reads_only [set ${t}(ReadsOnly)] \
+	    -by_strand  [set ${t}(SeparateStrands)] \
+
+	puts [$td ymin],[$td ymax],[$td yrange]
+	set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
+	eval [set ${t}(ys)] set [$td yrange]
 	return
     }
 
@@ -616,7 +650,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     # Else slow canvas mode.
     $d delete p
 
-    if {[expr {$x2-$x1}] > $max_template_display_width} return
+#    if {[expr {$x2-$x1}] > $max_template_display_width} return
 
     set tm [time {set reads [$c seqs_in_range [expr {int($x1)}] [expr {int($x2+0.999)}]]}]
     puts "nreads between $x1..$x2=[llength $reads] in $tm"
@@ -902,7 +936,9 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     # Sync Y scrollbar
     set hei [expr {($ymax+$ystart)*$ysep+3.0}]
+    puts hei=$hei
     set ${t}(scroll_height) $hei
+    puts "[set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]"
     [set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]
 
     puts SEQ_SEQS_DRAW_END

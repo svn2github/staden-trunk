@@ -61,10 +61,16 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, cmode), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-ymode", "YMode", "YMode", "0",
      -1, Tk_Offset(template_disp_t, ymode), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-yoffset", "YOffset", "YOffset", "0",
+     -1, Tk_Offset(template_disp_t, yoffset), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-accuracy", "accuracy", "Accuracy", "0",
      -1, Tk_Offset(template_disp_t, accuracy), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-spread", "spread", "Spread", "0",
      -1, Tk_Offset(template_disp_t, spread), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-reads_only", "readsOnly", "ReadsOnly", "0",
+     -1, Tk_Offset(template_disp_t, reads_only), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-by_strand", "byStrand", "ByStrand", "1",
+     -1, Tk_Offset(template_disp_t, sep_by_strand), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
      -1, Tk_Offset(template_disp_t, yzoom), 0, 0, 0 /* mask */},
     {TK_OPTION_END}
@@ -78,11 +84,13 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 
     static char *options[] = {
 	"delete",       "io",           "cget",    "configure", "replot",
+	"ymin",         "ymax",         "yrange",
 	(char *)NULL,
     };
 
     enum options {
-	DELETE,         IO,     	CGET,      CONFIGURE,   REPLOT
+	DELETE,         IO,     	CGET,      CONFIGURE,   REPLOT,
+	YMIN,           YMAX,           YRANGE
     };
 
     if (objc < 2) {
@@ -137,6 +145,25 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
     case REPLOT:
 	replot = 1;
 	break;
+
+    case YMIN:
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymin));
+	break;
+
+    case YMAX:
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymax));
+	break;
+
+    case YRANGE: {
+	char buf[1024];
+	double wx0, wy0, wx1, wy1;
+	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
+	sprintf(buf, "%f %f",
+		(t->ymin-wy0)/(wy1-wy0),
+		(t->ymax-wy0)/(wy1-wy0));
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
+	break;
+    }
     }
 
     if (replot)
@@ -230,7 +257,7 @@ template_disp_t *template_new(GapIO *io, int cnum,
 			      Tk_Raster *raster) {
     template_disp_t *t = (template_disp_t *)calloc(1, sizeof(*t));
     int i;
-    char *opts[7], b[1024];
+    char *opts[10], b[1024];
 
     if (!t)
 	return NULL;
@@ -255,7 +282,7 @@ template_disp_t *template_new(GapIO *io, int cnum,
     opts[6] = NULL;
 
     for (i = 0; i < 32; i++) {
-	sprintf(b, "#%02x%02x%02x", i*7, i*7, i*8);
+	sprintf(b, "#%02x%02x%02x", 64+i*5, 64+i*5, 64+i*5);
 	t->map_col[i] = CreateDrawEnviron(interp, raster, 6, opts);
 	SetDrawEnviron(t->interp, t->raster, t->map_col[i]);
     }
@@ -268,6 +295,17 @@ template_disp_t *template_new(GapIO *io, int cnum,
 
     opts[1] = "red";
     t->inconsistent_col = CreateDrawEnviron(interp, raster, 6, opts);
+
+    //    opts[3] = "2";
+    //    opts[6] = "-capstyle";
+    //    opts[7] = "projecting"; // but or round
+    //    opts[8] = NULL;
+
+    opts[1] = "green";
+    t->fwd_col = CreateDrawEnviron(interp, raster, 6, opts);
+
+    opts[1] = "magenta";
+    t->rev_col = CreateDrawEnviron(interp, raster, 6, opts);
 
     return t;
 }
@@ -302,11 +340,15 @@ int sort_by_rec(void *p1, void *p2) {
 int template_replot(template_disp_t *t) {
     double wx0, wy0, wx1, wy1, y;
     rangec_t *r;
-    int nr, i;
+    int nr, i, mode;
     struct timeval tv1, tv2;
     double t1, t2, t3;
     double tsize = 1000;
     double yz;
+    int ymin = INT_MAX;
+    int ymax = INT_MIN;
+    int t_strand;
+    int width, height;
 
     Display *rdisp;
     Drawable rdraw;
@@ -325,6 +367,8 @@ int template_replot(template_disp_t *t) {
 
     tk_RasterClear(t->raster);
     GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
+    RasterWinSize(t->raster, &width, &height);
+    height /= 2;
 
     printf("Coordinates (%f,%f) - (%f,%f) yz %f\n",
 	   wx0, wy0, wx1, wy1, yz);
@@ -334,14 +378,14 @@ int template_replot(template_disp_t *t) {
 
     /* Find sequences on screen */
     gettimeofday(&tv1, NULL);
+    mode = t->reads_only ? 0 : CSIR_PAIR;
     if (t->ymode == 1) {
 	r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, 
-				 CSIR_PAIR |
+				 mode |
 				 CSIR_ALLOCATE_Y_MULTIPLE |
 				 CSIR_SORT_BY_Y, &nr);
     } else {
-	r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, 
-				 CSIR_PAIR, &nr);
+	r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, mode, &nr);
     }
     if (!r)
 	return 0;
@@ -368,8 +412,10 @@ int template_replot(template_disp_t *t) {
 	sta = r[i].start;
 	end = r[i].end;
 	mq  = r[i].mqual;
+	t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
+	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
 
-	if (r[i].pair_rec) {
+	if (!t->reads_only && r[i].pair_rec) {
 	    /* Only draw once */
 	    if (!r[i].rec)
 		continue;
@@ -417,10 +463,15 @@ int template_replot(template_disp_t *t) {
 			? r[i].pair_mqual
 			: r[i].mqual;
 		    break;
+		case 3:
+		    mq = 99;
+		    break;
 		}
 	    }
 	} else {
-	    single = 1;
+	    mq = r[i].mqual;
+	    if (!t->reads_only)
+		single = 1;
 	}
 
 	mq *= 3;
@@ -436,10 +487,10 @@ int template_replot(template_disp_t *t) {
 		y = mq*4;
 	    if (t->logy) {
 		if (y < 0) y = 0;
-		y = 250*log(y+1);
+		y = 50*log(y+1);
 	    }
 	}
-	y = 10 + y * yz;
+	y = (y + 50 - t->yoffset) * yz;
 
 	if (t->spread)
 	    y = y-t->spread/2+(sta%(t->spread));
@@ -461,10 +512,15 @@ int template_replot(template_disp_t *t) {
 		col = t->inconsistent_col;
 	}
 
+	if (ymin > y) ymin = y;
+	if (ymax < y) ymax = y;
+
+	if (t->sep_by_strand)
+	    y = t_strand ? height - y : height + y;
+
 	if (y >= wy0 && y <= wy1) {
 	    if (col != last_col) {
 		SetDrawEnviron(t->interp, t->raster, col);
-		last_col = col;
 	    }
 #if 0
 	    {
@@ -475,8 +531,32 @@ int template_replot(template_disp_t *t) {
 	    }
 #endif
 	    RasterDrawLine(t->raster, sta, y, end, y);
+
+	    /* Draw readings too */
+	    if (t->cmode == 3) {
+		//col = (r[i].flags & GRANGE_FLAG_END_MASK
+		//       == GRANGE_FLAG_END_FWD) ? t->fwd_col : t->rev_col;
+		col = (r[i].flags & GRANGE_FLAG_COMP1)
+		    ? t->fwd_col : t->rev_col;
+		SetDrawEnviron(t->interp, t->raster, col);
+		RasterDrawLine(t->raster, r[i].start, y, r[i].end, y);
+		if (r[i].pair_rec && (r[i].pair_start || r[i].pair_end)) {
+		    //col = (r[i].flags & GRANGE_FLAG_PEND_MASK
+		    //	   == GRANGE_FLAG_PEND_FWD) ? t->fwd_col : t->rev_col;
+		    col = (r[i].flags & GRANGE_FLAG_COMP2)
+			? t->fwd_col : t->rev_col;
+		    SetDrawEnviron(t->interp, t->raster, col);
+		    RasterDrawLine(t->raster, r[i].pair_start, y,
+				   r[i].pair_end, y);
+		}
+	    }
+
+	    last_col = col;
 	}
     }
+
+    t->ymin = ymin != INT_MAX ? ymin : 0;
+    t->ymax = ymax != INT_MIN ? ymax : 0;
 
     tv1 = tv2;
     gettimeofday(&tv2, NULL);

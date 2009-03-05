@@ -17,12 +17,18 @@ typedef struct {
     int single_col;
     int span_col;
     int inconsistent_col;
+    int fwd_col;
+    int rev_col;
     int logy;
     int cmode;
     int ymode;
     int accuracy;
     int spread;
+    int reads_only;
     double yzoom;
+    int sep_by_strand;
+    int yoffset;
+    int ymin, ymax; /* visible extents of data in Y */
 } template_disp_t;
 
 int TDisp_Init(Tcl_Interp *interp);
