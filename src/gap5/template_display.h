@@ -29,7 +29,11 @@ typedef struct {
     int sep_by_strand;
     int yoffset;
     int ymin, ymax; /* visible extents of data in Y */
+    int filter; /* bitmask */
 } template_disp_t;
+
+#define FILTER_PAIRED      (1<<0)
+#define FILTER_CONSISTENT  (1<<1)
 
 int TDisp_Init(Tcl_Interp *interp);
 

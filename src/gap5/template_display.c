@@ -71,6 +71,8 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, reads_only), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-by_strand", "byStrand", "ByStrand", "1",
      -1, Tk_Offset(template_disp_t, sep_by_strand), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-filter", "filter", "Filter", "0",
+     -1, Tk_Offset(template_disp_t, filter), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
      -1, Tk_Offset(template_disp_t, yzoom), 0, 0, 0 /* mask */},
     {TK_OPTION_END}
@@ -414,6 +416,9 @@ int template_replot(template_disp_t *t) {
 	mq  = r[i].mqual;
 	t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
 	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
+
+	if (t->filter & FILTER_PAIRED && !r[i].pair_rec)
+	    continue;
 
 	if (!t->reads_only && r[i].pair_rec) {
 	    /* Only draw once */

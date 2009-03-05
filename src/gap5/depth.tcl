@@ -529,6 +529,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	set ${t}(Y) "Template Size"
 	set ${t}(Colour) "Combined mapping quality"
 	set ${t}(Spread) 0
+	set ${t}(PairOnly) 0
 	set ${t}(SeparateStrands) 1
 
 	# Add raster component to canvas
@@ -576,7 +577,10 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	checkbutton $f1.sep_strands -text "Separate strands" \
 	    -variable ${t}(SeparateStrands) \
 	    -command "redraw_plot $w seq_seqs"
-	pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.can -side left
+	checkbutton $f1.pair_only -text "Pairs only" \
+	    -variable ${t}(PairOnly) \
+	    -command "redraw_plot $w seq_seqs"
+	pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only $f1.can -side left
 
 	label $f2.l_yscale -text "    YScale:"
 	scale $f2.yscale -from 1 -to 250 -orient horiz\
@@ -639,6 +643,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	    -cmode      $cmode \
 	    -reads_only [set ${t}(ReadsOnly)] \
 	    -by_strand  [set ${t}(SeparateStrands)] \
+	    -filter     [set ${t}(PairOnly)]
 
 	puts [$td ymin],[$td ymax],[$td yrange]
 	set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
