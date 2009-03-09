@@ -8,9 +8,6 @@
 
 package require Tk
 
-# Maximum width of template-dislay before we omit drawing it
-set max_template_display_width 500000
-
 #
 # Constructs a container window for drawing horizontal tracks of data.
 # It consists of standard controls like menus, horizontal scrollbars and
@@ -57,17 +54,17 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(xzoom) [expr {([set ${w}(x2)]-[set ${w}(x1)]+1)/
 			   double([set ${w}(width)])}]
 
-    # X Zoom control
-    scale $w.xzoom -from 1 -to 1000 -resolution 0.1 -orient horiz -label Zoom \
-	-command "set_zoom $w"
-    $w.xzoom set 20
+    # Bottom control panel
+    set bc [frame $w.bcontrol -bd 0 -bg blue]
     grid columnconfigure $w 0 -weight 1
-    grid $w.xzoom -row 998 -sticky nsew
-    grid rowconfigure $w 998 -weight 0
+    grid $bc -row 999 -sticky nsew
+    grid rowconfigure $w 999 -weight 0
 
-# Benchmarking
-#    $w.xzoom set 80
-#    set ${w}(x1) 1000000
+    scale $bc.xzoom -from 1 -to 1000 -orient horiz -label "X Scale" \
+	-resolution 0.1 -command "set_xzoom $w"
+    $bc.xzoom set 20
+    pack $bc.xzoom -fill both -expand 1 -side left
+
 
     # X scrollbar
     scrollbar $w.xscroll \
@@ -78,12 +75,13 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
 	[expr {[set ${w}(x1)]/double([set ${w}(length)])}] \
 	[expr {[set ${w}(x2)]/double([set ${w}(length)])}]
 
-    grid $w.xscroll -row 999 -sticky nsew
-    grid rowconfigure $w 999 -weight 0
+    grid $w.xscroll -row 998 -sticky nsew
+    grid rowconfigure $w 998 -weight 0
 
     # An information label
     frame $w.label
     grid $w.label -row 1000 -sticky nsew
+    grid rowconfigure $w 1000 -weight 0
     label $w.label.l -textvariable ${w}(info)
     pack $w.label.l
 
@@ -127,6 +125,8 @@ proc resize1.5 {w} {
 proc scrollx1.5 {w cmd args} {
     global $w
 
+    puts [info level [info level]]
+
     set sbar $w.xscroll
     set clen [set ${w}(length)]
 
@@ -163,7 +163,7 @@ proc scrollx1.5 {w cmd args} {
 }
 
 # X zoom only via scalebox
-proc set_zoom {w val} {
+proc set_xzoom {w val} {
     global $w
 
     # Change the scale
@@ -277,6 +277,10 @@ proc add_plot {w func height args} {
     grid $t -row $tnum -sticky nsew
     grid rowconfigure $w $tnum -weight $weight
 
+    if {[info command ${func}_init] != {}} {
+#	${func}_init $w $t
+    }
+
     #redraw_plot $w
 }
 
@@ -306,12 +310,17 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
     set y2 [expr {$y1+$h}]
     set wid [set ${w}(width)]
 
-    [set ${t}(canvas)] configure -scrollregion [list 0 $y1 $wid $y2]
+#    [set ${t}(canvas)] configure -scrollregion [list 0 $y1 $wid $y2]
+    puts "$y1 to $y2 out of [set ${t}(scroll_height)]"
     [set ${t}(ys)] set \
 	[expr {$y1/[set ${t}(scroll_height)]}] \
 	[expr {$y2/[set ${t}(scroll_height)]}]
 
     #redraw_plot $w [set ${t}(num)]
+    if {[info exists ${t}(Raster)]} {
+	eval [set ${t}(Raster)] yview $cmd $opt1 $opt2
+    }
+    redraw_plot $w seq_seqs
 }
 
 proc yscroll_plot_set {w t args} {
@@ -322,22 +331,8 @@ proc yscroll_plot_set {w t args} {
 # fires off the individual redraw functions registered.
 proc redraw_plot {w {track_types {}} args} {
     global $w
-    #parray $w
-    
 
-    set bd [set ${w}(border)]
-
-    puts "Redrawing"
-
-    set x1 [set ${w}(x1)]
-    set x2 [set ${w}(x2)]
-    set ${w}(xorigin) [expr $x1]
-
-#    puts ""
-#    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-#    puts "xorigin=[set ${w}(xorigin)] xzoom=[set ${w}(xzoom)] yzoom=[set ${w}(yzoom)]"
-#    puts "base coord=$x1..$x2   canvas coord=[x2c $w $x1]..[x2c $w $x2]"
-#    puts ""
+    puts "redraw_plot_pending $track_types"
 
     if {$track_types != {}} {
 	set tracks {}
@@ -351,7 +346,36 @@ proc redraw_plot {w {track_types {}} args} {
     } else {
 	set tracks [set ${w}(tracks)]
     }
-    puts tracks=$tracks
+
+    if {[info exists ${w}(RedrawPending)]} {
+	append ${w}(RedrawPending) " $tracks"
+	return
+    }
+
+    set ${w}(RedrawPending) $tracks
+    after idle [list redraw_plot_doit $w]
+#    redraw_plot_doit $w
+}
+
+
+# The actual redraw function, rather than a simple request to redraw
+proc redraw_plot_doit {w} {
+    global $w
+
+    set bd [set ${w}(border)]
+
+    set tracks [lsort -unique [set ${w}(RedrawPending)]]
+    puts "Redrawing tracks $tracks"
+
+    set x1 [set ${w}(x1)]
+    set x2 [set ${w}(x2)]
+    set ${w}(xorigin) [expr $x1]
+
+#    puts ""
+#    puts ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+#    puts "xorigin=[set ${w}(xorigin)] xzoom=[set ${w}(xzoom)] yzoom=[set ${w}(yzoom)]"
+#    puts "base coord=$x1..$x2   canvas coord=[x2c $w $x1]..[x2c $w $x2]"
+#    puts ""
 
     foreach id $tracks {
 	set t $w.track$id
@@ -362,13 +386,14 @@ proc redraw_plot {w {track_types {}} args} {
 	set d [set ${t}(canvas)]
 	set y1 [set ${t}(y1)]
 	set y2 [expr {[set ${t}(y1)]+[winfo height [set ${t}(canvas)]]}]
-	puts [time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
+	puts [set ${t}(func)]:[time {[set ${t}(func)] $w $t $x1 $x2 $y1 $y2}]
     }
 
     set ${w}(last_x1) $x1
     set ${w}(last_x1) $x2
-}
 
+    catch {unset ${w}(RedrawPending)}
+}
 
 #
 # Plots the sequence read depth.
@@ -485,27 +510,115 @@ proc compute_max_y {w lines} {
     return $ymax
 }
 
-proc seq_seqs_canvas {w t} {
+#
+# Initialises the template display window
+proc seq_seqs_init {w t} {
     global $w $t
 
+    puts START:[info level [info level]]
+
     set d    [set ${t}(canvas)]
-    set rid  [set ${t}(R_id)]
+    set c    [set ${w}(contig)]
+    set wid  [set ${w}(width)]
+    set yz   [set ${w}(yzoom)]
+    set io   [set ${w}(io)]
 
-    if {![set ${t}(Canvas)]} {
-	$d move $rid -9999 -9999
-    } else {
-	$d move $rid 9999 9999
-    }
+    set ${t}(Init) 1
+    set f [frame $w.controls]
+    set f1 [frame $f.l1]
+    set f2 [frame $f.l2]
+    pack $f1 $f2 -side top -fill both -expand 1
+    grid $f -row 0
 
-    redraw_plot $w seq_seqs
+    set ${t}(Accurate) 0
+    set ${t}(YLog) 1
+    set ${t}(YScale) 20
+    set ${t}(YOffset) 50
+    set ${t}(Simple) 0
+    set ${t}(Y) "Template Size"
+    set ${t}(Colour) "Combined mapping quality"
+    set ${t}(Spread) 0
+    set ${t}(PairOnly) 0
+    set ${t}(SeparateStrands) 1
+
+    # Add raster component to canvas
+    update idletasks
+    puts 1:[winfo width $d]x[winfo height $d]
+    set r [raster $d.r \
+	       -width [winfo width $d] \
+	       -height [winfo height $d] \
+	       -bg black]
+    #		   -bg \#e0ffe0]
+    set rid [$d create window 0 0 -anchor nw -window $r]
+    set ${t}(Cavnas) 0
+    set ${t}(Raster) $r
+    set ${t}(R_id)   $rid
+    $d raise [set ${t}(R_id)]
+    set ${t}(TDisp) [g5::template_display \
+			 -io $io \
+			 -cnum [set ${w}(cnum)] \
+			 -raster $r]
+    $r world_scroll 1 1 [set ${w}(length)] 10000
+    $r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
+	[winfo height $d]
+    set ${t}(R_zoom) [set ${w}(xzoom)]
+
+    # Add GUI elements
+    set bc $w.bcontrol
+    scale $bc.yzoom -from 1 -to 250 -orient horiz -label "Y Magnification" \
+	-variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
+
+    scale $bc.yspread -from 1 -to 250 -orient horiz -label "Y Spread" \
+	-variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
+
+    scale $bc.yoffset -from 0 -to 250 -orient horiz -label "Y Offset" \
+	-variable ${t}(YOffset) -command "redraw_plot $w seq_seqs"
+
+    pack $bc.yzoom $bc.yspread $bc.yoffset -fill both -expand 1 -side left
+
+    tk_optionMenu $f1.y ${t}(Y) \
+	{Template Size} \
+	Stacking \
+	{Mapping quality}
+    tk_optionMenu $f1.col ${t}(Colour) \
+	{Combined mapping quality} \
+	{Minimum mapping quality} \
+	{Maximum mapping quality} \
+	{Reads}
+    trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
+    trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
+    pack $f1.y $f1.col -side left
+    checkbutton $f1.acc -text ">>Acc" -variable ${t}(Accurate) \
+	-command "redraw_plot $w seq_seqs"
+    checkbutton $f1.reads -text "Reads" -variable ${t}(ReadsOnly) \
+	-command "redraw_plot $w seq_seqs"
+    checkbutton $f1.log -text "Y-Log scale" -variable ${t}(YLog) \
+	-command "redraw_plot $w seq_seqs"
+    checkbutton $f1.sep_strands -text "Separate strands" \
+	-variable ${t}(SeparateStrands) \
+	-command "redraw_plot $w seq_seqs"
+    checkbutton $f1.pair_only -text "Pairs only" \
+	-variable ${t}(PairOnly) \
+	-command "redraw_plot $w seq_seqs"
+    pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only -side left
+
+    $d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
+
+    bind $r <ButtonPress-1> {puts b1-down}
+    bind $r <ButtonRelease-1> {puts b1-up}
+
+    puts END:[info level [info level]]
 }
+
 
 #
 # Plots the sequence read depth.
 #
 proc seq_seqs {w t x1 x2 y1 y2} {
     global $w $t
-    global max_template_display_width
+
+    puts "=== $x1,$y1 to $x2,$y2 ==="
+
 
     set d    [set ${t}(canvas)]
     set c    [set ${w}(contig)]
@@ -514,91 +627,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set io   [set ${w}(io)]
 
     if {![info exists ${t}(Init)]} {
-	set ${t}(Init) 1
-	set f [frame $w.controls]
-	set f1 [frame $f.l1]
-	set f2 [frame $f.l2]
-	pack $f1 $f2 -side top -fill both -expand 1
-	grid $f -row 0
-
-	set ${t}(Accurate) 0
-	set ${t}(YLog) 1
-	set ${t}(YScale) 20
-	set ${t}(YOffset) 50
-	set ${t}(Simple) 0
-	set ${t}(Y) "Template Size"
-	set ${t}(Colour) "Combined mapping quality"
-	set ${t}(Spread) 0
-	set ${t}(PairOnly) 0
-	set ${t}(SeparateStrands) 1
-
-	# Add raster component to canvas
-	update idletasks
-	puts 1:[winfo width $d]x[winfo height $d]
-	set r [raster $d.r \
-		   -width [winfo width $d] \
-		   -height [winfo height $d] \
-		   -bg black]
-#		   -bg \#e0ffe0]
-	set rid [$d create window 0 0 -anchor nw -window $r]
-	set ${t}(Cavnas) 0
-	set ${t}(Raster) $r
-	set ${t}(R_id)   $rid
-	$d raise [set ${t}(R_id)]
-	set ${t}(TDisp) [g5::template_display \
-			     -io $io \
-			     -cnum [set ${w}(cnum)] \
-			     -raster $r]
-	$r world_scroll 1 1 [set ${w}(length)] 10000
-	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
-	    [winfo height $d]
-	set ${t}(R_zoom) [set ${w}(xzoom)]
-
-	tk_optionMenu $f1.y ${t}(Y) \
-	    {Template Size} \
-	    Stacking \
-	    {Mapping quality}
-	tk_optionMenu $f1.col ${t}(Colour) \
-	    {Combined mapping quality} \
-	    {Minimum mapping quality} \
-	    {Maximum mapping quality} \
-	    {Reads}
-	trace add variable ${t}(Y) write "redraw_plot $w seq_seqs"
-	trace add variable ${t}(Colour) write "redraw_plot $w seq_seqs"
-	pack $f1.y $f1.col -side left
-	checkbutton $f1.can -text "Canvas" -variable ${t}(Canvas) \
-	    -command "seq_seqs_canvas $w $t"
-	checkbutton $f1.acc -text ">>Acc" -variable ${t}(Accurate) \
-	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f1.reads -text "Reads" -variable ${t}(ReadsOnly) \
-	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f1.log -text "Y-Log scale" -variable ${t}(YLog) \
-	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f1.sep_strands -text "Separate strands" \
-	    -variable ${t}(SeparateStrands) \
-	    -command "redraw_plot $w seq_seqs"
-	checkbutton $f1.pair_only -text "Pairs only" \
-	    -variable ${t}(PairOnly) \
-	    -command "redraw_plot $w seq_seqs"
-	pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only $f1.can -side left
-
-	label $f2.l_yscale -text "    YScale:"
-	scale $f2.yscale -from 1 -to 250 -orient horiz\
-	    -variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
-	label $f2.l_yoffset -text "    YOffset:"
-	scale $f2.yoffset -from 0 -to 250 -orient horiz \
-	    -variable ${t}(YOffset) -command "redraw_plot $w seq_seqs"
-	label $f2.l_yspread -text "    YSpread:"
-	scale $f2.yspread -from 0 -to 250 -orient horiz \
-	    -variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
-	pack $f2.l_yscale  $f2.yscale  -side left
-	pack $f2.l_yoffset $f2.yoffset -side left
-	pack $f2.l_yspread $f2.yspread -side left
-
-	$d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
-
-	bind $r <ButtonPress-1> {puts b1-down}
-	bind $r <ButtonRelease-1> {puts b1-up}
+	seq_seqs_init $w $t
     }
 
     set rid  [set ${t}(R_id)]
@@ -606,23 +635,33 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set td   [set ${t}(TDisp)]
 
     if {[info exists ${t}(width)]} {
-	#$r configure -width [set ${t}(width)] -height [set ${t}(height)]
+#	#$r configure -width [set ${t}(width)] -height [set ${t}(height)]
 	$r configure -width [winfo width $d] -height [winfo height $d]
     }
 
     if {[set ${t}(R_zoom)] != [set ${w}(xzoom)]} {
-	$r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] [winfo height $d]
+	# Query existing world
+	foreach {x1 y1 x2 y2} [$r world] break;
+
+	# Find mid-point of old world
+	set mid [expr {($x1+$x2)/2.0}]
+
+	# Compute approximate new location
+	$r world [set ${w}(x1)] $y1 [set ${w}(x2)] $y2
+
+	# Reset to actual world
+	foreach {x1 y1 x2 y2} [$r world] break;
+	set delta [expr {($x2-$x1)/2.0}]
+	$r world [expr {$mid-$delta}] $y1 [expr {$mid+$delta}] $y2
+
 	set ${t}(R_zoom) [set ${w}(xzoom)]
     }
-
-    puts SEQ_SEQS_START,$y1..$y2
 
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
     set wid [expr {$wx2-$wx1+1}]
-    puts $x1..$x2,[expr {double($x1)/[set ${w}(length)]}]..[expr {double($x2)/[set ${w}(length)]}]
+#    puts $x1..$x2,[expr {double($x1)/[set ${w}(length)]}]..[expr {double($x2)/[set ${w}(length)]}]
     $r xview moveto [expr {double($x1)/[set ${w}(length)]}]
-    update idletasks 
 
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
@@ -631,322 +670,25 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
 		   [set ${t}(Y)]]
 
+    update idletasks
+
     # Forces a redraw too
-    if {![set ${t}(Canvas)]} {
-	$td configure \
-	    -accuracy   [set ${t}(Accurate)] \
-	    -logy       [set ${t}(YLog)] \
-	    -yzoom      [set ${t}(YScale)] \
-	    -yoffset    [set ${t}(YOffset)] \
-	    -spread     [set ${t}(Spread)] \
-	    -ymode      $ymode \
-	    -cmode      $cmode \
-	    -reads_only [set ${t}(ReadsOnly)] \
-	    -by_strand  [set ${t}(SeparateStrands)] \
-	    -filter     [set ${t}(PairOnly)]
+    $td configure \
+	-accuracy   [set ${t}(Accurate)] \
+	-logy       [set ${t}(YLog)] \
+	-yoffset    [set ${t}(YOffset)] \
+	-spread     [set ${t}(Spread)] \
+	-ymode      $ymode \
+	-cmode      $cmode \
+	-reads_only [set ${t}(ReadsOnly)] \
+	-by_strand  [set ${t}(SeparateStrands)] \
+	-filter     [set ${t}(PairOnly)] \
+	-yzoom      [set ${t}(YScale)]
 
-	puts [$td ymin],[$td ymax],[$td yrange]
-	set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
-	eval [set ${t}(ys)] set [$td yrange]
-	return
-    }
 
-    # ------------------------------------------------------------------
-    # Else slow canvas mode.
-    $d delete p
-
-#    if {[expr {$x2-$x1}] > $max_template_display_width} return
-
-    set tm [time {set reads [$c seqs_in_range [expr {int($x1)}] [expr {int($x2+0.999)}]]}]
-    puts "nreads between $x1..$x2=[llength $reads] in $tm"
-    puts SEQ_SEQS_DRAW_START
-    #set reads [lrange $reads 0 10000]
-    catch {unset done}
-
-    set t1 [clock clicks]
-    puts "  SEQS_FIND_START $t1"
-
-    # Setting accurate to zero means that when a read pair is in the same
-    # contig, but one end wasn't returned within the seqs_in_range query above
-    # then we just draw a dotted line to indicate the other end is present,
-    # but with unknown contig or position.
-    #
-    # Accurate mode does a get_position call on the sequence to find the
-    # true location. The upshot is that long templates are visible rather than
-    # "popping" to the top part of the screen only when entirely displayed.
-    # This could be alleviated somewhat using an over-sized range query, but
-    # too large and the overhead is more than that of accurate mode.
-    # Benchmarked at 8487 read/seeks accurate and 3078 inaccurate on EMU,
-    # which consists of lots of long and short insert sizes. It's less severe
-    # with all-short.
-    set accurate [set ${t}(Accurate)]
-
-    # ylength_view controls whether the y coordinate 
-    set ymode [lsearch {{Template Size} Stacking {Mapping quality}} \
-		   [set ${t}(Y)]]
-    set cmode  [set ${t}(Colour)]
-
-    set yscale [set ${t}(YScale)]
-    set ylog   [set ${t}(YLog)]
-
-    # Obtain the list of reads to plot and generate horizontal lines.
-    # For now we have no X coordinates though
-    set cn1 [set ${w}(cnum)]
-    foreach r $reads {
-	foreach {st1 en1 rec1 mq1 comp1 dir1 st2 en2 rec2 mq2 comp2 dir2 type same_c} \
-	    $r {break}
-	if {[info exists done($rec1)]} {continue}
-
-	# Don't need this? I think we only need to know the pair as rec
-	# should be unique from the seqs_in_range call.
-	#set done($rec1) 1
-
-	set xst1 [x2c $w $st1]
-	set xen1 [x2c $w $en1]
-	# Factored out for speed
-	#set xst1 [expr {($st1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
-	#set xen1 [expr {($en1 - [set ${w}(xorigin)]) / [set ${w}(xzoom)]}]
-
-	set mq $mq1
-	if {!$rec2} {
-	    if {$ymode == 2} {
-		set line [list [expr {5*($mq1+0.1)}] $xst1 $xen1 s $rec1]
-	    } else {
-		set line [list [expr {$en1-$st1}] $xst1 $xen1 s $rec1]
-	    }
-	    if {$ymode != 1} {
-		set sz 0
-	    } else {
-		set sz [expr {int(10*log([lindex $line end-2]-[lindex $line 1]))}]
-	    }
-	    lappend lines_sz($sz) $line
-	    continue
-	}
-
-	set dir1 [expr {$dir1 ? "r" : "f"}]
-
-	# Paired end
-	set unordered 0
-	if {$rec2} {
-	    set line {}
-	    if {$accurate && !($st2 || $en2)} {
-		# We want accurate plotting, but haven't observed the other
-		# end.
-		set r2 [$io get_sequence $rec2]
-		set st2 [$r2 get_position]
-		set cn2 [$r2 get_contig]
-		set en2 [expr {$st2+abs([$r2 get_length])-1}]
-		set comp2 [expr {[$r2 get_length] >= 0 ? 0 : 1}] 
-		set dir2 [expr {$comp2 ? "f" : "r"}]
-		set mq2 [$r2 get_mapping_qual]
-		$r2 delete
-		set xst2 [x2c $w $st2]
-		set xen2 [x2c $w $en2]
-	    } else {
-		# Otherwise, if we've observed the other end then
-		# we set the contig and st2/en2 in pxels, else leave
-		# contig as zero and plot a dotted line to indicate the
-		# other end is "somewhere" (unknown if this contig or
-		# another).
-		set cn2 [expr {$same_c ? $cn1 : 0}]
-		set dir2 [expr {$dir2 ? "r" : "f"}]
-		if {$st2 || $en2} {
-		    set xst2 [x2c $w $st2]
-		    set xen2 [x2c $w $en2]
-		}
-	    }
-
-	    # Temporary hack: only show long read-pairs
-	    #if {$en2 - $st1 < 10000} continue
-    
-	    # Consistency check
-	    set tcol t
-	    if {($st2 || $en2) && $cn1 == $cn2} {
-		if {$comp1 == $comp2 ||
-		    ($comp1 == 0 && $en2 < $st1) ||
-		    ($comp1 == 1 && $en1 < $st2)} {
-		    set dir1 x
-		    set dir2 x
-		    set tcol T
-		}
-	    }
-
-	    set mq [expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
-	    if {$tcol == "t"} {
-		switch $cmode {
-		    "Combined mapping quality" {
-			set tcol Y[expr {sqrt($mq1*$mq1+$mq2*$mq2)}]
-		    }
-		    "Minimum mapping quality" {
-			set tcol Y[expr {$mq1 < $mq2 ? $mq1 : $mq2}]
-		    }
-		    "Maximum mapping quality" {
-			set tcol Y[expr {$mq1 > $mq2 ? $mq1 : $mq2}]
-		    }
-		    "Reads" {}
-		}
-	    }
-
-	    lappend line [expr {$en1-$st1}] $xst1 $xen1 $dir1 $rec1
-	    set done($rec2) 1
-
-	    #if {$en2 >= $x1-100 && $st2 <= $x2+100 && $cn2 == $cn1} 
-	    if {$cn2 == $cn1} {
-		# Both in the same contig, so draw template line too.
-		if {$cmode != "Reads"} {
-		    if {$xen2 >= $xst1} {
-			set line [list [expr {$en2-$st1}] $xst1 $xen2 $tcol $rec2]
-		    } else {
-			set line [list [expr {$en1-$st2}] $xst2 $xen1 $tcol $rec2]
-		    }
-		} else {
-		    if {$st2 >= $st1} {
-			lappend line $xen1 $xst2 $tcol $rec2
-			lappend line $xst2 $xen2 $dir2 $rec2
-			set min $st1
-			set max $en2
-		    } else {
-			set unordered 1
-			set line [linsert $line 1 $xst2 $xen2 $dir2 $rec2 \
-				      $xen2 $xst1 $tcol $rec2]
-			set min $st2
-			set max $en1
-		    }
-		    set line [lreplace $line 0 0 [expr {$max-$min}]]
-		}
-	    } else {
-		# Other end is invisible (either too far away or
-		# simply in another contig), so draw dotted line.
-		if {$ymode == 1} {
-		    if {$dir1 == "f"} {
-			lappend line $xen1 [expr {$xen1+20}] d $rec2
-		    } else {
-			set line [concat 0 [expr {$xst1-20}] $xst1 d $rec2 \
-				      [lrange $line 1 end]]
-
-		    }
-		} else {
-		    set line [lreplace $line 3 3 D]
-		}
-	    }
-
-	    # NB: line consists of multiple segments, but must be in
-	    # left to right order
-	} else {
-	    # Singleton - the easy case.
-	    set line [list [expr {$en1-$st1}] $xst1 $xen1 s $rec1]
-	}
-	
-	if {$ymode == 0} {
-	    set sz 0
-	} elseif {$ymode == 2} {
-	    set sz 0
-	    set line [lreplace $line 0 0 [expr {4*$mq}]]
-	} else {
-	    set sz [expr {int(10*log([lindex $line end-2]-[lindex $line 1]))}]
-	}
-
-	if {$unordered && [info exists lines_sz($sz)]} {
-	    set p1 [lindex $line 1]
-	    set c 0
-	    foreach l $lines_sz($sz) {
-		if {[lindex $l 1] > $p1} break;
-		incr c
-	    }
-	    set lines_sz($sz) [linsert $lines_sz($sz) $c $line]
-	} else {
-	    lappend lines_sz($sz) $line
-	}
-    }
-
-    set t2 [clock clicks]
-    puts "  SEQS_FIND_END $t2 [expr {$t2-$t1}]"
-
-    # Plot
-    set t1 [clock clicks]
-    puts "  SEQS_PLOT_START $t1"
-    set y 3
-
-    set yoff [set ${t}(y1)]
-
-    set ysep [expr {10*(11-log($x2-$x1))}]
-    set ysep [expr {2+($ysep > 0 ? int($ysep) : 0)}]
-    set ysep [expr {$ysep > 15 ? 15 : $ysep}]
-    set ysep [expr {$ysep * $yscale/60.0}]
-
-    set ystart 0
-    set ymax 0
-    puts sz=[lsort -integer -decreasing [array names lines_sz]]
-    foreach sz [lsort -integer -decreasing [array names lines_sz]] {
-	if {$ymode == 1} {
-	    # compute_max_y is about 30% of plotting time
-	    set ymax [compute_max_y $w $lines_sz($sz)]
-	}
-	foreach l $lines_sz($sz) {
-	    if {$ymode == 1} {
-		set yp [expr {($y%$ymax+$ystart)*$ysep+3}]
-	    } else {
-		set yp [lindex $l 0]
-		if {$ylog} {
-		    set yp [expr {10+250*log($yp+1 < 0 ?1 :$yp+1)*$yscale/100}]
-		} else {
-		    set yp [expr {10+$yp*$yscale/100.0}]
-		}
-	    }
-	    foreach {x1 x2 st rec} [lrange $l 1 end] {
-		if {[string match "Y*" $st]} {
-		    set col [expr {int(2*[string range $st 1 end])}]
-		    if {$col > 255} {set col 255}
-		    set tcol [format "\#%02x%02x%02x" $col $col $col]
-		    set st t
-		} else {
-		    set tcol grey60
-		}
-
-		switch $st {
-		    x {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 3 -fill yellow -tags "rec_$rec p"}
-		    s {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 2 -fill black -tags "rec_$rec p"}
-		    f {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 2 -fill blue -tags "rec_$rec p"}
-		    r {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 2 -fill red -tags "rec_$rec p"}
-		    t {
-			$d create line $x1 $yp $x2 $yp -capstyle round \
-			    -activewidth 4 -activefill white \
-			    -width 1 -fill $tcol -tags "rec_$rec p"
-		    }
-		    T {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 2 -fill orange -tags "rec_$rec p"}
-		    d {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 1 -fill grey60 -dash . -tags "rec_$rec p"}
-		    D {$d create line $x1 $yp $x2 $yp -capstyle round \
-			   -activewidth 4 -activefill white \
-			   -width 1 -fill purple -tags "rec_$rec p"}
-		}
-	    }
-	    incr y
-	}
-	incr ystart $ymax
-    }
-    set t2 [clock clicks]
-    puts "  SEQS_PLOT_END $t2 [expr {$t2-$t1}]"
-
-    # Sync Y scrollbar
-    set hei [expr {($ymax+$ystart)*$ysep+3.0}]
-    puts hei=$hei
-    set ${t}(scroll_height) $hei
-    puts "[set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]"
-    [set ${t}(ys)] set [expr {$y1/$hei}] [expr {$y2/$hei}]
-
-    puts SEQ_SEQS_DRAW_END
+    # Set Y scrollbar
+    set ${t}(scroll_height) [expr {[$td ymax]-[$td ymin]}]
+    eval [set ${t}(ys)] set [$td yrange]
 }
 
 

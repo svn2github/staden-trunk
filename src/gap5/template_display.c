@@ -73,6 +73,8 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, sep_by_strand), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-filter", "filter", "Filter", "0",
      -1, Tk_Offset(template_disp_t, filter), 0, 0, 0 /* mask */},
+    {TK_CONFIG_DOUBLE, "-xzoom", "xZoom", "XZoom", "10.0",
+     -1, Tk_Offset(template_disp_t, xzoom), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
      -1, Tk_Offset(template_disp_t, yzoom), 0, 0, 0 /* mask */},
     {TK_OPTION_END}
@@ -161,8 +163,8 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	double wx0, wy0, wx1, wy1;
 	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
 	sprintf(buf, "%f %f",
-		(t->ymin-wy0)/(wy1-wy0),
-		(t->ymax-wy0)/(wy1-wy0));
+		(wy0-t->ymin-10)/(t->ymax-t->ymin+20),
+		(wy1-t->ymin-10)/(t->ymax-t->ymin+20));
 	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
 	break;
     }
@@ -340,7 +342,7 @@ int sort_by_rec(void *p1, void *p2) {
 }
 
 int template_replot(template_disp_t *t) {
-    double wx0, wy0, wx1, wy1, y;
+    double wx0, wy0, wx1, wy1, ny0, ny1, y;
     rangec_t *r;
     int nr, i, mode;
     struct timeval tv1, tv2;
@@ -351,6 +353,7 @@ int template_replot(template_disp_t *t) {
     int ymax = INT_MIN;
     int t_strand;
     int width, height;
+    static int last_zoom = 0;
 
     Display *rdisp;
     Drawable rdraw;
@@ -371,9 +374,6 @@ int template_replot(template_disp_t *t) {
     GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
     RasterWinSize(t->raster, &width, &height);
     height /= 2;
-
-    printf("Coordinates (%f,%f) - (%f,%f) yz %f\n",
-	   wx0, wy0, wx1, wy1, yz);
 
     wx0 -= tsize;
     wx1 += tsize;
@@ -517,11 +517,11 @@ int template_replot(template_disp_t *t) {
 		col = t->inconsistent_col;
 	}
 
-	if (ymin > y) ymin = y;
-	if (ymax < y) ymax = y;
-
 	if (t->sep_by_strand)
 	    y = t_strand ? height - y : height + y;
+
+	if (ymin > y) ymin = y;
+	if (ymax < y) ymax = y;
 
 	if (y >= wy0 && y <= wy1) {
 	    if (col != last_col) {
@@ -567,10 +567,27 @@ int template_replot(template_disp_t *t) {
     gettimeofday(&tv2, NULL);
     t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 
-    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs\n",
-	   (int)wx0, (int)wx1, nr, t1, t2, t3);
+    //    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs\n",
+    //	   (int)wx0, (int)wx1, nr, t1, t2, t3);
 
     free(r);
+
+    ny0 = wy0; ny1 = wy1;
+    if (t->yzoom != last_zoom) {
+	ny0 = t->ymin-10;
+	ny1 = t->ymax+10;
+    } else {
+	if (ny0 > t->ymin-10)
+	    ny0 = t->ymin-10;
+	if (ny1 < t->ymax+10)
+	    ny1 = t->ymax+10;
+    }
+    last_zoom = t->yzoom;
+    if (ny0 > 0) ny0 = 0;
+    if (ny1 < 400) ny1 = 400;
+    wx0 = contig_get_start(&t->contig)-10;
+    wx1 = contig_get_end(&t->contig)+10;
+    RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);
 
     return 0;
 }

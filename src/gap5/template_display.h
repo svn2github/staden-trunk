@@ -26,6 +26,7 @@ typedef struct {
     int spread;
     int reads_only;
     double yzoom;
+    double xzoom;
     int sep_by_strand;
     int yoffset;
     int ymin, ymax; /* visible extents of data in Y */
