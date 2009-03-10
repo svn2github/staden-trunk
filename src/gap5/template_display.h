@@ -31,6 +31,10 @@ typedef struct {
     int yoffset;
     int ymin, ymax; /* visible extents of data in Y */
     int filter; /* bitmask */
+    int *tdepth; /* paired template depth (consistent only) */
+    int *sdepth; /* sequence depth */
+    int depth_width;
+    int plot_depth;
 } template_disp_t;
 
 #define FILTER_PAIRED      (1<<0)

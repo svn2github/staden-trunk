@@ -32,6 +32,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(io) $io
     set ${w}(cnum) $cnum
     set ${w}(contig) [$io get_contig $cnum]
+    set ${w}(start) [[set ${w}(contig)] get_start]
     set ${w}(length) [[set ${w}(contig)] get_length]
     set ${w}(tracks) {}
     set ${w}(move_status) 0
@@ -60,7 +61,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     grid $bc -row 999 -sticky nsew
     grid rowconfigure $w 999 -weight 0
 
-    scale $bc.xzoom -from 1 -to 1000 -orient horiz -label "X Scale" \
+    scale $bc.xzoom -from 1 -to 250 -orient horiz -label "X Scale" \
 	-resolution 0.1 -command "set_xzoom $w"
     $bc.xzoom set 20
     pack $bc.xzoom -fill both -expand 1 -side left
@@ -539,6 +540,7 @@ proc seq_seqs_init {w t} {
     set ${t}(Colour) "Combined mapping quality"
     set ${t}(Spread) 0
     set ${t}(PairOnly) 0
+    set ${t}(PlotDepth) 0
     set ${t}(SeparateStrands) 1
 
     # Add raster component to canvas
@@ -600,7 +602,11 @@ proc seq_seqs_init {w t} {
     checkbutton $f1.pair_only -text "Pairs only" \
 	-variable ${t}(PairOnly) \
 	-command "redraw_plot $w seq_seqs"
-    pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only -side left
+    checkbutton $f1.plot_depth -text "Depth" \
+	-variable ${t}(PlotDepth) \
+	-command "redraw_plot $w seq_seqs"
+    pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only \
+	$f1.plot_depth -side left
 
     $d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
 
@@ -641,18 +647,18 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     if {[set ${t}(R_zoom)] != [set ${w}(xzoom)]} {
 	# Query existing world
-	foreach {x1 y1 x2 y2} [$r world] break;
+	foreach {X1 Y1 X2 Y2} [$r world] break;
 
 	# Find mid-point of old world
-	set mid [expr {($x1+$x2)/2.0}]
+	set mid [expr {($X1+$X2)/2.0}]
 
 	# Compute approximate new location
-	$r world [set ${w}(x1)] $y1 [set ${w}(x2)] $y2
+	$r world [set ${w}(x1)] $Y1 [set ${w}(x2)] $Y2
 
 	# Reset to actual world
-	foreach {x1 y1 x2 y2} [$r world] break;
-	set delta [expr {($x2-$x1)/2.0}]
-	$r world [expr {$mid-$delta}] $y1 [expr {$mid+$delta}] $y2
+	foreach {X1 Y1 X2 Y2} [$r world] break;
+	set delta [expr {($X2-$X1)/2.0}]
+	$r world [expr {$mid-$delta}] $Y1 [expr {$mid+$delta}] $Y2
 
 	set ${t}(R_zoom) [set ${w}(xzoom)]
     }
@@ -661,7 +667,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     set wx2 [x2c $w $x2]
     set wid [expr {$wx2-$wx1+1}]
 #    puts $x1..$x2,[expr {double($x1)/[set ${w}(length)]}]..[expr {double($x2)/[set ${w}(length)]}]
-    $r xview moveto [expr {double($x1)/[set ${w}(length)]}]
+    $r xview moveto [expr {double($x1-[set ${w}(start)])/[set ${w}(length)]}]
 
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
@@ -683,7 +689,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	-reads_only [set ${t}(ReadsOnly)] \
 	-by_strand  [set ${t}(SeparateStrands)] \
 	-filter     [set ${t}(PairOnly)] \
-	-yzoom      [set ${t}(YScale)]
+	-yzoom      [set ${t}(YScale)] \
+	-plot_depth [set ${t}(PlotDepth)] \
 
 
     # Set Y scrollbar

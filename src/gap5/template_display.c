@@ -73,6 +73,8 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, sep_by_strand), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-filter", "filter", "Filter", "0",
      -1, Tk_Offset(template_disp_t, filter), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-plot_depth", "plotDepth", "PlotDepth", "0",
+     -1, Tk_Offset(template_disp_t, plot_depth), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-xzoom", "xZoom", "XZoom", "10.0",
      -1, Tk_Offset(template_disp_t, xzoom), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
@@ -311,6 +313,10 @@ template_disp_t *template_new(GapIO *io, int cnum,
     opts[1] = "magenta";
     t->rev_col = CreateDrawEnviron(interp, raster, 6, opts);
 
+    t->tdepth = NULL;
+    t->sdepth = NULL;
+    t->depth_width = 0;
+
     return t;
 }
 
@@ -320,6 +326,11 @@ void template_destroy(template_disp_t *t) {
 
     if (t->io && t->contig)
 	cache_decr(t->io, t->contig);
+
+    if (t->tdepth)
+	free(t->tdepth);
+    if (t->sdepth)
+	free(t->sdepth);
 
     /* Draw Environments automatically freed on raster destroy */
 
@@ -344,7 +355,7 @@ int sort_by_rec(void *p1, void *p2) {
 int template_replot(template_disp_t *t) {
     double wx0, wy0, wx1, wy1, ny0, ny1, y;
     rangec_t *r;
-    int nr, i, mode;
+    int nr, i, j, mode;
     struct timeval tv1, tv2;
     double t1, t2, t3;
     double tsize = 1000;
@@ -352,7 +363,7 @@ int template_replot(template_disp_t *t) {
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     int t_strand;
-    int width, height;
+    int width, height, height2;
     static int last_zoom = 0;
 
     Display *rdisp;
@@ -371,12 +382,25 @@ int template_replot(template_disp_t *t) {
     yz = t->yzoom / 100.0;
 
     tk_RasterClear(t->raster);
-    GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
     RasterWinSize(t->raster, &width, &height);
-    height /= 2;
+    height2 = height / 2;
+
+    GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
+    //RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
+    //RasterToWorld(t->raster, width, height, &wx1, &wy1);
+
+    printf("templates %f to %f\n", wx0, wx1);
 
     wx0 -= tsize;
     wx1 += tsize;
+
+    if (t->depth_width != width) {
+	t->depth_width  = width;
+	t->sdepth = (int *)realloc(t->sdepth, width * sizeof(int));
+	t->tdepth = (int *)realloc(t->tdepth, width * sizeof(int));
+    }
+    memset(t->sdepth, 0, t->depth_width * sizeof(int));
+    memset(t->tdepth, 0, t->depth_width * sizeof(int));
 
     /* Find sequences on screen */
     gettimeofday(&tv1, NULL);
@@ -405,6 +429,7 @@ int template_replot(template_disp_t *t) {
     /* Plot */
     for (i = 0; i < nr; i++) {
 	int sta, end;
+	int r_sta, r_end, r_y;
 	int span = 0;
 	int single = 0;
 	int col;
@@ -417,8 +442,19 @@ int template_replot(template_disp_t *t) {
 	t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
 	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
 
-	if (t->filter & FILTER_PAIRED && !r[i].pair_rec)
+	if (t->plot_depth) {
+	    WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
+	    WorldToRaster (t->raster, end, y, &r_end, &r_y);
+	    if (r_sta < 0) r_sta = 0;
+	    if (r_end >= width) r_end = width-1;
+	    for (j = r_sta; j <= r_end; j++) {
+		t->sdepth[j]++;
+	    }
+	}
+
+	if (t->filter & FILTER_PAIRED && !r[i].pair_rec) {
 	    continue;
+	}
 
 	if (!t->reads_only && r[i].pair_rec) {
 	    /* Only draw once */
@@ -472,6 +508,14 @@ int template_replot(template_disp_t *t) {
 		    mq = 99;
 		    break;
 		}
+
+		WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
+		WorldToRaster (t->raster, end, y, &r_end, &r_y);
+		if (r_sta < 0) r_sta = 0;
+		if (r_end >= width) r_end = width-1;
+		for (j = r_sta; j <= r_end; j++) {
+		    t->sdepth[j]++;
+		}
 	    }
 	} else {
 	    mq = r[i].mqual;
@@ -517,8 +561,19 @@ int template_replot(template_disp_t *t) {
 		col = t->inconsistent_col;
 	}
 
+	if (t->plot_depth && !single && !span && col != t->inconsistent_col) {
+	    WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
+	    WorldToRaster (t->raster, end, y, &r_end, &r_y);
+	    if (r_sta < 0) r_sta = 0;
+	    if (r_end >= width) r_end = width-1;
+	    for (j = r_sta; j <= r_end; j++) {
+		t->tdepth[j]++;
+	    }
+	}
+
+
 	if (t->sep_by_strand)
-	    y = t_strand ? height - y : height + y;
+	    y = t_strand ? height2 - y : height2 + y;
 
 	if (ymin > y) ymin = y;
 	if (ymax < y) ymax = y;
@@ -559,7 +614,32 @@ int template_replot(template_disp_t *t) {
 	    last_col = col;
 	}
     }
+    free(r);
 
+
+    /* Plot depth */
+    if (t->plot_depth) {
+	XPoint *sp, *tp;
+	sp = (XPoint *)calloc(width, sizeof(*sp));
+	tp = (XPoint *)calloc(width, sizeof(*tp));
+	for (j = 0; j < width; j++) {
+	    sp[j].x = j;
+	    sp[j].y = height-5 - t->sdepth[j] * yz;
+	    tp[j].x = j;
+	    tp[j].y = height-5 - t->tdepth[j] * yz;
+	} 
+	if (!(t->filter & FILTER_PAIRED)) {
+	    SetDrawEnviron(t->interp, t->raster, t->fwd_col);
+	    XDrawLines(rdisp, rdraw, rgc, sp, width, CoordModeOrigin);
+	}
+	SetDrawEnviron(t->interp, t->raster, t->rev_col);
+	XDrawLines(rdisp, rdraw, rgc, tp, width, CoordModeOrigin);
+	free(sp);
+	free(tp);
+   }
+
+
+    /* Compute scrollbar and bounding box locations */
     t->ymin = ymin != INT_MAX ? ymin : 0;
     t->ymax = ymax != INT_MIN ? ymax : 0;
 
@@ -569,8 +649,6 @@ int template_replot(template_disp_t *t) {
 
     //    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs\n",
     //	   (int)wx0, (int)wx1, nr, t1, t2, t3);
-
-    free(r);
 
     ny0 = wy0; ny1 = wy1;
     if (t->yzoom != last_zoom) {
