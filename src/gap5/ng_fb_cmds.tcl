@@ -173,9 +173,7 @@ proc DB_Load { file } {
 	    return ""
     }
 
-    set version_num [file extension $filename]
-    set version_num [string range $version_num 1 end]
-    set db_name [file rootname $filename]
+    set db_name $filename
 
     #FIXME - how to reset Busy if there is an error in opening the db
     global read_only
@@ -187,7 +185,7 @@ proc DB_Load { file } {
     DBClose
 
     set orig_type $licence(type)
-    set new_io [g5::open_database -name "$db_name.$version_num" -access $access]
+    set new_io [g5::open_database -name "$db_name" -access $access]
 
     if {$new_io == ""} {
 	if {$licence(type) == "d"} {
