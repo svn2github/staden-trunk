@@ -3,9 +3,13 @@
 #include <math.h>
 #include <sys/time.h>
 #include <time.h>
+#include <float.h>
 
 #include "template_display.h"
 #include "gap_cli_arg.h"
+
+static void tdisp_move_xhair(template_disp_t *t, int x, int y,
+			     double *rx, double *ry);
 
 /* From tclIntDecls.h */
 extern Tcl_Command Tcl_GetCommandFromObj(Tcl_Interp * interp, Tcl_Obj * objPtr);
@@ -90,13 +94,13 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 
     static char *options[] = {
 	"delete",       "io",           "cget",    "configure", "replot",
-	"ymin",         "ymax",         "yrange",
+	"ymin",         "ymax",         "yrange",  "xhair",
 	(char *)NULL,
     };
 
     enum options {
 	DELETE,         IO,     	CGET,      CONFIGURE,   REPLOT,
-	YMIN,           YMAX,           YRANGE
+	YMIN,           YMAX,           YRANGE,    XHAIR
     };
 
     if (objc < 2) {
@@ -170,6 +174,22 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
 	break;
     }
+
+    case XHAIR:
+	if (objc == 4) {
+	    int x, y;
+	    double rx, ry;
+	    Tcl_Obj *obj[2];
+	    Tcl_GetIntFromObj(interp, objv[2], &x);
+	    Tcl_GetIntFromObj(interp, objv[3], &y);
+	    tdisp_move_xhair(t, x, y, &rx, &ry);
+	    obj[0] = Tcl_NewDoubleObj(rx);
+	    obj[1] = Tcl_NewDoubleObj(ry);
+	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, obj));
+	} else {
+	    tdisp_move_xhair(t, INT_MAX, INT_MAX, NULL, NULL);
+	}
+	break;
     }
 
     if (replot)
@@ -313,9 +333,15 @@ template_disp_t *template_new(GapIO *io, int cnum,
     opts[1] = "magenta";
     t->rev_col = CreateDrawEnviron(interp, raster, 6, opts);
 
+    opts[1] = "green";
+    opts[5] = "xor";
+    t->xhair_col = CreateDrawEnviron(interp, raster, 6, opts);
+
     t->tdepth = NULL;
     t->sdepth = NULL;
     t->depth_width = 0;
+    t->xhair_pos = DBL_MAX;
+    t->yhair_pos = DBL_MAX;
 
     return t;
 }
@@ -667,5 +693,47 @@ int template_replot(template_disp_t *t) {
     wx1 = contig_get_end(&t->contig)+10;
     RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);
 
+    t->xhair_pos = DBL_MAX;
+    t->yhair_pos = DBL_MAX;
+
     return 0;
+}
+
+static void tdisp_move_xhair(template_disp_t *t, int x, int y,
+			     double *rx, double *ry) {
+    double wx0, wx1, wy0, wy1;
+    double xh, yh;
+    int width, height;
+
+    RasterWinSize(t->raster, &width, &height);
+    RasterToWorld(t->raster, x, y, &xh, &yh);
+    RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
+    RasterToWorld(t->raster, width, height, &wx1, &wy1);
+
+    SetDrawEnviron(t->interp, t->raster, t->xhair_col);
+    if (t->xhair_pos != DBL_MAX) {
+	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
+    }
+    if (t->yhair_pos != DBL_MAX) {
+	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
+    }
+
+    if (x != INT_MAX) {
+	t->xhair_pos = xh;
+	RasterDrawLine(t->raster, t->xhair_pos, wy0, t->xhair_pos, wy1);
+	if (rx) *rx = t->xhair_pos;
+    } else {
+	t->xhair_pos = DBL_MAX;
+    }
+
+    if (y != INT_MAX) {
+	t->yhair_pos = yh;
+	RasterDrawLine(t->raster, wx0, t->yhair_pos, wx1, t->yhair_pos);
+	if (ry) *ry = t->yhair_pos;
+    } else {
+	t->yhair_pos = DBL_MAX;
+    }
+
+    RasterRefresh(t->raster);
+
 }

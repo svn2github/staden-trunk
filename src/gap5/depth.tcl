@@ -171,7 +171,7 @@ proc set_xzoom {w val} {
     set wid [set ${w}(width)]
     set scale [set ${w}(xzoom)]
     set mid [c2x $w [expr {$wid/2.0}]]
-    set ${w}(xzoom) [expr {pow(($val+3)/10,3)}]
+    set ${w}(xzoom) [expr {pow(($val+4)/10,4)}]
 
     # Adjust xorigin to ensure $mid stays the same
     set ${w}(xorigin) [expr {$mid - ($wid/2)*[set ${w}(xzoom)]}]
@@ -550,6 +550,7 @@ proc seq_seqs_init {w t} {
 	       -width [winfo width $d] \
 	       -height [winfo height $d] \
 	       -bg black]
+
     #		   -bg \#e0ffe0]
     set rid [$d create window 0 0 -anchor nw -window $r]
     set ${t}(Cavnas) 0
@@ -564,6 +565,12 @@ proc seq_seqs_init {w t} {
     $r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
 	[winfo height $d]
     set ${t}(R_zoom) [set ${w}(xzoom)]
+
+    bind $r <Any-Motion> "
+         foreach {x y} \[[set ${t}(TDisp)] xhair %x %y\] break;
+         set ${w}(info) \"X: \$x    Y: \$y\"
+    "
+    bind $r <Any-Leave> "[set ${t}(TDisp)] xhair; set ${w}(info) {}"
 
     # Add GUI elements
     set bc $w.bcontrol

@@ -19,6 +19,7 @@ typedef struct {
     int inconsistent_col;
     int fwd_col;
     int rev_col;
+    int xhair_col;
     int logy;
     int cmode;
     int ymode;
@@ -35,6 +36,8 @@ typedef struct {
     int *sdepth; /* sequence depth */
     int depth_width;
     int plot_depth;
+    double xhair_pos;
+    double yhair_pos;
 } template_disp_t;
 
 #define FILTER_PAIRED      (1<<0)
