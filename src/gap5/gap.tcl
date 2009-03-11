@@ -505,6 +505,7 @@ load libtgap.so g5
 
 #db_info foo
 
+tk appname Gap5
 if {[keylget gap5_defs BACKGROUNDS] != ""} {
     if {[tk appname Gap5] != "Gap5"} {
         set app [tk appname]
@@ -545,7 +546,7 @@ set exec_notes 0
 set rawdata_note 1
 set maxseq 10000000
 
-set GAP_VERSION "5.0.3"
+set GAP_VERSION "1.1.0"
 
 switch $licence(type) {
     f		{}
@@ -694,8 +695,8 @@ if {$io != ""} {
     } else {
 	set extras ""
     }
-    wm title . "GAP v$GAP_VERSION: [db_info db_name $io]$extras"
-    wm iconname . "GAP: [db_info db_name $io]"
+    wm title . "[tk appname] v$GAP_VERSION: [db_info db_name $io]$extras"
+    wm iconname . "[tk appname]: [db_info db_name $io]"
     if {[db_info num_contigs $io] > 0} {
 	if {$do_check_db == 1 || ($do_check_db == -1 && !$read_only)} {
 	    if {[check_database -io $io] == 0} {
