@@ -374,7 +374,6 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
     return 0;
 }
 
-
 /* ------------------------------------------------------------------------ */
 void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
@@ -383,6 +382,7 @@ void usage(void) {
     fprintf(stderr, "      -M			Input is MAQ-long format (off)\n");
     //    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -B			Input is BAF format (off)\n");
+    fprintf(stderr, "      -b			Input is BAM format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
     fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
@@ -400,7 +400,7 @@ int main(int argc, char **argv) {
     printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBThAmMo:pn")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbThAmMo:pn")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -414,6 +414,8 @@ int main(int argc, char **argv) {
 	case 'M':
 	case 'A':
 	case 'B':
+	case 's':
+	case 'b':
 	    fmt = opt;
 	    break;
 
@@ -472,6 +474,10 @@ int main(int argc, char **argv) {
 
 	case 'B':
 	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);
+	    break;
+
+	case 'b':
+	    parse_bam(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;
 
 	default:

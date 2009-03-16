@@ -13,11 +13,13 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 # Local comment: Comment out next line for remote compilation
 TGAPBIN=$(O)
 
-INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC)
+INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
+	-I../samtools-0.1.2
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For debugging g-alloc
 #CFLAGS += -DVALGRIND
+#CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector
 
 TGAP_LIB = -L$(L) -ltgap
 
@@ -74,7 +76,8 @@ TG_IND_OBJ = \
 	$(TGAPBIN)/tg_index.o \
 	$(TGAPBIN)/baf.o \
 	$(TGAPBIN)/maq.o \
-	$(TGAPBIN)/maqmap.o
+	$(TGAPBIN)/maqmap.o \
+	$(TGAPBIN)/sam.o
 
 #	$(TGAPBIN)/ace.o \
 #	mapass2.o
@@ -85,7 +88,8 @@ TGILIBS = \
 	$(ZLIB_LIB) \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
-	$(TCL_LIB)
+	$(TCL_LIB) \
+	-L../samtools-0.1.2 -lbam
 
 $(O)/tg_index: $(TG_IND_OBJ)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
