@@ -406,6 +406,11 @@ proc seq_depth {w t x1 x2 y1 y2} {
 
     set c    [set ${w}(contig)]
     set d    [set ${t}(canvas)]
+    $d delete all
+    $d configure -scrollregion \
+	[list 0 0 \
+	     [expr [winfo width $d]] \
+	     [expr [winfo height $d]]]
     set wid  [set ${w}(width)]
     set yz   [set ${w}(yzoom)]
 
@@ -533,7 +538,7 @@ proc seq_seqs_init {w t} {
 
     set ${t}(Accurate) 0
     set ${t}(YLog) 1
-    set ${t}(YScale) 20
+    set ${t}(YScale) 100
     set ${t}(YOffset) 50
     set ${t}(Simple) 0
     set ${t}(Y) "Template Size"
@@ -541,7 +546,7 @@ proc seq_seqs_init {w t} {
     set ${t}(Spread) 0
     set ${t}(PairOnly) 0
     set ${t}(PlotDepth) 0
-    set ${t}(SeparateStrands) 1
+    set ${t}(SeparateStrands) 0
 
     # Add raster component to canvas
     update idletasks
@@ -574,10 +579,10 @@ proc seq_seqs_init {w t} {
 
     # Add GUI elements
     set bc $w.bcontrol
-    scale $bc.yzoom -from 1 -to 250 -orient horiz -label "Y Magnification" \
+    scale $bc.yzoom -from 1 -to 1000 -orient horiz -label "Y Magnification" \
 	-variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
 
-    scale $bc.yspread -from 1 -to 250 -orient horiz -label "Y Spread" \
+    scale $bc.yspread -from 0 -to 250 -orient horiz -label "Y Spread" \
 	-variable ${t}(Spread) -command "redraw_plot $w seq_seqs"
 
     scale $bc.yoffset -from 0 -to 250 -orient horiz -label "Y Offset" \
