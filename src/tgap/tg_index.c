@@ -395,7 +395,7 @@ int main(int argc, char **argv) {
     char *out_fn = "g_db";
     int no_tree=0, pair_reads=0, append=0, merge_contigs=1;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 0.12\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 0.13\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
 
