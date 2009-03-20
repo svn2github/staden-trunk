@@ -89,6 +89,9 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
 
 /*
  * Removes a sequence from the bam_io_t struct.
+ * This actually performs the main work of adding a sequence to the gap5
+ * database.
+ *
  * Returns 0 on success
  *        -1 on failure
  */
@@ -186,11 +189,12 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	    : GRANGE_FLAG_END_REV;
     else
 	/* Guess work here. For now all <--- are rev, all ---> are fwd */
-	r.flags |= s.len > 0
+	r.flags |= bam1_strand(b)
 	    ? GRANGE_FLAG_END_FWD
 	    : GRANGE_FLAG_END_REV;
-    if (s.len < 0)
+    if (bam1_strand(b)) {
 	r.flags |= GRANGE_FLAG_COMP1;
+    }
 
     bin = bin_add_range(io, &bio->c, &r, &r_out);
 
@@ -200,11 +204,11 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     recno = sequence_new_from(io, &s);
 
     /* Find the read-pair if appropriate */
-    if (bio->pair) {
+    if (bio->pair && !(b->core.flag & (BAM_FMUNMAP | BAM_FUNMAP))) {
 	int new = 0;
 	HacheData hd;
 	pair_loc_t *pl;
-	    
+
 	/* Add data for this end */
 	pl = (pair_loc_t *)malloc(sizeof(*pl));
 	pl->rec  = recno;
@@ -247,6 +251,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     /* Tidy up */
     if (bs->seq)  free(bs->seq);
     if (bs->conf) free(bs->conf);
+    free(s.data);
     
     if (snum+1 < bio->nseq)
 	memmove(bs, bs+1, (bio->nseq - (snum+1)) * sizeof(*bs));
@@ -411,6 +416,7 @@ int parse_bam(GapIO *io, const char *fn,
     bam_header_t *header;
     bamFile fp;
 
+    /* Setup bam_io_t object and create our pileup interface */
     bio->io = io;
     bio->seqs = NULL;
     bio->nseq = 0;
@@ -432,6 +438,10 @@ int parse_bam(GapIO *io, const char *fn,
     plbuf = bam_plbuf_init(bio_callback, bio);
     bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
 
+    /*
+     * Loop through reads - the bulk of the work here is done in the
+     * bio_callback function.
+     */
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
     while ((ret = bam_read1(fp, b)) >= 0) {
 	bam_plbuf_push(b, plbuf);
@@ -445,11 +455,29 @@ int parse_bam(GapIO *io, const char *fn,
     bam_plbuf_push(0, plbuf);
     bam_plbuf_destroy(plbuf);
 
+    cache_flush(io);
     printf("Loaded %d sequences\n", bio->count);
 
-    cache_flush(io);
-    free(b->data);
-    free(b);
+    /* Tidy up */
+    if (header)
+	bam_header_destroy(header);
+
+    if (b) {
+	if (b->data)
+	    free(b->data);
+	free(b);
+    }
+    if (bio) {
+	if (bio->seqs)
+	    free(bio->seqs);
+	free(bio);
+    }
+
+    if (fp)
+	bam_close(fp);
+
+    if (bio->pair)
+	HacheTableDestroy(bio->pair, 0);
 
     return 0;
 }
