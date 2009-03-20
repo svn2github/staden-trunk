@@ -4,9 +4,11 @@
 #include <sys/time.h>
 #include <time.h>
 #include <float.h>
+#include <assert.h>
 
 #include "template_display.h"
 #include "gap_cli_arg.h"
+#include "tree.h"
 
 static void tdisp_move_xhair(template_disp_t *t, int x, int y,
 			     double *rx, double *ry);
@@ -327,11 +329,17 @@ template_disp_t *template_new(GapIO *io, int cnum,
     //    opts[7] = "projecting"; // but or round
     //    opts[8] = NULL;
 
-    opts[1] = "green";
-    t->fwd_col = CreateDrawEnviron(interp, raster, 6, opts);
+    opts[1] = "green4";
+    t->fwd_col  = CreateDrawEnviron(interp, raster, 6, opts);
+    opts[3] = "3";
+    t->fwd_col3 = CreateDrawEnviron(interp, raster, 6, opts);
+    opts[3] = "0";
 
     opts[1] = "magenta";
-    t->rev_col = CreateDrawEnviron(interp, raster, 6, opts);
+    t->rev_col  = CreateDrawEnviron(interp, raster, 6, opts);
+    opts[3] = "3";
+    t->rev_col3 = CreateDrawEnviron(interp, raster, 6, opts);
+    opts[3] = "0";
 
     opts[1] = "green";
     opts[5] = "xor";
@@ -363,6 +371,140 @@ void template_destroy(template_disp_t *t) {
     free(t);
 }
 
+typedef struct {
+    double y;          /* y coord */
+    int col[3];        /* colours */
+    int x[4];          /* coordinates */
+    int t_strand;      /* template strand */
+    int mq;            /* mapping qual */
+} tline;
+
+
+/* -------------------------------------------------------------------------
+ * Y Coordinate allocation routines
+ */
+static int yp_xgap = 2; /* FIXME */
+void set_yp_xgap(int v) {printf("v=%d\n", v);yp_xgap = v;}
+
+/* Pick Y coordinates for ranges */
+typedef struct ye2 {
+    SPLAY_ENTRY(ye2) link;
+    int x;
+    int y;
+} ye2;
+
+static int x_cmp(struct ye2 *y1, struct ye2 *y2) {
+    int d = (y1->x) - (y2->x);
+    return d ? d : y1->y - y2->y;
+}
+
+static int y_cmp(struct ye2 *y1, struct ye2 *y2) {
+    return y1->y - y2->y;
+}
+
+SPLAY_HEAD(XTREE, ye2);
+SPLAY_HEAD(YTREE, ye2);
+SPLAY_PROTOTYPE(XTREE, ye2, link, x_cmp);
+SPLAY_PROTOTYPE(YTREE, ye2, link, x_cmp);
+SPLAY_GENERATE(XTREE, ye2, link, x_cmp);
+SPLAY_GENERATE(YTREE, ye2, link, y_cmp);
+
+
+/*
+ * This algorithm allocates Y coordinates to the horizontal lines listed
+ * in tl[0..ntl-1].
+ *
+ * To keep track of this we expect sorted data, by X. We then keep track
+ * of every display line as an entry in one of two splay trees; one
+ * sorted on X and one sorted on Y. (NB, change macros SPLAY_ to RB_ for
+ * a red-black tree implementation instead.)
+ *
+ * The X-sorted tree holds the used portion of active display rows.
+ * The Y-sorted tree holds rows that can be considered as inactive, but
+ * will be reused if we have to add another row.
+ */
+static int compute_ypos(tline *tl, int ntl) {
+    int i;
+    struct ye2 *node, *curr, *next;
+    int yn = 0;
+
+    /* Create and initialise X and Y trees */
+    struct XTREE xtree = SPLAY_INITIALIZER(&xtree);
+    struct YTREE ytree = SPLAY_INITIALIZER(&ytree);
+
+    /* Compute Y coords */
+    for (i = 0; i < ntl; i++) {
+	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && tl[i].x[0] >= node->x) {
+	    int try_cull = 0;
+
+	    /* We found a node, is it the smallest in y? */
+	    curr = SPLAY_NEXT(XTREE, &xtree, node);
+	    while (curr && tl[i].x[0] >= curr->x) {
+		if (node->y > curr->y)
+		    node = curr;
+		curr = SPLAY_NEXT(XTREE, &xtree, curr);
+	    }
+	    
+	    /* Shift non-smallest y (but < x) to Y-tree */
+	    curr = SPLAY_MIN(XTREE, &xtree);
+	    while (curr && tl[i].x[0] >= curr->x) {
+		next = SPLAY_NEXT(XTREE, &xtree, curr);
+		if (curr != node) {
+		    SPLAY_REMOVE(XTREE, &xtree, curr);
+		    SPLAY_INSERT(YTREE, &ytree, curr);
+		    try_cull = 1;
+		}
+		curr = next;
+	    }
+	    
+	    tl[i].y = node->y;
+	    SPLAY_REMOVE(XTREE, &xtree, node);
+	    node->x = tl[i].x[3] + yp_xgap;
+	    SPLAY_INSERT(XTREE, &xtree, node);
+#if 0
+	    /* Cull Y tree if appropriate to remove excess rows */
+	    if (try_cull) {
+		for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
+		    next = SPLAY_PREV(YTREE, &ytree, curr);
+		    if (curr->y == yn) {
+			SPLAY_REMOVE(YTREE, &ytree, curr);
+			free(curr);
+			yn--;
+		    } else {
+			break;
+		    }
+		}
+	    }
+#endif
+
+	} else {
+	    /* Check if we have a free y on ytree */
+	    if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
+		SPLAY_REMOVE(YTREE, &ytree, node);
+	    } else {
+		node = (struct ye2 *)malloc(sizeof(*node));
+		node->y = ++yn;
+	    }
+	    tl[i].y = node->y;
+	    node->x = tl[i].x[3] + yp_xgap;
+	    SPLAY_INSERT(XTREE, &xtree, node);
+	}
+    }
+
+    /* Delete trees */
+    for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
+	next = SPLAY_NEXT(XTREE, &xtree, node);
+	SPLAY_REMOVE(XTREE, &xtree, node);
+    }
+
+    for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
+	next = SPLAY_NEXT(YTREE, &ytree, node);
+	SPLAY_REMOVE(YTREE, &ytree, node);
+    }
+
+    return 0;
+}
+
 int sort_by_mq(void *p1, void *p2) {
     rangec_t *r1 = (rangec_t *)p1;
     rangec_t *r2 = (rangec_t *)p2;
@@ -378,19 +520,28 @@ int sort_by_rec(void *p1, void *p2) {
     return r1->rec - r2->rec;
 }
 
+int sort_tline_by_x(const void *p1, const void *p2) {
+    tline *r1 = (tline *)p1;
+    tline *r2 = (tline *)p2;
+
+    return r1->x[0] - r2->x[1];
+}
+
 int template_replot(template_disp_t *t) {
     double wx0, wy0, wx1, wy1, ny0, ny1, y;
     rangec_t *r;
     int nr, i, j, mode;
     struct timeval tv1, tv2;
-    double t1, t2, t3;
+    double t1, t2, t3, t4;
     double tsize = 1000;
     double yz;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
-    int t_strand;
     int width, height, height2;
     static int last_zoom = 0;
+    tline *tl = NULL;
+    int ntl = 0;
+    int fwd_col, rev_col;
 
     Display *rdisp;
     Drawable rdraw;
@@ -405,7 +556,10 @@ int template_replot(template_disp_t *t) {
     if (!t->io)
 	return -1;
 
-    yz = t->yzoom / 100.0;
+    yz = t->yzoom / 200.0;
+
+    fwd_col = t->yzoom >= 150 ? t->fwd_col3 : t->fwd_col;
+    rev_col = t->yzoom >= 150 ? t->rev_col3 : t->rev_col;
 
     tk_RasterClear(t->raster);
     RasterWinSize(t->raster, &width, &height);
@@ -416,6 +570,8 @@ int template_replot(template_disp_t *t) {
     //RasterToWorld(t->raster, width, height, &wx1, &wy1);
 
     printf("templates %f to %f\n", wx0, wx1);
+
+    set_yp_xgap((int)(10*yz*(wx1-wx0)/width));
 
     wx0 -= tsize;
     wx1 += tsize;
@@ -431,28 +587,32 @@ int template_replot(template_disp_t *t) {
     /* Find sequences on screen */
     gettimeofday(&tv1, NULL);
     mode = t->reads_only ? 0 : CSIR_PAIR;
-    if (t->ymode == 1) {
-	r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, 
-				 mode |
-				 CSIR_ALLOCATE_Y_MULTIPLE |
-				 CSIR_SORT_BY_Y, &nr);
-    } else {
-	r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, mode, &nr);
-    }
+    if (t->ymode == 1)
+	mode |= CSIR_SORT_BY_Y;
+
+    //mode = CSIR_SORT_BY_X | CSIR_PAIR | CSIR_ALLOCATE_Y_MULTIPLE;
+
+    r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, mode, &nr);
+
     if (!r)
 	return 0;
+
+    tl = (tline *)malloc(nr * sizeof(*tl));
 
     gettimeofday(&tv2, NULL);
     t1 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 
     /* Sort data */
-    //    qsort(r, nr, sizeof(*r), sort_by_mq);
+    //qsort(r, nr, sizeof(*r), sort_by_mq);
 
-    tv1 = tv2;
-    gettimeofday(&tv2, NULL);
-    t2 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
+    /*
+     * Do this in multiple passes.
+     * 1) Compute X (start/end of lines to draw), colours, status.
+     * 2) Compute Y
+     * 3) Plot (possibly combined with 2)
+     */
 
-    /* Plot */
+    /* 1) Compute X */
     for (i = 0; i < nr; i++) {
 	int sta, end;
 	int r_sta, r_end, r_y;
@@ -465,8 +625,6 @@ int template_replot(template_disp_t *t) {
 	sta = r[i].start;
 	end = r[i].end;
 	mq  = r[i].mqual;
-	t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
-	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
 
 	if (t->plot_depth) {
 	    WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
@@ -481,6 +639,9 @@ int template_replot(template_disp_t *t) {
 	if (t->filter & FILTER_PAIRED && !r[i].pair_rec) {
 	    continue;
 	}
+
+	tl[ntl].t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
+	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
 
 	if (!t->reads_only && r[i].pair_rec) {
 	    /* Only draw once */
@@ -518,6 +679,7 @@ int template_replot(template_disp_t *t) {
 
 		switch (t->cmode) {
 		case 0:
+		case 3:
 		    mq = (r[i].mqual + r[i].pair_mqual)/2.0;
 		    break;
 		case 1:
@@ -530,17 +692,16 @@ int template_replot(template_disp_t *t) {
 			? r[i].pair_mqual
 			: r[i].mqual;
 		    break;
-		case 3:
-		    mq = 99;
-		    break;
 		}
 
-		WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
-		WorldToRaster (t->raster, end, y, &r_end, &r_y);
-		if (r_sta < 0) r_sta = 0;
-		if (r_end >= width) r_end = width-1;
-		for (j = r_sta; j <= r_end; j++) {
-		    t->sdepth[j]++;
+		if (t->plot_depth) {
+		    WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
+		    WorldToRaster (t->raster, end, y, &r_end, &r_y);
+		    if (r_sta < 0) r_sta = 0;
+		    if (r_end >= width) r_end = width-1;
+		    for (j = r_sta; j <= r_end; j++) {
+			t->sdepth[j]++;
+		    }
 		}
 	    }
 	} else {
@@ -552,23 +713,7 @@ int template_replot(template_disp_t *t) {
 	mq *= 3;
 	if (mq < 0) mq = 0;
 	if (mq > 255) mq = 255;
-
-	if (t->ymode == 1) {
-	    y = r[i].y*10;
-	} else {
-	    if (t->ymode == 0)
-		y = end - sta;
-	    else
-		y = mq*4;
-	    if (t->logy) {
-		if (y < 0) y = 0;
-		y = 50*log(y+1);
-	    }
-	}
-	y = (y + 50 - t->yoffset) * yz;
-
-	if (t->spread)
-	    y = y-t->spread/2+(sta%(t->spread));
+	tl[ntl].mq = mq;
 
 	col = t->map_col[(int)(mq/8)];
 	if (single)
@@ -588,8 +733,8 @@ int template_replot(template_disp_t *t) {
 	}
 
 	if (t->plot_depth && !single && !span && col != t->inconsistent_col) {
-	    WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
-	    WorldToRaster (t->raster, end, y, &r_end, &r_y);
+	    WorldToRaster (t->raster, sta, 0, &r_sta, &r_y);
+	    WorldToRaster (t->raster, end, 0, &r_end, &r_y);
 	    if (r_sta < 0) r_sta = 0;
 	    if (r_end >= width) r_end = width-1;
 	    for (j = r_sta; j <= r_end; j++) {
@@ -597,50 +742,118 @@ int template_replot(template_disp_t *t) {
 	    }
 	}
 
+	/* Generate line data */
+	tl[ntl].y      = y;
+	tl[ntl].col[1] = col;
+	tl[ntl].x[0]   = sta;
+	/* range in col 0 */
+	tl[ntl].x[1]   = sta;
+	/* range in col 1 */
+	tl[ntl].x[2]   = end; 
+	/* range in col 3 */
+	tl[ntl].x[3]   = end;
 
-	if (t->sep_by_strand)
-	    y = t_strand ? height2 - y : height2 + y;
+	/* Readings too? */
+	if (t->cmode == 3) {
+	    //col = (r[i].flags & GRANGE_FLAG_END_MASK
+	    //       == GRANGE_FLAG_END_FWD) ? t->fwd_col : t->rev_col;
+	    col = (r[i].flags & GRANGE_FLAG_COMP1)
+		? fwd_col : rev_col;
 
-	if (ymin > y) ymin = y;
-	if (ymax < y) ymax = y;
-
-	if (y >= wy0 && y <= wy1) {
-	    if (col != last_col) {
-		SetDrawEnviron(t->interp, t->raster, col);
+	    if (r[i].start == tl[ntl].x[0]) {
+		tl[ntl].x[1] = r[i].end;
+		tl[ntl].col[0] = col;
+	    } else if (r[i].end == tl[ntl].x[3]) {
+		tl[ntl].x[2] = r[i].start;
+		tl[ntl].col[2] = col;
+	    } else {
+		printf("error, start/end do not match template pos\n");
 	    }
-#if 0
-	    {
-		int r_sta, r_end, r_y;
-		WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
-		WorldToRaster (t->raster, end, y, &r_end, &r_y);
-		XDrawLine(rdisp, rdraw, rgc, r_sta, r_y, r_end, r_y);
-	    }
-#endif
-	    RasterDrawLine(t->raster, sta, y, end, y);
 
-	    /* Draw readings too */
-	    if (t->cmode == 3) {
-		//col = (r[i].flags & GRANGE_FLAG_END_MASK
-		//       == GRANGE_FLAG_END_FWD) ? t->fwd_col : t->rev_col;
-		col = (r[i].flags & GRANGE_FLAG_COMP1)
-		    ? t->fwd_col : t->rev_col;
-		SetDrawEnviron(t->interp, t->raster, col);
-		RasterDrawLine(t->raster, r[i].start, y, r[i].end, y);
-		if (r[i].pair_rec && (r[i].pair_start || r[i].pair_end)) {
-		    //col = (r[i].flags & GRANGE_FLAG_PEND_MASK
-		    //	   == GRANGE_FLAG_PEND_FWD) ? t->fwd_col : t->rev_col;
-		    col = (r[i].flags & GRANGE_FLAG_COMP2)
-			? t->fwd_col : t->rev_col;
-		    SetDrawEnviron(t->interp, t->raster, col);
-		    RasterDrawLine(t->raster, r[i].pair_start, y,
-				   r[i].pair_end, y);
+	    if (r[i].pair_rec && (r[i].pair_start || r[i].pair_end)) {
+		//col = (r[i].flags & GRANGE_FLAG_PEND_MASK
+		//	   == GRANGE_FLAG_PEND_FWD) ? t->fwd_col : t->rev_col;
+		col = (r[i].flags & GRANGE_FLAG_COMP2)
+		    ? fwd_col : rev_col;
+
+		if (r[i].pair_start == tl[ntl].x[0]) {
+		    tl[ntl].x[1] = r[i].pair_end;
+		    tl[ntl].col[0] = col;
+		} else if (r[i].pair_end == tl[ntl].x[3]) {
+		    tl[ntl].x[2] = r[i].pair_start;
+		    tl[ntl].col[2] = col;
+		} else {
+		    printf("error, start/end do not match template pos\n");
 		}
 	    }
-
-	    last_col = col;
 	}
+
+	last_col = col;
+	ntl++;
     }
     free(r);
+
+    /* 2) Compute Y coordinates (part 1) */
+    if (t->ymode == 1) {
+	puts("Sorting");
+	qsort(tl, ntl, sizeof(*tl), sort_tline_by_x);
+	puts("computing ypos");
+    tv1 = tv2;
+    gettimeofday(&tv2, NULL);
+    t2 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
+	compute_ypos(tl, ntl);
+    tv1 = tv2;
+    gettimeofday(&tv2, NULL);
+    t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
+	puts("done");
+    }
+
+
+    /* 3) Plot the lines */
+    for (i = 0; i < ntl; i++) {
+	int last_col = -1;
+	for (j = 0; j < 3; j++) {
+	    //	    printf("%d: %d..%d in %d\n",
+	    //		   i, tl[i].x[j], tl[i].x[j+1], tl[i].col[j]);
+	    if (tl[i].x[j] < tl[i].x[j+1]) {
+		double y;
+
+		/* Compute the Y coordinates (part 2) */
+		if (t->ymode == 1) {
+		    y = tl[i].y*10;
+		} else {
+		    if (t->ymode == 0)
+			y = tl[i].x[3] - tl[i].x[0];
+		    else
+			y = tl[i].mq*4;
+		    if (t->logy) {
+			if (y < 0) y = 0;
+			y = 50*log(y+1);
+		    }
+		}
+		y = (y + 50 - t->yoffset) * yz;
+
+		if (t->spread)
+		    y = y-t->spread/2+(tl[i].x[0]%(t->spread));
+
+		if (t->sep_by_strand)
+		    y = tl[i].t_strand ? height2 - y : height2 + y;
+
+		if (ymin > y) ymin = y;
+		if (ymax < y) ymax = y;
+
+		/* And plot if visible */
+		if (y >= wy0 && y <= wy1) {
+		    if (last_col != tl[i].col[j]) {
+			last_col  = tl[i].col[j];
+			SetDrawEnviron(t->interp, t->raster, last_col);
+		    }
+		    RasterDrawLine(t->raster, tl[i].x[j], y, tl[i].x[j+1], y);
+		}
+	    }
+	}
+    }
+    free(tl);
 
 
     /* Plot depth */
@@ -671,10 +884,10 @@ int template_replot(template_disp_t *t) {
 
     tv1 = tv2;
     gettimeofday(&tv2, NULL);
-    t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
+    t4 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 
-    //    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs\n",
-    //	   (int)wx0, (int)wx1, nr, t1, t2, t3);
+    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs + %5.3fs\n",
+    	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
 
     ny0 = wy0; ny1 = wy1;
     if (t->yzoom != last_zoom) {
