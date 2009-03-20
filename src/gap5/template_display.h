@@ -19,6 +19,8 @@ typedef struct {
     int inconsistent_col;
     int fwd_col;
     int rev_col;
+    int fwd_col3;
+    int rev_col3;
     int xhair_col;
     int logy;
     int cmode;
