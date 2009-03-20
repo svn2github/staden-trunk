@@ -234,9 +234,9 @@ set auto_index(InitContigGlobals) [list source [file join $dir gap_utils.tcl]]
 set auto_index(SetContigGlobals) [list source [file join $dir gap_utils.tcl]]
 set auto_index(complement_tag_list) [list source [file join $dir gap_utils.tcl]]
 
-set auto_index(ListResults) [list source [file join $dir result_manager.tcl]]
-set auto_index(result_list_update) [list source [file join $dir result_manager.tcl]]
-set auto_index(consistency_result_list_update) [list source [file join $dir result_manager.tcl]]
+#set auto_index(ListResults) [list source [file join $dir result_manager.tcl]]
+#set auto_index(result_list_update) [list source [file join $dir result_manager.tcl]]
+#set auto_index(consistency_result_list_update) [list source [file join $dir result_manager.tcl]]
 
 set auto_index(SendTo) [list source [file join $dir sendto.tcl]]
 set auto_index(EventHandler) [list source [file join $dir sendto.tcl]]
