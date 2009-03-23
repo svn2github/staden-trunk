@@ -621,7 +621,8 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
  *        -1 for failure
  */
 int edview_visible_items(edview *xx, int start, int end) {
-    if (!xx->r || xx->r_start != start || xx->r_end != end) {
+    /* Always reload for now as we can't spot edits yet */
+    if (1 || !xx->r || xx->r_start != start || xx->r_end != end) {
 	int mode = xx->ed->stack_mode
 	    ? CSIR_ALLOCATE_Y_MULTIPLE
 	    : CSIR_ALLOCATE_Y_SINGLE;
