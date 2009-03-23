@@ -55,6 +55,8 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(xzoom) [expr {([set ${w}(x2)]-[set ${w}(x1)]+1)/
 			   double([set ${w}(width)])}]
 
+    wm title $w "Contig [[set ${w}(contig)] get_name]"
+
     # Bottom control panel
     set bc [frame $w.bcontrol -bd 0 -bg blue]
     grid columnconfigure $w 0 -weight 1
@@ -62,7 +64,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     grid rowconfigure $w 999 -weight 0
 
     scale $bc.xzoom -from 1 -to 250 -orient horiz -label "X Scale" \
-	-resolution 0.1 -command "set_xzoom $w"
+	-resolution 0.1 -command "set_xzoom $w" -repeatinterval 20
     $bc.xzoom set 20
     pack $bc.xzoom -fill both -expand 1 -side left
 
