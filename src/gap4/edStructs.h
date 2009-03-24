@@ -77,7 +77,8 @@ typedef enum {
     CLONE    = 3,
     ALPHA    = 4,
     NUMERIC  = 5,
-    SET      = 6
+    SET      = 6,
+    CHEMISTRY= 7
 } editor_sort_t;
 
 typedef f_int tag_id;

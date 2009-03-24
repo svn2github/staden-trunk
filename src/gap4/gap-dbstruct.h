@@ -116,6 +116,10 @@
 #define GAP_CHEM_TYPE_MB_ET	(6<<1)
 #define GAP_CHEM_TYPE_BIGDYE1	(7<<1)
 #define GAP_CHEM_TYPE_BIGDYE3	(8<<1)
+#define GAP_CHEM_TYPE_SOLEXA	(9<<1)
+#define GAP_CHEM_TYPE_SOLID	(10<<1)
+#define GAP_CHEM_TYPE_454	(11<<1)
+#define GAP_CHEM_TYPE_OX_NANO	(12<<1)
 /* GVectors.level */
 #define GAP_LEVEL_UNKNOWN  0
 #define GAP_LEVEL_CLONE    1
@@ -140,6 +144,14 @@
 15	ABI BigDye v1 	terminator
 16	ABI BigDye v3 	primer
 17	ABI BigDye v3 	terminator
+18	-
+19	Solexa		terminator
+20	AB SOLiD	N/A
+21	AB SOLiD	N/A <- use this one
+22	454		N/A
+23	454		N/A <- use this one
+24	Oxford Nanopore	N/A
+25	Oxford Nanopore	N/A <- use this one
 */
 
 

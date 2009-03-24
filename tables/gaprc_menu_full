@@ -378,6 +378,8 @@ add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
 	1 {$e set_grouping \[set $w.GroupBy\]}
 add_radio       {Settings.Group Readings.By Clone}      1 0 {$w.GroupBy}\
 	3 {$e set_grouping \[set $w.GroupBy\]}
+add_radio       {Settings.Group Readings.By Chemistry}  1 0 {$w.GroupBy}\
+	7 {$e set_grouping \[set $w.GroupBy\]}
 add_radio       {Settings.Group Readings.By Set}        1 0 {$w.GroupBy}\
 	6 {$e set_grouping \[set $w.GroupBy\]}
 

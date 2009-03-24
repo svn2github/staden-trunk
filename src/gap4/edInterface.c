@@ -1759,15 +1759,35 @@ static int edSetBriefRead(EdStruct *xx, int seq, char *format) {
 			type_name = "LiCor";
 			break;
 
+		    case GAP_CHEM_TYPE_SOLEXA:
+			type_name = "Solexa";
+			break;
+
+		    case GAP_CHEM_TYPE_SOLID:
+			type_name = "SOLiD";
+			break;
+
+		    case GAP_CHEM_TYPE_454:
+			type_name = "454";
+			break;
+
+		    case GAP_CHEM_TYPE_OX_NANO:
+			type_name = "Nanopore";
+			break;
+
+
 		    default:
 			type_name = "undefined";
 			break;
 		    }
 		    add_string(status_buf, &j, l1, l2, type_name);
 
-		    add_string(status_buf, &j, l1, l2,
-			       (r.chemistry & GAP_CHEM_TERMINATOR)
-			       ? " terminator" : " primer");
+		    if ((r.chemistry & GAP_CHEM_TYPE_MASK) 
+			< GAP_CHEM_TYPE_SOLEXA) {
+			add_string(status_buf, &j, l1, l2,
+				   (r.chemistry & GAP_CHEM_TERMINATOR)
+				   ? " terminator" : " primer");
+		    }
 		}
 	    }
 	    break;

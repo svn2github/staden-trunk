@@ -2130,6 +2130,22 @@ static int qsort_seq_by_numeric(const void *ps1, const void *ps2) {
     return DB_Number(tmp_xx, s1) - DB_Number(tmp_xx, s2);
 }
 
+static int qsort_seq_by_chemistry(const void *ps1, const void *ps2) {
+    int s1 = *(int *)ps1, s2 = *(int *)ps2;
+    GReadings r1, r2;
+    if (DB_Number(tmp_xx, s1) <= 0 || DB_Number(tmp_xx, s2) <= 0)
+	return 0;
+
+    gel_read(DBI_io(tmp_xx), DB_Number(tmp_xx, s1), r1);
+    gel_read(DBI_io(tmp_xx), DB_Number(tmp_xx, s2), r2);
+    if (r1.chemistry < r2.chemistry) {
+	return -1;
+    } else if (r1.chemistry > r2.chemistry) {
+	return 1;
+    } else {
+	return DB_RelPos(tmp_xx, s1) - DB_RelPos(tmp_xx, s2);
+    }
+}
 
 /*
  * Sort sequence list in-line by xx->group_mode.
@@ -2183,6 +2199,11 @@ static void sort_seq_list(EdStruct *xx, int *list, int count) {
     case NUMERIC:
 	tmp_xx = xx;
 	qsort(list, count, sizeof(*list), qsort_seq_by_numeric);
+	break;
+
+    case CHEMISTRY:
+	tmp_xx = xx;
+	qsort(list, count, sizeof(*list), qsort_seq_by_chemistry);
 	break;
 
     case SET:

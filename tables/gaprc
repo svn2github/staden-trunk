@@ -2,10 +2,10 @@
 # Packages required
 #-----------------------------------------------------------------------------
 load_package tk_utils
-load_package copy_reads
-if {[info commands tk] != ""} {
-   load_package iwidgets
-}
+#load_package copy_reads
+#if {[info commands tk] != ""} {
+#   load_package iwidgets
+#}
 
 # Next line can be removed when using the updated newgap_top.tcl
 # load_package %L/gap		{}	gap		1
@@ -30,7 +30,7 @@ set_def MENU_LEVEL		b
 set_def GENETIC_CODE_DIR	$env(STADTABL)/gcodes
 set_def GENETIC_CODE		$env(STADTABL)/gcodes/code_1
 set_def TEMPLATE_TOLERANCE      1.0
-set_def MIN_VECTOR_LENGTH	0
+set_def MIN_VECTOR_LENGTH	5
 set_def IGNORE_ALL_PTYPE	0
 set_def IGNORE_CUSTOM_PTYPE	0
 
@@ -651,6 +651,7 @@ set_def FIJ.USEBAND.VALUE       1
 
 
 #Auto assemble
+set_def AUTO_ASSEMBLE.USE_EXP_ARCHIVES   0
 set_def AUTO_ASSEMBLE.MASKING.NAME  "Apply masking"
 set_def AUTO_ASSEMBLE.MASKING.VALUE  0
 
