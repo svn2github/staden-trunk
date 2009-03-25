@@ -819,7 +819,7 @@ proc UpdateContigId { io cs_h current } {
     set cnum [GetContigNum $cs_h $current]
     set c [$io get_contig $cnum]
     set c_id_contig [$c get_name]
-    puts "c_id_contig = $c_id_contig"
+    puts "c_id_contig = $c_id_contig \#[$c get_rec]"
 }
 
 ##############################################################################
@@ -1473,7 +1473,7 @@ proc GetItemInfo {io plot nearest} {
 	} elseif {[string compare [string range $tag 0 3] num_] == 0} {
 	    set c_num [string trim $tag num_]
 	    set c [$io get_contig $c_num]
-	    return "Contig: [$c get_name]  Length: [$c get_length]"
+	    return "Contig: [$c get_name]  Length: [$c get_length] NSeqs: [$c nseqs]"
 	}
     }
 }

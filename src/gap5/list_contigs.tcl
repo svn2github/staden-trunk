@@ -125,8 +125,6 @@ proc InitListContigs {io parent {csh_win {}}} {
     # Find the contig identifier
     set ident [lindex [lindex [$w get $row] 0] 1]
     set ident [string range $ident 2 end-1]
-    puts ident=$ident
-    
 
     ListContigsPopupMenu $io $ident $w $X $Y
 }		
@@ -218,7 +216,8 @@ proc InitListContigs {io parent {csh_win {}}} {
     foreach name $name_list num $num_list {
 	set cstruct [$io get_contig $num]
 	set clen [$cstruct get_length]
-	set nreads 0
+	set nreads [$cstruct nseqs]
+	puts "$w insert end [list "$name (#$num)" $clen $nreads]"
 	$w insert end [list "$name (#$num)" $clen $nreads]
     }
     if {[$w sortcolumn] != -1} {
