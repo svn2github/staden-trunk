@@ -1106,6 +1106,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     bin->track_rec   = b->track;
     bin->track       = NULL;
     bin->anno        = NULL;
+    bin->nseqs       = b->nseqs;
 
     /* Load ranges */
     if (b->range) {
@@ -1208,6 +1209,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.child[1]    = bin->child[1];
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
+	g.nseqs       = bin->nseqs;
 	g.Nanno       = bin->anno ? ArrayMax(bin->anno) : 0;
 
 	err |= g_write(io, v, &g, sizeof(g));
@@ -1253,6 +1255,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
 	b.track_rec   = 0;
 	b.flags       = 0;
 	b.anno        = NULL;
+	b.nseqs	      = 0;
 	io_bin_write_view(io, &b, v);
     }
     unlock(io, v);

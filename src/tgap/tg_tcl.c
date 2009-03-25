@@ -359,6 +359,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
+	"nseqs",
 	(char *)NULL,
     };
 
@@ -366,7 +367,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,         IO,     	DUMP_PS,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
-	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE
+	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
+	NSEQS
     };
 
     if (objc < 2) {
@@ -500,6 +502,20 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	    s = cache_rw(tc->io, s);
 	    s->bin = bin->rec;
 	}
+	break;
+    }
+
+    case NSEQS: {
+	int nseqs;
+	if (!tc->contig->bin) {
+	    nseqs = 0;
+	} else {
+	    bin_index_t *bin;
+	    bin = (bin_index_t *)cache_search(tc->io, GT_Bin, tc->contig->bin);
+	    nseqs = bin->nseqs;
+	}
+
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(nseqs));
 	break;
     }
     }

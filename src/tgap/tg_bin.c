@@ -34,6 +34,7 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin.track       = NULL;
     bin.track_rec   = 0;
     bin.anno        = NULL;
+    bin.nseqs       = 0;
 
     if (-1 == (rec = io->iface->bin.create(io->dbh, &bin)))
 	return -1;
@@ -320,6 +321,28 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 }
 
 /*
+ * Adds 'n' to the nseq counter for a bin and all parent bins chaining up
+ * to the root node. 'n' may be negative too.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
+    while (bin) {
+	if (!(bin = cache_rw(io, bin)))
+	    return -1;
+	bin->nseqs += n;
+
+	if (bin->parent_type != GT_Bin)
+	    break;
+
+	bin = get_bin(io, bin->parent);
+    }
+
+    return 0;
+}
+
+/*
  * Adds a range to the contig.
  *
  * Returns the bin we added the range to on success
@@ -368,6 +391,8 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (r_out)
 	*r_out = r2;
 
+    bin_incr_nseq(io, bin, 1);
+
     return bin;
 }
 
@@ -413,6 +438,8 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 	ArrayMax(bin->rng)--;
 	break;
     }
+
+    bin_incr_nseq(io, bin, -1);
 
     return 0;
 }

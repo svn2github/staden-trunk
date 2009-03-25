@@ -37,6 +37,7 @@ typedef struct {
     GCardinal id;
     GCardinal flags;
     GCardinal track;
+    GCardinal nseqs;
     GCardinal Nanno;    /* followed by Nanno record numbers */
 } GBin;
 
@@ -191,6 +192,7 @@ typedef struct index {
     Array track;    /* array of GTrack objects */
     int track_rec;
     Array anno;     /* array of GAnno objects */
+    int nseqs;
 } bin_index_t;
 
 /* Bit flags for bin_index_t.flags */
