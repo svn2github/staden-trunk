@@ -15,6 +15,7 @@ typedef union {
 typedef struct HacheItemStruct {
     struct HacheTableStruct *h; /* For consistency checking */
     struct HacheItemStruct *next;
+    struct HacheItemStruct *in_use_next, *in_use_prev;
     HacheData data;        /* user defined data attached to this key */
     char    *key;         /* key we hashed on */
     int      key_len;     /* and its length */
@@ -48,6 +49,8 @@ typedef struct HacheTableStruct {
 
     int	      searches; /* number of total queries */
     int       hits;	/* number of cached queries */
+
+    HacheItem *in_use;
 } HacheTable;
 
 /* An iterator on HacheTable items */

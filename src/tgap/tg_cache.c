@@ -2,9 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "tg_gio.h"
 #include "misc.h"
+
+static int load_counts[100];
+static int unload_counts[100];
+static int write_counts[100];
 
 /*
  * This module implements a layer of caching on top of the underlying
@@ -227,6 +233,8 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 
     //printf("Cache load %d type %d\n", k->rec, k->type);
 
+    load_counts[k->type]++;
+
     switch (k->type) {
     case GT_Database:
 	ci = io->iface->database.read(io->dbh, k->rec);
@@ -286,6 +294,8 @@ static void cache_unload(void *clientdata, HacheData hd) {
     //printf("Cache unload %d\n", ci->rec);
 
     assert(ci->updated == 0);
+
+    unload_counts[ci->type]++;
 
     switch (ci->type) {
     case GT_Seq:
@@ -469,6 +479,7 @@ int qsort_ci_view(const void *p1, const void *p2) {
 int cache_flush(GapIO *io) {
     int i, ret = 0;
     HacheTable *h = io->cache;
+    HacheItem *hi;
     Array to_flush;
     int nflush = 0;
 
@@ -515,15 +526,12 @@ int cache_flush(GapIO *io) {
 
     /* Identify the list of items that need flushing */
     //fprintf(stderr, "\n");
-    for (i = 0; i < h->nbuckets; i++) {
-	HacheItem *hi;
-	for (hi = h->bucket[i]; hi; hi = hi->next) {
-	    cached_item *ci = hi->data.p;
-	    //fprintf(stderr, "Item %d, type %d, updated %d\n",
-	    //    ci->view, ci->type, ci->updated);
-	    if (ci->updated) {
-		ARR(cached_item *, to_flush, nflush++) = ci;
-	    }
+    for (hi = h->in_use; hi; hi = hi->in_use_next) {
+	cached_item *ci = hi->data.p;
+	//fprintf(stderr, "Item %d, type %d, updated %d\n",
+	//    ci->view, ci->type, ci->updated);
+	if (ci->updated) {
+	    ARR(cached_item *, to_flush, nflush++) = ci;
 	}
     }
 
@@ -537,6 +545,12 @@ int cache_flush(GapIO *io) {
     /* Flush them out */
     for (i = 0; i < nflush; i++) {
 	cached_item *ci = arr(cached_item *, to_flush, i);
+	//	struct timeval tp1, tp2;
+	//	long d1, d2;
+	//	gettimeofday(&tp1, NULL);
+
+	write_counts[ci->type]++;
+
 	switch (ci->type) {
 	case GT_Database:
 	    ret = io->iface->database.write(io->dbh, ci);
@@ -568,11 +582,19 @@ int cache_flush(GapIO *io) {
 	    ret = -1;
 	}
 
+	//	gettimeofday(&tp2, NULL);
+	//	d1 = (tp2.tv_sec - tp1.tv_sec)*1000000 + tp2.tv_usec - tp1.tv_usec;
+
 	if (ret == 0) {
 	    ci->updated = 0;
 	    //printf("2Dec rec %d => %d\n", ci->rec, ci->hi->ref_count-1);
 	    HacheTableDecRef(io->cache, ci->hi);
 	}
+
+	//	gettimeofday(&tp1, NULL);
+	//	d2 = (tp1.tv_sec - tp2.tv_sec)*1000000 + tp1.tv_usec - tp2.tv_usec;
+	//	printf("Flush %d type %d, time %ld %ld\n",
+	//	       i, ci->type, d1, d2);
     }
 
     ArrayDestroy(to_flush);
@@ -582,6 +604,50 @@ int cache_flush(GapIO *io) {
 
     //printf(">>> flush done <<<\n");
     //HacheTableRefInfo(io->cache, stdout);
+
+#if 0
+    printf("\nType       Load\tUnload\tWrite\n");
+    printf("----------------------------------\n");
+    printf("RecArray     %d\t%d\t%d\n",
+	   load_counts[GT_RecArray],
+	   unload_counts[GT_RecArray],
+	   write_counts[GT_RecArray]);
+    printf("Bin          %d\t%d\t%d\n",
+	   load_counts[GT_Bin],
+	   unload_counts[GT_Bin],
+	   write_counts[GT_Bin]);
+    printf("Range        %d\t%d\t%d\n",
+	   load_counts[GT_Range],
+	   unload_counts[GT_Range],
+	   write_counts[GT_Range]);
+    printf("BTree        %d\t%d\t%d\n",
+	   load_counts[GT_BTree],
+	   unload_counts[GT_BTree],
+	   write_counts[GT_BTree]);
+    printf("Database     %d\t%d\t%d\n",
+	   load_counts[GT_Database],
+	   unload_counts[GT_Database],
+	   write_counts[GT_Database]);
+    printf("Contig       %d\t%d\t%d\n",
+	   load_counts[GT_Contig],
+	   unload_counts[GT_Contig],
+	   write_counts[GT_Contig]);
+    printf("Seq          %d\t%d\t%d\n",
+	   load_counts[GT_Seq],
+	   unload_counts[GT_Seq],
+	   write_counts[GT_Seq]);
+    printf("DNASource    %d\t%d\t%d\n",
+	   load_counts[GT_DNASource],
+	   unload_counts[GT_DNASource],
+	   write_counts[GT_DNASource]);
+    printf("Track        %d\t%d\t%d\n",
+	   load_counts[GT_Track],
+	   unload_counts[GT_Track],
+	   write_counts[GT_Track]);
+    memset(load_counts, 0, 100*sizeof(int));
+    memset(unload_counts, 0, 100*sizeof(int));
+    memset(write_counts, 0, 100*sizeof(int));
+#endif
 
     return ret;
 }

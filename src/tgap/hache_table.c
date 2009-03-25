@@ -252,6 +252,8 @@ static HacheItem *HacheItemCreate(HacheTable *h) {
     hi->ref_count = 1;
     hi->order     = -1;
     hi->h         = h;
+    hi->in_use_next = NULL;
+    hi->in_use_prev = NULL;
 
     h->nused++;
 
@@ -342,6 +344,7 @@ HacheTable *HacheTableCreate(int size, int options) {
     h->clientdata = NULL;
     h->load = NULL;
     h->del = NULL;
+    h->in_use = NULL;
 
     for (i = 0; i < size; i++) {
 	h->bucket[i] = NULL;
@@ -599,6 +602,14 @@ void HacheTableIncRef(HacheTable *h, HacheItem *hi) {
 	HacheOrderRemove(h, hi);
 	hi->order = -1;
     }
+
+    if (!(h->in_use == hi || hi->in_use_prev || hi->in_use_next)) {
+	hi->in_use_next = h->in_use;
+	if (h->in_use)
+	    h->in_use->in_use_prev = hi;
+	hi->in_use_prev = NULL;
+	h->in_use = hi;
+    }
 }
 
 void HacheTableDecRef(HacheTable *h, HacheItem *hi) {
@@ -607,6 +618,15 @@ void HacheTableDecRef(HacheTable *h, HacheItem *hi) {
     if (hi && hi->ref_count > 0) {
 	if (--hi->ref_count <= 0) {
 	    hi->order = HacheOrderAdd(h, hi);
+
+	    if (hi->in_use_next)
+		hi->in_use_next->in_use_prev = hi->in_use_prev;
+	    if (hi->in_use_prev)
+		hi->in_use_prev->in_use_next = hi->in_use_next;
+	    if (h->in_use == hi)
+		h->in_use = hi->in_use_next;
+	    hi->in_use_next = NULL;
+	    hi->in_use_prev = NULL;
 	}
     }
 }
