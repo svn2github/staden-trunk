@@ -360,7 +360,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	 * we just inserted a very long sequence and the next sequence is
 	 * very short.
 	 */
-	if ((nseqs & 0x3fff) == 0) {
+	if ((nseqs & 0xffff) == 0) {
 	    cache_flush(io);
 	}
     }

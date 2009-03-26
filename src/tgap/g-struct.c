@@ -61,7 +61,7 @@ GFile *g_new_gfile(int bitsize)
     gfile->fd = gfile->fdaux = -1;
     gfile->dheap = NULL;
     gfile->Nidx = 0; gfile->idx = NULL;
-    gfile->idx_hash = HacheTableCreate(32768, HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
+    gfile->idx_hash = HacheTableCreate(131072, HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
     gfile->flock_client = -1; /* An invalid client number */
     gfile->flock_status = G_FLOCK_NONE;
     gfile->check_header = 1;

@@ -339,7 +339,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
 int cache_create(GapIO *io) {
     HacheTable *h;
 
-    if (NULL == (h = HacheTableCreate(32768, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
 
     h->clientdata = io;

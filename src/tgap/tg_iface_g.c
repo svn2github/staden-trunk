@@ -725,7 +725,7 @@ static void *io_database_connect(char *dbname, int ro) {
     //g_lock_file_N_(io->gdb, io->client, 0);
 
 #ifdef INDEX_NAMES
-    io->seq_name_hash = HacheTableCreate(256,
+    io->seq_name_hash = HacheTableCreate(1024,
 					 HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
 
     if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
@@ -739,7 +739,7 @@ static void *io_database_connect(char *dbname, int ro) {
     io->seq_name_hash = NULL;
 #endif
 
-    io->contig_name_hash = HacheTableCreate(1000,
+    io->contig_name_hash = HacheTableCreate(1024,
 					    HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
 
     if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
