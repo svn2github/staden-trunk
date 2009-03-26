@@ -232,7 +232,7 @@ proc contig_id_rec {path} {
     global $path.Io
 
     set r [cname2crec [set $path.Io] [entrybox_get $path.ent]]
-    if {"$r" != ""} {
+    if {$r != -1} {
 	set c [[set $path.Io] get_contig $r]
 	set cn [$c get_name]
 	if {$cn != ""} {set cn "=$r"}

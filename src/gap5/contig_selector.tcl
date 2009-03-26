@@ -1364,9 +1364,10 @@ proc ContigParams { io } {
     global LREG
     global RREG
 
-    if {[db_info get_contig_num $io $CurContig] != -1} {
+    set cnum [db_info get_contig_num $io $CurContig]
+    if {$cnum != -1} {
 	set LREG 1
-	set RREG [c_length $io [db_info get_contig_num $io $CurContig]]
+	set RREG [c_length $io $cnum]
     } else {
 	set longest [db_info longest_contig $io]
 	set CurContig [left_gel $io $longest]

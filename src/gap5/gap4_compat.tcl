@@ -38,8 +38,12 @@ proc io_read_contig {io cnum} {
     return $contig
 }
 
-# Currently brute force search
 proc cname2crec {io name} {
+    # Check B-Tree indices if present
+    if {[set crec [db_info get_contig_num $io $name]] != -1} {
+	return $crec
+    }
+
     # =contig_rec => rec
     if {[string match "=*" $name]} {
 	return [string range $name 1 end]
