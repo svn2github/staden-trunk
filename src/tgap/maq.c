@@ -152,6 +152,10 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
 	parse_maqmap_aux(&seq, sz, &m128, k++);
 
+	/* Read is unmapped, but placed along side the pair in the file */
+	if (m128.flag & (PAIRFLAG_SW | PAIRFLAG_NOMATCH))
+	    continue;
+
 	/* Create new contig if required */
 	if (m128.seqid != curr_contig) {
 	    if (c) {
@@ -213,8 +217,8 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
 	recno = sequence_new_from(io, &seq);
 
-	/* Find pair if appropriate */
-	if (pair) {
+	/* Find pair if requested and we thing the other end worked */
+	if (pair && !(m128.flag & PAIRFLAG_NOMATCH)) {
 	    int new = 0;
 	    HacheData hd;
 	    pair_loc_t *pl;
@@ -262,7 +266,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	/* Link bin back to sequence too before it gets flushed */
 	r_out->rec = recno;
 
-	if (((j+1) & 0x1fff) == 0) {
+	if (((j+1) & 0xffff) == 0) {
 	    fprintf(stderr, "-- %.2f%%\n", 100.0*(j+1)/mm->n_mapped_reads);
 
 	    cache_flush(io);
