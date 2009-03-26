@@ -10,7 +10,7 @@
 #include "b+tree2.h"
 /* #include "io_lib/deflate_interlaced.h" */
 
-/* #define INDEX_NAMES */
+#define INDEX_NAMES
 
 static iface iface_g;
 
@@ -452,7 +452,8 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
 }
 
 static void btree_del_cache(void *clientdata, HacheData hd) {
-    g_io *io = (g_io *)clientdata;
+    btree_query_t *bt = (btree_query_t *)clientdata;
+    g_io *io = bt->io;
     cached_item *ci = hd.p;
     btree_node_t *n = (btree_node_t *)ci->data;
 
@@ -617,7 +618,12 @@ void btree_destroy(g_io *io, HacheTable *h) {
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
 	for (hi = h->bucket[i]; hi; hi = hi->next) {
-	    btree_del_cache(io, hi->data);
+	    cached_item *ci = hi->data.p;
+	    btree_node_t *n = (btree_node_t *)ci->data;
+	    assert(ci->updated == 0);
+	    unlock(io, ci->view);
+	    free(ci);
+	    btree_del_node(n);
 	}
     }
 
@@ -1149,6 +1155,29 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     return ci;
 }
 
+static char *pack_rng_array(GRange *rng, int nr) {
+    int i, j;
+    GRange l2;
+    char *out = malloc(nr * sizeof(*rng));
+
+    memset(&l2, 0, sizeof(l2));
+
+    for (i = 0; i < nr; i++) {
+	GRange *r = &rng[i];
+	r->end -= r->start;
+	for (j = 0; j < sizeof(GRange); j++) {
+	    /* Rotate it; this doesn't work, but should. Why? */
+	    out[i+nr*j] = ((char *)r)[j] - ((char *)&l2)[j];
+	    //out[i*sizeof(GRange)+j] = ((char *)r)[j] - ((char *)&l2)[j];
+	}
+	l2 = *r;
+	r->end += r->start;
+    }
+
+    //write(2, out, nr * sizeof(*rng));
+    return out;
+}
+
 static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     GBin g;
     int err = 0;
@@ -1163,6 +1192,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    bin->rng_rec = allocate(io);
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
+
+	//pack_rng_array(ArrayBase(GRange, bin->rng), ArrayMax(bin->rng));
 
 	v = lock(io, bin->rng_rec, G_LOCK_EX);
 	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
