@@ -383,9 +383,12 @@ void usage(void) {
     //    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -B			Input is BAF format (off)\n");
     fprintf(stderr, "      -b			Input is BAM format (off)\n");
-    fprintf(stderr, "      -p			Link read-pairs together\n");
+    fprintf(stderr, "      -p			Link read-pairs together (on)\n");
+    fprintf(stderr, "      -P			Do not link read-pairs together (off)\n");
     fprintf(stderr, "      -a			Append to existing db\n");
     fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
+    fprintf(stderr, "      -t			Index sequence names (off)\n");
+    fprintf(stderr, "      -T			Do not index sequence names (on)\n");
 }
 
 int main(int argc, char **argv) {
@@ -393,17 +396,21 @@ int main(int argc, char **argv) {
     GapIO *io;
     int opt, fmt = 'a' /*aln */;
     char *out_fn = "g_db";
-    int no_tree=0, pair_reads=0, append=0, merge_contigs=1;
+    int no_tree=1, pair_reads=1, append=0, merge_contigs=1;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 0.13\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 0.14\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
-    printf("\t        \t2007-2008, Wellcome Trust Sanger Institute\n\n");
+    printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBsbThAmMo:pn")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPn")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
+	    break;
+
+	case 't':
+	    no_tree = 0;
 	    break;
 
 	case 'T':
@@ -425,6 +432,10 @@ int main(int argc, char **argv) {
 
 	case 'p':
 	    pair_reads = 1;
+	    break;
+
+	case 'P':
+	    pair_reads = 0;
 	    break;
 
 	case 'h':
