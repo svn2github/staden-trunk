@@ -914,9 +914,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 
 	    i++;
 	}
-	
-	XawSheetPutJazzyText(&xx->ed->sw, 0, j, xx->displayWidth,
-			     line, ink);
+
+	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ))
+	    XawSheetPutJazzyText(&xx->ed->sw, 0, j, xx->displayWidth,
+				 line, ink);
     }
 
     /*
