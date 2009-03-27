@@ -153,8 +153,10 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	parse_maqmap_aux(&seq, sz, &m128, k++);
 
 	/* Read is unmapped, but placed along side the pair in the file */
-	if (m128.flag & (PAIRFLAG_SW | PAIRFLAG_NOMATCH))
+	if (m128.flag == (PAIRFLAG_SW | PAIRFLAG_NOMATCH)) {
+	    free(seq.data);
 	    continue;
+	}
 
 	/* Create new contig if required */
 	if (m128.seqid != curr_contig) {
@@ -232,6 +234,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    hd.p = pl;
 
 	    hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
+	    //if (new) printf("%s ADD %x\n", tname, m128.flag);
 
 	    /* Pair existed already */
 	    if (!new) {
@@ -255,6 +258,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
 		/* And, making an assumption, remove from hache */
 		HacheTableDel(pair, hi, 1);
+		//printf("%s DEL %x\n", tname, m128.flag);
 		free(pl);
 	    }
 	}
@@ -285,8 +289,10 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     gzclose(dat_fp);
     maq_delete_maqmap(mm);
 
-    if (pair)
+    if (pair) {
+	HacheTableStats(pair, stdout);
 	HacheTableDestroy(pair, 0);
+    }
 
     return 0;
 }
