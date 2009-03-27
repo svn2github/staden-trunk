@@ -1038,6 +1038,54 @@ void HacheTableStats(HacheTable *h, FILE *fp) {
     for (i = 0; i <= maxlen; i++) {
 	fprintf(fp, "Chain %2d   = %d\n", i, clen[i]);
     }
+
+    //HacheTableLeakCheck(h);
+}
+
+/*
+ * For debugging purposes only. This function severs all links to items
+ * with a reference count > 0. Obviously this breaks the HacheTable in
+ * various ways, but the purpose is that it should be immediately followed
+ * up by an exit() call and an analysis of memory leaks.
+ *
+ * In theory all items with a reference count > 0 will have pointers to them
+ * in other pieces of code. If they do not then we know we leaked memory
+ * somewhere by virtue of incrementing the reference count and not
+ * decrementing it again before losing our pointer to the object.
+ */
+void HacheTableLeakCheck(HacheTable *h, FILE *fp) {
+    int i;
+    for (i = 0; i < h->nbuckets; i++) {
+	HacheItem *hi, *next, *last = NULL;
+	for (hi = h->bucket[i]; hi; last = hi, hi = next) {
+	    assert(hi->h == h);
+	    next = hi->next;
+
+	    if (!hi->ref_count)
+		continue;
+
+	    //	    printf("Has ref count %d: %.*s\n",
+	    //		   hi->ref_count, hi->key_len, hi->key);
+
+	    /* Remove all memory links to haches, keys and data */
+	    if (last)
+		last->next = next;
+	    else
+		h->bucket[i] = next;
+	    hi->next = NULL;
+	    hi->h = NULL;
+	    hi->key = NULL;
+	    hi->data.p = 0;
+	    if (hi->in_use_next) {
+		hi->in_use_next->in_use_prev = NULL;
+		hi->in_use_next = NULL;
+	    }
+	    if (hi->in_use_prev) {
+		hi->in_use_prev->in_use_next = NULL;
+		hi->in_use_prev = NULL;
+	    }
+	}
+    }
 }
 
 /*
