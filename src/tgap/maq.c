@@ -285,7 +285,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
     cache_flush(io);
 
-    fprintf(stderr, "-- %d reads are added.\n", k);
+    fprintf(stderr, "-- %d reads were added.\n", k);
     gzclose(dat_fp);
     maq_delete_maqmap(mm);
 
