@@ -99,6 +99,12 @@ typedef struct _edview {
     rangec_t *r;
     int nr;
     int r_start, r_end;
+
+    /* Selection */
+    int select_made;
+    int select_seq;
+    int select_start;
+    int select_end;
 } edview;
 
 typedef struct _EdLink {

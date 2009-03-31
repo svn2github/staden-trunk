@@ -1,6 +1,7 @@
 #include <xalloc.h>
 #include <math.h>
 #include <ctype.h>
+#include <X11/Xatom.h> /* XA_PRIMARY - included in Tk distribrution */
 
 #include "editor_view.h"
 #include "tkSheet.h"
@@ -1131,7 +1132,8 @@ static void tk_redisplaySeqScroll(edview *xx, rangec_t *r, int nr) {
 	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, nr);
 
 	/* No need to redraw the consenus/numbers */
-	xx->refresh_flags |= ED_DISP_NAMES | ED_DISP_SEQS | ED_DISP_CURSOR;
+	xx->refresh_flags |= ED_DISP_NAMES | ED_DISP_SEQS | ED_DISP_CURSOR |
+	    ED_DISP_SELECTION;
     }
 
     if (xx->refresh_flags & ED_DISP_XSCROLL) {
@@ -1629,12 +1631,12 @@ int edview_redraw(edview *xx) {
     if (xx->refresh_flags & ED_DISP_STATUS) {
 	tk_redisplaySeqStatusDisplay(xx);
     }
+#endif
 
     /* Underlining for current selection */
     if (xx->refresh_flags & ED_DISP_SELECTION) {
 	redisplaySelection(xx);
     }
-#endif
 
     if (inJoinMode(xx) && !(xx->refresh_flags & ED_DISP_NO_DIFFS))
 	tk_redisplaySeqDiffs(xx);
@@ -1690,6 +1692,42 @@ int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
     }
 
     return type;
+}
+
+/*
+ * More or less the opposite of the above function. Given a record and type
+ * this returns the row number on screen. If non-NULL xmin and xmax are the
+ * X coordinates of the extends of this record. These may be beyond the bounds
+ * of the window.
+ *
+ * Returns Y coordinate (and optionally min/max X coordinates) if found
+ *        -1 if not (with xmin/xmax unset).
+ */
+int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
+    int i, j;
+
+    if (rec == xx->cnum) {
+	if (xmin) *xmin = xx->contig->start-1 - xx->displayPos;
+	if (xmax) *xmax = xx->contig->end-1 - xx->displayPos;
+	return 0;
+    }
+
+    /* A sequence, so find out what's visible */
+    edview_visible_items(xx, xx->displayPos,
+			 xx->displayPos + xx->displayWidth);
+
+    /* And search for rec in this list */
+    for (j = xx->y_seq_start, i = xx->displayYPos;
+	 j < xx->displayHeight - xx->y_seq_end && i < xx->nr;
+	 i++, j++) {
+	if (xx->r[i].rec == rec) {
+	    if (xmin) *xmin = xx->r[i].start - xx->displayPos;
+	    if (xmax) *xmax = xx->r[i].end   - xx->displayPos;
+	    return j;
+	}
+    }
+    
+    return -1;
 }
 
 
@@ -1768,4 +1806,175 @@ int *edGetTemplateReads(edview *xx, int seqrec, int *nrec) {
     cache_decr(xx->io, s);
 
     return r;
+}
+
+
+/* ---------------------------------------------------------------------- */
+/* Selection aka cut'n'paste handling code */
+
+/*
+ * (Un)draws the selection - toggles it on or off
+ */
+static void toggle_select(edview *xx, int seq, int from_pos, int to_pos) {
+    int row, xmin, xmax;
+
+    if (from_pos > to_pos) {
+	int temp = from_pos;
+	from_pos = to_pos;
+	to_pos = temp;
+    }
+
+    /* Find out the X and Y coord, and exit now if it's not visible */
+    if (-1 == (row = edview_row_for_item(xx, seq, &xmin, NULL)))
+	return;
+    
+    /* Convert xmin/xmax to the region we wish to view */
+    xmin += from_pos;
+    xmax = xmin + to_pos - from_pos;
+
+    /* clip to screen */
+    if (xmin < 0) xmin = 0;
+    if (xmax >= xx->displayWidth) xmax = xx->displayWidth-1;
+
+    if (xmin > xmax)
+	return;
+
+    /* Toggle the line */
+    XawSheetOpHilightText(&xx->ed->sw, xmin, row, xmax-xmin+1,
+			  sh_select, HOP_TOG);
+}
+
+static void redisplaySelection(edview *xx) {
+    toggle_select(xx, xx->select_seq, xx->select_start, xx->select_end);
+}
+
+/*
+ * Callback from Tk_OwnSelection().
+ */
+static void edSelectionLost(ClientData cd) {
+    edview *xx = (edview *)cd;
+
+    /* Undisplay the selection */
+    redisplaySelection(xx);
+
+    xx->select_made = 0;
+    xx->select_seq = 0;
+    xx->select_start = 0;
+    xx->select_end = 0;
+}
+
+int edSelectClear(edview *xx) {
+    if (xx->select_made && EDTKWIN(xx->ed))
+	Tk_ClearSelection(EDTKWIN(xx->ed), XA_PRIMARY);
+    edSelectionLost((ClientData)xx);
+
+    return 0;
+}
+
+void edSelectFrom(edview *xx, int pos) {
+    /* Undisplay an old selection */
+    if (xx->select_made)
+	redisplaySelection(xx);
+    else
+	xx->select_made = 1;
+
+    /* Set start/end */
+    xx->select_seq = xx->cursor_rec;
+    pos += xx->displayPos;
+    if (xx->select_seq != xx->cnum) {
+	int cnum, cpos;
+	seq_t *s = get_seq(xx->io, xx->select_seq);
+
+	sequence_get_position(xx->io, xx->select_seq,
+			      &cnum, &cpos, NULL, NULL);
+	pos -= cpos;
+	if (pos < 0)
+	    pos = 0;
+	if (pos >= ABS(s->len))
+	    pos = ABS(s->len)-1;
+    }
+    xx->select_start = xx->select_end = pos;
+
+    Tk_OwnSelection(EDTKWIN(xx->ed), XA_PRIMARY, edSelectionLost,
+		    (ClientData)xx);
+
+    /* Display new selection */
+    redisplaySelection(xx);
+}
+
+void edSelectTo(edview *xx, int pos) {
+    if (!xx->select_made) {
+	edSelectFrom(xx, pos);
+    }
+
+    /* Undisplay old selection */
+    redisplaySelection(xx);
+
+    /* Set start/end */
+    pos += xx->displayPos;
+    if (xx->select_seq != xx->cnum) {
+	int cnum, cpos;
+	seq_t *s = get_seq(xx->io, xx->select_seq);
+
+	sequence_get_position(xx->io, xx->select_seq,
+			      &cnum, &cpos, NULL, NULL);
+	pos -= cpos;
+	if (pos < 0)
+	    pos = 0;
+	if (pos >= ABS(s->len))
+	    pos = ABS(s->len)-1;
+    }
+    xx->select_end = pos;
+
+    /* Display new selection */
+    redisplaySelection(xx);
+}
+
+/*
+ * Automatically called when X wishes to obtain a selection. We register
+ * this procedure in the initialise code of tkEditor.c.
+ *
+ * Return codes expected:
+ *    -1  Failure
+ *    >0  Number of bytes
+ */
+int edGetSelection(ClientData clientData, int offset, char *buffer,
+		   int bufsize) {
+    Editor *ed = (Editor *)clientData;
+    int start, end, len;
+    edview *xx = ed->xx;
+
+    /* Do we have a selection? */
+    if (!xx->select_made)
+	return -1;
+
+    start = xx->select_start + offset;
+    end   = xx->select_end;
+
+    if (start > end) {
+	len = start;
+	start = end;
+	end = len;
+    }
+
+    len = end - start+1 > bufsize ? bufsize : end - start + 1;
+
+    if (len && xx->select_seq) {
+	if (xx->select_seq != xx->cnum) {
+	    seq_t *s, *sorig;
+	    sorig = s = get_seq(xx->io, xx->select_seq);
+	    if (s->len < 0) {
+		s = dup_seq(s);
+		complement_seq_t(s);
+	    }
+	    memcpy(buffer, s->seq+start, len);
+	    if (s != sorig)
+		free(s);
+	} else {
+	    calculate_consensus_simple(xx->io, xx->cnum, start, start+len-1,
+				       buffer, NULL);
+	}
+    }
+
+    return len;
 }

@@ -867,7 +867,7 @@ bind EdNames <3> {
     }
 }
 
-bind Editor <1> {
+bind Editor <<select>> {
     focus %W
     set w [winfo toplevel %W]
     if {![string match [set ${w}(curr_editor)] %W]} {
@@ -880,6 +880,7 @@ bind Editor <1> {
     } else {
 	eval %W set_cursor $d
     }
+    %W select clear
 }
 
 bind Editor <Key-Left>		{%W cursor_left; update_brief %W}
@@ -958,3 +959,8 @@ if {[tk windowingsystem] eq "x11"} {
     bind EdNames <Shift-4>         {%W xview scroll  -1 units}
     bind EdNames <Shift-5>         {%W xview scroll  +1 units}
 }
+
+# Selection control for adding tags
+bind Editor <<select-drag>> {%W select to @%x}
+#bind Editor <<select-release>> {puts "select release"}
+

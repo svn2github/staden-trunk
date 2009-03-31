@@ -343,13 +343,11 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
 		      EditorWidgetCmd, (ClientData)ed,
 		      (Tcl_CmdDeleteProc *)NULL);
 
-#if 0
     /*
      * Add a selection handler
      */
     Tk_CreateSelHandler(tkwin, XA_PRIMARY, XA_STRING, edGetSelection,
 			(ClientData)ed, XA_STRING);
-#endif
 
     /*
      * And process our arguments - send them to Configure
@@ -394,7 +392,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
-	"join_align",	 "join",
+	"join_align",	 "join",          "select",
 	NULL
     };
     enum options {
@@ -405,7 +403,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
-	_JOIN_ALIGN,     _JOIN
+	_JOIN_ALIGN,     _JOIN,          _SELECT
     };
 
     if (argc < 2) {
@@ -786,6 +784,63 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     case _JOIN:
 	result = edJoin(ed->xx) == 0 ? TCL_OK : TCL_ERROR;
 	break;
+
+    case _SELECT: {
+	char *select_options[] = {"clear", "from", "to", NULL};
+	enum  select_options     { CLEAR,   FROM,   TO};
+	Tcl_Obj *obj;
+	int index;
+
+	if (argc < 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " select sub-cmd ?options?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	obj = Tcl_NewStringObj(argv[2], -1);
+	Tcl_IncrRefCount(obj);
+	if (Tcl_GetIndexFromObj(interp, obj, select_options, "option", 0,
+				&index) != TCL_OK) {
+	    Tcl_DecrRefCount(obj);
+	    goto fail;
+	}
+	Tcl_DecrRefCount(obj);
+
+	if (index == CLEAR) {
+	    if (argc != 3) {
+		Tcl_AppendResult(interp, "wrong # args: should be \"",
+				 argv[0], " select clear\"",
+				 (char *) NULL);
+		goto fail;
+	    }
+	    edSelectClear(ed->xx);
+	} else if (index == TO || index == FROM) {
+	    int arg;
+	    if (argc != 4) {
+		Tcl_AppendResult(interp, "wrong # args: should be \"",
+				 argv[0], " select ",
+				 index == TO ? "to" : "from",
+				 " arg\"",
+				 (char *) NULL);
+		goto fail;
+	    }
+
+	    sheet_arg_x(TKSHEET(ed), argv[3], &arg);
+	    if (index == TO) {
+		edSelectTo(ed->xx, arg);
+	    } else {
+		edSelectFrom(ed->xx, arg);
+	    }
+
+	} else {
+	    Tcl_AppendResult(interp, "wrong sub-command: should be "
+			     "clear, from or to",
+			     (char *) NULL);
+	    goto fail;
+	}
+	break;
+    }
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));
