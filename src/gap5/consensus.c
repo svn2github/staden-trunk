@@ -57,7 +57,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
     consensus_t q[CONS_BLOCK_SIZE];
     
     /* Compute in small ranges */
-    for (i = start; i < end; i += CONS_BLOCK_SIZE) {
+    for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
 	int st = i;
 	int en = st + CONS_BLOCK_SIZE-1; /* inclusive range */
 	if (en > end)
@@ -111,7 +111,7 @@ int calculate_consensus(GapIO *io, int contig, int start, int end,
     int i;
 
     /* Compute in small ranges */
-    for (i = start; i < end; i += CONS_BLOCK_SIZE) {
+    for (i = start; i <= end; i += CONS_BLOCK_SIZE) {
 	int st = i;
 	int en = st + CONS_BLOCK_SIZE-1;
 	if (en > end)
@@ -276,6 +276,16 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    base_prob = 1;
 	}
 
+	/* Shift so that we never attempt to exp() of all high -ve values */
+	max = cvec[i][0];
+	for (j = 1; j < 4; j++) {
+	    if (max < cvec[i][j])
+		max = cvec[i][j];
+	}
+	for (j = 0; j < 4; j++) {
+	    cvec[i][j] -= max;
+	}
+
 	/*
 	 * And now which base type it may be.
 	 * Here probs[] hold the numerators with the denominators being
@@ -283,6 +293,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	 */
 	for (j = 0; j < 4; j++) {
 	    probs[j] = exp(cvec[i][j]);
+	    if (probs[j] == 0)
+		probs[j] = DBL_MIN;
 	    tot2[j] = 0;
 	}
 
