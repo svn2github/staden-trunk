@@ -1707,8 +1707,8 @@ int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
     int i, j;
 
     if (rec == xx->cnum) {
-	if (xmin) *xmin = xx->contig->start-1 - xx->displayPos;
-	if (xmax) *xmax = xx->contig->end-1 - xx->displayPos;
+	if (xmin) *xmin = -xx->displayPos;
+	if (xmax) *xmax = -xx->displayPos;
 	return 0;
     }
 
