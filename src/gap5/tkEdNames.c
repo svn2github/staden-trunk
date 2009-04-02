@@ -154,11 +154,11 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     edview *xx = en->xx;
 
     static char *optionStrings[] = {
-	"configure", "xview",	"yview",
+	"configure", "io",   "xview",	"yview",  "get_number",
 	NULL
     };
     enum options {
-	CONFIGURE, XVIEW,	YVIEW
+	CONFIGURE, IO, XVIEW,	YVIEW,     GET_NUMBER
     };
 
     if (argc < 2) {
@@ -185,6 +185,10 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	result = SheetWidgetCmdConfig(interp, TKSHEET(en), argc, argv);
 	break;
 	
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(xx->io) , TCL_VOLATILE);
+	break;
+
     case XVIEW: {
 	double f1;
 	int type, count, offset;
@@ -251,6 +255,38 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    xx->displayYPos = offset;
 	xx->refresh_flags = ED_DISP_ALL;
 	edview_redraw(xx);
+	break;
+    }
+
+    /* Get reading number under at x,y coord (eg mouse pointer), or
+     * the current editior cursor if no x,y specified.
+     */
+    case GET_NUMBER: {
+	char buf[10];
+	int x, y, type, rec, pos;
+
+	if (argc != 2 && argc != 4) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_number ?xpos ypos?\"",
+			     (char *) NULL);
+	    return TCL_ERROR;
+	}
+
+	if (argc == 4) {
+	    sheet_arg_x(TKSHEET(en), argv[2], &x); /* cell coordinates */
+	    sheet_arg_y(TKSHEET(en), argv[3], &y); y++;
+
+	    if (-1 != (type = edview_item_at_pos(xx, y, x, &rec, &pos))) {
+		sprintf(buf, "%d %d %d", type, rec, pos);
+		Tcl_AppendResult(interp, buf, NULL);
+	    } /* otherwise return a blank */
+	} else {
+	    sprintf(buf, "%d %d %d",
+		    xx->cursor_type,
+		    xx->cursor_rec,
+		    xx->cursor_pos);
+	    Tcl_AppendResult(interp, buf, NULL);
+	}
 	break;
     }
     }

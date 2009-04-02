@@ -816,6 +816,31 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
     set ${w}(Status) $msg
 }
 
+proc editor_name_select {w where} {
+    global $w
+
+    foreach {type rec pos} $where break;
+    if {$type != 18} return
+
+    # Add name to XA_PRIMARY selection
+    set seq [[$w io] get_sequence $rec]
+    set name [$seq get_name]
+
+    # FIXME: underline name too, via $ed call?
+#    [set ${w}(ed)]
+
+    # Ignore parameters for now. Assume reading name length <= maxbytes.
+    catch {rename editor_selection_handler {}}
+    proc editor_selection_handler {offset maxbytes} [list return $name]
+
+    selection own $w
+    selection handle $w editor_selection_handler
+
+    # For Windows...
+    clipboard clear
+    clipboard append $name
+}
+
 #-----------------------------------------------------------------------------
 # Trace display
 proc show_trace {w loc} {
@@ -964,3 +989,4 @@ if {[tk windowingsystem] eq "x11"} {
 bind Editor <<select-drag>> {%W select to @%x}
 #bind Editor <<select-release>> {puts "select release"}
 
+bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
