@@ -815,7 +815,7 @@ int tcl_calc_quality(ClientData clientData, Tcl_Interp *interp,
     if (rargc >= 1) {
 	char *buf;
 	float *flt;
-	int len = rargv[0].end - rargv[0].start + 2;
+	int len = rargv[0].end - rargv[0].start + 1;
 	int i;
 	
 	if (NULL == (flt = (float *)xmalloc(len * sizeof(float))))
@@ -1123,6 +1123,58 @@ tcl_break_contig(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+typedef struct {
+    int fold;     /* line wrapping, 0 to disable */
+    int shift;    /* add 'shift' to all output chars, default 0 */
+    int phred;    /* boolean => convert from log-odds to phred */
+    Tcl_Obj *str; /* The string to convert */
+    int min;      /* Minimum ASCII value to print */
+    int max;      /* Maximum ASCII value to print */
+} format_sequence_arg;
+
+int
+tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
+		 int objc, Tcl_Obj *CONST objv[])
+{
+    int i, j, k, len;
+    signed char *in, *out;
+
+    format_sequence_arg args;
+    cli_args a[] = {
+	{"-fold",  ARG_INT, 1, "0",   offsetof(format_sequence_arg, fold)},
+	{"-shift", ARG_INT, 1, "0",   offsetof(format_sequence_arg, shift)},
+	{"-phred", ARG_INT, 0, "0",   offsetof(format_sequence_arg, phred)},
+	{"-str",   ARG_OBJ, 1, NULL,  offsetof(format_sequence_arg, str)},
+	{"-min",   ARG_INT, 1, "0",   offsetof(format_sequence_arg, min)},
+	{"-max",   ARG_INT, 1, "255", offsetof(format_sequence_arg, max)},
+	{NULL,	 0,	  0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    in = Tcl_GetStringFromObj(args.str, &len);
+
+    out = (char *)malloc(len + 1 + (args.fold ? len / args.fold + 1 : 0));
+    if (!out)
+	return TCL_ERROR;
+    
+    for (i = j = k = 0; i < len; i++, j++) {
+	signed int c = in[i] + args.shift;
+	if (c < args.min) c = args.min;
+	if (c > args.max) c = args.max;
+	out[j] = c;
+	if (args.fold && ++k == args.fold) {
+	    out[++j] = '\n';
+	    k = 0;
+	}
+    }
+
+    Tcl_SetObjResult(interp, Tcl_NewStringObj(out, j));
+
+    return TCL_OK;
+}
+
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
 /*				   NewGap_Init				     */
@@ -1261,6 +1313,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "sequence_depth",
 			 tcl_sequence_depth,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "reformat_sequence",
+			 tcl_reformat_sequence,
 			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);

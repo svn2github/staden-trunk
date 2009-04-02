@@ -558,6 +558,7 @@ proc get_consensus {args} {
 	    -type ok
 	return
     }
+    fconfigure $fd -translation binary
 
     foreach contig $opt(-contigs) {
 	foreach {id start end} $contig {
@@ -567,23 +568,20 @@ proc get_consensus {args} {
 	    if {$end   == ""} {set end   [$c get_end]}
 
 	    set cons [calc_consensus -io $io -contigs =$crec]
-	    regsub -all "(.{60})" $cons "\\1\n" c60
+	    set c60 [reformat_sequence -fold 60 -str $cons]
 	    switch $opt(-format) {
 		1 {
 		    # Fastq
 		    set qual [calc_quality -io $io -contigs =$crec]
-		    for {set i 0} {$i < 255} {incr i} {
-			if {$i < 93} {
-			    lappend l [binary format c $i] \
-				[binary format c [expr {$i+33}]]
-			} else {
-			    lappend l [binary format c $i] ~
-			}
-		    }
 		    puts $fd @$id
 		    puts $fd $c60
 		    puts $fd +
-		    regsub -all "(.{60})" [string map $l $qual] "\\1\n" q60
+		    set q60 [reformat_sequence \
+				 -fold 60 \
+				 -shift 33 \
+				 -min 33 \
+				 -max 126 \
+				 -str $qual]
 		    puts $fd $q60
 		}
 
