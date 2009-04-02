@@ -900,7 +900,6 @@ proc CreateAllContigListNumbers { io } {
 	set order [contig_order_to_number -io $io -order $i]
 	lappend clist $order
     }
-    puts "LIST $clist"
     return $clist
 }
 
@@ -916,7 +915,6 @@ proc CreateAllContigList { io } {
 	set c [$io get_contig $order]
 	lappend clist [$c get_name]
     }
-    puts "LIST $clist"
     return $clist
 }
 
