@@ -207,8 +207,9 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	    ry = ry/(t->yzoom / 200.0) + t->yoffset - 50;
 	    if (t->logy && t->ymode != 1) {
-		ry = exp(ry/50.0);
+		ry = exp(ry/50.0)-1;
 	    }
+	    ry++;
 
 	    obj[0] = Tcl_NewDoubleObj(rx);
 	    obj[1] = Tcl_NewDoubleObj(ry);
@@ -957,11 +958,14 @@ int template_replot(template_disp_t *t) {
 static void tdisp_move_xhair(template_disp_t *t, int x, int y,
 			     double *rx, double *ry) {
     double wx0, wx1, wy0, wy1;
-    double xh, yh;
+    double xh, xh2, yh, yh2;
     int width, height;
 
     RasterWinSize(t->raster, &width, &height);
     RasterToWorld(t->raster, x, y, &xh, &yh);
+    RasterToWorld(t->raster, x+1, y+1, &xh2, &yh2);
+    xh = (xh+xh2)/2;
+    yh = (yh+yh2)/2;
     RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
     RasterToWorld(t->raster, width, height, &wx1, &wy1);
 
