@@ -186,9 +186,21 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	    int x, y;
 	    double rx, ry;
 	    Tcl_Obj *obj[2];
+	    int width, height, height2;
+
+	    RasterWinSize(t->raster, &width, &height);
+	    height2 = height / 2;
+
 	    Tcl_GetIntFromObj(interp, objv[2], &x);
 	    Tcl_GetIntFromObj(interp, objv[3], &y);
 	    tdisp_move_xhair(t, x, y, &rx, &ry);
+
+	    if (t->sep_by_strand) {
+		if (ry > height2)
+		    ry = ry-height2;
+		else
+		    ry = height2-ry;
+	    }
 
 	    if (t->ymode == 1)
 		ry /= 10;
