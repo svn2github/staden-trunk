@@ -546,9 +546,13 @@ proc seq_seqs_init {w t} {
     set ${t}(Y) "Template Size"
     set ${t}(Colour) "Combined mapping quality"
     set ${t}(Spread) 0
-    set ${t}(PairOnly) 0
     set ${t}(PlotDepth) 0
     set ${t}(SeparateStrands) 0
+    set ${t}(MinQual) 0
+    set ${t}(MaxQual) 255
+    set ${t}(FilterPair) 0
+    set ${t}(FilterConsistent) 0
+    set ${t}(FilterSpanning) 0
 
     # Add raster component to canvas
     update idletasks
@@ -568,16 +572,17 @@ proc seq_seqs_init {w t} {
 			 -io $io \
 			 -cnum [set ${w}(cnum)] \
 			 -raster $r]
+    set td   [set ${t}(TDisp)]
     $r world_scroll 1 1 [set ${w}(length)] 10000
     $r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
 	[winfo height $d]
     set ${t}(R_zoom) [set ${w}(xzoom)]
 
     bind $r <Any-Motion> "
-         foreach {x y} \[[set ${t}(TDisp)] xhair %x %y\] break;
-         set ${w}(info) \"X: \$x    Y: \$y\"
+         foreach {x y} \[$td xhair %x %y\] break;
+         set ${w}(info) \"X: \$x    Y: \$y)\"
     "
-    bind $r <Any-Leave> "[set ${t}(TDisp)] xhair; set ${w}(info) {}"
+    bind $r <Any-Leave> "$td xhair; set ${w}(info) {}"
 
     # Add GUI elements
     set bc $w.bcontrol
@@ -613,13 +618,12 @@ proc seq_seqs_init {w t} {
     checkbutton $f1.sep_strands -text "Separate strands" \
 	-variable ${t}(SeparateStrands) \
 	-command "redraw_plot $w seq_seqs"
-    checkbutton $f1.pair_only -text "Pairs only" \
-	-variable ${t}(PairOnly) \
-	-command "redraw_plot $w seq_seqs"
+    button $f1.filter -text Filter \
+	-command "seq_seqs_filter $w $t"
     checkbutton $f1.plot_depth -text "Depth" \
 	-variable ${t}(PlotDepth) \
 	-command "redraw_plot $w seq_seqs"
-    pack $f1.log $f1.acc $f1.reads $f1.sep_strands $f1.pair_only \
+    pack $f1.filter $f1.log $f1.acc $f1.reads $f1.sep_strands \
 	$f1.plot_depth -side left
 
     $d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
@@ -630,6 +634,174 @@ proc seq_seqs_init {w t} {
     puts END:[info level [info level]]
 }
 
+#
+# Contols the filter dialogue
+#
+proc seq_seqs_filter {w t} {
+    global $w $t
+
+    if {[winfo exists $w.filter_win]} {
+	return
+    }
+    set f [xtoplevel $w.filter_win -resizable 0]
+    set f2 [frame $f.sub]
+
+    # Initialise variable copies
+    foreach v {FilterPair FilterConsistent FilterSpanning MinQual MaxQual} {
+	set ${t}(_$v) [set ${t}($v)]
+	set ${t}($v~) [set ${t}($v)]
+    }
+
+    # Auto-update?
+    checkbutton $f2.auto \
+	-text "Auto update" \
+	-variable ${t}(FilterAutoUpdate) \
+	-command "seq_seqs_filter_update $w $t $f"
+    grid $f2.auto - - - -sticky w
+
+    # Radio buttons
+    set r 1
+    foreach {label var list} {
+	Pairs       FilterPair {
+	    All 0
+	    {Single only} 2
+	    {Pair only} 1
+	} \
+	Consistency FilterConsistent {
+	    All 0
+	    {Consistent only} 4
+	    {Inconsistent only} 8
+	} \
+        Spanning    FilterSpanning {
+	    All 0
+	    {Non-spanning only} 32
+	    {Spanning only} 16
+	}
+    } {
+	set c 1
+	grid [label $f2.label$r -text "$label:"] -row $r -column 0 -sticky w
+
+	foreach {name value} $list {
+	    grid [radiobutton $f2.b$r$c \
+		      -text $name \
+		      -value $value \
+		      -variable ${t}(_$var) \
+		      -command "seq_seqs_filter_update $w $t $f" \
+		     ] -row $r -column $c -sticky w
+	    incr c
+	}
+
+	incr r
+    }
+
+#    foreach {name value} {All 0 {Single only} 2 {Pair only} 1} {
+#	grid [radiobutton $f2.b$r$c \
+#		  -text $name \
+#		  -value $value \
+#		  -variable ${t}(_FilterPair)] -row $r -column $c -sticky w
+#	incr c
+#    }
+#
+#    incr r
+#    grid [label $f2.label$r -text "Consistency:"] -row $r -column 0 -sticky w
+#    set c 1
+#    foreach {name value} {All 0 {Consistent only} 4 {Inconsistent only} 8} {
+#	grid [radiobutton $f2.b$r$c \
+#		  -text $name \
+#		  -value $value \
+#		  -variable ${t}(_FilterConsistent)] \
+#	    -row $r -column $c -sticky w
+#	incr c
+#    }
+#
+#    incr r
+#    grid [label $f2.label$r -text "Spanning:"] -row $r -column 0 -sticky w
+#    set c 1
+#    foreach {name value} {All 0 {Non-spanning only} 32 {Spanning only} 16} {
+#	grid [radiobutton $f2.b$r$c \
+#		  -text $name \
+#		  -value $value \
+#		  -variable ${t}(_FilterSpanning)] -row $r -column $c -sticky w
+#	incr c
+#    }
+
+    # Scale bars
+    incr r
+    label $f2.min_label -text "Min. Qual"
+    scale $f2.min_qual \
+	-from 0 \
+	-to 255 \
+	-orient horiz \
+	-variable ${t}(_MinQual) \
+	-command "seq_seqs_filter_update $w $t $f min"
+    grid $f2.min_label $f2.min_qual - - -sticky ew
+    label $f2.max_label -text "Max. Qual"
+    scale $f2.max_qual \
+	-from 0 \
+	-to 255 \
+	-orient horiz \
+	-variable ${t}(_MaxQual) \
+	-command "seq_seqs_filter_update $w $t $f max"
+    grid $f2.max_label $f2.max_qual - - -sticky ew
+
+    # Standard controls
+    okcancelhelp $f.ok \
+	-ok_command "seq_seqs_filter_ok $w $t $f" \
+	-cancel_command "seq_seqs_filter_cancel $w $t $f" \
+	-apply_command "seq_seqs_filter_apply $w $t $f 1" \
+	-bd 2 \
+	-relief groove
+
+    pack $f2 $f.ok -side top -fill both -expand 1
+}
+
+# Filter::OK 
+proc seq_seqs_filter_apply {w t f keep} {
+    global $w $t
+    foreach var [array names $t] {
+	if {[regexp {^_(.*)} $var dummy v]} {
+	    set ${t}($v)  [set ${t}($var)]
+	    if {$keep} {
+		set ${t}($v~) [set ${t}($var)]
+	    }
+	}
+    }
+
+    redraw_plot $w seq_seqs
+}
+
+proc seq_seqs_filter_ok {w t f} {
+    seq_seqs_filter_apply $w $t $f 1
+    destroy $f
+}
+
+proc seq_seqs_filter_cancel {w t f} {
+    global $w $t
+    foreach var [array names $t] {
+	if {[regexp {^(.*)~} $var dummy v]} {
+	    puts "set ${t}($v) [set ${t}($var)]"
+	    set ${t}($v) [set ${t}($var)]
+	}
+    }
+
+    destroy $f
+    redraw_plot $w seq_seqs
+}
+
+proc seq_seqs_filter_update {w t f {cmd {}} args} {
+    global $w $t
+
+    if {$cmd == "min" && [set ${t}(_MinQual)] > [set ${t}(_MaxQual)]} {
+	set ${t}(_MaxQual) [set ${t}(_MinQual)]
+    }
+    if {$cmd == "max" && [set ${t}(_MaxQual)] < [set ${t}(_MinQual)]} {
+	set ${t}(_MinQual) [set ${t}(_MaxQual)]
+    }
+
+    if {[set ${t}(FilterAutoUpdate)]} {
+	seq_seqs_filter_apply $w $t $f 0
+    }
+}
 
 #
 # Plots the sequence read depth.
@@ -693,6 +865,10 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     update idletasks
 
     # Forces a redraw too
+    set flag [expr { [set ${t}(FilterPair)]
+		    +[set ${t}(FilterConsistent)]
+		    +[set ${t}(FilterSpanning)]}]
+		     
     $td configure \
 	-accuracy   [set ${t}(Accurate)] \
 	-logy       [set ${t}(YLog)] \
@@ -702,9 +878,11 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	-cmode      $cmode \
 	-reads_only [set ${t}(ReadsOnly)] \
 	-by_strand  [set ${t}(SeparateStrands)] \
-	-filter     [set ${t}(PairOnly)] \
+	-filter     $flag \
 	-yzoom      [set ${t}(YScale)] \
 	-plot_depth [set ${t}(PlotDepth)] \
+ 	-min_qual   [set ${t}(MinQual)] \
+ 	-max_qual   [set ${t}(MaxQual)] 
 
 
     # Set Y scrollbar

@@ -40,10 +40,16 @@ typedef struct {
     int plot_depth;
     double xhair_pos;
     double yhair_pos;
+    int min_qual, max_qual; /* Filter parameters */
 } template_disp_t;
 
-#define FILTER_PAIRED      (1<<0)
-#define FILTER_CONSISTENT  (1<<1)
+/* If bit set we filter our this data type */
+#define FILTER_PAIRED        (1<<0)
+#define FILTER_SINGLE        (1<<1)
+#define FILTER_CONSISTENT    (1<<2)
+#define FILTER_INCONSISTENT  (1<<3)
+#define FILTER_SPANNING      (1<<4)
+#define FILTER_NONSPANNING   (1<<5)
 
 int TDisp_Init(Tcl_Interp *interp);
 

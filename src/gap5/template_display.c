@@ -85,6 +85,10 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, xzoom), 0, 0, 0 /* mask */},
     {TK_CONFIG_DOUBLE, "-yzoom", "yZoom", "YZoom", "10.0",
      -1, Tk_Offset(template_disp_t, yzoom), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-min_qual", "minQual", "MinQual", "0",
+     -1, Tk_Offset(template_disp_t, min_qual), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255",
+     -1, Tk_Offset(template_disp_t, max_qual), 0, 0, 0 /* mask */},
     {TK_OPTION_END}
 };
 
@@ -185,6 +189,15 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	    Tcl_GetIntFromObj(interp, objv[2], &x);
 	    Tcl_GetIntFromObj(interp, objv[3], &y);
 	    tdisp_move_xhair(t, x, y, &rx, &ry);
+
+	    if (t->ymode == 1)
+		ry /= 10;
+
+	    ry = ry/(t->yzoom / 200.0) + t->yoffset - 50;
+	    if (t->logy && t->ymode != 1) {
+		ry = exp(ry/50.0);
+	    }
+
 	    obj[0] = Tcl_NewDoubleObj(rx);
 	    obj[1] = Tcl_NewDoubleObj(ry);
 	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, obj));
@@ -384,7 +397,7 @@ typedef struct {
  * Y Coordinate allocation routines
  */
 static int yp_xgap = 2; /* FIXME */
-void set_yp_xgap(int v) {printf("v=%d\n", v);yp_xgap = v;}
+void set_yp_xgap(int v) {yp_xgap = v;}
 
 /* Pick Y coordinates for ranges */
 typedef struct ye2 {
@@ -636,9 +649,11 @@ int template_replot(template_disp_t *t) {
 	    }
 	}
 
-	if (t->filter & FILTER_PAIRED && !r[i].pair_rec) {
+	if (t->filter & (FILTER_PAIRED | FILTER_SPANNING) && !r[i].pair_rec)
 	    continue;
-	}
+
+	if (t->filter & FILTER_SINGLE && r[i].pair_rec)
+	    continue;
 
 	tl[ntl].t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
 	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
@@ -669,6 +684,11 @@ int template_replot(template_disp_t *t) {
 	    if (!t->accuracy && !(r[i].pair_start || r[i].pair_end)) {
 		span = 1;
 	    }
+
+	    if (t->filter & FILTER_SPANNING && !span)
+		continue;
+	    if (t->filter & FILTER_NONSPANNING && span)
+		continue;
 
 	    if (!span) {
 		sta = r[i].start < r[i].pair_start
@@ -731,6 +751,11 @@ int template_replot(template_disp_t *t) {
 		   (r[i].flags & GRANGE_FLAG_COMP2) == 0)))
 		col = t->inconsistent_col;
 	}
+	
+	if (t->filter & FILTER_CONSISTENT && col == t->inconsistent_col)
+	    continue;
+	if (t->filter & FILTER_INCONSISTENT && col != t->inconsistent_col)
+	    continue;
 
 	if (t->plot_depth && !single && !span && col != t->inconsistent_col) {
 	    WorldToRaster (t->raster, sta, 0, &r_sta, &r_y);
@@ -741,6 +766,10 @@ int template_replot(template_disp_t *t) {
 		t->tdepth[j]++;
 	    }
 	}
+
+	/* Filter */
+	if (tl[ntl].mq < t->min_qual || tl[ntl].mq > t->max_qual)
+	    continue;
 
 	/* Generate line data */
 	tl[ntl].y      = y;
@@ -819,6 +848,7 @@ int template_replot(template_disp_t *t) {
 		double y;
 
 		/* Compute the Y coordinates (part 2) */
+		/* See XHAIR sub-command code too; keep it in sync */
 		if (t->ymode == 1) {
 		    y = tl[i].y*10;
 		} else {
@@ -834,7 +864,7 @@ int template_replot(template_disp_t *t) {
 		y = (y + 50 - t->yoffset) * yz;
 
 		if (t->spread)
-		    y = y-t->spread/2+(tl[i].x[0]%(t->spread));
+		    y = y-t->spread/2+((tl[i].x[0]+i)%(t->spread));
 
 		if (t->sep_by_strand)
 		    y = tl[i].t_strand ? height2 - y : height2 + y;
