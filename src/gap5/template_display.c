@@ -409,32 +409,13 @@ typedef struct {
 /* -------------------------------------------------------------------------
  * Y Coordinate allocation routines
  */
-static int yp_xgap = 2; /* FIXME */
-void set_yp_xgap(int v) {yp_xgap = v;}
 
-/* Pick Y coordinates for ranges */
-typedef struct ye2 {
-    SPLAY_ENTRY(ye2) link;
-    int x;
-    int y;
-} ye2;
-
-static int x_cmp(struct ye2 *y1, struct ye2 *y2) {
-    int d = (y1->x) - (y2->x);
-    return d ? d : y1->y - y2->y;
-}
-
-static int y_cmp(struct ye2 *y1, struct ye2 *y2) {
-    return y1->y - y2->y;
-}
-
-SPLAY_HEAD(XTREE, ye2);
-SPLAY_HEAD(YTREE, ye2);
-SPLAY_PROTOTYPE(XTREE, ye2, link, x_cmp);
-SPLAY_PROTOTYPE(YTREE, ye2, link, x_cmp);
-SPLAY_GENERATE(XTREE, ye2, link, x_cmp);
-SPLAY_GENERATE(YTREE, ye2, link, y_cmp);
-
+SPLAY_HEAD(XTREE, xy_pair);
+SPLAY_HEAD(YTREE, xy_pair);
+SPLAY_PROTOTYPE(XTREE, xy_pair, link, x_cmp);
+SPLAY_PROTOTYPE(YTREE, xy_pair, link, y_cmp);
+SPLAY_GENERATE(XTREE, xy_pair, link, x_cmp);
+SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
 
 /*
  * This algorithm allocates Y coordinates to the horizontal lines listed
@@ -449,9 +430,9 @@ SPLAY_GENERATE(YTREE, ye2, link, y_cmp);
  * The Y-sorted tree holds rows that can be considered as inactive, but
  * will be reused if we have to add another row.
  */
-static int compute_ypos(tline *tl, int ntl) {
+static int compute_ypos(int xgap, tline *tl, int ntl) {
     int i;
-    struct ye2 *node, *curr, *next;
+    struct xy_pair *node, *curr, *next;
     int yn = 0;
 
     /* Create and initialise X and Y trees */
@@ -485,7 +466,7 @@ static int compute_ypos(tline *tl, int ntl) {
 	    
 	    tl[i].y = node->y;
 	    SPLAY_REMOVE(XTREE, &xtree, node);
-	    node->x = tl[i].x[3] + yp_xgap;
+	    node->x = tl[i].x[3] + xgap;
 	    SPLAY_INSERT(XTREE, &xtree, node);
 #if 0
 	    /* Cull Y tree if appropriate to remove excess rows */
@@ -508,11 +489,11 @@ static int compute_ypos(tline *tl, int ntl) {
 	    if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
 		SPLAY_REMOVE(YTREE, &ytree, node);
 	    } else {
-		node = (struct ye2 *)malloc(sizeof(*node));
+		node = (struct xy_pair *)malloc(sizeof(*node));
 		node->y = ++yn;
 	    }
 	    tl[i].y = node->y;
-	    node->x = tl[i].x[3] + yp_xgap;
+	    node->x = tl[i].x[3] + xgap;
 	    SPLAY_INSERT(XTREE, &xtree, node);
 	}
     }
@@ -568,6 +549,7 @@ int template_replot(template_disp_t *t) {
     tline *tl = NULL;
     int ntl = 0;
     int fwd_col, rev_col;
+    int xgap;
 
     Display *rdisp;
     Drawable rdraw;
@@ -597,7 +579,7 @@ int template_replot(template_disp_t *t) {
 
     printf("templates %f to %f\n", wx0, wx1);
 
-    set_yp_xgap((int)(10*yz*(wx1-wx0)/width));
+    xgap = (int)(10*yz*(wx1-wx0)/width);
 
     wx0 -= tsize;
     wx1 += tsize;
@@ -843,7 +825,7 @@ int template_replot(template_disp_t *t) {
     tv1 = tv2;
     gettimeofday(&tv2, NULL);
     t2 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-	compute_ypos(tl, ntl);
+	compute_ypos(xgap, tl, ntl);
     tv1 = tv2;
     gettimeofday(&tv2, NULL);
     t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;

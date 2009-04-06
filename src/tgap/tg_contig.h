@@ -2,6 +2,7 @@
 #define _TG_CONTIG_H_
 
 #include <limits.h>
+#include "tree.h"
 
 /*
  * 'get' functions - simply returns the structure member.
@@ -88,6 +89,19 @@ typedef struct {
 #define CITER_LAST   1
 #define CITER_CSTART INT_MIN
 #define CITER_CEND   INT_MAX
+
+
+/*
+ * Y position allocation functions/data structs
+ */
+typedef struct xy_pair {
+    SPLAY_ENTRY(xy_pair) link;
+    int x;
+    int y;
+} xy_pair;
+int x_cmp(struct xy_pair *y1, struct xy_pair *y2);
+int y_cmp(struct xy_pair *y1, struct xy_pair *y2);
+
 
 /*
  * Allocates and initialises a new contig_iterator struct.

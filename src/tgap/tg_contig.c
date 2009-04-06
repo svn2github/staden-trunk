@@ -5,6 +5,7 @@
 
 #include "tg_gio.h"
 #include "misc.h"
+#include "tree.h"
 
 /*
  * Sets the contig start position
@@ -125,6 +126,11 @@ static int contig_insert_base2(GapIO *io, int bnum,
     } else {
 	pos -= offset;
     }
+
+    /* FIXME: add end_used (or start_used if complemented?) check here,
+     * so we can shortcut looping through the bin if we're inserting beyond
+     * any of the bin contents.
+     */
 
     /* Perform the insert into objects first */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
@@ -485,303 +491,128 @@ static int sort_range_by_y(const void *v1, const void *v2) {
 }
 
 
-typedef struct {
-    int x;
-    int y;
-} ye2;
+/* Pick Y coordinates for ranges */
+int x_cmp(struct xy_pair *y1, struct xy_pair *y2) {
+    int d = (y1->x) - (y2->x);
+    return d ? d : y1->y - y2->y;
+}
 
-#define X_GAP 2
+int y_cmp(struct xy_pair *y1, struct xy_pair *y2) {
+    return y1->y - y2->y;
+}
+
+SPLAY_HEAD(XTREE, xy_pair);
+SPLAY_HEAD(YTREE, xy_pair);
+SPLAY_PROTOTYPE(XTREE, xy_pair, link, x_cmp);
+SPLAY_PROTOTYPE(YTREE, xy_pair, link, y_cmp);
+SPLAY_GENERATE(XTREE, xy_pair, link, x_cmp);
+SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
+
+/*
+ * This algorithm allocates Y coordinates to the horizontal lines listed
+ * in tl[0..ntl-1].
+ *
+ * To keep track of this we expect sorted data, by X. We then keep track
+ * of every display line as an entry in one of two splay trees; one
+ * sorted on X and one sorted on Y. (NB, change macros SPLAY_ to RB_ for
+ * a red-black tree implementation instead.)
+ *
+ * The X-sorted tree holds the used portion of active display rows.
+ * The Y-sorted tree holds rows that can be considered as inactive, but
+ * will be reused if we have to add another row.
+ */
 static int compute_ypos(rangec_t *r, int nr, int job) {
-    int i, j, k;
-    ye2 *yend = NULL;
-    int yn = 0, ya = 0, jend = -1;
+    int i;
+    struct xy_pair *node, *curr, *next;
+    int yn = 0;
 
+    /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = 0; i < nr; i++) {
 	    r[i].y = i;
 	}
-    } else {
-	/* CSIR_ALLOCATE_Y_MULTIPLE */
-	for (i = 0; i < nr; i++) {
-
-#ifdef DEBUG
-	    printf("=== read %d, pos %d..%d ===\n",
-		   i, r[i].start, r[i].end);
-#endif
-	    if (yn && r[i].start >= yend[0].x) {
-		int miny = yn;
-		j = 0;
-
-		/* Or a more optimal find */
-		for (k = 0; k < yn; k++) {
-		    if (r[i].start < yend[k].x)
-			break;
-		    if (yend[k].y < miny) {
-			j = k;
-			miny = yend[k].y;
-		    }
-		}
-
-		r[i].y = yend[j].y;
-
-		/* Cull old lines */
-		while (jend != -1 && yend[jend].x < r[i].start) {
-		    int new_jend = -1;
-		    if (jend > 0 && yend[jend-1].y == yn-2) {
-			new_jend = jend-1;
-		    } else {
-			for (k = 0; k < yn; k++) {
-			    if (yend[k].y == yn-2) {
-				new_jend = k > jend ? k-1 : k;
-				break;
-			    }
-			}
-		    }
-
-#ifdef DEBUG
-		    printf("Purge jend=%d(%d), new=%d\n",
-			   jend, yend[jend].y, new_jend);
-#endif
-		    memmove(&yend[jend], &yend[jend+1],
-			    (yn-jend-1) * sizeof(yend[jend]));
-		    yn--;
-		    jend = new_jend;
-		}
-	    } else {
-		if (++yn >= ya) {
-		    ya += 1000;
-		    yend = (ye2 *)xrealloc(yend, ya * sizeof(*yend));
-		}
-		j = yn-1;
-		yend[j].y = yn-1;
-		r[i].y = yn-1;
-		jend = j;
-	    }
-
-#ifdef DEBUG
-	    for (k = 0; k < yn; k++) {
-	    	printf("%3d = %3d,%d %c%c\n",
-		       k, yend[k].x, yend[k].y, j == k ? '*' : ' ',
-		       jend == k ? 'E' : ' ');
-	    }
-#endif
-
-	    yend[j].x = r[i].end + X_GAP;
-
-	    /* Ensure it's shuffled to the correct location */
-	    if (j+1 < yn && yend[j].x > yend[j+1].x) {
-		int low = j+1, high = yn;
-		ye2 tmp;
-
-#if 1
-		/* Most cpu spent here - binary search */
-		do {
-		    k = (low + high)/2;
-		    if (yend[j].x > yend[k].x) {
-			low = k;
-		    } else {
-			high = k;
-		    }
-		} while (high-low > 1);
-		k = (low + high)/2;
-		
-		/*
-		 * We now need to move [j+1..k] to [j..k] and put
-		 * [j] into [k].
-		 * Ideally this should be done via links instead.
-		 */
-		tmp = yend[j];
-		memmove(&yend[j], &yend[j+1], (k-j)*sizeof(yend[j]));
-		yend[k] = tmp;
-		if (jend == j)
-		    jend = k;
-		else if (jend > j && jend <= k)
-		    jend--;
-#else
-		for (k = j+1; k < yn; j=k, k++) {
-		    if (yend[j].x > yend[k].x) {
-			tmp = yend[j];
-			yend[j] = yend[k];
-			yend[k] = tmp;
-			if (j == jend) jend = k;
-			else if (k == jend) jend = j;
-		    } else {
-			break;
-		    }
-		}
-#endif
-	    } else if (j > 0 && yend[j].x < yend[j-1].x) {
-		for (k = j-1; k >= 0; k--, j--) {
-		    if (yend[j].x < yend[k].x) {
-			ye2 tmp = yend[j];
-			yend[j] = yend[k];
-			yend[k] = tmp;
-			if (j == jend) jend = k;
-			else if (k == jend) jend = j;
-		    } else {
-			break;
-		    }
-		}
-	    }
-	}
-
-	if (yend)
-	    free(yend);
+	return 0;
     }
-    
-    return 0;
-}
 
+    /* Otherwise CSIR_ALLOCATE_Y_MULTIPLE */
+#define xgap 3
+
+    /* Create and initialise X and Y trees */
+    struct XTREE xtree = SPLAY_INITIALIZER(&xtree);
+    struct YTREE ytree = SPLAY_INITIALIZER(&ytree);
+
+    /* Compute Y coords */
+    for (i = 0; i < nr; i++) {
+	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && r[i].start >= node->x) {
+	    int try_cull = 0;
+
+	    /* We found a node, is it the smallest in y? */
+	    curr = SPLAY_NEXT(XTREE, &xtree, node);
+	    while (curr && r[i].start >= curr->x) {
+		if (node->y > curr->y)
+		    node = curr;
+		curr = SPLAY_NEXT(XTREE, &xtree, curr);
+	    }
+	    
+	    /* Shift non-smallest y (but < x) to Y-tree */
+	    curr = SPLAY_MIN(XTREE, &xtree);
+	    while (curr && r[i].start >= curr->x) {
+		next = SPLAY_NEXT(XTREE, &xtree, curr);
+		if (curr != node) {
+		    SPLAY_REMOVE(XTREE, &xtree, curr);
+		    SPLAY_INSERT(YTREE, &ytree, curr);
+		    try_cull = 1;
+		}
+		curr = next;
+	    }
+	    
+	    r[i].y = node->y;
+	    SPLAY_REMOVE(XTREE, &xtree, node);
+	    node->x = r[i].end + xgap;
+	    SPLAY_INSERT(XTREE, &xtree, node);
 #if 0
-typedef struct {
-    int x;
-    int next;
-    int prev;
-} yenp;
-
-#define X_GAP 2
-static int compute_ypos_old(rangec_t *r, int nr, int job) {
-    int i, j, k, l;
-    yenp *yend = NULL;
-    int yn = 0, ya = 0, ys = -1, ye = -1;
-    int count;
-
-    if (job & CSIR_ALLOCATE_Y_SINGLE) {
-	for (i = 0; i < nr; i++) {
-	    r[i].y = i;
-	}
-    } else {
-	/* CSIR_ALLOCATE_Y_MULTIPLE */
-	for (i = 0; i < nr; i++) {
-#ifdef DEBUG
-	    printf("=== read %d, pos %d..%d, yn %d ===\n",
-	    	   i, r[i].start, r[i].end, yn);
-#endif
-
-	    if (yn && r[i].start >= yend[ys].x) {
-		int miny = yn;
-		j = ys;
-
-		r[i].y = ys;
-
-#if 1
-		/* Cull excess lines */
-		while (r[i].start > yend[yn-1].x && yn-1 != j) {
-#ifdef DEBUG
-		    printf("Purge %d\n", yn-1);
-#endif
-		    if (ys == yn-1)
-			ys = yend[yn-1].next;
-		    if (ye == yn-1)
-			ye = yend[yn-1].prev;
-		    if (yend[yn-1].prev != -1)
-			yend[yend[yn-1].prev].next = yend[yn-1].next;
-		    if (yend[yn-1].next != -1)
-			yend[yend[yn-1].next].prev = yend[yn-1].prev;
-		    yn--;
+	    /* Cull Y tree if appropriate to remove excess rows */
+	    if (try_cull) {
+		for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
+		    next = SPLAY_PREV(YTREE, &ytree, curr);
+		    if (curr->y == yn) {
+			SPLAY_REMOVE(YTREE, &ytree, curr);
+			free(curr);
+			yn--;
+		    } else {
+			break;
+		    }
 		}
+	    }
 #endif
+
+	} else {
+	    /* Check if we have a free y on ytree */
+	    if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
+		SPLAY_REMOVE(YTREE, &ytree, node);
 	    } else {
-		//printf("Inc yn to %d\n", yn+1);
-		if (++yn >= ya) {
-		    ya += 1000;
-		    yend = (yenp *)xrealloc(yend, ya * sizeof(*yend));
-		}
-		j = yn-1;
-		yend[j].next = -1;
-		if (ye != -1) {
-		    yend[j].prev = ye;
-		    yend[ye].next = j;
-		    ye = j;
-		} else {
-		    yend[j].prev = -1;
-		    yend[j].next = -1;
-		    ys = ye = j;
-		}
-		yend[j].x = -999;
-
-		r[i].y = j;
+		node = (struct xy_pair *)malloc(sizeof(*node));
+		node->y = ++yn;
 	    }
-
-#ifdef DEBUG
-	    count = 0;
-	    for (k = ys; k != -1; k = yend[k].next) {
-	    	printf("%3d = %3d,%3d,%3d  %c%c\n",
-		       k, yend[k].x, yend[k].prev, yend[k].next,
-		       " <"[k==ys], " >"[k==ye]);
-		assert(yend[k].x == -999 ||
-		       yend[k].prev == -1 ||
-		       yend[k].x >= yend[yend[k].prev].x);
-		assert(yend[k].prev == -1 ||
-		       yend[yend[k].prev].next == k);
-		count++;
-	    }
-	    assert(ys == -1 || yend[ys].prev == -1);
-	    assert(ye == -1 || yend[ye].next == -1);
-	    assert(count == yn);
-#endif
-
-	    yend[j].x = r[i].end + X_GAP;
-
-	    /* Ensure it's shuffled to the correct location */
-	    if (yend[j].next != -1 && yend[j].x > yend[yend[j].next].x) {
-		for (k = yend[j].next; k != -1; k = yend[j].next) {
-		    if (yend[j].x >= yend[k].x) {
-			int nk = yend[k].next;
-			int pj = yend[j].prev;
-			yend[j].prev = k;
-			yend[k].next = j;
-			if ((yend[j].next = nk) != -1)
-			    yend[nk].prev = j;
-
-			if ((yend[k].prev = pj) != -1)
-			    yend[pj].next = k;
-
-			if (ys == j) ys = k;
-			if (ye == k) ye = j;
-		    } else {
-			break;
-		    }
-		}
-	    } else if (yend[j].prev != -1 && yend[j].x < yend[yend[j].prev].x) {
-		for (k = yend[j].prev; k != -1; k = yend[j].prev) {
-		    if (yend[j].x < yend[k].x) {
-			int nj = yend[j].next;
-			int pk = yend[k].prev;
-
-			yend[j].next = k;
-			yend[k].prev = j;
-			if ((yend[k].next = nj) != -1)
-			    yend[nj].prev = k;
-
-			if ((yend[j].prev = pk) != -1)
-			    yend[pk].next = j;
-
-			if (ys == k) ys = j;
-			if (ye == j) ye = k;
-		    } else {
-			break;
-		    }
-		}
-	    }
-
-#ifdef DEBUG
-	    puts("");
-	    for (k = ys; k != -1; k = yend[k].next) {
-	    	printf("%3d = %3d,%3d,%3d  %c%c\n",
-		       k, yend[k].x, yend[k].prev, yend[k].next,
-		       " <"[k==ys], " >"[k==ye]);
-	    }
-#endif
+	    r[i].y = node->y;
+	    node->x = r[i].end + xgap;
+	    SPLAY_INSERT(XTREE, &xtree, node);
 	}
-
-	if (yend)
-	    free(yend);
     }
-    
+
+    /* Delete trees */
+    for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
+	next = SPLAY_NEXT(XTREE, &xtree, node);
+	SPLAY_REMOVE(XTREE, &xtree, node);
+    }
+
+    for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
+	next = SPLAY_NEXT(YTREE, &ytree, node);
+	SPLAY_REMOVE(YTREE, &ytree, node);
+    }
+
     return 0;
 }
-#endif
 
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
