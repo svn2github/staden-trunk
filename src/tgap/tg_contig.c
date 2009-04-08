@@ -524,7 +524,7 @@ SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
 static int compute_ypos(rangec_t *r, int nr, int job) {
     int i;
     struct xy_pair *node, *curr, *next;
-    int yn = 0;
+    int yn = -1;
 
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
@@ -546,30 +546,40 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && r[i].start >= node->x) {
 	    int try_cull = 0;
 
-	    /* We found a node, is it the smallest in y? */
-	    curr = SPLAY_NEXT(XTREE, &xtree, node);
-	    while (curr && r[i].start >= curr->x) {
-		if (node->y > curr->y)
-		    node = curr;
-		curr = SPLAY_NEXT(XTREE, &xtree, curr);
-	    }
-	    
-	    /* Shift non-smallest y (but < x) to Y-tree */
-	    curr = SPLAY_MIN(XTREE, &xtree);
-	    while (curr && r[i].start >= curr->x) {
-		next = SPLAY_NEXT(XTREE, &xtree, curr);
-		if (curr != node) {
-		    SPLAY_REMOVE(XTREE, &xtree, curr);
-		    SPLAY_INSERT(YTREE, &ytree, curr);
-		    try_cull = 1;
+	    /* We found a node, but is there a smaller Y in the YTREE? */
+	    curr = SPLAY_MIN(YTREE, &ytree);
+	    if (curr && node->y > curr->y) {
+		node = curr;
+		r[i].y = node->y;
+		SPLAY_REMOVE(YTREE, &ytree, node);
+		node->x = r[i].end + xgap;
+		SPLAY_INSERT(XTREE, &xtree, node);
+	    } else {
+		/* Apparently not, what about smaller (in y) in XTREE? */
+		curr = SPLAY_NEXT(XTREE, &xtree, node);
+		while (curr && r[i].start >= curr->x) {
+		    if (node->y > curr->y)
+			node = curr;
+		    curr = SPLAY_NEXT(XTREE, &xtree, curr);
 		}
-		curr = next;
-	    }
 	    
-	    r[i].y = node->y;
-	    SPLAY_REMOVE(XTREE, &xtree, node);
-	    node->x = r[i].end + xgap;
-	    SPLAY_INSERT(XTREE, &xtree, node);
+		/* Shift non-smallest y (but < x) to Y-tree */
+		curr = SPLAY_MIN(XTREE, &xtree);
+		while (curr && r[i].start >= curr->x) {
+		    next = SPLAY_NEXT(XTREE, &xtree, curr);
+		    if (curr != node) {
+			SPLAY_REMOVE(XTREE, &xtree, curr);
+			SPLAY_INSERT(YTREE, &ytree, curr);
+			try_cull = 1;
+		    }
+		    curr = next;
+		}
+		
+		r[i].y = node->y;
+		SPLAY_REMOVE(XTREE, &xtree, node);
+		node->x = r[i].end + xgap;
+		SPLAY_INSERT(XTREE, &xtree, node);
+	    }
 #if 0
 	    /* Cull Y tree if appropriate to remove excess rows */
 	    if (try_cull) {
