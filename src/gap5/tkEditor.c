@@ -392,7 +392,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
-	"join_align",	 "join",          "select",
+	"join_align",	 "join",          "select",	 "edit_annotation",
 	NULL
     };
     enum options {
@@ -403,7 +403,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
-	_JOIN_ALIGN,     _JOIN,          _SELECT
+	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION
     };
 
     if (argc < 2) {
@@ -508,23 +508,24 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     case _YVIEW: {
 	double f1;
 	int type, count, offset;
-	rangec_t *r;
-	int nr;
 
 	/* Cache elsewhere - ie last number of seqs visible? */
-	r = contig_seqs_in_range(xx->io, &xx->contig, xx->displayPos,
-				 xx->displayPos + xx->displayWidth,
-				 CSIR_COUNT_ONLY, &nr);
-	free(r);
+	edview_visible_items(xx, xx->displayPos,
+			     xx->displayPos + xx->displayWidth);
 
 	//type = Tk_GetScrollInfoObj(interp, objc, objv, &f1, &count);
 	type = Tk_GetScrollInfo(interp, argc, argv, &f1, &count);
+	if (!xx->ed->consensus_at_top)
+	    count = -count;
 	switch (type) {
 	default:
 	    goto fail;
 
 	case TK_SCROLL_MOVETO:
-	    offset = f1 * nr;
+	    if (xx->ed->consensus_at_top)
+		offset = f1 * xx->max_height + 0.5;
+	    else
+		offset = (1-f1) * xx->max_height - (xx->displayHeight-1) + 0.5;
 	    break;
 
 	case TK_SCROLL_PAGES:
@@ -561,7 +562,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    sheet_arg_x(TKSHEET(ed), argv[2], &x); /* cell coordinates */
 	    sheet_arg_y(TKSHEET(ed), argv[3], &y); y++;
 
-	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, &rec, &pos))) {
+	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, 0,
+						 &rec, &pos))) {
 		sprintf(buf, "%d %d %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */
@@ -841,6 +843,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 	break;
     }
+
+    case _EDIT_ANNOTATION:
+	//tagEditor(ed->xx);
+	break;
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

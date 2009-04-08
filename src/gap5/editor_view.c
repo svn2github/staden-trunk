@@ -13,6 +13,8 @@
 #include "misc.h"
 #include "consensus.h"
 
+static void redisplaySelection(edview *xx);
+
 /*
  * A C interface to the edit_contig and join_contig Tcl functions.
  */
@@ -624,6 +626,7 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
 int edview_visible_items(edview *xx, int start, int end) {
     /* Always reload for now as we can't spot edits yet */
     if (1 || !xx->r || xx->r_start != start || xx->r_end != end) {
+	int i;
 	int mode = xx->ed->stack_mode
 	    ? CSIR_ALLOCATE_Y_MULTIPLE
 	    : CSIR_ALLOCATE_Y_SINGLE;
@@ -636,6 +639,13 @@ int edview_visible_items(edview *xx, int start, int end) {
 				     CSIR_SORT_BY_Y | mode, &xx->nr);
 	if (!xx->r)
 	    return -1;
+
+	xx->max_height = 0;
+	for (i = 0; i < xx->nr; i++) {
+	    if (xx->max_height < xx->r[i].y)
+		xx->max_height = xx->r[i].y;
+	}
+	xx->max_height += 3; /* +1 for from 0, +2 for consensus+ruler */
     }
 
     return 0;
@@ -683,9 +693,15 @@ static int ed_set_yslider_pos(edview *xx, int offset, int size, int total) {
     char buf[100];
     double len = total;
 
-    sprintf(buf, " %.20f %.20f",
-	    offset / len,
-	    (offset + size) / len);
+    if (xx->ed->consensus_at_top) {
+	sprintf(buf, " %.20f %.20f",
+		offset / len,
+		(offset + size) / len);
+    } else {
+	sprintf(buf, " %.20f %.20f",
+		(len - offset - size) / len,
+		(len - offset) / len);
+    }
 
     if (Tcl_VarEval(xx->interp, xx->ed->yScrollCmd, buf, NULL)
 	!= TCL_OK) {
@@ -707,8 +723,14 @@ void ed_set_nslider_pos(edview *xx, int pos) {
 
     if (en->xScrollCmd) {
 	double fract1, fract2;
-	fract1 = pos / (double)MAX_NAME_LEN;
-	fract2 = (pos + en->sw.columns) / (double)MAX_NAME_LEN;
+
+	if (xx->ed->stack_mode) {
+	    fract1 = 0;
+	    fract2 = 1;
+	} else {
+	    fract1 = pos / (double)MAX_NAME_LEN;
+	    fract2 = (pos + en->sw.columns) / (double)MAX_NAME_LEN;
+	}
 	sprintf(buf, " %.20f %.20f", fract1, fract2);
 	if (Tcl_VarEval(EDINTERP(en), en->xScrollCmd, buf, NULL) != TCL_OK) {
 	    printf("Error in editor names scroll: %s\n", EDINTERP(en)->result);
@@ -731,11 +753,13 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	seq_t *s, *sorig;
 	int sp, l;
 	unsigned char seq_a[MAX_SEQ_LEN+1], *seq = seq_a;
-	XawSheetInk ink[MAX_DISPLAY_WIDTH];
-	char line[MAX_DISPLAY_WIDTH+1];
+	XawSheetInk ink[MAX_DISPLAY_WIDTH], nink[MAX_NAME_WIDTH];
+	char line[MAX_DISPLAY_WIDTH+1], nline[MAX_NAME_WIDTH];
 	int dir;
 	int left, right;
 	int seq_p;
+
+	s = get_seq(xx->io, r[i].rec);
 
 	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ)) {
 	    memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
@@ -749,11 +773,18 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    }
 	}
 
+	if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
+	    memset(nink, 0, MAX_NAME_WIDTH * sizeof(*nink));
+	    memset(nline, ' ', MAX_NAME_WIDTH);
+	}
+
 	/* Iterate through all sequences on this line */
 	if (i >= nr || xx->r[i].y - xx->displayYPos > j - xx->y_seq_start)
 	    continue;
 
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
+	    s = get_seq(xx->io, r[i].rec);
+
 	    if (xx->r[i].y - xx->displayYPos < j - xx->y_seq_start) {
 		i++;
 		continue;
@@ -763,7 +794,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    sp = r[i].start;
 	    l = s->len > 0 ? s->len : -s->len;
 	    seq_p = 0;
-	    dir = '+';
+	    dir = '>';
 
 	    /* Optimisation for single sequence only */
 	    if (xx->refresh_flags & ED_DISP_SEQ &&
@@ -775,7 +806,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	
 	    /* Complement data on-the-fly */
 	    if ((s->len < 0) ^ r[i].comp) {
-		dir = '-';
+		dir = '<';
 		s = dup_seq(s);
 		complement_seq_t(s);
 	    }
@@ -875,37 +906,68 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 
 	    /* Name */
 	    if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME)) {
-		char name[1024];
-		XawSheetInk ink[1024];
 		int nl = s->name_len - xx->names_xPos;
 		int ncol = xx->names->sw.columns;
 	    
-		memset(name, ' ', ncol);
-		name[0] = dir;
-		if (nl > 0)
-		    memcpy(&name[1], s->name + xx->names_xPos, nl);
-		ink[0].sh = sh_bg;
-		if (r[i].pair_rec) {
-		    ink[0].bg = xx->ed->qual_bg[9]->pixel;
-		} else {
-		    ink[0].bg = xx->ed->qual_bg[0]->pixel;
-		}
-		if (xx->ed->display_mapping_quality) {
-		    int i, qbin;
-		    qbin = s->mapping_qual / 10;
-		    if (qbin < 0) qbin = 0;
-		    if (qbin > 9) qbin = 9;
-		    for (i = 1; i < ncol && i < 1024; i++) {
-			ink[i].sh = sh_bg;
-			ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+		if (xx->ed->stack_mode) {
+		    int p  = r[i].start - xx->displayPos;
+		    int p2 = r[i].end   - xx->displayPos;
+		    int bg = -1;
+		    double nc = xx->names->sw.columns;
+		    if (p < 0) p = 0;
+		    p = p * (nc / xx->displayWidth);
+		    if (p2 < 0) p2 = 0;
+		    p2 = p2 * (nc / xx->displayWidth);
+		    while (nline[p] != ' ')
+			p++;
+
+		    if (xx->ed->display_mapping_quality) {
+			int qbin;
+			qbin = s->mapping_qual / 10;
+			if (qbin < 0) qbin = 0;
+			if (qbin > 9) qbin = 9;
+			bg = xx->ed->qual_bg[qbin]->pixel;
 		    }
+
+		    nline[p] = dir;
+		    if (bg != -1) {
+			nink[p].sh |= sh_bg;
+			nink[p].bg = bg;
+		    }
+		    for (++p; p <= p2; p++) {
+			nline[p] = '.';
+			if (bg != -1) {
+			    nink[p].sh |= sh_bg;
+			    nink[p].bg = bg;
+			}
+		    }
+
 		} else {
-		    int i;
-		    for (i = 1; i < ncol && i < 1024; i++) {
-			ink[i].sh = sh_default;
+		    nline[0] = dir;
+		    if (nl > 0)
+			memcpy(&nline[1], s->name + xx->names_xPos, nl);
+		    nink[0].sh = sh_bg;
+		    if (r[i].pair_rec) {
+			nink[0].bg = xx->ed->qual_bg[9]->pixel;
+		    } else {
+			nink[0].bg = xx->ed->qual_bg[0]->pixel;
+		    }
+		    if (xx->ed->display_mapping_quality) {
+			int i, qbin;
+			qbin = s->mapping_qual / 10;
+			if (qbin < 0) qbin = 0;
+			if (qbin > 9) qbin = 9;
+			for (i = 1; i < ncol && i < MAX_NAME_WIDTH; i++) {
+			    nink[i].sh = sh_bg;
+			    nink[i].bg = xx->ed->qual_bg[qbin]->pixel;
+			}
+		    } else {
+			int i;
+			for (i = 1; i < ncol && i < 1024; i++) {
+			    nink[i].sh = sh_default;
+			}
 		    }
 		}
-		XawSheetPutJazzyText(&xx->names->sw, 0, j, ncol, name,ink);
 	    }
 
 	    cache_decr(xx->io, sorig);
@@ -919,6 +981,10 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ))
 	    XawSheetPutJazzyText(&xx->ed->sw, 0, j, xx->displayWidth,
 				 line, ink);
+
+	if (xx->refresh_flags & (ED_DISP_NAMES | ED_DISP_NAME))
+	    XawSheetPutJazzyText(&xx->names->sw, 0, j, xx->names->sw.columns,
+				 nline, nink);
     }
 
     /*
@@ -1129,7 +1195,8 @@ static void tk_redisplaySeqNumbers(edview *xx) {
 /* Handle scrolling changes */
 static void tk_redisplaySeqScroll(edview *xx, rangec_t *r, int nr) {
     if (xx->refresh_flags & ED_DISP_YSCROLL) {
-	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, nr);
+	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight,
+			   xx->max_height);
 
 	/* No need to redraw the consenus/numbers */
 	xx->refresh_flags |= ED_DISP_NAMES | ED_DISP_SEQS | ED_DISP_CURSOR |
@@ -1141,7 +1208,8 @@ static void tk_redisplaySeqScroll(edview *xx, rangec_t *r, int nr) {
 
 	/* Changing X may also change height */
 	if (!(xx->refresh_flags & ED_DISP_YSCROLL))
-	    ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, nr);
+	    ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight,
+			       xx->max_height);
 
 	xx->refresh_flags |= ED_DISP_ALL;
     }
@@ -1157,18 +1225,16 @@ static void tk_redisplayCursor(edview *xx, rangec_t *r, int nr) {
     if (xx->cursor_rec == xx->cnum) {
 	y = xx->y_cons;
     } else {
-	int i, j;
+	int i;
 	y = -1;
-	for (j = xx->y_seq_start, i = xx->displayYPos;
-	     j < xx->displayHeight - xx->y_seq_end && i < nr;
-	     i++, j++) {
+	for (i = 0; i < nr; i++) {
 	    if (r[i].rec == xx->cursor_rec) {
-		y = j;
+		y = r[i].y + xx->y_seq_start - xx->displayYPos;
 		break;
 	    }
 	}
 	
-	if (-1 == y) {
+	if (y < xx->y_seq_start || y >= xx->displayHeight) {
 	    XawSheetDisplayCursor(&xx->ed->sw, False);
 	    return; /* not visible */
 	}
@@ -1219,7 +1285,7 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 
 	for (i = 0; i < xx->nr; i++) {
 	    if (xx->r[i].rec == xx->cursor_rec) {
-		y_pos = i;
+		y_pos = xx->r[i].y;
 		break;
 	    }
 	}
@@ -1243,7 +1309,8 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 	ed_set_xslider_pos(xx, xx->displayPos);
 
     if (do_y)
-	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight, xx->nr);
+	ed_set_yslider_pos(xx, xx->displayYPos, xx->displayHeight,
+			   xx->max_height);
 
     if (do_x || do_y) {
 	xx->refresh_flags = ED_DISP_ALL;
@@ -1657,13 +1724,18 @@ int edview_redraw(edview *xx) {
 
 /*
  * Identifies the type of object underneath a specific row and column.
+ * 'name' is a boolean which when true indicates the row,col are in the
+ * names panel instead of the sequence panel.
  *
  * Returns the item type GT_* on success and the record/pos in *rec, *pos
  *         -1 on failure (eg numbers, off screen, etc)
  */
-int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
-    int i, j;
+int edview_item_at_pos(edview *xx, int row, int col, int name,
+		       int *rec, int *pos) {
+    int i;
     int type = -1;
+    int best_delta = INT_MAX;
+    int exact = (name && xx->ed->stack_mode) || !name;
 
     /* Special case - the reserve row numbers */
     if (row == xx->y_cons) {
@@ -1672,26 +1744,59 @@ int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
 	return GT_Contig;
     }
 
-    if (! (row >= xx->y_seq_start && row < xx->displayHeight - xx->y_seq_end))
+    if (row < xx->y_seq_start)
 	return -1;
-
+    
     /* A sequence, so find out what's visible */
     edview_visible_items(xx, xx->displayPos,
 			 xx->displayPos + xx->displayWidth);
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
-    for (j = xx->y_seq_start, i = xx->displayYPos;
-	 j < xx->displayHeight - xx->y_seq_end && i < xx->nr;
-	 i++, j++) {
-	if (j == row) {
-	    *rec = xx->r[i].rec;
-	    *pos = col + xx->displayPos - xx->r[i].start;
-	    type = GT_Seq;
-	    break;
+    for (i = 0; i < xx->nr; i++) {
+	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
+	    int delta;
+
+	    /* Find distance from object, in X */
+	    if (xx->ed->stack_mode && name) {
+		/* In names display during stacking mode */
+		int p1 = xx->r[i].start - xx->displayPos;
+		int p2 = xx->r[i].end   - xx->displayPos;
+		double nc = xx->names->sw.columns;
+
+		if (p1 < 0) p1 = 0;
+		p1 = p1 * (nc / xx->displayWidth);
+		if (p2 < 0) p2 = 0;
+		p2 = p2 * (nc / xx->displayWidth);
+		if (col >= p1 && col <= p2)
+		    delta = 0;
+		else
+		    delta = INT_MAX;
+	    } else {
+		/* In sequence display, or only 1 seq per line */
+		if (col + xx->displayPos < xx->r[i].start)
+		    delta = xx->r[i].start - (col + xx->displayPos);
+		else if (col + xx->displayPos > xx->r[i].end)
+		    delta = col + xx->displayPos - xx->r[i].end;
+		else {
+		    delta = 0;
+		}
+	    }
+
+	    /* And if this is closest match, use it */
+	    if (best_delta > delta) {
+		best_delta = delta;
+		*rec = xx->r[i].rec;
+		*pos = col + xx->displayPos - xx->r[i].start;
+		type = GT_Seq;
+	    }
+
+	    if (!delta)
+		/* Can't get better than perfect hit */
+		break;
 	}
     }
 
-    return type;
+    return !exact || best_delta == 0 ? type : -1;
 }
 
 /*
@@ -1704,7 +1809,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos) {
  *        -1 if not (with xmin/xmax unset).
  */
 int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
-    int i, j;
+    int i, r = -1;
 
     if (rec == xx->cnum) {
 	if (xmin) *xmin = -xx->displayPos;
@@ -1717,17 +1822,17 @@ int edview_row_for_item(edview *xx, int rec, int *xmin, int *xmax) {
 			 xx->displayPos + xx->displayWidth);
 
     /* And search for rec in this list */
-    for (j = xx->y_seq_start, i = xx->displayYPos;
-	 j < xx->displayHeight - xx->y_seq_end && i < xx->nr;
-	 i++, j++) {
+    for (i = 0; i < xx->nr; i++) {
 	if (xx->r[i].rec == rec) {
 	    if (xmin) *xmin = xx->r[i].start - xx->displayPos;
 	    if (xmax) *xmax = xx->r[i].end   - xx->displayPos;
-	    return j;
+	    r = xx->r[i].y + xx->y_seq_start - xx->displayYPos;
+	    break;
+	    
 	}
     }
     
-    return -1;
+    return r >= xx->y_seq_start ? r : -1;
 }
 
 

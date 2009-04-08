@@ -8,6 +8,7 @@
 #include "consensus.h"
 
 #define MAX_DISPLAY_WIDTH 1000
+#define MAX_NAME_WIDTH    256
 #define WIN_NAME_SIZE 100
 
 /*
@@ -98,7 +99,9 @@ typedef struct _edview {
     /* Cached range query & Y position */
     rangec_t *r;
     int nr;
+    int max_height;
     int r_start, r_end;
+    /* FIXME: add cached index into r[] foreach row[y], as it's sorted on y */
 
     /* Selection */
     int select_made;
@@ -159,11 +162,14 @@ int edGetGelNumber(edview *xx, int x, int y);
 
 /*
  * Identifies the type of object underneath a specific row and column.
+ * 'name' is a boolean which when true indicates the row,col are in the
+ * names panel instead of the sequence panel.
  *
  * Returns the item type GT_* on success and the record/pos in *rec, *pos
  *         -1 on failure (eg numbers, off screen, etc)
  */
-int edview_item_at_pos(edview *xx, int row, int col, int *rec, int *pos);
+int edview_item_at_pos(edview *xx, int row, int col, int name,
+		       int *rec, int *pos);
 
 /* Cursor movement control */
 void edSetApos(edview *xx);
