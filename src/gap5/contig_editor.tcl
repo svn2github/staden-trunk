@@ -1,3 +1,30 @@
+#
+# The contig editor consists of multiple components
+# 1) A top-level window, w.
+#    Display settings are local to this and are held within the global tcl
+#    array named after $w. In the code I typically upvar this to a
+#    local array named opt().
+#    Button/checkbutton GUI textvariables are stored within opt
+#    starting with capital letters. Eg $opt(PackSequences).
+#
+# 2) The GapIO struct and a contig itself.
+#    The gapio ($io) is typically a child io so we can edit (copy on write)
+#    with the ability to cancel changes.
+#    Multiple editors maybe sharing the same io and contig. The undo
+#    stack therefore also belongs at this level, so we store this
+#    using an array named after the io/contig pair. (TODO)
+#    $opt(-io) and $opt(contig) get to the child io/contig.
+#
+# 3) A names and editor tk widget (ednames and editor), attached to the
+#    io/contig. This will be something like $w.seqs.sheet.
+#    It doesn't have much Tcl data locally as the settings are mainly
+#    held in the C widgets.
+#
+# The join editor is a stack of two contig editors. As such we have
+# toplevel window with settings that govern both visible editors.
+# $opt(all_editors) is a list of editors visible for window.
+
+
 #-----------------------------------------------------------------------------
 # User dialogue for starting up the editors
 #-----------------------------------------------------------------------------
@@ -107,7 +134,7 @@ proc contig_editor {w args} {
     set opt(Disagreements) 0
     set opt(DisagreeMode)  1
     set opt(DisagreeCase)  1
-    set opt(PackSequences) 0
+    set opt(PackSequences) 1
     set opt(Status)        "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
@@ -380,7 +407,8 @@ proc editor_pane {top w above ind arg_array} {
 		-qualcolour8 [keylget gap5_defs CONTIG_EDITOR.QUAL8_COLOUR] \
 		-qualcolour9 [keylget gap5_defs CONTIG_EDITOR.QUAL9_COLOUR] \
 		-bd 0 \
-	        -consensus_at_top $cattop]
+	        -consensus_at_top $cattop \
+	        -stack_mode  $opt(PackSequences)]
     set opt(curr_editor) $ed
 
     # X and y scrollbars
@@ -418,7 +446,7 @@ proc editor_pane {top w above ind arg_array} {
     grid $w.name.x     -row $scrollrow -sticky nsew
     grid $w.name.pos   -row $jogrow    -sticky nsew
 
-    $w.name configure -width [expr {16*[font measure sheet_font A]}]
+    $w.name configure -width [expr {11*[font measure sheet_font A]}]
 
     grid rowconfigure $w.seq $textrow -weight 1
     grid columnconfigure $w.seq 0 -weight 1
@@ -542,28 +570,45 @@ proc editor_quality {w} {
 proc editor_disagreements {w} {
     upvar \#0 $w opt
 
-    set ed $opt(curr_editor)
-    if {$opt(Disagreements)} {
-	$ed configure -display_differences $opt(DisagreeMode)
-    } else {
-	$ed configure -display_differences 0
+    foreach ed $opt(all_editors) {
+	if {$opt(Disagreements)} {
+	    $ed configure -display_differences $opt(DisagreeMode)
+	} else {
+	    $ed configure -display_differences 0
+	}
+	$ed configure -differences_case_sensitive $opt(DisagreeCase)
+	$ed redraw
     }
-    $ed configure -differences_case_sensitive $opt(DisagreeCase)
-    $ed redraw
+}
+
+proc ed2name {w} {
+    return [regsub {\.seq\.sheet} $w .name.sheet]
+}
+
+proc name2ed {w} {
+    return [regsub {\.name\.sheet} $w .seq.sheet]
 }
 
 proc set_editor_pack_sequences {w} {
     upvar \#0 $w opt
 
-    set ed $opt(curr_editor)
-    $ed configure -stack_mode $opt(PackSequences)
-    $ed xview scroll 1 units
-    $ed xview scroll -1 units
+    foreach ed $opt(all_editors) {
+	$ed configure -stack_mode $opt(PackSequences)
+	$ed xview scroll 1 units
+	$ed xview scroll -1 units
+
+	# Force redraw of name scrollbar
+	[ed2name $ed] xview scroll 0 units
+    }
 }
 
-proc set_differences_quality_callback {ed val} {
-    $ed configure -display_differences_quality $val
-    $ed redraw
+proc set_differences_quality_callback {w val} {
+    upvar \#0 $w opt
+
+    foreach ed $opt(all_editors) {
+	$ed configure -display_differences_quality $val
+	$ed redraw
+    }
 }
 
 proc set_differences_quality {w} {
@@ -586,22 +631,16 @@ proc set_differences_quality {w} {
 	-width 5 \
 	-default $start \
 	-type CheckInt \
-	-command "set_differences_quality_callback $ed"
+	-command "set_differences_quality_callback $w"
     $t.qual.scale configure -length 150
 
     okcancelhelp $t.ok \
 	-ok_command "keylset gap5_defs CONTIG_EDITOR.DISAGREE_QUAL \[scalebox_get $t.qual\]; destroy $t" \
-	-cancel_command "set_differences_quality_callback $ed $start; destroy $t" \
+	-cancel_command "set_differences_quality_callback $w $start; destroy $t" \
         -help_command "show_help gap4 {Editor-Differences Quality}"
 
     pack $t.qual $t.ok -side top -fill both
 }
-
-proc editor_disagreements_quality {w} {
-    $ed configure  $opt(DisagreeQuality)
-    $ed redraw
-}
-
 
 #-----------------------------------------------------------------------------
 # Undo support
@@ -789,7 +828,15 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 	foreach {type rec pos} [$w get_number] break
     }
 
+    if {$name} {
+	set w [name2ed $w]
+	global $w
+    }
+
     if {![info exists type]} {
+	set w [set ${w}(top)]
+	global $w
+	set ${w}(Status) ""
 	return
     }
 
@@ -818,6 +865,8 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 
 proc editor_name_select {w where} {
     global $w
+
+    if {$where == ""} return
 
     foreach {type rec pos} $where break;
     if {$type != 18} return
@@ -869,7 +918,7 @@ bind Editor <Any-Enter> {
     focus %W
 }
 
-bind EdNames <Any-Motion> {update_brief [set %W(ed)] 1 @%x @%y}
+bind EdNames <Any-Motion> {update_brief %W 1 @%x @%y}
 
 bind Editor <Any-Motion> {update_brief %W 0 @%x @%y}
 
@@ -990,3 +1039,6 @@ bind Editor <<select-drag>> {%W select to @%x}
 #bind Editor <<select-release>> {puts "select release"}
 
 bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
+
+# Tag creation - test
+bind Editor <Key-F11> {create_tag_editor %W}
