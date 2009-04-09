@@ -605,13 +605,22 @@ static char *reg_type2str(int type) {
  * Used as a task parameter to REG_GENERIC. NB putting this here means this
  * code has internal knowledge of the various gap4 windows. For this reason
  * we also allow them to be passed numerically in.
+ *
+ * For tcl it's often easier to simply use TASK_GENERIC and pass in data
+ * as an arbitrary string.
  */
 static int reg_str2task(char *str) {
+    /* Blank str => task is just TASK_GENERIC */
+    if (str[0] == '\0')
+	return TASK_GENERIC;
+
     /* Numerical versions */
     if (str[0] >= '0' && str[0] <= '9')
 	return atoi(str);
 
     /* Or string symbolic ones */
+    if (strcmp(str, "TASK_GENERIC") == 0)
+	return TASK_GENERIC;
     if (strcmp(str, "TASK_CANVAS_SCROLLX") == 0)
 	return TASK_CANVAS_SCROLLX;
     if (strcmp(str, "TASK_CANVAS_SCROLLY") == 0)
@@ -658,6 +667,47 @@ static int reg_str2task(char *str) {
 #endif
 
     return -1;
+}
+
+static char *reg_task2str(int task) {
+    switch (task) {
+    case TASK_GENERIC:
+	return "TASK_GENERIC";
+    case TASK_CANVAS_SCROLLX:
+	return "TASK_CANVAS_SCROLLX";
+    case TASK_CANVAS_SCROLLY:
+	return "TASK_CANVAS_SCROLLY";
+    case TASK_CANVAS_ZOOM:
+	return "TASK_CANVAS_ZOOM";
+    case TASK_CANVAS_CURSOR_X:
+	return "TASK_CANVAS_CURSOR_X";
+    case TASK_CANVAS_CURSOR_Y:
+	return "TASK_CANVAS_CURSOR_Y";
+    case TASK_CANVAS_CURSOR_DELETE:
+	return "TASK_CANVAS_CURSOR_DELETE";
+    case TASK_CANVAS_RESIZE:
+	return "TASK_CANVAS_RESIZE";
+    case TASK_CANVAS_WORLD:
+	return "TASK_CANVAS_WORLD";
+    case TASK_WINDOW_ADD:
+	return "TASK_WINDOW_ADD";
+    case TASK_WINDOW_DELETE:
+	return "TASK_WINDOW_DELETE";
+    case TASK_DISPLAY_TICKS:
+	return "TASK_DISPLAY_TICKS";
+    case TASK_DISPLAY_RULER:
+	return "TASK_DISPLAY_RULER";
+    case TASK_CONS_WORLD:
+	return "TASK_CONS_WORLD";
+    case TASK_CONS_JOIN:
+	return "TASK_CONS_JOIN";
+    case TASK_CONS_CURSOR_DELETE:
+	return "TASK_CONS_CURSOR_DELETE";
+    case TASK_CONS_ID:
+	return "TASK_CONS_ID";
+    }
+
+    return "unknown";
 }
 
 /*
@@ -926,6 +976,11 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	Tcl_DStringAppend(&ds, buf, -1);
 	break;
 
+    case REG_GENERIC:
+	Tcl_DStringAppendElement(&ds, reg_task2str(jdata->generic.task));
+	Tcl_DStringAppendElement(&ds, jdata->generic.data);
+	break;
+
     default:
 	Tcl_DStringAppend(&ds, "{unknown unknown}", -1);
 	break;
@@ -1047,6 +1102,10 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
     case REG_GENERIC:
 	rd->generic.task = reg_str2task(reg_get_arg("task"));
 	switch (rd->generic.task) {
+	case TASK_GENERIC:
+	    rd->generic.data = reg_get_arg("data");
+	    break;
+
 	case TASK_CANVAS_SCROLLX:
 	case TASK_CANVAS_SCROLLY:
 	    rd->generic.data = reg_get_arg("data");
