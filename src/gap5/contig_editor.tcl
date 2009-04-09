@@ -5,25 +5,160 @@
 #    array named after $w. In the code I typically upvar this to a
 #    local array named opt().
 #    Button/checkbutton GUI textvariables are stored within opt
-#    starting with capital letters. Eg $opt(PackSequences).
+#    starting with capital letters.
+#        opt(PackSequences)
 #
-# 2) The GapIO struct and a contig itself.
-#    The gapio ($io) is typically a child io so we can edit (copy on write)
-#    with the ability to cancel changes.
-#    Multiple editors maybe sharing the same io and contig. The undo
-#    stack therefore also belongs at this level, so we store this
-#    using an array named after the io/contig pair. (TODO)
-#    $opt(-io) and $opt(contig) get to the child io/contig.
+# 2) The contig itself (with an associated io). The gapio ($io) is
+#    typically a child io so we can edit (copy on write).
+#    The contig has a global array named contigIO_$crec, usually
+#    upvared to cio. This is the level at which we handle undo and
+#    contig registration events.
+#        cio(Undo) = <commands>
+#        cio(Redo) = <commands>
+#        cio(io)   = io=0x69ec60
+#        cio(base) = io=0x68afa0
+#        cio(c)    = contig=0xd02348
+#        cio(crec) = 298459
+#        cio(ref)  = 2
 #
 # 3) A names and editor tk widget (ednames and editor), attached to the
 #    io/contig. This will be something like $w.seqs.sheet.
 #    It doesn't have much Tcl data locally as the settings are mainly
 #    held in the C widgets.
-#
+#        .e1.ed1.pane.seq.sheet(displayPos) = 658122
+#        .e1.ed1.pane.seq.sheet(parent)     = .e1.ed1.pane
+#        .e1.ed1.pane.seq.sheet(reg)        = 2
+#        .e1.ed1.pane.seq.sheet(top)        = .e1
+
 # The join editor is a stack of two contig editors. As such we have
 # toplevel window with settings that govern both visible editors.
 # $opt(all_editors) is a list of editors visible for window.
 
+#-----------------------------------------------------------------------------
+# IO/contig specific components. (child IOs, undo history)
+#-----------------------------------------------------------------------------
+
+proc io_child {io crec} {
+    upvar \#0 contigIO_$crec cio
+
+    if {![info exists cio(io)]} {
+	set cio(base) $io
+	set child     [$io child]
+	set cio(io)   $child
+	set cio(c)    [$child get_contig $crec]
+	set cio(crec) $crec
+	set cio(ref)  0
+    }
+
+    incr cio(ref)
+
+    return $cio(io)
+}
+
+proc io_detach {crec} {
+    upvar \#0 contigIO_$crec cio
+
+    incr cio(ref) -1
+
+    if {[set cio(ref)] == 0} {
+	unset cio
+    }
+}
+
+proc io_store_undo {crec cmdu cmdr} {
+    upvar \#0 contigIO_$crec cio
+    
+    lappend cio(Undo) [list $cmdu $cmdr]
+    set cio(Redo) ""
+
+    contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	-args [list TASK_GENERIC "" data {undo normal redo disable}]
+    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+}
+
+proc io_undo {crec} {
+    upvar \#0 contigIO_$crec cio
+    
+    foreach {cmdu cmdr} [lindex [set cio(Undo)] end] break
+    eval $cmdu
+    lappend cio(Redo) [list $cmdu $cmdr]
+    set cio(Undo) [lrange $cio(Undo) 0 end-1]
+
+    if {[llength $cio(Undo)] == 0} {
+	contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	    -args [list TASK_GENERIC "" data {undo disable}]
+    }
+    contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	-args [list TASK_GENERIC "" data {redo normal}]
+    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+}
+
+proc io_undo_state {crec} {
+    upvar \#0 contigIO_$crec cio
+    if {[info exists cio(Undo)] && [llength $cio(Undo)] != 0} {
+	return normal
+    }
+    return disabled
+}
+
+proc io_redo {crec} {
+    upvar \#0 contigIO_$crec cio
+    
+    foreach {cmdu cmdr} [lindex [set cio(Redo)] end] break
+    eval $cmdr
+    lappend cio(Undo) [list $cmdu $cmdr]
+    set cio(Redo) [lrange $cio(Redo) 0 end-1]
+
+    if {[llength $cio(Redo)] == 0} {
+	contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	    -args [list TASK_GENERIC "" data {redo disable}]
+    }
+    contig_notify -io $cio(base) -cnum $crec -type GENERIC \
+	-args [list TASK_GENERIC "" data {undo normal}]
+    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+}
+
+proc io_redo_state {crec} {
+    upvar \#0 contigIO_$crec cio
+    if {[info exists cio(Redo)] && [llength $cio(Redo)] != 0} {
+	return normal
+    }
+    return disabled
+}
+
+#-----------------------------------------------------------------------------
+# Contig registration hookups. This data is obviously held per view rather
+# than per contig or per io.
+#-----------------------------------------------------------------------------
+proc contig_register_callback {ed type id cdata args} {
+    global $ed
+    set w [set ${ed}(top)]
+
+    switch $type {
+	LENGTH {
+	    $ed redraw
+	}
+
+	GENERIC {
+	    foreach {component state} [lindex $args 1] {
+		switch $component {
+		    "undo" {
+			$w.toolbar.undo configure -state $state
+		    }
+		    "redo" {
+			$w.toolbar.redo configure -state $state
+		    }
+		}
+	    }
+	}
+	
+	default {
+	    puts "Event '$type $args' not handled"
+	}
+    }
+
+    return
+}
 
 #-----------------------------------------------------------------------------
 # User dialogue for starting up the editors
@@ -138,7 +273,7 @@ proc contig_editor {w args} {
     set opt(Status)        "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
-    set opt(-io) [$opt(-io) child]
+    set opt(-io) [io_child $opt(-io) $opt(-contig)]
 
     set join [info exists opt(-contig2)]
 
@@ -176,8 +311,10 @@ proc contig_editor {w args} {
 	-variable ${w}(Quality) \
 	-text Quality \
 	-command "editor_quality $w"
-    button $tool.undo    -text Undo -command "editor_undo $w" -state disabled
-    button $tool.redo    -text Redo -command "editor_redo $w" -state disabled
+    button $tool.undo    -text Undo -command "editor_undo $w" \
+	-state [io_undo_state $opt(contig)]
+    button $tool.redo    -text Redo -command "editor_redo $w" \
+	-state [io_redo_state $opt(contig)]
     button $tool.search  -text Search
     button $tool.save -text Save -command "editor_save $w"
     wm protocol $w WM_DELETE_WINDOW "editor_exit $w"
@@ -339,6 +476,8 @@ proc editor_exit {w} {
 	}
     }
 
+    io_detach [$ed contig_rec]
+
     destroy $w
 }
 
@@ -457,14 +596,15 @@ proc editor_pane {top w above ind arg_array} {
     focus $w.seq.sheet
 
     # Initialise with an IO and link name/seq panel together
-    puts "$ed init $opt(-io) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet"
-#    $ed init $opt(-io) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet
     $ed init $opt(-io) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
     global $ed $edname
     set ${ed}(parent) $w
     set ${ed}(top) $top
-    set ${ed}(Undo) ""
-    set ${ed}(Redo) ""
+    set ${ed}(reg) [contig_register \
+			-io $opt(io_base) \
+			-contig $opt(-contig) \
+			-command "contig_register_callback $ed" \
+			-flags [list ALL GENERIC]]
     set ${edname}(ed) $ed
 
     # Force new style mode
@@ -645,49 +785,20 @@ proc set_differences_quality {w} {
 #-----------------------------------------------------------------------------
 # Undo support
 proc store_undo {w cmdu cmdr} {
-    global $w
-
-    lappend ${w}(Undo) [list $cmdu $cmdr]
-    set ${w}(Redo) ""
-    set top [set ${w}(top)]
-    $top.toolbar.undo configure -state normal
-    $top.toolbar.redo configure -state disabled
+    io_store_undo [$w contig_rec] $cmdu $cmdr
 }
 
 proc editor_undo {top} {
     upvar \#0 $top opt
+    
     set w $opt(curr_editor)
-    global $w
-
-    foreach {cmdu cmdr} [lindex [set ${w}(Undo)] end] break
-    eval $cmdu
-    lappend ${w}(Redo) [list $cmdu $cmdr]
-    set ${w}(Undo) [lrange [set ${w}(Undo)] 0 end-1]
-
-    if {[llength [set ${w}(Undo)]] == 0} {
-	$top.toolbar.undo configure -state disabled
-    }
-    $top.toolbar.redo configure -state normal
-
-    $w redraw
+    io_undo [$w contig_rec]
 }
 
 proc editor_redo {top} {
     upvar \#0 $top opt
     set w $opt(curr_editor)
-    global $w
-
-    foreach {cmdu cmdr} [lindex [set ${w}(Redo)] end] break
-    eval $cmdr
-    lappend ${w}(Undo) [list $cmdu $cmdr]
-    set ${w}(Redo) [lrange [set ${w}(Redo)] 0 end-1]
-
-    if {[llength [set ${w}(Redo)]] == 0} {
-	$top.toolbar.redo configure -state disabled
-    }
-    $top.toolbar.undo configure -state normal
-
-    $w redraw
+    io_redo [$w contig_rec]
 } 
 
 
@@ -696,7 +807,6 @@ proc editor_redo {top} {
 proc editor_edit_base {w call where} {
     upvar $w opt
 
-    #set io $opt(-io)
     set io [$w io]
 
     if {$where == ""} {
