@@ -387,7 +387,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     static char *optionStrings[] = {
 	"configure",     "init",         "io",	         "redraw",
 	"xview",         "yview",        "get_number",   "get_seq_status",
-	"set_cursor",    "contig_start", "contig_end",
+	"set_cursor",    "contig_start", "contig_end",   "contig_rec",
 	"display_trace", "delete_trace", "trace_scroll", "save",
 	"cursor_up",     "cursor_down",  "cursor_left",  "cursor_right",
 	"read_start",    "read_start2",  "read_end",     "read_end2",
@@ -398,7 +398,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     enum options {
 	_CONFIGURE,      _INIT,          _IO,            _REDRAW,
 	_XVIEW,          _YVIEW,         _GET_NUMBER,    _GET_SEQ_STATUS,
-	_SET_CURSOR,     _CONTIG_START,  _CONTIG_END,
+	_SET_CURSOR,     _CONTIG_START,  _CONTIG_END,    _CONTIG_REC,
 	_DISPLAY_TRACE,  _DELETE_TRACE,  _TRACE_SCROLL,  _SAVE,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
@@ -441,6 +441,11 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     /* GapIO */
     case _IO:
 	Tcl_SetResult(interp, io_obj_as_string(xx->io) , TCL_VOLATILE);
+	break;
+
+    /* Contig record number */
+    case _CONTIG_REC:
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(xx->cnum));
 	break;
 
     /* Save contig */
