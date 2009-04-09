@@ -104,8 +104,9 @@
  * Tasks defined in the reg_generic request. These apply to one specific type
  * of window.
  */
-#define TASK_EDITOR_SETCURSOR	0
-#define TASK_EDITOR_GETCON	1
+#define TASK_GENERIC            0
+#define TASK_EDITOR_SETCURSOR	1
+#define TASK_EDITOR_GETCON	2
 
 /*
  *----------------------------------------------------------------------------

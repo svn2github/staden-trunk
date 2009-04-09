@@ -18,7 +18,7 @@
  * We implement this by storing a function pointer and void* data in a
  * hash table keyed on the contig number. The hash table is setup to allow
  * duplicate entries so we can have multiple displays registered for
- * a single contig. (The use of a hash table also acts as a spare array, so
+ * a single contig. (The use of a hash table also acts as a sparse array, so
  * the 'key' here is the real contig record number and not an index
  * into a 1..NContigs array.)
  *
@@ -199,7 +199,7 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
 	hi = HacheTableNext(hi, (char *)&contig, sizeof(contig));
 
 	/* Skip 'contig' root list entries */
-	if (key >= 0)
+	if (contig < 0 && key >= 0)
 	    continue;
 
 	if (cr->flags & REG_FLAG_INACTIVE)
