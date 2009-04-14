@@ -934,7 +934,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			nink[p].sh |= sh_bg;
 			nink[p].bg = bg;
 		    }
-		    for (++p; p <= p2; p++) {
+		    for (++p; p < p2; p++) {
 			nline[p] = '.';
 			if (bg != -1) {
 			    nink[p].sh |= sh_bg;
@@ -1730,12 +1730,12 @@ int edview_redraw(edview *xx) {
  * Returns the item type GT_* on success and the record/pos in *rec, *pos
  *         -1 on failure (eg numbers, off screen, etc)
  */
-int edview_item_at_pos(edview *xx, int row, int col, int name,
+int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 		       int *rec, int *pos) {
     int i;
     int type = -1;
     int best_delta = INT_MAX;
-    int exact = (name && xx->ed->stack_mode) || !name;
+    //    int exact = (name && xx->ed->stack_mode) || !name;
 
     /* Special case - the reserve row numbers */
     if (row == xx->y_cons) {
@@ -1767,7 +1767,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name,
 		p1 = p1 * (nc / xx->displayWidth);
 		if (p2 < 0) p2 = 0;
 		p2 = p2 * (nc / xx->displayWidth);
-		if (col >= p1 && col <= p2)
+		if (col >= p1 && col < p2)
 		    delta = 0;
 		else
 		    delta = INT_MAX;

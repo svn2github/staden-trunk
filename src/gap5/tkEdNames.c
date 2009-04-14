@@ -276,7 +276,7 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    sheet_arg_x(TKSHEET(en), argv[2], &x); /* cell coordinates */
 	    sheet_arg_y(TKSHEET(en), argv[3], &y); y++;
 
-	    if (-1 != (type = edview_item_at_pos(xx, y, x, 1, &rec, &pos))) {
+	    if (-1 != (type = edview_item_at_pos(xx, y, x, 1, 1, &rec,&pos))) {
 		sprintf(buf, "%d %d %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */

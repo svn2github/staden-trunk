@@ -1082,12 +1082,11 @@ bind Editor <<select>> {
     focus %W
     set w [winfo toplevel %W]
     if {![string match [set ${w}(curr_editor)] %W]} {
-	puts "Change editor"
 	set ${w}(curr_editor) %W
 	$w.toolbar.undo configure -state [io_undo_state [%W contig_rec]]
 	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
     }
-    set d [%W get_number @%x @%y]
+    set d [%W get_number @%x @%y 0]
     if {$d == ""} {
 	return
     } else {

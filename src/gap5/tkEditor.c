@@ -556,18 +556,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	char buf[10];
 	int x, y, type, rec, pos;
 
-	if (argc != 2 && argc != 4) {
+	if (argc != 2 && argc != 4 && argc != 5) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " get_number ?xpos ypos?\"",
+			     argv[0], " get_number ?xpos ypos ?exact??\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	if (argc == 4) {
+	if (argc >= 4) {
+	    int exact = argc == 5 ? atoi(argv[4]) : 1;
 	    sheet_arg_x(TKSHEET(ed), argv[2], &x); /* cell coordinates */
 	    sheet_arg_y(TKSHEET(ed), argv[3], &y); y++;
 
-	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, 0,
+	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, 0, exact,
 						 &rec, &pos))) {
 		sprintf(buf, "%d %d %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);

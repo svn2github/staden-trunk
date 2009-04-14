@@ -168,7 +168,7 @@ int edGetGelNumber(edview *xx, int x, int y);
  * Returns the item type GT_* on success and the record/pos in *rec, *pos
  *         -1 on failure (eg numbers, off screen, etc)
  */
-int edview_item_at_pos(edview *xx, int row, int col, int name,
+int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 		       int *rec, int *pos);
 
 /* Cursor movement control */
