@@ -1,6 +1,9 @@
 #
-# The contig editor consists of multiple components
-# 1) A top-level window, w.
+# The contig editor consists of multiple components, following the standard
+# model, view, controller pattern.
+#
+# 1) Controller: A top-level window, w, containing one or two editors plus
+#    all the usual GUI buttons and menus.
 #    Display settings are local to this and are held within the global tcl
 #    array named after $w. In the code I typically upvar this to a
 #    local array named opt().
@@ -8,7 +11,7 @@
 #    starting with capital letters.
 #        opt(PackSequences)
 #
-# 2) The contig itself (with an associated io). The gapio ($io) is
+# 2) Model: The contig itself (with an associated io). The gapio ($io) is
 #    typically a child io so we can edit (copy on write).
 #    The contig has a global array named contigIO_$crec, usually
 #    upvared to cio. This is the level at which we handle undo and
@@ -21,7 +24,7 @@
 #        cio(crec) = 298459
 #        cio(ref)  = 2
 #
-# 3) A names and editor tk widget (ednames and editor), attached to the
+# 3) View: A names and editor tk widget (ednames and editor), attached to the
 #    io/contig. This will be something like $w.seqs.sheet.
 #    It doesn't have much Tcl data locally as the settings are mainly
 #    held in the C widgets.
@@ -67,7 +70,7 @@ proc io_detach {crec} {
 
 proc io_store_undo {crec cmdu cmdr} {
     upvar \#0 contigIO_$crec cio
-    
+
     lappend cio(Undo) [list $cmdu $cmdr]
     set cio(Redo) ""
 
@@ -133,6 +136,7 @@ proc io_redo_state {crec} {
 proc contig_register_callback {ed type id cdata args} {
     global $ed
     set w [set ${ed}(top)]
+    global $w
 
     switch $type {
 	LENGTH {
@@ -140,6 +144,7 @@ proc contig_register_callback {ed type id cdata args} {
 	}
 
 	GENERIC {
+	    if {$ed != [set ${w}(curr_editor)]} break
 	    foreach {component state} [lindex $args 1] {
 		switch $component {
 		    "undo" {
@@ -273,7 +278,7 @@ proc contig_editor {w args} {
     set opt(Status)        "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
-    set opt(-io) [io_child $opt(-io) $opt(-contig)]
+    set opt(io) [io_child $opt(-io) $opt(-contig)]
 
     set join [info exists opt(-contig2)]
 
@@ -283,6 +288,7 @@ proc contig_editor {w args} {
     if {![info exists opt(-pos)]}     { set opt(-pos) 1 }
     if {$join} {
 	set opt(contig2) $opt(-contig2)
+	set opt(io2) [io_child $opt(-io) $opt(-contig2)]
 	if {![info exists opt(-reading2)]} { set opt(-reading2) 0 }
 	if {![info exists opt(-pos2)]}     { set opt(-pos2) 1 }
     }
@@ -290,10 +296,10 @@ proc contig_editor {w args} {
     # Create the window layout
     if {![winfo exists $w]} {
 	toplevel $w
-	set c [$opt(-io) get_contig $opt(contig)]
+	set c [$opt(io) get_contig $opt(contig)]
 	#$c dump_ps /tmp/tree.ps
 	if {$join} {
-	    set c2 [$opt(-io) get_contig $opt(contig2)]
+	    set c2 [$opt(io2) get_contig $opt(contig2)]
 	    wm title $w "Join: [$c get_name] / [$c2 get_name]"
 	} else {
 	    wm title $w "Edit: [$c get_name]"
@@ -321,6 +327,13 @@ proc contig_editor {w args} {
     pack $tool.undo $tool.redo $tool.search $tool.cutoffs $tool.quality \
 	-side left
     pack $tool.save -side right
+
+    # Highlights of the current editor so we know what window the button
+    # applies to.
+    bind $tool.undo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
+    bind $tool.undo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
+    bind $tool.redo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
+    bind $tool.redo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
 
     if {$join} {
 	set opt(Lock) 1; # See default in tkEditor.c link_to command
@@ -361,7 +374,7 @@ proc contig_editor {w args} {
     # Difference bar for the join editor
     if {$join} {
 	set diffs [diff_pane $w.diffs]
-	$e link_to $opt(editor2) $diffs.seq.sheet
+	$e link_to $opt(editor2) $diffs.pane.seq.sheet
     }
 
     # The bottom status line
@@ -393,7 +406,7 @@ proc contig_editor {w args} {
     # Synchronised pane movement
     set opt(panes) $pane1.pane
     if {$join} {
-	lappend opt(panes) $diffs $pane0.pane
+	lappend opt(panes) $diffs.pane $pane0.pane
     }
 
     foreach p $opt(panes) {
@@ -511,7 +524,7 @@ proc editor_pane {top w above ind arg_array} {
     }
 
     set f $w
-    frame $f -bd 0
+    frame $f -bd 3
 
     set w $f.pane
     panedwindow $w -orient horiz -bd 2 -relief sunken
@@ -596,15 +609,21 @@ proc editor_pane {top w above ind arg_array} {
     focus $w.seq.sheet
 
     # Initialise with an IO and link name/seq panel together
-    $ed init $opt(-io) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
+    $ed init $opt(io$ind) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
     global $ed $edname
+    puts "register with $ed"
     set ${ed}(parent) $w
     set ${ed}(top) $top
     set ${ed}(reg) [contig_register \
 			-io $opt(io_base) \
-			-contig $opt(-contig) \
+			-contig $opt(contig$ind) \
 			-command "contig_register_callback $ed" \
 			-flags [list ALL GENERIC]]
+    if {$ind == 2} {
+	set ${ed}(side) top
+    } else {
+	set ${ed}(side) bottom
+    }
     set ${edname}(ed) $ed
 
     # Force new style mode
@@ -628,17 +647,19 @@ proc editor_pane {top w above ind arg_array} {
 
 # The "differences" bar that separates a pair of join editors
 proc diff_pane {w} {
-    panedwindow $w -orient horiz -bd 2 -relief sunken
+    frame $w -bd 0 -padx 3
+    set p [panedwindow $w.pane -orient horiz -bd 2 -relief sunken]
+    pack $p -fill both -expand 1
 
-    frame $w.name -bd 0 -highlightthickness 0
-    label $w.name.diff -text "Differences"
-    pack $w.name.diff
+    frame $p.name -bd 0 -highlightthickness 0
+    label $p.name.diff -text "Differences"
+    pack $p.name.diff
 
-    frame $w.seq -bd 0 -highlightthickness 0
-    sheet $w.seq.sheet
-    pack $w.seq.sheet -fill both -expand 1
+    frame $p.seq -bd 0 -highlightthickness 0
+    sheet $p.seq.sheet
+    pack $p.seq.sheet -fill both -expand 1
 
-    $w add $w.name $w.seq
+    $p add $p.name $p.seq
     
     return $w
 }
@@ -673,6 +694,12 @@ proc sync_panes {w arg_array proxy round} {
 
 	after idle "$pane sash place 0 $x $y"
     }
+}
+
+# Highlights the curr_editor window
+proc editor_hl {ed col} {
+    set w [winfo parent [winfo parent [winfo parent $ed]]]
+    $w configure -bg $col
 }
 
 # A coordinate jump
@@ -986,7 +1013,7 @@ proc editor_name_select {w where} {
     set name [$seq get_name]
 
     # FIXME: underline name too, via $ed call?
-#    [set ${w}(ed)]
+#    [set ${w}(ed)] ...
 
     # Ignore parameters for now. Assume reading name length <= maxbytes.
     catch {rename editor_selection_handler {}}
@@ -1057,6 +1084,8 @@ bind Editor <<select>> {
     if {![string match [set ${w}(curr_editor)] %W]} {
 	puts "Change editor"
 	set ${w}(curr_editor) %W
+	$w.toolbar.undo configure -state [io_undo_state [%W contig_rec]]
+	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
     }
     set d [%W get_number @%x @%y]
     if {$d == ""} {
