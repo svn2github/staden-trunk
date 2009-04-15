@@ -96,7 +96,7 @@ int db_info(ClientData clientData,
 
     if (strcmp(cmd, "num_contigs") == 0) {
 	//vTcl_SetResult(interp, "%d", NumContigs(io));
-	vTcl_SetResult(interp, "%d", 1);
+	vTcl_SetResult(interp, "%d", io->db->Ncontigs);
 	return TCL_OK;
     }
 

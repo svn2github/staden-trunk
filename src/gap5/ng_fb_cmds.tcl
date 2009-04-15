@@ -258,7 +258,11 @@ proc DB_Load { file } {
 	    set cs_win [keylget gap5_defs CONTIG_SEL.WIN]
 	    global do_csel
 	    if {![winfo exists $cs_win] && $do_csel} {
-		ContigSelector $io
+		if {$do_csel == 2 || [db_info num_contigs $io] <= 1000} {
+		    ContigSelector $io
+		} else {
+		    vmessage "\nSkipping contig selector due to large number of contigs."
+		}
 	    } else {
 		ContigInitReg $io
 		catch {raise $cs_win}

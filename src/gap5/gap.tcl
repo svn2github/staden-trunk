@@ -602,7 +602,7 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 	set do_csel 0
 
     } elseif {$arg == "-csel"} {
-	set do_csel 1
+	set do_csel 2
 
     } elseif {$arg == "-no_rawdata_note"} {
 	set rawdata_note 0
@@ -701,14 +701,22 @@ if {$io != ""} {
 	if {$do_check_db == 1 || ($do_check_db == -1 && !$read_only)} {
 	    if {[check_database -io $io] == 0} {
 		if {$do_csel} {
-		    ContigSelector $io
-		    MoveWinUnder . [keylget gap5_defs CONTIG_SEL.WIN]
+		    if {$do_csel == 2 || [db_info num_contigs $io] <= 1000} {
+			ContigSelector $io
+			MoveWinUnder . [keylget gap5_defs CONTIG_SEL.WIN]
+		    } else {
+			vmessage "\nSkipping contig selector due to large number of contigs."
+		    }
 		}
 	    }
 	} else {
 	    if {$do_csel} {
-		ContigSelector $io
-		MoveWinUnder . [keylget gap5_defs CONTIG_SEL.WIN]
+		if {$do_csel == 2 || [db_info num_contigs $io] <= 1000} {
+		    ContigSelector $io
+		    MoveWinUnder . [keylget gap5_defs CONTIG_SEL.WIN]
+		} else {
+		    vmessage "\nSkipping contig selector due to large number of contigs."
+		}
 	    }
 	}
 	ActivateMenu_Open
