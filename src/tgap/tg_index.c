@@ -380,7 +380,7 @@ void usage(void) {
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
     fprintf(stderr, "      -m			Input is MAQ format (off)\n");
     fprintf(stderr, "      -M			Input is MAQ-long format (off)\n");
-    //    fprintf(stderr, "      -A			Input is ACE format (off)\n");
+    fprintf(stderr, "      -A			Input is ACE format (off)\n");
     fprintf(stderr, "      -B			Input is BAF format (off)\n");
     fprintf(stderr, "      -b			Input is BAM format (off)\n");
     fprintf(stderr, "      -p			Link read-pairs together (on)\n");
@@ -476,12 +476,11 @@ int main(int argc, char **argv) {
 	    parse_maqmap(io, max_size, argv[optind++], no_tree, pair_reads,
 			 merge_contigs, fmt == 'M');
 	    break;
-#if 0
+
 	case 'A':
 	    parse_ace(io, max_size, argv[optind++], no_tree, pair_reads,
 		      merge_contigs);
 	    break;
-#endif
 
 	case 'B':
 	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);

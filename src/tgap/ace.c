@@ -114,17 +114,17 @@ typedef struct {
  */
 typedef struct {
     int type;
-    int not_supported_yet;
+    char *text;
 } ace_rt_t;
 
 typedef struct {
     int type;
-    int not_supported_yet;
+    char *text;
 } ace_ct_t;
 
 typedef struct {
     int type;
-    int not_supported_yet;
+    char *text;
 } ace_wa_t;
 
 typedef union {
@@ -170,6 +170,21 @@ ace_item_t *next_ace_item(FILE *fp) {
 	if (ai.rd.seq)
 	    free(ai.rd.seq);
 	break;
+
+    case ACE_RT:
+	if (ai.rt.text)
+	    free(ai.rt.text);
+	break;
+
+    case ACE_CT:
+	if (ai.ct.text)
+	    free(ai.ct.text);
+	break;
+
+    case ACE_WA:
+	if (ai.wa.text)
+	    free(ai.wa.text);
+	break;
     }
 
     /* Read in next item */
@@ -179,7 +194,6 @@ ace_item_t *next_ace_item(FILE *fp) {
 	    return NULL;
 	}
     } while (line[0] == '\n');
-
 
     /* Decode it */
     if (strncmp(line, "AS", 2) == 0) {
@@ -356,6 +370,38 @@ ace_item_t *next_ace_item(FILE *fp) {
 	ai.ds.dye = 0;
 	ai.ds.dir = 0;
 
+    } else if (strncmp(line, "CT{", 3) == 0) {
+	ai.type = ACE_CT;
+	goto RT_code;
+
+    } else if (strncmp(line, "WA{", 3) == 0) {
+	ai.type = ACE_WA;
+	goto RT_code;
+
+    } else if (strncmp(line, "RT{", 3) == 0) {
+	size_t allocated, used;
+	ai.type = ACE_RT;
+
+	/* Shared between CT, WA and RT as the structures are compatible */
+    RT_code:
+	ai.rt.text = NULL;
+	allocated = used = 0;
+
+	/* Consume up to the next "}" */
+	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
+	    size_t l;
+	    if (line[0] == '}' && line[1] == '\n')
+		break;
+
+	    l = strlen(line);
+	    while (used + l >= allocated) {
+		allocated += 8192;
+		ai.rt.text = (char *)realloc(ai.rt.text, allocated);
+	    }
+	    strcpy(&ai.rt.text[used], line);
+	    used += l;
+	}
+
     } else {
 	ai.type = 0;
 	fprintf(stderr, "Unknown ACE line: %s\n", line);
@@ -370,6 +416,13 @@ typedef struct {
     int dir;
     int pos;
 } af_line;
+
+typedef struct {
+    int rec;
+    int bin;
+    int idx;
+    int crec;
+} pair_loc_t;
 
 /*
  * Parses a new ACE format file passed in.
@@ -396,7 +449,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
     }
 
     while (ai = next_ace_item(fp)) {
-	HacheItem *hi = NULL, *other_hi;
+	HacheItem *hi = NULL;
 	seq_t seq;
 	range_t r, *r_out;
 	int recno;
@@ -457,10 +510,12 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 	    seq.right = ai->rd.nbases;
 	    seq.flags = af[seq_count].dir == 0 ? 0 : SEQ_COMPLEMENTED;
 	    seq.name_len = strlen(ai->rd.rname);
-	    seq.data = (char *)malloc(seq.name_len+2*ai->rd.nbases);
+	    seq.data = (char *)malloc(seq.name_len+1+2*ai->rd.nbases);
 	    seq.name = seq.data;
 	    strcpy(seq.name, ai->rd.rname);
-	    seq.seq = seq.data + seq.name_len;
+	    seq.seq = seq.data + seq.name_len + 1;
+	    seq.trace_name = NULL;
+	    seq.alignment = NULL;
 	    memcpy(seq.seq, ai->rd.seq, ai->rd.nbases);
 	    seq.conf = seq.seq + ai->rd.nbases;
 	    memset(seq.conf, 4, ai->rd.nbases);
@@ -469,8 +524,13 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 	    break;
 
 	case ACE_QA:
-	    seq.left  = ai->qa.astart;
-	    seq.right = ai->qa.aend;
+	    if (seq.flags & SEQ_COMPLEMENTED) {
+		seq.left  = seq.len - ai->qa.aend   + 1;
+		seq.right = seq.len - ai->qa.astart + 1;
+	    } else {
+		seq.left  = ai->qa.astart;
+		seq.right = ai->qa.aend;
+	    }
 	    break;
 
 	case ACE_DS:
@@ -482,35 +542,51 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 	    /* Add the range to a bin, and see which bin it was */
 	    bin = bin_add_range(io, &c, &r, &r_out);
 
+	    /* Save sequence */
+	    seq.bin = bin->rec;
+	    recno = sequence_new_from(io, &seq);
+
 	    if (pair && *ai->ds.tname) {
 		int new = 0;
+		pair_loc_t *pl = NULL;
 		HacheData hd;
 	    
+		pl = (pair_loc_t *)malloc(sizeof(*pl));
+		pl->rec  = recno;
+		pl->bin  = bin->rec;
+		pl->crec = c->rec;
+		pl->idx  = seq.bin_index;
+		hd.p = pl;
+
 		/* Spot other uses of this template */
-		hd.i = 0;
 		hi = HacheTableAdd(pair, ai->ds.tname, strlen(ai->ds.tname),
 				   hd, &new);
 
 		/* Pair existed already */
 		if (!new) {
-		    seq.other_end = hi->data.i;
-		    
-		    /* Link other end to 'us' too */
-		    other_hi = hi;
-		    hi = NULL;
-		} else {
-		    other_hi = NULL;
-		}
-	    } else {
-		hi = NULL;
-		other_hi = NULL;
-	    }
+		    pair_loc_t *po = (pair_loc_t *)hi->data.p;
+		    bin_index_t *bo;
+		    range_t *ro;
 
-	    /* Save sequence */
-	    seq.bin = bin->rec;
-	    recno = sequence_new_from(io, &seq);
-	    if (hi)
-		hi->data.i = recno;
+		    /* We found one so update r_out now, before flush */
+		    r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    r_out->pair_rec = po->rec;
+
+		    /* Link other end to 'us' too */
+		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		    bo = cache_rw(io, bo);
+		    bo->flags |= BIN_RANGE_UPDATED;
+		    ro = arrp(range_t, bo->rng, po->idx);
+		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    ro->pair_rec = pl->rec;
+
+		    /* And, making an assumption, remove from hache */
+		    HacheTableDel(pair, hi, 1);
+		    free(pl);
+		}
+	    }
 
 	    if (!no_tree)
 		sequence_index_update(io, seq.name, seq.name_len, recno);
@@ -518,14 +594,6 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
 	    /* Link bin back to sequence too before it gets flushed */
 	    r_out->rec = recno;
-
-	    /* Link other end of pair back to this recno if appropriate */
-	    if (other_hi) {
-		seq_t *other = (seq_t *)cache_search(io, GT_Seq,
-						     other_hi->data.i);
-		sequence_set_other_end(io, &other, recno);
-		HacheTableDel(pair, other_hi, 0);
-	    }
 
 	    seq_count++;
 	    nseqs++;
