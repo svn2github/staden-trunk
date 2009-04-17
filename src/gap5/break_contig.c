@@ -448,7 +448,7 @@ int break_contig(GapIO *io, int crec, int cpos) {
     bin_index_t *bin;
     int do_comp = 0;
 
-    contig_dump_ps(io, &cl, "/tmp/tree.ps");
+    //    contig_dump_ps(io, &cl, "/tmp/tree.ps");
 
     strncpy(cname, contig_get_name(&cl), 1000);
     cname_end = cname + strlen(cname);
@@ -508,8 +508,8 @@ int break_contig(GapIO *io, int crec, int cpos) {
     printf("Final left bin = %d, right bin = %d\n",
 	   cl->bin, cr->bin);
 
-    contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
-    contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
+    //    contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
+    //    contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
 
     return 0;
 }
