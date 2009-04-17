@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <ctype.h>
+
 #include "maqmap.h"
 
 maqmap_t *maq_new_maqmap(void)
