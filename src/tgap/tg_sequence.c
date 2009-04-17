@@ -35,8 +35,11 @@ int sequence_new_from(GapIO *io, seq_t *s) {
     seq_t *n;
     size_t extra_len;
 
-    extra_len = strlen(s->name) + strlen(s->trace_name) +
-	strlen(s->alignment) + ABS(s->len)*(1+sequence_conf_size(s));
+    extra_len =
+	(s->name       ? strlen(s->name)       : 0) +
+	(s->trace_name ? strlen(s->trace_name) : 0) +
+	(s->alignment  ? strlen(s->alignment)  : 0) +
+	ABS(s->len)*(1+sequence_conf_size(s));
 
     rec = io->iface->seq.create(io->dbh, s);
     n = (seq_t *)cache_search(io, GT_Seq, rec);
@@ -45,15 +48,15 @@ int sequence_new_from(GapIO *io, seq_t *s) {
 
     memcpy(n, s, sizeof(*s));
     n->name = (char *)&n->data;
-    strcpy(n->name, s->name);
+    strcpy(n->name, s->name ? s->name : "");
     n->name_len = strlen(n->name);
 
     n->trace_name = n->name + n->name_len + 1;
-    strcpy(n->trace_name, s->trace_name);
+    strcpy(n->trace_name, s->trace_name ? s->trace_name : "");
     n->trace_name_len = strlen(n->trace_name);
 
     n->alignment = n->trace_name + n->trace_name_len + 1;
-    strcpy(n->alignment, s->alignment);
+    strcpy(n->alignment, s->alignment ? s->alignment : "");
     n->alignment_len = strlen(n->alignment);
 
     n->seq = n->alignment + n->alignment_len + 1;
