@@ -403,6 +403,7 @@ typedef struct {
     int x[4];          /* coordinates */
     int t_strand;      /* template strand */
     int mq;            /* mapping qual */
+    int rec;	       /* used for yspread */
 } tline;
 
 
@@ -539,7 +540,7 @@ int template_replot(template_disp_t *t) {
     rangec_t *r;
     int nr, i, j, mode;
     struct timeval tv1, tv2;
-    double t1, t2, t3, t4;
+    double t1, t2 = 0, t3, t4;
     double tsize = 1000;
     double yz;
     int ymin = INT_MAX;
@@ -652,6 +653,7 @@ int template_replot(template_disp_t *t) {
 
 	tl[ntl].t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
 	    == ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
+	tl[ntl].rec = r[i].rec;
 
 	if (!t->reads_only && r[i].pair_rec) {
 	    /* Only draw once */
@@ -859,7 +861,7 @@ int template_replot(template_disp_t *t) {
 		y = (y + 50 - t->yoffset) * yz;
 
 		if (t->spread)
-		    y = y-t->spread/2+((tl[i].x[0]+i)%(t->spread));
+		    y = y-t->spread/2+((tl[i].x[0]+tl[i].rec)%(t->spread));
 
 		if (t->sep_by_strand)
 		    y = tl[i].t_strand ? height2 - y : height2 + y;
