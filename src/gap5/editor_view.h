@@ -103,6 +103,9 @@ typedef struct _edview {
     int r_start, r_end;
     /* FIXME: add cached index into r[] foreach row[y], as it's sorted on y */
 
+    /* Maps r[i].anno.obj_rec to i */
+    HacheTable *anno_hash;
+
     /* Selection */
     int select_made;
     int select_seq;

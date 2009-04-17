@@ -87,14 +87,15 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
     xx->displayPos = xx->cursor_apos;
 
     xx->trace_lock = 1;
-
+    
     if (!xx->ed->consensus_at_top) {
 	xx->ed->sw.yflip = 1;
 	xx->names->sw.yflip = 1;
     }
 
     xx->r = NULL;
-
+    xx->anno_hash = NULL;
+    
     return xx;
 }
 
@@ -624,28 +625,58 @@ char *edGetBriefCon(edview *xx, int crec, int pos, char *format) {
  *        -1 for failure
  */
 int edview_visible_items(edview *xx, int start, int end) {
+    int i;
+    int mode = xx->ed->stack_mode
+	? CSIR_ALLOCATE_Y_MULTIPLE
+	: CSIR_ALLOCATE_Y_SINGLE;
+
     /* Always reload for now as we can't spot edits yet */
-    if (1 || !xx->r || xx->r_start != start || xx->r_end != end) {
-	int i;
-	int mode = xx->ed->stack_mode
-	    ? CSIR_ALLOCATE_Y_MULTIPLE
-	    : CSIR_ALLOCATE_Y_SINGLE;
+    if (0 && xx->r && xx->r_start == start && xx->r_end == end)
+	return 0;
 
-	if (xx->r)
-	    free(xx->r);
-	xx->r_start = start;
-	xx->r_end = end;
-	xx->r = contig_seqs_in_range(xx->io, &xx->contig, start, end,
-				     CSIR_SORT_BY_Y | mode, &xx->nr);
-	if (!xx->r)
-	    return -1;
+    /* Query sequences */
+    if (xx->r)
+	free(xx->r);
+    xx->r_start = start;
+    xx->r_end = end;
+    xx->r = contig_items_in_range(xx->io, &xx->contig, start, end,
+				  CSIR_SORT_BY_Y | mode, &xx->nr);
+    if (!xx->r)
+	return -1;
+    
+    /* Work out Y dimension */
+    xx->max_height = 0;
+    for (i = 0; i < xx->nr; i++) {
+	if (xx->max_height < xx->r[i].y)
+	    xx->max_height = xx->r[i].y;
+    }
+    xx->max_height += 3; /* +1 for from 0, +2 for consensus+ruler */
 
-	xx->max_height = 0;
-	for (i = 0; i < xx->nr; i++) {
-	    if (xx->max_height < xx->r[i].y)
-		xx->max_height = xx->r[i].y;
-	}
-	xx->max_height += 3; /* +1 for from 0, +2 for consensus+ruler */
+    /* Fast map of annotations to sequences */
+    if (xx->anno_hash)
+	HacheTableDestroy(xx->anno_hash, 0);
+
+    xx->anno_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE |
+				     HASH_ALLOW_DUP_KEYS);
+    for (i = 0; i < xx->nr; i++) {
+	int key = xx->r[i].pair_rec; /* aka obj_rec */
+	HacheData hd;
+	anno_ele_t *a;
+
+	if (!xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	    continue;
+
+	hd.i = i;
+	HacheTableAdd(xx->anno_hash, &key, sizeof(key), hd, NULL);
+
+	/*
+	a = (anno_ele_t *)cache_search(xx->io, GT_AnnoEle, xx->r[i].rec);
+	printf("Add anno %d/%d/%s to seq %d,%d,%d\n",
+	       i, a->rec, a->comment,
+	       xx->r[i].pair_rec,
+	       xx->r[i].mqual,
+	       xx->r[i].flags);
+	*/
     }
 
     return 0;
@@ -750,7 +781,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
     for (j = xx->y_seq_start, i = 0;
 	 j < xx->displayHeight - xx->y_seq_end && i < nr;
 	 j++) {
-	seq_t *s, *sorig;
 	int sp, l;
 	unsigned char seq_a[MAX_SEQ_LEN+1], *seq = seq_a;
 	XawSheetInk ink[MAX_DISPLAY_WIDTH], nink[MAX_NAME_WIDTH];
@@ -758,8 +788,6 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	int dir;
 	int left, right;
 	int seq_p;
-
-	s = get_seq(xx->io, r[i].rec);
 
 	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ)) {
 	    memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
@@ -783,7 +811,12 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    continue;
 
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
-	    s = get_seq(xx->io, r[i].rec);
+	    seq_t *s, *sorig;
+
+	    if (r[i].flags & GRANGE_FLAG_ISANNO) {
+		i++;
+		continue;
+	    }
 
 	    if (xx->r[i].y - xx->displayYPos < j - xx->y_seq_start) {
 		i++;
@@ -902,6 +935,24 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			}
 		    }
 		}
+
+		/* Annotations */
+		if (xx->anno_hash) {
+		    HacheItem *hi;
+		    int key = s->rec;
+		    for (hi = HacheTableSearch(xx->anno_hash, &key,
+					       sizeof(key));
+			 hi; hi = HacheTableNext(hi, &key, sizeof(key))) {
+			int ai = hi->data.i;
+			printf("Seq %d anno %d\n", key, ai);
+
+			for (p2 = sp - xx->displayPos, p = 0; p<l; p++,p2++) {
+			    if (p2 + xx->displayPos >= xx->r[ai].start &&
+				p2 + xx->displayPos <= xx->r[ai].end)
+				ink[p2].sh |= sh_inverse;
+			}
+		    }
+		}
 	    }
 
 	    /* Name */
@@ -918,6 +969,8 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    p = p * (nc / xx->displayWidth);
 		    if (p2 < 0) p2 = 0;
 		    p2 = p2 * (nc / xx->displayWidth);
+		    if (p2 > xx->names->sw.columns)
+			p2 = xx->names->sw.columns;
 		    while (nline[p] != ' ')
 			p++;
 
@@ -934,6 +987,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 			nink[p].sh |= sh_bg;
 			nink[p].bg = bg;
 		    }
+		    
 		    for (++p; p < p2; p++) {
 			nline[p] = '.';
 			if (bg != -1) {
@@ -1011,6 +1065,7 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
     int wid =  xx->displayWidth;
     char name[] = " Consensus";
     int i;
+    XawSheetInk ink[MAX_DISPLAY_WIDTH];
 
     /* Names panel */
     XawSheetPutText(&xx->names->sw, 0, xx->y_cons, strlen(name), name);
@@ -1022,10 +1077,9 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 	xx->displayedConsensus[i] = "ACGT*N"[xx->cachedConsensus[i].call];
     }
 
+    memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
     if (xx->ed->display_quality) {
 	int i, qbin;
-	XawSheetInk ink[MAX_DISPLAY_WIDTH];
-	memset(ink, 0, MAX_DISPLAY_WIDTH * sizeof(*ink));
 
 	for (i = 0; i < wid; i++) {
 	    qbin = xx->cachedConsensus[i].phred/10;
@@ -1034,12 +1088,31 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 	    ink[i].sh |= sh_bg;
 	    ink[i].bg = xx->ed->qual_bg[qbin]->pixel;
 	}
-	XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_cons, wid,
-			     xx->displayedConsensus, ink);
-    } else {
-	XawSheetPutText(&xx->ed->sw, 0, xx->y_cons, wid,
-			xx->displayedConsensus);
     }
+
+    /* Consensus annotations */
+    for (i = 0; i < xx->nr; i++) {
+	int sp  = xx->r[i].start;
+	int j;
+
+	if (!xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	    continue;
+
+	if (xx->r[i].mqual /* obj_type */ != GT_Contig)
+	    continue;
+
+	if (sp < xx->displayPos)
+	    sp = xx->displayPos;
+
+	for (j = sp; j <= xx->r[i].end; j++) {
+	    if (j >= xx->displayPos + xx->displayWidth)
+		break;
+	    ink[j-xx->displayPos].sh |= sh_inverse;
+	}
+    }
+
+    XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_cons, wid,
+			 xx->displayedConsensus, ink);
 }
 
 /*
