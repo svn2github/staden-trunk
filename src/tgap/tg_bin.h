@@ -2,6 +2,7 @@
 #define _TG_BIN_H_
 
 /* #define MIN_BIN_SIZE 256 */
+/* #define MIN_BIN_SIZE 1024 */
 #define MIN_BIN_SIZE 4096
 
 /* Size of bin to use for depth track */
@@ -65,5 +66,13 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
  *        -1 on failure
  */
 int bin_get_position(GapIO *io, bin_index_t *bin, int *contig, int *pos);
+
+/*
+ * Removes a record referenced from a bin.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_item(GapIO *io, contig_t **c, int rec);
 
 #endif /* _TG_CONTIG_H_ */
