@@ -24,6 +24,8 @@
 #define GT_Seq         18
 #define GT_DNASource   19
 #define GT_Track       20
+#define GT_AnnoEle     21
+#define GT_Anno        22
 
 typedef struct {
     GCardinal pos;
@@ -38,7 +40,6 @@ typedef struct {
     GCardinal flags;
     GCardinal track;
     GCardinal nseqs;
-    GCardinal Nanno;    /* followed by Nanno record numbers */
 } GBin;
 
 typedef struct {
@@ -63,6 +64,7 @@ typedef struct {
 #define GRANGE_FLAG_CONTIG     (1<<3) /* pair held within the same contig */
 #define GRANGE_FLAG_COMP1      (1<<4) /* true if complemented */
 #define GRANGE_FLAG_COMP2      (1<<5) /* true if complemented */
+#define GRANGE_FLAG_ISANNO     (1<<7) /* sequence vs tag */
 
 typedef struct {
     GCardinal type;
@@ -139,7 +141,7 @@ typedef struct {
     int name_len;
     int trace_name_len;
     int alignment_len;
-    Array anno;       /* Annotations */
+    Array anno;       /* Annotations; FIXME */
     char *name;       /* nul terminated name */
     char *trace_name; /* trace name; blank => same as name */
     char *alignment;  /* alignment; blank => obvious guess from pads */
@@ -172,7 +174,7 @@ typedef struct {
     int rec;
     signed int start, end;
     unsigned int bin;
-    int anno_rec;
+    int anno_rec; /* FIXME */
     char *name;
 } contig_t;
 
@@ -191,7 +193,6 @@ typedef struct index {
     int flags;
     Array track;    /* array of GTrack objects */
     int track_rec;
-    Array anno;     /* array of GAnno objects */
     int nseqs;
 } bin_index_t;
 
@@ -200,7 +201,6 @@ typedef struct index {
 #define BIN_BIN_UPDATED   (1<<1)
 #define BIN_RANGE_UPDATED (1<<2)
 #define BIN_TRACK_UPDATED (1<<3)
-#define BIN_ANNO_UPDATED  (1<<4)
 
 /*
  * We may also wish to hold in range:
@@ -251,9 +251,28 @@ typedef struct {
     int start;
     int end;
     int rec;
-    int mqual; /* Mapping qual */
+#if 0
+    int type;
+    union {
+	struct {
+	    int mqual;
+	    int pair_rec;
+	    int flags;
+	} seq;
+	struct {
+	    int obj_type;
+	    int obj_rec;
+	    int anno_rec;
+	} anno;
+	struct {
+	    int a, b, c;
+	} generic;
+    } u;
+#else
+    int mqual;
     int pair_rec;
     int flags;
+#endif
 } range_t;
 
 /* Decoded from GTrack_header above */
@@ -287,18 +306,18 @@ typedef struct {
 typedef struct {
     char *comment; /* Possibly blank, but a per-region comment too */
     int rec;       /* record */
-    int type;      /* type of object referred to by record */
-    int start;
-    int end;
+    int bin;       /* bin containing this element */
+    int obj_type;  /* type of object referred to by record */
+    int obj_rec;   /* record number of object the tag is attached to */
+    int anno_rec;  /* link to anno_t record below */
+    char *data;    /* location of packed comment */
 } anno_ele_t;
 
 typedef struct {
     char *key;        /* the tag type and text */
     char *value;
     int rec;          /* rec of this anno */
-    int nele;
-    anno_ele_t *ele;  /* ele = &single if nele == 1 */
-    anno_ele_t single;
+    Array ele;        /* recs of anno_ele_t */
 } anno_t;
 
 #endif /* _TG_STRUCT_H_ */

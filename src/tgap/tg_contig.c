@@ -529,7 +529,10 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = 0; i < nr; i++) {
-	    r[i].y = i;
+	    if (r[i].flags & GRANGE_FLAG_ISANNO)
+		r[i].y = 0;
+	    else
+		r[i].y = i;
 	}
 	return 0;
     }
@@ -543,6 +546,11 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
+	if (r[i].flags & GRANGE_FLAG_ISANNO) {
+	    r[i].y = 0;
+	    continue;
+	}
+
 	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && r[i].start >= node->x) {
 	    int try_cull = 0;
 
@@ -630,7 +638,7 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 static int contig_seqs_in_range2(GapIO *io, int bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,
-				 int complement) {
+				 int complement, int mask, int val) {
     int count = used;
     int i, n, f_a, f_b;
     bin_index_t *bin = get_bin(io, bin_num);
@@ -656,6 +664,11 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	    l = arrp(range_t, bin->rng, n);
 	    if (l->start == -1 && l->end == -1)
 		continue;
+
+	    /* Select type: seqs, annotations, or maybe both (mask=val=0) */
+	    if ((l->flags & mask) != val)
+		continue;
+
 	    if (NMAX(l->start, l->end) >= start
 		&& NMIN(l->start, l->end) <= end) {
 		int st, en;
@@ -699,12 +712,36 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	    count = contig_seqs_in_range2(io, bin->child[i], start, end,
 					  NMIN(ch->pos, ch->pos + ch->size-1),
 					  results, alloc, count,
-					  complement);
+					  complement, mask, val);
 	}
     }
 
     cache_decr(io, bin);
     return count;
+}
+
+rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
+				int job, int *count) {
+    rangec_t *r = NULL;
+    int alloc = 0;
+
+    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
+				   contig_offset(io, c), &r, &alloc, 0, 0,
+				   0, 0);
+
+    if (job & CSIR_PAIR)
+	pair_rangec(io, r, *count);
+
+    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	qsort(r, *count, sizeof(*r), sort_range_by_x);
+
+    if (job & CSIR_ALLOCATE_Y)
+	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+
+    if (job & CSIR_SORT_BY_Y)
+	qsort(r, *count, sizeof(*r), sort_range_by_y);
+
+    return r;
 }
 
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
@@ -713,12 +750,32 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     int alloc = 0;
 
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
-    				   contig_offset(io, c), &r, &alloc, 0, 0);
-    //*count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
-    //                               0, &r, &alloc, 0, 0);
+				   contig_offset(io, c), &r, &alloc, 0, 0,
+				   GRANGE_FLAG_ISANNO, 0);
 
     if (job & CSIR_PAIR)
 	pair_rangec(io, r, *count);
+
+    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	qsort(r, *count, sizeof(*r), sort_range_by_x);
+
+    if (job & CSIR_ALLOCATE_Y)
+	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+
+    if (job & CSIR_SORT_BY_Y)
+	qsort(r, *count, sizeof(*r), sort_range_by_y);
+
+    return r;
+}
+
+rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
+			       int job, int *count) {
+    rangec_t *r = NULL;
+    int alloc = 0;
+
+    *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
+				   contig_offset(io, c), &r, &alloc, 0, 0,
+				   GRANGE_FLAG_ISANNO, GRANGE_FLAG_ISANNO);
 
     if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
 	qsort(r, *count, sizeof(*r), sort_range_by_x);

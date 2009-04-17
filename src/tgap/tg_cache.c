@@ -188,6 +188,28 @@ static void database_unload(GapIO *io, cached_item *ci) {
     free(ci);
 }
 
+/*
+ * Writes an annotation / annotation_element to disc.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+static int anno_ele_write(GapIO *io, cached_item *ci) {
+    return io->iface->anno_ele.write(io->dbh, ci);
+}
+static int anno_write(GapIO *io, cached_item *ci) {
+    return io->iface->anno.write(io->dbh, ci);
+}
+
+static void anno_ele_unload(GapIO *io, cached_item *ci) {
+    io->iface->anno_ele.unlock(io->dbh, ci->view);
+    free(ci);
+}
+static void anno_unload(GapIO *io, cached_item *ci) {
+    io->iface->anno.unlock(io->dbh, ci->view);
+    free(ci);
+}
+
 
 /*
  * Resize a cached_item object to a new size.
@@ -260,6 +282,14 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	ci = io->iface->array.read(io->dbh, k->rec);
 	break;
 
+    case GT_AnnoEle:
+	ci = io->iface->anno_ele.read(io->dbh, k->rec);
+	break;
+
+    case GT_Anno:
+	ci = io->iface->anno.read(io->dbh, k->rec);
+	break;
+
     default:
 	return NULL;
     }
@@ -320,6 +350,14 @@ static void cache_unload(void *clientdata, HacheData hd) {
 
     case GT_Database:
 	database_unload(io, ci);
+	break;
+
+    case GT_AnnoEle:
+	anno_ele_unload(io, ci);
+	break;
+
+    case GT_Anno:
+	anno_unload(io, ci);
 	break;
     }
 }
@@ -420,7 +458,17 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
 	ret = io->iface->array.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
 	break;
-	
+
+    case GT_AnnoEle:
+	ret = io->iface->anno_ele.upgrade(io->dbh, ci->view, mode);
+	ci->lock_mode = mode;
+	break;
+
+    case GT_Anno:
+	ret = io->iface->anno.upgrade(io->dbh, ci->view, mode);
+	ci->lock_mode = mode;
+	break;
+
     default:
 	return -1;
     }
@@ -540,7 +588,7 @@ int cache_flush(GapIO *io) {
 	  qsort_ci_view);
 
 
-    io_database_lock(io->dbh); /* FIXME: should be via iface */
+    io->iface->lock(io->dbh);
 
     /* Flush them out */
     for (i = 0; i < nflush; i++) {
@@ -576,6 +624,14 @@ int cache_flush(GapIO *io) {
 	    ret = array_write(io, ci);
 	    break;
 
+	case GT_AnnoEle:
+	    ret = anno_ele_write(io, ci);
+	    break;
+
+	case GT_Anno:
+	    ret = anno_write(io, ci);
+	    break;
+
 	default:
 	    fprintf(stderr, "Unable to write object of type %d\n",
 		    ci->type);
@@ -599,7 +655,7 @@ int cache_flush(GapIO *io) {
 
     ArrayDestroy(to_flush);
 
-    io_database_unlock(io->dbh); /* FIXME: should be via iface */
+    io->iface->unlock(io->dbh);
     io->iface->commit(io->dbh);
 
     //printf(">>> flush done <<<\n");
@@ -753,6 +809,7 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 	    s->conf = s->seq + ABS(s->len);
 
 	    /* Duplicate the annotation Array */
+	    /* FIXME: update to new format, whatever that is! */
 	    if (s->anno) {
 		s->anno = ArrayCreate(sizeof(int), ArrayMax(os->anno));
 		memcpy(ArrayBase(int, s->anno),
@@ -796,6 +853,34 @@ cached_item *cache_dup(GapIO *io, cached_item *ci) {
 	    }
 	    break;
 	}
+
+	case GT_AnnoEle: {
+	    /* reset internal comment pointer */
+	    anno_ele_t *oe = (anno_ele_t *)&ci->data;
+	    anno_ele_t *ne = (anno_ele_t *)&ci_new->data;
+	    if (oe->comment)
+		ne->comment = (char *)&ne->data;
+	    else
+		ne->comment = NULL;
+	    break;
+	}
+
+	case GT_Anno: {
+	    anno_t *oa = (anno_t *)&ci->data;
+	    anno_t *na = (anno_t *)&ci_new->data;
+	    
+	    na->key   = oa->key   ? strdup(oa->key)   : NULL;
+	    na->value = oa->value ? strdup(oa->value) : NULL;
+	    if (oa->ele) {
+		na->ele = ArrayCreate(sizeof(int), ArrayMax(oa->ele));
+		ArrayMax(na->ele) = ArrayMax(oa->ele);
+		memcpy(ArrayBase(char, na->ele),
+		       ArrayBase(char, oa->ele),
+		       ArrayMax(na->ele) * sizeof(int));
+	    }
+	    break;
+	}
+
 	}
     }
 

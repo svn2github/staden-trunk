@@ -33,7 +33,6 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin.flags       = BIN_BIN_UPDATED;
     bin.track       = NULL;
     bin.track_rec   = 0;
-    bin.anno        = NULL;
     bin.nseqs       = 0;
 
     if (-1 == (rec = io->iface->bin.create(io->dbh, &bin)))

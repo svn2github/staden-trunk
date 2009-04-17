@@ -79,6 +79,7 @@ void cache_decr(GapIO *io, void *data);
 #include "tg_sequence.h"
 #include "tg_bin.h"
 #include "tg_track.h"
+#include "tg_anno.h"
 #include "tg_utils.h"
 #include "tg_tcl.h"
 

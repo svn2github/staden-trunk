@@ -1043,10 +1043,149 @@ static int io_array_write(void *dbh, cached_item *ci) {
 
 
 /* ------------------------------------------------------------------------
+ * anno element access methods
+ */
+
+/*
+ * Reads an anno_ele_t struct and returns a cached_item containing this.
+ * In memory we have the structure and the comment packed together into
+ * one malloc call.
+ *
+ * On disc we have:
+ * ? byte bin record
+ * ? byte obj_type
+ * ? byte obj_rec
+ * ? byte anno_rec
+ * ? byte comment length (L)
+ * L bytes of comment
+ */
+static cached_item *io_anno_ele_read(void *dbh, GRec rec) {
+    g_io *io = (g_io *)dbh;
+    void *bloc;
+    char *cp;
+    size_t bloc_len;
+    GView v;
+    cached_item *ci;
+    int anno_rec, obj_type, obj_rec, comment_len, bin_rec;
+    anno_ele_t *e;
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return NULL;
+
+    bloc = g_read_alloc(io, v, &bloc_len);
+
+    if (!bloc)
+	return NULL;
+
+
+    /* Decode it */
+    cp = bloc;
+    cp += u72int(cp, &bin_rec);
+    cp += u72int(cp, &obj_type);
+    cp += u72int(cp, &obj_rec);
+    cp += u72int(cp, &anno_rec);
+    cp += u72int(cp, &comment_len);
+    ci = cache_new(GT_AnnoEle, rec, v, NULL, sizeof(anno_ele_t) +
+		   comment_len + 1);
+    e = (anno_ele_t *)&ci->data;
+    e->bin      = bin_rec;
+    e->obj_type = obj_type;
+    e->obj_rec  = obj_rec;
+    e->anno_rec = anno_rec;
+    e->rec = rec;
+    if (comment_len) {
+	e->comment = (char *)&e->data;
+	memcpy(e->comment, cp, comment_len);
+	e->comment[comment_len] = 0;
+    } else {
+	e->comment = NULL;
+    }
+    
+
+    /* And tidy up */
+    free(bloc);
+    ci->view = v;
+    ci->rec = rec;
+    return ci;
+
+}
+
+static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
+    int data_len, err = 0;
+    unsigned char block[1024], *cp = block, *cpstart;
+    int comment_len;
+
+    /* Allocate memory if needed */
+    comment_len = e->comment ? strlen(e->comment) : 0;
+    data_len = 5 + 5 + 5 + 5 + 5 + comment_len;
+    if (data_len > 1024) {
+	if (NULL == (cp = (unsigned char *)malloc(data_len)))
+	    return -1;
+    }
+
+    /* Encode */
+    cpstart = cp;
+    cp += int2u7(e->bin, cp);
+    cp += int2u7(e->obj_type, cp);
+    cp += int2u7(e->obj_rec, cp);
+    cp += int2u7(e->anno_rec, cp);
+    cp += int2u7(comment_len, cp);
+    if (comment_len) {
+	memcpy(cp, e->comment, comment_len);
+	cp += comment_len;
+    }
+
+    /* Write */
+    err |= g_write(io, v, (void *)cpstart, cp-cpstart);
+    g_flush(io, v);
+
+    if (cpstart != block)
+	free(cpstart);
+
+    return err ? -1 : 0;
+}
+
+static int io_anno_ele_write(void *dbh, cached_item *ci) {
+    g_io *io = (g_io *)dbh;
+    anno_ele_t *e = (anno_ele_t *)&ci->data;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+    return io_anno_ele_write_view(io, e, ci->view);
+}
+
+static int io_anno_ele_create(void *dbh, void *vfrom) {
+    g_io *io = (g_io *)dbh;
+    anno_ele_t *from = (anno_ele_t *)vfrom;
+    GRec rec;
+    GView v;
+
+    rec = allocate(io);
+    v = lock(io, rec, G_LOCK_EX);
+    
+    if (from) {
+	io_anno_ele_write_view(io, from, v);
+    } else {
+	anno_ele_t e;
+	memset(&e, 0, sizeof(e));
+	io_anno_ele_write_view(io, &e, v);
+    }
+
+    unlock(io, v);
+
+    return rec;
+}
+
+
+/* ------------------------------------------------------------------------
  * anno access methods
  */
 static cached_item *io_anno_read(void *dbh, GRec rec) {
     return io_generic_read(dbh, rec, 0);
+}
+
+static int io_anno_write(void *dbh, cached_item *ci) {
+    return io_generic_write(dbh, ci);
 }
 
 
@@ -1111,7 +1250,6 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     bin->rng         = NULL;
     bin->track_rec   = b->track;
     bin->track       = NULL;
-    bin->anno        = NULL;
     bin->nseqs       = b->nseqs;
 
     /* Load ranges */
@@ -1145,11 +1283,6 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	       ntracks * sizeof(GBinTrack));
 	unlock(io, v);
     }
-
-    /* Load annotations? */
-    //    if (b->Nanno) {
-    //	fprintf(stderr, "Bin read annotations not yet supported\n");
-    //    }
 
     free(buf);
     return ci;
@@ -1220,11 +1353,6 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	}
     }
 
-    /* Anno */
-    if (bin->flags & BIN_ANNO_UPDATED) {
-	fprintf(stderr, "Bin write annotations not yet supported\n");
-    }
-
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
 	bin->flags &= ~BIN_BIN_UPDATED;
@@ -1241,7 +1369,6 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
 	g.nseqs       = bin->nseqs;
-	g.Nanno       = bin->anno ? ArrayMax(bin->anno) : 0;
 
 	err |= g_write(io, v, &g, sizeof(g));
 	g_flush(io, v);
@@ -1285,7 +1412,6 @@ static int io_bin_create(void *dbh, void *vfrom) {
 	b.track	      = NULL;
 	b.track_rec   = 0;
 	b.flags       = 0;
-	b.anno        = NULL;
 	b.nseqs	      = 0;
 	io_bin_write_view(io, &b, v);
     }
@@ -1922,6 +2048,8 @@ static iface iface_g = {
     io_database_connect,
     io_database_disconnect,
     io_database_commit,
+    io_database_lock,
+    io_database_unlock,
 
     {
 	/* Generic array */
@@ -1965,6 +2093,32 @@ static iface iface_g = {
     },
 
     {
+	/* Bin */
+	io_bin_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	io_bin_read,
+	io_bin_write,
+	io_generic_info,
+    },
+
+    {
+	/* Track */
+	io_track_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	io_track_read,
+	io_track_write,
+	io_generic_info,
+    },
+
+    {
 	/* Seq */
 	io_seq_create,
 	io_generic_destroy,
@@ -1980,6 +2134,19 @@ static iface iface_g = {
     },
 
     {
+	/* AnnoEle */
+	io_anno_ele_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	io_anno_ele_read,
+	io_anno_ele_write,
+	io_generic_info,
+    },
+
+    {
 	/* Anno */
 	io_generic_create,
 	io_generic_destroy,
@@ -1988,7 +2155,7 @@ static iface iface_g = {
 	io_generic_upgrade,
 	io_generic_abandon,
 	io_anno_read,
-	io_generic_write,
+	io_anno_write,
 	io_generic_info,
     },
 
@@ -2015,32 +2182,6 @@ static iface iface_g = {
 	io_generic_abandon,
 	io_vector_read,
 	io_generic_write,
-	io_generic_info,
-    },
-
-    {
-	/* Bin */
-	io_bin_create,
-	io_generic_destroy,
-	io_generic_lock,
-	io_generic_unlock,
-	io_generic_upgrade,
-	io_generic_abandon,
-	io_bin_read,
-	io_bin_write,
-	io_generic_info,
-    },
-
-    {
-	/* Track */
-	io_track_create,
-	io_generic_destroy,
-	io_generic_lock,
-	io_generic_unlock,
-	io_generic_upgrade,
-	io_generic_abandon,
-	io_track_read,
-	io_track_write,
 	io_generic_info,
     },
 };

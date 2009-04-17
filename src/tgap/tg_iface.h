@@ -86,6 +86,10 @@ typedef struct {
 
 typedef struct {
     STANDARD_IFACE
+} io_anno_ele;
+
+typedef struct {
+    STANDARD_IFACE
 } io_dnasrc;
 
 typedef struct {
@@ -106,17 +110,20 @@ typedef struct {
     void *(*connect)(char *dbname, int ro);
     int (*disconnect)(void *dbh);
     int (*commit)(void *dbh);
+    int (*lock)(void *dbh);
+    int (*unlock)(void *dbh);
 
     /* The objects themselves */
     io_array        array; /* generic array */
     io_database     database;
     io_contig       contig;
+    io_bin          bin;
+    io_track        track;
     io_seq          seq;
+    io_anno_ele     anno_ele;
     io_anno         anno;
     io_dnasrc       dnasrc;
     io_vector       vector;
-    io_bin          bin;
-    io_track        track;
 } iface;
 
 #endif /* _TG_IO_LOW_H_ */

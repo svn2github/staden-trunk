@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include <tcl.h>
+#include <tclInt.h> /* Tcl_GetCommandFromObj */
 #include <tcl_utils.h>
 
 #include "array.h"
@@ -45,6 +46,8 @@ static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
 static int tcl_contig_order(GapIO *io, Tcl_Interp *interp,
 			    int objc, Tcl_Obj *CONST objv[]);
 static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[]);
+static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]);
 
 static void io_update_string(Tcl_Obj *obj);
@@ -123,15 +126,15 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     GapIO *io = (GapIO *)clientData;
 
     static char *options[] = {
-	"flush",
-	"close",       "get_contig",   "get_sequence", "get_database",
+	"flush",       "close",
+	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	(char *)NULL,
     };
 
     enum options {
-	IO_FLUSH,
-	IO_CLOSE,     IO_CONTIG,      IO_SEQUENCE,    IO_DATABASE,
+	IO_FLUSH,     IO_CLOSE,
+	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
     };
 
@@ -164,6 +167,10 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case IO_DATABASE:
 	return tcl_database_read(io, interp, objc-1, objv+1);
+
+    case IO_ANNO_ELE:
+	return tcl_anno_ele_read(io, interp, objc-1, objv+1);
+	break;
 
     case IO_CORDER:
 	return tcl_contig_order(io, interp, objc-1, objv+1);
@@ -261,8 +268,8 @@ static int sort_range(const void *v1, const void *v2) {
     return r1->start - r2->start;
 }
 
-static int tcl_contig_range(tcl_contig *tc, Tcl_Interp *interp,
-			    int objc, Tcl_Obj *CONST objv[]) {
+static int tcl_contig_seqs_range(tcl_contig *tc, Tcl_Interp *interp,
+				 int objc, Tcl_Obj *CONST objv[]) {
     GapIO *io = tc->io;
     contig_t *c = tc->contig;
     int start, end;
@@ -283,6 +290,58 @@ static int tcl_contig_range(tcl_contig *tc, Tcl_Interp *interp,
 					 CSIR_SORT_BY_X | CSIR_PAIR,
 					 &nr);
     qsort(r, nr, sizeof(*r), sort_range);
+
+    items = Tcl_NewListObj(0, NULL);
+    for (i = 0; i < nr; i++) {
+	Tcl_Obj *ele, *e4[14];
+
+	e4[0]  = Tcl_NewIntObj(r[i].start);
+	e4[1]  = Tcl_NewIntObj(r[i].end);
+	e4[2]  = Tcl_NewIntObj(r[i].rec);
+	e4[3]  = Tcl_NewIntObj(r[i].mqual);
+	e4[4]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP1) ? 1 : 0);
+	e4[5]  = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_END_MASK) ? 1 : 0);
+	e4[6]  = Tcl_NewIntObj(r[i].pair_start);
+	e4[7]  = Tcl_NewIntObj(r[i].pair_end);
+	e4[8]  = Tcl_NewIntObj(r[i].pair_rec);
+	e4[9]  = Tcl_NewIntObj(r[i].pair_mqual);
+	e4[10] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_COMP2) ? 1 : 0);
+	e4[11] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_PEND_MASK) ? 1 : 0);
+	e4[12] = Tcl_NewIntObj(r[i].flags & GRANGE_FLAG_TYPE_MASK);
+	e4[13] = Tcl_NewIntObj((r[i].flags & GRANGE_FLAG_CONTIG) ? 1 : 0);
+	ele = Tcl_NewListObj(14, e4);
+
+	Tcl_ListObjAppendElement(interp, items, ele);
+    }
+
+    Tcl_SetObjResult(interp, items);
+
+    free(r);
+
+    return TCL_OK;
+}
+
+static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
+				 int objc, Tcl_Obj *CONST objv[]) {
+    GapIO *io = tc->io;
+    contig_t *c = tc->contig;
+    int start, end;
+    Tcl_Obj *items;
+    rangec_t *r;
+    int nr, i;
+
+    if (objc != 3) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s start end\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &start);
+    Tcl_GetIntFromObj(interp, objv[2], &end);
+    r = (rangec_t *)contig_anno_in_range(io, &c, start, end,
+					 CSIR_SORT_BY_X,
+					 &nr);
 
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
@@ -359,7 +418,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
-	"nseqs",
+	"nseqs",	"anno_in_range",
 	(char *)NULL,
     };
 
@@ -368,7 +427,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
-	NSEQS
+	NSEQS,          ANNO_IN_RANGE,
     };
 
     if (objc < 2) {
@@ -426,7 +485,10 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case SEQS_IN_RANGE:
-	return tcl_contig_range(tc, interp, objc-1, objv+1);
+	return tcl_contig_seqs_range(tc, interp, objc-1, objv+1);
+
+    case ANNO_IN_RANGE:
+	return tcl_contig_anno_range(tc, interp, objc-1, objv+1);
 
     case READ_DEPTH:
 	return tcl_read_depth(tc, interp, objc-1, objv+1);
@@ -927,6 +989,165 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 }
 
 /* ------------------------------------------------------------------------ */
+/* Tcl_Obj "anno_ele" type implementation */
+
+static void anno_ele_update_string(Tcl_Obj *obj);
+static int anno_ele_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
+
+typedef struct {
+    GapIO *io;
+    anno_ele_t *anno;
+} tcl_anno_ele;
+
+static Tcl_ObjType anno_ele_obj_type = {
+    "anno_ele",
+    (Tcl_FreeInternalRepProc*)NULL,
+    (Tcl_DupInternalRepProc*)NULL,
+    anno_ele_update_string,
+    anno_ele_from_any
+};
+
+static void anno_ele_update_string(Tcl_Obj *obj) {
+    tcl_anno_ele *te = obj->internalRep.otherValuePtr;
+    obj->bytes = ckalloc(30);
+    obj->length = sprintf(obj->bytes, "anno_ele=%p", te);
+}
+
+static int anno_ele_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
+    char *bytes;
+    int length;
+    tcl_anno_ele *te;
+
+    if (NULL == (bytes = Tcl_GetStringFromObj(obj, &length)))
+	return TCL_ERROR;
+
+    if (0 != strncmp(bytes, "anno_ele=", 3))
+	return TCL_ERROR;
+
+    /* Free the old internalRep before setting the new one. */
+    if (obj->typePtr && obj->typePtr->freeIntRepProc)
+	(*obj->typePtr->freeIntRepProc)(obj);
+
+    /* Convert the hex value to a pointer once more */
+    if (1 != sscanf(bytes+3, "%p", &te))
+	return TCL_ERROR;
+
+    obj->internalRep.otherValuePtr = te;
+    obj->typePtr = &anno_ele_obj_type;
+    return TCL_OK;
+}
+
+static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
+			int objc, Tcl_Obj *CONST objv[]) {
+    int index;
+    tcl_anno_ele *te = (tcl_anno_ele *)clientData;
+
+    static char *options[] = {
+	"delete",       "io",           "get_rec",
+	"get_contig",   "get_position", "get_comment",
+	"get_obj_type", "get_obj_rec",  "get_anno_rec",
+	(char *)NULL,
+    };
+
+    enum options {
+	DELETE,         IO,             GET_REC,
+	GET_CONTIG,     GET_POSITION,   GET_COMMENT,
+	GET_OBJ_TYPE,   GET_OBJ_REC,    GET_ANNO_REC,
+    };
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs(interp, 1, objv, "option arg ?arg ...?");
+	return TCL_ERROR;
+    }
+
+    if (Tcl_GetIndexFromObj(interp, objv[1], options, "option", 0,
+            &index) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    switch ((enum options)index) {
+    case DELETE:
+	Tcl_DeleteCommandFromToken(interp,
+				   Tcl_GetCommandFromObj(interp, objv[0]));
+	break;
+
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(te->io) , TCL_VOLATILE);
+	break;
+
+    case GET_REC:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->rec);
+	break;
+
+    case GET_CONTIG:
+    case GET_POSITION:
+	puts("Unimplemented\n");
+	break;
+
+    case GET_COMMENT:
+	Tcl_SetStringObj(Tcl_GetObjResult(interp),
+			 te->anno->comment ? te->anno->comment : "",
+			 -1);
+	break;
+
+    case GET_OBJ_TYPE:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->obj_type);
+	break;
+
+    case GET_OBJ_REC:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
+	break;
+
+    case GET_ANNO_REC:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->anno_rec);
+	break;
+    }
+
+    return TCL_OK;
+}
+
+static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[]) {
+    anno_ele_t *e;
+    int elenum;
+    tcl_anno_ele *te;
+    Tcl_Obj *res;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s anno_ele_id\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &elenum);
+    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, elenum);
+
+    if (NULL == (te = (tcl_anno_ele *)ckalloc(sizeof(*te))))
+	return TCL_ERROR;
+    te->io = io;
+    te->anno = e;
+
+    if (NULL == (res = Tcl_NewObj()))
+	return TCL_ERROR;
+
+    res->internalRep.otherValuePtr = te;
+    res->typePtr = &anno_ele_obj_type;
+    anno_ele_update_string(res);
+
+    /* Register the string form as a new command */
+    cache_incr(io, e);
+    if (NULL == Tcl_CreateObjCommand(interp, res->bytes, anno_ele_cmd,
+				     (ClientData)te,
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
+	return TCL_ERROR;
+
+    Tcl_SetObjResult(interp, res);
+
+    return TCL_OK;
+}
+
+/* ------------------------------------------------------------------------ */
 /* Tcl_Obj "database" type implementation */
 
 static void database_update_string(Tcl_Obj *obj);
@@ -1102,6 +1323,7 @@ int G5_Init(Tcl_Interp *interp) {
     Tcl_RegisterObjType(&database_obj_type);
     Tcl_RegisterObjType(&contig_obj_type);
     Tcl_RegisterObjType(&sequence_obj_type);
+    Tcl_RegisterObjType(&anno_ele_obj_type);
 
     if (NULL == Tcl_CreateObjCommand(interp, "g5::open_database",
 				     tcl_open_database,

@@ -14,7 +14,7 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 TGAPBIN=$(O)
 
 INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
-	-I../samtools-0.1.2
+	-I$(SRCROOT)/samtools-0.1.2 -I$(SRCROOT)/tgap
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For debugging g-alloc
@@ -56,7 +56,8 @@ TG_IO = \
 	$(TGAPBIN)/tg_bin.o \
 	$(TGAPBIN)/tg_utils.o \
 	$(TGAPBIN)/tg_register.o \
-	$(TGAPBIN)/tg_tracks.o
+	$(TGAPBIN)/tg_tracks.o \
+	$(TGAPBIN)/tg_anno.o
 
 TGSH_OBJ = \
 	$(TG_IO) \
@@ -77,9 +78,8 @@ TG_IND_OBJ = \
 	$(TGAPBIN)/baf.o \
 	$(TGAPBIN)/maq.o \
 	$(TGAPBIN)/maqmap.o \
-	$(TGAPBIN)/sam.o
-
-#	$(TGAPBIN)/ace.o \
+	$(TGAPBIN)/sam.o \
+	$(TGAPBIN)/ace.o
 #	mapass2.o
 
 TGILIBS = \
@@ -114,6 +114,8 @@ TGDLIBS = \
 
 $(O)/tg_depth: $(TG_DEPTH_OBJ)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_DEPTH_OBJ) $(TGDLIBS) $(LIBSC)
+
+DEPEND_OBJ = $(TG_IND_OBJ) $(TG_VIEW_OBJ) $(TGAPOBJS)
 
 install:
 	cp $(PROGBINS) $(INSTALLBIN)
