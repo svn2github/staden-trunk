@@ -1,0 +1,102 @@
+Gap5 1.1.3,  April 17th 2009
+============================
+
+This version is backwards compatible with v1.1.2 file formats.
+
+Key changes
+-----------
+
+*	The contig editor "pack sequences" mode now behaves much
+        better. The editing cursor, mouse overs, editing and selecting
+	all now correctly compensate for the layout change.
+
+	Additionally the names panel, which was useless in pack
+        sequences mode, now displays a reduced ascii layout of the
+        sequences allowing for the mapping quality to be shaded
+        there and to easily visualise the sequence orientation.
+
+*	ACE format support in tg_index is back, and it no longer
+        chokes on RT, CT and WA lines. Although at present I do not
+        add this data to the gap5 database.
+
+*	The contig selector no longer automatically displays at start
+        up if there are more than 1000 contigs. Using the -csel
+        command line option will forcibly override this check (along
+        with the previously implemented -no_csel option to never
+        display the contig selector on startup).
+
+*	The join editor settings now apply to both editors rather than
+        just one. Undo/Redo apply to the last used editor and on mouse-
+        over they highlight which editor they currently apply to.
+
+Bug fixes / minor changes
+-------------------------
+
+* 	The compute_ypos() function used for the pack sequences mode
+        of the editor now uses the faster algorithm developed for the
+        template display.
+
+*	Undo/Redo now behaves better when multiple editors are in use
+        on the same contig. Similarly the edits are redrawn instantly
+        in other editor views.
+
+*	(Transparent to users, for now.) The initial implementation of
+        annotations is in place. This is listed as a minor change for
+        now as currently there are no user-defined ways to add tags to
+        the database. Warning: this will lead to a file format change
+        soon.
+
+
+Gap5 1.1.2,  April 3rd 2009
+===========================
+
+Features
+--------
+
+*	The template display now sports a "Filter" button. This allows
+        certain types of data to be filtered in/out by mapping
+        quality, template consistency, whether it spans contigs and
+        whether single/paired.
+	(Future plans here include by ligation and/or instrument type.)
+
+*	The template display Y-mode of "stacking" should now be MUCH
+        faster when given deep data sets.
+
+*	Added the ability to select regions of a sequence or a reading
+	name from the contig editor so that cut and paste works. (From
+	the editor, but not into it yet.)
+
+*	The number of sequences in a contig is now displayed in the
+	contig selector and contig list windows.
+
+
+Bug fixes / minor adjustments
+-----------------------------
+
+*	The template display crosshair now correctly displays the Y
+	coordinate in the bottom status line.
+
+*	Fixed a bug in the consensus algorithm; the last base was
+	incorrect when the contig was 1 base longer than an exact
+	multiple of 1024bp.
+
+*	Sped up the Save Consensus command when dealing with many
+	contigs.
+
+*	Tweaked the Y-spread function of the template display so that
+	multiple sequences with both identical X and Y coordinates now
+	get spread apart.
+
+*	The contig editor now instantly displays the impact of making
+	insertions or deletions instead of only correctly displaying
+	all sequences on the next scroll.
+
+*	Fixed an issue of opening contigs when given a reading name
+	instead of a contig name.
+
+*	The contig editor sequence no longer vanishes temporarily when
+	scrolling the sequence names.
+
+
+Gap5 1.1.1,  March 19th 2009
+============================
