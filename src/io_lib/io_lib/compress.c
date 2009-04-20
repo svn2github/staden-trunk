@@ -181,7 +181,7 @@ char *memgzip(char *data, size_t size, size_t *cdata_size) {
 
 #ifdef DO_PIPE2
 /* ------------------------------------------------------------------------- */
-/* pipe2 - for piping via compression and decompression tools */
+/* pipe_into - for piping via compression and decompression tools */
 
 /*
  * This pipes 'input' data of length 'size' into a unix 'command'.
@@ -192,7 +192,8 @@ char *memgzip(char *data, size_t size, size_t *cdata_size) {
  *         NULL on failure
  */
 #define PIPEBS 8192
-char *pipe2(const char *command, char *input, size_t insize, size_t *outsize) {
+static char *pipe_into(const char *command, char *input, size_t insize,
+		       size_t *outsize) {
     char *output = NULL;
     int output_alloc = 0;
     int output_used = 0;
@@ -451,8 +452,8 @@ int fcompress_file(mFILE *fp) {
 	 * We have to pipe the data via an external tool, avoiding temporary
 	 * files for speed.
 	 */
-	data = pipe2(magics[compression_used-1].compress,
-		     fp->data, fp->size, &size);
+	data = pipe_into(magics[compression_used-1].compress,
+			 fp->data, fp->size, &size);
 #else
 	return -1;
 #endif
@@ -554,7 +555,7 @@ mFILE *freopen_compressed(mFILE *fp, mFILE **ofp) {
 #endif
     {
 #ifdef DO_PIPE2
-	udata = pipe2(magics[i].uncompress, fp->data, fp->size, &usize);
+	udata = pipe_into(magics[i].uncompress, fp->data, fp->size, &usize);
 #else
 	return NULL;
 #endif

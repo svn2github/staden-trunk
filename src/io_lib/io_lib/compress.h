@@ -89,16 +89,6 @@ char *memgzip(char *data, size_t size, size_t *cdata_size);
 char *memgunzip(char *data, size_t size, size_t *udata_size);
 
 /*
- * This pipes 'input' data of length 'size' into a unix 'command'.
- * The output is then returned as an allocated block of memory. It is the
- * caller's responsibility to free this data.
- *
- * Returns malloc()ed data on success
- *         NULL on failure
- */
-char *pipe2(const char *command, char *input, size_t insize, size_t *outsize);
-
-/*
  * Given a filename remove a known compression extension
  *
  * Returns: None
