@@ -663,7 +663,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 	HacheData hd;
 	anno_ele_t *a;
 
-	if (!xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
 	    continue;
 
 	hd.i = i;
@@ -1095,7 +1095,7 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
 	int sp  = xx->r[i].start;
 	int j;
 
-	if (!xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
 	    continue;
 
 	if (xx->r[i].mqual /* obj_type */ != GT_Contig)
