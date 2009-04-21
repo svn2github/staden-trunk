@@ -54,6 +54,7 @@
 #define REG_BUFFER_START       (1<<19)
 #define REG_BUFFER_END         (1<<20)
 #define REG_NOTE	       (1<<21)
+#define REG_CHILD_EDIT	       (1<<22)
 
 
 /*
@@ -265,6 +266,7 @@ typedef struct {
     int type;
     int uid; /* A _unique_ identifier for this contig_reg_t */
     int ref_count; /* Auto destroy when this hits zero */
+    HacheItem *hi[2]; /* Possible entries to hache for this reg */
 } contig_reg_t;
 
 

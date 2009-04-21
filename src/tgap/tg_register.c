@@ -30,6 +30,7 @@
 
 #include <string.h>
 #include <time.h>
+#include <assert.h>
 
 #include "tg_gio.h"
 #include "hache_table.h"
@@ -90,6 +91,29 @@ void contig_register_destroy(GapIO *io) {
 }
 
 /*
+ * Debugging output
+ */
+static void contig_register_dump(GapIO *io) {
+    HacheTable *h = io_contig_reg(io);
+    HacheIter *iter;
+    HacheItem *hi;
+
+    puts("====contig_register_dump====");
+    iter = HacheTableIterCreate();
+    while (hi = HacheTableIterNext(h, iter)) {
+	contig_reg_t *r = (contig_reg_t *)hi->data.p;
+	assert(h == hi->h);
+	printf("%p %p %2d %d*fn %p/%p {%p,%p}\n",
+	       hi, r,
+	       *(int *)hi->key,
+	       r->ref_count,
+	       r->func, r->fdata,
+	       r->hi[0], r->hi[1]);
+    }
+    puts("");
+}
+
+/*
  * Allocates new register id numbers as requires. No protection for wrap-
  * around, but this ought to take ages to ever happen.
  */
@@ -98,6 +122,56 @@ int register_id() {
 
     return ++id;
 }
+
+
+/*
+ * An internal function to handle removal of the contig_reg_t from our
+ * hache tables. This code is shared by multiple places; basically whenever
+ * the reference count hits zero.
+ *
+ * Iter and next maybe NULL, but if non-null they are used to make
+ * sure that the current next element in the iterator is still
+ * valid. As we are removing data, we may need to step on to the next
+ * iteration if we're invalidating our current next candidate.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int contig_reg_remove(GapIO *io, contig_reg_t *r,
+			     HacheIter *iter, HacheItem **next) {
+    int i;
+
+    if (!r)
+	return -1;
+
+    /* Mark for removal */
+    r->flags |= REG_FLAG_INACTIVE;
+
+    /* But possibly still in use, so delay */
+    if (!r->ref_count == 0)
+	return 0;
+
+    /* Yes - so remove from both locations in hache */
+    for (i = 0; i < 2; i++) {
+	if (!r->hi[i])
+	    continue;
+
+	if (next && *next == r->hi[i]) {
+	    if (iter)
+		*next = HacheTableIterNext(r->hi[i]->h, iter);
+	    else
+		*next = NULL;
+	}
+
+	if (HacheTableDel(io_contig_reg(io), r->hi[i], 0) != 0)
+	    return -1;
+   }
+
+    free(r);
+
+    return 0;
+}
+
 
 /*
  * As per send_event below, but we broadcast to every contig and to contig
@@ -122,7 +196,10 @@ void broadcast_event(GapIO *io, HacheTable *h,
 	contig_reg_t *cr = (contig_reg_t *)hi->data.p;
 	int key = *(int *)hi->key;
 
-	/* Skip 'contig' root list entries */
+	/*
+	 * One item may register to multiple contigs, so iterate through
+	 * registration IDs only - aka -ve indices in the hash.
+	 */
 	if (key >= 0)
 	    continue;
 
@@ -147,16 +224,7 @@ void broadcast_event(GapIO *io, HacheTable *h,
 	if (--cr->ref_count == 0) {
 	    int nid = -cr->id;
 	    puts("delete me");
-	    /*
-	     * FAIL: nid isn't unique so multiple passes through this destroys
-	     * too much? Ie HacheTableRemove(nid) has removed the next
-	     * cr already?
-	     *
-	     * FIX: remove by hi of nid?
-	     */
-	    HacheTableDel(io_contig_reg(io), hi, 0);
-	    HacheTableRemove(io_contig_reg(io), (char *)&nid, sizeof(nid), 0);
-	    free(cr);
+	    contig_reg_remove(io, cr, iter, &next);
 	}
     }
 }
@@ -177,11 +245,6 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
 
     if (!h)
 	return;
-
-    if (!contig) {
-	broadcast_event(io, h, msg, except);
-	return;
-    }
 
     /* Incr ref counts to ensure they're not removed */
     hi = HacheTableSearch(h, (char *)&contig, sizeof(contig));
@@ -219,10 +282,7 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
 
 	if (--cr->ref_count == 0) {
 	    puts("delete me");
-	    int nid = -cr->id;
-	    HacheTableDel(io_contig_reg(io), hi, 0);
-	    HacheTableRemove(io_contig_reg(io), (char *)&nid, sizeof(nid), 0);
-	    free(cr);
+	    contig_reg_remove(io, cr, NULL, &next);
 	}
 
 	hi = next;
@@ -263,11 +323,13 @@ int contig_register(GapIO *io, int contig,
     hi = HacheTableAdd(io_contig_reg(io), (char *)&contig, sizeof(contig),
 		       hd, NULL);
     HacheTableIncRef(io_contig_reg(io), hi);
+    r->hi[0] = hi;
 
     nid = -id;
     hi = HacheTableAdd(io_contig_reg(io), (char *)&nid, sizeof(nid),
 		       hd, NULL);
     HacheTableIncRef(io_contig_reg(io), hi);
+    r->hi[1] = hi;
 
 #ifdef LOG_FILE    
   {
@@ -299,6 +361,8 @@ int contig_register(GapIO *io, int contig,
     r->uid = ++uid;
     r->ref_count = 1;
 
+    //contig_register_dump(io);
+
     /*
      * Notify registration to those that are interested.
      * Send notifications to both contig 'n' and contig 0.
@@ -312,9 +376,12 @@ int contig_register(GapIO *io, int contig,
     return 0;
 }
 
+
 /*
  * Deregisters func(io, contig, data, jdata) from contig 'contig'.
  * Contig 0 represents the global state which gets all messages.
+ * Contig maybe negative in which case it indicates a specific result id,
+ * but we still need to find the positive version too.
  *
  * Returns 0 for success
  *        -1 for failure
@@ -325,63 +392,61 @@ int contig_deregister(GapIO *io, int contig,
 		      void *fdata) {
     contig_reg_t *r = NULL;
     reg_register reg;
-    HacheItem *hi;
+    HacheItem *hi, *next;
+    HacheIter *iter;
     int nid;
 
-    /* Find the HacheItem associated with the func/fdata pair */
-    hi = HacheTableSearch(io_contig_reg(io), (char *)&contig, sizeof(contig));
-    while (hi) {
+    //contig_register_dump(io);
+
+    /*
+     * NB: we may have multiple registrations for this func/fdata pair.
+     * We may also have been given a registration ID rather than a contig
+     * number. For now we take the brute force approach of just searching
+     * the entire hache table. It's not ideal, but is still bounded by
+     * the number of plots (mostly).
+     */
+    iter = HacheTableIterCreate();
+
+    next = HacheTableIterNext(io_contig_reg(io), iter);
+    while (hi = next) {
+	next = HacheTableIterNext(io_contig_reg(io), iter);
 	r = (contig_reg_t *)hi->data.p;
-	if (!(r->flags & REG_FLAG_INACTIVE) &&
-	    r->func == func &&
-	    r->fdata == fdata)
-	    break;
-	hi = HacheTableNext(hi, (char *)&contig, sizeof(contig));
-    }
+	if (r->func != func ||
+	    r->fdata != fdata)
+	    continue;
 
-    if (!hi || !r)
-	return -1;
-    
-#ifdef LOG_FILE    
-  {
-    static int last_id = -1;
-    /* Match found - log it */
-    if (r->id != last_id || 1) {
-	reg_query_name qn;
-	char buf[1024], buf2[1024];
+	/*
+	 * Found a candidate.
+	 * We decrement the reference count if active and mark it as inactive.
+	 *
+	 * If this makes the reference count hit zero then we remove it,
+	 * otherwise we leave it and hope it's removed later once the reference
+	 * count hits zero.
+	 */
+	if (!(r->flags & REG_FLAG_INACTIVE)) {
+	    r->flags |= REG_FLAG_INACTIVE;
+	}
 
-	qn.job = REG_QUERY_NAME;
-	qn.line = buf;
-	buf[0] = 0;
-	r->func(io, contig, r->fdata, (reg_data *)&qn);
-	sprintf(buf2, "> Deregister id=%d cnum=%d func=%p data=%p :%.900s",
-		r->id, contig, r->func, r->fdata, buf);
-	log_file(NULL, buf2);
-	last_id = r->id;
-    }
-  }
-#endif
+	/* Notify the deregistration to those that are interested */
+	reg.job = REG_DEREGISTER;
+	reg.contig = contig;
+	reg.id = r->id;
+	reg.type = r->type;
 
-    /* Mark as inactive so it doesn't get any more events */
-    r->flags |= REG_FLAG_INACTIVE;
-
-    /* Remove from the HacheTable */
-    if (--r->ref_count == 0) {
-	HacheTableDel(io_contig_reg(io), hi, 0);
-	nid = -r->id;
-	HacheTableRemove(io_contig_reg(io), (char *)&nid, sizeof(nid), 0);
-    }
-
-    /* Notify the deregistration to those that are interested */
-    reg.job = REG_DEREGISTER;
-    reg.contig = contig;
-    reg.id = r->id;
-    reg.type = r->type;
-    send_event(io, io_contig_reg(io), contig, (reg_data *)&reg, -1);
-    send_event(io, io_contig_reg(io), 0,      (reg_data *)&reg, -1);
+	/*
+	 * We may need to delay these until after removal incase we generate
+	 * more removals.
+	 */
+	send_event(io, io_contig_reg(io), contig, (reg_data *)&reg, -1);
+	send_event(io, io_contig_reg(io), 0,      (reg_data *)&reg, -1);
    
-    if (r->ref_count == 0)
-	xfree(r);
+	if (--r->ref_count == 0)
+	    contig_reg_remove(io, r, iter, &next);
+    }
+
+    HacheTableIterDestroy(iter);
+
+    //contig_register_dump(io);
 
     return 0;
 }
@@ -564,16 +629,19 @@ void delete_contig_cursor(GapIO *io, int contig, int id, int private)
 
 /*
  * Uses the register list for a given contig to call a particular job.
- *
- * Contig 0 is for all contigs. NB: may not work if this causes the number
- *    of contigs to change!
+ * Contig 0 is a special registration list for windows that want to track
+ * all contigs, so we always duplicate data there too.
  */
 void contig_notify(GapIO *io, int contig, reg_data *jdata) {
     send_event(io, io_contig_reg(io), contig, jdata, -1);
+    if (contig)
+	send_event(io, io_contig_reg(io), 0, jdata, -1);
 }
 
 void contig_notify_except(GapIO *io, int contig, reg_data *jdata, int id) {
     send_event(io, io_contig_reg(io), contig, jdata, id);
+    if (contig)
+	send_event(io, io_contig_reg(io), 0, jdata, id);
 }
 
 /*
