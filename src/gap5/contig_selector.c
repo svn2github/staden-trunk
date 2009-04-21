@@ -907,12 +907,11 @@ contig_selector_reg(Tcl_Interp *interp,
     /* do the first plot */
     update_contig_selector(interp, io, cs);
 
-    for (i = 1; i <= NumContigs(io); i++) {
-	contig_register(io, i, cs_callback, (void *)cs, id,
-			REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
-			REG_NUMBER_CHANGE | REG_ANNO | REG_GENERIC |
-			REG_BUFFER | REG_ORDER | REG_FLAG_INVIS, REG_TYPE_CONTIGSEL);
-    }
+    contig_register(io, 0, cs_callback, (void *)cs, id,
+		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
+		    REG_NUMBER_CHANGE | REG_ANNO | REG_GENERIC |
+		    REG_BUFFER | REG_ORDER | REG_FLAG_INVIS, REG_TYPE_CONTIGSEL);
+
     return id;
 
 }
@@ -1200,6 +1199,7 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		}
 		break;
 	    }
+#if 0
 	case TASK_CS_REDRAW:
 	    {
 		/* HACK - never used */
@@ -1220,6 +1220,7 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		}
 		break;
 	    }
+#endif
 	    break;
 	}
 	break;
