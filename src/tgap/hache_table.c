@@ -283,6 +283,13 @@ static void HacheItemDestroy(HacheTable *h, HacheItem *hi, int deallocate_data) 
 	}
     }
 
+    if (hi->in_use_next)
+	hi->in_use_next->in_use_prev = hi->in_use_prev;
+    if (hi->in_use_prev)
+	hi->in_use_prev->in_use_next = hi->in_use_next;
+    if (h->in_use == hi)
+	h->in_use = hi->in_use_next;
+
     if (hi)
 	free(hi);
 
