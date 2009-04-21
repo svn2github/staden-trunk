@@ -452,6 +452,8 @@ static int reg_str2flags(Tcl_Interp *interp, char *str) {
 	    flags |= REG_ORDER;
 	} else if (strcmp(str_flags[i], "LENGTH") == 0) {
 	    flags |= REG_LENGTH;
+	} else if (strcmp(str_flags[i], "CHILD_EDIT") == 0) {
+	    flags |= REG_CHILD_EDIT;
 	} else if (strcmp(str_flags[i], "QUERY_NAME") == 0) {
 	    flags |= REG_QUERY_NAME;
 	} else if (strcmp(str_flags[i], "DELETE") == 0) {
@@ -523,6 +525,8 @@ static char *reg_flags2str(int flags) {
 	strcat(str, "ORDER ");
     if (flags & REG_LENGTH)
 	strcat(str, "LENGTH ");
+    if (flags & REG_CHILD_EDIT)
+	strcat(str, "CHILD_EDIT ");
     if (flags & REG_QUERY_NAME)
 	strcat(str, "QUERY_NAME ");
     if (flags & REG_DELETE)
@@ -831,7 +835,8 @@ int tk_contig_deregister(ClientData clientData, Tcl_Interp *interp,
 	    }
 	    if (ptr) {
 		crt = (cr_type *)ptr->fdata;
-		ret |= contig_deregister(args.io, 0, ptr->func, ptr->fdata);
+		ret |= contig_deregister(args.io, -args.id,
+					 ptr->func, ptr->fdata);
 		xfree(crt->command);
 		xfree(crt);
 	    }
@@ -887,6 +892,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	/* 'line' element is returned */
 	break;
 
+    case REG_CHILD_EDIT:
     case REG_DELETE:
     case REG_COMPLEMENT:
     case REG_ANNO:
@@ -989,6 +995,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
     sprintf(buf, "%d", crt->id);
     if (Tcl_VarEval(crt->interp, crt->command, " ", type, " ", buf, " ",
 		    Tcl_DStringValue(&ds), NULL) != TCL_OK) {
+	fprintf(stderr, "registration_callback: %s", Tcl_GetStringResult(crt->interp));
 	verror(ERR_WARN, "registration_callback", "%s",
 	       Tcl_GetStringResult(crt->interp));
     }
@@ -1043,6 +1050,7 @@ int str2reg_data(Tcl_Interp *interp, GapIO *io,
     reg_init_args(str);
 
     switch (itype) {
+    case REG_CHILD_EDIT:
     case REG_BUFFER_START:
     case REG_BUFFER_END:
 	break;

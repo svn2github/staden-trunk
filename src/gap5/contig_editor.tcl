@@ -76,7 +76,7 @@ proc io_store_undo {crec cmdu cmdr} {
 
     contig_notify -io $cio(base) -cnum $crec -type GENERIC \
 	-args [list TASK_GENERIC "" data {undo normal redo disable}]
-    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+    contig_notify -io $cio(base) -cnum $crec -type CHILD_EDIT -args ""
 }
 
 proc io_undo {crec} {
@@ -93,7 +93,7 @@ proc io_undo {crec} {
     }
     contig_notify -io $cio(base) -cnum $crec -type GENERIC \
 	-args [list TASK_GENERIC "" data {redo normal}]
-    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+    contig_notify -io $cio(base) -cnum $crec -type CHILD_EDIT -args ""
 }
 
 proc io_undo_state {crec} {
@@ -118,7 +118,7 @@ proc io_redo {crec} {
     }
     contig_notify -io $cio(base) -cnum $crec -type GENERIC \
 	-args [list TASK_GENERIC "" data {undo normal}]
-    contig_notify -io $cio(base) -cnum $crec -type LENGTH -args ""
+    contig_notify -io $cio(base) -cnum $crec -type CHILD_EDIT -args ""
 }
 
 proc io_redo_state {crec} {
@@ -138,7 +138,14 @@ proc contig_register_callback {ed type id cdata args} {
     set w [set ${ed}(top)]
     global $w
 
+    puts [info level [info level]]
+
     switch $type {
+	QUERY_NAME {
+	    return "Contig Editor"
+	}
+
+	CHILD_EDIT -
 	LENGTH {
 	    $ed redraw
 	}
@@ -491,6 +498,13 @@ proc editor_exit {w} {
 
     io_detach [$ed contig_rec]
 
+    foreach ed [set ${w}(all_editors)] {
+	global $ed
+	set id [set ${ed}(reg)]
+	puts "Deregister $id"
+	contig_deregister -io [set ${w}(io_base)] -id $id
+    }
+
     destroy $w
 }
 
@@ -618,7 +632,7 @@ proc editor_pane {top w above ind arg_array} {
 			-io $opt(io_base) \
 			-contig $opt(contig$ind) \
 			-command "contig_register_callback $ed" \
-			-flags [list ALL GENERIC]]
+			-flags [list ALL GENERIC CHILD_EDIT]]
     if {$ind == 2} {
 	set ${ed}(side) top
     } else {
