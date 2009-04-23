@@ -138,8 +138,6 @@ proc contig_register_callback {ed type id cdata args} {
     set w [set ${ed}(top)]
     global $w
 
-    puts [info level [info level]]
-
     switch $type {
 	QUERY_NAME {
 	    return "Contig Editor"
@@ -161,6 +159,20 @@ proc contig_register_callback {ed type id cdata args} {
 			$w.toolbar.redo configure -state $state
 		    }
 		}
+	    }
+	}
+	
+	CURSOR_NOTIFY {
+	    foreach a $args {
+		foreach {k v} $a break;
+		set arg($k) $v
+	    }
+
+	    # Only move the cursor if it's not sent by oursleves and
+	    # it's our primary cursor.
+	    if {[set ${ed}(reg)] != $arg(sent_by) && \
+		    ($arg(id) == [$ed cursor_id] || $arg(id) == 0)} {
+		$ed set_cursor 17 [set ${w}(contig)] $arg(abspos)
 	    }
 	}
 	
@@ -623,7 +635,6 @@ proc editor_pane {top w above ind arg_array} {
     focus $w.seq.sheet
 
     # Initialise with an IO and link name/seq panel together
-    $ed init $opt(io$ind) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
     global $ed $edname
     puts "register with $ed"
     set ${ed}(parent) $w
@@ -633,6 +644,8 @@ proc editor_pane {top w above ind arg_array} {
 			-contig $opt(contig$ind) \
 			-command "contig_register_callback $ed" \
 			-flags [list ALL GENERIC CHILD_EDIT]]
+    $ed init $opt(io$ind) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
+
     if {$ind == 2} {
 	set ${ed}(side) top
     } else {
