@@ -23,6 +23,7 @@ enum line_type {
     QR=CC2('Q','R'), /*    Right quality clip */
     TN=CC2('T','N'), /*    Template name */
     DR=CC2('D','R'), /*    Direction, 1=>uncomp, -1=>complemented */
+    PR=CC2('P','R'), /*    Direction, 1=>uncomp, -1=>complemented */
     TR=CC2('T','R'), /*    Trace name */
     MQ=CC2('M','Q'), /*    Mapping quality */
     AL=CC2('A','L'), /*    Alignment */
@@ -41,6 +42,7 @@ enum line_type {
     qr=CC2('q','r'),
     tn=CC2('t','n'),
     dr=CC2('d','r'),
+    pr=CC2('p','r'),
     tr=CC2('t','r'),
     mq=CC2('m','q'),
     al=CC2('a','l'),

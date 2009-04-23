@@ -174,7 +174,7 @@ char *baf_block_value(baf_block *b, int type) {
 
 
 int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
-    int ap, dir, cleft, cright, i, qb, mq;
+    int ap, dir, cleft, cright, i, qb, mq, end;
     size_t len;
     char *cp, *seq, *qual, *name, *trace_name, *alignment;
     
@@ -218,6 +218,11 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     else
 	dir = 1;
 
+    if ((cp = baf_block_value(b, PR)))
+	end = atoi(cp);
+    else
+	end = 0;
+
     if ((cp = baf_block_value(b, MQ)))
 	mq = atoi(cp);
     else
@@ -250,6 +255,8 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     s->pos = ap;
     s->len = dir * len;
     s->flags = s->len < 0 ? SEQ_COMPLEMENTED : 0;
+    if (end == 1)
+	s->flags |= SEQ_END_REV;
     s->left = cleft;
     s->right = cright;
     s->mapping_qual = mq;
@@ -364,10 +371,10 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    r.pair_rec = 0;
 	    r.mqual = seq.mapping_qual;
 	    r.flags = GRANGE_FLAG_TYPE_SINGLE;
-	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
-	    r.flags|= seq.len > 0
-		? GRANGE_FLAG_END_FWD
-		: GRANGE_FLAG_END_REV;
+	    if (seq.flags & SEQ_END_REV)
+		r.flags |= GRANGE_FLAG_END_REV;
+	    else
+		r.flags |= GRANGE_FLAG_END_FWD;
 	    if (seq.len < 0)
 		r.flags |= GRANGE_FLAG_COMP1;
 
