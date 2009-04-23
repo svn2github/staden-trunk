@@ -93,7 +93,131 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
 
     bind $w <Any-Configure> "resize1.5 $w"
 
+    # Contig registration
+    set ${w}(reg) [contig_register \
+		       -io $io \
+		       -contig $cnum \
+		       -command "1.5plot_contig_event $w" \
+		       -flags [list QUERY_NAME CURSOR_NOTIFY]]
+    wm protocol $w WM_DELETE_WINDOW "1.5plot_exit $w"
+
     redraw_plot $w
+}
+
+proc 1.5plot_exit {w} {
+    global $w
+    contig_deregister -io [set ${w}(io)] -id [set ${w}(reg)]
+    destroy $w
+    unset $w
+}
+
+# Contig event handling
+proc 1.5plot_contig_event {w type id cdata args} {
+    global $w
+
+#    puts [info level [info level]]
+    switch $type {
+	QUERY_NAME {
+	    return "Template Display"
+	}
+
+	CURSOR_NOTIFY {
+	    set c_col [list blue green orange red]
+	    array set arg {}
+	    foreach a $args {
+		foreach {k v} $a break;
+		set arg($k) $v
+	    }
+	    set cid $arg(id)
+
+	    foreach id [set ${w}(tracks)] {
+		set t $w.track$id
+		global $t $t.Cursors $t.Id2Cid
+
+		if {![info exists ${t}(Raster)]} continue;
+		set r [set ${t}(Raster)]
+
+		if {[lsearch $arg(job) DELETE] != -1} {
+		    catch {unset $t.Cursors($cid)}
+		    catch {destroy $t.cursor$cid}
+		    continue
+		}
+
+		set $t.Id2Cid($arg(sent_by)) $cid
+
+		if {![winfo exists $t.cursor$cid]} {
+		    set col [lindex $c_col [expr {$cid % [llength $c_col]}]]
+		    frame $t.cursor$cid -width 5 -height 10000 -bg $col
+		    raise $t.cursor$cid
+		    bind $t.cursor$cid <ButtonPress-1> \
+			"1.5cursor_press $t $cid"
+		    bind $t.cursor$cid <ButtonRelease-1> \
+			"1.5cursor_release $t $cid"
+		    bind $t.cursor$cid <Any-Motion> \
+			"1.5cursor_motion $w $t $cid %x"
+		}
+		set $t.Cursors($cid) $arg(abspos)
+		set x [lindex [$r topixmap $arg(abspos) 0] 0]
+		incr x -2
+		place $t.cursor$cid -x $x
+	    }
+	}
+
+	default {
+	    puts "depth.tcl: Event '$type $args' not handled"
+	}
+    }
+}
+
+# Redraws cursors
+proc 1.5redraw_cursor {w t} {
+    global $w $t $t.Cursors
+
+    puts "REDRAW CURSOR"
+
+    if {![info exists ${t}(Raster)]} return;
+    set r [set ${t}(Raster)]
+
+    puts 1
+
+    foreach id [array names $t.Cursors] {
+	place $t.cursor$id -x [lindex [$r topixmap [set $t.Cursors($id)] 0] 0]
+    }
+
+    puts 2
+}
+
+# Cursor drag events
+proc 1.5cursor_press {t id} {
+    global $t.cursor_selected_$id
+    set $t.cursor_selected_$id 1
+}
+
+proc 1.5cursor_motion {w t id x} {
+    global $w $t $t.cursor_selected_$id
+    if {![info exists $t.cursor_selected_$id]} return
+
+    if {![info exists ${t}(Raster)]} return;
+    set r [set ${t}(Raster)]
+
+    incr x [winfo x $t.cursor$id]
+    set bx [lindex [$r toworld $x 0] 0]
+
+    contig_notify \
+	-io [set ${w}(io)] \
+	-cnum [set ${w}(cnum)] \
+	-type CURSOR_NOTIFY \
+	-args [list id      $id \
+	            job     MOVE \
+		    seq     [set ${w}(cnum)] \
+		    abspos  $bx \
+		    pos     $bx \
+		    sent_by 0]
+}
+
+proc 1.5cursor_release {t id} {
+    global $t.cursor_selected_$id
+    catch {unset $t.cursor_selected_$id}
 }
 
 # Resize events
@@ -560,7 +684,8 @@ proc seq_seqs_init {w t} {
     set r [raster $d.r \
 	       -width [winfo width $d] \
 	       -height [winfo height $d] \
-	       -bg black]
+	       -bg black \
+	       -bd 0]
 
     #		   -bg \#e0ffe0]
     set rid [$d create window 0 0 -anchor nw -window $r]
@@ -628,10 +753,47 @@ proc seq_seqs_init {w t} {
 
     $d bind all <Any-Enter> "seq_seqs_bind $t $w $d"
 
-    bind $r <ButtonPress-1> {puts b1-down}
-    bind $r <ButtonRelease-1> {puts b1-up}
+    bind $r <<use>> "invoke_editor $w $t %x"
 
     puts END:[info level [info level]]
+}
+
+#
+# Brings up a contig editor
+#
+proc invoke_editor {w t x} {
+    global $w $t
+
+    # Hunt for an existing editor for this contig
+    set io [set ${w}(io)]
+    set found 0
+    foreach result [result_names -io $io] {
+	foreach {crec id name} $result break;
+	if {$name == "Contig Editor" && $crec == [set ${w}(cnum)]} {
+	    set found $id
+	    break
+	}
+    }
+
+    set r    [set ${t}(Raster)]
+    set x [lindex [$r toworld $x 0] 0]
+    if {$found} {
+	global $t.Id2Cid
+	contig_notify -io $io -cnum [set ${w}(cnum)] -type CURSOR_NOTIFY \
+	    -args [list id      [set $t.Id2Cid($id)] \
+		        job     MOVE \
+		        seq     [set ${w}(cnum)] \
+		        abspos  $x \
+		        pos     $x \
+		        sent_by 0]
+    } else {
+	puts x=$x
+	edit_contig \
+	    -io $io \
+	    -contig [set ${w}(cnum)] \
+	    -readng [set ${w}(cnum)] \
+	    -pos $x
+    }
 }
 
 #
@@ -869,6 +1031,8 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 		    +[set ${t}(FilterConsistent)]
 		    +[set ${t}(FilterSpanning)]}]
 		     
+    1.5redraw_cursor $w $t
+
     $td configure \
 	-accuracy   [set ${t}(Accurate)] \
 	-logy       [set ${t}(YLog)] \
