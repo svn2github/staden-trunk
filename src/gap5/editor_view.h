@@ -84,6 +84,8 @@ typedef struct _edview {
     int cursor_rec;
     int cursor_pos;
     int cursor_apos; /* absolute position in contig */
+    cursor_t *cursor;
+    int reg_id; /* registration id */
 
     /* Y coordinates for the elements in the editor */
     int y_seq_start;
@@ -131,7 +133,8 @@ int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]);
  */
 edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 		   Editor *ed, edNames *names,
-		   void (*dispFunc)(void *, int, int, int, void *));
+		   void (*dispFunc)(void *, int, int, int, void *),
+		   Tcl_Interp *interp);
 
 /*
  * Deallocates an edview

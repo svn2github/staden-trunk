@@ -47,10 +47,12 @@ int join_contig(GapIO *io, int cnum[2], int rnum[2], int pos[2]) {
  */
 edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 		   Editor *ed, edNames *names,
-		   void (*dispFunc)(void *, int, int, int, void *))
+		   void (*dispFunc)(void *, int, int, int, void *),
+		   Tcl_Interp *interp)
 {
     edview *xx;
     static int editor_id = 1;
+    char *cp;
 
     xx = (edview *)xcalloc(1, sizeof(*xx));
     if (!xx)
@@ -58,7 +60,7 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
     
     xx->editor_id = editor_id++;
 
-    xx->interp = NULL; /* filled out elsewhere */
+    xx->interp = interp;
     xx->io = io; /* model */
     xx->cnum = contig;
     xx->contig = (contig_t *)cache_search(io, GT_Contig, xx->cnum);
@@ -83,8 +85,6 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
     xx->cursor_type = (xx->cursor_rec == 0 || xx->cursor_rec == contig)
 	? GT_Contig : GT_Seq;
     xx->cursor_rec  = crec ? crec : contig;
-    edSetApos(xx);
-    xx->displayPos = xx->cursor_apos;
 
     xx->trace_lock = 1;
     
@@ -95,6 +95,14 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 
     xx->r = NULL;
     xx->anno_hash = NULL;
+
+    /* Private cursor */
+    cp = Tcl_GetVar2(xx->interp, Tk_PathName(xx->ed->sw.tkwin), "reg",
+		     TCL_GLOBAL_ONLY);
+    xx->reg_id = cp ? atoi(cp) : 0;
+    xx->cursor = create_contig_cursor(io->base, contig, 1, xx->reg_id);
+    edSetApos(xx);
+    xx->displayPos = xx->cursor_apos;
     
     return xx;
 }
@@ -102,7 +110,9 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 /*
  * Deallocates an edview
  */
-static void edview_destroy(edview *xx) {
+void edview_destroy(edview *xx) {
+    if (xx->cursor)
+	delete_contig_cursor(xx->io->base, xx->cnum, xx->cursor->id, 1);
     if (xx->r)
 	free(xx->r);
     xfree(xx);
@@ -661,22 +671,12 @@ int edview_visible_items(edview *xx, int start, int end) {
     for (i = 0; i < xx->nr; i++) {
 	int key = xx->r[i].pair_rec; /* aka obj_rec */
 	HacheData hd;
-	anno_ele_t *a;
 
 	if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
 	    continue;
 
 	hd.i = i;
-	HacheTableAdd(xx->anno_hash, &key, sizeof(key), hd, NULL);
-
-	/*
-	a = (anno_ele_t *)cache_search(xx->io, GT_AnnoEle, xx->r[i].rec);
-	printf("Add anno %d/%d/%s to seq %d,%d,%d\n",
-	       i, a->rec, a->comment,
-	       xx->r[i].pair_rec,
-	       xx->r[i].mqual,
-	       xx->r[i].flags);
-	*/
+	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
     return 0;
@@ -940,9 +940,9 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		if (xx->anno_hash) {
 		    HacheItem *hi;
 		    int key = s->rec;
-		    for (hi = HacheTableSearch(xx->anno_hash, &key,
-					       sizeof(key));
-			 hi; hi = HacheTableNext(hi, &key, sizeof(key))) {
+		    for (hi = HacheTableSearch(xx->anno_hash,
+					       (char *)&key, sizeof(key));
+			 hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
 			int ai = hi->data.i;
 			printf("Seq %d anno %d\n", key, ai);
 
@@ -1394,6 +1394,25 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
     return 0;
 }
 
+/*
+ * Sends out a notification of our cursor movement
+ */
+static void cursor_notify(edview *xx) {
+    reg_cursor_notify cn;
+
+    if (!xx->cursor)
+	return;
+
+    xx->cursor->seq = xx->cursor_rec;
+    xx->cursor->pos = xx->cursor_pos;
+    xx->cursor->abspos = xx->cursor_apos;
+    xx->cursor->job = CURSOR_MOVE;
+    xx->cursor->sent_by = xx->reg_id;
+    cn.job = REG_CURSOR_NOTIFY;
+    cn.cursor = xx->cursor;
+    contig_notify(xx->io->base, xx->cnum, (reg_data *)&cn);
+}
+
 int set_displayPos(edview *xx, int pos) {
     char buf[100];
     int i, ret = 0;
@@ -1447,9 +1466,15 @@ void edSetApos(edview *xx) {
 			      NULL);
 	xx->cursor_apos = cpos + xx->cursor_pos;
     }
+
+    /* Send a notification of cursor movement */
+    cursor_notify(xx);
 }
 
 int edSetCursorPos(edview *xx, int type, int rec, int pos) {
+    if (!xx)
+	return 0;
+
     if (type == GT_Seq) {
 	seq_t *s = get_seq(xx->io, rec);
 
@@ -1512,6 +1537,7 @@ int edCursorUp(edview *xx) {
 	xx->cursor_pos = cpos;
     }
 
+    cursor_notify(xx);
     if (!showCursor(xx, 1, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1560,6 +1586,7 @@ int edCursorDown(edview *xx) {
 	xx->cursor_pos = cpos;
     }
 
+    cursor_notify(xx);
     if (!showCursor(xx, 1, 0)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1598,6 +1625,7 @@ int edCursorLeft(edview *xx) {
 	xx->cursor_apos--;
     }
 
+    cursor_notify(xx);
     if (!showCursor(xx, 0, 1)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1635,6 +1663,7 @@ int edCursorRight(edview *xx) {
 	xx->cursor_apos++;
     }
 
+    cursor_notify(xx);
     if (!showCursor(xx, 0, 1)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1692,6 +1721,7 @@ int edContigStart(edview *xx) {
     xx->cursor_rec = xx->cnum;
     xx->cursor_apos = xx->cursor_pos;
 
+    cursor_notify(xx);
     if (!showCursor(xx, 0, 1)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
@@ -1706,6 +1736,7 @@ int edContigEnd(edview *xx) {
     xx->cursor_rec = xx->cnum;
     xx->cursor_apos = xx->cursor_pos;
 
+    cursor_notify(xx);
     if (!showCursor(xx, 0, 1)) {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);

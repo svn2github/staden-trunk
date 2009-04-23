@@ -246,15 +246,13 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
     name_sheet = (edNames *)cmdinfo.clientData;
 
     xx = edview_new(io, atoi(argv[3]), atoi(argv[4]), atoi(argv[5]),
-		    ed, name_sheet,
-		    NULL);
+		    ed, name_sheet, NULL, interp);
     if (!xx) {
 	return TCL_ERROR;
     }
 
     strncpy(xx->seq_win,  Tk_PathName(tkwin), WIN_NAME_SIZE);
     strncpy(xx->name_win, argv[4], WIN_NAME_SIZE);
-    xx->interp = interp;
     
     ed->xx = xx;
     name_sheet->xx = xx;
@@ -393,6 +391,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join",          "select",	 "edit_annotation",
+	"cursor_id",
 	NULL
     };
     enum options {
@@ -403,7 +402,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_CURSOR_UP,      _CURSOR_DOWN,   _CURSOR_LEFT,   _CURSOR_RIGHT,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
-	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION
+	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION,
+	_CURSOR_ID,
     };
 
     if (argc < 2) {
@@ -852,6 +852,12 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     case _EDIT_ANNOTATION:
 	//tagEditor(ed->xx);
+	break;
+
+    case _CURSOR_ID:
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(xx && xx->cursor
+					       ? xx->cursor->id
+					       : -1));
 	break;
     }
 
@@ -2816,7 +2822,7 @@ static void EditorSheetExtension(ClientData clientData, int job, void *data) {
 
     case SHEET_JOB_DESTROY:
 	if (ed->xx) {
-	    puts("delete_edStruct(ed->xx);");
+	    edview_destroy(ed->xx);
 	    ed->xx = NULL;
 	}
 
