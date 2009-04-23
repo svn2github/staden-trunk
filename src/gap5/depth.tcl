@@ -178,13 +178,9 @@ proc 1.5redraw_cursor {w t} {
     if {![info exists ${t}(Raster)]} return;
     set r [set ${t}(Raster)]
 
-    puts 1
-
     foreach id [array names $t.Cursors] {
 	place $t.cursor$id -x [lindex [$r topixmap [set $t.Cursors($id)] 0] 0]
     }
-
-    puts 2
 }
 
 # Cursor drag events
@@ -231,7 +227,7 @@ proc resize1.5 {w} {
     puts "\n==================="
     puts "resize to [winfo width $w]x[winfo height $w]"
 
-    set ${w}(width) [winfo width $w]
+    set ${w}(width) [winfo width $w.xscroll]
     set ${w}(height) [winfo height $w]
 
     foreach id [set ${w}(tracks)] {
@@ -993,29 +989,14 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 	$r configure -width [winfo width $d] -height [winfo height $d]
     }
 
-    if {[set ${t}(R_zoom)] != [set ${w}(xzoom)]} {
-	# Query existing world
-	foreach {X1 Y1 X2 Y2} [$r world] break;
-
-	# Find mid-point of old world
-	set mid [expr {($X1+$X2)/2.0}]
-
-	# Compute approximate new location
-	$r world [set ${w}(x1)] $Y1 [set ${w}(x2)] $Y2
-
-	# Reset to actual world
-	foreach {X1 Y1 X2 Y2} [$r world] break;
-	set delta [expr {($X2-$X1)/2.0}]
-	$r world [expr {$mid-$delta}] $Y1 [expr {$mid+$delta}] $Y2
-
-	set ${t}(R_zoom) [set ${w}(xzoom)]
-    }
-
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
     set wid [expr {$wx2-$wx1+1}]
 #    puts $x1..$x2,[expr {double($x1)/[set ${w}(length)]}]..[expr {double($x2)/[set ${w}(length)]}]
-    $r xview moveto [expr {double($x1-[set ${w}(start)])/[set ${w}(length)]}]
+
+    # Replacement for the scroll/zooming code - just reset world
+    foreach {X1 Y1 X2 Y2} [$r world] break;
+    $r world $x1 $Y1 $x2 $Y2
 
     set cmode [lsearch {{Combined mapping quality} \
 			    {Minimum mapping quality} \
@@ -1137,7 +1118,7 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 
     $d create line $wx1 $h3 $wx2 $h3 -fill black
 
-    foreach {x1 step p1 pstep fmt} [nice_num $x1 [expr {$x2-$x1}] 0] break
+    foreach {x1 step p1 pstep fmt} [nice_num $x1 [expr {$x2-$x1+1}] 0] break
     set dist [expr {$step/[set ${w}(xzoom)]}]
     for {set i $x1; set j $p1} {$i < $x2} {set i [expr {$i+$step}]; set j [expr {$j+$pstep}]} {
 	$d create line [x2c $w $i] $h2 [x2c $w $i] $h3
@@ -1268,8 +1249,8 @@ proc CreateTemplateDisplay {io cnum} {
     set pwin .read_depth[counter]
     1.5Dplot $pwin $io 900 600 $cnum
 #    add_plot $pwin seq_depth 50  -bd 2 -relief raised
-    add_plot $pwin seq_seqs -200 -bd 2 -relief raised
-    add_plot $pwin seq_ruler 50  -bd 2 -relief raised
+    add_plot $pwin seq_seqs -200 -bd 0 -relief raised
+    add_plot $pwin seq_ruler 50  -bd 0 -relief raised
 }
 
 
