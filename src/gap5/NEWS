@@ -1,4 +1,4 @@
-Gap5 1.1.3,  April 17th 2009
+Gap5 1.1.3,  April 24th 2009
 ============================
 
 This version is backwards compatible with v1.1.2 file formats.
@@ -14,6 +14,10 @@ Key changes
         sequences mode, now displays a reduced ascii layout of the
         sequences allowing for the mapping quality to be shaded
         there and to easily visualise the sequence orientation.
+
+*	The contig editor cursor (editing cursor, not scrollbar
+        position) is now both visible and dragable from within the
+        template display.
 
 *	ACE format support in tg_index is back, and it no longer
         chokes on RT, CT and WA lines. Although at present I do not
@@ -34,7 +38,7 @@ Bug fixes / minor changes
 
 * 	The compute_ypos() function used for the pack sequences mode
         of the editor now uses the faster algorithm developed for the
-        template display.
+        template display. Hence "Stacking" mode is now faster.
 
 *	Undo/Redo now behaves better when multiple editors are in use
         on the same contig. Similarly the edits are redrawn instantly

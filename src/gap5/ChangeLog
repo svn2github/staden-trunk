@@ -1,3 +1,65 @@
+2009-04-23  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/baf.c,
+	* tgap/baf.h:
+	(14:23:26) Added PR (primer type) parsing. 
+
+	* gap5/contig_editor.tcl:
+	(14:24:27) Handle incoming CURSOR_NOTIFY events requesting the
+	cursor to be moved. 
+
+	* gap5/depth.tcl:
+	(14:25:25) This plot now registers itself with the contig
+	registration system. As such it now appears in the Results Manager
+	and can display/control the contig editor editing cursors. 
+
+	* gap5/editor_view.c,
+	* gap5/editor_view.h,
+	* gap5/tkEditor.c:
+	(14:27:11) The contig editor edview struct now contains a cursor_t
+	element, holding the private cursor to use used in CURSOR_MOVE
+	messages. This allows integration with other windows. 
+
+	* gap5/depth.tcl:
+	(16:30:41) Fixed an issue with the template display and ruler track
+	not being on the same scale - the width of the Y scrollbar impacted
+	the scaling.
+	
+	Also dramatically simplified the calculation of the world
+	coordinates. What was I thinking of? 
+
+2009-04-21  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/hache_table.c:
+	(14:03:46) HacheItemDestroy now also unlinks the in_use links.
+	
+	This caused crashes previously. 
+
+	* tgap/tg_register.c,
+	* tgap/tg_register.h:
+	(14:07:51) Overhauled the contig deregistration system.
+	Specifically in how we handle removal from the hache table.
+	
+	Also changed the meaning of contig 0. This is not a way to
+	broadcast to all contigs (although we still have a broadcast_event
+	function for this purpose) but rather a registration list for
+	windows that wish to receive events that take place on any contig.
+	(Such as the contig selector or Results Manager.) 
+
+	* gap5/contig_selector.c:
+	(14:09:30) Switched from registering with all contigs to just
+	contig 0. 
+
+	* gap5/contig_editor.tcl,
+	* gap5/tk-io-reg.c:
+	(14:19:18) Added REG_CHILD_EDIT callback instead of sending
+	REG_LENGTH so that windows like the contig selector do not
+	automatically redraw on every contig editor update. 
+
+	* gap5/editor_view.c:
+	(15:36:45) Fixed a bug with sequences sometimes being drawn as tags
+	too due to assumptions on precedence rules. 
+
 2009-04-17  jkbonfield  <jkb@sanger.ac.uk>
 
 	* gap5/template_display.c:
