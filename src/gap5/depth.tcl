@@ -39,6 +39,7 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     set ${w}(yzoom) 1
     set ${w}(xorigin) 0
     set ${w}(width) $wid
+    set ${w}(pwidth) $wid; # 1st guess
     set ${w}(height) $hei
     set ${w}(border) 500
     set ${w}(x1)    0
@@ -49,11 +50,6 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
 
     set ${w}(x1) 0
     set ${w}(x2) [expr {[set ${w}(x1)]+1000}]
-
-    set xstart 0
-    set ${w}(xorigin) [set ${w}(x1)]
-    set ${w}(xzoom) [expr {([set ${w}(x2)]-[set ${w}(x1)]+1)/
-			   double([set ${w}(width)])}]
 
     wm title $w "Contig [[set ${w}(contig)] get_name]"
 
@@ -91,7 +87,15 @@ proc 1.5Dplot {w io wid hei {cnum {}}} {
     bind $w <5> "zoom1.5 $w 0 1 1.1"
     bind $w <4> "zoom1.5 $w 0 1 [expr {1/1.1}]"
 
-    bind $w <Any-Configure> "resize1.5 $w"
+    bind $w <Any-Configure> "after idle {resize1.5 $w}"
+
+    set ${w}(pwidth) [expr {[set ${w}(width)]-21}]
+    puts pwdth=[set ${w}(pwidth)]
+    
+    set ${w}(xorigin) [set ${w}(x1)]
+    set ${w}(xzoom) [expr {([set ${w}(x2)]-[set ${w}(x1)]+1)/
+			   double([set ${w}(pwidth)])}]
+
 
     # Contig registration
     set ${w}(reg) [contig_register \
@@ -154,13 +158,15 @@ proc 1.5plot_contig_event {w type id cdata args} {
 		    bind $t.cursor$cid <ButtonRelease-1> \
 			"1.5cursor_release $t $cid"
 		    bind $t.cursor$cid <Any-Motion> \
-			"1.5cursor_motion $w $t $cid %x"
+			"1.5cursor_motion $w $t $cid %X"
 		}
 		set $t.Cursors($cid) $arg(abspos)
 		set x [lindex [$r topixmap $arg(abspos) 0] 0]
 		incr x -2
+
+		global $t.cursorx$cid
+		set $t.cursorx$cid $x
 		place $t.cursor$cid -x $x
-		update idletasks
 	    }
 	}
 
@@ -197,7 +203,7 @@ proc 1.5cursor_motion {w t id x} {
     if {![info exists ${t}(Raster)]} return;
     set r [set ${t}(Raster)]
 
-    incr x [winfo x $t.cursor$id]
+    incr x -[winfo rootx $t]
     set bx [expr {round([lindex [$r toworld $x 0] 0])}]
 
     contig_notify \
@@ -221,6 +227,8 @@ proc 1.5cursor_release {t id} {
 proc resize1.5 {w} {
     global $w
 
+    if {![info exists ${w}(xzoom)]} return
+
     # We get rogue events when highlighting. Skip these
     if {[winfo width  $w] == [set ${w}(width)] && \
 	[winfo height $w] == [set ${w}(height)]} return
@@ -228,8 +236,9 @@ proc resize1.5 {w} {
     puts "\n==================="
     puts "resize to [winfo width $w]x[winfo height $w]"
 
-    set ${w}(width) [winfo width $w.xscroll]
+    set ${w}(width) [winfo width $w]
     set ${w}(height) [winfo height $w]
+    set ${w}(pwidth) [winfo width $w.xscroll]
 
     foreach id [set ${w}(tracks)] {
 	set t $w.track$id
@@ -240,7 +249,7 @@ proc resize1.5 {w} {
 	set ${t}(height) $height
     }
 
-    set ${w}(x2) [expr {[set ${w}(xzoom)]*[set ${w}(width)] +
+    set ${w}(x2) [expr {[set ${w}(xzoom)]*[set ${w}(pwidth)] +
 			+[set ${w}(x1)] - 1}]
     redraw_plot $w
 }
@@ -264,7 +273,7 @@ proc scrollx1.5 {w cmd args} {
     } elseif {$cmd == "scroll"} {
 	set xpos [expr {[lindex [$sbar get] 0]*$clen}]
 	if {[lindex $args 1] == "pages"} {
-	    set wid [expr {[c2x $w [set ${w}(width)]] - [c2x $w 0]}]
+	    set wid [expr {[c2x $w [set ${w}(pwidth)]] - [c2x $w 0]}]
 	    set xpos [expr {$xpos + $wid/2*[lindex $args 0]}]
 	} else {
 	    set wid [expr {[c2x $w [lindex $args 0]] - [c2x $w 0]}]
@@ -291,7 +300,7 @@ proc set_xzoom {w val} {
     global $w
 
     # Change the scale
-    set wid [set ${w}(width)]
+    set wid [set ${w}(pwidth)]
     set scale [set ${w}(xzoom)]
     set mid [c2x $w [expr {$wid/2.0}]]
     set ${w}(xzoom) [expr {pow(($val+4)/10,4)}]
@@ -344,7 +353,7 @@ proc zoom1.5 {w x y z} {
 	    [expr {$x2/double([set ${w}(length)])}]
 
 	set ${w}(xorigin) [expr $x1]
-	set ${w}(xzoom)   [expr {($x2-$x1+1)/double([set ${w}(width)])}]
+	set ${w}(xzoom)   [expr {($x2-$x1+1)/double([set ${w}(pwidth)])}]
     }
 
     redraw_plot $w seq_depth
@@ -432,7 +441,7 @@ proc yscroll_plot {w t cmd {opt1 {}} {opt2 {}}} {
 
     set ${t}(y1) $y1
     set y2 [expr {$y1+$h}]
-    set wid [set ${w}(width)]
+    set wid [set ${w}(pwidth)]
 
 #    [set ${t}(canvas)] configure -scrollregion [list 0 $y1 $wid $y2]
     puts "$y1 to $y2 out of [set ${t}(scroll_height)]"
@@ -534,7 +543,7 @@ proc seq_depth {w t x1 x2 y1 y2} {
 	[list 0 0 \
 	     [expr [winfo width $d]] \
 	     [expr [winfo height $d]]]
-    set wid  [set ${w}(width)]
+    set wid  [set ${w}(pwidth)]
     set yz   [set ${w}(yzoom)]
 
     set inc [expr {($x2-$x1+1)/double($wid)}]
@@ -648,7 +657,7 @@ proc seq_seqs_init {w t} {
 
     set d    [set ${t}(canvas)]
     set c    [set ${w}(contig)]
-    set wid  [set ${w}(width)]
+    set wid  [set ${w}(pwidth)]
     set yz   [set ${w}(yzoom)]
     set io   [set ${w}(io)]
 
@@ -696,7 +705,7 @@ proc seq_seqs_init {w t} {
 			 -raster $r]
     set td   [set ${t}(TDisp)]
     $r world_scroll 1 1 [set ${w}(length)] 10000
-    $r world 0 0 [expr {[set ${w}(width)]*[set ${w}(xzoom)]}] \
+    $r world 0 0 [expr {[set ${w}(pwidth)]*[set ${w}(xzoom)]}] \
 	[winfo height $d]
     set ${t}(R_zoom) [set ${w}(xzoom)]
 
@@ -776,8 +785,14 @@ proc invoke_editor {w t x} {
     set x [lindex [$r toworld $x 0] 0]
     if {$found} {
 	global $t.Id2Cid
+	if {[info exists $t.Id2Cid($id)]} {
+	    set cid [set $t.Id2Cid($id)]
+	} else {
+	    set cid 0
+	}
+
 	contig_notify -io $io -cnum [set ${w}(cnum)] -type CURSOR_NOTIFY \
-	    -args [list id      [set $t.Id2Cid($id)] \
+	    -args [list id      $cid \
 		        job     MOVE \
 		        seq     [set ${w}(cnum)] \
 		        abspos  $x \
@@ -973,7 +988,7 @@ proc seq_seqs {w t x1 x2 y1 y2} {
 
     set d    [set ${t}(canvas)]
     set c    [set ${w}(contig)]
-    set wid  [set ${w}(width)]
+    set wid  [set ${w}(pwidth)]
     set yz   [set ${w}(yzoom)]
     set io   [set ${w}(io)]
 
@@ -1101,7 +1116,7 @@ proc seq_ruler {w t x1 x2 y1 y2} {
 
     set c    [set ${w}(contig)]
     set d    [set ${t}(canvas)]
-    set wid  [set ${w}(width)]
+    set wid  [set ${w}(pwidth)]
 
     set wx1 [x2c $w $x1]
     set wx2 [x2c $w $x2]
