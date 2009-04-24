@@ -160,6 +160,7 @@ proc 1.5plot_contig_event {w type id cdata args} {
 		set x [lindex [$r topixmap $arg(abspos) 0] 0]
 		incr x -2
 		place $t.cursor$cid -x $x
+		update idletasks
 	    }
 	}
 
@@ -197,7 +198,7 @@ proc 1.5cursor_motion {w t id x} {
     set r [set ${t}(Raster)]
 
     incr x [winfo x $t.cursor$id]
-    set bx [lindex [$r toworld $x 0] 0]
+    set bx [expr {round([lindex [$r toworld $x 0] 0])}]
 
     contig_notify \
 	-io [set ${w}(io)] \
