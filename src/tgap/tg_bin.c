@@ -67,6 +67,7 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
 
     nroot->child[0] = old_root_id;
     nroot->child[1] = 0;
+    nroot->nseqs = oroot->nseqs;
 
     nroot->flags |= BIN_BIN_UPDATED;
     cache_decr(io, nroot);
@@ -103,6 +104,7 @@ static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
 
     nroot->child[0] = 0;
     nroot->child[1] = old_root_id;
+    nroot->nseqs = oroot->nseqs;
 
     nroot->flags |= BIN_BIN_UPDATED;
     cache_decr(io, nroot);
