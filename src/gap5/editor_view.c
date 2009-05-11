@@ -1031,7 +1031,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		}
 	    }
 
-	    cache_decr(xx->io, sorig);
+	    //cache_decr(xx->io, sorig);
 
 	    if (s != sorig)
 		free(s);

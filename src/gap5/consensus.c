@@ -195,6 +195,8 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	int left, right;
 	int off = 0;
 
+	//cache_incr(io, sorig);
+
 	/* Complement data on-the-fly */
 	if ((s->len < 0) ^ r[i].comp) {
 	    s = dup_seq(s);
@@ -250,7 +252,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    depth[sp-start+j]++;
 	}
 
-	cache_decr(io, sorig);
+	//cache_decr(io, sorig);
 
 	if (s != sorig)
 	    free(s);
