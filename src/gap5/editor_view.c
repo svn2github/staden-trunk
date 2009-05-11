@@ -113,8 +113,13 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 void edview_destroy(edview *xx) {
     if (xx->cursor)
 	delete_contig_cursor(xx->io->base, xx->cnum, xx->cursor->id, 1);
+
     if (xx->r)
 	free(xx->r);
+
+    if (xx->anno_hash)
+	HacheTableDestroy(xx->anno_hash, 0);
+
     xfree(xx);
 }
 
