@@ -847,6 +847,8 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    left = s->left;
 	    right = s->right;
 
+	    if (l > MAX_SEQ_LEN)
+		seq = (char *)malloc(l);
 	    memcpy(seq, s->seq, l);
 
 	    if (sp < xx->displayPos) {
@@ -1030,6 +1032,11 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		free(s);
 
 	    i++;
+
+	    if (seq != seq_a) {
+		free(seq);
+		seq = seq_a;
+	    }
 	}
 
 	if (xx->refresh_flags & (ED_DISP_READS | ED_DISP_SEQ))
