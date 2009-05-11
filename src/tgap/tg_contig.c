@@ -622,11 +622,13 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
 	next = SPLAY_NEXT(XTREE, &xtree, node);
 	SPLAY_REMOVE(XTREE, &xtree, node);
+	free(node); 
     }
 
     for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
 	next = SPLAY_NEXT(YTREE, &ytree, node);
 	SPLAY_REMOVE(YTREE, &ytree, node);
+	free(node); 
     }
 
     return 0;
