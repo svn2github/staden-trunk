@@ -41,7 +41,8 @@ int sequence_new_from(GapIO *io, seq_t *s) {
 	(s->alignment  ? strlen(s->alignment)  : 0) +
 	ABS(s->len)*(1+sequence_conf_size(s));
 
-    rec = io->iface->seq.create(io->dbh, s);
+    //    rec = io->iface->seq.create(io->dbh, s);
+    rec = cache_item_create(io, GT_Seq, s);
     n = (seq_t *)cache_search(io, GT_Seq, rec);
     n = cache_rw(io, n);
     n = cache_item_resize(n, sizeof(*n) + extra_len);

@@ -26,6 +26,7 @@
 #define GT_Track       20
 #define GT_AnnoEle     21
 #define GT_Anno        22
+#define GT_SeqBlock    23
 
 typedef struct {
     GCardinal pos;
@@ -125,6 +126,7 @@ typedef struct {
  * conf		ABS(len)    (iff format != SEQ_FORMAT_CNF4)
  * conf		4*ABS(len)  (iff format == SEQ_FORMAT_CNF4, in order ACGT,ACGT)
  */
+struct seq_block;
 typedef struct {
     signed int  pos;  /* left end, regardless of direction */
     signed int len;   /* +ve or -ve indicates direction */
@@ -147,8 +149,21 @@ typedef struct {
     char *alignment;  /* alignment; blank => obvious guess from pads */
     char *seq;        /* sequence in ASCII format */
     char *conf;       /* 1 or 4 values per base depending on flags */
+    struct seq_block *block; /* seq_block_t pointer and index into it */
+    int idx; 
+
     char *data;       /* packed memory struct; names/al/seq/conf are here */
 } seq_t;
+
+/* Maximum size of a block, actual size maybe less if long sequences */
+#define SEQ_BLOCK_BITS 10
+#define SEQ_BLOCK_SZ (1<<SEQ_BLOCK_BITS)
+typedef struct seq_block {
+    int    est_size;
+    int    rec[SEQ_BLOCK_SZ];
+    seq_t *seq[SEQ_BLOCK_SZ];
+} seq_block_t;
+
 
 /* Sequencing technologies for seq_t.seq_tech */
 #define STECH_UNKNOWN 0

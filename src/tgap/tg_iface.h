@@ -105,6 +105,10 @@ typedef struct {
 } io_track;
 
 typedef struct {
+    STANDARD_IFACE
+} io_seq_block;
+
+typedef struct {
     /* Higher level database-level functions */
     int (*create)(char *dbname);
     void *(*connect)(char *dbname, int ro);
@@ -124,6 +128,7 @@ typedef struct {
     io_anno         anno;
     io_dnasrc       dnasrc;
     io_vector       vector;
+    io_seq_block    seq_block;
 } iface;
 
 #endif /* _TG_IO_LOW_H_ */

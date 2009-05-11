@@ -8,7 +8,8 @@
 #include "tg_iface_g.h"
 #include "tg_utils.h"
 #include "b+tree2.h"
-/* #include "io_lib/deflate_interlaced.h" */
+#include "io_lib/deflate_interlaced.h"
+#include "dna_utils.h"
 
 #define INDEX_NAMES
 
@@ -627,6 +628,9 @@ void btree_destroy(g_io *io, HacheTable *h) {
 	}
     }
 
+    if (h->clientdata)
+	free(h->clientdata);
+
     HacheTableDestroy(h, 0);
 }
 
@@ -786,8 +790,22 @@ static int io_database_disconnect(void *dbh) {
     //btree_print(io->seq_name_tree, io->seq_name_tree->root, 0);
 
     io_database_commit(dbh);
-    btree_destroy(io, io->seq_name_hash);
-    btree_destroy(io, io->contig_name_hash);
+
+    if (io->seq_name_hash) {
+	btree_destroy(io, io->seq_name_hash);
+	if (io->seq_name_tree) {
+	    free(io->seq_name_tree->cd);
+	    free(io->seq_name_tree);
+	}
+    }
+
+    if (io->contig_name_hash) {
+	btree_destroy(io, io->contig_name_hash);
+	if (io->contig_name_tree) {
+	    free(io->contig_name_tree->cd);
+	    free(io->contig_name_tree);
+	}
+    }
 
     g_disconnect_client_(io->gdb, io->client);
     g_shutdown_database_(io->gdb);
@@ -1208,6 +1226,360 @@ static cached_item *io_vector_read(void *dbh, GRec rec) {
 /* ------------------------------------------------------------------------
  * bin access methods
  */
+#include <zlib.h>
+static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
+    z_stream s;
+    char *cdata = NULL; /* Compressed output */
+    int cdata_alloc = 0;
+    int cdata_pos = 0;
+    int err;
+
+    cdata = malloc(cdata_alloc = size*1.05+10);
+    cdata_pos = 0;
+
+    /* Initialise zlib stream */
+    s.zalloc = Z_NULL; /* use default allocation functions */
+    s.zfree  = Z_NULL;
+    s.opaque = Z_NULL;
+    s.next_in  = (unsigned char *)data;
+    s.avail_in = size;
+    s.total_in = 0;
+    s.next_out  = cdata;
+    s.avail_out = cdata_alloc;
+    s.total_out = 0;
+    s.data_type = Z_BINARY;
+
+    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
+		       5, Z_DEFAULT_STRATEGY);
+
+    /* Encode to 'cdata' array */
+    for (;s.avail_in;) {
+	s.next_out = (unsigned char *)&cdata[cdata_pos];
+	s.avail_out = cdata_alloc - cdata_pos;
+	if (cdata_alloc - cdata_pos <= 0) {
+	    fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
+	    return NULL;
+	}
+	err = deflate(&s, Z_NO_FLUSH);
+	cdata_pos = cdata_alloc - s.avail_out;
+	if (err != Z_OK) {
+	    fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+	    break;
+	}
+    }
+    deflate(&s, Z_FINISH);
+    *cdata_size = s.total_out;
+
+    deflateEnd(&s);
+    return cdata;
+}
+
+static char *mem_deflate_parts(char *data,
+			       size_t *part_size, int nparts,
+			       size_t *cdata_size) {
+    z_stream s;
+    char *cdata = NULL; /* Compressed output */
+    int cdata_alloc = 0;
+    int cdata_pos = 0;
+    int err, i;
+    size_t size = 0;
+
+    for (i = 0; i < nparts; i++)
+	size += part_size[i];
+
+    cdata = malloc(cdata_alloc = size*1.05+256*nparts);
+    cdata_pos = 0;
+
+    /* Initialise zlib stream */
+    s.zalloc = Z_NULL; /* use default allocation functions */
+    s.zfree  = Z_NULL;
+    s.opaque = Z_NULL;
+    s.next_in  = (unsigned char *)data;
+    s.total_in = 0;
+    s.next_out  = cdata;
+    s.avail_out = cdata_alloc;
+    s.total_out = 0;
+    s.data_type = Z_BINARY;
+
+    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
+		       5, Z_DEFAULT_STRATEGY);
+
+    /* Encode to 'cdata' array */
+    for (i = 0; i < nparts; i++) {
+	s.avail_in = part_size[i];
+	for (;s.avail_in;) {
+	    s.next_out = (unsigned char *)&cdata[cdata_pos];
+	    s.avail_out = cdata_alloc - cdata_pos;
+	    if (cdata_alloc - cdata_pos <= 0) {
+		fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
+		return NULL;
+	    }
+	    err = deflate(&s, Z_SYNC_FLUSH); // also try Z_FULL_FLUSH
+	    cdata_pos = cdata_alloc - s.avail_out;
+	    if (err != Z_OK) {
+		fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+		break;
+	    }
+	}
+    }
+    deflate(&s, Z_FINISH);
+    *cdata_size = s.total_out;
+
+    deflateEnd(&s);
+    return cdata;
+}
+
+static char *mem_deflate_lparts(char *data,
+				size_t *part_size, int *level, int nparts,
+				size_t *cdata_size) {
+    z_stream s;
+    char *cdata = NULL; /* Compressed output */
+    int cdata_alloc = 0;
+    int cdata_pos = 0;
+    int err, i;
+    size_t size = 0;
+
+    for (i = 0; i < nparts; i++)
+	size += part_size[i];
+
+    cdata = malloc(cdata_alloc = size*1.05+256*nparts);
+    cdata_pos = 0;
+
+    /* Initialise zlib stream */
+    s.zalloc = Z_NULL; /* use default allocation functions */
+    s.zfree  = Z_NULL;
+    s.opaque = Z_NULL;
+    s.next_in  = (unsigned char *)data;
+    s.total_in = 0;
+    s.next_out  = cdata;
+    s.avail_out = cdata_alloc;
+    s.total_out = 0;
+    s.data_type = Z_BINARY;
+
+    err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
+		       5, Z_DEFAULT_STRATEGY);
+
+    /* Encode to 'cdata' array */
+    for (i = 0; i < nparts; i++) {
+	s.avail_in = part_size[i];
+	for (;s.avail_in;) {
+	    s.next_out = (unsigned char *)&cdata[cdata_pos];
+	    s.avail_out = cdata_alloc - cdata_pos;
+	    if (cdata_alloc - cdata_pos <= 0) {
+		fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
+		return NULL;
+	    }
+	    deflateParams(&s, level[i], Z_DEFAULT_STRATEGY);
+	    err = deflate(&s, Z_SYNC_FLUSH); // also try Z_FULL_FLUSH
+	    cdata_pos = cdata_alloc - s.avail_out;
+	    if (err != Z_OK) {
+		fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+		break;
+	    }
+	}
+    }
+    deflate(&s, Z_FINISH);
+    *cdata_size = s.total_out;
+
+    deflateEnd(&s);
+    return cdata;
+}
+
+static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
+    z_stream s;
+    char *data = NULL; /* Uncompressed output */
+    int data_alloc = 0;
+    int err;
+
+    /* Starting point at uncompressed size, 4x compressed */
+    data = malloc(data_alloc = csize*4+10);
+
+    /* Initialise zlib stream */
+    s.zalloc = Z_NULL; /* use default allocation functions */
+    s.zfree  = Z_NULL;
+    s.opaque = Z_NULL;
+    s.next_in  = (unsigned char *)cdata;
+    s.avail_in = csize;
+    s.total_in = 0;
+    s.next_out  = data;
+    s.avail_out = data_alloc;
+    s.total_out = 0;
+
+    err = inflateInit(&s);
+
+    /* Decode to 'data' array */
+    for (;s.avail_in;) {
+	s.next_out = (unsigned char *)&data[s.total_out];
+	err = inflate(&s, Z_NO_FLUSH);
+	if (err == Z_STREAM_END)
+	    break;
+
+	if (err != Z_OK) {
+	    fprintf(stderr, "zlib inflate error: %s\n", s.msg);
+	    break;
+	}
+
+	/* More to come, so realloc */
+	data = realloc(data, data_alloc += s.avail_in*4 + 10);
+	s.avail_out += s.avail_in*4+10;
+    }
+    inflateEnd(&s);
+
+    *size = s.total_out;
+    return data;
+}
+
+static char *pack_rng_array(GRange *rng, int nr, int *sz) {
+    int i;
+    size_t part_sz[7];
+    GRange last;
+    char *cp[6], *cp_orig[6], *out, *out_orig;
+
+    memset(&last, 0, sizeof(last));
+
+    /* Pack the 6 structure elements to their own arrays */
+    for (i = 0; i < 6; i++)
+	cp[i] = cp_orig[i] = malloc(nr * 5);
+
+    for (i = 0; i < nr; i++) {
+	GRange r = rng[i];
+
+	r.end   -= r.start;
+	r.start -= last.start;
+	r.rec   -= last.rec;
+
+	cp[0] += int2u7(r.start, cp[0]);
+	cp[1] += int2u7(r.end,   cp[1]);
+	cp[2] += int2u7(r.rec,   cp[2]);
+	cp[3] += int2u7(r.mqual, cp[3]);
+	cp[4] += int2u7(r.flags, cp[4]);
+	if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
+	    cp[5] += int2s7(r.pair_rec - last.pair_rec, cp[5]);
+
+	last = rng[i];
+    }
+
+    for (i = 0; i < 6; i++)
+	part_sz[i+1] = cp[i]-cp_orig[i];
+
+    /* Construct a header with nr and the size of the 6 packed struct fields */
+    *sz = 7*5 + part_sz[1] + part_sz[2] + part_sz[3] +
+	part_sz[4] + part_sz[5] + part_sz[6];
+
+    out = out_orig = (char *)malloc(*sz);
+    out += int2u7(nr, out);
+    for (i = 0; i < 6; i++)
+	out += int2u7(cp[i]-cp_orig[i], out);
+    part_sz[0] = out-out_orig;
+
+    /* Followed by the serialised 6 packed fields themselves */
+    for (i = 0; i < 6; i++) {
+	/* RLE encode it */
+	int len = cp[i]-cp_orig[i];
+#if 0
+	int last_sym = 0, count = 0, j;
+
+	for (j = 0; j < len; j++) {
+	    *out++ = cp_orig[i][j];
+	    if (cp_orig[i][j] == last_sym)
+		count++;
+	    else
+		count = 0;
+
+	    if (count >= 2) {
+		int k = 0;
+		while (cp_orig[i][++j] == last_sym && k < 255)
+		    k++;
+		*out++ = k;
+		if (cp_orig[i][j] != last_sym)
+		    j--;
+	    }
+	    last_sym = cp_orig[i][j];
+	}
+#else
+	memcpy(out, cp_orig[i], len);
+	out += len;
+#endif
+	free(cp_orig[i]);
+    }
+
+    *sz = out-out_orig;
+
+    //write(2, out_orig, *sz);
+
+    /* Gzip it too */
+    {
+    	char *gzout;
+	size_t ssz;
+
+	if (*sz < 512)
+	    gzout = mem_deflate(out_orig, *sz, &ssz);
+	else
+	    gzout = mem_deflate_parts(out_orig, part_sz, 7, &ssz);
+	*sz = ssz;
+
+    	free(out_orig);
+    	out_orig = gzout;
+    }
+
+    //write(2, out_orig, *sz);
+
+    return out_orig;
+}
+
+static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
+    int i, off[6];
+    char *cp[6], *zpacked = NULL;
+    GRange last, *r, *l = &last;
+    size_t ssz;
+
+    /* First of all, inflate the compressed data */
+    zpacked = packed = mem_inflate(packed, packed_sz, &ssz);
+    packed_sz = ssz;
+
+    /* Unpack number of ranges */
+    packed += u72int(packed, nr);
+
+    /* Unpack offsets of the 6 range components */
+    for (i = 0; i < 6; i++) 
+	packed += u72int(packed, &off[i]);
+    cp[0] = packed;
+    for (i = 1; i < 6; i++)
+	cp[i] = cp[i-1] + off[i-1];
+
+    r = (GRange *)malloc(*nr * sizeof(*r));
+    memset(l, 0, sizeof(*l));
+
+    /* And finally unpack from the 6 components in parallel for each struct */
+    for (i = 0; i < *nr; i++) {
+	cp[0] += u72int(cp[0], &r[i].start);
+	cp[1] += u72int(cp[1], &r[i].end);
+	cp[2] += u72int(cp[2], &r[i].rec);
+	cp[3] += u72int(cp[3], &r[i].mqual);
+	cp[4] += u72int(cp[4], &r[i].flags);
+	if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
+	    int32_t pr;
+	    cp[5] += s72int(cp[5], &pr);
+	    r[i].pair_rec = pr + l->pair_rec;
+	} else {
+	    r[i].pair_rec = 0;
+	}
+
+	r[i].rec += l->rec;
+	r[i].start += l->start;
+	r[i].end += r[i].start;
+
+	l = &r[i];
+    }
+
+    assert(cp[5] - zpacked == packed_sz);
+
+    if (zpacked)
+	free(zpacked);
+
+    return r;
+}
+
 static cached_item *io_bin_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
@@ -1256,15 +1628,27 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     if (b->range) {
 	GViewInfo vi;
 	int nranges;
+	GRange *r;
+	char *buf;
 
 	v = lock(io, b->range, G_LOCK_RO);
 	g_view_info_(io->gdb, io->client, v, &vi);
-	nranges = vi.used / sizeof(GRange);
+	
+	buf = (char *)malloc(vi.used);
+	g_read(io, v, buf, vi.used);
+	r = unpack_rng_array(buf, vi.used, &nranges);
+	free(buf);
+
+	//printf("Unpacked %d ranges from %d bytes\n", nranges, vi.used);
 
 	bin->rng = ArrayCreate(sizeof(GRange), nranges);
+	if (ArrayBase(GRange, bin->rng))
+	    free(ArrayBase(GRange, bin->rng));
+	ArrayBase(GRange, bin->rng) = r;
 	ArrayRef(bin->rng, nranges-1);
-	g_read(io, v, ArrayBase(GRange, bin->rng),
-	       nranges * sizeof(GRange));
+
+	//	g_read(io, v, ArrayBase(GRange, bin->rng),
+	//	       nranges * sizeof(GRange));
 	unlock(io, v);
     }
 
@@ -1288,29 +1672,6 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     return ci;
 }
 
-static char *pack_rng_array(GRange *rng, int nr) {
-    int i, j;
-    GRange l2;
-    char *out = malloc(nr * sizeof(*rng));
-
-    memset(&l2, 0, sizeof(l2));
-
-    for (i = 0; i < nr; i++) {
-	GRange *r = &rng[i];
-	r->end -= r->start;
-	for (j = 0; j < sizeof(GRange); j++) {
-	    /* Rotate it; this doesn't work, but should. Why? */
-	    out[i+nr*j] = ((char *)r)[j] - ((char *)&l2)[j];
-	    //out[i*sizeof(GRange)+j] = ((char *)r)[j] - ((char *)&l2)[j];
-	}
-	l2 = *r;
-	r->end += r->start;
-    }
-
-    //write(2, out, nr * sizeof(*rng));
-    return out;
-}
-
 static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     GBin g;
     int err = 0;
@@ -1318,6 +1679,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     /* Ranges */
     if (bin->flags & BIN_RANGE_UPDATED) {
 	GView v;
+	char *cp;
+	int sz;
 
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
@@ -1326,11 +1689,29 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
-	//pack_rng_array(ArrayBase(GRange, bin->rng), ArrayMax(bin->rng));
+	cp = pack_rng_array(ArrayBase(GRange, bin->rng), ArrayMax(bin->rng),
+			    &sz);
+	//printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
+
+#ifdef DEBUG
+	{
+	    char fn[1024];
+	    sprintf(fn, "/tmp/jkb/rng.%d", bin->rec);
+	    int fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	    if (fd == -1) {
+		perror (fn);
+	    } else {
+		write(fd, cp, sz);
+		close(fd);
+	    }
+	}
+#endif
 
 	v = lock(io, bin->rng_rec, G_LOCK_EX);
-	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
-		       sizeof(GRange) * ArrayMax(bin->rng));
+	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
+	//	       sizeof(GRange) * ArrayMax(bin->rng));
+	err |= g_write(io, v, cp, sz);
+	free(cp);
 	err |= unlock(io, v);
     }
 
@@ -1369,6 +1750,20 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
 	g.nseqs       = bin->nseqs;
+
+#ifdef DEBUG
+	{
+	    char fn[1024];
+	    sprintf(fn, "/tmp/jkb/bin.%d", bin->rec);
+	    int fd = open(fn, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+	    if (fd == -1) {
+		perror (fn);
+	    } else {
+		write(fd, &g, sizeof(g));
+		close(fd);
+	    }
+	}
+#endif
 
 	err |= g_write(io, v, &g, sizeof(g));
 	g_flush(io, v);
@@ -1708,6 +2103,28 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     return ci;
 }
 
+/* basic MTF code */
+static unsigned char order[256];
+static void reorder_init(void) {
+    int i;
+    for (i = 0; i < 256; i++)
+	order[i] = i;
+}
+static int reorder(int c) {
+    int i;
+    for (i = 0; i < 256; i++) {
+	if (order[i] == c)
+	    break;
+    }
+    if (i == 256)
+	abort();
+
+    memmove(&order[1], &order[0], i);
+    order[0] = c;
+
+    return i;
+}
+
 static cached_item *io_seq_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     void *bloc;
@@ -1726,6 +2143,8 @@ static cached_item *io_seq_read(void *dbh, GRec rec) {
 
     ci = seq_decode(bloc, bloc_len, rec);
     free(bloc);
+
+    printf("Read rec %d => %p\n", rec, ci);
 
     if (!ci)
 	return NULL;
@@ -1788,6 +2207,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	trace_name_len = 255;
 
     seq_len = ABS(seq->len);
+
+    seq->format = SEQ_FORMAT_CNF1;
 
     /* Auto-detect format where possible */
     if (seq->format == 0) {
@@ -1921,21 +2342,54 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	    unsigned char c3 = i+2 < seq_len ? seq->seq[i+2] : 0;
 	    *cp++ = base2val_cnf1[c1] + base2val_cnf1[c2]*6 + base2val_cnf1[c3]*36;
 	}
-	if (1) {
-	    for (i = 0; i < seq_len; i = j) {
-		j = i+1;
-		while (j-i<257 && j < seq_len && seq->conf[i]==seq->conf[j])
-		    j++;
-
-		if (j-i == 1) {
-		    *cp++ = seq->conf[i];
-		} else {
-		    *cp++ = seq->conf[i];
-		    *cp++ = seq->conf[i];
-		    *cp++ = j-i-2;
-		}
-	    }  
+	for (i = 0; i < seq_len; i++) {
+	    *cp++ = seq->conf[i];
 	}
+#else
+#if 1
+    {
+	char tmp[1024], *t = tmp;
+	static huffman_codeset_t *cs = NULL;
+	block_t *blk;
+
+	if (!cs) {
+	    huffman_code_t codes[] = {
+	{  0,  2}, {  1,  2}, {  2,  3}, {  3,  3}, {  4,  6}, { 28,  6},
+	{ 29,  6}, { 30,  6}, { 31,  6}, { 32,  6}, {'T',  6}, {  5,  7},
+	{  6,  7}, { 25,  7}, { 26,  7}, { 27,  7}, { 33,  7}, { 34,  7},
+	{'C',  7}, {'D',  7}, {'G',  7}, {'H',  7}, {  7,  8}, {  8,  8},
+	{ 21,  8}, { 22,  8}, { 23,  8}, { 24,  8}, {'A',  8}, {'B',  8},
+	{'E',  8}, {  9,  9}, { 10,  9}, { 11,  9}, { 16,  9}, { 17,  9},
+	{ 18,  9}, { 19,  9}, { 20,  9}, { 12, 10}, { 13, 10}, { 15, 11},
+	{'m', 12}, {'q', 13}, {'z', 13}, { 14, 15}, { 35, 15}, { 37, 15},
+	{ 43, 15}, { 45, 15}, { 46, 15}, {'0', 15}, {'1', 15}, {'2', 15},
+	{'3', 15}, {'4', 15}, {'5', 15}, {'6', 15}, {'8', 15}, {'L', 15},
+	{'P', 15}, {'a', 15}, {'c', 15}, {'d', 15}, {'e', 15}, {'f', 15},
+	{'g', 15}, {'h', 15}, {'i', 15}, {'n', 15}, {'o', 15}, {'p', 15},
+	{'r', 15}, {'s', 15}, {'t', 15}, {'u', 15}, {256 /* EOF */, 15},
+	    };
+
+	    cs = codes2codeset(codes, sizeof(codes)/sizeof(huffman_code_t), 99);
+	}
+
+	reorder_init();
+	for (i = 0; i < seq_len; i++) {
+	    *t++ = reorder(seq->seq[i]);
+	}
+	reorder_init();
+	for (i = 0; i < seq_len; i++) {
+	    *t++ = reorder(seq->conf[i]);
+	}
+
+	blk = block_create(NULL, 8192);
+	huffman_multi_encode(blk, cs, 99, tmp, seq_len*2);
+
+	//	write(1, blk->data, blk->byte + (blk->bit != 0));
+	//	write(2, tmp, seq_len*2);
+	memcpy(cp, blk->data, blk->byte + (blk->bit != 0));
+	cp += blk->byte + (blk->bit != 0);
+	block_destroy(blk, 0);
+    }
 #else
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->seq[i];
@@ -1943,6 +2397,7 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->conf[i];
 	}
+#endif
 #endif
 	break;
 
@@ -2039,6 +2494,400 @@ static int io_seq_index_add(void *dbh, char *name, GRec rec) {
     btree_insert(io->seq_name_tree, name, rec);
     return io->seq_name_tree->root->rec;
 }
+
+/* ------------------------------------------------------------------------
+ * seq_block access methods
+ */
+static cached_item *io_seq_block_read(void *dbh, GRec rec) {
+    g_io *io = (g_io *)dbh;
+    GView v;
+    cached_item *ci;
+    seq_block_t *b;
+    unsigned char *buf, *cp;
+    size_t buf_len;
+    seq_t in[SEQ_BLOCK_SZ];
+    int i, last;
+
+    set_dna_lookup();
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return NULL;
+
+    if (!(ci = cache_new(GT_SeqBlock, rec, v, NULL, sizeof(*b))))
+	return NULL;
+
+    b = (seq_block_t *)&ci->data;
+    cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
+
+    /* Ungzip it too */
+    if (1) {
+	size_t ssz;
+	buf = mem_inflate(buf, buf_len, &ssz);
+	free(cp);
+	cp = buf;
+	buf_len = ssz;
+    }
+    b->est_size = buf_len;
+
+    if (!buf_len) {
+	memset(&b->rec[0], 0, SEQ_BLOCK_SZ*sizeof(b->rec[0]));
+	memset(&b->seq[0], 0, SEQ_BLOCK_SZ*sizeof(b->seq[0]));
+	free(buf);
+	return ci;
+    }
+
+    /* Decode the fixed size components of our sequence structs */
+    /* Bin */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++)
+	cp += u72int(cp, &in[i].bin);
+
+    /* Bin index */
+    for (last = i = 0; i < SEQ_BLOCK_SZ; i++) {
+	int32_t bi;
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &bi);
+	in[i].bin_index = last + bi;
+    }
+
+    /* left clip */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].left);
+    }
+
+    /* right clip */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].right);
+    }
+
+    /* length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].len);
+    }
+
+    /* parent rec */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].parent_rec);
+    }
+
+    /* parent type */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	in[i].parent_type = *cp++;
+    }
+
+    /* flags */
+    for (i = 0 ; i < SEQ_BLOCK_SZ; i++) { 
+	if (!in[i].bin) continue;
+	unsigned char f = *cp++;
+	in[i].seq_tech = f & 7;
+	in[i].flags = (f >> 3) & 7;
+	in[i].format = (f >> 6) & 3;
+	if (in[i].flags & SEQ_COMPLEMENTED)
+	    in[i].len = -in[i].len;
+    }
+
+    /* mapping quality */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	in[i].mapping_qual = *cp++;
+    }
+
+    /* name length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].name_len);
+    }
+
+    /* trace name length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].trace_name_len);
+    }
+
+    /* alignment length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	cp += u72int(cp, &in[i].alignment_len);
+    }
+
+
+    /* Convert our static structs to cached_items */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (in[i].bin) {
+	    cached_item *si;
+	    size_t extra_len;
+
+	    extra_len =
+		sizeof(seq_t) + 
+		in[i].name_len +
+		in[i].trace_name_len +
+		in[i].alignment_len + 
+		ABS(in[i].len) +
+		ABS(in[i].len) * (in[i].format == SEQ_FORMAT_CNF4 ? 4 : 1);
+	    if (!(si = cache_new(GT_Seq, 0, 0, NULL, extra_len)))
+		return NULL;
+
+	    b->rec[i] = (rec << SEQ_BLOCK_BITS) + i;
+	    b->seq[i] = (seq_t *)&si->data;
+	    in[i].rec = (rec << SEQ_BLOCK_BITS) + i;
+	    in[i].anno = NULL;
+	    *b->seq[i] = in[i];
+	    b->seq[i]->block = b;
+	    b->seq[i]->idx = i;
+	} else {
+	    b->rec[i] = 0;
+	    b->seq[i] = NULL;
+	}
+    }
+
+    /* Decode variable sized components */
+    /* Names */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->name = (char *)&b->seq[i]->data;
+	memcpy(b->seq[i]->name, cp, b->seq[i]->name_len);
+	cp += b->seq[i]->name_len;
+	b->seq[i]->name[b->seq[i]->name_len] = 0;
+    }
+
+    /* Trace names, delta from seq name */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->trace_name = b->seq[i]->name + b->seq[i]->name_len + 1;
+	if (b->seq[i]->trace_name_len) {
+	    int tlen = *cp++;
+	    memcpy(b->seq[i]->trace_name, b->seq[i]->name, tlen);
+	    memcpy(&b->seq[i]->trace_name[tlen], cp,
+		   b->seq[i]->trace_name_len - tlen);
+	    cp += b->seq[i]->trace_name_len - tlen;
+	}
+	b->seq[i]->trace_name[b->seq[i]->trace_name_len] = 0;
+    }
+
+    /* Alignment strings (unused at present) */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->alignment = b->seq[i]->trace_name + b->seq[i]->trace_name_len + 1;
+	memcpy(b->seq[i]->alignment, cp, b->seq[i]->alignment_len);
+	cp += b->seq[i]->alignment_len;
+	b->seq[i]->alignment[b->seq[i]->alignment_len] = 0;
+    }
+
+    /* Sequence */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->seq = b->seq[i]->alignment + b->seq[i]->alignment_len + 1;
+	memcpy(b->seq[i]->seq, cp, ABS(b->seq[i]->len));
+	if (b->seq[i]->len < 0)
+	    complement_seq(b->seq[i]->seq, -b->seq[i]->len);
+	cp += ABS(b->seq[i]->len);
+    }
+
+    /* Quality */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!b->seq[i]) continue;
+	b->seq[i]->conf = b->seq[i]->seq + ABS(b->seq[i]->len);
+	memcpy(b->seq[i]->conf, cp, ABS(b->seq[i]->len));
+	cp += ABS(b->seq[i]->len);
+    }
+
+    assert(cp - buf == buf_len);
+    free(buf);
+
+    return ci;
+}
+
+static int io_seq_block_write(void *dbh, cached_item *ci) {
+    int err;
+    g_io *io = (g_io *)dbh;
+    seq_block_t *b = (seq_block_t *)&ci->data;
+    int i, last_index;
+    char *cp, *cp_start;
+    char *out[17], *out_start[17];
+    size_t out_size[17], total_size;
+    int level[17];
+
+    set_dna_lookup();
+
+    /* Compute worst-case sizes, for memory allocation */
+    for (i = 0; i < 17; i++) {
+	out_size[i] = 0;
+    }
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	seq_t *s = b->seq[i];
+	if (!s) {
+	    out_size[0]++;
+	    continue;
+	}
+
+	out_size[0] += 5; /* bin */
+	out_size[1] += 5; /* bin_index */
+	out_size[2] += 5; /* left */
+	out_size[3] += 5; /* right */
+	out_size[4] += 5; /* len */
+	out_size[5] += 5; /* parent_rec */
+	out_size[6] ++;   /* parent type */
+	out_size[7] ++;   /* format */
+	out_size[8] ++;   /* m.qual */
+	out_size[9] += 5; /* name len */
+	out_size[10]+= 5; /* trace name len */
+	out_size[11]+= 5; /* alignment len */
+	out_size[12]+= s->name_len+1;
+	out_size[13]+= s->trace_name_len;
+	out_size[14]+= s->alignment_len;
+	out_size[15]+= ABS(s->len); /* seq */
+	out_size[16]+= ABS(s->len) * (s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
+    }
+    for (i = 0; i < 17; i++)
+	out_start[i] = out[i] = malloc(out_size[i]+1);
+
+
+    /* serialised sequences, separated by type of data */
+    last_index = 0;
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	int delta;
+	seq_t *s = b->seq[i];
+
+	if (!s) {
+	    *out[0]++= 0; /* signifies sequence not present */
+	    continue;
+	}
+
+	out[0] += int2u7(s->bin, out[0]);
+	delta = s->bin_index - last_index;
+	last_index = s->bin_index;
+	out[1] += int2s7(delta, out[1]);
+	out[2] += int2u7(s->left, out[2]);
+	out[3] += int2u7(s->right, out[3]);
+	out[4] += int2u7(ABS(s->len), out[4]);
+
+	out[5] += int2u7(s->parent_rec, out[5]);
+	*out[6]++ = s->parent_type;
+	
+	/* flags & m.quality */
+	s->format = SEQ_FORMAT_CNF1;
+	*out[7]++ = (s->format << 6) | (s->flags << 3) | s->seq_tech;
+	*out[8]++ = s->mapping_qual;
+	
+	/* Name */
+	out[9] += int2u7(s->name_len, out[9]);
+	memcpy(out[12], s->name, s->name_len);
+	out[12] += s->name_len;
+
+	/* Trace name */
+	if (s->trace_name_len == 0 ||
+	    (s->trace_name_len == s->name_len &&
+	     0 == memcpy(s->trace_name, s->name, s->name_len))) {
+	    /* Trace name and seq name are identical, so just skip it */
+	    *out[10]++ = 0;
+	} else {
+	    out[10] += int2u7(s->trace_name_len, out[10]);
+
+	    if (s->trace_name_len) {
+		/* Delta to name */
+		int j;
+		for (j = 0; j < s->name_len && j < s->trace_name_len; j++)
+		    if (s->trace_name[j] != s->name[j])
+			break;
+		*out[13]++ = j;
+		memcpy(out[13], &s->trace_name[j], s->trace_name_len-j);
+		out[13] += s->trace_name_len - j;
+	    }
+	}
+
+	/* Alignment */
+	s->alignment_len = 0; /* this is unused for now */
+	out[11] += int2u7(s->alignment_len, out[11]);
+	memcpy(out[14], s->alignment, s->alignment_len);
+	out[14] += s->alignment_len;
+
+	/* Sequences - store in alignment orientation for better compression */
+	if (s->len < 0) {
+	    complement_seq(s->seq, ABS(s->len));
+	    memcpy(out[15], s->seq,  ABS(s->len)); out[15] += ABS(s->len);
+	    complement_seq(s->seq, ABS(s->len));
+	} else {
+	    memcpy(out[15], s->seq,  ABS(s->len)); out[15] += ABS(s->len);
+	}
+
+	/* Quality */
+	/* Reversing this too would be consistent with the sequence and it
+	 * saves a tiny amount of space, but it's only about 0.3% and costs
+	 * cpu
+	 */
+	memcpy(out[16], s->conf, ABS(s->len)); out[16] += ABS(s->len);
+    }
+
+
+    /* Concatenate data types together and adjust out_size to actual usage */
+    for (total_size = i = 0; i < 17; i++) {
+	out_size[i] = out[i] - out_start[i];
+	total_size += out_size[i];
+    }
+    cp = cp_start = (char *)malloc(total_size+1);
+    for (i = 0; i < 17; i++) {
+	memcpy(cp, out_start[i], out_size[i]);
+	cp += out_size[i];
+	free(out_start[i]);
+	level[i] = 5; /* default gzip level */
+    }
+    assert(cp - cp_start == total_size);
+
+    level[12] = 7; /* name, 8 is approx 1% better, but 10% slower */
+    level[13] = 7; /* trace name */
+    level[16] = 6; /* conf */
+
+    /* NB: should name and trace name be compressed together? They're
+     * probably the same or highly related?
+     */
+
+    //printf("Block %d, est.size %d, actual size %d, diff=%d %f gzip=",
+    //       ci->rec, b->est_size, cp-cp_start,
+    //       cp-cp_start - b->est_size, (cp-cp_start + 0.0) / b->est_size);
+    
+    /* Gzip it too */
+    if (1) {
+	char *gzout;
+	size_t ssz;
+
+	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
+	gzout = mem_deflate_lparts(cp_start, out_size, level, 17, &ssz);
+	free(cp_start);
+	cp_start = gzout;
+	cp = cp_start + ssz;
+    }
+    //printf("%d\n", cp-cp_start);
+
+    /* Finally write the serialised data block */
+    assert(ci->lock_mode >= G_LOCK_RW);
+    err = g_write(io, ci->view, cp_start, cp - cp_start);
+    g_flush(io, ci->view);
+    
+    free(cp_start);
+
+    return err ? -1 : 0;
+}
+
+static GRec io_seq_block_create(void *dbh, void *vfrom) {
+    g_io *io = (g_io *)dbh;
+    GRec rec;
+    GView v;
+
+    rec = allocate(io);
+    v = lock(io, rec, G_LOCK_EX);
+
+    /* Write blank data here? */
+
+    unlock(io, v);
+    
+    return rec;
+}
+
 
 /* ------------------------------------------------------------------------
  * The externally visible object interfaces themselves.
@@ -2182,6 +3031,19 @@ static iface iface_g = {
 	io_generic_abandon,
 	io_vector_read,
 	io_generic_write,
+	io_generic_info,
+    },
+
+    {
+	/* Seq_block */
+	io_seq_block_create,
+	io_generic_destroy,
+	io_generic_lock,
+	io_generic_unlock,
+	io_generic_upgrade,
+	io_generic_abandon,
+	io_seq_block_read,
+	io_seq_block_write,
 	io_generic_info,
     },
 };
