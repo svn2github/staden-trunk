@@ -11,6 +11,9 @@
 #include "io_lib/deflate_interlaced.h"
 #include "dna_utils.h"
 
+static int wrstats[100];
+static int wrcounts[100];
+
 #define INDEX_NAMES
 
 static iface iface_g;
@@ -474,6 +477,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
     cached_item *ci = n->cache;
 
     if (ci) {
+	wrstats[GT_BTree] += len;
+	wrcounts[GT_BTree]++;
 	ret = g_write(io, ci->view, data, len);
 	g_flush(io, ci->view);
     } else {
@@ -481,6 +486,8 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	    fprintf(stderr, "Failed to lock btree node %d\n", n->rec);
 	    return -1;
 	}
+	wrstats[GT_BTree] += len;
+	wrcounts[GT_BTree]++;
 	ret = g_write(io, v, data, len);
 	unlock(io, v);
     }
@@ -693,7 +700,7 @@ static int io_database_create_files(char *fn) {
 
     /* initialise header */
     auxheader.file_size = 0;
-    auxheader.block_size = (int32_t)8;
+    auxheader.block_size = (int32_t)8; /* unused now? */
     auxheader.num_records = 0;
     auxheader.max_records = 100; /* dynamically grows anyway */
     auxheader.last_time = G_YEAR_DOT;
@@ -811,6 +818,18 @@ static int io_database_disconnect(void *dbh) {
     g_shutdown_database_(io->gdb);
 
     free(io);
+
+    printf("\n*** Write stats ***\n");
+    printf("GT_RecArray \t%d\t%d\n", wrcounts[GT_RecArray],wrstats[GT_RecArray]);
+    printf("GT_Bin      \t%d\t%d\n", wrcounts[GT_Bin],     wrstats[GT_Bin]);
+    printf("GT_Range    \t%d\t%d\n", wrcounts[GT_Range],   wrstats[GT_Range]);
+    printf("GT_BTree    \t%d\t%d\n", wrcounts[GT_BTree],   wrstats[GT_BTree]);
+    printf("GT_Track    \t%d\t%d\n", wrcounts[GT_Track],   wrstats[GT_Track]);
+    printf("GT_Contig   \t%d\t%d\n", wrcounts[GT_Contig],  wrstats[GT_Contig]);
+    printf("GT_Seq      \t%d\t%d\n", wrcounts[GT_Seq],     wrstats[GT_Seq]);
+    printf("GT_Anno     \t%d\t%d\n", wrcounts[GT_Anno],    wrstats[GT_Anno]);
+    printf("GT_AnnoEle  \t%d\t%d\n", wrcounts[GT_AnnoEle], wrstats[GT_AnnoEle]);
+    printf("GT_SeqBlock \t%d\t%d\n", wrcounts[GT_SeqBlock],wrstats[GT_SeqBlock]);
 
     return 0;
 }
@@ -952,6 +971,8 @@ static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
 		((unsigned char *)ch)[sizeof(GContig_header)]);
 
     /* Write the data */
+    wrstats[GT_Contig] += len;
+    wrcounts[GT_Contig]++;
     if (-1 == g_write(io, v, (char *)ch, len)) {
 	free(ch);
 	return -1;
@@ -1052,6 +1073,8 @@ static int io_array_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     ar = (Array)&ci->data;
+    wrstats[GT_RecArray] += ArrayMax(ar) * sizeof(GCardinal);
+    wrcounts[GT_RecArray]++;
     ret = g_write(io, ci->view, ArrayBase(GCardinal, ar), 
 		   ArrayMax(ar) * sizeof(GCardinal));
     g_flush(io, ci->view);
@@ -1155,6 +1178,8 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
     }
 
     /* Write */
+    wrstats[GT_AnnoEle] += cp-cpstart;
+    wrcounts[GT_AnnoEle]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
     g_flush(io, v);
 
@@ -1250,7 +1275,7 @@ static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
     s.data_type = Z_BINARY;
 
     err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       5, Z_DEFAULT_STRATEGY);
+		       9, Z_DEFAULT_STRATEGY);
 
     /* Encode to 'cdata' array */
     for (;s.avail_in;) {
@@ -1267,10 +1292,14 @@ static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
 	    break;
 	}
     }
-    deflate(&s, Z_FINISH);
+    if (deflate(&s, Z_FINISH) != Z_STREAM_END) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     *cdata_size = s.total_out;
 
-    deflateEnd(&s);
+    if (deflateEnd(&s) != Z_OK) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     return cdata;
 }
 
@@ -1302,7 +1331,7 @@ static char *mem_deflate_parts(char *data,
     s.data_type = Z_BINARY;
 
     err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       5, Z_DEFAULT_STRATEGY);
+		       9, Z_FILTERED);
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -1322,10 +1351,14 @@ static char *mem_deflate_parts(char *data,
 	    }
 	}
     }
-    deflate(&s, Z_FINISH);
+    if (deflate(&s, Z_FINISH) != Z_STREAM_END) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     *cdata_size = s.total_out;
 
-    deflateEnd(&s);
+    if (deflateEnd(&s) != Z_OK) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     return cdata;
 }
 
@@ -1357,7 +1390,7 @@ static char *mem_deflate_lparts(char *data,
     s.data_type = Z_BINARY;
 
     err = deflateInit2(&s, Z_DEFAULT_COMPRESSION, Z_DEFLATED, 15,
-		       5, Z_DEFAULT_STRATEGY);
+		       9, Z_FILTERED);
 
     /* Encode to 'cdata' array */
     for (i = 0; i < nparts; i++) {
@@ -1378,10 +1411,14 @@ static char *mem_deflate_lparts(char *data,
 	    }
 	}
     }
-    deflate(&s, Z_FINISH);
+    if (deflate(&s, Z_FINISH) != Z_STREAM_END) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     *cdata_size = s.total_out;
 
-    deflateEnd(&s);
+    if (deflateEnd(&s) != Z_OK) {
+	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
+    }
     return cdata;
 }
 
@@ -1429,13 +1466,19 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
     return data;
 }
 
-static char *pack_rng_array(GRange *rng, int nr, int *sz) {
+static char *pack_rng_array(GRange *rng, int nr, /*int start,*/ int *sz) {
     int i;
     size_t part_sz[7];
     GRange last;
     char *cp[6], *cp_orig[6], *out, *out_orig;
 
     memset(&last, 0, sizeof(last));
+    /*
+     * Saves a small amount, but only significant when there are very
+     * shallow bins.
+     *
+     * last.start = start;
+     */
 
     /* Pack the 6 structure elements to their own arrays */
     for (i = 0; i < 6; i++)
@@ -1504,8 +1547,6 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     }
 
     *sz = out-out_orig;
-
-    //write(2, out_orig, *sz);
 
     /* Gzip it too */
     {
@@ -1580,14 +1621,25 @@ static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
     return r;
 }
 
+/* Used in the on-disc encoding */
+#define BIN_COMPLEMENTED  (1<<0)
+#define BIN_NO_RANGE      (1<<1)
+#define BIN_NO_TRACK      (1<<2)
+#define BIN_NO_LCHILD     (1<<3)
+#define BIN_NO_RCHILD     (1<<4)
+#define BIN_SIZE_EQ_POS   (1<<5)
+#define BIN_POS_ZERO      (1<<6)
+#define BIN_ROOT_NODE     (1<<7)
+
 static cached_item *io_bin_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
-    GBin *b;
+    GBin *b, g;
     bin_index_t *bin;
-    void *buf;
+    char *buf, *cp;
     size_t buf_len;
+    int bflag;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -1599,8 +1651,60 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	buf = realloc(buf, sizeof(GBin));
 	memset(buf + buf_len, 0, sizeof(GBin) - buf_len);
     }
-    b = (GBin *)buf;
+    //b = (GBin *)buf;
+    b = &g;
+    cp = buf;
 
+    cp += u72int(cp, &bflag);
+    g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
+    g.parent_type = (bflag & BIN_ROOT_NODE) ? GT_Contig : GT_Bin;
+
+    if (bflag & BIN_POS_ZERO)
+	g.pos = 0;
+    else
+	cp += s72int(cp, &g.pos);
+
+    if (bflag & BIN_SIZE_EQ_POS)
+	g.size = g.pos;
+    else
+	cp += u72int(cp, &g.size);
+
+    if (bflag & BIN_NO_RANGE) {
+	g.range = 0;
+	g.start = 0;
+	g.end   = 0;
+    } else {
+	cp += u72int(cp, &g.start);
+	cp += u72int(cp, &g.end);
+	g.end += g.start;
+	cp += u72int(cp, &g.range);
+    }
+
+    if (bflag & BIN_NO_LCHILD)
+	g.child[0] = 0;
+    else
+	cp += u72int(cp, &g.child[0]);
+
+    if (bflag & BIN_NO_RCHILD)
+	g.child[1] = 0;
+    else
+	cp += u72int(cp, &g.child[1]);
+
+    if (bflag & BIN_NO_TRACK)
+	g.track = 0;
+    else
+	cp += u72int(cp, &g.track);
+
+    cp += u72int(cp, &g.parent);
+    cp += u72int(cp, &g.nseqs);
+
+    /*
+    printf("<%d / p=%d+%d, %d..%d p=%d/%d, ch=%d/%d, id=%d, f=%d t=%d ns=%d r=%d\n",
+	   rec,
+	   g.pos, g.size, g.start, g.end,
+	   g.parent_type, g.parent, g.child[0], g.child[1],
+	   g.id, g.flags, g.track, g.nseqs, g.range);
+    */
     /* Allocate our overlapping data objects */
     if (!(ci = cache_new(GT_Bin, rec, v, NULL, sizeof(*bin))))
 	return NULL;
@@ -1675,6 +1779,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     GBin g;
     int err = 0;
+    unsigned int bflag;
 
     /* Ranges */
     if (bin->flags & BIN_RANGE_UPDATED) {
@@ -1690,7 +1795,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	}
 
 	cp = pack_rng_array(ArrayBase(GRange, bin->rng), ArrayMax(bin->rng),
-			    &sz);
+			    /* bin->start_used, */ &sz);
 	//printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
 
 #ifdef DEBUG
@@ -1710,6 +1815,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	v = lock(io, bin->rng_rec, G_LOCK_EX);
 	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
 	//	       sizeof(GRange) * ArrayMax(bin->rng));
+	wrstats[GT_Range] += sz;
+	wrcounts[GT_Range]++;
 	err |= g_write(io, v, cp, sz);
 	free(cp);
 	err |= unlock(io, v);
@@ -1728,6 +1835,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    }
 
 	    v = lock(io, bin->track_rec, G_LOCK_EX);
+	    wrstats[GT_Track] += sizeof(GBinTrack) * ArrayMax(bin->track);
+	    wrcounts[GT_Track]++;
 	    err |= g_write(io, v, ArrayBase(GBinTrack, bin->track),
 			   sizeof(GBinTrack) * ArrayMax(bin->track));
 	    err |= unlock(io, v);
@@ -1736,6 +1845,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
+	char cpstart[12*5], *cp = cpstart;
+
 	bin->flags &= ~BIN_BIN_UPDATED;
 	g.pos         = bin->pos;
 	g.size        = bin->size;
@@ -1764,8 +1875,45 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    }
 	}
 #endif
+	/*
+	printf(">%d / p=%d+%d, %d..%d p=%d/%d, ch=%d/%d, f=%d t=%d ns=%d r=%d\n",
+	       bin->rec,
+	       g.pos, g.size, g.start, g.end,
+	       g.parent_type, g.parent, g.child[0], g.child[1],
+	       g.flags, g.track, g.nseqs, g.range);
+	*/
 
-	err |= g_write(io, v, &g, sizeof(g));
+	/* Encode the bin in a more efficient struct */
+	bflag = 0;
+	if (g.flags & BIN_COMPLEMENTED) bflag |= BIN_COMPLEMENTED;
+	if (!g.child[0])                bflag |= BIN_NO_LCHILD;
+	if (!g.child[1])                bflag |= BIN_NO_RCHILD;
+	if (!g.range)                   bflag |= BIN_NO_RANGE;
+	if (!g.track)                   bflag |= BIN_NO_TRACK;
+	assert(g.parent_type == GT_Bin || g.parent_type == GT_Contig);
+	if (g.parent_type == GT_Contig) bflag |= BIN_ROOT_NODE;
+	if (g.pos == 0)                 bflag |= BIN_POS_ZERO;
+	if (g.size == g.pos)            bflag |= BIN_SIZE_EQ_POS;
+
+	cp += int2u7(bflag, cp);
+	if (!(bflag & BIN_POS_ZERO))     cp += int2s7(g.pos, cp);
+	if (!(bflag & BIN_SIZE_EQ_POS))  cp += int2u7(g.size, cp);
+	if (!(bflag & BIN_NO_RANGE)) {
+	    cp += int2u7(g.start, cp);
+	    cp += int2u7(g.end - g.start, cp);
+	    cp += int2u7(g.range, cp);
+	}
+	if (!(bflag & BIN_NO_LCHILD))    cp += int2u7(g.child[0], cp);
+	if (!(bflag & BIN_NO_RCHILD))    cp += int2u7(g.child[1], cp);
+	if (!(bflag & BIN_NO_TRACK))     cp += int2u7(g.track, cp);
+	cp += int2u7(g.parent, cp);
+	cp += int2u7(g.nseqs, cp);
+
+	wrstats[GT_Bin] += cp-cpstart;
+	//wrstats[GT_Bin] += sizeof(g);
+	wrcounts[GT_Bin]++;
+	err |= g_write(io, v, cpstart, cp - cpstart);
+	//err |= g_write(io, v, &g, sizeof(g));
 	g_flush(io, v);
     }
 
@@ -1876,6 +2024,8 @@ static int io_track_write_view(g_io *io, track_t *track, GView v) {
 	memcpy(data + sizeof(*h), ArrayBase(char, track->data),
 	       track->item_size * track->nitems);
     
+    wrstats[GT_Track] += sizeof(*h) + track->item_size * track->nitems;
+    wrcounts[GT_Track]++;
     err |= g_write(io, v, h, sizeof(*h) + track->item_size * track->nitems);
     g_flush(io, v);
     free(data);
@@ -2417,6 +2567,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 
     //    printf("Write rec %d len %d %.*s:%d\n", rec, cp-cpstart,
     //	   seq->name_len, seq->name, seq->mapping_qual);
+    wrstats[GT_Seq] += cp-cpstart;
+    wrcounts[GT_Seq]++;
     err |= g_write(io, v, (void *)cpstart, cp-cpstart);
     g_flush(io, v);
 
@@ -2865,6 +3017,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 
     /* Finally write the serialised data block */
     assert(ci->lock_mode >= G_LOCK_RW);
+    wrstats[GT_SeqBlock] += cp-cp_start;
+    wrcounts[GT_SeqBlock]++;
     err = g_write(io, ci->view, cp_start, cp - cp_start);
     g_flush(io, ci->view);
     
