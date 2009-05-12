@@ -1935,6 +1935,16 @@ static int io_bin_create(void *dbh, void *vfrom) {
     GView v;
 
     rec = allocate(io);
+    return rec;
+
+    /*
+     * Delay this now until after we've fully initialised it.
+     * This was previously causing a double write as we want the ability
+     * to allocate a record before we actually write data to it.
+     *
+     * See changes to bin_new() in tg_bin.c
+     */
+#if 0
     v = lock(io, rec, G_LOCK_EX);
     
     if (from) {
@@ -1961,6 +1971,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
     unlock(io, v);
 
     return rec;
+#endif
 }
 
 

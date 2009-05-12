@@ -14,6 +14,7 @@
  * Returns 0 for success
  *        -1 for failure.
  */
+#if 0
 int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     int rec;
     bin_index_t bin;
@@ -40,6 +41,37 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
 
     return rec;
 }
+#endif
+
+int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
+    int rec;
+    bin_index_t *bin;
+
+    if (-1 == (rec = io->iface->bin.create(io->dbh, NULL)))
+	return -1;
+
+    /* Initialise disk struct */
+    bin = get_bin(io, rec);
+    bin = cache_rw(io, bin);
+    bin->pos         = pos;
+    bin->size        = sz;
+    bin->start_used  = 0;
+    bin->end_used    = 0;
+    bin->parent      = parent;
+    bin->parent_type = parent_type;
+    bin->child[0]    = 0;
+    bin->child[1]    = 0;
+    bin->bin_id      = 0;
+    bin->rng	    = NULL;
+    bin->rng_rec     = 0;
+    bin->flags       = BIN_BIN_UPDATED;
+    bin->track       = NULL;
+    bin->track_rec   = 0;
+    bin->nseqs       = 0;
+
+    return rec;
+}
+
 
 /*
  * Doubles up the number of bins by adding a new root node and duplicating
