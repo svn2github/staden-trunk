@@ -1,8 +1,7 @@
 #ifndef _TG_BIN_H_
 #define _TG_BIN_H_
 
-/* #define MIN_BIN_SIZE 256 */
-/* #define MIN_BIN_SIZE 1024 */
+/* Default, overridden in tg_index */
 #define MIN_BIN_SIZE 4096
 
 /* Size of bin to use for depth track */

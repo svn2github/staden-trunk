@@ -47,6 +47,9 @@ typedef struct GapIO {
     /* Contig registration scheme hooks */
     HacheTable *contig_reg;     /* Registration arrays for each contig */
     HacheTable *contig_cursor;	/* Hash of cursor_t lists */
+
+    /* Minimum size for newly created bins */
+    int min_bin_size;
 } GapIO;
 
 GapIO *gio_open(char *fn, int ro, int create);

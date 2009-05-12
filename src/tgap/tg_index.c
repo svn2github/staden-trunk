@@ -378,32 +378,34 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
     fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
-    fprintf(stderr, "      -m			Input is MAQ format (off)\n");
-    fprintf(stderr, "      -M			Input is MAQ-long format (off)\n");
-    fprintf(stderr, "      -A			Input is ACE format (off)\n");
-    fprintf(stderr, "      -B			Input is BAF format (off)\n");
-    fprintf(stderr, "      -b			Input is BAM format (off)\n");
-    fprintf(stderr, "      -p			Link read-pairs together (on)\n");
-    fprintf(stderr, "      -P			Do not link read-pairs together (off)\n");
+    fprintf(stderr, "      -m			Input is MAQ format\n");
+    fprintf(stderr, "      -M			Input is MAQ-long format\n");
+    fprintf(stderr, "      -A			Input is ACE format\n");
+    fprintf(stderr, "      -B			Input is BAF format\n");
+    fprintf(stderr, "      -b			Input is BAM format\n");
+    fprintf(stderr, "      -p			Link read-pairs together (default on)\n");
+    fprintf(stderr, "      -P			Do not link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
     fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
-    fprintf(stderr, "      -t			Index sequence names (off)\n");
-    fprintf(stderr, "      -T			Do not index sequence names (on)\n");
+    fprintf(stderr, "      -t			Index sequence names\n");
+    fprintf(stderr, "      -T			Do not index sequence names (default on)\n");
+    fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
 }
 
 int main(int argc, char **argv) {
     unsigned int max_size = 63;
     GapIO *io;
     int opt, fmt = 'a' /*aln */;
-    char *out_fn = "g_db";
+    char *out_fn = "g_db", *cp;
     int no_tree=1, pair_reads=1, append=0, merge_contigs=1;
+    int min_bin_size = MIN_BIN_SIZE;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.1.3\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
     /* Arg parsing */
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPn")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -445,6 +447,13 @@ int main(int argc, char **argv) {
 	case 'n':
 	    merge_contigs = 0;
 	    break;
+
+	case 'z':
+	    min_bin_size = strtol(optarg, &cp, 10);
+	    if (*cp == 'k' || *cp == 'K') min_bin_size *= 1024;
+	    if (*cp == 'm' || *cp == 'M') min_bin_size *= 1024*1024;
+	    if (*cp == 'g' || *cp == 'G') min_bin_size *= 1024*1024*1024;
+	    break;
 	    
 	default:
 	    if (opt == ':')
@@ -467,6 +476,7 @@ int main(int argc, char **argv) {
 	io->db = cache_rw(io, io->db);
 	io->db->seq_name_index = 0;
     }
+    io->min_bin_size = min_bin_size;
 
     /* File processing loop */
     while (optind < argc) {

@@ -33,6 +33,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	    return NULL;
     }
 
+    io->min_bin_size = MIN_BIN_SIZE; /* default */
+
     /* Initialise the cache */
     cache_create(io);
 

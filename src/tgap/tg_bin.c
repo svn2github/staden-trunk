@@ -188,7 +188,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 #if 1
     if (last_bin && last_c == (*c)->rec && last_io == io) {
 	if (start >= last_start && end <= last_end) {
-	    if (last_bin && last_bin->size == MIN_BIN_SIZE) {
+	    if (last_bin && last_bin->size == io->min_bin_size) {
 		/* leaf node, so we can return right now */
 		if (offset_r)
 		    *offset_r = last_offset;
@@ -243,7 +243,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	 * as we delay creation of the sub-bins until required then we
 	 * should perhaps create a child bin.
 	 */
-	if (bin->size > MIN_BIN_SIZE && (!bin->child[0] || !bin->child[1])) {
+	if (bin->size > io->min_bin_size &&
+	    (!bin->child[0] || !bin->child[1])) {
 	    /* Construct left child if needed */
 	    if (!bin->child[0]) {
 		int pos = 0;

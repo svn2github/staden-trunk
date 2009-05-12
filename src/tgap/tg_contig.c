@@ -371,7 +371,7 @@ contig_t *contig_new(GapIO *io, char *name) {
     /* Initialise it */
     c = (contig_t *)cache_search(io, GT_Contig, rec);
     c = cache_rw(io, c);
-    c->bin = bin_new(io, 0, MIN_BIN_SIZE, rec, GT_Contig);
+    c->bin = bin_new(io, 0, io->min_bin_size, rec, GT_Contig);
     if (name)
 	contig_set_name(io, &c, name);
     else
