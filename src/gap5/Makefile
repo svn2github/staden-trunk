@@ -91,6 +91,7 @@ GAP5=\
 	$(GAP5BIN)/fij.o\
 	$(GAP5BIN)/do_fij.o\
 	$(GAP5BIN)/break_contig.o \
+	$(GAP5BIN)/export_contigs.o \
 	$(CEDITOR)
 
 GAP5SH_LIBS=\
