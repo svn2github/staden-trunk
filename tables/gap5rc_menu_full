@@ -76,6 +76,7 @@ add_separator	{File.S1}
 if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Export to BioLIMS}	 8 10 {ExportBiolims \$io}
 }
+add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
 add_cascade	{File.Save consensus}		 8 10
 add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_separator	{File.S2}
@@ -244,109 +245,109 @@ add_command {File.Exit} 1 0 {editor_exit $w}
 #add_separator	{Commands.S4}
 #add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
 
-# Contig Editor Settings menu
-# Contig Editor Settings -> Status menu
-add_cascade	{Settings.Status Line}		1 0
-add_check	{Settings.Status Line.Show Strands}	  1 0 {$w.Status0} \
-	{editor_set_status $e $w \[set $w.Status0\] 0}
-add_check	{Settings.Status Line.Translate using Feature Tables} 1 0 {$w.Status7} \
-	{editor_set_status $e $w \[set $w.Status7\] 7} 
-add_separator	{Settings.Status Line.S0}
-add_check	{Settings.Status Line.Translate Frame 1+} 1 0 {$w.Status1} \
-	{editor_set_status $e $w \[set $w.Status1\] 1}
-add_check	{Settings.Status Line.Translate Frame 2+} 1 0 {$w.Status2} \
-	{editor_set_status $e $w \[set $w.Status2\] 2}
-add_check	{Settings.Status Line.Translate Frame 3+} 1 0 {$w.Status3} \
-	{editor_set_status $e $w \[set $w.Status3\] 3}
-add_check	{Settings.Status Line.Translate Frame 1-} 1 0 {$w.Status4} \
-	{editor_set_status $e $w \[set $w.Status4\] 4}
-add_check	{Settings.Status Line.Translate Frame 2-} 1 0 {$w.Status5} \
-	{editor_set_status $e $w \[set $w.Status5\] 5}
-add_check	{Settings.Status Line.Translate Frame 3-} 1 0 {$w.Status6} \
-	{editor_set_status $e $w \[set $w.Status6\] 6}
-add_separator	{Settings.Status Line.S1}
-add_command	{Settings.Status Line.Translate + frames}	1 0 \
-	{editor_set_status $e $w 1 1 2 3}
-add_command	{Settings.Status Line.Translate - frames}	1 0 \
-	{editor_set_status $e $w 1 4 5 6}
-add_command	{Settings.Status Line.Translate all frames}	1 0 \
-	{editor_set_status $e $w 1 1 2 3 4 5 6}
-add_separator	{Settings.Status Line.S2}
-add_command	{Settings.Status Line.Remove all}		1 0\
-	{editor_set_status $e $w 0 0 1 2 3 4 5 6}
-
-# Contig Editor Settings -> Trace menu
-add_cascade	{Settings.Trace Display}	1 0
-add_check	{Settings.Trace Display.Auto-display Traces}	1 0 \
-	{$w.DisplayTraces} {$e autodisplay_traces}
-add_check	{Settings.Trace Display.Show Read-pair Traces}	1 0 \
-	{$w.ReadPairTraces} {$e read_pair_traces}
-add_check	{Settings.Trace Display.Auto-diff Traces}	1 0 \
-	{$w.DiffTraces} {$e autodiff_traces}
-add_check	{Settings.Trace Display.Y scale differences} 1 0 \
- 	{$w.TraceDiffScale}	{editor_trace_config $e $w}
-
-# # Contig Editor Settings -> Trace menu -> Consensus trace options
-# add_cascade	{Settings.Trace Display.Consensus trace options}	1 0 e
-# add_radio	{Settings.Trace Display.Consensus trace options.Normal mode} 1 0 \
-# 	{$w.TraceDiff} 0 {editor_trace_diff $e $w} e
-# add_radio	{Settings.Trace Display.Consensus trace options.Diff against consensus trace} 1 0 \
-# 	{$w.TraceDiff} 1 {editor_trace_diff $e $w} e
-# add_radio	{Settings.Trace Display.Consensus trace options.Diff against specific trace} 1 0 \
-# 	{$w.TraceDiff} 2 {editor_trace_diff $e $w} e
-# add_separator	{Settings.Trace Display.Consensus trace options.S1} e
-# add_check	{Settings.Trace Display.Consensus trace options.Only matching reads} 1 0 \
-# 	{$w.TraceConsMatch}	{editor_trace_config $e $w} e
-# add_check	{Settings.Trace Display.Consensus trace options.Ignore selected read} 1 0 \
-# 	{$w.TraceConsSelect}	{editor_trace_config $e $w} e
-# 
-# # Contig Editor Settings -> Trace menu -> Trace difference algorithm
-# add_cascade	{Settings.Trace Display.Trace difference algorithm}	1 0 e
-# add_check	{Settings.Trace Display.Trace difference algorithm.Show positive differences} 1 0 \
-# 	{$w.TraceDiffAlgorithm}	{editor_trace_config $e $w} e
-# add_check	{Settings.Trace Display.Trace difference algorithm.Y scale differences} 1 0 \
-# 	{$w.TraceDiffScale}	{editor_trace_config $e $w} e
-add_separator	{Settings.Trace Display.S0} 
-add_radio	{Settings.Trace Display.Do not embed traces} 1 0 \
-	{$w.DisplayMiniTraces} 0 {$e show_mini_traces 0} 
-add_radio	{Settings.Trace Display.Embed traces size 1} 1 0 \
-	{$w.DisplayMiniTraces} 1 {$e show_mini_traces 1} 
-add_radio	{Settings.Trace Display.Embed traces size 2} 1 0 \
-	{$w.DisplayMiniTraces} 2 {$e show_mini_traces 2} 
-add_radio	{Settings.Trace Display.Embed traces size 3} 1 0 \
-	{$w.DisplayMiniTraces} 3 {$e show_mini_traces 3} 
-add_radio	{Settings.Trace Display.Embed traces size 4} 1 0 \
-	{$w.DisplayMiniTraces} 4 {$e show_mini_traces 4} 
-add_radio	{Settings.Trace Display.Embed traces size 5} 1 0 \
-	{$w.DisplayMiniTraces} 5 {$e show_mini_traces 5}
-
-# Contig Editor Settings -> Consensus algorithm menu
-add_cascade	{Settings.Consensus algorithm}				1 0
-add_radio	{Settings.Consensus algorithm.Base frequencies}		1 0 \
-	{$w.ConsensusAlgorithm} 0 {editor_change_consensus_algorithm $e $w}
-add_radio	{Settings.Consensus algorithm.Weighted base frequencies} 1 0 \
-	{$w.ConsensusAlgorithm} 1 {editor_change_consensus_algorithm $e $w}
-add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
-	{$w.ConsensusAlgorithm} 2 {editor_change_consensus_algorithm $e $w}
-
-# Group Readings
-add_cascade	{Settings.Group Readings}		1 0
-add_radio       {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
-	0 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Strand}     1 0 {$w.GroupBy}\
-	2 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Name}       1 0 {$w.GroupBy}\
-	4 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Number}     1 0 {$w.GroupBy}\
-	5 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
-	1 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Clone}      1 0 {$w.GroupBy}\
-	3 {$e set_grouping \[set $w.GroupBy\]}
-add_radio       {Settings.Group Readings.By Set}        1 0 {$w.GroupBy}\
-	6 {$e set_grouping \[set $w.GroupBy\]}
-
-add_separator	{Settings.S1}
+### # Contig Editor Settings menu
+### # Contig Editor Settings -> Status menu
+### add_cascade	{Settings.Status Line}		1 0
+### add_check	{Settings.Status Line.Show Strands}	  1 0 {$w.Status0} \
+### 	{editor_set_status $e $w \[set $w.Status0\] 0}
+### add_check	{Settings.Status Line.Translate using Feature Tables} 1 0 {$w.Status7} \
+### 	{editor_set_status $e $w \[set $w.Status7\] 7} 
+### add_separator	{Settings.Status Line.S0}
+### add_check	{Settings.Status Line.Translate Frame 1+} 1 0 {$w.Status1} \
+### 	{editor_set_status $e $w \[set $w.Status1\] 1}
+### add_check	{Settings.Status Line.Translate Frame 2+} 1 0 {$w.Status2} \
+### 	{editor_set_status $e $w \[set $w.Status2\] 2}
+### add_check	{Settings.Status Line.Translate Frame 3+} 1 0 {$w.Status3} \
+### 	{editor_set_status $e $w \[set $w.Status3\] 3}
+### add_check	{Settings.Status Line.Translate Frame 1-} 1 0 {$w.Status4} \
+### 	{editor_set_status $e $w \[set $w.Status4\] 4}
+### add_check	{Settings.Status Line.Translate Frame 2-} 1 0 {$w.Status5} \
+### 	{editor_set_status $e $w \[set $w.Status5\] 5}
+### add_check	{Settings.Status Line.Translate Frame 3-} 1 0 {$w.Status6} \
+### 	{editor_set_status $e $w \[set $w.Status6\] 6}
+### add_separator	{Settings.Status Line.S1}
+### add_command	{Settings.Status Line.Translate + frames}	1 0 \
+### 	{editor_set_status $e $w 1 1 2 3}
+### add_command	{Settings.Status Line.Translate - frames}	1 0 \
+### 	{editor_set_status $e $w 1 4 5 6}
+### add_command	{Settings.Status Line.Translate all frames}	1 0 \
+### 	{editor_set_status $e $w 1 1 2 3 4 5 6}
+### add_separator	{Settings.Status Line.S2}
+### add_command	{Settings.Status Line.Remove all}		1 0\
+### 	{editor_set_status $e $w 0 0 1 2 3 4 5 6}
+### 
+### # Contig Editor Settings -> Trace menu
+### add_cascade	{Settings.Trace Display}	1 0
+### add_check	{Settings.Trace Display.Auto-display Traces}	1 0 \
+### 	{$w.DisplayTraces} {$e autodisplay_traces}
+### add_check	{Settings.Trace Display.Show Read-pair Traces}	1 0 \
+### 	{$w.ReadPairTraces} {$e read_pair_traces}
+### add_check	{Settings.Trace Display.Auto-diff Traces}	1 0 \
+### 	{$w.DiffTraces} {$e autodiff_traces}
+### add_check	{Settings.Trace Display.Y scale differences} 1 0 \
+###  	{$w.TraceDiffScale}	{editor_trace_config $e $w}
+### 
+### # # Contig Editor Settings -> Trace menu -> Consensus trace options
+### # add_cascade	{Settings.Trace Display.Consensus trace options}	1 0 e
+### # add_radio	{Settings.Trace Display.Consensus trace options.Normal mode} 1 0 \
+### # 	{$w.TraceDiff} 0 {editor_trace_diff $e $w} e
+### # add_radio	{Settings.Trace Display.Consensus trace options.Diff against consensus trace} 1 0 \
+### # 	{$w.TraceDiff} 1 {editor_trace_diff $e $w} e
+### # add_radio	{Settings.Trace Display.Consensus trace options.Diff against specific trace} 1 0 \
+### # 	{$w.TraceDiff} 2 {editor_trace_diff $e $w} e
+### # add_separator	{Settings.Trace Display.Consensus trace options.S1} e
+### # add_check	{Settings.Trace Display.Consensus trace options.Only matching reads} 1 0 \
+### # 	{$w.TraceConsMatch}	{editor_trace_config $e $w} e
+### # add_check	{Settings.Trace Display.Consensus trace options.Ignore selected read} 1 0 \
+### # 	{$w.TraceConsSelect}	{editor_trace_config $e $w} e
+### # 
+### # # Contig Editor Settings -> Trace menu -> Trace difference algorithm
+### # add_cascade	{Settings.Trace Display.Trace difference algorithm}	1 0 e
+### # add_check	{Settings.Trace Display.Trace difference algorithm.Show positive differences} 1 0 \
+### # 	{$w.TraceDiffAlgorithm}	{editor_trace_config $e $w} e
+### # add_check	{Settings.Trace Display.Trace difference algorithm.Y scale differences} 1 0 \
+### # 	{$w.TraceDiffScale}	{editor_trace_config $e $w} e
+### add_separator	{Settings.Trace Display.S0} 
+### add_radio	{Settings.Trace Display.Do not embed traces} 1 0 \
+### 	{$w.DisplayMiniTraces} 0 {$e show_mini_traces 0} 
+### add_radio	{Settings.Trace Display.Embed traces size 1} 1 0 \
+### 	{$w.DisplayMiniTraces} 1 {$e show_mini_traces 1} 
+### add_radio	{Settings.Trace Display.Embed traces size 2} 1 0 \
+### 	{$w.DisplayMiniTraces} 2 {$e show_mini_traces 2} 
+### add_radio	{Settings.Trace Display.Embed traces size 3} 1 0 \
+### 	{$w.DisplayMiniTraces} 3 {$e show_mini_traces 3} 
+### add_radio	{Settings.Trace Display.Embed traces size 4} 1 0 \
+### 	{$w.DisplayMiniTraces} 4 {$e show_mini_traces 4} 
+### add_radio	{Settings.Trace Display.Embed traces size 5} 1 0 \
+### 	{$w.DisplayMiniTraces} 5 {$e show_mini_traces 5}
+### 
+### # Contig Editor Settings -> Consensus algorithm menu
+### add_cascade	{Settings.Consensus algorithm}				1 0
+### add_radio	{Settings.Consensus algorithm.Base frequencies}		1 0 \
+### 	{$w.ConsensusAlgorithm} 0 {editor_change_consensus_algorithm $e $w}
+### add_radio	{Settings.Consensus algorithm.Weighted base frequencies} 1 0 \
+### 	{$w.ConsensusAlgorithm} 1 {editor_change_consensus_algorithm $e $w}
+### add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
+### 	{$w.ConsensusAlgorithm} 2 {editor_change_consensus_algorithm $e $w}
+### 
+### # Group Readings
+### add_cascade	{Settings.Group Readings}		1 0
+### add_radio       {Settings.Group Readings.By Position}   1 0 {$w.GroupBy}\
+### 	0 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Strand}     1 0 {$w.GroupBy}\
+### 	2 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Name}       1 0 {$w.GroupBy}\
+### 	4 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Number}     1 0 {$w.GroupBy}\
+### 	5 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Template}   1 0 {$w.GroupBy}\
+### 	1 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Clone}      1 0 {$w.GroupBy}\
+### 	3 {$e set_grouping \[set $w.GroupBy\]}
+### add_radio       {Settings.Group Readings.By Set}        1 0 {$w.GroupBy}\
+### 	6 {$e set_grouping \[set $w.GroupBy\]}
+### 
+### add_separator	{Settings.S1}
 add_check	{Settings.Highlight Disagreements}	1 0 {${w}(Disagreements)}\
 	{editor_disagreements $w}
 add_radio	{Settings.    By dots}			1 0 {${w}(DisagreeMode)} \
@@ -363,37 +364,37 @@ add_separator	{Settings.S2}
 add_check       {Settings.Pack Sequences}               1 0 {${w}(PackSequences)} \
 	{set_editor_pack_sequences $w}
 
-add_check	{Settings.Compare Strands}		1 0 \
-	{$w.CompareStrands} {$e compare_strands} e
-add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
-	{$e auto_save}
-#add_check	{Settings.3 Character Amino Acids}	1 0 {$w.AminoMode} \
-#	{$e translation_mode \[lindex {1 3} \[set $w.AminoMode\]\]}
-add_check	{Settings.Show reading quality}		1 0 {$w.ShowQuality} \
-	{$e show_quality \[set $w.ShowQuality\]}
-add_check	{Settings.Show consensus quality}	1 0 {$w.ShowCQuality} \
-	{$e show_consensus_quality \[set $w.ShowCQuality\]}
-add_check	{Settings.Show edits}			1 0 {$w.ShowEdits} \
-	{$e show_edits \[set $w.ShowEdits\]}
-add_check	{Settings.Show Unpadded Positions}	1 0 {$w.ShowUnpadded} \
-	{$e set_unpadded_ruler}
-add_check	{Settings.Show Template Names}		1 0 {$w.TemplateNames} \
-	{$e show_template_names -1}
-add_command	{Settings.Set Active Tags}		1 0 \
-	{editor_setannos $e $e.select_tags}
-#add_command	{Settings.Set Output List}		1 0 \
-#	{editor_setlist $n.set_list $n} e
-add_command	{Settings.Set Default Confidences}	1 0 \
-	{set_default_confidence $e $e.default_confidence}
-
-#add_separator	{Settings.S3}
-#add_check	{Settings.Store undo}		1 0 {_$dbptr.StoreUndo} \
-#	{$e store_undo -1} 
-add_separator	{Settings.S4}
-add_command	{Settings.Save Settings}		1 0 \
-	{save_editor_settings $e $w}
-add_command     {Settings.Save Macros}			1 0 \
-	{tag_macro_save}
+### add_check	{Settings.Compare Strands}		1 0 \
+### 	{$w.CompareStrands} {$e compare_strands} e
+### add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
+### 	{$e auto_save}
+### #add_check	{Settings.3 Character Amino Acids}	1 0 {$w.AminoMode} \
+### #	{$e translation_mode \[lindex {1 3} \[set $w.AminoMode\]\]}
+### add_check	{Settings.Show reading quality}		1 0 {$w.ShowQuality} \
+### 	{$e show_quality \[set $w.ShowQuality\]}
+### add_check	{Settings.Show consensus quality}	1 0 {$w.ShowCQuality} \
+### 	{$e show_consensus_quality \[set $w.ShowCQuality\]}
+### add_check	{Settings.Show edits}			1 0 {$w.ShowEdits} \
+### 	{$e show_edits \[set $w.ShowEdits\]}
+### add_check	{Settings.Show Unpadded Positions}	1 0 {$w.ShowUnpadded} \
+### 	{$e set_unpadded_ruler}
+### add_check	{Settings.Show Template Names}		1 0 {$w.TemplateNames} \
+### 	{$e show_template_names -1}
+### add_command	{Settings.Set Active Tags}		1 0 \
+### 	{editor_setannos $e $e.select_tags}
+### #add_command	{Settings.Set Output List}		1 0 \
+### #	{editor_setlist $n.set_list $n} e
+### add_command	{Settings.Set Default Confidences}	1 0 \
+### 	{set_default_confidence $e $e.default_confidence}
+### 
+### #add_separator	{Settings.S3}
+### #add_check	{Settings.Store undo}		1 0 {_$dbptr.StoreUndo} \
+### #	{$e store_undo -1} 
+### add_separator	{Settings.S4}
+### add_command	{Settings.Save Settings}		1 0 \
+### 	{save_editor_settings $e $w}
+### add_command     {Settings.Save Macros}			1 0 \
+### 	{tag_macro_save}
 
 # Contig Editor "Edit Modes" menu
 add_check	{Edit Modes.Allow insert in read}	1 0 \

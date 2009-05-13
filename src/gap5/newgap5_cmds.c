@@ -32,6 +32,7 @@
 #include "fij.h"
 #include "break_contig.h"
 #include "template_display.h"
+#include "export_contigs.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -1317,6 +1318,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "reformat_sequence",
 			 tcl_reformat_sequence,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "export_contigs",
+			 tcl_export_contigs,
 			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);
