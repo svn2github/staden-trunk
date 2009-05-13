@@ -34,6 +34,7 @@ typedef struct {
     contig_t *c;
     int n_inserts;
     int count;
+    bam_header_t *header;
 } bam_io_t;
 
 typedef struct {
@@ -203,8 +204,36 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.bin_index = r_out - ArrayBase(range_t, bin->rng);
     recno = sequence_new_from(io, &s);
 
+#if 0
+    /* Demo code for tagging sequences */
+    if (memcmp(s.seq, "TAG", 3) == 0) {
+	range_t er;
+	anno_ele_t *e;
+	char comment[1024];
+
+	er.start = r.start;
+	er.end = er.start + 2;
+	if (random()%10) {
+	    er.mqual = GT_Seq;   /* obj_type */
+	    er.pair_rec = recno; /* obj_rec */
+	} else {
+	    er.mqual = GT_Contig;
+	    er.pair_rec = 0;
+	}
+	er.flags = GRANGE_FLAG_ISANNO; /* anno_rec, not supported yet */
+	sprintf(comment,":seq=%d,pos=%d..%d:", recno,r.start,r.end);
+	er.rec = anno_ele_new(io, bin->rec, GT_Seq, recno, 0, comment);
+
+	e = (anno_ele_t *)cache_search(io, GT_AnnoEle, er.rec);
+	e = cache_rw(io, e);
+	
+	//bin_add_anno_range(io, &bio->c, &er, NULL);
+	bin_add_range(io, &bio->c, &er, NULL);
+    }
+#endif
+
     /* Find the read-pair if appropriate */
-    if (bio->pair && !(b->core.flag & (BAM_FMUNMAP | BAM_FUNMAP))) {
+    if (bio->pair /* && !(b->core.flag & (BAM_FMUNMAP | BAM_FUNMAP)) */) {
 	int new = 0;
 	HacheData hd;
 	pair_loc_t *pl;
@@ -252,7 +281,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     if (bs->seq)  free(bs->seq);
     if (bs->conf) free(bs->conf);
     free(s.data);
-    
+
     if (snum+1 < bio->nseq)
 	memmove(bs, bs+1, (bio->nseq - (snum+1)) * sizeof(*bs));
 
@@ -315,11 +344,10 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
      */
     /* Create new contig if appropriate */
     if (tid != last_tid) {
-	char cname[100];
-	sprintf(cname, "Contig=%d", tid);
+	char *cname = bio->header->target_name[tid];
 
 	/* header->target_name[b.core.tid] */
-	printf("\n++Processing contig %d\n", tid);
+	printf("\n++Processing contig %d / %s\n", tid, cname);
 	if (bio->c)
 	    cache_decr(io, bio->c);
 	if (!bio->merge_contigs ||
@@ -336,7 +364,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 
     //    printf("Callback at pos=%d n=%d tid=%d\n", pos, n, tid);
     for (j = 0; j <= insertions; j++) {
-	//printf("%d pos: %6d.%d ", tid, pos+bio->n_inserts, j);
+	//printf("%d pos: %6d.%d ", tid, pos+1+bio->n_inserts, j);
 	for (i = 0; i < n; i++) {
 	    const bam_pileup1_t *p = &pl[i];
 	    
@@ -344,7 +372,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		int i2;
 		/* New sequence */
 		//printf("^%c", p->b->core.qual+33);
-		i2 = bio_new_seq(bio, p, pos+bio->n_inserts);
+		i2 = bio_new_seq(bio, p, pos+1+bio->n_inserts);
 		assert(i == i2);
 	    }
 
@@ -413,7 +441,6 @@ int parse_bam(GapIO *io, const char *fn,
     bam1_t *b;
     int ret, count = 0;
     bam_plbuf_t *plbuf;
-    bam_header_t *header;
     bamFile fp;
 
     /* Setup bam_io_t object and create our pileup interface */
@@ -434,9 +461,10 @@ int parse_bam(GapIO *io, const char *fn,
 
     fp = bam_open(fn, "r");
     assert(fp);
-    header = bam_header_read(fp);
+    bio->header = bam_header_read(fp);
     plbuf = bam_plbuf_init(bio_callback, bio);
-    bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
+    //bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
+    bam_plbuf_set_mask(plbuf, 0 /* or BAM_DEF_MASK, or BAM_FUNMAP? */);
 
     /*
      * Loop through reads - the bulk of the work here is done in the
@@ -459,399 +487,26 @@ int parse_bam(GapIO *io, const char *fn,
     printf("Loaded %d sequences\n", bio->count);
 
     /* Tidy up */
-    if (header)
-	bam_header_destroy(header);
-
     if (b) {
 	if (b->data)
 	    free(b->data);
 	free(b);
     }
+
+    if (fp)
+	bam_close(fp);
+
     if (bio) {
+	if (bio->pair)
+	    HacheTableDestroy(bio->pair, 1);
+
+	if (bio->header)
+	    bam_header_destroy(bio->header);
+
 	if (bio->seqs)
 	    free(bio->seqs);
 	free(bio);
     }
 
-    if (fp)
-	bam_close(fp);
-
-    if (bio->pair)
-	HacheTableDestroy(bio->pair, 0);
-
     return 0;
 }
-
-
-/* ---------------------------------------------------------------------- */
-/*
- * Original implementation left here for a while, so it makes it into cvs
- * at least briefly.
- */
-
-#if 0
-
-#define _IOLIB 2
-#include "bam.h"
-#include "bam_endian.h"
-
-typedef struct {
-    int rec;
-    int bin;
-    int idx;
-    int crec;
-} pair_loc_t;
-
-
-int edit_by_cigar(GapIO *io, bam1_t *b, char **eseq_p, char **equal_p,
-		  int *eseq_alloc, int *cleft, int *cright) {
-    bam1_core_t *c = &b->core;
-    int i;
-    int p = 0;
-    char *eseq = *eseq_p;
-    char *equal = *equal_p;
-    int len = c->l_qseq;
-
-    *cleft = 1;
-    *cright = len;
-
-    for (i = 0; i < c->n_cigar; i++) {
-	int op = bam1_cigar(b)[i] & BAM_CIGAR_MASK; // operation
-	int l = bam1_cigar(b)[i] >> BAM_CIGAR_SHIFT; // length
-
-	switch (op) {
-	case BAM_CMATCH:
-	    p += l;
-	    break;
-
-	case BAM_CINS:
-	    //printf("CINS unsupported at %d+%d len %d\n", c->pos, p, l);
-	    break;
-
-	case BAM_CDEL: {
-	    int j;
-	    int pqual;
-
-	    pqual = p == 0
-		? equal[p+1]
-		: p == len-1
-		  ? equal[p-1]
-		  : equal[p-1] < equal[p+1]
-		    ? equal[p-1]
-		    : equal[p+1];
-
-	    len += l;
-	    *cright += len;
-	    while (len >= *eseq_alloc) {
-		*eseq_alloc *= 2;
-		eseq = *eseq_p  = (char *)realloc(eseq,  *eseq_alloc);
-		equal= *equal_p = (char *)realloc(equal, *eseq_alloc);
-	    }
-	    memmove(&eseq[p+1],  &eseq[p],  len-l-p);
-	    memmove(&equal[p+1], &equal[p], len-l-p);
-	    for (j = 0; j < l; j++, p++) {
-		eseq[p] = '*';
-		equal[p] = pqual;
-	    }
-	    break;
-	}
-
-	case BAM_CREF_SKIP:
-	    break;
-
-	case BAM_CSOFT_CLIP:
-	    if (p == 0) {
-		*cleft += l;
-		c->pos -= l;
-	    }
-	    if (p + l == c->l_qseq)
-		*cright -= l;
-	    p += l;
-	    break;
-
-	case BAM_CHARD_CLIP:
-	    if (p == 0)
-		c->pos -= l;
-	    break;
-
-	case BAM_CPAD:
-	    break;
-	}
-    }
-
-    c->l_qseq = len;
-
-    return 0;
-}
-
-
-int parse_bam(GapIO *io, const char *fn,
-	      int no_tree, int pair_reads, int merge_contigs)
-{
-    bamFile fp;
-    bam_header_t *header;
-    int ret = -1;
-    bam1_t b;
-    contig_t *c = NULL;
-    int ncontigs = 0, nseqs = 0;
-    int last_tid = -999;
-    HacheTable *pair = NULL;
-    char tname[1024];
-    int i, j = 0;
-    int cleft, cright;
-    char *eseq = NULL, *equal = NULL;
-    int eseq_alloc = 0;
-    int count = 0;
-
-    printf("Loading %s...\n", fn);
-
-    if (NULL == (fp = bam_open(fn, "r"))) {
-	perror(fn);
-	return -1;
-    }
-    
-    if (NULL == (header = bam_header_read(fp)))
-	goto fail;
-
-    if (pair_reads) {
-	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
-    }
-
-    memset(&b, 0, sizeof(b));
-    while (bam_read1(fp, &b) >= 0) {
-	seq_t seq;
-	range_t r, *r_out;
-	int recno;
-	bin_index_t *bin;
-	HacheItem *hi;
-	int paired;
-	uint8_t *s, *q;
-	int eseq_len;
-
-	/* Reject unmapped data */
-	if (b.core.flag & BAM_FUNMAP)
-	    continue;
-
-	count++;
-
-	//	bam_view1(header, &b);
-
-	/* Extract our sequence and quality */
-	s = bam1_seq(&b);
-	q = bam1_qual(&b);
-	if (b.core.l_qseq >= eseq_alloc) {
-	    eseq_alloc = eseq_alloc ? 2*eseq_alloc : 1024;
-	    eseq = (char *)realloc(eseq, eseq_alloc);
-	    equal= (char *)realloc(equal, eseq_alloc);
-	}
-	for (i = 0; i < b.core.l_qseq; i++) {
-	    eseq[i] = bam_nt16_rev_table[bam1_seqi(s,i)];
-	    equal[i] = q[i];
-	}
-
-	/* Cigar string editing */
-	edit_by_cigar(io, &b, &eseq, &equal, &eseq_alloc, &cleft, &cright);
-
-	/* Create seq struct */
-	memset(&seq, 0, sizeof(seq));
-	seq.pos = b.core.pos + 1;
-	seq.len = b.core.l_qseq;
-	seq.seq_tech = STECH_SOLEXA;
-	seq.flags = 0;
-	seq.left = cleft;
-	seq.right = cright;
-	seq.parent_type = 0;
-	seq.parent_rec = 0;
-	seq.name_len = strlen(bam1_qname(&b));
-	seq.data = (char *)malloc(seq.name_len + 3 + 2*b.core.l_qseq);
-	seq.name = seq.data;
-	seq.trace_name = seq.name + seq.name_len + 1;
-	*seq.trace_name = 0;
-	seq.trace_name_len = 0;
-	seq.alignment = seq.trace_name + seq.trace_name_len + 1;
-	*seq.alignment = 0;
-	seq.alignment_len = 0;
-	seq.seq = seq.alignment + seq.alignment_len+1;
-	seq.conf = seq.seq+b.core.l_qseq;
-	seq.mapping_qual = b.core.qual;
-
-	strcpy(seq.name, bam1_qname(&b));
-	s = bam1_seq(&b);
-	q = bam1_qual(&b);
-	memcpy(seq.seq,  eseq,  b.core.l_qseq);
-	memcpy(seq.conf, equal, b.core.l_qseq);
-	/*
-	printf("%36s\t%d\t%+d\t%d\t%d\t%02x\n",
-	       seq.name, seq.pos, seq.len,
-	       bam1_strand(&b), bam1_mstrand(&b),
-	       b.core.flag);
-	*/
-	if (bam1_strand(&b)) {
-	    complement_seq_t(&seq);
-	    seq.flags |= SEQ_COMPLEMENTED;
-	}
-
-	/* Create new contig if appropriate */
-	if (b.core.tid != last_tid) {
-	    char cname[100];
-	    sprintf(cname, "Contig=%d", b.core.tid);
-
-	    /* header->target_name[b.core.tid] */
-	    printf("++Processing contig %d\n", b.core.tid);
-	    if (c)
-		cache_decr(io, c);
-	    if (!merge_contigs ||
-		(NULL == (c = find_contig_by_name(io, cname)))) {
-		c = contig_new(io, cname);
-		contig_index_update(io, cname, strlen(cname), c->rec);
-	    }
-	    cache_incr(io, c);
-
-	    last_tid = b.core.tid;
-	}
-
-	/* Create range */
-	r.start = seq.pos;
-	r.end = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
-	r.rec = 0;
-	r.pair_rec = 0;
-	r.mqual = seq.mapping_qual;
-	r.flags = GRANGE_FLAG_TYPE_SINGLE;
-
-	/* Get direction from flags */
-	paired = (b.core.flag & BAM_FPAIRED) ? 1 : 0;
-	if (b.core.flag & BAM_FREAD1)
-	    seq.flags |= SEQ_END_FWD;
-	if (b.core.flag & BAM_FREAD2)
-	    seq.flags |= SEQ_END_REV;
-	strcpy(tname, seq.name);
-	if (seq.name_len >= 2 && seq.name[seq.name_len-2] == '/') {
-	    tname[seq.name_len-2] = 0;
-	    /* Check validity of name vs bit-fields */
-	    if ((seq.name[seq.name_len-1] == '1' &&
-		 (seq.flags & SEQ_END_MASK) != SEQ_END_FWD) ||
-		(seq.name[seq.name_len-1] == '2' &&
-		 (seq.flags & SEQ_END_MASK) != SEQ_END_REV)) {
-		printf(stderr, "Inconsistent read name vs flags: %s vs 0x%02x\n",
-		       seq.name, b.core.flag);
-	    }
-	}
-
-	if (paired)
-	    r.flags |= (seq.flags & SEQ_END_MASK) == SEQ_END_FWD
-		? GRANGE_FLAG_END_FWD
-		: GRANGE_FLAG_END_REV;
-	else
-	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
-	    r.flags |= seq.len > 0
-		? GRANGE_FLAG_END_FWD
-		: GRANGE_FLAG_END_REV;
-	if (seq.len < 0)
-	    r.flags |= GRANGE_FLAG_COMP1;
-
-	bin = bin_add_range(io, &c, &r, &r_out);
-
-	/* Save sequence */
-	seq.bin = bin->rec;
-	seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
-	recno = sequence_new_from(io, &seq);
-
-	/* Find pair if appropriate */
-	if (pair) {
-	    int new = 0;
-	    HacheData hd;
-	    pair_loc_t *pl;
-	    
-	    /* Add data for this end */
-	    pl = (pair_loc_t *)malloc(sizeof(*pl));
-	    pl->rec  = recno;
-	    pl->bin  = bin->rec;
-	    pl->crec = c->rec;
-	    pl->idx  = seq.bin_index;
-	    hd.p = pl;
-
-	    hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
-
-	    /* Pair existed already */
-	    if (!new) {
-		pair_loc_t *po = (pair_loc_t *)hi->data.p;
-		bin_index_t *bo;
-		range_t *ro;
-
-		/* We found one so update r_out now, before flush */
-		r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		r_out->pair_rec = po->rec;
-
-		/* Link other end to 'us' too */
-		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		bo = cache_rw(io, bo);
-		bo->flags |= BIN_RANGE_UPDATED;
-		ro = arrp(range_t, bo->rng, po->idx);
-		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		ro->pair_rec = pl->rec;
-
-		/* And, making an assumption, remove from hache */
-		HacheTableDel(pair, hi, 1);
-		free(pl);
-	    }
-	}
-
-	if (!no_tree)
-	    sequence_index_update(io, seq.name, seq.name_len, recno);
-	free(seq.data);
-	
-	/* Link bin back to sequence too before it gets flushed */
-	r_out->rec = recno;
-
-	if (((j+1) & 0x1fff) == 0) {
-	    //	    fprintf(stderr, "-- %.2f%%\n", 100.0*(j+1)/mm->n_mapped_reads);
-
-	    cache_flush(io);
-	}
-
-	++j;
-    }
-
-    ret = 0;
- fail:
-    if (header)
-	bam_header_destroy(header);
-    bam_close(fp);
-
-    printf("Loaded %d sequences\n", count);
-
-    return ret;
-}
-
-int parse_sam(GapIO *io, const char *hfn, const char *fn,
-	      int no_tree, int pair_reads, int merge_contigs)
-{
-    tamFile fp;
-    bam_header_t *header;
-    int ret = -1;
-    bam1_t b;
-
-    if (NULL == (header = sam_header_read2(hfn)))
-	goto fail;
-
-    fp = sam_open(fn);
-
-    memset(&b, 0, sizeof(b));
-    while (sam_read1(fp, header, &b) >= 0) {
-	bam_view1(header, &b);
-    }
-
-    cache_flush(io);
-
-    ret = 0;
- fail:
-    if (header)
-	bam_header_destroy(header);
-    sam_close(fp);
-    return ret;
-}
-
-#endif
-
