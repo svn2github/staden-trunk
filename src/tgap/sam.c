@@ -76,8 +76,8 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     s->seq = (char *)malloc(s->alloc_len);
     s->conf = (char *)malloc(s->alloc_len);
     for (i = 0; i < p->qpos; i++) {
-	s->seq[i] = tolower(bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)]);
-	s->conf[i] = 'X';
+	s->seq[i] = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)];
+	s->conf[i] = bam1_qual(p->b)[i];
     }
     s->seq_len = i;
     s->pos = pos - i;
@@ -124,7 +124,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.right = bs->seq_len;
     for (i = p->qpos+1; i < b->core.l_qseq; i++) {
 	int base = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)];
-	int qual = '0';
+	int qual = bam1_qual(p->b)[i];
 	bio_extend_seq(bio, snum, base, qual);
     }
     s.pos = bs->pos;
@@ -473,7 +473,7 @@ int parse_bam(GapIO *io, const char *fn,
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
     while ((ret = bam_read1(fp, b)) >= 0) {
 	bam_plbuf_push(b, plbuf);
-	if ((++count & 0x1fff) == 0) {
+	if ((++count & 0xffff) == 0) {
 	    putchar('.');
 	    fflush(stdout);
 	    cache_flush(io);

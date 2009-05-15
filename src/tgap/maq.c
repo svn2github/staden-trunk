@@ -280,7 +280,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
 	/* For benchmarking */
 	//if (j == 100000)
-	//    break;
+	//break;
     }
 
     cache_flush(io);

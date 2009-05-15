@@ -443,7 +443,8 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    
 	    if ((++nseqs & 0x3fff) == 0) {
 		int perc = 0;
-		cache_flush(io);
+		if (nseqs & 0xffff == 0)
+		    cache_flush(io);
 		pos = ftello(fp);
 		perc = 100.0 * pos / sb.st_size;
 		printf("\r%d%%", perc);
