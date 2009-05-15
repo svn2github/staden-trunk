@@ -914,7 +914,7 @@ int cache_item_create(GapIO *io, int type, void *from) {
     b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
 
     /* Start new blocks if they contain too much data too */
-    if (b->est_size > 200000) {
+    if (b->est_size > 150000) {
 	//printf("New sub block after %d/%d seqs\n", sub_rec, SEQ_BLOCK_SZ);
 	sub_rec = 0;
 	brec = io->iface->seq_block.create(io->dbh, NULL);
