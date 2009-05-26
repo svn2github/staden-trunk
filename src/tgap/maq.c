@@ -14,6 +14,7 @@ typedef struct {
     int bin;
     int idx;
     int crec;
+    int pos;
 } pair_loc_t;
 
 /* lh3: an analogy of parse_line() */
@@ -101,6 +102,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     int curr_contig = -1;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
+    HacheTable *libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     char tname[1024];
     int sz;
 
@@ -131,6 +133,11 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	bin_index_t *bin;
 	HacheItem *hi;
 	int paired;
+	library_t *lib = NULL;
+	char type;
+	char *LB = dat_fn;
+	HacheData hd;
+	int new = 0;
 
 	/* Convert m64 to m128 if needed */
 	if (sz == 64) {
@@ -157,6 +164,20 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    free(seq.data);
 	    continue;
 	}
+
+	/* Fetch library */
+	hd.p = NULL;
+	hi = HacheTableAdd(libs, LB, strlen(LB), hd, &new);
+	if (new) {
+	    int lrec;
+	    printf("New library %s\n", LB);
+
+	    lrec = library_new(io);
+	    lib = get_lib(io, lrec);
+	    hi->data.p = lib;
+	    cache_incr(io, lib);
+	}
+	lib = hi->data.p;
 
 	/* Create new contig if required */
 	if (m128.seqid != curr_contig) {
@@ -230,6 +251,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    pl->rec  = recno;
 	    pl->bin  = bin->rec;
 	    pl->crec = c->rec;
+	    pl->pos  = seq.len >= 0 ? seq.pos : seq.pos - seq.len - 1;
 	    pl->idx  = seq.bin_index;
 	    hd.p = pl;
 
@@ -255,6 +277,39 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
 		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 		ro->pair_rec = pl->rec;
+
+		/* Increment insert size in library */
+		if (po->crec == pl->crec) {
+		    int isize = pl->pos - po->pos;
+
+		    /*
+		     * We can get +ve isize via:
+		     * |------->     <-------|
+		     *
+		     * and -ve isize via:
+		     * <-------|
+		     *    |------->
+		     *
+		     * We know that 's' is the right-most sequence so
+		     * when this_pos as the input is sorted.
+		     * Therefore we can tell which case it is by the orientation
+		     * of this sequence, and negate isize for the 2nd case.
+		     */
+		    if (!(r_out->flags & GRANGE_FLAG_COMP1))
+			isize = -isize;
+
+		    lib = cache_rw(io, lib);
+		    if ((r_out->flags & GRANGE_FLAG_COMP1) != 
+			(ro->flags & GRANGE_FLAG_COMP1)) {
+			accumulate_library(io, lib,
+					   isize >= 0
+				           ? LIB_T_INWARD
+				           : LIB_T_OUTWARD,
+					   ABS(isize));
+		    } else {
+			accumulate_library(io, lib, LIB_T_SAME, ABS(isize));
+		    }
+		}
 
 		/* And, making an assumption, remove from hache */
 		HacheTableDel(pair, hi, 1);
@@ -293,6 +348,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	HacheTableStats(pair, stdout);
 	HacheTableDestroy(pair, 0);
     }
+    HacheTableDestroy(libs, 0);
 
     return 0;
 }

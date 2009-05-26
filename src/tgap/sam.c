@@ -25,12 +25,14 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
+    char *fn;
     bam_seq_t *seqs;
     int nseq;
     int max_seq;
     int no_tree;
     int merge_contigs;
     HacheTable *pair;
+    HacheTable *libs;
     contig_t *c;
     int n_inserts;
     int count;
@@ -42,6 +44,7 @@ typedef struct {
     int bin;
     int idx;
     int crec;
+    int pos;
 } pair_loc_t;
 
 int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
@@ -87,6 +90,119 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     return bio->nseq++;
 }
 
+typedef union {
+    char  *s;
+    int    i;
+    float  f;
+    double d;
+} bam_aux_t;
+
+/*
+ * Searches for 'key' in the bam auxillary tags.
+ *
+ * If found, key type and value are filled out in the supplied
+ * 'type' and 'val' pointers. These may be supplied as NULL if the
+ * caller simply wishes to test for the presence of a key instead.
+ *
+ * Returns 0 if found
+ *        -1 if not
+ */
+int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
+    char *s = bam1_aux(b);
+    int match = 0;
+
+    while ((uint8_t *)s < b->data + b->data_len) {
+	if (s[0] == key[0] && s[1] == key[1])
+	    match = 1;
+
+	switch (s[2]) {
+	case 'A':
+	    if (type) *type = 'A';
+	    if (val) val->i = *(s+3);
+	    s+=4;
+	    break;
+
+	case 'C':
+	    if (type) *type = 'i';
+	    if (val) val->i = *(uint8_t *)(s+3);
+	    s+=4;
+	    break;
+
+	case 'c':
+	    if (type) *type = 'i';
+	    if (val) val->i = *(int8_t *)(s+3);
+	    s+=4;
+	    break;
+
+	case 'S':
+	    if (type) *type = 'i';
+	    if (val) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		val->i = *(uint16_t *)tmp;
+	    }
+	    s+=5;
+	    break;
+
+	case 's':
+	    if (type) *type = 'i';
+	    if (val) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		val->i = *(int16_t *)tmp;
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	    if (type) *type = 'i';
+	    if (val) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		val->i = *(uint16_t *)tmp;
+	    }
+	    s+=7;
+	    break;
+
+	case 'i':
+	    if (type) *type = 'i';
+	    if (val) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		val->i = *(int16_t *)tmp;
+	    }
+	    s+=7;
+	    break;
+
+	case 'f':
+	    if (type) *type = 'f';
+	    if (val) memcpy(&val->f, s+3, 4);
+	    s+=7;
+	    break;
+
+	case 'd':
+	    if (type) *type = 'd';
+	    if (val) memcpy(&val->d, s+3, 8);
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    if (type) *type = s[2];
+	    s+=3;
+	    if (val) val->s = s;
+	    while (*s++);
+	    s++;
+	    break;
+	}
+
+	if (match)
+	    return 0;
+
+    }
+
+    return -1;
+}
+
 
 /*
  * Removes a sequence from the bam_io_t struct.
@@ -106,6 +222,12 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     int recno, i, paired;
     GapIO *io = bio->io;
     char tname[1024];
+    library_t *lib = NULL;
+    bam_aux_t val;
+    char type;
+    char *LB;
+    HacheData hd;
+    int new = 0;
 
     if (snum < 0 || snum >= bio->nseq)
 	return -1;
@@ -114,6 +236,27 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 
     bs = &bio->seqs[snum];
     b = bs->b;
+
+    /* Fetch library */
+    if (0 == bam_aux_find(b, "LB", &type, &val) && type == 'Z') {
+	LB = val.s;
+    } else {
+	LB = bio->fn;
+    }
+
+    hd.p = NULL;
+    hi = HacheTableAdd(bio->libs, LB, strlen(LB), hd, &new);
+    if (new) {
+	int lrec;
+	printf("New library %s\n", LB);
+
+	lrec = library_new(bio->io);
+	lib = get_lib(bio->io, lrec);
+	hi->data.p = lib;
+	cache_incr(bio->io, lib);
+    }
+    lib = hi->data.p;
+
     /*
     printf("\nSeq %d @ %6d: '%.*s' '%.*s' => nseq=%d\n",
 	   snum, bs->pos, bs->seq_len, bs->seq, bs->seq_len, bs->conf,
@@ -204,6 +347,9 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.bin_index = r_out - ArrayBase(range_t, bin->rng);
     recno = sequence_new_from(io, &s);
 
+    // Simulations of fetching sequence data from source file instead.
+    // recno = bio->count;
+
 #if 0
     /* Demo code for tagging sequences */
     if (memcmp(s.seq, "TAG", 3) == 0) {
@@ -243,6 +389,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	pl->rec  = recno;
 	pl->bin  = bin->rec;
 	pl->crec = bio->c->rec;
+	pl->pos  = s.len >= 0 ? s.pos : s.pos - s.len - 1;
 	pl->idx  = s.bin_index;
 	hd.p = pl;
 
@@ -267,6 +414,40 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	    ro->pair_rec = pl->rec;
+
+	    /* Increment insert size in library */
+	    if (po->crec == pl->crec) {
+		//int pos = s.len >= 0 ? s.pos : s.pos - s.len - 1;
+		int isize = pl->pos - po->pos;
+
+		/*
+		 * We can get +ve isize via:
+		 * |------->     <-------|
+		 *
+		 * and -ve isize via:
+		 * <-------|
+		 *    |------->
+		 *
+		 * We know that 's' is the right-most sequence so
+		 * when this_pos as the input is sorted.
+		 * Therefore we can tell which case it is by the orientation
+		 * of this sequence, and negate isize for the 2nd case.
+		 */
+		if (!(r_out->flags & GRANGE_FLAG_COMP1))
+		    isize = -isize;
+
+		lib = cache_rw(bio->io, lib);
+		if ((r_out->flags & GRANGE_FLAG_COMP1) != 
+		    (ro->flags & GRANGE_FLAG_COMP1)) {
+		    accumulate_library(bio->io, lib,
+				       isize >= 0
+				           ? LIB_T_INWARD
+				           : LIB_T_OUTWARD,
+				       ABS(isize));
+		} else {
+		    accumulate_library(bio->io, lib, LIB_T_SAME, ABS(isize));
+		}
+	    }
 
 	    /* And, making an assumption, remove from hache */
 	    HacheTableDel(bio->pair, hi, 1);
@@ -452,6 +633,8 @@ int parse_bam(GapIO *io, const char *fn,
     bio->merge_contigs = merge_contigs;
     bio->c = NULL;
     bio->count = 0;
+    bio->fn = fn;
+    bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
 
     if (pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
@@ -499,6 +682,9 @@ int parse_bam(GapIO *io, const char *fn,
     if (bio) {
 	if (bio->pair)
 	    HacheTableDestroy(bio->pair, 1);
+
+	if (bio->libs)
+	    HacheTableDestroy(bio->libs, 0);
 
 	if (bio->header)
 	    bam_header_destroy(bio->header);

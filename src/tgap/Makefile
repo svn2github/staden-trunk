@@ -13,8 +13,8 @@ include $(SRCROOT)/mk/$(MACHINE).mk
 # Local comment: Comment out next line for remote compilation
 TGAPBIN=$(O)
 
-INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
-	-I$(SRCROOT)/samtools-0.1.2 -I$(SRCROOT)/tgap
+INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)\
+	-I$(SRCROOT)/samtools-0.1.2-$(MACHINE) -I$(SRCROOT)/tgap
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For debugging g-alloc
@@ -57,7 +57,8 @@ TG_IO = \
 	$(TGAPBIN)/tg_utils.o \
 	$(TGAPBIN)/tg_register.o \
 	$(TGAPBIN)/tg_tracks.o \
-	$(TGAPBIN)/tg_anno.o
+	$(TGAPBIN)/tg_anno.o \
+	$(TGAPBIN)/tg_library.o
 
 TGSH_OBJ = \
 	$(TG_IO) \
@@ -89,7 +90,7 @@ TGILIBS = \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
 	$(TCL_LIB) \
-	-L../samtools-0.1.2 -lbam
+	-L../samtools-0.1.2-$(MACHINE) -lbam
 
 $(O)/tg_index: $(TG_IND_OBJ)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)

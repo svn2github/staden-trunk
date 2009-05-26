@@ -22,7 +22,7 @@
 #define GT_Database    16
 #define GT_Contig      17
 #define GT_Seq         18
-#define GT_DNASource   19
+#define GT_Library     19
 #define GT_Track       20
 #define GT_AnnoEle     21
 #define GT_Anno        22
@@ -96,6 +96,9 @@ typedef struct {
     /* Arrays */
     GCardinal Ncontigs;		/* N.elements in array */
     GCardinal contig_order;	/* rec. of array of contig rec. nos */
+
+    GCardinal Nlibraries;       /* N.elements in array */
+    GCardinal library;          /* rec. of array o library rec. nos */
 
     /* Indices */
     GCardinal seq_name_index;	/* rec of type GT_Index */
@@ -334,5 +337,52 @@ typedef struct {
     int rec;          /* rec of this anno */
     Array ele;        /* recs of anno_ele_t */
 } anno_t;
+
+/*
+ * Libraries:
+ * These hold data on how a set of sequences were produced, describing the
+ * processes involved in producing our single or paired-end reads.
+ *
+ * It's not a strict physical library description as it's possible to take
+ * one library and run it on multiple sequencing technologies, but rather
+ * we describe a single run on a single machine as our level of granularity.
+ *
+ * The orientation and direction of our forward and reverse reads will
+ * vary by library construction type. Standard puc19 capillary libraries
+ * have fwd/rev reads in opposite orientations pointing towards one another,
+ * similarly for solexa short insert libraries.
+ * Long insert libraries on solexa have the fwd and rev reads pointing away
+ * from one another at long insert size (with a smaller sub-set pointing
+ * towards one another with small insert size).
+ * While 454 long insert libraries have the fwd/rev reading pointing in the
+ * same orientation. (Reverse first, then forward?)
+ *
+ * Hence we describe here our expected orientation, for purposes of working
+ * out if a pair for a library is consistent or not.
+ * rev_dir and rev_orient are expressed as relative to the fwd_dir and
+ * fwd_orient.
+ *
+ * We measure insert sizes from 0   to +255 in steps of 1 (256 values)
+ *                              256 to  511 in steps of 2 (128 values)
+ *                              512 to 1024 in steps of 4 (128 valyes)
+ * etc, up to a maximum value.
+ */
+#define LIB_BINS 1792
+
+#define LIB_T_INWARD  0 /* Reads point towards one another */
+#define LIB_T_OUTWARD 1 /* Reads point outwards from one another */
+#define LIB_T_SAME    2 /* Reads are in the same orientation */
+
+typedef struct {
+    int rec;             /* DB record */
+    int insert_size[3];  /* Mean insert size */
+    double sd[3];        /* standard deviation of insert size */
+    int machine;         /* Type of machine, see STECH_* defines above */
+    int lib_type;        /* Primary LIB_T_ type expected */
+    
+    /* A distribution summary, in 1s initially, and then 2s, 4s, 8s, etc */
+    int size_hist[3][LIB_BINS];
+} library_t;
+
 
 #endif /* _TG_STRUCT_H_ */

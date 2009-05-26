@@ -249,6 +249,22 @@ static void anno_unload(GapIO *io, cached_item *ci) {
 
 
 /*
+ * Writes an library to disk.
+ *
+ * Returns 0 for success
+ *        -1 for failure.
+ */
+static int library_write(GapIO *io, cached_item *ci) {
+    return io->iface->library.write(io->dbh, ci);
+}
+
+static void library_unload(GapIO *io, cached_item *ci) {
+    io->iface->library.unlock(io->dbh, ci->view);
+    free(ci);
+}
+
+
+/*
  * Resize a cached_item object to a new size.
  * The object passed in and returned is the object itself in the cache, but
  * the memory we realloc is the cached_item struct holding that.
@@ -343,6 +359,10 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	ci = io->iface->anno.read(io->dbh, k->rec);
 	break;
 
+    case GT_Library:
+	ci = io->iface->library.read(io->dbh, k->rec);
+	break;
+
     default:
 	return NULL;
     }
@@ -418,6 +438,10 @@ static void cache_unload(void *clientdata, HacheData hd) {
 
     case GT_Anno:
 	anno_unload(io, ci);
+	break;
+
+    case GT_Library:
+	library_unload(io, ci);
 	break;
     }
 }
@@ -524,7 +548,7 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
 	ret = io->iface->array.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
 	break;
-
+ 
     case GT_AnnoEle:
 	ret = io->iface->anno_ele.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
@@ -532,6 +556,11 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
 
     case GT_Anno:
 	ret = io->iface->anno.upgrade(io->dbh, ci->view, mode);
+	ci->lock_mode = mode;
+	break;
+
+    case GT_Library:
+	ret = io->iface->library.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
 	break;
 
@@ -727,6 +756,10 @@ int cache_flush(GapIO *io) {
 
 	case GT_Anno:
 	    ret = anno_write(io, ci);
+	    break;
+
+	case GT_Library:
+	    ret = library_write(io, ci);
 	    break;
 
 	default:
@@ -1128,6 +1161,11 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 		       ArrayBase(char, oa->ele),
 		       ArrayMax(na->ele) * sizeof(int));
 	    }
+	    break;
+	}
+
+	case GT_Library: {
+	    puts("FIXME: implement library_dup");
 	    break;
 	}
 

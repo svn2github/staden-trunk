@@ -49,6 +49,8 @@ static int tcl_sequence_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]);
 static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 			     int objc, Tcl_Obj *CONST objv[]);
+static int tcl_library_read(GapIO *io, Tcl_Interp *interp,
+			   int objc, Tcl_Obj *CONST objv[]);
 
 static void io_update_string(Tcl_Obj *obj);
 int io_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
@@ -129,6 +131,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"flush",       "close",
 	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
+	"get_library",
 	(char *)NULL,
     };
 
@@ -136,6 +139,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_FLUSH,     IO_CLOSE,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
+	IO_LIBRARY
     };
 
     if (objc < 2) {
@@ -170,6 +174,10 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case IO_ANNO_ELE:
 	return tcl_anno_ele_read(io, interp, objc-1, objv+1);
+	break;
+
+    case IO_LIBRARY:
+	return tcl_library_read(io, interp, objc-1, objv+1);
 	break;
 
     case IO_CORDER:
@@ -1148,6 +1156,202 @@ static int tcl_anno_ele_read(GapIO *io, Tcl_Interp *interp,
 }
 
 /* ------------------------------------------------------------------------ */
+/* Tcl_Obj "library" type implementation */
+
+static void library_update_string(Tcl_Obj *obj);
+static int library_from_any(Tcl_Interp *interp, Tcl_Obj *obj);
+
+typedef struct {
+    GapIO *io;
+    library_t *library;
+} tcl_library;
+
+static Tcl_ObjType library_obj_type = {
+    "library",
+    (Tcl_FreeInternalRepProc*)NULL,
+    (Tcl_DupInternalRepProc*)NULL,
+    library_update_string,
+    library_from_any
+};
+
+static void library_update_string(Tcl_Obj *obj) {
+    tcl_library *l = obj->internalRep.otherValuePtr;
+    obj->bytes = ckalloc(30);
+    obj->length = sprintf(obj->bytes, "library=%p", l);
+}
+
+static int library_cmd(ClientData clientData, Tcl_Interp *interp,
+		       int objc, Tcl_Obj *CONST objv[]) {
+    int index;
+    tcl_library *tl = (tcl_library *)clientData;
+
+    static char *options[] = {
+	"delete",         "io",           "get_rec",
+	"get_orient",     "get_machine",  "get_dist",
+	"get_insert_size","get_insert_sd","get_count",
+	(char *)NULL,
+    };
+
+    enum options {
+	DELETE,          IO,             GET_REC,
+	GET_ORIENT,      GET_MACHINE,    GET_DIST,
+	GET_INSERT_SIZE, GET_INSERT_SD,  GET_COUNT,
+    };
+
+    if (objc < 2) {
+	Tcl_WrongNumArgs(interp, 1, objv, "option arg ?arg ...?");
+	return TCL_ERROR;
+    }
+
+    if (Tcl_GetIndexFromObj(interp, objv[1], options, "option", 0,
+            &index) != TCL_OK) {
+        return TCL_ERROR;
+    }
+
+    switch ((enum options)index) {
+    case DELETE:
+	Tcl_DeleteCommandFromToken(interp,
+				   Tcl_GetCommandFromObj(interp, objv[0]));
+	break;
+
+    case IO:
+	Tcl_SetResult(interp, io_obj_as_string(tl->io) , TCL_VOLATILE);
+	break;
+
+    case GET_REC:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), tl->library->rec);
+	break;
+
+    case GET_ORIENT:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), tl->library->lib_type);
+	break;
+
+    case GET_MACHINE:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), tl->library->machine);
+	break;
+
+    case GET_INSERT_SIZE: {
+	Tcl_Obj *obj[3];
+	obj[0] = Tcl_NewIntObj(tl->library->insert_size[0]);
+	obj[1] = Tcl_NewIntObj(tl->library->insert_size[1]);
+	obj[2] = Tcl_NewIntObj(tl->library->insert_size[2]);
+	Tcl_SetObjResult(interp, Tcl_NewListObj(3, obj));
+	break;
+    }
+
+    case GET_INSERT_SD: {
+	Tcl_Obj *obj[3];
+	obj[0] = Tcl_NewDoubleObj(tl->library->sd[0]/100.0);
+	obj[1] = Tcl_NewDoubleObj(tl->library->sd[1]/100.0);
+	obj[2] = Tcl_NewDoubleObj(tl->library->sd[2]/100.0);
+	Tcl_SetObjResult(interp, Tcl_NewListObj(3, obj));
+	break;
+    }
+
+    case GET_DIST: {
+	Tcl_Obj *lo[3];
+	int i, j;
+	for (j = 0; j < 3; j++) {
+	    lo[j] = Tcl_NewListObj(0, NULL);
+	    for (i = 0; i < LIB_BINS; i++) {
+		int b;
+		double d;
+		if (!tl->library->size_hist[j][i]) continue;
+
+		b = ibin2isize(i);
+		d = (double)tl->library->size_hist[j][i] / ibin_width(i);
+		Tcl_ListObjAppendElement(interp, lo[j], Tcl_NewIntObj(b));
+		Tcl_ListObjAppendElement(interp, lo[j], Tcl_NewDoubleObj(d));
+	    }
+	}
+	Tcl_SetObjResult(interp, Tcl_NewListObj(3, lo));
+	break;
+    }
+
+    case GET_COUNT: {
+	Tcl_Obj *obj[3];
+	int i, j;
+
+	for (j = 0; j < 3; j++) {
+	    int c = 0;
+	    for (i = 0; i < LIB_BINS; i++) 
+		c += tl->library->size_hist[j][i];
+	    obj[j] = Tcl_NewIntObj(c);
+	}
+        Tcl_SetObjResult(interp, Tcl_NewListObj(3, obj));
+	break;
+    }
+    }
+
+    return TCL_OK;
+}
+
+static int library_from_any(Tcl_Interp *interp, Tcl_Obj *obj) {
+    char *bytes;
+    int length;
+    tcl_library *l;
+
+    if (NULL == (bytes = Tcl_GetStringFromObj(obj, &length)))
+	return TCL_ERROR;
+
+    if (0 != strncmp(bytes, "library=", 3))
+	return TCL_ERROR;
+
+    /* Free the old internalRep before setting the new one. */
+    if (obj->typePtr && obj->typePtr->freeIntRepProc)
+	(*obj->typePtr->freeIntRepProc)(obj);
+
+    /* Convert the hex value to a pointer once more */
+    if (1 != sscanf(bytes+3, "%p", &l))
+	return TCL_ERROR;
+
+    obj->internalRep.otherValuePtr = l;
+    obj->typePtr = &library_obj_type;
+    return TCL_OK;
+}
+
+static int tcl_library_read(GapIO *io, Tcl_Interp *interp,
+			   int objc, Tcl_Obj *CONST objv[]) {
+    int rec;
+    library_t *l;
+    tcl_library *tl;
+    Tcl_Obj *res;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s contig_id\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    Tcl_GetIntFromObj(interp, objv[1], &rec);
+    l = (library_t *)cache_search(io, GT_Library, rec);
+
+    if (NULL == (tl = (tcl_library *)ckalloc(sizeof(*tl))))
+	return TCL_ERROR;
+    tl->io = io;
+    tl->library = l;
+
+    if (NULL == (res = Tcl_NewObj()))
+	return TCL_ERROR;
+
+    res->internalRep.otherValuePtr = tl;
+    res->typePtr = &library_obj_type;
+    library_update_string(res);
+
+    /* Register the string form as a new command */
+    cache_incr(io, l);
+    if (NULL == Tcl_CreateObjCommand(interp, res->bytes, library_cmd,
+				     (ClientData)tl,
+				     (Tcl_CmdDeleteProc *)_cmd_delete))
+	return TCL_ERROR;
+
+    Tcl_SetObjResult(interp, res);
+
+    return TCL_OK;
+}
+
+/* ------------------------------------------------------------------------ */
 /* Tcl_Obj "database" type implementation */
 
 static void database_update_string(Tcl_Obj *obj);
@@ -1197,12 +1401,14 @@ static int database_cmd(ClientData clientData, Tcl_Interp *interp,
     GapIO *io = (GapIO *)clientData;
 
     static char *options[] = {
-	"get_num_contigs",  "flush",
+	"get_num_contigs",  "flush", "get_num_libraries",
+	"get_library_rec",
 	(char *)NULL,
     };
 
     enum options {
-	GET_NUM_CONTIGS,     FLUSH
+	GET_NUM_CONTIGS,     FLUSH,   GET_NUM_LIBRARIES,
+	GET_LIBRARY_REC,
     };
 
     if (objc < 2) {
@@ -1219,6 +1425,21 @@ static int database_cmd(ClientData clientData, Tcl_Interp *interp,
     case GET_NUM_CONTIGS:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), io->db->Ncontigs);
 	break;
+
+    case GET_NUM_LIBRARIES:
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), io->db->Nlibraries);
+	break;
+
+    case GET_LIBRARY_REC: {
+	int idx;
+	if (objc < 2) {
+	}
+	
+	Tcl_GetIntFromObj(interp, objv[2], &idx);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp),
+		      arr(GCardinal, io->library, idx));
+	break;
+    }
 
     case FLUSH:
 	cache_flush(io);
@@ -1324,6 +1545,7 @@ int G5_Init(Tcl_Interp *interp) {
     Tcl_RegisterObjType(&contig_obj_type);
     Tcl_RegisterObjType(&sequence_obj_type);
     Tcl_RegisterObjType(&anno_ele_obj_type);
+    Tcl_RegisterObjType(&library_obj_type);
 
     if (NULL == Tcl_CreateObjCommand(interp, "g5::open_database",
 				     tcl_open_database,
@@ -1337,7 +1559,6 @@ int G5_Init(Tcl_Interp *interp) {
 int G5_SafeInit(Tcl_Interp *interp) {
     return G5_Init(interp);
 }
-
 
 
 

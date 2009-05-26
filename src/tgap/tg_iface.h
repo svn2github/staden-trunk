@@ -90,7 +90,7 @@ typedef struct {
 
 typedef struct {
     STANDARD_IFACE
-} io_dnasrc;
+} io_library;
 
 typedef struct {
     STANDARD_IFACE
@@ -126,7 +126,7 @@ typedef struct {
     io_seq          seq;
     io_anno_ele     anno_ele;
     io_anno         anno;
-    io_dnasrc       dnasrc;
+    io_library      library;
     io_vector       vector;
     io_seq_block    seq_block;
 } iface;

@@ -854,6 +854,15 @@ static GRec io_database_create(void *dbh, void *from) {
     g_flush(io, v);
     unlock(io, v);
 
+    /* Libraries */
+    db.Nlibraries = 0;
+    db.library = allocate(io);
+    v = lock(io, db.library, G_LOCK_EX);
+    if (-1 == g_write_le4(io, v, NULL, 0))
+	return -1;
+    g_flush(io, v);
+    unlock(io, v);
+
 #ifdef INDEX_NAMES
     /* Sequence name btree */
     db.seq_name_index = btree_node_create(io, io->seq_name_hash);
@@ -1235,10 +1244,126 @@ static int io_anno_write(void *dbh, cached_item *ci) {
 /* ------------------------------------------------------------------------
  * dnasrc access methods
  */
-static cached_item *io_dnasrc_read(void *dbh, GRec rec) {
-    return io_generic_read(dbh, rec, GT_DNASource);
+static cached_item *io_library_read(void *dbh, GRec rec) {
+    g_io *io = (g_io *)dbh;
+    cached_item *ci;
+    GView v;
+    library_t *lib;
+    char *ch, *zpacked;
+    size_t len, ssz;
+
+    /* Load from disk */
+    if (-1 == (v = lock(io, rec, G_LOCK_RO)))
+	return NULL;
+
+    ch = g_read_alloc(io, v, &len);
+
+    if (ch && len) {
+	zpacked = mem_inflate(ch, len, &ssz);
+	free(ch);
+	len = ssz;
+	ch = zpacked;
+    }
+
+    /* Generate in-memory data structure */
+    if (!(ci = cache_new(GT_Library, rec, v, NULL, sizeof(*lib))))
+	return NULL;
+
+    lib = (library_t *)&ci->data;
+    lib->rec = rec;
+    if (ch == NULL || len == 0) {
+	lib->insert_size[0] = 0;
+	lib->insert_size[1] = 0;
+	lib->insert_size[2] = 0;
+	lib->sd[0] = 0;
+	lib->sd[1] = 0;
+	lib->sd[2] = 0;
+	lib->machine = 0;
+	lib->lib_type = 0;
+	memset(lib->size_hist, 0, 3 * LIB_BINS * sizeof(lib->size_hist[0][0]));
+    } else {
+	int i, j, tmp;
+	char *cp = ch;
+
+	cp += u72int(cp, &lib->insert_size[0]);
+	cp += u72int(cp, &lib->insert_size[1]);
+	cp += u72int(cp, &lib->insert_size[2]);
+	cp += u72int(cp, &tmp); lib->sd[0] = tmp/100.0;
+	cp += u72int(cp, &tmp); lib->sd[1] = tmp/100.0;
+	cp += u72int(cp, &tmp); lib->sd[2] = tmp/100.0;
+	cp += u72int(cp, &lib->machine);
+	cp += u72int(cp, &lib->lib_type);
+	
+	for (j = 0; j < 3; j++) {
+	    int last = 0;
+	    for (i = 0; i < LIB_BINS; i++) {
+		cp += s72int(cp, &lib->size_hist[j][i]);
+		lib->size_hist[j][i] += last;
+		last = lib->size_hist[j][i];
+	    }
+	}
+    }
+
+    if (ch)
+	free(ch);
+
+    ci->view = v;
+    ci->rec = rec;
+
+    return ci;
 }
 
+static int io_library_write(void *dbh, cached_item *ci) {
+    g_io *io = (g_io *)dbh;
+    library_t *lib = (library_t *)&ci->data;
+    char cpstart[LIB_BINS*5*3+100], *cp = cpstart;
+    int tmp, i, j, err;
+    char *gzout;
+    size_t ssz;
+
+    assert(ci->lock_mode >= G_LOCK_RW);
+
+    cp += int2u7(lib->insert_size[0], cp);
+    cp += int2u7(lib->insert_size[1], cp);
+    cp += int2u7(lib->insert_size[2], cp);
+    tmp = lib->sd[0] * 100; cp += int2u7(tmp, cp);
+    tmp = lib->sd[1] * 100; cp += int2u7(tmp, cp);
+    tmp = lib->sd[2] * 100; cp += int2u7(tmp, cp);
+    cp += int2u7(lib->machine, cp);
+    cp += int2u7(lib->lib_type, cp);
+
+    for (j = 0; j < 3; j++) {
+	int last = 0;
+	for (i = 0; i < LIB_BINS; i++) {
+	    cp += int2s7(lib->size_hist[j][i] - last, cp);
+	    last = lib->size_hist[j][i];
+	}
+    }
+
+    /* Compress it */
+    gzout = mem_deflate(cpstart, cp-cpstart, &ssz);
+    //err = g_write(io, ci->view, cpstart, cp-cpstart);
+    err = g_write(io, ci->view, gzout, ssz);
+    free(gzout);
+    g_flush(io, ci->view);
+
+    if (0) {
+	int i, j;
+
+	puts("\nlibrary\n");
+	for (j = 0; j < 3; j++) {
+	    printf("  type %d\n", j);
+	    for (i = 0; i < 1792; i++) {
+		if (!lib->size_hist[j][i]) continue;
+		printf("        %d\t%f\n", ibin2isize(i),
+		       (double)lib->size_hist[j][i] / ibin_width(i));
+	    }
+	}
+	printf("Rec %d view %d\n", ci->rec, ci->view);
+    }
+
+    return err;
+}
 
 /* ------------------------------------------------------------------------
  * vector access methods
@@ -1932,7 +2057,6 @@ static int io_bin_create(void *dbh, void *vfrom) {
     bin_index_t *from = vfrom;
     g_io *io = (g_io *)dbh;
     GRec rec;
-    GView v;
 
     rec = allocate(io);
     return rec;
@@ -1945,6 +2069,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
      * See changes to bin_new() in tg_bin.c
      */
 #if 0
+    GView v;
     v = lock(io, rec, G_LOCK_EX);
     
     if (from) {
@@ -3174,15 +3299,15 @@ static iface iface_g = {
     },
 
     {
-	/* DNASource */
+	/* Library */
 	io_generic_create,
 	io_generic_destroy,
 	io_generic_lock,
 	io_generic_unlock,
 	io_generic_upgrade,
 	io_generic_abandon,
-	io_dnasrc_read,
-	io_generic_write,
+	io_library_read,
+	io_library_write,
 	io_generic_info,
     },
 

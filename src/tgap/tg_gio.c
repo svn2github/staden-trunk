@@ -54,6 +54,10 @@ GapIO *gio_open(char *fn, int ro, int create) {
     io->contig_order = cache_search(io, GT_RecArray, io->db->contig_order);
     cache_incr(io, io->contig_order);
 
+    /* Load the library array */
+    io->library = cache_search(io, GT_RecArray, io->db->library);
+    cache_incr(io, io->library);
+
     /* Initialise the contig and cursor registration hashes */
     contig_register_init(io);
 
@@ -68,6 +72,7 @@ GapIO *gio_open(char *fn, int ro, int create) {
 void gio_close(GapIO *io) {
     cache_decr(io, io->db);
     cache_decr(io, io->contig_order);
+    cache_decr(io, io->library);
 
     cache_flush(io);
     cache_destroy(io);
