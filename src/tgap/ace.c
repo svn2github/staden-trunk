@@ -504,7 +504,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 	    /* Fill out a seq_t struct */
 	    memset(&seq, 0, sizeof(seq));
 	    seq.pos = af[seq_count].pos;
-	    seq.len = ai->rd.nbases;
+	    seq.len = af[seq_count].dir == 0 ? ai->rd.nbases : -ai->rd.nbases;
 	    seq.mapping_qual = 50;
 	    seq.left = 1;
 	    seq.right = ai->rd.nbases;
@@ -525,8 +525,8 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
 	case ACE_QA:
 	    if (seq.flags & SEQ_COMPLEMENTED) {
-		seq.left  = seq.len - ai->qa.aend   + 1;
-		seq.right = seq.len - ai->qa.astart + 1;
+		seq.left  = ABS(seq.len) - ai->qa.aend   + 1;
+		seq.right = ABS(seq.len) - ai->qa.astart + 1;
 	    } else {
 		seq.left  = ai->qa.astart;
 		seq.right = ai->qa.aend;
@@ -536,7 +536,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 	case ACE_DS:
 	    /* Create range */
 	    r.start = seq.pos;
-	    r.end   = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
+	    r.end   = seq.pos + ABS(seq.len) - 1;
 	    r.rec   = 0;
 
 	    /* Add the range to a bin, and see which bin it was */
