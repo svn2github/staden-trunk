@@ -658,7 +658,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	f_a = +1;
 	f_b = offset;
     }
-    
+
     if (!(end < NMIN(bin->start_used, bin->end_used) ||
 	  start > NMAX(bin->start_used, bin->end_used))
 	&& bin->rng) {
@@ -674,6 +674,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	    if (NMAX(l->start, l->end) >= start
 		&& NMIN(l->start, l->end) <= end) {
 		int st, en;
+
 		if (count >= *alloc) {
 		    *alloc = *alloc ? *alloc * 2 : 16;
 		    *results = (rangec_t *)realloc(*results,
@@ -905,7 +906,7 @@ void contig_bin_dump(GapIO *io, int cnum) {
 static int range_populate(GapIO *io, contig_iterator *ci,
 			  int cnum, int start, int end) {
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
-    
+
     if (ci->r) {
 	free(ci->r);
 	ci->r = NULL;
@@ -991,10 +992,10 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
 
     if (whence == CITER_FIRST) {
 	start = ci->cstart;
-	end   = start + 1000;
+	end   = start + 999;
     } else {
 	end   = ci->cend;
-	start = end - 1000;
+	start = end - 999;
     }
 
     if (0 != range_populate(io, ci, cnum, start, end)) {
@@ -1009,45 +1010,32 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
     return ci;
 }
 
-/*
- * Finds the index of snum in a range array.
- * Returns index on success
- *         -1 on failure
- */
-static int find_range_index(contig_iterator *ci, int snum) {
-    int i;
-    for (i = 0; i < ci->nitems; i++) {
-	if (ci->r[i].rec == snum)
-	    break;
-    }
-
-    return (i == ci->nitems) ? -1 : i;
-}
 
 /*
  * Returns seq range_t struct pointer on success
  *        NULL on failure (typically fallen off the end of the contig)
  */
 rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
-    int curr;
+    rangec_t *r;
 
-    while (ci->index >= ci->nitems) {
-	/* Fallen off the range edge */
-	//	if (!ci->auto_extend)
-	//	    return NULL;
+    for (;;) {
+	while (ci->index >= ci->nitems) {
+	    /* Fallen off the range edge */
+	    //	if (!ci->auto_extend)
+	    //	    return NULL;
 
-	curr = ci->r ? ci->r[ci->index-1].rec : -1;
-	if (-1 == range_populate(io, ci, ci->cnum,
-				 ci->start + 1000, ci->end + 1000))
-	    return NULL;
+	    if (-1 == range_populate(io, ci, ci->cnum,
+				     ci->start + 1000, ci->end + 1000))
+		return NULL;
 
-	if (ci->r && curr != -1)
-	    ci->index = find_range_index(ci, curr)+1;
-	else
 	    ci->index = 0;
-    }
+	}
 
-    return &ci->r[ci->index++];
+	while (ci->index < ci->nitems && (r = &ci->r[ci->index++])) {
+	    if (r->start >= ci->start)
+		return r;
+	}
+    }
 }
 
 /*
@@ -1055,30 +1043,27 @@ rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
  *        NULL on failure (typically fallen off the end of the contig)
  */
 rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
-    int curr;
+    rangec_t *r;
 
-    while (ci->index < 0 || ci->nitems == 0) {
-	/* Fallen off the range edge */
-	//	if (!ci->auto_extend)
-	//	    return NULL;
+    for (;;) {
+	while (ci->index < 0 || ci->nitems == 0) {
+	    /* Fallen off the range edge */
+	    //	if (!ci->auto_extend)
+	    //	    return NULL;
+	    
+	    if (-1 == range_populate(io, ci, ci->cnum,
+				     ci->start - 1000, ci->end - 1000))
+		return NULL;
+	    
 
-	curr = ci->r ? ci->r[0].rec : -1;
-	if (-1 == range_populate(io, ci, ci->cnum,
-				 ci->start - 1000, ci->end - 1000))
-	    return NULL;
-
-	if (ci->r && curr != -1) {
-	    ci->index = find_range_index(ci, curr);
-	    if (ci->index == -1)
-		ci->index = ci->nitems-1;
-	    else
-		ci->index--;
-	} else {
 	    ci->index = ci->nitems-1;
 	}
-    }
 
-    return &ci->r[ci->index--];
+	while (ci->index >= 0 && (r = &ci->r[ci->index--])) {
+	    if (r->start <= ci->end)
+		return r;
+	}
+    }
 }
 
 /* Track values prior to resolution resampling */
