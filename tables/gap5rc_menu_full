@@ -134,6 +134,7 @@ add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
 #add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
 add_command	{View.List Consensus Confidence} 8 10 {ListConfidence \$io}
 add_command	{View.List Base Confidence}	 8 10 {ListBaseConfidence \$io}
+add_command     {View.List Libraries}            8 10 {ListLibraries \$io}
 #add_command     {View.Contig Navigation}         1 2 {ViewNavigationData \$io}
 
 add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}

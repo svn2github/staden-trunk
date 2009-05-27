@@ -261,3 +261,5 @@ set auto_index(result_list_update) [list source [file join $dir result_manager.t
 set auto_index(consistency_result_list_update) [list source [file join $dir result_manager.tcl]]
 
 set auto_index(ExportSequences) [list source [file join $dir export_contigs.tcl]]
+
+set auto_index(ListLibraries) [list source [file join $dir libraries.tcl]]
