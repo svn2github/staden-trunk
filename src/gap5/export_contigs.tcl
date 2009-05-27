@@ -20,7 +20,7 @@ proc ExportSequences {io} {
 	-title "Select format" \
 	-default 1 \
 	-orient horizontal \
-	-buttons "sam baf fastq fasta"
+	-buttons "sam ace baf fastq fasta"
 
     #--- output filename
     getFname $f.outfile "Output filename" save {} aln.out
@@ -38,7 +38,7 @@ proc ExportSequences {io} {
 }
 
 proc ExportSequences2 {io f} {
-    set format [lindex "x sam baf fastq fasta" [radiolist_get $f.format]]
+    set format [lindex "x sam ace baf fastq fasta" [radiolist_get $f.format]]
     if {[lorf_in_get $f.infile] == 4} {
 	set gel_name [contig_id_gel $f.id]
 	set lreg [contig_id_lreg $f.id]
