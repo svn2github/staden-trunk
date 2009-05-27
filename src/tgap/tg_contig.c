@@ -992,10 +992,10 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
 
     if (whence == CITER_FIRST) {
 	start = ci->cstart;
-	end   = start + 999;
+	end   = start + 9999;
     } else {
 	end   = ci->cend;
-	start = end - 999;
+	start = end - 9999;
     }
 
     if (0 != range_populate(io, ci, cnum, start, end)) {
@@ -1025,7 +1025,7 @@ rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
 	    //	    return NULL;
 
 	    if (-1 == range_populate(io, ci, ci->cnum,
-				     ci->start + 1000, ci->end + 1000))
+				     ci->start + 10000, ci->end + 10000))
 		return NULL;
 
 	    ci->index = 0;
@@ -1052,7 +1052,7 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 	    //	    return NULL;
 	    
 	    if (-1 == range_populate(io, ci, ci->cnum,
-				     ci->start - 1000, ci->end - 1000))
+				     ci->start - 10000, ci->end - 10000))
 		return NULL;
 	    
 
