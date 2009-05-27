@@ -1,3 +1,18 @@
+Gap5 1.1.3.1,  May 15th 2009
+============================
+
+A minor change to support exporting the data in a variety of formats,
+to facilitate migrating from one Gap5 release to the next. (The next
+one will have substantially smaller database sizes and faster I/O.)
+
+
+Key changes
+-----------
+
+*	Added an "Export Sequences" function to the main File
+        menu. This can output in fasta, fastq, sam or baf format.
+
+
 Gap5 1.1.3,  April 24th 2009
 ============================
 
