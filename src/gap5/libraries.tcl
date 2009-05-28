@@ -117,21 +117,34 @@ proc ListLibraries {io} {
     set maxy 1
     set maxx 1
     for {set j 0} {$j < 3} {incr j} {
-	set line [list 0 0]
-	set col [lindex {black red blue} $j]
+	set last_x 0
+	set last_y 0
+	set col [lindex {black orange3 blue} $j]
 	foreach {x y} [lindex $dist $j] {
-	    lappend line $x $y
+	    #set y [expr {log($y+1)}]
+	    $c create line $last_x $last_y $x $y -tags type_$j -fill $col -width 3
+	    set last_x $x
+	    set last_y $y
 	    if {$maxy < $y} {set maxy $y}
 	    if {$maxx < $x} {set maxx $x}
 	}
-	lappend line [lindex $line end-1] 0
-	eval $c create line $line -tags type_$j -fill $col
     }
 
     $c scale all 0 0 1 -1
     $c move all 0 $maxy
     $c scale all 0 0 1 [expr {400.0/$maxy}]
 
+    # Identify an *appropriate* scrollregion.
+    for {set x $maxx} {$x >= 100} {set x [expr {int($x * 0.9)}]} {
+	set l [$c find enclosed $x -10000 10000000 10000]
+	if {$l != {}} {
+	    foreach {x1 y1 x2 y2} [eval $c bbox $l] break;
+	    if {[expr {abs($y1-$y2)}] >= 10} break
+	}
+    }
+    set maxx [expr {int($x/0.9)}]
+    set maxy $y2
+    
     # Create the ruler
     puts $maxx,$maxy
     for {set x 0} {$x < $maxx+100} {incr x 10} {
@@ -145,7 +158,17 @@ proc ListLibraries {io} {
 	$c create line $x 0 $x $h -tags ruler
     }
 
-    $c configure -scrollregion [$c bbox all]
+    # Plot Labels
+    set o 40
+    for {set j 0} {$j < 3} {incr j} {
+	set col [lindex {black orange3 blue} $j]
+	set dir [lindex {"--->  <---" "<---  --->" "<---  <---\n--->  --->"} $j]
+	if {$j == 2} {incr o 5}
+	$c create text 25 [expr {$j*20+$o}] -text $dir -fill $col -anchor w
+	$c create line 5 [expr {$j*20+$o}] 20 [expr {$j*20+$o}] -fill $col -width 3
+    }
+
+    $c configure -scrollregion "0 0 $maxx $maxy"
 
     $lib delete
 }
