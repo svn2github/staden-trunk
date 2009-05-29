@@ -627,6 +627,7 @@ int sequence_get_pair(GapIO *io, seq_t *s) {
 
     /* Jump over to pair */
     r = arrp(range_t, b->rng, s->bin_index);
+    assert(r->rec == s->rec);
     cache_decr(io, b);
     return r->pair_rec;
 }
