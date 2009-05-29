@@ -137,7 +137,7 @@ ST=<source type>
 
 SV=<vector name>
 
-PA=<parent source>
+SO=<parent source>
 
 	Parent source should match a previously defined SO name.
 
@@ -181,7 +181,13 @@ DR=<direction>
 MQ=<qual>
 	MAQ style mapping quality
 
+SO=<parent source>
+	(aka the library name)
+	This matches the name of a DNA Source record.
+
 AL=<alignment-string>
+	(Unused currently)
+
 	The alignment-string indicates a detailed mapping of base
 	coordinates to trace coordinates. It is used to dislay the
 	traces in register with the sequences even after clipping,
@@ -199,6 +205,51 @@ AL=<alignment-string>
 	be "M50I1M50". The E(dit) character is used to indicate both
 	sequence and trace have a base call at this position but the
 	sequence base has been edited and no longer matches the trace.
+
+
+
+Annotations: AN
+===============
+
+Mandatory fields
+----------------
+AN=<type> (Must be first item)
+	The annotation type. Eg repeat, comment, oligo, etc.
+
+Options fields
+--------------
+
+RD=<read name>
+CO=<contig name>
+	Optional - if neither are specified the last reading is
+	assumed to be the location, or if no reads have been specified
+	yet for this contig then the last contig is used.
+
+	NB: for now these aren't fully implemented - it's ALWAYS last one.
+
+LO=<location>
+	Optional - see below.
+
+	The position of the annotation. If location starts with an @
+	sign then it is an absolute position in the contig, otherwise
+	it is relative to the left end of the object the annotation is
+	attached to.
+
+	If LO is unspecified the annoation will be assumed to be a
+	whole object annotation rather than annotating just a range in
+	that object. In this case the LL key is unused.
+	
+
+LL=<length>
+	Annotation length. Optional. If unspecified this is a single
+	base annotation.
+
+TX=<free-text comment>
+	The text associated with this annotation.
+
+Multiple copies of the above are possible - they bind to the closest
+previous value. Eg: RD, LO, LL together form one tag and followed by
+RD, LO again specifies the same tag on another read.
 
 
 Issues
@@ -223,6 +274,10 @@ Examples
 Basic example 1
 ---------------
 
+SO=xb
+ST=shotgun
+SV=puc19
+
 CO=Contig6
 LN=2764
 
@@ -231,6 +286,7 @@ DR=1
 AP=0
 QL=24
 QR=296
+SO=xb
 TN=xb96d5
 TR=xb96d5.s1.ztr
 SQ=GACAGGTCGACTCTAGAGGATCCCCAACATATTGTGCACCAAGAATTGATGCAGTTTTCCAGGTGAGACCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACG-ATCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGAACTTCCGAAGTGTTCAAATTTTAAAAACTTATTTGGGTACCGAGCTCGAATTCGTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCCACACAACATACGAGCCGGAAGCATAAAGTGTAAAGCCTGGGGTGCCTAATGAGTGAGCTAACTCCCTTAATTCCGTTGGTAAATGCCCTTTTTCCAGTGGGAAACTTTTGTGCCAGTGCTTTATGATTGGCCCCGGGGGGGAGGGCGTTTCTTTGGCCCGGGGGTTTTTGCCCGGGGGAACGTTTCCTCCCCGGTCCCTAGGGTTCAAAACGCCCCCTTTTTCCCGGGGAAATCTTTTTGGGCCCGAGAGAACCCTTTAAAAATCGCCAGTGGTTTTCTTTGAGGACCTTTAAGGGGCTTG
@@ -241,6 +297,7 @@ DR=1
 AP=45
 QL=28
 QR=218
+SO=xb
 TN=xc04h1
 TR=xc04h1.s1.ztr
 SQ=CGCTGCAGGTCGACTCTAGAGGATCCCCCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACGAGTCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGGACTTTCGAAGGTTCAAAATTTAAAAACTTTTTTAAAAATTTTTAATTTCTTCTTAAATTCCAGGGGTTTACCTCTTGGGCCTCAGCCTTTCCTGACGGGTTTCGTTGGGCTTTCCCCTGGGGTCAACTTTTTTATGGGGCAAATTTCCCGGGGGAAATTTGGTAAGGCCATTCTGGATACCCTCAAGGGTTTTGCCCAATATTTTGGTTCACTTGTGGGAGAATTGGGTTACCCAAATTTTTAAAAACTTTGCCCTCTAAATTTTTTCTTGAAAGCGCTGGGGGTTCCCTTTAAGAGGCCCCCTGGGGGGTTATAAGAGGCCCTGTCCCCGGTTTCCAGGGGGGTGTTCCCAGGGCTCTTGTAGGGTTTACTGGGGCCGCTGTTGTGC
@@ -252,10 +309,11 @@ Example 2
 
 CO=Contig6
 LN=2764
-rd=([^.]*)(.)(.*)
-TN:${rd(1)}
+rd=([^.]*)([a-z][0-9]+)\.(.)(.*)
+SO:${rd(1)}
+TN:${rd(1)}${rd(2)}
 TR:${rd}.ztr
-PR:${rd(2)/p/1/q/2/*/0}
+PR:${rd(3)/p/1/q/2/*/0}
   
 RD=xb96d5.s1
 DR=1
@@ -264,6 +322,10 @@ QL=24
 QR=296
 SQ=GACAGGTCGACTCTAGAGGATCCCCAACATATTGTGCACCAAGAATTGATGCAGTTTTCCAGGTGAGACCTTTTTTAATACTTCCAAACTCTTAAGACAAAGTGAAATTCAGAAATACTA-CCCAGGAGTCGAGTCTACTTTCGAAATTGAGCGCAACG-ATCTATAAACTTCGTGAATACCCCTCCTATTTTTGACTTCTCAAGACCATACATGCCACGTGTAAATTTCATCGGAGCCATCCAATGCAGAAAACCAAAAGAACTTCCGAAGTGTTCAAATTTTAAAAACTTATTTGGGTACCGAGCTCGAATTCGTAATCATGGTCATAGCTGTTTCCTGTGTGAAATTGTTATCCGCTCACAATTCCACACAACATACGAGCCGGAAGCATAAAGTGTAAAGCCTGGGGTGCCTAATGAGTGAGCTAACTCCCTTAATTCCGTTGGTAAATGCCCTTTTTCCAGTGGGAAACTTTTGTGCCAGTGCTTTATGATTGGCCCCGGGGGGGAGGGCGTTTCTTTGGCCCGGGGGTTTTTGCCCGGGGGAACGTTTCCTCCCCGGTCCCTAGGGTTCAAAACGCCCCCTTTTTCCCGGGGAAATCTTTTTGGGCCCGAGAGAACCCTTTAAAAATCGCCAGTGGTTTTCTTTGAGGACCTTTAAGGGGCTTG
 FQ='')*.1-33>>DB>>>>>>ADDKKKKKIKKKKKC>8====DKB;77BEKIIIIG@E979?@B66**+89B??EHHDDFFFFIKKMQIFFFFFFDDDDDFKKIIIFF>D==9>>FIIFFIDDDDKHIFDDDDFIIGGIIIFIIIIIIIIDDDIIIKHH;DDDHIFIKKKKKB88664==DDFKKQPMFKKLKMKKKKOKKKKKYYYYIFFFFFIKKKMKKKKKKMMMMMMMMYKKYYYYYYKKFFFD??<OB99?BIFGKYYYYOIBA=>@1.'')1:AIIQIIIIIIYIIIIIBB=>><<6306:<AAABIIFIIIIIQAAA:97:@IIIIIEI<<:3.39AAIIII>99>0-**))+1285:7472228<:844855++**+-*//++,/-0)))+*)+452-***/,.)**)*)))-(())***,,'''')'())''*'''))****)(((((+)++1+,+**(())++)))')('**((()*++*)(**(())**+''''''))+((('''''''(*))+''''(.0-((((*.)))))+*(((()(().*.((((((*,,(((*****'''')))'''(((((+((+(+(/+,,)'+''',)))-,(((((**((((((****+//.*))''''''(.,/++(')))))*)'''*,)),-,))%%%
+
+AN=AMBG
+LO=* 366 1
+TX=Q 23
   
 RD=xc04h1.s1
 DR=1

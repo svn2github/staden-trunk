@@ -307,6 +307,10 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
     HacheTable *pair = NULL;
     int ncontigs = 0;
     baf_block *b, *co = NULL;
+    int last_obj_type = 0;
+    int last_obj_pos = 0;
+    int last_obj_rec = 0;
+    int last_obj_orient = 0;
 	
     printf("Loading %s...\n", fn);
     if (-1 == stat(fn, &sb) ||
@@ -344,6 +348,12 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		contig_index_update(io, contig, strlen(contig), c->rec);
 	    }
 	    cache_incr(io, c);
+
+	    /* For anno */
+	    last_obj_type = GT_Contig;
+	    last_obj_rec = c->rec;
+	    last_obj_pos = c->start + 1;
+	    last_obj_orient = 0;
 
 	    break;
 	}
@@ -385,6 +395,17 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    seq.bin = bin->rec;
 	    seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
 	    recno = sequence_new_from(io, &seq);
+
+	    /* For anno */
+	    last_obj_type = GT_Seq;
+	    last_obj_rec = recno;
+	    if (seq.len >= 0) {
+		last_obj_pos = seq.pos;
+		last_obj_orient = 0;
+	    } else {
+		last_obj_pos = seq.pos - seq.len - 1;
+		last_obj_orient = 1;
+	    }
 
 	    /* Find pair if appropriate */
 	    if (pair) {
@@ -451,6 +472,45 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		fflush(stdout);
 	    }
 	    
+	    break;
+	}
+
+	case AN: {
+	    range_t r;
+	    anno_ele_t *e;
+	    char *loc = baf_block_value(b, LO);
+	    char *len = baf_block_value(b, LL);
+	    char *txt = baf_block_value(b, TX);
+	    int pos;
+	    bin_index_t *bin;
+
+	    if (!loc) {
+		pos = last_obj_pos;
+	    } else {
+		if (*loc == '@') {
+		    pos = atoi(loc+1)-1;
+		} else {
+		    if (last_obj_orient == 0)
+			pos = last_obj_pos + atoi(loc)-1;
+		    else
+			pos = last_obj_pos - (atoi(loc)-1)
+			    - (len ? atoi(len)-1 : 0);
+		}
+	    }
+
+	    r.start = pos;
+	    r.end = pos + (len ? atoi(len)-1 : 0);
+
+	    r.mqual    = last_obj_type;  /* obj_type */
+	    r.pair_rec = last_obj_rec;   /* obj_rec */
+
+	    r.flags = GRANGE_FLAG_ISANNO;
+	    r.rec = anno_ele_new(io, 0, last_obj_type, last_obj_rec, 0, txt);
+	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
+	    e = cache_rw(io, e);
+	
+	    bin = bin_add_range(io, &c, &r, NULL);
+	    e->bin = bin->rec;
 	    break;
 	}
 

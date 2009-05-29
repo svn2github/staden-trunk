@@ -14,7 +14,6 @@ enum line_type {
     SI=CC2('S','I'), /*    Insert size mean */
     SS=CC2('S','S'), /*    Insert size standard deviation */
     SV=CC2('S','V'), /*    vector */
-    PA=CC2('P','A'), /*    parent source */
     RD=CC2('R','D'), /* Reading */
     SQ=CC2('S','Q'), /*    Sequence */
     FQ=CC2('F','Q'), /*    Fastq quality */
@@ -23,10 +22,15 @@ enum line_type {
     QR=CC2('Q','R'), /*    Right quality clip */
     TN=CC2('T','N'), /*    Template name */
     DR=CC2('D','R'), /*    Direction, 1=>uncomp, -1=>complemented */
-    PR=CC2('P','R'), /*    Direction, 1=>uncomp, -1=>complemented */
+    PR=CC2('P','R'), /*    Primer type */
     TR=CC2('T','R'), /*    Trace name */
     MQ=CC2('M','Q'), /*    Mapping quality */
-    AL=CC2('A','L'), /*    Alignment */
+    AL=CC2('A','L'), /* Alignment */
+    AN=CC2('A','N'), /*    Annotation */
+    LO=CC2('L','O'), /*    Location */
+    LL=CC2('L','L'), /*    Length */
+    AT=CC2('A','T'), /*    Anno. Type */
+    TX=CC2('T','X'), /*    Anno. Text */
 
     /* Regexp versions of the above */
     ln=CC2('l','n'),
@@ -46,6 +50,10 @@ enum line_type {
     tr=CC2('t','r'),
     mq=CC2('m','q'),
     al=CC2('a','l'),
+    an=CC2('a','n'),
+    lo=CC2('l','o'),
+    at=CC2('a','t'),
+    tx=CC2('t','x'),
 };
 
 typedef struct {
