@@ -425,7 +425,8 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (r_out)
 	*r_out = r2;
 
-    bin_incr_nseq(io, bin, 1);
+    if (!(r2->flags & GRANGE_FLAG_ISANNO))
+	bin_incr_nseq(io, bin, 1);
 
     return bin;
 }
@@ -470,10 +471,12 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 	memmove(arrp(range_t, bin->rng, i), arrp(range_t, bin->rng, i+1), 
 		(ArrayMax(bin->rng) - (i+1)) * sizeof(range_t));
 	ArrayMax(bin->rng)--;
+
+	if (!(r->flags & GRANGE_FLAG_ISANNO))
+	    bin_incr_nseq(io, bin, -1);
+
 	break;
     }
-
-    bin_incr_nseq(io, bin, -1);
 
     return 0;
 }
