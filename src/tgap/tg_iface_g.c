@@ -2834,8 +2834,9 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     for (last = i = 0; i < SEQ_BLOCK_SZ; i++) {
 	int32_t bi;
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &bi);
+	cp += s72int(cp, &bi);
 	in[i].bin_index = last + bi;
+	last = in[i].bin_index;
     }
 
     /* left clip */
