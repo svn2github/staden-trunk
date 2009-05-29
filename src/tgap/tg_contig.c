@@ -522,17 +522,17 @@ SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
  * will be reused if we have to add another row.
  */
 static int compute_ypos(rangec_t *r, int nr, int job) {
-    int i;
+    int i, j;
     struct xy_pair *node, *curr, *next;
     int yn = -1;
 
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
-	for (i = 0; i < nr; i++) {
+	for (i = j = 0; i < nr; i++) {
 	    if (r[i].flags & GRANGE_FLAG_ISANNO)
 		r[i].y = 0;
 	    else
-		r[i].y = i;
+		r[i].y = j++;
 	}
 	return 0;
     }
