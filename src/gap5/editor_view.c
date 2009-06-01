@@ -951,12 +951,14 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 					       (char *)&key, sizeof(key));
 			 hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
 			int ai = hi->data.i;
-			printf("Seq %d anno %d\n", key, ai);
 
 			for (p2 = sp - xx->displayPos, p = 0; p<l; p++,p2++) {
 			    if (p2 + xx->displayPos >= xx->r[ai].start &&
-				p2 + xx->displayPos <= xx->r[ai].end)
-				ink[p2].sh |= sh_inverse;
+				p2 + xx->displayPos <= xx->r[ai].end) {
+				if (xx->ed->display_cutoffs ||
+				    (p >= left-1 && p <= right-1))
+				    ink[p2].sh |= sh_inverse;
+			    }
 			}
 		    }
 		}
@@ -1534,7 +1536,8 @@ int edCursorUp(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j--; j >= 0; j--) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
+	    !(xx->r[j].flags & GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -1583,7 +1586,8 @@ int edCursorDown(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j++; j < xx->nr; j++) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
+	    !(xx->r[j].flags & GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -1869,6 +1873,9 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     for (i = 0; i < xx->nr; i++) {
+	if (xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	    continue;
+
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
 	    int delta;
 
