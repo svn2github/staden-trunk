@@ -11,7 +11,7 @@
  */
 int anno_ele_new(GapIO *io, int bin,
 		 int obj_type, int obj_rec, int anno_rec,
-		 char *comment) {
+		 int type, char *comment) {
     int rec;
     anno_ele_t e;
 
@@ -19,10 +19,10 @@ int anno_ele_new(GapIO *io, int bin,
     e.obj_type = obj_type;
     e.obj_rec  = obj_rec;
     e.anno_rec = anno_rec;
+    e.tag_type = type;
     e.comment  = comment;
     
-    if (-1 == (rec = io->iface->anno_ele.create(io->dbh, &e)))
-	return -1;
+    rec = cache_item_create(io, GT_AnnoEle, &e);
 
     return rec;
 }
