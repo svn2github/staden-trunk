@@ -15,18 +15,19 @@
  * as it's stored.
  */
 
-#define GT_RecArray     3
-#define GT_Bin          5
-#define GT_Range        6
-#define GT_BTree	7
-#define GT_Database    16
-#define GT_Contig      17
-#define GT_Seq         18
-#define GT_Library     19
-#define GT_Track       20
-#define GT_AnnoEle     21
-#define GT_Anno        22
-#define GT_SeqBlock    23
+#define GT_RecArray      3
+#define GT_Bin           5
+#define GT_Range         6
+#define GT_BTree         7
+#define GT_Database     16
+#define GT_Contig       17
+#define GT_Seq          18
+#define GT_Library      19
+#define GT_Track        20
+#define GT_AnnoEle      21
+#define GT_Anno         22
+#define GT_SeqBlock     23
+#define GT_AnnoEleBlock 24
 
 typedef struct {
     GCardinal pos;
@@ -50,8 +51,17 @@ typedef struct {
     GCardinal mqual; /* mapping quality */
     GCardinal pair_rec; /* paired end data */
     GCardinal flags; /* see below */
+    /* Move library here? */
 } GRange; /* An element of the bin->rng record */
 
+
+#define GRANGE_FLAG_ISANNO     (1<<7) /* sequence vs tag */
+
+/* For annotation ranges: */
+#define GRANGE_FLAG_TAG_SEQ    (1<<1) /* 0=>contig, 1=>sequence */
+#define GRANGE_FLAG_COMPOUND   (1<<2) /* true anno. has multiple components */
+
+/* For sequence ranges: */
 #define GRANGE_FLAG_TYPE_MASK  (3<<0)
 #  define GRANGE_FLAG_TYPE_SINGLE  0
 #  define GRANGE_FLAG_TYPE_PAIRED  1
@@ -65,7 +75,6 @@ typedef struct {
 #define GRANGE_FLAG_CONTIG     (1<<3) /* pair held within the same contig */
 #define GRANGE_FLAG_COMP1      (1<<4) /* true if complemented */
 #define GRANGE_FLAG_COMP2      (1<<5) /* true if complemented */
-#define GRANGE_FLAG_ISANNO     (1<<7) /* sequence vs tag */
 
 typedef struct {
     GCardinal type;
@@ -142,7 +151,7 @@ typedef struct {
     unsigned int seq_tech:3;
     unsigned int flags:3;
     unsigned int format:2;
-    uint8_t mapping_qual;
+    uint8_t mapping_qual; /* REMOVE? In GRange already. Same for parent_rec */
     int name_len;
     int trace_name_len;
     int alignment_len;
@@ -263,6 +272,7 @@ typedef struct {
     int flags;
     int y;     /* nominal display position, not stored on disc */
     int pair_ind; /* -1 if not found, or index into array of rangec_t */
+    /* Move library here? */
 } rangec_t;
 
 typedef struct {
@@ -290,6 +300,7 @@ typedef struct {
     int mqual;
     int pair_rec;
     int flags;
+    /* Move library here? */
 #endif
 } range_t;
 
@@ -321,15 +332,27 @@ typedef struct {
  * that may link in some way with a single shared annotation, or disjoint 
  * regions within a single sequence (eg gene structures).
  */
+struct anno_ele_block;
 typedef struct {
+    int tag_type;  /* short 4-byte tag type code */
     char *comment; /* Possibly blank, but a per-region comment too */
     int rec;       /* record */
     int bin;       /* bin containing this element */
     int obj_type;  /* type of object referred to by record */
     int obj_rec;   /* record number of object the tag is attached to */
     int anno_rec;  /* link to anno_t record below */
+    struct anno_ele_block *block;
+    int idx; 
     char *data;    /* location of packed comment */
 } anno_ele_t;
+
+#define ANNO_ELE_BLOCK_BITS 10
+#define ANNO_ELE_BLOCK_SZ (1<<ANNO_ELE_BLOCK_BITS)
+typedef struct anno_ele_block {
+    int        est_size;
+    int        rec[ANNO_ELE_BLOCK_SZ];
+    anno_ele_t *ae[ANNO_ELE_BLOCK_SZ];
+} anno_ele_block_t;
 
 typedef struct {
     char *key;        /* the tag type and text */

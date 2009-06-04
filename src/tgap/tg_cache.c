@@ -237,6 +237,9 @@ static int anno_ele_write(GapIO *io, cached_item *ci) {
 static int anno_write(GapIO *io, cached_item *ci) {
     return io->iface->anno.write(io->dbh, ci);
 }
+static int anno_ele_block_write(GapIO *io, cached_item *ci) {
+    return io->iface->anno_ele_block.write(io->dbh, ci);
+}
 
 static void anno_ele_unload(GapIO *io, cached_item *ci) {
     io->iface->anno_ele.unlock(io->dbh, ci->view);
@@ -244,6 +247,21 @@ static void anno_ele_unload(GapIO *io, cached_item *ci) {
 }
 static void anno_unload(GapIO *io, cached_item *ci) {
     io->iface->anno.unlock(io->dbh, ci->view);
+    free(ci);
+}
+static void anno_ele_block_unload(GapIO *io, cached_item *ci) {
+    int i;
+    anno_ele_block_t *b = (anno_ele_block_t *)&ci->data;
+
+    io->iface->anno_ele_block.unlock(io->dbh, ci->view);
+
+    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+	if (b->ae[i]) {
+	    cached_item *si = ci_ptr(b->ae[i]);
+	    if (si)
+		free(si);
+	}
+    }
     free(ci);
 }
 
@@ -292,9 +310,18 @@ void *cache_item_resize(void *item, size_t size) {
 	new->hi->data.p = new;
     }
 
-    if (new->type == GT_Seq) {
+    switch (new->type) {
+    case GT_Seq: {
 	seq_t *s = (seq_t *)&new->data;
 	s->block->seq[s->idx] = s;
+	break;
+    }
+
+    case GT_AnnoEle: {
+	anno_ele_t *e = (anno_ele_t *)&new->data;
+	e->block->ae[e->idx] = e;
+	break;
+    }
     }
 
     return &new->data;
@@ -328,10 +355,6 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 	break;
 
     case GT_SeqBlock:
-	/* FIXME
-	 * At this point we need to reparent the unpacked sequences
-	 * and populate as objects in the cache too.
-	 */
 	ci = io->iface->seq_block.read(io->dbh, k->rec);
 	break;
 
@@ -353,6 +376,10 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
 
     case GT_AnnoEle:
 	ci = io->iface->anno_ele.read(io->dbh, k->rec);
+	break;
+
+    case GT_AnnoEleBlock:
+	ci = io->iface->anno_ele_block.read(io->dbh, k->rec);
 	break;
 
     case GT_Anno:
@@ -405,10 +432,6 @@ static void cache_unload(void *clientdata, HacheData hd) {
 	break;
 
     case GT_SeqBlock:
-	/* FIXME:
-	 * At this stage we need to decrement the reference counts on
-	 * the child GT_Seq objects and unload those too.
-	 */
 	seq_block_unload(io, ci);
 	break;
 
@@ -434,6 +457,10 @@ static void cache_unload(void *clientdata, HacheData hd) {
 
     case GT_AnnoEle:
 	anno_ele_unload(io, ci);
+	break;
+
+    case GT_AnnoEleBlock:
+	anno_ele_block_unload(io, ci);
 	break;
 
     case GT_Anno:
@@ -464,6 +491,7 @@ int cache_create(GapIO *io) {
     //    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
     if (NULL == (h = HacheTableCreate(8192, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
+    h->name = "tg_cache";
 
     h->clientdata = io;
     h->load = cache_load;
@@ -551,6 +579,11 @@ int cache_upgrade(GapIO *io, cached_item *ci, int mode) {
  
     case GT_AnnoEle:
 	ret = io->iface->anno_ele.upgrade(io->dbh, ci->view, mode);
+	ci->lock_mode = mode;
+	break;
+
+    case GT_AnnoEleBlock:
+	ret = io->iface->anno_ele_block.upgrade(io->dbh, ci->view, mode);
 	ci->lock_mode = mode;
 	break;
 
@@ -669,6 +702,25 @@ int cache_flush(GapIO *io) {
 
 		    break;
 		}
+
+		case GT_AnnoEleBlock: {
+		    HacheItem *htmp;
+		    anno_ele_block_t *bn = (anno_ele_block_t *)&ci->data;
+		    anno_ele_block_t *bo;
+		    int i;
+
+		    htmp = HacheTableSearch(io->base->cache,
+					    hi->key, hi->key_len);
+		    bo = (anno_ele_block_t *)&((cached_item *)htmp->data.p)->data;
+
+		    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+			if (!bn->ae[i]) {
+			    bn->ae[i] = bo->ae[i];
+			    bn->ae[i]->block = bn;
+			}
+		    }
+		    break;
+		}
 		}
 
 		/* Purge from parent */
@@ -754,6 +806,10 @@ int cache_flush(GapIO *io) {
 	    ret = anno_ele_write(io, ci);
 	    break;
 
+	case GT_AnnoEleBlock:
+	    ret = anno_ele_block_write(io, ci);
+	    break;
+
 	case GT_Anno:
 	    ret = anno_write(io, ci);
 	    break;
@@ -834,6 +890,93 @@ int cache_flush(GapIO *io) {
     memset(write_counts, 0, 100*sizeof(int));
 #endif
 
+#if 0
+    /* Count updated & locked records, to check for cache ref-count leaks */
+    {
+	int total[100];
+	int updated[100];
+	int ref_count[100];
+	int in_use[100];
+	size_t sz[100], tsz, tc;
+
+	memset(total,     0, 100*sizeof(int));
+	memset(updated,   0, 100*sizeof(int));
+	memset(ref_count, 0, 100*sizeof(int));
+	memset(in_use,    0, 100*sizeof(int));
+	memset(sz,        0, 100*sizeof(size_t));
+
+	for (i = 0; i < h->nbuckets; i++) {
+	    HacheItem *hi, *next;
+	    for (hi = h->bucket[i]; hi; hi = next) {
+		HacheData data;
+		cached_item *ci = hi->data.p;
+
+		next = hi->next;
+
+		if (ci->updated) updated[ci->type]++;
+		if (hi->ref_count) ref_count[ci->type]++;
+		if (hi->in_use_prev || hi->in_use_next || h->in_use == hi)
+		    in_use[ci->type]++;
+		total[ci->type]++;
+
+		sz[ci->type] += sizeof(*ci) + ci->data_size + 8;
+
+		switch(ci->type) {
+		    int j;
+		    seq_block_t *sb;
+		    anno_ele_block_t *eb;
+		    cached_item *si;
+
+		case GT_SeqBlock:
+		    sb = (seq_block_t *)&ci->data;
+		    for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+			seq_t *s = sb->seq[j];
+			if (s) {
+			    si = ci_ptr(s);
+			    sz[ci->type] += sizeof(*si) + si->data_size + 8;
+			}
+		    }
+		    break;
+
+		case GT_AnnoEleBlock:
+		    eb = (anno_ele_block_t *)&ci->data;
+		    for (j = 0; j < SEQ_BLOCK_SZ; j++) {
+			anno_ele_t *e = eb->ae[j];
+			if (e) {
+			    si = ci_ptr(e);
+			    sz[ci->type] += sizeof(*si) + si->data_size + 8;
+			}
+		    }
+		    break;
+		}
+	    }
+	}
+
+	for (tc = tsz = i = 0; i < 100; i++) {
+	    tsz += sz[i];
+	    tc  += total[i];
+	}
+	printf("After flush: %d items, %ld bytes in cache\n", tc, tsz);
+	for (i = 0; i < 100; i++) {
+	    char *s[] = {
+		"", "", "", "RecArray", "", "Bin", "Range", "BTree",
+		"", "", "", "", "", "", "", "", "Database", "Contig",
+		"Seq", "Library", "Track", "AnnoEle", "Anno",
+		"SeqBlock", "AnnoEleBlock"
+	    };
+	    if (!total[i]) continue;
+	    printf("  Type %d %s\n", i, s[i]);
+	    printf("    Size      = %ld (%ld/item)\n", sz[i], sz[i]/total[i]);
+	    printf("    Total rec = %d\n", total[i]);
+	    printf("    locked    = %d\n", ref_count[i]);
+	    if (in_use[i] != ref_count[i])
+		printf("****'in_use'  = %d\n", in_use[i]);
+	    if (updated[i])
+		printf("****updated   = %d\n", updated[i]);
+	}
+    }
+#endif
+
     return ret;
 }
 
@@ -873,11 +1016,20 @@ void *cache_search(GapIO *io, int type, GRec rec) {
     cache_key_t k;
     HacheItem *hi;
     
-    if (type == GT_Seq) {
+    switch (type) {
+    case GT_Seq:
 	sub_rec = rec & (SEQ_BLOCK_SZ-1);
 	rec >>= SEQ_BLOCK_BITS;
 	type = GT_SeqBlock;
-	//	printf("Converting seq %d to seq_block %d,%d\n", orec, rec, sub_rec);
+	break;
+
+    case GT_AnnoEle:
+	sub_rec = rec & (ANNO_ELE_BLOCK_SZ-1);
+	rec >>= ANNO_ELE_BLOCK_BITS;
+	type = GT_AnnoEleBlock;
+	break;
+
+    default:
     }
 
     k = construct_key(rec, type);
@@ -894,7 +1046,8 @@ void *cache_search(GapIO *io, int type, GRec rec) {
     if (!hi)
 	return NULL;
 
-    if (otype == GT_Seq) {
+    switch (otype) {
+    case GT_Seq: {
 	seq_block_t *b = (seq_block_t *)&((cached_item *)hi->data.p)->data;
 	HacheData hd;
 
@@ -907,37 +1060,36 @@ void *cache_search(GapIO *io, int type, GRec rec) {
 	} else {
 	    return b->seq[sub_rec];
 	}
+	break;
+    }
+
+    case GT_AnnoEle: {
+	anno_ele_block_t *b = (anno_ele_block_t *)&((cached_item *)hi->data.p)->data;
+	HacheData hd;
 
 	/*
-	k = construct_key(b->rec[sub_rec], GT_Seq);
-	if (b->seq[sub_rec]) {
-	    //	    printf("Adding seq %d to cache\n", b->rec[sub_rec]);
-	    hd.p = ci_ptr(b->seq[sub_rec]);
-	    hi = HacheTableAdd(io->cache, (char *)&k, sizeof(k), hd, NULL);
-	    ci_ptr(b->seq[sub_rec])->hi = hi;
-	    return b->seq[sub_rec];
+	 * If this is a child I/O then it's possible this block has partial
+	 * data. Hence we look both here and also the parent I/O.
+	 */
+	if (!b->ae[sub_rec] && io->base) {
+	    return cache_search(io->base, otype, orec);
 	} else {
-	    return NULL;
+	    return b->ae[sub_rec];
 	}
-	*/
+	break;
+    }
     }
 
     return &((cached_item *)hi->data.p)->data;
 }
 
 /*
- * Creates a new item.
+ * Creates a new seq_t item.
  */
-int cache_item_create(GapIO *io, int type, void *from) {
+static int cache_item_create_seq(GapIO *io, void *from) {
     static int brec = 0;
     static int sub_rec = SEQ_BLOCK_SZ;
     seq_block_t *b;
-
-    if (type != GT_Seq) {
-	fprintf(stderr,
-		"cache_item_create only implemented for GT_Seq right now\n");
-	return -1;
-    }
 
     if (sub_rec == SEQ_BLOCK_SZ) {
 	sub_rec = 0;
@@ -966,26 +1118,8 @@ int cache_item_create(GapIO *io, int type, void *from) {
 	cached_item *ci = cache_new(GT_Seq, 0, 0, NULL, slen);
 
 	s = (seq_t *)&ci->data;
-	*s = *f;
-
-	s->name = (char *)&s->data;
-	strcpy(s->name, f->name ? f->name : "");
-	s->name_len = strlen(s->name);
-
-	s->trace_name = s->name + s->name_len + 1;
-	strcpy(s->trace_name, f->trace_name ? f->trace_name : "");
-	s->trace_name_len = strlen(s->trace_name);
-
-	s->alignment = s->trace_name + s->trace_name_len + 1;
-	strcpy(s->alignment, f->alignment ? f->alignment : "");
-	s->alignment_len = strlen(s->alignment);
-
-	s->seq = s->alignment + s->alignment_len + 1;
-	memcpy(s->seq, f->seq, ABS(f->len));
-
-	s->conf = s->seq + ABS(s->len);
-	memcpy(s->conf, f->conf, ABS(f->len)*
-	       (f->format == SEQ_FORMAT_CNF4 ? 4 : 1));
+	if (sequence_copy(s, f) == -1)
+	    return -1;
 
 	s->block = b;
 	s->idx = sub_rec;
@@ -994,9 +1128,73 @@ int cache_item_create(GapIO *io, int type, void *from) {
 	    s->trace_name_len + 15;
     }
 
-    //printf("Create seq %d,%d => %d\n", brec, sub_rec, b->rec[sub_rec]);
+    assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
 
     return (brec << SEQ_BLOCK_BITS) + sub_rec++;
+}
+
+static int cache_item_create_anno_ele(GapIO *io, void *from) {
+    static int brec = 0;
+    static int sub_rec = ANNO_ELE_BLOCK_SZ;
+    anno_ele_block_t *b;
+
+    if (sub_rec == ANNO_ELE_BLOCK_SZ) {
+	sub_rec = 0;
+	brec = io->iface->anno_ele_block.create(io->dbh, NULL);
+    }
+
+    b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
+
+    /* Start new blocks if they contain too much data too */
+    if (b->est_size > 150000) {
+	sub_rec = 0;
+	brec = io->iface->anno_ele_block.create(io->dbh, NULL);
+	b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
+    }
+
+    b = cache_rw(io, b);
+    b->rec[sub_rec] = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
+
+    /* FIXME: move this somewhere sensible */
+    {
+	anno_ele_t *t, *f = (seq_t *)from;
+	int slen = sizeof(anno_ele_t) +
+	    (f->comment ? strlen(f->comment) : 0)+1;
+	cached_item *ci = cache_new(GT_AnnoEle, 0, 0, NULL, slen);
+
+	t = (anno_ele_t *)&ci->data;
+	*t = *f;
+	t->comment = (char *)&t->data;
+	strcpy(t->comment, f->comment ? f->comment : "");
+
+	t->block = b;
+	t->idx = sub_rec;
+	b->ae[sub_rec] = t;
+	b->est_size += strlen(t->comment) + 10;
+    }
+
+    assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
+
+    return (brec << ANNO_ELE_BLOCK_BITS) + sub_rec++;
+}
+
+/*
+ * Creates a new item.
+ */
+int cache_item_create(GapIO *io, int type, void *from) {
+    switch (type) {
+    case GT_Seq:
+	return cache_item_create_seq(io, from);
+
+    case GT_AnnoEle:
+	return cache_item_create_anno_ele(io, from);
+
+    default:
+	fprintf(stderr,
+		"cache_item_create only implemented for GT_Seq/GT_AnnoEle right now\n");
+    }
+    
+    return -1;
 }
 
 /*
@@ -1008,16 +1206,30 @@ int cache_item_create(GapIO *io, int type, void *from) {
  */
 cached_item *cache_master(cached_item *ci) {
     seq_t *s;
+    anno_ele_t *e;
 
-    if (!ci || ci->type != GT_Seq)
-	return ci;
+    if (!ci)
+	return NULL;
 
-    s = (seq_t *)&ci->data;
-    if (!s->block)
-	return ci;
+    switch (ci->type) {
+    case GT_Seq:
+	s = (seq_t *)&ci->data;
+	if (!s->block)
+	    return ci;
+	else
+	    return ci_ptr(s->block);
 
-    return ci_ptr(s->block);
+    case GT_AnnoEle:
+	e = (anno_ele_t *)&ci->data;
+	if (!e->block)
+	    return ci;
+	else
+	    return ci_ptr(e->block);
+    }
+
+    return ci;
 }
+
 void cache_incr(GapIO *io, void *data) {
     cached_item *ci = cache_master(ci_ptr(data));
     HacheTableIncRef(ci->hi->h, ci->hi);
@@ -1085,11 +1297,8 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    /* reset internal name/seq/conf pointers */
 	    seq_t *os = (seq_t *)&ci->data;
 	    seq_t *s  = (seq_t *)&ci_new->data;
-	    s->name = (char *)&s->data;
-	    s->trace_name = s->name + s->name_len + 1;
-	    s->alignment = s->trace_name + s->trace_name_len + 1;
-	    s->seq = s->alignment + s->alignment_len + 1;
-	    s->conf = s->seq + ABS(s->len);
+
+	    sequence_reset_ptr(s);
 
 	    /* Duplicate the annotation Array */
 	    /* FIXME: update to new format, whatever that is! */
@@ -1148,6 +1357,19 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    break;
 	}
 
+	case GT_AnnoEleBlock: {
+	    int i;
+	    /* Duplicate our arrays */
+	    anno_ele_block_t *ob = (anno_ele_block_t *)&ci->data;
+	    anno_ele_block_t *b = (anno_ele_block_t *)&ci_new->data;
+	    memcpy(b->rec, ob->rec, ANNO_ELE_BLOCK_SZ * sizeof(*b->rec));
+
+	    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
+		b->ae[i] = NULL;
+	    }
+	    break;
+	}
+
 	case GT_Anno: {
 	    anno_t *oa = (anno_t *)&ci->data;
 	    anno_t *na = (anno_t *)&ci_new->data;
@@ -1202,11 +1424,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
 	    s = (seq_t *)&sub_new->data;
 
-	    s->name = (char *)&s->data;
-	    s->trace_name = s->name + s->name_len + 1;
-	    s->alignment = s->trace_name + s->trace_name_len + 1;
-	    s->seq = s->alignment + s->alignment_len + 1;
-	    s->conf = s->seq + ABS(s->len);
+	    sequence_reset_ptr(s);
 
 	    /* Duplicate the annotation Array */
 	    /* FIXME: update to new format, whatever that is! */
@@ -1222,6 +1440,30 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 
 	    break;
 	}
+
+	case GT_AnnoEle: {
+	    anno_ele_block_t *b = (anno_ele_block_t *)&ci_new->data;
+	    anno_ele_t *oe  = (anno_ele_t *)&sub_ci->data, *e;
+	    int sub_rec = oe->rec & (ANNO_ELE_BLOCK_SZ-1);
+
+	    /* Already duplicated? */
+	    if (b->ae[oe->idx]) {
+		sub_new = sub_ci;
+		break;
+	    }
+	    
+	    printf("Duplicate anno %d in block %d\n", sub_rec, ci->rec);
+
+	    sub_new = (cached_item *)malloc(sizeof(*ci) + sub_ci->data_size);
+	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
+	    e = (anno_ele_t *)&sub_new->data;
+
+	    e->comment = (char *)&e->data;
+	    e->block = b;
+	    b->ae[e->idx] = e;
+	    break;
+	}
+
 	}
 
 	ci_new = sub_new;
@@ -1246,13 +1488,6 @@ void *cache_rw(GapIO *io, void *data) {
     if (io->base) {
 	ci = cache_dup(io, ci);
 	mi = cache_master(ci);
-	/*
-	if (ci->type == GT_Seq) {
-	    seq_t *s = (seq_t *)&ci->data;
-	    seq_block_t *b = (seq_block_t *)&mi->data;
-	    ci = ci_ptr(b->seq[s->idx]);
-	}
-	*/
 	data = &ci->data;
     }
 

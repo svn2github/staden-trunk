@@ -109,6 +109,10 @@ typedef struct {
 } io_seq_block;
 
 typedef struct {
+    STANDARD_IFACE
+} io_anno_ele_block;
+
+typedef struct {
     /* Higher level database-level functions */
     int (*create)(char *dbname);
     void *(*connect)(char *dbname, int ro);
@@ -118,17 +122,18 @@ typedef struct {
     int (*unlock)(void *dbh);
 
     /* The objects themselves */
-    io_array        array; /* generic array */
-    io_database     database;
-    io_contig       contig;
-    io_bin          bin;
-    io_track        track;
-    io_seq          seq;
-    io_anno_ele     anno_ele;
-    io_anno         anno;
-    io_library      library;
-    io_vector       vector;
-    io_seq_block    seq_block;
+    io_array          array; /* generic array */
+    io_database       database;
+    io_contig         contig;
+    io_bin            bin;
+    io_track          track;
+    io_seq            seq;
+    io_anno_ele       anno_ele;
+    io_anno           anno;
+    io_library        library;
+    io_vector         vector;
+    io_seq_block      seq_block;
+    io_anno_ele_block anno_ele_block;
 } iface;
 
 #endif /* _TG_IO_LOW_H_ */
