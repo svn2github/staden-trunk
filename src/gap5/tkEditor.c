@@ -25,6 +25,8 @@
 #include "gap_globals.h"
 #include "dstring.h"
 #include "gap4_compat.h"
+#include "tagdb.h"
+#include "notedb.h"
 
 /* ---- Local function prototypes ---- */
 static int EditorConfigure(Tcl_Interp *interp, Editor *ed,
@@ -259,6 +261,51 @@ static int attach_edview(Tcl_Interp *interp, Editor *ed,
     return TCL_OK;
 }
 
+static Pixel ColourNameToPixel(Tcl_Interp *interp, Tk_Window tkwin, char *name)
+{
+    XColor *cp = Tk_GetColor(interp, tkwin, name);
+
+    if (cp) {
+	return cp->pixel;
+    } else {
+	verror(ERR_WARN, "ColourNameToPixel", "Colourmap is full");
+	return 0;
+    }
+}
+
+static void setUpColourMap(Tcl_Interp *interp, Tk_Window tkwin)
+{
+    static int done = 0;
+    int i;
+
+    if (done)
+	return;
+    else
+	done = 1;
+
+    for (i=0;i<tag_db_count;i++) {
+        tag_db[i].fg_pixel =  (tag_db[i].fg_colour == NULL) ?
+            1 : ColourNameToPixel(interp, tkwin, tag_db[i].fg_colour);
+        tag_db[i].bg_pixel =  (tag_db[i].bg_colour == NULL) ?
+            0 : ColourNameToPixel(interp, tkwin, tag_db[i].bg_colour);
+        tag_db[i].gf_pixel =  (tag_db[i].gf_colour == NULL) ?
+            1 : ColourNameToPixel(interp, tkwin, tag_db[i].gf_colour);
+        tag_db[i].gb_pixel =  (tag_db[i].gb_colour == NULL) ?
+            0 : ColourNameToPixel(interp, tkwin, tag_db[i].gb_colour);
+    }
+
+    for (i = 0; i < note_db_count; i++) {
+	note_db[i].fg_pixel = note_db[i].fg_colour
+	    ? ColourNameToPixel(interp, tkwin, note_db[i].fg_colour) : 1;
+	note_db[i].bg_pixel = note_db[i].bg_colour
+	    ? ColourNameToPixel(interp, tkwin, note_db[i].bg_colour) : 0;
+	note_db[i].gf_pixel = note_db[i].gf_colour
+	    ? ColourNameToPixel(interp, tkwin, note_db[i].gf_colour) : 1;
+	note_db[i].gb_pixel = note_db[i].gb_colour
+	    ? ColourNameToPixel(interp, tkwin, note_db[i].gb_colour) : 0;
+    }
+}
+
 /*
  * Our class command procedure. This is different from usual class command
  * procs as we actually use the SheetCmd() procedure and then carefully
@@ -297,9 +344,9 @@ static int EditorCmd(ClientData clientData, Tcl_Interp *interp,
 
 
     /*
-     * Initialise tag colours - FIXME, do in one place.
+     * Initialise tag colours.
      */
-    //    setUpColourMap(interp, Tk_MainWindow(interp));
+    setUpColourMap(interp, Tk_MainWindow(interp));
 
 
     /*

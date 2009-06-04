@@ -12,6 +12,7 @@
 #include "tg_gio.h"
 #include "misc.h"
 #include "consensus.h"
+#include "tagdb.h"
 
 static void redisplaySelection(edview *xx);
 
@@ -673,6 +674,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 
     xx->anno_hash = HacheTableCreate(8192, HASH_DYNAMIC_SIZE |
 				     HASH_ALLOW_DUP_KEYS);
+    xx->anno_hash->name = "anno_hash";
     for (i = 0; i < xx->nr; i++) {
 	int key = xx->r[i].pair_rec; /* aka obj_rec */
 	HacheData hd;
@@ -770,6 +772,76 @@ void ed_set_nslider_pos(edview *xx, int pos) {
 	sprintf(buf, " %.20f %.20f", fract1, fract2);
 	if (Tcl_VarEval(EDINTERP(en), en->xScrollCmd, buf, NULL) != TCL_OK) {
 	    printf("Error in editor names scroll: %s\n", EDINTERP(en)->result);
+	}
+    }
+}
+
+static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
+				int sp, int left, int right) {
+    char type[5];
+    HacheItem *hi;
+
+    if (xx->nr == 0)
+	return;
+
+    if (s) {
+	/* A sequence */
+	int key = s->rec;
+	int p, p2, l = s->len >= 0 ? s->len : -s->len;
+
+	for (hi = HacheTableSearch(xx->anno_hash,
+			       (char *)&key, sizeof(key));
+	     hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
+	    int ai = hi->data.i;
+	    int db = idToIndex(type2str(xx->r[ai].mqual, type));
+
+	    /* FIXME: Inefficient! */
+	    for (p2 = sp - xx->displayPos, p = 0; p<l; p++,p2++) {
+		if (p2 + xx->displayPos >= xx->r[ai].start &&
+		    p2 + xx->displayPos <= xx->r[ai].end) {
+		    if (xx->ed->display_cutoffs ||
+			(p >= left-1 && p <= right-1)) {
+			if (tag_db[db].fg_colour!=NULL) {
+			    ink[p2].sh|=sh_fg;
+			    ink[p2].fg=tag_db[db].fg_pixel;
+			}
+			if (tag_db[db].bg_colour!=NULL) {
+			    ink[p2].sh|=sh_bg;
+			    ink[p2].bg=tag_db[db].bg_pixel;
+			}
+		    }
+		}
+	    }
+	}
+    } else {
+	/* Consensus */
+	int i, j, p2;
+	int key = xx->cnum;
+
+	for (hi = HacheTableSearch(xx->anno_hash,
+			       (char *)&key, sizeof(key));
+	     hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
+	    int ai = hi->data.i;
+	    int db = idToIndex(type2str(xx->r[ai].mqual, type));
+
+	    sp = xx->r[ai].start;
+	    if (sp < xx->displayPos)
+		sp = xx->displayPos;
+
+	    for (j = sp; j <= xx->r[ai].end; j++) {
+		if (j >= xx->displayPos + xx->displayWidth)
+		    break;
+
+		p2 = j-xx->displayPos;
+		if (tag_db[db].fg_colour!=NULL) {
+		    ink[p2].sh|=sh_fg;
+		    ink[p2].fg=tag_db[db].fg_pixel;
+		}
+		if (tag_db[db].bg_colour!=NULL) {
+		    ink[p2].sh|=sh_bg;
+		    ink[p2].bg=tag_db[db].bg_pixel;
+		}
+	    }
 	}
     }
 }
@@ -945,22 +1017,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 
 		/* Annotations */
 		if (xx->anno_hash) {
-		    HacheItem *hi;
-		    int key = s->rec;
-		    for (hi = HacheTableSearch(xx->anno_hash,
-					       (char *)&key, sizeof(key));
-			 hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
-			int ai = hi->data.i;
-
-			for (p2 = sp - xx->displayPos, p = 0; p<l; p++,p2++) {
-			    if (p2 + xx->displayPos >= xx->r[ai].start &&
-				p2 + xx->displayPos <= xx->r[ai].end) {
-				if (xx->ed->display_cutoffs ||
-				    (p >= left-1 && p <= right-1))
-				    ink[p2].sh |= sh_inverse;
-			    }
-			}
-		    }
+		    tk_redisplaySeqTags(xx, ink, s, sp, left, right);
 		}
 	    }
 
@@ -1105,25 +1162,8 @@ static void tk_redisplaySeqConsensus(edview *xx, rangec_t *r, int nr) {
     }
 
     /* Consensus annotations */
-    for (i = 0; i < xx->nr; i++) {
-	int sp  = xx->r[i].start;
-	int j;
-
-	if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
-	    continue;
-
-	if (xx->r[i].mqual /* obj_type */ != GT_Contig)
-	    continue;
-
-	if (sp < xx->displayPos)
-	    sp = xx->displayPos;
-
-	for (j = sp; j <= xx->r[i].end; j++) {
-	    if (j >= xx->displayPos + xx->displayWidth)
-		break;
-	    ink[j-xx->displayPos].sh |= sh_inverse;
-	}
-    }
+    if (xx->anno_hash)
+	tk_redisplaySeqTags(xx, ink, NULL, 0, 0, 0);
 
     XawSheetPutJazzyText(&xx->ed->sw, 0, xx->y_cons, wid,
 			 xx->displayedConsensus, ink);
