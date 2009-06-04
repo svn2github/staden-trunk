@@ -228,6 +228,16 @@ uint32_t hash(int func, uint8_t *key, int key_len) {
  * =========================================================================
  */
 
+static char *hname(HacheTable *h) {
+    static char name[100];
+    if (h->name)
+	return h->name;
+
+    sprintf(name, "%p", h);
+    return name;
+}
+
+
 /* Multiplicative factors indicating when to grow or shrink the hash table */
 #define HASH_TABLE_RESIZE 3
 
@@ -352,6 +362,7 @@ HacheTable *HacheTableCreate(int size, int options) {
     h->load = NULL;
     h->del = NULL;
     h->in_use = NULL;
+    h->name = NULL;
 
     for (i = 0; i < size; i++) {
 	h->bucket[i] = NULL;
@@ -412,7 +423,7 @@ int HacheTableResize(HacheTable *h, int newsize) {
     HacheTable *h2;
     int i;
 
-    fprintf(stdout, "Resizing HacheTable %p to %d\n", h, newsize);
+    fprintf(stdout, "Resizing HacheTable %s to %d\n", hname(h), newsize);
 
     /* Create a new hash table and rehash everything into it */
     h2 = HacheTableCreate(newsize, h->options);
@@ -449,8 +460,8 @@ int HacheTableExpandCache(HacheTable *h) {
     HacheOrder *newo;
     int i, j = h->cache_size;
 
-    fprintf(stderr, "Cache order %p full, doubling size (%d)!\n",
-	    h, h->cache_size*2);
+    fprintf(stderr, "Cache order %s full, doubling size (%d)!\n",
+	    hname(h), h->cache_size*2);
 
     /* Double size */
     newo = (HacheOrder *)realloc(h->ordering, h->cache_size*2 * sizeof(*newo));
@@ -670,7 +681,7 @@ HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len, HacheData data,
     HacheItem *hi;
 
 #ifdef DEBUG
-    printf("HacheTableAdd %p %d data.p %p\n", h, *(int *)key, data.p);
+    printf("HacheTableAdd %s %d data.p %p\n", hname(h), *(int *)key, data.p);
 #endif
 
     if (!key_len)
@@ -737,7 +748,7 @@ int HacheTableDel(HacheTable *h, HacheItem *hi, int deallocate_data) {
     assert(hi->h == h);
 
 #ifdef DEBUG
-    printf("HacheTableDel %p %p\n", h, hi->data.p);
+    printf("HacheTableDel %s %p\n", hname(h), hi->data.p);
 #endif
 
     hv = hash(h->options & HASH_FUNC_MASK,
@@ -830,7 +841,7 @@ HacheItem *HacheTableQuery(HacheTable *h, char *key, int key_len) {
     HacheItem *hi;
 
 #ifdef DEBUG
-    printf("HacheTableQuery %p %d\n", h, *(int *)key);
+    printf("HacheTableQuery %s %d\n", hname(h), *(int *)key);
 #endif
 
     h->searches++;
@@ -870,7 +881,7 @@ HacheItem *HacheTableSearch(HacheTable *h, char *key, int key_len) {
     HacheItem *hi;
 
 #ifdef DEBUG
-    printf("HacheTableSearch %p %d\n", h, *(int *)key);
+    printf("HacheTableSearch %s %d\n", hname(h), *(int *)key);
 #endif
 
     h->searches++;
@@ -975,7 +986,7 @@ void HacheTableRefInfo(HacheTable *h, FILE *fp) {
     for (i = h->free; i != -1; i = h->ordering[i].next)
 	nf++;
 
-    fprintf(fp, "Hache Table %p\n", h);
+    fprintf(fp, "Hache Table %s\n", hname(h));
     fprintf(fp, "    Cache size       %d\n", h->cache_size);
     fprintf(fp, "    Refcount > 0     %d\n", nr);
     fprintf(fp, "    Refcount = 0     %d\n", nu);

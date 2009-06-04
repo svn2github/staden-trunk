@@ -635,9 +635,11 @@ int parse_bam(GapIO *io, const char *fn,
     bio->count = 0;
     bio->fn = fn;
     bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
+    bio->libs->name = "libs";
 
     if (pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
+	bio->pair->name = "pair";
     } else {
 	bio->pair = NULL;
     }

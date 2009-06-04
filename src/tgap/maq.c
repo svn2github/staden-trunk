@@ -112,8 +112,10 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
     fprintf(stderr, "++ The input contains %d sequences.\n", mm->n_ref);
 
+    libs->name = "libs";
     if (pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
+	pair->name = "pair";
     }
 
     if (long_format) {

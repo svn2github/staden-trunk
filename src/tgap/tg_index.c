@@ -204,8 +204,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 
     if (pair_reads) {
 	pair = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
-	printf("Pair hache = %p\n", pair);
-	pair->clientdata = io;
+	pair->name = "pair";
 	pair->load = pair_load;
 	pair->del  = NULL;
     }
@@ -323,7 +322,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	    exit(0);
 	*/
 
-	if ((nseqs & 0x7fff) == 0) {
+	if ((nseqs & 0xffff) == 0) {
 	    static int perc = 0;
 	    if (perc < 100.0 * pos / sb.st_size) {
 		perc = 100.0 * pos / sb.st_size;

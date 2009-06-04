@@ -69,6 +69,9 @@ int contig_register_init(GapIO *io) {
 
 	return -1;
 
+    io_contig_reg(io)->name = "io_contig_reg(io)";
+    io_cursor_reg(io)->name = "io_cursor_reg(io)";
+
     io_contig_reg(io)->load = NULL;
     io_contig_reg(io)->del  = NULL;
     io_cursor_reg(io)->load = NULL;

@@ -51,6 +51,8 @@ typedef struct HacheTableStruct {
     int       hits;	/* number of cached queries */
 
     HacheItem *in_use;
+
+    char      *name;    /* For debug messages */
 } HacheTable;
 
 /* An iterator on HacheTable items */

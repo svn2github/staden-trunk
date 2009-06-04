@@ -436,7 +436,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
     FILE *fp;
     af_line *af = NULL;
     int af_count, seq_count, nseqs = 0, ncontigs = 0;
-    contig_t *c;
+    contig_t *c = NULL;
     HacheTable *pair = NULL;
 
     set_dna_lookup(); /* initialise complement table */
@@ -446,6 +446,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
     if (pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
+	pair->name = "pair";
     }
 
     while (ai = next_ace_item(fp)) {
@@ -457,6 +458,9 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
 	switch (ai->type) {
 	case ACE_CO:
+	    if (c)
+		cache_decr(io, c);
+
 	    /* Create a new contig */
 	    c = NULL;
 	    if (merge_contigs)

@@ -430,6 +430,7 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 
     /* Build a hash on record number */
     h = HacheTableCreate(count, HASH_DYNAMIC_SIZE);
+    h->name = "pair_rangec()";
     for (i = 0; i < count; i++) {
 	HacheData hd;
 	hd.i = i;
