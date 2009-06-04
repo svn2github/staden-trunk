@@ -227,6 +227,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     return 0;
 }
 
+/* #define FASTQ_COMPLEMENTED */
 static int export_contig_fastq(GapIO *io, FILE *fp,
 			       int crec, int start, int end) {
     contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
@@ -240,6 +241,14 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 	int len = s->len < 0 ? -s->len : s->len;
 	int i;
 
+#ifdef FASTQ_COMPLEMENTED
+	seq_t *origs = s;
+	if (s->len < 0) {
+	    s = dup_seq(s);
+	    complement_seq_t(s);
+	}
+#endif
+
 	if (len > qalloc) {
 	    qalloc = len;
 	    q = realloc(q, qalloc);
@@ -251,8 +260,16 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 	    q[i] = v;
 	}
 
+#ifdef FASTQ_COMPLEMENTED
+	fprintf(fp, "@%.*s %d\n%.*s\n+\n%.*s\n",
+		s->name_len, s->name, s != origs, len, s->seq, len, q);
+
+	if (s != origs)
+	    free(s);
+#else
 	fprintf(fp, "@%.*s\n%.*s\n+\n%.*s\n",
 		s->name_len, s->name, len, s->seq, len, q);
+#endif
     }
     contig_iter_del(ci);
 
