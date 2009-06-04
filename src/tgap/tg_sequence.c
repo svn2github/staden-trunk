@@ -9,6 +9,62 @@
 #    define ABS(x) ((x) >= 0 ? (x) : -(x))
 #endif
 
+/*
+ * Given a seq_t struct this updates the internal pointers to be valid offsets
+ * into the s->data field. This is useful if the structure has been copied to
+ * a new address.
+ */
+void sequence_reset_ptr(seq_t *s) {
+    if (!s) return;
+
+    s->name = (char *)&s->data;
+    s->trace_name = s->name + s->name_len + 1;
+    s->alignment = s->trace_name + s->trace_name_len + 1;
+    s->seq = s->alignment + s->alignment_len + 1;
+    s->conf = s->seq + (s->len >= 0 ? s->len : -s->len);
+}
+
+/*
+ * Copies the 'f' seq_t struct to the 's' seq_t struct.
+ * Assumes 's' has already been allocated to be large enough to hold 'f'.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int  sequence_copy(seq_t *s, seq_t *f) {
+    if (!s || !f)
+	return -1;
+
+    *s = *f;
+
+    s->name = (char *)&s->data;
+    strcpy(s->name, f->name ? f->name : "");
+    s->name_len = strlen(s->name);
+
+    s->trace_name = s->name + s->name_len + 1;
+    strcpy(s->trace_name, f->trace_name ? f->trace_name : "");
+    s->trace_name_len = strlen(s->trace_name);
+
+    s->alignment = s->trace_name + s->trace_name_len + 1;
+    strcpy(s->alignment, f->alignment ? f->alignment : "");
+    s->alignment_len = strlen(s->alignment);
+
+    s->seq = s->alignment + s->alignment_len + 1;
+    memcpy(s->seq, f->seq, ABS(f->len));
+
+    s->conf = s->seq + ABS(s->len);
+    memcpy(s->conf, f->conf, ABS(f->len)*
+	   (f->format == SEQ_FORMAT_CNF4 ? 4 : 1));
+    
+    if (s->anno) {
+	s->anno = ArrayCreate(sizeof(int), ArrayMax(f->anno));
+	memcpy(ArrayBase(int, s->anno),
+	       ArrayBase(int, f->anno),
+	       ArrayMax(f->anno) * sizeof(int));
+    }
+
+    return 0;
+}
 
 /*
  * Returns the size needed to store confidence values in this sequence.
@@ -47,24 +103,8 @@ int sequence_new_from(GapIO *io, seq_t *s) {
     n = cache_rw(io, n);
     n = cache_item_resize(n, sizeof(*n) + extra_len);
 
-    memcpy(n, s, sizeof(*s));
-    n->name = (char *)&n->data;
-    strcpy(n->name, s->name ? s->name : "");
-    n->name_len = strlen(n->name);
-
-    n->trace_name = n->name + n->name_len + 1;
-    strcpy(n->trace_name, s->trace_name ? s->trace_name : "");
-    n->trace_name_len = strlen(n->trace_name);
-
-    n->alignment = n->trace_name + n->trace_name_len + 1;
-    strcpy(n->alignment, s->alignment ? s->alignment : "");
-    n->alignment_len = strlen(n->alignment);
-
-    n->seq = n->alignment + n->alignment_len + 1;
-    memcpy(n->seq, s->seq, ABS(s->len));
-
-    n->conf = n->seq + ABS(n->len);
-    memcpy(n->conf, s->conf, ABS(s->len)*sequence_conf_size(s));
+    if (sequence_copy(n, s) == -1)
+	return -1;
 
     return rec;
 }
