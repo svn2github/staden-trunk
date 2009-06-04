@@ -127,6 +127,7 @@ baf_block *baf_next_block(FILE *fp) {
 
     b->type = l->type;
     b->h = HacheTableCreate(0, HASH_DYNAMIC_SIZE | HASH_ALLOW_DUP_KEYS);
+    b->h->name = "baf-block";
 
     do {
 	HacheData hd;
@@ -303,7 +304,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
     struct stat sb;
     FILE *fp;
     off_t pos;
-    contig_t *c;
+    contig_t *c = NULL;
     HacheTable *pair = NULL;
     int ncontigs = 0;
     baf_block *b, *co = NULL;
@@ -321,6 +322,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 
     if (pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
+	pair->name = "pair";
     }
 
     /* Loop:
@@ -336,6 +338,9 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	switch (b->type) {
 	case CO: {
 	    char *contig = baf_block_value(b, CO);
+
+	    if (c)
+		cache_decr(io, c);
 	    if (co)
 		baf_block_destroy(co);
 	    co = b;
@@ -462,9 +467,9 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    /* Link bin back to sequence too before it gets flushed */
 	    r_out->rec = recno;
 	    
-	    if ((++nseqs & 0x3fff) == 0) {
+	    if ((++nseqs & 0xfff) == 0) {
 		int perc = 0;
-		if (nseqs & 0xffff == 0)
+		if ((nseqs & 0xffff) == 0)
 		    cache_flush(io);
 		pos = ftello(fp);
 		perc = 100.0 * pos / sb.st_size;
@@ -478,6 +483,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	case AN: {
 	    range_t r;
 	    anno_ele_t *e;
+	    char *typ = baf_block_value(b, AN);
 	    char *loc = baf_block_value(b, LO);
 	    char *len = baf_block_value(b, LL);
 	    char *txt = baf_block_value(b, TX);
@@ -501,11 +507,15 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    r.start = pos;
 	    r.end = pos + (len ? atoi(len)-1 : 0);
 
-	    r.mqual    = last_obj_type;  /* obj_type */
+	    //r.mqual    = last_obj_type;  /* obj_type */
+	    r.mqual = str2type(typ);
 	    r.pair_rec = last_obj_rec;   /* obj_rec */
 
 	    r.flags = GRANGE_FLAG_ISANNO;
-	    r.rec = anno_ele_new(io, 0, last_obj_type, last_obj_rec, 0, txt);
+	    if (GT_Seq == last_obj_type)
+		r.flags |= GRANGE_FLAG_TAG_SEQ;
+	    r.rec = anno_ele_new(io, 0, last_obj_type, last_obj_rec, 0,
+				 str2type(typ), txt);
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	

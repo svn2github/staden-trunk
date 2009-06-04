@@ -87,15 +87,20 @@ static bin_index_t *contig_extend_bins_right(GapIO *io, contig_t **c) {
     int sz = oroot->size;
 
     cache_incr(io, oroot);
-    if (!(oroot = cache_rw(io, oroot)))
+    if (!(oroot = cache_rw(io, oroot))) {
+	cache_decr(io, oroot);
 	return NULL;
+    }
 
     /* Create a new root */
     root_id = bin_new(io, oroot->pos, sz*2, oroot->parent, oroot->parent_type);
     nroot = get_bin(io, root_id);
     cache_incr(io, nroot);
-    if (!(nroot = cache_rw(io, nroot)))
+    if (!(nroot = cache_rw(io, nroot))) {
+	cache_decr(io, oroot);
+	cache_decr(io, nroot);
 	return NULL;
+    }
 
     nroot->child[0] = old_root_id;
     nroot->child[1] = 0;
@@ -124,15 +129,20 @@ static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
     int sz = oroot->size;
 
     cache_incr(io, oroot);
-    if (!(oroot = cache_rw(io, oroot)))
+    if (!(oroot = cache_rw(io, oroot))) {
+	cache_decr(io, oroot);
 	return NULL;
+    }
 
     /* Create a new root */
     root_id = bin_new(io, oroot->pos-sz, sz*2, oroot->parent, oroot->parent_type);
     nroot = get_bin(io, root_id);
     cache_incr(io, nroot);
-    if (!(nroot = cache_rw(io, nroot)))
+    if (!(nroot = cache_rw(io, nroot))) {
+	cache_decr(io, oroot);
+	cache_decr(io, nroot);
 	return NULL;
+    }
 
     nroot->child[0] = 0;
     nroot->child[1] = old_root_id;
@@ -230,7 +240,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	    /* Maybe a smaller bin, but start the search from here on */
 	    bin = last_bin;
 	    offset = last_offset;
-	    cache_incr(io, bin);
+	    //cache_incr(io, bin);
 	    goto jump;
 	}
     }
