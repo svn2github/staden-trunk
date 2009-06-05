@@ -22,8 +22,10 @@ GCCWARNINGS = -Wimplicit -Wreturn-type -Wunused -Wswitch -Wcomment -Wformat \
 CFLAGS	+= $(GCCWARNINGS) -DNEED_VA_COPY=1
 
 # For large file support (off_t by default is only 32-bit)
-CFLAGS += -D_FILE_OFFSET_BITS=64
-CXXFLAGS += -D_FILE_OFFSET_BITS=64
+CFLAGS += -D_XOPEN_SOURCE=500
+CXXFLAGS += -D_XOPEN_SOURCE=500
+#CFLAGS += -D_FILE_OFFSET_BITS=64
+#CXXFLAGS += -D_FILE_OFFSET_BITS=64
 
 #CXXFLAGS += -I$(SRCROOT)/stlport/linux
 

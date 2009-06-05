@@ -9,7 +9,8 @@
 COPT		= -O2 -DNDEBUG
 FOPT		= -O2 -DNDEBUG
 
-/* DEFINES += -DLITTLE_ENDIAN */
+DEFINES += -DSP_LITTLE_ENDIAN
+
 
 # Use g77 for compiling our fortran
 F77	 = icc

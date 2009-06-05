@@ -16,7 +16,7 @@ PNG_INC=-I/usr/local/include
 #CFLAGS	+= $(GCCWARNINGS) -gcoff
 
 # For DEC cc
-CFLAGS += -w0 -warnprotos
+CFLAGS += -w0 -warnprotos -std1 -D_XOPEN_SOURCE=500
 
 
 #CXX= /nfs/team71/psg/dgm/sys/alpha/bin/g++-3.2
