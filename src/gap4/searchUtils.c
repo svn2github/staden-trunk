@@ -1078,7 +1078,8 @@ static int findPosition(EdStruct *xx, char *text_pos)
 	    int i, j;
 
 	    pos -= DBI(xx)->reference_offset-1;
-	    pos = (pos-1) % DBI(xx)->reference_len;
+	    if (DBI(xx)->reference_len)
+		pos = (pos-1) % DBI(xx)->reference_len;
 	    while (pos < 0)
 		pos += DBI(xx)->reference_len;
 	    pos++;
