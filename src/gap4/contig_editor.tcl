@@ -1498,10 +1498,10 @@ proc copy_name {n x y} {
     # Selection to PRIMARY STRING
     catch {rename editor_selection_handler {}}
     # Ignore parameters for now. Assume reading name length <= maxbytes.
-    proc editor_selection_handler {offset maxbytes} \
+    proc ::editor_selection_handler {offset maxbytes} \
 	[list return [lindex $name 1]]
     selection own $n
-    selection handle $n editor_selection_handler
+    selection handle $n ::editor_selection_handler
 
     # For Windows...
     clipboard clear
