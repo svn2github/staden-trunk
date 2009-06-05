@@ -1301,14 +1301,6 @@ command and adjust the cutoff point as desired.  Pads are inserted in the
 consensus and readings as necessary, although pads will not be inserted in the
 cutoff data of other sequences.
 
-The ``<'' and ``>'' buttons either side of the ``Align'' button
-perform the alignment from the editing cursor to the start of the
-contig and and from the cursor to the end of the contig
-only. Alignment end-gaps are penalised at the curosr position but not
-for the alignment end at the contig start/end position. These buttons
-are useful for when multiple alignment positions may be valid, such as
-is the case with an overlap consisting entirely of a STR.
-
 @node Editor-Comm-Remove Reading
 @subsection Remove Reading
 
@@ -2474,13 +2466,20 @@ One difference is the Lock button. When set (as it is in the
 illustration) scrolling either contig, by using the scrollbar or the
 four movement buttons, will also scroll the other contig.
 
-The Align button aligns the overlapping consensus sequences and adds pads
-The alignment routine assumes that the two contigs are already
-in approximately the right relative position (as they are immediately
-after the
-Join Editor has been invoked from Find Internal Joins, or Find
-Repeats). If they are not they must be positioned manually before using
-the Align button.
+The Align button aligns the overlapping consensus sequences and adds
+pads The alignment routine assumes that the two contigs are already in
+approximately the right relative position (as they are immediately
+after the Join Editor has been invoked from Find Internal Joins, or
+Find Repeats). If they are not they must be positioned manually before
+using the Align button.
+
+The ``<'' and ``>'' buttons either side of the ``Align'' button
+perform the alignment from the editing cursor to the start of the
+contig and and from the cursor to the end of the contig
+only. Alignment end-gaps are penalised at the curosr position but not
+for the alignment end at the contig start/end position. These buttons
+are useful for when multiple alignment positions may be valid, such as
+is the case with an overlap consisting entirely of a STR.
 
 It should be noted
 that each of the pair of editors comprising the Contig Editor 
