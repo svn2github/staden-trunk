@@ -1618,6 +1618,9 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	*status = ERROR;
 	return NULL;
     }
+#else
+    io->rnum2cnum = NULL;
+    io->cached_rnum2cnum = 0;
 #endif
 
     if (NULL == io->relpos ||
