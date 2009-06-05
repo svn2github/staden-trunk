@@ -599,6 +599,9 @@ int check_rnum2cnum(GapIO *io) {
     int rnum, cnum;
     int status = 0;
 
+    if (!io->rnum2cnum)
+	return 0;
+
     ArrayRef(io->rnum2cnum, NumReadings(io)-1);
     nc = NumContigs(io);
     for (cnum = 1; cnum <= nc; cnum++) {
