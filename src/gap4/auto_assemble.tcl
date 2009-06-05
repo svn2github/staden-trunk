@@ -737,6 +737,11 @@ proc OK_Pressed6 { io f masking disp_mode match infile fails \
 # If so it expands them up to contain the contents
 proc expand_hash_archives {inlist} {
     global env old_exp_path
+    global gap_defs
+
+    if {![keylget gap_defs AUTO_ASSEMBLE.USE_EXP_ARCHIVES]} {
+	return $inlist
+    }
 
     set outlist {}
     if {[info exists env(EXP_PATH)]} {
