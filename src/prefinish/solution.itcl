@@ -88,7 +88,13 @@ body Solution::display {w} {
 	-command [code $this experiments_selected]
     ::tooltip::attach $cs.chwalk $::prefinish::tooltips(type_chwalk)
 
-    pack $cs.skip $cs.reseq $cs.long $cs.vpwalk $cs.chwalk \
+    checkbutton $cs.reverse \
+	-text "Read-pairs" \
+	-variable [scope type_reverse] \
+	-command [code $this experiments_selected]
+    ::tooltip::attach $cs.reverse $::prefinish::tooltips(type_reverse)
+
+    pack $cs.skip $cs.reseq $cs.long $cs.vpwalk $cs.chwalk $cs.reverse \
 	-side top \
 	-anchor w
 

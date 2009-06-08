@@ -14,6 +14,7 @@ class ParamCosts {
 	variable long_cost    2.0
 	variable vpwalk_cost  3.0
 	variable cpwalk_cost  8.0
+	variable reverse_cost 1.0
 	variable reseq_length 400
 	variable pwalk_length 400
 	variable long_length  700
@@ -34,6 +35,7 @@ class ParamCosts {
 	    vpwalk_cost		"Template primer-walk cost"
 	    cpwalk_cost		"Chromosomal primer-walk cost"
 	    long_cost		"Long-read cost"
+	    reverse_cost	"Fwd/Rev sequence cost"
 	    reseq_length	"Resequence experiment length"
 	    pwalk_length	"Primer-walk experiment length"
 	    long_length		"Long-read experiment length"

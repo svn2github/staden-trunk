@@ -363,6 +363,10 @@ type_chwalk
 	Pick primer-walking experiments directly from the chromosomal DNA or
 	from the main clone (BAC, YAC, etc).
 
+type_reverse
+	Pick a reverse (or forward if reverse only is present) strand
+	sequence.
+
 solution_strand
 	Suitable strands to produce experiments for. "Any" will search on both
 	strands and pick the best scoring one.
