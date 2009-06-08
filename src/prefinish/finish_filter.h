@@ -3,6 +3,8 @@
 #ifndef _FINISH_FILTER_H
 #define _FINISH_FILTER_H
 
+#include "finish.h"
+
 #define ctrl(a) ((a) & 0x1f)
 #define FILTER_LOWCOMPLEX	'#'
 
