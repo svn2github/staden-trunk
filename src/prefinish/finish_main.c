@@ -39,6 +39,7 @@ typedef struct {
     int cvec_right;		/* Is their cosmid at the end? */
     int *template_dup;		/* Linked-list (as array) of dup. templates */
     int *virtual;		/* Number of virtual seqs at this pos? */
+    int *template_skip;		/* Whether to discount a template */
 } depth_t;
 
 
@@ -243,6 +244,11 @@ static void classify_callback(GapIO *io, int contig, int start, int end,
     /* Check for duplicate templates; num_frags^2 / 2 ops */
     template_depth = 0;
     for (i = 0; i < num_frags; i++) {
+	if (templates[i] &&
+	    d->template_skip &&
+	    d->template_skip[templates[i]])
+	    continue;
+
 	for (j = i+1; j < num_frags; j++) {
 	    if (templates[i] == templates[j] ||
 		template_dupped(d->template_dup, templates[i], templates[j]))
@@ -359,6 +365,7 @@ unsigned int *classify_bases(finish_t *fin,
     d.cvec_left = fin->cvec_left;
     d.cvec_right = fin->cvec_right;
     d.template_dup = fin->template_dup;
+    d.template_skip = fin->template_skip;
     if (virtual) {
 	*virtual = d.virtual = (int *)xcalloc(len, sizeof(int));
 	if (!d.virtual)
