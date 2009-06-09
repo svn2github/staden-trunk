@@ -17,6 +17,10 @@ INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)
 	-I$(SRCROOT)/samtools-0.1.2-$(MACHINE) -I$(SRCROOT)/tgap
 CFLAGS += $(SHLIB_CFLAGS)
 
+# For gprof profiling
+#CFLAGS   += -pg
+#CLDFLAGS += -pg
+
 # For debugging g-alloc
 #CFLAGS += -DVALGRIND
 #CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector
@@ -65,7 +69,8 @@ TGSH_OBJ = \
 	$(TGAPBIN)/gap_cli_arg.o \
 	$(TGAPBIN)/tg_tcl.o
 
-TGAPOBJS = $(TGSH_OBJ) $(GOBJS)
+TGAPOBJS = $(TGSH_OBJ) $(GOBJS) $(L)/libptmalloc3.a
+
 
 $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	-@
