@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 
 #include "tg_gio.h"
 #include "hache_table.h"
@@ -300,13 +301,12 @@ typedef struct {
 
 int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	      int merge_contigs) {
-    int nseqs = 0;
+    int nseqs = 0, nobj = 0, ntags = 0, ncontigs = 0;
     struct stat sb;
     FILE *fp;
     off_t pos;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
-    int ncontigs = 0;
     baf_block *b, *co = NULL;
     int last_obj_type = 0;
     int last_obj_pos = 0;
@@ -466,16 +466,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 
 	    /* Link bin back to sequence too before it gets flushed */
 	    r_out->rec = recno;
-	    
-	    if ((++nseqs & 0xfff) == 0) {
-		int perc = 0;
-		if ((nseqs & 0xffff) == 0)
-		    cache_flush(io);
-		pos = ftello(fp);
-		perc = 100.0 * pos / sb.st_size;
-		printf("\r%d%%", perc);
-		fflush(stdout);
-	    }
+	    nseqs++;
 	    
 	    break;
 	}
@@ -521,6 +512,8 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	
 	    bin = bin_add_range(io, &c, &r, NULL);
 	    e->bin = bin->rec;
+
+	    ntags++;
 	    break;
 	}
 
@@ -532,12 +525,19 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	if (!delay_destroy)
 	    baf_block_destroy(b);
 
-    }
-    if (co)
-	baf_block_destroy(co);
+	if ((++nobj & 0xfff) == 0) {
+	    int perc = 0;
 
-#if 0
-	if ((nseqs & 0x3fff) == 0) {
+	    pos = ftello(fp);
+	    perc = 100.0 * pos / sb.st_size;
+	    printf("\r%d%c", perc, (nobj & 0x3fff) ? '%' : '*');
+	    fflush(stdout);
+	    if ((nobj & 0x3fff) == 0)
+		cache_flush(io);
+	}
+
+#if 1
+	if ((nobj & 0xffff) == 0) {
 	    static int perc = 0;
 	    if (perc < 100.0 * pos / sb.st_size) {
 		perc = 100.0 * pos / sb.st_size;
@@ -547,7 +547,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		{
 		    static struct timeval last, curr;
 		    static int first = 1;
-		    static int last_contig = 0;
+		    static int last_obj = 0;
 		    long delta;
 
 		    gettimeofday(&curr, NULL);
@@ -558,18 +558,25 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 
 		    delta = (curr.tv_sec - last.tv_sec) * 1000000
 			+ (curr.tv_usec - last.tv_usec);
-		    printf(" - %g sec %d contigs\n", delta/1000000.0,
-			   ncontigs - last_contig);
+		    printf(" - %g sec %d obj\n", delta/1000000.0,
+			   nobj - last_obj);
 		    last = curr;
-		    last_contig = ncontigs;
+		    last_obj = nobj;
 		}
 		fflush(stdout);
 	    }
 	}
 #endif
+    }
+    if (co)
+	baf_block_destroy(co);
 
     cache_flush(io);
     fclose(fp);
+
+    printf("\nLoaded %12d contigs\n",     ncontigs);
+    printf("       %12d sequences\n",   nseqs);
+    printf("       %12d annotations\n", ntags);
 
     if (pair)
 	HacheTableDestroy(pair, 1);
