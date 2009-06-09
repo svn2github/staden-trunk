@@ -376,6 +376,7 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
 	if (!(bin = cache_rw(io, bin)))
 	    return -1;
 	bin->nseqs += n;
+	bin->flags |= BIN_BIN_UPDATED;
 
 	if (bin->parent_type != GT_Bin)
 	    break;
