@@ -391,23 +391,29 @@ void usage(void) {
     fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
 }
 
+#include <malloc.h>
+
 int main(int argc, char **argv) {
     unsigned int max_size = 63;
     GapIO *io;
     int opt, fmt = 'a' /*aln */;
     char *out_fn = "g_db", *cp;
-    int no_tree=1, pair_reads=1, append=0, merge_contigs=1;
+    int no_tree=1, pair_reads=1, append=0, merge_contigs=-1;
     int min_bin_size = MIN_BIN_SIZE;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.1.3\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
+    //mallopt(M_MMAP_MAX, 0);
+
     /* Arg parsing */
     while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:")) != -1) {
 	switch(opt) {
 	case 'a':
 	    append = 1;
+	    if (merge_contigs == -1)
+		merge_contigs = 1;
 	    break;
 
 	case 't':
@@ -463,6 +469,8 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
     }
+    if (merge_contigs == -1)
+	merge_contigs = 0;
 
     if (optind == argc) {
 	usage();
