@@ -1987,7 +1987,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	bin->rng = ArrayCreate(sizeof(GRange), nranges);
 	if (ArrayBase(GRange, bin->rng))
 	    free(ArrayBase(GRange, bin->rng));
-	ArrayBase(GRange, bin->rng) = r;
+	bin->rng->base = r;
 	ArrayRef(bin->rng, nranges-1);
 
 	//	g_read(io, v, ArrayBase(GRange, bin->rng),
