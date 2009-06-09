@@ -877,10 +877,10 @@ int cache_flush(GapIO *io) {
 	   load_counts[GT_Seq],
 	   unload_counts[GT_Seq],
 	   write_counts[GT_Seq]);
-    printf("DNASource    %d\t%d\t%d\n",
-	   load_counts[GT_DNASource],
-	   unload_counts[GT_DNASource],
-	   write_counts[GT_DNASource]);
+    printf("Library    %d\t%d\t%d\n",
+	   load_counts[GT_Library],
+	   unload_counts[GT_Library],
+	   write_counts[GT_Library]);
     printf("Track        %d\t%d\t%d\n",
 	   load_counts[GT_Track],
 	   unload_counts[GT_Track],
@@ -1028,8 +1028,6 @@ void *cache_search(GapIO *io, int type, GRec rec) {
 	rec >>= ANNO_ELE_BLOCK_BITS;
 	type = GT_AnnoEleBlock;
 	break;
-
-    default:
     }
 
     k = construct_key(rec, type);
