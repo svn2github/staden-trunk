@@ -191,8 +191,11 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
 	    s+=3;
 	    if (val) val->s = s;
 	    while (*s++);
-	    s++;
 	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return -1;
 	}
 
 	if (match)
