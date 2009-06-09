@@ -942,6 +942,7 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     ci->end = end;
     ci->r = contig_seqs_in_range(io, &c, start, end,
 				 CSIR_SORT_BY_X, &ci->nitems);
+
     ci->index = 0;
     return 0;
 }
@@ -987,6 +988,7 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
     ci->nitems = 0;
     ci->index = 0;
     ci->auto_extend = auto_extend;
+    ci->first_r = 1;
 
     ci->cstart = start == CITER_CSTART ? c->start : start;
     ci->cend   =   end == CITER_CEND   ? c->end   : end;
@@ -1030,10 +1032,18 @@ rangec_t *contig_iter_next(GapIO *io, contig_iterator *ci) {
 		return NULL;
 
 	    ci->index = 0;
+	    ci->first_r = 0;
 	}
 
+	/*
+	 * The first range query we start from the first item, even if it's
+	 * partially overlapping. Subsequent queries we start from the first
+	 * item completely in our next range.
+	 */
 	while (ci->index < ci->nitems && (r = &ci->r[ci->index++])) {
 	    if (r->start >= ci->start)
+		return r;
+	    else if (ci->first_r && r->end >= ci->start)
 		return r;
 	}
     }
@@ -1058,10 +1068,13 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 	    
 
 	    ci->index = ci->nitems-1;
+	    ci->first_r = 0;
 	}
 
 	while (ci->index >= 0 && (r = &ci->r[ci->index--])) {
 	    if (r->start <= ci->end)
+		return r;
+	    else if (ci->first_r && r->end <= ci->start)
 		return r;
 	}
     }

@@ -87,6 +87,7 @@ typedef struct {
     int cstart;      /* requested limits of region to fetch */
     int cend;
     int auto_extend; /* whether to extend past cstart..cend */
+    int first_r;     /* True if r[] is our first search */
 } contig_iterator;
 
 #define CITER_FIRST  0
