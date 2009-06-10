@@ -936,7 +936,7 @@ int main(int argc, char **argv) {
     }
 
     if (!lp_mode) {
-	printf("\n\n\tg_view:\tShort Read Alignment Viewer, version 1.1.3\n");
+	printf("\n\n\tg_view:\tShort Read Alignment Viewer, version 1.2.0\n");
 	printf("\n\tAuthor:\tJames Bonfield (jkb@sanger.ac.uk)\n");
 	printf("\t\t2007-2009, Wellcome Trust Sanger Institute\n\n");
     }
