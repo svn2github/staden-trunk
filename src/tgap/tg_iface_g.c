@@ -470,31 +470,8 @@ static int g_write(g_io *io, GView v, void *buf, size_t len) {
     return g_write_(io->gdb, io->client, v, buf, len);
 }
 
-/*
- * Writes buf as a series of little-endian int32_t elements, byte
- * swapping if appropriate.
- */
-static int g_write_le4(g_io *io, GView v, void *buf, size_t len) {
-    static GCardinal le_a[256];
-    int32_t *le = le_a;
-    int ret;
-    size_t i, j;
-
-    if (len % sizeof(int32_t) != 0)
-	return -1;
-
-    if (len > 256 * sizeof(int32_t))
-	le = (int32_t *)malloc(len * sizeof(int32_t));
-
-    for (i = j = 0; i < len; i+=sizeof(int32_t), j++) {
-	le[j] = le_int4(((int32_t *)buf)[j]);
-    }
-
-    ret = g_write_(io->gdb, io->client, v, le, len);
-
-    if (le != le_a)
-	free(le);
-    return ret ? -1 : 0;
+static int g_writev(g_io *io, GView v, GIOVec *vec, GCardinal vcnt) {
+    return g_writev_(io->gdb, io->client, v, vec, vcnt);
 }
 
 static int g_read(g_io *io, GView v, void *buf, size_t len) {
@@ -518,27 +495,6 @@ static void *g_read_alloc(g_io *io, GView v, size_t *len) {
 	free(buf);
 	return NULL;
     }
-}
-
-/*
- * Reads buf as a series of little-endian int32_t elements, byte
- * swapping if appropriate.
- */
-static int g_read_le4(g_io *io, GView v, void *buf, size_t len) {
-    int ret;
-    size_t i, j;
-    int32_t *le = (int32_t *)buf;
-
-    if (len % sizeof(int32_t) != 0)
-	return -1;
-
-    ret = g_read_(io->gdb, io->client, v, buf, len);
-
-    for (i = j = 0; i < len; i+=sizeof(int32_t), j++) {
-	le[j] = le_int4(((int32_t *)buf)[j]);
-    }
-
-    return ret ? -1 : 0;
 }
 
 static int g_flush(g_io *io, GView v) {
@@ -580,38 +536,113 @@ static int io_generic_abandon(void *dbh, GView v) {
     return g_abandon_(gio->gdb, gio->client, v);
 }
 
+
+/*
+ * Generic reading and writing of N 32-bit integer values
+ */
+static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
+				     size_t *nitems) {
+    char *buf, *cp;
+    size_t buf_len;
+    int i, ni;
+    GCardinal *card;
+
+    /* Load from disk */
+    cp = buf = g_read_alloc(io, v, &buf_len);
+    if (buf_len < 2) {
+	*nitems = 0;
+	return NULL;
+    }
+
+    assert(*cp++ == type);
+    assert(*cp++ == 0); /* initial format */
+    cp += u72int(cp, &ni);
+    *nitems = ni;
+
+    if (NULL == (card = (GCardinal *)malloc(*nitems * sizeof(GCardinal)))) {
+	free(buf);
+        return NULL;
+    }
+
+    for (i = 0; i < ni; i++)
+	cp += u72int(cp, &card[i]);
+
+    assert(cp-buf == buf_len);
+    free(buf);
+
+    return card;
+}
+
 static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
     GView v;
-    void *buf;
+    char *buf, *cp;
     size_t buf_len;
     cached_item *ci;
+    int nitems, i;
+    GCardinal *card;
 
     /* Load from disk */
     if (-1 == (v = io_generic_lock(dbh, rec, G_LOCK_RO)))
 	return NULL;
 
-    buf = g_read_alloc((g_io *)dbh, v, &buf_len);
+    cp = buf = g_read_alloc((g_io *)dbh, v, &buf_len);
+    if (buf_len < 2)
+	return NULL;
 
-    if (!(ci = cache_new(type, rec, v, NULL, buf_len))) {
+    assert(*cp++ == type);
+    assert(*cp++ == 0); /* initial format */
+    cp += u72int(cp, &nitems);
+
+    if (!(ci = cache_new(type, rec, v, NULL, nitems * sizeof(GCardinal)))) {
 	free(buf);
         return NULL;
     }
+    ci->data_size = nitems * sizeof(GCardinal);
+    card = (GCardinal *)&ci->data;
 
-    memcpy(&ci->data, buf, buf_len);
+    for (i = 0; i < nitems; i++)
+	cp += u72int(cp, &card[i]);
+
+    assert(cp-buf == buf_len);
     free(buf);
 
-    ci->data_size = buf_len;
     return ci;
 }
 
-static int io_generic_write(void *dbh, cached_item *ci) {
-    int ret;
+/*
+ * Returns number of bytes written on success
+ *         -1 on failure
+ */
+static int io_generic_write_i4(g_io *io, GView v, int type,
+			       void *buf, size_t len) {
+    int ret, i;
+    char *cp_start, *cp;
+    GCardinal *card = (GCardinal *)buf;
+    int nitems = len / sizeof(GCardinal);
 
+    /* Allocate memory based on worst case sizes */
+    if (NULL == (cp = cp_start = (char *)malloc(5 * nitems + 2 + 5)))
+	return -1;
+
+    *cp++ = type;
+    *cp++ = 0;
+    cp += int2u7(nitems, cp);
+    for (i = 0; i < nitems; i++) {
+	cp += int2u7(card[i], cp);
+    }
+
+    ret = g_write(io, v, cp_start, cp - cp_start);
+    g_flush(io, v); /* Should we auto-flush? */
+
+    free(cp_start);
+    return ret ? -1 : cp - cp_start;
+}
+
+static int io_generic_write(void *dbh, cached_item *ci) {
     assert(ci->lock_mode >= G_LOCK_RW);
 
-    ret = g_write((g_io *)dbh, ci->view, &ci->data, ci->data_size);
-    g_flush((g_io *)dbh, ci->view); /* Should we auto-flush? */
-    return ret ? -1 : 0;
+    return io_generic_write_i4((g_io *)dbh, ci->view,
+			       ci->type, &ci->data, ci->data_size) ? 0 : -1;
 }
 
 static int io_generic_info(void *dbh, GView v, GViewInfo *vi) {
@@ -657,11 +688,14 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
 	return NULL;
     }
 
+    assert(buf[0] == GT_BTree);
+    assert(buf[1] == 0); /* format number */
+
     rdstats[GT_BTree] += len;
     rdcounts[GT_BTree]++;
 
     /* Decode the btree element */
-    n = btree_node_decode(buf);
+    n = btree_node_decode(buf+2);
     n->rec = rec;
 
     ci = cache_new(GT_BTree, rec, v, NULL, sizeof(btree_node_t *));
@@ -699,12 +733,21 @@ static int btree_write(g_io *io, btree_node_t *n) {
     size_t len;
     GView v;
     char *data = (char *)btree_node_encode(n, &len);
+    char fmt[2];
+    GIOVec vec[2];
     cached_item *ci = n->cache;
+
+    /* Set up data type and version */
+    fmt[0] = GT_BTree;
+    fmt[1] = 0;
+    vec[0].buf = fmt;  vec[0].len = 2;
+    vec[1].buf = data; vec[1].len = len;
 
     if (ci) {
 	wrstats[GT_BTree] += len;
 	wrcounts[GT_BTree]++;
-	ret = g_write(io, ci->view, data, len);
+	//ret = g_write(io, ci->view, b2, len);
+	ret = g_writev(io, ci->view, vec, 2);
 	g_flush(io, ci->view);
     } else {
 	if (-1 == (v = lock(io, n->rec, G_LOCK_EX))) {
@@ -713,8 +756,9 @@ static int btree_write(g_io *io, btree_node_t *n) {
 	}
 	wrstats[GT_BTree] += len;
 	wrcounts[GT_BTree]++;
-	ret = g_write(io, v, data, len);
-	unlock(io, v);
+	//ret = g_write(io, v, b2, len);
+	ret = g_writev(io, v, vec, 2);
+	//unlock(io, v);
     }
 
     free(data);
@@ -1099,8 +1143,8 @@ static GRec io_database_create(void *dbh, void *from) {
     /* Contig order */
     db.contig_order = allocate(io); /* contig array */
     v = lock(io, db.contig_order, G_LOCK_EX);
-    if (-1 == g_write_le4(io, v, NULL, 0))
-	return -1;
+    //    if (-1 == g_write_le4(io, v, NULL, 0))
+    //	return -1;
     g_flush(io, v);
     unlock(io, v);
 
@@ -1108,8 +1152,8 @@ static GRec io_database_create(void *dbh, void *from) {
     db.Nlibraries = 0;
     db.library = allocate(io);
     v = lock(io, db.library, G_LOCK_EX);
-    if (-1 == g_write_le4(io, v, NULL, 0))
-	return -1;
+    //    if (-1 == g_write_le4(io, v, NULL, 0))
+    //	return -1;
     g_flush(io, v);
     unlock(io, v);
 
@@ -1124,7 +1168,7 @@ static GRec io_database_create(void *dbh, void *from) {
 
     /* Database struct itself */
     v = lock(io, db_rec, G_LOCK_EX);
-    if (-1 == g_write_le4(io, v, (void *)&db, sizeof(db)))
+    if (-1 == io_generic_write_i4(io, v, GT_Database, (void *)&db, sizeof(db)))
 	return -1;
     g_flush(io, v);
     unlock(io, v);
@@ -1181,35 +1225,48 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
-    GContig_header *ch;
     contig_t *c;
     size_t len, slen;
+    char *ch, *cp;
+    int32_t start, end;
+    uint32_t bin, nlen;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
 	return NULL;
 
-    if (NULL == (ch = g_read_alloc(io, v, &len))) {
+    if (NULL == (cp = ch = g_read_alloc(io, v, &len))) {
 	return NULL;
     }
+
+    if (len < 2)
+	return NULL;
+
+    assert(*cp++ == GT_Contig);
+    assert(*cp++ == 0);
 
     rdstats[GT_Contig] += len;
     rdcounts[GT_Contig]++;
 
+    /* Decode the fixed size bits */
+    cp += s72int(cp, &start);
+    cp += s72int(cp, &end);
+    cp += u72int(cp, &bin);
+    cp += u72int(cp, &nlen);
+
     /* Generate in-memory data structure */
-    slen = sizeof(*c) + sizeof(char *) + ((unsigned char *)(ch+1))[0] + 1;
+    slen = sizeof(*c) + sizeof(char *) + nlen + 1;
     if (!(ci = cache_new(GT_Contig, rec, v, NULL, slen)))
 	return NULL;
 
     c = (contig_t *)&ci->data;
     c->rec    = rec;
-    c->start  = le_int4(ch->start);
-    c->end    = le_int4(ch->end);
-    c->bin    = le_int4(ch->bin);
-    c->name   = (char *)(&c->name + 1);
-    strncpy(c->name, ((unsigned char *)ch) + sizeof(GContig_header) + 1,
-	    ((unsigned char *)ch)[sizeof(GContig_header)]);
-    c->name[((unsigned char *)ch)[sizeof(GContig_header)]] = 0;
+    c->start  = start;
+    c->end    = end;
+    c->bin    = bin;
+    c->name   = (char *)&c->data;
+    memcpy(c->name, cp, nlen);
+    c->name[nlen] = 0;
 
     free(ch);
 
@@ -1217,31 +1274,40 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
 }
 
 static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
-    GContig_header *ch;
     size_t len;
+    char *cp, *buf;
+    int nlen;
+
+    /* Estimate worst-case memory requirements */
+    nlen = c->name ? strlen(c->name) : 0;
+    len = 2 + 5+5+5 + 5+nlen;
+    if (NULL == (cp = buf = (char *)malloc(len)))
+	return -1;
+
 
     /* Construct on-disc representation */
-    len = sizeof(*ch) + 1 + (c->name ? strlen(c->name) : 0);
-    ch = (GContig_header *)malloc(len);
-    ch->start = le_int4(c->start);
-    ch->end   = le_int4(c->end);
-    ch->bin   = le_int4(c->bin);
-    ((unsigned char *)ch)[sizeof(GContig_header)] =
-	c->name ? strlen(c->name) : 0;
-    if (c->name)
-	strncpy(&((char *)ch)[sizeof(GContig_header)+1], c->name,
-		((unsigned char *)ch)[sizeof(GContig_header)]);
+    *cp++ = GT_Contig;
+    *cp++ = 0; /* format version */
+    cp += int2s7(c->start, cp);
+    cp += int2s7(c->end, cp);
+    cp += int2u7(c->bin, cp);
+    cp += int2u7(nlen, cp);
+    if (c->name) {
+	memcpy(cp, c->name, nlen);
+	cp += nlen;
+    }
+    len = cp-buf; /* Actual length */
 
     /* Write the data */
     wrstats[GT_Contig] += len;
     wrcounts[GT_Contig]++;
-    if (-1 == g_write(io, v, (char *)ch, len)) {
-	free(ch);
+    if (-1 == g_write(io, v, (char *)buf, len)) {
+	free(buf);
 	return -1;
     }
 
     g_flush(io, v);
-    free(ch);
+    free(buf);
     return 0;
 }
 
@@ -1305,7 +1371,6 @@ static cached_item *io_array_read(void *dbh, GRec rec) {
     GView v;
     GViewInfo vi;
     ArrayStruct *ar;
-    int ar_sz;
 
     if (!(ci = cache_new(GT_RecArray, rec, 0, NULL, sizeof(*ar))))
 	return NULL;
@@ -1315,14 +1380,13 @@ static cached_item *io_array_read(void *dbh, GRec rec) {
 	return NULL;
 
     g_view_info_(io->gdb, io->client, v, &vi);
-    ar_sz = vi.used / sizeof(GCardinal);
-
     rdstats[GT_RecArray] += vi.used;
     rdcounts[GT_RecArray]++;
 
-    ar = ArrayCreate(sizeof(GCardinal), ar_sz);
-    ArrayRef(ar, ar_sz);
-    g_read(io, v, ArrayBase(GCardinal, ar), ar_sz * sizeof(GCardinal));
+    ar = ArrayCreate(sizeof(GCardinal), 0);
+    if (ar->base) free(ar->base);
+    ar->base = io_generic_read_i4(io, v, GT_RecArray, &ar->dim);
+    ar->max = ar->dim;
 
     memcpy(&ci->data, ar, sizeof(*ar));
     free(ar);
@@ -1338,13 +1402,14 @@ static int io_array_write(void *dbh, cached_item *ci) {
 
     assert(ci->lock_mode >= G_LOCK_RW);
     ar = (Array)&ci->data;
-    wrstats[GT_RecArray] += ArrayMax(ar) * sizeof(GCardinal);
-    wrcounts[GT_RecArray]++;
-    ret = g_write(io, ci->view, ArrayBase(GCardinal, ar), 
-		   ArrayMax(ar) * sizeof(GCardinal));
-    g_flush(io, ci->view);
+    ret = io_generic_write_i4(io, ci->view, GT_RecArray,
+			      ArrayBase(GCardinal, ar),
+			      ArrayMax(ar) * sizeof(GCardinal));
 
-    return ret ? -1 : 0;
+    wrstats[GT_RecArray] += ret;
+    wrcounts[GT_RecArray]++;
+
+    return ret >= 0 ? 0 : -1;
 }
 
 
@@ -1391,6 +1456,8 @@ static cached_item *io_anno_ele_read(void *dbh, GRec rec) {
 
     /* Decode it */
     cp = bloc; 
+    assert(*cp++ == GT_AnnoEle);
+    assert(*cp++ == 0); /* format */
     cp += u72int(cp, &bin_rec);
     cp += u72int(cp, &tag_type);
     cp += u72int(cp, &obj_type);
@@ -1430,7 +1497,7 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
 
     /* Allocate memory if needed */
     comment_len = e->comment ? strlen(e->comment) : 0;
-    data_len = 5 + 5 + 5 + 5 + 5 + comment_len;
+    data_len = 2 + 5 + 5 + 5 + 5 + 5 + comment_len;
     if (data_len > 1024) {
 	if (NULL == (cp = (unsigned char *)malloc(data_len)))
 	    return -1;
@@ -1438,6 +1505,8 @@ static int io_anno_ele_write_view(g_io *io, anno_ele_t *e, GView v) {
 
     /* Encode */
     cpstart = cp;
+    *cp++ = GT_AnnoEle;
+    *cp++ = 0; /* format */ 
     cp += int2u7(e->bin, cp);
     cp += int2u7(e->tag_type, cp);
     cp += int2u7(e->obj_type, cp);
@@ -1496,7 +1565,7 @@ static int io_anno_ele_create(void *dbh, void *vfrom) {
  * anno access methods
  */
 static cached_item *io_anno_read(void *dbh, GRec rec) {
-    return io_generic_read(dbh, rec, 0);
+    return io_generic_read(dbh, rec, GT_Anno);
 }
 
 static int io_anno_write(void *dbh, cached_item *ci) {
@@ -1522,7 +1591,10 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
     ch = g_read_alloc(io, v, &len);
 
     if (ch && len) {
-	zpacked = mem_inflate(ch, len, &ssz);
+	assert(ch[0] == GT_Library);
+	assert(ch[1] == 0); /* format */
+
+	zpacked = mem_inflate(ch+2, len-2, &ssz);
 	free(ch);
 	len = ssz;
 	ch = zpacked;
@@ -1583,8 +1655,13 @@ static int io_library_write(void *dbh, cached_item *ci) {
     int tmp, i, j, err;
     char *gzout;
     size_t ssz;
+    char fmt[2];
+    GIOVec vec[2];
 
     assert(ci->lock_mode >= G_LOCK_RW);
+
+    fmt[0] = GT_Library;
+    fmt[1] = 0; /* format */
 
     cp += int2u7(lib->insert_size[0], cp);
     cp += int2u7(lib->insert_size[1], cp);
@@ -1606,7 +1683,9 @@ static int io_library_write(void *dbh, cached_item *ci) {
     /* Compress it */
     gzout = mem_deflate(cpstart, cp-cpstart, &ssz);
     //err = g_write(io, ci->view, cpstart, cp-cpstart);
-    err = g_write(io, ci->view, gzout, ssz);
+    vec[0].buf = fmt;   vec[0].len = 2;
+    vec[1].buf = gzout; vec[1].len = ssz;
+    err = g_writev(io, ci->view, vec, 2);
     free(gzout);
     g_flush(io, ci->view);
 
@@ -1632,7 +1711,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
  * vector access methods
  */
 static cached_item *io_vector_read(void *dbh, GRec rec) {
-    return io_generic_read(dbh, rec, 0);
+    return io_generic_read(dbh, rec, 0 /*GT_Vector*/);
 }
 
 
@@ -1720,7 +1799,7 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 	part_sz[i+1] = cp[i]-cp_orig[i];
 
     /* Construct a header with nr and the size of the 6 packed struct fields */
-    *sz = 7*5 + part_sz[1] + part_sz[2] + part_sz[3] +
+    *sz =  7*5 + part_sz[1] + part_sz[2] + part_sz[3] +
 	part_sz[4] + part_sz[5] + part_sz[6];
 
     out = out_orig = (char *)malloc(*sz);
@@ -1787,7 +1866,7 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
     int i, off[6];
     char *cp[6], *zpacked = NULL;
-    GRange last, last_tag, *r, *ls = &last, *lt = &last;
+    GRange last, *r, *ls = &last, *lt = &last;
     size_t ssz;
 
     /* First of all, inflate the compressed data */
@@ -1868,7 +1947,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
-    GBin *b, g;
+    GBin g, *b = &g;
     bin_index_t *bin;
     char *buf, *cp;
     size_t buf_len;
@@ -1880,16 +1959,26 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 
     if (NULL == (buf = g_read_alloc(io, v, &buf_len)))
 	return NULL;
-    if (buf_len < sizeof(GBin)) {
-	buf = realloc(buf, sizeof(GBin));
-	memset(buf + buf_len, 0, sizeof(GBin) - buf_len);
+    if (buf_len == 0) {
+	/* Blank bin */
+	g.pos = g.size = 0;
+	g.start = g.end = 0;
+	g.child[0] = g.child[1] = 0;
+	g.id = 0;
+	g.flags = 0;
+	g.parent = g.parent_type = 0;
+	g.range = 0;
+	g.track = 0;
+	g.nseqs = 0;
+	goto empty_bin;
     }
-    //b = (GBin *)buf;
-    b = &g;
     cp = buf;
 
     rdstats[GT_Bin] += buf_len;
     rdcounts[GT_Bin]++;
+
+    assert(*cp++ == GT_Bin);
+    assert(*cp++ == 0); /* format */
 
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
@@ -1934,6 +2023,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     cp += u72int(cp, &g.parent);
     cp += u72int(cp, &g.nseqs);
 
+ empty_bin:
     /*
     printf("<%d / p=%d+%d, %d..%d p=%d/%d, ch=%d/%d, id=%d, f=%d t=%d ns=%d r=%d\n",
 	   rec,
@@ -1974,21 +2064,27 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	v = lock(io, b->range, G_LOCK_RO);
 	g_view_info_(io->gdb, io->client, v, &vi);
 	
-	buf = (char *)malloc(vi.used);
-	g_read(io, v, buf, vi.used);
-	r = unpack_rng_array(buf, vi.used, &nranges);
-	free(buf);
+	if (vi.used) {
+	    buf = (char *)malloc(vi.used);
+	    g_read(io, v, buf, vi.used);
+	    assert(buf[0] == GT_Range);
+	    assert(buf[1] == 0);
+	    r = unpack_rng_array(buf+2, vi.used-2, &nranges);
+	    free(buf);
 
-	rdstats[GT_Range] += vi.used;
-	rdcounts[GT_Range]++;
+	    rdstats[GT_Range] += vi.used;
+	    rdcounts[GT_Range]++;
 
-	//printf("Unpacked %d ranges from %d bytes\n", nranges, vi.used);
+	    //printf("Unpacked %d ranges from %d bytes\n", nranges, vi.used);
 
-	bin->rng = ArrayCreate(sizeof(GRange), nranges);
-	if (ArrayBase(GRange, bin->rng))
-	    free(ArrayBase(GRange, bin->rng));
-	bin->rng->base = r;
-	ArrayRef(bin->rng, nranges-1);
+	    bin->rng = ArrayCreate(sizeof(GRange), nranges);
+	    if (ArrayBase(GRange, bin->rng))
+		free(ArrayBase(GRange, bin->rng));
+	    bin->rng->base = r;
+	    ArrayRef(bin->rng, nranges-1);
+	} else {
+	    bin->rng = NULL;
+	}
 
 	//	g_read(io, v, ArrayBase(GRange, bin->rng),
 	//	       nranges * sizeof(GRange));
@@ -1998,19 +2094,21 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     /* Load tracks */
     if (b->track) {
 	GViewInfo vi;
-	int ntracks;
+	size_t nitems;
 
-	v = lock(io, b->track, G_LOCK_RO);
+	if (-1 == (v = lock(io, b->track, G_LOCK_RO)))
+	    return NULL;
+
 	g_view_info_(io->gdb, io->client, v, &vi);
-	ntracks = vi.used / sizeof(GBinTrack);
-
 	rdstats[GT_Track] += vi.used;
 	rdcounts[GT_Track]++;
 
-	bin->track = ArrayCreate(sizeof(GBinTrack), ntracks);
-	ArrayRef(bin->track, ntracks-1);
-	g_read(io, v, ArrayBase(GBinTrack, bin->track),
-	       ntracks * sizeof(GBinTrack));
+	bin->track = ArrayCreate(sizeof(GBinTrack), 0);
+	if (bin->track->base) free(bin->track->base);
+	bin->track->base = io_generic_read_i4(io, v, GT_RecArray,
+					      &nitems);
+	nitems /= sizeof(GBinTrack) / sizeof(GCardinal);
+	bin->track->max = bin->track->dim = nitems;
 	unlock(io, v);
     }
 
@@ -2026,8 +2124,12 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     /* Ranges */
     if (bin->flags & BIN_RANGE_UPDATED) {
 	GView v;
-	char *cp;
+	char *cp, fmt[2];
 	int sz;
+	GIOVec vec[2];
+
+	fmt[0] = GT_Range;
+	fmt[1] = 0;
 
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
@@ -2057,9 +2159,11 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	v = lock(io, bin->rng_rec, G_LOCK_EX);
 	//	err |= g_write(io, v, ArrayBase(GRange, bin->rng),
 	//	       sizeof(GRange) * ArrayMax(bin->rng));
-	wrstats[GT_Range] += sz;
+	wrstats[GT_Range] += sz+2;
 	wrcounts[GT_Range]++;
-	err |= g_write(io, v, cp, sz);
+	vec[0].buf = fmt;   vec[0].len = 2;
+	vec[1].buf = cp;    vec[1].len = sz;
+	err |= g_writev(io, v, vec, 2);
 	free(cp);
 	err |= unlock(io, v);
     }
@@ -2067,7 +2171,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     /* Tracks */
     if (bin->flags & BIN_TRACK_UPDATED) {
 	GView v;
-
+	size_t nb;
+	
 	bin->flags &= ~BIN_TRACK_UPDATED;
 
 	if (bin->track) {
@@ -2077,17 +2182,19 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    }
 
 	    v = lock(io, bin->track_rec, G_LOCK_EX);
-	    wrstats[GT_Track] += sizeof(GBinTrack) * ArrayMax(bin->track);
+	    nb = io_generic_write_i4(io, v, GT_RecArray,
+				     ArrayBase(GBinTrack, bin->track),
+				     sizeof(GBinTrack) * ArrayMax(bin->track));
+	    if (nb < 0) err |= 1;
+	    wrstats[GT_Track] += nb;
 	    wrcounts[GT_Track]++;
-	    err |= g_write(io, v, ArrayBase(GBinTrack, bin->track),
-			   sizeof(GBinTrack) * ArrayMax(bin->track));
 	    err |= unlock(io, v);
 	}
     }
 
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
-	char cpstart[12*5], *cp = cpstart;
+	char cpstart[12*5+2], *cp = cpstart;
 
 	bin->flags &= ~BIN_BIN_UPDATED;
 	g.pos         = bin->pos;
@@ -2136,6 +2243,9 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.parent_type == GT_Contig) bflag |= BIN_ROOT_NODE;
 	if (g.pos == 0)                 bflag |= BIN_POS_ZERO;
 	if (g.size == g.pos)            bflag |= BIN_SIZE_EQ_POS;
+
+	*cp++ = GT_Bin;
+	*cp++ = 0; /* Format */
 
 	cp += int2u7(bflag, cp);
 	if (!(bflag & BIN_POS_ZERO))     cp += int2s7(g.pos, cp);
@@ -2228,6 +2338,8 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     track_t *track;
     char *buf;
     size_t buf_len;
+    char *cp;
+    uint32_t type, flags, item_size, nitems;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -2235,10 +2347,19 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
 
     if (NULL == (buf = g_read_alloc(io, v, &buf_len)))
 	return NULL;
-    t = (GTrack_Header *)buf;
+    cp = buf;
 
     rdstats[GT_Track] += buf_len;
     rdcounts[GT_Track]++;
+
+    assert(*cp++ == GT_Track);
+    assert(*cp++ = 0);
+
+    /* Decode fixed size portions */
+    cp += u72int(cp, &type);
+    cp += u72int(cp, &flags);
+    cp += u72int(cp, &item_size);
+    cp += u72int(cp, &nitems);
 
     /* Allocate our overlapping data objects */
     if (!(ci = cache_new(GT_Track, rec, v, NULL, sizeof(*track) + buf_len)))
@@ -2247,13 +2368,13 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
 
     /* Construct track_t */
     track->rec       = rec;
-    track->type      = t->type;
-    track->flag      = t->flags;
-    track->item_size = t->item_size;
-    track->nitems    = t->nitems;
+    track->type      = type;
+    track->flag      = flags;
+    track->item_size = item_size;
+    track->nitems    = nitems;
     track->data      = ArrayCreate(track->item_size, track->nitems);
-    memcpy(ArrayBase(char, track->data), buf + sizeof(GTrack_Header),
-	   t->item_size * t->nitems);
+    assert(buf_len - (cp-buf) == t->item_size * t->nitems);
+    memcpy(ArrayBase(char, track->data), cp, t->item_size * t->nitems);
 
     free(buf);
     return ci;
@@ -2261,28 +2382,31 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
 
 static int io_track_write_view(g_io *io, track_t *track, GView v) {
     GTrack_Header *h;
-    char *data;
+    char *data, *cp;
     int err = 0;
 
-    data = (char *)malloc(sizeof(*h) + track->item_size * track->nitems);
+    cp = data = (char *)malloc(2 + 4*5 + track->item_size * track->nitems);
     if (!data)
 	return -1;
-    h = (GTrack_Header *)data;
 
-    /* The structure header fields */
-    h->type      = track->type;
-    h->flags     = track->flag & ~TRACK_FLAG_FREEME; /* not fake */
-    h->item_size = track->item_size;
-    h->nitems    = track->data ? track->nitems : 0;
-    
+    /* Encode the fixed portions */
+    *cp++ = GT_Track;
+    *cp++ = 0; /* format */
+    cp += int2u7(track->type, cp);
+    cp += int2u7(track->flag & ~TRACK_FLAG_FREEME, cp);
+    cp += int2u7(track->item_size, cp);
+    cp += int2u7(track->data ? track->nitems : 0, cp);
+
     /* The array */
-    if (h->nitems)
-	memcpy(data + sizeof(*h), ArrayBase(char, track->data),
+    if (h->nitems) {
+	memcpy(cp, ArrayBase(char, track->data),
 	       track->item_size * track->nitems);
+	cp += track->item_size * track->nitems;
+    }
     
     wrstats[GT_Track] += sizeof(*h) + track->item_size * track->nitems;
     wrcounts[GT_Track]++;
-    err |= g_write(io, v, h, sizeof(*h) + track->item_size * track->nitems);
+    err |= g_write(io, v, data, cp-data);
     g_flush(io, v);
     free(data);
 
@@ -2366,6 +2490,8 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     if (len) {
 	int Nanno;
 	cp = buf;
+	assert(*cp++ == GT_Seq);
+	assert(*cp++ == 0);
 	cp += u72int(cp, &bin);
 	cp += u72int(cp, &bin_index);
 	cp += u72int(cp, &left);
@@ -2633,7 +2759,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 
     /* Worst case */
     data_len =
-	  5 /* bin rec.no */
+	  2
+	+ 5 /* bin rec.no */
 	+ 5 /* bin index */
 	+ 5 /* left clip */
 	+ 5 /* right clip */
@@ -2654,6 +2781,8 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 
     /* Clips */
     cpstart = cp;
+    *cp++ = GT_Seq;
+    *cp++ = 0; /* format */
     cp += int2u7(seq->bin, cp);
     cp += int2u7(seq->bin_index, cp);
     cp += int2u7(seq->left, cp);
@@ -2934,22 +3063,25 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     rdstats[GT_SeqBlock] += buf_len;
     rdcounts[GT_SeqBlock]++;
 
-    /* Ungzip it too */
-    if (1) {
-	size_t ssz;
-	buf = mem_inflate(buf, buf_len, &ssz);
-	free(cp);
-	cp = buf;
-	buf_len = ssz;
-    }
-    b->est_size = buf_len;
-
     if (!buf_len) {
 	memset(&b->rec[0], 0, SEQ_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->seq[0], 0, SEQ_BLOCK_SZ*sizeof(b->seq[0]));
 	free(buf);
 	return ci;
     }
+
+    assert(buf[0] == GT_SeqBlock);
+    assert(buf[1] == 0); /* format */
+
+    /* Ungzip it too */
+    if (1) {
+	size_t ssz;
+	buf = mem_inflate(buf+2, buf_len-2, &ssz);
+	free(cp);
+	cp = buf;
+	buf_len = ssz;
+    }
+    b->est_size = buf_len;
 
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
@@ -3126,6 +3258,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     char *out[17], *out_start[17];
     size_t out_size[17], total_size;
     int level[17];
+    GIOVec vec[2];
+    char fmt[2];
 
     set_dna_lookup();
 
@@ -3279,10 +3413,15 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     //printf("%d\n", cp-cp_start);
 
     /* Finally write the serialised data block */
+    fmt[0] = GT_SeqBlock;
+    fmt[1] = 0; /* format */
+    vec[0].buf = fmt;      vec[0].len = 2;
+    vec[1].buf = cp_start; vec[1].len = cp - cp_start;
+    
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_SeqBlock] += cp-cp_start;
+    wrstats[GT_SeqBlock] += cp-cp_start + 2;
     wrcounts[GT_SeqBlock]++;
-    err = g_write(io, ci->view, cp_start, cp - cp_start);
+    err = g_writev(io, ci->view, vec, 2);
     g_flush(io, ci->view);
    
     free(cp_start);
@@ -3330,25 +3469,28 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     b = (anno_ele_block_t *)&ci->data;
     cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
 
-    rdstats[GT_AnnoEleBlock] += buf_len;
-    rdcounts[GT_AnnoEleBlock]++;
-
-    /* Ungzip it too */
-    if (1) {
-	size_t ssz;
-	buf = mem_inflate(buf, buf_len, &ssz);
-	free(cp);
-	cp = buf;
-	buf_len = ssz;
-    }
-    b->est_size = buf_len;
-
     if (!buf_len) {
 	memset(&b->rec[0], 0, ANNO_ELE_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->ae[0],  0, ANNO_ELE_BLOCK_SZ*sizeof(b->ae[0]));
 	free(buf);
 	return ci;
     }
+
+    assert(buf[0] == GT_AnnoEleBlock);
+    assert(buf[1] == 0); /* Format */
+
+    rdstats[GT_AnnoEleBlock] += buf_len;
+    rdcounts[GT_AnnoEleBlock]++;
+
+    /* Ungzip it too */
+    if (1) {
+	size_t ssz;
+	buf = mem_inflate(buf+2, buf_len-2, &ssz);
+	free(cp);
+	cp = buf;
+	buf_len = ssz;
+    }
+    b->est_size = buf_len;
 
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
@@ -3442,6 +3584,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     char *out[7], *out_start[7];
     size_t out_size[7], total_size;
     int level[7];
+    GIOVec vec[2];
+    char fmt[2];
 
     /* Compute worst-case sizes, for memory allocation */
     for (i = 0; i < 7; i++) {
@@ -3529,10 +3673,15 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     }
 
     /* Finally write the serialised data block */
+    fmt[0] = GT_AnnoEleBlock;
+    fmt[1] = 0; /* format */
+    vec[0].buf = fmt;      vec[0].len = 2;
+    vec[1].buf = cp_start; vec[1].len = cp - cp_start;
+
     assert(ci->lock_mode >= G_LOCK_RW);
-    wrstats[GT_AnnoEleBlock] += cp-cp_start;
+    wrstats[GT_AnnoEleBlock] += cp-cp_start + 2;
     wrcounts[GT_AnnoEleBlock]++;
-    err = g_write(io, ci->view, cp_start, cp - cp_start);
+    err = g_writev(io, ci->view, vec, 2);
     g_flush(io, ci->view);
     
     free(cp_start);

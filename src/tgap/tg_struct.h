@@ -203,6 +203,7 @@ typedef struct {
     unsigned int bin;
     int anno_rec; /* FIXME */
     char *name;
+    char *data;
 } contig_t;
 
 typedef struct index {
