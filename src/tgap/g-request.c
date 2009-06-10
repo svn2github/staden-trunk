@@ -409,6 +409,7 @@ static int write_image_(int fd, GImage image, GCardinal allocated, void *buf, GC
 {
     int check;
     /* LOW LEVEL IO HERE */
+#ifdef NO_PREAD
     errno = 0;
     if (-1==lseek(fd, (off_t)image, 0))
 	return gerr_set(GERR_SEEK_ERROR);
@@ -416,6 +417,10 @@ static int write_image_(int fd, GImage image, GCardinal allocated, void *buf, GC
     /* LOW LEVEL IO HERE */
     errno = 0;
     check = write(fd, buf, (int)len);
+#else
+    errno = 0;
+    check = pwrite(fd, buf, (int)len, (off_t)image);
+#endif
     if (check !=  len)
 	return gerr_set(GERR_WRITE_ERROR);
 
