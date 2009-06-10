@@ -1199,6 +1199,9 @@ if {[tk windowingsystem] eq "x11"} {
     bind EdNames <Shift-5>         {%W xview scroll  +1 units}
 }
 
+bind Editor <Key-Page_Down> {%W xview scroll  +1000 units}
+bind Editor <Key-Page_Up>   {%W xview scroll  -1000 units}
+
 # Selection control for adding tags
 bind Editor <<select-drag>> {%W select to @%x}
 #bind Editor <<select-release>> {puts "select release"}
