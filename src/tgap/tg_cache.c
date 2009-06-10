@@ -489,7 +489,7 @@ int cache_create(GapIO *io) {
     HacheTable *h;
 
     //    if (NULL == (h = HacheTableCreate(131072, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
-    if (NULL == (h = HacheTableCreate(8192, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
+    if (NULL == (h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE|HASH_OWN_KEYS)))
 	return -1;
     h->name = "tg_cache";
 
