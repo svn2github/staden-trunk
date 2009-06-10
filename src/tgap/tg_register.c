@@ -467,8 +467,13 @@ static int cursor_id = 0;
  *         NULL if none found.
  */
 static cursor_t *io_cursor_get(GapIO *io, int contig) {
-    HacheItem *hi = HacheTableSearch(io_cursor_reg(io),
-				     (char *)&contig, sizeof(contig));
+    HacheItem *hi;
+    HacheTable *h = io_cursor_reg(io);
+
+    if (!h)
+	return NULL;
+
+    hi = HacheTableSearch(io_cursor_reg(io), (char *)&contig, sizeof(contig));
     if (!hi)
 	return NULL;
 
