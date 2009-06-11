@@ -97,15 +97,10 @@ int SheetConfigureCommon(Tcl_Interp *interp, tkSheet *sw,
 	2 * (sw->sw.border_width /* + sw->sw.pad_x */);
     sw->sw.height_in_pixels = sw->sw.rows * font_height +
 	2 * (sw->sw.border_width /* + sw->sw.pad_y */);
-
+    
     Tk_GeometryRequest(sw->sw.tkwin, sw->sw.width_in_pixels,
 		       sw->sw.height_in_pixels);
     Tk_SetInternalBorder(sw->sw.tkwin, sw->sw.border_width);
-
-    if (sw->grid)
-	Tk_SetGrid(sw->sw.tkwin, sw->sw.columns, sw->sw.rows,
-		   sw->sw.font_width, sw->sw.fm.linespace);
-
 
     /*
      * Are we initialising things? If so we've got things to setup
@@ -115,6 +110,10 @@ int SheetConfigureCommon(Tcl_Interp *interp, tkSheet *sw,
 	sheet_create(&sw->sw, sw->light->pixel, sw->fg->pixel,
 		     Tk_3DBorderColor(sw->border)->pixel);
 	sw->initialised = 1;
+
+	if (sw->grid)
+	    Tk_SetGrid(sw->sw.tkwin, sw->sw.columns, sw->sw.rows,
+		       sw->sw.font_width, sw->sw.fm.linespace);
     } else {
 	int old_rows = sw->sw.rows, old_columns = sw->sw.columns;
 	sheet_resize(&sw->sw, old_rows, old_columns);
@@ -352,9 +351,11 @@ static void SheetEventProc(ClientData clientData, XEvent *eventPtr) {
 	sw->sw.columns =  ceil(dcol);
 	sw->sw.rows    =  ceil(drow);
 
+#if 0
 	if (sw->sw.columns == old_width && sw->sw.rows == old_height) {
 	    break;
 	}
+#endif
 
 	sw->sw.width_in_pixels = sw->sw.columns * font_width +
 	    2 * (sw->sw.border_width);
@@ -368,13 +369,14 @@ static void SheetEventProc(ClientData clientData, XEvent *eventPtr) {
 #endif
 	sheet_resize(&sw->sw, old_height, old_width);
 
+	    sheet_clear(&sw->sw);
+#if 0
 	if (fmod(drow, 1.0) != 0.0) {
 	    sheet_clear(&sw->sw);
-	    /* Causes loops - don't do this */
-	    /*Tk_GeometryRequest(sw->sw.tkwin, sw->sw.width_in_pixels,
-	     *		       sw->sw.height_in_pixels);
-	     */
+	    Tk_GeometryRequest(sw->sw.tkwin, sw->sw.width_in_pixels,
+	    		       sw->sw.height_in_pixels);
 	}
+#endif
 
 	sw->flags |= SHEET_REDRAW_ALL;
 	SheetDisplay((ClientData)sw);
