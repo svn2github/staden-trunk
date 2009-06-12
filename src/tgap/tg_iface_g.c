@@ -3064,6 +3064,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     rdcounts[GT_SeqBlock]++;
 
     if (!buf_len) {
+	b->est_size = 0;
 	memset(&b->rec[0], 0, SEQ_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->seq[0], 0, SEQ_BLOCK_SZ*sizeof(b->seq[0]));
 	free(buf);
@@ -3287,7 +3288,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[10]+= 5; /* trace name len */
 	out_size[11]+= 5; /* alignment len */
 	out_size[12]+= s->name_len+1;
-	out_size[13]+= s->trace_name_len;
+	out_size[13]+= s->trace_name_len+1;
 	out_size[14]+= s->alignment_len;
 	out_size[15]+= ABS(s->len); /* seq */
 	out_size[16]+= ABS(s->len) * (s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
@@ -3470,6 +3471,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     cp = buf = (unsigned char *)g_read_alloc((g_io *)dbh, v, &buf_len);
 
     if (!buf_len) {
+	b->est_size = 0;
 	memset(&b->rec[0], 0, ANNO_ELE_BLOCK_SZ*sizeof(b->rec[0]));
 	memset(&b->ae[0],  0, ANNO_ELE_BLOCK_SZ*sizeof(b->ae[0]));
 	free(buf);
