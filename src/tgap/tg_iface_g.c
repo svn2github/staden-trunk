@@ -554,8 +554,9 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
 	return NULL;
     }
 
-    assert(*cp++ == type);
-    assert(*cp++ == 0); /* initial format */
+    assert(cp[0] == type);
+    assert(cp[1] == 0); /* initial format */
+    cp += 2;
     cp += u72int(cp, &ni);
     *nitems = ni;
 
@@ -589,8 +590,9 @@ static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
     if (buf_len < 2)
 	return NULL;
 
-    assert(*cp++ == type);
-    assert(*cp++ == 0); /* initial format */
+    assert(cp[0] == type);
+    assert(cp[1] == 0); /* initial format */
+    cp += 2;
     cp += u72int(cp, &nitems);
 
     if (!(ci = cache_new(type, rec, v, NULL, nitems * sizeof(GCardinal)))) {
@@ -1242,8 +1244,9 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
     if (len < 2)
 	return NULL;
 
-    assert(*cp++ == GT_Contig);
-    assert(*cp++ == 0);
+    assert(cp[0] == GT_Contig);
+    assert(cp[1] == 0);
+    cp += 2;
 
     rdstats[GT_Contig] += len;
     rdcounts[GT_Contig]++;
@@ -1456,8 +1459,9 @@ static cached_item *io_anno_ele_read(void *dbh, GRec rec) {
 
     /* Decode it */
     cp = bloc; 
-    assert(*cp++ == GT_AnnoEle);
-    assert(*cp++ == 0); /* format */
+    assert(cp[0] == GT_AnnoEle);
+    assert(cp[1] == 0); /* format */
+    cp += 2;
     cp += u72int(cp, &bin_rec);
     cp += u72int(cp, &tag_type);
     cp += u72int(cp, &obj_type);
@@ -1977,9 +1981,9 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     rdstats[GT_Bin] += buf_len;
     rdcounts[GT_Bin]++;
 
-    assert(*cp++ == GT_Bin);
-    assert(*cp++ == 0); /* format */
-
+    assert(cp[0] == GT_Bin);
+    assert(cp[1] == 0); /* format */
+    cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
     g.parent_type = (bflag & BIN_ROOT_NODE) ? GT_Contig : GT_Bin;
@@ -2352,8 +2356,9 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     rdstats[GT_Track] += buf_len;
     rdcounts[GT_Track]++;
 
-    assert(*cp++ == GT_Track);
-    assert(*cp++ = 0);
+    assert(cp[0] == GT_Track);
+    assert(cp[1] == 0);
+    cp += 2;
 
     /* Decode fixed size portions */
     cp += u72int(cp, &type);
@@ -2490,8 +2495,9 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     if (len) {
 	int Nanno;
 	cp = buf;
-	assert(*cp++ == GT_Seq);
-	assert(*cp++ == 0);
+	assert(cp[0] == GT_Seq);
+	assert(cp[1] == 0);
+	cp += 2;
 	cp += u72int(cp, &bin);
 	cp += u72int(cp, &bin_index);
 	cp += u72int(cp, &left);

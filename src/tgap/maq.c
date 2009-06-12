@@ -107,7 +107,9 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     int sz;
 
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
-    assert(dat_fp = gzopen(dat_fn, "r"));
+    if (NULL == (dat_fp = gzopen(dat_fn, "r")))
+	return -1;
+    
     mm = maqmap_read_header(dat_fp);
 
     fprintf(stderr, "++ The input contains %d sequences.\n", mm->n_ref);
