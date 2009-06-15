@@ -518,7 +518,7 @@ RasterCmd(ClientData clientData, Tcl_Interp *interp, int argc, char **argv)
        return TCL_ERROR;
     }
 
-    interp->result = Tk_PathName(RasterPtr->tkwin);
+    Tcl_SetResult(interp, Tk_PathName(RasterPtr->tkwin), TCL_STATIC);
     return TCL_OK;
 }
 
@@ -675,8 +675,8 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 		case TK_SCROLL_MOVETO: {
 		    double wdx;
 
-		    if (fraction <= 0)
-			fraction = 0;
+		    //		    if (fraction <= 0)
+		    //			fraction = 0;
 
 		    wdx = RasterPtr->wx1 - RasterPtr->wx0;
 
@@ -684,8 +684,8 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 		    printf("world_length %f wdx %f %f\n", world_length, wdx,
 			   (world_length - wdx) / world_length);
 #endif
-		    if (fraction >= (world_length - wdx) / world_length)
-			fraction = (world_length - wdx) / world_length;
+		    //		    if (fraction >= (world_length - wdx) / world_length)
+		    //			fraction = (world_length - wdx) / world_length;
 		    WorldToRaster(RasterPtr, (world_length * fraction +
 					      RasterPtr->wx_start), 0,
 				  &rx, &ry);
@@ -877,7 +877,7 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 	  result = SetDrawEnv (interp, RasterPtr, drawEnvPtr);
        }
        else {
-	  sprintf (interp->result, "%d", RasterPtr->currentDrawEnv->index);
+	   vTcl_SetResult(interp, "%d", RasterPtr->currentDrawEnv->index);
        }
     }
     else if ((c == 'e') && (strncmp (argv [1], "envcreate", length) == 0)) {
@@ -939,9 +939,9 @@ RasterWidgetCmd(clientData, interp, argc, argv)
        /* WORLD COMMAND */
        if (argc == 2) {
 	  /*return world coordinates */
-	  sprintf (interp->result, "%.9g %.9g %.9g %.9g",
-		   RasterPtr->wx0, RasterPtr->wy0, RasterPtr->wx1,
-		   RasterPtr->wy1);
+	  vTcl_SetResult(interp, "%.9g %.9g %.9g %.9g",
+			 RasterPtr->wx0, RasterPtr->wy0, RasterPtr->wx1,
+			 RasterPtr->wy1);
        }
        else {
 	  /* set world coordinates */
@@ -967,13 +967,45 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 	  SetRasterCoords (RasterPtr, x0, y0, x1, y1);
        }
     }
+    else if ((c == 'w') && (strncmp (argv [1], "world_scroll", length) == 0)) {
+       /* WORLD COMMAND */
+       if (argc == 2) {
+	  /*return world coordinates */
+	  vTcl_SetResult(interp, "%.9g %.9g %.9g %.9g",
+			 RasterPtr->wx0, RasterPtr->wy0, RasterPtr->wx1,
+			 RasterPtr->wy1);
+       }
+       else {
+	  /* set world coordinates */
+	  if (argc < 6) {
+	     Tcl_AppendResult (interp, "wrong # args: ",
+			       " expected 4 world coordinates", (char*)NULL);
+	     goto error;
+	  }
+	  if (Tcl_GetDouble (interp, argv [2], &x0) != TCL_OK ||
+	      Tcl_GetDouble (interp, argv [3], &y0) != TCL_OK ||
+	      Tcl_GetDouble (interp, argv [4], &x1) != TCL_OK ||
+	      Tcl_GetDouble (interp, argv [5], &y1) != TCL_OK) {
+	     goto error;
+	  }
+	  if (x1 == x0 || y1 == y0) {
+	     Tcl_AppendResult (interp, "coordinates must define a rectangle",
+			       (char*) NULL);
+	     goto error;
+	  }
+#ifdef DEBUG
+	  printf("*************************WORLD*******************\n");
+#endif
+	  RasterSetWorldScroll (RasterPtr, x0, y0, x1, y1);
+       }
+    }
     else if ((c == 'w') && (strncmp (argv [1], "world_size", length) == 0)) {
 	/* WORLD_SIZE COMMAND */
 	/* return the total world coords of raster */
 
-	sprintf(interp->result, "%.9g %.9g %.9g %.9g",
-		RasterPtr->wx_start, RasterPtr->wy_start,
-		RasterPtr->wx_end, RasterPtr->wy_end);
+	vTcl_SetResult(interp, "%.9g %.9g %.9g %.9g",
+		       RasterPtr->wx_start, RasterPtr->wy_start,
+		       RasterPtr->wx_end, RasterPtr->wy_end);
 
     }
     else if ((c == 't') && (strncmp (argv [1], "toworld", length) == 0)) {
@@ -995,7 +1027,7 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 #ifdef DEBUG
        printf("TOWORLD %d %d %f %f\n", rx, ry, x0, y0);
 #endif
-       sprintf (interp->result, "%.9g %.9g", x0, y0);
+       vTcl_SetResult(interp, "%.9g %.9g", x0, y0);
     }
     else if ((c == 't') && (strncmp (argv [1], "topixmap", length) == 0)) {
        /* TOPIXMAP COMMAND */
@@ -1013,7 +1045,7 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 #ifdef DEBUG
        printf("TOPIXMAP %f %f %d %d\n", x0, y0, rx, ry);
 #endif
-       sprintf (interp->result, "%d %d", rx, ry);
+       vTcl_SetResult(interp, "%d %d", rx, ry);
     }
     else if ((entryPtr = Tcl_FindHashEntry (&PrimitiveTable, argv[1]))
 	       != NULL) {
@@ -2336,7 +2368,7 @@ static int CreateDrawEnv (interp, RasterPtr, argc, argv)
 
    Tcl_SetHashValue (entryPtr, drawEnvPtr);
 
-   sprintf (interp->result, "%d", RasterPtr->drawEnvCount++);
+   vTcl_SetResult(interp, "%d", RasterPtr->drawEnvCount++);
    return TCL_OK;
 }
 
@@ -2980,7 +3012,7 @@ CreateDrawEnviron(Tcl_Interp *interp,
     int result;
 
     CreateDrawEnv(interp, RasterPtr, argc, argv);
-    result = atoi(interp->result);
+    result = atoi(Tcl_GetStringResult(interp));
     return result;
 }
 
@@ -3240,19 +3272,19 @@ RasterSetWorldScroll(Tk_Raster *rasterptr,
 	   y0, y1, raster->wy_start, raster->wy_end);
 #endif
 
-    if (x0 < raster->wx_start) {
+    if (x0 != raster->wx_start) {
 	raster->wx_start = x0;
 	flag = 1;
     }
-    if (y0 < raster->wy_start) {
+    if (y0 != raster->wy_start) {
 	raster->wy_start = y0;
 	flag = 1;
     }
-    if (x1 > raster->wx_end) {
+    if (x1 != raster->wx_end) {
 	raster->wx_end = x1;
 	flag = 1;
     }
-    if (y1 > raster->wy_end) {
+    if (y1 != raster->wy_end) {
 	raster->wy_end = y1;
 	flag = 1;
     }
