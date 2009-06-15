@@ -1,3 +1,78 @@
+Gap5 1.2.1,  June 15th 2009
+===========================
+
+Mostly just a bug fix release.
+
+Bug fixes / minor changes
+-------------------------
+
+*	caf2baf now supports annotations.
+
+*	Fixed a crash when storing sequences with trace names that
+        substantially differ to the read names.
+
+*	Compiling with optimisation now works correctly. (Previous
+        release was built with debugging and no optimisation, so the
+        errors were not apparent.)
+
+
+Gap5 1.2.0,  June 10th 2009
+===========================
+
+*INCOMPATIBILITY* The files written by tg_index and read/written by
+gap5 are not in the same format as those produced by v1.1.x.
+If you wish to migrate existing gap5 databases then it is recommended
+that you use the Export Sequences function in 1.1.3 to output in BAF
+format, and reindex them using tg_index v1.2.0 with the -B option.
+
+
+Key changes
+-----------
+
+*	Major reduction in disk space required.
+	Gap5 databases are now (de)compressed on the fly and so are a
+	fraction of their original size. In most cases they'll be
+	~20-30% smaller than an input BAM file too.
+
+	This change has also meant less I/O and in particular fewer
+	random file seeks. Hence Gap5 is better behaved on the Lustre
+	filesystem, although local storage of NFS are still faster.
+
+*	Minimal support for libraries. This is still work in progress,
+        but the LB tag in sam/bam format is now used to separate
+        sequences into libraries. (More work on this to follow,
+        including better use of this information and adding library
+        support to other input file formats.)
+
+*	Can now export in ACE format too.
+
+*	Added a -z option to tg_index to allow user specified block
+        sizes. I'd suggest using this (eg "tg_index -z 64k") on sparse
+        alignment files.
+
+*	Annotatons (aka "tags" in Gap4) have been added. For now these
+        are visible by colouration, but no interaction is possible
+        yet. The full tag editor is planned for later 1.2.x releases.
+
+
+Bug fixes / minor changes
+-------------------------
+
+*	Fixed a bug in the Export Sequences function. It occasionally
+        missed sequences at the very start of a contig.
+
+*	Fixed ACE file reading of complemented data.
+
+*	The file format changes also included better error
+        checking. The encoding of each data type now includes the data
+        type itself (to ensure we've found the expected type of data)
+        and a format code. The format codes should allow for more
+        graceful file format changes in the future.
+
+*	Fixed a bug in the count of how many sequences are in each
+        contig.
+
+
 Gap5 1.1.3.1,  May 15th 2009
 ============================
 

@@ -1,3 +1,435 @@
+2009-06-15  jkbonfield  <jkb@sanger.ac.uk>
+
+	* VERSION 1.2.1 *
+	
+2009-06-15  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+        * tgap/tg_index.c,
+        * tgap/tg_view.c,
+        * gap5/gap.tcl:
+        (10:43:54) Bumped version to 1.2.1
+
+2009-06-12  jkbonfield  <jkbonfield@sanger.ac.uk>
+
+        * tgap/tg_iface_g.c:
+        (14:17:29) Fixed memory corruption when writing out seq blocks if
+        trace_name disagrees with sequence name. (We didn't allocate enough
+        storage.)
+
+        Also insure seq_block and anno_ele_block est_size field is always
+        initialised to zero.
+
+        * tgap/caf2baf.pl:
+        (15:13:08) *** empty log message ***
+
+        * tgap/maq.c,
+        * tgap/tg_iface_g.c:
+        (16:24:28) Fixed use of assert. Nasties like assert(*cp++ ==
+        GT_Seq) are invalid as compiled used NDEBUG to disable assert also
+        no longer increments cp.
+
+2009-06-10  jkbonfield  <jkb@sanger.ac.uk>
+
+	* VERSION 1.2.0 *
+	
+2009-06-10  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_register.c:
+	(13:19:21) Protect against io_cursor_reg(io) being NULL in
+	io_cursor_get(). This can happen when shutting down all displays. 
+
+	* tgap/g-request.c:
+	(13:19:58) Added use of pwrite instead of lseek and write (similar
+	to the already in-use pread calls). 
+
+	* tgap/tg_cache.c:
+	(13:20:27) Set cache size to 1024 (from 8192). More applicable now
+	we have compound "blocked" data structs. 
+
+	* tgap/tg_iface_g.c,
+	* tgap/tg_struct.h:
+	(13:22:25) *INCOMPATIBILITY* Major overhaul on encoded data
+	formats.
+	
+	Every record written to disk now starts with a byte for the data
+	type and a byte for the encoding format (starting at zero for now).
+	Every time we read a record we assert that the type and format are
+	correct.
+	
+	This should help spot potential data corruptions before they take
+	place. The error handling could be improved, but assert/abort is
+	sufficient for now and (in theory) these should never happen
+	anyway. 
+
+	* gap5/contig_editor.tcl:
+	(13:27:44) Added pageup/pagedown bindings (+/- 1k at a time). 
+
+	* tgap/tg_index.c,
+	* tgap/tg_view.c,
+	* gap5/gap.tcl:
+	(13:28:38) Bumped version to 1.2.0 
+
+2009-06-09  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_contig.c,
+	* tgap/tg_contig.h:
+	(09:23:34) Added a flag to distinguish between the first range and
+	subsequent ranges in the contig iterators.
+	
+	The first range needs to allow objects that overlap the range to be
+	included while subsequent objects need to only allow objects that
+	start entirely within the new range (in order to remove
+	duplicates).
+	
+	This fixes a bug where the first few sequences in a contig were
+	rejected when exporting to varying file formats. 
+
+	* tgap/Makefile:
+	(12:38:18) Link libtgap.so against ptmalloc3 library.
+	
+	This replaces the system malloc as we've seen some *dire*
+	performance issues. In one case tg_index sped up 24 fold after
+	linking with the new library. 
+
+	* tgap/baf.c:
+	(12:39:17) Count all object types rather than just sequences when
+	deciding to flush.
+	
+	Improved outputs, giving timings per block of data. 
+
+	* tgap/tg_bin.c:
+	(12:40:12) Fix buf where bin->nseqs changes weren't always written
+	back to disk. 
+
+	* tgap/tg_cache.c:
+	(12:40:45) Bug fix: remove empty case statement (illegal C?).
+	
+	Minor debug output changes. 
+
+	* tgap/tg_iface_g.c:
+	(12:41:05) Minor change to improve portability. 
+
+	* tgap/tg_index.c:
+	(12:42:44) The default value of merge_contigs is now dependant on
+	whether or not we are appending. This removes the need to search
+	through contig existing names when we're not appending.
+	
+	ASSUMPTION: per input file, all data for a single contig is
+	collated together rather than intermingled. 
+
+	* tgap/sam.c:
+	(14:00:31) Fixed bug with handling 'Z' aux sam type. 
+
+2009-06-04  jkbonfield  <jkb@sanger.ac.uk>
+
+	* gap5/export_contigs.c:
+	(13:32:07) #ifdefed out code; for evaluating size of fastq files
+	when complementing sequences to keep in assembly orientation. 
+
+	* gap5/editor_view.c,
+	* gap5/tkEditor.c:
+	(13:32:43) Added support for displaying annotation colours. 
+
+	* tgap/ace.c,
+	* tgap/g-struct.c,
+	* tgap/hache_table.c,
+	* tgap/hache_table.h,
+	* tgap/maq.c,
+	* tgap/sam.c,
+	* tgap/tg_contig.c,
+	* tgap/tg_index.c,
+	* tgap/tg_register.c:
+	(13:49:25) Strictly for debugging purposes, hache tables now have a
+	name field. If set this outputs the name string in debugging output
+	instead of using %p and the hache table pointer. 
+
+	* tgap/tg_cache.c,
+	* tgap/tg_iface.h,
+	* tgap/tg_iface_g.c,
+	* tgap/tg_struct.h:
+	(13:50:04) GT_AnnoEle items are now blocked like sequences in a
+	GT_AnnoEleBlock items instead. This massively reduces the file size
+	for tag-rich databases.
+	
+	Also improved I/O stats output. 
+
+	* tgap/tg_sequence.c:
+	(13:50:13) Added sequence_reset_ptr and sequence_copy functions to
+	remove code duplication. 
+
+	* tgap/baf.c,
+	* tgap/tg_bin.c:
+	(13:50:27) Fixed reference count leaks 
+
+	* tgap/tg_anno.c,
+	* tgap/tg_anno.h:
+	(13:50:53) Added tag types to anno_ele so we can get away with not
+	using anno structs at all for the simple case of a tag marking just
+	one region. Tag types are now stored in the range_t struct too,
+	using the mqual field (TODO: use a union instead). Old old_type was
+	stored here, but now fits in a flag instead. 
+
+2009-06-01  jkbonfield  <jkb@sanger.ac.uk>
+
+	* gap5/editor_view.c:
+	(10:36:47) Bug fix cases where the item in xx->r[] is an annotation
+	instead of a sequence (eg in edCursorUp, edCursorDown and
+	edview_item_at_pos). 
+
+2009-05-29  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/BAF,
+	* tgap/baf.c,
+	* tgap/baf.h:
+	(10:57:28) Added annotation support. 
+
+	* tgap/sam2fai.pl:
+	(10:58:00) Now preserves the order in the input sam file when
+	producing the output list. (Not needed, but useful for debugging
+	purposes sometimes.) 
+
+	* tgap/tg_bin.c:
+	(10:58:23) Fixed the nseqs counter so it isn't incremented by
+	annotations. 
+
+	* tgap/tg_contig.c:
+	(10:59:05) compute_ypos() when operating in non-stacking mode no
+	longer counts tags in computing Y coordinates. 
+
+	* tgap/tg_iface_g.c:
+	(16:32:29) Fixed bug in decoding of SeqBlocks and seq->bin_index. 
+
+	* tgap/tg_sequence.c:
+	(16:32:54) Assert in sequence_get_pair() - spotted bin_index
+	decoding issues. 
+
+2009-05-28  jkbonfield  <jkb@sanger.ac.uk>
+
+	* gap5/libraries.tcl:
+	(14:23:34) Improved the auto-scaling and added a simple key. 
+
+2009-05-27  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_contig.c:
+	(15:31:35) Upped the size of the range queries used in the
+	contig_iter system from 1k to 10k. 
+
+	* gap5/NEWS:
+	(15:40:35) *** empty log message *** 
+
+	* gap5/export_contigs.c:
+	(15:41:27) Improved cigar string generation for SAM format.
+	
+	Added ACE format output. 
+
+	* gap5/export_contigs.tcl:
+	(15:41:41) Added ACE format output. 
+
+	* gap5/libraries.tcl,
+	* gap5/tclIndex:
+	(15:42:18) Added a rudimentary libraries Tk interface. 
+
+2009-05-26  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/ace.c:
+	(14:21:41) Fixed ACE file reading of complemented data. 
+
+	* tgap/Makefile,
+	* tgap/maq.c,
+	* tgap/sam.c,
+	* tgap/tg_cache.c,
+	* tgap/tg_gio.c,
+	* tgap/tg_gio.h,
+	* tgap/tg_iface.h,
+	* tgap/tg_iface_g.c,
+	* tgap/tg_library.c,
+	* tgap/tg_library.h,
+	* tgap/tg_struct.h,
+	* tgap/tg_tcl.c:
+	(14:24:21) Added libraries as a data type.
+	
+	These replace the (unimplemented) DNASrc data type. For now only
+	MAQ and SAM input formats populate these fields, but more will
+	follow shortly. 
+
+	* tgap/tg_contig.c:
+	(14:27:50) Fixed contig_iter_next and contig_iter_prev. When faced
+	with sequences of varying length these sometimes caused duplicates
+	during iteration. 
+
+2009-05-15  jkbonfield  <jkb@sanger.ac.uk>
+
+	* VERSION 1.1.3.1 *
+
+2009-05-15  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/baf.c:
+	(09:05:14) Only flush changes every 65536 sequences now, as this
+	improves data locality and reduces database fragmentation.
+	
+	Fixed issues with incorrect quality values for soft-clipped data in
+	SAM. 
+
+	* tgap/maq.c,
+	* tgap/sam.c:
+	(09:05:15) Only flush changes every 65536 sequences now, as this
+	improves data locality and reduces database fragmentation.
+	
+	Fixed issues with incorrect quality values for soft-clipped data in
+	SAM. 
+
+	* tgap/tg_cache.c:
+	(09:16:16) Tweaked the maximum data size of an uncompressed
+	sequence block from 200k to 150k as this appears to be marginally
+	more optimal in disk usage. 
+
+2009-05-13  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/sam2fai.pl:
+	(15:56:47) Added a simple tool to index sam files, building a .fai
+	file suitable for use with "samtools import". 
+
+	* gap5/export_contigs.c,
+	* gap5/export_contigs.h,
+	* gap5/export_contigs.tcl,
+	* gap5/newgap5_cmds.c,
+	* gap5/tclIndex:
+	(16:01:05) Added a "File->Export Sequences" command.
+	
+	This outputs data in SAM, Fasta, Fastq or BAF format and can be
+	used for migrating between gap5 releases or from gap5 back to
+	samtools.
+	
+	Note that right now it's not robust with regards to CIGAR
+	alignments though - it writes out padded data currently. 
+
+	* gap5/Makefile:
+	(16:02:13) Added export_contigs.c 
+
+	* tgap/sam.c:
+	(16:03:25) Fixed contig names - we now use the references listed in
+	the sam file.
+	
+	Fixed sequence position - they were out by 1.
+	
+	Removed the old sam reading code (previously #if-ed out). 
+
+2009-05-12  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_bin.c,
+	* tgap/tg_bin.h,
+	* tgap/tg_contig.c,
+	* tgap/tg_gio.c,
+	* tgap/tg_gio.h,
+	* tgap/tg_index.c:
+	(16:40:21) Made the minimum bin size a parameter of tg_index. This
+	allows for a great improvement of speed and compression size when
+	dealing with very low coverage data sets (eg many 1000G runs). 
+
+	* tgap/tg_iface_g.c:
+	(16:41:07) We now store GT_Bin structs in a more optimal fashion.
+	
+	This doesn't have a big impact mostly unless using lots of small
+	bins with shallow depth data. 
+
+	* tgap/tg_bin.c,
+	* tgap/tg_iface_g.c:
+	(16:58:16) The io->iface->bin.create method no longer creates a bin
+	from a template, instead preferring simply to just allocate the
+	record.
+	
+	This along with bin_new() changes means we don't write the bin
+	struct to disk multiple times. It has a minor change on deep
+	projects, but a substantial speed improvement on very shallow ones
+	(with admittedly too many bins for the depth). 
+
+2009-05-11  jkbonfield  <jkb@sanger.ac.uk>
+
+	* gap5/editor_view.c:
+	(09:07:02) Handle sequences longer than MAX_SEQ_LEN. The #define
+	should only be for static memory allocation for speed, and not a
+	hard limit. 
+
+	* gap5/editor_view.c:
+	(16:27:38) Fixed memory leak: free memory for anno_hash. 
+
+	* gap5/consensus.c,
+	* gap5/editor_view.c:
+	(16:28:20) Don't decrement the seq_t cache. This is unnecessary as
+	it's not auto-incremented and it now produces issues for
+	referencing counting of block data. 
+
+	* tgap/tg_contig.c:
+	(16:29:24) Fixed memory leak in compute_ypos(). 
+
+	* tgap/tg_utils.c,
+	* tgap/tg_utils.h:
+	(16:30:16) Added signed versions of the 7-bit int encoding; int2s7
+	and s72int. 
+
+	* tgap/tg_cache.c,
+	* tgap/tg_iface.h,
+	* tgap/tg_iface_g.c,
+	* tgap/tg_sequence.c,
+	* tgap/tg_struct.h:
+	(16:35:38) *MAJOR AND INCOMPATIBLE CHANGE*
+	
+	First draft of a new data type: SeqBlock. This implements a block
+	of sequences, rather than a single sequence object.  The purpose is
+	to improve compression by allowing for multiple sequences (up to
+	1024) to be compressed as a single block of data at the g-layer.
+	
+	This requires a LOT of smoke and mirrors in the caching layer to
+	get right, and a few tweaks to allocation of new sequence objects
+	too (in tg_sequence.c).
+	
+	Currently it's a mess of code, but the implementation appears to
+	now be working. The compression achieve is quite amazing; typically
+	beating bzip2 of the old gap5 database size while still being
+	faster. The actual compression ratios vary, but 5:1 isn't
+	unexpected.
+	
+	Note that it works far better with deep assemblies and less well
+	with very shallow (eg 1000 genomes) data sets. This is partly due
+	to the inherent compression from having lots of similar (ie
+	overlapping) strings and partly due to a better ratio of sequences
+	to bins. (Lots of almost empty bins is inefficient). 
+
+2009-05-08  jkbonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_bin.c:
+	(13:23:22) When extending contigs and adding a new root bin we now
+	inherit the count of sequences from the old root.
+	
+	Previously it restarted the count at zero, giving incorrect
+	sequence counts. 
+
+2009-04-24  jkbonfield  <jkb@sanger.ac.uk>
+
+	* VERSION 1.1.3 *
+
+2009-04-24  jkbonfield  <jkb@sanger.ac.uk>
+
+	* gap5/ChangeLog,
+	* gap5/NEWS:
+	(13:26:43) *** empty log message *** 
+
+	* gap5/depth.tcl:
+	(14:01:24) Added an "update idletasks" when moving the cursor
+	window. This prevents oscillation as we scroll by generating motion
+	events that are applied to the location of the old window,
+	pre-move. 
+
+	* gap5/depth.tcl:
+	(16:10:08) Fixed an issue with resize events occurring all the
+	time. This was due to changes in resize1.5 and subtracting the
+	scrollbar size from ${w}(width). Now using a separate variable for
+	this.
+	
+	Also fixed an issue where bringing up a contig editor first,
+	followed by the template display. Then double left clicking to move
+	the editor was giving errors. 
+
 2009-04-23  jkbonfield  <jkb@sanger.ac.uk>
 
 	* tgap/baf.c,
@@ -254,6 +686,10 @@
 
 2009-04-03  jkbonfield  <jkb@sanger.ac.uk>
 
+	* VERSION 1.1.2 *
+
+2009-04-03  jkbonfield  <jkb@sanger.ac.uk>
+
 	* gap5/template_display.c:
 	(11:26:38) Added a filter dialogue to allow the template display to
 	be filtered by spanning, pair/single or mapping quality.
@@ -453,6 +889,10 @@
 	* gap5/depth.tcl:
 	(16:09:19) The window title bar is now named after the contig being
 	displayed. 
+
+2009-03-20  jkbonfield  <jkb@sanger.ac.uk>
+
+	* VERSION 1.1.1 *
 
 2009-03-20  jkbonfield  <jkb@sanger.ac.uk>
 
