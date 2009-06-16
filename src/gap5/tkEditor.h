@@ -41,6 +41,7 @@ typedef struct {
     int consensus_at_top; /* 0 => normal, 1 => flipped for join editor */
     int stripe_mode; /* 0 => no stripes, N => stripes every N bytes */
     int stack_mode; /* 0 => 1 line per seq. 1 => multiples per line */
+    int hide_annos; /* 0 => display, 1 => hide */
 } Editor;
 
 #define TKSHEET(ed)   ((tkSheet *)(ed))

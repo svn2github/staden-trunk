@@ -781,6 +781,9 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
     char type[5];
     HacheItem *hi;
 
+    if (xx->ed->hide_annos)
+	return;
+
     if (xx->nr == 0)
 	return;
 

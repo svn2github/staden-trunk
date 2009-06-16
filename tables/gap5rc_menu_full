@@ -364,6 +364,8 @@ add_command	{Settings.Set quality threshold}	1 0 \
 add_separator	{Settings.S2}
 add_check       {Settings.Pack Sequences}               1 0 {${w}(PackSequences)} \
 	{set_editor_pack_sequences $w}
+add_check       {Settings.Hide Annotations}             1 0 {${w}(HideAnno)} \
+	{editor_toggle_annos $w}
 
 ### add_check	{Settings.Compare Strands}		1 0 \
 ### 	{$w.CompareStrands} {$e compare_strands} e

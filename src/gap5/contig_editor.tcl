@@ -10,6 +10,7 @@
 #    Button/checkbutton GUI textvariables are stored within opt
 #    starting with capital letters.
 #        opt(PackSequences)
+#        opt(HideAnno)
 #
 # 2) Model: The contig itself (with an associated io). The gapio ($io) is
 #    typically a child io so we can edit (copy on write).
@@ -294,6 +295,7 @@ proc contig_editor {w args} {
     set opt(DisagreeMode)  1
     set opt(DisagreeCase)  1
     set opt(PackSequences) 1
+    set opt(HideAnno)      0
     set opt(Status)        "--- Status info here ---"
 
     set opt(io_base) $opt(-io)
@@ -587,7 +589,8 @@ proc editor_pane {top w above ind arg_array} {
 		-qualcolour9 [keylget gap5_defs CONTIG_EDITOR.QUAL9_COLOUR] \
 		-bd 0 \
 	        -consensus_at_top $cattop \
-	        -stack_mode  $opt(PackSequences)]
+	        -stack_mode  $opt(PackSequences) \
+	        -hide_anno   $opt(HideAnno)]
     set opt(curr_editor) $ed
 
     # X and y scrollbars
@@ -773,6 +776,24 @@ proc editor_disagreements {w} {
 	    $ed configure -display_differences 0
 	}
 	$ed configure -differences_case_sensitive $opt(DisagreeCase)
+	$ed redraw
+    }
+}
+
+proc editor_toggle_annos {w} {
+    global $w
+
+    if {[info exists ${w}(all_editors)]} {
+	# Called either via the menu, after setting ther new value
+	upvar \#0 $w opt
+    } else {
+	# Or via control-Q on an editor, to toggle the value
+	upvar \#0 [set ${w}(top)] opt
+	set opt(HideAnno) [expr {1-$opt(HideAnno)}]
+    }
+
+    foreach ed $opt(all_editors) {
+	$ed configure -hide_anno $opt(HideAnno)
 	$ed redraw
     }
 }
@@ -1165,7 +1186,7 @@ bind Editor <Escape><Key-period> {%W contig_end;  update_brief %W}
 bind Editor <Double-1> {%W display_trace}
 bind Editor <Control-Key-t> {%W display_trace}
 
-# Editing commanda
+# Editing commands
 bind Editor <Key-a> {editor_edit_base %W a [%W get_number]}
 bind Editor <Key-c> {editor_edit_base %W c [%W get_number]}
 bind Editor <Key-g> {editor_edit_base %W g [%W get_number]}
@@ -1177,6 +1198,8 @@ bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
 
 bind Editor <Control-Key-Left>  {editor_move_seq %W [%W get_number] -1}
 bind Editor <Control-Key-Right> {editor_move_seq %W [%W get_number]  1}
+
+bind Editor <Control-Key-q> {editor_toggle_annos %W}
 
 # MouseWheel scrolling
 bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}
