@@ -240,8 +240,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     bs = &bio->seqs[snum];
     b = bs->b;
 
-    /* Fetch library */
-    if (0 == bam_aux_find(b, "LB", &type, &val) && type == 'Z') {
+    /* Fetch read-group and pretend it's a library for now */
+    if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
 	LB = val.s;
     } else {
 	LB = bio->fn;
