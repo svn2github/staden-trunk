@@ -553,7 +553,8 @@ proc editor_pane {top w above ind arg_array} {
     frame $f -bd 3
 
     set w $f.pane
-    panedwindow $w -orient horiz -bd 2 -relief sunken
+    panedwindow $w -orient horiz -bd 1 -relief sunken \
+	-showhandle 1 -sashrelief raised
 
     frame $w.name -bd 0 -highlightthickness 0
     frame $w.seq -bd 0 -highlightthickness 0
@@ -675,7 +676,8 @@ proc editor_pane {top w above ind arg_array} {
 # The "differences" bar that separates a pair of join editors
 proc diff_pane {w} {
     frame $w -bd 0 -padx 3
-    set p [panedwindow $w.pane -orient horiz -bd 2 -relief sunken]
+    set p [panedwindow $w.pane -orient horiz -bd 2 -relief sunken \
+	      -showhandle 1 -sashrelief raised]
     pack $p -fill both -expand 1
 
     frame $p.name -bd 0 -highlightthickness 0
