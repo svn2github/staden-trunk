@@ -69,7 +69,8 @@ TGSH_OBJ = \
 	$(TGAPBIN)/gap_cli_arg.o \
 	$(TGAPBIN)/tg_tcl.o
 
-TGAPOBJS = $(TGSH_OBJ) $(GOBJS) $(L)/libptmalloc3.a
+#TGAPOBJS = $(TGSH_OBJ) $(GOBJS) $(L)/libptmalloc3.a
+TGAPOBJS = $(TGSH_OBJ) $(GOBJS)
 
 
 $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
@@ -97,7 +98,7 @@ TGILIBS = \
 	$(TCL_LIB) \
 	-L../samtools-0.1.2-$(MACHINE) -lbam
 
-$(O)/tg_index: $(TG_IND_OBJ)
+$(O)/tg_index: $(TG_IND_OBJ) $(LIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
 
 TG_VIEW_OBJ = \
@@ -108,18 +109,8 @@ TGVLIBS = \
 	$(TGILIBS) \
 	-lcurses
 
-$(O)/tg_view: $(TG_VIEW_OBJ)
+$(O)/tg_view: $(TG_VIEW_OBJ) $(LIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
-
-TG_DEPTH_OBJ = \
-	$(TG_IO) \
-	$(TGAPBIN)/tg_depth.o
-
-TGDLIBS = \
-	$(TGILIBS) \
-
-$(O)/tg_depth: $(TG_DEPTH_OBJ)
-	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_DEPTH_OBJ) $(TGDLIBS) $(LIBSC)
 
 DEPEND_OBJ = $(TG_IND_OBJ) $(TG_VIEW_OBJ) $(TGAPOBJS)
 
