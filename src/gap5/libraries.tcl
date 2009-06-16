@@ -121,6 +121,7 @@ proc ListLibraries {io} {
 	set last_y 0
 	set col [lindex {black orange3 blue} $j]
 	foreach {x y} [lindex $dist $j] {
+	    if {$last_x == 0} {set last_x $x; continue}
 	    #set y [expr {log($y+1)}]
 	    $c create line $last_x $last_y $x $y -tags type_$j -fill $col -width 3
 	    set last_x $x
@@ -135,6 +136,7 @@ proc ListLibraries {io} {
     $c scale all 0 0 1 [expr {400.0/$maxy}]
 
     # Identify an *appropriate* scrollregion.
+    set y2 0
     for {set x $maxx} {$x >= 100} {set x [expr {int($x * 0.9)}]} {
 	set l [$c find enclosed $x -10000 10000000 10000]
 	if {$l != {}} {
@@ -146,7 +148,6 @@ proc ListLibraries {io} {
     set maxy $y2
     
     # Create the ruler
-    puts $maxx,$maxy
     for {set x 0} {$x < $maxx+100} {incr x 10} {
 	if {[expr {$x%1000}] == 0} {
 	    set h 40
