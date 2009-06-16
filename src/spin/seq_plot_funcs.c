@@ -476,7 +476,7 @@ void stick_pair_plot_func(void *obj, seq_reg_plot *plot)
     /* world scroll limits */
     RasterGetWorldScroll(raster, &sx0, &sy0, &sx1, &sy1);
     Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, NULL);
-    raster_id = atoi(output->interp->result);
+    raster_id = atoi(Tcl_GetStringResult(output->interp));
     raster_result = raster_id_to_result(raster_id);
 
     
@@ -588,7 +588,7 @@ void stick_plot_func(void *obj, seq_reg_plot *plot)
     /* world scroll limits */
     RasterGetWorldScroll(raster, &sx0, &sy0, &sx1, &sy1);
     Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, NULL);
-    raster_id = atoi(output->interp->result);
+    raster_id = atoi(Tcl_GetStringResult(output->interp));
     raster_result = raster_id_to_result(raster_id);
 
     

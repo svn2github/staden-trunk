@@ -257,7 +257,7 @@ DisplayContext *diff_edc_traces(EdStruct *xx, tman_dc *ed1, tman_dc *ed2) {
 		Tk_PathName(EDTKWIN(xx->ed)), pname, " ",
 		Tk_PathName(EDTKWIN(xx->ed)),
 		name, NULL);
-    pname = interp->result;
+    pname = Tcl_GetStringResult(interp);
 
     /* Fill out the tman_dc and DisplayContext structures */
     sprintf(buf, "Diffs %d", diff_counter++);
@@ -272,7 +272,7 @@ DisplayContext *diff_edc_traces(EdStruct *xx, tman_dc *ed1, tman_dc *ed2) {
     ed->derivative_offset = start1;
 
     /* Add the Read to the trace widget */
-    Tcl_GetCommandInfo(interp, interp->result, &info);
+    Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &info);
     trace_memory_load((DNATrace *)info.clientData, r);
     dc->tracePtr = (DNATrace *)info.clientData;
 

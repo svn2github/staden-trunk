@@ -439,7 +439,7 @@ int get_element_row(Tcl_Interp *interp,
 
     sprintf(cmd, "get_element_row %s", win);
     Tcl_Eval(interp, cmd);
-    return (atoi(interp->result));
+    return (atoi(Tcl_GetStringResult(interp)));
     
 }
 int get_element_column(Tcl_Interp *interp,
@@ -449,7 +449,7 @@ int get_element_column(Tcl_Interp *interp,
 
     sprintf(cmd, "get_element_column %s", win);
     Tcl_Eval(interp, cmd);
-    return (atoi(interp->result));
+    return (atoi(Tcl_GetStringResult(interp)));
     
 }
 
@@ -828,11 +828,11 @@ void delete_element_from_container(element *e)
     } else if (e->type == RULER_AMP) {
 
 	Tcl_VarEval(c->interp, "is_empty_column ", e->win, NULL);
-	if (!atoi(c->interp->result)) {
+	if (!atoi(Tcl_GetStringResult(c->interp))) {
 	    column_delete = 0;
 	}
 	Tcl_VarEval(c->interp, "is_empty_row ", e->win, NULL);
-	if (!atoi(c->interp->result)) {
+	if (!atoi(Tcl_GetStringResult(c->interp))) {
 	    row_delete = 0;
 	}
 #if 0
@@ -879,7 +879,7 @@ void delete_element_from_container(element *e)
 
 	sprintf(cmd, "tcl_delete_row %s %d", c->win, row_num);
 	if (TCL_OK != (Tcl_Eval(c->interp, cmd)))
-	    printf("tcl_delete_row %s\n", c->interp->result);
+	    printf("tcl_delete_row %s\n", Tcl_GetStringResult(c->interp));
 
 	/* length ruler */
 	if (c->row[e->row_index]->ruler) {
@@ -904,7 +904,7 @@ void delete_element_from_container(element *e)
 
 	sprintf(cmd, "tcl_delete_column %s %d", c->win, column_num);
 	if (TCL_OK != (Tcl_Eval(c->interp, cmd)))
-	    printf("tcl_delete_column %s\n", c->interp->result);
+	    printf("tcl_delete_column %s\n", Tcl_GetStringResult(c->interp));
 
 	if (c->column[e->column_index]->ruler && (e != c->column[e->column_index]->ruler)) {
 
@@ -2616,7 +2616,7 @@ void rotate_element(element *e,
 	sprintf(cmd, "rotate_element %s %s %d %d %d %d", e->win, c->row[i]->ruler->win, seq_id, result_id, VERTICAL, row_num);
 	
 	if (TCL_OK != (Tcl_Eval(c->interp, cmd)))
-	    printf("rotate_element!!! %s\n", c->interp->result);
+	    printf("rotate_element!!! %s\n", Tcl_GetStringResult(c->interp));
     }
 }
 

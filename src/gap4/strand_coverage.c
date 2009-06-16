@@ -297,7 +297,7 @@ static void strand_coverage_shutdown(GapIO *io, obj_strand_coverage *scov) {
     sprintf(cmd, "DeleteStrandCoverage %d %s %s %d\n", *handle_io(io), 
 	    scov->frame, scov->c_win, scov->cons_id);
     if (TCL_ERROR == Tcl_Eval(c->interp, cmd)) 
-      printf("strand_coverage_shutdown: %s\n", c->interp->result);
+      printf("strand_coverage_shutdown: %s\n", Tcl_GetStringResult(c->interp));
 
     if (scov->forward) {
         for (i = 0; i < c->num_contigs; i++) {

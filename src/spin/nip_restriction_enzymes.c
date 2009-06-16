@@ -32,12 +32,12 @@ void nip_renz_shutdown(Tcl_Interp *interp,
 			      "seq_result_list_update ", 
 			      tmp, NULL)){
 	verror(ERR_WARN, "restriction enzymes", "shutdown %s \n", 
-	       interp->result);
+	       Tcl_GetStringResult(interp));
     }
     sprintf(cmd, "DeleteREnzPlot %s %s\n", data->frame, data->re_win);
     if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
 	verror(ERR_WARN, "restriction enzymes", "shutdown %s\n", 
-	       interp->result);
+	       Tcl_GetStringResult(interp));
     }
 
     renz_shutdown(data->r_enzyme, data->num_enzymes, data->match,

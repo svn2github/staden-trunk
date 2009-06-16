@@ -92,7 +92,7 @@ void nip_canvas_cursor_delete(Tcl_Interp *interp,cursor_t *cursor,
 
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
 		verror(ERR_WARN, "canvas_cursor_delete", "%s\n", 
-		       interp->result);
+		       Tcl_GetStringResult(interp));
 	    }
 	    
 	}
@@ -130,7 +130,7 @@ int nip_canvas_cursor_move(Tcl_Interp *interp, int seq_id,
 		    cursor->colour, cx);
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
 		verror(ERR_WARN, "nip_canvas_cursor_move", "%s\n", 
-		       interp->result);
+		       Tcl_GetStringResult(interp));
 	    }
 	}
     }

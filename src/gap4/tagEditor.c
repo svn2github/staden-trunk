@@ -300,7 +300,7 @@ char *invokeTagEditor(EdStruct *xx, tag_id id, int seq, int pos, int length,
     /* Create our editor window and add some commands to it */
     if (TCL_OK != Tcl_VarEval(interp, "create_tag_editor ", te->window,
 			      " ", te->command, " ", te->array, " ", NULL))
-	fprintf(stderr, "%s\n", interp->result);
+	fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
 
     Tcl_CreateCommand(interp, te->command, TagEdCommand, (ClientData)te, NULL);
 

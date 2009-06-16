@@ -30,6 +30,12 @@ Tcl_Interp* GetInterp( void )
     return our_interp;
 }
 
+char* GetInterpResult( void )
+{
+    assert(our_interp);
+    return Tcl_GetStringResult(GetInterp());
+}
+
 int Tk_utils_Init(Tcl_Interp *interp) {
     char *s, c[20], *lib = NULL, buf[1024];
 

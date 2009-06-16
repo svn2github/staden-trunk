@@ -42,7 +42,7 @@ void plot_gene_search_shutdown(Tcl_Interp *interp,
 
     /* determine raster_id and raster_result structure */
     Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(interp->result);
+    raster_id = atoi(Tcl_GetStringResult(interp));
     raster_result = raster_id_to_result(raster_id);
 
     /* find key name BEFORE deregister */
@@ -64,15 +64,15 @@ void plot_gene_search_shutdown(Tcl_Interp *interp,
 	tmp = get_default_string(interp, tk_utils_defs, w("RASTER.RESULTS.WIN"));
 	if (TCL_OK != Tcl_VarEval(interp, "seq_result_list_update ", 
 				  tmp, NULL)){
-	    verror(ERR_WARN, "gene search", "shutdown: %s \n", interp->result);
+	    verror(ERR_WARN, "gene search", "shutdown: %s \n", Tcl_GetStringResult(interp));
 	}
 	
 	Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-	raster_id = atoi(interp->result);
+	raster_id = atoi(Tcl_GetStringResult(interp));
 
 	if (TCL_OK != Tcl_VarEval(interp, "RemoveRasterResultKey ", raster_win,
 				  " {", info.line, "}", NULL))
-	    verror(ERR_WARN, "gene search", "shutdown %s \n", interp->result);
+	    verror(ERR_WARN, "gene search", "shutdown %s \n", Tcl_GetStringResult(interp));
 	
 
 	Tcl_GetCommandInfo(interp, raster_win, &info1);
@@ -166,7 +166,7 @@ plot_gene_search_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	case 2: /* configure */
 	    sprintf(cmd, "RasterConfig %d", id);
 	    if (TCL_OK != Tcl_Eval(output->interp, cmd)){
-		puts(output->interp->result);
+		puts(Tcl_GetStringResult(output->interp));
 	    }
 	    break;
 	case 3: /* hide all */

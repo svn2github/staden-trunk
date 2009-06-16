@@ -252,7 +252,7 @@ template_renz_shutdown(GapIO *io,
      */
     sprintf(cmd, "DeleteTemplateREnzPlot %s %s\n", r->frame, r->window);
     if (TCL_ERROR == Tcl_Eval(r->interp, cmd))
-	printf("template_renz_shutdown: %s\n", r->interp->result);
+	printf("template_renz_shutdown: %s\n", Tcl_GetStringResult(r->interp));
 
     /* Free memory */
     if (r->r_enzyme) {
@@ -513,7 +513,7 @@ static void gap_renz_shutdown(GapIO *io, obj_renz *r) {
 
     sprintf(cmd, "DeleteREnzPlot %s %s\n", r->frame, r->window);
     if (TCL_ERROR == Tcl_Eval(r->interp, cmd)) {
-	printf("%s\n", r->interp->result);
+	printf("%s\n", Tcl_GetStringResult(r->interp));
     }
 
     if (r->xhair.colour) free(r->xhair.colour);
@@ -1051,7 +1051,7 @@ display_renz(Tcl_Interp *interp,
     /* add back selection rectangles */
     if (TCL_ERROR == Tcl_VarEval(interp, "ReSelectRect ", r->frame, " ",
 				 r->names_win, NULL))
-	printf("display_renz: %s\n", interp->result);
+	printf("display_renz: %s\n", Tcl_GetStringResult(interp));
 
     r->world->total->x1 = 1;
     r->world->total->x2 = contig_len;

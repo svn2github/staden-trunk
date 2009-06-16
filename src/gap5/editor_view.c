@@ -771,7 +771,7 @@ void ed_set_nslider_pos(edview *xx, int pos) {
 	}
 	sprintf(buf, " %.20f %.20f", fract1, fract2);
 	if (Tcl_VarEval(EDINTERP(en), en->xScrollCmd, buf, NULL) != TCL_OK) {
-	    printf("Error in editor names scroll: %s\n", EDINTERP(en)->result);
+	    printf("Error in editor names scroll: %s\n", Tcl_GetStringResult(EDINTERP(en)));
 	}
     }
 }

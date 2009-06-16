@@ -159,7 +159,8 @@ plot_renz_matches(Tcl_Interp *interp,
     /* add back selection rectangles */
     if (TCL_ERROR == Tcl_VarEval(interp, "ReSelectRect ", frame, " ",
 				 names_win, NULL))
-	verror(ERR_WARN, "plot_renz_matches", "%s\n", interp->result);
+	verror(ERR_WARN, "plot_renz_matches", "%s\n",
+	       Tcl_GetStringResult(interp));
 
     world->total->x1 = ruler->start;
     world->total->x2 = ruler->end;

@@ -37,7 +37,7 @@ void nip_string_search_shutdown(Tcl_Interp *interp,
 
     /* determine raster_id and raster_result structure */
     Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(interp->result);
+    raster_id = atoi(Tcl_GetStringResult(interp));
     raster_result = raster_id_to_result(raster_id);
 
     /* find key name BEFORE deregister */
@@ -58,12 +58,12 @@ void nip_string_search_shutdown(Tcl_Interp *interp,
 				 w("RASTER.RESULTS.WIN"));
 	if (TCL_OK != Tcl_VarEval(interp, "seq_result_list_update ", 
 				  tmp, NULL)){
-	    puts(interp->result);
+	    puts(Tcl_GetStringResult(interp));
 	}
 	
 	if (TCL_OK != Tcl_VarEval(interp, "RemoveRasterResultKey ", raster_win,
 				  " {", info.line, "}", NULL))
-	    verror(ERR_WARN, "string_search", "shutdown %s \n", interp->result);
+	    verror(ERR_WARN, "string_search", "shutdown %s \n", Tcl_GetStringResult(interp));
     }
     xfree(data->ap_array[0].p_array);
     xfree(data->ap_array);
@@ -131,7 +131,7 @@ void nip_string_search_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	case 2: /* configure */
 	    sprintf(cmd, "RasterConfig %d", id);
 	    if (TCL_OK != Tcl_Eval(output->interp, cmd)){
-		puts(output->interp->result);
+		puts(Tcl_GetStringResult(output->interp));
 	    }
 	    break;
 	case 3: /* hide all */

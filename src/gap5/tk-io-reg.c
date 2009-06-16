@@ -1405,11 +1405,9 @@ int tk_cursor_ref(ClientData clientData, Tcl_Interp *interp,
 
     cursor = find_contig_cursor(args.io, args.cnum, args.id);
     if (!cursor) {
-#ifdef DEBUG
 	verror(ERR_WARN, "contig_notify", "Unable to find cursor for "
 	       "contig %d with id %d\n",
 	       args.cnum, args.id);
-#endif
 	return TCL_OK;
     }
 

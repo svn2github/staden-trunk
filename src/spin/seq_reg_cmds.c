@@ -270,13 +270,13 @@ tcl_seq_invoke_seq_op(ClientData clientData,
     case 2: /* set range */
 	sprintf(cmd, "set_range_d %d", GetSeqId(args.seq_num));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    printf("SeqInvokeSeqOp: %s\n", interp->result);
+	    printf("SeqInvokeSeqOp: %s\n", Tcl_GetStringResult(interp));
 	}
 	break;
     case 3: /* copy range */
 	sprintf(cmd, "copy_range_d %d", GetSeqId(args.seq_num));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    printf("SeqInvokeSeqOp: %s\n", interp->result);
+	    printf("SeqInvokeSeqOp: %s\n", Tcl_GetStringResult(interp));
 	}
 	break;
     case 4: /* complement */
@@ -303,7 +303,7 @@ tcl_seq_invoke_seq_op(ClientData clientData,
 	{
 	    sprintf(cmd, "translate_d %d", GetSeqId(args.seq_num));
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", interp->result);
+		verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", Tcl_GetStringResult(interp));
 	    }
 	}
 	break;
@@ -328,13 +328,13 @@ tcl_seq_invoke_seq_op(ClientData clientData,
     case 9: /* rotate */
 	sprintf(cmd, "rotate_d %d", GetSeqId(args.seq_num));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", interp->result);
+	    verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", Tcl_GetStringResult(interp));
 	}
 	break;
     case 10: {/* save */
 	sprintf(cmd, "file_save_d %d", GetSeqId(args.seq_num));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", interp->result);
+	    verror(ERR_WARN, "SeqInvokeSeqOp", "%s\n", Tcl_GetStringResult(interp));
 	}
 	break;
     }

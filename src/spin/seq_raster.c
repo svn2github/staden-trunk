@@ -87,11 +87,11 @@ void ReplotAllCurrentZoom(Tcl_Interp *interp,
     /* draw rulers */
     sprintf(cmd, "rasterHRuler %s %f %f ", raster_win, wx0, wx1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "ReplotAllCurrentZoom", "%s\n", interp->result);
+	verror(ERR_WARN, "ReplotAllCurrentZoom", "%s\n", Tcl_GetStringResult(interp));
 
     sprintf(cmd, "rasterVRuler %s %f %f", raster_win, wy0, wy1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "ReplotAllCurrentZoom", "%s \n", interp->result);
+	verror(ERR_WARN, "ReplotAllCurrentZoom", "%s \n", Tcl_GetStringResult(interp));
 
     /* replot results ONCE only */
     RasterCallPlotFunc(raster, RASTER_REPLOT_ZOOM,
@@ -199,7 +199,7 @@ ReplotAllRasterWindow(Tcl_Interp *interp,
 	sprintf(cmd, "rasterVRuler %s %f %f", window, wy0, wy1);
 	
 	if (TCL_OK != Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "ReplotAllRasterWindow", "%s \n", interp->result);
+	    verror(ERR_WARN, "ReplotAllRasterWindow", "%s \n", Tcl_GetStringResult(interp));
 	    
 	/* replot results ONCE only */
 	RasterCallPlotFunc(raster, RASTER_REPLOT_ZOOM,
@@ -215,7 +215,7 @@ ReplotAllRasterWindow(Tcl_Interp *interp,
 
     sprintf(cmd, "rasterHRuler %s %f %f ", raster_win, wx0, wx1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "ReplotAllRasterWindow", "%s\n", interp->result);
+	verror(ERR_WARN, "ReplotAllRasterWindow", "%s\n", Tcl_GetStringResult(interp));
     retval = 0;
 
 
@@ -256,11 +256,11 @@ void ReplotAllZoom(Tcl_Interp *interp,
     /* draw rulers */
     sprintf(cmd, "rasterHRuler %s %f %f ", raster_win, x0, x1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "ReplotAllZoom", "%s\n", interp->result);
+	verror(ERR_WARN, "ReplotAllZoom", "%s\n", Tcl_GetStringResult(interp));
 
     sprintf(cmd, "rasterVRuler %s %f %f", raster_win, y0, y1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "ReplotAllZoom", "%s \n", interp->result);
+	verror(ERR_WARN, "ReplotAllZoom", "%s \n", Tcl_GetStringResult(interp));
 
     /* check that there is at least one result to replot! */
     num_results = seq_num_results();
@@ -314,7 +314,7 @@ void raster_shutdown(Tcl_Interp *interp,
     tmp = get_default_string(interp, tk_utils_defs, w("RASTER.RESULTS.WIN"));
     if (TCL_OK != Tcl_VarEval(interp, "removeRaster ", raster_win, " ", tmp, 
 			      NULL))
-	verror(ERR_WARN, "raster_shutdown",  "%s\n", interp->result);
+	verror(ERR_WARN, "raster_shutdown",  "%s\n", Tcl_GetStringResult(interp));
 
     xfree(result->seq);
     xfree(result->cursor);
@@ -342,7 +342,7 @@ RasterResult *raster_name_to_result(Tcl_Interp *interp,
 				    char * raster_win)
 {
   Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-  return (raster_id_to_result(atoi(interp->result)));
+  return (raster_id_to_result(atoi(Tcl_GetStringResult(interp))));
 }
 
 /* invoked from tcl move cursor binding command */
@@ -527,10 +527,10 @@ int raster_cursor_show(Tcl_Interp *interp,
 	   cursor, s0, s1, w0, w1, fract, x1);
 #endif
     Tcl_VarEval(interp, "winfo parent ", raster_win, NULL);
-    r_win = strdup(interp->result);
+    r_win = strdup(Tcl_GetStringResult(interp));
 
     Tcl_VarEval(interp, "GetRasterStem ", r_win, NULL);
-    raster_stem = strdup(interp->result);
+    raster_stem = strdup(Tcl_GetStringResult(interp));
 
     /* HACK - to fix ruler_h */
     if (direction == HORIZONTAL) {
@@ -553,7 +553,7 @@ int raster_cursor_show(Tcl_Interp *interp,
 		r_win, raster_stem, r_win, fract);
     } else {
 	Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-	id = atoi(interp->result);
+	id = atoi(Tcl_GetStringResult(interp));
 	/*
 	sprintf(cmd, "after idle scrollYCmd %s %s.ruler_v%d moveto %f", 
 		raster_win, r_win, id, fract);
@@ -563,7 +563,7 @@ int raster_cursor_show(Tcl_Interp *interp,
     }
 
     if (TCL_ERROR == (Tcl_Eval(interp, cmd)))
-	verror(ERR_WARN, "raster_cursor_show", "%s\n", interp->result);
+	verror(ERR_WARN, "raster_cursor_show", "%s\n", Tcl_GetStringResult(interp));
 
     free(r_win);
     free(raster_stem);
@@ -631,9 +631,9 @@ int raster_cursor_delete(Tcl_Interp *interp,
 	    Tcl_VarEval(interp, "winfo parent ", result->raster_win, 
 			NULL);
 	    sprintf(cmd, "%s.buttons.pos1 configure -text {}", 
-		    interp->result);
+		    Tcl_GetStringResult(interp));
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		printf("raster_cursor_delete: %s\n", interp->result);
+		printf("raster_cursor_delete: %s\n", Tcl_GetStringResult(interp));
 	    }
 	} else {
 	    RasterDrawLine(raster, wx0, rasterY(raster,cursor->abspos),
@@ -644,9 +644,9 @@ int raster_cursor_delete(Tcl_Interp *interp,
 	    Tcl_VarEval(interp, "winfo parent ", result->raster_win, 
 			    NULL);
 	    sprintf(cmd, "%s.buttons.pos2 configure -text {}", 
-		    interp->result);
+		    Tcl_GetStringResult(interp));
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		printf("raster_cursor_delete: %s\n", interp->result);
+		printf("raster_cursor_delete: %s\n", Tcl_GetStringResult(interp));
 	    }
 	}
 
@@ -763,9 +763,9 @@ int raster_cursor_move(Tcl_Interp *interp,
 	RasterDrawLine(raster, cursor->abspos, wy0, cursor->abspos, wy1);
 	Tcl_VarEval(interp, "winfo parent ", result->raster_win, NULL);
 	sprintf(cmd, "%s.buttons.pos1 configure -text %d", 
-		interp->result, cursor->abspos);
+		Tcl_GetStringResult(interp), cursor->abspos);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    printf("raster_cursor_move: %s\n", interp->result);
+	    printf("raster_cursor_move: %s\n", Tcl_GetStringResult(interp));
 	}
 
 #ifdef DEBUG
@@ -776,9 +776,9 @@ int raster_cursor_move(Tcl_Interp *interp,
 		       wx1, rasterY(raster, cursor->abspos));
 	Tcl_VarEval(interp, "winfo parent ", result->raster_win, NULL);
 	sprintf(cmd, "%s.buttons.pos2 configure -text %d", 
-		interp->result, cursor->abspos);
+		Tcl_GetStringResult(interp), cursor->abspos);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	    printf("raster_cursor_move: %s\n", interp->result);
+	    printf("raster_cursor_move: %s\n", Tcl_GetStringResult(interp));
 	}
 #ifdef DEBUG
     printf("!!!!!!!!!!RasterDrawLine V %d %f %f \n", cursor->abspos, wx0, wx1);
@@ -1029,14 +1029,14 @@ void UpdateScaleBars(Tcl_Interp *interp,
 #endif
 
     Tcl_VarEval(interp, "winfo parent ", raster_new, NULL);
-    r_win = strdup(interp->result);
+    r_win = strdup(Tcl_GetStringResult(interp));
 
     /* 
      * find the current scale value
      */
     tmp = get_default_string(interp, tk_utils_defs, w("RASTER.SCALEX.WIN"));
     Tcl_VarEval(interp, r_win, tmp, " get", NULL);
-    current_xmag_value = atoi(interp->result);
+    current_xmag_value = atoi(Tcl_GetStringResult(interp));
 
 #ifdef DEBUG
     printf("old %f new %f\n", old_xscroll, new_xscroll);
@@ -1065,7 +1065,7 @@ void UpdateScaleBars(Tcl_Interp *interp,
      */
     tmp = get_default_string(interp, tk_utils_defs, w("RASTER.SCALEY.WIN"));
     Tcl_VarEval(interp, r_win, tmp, " get", NULL);
-    current_ymag_value = atoi(interp->result);
+    current_ymag_value = atoi(Tcl_GetStringResult(interp));
 
     if (job == 0) {
 	/* adding a plot */
@@ -1115,7 +1115,7 @@ void UpdateZoomList(Tcl_Interp *interp,
 		parent, job, (int)x0, (int)y0, (int)x1, (int)y1);
 	
 	if (TCL_ERROR == (Tcl_Eval(interp, cmd))) {
-	    printf("UpdateZoomList %s\n", interp->result);
+	    printf("UpdateZoomList %s\n", Tcl_GetStringResult(interp));
 	}
     }
     if (job == 1) {
@@ -1123,7 +1123,7 @@ void UpdateZoomList(Tcl_Interp *interp,
 		parent, job, (int)x0, (int)y0, (int)x1, (int)y1);
 	
 	if (TCL_ERROR == (Tcl_Eval(interp, cmd))) {
-	    printf("UpdateZoomList %s\n", interp->result);
+	    printf("UpdateZoomList %s\n", Tcl_GetStringResult(interp));
 	}
     }
 }
@@ -1279,7 +1279,7 @@ void RemoveVRuler(Tcl_Interp *interp,
 #endif
 
     Tcl_VarEval(interp, "winfo parent ", raster_win, NULL);
-    r_win = (interp->result);
+    r_win = (Tcl_GetStringResult(interp));
     
     sprintf(cmd, "%s.ruler_v%d delete all", r_win, id); 
     Tcl_Eval(interp, cmd);
@@ -1298,7 +1298,7 @@ void UpdateVRuler(Tcl_Interp *interp,
 
     sprintf(cmd, "rasterVRuler %s %f %f", raster_win, wy0, wy1);
     if (TCL_OK != Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "UpdateVRuler", "%s \n", interp->result);
+	verror(ERR_WARN, "UpdateVRuler", "%s \n", Tcl_GetStringResult(interp));
 }
 
 /*
@@ -1334,7 +1334,7 @@ int ReSetRasterWindowWorld(Tcl_Interp *interp,
 	/* NB - parent may not exist if we've removed the last result */
 	return 0;
 
-    parent_old = strdup(interp->result);
+    parent_old = strdup(Tcl_GetStringResult(interp));
 
     win_list_argv = GetRasterWindowList(interp, raster_old, &win_list_argc);
     id_list_argv = GetRasterIdList(interp, raster_old, &win_list_argc);
@@ -1482,7 +1482,7 @@ int ReSetRasterWindowWorld(Tcl_Interp *interp,
 		parent_old, (int)cx0, (int)cy0, (int)cx1, (int)cy1, 
 		(int)wx0, (int)wy0, (int)wx1, (int)wy1);
 	if (TCL_ERROR == (Tcl_Eval(interp, cmd))) {
-	    printf("ReSetRasterWindowWorld %s\n", interp->result);
+	    printf("ReSetRasterWindowWorld %s\n", Tcl_GetStringResult(interp));
 	}
     }
     retval = 0;
@@ -1709,14 +1709,14 @@ char **GetRasterWindowList(Tcl_Interp *interp,
     char **win_list_argv;
     
     Tcl_VarEval(interp, "GetRasterParent ", raster_win, NULL);
-    parent = strdup(interp->result);
+    parent = strdup(Tcl_GetStringResult(interp));
 
     if (TCL_ERROR == (Tcl_VarEval(interp, "GetRasterWinList ", parent, NULL))) {
-	printf("GetRasterWindowList: %s\n", interp->result);
+	printf("GetRasterWindowList: %s\n", Tcl_GetStringResult(interp));
 	free(parent);
 	return NULL;
     }
-    if (Tcl_SplitList(interp, interp->result,
+    if (Tcl_SplitList(interp, Tcl_GetStringResult(interp),
 		      &win_list_argc, &win_list_argv) != TCL_OK) {
 	free(parent);
 	return NULL;
@@ -1739,14 +1739,14 @@ char **GetRasterIdList(Tcl_Interp *interp,
     char **id_list_argv;
     
     Tcl_VarEval(interp, "GetRasterParent ", raster_win, NULL);
-    parent = strdup(interp->result);
+    parent = strdup(Tcl_GetStringResult(interp));
 
     if (TCL_ERROR == (Tcl_VarEval(interp, "GetRasterIdList ", parent, NULL))) {
-	printf("GetRasterIdList: %s\n", interp->result);
+	printf("GetRasterIdList: %s\n", Tcl_GetStringResult(interp));
 	free(parent);
 	return NULL;
     }
-    if (Tcl_SplitList(interp, interp->result,
+    if (Tcl_SplitList(interp, Tcl_GetStringResult(interp),
 		      &id_list_argc, &id_list_argv) != TCL_OK) {
 	free(parent);
 	return NULL;
@@ -2192,9 +2192,9 @@ void SeqUpdateResultWindow(Tcl_Interp *interp,
      * scroll region has changed 
      */
     Tcl_VarEval(interp, "winfo parent ", raster_new, NULL);
-    parent_new = strdup(interp->result);
+    parent_new = strdup(Tcl_GetStringResult(interp));
     Tcl_VarEval(interp, "winfo parent ", raster_old, NULL);
-    parent_old = strdup(interp->result);
+    parent_old = strdup(Tcl_GetStringResult(interp));
 
     /* only need to do this if rasters are in different windows */
     if (strcmp(parent_new, parent_old) != 0) { 
@@ -2272,7 +2272,7 @@ void SeqUpdateResultWindow(Tcl_Interp *interp,
 			parent_old, job, (int)o_wx0, (int)o_wy0, (int)o_wx1, (int)o_wy1);
 		
 		if (TCL_ERROR == (Tcl_Eval(interp, cmd))) {
-		    printf("UpdateZoomList %s\n", interp->result);
+		    printf("UpdateZoomList %s\n", Tcl_GetStringResult(interp));
 		}
 		
 	    }
@@ -2515,9 +2515,9 @@ void SeqUpdateRasterWindow(Tcl_Interp *interp,
 	 * scroll region has changed 
 	 */
 	Tcl_VarEval(interp, "winfo parent ", raster_new, NULL);
-	parent_new = strdup(interp->result);
+	parent_new = strdup(Tcl_GetStringResult(interp));
 	Tcl_VarEval(interp, "winfo parent ", raster_old, NULL);
-	parent_old = strdup(interp->result);
+	parent_old = strdup(Tcl_GetStringResult(interp));
 
 	/* only need to do this if rasters are in different windows */
 	if (strcmp(parent_new, parent_old) != 0) { 
@@ -2603,7 +2603,7 @@ int SeqAddRasterToWindow(Tcl_Interp *interp,
 	    y0_offset = (o_y0 - o_wy0) / (o_wy1 - o_wy0);
 	    y1_offset = (o_y1 - o_wy0) / (o_wy1 - o_wy0);
 	    Tcl_VarEval(interp, "GetRasterId ", win_list_argv[i], NULL);
-	    raster_id_orig = atoi(interp->result);
+	    raster_id_orig = atoi(Tcl_GetStringResult(interp));
 
 #ifdef DEBUG
 	    printf("o_x0 %f o_x1 %f o_y0 %f o_y1 %f\n", 
@@ -2656,7 +2656,7 @@ int SeqAddRasterToWindow(Tcl_Interp *interp,
 	    /* SIP */
 	    /* scale all plots in x & y to the original and update zoom list */
 	    Tcl_VarEval(interp, "winfo parent ", raster_orig, NULL);
-	    parent = strdup(interp->result);
+	    parent = strdup(Tcl_GetStringResult(interp));
 
 	    RasterGetWorldScroll(rasterorig, &o_wx0, &o_wy0, &o_wx1, &o_wy1);
 	    SeqReSetRasterWindowSize(interp, raster_orig, raster_type);
@@ -2680,7 +2680,7 @@ int SeqAddRasterToWindow(Tcl_Interp *interp,
 	printf("new_yscroll %f orig_yscroll %f\n", new_yscroll, orig_yscroll);
 #endif
 	Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-	raster_id_new = atoi(interp->result);
+	raster_id_new = atoi(Tcl_GetStringResult(interp));
 
 	if (raster_id_orig > -1) {
 	    orig_zoom = GetRasterZoom(raster_id_orig);
@@ -3311,7 +3311,7 @@ char *get_raster_frame_graph(Tcl_Interp *interp,
 	    return NULL;
 	
 	Tcl_VarEval(interp, "GetRasterWindow", NULL);
-	strcpy(raster_frame, interp->result);
+	strcpy(raster_frame, Tcl_GetStringResult(interp));
 	
 	/* define default raster for sequence */
 	SetRaster(seq_num, raster_frame);
@@ -3435,7 +3435,7 @@ int get_raster_frame_dot(Tcl_Interp *interp,
     /* failed to find existing raster, therefore create new window & raster */
 
     Tcl_VarEval(interp, "GetRasterWindow", NULL);
-    strcpy(raster_win, interp->result);
+    strcpy(raster_win, Tcl_GetStringResult(interp));
 
     val = get_default_string(interp, tk_utils_defs, w("RASTER.R.WIN"));
     if (NULL == (seq_array = (seq_id_dir *)xmalloc(MAX_NUM_SEQ*sizeof(seq_id_dir)))) {
@@ -4150,7 +4150,7 @@ int init_dot_plot(Tcl_Interp *interp,
 
 	/* scale all plots in x & y to the original and update zoom list */
 	Tcl_VarEval(interp, "winfo parent ", raster_win, NULL);
-	parent = strdup(interp->result);
+	parent = strdup(Tcl_GetStringResult(interp));
 
 	RasterGetWorldScroll(raster, &o_wx0, &o_wy0, &o_wx1, &o_wy1);
 	SeqReSetRasterWindowSize(interp, raster_win, result->graph);

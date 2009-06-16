@@ -33,12 +33,12 @@ void seqed_shutdown(Tcl_Interp *interp,
 
     /* destroy toplevel seqed window */
     Tcl_VarEval(interp, "winfo toplevel ", result->seqed_win, NULL);
-    Tcl_VarEval(interp, "destroy ", interp->result, NULL);
+    Tcl_VarEval(interp, "destroy ", Tcl_GetStringResult(interp), NULL);
 
     tmp = get_default_string(interp, tk_utils_defs, w("RASTER.RESULTS.WIN"));
     if (TCL_OK != Tcl_VarEval(interp, "seq_result_list_update ", 
 			      tmp, NULL)){
-	verror(ERR_WARN, "seqed shutdown", "%s \n", interp->result);
+	verror(ERR_WARN, "seqed shutdown", "%s \n", Tcl_GetStringResult(interp));
     }
 
     xfree(result);

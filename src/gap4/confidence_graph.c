@@ -284,7 +284,7 @@ static void confidence_shutdown(GapIO *io, obj_confidence_graph *conf) {
     sprintf(cmd, "DeleteConfidenceGraph %d %s %s %d\n", *handle_io(io), 
 	    conf->frame, conf->c_win, conf->cons_id);
     if (TCL_ERROR == Tcl_Eval(c->interp, cmd)) 
-      printf("confidence_shutdown: %s\n", c->interp->result);
+      printf("confidence_shutdown: %s\n", Tcl_GetStringResult(c->interp));
 
     if (conf->qual) {
         for (i = 0; i < c->num_contigs; i++) {
@@ -421,7 +421,7 @@ static void confidenceScrollY(Tcl_Interp *interp,
 
     /* find new top edge of canvas in canvasy coords */
     Tcl_VarEval(interp, conf->ruler->window, " canvasy 0", NULL);
-    canvas->y = atoi(interp->result);
+    canvas->y = atoi(Tcl_GetStringResult(interp));
 
     /* find new top and bottom edges of canvas in world coords */
     CanvasToWorld(canvas, 0, canvas->y, &wx, &visible->y1);

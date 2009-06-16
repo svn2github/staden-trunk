@@ -49,10 +49,10 @@ int add_length_ruler(Tcl_Interp *interp,
 	    orientation, row_num, column_num, width, height);
 
     if (TCL_OK != (Tcl_Eval(interp, cmd))) {
-	printf("error create_canvas_ruler: %s\n", interp->result);
+	printf("error create_canvas_ruler: %s\n", Tcl_GetStringResult(interp));
     }
  
-    if (Tcl_SplitList(interp, interp->result, &num, &list) != TCL_OK) {
+    if (Tcl_SplitList(interp, Tcl_GetStringResult(interp), &num, &list) != TCL_OK) {
 	return -1;
     }
     
@@ -211,10 +211,10 @@ int add_element_ruler(Tcl_Interp *interp,
 	sprintf(cmd, "find_result_position \"\" %s %d", e->win, BOTTOM);
 	if (TCL_OK != (Tcl_Eval(interp, cmd))) {
 	    verror(ERR_WARN, "add_element_ruler", "create_canvas_ruler: %s\n",
-		   interp->result);
+		   Tcl_GetStringResult(interp));
 	}
 
-	if (Tcl_SplitList(interp, interp->result, &num, &list) != TCL_OK) {
+	if (Tcl_SplitList(interp, Tcl_GetStringResult(interp), &num, &list) != TCL_OK) {
 	    return -1;
 	}
 	
@@ -234,10 +234,10 @@ int add_element_ruler(Tcl_Interp *interp,
 
     if (TCL_OK != (Tcl_Eval(interp, cmd))) {
 	verror(ERR_WARN, "add_element_ruler", "create_canvas_ruler: %s\n",
-	       interp->result);
+	       Tcl_GetStringResult(interp));
     }
  
-    if (Tcl_SplitList(interp, interp->result, &num, &list) != TCL_OK) {
+    if (Tcl_SplitList(interp, Tcl_GetStringResult(interp), &num, &list) != TCL_OK) {
 	return -1;
     }
     

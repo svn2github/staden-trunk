@@ -294,7 +294,7 @@ void db_callback_tk(void *xxv, int type, int seq, int pos, void *pointer) {
 	}
 	if (TCL_OK != (Tcl_VarEval(EDINTERP(xx->ed), "editor_quit_internal ",
 				   Tk_PathName(EDTKWIN(xx->ed)), NULL)))
-	    fprintf(stderr, "%s\n", EDINTERP(xx->ed)->result);
+	    fprintf(stderr, "%s\n", Tcl_GetStringResult(EDINTERP(xx->ed)));
 
 	if (xx->link) {
 	    tman_shutdown_traces(xx->link->xx[0], 0);
@@ -437,11 +437,11 @@ int edit_contig(Tcl_Interp *interp, GapIO *io, int cnum, int llino, int pos,
 	}
     }
 
-    ptr = strchr(interp->result, ' ');
+    ptr = strchr(Tcl_GetStringResult(interp), ' ');
     if (ptr)
 	*ptr++ = 0;
 
-    if (0 == Tcl_GetCommandInfo(interp, interp->result, &cmdinfo)) {
+    if (0 == Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Editor structure!");
 	return TCL_ERROR;
     }
@@ -614,11 +614,11 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
 	fprintf(stderr, "%s\n", Tcl_GetStringResult(interp));
     }
 
-    ptr = strchr(interp->result, ' ');
+    ptr = strchr(Tcl_GetStringResult(interp), ' ');
     if (ptr)
 	*ptr++ = 0;
 
-    if (0 == Tcl_GetCommandInfo(interp, interp->result, &cmdinfo)) {
+    if (0 == Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Editor structure!");
 	return TCL_ERROR;
     }
@@ -635,9 +635,9 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
 
     if (TCL_OK != Tcl_VarEval(interp, "create_editor_diff ", edn, " d",
 			      " 0", NULL))
-	puts(interp->result);
+	puts(Tcl_GetStringResult(interp));
 
-    if (0 == Tcl_GetCommandInfo(interp, interp->result, &cmdinfo)) {
+    if (0 == Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No 'diff' sheet structure!");
 	return TCL_ERROR;
     }
@@ -653,13 +653,13 @@ int join_contig(Tcl_Interp *interp, GapIO *io, int cnum[2], int llino[2],
 			      ccut, " ", qcut, " ",
 			      dbptr,
 			      NULL))
-	puts(interp->result);
+	puts(Tcl_GetStringResult(interp));
 
-    ptr = strchr(interp->result, ' ');
+    ptr = strchr(Tcl_GetStringResult(interp), ' ');
     if (ptr)
 	*ptr++ = 0;
 
-    if (0 == Tcl_GetCommandInfo(interp, interp->result, &cmdinfo)) {
+    if (0 == Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &cmdinfo)) {
 	verror(ERR_FATAL, "edit_contig", "No Editor structure!");
 	return TCL_ERROR;
     }

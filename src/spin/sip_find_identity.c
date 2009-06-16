@@ -58,7 +58,7 @@ void identities_shutdown(Tcl_Interp *interp,
 	if (TCL_OK != Tcl_VarEval(interp, "RemoveRasterResultKey ", raster_win,
 				  " {", info.line, "}", NULL))
 	    verror(ERR_WARN, "quick_scan_shutdown", "%s \n", 
-		   interp->result);
+		   Tcl_GetStringResult(interp));
 	
 	/* find original y before reset size */
 	RasterGetWorldScroll(raster, &wx0, &wy0, &wx1, &wy1);
@@ -135,7 +135,7 @@ void identities_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	case 3: /* configure */
 	    sprintf(cmd, "RasterConfig %d", id);
 	    if (TCL_OK != Tcl_Eval(output->interp, cmd)){
-		puts(output->interp->result);
+		puts(Tcl_GetStringResult(output->interp));
 	    }
 	    break;
 	case 4: /* display sequences */
@@ -157,7 +157,7 @@ void identities_callback(int seq_num, void *obj, seq_reg_data *jdata)
 		RasterResult *raster_result;
 
 		Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, NULL);
-		raster_id = atoi(output->interp->result);
+		raster_id = atoi(Tcl_GetStringResult(output->interp));
 		raster_result = raster_id_to_result(raster_id);
 
 		identities_shutdown(output->interp, seq_num, result, 
@@ -238,7 +238,7 @@ void identities_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    int raster_id;
 
 	    Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 	    raster_result = raster_id_to_result(raster_id);
 
 	    /* called when hide all in dot plot */
@@ -260,7 +260,7 @@ void identities_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    int raster_id;
 
 	    Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 	    raster_result = raster_id_to_result(raster_id);
 
 	    identities_shutdown(output->interp, seq_num, result, 

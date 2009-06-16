@@ -67,7 +67,7 @@ int canvas_width(Tcl_Interp *interp,
 {
     Tcl_VarEval(interp, "update idletasks", NULL);
     Tcl_VarEval(interp, "winfo width ", win, NULL);
-    return(atoi(interp->result));
+    return(atoi(Tcl_GetStringResult(interp)));
 }
 
 int canvas_height(Tcl_Interp *interp,
@@ -75,7 +75,7 @@ int canvas_height(Tcl_Interp *interp,
 {
     Tcl_VarEval(interp, "update idletasks", NULL);
     Tcl_VarEval(interp, "winfo height ", win, NULL);
-    return(atoi(interp->result));
+    return(atoi(Tcl_GetStringResult(interp)));
 }
 
 /* scales single result */
@@ -105,13 +105,13 @@ void canvas_scale_result(Tcl_Interp *interp,
 	sprintf(cmd, "%s scale cursor %.20f %.20f %.20f %.20f \n", 
 		e->win, x_origin, y_origin, sf_x, sf_y);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "canvas_scale_result", "%s\n", interp->result);
+	    verror(ERR_WARN, "canvas_scale_result", "%s\n", Tcl_GetStringResult(interp));
 
 	/* must scale ruler ticks aswell */
 	sprintf(cmd, "%s scale tick %.20f %.20f %.20f %.20f \n", 
 		e->win, x_origin, y_origin, sf_x, sf_y);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "canvas_scale_result", "%s\n", interp->result);
+	    verror(ERR_WARN, "canvas_scale_result", "%s\n", Tcl_GetStringResult(interp));
 
 	sprintf(cmd, "%s scale id%d %.20f %.20f %.20f %.20f \n", 
 		e->win, result->result_id, x_origin, y_origin, sf_x, sf_y);
@@ -124,7 +124,7 @@ void canvas_scale_result(Tcl_Interp *interp,
 #endif
 
     if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	verror(ERR_WARN, "canvas_scale_result", "%s\n", interp->result);
+	verror(ERR_WARN, "canvas_scale_result", "%s\n", Tcl_GetStringResult(interp));
     }
 }
 
@@ -144,7 +144,7 @@ void canvas_move(Tcl_Interp *interp,
     }
 
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "moveCanvas", "%s\n", interp->result);
+	verror(ERR_WARN, "moveCanvas", "%s\n", Tcl_GetStringResult(interp));
 
 }
 
@@ -292,7 +292,7 @@ void canvas_scrollregion(Tcl_Interp *interp,
     printf("scroll region %s\n", cmd);
 #endif
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "scrollRegion", "%s\n", interp->result);
+	verror(ERR_WARN, "scrollRegion", "%s\n", Tcl_GetStringResult(interp));
 }
 
 void canvas_scroll_x(Tcl_Interp *interp,
@@ -308,7 +308,7 @@ void canvas_scroll_x(Tcl_Interp *interp,
     fflush(stdout);
 #endif
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "canvas_scroll_x", "%s\n", interp->result);
+	verror(ERR_WARN, "canvas_scroll_x", "%s\n", Tcl_GetStringResult(interp));
 
     Tcl_VarEval(interp, "update idletasks", NULL);
 
@@ -347,7 +347,7 @@ void canvas_scroll_y(Tcl_Interp *interp,
 
     sprintf(cmd, "%s yview %s", e->win, command);
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "canvas_scroll_y", "%s\n", interp->result);
+	verror(ERR_WARN, "canvas_scroll_y", "%s\n", Tcl_GetStringResult(interp));
 
     for (i = 0; i < e->num_results; i++) {
 	for (j = 0; j < e->results[i]->n_configure; j++) {
@@ -649,9 +649,9 @@ void draw_canvas_crosshair(Tcl_Interp *interp,
     if (orientation == HORIZONTAL) {
 	sprintf(cmd, "%s canvasx %d", e->win, pos);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "draw_canvas_crosshairX", "%s\n", interp->result);
+	    verror(ERR_WARN, "draw_canvas_crosshairX", "%s\n", Tcl_GetStringResult(interp));
 
-	cx = atoi(interp->result);
+	cx = atoi(Tcl_GetStringResult(interp));
 
 	column = e->c->column[e->column_index];
 
@@ -660,18 +660,18 @@ void draw_canvas_crosshair(Tcl_Interp *interp,
 	sprintf(cmd, "draw_canvas_crosshairX %s %s %d %.20f\n", e->c->win, e->win, cx, wx);
 
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "draw_canvas_crosshairX", "%s\n", interp->result);
+	    verror(ERR_WARN, "draw_canvas_crosshairX", "%s\n", Tcl_GetStringResult(interp));
     }
 
     if (orientation == VERTICAL) {
 	sprintf(cmd, "%s canvasy %d", e->win, pos);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "draw_canvas_crosshairY1", "%s\n", interp->result);
-	cy = atoi(interp->result);
+	    verror(ERR_WARN, "draw_canvas_crosshairY1", "%s\n", Tcl_GetStringResult(interp));
+	cy = atoi(Tcl_GetStringResult(interp));
 	pixel_to_world(e->pixel, 0, cy, &dummy, &wy);	
 	sprintf(cmd, "draw_canvas_crosshairY %s %s %d %.20f\n", e->c->win, e->win, cy, invert_wy(e, wy));
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "draw_canvas_crossshairY2", "%s\n", interp->result);
+	    verror(ERR_WARN, "draw_canvas_crossshairY2", "%s\n", Tcl_GetStringResult(interp));
     }
 }
 

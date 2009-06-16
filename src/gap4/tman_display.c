@@ -218,7 +218,7 @@ DisplayContext *manageTrace(EdStruct *xx,
 				  edpath, pname, " {", rawDataFile, "} {",
 				  edpath, "} ", seqbuf, NULL)) {
 	    freeTDisplay(traceName);
-	    puts(interp->result);
+	    puts(Tcl_GetStringResult(interp));
 	    return NULL;
 	}
     } else {
@@ -230,10 +230,10 @@ DisplayContext *manageTrace(EdStruct *xx,
 	    return NULL;
 	}
     }
-    strcpy(dc->path, interp->result);
+    strcpy(dc->path, Tcl_GetStringResult(interp));
 
     /* Get Trace widget pointer */
-    if (-1 == Tcl_GetCommandInfo(interp, interp->result, &info)) {
+    if (-1 == Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &info)) {
 	freeTDisplay(traceName);
 	return NULL;
     }

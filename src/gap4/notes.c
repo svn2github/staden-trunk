@@ -661,7 +661,7 @@ void execute_database_notes(GapIO *io, char *type) {
 	    if (Tcl_GlobalEval(GetInterp(), txt) != TCL_OK) {
 		verror(ERR_WARN, "execute_database_note",
 		       "Note '%s' failed with message \"%s\"",
-		       type, GetInterp()->result);
+		       type, GetInterpResult());
 	    }
 
 	    xfree(txt);
@@ -809,7 +809,7 @@ void select_note(GapIO *io, int gtype, int num) {
 
     sprintf(cmd, "NoteSelector %d %s %s", *handle_io(io), type, ident);
     if (Tcl_Eval(GetInterp(), cmd) != TCL_OK)
-	verror(ERR_WARN, "select_note", "%s\n", GetInterp()->result);
+	verror(ERR_WARN, "select_note", "%s\n", GetInterpResult());
 }
 
 /*

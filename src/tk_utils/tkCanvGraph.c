@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <float.h>
+#include <limits.h>
 #include "tkInt.h"
 #include "tkPort.h"
 #include "tkCanvas.h"
@@ -8,14 +9,6 @@
 #include "matrix.h"
 
 #ifdef __MINGW32__
-extern int		TkPixelParseProc _ANSI_ARGS_((
-			    ClientData clientData, Tcl_Interp *interp,
-			    Tk_Window tkwin, CONST char *value, char *widgRec,
-			    int offset));
-extern char *		TkPixelPrintProc _ANSI_ARGS_((
-			    ClientData clientData, Tk_Window tkwin,
-			    char *widgRec, int offset,
-			    Tcl_FreeProc **freeProcPtr));
 extern int		Tk_CanvasTagsParseProc _ANSI_ARGS_((
 				ClientData clientData, Tcl_Interp * interp, 
 				Tk_Window tkwin, CONST char * value, 
@@ -24,14 +17,6 @@ extern char *		Tk_CanvasTagsPrintProc _ANSI_ARGS_((
 				ClientData clientData, Tk_Window tkwin, 
 				char * widgRec, int offset, 
 				Tcl_FreeProc ** freeProcPtr));
-extern int		TkOrientParseProc _ANSI_ARGS_((
-			    ClientData clientData, Tcl_Interp *interp,
-			    Tk_Window tkwin, CONST char *value,
-			    char *widgRec, int offset));
-extern char *		TkOrientPrintProc _ANSI_ARGS_((
-			    ClientData clientData, Tk_Window tkwin,
-			    char *widgRec, int offset,
-			    Tcl_FreeProc **freeProcPtr));
 #endif
 
 /* HACK - put somewhere else */
@@ -183,9 +168,161 @@ Tk_CanvasGraphPrintProc(ClientData clientData,
                        int offset,
                         Tcl_FreeProc **freeProcPtr);
 
+/* From tkUtil.c */
+static char *
+TkOrientPrintProc_(
+		  ClientData clientData,      /* Ignored. */
+		  Tk_Window tkwin,            /* Window containing canvas widget. */
+		  char *widgRec,              /* Pointer to record for item. */
+		  int offset,                 /* Offset into item. */
+    Tcl_FreeProc **freeProcPtr) /* Pointer to variable to fill in with
+                                 * information about how to reclaim storage
+                                 * for return string. */
+{
+    register int *statePtr = (int *) (widgRec + offset);
+
+    if (*statePtr) {
+        return "vertical";
+    } else {
+        return "horizontal";
+    }
+}
+
+/* From tkUtil.c */
+static char *
+TkPixelPrintProc_(
+		 ClientData clientData,      /* not used */
+		 Tk_Window tkwin,            /* not used */
+		 char *widgRec,              /* Widget structure record */
+		 int offset,                 /* Offset of tile in record */
+		 Tcl_FreeProc **freeProcPtr) /* not used */
+{
+    double *doublePtr = (double *) (widgRec + offset);
+    char *p = (char *) ckalloc(24);
+
+    Tcl_PrintDouble(NULL, *doublePtr, p);
+    *freeProcPtr = TCL_DYNAMIC;
+    return p;
+}
+
+static int
+TkOrientParseProc_(
+		  ClientData clientData,      /* some flags.*/
+		  Tcl_Interp *interp,         /* Used for reporting errors. */
+		  Tk_Window tkwin,            /* Window containing canvas widget. */
+		  const char *value,          /* Value of option. */
+		  char *widgRec,              /* Pointer to record for item. */
+		  int offset)                 /* Offset into item. */
+{
+    int c;
+    size_t length;
+
+    register int *orientPtr = (int *) (widgRec + offset);
+
+    if(value == NULL || *value == 0) {
+        *orientPtr = 0;
+        return TCL_OK;
+    }
+
+    c = value[0];
+    length = strlen(value);
+
+    if ((c == 'h') && (strncmp(value, "horizontal", length) == 0)) {
+        *orientPtr = 0;
+        return TCL_OK;
+    }
+    if ((c == 'v') && (strncmp(value, "vertical", length) == 0)) {
+        *orientPtr = 1;
+        return TCL_OK;
+    }
+    Tcl_AppendResult(interp, "bad orientation \"", value,
+            "\": must be vertical or horizontal", NULL);
+    *orientPtr = 0;
+    return TCL_ERROR;
+}
+
+static int
+TkGetDoublePixels_(
+		  Tcl_Interp *interp,         /* Use this for error reporting. */
+		  Tk_Window tkwin,            /* Window whose screen determines conversion
+					       * from centimeters and other absolute
+					       * units. */
+		  CONST char *string,         /* String describing a number of pixels. */
+		  double *doublePtr)          /* Place to store converted result. */
+{
+    char *end;
+    double d;
+
+    d = strtod((char *) string, &end);
+    if (end == string) {
+    error:
+        Tcl_AppendResult(interp, "bad screen distance \"", string, "\"", NULL);
+        return TCL_ERROR;
+    }
+    while ((*end != '\0') && isspace(UCHAR(*end))) {
+        end++;
+    }
+    switch (*end) {
+    case 0:
+        break;
+    case 'c':
+        d *= 10*WidthOfScreen(Tk_Screen(tkwin));
+        d /= WidthMMOfScreen(Tk_Screen(tkwin));
+        end++;
+        break;
+    case 'i':
+        d *= 25.4*WidthOfScreen(Tk_Screen(tkwin));
+        d /= WidthMMOfScreen(Tk_Screen(tkwin));
+        end++;
+        break;
+    case 'm':
+        d *= WidthOfScreen(Tk_Screen(tkwin));
+        d /= WidthMMOfScreen(Tk_Screen(tkwin));
+        end++;
+        break;
+    case 'p':
+        d *= (25.4/72.0)*WidthOfScreen(Tk_Screen(tkwin));
+        d /= WidthMMOfScreen(Tk_Screen(tkwin));
+        end++;
+        break;
+    default:
+        goto error;
+    }
+    while ((*end != '\0') && isspace(UCHAR(*end))) {
+        end++;
+    }
+    if (*end != 0) {
+        goto error;
+    }
+    *doublePtr = d;
+    return TCL_OK;
+}
+
+static int
+TkPixelParseProc_(
+    ClientData clientData,      /* If non-NULL, negative values are allowed as
+                                 * well */
+    Tcl_Interp *interp,         /* Interpreter to send results back to */
+    Tk_Window tkwin,            /* Window on same display as tile */
+    const char *value,          /* Name of image */
+    char *widgRec,              /* Widget structure record */
+    int offset)                 /* Offset of tile in record */
+{
+    double *doublePtr = (double *) (widgRec + offset);
+    int result;
+
+    result = TkGetDoublePixels_(interp, tkwin, value, doublePtr);
+
+    if ((result == TCL_OK) && (clientData == NULL) && (*doublePtr < 0.0)) {
+        Tcl_AppendResult(interp, "bad screen distance \"", value, "\"", NULL);
+        return TCL_ERROR;
+    }
+    return result;
+}
+
 static Tk_CustomOption pixelOption = {
-    (Tk_OptionParseProc *) TkPixelParseProc,
-    TkPixelPrintProc, (ClientData) NULL
+    (Tk_OptionParseProc *) TkPixelParseProc_,
+    TkPixelPrintProc_, (ClientData) NULL
 };
 
 static Tk_CustomOption graphOption = {
@@ -199,8 +336,8 @@ static Tk_CustomOption tagsOption = {
 };
 
 static Tk_CustomOption orientOption = {
-    (Tk_OptionParseProc *) TkOrientParseProc,
-    TkOrientPrintProc,
+    (Tk_OptionParseProc *) TkOrientParseProc_,
+    TkOrientPrintProc_,
     (ClientData) NULL
 };
 
@@ -605,7 +742,7 @@ ConfigureGraph(Tcl_Interp *interp,
     if (Tk_ConfigureWidget(interp, tkwin, configSpecs, argc, (char **) argv,
 	    (char *) graphPtr, flags|TK_CONFIG_OBJS) != TCL_OK) {
 
-	printf("ERROR %s\n", interp->result);
+	printf("ERROR %s\n", Tcl_GetStringResult(interp));
 	return TCL_ERROR;
     }
 
@@ -1691,18 +1828,6 @@ static void DisplayGraph(Tk_Canvas canvas,
     short drawableX=0, drawableY=0;
     int graphX=0, graphY=0, graphWidth=0, graphHeight=0;
 
-#ifdef DEBUG
-    printf("DISPLAY GRAPH %s x %d width %d height %d header x1 %d x2 %d x0 %d x1 %d\n",
-	   Tk_PathName(tkwin), x, width, height, graphPtr->header.x1,
-	   graphPtr->header.x2, graphPtr->x0, graphPtr->x1);
-    {
-	TkCanvas *canvasPtr = (TkCanvas *) canvas;
-	printf("ORIGIN %d %d %d %d %d\n", canvasPtr->drawableXOrigin,
-	       canvasPtr->xOrigin, canvasPtr->inset, canvasPtr->redrawX1,
-	       canvasPtr->redrawX2);
-
-    }
-#endif
     if (x > graphPtr->header.x1) {
 	graphX = x - graphPtr->header.x1;
 	graphWidth = graphPtr->header.x2 - x;
@@ -2335,7 +2460,7 @@ int pixel_to_canvas(Tcl_Interp *interp,
 	sprintf(buf, "%s canvasy %d", Tk_PathName(tkwin), pixel);
     }
     Tcl_Eval(interp, buf);
-    return (atoi(interp->result));
+    return (atoi(Tcl_GetStringResult(interp)));
 
 }
 

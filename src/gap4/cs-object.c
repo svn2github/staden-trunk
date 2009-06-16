@@ -345,7 +345,7 @@ void csmatch_configure(GapIO *io, char *cs_plot, mobj_repeat *r) {
     tclptr = CPtr2Tcl(r);
     if (TCL_OK != Tcl_VarEval(GetInterp(), "cs_config ", cs_plot, " ",
 			      tclptr, NULL)) {
-	puts(GetInterp()->result);
+	puts(GetInterpResult());
     }
 }
 
@@ -373,7 +373,7 @@ void csmatch_remove(GapIO *io, char *cs_plot,
      */
     if (TCL_OK != Tcl_VarEval(GetInterp(), "cs_config_quit ", cs_plot, " ",
 			      reg_dat->tagname, NULL)) {
-	puts(GetInterp()->result);
+	puts(GetInterpResult());
     }
 
     /* Inform contig selector next button */

@@ -1029,7 +1029,7 @@ UpdateAutomaticContigOrder(Tcl_Interp *interp,
     Tcl_DStringAppendElement(&d_cmd, Tcl_DStringValue(&c_list));
     Tcl_DStringAppendElement(&d_cmd, Tcl_DStringValue(&d_list));
     if (TCL_ERROR == Tcl_Eval(interp, Tcl_DStringValue(&d_cmd)))
-	printf("UpdateAutomaticContigOrder %s\n", interp->result); 
+	printf("UpdateAutomaticContigOrder %s\n", Tcl_GetStringResult(interp)); 
 
     Tcl_DStringFree(&c_list);
     Tcl_DStringFree(&d_list);
@@ -1225,7 +1225,7 @@ find_contig_order(Tcl_Interp *interp,
     (void) AddMateAddresses( g );
 
     if (TCL_ERROR == Tcl_VarEval(interp, "init_contig_order_list", NULL))
-	verror(ERR_WARN, "init_c_order_list",  "%s \n", interp->result);
+	verror(ERR_WARN, "init_c_order_list",  "%s \n", Tcl_GetStringResult(interp));
 
     non_visited = g->number_of_verts;
     cur_sp = 1;
@@ -1256,7 +1256,7 @@ find_contig_order(Tcl_Interp *interp,
 
     sprintf(cmd, "contig_order_listbox %d ", *handle_io(io));
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "find_contig_order", " %s\n", interp->result);
+	verror(ERR_WARN, "find_contig_order", " %s\n", Tcl_GetStringResult(interp));
 
     free_contig_order(g->recs, num_verts);
     xfree(g);

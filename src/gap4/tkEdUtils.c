@@ -174,7 +174,7 @@ static void shuffle_traces(EdStruct *xx) {
     sprintf(cmd, "foreach t [winfo children %s] {place forget $t}",
 	    edpath);
     if (TCL_OK != Tcl_Eval(EDINTERP(xx->ed), cmd)) {
-	puts(EDINTERP(xx->ed)->result);
+	puts(Tcl_GetStringResult(EDINTERP(xx->ed)));
     }
     
     for (i=0 ; i < xx->displayHeight - xx->lines_per_seq;
@@ -258,7 +258,7 @@ void ed_set_nslider_pos(EdStruct *xx, int pos) {
 	    (double)DB_NAMELEN;
 	sprintf(buf, " %.20f %.20f", fract1, fract2);
 	if (Tcl_VarEval(EDINTERP(en), en->xScrollCmd, buf, NULL) != TCL_OK) {
-	    printf("Error in editor names scroll: %s\n", EDINTERP(en)->result);
+	    printf("Error in editor names scroll: %s\n", Tcl_GetStringResult(EDINTERP(en)));
 	}
     }
 }
@@ -1779,7 +1779,7 @@ int tk_update_brief_line(EdStruct *xx, char *msg) {
     Tcl_DStringAppend(&ds, " ", 1);
     Tcl_DStringAppendElement(&ds, tmp_msg);
     if (TCL_OK != Tcl_Eval(EDINTERP(xx->ed), Tcl_DStringValue(&ds))) {
-	fprintf(stderr, "Tcl_Eval: %s\n", EDINTERP(xx->ed)->result);
+	fprintf(stderr, "Tcl_Eval: %s\n", Tcl_GetStringResult(EDINTERP(xx->ed)));
     }
 
     Tcl_DStringFree(&ds);

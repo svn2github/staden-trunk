@@ -255,7 +255,7 @@ static void readpair_coverage_shutdown(GapIO *io, obj_reading_coverage *rcov) {
     sprintf(cmd, "DeleteReadPairCoverage %d %s %s %d\n", *handle_io(io), 
 	    rcov->frame, rcov->c_win, rcov->cons_id);
     if (TCL_ERROR == Tcl_Eval(c->interp, cmd)) 
-      printf("readpair_coverage_shutdown: %s\n", c->interp->result);
+      printf("readpair_coverage_shutdown: %s\n", Tcl_GetStringResult(c->interp));
 
     if (rcov->histogram1) {
         for (i = 0; i < c->num_contigs; i++) {
@@ -396,7 +396,7 @@ static void readpair_coverageScrollY(Tcl_Interp *interp,
 
     /* find new top edge of canvas in canvasy coords */
     Tcl_VarEval(interp, rcov->ruler->window, " canvasy 0", NULL);
-    canvas->y = atoi(interp->result);
+    canvas->y = atoi(Tcl_GetStringResult(interp));
 
     /* find new top and bottom edges of canvas in world coords */
     CanvasToWorld(canvas, 0, canvas->y, &wx, &visible->y1);

@@ -30,7 +30,7 @@ void seq_disp_move_cursor(Tcl_Interp *interp,
     sprintf(cmd, "seq_disp_show_cursor %s %d %d %d\n", seq_disp_win, result_id,
 	    pos, direction);
     if (TCL_OK != Tcl_Eval(interp, cmd)) {
-	printf("seq_disp_move_cursor: %s\n",interp->result);
+	printf("seq_disp_move_cursor: %s\n",Tcl_GetStringResult(interp));
     }
 }
 
@@ -63,7 +63,7 @@ void seq_disp_shutdown(Tcl_Interp *interp,
     tmp = get_default_string(result->interp, tk_utils_defs, w("RASTER.RESULTS.WIN"));
     if (TCL_OK != Tcl_VarEval(result->interp, "seq_result_list_update ", 
 			      tmp, NULL)){
-	verror(ERR_WARN, "seq disp shutdown", "%s \n", result->interp->result);
+	verror(ERR_WARN, "seq disp shutdown", "%s \n", Tcl_GetStringResult(result->interp));
     }
   
     xfree(result);
@@ -478,10 +478,10 @@ void SequencePairDisplay(Tcl_Interp *interp,
     int height;
 
     Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(interp->result);
+    raster_id = atoi(Tcl_GetStringResult(interp));
     
     Tcl_VarEval(interp, "winfo height ", raster_win, NULL);
-    height = atoi(interp->result);
+    height = atoi(Tcl_GetStringResult(interp));
    
     sprintf(cmd, "SequencePairDisplay 1 1 %d %d -1 -1 %d\n", 
 	    seq_id_h, seq_id_v, result_index);
@@ -489,7 +489,7 @@ void SequencePairDisplay(Tcl_Interp *interp,
        /* dmalloc_verify(NULL); */
  
     if (TCL_OK != Tcl_GlobalEval(interp, cmd)) {
-	printf("DisplaySequences: %s\n", interp->result);
+	printf("DisplaySequences: %s\n", Tcl_GetStringResult(interp));
     }
 }
 
@@ -506,7 +506,7 @@ void DestroySequencePairDisplay(Tcl_Interp *interp,
 				      "SEQ_DISP.WIN");
     sprintf(cmd, "SeqDispStartShutdown %s%d", seq_disp_win, result_index);
     if (TCL_ERROR == (Tcl_Eval(interp, cmd))) {
-	printf("DestroyDisplaySequences %s\n", interp->result);
+	printf("DestroyDisplaySequences %s\n", Tcl_GetStringResult(interp));
     }
 }
 

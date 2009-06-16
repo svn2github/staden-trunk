@@ -275,9 +275,6 @@ RasterGetWorldScroll(Tk_Raster *rasterptr,
 		     double *x0, double *y0, 
 		     double *x1, double *y1);
 
-void RasterWorldExtents(Tk_Raster *rasterptr, 
-			double *wx0, double *wy0, double *wx1, double *wy1);
-
 void GetRasterCoords(Tk_Raster *rasterptr, 
 		     double *wx0, double *wy0, double *wx1, double *wy1);
 

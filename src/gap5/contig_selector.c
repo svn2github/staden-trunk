@@ -142,9 +142,9 @@ PlotRepeats(GapIO *io,
 	}
 	/* printf("cmd %s \n", cmd); */
 	if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))
-	    printf("%s \n", GetInterp()->result);
+	    printf("%s \n", GetInterpResult());
 
-	inum = atoi(GetInterp()->result);
+	inum = atoi(GetInterpResult());
 	match->inum = inum;
 	HashInsert(csplot_hash, inum, match);
     }
@@ -652,10 +652,10 @@ display_cs_tags(Tcl_Interp *interp,                                   /* in */
    /* get template display tag list */
     /* HACK - put in registration structure ? */
     if (TCL_ERROR == Tcl_VarEval(interp, "GetDefaultTags ", "CONTIG_SEL.TAGS ", NULL)) {
-	printf("ERROR %s\n", interp->result);
+	printf("ERROR %s\n", Tcl_GetStringResult(interp));
     }
 
-    if (SetActiveTags2(interp->result, &num_tags, &tag_types) == -1) {
+    if (SetActiveTags2(Tcl_GetStringResult(interp), &num_tags, &tag_types) == -1) {
 	return -1;
     }
 
@@ -751,7 +751,7 @@ update_contig_selector(Tcl_Interp *interp,
     char cmd[1024];
 
     Tcl_VarEval(interp, "winfo height ", cs->hori, NULL);
-    win_ht = atoi(interp->result);
+    win_ht = atoi(Tcl_GetStringResult(interp));
 
     display_contigs(interp, io, cs->hori, cs->line_colour, cs->line_width,
 		    cs->tick->line_width, cs->tick->ht, win_ht/2, "horizontal");
@@ -795,7 +795,7 @@ update_contig_comparator(Tcl_Interp *interp,
     char cmd[1024];
 
     Tcl_VarEval(interp, "winfo width ", cs->vert, NULL);
-    win_wd = atoi(interp->result);
+    win_wd = atoi(Tcl_GetStringResult(interp));
 
     display_contigs(interp, io, cs->vert, cs->line_colour, cs->line_width,
 		    cs->tick->line_width, cs->tick->ht, win_wd/2, "vertical");
@@ -805,7 +805,7 @@ update_contig_comparator(Tcl_Interp *interp,
     sprintf(cmd, "DisplayDiagonal %s %s %s", cs->frame, cs->window,
 	    io_obj_as_string(io));
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	printf("update_contig_comparator: %s\n", interp->result);
+	printf("update_contig_comparator: %s\n", Tcl_GetStringResult(interp));
 
 }
 
@@ -947,7 +947,7 @@ static void cs_shutdown(GapIO *io, obj_cs *cs) {
 
     if (TCL_ERROR == Tcl_VarEval(GetInterp(), "DeleteContigSelector ",
 				 cs->frame, NULL)) {
-	printf("cs_shutdown %s\n", GetInterp()->result);
+	printf("cs_shutdown %s\n", GetInterpResult());
     }
 
     free_win_list(cs->win_list, cs->num_wins);
@@ -1176,7 +1176,7 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 			cs->frame, cs->hori, cx1, cs->cursor.colour,
 			cs->cursor.width);
 		if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))
-		    printf("%s\n", GetInterp()->result);
+		    printf("%s\n", GetInterpResult());
 
 		/* fill in local position of cursor in label box */
 		local_pos = CSLocalCursor(io, wy);

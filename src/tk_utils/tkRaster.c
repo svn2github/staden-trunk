@@ -2088,13 +2088,9 @@ Tk_ConfigSpec DrawEnvSpecs [] = {
      (char*) NULL, Tk_Offset(DrawEnvironment, fgColor->pixel), 0},
      */
     {TK_CONFIG_COLOR, "-background", "background",  "Background",
-	"#d9d9d9", Tk_Offset(DrawEnvironment, bgColor),  TK_CONFIG_COLOR_ONLY},
-    {TK_CONFIG_COLOR, "-background", "background", "Background",
-	"white", Tk_Offset(DrawEnvironment, bgColor), TK_CONFIG_MONO_ONLY},
+	NULL, Tk_Offset(DrawEnvironment, bgColor),  TK_CONFIG_NULL_OK},
     {TK_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-	"brown", Tk_Offset(DrawEnvironment, fgColor), TK_CONFIG_COLOR_ONLY},
-    {TK_CONFIG_COLOR, "-foreground", "foreground", "Foreground",
-	"black", Tk_Offset(DrawEnvironment, fgColor), TK_CONFIG_MONO_ONLY},
+	NULL, Tk_Offset(DrawEnvironment, fgColor), TK_CONFIG_NULL_OK},
     {TK_CONFIG_PIXELS, "-linewidth", "linewidth", "LineWidth", (char*) NULL,
 	Tk_Offset(DrawEnvironment, gcValues.line_width), 0 },
     {TK_CONFIG_CUSTOM, "-linestyle", "linestyle", "LineStyle", "solid",
@@ -2120,7 +2116,6 @@ Tk_ConfigSpec DrawEnvSpecs [] = {
     {TK_CONFIG_END, (char *) NULL, (char *) NULL, (char *) NULL,
 	(char *) NULL, 0, 0}
 };
-
 
 int
 GetFgPixel(Tcl_Interp* interp,
@@ -2176,20 +2171,19 @@ static int ConfigDrawEnv (interp, RasterPtr, drawEnv, argc, argv)
      char * argv [];
 {
    if (Tk_ConfigureWidget(interp, RasterPtr->tkwin, DrawEnvSpecs,
-	argc, argv, (char *) drawEnv, TK_CONFIG_ARGV_ONLY) != TCL_OK) {
-	return TCL_ERROR;
-    }
+      argc, argv, (char *) drawEnv, TK_CONFIG_ARGV_ONLY) != TCL_OK) {
+      return TCL_ERROR;
+   }
 
-   if ((DrawEnvSpecs [0].specFlags & TK_CONFIG_OPTION_SPECIFIED) ||
-       (DrawEnvSpecs [1].specFlags & TK_CONFIG_OPTION_SPECIFIED)) {
+   if (drawEnv->bgColor) {
       /* Background was changed */
       drawEnv->valMask |= GCBackground;
       drawEnv->gcValues.background = drawEnv->bgColor->pixel;
    }
-   if ((DrawEnvSpecs [2].specFlags & TK_CONFIG_OPTION_SPECIFIED) ||
-       (DrawEnvSpecs [3].specFlags & TK_CONFIG_OPTION_SPECIFIED)) {
+   if (drawEnv->fgColor) {
       /* Foreground was changed */
       drawEnv->valMask |= GCForeground;
+      printf("fg = %ld\n", drawEnv->fgColor->pixel);
       drawEnv->gcValues.foreground = drawEnv->fgColor->pixel;
    }
    if (DrawEnvSpecs [4].specFlags & TK_CONFIG_OPTION_SPECIFIED) {

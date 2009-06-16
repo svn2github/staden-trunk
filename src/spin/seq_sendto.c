@@ -29,7 +29,7 @@ void sender_shutdown(int seq_num,
     seq_deregister(seq_num, sender_callback, (sender_result *)send);
 
     if (TCL_ERROR == Tcl_Eval(send->interp, cmd)) 
-	verror(ERR_WARN, "sender_shutdown", "%s\n", send->interp->result);
+	verror(ERR_WARN, "sender_shutdown", "%s\n", Tcl_GetStringResult(send->interp));
     Tcl_VarEval(send->interp, "unset commn", NULL);
     send->communicating = 0;
 
@@ -37,7 +37,7 @@ void sender_shutdown(int seq_num,
 #ifdef REMOVE
     if (NumSequences() == 0) {
 	if (TCL_ERROR == (Tcl_VarEval(send->interp, "ExitSip", NULL)))
-	    verror(ERR_WARN, "sender_shutdown",  "%s\n", send->interp->result);
+	    verror(ERR_WARN, "sender_shutdown",  "%s\n", Tcl_GetStringResult(send->interp));
     }
 #endif
 
@@ -45,7 +45,7 @@ void sender_shutdown(int seq_num,
 			     w("RASTER.RESULTS.WIN"));
     if (TCL_OK != Tcl_VarEval(send->interp, "seq_result_list_update ", 
 			      tmp, NULL)){
-	verror(ERR_WARN, "sender shutdown", "%s \n", send->interp->result);
+	verror(ERR_WARN, "sender shutdown", "%s \n", Tcl_GetStringResult(send->interp));
     }
 }
 
@@ -144,9 +144,9 @@ void sender_callback(int seq_num, void *obj, seq_reg_data *jdata)
 		       Tcl_GetStringResult(send->interp));
 
 #ifdef DEBUG
-	    printf("SIP CURSORS %s\n", send->interp->result);
+	    printf("SIP CURSORS %s\n", Tcl_GetStringResult(send->interp));
 #endif
-	    if (strcmp(send->interp->result, "") != 0) {
+	    if (strcmp(Tcl_GetStringResult(send->interp), "") != 0) {
 		sprintf(id, "%d", cursor->id);
 		if (cursor->direction == HORIZONTAL) {
 		    /* sip */
@@ -157,7 +157,7 @@ void sender_callback(int seq_num, void *obj, seq_reg_data *jdata)
 		    /* nip */
 		    sprintf(c, "cursor_%s", send->rid); 
 		}
-		if (Tcl_SplitList(send->interp, send->interp->result, &num, &list) 
+		if (Tcl_SplitList(send->interp, Tcl_GetStringResult(send->interp), &num, &list) 
 		    != TCL_OK) {
 		    return;
 		}
@@ -173,7 +173,7 @@ void sender_callback(int seq_num, void *obj, seq_reg_data *jdata)
 		}
 		Tcl_Free((char*)list);
 #ifdef DEBUG
-		printf("SENDTO %s %s %s refs %d\n", c, send->interp->result,
+		printf("SENDTO %s %s %s refs %d\n", c, Tcl_GetStringResult(send->interp),
 		       id, cursor->refs);
 #endif
 	    }

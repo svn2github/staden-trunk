@@ -125,7 +125,7 @@ int consistency_cursor_move(Tcl_Interp *interp,
 #endif
 
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		printf("consistency_cursor_move: %s\n", interp->result);
+		printf("consistency_cursor_move: %s\n", Tcl_GetStringResult(interp));
 	    }
 	}
     }

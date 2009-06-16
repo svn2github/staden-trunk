@@ -616,7 +616,7 @@ void cons_edc_trace(EdStruct *xx, int start, int end, int strand, int match,
 		Tk_PathName(EDTKWIN(xx->ed)), pname, " ",
 		Tk_PathName(EDTKWIN(xx->ed)),
 		" consensus", NULL);
-    pname = interp->result;
+    pname = Tcl_GetStringResult(interp);
 
     /* Fill out the tman_dc and DisplayContext structures */
     sprintf(buf, "Cons %d", cons_counter++);
@@ -630,7 +630,7 @@ void cons_edc_trace(EdStruct *xx, int start, int end, int strand, int match,
     ed->type = TRACE_TYPE_CON;
 
     /* Add the Read to the trace widget */
-    Tcl_GetCommandInfo(interp, interp->result, &info);
+    Tcl_GetCommandInfo(interp, Tcl_GetStringResult(interp), &info);
     trace_memory_load((DNATrace *)info.clientData, r);
     dc->tracePtr = (DNATrace *)info.clientData;
 

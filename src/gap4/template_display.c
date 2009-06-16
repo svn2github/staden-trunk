@@ -1717,7 +1717,7 @@ static void template_shutdown(GapIO *io, obj_template_disp *t) {
     sprintf(cmd, "DeleteTemplateDisplay %s %s %d\n", t->frame, t->t_win,
 	    t->id);
     if (TCL_ERROR == Tcl_Eval(t->interp, cmd))
-	printf("template_shutdown:%s\n", t->interp->result);
+	printf("template_shutdown:%s\n", Tcl_GetStringResult(t->interp));
 
 
     if (t->tarr)
@@ -1819,11 +1819,11 @@ template_join(Tcl_Interp *interp,
 	sprintf(cmd,"%s.menubar.[menu_path {View.Quality Plot}] delete \"contig %s\" ",
 		t->frame, old_contig_name);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    printf("template_join:%s\n", interp->result);
+	    printf("template_join:%s\n", Tcl_GetStringResult(interp));
 	sprintf(cmd,"%s.menubar.[menu_path {View.Restriction Enzyme Plot}] delete \"contig %s\" ",
 		t->frame, old_contig_name);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    printf("template_join:%s\n", interp->result);
+	    printf("template_join:%s\n", Tcl_GetStringResult(interp));
     }
 }
 
@@ -1910,12 +1910,12 @@ static void template_callback(GapIO *io, int contig, void *fdata,
 	    sprintf(cmd,"%s.menubar.view.opts.quality entryconfigure \"contig %s\" -label \"contig %s\"", t->frame, get_read_name(io, right),
 		    get_contig_name(io, ABS(contig)));
 	    if (TCL_ERROR == Tcl_Eval(t->interp, cmd))
-		printf("update_template_view_menu:%s\n", t->interp->result);
+		printf("update_template_view_menu:%s\n", Tcl_GetStringResult(t->interp));
 
 	    sprintf(cmd,"%s.menubar.view.opts.renz entryconfigure \"contig %s\" -label \"contig %s\"", t->frame, get_read_name(io, right),
 		    get_contig_name(io, ABS(contig)));
 	    if (TCL_ERROR == Tcl_Eval(t->interp, cmd))
-		printf("update_template_view_menu:%s\n", t->interp->result);
+		printf("update_template_view_menu:%s\n", Tcl_GetStringResult(t->interp));
 #endif
 	    Tcl_DStringInit(&c_list);
 
@@ -1931,7 +1931,7 @@ static void template_callback(GapIO *io, int contig, void *fdata,
 	    Tcl_DStringEndSublist(&c_list);
 
 	    if (TCL_ERROR == Tcl_Eval(t->interp, Tcl_DStringValue(&c_list)))
-		printf("template complement: %s \n", t->interp->result);
+		printf("template complement: %s \n", Tcl_GetStringResult(t->interp));
 	    Tcl_DStringFree(&c_list);
 
 	    if (!t->do_update)
@@ -2073,7 +2073,7 @@ static void template_callback(GapIO *io, int contig, void *fdata,
 			t->window, jdata->highlight.seq, width);
 
 	    if (Tcl_Eval(t->interp, buf) == TCL_ERROR) {
-		puts(t->interp->result);
+		puts(Tcl_GetStringResult(t->interp));
 	    }
 	}
 	return;
@@ -2693,7 +2693,7 @@ display_templates(Tcl_Interp *interp,
 	sprintf(cmd, "DeleteTemplatePlot %d %d %s %s",
 		*handle_io(io), t->id, t->frame, t->t_win);
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    printf("display_templates: %s \n", interp->result);
+	    printf("display_templates: %s \n", Tcl_GetStringResult(interp));
 
 	deleteWindow(t->win_list, &t->num_wins, t->window);
 	if (t->num_wins > 0) {
@@ -2887,7 +2887,7 @@ DrawReadingTags(Tcl_Interp *interp,                                    /* in */
 	    win_name, x1, y, x2, y, colour, type, line_width, colour);
 
     if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-	printf("%s\n", interp->result);
+	printf("%s\n", Tcl_GetStringResult(interp));
     }
     /* printf("cmd %s \n", cmd); */
 }
@@ -2953,7 +2953,7 @@ display_reading_tags(Tcl_Interp *interp,
     /* HACK - put in registration structure ? */
     Tcl_VarEval(interp, "GetDefaultTags ", "TEMPLATE.TAGS ", t->frame, NULL);
 
-    if (SetActiveTags2(interp->result, &num_tags, &tags) == -1) {
+    if (SetActiveTags2(Tcl_GetStringResult(interp), &num_tags, &tags) == -1) {
 	return -1;
     }
 

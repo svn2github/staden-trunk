@@ -18,6 +18,7 @@ extern TK_UTILS_EXPORT Tcl_Obj *tk_utils_defs;   /* Todo: Make this a function *
 
 
 Tcl_Interp* GetInterp( void );
+char* GetInterpResult( void );
 void dump_tcl_stack(void);
 void vTcl_SetResult(Tcl_Interp *interp, char *fmt, ...);
 char *vTcl_DStringAppend(Tcl_DString *dsPtr, char *fmt, ...);

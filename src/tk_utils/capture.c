@@ -53,7 +53,7 @@ int tcl_capture(ClientData clientData, Tcl_Interp *interp,
     /* Return it to Tcl */
     if (argc == 3) {
 	Tcl_ResetResult(interp);
-	sprintf(interp->result, "%d", result);
+	vTcl_SetResult(interp, "%d", result);
 	return Tcl_SetVar(interp, argv[2], buf, 0) ? TCL_OK : TCL_ERROR;
     } else {
 	Tcl_SetResult(interp, buf, TCL_DYNAMIC);

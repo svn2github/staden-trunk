@@ -387,7 +387,7 @@ void codon_shutdown(Tcl_Interp *interp,
      */
     sprintf(cmd, "DeleteCodonPlot %s %s\n", s->frame, s->window);
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	printf("%s\n", interp->result);
+	printf("%s\n", Tcl_GetStringResult(interp));
 
     /* Free memory */
     if (s->c_match.match)

@@ -132,7 +132,7 @@ plot_quality(char *seq,
 		    Y0, YP1, YP2, YM1, YM2,
 		    ymin, ymax);
 #ifdef DEBUG
-	    printf("%s %s \n", GetInterp()->result, cmd);
+	    printf("%s %s \n", GetInterpResult(), cmd);
 #endif
 	    Tcl_Eval(GetInterp(), cmd);
             current = seq[i];

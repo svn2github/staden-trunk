@@ -175,7 +175,7 @@ void *readpair_obj_func(int job, void *jdata, obj_read_pair *obj,
 		sprintf(cmd, "CreateTemplateDisplay %d {%s}",
 			*handle, c_list);
 		if (TCL_ERROR == Tcl_Eval(GetInterp(), cmd))
-		    printf("%s\n", GetInterp()->result);
+		    printf("%s\n", GetInterpResult());
 	    }
 	    break;
 

@@ -107,7 +107,7 @@ void canvas_cursor_delete(Tcl_Interp *interp, GapIO *io, cursor_t *cursor,
 		    *handle_io(io), win_list[i]->window, cursor->id);
 
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		printf("canvas_cursor_delete: %s\n", interp->result);
+		printf("canvas_cursor_delete: %s\n", Tcl_GetStringResult(interp));
 	    }
 
 	}
@@ -155,7 +155,7 @@ int canvas_cursor_move(Tcl_Interp *interp,
 		    cursor->id, reg_id, cx);
 
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd)) {
-		printf("canvas_cursor_move: %s\n", interp->result);
+		printf("canvas_cursor_move: %s\n", Tcl_GetStringResult(interp));
 	    }
 	}
     }

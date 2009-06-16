@@ -125,7 +125,7 @@ void similar_spans_shutdown(Tcl_Interp *interp,
 
     /* determine raster_id and raster_result structure */
     Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(interp->result);
+    raster_id = atoi(Tcl_GetStringResult(interp));
     raster_result = raster_id_to_result(raster_id);
 
     /* find key name BEFORE deregister */
@@ -152,11 +152,11 @@ void similar_spans_shutdown(Tcl_Interp *interp,
 	ReplotAllCurrentZoom(interp, raster_win);
 
 	Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-	raster_id = atoi(interp->result);
+	raster_id = atoi(Tcl_GetStringResult(interp));
 	if (TCL_OK != Tcl_VarEval(interp, "RemoveRasterResultKey ", raster_win,
 				  " {", info.line, "}", NULL))
 	    verror(ERR_WARN, "similar spans_shutdown1", "%s \n", 
-		   interp->result);
+		   Tcl_GetStringResult(interp));
 	
 	/* find original y before reset size */
 	Tcl_GetCommandInfo(interp, raster_win, &info1);
@@ -169,7 +169,7 @@ void similar_spans_shutdown(Tcl_Interp *interp,
 	ReplotAllRasterWindow(interp, raster_win);
 
 	if (TCL_OK != Tcl_VarEval(interp, "seq_result_list_update ", tmp, NULL)){
-	    verror(ERR_WARN, "similar_spans_shutdown2", "%s\n", interp->result);
+	    verror(ERR_WARN, "similar_spans_shutdown2", "%s\n", Tcl_GetStringResult(interp));
 	}
     }
     DestroySequencePairDisplay(interp, id);
@@ -238,14 +238,14 @@ void similar_spans_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    {
 		Tcl_Eval(output->interp, "sip_rescan_matches");
 		Tcl_Eval(output->interp, "SetBusy");
-		SipRescanMatches(output->interp, result, id, atoi(output->interp->result));
+		SipRescanMatches(output->interp, result, id, atoi(Tcl_GetStringResult(output->interp)));
 		Tcl_Eval(output->interp, "ClearBusy");
 		break;
 	    }
 	case 4: /* configure */
 	    sprintf(cmd, "RasterConfig %d", id);
 	    if (TCL_OK != Tcl_Eval(output->interp, cmd)){
-		puts(output->interp->result);
+		puts(Tcl_GetStringResult(output->interp));
 	    }
 	    break;
 	case 5: /* display sequences */

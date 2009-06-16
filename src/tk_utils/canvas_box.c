@@ -38,10 +38,10 @@ initCanvas(Tcl_Interp *interp,
 	   char *window)
 {
     Tcl_VarEval(interp, "winfo width ", window, NULL);
-    canvas->width = atoi(interp->result) - 1;
+    canvas->width = atoi(Tcl_GetStringResult(interp)) - 1;
 
     Tcl_VarEval(interp, "winfo height ", window, NULL);
-    canvas->height = atoi(interp->result) - 1;
+    canvas->height = atoi(Tcl_GetStringResult(interp)) - 1;
     
     canvas->x = 0;
     canvas->y = 0;
@@ -164,7 +164,8 @@ scrollRegion(Tcl_Interp *interp,
 	printf("scroll region %s\n", cmd);
 #endif
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "scrollRegion", "%s\n", interp->result);
+	    verror(ERR_WARN, "scrollRegion", "%s\n",
+		   Tcl_GetStringResult(interp));
     }
 }
 
@@ -244,7 +245,8 @@ scaleCanvas(Tcl_Interp *interp,
 		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
 			canvas->x, canvas->y);
 		if (TCL_ERROR == Tcl_Eval(interp, cmd))
-		    verror(ERR_WARN, "moveCanvas", "%s\n", interp->result);
+		    verror(ERR_WARN, "moveCanvas", "%s\n",
+			   Tcl_GetStringResult(interp));
 	    } else {
 		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, x_origin, y_origin, sf_x, sf_y);
@@ -255,7 +257,8 @@ scaleCanvas(Tcl_Interp *interp,
 	printCanvas(canvas);
 #endif
 	if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	    verror(ERR_WARN, "scaleCanvas", "%s\n", interp->result);
+	    verror(ERR_WARN, "scaleCanvas", "%s\n",
+		   Tcl_GetStringResult(interp));
     }
 }
 
@@ -342,7 +345,7 @@ canvasScrollY(Tcl_Interp *interp,
 
     /* find new top edge of canvas in canvasy coords */
     Tcl_VarEval(interp, window, " canvasy 0", NULL);
-    canvas->y = atoi(interp->result);
+    canvas->y = atoi(Tcl_GetStringResult(interp));
 
     /* find new top and bottom edges of canvas in world coords */
     CanvasToWorld(canvas, 0, canvas->y, &wx, &visible->y1);
@@ -372,10 +375,10 @@ resizeCanvas(Tcl_Interp *interp,
     bbox->y2 = (double)(canvas->y + canvas->height);
 
     Tcl_VarEval(interp, "winfo width ", window, NULL);
-    width = atoi(interp->result) - 1;
+    width = atoi(Tcl_GetStringResult(interp)) - 1;
 
     Tcl_VarEval(interp, "winfo height ", window, NULL);
-    height = atoi(interp->result) - 1;
+    height = atoi(Tcl_GetStringResult(interp)) - 1;
 
 #ifdef DEBUG
     printf("resizeCanvas \n");
@@ -592,7 +595,8 @@ canvasCursorX(Tcl_Interp *interp,
 	    sprintf(cmd, "DrawCanvasCursorX %s %s %d %s %d\n", 
 		    frame,win_list[i]->window, cx, colour, line_width);
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd))
-		verror(ERR_WARN, "canvasCursorX", "%s\n", interp->result);
+		verror(ERR_WARN, "canvasCursorX", "%s\n",
+		       Tcl_GetStringResult(interp));
 	}
     }
 }
@@ -622,7 +626,8 @@ canvasCursorY(Tcl_Interp *interp,
 	    sprintf(cmd, "DrawCanvasCursorY %s %s %d %s %d\n", 
 		    frame,win_list[i]->window, cy, colour, line_width);
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd))
-		verror(ERR_WARN, "canvasCursorY", "%s\n", interp->result);
+		verror(ERR_WARN, "canvasCursorY", "%s\n",
+		       Tcl_GetStringResult(interp));
 	}
     }
 }
@@ -969,7 +974,8 @@ void draw_single_ruler(Tcl_Interp *interp,
 	    ruler->offset, ruler->colour, ruler->line_width);
     
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "draw_single_ruler", "%s\n", interp->result);
+	verror(ERR_WARN, "draw_single_ruler", "%s\n",
+	       Tcl_GetStringResult(interp));
     
     if (disp_ticks)
 	display_ruler_ticks(interp, canvas, 0, ruler->offset, ruler, 
@@ -997,7 +1003,8 @@ void draw_single_ruler_vertical(Tcl_Interp *interp,
 #endif
 
     if (TCL_ERROR == Tcl_Eval(interp, cmd))
-	verror(ERR_WARN, "draw_single_ruler_vertical", "%s\n", interp->result);
+	verror(ERR_WARN, "draw_single_ruler_vertical", "%s\n",
+	       Tcl_GetStringResult(interp));
 
     if (disp_ticks)
 	display_ruler_ticks_v(interp, canvas, ruler, start, end);
@@ -1011,7 +1018,7 @@ int canvasx(Tcl_Interp *interp,
 
   sprintf(cmd, "%s canvasx %.20f", window, val);
   Tcl_Eval(interp, cmd);
-  return (atoi(interp->result));
+  return (atoi(Tcl_GetStringResult(interp)));
 }
 
 int canvasy(Tcl_Interp *interp,
@@ -1022,5 +1029,5 @@ int canvasy(Tcl_Interp *interp,
 
   sprintf(cmd, "%s canvasy %.20f", window, val);
   Tcl_Eval(interp, cmd);
-  return (atoi(interp->result));
+  return (atoi(Tcl_GetStringResult(interp)));
 }

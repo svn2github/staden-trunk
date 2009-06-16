@@ -54,7 +54,7 @@ void quick_scan_shutdown(Tcl_Interp *interp,
     seq_deregister(GetSeqNum(result->seq_id[VERTICAL]), quick_scan_callback, (seq_result *)result);
 
     Tcl_VarEval(interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(interp->result);
+    raster_id = atoi(Tcl_GetStringResult(interp));
 
     /* 
      * only bother replotting the raster if there are still results in the
@@ -64,7 +64,7 @@ void quick_scan_shutdown(Tcl_Interp *interp,
 	if (TCL_OK != Tcl_VarEval(interp, "RemoveRasterResultKey ", raster_win,
 				  " {", info.line, "}", NULL))
 	    verror(ERR_WARN, "quick_scan_shutdown", "%s \n", 
-		   interp->result);
+		   Tcl_GetStringResult(interp));
 	
 	/* find original y before reset size */
 	RasterGetWorldScroll(raster, &wx0, &wy0, &wx1, &wy1);
@@ -131,7 +131,7 @@ void quick_scan_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	case 2: /* configure */
 	    sprintf(cmd, "RasterConfig %d", id);
 	    if (TCL_OK != Tcl_Eval(output->interp, cmd)){
-		puts(output->interp->result);
+		puts(Tcl_GetStringResult(output->interp));
 	    }
 	    break;
 	case 3: /* display sequences */
@@ -154,7 +154,7 @@ void quick_scan_callback(int seq_num, void *obj, seq_reg_data *jdata)
 		RasterResult *raster_result;
 
 		Tcl_VarEval(interp, "GetRasterId ", output->raster_win, NULL);
-		raster_id = atoi(interp->result);
+		raster_id = atoi(Tcl_GetStringResult(interp));
 		raster_result = raster_id_to_result(raster_id);
 
 		quick_scan_shutdown(output->interp, seq_num, result, 
@@ -183,7 +183,7 @@ void quick_scan_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    /* determine raster_id and raster_result structure */
 	    Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, 
 			NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 	    raster_result = raster_id_to_result(raster_id);
 
 	    /* 
@@ -264,7 +264,7 @@ void quick_scan_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    /* determine raster_id and raster_result structure */
 	    Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, 
 			NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 	    raster_result = raster_id_to_result(raster_id);
 
 	    if (get_replot_temp()) {
@@ -287,7 +287,7 @@ void quick_scan_callback(int seq_num, void *obj, seq_reg_data *jdata)
 	    /* determine raster_id and raster_result structure */
 	    Tcl_VarEval(output->interp, "GetRasterId ", output->raster_win, 
 			NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 	    raster_result = raster_id_to_result(raster_id);
 
 	    quick_scan_shutdown(output->interp, seq_num, result, 

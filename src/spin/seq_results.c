@@ -1248,11 +1248,11 @@ void SeqReplotResults(Tk_Raster *raster,
 	if (TCL_OK != Tcl_VarEval(output->interp, "rasterRescaleZoom ", 
 				  raster_win, NULL))
 	    verror(ERR_WARN, "SeqReplotResults", "%\n", 
-		   output->interp->result);
+		   Tcl_GetStringResult(output->interp));
     }
 
     Tcl_VarEval(output->interp, "GetRasterId ", raster_win, NULL);
-    raster_id = atoi(output->interp->result);
+    raster_id = atoi(Tcl_GetStringResult(output->interp));
 
     if (NULL == (raster_result = raster_id_to_result(raster_id))) {
 	xfree(data);
@@ -1313,7 +1313,7 @@ void SeqRasterPlotFunc(Tk_Raster *raster,
 	    output = result->output;
 
 	    Tcl_VarEval(output->interp, "GetRasterId ", raster_win, NULL);
-	    raster_id = atoi(output->interp->result);
+	    raster_id = atoi(Tcl_GetStringResult(output->interp));
 
 	    if (NULL == (raster_result = raster_id_to_result(raster_id))) {
 		xfree(data);

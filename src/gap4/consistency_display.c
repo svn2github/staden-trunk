@@ -202,7 +202,7 @@ void consistency_shutdown(GapIO *io, obj_consistency_disp *c) {
 
     sprintf(cmd, "DeleteConsistencyDisplay %s\n", c->frame);
     if (TCL_ERROR == Tcl_Eval(c->interp, cmd))
-	printf("consistency_shutdown:%s\n", c->interp->result);
+	printf("consistency_shutdown:%s\n", Tcl_GetStringResult(c->interp));
 
     if (c->orig_total)
         xfree(c->orig_total);
@@ -363,7 +363,7 @@ void consistencyZoom(obj_consistency_disp *c,
     
       sprintf(cmd, "%s canvasx 0\n", c->win_list[i]->window);
       Tcl_Eval(c->interp, cmd);
-      c->win_list[i]->canvas->x = atoi(c->interp->result);
+      c->win_list[i]->canvas->x = atoi(Tcl_GetStringResult(c->interp));
     }
     xfree(bbox);
 }
@@ -417,7 +417,7 @@ void consistencyZoomback(obj_consistency_disp *c)
       
       sprintf(cmd, "%s canvasx 0", c->win_list[i]->window);
       Tcl_Eval(c->interp, cmd);
-      c->win_list[i]->canvas->x = atoi(c->interp->result);
+      c->win_list[i]->canvas->x = atoi(Tcl_GetStringResult(c->interp));
     }
 
     xfree(zoom);
@@ -445,7 +445,7 @@ void consistency_canvasScrollX(Tcl_Interp *interp,
 	}
 	/* find new left hand edge of canvas in canvasx coords */
 	Tcl_VarEval(interp, win_list[i]->window, " canvasx 0", NULL);
-	win_list[i]->canvas->x = atoi(interp->result);
+	win_list[i]->canvas->x = atoi(Tcl_GetStringResult(interp));
 
 	/* find new left and right edges of canvas in world coords */
 	CanvasToWorld(win_list[i]->canvas, win_list[i]->canvas->x, 0, 
@@ -483,7 +483,7 @@ void consistencyScrollY(Tcl_Interp *interp,
 
     /* find new top edge of canvas in canvasy coords */
     Tcl_VarEval(interp, window, " canvasy 0", NULL);
-    canvas->y = atoi(interp->result);
+    canvas->y = atoi(Tcl_GetStringResult(interp));
 
     /* find new top and bottom edges of canvas in world coords */
     CanvasToWorld(canvas, 0, canvas->y, &wx, &visible->y1);
@@ -517,10 +517,10 @@ void consistency_resizeCanvas(Tcl_Interp *interp,
 			    win_list[i]->canvas->height);
 
 	Tcl_VarEval(interp, "winfo width ", win_list[i]->window, NULL);
-	width = atoi(interp->result) - 1;
+	width = atoi(Tcl_GetStringResult(interp)) - 1;
 
 	Tcl_VarEval(interp, "winfo height ", win_list[i]->window, NULL);
-	height = atoi(interp->result) - 1;
+	height = atoi(Tcl_GetStringResult(interp)) - 1;
 
 #ifdef DEBUG
 	printf("resizeCanvas \n");
@@ -998,7 +998,7 @@ int add_consistency_window(GapIO *io,
     xfree(win_list);
 
     Tcl_VarEval(c->interp, c->win_list[win_num]->window, " canvasx 0", NULL);
-    c->win_list[win_num]->canvas->x = atoi(c->interp->result);
+    c->win_list[win_num]->canvas->x = atoi(Tcl_GetStringResult(c->interp));
 
     return 0;
 }
