@@ -789,6 +789,9 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 	int key = s->rec;
 	int p, p2, l = s->len >= 0 ? s->len : -s->len;
 
+	if (l > xx->displayWidth - (sp-xx->displayPos))
+	    l = xx->displayWidth - (sp-xx->displayPos);
+
 	for (hi = HacheTableSearch(xx->anno_hash,
 			       (char *)&key, sizeof(key));
 	     hi; hi = HacheTableNext(hi, (char *)&key, sizeof(key))) {
