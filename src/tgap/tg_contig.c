@@ -488,7 +488,9 @@ static int sort_range_by_y(const void *v1, const void *v2) {
     const rangec_t *r2 = (const rangec_t *)v2;
     if (r1->y != r2->y)
         return r1->y - r2->y;
-    return r1->start - r2->start;
+    if (r1->start != r2->start)
+    	return r1->start - r2->start;
+    return (r1->flags & GRANGE_FLAG_ISANNO) - (r2->flags & GRANGE_FLAG_ISANNO);
 }
 
 
@@ -635,6 +637,51 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     return 0;
 }
 
+/*
+ * Given sequences with Y positions, this allocates tags to reside
+ * in the same Y coordinate as the sequences they annotate.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int compute_ypos_tags(rangec_t *r, int nr) {
+    int i, key;
+    HacheTable *h = HacheTableCreate(8192, HASH_DYNAMIC_SIZE);
+    HacheData hd;
+
+    if (!h)
+	return -1;
+
+    /* Build an hash of sequence record numbers to Y coordinates. */
+    for (i = 0; i < nr; i++) {
+	if (r[i].flags & GRANGE_FLAG_ISANNO)
+	    continue;
+
+	key = r[i].rec;
+	hd.i = r[i].y;
+	HacheTableAdd(h, (char *)&key, sizeof(key), hd, NULL);
+    }
+
+    /* Iterate through annotations copying over their Y coordinate */
+    for (i = 0; i < nr; i++) {
+	HacheItem *hi;
+
+	if (!(r[i].flags & GRANGE_FLAG_ISANNO))
+	    continue;
+
+	key = r[i].pair_rec;
+	if (!(hi = HacheTableSearch(h, (char *)&key, sizeof(key))))
+	    /* consensus tag */
+	    r[i].y = -1;
+	else
+	    r[i].y = hi->data.i;
+    }
+
+    HacheTableDestroy(h, 0);
+
+    return 0;
+}
+
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
@@ -739,8 +786,10 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
     if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
 	qsort(r, *count, sizeof(*r), sort_range_by_x);
 
-    if (job & CSIR_ALLOCATE_Y)
+    if (job & CSIR_ALLOCATE_Y) {
 	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+	compute_ypos_tags(r, *count);
+    }
 
     if (job & CSIR_SORT_BY_Y)
 	qsort(r, *count, sizeof(*r), sort_range_by_y);
