@@ -548,6 +548,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
 	    /* Save sequence */
 	    seq.bin = bin->rec;
+	    seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
 	    recno = sequence_new_from(io, &seq);
 
 	    if (pair && *ai->ds.tname) {
