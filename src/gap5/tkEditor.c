@@ -739,6 +739,10 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    msg = edGetBriefCon(ed->xx, atoi(argv[3]), atoi(argv[4]), argv[5]);
 	    break;
 
+	case GT_AnnoEle:
+	    msg = edGetBriefTag(ed->xx, atoi(argv[3]), argv[5]);
+	    break;
+
 	default:
 	    msg = "";
 	    break;

@@ -13,6 +13,7 @@
 #include "misc.h"
 #include "consensus.h"
 #include "tagdb.h"
+#include "active_tags.h"
 
 static void redisplaySelection(edview *xx);
 
@@ -168,6 +169,100 @@ static void add_string(char *buf, int *j, int l1, int l2, char *str) {
 	    *j += sprintf(buf + *j, "%.*s", l2, str);
 	else
 	    *j += sprintf(buf + *j, "%s", str);
+}
+
+
+/*
+ * Formats tag information for the status line. This is done using a format
+ * string where certain % rules are replaced by appropriate components.
+ *
+ * %%	Single % sign
+ * %p	Tag position
+ * %t	Tag type (always 4 characters)
+ * %l	Tag length
+ * %#	Tag number (0 if unknown)
+ * %c	Tag comment
+ *
+ * Additionally, some formats (p, l, n and c) can be specified as
+ * %<number><format> (eg %80c) to allow AT MOST that many characters.
+ */
+char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
+    static char status_buf[8192]; /* NB: no bounds checking! */
+    int i, j, l1, l2, raw;
+    char *cp;
+    GapIO *io = xx->io;
+    anno_ele_t *e;
+
+    if (!anno_ele)
+	return "";
+
+    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, anno_ele);
+    
+    for (i = j = 0; format[i]; i++) {
+	char type[5];
+
+	if (format[i] != '%') {
+	    status_buf[j++] = format[i];
+	    continue;
+	}
+
+	l1 = strtol(&format[++i], &cp, 10);
+	i = cp - format;
+	if (format[i] == '.') {
+	    l2 = strtol(&format[++i], &cp, 10);
+	    i = cp - format;
+	} else {
+	    l2 = 0;
+	}
+	if (format[i] == 'R') {
+	    raw = 1;
+	    i++;
+	} else {
+	    raw = 0;
+	}
+
+	switch(format[i]) {
+	case '%':
+	    status_buf[j++] = '%';
+	    break;
+
+	case 't': /* Type */
+	    (void)type2str(e->tag_type, type);
+	    status_buf[j++] = type[0];
+	    status_buf[j++] = type[1];
+	    status_buf[j++] = type[2];
+	    status_buf[j++] = type[3];
+	    break;
+
+	case 'p': { /* Position */
+	    range_t *r = anno_get_range(io, anno_ele, NULL);
+	    add_number(status_buf, &j, l1, l2, r->start);
+	    break;
+	}
+
+	case 'l': { /* Length */
+	    range_t *r = anno_get_range(io, anno_ele, NULL);
+	    add_number(status_buf, &j, l1, l2, r->end - r->start + 1);
+	    break;
+	}
+
+	case '#': /* Number */
+	    add_number(status_buf, &j, l1, l2, e->rec);
+	    break;
+
+
+	case 'c': /* Comment */
+	    add_string(status_buf, &j, l1, l2,
+		       e->comment ? e->comment : "(no comment)");
+	    break;
+
+	default:
+	    status_buf[j++] = format[i];
+	}
+    }
+    status_buf[j] = 0;
+
+    return status_buf;
 }
 
 
@@ -686,6 +781,17 @@ int edview_visible_items(edview *xx, int start, int end) {
 	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
+    /*
+    puts("");
+    for (i = 0; i < xx->nr; i++) {
+	printf("%d\t%d\t%d\t%d\t%s\n",
+	       i, xx->r[i].y,
+	       xx->r[i].rec,
+	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? xx->r[i].pair_rec : 0,
+	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? "tag" : "seq");
+    }
+    */
+
     return 0;
 }
 
@@ -821,7 +927,7 @@ static void tk_redisplaySeqTags(edview *xx, XawSheetInk *ink, seq_t *s,
 	}
     } else {
 	/* Consensus */
-	int i, j, p2;
+	int j, p2;
 	int key = xx->cnum;
 
 	for (hi = HacheTableSearch(xx->anno_hash,
@@ -1907,7 +2013,28 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     if (row == xx->y_cons) {
 	*rec = xx->cnum;
 	*pos = col + xx->displayPos;
-	return GT_Contig;
+	type = GT_Contig;
+
+	if (xx->ed->hide_annos)
+	    return type;
+
+	/* Look for consensus tags */
+	for (i = 0; i < xx->nr; i++) {
+	    if (xx->r[i].y != -1)
+		break;
+
+	    if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
+		continue;
+
+	    if (col + xx->displayPos >= xx->r[i].start &&
+		col + xx->displayPos <= xx->r[i].end) {
+		*rec = xx->r[i].rec;
+		*pos = col + xx->displayPos - xx->r[i].start;
+		type = GT_AnnoEle;
+	    }
+	}
+
+	return type;
     }
 
     if (row < xx->y_seq_start)
@@ -1919,7 +2046,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     for (i = 0; i < xx->nr; i++) {
-	if (xx->r[i].flags & GRANGE_FLAG_ISANNO)
+	if (xx->ed->hide_annos && (xx->r[i].flags & GRANGE_FLAG_ISANNO))
 	    continue;
 
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
@@ -1952,16 +2079,14 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 	    }
 
 	    /* And if this is closest match, use it */
-	    if (best_delta > delta) {
-		best_delta = delta;
+	    if (best_delta >= delta) {
+		best_delta =  delta;
 		*rec = xx->r[i].rec;
 		*pos = col + xx->displayPos - xx->r[i].start;
-		type = GT_Seq;
+		type = xx->r[i].flags & GRANGE_FLAG_ISANNO
+		    ? GT_AnnoEle
+		    : GT_Seq;
 	    }
-
-	    if (!delta)
-		/* Can't get better than perfect hit */
-		break;
 	}
     }
 

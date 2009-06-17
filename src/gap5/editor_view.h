@@ -146,6 +146,12 @@ void ed_set_nslider_pos(edview *xx, int pos);
 int set_displayPos(edview *xx, int pos);
 
 /*
+ * Formats tag information for the status line. This is done using a format
+ * string where certain % rules are replaced by appropriate components.
+ */
+char *edGetBriefTag(edview *xx, int anno_ele, char *format);
+
+/*
  * Formats reading information for the status line. This is done using a format
  * string where certain % rules are replaced by appropriate components.
  */

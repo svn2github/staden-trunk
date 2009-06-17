@@ -1028,20 +1028,34 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
     }
 
     if {$name} {
-	if {$type == 18} {
-	    set msg [$w get_seq_status $type $rec $pos \
-			 [keylget gap5_defs READ_BRIEF_FORMAT]]
-	} else {
-	    set msg [$w get_seq_status $type $rec $pos \
-			 [keylget gap5_defs CONTIG_BRIEF_FORMAT]]
+	switch $type {
+	    18 {
+		set msg [$w get_seq_status $type $rec $pos \
+			     [keylget gap5_defs READ_BRIEF_FORMAT]]
+	    }
+	    17 {
+		set msg [$w get_seq_status $type $rec $pos \
+			     [keylget gap5_defs CONTIG_BRIEF_FORMAT]]
+	    }
+	    21 {
+		set msg "tag in name?"
+	    }
 	}
     } else {
-	if {$type == 18} {
-	    set msg [$w get_seq_status $type $rec $pos \
-			 [keylget gap5_defs BASE_BRIEF_FORMAT1]]
-	} else {
-	    set msg [$w get_seq_status $type $rec $pos \
-			 [keylget gap5_defs BASE_BRIEF_FORMAT2]]
+	switch $type {
+	    18 {
+		set msg [$w get_seq_status $type $rec $pos \
+			     [keylget gap5_defs BASE_BRIEF_FORMAT1]]
+	    }
+	    17 {
+		set msg [$w get_seq_status $type $rec $pos \
+			     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
+	    }
+	    21 {
+		set msg "FIXME: show tag data here"
+		set msg [$w get_seq_status $type $rec $pos \
+			     [keylget gap5_defs TAG_BRIEF_FORMAT]]
+	    }
 	}
     }
 
