@@ -14,6 +14,7 @@
 #include "consensus.h"
 #include "tagdb.h"
 #include "active_tags.h"
+#include "io_utils.h"
 
 static void redisplaySelection(edview *xx);
 
@@ -376,8 +377,16 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'p': {
 	    int cnum, cpos;
 	    if (0 == sequence_get_position(xx->io, s->rec, &cnum, &cpos, NULL,
-					   NULL))
-		add_number(status_buf, &j, l1, l2, cpos);
+					   NULL)) {
+		
+		if (raw || cnum == xx->contig->rec) {
+		    add_number(status_buf, &j, l1, l2, cpos);
+		} else {
+		    char buf[1024];
+		    sprintf(buf, "%d@%s", cpos, get_contig_name(io, cnum));
+		    add_string(status_buf, &j, l1, l2, buf);
+		}
+	    }
 	    break;
 	}
 
@@ -401,7 +410,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	    if (raw)
 		add_number(status_buf, &j, l1, l2, s->len < 0);
 	    else
-		add_string(status_buf, &j, l1, l2, s->len < 0 ? "-" : "+");
+		add_string(status_buf, &j, l1, l2, s->len < 0 ? "<<" : ">>");
 	    break;
 
 	case 'd':
