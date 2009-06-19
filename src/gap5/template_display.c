@@ -451,7 +451,6 @@ static int compute_ypos(template_disp_t *t, int xgap, tline *tl, int ntl) {
     }
 
     while (nleft) {
-	printf("%d..%d left=%d/%d\n", min_sz, max_sz, nleft, ntl);
 	ymax = 0;
 	yn = 0;
 
@@ -945,8 +944,8 @@ int template_replot(template_disp_t *t) {
     gettimeofday(&tv2, NULL);
     t4 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 
-    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs + %5.3fs\n",
-    	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
+    //    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs + %5.3fs\n",
+    //    	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
 
     ny0 = wy0; ny1 = wy1;
     if (t->yzoom != last_zoom) {
