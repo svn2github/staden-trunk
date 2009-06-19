@@ -680,6 +680,7 @@ proc seq_seqs_init {w t} {
     set ${t}(SeparateStrands) 0
     set ${t}(MinQual) 0
     set ${t}(MaxQual) 255
+    set ${t}(MinYSize) 1024
     set ${t}(FilterPair) 0
     set ${t}(FilterConsistent) 0
     set ${t}(FilterSpanning) 0
@@ -727,6 +728,12 @@ proc seq_seqs_init {w t} {
 	-variable ${t}(YOffset) -command "redraw_plot $w seq_seqs"
 
     pack $bc.yzoom $bc.yspread $bc.yoffset -fill both -expand 1 -side left
+
+    scale $bc.minysize -from 100 -to 5000 -resolution 10 -orient horiz \
+	-label "Stacking Y Size" -variable ${t}(MinYSize) \
+	-command "redraw_plot $w seq_seqs"
+
+    pack $bc.minysize -fill both -expand 1 -side left
 
     tk_optionMenu $f1.y ${t}(Y) \
 	{Template Size} \
@@ -1031,19 +1038,20 @@ proc seq_seqs {w t x1 x2 y1 y2} {
     1.5redraw_cursor $w $t
 
     $td configure \
-	-accuracy   [set ${t}(Accurate)] \
-	-logy       [set ${t}(YLog)] \
-	-yoffset    [set ${t}(YOffset)] \
-	-spread     [set ${t}(Spread)] \
-	-ymode      $ymode \
-	-cmode      $cmode \
-	-reads_only [set ${t}(ReadsOnly)] \
-	-by_strand  [set ${t}(SeparateStrands)] \
-	-filter     $flag \
-	-yzoom      [set ${t}(YScale)] \
-	-plot_depth [set ${t}(PlotDepth)] \
- 	-min_qual   [set ${t}(MinQual)] \
- 	-max_qual   [set ${t}(MaxQual)] 
+	-accuracy    [set ${t}(Accurate)] \
+	-logy        [set ${t}(YLog)] \
+	-yoffset     [set ${t}(YOffset)] \
+	-spread      [set ${t}(Spread)] \
+	-ymode       $ymode \
+	-cmode       $cmode \
+	-reads_only  [set ${t}(ReadsOnly)] \
+	-by_strand   [set ${t}(SeparateStrands)] \
+	-filter      $flag \
+	-yzoom       [set ${t}(YScale)] \
+	-plot_depth  [set ${t}(PlotDepth)] \
+ 	-min_qual    [set ${t}(MinQual)] \
+ 	-max_qual    [set ${t}(MaxQual)] \
+	-min_y_size  [set ${t}(MinYSize)]
 
 
     # Set Y scrollbar
