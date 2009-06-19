@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+
 #include "array.h"
 #include "tg_gio.h"
 #include "tg_struct.h"
@@ -330,7 +332,22 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	r_out->rec = recno;
 
 	if (((j+1) & 0xffff) == 0) {
-	    fprintf(stderr, "-- %.2f%%\n", 100.0*(j+1)/mm->n_mapped_reads);
+	    static struct timeval last, curr;
+	    static int first = 0;
+	    long delta;
+	    
+	    gettimeofday(&curr, NULL);
+	    if (first) {
+		last = curr;
+		first = 0;
+	    }
+
+	    delta = (curr.tv_sec - last.tv_sec) * 1000000
+		+ (curr.tv_usec - last.tv_usec);
+	    last = curr;
+
+	    fprintf(stderr, "-- %.2f%% %g sec\n",
+		    100.0*(j+1)/mm->n_mapped_reads, delta/1000000.0);
 
 	    cache_flush(io);
 	}
