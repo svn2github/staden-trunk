@@ -157,4 +157,11 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
  */
 void contig_dump_ps(GapIO *io, contig_t **c, char *fn);
 
+/*
+ * Destroys contig 'rec'.
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int contig_destroy(GapIO *io, int rec);
+
 #endif /* _TG_CONTIG_H_ */
