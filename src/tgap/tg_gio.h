@@ -76,6 +76,9 @@ void *cache_rw(GapIO *io, void *data);
 void cache_incr(GapIO *io, void *data);
 void cache_decr(GapIO *io, void *data);
 
+/* Creates a new item. */
+int cache_item_create(GapIO *io, int type, void *from);
+
 /* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */
 #include "tg_register.h"

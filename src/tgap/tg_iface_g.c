@@ -270,171 +270,6 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
 }
 
 
-#if 0
-/*
- * Data compression routines. These hook into the interlaced-deflate
- * algorithm using in SRF/ZTR.
- */
-
-#define SYM_EOF 256
-static huffman_code_t codes_slx_qual[] = {
-    { 40,  1}, { 10,  5}, {  3,  6}, {  4,  6}, {  5,  6}, { 11,  6},
-    { 12,  6}, { 13,  6}, { 14,  6}, { 15,  6}, { 16,  6}, { 17,  6},
-    { 18,  6}, { 19,  6}, { 20,  6}, { 21,  6}, { 22,  6}, { 23,  6},
-    { 24,  6}, { 25,  6}, { 26,  6}, { 27,  6}, { 29,  6}, { 30,  6},
-    { 31,  6}, {  6,  7}, {  7,  7}, {  8,  7}, {  9,  7}, { 28,  7},
-    { 32,  7}, { 33,  7}, { 34,  7}, { 35,  7}, { 36,  7}, { 37,  7},
-    { 38,  7}, { 39,  7}, {  2, 10}, {229, 13}, {254, 13}, {  0, 15},
-    {  1, 15}, { 41, 15}, { 42, 15}, { 43, 15}, { 44, 15}, { 45, 15},
-    { 46, 15}, { 47, 15}, {'0', 15}, {'1', 15}, {'2', 15}, {'3', 15},
-    {'4', 15}, {'5', 15}, {'6', 15}, {'7', 15}, {'8', 15}, {'9', 15},
-    { 58, 15}, { 59, 15}, { 60, 15}, { 61, 15}, { 62, 15}, { 63, 15},
-    { 64, 15}, {'A', 15}, {'B', 15}, {'C', 15}, {'D', 15}, {'E', 15},
-    {'F', 15}, {'G', 15}, {'H', 15}, {'I', 15}, {'J', 15}, {'K', 15},
-    {'L', 15}, {'M', 15}, {'N', 15}, {'O', 15}, {'P', 15}, {'Q', 15},
-    {'R', 15}, {'S', 15}, {'T', 15}, {'U', 15}, {'V', 15}, {'W', 15},
-    {'X', 15}, {'Y', 15}, {'Z', 15}, { 91, 15}, { 92, 15}, { 93, 15},
-    { 94, 15}, { 95, 15}, { 96, 15}, {'a', 15}, {'b', 15}, {'c', 15},
-    {'d', 15}, {'e', 15}, {'f', 15}, {'g', 15}, {'h', 15}, {'i', 15},
-    {'j', 15}, {'k', 15}, {'l', 15}, {'m', 15}, {'n', 15}, {'o', 15},
-    {'p', 15}, {'q', 15}, {'r', 15}, {'s', 15}, {'t', 15}, {'u', 15},
-    {'v', 15}, {'w', 15}, {'x', 15}, {'y', 15}, {'z', 15}, {123, 15},
-    {124, 15}, {125, 15}, {126, 15}, {127, 15}, {128, 15}, {129, 15},
-    {130, 15}, {131, 15}, {132, 15}, {133, 15}, {134, 15}, {135, 15},
-    {136, 15}, {137, 15}, {138, 15}, {139, 15}, {140, 15}, {141, 15},
-    {142, 15}, {143, 15}, {144, 15}, {145, 15}, {146, 15}, {147, 15},
-    {148, 15}, {149, 15}, {150, 15}, {151, 15}, {152, 15}, {153, 15},
-    {154, 15}, {155, 15}, {156, 15}, {157, 15}, {158, 15}, {159, 15},
-    {160, 15}, {161, 15}, {162, 15}, {163, 15}, {164, 15}, {165, 15},
-    {166, 15}, {167, 15}, {168, 15}, {169, 15}, {170, 15}, {171, 15},
-    {172, 15}, {173, 15}, {174, 15}, {175, 15}, {176, 15}, {177, 15},
-    {178, 15}, {179, 15}, {180, 15}, {181, 15}, {182, 15}, {183, 15},
-    {184, 15}, {185, 15}, {186, 15}, {187, 15}, {188, 15}, {189, 15},
-    {190, 15}, {191, 15}, {192, 15}, {193, 15}, {194, 15}, {195, 15},
-    {196, 15}, {197, 15}, {198, 15}, {199, 15}, {200, 15}, {201, 15},
-    {202, 15}, {203, 15}, {204, 15}, {205, 15}, {206, 15}, {207, 15},
-    {208, 15}, {209, 15}, {210, 15}, {211, 15}, {212, 15}, {213, 15},
-    {214, 15}, {215, 15}, {216, 15}, {217, 15}, {218, 15}, {219, 15},
-    {220, 15}, {221, 15}, {222, 15}, {223, 15}, {224, 15}, {225, 15},
-    {226, 15}, {227, 15}, {228, 15}, {230, 15}, {231, 15}, {232, 15},
-    {233, 15}, {234, 15}, {235, 15}, {236, 15}, {237, 15}, {238, 15},
-    {239, 15}, {240, 15}, {241, 15}, {242, 15}, {243, 15}, {244, 15},
-    {245, 15}, {246, 15}, {247, 15}, {248, 15}, {249, 15}, {250, 15},
-    {251, 15}, {252, 15}, {253, 15}, {255, 15}, {SYM_EOF, 15},
-};
-
-/*
- * Returns block_t pointer on success
- *         NULL on failure.
- */
-block_t *ideflate_encode(unsigned char *data, int len,
-			 int code_set, int rec_size) {
-    /* Encoding */
-    int blk_size = 1<<20;
-    unsigned char *d2 = data;
-    block_t *blk;
-    huffman_codeset_t *cs;
-    static int init_code_sets = 0;
-    huffman_codeset_t *cuser0;
-
-    if (!init_code_sets) {
-	cuser0 = codes2codeset(codes_slx_qual, 
-			       sizeof(codes_slx_qual)/sizeof(huffman_code_t),
-			       CODE_USER);
-	init_code_sets = 1;
-    }
-
-    blk = block_create(NULL, 8192);
-
-    do {
-	int l2 = len > blk_size ? blk_size : len;
-
-	if (code_set != 0)
-	    l2 = len; /* predefined code-sets have final-block bit set */
-	cs = generate_code_set(code_set, rec_size,
-			       d2, l2, /* Data and length */
-			       1,      /* eof */
-			       MAX_CODE_LEN,
-			       0);     /* all codes */
-	if (!cs)
-	    return NULL;
-
-	store_codes(blk, cs, l2 == len);
-	if (code_set != 0) {
-	    blk->data[blk->byte = 0] = 0;  /* starting bit no. preseved */
-	} else {
-	    /*
-	      fprintf(stderr, "codes finished at %d bytes, %d bits\n",
-		    blk->byte, blk->bit);
-	    */
-	}
-
-	huffman_multi_encode(blk, cs, code_set, d2, l2);
-
-	huffman_codeset_destroy(cs);
-	len -= l2;
-	d2  += l2;
-
-    } while (len > 0);
-
-    return blk;
-}
-
-/*
- * Returns block_t ptr on success and sets new_data to point to the byte
- *         immediately following the compressed input.
- *         NULL for failure.
- */
-block_t *ideflate_decode(unsigned char *data, int len, int code_set,
-			 unsigned char **new_data) {
-    huffman_codeset_t *cs = NULL;
-    block_t *blk_in;
-    int bfinal;
-    block_t *out;
-
-    blk_in = block_create(NULL, 1000 + len);
-
-    /* Inefficient; see ztr's compression.c for caching this */
-    if (code_set != 0) {
-	cs = generate_code_set(code_set, 1,  /* no. codes */
-			       NULL, 0,      /* data + size */
-			       1,	     /* eof */
-			       MAX_CODE_LEN,
-			       0);	     /* all_codes */
-	store_codes(blk_in, cs, 1);
-    }
-
-    if (blk_in->bit != 0) {
-	blk_in->data[blk_in->byte] |= data[0];
-	memcpy(&blk_in->data[blk_in->byte+1], data+1, len-1);
-    } else {
-	memcpy(&blk_in->data[blk_in->byte], data, len);
-    }
-
-    /* Do the decoding */
-    do {
-	if (!cs)
-	    cs = restore_codes(blk_in, &bfinal);
-	out = huffman_multi_decode(blk_in, cs);
-	if (!bfinal) {
-	    fprintf(stderr, "Multiple huffman blocks needed in "
-		    "ideflate_decode: not catered for.\n");
-	    block_destroy(out, 0);
-	    return NULL;
-	}
-	huffman_codeset_destroy(cs);
-	cs = NULL;
-
-	break;
-    } while (!bfinal);
-
-    if (new_data)
-	*new_data = data + blk_in->byte + (blk_in->bit != 0);
-
-    return out;
-}
-#endif
-
 /* ------------------------------------------------------------------------ */
 /*
  * Simple interfaces to the underlying g-library. These are very basic, but
@@ -1734,37 +1569,6 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     memset(&last, 0, sizeof(last));
     memset(&last_tag, 0, sizeof(last_tag));
 
-#if 0
-    /* Allocate an index to all the tag types concerned */
-    for (i = 0; i < nr; i++) {
-	GRange r = rng[i];
-	HacheData hd;
-
-	if (!(r.flags & GRANGE_FLAG_ISANNO))
-	    continue;
-
-	HacheTableAdd(h, &r.mqual, sizeof(r.mqual), hd, NULL);
-    }
-    for (ntags = i = 0; i < h->nbuckets; i++) {
-	HacheItem *hi;
-	for (hi = h->bucket[i]; hi; hi = hi->next) {
-	    hi->data.i = ntags++;
-	}
-    }
-
-    /* First write out tag type dictionary */
-    cpt = cpt_orig = malloc(5+ntags*4);
-    cpt += int2u7(ntags, cpt);
-    for (i = 0; i < h->nbuckets; i++) {
-	HacheItem *hi;
-	for (hi = h->bucket[i]; hi; hi = hi->next) {
-	    memcpy(cpt, hi->key, 4);
-	    cpt += 4;
-	}
-    }
-    /* FIXME: add cpt dict to 'out' later on */
-#endif
-
     /* Pack the 6 structure elements to their own arrays */
     for (i = 0; i < 6; i++)
 	cp[i] = cp_orig[i] = malloc(nr * 5);
@@ -1815,31 +1619,8 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     /* Followed by the serialised 6 packed fields themselves */
     for (i = 0; i < 6; i++) {
 	int len = cp[i]-cp_orig[i];
-#if 0
-	/* Run length encoding - doesn't gain us much so skip */
-	int last_sym = 0, count = 0, j;
-
-	for (j = 0; j < len; j++) {
-	    *out++ = cp_orig[i][j];
-	    if (cp_orig[i][j] == last_sym)
-		count++;
-	    else
-		count = 0;
-
-	    if (count >= 2) {
-		int k = 0;
-		while (cp_orig[i][++j] == last_sym && k < 255)
-		    k++;
-		*out++ = k;
-		if (cp_orig[i][j] != last_sym)
-		    j--;
-	    }
-	    last_sym = cp_orig[i][j];
-	}
-#else
 	memcpy(out, cp_orig[i], len);
 	out += len;
-#endif
 	free(cp_orig[i]);
     }
 
@@ -2593,7 +2374,6 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 	break;
 
     case SEQ_FORMAT_CNF1:
-#if 1
 	for (i = j = 0; i < seq_len;) {
 	    unsigned char c = cp[j++];
 	    seq->seq[i++] = "ACGTN*"[c%6]; c /= 6;
@@ -2611,15 +2391,6 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 		    seq->conf[i++] = dup;
 	    }
 	}
-#else
-	for (i = 0; i < seq_len; i++) {
-	    seq->seq[i] = cp[i];
-	}
-	cp += seq_len;
-	for (i = 0; i < seq_len; i++) {
-	    seq->conf[i] = cp[i];
-	}
-#endif
 	break;
 
     case SEQ_FORMAT_CNF4:
@@ -2639,28 +2410,6 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 
 
     return ci;
-}
-
-/* basic MTF code */
-static unsigned char order[256];
-static void reorder_init(void) {
-    int i;
-    for (i = 0; i < 256; i++)
-	order[i] = i;
-}
-static int reorder(int c) {
-    int i;
-    for (i = 0; i < 256; i++) {
-	if (order[i] == c)
-	    break;
-    }
-    if (i == 256)
-	abort();
-
-    memmove(&order[1], &order[0], i);
-    order[0] = c;
-
-    return i;
 }
 
 static cached_item *io_seq_read(void *dbh, GRec rec) {
@@ -2879,7 +2628,6 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	break;
 
     case SEQ_FORMAT_CNF1:
-#if 1
 	for (i = j = 0; i < seq_len; i+=3, j++) {
 	    unsigned char c1 = seq->seq[i];
 	    unsigned char c2 = i+1 < seq_len ? seq->seq[i+1] : 0;
@@ -2889,60 +2637,6 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
 	for (i = 0; i < seq_len; i++) {
 	    *cp++ = seq->conf[i];
 	}
-#else
-#if 1
-    {
-	char tmp[1024], *t = tmp;
-	static huffman_codeset_t *cs = NULL;
-	block_t *blk;
-
-	if (!cs) {
-	    huffman_code_t codes[] = {
-	{  0,  2}, {  1,  2}, {  2,  3}, {  3,  3}, {  4,  6}, { 28,  6},
-	{ 29,  6}, { 30,  6}, { 31,  6}, { 32,  6}, {'T',  6}, {  5,  7},
-	{  6,  7}, { 25,  7}, { 26,  7}, { 27,  7}, { 33,  7}, { 34,  7},
-	{'C',  7}, {'D',  7}, {'G',  7}, {'H',  7}, {  7,  8}, {  8,  8},
-	{ 21,  8}, { 22,  8}, { 23,  8}, { 24,  8}, {'A',  8}, {'B',  8},
-	{'E',  8}, {  9,  9}, { 10,  9}, { 11,  9}, { 16,  9}, { 17,  9},
-	{ 18,  9}, { 19,  9}, { 20,  9}, { 12, 10}, { 13, 10}, { 15, 11},
-	{'m', 12}, {'q', 13}, {'z', 13}, { 14, 15}, { 35, 15}, { 37, 15},
-	{ 43, 15}, { 45, 15}, { 46, 15}, {'0', 15}, {'1', 15}, {'2', 15},
-	{'3', 15}, {'4', 15}, {'5', 15}, {'6', 15}, {'8', 15}, {'L', 15},
-	{'P', 15}, {'a', 15}, {'c', 15}, {'d', 15}, {'e', 15}, {'f', 15},
-	{'g', 15}, {'h', 15}, {'i', 15}, {'n', 15}, {'o', 15}, {'p', 15},
-	{'r', 15}, {'s', 15}, {'t', 15}, {'u', 15}, {256 /* EOF */, 15},
-	    };
-
-	    cs = codes2codeset(codes, sizeof(codes)/sizeof(huffman_code_t), 99);
-	}
-
-	reorder_init();
-	for (i = 0; i < seq_len; i++) {
-	    *t++ = reorder(seq->seq[i]);
-	}
-	reorder_init();
-	for (i = 0; i < seq_len; i++) {
-	    *t++ = reorder(seq->conf[i]);
-	}
-
-	blk = block_create(NULL, 8192);
-	huffman_multi_encode(blk, cs, 99, tmp, seq_len*2);
-
-	//	write(1, blk->data, blk->byte + (blk->bit != 0));
-	//	write(2, tmp, seq_len*2);
-	memcpy(cp, blk->data, blk->byte + (blk->bit != 0));
-	cp += blk->byte + (blk->bit != 0);
-	block_destroy(blk, 0);
-    }
-#else
-	for (i = 0; i < seq_len; i++) {
-	    *cp++ = seq->seq[i];
-	}
-	for (i = 0; i < seq_len; i++) {
-	    *cp++ = seq->conf[i];
-	}
-#endif
-#endif
 	break;
 
     case SEQ_FORMAT_CNF4:
@@ -2980,47 +2674,10 @@ static int io_seq_write(void *dbh, cached_item *ci) {
     return io_seq_write_view(io, seq, ci->view, ci->rec);
 }
 
-#if 0
-static int io_seq_create(void *dbh, void *vfrom) {
-    seq_t *from = vfrom;
-    g_io *io = (g_io *)dbh;
-    GRec rec;
-    GView v;
-
-    rec = allocate(io);
-    v = lock(io, rec, G_LOCK_EX);
-    
-    if (from) {
-	io_seq_write_view(io, from, v, rec);
-    } else {
-	seq_t s;
-	s.bin = 0;
-	s.bin_index = 0;
-	s.pos = 0;
-	s.len = 0;
-	s.left = s.right = 0;
-	s.seq_tech = 0;
-	s.flags = 0;
-	s.parent_rec = 0;
-	s.parent_type = 0;
-	s.mapping_qual = 0;
-	s.anno = NULL;
-	s.name_len = 0;
-	s.name = NULL;
-	s.seq = NULL;
-	s.conf = NULL;
-	io_seq_write_view(io, &s, v, rec);
-    }
-    unlock(io, v);
-
-    return rec;
-}
-#else
 static int io_seq_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
     return allocate(io);
 }
-#endif
 
 static GRec io_seq_index_query(void *dbh, char *name) {
     g_io *io = (g_io *)dbh;

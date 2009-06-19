@@ -1047,7 +1047,6 @@ void *cache_search(GapIO *io, int type, GRec rec) {
     switch (otype) {
     case GT_Seq: {
 	seq_block_t *b = (seq_block_t *)&((cached_item *)hi->data.p)->data;
-	HacheData hd;
 
 	/*
 	 * If this is a child I/O then it's possible this block has partial
@@ -1063,7 +1062,6 @@ void *cache_search(GapIO *io, int type, GRec rec) {
 
     case GT_AnnoEle: {
 	anno_ele_block_t *b = (anno_ele_block_t *)&((cached_item *)hi->data.p)->data;
-	HacheData hd;
 
 	/*
 	 * If this is a child I/O then it's possible this block has partial
@@ -1155,7 +1153,7 @@ static int cache_item_create_anno_ele(GapIO *io, void *from) {
 
     /* FIXME: move this somewhere sensible */
     {
-	anno_ele_t *t, *f = (seq_t *)from;
+	anno_ele_t *t, *f = (anno_ele_t *)from;
 	int slen = sizeof(anno_ele_t) +
 	    (f->comment ? strlen(f->comment) : 0)+1;
 	cached_item *ci = cache_new(GT_AnnoEle, 0, 0, NULL, slen);

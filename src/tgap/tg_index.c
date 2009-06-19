@@ -35,6 +35,10 @@
 #include "ace.h"
 #include "baf.h"
 
+extern int parse_bam(GapIO *io, const char *fn,
+		     int no_tree, int pair_reads, int merge_contigs);
+
+
 /* .dat version format to handle */
 #define DAT_VERSION 3
 

@@ -140,8 +140,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	HacheItem *hi;
 	int paired;
 	library_t *lib = NULL;
-	char type;
-	char *LB = dat_fn;
+	const char *LB = dat_fn;
 	HacheData hd;
 	int new = 0;
 
@@ -173,7 +172,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 
 	/* Fetch library */
 	hd.p = NULL;
-	hi = HacheTableAdd(libs, LB, strlen(LB), hd, &new);
+	hi = HacheTableAdd(libs, (char *)LB, strlen(LB), hd, &new);
 	if (new) {
 	    int lrec;
 	    printf("New library %s\n", LB);

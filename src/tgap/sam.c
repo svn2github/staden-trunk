@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct {
     GapIO *io;
-    char *fn;
+    const char *fn;
     bam_seq_t *seqs;
     int nseq;
     int max_seq;
@@ -228,7 +228,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     library_t *lib = NULL;
     bam_aux_t val;
     char type;
-    char *LB;
+    const char *LB;
     HacheData hd;
     int new = 0;
 
@@ -248,7 +248,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     }
 
     hd.p = NULL;
-    hi = HacheTableAdd(bio->libs, LB, strlen(LB), hd, &new);
+    hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
     if (new) {
 	int lrec;
 	printf("New library %s\n", LB);

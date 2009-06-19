@@ -90,4 +90,20 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos,
 			 int contig_orient);
 
 
+/*
+ * Given a seq_t struct this updates the internal pointers to be valid offsets
+ * into the s->data field. This is useful if the structure has been copied to
+ * a new address.
+ */
+void sequence_reset_ptr(seq_t *s);
+
+/*
+ * Copies the 'f' seq_t struct to the 's' seq_t struct.
+ * Assumes 's' has already been allocated to be large enough to hold 'f'.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int  sequence_copy(seq_t *s, seq_t *f);
+
 #endif /* _TG_SEQUENCE_H_ */
