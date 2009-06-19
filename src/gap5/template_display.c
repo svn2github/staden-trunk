@@ -89,6 +89,8 @@ static Tk_OptionSpec optionSpecs[] = {
      -1, Tk_Offset(template_disp_t, min_qual), 0, 0, 0 /* mask */},
     {TK_CONFIG_INT, "-max_qual", "maxQual", "MaxQual", "255",
      -1, Tk_Offset(template_disp_t, max_qual), 0, 0, 0 /* mask */},
+    {TK_CONFIG_INT, "-min_y_size", "minYSize", "MinYSize", "512",
+     -1, Tk_Offset(template_disp_t, min_sz), 0, 0, 0 /* mask */},
     {TK_OPTION_END}
 };
 
@@ -431,85 +433,114 @@ SPLAY_GENERATE(YTREE, xy_pair, link, y_cmp);
  * The Y-sorted tree holds rows that can be considered as inactive, but
  * will be reused if we have to add another row.
  */
-static int compute_ypos(int xgap, tline *tl, int ntl) {
+static int compute_ypos(template_disp_t *t, int xgap, tline *tl, int ntl) {
     int i;
     struct xy_pair *node, *curr, *next;
     int yn = 0;
+    int min_sz = INT_MIN;
+    int max_sz = t->min_sz;
+    int yoffset = 0, ymax = 0, nleft;
 
     /* Create and initialise X and Y trees */
     struct XTREE xtree = SPLAY_INITIALIZER(&xtree);
     struct YTREE ytree = SPLAY_INITIALIZER(&ytree);
 
-    /* Compute Y coords */
+    nleft = ntl;
     for (i = 0; i < ntl; i++) {
-	if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && tl[i].x[0] >= node->x) {
-	    int try_cull = 0;
+	tl[i].y = -1;
+    }
 
-	    /* We found a node, is it the smallest in y? */
-	    curr = SPLAY_NEXT(XTREE, &xtree, node);
-	    while (curr && tl[i].x[0] >= curr->x) {
-		if (node->y > curr->y)
-		    node = curr;
-		curr = SPLAY_NEXT(XTREE, &xtree, curr);
-	    }
-	    
-	    /* Shift non-smallest y (but < x) to Y-tree */
-	    curr = SPLAY_MIN(XTREE, &xtree);
-	    while (curr && tl[i].x[0] >= curr->x) {
-		next = SPLAY_NEXT(XTREE, &xtree, curr);
-		if (curr != node) {
-		    SPLAY_REMOVE(XTREE, &xtree, curr);
-		    SPLAY_INSERT(YTREE, &ytree, curr);
-		    try_cull = 1;
+    while (nleft) {
+	printf("%d..%d left=%d/%d\n", min_sz, max_sz, nleft, ntl);
+	ymax = 0;
+	yn = 0;
+
+	/* Compute Y coords */
+	for (i = 0; i < ntl; i++) {
+	    if (tl[i].y != -1)
+		continue;
+
+	    if (tl[i].x[3] - tl[i].x[0] + 1 < min_sz ||
+		tl[i].x[3] - tl[i].x[0] + 1 > max_sz)
+		continue;
+	    nleft--;
+
+	    if ((node = SPLAY_MIN(XTREE, &xtree)) != NULL && tl[i].x[0] >= node->x) {
+		int try_cull = 0;
+
+		/* We found a node, is it the smallest in y? */
+		curr = SPLAY_NEXT(XTREE, &xtree, node);
+		while (curr && tl[i].x[0] >= curr->x) {
+		    if (node->y > curr->y)
+			node = curr;
+		    curr = SPLAY_NEXT(XTREE, &xtree, curr);
 		}
-		curr = next;
-	    }
 	    
-	    tl[i].y = node->y;
-	    SPLAY_REMOVE(XTREE, &xtree, node);
-	    node->x = tl[i].x[3] + xgap;
-	    SPLAY_INSERT(XTREE, &xtree, node);
+		/* Shift non-smallest y (but < x) to Y-tree */
+		curr = SPLAY_MIN(XTREE, &xtree);
+		while (curr && tl[i].x[0] >= curr->x) {
+		    next = SPLAY_NEXT(XTREE, &xtree, curr);
+		    if (curr != node) {
+			SPLAY_REMOVE(XTREE, &xtree, curr);
+			SPLAY_INSERT(YTREE, &ytree, curr);
+			try_cull = 1;
+		    }
+		    curr = next;
+		}
+	    
+		tl[i].y = node->y + yoffset;
+		SPLAY_REMOVE(XTREE, &xtree, node);
+		node->x = tl[i].x[3] + xgap;
+		SPLAY_INSERT(XTREE, &xtree, node);
 #if 0
-	    /* Cull Y tree if appropriate to remove excess rows */
-	    if (try_cull) {
-		for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
-		    next = SPLAY_PREV(YTREE, &ytree, curr);
-		    if (curr->y == yn) {
-			SPLAY_REMOVE(YTREE, &ytree, curr);
-			free(curr);
-			yn--;
-		    } else {
-			break;
+		/* Cull Y tree if appropriate to remove excess rows */
+		if (try_cull) {
+		    for (curr = SPLAY_MAX(YTREE, &ytree); curr; curr = next) {
+			next = SPLAY_PREV(YTREE, &ytree, curr);
+			if (curr->y == yn) {
+			    SPLAY_REMOVE(YTREE, &ytree, curr);
+			    free(curr);
+			    yn--;
+			} else {
+			    break;
+			}
 		    }
 		}
-	    }
 #endif
 
-	} else {
-	    /* Check if we have a free y on ytree */
-	    if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
-		SPLAY_REMOVE(YTREE, &ytree, node);
 	    } else {
-		node = (struct xy_pair *)malloc(sizeof(*node));
-		node->y = ++yn;
+		/* Check if we have a free y on ytree */
+		if ((node = SPLAY_MIN(YTREE, &ytree)) != NULL) {
+		    SPLAY_REMOVE(YTREE, &ytree, node);
+		} else {
+		    node = (struct xy_pair *)malloc(sizeof(*node));
+		    node->y = ++yn;
+		    if (ymax < yn)
+			ymax = yn;
+		}
+		tl[i].y = node->y + yoffset;
+		node->x = tl[i].x[3] + xgap;
+		SPLAY_INSERT(XTREE, &xtree, node);
 	    }
-	    tl[i].y = node->y;
-	    node->x = tl[i].x[3] + xgap;
-	    SPLAY_INSERT(XTREE, &xtree, node);
 	}
-    }
 
-    /* Delete trees */
-    for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
-	next = SPLAY_NEXT(XTREE, &xtree, node);
-	SPLAY_REMOVE(XTREE, &xtree, node);
-    }
+	/* Delete trees */
+	for (node = SPLAY_MIN(XTREE, &xtree); node; node = next) {
+	    next = SPLAY_NEXT(XTREE, &xtree, node);
+	    SPLAY_REMOVE(XTREE, &xtree, node);
+	}
 
-    for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
-	next = SPLAY_NEXT(YTREE, &ytree, node);
-	SPLAY_REMOVE(YTREE, &ytree, node);
-    }
+	for (node = SPLAY_MIN(YTREE, &ytree); node; node = next) {
+	    next = SPLAY_NEXT(YTREE, &ytree, node);
+	    SPLAY_REMOVE(YTREE, &ytree, node);
+	}
 
+	min_sz = max_sz;
+	max_sz += t->min_sz;
+	if (max_sz < min_sz+10)
+	    max_sz = min_sz+10;
+	yoffset += ymax;
+    }
     return 0;
 }
 
@@ -550,7 +581,7 @@ int template_replot(template_disp_t *t) {
     tline *tl = NULL;
     int ntl = 0;
     int fwd_col, rev_col;
-    int xgap;
+    double xgap;
 
     Display *rdisp;
     Drawable rdraw;
@@ -580,7 +611,8 @@ int template_replot(template_disp_t *t) {
 
     printf("templates %f to %f\n", wx0, wx1);
 
-    xgap = (int)(10*yz*(wx1-wx0)/width);
+    //xgap = (int)(10*yz*(wx1-wx0)/width);
+    xgap = 100;
 
     wx0 -= tsize;
     wx1 += tsize;
@@ -827,7 +859,7 @@ int template_replot(template_disp_t *t) {
     tv1 = tv2;
     gettimeofday(&tv2, NULL);
     t2 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-	compute_ypos(xgap, tl, ntl);
+	compute_ypos(t, xgap, tl, ntl);
     tv1 = tv2;
     gettimeofday(&tv2, NULL);
     t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;

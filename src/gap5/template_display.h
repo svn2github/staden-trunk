@@ -41,6 +41,7 @@ typedef struct {
     double xhair_pos;
     double yhair_pos;
     int min_qual, max_qual; /* Filter parameters */
+    int min_sz;  /* For stacking mode */
 } template_disp_t;
 
 /* If bit set we filter our this data type */
