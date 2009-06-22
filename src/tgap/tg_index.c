@@ -406,7 +406,7 @@ int main(int argc, char **argv) {
     int no_tree=1, pair_reads=1, append=0, merge_contigs=-1;
     int min_bin_size = MIN_BIN_SIZE;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.1\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.2\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 

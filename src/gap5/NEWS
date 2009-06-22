@@ -1,3 +1,60 @@
+Gap5 1.2.2,  June 22nd 2009
+===========================
+
+Minor bug fix release.
+
+Minor changes
+-------------
+
+
+*	Added a Hide Annotation setting in the contig editor. This is
+        also bound to control-Q (as per Gap4). This allows us a quick
+        way to see the quality values underneath a tag.
+
+*	Annotion contents are now visible in the editor information
+        line, but the "Tag editor" itself still hasn't been ported
+        over from Gap4.
+
+*	Changed SAM reading of LB tags to use TG tags. In practice
+        libraries rarely seem to appear directly in the sequence
+        lines, but instead occur in read-groups. In theory we should
+        then check the main read-group header for LB links from there,
+        but for now treating a library as a group (eg a run or a lane)
+        is perhaps more useful than a genuine library grouping.
+
+*	Lots of internal code tweaking to support newer versions of
+        Tcl/Tk (tested with 8.6b1). For now we still ship with 8.4,
+        but this is the first stage of making the code more portable
+        and easier to build from source.
+
+*	Extra slider (there's too many I know - it's overdue a
+        redesign) in the template display. This governs the "stacking"
+        y-mode, controlling where the data gets binned into groups. Eg
+        every 1k so that templates 0-1000 are stacked together,
+        1000-2000bp are below, 2000-3000 below those, etc.
+
+Bug fixes
+---------
+
+*	Removed a memory corruption when displaying long sequence
+        tags (> 1Kb).
+
+*	Removed issues with diagonal lines appearing at the start
+        of the library insert-size distribution plot.
+
+*	Removed unneeded dependency on C++ (libstdc++.so.5) and
+        FORTRAN (libg2c0.so) libraries.
+
+*	The contig selector window now internally uses more 64-bit
+        integers. This fixes issues where the total contig length grew
+        beyond 2Gb.
+
+*	Initialised more elements in some of the data structures.
+        Previously some parts of range_t struct were
+        uninitialised. Hopefully this resolves some of the random ACE
+        related errors (unknown).
+
+
 Gap5 1.2.1,  June 15th 2009
 ===========================
 
