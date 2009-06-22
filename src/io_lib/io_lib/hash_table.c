@@ -1383,3 +1383,42 @@ char *HashFileExtract(HashFile *hf, char *fname, size_t *len) {
 
     return data;
 }
+
+/*
+ * Iterates through members of a hash table returning items sequentially.
+ *
+ * Returns the next HashItem on success
+ *         NULL on failure.
+ */
+HashItem *HashTableIterNext(HashTable *h, HashIter *iter) {
+    do {
+	if (iter->hi == NULL) {
+	    if (++iter->bnum >= h->nbuckets)
+		break;
+	    iter->hi = h->bucket[iter->bnum];
+	} else {
+	    iter->hi = iter->hi->next;
+	}
+    } while (!iter->hi);
+    
+    return iter->hi;
+}
+
+void HashTableIterReset(HashIter *iter) {
+    if (iter) {
+	iter->bnum = -1;
+	iter->hi = NULL;
+    }
+}
+
+HashIter *HashTableIterCreate(void) {
+    HashIter *iter = (HashIter *)malloc(sizeof(*iter));
+
+    HashTableIterReset(iter);
+    return iter;
+}
+
+void HashTableIterDestroy(HashIter *iter) {
+    if (iter)
+	free(iter);
+}

@@ -33,6 +33,12 @@ typedef struct {
     HashItem **bucket;  /* The bucket "list heads" themselves */
 } HashTable;
 
+/* An iterator on HashTable items */
+typedef struct {
+    int bnum;
+    HashItem *hi;
+} HashIter;
+
 #define HASHFILE_MAGIC ".hsh"
 #define HASHFILE_VERSION "1.00"
 #define HASHFILE_PREPEND -1
@@ -127,6 +133,12 @@ HashItem *HashTableNext(HashItem *hi, char *key, int key_len);
 
 void HashTableStats(HashTable *h, FILE *fp);
 void HashTableDump(HashTable *h, FILE *fp);
+
+/* Iterator prototypes */
+HashIter *HashTableIterCreate(void);
+void HashTableIterDestroy(HashIter *iter);
+HashItem *HashTableIterNext(HashTable *h, HashIter *iter);
+void HashTableIterReset(HashIter *iter);
 
 /* HashFile prototypes */
 uint64_t HashFileSave(HashFile *hf, FILE *fp, int64_t offset);
