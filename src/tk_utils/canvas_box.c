@@ -16,7 +16,7 @@ void
 printCanvas(CanvasPtr *c)
 {
 
-    printf("wd %d ht %d x %d y %d ax %.20f ay %.20f bx %.20f by %.20f\n",
+    printf("wd %d ht %d x %"PRId64" y %"PRId64" ax %.20f ay %.20f bx %.20f by %.20f\n",
 	   c->width, c->height, c->x, c->y, c->ax, c->ay, c->bx, c->by);
 
 }
@@ -62,7 +62,7 @@ initCanvas(Tcl_Interp *interp,
  */
 void
 CanvasToWorld(CanvasPtr *canvas,
-	      int cx, int cy,
+	      int64_t cx, int64_t cy,
 	      double *wx, double *wy)
 {
    *wx = (cx - canvas->bx) / canvas->ax;
@@ -183,7 +183,7 @@ scaleCanvas(Tcl_Interp *interp,
     char cmd[1024];
     double x_origin, y_origin;
     double sf_x, sf_y;
-    int c_x1, c_y1, c_x2, c_y2;
+    int64_t c_x1, c_y1, c_x2, c_y2;
     int i;
 
     c_x1 = canvas->x;
@@ -216,8 +216,8 @@ scaleCanvas(Tcl_Interp *interp,
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 
 	    } else if (x_origin == 0.0 && sf_x == 1.0) {
-		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
-			canvas->x, 0);
+		sprintf(cmd, "%s move %s %"PRId64" %d",
+			win_list[i]->window, tags, canvas->x, 0);
 	    } else {
 		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, x_origin, 0.0, sf_x, 1.0);
@@ -228,8 +228,8 @@ scaleCanvas(Tcl_Interp *interp,
 		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 	    } else if (y_origin == 0.0 && sf_y == 1.0) {
-		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
-			0, canvas->y);
+		sprintf(cmd, "%s move %s %d %"PRId64,
+			win_list[i]->window, tags, 0, canvas->y);
 	    } else {
 		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, y_origin, 1.0, sf_y);
@@ -242,8 +242,8 @@ scaleCanvas(Tcl_Interp *interp,
 		sprintf(cmd, "%s scale %s %.20f %.20f %.20f %.20f", 
 			win_list[i]->window, tags, 0.0, 0.0, 1.0, 1.0);
 	    } else if (x_origin == 0.0 && sf_x == 1.0 && y_origin == 0.0 && sf_y == 1.0){ 
-		sprintf(cmd, "%s move %s %d %d", win_list[i]->window, tags, 
-			canvas->x, canvas->y);
+		sprintf(cmd, "%s move %s %"PRId64" %"PRId64,
+			win_list[i]->window, tags, canvas->x, canvas->y);
 		if (TCL_ERROR == Tcl_Eval(interp, cmd))
 		    verror(ERR_WARN, "moveCanvas", "%s\n",
 			   Tcl_GetStringResult(interp));
@@ -577,7 +577,7 @@ canvasCursorX(Tcl_Interp *interp,
 	      char *label,
 	      char *colour,
 	      int line_width,
-	      int cx,
+	      int64_t cx,
 	      double wx,
 	      win **win_list,
 	      int num_wins)
@@ -585,14 +585,15 @@ canvasCursorX(Tcl_Interp *interp,
     char cmd[1024];
     int i;
 
-    sprintf(cmd, "%s%s configure -text %d\n", frame, label, (int)wx);
+    sprintf(cmd, "%s%s configure -text %"PRId64"\n",
+	    frame, label, (int64_t)wx);
     Tcl_Eval(interp, cmd);
     
     /* draw the cursor in each window */
     for (i = 0; i < num_wins; i++) {
 	/* only draw cursors in x direction */
 	if ((win_list[i]->scroll == 'x') || (win_list[i]->scroll == 'b')) {
-	    sprintf(cmd, "DrawCanvasCursorX %s %s %d %s %d\n", 
+	    sprintf(cmd, "DrawCanvasCursorX %s %s %"PRId64" %s %d\n", 
 		    frame,win_list[i]->window, cx, colour, line_width);
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd))
 		verror(ERR_WARN, "canvasCursorX", "%s\n",
@@ -608,7 +609,7 @@ canvasCursorY(Tcl_Interp *interp,
 	      char *label,
 	      char *colour,
 	      int line_width,
-	      int cy,
+	      int64_t cy,
 	      double wy,
 	      win **win_list,
 	      int num_wins)
@@ -616,14 +617,15 @@ canvasCursorY(Tcl_Interp *interp,
     char cmd[1024];
     int i;
 
-    sprintf(cmd, "%s%s configure -text %d\n", frame, label, (int)wy);
+    sprintf(cmd, "%s%s configure -text %"PRId64"\n",
+	    frame, label, (int64_t)wy);
     Tcl_Eval(interp, cmd);
     
     /* draw the cursor in each window */
     for (i = 0; i < num_wins; i++) {
 	/* only draw cursors in y direction */
 	if ((win_list[i]->scroll == 'y') || (win_list[i]->scroll == 'b')) {
-	    sprintf(cmd, "DrawCanvasCursorY %s %s %d %s %d\n", 
+	    sprintf(cmd, "DrawCanvasCursorY %s %s %"PRId64" %s %d\n", 
 		    frame,win_list[i]->window, cy, colour, line_width);
 	    if (TCL_ERROR == Tcl_Eval(interp, cmd))
 		verror(ERR_WARN, "canvasCursorY", "%s\n",

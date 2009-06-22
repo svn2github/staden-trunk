@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <tcl.h>
+#include <inttypes.h>
 
 #define TASK_CANVAS_SCROLLX         1000
 #define TASK_CANVAS_SCROLLY         1001
@@ -111,8 +112,8 @@ typedef struct CanvasPtr_s {
     double ay;
     double bx;
     double by;
-    int x;    /* canvas pixel value of left hand side */
-    int y;
+    int64_t x;    /* canvas pixel value of left hand side */
+    int64_t y;
 } CanvasPtr;
 
 typedef struct win_s {
@@ -170,7 +171,7 @@ initCanvas(Tcl_Interp *interp,
 
 void
 CanvasToWorld(CanvasPtr *canvas,
-	      int cx, int cy,
+	      int64_t cx, int64_t cy,
 	      double *wx, double *wy);
 
 void
@@ -241,12 +242,12 @@ void deleteWindow(win **win_list, int *num_wins, char *window);
 void free_win_list(win **win_list, int num_wins);
 
 void canvasCursorX(Tcl_Interp *interp, CanvasPtr *canvas, char *frame,
-	      char *label, char *colour, int line_width, int cx,
+	      char *label, char *colour, int line_width, int64_t cx,
 	      double wx, win **win_list, int num_wins);
 
 void canvasCursorY(Tcl_Interp *interp, CanvasPtr *canvas, char *frame,
-	      char *label, char *colour, int line_width, int cx,
-	      double wx, win **win_list, int num_wins);
+	      char *label, char *colour, int line_width, int64_t cy,
+	      double wy, win **win_list, int num_wins);
 
 void
 canvasScrollX(Tcl_Interp *interp,
