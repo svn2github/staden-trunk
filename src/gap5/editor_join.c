@@ -530,7 +530,6 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
 		  int junction) {
     bin_index_t *binl, *binr;
-    int loffset = 0;
     int complement = 0;
     int i, f_a, f_b;
     int start, end;

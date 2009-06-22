@@ -9,6 +9,7 @@
 #include "template_display.h"
 #include "gap_cli_arg.h"
 #include "tree.h"
+#include "tkRaster.h"
 
 static void tdisp_move_xhair(template_disp_t *t, int x, int y,
 			     double *rx, double *ry);
@@ -1008,6 +1009,6 @@ static void tdisp_move_xhair(template_disp_t *t, int x, int y,
 	t->yhair_pos = DBL_MAX;
     }
 
-    RasterRefresh(t->raster);
+    tk_RasterRefresh(t->raster);
 
 }

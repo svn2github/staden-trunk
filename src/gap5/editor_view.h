@@ -135,6 +135,10 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
 		   Editor *ed, edNames *names,
 		   void (*dispFunc)(void *, int, int, int, void *),
 		   Tcl_Interp *interp);
+/*
+ * Deallocates an edview
+ */
+void edview_destroy(edview *xx);
 
 /*
  * Deallocates an edview
@@ -224,5 +228,20 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right);
  *        -1 for failure
  */
 int edJoin(edview *xx);
+
+/*
+ * Populates the cache of visible items in xx->r and xx->nr.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+int edview_visible_items(edview *xx, int start, int end);
+
+/*
+ * X11 Selection handling
+ */
+int edSelectClear(edview *xx);
+void edSelectFrom(edview *xx, int pos);
+void edSelectTo(edview *xx, int pos);
 
 #endif /* _EDITOR_VIEW_H_ */

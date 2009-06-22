@@ -54,7 +54,6 @@
 
 #define DB_FILELEN 256 /* size of the filenames on disk (project.version) */
 		       /* See also select_contig.tcl CheckDBFilename */
-#define FILE_NAME_LENGTH DB_FILELEN /* Length of trace file names */
 
 #define DB_NAMELEN 40  /* size of records in AR file. See also db_namelen
 			  in gap.tcl and the *40's in legacy.f */

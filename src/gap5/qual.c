@@ -57,6 +57,7 @@
 #include "qualP.h"
 #include "misc.h"
 #include "xalloc.h"
+#include "consensus.h"
 
 /* ----- Standalone compilation, when used outside of Gap4 ----- */
 #ifdef QUAL_STANDALONE
