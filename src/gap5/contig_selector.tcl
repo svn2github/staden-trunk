@@ -1307,8 +1307,8 @@ proc ContigSelector { io } {
     label $f.brief
 
     pack $f.buttons.next $f.buttons.zoomin10 $f.buttons.zoomin50 \
-	 $f.buttons.back $f.buttons.cursor -expand yes -side left
-    pack $f$cursor_lx $f$cursor_tx $f$cursor_ly $f$cursor_ty -in $f.buttons -side left -expand yes 
+	 $f.buttons.back $f.buttons.cursor -expand no -side left
+    pack $f$cursor_lx $f$cursor_tx $f$cursor_ly $f$cursor_ty -in $f.buttons -side left -expand yes -fill x
 
     grid columnconfig $f 1 -weight 1
 

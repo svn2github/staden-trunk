@@ -570,8 +570,9 @@ int x_clone_write   (GapIO *io, int n, void *v) { unimp("clone_write"); }
 
 /* ----------------------------------------------------------------------
  */
-int CalcTotalContigLen(GapIO *io) {
-    int len = 0, i;
+int64_t CalcTotalContigLen(GapIO *io) {
+    int64_t len = 0;
+    int i;
     contig_t *c;
 
     for (i = 0; i < NumContigs(io); i++) {

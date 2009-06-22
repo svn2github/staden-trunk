@@ -28,7 +28,7 @@ typedef struct {
     GCardinal next;
 } GAnnotations;
 
-int CalcTotalContigLen(GapIO *io);
+int64_t CalcTotalContigLen(GapIO *io);
 void bell(void);
 
 /* FIXME */

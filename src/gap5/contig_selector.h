@@ -34,7 +34,7 @@ typedef struct {
 int
 find_position_in_DB(GapIO *io, 
 		 int c_num, 
-		 int position);
+		 int64_t position);
 
 void
 PlotRepeats(GapIO *io, 
@@ -58,7 +58,7 @@ update_contig_order(Tcl_Interp *interp,
 		    int cs_id,
 		    int *order_array,
 		    int num_contigs,
-		    int cx);
+		    int64_t cx);
 
 void
 ReOrder(GapIO *io, 

@@ -50,7 +50,7 @@ PlotRepeats(GapIO *io,
     int i;
     char cmd[1024];
     int pos1, pos2;
-    int x1, y1, x2, y2;
+    int64_t x1, y1, x2, y2;
     /* int max_x = 0; */
     int sense1 = 1;
     int sense2 = 1;
@@ -130,12 +130,14 @@ PlotRepeats(GapIO *io,
 	   printf("tag_id %s \n", tag_id);
 	*/
 	if (pos1 > pos2){
-	    sprintf(cmd,"%s create line %d %d %d %d -width %d -capstyle round "
+	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
+		    " %"PRId64" -width %d -capstyle round "
 		    "-tags {num_%d num_%d %s S} -fill %s",
 		    cs->window, x1, y1, x2, y2, width, abs(new_match.c1),
 		    abs(new_match.c2), tag_id, colour);
 	} else {
-	    sprintf(cmd,"%s create line %d %d %d %d -width %d -capstyle round "
+	    sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
+		    " %"PRId64" -width %d -capstyle round "
 		    "-tags \"num_%d num_%d %s S\" -fill %s",
 		    cs->window, y1, x1, y2, x2, width, abs(new_match.c1),
 		    abs(new_match.c2), tag_id, colour);
@@ -163,32 +165,31 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 		int width,                                            /* in */
 		int tick_wd,                                          /* in */
 		int tick_ht,                                          /* in */
-		int offset,                                           /* in */
+		int64_t offset,                                       /* in */
 		char *direction)                                      /* in */
 {
     char cmd[1024];
     int i;
-    int x1 = 1;
-    int x2 = x1;
-    int y1 = 1;
-    int y2 = y1;
+    int64_t x1 = 1;
+    int64_t x2 = x1;
+    int64_t y1 = 1;
+    int64_t y2 = y1;
 
     sprintf(cmd, "%s delete all", win_name);
     Tcl_Eval(interp, cmd);
 
     /* draw first tick */
     if (strcmp(direction, "horizontal")==0){
-	sprintf(cmd, "%s create line %d %d %d %d "
-		"-fill %s -width %d -tags sep_1\n",
+	sprintf(cmd, "%s create line %"PRId64" %"PRId64" %"PRId64" %"PRId64
+		" -fill %s -width %d -tags sep_1\n",
 		win_name, x1, offset-tick_ht, x1, offset+tick_ht,
 		colour, tick_wd);
     } else if (strcmp(direction, "vertical")==0){
-	sprintf(cmd, "%s create line %d %d %d %d "
-		"-fill %s -width %d -tags sep_1\n",
+	sprintf(cmd, "%s create line %"PRId64" %"PRId64" %"PRId64" %"PRId64
+		" -fill %s -width %d -tags sep_1\n",
 		win_name, offset-tick_ht, y1, offset+tick_ht, y1,
 		colour, tick_wd);
     }
-    /* printf("cmd %s \n", cmd); */
     Tcl_Eval(interp, cmd);
 
 #ifdef DEBUG
@@ -210,8 +211,8 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 		  x1, x2);
 		*/
 		/* contig line */
-		sprintf(cmd,"%s create line %d %d %d %d "
-			"-fill %s -width %d "
+		sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
+			" %"PRId64" -fill %s -width %d "
 			"-tags {contig c_%d num_%d hl_%d S}\n",
 			win_name, x1, offset, x2, offset,
 			colour, width, i+1,
@@ -220,14 +221,15 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 	    } else if (strcmp(direction, "vertical")==0){
 		y1 = y2;
 		y2 = clen + y2;
-		sprintf(cmd,"%s create line %d %d %d %d "
-			"-fill %s -width %d "
+		sprintf(cmd,"%s create line %"PRId64" %"PRId64" %"PRId64
+			" %"PRId64" -fill %s -width %d "
 			"-tags {contig c_%d num_%d hl_%d S}\n",
 			win_name, offset, y1, offset, y2,
 			colour, width, i+1,
 			arr(GCardinal, io->contig_order, i),
 			arr(GCardinal, io->contig_order, i));
 	    }
+	    /* printf("cmd %s \n", cmd); */
 	    Tcl_Eval(interp, cmd);
 
 	    /* Store canvas item number in an array containing contig no. */
@@ -241,13 +243,13 @@ display_contigs(Tcl_Interp *interp,                                   /* in */
 
 	    /* tick at end of line */
 	    if (strcmp(direction, "horizontal")==0){
-		sprintf(cmd, "%s create line %d %d %d %d "
-			"-fill %s -width %d -tags sep_%d\n",
+		sprintf(cmd, "%s create line %"PRId64" %"PRId64" %"PRId64
+			" %"PRId64" -fill %s -width %d -tags sep_%d\n",
 			win_name, x2, offset-tick_ht, x2, offset+tick_ht,
 			colour, tick_wd, i+2);
 	    } else if (strcmp(direction, "vertical")==0){
-		sprintf(cmd, "%s create line %d %d %d %d "
-			"-fill %s -width %d -tags sep_%d\n",
+		sprintf(cmd, "%s create line %"PRId64" %"PRId64" %"PRId64
+			" %"PRId64" -fill %s -width %d -tags sep_%d\n",
 			win_name, offset-tick_ht, y2, offset+tick_ht, y2,
 			colour, tick_wd, i+2);
 
@@ -265,15 +267,15 @@ update_contig_order(Tcl_Interp *interp,
 		    int cs_id,
 		    int *contig_array,
 		    int num_contigs,
-		    int cx)
+		    int64_t cx)
 {
     GCardinal *order = ArrayBase(GCardinal, io->contig_order);
     obj_cs *cs;
     int i, j;
     double wx, wy;
-    int left_position;
+    int64_t left_position;
     char cmd[1024];
-    int orig_pos = 0;
+    int64_t orig_pos = 0;
     reg_buffer_start rs;
     reg_buffer_end re;
     reg_order ro;
@@ -398,7 +400,7 @@ find_left_position(GapIO *io,
 
     int num_contigs;
     int cur_contig;
-    int length, prev_len;
+    int64_t length, prev_len;
     int nearest_contig;
     int i;
 
@@ -432,12 +434,12 @@ find_left_position(GapIO *io,
 int
 find_position_in_DB(GapIO *io,
 		    int c_num,
-		    int position)
+		    int64_t position)
 {
     GCardinal *order = ArrayBase(GCardinal, io->contig_order);
     int i;
-    int cur_length = 0;
-    int cur_contig;
+    int64_t cur_length = 0;
+    int64_t cur_contig;
 
     for (i = 0; i < NumContigs(io); i++){
 
@@ -462,8 +464,8 @@ CSLocalCursor(GapIO *io,
 	      double wx)
 {
     int i;
-    int offset = 0;
-    int prev_offset = 0;
+    int64_t offset = 0;
+    int64_t prev_offset = 0;
     int num_contigs;
     GCardinal *order = ArrayBase(GCardinal, io->contig_order);
     int cur_contig;
@@ -495,9 +497,9 @@ DoClipping(GapIO *io,                                                  /* in */
 	   obj_match *match)                                      /* in, out */
 
 {
-    int length[4];
-    int min_length = INT_MAX;
-    int c1_len, c2_len, i;
+    int64_t length[4];
+    int64_t min_length = INT_MAX;
+    int64_t c1_len, c2_len, i;
 
     length[0] = match->length;
     length[1] = length[0];
@@ -854,7 +856,6 @@ contig_selector_reg(Tcl_Interp *interp,
 {
     obj_cs *cs;
     int id;
-    int i;
 
     if (NULL == (cs = (obj_cs *)xmalloc(sizeof(obj_cs))))
 	return 0;
