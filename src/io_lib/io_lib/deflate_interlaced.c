@@ -639,6 +639,9 @@ huffman_codeset_t *codes2codeset(huffman_code_t *codes, int ncodes,
     if (NULL == (cs = (huffman_codeset_t *)malloc(sizeof(*cs))))
 	return NULL;
 
+    if (NULL == (c = (huffman_codes_t *)malloc(sizeof(*c))))
+	return NULL;
+
     cs->codes = (huffman_codes_t **)malloc(sizeof(*cs->codes));
     cs->codes[0] = c;
     cs->ncodes = 1;
@@ -648,9 +651,6 @@ huffman_codeset_t *codes2codeset(huffman_code_t *codes, int ncodes,
     cs->decode_t = NULL;
     cs->decode_J4 = NULL;
     
-    if (NULL == (c = (huffman_codes_t *)malloc(sizeof(*c))))
-	return NULL;
-
     c->codes_static = 1;
     c->max_code_len = MAX_CODE_LEN;
 
