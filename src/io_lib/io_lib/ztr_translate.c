@@ -1014,7 +1014,7 @@ ztr_t *read2ztr(Read *r) {
 Read *ztr2read(ztr_t *ztr) {
     Read *r;
     int i;
-    int done_conf = 0;
+    int done_conf = 0, done_pos = 0;
     int sections = read_sections(0);
 
     /* Allocate */
@@ -1037,6 +1037,7 @@ Read *ztr2read(ztr_t *ztr) {
 		char *offs = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "OFFS");
 		char *type = ztr_lookup_mdata_value(ztr, &ztr->chunk[i], "TYPE");
 		if (!type || 0 == strcmp(type, "PROC")) {
+		//if (type && 0 == strcmp(type, "SLXI")) {
 		    uncompress_chunk(ztr, &ztr->chunk[i]);
 		    ztr_decode_samples_4(ztr, &ztr->chunk[i], r);
 
@@ -1079,6 +1080,7 @@ Read *ztr2read(ztr_t *ztr) {
 	    if (sections & READ_BASES) {
 		uncompress_chunk(ztr, &ztr->chunk[i]);
 		ztr_decode_positions(ztr, &ztr->chunk[i], r);
+		done_pos++;
 	    }
 	    break;
 
@@ -1128,6 +1130,13 @@ Read *ztr2read(ztr_t *ztr) {
 	memset(r->prob_C, 0, r->NBases);
 	memset(r->prob_G, 0, r->NBases);
 	memset(r->prob_T, 0, r->NBases);
+    }
+
+    /* Handle the case when we have no BPOS chunk */
+    if (!done_pos && r->NBases > 0) {
+	r->basePos = (uint_2 *)xrealloc(r->basePos, r->NBases * 2);
+	for (i = 0; i < r->NBases; i++)
+	    r->basePos[i] = i;
     }
 
     r->format = TT_ZTR;
