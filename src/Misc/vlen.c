@@ -65,7 +65,7 @@ int vflen(char *fmt, va_list ap)
 #if defined(NEED_VA_COPY)
     va_list ap_local;
     va_copy(ap_local, ap);
-    #define ap ap_local
+#    define ap ap_local
 #endif
 
     for(cp = fmt; *cp; cp++) {
