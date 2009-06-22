@@ -97,7 +97,8 @@ endif
 #-----------------------------------------------------------------------------
 # Build rules
 
-RLIBS += $(MISC_LIB) $(shell curl-config --libs)
+#RLIBS += $(MISC_LIB) $(shell curl-config --libs)
+RLIBS += $(MISC_LIB) -lcurl
 
 $(LIBS): $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
