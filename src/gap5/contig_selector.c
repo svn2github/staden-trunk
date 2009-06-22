@@ -341,7 +341,7 @@ update_contig_order(Tcl_Interp *interp,
     }
 
     /* draw larger separator tick to show where contig was moved from */
-    sprintf(cmd, "HighlightSeparator %s %d", cs->hori, orig_pos);
+    sprintf(cmd, "HighlightSeparator %s %"PRId64, cs->hori, orig_pos);
     Tcl_Eval(interp, cmd);
 }
 
