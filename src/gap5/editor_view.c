@@ -1534,6 +1534,11 @@ static int showCursor(edview *xx, int x_safe, int y_safe) {
 	for (i = 0; i < xx->nr; i++) {
 	    if (xx->r[i].rec == xx->cursor_rec) {
 		y_pos = xx->r[i].y;
+		if (y_pos == -1) {
+		    y_pos = 0; /* tag on consensus */
+		    xx->cursor_rec = xx->cnum;
+		    xx->cursor_type = GT_Contig;
+		}
 		break;
 	    }
 	}
@@ -1633,13 +1638,29 @@ int set_displayPos(edview *xx, int pos) {
  * cursor_pos and cursor_rec fields.
  */
 void edSetApos(edview *xx) {
-    if (xx->cursor_type == GT_Contig) {
+    switch (xx->cursor_type) {
+    case GT_Contig:
 	xx->cursor_apos = xx->cursor_pos;
-    } else {
+	break;
+
+    case GT_Seq: {
 	int cnum, cpos;
 	sequence_get_position(xx->io, xx->cursor_rec, &cnum, &cpos, NULL,
 			      NULL);
 	xx->cursor_apos = cpos + xx->cursor_pos;
+	break;
+    }
+
+    case GT_AnnoEle: {
+	int cnum;
+	range_t *r = anno_get_range(xx->io, xx->cursor_rec, &cnum);
+	xx->cursor_apos = r->start + xx->cursor_pos;
+	break;
+    }
+
+    default:
+	fprintf(stderr, "Unknown item type in edSetApos(): %d\n",
+		xx->cursor_type);
     }
 
     /* Send a notification of cursor movement */
