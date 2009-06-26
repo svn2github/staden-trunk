@@ -696,7 +696,8 @@ int cache_flush(GapIO *io) {
 		    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 			if (!bn->seq[i]) {
 			    bn->seq[i] = bo->seq[i];
-			    bn->seq[i]->block = bn;
+			    if (bn->seq[i])
+				bn->seq[i]->block = bn;
 			}
 		    }
 
@@ -716,7 +717,8 @@ int cache_flush(GapIO *io) {
 		    for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 			if (!bn->ae[i]) {
 			    bn->ae[i] = bo->ae[i];
-			    bn->ae[i]->block = bn;
+			    if (bn->ae[i])
+				bn->ae[i]->block = bn;
 			}
 		    }
 		    break;
