@@ -5,13 +5,13 @@ LIBS = mutlib
 PROGS= $(LIBS)
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 CXXFLAGS += $(SHLIB_CXXFLAGS) $(MISC_DLL)
 
-INCLUDES_E += $(MUT_INC) $(SEQUTILS_INC) $(IOLIB_INC)
+INCLUDES_E += $(MISC_INC) $(MUT_INC) $(SEQUTILS_INC) $(IOLIB_INC)
 
 DEFINES += -DMUTLIB_EXPORTS -DDYNMAT
 
@@ -87,11 +87,6 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS)
 	$(SHLIB_LDXX) $(SHLIB_LDXXFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(MUT_DEP)
 
 DEPEND_OBJ = $(OBJS)
-
-distsrc: distsrc_dirs
-	-cp -R *.[ch] *.[ch]pp Makefile dependencies $(DIRNAME)
-	mkdir $(DIRNAME)/docs
-	cp docs/*.txt docs/*.doc $(DIRNAME)/docs
 
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)

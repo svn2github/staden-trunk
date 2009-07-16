@@ -4,12 +4,9 @@
 
 PROGS = $(O)/make_weights
 
-SRCROOT=..
-#SRCROOT=/home5/pubseq/share/src
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
-#COPTDEBUG	= -O2
-
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 INCLUDES_E += $(SEQUTILS_INC) $(MISC_INC) $(TEXTUTILS_INC)
 

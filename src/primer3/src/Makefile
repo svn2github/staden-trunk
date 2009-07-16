@@ -2,10 +2,9 @@ LIBS = primer3
 PROGS = $(LIBS) $(O)/primer3_core
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=../..
-
-include	$(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/../..
+include $(SRCROOT)/global.mk
+include ../../system.mk
 
 CFLAGS += $(SHLIB_CFLAGS)
 

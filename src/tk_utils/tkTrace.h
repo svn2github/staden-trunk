@@ -1,7 +1,8 @@
 #ifndef _TK_TRACE_H
 #define _TK_TRACE_H
 
-#include "Read.h"
+#include <io_lib/Read.h>
+
 #include "tk.h"
 #include "postscript.h"
 #include "cli_arg.h"

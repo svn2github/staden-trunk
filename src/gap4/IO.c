@@ -31,7 +31,6 @@
 #include "misc.h"
 #include "array.h"
 #include "bitmap.h"
-#include "licence.h"
 
 /*
  * Low level gap server stuff
@@ -1120,14 +1119,6 @@ int io_write_rd(GapIO *io,	/*  */
     if (r.trace_type==0)
 	r.trace_type = allocate(io,GT_Text);
 
-    if (get_licence_type() == LICENCE_DEMO) {
-	if (r.trace_name < r.trace_type) {
-	    int tmp = r.trace_type;
-	    r.trace_type = r.trace_name;
-	    r.trace_name = tmp;
-	}
-    }
-
     err = TextWrite(io,r.trace_name,file,filelen);
     err = TextWrite(io,r.trace_type,type,typelen);
 
@@ -1280,11 +1271,6 @@ GapIO *open_db(char *project, char *version, int *status, int create,
     GHeaderInfo h;
     char db_fn[1024];
 
-    if (get_licence_type() == LICENCE_VIEWER) {
-	read_only = 1;
-	create = 0;
-    }
-
     *status = OK;
 
     /* Check if database is available for read-write */
@@ -1380,8 +1366,7 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 
 	(void)gap_construct_file(project, file_list[0], version, db_fn);
 	strcat(db_fn, ".log");
-	log_file(get_licence_type() == LICENCE_FULL ? db_fn : NULL,
-		 log_buf);
+	log_file(db_fn, log_buf);
     }
 #endif
 
@@ -1678,26 +1663,6 @@ GapIO *open_db(char *project, char *version, int *status, int create,
 	cache_template_name(io, i, name);
     }
 #endif
-
-    /*
-     * Check we are licenced to use this database.
-     * We are allowed to open new databases and we're allowed to open
-     * databases consisting of "valid" sequences. These may be edited though
-     * so it's not easy to spot them...
-     */
-    if (get_licence_type() == LICENCE_DEMO) {
-	int i;
-	for (i = 1; i <= NumReadings(io); i++) {
-	    GReadings r;
-	    gel_read(io, i, r);
-	    /* Obscure? :-) */
-	    if (!r.trace_name|(r.trace_name<=r.trace_type)|!r.trace_type) {
-		close_db(io);
-		viewer_mode();
-		return open_db(project, version, status, create, read_only);
-	    }
-	}
-    }
 
     if (*status >= 999) {
 	convert_db(io, project, version);

@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
-#include "misc.h"
 
-#include "Read.h"
-#include "traceType.h"
+#include <io_lib/misc.h>
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
 
 #define FULL_TEST 2
 #define TEST 1

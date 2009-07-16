@@ -2,18 +2,14 @@ LIBS = copy_reads
 PROGS = cplib
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-#SRCROOT=/nfs/arran/home5/pubseq/share/src
-SRCROOT=..
-
-include	 $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 COPYREADSBIN=$(O)
 
-#L=$(O)
-
-INCLUDES_E := $(GAP4_INC) $(G_INC) $(TK_INC) \
+INCLUDES_E := $(MISC_INC) $(GAP4_INC) $(G_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(P3_INC) $(INCLUDES_E)
 CFLAGS += $(SHLIB_CFLAGS)
 FFLAGS += $(SHLIB_FFLAGS)

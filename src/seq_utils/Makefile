@@ -6,14 +6,14 @@ LIBS 	= seq_utils
 PROGS	= $(LIBS)
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 CFLAGS += $(SHLIB_CFLAGS) $(SEQ_UTILS_DLL)
 SEQUTILSBIN=$(O)
 
-INCLUDES_E += $(TEXTUTILS_INC)
+INCLUDES_E += $(MISC_INC) $(TEXTUTILS_INC)
 
 #
 # Objects

@@ -4,10 +4,9 @@
 
 PROGS= 	$(O)/qclip
 
-SRCROOT=..
-
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 INCLUDES_E += $(IOLIB_INC) $(TKUTILS_INC)
 

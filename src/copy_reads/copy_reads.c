@@ -20,7 +20,6 @@
 #include "active_tags.h"
 #include "list_proc.h"
 #include "hash_lib.h"
-#include "licence.h"
 
 
 #ifdef _MSC_VER
@@ -1067,10 +1066,6 @@ int tcl_copy_reads(ClientData clientData,
 	{NULL,	0,	0, NULL, 0}
     };
 
-    if (get_licence_type() != LICENCE_FULL) {
-	verror(ERR_FATAL, "copy reads", "ERROR: Unable to copy reads in Demonstation or Viewer mode\n");
-	return TCL_OK;
-    }
     vfuncheader("copy reads");
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv)) {

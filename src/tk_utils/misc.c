@@ -2,12 +2,12 @@
 #include <tk.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <io_lib/traceType.h>
 
 #include "misc.h"
 #include "getfile.h"
 #include "tcl_utils.h"
 #include "capture.h"
-#include "traceType.h"
 #include "cli_arg.h"
 #include "renz_utils.h"
 

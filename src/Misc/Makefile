@@ -5,9 +5,9 @@ LIBS = misc
 PROGS= $(LIBS)
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 CFLAGS += $(SHLIB_CFLAGS) $(MISC_DLL)
 
@@ -52,12 +52,13 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(CORBA_OBJS) $(DEF_FILE) $(
 $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 	$(MKDEFL) $@ $(OBJS)
 
-find.c:
-	ln -s ../io_lib/utils/find.c
+#find.c:
+#	ln -s ../io_lib/utils/find.c
 
 DEPEND_OBJ = $(OBJS)
 
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+
 
 include dependencies

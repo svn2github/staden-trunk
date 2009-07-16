@@ -59,7 +59,6 @@
 #include "clip.h"
 #include "notes.h"
 #include "active_tags.h"
-#include "licence.h"
 #include "read_matrix.h"
 #include "genetic_code.h"
 #include "consistency_display.h"
@@ -139,15 +138,6 @@ OpenDB(ClientData clientData,
 
     io = open_db(args.db_name, args.version, &status, args.create, access);
 
-    /* Licence type may have changed; eg DEMO to VIEWER */
-    {
-	char c[2];
-	c[0] = get_licence_type();
-	c[1] = '\0';
-
-	Tcl_SetVar2(interp, "licence","type", c, TCL_GLOBAL_ONLY);
-    }
-
     if (!io) {
 	Tcl_ResetResult(interp);
 	return TCL_OK; /* caught by calling language */
@@ -226,8 +216,6 @@ CopyDB(ClientData clientData,
 	{NULL,	    0,	     0, NULL, 0}
     };
     int ret;
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("copy database");
 
@@ -2196,8 +2184,6 @@ int MainAssembly(ClientData clientData, Tcl_Interp *interp,
         {NULL,             0,       0,  NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("auto assemble");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -2320,8 +2306,6 @@ DisReadings(ClientData clientData,
 						 duplicate_tags)},
 	{NULL,	     0,	       0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("disassemble readings");
 
@@ -2473,8 +2457,6 @@ BreakContig(ClientData clientData,
     };
     int i;
     int err = 0;
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("break contig");
 
@@ -2808,8 +2790,6 @@ FindLongGels(ClientData clientData,
 	{NULL,	  0,	   0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("suggest long readings");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -2853,8 +2833,6 @@ FindTaqTerminator(ClientData clientData,
 	{"-avg_len", ARG_INT, 1, "350", offsetof(taq_terms_arg, avg_len)},
 	{NULL,	  0,	   0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("solve compressions and stops");
 
@@ -2921,8 +2899,6 @@ tcl_remove_contig_holes(ClientData clientData,
 	{NULL,	  0,	   0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("remove_contig_holes");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -2964,8 +2940,6 @@ DeleteContig(ClientData clientData,
 	{"-contigs", ARG_STR, 1, NULL, offsetof(delete_contig_arg, contig)},
 	{NULL,	  0,	   0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("delete contig");
 
@@ -3066,8 +3040,6 @@ DoubleStrand(ClientData clientData,
 	{NULL,	  0,	   0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("double strand");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -3113,8 +3085,6 @@ FindPrimers(ClientData clientData,
 	{NULL,	         0,	  0, NULL, 0}
     };
     char *res, *primer_defs;
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("suggest primers");
 
@@ -3191,8 +3161,6 @@ PreAssemble(ClientData clientData,
 	{"-files",  ARG_STR, 1, NULL, offsetof(pre_ass_arg, list)},
 	{NULL,	0,	0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("enter preassembled data");
 
@@ -3507,8 +3475,6 @@ int EnterTags(ClientData clientData,
 	{NULL,	    0,	     0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("enter tags");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -3556,8 +3522,6 @@ tcl_assemble_direct(ClientData clientData, Tcl_Interp *interp,
 						     ignore_vec)},
 	{NULL,	     0,	       0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("directed assembly");
 
@@ -3711,8 +3675,6 @@ int tcl_delete_anno_list(ClientData clientData, Tcl_Interp *interp,
     char *cp;
     int anno, pos, count = 0, *anno_av;
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("delete annotations");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -3771,8 +3733,6 @@ tcl_find_probes(ClientData clientData, Tcl_Interp *interp,
 	{NULL,	      0,       0, NULL, 0}
     };
     Tcl_DString dstr;
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("suggest probes");
 
@@ -4121,8 +4081,6 @@ tcl_order_contigs(ClientData clientData,
 	{NULL,	  0,	   0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("order contigs");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -4150,8 +4108,6 @@ tcl_quality_clip(ClientData clientData,
 	{"-quality", ARG_INT, 1, "20", offsetof(qclip_arg, quality)},
 	{NULL,	  0,	   0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("quality clip");
 
@@ -4187,8 +4143,6 @@ tcl_N_clip(ClientData clientData,
 	{"-contigs", ARG_STR, 1, NULL, offsetof(list2_arg, inlist)},
 	{NULL,	  0,	   0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("N-base clip");
 
@@ -4227,8 +4181,6 @@ tcl_quality_clip_ends(ClientData clientData,
 	{NULL,	  0,	   0, NULL, 0}
     };
 
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
-
     vfuncheader("Quality clip ends");
 
     if (-1 == gap_parse_args(a, &args, argc, argv))
@@ -4260,8 +4212,6 @@ tcl_difference_clip(ClientData clientData,
 	{"-tag",     ARG_INT, 1, "0",  offsetof(dclip_arg, tag)},
 	{NULL,	  0,	   0, NULL, 0}
     };
-
-    if (get_licence_type() == LICENCE_VIEWER) return TCL_ERROR;
 
     vfuncheader("difference clip");
 

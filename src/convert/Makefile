@@ -4,12 +4,12 @@
 
 PROGS = $(O)/convert
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
-include $(SRCROOT)/mk/gap4_defs.mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include $(SRCROOT)/gap4/gap4_defs.mk
+include ../system.mk
 
-INCLUDES_E += $(GAPDB_EXT_INC) $(TCL_INC)
+INCLUDES_E += $(MISC_INC) $(GAPDB_EXT_INC) $(TK_INC) $(IOLIB_INC) $(TKUTILS_INC) $(P3_INC) $(TCL_INC)
 CONVERTBIN=$(O)
 
 OBJS = \

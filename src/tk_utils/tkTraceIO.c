@@ -1,11 +1,11 @@
 #include <assert.h>
 #include <string.h>
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
+#include <io_lib/expFileIO.h>
 
 #include "misc.h"
-#include "Read.h"
-#include "expFileIO.h"
 #include "tkTrace.h"
-#include "traceType.h"
 #include "xalloc.h"
 #include "postscript.h"
 #include "trace_print.h"

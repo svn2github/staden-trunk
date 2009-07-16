@@ -4,12 +4,11 @@
 
 PROGS= 	$(O)/get_scf_field
 
-SRCROOT=..
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
-
-INCLUDES_E += $(IOLIB_INC)
+INCLUDES_E += $(MISC_INC) $(IOLIB_INC)
 
 SCFFIELDSRC=$(O)
 

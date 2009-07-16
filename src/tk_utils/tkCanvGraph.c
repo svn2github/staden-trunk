@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <float.h>
-#include <limits.h>
+#include "os.h"
 #include "tkInt.h"
 #include "tkPort.h"
 #include "tkCanvas.h"

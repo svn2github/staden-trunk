@@ -4,11 +4,9 @@
 
 PROGS = $(O)/hetins
 
-#SRCROOT=$(STADENROOT)/src
-SRCROOT=..
-
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 HETINSBIN=$(O)
 

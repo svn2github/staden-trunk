@@ -12,7 +12,6 @@
 
 #include "misc.h" 
 #include "dna_utils.h"
-#include "licence.h"
 
 #define MAX_LINE 2048
 #define MAX_MOTIFS 10000
@@ -593,11 +592,6 @@ int main(int argc, char **argv) {
     min_score = max_score = UNSPECIFIED;
     set_dna_lookup();
     set_char_set(1); /* FIXME DNA*/
-
-    if (check_licence()) {
-	fprintf(stderr, "This program will not work unless you have a full licence.\n");
-	exit(1);
-    }
 
     while ((c = getopt(argc, argv, "o:w:m:c:C:vp")) != -1) {
 	switch (c) {

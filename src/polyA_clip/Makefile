@@ -4,11 +4,9 @@
 
 PROGS= 	$(O)/polyA_clip
 
-SRCROOT=..
-#SRCROOT=/nfs/arran/home5/pubseq/share/src
-
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 INCLUDES_E += $(IOLIB_INC) $(SEQUTILS_INC) $(TKUTILS_INC)
 

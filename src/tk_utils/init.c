@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "user_defaults.h"
-#include "licence.h"
 #include "tclXkeylist.h"
 #include "tclCanvGraph.h"
 #include "tkCanvGraph.h"
@@ -38,21 +37,6 @@ char* GetInterpResult( void )
 
 int Tk_utils_Init(Tcl_Interp *interp) {
     char *s, c[20], *lib = NULL, buf[1024];
-
-    check_licence();
-    c[0] = get_licence_type();
-    c[1] = '\0';
-
-    Tcl_SetVar2(interp, "licence","type", c, TCL_GLOBAL_ONLY);
-    c[0] = get_licence_os();
-    Tcl_SetVar2(interp, "licence","os", c, TCL_GLOBAL_ONLY);
-    Tcl_SetVar2(interp, "licence","hostid", get_licence_id(), TCL_GLOBAL_ONLY);
-    sprintf(c, "%d", get_licence_users());
-    Tcl_SetVar2(interp, "licence", "users", c, TCL_GLOBAL_ONLY);
-    sprintf(c, "%d", get_licence_expire());
-    Tcl_SetVar2(interp, "licence", "expire", c, TCL_GLOBAL_ONLY);
-
-    our_interp = interp;
 
     /* Keyed lists from tclX */
     TclX_KeyedListInit(interp);

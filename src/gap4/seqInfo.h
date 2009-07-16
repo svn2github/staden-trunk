@@ -21,7 +21,7 @@
 #include "os.h"
 #include "array.h"
 
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 
 /*
  * The following structure contains all the useful information

@@ -2,15 +2,9 @@ LIBS = gap5
 PROGS = $(LIBS) $(O)/gap5sh 
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-#SRCROOT=/home5/pubseq/share/src
-#SRCROOT=/nfs/arran/home5/pubseq/share/src
-#REMOTESRC=$(GAP5SRC)
-
-include	 $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
-
-GAP5SRC=$(SRCROOT)/gap5
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 GAP5BIN=$(O)
@@ -18,7 +12,7 @@ GAP5BIN=$(O)
 TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
-INCLUDES_E += -I$(GAP5SRC) $(TGAP_INC) $(TK_INC) \
+INCLUDES_E += $(MISC_INC) $(TGAP_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC)
 	      
 CFLAGS += $(SHLIB_CFLAGS)

@@ -14,7 +14,7 @@
 #include "io_utils.h"
 #include "list_proc.h"
 #include "assemble_direct.h"
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 #include "consen.h"
 #include "gap_globals.h"
 #include "seqInfo.h"

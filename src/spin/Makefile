@@ -6,11 +6,11 @@ LIBS = spin
 PROGS = lib$(LIBS) 
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include	$(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
-INCLUDES_E += $(TK_INC)  $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)
+INCLUDES_E += $(MISC_INC) $(TK_INC)  $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 
 SPINBIN=$(O)

@@ -4,10 +4,9 @@
 
 PROGS = $(O)/find_renz
 
-SRCROOT=..
-#SRCROOT=$(STADENROOT)/src
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 INCLUDES_E += $(SEQUTILS_INC) $(MISC_INC)
 

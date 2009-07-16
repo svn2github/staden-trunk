@@ -2,17 +2,16 @@ LIBS = prefinish
 PROGS = x$(LIBS) $(O)/insert_size_dist $(O)/read_size_dist $(O)/read_conf_dist
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-
-include	 $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 FINBIN=$(O)
 
 #L=$(O)
 
-INCLUDES_E := $(GAP4_INC) $(G_INC) $(TK_INC) \
+INCLUDES_E := $(MISC_INC) $(GAP4_INC) $(G_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(P3_INC) \
 	      $(INCLUDES_E)
 #INCLUDES += -Iprimer3_0_9_test/src/
@@ -48,7 +47,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(FIN_DEP) $(SHLIB_DEP)
 
-include $(SRCROOT)/mk/gap4_defs.mk
+include $(SRCROOT)/gap4/gap4_defs.mk
 ISLIBS=\
 	$(G_LIB) \
 	$(GAP_LIB) \

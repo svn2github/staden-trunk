@@ -16,7 +16,6 @@
 #include "spin_globals.h"
 #include "emboss_input_funcs.h"
 #include "limits.h"
-#include "licence.h"
 #include "sequence_pair_display.h"
 #include "seqed.h"
 #include "sequtils.h"

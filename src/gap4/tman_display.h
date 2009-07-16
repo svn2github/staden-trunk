@@ -1,8 +1,8 @@
 #ifndef _tman_display_h
 #define _tman_display_h
 
+#include <io_lib/Read.h>
 #include "os.h"
-#include "Read.h"
 #include "IO.h"         /* IMPORT - FILE_NAME_LENGTH */
 #include "tkTrace.h"
 

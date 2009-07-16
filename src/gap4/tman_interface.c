@@ -33,7 +33,7 @@
 #include "tman_display.h"
 #include "contigEditor.h"
 #include "edStructs.h"
-#include "Read.h"
+#include <io_lib/Read.h>
 #include "os.h"
 #include "misc.h"
 #include "array.h"

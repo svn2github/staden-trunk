@@ -10,12 +10,12 @@ PROGS= $(LIBS)
 endif
 PROGLIBS=$(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
-INCLUDES_E += $(TKUTILS_INC) $(IOLIB_INC) $(TK_INC) $(SEQUTILS_INC) \
-	$(BIOLIMS_INC) $(PNG_INC)
+INCLUDES_E += $(MISC_INC) $(TKUTILS_INC) $(IOLIB_INC) $(TK_INC) \
+	      $(SEQUTILS_INC) $(BIOLIMS_INC) $(PNG_INC)
 
 CFLAGS += $(SHLIB_CFLAGS) $(TK_UTILS_DLL)
 
@@ -52,10 +52,6 @@ OBJS = \
 	$(TKUTILSBIN)/canvas_box.o \
 	$(TKUTILSBIN)/ruler_tick.o \
 	$(TKUTILSBIN)/restriction_enzyme_map.o \
-	$(TKUTILSBIN)/check_licence.o\
-	$(TKUTILSBIN)/licence_utils.o\
-	$(TKUTILSBIN)/valid_seq.o\
-	$(TKUTILSBIN)/md52.o\
 	$(TKUTILSBIN)/container_cmds.o\
 	$(TKUTILSBIN)/container.o\
 	$(TKUTILSBIN)/container_ruler.o\
@@ -68,7 +64,7 @@ OBJS = \
 #
 # Main dependency
 #
-$(LIBS) : .links $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
 TKU_LIBS = \
@@ -102,21 +98,6 @@ STASH_LIBS = \
 $(TKUTILSBIN)/stash: $(STASH_OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMWIN) $(STASH_OBJS) $(STASH_LIBS) $(LIBSC)
 endif
-
-.PRECIOUS:	.links
-.links:
-	-ln -s ../licence/boxes.h .
-	-ln -s ../licence/licence.h .
-	-ln -s ../licence/check_licence.c .
-	-ln -s ../licence/licence_utils.c .
-	-ln -s ../licence/licence_utils.h .
-	-ln -s ../licence/md52.c .
-	-ln -s ../licence/md52.h .
-	-ln -s ../licence/valid_seq.c .
-	-ln -s ../tcl8.4.6/unix/tclAppInit.c .
-	-ln -s ../tk8.4.6/winMain.c .
-	touch .links
-	$(MAKE) $(MFLAGS)
 
 # Copy the tk_utils source
 distsrc: distsrc_dirs

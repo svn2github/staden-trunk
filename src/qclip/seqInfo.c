@@ -27,10 +27,11 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <io_lib/expFileIO.h>
+#include <io_lib/scf_extras.h>
+#include <io_lib/misc.h>
+
 #include "seqInfo.h"
-#include "expFileIO.h"
-#include "scf_extras.h"
-#include "misc.h"
 
 /*
  * Usage: verror(priority, name, format, args...);

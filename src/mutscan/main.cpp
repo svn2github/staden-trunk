@@ -458,17 +458,6 @@ int main( int argc, char* argv[] )
 
 
 
-            // Check for licence
-            char* pSeq = exp_get_entry( pExpFile, EFLT_SQ );
-            if( !valid_seq(pSeq,0) )
-            {
-                std::fprintf( stderr, "File %s is not allowed in demonstration mode.\n", p );
-                std::fflush( stderr );
-                continue;
-            }
-
-
-
             // Extract PR record, gives us strand direction
             int PR = 0;
             if( exp_get_int(pExpFile,EFLT_PR,&PR) )

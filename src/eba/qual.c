@@ -5,10 +5,11 @@
 #include <string.h>
 #include <math.h>
 
-#include "Read.h"
+#include <io_lib/Read.h>
+#include <io_lib/open_trace_file.h>
+#include <io_lib/misc.h>
+
 #include "conf.h"
-#include "open_trace_file.h"
-#include "misc.h"
 
 static int combined[] = {
     /*   0 */ 3,

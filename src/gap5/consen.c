@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include "io_utils.h"
 #include "IO.h"
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 #include "misc.h"
 #include "consen.h"
 #include "gap_globals.h"

@@ -18,10 +18,8 @@
 
 #include "misc.h" 
 #include "dna_utils.h"
-#include "scf.h"
-#include "expFileIO.h"
-#include "dna_utils.h"
-#include "licence.h"
+#include <io_lib/scf.h>
+#include <io_lib/expFileIO.h>
 #include "getfile.h"
 
 #define NORMAL_MODE 0
@@ -676,17 +674,6 @@ int do_it_con ( char *vector_seq, int max_vector,
 	      seq_length = strlen ( seq );
 	      ql = 0;
 	      qr = seq_length + 1;
-
-	      /*
-	       * Check sequence validity (for demo mode). For speed, only
-	       * bother for first pass around (first "vector" file).
-	       */
-	      if (vfile_num == 0 && !valid_seq(seq, 0)) {
-		  eret = vep_error(fp_f, expt_file_name, 6);
-		  exp_destroy_info(e);
-		  file_names[file_num] = NULL;
-		  continue;
-	      }
 
 	      if ( exp_Nentries ( e, EFLT_QL )) {
 		expline = exp_get_entry ( e, EFLT_QL );

@@ -1,0 +1,83 @@
+# Override the old bits that depended on $(MACHINE)
+PWD=@PWD@
+SRCROOT=$(PWD)/@srcdir@
+O=.
+L=$(PWD)/lib
+
+#-----------------------------------------------------------------------------
+# Third party package dependencies
+
+#-- libcurl
+CURL_LIB          = @LIBCURL@
+CURL_INC          = @LIBCURL_CPPFLAGS@
+
+#-- zlib
+ZLIB_LIB          = @ZLIB_LDFLAGS@
+ZLIB_INC          = @ZLIB_CFLAGS@
+#ZLIB_VERSION     = @ZLIB_VERSION@
+
+#-- samtools 
+SAMTOOLS_LIB      = @SAMTOOLS_LDFLAGS@
+SAMTOOLS_INC      = @SAMTOOLS_CFLAGS@
+#SAMTOOLS_VERSION = @SAMTOOLS_VERSION@
+
+#-- staden-io_lib
+IOLIB_LIB	  = @IO_LIB_LDFLAGS@
+IOLIB_INC	  = @IO_LIB_CFLAGS@
+
+#-- X windows
+X_LIB		  = @X_LIBS@
+INCLUDES         += @X_CFLAGS@
+
+#-- Tcl/Tk
+#TCL_INC	  = @TCL_INCLUDE_SPEC@
+TCL_INC		  = @TCL_INCLUDES@
+TCL_LIB		  = @TCL_LIB_SPEC@
+#TCL_LIB	  = @TCL_LIB_SPEC@ @TCL_LIBS@
+
+#TK_INC		  = @TK_INCLUDE_SPEC@ $(TCL_INC)
+TK_INC		  = @TK_INCLUDES@ $(TCL_INC)
+TK_LIB		  = @TK_LIB_SPEC@ $(TCL_LIB)
+#TK_LIB		  = @TK_LIB_SPEC@ @TK_LIBS@ $(TCL_LIB)
+
+
+
+
+#-----------------------------------------------------------------------------
+# Compiler/linking options
+
+CC		  = @CC@
+CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES)
+CXX		  = @CXX@
+CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
+CPP		  = @CPP@
+CPPFLAGS	  = @CPPFLAGS@
+LDFLAGS		  = -L$(L) @LDFLAGS@
+
+#EXTRA_LIBS	  = @LIBS@
+
+
+# Large file support
+# (Enabled automatically due to AC_SYS_LARGEFILE & AC_FUNC_FSEEKO ?)
+
+# Dynamic linking options. These mainly come from querying how Tcl worked.
+# Note for windows we'll need to change SHLIB_PREFIX. (TODO)
+# Do we also need to add SHLIB_SONAME somewhere? On irix this is:
+# SHLIB_SONAME = $(@:$(L)/%=-soname %)
+#
+SHLIB_CFLAGS      = @TCL_SHLIB_CFLAGS@
+SHLIB_LD          = @TCL_SHLIB_LD@
+SHLIB_LDFLAGS     = $(CFLAGS) $(LDFLAGS)
+SHLIB_PREFIX      = lib
+SHLIB_SUFFIX      = @TCL_SHLIB_SUFFIX@
+SHLIB_SONAME      =
+SHLIB_OUTFLAG     = -o $(SPACE)
+EXTRA_LIBS       += @TCL_DL_LIBS@
+
+# Best guess for C++
+SHLIB_CXXFLAGS    = $(SHLIB_CFLAGS)
+SHLIB_LDXX        = $(CXX) -shared ${CXXFLAGS} ${LDFLAGS}
+SHLIB_LDXXFLAGS   = $(SHLIB_LDFLAGS)
+
+# Best guess for fortran
+SHLIB_FFLAGS      = $(SHLIB_CFLAGS)

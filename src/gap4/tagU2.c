@@ -42,7 +42,7 @@
 #include "IO.h"
 #include "io_utils.h"
 #include "gap-dbstruct.h"
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 #include "text_output.h"
 #include "dbcheck.h"
 #include "active_tags.h"

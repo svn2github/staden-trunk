@@ -25,8 +25,8 @@
 #include "misc.h"
 #include "gap-create.h" /* IMPORT: cpdb */
 #include "io-reg.h"
-#include "Read.h"
-#include "scf_extras.h"
+#include <io_lib/Read.h>
+#include <io_lib/scf_extras.h>
 #include "FtoC.h"
 #include "contig_selector.h"
 #include "clones.h"

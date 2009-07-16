@@ -1,4 +1,4 @@
-#include "scf.h"
+#include <io_lib/scf.h>
 
 /*
  * MODULE    SeqQual12

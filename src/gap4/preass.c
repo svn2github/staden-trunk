@@ -7,7 +7,7 @@
 #include "array.h"
 #include "io_utils.h"
 #include "tagUtils.h"
-#include "scf_extras.h"
+#include <io_lib/scf_extras.h>
 #include "preass.h"
 #include "text_output.h"
 #include "clones.h"

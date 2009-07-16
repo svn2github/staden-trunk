@@ -16,8 +16,8 @@
 #ifndef _SEQINFO_H_
 #define _SEQINFO_H_
 
-#include "array.h"
-#include "expFileIO.h"
+#include <io_lib/array.h>
+#include <io_lib/expFileIO.h>
 
 #define DB_NAMELEN 32
 

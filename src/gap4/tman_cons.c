@@ -3,11 +3,11 @@
 
 #include "tman_interface.h"
 #include "edUtils.h"
-#include "Read.h"
+#include <io_lib/Read.h>
 #include "misc.h"
 #include "gap_globals.h"
 #include "tcl_utils.h"
-#include "traceType.h"
+#include <io_lib/traceType.h>
 #include "tclXkeylist.h"
 #include "tkTraceIO.h"
 

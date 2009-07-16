@@ -32,10 +32,8 @@
 
 #include "misc.h" 
 #include "dna_utils.h"
-#include "scf.h"
-#include "expFileIO.h"
-#include "dna_utils.h"
-#include "licence.h"
+#include <io_lib/scf.h>
+#include <io_lib/expFileIO.h>
 #include "getfile.h"
 /*#include "vector_clip.h"*/
 
@@ -895,12 +893,6 @@ int do_it_3p ( FILE *fp_i, FILE *fp_p, FILE *fp_f,
 		seq = exp_get_entry ( e, EFLT_SQ );
 		seq_length = strlen ( seq );
 
-		if (!valid_seq(seq, 0)) {
-		    eret = vep_error(fp_f, file_name, 17);
-		    exp_destroy_info ( e );
-		    continue;
-		}
-
 		if ( exp_Nentries ( e, EFLT_PD )) {
 		    primer = exp_get_entry ( e, EFLT_PD );
 		    primer_length = strlen(primer);
@@ -1060,12 +1052,6 @@ int do_it_sv ( char *vector_seq, int max_vector,
 
 		seq = exp_get_entry ( e, EFLT_SQ );
 		seq_length = strlen ( seq );
-
-		if (!valid_seq(seq, 0)) {
-		    eret = vep_error(fp_f, file_name, 17);
-		    exp_destroy_info ( e );
-		    continue;
-		}
 
 		if ( seq_length < MIN_USEFUL ) {
 		    eret =  vep_error ( fp_f, file_name, 3 );
@@ -1370,11 +1356,6 @@ int do_it_sv_pvf ( char *vector_seq, int max_vector,
 		seq = exp_get_entry ( e, EFLT_SQ );
 		seq_length = strlen ( seq );
 	      
-		if (!valid_seq(seq, 0)) {
-		    eret = vep_error(fp_f, file_name, 17);
-		    goto next_file;
-		}
-
 		if ( seq_length < MIN_USEFUL ) {
 		    eret =  vep_error ( fp_f, file_name, 3 );
 		    goto next_file;
@@ -1764,12 +1745,6 @@ int do_it_tr ( char *vector_seq, int max_vector,
 
 	      seq = exp_get_entry ( e, EFLT_SQ );
 	      seq_length = strlen ( seq );
-
-	      if (!valid_seq(seq, 0)) {
-		  eret = vep_error(fp_f, file_name, 17);
-		  exp_destroy_info ( e );
-		  continue;
-	      }
 
 	      if ( seq_length < MIN_USEFUL ) {
 		eret =  vep_error ( fp_f, file_name, 3 );
@@ -2246,12 +2221,6 @@ int do_it_cv ( char *vector_seq, int max_vector,
 		seq_length = strlen ( seq );
 		ql = 0;
 		qr = seq_length + 1;
-
-		if (!valid_seq(seq, 0)) {
-		    eret = vep_error(fp_f, file_name, 17);
-		    exp_destroy_info ( e );
-		    continue;
-		}
 
 		if ( exp_Nentries ( e, EFLT_QL )) {
 		    expline = exp_get_entry ( e, EFLT_QL );
@@ -2825,12 +2794,6 @@ int do_it_vr ( char *vector_seq, int max_vector,
 		seq_length = strlen ( seq );
 		ql = 0;
 		qr = seq_length + 1;
-
-		if (!valid_seq(seq, 0)) {
-		    eret = vep_error(fp_f, file_name, 17);
-		    exp_destroy_info ( e );
-		    continue;
-		}
 
 		if ( exp_Nentries ( e, EFLT_QL )) {
 		    expline = exp_get_entry ( e, EFLT_QL );

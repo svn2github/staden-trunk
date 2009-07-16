@@ -25,7 +25,6 @@
 #include "sip_sim.h"
 #include "sequtils.h"
 #include "tkRaster.h"
-#include "licence.h"
 
 /*
  * display the expected and observed scores

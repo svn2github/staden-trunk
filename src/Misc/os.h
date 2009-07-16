@@ -16,6 +16,7 @@
 
 #include <limits.h>
 #include <inttypes.h>
+#include <staden_config.h>
 
 
 /*
@@ -33,6 +34,16 @@
 #define PRIu32 "u"
 #define PRIu16 "u"
 #define PRIu8  "u"
+#endif
+
+/*
+ * FIXME: most of this should be replaced by autoconf now.
+ * Still a work in progress.
+ */
+#ifdef WORDS_BIGENDIAN
+#    define SP_BIG_ENDIAN
+#else
+#    define SP_LITTLE_ENDIAN
 #endif
 
 

@@ -11,15 +11,16 @@
 #include <math.h>
 #include <X11/Xutil.h>
 #include <png.h>
+#include <io_lib/Read.h>
+#include <io_lib/traceType.h>
+
 #include "tk_defs.h"
 
 #include "os.h"
 #include "tkTrace.h"
-#include "Read.h"
 #include "tkTraceIO.h"
-#include "traceType.h"
-#include "misc.h"
 #include "trace_print.h"
+#include "misc.h"
 #include "split.h"
 #include "tcl_utils.h"
 

@@ -18,23 +18,22 @@
 #include <stdio.h>
 #include <string.h> /* IMPORT: strchr, strdup */
 
-#include "expFileIO.h"
-#include "traceType.h"
+#include <io_lib/expFileIO.h>
+#include <io_lib/traceType.h>
 #include "os.h"
 
 #include "seqInfo.h"
 #include "array.h"
-#include "scf_extras.h"
+#include <io_lib/scf_extras.h>
 
 #include "misc.h"   /* IMPORT: strdup */
 #include "FtoC.h"
 #include "xalloc.h"
 #include "IO.h"
-#include "licence.h"
 #include "parse_ft.h"
 #include "tagUtils.h"
 #include "tagdb.h"
-#include "open_trace_file.h"
+#include <io_lib/open_trace_file.h>
 
 #ifdef USE_BIOLIMS
 #include "spBiolims.h"
@@ -638,15 +637,6 @@ SeqInfo *read_sequence_details(char *filename, int ignore_vec)
 	    si->e = e;
 	    si->length = strlen(exp_get_entry(e,EFLT_SQ));
 	    determine_active_region(e, &si->start, &si->end, ignore_vec);
-	}
-
-	/* Is this valid in demo mode? */
-	if (!valid_seq(exp_get_entry(e, EFLT_SQ), 0)) {
-	    verror(ERR_WARN, "read_sequence_details",
-		   "File %s is not allowed in demonstration mode",
-		   filename);
-	    exp_destroy_info(e);
-	    return NULL;
 	}
 
 	/* orig pos and conf. values */

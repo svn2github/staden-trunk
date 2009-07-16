@@ -6,9 +6,11 @@ LIBS 	= g
 PROGS	= $(LIBS)
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-include $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
+
+INCLUDES_S += $(MISC_INC)
 
 # CACHE_FREETREE makes Gap4 append the freetree data structure to the end of
 # the .aux file when a database is shutdown. Similarly it's loaded on database

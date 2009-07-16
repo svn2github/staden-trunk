@@ -5,7 +5,6 @@
 
 #include "copy_db.h"
 #include "misc.h"
-#include "licence.h"
 #include "gap-create.h"
 
 #ifdef _MSC_VER
@@ -37,8 +36,6 @@ int main(int argc, char **argv) {
 
     extern int gap_fatal_errors;
     extern int maxdb;
-
-    check_licence();
 
     maxdb = 20000;
 

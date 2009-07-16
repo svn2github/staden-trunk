@@ -6,13 +6,13 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
-#include "Read.h"
-#include "expFileIO.h"
-#include "errno.h"
-#include "misc.h"
-#include "open_trace_file.h"
-#include "mFILE.h"
+#include <io_lib/Read.h>
+#include <io_lib/expFileIO.h>
+#include <io_lib/misc.h>
+#include <io_lib/open_trace_file.h>
+#include <io_lib/mFILE.h>
 
 double avg_qual(Read *r) {
     double aq = 0.0;

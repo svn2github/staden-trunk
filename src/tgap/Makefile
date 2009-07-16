@@ -3,18 +3,15 @@ PROGS = $(LIBS) $(PROGBINS)
 PROGBINS= $(O)/tg_index $(O)/tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-#SRCROOT=/home5/pubseq/share/src
-#REMOTESRC=$(GAP4SRC)
-
-include	$(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 TGAPBIN=$(O)
 
-INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(IOLIB_INC)\
-	-I$(SRCROOT)/samtools-0.1.2-$(MACHINE) -I$(SRCROOT)/tgap
+INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
+	$(IOLIB_INC) $(SAMTOOLS_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For gprof profiling
@@ -96,7 +93,7 @@ TGILIBS = \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
 	$(TCL_LIB) \
-	-L../samtools-0.1.2-$(MACHINE) -lbam
+	$(SAMTOOLS_LIB)
 
 $(O)/tg_index: $(TG_IND_OBJ) $(LIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)

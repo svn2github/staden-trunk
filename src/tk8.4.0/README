@@ -1,4 +1,0 @@
-This directory contains a few files taken from the Tk
-distribution to aid compilation of the Staden Package.
-(Ie necessary header files that often do not get
-installed.)

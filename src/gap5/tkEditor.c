@@ -21,7 +21,6 @@
 #include "tcl_utils.h"
 //#include "edCommands.h"
 //#include "contigEditor.h"
-#include "licence.h"
 #include "gap_globals.h"
 #include "dstring.h"
 #include "gap4_compat.h"

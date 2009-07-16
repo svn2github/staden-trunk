@@ -22,7 +22,6 @@
 #include "tcl_utils.h"
 #include "edCommands.h"
 #include "contigEditor.h"
-#include "licence.h"
 #include "gap_globals.h"
 #include "dstring.h"
 
@@ -622,9 +621,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edCursorDown(ed->xx);
 
     } else if ('t' == *argv[1] && strcmp(argv[1], "transpose_left") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " transpose_left\"",
@@ -636,9 +632,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    bell();
 
     } else if ('t' == *argv[1] && strcmp(argv[1], "transpose_right") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " transpose_right\"",
@@ -650,9 +643,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    bell();
 
     } else if ('d' == *argv[1] && strcmp(argv[1], "delete_key") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " delete_key\"",
@@ -664,9 +654,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    bell();
 
     } else if ('d' == *argv[1] && strcmp(argv[1], "delete_left_key") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " delete_left_key\"",
@@ -679,9 +666,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     } else if ('e' == *argv[1] && strcmp(argv[1], "edit_key") == 0) {
 	char key, nomove = 0;
-
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
 
 	if (argc != 3 && argc != 4) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -703,9 +687,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     } else if ('s' == *argv[1] && strcmp(argv[1], "set_confidence") == 0) {
 	int val;
 
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " set_confidence value\"",
@@ -723,9 +704,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     } else if ('i' == *argv[1] && strcmp(argv[1], "increment_confidence")==0) {
 	int val;
-
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
 
 	if (argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -798,9 +776,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edEndContig(ed->xx);
 
     } else if ('e' == *argv[1] && strcmp(argv[1], "extend_left") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " extend_left\"",
@@ -811,9 +786,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edExtendLeft(ed->xx);
 
     } else if ('e' == *argv[1] && strcmp(argv[1], "extend_right") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " extend_right\"",
@@ -824,9 +796,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edExtendRight(ed->xx);
 
     } else if ('z' == *argv[1] && strcmp(argv[1], "zap_left") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " zap_left\"",
@@ -837,9 +806,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	edZapLeft(ed->xx);
 
     } else if ('z' == *argv[1] && strcmp(argv[1], "zap_right") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " zap_right\"",
@@ -884,9 +850,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 		       ed->xx->cursorPos);
 
     } else if ('u' == *argv[1] && strcmp(argv[1], "undo") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " undo\"",
@@ -945,9 +908,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     } else if ('d' == *argv[1] && strcmp(argv[1], "delete_anno") == 0) {
 	tagStruct *t = NULL;
 
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " delete_anno ?tagptr?\"",
@@ -962,9 +922,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     } else if ('c' == *argv[1] && strcmp(argv[1], "create_anno") == 0) {
 	char *res;
-
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
 
 	if (argc != 2 && argc != 5) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
@@ -1046,9 +1003,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 			    argv[5], argv[6], atoi(argv[7]));
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "save") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " save\"",
@@ -1060,9 +1014,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	redisplaySequences(ed->xx, 1);
 
     } else if ('a' == *argv[1] && strcmp(argv[1], "auto_save") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto release;
-
 	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " auto_save ?value?\"",
@@ -1081,9 +1032,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	saveDB(ed->xx, DBI_io(ed->xx), 0, 1);
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "store_undo") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto release;
-
 	if (argc != 2 && argc != 3) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " store_undo ?value?\"",
@@ -1262,9 +1210,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	save_consensus_trace(ed->xx, argv[2], left, right, strand, matching);
 
     } else if ('a' == *argv[1] && strcmp(argv[1], "align") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	if (argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
 			     argv[0], " align\"",
@@ -1275,9 +1220,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	align_read(ed->xx);
 
     } else if ('s' == *argv[1] && strcmp(argv[1], "select_oligo") == 0) {
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
-
 	/*
 	 * select_oligos generate sense fwd back avg_readlen
 	 * select_oligos next
@@ -1321,9 +1263,6 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
     } else if ('s' == *argv[1] && strcmp(argv[1], "strip_pads") == 0) {
 	int sp_consensus_mode;
 	float sp_consensus_cutoff;
-
-	if (get_licence_type() == LICENCE_VIEWER)
-	    goto fail;
 
 	if (argc != 4 && argc != 2) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",

@@ -30,7 +30,7 @@
 #include "fort.h"
 #include "FtoC.h"
 #include "edUtils.h"
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 #include "qual.h"
 #include "xalloc.h"
 #include "io_utils.h"

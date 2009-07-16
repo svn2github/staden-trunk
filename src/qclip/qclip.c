@@ -3,8 +3,6 @@
 #include <stdlib.h>
 
 #include "seqInfo.h"
-#include "licence.h"
-#include "misc.h"
 #include "consen.h"
 
 /* johnt 1/6/99 must explicitly import globals from DLLs with Visual C++*/
@@ -162,13 +160,6 @@ static int qclip(char *file, params p) {
     /* Read the sequence and confidence */
     if (NULL == (si = read_sequence_details(file, 0))) {
 	fprintf(stderr, "Failed to read file '%s'\n", file);
-	return -1;
-    }
-
-    if (exp_Nentries(si->e, EFLT_SQ) > 0 &&
-	!valid_seq(exp_get_entry(si->e, EFLT_SQ), 0)) {
-	fprintf(stderr, "File '%s' not allowed in demonstration mode\n", file);
-	freeSeqInfo(si);
 	return -1;
     }
 

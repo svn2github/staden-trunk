@@ -36,7 +36,7 @@
 #include "IO.h"
 #include "fort.h"
 #include "FtoC.h"
-#include "expFileIO.h"
+#include <io_lib/expFileIO.h>
 #include "misc.h"
 #include "edUtils.h"
 #include "tagUtils.h"

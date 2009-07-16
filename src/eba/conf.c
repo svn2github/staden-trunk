@@ -1,5 +1,6 @@
-#include "Read.h"
-#include "misc.h"
+#include <io_lib/Read.h>
+#include <io_lib/misc.h>
+
 #include "conf.h"
 
 #define WINDOW_SIZE 15

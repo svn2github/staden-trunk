@@ -7,8 +7,10 @@
 #ifdef _WIN32
 #include "tkWinport.h"
 #endif
+
+#include <io_lib/Read.h>
+
 #include "tkTrace.h"
-#include "Read.h"
 #include "tkTraceIO.h"
 #include "xalloc.h"
 #include "misc.h"

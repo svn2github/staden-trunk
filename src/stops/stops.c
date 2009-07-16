@@ -7,8 +7,8 @@
 #include <dirent.h>
 #include <string.h>
 
-#include "Read.h"
-#include "misc.h"
+#include <io_lib/Read.h>
+#include <io_lib/misc.h>
 
 void do_nothing(void) {}
 

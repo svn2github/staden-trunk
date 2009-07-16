@@ -23,7 +23,6 @@ extern "C" {
 
 
 #include <io_lib/Read.h>
-#include <licence/licence.h>
 
 
 #ifdef __cplusplus

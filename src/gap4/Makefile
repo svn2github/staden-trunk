@@ -6,18 +6,14 @@ PROGS = $(LIBS) $(O)/gap4sh $(O)/copy_db
 endif
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
-SRCROOT=..
-#SRCROOT=/home5/pubseq/share/src
-#SRCROOT=/nfs/arran/home5/pubseq/share/src
-#REMOTESRC=$(GAP4SRC)
-
-include	 $(SRCROOT)/mk/global.mk
-include $(SRCROOT)/mk/$(MACHINE).mk
+SRCROOT=$(SRC)/..
+include $(SRCROOT)/global.mk
+include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 GAP4BIN=$(O)
 
-INCLUDES_E += -I$(GAP4SRC) $(G_INC) $(TK_INC) \
+INCLUDES_E += $(MISC_INC) $(G_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(MUT_INC) \
 	      $(F77_INC) $(P3_INC)
 CFLAGS += $(SHLIB_CFLAGS)
@@ -35,7 +31,7 @@ FFLAGS += $(SHLIB_FFLAGS)
 # Trace manager objects
 #
 
-include $(SRCROOT)/mk/gap4_defs.mk
+include $(SRCROOT)/gap4/gap4_defs.mk
 
 GAPDB=\
 	$(GAPDB_LOW)\

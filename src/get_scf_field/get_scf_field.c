@@ -19,10 +19,10 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "mFILE.h"
-#include "scf.h"
-#include "xalloc.h"
-#include "compress.h"
+#include <io_lib/mFILE.h>
+#include <io_lib/scf.h>
+#include <io_lib/xalloc.h>
+#include <io_lib/compress.h>
 
 /* 6/1/99 johnt - need to implicitly import globals from DLLs with Visual C++ */
 #ifdef _MSC_VER

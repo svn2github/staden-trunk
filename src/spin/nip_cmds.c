@@ -49,7 +49,6 @@
 #include "open_reading_frames.h"
 #include "dinuc_freqs.h"
 #include "nip_wtmatrix_search.h"
-#include "licence.h"
 
 static char *get_subseq(char *dnaseq, Featcds **key_index, int k);
 static int get_transl_table(Featcds **key_index);
