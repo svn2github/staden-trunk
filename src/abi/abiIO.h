@@ -1,8 +1,8 @@
 #ifndef _ABI_H_
 #define _ABI_H_
 
-#include "os.h"
-#include "fpoint.h"
+#include <io_lib/os.h>
+#include <io_lib/fpoint.h>
 
 /*
  * The ABI magic number - "ABIF"

@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "abiIO.h"
-#include "mach-io.h" /* get_be_float, get_be_double */
+#include <io_lib/mach-io.h> /* get_be_float, get_be_double */
 
 void dump_raw(char *data, size_t sz) {
     fwrite(data, 1, sz, stdout);

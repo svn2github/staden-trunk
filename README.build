@@ -1,195 +1,139 @@
-		      Unix build - 28th Oct 2004
-		      ==========================
+		      Unix build - 14th July 2009
+		      ===========================
 
 
 External dependencies
 =====================
 
-The package code does not compile without having a few other libraries
-installed. It is possible that these may be on your system already,
-but the binary distributions of the Staden Package come complete with
-prebuilt copies anyway. (The reason is that we cannot be sure if the
-libraries will be installed already and if so what version.)
+In order to compile the Staden source tree we also need a few extra
+libraries. Some of these may be considered as internal (eg io_lib),
+but they are not included within this source tree and need to be
+downloaded and installed before hand.
 
-External packages required:
+Packages required (newer versions should work; older versions may work
+but are untested - please tell me if they work too).
 
-* tcl		(tested with 8.4.6)
-* tk		(tested with 8.4.6)
-* itcl		(tested with 3.2.1)
-* iwidgets	(tested with 4.0.1)
-* zlib		(tested with 1.2.2)
-* libpng	(tested with 1.2.7)
-(Different versions may work.)
+* staden-io_lib	1.11.x
+* samtools	0.1.4
+* tcl		8.4
+* tk		8.4
+* zlib		1.2.x
+* libpng	1.2.x
+* curl		7.x
 
-If you wish to compile these, do:
+Note that if your operating system separates out run-time from
+development files, we'll need both. For example on Debian we need
+tcl8.5 and tcl8.5-dev packages.
 
-	cd src
-	make -f Makefile.thirdparty
+Other system prerequisites:
 
-This downloads (from sourceforge), configures, compile and installs the
-binary library components into the src/lib/$MACHINE-binaries directory.
+* C compiler (eg gcc, icc)
+* C++ compiler (eg g++)
+* FORTRAN compiler (eg g77, but see src/gap4/legacy_f2c.c and the
+	            src/gap4/Makefile if this is an issue)
+* GNU make
+* TexInfo (for documentation only)
 
-NOTE: src/Makefile.thirdparty does NOT copy over the text lib files,
-such as the tcl, tk, itcl and iwidgets "tcl" files. The reason for
-this is that some have been locally modified to either fix bugs or
-improve performance. Upgrading to new versions of the thirdparty
-libraries may therefore prove to be harder than expected.
-
-If you need to manually compile various bits without using the
-Makefile.thirdparty, this is essentially what it does:
-
-tcl
----
-
-From within $STADENROOT/src:
-	gzip -cd tcl8.4.6-src.tar.gz | tar xf -
-	cd tcl8.4.6/unix
-	./configure --enable-shared --prefix=../../..
-	make
-	cp libtcl8.4.so ../../../lib/$MACHINE-binaries
-
-The $STADENROOT/lib/tcl directory already includes copies of the
-tcl8.4.6/library contents, but for newer Tcl releases you may need to
-update this copy.
+Building the package consists of three main components: source,
+documentation and course notes.
 
 
-tk
---
+Source code
+===========
 
-From within $STADENROOT/src:
-	gzip -cd tk8.4.6-src.tar.gz | tar xf -
-	cd tk8.4.6/unix
-	./configure --enable-shared --prefix=../../..
-	make
-	cp libtk8.4.so ../../../lib/$MACHINE-binaries
+The program source is all held within the src directory. It now uses
+the GNU autoconf system, but we recommend using it in the following
+manner.
+
+    cd src
+    mkdir build.myhost
+    cd build.myhost
+    ../configure [options]
+    make
+
+You may need to specify options to the configure script in order to
+find certain third-party packages:
+
+  --with-samtools=DIR
+	Specifies either a prefix directory for the installed samtools
+	files, or alternatively the root of an unpacked and built
+	samtools source tree.
+
+  --with-io_lib=DIR
+	Specifies the prefix for an io_lib install.
+
+  --with-zlib=DIR
+	Specifies the prefix for a zlib install.
+
+  --with-libcurl=DIR
+	Specifies the prefix for a curl install.
+
+  --with-tcl=DIR
+	Specifies the directory containing a tclConfig.sh file.
+
+  --with-tk=DIR
+	Specifies the directory containing a tkConfig.sh file.
+
+  --with-tclinclude=DIR
+	If not found in the place specified in tclConfig.sh, this
+	specifies the root directory of a tcl source tree (so it
+	should have generic, unix, etc subdirectories).
+
+  --with-tkinclude=DIR
+	If not found in the place specified in tkConfig.sh, this
+	specifies the root directory of a tcl source tree (so it
+	should have generic, unix, etc subdirectories).
 	
+You may also want to use the --prefix=DIR option to control the
+install prefix (defaults to /usr/local/staden).
 
-The $STADENROOT/lib/tk directory already includes copies of the
-tk8.4.6/library contents, but for newer Tcl releases you may need to
-update this copy.
+Note that on some systems it is not sufficient to simply use the
+--with-x=y syntax, but you also need to setup LD_LIBRARY_PATH to
+include the location of any run-time libraries prior to linking
+against them. This shouldn't be an issue for libraries installed in
+the default system locations.
 
-NOTE:  The tk library (tcl code) shipped with the Staden package has
-some substantial speedups in the Tk file browser and various other
-tweaks. If you copy over a new library then you may find bugs.
+Examples for standard systems follow.
 
+Debian etch
+-----------
 
-itcl
-----
-
-From within $STADENROOT/src:
-	gzip -cd itcl3.2.1_src.tgz | tar xf -
-	cd itcl3.2.1
-	./configure --enable-shared
-	make
-	cp */*so ../../lib/$MACHINE-binaries
-
-
-iwidgets
---------
-
-From within $STADENROOT/src:
-	gzip -cd iwidgets4.0.1.tar.gz |tar xf -
-	cd iwidgets4.0.1
-	./configure --with-itcl=../itcl3.2.1 --prefix=../..
-	make install-libraries
-
-At this point it'll have some broken links, so fix this with:
-	rm ../../lib/widgets
-	mv ../../lib/iwidgets4.0.1 ../../lib/iwidgets
+mkdir src/build.etch
+cd src/build.etch
+../configure \
+    --with-samtools=$HOME/ftp/samtools-0.1.5c \
+    --with-tcl=/usr/lib/tcl8.4 --with-tk=/usr/lib/tk8.4 \
+    --with-tkinclude=/usr/include/tcl8.4/tk-private/generic
 
 
-zlib
-----
 
-From within $STADENROOT/src:
-	gzip -cd zlib-1.2.2.tar.gz |tar xf -
-	cd zlib-1.2.2
-	./configure
-	make
+Documentation / Course notes
+============================
 
-png
----
+These are not yet using autoconf, but are less system specific than
+source code compilations.  Both make heavy use of TeX and TeXInfo, but
+for general users just downloading the prebuilt documentation is
+sufficient as it is platform agnostic.
 
-From within $STADENROOT/src:
-	gzip -cd libpng-1.2.7.tar.gz |tar xf -
-	cd libpng-1.2.7
-	make -f scripts/makefile.??? ZLIBINC=../zlib-1.2.2 ZLIBLIB=../zlib-1.2.2
-	cp -R libpng12* ../../lib/$MACHINE-binaries
+Should you wish to build the documentation and/or course material
+yourself from scratch cd to the appropriate directory and type
+make. Eg:
 
-Where the "makefile.???" is the appropriate makefile (Eg makefile.linux)
+    (cd doc; make)
+    (cd course; make)
 
-
-Compiler setups
-===============
-
-Prerequisites:
-	C compiler (eg gcc)
-	C++ compiler (eg g++)
-	FORTRAN compiler (eg g77)
-	GNU Make
-	TeXInfo (for documentation only)
-	
-
-Firstly define the MACHINE environment variable. This may be done for you
-when you source the staden.login or staden.profile.
-Eg for bash within the root:
-
-	export STADENROOT=`pwd`
-	. staden.profile
-
-The standard MACHINE settings may be:
-	alpha		      (Tru64 running on Alphas)
-	linux		      (x86 based linux)
-	linux-ia64	      (Itanium based linux)
-	macosx		      (Apple's MacOSX)
-	solaris		      (Sparc based Solaris 2.x or 7+)
-	sgi		      (Mips based SGI systems)
-
-If you wish to define your own, firstly set MACHINE appropriately and
-then create a src/mk/$MACHINE.mk Makefile stub. It's best to check out
-how the others (eg src/mk/linux.mk) work.
-
-The $MACHINE.mk file is also where you may change compiler definitions
-specific to that machine. If you need to change global options that
-are cross-platform (eg whether to enable optimisation or debugging)
-then these may be edited within "src/mk/global.mk".
-
-
-Building
-========
-
-To compile the code and docs just type "make" and let it get on with
-it.
-
-If you only want to build the source code, "cd src" first and do make
-there. Similarly if you want only want documentation then "cd doc"
-first.
-
-I recommend saving your output to a file. E.g. with bash:
-
-	make 2>&1 | tee make.out
-
-
-The programs should now be compiled, but they have not yet been
-installed. We do this by building a complete distribution, copying out
-bits from the source tree.
-
-	make distunix
-
-At present it will attempt to install binaries for all the supported
-systems, but please edit the Makefile and search for the "distunix:"
-target. Within there it should be obvious which sections to comment
-out to skip the other platforms. (The binaries get copied over by
-doing little more than a "make MACHINE=xyzzy install".)
-
-At the end of this, you should find a distrib subdirectory containing
-another directory (named after the contents of your "Version" file).
 
 =============================================================================
 
 
 		     Windows build 1st July 2004
 		     ===========================
+
+TODO: Update this. Windows build can be made to look largely like the
+unix build if you use mingw/msys, but you'll most likely have to build
+the prerequisites yourself.
+
+
 
 * Install mingw (3.1.0), msys (1.0.10).
 Put these somewhere without a space in their path. Ie not "/program

@@ -1,0 +1,7 @@
+#!/bin/sh
+set -x
+rm -rf install-sh missing mkinstalldirs depcomp aclocal.m4 acinclude.m4 config.cache config.log config.status configure autom4te.cache config.sub config.guess
+
+aclocal -I ac_stubs && \
+autoheader && \
+autoconf

@@ -44,8 +44,8 @@ INSTALLSEQSCRIPT= $(STADENROOT)/seqlibs-$(MACHINE)-bin
 # Debugging and optimising switches; define [CF]OPTDEBUG to be one or the other
 CDEBUG		= -g
 FDEBUG		= -g -C
-COPT		= -O2 -g3 -DNDEBUG
-FOPT		= -O2 -g3 -DNDEBUG
+COPT		= -O2 -g3
+FOPT		= -O2 -g3
 COPTDEBUG	= $(CDEBUG)
 FOPTDEBUG	= $(FDEBUG)
 #COPTDEBUG	= $(COPT)
@@ -71,7 +71,7 @@ CXXFLAGS	= $(COPTDEBUG) $(DEFINES) $(INCLUDES)
 
 
 # 7/1/99 johnt - Command to make Windows Def file for each object file - defaults to echo - required by Visual C++
-MKDEFC = @echo
+MKDEFC = @\#
 
 # 7/1/99 johnt - flag to specify output object file - defaults to "-o " - required by Visual C++
 SPACE=
@@ -91,8 +91,8 @@ LINK_LIBFLAG = -l
 LINK_PATHFLAG = -L
 LIB_EXT      =
 
-CLD_PROG	= $(CC)
-CXXLD_PROG	= $(CXX)
+CLD_PROG	= LD_RUN_PATH=$(L) $(CC)
+CXXLD_PROG	= LD_RUN_PATH=$(L) $(CXX)
 CLDFLAGS	= $(CLDFLAGS_S) $(CLDOPTDEBUG) $(LINK_PATHFLAG)$(L) $(CLDFLAGS_E)
 CXXLDFLAGS      = $(CLDFLAGS_S) $(CLDOPTDEBUG) $(LINK_PATHFLAG)$(L) $(CLDFLAGS_E)
 CLD		= $(CLD_PROG) $(CLDFLAGS)
@@ -111,21 +111,15 @@ RANLIB		= ranlib
 
 
 # Default includes
-INCLUDES	= $(INCLUDES_S) -I. -I$(MISCSRC) $(INCLUDES_E)
+VPATH           = $(SRC)
+INCLUDES	= $(INCLUDES_S) -I$(SRC) -I$(BUILD) $(INCLUDES_E)
 
-# Override these in system makefiles. Note that XSRC defaults to blank as
-# the include files are normally in /usr/include. Specifying /usr/include here
-# causes /usr/include to be searched before some of our own include paths,
-# which yields to unreliable results: what if a new release of the OS happens
-# to add a 'fort.h' file or something similar in there? Similarly for XBIN.
-XBIN		=
 STADLIB		= ../../lib
 TCLBIN		= $(L)
 TKBIN		= $(L)
 ITCLBIN		= $(L)
 ITKBIN		= $(L)
 TTBIN		=
-XSRC		= 
 TCLVERS		= 8.4
 TKVERS		= 8.4
 TCLSRC		= $(SRCROOT)/tcl8.4.6/generic
@@ -138,7 +132,7 @@ ITKVERS		= 3.3
 
 #26/3/99 johnt - added corba support
 ifdef CORBA
-CORBA_OBJS      = $(O)/corba.o $(O)/trace.o $(O)/basicServer.o
+CORBA_OBJS      = corba.o trace.o basicServer.o
 
 CORBA_INCDIR    = /usr/local/mico/include
 CORBA_LIBDIR    = /usr/local/mico/lib
@@ -156,21 +150,12 @@ MATH_LIB     = $(MATH_LIB_S) -lm $(MATH_LIB_E)
 MISC_LIB     = $(MISC_LIB_S) $(LINK_LIBFLAG)misc$(LIB_EXT) $(MISC_LIB_E)
 TCL_LIB	     = $(TCL_LIB_S) $(LINK_PATHFLAG)$(TCLBIN) $(LINK_LIBFLAG)tcl$(TCLVERS)$(LIB_EXT) $(MATH_LIB) \
 	           $(TCL_LIB_E)
-TK_LIB	     = $(TK_LIB_S) $(LINK_PATHFLAG)$(TKBIN) $(LINK_LIBFLAG)tk$(TKVERS)$(LIB_EXT) $(TCL_LIB) \
-		   $(X_LIB) $(TK_LIB_E)
+TK_LIB	     = $(TK_LIB_S) $(LINK_PATHFLAG)$(TKBIN) $(LINK_LIBFLAG)tk$(TKVERS)$(LIB_EXT) $(TCL_LIB) $(TK_LIB_E)
 ITCL_LIB	     = $(ITCL_LIB_S) $(LINK_PATHFLAG)$(ITCLBIN) $(LINK_LIBFLAG)itcl$(ITCLVERS)$(LIB_EXT) $(MATH_LIB) \
 	           $(ITCL_LIB_E)
-ITK_LIB	     = $(ITK_LIB_S) $(LINK_PATHFLAG)$(ITKBIN) $(LINK_LIBFLAG)itk$(ITKVERS)$(LIB_EXT) $(ITCL_LIB) \
-		   $(X_LIB) $(ITK_LIB_E)
-X_LIB	     = $(X_LIB_S) $(XBIN:%=-L%) -lX11 $(X_LIB_E)
-XAW_LIB	     = $(XAW_LIB_S) $(XBIN:%=-L%) -lXaw -lXt -lXmu -lXext -lX11 \
-	           $(XAW_LIB_E)
+ITK_LIB	     = $(ITK_LIB_S) $(LINK_PATHFLAG)$(ITKBIN) $(LINK_LIBFLAG)itk$(ITKVERS)$(LIB_EXT) $(ITCL_LIB) $(ITK_LIB_E)
 TT_LIB	     = $(TT_LIB_S) $(TTBIN:%=-L%) $(TT_LIBRARY) $(TT_LIB_E)
 # io-utils and read libraries have now been merged into one.
-#IOLIB_LIB    = $(IOLIB_S) $(LINK_LIBFLAG)read$(LIB_EXT) $(LINK_LIBFLAG)io-utils$(LIB_EXT)$(IOLIB_E)
-#IOUTILS_LIB  = $(IOUTILS_S) $(LINK_LIBFLAG)io-utils$(LIB_EXT) $(IOUTILS_E)
-IOLIB_LIB    = $(IOLIB_S) $(LINK_LIBFLAG)read$(LIB_EXT) $(IOLIB_E)
-IOUTILS_LIB  = $(IOLIB_LIB)
 SCF_LIB	     = $(SCF_LIB_S) $(LINK_LIBFLAG)scf$(LIB_EXT) $(LINK_LIBFLAG)io-utils$(LIB_EXT) $(SCF_LIB_E)
 EXP_LIB	     = $(EXP_LIB_S) $(LINK_LIBFLAG)exp$(LIB_EXT) $(LINK_LIBFLAG)io-utils$(LIB_EXT) $(EXP_LIB_E)
 G_LIB	     = $(G_LIB_S) $(LINK_LIBFLAG)g$(LIB_EXT) $(G_LIB_E)
@@ -195,16 +180,10 @@ CORBA_INC       = -I$(CORBA_INCDIR)
 endif
 MISC_INC	= -I$(MISCSRC)
 TCL_INC		= -I$(TCLSRC)
-TK_INC		= -I$(TKSRC) -I$(TCLSRC) $(X_INC)
+TK_INC		= -I$(TKSRC) -I$(TCLSRC)
 ITCL_INC	= -I$(ITCLSRC)
-ITK_INC		= -I$(ITKSRC) -I$(ITCLSRC) $(X_INC)
-X_INC		= $(XSRC:%=-I%)
-XAW_INC		= $(XSRC:%=-I%)
+ITK_INC		= -I$(ITKSRC) -I$(ITCLSRC)
 TT_INC		= $(TTSRC:%=-I%)
-IOLIB_INC	= -I$(IOLIBSRC) -I$(IOLIBSRC)/io_lib
-IOUTILS_INC	= -I$(IOLIBSRC)/include
-SCF_INC		= -I$(IOLIBSRC)/include
-EXP_INC		= -I$(IOLIBSRC)/include
 G_INC		= -I$(GSRC)
 GAP4_INC	= -I$(GAP4SRC)
 NIP4_INC	= -I$(NIP4SRC)
@@ -217,7 +196,6 @@ SPIN_INC	= -I$(SPINSRC)
 COPYREADS_INC	= -I$(COPYREADSSRC)
 MUT_INC		= -I$(SRCROOT) -I$(MUTSRC)
 P3_INC		= -I$(SRCROOT)/primer3/src
-ZLIB_INC 	= -I$(SRCROOT)/zlib
 PNG_INC	        = -I$(SRCROOT)/libpng
 
 #
@@ -225,11 +203,12 @@ PNG_INC	        = -I$(SRCROOT)/libpng
 # Use this to shorten later references (makes things tidier).
 #
 # Src to Obj
-O = $(MACHINE)-binaries
+#O = $(MACHINE)-binaries
+O=.
 # Obj to Src
 S = ..
 # Lib
-L = $(SRCROOT)/lib/$(O)
+L = $(SRCROOT)/lib
 LD_LIBRARY_PATH := $(L):$(LD_LIBRARY_PATH)
 
 #
@@ -251,7 +230,7 @@ PROGSTOCLEAN=$(PROGS:=$(EXE_SUFFIX))
 #
 all:	$(PROGS)
 
-CLEANCOMMAND=-rm -f $(O)/*.a $(O)/*.o
+CLEANCOMMAND=-rm -f *.a *.o
 clean:
 	$(CLEANCOMMAND)
 
@@ -290,7 +269,6 @@ GETMCHSRC	= $(SRCROOT)/getMCH
 GETSCFFIELD	= $(SRCROOT)/get_scf_field
 INDEXSEQLIBSSRC	= $(SRCROOT)/indexseqlibs
 INITEXPSRC	= $(SRCROOT)/init_exp
-IOLIBSRC	= $(SRCROOT)/io_lib
 LOOKUPSRC	= $(SRCROOT)/lookup
 MAKESCFSRC	= $(SRCROOT)/makeSCF
 MISCSRC		= $(SRCROOT)/Misc
@@ -328,7 +306,6 @@ GETMCHBIN	= $(GETMCHSRC)/$(O)
 GETSCFFIBIN	= $(GETSCFFIELD)/$(O)
 INDEXSEQLIBSBIN	= $(INDEXSEQLIBSSRC)/$(O)
 INITEXPBIN	= $(INITEXPSRC)/$(O)
-IOLIBBIN	= $(IOLIBSRC)/lib/$(O)
 LOOKUPBIN	= $(LOOKUPSRC)/$(O)
 MAKESCFBIN	= $(MAKESCFSRC)/$(O)
 MISCBIN		= $(MISCSRC)/$(O)
@@ -358,47 +335,44 @@ MUTBIN		= $(MUTSRC)/$(O)
 # The $(@F) removes the pathname match and hence removes recursion.
 #
 $(GAPBIN)/%:
-	cd $(GAPBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(GAPBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(GBIN)/%.a:
-	cd $(GBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)	
+	cd $(GBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)	
 $(OSPBIN)/%.o: $(OSPSRC)/%.c
-	cd $(OSPBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(OSPBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(OSP4BIN)/%.o: $(OSP4SRC)/%.c
-	cd $(OSP4BIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(OSP4BIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(STADENBIN)/%.o: $(STADENSRC)/%.c
-	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(STADENBIN)/%.o: $(STADENSRC)/%.f
-	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(STADENBIN)/%.o: $(TEDSRC)/%.c
-	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(STADENBIN)/%.a: $(STADENSRC)/%.f
-	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(STADENBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(TEDBIN)/%.o: $(TEDSRC)/%.c
-	cd $(TEDBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(TEDBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(CONVERTBIN)/%.o: $(CONVERTSRC)/%.c
-	cd $(CONVERTBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(CONVERTBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(MISCBIN)/%.a:
-	cd $(MISCBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(MISCBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(SEQLIBBIN)/%.o: $(SEQLIBSRC)/%.c
-	cd $(SEQLIBBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(SEQLIBBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(SEQLIBBIN)/%.a:
-	cd $(SEQLIBBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(SEQLIBBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(SEQUTILSBIN)/%.o: $(SEQUTILSSRC)/%.c
-	cd $(SEQUTILSBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(SEQUTILSBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(SEQUTILSBIN)/%.a:
-	cd $(SEQUTILSBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(SEQUTILSBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 $(MUTBIN)/%.a: $(MUTSRC)/%.cpp
-	cd $(MUTBIN)/$(S);$(MAKE) $(MFLAGS) $(O)/$(@F)
+	cd $(MUTBIN)/$(S);$(MAKE) $(MFLAGS) $(@F)
 
 
-# Automatically make $(MACHINE)-binaries output directories
-$(O)/.dir:
-	-@mkdir -p $(O)
-	touch $(O)/.dir
+# Automatically make output directories
+%.dir:
+	-mkdir -p $(@D) 2>/dev/null
+	touch $@
 
-$(L)/.dir:
-	-@mkdir -p $(L)
-	touch $(L)/.dir
 
 #
 # Files requiring simple C and FORTRAN compilation ($(SRC)/thing.c -> thing.o)
@@ -406,37 +380,16 @@ $(L)/.dir:
 # 
 # 7/1/99 johnt - added abstractions to support Visual C++, and mkdef command
 # to build Windows DEF files
-$(O)/%.o:	%.c $(O)/.dir
-	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
+%.o:	%.c 
+	$(CC) $(CFLAGS) $(CDEFS) $(COBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.f $(O)/.dir
-	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
+%.o:	%.f
+	$(F77) $(FFLAGS) $(FDEFS) $(FOBJFLAG)$@ -c $<
 	$(MKDEFC) $(MKFLAGS) $@
 
-$(O)/%.o:	%.cpp $(O)/.dir
-	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
-
-
-#
-# These two allow setting REMOTESRC to be somewhere else to fetch the code from
-# The typical use is when debugging the program yourself, you may wish to have
-# your own copies of some files and pick up the standard copies of the rest of
-# the files, yet still force compilation of all files (eg due to important
-# header file changes or compile flags).
-#
-$(O)/%.o:	$(REMOTESRC)/%.c $(O)/.dir
-	$(CC) $(CFLAGS) $(COBJFLAG)$@ -c $<
-	$(MKDEFC) $(MKFLAGS) $@
-
-
-$(O)/%.o:	$(REMOTESRC)/%.f $(O)/.dir
-	$(F77) $(FFLAGS) $(FOBJFLAG)$@ -c $<
-	$(MKDEFC) $(MKFLAGS) $@
-
-
-$(O)/%.o:	$(REMOTESRC)/%.cpp $(O)/.dir
-	$(CXX) $(CXXFLAGS) $(COBJFLAG)$@ -c $<
+%.o:	%.cpp
+	$(CXX) $(CXXFLAGS) $(CXXDEFS) $(COBJFLAG)$@ -c $<
 
 
 #
@@ -457,7 +410,7 @@ $(O)/%.o:	$(REMOTESRC)/%.cpp $(O)/.dir
 # The fortran compilations must be done sequentially in order to
 # avoid filling up the /tmp directory with compiler debugging information.
 #
-$(O)/%.a: %.f
+%.a: %.f
 	SRCDIR=`pwd`; \
 	TMPDIR=/tmp/staden$$$$; \
 	if test ! -d $$TMPDIR; \
@@ -492,6 +445,7 @@ distsrc_dirs:
 distsrc: DIRNAME=$(DISTSRC)/src/$(subst $(STADENROOT)/src/,,$(shell pwd))
 distsrc: distsrc_dirs
 	-cp -R *.[ch] $(DIRNAME)
+	-cp -R *.[ch]pp $(DIRNAME)
 	-cp -R *.f $(DIRNAME)
 	-cp -R *.bat $(DIRNAME)
 	-cp -R *.tcl $(DIRNAME)
@@ -513,13 +467,13 @@ distsrc: distsrc_dirs
 
 depend:
 	-DEPEND_SRC=`echo $(DEPEND_OBJ:.o=.c) $(DEPEND_OBJ:.o=.cpp) \
-	| sed 's/$(O)\///g'`; \
+	| sed 's/\.\//$(subst /,\/,$(VPATH))\//g'`; \
 	touch ./dependencies.tmp; \
 	makedepend -f ./dependencies.tmp -- $(CFLAGS) -- $$DEPEND_SRC 2>&-
-	sort < ./dependencies.tmp | uniq | sed -e 's; /usr/[^ ]*;;g' \
-	  -e "s;`echo $(SRCROOT)|sed 's/\\./\\\\./g'`;\$$(SRCROOT);g" \
-	  -e '/:/s;^;$$O/;' | \
+	sort < ./dependencies.tmp | uniq | sed -e 's; /usr/[^ ]*;;g' | \
+	  sed -e 's;.*/\([^:]*\):;\1:;'  | \
 	  grep -v '^[^:]*:[     ]*$$' > ./dependencies
 	-rm ./dependencies.tmp*
+
 
 dependencies:

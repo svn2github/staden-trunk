@@ -20,9 +20,7 @@ HLIBS=\
 	$(IOLIB_LIB)
 
 OBJSD	= \
-	$(TRACEDIFFBIN)/main.o \
-	$(TRACEDIFFBIN)/pathutil.o \
-	$(TRACEDIFFBIN)/stringlist.o
+	$(TRACEDIFFBIN)/main.o
 
 
 $(O)/tracediff: $(OBJSD)
