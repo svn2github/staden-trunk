@@ -2282,7 +2282,8 @@ int MainAssembly(ClientData clientData, Tcl_Interp *interp,
     }
     SetActiveTags("");
 
-    Tcl_SetResult(interp, ret, TCL_DYNAMIC);
+    Tcl_SetResult(interp, ret, TCL_VOLATILE);
+    free(ret);
     return TCL_OK;
 }
 
@@ -3105,7 +3106,8 @@ FindPrimers(ClientData clientData,
 			       primer_defs);
     xfree(rargv);
 
-    Tcl_SetResult(interp, res, TCL_DYNAMIC);
+    Tcl_SetResult(interp, res, TCL_VOLATILE);
+    free(res);
 
     return TCL_OK;
 }
@@ -3295,7 +3297,8 @@ int tcl_calc_consensus(ClientData clientData, Tcl_Interp *interp,
 		       consensus_cutoff, quality_cutoff,
 		       database_info, (void *)args.io);
 	buf[rargv[0].end - rargv[0].start + 1] = 0;
-	Tcl_SetResult(interp, buf, TCL_DYNAMIC);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	free(buf);
     }
 
     xfree(rargv);

@@ -56,7 +56,8 @@ int tcl_capture(ClientData clientData, Tcl_Interp *interp,
 	vTcl_SetResult(interp, "%d", result);
 	return Tcl_SetVar(interp, argv[2], buf, 0) ? TCL_OK : TCL_ERROR;
     } else {
-	Tcl_SetResult(interp, buf, TCL_DYNAMIC);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	free(buf);
     }
 
     return TCL_OK;

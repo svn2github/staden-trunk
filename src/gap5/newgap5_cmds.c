@@ -789,7 +789,8 @@ int tcl_calc_consensus(ClientData clientData, Tcl_Interp *interp,
 	calculate_consensus_simple(args.io, rargv[0].contig, rargv[0].start,
 				   rargv[0].end, buf, NULL);
 	buf[rargv[0].end - rargv[0].start + 1] = 0;
-	Tcl_SetResult(interp, buf, TCL_DYNAMIC);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	free(buf);
     }
 
     xfree(rargv);

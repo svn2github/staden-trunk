@@ -1240,13 +1240,15 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    char *ret = edSelectOligoNext(ed->xx);
 
 	    if (ret) {
-		Tcl_SetResult(interp, ret, TCL_DYNAMIC);
+		Tcl_SetResult(interp, ret, TCL_VOLATILE);
+		free(ret);
 	    }
 	} else if (argc == 3 && strcmp(argv[2], "prev") == 0) {
 	    char *ret = edSelectOligoPrev(ed->xx);
 
 	    if (ret) {
-		Tcl_SetResult(interp, ret, TCL_DYNAMIC);
+		Tcl_SetResult(interp, ret, TCL_VOLATILE);
+		free(ret);
 	    }
 	} else if (argc == 4 && strcmp(argv[2], "accept") == 0) {
 	    Tcl_SetResult(interp, edSelectOligoAccept(ed->xx, argv[3]),
