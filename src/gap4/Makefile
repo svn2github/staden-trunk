@@ -1,8 +1,8 @@
 LIBS = gap
 ifeq ($(MACHINE),windows)
-PROGS = $(LIBS) $(O)/copy_db 
+PROGS = $(LIBS) copy_db 
 else
-PROGS = $(LIBS) $(O)/gap4sh $(O)/copy_db 
+PROGS = $(LIBS) copy_db 
 endif
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
@@ -11,7 +11,6 @@ include $(SRCROOT)/global.mk
 include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
-GAP4BIN=$(O)
 
 INCLUDES_E += $(MISC_INC) $(G_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(MUT_INC) \
@@ -27,116 +26,154 @@ FFLAGS += $(SHLIB_FFLAGS)
 # We use the fortran compiler to do linking.
 #
 
-#
-# Trace manager objects
-#
+GAPDB_LOW=\
+	gap-local.o\
+	gap-remote.o\
+	gap-if.o\
+	gap-init.o\
+	gap-dbstruct.o\
+	gap-create.o\
+	gap-error.o\
+	stack_dump.o\
+	gap-io.o
 
-include $(SRCROOT)/gap4/gap4_defs.mk
+GAPDB_MID=\
+        IO.o \
+        io-reg.o \
+        actf.o
+
+GAPDB_UTILS=\
+	io_handle.o \
+	io_utils.o
+
+# GAPDB_EXT_OBJS is basically the low and mid level files plus the
+# text-io-reg.o object. This is simply stub routines to enable safe linking
+# and isn't needed by gap4 itself.
+
+GAPDB_EXT_OBJS=\
+	$(GAPDB_LOW) \
+	$(GAPDB_MID) \
+	$(GAPDB_UTILS) \
+	text-io-reg.o
+
+GAPDB_EXT_INC=$(G_INC) -I$(GAP4SRC)
+
+GAPDB_EXT_DEPS=\
+	$(G_DEP) \
+	$(TEXTUTILS_DEP) \
+	$(MISC_DEP) \
+	$(TCL_DEP)
+
+GAPDB_EXT_LIBS=\
+	$(G_LIB) \
+	$(TEXTUTILS_LIB) \
+	$(MISC_LIB) \
+	$(TCL_LIB)
 
 GAPDB=\
 	$(GAPDB_LOW)\
 	$(GAPDB_MID)\
-	$(GAP4BIN)/IO2.o\
-	$(GAP4BIN)/seqInfo.o\
-	$(GAP4BIN)/parse_ft.o\
-	$(GAP4BIN)/IO3.o \
-	$(GAP4BIN)/io_utils.o \
-	$(GAP4BIN)/io_handle.o \
-	$(GAP4BIN)/gap-tcl.o \
-	$(GAP4BIN)/tk-io-reg.o
+	IO2.o\
+	seqInfo.o\
+	parse_ft.o\
+	IO3.o \
+	io_utils.o \
+	io_handle.o \
+	gap-tcl.o \
+	tk-io-reg.o
 
 CONSEN=\
-	$(GAP4BIN)/consen.o\
-	$(GAP4BIN)/gap_hash.o\
-	$(GAP4BIN)/qual.o\
-	$(GAP4BIN)/qualIO.o
+	consen.o\
+	gap_hash.o\
+	qual.o\
+	qualIO.o
 
 TCLBITS=\
-	$(GAP4BIN)/gap_cli_arg.o \
-	$(GAP4BIN)/gap_globals.o \
-	$(GAP4BIN)/newgap_cmds.o \
-	$(GAP4BIN)/init.o
+	gap_cli_arg.o \
+	gap_globals.o \
+	newgap_cmds.o \
+	init.o
 
 EDITOR = \
-	$(GAP4BIN)/tkEditor.o\
-	$(GAP4BIN)/tkEdNames.o\
-	$(GAP4BIN)/tkEdUtils.o\
-	$(GAP4BIN)/edInterface.o\
-	$(GAP4BIN)/edUtils2.o \
-	$(GAP4BIN)/tagU1.o\
-	$(GAP4BIN)/undo.o\
-	$(GAP4BIN)/edExtend.o\
-	$(GAP4BIN)/edCommands.o\
-	$(GAP4BIN)/edMutations.o\
-	$(GAP4BIN)/tagEditor.o\
-	$(GAP4BIN)/searchUtils.o\
-	$(GAP4BIN)/tman_interface.o\
-	$(GAP4BIN)/tman_display.o\
-	$(GAP4BIN)/tman_cons.o\
-	$(GAP4BIN)/tman_diff.o\
-	$(GAP4BIN)/contigEditor.o\
-	$(GAP4BIN)/join.o\
-	$(GAP4BIN)/oligo.o
+	tkEditor.o\
+	tkEdNames.o\
+	tkEdUtils.o\
+	edInterface.o\
+	edUtils2.o \
+	tagU1.o\
+	undo.o\
+	edExtend.o\
+	edCommands.o\
+	edMutations.o\
+	tagEditor.o\
+	searchUtils.o\
+	tman_interface.o\
+	tman_display.o\
+	tman_cons.o\
+	tman_diff.o\
+	contigEditor.o\
+	join.o\
+	oligo.o
 
 GAPFUNCS = \
-	$(GAP4BIN)/bubbl3.o\
-	$(GAP4BIN)/tagdb.o\
-	$(GAP4BIN)/notedb.o\
-	$(GAP4BIN)/active_tags.o\
-	$(GAP4BIN)/dbcheck.o\
-	$(GAP4BIN)/clones.o\
-	$(GAP4BIN)/extract.o\
-	$(GAP4BIN)/preass.o \
-	$(GAP4BIN)/list.o \
-	$(GAP4BIN)/reactions.o \
-	$(GAP4BIN)/probe.o \
-	$(GAP4BIN)/template.o \
-	$(GAP4BIN)/template_display.o \
-	$(GAP4BIN)/ruler_display.o \
-	$(GAP4BIN)/gap_canvas_box.o \
-	$(GAP4BIN)/hash.o \
-	$(GAP4BIN)/gap_array.o \
-	$(GAP4BIN)/show_relationships.o \
-	$(GAP4BIN)/fij.o \
-	$(GAP4BIN)/hash_lib.o \
-	$(GAP4BIN)/do_fij.o \
-	$(GAP4BIN)/auto_assemble.o \
-	$(GAP4BIN)/dis_readings.o \
-	$(GAP4BIN)/find_repeats.o \
-	$(GAP4BIN)/break_contig.o \
-	$(GAP4BIN)/quality_plot.o \
-	$(GAP4BIN)/readpair.o \
-	$(GAP4BIN)/contig_selector.o \
-	$(GAP4BIN)/complement.o \
-	$(GAP4BIN)/cs-object.o\
-	$(GAP4BIN)/list_proc.o\
-	$(GAP4BIN)/dstrand.o\
-	$(GAP4BIN)/oligo_sel.o\
-	$(GAP4BIN)/primlib.o\
-	$(GAP4BIN)/alter_rel.o\
-	$(GAP4BIN)/restriction_enzymes.o \
-	$(GAP4BIN)/stop_codon.o \
-	$(GAP4BIN)/assemble_direct.o\
-	$(GAP4BIN)/check_assembly.o\
-	$(GAP4BIN)/tagU2.o\
-	$(GAP4BIN)/mess.o\
-	$(GAP4BIN)/find_oligo.o\
-	$(GAP4BIN)/copy_db.o \
-	$(GAP4BIN)/contig_order.o\
-	$(GAP4BIN)/clip.o\
-	$(GAP4BIN)/notes.o\
-	$(GAP4BIN)/consistency_display.o\
-	$(GAP4BIN)/consistency_canvas_box.o\
-	$(GAP4BIN)/confidence_graph.o\
-	$(GAP4BIN)/reading_coverage.o\
-	$(GAP4BIN)/readpair_coverage.o\
-	$(GAP4BIN)/strand_coverage.o\
-	$(GAP4BIN)/find_fragments.o\
-	$(GAP4BIN)/vseqs.o\
-	$(GAP4BIN)/$(GAP4_LEGACY)\
-	$(GAP4BIN)/f2c.o \
-	$(GAP4BIN)/shuffle_pads.o \
-	$(GAP4BIN)/auto_break.o
+	bubbl3.o\
+	tagdb.o\
+	notedb.o\
+	active_tags.o\
+	dbcheck.o\
+	clones.o\
+	extract.o\
+	preass.o \
+	list.o \
+	reactions.o \
+	probe.o \
+	template.o \
+	template_display.o \
+	ruler_display.o \
+	gap_canvas_box.o \
+	hash.o \
+	gap_array.o \
+	show_relationships.o \
+	fij.o \
+	hash_lib.o \
+	do_fij.o \
+	auto_assemble.o \
+	dis_readings.o \
+	find_repeats.o \
+	break_contig.o \
+	quality_plot.o \
+	readpair.o \
+	contig_selector.o \
+	complement.o \
+	cs-object.o\
+	list_proc.o\
+	dstrand.o\
+	oligo_sel.o\
+	primlib.o\
+	alter_rel.o\
+	restriction_enzymes.o \
+	stop_codon.o \
+	assemble_direct.o\
+	check_assembly.o\
+	tagU2.o\
+	mess.o\
+	find_oligo.o\
+	copy_db.o \
+	contig_order.o\
+	clip.o\
+	notes.o\
+	consistency_display.o\
+	consistency_canvas_box.o\
+	confidence_graph.o\
+	reading_coverage.o\
+	readpair_coverage.o\
+	strand_coverage.o\
+	find_fragments.o\
+	vseqs.o\
+	$(GAP4_LEGACY)\
+	f2c.o \
+	shuffle_pads.o \
+	auto_break.o
 
 GAPOBJS=\
 	$(COMMONOBJS)\
@@ -145,9 +182,6 @@ GAPOBJS=\
 	$(CONSEN)\
 	$(GAPFUNCS)\
 	$(EDITOR)
-
-GAPOBJS2=\
-	$(GAP4BIN)/tkAppInit.o
 
 GAP4_LIBS=\
 	$(IOLIB_LIB) \
@@ -180,17 +214,14 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(GAPOBJS) $(DEF_FILE)
 $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(GAPOBJS)
 	$(MKDEFL) $@ $(GAPOBJS)
 
-$(O)/gap4sh:	$(GAPOBJS) $(GAPOBJS2)
-	$(CXXLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(GAPOBJS) $(GAPOBJS2) $(GAP4SH_LIBS) $(CXX_DEP) $(F77_DEP)
-
 COPYDBOBJS=\
         $(GAPDB_LOW) \
         $(GAPDB_MID) \
-        $(GAP4BIN)/copy_db.o \
-        $(GAP4BIN)/copy_db_main.o \
-        $(GAP4BIN)/text-io-reg.o\
-	$(GAP4BIN)/io_utils.o \
-	$(GAP4BIN)/io_handle.o
+        copy_db.o \
+        copy_db_main.o \
+        text-io-reg.o\
+	io_utils.o \
+	io_handle.o
 
 CPLIB=\
 	$(G_LIB) \
@@ -198,39 +229,44 @@ CPLIB=\
 	$(MISC_LIB) \
 	$(TCL_LIB)
 
-$(O)/copy_db:   $(COPYDBOBJS)
+copy_db:   $(COPYDBOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(COPYDBOBJS) $(CPLIB) $(LIBSC)
 
 THRASHOBJS=\
         $(GAPDB_LOW) \
         $(GAPDB_MID) \
-        $(GAP4BIN)/gap-thrash3.o \
-        $(GAP4BIN)/text-io-reg.o
+        gap-thrash3.o \
+        text-io-reg.o
 
 THRASHBOBJS=\
         $(GAPDB_LOW) \
         $(GAPDB_MID) \
-        $(GAP4BIN)/gap-thrash2bug.o \
-        $(GAP4BIN)/text-io-reg.o
+        gap-thrash2bug.o \
+        text-io-reg.o
 
 TLIB=\
 	$(G_LIB) \
 	$(TEXTUTILS_LIB) \
 	./libmisc.a
 
-$(O)/thrash:   $(THRASHOBJS)
+thrash:   $(THRASHOBJS)
 	$(CLD) -o $@ $(THRASHOBJS) $(TLIB) $(LIBSC) -ldmalloc
-$(O)/thrashb:   $(THRASHBOBJS)
+thrashb:   $(THRASHBOBJS)
 	$(CLD) -o $@ $(THRASHBOBJS) $(TLIB) $(LIBSC) -ldmalloc
 
 DEPEND_OBJ = $(GAPOBJS) $(COPYDBOBJS)
 
+S=$(SRCROOT)/gap4
 install:
-	cp $(O)/copy_db $(INSTALLBIN)
-	-cp gap4 $(INSTALLSCRIPT)
-	-mkdir $(INSTALLLIB)/gap
-	cp *.tcl tclIndex $(INSTALLLIB)/gap
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp copy_db $(INSTALLBIN)
+	-cp $(S)/gap4 $(INSTALLBIN)
+	-mkdir $(INSTALLTCL)/gap
+	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap
+	cp $(PROGLIBS) $(INSTALLLIB)
+	cp $(S)/gaprc $(S)/gaprc_menu_full $(S)/gaprc_menu_mito $(INSTALLETC)
+	cp $(S)/GTAGDB $(S)/NOTEDB $(INSTALLETC)
+	cp $(S)/cap2rc $(S)/cap3rc $(S)/fak2rc $(S)/phraprc $(INSTALLETC)
+	cp $(S)/*.bitmap $(S)/*.gif $(INSTALLETC)
 
 distsrc: distsrc_dirs
 	-cp -R *.[chf] *.tcl tclIndex Makefile gap4 gap4viewer gap4.bat \

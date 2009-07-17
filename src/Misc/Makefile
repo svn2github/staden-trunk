@@ -13,32 +13,30 @@ CFLAGS += $(SHLIB_CFLAGS) $(MISC_DLL)
 
 INCLUDES_S += $(CORBA_INC)
 
-MISCBIN=$(O)
-
 #
 # Objects
 #
 OBJS = \
-	$(MISCBIN)/crash.o \
-	$(MISCBIN)/date.o \
-	$(MISCBIN)/filenames.o \
-	$(MISCBIN)/files.o \
-	$(MISCBIN)/find.o \
-	$(MISCBIN)/shell.o \
-	$(MISCBIN)/strings.o \
-	$(MISCBIN)/usleep.o \
-	$(MISCBIN)/error.o \
-	$(MISCBIN)/xerror.o \
-	$(MISCBIN)/xalloc.o \
-	$(MISCBIN)/vlen.o \
-	$(MISCBIN)/FtoC.o \
-	$(MISCBIN)/getfile.o \
-	$(MISCBIN)/bitmap.o \
-	$(MISCBIN)/array.o \
-	$(MISCBIN)/locks.o \
-	$(MISCBIN)/array_arith.o \
-	$(MISCBIN)/parse_db.o\
-	$(MISCBIN)/dstring.o
+	crash.o \
+	date.o \
+	filenames.o \
+	files.o \
+	find.o \
+	shell.o \
+	strings.o \
+	usleep.o \
+	error.o \
+	xerror.o \
+	xalloc.o \
+	vlen.o \
+	FtoC.o \
+	getfile.o \
+	bitmap.o \
+	array.o \
+	locks.o \
+	array_arith.o \
+	parse_db.o\
+	dstring.o
 
 #
 # Main dependency
@@ -58,7 +56,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)
 
 
 include dependencies

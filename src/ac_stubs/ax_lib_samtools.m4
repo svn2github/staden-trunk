@@ -50,6 +50,7 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
   samtools_ok=no
   _cppflags=$CPPFLAGS
   _ldflags=$LDFLAGS
+  _libs=$LIBS
   if test "x$SAMTOOLS_ROOT" != "x"
   then
       CPPFLAGS="$_cppflags -I${SAMTOOLS_ROOT}/include"
@@ -106,6 +107,7 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
   # Backout of variable changes
   CPPFLAGS=$_cppflags
   LDFLAGS=$_ldflags
+  LIBS=$_libs
 
   # Check version number
   if test "x$1" != "x" && test "$samtools_ok" = "yes"
@@ -172,4 +174,5 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
   unset samtools_ok
   unset _cppflags
   unset _ldflags
+  unset _libs
 ])

@@ -28,27 +28,25 @@ CFLAGS += $(SHLIB_CFLAGS) $(G_DLL)
 # Optimise IO
 #COPTDEBUG=$(COPT)
 
-GBIN=$(O)
-
 #
 # Objects
 #
 
 GSIO = \
-	$(GBIN)/g-files.o \
-	$(GBIN)/g-db.o \
-	$(GBIN)/g-struct.o
+	g-files.o \
+	g-db.o \
+	g-struct.o
 
 GSLIB = \
-	$(GBIN)/freetree.o
+	freetree.o
 
 GSMISC = \
-	$(GBIN)/g-error.o \
-	$(GBIN)/g-io.o
+	g-error.o \
+	g-io.o
 
 GSREQ = \
-	$(GBIN)/g-connect.o \
-	$(GBIN)/g-request.o
+	g-connect.o \
+	g-request.o
 
 OBJS = $(GSIO) $(GSLIB) $(GSMISC) $(GSREQ)
 
@@ -78,4 +76,4 @@ FORCE::
 include dependencies
 
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)

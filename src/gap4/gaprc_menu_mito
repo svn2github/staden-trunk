@@ -1,0 +1,515 @@
+#-----------------------------------------------------------------------------
+# Overload some of the standard options
+#-----------------------------------------------------------------------------
+
+# Menu styles
+set_def MENU_LEVELS		{{Beginner b} {Expert em} {{Full Gap4} e}}
+
+# Vertibrate Mitochondrial
+set_def GENETIC_CODE		$env(STADTABL)/gcodes/code_2
+
+#-----------------------------------------------------------------------------
+# Menus
+#-----------------------------------------------------------------------------
+
+# Note selector menus
+set_menu select_notes_menu
+add_menu File				1 0 left
+add_menu Edit				1 0 left
+add_menu View				1 0 left
+#add_menu Search				1 0 left
+add_menu Help				1 0 right
+add_command {File.Exit}			1 0 {NoteSelectorExit $io $w}
+add_command {Edit.New}			1 18 {NewNote $io $w}
+add_command {Edit.Delete}		1 18 {DeleteNote $io $w}
+add_command {View.Reading Notes}	1 0 {SelectReadingNote $io $w}
+add_command {View.Contig Notes}		1 0 {SelectContigNote $io $w}
+add_command {View.Database Notes}	1 0 {SelectDBNote $io $w}
+add_command {Help.Selecting Notes}	1 0 {show_help gap4 {Notes-Selector}}
+add_command {Help.Editing Notes}	1 0 {show_help gap4 {Notes-Editor}}
+add_command {Help.Special Note Types}	1 0 {show_help gap4 {Notes-Special}}
+
+# Note editor menus
+set_menu edit_note_menu
+add_menu File				1 0 left
+add_menu Type				1 0 left
+add_menu Help				1 0 right
+add_command {File.Save}			1 18 {EditNoteSave $io $w $nn}
+add_command {File.Delete}		1 18 {EditNoteDelete $io $w $nn}
+add_command {File.Exit}			1 0 {EditNoteExit $io $w $nn}
+add_command {Help.Selecting Notes}	1 0 {show_help gap4 {Notes-Selector}}
+add_command {Help.Editing Notes}	1 0 {show_help gap4 {Notes-Editor}}
+add_command {Help.Special Note Types}	1 0 {show_help gap4 {Notes-Special}}
+
+# Main Gap4 menus
+set_menu gap_menu
+add_menu File		1 2 left
+add_menu Edit		1 2 left
+add_menu View		1 2 left
+add_menu Options	1 2 left
+add_menu Experiments	1 2 left e
+add_menu Lists		1 2 left {em e}
+add_menu Assembly	1 2 left
+add_menu Help		1 0 right
+
+# In the following commands \$io is the global io variable, to be expanded
+# up at the time of activating the menu command rather than at the time
+# of creating the menus (which is what $io would do).
+
+# The menu state bit enable/disable patterns are as follows
+# Bit 0: Startup (and no database open)		(on)
+# Bit 1: Busy mode				(off)
+# Bit 2: With a database open...		(on/off)
+# Bit 3: ...which contains data			(on/off)
+# Bit 4: Read only				(off)
+
+add_command	{File.New}			 1 2 {NewFile}
+add_command	{File.Open}			 1 2 {Gap_Open \$io}
+add_command	{File.Check database}		12 6 {check_database -io \$io}
+add_command	{File.Copy database}		 8 10 {CopyDatabase \$io}
+add_command	{File.Change directory}		 1 2 {ChangeDirectory} {em e}
+#if {$tcl_platform(platform) == "unix"} {
+#    add_command	{File.Send to}			 8 10 {SendTo \$io} e
+#}
+add_separator	{File.S1}
+add_cascade	{File.Save consensus}		 8 10
+add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} {em e}
+add_separator	{File.S2}
+add_command	{File.Exit}			 1 2 {Gap_Exit \$io}
+
+add_command	{File.Save consensus.normal}	8 10 \
+			{NormalDialog \$io}
+add_command	{File.Save consensus.extended}	8 10 \
+			{ExtendedDialog \$io} e
+add_command	{File.Save consensus.unfinished}	8 10 \
+			{UnfinishedDialog \$io} e
+add_command	{File.Save consensus.quality}	8 10 \
+			{QualityDialog \$io} e
+
+add_command	{Edit.Edit Contig}		 8 10 {EditContig \$io}
+add_command	{Edit.Join Contig}		 8 10 {JoinContig \$io} {em e}
+add_command	{Edit.Break a contig}		 8 26 {BreakContig \$io} {em e}
+add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
+add_command	{Edit.Order contigs}		 8 10 {OrderContigs \$io} e
+add_command	{Edit.Save contig order}	 8 26 {SaveContigOrder \$io} e
+add_command	{Edit.Quality Clip}		 8 26 {QualityClip \$io} e
+add_command	{Edit.Difference Clip}		 8 26 {DifferenceClip \$io} {em e}
+add_command	{Edit.Double strand}		 8 26 {DoubleStrand \$io} {em e}
+add_command	{Edit.Disassemble readings}	 8 26 {DisReadings \$io} {em e}
+add_command	{Edit.Enter tags}		 8 26 {EnterTags \$io} {em e}
+add_command	{Edit.Edit Notebooks}	 	 8 10 {NoteSelector \$io database}
+add_separator	{Edit.S1} {em e}
+add_command	{Edit.Doctor Database}		12 6 {AlterRelationships \$io} {em e}
+
+add_command	{View.Contig selector}		 8 10 {ContigSelector \$io}
+add_separator	{View.S1}
+add_command	{View.Results manager}		 8 10 {ListResults \$io} {em e}
+add_separator	{View.S2} {em e}
+add_command	{View.Find internal joins}	 8 10 {FindInternalJoins \$io}
+add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
+add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
+add_command	{View.Check assembly}		 8 10 {CheckAssembly \$io} e
+add_command	{View.Sequence search}		 8 10 {FindOligos \$io} {em e}
+add_separator	{View.S3}
+add_command	{View.Database information}	 8 10 {PrintDatabaseInfo \$io}
+add_command	{View.Template Display}		 8 10 {TempDispDialog \$io}
+add_command	{View.Show relationships}	 8 10 {ShowRelationships \$io}
+add_command	{View.Restriction enzyme map}	 8 10 {GapRestrictionEnzymeDialogue \$io}
+add_command	{View.Stop codon map}		 8 10 {StopCodonDisplay \$io}
+add_command	{View.Quality plot}		 8 10 {QualityPlotDisplay \$io}
+add_command	{View.Confidence values graph}	 8 10 {ConfidenceGraph \$io}
+add_command	{View.Reading coverage histogram} 8 10 {ReadingCoverage \$io}
+add_command	{View.Readpair coverage histogram} 8 10 {ReadPairCoverage \$io}
+add_command	{View.Strand coverage}           8 10 {StrandCoverage \$io}
+add_command	{View.List Confidence}	 	 8 10 {ListConfidence \$io}
+
+add_command	{Options.Consensus algorithm}	1 2 {ConfigureCutoffs}
+add_command	{Options.Set maxseq}	       12 6 {SetMaxseq \$io}
+add_command	{Options.Set fonts}		1 2 {SetFonts}
+if { $tcl_platform(platform) != "windows" } {
+    add_command	{Options.Colours}		1 2 {ConfigureColours}
+}
+add_command	{Options.Configure menus}	1 2 {ConfigureMenus}
+add_command	{Options.Set genetic code}	1 2 {SetGeneticCode} {em e}
+add_command	{Options.Alignment scores}	1 2 {SetAlignmentScores} {em e}
+add_command	{Options.Trace file location}  12 3 {SetRawData \$io} {em e}
+
+add_command	{Experiments.Suggest long readings}  8 10 {LongGels \$io}
+add_command	{Experiments.Compressions and Stops} 8 10 {TaqTerminator \$io} e
+add_command	{Experiments.Suggest primers}	     8 26 {SuggestPrimers \$io}
+add_command	{Experiments.Suggest probes}	     8 10 {SuggestProbes \$io} e
+
+add_command	{Lists.View/Edit}	        12 6 {EditListDialog}
+add_command	{Lists.Create}			12 6 {CreateListDialog}
+add_command	{Lists.Delete}			12 6 {DeleteListDialog}
+add_command	{Lists.Copy}			12 6 {CopyListDialog}
+add_command	{Lists.Load}			12 6 {LoadListDialog}
+add_command	{Lists.Save}			12 6 {SaveListDialog}
+if { $tcl_platform(platform) != "windows" } {
+    add_command	{Lists.Print}			12 6 {PrintListDialog}
+}
+add_separator	{Lists.S1}
+add_command	{Lists.Contigs to readings}	 8 10 {ContigsToReadings \$io}
+add_command	{Lists.Minimal coverage}	 8 10 {MinimalCoverage \$io} e
+add_command	{Lists.Unattached readings}	 8 10 {UnattachedReadings \$io} e
+
+add_command	{Assembly.Normal shotgun assembly} \
+			12 22 {AutoAssemble \$io 1}
+add_command	{Assembly.Assembly into single stranded regions} \
+			12 22 {AutoAssemble \$io 5} e
+add_command	{Assembly.Stack readings} \
+			12 22 {AutoAssemble \$io 3} e
+add_command	{Assembly.Put all readings in separate contigs} \
+			12 22 {AutoAssemble \$io 4} e
+add_command	{Assembly.Directed assembly} \
+			12 22 {DirectAssembly \$io}
+#add_command	{Assembly.Enter pre-assembled data} \
+#			12 22 {Preassemble \$io} e
+add_command	{Assembly.Screen only} \
+			8 10 {AutoAssemble \$io 2} {em e}
+add_command	{Assembly.Assemble independently} \
+			12 22 {AutoAssemble \$io 6} {em e}
+
+add_command	{Help.Contents}		1 0 {show_help gap4 Contents}
+add_command	{Help.Introduction}	1 0 {show_help gap4 Gap4-Introduction}
+add_command	{Help.Output Window}	1 0 {show_help interface {UI-Output}}
+add_separator	{Help.S1}
+add_command	{Help.Index}		1 0 {show_help gap4 Index}
+add_separator	{Help.S2}
+add_command	{Help.Show Licence}	1 0 {ShowLicence}
+
+#For testing busy mode
+#add_command	{File.Busy On}	1 2 {SetBusy}
+#add_command	{File.Busy Off}	1 0 {ClearBusy}
+
+
+# Contig Editor menus
+#
+# The bit settings are as follows:
+# Bit 0: Startup 			(on)
+# Bit 1: Read only			(on/off)
+# Bit 2: In join editor			(off)
+
+# Contig Editor "Edit Modes" menu
+set_menu contig_editor_editmodes_menu
+add_menu {Edit Modes}				1 0 left
+add_check	{Edit Modes.Allow insert in read}	1 0 \
+	{$w.SE_ins_read}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow del in read}		1 0 \
+	{$w.SE_del_read}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow insert any in cons}	1 0 \
+	{$w.SE_ins_cons}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow del dash in cons}	1 0 \
+	{$w.SE_del_dash_cons}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow del any in cons}	1 0 \
+	{$w.SE_del_any_cons}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow replace in cons}	1 0 \
+	{$w.SE_replace_cons}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow reading shift}	1 0 \
+	{$w.SE_read_shift}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow transpose any}	1 0 \
+	{$w.SE_trans_any}	{editor_set_superedit $e $w}
+add_check	{Edit Modes.Allow uppercase}		1 0 \
+	{$w.SE_uppercase}	{editor_set_superedit $e $w}
+add_separator	{Edit Modes.S1}
+add_radio	{Edit Modes.Edit by base type}		1 0 \
+	{$w.SE_edit_mode} 0 	{editor_set_superedit $e $w}
+add_radio	{Edit Modes.Edit by confidence}		1 0 \
+	{$w.SE_edit_mode} 1 	{editor_set_superedit $e $w}
+add_separator	{Edit Modes.S2}
+add_command	{Edit Modes.Mode set 1}			1 0 \
+	{editor_set_superedit_set $e $w 1}
+add_command	{Edit Modes.Mode set 2}			1 0 \
+	{editor_set_superedit_set $e $w 2}
+
+# Contig Editor Commands menu
+set_menu contig_editor_commands_menu
+add_menu Commands				1 0 left
+add_command	{Commands.Search}			1 0 \
+	{create_search_win $e.search {$e search}}
+add_separator	{Commands.S1}
+add_command	{Commands.Create Tag}		3 2 {$e create_anno}
+add_command	{Commands.Edit Tag}		1 0 {$e select clear; $e edit_anno}
+add_command	{Commands.Delete Tag}		3 2 {$e select clear; $e delete_anno}
+add_separator	{Commands.S2}
+add_command	{Commands.Save Contig}		1 0 {$e save}
+add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
+add_command	{Commands.Save Consensus Trace}	1 0 {consensus_trace_dialog $e}
+add_command	{Commands.List Confidence}	1 0 \
+	{ed_list_confidence $e $e.list_confidence}
+add_command     {Commands.Report Mutations}	1 0 \
+	{report_mutations_dialog $e} 
+add_separator	{Commands.S3}
+add_command	{Commands.Select Primer}	1 0 {select_oligos $e} {em e}
+add_command	{Commands.Align}		3 2 {$e align}
+#add_command	{Commands.Shuffle Pads}		3 2 {editor_shuffle_pads $e}
+add_command	{Commands.Remove Reading}	3 6 {$e hide_read} e
+add_separator	{Commands.S4}
+add_command	{Commands.Break Contig}		3 6 {editor_break_contig $w $e}
+
+# Contig Editor Settings menu
+set_menu contig_editor_settings_menu
+add_menu Settings				1 0 left
+
+# Contig Editor Settings -> Status menu
+add_cascade	{Settings.Status Line}		1 0
+add_check	{Settings.Status Line.Show Strands}	  1 0 {$w.Status0} \
+	{editor_set_status $e $w \[set $w.Status0\] 0}
+add_check	{Settings.Status Line.Translate using Feature Tables} 1 0 {$w.Status7} \
+	{editor_set_status $e $w \[set $w.Status7\] 7} 
+add_separator	{Settings.Status Line.S0}
+add_check	{Settings.Status Line.Translate Frame 1+} 1 0 {$w.Status1} \
+	{editor_set_status $e $w \[set $w.Status1\] 1}
+add_check	{Settings.Status Line.Translate Frame 2+} 1 0 {$w.Status2} \
+	{editor_set_status $e $w \[set $w.Status2\] 2}
+add_check	{Settings.Status Line.Translate Frame 3+} 1 0 {$w.Status3} \
+	{editor_set_status $e $w \[set $w.Status3\] 3}
+add_check	{Settings.Status Line.Translate Frame 1-} 1 0 {$w.Status4} \
+	{editor_set_status $e $w \[set $w.Status4\] 4}
+add_check	{Settings.Status Line.Translate Frame 2-} 1 0 {$w.Status5} \
+	{editor_set_status $e $w \[set $w.Status5\] 5}
+add_check	{Settings.Status Line.Translate Frame 3-} 1 0 {$w.Status6} \
+	{editor_set_status $e $w \[set $w.Status6\] 6}
+add_separator	{Settings.Status Line.S1}
+add_command	{Settings.Status Line.Translate + frames}	1 0 \
+	{editor_set_status $e $w 1 1 2 3}
+add_command	{Settings.Status Line.Translate - frames}	1 0 \
+	{editor_set_status $e $w 1 4 5 6}
+add_command	{Settings.Status Line.Translate all frames}	1 0 \
+	{editor_set_status $e $w 1 1 2 3 4 5 6}
+add_separator	{Settings.Status Line.S2}
+add_command	{Settings.Status Line.Remove all}		1 0\
+	{editor_set_status $e $w 0 0 1 2 3 4 5 6}
+
+# Contig Editor Settings -> Trace menu
+add_cascade	{Settings.Trace Display}	1 0
+add_check	{Settings.Trace Display.Auto-display Traces}	1 0 \
+	{$w.DisplayTraces} {$e autodisplay_traces}
+add_check	{Settings.Trace Display.Auto-diff Traces}	1 0 \
+	{$w.DiffTraces} {$e autodiff_traces}
+
+# # Contig Editor Settings -> Trace menu -> Consensus trace options
+# add_cascade	{Settings.Trace Display.Consensus trace options}	1 0
+# add_radio	{Settings.Trace Display.Consensus trace options.Normal mode} 1 0 \
+# 	{$w.TraceDiff} 0 {editor_trace_diff $e $w}
+# add_radio	{Settings.Trace Display.Consensus trace options.Diff against consensus trace} 1 0 \
+# 	{$w.TraceDiff} 1 {editor_trace_diff $e $w}
+# add_radio	{Settings.Trace Display.Consensus trace options.Diff against specific trace} 1 0 \
+# 	{$w.TraceDiff} 2 {editor_trace_diff $e $w}
+# add_separator	{Settings.Trace Display.Consensus trace options.S1} {em e}
+# add_check	{Settings.Trace Display.Consensus trace options.Only matching reads} 1 0 \
+# 	{$w.TraceConsMatch}	{editor_trace_config $e $w} {em e}
+# add_check	{Settings.Trace Display.Consensus trace options.Ignore selected read} 1 0 \
+# 	{$w.TraceConsSelect}	{editor_trace_config $e $w} {em e}
+# 
+# # Contig Editor Settings -> Trace menu -> Trace difference algorithm
+# add_cascade	{Settings.Trace Display.Trace difference algorithm}	1 0 {em e}
+# add_check	{Settings.Trace Display.Trace difference algorithm.Show positive differences} 1 0 \
+# 	{$w.TraceDiffAlgorithm}	{editor_trace_config $e $w} {em e}
+# add_check	{Settings.Trace Display.Trace difference algorithm.Y scale differences} 1 0 \
+# 	{$w.TraceDiffScale}	{editor_trace_config $e $w} {em e}
+
+# Contig Editor Settings -> Consensus algorithm menu
+add_cascade	{Settings.Consensus algorithm}				1 0
+add_radio	{Settings.Consensus algorithm.Base frequencies}		1 0 \
+	{$w.ConsensusAlgorithm} 0 {editor_change_consensus_algorithm $e $w}
+add_radio	{Settings.Consensus algorithm.Weighted base frequencies} 1 0 \
+	{$w.ConsensusAlgorithm} 1 {editor_change_consensus_algorithm $e $w}
+add_radio	{Settings.Consensus algorithm.Confidence values}	1 0 \
+	{$w.ConsensusAlgorithm} 2 {editor_change_consensus_algorithm $e $w}
+
+add_separator	{Settings.S1}
+add_check	{Settings.Highlight Disagreements}	1 0 {$w.Disagreements}\
+	{set_differences_mode $e $w toggle}
+add_radio	{Settings.    By dots}			1 0 {$w.DisagreeMode} \
+	1 {set_differences_mode $e $w mode}
+add_radio	{Settings.    By foreground colour}	1 0 {$w.DisagreeMode} \
+	2 {set_differences_mode $e $w mode}
+add_radio	{Settings.    By background colour}	1 0 {$w.DisagreeMode} \
+	3 {set_differences_mode $e $w mode}
+add_check	{Settings.    Case sensitive}		1 0 {$w.DisagreeCase} \
+	{set_differences_mode $e $w mode}
+add_separator	{Settings.S2}
+add_check	{Settings.Compare Strands}		1 0 \
+	{$w.CompareStrands} {$e compare_strands} {em e}
+add_check	{Settings.Toggle auto-save}		1 0 {$w.AutoSave} \
+	{$e auto_save}
+add_check	{Settings.3 Character Amino Acids}	1 0 {$w.AminoMode} \
+	{$e translation_mode \[lindex {1 3} \[set $w.AminoMode\]\]}
+add_check       {Settings.Group Readings by Templates}  1 0 {$w.TemplateGroup}\
+	{$e set_grouping} {em e}
+add_check	{Settings.Show reading quality}		1 0 {$w.ShowQuality} \
+	{$e show_quality \[set $w.ShowQuality\]}
+add_check	{Settings.Show consensus quality}	1 0 {$w.ShowCQuality} \
+	{$e show_consensus_quality \[set $w.ShowCQuality\]}
+add_check	{Settings.Show edits}			1 0 {$w.ShowEdits} \
+	{$e show_edits \[set $w.ShowEdits\]}
+add_check	{Settings.Show Unpadded Positions}	1 0 {$w.ShowUnpadded} \
+	{$e set_unpadded_ruler}
+add_command	{Settings.Set Active Tags}		1 0 \
+	{editor_setannos $e $e.select_tags}
+add_command	{Settings.Set Output List}		1 0 \
+	{editor_setlist $n.set_list $n} {em e}
+add_command	{Settings.Set Default Confidences}	1 0 \
+	{set_default_confidence $e $e.default_confidence}
+add_separator	{Settings.S3}
+add_check	{Settings.Store undo}		1 0 {_$dbptr.StoreUndo} \
+	{$e store_undo -1} 
+add_separator	{Settings.S4}
+add_command	{Settings.Save Settings}		1 0 \
+	{save_editor_settings $e $w}
+
+# Contig Editor Help menu
+set_menu contig_editor_help_menu
+add_menu {Help}						1 0 left
+add_command	{Help.Introduction}			1 0 \
+	{show_help gap4 {Editor}}
+add_separator	{Help.S1}
+add_command	{Help.Movement}				1 0 \
+	{show_help gap4 {Editor-Movement}}
+add_cascade	{Help.Editing}					1 0
+add_command	{Help.Editing.General}				1 0 \
+	{show_help gap4 {Editor-Editing}}
+add_command	{Help.Editing.Editing Modes}			1 0 \
+	{show_help gap4 {Editor-Modes}}
+add_command	{Help.Editing.Adjusting the Quality Values}	1 0 \
+	{show_help gap4 {Editor-Quality Values}}
+add_command	{Help.Editing.Adjusting the Cutoff Data}	1 0 \
+	{show_help gap4 {Editor-Cutoffs}}
+add_command	{Help.Editing.Consensus/Quality Cutoff Data}	1 0 \
+	{show_help gap4 {Editor-Techniques-Cutoffs}}
+add_command	{Help.Editing.Summary of Editing Commands}	1 0 \
+	{show_help gap4 {Editor-Editing Summary}}
+add_command	{Help.Editing.Selections}			1 0 \
+	{show_help gap4 {Editor-Selections}}
+add_command	{Help.Editing.Annotations}			1 0 \
+	{show_help gap4 {Editor-Annotations}}
+add_command	{Help.Editing.Searching}			1 0 \
+	{show_help gap4 {Editor-Searching}}
+add_command	{Help.Editing.Commands Menu}			1 0 \
+	{show_help gap4 {Editor-Commands}}
+add_command	{Help.Editing.Settings Menu}			1 0 \
+	{show_help gap4 {Editor-Settings}}
+add_command	{Help.Editing.Primer Selection}			1 0 \
+	{show_help gap4 {Editor-Primer Selection}}
+add_command	{Help.Editing.Traces}				1 0 \
+	{show_help gap4 {Editor-Traces}}
+add_command	{Help.Editing.Join Editor}			1 0 \
+	{show_help gap4 {Editor-Joining}}
+add_command	{Help.Editing.Using Several Editors at Once}	1 0 \
+	{show_help gap4 {Editor-Multiple Editors}}
+add_cascade	{Help.Control Summary}			1 0
+add_command	{Help.Control Summary.Keys for editing window}		1 0 \
+	{show_help gap4 {Editor-Summary-Keys}}
+add_command	{Help.Control Summary.Mouse usage for editing window}	1 0 \
+	{show_help gap4 {Editor-Summary-Mouse}}
+add_command	{Help.Control Summary.Mouse usage for names window}	1 0 \
+	{show_help gap4 {Editor-Summary-MouseNames}}
+add_command	{Help.Control Summary.Mouse usage for scrollbar}	1 0 \
+	{show_help gap4 {Editor-Summary-Scroll}}
+
+#template display menu
+set_menu template_menu
+add_menu File			1 0 left
+add_menu Edit			8 26 left
+add_menu View			1 0 left
+add_menu Help			1 0 right
+
+add_command {File.Exit}		1 0 {TemplateStartShutdown $io $f \[set $f.template_id\]}
+
+add_command {Edit.Update contig order} 	8 26 {RefreshContigOrder $io $f}
+
+#add_check {View.Ruler}	        1 0 {config$f.ruler} \
+	{UpdateRuler $io $f \[set $f.template_id\] $f.hscroll $brief}
+add_check {View.Ruler ticks}    1 0 {config$f.ticks} \
+	{DisplayRulerTicks $io $f \[set $f.template_id\] $f.hscroll}
+add_check {View.Templates} 	1 0 {config$f.template} \
+	{UpdateTemplateDisplay $io $f $t_win}
+add_check {View.Readings} 	1 0 {config$f.reading} \
+	{UpdateTemplateDisplay $io $f $t_win}
+add_cascade {View.Quality Plot}	1 0
+add_cascade {View.Restriction Enzyme Plot} 1 0
+add_check {View.Ignore 'single' Templates} 1 0 {config$f.multi_template} \
+	{update_template_display -io $io -id \[set $f.template_id\]}
+add_check {View.Show only read pairs} 1 0 {config$f.read_pairs} \
+	{update_template_display -io $io -id \[set $f.template_id\]}
+add_check {View.Show only spanning read pairs} 1 0 {config$f.span_read_pairs} \
+	{update_template_display -io $io -id \[set $f.template_id\]}
+add_check {View.Calculate contig postions} 1 0 {config$f.calc_contig_pos} \
+        {update_template_display -io $io -id \[set $f.template_id\] -recalc 1}
+add_separator {View.S1}
+add_command {View.Select tags} 1 0 \
+	{TagCheckList $f $f[keylget gap_defs SELECT_TAGS.WIN] $io \
+	\[set $f.template_id\] $t_win $r_win}
+add_command {View.Clear ActiveReadings} 1 0 {ListClear readings}
+add_command {View.Highlight reading list} 1 0 {InputSelectReadingList $io}
+
+add_command {Help.Introduction} 1 0 {show_help gap4 {Template-Display}}
+add_command {Help.Reading and Template Plot} 1 0 {show_help gap4 {Template-Templates}}
+add_command {Help.Active Readings} 1 0 {show_help gap4 {Template-Templates-Operations}}
+add_command {Help.Quality Plot} 1 0 {show_help gap4 {Template-Quality}}
+add_command {Help.Restriction Enzyme Plot} 1 0 {show_help gap4 {Template-Restriction}}
+
+#contig selector menu
+set_menu selector_menu
+add_menu File			1 0 left
+add_menu View			1 0 left
+add_menu Results		1 0 left
+add_menu Help			1 0 right
+
+add_command {File.Exit} 	1 0 {CSStartShutdown $io $f}
+add_command {View.Results manager} 	1 0 {ListResults $io}
+add_command {View.List contigs}		1 0 {InitListContigs $io $f $csh_win} 
+add_command {View.Select tags}		1 0 {CSTagCheckList $io $f \
+		    $f[keylget gap_defs SELECT_TAGS.WIN] $csh_win}
+add_command {View.Clear selection} 	1 0 {ClearContigSelection $io $csh_win}
+add_check   {View.Display diagonal} 	1 0 {$f.diagonal} \
+	{DisplayDiagonal $f $csp_win $io}
+add_command {View.Clear all} 		1 0 {CSClearAll $io $f $csp_win $csv_win}
+
+add_command {Help.Contig Selector Introduction} 1 0 {show_help gap4 {Contig Selector}}
+add_command {Help.Selecting Contigs}		1 0 {show_help gap4 {Contig-Selector-Contigs}}
+add_command {Help.Changing the Contig Order} 	1 0 {show_help gap4 {Contig-Selector-Order}}
+add_command {Help.View Menu} 			1 0 {show_help gap4 {Contig-Selector-Menus}}
+add_separator {Help.S1}
+add_command {Help.Contig Comparator Introduction} 1 0 {show_help gap4 {Contig Comparator}}
+add_command {Help.Examining Results} 1 0 {show_help gap4 {Compar-Examining}}
+add_command {Help.Using The Next Button} 1 0 {show_help gap4 {Compar-AutoNavigation}}
+add_separator {Help.S2}
+add_command {Help.Results Manager} 1 0 {show_help gap4 {Results}}
+add_separator {Help.S3}
+add_command {Help.Find Internal Joins} 1 0 {show_help gap4 {FIJ}}
+add_command {Help.Find Repeats} 1 0 {show_help gap4 {Repeats}}
+add_command {Help.Find Read Pairs} 1 0 {show_help gap4 {Read Pairs}}
+add_command {Help.Check Assembly} 1 0 {show_help gap4 {Check Assembly}}
+add_command {Help.Sequence Search} 1 0 {show_help gap4 {Find Oligos}}
+
+#consistency menu
+set_menu consistency_menu
+add_menu File			1 0 left
+add_menu View			1 0 left
+add_menu Results		1 0 left
+add_menu Help			1 0 right
+
+add_command {File.Exit} 	1 0 {ConsistencyStartShutdown $io $t}
+
+#add_check {View.Ruler} 	1 0 {config$t.ruler} \
+	{DisplayConsistencyRuler $io $t \[set $t.cons_id\] $r_win $t.hscroll}
+add_check {View.Ruler ticks} 	1 0 {config$t.ticks} \
+	{DisplayConsistencyRulerTicks $io $t \[set $t.cons_id\] $t.hscroll}
+add_command {View.Confidence graph} 	1 0 \
+	{CreateConfidenceGraph $io \[set $t.cons_id\] $t}
+add_command {View.Reading coverage histogram} 	1 0 \
+	{ConsistencyReadingCoverage $io \[set $t.cons_id\] $t}
+add_command {View.Readpair coverage histogram} 	1 0 \
+	{CreateReadPairCoverage $io \[set $t.cons_id\] $t} 
+add_command {View.Strand coverage} 	1 0 \
+	{ConsistencyStrandCoverage $io \[set $t.cons_id\] $t}
+
+add_command {Help.Introduction} 1 0 {show_help gap4 {Consistency-Display}}
+add_command {Help.Confidence value graph} 	1 0 {show_help gap4 {Consistency-Confidence}}
+add_command {Help.Reading coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadingCov}}
+add_command {Help.Readpair coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadPairCov}}
+add_command {Help.Strand coverage} 	1 0 {show_help gap4 {Consistency-Strand}}
+
+set_def CONTIG_EDITOR.AUTO_DIFF_TRACES	1

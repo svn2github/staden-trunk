@@ -174,7 +174,7 @@ proc prefinish_run {io w} {
 	puts $script_fd {catch {wm withdraw .}}
     }
     puts $script_fd {source $env(STADTABL)/shlib.conf}
-    puts $script_fd {load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}}
+    puts $script_fd {load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}}
     puts $script_fd {load_package gap}
     puts $script_fd {load_package prefinish}
     puts $script_fd {set consensus_cutoff 0.02}

@@ -1,0 +1,261 @@
+add_menu Emboss 1 0 left
+add_cascade Emboss.Acd $::EMBOSS::init 4
+add_command {Emboss.Acd.ACD compiler (acdc)} $::EMBOSS::init 4 ::EMBOSS::acdc::create_dialogue
+add_command {Emboss.Acd.ACD compiler logging (acdlog)} $::EMBOSS::init 4 ::EMBOSS::acdlog::create_dialogue
+add_command {Emboss.Acd.ACD compiler on-screen trace (acdtrace)} $::EMBOSS::init 4 ::EMBOSS::acdtrace::create_dialogue
+add_command {Emboss.Acd.ACD file validation (acdvalid)} $::EMBOSS::init 4 ::EMBOSS::acdvalid::create_dialogue
+add_command {Emboss.Acd.ACD pretty printing utility (acdpretty)} $::EMBOSS::init 4 ::EMBOSS::acdpretty::create_dialogue
+add_command {Emboss.Acd.Creates an HTML table from an ACD file (acdtable)} $::EMBOSS::init 4 ::EMBOSS::acdtable::create_dialogue
+add_cascade Emboss.Alignment $::EMBOSS::init 4
+add_cascade Emboss.Alignment.Consensus $::EMBOSS::init 4
+add_command {Emboss.Alignment.Consensus.Creates a consensus from multiple alignments (cons)} $::EMBOSS::init 4 ::EMBOSS::cons::create_dialogue
+add_command {Emboss.Alignment.Consensus.Merge two large overlapping nucleic acid sequences (megamerger)} $::EMBOSS::init 4 ::EMBOSS::megamerger::create_dialogue
+add_command {Emboss.Alignment.Consensus.Merge two overlapping sequences (merger)} $::EMBOSS::init 4 ::EMBOSS::merger::create_dialogue
+add_cascade Emboss.Alignment.Differences $::EMBOSS::init 4
+add_command {Emboss.Alignment.Differences.Find differences between nearly identical sequences (diffseq)} $::EMBOSS::init 4 ::EMBOSS::diffseq::create_dialogue
+add_cascade {Emboss.Alignment.Dot plots} $::EMBOSS::init 4
+add_command {Emboss.Alignment.Dot plots.Displays a thresholded dotplot of two sequences (dotmatcher)} $::EMBOSS::init 4 ::EMBOSS::dotmatcher::create_dialogue
+add_command {Emboss.Alignment.Dot plots.Displays a wordmatch dotplot of two sequences (dottup)} $::EMBOSS::init 4 ::EMBOSS::dottup::create_dialogue
+add_command {Emboss.Alignment.Dot plots.Displays all-against-all dotplots of a set of sequences (polydot)} $::EMBOSS::init 4 ::EMBOSS::polydot::create_dialogue
+add_command {Emboss.Alignment.Dot plots.Non-overlapping wordmatch dotplot of two sequences (dotpath)} $::EMBOSS::init 4 ::EMBOSS::dotpath::create_dialogue
+add_cascade Emboss.Alignment.Global $::EMBOSS::init 4
+add_command {Emboss.Alignment.Global.Align EST and genomic DNA sequences (est2genome)} $::EMBOSS::init 4 ::EMBOSS::est2genome::create_dialogue
+add_command {Emboss.Alignment.Global.Finds the best global alignment between two sequences (stretcher)} $::EMBOSS::init 4 ::EMBOSS::stretcher::create_dialogue
+add_command {Emboss.Alignment.Global.Needleman-Wunsch global alignment (needle)} $::EMBOSS::init 4 ::EMBOSS::needle::create_dialogue
+add_cascade Emboss.Alignment.Local $::EMBOSS::init 4
+add_command {Emboss.Alignment.Local.All-against-all comparison of a set of sequences (seqmatchall)} $::EMBOSS::init 4 ::EMBOSS::seqmatchall::create_dialogue
+add_command {Emboss.Alignment.Local.Finds all exact matches of a given size between 2 sequences (wordmatch)} $::EMBOSS::init 4 ::EMBOSS::wordmatch::create_dialogue
+add_command {Emboss.Alignment.Local.Finds the best local alignments between two sequences (matcher)} $::EMBOSS::init 4 ::EMBOSS::matcher::create_dialogue
+add_command {Emboss.Alignment.Local.Match large sequences against one or more other sequences (supermatcher)} $::EMBOSS::init 4 ::EMBOSS::supermatcher::create_dialogue
+add_command {Emboss.Alignment.Local.Match large sequences against one or more other sequences (wordfinder)} $::EMBOSS::init 4 ::EMBOSS::wordfinder::create_dialogue
+add_command {Emboss.Alignment.Local.Smith-Waterman local alignment (water)} $::EMBOSS::init 4 ::EMBOSS::water::create_dialogue
+add_cascade Emboss.Alignment.Multiple $::EMBOSS::init 4
+add_command {Emboss.Alignment.Multiple.Align nucleic coding regions given the aligned proteins (tranalign)} $::EMBOSS::init 4 ::EMBOSS::tranalign::create_dialogue
+add_command {Emboss.Alignment.Multiple.Displays a multiple sequence alignment (showalign)} $::EMBOSS::init 4 ::EMBOSS::showalign::create_dialogue
+add_command {Emboss.Alignment.Multiple.Displays aligned sequences, with colouring and boxing (prettyplot)} $::EMBOSS::init 4 ::EMBOSS::prettyplot::create_dialogue
+add_command {Emboss.Alignment.Multiple.Information on a multiple sequence alignment (infoalign)} $::EMBOSS::init 4 ::EMBOSS::infoalign::create_dialogue
+add_command {Emboss.Alignment.Multiple.Local multiple alignment of sequences (edialign)} $::EMBOSS::init 4 ::EMBOSS::edialign::create_dialogue
+add_command {Emboss.Alignment.Multiple.Multiple alignment program - interface to ClustalW program (emma)} $::EMBOSS::init 4 ::EMBOSS::emma::create_dialogue
+add_command {Emboss.Alignment.Multiple.Plot quality of conservation of a sequence alignment (plotcon)} $::EMBOSS::init 4 ::EMBOSS::plotcon::create_dialogue
+add_cascade Emboss.Display $::EMBOSS::init 4
+add_command {Emboss.Display.Display a DNA sequence with 6-frame translation and ORFs (sixpack)} $::EMBOSS::init 4 ::EMBOSS::sixpack::create_dialogue
+add_command {Emboss.Display.Display a sequence with features, translation etc (showseq)} $::EMBOSS::init 4 ::EMBOSS::showseq::create_dialogue
+add_command {Emboss.Display.Display sequence with restriction sites, translation etc (remap)} $::EMBOSS::init 4 ::EMBOSS::remap::create_dialogue
+add_command {Emboss.Display.Displays a multiple sequence alignment (showalign)} $::EMBOSS::init 4 ::EMBOSS::showalign::create_dialogue
+add_command {Emboss.Display.Displays aligned sequences, with colouring and boxing (prettyplot)} $::EMBOSS::init 4 ::EMBOSS::prettyplot::create_dialogue
+add_command {Emboss.Display.Displays information on the currently available databases (showdb)} $::EMBOSS::init 4 ::EMBOSS::showdb::create_dialogue
+add_command {Emboss.Display.Displays proteins as a helical net (pepnet)} $::EMBOSS::init 4 ::EMBOSS::pepnet::create_dialogue
+add_command {Emboss.Display.Draws circular maps of DNA constructs (cirdna)} $::EMBOSS::init 4 ::EMBOSS::cirdna::create_dialogue
+add_command {Emboss.Display.Draws linear maps of DNA constructs (lindna)} $::EMBOSS::init 4 ::EMBOSS::lindna::create_dialogue
+add_command {Emboss.Display.Finds programs sharing group names (seealso)} $::EMBOSS::init 4 ::EMBOSS::seealso::create_dialogue
+add_command {Emboss.Display.Output sequence with translated ranges (prettyseq)} $::EMBOSS::init 4 ::EMBOSS::prettyseq::create_dialogue
+add_command {Emboss.Display.Reads ABI file and display the trace (abiview)} $::EMBOSS::init 4 ::EMBOSS::abiview::create_dialogue
+add_command {Emboss.Display.Search sequence documentation Slow, use SRS and Entrez! (textsearch)} $::EMBOSS::init 4 ::EMBOSS::textsearch::create_dialogue
+add_command {Emboss.Display.Show features of a sequence (showfeat)} $::EMBOSS::init 4 ::EMBOSS::showfeat::create_dialogue
+add_command {Emboss.Display.Shows protein sequences as helices (pepwheel)} $::EMBOSS::init 4 ::EMBOSS::pepwheel::create_dialogue
+add_cascade Emboss.Edit $::EMBOSS::init 4
+add_command {Emboss.Edit.Alter the name or description of a sequence (descseq)} $::EMBOSS::init 4 ::EMBOSS::descseq::create_dialogue
+add_command {Emboss.Edit.Creates random nucleotide sequences (makenucseq)} $::EMBOSS::init 4 ::EMBOSS::makenucseq::create_dialogue
+add_command {Emboss.Edit.Creates random protein sequences (makeprotseq)} $::EMBOSS::init 4 ::EMBOSS::makeprotseq::create_dialogue
+add_command {Emboss.Edit.Exclude a set of sequences and write out the remaining ones (notseq)} $::EMBOSS::init 4 ::EMBOSS::notseq::create_dialogue
+add_command {Emboss.Edit.Extract features from a sequence (extractfeat)} $::EMBOSS::init 4 ::EMBOSS::extractfeat::create_dialogue
+add_command {Emboss.Edit.Extract regions from a sequence (extractseq)} $::EMBOSS::init 4 ::EMBOSS::extractseq::create_dialogue
+add_command {Emboss.Edit.Extract regions from a sequence alignment (extractalign)} $::EMBOSS::init 4 ::EMBOSS::extractalign::create_dialogue
+add_command {Emboss.Edit.Insert one sequence into another (pasteseq)} $::EMBOSS::init 4 ::EMBOSS::pasteseq::create_dialogue
+add_command {Emboss.Edit.Mask off features of a sequence (maskfeat)} $::EMBOSS::init 4 ::EMBOSS::maskfeat::create_dialogue
+add_command {Emboss.Edit.Mask off regions of a sequence (maskseq)} $::EMBOSS::init 4 ::EMBOSS::maskseq::create_dialogue
+add_command {Emboss.Edit.Reads a sequence range, appends the full USA to a list file (yank)} $::EMBOSS::init 4 ::EMBOSS::yank::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) a set of sequences all at once (seqretset)} $::EMBOSS::init 4 ::EMBOSS::seqretset::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) a set of sequences one at a time (seqretall)} $::EMBOSS::init 4 ::EMBOSS::seqretall::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) flatfile entries (entret)} $::EMBOSS::init 4 ::EMBOSS::entret::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) sequences (seqret)} $::EMBOSS::init 4 ::EMBOSS::seqret::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) sequences (seqrettype)} $::EMBOSS::init 4 ::EMBOSS::seqrettype::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) sequences in individual files (seqretsplit)} $::EMBOSS::init 4 ::EMBOSS::seqretsplit::create_dialogue
+add_command {Emboss.Edit.Reads and writes (returns) sequences, skipping first few (skipseq)} $::EMBOSS::init 4 ::EMBOSS::skipseq::create_dialogue
+add_command {Emboss.Edit.Reads and writes a codon usage table (codcopy)} $::EMBOSS::init 4 ::EMBOSS::codcopy::create_dialogue
+add_command {Emboss.Edit.Reads sequence fragments and builds one sequence (origunion)} $::EMBOSS::init 4 ::EMBOSS::origunion::create_dialogue
+add_command {Emboss.Edit.Reads sequence fragments and builds one sequence (union)} $::EMBOSS::init 4 ::EMBOSS::union::create_dialogue
+add_command {Emboss.Edit.Removes a specified section from a sequence (cutseq)} $::EMBOSS::init 4 ::EMBOSS::cutseq::create_dialogue
+add_command {Emboss.Edit.Removes carriage return from ASCII files (noreturn)} $::EMBOSS::init 4 ::EMBOSS::noreturn::create_dialogue
+add_command {Emboss.Edit.Removes gap characters from sequences (degapseq)} $::EMBOSS::init 4 ::EMBOSS::degapseq::create_dialogue
+add_command {Emboss.Edit.Replace or delete sequence sections (biosed)} $::EMBOSS::init 4 ::EMBOSS::biosed::create_dialogue
+add_command {Emboss.Edit.Reverse and complement a sequence (revseq)} $::EMBOSS::init 4 ::EMBOSS::revseq::create_dialogue
+add_command {Emboss.Edit.Split a sequence into (overlapping) smaller sequences (origsplitter)} $::EMBOSS::init 4 ::EMBOSS::origsplitter::create_dialogue
+add_command {Emboss.Edit.Split a sequence into (overlapping) smaller sequences (splitter)} $::EMBOSS::init 4 ::EMBOSS::splitter::create_dialogue
+add_command {Emboss.Edit.Strips out DNA between a pair of vector sequences (vectorstrip)} $::EMBOSS::init 4 ::EMBOSS::vectorstrip::create_dialogue
+add_command {Emboss.Edit.Trim ambiguous bits off the ends of sequences (trimseq)} $::EMBOSS::init 4 ::EMBOSS::trimseq::create_dialogue
+add_command {Emboss.Edit.Trim poly-A tails off EST sequences (trimest)} $::EMBOSS::init 4 ::EMBOSS::trimest::create_dialogue
+add_command {Emboss.Edit.Type in a short new sequence (newseq)} $::EMBOSS::init 4 ::EMBOSS::newseq::create_dialogue
+add_command {Emboss.Edit.Write a list file of the logical OR of two sets of sequences (listor)} $::EMBOSS::init 4 ::EMBOSS::listor::create_dialogue
+add_command {Emboss.Edit.Writes one sequence from a multiple set of sequences (nthseq)} $::EMBOSS::init 4 ::EMBOSS::nthseq::create_dialogue
+add_cascade {Emboss.Enzyme Kinetics} $::EMBOSS::init 4
+add_command {Emboss.Enzyme Kinetics.Find Km and Vmax for an enzyme reaction (findkm)} $::EMBOSS::init 4 ::EMBOSS::findkm::create_dialogue
+add_cascade {Emboss.Feature tables} $::EMBOSS::init 4
+add_command {Emboss.Feature tables.Extract CDS, mRNA and translations from feature tables (coderet)} $::EMBOSS::init 4 ::EMBOSS::coderet::create_dialogue
+add_command {Emboss.Feature tables.Extract features from a sequence (extractfeat)} $::EMBOSS::init 4 ::EMBOSS::extractfeat::create_dialogue
+add_command {Emboss.Feature tables.Finds neighbouring pairs of features in sequences (twofeat)} $::EMBOSS::init 4 ::EMBOSS::twofeat::create_dialogue
+add_command {Emboss.Feature tables.Mask off features of a sequence (maskfeat)} $::EMBOSS::init 4 ::EMBOSS::maskfeat::create_dialogue
+add_command {Emboss.Feature tables.Show features of a sequence (showfeat)} $::EMBOSS::init 4 ::EMBOSS::showfeat::create_dialogue
+add_cascade Emboss.Information $::EMBOSS::init 4
+add_command {Emboss.Information.Displays a program's help documentation manual (tfm)} $::EMBOSS::init 4 ::EMBOSS::tfm::create_dialogue
+add_command {Emboss.Information.Displays information on the currently available databases (showdb)} $::EMBOSS::init 4 ::EMBOSS::showdb::create_dialogue
+add_command {Emboss.Information.Displays some simple information about sequences (infoseq)} $::EMBOSS::init 4 ::EMBOSS::infoseq::create_dialogue
+add_command {Emboss.Information.Finds programs by keywords in their one-line documentation (wossname)} $::EMBOSS::init 4 ::EMBOSS::wossname::create_dialogue
+add_command {Emboss.Information.Finds programs sharing group names (seealso)} $::EMBOSS::init 4 ::EMBOSS::seealso::create_dialogue
+add_command {Emboss.Information.Information on a multiple sequence alignment (infoalign)} $::EMBOSS::init 4 ::EMBOSS::infoalign::create_dialogue
+add_command {Emboss.Information.Search all databases for an entry (whichdb)} $::EMBOSS::init 4 ::EMBOSS::whichdb::create_dialogue
+add_command {Emboss.Information.Search sequence documentation Slow, use SRS and Entrez! (textsearch)} $::EMBOSS::init 4 ::EMBOSS::textsearch::create_dialogue
+add_cascade Emboss.Nucleic $::EMBOSS::init 4
+add_cascade {Emboss.Nucleic.2D structure} $::EMBOSS::init 4
+add_command {Emboss.Nucleic.2D structure.Finds DNA inverted repeats (einverted)} $::EMBOSS::init 4 ::EMBOSS::einverted::create_dialogue
+add_cascade {Emboss.Nucleic.Codon usage} $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Codon usage.CAI codon adaptation index (cai)} $::EMBOSS::init 4 ::EMBOSS::cai::create_dialogue
+add_command {Emboss.Nucleic.Codon usage.Codon usage statistics (chips)} $::EMBOSS::init 4 ::EMBOSS::chips::create_dialogue
+add_command {Emboss.Nucleic.Codon usage.Codon usage table comparison (codcmp)} $::EMBOSS::init 4 ::EMBOSS::codcmp::create_dialogue
+add_command {Emboss.Nucleic.Codon usage.Create a codon usage table (cusp)} $::EMBOSS::init 4 ::EMBOSS::cusp::create_dialogue
+add_command {Emboss.Nucleic.Codon usage.Synonymous codon usage Gribskov statistic plot (syco)} $::EMBOSS::init 4 ::EMBOSS::syco::create_dialogue
+add_cascade Emboss.Nucleic.Composition $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Composition.Bending and curvature plot in B-DNA (banana)} $::EMBOSS::init 4 ::EMBOSS::banana::create_dialogue
+add_command {Emboss.Nucleic.Composition.Calculates DNA RNA/DNA melting temperature (dan)} $::EMBOSS::init 4 ::EMBOSS::dan::create_dialogue
+add_command {Emboss.Nucleic.Composition.Calculates the twisting in a B-DNA sequence (btwisted)} $::EMBOSS::init 4 ::EMBOSS::btwisted::create_dialogue
+add_command {Emboss.Nucleic.Composition.Count composition of dimer/trimer/etc words in a sequence (compseq)} $::EMBOSS::init 4 ::EMBOSS::compseq::create_dialogue
+add_command {Emboss.Nucleic.Composition.Counts words of a specified size in a DNA sequence (wordcount)} $::EMBOSS::init 4 ::EMBOSS::wordcount::create_dialogue
+add_command {Emboss.Nucleic.Composition.Create a chaos game representation plot for a sequence (chaos)} $::EMBOSS::init 4 ::EMBOSS::chaos::create_dialogue
+add_command {Emboss.Nucleic.Composition.Find the linguistic complexity in nucleotide sequences (complex)} $::EMBOSS::init 4 ::EMBOSS::complex::create_dialogue
+add_command {Emboss.Nucleic.Composition.Finds siRNA duplexes in mRNA (sirna)} $::EMBOSS::init 4 ::EMBOSS::sirna::create_dialogue
+add_command {Emboss.Nucleic.Composition.Plots isochores in large DNA sequences (isochore)} $::EMBOSS::init 4 ::EMBOSS::isochore::create_dialogue
+add_command {Emboss.Nucleic.Composition.Residue/base frequency table or plot (freak)} $::EMBOSS::init 4 ::EMBOSS::freak::create_dialogue
+add_cascade {Emboss.Nucleic.CpG Islands} $::EMBOSS::init 4
+add_command {Emboss.Nucleic.CpG Islands.Calculates fractional GC content of nucleic acid sequences (geecee)} $::EMBOSS::init 4 ::EMBOSS::geecee::create_dialogue
+add_command {Emboss.Nucleic.CpG Islands.Plot CpG rich areas (cpgplot)} $::EMBOSS::init 4 ::EMBOSS::cpgplot::create_dialogue
+add_command {Emboss.Nucleic.CpG Islands.Report CpG rich areas (newcpgreport)} $::EMBOSS::init 4 ::EMBOSS::newcpgreport::create_dialogue
+add_command {Emboss.Nucleic.CpG Islands.Reports all CpG rich regions (cpgreport)} $::EMBOSS::init 4 ::EMBOSS::cpgreport::create_dialogue
+add_command {Emboss.Nucleic.CpG Islands.Reports CpG rich regions (newcpgseek)} $::EMBOSS::init 4 ::EMBOSS::newcpgseek::create_dialogue
+add_cascade {Emboss.Nucleic.Gene finding} $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Gene finding.Display a DNA sequence with 6-frame translation and ORFs (sixpack)} $::EMBOSS::init 4 ::EMBOSS::sixpack::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Fickett TESTCODE statistic to identify protein-coding DNA (tcode)} $::EMBOSS::init 4 ::EMBOSS::tcode::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Finds and extracts open reading frames (ORFs) (getorf)} $::EMBOSS::init 4 ::EMBOSS::getorf::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Finds MAR/SAR sites in nucleic sequences (marscan)} $::EMBOSS::init 4 ::EMBOSS::marscan::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Plot potential open reading frames (plotorf)} $::EMBOSS::init 4 ::EMBOSS::plotorf::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Pretty output of DNA translations (showorf)} $::EMBOSS::init 4 ::EMBOSS::showorf::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Synonymous codon usage Gribskov statistic plot (syco)} $::EMBOSS::init 4 ::EMBOSS::syco::create_dialogue
+add_command {Emboss.Nucleic.Gene finding.Wobble base plot (wobble)} $::EMBOSS::init 4 ::EMBOSS::wobble::create_dialogue
+add_cascade Emboss.Nucleic.Motifs $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Motifs.Finds MAR/SAR sites in nucleic sequences (marscan)} $::EMBOSS::init 4 ::EMBOSS::marscan::create_dialogue
+add_command {Emboss.Nucleic.Motifs.Nucleic acid pattern search (fuzznuc)} $::EMBOSS::init 4 ::EMBOSS::fuzznuc::create_dialogue
+add_command {Emboss.Nucleic.Motifs.Protein pattern search after translation (fuzztran)} $::EMBOSS::init 4 ::EMBOSS::fuzztran::create_dialogue
+add_command {Emboss.Nucleic.Motifs.Regular expression search of a nucleotide sequence (dreg)} $::EMBOSS::init 4 ::EMBOSS::dreg::create_dialogue
+add_cascade Emboss.Nucleic.Mutation $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Mutation.Mutate sequence beyond all recognition (msbar)} $::EMBOSS::init 4 ::EMBOSS::msbar::create_dialogue
+add_command {Emboss.Nucleic.Mutation.Shuffles a set of sequences maintaining composition (shuffleseq)} $::EMBOSS::init 4 ::EMBOSS::shuffleseq::create_dialogue
+add_cascade Emboss.Nucleic.Primers $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Primers.Picks PCR primers and hybridization oligos (eprimer3)} $::EMBOSS::init 4 ::EMBOSS::eprimer3::create_dialogue
+add_command {Emboss.Nucleic.Primers.Search a DNA database for matches with a set of STS primers (stssearch)} $::EMBOSS::init 4 ::EMBOSS::stssearch::create_dialogue
+add_command {Emboss.Nucleic.Primers.Searches DNA sequences for matches with primer pairs (primersearch)} $::EMBOSS::init 4 ::EMBOSS::primersearch::create_dialogue
+add_command {Emboss.Nucleic.Primers.Selects primers for PCR and DNA amplification (prima)} $::EMBOSS::init 4 ::EMBOSS::prima::create_dialogue
+add_command {Emboss.Nucleic.Primers.Simple version of primer3 to pick PCR primers (primers)} $::EMBOSS::init 4 ::EMBOSS::primers::create_dialogue
+add_cascade Emboss.Nucleic.Profiles $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Profiles.Creates matrices/profiles from multiple alignments (prophecy)} $::EMBOSS::init 4 ::EMBOSS::prophecy::create_dialogue
+add_command {Emboss.Nucleic.Profiles.Gapped alignment for profiles (prophet)} $::EMBOSS::init 4 ::EMBOSS::prophet::create_dialogue
+add_command {Emboss.Nucleic.Profiles.Scan a sequence or database with a matrix or profile (profit)} $::EMBOSS::init 4 ::EMBOSS::profit::create_dialogue
+add_cascade Emboss.Nucleic.Repeats $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Repeats.Finds DNA inverted repeats (einverted)} $::EMBOSS::init 4 ::EMBOSS::einverted::create_dialogue
+add_command {Emboss.Nucleic.Repeats.Finds tandem repeats (equicktandem)} $::EMBOSS::init 4 ::EMBOSS::equicktandem::create_dialogue
+add_command {Emboss.Nucleic.Repeats.Looks for inverted repeats in a nucleotide sequence (palindrome)} $::EMBOSS::init 4 ::EMBOSS::palindrome::create_dialogue
+add_command {Emboss.Nucleic.Repeats.Looks for tandem repeats in a nucleotide sequence (etandem)} $::EMBOSS::init 4 ::EMBOSS::etandem::create_dialogue
+add_cascade Emboss.Nucleic.Restriction $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Restriction.Display a sequence with features, translation etc (showseq)} $::EMBOSS::init 4 ::EMBOSS::showseq::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Display sequence with restriction sites, translation etc (remap)} $::EMBOSS::init 4 ::EMBOSS::remap::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Find restriction enzymes producing specific overhang (restover)} $::EMBOSS::init 4 ::EMBOSS::restover::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Finds restriction enzyme cleavage sites (restrict)} $::EMBOSS::init 4 ::EMBOSS::restrict::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Remove restriction sites but maintain same translation (recoder)} $::EMBOSS::init 4 ::EMBOSS::recoder::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Search REBASE for enzyme name, references, suppliers etc (redata)} $::EMBOSS::init 4 ::EMBOSS::redata::create_dialogue
+add_command {Emboss.Nucleic.Restriction.Silent mutation restriction enzyme scan (silent)} $::EMBOSS::init 4 ::EMBOSS::silent::create_dialogue
+add_cascade Emboss.Nucleic.Transcription $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Transcription.Scans DNA sequences for transcription factors (tfscan)} $::EMBOSS::init 4 ::EMBOSS::tfscan::create_dialogue
+add_cascade Emboss.Nucleic.Translation $::EMBOSS::init 4
+add_command {Emboss.Nucleic.Translation.Back translate a protein sequence (backtranseq)} $::EMBOSS::init 4 ::EMBOSS::backtranseq::create_dialogue
+add_command {Emboss.Nucleic.Translation.Back translate a protein sequence to ambiguous codons (backtranambig)} $::EMBOSS::init 4 ::EMBOSS::backtranambig::create_dialogue
+add_command {Emboss.Nucleic.Translation.Display a DNA sequence with 6-frame translation and ORFs (sixpack)} $::EMBOSS::init 4 ::EMBOSS::sixpack::create_dialogue
+add_command {Emboss.Nucleic.Translation.Display a sequence with features, translation etc (showseq)} $::EMBOSS::init 4 ::EMBOSS::showseq::create_dialogue
+add_command {Emboss.Nucleic.Translation.Display sequence with restriction sites, translation etc (remap)} $::EMBOSS::init 4 ::EMBOSS::remap::create_dialogue
+add_command {Emboss.Nucleic.Translation.Extract CDS, mRNA and translations from feature tables (coderet)} $::EMBOSS::init 4 ::EMBOSS::coderet::create_dialogue
+add_command {Emboss.Nucleic.Translation.Output sequence with translated ranges (prettyseq)} $::EMBOSS::init 4 ::EMBOSS::prettyseq::create_dialogue
+add_command {Emboss.Nucleic.Translation.Plot potential open reading frames (plotorf)} $::EMBOSS::init 4 ::EMBOSS::plotorf::create_dialogue
+add_command {Emboss.Nucleic.Translation.Pretty output of DNA translations (showorf)} $::EMBOSS::init 4 ::EMBOSS::showorf::create_dialogue
+add_command {Emboss.Nucleic.Translation.Translate nucleic acid sequences (transeq)} $::EMBOSS::init 4 ::EMBOSS::transeq::create_dialogue
+add_cascade Emboss.Phylogeny $::EMBOSS::init 4
+add_cascade {Emboss.Phylogeny.Molecular sequence} $::EMBOSS::init 4
+add_command {Emboss.Phylogeny.Molecular sequence.Creates a distance matrix from multiple alignments (distmat)} $::EMBOSS::init 4 ::EMBOSS::distmat::create_dialogue
+add_cascade Emboss.Protein $::EMBOSS::init 4
+add_cascade {Emboss.Protein.2D Structure} $::EMBOSS::init 4
+add_command {Emboss.Protein.2D Structure.Displays membrane spanning regions (tmap)} $::EMBOSS::init 4 ::EMBOSS::tmap::create_dialogue
+add_command {Emboss.Protein.2D Structure.Displays proteins as a helical net (pepnet)} $::EMBOSS::init 4 ::EMBOSS::pepnet::create_dialogue
+add_command {Emboss.Protein.2D Structure.Hydrophobic moment calculation (hmoment)} $::EMBOSS::init 4 ::EMBOSS::hmoment::create_dialogue
+add_command {Emboss.Protein.2D Structure.Predicts coiled coil regions (pepcoil)} $::EMBOSS::init 4 ::EMBOSS::pepcoil::create_dialogue
+add_command {Emboss.Protein.2D Structure.Predicts coils protein secondary structure (newcoils)} $::EMBOSS::init 4 ::EMBOSS::newcoils::create_dialogue
+add_command {Emboss.Protein.2D Structure.Predicts protein secondary structure (garnier)} $::EMBOSS::init 4 ::EMBOSS::garnier::create_dialogue
+add_command {Emboss.Protein.2D Structure.Report nucleic acid binding motifs (helixturnhelix)} $::EMBOSS::init 4 ::EMBOSS::helixturnhelix::create_dialogue
+add_command {Emboss.Protein.2D Structure.Shows protein sequences as helices (pepwheel)} $::EMBOSS::init 4 ::EMBOSS::pepwheel::create_dialogue
+add_cascade Emboss.protein $::EMBOSS::init 4
+add_cascade {Emboss.protein.3D structure} $::EMBOSS::init 4
+add_command {Emboss.protein.3D structure.Phi and psi torsion angles from protein coordinates (psiphi)} $::EMBOSS::init 4 ::EMBOSS::psiphi::create_dialogue
+add_cascade Emboss.Protein.Composition $::EMBOSS::init 4
+add_command {Emboss.Protein.Composition.Back translate a protein sequence (backtranseq)} $::EMBOSS::init 4 ::EMBOSS::backtranseq::create_dialogue
+add_command {Emboss.Protein.Composition.Back translate a protein sequence to ambiguous codons (backtranambig)} $::EMBOSS::init 4 ::EMBOSS::backtranambig::create_dialogue
+add_command {Emboss.Protein.Composition.Calculates the isoelectric point of a protein (giep)} $::EMBOSS::init 4 ::EMBOSS::giep::create_dialogue
+add_command {Emboss.Protein.Composition.Calculates the isoelectric point of a protein (iep)} $::EMBOSS::init 4 ::EMBOSS::iep::create_dialogue
+add_command {Emboss.Protein.Composition.Count composition of dimer/trimer/etc words in a sequence (compseq)} $::EMBOSS::init 4 ::EMBOSS::compseq::create_dialogue
+add_command {Emboss.Protein.Composition.Displays protein hydropathy (octanol)} $::EMBOSS::init 4 ::EMBOSS::octanol::create_dialogue
+add_command {Emboss.Protein.Composition.Displays protein hydropathy (pepwindow)} $::EMBOSS::init 4 ::EMBOSS::pepwindow::create_dialogue
+add_command {Emboss.Protein.Composition.Displays protein hydropathy of a set of sequences (pepwindowall)} $::EMBOSS::init 4 ::EMBOSS::pepwindowall::create_dialogue
+add_command {Emboss.Protein.Composition.Filter noisy molwts from mass spec output (mwfilter)} $::EMBOSS::init 4 ::EMBOSS::mwfilter::create_dialogue
+add_command {Emboss.Protein.Composition.Plots simple amino acid properties in parallel (pepinfo)} $::EMBOSS::init 4 ::EMBOSS::pepinfo::create_dialogue
+add_command {Emboss.Protein.Composition.Protein charge plot (charge)} $::EMBOSS::init 4 ::EMBOSS::charge::create_dialogue
+add_command {Emboss.Protein.Composition.Protein identification by mass spectrometry (emowse)} $::EMBOSS::init 4 ::EMBOSS::emowse::create_dialogue
+add_command {Emboss.Protein.Composition.Protein statistics (pepstats)} $::EMBOSS::init 4 ::EMBOSS::pepstats::create_dialogue
+add_command {Emboss.Protein.Composition.Reports STOP codons and ORF statistics of a protein (checktrans)} $::EMBOSS::init 4 ::EMBOSS::checktrans::create_dialogue
+add_command {Emboss.Protein.Composition.Residue/base frequency table or plot (freak)} $::EMBOSS::init 4 ::EMBOSS::freak::create_dialogue
+add_command {Emboss.Protein.Composition.Shows molwts that match across a set of files (mwcontam)} $::EMBOSS::init 4 ::EMBOSS::mwcontam::create_dialogue
+add_cascade Emboss.Protein.Motifs $::EMBOSS::init 4
+add_command {Emboss.Protein.Motifs.Find protein sequence regions with a biased composition (oddcomp)} $::EMBOSS::init 4 ::EMBOSS::oddcomp::create_dialogue
+add_command {Emboss.Protein.Motifs.Finds antigenic sites in proteins (antigenic)} $::EMBOSS::init 4 ::EMBOSS::antigenic::create_dialogue
+add_command {Emboss.Protein.Motifs.Finds PEST motifs as potential proteolytic cleavage sites (epestfind)} $::EMBOSS::init 4 ::EMBOSS::epestfind::create_dialogue
+add_command {Emboss.Protein.Motifs.Predicts coiled coil regions (pepcoil)} $::EMBOSS::init 4 ::EMBOSS::pepcoil::create_dialogue
+add_command {Emboss.Protein.Motifs.Protein pattern search (fuzzpro)} $::EMBOSS::init 4 ::EMBOSS::fuzzpro::create_dialogue
+add_command {Emboss.Protein.Motifs.Protein pattern search after translation (fuzztran)} $::EMBOSS::init 4 ::EMBOSS::fuzztran::create_dialogue
+add_command {Emboss.Protein.Motifs.Protein proteolytic enzyme or reagent cleavage digest (digest)} $::EMBOSS::init 4 ::EMBOSS::digest::create_dialogue
+add_command {Emboss.Protein.Motifs.Regular expression search of a protein sequence (preg)} $::EMBOSS::init 4 ::EMBOSS::preg::create_dialogue
+add_command {Emboss.Protein.Motifs.Report nucleic acid binding motifs (helixturnhelix)} $::EMBOSS::init 4 ::EMBOSS::helixturnhelix::create_dialogue
+add_command {Emboss.Protein.Motifs.Reports protein signal cleavage sites (sigcleave)} $::EMBOSS::init 4 ::EMBOSS::sigcleave::create_dialogue
+add_command {Emboss.Protein.Motifs.Scans proteins using PRINTS (pscan)} $::EMBOSS::init 4 ::EMBOSS::pscan::create_dialogue
+add_command {Emboss.Protein.Motifs.Search a PROSITE motif database with a protein sequence (patmatmotifs)} $::EMBOSS::init 4 ::EMBOSS::patmatmotifs::create_dialogue
+add_command {Emboss.Protein.Motifs.Search a protein sequence with a motif (patmatdb)} $::EMBOSS::init 4 ::EMBOSS::patmatdb::create_dialogue
+add_cascade Emboss.Protein.Mutation $::EMBOSS::init 4
+add_command {Emboss.Protein.Mutation.Mutate sequence beyond all recognition (msbar)} $::EMBOSS::init 4 ::EMBOSS::msbar::create_dialogue
+add_command {Emboss.Protein.Mutation.Shuffles a set of sequences maintaining composition (shuffleseq)} $::EMBOSS::init 4 ::EMBOSS::shuffleseq::create_dialogue
+add_cascade Emboss.Protein.Profiles $::EMBOSS::init 4
+add_command {Emboss.Protein.Profiles.Creates matrices/profiles from multiple alignments (prophecy)} $::EMBOSS::init 4 ::EMBOSS::prophecy::create_dialogue
+add_command {Emboss.Protein.Profiles.Gapped alignment for profiles (prophet)} $::EMBOSS::init 4 ::EMBOSS::prophet::create_dialogue
+add_command {Emboss.Protein.Profiles.Scan a sequence or database with a matrix or profile (profit)} $::EMBOSS::init 4 ::EMBOSS::profit::create_dialogue
+add_cascade Emboss.Utils $::EMBOSS::init 4
+add_cascade {Emboss.Utils.Database creation} $::EMBOSS::init 4
+add_command {Emboss.Utils.Database creation.Build the PROSITE motif database for use by patmatmotifs (prosextract)} $::EMBOSS::init 4 ::EMBOSS::prosextract::create_dialogue
+add_command {Emboss.Utils.Database creation.Extract data from AAINDEX (aaindexextract)} $::EMBOSS::init 4 ::EMBOSS::aaindexextract::create_dialogue
+add_command {Emboss.Utils.Database creation.Extract data from CUTG (cutgextract)} $::EMBOSS::init 4 ::EMBOSS::cutgextract::create_dialogue
+add_command {Emboss.Utils.Database creation.Extract data from PRINTS (printsextract)} $::EMBOSS::init 4 ::EMBOSS::printsextract::create_dialogue
+add_command {Emboss.Utils.Database creation.Extract data from REBASE (rebaseextract)} $::EMBOSS::init 4 ::EMBOSS::rebaseextract::create_dialogue
+add_command {Emboss.Utils.Database creation.Extract data from TRANSFAC (tfextract)} $::EMBOSS::init 4 ::EMBOSS::tfextract::create_dialogue
+add_cascade {Emboss.Utils.Database indexing} $::EMBOSS::init 4
+add_command {Emboss.Utils.Database indexing.Database b+tree indexing for fasta file databases (dbxfasta)} $::EMBOSS::init 4 ::EMBOSS::dbxfasta::create_dialogue
+add_command {Emboss.Utils.Database indexing.Database b+tree indexing for flat file databases (dbxflat)} $::EMBOSS::init 4 ::EMBOSS::dbxflat::create_dialogue
+add_command {Emboss.Utils.Database indexing.Database b+tree indexing for GCG formatted databases (dbxgcg)} $::EMBOSS::init 4 ::EMBOSS::dbxgcg::create_dialogue
+add_command {Emboss.Utils.Database indexing.Database indexing for fasta file databases (dbifasta)} $::EMBOSS::init 4 ::EMBOSS::dbifasta::create_dialogue
+add_command {Emboss.Utils.Database indexing.Index a BLAST database (dbiblast)} $::EMBOSS::init 4 ::EMBOSS::dbiblast::create_dialogue
+add_command {Emboss.Utils.Database indexing.Index a flat file database (dbiflat)} $::EMBOSS::init 4 ::EMBOSS::dbiflat::create_dialogue
+add_command {Emboss.Utils.Database indexing.Index a GCG formatted database (dbigcg)} $::EMBOSS::init 4 ::EMBOSS::dbigcg::create_dialogue
+add_cascade Emboss.Utils.Misc $::EMBOSS::init 4
+add_command {Emboss.Utils.Misc.Finds or fetches data files read by EMBOSS programs (embossdata)} $::EMBOSS::init 4 ::EMBOSS::embossdata::create_dialogue
+add_command {Emboss.Utils.Misc.Reports the internal data from the EMBOSS code (entrails)} $::EMBOSS::init 4 ::EMBOSS::entrails::create_dialogue
+add_command {Emboss.Utils.Misc.Writes the current EMBOSS version number (embossversion)} $::EMBOSS::init 4 ::EMBOSS::embossversion::create_dialogue
+

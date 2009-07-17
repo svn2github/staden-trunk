@@ -11,7 +11,6 @@ include $(SRCROOT)/global.mk
 include ../system.mk
 
 CFLAGS += $(SHLIB_CFLAGS) $(SEQ_UTILS_DLL)
-SEQUTILSBIN=$(O)
 
 INCLUDES_E += $(MISC_INC) $(TEXTUTILS_INC)
 
@@ -19,23 +18,23 @@ INCLUDES_E += $(MISC_INC) $(TEXTUTILS_INC)
 # Objects
 #
 OBJS = \
-	$(SEQUTILSBIN)/align.o \
-	$(SEQUTILSBIN)/align_lib_old.o \
-	$(SEQUTILSBIN)/align_ss.o \
-	$(SEQUTILSBIN)/align_ss2.o \
-	$(SEQUTILSBIN)/align_sv.o \
-	$(SEQUTILSBIN)/dna_utils.o \
-	$(SEQUTILSBIN)/genetic_code.o \
-	$(SEQUTILSBIN)/renz_utils.o \
-	$(SEQUTILSBIN)/sequence_formats.o \
-	$(SEQUTILSBIN)/scramble.o \
-	$(SEQUTILSBIN)/base_comp.o \
-	$(SEQUTILSBIN)/open_reading_frames.o\
-	$(SEQUTILSBIN)/edge.o\
-	$(SEQUTILSBIN)/search_utils.o\
-	$(SEQUTILSBIN)/align_lib.o\
-	$(SEQUTILSBIN)/read_matrix.o\
-	$(SEQUTILSBIN)/filter_words.o
+	align.o \
+	align_lib_old.o \
+	align_ss.o \
+	align_ss2.o \
+	align_sv.o \
+	dna_utils.o \
+	genetic_code.o \
+	renz_utils.o \
+	sequence_formats.o \
+	scramble.o \
+	base_comp.o \
+	open_reading_frames.o\
+	edge.o\
+	search_utils.o\
+	align_lib.o\
+	read_matrix.o\
+	filter_words.o
 
 
 SU_LIBS = \
@@ -66,8 +65,10 @@ DEPEND_OBJ = $(OBJS)
 distsrc: distsrc_dirs
 	-cp -R *.[ch] *.gbl Makefile dependencies $(DIRNAME)
 
+S=$(SRCROOT)/seq_utils
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)
+	cp $(S)/align_lib_nuc_matrix $(S)/nuc_matrix $(INSTALLETC)
 
 include dependencies
 # DO NOT DELETE

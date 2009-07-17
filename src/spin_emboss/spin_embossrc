@@ -1,0 +1,7 @@
+if {[file exists $env(STADTABL)/emboss_menu]} {
+   load_package spin_emboss
+
+   emboss_init
+   
+   source $env(STADTABL)/emboss_menu
+}

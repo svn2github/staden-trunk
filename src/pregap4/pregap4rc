@@ -1,0 +1,374 @@
+#
+# Copyright (c) Medical Research Council, Laboratory of Molecular Biology,
+# 1998. All rights reserved.
+#
+# This file is part of the Staden Package. See the Staden Package copyright
+# notice for information on the restrictions for usage and distribution, and
+# for a disclaimer of all warranties.
+#
+
+# The menu state bit enable/disable patterns are as follows
+# Bit 0: Startup (and no database open)         (on)
+# Bit 1: Busy mode                              (off)
+
+set_menu pregap4_menu
+add_menu File           1 0 left
+add_menu Modules        1 0 left
+add_menu {Information source} 1 0 left
+add_menu Options        1 0 left
+add_menu Help           1 0 right
+
+add_command     {File.Set Files to Process}       1   0 {file_panel}
+add_command {File.Load New Config File}   1   2 {load_new_config}
+add_command     {File.Load Naming Scheme}         1   2 {add_template_gui 1}
+add_command     {File.Include Config Component}   1   2 {add_template_gui 0}
+add_separator   {File.S1}
+add_command     {File.Save All Parameters (in all modules)}     \
+                                                  1   2 {save_all_params}
+add_command     {File.Save All Parameters (in all modules) to:}     \
+                                                  1   2 {save_all_params_to}
+add_command     {File.Save Module List}           1   0 {save_module_list}
+add_separator   {File.S2}
+add_command     {File.Exit}                       1   0 {exit}
+
+add_command     {Modules.Add/Remove Modules}      1   2 {select_modules}
+add_command     {Modules.Configure Modules}       1   2 {config_panel}
+add_separator   {Modules.S1}
+add_command     {Modules.Select all modules}      1   2 {select_all_modules 1}
+add_command     {Modules.Deselect all modules}    1   2 {select_all_modules 0}
+add_separator   {Modules.S2}
+add_command     {Modules.Run}                        1   0 {run_gui}
+
+
+add_command     {Information source.Simple Text Database} \
+                          1   2 {unix_database}
+add_command     {Information source.Experiment File Line Types} \
+                              1   2 {edit_exp_types}
+
+add_command     {Options.Set Fonts}               1   2 {SetFonts}
+if { $tcl_platform(platform) != "windows" } {
+  add_command     {Options.Set Colours}             1   2 {ConfigureColours}
+}
+#add_command     {Options.Compact Window Style}   1   2 {set_window_style compact}
+#add_command     {Options.Separate Windows Style}  1   2 {set_window_style separate}
+
+add_command     {Help.Contents}     1   0 \
+    {show_help pregap4 {Contents}}
+add_command     {Help.Index}    1   0 \
+    {show_help pregap4 {General Index}}
+add_separator   {Help.S1}
+add_command     {Help.Introduction} 1   0 \
+    {show_help pregap4 {Pregap4-Introduction}}
+add_command     {Help.Files}        1   0 \
+    {show_help pregap4 {Pregap4-Files}}
+add_command     {Help.Configuring Modules}  1   0 \
+    {show_help pregap4 {Pregap4-Modules}}
+add_separator   {Help.S2}
+add_command {Help.Show Licence} 1 0 {ShowLicence}
+
+set_def WINDOW_STYLE compact
+
+set line_types "CN CV SV SF CF WT DR DT MC MN MT OP TN ST PN PR SC SP SI
+        SS EX AP CH"
+
+# -----------------------------------------------------------------------------
+# Where to find modules, and which ones to use
+
+#[module_list]
+set MODULE_PATH {$env(STADLIB)/pregap4/modules}
+if { $tcl_platform(platform) != "windows" } {
+    set MODULES {
+    phred
+    atqa
+    eba
+    convert_trace
+    compress_trace
+    init_exp
+    augment_exp
+    quality_clip
+    sequence_vector_clip
+    cross_match_svec
+    screen_vector
+    polyA
+    cloning_vector_clip
+    screen_seq
+    blast
+    interactive_clip
+    repeat_masker
+    hetins
+    reference
+    mutscan
+    gap4_assemble
+    cap3_assemble
+    fakii_assemble
+    phrap_assemble
+    enter_assembly
+    email
+    }
+} else {
+    set MODULES {
+    phred
+    atqa
+    eba
+    convert_trace
+    init_exp
+    augment_exp
+    quality_clip
+    sequence_vector_clip
+    cross_match_svec
+    screen_vector
+    polyA
+    cloning_vector_clip
+    screen_seq
+    interactive_clip
+    hetins
+    reference
+    mutscan
+    gap4_assemble
+    phrap_assemble
+    enter_assembly
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Global variables
+
+#[global_variables]
+
+# -----------------------------------------------------------------------------
+# Module default parameters
+#
+# The following parameters are the defaults defined in the module files
+# themselves. They do not need to be defined here, but this list is a handy
+# location to edit site-wide defaults for Pregap4.
+
+##[::init]
+module init {
+set enabled 1
+set use_sample_name 0
+}
+#
+##[::convert_trace]
+module convert_trace {
+set enabled 1
+#set down_scale 0
+#set down_scale_range 255
+#set output_format ztr
+#set subtract_background 0
+#set normalise 0
+}
+##[::compress_trace]
+module compress_trace {
+set enabled 0
+#set keep_names 0
+#set compression none
+}
+#
+##[::eba]
+module eba {
+set enabled 1
+set scale logarithmic
+}
+#
+##[::phred]
+module phred {
+set enabled 0
+}
+#
+##[::atqa]
+module atqa {
+set enabled 0
+}
+#
+##[::init_exp]
+module init_exp {
+set enabled 1
+}
+#
+##[::augment_exp]
+module augment_exp {
+set enabled 1
+}
+#
+##[::uncalled_clip]
+module uncalled_clip {
+set enabled 0
+#set offset 70
+#set min_extent 0
+#set max_extent 999999
+#set right_win_length 100
+#set right_num_uncalled 5
+#set left_win_length 100
+#set left_num_uncalled 5
+}
+#
+##[::quality_clip]
+module quality_clip {
+set enabled 1
+set clip_mode confidence
+set conf_val 15
+set window_length 50
+#set offset 70
+#set min_extent 0
+#set max_extent 999999
+#set right_win_length 100
+#set right_num_uncalled 5
+#set left_win_length 100
+#set left_num_uncalled 5
+}
+#
+##[::sequence_vector_clip]
+module sequence_vector_clip {
+set enabled 1
+#set min_5_match 60
+#set min_3_match 80
+#set def_5_pos -1
+}
+#
+##[::cloning_vector_clip]
+module cloning_vector_clip {
+set enabled 1
+#set word_length 4
+#set probability 0.000001
+}
+##[::polyA]
+module polyA {
+set enabled 0
+}
+#
+#
+##[::old_cloning_vector_clip]
+module old_cloning_vector_clip {
+set enabled 1
+#set word_length 4
+#set num_diags 7
+#set diag_score 0.3
+}
+#
+##[::screen_vector]
+module screen_vector {
+set enabled 1
+#set min_match 30
+}
+#
+##[::screen_seq]
+module screen_seq {
+set enabled 0
+#set min_match 25
+#set max_length 250000
+#set screen_mode fofn
+#set screen_file $env(STADENROOT)/userdata/ecoli.files
+}
+#
+##[::blast]
+module blast {
+set enabled 0
+#set database $env(STADTABL)/blast_data/ecoli
+#set match_fraction 0.5
+}
+#
+##[::interactive_clip]
+module interactive_clip {
+set enabled 0
+}
+#
+##[::hetins]
+module hetins {
+set enabled 0
+}
+#
+##[::reference]
+module reference {
+set enabled 0
+}
+#
+##[::mutscan]
+module mutscan {
+set enabled 0
+}
+#
+##[::gap4_assemble]
+module gap4_assemble {
+set enabled 0
+#set database_name {}
+#set database_version 0
+#set create 0
+#set min_match 15
+#set max_pads 25
+#set max_pmismatch 5.0
+#set enter_all 0
+}
+#
+##[::cap2_assemble]
+module cap2_assemble {
+set enabled 0
+}
+#
+##[::cap3_assemble]
+module cap3_assemble {
+set enabled 0
+#set generate_constraints 0
+}
+#
+##[::fakii_assemble]
+module fakii_assemble {
+set enabled 0
+#set graph_e_limit .099
+#set graph_d_limit 0.0001
+#set graph_o_threshold 10.0
+#set assem_o_threshold 20.0
+#set assem_d_threshold 0.0001
+#set assem_number 1
+#set generate_constraints 0
+}
+#
+##[::phrap_assemble]
+module phrap_assemble {
+set enabled 0
+#set minmatch 12
+#set minscore 30
+}
+#
+##[::enter_assembly]
+module enter_assembly {
+set enabled 0
+#set database_name {}
+#set database_version 0
+#set create 0
+#set quality_clip 0
+#set difference_clip 1
+}
+#
+##[::email]
+module email {
+set enabled 0
+#set email_address {}
+#set email_program Mail
+#set email_args {-s "Pregap4 has finished"}
+}
+#
+##[::shutdown]
+module shutdown {
+set enabled 1
+}
+#
+##[::cross_match_svec]
+module cross_match_svec {
+set enabled 0
+#set vector_file {}
+#set minmatch 12
+#set minscore 20
+}
+#
+##[::repeat_masker]
+module repeat_masker {
+set enabled 0
+#set tag_type REPT
+#set alu_only 0
+#set simple_only 0
+#set no_primate_rodent 0
+#set rodent_only 0
+#set no_low_complexity 0
+#set library "<default>"
+#set cutoff 200
+}

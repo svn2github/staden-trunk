@@ -2,7 +2,7 @@
 # Makefile for polyA_clip
 #
 
-PROGS= 	$(O)/polyA_clip
+PROGS= 	polyA_clip
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
@@ -10,13 +10,9 @@ include ../system.mk
 
 INCLUDES_E += $(IOLIB_INC) $(SEQUTILS_INC) $(TKUTILS_INC)
 
-POLYA_CLIPSRC=$(O)
-
-all: $(O)/polyA_clip
-
 OBJ=\
-	$(POLYA_CLIPSRC)/polyA_clip.o\
-	$(POLYA_CLIPSRC)/seqInfo.o
+	polyA_clip.o\
+	seqInfo.o
 
 POLYA_CLIP_LIBS=\
 	$(SEQUTILS_LIB) \
@@ -29,7 +25,7 @@ DEPS=\
 	$(MISC_DEP)
 
 
-$(O)/polyA_clip: $(OBJ)
+polyA_clip: $(OBJ)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(OBJ) $(POLYA_CLIP_LIBS) $(LIBSC) $(DEPS)
 
 DEPEND_OBJ = $(OBJ)

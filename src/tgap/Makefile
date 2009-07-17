@@ -1,6 +1,6 @@
 LIBS = tgap
 PROGS = $(LIBS) $(PROGBINS)
-PROGBINS= $(O)/tg_index $(O)/tg_view
+PROGBINS= tg_index tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -8,7 +8,6 @@ include $(SRCROOT)/global.mk
 include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
-TGAPBIN=$(O)
 
 INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
 	$(IOLIB_INC) $(SAMTOOLS_INC)
@@ -30,41 +29,41 @@ TGAP_LIB = -L$(L) -ltgap
 # "g" library components (from Gap4's src/g)
 
 GSIO = \
-	$(TGAPBIN)/g-files.o \
-	$(TGAPBIN)/g-db.o \
-	$(TGAPBIN)/g-struct.o
+	g-files.o \
+	g-db.o \
+	g-struct.o
 
 GSMISC = \
-	$(TGAPBIN)/g-error.o \
-	$(TGAPBIN)/g-alloc.o \
-	$(TGAPBIN)/g-io.o
+	g-error.o \
+	g-alloc.o \
+	g-io.o
 
 GSREQ = \
-	$(TGAPBIN)/g-connect.o \
-	$(TGAPBIN)/g-request.o
+	g-connect.o \
+	g-request.o
 
 GOBJS = $(GSIO) $(GSMISC) $(GSREQ)
 
 TG_IO = \
-	$(TGAPBIN)/tg_iface_g.o \
-	$(TGAPBIN)/b+tree2.o \
-	$(TGAPBIN)/hache_table.o \
-	$(TGAPBIN)/tg_gio.o \
-	$(TGAPBIN)/tg_cache.o \
-	$(TGAPBIN)/tg_contig.o \
-	$(TGAPBIN)/tg_sequence.o \
-	$(TGAPBIN)/tg_track.o \
-	$(TGAPBIN)/tg_bin.o \
-	$(TGAPBIN)/tg_utils.o \
-	$(TGAPBIN)/tg_register.o \
-	$(TGAPBIN)/tg_tracks.o \
-	$(TGAPBIN)/tg_anno.o \
-	$(TGAPBIN)/tg_library.o
+	tg_iface_g.o \
+	b+tree2.o \
+	hache_table.o \
+	tg_gio.o \
+	tg_cache.o \
+	tg_contig.o \
+	tg_sequence.o \
+	tg_track.o \
+	tg_bin.o \
+	tg_utils.o \
+	tg_register.o \
+	tg_tracks.o \
+	tg_anno.o \
+	tg_library.o
 
 TGSH_OBJ = \
 	$(TG_IO) \
-	$(TGAPBIN)/gap_cli_arg.o \
-	$(TGAPBIN)/tg_tcl.o
+	gap_cli_arg.o \
+	tg_tcl.o
 
 #TGAPOBJS = $(TGSH_OBJ) $(GOBJS) $(L)/libptmalloc3.a
 TGAPOBJS = $(TGSH_OBJ) $(GOBJS)
@@ -78,12 +77,12 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(TGAPOBJS) $(DEF_FILE)
 
 TG_IND_OBJ = \
 	$(TG_IO) \
-	$(TGAPBIN)/tg_index.o \
-	$(TGAPBIN)/baf.o \
-	$(TGAPBIN)/maq.o \
-	$(TGAPBIN)/maqmap.o \
-	$(TGAPBIN)/sam.o \
-	$(TGAPBIN)/ace.o
+	tg_index.o \
+	baf.o \
+	maq.o \
+	maqmap.o \
+	sam.o \
+	ace.o
 #	mapass2.o
 
 TGILIBS = \
@@ -95,22 +94,22 @@ TGILIBS = \
 	$(TCL_LIB) \
 	$(SAMTOOLS_LIB)
 
-$(O)/tg_index: $(TG_IND_OBJ) $(LIBS)
+tg_index: $(TG_IND_OBJ) $(LIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
 
 TG_VIEW_OBJ = \
 	$(TG_IO) \
-	$(TGAPBIN)/tg_view.o
+	tg_view.o
 
 TGVLIBS = \
 	$(TGILIBS) \
 	-lcurses
 
-$(O)/tg_view: $(TG_VIEW_OBJ) $(LIBS)
+tg_view: $(TG_VIEW_OBJ) $(LIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
 
 DEPEND_OBJ = $(TG_IND_OBJ) $(TG_VIEW_OBJ) $(TGAPOBJS)
 
 install:
 	cp $(PROGBINS) $(INSTALLBIN)
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)

@@ -31,13 +31,15 @@ distsrc:
 	-cp templates/*.p4t $(DIRNAME)/templates
 	cp naming_schemes/*.p4t $(DIRNAME)/naming_schemes
 
+S=$(SRCROOT)/pregap4
 install:
-	-cp pregap4 $(INSTALLBIN)/pregap4
-	-mkdir $(INSTALLLIB)/pregap4
-	cp *.tcl widget_licence tclIndex pregap4 $(INSTALLLIB)/pregap4
-	-mkdir $(INSTALLLIB)/pregap4/modules
-	-mkdir $(INSTALLLIB)/pregap4/templates
-	-mkdir $(INSTALLLIB)/pregap4/naming_schemes
-	cp modules/*.p4m $(INSTALLLIB)/pregap4/modules
-	-cp templates/*.p4t $(INSTALLLIB)/pregap4/templates
-	-cp naming_schemes/*.p4t $(INSTALLLIB)/pregap4/naming_schemes
+	-cp $(S)/pregap4 $(INSTALLBIN)/pregap4
+	-mkdir $(INSTALLTCL)/pregap4
+	cp $(S)/*.tcl $(S)/widget_licence $(S)/tclIndex $(INSTALLTCL)/pregap4
+	-mkdir $(INSTALLTCL)/pregap4/modules
+	-mkdir $(INSTALLTCL)/pregap4/templates
+	-mkdir $(INSTALLTCL)/pregap4/naming_schemes
+	cp $(S)/modules/*.p4m $(INSTALLTCL)/pregap4/modules
+	-cp $(S)/templates/*.p4t $(INSTALLTCL)/pregap4/templates
+	-cp $(S)/naming_schemes/*.p4t $(INSTALLTCL)/pregap4/naming_schemes
+	cp $(S)/pregap4rc $(INSTALLETC)

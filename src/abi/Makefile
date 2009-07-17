@@ -2,38 +2,36 @@
 # Makefile for getABISampleName
 #
 
-PROGS = $(O)/getABISampleName $(O)/getABIcomment $(O)/getABIdate \
-	$(O)/getABIfield
+PROGS = getABISampleName getABIcomment getABIdate getABIfield
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
 
 INCLUDES_E += $(IOLIB_INC)
-ABIBIN=$(O)
 
-OBJSSN = $(ABIBIN)/abiIO.o $(ABIBIN)/getABISampleName.o
-OBJSD  = $(ABIBIN)/abiIO.o $(ABIBIN)/getABIdate.o
-OBJSFI = $(ABIBIN)/abiIO.o $(ABIBIN)/getABIfield.o
-OBJSC  = $(ABIBIN)/abiIO.o $(ABIBIN)/getABIcomment.o
+OBJSSN = abiIO.o getABISampleName.o
+OBJSD  = abiIO.o getABIdate.o
+OBJSFI = abiIO.o getABIfield.o
+OBJSC  = abiIO.o getABIcomment.o
 
 LIBS=\
 	$(IOLIB_LIB) \
 	$(MISC_LIB)
 
-$(O)/getABISampleName: $(OBJSSN)
+getABISampleName: $(OBJSSN)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSSN) $(LIBS) $(LIBSC)
 
-$(O)/getABIdate: $(OBJSD)
+getABIdate: $(OBJSD)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSD) $(IOUTILS_LIB) $(MISC_LIB) $(LIBSC)
 
-$(O)/getABIcomment: $(OBJSC)
+getABIcomment: $(OBJSC)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSC) $(LIBS) $(LIBSC)
 
-$(O)/getABIfield: $(OBJSFI)
+getABIfield: $(OBJSFI)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSFI) $(LIBS) $(LIBSC)
 
-DEPEND_OBJ = $(OBJSSN) $(OBJSST) $(OBJSHX) $(OBJSRW) $(OBJSD) $(OBJSC) $(OBJSF)
+DEPEND_OBJ = $(OBJSSN) $(OBJSD) $(OBJSC) $(OBJSFI)
 
 include dependencies
 

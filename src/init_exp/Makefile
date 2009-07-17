@@ -2,7 +2,7 @@
 # Makefile for init_exp
 #
 
-PROGS = $(O)/init_exp
+PROGS = init_exp
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
@@ -10,11 +10,9 @@ include ../system.mk
 
 INCLUDES_E += $(MISC_INC) $(IOLIB_INC)
 
-INITEXPSRC=$(O)
+OBJS=init_exp.o
 
-OBJS=$(INITEXPSRC)/init_exp.o
-
-$(O)/init_exp:	$(OBJS)
+init_exp:	$(OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJS) $(IOLIB_LIB) $(MISC_LIB) $(LIBSC)
 
 DEPEND_OBJ = $(OBJS)

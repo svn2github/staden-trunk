@@ -12,16 +12,13 @@ include ../system.mk
 
 INCLUDES_E += $(MISC_INC) $(TCLUTILS_INC)
 CFLAGS += $(SHLIB_CFLAGS)
-#DEFINES += -DCHECK_LICENCE
-
-TEXTOUTPUTBIN=$(O)
 
 #
 # Objects
 #
 OBJS = \
-	$(TEXTOUTPUTBIN)/text_output_stubs.o \
-	$(TEXTOUTPUTBIN)/text_output_stubs2.o
+	text_output_stubs.o \
+	text_output_stubs2.o
 
 #
 # Main dependency
@@ -39,7 +36,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)
 
 include dependencies
 # DO NOT DELETE

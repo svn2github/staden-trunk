@@ -25,32 +25,6 @@ int Stash_AppInit(Tcl_Interp *interp) {
     char *env;
     static char tcl_lib[8192], tk_lib[8192], stad_lib[8192];
 
-    /*
-     * Ensure environment is sane.
-     * Specifically if TCL_LIBRARY and TK_LIBRARY haven't been defined then
-     * we default them to $STADLIB/tcl and $STADLIB/tk
-     */
-    if (NULL == (env = getenv("STADLIB"))) {
-	if ((env = getenv("STADENROOT"))) {
-	    sprintf(stad_lib, "STADLIB=%s/lib", env);
-	    putenv(stad_lib);
-	}
-    }
-
-    if (NULL == getenv("TCL_LIBRARY")) {
-	if ((env = getenv("STADLIB"))) {
-	    sprintf(tcl_lib, "TCL_LIBRARY=%s/tcl", env);
-	    putenv(tcl_lib);
-	}
-    }
-
-    if (NULL == getenv("TK_LIBRARY")) {
-	if ((env = getenv("STADLIB"))) {
-	    sprintf(tk_lib, "TK_LIBRARY=%s/tk", env);
-	    putenv(tk_lib);
-	}
-    }
-
     if (Tcl_Init(interp) == TCL_ERROR) {
 	return TCL_ERROR;
     }

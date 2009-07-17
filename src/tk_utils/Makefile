@@ -4,7 +4,7 @@
 
 LIBS = tk_utils
 ifneq ($(MACHINE),windows)
-PROGS= $(LIBS) $(O)/stash
+PROGS= $(LIBS) stash
 else
 PROGS= $(LIBS)
 endif
@@ -19,8 +19,6 @@ INCLUDES_E += $(MISC_INC) $(TKUTILS_INC) $(IOLIB_INC) $(TK_INC) \
 
 CFLAGS += $(SHLIB_CFLAGS) $(TK_UTILS_DLL)
 
-TKUTILSBIN=$(O)
-
 #DEFINES += -DCHECK_LICENCE -DTCL_LOCAL_APPINIT=Stash_AppInit
 DEFINES += -DTCL_LOCAL_APPINIT=Stash_AppInit
 
@@ -28,37 +26,37 @@ DEFINES += -DTCL_LOCAL_APPINIT=Stash_AppInit
 # Objects
 #
 OBJS = \
-	$(TKUTILSBIN)/cli_arg.o \
-	$(TKUTILSBIN)/tclXkeylist.o \
-	$(TKUTILSBIN)/tclXutil.o \
-	$(TKUTILSBIN)/tcl_utils.o \
-	$(TKUTILSBIN)/tcl_debug.o \
-	$(TKUTILSBIN)/misc.o \
-	$(TKUTILSBIN)/init.o \
-	$(TKUTILSBIN)/text_output.o \
-	$(TKUTILSBIN)/tkRaster.o \
-	$(TKUTILSBIN)/tkRasterBuiltIn.o \
-	$(TKUTILSBIN)/sheet.o \
-	$(TKUTILSBIN)/tkSheet.o \
-	$(TKUTILSBIN)/tkSheet_common.o \
-	$(TKUTILSBIN)/trace_print.o \
-	$(TKUTILSBIN)/postscript.o \
-	$(TKUTILSBIN)/split.o \
-	$(TKUTILSBIN)/tkTrace.o \
-	$(TKUTILSBIN)/tkTraceComp.o \
-	$(TKUTILSBIN)/tkTraceIO.o \
-	$(TKUTILSBIN)/tkTraceDisp.o \
-	$(TKUTILSBIN)/capture.o \
-	$(TKUTILSBIN)/canvas_box.o \
-	$(TKUTILSBIN)/ruler_tick.o \
-	$(TKUTILSBIN)/restriction_enzyme_map.o \
-	$(TKUTILSBIN)/container_cmds.o\
-	$(TKUTILSBIN)/container.o\
-	$(TKUTILSBIN)/container_ruler.o\
-	$(TKUTILSBIN)/element_canvas.o\
-	$(TKUTILSBIN)/tclCanvGraph.o\
-	$(TKUTILSBIN)/tkCanvGraph.o\
-	$(TKUTILSBIN)/matrix.o\
+	cli_arg.o \
+	tclXkeylist.o \
+	tclXutil.o \
+	tcl_utils.o \
+	tcl_debug.o \
+	misc.o \
+	init.o \
+	text_output.o \
+	tkRaster.o \
+	tkRasterBuiltIn.o \
+	sheet.o \
+	tkSheet.o \
+	tkSheet_common.o \
+	trace_print.o \
+	postscript.o \
+	split.o \
+	tkTrace.o \
+	tkTraceComp.o \
+	tkTraceIO.o \
+	tkTraceDisp.o \
+	capture.o \
+	canvas_box.o \
+	ruler_tick.o \
+	restriction_enzyme_map.o \
+	container_cmds.o\
+	container.o\
+	container_ruler.o\
+	element_canvas.o\
+	tclCanvGraph.o\
+	tkCanvGraph.o\
+	matrix.o\
 	$(TKUTILS_EXTRAS)
 
 #
@@ -88,14 +86,14 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 # function.
 ifneq ($(MACHINE),windows)
 STASH_OBJS = \
-	$(TKUTILSBIN)/stash.o \
-	$(TKUTILSBIN)/tclAppInit.o
+	stash.o \
+	tclAppInit.o
 
 STASH_LIBS = \
 	$(TKUTILS_LIB) \
 	$(TK_LIB)
 
-$(TKUTILSBIN)/stash: $(STASH_OBJS)
+stash: $(STASH_OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMWIN) $(STASH_OBJS) $(STASH_LIBS) $(LIBSC)
 endif
 
@@ -105,13 +103,15 @@ distsrc: distsrc_dirs
 		$(DIRNAME)
 	-rm $(DIRNAME)/resource.h
 
+S=$(SRCROOT)/tk_utils
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
-	-mkdir $(INSTALLLIB)/tk_utils
-	cp *.tcl tclIndex $(INSTALLLIB)/tk_utils
+	cp $(PROGLIBS) $(INSTALLLIB)
+	-mkdir $(INSTALLTCL)/tk_utils
+	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/tk_utils
 ifneq ($(MACHINE),windows)
-	cp $(O)/stash $(INSTALLBIN)
+	cp stash $(INSTALLBIN)
 endif
+	cp $(S)/2bars_*.bmp $(S)/help_config $(S)/shlib.conf $(S)/tk_utilsrc $(INSTALLETC)
 
 include dependencies
 # DO NOT DELETE

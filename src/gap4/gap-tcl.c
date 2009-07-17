@@ -976,7 +976,8 @@ int tcl_io_read_text(ClientData clientData, Tcl_Interp *interp,
 	    *(cp+1) = 0;
 	}
     
-	Tcl_SetResult(interp, buf, TCL_DYNAMIC);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	free(buf);
     }
     return TCL_OK;
 }

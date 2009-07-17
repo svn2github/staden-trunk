@@ -1,13 +1,10 @@
 LIBS = gap5
-PROGS = $(LIBS) $(O)/gap5sh 
+PROGS = $(LIBS)
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
-
-# Local comment: Comment out next line for remote compilation
-GAP5BIN=$(O)
 
 TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
@@ -27,79 +24,64 @@ TGAP_LIB=-ltgap
 # This should be just a linking phase because all of the object
 # files and library files are generated using implicit rules.
 # We use the fortran compiler to do linking.
-#
-#	$(GAP5BIN)/contig_editor.o
 CEDITOR = \
-	$(GAP5BIN)/editor_view.o \
-	$(GAP5BIN)/editor_join.o \
-	$(GAP5BIN)/tkEdNames.o\
-	$(GAP5BIN)/tkEditor.o\
-	$(GAP5BIN)/tman_interface.o\
-	$(GAP5BIN)/tman_display.o
+	editor_view.o \
+	editor_join.o \
+	tkEdNames.o\
+	tkEditor.o\
+	tman_interface.o\
+	tman_display.o
 
 CEDITOR_SCRAP=\
-	$(GAP5BIN)/contigEditor.o\
-	$(GAP5BIN)/tkEditor.o\
-	$(GAP5BIN)/tkEdUtils.o\
-	$(GAP5BIN)/edInterface.o\
-	$(GAP5BIN)/edUtils2.o \
-	$(GAP5BIN)/tagU1.o\
-	$(GAP5BIN)/undo.o\
-	$(GAP5BIN)/edExtend.o\
-	$(GAP5BIN)/edCommands.o\
-	$(GAP5BIN)/edMutations.o\
-	$(GAP5BIN)/tagEditor.o\
-	$(GAP5BIN)/searchUtils.o\
-	$(GAP5BIN)/tman_interface.o\
-	$(GAP5BIN)/tman_display.o\
-	$(GAP5BIN)/tman_cons.o\
-	$(GAP5BIN)/tman_diff.o\
-	$(GAP5BIN)/join.o\
-	$(GAP5BIN)/oligo.o
+	contigEditor.o\
+	tkEditor.o\
+	tkEdUtils.o\
+	edInterface.o\
+	edUtils2.o \
+	tagU1.o\
+	undo.o\
+	edExtend.o\
+	edCommands.o\
+	edMutations.o\
+	tagEditor.o\
+	searchUtils.o\
+	tman_interface.o\
+	tman_display.o\
+	tman_cons.o\
+	tman_diff.o\
+	join.o\
+	oligo.o
 
 GAP5=\
-	$(GAP5BIN)/newgap5_cmds.o \
-	$(GAP5BIN)/gap4_compat.o \
-        $(GAP5BIN)/actf.o \
-	$(GAP5BIN)/gap_hash.o\
-	$(GAP5BIN)/hash_lib.o \
-	$(GAP5BIN)/qual.o \
-	$(GAP5BIN)/qualIO.o \
-	$(GAP5BIN)/gap_globals.o \
-	$(GAP5BIN)/tagdb.o\
-	$(GAP5BIN)/init.o \
-	$(GAP5BIN)/notedb.o\
-	$(GAP5BIN)/active_tags.o\
-	$(GAP5BIN)/list_proc.o\
-	$(GAP5BIN)/gap-error.o\
-	$(GAP5BIN)/stack_dump.o\
-	$(GAP5BIN)/tk-io-reg.o\
-	$(GAP5BIN)/tkAppInit.o \
-	$(GAP5BIN)/consen.o\
-	$(GAP5BIN)/contig_selector.o\
-	$(GAP5BIN)/cs-object.o\
-	$(GAP5BIN)/find_repeats.o\
-	$(GAP5BIN)/consensus.o\
-	$(GAP5BIN)/read_depth.o\
-	$(GAP5BIN)/template_display.o \
-	$(GAP5BIN)/fij.o\
-	$(GAP5BIN)/do_fij.o\
-	$(GAP5BIN)/break_contig.o \
-	$(GAP5BIN)/export_contigs.o \
+	newgap5_cmds.o \
+	gap4_compat.o \
+        actf.o \
+	gap_hash.o\
+	hash_lib.o \
+	qual.o \
+	qualIO.o \
+	gap_globals.o \
+	tagdb.o\
+	init.o \
+	notedb.o\
+	active_tags.o\
+	list_proc.o\
+	gap-error.o\
+	stack_dump.o\
+	tk-io-reg.o\
+	tkAppInit.o \
+	consen.o\
+	contig_selector.o\
+	cs-object.o\
+	find_repeats.o\
+	consensus.o\
+	read_depth.o\
+	template_display.o \
+	fij.o\
+	do_fij.o\
+	break_contig.o \
+	export_contigs.o \
 	$(CEDITOR)
-
-GAP5SH_LIBS=\
-	$(IOLIB_LIB) \
-	$(SEQUTILS_LIB) \
-	$(TKUTILS_LIB) \
-	$(TK_LIB) \
-	$(MISC_LIB) \
-	$(P3_LIB) \
-	$(TGAP_LIB)
-
-
-$(O)/gap5sh:	$(GAP5)
-	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(GAP5) $(GAP5SH_LIBS)
 
 GAP5_LIBS=\
 	$(IOLIB_LIB) \
@@ -122,11 +104,13 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(GAP5)
 
 DEPEND_OBJ = $(GAP5)
 
+S=$(SRCROOT)/gap5
 install:
-	-cp gap5 $(INSTALLSCRIPT)
-	-mkdir $(INSTALLLIB)/gap5
-	cp *.tcl tclIndex $(INSTALLLIB)/gap5
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	-cp $(S)/gap5 $(INSTALLBIN)
+	-mkdir $(INSTALLTCL)/gap5
+	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
+	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
+	cp $(PROGLIBS) $(INSTALLLIB)
 
 distsrc: distsrc_dirs
 	-cp -R *.[chf] *.tcl tclIndex Makefile gap5 gap5viewer gap5.bat \

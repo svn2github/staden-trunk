@@ -1,0 +1,52 @@
+load_package %L/cap2	{}	cap2	0
+
+set_menu	gap_menu
+add_menu	Assembly	1 2 left
+set fs ""
+catch {set fs [open "|cap2_s" r]}
+if {$fs == ""} {
+    add_cascade	{Assembly.CAP2 Assembly} 0 0
+} else {
+    catch {close $fs}
+    add_cascade	{Assembly.CAP2 Assembly} 12 22
+}
+add_command	{Assembly.CAP2 Assembly.Perform CAP2 assembly} \
+			12 22 {HuangAssembly \$io 1}
+add_command	{Assembly.CAP2 Assembly.Import CAP2 assembly data} \
+			12 22 {HuangImport \$io}
+add_command	{Assembly.CAP2 Assembly.Perform and import CAP2 assembly} \
+			12 22 {HuangAssembly \$io 2}
+
+set_defx defs_f_or_l_in	WHICH.NAME	"Input from"
+set_defx defs_f_or_l_in	WHICH.BUTTONS	{list file}
+set_defx defs_f_or_l_in	WHICH.VALUE	2
+set_defx defs_f_or_l_in	NAME.NAME	"List or file name"
+set_defx defs_f_or_l_in	NAME.BROWSE	"Browse"
+set_defx defs_f_or_l_in	NAME.VALUE	""
+
+set_defx defs_f_or_l_out	WHICH.NAME	"Output to"
+set_defx defs_f_or_l_out	WHICH.BUTTONS	{list file}
+set_defx defs_f_or_l_out	WHICH.VALUE	2
+set_defx defs_f_or_l_out	NAME.NAME	"List or file name"
+set_defx defs_f_or_l_out	NAME.BROWSE	"Browse"
+set_defx defs_f_or_l_out	NAME.VALUE	""
+
+set_def HUANG_ASSEMBLY1.WIN     .cap2_perform_assembly
+set_def HUANG_ASSEMBLY2.WIN     .cap2_import_assembly
+set_def HUANG_ASSEMBLY3.WIN     .cap2_perform_import_assembly
+
+set_def HUANG_ASSEMBLY.INFILE                   $defs_f_or_l_in
+set_def HUANG_ASSEMBLY.INFILE.WHICH.NAME        "Input readings from"
+set_def HUANG_ASSEMBLY.DEST.NAME                "Destination directory"
+set_def HUANG_ASSEMBLY.DEST.VALUE               "assemble"
+set_def HUANG_ASSEMBLY.FORMAT.NAME              "Input reading format"
+set_def HUANG_ASSEMBLY.FORMAT.VALUE             1
+set_def HUANG_ASSEMBLY.FORMAT.BUTTON.1          "experiment"
+set_def HUANG_ASSEMBLY.FORMAT.BUTTON.2          "fasta"
+set_def HUANG_ASSEMBLY.REPEAT.NAME              "Find repeats/chimerics"
+set_def HUANG_ASSEMBLY.REPEAT.VALUE             1
+set_def HUANG_ASSEMBLY.OUTFILE                  $defs_f_or_l_out
+set_def HUANG_ASSEMBLY.OUTFILE.WHICH.NAME       "Save failures to"
+set_def HUANG_ASSEMBLY.INDIR.NAME               "Directory containing assembled readings"
+set_def HUANG_ASSEMBLY.FOFN                     "outfile"
+

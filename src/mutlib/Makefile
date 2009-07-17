@@ -15,50 +15,48 @@ INCLUDES_E += $(MISC_INC) $(MUT_INC) $(SEQUTILS_INC) $(IOLIB_INC)
 
 DEFINES += -DMUTLIB_EXPORTS -DDYNMAT
 
-MUTBIN=$(O)
-
 #
 # Objects
 #
 OBJS = \
-	$(MUTBIN)/align.o \
-	$(MUTBIN)/basecall.o \
-	$(MUTBIN)/caller.o \
-	$(MUTBIN)/caller_snr.o \
-	$(MUTBIN)/caller_base.o \
-	$(MUTBIN)/caller_level.o \
-	$(MUTBIN)/dnatable.o \
-	$(MUTBIN)/muttag.o \
-	$(MUTBIN)/mutationtag.o \
-	$(MUTBIN)/mutationtag_utils.o \
-	$(MUTBIN)/pathutil.o \
-	$(MUTBIN)/peakcall.o \
-	$(MUTBIN)/stringlist.o \
-	$(MUTBIN)/tagarray.o \
-	$(MUTBIN)/trace.o \
-	$(MUTBIN)/validate.o \
-	$(MUTBIN)/read_matrix.o \
-	$(MUTBIN)/sp_align_lib.o \
-	$(MUTBIN)/sp_alignment.o \
-	$(MUTBIN)/sp_hash_lib.o \
-	$(MUTBIN)/sp_matrix.o \
-	$(MUTBIN)/tracediff.o \
-	$(MUTBIN)/tracediff_helper.o \
-	$(MUTBIN)/tracediff_mutations.o \
-	$(MUTBIN)/tracediff_parameters.o \
-	$(MUTBIN)/tracediff_validate.o \
-	$(MUTBIN)/tracealign.o \
-	$(MUTBIN)/tracealign_cache.o \
-	$(MUTBIN)/tracealign_helper.o \
-	$(MUTBIN)/tracealign_interpolate.o \
-	$(MUTBIN)/tracealign_preprocess.o \
-	$(MUTBIN)/tracealign_validate.o \
-	$(MUTBIN)/mutscan.o \
-	$(MUTBIN)/mutscan_helper.o \
-	$(MUTBIN)/mutscan_validate.o \
-	$(MUTBIN)/mutscan_analysis.o \
-	$(MUTBIN)/mutscan_preprocess.o \
-	$(MUTBIN)/mutscan_parameters.o
+	align.o \
+	basecall.o \
+	caller.o \
+	caller_snr.o \
+	caller_base.o \
+	caller_level.o \
+	dnatable.o \
+	muttag.o \
+	mutationtag.o \
+	mutationtag_utils.o \
+	pathutil.o \
+	peakcall.o \
+	stringlist.o \
+	tagarray.o \
+	trace.o \
+	validate.o \
+	read_matrix.o \
+	sp_align_lib.o \
+	sp_alignment.o \
+	sp_hash_lib.o \
+	sp_matrix.o \
+	tracediff.o \
+	tracediff_helper.o \
+	tracediff_mutations.o \
+	tracediff_parameters.o \
+	tracediff_validate.o \
+	tracealign.o \
+	tracealign_cache.o \
+	tracealign_helper.o \
+	tracealign_interpolate.o \
+	tracealign_preprocess.o \
+	tracealign_validate.o \
+	mutscan.o \
+	mutscan_helper.o \
+	mutscan_validate.o \
+	mutscan_analysis.o \
+	mutscan_preprocess.o \
+	mutscan_parameters.o
 
 
 MUT_DEP=\
@@ -89,6 +87,6 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 install:
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
+	cp $(PROGLIBS) $(INSTALLLIB)
 
 include dependencies

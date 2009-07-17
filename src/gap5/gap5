@@ -1,0 +1,78 @@
+#!/bin/sh
+
+# Finds the directory holding this program
+find_dir() {
+    arg0=$1
+
+    # Protect against ls, sed and echo being exported shell functions.
+    # Eg ls() { ls -F ${@+"$@"} }; export ls
+    unset ls
+    unset sed
+    unset echo
+    
+    orig_dir=`pwd`
+    must_loop=yes
+
+    # The looping is to protect against symbolic links. We find the location
+    # of arg0, but if arg0 is a link to elsewhere then we go around again
+    # finding its location (noting that symlinks may be ether relative
+    # or full pathnames).
+    while [ -n "$must_loop" ]
+    do
+	cur_dir=`pwd`
+    
+	# Find directory that $arg0 resides in
+	case $arg0 in
+	    /*)
+		# Full pathname, not much to do
+		dir=`echo $arg0 | sed 's:/[^/]*$::'`
+		;;
+	    *)
+		# Relative pathname, add current directory.
+		dir=`echo $cur_dir/$arg0 | sed 's:/[^/]*$::'`
+		;;
+	esac
+    
+	if [ -h $arg0 ]
+	then
+	    # NOTE: This statement will not work when $arg0 is a filename
+	    # containing "-> ".
+	    lnto=`ls -l -- $arg0 | sed 's/.*-> //'`
+	    lndir=`echo $lnto | sed 's:/[^/]*$::'`
+	    case $lndir in
+		/*)
+		    # Absolute symlink
+		    dirto=$lndir
+		    ;;
+		*)
+		    # Relative symlink
+		    dirto=`echo $arg0 | sed "s:/[^/]*\$:/$lndir:"`
+		    ;;
+	    esac
+
+	    cd "$dirto"
+	    arg0=`echo $lnto | sed 's:.*/::'`
+	    must_loop=yes
+	else
+	    must_loop=
+	fi
+    done
+    
+    # To tidy up cases with ../ and ./ we cd to the directory, getcwd, and then
+    # cd back again
+    cd "$dir"
+    dir=`pwd`
+    cd "$orig_dir"
+    
+    echo $dir
+}
+
+STADENROOT=`find_dir $0`/..;            export STADENROOT
+STADLIB=$STADENROOT/lib/staden;         export STADLIB
+STADTABL=$STADENROOT/share/staden/etc;  export STADTABL
+STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
+
+PATH=$STADENROOT/bin:$PATH
+LD_LIBRARY_PATH=$STADENROOT/lib:$LD_LIBRARY_PATH
+
+exec stash "$STADTCL/gap5/gap.tcl" ${@+"$@"}

@@ -42,14 +42,11 @@ AC_PATH_XTRA
 
 AC_C_BIGENDIAN
 
+dnl Do we have the va_copy function?
+AX_FUNC_VA_COPY
+
 PWD=`pwd`
 AC_SUBST([PWD])
-
-dnl Source the tcl configuration and substitute some of these
-#SC_LOAD_TCLCONFIG
-#SC_LOAD_TKCONFIG
-
-dnl SC_CONFIG_CFLAGS
 
 #-----------------------------------------------------------------------------
 # Tcl TEA usage

@@ -1,34 +1,28 @@
 LIBS = prefinish
-PROGS = x$(LIBS) $(O)/insert_size_dist $(O)/read_size_dist $(O)/read_conf_dist
+PROGS = x$(LIBS) insert_size_dist read_size_dist read_conf_dist
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
 
-# Local comment: Comment out next line for remote compilation
-FINBIN=$(O)
-
-#L=$(O)
-
 INCLUDES_E := $(MISC_INC) $(GAP4_INC) $(G_INC) $(TK_INC) \
 	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(P3_INC) \
 	      $(INCLUDES_E)
-#INCLUDES += -Iprimer3_0_9_test/src/
 CFLAGS += $(SHLIB_CFLAGS)
 FFLAGS += $(SHLIB_FFLAGS)
 
 OBJS=\
-	$(FINBIN)/finish.o \
-	$(FINBIN)/finish_hash.o \
-	$(FINBIN)/finish_long.o \
-	$(FINBIN)/finish_main.o \
-	$(FINBIN)/finish_utils.o \
-	$(FINBIN)/finish_walk.o \
-	$(FINBIN)/finish_reverse.o \
-	$(FINBIN)/finish_filter.o \
-	$(FINBIN)/finish_pcr.o \
-	$(FINBIN)/dust.o
+	finish.o \
+	finish_hash.o \
+	finish_long.o \
+	finish_main.o \
+	finish_utils.o \
+	finish_walk.o \
+	finish_reverse.o \
+	finish_filter.o \
+	finish_pcr.o \
+	dust.o
 
 FIN_DEP=\
 	$(TK_LIB) \
@@ -47,7 +41,6 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(FIN_DEP) $(SHLIB_DEP)
 
-include $(SRCROOT)/gap4/gap4_defs.mk
 ISLIBS=\
 	$(G_LIB) \
 	$(GAP_LIB) \
@@ -55,33 +48,33 @@ ISLIBS=\
 	$(MISC_LIB) \
 	$(TCL_LIB)
 
-ISOBJS=\
-	$(O)/insert_size_dist.o
+ISOBJS= insert_size_dist.o
 
-RSOBJS=\
-	$(O)/read_size_dist.o
+RSOBJS=	read_size_dist.o
 
-RCOBJS=\
-	$(O)/read_conf_dist.o
+RCOBJS=	read_conf_dist.o
 
-$(O)/insert_size_dist: $(ISOBJS)
+insert_size_dist: $(ISOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(ISOBJS) $(ISLIBS) $(LIBSC)
 
-$(O)/read_size_dist: $(RSOBJS)
+read_size_dist: $(RSOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(RSOBJS) $(ISLIBS) $(LIBSC)
 
-$(O)/read_conf_dist: $(RCOBJS)
+read_conf_dist: $(RCOBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(RCOBJS) $(ISLIBS) $(LIBSC)
 
+S=$(SRCROOT)/prefinish
 install:
-	-mkdir $(INSTALLLIB)/prefinish
-	cp *.tcl *.itcl *.itk help args.template tclIndex $(INSTALLLIB)/prefinish
-	cp config.prefinish $(INSTALLLIB)/prefinish
-	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
-	cp prefinish finish_sanger finish_cDNA finish_cDNA_ends_only \
-	    $(INSTALLBIN)
-	-mkdir $(INSTALLLIB)/prefinish/rules
-	cp rules/*.rule $(INSTALLLIB)/prefinish/rules
+	-mkdir $(INSTALLTCL)/prefinish
+	cp $(S)/*.tcl $(S)/*.itcl $(S)/*.itk $(S)/help $(S)/args.template $(S)/tclIndex $(INSTALLTCL)/prefinish
+	cp $(S)/config.prefinish $(INSTALLTCL)/prefinish
+	cp $(PROGLIBS) $(INSTALLLIB)
+	cp $(S)/prefinish $(INSTALLBIN)
+	cp $(S)/finish_sanger $(S)/finish_cDNA $(S)/finish_cDNA_ends_only \
+	    $(INSTALLSCRIPTS)
+	-mkdir $(INSTALLTCL)/prefinish/rules
+	cp $(S)/rules/*.rule $(INSTALLTCL)/prefinish/rules
+	cp $(S)/config.prefinish $(S)/prefinishrc $(INSTALLETC)
 
 distsrc: distsrc_dirs
 	-cp -R *.[ch] *.tcl *.itcl *.itk help args.template Makefile \

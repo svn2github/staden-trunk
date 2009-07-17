@@ -2,14 +2,11 @@
 # Makefile for hetins
 #
 
-PROGS = $(O)/hetins
+PROGS = hetins
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
-
-HETINSBIN=$(O)
-
 
 INCLUDES_E += $(IOLIB_INC) $(HETINS_INC)
 
@@ -18,11 +15,10 @@ HLIBS=\
 	$(MISC_LIB) \
 	$(IOLIB_LIB)
 
-OBJSD	= \
-	$(HETINSBIN)/hetins.o
+OBJSD	= hetins.o
 
 
-$(O)/hetins: $(OBJSD)
+hetins: $(OBJSD)
 	$(CXXLD) $(CXXLDFLAGS) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSD) $(HLIBS) $(LIBSC)
 
 

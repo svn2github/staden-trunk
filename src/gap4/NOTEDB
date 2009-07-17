@@ -1,0 +1,39 @@
+comment: id=COMM: fg=black: bg=blue
+
+"info line": \
+      id=INFO:\
+      dt="Only have one note of this type.
+It will be displayed in the information line of the contig editor."
+
+"database open": \
+	id="OPEN":\
+	dt="# This note will be executed whenever this database is opened.
+# It may be used for adding .gaprc style defaults so that these may be
+# attached to the database itself. The .gaprc files from $HOME and the current
+# directory will still be read, however definitions here take priority."
+
+"database close": \
+	id="CLOS": \
+	dt="puts Closing"
+
+#
+# The RAWDATA environment variable
+#
+rawdata: id="RAWD"
+
+#
+# Used to specify a reference sequence
+#
+"reference sequence": \
+	id="REFS": bg="#e8e0e8": \
+	dt="# REFERENCE: sequence_id length offset\n"
+
+"reference trace": \
+	id="REFT": fg=red: gf="#707000":  \
+	dt="# REFERENCE: sequence_id length offset\n"
+
+#
+# FAKE to indicate consensus, etc. These should be excluded from
+# strand calculations, etc.
+#
+"Fake (eg consensus)": id="FAKE": bg=orange

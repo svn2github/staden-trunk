@@ -2,14 +2,11 @@
 # Makefile for mutscan
 #
 
-PROGS = $(O)/mutscan
+PROGS = mutscan
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
-
-MUTSCANBIN=$(O)
-
 
 INCLUDES_E += $(IOLIB_INC) $(MUT_INC)
 
@@ -21,12 +18,12 @@ HLIBS=\
 	$(TK_LIB)
 
 OBJSD	= \
-	$(MUTSCANBIN)/main.o \
-	$(MUTSCANBIN)/pathutil.o \
-	$(MUTSCANBIN)/stringlist.o
+	main.o \
+	pathutil.o \
+	stringlist.o
 
 
-$(O)/mutscan: $(OBJSD)
+mutscan: $(OBJSD)
 	$(CXXLD) $(CXXLDFLAGS) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSD) $(HLIBS) $(LIBSC)
 
 

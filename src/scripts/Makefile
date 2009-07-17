@@ -28,14 +28,15 @@ distsrc:
 
 # Not all scripts are particularly useful, so don't bother to install these.
 
+S=$(SRCROOT)/scripts
 install:
-#	cp gzip_trace $(INSTALLBIN)
-#	cp bzip_trace $(INSTALLBIN)
-#	cp bzip2_trace $(INSTALLBIN)
-	cp assemble4 $(INSTALLBIN)
-	cp fasta-split $(INSTALLBIN)
-	cp fasta2exp $(INSTALLBIN)
-#	cp make_fasta $(INSTALLBIN)
-#	cp staden2exp $(INSTALLBIN)
-	cp splitseq_da $(INSTALLBIN)
-	cp staden_help $(INSTALLBIN)
+#	cp $(S)/gzip_trace $(INSTALLSCRIPTS)
+#	cp $(S)/bzip_trace $(INSTALLSCRIPTS)
+#	cp $(S)/bzip2_trace $(INSTALLSCRIPTS)
+	cp $(S)/assemble4 $(INSTALLSCRIPTS)
+	cp $(S)/fasta-split $(INSTALLSCRIPTS)
+	cp $(S)/fasta2exp $(INSTALLSCRIPTS)
+#	cp $(S)/make_fasta $(INSTALLSCRIPTS)
+#	cp $(S)/staden2exp $(INSTALLSCRIPTS)
+	cp $(S)/splitseq_da $(INSTALLSCRIPTS)
+	cp $(S)/staden_help $(INSTALLSCRIPTS)

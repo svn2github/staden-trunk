@@ -1,0 +1,17 @@
+#! /bin/sh
+AWK=gawk
+for x in $*
+  do
+    echo splitting ${x}
+$AWK '
+BEGIN { f = ""; }
+/^>/ { if ( f != "" ) close(f); f = substr($1,2);
+"if [ -r " f " ] ; then echo yes ; else echo no ; fi" | getline result;
+if (result == "yes") { print "File " f " already exists"; f = "";} else
+print f;
+next;} 
+{if (f != "") print $0 >> f ;}
+' $x
+  done
+
+

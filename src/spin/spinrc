@@ -1,0 +1,230 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+load_package tk_utils
+load_package spin
+load_package sip
+load_package nip
+load_package iwidgets
+
+package require tablelist
+
+#-----------------------------------------------------------------------------
+# Menus
+#-----------------------------------------------------------------------------
+set_menu seq_menu
+add_menu File				1 0 left
+add_menu View				1 0 left
+add_menu Options			1 0 left
+add_menu Sequences			1 0 left
+add_menu Statistics			1 0 left
+add_menu "Translation"			1 0 left
+add_menu "Search"			1 0 left
+#add_menu Lists				1 0 left
+add_menu Comparison			1 0 left
+add_menu Help				1 0 right
+
+# The menu state bit enable/disable patterns are as follows
+# Bit 0: Startup and no sequences loaded  1
+# Bit 1: Busy mode                        2
+# Bit 2: Sequences loaded  		  4
+
+add_cascade     {File.Load sequence}                    1 0
+add_command     {File.Load sequence.Simple}             1 0 {CreateSimpleBrowser}
+add_command     {File.Load sequence.Personal search}    1 0 {CreatePersonalBrowser}
+add_command	{File.Save}				4 4 {file_save_d}
+add_command	{File.Change directory}			1 0 {ChangeDir}
+add_command	{File.Sequence manager}			4 4 {SequenceManager}
+#if {$tcl_platform(platform) == "unix"} {
+#    add_command	{File.Send to}				4 4 {SendTo}
+#}
+add_command	{File.Exit}				1 0 {seq_exit}
+
+add_command	{View.Results manager}			4 4 {rasterResultsManager {show_help spin {SPIN-Result-Manager}}}
+
+#add_command	{View.Sequence display}		4 4 {SeqedDisplay 1 \[get_active_seq_id\]}
+
+add_command	{View.Sequence display}		4 4 {SeqedDisplay_d}
+
+add_command	{Options.Change protein score matrix} 		1 0 \
+			{ChangeScoreMatrix}
+add_command	{Options.Set protein alignment symbols} 	1 0 \
+			{SetAlignmentSymbols}
+add_command	{Options.Configure matches}	1 0 {ConfigMatches}
+
+add_check	{Options.Hide duplicate matches} 1 0 rem_dup {set_remove_dup \$rem_dup}
+add_command	{Options.Set fonts}		1 0 {SetFonts}
+if { $tcl_platform(platform) != "windows" } {
+  add_command	{Options.Colours}		1 0 {ConfigureColours}
+  #add_command	{Options.Sequence library}	1 0 {SetSequenceLibrary}
+}
+
+add_command	{Sequences.Horizonal}		4 4 {set_horizontal_d}
+add_command	{Sequences.Vertical}		4 4 {set_vertical_d}
+add_command	{Sequences.Set range}		4 4 {set_range_d}
+add_command     {Sequences.Copy}                4 4 {copy_range_d}
+add_command	{Sequences.Complement}		4 4 {complement_d}
+add_command	{Sequences.Interconvert t and u} 4 4 {interconvert_d}
+add_command     {Sequences.Translate} 		4 4 {translate_d}
+add_command	{Sequences.Scramble}		4 4 {scramble_d}
+add_cascade     {Sequences.Sequence type}     4 4
+add_command     {Sequences.Sequence type.Linear}  4 4 {set_structure_d 0}
+add_command     {Sequences.Sequence type.Circular} 4 4 {set_structure_d 1}
+add_command	{Sequences.Rotate}		4 4 {rotate_d}
+add_separator	Sequences.S1
+add_command	{Sequences.Save}		4 4 {file_save_d}
+add_command	{Sequences.Delete}		4 4 {file_delete_d}
+
+add_command	{Statistics.Count sequence composition} 4 4 {CountBaseComp}
+add_command	{Statistics.Count dinucleotide frequencies} 4 4 {CountDinucFreq}
+add_command	{Statistics.Plot base composition} 4 4 {PlotBaseComp}
+
+add_command	{Translation.Set genetic code}      4 4 {SetGeneticCode}
+add_command	{Translation.Translate} 4 4 {NipTranslate}
+add_cascade	{Translation.Find open reading frames}  4 4
+add_command 	{Translation.Calculate and write codon table to disk} 4 4 {CodonUsage}
+
+add_command 	{Translation.Find open reading frames.write as feature table} 4 4 {TranslateFT}
+add_command 	{Translation.Find open reading frames.write protein as fasta file} 4 4 {TranslateFasta}
+
+add_cascade	{Search.Protein genes}	 	4 4
+add_command	{Search.tRNA genes}             4 4 {trnaSearch}
+add_command	{Search.Search for string (DNA)}	4 4 {NipStringSearch}
+add_command	{Search.Restriction enzyme map} 4 4 {NipRestrictionEnzymeDialogue}
+
+add_command	{Search.Protein genes.codon pref}    4 4 {CodonPref}
+add_command	{Search.Protein genes.author test}   4 4 {AuthorTest}
+add_command	{Search.Protein genes.base bias}     4 4 {BaseBias}
+
+add_command 	{Search.Plot start codons} 4 4 {NipStartCodons}
+add_command 	{Search.Plot stop codons} 4 4 {NipStopCodons}
+
+add_command 	{Search.Search for splice junctions} 4 4 {SpliceSearch}
+add_command	{Search.Search using weight matrix (DNA)}  4 4 {NipWtMatrixSearch}
+
+add_command	{Lists.Edit}			1 2 {EditListDialog}
+add_command	{Lists.Create}			1 2 {CreateListDialog}
+add_command	{Lists.Delete}			1 2 {DeleteListDialog}
+add_command	{Lists.Copy}			1 2 {CopyListDialog}
+add_command	{Lists.Load}			1 2 {LoadListDialog}
+add_command	{Lists.Save}			1 2 {SaveListDialog}
+add_command	{Lists.Print}			1 2 {PrintListDialog}
+
+add_command	{Comparison.Find similar spans}	 4 4 {CompareSpans}
+add_command	{Comparison.Find matching words} 4 4 {SipIdentities}
+add_command	{Comparison.Find best diagonals} 4 4 {QuickScan}
+add_command	{Comparison.Align sequences}	 4 4 {AlignSeqs}
+add_command     {Comparison.Local alignment}     4 4 {SimAlign}
+
+add_command	{Help.Contents}		1 0 {show_help spin Contents}
+add_command	{Help.Introduction}	1 0 {show_help spin SPIN-Introduction}
+add_command	{Help.Output Window}	1 0 {show_help interface {UI-Output}}
+add_separator	{Help.S1}
+add_command	{Help.Index}		1 0 {show_help spin Index}
+
+#-----------------------------------------------------------------------------
+# Global variables
+#-----------------------------------------------------------------------------
+set_def OUTPUT_SCROLL		1
+set_def GENETIC_CODE_DIR	$env(STADTABL)/gcodes
+set_def GENETIC_CODE		code_1
+
+set_def SEQ.WIN 		.seq
+set_def SEQ_WIN_WIDTH           7  
+
+set_def SEQ.CURSOR.LINE_WIDTH   2
+
+set_def SEQ_DISP.WIN            .sequence_pair_display
+set_def SEQ_DISP.PLOT_WIDTH     80
+
+set_def GRAPH.CURSOR.SENSITIVE    5
+set_def GRAPH.RASTER.BORDERWIDTH  2
+
+set_def DOT.CURSOR.SENSITIVE    5
+set_def DOT.RASTER.BORDERWIDTH  2
+
+set_def   CURSOR.COLOUR.0	"#0000ff"; #blue
+set_def   CURSOR.COLOUR.1	"#8b8b00"; #yellow4 
+set_def   CURSOR.COLOUR.2	"#ff0000"; #red
+set_def   CURSOR.COLOUR.3	"#228b22"; #forestgreen
+set_def   CURSOR.COLOUR.4	"#5f9ea0"; #cadetblue
+set_def   CURSOR.COLOUR.5	"#4b0082"; #indigo
+set_def   CURSOR.COLOUR.6	"#a52a2a"; #brown
+set_def   CURSOR.COLOUR.7	"#ffa500"; #orange
+set_def   CURSOR.COLOUR.8	"#00c0c0"; #turquoise(ish)
+set_def   CURSOR.COLOUR.9	"#d02090"; #violet red
+
+set_def   RASTER.COLOUR.0	"#0000ff"; #blue
+set_def   RASTER.COLOUR.1	"#8b8b00"; #yellow4 
+set_def   RASTER.COLOUR.2	"#ff0000"; #red
+set_def   RASTER.COLOUR.3	"#228b22"; #forestgreen
+set_def   RASTER.COLOUR.4	"#5f9ea0"; #cadetblue
+set_def   RASTER.COLOUR.5	"#4b0082"; #indigo
+set_def   RASTER.COLOUR.6	"#a52a2a"; #brown
+set_def   RASTER.COLOUR.7	"#ffa500"; #orange
+set_def   RASTER.COLOUR.8	"#00c0c0"; #turquoise(ish)
+set_def   RASTER.COLOUR.9	"#d02090"; #violet red
+
+#-----------------------------------------------------------------------------
+# Local variables
+#-----------------------------------------------------------------------------
+set_def SEQED.AMINO_ACID_MODE		0
+
+#-----------------------------------------------------------------------------
+# SEQED
+#-----------------------------------------------------------------------------
+#save
+set_def SEQED.SAVE.RANGE.NAME		"Range"
+set_def SEQED.SAVE.LINE_LEN.NAME	"Line length"
+set_def SEQED.SAVE.LINE_LEN.VALUE	60
+set_def SEQED.SAVE.FILENAME.NAME	"File name"
+set_def SEQED.SAVE.FILENAME.VALUE	""
+
+set_def SEQED.SEARCH.DIRECTION.NAME	Direction
+set_def SEQED.SEARCH.DIRECTION.VALUE	1
+set_def SEQED.SEARCH.DIRECTION.BUTTON.1	forward
+set_def SEQED.SEARCH.DIRECTION.BUTTON.2	backward
+set_def SEQED.SEARCH.MATCH.NAME		"Minimum percent match"
+set_def SEQED.SEARCH.MATCH.VALUE	75.0
+set_def SEQED.SEARCH.STRAND.NAME	Strand
+set_def SEQED.SEARCH.STRAND.VALUE	1
+set_def SEQED.SEARCH.STRAND.BUTTON.1	forward
+set_def SEQED.SEARCH.STRAND.BUTTON.2	reverse
+set_def SEQED.SEARCH.STRING.NAME	"Search string"
+set_def SEQED.SEARCH.STRING.VALUE	""
+set_def SEQED.SEARCH.USE_IUB.NAME               "Search algorithm"
+set_def SEQED.SEARCH.USE_IUB.VALUE              1
+set_def SEQED.SEARCH.USE_IUB.BUTTON1.NAME       "iub codes"
+set_def SEQED.SEARCH.USE_IUB.BUTTON2.NAME       literal
+set_def SEQED.SEARCH.USE_IUB.BUTTON1.VALUE      1
+set_def SEQED.SEARCH.USE_IUB.BUTTON2.VALUE      0
+
+# For the file loading dialogues
+set_def SIMPLE.WIN              .simple
+set_def PERSONAL.WIN            .personal
+
+#-----------------------------------------------------------------------------
+#emboss definitions
+#-----------------------------------------------------------------------------
+
+set_def EMBOSS.MAX_MENU_ITEMS 40
+set_def EMBOSS.L_WIDTH  0
+
+set_def EMBOSS.RASTER.GRAPH.TITLE       "graph"
+set_def EMBOSS.RASTER.GRAPH.PLOT_HEIGHT 200
+set_def EMBOSS.RASTER.GRAPH.PLOT_WIDTH  500
+set_def EMBOSS.RULER.GRAPH.PLOT_HEIGHT   40
+set_def EMBOSS.RULER.GRAPH.PLOT_WIDTH   100
+set_def EMBOSS.RASTER.SINGLE.PLOT_HEIGHT 60
+
+set_def EMBOSS.RASTER.DOT.TITLE "dot plot"
+set_def EMBOSS.RASTER.DOT.PLOT_HEIGHT 400
+set_def EMBOSS.RASTER.DOT.PLOT_WIDTH  400
+set_def EMBOSS.RULER.DOT.PLOT_HEIGHT   40
+set_def EMBOSS.RULER.DOT.PLOT_WIDTH   100
+
+set_def EMBOSS.TYPE     ""
+
+load_package %L/spin_emboss	 {}	 spin_emboss 0
+
+

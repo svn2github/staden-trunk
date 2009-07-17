@@ -1,0 +1,11 @@
+set_menu gap_menu
+add_command {View.SNP candidates} 8 10 {CandidateSNPs \$io}
+
+set_def CANDIDATE_SNPS.WIN	.snps
+set_def CURSOR_COLOURS		{blue orange4 green3 red hotpink}
+
+set_def SAVE_CONSENSUS.NAME	"Output file"
+set_def SAVE_CONSENSUS.VALUE	cons
+
+set_def FOFN			$defs_f_or_l_out
+set_def FOFN.WHICH.NAME		"Output file/list prefix"

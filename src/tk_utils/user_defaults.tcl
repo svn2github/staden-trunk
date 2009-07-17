@@ -39,6 +39,8 @@ proc load_package {tcldir {libdir {}} {name {}} {init {}}} {
     # Replace %L by $env(STADLIB), %S with src, %% with %
     regsub -all {%L} $tcldir $env(STADLIB) tcldir
     regsub -all {%L} $libdir $env(STADLIB) libdir
+    regsub -all {%T} $tcldir $env(STADTCL) tcldir
+    regsub -all {%T} $libdir $env(STADTCL) libdir
     regsub -all {%S} $tcldir $env(STADENROOT)/src tcldir
     regsub -all {%S} $libdir $env(STADENROOT)/src libdir
     regsub -all {%%} $tcldir %% tcldir
@@ -108,6 +110,7 @@ proc simple_load_package {name} {
     # puts "start simple_load_package $name"
 
     regsub -all {%L} $name $env(STADLIB) name
+    regsub -all {%T} $name $env(STADTCL) name
     regsub -all {%S} $name $env(STADENROOT)/src name
     regsub -all {%%} $name %% name
 
@@ -117,13 +120,13 @@ proc simple_load_package {name} {
 	set tdir $dir
 	set ldir $dir
 	set adir $dir
-	set bdir $ldir/$env(MACHINE)-binaries/
+	set bdir $ldir
     } else {
 	set tdir $env(STADTABL)
 	set ldir $env(STADLIB)
-	set adir $ldir/$name
+	set adir $env(STADTCL)/$name
 	if {$tcl_platform(os) == "Darwin" || $tcl_version < "8.3"} {
-	    set bdir "$ldir/$env(MACHINE)-binaries/"
+	    set bdir "$ldir"
 	} else {
 	    set bdir ""
 	}

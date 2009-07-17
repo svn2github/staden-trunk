@@ -1282,7 +1282,7 @@ proc CreateTemplateDisplay {io cnum} {
 # Test version when running as a script in its own right
 if {[string match "*depth.tcl" $argv0]} {
     source $env(STADTABL)/shlib.conf
-    load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
+    load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
     load_package tk_utils
     tk_utils_init
     load_package gap5

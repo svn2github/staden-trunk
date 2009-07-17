@@ -23,9 +23,11 @@ distsrc:
 	-cp Makefile *.tcl tclIndex create_emboss_files $(DIRNAME)
 	-cp -R acdtcl $(DIRNAME)
 
+S=$(SRCROOT)/spin_emboss
 install:
-	-mkdir $(INSTALLLIB)/spin_emboss
-	cp *.tcl tclIndex $(INSTALLLIB)/spin_emboss
-	cp create_emboss_files $(INSTALLBIN)
-	-mkdir $(INSTALLLIB)/spin_emboss/acdtcl
-	-cp acdtcl/* $(INSTALLLIB)/spin_emboss/acdtcl
+	-mkdir $(INSTALLTCL)/spin_emboss
+	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/spin_emboss
+	cp $(S)/create_emboss_files $(INSTALLBIN)
+	-mkdir $(INSTALLTCL)/spin_emboss/acdtcl
+	-cp $(S)/acdtcl/* $(INSTALLTCL)/spin_emboss/acdtcl
+	cp $(S)/emboss_menu $(S)/spin_embossrc $(INSTALLETC)

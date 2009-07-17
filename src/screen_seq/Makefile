@@ -2,7 +2,7 @@
 # Makefile for screen_seq
 #
 
-PROGS = $(O)/screen_seq
+PROGS = screen_seq
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
@@ -10,12 +10,7 @@ include ../system.mk
 
 INCLUDES_E += $(TEXTUTILS_INC) $(IOLIB_INC) $(SEQUTILS_INC) $(MISC_INC)
 
-#EXTRA_LIBS += -ldmalloc
-
-CLPSRC=$(O)
-
-OBJS	= \
-	$(CLPSRC)/screen_seq.o
+OBJS	= screen_seq.o
 
 HLIBS=\
 	$(SEQUTILS_LIB) \
@@ -26,7 +21,7 @@ HLIBS=\
 	$(MATH_LIB)
 
 
-$(O)/screen_seq: $(OBJS) 
+screen_seq: $(OBJS) 
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJS) $(HLIBS) $(LIBSC)
 
 

@@ -2,13 +2,11 @@
 # Makefile for tracediff
 #
 
-PROGS = $(O)/tracediff
+PROGS = tracediff
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
-
-TRACEDIFFBIN=$(O)
 
 
 INCLUDES_E += $(IOLIB_INC) $(MUT_INC)
@@ -19,11 +17,10 @@ HLIBS=\
 	$(MUT_LIB) \
 	$(IOLIB_LIB)
 
-OBJSD	= \
-	$(TRACEDIFFBIN)/main.o
+OBJSD	= main.o
 
 
-$(O)/tracediff: $(OBJSD)
+tracediff: $(OBJSD)
 	$(CXXLD) $(CXXLDFLAGS) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJSD) $(HLIBS) $(LIBSC)
 
 
@@ -46,7 +43,7 @@ distsrc: distsrc_dirs
 install:
 	cp $(PROGS) $(INSTALLBIN)
 
-DEPEND_OBJ = $(OBJS) $(OBJS) $(OBJSA)
+DEPEND_OBJ = $(OBJSD)
 
 include dependencies
 

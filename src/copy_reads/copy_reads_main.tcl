@@ -54,7 +54,7 @@ if {$argc >= 2 && [lindex $argv 0] == "-menu_file"} {
 
 
 if {$tcl_platform(os) == "Darwin"} {
-    load $env(STADLIB)/$env(MACHINE)-binaries/libtk_utils.dylib
+    load $env(STADLIB)/libtk_utils.dylib
 }
 
 load_package tk_utils

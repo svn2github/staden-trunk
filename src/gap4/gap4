@@ -67,17 +67,12 @@ find_dir() {
     echo $dir
 }
 
-STADENROOT=`find_dir $0`/..
-export STADENROOT
-STADEN_PREPEND=1 . $STADENROOT/staden.profile
+STADENROOT=`find_dir $0`/..;            export STADENROOT
+STADLIB=$STADENROOT/lib/staden;         export STADLIB
+STADTABL=$STADENROOT/share/staden/etc;  export STADTABL
+STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 
-# Define TCL/TK config - not defined in staden.profile as it may break
-# some other applications the user wishes to use.
-TCL_LIBRARY=$STADLIB/tcl
-TK_LIBRARY=$STADLIB/tk
-export TCL_LIBRARY TK_LIBRARY
+PATH=$STADENROOT/bin:$PATH
+LD_LIBRARY_PATH=$STADENROOT/lib:$LD_LIBRARY_PATH
 
-#
-# Run it!
-#
-exec stash "$STADLIB/gap/gap.tcl" ${@+"$@"}
+exec stash "$STADTCL/gap/gap.tcl" ${@+"$@"}

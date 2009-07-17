@@ -2,7 +2,7 @@
 # Makefile for vector_clip
 #
 
-PROGS = $(O)/vector_clip
+PROGS = vector_clip
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
@@ -12,10 +12,8 @@ INCLUDES_E += $(IOLIB_INC) $(SEQUTILS_INC) $(MISC_INC) $(TEXTUTILS_INC)
 
 #EXTRA_LIBS += -ldmalloc
 
-CLPSRC=$(O)
-
 OBJS	= \
-	$(CLPSRC)/vector_clip.o
+	vector_clip.o
 
 HLIBS=\
 	$(SEQUTILS_LIB) \
@@ -26,7 +24,7 @@ HLIBS=\
 	$(MATH_LIB)
 
 
-$(O)/vector_clip: $(OBJS)
+vector_clip: $(OBJS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(OBJS) $(HLIBS) $(LIBSC) 
 
 

@@ -38,6 +38,11 @@ char* GetInterpResult( void )
 int Tk_utils_Init(Tcl_Interp *interp) {
     char *s, c[20], *lib = NULL, buf[1024];
 
+    our_interp = interp;
+
+    /* FIXME: Remove this, but firstly we need to remove from tcl code */
+    Tcl_SetVar2(interp, "licence","type", "f", TCL_GLOBAL_ONLY);
+
     /* Keyed lists from tclX */
     TclX_KeyedListInit(interp);
  
@@ -60,11 +65,9 @@ int Tk_utils_Init(Tcl_Interp *interp) {
     /*
      * The auto_path.
      */
-    if (NULL == (lib = getenv("STASH_LIB"))) {
-	if (lib = getenv("STADENROOT")) {
-	    sprintf(buf, "%s/lib/tk_utils", lib);
-	    lib = buf;
-	}
+    if (lib = getenv("STADTCL")) {
+	sprintf(buf, "%s/tk_utils", lib);
+	lib = buf;
     }
 
     if (lib) {

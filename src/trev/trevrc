@@ -1,0 +1,117 @@
+#-----------------------------------------------------------------------------
+# Packages required
+#-----------------------------------------------------------------------------
+load_package tk_utils
+load_package tkdnd
+
+
+#-----------------------------------------------------------------------------
+# Menus
+#-----------------------------------------------------------------------------
+set_menu trev_menu
+add_menu File		1 0 left
+add_menu Edit		1 0 left
+add_menu View		1 0 left
+add_menu Options	1 0 left
+add_menu Help		1 0 right
+
+# The menu state bit enable/disable patterns are as follows
+# Bit 0: Startup (and no trace open)              1
+# Bit 1: Opened a file				  2
+# Bit 2: Enable save				  4
+# Bit 3: Enable save as				  8
+# Bit 4: Pregap mode				 16
+# Bit 5: Edits shown				 32
+# Bit 6: Edits to undo                           64
+
+add_command	{File.Open}			 1 16 {OpenFile}
+if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
+    add_command     {File.Open Biolims}              1 16 {OpenBiolims}
+}
+add_command	{File.Save}			 4  4 \
+	{SaveFile 0 \[[keylget trev_defs TRACE.WIN].t orig_format\]}
+add_cascade	{File.Save As}			 8 16
+add_command	{File.Save As.CTF}		 8 16 {SaveFile 1 CTF}
+add_command	{File.Save As.SCF}		 8 16 {SaveFile 1 SCF}
+add_command	{File.Save As.ZTR}		 8 16 {SaveFile 1 ZTR}
+add_command	{File.Save As.Experiment File}	 8 16 {SaveFile 1 EXP}
+add_command	{File.Save As.Plain Text}	 8 16 {SaveFile 1 PLN}
+add_cascade	{File.Print}			 2 2
+add_command	{File.Print.Page Options}	 2 2 {PrintSetup}
+add_command	{File.Print.Trace Options}	 2 2 {PrintTraceSetup}
+add_command	{File.Print.Print}		 2 2 {PrintFile 1}
+add_separator	{File.S1}
+add_command	{File.Exit}			 1 0 {ExitTrev}
+
+#Enable at your own risk - this only works when editing is disabled
+#add_command	{Edit.Complement}		 2 18 {.trev.trace.t complement}
+
+add_radio	{Edit.Left Quality}		 2  2 edit LCutOff \
+	{SetBinding \$edit}
+add_radio	{Edit.Right Quality}		 2  2 edit RCutOff \
+	{SetBinding \$edit}
+add_radio	{Edit.Left Vector}		 2  2 edit LVector \
+	{SetBinding \$edit}
+add_radio	{Edit.Right Vector}		 2  2 edit RVector \
+	{SetBinding \$edit}
+add_radio	{Edit.Sequence}			34 32 edit Seq \
+	{SetBinding \$edit}
+add_separator	{Edit.S1}
+add_command	{Edit.Undo Clipping}		66 66 {UndoClipping}
+
+add_command	{View.Search}			 2  2 {SearchProc}
+add_command	{View.Information}		 2  2 {DisplayInfo}
+add_separator	{View.S1}
+
+add_check	{View.Display base numbers}	2 2 tdisp(n) \
+	{SetTraceDisplay tdisp}
+add_check	{View.Display sequence}	2 2 tdisp(s) \
+	{SetTraceDisplay tdisp}
+add_check	{View.Display edits}		2 2 tdisp(e) \
+	{SetTraceDisplay tdisp}
+#add_check	{View.Display trace}		2 2 tdisp(t) \
+	{SetTraceDisplay tdisp}
+add_check	{View.Display confidence}	2 2 tdisp(c) \
+	{SetTraceDisplay tdisp}
+
+add_command	{Options.Set fonts}		 1 0 {SetFonts}
+if { $tcl_platform(platform) != "windows" } {
+  add_command	{Options.Colours}		 1 0 {ConfigureColours}
+}
+
+add_command	{Help.About}		1 0 {about}
+add_separator	{Help.S0}
+add_command	{Help.Contents}		1 0 {show_help trev Contents}
+add_command	{Help.Introduction}	1 0 {show_help trev Trev}
+add_separator	{Help.S1}
+add_command	{Help.Index}		1 0 {show_help trev Index}
+
+#-----------------------------------------------------------------------------
+# Window names
+#-----------------------------------------------------------------------------
+set_def TREV.WIN		.trev
+set_def TRACE.WIN		.trev.trace
+set_def MENU.FRAME		.trev.menus
+
+
+#-----------------------------------------------------------------------------
+# Default format for the file open dialog:
+# 0=ABI, 1=ALF, 2=CTF, 3=EXP, 4=SCF, 5=PLN, 6=ZTR, 7=any
+#-----------------------------------------------------------------------------
+set_def FILE.FORMAT            6
+
+
+#-----------------------------------------------------------------------------
+# Trace items to show at startup.
+#-----------------------------------------------------------------------------
+set_def SHOW_NUMBERS		1
+set_def SHOW_SEQUENCE		1
+set_def SHOW_EDITS		0
+set_def SHOW_TRACE		1
+set_def SHOW_CONFIDENCE		0
+
+#-----------------------------------------------------------------------------
+# Default value for the Edit menu.
+# One of Seq, LCutOff, RCutOff, LVector, RVector
+#-----------------------------------------------------------------------------
+set_def DEFAULT_EDIT RCutOff

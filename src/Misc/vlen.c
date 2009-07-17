@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <string.h>
+#include <staden_config.h>
 
 #include "vlen.h"
 
@@ -56,13 +57,13 @@ int vflen(char *fmt, va_list ap)
      * This code modifies 'ap', but we do not know if va_list is a structure
      * or a pointer to an array so we do not know if it is a local variable
      * or not.
+     *
      * C99 gets around this by defining va_copy() to make copies of ap, but
      * this does not exist on all systems.
-     * For now, I just assume that when va_list is a pointer the system also
-     * provides a va_copy macro to work around this problem. The only system
-     * I have seen needing this so far was Linux on AMD64.
+     * I consider that va_copy when not absolute necessary does no harm,
+     * so if the system has VA_COPY I'll use it.
      */
-#if defined(NEED_VA_COPY)
+#if defined(HAVE_VA_COPY)
     va_list ap_local;
     va_copy(ap_local, ap);
 #    define ap ap_local

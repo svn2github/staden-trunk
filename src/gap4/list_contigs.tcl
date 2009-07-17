@@ -95,20 +95,21 @@ proc InitListContigs {io parent {csh_win {}}} {
 # csh_win canvas.
 #
 # FIXME: rewrite the csh_win canvas stuff to call this menu code instead.
-; proc ListContigsPopupMenu {io name w X Y} {
+; proc ListContigsPopupMenu {io rnum w X Y} {
     global read_only gap_defs
 
+    set name [io_read_reading_name $io $rnum]
     create_popup $w.m "Contig Commands ($name)"
     $w.m add command -label "Edit contig" \
-	-command "edit_contig -io $io -contig $name"
+	-command "edit_contig -io $io -contig {\#$rnum}"
     $w.m add command -label "Template Display" \
-	-command "CreateTemplateDisplay $io $name"
+	-command "CreateTemplateDisplay $io {\#$rnum}"
     if {!$read_only} {
 	$w.m add command -label "Complement contig" \
-	    -command "complement_contig -io $io -contigs $name"
+	    -command "complement_contig -io $io -contigs {\#$rnum}"
     }
     $w.m add command -label "List notes" \
-	-command "NoteSelector $io contig $name"
+	-command "NoteSelector $io contig {\#$rnum}"
     tk_popup $w.m [expr $X-20] [expr $Y-10]
 }
 
@@ -123,9 +124,9 @@ proc InitListContigs {io parent {csh_win {}}} {
     foreach {row col} [split [$w nearestcell $x $y] ,] {break}
 
     # Find the contig identifier
-    set ident [lindex [lindex [$w get $row] 0] 0]
+    set rnum [lindex [regexp -inline  {\(\#([0-9]+)\)} [lindex [$w get $row] 0]] 1]
 
-    ListContigsPopupMenu $io $ident $w $X $Y
+    ListContigsPopupMenu $io $rnum $w $X $Y
 }		
 
 ; proc ListContigsSelectPressBinding {io w x y} {
@@ -210,20 +211,21 @@ proc InitListContigs {io parent {csh_win {}}} {
     $w selection clear 0 end
     $w delete 0 end
 
-    set name_list [CreateAllContigList $io]
-    set num_list [CreateAllContigListNumbers $io]
-    foreach name $name_list num $num_list {
-	set cnum [db_info get_contig_num $io $name]
+    set db [io_read_database $io]
+    set ncontigs [keylget db num_contigs]
+    for {set cnum 1} {$cnum <= $ncontigs} {incr cnum} {
 	set cstruct [io_read_contig $io $cnum]
 	set clen [keylget cstruct length]
+	set num [keylget cstruct left]
+	set name [io_read_reading_name $io $num]
+
+	# Slow - should be cached!
 	set nreads 0
-	for {set rnum [keylget cstruct left]} \
-	    {$rnum != 0} \
-	    {set rnum [keylget rstruct right]} \
-	    {
-		set rstruct [io_read_reading $io $rnum]
-		incr nreads
-	    }
+	for {set rnum $num} {$rnum != 0} {set rnum [keylget rstruct right]} {
+	    set rstruct [io_read_reading $io $rnum]
+	    incr nreads
+	}
+
 	$w insert end [list "$name (#$num)" $clen $nreads]
     }
     if {[$w sortcolumn] != -1} {
