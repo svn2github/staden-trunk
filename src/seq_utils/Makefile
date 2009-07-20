@@ -64,6 +64,7 @@ DEPEND_OBJ = $(OBJS)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.gbl $(S)/Makefile $(DIRNAME)
+	cp $(S)/align_lib_nuc_matrix $(S)/nuc_matrix $(DIRNAME)
 
 S=$(SRCROOT)/seq_utils
 install:

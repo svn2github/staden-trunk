@@ -5,7 +5,7 @@ include ../system.mk
 INCLUDES_E += $(MISC_INC) $(IOLIB_INC) $(TK_INC)
 
 distsrc: distsrc_dirs
-	cp $(S)/*.tcl $(S)/trevrc $(S)/trev.bat $(S)/Makefile $(DIRNAME)
+	cp $(S)/*.tcl $(S)/trevrc $(S)/trev $(S)/trev.bat $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(S)/trev $(INSTALLBIN)

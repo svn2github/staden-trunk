@@ -19,7 +19,8 @@ acdtcl:
 	stash create_emboss_files.tcl
 
 distsrc: distsrc_dirs
-	cp $(S)/Makefile $(S)/*.tcl $(S)/tclIndex $(S)/create_emboss_files $(DIRNAME)
+	cp $(S)/Makefile $(S)/*.tcl $(S)/tclIndex $(S)/create_emboss_files \
+	   $(S)/emboss_menu $(S)/spin_embossrc $(DIRNAME)
 
 install:
 	-mkdir $(INSTALLTCL)/spin_emboss
