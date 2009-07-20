@@ -1611,13 +1611,6 @@ tcl_read_sequence(ClientData clientData,
 	}
 
 
-	if (!valid_seq(sequence, 0)) {
-	    verror(ERR_WARN, "read_sequence",
-		   "This sequence may not be used in demo mode.");
-	    vTcl_SetResult(interp, "%d", -1);	    
-	    return TCL_OK;
-	}
-
 	/* 
 	 * FIXME - this needs some more thought - perhaps shouldn't merely 
 	 * produce a unique name but update the sequence properly
