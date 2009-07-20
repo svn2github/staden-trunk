@@ -35,6 +35,11 @@ Other system prerequisites:
 * GNU make
 * TexInfo (for documentation only)
 
+Note that if you are using gfortran then the GNU autoconf system does
+not automatically detect the requirement of -lgfortran on link lines
+while building libraries. To fix this add "LIBS=-lgfortran" on to the
+end of your ./configure command.
+
 Building the package consists of three main components: source,
 documentation and course notes.
 

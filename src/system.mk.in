@@ -53,8 +53,10 @@ CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
 LDFLAGS		  = -L$(L) @LDFLAGS@
+F77		  = @F77@
+FFLAGS		  = @FFLAGS@
 
-#EXTRA_LIBS	  = @LIBS@
+EXTRA_LIBS	  = @LIBS@
 
 
 # Large file support

@@ -12,6 +12,7 @@ AC_CONFIG_HEADERS(staden_config.h)
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_CXX
+AC_PROG_F77
 #AC_PROG_INSTALL
 
 dnl Check for library dependencies
