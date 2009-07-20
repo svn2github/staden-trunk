@@ -75,7 +75,7 @@ set line_types "CN CV SV SF CF WT DR DT MC MN MT OP TN ST PN PR SC SP SI
 # Where to find modules, and which ones to use
 
 #[module_list]
-set MODULE_PATH {$env(STADLIB)/pregap4/modules}
+set MODULE_PATH {$env(STADTCL)/pregap4/modules}
 if { $tcl_platform(platform) != "windows" } {
     set MODULES {
     phred
