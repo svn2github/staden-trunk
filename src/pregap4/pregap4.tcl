@@ -117,7 +117,7 @@ if {!$interactive} {
     exit
 } else {
     set tk_strictMotif 0
-    load_package iwidgets
+    package require Iwidgets
     wm withdraw .
     wm protocol . WM_DELETE_WINDOW exit
     if {$licence(type) != "f"} {

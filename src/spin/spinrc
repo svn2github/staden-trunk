@@ -5,8 +5,9 @@ load_package tk_utils
 load_package spin
 load_package sip
 load_package nip
-load_package iwidgets
 
+package require Iwidgets
+namespace import itcl::*
 package require tablelist
 
 #-----------------------------------------------------------------------------
