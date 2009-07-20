@@ -103,3 +103,6 @@ INSTALLTCL     = $(INSTALLSHARE)/tcl
 # traditionally this all ended up in $STADTABL
 INSTALLETC     = $(INSTALLSHARE)/etc
 INSTALLDATA    = $(INSTALLSHARE)/etc
+
+# Keep autoconf happy
+datarootdir = @datarootdir@

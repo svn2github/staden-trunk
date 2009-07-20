@@ -256,10 +256,9 @@ thrashb:   $(THRASHBOBJS)
 
 DEPEND_OBJ = $(GAPOBJS) $(COPYDBOBJS)
 
-S=$(SRCROOT)/gap4
 install:
 	cp copy_db $(INSTALLBIN)
-	-cp $(S)/gap4 $(INSTALLBIN)
+	cp $(S)/gap4 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap
 	cp $(PROGLIBS) $(INSTALLLIB)
@@ -269,8 +268,10 @@ install:
 	cp $(S)/*.bitmap $(S)/*.gif $(INSTALLETC)
 
 distsrc: distsrc_dirs
-	-cp -R *.[chf] *.tcl tclIndex Makefile gap4 gap4viewer gap4.bat \
-		dependencies $(DIRNAME)
+	cp $(S)/*.[chf] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap4 \
+	   $(S)/gap4.bat $(S)/GTAGDB $(S)/NOTEDB $(S)/*.bitmap $(S)/*.gif \
+	   $(S)/gaprc $(S)/gaprc_menu_full $(S)/gaprc_menu_mito \
+	   $(S)/cap2rc $(S)/cap3rc $(S)/fak2rc $(S)/phraprc $(DIRNAME)
 
 include dependencies
 # DO NOT DELETE THIS LINE -- make depend depends on it.

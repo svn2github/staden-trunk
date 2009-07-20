@@ -99,11 +99,9 @@ endif
 
 # Copy the tk_utils source
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.tcl tclIndex Makefile dependencies \
-		$(DIRNAME)
-	-rm $(DIRNAME)/resource.h
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(DIRNAME)
+	cp $(S)/*.bmp $(S)/help_config $(S)/tk_utilsrc $(DIRNAME)
 
-S=$(SRCROOT)/tk_utils
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)
 	-mkdir $(INSTALLTCL)/tk_utils
@@ -111,7 +109,7 @@ install:
 ifneq ($(MACHINE),windows)
 	cp stash $(INSTALLBIN)
 endif
-	cp $(S)/2bars_*.bmp $(S)/help_config $(S)/shlib.conf $(S)/tk_utilsrc $(INSTALLETC)
+	cp $(S)/2bars_*.bmp $(S)/help_config $(S)/tk_utilsrc $(INSTALLETC)
 
 include dependencies
 # DO NOT DELETE

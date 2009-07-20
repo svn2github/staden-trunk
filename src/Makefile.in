@@ -79,6 +79,7 @@ install:
 	-mkdir -p $(INSTALLTCL)
 	-mkdir -p $(INSTALLDOC)
 	-mkdir -p $(INSTALLMAN)
+	cp shlib.conf $(INSTALLETC)
 	$(MAKE) $(FLAGS) JOB=install
 
 
@@ -126,73 +127,45 @@ distwindows:
 
 
 
-
+DS=staden-@PACKAGE_VERSION@-src
+S=$(SRCROOT)
 distsrc:
-	-mkdir $(DISTSRC)/src
-	-mkdir $(DISTSRC)/src/mk
-	-mkdir $(DISTSRC)/src/lib
-	-mkdir $(DISTSRC)/src/lib/alpha-binaries
-	-mkdir $(DISTSRC)/src/lib/linux-binaries
-	-mkdir $(DISTSRC)/src/lib/sgi-binaries
-	-mkdir $(DISTSRC)/src/lib/solaris-binaries
-	cp -R mk/*.mk mk/README $(DISTSRC)/src/mk
-	cp -R Makefile Makefile.thirdparty $(DISTSRC)/src
-	$(MAKE) $(FLAGS) JOB=distsrc
-#	 A few bits of Tcl that are needed for compilation
-#	-mkdir $(DISTSRC)/src/tcl8.4.6
-#	-mkdir $(DISTSRC)/src/tcl8.4.6/generic
-#	-cp -R tcl8.4.6/generic/tcl*.h $(DISTSRC)/src/tcl8.4.6/generic/
-#	-mkdir $(DISTSRC)/src/tcl8.4.6/unix
-#	-cp -R tcl8.4.6/unix/tclAppInit.c $(DISTSRC)/src/tcl8.4.6/unix
-#	 A few bits of Tk that are needed for compilation
-#	-mkdir $(DISTSRC)/src/tk8.4.6
-#	-mkdir $(DISTSRC)/src/tk8.4.6/generic
-#	-mkdir $(DISTSRC)/src/tk8.4.6/unix
-#	-mkdir $(DISTSRC)/src/tk8.4.6/compat
-#	-cp -R tk8.4.6/generic/tk*.h $(DISTSRC)/src/tk8.4.6/generic/
-#	-cp -R tk8.4.6/unix/tkUnixPort.h $(DISTSRC)/src/tk8.4.6/unix
-#	-cp -R tk8.4.6/compat/*.h $(DISTSRC)/src/tk8.4.6/compat
-#	 Some itcl stuff
-#	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
-#	-cp -R incrTcl-3.3cvs/itcl/generic/*.h \
-#	       $(DISTSRC)/src/incrTcl-3.3cvs/itcl/generic
-#	-mkdir -p $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
-#	-cp -R incrTcl-3.3cvs/itk/generic/*.h \
-#	       $(DISTSRC)/src/incrTcl-3.3cvs/itk/generic
-#	 Dummy licence code
-	-cp -R licence $(DISTSRC)/src/licence
-#	# STLPort
-#	-mkdir $(DISTSRC)/src/stlport
-#	-cp -R stlport/alpha $(DISTSRC)/src/stlport
-#	-cp -R stlport/linux $(DISTSRC)/src/stlport
-#	-cp -R stlport/macosx $(DISTSRC)/src/stlport
-
+#
+#	General souce. Works best from a clean svn checkout.
+	-mkdir $(DS)
+	cp $(S)/configure $(S)/*.in $(S)/bootstrap $(S)/README.build \
+	   $(S)/global.mk $(DS)
+	-mkdir $(DS)/ac_stubs
+	cp $(S)/ac_stubs/*.m4 $(DS)/ac_stubs
+#
+#	Recurse through sub-directories too
+	$(MAKE) $(FLAGS) DISTSRC=$(PWD)/$(DS) JOB=distsrc
+#
 #	 Windows compilation bits
-	mkdir $(DISTSRC)/src/windows
-	cp -R windows/include $(DISTSRC)/src/windows
-	mkdir $(DISTSRC)/src/windows/mkdef
-	cp -R windows/mkdef/mkdef.* \
-	      $(DISTSRC)/src/windows/mkdef
-	mkdir $(DISTSRC)/src/windows/run
-	cp -R windows/run/run.* \
-	      windows/run/main.cpp\
-	      windows/run/notes.txt\
-	      windows/run/sprun.rc\
-	      windows/run/staden.ico\
-	      $(DISTSRC)/src/windows/run
-	mkdir $(DISTSRC)/src/windows/dumpenv
-	cp -R windows/dumpenv/dumpenv.*\
-	      windows/dumpenv/main.cpp\
-	      $(DISTSRC)/src/windows/dumpenv
-	mkdir $(DISTSRC)/src/windows/stashmsg
-	cp -R windows/stashmsg/stashmsg.*\
-	      windows/stashmsg/icon1.ico\
-	      windows/stashmsg/messages.*\
-	      windows/stashmsg/msg00001.bin\
-	      windows/stashmsg/resource.h\
-	      windows/stashmsg/stadenmsg.rc\
-	      $(DISTSRC)/src/windows/stashmsg
-	cp -R windows/install-2003 $(DISTSRC)/src/windows
+#	-mkdir $(S)/windows
+#	cp -R windows/include $(S)
+#	-mkdir $(S)/mkdef
+#	cp -R windows/mkdef/mkdef.* $(S)/mkdef
+#	-mkdir $(S)/run
+#	cp -R windows/run/run.* \
+#	      windows/run/main.cpp\
+#	      windows/run/notes.txt\
+#	      windows/run/sprun.rc\
+#	      windows/run/staden.ico\
+#	      $(S)/run
+#	mkdir $(S)/windows/dumpenv
+#	cp -R windows/dumpenv/dumpenv.*\
+#	      windows/dumpenv/main.cpp\
+#	      $(S)/windows/dumpenv
+#	mkdir $(S)/windows/stashmsg
+#	cp -R windows/stashmsg/stashmsg.*\
+#	      windows/stashmsg/icon1.ico\
+#	      windows/stashmsg/messages.*\
+#	      windows/stashmsg/msg00001.bin\
+#	      windows/stashmsg/resource.h\
+#	      windows/stashmsg/stadenmsg.rc\
+#	      $(S)/windows/stashmsg
+#	cp -R windows/install-2003 $(S)/windows
 
 $(DIRS): FORCE
 	@if ! test -f $@/.dir; \
@@ -203,7 +176,7 @@ $(DIRS): FORCE
 	    $(MAKE) -f $(SRCROOT)/$@/Makefile $(FLAGS) $(MFLAGS) BUILD=$(PWD) SRC=$(SRCROOT)/$@ depend; \
 	fi
 
-	cd $@ && $(MAKE) -f $(SRCROOT)/$@/Makefile $(FLAGS) $(MFLAGS) BUILD=$(PWD) SRC=$(SRCROOT)/$@ $(JOB)
+	cd $@ && $(MAKE) -f $(SRCROOT)/$@/Makefile $(FLAGS) $(MFLAGS) BUILD=$(PWD) SRC=$(SRCROOT)/$@ SUBDIR=$@ $(JOB)
 
 %/: %
 	#

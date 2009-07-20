@@ -32,7 +32,6 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(HAPLO_DEP) $(SHLIB_DEP)
 
-S=$(SRCROOT)/haplo
 install:
 	-mkdir $(INSTALLTCL)/haplo
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/haplo
@@ -40,8 +39,8 @@ install:
 	cp $(S)/haplorc $(INSTALLETC)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.tcl Makefile dependencies tclIndex \
-	    $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/Makefile $(S)/tclIndex $(S)/haplorc \
+	   $(DIRNAME)
 
 DEPEND_OBJ = $(OBJS)
 

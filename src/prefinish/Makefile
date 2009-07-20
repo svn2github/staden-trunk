@@ -77,10 +77,15 @@ install:
 	cp $(S)/config.prefinish $(S)/prefinishrc $(INSTALLETC)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.tcl *.itcl *.itk help args.template Makefile \
-	    dependencies CHEMISTRY METHODS prefinish rules tclIndex \
-	    config.prefinish finish_sanger finish_cDNA finish_cDNA_ends_only \
-	    $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/*.itcl $(S)/*.itk $(S)/help \
+	   $(S)/args.template $(S)/Makefile $(S)/prefinish $(S)/tclIndex \
+	   $(S)/config.prefinish $(S)/finish_sanger $(S)/finish_cDNA \
+	   $(S)/finish_cDNA_ends_only $(S)/prefinishrc \
+	   $(DIRNAME)
+	-mkdir $(DIRNAME)/rules
+	cp $(S)/rules/* $(DIRNAME)/rules
+	-mkdir $(DIRNAME)/docs
+	cp $(S)/docs/* $(DIRNAME)/docs
 
 DEPEND_OBJ = $(OBJS)
 

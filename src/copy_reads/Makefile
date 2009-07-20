@@ -34,18 +34,17 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	-$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(COPIER_LIB) $(SHLIB_DEP) $(F77_DEP)
 
-S=$(SRCROOT)/copy_reads
+
 install:
 	-mkdir $(INSTALLTCL)/copy_reads
-	-cp $(S)/copy_reads $(INSTALLBIN)
+	cp $(S)/copy_reads $(INSTALLBIN)
 	cp $(S)/copy_reads.tcl $(S)/copy_reads_main.tcl $(S)/tclIndex $(INSTALLTCL)/copy_reads
 	cp $(PROGLIBS) $(INSTALLLIB)
 	cp $(S)/copy_readsrc $(INSTALLETC)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] copy_reads.tcl copy_reads_main.tcl tclIndex \
-		copy_reads Makefile dependencies \
-		$(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/copy_reads \
+	   $(S)/Makefile $(S)/copy_readsrc $(DIRNAME)
 
 DEPEND_OBJ = $(OBJS)
 

@@ -68,7 +68,6 @@ TEA_PRIVATE_TCL_HEADERS
 TEA_PUBLIC_TK_HEADERS
 TEA_PRIVATE_TK_HEADERS
 
-
 AC_SUBST([TCL_SHLIB_CFLAGS])
 AC_SUBST([TCL_SHLIB_LD])
 AC_SUBST([TCL_SHLIB_LD_LIBS])
@@ -83,8 +82,12 @@ AC_SUBST([TK_INCLUDE_SPEC])
 AC_SUBST([TK_LIB_SPEC])
 AC_SUBST([TK_LIBS])
 
+# tklib - extra widgets for Tk
+AX_LIB_TKLIB(,[have_tklib=yes], [AC_MSG_ERROR([Abort: no tklib package found, use --with-tklib=DIR])])
 
-AC_CONFIG_FILES([system.mk])
+#-----------------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([system.mk])
+AC_CONFIG_FILES([shlib.conf])
 AC_OUTPUT
 

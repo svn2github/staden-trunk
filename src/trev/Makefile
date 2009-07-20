@@ -5,11 +5,10 @@ include ../system.mk
 INCLUDES_E += $(MISC_INC) $(IOLIB_INC) $(TK_INC)
 
 distsrc: distsrc_dirs
-	-cp -R *.tcl Makefile trev trev.bat $(DIRNAME)
+	cp $(S)/*.tcl $(S)/trevrc $(S)/trev.bat $(S)/Makefile $(DIRNAME)
 
-S=$(SRCROOT)/trev
 install:
-	-cp $(S)/trev $(INSTALLBIN)
+	cp $(S)/trev $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/trev
 	cp $(S)/trev.tcl $(INSTALLTCL)/trev
 	cp $(S)/trevrc $(INSTALLETC)

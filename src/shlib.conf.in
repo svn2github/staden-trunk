@@ -1,0 +1,7 @@
+# Shared library support, so we know what to use in tcl load commands.
+set lib_prefix lib
+set lib_suffix @TCL_SHLIB_SUFFIX@
+
+# Also for tcl loading, what extra bits to add to our auto_path
+lappend auto_path "@TKLIB_PATH@"
+

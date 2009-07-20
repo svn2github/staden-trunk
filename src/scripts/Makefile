@@ -19,12 +19,10 @@ spotless: clean cleanprogs cleanlibs
 
 
 .PHONY: distsrc cleanprogs cleanlibs
-distsrc:
-	-mkdir $(DIRNAME)
-	cp gzip_trace bzip_trace bzip2_trace assemble4 fasta-split \
-	   fasta2exp make_fasta staden2exp splitseq_da staden_help \
-	   Makefile $(DIRNAME)
-	-rmdir *-binaries
+distsrc: distsrc_dirs
+	cp $(S)/gzip_trace $(S)/bzip_trace $(S)/bzip2_trace $(S)/assemble4 \
+	   $(S)/fasta-split $(S)/fasta2exp $(S)/make_fasta $(S)/staden2exp \
+	   $(S)/splitseq_da $(S)/staden_help $(S)/Makefile $(DIRNAME)
 
 # Not all scripts are particularly useful, so don't bother to install these.
 

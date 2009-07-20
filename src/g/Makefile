@@ -75,5 +75,8 @@ FORCE::
 
 include dependencies
 
+distsrc: distsrc_dirs
+	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
+
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)

@@ -206,7 +206,7 @@ PNG_INC	        = -I$(SRCROOT)/libpng
 #O = $(MACHINE)-binaries
 O=.
 # Obj to Src
-S = ..
+S = $(SRCROOT)/$(SUBDIR)
 # Lib
 L = $(SRCROOT)/lib
 LD_LIBRARY_PATH := $(L):$(LD_LIBRARY_PATH)
@@ -434,25 +434,10 @@ $(MUTBIN)/%.a: $(MUTSRC)/%.cpp
 # sensible, but it is expected that this will be overridden. Relies on
 # GNU make.
 .PHONY: distsrc_dirs
-distsrc: DIRNAME=$(DISTSRC)/src/$(subst $(STADENROOT)/src/,,$(shell pwd))
 distsrc_dirs:
-	-mkdir -p $(DIRNAME)
-	-mkdir -p $(DIRNAME)/alpha-binaries
-	-mkdir -p $(DIRNAME)/linux-binaries
-	-mkdir -p $(DIRNAME)/sgi-binaries
-	-mkdir -p $(DIRNAME)/solaris-binaries
+	-mkdir -p $(DISTSRC)/$(SUBDIR)
 
-distsrc: DIRNAME=$(DISTSRC)/src/$(subst $(STADENROOT)/src/,,$(shell pwd))
-distsrc: distsrc_dirs
-	-cp -R *.[ch] $(DIRNAME)
-	-cp -R *.[ch]pp $(DIRNAME)
-	-cp -R *.f $(DIRNAME)
-	-cp -R *.bat $(DIRNAME)
-	-cp -R *.tcl $(DIRNAME)
-	-cp -R tclIndex $(DIRNAME)
-	-cp -R Makefile $(DIRNAME)
-	-cp -R dependencies $(DIRNAME)
-	-cp -R README $(DIRNAME)
+distsrc: DIRNAME=$(DISTSRC)/$(SUBDIR)
 
 #------------------------------------------------------------------------------
 # Depend rule should work on most systems except Solaris.

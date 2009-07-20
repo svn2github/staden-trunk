@@ -104,17 +104,16 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(GAP5)
 
 DEPEND_OBJ = $(GAP5)
 
-S=$(SRCROOT)/gap5
 install:
-	-cp $(S)/gap5 $(INSTALLBIN)
+	cp $(S)/gap5 $(INSTALLBIN)
 	-mkdir $(INSTALLTCL)/gap5
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
 
 distsrc: distsrc_dirs
-	-cp -R *.[chf] *.tcl tclIndex Makefile gap5 gap5viewer gap5.bat \
-		dependencies $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \
+	   $(S)/gap5rc $(S)/gap5rc_menu_full $(DIRNAME)
 
 include dependencies
 # DO NOT DELETE THIS LINE -- make depend depends on it.

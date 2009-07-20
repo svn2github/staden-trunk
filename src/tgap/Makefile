@@ -94,7 +94,7 @@ TGILIBS = \
 	$(TCL_LIB) \
 	$(SAMTOOLS_LIB)
 
-tg_index: $(TG_IND_OBJ) $(LIBS)
+tg_index: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
 
 TG_VIEW_OBJ = \
@@ -105,10 +105,13 @@ TGVLIBS = \
 	$(TGILIBS) \
 	-lcurses
 
-tg_view: $(TG_VIEW_OBJ) $(LIBS)
+tg_view: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
 
 DEPEND_OBJ = $(TG_IND_OBJ) $(TG_VIEW_OBJ) $(TGAPOBJS)
+
+distsrc: distsrc_dirs
+	cp $(S)/*.[ch] $(S)/*.pl $(S)/BAF $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGBINS) $(INSTALLBIN)

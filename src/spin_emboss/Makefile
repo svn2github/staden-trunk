@@ -18,12 +18,9 @@ ACDDIR=parser/acd
 acdtcl:
 	stash create_emboss_files.tcl
 
-distsrc:
-	-mkdir $(DIRNAME)
-	-cp Makefile *.tcl tclIndex create_emboss_files $(DIRNAME)
-	-cp -R acdtcl $(DIRNAME)
+distsrc: distsrc_dirs
+	cp $(S)/Makefile $(S)/*.tcl $(S)/tclIndex $(S)/create_emboss_files $(DIRNAME)
 
-S=$(SRCROOT)/spin_emboss
 install:
 	-mkdir $(INSTALLTCL)/spin_emboss
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/spin_emboss

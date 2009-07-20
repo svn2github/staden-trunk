@@ -63,7 +63,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.gbl Makefile dependencies $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.gbl $(S)/Makefile $(DIRNAME)
 
 S=$(SRCROOT)/seq_utils
 install:

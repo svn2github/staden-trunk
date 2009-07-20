@@ -28,7 +28,7 @@ mutscan: $(OBJSD)
 
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.[ch]pp Makefile dependencies $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.[ch]pp $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)

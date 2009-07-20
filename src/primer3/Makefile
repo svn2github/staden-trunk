@@ -10,5 +10,6 @@ relink:
 depend:
 
 distsrc: distsrc_dirs
-	-cp -R Copyright README README.jkb example example.int example.for \
-	       example.rev test Makefile $(DIRNAME)
+	cp $(S)/Copyright $(S)/README $(S)/README.jkb $(S)/example \
+	   $(S)/example.int $(S)/example.for $(S)/example.rev $(S)/Makefile \
+	   $(DIRNAME)

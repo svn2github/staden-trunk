@@ -43,8 +43,7 @@ install:
 	cp $(PROGLIBS) $(INSTALLLIB)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] Makefile dependencies \
-		$(DIRNAME)
+	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
 include dependencies
 # DO NOT DELETE THIS LINE -- make depend depends on it.

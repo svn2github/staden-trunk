@@ -38,7 +38,7 @@ set_defx defs_c_in	NAME.NAME	"List or file name"
 set_defx defs_c_in	NAME.BROWSE	"Browse"
 set_defx defs_c_in	NAME.VALUE	""
 
-set_def BINARIES		$env(STADENROOT)/$env(MACHINE)-bin
+set_def BINARIES		$env(STADENROOT)/bin
 
 set_def FAK2_ASSEMBLY1.WIN	.fakii_perform_assembly
 set_def FAK2_ASSEMBLY2.WIN	.fakii_import_assembly

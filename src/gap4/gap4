@@ -67,10 +67,11 @@ find_dir() {
     echo $dir
 }
 
-STADENROOT=`find_dir $0`/..;            export STADENROOT
-STADLIB=$STADENROOT/lib/staden;         export STADLIB
-STADTABL=$STADENROOT/share/staden/etc;  export STADTABL
-STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
+STADENROOT=`find_dir $0`/..;                  export STADENROOT
+STADLIB=$STADENROOT/lib/staden;               export STADLIB
+STADTABL=$STADENROOT/share/staden/etc;        export STADTABL
+STADTCL=$STADENROOT/share/staden/tcl;         export STADTCL
+GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
 
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$LD_LIBRARY_PATH

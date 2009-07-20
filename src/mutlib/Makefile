@@ -86,6 +86,9 @@ $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS)
 
 DEPEND_OBJ = $(OBJS)
 
+distsrc: distsrc_dirs
+	cp $(S)/*.[ch] $(S)/*.[ch]pp $(S)/Makefile $(DIRNAME)
+
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)
 

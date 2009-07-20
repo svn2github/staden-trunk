@@ -31,7 +31,7 @@ DEPEND_OBJ = $(OBJS)
 include dependencies
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] Makefile dependencies convert.doc $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/Makefile $(S)/convert.doc $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)

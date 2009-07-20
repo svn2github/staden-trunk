@@ -24,5 +24,8 @@ DEPEND_OBJ = $(OBJ)
 
 include dependencies
 
+distsrc: distsrc_dirs
+	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
+
 install:
 	cp $(PROGS) $(INSTALLBIN)
