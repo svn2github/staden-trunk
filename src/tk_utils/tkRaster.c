@@ -2183,7 +2183,6 @@ static int ConfigDrawEnv (interp, RasterPtr, drawEnv, argc, argv)
    if (drawEnv->fgColor) {
       /* Foreground was changed */
       drawEnv->valMask |= GCForeground;
-      printf("fg = %ld\n", drawEnv->fgColor->pixel);
       drawEnv->gcValues.foreground = drawEnv->fgColor->pixel;
    }
    if (DrawEnvSpecs [4].specFlags & TK_CONFIG_OPTION_SPECIFIED) {
