@@ -26,6 +26,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include <staden_config.h>
+
 #include "maqmap.h" /* lh3-rev */
 
 #include "array.h"
@@ -35,9 +37,10 @@
 #include "ace.h"
 #include "baf.h"
 
+#ifdef HAVE_SAMTOOLS_H
 extern int parse_bam(GapIO *io, const char *fn,
 		     int no_tree, int pair_reads, int merge_contigs);
-
+#endif
 
 /* .dat version format to handle */
 #define DAT_VERSION 3
@@ -386,7 +389,9 @@ void usage(void) {
     fprintf(stderr, "      -M			Input is MAQ-long format\n");
     fprintf(stderr, "      -A			Input is ACE format\n");
     fprintf(stderr, "      -B			Input is BAF format\n");
+#ifdef HAVE_SAMTOOLS_H
     fprintf(stderr, "      -b			Input is BAM format\n");
+#endif
     fprintf(stderr, "      -p			Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P			Do not link read-pairs together\n");
     fprintf(stderr, "      -a			Append to existing db\n");
@@ -508,9 +513,11 @@ int main(int argc, char **argv) {
 	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;
 
+#ifdef HAVE_SAMTOOLS_H
 	case 'b':
 	    parse_bam(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;
+#endif
 
 	default:
 	    parse_file(io, max_size, argv[optind++], no_tree, pair_reads,

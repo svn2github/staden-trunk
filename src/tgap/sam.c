@@ -7,6 +7,9 @@
 #include "tg_gio.h"
 #include "tg_struct.h"
 
+#include <staden_config.h>
+#ifdef HAVE_SAMTOOLS_H
+
 #define _IOLIB 2
 #include "bam.h"
 #include "faidx.h"
@@ -701,3 +704,6 @@ int parse_bam(GapIO *io, const char *fn,
 
     return 0;
 }
+
+#endif /* HAVE_SAMTOOLS_H */
+
