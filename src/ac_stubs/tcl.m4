@@ -139,6 +139,7 @@ AC_DEFUN([TEA_PATH_TCLCONFIG], [
 			`ls -d /usr/local/lib 2>/dev/null` \
 			`ls -d /usr/contrib/lib 2>/dev/null` \
 			`ls -d /usr/lib 2>/dev/null` \
+			`ls -d /usr/lib/tcl* 2>/dev/null` \
 			; do
 		    if test -f "$i/tclConfig.sh" ; then
 			ac_cv_c_tclconfig=`(cd $i; pwd)`
@@ -278,6 +279,7 @@ AC_DEFUN([TEA_PATH_TKCONFIG], [
 			`ls -d /usr/local/lib 2>/dev/null` \
 			`ls -d /usr/contrib/lib 2>/dev/null` \
 			`ls -d /usr/lib 2>/dev/null` \
+			`ls -d /usr/lib/tk* 2>/dev/null` \
 			; do
 		    if test -f "$i/tkConfig.sh" ; then
 			ac_cv_c_tkconfig=`(cd $i; pwd)`
@@ -3861,7 +3863,8 @@ AC_DEFUN([TEA_PUBLIC_TK_HEADERS], [
 		`ls -d ${TCL_PREFIX}/include     2>/dev/null` \
 		`ls -d ${TCL_BIN_DIR}/../include 2>/dev/null`"
 	    if test "${TEA_PLATFORM}" != "windows" -o "$GCC" = "yes"; then
-		list="$list /usr/local/include /usr/include"
+		list="$list /usr/local/include /usr/include \
+		     `ls -d /usr/include/tcl*`"
 		if test x"${TK_INCLUDE_SPEC}" != x ; then
 		    d=`echo "${TK_INCLUDE_SPEC}" | sed -e 's/^-I//'`
 		    list="$list `ls -d ${d} 2>/dev/null`"
