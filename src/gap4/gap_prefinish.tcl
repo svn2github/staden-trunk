@@ -1,9 +1,11 @@
+package require Iwidgets
+namespace import itcl::*
+
 # -----------------------------------------------------------------------------
 # A Gap4 interface to the prefinish library and GUI.
 #
 proc prefinish {io} {
     global gap_defs
-    load_package iwidgets
     load_package prefinish
     ::prefinish::init
 

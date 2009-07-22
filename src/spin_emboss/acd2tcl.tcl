@@ -24,9 +24,7 @@
 #    stash create_menu.tcl > menu
 
 tkinit
-load_package iwidgets
-#package require Tk
-#package require Iwidgets
+package require Iwidgets
 wm withdraw .
 
 #-----------------------------------------------------------------------------

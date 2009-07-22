@@ -19,7 +19,8 @@ load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
 
 load_package tk_utils
 tk_utils_init
-load_package iwidgets
+package require Iwidgets
+namespace import itcl::*
 load_package prefinish
 
 # Do the actual business

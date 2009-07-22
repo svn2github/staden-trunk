@@ -3,7 +3,7 @@
 #-----------------------------------------------------------------------------
 load_package tk_utils
 if {[info commands tk] != ""} {
-   load_package iwidgets
+   package require Iwidgets
 }
 
 # Next line can be removed when using the updated newgap_top.tcl

@@ -8,7 +8,7 @@
 #-----------------------------------------------------------------------------
 # The lexical analyser
 
-load_package iwidgets
+package require Iwidgets
 namespace eval acd2tag {
 
 # A lex style rule set.
