@@ -26,7 +26,7 @@ proc show_url {url} {
     # and we try to bring up a help browser that cannot deal with X (eg
     # internet explorer). 
     if {[catch {exec open $url}]} {
-        source $env(STADLIB)/tk_utils/help_int.tcl
+        source $env(STADTCL)/tk_utils/help_int.tcl
 	return [show_url $url]
     }
 }

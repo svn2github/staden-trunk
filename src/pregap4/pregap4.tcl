@@ -15,7 +15,7 @@ catch {console hide}
 
 # Make pregap4 take priority over tk_utils. This is temporary until we fold
 # back in some of our local changes to tk_utils.
-set auto_path "$env(STADLIB)/pregap4 $auto_path"
+set auto_path "$env(STADTCL)/pregap4 $auto_path"
 if [info exists env(STADEN_AUTO_PATH)] {
     set auto_path "$env(STADEN_AUTO_PATH) $auto_path"
 }

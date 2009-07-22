@@ -24,7 +24,7 @@ proc init {} {
     mod_preset min_match 25
     mod_preset max_length 250000
     mod_preset screen_mode fofn
-    mod_preset screen_file $env(STADENROOT)/userdata/ecoli.files
+    mod_preset screen_file $env(STADTABL)/ecoli.files
     variable screen_file
     set screen_file [fullpath $screen_file]
 }

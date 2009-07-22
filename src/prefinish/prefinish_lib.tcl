@@ -79,7 +79,7 @@ proc prefinish::main_gui {w} {
     variable rules
     global env
 
-    load_tooltips $env(STADLIB)/prefinish/help
+    load_tooltips $env(STADTCL)/prefinish/help
 
     if {$w == ""} {
 	set wt .
@@ -870,7 +870,7 @@ proc prefinish::generate_app {h} {
 
     append str [generate_app2 $h]
     
-    set fd [open $env(STADLIB)/prefinish/args.template]
+    set fd [open $env(STADTCL)/prefinish/args.template]
     append str "[read $fd]\n"
     close $fd
 

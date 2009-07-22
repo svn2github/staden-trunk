@@ -370,7 +370,7 @@ proc HMwent_to {win where} {
 
 # When running as a standalone program, we bring up the display automatically
 if {[info exists argv] && $argv == "-init"} {
-    set auto_path "$env(STADLIB)/tkutils $auto_path"
+    set auto_path "$env(STADTCL)/tkutils $auto_path"
     tkinit
     help_init "" 1
     cd $help_path

@@ -760,7 +760,7 @@ proc emboss_init {} {
 	destroy .tmp
     }
 
-    lappend auto_path $env(STADLIB)/spin_emboss/acdtcl
+    lappend auto_path $env(STADTCL)/spin_emboss/acdtcl
 
     if {![info exists env(EMBOSS_DATA)]} {
 	set dir [EMBOSS::data_dir]

@@ -24,7 +24,7 @@ proc init {} {
     mod_preset def_5_pos -1
     mod_preset update_exp_file 1
     mod_preset use_vp_file 1
-    mod_preset vp_file $env(STADENROOT)/tables/vector_primer
+    mod_preset vp_file $env(STADTABL)/vector_primer
     mod_preset vector_list ""
     mod_preset vp_length 40
 

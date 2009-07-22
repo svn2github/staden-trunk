@@ -42,14 +42,14 @@ proc add_template_gui {is_name_scheme} {
 	get_fname $w.file \
 		-text "Naming scheme file name" \
 		-type load \
-		-initialdir $env(STADLIB)/pregap4/naming_schemes \
+		-initialdir $env(STADTCL)/pregap4/naming_schemes \
 		-filetypes {{"template"	*.p4t}}
 	set help "Pregap4-Naming"
     } else {
 	get_fname $w.file \
 		-text "Component file name" \
 		-type load \
-		-initialdir $env(STADLIB)/pregap4/templates \
+		-initialdir $env(STADTCL)/pregap4/templates \
 		-filetypes {{"template"	*.p4t}}
 	set help "Pregap4-Components"
     }

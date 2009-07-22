@@ -43,12 +43,12 @@ proc run {files} {
 	    return $files
 	}
     } elseif {$tcl_platform(platform) == "windows"} {
-	if {[catch {set fd [open "|wish [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
+	if {[catch {set fd [open "|wish [list $env(STADTCL)/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
 	    append report "ERR: trev failed with error message '$var'.\n"
 	    return $files
 	}
     } else {
-	if {[catch {set fd [open "|stash [list $env(STADENROOT)/lib/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
+	if {[catch {set fd [open "|stash [list $env(STADTCL)/trev/trev.tcl] -pregap_mode -editscf  -fofn [list $fofn.tmp]"]} var]} {
 	    append report "ERR: trev failed with error message '$var'.\n"
 	    return $files
 	}

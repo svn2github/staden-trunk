@@ -11,7 +11,7 @@ add_command {File.Generate CLI App}	1 0 {::prefinish::generate_save $h}
 add_separator {File.Sep1}
 add_command {File.Exit}			1 0 {::prefinish::exit $h}
 
-set_def RULE_DIR $env(STADLIB)/prefinish/rules
+set_def RULE_DIR $env(STADTCL)/prefinish/rules
 
 add_command {Add.Configuration}		1 0 {::prefinish::add_param $h}
 add_command {Add.Pass}			1 0 {::prefinish::add_pass $h}
