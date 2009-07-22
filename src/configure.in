@@ -17,9 +17,12 @@ AC_PROG_F77
 
 dnl Check for library dependencies
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
-AX_LIB_ZLIB(,[have_zlib=yes], [AC_MSG_ERROR([Abort: no zlib])])
-AX_LIB_SAMTOOLS(0.1.3,[have_bam=yes],[AC_MSG_ERROR([Abort: no samtools])])
-AX_LIB_IO_LIB(1.11.0,[have_io_lib=yes],[AC_MSG_ERROR([Abort: no staden-io_lib found])])
+AX_LIB_ZLIB(,[have_zlib=yes], [AC_MSG_ERROR([Abort: no zlib. Please rerun configure using the --with-zlib=DIR option.])])
+AX_LIB_SAMTOOLS(0.1.3,[have_bam=yes],[AC_MSG_WARN([Gap5/tg_index will have reduced functionality])])
+AX_LIB_IO_LIB(1.11.0,[have_io_lib=yes],[AC_MSG_ERROR([Abort: no staden-io_lib found.
+Please rerun configure with a --with-io_lib=DIR option specified.
+This can be found at https://sourceforge.net/projects/staden or may be bundled
+as a package for your operating system. See README.build for more details.])])
 
 #dnl Add --with-tcl option
 #SC_PATH_TCLCONFIG
@@ -92,3 +95,38 @@ AC_CONFIG_FILES([system.mk])
 AC_CONFIG_FILES([shlib.conf])
 AC_OUTPUT
 
+#-----------------------------------------------------------------------------
+# Summary output
+echo
+echo ----------------------------------------------------------------------
+echo External packages used:
+
+if test "$have_curl" = "yes"
+then
+echo    "curl:      via $_libcurl_config"
+else
+echo    "curl:      NOT FOUND"
+fi
+
+if test "x$ZLIB_ROOT" = "x"
+then
+echo    "zlib:      DIR (system)"
+else
+echo    "zlib:      DIR $ZLIB_ROOT"
+fi
+
+if test "have_bam" = "yes"
+then
+echo    "samtools:  DIR $SAMTOOLS_ROOT"
+else
+echo    'samtools:  ***NOT FOUND***'
+fi
+
+echo    "io_lib:    via $_io_lib_config"
+
+echo    "Tcl:       via $TCL_BIN_DIR/tclConfig.sh"
+
+echo    "Tk:        via $TK_BIN_DIR/tkConfig.sh"
+
+echo    "tklib:     $TKLIB_PATH"
+echo ----------------------------------------------------------------------

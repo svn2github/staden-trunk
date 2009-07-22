@@ -37,26 +37,25 @@ AC_DEFUN([AX_LIB_IO_LIB],
   AC_ARG_WITH(io_lib, AC_HELP_STRING([--with-io_lib=DIR],
 	                             [Look for io_lib root in DIR]),
 	      [_io_lib_with=$withval],
-	      [_io_lib_with="_use_path_"])
+	      [_io_lib_with=""])
 
-  # Defaults to enabled
-  if test "$_io_lib_with" != "no"
+  if test "x$_io_lib_with" = "x"
   then
-    # Identify the location of io_lib-config
-    if test -d "$_io_lib_with"
-    then
-      if test -x "$_io_lib_with/bin/io_lib-config"
-      then
-        _io_lib_config="$_io_lib_with/bin/io_lib-config"
-      else
-        _io_lib_config=
-      fi
-    else
-      AC_PATH_PROG([_io_lib_config], [io_lib-config])
-    fi
+    _iopath=$PATH
+  else
+    _iopath="$_io_lib_with/bin"
+  fi
 
+  AC_PATH_PROG([_io_lib_config], [staden-io_lib-config],,[$_iopath])
+  if test "x$_io_lib_config" = "x"
+  then
+      AC_PATH_PROG([_io_lib_config], [io_lib-config],,[$_iopath])
+  fi
+
+  if test "x$_io_lib_config" != "x"
+  then
     # Check version is sufficient; sneakily entirely in sh syntax
-    if test x$_io_lib_config != "x"
+    if test "x$1" != "x"
     then
       AC_MSG_CHECKING([if io_lib version >= $1])
 
@@ -84,27 +83,19 @@ AC_DEFUN([AX_LIB_IO_LIB],
       fi
       AC_SUBST([IO_LIB_VERSION])
     else
-      io_lib_version_ok=yes; # Have to just guess and hope
+      io_lib_version_ok=yes;
     fi
 
     if test $io_lib_version_ok = "yes" 
     then    
       # Configure IO_LIB_CFLAGS and IO_LIB_LDFLAGS
-      if test x$_io_lib_config != "x"
-      then
-	test x"$IO_LIB_CFLAGS" = "x" && IO_LIB_CFLAGS=`$_io_lib_config --cflags`
-        test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS=`$_io_lib_config --libs`
-      else
-        # defaults when io_lib-config isn't found
-        test x"$IO_LIB_CFLAGS" = "x" && IO_LIB_CFLAGS="-I$withval/include"
-        test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS="-L$withval/lib -lread"
-      fi
+      test x"$IO_LIB_CFLAGS" = "x" && IO_LIB_CFLAGS=`$_io_lib_config --cflags`
+      test x"$IO_LIB_LDFLAGS"  = "x" && IO_LIB_LDFLAGS=`$_io_lib_config --libs`
       AC_DEFINE(HAVE_IO_LIB, 1, [Define to 1 if you have a working io_lib])
       AC_SUBST(IO_LIB_CFLAGS)
       AC_SUBST(IO_LIB_LDFLAGS)
     fi
   fi
-
 
   # Execute the conditional expressions
   if test "$io_lib_version_ok" = "yes"

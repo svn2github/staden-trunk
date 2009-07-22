@@ -255,7 +255,7 @@ x=CURLOPT_VERBOSE;
 
      unset _libcurl_try_link
      unset _libcurl_version_parse
-     unset _libcurl_config
+     #unset _libcurl_config
      unset _libcurl_feature
      unset _libcurl_features
      unset _libcurl_protocol
