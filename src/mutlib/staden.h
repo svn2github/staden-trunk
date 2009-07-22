@@ -24,6 +24,21 @@ extern "C" {
 
 #include <Misc/misc.h>
 #include <seq_utils/dna_utils.h>
+
+/*
+ * This is ugly, but io_lib's compress.h defines a pipe2()
+ * function. It's only internally used and doesn't really need to be
+ * there. However on more recent linuxes (>= 2.6.27) it conflicts with
+ * a new pipe2 function added to unistd.h. In theory that's protected
+ * behind __USE_GNU, but no matter what I try I cannot undef that.
+ *
+ * So instead we temporarily rename io_lib's pipe2 to something else.
+ * Apologies for the shenanigans.
+ */
+#define pipe2 pipe_into
+#include <io_lib/compress.h>
+#undef pipe2
+
 #include <io_lib/Read.h>
 
 
