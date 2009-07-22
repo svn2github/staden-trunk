@@ -64,6 +64,8 @@ void sheet_destroy(Sheet *sw) {
 	destroy_array(sw->paper);
     if (sw->ink)
 	destroy_array(sw->ink);
+    if (sw->dbl_buffer)
+	Tk_FreePixmap(sw->display, sw->dbl_buffer);
 }
 
 /*
@@ -90,6 +92,14 @@ void sheet_resize(Sheet *sw, int rows, int columns) {
 	    extend_array (&sw->ink,   sw->rows, sw->columns);
 
 	sheet_clear(sw);
+
+	if (sw->dbl_buffer)
+	    Tk_FreePixmap(sw->display, sw->dbl_buffer);
+	if (Tk_IsMapped(sw->tkwin))
+	    sw->dbl_buffer = Tk_GetPixmap(sw->display, Tk_WindowId(sw->tkwin),
+					  sw->width_in_pixels,
+					  sw->height_in_pixels,
+					  Tk_Depth(sw->tkwin));
     }
 }
 
@@ -147,6 +157,7 @@ int sheet_create(Sheet *sw, Pixel light, Pixel fg, Pixel bg) {
     sw->display_cursor = 1;
     sw->window = 0;
     sw->yflip = 0;
+    sw->dbl_buffer = 0;
 
     sheet_resize(sw, 0, 0);
 
@@ -370,65 +381,49 @@ static GC setGC(Sheet *sw, sheet_ink ink_base)
 static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
 {
     sheet_ink_struct my_ink;
-    my_ink = *ink;
+    GC bg_gc;
+    XGCValues values;
+    unsigned long mask;
+    unsigned long bg;
 
+    my_ink = *ink;
     if (ink->sh & sh_light) {
 	my_ink.sh = (my_ink.sh | sh_fg) /* & ~sh_bg */ ;
 	my_ink.fg = sw->light;
     }
 
+    if (ink->sh & sh_inverse)
+	bg = (ink->sh & sh_fg) ? ink->fg : sw->foreground;
+    else
+	bg = (ink->sh & sh_bg) ? ink->bg : sw->background;
+
+    /* Create or change the GC for filling the background */
+    values.foreground = bg;
+    values.function = GXcopy;
+    values.fill_style = FillSolid;
+    mask = GCForeground  | GCFunction | GCFillStyle;
+    bg_gc = Tk_GetGC(sw->tkwin, mask, &values);
+
+#if 0
+    /* fill the background */
+    XFillRectangle(sw->display,
+		   sw->window,
+		   bg_gc,
+		   (int) COL_TO_PIXEL(sw,c),
+		   (int) ROW_TO_PIXEL(sw,r-1),
+		   FONT_WIDTH(sw) * l,
+		   FONT_HEIGHT(sw)
+		   );
+    Tk_FreeGC(sw->display, bg_gc);
+
+    /* finally draw the string */
     sw->sparegc = setGC(sw, &my_ink);
+    Tk_DrawChars(sw->display,sw->window,sw->sparegc,sw->font,s,l,
+		 (int) COL_TO_PIXEL(sw,c),(int) ROW_TO_BASELINE_PIXEL(sw,r));
 
-/* 7/1/99 johnt - implement XDrawImageString by hand for WINNT */
-#if !defined(_WIN32)
-    XDrawImageString(
-		     sw->display,
-		     sw->window,
-		     sw->sparegc,
-		     (int) COL_TO_PIXEL(sw,c),
-		     (int) ROW_TO_BASELINE_PIXEL(sw,r),
-		     s,
-		     l);
-#else
-{
-	XGCValues values;
-	unsigned long mask;
-	static GC bg_gc;
-	static int got_bg_gc = 0;
-
-	/* Create or change the GC for filling the background */
-	values.foreground = sw->sparegc->background;
-	values.function = GXcopy;
-	values.fill_style = FillSolid;
-	mask = GCForeground  | GCFunction | GCFillStyle;
-	if (got_bg_gc)
-	  XChangeGC(sw->display, bg_gc, mask, &values);
-	else {
-	  bg_gc = XCreateGC(sw->display, sw->window, mask, &values);
-	  got_bg_gc = 1;
-	}
-
-	/* fill the background */
-	XFillRectangle(
-	   sw->display,
-	   sw->window,
-	   bg_gc,
-	   (int) COL_TO_PIXEL(sw,c),
-	   (int) ROW_TO_PIXEL(sw,r-1),
-	   FONT_WIDTH(sw) * l,
-	   FONT_HEIGHT(sw)
-	);
-
-	/* finally draw the string */
-	Tk_DrawChars(sw->display,sw->window,sw->sparegc,sw->font,s,l,
-	(int) COL_TO_PIXEL(sw,c),(int) ROW_TO_BASELINE_PIXEL(sw,r));
-}
-#endif
-
-   /* and underline if required */
-   if (ink->sh & sh_select || ink->sh & sh_underline) {
-	XDrawLine(
-		  sw->display,
+    /* and underline if required */
+    if (ink->sh & sh_select || ink->sh & sh_underline) {
+	XDrawLine(sw->display,
 		  sw->window,
 		  sw->sparegc,
 		  (int) COL_TO_PIXEL(sw,c),
@@ -436,20 +431,85 @@ static void _repaint_colour(Sheet *sw, int c, int r, int l, sheet_ink ink, char 
 		  (int) COL_TO_PIXEL(sw,c+l)-1,
 		  (int) ROW_TO_BASELINE_PIXEL(sw,r)
 		  );
-   }
+    }
 
-   /* add ruler tick if required */
-   if (ink->sh & sh_tick) {
-       int i;
-       for (i = 0; i < l; i++) {
-	   XDrawRectangle(sw->display,
-			  sw->window,
-			  sw->sparegc,
-			  (int) COL_TO_PIXEL(sw,c+i) + COL_TO_PIXEL(sw,1)/2-1,
-			  (int) ROW_TO_BASELINE_PIXEL(sw,r)+1,
-			  1, 2);
-       }
-   }
+    /* add ruler tick if required */
+    if (ink->sh & sh_tick) {
+	int i;
+	for (i = 0; i < l; i++) {
+	    XDrawRectangle(sw->display,
+			   sw->window,
+			   sw->sparegc,
+			   (int) COL_TO_PIXEL(sw,c+i) + COL_TO_PIXEL(sw,1)/2-1,
+			   (int) ROW_TO_BASELINE_PIXEL(sw,r)+1,
+			   1, 2);
+	}
+    }
+#else
+ {
+     /* Double buffered */
+     GC copygc;
+
+     Pixmap p = sw->dbl_buffer;
+     mask = GCFunction|GCGraphicsExposures|GCForeground;
+     values.function = GXcopy;
+     values.graphics_exposures = False;
+     values.foreground = sw->foreground;
+     copygc = Tk_GetGC(sw->tkwin, mask, &values);
+
+     /* fill the background */
+     XFillRectangle(sw->display,
+		    p,
+		    bg_gc,
+		    (int) COL_TO_PIXEL(sw,c),
+		    (int) ROW_TO_PIXEL(sw,r-1),
+		    FONT_WIDTH(sw) * l,
+		    FONT_HEIGHT(sw)
+		    );
+     Tk_FreeGC(sw->display, bg_gc);
+
+     /* finally draw the string */
+     sw->sparegc = setGC(sw, &my_ink);
+     Tk_DrawChars(sw->display,p,sw->sparegc,sw->font,s,l,
+		  (int) COL_TO_PIXEL(sw,c),(int) ROW_TO_BASELINE_PIXEL(sw,r));
+
+     /* and underline if required */
+     if (ink->sh & sh_select || ink->sh & sh_underline) {
+	 XDrawLine(sw->display,
+		   p,
+		   sw->sparegc,
+		   (int) COL_TO_PIXEL(sw,c),
+		   (int) ROW_TO_BASELINE_PIXEL(sw,r),
+		   (int) COL_TO_PIXEL(sw,c+l)-1,
+		   (int) ROW_TO_BASELINE_PIXEL(sw,r)
+		   );
+     }
+
+     /* add ruler tick if required */
+     if (ink->sh & sh_tick) {
+	 int i;
+	 for (i = 0; i < l; i++) {
+	     XDrawRectangle(sw->display,
+			    p,
+			    sw->sparegc,
+			    (int)COL_TO_PIXEL(sw,c+i) + COL_TO_PIXEL(sw,1)/2-1,
+			    (int)ROW_TO_BASELINE_PIXEL(sw,r)+1,
+			    1, 2);
+	 }
+     }
+
+     XCopyArea(sw->display, p, sw->window, copygc,
+	       (int) COL_TO_PIXEL(sw,c),
+	       (int) ROW_TO_PIXEL(sw,r-1),
+	       FONT_WIDTH(sw) * l,
+	       FONT_HEIGHT(sw),
+	       (int) COL_TO_PIXEL(sw,c),
+	       (int) ROW_TO_PIXEL(sw,r-1));
+     Tk_FreeGC(sw->display, copygc);
+ }
+#endif
+
+    Tk_FreeGC(sw->display, sw->sparegc);
 }
 
 
@@ -526,6 +586,13 @@ static void _repaint(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
     if (!Tk_IsMapped(sw->tkwin))
 	return;
 
+    /* Incase it hasn't been created yet due to an unmapped window */
+    if (!sw->dbl_buffer)
+	sw->dbl_buffer = Tk_GetPixmap(sw->display, Tk_WindowId(sw->tkwin),
+				      sw->width_in_pixels,
+				      sw->height_in_pixels,
+				      Tk_Depth(sw->tkwin));
+
     if (!sw->window)
 	sw->window = Tk_WindowId(sw->tkwin);
 
@@ -539,48 +606,68 @@ static void _repaint(Sheet *sw, int c, int r, int l, sheet_ink ink, char *s)
     */
 
     if (ink->sh==sh_default) {
-	/* 7/1/99 johnt - Implement XDrawImageString Manually under Windows */
-#if !defined(_WIN32)
-	XDrawImageString(
-	    sw->display,
-	    sw->window,
-	    sw->normgc,
-	    (int) COL_TO_PIXEL(sw,c),
-	    (int) ROW_TO_BASELINE_PIXEL(sw,r),
-	    s,
-	    l);
-#else
 	XGCValues values;
 	unsigned long mask;
-	static GC bg_gc;
-	static int got_bg_gc = 0;
+	GC bg_gc;
 
 	/* Create or change the GC for filling the background */
-	values.foreground = sw->normgc->background;
+	values.foreground = sw->background;
 	values.function = GXcopy;
 	values.fill_style = FillSolid;
 	mask = GCForeground  | GCFunction | GCFillStyle;
-	if (got_bg_gc)
-	  XChangeGC(sw->display, bg_gc, mask, &values);
-	else {
-	  bg_gc = XCreateGC(sw->display, sw->window, mask, &values);
-	  got_bg_gc = 1;
-	}
+	bg_gc = Tk_GetGC(sw->tkwin, mask, &values);
 
+#if 0
 	/* fill the background */
-	XFillRectangle(
-	   sw->display,
-	   sw->window,
-	   bg_gc,
-	   (int) COL_TO_PIXEL(sw,c),
-	   (int) ROW_TO_PIXEL(sw,r-1),
-	   FONT_WIDTH(sw) * l,
-	   FONT_HEIGHT(sw)
-	);
+	XFillRectangle(sw->display,
+		       sw->window,
+		       bg_gc,
+		       (int) COL_TO_PIXEL(sw,c),
+		       (int) ROW_TO_PIXEL(sw,r-1),
+		       FONT_WIDTH(sw) * l,
+		       FONT_HEIGHT(sw)
+		       );
+	Tk_FreeGC(sw->display, bg_gc);
 
 	/* finally draw the string */
 	Tk_DrawChars(sw->display,sw->window,sw->normgc,sw->font,s,l,
 	(int) COL_TO_PIXEL(sw,c),(int) ROW_TO_BASELINE_PIXEL(sw,r));
+#else
+ {
+     /* Double buffered */
+     GC copygc;
+
+     Pixmap p = sw->dbl_buffer;
+     mask = GCFunction|GCGraphicsExposures|GCForeground;
+     values.function = GXcopy;
+     values.graphics_exposures = False;
+     values.foreground = sw->foreground;
+     copygc = Tk_GetGC(sw->tkwin, mask, &values);
+
+     /* fill the background */
+     XFillRectangle(sw->display,
+		    p,
+		    bg_gc,
+		    (int) COL_TO_PIXEL(sw,c),
+		    (int) ROW_TO_PIXEL(sw,r-1),
+		    FONT_WIDTH(sw) * l,
+		    FONT_HEIGHT(sw)
+		    );
+     Tk_FreeGC(sw->display, bg_gc);
+
+     /* finally draw the string */
+     Tk_DrawChars(sw->display,p,sw->normgc,sw->font,s,l,
+		  (int) COL_TO_PIXEL(sw,c),(int) ROW_TO_BASELINE_PIXEL(sw,r));
+
+     XCopyArea(sw->display, p, sw->window, copygc,
+	       (int) COL_TO_PIXEL(sw,c),
+	       (int) ROW_TO_PIXEL(sw,r-1),
+	       FONT_WIDTH(sw) * l,
+	       FONT_HEIGHT(sw),
+	       (int) COL_TO_PIXEL(sw,c),
+	       (int) ROW_TO_PIXEL(sw,r-1));
+     Tk_FreeGC(sw->display, copygc);
+ }
 #endif
 
     } else {

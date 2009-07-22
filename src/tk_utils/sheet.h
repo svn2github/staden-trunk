@@ -94,6 +94,7 @@ typedef struct {
     Pixel          light;
     Pixmap         grey_stipple;
     SheetHilight   default_sh;
+    Pixmap	   dbl_buffer;
 } Sheet;
 
 extern void sheet_destroy(Sheet *sw);
