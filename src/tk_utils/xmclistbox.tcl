@@ -145,7 +145,7 @@ namespace eval ::Widget::Xmclistbox {;
 
 
     # Check whether this configure resizes the font
-    set data(col_${col}_width) 0
+    set data(col_${col}_width) 1
     set width 0
     for {set i 0} {$i < $data(nItems)} {incr i} {
 	set t [lindex [split [$data(text) get $i.0 $i.end] \t] $col]
@@ -163,7 +163,7 @@ namespace eval ::Widget::Xmclistbox {;
 
     set c $data(num_columns)
     eval $data(text) tag configure col_$c $args
-    set data(col_${c}_width) 0
+    set data(col_${c}_width) 1
     set fn [$data(text) tag cget col_$c -font]
     if {$fn == ""} {
 	set fn [$data(text) cget -font]
