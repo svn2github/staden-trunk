@@ -13,14 +13,25 @@ downloaded and installed before hand.
 Packages required (newer versions should work; older versions may work
 but are untested - please tell me if they work too).
 
-* staden-io_lib	1.11.x
-* samtools	0.1.4
-* tcl		8.4
-* tk		8.4
-* zlib		1.2.x
-* libpng	1.2.x
-* curl		7.x
-* tklib		0.3? (for tablelist widget)
+* staden-io_lib	>=1.11.x
+* samtools	>=0.1.3 (optional[1])
+* tcl		>=8.4
+* tk		>=8.4
+* zlib		>=1.2.x
+* libpng	>=1.2.x
+* curl		>=7.x
+* tklib		>=0.3? (for tablelist widget)
+* itcl		>=3.2 (advisable, but optional[2])
+* itk		>=3.2 (advisable, but optional[2])
+* iwidgets	>=4.0 (advisable, but optional[2])
+
+[1] Samtools is only needed by tg_index to build Gap5 databases from
+bam format files.
+
+[2] itcl/itk/iwidgets are needed by pregap4, spin and some parts of
+Gap4. However it is a run-time dependency and the package will build
+without these installed. Note that itcl/itk version 3.4 is required if
+you link against Tcl/Tk 8.5.
 
 Note that if your operating system separates out run-time from
 development files, we'll need both. For example on Debian we need
@@ -193,3 +204,53 @@ libtcl8.4.6.dll and libtk8.4.6.dll
   (Optionally install perl too if you want to regenerate the .wxs files.)
 
 
+
+
+-----------------------------------------------------------------------------
+
+Fedora
+------
+
+Packages I needed to install:
+
+zlib-devel
+libcurl-devel
+libpng-devel
+tc-devel
+tk-devel
+libXt-devel
+itcl-devel
+itk-devel
+tcllib
+tklib
+gcc
+gcc-c++
+gfortran
+imake (for makedepend)
+staden-io_lib-devel (needs fix to compress.h to remove pipe2?)
+
+After compile and install you may find this error on running:
+
+".../lib/staden/libtk_utils.so: cannot restore segment prot
+after reloc: Permission denied"
+
+This is due to SElinux being set to enforcing. The correct way to
+resolve this is to use the chcon command as follows:
+
+    chcon -t texrel_shlib_t /PREFIX/lib/staden/lib*
+
+where PREFIX is the --prefix value used in autoconf.
+
+(Alternatively SElinux can be made less picky by running
+ "/usr/sbin/setenforce 0")
+
+
+TODO
+----
+
+*	Fix ./configure and make in top directory instead of
+        subdir. gap5/gap5 script was removed. (Because it's target
+        for library?)
+
+*	Figure out what to do with itcl/itk. We need them, but not as
+         a mandatory package.
