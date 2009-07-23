@@ -339,47 +339,6 @@ int poisson_diagonal ( int diagonal_length, int word_size,
 }
 
 
-int rotate_seq ( char *seq, int seq_len, int origin ) {
-
-    /* rotate seq seq so it starts at base origin.
-       note numbering: base 1 is stored in seq[0]
-    */
-
-    char *buf;
-    int i, j;
-
-    if ( origin > seq_len+1 ) return -2;
-    origin = (origin-1)%seq_len + 1;
-    if ( origin < 1 ) return -3;
-
-    if (origin == 1)
-	return 0;
-
-    if ( ( NULL == ( buf = ( char* ) xmalloc ( sizeof (char) * (origin-1))))) {
-	return -1;
-    }
-
-    /* save up to origin to temp buffer */
-
-    for ( i = 0; i < origin-1; i++ ) {
-	buf[i] = seq[i];
-    }
-
-    /* move origin onwards to start of input array */
-
-    for ( j = 0; i < seq_len; j++, i++ ) {
-	seq[j]= seq[i];
-    }
-
-    /* put back original left end */
-
-    for ( i = 0; i < origin-1; i++, j++ ) {
-	seq[j] = buf[i];
-    }
-    xfree ( buf );
-    return 0;
-}
-
 void free_hash ( int *hash_values1, int *last_word,
 	        int *word_count, int *hash_values2, int *diag,
 	        DI *hist) {
