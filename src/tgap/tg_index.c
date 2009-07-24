@@ -37,7 +37,7 @@
 #include "ace.h"
 #include "baf.h"
 
-#ifdef HAVE_SAMTOOLS_H
+#ifdef HAVE_SAMTOOLS
 extern int parse_bam(GapIO *io, const char *fn,
 		     int no_tree, int pair_reads, int merge_contigs);
 #endif
@@ -389,7 +389,7 @@ void usage(void) {
     fprintf(stderr, "      -M			Input is MAQ-long format\n");
     fprintf(stderr, "      -A			Input is ACE format\n");
     fprintf(stderr, "      -B			Input is BAF format\n");
-#ifdef HAVE_SAMTOOLS_H
+#ifdef HAVE_SAMTOOLS
     fprintf(stderr, "      -b			Input is BAM format\n");
 #endif
     fprintf(stderr, "      -p			Link read-pairs together (default on)\n");
@@ -418,7 +418,11 @@ int main(int argc, char **argv) {
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
+#ifdef HAVE_SAMTOOLS
     while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:")) != -1) {
+#else
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:")) != -1) {
+#endif
 	switch(opt) {
 	case 'a':
 	    append = 1;
@@ -513,7 +517,7 @@ int main(int argc, char **argv) {
 	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;
 
-#ifdef HAVE_SAMTOOLS_H
+#ifdef HAVE_SAMTOOLS
 	case 'b':
 	    parse_bam(io, argv[optind++], no_tree, pair_reads, merge_contigs);
 	    break;

@@ -8,7 +8,7 @@
 #include "tg_struct.h"
 
 #include <staden_config.h>
-#ifdef HAVE_SAMTOOLS_H
+#ifdef HAVE_SAMTOOLS
 
 #define _IOLIB 2
 #include "bam.h"
@@ -705,5 +705,5 @@ int parse_bam(GapIO *io, const char *fn,
     return 0;
 }
 
-#endif /* HAVE_SAMTOOLS_H */
+#endif /* HAVE_SAMTOOLS */
 
