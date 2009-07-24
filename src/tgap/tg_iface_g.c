@@ -278,7 +278,40 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
  */
 
 /* Hacky allocation scheme - always increment the record number */
-static int allocate(g_io *io) {
+#if 0
+static int allocate(g_io *io, int type) {
+    /* FIXME: we should track free records using a freerecs bitmap
+     * as is done in Gap4.
+     */
+    static int record = -1;
+    static int other_record = 4000000;
+    int r;
+
+    if (record == -1)
+	record = io->gdb->gfile->header.num_records;
+
+    /*
+     * Temporary hack to prevent lots of small records (bins, contigs, etc)
+     * from pushing the number of bits for the record number beyond
+     * 31-SEQ_BLOCK_BITS (ie currently record ~2 million).
+     *
+     * FIXME: the correct solution is to enable record numbers to be 64-bit.
+     */
+    switch (type) {
+    case GT_SeqBlock:
+    case GT_AnnoEleBlock:
+    case GT_Database:
+	r = record++;
+	break;
+
+    default:
+	r = other_record++;
+    }
+
+    return r;
+}
+#else
+static int allocate(g_io *io, int type) {
     /* FIXME: we should track free records using a freerecs bitmap
      * as is done in Gap4.
      */
@@ -289,6 +322,7 @@ static int allocate(g_io *io) {
 
     return record++;
 }
+#endif
 
 static GView lock(g_io *io, int rec, int mode) {
     if (!mode)
@@ -344,7 +378,7 @@ static int g_flush(g_io *io, GView v) {
 
 /* Generic functions - shared by all objects within the g library */
 static GRec io_generic_create(void *dbh, void *unused) {
-    return allocate((g_io *)dbh);
+    return allocate((g_io *)dbh, GT_Generic);
 }
 
 static int io_generic_destroy(void *dbh, GRec r) {
@@ -637,7 +671,7 @@ int btree_node_create(g_io *io, HacheTable *h) {
     HacheItem *hi;
 
     /* Allocate a new record */
-    rec = allocate(io);
+    rec = allocate(io, GT_BTree);
     n = btree_new_node();
     n->rec = rec;
 
@@ -967,7 +1001,7 @@ static int io_database_disconnect(void *dbh) {
 
 static GRec io_database_create(void *dbh, void *from) {
     g_io *io = (g_io *)dbh;
-    GCardinal db_rec = allocate(io);
+    GCardinal db_rec = allocate(io, GT_Database);
     GView v;
     GDatabase db;
 
@@ -978,7 +1012,7 @@ static GRec io_database_create(void *dbh, void *from) {
     db.version = 0;
 
     /* Contig order */
-    db.contig_order = allocate(io); /* contig array */
+    db.contig_order = allocate(io, GT_RecArray); /* contig array */
     v = lock(io, db.contig_order, G_LOCK_EX);
     //    if (-1 == g_write_le4(io, v, NULL, 0))
     //	return -1;
@@ -987,7 +1021,7 @@ static GRec io_database_create(void *dbh, void *from) {
 
     /* Libraries */
     db.Nlibraries = 0;
-    db.library = allocate(io);
+    db.library = allocate(io, GT_RecArray);
     v = lock(io, db.library, G_LOCK_EX);
     //    if (-1 == g_write_le4(io, v, NULL, 0))
     //	return -1;
@@ -1163,7 +1197,7 @@ static GRec io_contig_create(void *dbh, void *vfrom) {
     GView v;
     contig_t *from = (contig_t *)vfrom;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_Contig);
     v = lock(io, rec, G_LOCK_EX);
     
     if (from) {
@@ -1383,7 +1417,7 @@ static int io_anno_ele_create(void *dbh, void *vfrom) {
     GRec rec;
     GView v;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_AnnoEle);
     v = lock(io, rec, G_LOCK_EX);
     
     if (from) {
@@ -1919,7 +1953,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
 	if (!bin->rng_rec) {
-	    bin->rng_rec = allocate(io);
+	    bin->rng_rec = allocate(io, GT_Range);
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
@@ -1962,7 +1996,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
 	if (bin->track) {
 	    if (!bin->track_rec) {
-		bin->track_rec = allocate(io);
+		bin->track_rec = allocate(io, GT_Track);
 		bin->flags |= BIN_BIN_UPDATED;
 	    }
 
@@ -2070,7 +2104,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
     GRec rec;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_Bin);
     return rec;
 
     /*
@@ -2213,7 +2247,7 @@ static int io_track_create(void *dbh, void *vfrom) {
     GRec rec;
     GView v;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_Track);
     v = lock(io, rec, G_LOCK_EX);
     
     if (from) {
@@ -2676,7 +2710,7 @@ static int io_seq_write(void *dbh, cached_item *ci) {
 
 static int io_seq_create(void *dbh, void *vfrom) {
     g_io *io = (g_io *)dbh;
-    return allocate(io);
+    return allocate(io, GT_Seq);
 }
 
 static GRec io_seq_index_query(void *dbh, char *name) {
@@ -3098,7 +3132,7 @@ static GRec io_seq_block_create(void *dbh, void *vfrom) {
     GRec rec;
     GView v;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_SeqBlock);
     v = lock(io, rec, G_LOCK_EX);
 
     /* Write blank data here? */
@@ -3359,7 +3393,7 @@ static GRec io_anno_ele_block_create(void *dbh, void *vfrom) {
     GRec rec;
     GView v;
 
-    rec = allocate(io);
+    rec = allocate(io, GT_AnnoEleBlock);
     v = lock(io, rec, G_LOCK_EX);
 
     /* Write blank data here? */
