@@ -249,6 +249,13 @@ spotless: clean cleanprogs cleanlibs
 
 
 #------------------------------------------------------------------------------
+# Swap these lines around if you have a fortran compiler and wish to
+# edit legacy.f. To keep dependencies down and simplify dynamic linking for
+# now we just use the (edited) f2c derived version instead.
+#GAP4_LEGACY	= legacy.o
+GAP4_LEGACY	= legacy_f2c.o
+
+#------------------------------------------------------------------------------
 # Where to put things
 #
 ABISRC		= $(SRCROOT)/abi
@@ -262,7 +269,6 @@ FROGSRC		= $(SRCROOT)/frog
 GSRC		= $(SRCROOT)/g
 GAPSRC		= $(SRCROOT)/gap
 GAP4SRC		= $(SRCROOT)/gap4
-GAP4_LEGACY	= legacy.o
 REPE_OBJ	= repe.o
 NIP4SRC		= $(SRCROOT)/nip4
 GETMCHSRC	= $(SRCROOT)/getMCH

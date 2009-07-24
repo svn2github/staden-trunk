@@ -9,24 +9,42 @@ AC_INIT([staden],[2.0])
 
 AC_CONFIG_HEADERS(staden_config.h)
 
-dnl Checks for programs.
+#-----------------------------------------------------------------------------
+# Checks for compiler programs.
 AC_PROG_CC
 AC_PROG_CXX
-AC_PROG_F77
-#AC_PROG_INSTALL
 
-dnl Check for library dependencies
+#---
+#Disabled for now, see fortran comments global.mk too.
+# AC_PROG_F77
+# # If we're using gfortran we also need to add -lgfortran to our link line
+# # for programs that link against a shared-library built using (entirely or
+# # in part) gfortran.
+# case "$F77" in
+# gfortran*)
+#         LIBS="$LIBS -lgfortran"
+#         ;;
+# esac
+
+#-----------------------------------------------------------------------------
+# Check for library dependencies
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
 AX_LIB_ZLIB(,[have_zlib=yes], [AC_MSG_ERROR([Abort: no zlib. Please rerun configure using the --with-zlib=DIR option.])])
 AX_LIB_SAMTOOLS(0.1.3,[have_bam=yes],[AC_MSG_WARN([Gap5/tg_index will have reduced functionality])])
-AX_LIB_IO_LIB(1.11.0,[have_io_lib=yes],[AC_MSG_ERROR([Abort: no staden-io_lib found.
-Please rerun configure with a --with-io_lib=DIR option specified.
-This can be found at https://sourceforge.net/projects/staden or may be bundled
-as a package for your operating system. See README.build for more details.])])
 
-#dnl Add --with-tcl option
-#SC_PATH_TCLCONFIG
-#SC_PATH_TKCONFIG
+AX_LIB_IO_LIB(1.12.0,[have_io_lib=yes;IO_LIB_LOCAL=""],
+dnl No suitable system io_lib found, so build our own for use solely with
+dnl this package.
+[
+AC_MSG_WARN([No suitable io_lib (>= 1.12.x) found installed.
+Using a local copy instead.])
+IO_LIB_CFLAGS='-I${SRCROOT}/io_lib'
+IO_LIB_LDFLAGS='-lsp_read -lm -lcurl -lz'
+IO_LIB_LOCAL="io_lib/io_lib"
+AC_DEFINE(HAVE_IO_LIB, 1, [Define to 1 if you have a working io_lib])
+AC_SUBST(IO_LIB_CFLAGS)
+AC_SUBST(IO_LIB_LDFLAGS)])
+AC_SUBST(IO_LIB_LOCAL)
 
 dnl Checks for header files.
 AC_HEADER_STDC
@@ -72,8 +90,14 @@ TEA_PRIVATE_TCL_HEADERS
 TEA_PUBLIC_TK_HEADERS
 TEA_PRIVATE_TK_HEADERS
 
+# Guess C++ shared library generation from the C one.
+[TCL_SHLIB_LDXX=`echo "$TCL_SHLIB_LD" | \
+	sed 's/{CC}/{CXX}/;s/{CFLAGS}/{CXXFLAGS}/;s/^[a-z]*cc /${CXX} /'`
+]
+
 AC_SUBST([TCL_SHLIB_CFLAGS])
 AC_SUBST([TCL_SHLIB_LD])
+AC_SUBST([TCL_SHLIB_LDXX])
 AC_SUBST([TCL_SHLIB_LD_LIBS])
 AC_SUBST([TCL_SHLIB_SUFFIX])
 AC_SUBST([TCL_DL_LIBS])
@@ -88,6 +112,7 @@ AC_SUBST([TK_LIBS])
 
 # tklib - extra widgets for Tk
 AX_LIB_TKLIB(,[have_tklib=yes], [AC_MSG_ERROR([Abort: no tklib package found, use --with-tklib=DIR])])
+AX_LIB_IWIDGETS(4,[have_iwidgets=yes], [AC_MSG_ERROR([Abort: no iwidgets package found, use --with-iwidgets=DIR])])
 
 #-----------------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
@@ -115,7 +140,7 @@ else
 echo    "zlib:      DIR $ZLIB_ROOT"
 fi
 
-if test "have_bam" = "yes"
+if test "$have_bam" = "yes"
 then
 echo    "samtools:  DIR $SAMTOOLS_ROOT"
 else
@@ -129,4 +154,6 @@ echo    "Tcl:       via $TCL_BIN_DIR/tclConfig.sh"
 echo    "Tk:        via $TK_BIN_DIR/tkConfig.sh"
 
 echo    "tklib:     $TKLIB_PATH"
+
+echo    "Iwidgets:  $IWIDGETS_PATH"
 echo ----------------------------------------------------------------------
