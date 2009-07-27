@@ -30,6 +30,9 @@ AC_PROG_CXX
 # Check for library dependencies
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
 AX_LIB_ZLIB(,[have_zlib=yes], [AC_MSG_ERROR([Abort: no zlib. Please rerun configure using the --with-zlib=DIR option.])])
+AX_LIB_PNG(,[have_png=yes],[
+    have_png=no;
+    AC_MSG_WARN([No PNG library found. Gap4's Report Mutatations functionality will be absent.])])
 AX_LIB_SAMTOOLS(0.1.3,[have_bam=yes],[AC_MSG_WARN([Gap5/tg_index will have reduced functionality])])
 
 AX_LIB_IO_LIB(1.12.0,[have_io_lib=yes;IO_LIB_LOCAL=""],
@@ -113,6 +116,8 @@ AC_SUBST([TK_LIBS])
 # tklib - extra widgets for Tk
 AX_LIB_TKLIB(,[have_tklib=yes], [AC_MSG_ERROR([Abort: no tklib package found, use --with-tklib=DIR])])
 AX_LIB_IWIDGETS(4,[have_iwidgets=yes], [AC_MSG_ERROR([Abort: no iwidgets package found, use --with-iwidgets=DIR])])
+AX_LIB_ITCL(3.2,[have_itcl=yes], [AC_MSG_ERROR([Abort: no itcl package found, use --with-itcl=DIR])])
+AX_LIB_ITK(3.2,[have_itk=yes], [AC_MSG_ERROR([Abort: no itk package found, use --with-itk=DIR])])
 
 #-----------------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
@@ -156,4 +161,8 @@ echo    "Tk:        via $TK_BIN_DIR/tkConfig.sh"
 echo    "tklib:     $TKLIB_PATH"
 
 echo    "Iwidgets:  $IWIDGETS_PATH"
+
+echo    "Itcl:      $ITCL_PATH"
+
+echo    "Itk:       $ITK_PATH"
 echo ----------------------------------------------------------------------

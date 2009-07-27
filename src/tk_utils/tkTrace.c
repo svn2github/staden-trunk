@@ -10,7 +10,10 @@
 #include <tk.h>
 #include <math.h>
 #include <X11/Xutil.h>
-#include <png.h>
+#include <staden_config.h>
+#ifdef HAVE_PNG
+#    include <png.h>
+#endif
 #include <io_lib/Read.h>
 #include <io_lib/traceType.h>
 
@@ -2079,7 +2082,7 @@ static int resample(DNATrace *t, int spacing) {
     return -1;
 }
 
-
+#ifdef HAVE_PNG
 /*
  * Takes an X "drawable" and saves it as a PNG format file to 'fp'.
  * (xoff,yoff)-(xoff+width-1,yoff+height-1) specifies the inclusive area
@@ -2219,6 +2222,7 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
 
     return -1;
 }
+#endif
 
 
 /*
@@ -2233,6 +2237,7 @@ int drawable_to_png(DNATrace *t, FILE *fp, Display *disp, Drawable d,
  */
 static int save_image(DNATrace *t, char *filename, int trace_height,
 		      int start, int end) {
+#ifdef HAVE_PNG
     Pixmap p = 0;
     int width;
     int height;
@@ -2288,6 +2293,7 @@ static int save_image(DNATrace *t, char *filename, int trace_height,
 
     if (p)
 	Tk_FreePixmap(t->display, p);
+#endif
 
     return -1;
 }

@@ -21,6 +21,9 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
+/* Define if png is installed */
+#undef HAVE_PNG
+
 /* Define if samtools is installed */
 #undef HAVE_SAMTOOLS
 

@@ -78,7 +78,7 @@ EXTRA_LIBS       += @TCL_DL_LIBS@
 
 # Best guess for C++
 SHLIB_CXXFLAGS    = $(SHLIB_CFLAGS)
-SHLIB_LDXX        = $(CXX) -shared ${CXXFLAGS} ${LDFLAGS}
+SHLIB_LDXX        = @TCL_SHLIB_LDXX@
 SHLIB_LDXXFLAGS   = $(SHLIB_LDFLAGS)
 
 # Best guess for fortran

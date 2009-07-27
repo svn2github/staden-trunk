@@ -3,5 +3,15 @@ set lib_prefix lib
 set lib_suffix @TCL_SHLIB_SUFFIX@
 
 # Also for tcl loading, what extra bits to add to our auto_path
-lappend auto_path "@TKLIB_PATH@" "@IWIDGETS_PATH@"
+foreach x $auto_path {
+    set _p($x) 1
+}
 
+foreach x [list "@TKLIB_PATH@" "@IWIDGETS_PATH@" "@ITCL_PATH@" "@ITK_PATH@"] {
+    if {![info exists _p($x)]} {
+        set _p($x) 1
+	lappend auto_path $x
+    }
+}
+
+unset _p
