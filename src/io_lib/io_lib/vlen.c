@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include "io_lib/vlen.h"
+#include "io_lib/os.h"
 
 #ifndef MAX
 #define MAX(a,b) ((a)>(b)?(a):(b))
