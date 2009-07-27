@@ -1,6 +1,6 @@
-lib_LIBRARIES = libread.a
+lib_LTLIBRARIES = libstaden-read.la
 
-libread_a_SOURCES = \
+libstaden_read_la_SOURCES = \
 	Read.c \
 	Read.h \
 	scf_extras.c \
@@ -67,8 +67,9 @@ libread_a_SOURCES = \
 	os.h \
 	stdio_hack.h
 
-libread_a_CPPFLAGS = @LIBCURL_CPPFLAGS@
+libstaden_read_la_CPPFLAGS = @LIBCURL_CPPFLAGS@
 
-#libread_a_LDFLAGS = -avoid-version
+libstaden_read_la_LDFLAGS = @LIBZ@ @LIBCURL@
+#libstaden_read_la_LDFLAGS = -avoid-version
 
 INCLUDES = -I${top_srcdir}
