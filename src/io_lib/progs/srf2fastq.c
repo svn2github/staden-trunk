@@ -169,7 +169,7 @@ HashItem *parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
 }
 
 /* ------------------------------------------------------------------------ */
-#define MAX_READ_LEN 1024
+#define MAX_READ_LEN 10000
 void ztr2fastq(ztr_t *z, char *name, int calibrated,
                int split, char *root, int numeric, int append, int explicit,
                HashTable *regn_hash, int *nfiles_open, char **filenames,

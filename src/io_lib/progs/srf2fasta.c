@@ -41,7 +41,7 @@
 
 /* ------------------------------------------------------------------------ */
 
-#define MAX_READ_LEN 1024
+#define MAX_READ_LEN 10000
 void ztr2fasta(ztr_t *z, char *name) {
     int i, nc;
     char buf[MAX_READ_LEN*2 + 512 + 6];

@@ -20,7 +20,7 @@ void init_qlookup(void) {
 
 /* ------------------------------------------------------------------------ */
 
-#define MAX_READ_LEN 1024
+#define MAX_READ_LEN 10000
 void ztr2fastq(ztr_t *z, char *name, int calibrated) {
     int i, nc, seq_len;
     char buf[MAX_READ_LEN*2 + 512 + 6];
