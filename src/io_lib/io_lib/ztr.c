@@ -790,10 +790,11 @@ char *ztr_lookup_mdata_value(ztr_t *z, ztr_chunk_t *chunk, char *key) {
 	 */
 	while (dlen > 0) {
 	    size_t l;
+	    int found;
 
 	    /* key */
 	    l = strlen(cp);
-	    int found = strcmp(cp, key) == 0;
+	    found = strcmp(cp, key) == 0;
 	    cp += l+1;
 	    dlen -= l+1;
 
