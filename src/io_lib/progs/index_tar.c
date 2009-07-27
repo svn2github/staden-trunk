@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	/*
 	 * If a directory is too large to fit in the name (>100) but short
 	 * enough to fit in the prefix the name field will be empty, this is
-	 * not the cas for ordinary files where the name field is always
+	 * not the case for ordinary files where the name field is always
 	 * non-empty
 	 */
 	if (!blk.header.name[0] && !blk.header.prefix[0])
@@ -48,7 +48,7 @@ int main(int argc, char **argv) {
         extra = TBLOCK*((size+TBLOCK-1)/TBLOCK) - size;
 
         /* skip directories unless requested */
-        if (directories || blk.header.typeflag != DIRTYPE) {
+        if (directories || blk.header.typeflag != DIRTYPE || LongLink) {
 
             /*
 	     * extract member name (prefix + name), unless last member
