@@ -39,6 +39,7 @@
 #include <io_lib/misc.h>
 #include <io_lib/ztr.h>
 #include <io_lib/srf.h>
+#include <io_lib/hash_table.h>
 
 #define CR 13            /* Decimal code of Carriage Return char */
 #define LF 10            /* Decimal code of Line Feed char */
@@ -96,7 +97,7 @@ typedef struct {
     int prefixes_size;
     int reads_size;
     char** prefixes;  /* Prefixes to filter on. */
-    char** reads;     /* Reads to filter on. */
+    HashTable *reads_hash;  /* Reads to filter on. */
 } read_filter_t;
 
 /* ------------------------------------------------------------------------ */
@@ -132,6 +133,7 @@ void usage(int code) {
     fprintf(stderr, "              one per line.\n");
     fprintf(stderr, "              The default is no filter, which means all reads are dumped.\n");
     fprintf(stderr, "\n    -b      exclude bad reads using readsFlags bitmask in data block header.\n");
+    fprintf(stderr, "\n    -2 cyc  use this option to add a Illumina-style REGN chunk.\n");
     fprintf(stderr, "\n    -v      Print verbose messages.\n");
     fprintf(stderr, "\n");
 
@@ -236,10 +238,24 @@ int read_filter_from_file(FILE *input, read_filter_t *read_filter)
 		    fprintf(stderr, "Bad read \"%s\" in read filter \"%s\".\n", read, cThisLine);
 		    usage(1);
 		} else {
-		    ++(read_filter->reads_size);
-		    read_filter->reads = (char**) realloc (read_filter->reads, read_filter->reads_size * sizeof(char *));
-		    read_filter->reads[read_filter->reads_size - 1] =  (char*) calloc (strlen(read) + 1,sizeof(char));
-		    strcpy(read_filter->reads[read_filter->reads_size - 1], read);
+                  char *file;
+                  HashItem *hi;
+                  if( NULL != (file = strchr(read, ' '))) {
+                      *file = '\0';
+                      file++;
+                      printf("read=%s file=%s\n", read, file);
+                  } else {
+                      printf("read=%s\n", read);
+                  }
+                  if (NULL == (hi = (HashTableSearch(read_filter->reads_hash, read, strlen(read))))) {
+                      HashData hd;
+                      hd.i = read_filter->reads_size;
+                      if (NULL == (hi = HashTableAdd(read_filter->reads_hash, read, strlen(read), hd, NULL))) {
+                          fprintf(stderr, "\nUnable to process read filter.\n");
+                          return 0;
+                      }
+  		      ++(read_filter->reads_size);
+                    }
 		}
 	    } else {
 		fprintf(stderr, "Unrecognized filter type \"%s\" given as part of read filter \"%s\".  The valid filter types are \"%s\".\n", filter_type, cThisLine, "prefix or read");
@@ -273,7 +289,10 @@ read_filter_t *get_read_filter(char *filter_value)
     }
     read_filter->prefixes_size = 0;
     read_filter->reads_size = 0;
-
+    if (NULL == (read_filter->reads_hash = HashTableCreate(0, HASH_DYNAMIC_SIZE|HASH_FUNC_JENKINS3))) {
+        return NULL;
+    }
+    
     /* Find the one and only = in the string. */
     if( strchr(filter_value,'=') != NULL &&
 	(strchr(filter_value,'=') == strrchr(filter_value,'=')) ) {
@@ -321,10 +340,15 @@ read_filter_t *get_read_filter(char *filter_value)
 	    fprintf(stderr, "Bad read \"%s\" in read filter \"%s\".\n", read, filter_value);
 	    usage(1);
 	} else {
-	    ++(read_filter->reads_size);
-	    read_filter->reads = (char**) malloc (read_filter->reads_size * sizeof(char *));
-	    read_filter->reads[read_filter->reads_size - 1] =  (char*) calloc (strlen(read) + 1, sizeof(char));
-	    strcpy(read_filter->reads[read_filter->reads_size - 1], read);
+            HashItem *hi;
+            if (NULL == (hi = (HashTableSearch(read_filter->reads_hash, read, strlen(read))))) {
+                HashData hd;
+                hd.i = 0;
+                if (NULL == (hi = HashTableAdd(read_filter->reads_hash, read, strlen(read), hd, NULL))) {
+                    return NULL;
+                }
+		++(read_filter->reads_size);
+            }
 	}
     } else {
 	fprintf(stderr, "Unrecognized filter type \"%s\" given as part of read filter \"%s\".  The valid filter types are \"%s\".\n", filter_type, filter_value, "prefix, read, or file");
@@ -398,11 +422,9 @@ int check_read_name(read_filter_t *read_filter, char *name) {
 	}
     }
 
-    for(i = 0; i < read_filter->reads_size; i++) {
-	if(!strcmp(name, read_filter->reads[i])) {
-	    free(read_filter->reads[i]);
-	    read_filter->reads[i] = read_filter->reads[read_filter->reads_size - 1];
-	    read_filter->reads_size--;
+    if( read_filter->reads_size ){
+        HashItem *hi;
+        if (NULL != (hi = (HashTableSearch(read_filter->reads_hash, name, strlen(name))))) {
 	    return 1;
 	}
     }
@@ -419,8 +441,14 @@ void dump_read_filter(read_filter_t *read_filter) {
 	printf("\tprefix[%d] = %s\n", i, read_filter->prefixes[i]);
     }
 
-    for(i = 0; i < read_filter->reads_size; i++) {
-	printf("\tread[%d] = %s\n", i, read_filter->reads[i]);
+    if( read_filter->reads_size ){
+        int ibucket;
+        for (ibucket=0; ibucket<read_filter->reads_hash->nbuckets; ibucket++) {
+            HashItem *hi;
+            for (hi = read_filter->reads_hash->bucket[ibucket]; hi; hi = hi->next) {
+                printf("\tread[%d] = %s\n", hi->data.i, hi->key);
+            }
+        }
     }
 }
 
@@ -471,6 +499,98 @@ void dump_mdata_mode(char mode) {
 }
 
 /*
+ * ztr_mwrite_chunk
+ *
+ * Writes a ZTR chunk including chunk header and data
+ *
+ * Arguments:
+ * 	fp		A mFILE pointer
+ *	chunk		A pointer to the chunk to write
+ *
+ * Returns:
+ *	Success:  0
+ *	Failure: -1
+ */
+static int ztr_mwrite_chunk(mFILE *fp, ztr_chunk_t *chunk) {
+    int4 bei4;
+
+    /*
+    {
+	char str[5];
+	fprintf(stderr, "Write chunk %.4s %08x length %d\n",
+		ZTR_BE2STR(chunk->type, str), chunk->type, chunk->dlength);
+    }
+    */
+
+    /* type */
+    bei4 = be_int4(chunk->type);
+    if (1 != mfwrite(&bei4, 4, 1, fp))
+	return -1;
+
+    /* metadata length */
+    bei4 = be_int4(chunk->mdlength);
+    if (1 != mfwrite(&bei4, 4, 1, fp))
+	return -1;
+
+    /* metadata */
+    if (chunk->mdlength)
+	if (chunk->mdlength != mfwrite(chunk->mdata, 1, chunk->mdlength, fp))
+	    return -1;
+
+    /* data length */
+    bei4 = be_int4(chunk->dlength);
+    if (1 != mfwrite(&bei4, 4, 1, fp))
+	return -1;
+
+    /* data */
+    if (chunk->dlength != mfwrite(chunk->data, 1, chunk->dlength, fp))
+	return -1;
+
+    return 0;
+}
+
+/*
+ * Adds a ZTR REGN chunk describing the paired-end structure. Ie which bit
+ * is which. This is a simplified form of the more generic REGN contents.
+ *
+ * Returns 0 for success
+ *        -1 for failure
+ */
+static int add_readpair_region(unsigned int rev_cycle, mFILE *mf) {
+    char *mdata = malloc(100);
+    unsigned char *data = malloc(5);
+    int mdlen;
+    ztr_chunk_t c;
+
+    if (!data || !mdata)
+	return -1;
+
+    data[0] = 0;
+    rev_cycle--; /* we count from 0 */
+    data[1] = (rev_cycle >> 24) & 0xff;
+    data[2] = (rev_cycle >> 16) & 0xff;
+    data[3] = (rev_cycle >>  8) & 0xff;
+    data[4] = (rev_cycle >>  0) & 0xff;
+    
+    mdlen = sprintf(mdata, "NAME%cforward:P;reverse:P%c",0,0);
+
+    /* Initialise */
+    c.type     = ZTR_TYPE_REGN;
+    c.data     = data;
+    c.dlength  = 5;
+    c.mdata    = mdata;
+    c.mdlength = mdlen;
+    c.ztr_owns = 1;
+
+    ztr_mwrite_chunk(mf, &c);
+
+    xfree(data);
+    xfree(mdata);
+    
+    return 0;
+}
+
+/*
  * Given the input archive name (input), the output archive name (output),
  * the chunk types to output (chunk_mode) and some other parameters such as
  * the read filter generates a filtered srf file.
@@ -480,8 +600,9 @@ void dump_mdata_mode(char mode) {
  * Returns 0 on success.
  *         1 on failure
  */
-int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, int filter_mode, read_filter_t *read_filter, int read_mask) {
+int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, int filter_mode, read_filter_t *read_filter, int read_mask, int rev_cycle) {
     srf_t *in_srf;
+    int output_trace_header;
     char name[1024];
 
     if (NULL == (in_srf = srf_open(input, "rb"))) {
@@ -523,15 +644,14 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 	    }
 
 #if 1
-	    if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
-		if (0 != srf_write_trace_hdr(out_srf, &in_srf->th)) {
-		    fprintf(stderr, "Error writing trace header.\nExiting.\n");
-		    exit(1);
+	    if (chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL) {
+                if (!rev_cycle) {
+                    output_trace_header = 1;
+                    break;
 		}
-		break;
 	    }
 #endif		
-      
+
 	    /* Decode ZTR chunks in the header */
 	    if (in_srf->mf)
 		mfdestroy(in_srf->mf);
@@ -574,6 +694,10 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 			if (chunk_mode & CHUNK_CNF4)
 			    flag = 1;
 			break;
+		    case ZTR_TYPE_REGN:
+			if (!rev_cycle)
+			    flag = 1;
+			break;
 		    case ZTR_TYPE_SAMP:
 			if (chunk_mode & CHUNK_SAMP) {
 			    if (mdata_mode == TYPE_ALL)
@@ -615,19 +739,40 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 		    xfree(chunk);
 		}
 
+                if (rev_cycle) {
+                    fprintf(stderr, "Adding REGN chunk to trace header\n");
+                    if ( -1 == add_readpair_region(rev_cycle, mf)) {
+                        fprintf(stderr, "Failed to add to REGN chunk\n");
+                        exit(1);
+                    }
+                }
+
+#if 1
+                if (chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL) {
+                    mfwrite(in_srf->mf->data+in_srf->mf_pos, 1 , (in_srf->mf_end-in_srf->mf_pos), mf);
+                }
+#endif		
 	    } else {
 		/* Maybe not enough to decode or no headerBlob. */
 		/* So delay until decoding the body. */
-		in_srf->mf_pos = in_srf->mf_end = 0;
+		in_srf->mf_pos = 0;
 	    }
 
+	    mfseek(in_srf->mf, 0, SEEK_END);
+	    in_srf->mf_end = mftell(in_srf->mf);
+
 	    /* construct the new trace header */
-	    srf_trace_hdr_t th;
-	    srf_construct_trace_hdr(&th, in_srf->th.id_prefix, (unsigned char *)mf->data, mftell(mf));
-	    if (0 != srf_write_trace_hdr(out_srf, &th)) {
-		fprintf(stderr, "Error writing trace header.\nExiting.\n");
+            uint32_t trace_hdr_size = mftell(mf);
+	    char *trace_hdr;
+            if (NULL == (trace_hdr = malloc(trace_hdr_size))) {
+                stderr, "Error making trace header.\nExiting.\n";
 		exit(1);
-	    }
+            }
+            memcpy(trace_hdr, mf->data, trace_hdr_size);
+ 	    if (out_srf->th.trace_hdr)
+  	        free(out_srf->th.trace_hdr);
+	    srf_construct_trace_hdr(&out_srf->th, in_srf->th.id_prefix, trace_hdr, trace_hdr_size);
+            output_trace_header = 1;
 
 	    mfdestroy(mf);
 
@@ -650,18 +795,44 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 		exit(1);
 	    }
 
-	    if (old_tb.flags & read_mask)
+	    if (old_tb.flags & read_mask) {
+                if (old_tb.trace_size)
+                    free(old_tb.trace);
 		break;
+	    }
 
-	    if(filter_mode && !check_read_name(read_filter, name))
+	    if (filter_mode && !check_read_name(read_filter, name)) {
+                if (old_tb.trace_size)
+                    free(old_tb.trace);
 		break;
+	    }
 	  
 #if 1
-	    if(chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL ){
-		if (0 != srf_write_trace_body(out_srf, &old_tb)) {
-		    fprintf(stderr, "Error writing trace body.\nExiting.\n");
-		    exit(1);
+            if (chunk_mode == CHUNK_ALL && mdata_mode == TYPE_ALL) {
+                /* output the trace header as required */
+                if( output_trace_header ) {
+                    output_trace_header = 0;
+                    if (!rev_cycle ) {
+                        if (0 != srf_write_trace_hdr(out_srf, &in_srf->th)) {
+                            fprintf(stderr, "Error writing trace header.\nExiting.\n");
+                            exit(1);
+                        }
+                    }else{
+                        if (0 != srf_write_trace_hdr(out_srf, &out_srf->th)) {
+                            fprintf(stderr, "Error writing trace header.\nExiting.\n");
+                            exit(1);
+                        }
+                    }
+                }
+
+                if (!rev_cycle || (rev_cycle && in_srf->mf_pos)) {
+                    if (0 != srf_write_trace_body(out_srf, &old_tb)) {
+                        fprintf(stderr, "Error writing trace body.\nExiting.\n");
+                        exit(1);
+                    }
 		}
+                if (old_tb.trace_size)
+                    free(old_tb.trace);
 		break;
 	    }
 #endif		
@@ -685,7 +856,7 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 	    else
 		ztr_tmp = NULL;
 
-	    if (NULL != partial_decode_ztr(in_srf, in_srf->mf, ztr_tmp)) {
+	    if ((ztr_tmp = partial_decode_ztr(in_srf, in_srf->mf, ztr_tmp))) {
 
 		/* create the trace body data */
 		mFILE *mf = mfcreate(NULL, 0);
@@ -718,6 +889,14 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 			if (chunk_mode & CHUNK_CNF4)
 			    flag = 1;
 			break;
+		    case ZTR_TYPE_REGN:
+                        if (rev_cycle && in_srf->mf_pos) {
+                            fprintf(stderr, "Added REGN chunk to trace header but found REGN chunk in trace body\n");
+                            exit(1);
+                        }
+                        if (!rev_cycle)
+			    flag = 1;
+			break;
 		    case ZTR_TYPE_SAMP:
 			if (chunk_mode & CHUNK_SAMP) {
 			    if (mdata_mode == TYPE_ALL)
@@ -759,7 +938,24 @@ int srf_filter(char *input, srf_t *out_srf, char chunk_mode, char mdata_mode, in
 		    xfree(chunk);
 		}
 
-		/* construct the new trace body */
+                if (rev_cycle && !in_srf->mf_pos) {
+                    fprintf(stderr, "Adding REGN chunk to trace body\n");
+                    if ( -1 == add_readpair_region(rev_cycle, mf)) {
+                        fprintf(stderr, "Failed to add to REGN chunk\n");
+                        exit(1);
+                    }
+                }
+
+                /* output the trace header as required */
+                if( output_trace_header ) {
+                    output_trace_header = 0;
+                    if (0 != srf_write_trace_hdr(out_srf, &out_srf->th)) {
+                        fprintf(stderr, "Error writing trace header.\nExiting.\n");
+                        exit(1);
+                    }
+                }
+
+                /* construct the new trace body */
 		srf_trace_body_t new_tb;
 		srf_construct_trace_body(&new_tb, name+strlen(in_srf->th.id_prefix), -1, mf->data, mf->size, old_tb.flags);
 
@@ -843,6 +1039,7 @@ int main(int argc, char **argv) {
     char *output = NULL;
     read_filter_t *read_filter = NULL;
     char *filter_value = NULL;
+    int rev_cycle = 0;
 
     int c;
     int errflg = 0;
@@ -856,7 +1053,7 @@ int main(int argc, char **argv) {
 
     srf_t *srf = NULL;
 
-    while ((c = getopt(argc, argv, ":c:m:f:vb")) != -1) {
+    while ((c = getopt(argc, argv, ":c:m:f:vb2:")) != -1) {
         switch (c) {
         case 'c':
 	    chunk_mode = 0;
@@ -883,6 +1080,9 @@ int main(int argc, char **argv) {
             break;
         case 'b':
 	    read_mask = SRF_READ_FLAG_BAD_MASK;
+            break;
+	case '2':
+  	    rev_cycle = atoi(optarg);
             break;
         case ':':       /* -? without operand */
             fprintf(stderr,
@@ -932,7 +1132,7 @@ int main(int argc, char **argv) {
         input = argv[optind+ifile];
         printf("Reading archive %s.\n", input);
 
-        if (0 != srf_filter(input, srf, chunk_mode, mdata_mode, filter_mode, read_filter, read_mask)) {
+        if (0 != srf_filter(input, srf, chunk_mode, mdata_mode, filter_mode, read_filter, read_mask, rev_cycle)) {
             srf_destroy(srf, 1);
             remove(output);
             return 1;
