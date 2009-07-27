@@ -361,6 +361,88 @@ int count_mdata_keys(ztr_t *z, ztr_chunk_t *chunk, int ichunk, long key_count[NC
 }
 
 /*
+ * As per partial_decode_ztr in srf.c, but without uncompress_ztr.
+ */
+ztr_t *partial_decode_ztr2(srf_t *srf, mFILE *mf, ztr_t *z) {
+    ztr_t *ztr;
+    ztr_chunk_t *chunk;
+    long pos = 0;
+
+    if (z) {
+	/* Use existing ZTR object => already loaded header */
+	ztr = z;
+
+    } else {
+	/* Allocate or use existing ztr */
+	if (NULL == (ztr = new_ztr()))
+	    return NULL;
+
+	/* Read the header */
+	if (-1 == ztr_read_header(mf, &ztr->header)) {
+	    if (!z)
+		delete_ztr(ztr);
+	    mrewind(mf);
+	    return NULL;
+	}
+
+	/* Check magic number and version */
+	if (memcmp(ztr->header.magic, ZTR_MAGIC, 8) != 0) {
+	    if (!z)
+		delete_ztr(ztr);
+	    mrewind(mf);
+	    return NULL;
+	}
+
+	if (ztr->header.version_major != ZTR_VERSION_MAJOR) {
+	    if (!z)
+		delete_ztr(ztr);
+	    mrewind(mf);
+	    return NULL;
+	}
+    }
+
+    /* Load chunks */
+    pos = mftell(mf);
+    while (chunk = ztr_read_chunk_hdr(mf)) {
+	chunk->data = (char *)xmalloc(chunk->dlength);
+	if (chunk->dlength != mfread(chunk->data, 1, chunk->dlength, mf))
+	    break;
+
+	ztr->nchunks++;
+	ztr->chunk = (ztr_chunk_t *)xrealloc(ztr->chunk, ztr->nchunks *
+					     sizeof(ztr_chunk_t));
+	memcpy(&ztr->chunk[ztr->nchunks-1], chunk, sizeof(*chunk));
+	xfree(chunk);
+	pos = mftell(mf);
+    }
+
+    /*
+     * At this stage we're 'pos' into the mFILE mf with any remainder being
+     * a partial block.
+     */
+    if (0 == ztr->nchunks) {
+	if (!z)
+	    delete_ztr(ztr);
+	mrewind(mf);
+	return NULL;
+    }
+
+    /* Ensure we exit at the start of a ztr CHUNK */
+    mfseek(mf, pos, SEEK_SET);
+
+    /* If this is the header part, ensure we uncompress and init. data */
+    if (!z) {
+	/* Force caching of huffman code_sets */
+	ztr_find_hcode(ztr, CODE_USER);
+
+	/* And uncompress the rest */
+	uncompress_ztr(ztr);
+    }
+
+    return ztr;
+}
+
+/*
  * Given the archive name and the level_mode
  * generate information about the archive
  *
@@ -368,8 +450,10 @@ int count_mdata_keys(ztr_t *z, ztr_chunk_t *chunk, int ichunk, long key_count[NC
  *
  * Returns 0 on success.
  */
-int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, long key_count[NCHUNKS][NKEYS], long type_count[NCHUNKS][NTYPES],
-             HashTable *regn_hash, long *base_count) {
+int srf_info(char *input, int level_mode, long *read_count, long *chunk_count,
+	     long *chunk_size, long key_count[NCHUNKS][NKEYS],
+	     long type_count[NCHUNKS][NTYPES], HashTable *regn_hash,
+	     long *base_count) {
     srf_t *srf;
     uint64_t pos;
     int type;
@@ -505,9 +589,11 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 		int i;
 		for (i=0; i<ztr_tmp->nchunks; i++) {
 		    int ichunk = -1;
+
 		    switch (ztr_tmp->chunk[i].type) {
 		    case ZTR_TYPE_BASE:
 			ichunk = CHUNK_BASE;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			if( parse_base(ztr_tmp, &ztr_tmp->chunk[i], base_count) ){
 			    delete_ztr(ztr_tmp);
 			    return 1;
@@ -515,18 +601,23 @@ int srf_info(char *input, int level_mode, long *read_count, long *chunk_count, l
 			break;
 		    case ZTR_TYPE_CNF1:
 			ichunk = CHUNK_CNF1;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			break;
 		    case ZTR_TYPE_CNF4:
 			ichunk = CHUNK_CNF4;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			break;
 		    case ZTR_TYPE_SAMP:
 			ichunk = CHUNK_SAMP;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			break;
 		    case ZTR_TYPE_SMP4:
 			ichunk = CHUNK_SMP4;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			break;
 		    case ZTR_TYPE_REGN:
 			ichunk = CHUNK_REGN;
+			chunk_size[ichunk] += ztr_tmp->chunk[i].dlength;
 			if( NULL == parse_regn(ztr_tmp, &ztr_tmp->chunk[i], regn_hash) ){
 			    delete_ztr(ztr_tmp);
 			    return 1;
@@ -654,6 +745,7 @@ int main(int argc, char **argv) {
     long read_count[NREADS];
     char *read_str[] = {READ_GOOD_STR, READ_BAD_STR, READ_TOTAL_STR};
     long chunk_count[NCHUNKS];
+    long chunk_size[NCHUNKS];
     uint4 chunk_type[] = {CHUNK_BASE_TYPE, CHUNK_CNF1_TYPE, CHUNK_CNF4_TYPE, CHUNK_SAMP_TYPE, CHUNK_SMP4_TYPE, CHUNK_REGN_TYPE};
     long key_count[NCHUNKS][NKEYS];
     char *keys_str[] = {KEY_TYPE_STR, KEY_VALTYPE_STR, KEY_GROUP_STR, KEY_OFFS_STR, KEY_SCALE_STR, KEY_COORD_STR, KEY_NAME_STR};
@@ -704,8 +796,10 @@ int main(int argc, char **argv) {
         for (iread=0; iread<NREADS; iread++)
 	    read_count[iread] = 0;
 
-        for (ichunk=0; ichunk<NCHUNKS; ichunk++)
+        for (ichunk=0; ichunk<NCHUNKS; ichunk++) {
 	    chunk_count[ichunk] = 0;
+	    chunk_size[ichunk] = 0;
+	}
 
         for (ichunk=0; ichunk<NCHUNKS; ichunk++)
             for (ikey=0; ikey<NKEYS; ikey++)
@@ -721,7 +815,9 @@ int main(int argc, char **argv) {
     
         memset(base_count, 0, 5 * sizeof(long));
 
-        if( 0 == srf_info(input, level_mode, read_count, chunk_count, key_count, type_count, regn_hash, base_count) ){
+        if( 0 == srf_info(input, level_mode, read_count,
+			  chunk_count, chunk_size,
+			  key_count, type_count, regn_hash, base_count) ){
 
             /* read counts */
             if( level_mode & LEVEL_READ ) {
@@ -735,7 +831,9 @@ int main(int argc, char **argv) {
             if( level_mode & LEVEL_CHUNK ) {
                 for (ichunk=0; ichunk<NCHUNKS; ichunk++) {
                     if( chunk_count[ichunk] ) {
-                        printf("Chunk: %s : %ld\n", ZTR_BE2STR(chunk_type[ichunk], type), chunk_count[ichunk]);
+                        printf("Chunk: %s : %ld %ld\n",
+			       ZTR_BE2STR(chunk_type[ichunk], type),
+			       chunk_count[ichunk], chunk_size[ichunk]);
                         for (ikey=0; ikey<NKEYS; ikey++) {
                             if(key_count[ichunk][ikey]) {
                                 printf("  Mdata key: %s : %ld\n", keys_str[ikey], key_count[ichunk][ikey]);
