@@ -252,7 +252,7 @@ HashItem *parse_regn(ztr_t *z, ztr_chunk_t *chunk, HashTable *regn_hash) {
  *
  * Returns 0 on success.
  */
-int parse_base(ztr_t *z, ztr_chunk_t *chunk, long *base_count) {
+int parse_base(ztr_t *z, ztr_chunk_t *chunk, uint64_t *base_count) {
     int i;
     
     uncompress_chunk(z, chunk);
@@ -451,11 +451,11 @@ ztr_t *partial_decode_ztr2(srf_t *srf, mFILE *mf, ztr_t *z) {
  * Returns 0 on success.
  */
 int srf_info(char *input, int level_mode, long *read_count, long *chunk_count,
-	     long *chunk_size, long key_count[NCHUNKS][NKEYS],
+	     uint64_t *chunk_size, long key_count[NCHUNKS][NKEYS],
 	     long type_count[NCHUNKS][NTYPES], HashTable *regn_hash,
-	     long *base_count) {
+	     uint64_t *base_count) {
     srf_t *srf;
-    uint64_t pos;
+    off_t pos;
     int type;
     int count = 0;
     long trace_body_count = 0;
@@ -745,7 +745,7 @@ int main(int argc, char **argv) {
     long read_count[NREADS];
     char *read_str[] = {READ_GOOD_STR, READ_BAD_STR, READ_TOTAL_STR};
     long chunk_count[NCHUNKS];
-    long chunk_size[NCHUNKS];
+    uint64_t chunk_size[NCHUNKS];
     uint4 chunk_type[] = {CHUNK_BASE_TYPE, CHUNK_CNF1_TYPE, CHUNK_CNF4_TYPE, CHUNK_SAMP_TYPE, CHUNK_SMP4_TYPE, CHUNK_REGN_TYPE};
     long key_count[NCHUNKS][NKEYS];
     char *keys_str[] = {KEY_TYPE_STR, KEY_VALTYPE_STR, KEY_GROUP_STR, KEY_OFFS_STR, KEY_SCALE_STR, KEY_COORD_STR, KEY_NAME_STR};
@@ -787,7 +787,7 @@ int main(int argc, char **argv) {
     for (ifile=0; ifile<nfiles; ifile++) {
         HashTable *regn_hash;
         char bases[] = "ACGTN";
-        long base_count[5];
+        uint64_t base_count[5];
         char type[5];
 
         input = argv[optind+ifile];
@@ -813,7 +813,7 @@ int main(int argc, char **argv) {
 	    return 1;
         }
     
-        memset(base_count, 0, 5 * sizeof(long));
+        memset(base_count, 0, 5 * sizeof(uint64_t));
 
         if( 0 == srf_info(input, level_mode, read_count,
 			  chunk_count, chunk_size,
@@ -831,7 +831,7 @@ int main(int argc, char **argv) {
             if( level_mode & LEVEL_CHUNK ) {
                 for (ichunk=0; ichunk<NCHUNKS; ichunk++) {
                     if( chunk_count[ichunk] ) {
-                        printf("Chunk: %s : %ld %ld\n",
+                        printf("Chunk: %s : %ld %"PRId64"\n",
 			       ZTR_BE2STR(chunk_type[ichunk], type),
 			       chunk_count[ichunk], chunk_size[ichunk]);
                         for (ikey=0; ikey<NKEYS; ikey++) {
@@ -860,15 +860,16 @@ int main(int argc, char **argv) {
 
             /* base counts */
             if( level_mode & LEVEL_BASE ) {
-                long total = 0;
+                uint64_t total = 0;
                 int i;
                 for (i=0; i<5; i++) {
                     if( base_count[i] ){
-                        printf("Bases: %c: %d\n", bases[i], base_count[i]);
+                        printf("Bases: %c: %"PRId64"\n",
+			       bases[i], base_count[i]);
                         total += base_count[i];
                     }
                 }
-                printf("Bases: TOTAL: %d\n", total);
+                printf("Bases: TOTAL: %"PRId64"\n", total);
             }
         }
     }
