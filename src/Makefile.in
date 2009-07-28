@@ -6,7 +6,6 @@
 include	 system.mk
 
 DIRS =	Misc\
-	@IO_LIB_LOCAL@ \
 	tk_utils\
 	text_utils\
 	seq_utils\
