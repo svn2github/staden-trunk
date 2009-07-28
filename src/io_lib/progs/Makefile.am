@@ -1,4 +1,4 @@
-bin_PROGRAMS = convert_trace makeSCF extract_seq extract_qual extract_fastq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract hash_list trace_dump hash_sff append_sff ztr_dump illumina2srf srf2illumina srf_dump_all srf_index_hash srf_extract_linear srf_extract_hash srf2fastq srf2fasta srf_filter srf_info srf_list
+bin_PROGRAMS = convert_trace makeSCF extract_seq extract_qual extract_fastq index_tar scf_dump scf_info scf_update get_comment hash_tar hash_extract hash_list trace_dump hash_sff append_sff ztr_dump srf_dump_all srf_index_hash srf_extract_linear srf_extract_hash srf2fastq srf2fasta srf_filter srf_info srf_list
 
 convert_trace_SOURCES = convert_trace.c
 convert_trace_LDADD = $(top_builddir)/io_lib/libstaden-read.la
@@ -49,12 +49,6 @@ trace_dump_LDADD = $(top_builddir)/io_lib/libstaden-read.la
 
 ztr_dump_SOURCES = ztr_dump.c
 ztr_dump_LDADD = $(top_builddir)/io_lib/libstaden-read.la
-
-illumina2srf_SOURCES = solexa2srf.c
-illumina2srf_LDADD = $(top_builddir)/io_lib/libstaden-read.la
-
-srf2illumina_SOURCES = srf2solexa.c
-srf2illumina_LDADD = $(top_builddir)/io_lib/libstaden-read.la
 
 srf2fastq_SOURCES = srf2fastq.c
 srf2fastq_LDADD = $(top_builddir)/io_lib/libstaden-read.la
