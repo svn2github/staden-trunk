@@ -69,7 +69,7 @@ libstaden_read_la_SOURCES = \
 
 libstaden_read_la_CPPFLAGS = @LIBCURL_CPPFLAGS@
 
-libstaden_read_la_LDFLAGS = @LIBZ@ @LIBCURL@
-#libstaden_read_la_LDFLAGS = -avoid-version
+libstaden_read_la_LDFLAGS = -version-info @VERS_CURRENT@:@VERS_REVISION@:@VERS_AGE@ 
+libstaden_read_la_LIBADD = @LIBZ@ @LIBCURL@
 
 INCLUDES = -I${top_srcdir}

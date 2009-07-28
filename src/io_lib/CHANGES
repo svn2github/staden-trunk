@@ -1,7 +1,39 @@
+Version 1.12.0 (?th July 2009)
+--------------
+
+* Switched to using libtool to allow building of dynamic libraries.
+  Note that this is tweaked to not use -rpath though.
+
+* Removed deprecated platform specific tools: illumina2srf, srf2illumina.
+
+* API
+  - The Array functions now take size_t instead of int for the
+    array dimensions. (API CHANGE)
+
+  - Removed the (unused?) pipe2 function from compress.h. This was
+    intended to be internal only, and it now clashes with a new linux
+    kernel function. (API CHANGE)
+
+  - Added iterators to the HashTable* api.
+
+* Bug fixes
+
+  - Fixed a memory allocation bug in the codes2codeset() function.
+
+  - ztr2read() should now work better on ZTR structs with no BPOS
+    chunk.
+
+  - Fixed various srf tools when facing an SRF file containing zero
+    chunks in the data block header.
+
+  - index_tar handles some GNU tar extensions better (LongLink).
+
+
 Version 1.11.6.1 (9th December 2008)
 ----------------
 
 * Identical except removal of a debugging printf statement in solexa2srf.
+
 
 Version 1.11.6 (9th December 2008)
 --------------

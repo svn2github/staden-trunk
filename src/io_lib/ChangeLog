@@ -1,3 +1,83 @@
+------------------------------------------------------------------------
+r1723 | jkbonfield | 2009-06-22 12:38:26 +0100 (Mon, 22 Jun 2009) | 2 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/ztr_translate.c
+
+Gracefully handle the case of a trace with no BPOS chunk in ztr2read().
+
+------------------------------------------------------------------------
+r1722 | jkbonfield | 2009-06-22 12:37:32 +0100 (Mon, 22 Jun 2009) | 2 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/hash_table.c
+   M /staden/trunk/src/io_lib/io_lib/hash_table.h
+
+Added the hash table iterator functions (copied from Gap5's hache tables).
+
+------------------------------------------------------------------------
+r1721 | jkbonfield | 2009-06-22 12:36:52 +0100 (Mon, 22 Jun 2009) | 2 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/deflate_interlaced.c
+
+Fixed a memory allocation issue of codes2codeset().
+
+------------------------------------------------------------------------
+r1720 | jkbonfield | 2009-06-22 12:35:21 +0100 (Mon, 22 Jun 2009) | 4 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/Makefile
+
+Remove use of curl-config --libs. While useful for linking against
+static libraries, it just adds unwanted dependencies in a dynamic
+build environment.
+
+------------------------------------------------------------------------
+r1596 | jkbonfield | 2009-04-20 12:34:23 +0100 (Mon, 20 Apr 2009) | 6 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/compress.c
+   M /staden/trunk/src/io_lib/io_lib/compress.h
+
+Made pipe2() internal as it's not used anywhere else yet.
+
+Also renamed from pipe2 to pipe_into. This resolves SF bug #2629155;
+pipe2 has been added as a system function to glibc 2.9 as an interface
+to the new (2.6.27+) kernel system call of the same name.
+
+------------------------------------------------------------------------
+r1526 | jkbonfield | 2009-03-04 14:38:16 +0000 (Wed, 04 Mar 2009) | 5 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/progs/srf_info.c
+
+Fixed the same bug with mf_end and ztr_partial_decode from srf.c.
+
+Specifically a ZTR file with no chunks in the srf data block header
+failed.
+
+------------------------------------------------------------------------
+r1525 | jkbonfield | 2009-03-04 14:23:58 +0000 (Wed, 04 Mar 2009) | 4 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/srf.c
+
+Bug fix to srf_next_ztr_flags. When faced with a ZTR header with no
+ZTR chunks in the srf data block header it erroneously set mf_end to
+zero instead of the actual length.
+
+------------------------------------------------------------------------
+r1455 | jkbonfield | 2009-01-22 17:19:25 +0000 (Thu, 22 Jan 2009) | 3 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/io_lib/array.c
+   M /staden/trunk/src/io_lib/io_lib/array.h
+
+Updated the Array struct to use size_t, matching the copy in Misc (yes
+I know, multiple variants is asking for trouble).
+
+------------------------------------------------------------------------
+r1428 | jkbonfield | 2008-12-11 10:22:25 +0000 (Thu, 11 Dec 2008) | 3 lines
+Changed paths:
+   M /staden/trunk/src/io_lib/progs/srf2solexa.c
+
+Changed dump_qcal so it handles negative log-odds scores. In practice
+I've never seen these occur with the 1.0 solexa pipeline release though.
+
+
 2008-12-10  James Bonfield  <jkb@sanger.ac.uk>
 
 	* 1.11.6.1 released.
