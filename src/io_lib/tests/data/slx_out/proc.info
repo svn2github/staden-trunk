@@ -5,10 +5,10 @@ Reading srf null index block
 Reads: GOOD : 18
 Reads: BAD : 2
 Reads: TOTAL : 20
-Chunk: BASE : 20
-Chunk: CNF4 : 20
+Chunk: BASE : 20 475
+Chunk: CNF4 : 20 842
   Mdata key: SCALE : 20
-Chunk: SMP4 : 20
+Chunk: SMP4 : 20 9467
   Mdata key: OFFS : 20
 Bases: A: 411
 Bases: C: 296
