@@ -1,0 +1,42 @@
+2009-07-30
+
+Notes to developers
+===================
+
+The new directory layout doesn't have one single makefile, but rather
+two main subdirectories which are expected to be two source download
+packages. For historical reasons they're still (for now) within the
+one subversion source tree.
+
+Source
+------
+
+See src/README.build for full details. Essentially it's running
+configure and typing make. If you downloaded the subversion tree (very
+likely if you're reading this) then you may need to run bootstrap
+first.
+
+
+Documentation
+-------------
+
+See the doc/README for full details. Note that when installing set the
+PREFIX to be the same --prefix you used in the src configure step.
+
+
+
+Other bits - TODO
+----------
+
+demo - largely redundant for now, but I may tidy this up with some
+suitable gap4 / gap5 databases and some suitable sequences for spin.
+
+course - still to tidy up. We already distribute a separate course
+package on sourceforge (the tutorial), but it's largely out of date.
+
+lib - old tcl code. Most of this got moved to the main source tree,
+but there are still various local copies of third-party
+libraries. This should be tidied up too.
+
+userdata - maybe merge with demo. It's mostly just some example data for
+spin.
