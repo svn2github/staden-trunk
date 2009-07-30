@@ -1,1 +1,0 @@
-set env(ITK_LIBRARY) $env(STADLIB)/itk3.3

@@ -1,1 +1,0 @@
-set env(ITCL_LIBRARY) $env(STADLIB)/itcl3.3
