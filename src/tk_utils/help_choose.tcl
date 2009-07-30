@@ -6,8 +6,7 @@
 # name which is then searched for in the $file.index file.
 #
 # The new mode works from texinfo node names. It doens't have double
-# indirection. It also now handles windows and unix versions. It
-# searches only in ${file}_${platform}.index.
+# indirection. It searches only in ${file}.index.
 #
 # For backwards compatibility with third party modules (eg Pride), we
 # look for the presence of a .topic file. If we find one then we'll
@@ -15,7 +14,7 @@
 #
 
 proc show_help_common {file {topic Contents}} {
-    global help_path package_dir tcl_platform
+    global help_path package_dir
 
     if {$file == ""} {
 	return ""
@@ -63,7 +62,7 @@ proc show_help_common {file {topic Contents}} {
 		
 		set section [lindex $l 1]
 		# Convert from section to URL
-		set fd [open ${file}_$tcl_platform(platform).index]
+		set fd [open ${file}.index]
 		while {[gets $fd l] != -1} {
 		    if {[lindex $l 0] == $section} {
 			close $fd
@@ -77,7 +76,7 @@ proc show_help_common {file {topic Contents}} {
 	# New method
 
 	# Convert from topic to section
-	set fd [open ${file}_$tcl_platform(platform).index]
+	set fd [open ${file}.index]
 	while {[gets $fd l] != -1} {
 	    if {[string compare [lindex $l 0] $topic] == 0} {
 		close $fd
@@ -131,4 +130,4 @@ proc load_help_system {dir} {
     }
 }
 
-load_help_system $env(STADENROOT)/lib/tk_utils
+load_help_system $env(STADTCL)/tk_utils

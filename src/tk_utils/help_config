@@ -1,1 +1,1 @@
-set help_path $env(STADENROOT)/doc/manual
+set help_path $env(STADENROOT)/share/doc/staden/manual
