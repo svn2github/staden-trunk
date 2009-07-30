@@ -1,78 +1,78 @@
+VERSION=2.0
+PREFIX=_inst
+
 all:
+	@echo
+	@echo Please rerun make specifying either target \"unix\" or \"windows\".
+	@echo
+
+unix: SYSTEM=unix
+unix: common
+
+windows: SYSTEM=windows
+windows: common
+
+common:
+	cd manual; $(MAKE) $(SUBFLAGS) $(SYSTEM)
 	cd scripting_manual; $(MAKE) $(SUBFLAGS)
-	cd manual; $(MAKE) $(SUBFLAGS)
+	./parse_template $(SYSTEM) < overview.html.template > overview.html
 
-.PHONY: distcommon distwindows distunix install
-
-distcommon:
-	-mkdir $(DIST)/doc
-	-mkdir $(DIST)/doc/manual
-	-mkdir $(DIST)/doc/scripting_manual
-	-cp -R i $(DIST)/doc/i
-	-cp -R manual/i $(DIST)/doc/manual/i
-	-cp -R scripting_manual/i $(DIST)/doc/scripting_manual/i
-	-cp scripting_manual/*.html $(DIST)/doc/scripting_manual
-	-cp Acknowledgements $(DIST)/doc
-	-cp README $(DIST)/doc
-	-cp gkb547_gml.pdf $(DIST)/doc
-	-cp scripting_manual/*.pdf $(DIST)/doc
-	-cp emboss.txt $(DIST)/doc
-	-cp ReleaseNotes $(DIST)/doc
-	-cp *.gif $(DIST)/doc
-
-
-
-distwindows: distcommon
-	-cp windows/*.html $(DIST)/doc
-	-cp manual/*_windows.index $(DIST)/doc/manual
-	-cp manual/*_windows_*.html $(DIST)/doc/manual
-	-cp manual/manual_windows.pdf $(DIST)/doc
-	-cp manual/mini_windows.pdf $(DIST)/doc
-	-cp manual/*.unix.png $(DIST)/doc/manual
-	-cp manual/*.unix.png.html $(DIST)/doc/manual
+install:
+	# Man pages
+	-mkdir -p $(PREFIX)/share/man
+	cp -R manual/man/* $(PREFIX)/share/man/
+	#
+	# Main PDF docs
+	-mkdir -p $(PREFIX)/share/doc/staden
+	cp manual/manual.pdf manual/mini.pdf $(PREFIX)/share/doc/staden
+	#
+	# HTML pages
+	-mkdir $(PREFIX)/share/doc/staden/manual
+	cp manual/*.html $(PREFIX)/share/doc/staden/manual
+	cp manual/*.png $(PREFIX)/share/doc/staden/manual
+	cp -r i $(PREFIX)/share/doc/staden/manual
+	-mkdir $(PREFIX)/share/doc/staden/scripting_manual
+	-cp scripting_manual/*.html $(PREFIX)/share/doc/staden/scripting_manual
+	cp -r i $(PREFIX)/share/doc/staden/manual/scripting_manual
+	cp *.html $(PREFIX)/share/doc/staden
+	#
+	# Other bits and pieces
+	cp -r *.gif Acknowledgements *.txt *.pdf i $(PREFIX)/share/doc/staden
+	#
+	# Tidy up
+	-test "$(PREFIX)" != "." && find $(PREFIX) -name .svn -exec rm -rf {} \;
 
 
-
-distunix: distcommon
-	-cp unix/*.html $(DIST)/doc
-	-cp manual/*_unix.index $(DIST)/doc/manual
-	-cp manual/*_unix_*.html $(DIST)/doc/manual
-	-cp manual/manual_unix.pdf $(DIST)/doc
-	-cp manual/mini_unix.pdf $(DIST)/doc
-	-cp manual/*.unix.png $(DIST)/doc/manual
-	-cp manual/*.unix.png.html $(DIST)/doc/manual
-
+DISTSRC=staden-$(VERSION)-doc-src
 distsrc:
-	-mkdir -p $(DISTSRC)/doc/manual
-	-mkdir -p $(DISTSRC)/doc/scripting_manual
-	-cp -R i $(DISTSRC)/doc/i
-	-cp -R manual/i \
-	       manual/Makefile \
+	-mkdir -p $(DISTSRC)/manual
+	-mkdir -p $(DISTSRC)/scripting_manual
+	-cp -R i $(DISTSRC)/i
+	-cp -R manual/Makefile \
 	       manual/*.texi \
 	       manual/*.png \
 	       manual/*.m4 \
 	       manual/README \
 	       manual/dependencies \
-	       manual/data \
 	       manual/tools \
 	       manual/man \
-	       $(DISTSRC)/doc/manual
-	-cp -R scripting_manual/i \
-	       scripting_manual/*.texi \
+	       $(DISTSRC)/manual
+	-cp -R scripting_manual/*.texi \
 	       scripting_manual/*.m4 \
 	       scripting_manual/Makefile \
 	       scripting_manual/dependencies \
 	       scripting_manual/i \
 	       scripting_manual/tools \
-	       $(DISTSRC)/doc/scripting_manual
-	-cp Acknowledgements $(DISTSRC)/doc
-	-cp Copyright $(DISTSRC)/doc
-	-cp LICENCE $(DISTSRC)/doc
-	-cp README $(DISTSRC)/doc
-	-cp gkb547_gml.pdf $(DISTSRC)/doc
-	-cp emboss.txt $(DISTSRC)/doc
-	-cp *.gif $(DISTSRC)/doc
-	-cp Makefile $(DISTSRC)/doc
+	       $(DISTSRC)/scripting_manual
+	-cp Acknowledgements $(DISTSRC)
+	-cp README $(DISTSRC)
+	-cp *.pdf $(DISTSRC)
+	-cp emboss.txt $(DISTSRC)
+	-cp *.gif $(DISTSRC)
+	-cp Makefile $(DISTSRC)
+	-cp *template $(DISTSRC)
+	-find $(DISTSRC) -name .svn -exec rm -rf {} \;
+	tar cfz $(DISTSRC).tar.gz $(DISTSRC)
 
 install:
 

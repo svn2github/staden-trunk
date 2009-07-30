@@ -10,6 +10,6 @@ done
 # PostScript files from the images
 for i in *.texi
 do
-    sed -n "s/^_picture(\(.*\))/$i: \1.unix.pdf/p" $i
-    sed -n "s/^_lpicture(\(.*\))/$i: \1.unix.pdf/p" $i
+    sed -n "s/^_picture(\(.*\))/$i: \1.pdf/p" $i
+    sed -n "s/^_lpicture(\(.*\))/$i: \1.pdf/p" $i
 done

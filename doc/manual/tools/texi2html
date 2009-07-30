@@ -1715,12 +1715,8 @@ EOT
 sub print_footer {
     print FILE <<EOT;
 <hr>
-<i>This page is maintained by
-<a href="mailto:staden-package\@mrc-lmb.cam.ac.uk">staden-package</a>.
-Last generated on $TODAY.
-</i>
+<i>Last generated on $TODAY.</i>
 <font size="-1"><br>
-URL: $http_prefix/$docu_doc
 </font>
 </BODY>
 </HTML>

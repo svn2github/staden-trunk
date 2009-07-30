@@ -1,0 +1,308 @@
+<html>
+<head>
+<title>Staden Package Program Summary</title>
+</head>
+<body bgcolor="#ffffff">
+<a href="index.html"><img src="i/nav_home.gif" alt="home"></a>
+<hr size=4>
+<h1 align=center>Staden Package Program Summary</h1>
+
+<h2>Assembly</h2>
+
+<h3>Assembly program</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="manual/gap4_toc.html">gap4</a></i>
+	<td>Performs assembly, contig joining, 
+	assembly checking, repeat searching, experiment suggestion,
+        read pair analysis and contig editing. Has graphical views of
+	contigs, templates, readings and traces which all scroll in register.
+	Contig editor searches
+	and experiment suggestion routines use phred confidence values 
+	to calculate the confidence of the consensus sequence and hence 
+	only identify places requiring visual trace inspection or extra data.
+	The result is extremely rapid finishing and a consensus of known
+	accuracy.<br>
+
+<tr align=left>
+<td><i>gap5</i>
+	<td>This is the new development version of Gap4, designed to
+	work with the large volumes of data attainable through the
+	newer sequencing technologies (eg Illumina, SOLiD, 454).
+	At present documentation is absent, but it shares many common
+	features with Gap4.<br>
+
+<tr align=left>
+<td><i>tg_index</i>
+	<td>Generates Gap5 format databases from input assembly
+	formats: SAM, BAM, MAQ, ACE, etc.<br>
+
+<tr align=left>
+<td><i>tg_view</i>
+	<td>A text-mode viewer for Gap5 databases.<br>
+</table>
+
+<h3>Preparing sequence trace data for analysis or assembly</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="manual/pregap4_toc.html">pregap4</a></i>
+	<td>Provides a graphical user interface to set up the processing
+	required to prepare trace data for assembly or analysis; and also 
+	gives a method for its automation. The possible processes which
+	can be set up include trace format conversion, quality analysis,
+	vector clipping, contaminant screening and repeat searching.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-qclip%">qclip</a></i>
+	<td>Performs simple quality clipping of Experiment Files based
+	on confidence values or on the sequence composition.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-polyA_clip%">polyA_clip</a></i>
+	<td>Marks polyA and polyT heads and tails.<br>
+
+<tr align=left>
+<td><i>stops</i>
+	<td>Identifies Sanger sequencing "stops" in SCF and ZTR trace files.<br>
+
+</table>
+
+<h3>Sequence screening</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="%INDEX:vector_clip/Vector_Clip%">vector_clip</a></i>
+	<td>Finds and marks (with tags) vector segments of sequence readings
+        stored as Experiment Files. Rapid and sensitive, and usually
+	used via <i>pregap4.</i><br>
+
+<tr align=left>
+<td><i><a href="%INDEX:vector_clip/Screen_seq%">screen_seq</a></i>
+	<td>Searches sequence readings stored as Experiment Files 
+	for matches against sets of possible contaminant
+	sequences. Typically used to look for E.Coli or yeast
+	contamination. Very fast, and usually used via <i>pregap4.</i><br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-find_renz%">find_renz</a></i>
+	<td>Finds and marks (with tags) known repeat sequences ( e.g. ALUs)
+        in sequence readings stored as Experiment Files.
+	Usually used via <i>pregap4.</i><br>
+
+</table>
+
+<h3>Trace viewing</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="manual/trev_toc.html">trev</a></i>
+	<td>A rapid and flexible viewer and editor for
+	 ABI, ALF or SCF trace files. Provides good
+	support for interaction with Experiment Files.<br>
+</table>
+
+<h2>Mutation detection</h2>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-tracediff%">tracediff</a></i>
+	<td>Automatically locates point mutations by comparing new traces
+        against those of a reference trace. Handles any number of files
+	in a single run and prepares results which can be viewed in <i>gap4</i>.
+<tr align=left>
+<td><i><a href="%INDEX:pregap4/Pregap4-Modules-Mutation Scanner%">mutscan</a></i>
+	<td>Used in conjunction with <i>tracediff</i> to search for
+	heterozygous positions and, where they coincide, to label
+	<i>tracediff</i> results appropriately.
+<tr align=left>
+<td><i><a href="manual/gap4_toc.html">gap4</a></i>
+	<td>For viewing aligned sequences and traces and checking automatic
+        mutation assignments. Can subtract traces and display their 
+        differences.<br>
+</table>
+
+
+<p><hr size=4>
+<h2>Sequence analysis</h2>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="manual/spin_toc.html">spin</a></i>
+
+	<td>A combination of the older nip4 and sip4 program.  Spin compares
+	pairs of sequences in many ways, often presenting
+        its results graphically. Has very rapid dot matrix analysis, 
+	global and local alignment, plus a sliding sequence window linked to
+	the graphical plots. Can compare nucleic acid against nucleic acid,
+	protein against protein, and protein against nucleic acid.
+	Analyses nucleotide sequences to find genes, restriction sites,
+        motifs, etc. Performs translations, finds open reading frames, counts
+	codons, etc.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-make_weights%">make_weights</a></i>
+	<td>Analyses a multiple alignment to produce a weight matrix for use
+	within spin.<br>
+
+<tr align=left>
+%UNIX%<td><i><a href="%INDEX:spin/SPIN-Intro-Menu-Emboss%">create_emboss_files</a></i>
+%UNIX%	<td>Creates the GUI interface files for Spin from emboss ACD
+%UNIX%  files. Only needs to be run once after a new EMBOSS release.<br>
+</table>
+
+<p><hr size=4>
+<h2>Sequence trace and reading file manipulation</h2>
+
+<h3>Any trace file</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-convert_trace%">convert_trace</a></i>
+	<td>Converts traces from any format to any format. Also handles
+	trace background subtraction and normalisation.<br>
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-get_comment%">get_comment</a></i>
+	<td>Extracts text from the comment fields from any trace
+	format. Replaces the get_scf_field program.<br>
+<tr align=left>
+<td><i>index_tar</i>
+	<td>Produces a text index from a <i>tar</i> file. Used for speeding up 
+	RAWDATA access within gap4.<br>
+</table>
+
+<h3>ABI files</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i>getABIstring</i>
+	<td>Displays arbitrary string fields from an ABI trace file.<br>
+
+<tr align=left>
+<td><i>getABIhex</i>
+	<td>Displays arbitrary fields from an ABI trace file as hex codes.<br>
+
+<tr align=left>
+<td><i>getABIraw</i>
+	<td>Displays arbitrary fields from an ABI trace file in the raw
+	format.<br>
+
+<tr align=left>
+<td><i>getABIcomment</i>
+	<td>Displays the comments from an ABI trace file. Equivalent to
+	<i>getABIstring CMNT</i>.<br>
+
+<tr align=left>
+<td><i>getABISampleName</i>
+	<td>Displays the sample name (reading name) stored in an ABI trace
+	file. Equivalent to <i>getABIstring SMPL</i><br>
+
+<tr align=left>
+<td><i>getABIdate</i>
+	<td>Displays the run date from an ABI trace file.<br>
+</table>
+
+<h3>ALF files</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i>alfsplit</i>
+	<td>Splits the Pharmacia ALF gel file into multiple files. This is
+	necessary before processing by <i>pregap4</i>.<br>
+</table>
+
+
+<h3>SCF files</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-makeSCF%">makeSCF</a></i>
+	<td>Converts existing trace files (whatever format) into SCF
+	files.<br>
+
+<tr align=left>
+<td><i>scf_info</i>
+	<td>Displays details stored in the header of an SCF file.<br>
+
+<tr align=left>
+<td><i>scf_dump</i>
+	<td>Displays the entire SCF file contents in a human readable
+	format.<br>
+
+<tr align=left>
+<td><i>scf_update</i>
+	<td>Converts between SCF file versions (2 to 3 and vice versa).<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-get_scf_field%">get_scf_field</a></i>
+	<td>Extracts data from the SCF comment section.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-eba%">eba</a></i>
+	<td>Estimates the base accuracy of each base in an SCF file.
+</table>
+
+<h3>Gap4 database utilities</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+%UNIX%<tr align=left>
+%UNIX%<td><i><a href="%INDEX:gap4/Convert%">convert</a></i>
+%UNIX%	<td>Converts between the various assembly database formats.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-copy_db%">copy_db</a></i>
+	<td>Copies and garbage collects <i>gap4</i> databases.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-copy_reads%">copy_reads</a></i>
+	<td>Aligns two <i>gap4</i> databases and copies overlapping
+	sequences from one to the other.<br>
+
+</table>
+
+<h3>Other sequencing utilities</h3>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-extract_seq%">extract_seq</a></i>
+	<td>Extracts the sequence component from trace files or
+	experiment files.<br>
+
+<tr align=left>
+<td><i><a href="%INDEX:manpages/Man-init_exp%">init_exp</a></i>
+	<td>Extracts the sequence and related information from trace files
+	to output in Experiment File format.
+</table>
+
+
+<p><hr size=4>
+<h2>Scripting utilities</h2>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+<tr align=left>
+<td><i><a href="scripting_manual/scripting_toc.html">stash</a></i>
+	<td>General purpose scripting interface to Gap4 and Spin,
+	be used for producing graphical scripts and interfaces.<br>
+
+</table>
+
+<p><hr size=4>
+<h2>Misc</h2>
+
+<table border=3 cellpadding=4 cellspacing=1 width=95%>
+
+<tr align=left>
+<td><i>splitseq_da</i>
+	<td>Splits large sequences into a set of overlapping smaller
+	sequences. Outputs the sequences in a Experiment File format
+	with attributes suitable for input using Directed Assembly.<br>
+
+</table>
+
+<p>
+<hr>
+<a href="index.html"><img src="i/nav_home.gif" alt="home"></a>
+</body>
+</html>
+

@@ -9,7 +9,6 @@
 # update those pages we're accessing to point back to our master pages.
 #
 
-$os=shift;
 %index = ();
 $silent = 1;
 $doit = 0;
@@ -19,10 +18,10 @@ $http_prefix = "..";
 $http_prefix2 = "$http_prefix/manual";
 $package_version = "version 1.5 (2004)";
 
-open(TOCL, "> master_${os}_contents.html")
-	|| die "Couldn't create master_${os}_contents.html";
-open(TOCS, "> master_${os}_brief.html")
-	|| die "Couldn't create master_${os}_brief.html";
+open(TOCL, "> master_contents.html")
+	|| die "Couldn't create master_contents.html";
+open(TOCS, "> master_brief.html")
+	|| die "Couldn't create master_brief.html";
 
 # Create full and brief contents page headers
 print TOCL <<EOH;
@@ -31,9 +30,8 @@ print TOCL <<EOH;
 <TITLE>Master Table of Contents</TITLE>
 </HEAD>
 <BODY bgcolor="#ffffff">
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
 <hr size=4>
 <H1>Master Table of Contents</H1>
 <H3>For $package_version</H3>
@@ -47,9 +45,8 @@ print TOCS <<EOH;
 <TITLE>Master Table of Contents (Brief)</TITLE>
 </HEAD>
 <BODY bgcolor="#ffffff">
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <hr size=4>
 <H1>Master Table of Contents (Brief)</H1>
 <H3>For $package_version</H3>
@@ -75,10 +72,9 @@ while (<ARGV>) {
 	$silent = 0;
 	print NEW_TOC $_;
 	print NEW_TOC <<EOH;
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <hr size=4>
 EOH
 	next;
@@ -86,10 +82,9 @@ EOH
     if (/^<HR>$/) { #Footer of _toc file (hack: assume on a line by itself)
         print NEW_TOC <<EOH;
 <hr size=4>
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <hr>
 EOH
 	$silent = 1;
@@ -120,40 +115,26 @@ if ($curr_file) {
 # Create full and brief contents page footers.
 print TOCL <<EOF;
 <HR>
-<H2><A HREF="master_${os}_index.html">Master Index</A></H2>
+<H2><A HREF="master_index.html">Master Index</A></H2>
 <hr size=4>
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
-<HR>
-This document was generated using the <CITE>merge_indexes.pl</CITE> program.
-<p>
-<i>This page is maintained by
-<a href="mailto:staden-package\@mrc-lmb.cam.ac.uk">staden-package</a>.
-Last generated on $TODAY.
-</i>
-<font size="-1"><br>
-URL: $http_prefix2/master_${os}_contents.html
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
 </BODY>
 </HTML>
 EOF
 close(TOCL);
 
 print TOCS <<EOF;
-<H2><A HREF="master_${os}_index.html">Master Index</A></H2>
+<H2><A HREF="master_index.html">Master Index</A></H2>
 <hr size=4>
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <HR>
 This document was generated using the <CITE>merge_indexes.pl</CITE> program.
 <p>
-<i>This page is maintained by
-<a href="mailto:staden-package\@mrc-lmb.cam.ac.uk">staden-package</a>.
-Last generated on $TODAY.
+<i>Last generated on $TODAY.
 </i>
 <font size="-1"><br>
-URL: $http_prefix2/master_${os}_brief.html
 </BODY>
 </HTML>
 EOF
@@ -207,8 +188,8 @@ sub generate_index {
 }
 
 sub print_index {
-    open(MASTER, "> master_${os}_index.html") 
-	|| die "Couldn't open master_${os}_index.html";
+    open(MASTER, "> master_index.html") 
+	|| die "Couldn't open master_index.html";
 
     print MASTER <<EOH;
 <HTML>
@@ -216,10 +197,9 @@ sub print_index {
 <TITLE>Master Index</TITLE>
 </HEAD>
 <BODY bgcolor="#ffffff">
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <hr size=4>
 <H1>Master Index</H1>
 <H3>For $package_version</H3>
@@ -229,7 +209,7 @@ EOH
     foreach $letter (sort keys(%index)) {
 	$uletter = $letter;
 	$letter =~ tr/a-z/A-Z/;
-	print MASTER "<A HREF=\"master_${os}_index.html#LET$uletter\">$letter</A>\n";
+	print MASTER "<A HREF=\"master_index.html#LET$uletter\">$letter</A>\n";
     }
     print MASTER "<P>\n";
 
@@ -243,19 +223,15 @@ EOH
 
     print MASTER <<EOF;
 <hr size=4>
-<a href="$http_prefix/staden_home.html"><img src="i/nav_home.gif" alt="home"></a>
-<a href="$http_prefix/documentation.html"><img src="i/nav_up.gif" alt="up"></a>
-<a href="master_${os}_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
-<a href="master_${os}_contents.html"><img src="i/nav_full.gif" alt="full"></a>
+<a href="$http_prefix/index.html"><img src="i/nav_home.gif" alt="home"></a>
+<a href="master_brief.html"><img src="i/nav_brief.gif" alt="brief"></a>
+<a href="master_contents.html"><img src="i/nav_full.gif" alt="full"></a>
 <HR>
 This document was generated using the <CITE>merge_indexes.pl</CITE> program.
 <p>
-<i>This page is maintained by
-<a href="mailto:staden-package\@mrc-lmb.cam.ac.uk">staden-package</a>.
-Last generated on $TODAY.
+<i>Last generated on $TODAY.
 </i>
 <font size="-1"><br>
-URL: $http_prefix2/master_${os}_index.html
 </BODY>
 </HTML>
 EOF

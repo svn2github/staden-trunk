@@ -1,0 +1,84 @@
+#!/bin/sh
+#\
+exec tclsh $0 $@
+
+#
+# This programs searches for embedded statements in text files and
+# replaces them with the appropriate HTML.
+# The replacement rules are:
+#
+# "%INDEX:"htmlmanual/index_name"%"
+#	expands to the local URL in the same way that "show_help" proc does.
+#
+# "%UNIX%"
+#	this line is for unix only
+#
+# "%WINDOWS%"
+#	this line is for windows only
+#
+#
+# For example, we may have:
+#    <td><i><a href="%INDEX:manpages/Man-makeSCF%">makeSCF</a></i>
+#
+# which will be replaced by:
+#    <td><i><a href="manual/manpages_unix_7.html">makeSCF</a></i>
+#
+
+#
+# Usage: parse_template [system] < a.html.template > a.html
+#
+# system defaults to unix, but may be specified as either "unix" or "windows".
+#
+
+
+proc find_topic {topic {sys unix}} {
+    regexp {%INDEX:(.*)/(.*)%} $topic dummy file topic
+
+    set file manual/${file}.index
+
+    # Convert from topic to section
+    if {[catch {set fd [open $file]} err]} {
+	puts stderr "Error: $err"
+	return ""
+    }
+    while {[gets $fd l] != -1} {
+	if {[string compare [lindex $l 0] $topic] == 0} {
+	    close $fd
+	    return manual/[lindex $l 1]
+	}
+    }
+    
+    puts stderr "Error: No topic $topic in $file"
+    return ""
+}
+
+
+if {$argc > 0} {
+    set sys $argv
+} else {
+    set sys unix
+}
+
+set file [read stdin]
+
+#--- Replace %SYS%
+regsub -all {%SYS%} $file $sys file
+
+#--- Delete %UNIX% and %WINDOWS% lines
+if {$sys == "unix"} {
+    regsub -all "%UNIX%" $file {} file
+    regsub -all "\[^\n\]*%WINDOWS%\[^\n\]*\n" $file {} file
+} else {
+    regsub -all "\[^\n\]*%UNIX%\[^\n\]*\n" $file {} file
+    regsub -all "%WINDOWS%" $file {} file
+}
+
+#--- Replace %INDEX.*%
+# Terribly inefficient, but it works.
+while {[regexp {%INDEX:[^%]*%} $file topic] == 1} {
+    regsub {%INDEX:[^%]*%} $file [find_topic $topic $sys] file
+}
+
+puts $file
+
+exit

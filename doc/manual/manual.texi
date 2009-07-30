@@ -2,7 +2,7 @@
 \input texinfo
 
 @c %**start of header
-@setfilename manual_unix.info@
+@setfilename manual.info@
 @setcontentsaftertitlepage
 @setshortcontentsaftertitlepage
 @settitle The Staden Package Manual

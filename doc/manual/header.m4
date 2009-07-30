@@ -137,11 +137,11 @@ _changequote([[,]])
 @c argument 1: a filename prefix. .ps, .pdf and .png are added to the prefix
 @c             as required.
 @c ---------------------------------------------------------------------------
-_define([[_picture]],[[_ifdef([[_tex]],[[@image{[[$*]].unix}]])
+_define([[_picture]],[[_ifdef([[_tex]],[[@image{[[$*]]}]])
 _ifdef([[_html]],[[
 @ifhtml
 <p>
-<img src="[[$*]].unix.png" alt="[picture]">
+<img src="[[$*]].png" alt="[picture]">
 @end ifhtml]])]])
 
 @c ---------------------------------------------------------------------------
@@ -154,11 +154,11 @@ _ifdef([[_html]],[[
 @c argument 1: a filename prefix. .pdf, .png, .small.png and .png.html are
 @c             added to the prefix as required.
 @c ---------------------------------------------------------------------------
-_define([[_lpicture]],[[_ifdef([[_tex]],[[@image{[[$*]].unix}]])
+_define([[_lpicture]],[[_ifdef([[_tex]],[[@image{[[$*]]}]])
 _ifdef([[_html]],[[
 @ifhtml
 <p>
-<a href="[[$*]].unix.png.html"><img src="[[$*]].small.unix.png" alt="[picture]"></a>
+<a href="[[$*]].png.html"><img src="[[$*]].small.png" alt="[picture]"></a>
 <br><font size="-1">(Click for full size image)<font size="+0"><br>
 @end ifhtml]])]])
 

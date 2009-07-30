@@ -74,9 +74,9 @@ _include(hash_list.1.texi)
 _include(hash_tar.1.texi)
 
 @page
-@node Man-init_tar
-@chapter Init_tar
-_include(init_tar.1.texi)
+@node Man-init_exp
+@chapter Init_exp
+_include(init_exp.1.texi)
 
 @page
 @node Man-makeSCF

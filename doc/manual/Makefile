@@ -1,5 +1,7 @@
-#all: unix windows unix_us windows_us gzip
-all: unix windows
+all: 
+	@echo
+	@echo Please rerun make specifying either target \"unix\" or \"windows\".
+	@echo
 
 #
 # Sorry if this Makefile doesn't work correctly regarding dependencies. GNU
@@ -15,9 +17,6 @@ all: unix windows
 #
 # .texinfo files are expanded up .texi files. They have the macros replaced
 # and have been processed by m4 to include Unix or Windows specific components.
-#
-# The _us.* files are US-letter format copies, otherwise we assume everything
-# is in A4 format.
 #
 
 # M4 preprocessor. Various buggy versions of this have caused problems in the
@@ -36,20 +35,12 @@ M4=m4
 # documents designed for passing into TeX or texi2html. The changes are
 # minimal and relate to cross-referencing and page-splitting.
 #
-%_unix.texinfo:	%.texi header.m4
-	$(M4) -Uunix -D_unix -D_tex < $< > $@
+%.texinfo:	%.texi header.m4
+	$(M4) $(M4OPT) -D_tex < $< > $@
 	./tools/update-nodes $@
 
-%_unix.htmlinfo:	%.texi header.m4
-	$(M4) -Uunix -D_unix -D_html < $< > $@
-	./tools/update-nodes $@
-
-%_windows.texinfo:	%.texi header.m4
-	$(M4) -Uunix -D_windows -D_tex < $< > $@
-	./tools/update-nodes $@
-
-%_windows.htmlinfo:	%.texi header.m4
-	$(M4) -Uunix -D_windows -D_html < $< > $@
+%.htmlinfo:	%.texi header.m4
+	$(M4) $(M4OPT) -D_html < $< > $@
 	./tools/update-nodes $@
 
 # How to build .dvi files from our m4-expanded .texinfo
@@ -57,26 +48,18 @@ M4=m4
 %.dvi:	%.texinfo
 	texi2dvi $<
 
-# US-letter PostScript from DVI
-%_us.ps:	%_us.dvi
-	dvips -t letter -o $@ $<
-
-# A4 PostScript from DVI
+# A4 or US Letter PostScript from DVI
 %.ps:	%.dvi
-	dvips -t a4 -Ppdf -o $@ $<
+	dvips -t $(PAPER) -Ppdf -o $@ $<
 
 # PDF generation. Directly from the texinfo.
 # Note that as the texinfo is reordered, this produces out of order
 # data too (contents page at the end).
 # One solution is (eg):
-#   pdftk manual_unix.pdf cat 1-2 469-end 3-468 output new.pdf
+#   pdftk manual.pdf cat 1-2 469-end 3-468 output new.pdf
 # however this loses the bookmarks.
 %.pdf:	%.texinfo
 	texi2pdf $<
-
-# Converts an A4 formatted .texi file into a US-letter formatted file.
-%_us.texinfo: %.texinfo
-	egrep -v '^@afourpaper' < $< > $@
 
 # HTML files - built from an expanded .texinfo file with the -D_html m4 macro
 # defined. We need the *_toc.html and the index files.
@@ -120,14 +103,9 @@ pngs:
 
 # The mini manuals need to have the xrefs removed. Internal references are
 # kept "as is".
-mini_unix.texinfo: mini_manual_unix.texinfo
+mini.texinfo: mini_manual.texinfo
 	./tools/remove_xrefs.pl < $< > $@
-mini_unix.htmlinfo: mini_manual_unix.texinfo
-	./tools/remove_xrefs.pl < $< > $@
-
-mini_windows.texinfo: mini_manual_windows.texinfo
-	./tools/remove_xrefs.pl < $< > $@
-mini_windows.htmlinfo: mini_manual_windows.texinfo
+mini.htmlinfo: mini_manual.texinfo
 	./tools/remove_xrefs.pl < $< > $@
 
 # Help within the programs is HTML based. Given a topic the appropriate URL
@@ -138,65 +116,36 @@ mini_windows.htmlinfo: mini_manual_windows.texinfo
 # Resolves cross references between separate html texinfo documents by
 # searching for <!-- XREF:name --> comments in the html code and matching
 # these up with the node names.
-# We need to have a different index for unix and windows versions as some
-# pages are missing in unix which upsets the indexing.
-xref_unix: \
-	formats_unix.index \
-	pregap4_unix.index \
-	read_clipping_unix.index \
-	vector_clip_unix.index \
-	interface_unix.index \
-	trev_unix.index \
-	gap4_unix.index \
-	manpages_unix.index \
-	spin_unix.index \
-	filebrowser_unix.index 
 
-	./tools/xref_update.pl *_unix_*.html
+xref: \
+	formats.index \
+	pregap4.index \
+	read_clipping.index \
+	vector_clip.index \
+	interface.index \
+	trev.index \
+	gap4.index \
+	manpages.index \
+	spin.index \
+	filebrowser.index 
 
-xref_windows: \
-	formats_windows.index \
-	pregap4_windows.index \
-	read_clipping_windows.index \
-	vector_clip_windows.index \
-	interface_windows.index \
-	trev_windows.index \
-	gap4_windows.index \
-	manpages_windows.index \
-	spin_windows.index \
-	filebrowser_windows.index 
-
-	./tools/xref_update.pl *_windows_*.html
+	./tools/xref_update.pl *_*.html
 
 # Master full and brief contents page generation. Basically this combines
 # the separate _toc.html pages into global ones.
-contents_unix:
-	./tools/merge_indexes.pl unix \
-		gap4_unix_toc.html \
-		mutations_unix_toc.html \
-		pregap4_unix_toc.html \
-		read_clipping_unix_toc.html \
-		vector_clip_unix_toc.html \
-		trev_unix_toc.html \
-		spin_unix_toc.html \
-		interface_unix_toc.html \
-		formats_unix_toc.html \
-		manpages_unix_toc.html \
-		references_unix_toc.html
-
-contents_windows:
-	./tools/merge_indexes.pl windows \
-		gap4_windows_toc.html \
-		mutations_windows_toc.html \
-		pregap4_windows_toc.html \
-		read_clipping_windows_toc.html \
-		vector_clip_windows_toc.html \
-		trev_windows_toc.html \
-		spin_windows_toc.html \
-		interface_windows_toc.html \
-		formats_windows_toc.html \
-		manpages_windows_toc.html \
-		references_windows_toc.html
+contents:
+	./tools/merge_indexes.pl \
+		gap4_toc.html \
+		mutations_toc.html \
+		pregap4_toc.html \
+		read_clipping_toc.html \
+		vector_clip_toc.html \
+		trev_toc.html \
+		spin_toc.html \
+		interface_toc.html \
+		formats_toc.html \
+		manpages_toc.html \
+		references_toc.html
 
 # Backup only the 'source' files and generating scripts
 backup::
@@ -208,47 +157,40 @@ backup::
 #-----------------------------------------------------------------------------
 # The main make targets.
 
-unix: manual_unix xref_unix contents_unix mini_unix man pngs
-windows: manual_windows xref_windows contents_windows mini_windows man pngs
+unix: M4OPT+=-Uunix -D_unix
+unix: common
 
-unix_us: manual_unix_us.pdf mini_unix_us.pdf
-windows_us: manual_windows_us.pdf mini_windows_us.pdf
+windows: M4OPT+=-Uunix -D_windows
+windows: common
 
-mini_unix: mini_unix.pdf mini_unix_toc.html
-	./tools/edit_mini_contents.pl unix < mini_unix_toc.html > tmp.html
-	mv tmp.html mini_unix_toc.html
+ifeq ($(PAPER),us)
+M4OPT += -Dafourpaper=c
+PAPER=letter
+else
+M4OPT += -Dafourpaper=c
+PAPER=m4
+endif
 
-mini_windows: mini_windows.pdf mini_windows_toc.html
-	./tools/edit_mini_contents.pl windows < mini_windows_toc.html > tmp.html
-	mv tmp.html mini_windows_toc.html
+common: manual xref contents mini man pngs
 
-manual_unix:	 manual_unix.pdf manual_unix_html
-manual_unix_html: \
-	interface_unix_toc.html \
-	gap4_unix_toc.html \
-	formats_unix_toc.html \
-	vector_clip_unix_toc.html \
-	trev_unix_toc.html \
-	manpages_unix_toc.html \
-	read_clipping_unix_toc.html \
-	references_unix_toc.html \
-	spin_unix_toc.html \
-	pregap4_unix_toc.html \
-	mutations_unix_toc.html
 
-manual_windows:	manual_windows.pdf manual_windows_html
-manual_windows_html: \
-	interface_windows_toc.html \
-	gap4_windows_toc.html \
-	formats_windows_toc.html \
-	vector_clip_windows_toc.html \
-	trev_windows_toc.html \
-	manpages_windows_toc.html \
-	read_clipping_windows_toc.html \
-	references_windows_toc.html \
-	spin_windows_toc.html \
-	pregap4_windows_toc.html \
-	mutations_windows_toc.html
+mini: mini.pdf mini_toc.html
+	./tools/edit_mini_contents.pl < mini_toc.html > tmp.html
+	mv tmp.html mini_toc.html
+
+manual:	 manual.pdf manual_html
+manual_html: \
+	interface_toc.html \
+	gap4_toc.html \
+	formats_toc.html \
+	vector_clip_toc.html \
+	trev_toc.html \
+	manpages_toc.html \
+	read_clipping_toc.html \
+	references_toc.html \
+	spin_toc.html \
+	pregap4_toc.html \
+	mutations_toc.html
 
 man:	man/man1/makeSCF.1 man/man1/eba.1 man/man1/makeSCF.1 \
 	man/man1/get_scf_field.1 man/man1/init_exp.1 man/man4/scf.4 \
@@ -258,16 +200,6 @@ man:	man/man1/makeSCF.1 man/man1/eba.1 man/man1/makeSCF.1 \
 	man/man1/find_renz.1 man/man1/get_comment.1 \
 	man/man1/getABIfield.1 man/man1/trace_dump.1
 
-# For distributions
-gzip:
-	-gzip < mini_windows.ps > mini_windows.ps.gz
-	-gzip < mini_windows_us.ps > mini_windows_us.ps.gz
-	-gzip < mini_unix.ps > mini_unix.ps.gz
-	-gzip < mini_unix_us.ps > mini_unix_us.ps.gz
-	-gzip < manual_windows.ps > manual_windows.ps.gz
-	-gzip < manual_windows_us.ps > manual_windows_us.ps.gz
-	-gzip < manual_unix.ps > manual_unix.ps.gz
-	-gzip < manual_unix_us.ps > manual_unix_us.ps.gz
 
 clean:
 	-rm *.aux *.cp *.fn *.ky *.log *.pg *.toc *.tp *.vr *.cps *.fns *.pgs *.vrs
@@ -277,7 +209,7 @@ clean:
 spotless:	clean
 	-rm *.dvi *.html *.info *.info-[0-9] *.index *.topic
 	-rm master_index.html master_contents.html master_brief.html
-	-rm manual_unix.ps manual_windows.ps mini_unix.ps mini_windows.ps
+	-rm manual.ps mini.ps
 	-rm man/man1/* man/man4/*
 	-rm *.ps *.pdf
 
