@@ -30,6 +30,7 @@ install:
 	-mkdir $(PREFIX)/share/doc/staden/manual
 	cp manual/*.html $(PREFIX)/share/doc/staden/manual
 	cp manual/*.png $(PREFIX)/share/doc/staden/manual
+	cp manual/*.index $(PREFIX)/share/doc/staden/manual
 	cp -r i $(PREFIX)/share/doc/staden/manual
 	-mkdir $(PREFIX)/share/doc/staden/scripting_manual
 	-cp scripting_manual/*.html $(PREFIX)/share/doc/staden/scripting_manual
@@ -37,7 +38,7 @@ install:
 	cp *.html $(PREFIX)/share/doc/staden
 	#
 	# Other bits and pieces
-	cp -r *.gif Acknowledgements *.txt *.pdf i $(PREFIX)/share/doc/staden
+	cp -r Acknowledgements *.txt *.pdf i $(PREFIX)/share/doc/staden
 	#
 	# Tidy up
 	-test "$(PREFIX)" != "." && find $(PREFIX) -name .svn -exec rm -rf {} \;
