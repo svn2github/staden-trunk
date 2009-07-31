@@ -602,7 +602,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
      * the current editior cursor if no x,y specified.
      */
     case _GET_NUMBER: {
-	char buf[10];
+	char buf[100];
 	int x, y, type, rec, pos;
 
 	if (argc != 2 && argc != 4 && argc != 5) {
