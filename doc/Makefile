@@ -44,7 +44,7 @@ install:
 	-test "$(PREFIX)" != "." && find $(PREFIX) -name .svn -exec rm -rf {} \;
 
 
-DISTSRC=staden-$(VERSION)-doc-src
+DISTSRC=staden_doc-$(VERSION)-src
 distsrc:
 	-mkdir -p $(DISTSRC)/manual
 	-mkdir -p $(DISTSRC)/scripting_manual
