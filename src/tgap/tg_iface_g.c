@@ -3242,7 +3242,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 	    size_t extra_len;
 
 	    extra_len = sizeof(anno_ele_t) + comment_len[i];
-	    if (!(si = cache_new(GT_Seq, 0, 0, NULL, extra_len)))
+	    if (!(si = cache_new(GT_AnnoEle, 0, 0, NULL, extra_len)))
 		return NULL;
 
 	    b->rec[i] = (rec << ANNO_ELE_BLOCK_BITS) + i;
