@@ -1461,7 +1461,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	    return -1;
 	scale = 800.0 / bin->size;
 	o -= offset * scale;
-	fprintf(gv, "%%!\n/Times-Roman findfont\n6 scalefont\nsetfont\n"
+	fprintf(gv, "%%!\n/Times-Roman findfont\n5 scalefont\nsetfont\n"
 		"90 %d translate\n90 rotate\nnewpath\n", o);
 
 	for (i = 0; i < 100; i++) {
@@ -1515,7 +1515,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		H-6);
 	
 	/* bin offset */
-	fprintf(gv, "%f %d moveto (%d) show\n",
+	fprintf(gv, "0.5 setgray %f %d moveto (%d) show\n",
 		scale * offset, level*(H+G)-7, offset);
     }
 
@@ -1542,8 +1542,9 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		level*(H+G)+H+2);
 
     /* Bin record ID */
-    fprintf(gv, "%f %d moveto (#%d) show\n",
-	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec);
+    fprintf(gv, "%f %d moveto (#%d/%d) show\n",
+	    scale * (offset+bin->size/2)-10, level*(H+G)+H/2-2, bin->rec,
+	    bin->nseqs);
 
     fflush(gv);
 
