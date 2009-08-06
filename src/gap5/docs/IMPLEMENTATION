@@ -1,0 +1,449 @@
+Library
+-------
+
+
+tg_iface.[ch]
+	The generic IO interface data structures.
+
+tg_iface_g.[ch]
+	OBJECT: g_io (internal only in tg_iface_g.c)
+
+	Implementation of the g-library interface. This is the primary
+	one we use right now.
+
+	This uses the g_io structure, which internally keps GDB and
+	GClient structures used by the g library.
+
+tg_cache.[ch]
+	(Uses GapIO too)
+	A layer between iface_g and gio. This basically emulates data
+	object caching along with keeping track of existing views.
+
+tg_gio.[ch]
+	OBJECT: GapIO (tg_gio.h)
+
+	Mid level functions that build on top of the iface layer. This
+	is basic common things like opening a database, reading a
+	contig, complementing, performing range queries, etc.
+
+	These all use the GapIO structure at their core, which has a
+	void *dbh (the g_io from above) passed over the iface along
+	with local caches of various objects.
+
+
+
+Applications
+------------
+
+tg_index.c
+	Reads an alignment file and builds the gap5 database.
+
+tg_view.c
+	Views a prebuilt gap5 database.
+
+
+-----------------------------------------------------------------------------
+
+Caching
+=======
+
+All records will go through a cache layer, implemented as a sparse
+hash table (cache_table.c). Querying the cache returns the address of
+the internal object registered with it. Thus all reads pass obj** type
+as the input and we set the pointer. We need to ensure we take
+duplicates if we require local temporary modifications.
+
+Writes are made by upgrading the cache lock mode, modifying the object
+directly and then calling the cache write call. This may write the
+data there and then or it may delay until later, but either way the
+data is not "live" in the database until a commit is made.
+
+Reads, naturally, check the cache first and if not found then the
+disk. To expire old data we can keep track using LRU (or just random
+if needs be). If someone has not been committed yet but is the least
+recently used then how do we deal with that? Two options:
+
+1) Increase the hash table size. All data still to be written is held
+   in memory in the cache until we're ready for a commit.
+
+2) Write it, but do not g_flush it. Put it's view (a very small object) in
+   a separate hash table to peruse later for flushing or subsequent
+   re-reads.
+
+The latter seems the most sensible as it allows us to write large
+complex algorithms that write a huge amount of data without worrying
+about needing to regularly commit changes. However it means changes
+maybe exposed earlier than we'd like (eg edits within the editor maybe
+visible outside the editor before hitting save) and makes cancel
+awkward (we'd have to g_abandon all the views we wrote to disk).
+
+For now I propose method 1) and we can add the additional layer to
+allow writing of partial transcations later if needed.
+
+Impact
+------
+
+This means that for building the binning system (or an R-tree) we can
+always implement it as read/modify/write at the application level and
+let the cache worry about what's sensible with regards to keeping
+track of.
+
+
+Cache locking
+-------------
+
+Unedited objects in the cache should always have GView locks of
+G_LOCK_RO.
+
+Edited objects should always have GView locks of G_LOCK_RW.
+
+The first attempt to write to a record will upgrade the lock to
+G_LOCK_RW and fail if unable (locked by someone else).
+
+We can also upgrade a lock prior to writing if we want the ability to
+rollback (ie cancel in the editor). In that situation we're stating
+that we have data in memory that needs writing, but we don't want to
+actually write it to the database yet. (Alternative is to use
+g_abandon to throw away out changes.)
+
+
+Questions regarding G_LOCK_RW vs G_LOCK_EX. In G_LOCK_EX we cannot
+upgrade if someone else has a RO lock on it. However with G_LOCK_RW as
+soon as we write the data another client will (I think) see our
+changes if it asks for a G_LOCK_RO view. NB: does this happen even
+before a gflush to update the master time stamp? 
+
+
+Reference counting
+------------------
+
+Items are purged from the cache based on their reference
+count. Objects will start with a reference count of 0 and it is up to
+the code to increment the reference count if it requires it.
+
+For simplicity of code we don't want the developer to assume the cache
+can be infinitesimal; code like foo = foo->next() should work
+without needing to use temporary variables and manually playing with
+reference counts. Ie we can assume the cache is at least large enough
+to hold both the existing foo and the new one.
+
+The cache can be assumed to be large enough to hold at least 256 objects.
+
+
+Bin updates
+-----------
+
+Inserting to a consensus edits the size of all bins covering that
+region plus also all right hand children of any bins covering that
+region (if we got their via a left child). This means for two clients
+on the same contig the root node (and many child nodes) can get
+updated regularly by both clients.
+
+How to address this? Need a way of publicising changes and forcing
+clients to update, or at least invalidating their cache so that when
+they next read they have to reget the latest data. Think harder!?
+
+Proposal: sequences are locked RW, but never bins (except when
+actually saving the contig). The logic for this is that it's trivial
+to merge bin data so we can resolve conflicts at the write stage.
+
+
+-----------------------------------------------------------------------------
+
+Code layers
+===========
+
++-------------+
+| Application |
++-------------+
+|    gio      |
++-------------+
+|   Cache     |
++-------------+
+|   iface     |
++-------------+
+|    "g"      |
++-------------+
+
+
+Application level
+-----------------
+
+GapIO *io = gio_open(...);
+...
+gio_read_database(io, &db);
+gio_read_contig(io, cnum, &cont);
+...
+gio_close(io);
+
+
+tg_gio.c
+--------
+
+This implements the above gio_* functions. Some are direct accesses
+but most operate through an object cache. 
+
+Eg:
+
+GapIO *gio_open(...) {
+    cache_create(io);
+    ...
+}
+
+gio_read_contig(GapIO *io, int cnum, GContig *c) {
+    *c = cache_search(io, GT_Contig, cnum;
+}
+
+tg_cache.c
+----------
+
+This keeps track of recently requested objects and remembers data
+needing to be flushed still.
+
+cache_search() is nothing more than the HashTableSearch() function on
+io->cache, which has callbacks for populating hash entries on missing
+data (cache_load() and cache_unload() functions).
+
+cache_load() calls appropriate load functions based on the object type
+(seq_load, bin_load, contig_load) which in turn use the "iface"
+system. Eg:
+
+static cached_item *seq_load(GapIO *io, int rec) {
+   ...
+   io->iface->seq.lock(io->dbh, rec, G_LOCK_RO);
+   io->iface->seq.mread(io->dbh, v, (void **)&buf, &len);
+   ...
+}
+
+static void seq_unload(GapIO *io, cached_item *ci) {
+    io->iface->seq.unlock(io->dbh, ci->view);
+    ...
+}
+
+
+tg_iface_g.c
+------------
+
+This implements the interface to the Gap4 "g" library. It's one of
+several possible interfaces to allow multiple backend storage formats,
+but is the only one in active development/use.
+
+
+
+FIXME
+=====
+
+1. The memory vs disk layout shenanigans needs to be in iface_g and
+   not tg_cache as it may differ per database implementation method.
+
+
+
+
+-----------------------------------------------------------------------------
+
+Implementation 2
+----------------
+
+14th Jan 2008
+
+Conclusion now, with regards to locking and modifying data, is that
+all get and set queries are done through object accessor
+functions. These may simply be macros for speed, but in some cases (eg
+set_name) they may need to be more complex as they grow the data
+structure.
+
+
+The basic interface level is via double-pointers. Eg seq_t ** or
+contig_t **.
+
+Ie:
+
+set_t *s;
+gio_get_seq(io, &s, seq_num);
+
+char *name = seq_get_name(&s);
+
+seq_set_name(&s, "foo");
+
+The reason for this include efficiency of CPU and memory. The goals
+are as follows:
+
+1) Reduce CPU cache overhead where possible. The sequence name,
+   basecalls and confidence values should all be near each other in
+   memory.
+
+2) Reduce malloc overhead. 1 malloc() block maximum per object (maybe
+   less for fixed sized objects via array entries). This also helps
+   solve point 1 above.
+
+3) Accessor methods. Even if they're just macros pretending to be
+   functions (which'll be true for most cases) it gives flexibility to
+   update them to something more complex if needed later on.
+
+
+Given that objects may grow and that we only have one single pointer
+to a malloced block, we need to always be passing in the address of
+that pointer so the external pointer can be redirected.
+
+-----------------------------------------------------------------------------
+
+Storage compression
+-------------------
+
+30th Jan 2008
+
+Sequence objects do not need to store the sequence data except when it
+differs to the consensus (or reference?). If we hold the consensus as
+a sequence, possibly broken into smaller chunks so we don't have to
+hold in memory a huge string, then we can list sequences as simply an
+edit-string plus a link to the reference ID.
+
+We do however still have to store the confidence values, so this at
+most only halves the storage size.
+
+
+-----------------------------------------------------------------------------
+
+
+Code layout
+===========
+
+tg_gio.c
+--------
+
+Higher level Gap IO - stuff like connecting to a database, flushing,
+closing, some basic gap5 database stats, etc.
+
+
+tg_<object>.c
+-------------
+
+Object based methods that wrap the tg_cache up and also provide
+utility functions. Eg tg_contig.c will contain code to query which
+sequences are visible within a particular region, what the root bin
+will be, etc.
+
+
+tg_cache.c
+----------
+
+Operates as the main query mechanism for fetching data and also, when
+locked, as means to write data back.
+
+External			Internal
+cache_{create,destroy}		cache_load
+cache_search			cache_unload
+cache_{incr,decr}
+cache_lock
+cache_flush,
+etc
+
+
+iface.c
+-------
+
+Interface layer. Internally only expected to be used by the cache and
+rarely directly from low level functions such as open/close database.
+
+This takes in-memory structures and passes them on to the
+implementation specific database mechanisms which then encode them in
+their own particular formats.
+
+
+iface_g.c
+---------
+
+An implementation of a gap4 "iface". This contains all the in-memory
+to/from on-disk conversion functions along with hooks to the G library
+to perform the low level I/O itself.
+
+Only iface_g.c should need any g-*.h files #included.
+
+
+-----------------------------------------------------------------------------
+
+Multi-layer GapIO
+-----------------
+
+A GapIO struct consists of database pointers for the I/O mechanism
+(currently iface_g, but optionally others) and a cache.
+
+The contig editor and some other mechanism (eg the vseqs.c code in
+Gap4) have private copies of the data. Gap4 does this by load on
+demand in the contig editor.
+
+However the editor has it's own set of data structures (EdStruct) that
+differ in layout to the GapIO. Hence algorithms written in the editor
+do not work outside the editor and vice versa.
+
+Solution: the editor should work on GapIO structs too as if it was
+directly manipulating the database rather than in-memory copies. We
+implement this by have a parent for GapIO and treating the child as an
+overlay. All writes to the derived GapIO get lodged in that struct and
+are only written to thebase GapIO when the editor itself is saved.
+
+ie: io_base and io_chld (derived or child)
+
+Consider a course of actions:
+
+1) c = (contig_t *)cache_search(io_chld, GT_Contig, cnum)
+2) cache_rw(io_chld, c);
+3) c->start += 100;
+4) cache_flush(io_chld);
+
+The use of cache_rw doesn't return a new seq pointer, rather it just
+upgrades seq to read/write. Hence we *either* need to make sure that
+the original read-only copy returned by cache_search is in io_chld and
+not just returning the copy from io_base, or we have to modify
+cache_rw to return a new pointer which effectively implements the
+copy-on-write scheme.
+
+The latter is preferable and not too hard to implement due to the
+existing use of double pointers. ie code right now is more along the
+lines of:
+
+1) c = (contig_t *)cache_search(io_chld, GT_Contig, cnum)
+2) contig_set_start(io, &c, c->start+100);
+3) cache_flush(io_chld);
+
+Here the 'c' in 1 is just a pointer to a contig object which gets
+redirected by the contig_set_start call. This already happens, to
+therefore the cache_rw prototype could return the new pointer,
+allowing for proper copy-on-write.
+
+The above the operates as follows:
+
+1) c = (contig_t *)cache_search(io_chld, GT_Contig, cnum)
+
+   Check for GT_Contig/cnum key in io_chld cache.
+   If exists
+      return it
+   else
+      pass the query up to io_chld->base
+
+2) contig_set_start(io, &c, c->start+100);
+
+   Internally this  is effectively
+      c = cache_rw(io_chld->base, c); // lock the base struct
+      c2 = dup(c);                    // create our copy
+      insert c2 to io_chld->cache;    // and remember it
+      c2->start = new_val             // modify our local copy
+
+3) cache_flush(io_chld);
+
+   This then iterates through all items in io_chld's cache, compares
+   against io_chld->base, and writes them. The comparison allows for
+   undo functionality, which is effectively a write with a store onto
+   the undo stack with the corresponding statement to write back the
+   original data. Hence edit+undo => contents in io_chld, but now
+   unchanged from io_chld->base.
+
+   The operation of this will be something like:
+
+   foreach 'x' in io_chld->cache
+       y = same record from io_chld->base
+       if x != y
+	   copy x into y
+	   write y
+       decr ref count on y
+       remove x from io_chld

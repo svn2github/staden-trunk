@@ -1,0 +1,130 @@
+			      Bin tracks
+			      ==========
+
+Overview
+========
+
+A track consists of data values of a given track type covering a
+region of consensus, such as the contig depth, consensus quality
+or the consensus itself.
+
+For efficiencies sake the same track data may be stored at multiple
+resolutions. The purpose of this is for practical display of megabases
+of data. If a plot display window is only 1000 pixels across then we
+don't gain much by attempting to plot 5 million data points. Instead
+we are happy to plot 1000 averaged data points, possibly with minimum
+and maximum observed values in the 5Kb worth of data that spans each
+pixel so we don't smooth over the interesting events (eg where the
+sequence depth drops to zero).
+
+The consensus is somewhat of a special case. There isn't much we can
+do to average it or represent it at differing resolutions. So we store
+this data at one resolution only - 1 base per value. We also won't be
+needing to store minimum, average and maximum values. The track system
+has to allow for a varying number of elements per track type.
+
+Question: are tags/annotations just another form of track? Do we need
+to represent them at different resolutions, or simply omit their
+display when it becomes infeasible? This is feasible perhaps with a
+series of bit-fields (1 per tag type) indicating that a tag is present
+at this coordinate. Lower resolutions just indicate that a tag is
+present somewhere within this range/pixel.
+
+
+API
+===
+
+The key features we need for accessing tracks are:
+
+bin_get_track
+-------------
+
+Returns the bin track data in the native resolution as specified in
+that bin/track combination.
+
+
+bin_recalculate_track
+---------------------
+
+Given a bin and track type this recomputes the cached track from the
+child data.
+
+Resolution is automatically determined by the bin size. Typically we
+want the bpv to double up as each bin doubles in size, allowing a bit
+of slop for bins that aren't a power of two in size.
+
+
+contig_get_track
+----------------
+
+Takes an IO handle, contig, start..end range, a track type and a
+desired output resolution as input.  Returns the track array mapped to
+that resolution.
+
+I guess optionally we could request to return data in the resolution
+closest too but not poorer than requested in order to avoid
+unnecessary resampling.
+
+
+
+Implementation
+==============
+
+bin_get_track
+-------------
+
+Pretty straight forward - if the data doesn't exist it and it's a
+small bin then it generates it on-the-fly and returns the result at 1
+bpv. If it's a larger bin where we'd expect a track then it runs
+bin_recalculate_track first and then returns the result.
+
+
+bin_recalculate_track
+---------------------
+
+In theory this is straight forward. We take the child data in higher
+resolution and downscale it to match the current desired bpv for this
+bin. In practice our children may not have a cached track (we have to
+start somewhere) and further more even if they do they may not contain a
+convient number of elements or even be at the same bpv as each other.
+
+The solution to this is simply call the contig_get_track function for
+the given child regions at a resolution of double (half the bpv) that
+we desire. (Or triple? To test impact.)
+
+We then filter or average the higher resolution data with a small
+window size and finally downsample the data to produce our final
+poorer resolution track. It's likely these two parts can be combined
+together in a single step.
+
+The specific averaging and downsampling algorithms will depend on the
+type of data being averaged. For the sequence depth we want to plot
+minimum, maximum and average values. The min/max are straight forward
+to compute while the average value needs a bit more attention.
+
+Note: should we consider these to be one single track of 3 items or 3
+separate tracks? The latter is possibly easier to implement, but
+logically speaking it makes more sense to hold the former.
+
+
+contig_get_track
+----------------
+
+We have a desired resolution which determines the bin level to descend
+to (with the minimum supported resolution of 1 value per base).
+
+This queries the contig bin structure to work out what bins span the
+region requested at (at least) the desired resolution and then fetches
+the data using bin_get_track. 
+
+The resultant bin data though won't necessarily be at the desired
+resolution and indeed may be of variable resolution. This code
+therefore needs to resample it to the correct resolution.
+
+Note that this function may well be co-recursive as if the bins in
+question have non-existant or out of date tracks then bin_get_track
+calls bin_recalculate_track which calls contig_get_track (albeit at a
+lower bpv value). We should never get stuck in a loop, but should put
+safeguards in place to ensure that rounding errors and slight bpv
+fluctuations from insertions mean that we never end up querying the
+same bin again.

@@ -1,0 +1,158 @@
+Musings on serialising a tree structure
+=======================================
+
+We may wish to write out a tree in a serial fashion such that it may
+be used as both an interchange format and as a direct querying
+mechanism for viewing data in given regions.
+
+Our tree basically consists of a series of nodes ("bin"s) which span
+regions on the genome. Sequences (or templates?) are stored within a
+bin, preferably the smallest one they entirely fit within. Eg a small
+example:
+
+    0						   64K
+    +-----------------------------------------------+
+    |                      ...                      |
+    |                     ...                       |
+    |          ..................                   |
+    +-----------------------+-----------------------+
+    |  ..............       | .............         |
+    |                       |       ..............  |
+    |                       |          ...          |
+    +-----------+-----------+-----------+-----------+
+    |     ...   |           |           |     ...   |
+    |    ...    |   ...     |    ...    |   ...     |
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+    | ... |  ...| ... |  ...| ... |  ...| ... |  ...|
+    |...  |...  |...  |...  |...  |...  |...  |...  |
+    +-----+-----+-----+-----+-----+-----+-----+-----+
+   
+Here ... are sequences, with small ones being solexa and the longer
+ones representing 454 or capillary data.
+
+Positions of sequences are stored relative to their parent bin. Bins
+themselves keep track of size and their own position relative to the
+their parent. (We could swap it around too - bins hold a list of child
+bins and their positons. Maybe that's easier to store.)
+
+The aim of serialising this is that to fetch a given region of data we
+need very few seeks and reads. We'll start at the beginning of the
+file (likely cached) and read the first bin. From that we work out
+which child bins to look at and where they are, seek and read them,
+and recurse. Overall we should be doing O(log(N)) seeks and reads of
+bin data. If the sequences within the bin are held along side the bin
+itself then we also fetch that data at the same time.
+
+Given an alignment from MAQ we know which read is where and the order
+they are in. This means as we go we can compute the bin boundaries,
+although working out how many reads are in that bin is a bit more
+complicated. (Look at the top bin - we don't know there are 3
+sequences in it until we've processed half of the entire data set.)
+Most bins are close to the bottom though and for those we can afford a
+certain degree of lookahead to turn an estimation of number of bin
+elements into a actual measured quantity.
+
+For the higher up ones I think we have no easy way to work out the
+offset to the child bins, meaning we'd have to seek to write the
+figure out when we finally know it. This prevents streaming of the
+output so it's not a true serialised format. It's either that or
+perform two passes; one to count sequences in bins and the second to
+write the data out. This means the input cannot be streamed, but the
+output can.
+
+
+Therefore we could have:
+
+Bin: 
+    LPosition - left bin: relative to parent bin
+    LSize     - left bin: size of region spanned by bin, in base coordinates
+    Loffset   - left_bin: offset on disk for struct
+    RPosition - right bin: relative to parent bin
+    RSize     - right bin: size of region spanned by bin, in base coordinates
+    Roffset   - right_bin: offset on disk for struct
+    NSeq - Number of sequences in this bin
+    Nseq x Seq
+	 Position
+	 Length
+	 Sequence
+	 Confidence
+	 Name?
+	 Pair? (unsure how to serialise this without an index right
+	        now)
+
+We probably would also need a root node struct of some sort to
+indicate its size. Likely that's the "contig" record.
+
+Ignoring multiple contigs for now, to read a file we just load the
+first Bin struct and scan through the sequences to see if they match
+the query region. Then recurse down left and right bin and repeat.
+
+An optimisation to the above is for bins to keep track of the actual
+area used by their contents.
+
+Ie instead:
+
+    +-----------+
+    |     ...   |
+    |    ...    |
+    +-----+-----+
+    |     |     |
+    ...
+
+we get:
+
+    +-----------+
+    |   : ...:  |
+    |   :... :  |
+    +-----+-----+
+    |     |     |
+
+Then we only need to query the sequences within the bin if at least
+one is within the region of interest.
+
+Handling read-pairs could either be done by storing the entire
+read-pair as a single item, putting it in the bin the entire span fits
+in (although this cannot handle read-pairs linking two
+chromosomes). Alternatively we need each sequence to have some ID to
+tie to two pairs together. This is how gap5 works, but it has a
+separate index file too. I guess a read could hold the location of the
+pair, as in CALF, but it adds another complexity again and suffers
+much the same problems.
+
+
+==============================================================================
+
+skip lists.
+
+--------------->----------->-------------------->
+|----->-------->-->-------->----------->--------|
+|-->-->-->-->-->-->-->-->-->-->-->-->-->-->-->--|
+A  B  C  D  E  F  G  H  I  J  K  L  M  N  O  P  Q
+
+A-Q objects with their own positions.
+A links to B, to C and to F. The number of links and the distances are
+probabilistically determined.
+
+To find data at position H we read A, check position, if too small
+jump the largest distance (F) and check again. Too small so jump to J
+and compare. That's too large so backtrack to F and drop down one
+layer. We now follow F->G->J. At J we're too far so we back up to G
+and drop down again. Then we follow once more using G->H and voila we
+found the spot.
+
+We can write out the distances of the links up front regardless of
+whether we actually have the data or not. It's just a random seek
+forward with size based on the layer. It doesn't have to be a whole
+record either if we ensure specific bytes (eg zero) never occur as we
+can seek from there to find the next record start.
+
+How does this act as a "container" though? Probably doesn't. Hmm
+
+
+==============================================================================
+
+Nested containment lists. It's just a linked list but items are both
+data and also have their own sub-containment list.
+
+Again the same problem of knowing the size of the item (so we can point
+to the next) arises. It's essentially the same as the binning system.

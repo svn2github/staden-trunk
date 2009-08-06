@@ -1,0 +1,326 @@
+			     Gap5 Design
+			     ===========
+
+From the top levels going downwards, we have a series of operations
+that we need to do, consisting of editing, joining and breaking
+contigs, assembly and disassembly of sequences, various search options
+(find repeats, find SNPs, etc), views (template display, editor) and
+so on.
+
+These manipulate the basic data structures in an object oriented
+way, with objects here being types of data:
+
+        Database (master "project" record)
+	Contig
+	Sequence
+	Annotation/Notes
+	DNASource (aka template/clone)
+	Vector
+
+Each object has a standard set of interfaces consisting of
+
+	new
+	delete
+	lock
+	unlock
+	read
+	write
+
+along with some object specific methods (such as complement for a
+Contig, or find parent for a DNASource). In order to keep the objects
+small and efficient, we can utilise the fact that we'll only have so
+many implementations of these interfaces. Therefore each object should
+point to an interface table rather than explicitly contain pointers to
+each individual function.[1]
+
+
+In addition to this we have some basic I/O primitives for manipulating
+the database as a whole. Such as:
+
+	open_database (read-only vs read-write)
+	close_database
+	flush (aka commit)
+	rollback
+
+
+Interfaces
+==========
+
+We can stick with the old gap4 "g library" for the underlying database
+structure. It's both fast and lightweight. However we may wish to
+support various other underlying storage mechanisms, such as
+client-server based g-library I/O, DBM files, HDF5, or a SQL database
+such as PostGRES, MySQL or Oracle.
+
+This can be achieved by making sure that the standard object
+interfaces are all specified via pointers to functions. Then we only
+need to reimpliment a few functions and we can change the underlying
+databse in one fell swoop. For this to work though the layer has to be
+drawn at the correct level.
+
+Note that this is already utilised within Gap4. The consensus
+algorithm (amongst other things) does not know how to fetch any data
+itself. Instead it has a callback function along with a "job"
+parameter to fetch data. This means the same algorithm can operate
+directly off the disk structures, from in-memory ones such as those
+held in the contig editor, or via a mix of the two as in the faked up
+overlays used by the auto-finishing code.
+
+
+Indexing
+========
+
+For higher level database systems (PostGRES and Oracle) we possibly
+some fancy indexing techniques. The g-library implements spatial
+indexing by means of additional record types; Bins and Ranges. These
+allow for range based queries. Oracle and PostGRES both natively
+support R-Trees, although I think this is only via a (costly?) add-on
+in Oracle. That would avoid the need to invent our own tables and data
+structures to emulate the same thing (although that would still
+obviously work).
+
+One problem with this is that the tgap is so fast and small simply
+because it is closely coupled to the underlying data structure. Ie the
+contig struct itself holds the root bin. We could maybe hide this away
+by using a void* and passing that in to any queries. In Oracle it'd
+just be a key into the contig table so we can use it in a query. It
+seems rather messy though.
+
+
+This also leads to the whole topic of what types of query and
+made. The low level API needs to have methods for implementing these
+in whatever fashion is appropriate given the database system used. The
+forms of query I can think of are:
+
+By numeric id: (contig #1, sequence #15551)
+By range scan: (all sequences in contig #2 between 10000 and 20000 bp)
+By name: (sequence IL1_3_8_15_111_222)
+
+By name is possibly not so important any more, but I suspect it'll
+still occur. So far tgap only addresses numeric ID and range queries.
+
+
+Contig registration
+===================
+
+Gap4 already has an existing contig registration scheme. This is
+basically a message passing system used between Gap4 plots (and rarely
+between programs such as Gap4 to Spin). This is utilised for both real
+data edits, such as when we save the contig editor we may wish the
+template display to redraw, or when we Join Contigs the contig
+selector needs to update.
+
+We also use the same system for passing cursor information around.
+Each contig editor has its own private cursor, even if we have two
+editors open on the same contig, but these are still visible as
+vertical bars in other graphic plots (eg the template display). We
+also allow for shared cursors for when a display doesn't need to own
+the cursor itself - it merely wishes to have the same cursor visible
+in multiple displays.
+
+This already exists and works well within Gap4. A more complete
+definition can be found at:
+
+http://staden.sourceforge.net/scripting_manual/scripting_173.html
+
+
+Multi-user mode
+===============
+
+In the first pass we plan for a single-user only Gap5. However the
+basic code structure should be amenable to this in the future. The use
+of standard interfaces and function pointers goes a long way to
+making this possible.
+
+The key problem to solve is one of locking and who has
+permission. The g library has fine grained locking, but Gap4's use of
+it was crude - it simply locked every single record at start up.
+
+We definitely want the ability for users to have read access to
+everything and write access to individual contigs that they
+lock. Ideally we'd allow for even only ranges of contigs to be locked
+allowing multiple users to edit the same contig simultaneously.
+
+
+Implementation
+==============
+
+For a g-library based solution I'm calling the objects and their
+interfaces the "mid level" I/O. These sit on top of the low-level I/O
+which is the API to wrap up the g-library itself - ie allocate, flush,
+etc. 
+
+
+Aux file
+--------
+
+The g-library AUX file is currently quite large when dealing with
+thousands of tiny records. It's 32 bytes per record, consisting of 2x
+{8-byte offset, 4-byte timestamp, 4-byte size}. The duplicate values
+allow the current "safe" data and the in-progress uncomitted version,
+both with timestamps so we know which is the most up to date one. The
+timestamp is also duplicated in the header and the flush ends with the
+timestamp being updated. Hence a partial write with no flush means we
+can rewind any changes to the previous timestamp.
+
+What do we really need to support?
+
+YES - Transactions.
+      We need safety if the program crashes. If we're half way through
+      updating some complex records and crash, we want gap4 to start
+      up on the data as it was at the last commit, rather than with
+      half updated records.
+
+?? - rollback.
+      If we decide to back out some changes we could blow away our
+      views and roll back to the last commit.
+
+      We're not interactively manipulating the data at that level
+      though often so do we need to do this? One possibility is if
+      gap4 allows for large scale editing without the need to hold all
+      changes in memory, so we can write contig editor changes to
+      disk, but then still provide a cancel functionality. Unknown if
+      this is worth it, unless it's trivial and essentially free.
+
+NO - Roll forwards.
+      If we're recovering from a crash, then in my opinion it's
+      sufficient to just accept we've lost changes since the
+      crash. Realistically we need to put more effort into preventing
+      crashes than we do in providing fancy functionality like this.
+
+?? - Atomic
+      Tricky one. We can possibly turn on synchronise I/O to be 100%
+      certain that the underlying OS really has written the data, but
+      this often cripples performance.
+
+      Ideally we'd want to write out data in any old order up until
+      the commit phase, then we need to sync just prior to the
+      commit. This middle ground may be workable. To test...
+
+
+So we still need a transaction idea of sorts. In memory the g-library
+keeps track of current live views (and by not locking every record in
+sight hopefully this won't be so large as in the past).
+
+From here we either don't bother writing the aux file contents at all
+until a commit, or we write them as we go to the second copy and flip
+timestamps at the final commit stage (ie the current method).
+
+If we use the former approach then we only need 12 bytes per aux
+record instead of 32. We can store just 8 byte offset and 4 byte
+size. The commit is basically a rewrite of all this data. This *only*
+works though if we're happy to risk a crash or network failure in that
+window - so it's not an atomic operation.
+
+To achieve an atomic nature, we probably need to keep the 32-byte
+format or switch to something completely different like a B-Tree.
+
+
+Data types - DISK based
+-----------------------
+
+Basic types:
+
+Array
+	Need random access ability (aka cursors).
+
+	Used to, say, hold the list of contig record numbers. This
+	effectively can be considered as an index on contig number
+	(etc).
+
+Bin
+	These form the primary method of range-based indexing. 
+	Conceptually a Bin has positional and size data and contains a
+	set of Ranges. On disk the Bin only holds the record number
+	for Ranges and the full array is held in it's own DB record.
+
+Range
+	Each range has a start, end and a link to another database
+	record - the "object". Ranges are held grouped together within
+	an array and not as individual database records.
+
+	NB: maybe we should merge Bins and Ranges into a single
+	record? It's not a huge overhead though.
+
+Freetree node (TO DO)
+	These (will) keep track of unallocated blocks. Much like a
+	malloc heap works we have free pointers threading their way
+	through the main database file. The low level allocation
+	functions will need to update this.
+
+
+Gap5 types:
+
+Database
+	Always record 0, it's the starting point for all other
+	records. It houses things like the record for the Contigs Array.
+
+Contig
+	Basic contig data (notes, lengths, cached consensus?).
+	Links to a Bin forming the root node for this contig.
+
+Seq
+	The typical (but not only) "object" referenced to by a Range.
+	Unlike gap4 Seq is a packed structure consisting of sequence
+	name, sequence, quality, etc.
+
+	This is an amalgamation of Gap4's GReadings record coupled
+	with the reading and trace names, sequence, quality and
+	original positions records. Hence we only use 1 database
+	record per sequence instead of 6.
+
+
+Tag (TO DO)
+	These should be linked to by a Bin tree pointed to from Seq.
+	NB: This could be inefficient as we have a Bin for every
+	sequence with a tag, and many sequences have at least one
+	tag. Is that still true for solexa data? My guess is we'll not
+	tag very often then.
+
+DNASource (TO DO)
+	This replaces the original template and clone strucutres in a
+	more hierachical manner. See the internal trace server for
+	ideas of the attributes and fields to hold in this struct.
+
+Vector (TO DO)
+	Referenced by a DNASource.
+
+
+
+Appendix
+========
+
+[1] Object Interfaces
+---------------------
+
+I propose something like:
+
+typedef struct {
+    GRec  (*o_new)(IO *io);
+    int   (*o_del)(IO *io, GRec rec);
+    GView (*o_lock)(IO *io, GRec rec);
+    int   (*o_unlock)(IO *io, GView view);
+    int   (*o_read)(IO *io, GView view, void *buf, size_t buf_len);
+    int   (*o_read_alloc)(IO *io, GView view, void **buf, size_t *buf_len);
+    int   (*o_write)(IO *io, GView view, void *buf, size_t buf_len);
+} obj_int;
+
+To read or write an object we first have to acquire a "view" by
+locking it, either with read-only access or read-write access, and
+then perform the I/O operation on that view. If it's a write request
+the change is not committed until the view is unlocked or a database
+commit occurs. The purpose of a read-only lock is simply to increment
+the reference count so that an underlying database knows to not remove
+it yet.
+
+Each main data type then points to an instance of the obj_int struct.
+Eg:
+
+typedef struct {
+    obj_int *fs;
+    bin *root;
+    char *cached_consensus;
+    int32_t length;
+} contig;
+
+
