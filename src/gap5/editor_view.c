@@ -790,16 +790,29 @@ int edview_visible_items(edview *xx, int start, int end) {
 	HacheTableAdd(xx->anno_hash, (char *)&key, sizeof(key), hd, NULL);
     }
 
-    /*
+#if 0
     puts("");
     for (i = 0; i < xx->nr; i++) {
-	printf("%d\t%d\t%d\t%d\t%s\n",
+	int rec;
+
+	if (xx->r[i].flags & GRANGE_FLAG_ISANNO) {
+	    anno_ele_t *a = (anno_ele_t *)cache_search(xx->io, GT_AnnoEle,
+						       xx->r[i].rec);
+	    rec = a->rec;
+	} else {
+	    seq_t *s = (seq_t *)cache_search(xx->io, GT_Seq,
+					     xx->r[i].rec);
+	    rec = s->rec;
+	}
+	printf("%d\t%d\t%s%d/%d\t%d\t%s\t%d..%d\n",
 	       i, xx->r[i].y,
-	       xx->r[i].rec,
+	       xx->r[i].rec == rec ? "" : "*", xx->r[i].rec, rec,
 	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? xx->r[i].pair_rec : 0,
-	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? "tag" : "seq");
+	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? "tag" : "seq",
+	       xx->r[i].start, xx->r[i].end);
     }
-    */
+#endif
+
 
     return 0;
 }
