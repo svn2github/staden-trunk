@@ -1,0 +1,123 @@
+Templates
+=========
+
+The standard structure is clone -> library -> template -> reads.
+However we can take a template and make a library from it, eg SIL or
+TILs.
+
+So the general concept is DNA piece -> DNA piece -> ... -> reads.  Ie
+DNA piece has a parent which is another DNA piece and has children
+which are either reads or further DNA pieces. Reads are leaf always
+nodes though as they're readings taken from a DNA object rather than
+the object itself.
+
+To avoid unnecessary data storing, for solexa data we don't want to
+need to have one template for every two (or every one) solexa
+read. It's heavyweight and each item in the database takes up disk
+space.
+
+Instead we will have the option of a read linking to it's sibling
+("other_end") directly and to the parent of it's template.
+
+Ie Solexa templates are an invisible not-stored layer:
+
+ReadF >----,
+ ^         | (template)
+ |         +-----------,
+ v         |           |
+ReadR >----'           |
+                       +---- Library
+                       |
+ReadF >----,           |
+ ^         |           |
+ |         +-----------'
+ v         | (template)
+ReadR >----'
+
+In this case, library doesn't need to know what sequences are a member
+of it and has no listed children.
+
+
+
+Read (aka seq_t)
+----------------
+
+This has a parent_DNA_rec and a parent_DNA_type field. For solexa data
+it'll be the library record. For capillary data it'll probably be a
+real template record.
+
+
+Template
+--------
+
+When needed, this has a parent_DNA_rec/parent_DNA_type and an array of
+children, each element of which is a child record and type. It also
+has a flag to indicate status (chimeric, spanning, etc). Finally we'll
+need some form of code to indicate preparation type, eg SIL or TIL, so
+we know in which orientation we should be expecting the read-pairs to
+be.
+
+Library
+-------
+
+This contains vector data along with aggregated stats on templates
+(average insert size and standard deviation).
+
+As per template, it has a single parent rec/type and an array of child
+rec/types. For Solexa/SOLID data where the template structure is
+omitted there will be no explicit child records. What will the parent
+be? Possibly another template (SIL/TIL), a BAC clone, a genome, a PCR
+fragment, and so on. For now we'll just store parent record as zero
+for the cases where the parent isn't a data type we have implemented
+yet.
+
+
+Consequences
+------------
+
+1. For the template display we can derive within a window what reads
+are visible. From that we can derive what templates are
+visible. However we have no way to tell what templates span a region
+but do not contain data within that region. For example:
+
+               (region visible)
+-------------|=========================|----------------------- contig
+            ----->...........................<-----  visible templates
+    --->.......................<----
+                 ---->...........<----                  
+
+     --->..................................<----   invisible template
+
+Practically speaking this is actually a benefit over Gap4 where given
+a fixed percentage of wrongly aligned reads or chimeras (ie "bad"
+templates) we end up displaying a number of bad templates in
+proportion to the contig length - unwieldy for anything long.
+
+The above scheme means displaying a region in the template display is
+O(L) where L is the length of window to view.
+
+
+2. We cannot determine all reads for a Solexa library without brute
+force scanning. Typically this is OK as why do we need to know such
+information except then when proceeding to operate on all reads? Doing
+so from a list stored in the library would end up hitting a huge
+number of disk blocks, often even all sequences. It would usually be
+more efficient to simply linear scan the entire database finding
+sequences that match a given library.
+
+
+3. An additional 12 bytes per seq_t struct to house the other end and
+parent data. This is minimal and still less than implementing a
+full template.
+
+
+4. There's quite a bit of IO to work out what position a sequence
+is. Right now this is done by identifying the bin number from a
+sequence and then chaining up the bin tree accumulating the original
+bin's absolute position. If we do this per read within a region to
+compute the template display it's a lot of I/O.
+
+Should we cache the bin position to speed this up? If so it has to be
+temporary only for the duration of the redraw as keeping this up to
+date in the general case (eg joins, contig insertions/deletions) is
+complicated and slow.

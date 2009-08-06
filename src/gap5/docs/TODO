@@ -1,0 +1,170 @@
+*	Removal of iwidgets/itcl/itk?
+	itcl/itk widgets:
+	itcl/itk => {prefinish, spin, spin2, seqed}/*.itk
+
+	iwidgets => *gap4/acd2tag.tcl, *contig_editor (tabset), gap_prefinish
+		    *pregap4/gui.tcl (tabnotebook)
+		    seqed/*
+		    spin/*
+		    spin2/*
+		    spin_emboss/* (via acd2tcl)
+
+*	Improve library displays and auto-sensing.
+
+*	Consensus caching
+
+*	Improved depth caching (min/max as well as average)
+
+*	Finish tag editing.
+
+*	Implement annotation links as well as annotation elements.
+
+*	Add visualisation of annotations in template display.
+
+*	Split up template display into multiple panels, for GC, depth,
+        annotation, etc tracks.
+
+*	Maq/BAM can store unaligned data where one end of a read-pair
+	maps and the other end does not. The unaligned read is stored
+	adjacen to the aligned read and just has a flag saying it's
+	unaligned. Currently tg_index strips these out.
+
+	Add a -u option to tg_index to store this with an appropriate
+	flag. Add a function to gap5 to dump out a fastq of unaligned
+	reads over a specific region. The purpose is, for example, to
+	perform denovo assembly of unaligned reads around a deletion
+	in order to identify the deleted sequence.
+
+*	Contig notifications should be per io (base or child) and not
+        solely on the base? Alternatively they should always be the
+        base but the actual io should be known so windows can ignore
+        ignore or delay handling of io events.
+
+*	DONE: Sequence blocks.
+	The caching layer has 1 record per sequence. But rec>>10 gives
+	1024 sequences with the same record; pack 1024 in the same
+	block using tg_iface_g.c and use the bottom 10 bits as an
+	indicator to which sequence we wish to unpack.
+
+	This means some level of caching involved too so we don't keep
+	compressing and uncompressing the same sequence blocks
+	repeatedly. Which implies tg_cache.c is probably the correct
+	layer, perhaps using a new data type GT_SeqBlock?
+
+*	DONE: Add type/format to iface_g I/O
+	Every object should start with 3 bits type, 5 bits format.
+	- This means we can change the layout of a packed struct and
+	  support both old and new layout formats.
+	- It also means we can type check and spot stray reads of the
+	  wrong object type.
+
+*	DONE: Better formatting of bin range arrays.
+	- Try storing start + length instead of start + end.
+	- Replace start with delta from previous start.
+	- Encode final number series in int7 format instead to reduce
+	  size.
+
+*	DONE: Add a means to detect the number of sequences in a contig.
+	- Note contig breaking means maybe we need to know this at a
+	  bin level; how many sequences are in this bin and below.
+	- How to keep this information up to date without undue costs.
+	Idea: update the bin we add to + the root bin (or contig
+	struct). Add checks in most bin-walking algorithms that
+	automatically correct for incorrect bin->nseqs figures. (ie
+	parent = child[0] + child[1] counts.)
+	
+
+*	DONE: Contig joining
+
+*	DONE: Contig breaking
+
+*	Annotations
+	partially done.
+
+* 	Fix editor UNDO. (Only works for Tcl controlled I/O atm)
+
+*	Improved input/output formats
+	(DONE: except for $variable expansion)
+
+*	Store alignments for trace displaying
+	(PARTIALLY DONE: needs better format and use of them)
+
+*	Mixed assemblies
+	- splitting reads by type (sanger, solid, 454, solexa)
+
+*	Searching
+	- by sequence? slow
+	- by name/position (DONE)
+
+*	Fix reading name indexing.
+	- B+Tree is OK for searching and small updates, but updating
+	serially for every read 1 at a time is Nlog(N) complexity and
+	becomes slow.
+	- Suggest binning names to temporary files as we read them and
+	then sorting within the bins and bulk uploading of the B+Tree.
+
+*	DONE: Improve template display speed. Maybe C code for rendering to
+        a pixmap instead.
+
+	- Store other_end / template info in the range_t array instead
+          of the seq struct. This avoids performing seq_t when drawing
+          data pictorially. (DONE)
+
+*	DONE: Implement Magnus' Y coordinate algorithm for templates - based
+        on size.  (DONE)
+
+*	DONE: Libraries / ligations
+
+*	DEBUG version:
+	Cache items should have an md5 sum for the data structure
+        created at population.
+	Upon removal of cache, if the md5 sum has changed but our data
+        hasn't been marked for r/w then we should fail. Alternatively
+        if our data has been marked r/w but the md5 sum hasn't changed
+        then we can print a warning about unnecessary writing of data
+	structures.
+
+
+BUG: Join Contigs with containment and one contig not starting at 1
+causes issues.
+Ie KEEP_POSITIONS defined in editor_join. Break suis1 at 17000. Join
+suis1 and suis#1 with suis#1@17000 aligned against suis1@7000. This
+gives incorrect start position and indeed seems to muddle left and
+right contig somewhat.
+
+
+Annotations
+-----------
+
+Annotations consist of two parts, an annotation element and the
+annotation itself, which is a means of collating the elements
+together. The annotation elements have a start/end range and are
+attached to sequences or contigs.
+
+This means that we can have one annotation element per sequence
+marking a repeat, but all annotation elements are essentially part of
+the same annotation. Hence we can tell which other sequences share
+this annotation.
+
+Similarly we could have one annotation with two elements, each at the
+end of a contig. This forms a link between the two contigs and can
+represent scaffolding or overlap graphs.
+
+In short:
+
+anno_element
+	record type/number (GT_Seq/2378123, GT_Contig/4, etc);
+	text comment
+	anno_rec (link to anno below)
+
+anno
+	key (aka tag type)
+	value (the text contents)
+	Array of anno_element
+
+
+The positioning of the annotation elements will be held in the contig
+bin structures, just like sequences. Hence they get moved about by
+insertions, deletions, joins, etc.
+
+
