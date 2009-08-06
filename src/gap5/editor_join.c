@@ -728,6 +728,7 @@ int edJoin(edview *xx) {
 				  contig_get_end(&cr)+offset));
 
     /* Link the new bins together */
+    binp->nseqs = binl->nseqs + binr->nseqs;
     binp->child[0] = binl->rec;
     binp->child[1] = binr->rec;
     binp->pos = MIN(binl->pos, binr->pos + offset);

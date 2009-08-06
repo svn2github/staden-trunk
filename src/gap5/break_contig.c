@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "break_contig.h"
 #include "misc.h"
@@ -91,10 +92,18 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
 
     for (i = 0; i < nr; i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
-	seq_t *seq = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	if (seq->bin != bin->rec) {
-	    seq = cache_rw(io, seq);
-	    seq->bin = bin->rec;
+	if (r->flags & GRANGE_FLAG_ISANNO) {
+	    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, r->rec);
+	    if (a->bin != bin->rec) {
+		a = cache_rw(io, a);
+		a->bin = bin->rec;
+	    }
+	} else {
+	    seq_t *seq = (seq_t *)cache_search(io, GT_Seq, r->rec);
+	    if (seq->bin != bin->rec) {
+		seq = cache_rw(io, seq);
+		seq->bin = bin->rec;
+	    }
 	}
     }
 
@@ -110,7 +119,7 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
  * pright	The parent bin/contig record num in the right new contig
  * child_no     0 or 1 - whether this bin is the left/right child of its parent
  */
-static int break_contig_recurse(GapIO *io,
+static int break_contig_recurse(GapIO *io, HacheTable *h,
 				contig_t *cl, contig_t *cr,
 				int bin_num, int pos, int offset,
 				int level, int pleft, int pright,
@@ -119,6 +128,7 @@ static int break_contig_recurse(GapIO *io,
     int i, f_a, f_b, rbin;
     bin_index_t *bin = get_bin(io, bin_num), *bin_dup ;
     int bin_min, bin_max;
+    int nseqs;
 
     cache_incr(io, bin);
 
@@ -141,6 +151,8 @@ static int break_contig_recurse(GapIO *io,
 	   NMAX(bin->start_used, bin->end_used));
 
     bin = cache_rw(io, bin);
+    nseqs = bin->nseqs;
+    bin->nseqs = 0;
     bin_invalidate_track(io, bin, TRACK_ALL);
 
     bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
@@ -167,7 +179,9 @@ static int break_contig_recurse(GapIO *io,
 	if (*right_start > bin_min)
 	    *right_start = bin_min;
 
+	bin_incr_nseq(io, bin, nseqs);
 	cache_decr(io, bin);
+
 	return 0;
     }
 
@@ -183,7 +197,9 @@ static int break_contig_recurse(GapIO *io,
 	if (*left_end < bin_max)
 	    *left_end = bin_max;
 
+	bin_incr_nseq(io, bin, nseqs);
 	cache_decr(io, bin);
+	
 	return 0;
     }
 
@@ -242,12 +258,12 @@ static int break_contig_recurse(GapIO *io,
 	bin_dup->end_used = bin->end_used;
 
 	/*
-	 * Shift bin by offset if it's the contig root.
+	 * Shift bin to offset if it's the contig root.
 	 * It'll be shifted back by the correct amount later.
 	 */
 	if (pright == cr->rec) {
-	    printf("moving root bin via offset=%d comp=%d\n", offset, complement);
-	    bin_dup->pos += offset;
+	    printf("moving root bin to offset=%d comp=%d\n", offset, complement);
+	    bin_dup->pos = offset;
 	}
 
 	printf("%*sCreated dup for right, rec %d\n", level*4,"", bin_dup->rec);
@@ -289,6 +305,18 @@ static int break_contig_recurse(GapIO *io,
 	bin->start_used = bin->end_used = 0;
 	break_contig_reparent_seqs(io, bin_dup);
 
+	if (bin_dup->rng) {
+	    int i, j, n = ArrayMax(bin_dup->rng);
+	    for (i = j = 0; i < n; i++) {
+		range_t *r = arrp(range_t, bin_dup->rng, i), *r2;
+		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
+		    HacheData hd; hd.i = 1;
+		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
+		    j++;
+		}
+	    }
+	    bin_incr_nseq(io, bin_dup, j);
+	}
     } else if (NMAX(bin->start_used, bin->end_used) < pos) {
 	/* Range array already in left contig, so do nothing */
 	printf("%*sMOVE Array to left\n", level*4, "");
@@ -299,37 +327,101 @@ static int break_contig_recurse(GapIO *io,
 	if (bin_dup)
 	    bin_dup->start_used = bin_dup->end_used = 0;
 
+	if (bin->rng) {
+	    int i, j, n = ArrayMax(bin->rng);
+	    for (i = j = 0; i < n; i++) {
+		range_t *r = arrp(range_t, bin->rng, i), *r2;
+		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
+		    HacheData hd; hd.i = 0;
+		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
+		    j++;
+		}
+	    }
+	    bin_incr_nseq(io, bin, j);
+	}
     } else {
 	/* Range array covers pos, so split in two */
-	int i, j, n;
+	int i, j, n, nl = 0, nr = 0;
 	int lmin = bin->size, lmax = 0, rmin = bin->size, rmax = 0;
+
 	printf("%*sDUP %d, SPLIT array\n", level*4, "", bin_dup->rec);
 
 	bin->flags |= BIN_RANGE_UPDATED;
 	bin_dup->flags |= BIN_RANGE_UPDATED;
 
 	bin_dup->rng = ArrayCreate(sizeof(range_t), 0);
-	n = ArrayMax(bin->rng);
-	for (i = j = 0; i < n; i++) {
-	    range_t *r = arrp(range_t, bin->rng, i), *r2;
-	    seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	    int cstart; /* clipped sequence positions */
 
+	/* Pass 1 - hash sequences */
+	n = ArrayMax(bin->rng);
+	for (i = 0; i < n; i++) {
+	    range_t *r = arrp(range_t, bin->rng, i);
+	    int cstart; /* clipped sequence positions */
+	    seq_t *s;
+
+	    if (r->flags & GRANGE_FLAG_ISANNO)
+		continue;
+
+	    s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	    if ((s->len < 0) ^ complement) {
 		cstart = NMAX(r->start, r->end) - (s->right-1);
-		/* cend   = NMAX(r->start, r->end) - (s->left-1); */
 	    } else {
 		cstart = NMIN(r->start, r->end) + s->left-1;
-		/* cend   = NMIN(r->start, r->end) + s->right-1; */
 	    }
 	    
 	    if (cstart >= pos)  {
+		HacheData hd; hd.i = 1;
+		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
+	    } else {
+		HacheData hd; hd.i = 0;
+		HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd, NULL);
+	    }
+	}
+	
+	/* Pass 2 - do the moving of anno/seqs */
+	n = ArrayMax(bin->rng);
+	for (i = j = 0; i < n; i++) {
+	    range_t *r = arrp(range_t, bin->rng, i), *r2;
+	    int cstart; /* clipped sequence positions */
+
+	    if (r->flags & GRANGE_FLAG_ISANNO) {
+		cstart = NMAX(r->start, r->end);
+	    } else {
+		seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
+		if ((s->len < 0) ^ complement) {
+		    cstart = NMAX(r->start, r->end) - (s->right-1);
+		} else {
+		    cstart = NMIN(r->start, r->end) + s->left-1;
+		}
+	    }
+	    
+	    if (cstart >= pos && r->flags & GRANGE_FLAG_ISANNO) {
+		anno_ele_t *a = (anno_ele_t *)cache_search(io,
+							   GT_AnnoEle,
+							   r->rec);
+		/* If it's an annotation on a sequence < pos then we
+		 * still don't move.
+		 */
+		if (a->obj_type == GT_Seq) {
+		    HacheItem *hi = HacheTableSearch(h,
+						     (char *)&r->pair_rec,
+						     sizeof(r->pair_rec));
+
+		    assert(hi);
+
+		    if (hi->data.i == 0)
+			cstart = pos-1;
+		}
+	    }
+
+	    if (cstart >= pos) {
 		r2 = (range_t *)ArrayRef(bin_dup->rng, ArrayMax(bin_dup->rng));
 		*r2 = *r;
 		if (rmin > r->start) rmin = r->start;
 		if (rmin > r->end)   rmin = r->end;
 		if (rmax < r->start) rmax = r->start;
 		if (rmax < r->end)   rmax = r->end;
+		if (!(r->flags & GRANGE_FLAG_ISANNO))
+		    nr++;
 	    } else {
 		if (lmin > r->start) lmin = r->start;
 		if (lmin > r->end)   lmin = r->end;
@@ -341,13 +433,15 @@ static int break_contig_recurse(GapIO *io,
 		    *r2 = *r;
 		}
 		j++;
+		if (!(r->flags & GRANGE_FLAG_ISANNO))
+		    nl++;
 	    }
 	}
+	bin_incr_nseq(io, bin, nl);
+	bin_incr_nseq(io, bin_dup, nr);
+
 
 	ArrayMax(bin->rng) = j;
-
-	printf("%d seqs => left=%ld, right=%ld\n",
-	       n, ArrayMax(bin->rng), bin_dup ? ArrayMax(bin_dup->rng) : 0);
 
 	if (bin_dup)
 	    break_contig_reparent_seqs(io, bin_dup);
@@ -393,7 +487,7 @@ static int break_contig_recurse(GapIO *io,
 	    continue;
 
 	ch = get_bin(io, bin->child[i]);
-	if (0 != break_contig_recurse(io, cl, cr, bin->child[i], pos,
+	if (0 != break_contig_recurse(io, h, cl, cr, bin->child[i], pos,
 				      NMIN(ch->pos, ch->pos + ch->size-1),
 				      level+1, pleft, pright,
 				      i, complement,
@@ -402,8 +496,8 @@ static int break_contig_recurse(GapIO *io,
     }
 
     cache_decr(io, bin);
-    if (bin_dup)
-	cache_decr(io, bin_dup);
+    //    if (bin_dup)
+    //	cache_decr(io, bin_dup);
 
     return 0;
 }
@@ -447,8 +541,26 @@ int break_contig(GapIO *io, int crec, int cpos) {
     int left_end, right_start;
     bin_index_t *bin;
     int do_comp = 0;
+    HacheTable *h;
 
-    //    contig_dump_ps(io, &cl, "/tmp/tree.ps");
+    //contig_dump_ps(io, &cl, "/tmp/tree.ps");
+
+    /*
+     * Our hash table is keyed on sequence record numbers for all sequences
+     * in all bins spanning the break point. The value is either 0 or 1
+     * for left/right contig.
+     * 
+     * The purpose of this hash is to allow us to work out whether a tag
+     * belongs in the left or right contig, as a tag could start beyond the
+     * break point but be attached to a sequence before the break point.
+     *
+     * Further complicating this is that a tag could be in a smaller bin
+     * than the sequence as it may not be as long. However we know
+     * we'll recurse down these in a logical order so we can be sure
+     * we've already "seen" the sequence that the tag has been
+     * attached to.
+     */
+    h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
 
     strncpy(cname, contig_get_name(&cl), 1000);
     cname_end = cname + strlen(cname);
@@ -467,49 +579,66 @@ int break_contig(GapIO *io, int crec, int cpos) {
     printf("Existing left bin = %d, right bin = %d\n",
 	   cl->bin, cr->bin);
 
+    cache_incr(io, cl);
+    cache_incr(io, cr);
+
     bin = get_bin(io, cl->bin);
     do_comp = bin->flags & BIN_COMPLEMENTED;
     cache_decr(io, bin);
 
     left_end = 0;
     right_start = INT_MAX;
-    break_contig_recurse(io, cl, cr,
+    break_contig_recurse(io, h, cl, cr,
 			 contig_get_bin(&cl), cpos, contig_offset(io, &cl),
 			 0, cl->rec, cr->rec, 0, 0, &left_end, &right_start);
 
-    printf("New left end = %d, right start = %d\n", left_end, right_start);
+    printf("New left end = %d, right start = %d\n",
+	   left_end, right_start);
 
     /* Ensure start/end positions of contigs work out */
     bin = cache_rw(io, get_bin(io, cr->bin));
+
     //#define KEEP_POSITIONS 1
 #ifndef KEEP_POSITIONS
     cr->start = 1;
     cr->end = cl->end - right_start + 1;
     bin->pos -= right_start-1;
+#else
+    cr->start = right_start;
+    cr->end = cl->end;
 #endif
+
     if ((do_comp && !(bin->flags & BIN_COMPLEMENTED)) ||
 	(!do_comp && (bin->flags & BIN_COMPLEMENTED))) {
 	bin->flags ^= BIN_COMPLEMENTED;
     }
 
-#ifdef KEEP_POSITIONS
-    cr->start = right_start;
-    cr->end = cl->end;
-#endif
-
-    cl = cache_rw(io, cl);
     cl->end = left_end;
 
     remove_redundant_bins(io, cl);
     remove_redundant_bins(io, cr);
 
+    cache_decr(io, cl);
+    cache_decr(io, cr);
+
+    printf("Final left bin = %d, right bin = %d\n", cl->bin, cr->bin);
+
+    /* Empty contig? If so remove it completely */
+    if (cl->bin == 0) {
+	printf("Removing empty contig %d\n", cl->rec);
+	contig_destroy(io, cl->rec);
+    }
+    if (cr->bin == 0) {
+	printf("Removing empty contig %d\n", cr->rec);
+	contig_destroy(io, cr->rec);
+    }
+
     cache_flush(io);
 
-    printf("Final left bin = %d, right bin = %d\n",
-	   cl->bin, cr->bin);
+    HacheTableDestroy(h, 0);
 
-    //    contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
-    //    contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
+    //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
+    //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
 
     return 0;
 }
