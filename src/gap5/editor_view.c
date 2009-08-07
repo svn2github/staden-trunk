@@ -2089,7 +2089,8 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     for (i = 0; i < xx->nr; i++) {
-	if (xx->ed->hide_annos && (xx->r[i].flags & GRANGE_FLAG_ISANNO))
+	if ((xx->ed->hide_annos || name) &&
+	    (xx->r[i].flags & GRANGE_FLAG_ISANNO))
 	    continue;
 
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {

@@ -1040,6 +1040,9 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 	    21 {
 		set msg "tag in name?"
 	    }
+	    default {
+		set msg "Unknown data type $type"
+	    }
 	}
     } else {
 	switch $type {
@@ -1052,9 +1055,11 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 			     [keylget gap5_defs BASE_BRIEF_FORMAT2]]
 	    }
 	    21 {
-		set msg "FIXME: show tag data here"
 		set msg [$w get_seq_status $type $rec $pos \
 			     [keylget gap5_defs TAG_BRIEF_FORMAT]]
+	    }
+	    default {
+		set msg "Unknown data type $type"
 	    }
 	}
     }
