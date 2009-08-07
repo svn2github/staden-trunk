@@ -2,6 +2,7 @@
 #define _BAF_H_
 
 #include <hache_table.h>
+#include <tg_index.h>
 
 #define CC2(a,b) ((((unsigned char)a)<<8) | ((unsigned char)b))
 
@@ -89,7 +90,6 @@ line_t *get_line(FILE *fp, line_t *in);
 baf_block *baf_next_block(FILE *fp);
 void baf_block_destroy(baf_block *b);
 line_t *baf_line_for_type(baf_block *b, int type);
-int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
-	      int merge_contigs);
+int parse_baf(GapIO *io, char *fn, tg_args *a);
 
 #endif /* _BAF_H_ */

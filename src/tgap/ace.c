@@ -430,8 +430,7 @@ typedef struct {
  * Returns 0 on success
  *	  -1 on error
  */
-int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
-	      int pair_reads, int merge_contigs) {
+int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     ace_item_t *ai;
     FILE *fp;
     af_line *af = NULL;
@@ -444,7 +443,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
     if (NULL == (fp = fopen(ace_fn, "r")))
 	return -1;
 
-    if (pair_reads) {
+    if (a->pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
 	pair->name = "pair";
     }
@@ -463,7 +462,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 
 	    /* Create a new contig */
 	    c = NULL;
-	    if (merge_contigs)
+	    if (a->merge_contigs)
 		c = find_contig_by_name(io, ai->co.cname);
 	    if (!c) {
 		c = contig_new(io, ai->co.cname);
@@ -581,14 +580,16 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 		    r_out->pair_rec = po->rec;
 
-		    /* Link other end to 'us' too */
-		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		    bo = cache_rw(io, bo);
-		    bo->flags |= BIN_RANGE_UPDATED;
-		    ro = arrp(range_t, bo->rng, po->idx);
-		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		    ro->pair_rec = pl->rec;
+		    if (!a->fast_mode) {
+			/* Link other end to 'us' too */
+			bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+			bo = cache_rw(io, bo);
+			bo->flags |= BIN_RANGE_UPDATED;
+			ro = arrp(range_t, bo->rng, po->idx);
+			ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+			ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+			ro->pair_rec = pl->rec;
+		    }
 
 		    /* And, making an assumption, remove from hache */
 		    HacheTableDel(pair, hi, 1);
@@ -596,7 +597,7 @@ int parse_ace(GapIO *io, int max_size, char *ace_fn, int no_tree,
 		}
 	    }
 
-	    if (!no_tree)
+	    if (!a->no_tree)
 		sequence_index_update(io, seq.name, seq.name_len, recno);
 	    free(seq.data);
 

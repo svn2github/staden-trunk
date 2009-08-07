@@ -92,10 +92,7 @@ static int parse_maqmap_aux(seq_t *s,
  * pair_reads, if true, attempts to identify read pairs (based on duplicate
  * sequence names) and points them at each other.
  */
-int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
-		 int no_tree, int pair_reads, int merge_contigs,
-		 int long_format)
-{
+int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
     gzFile dat_fp;
     maqmap_t *mm;
     maqmap64_t m64;
@@ -107,6 +104,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     HacheTable *libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     char tname[1024];
     int sz;
+    int long_format = (a->fmt == 'M');
 
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
     if (NULL == (dat_fp = gzopen(dat_fn, "r")))
@@ -117,7 +115,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
     fprintf(stderr, "++ The input contains %d sequences.\n", mm->n_ref);
 
     libs->name = "libs";
-    if (pair_reads) {
+    if (a->pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
 	pair->name = "pair";
     }
@@ -189,7 +187,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    if (c) {
 		cache_decr(io, c);
 	    }
-	    if (!merge_contigs ||
+	    if (!a->merge_contigs ||
 		m128.seqid >= mm->n_ref ||
 		!mm->ref_name[m128.seqid] ||
 		(NULL == (c = find_contig_by_name(io, mm->ref_name[m128.seqid])))) {
@@ -274,14 +272,16 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 		r_out->pair_rec = po->rec;
 
-		/* Link other end to 'us' too */
-		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		bo = cache_rw(io, bo);
-		bo->flags |= BIN_RANGE_UPDATED;
-		ro = arrp(range_t, bo->rng, po->idx);
-		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		ro->pair_rec = pl->rec;
+		if (!a->fast_mode) {
+		    /* Link other end to 'us' too */
+		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		    bo = cache_rw(io, bo);
+		    bo->flags |= BIN_RANGE_UPDATED;
+		    ro = arrp(range_t, bo->rng, po->idx);
+		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    ro->pair_rec = pl->rec;
+		}
 
 		/* Increment insert size in library */
 		if (po->crec == pl->crec) {
@@ -323,7 +323,7 @@ int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
 	    }
 	}
 
-	if (!no_tree)
+	if (!a->no_tree)
 	    sequence_index_update(io, seq.name, seq.name_len, recno);
 	free(seq.data);
 	

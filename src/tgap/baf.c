@@ -299,8 +299,7 @@ typedef struct {
     int crec;
 } pair_loc_t;
 
-int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
-	      int merge_contigs) {
+int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int nseqs = 0, nobj = 0, ntags = 0, ncontigs = 0;
     struct stat sb;
     FILE *fp;
@@ -320,7 +319,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	return -1;
     }
 
-    if (pair_reads) {
+    if (a->pair_reads) {
 	pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
 	pair->name = "pair";
     }
@@ -347,7 +346,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 	    delay_destroy = 1;
 
 	    ncontigs++;
-	    if (!merge_contigs ||
+	    if (!a->merge_contigs ||
 		NULL == (c = find_contig_by_name(io, contig))) {
 		c = contig_new(io, contig);
 		contig_index_update(io, contig, strlen(contig), c->rec);
@@ -438,14 +437,16 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 		    r_out->pair_rec = po->rec;
 
-		    /* Link other end to 'us' too */
-		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		    bo = cache_rw(io, bo);
-		    bo->flags |= BIN_RANGE_UPDATED;
-		    ro = arrp(range_t, bo->rng, po->idx);
-		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		    ro->pair_rec = pl->rec;
+		    if (!a->fast_mode) {
+			/* Link other end to 'us' too */
+			bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+			bo = cache_rw(io, bo);
+			bo->flags |= BIN_RANGE_UPDATED;
+			ro = arrp(range_t, bo->rng, po->idx);
+			ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+			ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+			ro->pair_rec = pl->rec;
+		    }
 
 #if 0
 		    if (c->rec == po->crec) {
@@ -460,7 +461,7 @@ int parse_baf(GapIO *io, char *fn, int no_tree, int pair_reads,
 		}
 	    }
 
-	    if (!no_tree)
+	    if (!a->no_tree)
 		sequence_index_update(io, seq.name, seq.name_len, recno);
 	    free(seq.data);
 

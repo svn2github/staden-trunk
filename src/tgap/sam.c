@@ -6,6 +6,7 @@
 
 #include "tg_gio.h"
 #include "tg_struct.h"
+#include <sam.h>
 
 #include <staden_config.h>
 #ifdef HAVE_SAMTOOLS
@@ -32,14 +33,13 @@ typedef struct {
     bam_seq_t *seqs;
     int nseq;
     int max_seq;
-    int no_tree;
-    int merge_contigs;
     HacheTable *pair;
     HacheTable *libs;
     contig_t *c;
     int n_inserts;
     int count;
     bam_header_t *header;
+    tg_args *a;
 } bam_io_t;
 
 typedef struct {
@@ -412,14 +412,16 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	    r_out->pair_rec = po->rec;
 
-	    /* Link other end to 'us' too */
-	    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-	    bo = cache_rw(io, bo);
-	    bo->flags |= BIN_RANGE_UPDATED;
-	    ro = arrp(range_t, bo->rng, po->idx);
-	    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-	    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-	    ro->pair_rec = pl->rec;
+	    if (!bio->a->fast_mode) {
+		/* Link other end to 'us' too */
+		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		bo = cache_rw(io, bo);
+		bo->flags |= BIN_RANGE_UPDATED;
+		ro = arrp(range_t, bo->rng, po->idx);
+		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		ro->pair_rec = pl->rec;
+	    }
 
 	    /* Increment insert size in library */
 	    if (po->crec == pl->crec) {
@@ -443,7 +445,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 		    isize = -isize;
 
 		lib = cache_rw(bio->io, lib);
-		if ((r_out->flags & GRANGE_FLAG_COMP1) != 
+		if (bio->a->fast_mode || 
+		    (r_out->flags & GRANGE_FLAG_COMP1) != 
 		    (ro->flags & GRANGE_FLAG_COMP1)) {
 		    accumulate_library(bio->io, lib,
 				       isize >= 0
@@ -537,7 +540,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	printf("\n++Processing contig %d / %s\n", tid, cname);
 	if (bio->c)
 	    cache_decr(io, bio->c);
-	if (!bio->merge_contigs ||
+	if (!bio->a->merge_contigs ||
 	    (NULL == (bio->c = find_contig_by_name(io, cname)))) {
 	    bio->c = contig_new(io, cname);
 	    contig_index_update(io, cname, strlen(cname), bio->c->rec);
@@ -621,9 +624,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 }
 
 
-int parse_bam(GapIO *io, const char *fn,
-	      int no_tree, int pair_reads, int merge_contigs)
-{
+int parse_bam(GapIO *io, const char *fn, tg_args *a) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam1_t *b;
     int ret, count = 0;
@@ -635,15 +636,14 @@ int parse_bam(GapIO *io, const char *fn,
     bio->seqs = NULL;
     bio->nseq = 0;
     bio->max_seq = 0;
-    bio->no_tree = no_tree;
-    bio->merge_contigs = merge_contigs;
+    bio->a = a;
     bio->c = NULL;
     bio->count = 0;
     bio->fn = fn;
     bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     bio->libs->name = "libs";
 
-    if (pair_reads) {
+    if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
 	bio->pair->name = "pair";
     } else {

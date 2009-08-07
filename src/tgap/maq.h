@@ -1,6 +1,8 @@
 #ifndef _MAQ_H_
 #define _MAQ_H_
 
+#include <tg_index.h>
+
 #define PAIRFLAG_FF      0x01
 #define PAIRFLAG_FR      0x02
 #define PAIRFLAG_RF      0x04
@@ -10,9 +12,7 @@
 #define PAIRFLAG_NOMATCH 0x40
 #define PAIRFLAG_SW      0x80
 
-int parse_maqmap(GapIO *io, int max_size, const char *dat_fn,
-		 int no_tree, int pair_reads, int merge_contigs,
-		 int long_format);
+int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a);
 
 
 #endif /* _MAQ_H_ */

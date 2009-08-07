@@ -38,8 +38,7 @@
 #include "baf.h"
 
 #ifdef HAVE_SAMTOOLS
-extern int parse_bam(GapIO *io, const char *fn,
-		     int no_tree, int pair_reads, int merge_contigs);
+#include "sam.h"
 #endif
 
 /* .dat version format to handle */
@@ -189,8 +188,7 @@ typedef struct {
  * Returns 0 on success
  *	  -1 on error
  */
-int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
-	       int pair_reads, int merge_contigs) {
+int parse_file(GapIO *io, char *dat_fn, tg_args *a) {
     int nseqs = 0;
     struct stat sb;
     FILE *dat_fp;
@@ -210,7 +208,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	return -1;
     }
 
-    if (pair_reads) {
+    if (a->pair_reads) {
 	pair = HacheTableCreate(1024, HASH_DYNAMIC_SIZE);
 	pair->name = "pair";
 	pair->load = pair_load;
@@ -244,7 +242,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	    /* printf("Processing contig %s\n", contig); */
 	    ncontigs++;
 	    strcpy(last_contig, contig);
-	    if (!merge_contigs ||
+	    if (!a->merge_contigs ||
 		NULL == (c = find_contig_by_name(io, contig))) {
 		c = contig_new(io, contig);
 		contig_index_update(io, contig, strlen(contig), c->rec);
@@ -300,14 +298,16 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 		r_out->pair_rec = po->rec;
 
-		/* Link other end to 'us' too */
-		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		bo = cache_rw(io, bo);
-		bo->flags |= BIN_RANGE_UPDATED;
-		ro = arrp(range_t, bo->rng, po->idx);
-		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		ro->pair_rec = pl->rec;
+		if (!a->fast_mode) {
+		    /* Link other end to 'us' too */
+		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
+		    bo = cache_rw(io, bo);
+		    bo->flags |= BIN_RANGE_UPDATED;
+		    ro = arrp(range_t, bo->rng, po->idx);
+		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+		    ro->pair_rec = pl->rec;
+		}
 
 		/* And, making an assumption, remove from hache */
 		HacheTableDel(pair, hi, 1);
@@ -315,7 +315,7 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 	    }
 	}
 
-	if (!no_tree)
+	if (!a->no_tree)
 	    sequence_index_update(io, seq.name, seq.name_len, recno);
 	free(seq.data);
 
@@ -384,34 +384,42 @@ int parse_file(GapIO *io, int max_size, char *dat_fn, int no_tree,
 /* ------------------------------------------------------------------------ */
 void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] dat_file ...\n");
-    fprintf(stderr, "      -o output		Specify ouput filename (g_db)\n");
-    fprintf(stderr, "      -m			Input is MAQ format\n");
-    fprintf(stderr, "      -M			Input is MAQ-long format\n");
-    fprintf(stderr, "      -A			Input is ACE format\n");
-    fprintf(stderr, "      -B			Input is BAF format\n");
+    fprintf(stderr, "      -o output            Specify ouput filename (g_db)\n");
+    fprintf(stderr, "      -m                   Input is MAQ format\n");
+    fprintf(stderr, "      -M                   Input is MAQ-long format\n");
+    fprintf(stderr, "      -A                   Input is ACE format\n");
+    fprintf(stderr, "      -B                   Input is BAF format\n");
 #ifdef HAVE_SAMTOOLS
-    fprintf(stderr, "      -b			Input is BAM format\n");
+    fprintf(stderr, "      -b                   Input is BAM format\n");
 #endif
-    fprintf(stderr, "      -p			Link read-pairs together (default on)\n");
-    fprintf(stderr, "      -P			Do not link read-pairs together\n");
-    fprintf(stderr, "      -a			Append to existing db\n");
-    fprintf(stderr, "      -n			New contigs always (relevant if appending)\n");
-    fprintf(stderr, "      -t			Index sequence names\n");
-    fprintf(stderr, "      -T			Do not index sequence names (default on)\n");
+    fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
+    fprintf(stderr, "      -P                   Do not link read-pairs together\n");
+    fprintf(stderr, "      -a                   Append to existing db\n");
+    fprintf(stderr, "      -n                   New contigs always (relevant if appending)\n");
+    fprintf(stderr, "      -t                   Index sequence names\n");
+    fprintf(stderr, "      -T                   Do not index sequence names (default on)\n");
     fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
+    fprintf(stderr, "      -f                   Fast mode: read-pair links are unidirectional\n");
 }
 
 #include <malloc.h>
 
 int main(int argc, char **argv) {
-    unsigned int max_size = 63;
+    tg_args a;
     GapIO *io;
-    int opt, fmt = 'a' /*aln */;
-    char *out_fn = "g_db", *cp;
-    int no_tree=1, pair_reads=1, append=0, merge_contigs=-1;
-    int min_bin_size = MIN_BIN_SIZE;
+    int opt;
+    char *cp;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.2\n");
+    a.fmt           = 'a'; /* aln */
+    a.out_fn        = "g_db";
+    a.no_tree       = 1;
+    a.pair_reads    = 1;
+    a.append        = 0;
+    a.merge_contigs = -1;
+    a.min_bin_size  = MIN_BIN_SIZE;
+    a.fast_mode     = 0;
+
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.3\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
@@ -419,23 +427,23 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:f")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:f")) != -1) {
 #endif
 	switch(opt) {
 	case 'a':
-	    append = 1;
-	    if (merge_contigs == -1)
-		merge_contigs = 1;
+	    a.append = 1;
+	    if (a.merge_contigs == -1)
+		a.merge_contigs = 1;
 	    break;
 
 	case 't':
-	    no_tree = 0;
+	    a.no_tree = 0;
 	    break;
 
 	case 'T':
-	    no_tree = 1;
+	    a.no_tree = 1;
 	    break;
 
 	case 'm':
@@ -444,19 +452,19 @@ int main(int argc, char **argv) {
 	case 'B':
 	case 's':
 	case 'b':
-	    fmt = opt;
+	    a.fmt = opt;
 	    break;
 
 	case 'o':
-	    out_fn = optarg;
+	    a.out_fn = optarg;
 	    break;
 
 	case 'p':
-	    pair_reads = 1;
+	    a.pair_reads = 1;
 	    break;
 
 	case 'P':
-	    pair_reads = 0;
+	    a.pair_reads = 0;
 	    break;
 
 	case 'h':
@@ -464,14 +472,18 @@ int main(int argc, char **argv) {
 	    return 0;
 
 	case 'n':
-	    merge_contigs = 0;
+	    a.merge_contigs = 0;
 	    break;
 
 	case 'z':
-	    min_bin_size = strtol(optarg, &cp, 10);
-	    if (*cp == 'k' || *cp == 'K') min_bin_size *= 1024;
-	    if (*cp == 'm' || *cp == 'M') min_bin_size *= 1024*1024;
-	    if (*cp == 'g' || *cp == 'G') min_bin_size *= 1024*1024*1024;
+	    a.min_bin_size = strtol(optarg, &cp, 10);
+	    if (*cp == 'k' || *cp == 'K') a.min_bin_size *= 1024;
+	    if (*cp == 'm' || *cp == 'M') a.min_bin_size *= 1024*1024;
+	    if (*cp == 'g' || *cp == 'G') a.min_bin_size *= 1024*1024*1024;
+	    break;
+
+	case 'f':
+	    a.fast_mode = 1;
 	    break;
 	    
 	default:
@@ -483,8 +495,8 @@ int main(int argc, char **argv) {
 	    return 1;
 	}
     }
-    if (merge_contigs == -1)
-	merge_contigs = 0;
+    if (a.merge_contigs == -1)
+	a.merge_contigs = 0;
 
     if (optind == argc) {
 	usage();
@@ -492,40 +504,37 @@ int main(int argc, char **argv) {
     }
 
     /* Open the DB */
-    io = gio_open(out_fn, 0, append ? 0 : 1);
-    if (no_tree) {
+    io = gio_open(a.out_fn, 0, a.append ? 0 : 1);
+    if (a.no_tree) {
 	io->db = cache_rw(io, io->db);
 	io->db->seq_name_index = 0;
     }
-    io->min_bin_size = min_bin_size;
+    io->min_bin_size = a.min_bin_size;
 
     /* File processing loop */
     while (optind < argc) {
-	switch (fmt) {
+	switch (a.fmt) {
 	case 'm':
 	case 'M':
-	    parse_maqmap(io, max_size, argv[optind++], no_tree, pair_reads,
-			 merge_contigs, fmt == 'M');
+	    parse_maqmap(io, argv[optind++], &a);
 	    break;
 
 	case 'A':
-	    parse_ace(io, max_size, argv[optind++], no_tree, pair_reads,
-		      merge_contigs);
+	    parse_ace(io, argv[optind++], &a);
 	    break;
 
 	case 'B':
-	    parse_baf(io, argv[optind++], no_tree, pair_reads, merge_contigs);
+	    parse_baf(io, argv[optind++], &a);
 	    break;
 
 #ifdef HAVE_SAMTOOLS
 	case 'b':
-	    parse_bam(io, argv[optind++], no_tree, pair_reads, merge_contigs);
+	    parse_bam(io, argv[optind++], &a);
 	    break;
 #endif
 
 	default:
-	    parse_file(io, max_size, argv[optind++], no_tree, pair_reads,
-		       merge_contigs);
+	    parse_file(io, argv[optind++], &a);
 	}
     }
 
