@@ -1,3 +1,46 @@
+Gap5 1.2.3,  August 7th 2009
+============================
+
+Now integrated into the staden package release system (2.0.0b1).
+
+Minor changes
+-------------
+
+*	Added a -f (fast mode) parameter to tg_index. When linking
+        read-pairs this links A' to A but not A back to A'. This
+        reverse link is desireable, but currently causes major I/O
+        bottlenecks on very large data sets. I'll address this later
+        in a better fix, so -f will probably be only a temporary
+        option.
+
+*	The code can now build without samtools support, although
+        obviously it loses the ability to read .bam files.
+
+*	Compilation from source is vastly easier, as is the rest of
+        the staden package.
+
+Bug fixes
+---------
+
+*	Break contig and join contig are no longer crashing. They also
+        now keep track of the number of sequences in the contigs and
+        break-contig moves annotations where appropriate too.
+
+*	Fixed a bug that incorrectly caused tags to be considered as
+        sequences in some case, causing crashes.
+
+*	The mouse-over for the  contig editor names display now works
+        better, no longer attempting to display tag information.
+
+*	Fixed for copy-on-write of seq/anno blocks, sometimes causing
+        crashes when saving the contig editor.
+
+*	Clicking on an annotation in the editor no longer causes
+        crashes.
+
+*	Removed buffer overrun in the editor get_number method.
+
+
 Gap5 1.2.2,  June 22nd 2009
 ===========================
 
