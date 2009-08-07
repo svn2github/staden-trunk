@@ -1,6 +1,44 @@
-*	Removal of iwidgets/itcl/itk?
-	itcl/itk widgets:
-	itcl/itk => {prefinish, spin, spin2, seqed}/*.itk
+*	NOTE: questionable change - need to ponder.
+
+	When adding annotation elements for sequences, attempt to
+        store in the same bin that the sequence resides in even if
+        they could fit in a smaller bin. Eg right now:
+
+	 +---------------------+
+         |A     ......seq....  |
+         +-----------+---------+
+         |B          | .tag.  C|
+	 +-----------+---------+
+               
+	.tag. on this sequence ends up in bin C while the sequence is
+	in bin A.
+
+	The reason for wanting both in the same bin is it makes some
+	bin manipulation algorithsm (eg break contig) easier if we
+	know items attached to each other share the same bin.
+
+	Suggest we create a bin_add_range_to() function that takes an
+	existing bin and avoids the call to find bin for range.
+
+*	When adding data in pair mode (tg_index -p), try using a 2
+        pass affair. We observe that it slows down linearly and grows
+        memory linearly. This is due to random scattering of
+        read-pairs rather than neatly in order. This also translates
+        to random I/O instead of mostly serial. Solution is:
+
+	1) When we have 1st_read (written) and 2nd_read (just loaded
+           from input data), do not edit 1st_read to point to
+           2nd_read. Instead write the ID of 1st+2nd to a file. Use a
+           2nd pass at end to relink all the 1st reads to their 2nd.
+
+	2) To reduce memory, perioidically purge the read name hash
+           table and write out the purged data to a file too for
+           subsequent fixing. This step would need a sort algorithm I
+           think to relink 1st and 2nd together as both copies will
+           need fixing.
+
+*	Removal of iwidgets/itcl/itk?  itcl/itk widgets: itcl/itk =>
+	{prefinish, spin, spin2, seqed}/*.itk
 
 	iwidgets => *gap4/acd2tag.tcl, *contig_editor (tabset), gap_prefinish
 		    *pregap4/gui.tcl (tabnotebook)
