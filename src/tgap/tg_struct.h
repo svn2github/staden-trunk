@@ -14,7 +14,8 @@
  * Structures in a more database 'on disk' representation. This is basically
  * as it's stored.
  */
-
+ 
+#define GT_Generic       0
 #define GT_RecArray      3
 #define GT_Bin           5
 #define GT_Range         6
