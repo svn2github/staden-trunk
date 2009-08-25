@@ -34,7 +34,7 @@ AC_DEFUN([AX_LIB_ITK],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_itk_with/itk* /usr/share/tcl*/itk* /usr/local/tcl*/itk*
+  for i in $_itk_with/itk* /usr/share/tcl*/itk* /usr/local/tcl*/itk* /usr/lib64/tcl*/itk*
   do
     if test -e "$i/pkgIndex.tcl"
     then
