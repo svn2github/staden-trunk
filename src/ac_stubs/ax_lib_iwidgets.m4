@@ -7,8 +7,8 @@
 #   This macro will check for the existence of the iwidgets package.
 #   Note this is NOT tk itself, but a miscellaneous collection of
 #   extra Tk widgets written in tcl/tk.
-#   The DIR specified should be the root of the packages, ie the directory
-#   containing tablelist, tooltip, datefield etc.
+#   The DIR specified should be either a tcl package path containing iwidgets
+#   or the iwidgets install directory itself.
 #
 #   The following output variables are set using AC_SUBST:
 #
@@ -36,7 +36,7 @@ AC_DEFUN([AX_LIB_IWIDGETS],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_iwidgets_with/iwidgets* /usr/share/tcl*/iwidgets* /usr/local/tcl*/iwidgets*
+  for i in $_iwidgets_with/iwidgets* $_iwidgets_with /usr/share/tcl*/iwidgets* /usr/local/tcl*/iwidgets*
   do
     if test -e "$i/pkgIndex.tcl"
     then
