@@ -114,6 +114,27 @@ line_t *get_line(FILE *fp, line_t *in) {
     return l;
 }
 
+
+/*
+ * Relaces \n with newline and \\ with \.
+ * Modifies the line in-situ as it can never grow.
+ */
+void unescape_line(char *txt) {
+    char *cp;
+    for (cp = txt; *txt; txt++) {
+	if (*txt != '\\') {
+	    *cp++ = *txt;
+	} else {
+	    if (*++txt == 'n')
+		*cp++ = '\n';
+	    else
+		*cp++ = *txt;
+	}
+    }
+    *cp++ = 0;
+}
+
+
 baf_block *baf_next_block(FILE *fp) {
     line_t *l;
     baf_block *b;
@@ -481,6 +502,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    char *txt = baf_block_value(b, TX);
 	    int pos;
 	    bin_index_t *bin;
+
+	    unescape_line(txt);
 
 	    if (!loc) {
 		pos = last_obj_pos;
