@@ -3868,7 +3868,7 @@ AC_DEFUN([TEA_PUBLIC_TK_HEADERS], [
 		`ls -d ${TCL_BIN_DIR}/../include 2>/dev/null`"
 	    if test "${TEA_PLATFORM}" != "windows" -o "$GCC" = "yes"; then
 		list="$list /usr/local/include /usr/include \
-		     `ls -d /usr/include/tcl*`"
+		     `ls -d /usr/include/tcl* 2>/dev/null`"
 		if test x"${TK_INCLUDE_SPEC}" != x ; then
 		    d=`echo "${TK_INCLUDE_SPEC}" | sed -e 's/^-I//'`
 		    list="$list `ls -d ${d} 2>/dev/null`"
