@@ -1056,6 +1056,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	"delete",       "io",           "get_rec",
 	"get_contig",   "get_position", "get_comment",
 	"get_obj_type", "get_obj_rec",  "get_anno_rec",
+	"get_type",     
+	"set_contig",   "set_position", "set_comment",
+	"set_obj_type", "set_obj_rec",  "set_anno_rec",
+	"set_type",
 	(char *)NULL,
     };
 
@@ -1063,6 +1067,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	DELETE,         IO,             GET_REC,
 	GET_CONTIG,     GET_POSITION,   GET_COMMENT,
 	GET_OBJ_TYPE,   GET_OBJ_REC,    GET_ANNO_REC,
+	GET_TYPE,       
+	SET_CONTIG,     SET_POSITION,   SET_COMMENT,
+	SET_OBJ_TYPE,   SET_OBJ_REC,    SET_ANNO_REC,
+	SET_TYPE
     };
 
     if (objc < 2) {
@@ -1075,6 +1083,23 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
         return TCL_ERROR;
     }
 
+    /* Get read/write if appropriate */
+    switch ((enum options)index) {
+	anno_ele_t *t;
+    case SET_CONTIG:
+    case SET_POSITION:
+    case SET_OBJ_TYPE:
+    case SET_OBJ_REC:
+    case SET_COMMENT:
+    case SET_ANNO_REC:
+    case SET_TYPE:
+	if (NULL == (t = cache_rw(te->io, te->anno)))
+	    return TCL_ERROR;
+	te->anno = t;
+	break;
+    }
+
+    /* Perform the command proper */
     switch ((enum options)index) {
     case DELETE:
 	Tcl_DeleteCommandFromToken(interp,
@@ -1091,6 +1116,8 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_CONTIG:
     case GET_POSITION:
+    case SET_CONTIG:
+    case SET_POSITION:
 	puts("Unimplemented\n");
 	break;
 
@@ -1100,17 +1127,96 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 			 -1);
 	break;
 
+    case SET_COMMENT: {
+	char *str;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_comment string\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	str = Tcl_GetStringFromObj(objv[2], NULL);
+	anno_ele_set_comment(te->io, &te->anno, str);
+	break;
+    }
+
+    case GET_TYPE: {
+	char type[5];
+	type2str(te->anno->tag_type, type);
+	Tcl_SetStringObj(Tcl_GetObjResult(interp), type ,4);
+	break;
+    }
+
+    case SET_TYPE:
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_type type_str\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+	
+	anno_ele_set_type(te->io, &te->anno,
+			  Tcl_GetStringFromObj(objv[2], NULL));
+	break;
+
     case GET_OBJ_TYPE:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->obj_type);
 	break;
+
+    case SET_OBJ_TYPE: {
+	int otype;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_obj_type integer_type_code\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &otype);
+	te->anno->obj_type = otype;
+	break;
+    }
 
     case GET_OBJ_REC:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->obj_rec);
 	break;
 
+    case SET_OBJ_REC: {
+	int orec;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_obj_rec record_no\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &orec);
+	te->anno->obj_rec = orec;
+	break;
+    }
+
     case GET_ANNO_REC:
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->anno_rec);
 	break;
+
+    case SET_ANNO_REC: {
+	int rec;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_anno_rec record_no\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &rec);
+	te->anno->anno_rec = rec;
+	break;
+    }
     }
 
     return TCL_OK;

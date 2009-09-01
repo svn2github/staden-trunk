@@ -28,6 +28,88 @@ int anno_ele_new(GapIO *io, int bin,
 }
 
 /*
+ * Sets the comment for an annotation element.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_set_comment(GapIO *io, anno_ele_t **e, char *comment) {
+    anno_ele_t *ae;
+    size_t clen;
+
+    if (!(ae = cache_rw(io, *e)))
+	return -1;
+
+    clen = comment ? strlen(comment) : 0;
+    if (clen > (ae->comment ? strlen(ae->comment) : 0)) {
+	ae = cache_item_resize(ae, sizeof(*ae) + clen+1);
+	ae->comment = (char *)&ae->data;
+    }
+    strcpy(ae->comment, comment);
+
+    *e = ae;
+
+    return 0;
+}
+
+/*
+ * Sets the annotation type, passed in as a string but held in a 4-byte int.
+ * This also attempts to set the cached copy of the type held within the
+ * bin range array.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
+    int type;
+    char stype[5];
+    anno_ele_t *ae;
+
+    if (!(ae = cache_rw(io, *e)))
+	return -1;
+
+    /* Get integer type */
+    memset(stype, 0, 5);
+    strncpy(stype, str, 4);
+    type = str2type(stype);
+
+    /* Update annotation */
+    ae->tag_type = type;
+
+    /* Also update range_t cached copy of type */
+    if (ae->bin) {
+	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, ae->bin);
+	range_t *r;
+	int i, nranges;
+
+	if (!bin)
+	    return -1;
+	if (!(bin = cache_rw(io, bin)))
+	    return -1;
+
+	/*
+	 * Find the index into the bin range.
+	 * FIXME: we should add a bin_index element, as seen in seq_t,
+	 * to avoid the brute force loop. This doesn't have to be
+	 * permanently stored - a cached copy would suffice.
+	 */
+	nranges = bin->rng ? ArrayMax(bin->rng) : 0;
+	for (i = 0; i < nranges; i++) {
+	    r = arrp(range_t, bin->rng, i);
+	    if (r->rec == ae->rec)
+		break;
+	}
+	if (i == nranges)
+	    return -1;
+
+	bin->flags |= BIN_RANGE_UPDATED;
+	r->mqual = type;
+    }
+
+    *e = ae;
+}
+
+/*
  * Returns the range_t element from the bin holding this annotation.
  * The start and end have been modified to be the absolute position
  * within the contig.
