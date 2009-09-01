@@ -278,7 +278,7 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	    if (-1 != (type = edview_item_at_pos(xx, y, x, 1,
 						 xx->ed->stack_mode,
-						 &rec,&pos))) {
+						 1, &rec,&pos))) {
 		sprintf(buf, "%d %d %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */

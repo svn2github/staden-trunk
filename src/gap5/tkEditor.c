@@ -605,20 +605,21 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	char buf[100];
 	int x, y, type, rec, pos;
 
-	if (argc != 2 && argc != 4 && argc != 5) {
+	if (argc != 2 && !(argc >= 4 && argc <= 6)) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " get_number ?xpos ypos ?exact??\"",
+			     argv[0], " get_number ?xpos ypos ?exact ?seq_only???\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
 	if (argc >= 4) {
 	    int exact = argc == 5 ? atoi(argv[4]) : 1;
+	    int seq_only = argc == 6 ? atoi(argv[5]) : 0;
 	    sheet_arg_x(TKSHEET(ed), argv[2], &x); /* cell coordinates */
 	    sheet_arg_y(TKSHEET(ed), argv[3], &y); y++;
 
 	    if (-1 != (type = edview_item_at_pos(ed->xx, y, x, 0, exact,
-						 &rec, &pos))) {
+						 seq_only, &rec, &pos))) {
 		sprintf(buf, "%d %d %d", type, rec, pos);
 		Tcl_AppendResult(interp, buf, NULL);
 	    } /* otherwise return a blank */
