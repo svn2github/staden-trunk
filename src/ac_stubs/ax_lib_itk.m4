@@ -5,8 +5,8 @@
 # DESCRIPTION
 #
 #   This macro will check for the existence of the itk package.
-#   The DIR specified should be a tcl package path - ie the directory
-#   containing the itk* directory.
+#   The DIR specified should be either a tcl package path containing itk
+#   or the itk install directory itself.
 #
 #   The following output variables are set using AC_SUBST:
 #
@@ -34,7 +34,7 @@ AC_DEFUN([AX_LIB_ITK],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_itk_with/itk* /usr/share/tcl*/itk* /usr/local/tcl*/itk* /usr/lib64/tcl*/itk*
+  for i in $_itk_with/itk* $_itk_with /usr/share/tcl*/itk* /usr/local/tcl*/itk* /usr/lib64/tcl*/itk*
   do
     if test -e "$i/pkgIndex.tcl"
     then

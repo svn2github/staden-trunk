@@ -5,8 +5,8 @@
 # DESCRIPTION
 #
 #   This macro will check for the existence of the itcl package.
-#   The DIR specified should be a tcl package path - ie the directory
-#   containing the itcl* directory.
+#   The DIR specified should be either a tcl package path containing itcl
+#   or the itcl install directory itself.
 #
 #   The following output variables are set using AC_SUBST:
 #
@@ -34,7 +34,7 @@ AC_DEFUN([AX_LIB_ITCL],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_itcl_with/itcl* /usr/share/tcl*/itcl* /usr/local/tcl*/itcl* /usr/lib64/tcl*/itcl*
+  for i in $_itcl_with/itcl* $_itcl_with /usr/share/tcl*/itcl* /usr/local/tcl*/itcl* /usr/lib64/tcl*/itcl*
   do
     if test -e "$i/pkgIndex.tcl"
     then
