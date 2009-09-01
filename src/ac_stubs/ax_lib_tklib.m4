@@ -77,7 +77,7 @@ AC_DEFUN([AX_LIB_TKLIB],
   if test "$_ok" = "yes"
   then
      # This is the IF-YES path
-     AC_MSG_RESULT([no ($TKLIB_PATH)])
+     AC_MSG_RESULT([yes ($TKLIB_PATH)])
      ifelse([$2],,:,[$2])
   else
      # This is the IF-NO path
