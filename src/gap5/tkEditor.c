@@ -440,7 +440,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join",          "select",	 "edit_annotation",
-	"cursor_id",
+	"cursor_id",     "get_cursor",
 	NULL
     };
     enum options {
@@ -452,7 +452,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
 	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION,
-	_CURSOR_ID,
+	_CURSOR_ID,      _GET_CURSOR,
     };
 
     if (argc < 2) {
@@ -643,6 +643,25 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	edSetCursorPos(ed->xx, atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+	break;
+    }
+
+    /* Gets the cursor position, either absolute or relative */
+    case _GET_CURSOR: {
+	if (argc != 3) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " get_cursor {absolute|relative}\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (*argv[2] == 'a')
+	    vTcl_SetResult(interp, "%d %d %d",
+			   GT_Contig, xx->cnum, xx->cursor_apos);
+	else
+	    vTcl_SetResult(interp, "%d %d %d",
+			   xx->cursor_type, xx->cursor_rec, xx->cursor_pos);
+	
 	break;
     }
 
@@ -848,8 +867,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     case _SELECT: {
-	char *select_options[] = {"clear", "from", "to", NULL};
-	enum  select_options     { CLEAR,   FROM,   TO};
+	char *select_options[] = {"clear", "from", "to", "get", NULL};
+	enum  select_options     { CLEAR,   FROM,   TO,   GET};
 	Tcl_Obj *obj;
 	int index;
 
@@ -894,10 +913,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    } else {
 		edSelectFrom(ed->xx, arg);
 	    }
+	    
+	} else if (index == GET) {
+	    vTcl_SetResult(interp, "%d %d %d %d",
+			   ed->xx->select_seq == ed->xx->cnum
+			       ? GT_Contig
+			       : GT_Seq,
+			   ed->xx->select_seq,
+			   ed->xx->select_start,
+			   ed->xx->select_end);
 
 	} else {
 	    Tcl_AppendResult(interp, "wrong sub-command: should be "
-			     "clear, from or to",
+			     "clear, from, to or get",
 			     (char *) NULL);
 	    goto fail;
 	}

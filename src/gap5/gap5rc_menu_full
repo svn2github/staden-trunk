@@ -216,7 +216,7 @@ add_command	{Help.Show Licence}	1 0 {ShowLicence}
 
 set_menu contig_editor_main_menu
 add_menu {File}					1 0 left
-#add_menu Commands				1 0 left
+add_menu Commands				1 0 left
 add_menu Settings				1 0 left
 #add_menu {Edit Modes}				1 0 left
 add_menu {Help}					1 0 right
@@ -227,9 +227,9 @@ add_command {File.Exit} 1 0 {editor_exit $w}
 #add_command	{Commands.Search}			1 0 \
 #	{create_search_win $e.search {$e search}}
 #add_separator	{Commands.S1}
-#add_command	{Commands.Create Tag}		3 2 {$e create_anno}
-#add_cascade	{Commands.Edit Tag}		1 0
-#add_cascade	{Commands.Delete Tag}		3 2
+add_command	{Commands.Create Tag}		3 2 {tag_editor_create $e}
+add_cascade	{Commands.Edit Tag}		1 0
+add_cascade	{Commands.Delete Tag}		3 2
 #add_separator	{Commands.S2}
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
@@ -589,3 +589,4 @@ add_command {Help.Confidence value graph} 	1 0 {show_help gap4 {Consistency-Conf
 add_command {Help.Reading coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadingCov}}
 add_command {Help.Readpair coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadPairCov}}
 add_command {Help.Strand coverage} 	1 0 {show_help gap4 {Consistency-Strand}}
+

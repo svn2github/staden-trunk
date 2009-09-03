@@ -284,6 +284,7 @@ proc next_editor {} {
 # Returns the pathname of the newly created object: '$path'
 #
 proc contig_editor {w args} {
+    global gap5_defs
     upvar \#0 $w opt
 
     # Initialise the $path global array - the instance data for this widget
@@ -302,6 +303,7 @@ proc contig_editor {w args} {
     set opt(io) [io_child $opt(-io) $opt(-contig)]
 
     set join [info exists opt(-contig2)]
+
 
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
@@ -411,6 +413,8 @@ proc contig_editor {w args} {
     $w configure -menu $w.menubar
     menu $w.menubar 
     create_menus $contig_editor_main_menu $w.menubar
+    bind  $w.menubar <ButtonPress> "tag_repopulate_menu \[set ${w}(curr_editor)\]"
+    bind  $w.menubar <Down> "+puts down"
 
     # Packing
     grid rowconfigure $w 3 -weight 1
@@ -1057,6 +1061,7 @@ proc update_brief {w {name 0} {x {}} {y {}}} {
 	    21 {
 		set msg [$w get_seq_status $type $rec $pos \
 			     [keylget gap5_defs TAG_BRIEF_FORMAT]]
+		regsub -all "\n" $msg { \n } msg
 	    }
 	    default {
 		set msg "Unknown data type $type"
@@ -1094,6 +1099,168 @@ proc editor_name_select {w where} {
     # For Windows...
     clipboard clear
     clipboard append $name
+}
+
+#-----------------------------------------------------------------------------
+# Tag editor windows
+
+proc tag_repopulate_menu {w} {
+    foreach {rtype rrec rpos} [$w get_cursor relative] break
+    foreach {atype arec apos} [$w get_cursor absolute] break
+
+    upvar contigIO_$arec cio
+    upvar $w wa
+
+    set me $wa(top).menubar.commands.edit_tag
+    $me delete 0 end
+    $me configure -tearoff 0
+
+    set md $wa(top).menubar.commands.delete_tag
+    $md delete 0 end
+    $md configure -tearoff 0
+
+    # Perhaps not the most efficient approach, but it works
+    foreach anno [$cio(c) anno_in_range $apos $apos] {
+	if {$rrec == [lindex $anno 8]} {
+	    foreach {start end rec itype} $anno break
+	    set type ""
+	    while {$itype > 0} {
+		set type "[format "%c" [expr {$itype & 0xff}]]$type"
+		set itype [expr {$itype >> 8}]
+	    }
+	    puts "$type $rec"
+	    $me add command -label "$type $start..$end \#$rec" \
+		-command "tag_editor_launch $w $rec"
+	    $md add command -label "$type $start..$end \#$rec" \
+		-command "tag_editor_delete $w $rec"
+	}
+    }
+
+}
+
+proc tag_editor_launch {w where} {
+    puts [info level [info level]]
+
+    if {[llength $where] != 1} {
+	foreach {type rec pos} $where break;
+	if {$type != 21} return
+    } else {
+	set rec $where
+    }
+
+    set tag [[$w io] get_anno_ele $rec]
+    global .Tag.$rec
+    upvar \#0 .Tag.$rec d
+
+    set d(strand)  0; # fixme
+    set d(type)    [$tag get_type]
+    set d(otype)   [$tag get_obj_type]
+    set d(orec)    [$tag get_obj_rec]
+    set d(anno)    [$tag get_comment]
+    set d(default) "?"
+
+    $tag delete
+
+    create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
+}
+
+proc tag_editor_delete {w where} {
+    if {[llength $where] != 1} {
+	foreach {type rec pos} $where break;
+	if {$type != 21} return
+    } else {
+	set rec $where
+    }
+
+    set tag [[$w io] get_anno_ele $rec]
+    $tag remove
+
+    $w redraw
+}
+
+proc tag_editor_create {w} {
+    puts [info level [info level]]
+
+    global $w
+    parray $w
+
+    set rec -1
+    
+    foreach {otype orec start end} [$w select get] break;
+
+    global .Tag.$rec
+    upvar \#0 .Tag.$rec d
+
+    set d(strand)  0; # fixme
+    set d(type)    "COMM"
+    set d(otype)   $otype
+    set d(orec)    $orec
+    set d(start)   $start
+    set d(end)     $end
+    set d(anno)    "default"
+    set d(default) "?"
+
+    create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
+}
+
+proc tag_editor_callback {w rec cmd args} {
+    upvar \#0 .Tag.$rec d
+    set f $w.tag_$rec
+    set io [$w io]
+
+    puts [info level [info level]]
+    switch $cmd {
+	"save" {
+	    if {$rec == -1} {
+		# Allocate a new item
+		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+		puts "New tag with rec $rec"
+		set t [$io get_anno_ele $rec]
+		$t set_comment $d(anno)
+		$t set_type $d(type)
+		$t delete
+	    } else {
+		set t [$io get_anno_ele $rec]
+
+		if {[$t get_comment] != $d(anno)} {
+		    $t set_comment $d(anno)
+		}
+		if {[$t get_type] != $d(type)} {
+		    $t set_type $d(type)
+		}
+		$t delete
+	    }
+
+	    $w redraw
+	    destroy $f
+	    unset d
+	}
+
+	"quit" {
+	    destroy $f
+	    unset d
+	}
+
+	"move" {
+	    puts "move"
+	}
+
+	"copy" {
+	    puts "copy"
+	}
+
+	default {
+	    puts "ERROR: Unknown tag callback command: $cmd"
+	}
+    }
+}
+
+proc editor_menu {w x y} {
+    upvar $w opt
+
+    puts $opt(top).menubar.commands
+    tk_popup $opt(top).menubar.commands \
+	[expr $x+[winfo rootx $w]] [expr $y+[winfo rooty $w]]
 }
 
 #-----------------------------------------------------------------------------
@@ -1155,12 +1322,14 @@ bind Editor <<select>> {
 	$w.toolbar.undo configure -state [io_undo_state [%W contig_rec]]
 	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
     }
-    set d [%W get_number @%x @%y 0]
-    if {$d == ""} {
+    set _sel [%W get_number @%x @%y 0 1]
+    if {$_sel == ""} {
+	unset _sel
 	return
     } else {
-	eval %W set_cursor $d
+	eval %W set_cursor $_sel
     }
+    unset _sel
     %W select clear
 }
 
@@ -1252,5 +1421,20 @@ bind Editor <<select-drag>> {%W select to @%x}
 
 bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
 
-# Tag creation - test
-bind Editor <Key-F11> {create_tag_editor %W}
+# Tag editing
+bind Editor <Key-F11> {tag_editor_launch %W [%W get_number @%x @%y]}
+bind Editor <Key-F12> {tag_editor_delete %W [%W get_number @%x @%y]}
+
+bind Editor <<menu>> {
+    set _sel [%W get_number @%x @%y 0 1]
+    if {$_sel == ""} {
+	unset _sel
+	return
+    } else {
+	eval %W set_cursor $_sel
+    }
+    unset _sel
+
+    tag_repopulate_menu %W
+    editor_menu %W %x %y
+}
