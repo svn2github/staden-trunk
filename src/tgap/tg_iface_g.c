@@ -1610,6 +1610,12 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     for (i = 0; i < nr; i++) {
 	GRange r = rng[i];
 
+	if (r.flags & GRANGE_FLAG_UNUSED) {
+	    cp[2] += int2u7(r.rec, cp[2]);
+	    cp[4] += int2u7(GRANGE_FLAG_UNUSED, cp[4]);
+	    continue;
+	}
+
 	if (r.flags & GRANGE_FLAG_ISANNO) {
 	    r.end   -= r.start;
 	    r.start -= last_tag.start;
@@ -1708,11 +1714,19 @@ static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
 
     /* And finally unpack from the 6 components in parallel for each struct */
     for (i = 0; i < *nr; i++) {
+	cp[2] += u72int(cp[2], &r[i].rec);
+	cp[4] += u72int(cp[4], &r[i].flags);
+	if (r[i].flags & GRANGE_FLAG_UNUSED) {
+	    r[i].start = 0;
+	    r[i].end = 0;
+	    r[i].mqual = 0;
+	    r[i].pair_rec = 0;
+	    continue;
+	}
+
 	cp[0] += u72int(cp[0], &r[i].start);
 	cp[1] += u72int(cp[1], &r[i].end);
-	cp[2] += u72int(cp[2], &r[i].rec);
 	cp[3] += u72int(cp[3], &r[i].mqual);
-	cp[4] += u72int(cp[4], &r[i].flags);
 	if (r[i].flags & GRANGE_FLAG_ISANNO) {
 	    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
 		int32_t pr;
@@ -1771,6 +1785,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     char *buf, *cp;
     size_t buf_len;
     int bflag;
+    int version;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -1789,6 +1804,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	g.range = 0;
 	g.track = 0;
 	g.nseqs = 0;
+	g.rng_free = -1;
 	goto empty_bin;
     }
     cp = buf;
@@ -1797,7 +1813,8 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     rdcounts[GT_Bin]++;
 
     assert(cp[0] == GT_Bin);
-    assert(cp[1] == 0); /* format */
+    version = cp[1];
+    assert(version <= 1); /* format */
     cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
@@ -1842,6 +1859,11 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     cp += u72int(cp, &g.parent);
     cp += u72int(cp, &g.nseqs);
 
+    if (version > 0)
+	cp += s72int(cp, &g.rng_free);
+    else
+	g.rng_free = -1;
+
  empty_bin:
     /*
     printf("<%d / p=%d+%d, %d..%d p=%d/%d, ch=%d/%d, id=%d, f=%d t=%d ns=%d r=%d\n",
@@ -1872,6 +1894,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     bin->track_rec   = b->track;
     bin->track       = NULL;
     bin->nseqs       = b->nseqs;
+    bin->rng_free    = b->rng_free;
 
     /* Load ranges */
     if (b->range) {
@@ -2029,6 +2052,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	g.range       = bin->rng_rec;
 	g.track       = bin->track_rec;
 	g.nseqs       = bin->nseqs;
+	g.rng_free    = bin->rng_free;
 
 #ifdef DEBUG
 	{
@@ -2064,7 +2088,9 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.size == g.pos)            bflag |= BIN_SIZE_EQ_POS;
 
 	*cp++ = GT_Bin;
-	*cp++ = 0; /* Format */
+	printf("Writing format %d to bin rec %d\n",
+	       g.rng_free == -1 ? 0 : 1, bin->rec);
+	*cp++ = g.rng_free == -1 ? 0 : 1; /* Format */
 
 	cp += int2u7(bflag, cp);
 	if (!(bflag & BIN_POS_ZERO))     cp += int2s7(g.pos, cp);
@@ -2079,6 +2105,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (!(bflag & BIN_NO_TRACK))     cp += int2u7(g.track, cp);
 	cp += int2u7(g.parent, cp);
 	cp += int2u7(g.nseqs, cp);
+	if (g.rng_free != -1)
+	    cp += int2s7(g.rng_free, cp);
 
 	wrstats[GT_Bin] += cp-cpstart;
 	//wrstats[GT_Bin] += sizeof(g);
@@ -2137,6 +2165,7 @@ static int io_bin_create(void *dbh, void *vfrom) {
 	b.track_rec   = 0;
 	b.flags       = 0;
 	b.nseqs	      = 0;
+	b.rng_free    = -1;
 	io_bin_write_view(io, &b, v);
     }
     unlock(io, v);

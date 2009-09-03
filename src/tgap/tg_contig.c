@@ -136,6 +136,9 @@ static int contig_insert_base2(GapIO *io, int bnum,
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (MAX(r->start, r->end) >= pos && MIN(r->start, r->end) < pos) {
 	    /*
 	     * FIXME: This should be a callback function so we can
@@ -268,6 +271,9 @@ static int contig_delete_base2(GapIO *io, int bnum,
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (MAX(r->start, r->end) >= pos && MIN(r->start, r->end) <= pos) {
 	    /*
 	     * FIXME: This should be a callback function so we can
@@ -279,7 +285,11 @@ static int contig_delete_base2(GapIO *io, int bnum,
 	    if (MIN(r->start, r->end) == MAX(r->start, r->end)) {
 		/* Remove object entirely */
 		fprintf(stderr, "Delete sequence %s\n", s->name);
-		r->start = r->end = -1;
+		r->flags |= GRANGE_FLAG_UNUSED;
+		r->rec = bin->rng_free;
+
+		bin->rng_free = i;
+		bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 	    } else {
 		/* Delete */
 		sequence_delete_base(io, &s, pos - MIN(r->start, r->end), 0);
@@ -712,7 +722,8 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 	&& bin->rng) {
 	for (n = 0; n < ArrayMax(bin->rng); n++) {
 	    l = arrp(range_t, bin->rng, n);
-	    if (l->start == -1 && l->end == -1)
+
+	    if (l->flags & GRANGE_FLAG_UNUSED)
 		continue;
 
 	    /* Select type: seqs, annotations, or maybe both (mask=val=0) */

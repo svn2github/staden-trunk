@@ -584,6 +584,9 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
     bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
         range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (r->rec == snum) {
 	    found = 1;
 	    offset1 = r->start;

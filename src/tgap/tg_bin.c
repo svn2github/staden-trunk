@@ -35,6 +35,7 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin.track       = NULL;
     bin.track_rec   = 0;
     bin.nseqs       = 0;
+    bin.rng_free    = -1;
 
     if (-1 == (rec = io->iface->bin.create(io->dbh, &bin)))
 	return -1;
@@ -68,6 +69,7 @@ int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type) {
     bin->track       = NULL;
     bin->track_rec   = 0;
     bin->nseqs       = 0;
+    bin->rng_free    = -1;
 
     return rec;
 }
@@ -168,11 +170,23 @@ static bin_index_t *contig_extend_bins_left(GapIO *io, contig_t **c) {
  * Allocates and returns next range from a range array
  * Returns -1 for error.
  */
-static int next_range(Array ra) {
-    if (NULL == ArrayRef(ra, ArrayMax(ra)))
-	return -1;
-    
-    return ArrayMax(ra)-1;
+static int next_range(bin_index_t *bin) {
+    Array ra = bin->rng;
+
+    if (bin->rng_free == -1) {
+	if (NULL == ArrayRef(ra, ArrayMax(ra)))
+	    return -1;
+
+	return ArrayMax(ra)-1;
+
+    } else {
+	int tmp;
+	range_t *r = arrp(range_t, bin->rng, bin->rng_free);
+	
+	tmp = bin->rng_free;
+	bin->rng_free = r->rec;
+	return tmp;
+    }
 }
 
 /*
@@ -427,7 +441,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (!bin->rng)
 	bin->rng = ArrayCreate(sizeof(range_t), 0);
 
-    nr = next_range(bin->rng);
+    nr = next_range(bin);
     r2 = arrp(range_t, bin->rng, nr);
     *r2 = *r; /* struct copy */
     r2->start -= offset;
@@ -471,17 +485,16 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (r->rec != rec)
 	    continue;
 
-	/*
-	 * Found it, move it down or should we just label it as a hole?
-	 * The latter is more efficient, but we need to implement the other
-	 * end for this support.
-	 */
-	memmove(arrp(range_t, bin->rng, i), arrp(range_t, bin->rng, i+1), 
-		(ArrayMax(bin->rng) - (i+1)) * sizeof(range_t));
-	ArrayMax(bin->rng)--;
+	r->flags |= GRANGE_FLAG_UNUSED;
+	r->rec = bin->rng_free;
+	bin->rng_free = i;
+	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
 	if (!(r->flags & GRANGE_FLAG_ISANNO))
 	    bin_incr_nseq(io, bin, -1);

@@ -92,6 +92,9 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
 
     for (i = 0; i < nr; i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (r->flags & GRANGE_FLAG_ISANNO) {
 	    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, r->rec);
 	    if (a->bin != bin->rec) {
@@ -290,12 +293,14 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 
 	bin_dup->rng = bin->rng;
 	bin_dup->rng_rec = bin->rng_rec;
+	bin_dup->rng_free = bin->rng_free;
 	if (bin_dup->rng_rec)
 	    bin_dup->flags |= BIN_RANGE_UPDATED;
 
 	if (bin->rec != bin_dup->rec) {
 	    bin->rng = NULL;
 	    bin->rng_rec = 0;
+	    bin->rng_free = -1;
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
@@ -309,6 +314,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    int i, j, n = ArrayMax(bin_dup->rng);
 	    for (i = j = 0; i < n; i++) {
 		range_t *r = arrp(range_t, bin_dup->rng, i), *r2;
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
 		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
 		    HacheData hd; hd.i = 1;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
@@ -331,6 +339,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    int i, j, n = ArrayMax(bin->rng);
 	    for (i = j = 0; i < n; i++) {
 		range_t *r = arrp(range_t, bin->rng, i), *r2;
+		if (r->flags & GRANGE_FLAG_UNUSED)
+		    continue;
+
 		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
 		    HacheData hd; hd.i = 0;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
@@ -350,6 +361,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	bin_dup->flags |= BIN_RANGE_UPDATED;
 
 	bin_dup->rng = ArrayCreate(sizeof(range_t), 0);
+	bin_dup->rng_free = -1;
 
 	/* Pass 1 - hash sequences */
 	n = ArrayMax(bin->rng);
@@ -357,6 +369,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    range_t *r = arrp(range_t, bin->rng, i);
 	    int cstart; /* clipped sequence positions */
 	    seq_t *s;
+
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
 
 	    if (r->flags & GRANGE_FLAG_ISANNO)
 		continue;
@@ -382,6 +397,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	for (i = j = 0; i < n; i++) {
 	    range_t *r = arrp(range_t, bin->rng, i), *r2;
 	    int cstart; /* clipped sequence positions */
+
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
 
 	    if (r->flags & GRANGE_FLAG_ISANNO) {
 		cstart = NMAX(r->start, r->end);

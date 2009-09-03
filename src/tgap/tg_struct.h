@@ -16,6 +16,7 @@
  */
  
 #define GT_Generic       0
+#define GT_Generic       0
 #define GT_RecArray      3
 #define GT_Bin           5
 #define GT_Range         6
@@ -43,6 +44,7 @@ typedef struct {
     GCardinal flags;
     GCardinal track;
     GCardinal nseqs;
+    GCardinal rng_free; /* forms a linked list of items in rng that are free */
 } GBin;
 
 typedef struct {
@@ -76,6 +78,8 @@ typedef struct {
 #define GRANGE_FLAG_CONTIG     (1<<3) /* pair held within the same contig */
 #define GRANGE_FLAG_COMP1      (1<<4) /* true if complemented */
 #define GRANGE_FLAG_COMP2      (1<<5) /* true if complemented */
+
+#define GRANGE_FLAG_UNUSED     (1<<8) /* range has been deleted */
 
 typedef struct {
     GCardinal type;
@@ -216,13 +220,14 @@ typedef struct index {
     int parent_type;
     int parent;   /* -1 implies none */
     int child[2]; /* -ve implies saved already with record -child[?] */
-    Array rng; /* NULL => not loaded */
+    Array rng;    /* NULL => not loaded */
     int rng_rec;
     int bin_id;
     int flags;
-    Array track;    /* array of GTrack objects */
+    Array track;  /* array of GTrack objects */
     int track_rec;
     int nseqs;
+    int rng_free; /* forms a linked list of items in rng that are free */
 } bin_index_t;
 
 /* Bit flags for bin_index_t.flags */
@@ -280,7 +285,7 @@ typedef struct {
 typedef struct {
     int start;
     int end;
-    int rec;
+    int rec; /* or alternatively an index if range_t is free */
 #if 0
     int type;
     union {
