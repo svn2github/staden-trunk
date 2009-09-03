@@ -1165,6 +1165,7 @@ static int cache_item_create_anno_ele(GapIO *io, void *from) {
 	t->comment = (char *)&t->data;
 	strcpy(t->comment, f->comment ? f->comment : "");
 
+	t->rec = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
 	t->block = b;
 	t->idx = sub_rec;
 	b->ae[sub_rec] = t;
