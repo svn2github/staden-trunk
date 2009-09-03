@@ -1,3 +1,30 @@
+*	Investigate use of seq_t->bin_index field. This is primarily
+        used for the sequence_get_pair function and or the
+        read-pairing during tg_index (which needs a rewrite
+        anyway). Perhaps just duplicating range_t->pair_rec into the
+        seq_t struct and removing bin_index field instead (so it's no
+        larger in storage) would be better.
+
+	The reason I'd like to remove this is that currently it means
+	we cannot remove from a bin Range array; only mark as unused
+	instead. (Removal would mean shuffling data down and
+	consequentially updating all seq_t structs to have a new
+	bin_index value.)
+
+	It has impact on seq_t->mapping_qual vs range_t->mqual
+	though. Currently this is duplicated. Should we treat the
+	ranges array copy as simply a cache for faster viewing, or
+	should we actually treat it as the primary copy and remove the
+	duplicates? If we do the latter then we still need a fast way
+	of going from seq_t to the range_t linking to it. One
+	possibility would be to require that the data in a range_t
+	array is sorted by position and then record number (and it
+	probably is already), which allows for binary search.
+
+*	Implement a proper record deallocation (or reuse) system.
+	Right now contig_destroy and anno_ele_destroy just unlink the
+	record, but leave the disk space used up.
+
 *	NOTE: questionable change - need to ponder.
 
 	When adding annotation elements for sequences, attempt to
@@ -78,6 +105,8 @@
         base but the actual io should be known so windows can ignore
         ignore or delay handling of io events.
 
+* 	Fix editor UNDO. (Only works for Tcl controlled I/O atm)
+
 *	DONE: Sequence blocks.
 	The caching layer has 1 record per sequence. But rec>>10 gives
 	1024 sequences with the same record; pack 1024 in the same
@@ -118,8 +147,6 @@
 
 *	Annotations
 	partially done.
-
-* 	Fix editor UNDO. (Only works for Tcl controlled I/O atm)
 
 *	Improved input/output formats
 	(DONE: except for $variable expansion)
