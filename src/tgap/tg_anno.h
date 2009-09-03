@@ -11,6 +11,22 @@ int anno_ele_new(GapIO *io, int bin,
 		 int type, char *comment);
 
 /*
+ * Removes an anno_ele from the gap database.
+ * FIXME: need to deallocate storage too. (See docs/TODO)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_destroy(GapIO *io, anno_ele_t *e);
+
+/*
+ * Creates an anno_ele as per anno_ele_new, but also adds it to an object
+ * and creates the bin Range entry too.
+ */
+int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
+		 int type, char *comment, int start, int end);
+
+/*
  * Returns the range_t element from the bin holding this annotation.
  * The start and end have been modified to be the absolute position
  * within the contig.

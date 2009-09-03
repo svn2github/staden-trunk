@@ -28,6 +28,92 @@ int anno_ele_new(GapIO *io, int bin,
 }
 
 /*
+ * Creates an anno_ele as per anno_ele_new, but also adds it to an object
+ * and creates the bin Range entry too.
+ */
+int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
+		 int type, char *comment, int start, int end) {
+    range_t r;
+    anno_ele_t *e;
+    contig_t *c;
+    int crec;
+    bin_index_t *bin;
+
+    /* Find contig for obj_rec/obj_type */
+    if (obj_type == GT_Contig) {
+	crec = obj_rec;
+    } else {
+	int st, en;
+	sequence_get_position(io, obj_rec, &crec, &st, &en, NULL);
+
+	start += st;
+	end += st;
+    }
+
+    c = (contig_t *)cache_search(io, GT_Contig, crec);
+
+    r.start    = start;
+    r.end      = end;
+    r.flags    = GRANGE_FLAG_ISANNO;
+    r.mqual    = type;
+    r.pair_rec = obj_rec;
+
+    if (GT_Seq == obj_type)
+	r.flags |= GRANGE_FLAG_TAG_SEQ;
+
+    r.rec = anno_ele_new(io, 0, obj_type, obj_rec, 0, type, comment);
+    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
+    e = cache_rw(io, e);
+
+    bin = bin_add_range(io, &c, &r, NULL);
+    e->bin = bin->rec;
+
+    return r.rec;
+}
+
+/*
+ * Removes an anno_ele from the gap database.
+ * FIXME: need to deallocate storage too. (See docs/TODO)
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_destroy(GapIO *io, anno_ele_t *e) {
+    bin_index_t *bin;
+    range_t *r;
+    int i;
+
+    /* Find the bin range pointing to this object */
+    bin = (bin_index_t *)cache_search(io, GT_Bin, e->bin);
+    if (!bin || !bin->rng)
+	return -1;
+    if (!(bin = cache_rw(io, bin)))
+	return -1;
+
+
+    for (i = 0; i < ArrayMax(bin->rng); i++) {
+	r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if (r->rec == e->rec)
+	    break;
+    }
+    if (i == ArrayMax(bin->rng))
+	return -1;
+
+    /* Mark this bin range as unused */
+    r->rec = bin->rng_free;
+    r->flags |= GRANGE_FLAG_UNUSED;
+
+    bin->rng_free = i;
+    bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+
+    return 0;
+}
+
+
+/*
  * Sets the comment for an annotation element.
  *
  * Returns 0 on success
@@ -96,6 +182,9 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
 	nranges = bin->rng ? ArrayMax(bin->rng) : 0;
 	for (i = 0; i < nranges; i++) {
 	    r = arrp(range_t, bin->rng, i);
+	    if (r->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
 	    if (r->rec == ae->rec)
 		break;
 	}
@@ -136,6 +225,9 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig) {
     /* Find the appropriate range_t element */
     for (i = 0; i < ArrayMax(bin->rng); i++) {
 	r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
 	if (r->rec == anno_ele)
 	    break;
     }

@@ -134,6 +134,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
 	"get_library",
+	"new_contig",  "new_sequence", "new_anno_ele",
 	(char *)NULL,
     };
 
@@ -141,7 +142,8 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_FLUSH,     IO_CLOSE,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
-	IO_LIBRARY
+	IO_LIBRARY,
+	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,
     };
 
     if (objc < 2) {
@@ -193,6 +195,42 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
     case SEQ_NAME2REC: {
 	char *seq = Tcl_GetStringFromObj(objv[2], NULL);
 	vTcl_SetResult(interp, "%d", sequence_index_query(io, seq));
+	break;
+    }
+
+    case NEW_CONTIG: {
+	contig_t *c = contig_new(io, "contig");
+	vTcl_SetResult(interp, "%d", c->rec);
+	break;
+    }
+
+    case NEW_SEQUENCE: {
+	seq_t s;
+	memset(&s, 0, sizeof(s));
+	vTcl_SetResult(interp, "%d", cache_item_create(io, GT_Seq, &s));
+	break;
+    }
+
+    case NEW_ANNO_ELE: {
+	int obj_type, obj_rec, start, end;
+
+	if (objc != 6) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s obj_type obj_rec start end\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &obj_type);
+	Tcl_GetIntFromObj(interp, objv[3], &obj_rec);
+	Tcl_GetIntFromObj(interp, objv[4], &start);
+	Tcl_GetIntFromObj(interp, objv[5], &end);
+
+	vTcl_SetResult(interp, "%d",
+		       anno_ele_add(io, obj_type, obj_rec,
+				    0 /* anno_rec */,
+				    str2type("COMM"), "",
+				    start, end));
 	break;
     }
 
@@ -1059,7 +1097,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_type",     
 	"set_contig",   "set_position", "set_comment",
 	"set_obj_type", "set_obj_rec",  "set_anno_rec",
-	"set_type",
+	"set_type",     "remove",
 	(char *)NULL,
     };
 
@@ -1070,7 +1108,7 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_TYPE,       
 	SET_CONTIG,     SET_POSITION,   SET_COMMENT,
 	SET_OBJ_TYPE,   SET_OBJ_REC,    SET_ANNO_REC,
-	SET_TYPE
+	SET_TYPE,	REMOVE
     };
 
     if (objc < 2) {
@@ -1101,6 +1139,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 
     /* Perform the command proper */
     switch ((enum options)index) {
+    case REMOVE:
+	anno_ele_destroy(te->io, te->anno);
+	/* Deliberate flow through to DELETE */
+
     case DELETE:
 	Tcl_DeleteCommandFromToken(interp,
 				   Tcl_GetCommandFromObj(interp, objv[0]));
@@ -1157,8 +1199,10 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	    return TCL_ERROR;
 	}
 	
-	anno_ele_set_type(te->io, &te->anno,
-			  Tcl_GetStringFromObj(objv[2], NULL));
+	if (-1 == anno_ele_set_type(te->io, &te->anno,
+				    Tcl_GetStringFromObj(objv[2], NULL)))
+	    return TCL_ERROR;
+
 	break;
 
     case GET_OBJ_TYPE:
