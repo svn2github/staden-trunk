@@ -67,18 +67,18 @@ EXTRA_LIBS	  = @LIBS@
 # Do we also need to add SHLIB_SONAME somewhere? On irix this is:
 # SHLIB_SONAME = $(@:$(L)/%=-soname %)
 #
-SHLIB_CFLAGS      = @TCL_SHLIB_CFLAGS@
-SHLIB_LD          = @TCL_SHLIB_LD@
+SHLIB_CFLAGS      = @SHLIB_CFLAGS@
+SHLIB_LD          = @SHLIB_LD@
 SHLIB_LDFLAGS     = $(CFLAGS) $(LDFLAGS)
 SHLIB_PREFIX      = lib
-SHLIB_SUFFIX      = @TCL_SHLIB_SUFFIX@
+SHLIB_SUFFIX      = @SHLIB_SUFFIX@
 SHLIB_SONAME      =
 SHLIB_OUTFLAG     = -o $(SPACE)
-EXTRA_LIBS       += @TCL_DL_LIBS@
+EXTRA_LIBS       += @DL_LIBS@
 
 # Best guess for C++
 SHLIB_CXXFLAGS    = $(SHLIB_CFLAGS)
-SHLIB_LDXX        = @TCL_SHLIB_LDXX@
+SHLIB_LDXX        = @SHLIB_LDXX@
 SHLIB_LDXXFLAGS   = $(SHLIB_LDFLAGS)
 
 # Best guess for fortran

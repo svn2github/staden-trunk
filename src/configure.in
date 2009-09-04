@@ -73,6 +73,11 @@ TEA_LOAD_TCLCONFIG
 TEA_PATH_TKCONFIG
 TEA_LOAD_TKCONFIG
 
+# Override the TEA_PATH_TCLCONFIG for compilation options.
+# This allows us to do "./configure ... CC=/some/other/cc" and get SHLIB_LD
+# variables set correctly for our new compiler.
+TEA_CONFIG_CFLAGS
+
 # Handles --prefix option
 #TEA_PREFIX
 
@@ -83,16 +88,12 @@ TEA_PUBLIC_TK_HEADERS
 TEA_PRIVATE_TK_HEADERS
 
 # Guess C++ shared library generation from the C one.
-[TCL_SHLIB_LDXX=`echo "$TCL_SHLIB_LD" | \
+[SHLIB_LDXX=`echo "$SHLIB_LD" | \
 	sed 's/{CC}/{CXX}/;s/{CFLAGS}/{CXXFLAGS}/;s/^[a-z]*cc /${CXX} /'`
 ]
+AC_SUBST([SHLIB_LDXX])
+AC_SUBST([SHLIB_SUFFIX])
 
-AC_SUBST([TCL_SHLIB_CFLAGS])
-AC_SUBST([TCL_SHLIB_LD])
-AC_SUBST([TCL_SHLIB_LDXX])
-AC_SUBST([TCL_SHLIB_LD_LIBS])
-AC_SUBST([TCL_SHLIB_SUFFIX])
-AC_SUBST([TCL_DL_LIBS])
 AC_SUBST([TCL_VERSION])
 AC_SUBST([TCL_INCLUDE_SPEC])
 AC_SUBST([TCL_LIB_SPEC])
