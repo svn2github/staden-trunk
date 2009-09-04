@@ -57,7 +57,7 @@ typedef struct {
 #include <zlib.h>
 static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
     z_stream s;
-    char *cdata = NULL; /* Compressed output */
+    unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
     int cdata_pos = 0;
     int err;
@@ -82,7 +82,7 @@ static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
 
     /* Encode to 'cdata' array */
     for (;s.avail_in;) {
-	s.next_out = (unsigned char *)&cdata[cdata_pos];
+	s.next_out = &cdata[cdata_pos];
 	s.avail_out = cdata_alloc - cdata_pos;
 	if (cdata_alloc - cdata_pos <= 0) {
 	    fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
@@ -103,14 +103,14 @@ static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
     if (deflateEnd(&s) != Z_OK) {
 	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
     }
-    return cdata;
+    return (char *)cdata;
 }
 
 static char *mem_deflate_parts(char *data,
 			       size_t *part_size, int nparts,
 			       size_t *cdata_size) {
     z_stream s;
-    char *cdata = NULL; /* Compressed output */
+    unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
     int cdata_pos = 0;
     int err, i;
@@ -140,7 +140,7 @@ static char *mem_deflate_parts(char *data,
     for (i = 0; i < nparts; i++) {
 	s.avail_in = part_size[i];
 	for (;s.avail_in;) {
-	    s.next_out = (unsigned char *)&cdata[cdata_pos];
+	    s.next_out = &cdata[cdata_pos];
 	    s.avail_out = cdata_alloc - cdata_pos;
 	    if (cdata_alloc - cdata_pos <= 0) {
 		fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
@@ -162,14 +162,14 @@ static char *mem_deflate_parts(char *data,
     if (deflateEnd(&s) != Z_OK) {
 	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
     }
-    return cdata;
+    return (char *)cdata;
 }
 
 static char *mem_deflate_lparts(char *data,
 				size_t *part_size, int *level, int nparts,
 				size_t *cdata_size) {
     z_stream s;
-    char *cdata = NULL; /* Compressed output */
+    unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
     int cdata_pos = 0;
     int err, i;
@@ -199,7 +199,7 @@ static char *mem_deflate_lparts(char *data,
     for (i = 0; i < nparts; i++) {
 	s.avail_in = part_size[i];
 	for (;s.avail_in;) {
-	    s.next_out = (unsigned char *)&cdata[cdata_pos];
+	    s.next_out = &cdata[cdata_pos];
 	    s.avail_out = cdata_alloc - cdata_pos;
 	    if (cdata_alloc - cdata_pos <= 0) {
 		fprintf(stderr, "Deflate produced larger output than expected. Abort\n"); 
@@ -222,12 +222,12 @@ static char *mem_deflate_lparts(char *data,
     if (deflateEnd(&s) != Z_OK) {
 	fprintf(stderr, "zlib deflate error: %s\n", s.msg);
     }
-    return cdata;
+    return (char *)cdata;
 }
 
 static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
     z_stream s;
-    char *data = NULL; /* Uncompressed output */
+    unsigned char *data = NULL; /* Uncompressed output */
     int data_alloc = 0;
     int err;
 
@@ -249,7 +249,7 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
 
     /* Decode to 'data' array */
     for (;s.avail_in;) {
-	s.next_out = (unsigned char *)&data[s.total_out];
+	s.next_out = &data[s.total_out];
 	err = inflate(&s, Z_NO_FLUSH);
 	if (err == Z_STREAM_END)
 	    break;
@@ -266,7 +266,7 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
     inflateEnd(&s);
 
     *size = s.total_out;
-    return data;
+    return (char *)data;
 }
 
 
@@ -411,9 +411,9 @@ static int io_generic_abandon(void *dbh, GView v) {
  */
 static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
 				     size_t *nitems) {
-    char *buf, *cp;
+    unsigned char *buf, *cp;
     size_t buf_len;
-    int i, ni;
+    uint32_t i, ni;
     GCardinal *card;
 
     /* Load from disk */
@@ -435,7 +435,7 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
     }
 
     for (i = 0; i < ni; i++)
-	cp += u72int(cp, &card[i]);
+	cp += u72int(cp, (uint32_t *)&card[i]);
 
     assert(cp-buf == buf_len);
     free(buf);
@@ -445,10 +445,10 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
 
 static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
     GView v;
-    char *buf, *cp;
+    unsigned char *buf, *cp;
     size_t buf_len;
     cached_item *ci;
-    int nitems, i;
+    uint32_t nitems, i;
     GCardinal *card;
 
     /* Load from disk */
@@ -472,7 +472,7 @@ static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
     card = (GCardinal *)&ci->data;
 
     for (i = 0; i < nitems; i++)
-	cp += u72int(cp, &card[i]);
+	cp += u72int(cp, (uint32_t *)&card[i]);
 
     assert(cp-buf == buf_len);
     free(buf);
@@ -487,19 +487,19 @@ static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
 static int io_generic_write_i4(g_io *io, GView v, int type,
 			       void *buf, size_t len) {
     int ret, i;
-    char *cp_start, *cp;
+    unsigned char *cp_start, *cp;
     GCardinal *card = (GCardinal *)buf;
-    int nitems = len / sizeof(GCardinal);
+    uint32_t nitems = len / sizeof(GCardinal);
 
     /* Allocate memory based on worst case sizes */
-    if (NULL == (cp = cp_start = (char *)malloc(5 * nitems + 2 + 5)))
+    if (NULL == (cp = cp_start = malloc(5 * nitems + 2 + 5)))
 	return -1;
 
     *cp++ = type;
     *cp++ = 0;
     cp += int2u7(nitems, cp);
     for (i = 0; i < nitems; i++) {
-	cp += int2u7(card[i], cp);
+	cp += int2u7((uint32_t)card[i], cp);
     }
 
     ret = g_write(io, v, cp_start, cp - cp_start);
@@ -566,7 +566,7 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     rdcounts[GT_BTree]++;
 
     /* Decode the btree element */
-    n = btree_node_decode(buf+2);
+    n = btree_node_decode((unsigned char *)buf+2);
     n->rec = rec;
 
     ci = cache_new(GT_BTree, rec, v, NULL, sizeof(btree_node_t *));
@@ -651,9 +651,12 @@ btree_node_t *btree_node_get(void *clientdata, BTRec r) {
     btree_query_t *bt = (btree_query_t *)clientdata;
     HacheItem *hi = HacheTableSearch(bt->h, (char *)&r, sizeof(r));
 
-    return hi
-	? (btree_node_t *)(((cached_item *)hi->data.p)->data)
-	: (fprintf(stderr, "Failed to load btree %d\n", r), NULL);
+    if (hi) {
+	return (btree_node_t *)(((cached_item *)hi->data.p)->data);
+    } else {
+	fprintf(stderr, "Failed to load btree %d\n", r);
+	return NULL;
+    }
 }
 
 /*
@@ -1098,7 +1101,7 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
     GView v;
     contig_t *c;
     size_t len, slen;
-    char *ch, *cp;
+    unsigned char *ch, *cp;
     int32_t start, end;
     uint32_t bin, nlen;
 
@@ -1147,13 +1150,13 @@ static cached_item *io_contig_read(void *dbh, GRec rec) {
 
 static int io_contig_write_view(g_io *io, contig_t *c, GView v) {
     size_t len;
-    char *cp, *buf;
+    unsigned char *cp, *buf;
     int nlen;
 
     /* Estimate worst-case memory requirements */
     nlen = c->name ? strlen(c->name) : 0;
     len = 2 + 5+5+5 + 5+nlen;
-    if (NULL == (cp = buf = (char *)malloc(len)))
+    if (NULL == (cp = buf = malloc(len)))
 	return -1;
 
 
@@ -1306,11 +1309,11 @@ static int io_array_write(void *dbh, cached_item *ci) {
 static cached_item *io_anno_ele_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     void *bloc;
-    char *cp;
+    unsigned char *cp;
     size_t bloc_len;
     GView v;
     cached_item *ci;
-    int anno_rec, tag_type, obj_type, obj_rec, comment_len, bin_rec;
+    uint32_t anno_rec, tag_type, obj_type, obj_rec, comment_len, bin_rec;
     anno_ele_t *e;
 
     /* Load from disk */
@@ -1490,17 +1493,18 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 	lib->lib_type = 0;
 	memset(lib->size_hist, 0, 3 * LIB_BINS * sizeof(lib->size_hist[0][0]));
     } else {
-	int i, j, tmp;
-	char *cp = ch;
+	int i, j;
+	uint32_t tmp;
+	unsigned char *cp = (unsigned char *)ch;
 
-	cp += u72int(cp, &lib->insert_size[0]);
-	cp += u72int(cp, &lib->insert_size[1]);
-	cp += u72int(cp, &lib->insert_size[2]);
+	cp += u72int(cp, (uint32_t *)&lib->insert_size[0]);
+	cp += u72int(cp, (uint32_t *)&lib->insert_size[1]);
+	cp += u72int(cp, (uint32_t *)&lib->insert_size[2]);
 	cp += u72int(cp, &tmp); lib->sd[0] = tmp/100.0;
 	cp += u72int(cp, &tmp); lib->sd[1] = tmp/100.0;
 	cp += u72int(cp, &tmp); lib->sd[2] = tmp/100.0;
-	cp += u72int(cp, &lib->machine);
-	cp += u72int(cp, &lib->lib_type);
+	cp += u72int(cp, (uint32_t *)&lib->machine);
+	cp += u72int(cp, (uint32_t *)&lib->lib_type);
 	
 	for (j = 0; j < 3; j++) {
 	    int last = 0;
@@ -1524,7 +1528,7 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 static int io_library_write(void *dbh, cached_item *ci) {
     g_io *io = (g_io *)dbh;
     library_t *lib = (library_t *)&ci->data;
-    char cpstart[LIB_BINS*5*3+100], *cp = cpstart;
+    unsigned char cpstart[LIB_BINS*5*3+100], *cp = cpstart;
     int tmp, i, j, err;
     char *gzout;
     size_t ssz;
@@ -1554,7 +1558,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
     }
 
     /* Compress it */
-    gzout = mem_deflate(cpstart, cp-cpstart, &ssz);
+    gzout = mem_deflate((char *)cpstart, cp-cpstart, &ssz);
     //err = g_write(io, ci->view, cpstart, cp-cpstart);
     vec[0].buf = fmt;   vec[0].len = 2;
     vec[1].buf = gzout; vec[1].len = ssz;
@@ -1595,7 +1599,8 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     int i;
     size_t part_sz[7];
     GRange last, last_tag;
-    char *cp[6], *cp_orig[6], *out, *out_orig;
+    unsigned char *cp[6], *cp_orig[6], *out;
+    char *out_orig;
     //char *cpt, *cpt_orig;
     //HacheTable *h = HacheTableCreate(16, HASH_DYNAMIC_SIZE);
     //int ntags;
@@ -1650,11 +1655,12 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     *sz =  7*5 + part_sz[1] + part_sz[2] + part_sz[3] +
 	part_sz[4] + part_sz[5] + part_sz[6];
 
-    out = out_orig = (char *)malloc(*sz);
+    out = malloc(*sz);
+    out_orig = (char *)out;
     out += int2u7(nr, out);
     for (i = 0; i < 6; i++)
 	out += int2u7(cp[i]-cp_orig[i], out);
-    part_sz[0] = out-out_orig;
+    part_sz[0] = (char *)out-out_orig;
 
     /* Followed by the serialised 6 packed fields themselves */
     for (i = 0; i < 6; i++) {
@@ -1664,7 +1670,7 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 	free(cp_orig[i]);
     }
 
-    *sz = out-out_orig;
+    *sz = (char *)out-out_orig;
 
     /* Gzip it too */
     {
@@ -1688,18 +1694,19 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     return out_orig;
 }
 
-static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
-    int i, off[6];
-    char *cp[6], *zpacked = NULL;
+static GRange *unpack_rng_array(unsigned char *packed, int packed_sz, int *nr) {
+    uint32_t i, off[6];
+    unsigned char *cp[6], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last;
     size_t ssz;
 
     /* First of all, inflate the compressed data */
-    zpacked = packed = mem_inflate(packed, packed_sz, &ssz);
+    zpacked = packed = (unsigned char *)mem_inflate((char *)packed,
+						    packed_sz, &ssz);
     packed_sz = ssz;
 
     /* Unpack number of ranges */
-    packed += u72int(packed, nr);
+    packed += u72int(packed, (uint32_t *)nr);
 
     /* Unpack offsets of the 6 range components */
     for (i = 0; i < 6; i++) 
@@ -1714,8 +1721,8 @@ static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
 
     /* And finally unpack from the 6 components in parallel for each struct */
     for (i = 0; i < *nr; i++) {
-	cp[2] += u72int(cp[2], &r[i].rec);
-	cp[4] += u72int(cp[4], &r[i].flags);
+	cp[2] += u72int(cp[2], (uint32_t *)&r[i].rec);
+	cp[4] += u72int(cp[4], (uint32_t *)&r[i].flags);
 	if (r[i].flags & GRANGE_FLAG_UNUSED) {
 	    r[i].start = 0;
 	    r[i].end = 0;
@@ -1724,9 +1731,9 @@ static GRange *unpack_rng_array(char *packed, int packed_sz, int *nr) {
 	    continue;
 	}
 
-	cp[0] += u72int(cp[0], &r[i].start);
-	cp[1] += u72int(cp[1], &r[i].end);
-	cp[3] += u72int(cp[3], &r[i].mqual);
+	cp[0] += u72int(cp[0], (uint32_t *)&r[i].start);
+	cp[1] += u72int(cp[1], (uint32_t *)&r[i].end);
+	cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
 	if (r[i].flags & GRANGE_FLAG_ISANNO) {
 	    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
 		int32_t pr;
@@ -1782,9 +1789,9 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     GView v;
     GBin g, *b = &g;
     bin_index_t *bin;
-    char *buf, *cp;
+    unsigned char *buf, *cp;
     size_t buf_len;
-    int bflag;
+    uint32_t bflag;
     int version;
 
     /* Load from disk */
@@ -1828,36 +1835,36 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     if (bflag & BIN_SIZE_EQ_POS)
 	g.size = g.pos;
     else
-	cp += u72int(cp, &g.size);
+	cp += u72int(cp, (uint32_t *)&g.size);
 
     if (bflag & BIN_NO_RANGE) {
 	g.range = 0;
 	g.start = 0;
 	g.end   = 0;
     } else {
-	cp += u72int(cp, &g.start);
-	cp += u72int(cp, &g.end);
+	cp += u72int(cp, (uint32_t *)&g.start);
+	cp += u72int(cp, (uint32_t *)&g.end);
 	g.end += g.start;
-	cp += u72int(cp, &g.range);
+	cp += u72int(cp, (uint32_t *)&g.range);
     }
 
     if (bflag & BIN_NO_LCHILD)
 	g.child[0] = 0;
     else
-	cp += u72int(cp, &g.child[0]);
+	cp += u72int(cp, (uint32_t *)&g.child[0]);
 
     if (bflag & BIN_NO_RCHILD)
 	g.child[1] = 0;
     else
-	cp += u72int(cp, &g.child[1]);
+	cp += u72int(cp, (uint32_t *)&g.child[1]);
 
     if (bflag & BIN_NO_TRACK)
 	g.track = 0;
     else
-	cp += u72int(cp, &g.track);
+	cp += u72int(cp, (uint32_t *)&g.track);
 
-    cp += u72int(cp, &g.parent);
-    cp += u72int(cp, &g.nseqs);
+    cp += u72int(cp, (uint32_t *)&g.parent);
+    cp += u72int(cp, (uint32_t *)&g.nseqs);
 
     if (version > 0)
 	cp += s72int(cp, &g.rng_free);
@@ -1901,13 +1908,13 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	GViewInfo vi;
 	int nranges;
 	GRange *r;
-	char *buf;
+	unsigned char *buf;
 
 	v = lock(io, b->range, G_LOCK_RO);
 	g_view_info_(io->gdb, io->client, v, &vi);
 	
 	if (vi.used) {
-	    buf = (char *)malloc(vi.used);
+	    buf = malloc(vi.used);
 	    g_read(io, v, buf, vi.used);
 	    assert(buf[0] == GT_Range);
 	    assert(buf[1] == 0);
@@ -1961,7 +1968,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     GBin g;
     int err = 0;
-    unsigned int bflag;
+    uint32_t bflag;
 
     /* Ranges */
     if (bin->flags & BIN_RANGE_UPDATED) {
@@ -2036,7 +2043,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 
     /* Bin struct itself */
     if (bin->flags & BIN_BIN_UPDATED) {
-	char cpstart[12*5+2], *cp = cpstart;
+	unsigned char cpstart[12*5+2], *cp = cpstart;
 
 	bin->flags &= ~BIN_BIN_UPDATED;
 	g.pos         = bin->pos;
@@ -2184,9 +2191,8 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     GView v;
     GTrack_Header *t;
     track_t *track;
-    char *buf;
     size_t buf_len;
-    char *cp;
+    unsigned char *buf, *cp;
     uint32_t type, flags, item_size, nitems;
 
     /* Load from disk */
@@ -2231,10 +2237,10 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
 
 static int io_track_write_view(g_io *io, track_t *track, GView v) {
     GTrack_Header *h;
-    char *data, *cp;
+    unsigned char *data, *cp;
     int err = 0;
 
-    cp = data = (char *)malloc(2 + 4*5 + track->item_size * track->nitems);
+    cp = data = malloc(2 + 4*5 + track->item_size * track->nitems);
     if (!data)
 	return -1;
 
@@ -2333,11 +2339,11 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     signed int i, j;
     seq_t *seq;
     uint32_t left, right, bin, seq_len;
-    int parent_rec, parent_type, bin_index;
+    uint32_t parent_rec, parent_type, bin_index;
     Array anno;
 
     if (len) {
-	int Nanno;
+	uint32_t Nanno;
 	cp = buf;
 	assert(cp[0] == GT_Seq);
 	assert(cp[1] == 0);
@@ -2359,7 +2365,7 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 	if (Nanno) {
 	    anno = ArrayCreate(sizeof(int), Nanno);
 	    for (i = 0; i < Nanno; i++) {
-		cp += u72int(cp, arrp(int, anno, i));
+		cp += u72int(cp, arrp(uint32_t, anno, i));
 	    }
 	} else {
 	    anno = NULL;
@@ -2379,7 +2385,8 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
 	mapping_qual = 0;
 	format = 0;
 	anno = NULL;
-	cp = buf = "\0\0\0"; /* seq name, trace name, alignment */
+	/* seq name, trace name, alignment */
+	cp = buf = (unsigned char *)"\0\0\0";
 	len = 3;
     }
 
@@ -2626,11 +2633,11 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     }
 
     /* Name */
-    strcpy(cp, seq->name);
+    strcpy((char *)cp, seq->name);
     cp += seq->name_len + 1;
 
     /* Trace name */
-    strcpy(cp, seq->trace_name);
+    strcpy((char *)cp, seq->trace_name);
     cp += seq->trace_name_len + 1;
 
     /* Alignment */
@@ -2667,7 +2674,7 @@ static int io_seq_write_view(g_io *io, seq_t *seq, GView v, GRec rec) {
     cp += int2u7(0, cp); /* match of length zero */
   }
 #else
-    strcpy(cp, seq->alignment);
+    strcpy((char *)cp, seq->alignment);
     cp += seq->alignment_len + 1;
 #endif
 
@@ -2803,7 +2810,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     /* Ungzip it too */
     if (1) {
 	size_t ssz;
-	buf = mem_inflate(buf+2, buf_len-2, &ssz);
+	buf = (unsigned char *)mem_inflate((char *)buf+2, buf_len-2, &ssz);
 	free(cp);
 	cp = buf;
 	buf_len = ssz;
@@ -2813,7 +2820,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
     for (i = 0; i < SEQ_BLOCK_SZ; i++)
-	cp += u72int(cp, &in[i].bin);
+	cp += u72int(cp, (uint32_t *)&in[i].bin);
 
     /* Bin index */
     for (last = i = 0; i < SEQ_BLOCK_SZ; i++) {
@@ -2827,25 +2834,25 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     /* left clip */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].left);
+	cp += u72int(cp, (uint32_t *)&in[i].left);
     }
 
     /* right clip */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].right);
+	cp += u72int(cp, (uint32_t *)&in[i].right);
     }
 
     /* length */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].len);
+	cp += u72int(cp, (uint32_t *)&in[i].len);
     }
 
     /* parent rec */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].parent_rec);
+	cp += u72int(cp, (uint32_t *)&in[i].parent_rec);
     }
 
     /* parent type */
@@ -2874,19 +2881,19 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     /* name length */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].name_len);
+	cp += u72int(cp, (uint32_t *)&in[i].name_len);
     }
 
     /* trace name length */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].trace_name_len);
+	cp += u72int(cp, (uint32_t *)&in[i].trace_name_len);
     }
 
     /* alignment length */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].alignment_len);
+	cp += u72int(cp, (uint32_t *)&in[i].alignment_len);
     }
 
 
@@ -2981,8 +2988,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     g_io *io = (g_io *)dbh;
     seq_block_t *b = (seq_block_t *)&ci->data;
     int i, last_index;
-    char *cp, *cp_start;
-    char *out[17], *out_start[17];
+    unsigned char *cp, *cp_start;
+    unsigned char *out[17], *out_start[17];
     size_t out_size[17], total_size;
     int level[17];
     GIOVec vec[2];
@@ -3105,7 +3112,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[i] = out[i] - out_start[i];
 	total_size += out_size[i];
     }
-    cp = cp_start = (char *)malloc(total_size+1);
+    cp = cp_start = malloc(total_size+1);
     for (i = 0; i < 17; i++) {
 	memcpy(cp, out_start[i], out_size[i]);
 	cp += out_size[i];
@@ -3128,11 +3135,12 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     
     /* Gzip it too */
     if (1) {
-	char *gzout;
+	unsigned char *gzout;
 	size_t ssz;
 
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
-	gzout = mem_deflate_lparts(cp_start, out_size, level, 17, &ssz);
+	gzout = (unsigned char *)mem_deflate_lparts((char *)cp_start,
+						    out_size, level, 17, &ssz);
 	free(cp_start);
 	cp_start = gzout;
 	cp = cp_start + ssz;
@@ -3213,7 +3221,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     /* Ungzip it too */
     if (1) {
 	size_t ssz;
-	buf = mem_inflate(buf+2, buf_len-2, &ssz);
+	buf = (unsigned char *)mem_inflate((char *)buf+2, buf_len-2, &ssz);
 	free(cp);
 	cp = buf;
 	buf_len = ssz;
@@ -3223,18 +3231,18 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     /* Decode the fixed size components of our sequence structs */
     /* Bin */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++)
-	cp += u72int(cp, &in[i].bin);
+	cp += u72int(cp, (uint32_t *)&in[i].bin);
 
     /* Tag type */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].tag_type);
+	cp += u72int(cp, (uint32_t *)&in[i].tag_type);
     }
 
     /* Obj type */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &in[i].obj_type);
+	cp += u72int(cp, (uint32_t *)&in[i].obj_type);
     }
     
     /* Obj record */
@@ -3244,7 +3252,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 	cp += s72int(cp, &tmp);
 	in[i].obj_rec = last + tmp;
 	tmp = in[i].obj_rec;
-	//cp += u72int(cp, &in[i].obj_rec);
+	//cp += u72int(cp, (uint32_t *)&in[i].obj_rec);
     }
 
     /* Anno record */
@@ -3254,13 +3262,13 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 	cp += s72int(cp, &tmp);
 	in[i].anno_rec = last + tmp;
 	tmp = in[i].anno_rec;
-	//cp += u72int(cp, &in[i].anno_rec);
+	//cp += u72int(cp, (uint32_t *)&in[i].anno_rec);
     }
 
     /* Comment length */
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	if (!in[i].bin) continue;
-	cp += u72int(cp, &comment_len[i]);
+	cp += u72int(cp, (uint32_t *)&comment_len[i]);
     }
 
 
@@ -3308,8 +3316,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
     g_io *io = (g_io *)dbh;
     anno_ele_block_t *b = (anno_ele_block_t *)&ci->data;
     int i, last_obj_rec, last_anno_rec;
-    char *cp, *cp_start;
-    char *out[7], *out_start[7];
+    unsigned char *cp, *cp_start;
+    unsigned char *out[7], *out_start[7];
     size_t out_size[7], total_size;
     int level[7];
     GIOVec vec[2];
@@ -3377,7 +3385,7 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	out_size[i] = out[i] - out_start[i];
 	total_size += out_size[i];
     }
-    cp = cp_start = (char *)malloc(total_size+1);
+    cp = cp_start = malloc(total_size+1);
     for (i = 0; i < 7; i++) {
 	memcpy(cp, out_start[i], out_size[i]);
 	cp += out_size[i];
@@ -3390,11 +3398,12 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 
     /* Gzip it too */
     if (1) {
-	char *gzout;
+	unsigned char *gzout;
 	size_t ssz;
 
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
-	gzout = mem_deflate_lparts(cp_start, out_size, level, 7, &ssz);
+	gzout = (unsigned char *)mem_deflate_lparts((char *)cp_start,
+						    out_size, level, 7, &ssz);
 	free(cp_start);
 	cp_start = gzout;
 	cp = cp_start + ssz;

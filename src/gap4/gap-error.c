@@ -86,7 +86,6 @@ void error_sig(int sig) {
     } else {
 	exit(1);
     }
-    puts("4");
 }
 
 static void xperror_out_func(char *name, char *str) {

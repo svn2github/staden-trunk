@@ -44,6 +44,16 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig);
  */
 int anno_ele_set_comment(GapIO *io, anno_ele_t **e, char *comment);
 
+/*
+ * Sets the annotation type, passed in as a string but held in a 4-byte int.
+ * This also attempts to set the cached copy of the type held within the
+ * bin range array.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str);
+
 #define str2type(s) ((s)[3] + ((s)[2]<<8) + ((s)[1]<<16) + ((s)[0]<<24))
 #define type2str(t,s) \
     ( \

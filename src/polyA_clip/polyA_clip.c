@@ -6,6 +6,7 @@
 
 #include "seqInfo.h"
 #include "dna_utils.h"
+#include "xalloc.h"
 #include <io_lib/misc.h>
 
 /* johnt 1/6/99 must explicitly import globals from DLLs with Visual C++*/

@@ -3,7 +3,7 @@
 
 #include "list.h"
 
-extern xdap_late_open_for_read(List *l);
+extern void xdap_late_open_for_read(List *l);
 extern void xdap_late_close(List *l);
 extern void xdap_late_open_for_write(List *l);
 extern void xdap_late_write_header(List *l);

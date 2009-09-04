@@ -607,11 +607,11 @@ btree_node_t *btree_node_decode(unsigned char *buf) {
     bufp = &buf[10 + n->used*4];
     for (i = 0; i < n->used; i++) {
 	int dist = *bufp++;
-	size_t l = strlen(bufp);
+	size_t l = strlen((char *)bufp);
 	n->keys[i] = (char *)malloc(dist + l + 1);
 	if (dist)
 	    strncpy(n->keys[i], last, dist);
-	strcpy(n->keys[i]+dist, bufp);
+	strcpy(n->keys[i]+dist, (char *)bufp);
 	bufp += l+1;
 
 	last = n->keys[i];

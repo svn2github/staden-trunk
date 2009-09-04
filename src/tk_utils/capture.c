@@ -7,6 +7,7 @@
 #include "os.h"
 #include "capture.h"
 #include "misc.h"
+#include "tcl_utils.h"
 
 int tcl_capture(ClientData clientData, Tcl_Interp *interp,
 		int argc, char **argv) {

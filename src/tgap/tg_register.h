@@ -60,8 +60,8 @@
 /*
  * Useful flags (musn't coincide with the job numbers)
  */
-#define REG_FLAG_INVIS	       (1<<30)
-#define REG_FLAG_INACTIVE      (1<<31)
+#define REG_FLAG_INVIS	       (1<<29)
+#define REG_FLAG_INACTIVE      (1<<30)
 
 
 /*

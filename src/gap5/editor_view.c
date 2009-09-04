@@ -1059,7 +1059,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	    right = s->right;
 
 	    if (l > MAX_SEQ_LEN)
-		seq = (char *)malloc(l);
+		seq = malloc(l);
 	    memcpy(seq, s->seq, l);
 
 	    if (sp < xx->displayPos) {

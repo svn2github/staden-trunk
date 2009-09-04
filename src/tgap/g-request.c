@@ -988,7 +988,7 @@ static int update_cache_for_write(GDB *gdb, GClient c, GView v, GCardinal len,
 	    allocate = 0;
 	} else {
 	    /* need to allocate a new image */
-	    image = heap_allocate(gdb->gfile->dheap,len,&allocate);
+	    image = heap_allocate(gdb->gfile->dheap,len,(uint32_t *)&allocate);
 	    if (-1 == image)
 		return get_xerrnum();
 	}
@@ -1039,7 +1039,7 @@ static int update_cache_for_write(GDB *gdb, GClient c, GView v, GCardinal len,
 
 	/* need to allocate a new image */
 	if (!remove) {
-	    image = heap_allocate(gdb->gfile->dheap, len, &allocate);
+	    image = heap_allocate(gdb->gfile->dheap, len, (uint32_t *)&allocate);
 	    if (-1 == image)
 		return get_xerrnum();
 	} else {
@@ -1322,7 +1322,7 @@ int g_fast_write_N_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, void *buf
 
 
     /* need to allocate a new image */
-    if (-1 == (image = heap_allocate(gdb->gfile->dheap, len, &allocate)))
+    if (-1 == (image = heap_allocate(gdb->gfile->dheap, len, (uint32_t *)&allocate)))
 	return gerr_set(GERR_FILE_FULL);
 
     /* write to image */
@@ -1391,7 +1391,7 @@ int g_fast_writev_N_(GDB *gdb, GClient c, GFileN file_N, GCardinal rec, GIOVec *
 
 
     /* need to allocate a new image */
-    if (-1 == (image = heap_allocate(gdb->gfile->dheap, len, &allocate)))
+    if (-1 == (image = heap_allocate(gdb->gfile->dheap, len, (uint32_t *)&allocate)))
 	return gerr_set(GERR_FILE_FULL);
 
     /* write to image */

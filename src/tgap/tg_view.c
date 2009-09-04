@@ -202,8 +202,6 @@ int wgotonum(int xpos, WINDOW *win) {
 	mvwprintw(win, 1, 13, "            ");
 	mvwprintw(win, 1, 13, "%-d", xpos);
     }
-
-    return 0;
 }
 
 char *wgotoseq(WINDOW *win) {
@@ -251,8 +249,6 @@ char *wgotoseq(WINDOW *win) {
 	mvwprintw(win, 1, 13, "            ");
 	mvwprintw(win, 1, 13, "%s", name);
     }
-
-    return name;
 }
 
 void whelp(WINDOW *win) {

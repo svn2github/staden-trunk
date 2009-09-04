@@ -32,7 +32,7 @@ int io_clength(GapIO *io, int cnum) {
 /* Left most reading in a contig - outmoded */
 int io_clnbr(GapIO *io, int cnum) {
     int rec;
-    range_t *r;
+    rangec_t *r;
     contig_iterator *ci = contig_iter_new(io, cnum, 1, CITER_FIRST,
 					  CITER_CSTART, CITER_CEND);
 
@@ -46,7 +46,7 @@ int io_clnbr(GapIO *io, int cnum) {
 /* Right most reading in a contig - outmoded */
 int io_crnbr(GapIO *io, int cnum) {
     int rec;
-    range_t *r;
+    rangec_t *r;
     contig_iterator *ci = contig_iter_new(io, cnum, 1, CITER_LAST,
 					  CITER_CSTART, CITER_CEND);
 

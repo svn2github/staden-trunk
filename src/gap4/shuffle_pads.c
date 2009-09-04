@@ -78,6 +78,7 @@
 #include "text_output.h"
 #include "tagUtils.h"
 #include "shuffle_pads.h"
+#include "dis_readings.h"
 
 void print_malign(MALIGN *malign);
 void print_moverlap(MALIGN *malign, MOVERLAP *o, int offset);

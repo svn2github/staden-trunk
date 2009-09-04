@@ -8,7 +8,7 @@ SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
 
-INCLUDES_E += $(IOLIB_INC) $(TKUTILS_INC)
+INCLUDES_E += $(IOLIB_INC) $(TKUTILS_INC) $(MISC_INC)
 
 OBJ=\
 	qclip.o\

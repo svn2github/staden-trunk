@@ -49,7 +49,7 @@ int database_info(int job, void *mydata, info_arg_t *theirdata) {
 
 	    gel_seq->gel_start  = s->left-1;
 	    gel_seq->gel_end    = s->right+1;
-	    gel_seq->gel_conf   = s->conf;
+	    gel_seq->gel_conf   = (unsigned char *)s->conf;
 	    gel_seq->gel_opos   = NULL;
 	    gel_seq->gel_length = ABS(s->len);
 

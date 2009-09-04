@@ -10,6 +10,7 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
+#include <stdlib.h>
 #include "f2c.h"
 
 /* Common Block Declarations */

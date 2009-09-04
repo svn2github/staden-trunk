@@ -4,6 +4,7 @@
 
 #include "seqInfo.h"
 #include "consen.h"
+#include "xalloc.h"
 
 /* johnt 1/6/99 must explicitly import globals from DLLs with Visual C++*/
 #ifdef _MSC_VER

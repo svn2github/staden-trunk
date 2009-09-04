@@ -1139,7 +1139,7 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
 		 int objc, Tcl_Obj *CONST objv[])
 {
     int i, j, k, len;
-    signed char *in, *out;
+    char *in, *out;
 
     format_sequence_arg args;
     cli_args a[] = {

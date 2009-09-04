@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#include <staden_config.h>
+
 #include "tg_gio.h"
 #include "hache_table.h"
 #include "baf.h"
