@@ -2095,8 +2095,6 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.size == g.pos)            bflag |= BIN_SIZE_EQ_POS;
 
 	*cp++ = GT_Bin;
-	printf("Writing format %d to bin rec %d\n",
-	       g.rng_free == -1 ? 0 : 1, bin->rec);
 	*cp++ = g.rng_free == -1 ? 0 : 1; /* Format */
 
 	cp += int2u7(bflag, cp);
