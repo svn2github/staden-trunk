@@ -216,7 +216,7 @@ Packages I needed to install:
 zlib-devel
 libcurl-devel
 libpng-devel
-tc-devel
+tcl-devel
 tk-devel
 libXt-devel
 itcl-devel
