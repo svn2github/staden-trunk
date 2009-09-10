@@ -1104,6 +1104,71 @@ proc editor_name_select {w where} {
 #-----------------------------------------------------------------------------
 # Tag editor windows
 
+# Functions to make tag edits or to be called by the undo/redo stack.
+proc U_tag_change {w rec new_a} {
+
+    puts [info level [info level]]
+
+    set io [$w io]
+
+    #-- Get existing tag
+    set old_a ""
+    if {$rec != -1} {
+	set tag [$io get_anno_ele $rec]
+	set d(strand)  0; # fixme
+	set d(type)    [$tag get_type]
+	FIXME: 	need set d(start) [$tag get_start]
+	FIXME: 	need set d(end)   [$tag get_end]
+	set d(otype)   [$tag get_obj_type]
+	set d(orec)    [$tag get_obj_rec]
+	set d(anno)    [$tag get_comment]
+	set d(default) "?"
+
+	set old_a [array get d]
+	unset d
+    }
+
+    #-- Create, Modify or Delete existing tag
+    array set d $new_a
+
+    if {$new_a == ""} {
+	# Delete
+	$tag remove
+
+	store_undo $w \
+	    [list U_tag_change $w -1 $old_a] \
+	    [list U_tag_change $w $rec ""]
+
+    } elseif {$rec == -1} {
+	# Create
+	set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+	set t [$io get_anno_ele $rec]
+	$t set_comment $d(anno)
+	$t set_type $d(type)
+	$t delete
+	
+	store_undo $w \
+	    [list U_tag_change $w $rec ""] \
+	    [list U_tag_change $w -1 $new_a] \
+
+    } else {
+	# Modify
+	if {[$tag get_comment] != $d(anno)} {
+	    $tag set_comment $d(anno)
+	}
+	if {[$tag get_type] != $d(type)} {
+	    $tag set_type $d(type)
+	}
+	$tag delete
+
+	store_undo $w \
+	    [list U_tag_change $w $rec $old_a] \
+	    [list U_tag_change $w $rec $new_a] \
+    }
+
+    unset d
+}
+
 proc tag_repopulate_menu {w} {
     foreach {rtype rrec rpos} [$w get_cursor relative] break
     foreach {atype arec apos} [$w get_cursor absolute] break
@@ -1172,8 +1237,9 @@ proc tag_editor_delete {w where} {
 	set rec $where
     }
 
-    set tag [[$w io] get_anno_ele $rec]
-    $tag remove
+    U_tag_change $w $rec ""
+#    set tag [[$w io] get_anno_ele $rec]
+#    $tag remove
 
     $w redraw
 }
@@ -1211,25 +1277,26 @@ proc tag_editor_callback {w rec cmd args} {
     puts [info level [info level]]
     switch $cmd {
 	"save" {
-	    if {$rec == -1} {
-		# Allocate a new item
-		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
-		puts "New tag with rec $rec"
-		set t [$io get_anno_ele $rec]
-		$t set_comment $d(anno)
-		$t set_type $d(type)
-		$t delete
-	    } else {
-		set t [$io get_anno_ele $rec]
-
-		if {[$t get_comment] != $d(anno)} {
-		    $t set_comment $d(anno)
-		}
-		if {[$t get_type] != $d(type)} {
-		    $t set_type $d(type)
-		}
-		$t delete
-	    }
+#	    if {$rec == -1} {
+#		# Allocate a new item
+#		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+#		puts "New tag with rec $rec"
+#		set t [$io get_anno_ele $rec]
+#		$t set_comment $d(anno)
+#		$t set_type $d(type)
+#		$t delete
+#	    } else {
+#		set t [$io get_anno_ele $rec]
+#
+#		if {[$t get_comment] != $d(anno)} {
+#		    $t set_comment $d(anno)
+#		}
+#		if {[$t get_type] != $d(type)} {
+#		    $t set_type $d(type)
+#		}
+#		$t delete
+#	    }
+	    U_tag_change $w $rec [array get d]
 
 	    $w redraw
 	    destroy $f
