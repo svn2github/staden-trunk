@@ -1324,9 +1324,9 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 	    if (ob->track) {
 		nb->track = ArrayCreate(sizeof(track_t), ArrayMax(ob->track));
 		ArrayMax(nb->track) = ArrayMax(ob->track);
-		memcpy(ArrayBase(GBinTrack, nb->track),
-		       ArrayBase(GBinTrack, ob->track),
-		       ArrayMax(ob->track) * sizeof(GBinTrack));
+		memcpy(ArrayBase(bin_track_t, nb->track),
+		       ArrayBase(bin_track_t, ob->track),
+		       ArrayMax(ob->track) * sizeof(bin_track_t));
 	    }
 	    break;
 	}

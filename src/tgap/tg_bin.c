@@ -603,7 +603,7 @@ track_t *bin_create_track(GapIO *io, bin_index_t *bin, int type) {
 int bin_add_track(GapIO *io, bin_index_t **bin, track_t *track) {
     bin_index_t *n;
     int i;
-    GBinTrack *bt;
+    bin_track_t *bt;
 
     if (!(n = cache_rw(io, *bin)))
 	return -1;
@@ -611,21 +611,22 @@ int bin_add_track(GapIO *io, bin_index_t **bin, track_t *track) {
 
     /* Create new bin-track, or error if already found */
     if (!n->track) {
-	n->track = ArrayCreate(sizeof(GBinTrack), 0);
+	n->track = ArrayCreate(sizeof(bin_track_t), 0);
 	n->flags |= BIN_TRACK_UPDATED;
     }
 
     for (i = 0; i < ArrayMax(n->track); i++) {
-	bt = arrp(GBinTrack, n->track, i);
+	bt = arrp(bin_track_t, n->track, i);
 	if (bt->type == track->type)
 	    return -1;
     }
 
     /* Add the track pointer */
-    bt = (GBinTrack *)ArrayRef(n->track, ArrayMax(n->track));
-    bt->type = track->type;
+    bt = (bin_track_t *)ArrayRef(n->track, ArrayMax(n->track));
+    bt->type  = track->type;
     bt->flags = 1;
-    bt->rec = track->rec;
+    bt->rec   = track->rec;
+    bt->track = track;
 
     return 0;
 }
@@ -642,8 +643,11 @@ track_t *bin_get_track(GapIO *io, bin_index_t *bin, int type) {
     /* If it exists and is up to date, return it */
     if (bin->track) {
 	for (i = 0; i < ArrayMax(bin->track); i++) {
-	    GBinTrack *bt = arrp(GBinTrack, bin->track, i);
+	    bin_track_t *bt = arrp(bin_track_t, bin->track, i);
 	    if (bt->type == type) {
+		if (bt->track)
+		    return bt->track;
+		
 		return (track_t *)cache_search(io, GT_Track, bt->rec);
 	    }
 	}
@@ -664,7 +668,7 @@ track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type) {
     /* If it exists and is up to date, return it */
     if (bin->track) {
 	for (i = 0; i < ArrayMax(bin->track); i++) {
-	    GBinTrack *bt = arrp(GBinTrack, bin->track, i);
+	    bin_track_t *bt = arrp(bin_track_t, bin->track, i);
 	    if (bt->type == type && (bt->flags & TRACK_FLAG_VALID))
 		return (track_t *)cache_search(io, GT_Track, bt->rec);
 	}
@@ -686,13 +690,13 @@ int bin_invalidate_track(GapIO *io, bin_index_t *bin, int type) {
 	return 0;
 
     for (i = 0; i < ArrayMax(bin->track); i++) {
-	GBinTrack *bt = arrp(GBinTrack, bin->track, i);
+	bin_track_t *bt = arrp(bin_track_t, bin->track, i);
 	if (bt->type == type || type == TRACK_ALL) {
 	    if (NULL == (bin = cache_rw(io, bin)))
 		return -1;
 	    printf("Update track for rec %d\n", bin->rec);
 	    bin->flags |= BIN_TRACK_UPDATED;
-	    bt = arrp(GBinTrack, bin->track, i);
+	    bt = arrp(bin_track_t, bin->track, i);
 	    bt->flags &= ~TRACK_FLAG_VALID;
 	}
     }

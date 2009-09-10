@@ -1943,7 +1943,8 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     /* Load tracks */
     if (b->track) {
 	GViewInfo vi;
-	size_t nitems;
+	size_t nitems, i;
+	GBinTrack *bt;
 
 	if (-1 == (v = lock(io, b->track, G_LOCK_RO)))
 	    return NULL;
@@ -1952,12 +1953,18 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	rdstats[GT_Track] += vi.used;
 	rdcounts[GT_Track]++;
 
-	bin->track = ArrayCreate(sizeof(GBinTrack), 0);
-	if (bin->track->base) free(bin->track->base);
-	bin->track->base = io_generic_read_i4(io, v, GT_RecArray,
-					      &nitems);
+	bt = (GBinTrack *)io_generic_read_i4(io, v, GT_RecArray, &nitems);
 	nitems /= sizeof(GBinTrack) / sizeof(GCardinal);
+	bin->track = ArrayCreate(sizeof(bin_track_t), nitems);
 	bin->track->max = bin->track->dim = nitems;
+	for (i = 0; i < nitems; i++) {
+	    bin_track_t *t = arrp(bin_track_t, bin->track, i);
+	    t->type  = bt->type;
+	    t->flags = bt->flags;
+	    t->rec   = bt->rec;
+	    t->track = NULL; /* cached ptr for temporary tracks */
+	}
+	free(bt);
 	unlock(io, v);
     }
 
@@ -2020,24 +2027,46 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
     /* Tracks */
     if (bin->flags & BIN_TRACK_UPDATED) {
 	GView v;
-	size_t nb;
+	size_t nb, i, j;
+	GBinTrack *bt;
 	
 	bin->flags &= ~BIN_TRACK_UPDATED;
 
 	if (bin->track) {
-	    if (!bin->track_rec) {
-		bin->track_rec = allocate(io, GT_Track);
-		bin->flags |= BIN_BIN_UPDATED;
+	    bt = (GBinTrack *)malloc(sizeof(GBinTrack) * ArrayMax(bin->track));
+
+	    /* Create GBinTrack array from non-temporary tracks */
+	    for (i = j = 0; i < ArrayMax(bin->track); i++) {
+		bin_track_t *from = arrp(bin_track_t, bin->track, i);
+
+		if (from->flags & TRACK_FLAG_FREEME) /* temp. */
+		    continue;
+
+		bt[j].type  = from->type;
+		bt[j].flags = from->flags;
+		bt[j].rec   = from->rec;
+		j++;
 	    }
 
-	    v = lock(io, bin->track_rec, G_LOCK_EX);
-	    nb = io_generic_write_i4(io, v, GT_RecArray,
-				     ArrayBase(GBinTrack, bin->track),
-				     sizeof(GBinTrack) * ArrayMax(bin->track));
-	    if (nb < 0) err |= 1;
-	    wrstats[GT_Track] += nb;
-	    wrcounts[GT_Track]++;
-	    err |= unlock(io, v);
+	    /* Write them out, if we have any left */
+	    if (j) {
+		if (!bin->track_rec) {
+		    bin->track_rec = allocate(io, GT_Track);
+		    bin->flags |= BIN_BIN_UPDATED;
+		}
+
+		v = lock(io, bin->track_rec, G_LOCK_EX);
+
+		nb = io_generic_write_i4(io, v, GT_RecArray, bt,
+					 j * sizeof(GBinTrack));
+		if (nb < 0) err |= 1;
+		err |= unlock(io, v);
+
+		wrstats[GT_Track] += nb;
+		wrcounts[GT_Track]++;
+	    }
+
+	    free(bt);
 	}
     }
 
@@ -2183,16 +2212,23 @@ static int io_bin_create(void *dbh, void *vfrom) {
 /* ------------------------------------------------------------------------
  * track access methods
  */
+
+typedef struct {
+    double base_qual[4];
+    double gap;
+    double base;
+    int depth;
+} cstat;
+
 static cached_item *io_track_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
-    GTrack_Header *t;
     track_t *track;
-    size_t buf_len;
+    size_t buf_len, i;
     unsigned char *buf, *cp;
     uint32_t type, flags, item_size, nitems;
-
+    
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
 	return NULL;
@@ -2215,7 +2251,8 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     cp += u72int(cp, &nitems);
 
     /* Allocate our overlapping data objects */
-    if (!(ci = cache_new(GT_Track, rec, v, NULL, sizeof(*track) + buf_len)))
+    if (!(ci = cache_new(GT_Track, rec, v, NULL, sizeof(*track) + 
+			 item_size * nitems)))
 	return NULL;
     track = (track_t *)&ci->data;
 
@@ -2225,18 +2262,37 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     track->flag      = flags;
     track->item_size = item_size;
     track->nitems    = nitems;
-    track->data      = ArrayCreate(track->item_size, track->nitems);
-    assert(buf_len - (cp-buf) == t->item_size * t->nitems);
-    memcpy(ArrayBase(char, track->data), cp, t->item_size * t->nitems);
+    track->data      = ArrayCreate(item_size, nitems);
+
+    switch (type) {
+    case TRACK_CONS_ARR:
+	for (i = 0; i < track->nitems; i++) {
+	    cstat *c = arrp(cstat, track->data, i);
+	    int i4;
+
+	    cp += s72int(cp, &i4); c->base_qual[0] = i4;
+	    cp += s72int(cp, &i4); c->base_qual[1] = i4;
+	    cp += s72int(cp, &i4); c->base_qual[2] = i4;
+	    cp += s72int(cp, &i4); c->base_qual[3] = i4;
+	    cp += s72int(cp, &i4); c->gap = i4;
+	    cp += s72int(cp, &i4); c->base = i4;
+	    cp += u72int(cp, &c->depth);
+	}
+	break;
+
+    default:
+	assert(buf_len - (cp-buf) == track->item_size * track->nitems);
+	memcpy(ArrayBase(char, track->data), cp,
+	       track->item_size * track->nitems);
+    }
 
     free(buf);
     return ci;
 }
 
 static int io_track_write_view(g_io *io, track_t *track, GView v) {
-    GTrack_Header *h;
     unsigned char *data, *cp;
-    int err = 0;
+    int err = 0, i;
 
     cp = data = malloc(2 + 4*5 + track->item_size * track->nitems);
     if (!data)
@@ -2250,14 +2306,30 @@ static int io_track_write_view(g_io *io, track_t *track, GView v) {
     cp += int2u7(track->item_size, cp);
     cp += int2u7(track->data ? track->nitems : 0, cp);
 
-    /* The array */
-    if (h->nitems) {
-	memcpy(cp, ArrayBase(char, track->data),
-	       track->item_size * track->nitems);
-	cp += track->item_size * track->nitems;
+    /* The array - try compressing this */
+    switch(track->type) {
+    case TRACK_CONS_ARR:
+	for (i = 0; i < track->nitems; i++) {
+	    cstat *c = arrp(cstat, track->data, i);
+	    cp += int2s7(c->base_qual[0] + 0.5, cp);
+	    cp += int2s7(c->base_qual[1] + 0.5, cp);
+	    cp += int2s7(c->base_qual[2] + 0.5, cp);
+	    cp += int2s7(c->base_qual[3] + 0.5, cp);
+	    cp += int2s7(c->gap + 0.5, cp);
+	    cp += int2s7(c->base + 0.5, cp);
+	    cp += int2u7(c->depth + 0.5, cp);
+	}
+	break;
+
+    default:
+	if (track->nitems) {
+	    memcpy(cp, ArrayBase(char, track->data),
+		   track->item_size * track->nitems);
+	    cp += track->item_size * track->nitems;
+	}
     }
     
-    wrstats[GT_Track] += sizeof(*h) + track->item_size * track->nitems;
+    wrstats[GT_Track] += cp-data;
     wrcounts[GT_Track]++;
     err |= g_write(io, v, data, cp-data);
     g_flush(io, v);

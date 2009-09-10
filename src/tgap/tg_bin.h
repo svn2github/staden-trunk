@@ -19,6 +19,14 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 track_t *bin_query_track(GapIO *io, bin_index_t *bin, int type);
 
 /*
+ * Finds the track of a given type for this bin.
+ *
+ * Returns track_t pointer on success (do not free)
+ *         NULL on failure (eg bin too small)
+ */
+track_t *bin_get_track(GapIO *io, bin_index_t *bin, int type);
+
+/*
  * Invalidates a track.
  * Returns 0 on success
  *        -1 on failure.

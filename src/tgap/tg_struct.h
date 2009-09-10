@@ -211,6 +211,7 @@ typedef struct {
     char *data;
 } contig_t;
 
+
 typedef struct index {
     int rec;
     int pos;
@@ -224,7 +225,7 @@ typedef struct index {
     int rng_rec;
     int bin_id;
     int flags;
-    Array track;  /* array of GTrack objects */
+    Array track;  /* array of bin_track_t objects */
     int track_rec;
     int nseqs;
     int rng_free; /* forms a linked list of items in rng that are free */
@@ -322,10 +323,18 @@ typedef struct {
     Array data;    /* cached copy of data for this track record */
 } track_t;
 
+typedef struct {
+    int type;
+    int flags;
+    int rec;
+    track_t *track;
+} bin_track_t;
+
 /* Track types */
 #define TRACK_UNKNOWN    0
 #define TRACK_ALL        0
 #define TRACK_READ_DEPTH 1
+#define TRACK_CONS_ARR   2
 
 /* Track flag masks */
 #define TRACK_FLAG_VALID  (1<<0)
