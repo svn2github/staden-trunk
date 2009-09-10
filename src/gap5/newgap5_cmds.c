@@ -790,7 +790,7 @@ int tcl_calc_consensus(ClientData clientData, Tcl_Interp *interp,
 				   rargv[0].end, buf, NULL);
 	buf[rargv[0].end - rargv[0].start + 1] = 0;
 	Tcl_SetResult(interp, buf, TCL_VOLATILE);
-	free(buf);
+	ckfree(buf);
     }
 
     xfree(rargv);
