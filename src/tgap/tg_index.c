@@ -15,6 +15,7 @@
  * Coordinates all start with 1 being the first base.
  */
 
+#include <staden_config.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>

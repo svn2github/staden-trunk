@@ -5,12 +5,12 @@
  */
 
 
+#include <staden_config.h>
 #include <stdlib.h>
 #include <stdio.h>          /* For sprintf() */
 #include <tk.h>
 #include <math.h>
 #include <X11/Xutil.h>
-#include <staden_config.h>
 #ifdef HAVE_PNG
 #    include <png.h>
 #endif

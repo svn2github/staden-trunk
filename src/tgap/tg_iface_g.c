@@ -1,3 +1,4 @@
+#include <staden_config.h>
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
