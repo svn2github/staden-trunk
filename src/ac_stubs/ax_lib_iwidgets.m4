@@ -12,7 +12,8 @@
 #
 #   The following output variables are set using AC_SUBST:
 #
-#     IWIDGETS_PATH
+#     IWIDGETS_PATH (path including iwidgets<vers>)
+#     IWIDGETS_ROOT (parent of IWIDGETS_PATH)
 #
 # LICENSE
 #
@@ -36,7 +37,7 @@ AC_DEFUN([AX_LIB_IWIDGETS],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_iwidgets_with/iwidgets* $_iwidgets_with /usr/share/tcl*/iwidgets* /usr/local/tcl*/iwidgets*
+  for i in $_iwidgets_with/iwidgets* $_iwidgets_with /usr/share/tcl*/iwidgets* /usr/share/iwidgets* /usr/local/tcl*/iwidgets*
   do
     if test -e "$i/pkgIndex.tcl"
     then
@@ -67,8 +68,10 @@ AC_DEFUN([AX_LIB_IWIDGETS],
 
       if test "x$_ok" = "xyes"
       then
-        IWIDGETS_PATH=`echo "$i" | sed 's:/[[^/]]*/*$::'`
+        IWIDGETS_PATH=`echo "$i" | sed 's:/*$::'`
+        IWIDGETS_ROOT=`echo "$i" | sed 's:/[[^/]]*/*$::'`
 	AC_SUBST([IWIDGETS_PATH])
+	AC_SUBST([IWIDGETS_ROOT])
         break
       fi
     fi

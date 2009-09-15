@@ -10,7 +10,8 @@
 #
 #   The following output variables are set using AC_SUBST:
 #
-#     ITCL_PATH
+#     ITCL_PATH (path including itcl<vers>)
+#     ITCL_ROOT (parent dir of ITCL_PATH)
 #
 # LICENSE
 #
@@ -34,7 +35,7 @@ AC_DEFUN([AX_LIB_ITCL],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_itcl_with/itcl* $_itcl_with /usr/share/tcl*/itcl* /usr/local/tcl*/itcl* /usr/lib64/tcl*/itcl*
+  for i in $_itcl_with $_itcl_with/itcl* /usr/share/tcl*/itcl* /usr/local/tcl*/itcl* /usr/lib64/tcl*/itcl* /usr/lib64/itcl*
   do
     if test -e "$i/pkgIndex.tcl"
     then
@@ -53,6 +54,7 @@ AC_DEFUN([AX_LIB_ITCL],
         v3=`expr "$p" : '.*Itcl  *[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
         have_vers=`expr "${v1:-0}" "*" 1000000 + "${v2:-0}" "*" 1000 + "${v3:-0}"`
 	
+	echo vers=/$have_vers/
         if test `expr "$have_vers" ">=" "$want_vers"` = "1"
 	then
 	  _ok="yes"
@@ -65,8 +67,10 @@ AC_DEFUN([AX_LIB_ITCL],
 
       if test "x$_ok" = "xyes"
       then
-        ITCL_PATH=`echo "$i" | sed 's:/[[^/]]*/*$::'`
+        ITCL_PATH=`echo "$i" | sed 's:/*$::'`
+	ITCL_ROOT=`echo "$i" | sed 's:/[[^/]]*/*$::'`
 	AC_SUBST([ITCL_PATH])
+	AC_SUBST([ITCL_ROOT])
         break
       fi
     fi

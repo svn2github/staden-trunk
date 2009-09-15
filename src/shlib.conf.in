@@ -1,17 +1,26 @@
 # Shared library support, so we know what to use in tcl load commands.
 set lib_prefix lib
-set lib_suffix @TCL_SHLIB_SUFFIX@
+set lib_suffix @SHLIB_SUFFIX@
 
 # Also for tcl loading, what extra bits to add to our auto_path
 foreach x $auto_path {
     set _p($x) 1
 }
 
-foreach x [list "@TKLIB_PATH@" "@IWIDGETS_PATH@" "@ITCL_PATH@" "@ITK_PATH@"] {
+foreach x [list "@TKLIB_PATH@" "@IWIDGETS_ROOT@"] {
     if {![info exists _p($x)]} {
         set _p($x) 1
 	lappend auto_path $x
     }
 }
-
 unset _p
+
+# Itcl/Itk use another method. Despite the presence of a perfectly
+# functioning auto_path system, instead they iterate around
+# directories that are "nearby" the tclsh/stash executable itself.
+#
+# Instead we override it manually as this is the only sane way to get
+# this working.
+set env(ITCL_LIBRARY) "@ITCL_PATH@"
+set env(ITK_LIBRARY)  "@ITK_PATH@"
+

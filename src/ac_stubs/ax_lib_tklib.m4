@@ -36,7 +36,7 @@ AC_DEFUN([AX_LIB_TKLIB],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in "$_tklib_with" /usr/share/tcl*/tklib* /usr/local/tklib*
+  for i in "$_tklib_with" /usr/share/tcl*/tklib* /usr/share/tklib* /usr/local/tklib*
   do
     if test -d "$i/tablelist"
     then

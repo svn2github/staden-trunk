@@ -10,7 +10,8 @@
 #
 #   The following output variables are set using AC_SUBST:
 #
-#     ITK_PATH
+#     ITK_PATH (path including itk<vers>)
+#     ITK_ROOT (parent dir of ITK_PATH)
 #
 # LICENSE
 #
@@ -34,7 +35,7 @@ AC_DEFUN([AX_LIB_ITK],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_itk_with/itk* $_itk_with /usr/share/tcl*/itk* /usr/local/tcl*/itk* /usr/lib64/tcl*/itk*
+  for i in $_itk_with/itk* $_itk_with /usr/share/tcl*/itk* /usr/local/tcl*/itk* /usr/lib64/tcl*/itk* /usr/lib64/itk*
   do
     if test -e "$i/pkgIndex.tcl"
     then
@@ -65,8 +66,10 @@ AC_DEFUN([AX_LIB_ITK],
 
       if test "x$_ok" = "xyes"
       then
-        ITK_PATH=`echo "$i" | sed 's:/[[^/]]*/*$::'`
+        ITK_PATH=`echo "$i" | sed 's:/*$::'`
+        ITK_ROOT=`echo "$i" | sed 's:/[[^/]]*/*$::'`
 	AC_SUBST([ITK_PATH])
+	AC_SUBST([ITK_ROOT])
         break
       fi
     fi
