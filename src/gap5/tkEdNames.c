@@ -262,7 +262,7 @@ static int NamesWidgetCmd(ClientData clientData, Tcl_Interp *interp,
      * the current editior cursor if no x,y specified.
      */
     case GET_NUMBER: {
-	char buf[10];
+	char buf[100];
 	int x, y, type, rec, pos;
 
 	if (argc != 2 && argc != 4) {
