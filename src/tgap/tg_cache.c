@@ -1119,6 +1119,7 @@ static int cache_item_create_seq(GapIO *io, void *from) {
 	if (sequence_copy(s, f) == -1)
 	    return -1;
 
+	s->rec = (brec << SEQ_BLOCK_BITS) + sub_rec;
 	s->block = b;
 	s->idx = sub_rec;
 	b->seq[sub_rec] = s;
