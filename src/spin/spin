@@ -73,6 +73,6 @@ STADTABL=$STADENROOT/share/staden/etc;  export STADTABL
 STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 
 PATH=$STADENROOT/bin:$PATH
-LD_LIBRARY_PATH=$STADENROOT/lib:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
 
 exec stash "$STADTCL/spin/spin.tcl" ${@+"$@"}
