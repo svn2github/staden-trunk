@@ -38,7 +38,7 @@ stringlist.hpp:
 
 
 distsrc: distsrc_dirs
-	cp $(S)/*.[ch] $(S)/*.[ch]pp $(S)/Makefile $(S)/dependencies $(DIRNAME)
+	cp $(S)/*.[ch] $(S)/*.[ch]pp $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)

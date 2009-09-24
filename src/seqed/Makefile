@@ -60,7 +60,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.tcl tclIndex Makefile seqed seqed.bat dependencies \
+	-cp -R *.[ch] *.tcl tclIndex Makefile seqed seqed.bat \
 		$(DIRNAME)
 
 install:

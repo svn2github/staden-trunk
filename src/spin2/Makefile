@@ -102,8 +102,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 DEPEND_OBJ = $(OBJS)
 
 distsrc: distsrc_dirs
-	-cp -R *.[ch] *.tcl *.itk tclIndex Makefile spin2 spin2.bat dependencies\
-		$(DIRNAME)
+	-cp -R *.[ch] *.tcl *.itk tclIndex Makefile spin2 spin2.bat $(DIRNAME)
 
 install:
 	-cp spin2 $(INSTALLSCRIPT)
