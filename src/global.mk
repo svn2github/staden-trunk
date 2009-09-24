@@ -464,7 +464,7 @@ depend:
 	  sed -e 's;.*/\([^:]*\):;\1:;'  | \
 	  egrep -v '^[^:]*:[     ]*$$' | \
 	  sed -e 's#$(subst .,\.,$(SRCROOT))#$$(SRCROOT)#g' \
-	      -e 's/$(subst /,\/,$(PWD))/$$(PWD)/g' | \
+	      -e 's#: .*/staden_config.h#: $$(PWD)/staden_config.h#g' | \
 	  egrep -v ': /' > dependencies.tmp2
 
 	@# Copy the dependencies into the Makefile

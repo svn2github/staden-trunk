@@ -291,7 +291,7 @@ IO.o: $(SRCROOT)/g/g-os.h
 IO.o: $(SRCROOT)/g/g-struct.h
 IO.o: $(SRCROOT)/primer3/src/dpal.h
 IO.o: $(SRCROOT)/primer3/src/primer3.h
-IO.o: $(SRCROOT)/staden_config.h
+IO.o: $(PWD)/staden_config.h
 IO.o: $(SRCROOT)/tk_utils/cli_arg.h
 IO.o: $(SRCROOT)/tk_utils/postscript.h
 IO.o: $(SRCROOT)/tk_utils/sheet.h
@@ -332,7 +332,7 @@ IO2.o: $(SRCROOT)/g/g-struct.h
 IO2.o: $(SRCROOT)/primer3/src/dpal.h
 IO2.o: $(SRCROOT)/primer3/src/primer3.h
 IO2.o: $(SRCROOT)/seq_utils/dna_utils.h
-IO2.o: $(SRCROOT)/staden_config.h
+IO2.o: $(PWD)/staden_config.h
 IO2.o: $(SRCROOT)/tk_utils/canvas_box.h
 IO2.o: $(SRCROOT)/tk_utils/cli_arg.h
 IO2.o: $(SRCROOT)/tk_utils/postscript.h
@@ -375,7 +375,7 @@ IO3.o: $(SRCROOT)/g/g-os.h
 IO3.o: $(SRCROOT)/g/g-struct.h
 IO3.o: $(SRCROOT)/primer3/src/dpal.h
 IO3.o: $(SRCROOT)/primer3/src/primer3.h
-IO3.o: $(SRCROOT)/staden_config.h
+IO3.o: $(PWD)/staden_config.h
 IO3.o: $(SRCROOT)/tk_utils/cli_arg.h
 IO3.o: $(SRCROOT)/tk_utils/postscript.h
 IO3.o: $(SRCROOT)/tk_utils/sheet.h
@@ -409,7 +409,7 @@ actf.o: $(SRCROOT)/g/g-error.h
 actf.o: $(SRCROOT)/g/g-filedefs.h
 actf.o: $(SRCROOT)/g/g-os.h
 actf.o: $(SRCROOT)/g/g-struct.h
-actf.o: $(SRCROOT)/staden_config.h
+actf.o: $(PWD)/staden_config.h
 actf.o: $(SRCROOT)/tk_utils/text_output.h
 actf.o: IO.h
 actf.o: actf.h
@@ -433,7 +433,7 @@ active_tags.o: $(SRCROOT)/g/g-os.h
 active_tags.o: $(SRCROOT)/g/g-struct.h
 active_tags.o: $(SRCROOT)/primer3/src/dpal.h
 active_tags.o: $(SRCROOT)/primer3/src/primer3.h
-active_tags.o: $(SRCROOT)/staden_config.h
+active_tags.o: $(PWD)/staden_config.h
 active_tags.o: $(SRCROOT)/tk_utils/cli_arg.h
 active_tags.o: $(SRCROOT)/tk_utils/postscript.h
 active_tags.o: $(SRCROOT)/tk_utils/sheet.h
@@ -474,7 +474,7 @@ alter_rel.o: $(SRCROOT)/g/g-os.h
 alter_rel.o: $(SRCROOT)/g/g-struct.h
 alter_rel.o: $(SRCROOT)/primer3/src/dpal.h
 alter_rel.o: $(SRCROOT)/primer3/src/primer3.h
-alter_rel.o: $(SRCROOT)/staden_config.h
+alter_rel.o: $(PWD)/staden_config.h
 alter_rel.o: $(SRCROOT)/tk_utils/cli_arg.h
 alter_rel.o: $(SRCROOT)/tk_utils/postscript.h
 alter_rel.o: $(SRCROOT)/tk_utils/sheet.h
@@ -518,7 +518,7 @@ assemble_direct.o: $(SRCROOT)/primer3/src/primer3.h
 assemble_direct.o: $(SRCROOT)/seq_utils/align.h
 assemble_direct.o: $(SRCROOT)/seq_utils/align_lib_old.h
 assemble_direct.o: $(SRCROOT)/seq_utils/dna_utils.h
-assemble_direct.o: $(SRCROOT)/staden_config.h
+assemble_direct.o: $(PWD)/staden_config.h
 assemble_direct.o: $(SRCROOT)/tk_utils/cli_arg.h
 assemble_direct.o: $(SRCROOT)/tk_utils/postscript.h
 assemble_direct.o: $(SRCROOT)/tk_utils/sheet.h
@@ -568,7 +568,7 @@ auto_assemble.o: $(SRCROOT)/g/g-error.h
 auto_assemble.o: $(SRCROOT)/g/g-filedefs.h
 auto_assemble.o: $(SRCROOT)/g/g-os.h
 auto_assemble.o: $(SRCROOT)/g/g-struct.h
-auto_assemble.o: $(SRCROOT)/staden_config.h
+auto_assemble.o: $(PWD)/staden_config.h
 auto_assemble.o: $(SRCROOT)/tk_utils/tcl_utils.h
 auto_assemble.o: IO.h
 auto_assemble.o: complement.h
@@ -593,7 +593,7 @@ auto_break.o: $(SRCROOT)/g/g-filedefs.h
 auto_break.o: $(SRCROOT)/g/g-os.h
 auto_break.o: $(SRCROOT)/g/g-struct.h
 auto_break.o: $(SRCROOT)/seq_utils/filter_words.h
-auto_break.o: $(SRCROOT)/staden_config.h
+auto_break.o: $(PWD)/staden_config.h
 auto_break.o: $(SRCROOT)/tk_utils/tcl_utils.h
 auto_break.o: $(SRCROOT)/tk_utils/text_output.h
 auto_break.o: IO.h
@@ -617,7 +617,7 @@ break_contig.o: $(SRCROOT)/g/g-error.h
 break_contig.o: $(SRCROOT)/g/g-filedefs.h
 break_contig.o: $(SRCROOT)/g/g-os.h
 break_contig.o: $(SRCROOT)/g/g-struct.h
-break_contig.o: $(SRCROOT)/staden_config.h
+break_contig.o: $(PWD)/staden_config.h
 break_contig.o: IO.h
 break_contig.o: dis_readings.h
 break_contig.o: gap-dbstruct.h
@@ -626,7 +626,7 @@ break_contig.o: io-reg.h fort.h
 break_contig.o: io_handle.h
 break_contig.o: io_utils.h
 bubbl3.o: $(SRCROOT)/Misc/os.h
-bubbl3.o: $(SRCROOT)/staden_config.h
+bubbl3.o: $(PWD)/staden_config.h
 check_assembly.o: $(SRCROOT)/Misc/array.h
 check_assembly.o: $(SRCROOT)/Misc/bitmap.h
 check_assembly.o: $(SRCROOT)/Misc/dstring.h
@@ -645,7 +645,7 @@ check_assembly.o: $(SRCROOT)/primer3/src/primer3.h
 check_assembly.o: $(SRCROOT)/seq_utils/align.h
 check_assembly.o: $(SRCROOT)/seq_utils/align_lib_old.h
 check_assembly.o: $(SRCROOT)/seq_utils/dna_utils.h
-check_assembly.o: $(SRCROOT)/staden_config.h
+check_assembly.o: $(PWD)/staden_config.h
 check_assembly.o: $(SRCROOT)/tk_utils/canvas_box.h
 check_assembly.o: $(SRCROOT)/tk_utils/cli_arg.h
 check_assembly.o: $(SRCROOT)/tk_utils/postscript.h
@@ -697,7 +697,7 @@ clip.o: $(SRCROOT)/g/g-struct.h
 clip.o: $(SRCROOT)/primer3/src/dpal.h
 clip.o: $(SRCROOT)/primer3/src/primer3.h
 clip.o: $(SRCROOT)/seq_utils/dna_utils.h
-clip.o: $(SRCROOT)/staden_config.h
+clip.o: $(PWD)/staden_config.h
 clip.o: $(SRCROOT)/tk_utils/cli_arg.h
 clip.o: $(SRCROOT)/tk_utils/postscript.h
 clip.o: $(SRCROOT)/tk_utils/sheet.h
@@ -734,7 +734,7 @@ clones.o: $(SRCROOT)/g/g-os.h
 clones.o: $(SRCROOT)/g/g-struct.h
 clones.o: $(SRCROOT)/primer3/src/dpal.h
 clones.o: $(SRCROOT)/primer3/src/primer3.h
-clones.o: $(SRCROOT)/staden_config.h
+clones.o: $(PWD)/staden_config.h
 clones.o: $(SRCROOT)/tk_utils/cli_arg.h
 clones.o: $(SRCROOT)/tk_utils/postscript.h
 clones.o: $(SRCROOT)/tk_utils/sheet.h
@@ -772,7 +772,7 @@ complement.o: $(SRCROOT)/g/g-struct.h
 complement.o: $(SRCROOT)/primer3/src/dpal.h
 complement.o: $(SRCROOT)/primer3/src/primer3.h
 complement.o: $(SRCROOT)/seq_utils/dna_utils.h
-complement.o: $(SRCROOT)/staden_config.h
+complement.o: $(PWD)/staden_config.h
 complement.o: $(SRCROOT)/tk_utils/cli_arg.h
 complement.o: $(SRCROOT)/tk_utils/postscript.h
 complement.o: $(SRCROOT)/tk_utils/sheet.h
@@ -812,7 +812,7 @@ confidence_graph.o: $(SRCROOT)/g/g-error.h
 confidence_graph.o: $(SRCROOT)/g/g-filedefs.h
 confidence_graph.o: $(SRCROOT)/g/g-os.h
 confidence_graph.o: $(SRCROOT)/g/g-struct.h
-confidence_graph.o: $(SRCROOT)/staden_config.h
+confidence_graph.o: $(PWD)/staden_config.h
 confidence_graph.o: $(SRCROOT)/tk_utils/canvas_box.h
 confidence_graph.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 confidence_graph.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -850,7 +850,7 @@ consen.o: $(SRCROOT)/primer3/src/dpal.h
 consen.o: $(SRCROOT)/primer3/src/primer3.h
 consen.o: $(SRCROOT)/seq_utils/align_lib.h
 consen.o: $(SRCROOT)/seq_utils/dna_utils.h
-consen.o: $(SRCROOT)/staden_config.h
+consen.o: $(PWD)/staden_config.h
 consen.o: $(SRCROOT)/tk_utils/cli_arg.h
 consen.o: $(SRCROOT)/tk_utils/postscript.h
 consen.o: $(SRCROOT)/tk_utils/sheet.h
@@ -883,7 +883,7 @@ consistency_canvas_box.o: $(SRCROOT)/g/g-error.h
 consistency_canvas_box.o: $(SRCROOT)/g/g-filedefs.h
 consistency_canvas_box.o: $(SRCROOT)/g/g-os.h
 consistency_canvas_box.o: $(SRCROOT)/g/g-struct.h
-consistency_canvas_box.o: $(SRCROOT)/staden_config.h
+consistency_canvas_box.o: $(PWD)/staden_config.h
 consistency_canvas_box.o: $(SRCROOT)/tk_utils/canvas_box.h
 consistency_canvas_box.o: IO.h
 consistency_canvas_box.o: consistency_display.h
@@ -905,7 +905,7 @@ consistency_display.o: $(SRCROOT)/g/g-error.h
 consistency_display.o: $(SRCROOT)/g/g-filedefs.h
 consistency_display.o: $(SRCROOT)/g/g-os.h
 consistency_display.o: $(SRCROOT)/g/g-struct.h
-consistency_display.o: $(SRCROOT)/staden_config.h
+consistency_display.o: $(PWD)/staden_config.h
 consistency_display.o: $(SRCROOT)/tk_utils/canvas_box.h
 consistency_display.o: $(SRCROOT)/tk_utils/ruler_tick.h
 consistency_display.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -940,7 +940,7 @@ contigEditor.o: $(SRCROOT)/g/g-os.h
 contigEditor.o: $(SRCROOT)/g/g-struct.h
 contigEditor.o: $(SRCROOT)/primer3/src/dpal.h
 contigEditor.o: $(SRCROOT)/primer3/src/primer3.h
-contigEditor.o: $(SRCROOT)/staden_config.h
+contigEditor.o: $(PWD)/staden_config.h
 contigEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
 contigEditor.o: $(SRCROOT)/tk_utils/postscript.h
 contigEditor.o: $(SRCROOT)/tk_utils/sheet.h
@@ -983,7 +983,7 @@ contig_order.o: $(SRCROOT)/g/g-error.h
 contig_order.o: $(SRCROOT)/g/g-filedefs.h
 contig_order.o: $(SRCROOT)/g/g-os.h
 contig_order.o: $(SRCROOT)/g/g-struct.h
-contig_order.o: $(SRCROOT)/staden_config.h
+contig_order.o: $(PWD)/staden_config.h
 contig_order.o: IO.h
 contig_order.o: QueueInterface.h
 contig_order.o: SeqQueueTypes.h
@@ -1008,7 +1008,7 @@ contig_selector.o: $(SRCROOT)/g/g-os.h
 contig_selector.o: $(SRCROOT)/g/g-struct.h
 contig_selector.o: $(SRCROOT)/primer3/src/dpal.h
 contig_selector.o: $(SRCROOT)/primer3/src/primer3.h
-contig_selector.o: $(SRCROOT)/staden_config.h
+contig_selector.o: $(PWD)/staden_config.h
 contig_selector.o: $(SRCROOT)/tk_utils/canvas_box.h
 contig_selector.o: $(SRCROOT)/tk_utils/cli_arg.h
 contig_selector.o: $(SRCROOT)/tk_utils/postscript.h
@@ -1063,7 +1063,7 @@ copy_db.o: $(SRCROOT)/g/g-error.h
 copy_db.o: $(SRCROOT)/g/g-filedefs.h
 copy_db.o: $(SRCROOT)/g/g-os.h
 copy_db.o: $(SRCROOT)/g/g-struct.h
-copy_db.o: $(SRCROOT)/staden_config.h
+copy_db.o: $(PWD)/staden_config.h
 copy_db.o: $(SRCROOT)/tk_utils/text_output.h
 copy_db.o: IO.h
 copy_db.o: copy_db.h
@@ -1082,7 +1082,7 @@ copy_db_main.o: $(SRCROOT)/g/g-error.h
 copy_db_main.o: $(SRCROOT)/g/g-filedefs.h
 copy_db_main.o: $(SRCROOT)/g/g-os.h
 copy_db_main.o: $(SRCROOT)/g/g-struct.h
-copy_db_main.o: $(SRCROOT)/staden_config.h
+copy_db_main.o: $(PWD)/staden_config.h
 copy_db_main.o: copy_db.h IO.h
 copy_db_main.o: gap-create.h
 copy_db_main.o: gap-dbstruct.h
@@ -1101,7 +1101,7 @@ cs-object.o: $(SRCROOT)/g/g-error.h
 cs-object.o: $(SRCROOT)/g/g-filedefs.h
 cs-object.o: $(SRCROOT)/g/g-os.h
 cs-object.o: $(SRCROOT)/g/g-struct.h
-cs-object.o: $(SRCROOT)/staden_config.h
+cs-object.o: $(PWD)/staden_config.h
 cs-object.o: $(SRCROOT)/tk_utils/canvas_box.h
 cs-object.o: $(SRCROOT)/tk_utils/tcl_utils.h
 cs-object.o: $(SRCROOT)/tk_utils/text_output.h
@@ -1128,7 +1128,7 @@ dbcheck.o: $(SRCROOT)/g/g-error.h
 dbcheck.o: $(SRCROOT)/g/g-filedefs.h
 dbcheck.o: $(SRCROOT)/g/g-os.h
 dbcheck.o: $(SRCROOT)/g/g-struct.h
-dbcheck.o: $(SRCROOT)/staden_config.h
+dbcheck.o: $(PWD)/staden_config.h
 dbcheck.o: $(SRCROOT)/tk_utils/tcl_utils.h
 dbcheck.o: $(SRCROOT)/tk_utils/text_output.h
 dbcheck.o: IO.h
@@ -1154,7 +1154,7 @@ dis_readings.o: $(SRCROOT)/g/g-os.h
 dis_readings.o: $(SRCROOT)/g/g-struct.h
 dis_readings.o: $(SRCROOT)/primer3/src/dpal.h
 dis_readings.o: $(SRCROOT)/primer3/src/primer3.h
-dis_readings.o: $(SRCROOT)/staden_config.h
+dis_readings.o: $(PWD)/staden_config.h
 dis_readings.o: $(SRCROOT)/tk_utils/cli_arg.h
 dis_readings.o: $(SRCROOT)/tk_utils/postscript.h
 dis_readings.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1197,7 +1197,7 @@ do_fij.o: $(SRCROOT)/g/g-os.h
 do_fij.o: $(SRCROOT)/g/g-struct.h
 do_fij.o: $(SRCROOT)/seq_utils/align_lib.h
 do_fij.o: $(SRCROOT)/seq_utils/dna_utils.h
-do_fij.o: $(SRCROOT)/staden_config.h
+do_fij.o: $(PWD)/staden_config.h
 do_fij.o: fij.h io_utils.h IO.h
 do_fij.o: gap-dbstruct.h
 do_fij.o: gap-if.h
@@ -1221,7 +1221,7 @@ dstrand.o: $(SRCROOT)/primer3/src/dpal.h
 dstrand.o: $(SRCROOT)/primer3/src/primer3.h
 dstrand.o: $(SRCROOT)/seq_utils/align.h
 dstrand.o: $(SRCROOT)/seq_utils/align_lib_old.h
-dstrand.o: $(SRCROOT)/staden_config.h
+dstrand.o: $(PWD)/staden_config.h
 dstrand.o: $(SRCROOT)/tk_utils/cli_arg.h
 dstrand.o: $(SRCROOT)/tk_utils/postscript.h
 dstrand.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1264,7 +1264,7 @@ edCommands.o: $(SRCROOT)/primer3/src/dpal.h
 edCommands.o: $(SRCROOT)/primer3/src/primer3.h
 edCommands.o: $(SRCROOT)/seq_utils/align.h
 edCommands.o: $(SRCROOT)/seq_utils/align_lib_old.h
-edCommands.o: $(SRCROOT)/staden_config.h
+edCommands.o: $(PWD)/staden_config.h
 edCommands.o: $(SRCROOT)/tk_utils/cli_arg.h
 edCommands.o: $(SRCROOT)/tk_utils/postscript.h
 edCommands.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1304,7 +1304,7 @@ edExtend.o: $(SRCROOT)/g/g-os.h
 edExtend.o: $(SRCROOT)/g/g-struct.h
 edExtend.o: $(SRCROOT)/primer3/src/dpal.h
 edExtend.o: $(SRCROOT)/primer3/src/primer3.h
-edExtend.o: $(SRCROOT)/staden_config.h
+edExtend.o: $(PWD)/staden_config.h
 edExtend.o: $(SRCROOT)/tk_utils/cli_arg.h
 edExtend.o: $(SRCROOT)/tk_utils/postscript.h
 edExtend.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1343,7 +1343,7 @@ edInterface.o: $(SRCROOT)/g/g-os.h
 edInterface.o: $(SRCROOT)/g/g-struct.h
 edInterface.o: $(SRCROOT)/primer3/src/dpal.h
 edInterface.o: $(SRCROOT)/primer3/src/primer3.h
-edInterface.o: $(SRCROOT)/staden_config.h
+edInterface.o: $(PWD)/staden_config.h
 edInterface.o: $(SRCROOT)/tk_utils/canvas_box.h
 edInterface.o: $(SRCROOT)/tk_utils/cli_arg.h
 edInterface.o: $(SRCROOT)/tk_utils/postscript.h
@@ -1395,7 +1395,7 @@ edMutations.o: $(SRCROOT)/primer3/src/dpal.h
 edMutations.o: $(SRCROOT)/primer3/src/primer3.h
 edMutations.o: $(SRCROOT)/seq_utils/dna_utils.h
 edMutations.o: $(SRCROOT)/seq_utils/genetic_code.h
-edMutations.o: $(SRCROOT)/staden_config.h
+edMutations.o: $(PWD)/staden_config.h
 edMutations.o: $(SRCROOT)/tk_utils/cli_arg.h
 edMutations.o: $(SRCROOT)/tk_utils/postscript.h
 edMutations.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1436,7 +1436,7 @@ edUtils2.o: $(SRCROOT)/g/g-os.h
 edUtils2.o: $(SRCROOT)/g/g-struct.h
 edUtils2.o: $(SRCROOT)/primer3/src/dpal.h
 edUtils2.o: $(SRCROOT)/primer3/src/primer3.h
-edUtils2.o: $(SRCROOT)/staden_config.h
+edUtils2.o: $(PWD)/staden_config.h
 edUtils2.o: $(SRCROOT)/tk_utils/cli_arg.h
 edUtils2.o: $(SRCROOT)/tk_utils/postscript.h
 edUtils2.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1481,7 +1481,7 @@ extract.o: $(SRCROOT)/g/g-os.h
 extract.o: $(SRCROOT)/g/g-struct.h
 extract.o: $(SRCROOT)/primer3/src/dpal.h
 extract.o: $(SRCROOT)/primer3/src/primer3.h
-extract.o: $(SRCROOT)/staden_config.h
+extract.o: $(PWD)/staden_config.h
 extract.o: $(SRCROOT)/tk_utils/cli_arg.h
 extract.o: $(SRCROOT)/tk_utils/postscript.h
 extract.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1509,7 +1509,7 @@ extract.o: undo.h tagUtils.h
 f2c.o: $(SRCROOT)/Misc/misc.h
 f2c.o: $(SRCROOT)/Misc/os.h
 f2c.o: $(SRCROOT)/Misc/xalloc.h
-f2c.o: $(SRCROOT)/staden_config.h
+f2c.o: $(PWD)/staden_config.h
 f2c.o: f2c.h
 fij.o: $(SRCROOT)/Misc/array.h
 fij.o: $(SRCROOT)/Misc/bitmap.h
@@ -1527,7 +1527,7 @@ fij.o: $(SRCROOT)/g/g-struct.h
 fij.o: $(SRCROOT)/primer3/src/dpal.h
 fij.o: $(SRCROOT)/primer3/src/primer3.h
 fij.o: $(SRCROOT)/seq_utils/align_lib.h
-fij.o: $(SRCROOT)/staden_config.h
+fij.o: $(PWD)/staden_config.h
 fij.o: $(SRCROOT)/tk_utils/canvas_box.h
 fij.o: $(SRCROOT)/tk_utils/cli_arg.h
 fij.o: $(SRCROOT)/tk_utils/postscript.h
@@ -1570,7 +1570,7 @@ find_fragments.o: $(SRCROOT)/g/g-error.h
 find_fragments.o: $(SRCROOT)/g/g-filedefs.h
 find_fragments.o: $(SRCROOT)/g/g-os.h
 find_fragments.o: $(SRCROOT)/g/g-struct.h
-find_fragments.o: $(SRCROOT)/staden_config.h
+find_fragments.o: $(PWD)/staden_config.h
 find_fragments.o: IO.h
 find_fragments.o: find_fragments.h
 find_fragments.o: gap-dbstruct.h
@@ -1596,7 +1596,7 @@ find_oligo.o: $(SRCROOT)/primer3/src/primer3.h
 find_oligo.o: $(SRCROOT)/seq_utils/dna_utils.h
 find_oligo.o: $(SRCROOT)/seq_utils/search_utils.h
 find_oligo.o: $(SRCROOT)/seq_utils/sequence_formats.h
-find_oligo.o: $(SRCROOT)/staden_config.h
+find_oligo.o: $(PWD)/staden_config.h
 find_oligo.o: $(SRCROOT)/tk_utils/canvas_box.h
 find_oligo.o: $(SRCROOT)/tk_utils/cli_arg.h
 find_oligo.o: $(SRCROOT)/tk_utils/postscript.h
@@ -1646,7 +1646,7 @@ find_repeats.o: $(SRCROOT)/g/g-os.h
 find_repeats.o: $(SRCROOT)/g/g-struct.h
 find_repeats.o: $(SRCROOT)/primer3/src/dpal.h
 find_repeats.o: $(SRCROOT)/primer3/src/primer3.h
-find_repeats.o: $(SRCROOT)/staden_config.h
+find_repeats.o: $(PWD)/staden_config.h
 find_repeats.o: $(SRCROOT)/tk_utils/canvas_box.h
 find_repeats.o: $(SRCROOT)/tk_utils/cli_arg.h
 find_repeats.o: $(SRCROOT)/tk_utils/postscript.h
@@ -1696,7 +1696,7 @@ gap-create.o: $(SRCROOT)/g/g-io.h
 gap-create.o: $(SRCROOT)/g/g-misc.h
 gap-create.o: $(SRCROOT)/g/g-os.h
 gap-create.o: $(SRCROOT)/g/g-struct.h
-gap-create.o: $(SRCROOT)/staden_config.h
+gap-create.o: $(PWD)/staden_config.h
 gap-create.o: gap-create.h
 gap-create.o: gap-dbstruct.h
 gap-create.o: gap-defaults.h
@@ -1707,7 +1707,7 @@ gap-dbstruct.o: $(SRCROOT)/Misc/os.h
 gap-dbstruct.o: $(SRCROOT)/Misc/xerror.h
 gap-dbstruct.o: $(SRCROOT)/g/g-error.h
 gap-dbstruct.o: $(SRCROOT)/g/g-os.h
-gap-dbstruct.o: $(SRCROOT)/staden_config.h
+gap-dbstruct.o: $(PWD)/staden_config.h
 gap-dbstruct.o: gap-dbstruct.h
 gap-error.o: $(SRCROOT)/Misc/array.h
 gap-error.o: $(SRCROOT)/Misc/bitmap.h
@@ -1716,7 +1716,7 @@ gap-error.o: $(SRCROOT)/Misc/os.h
 gap-error.o: $(SRCROOT)/Misc/xalloc.h
 gap-error.o: $(SRCROOT)/Misc/xerror.h
 gap-error.o: $(SRCROOT)/g/g-error.h
-gap-error.o: $(SRCROOT)/staden_config.h
+gap-error.o: $(PWD)/staden_config.h
 gap-error.o: gap-error.h
 gap-error.o: stack_dump.h
 gap-if.o: $(SRCROOT)/Misc/array.h
@@ -1727,7 +1727,7 @@ gap-if.o: $(SRCROOT)/g/g-error.h
 gap-if.o: $(SRCROOT)/g/g-filedefs.h
 gap-if.o: $(SRCROOT)/g/g-os.h
 gap-if.o: $(SRCROOT)/g/g-struct.h
-gap-if.o: $(SRCROOT)/staden_config.h
+gap-if.o: $(PWD)/staden_config.h
 gap-if.o: gap-if.h
 gap-if.o: gap-local.h
 gap-if.o: gap-remote.h gap-init.h
@@ -1739,7 +1739,7 @@ gap-init.o: $(SRCROOT)/g/g-error.h
 gap-init.o: $(SRCROOT)/g/g-filedefs.h
 gap-init.o: $(SRCROOT)/g/g-os.h
 gap-init.o: $(SRCROOT)/g/g-struct.h
-gap-init.o: $(SRCROOT)/staden_config.h
+gap-init.o: $(PWD)/staden_config.h
 gap-init.o: gap-init.h gap-if.h
 gap-init.o: gap-io.h
 gap-io.o: $(SRCROOT)/Misc/array.h
@@ -1751,7 +1751,7 @@ gap-io.o: $(SRCROOT)/g/g-error.h
 gap-io.o: $(SRCROOT)/g/g-filedefs.h
 gap-io.o: $(SRCROOT)/g/g-os.h
 gap-io.o: $(SRCROOT)/g/g-struct.h
-gap-io.o: $(SRCROOT)/staden_config.h
+gap-io.o: $(PWD)/staden_config.h
 gap-io.o: gap-error.h gap-if.h
 gap-local.o: $(SRCROOT)/Misc/array.h
 gap-local.o: $(SRCROOT)/Misc/os.h
@@ -1765,7 +1765,7 @@ gap-local.o: $(SRCROOT)/g/g-filedefs.h
 gap-local.o: $(SRCROOT)/g/g-os.h
 gap-local.o: $(SRCROOT)/g/g-request.h
 gap-local.o: $(SRCROOT)/g/g-struct.h
-gap-local.o: $(SRCROOT)/staden_config.h
+gap-local.o: $(PWD)/staden_config.h
 gap-local.o: gap-dbstruct.h
 gap-local.o: gap-local.h gap-if.h
 gap-remote.o: $(SRCROOT)/Misc/array.h
@@ -1779,7 +1779,7 @@ gap-remote.o: $(SRCROOT)/g/g-filedefs.h
 gap-remote.o: $(SRCROOT)/g/g-os.h
 gap-remote.o: $(SRCROOT)/g/g-request.h
 gap-remote.o: $(SRCROOT)/g/g-struct.h
-gap-remote.o: $(SRCROOT)/staden_config.h
+gap-remote.o: $(PWD)/staden_config.h
 gap-remote.o: gap-dbstruct.h
 gap-remote.o: gap-if.h
 gap-remote.o: gap-remote.h
@@ -1797,7 +1797,7 @@ gap-tcl.o: $(SRCROOT)/g/g-os.h
 gap-tcl.o: $(SRCROOT)/g/g-struct.h
 gap-tcl.o: $(SRCROOT)/primer3/src/dpal.h
 gap-tcl.o: $(SRCROOT)/primer3/src/primer3.h
-gap-tcl.o: $(SRCROOT)/staden_config.h
+gap-tcl.o: $(PWD)/staden_config.h
 gap-tcl.o: $(SRCROOT)/tk_utils/cli_arg.h
 gap-tcl.o: $(SRCROOT)/tk_utils/postscript.h
 gap-tcl.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1837,7 +1837,7 @@ gap_canvas_box.o: $(SRCROOT)/g/g-error.h
 gap_canvas_box.o: $(SRCROOT)/g/g-filedefs.h
 gap_canvas_box.o: $(SRCROOT)/g/g-os.h
 gap_canvas_box.o: $(SRCROOT)/g/g-struct.h
-gap_canvas_box.o: $(SRCROOT)/staden_config.h
+gap_canvas_box.o: $(PWD)/staden_config.h
 gap_canvas_box.o: $(SRCROOT)/tk_utils/canvas_box.h
 gap_canvas_box.o: $(SRCROOT)/tk_utils/tcl_utils.h
 gap_canvas_box.o: IO.h
@@ -1859,7 +1859,7 @@ gap_cli_arg.o: $(SRCROOT)/g/g-error.h
 gap_cli_arg.o: $(SRCROOT)/g/g-filedefs.h
 gap_cli_arg.o: $(SRCROOT)/g/g-os.h
 gap_cli_arg.o: $(SRCROOT)/g/g-struct.h
-gap_cli_arg.o: $(SRCROOT)/staden_config.h
+gap_cli_arg.o: $(PWD)/staden_config.h
 gap_cli_arg.o: $(SRCROOT)/tk_utils/cli_arg.h
 gap_cli_arg.o: IO.h
 gap_cli_arg.o: gap-dbstruct.h
@@ -1885,7 +1885,7 @@ gap_globals.o: $(SRCROOT)/seq_utils/align_lib_old.h
 gap_globals.o: $(SRCROOT)/seq_utils/dna_utils.h
 gap_globals.o: $(SRCROOT)/seq_utils/genetic_code.h
 gap_globals.o: $(SRCROOT)/seq_utils/read_matrix.h
-gap_globals.o: $(SRCROOT)/staden_config.h
+gap_globals.o: $(PWD)/staden_config.h
 gap_globals.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 gap_globals.o: $(SRCROOT)/tk_utils/tcl_utils.h
 gap_globals.o: consen.h IO.h
@@ -1911,7 +1911,7 @@ gap_hash.o: $(SRCROOT)/g/g-os.h
 gap_hash.o: $(SRCROOT)/g/g-struct.h
 gap_hash.o: $(SRCROOT)/seq_utils/align_lib.h
 gap_hash.o: $(SRCROOT)/seq_utils/dna_utils.h
-gap_hash.o: $(SRCROOT)/staden_config.h
+gap_hash.o: $(PWD)/staden_config.h
 gap_hash.o: fort.h
 gap_hash.o: gap-dbstruct.h
 gap_hash.o: gap-if.h
@@ -1925,7 +1925,7 @@ hash_lib.o: $(SRCROOT)/Misc/os.h
 hash_lib.o: $(SRCROOT)/Misc/xalloc.h
 hash_lib.o: $(SRCROOT)/seq_utils/align_lib.h
 hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
-hash_lib.o: $(SRCROOT)/staden_config.h
+hash_lib.o: $(PWD)/staden_config.h
 hash_lib.o: hash_lib.h
 init.o: $(SRCROOT)/Misc/array.h
 init.o: $(SRCROOT)/Misc/bitmap.h
@@ -1941,7 +1941,7 @@ init.o: $(SRCROOT)/g/g-os.h
 init.o: $(SRCROOT)/g/g-struct.h
 init.o: $(SRCROOT)/primer3/src/dpal.h
 init.o: $(SRCROOT)/primer3/src/primer3.h
-init.o: $(SRCROOT)/staden_config.h
+init.o: $(PWD)/staden_config.h
 init.o: $(SRCROOT)/tk_utils/cli_arg.h
 init.o: $(SRCROOT)/tk_utils/postscript.h
 init.o: $(SRCROOT)/tk_utils/sheet.h
@@ -1981,7 +1981,7 @@ io-reg.o: $(SRCROOT)/g/g-error.h
 io-reg.o: $(SRCROOT)/g/g-filedefs.h
 io-reg.o: $(SRCROOT)/g/g-os.h
 io-reg.o: $(SRCROOT)/g/g-struct.h
-io-reg.o: $(SRCROOT)/staden_config.h
+io-reg.o: $(PWD)/staden_config.h
 io-reg.o: $(SRCROOT)/tk_utils/text_output.h
 io-reg.o: IO.h
 io-reg.o: gap-dbstruct.h
@@ -2004,7 +2004,7 @@ io_handle.o: $(SRCROOT)/g/g-os.h
 io_handle.o: $(SRCROOT)/g/g-struct.h
 io_handle.o: $(SRCROOT)/primer3/src/dpal.h
 io_handle.o: $(SRCROOT)/primer3/src/primer3.h
-io_handle.o: $(SRCROOT)/staden_config.h
+io_handle.o: $(PWD)/staden_config.h
 io_handle.o: $(SRCROOT)/tk_utils/cli_arg.h
 io_handle.o: $(SRCROOT)/tk_utils/postscript.h
 io_handle.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2040,7 +2040,7 @@ io_utils.o: $(SRCROOT)/g/g-error.h
 io_utils.o: $(SRCROOT)/g/g-filedefs.h
 io_utils.o: $(SRCROOT)/g/g-os.h
 io_utils.o: $(SRCROOT)/g/g-struct.h
-io_utils.o: $(SRCROOT)/staden_config.h
+io_utils.o: $(PWD)/staden_config.h
 io_utils.o: IO.h
 io_utils.o: gap-dbstruct.h
 io_utils.o: gap-if.h
@@ -2065,7 +2065,7 @@ join.o: $(SRCROOT)/seq_utils/align.h
 join.o: $(SRCROOT)/seq_utils/align_lib.h
 join.o: $(SRCROOT)/seq_utils/align_lib_old.h
 join.o: $(SRCROOT)/seq_utils/dna_utils.h
-join.o: $(SRCROOT)/staden_config.h
+join.o: $(PWD)/staden_config.h
 join.o: $(SRCROOT)/tk_utils/cli_arg.h
 join.o: $(SRCROOT)/tk_utils/postscript.h
 join.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2106,7 +2106,7 @@ list_proc.o: $(SRCROOT)/g/g-error.h
 list_proc.o: $(SRCROOT)/g/g-filedefs.h
 list_proc.o: $(SRCROOT)/g/g-os.h
 list_proc.o: $(SRCROOT)/g/g-struct.h
-list_proc.o: $(SRCROOT)/staden_config.h
+list_proc.o: $(PWD)/staden_config.h
 list_proc.o: $(SRCROOT)/tk_utils/tcl_utils.h
 list_proc.o: IO.h
 list_proc.o: gap-dbstruct.h
@@ -2139,7 +2139,7 @@ newgap_cmds.o: $(SRCROOT)/seq_utils/genetic_code.h
 newgap_cmds.o: $(SRCROOT)/seq_utils/read_matrix.h
 newgap_cmds.o: $(SRCROOT)/seq_utils/renz_utils.h
 newgap_cmds.o: $(SRCROOT)/seq_utils/sequence_formats.h
-newgap_cmds.o: $(SRCROOT)/staden_config.h
+newgap_cmds.o: $(PWD)/staden_config.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/canvas_box.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/cli_arg.h
 newgap_cmds.o: $(SRCROOT)/tk_utils/postscript.h
@@ -2222,7 +2222,7 @@ notedb.o: $(SRCROOT)/Misc/misc.h
 notedb.o: $(SRCROOT)/Misc/os.h
 notedb.o: $(SRCROOT)/Misc/parse_db.h
 notedb.o: $(SRCROOT)/Misc/xalloc.h
-notedb.o: $(SRCROOT)/staden_config.h
+notedb.o: $(PWD)/staden_config.h
 notedb.o: notedb.h
 notes.o: $(SRCROOT)/Misc/array.h
 notes.o: $(SRCROOT)/Misc/bitmap.h
@@ -2238,7 +2238,7 @@ notes.o: $(SRCROOT)/g/g-os.h
 notes.o: $(SRCROOT)/g/g-struct.h
 notes.o: $(SRCROOT)/primer3/src/dpal.h
 notes.o: $(SRCROOT)/primer3/src/primer3.h
-notes.o: $(SRCROOT)/staden_config.h
+notes.o: $(PWD)/staden_config.h
 notes.o: $(SRCROOT)/tk_utils/cli_arg.h
 notes.o: $(SRCROOT)/tk_utils/postscript.h
 notes.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2279,7 +2279,7 @@ oligo.o: $(SRCROOT)/g/g-struct.h
 oligo.o: $(SRCROOT)/primer3/src/dpal.h
 oligo.o: $(SRCROOT)/primer3/src/primer3.h
 oligo.o: $(SRCROOT)/seq_utils/dna_utils.h
-oligo.o: $(SRCROOT)/staden_config.h
+oligo.o: $(PWD)/staden_config.h
 oligo.o: $(SRCROOT)/tk_utils/cli_arg.h
 oligo.o: $(SRCROOT)/tk_utils/postscript.h
 oligo.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2317,7 +2317,7 @@ oligo_sel.o: $(SRCROOT)/g/g-os.h
 oligo_sel.o: $(SRCROOT)/g/g-struct.h
 oligo_sel.o: $(SRCROOT)/primer3/src/dpal.h
 oligo_sel.o: $(SRCROOT)/primer3/src/primer3.h
-oligo_sel.o: $(SRCROOT)/staden_config.h
+oligo_sel.o: $(PWD)/staden_config.h
 oligo_sel.o: $(SRCROOT)/tk_utils/cli_arg.h
 oligo_sel.o: $(SRCROOT)/tk_utils/postscript.h
 oligo_sel.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2362,7 +2362,7 @@ preass.o: $(SRCROOT)/g/g-os.h
 preass.o: $(SRCROOT)/g/g-struct.h
 preass.o: $(SRCROOT)/primer3/src/dpal.h
 preass.o: $(SRCROOT)/primer3/src/primer3.h
-preass.o: $(SRCROOT)/staden_config.h
+preass.o: $(PWD)/staden_config.h
 preass.o: $(SRCROOT)/tk_utils/cli_arg.h
 preass.o: $(SRCROOT)/tk_utils/postscript.h
 preass.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2389,7 +2389,7 @@ preass.o: undo.h edUtils.h qual.h
 primlib.o: $(SRCROOT)/Misc/os.h
 primlib.o: $(SRCROOT)/primer3/src/dpal.h
 primlib.o: $(SRCROOT)/primer3/src/primer3.h
-primlib.o: $(SRCROOT)/staden_config.h
+primlib.o: $(PWD)/staden_config.h
 primlib.o: $(SRCROOT)/tk_utils/tcl_utils.h
 primlib.o: gap_globals.h
 primlib.o: primlib.h
@@ -2411,7 +2411,7 @@ probe.o: $(SRCROOT)/seq_utils/align.h
 probe.o: $(SRCROOT)/seq_utils/align_lib_old.h
 probe.o: $(SRCROOT)/seq_utils/dna_utils.h
 probe.o: $(SRCROOT)/seq_utils/sequence_formats.h
-probe.o: $(SRCROOT)/staden_config.h
+probe.o: $(PWD)/staden_config.h
 probe.o: $(SRCROOT)/tk_utils/tcl_utils.h
 probe.o: $(SRCROOT)/tk_utils/text_output.h
 probe.o: IO.h
@@ -2426,7 +2426,7 @@ probe.o: seqInfo.h
 qual.o: $(SRCROOT)/Misc/misc.h
 qual.o: $(SRCROOT)/Misc/os.h
 qual.o: $(SRCROOT)/Misc/xalloc.h
-qual.o: $(SRCROOT)/staden_config.h
+qual.o: $(PWD)/staden_config.h
 qual.o: $(SRCROOT)/tk_utils/tcl_utils.h
 qual.o: gap_globals.h
 qual.o: qual.h
@@ -2443,7 +2443,7 @@ qualIO.o: $(SRCROOT)/g/g-error.h
 qualIO.o: $(SRCROOT)/g/g-filedefs.h
 qualIO.o: $(SRCROOT)/g/g-os.h
 qualIO.o: $(SRCROOT)/g/g-struct.h
-qualIO.o: $(SRCROOT)/staden_config.h
+qualIO.o: $(PWD)/staden_config.h
 qualIO.o: $(SRCROOT)/tk_utils/tcl_utils.h
 qualIO.o: IO.h
 qualIO.o: IO2.h qual.h qualP.h
@@ -2466,7 +2466,7 @@ quality_plot.o: $(SRCROOT)/g/g-os.h
 quality_plot.o: $(SRCROOT)/g/g-struct.h
 quality_plot.o: $(SRCROOT)/primer3/src/dpal.h
 quality_plot.o: $(SRCROOT)/primer3/src/primer3.h
-quality_plot.o: $(SRCROOT)/staden_config.h
+quality_plot.o: $(PWD)/staden_config.h
 quality_plot.o: $(SRCROOT)/tk_utils/canvas_box.h
 quality_plot.o: $(SRCROOT)/tk_utils/cli_arg.h
 quality_plot.o: $(SRCROOT)/tk_utils/postscript.h
@@ -2518,7 +2518,7 @@ reactions.o: $(SRCROOT)/g/g-os.h
 reactions.o: $(SRCROOT)/g/g-struct.h
 reactions.o: $(SRCROOT)/primer3/src/dpal.h
 reactions.o: $(SRCROOT)/primer3/src/primer3.h
-reactions.o: $(SRCROOT)/staden_config.h
+reactions.o: $(PWD)/staden_config.h
 reactions.o: $(SRCROOT)/tk_utils/cli_arg.h
 reactions.o: $(SRCROOT)/tk_utils/postscript.h
 reactions.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2555,7 +2555,7 @@ reading_coverage.o: $(SRCROOT)/g/g-error.h
 reading_coverage.o: $(SRCROOT)/g/g-filedefs.h
 reading_coverage.o: $(SRCROOT)/g/g-os.h
 reading_coverage.o: $(SRCROOT)/g/g-struct.h
-reading_coverage.o: $(SRCROOT)/staden_config.h
+reading_coverage.o: $(PWD)/staden_config.h
 reading_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h
 reading_coverage.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 reading_coverage.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2591,7 +2591,7 @@ readpair.o: $(SRCROOT)/g/g-os.h
 readpair.o: $(SRCROOT)/g/g-struct.h
 readpair.o: $(SRCROOT)/primer3/src/dpal.h
 readpair.o: $(SRCROOT)/primer3/src/primer3.h
-readpair.o: $(SRCROOT)/staden_config.h
+readpair.o: $(PWD)/staden_config.h
 readpair.o: $(SRCROOT)/tk_utils/canvas_box.h
 readpair.o: $(SRCROOT)/tk_utils/cli_arg.h
 readpair.o: $(SRCROOT)/tk_utils/postscript.h
@@ -2635,7 +2635,7 @@ readpair_coverage.o: $(SRCROOT)/g/g-error.h
 readpair_coverage.o: $(SRCROOT)/g/g-filedefs.h
 readpair_coverage.o: $(SRCROOT)/g/g-os.h
 readpair_coverage.o: $(SRCROOT)/g/g-struct.h
-readpair_coverage.o: $(SRCROOT)/staden_config.h
+readpair_coverage.o: $(PWD)/staden_config.h
 readpair_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h
 readpair_coverage.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 readpair_coverage.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -2677,7 +2677,7 @@ restriction_enzymes.o: $(SRCROOT)/primer3/src/dpal.h
 restriction_enzymes.o: $(SRCROOT)/primer3/src/primer3.h
 restriction_enzymes.o: $(SRCROOT)/seq_utils/dna_utils.h
 restriction_enzymes.o: $(SRCROOT)/seq_utils/renz_utils.h
-restriction_enzymes.o: $(SRCROOT)/staden_config.h
+restriction_enzymes.o: $(PWD)/staden_config.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/canvas_box.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/cli_arg.h
 restriction_enzymes.o: $(SRCROOT)/tk_utils/postscript.h
@@ -2730,7 +2730,7 @@ ruler_display.o: $(SRCROOT)/g/g-error.h
 ruler_display.o: $(SRCROOT)/g/g-filedefs.h
 ruler_display.o: $(SRCROOT)/g/g-os.h
 ruler_display.o: $(SRCROOT)/g/g-struct.h
-ruler_display.o: $(SRCROOT)/staden_config.h
+ruler_display.o: $(PWD)/staden_config.h
 ruler_display.o: $(SRCROOT)/tk_utils/canvas_box.h
 ruler_display.o: $(SRCROOT)/tk_utils/ruler_tick.h
 ruler_display.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -2764,7 +2764,7 @@ searchUtils.o: $(SRCROOT)/primer3/src/dpal.h
 searchUtils.o: $(SRCROOT)/primer3/src/primer3.h
 searchUtils.o: $(SRCROOT)/seq_utils/dna_utils.h
 searchUtils.o: $(SRCROOT)/seq_utils/search_utils.h
-searchUtils.o: $(SRCROOT)/staden_config.h
+searchUtils.o: $(PWD)/staden_config.h
 searchUtils.o: $(SRCROOT)/tk_utils/cli_arg.h
 searchUtils.o: $(SRCROOT)/tk_utils/postscript.h
 searchUtils.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2810,7 +2810,7 @@ seqInfo.o: $(SRCROOT)/g/g-os.h
 seqInfo.o: $(SRCROOT)/g/g-struct.h
 seqInfo.o: $(SRCROOT)/primer3/src/dpal.h
 seqInfo.o: $(SRCROOT)/primer3/src/primer3.h
-seqInfo.o: $(SRCROOT)/staden_config.h
+seqInfo.o: $(PWD)/staden_config.h
 seqInfo.o: $(SRCROOT)/tk_utils/cli_arg.h
 seqInfo.o: $(SRCROOT)/tk_utils/postscript.h
 seqInfo.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2845,7 +2845,7 @@ show_relationships.o: $(SRCROOT)/g/g-error.h
 show_relationships.o: $(SRCROOT)/g/g-filedefs.h
 show_relationships.o: $(SRCROOT)/g/g-os.h
 show_relationships.o: $(SRCROOT)/g/g-struct.h
-show_relationships.o: $(SRCROOT)/staden_config.h
+show_relationships.o: $(PWD)/staden_config.h
 show_relationships.o: $(SRCROOT)/tk_utils/cli_arg.h
 show_relationships.o: $(SRCROOT)/tk_utils/text_output.h
 show_relationships.o: IO.h
@@ -2873,7 +2873,7 @@ shuffle_pads.o: $(SRCROOT)/seq_utils/align.h
 shuffle_pads.o: $(SRCROOT)/seq_utils/align_lib.h
 shuffle_pads.o: $(SRCROOT)/seq_utils/align_lib_old.h
 shuffle_pads.o: $(SRCROOT)/seq_utils/dna_utils.h
-shuffle_pads.o: $(SRCROOT)/staden_config.h
+shuffle_pads.o: $(PWD)/staden_config.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/cli_arg.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/postscript.h
 shuffle_pads.o: $(SRCROOT)/tk_utils/sheet.h
@@ -2908,7 +2908,7 @@ stack_dump.o: $(SRCROOT)/Misc/os.h
 stack_dump.o: $(SRCROOT)/Misc/xalloc.h
 stack_dump.o: $(SRCROOT)/Misc/xerror.h
 stack_dump.o: $(SRCROOT)/g/g-error.h
-stack_dump.o: $(SRCROOT)/staden_config.h
+stack_dump.o: $(PWD)/staden_config.h
 stack_dump.o: gap-error.h
 stack_dump.o: stack_dump.h
 stop_codon.o: $(SRCROOT)/Misc/array.h
@@ -2928,7 +2928,7 @@ stop_codon.o: $(SRCROOT)/primer3/src/dpal.h
 stop_codon.o: $(SRCROOT)/primer3/src/primer3.h
 stop_codon.o: $(SRCROOT)/seq_utils/dna_utils.h
 stop_codon.o: $(SRCROOT)/seq_utils/renz_utils.h
-stop_codon.o: $(SRCROOT)/staden_config.h
+stop_codon.o: $(PWD)/staden_config.h
 stop_codon.o: $(SRCROOT)/tk_utils/canvas_box.h
 stop_codon.o: $(SRCROOT)/tk_utils/cli_arg.h
 stop_codon.o: $(SRCROOT)/tk_utils/postscript.h
@@ -2974,7 +2974,7 @@ strand_coverage.o: $(SRCROOT)/g/g-error.h
 strand_coverage.o: $(SRCROOT)/g/g-filedefs.h
 strand_coverage.o: $(SRCROOT)/g/g-os.h
 strand_coverage.o: $(SRCROOT)/g/g-struct.h
-strand_coverage.o: $(SRCROOT)/staden_config.h
+strand_coverage.o: $(PWD)/staden_config.h
 strand_coverage.o: $(SRCROOT)/tk_utils/canvas_box.h
 strand_coverage.o: $(SRCROOT)/tk_utils/tclXkeylist.h
 strand_coverage.o: $(SRCROOT)/tk_utils/tcl_utils.h
@@ -3010,7 +3010,7 @@ tagEditor.o: $(SRCROOT)/g/g-os.h
 tagEditor.o: $(SRCROOT)/g/g-struct.h
 tagEditor.o: $(SRCROOT)/primer3/src/dpal.h
 tagEditor.o: $(SRCROOT)/primer3/src/primer3.h
-tagEditor.o: $(SRCROOT)/staden_config.h
+tagEditor.o: $(PWD)/staden_config.h
 tagEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
 tagEditor.o: $(SRCROOT)/tk_utils/postscript.h
 tagEditor.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3051,7 +3051,7 @@ tagU1.o: $(SRCROOT)/g/g-struct.h
 tagU1.o: $(SRCROOT)/primer3/src/dpal.h
 tagU1.o: $(SRCROOT)/primer3/src/primer3.h
 tagU1.o: $(SRCROOT)/seq_utils/dna_utils.h
-tagU1.o: $(SRCROOT)/staden_config.h
+tagU1.o: $(PWD)/staden_config.h
 tagU1.o: $(SRCROOT)/tk_utils/cli_arg.h
 tagU1.o: $(SRCROOT)/tk_utils/postscript.h
 tagU1.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3091,7 +3091,7 @@ tagU2.o: $(SRCROOT)/g/g-os.h
 tagU2.o: $(SRCROOT)/g/g-struct.h
 tagU2.o: $(SRCROOT)/primer3/src/dpal.h
 tagU2.o: $(SRCROOT)/primer3/src/primer3.h
-tagU2.o: $(SRCROOT)/staden_config.h
+tagU2.o: $(PWD)/staden_config.h
 tagU2.o: $(SRCROOT)/tk_utils/cli_arg.h
 tagU2.o: $(SRCROOT)/tk_utils/postscript.h
 tagU2.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3121,7 +3121,7 @@ tagdb.o: $(SRCROOT)/Misc/misc.h
 tagdb.o: $(SRCROOT)/Misc/os.h
 tagdb.o: $(SRCROOT)/Misc/parse_db.h
 tagdb.o: $(SRCROOT)/Misc/xalloc.h
-tagdb.o: $(SRCROOT)/staden_config.h
+tagdb.o: $(PWD)/staden_config.h
 tagdb.o: tagdb.h
 template.o: $(SRCROOT)/Misc/array.h
 template.o: $(SRCROOT)/Misc/bitmap.h
@@ -3138,7 +3138,7 @@ template.o: $(SRCROOT)/g/g-os.h
 template.o: $(SRCROOT)/g/g-struct.h
 template.o: $(SRCROOT)/primer3/src/dpal.h
 template.o: $(SRCROOT)/primer3/src/primer3.h
-template.o: $(SRCROOT)/staden_config.h
+template.o: $(PWD)/staden_config.h
 template.o: $(SRCROOT)/tk_utils/cli_arg.h
 template.o: $(SRCROOT)/tk_utils/postscript.h
 template.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3179,7 +3179,7 @@ template_display.o: $(SRCROOT)/g/g-os.h
 template_display.o: $(SRCROOT)/g/g-struct.h
 template_display.o: $(SRCROOT)/primer3/src/dpal.h
 template_display.o: $(SRCROOT)/primer3/src/primer3.h
-template_display.o: $(SRCROOT)/staden_config.h
+template_display.o: $(PWD)/staden_config.h
 template_display.o: $(SRCROOT)/tk_utils/canvas_box.h
 template_display.o: $(SRCROOT)/tk_utils/cli_arg.h
 template_display.o: $(SRCROOT)/tk_utils/postscript.h
@@ -3229,7 +3229,7 @@ text-io-reg.o: $(SRCROOT)/g/g-error.h
 text-io-reg.o: $(SRCROOT)/g/g-filedefs.h
 text-io-reg.o: $(SRCROOT)/g/g-os.h
 text-io-reg.o: $(SRCROOT)/g/g-struct.h
-text-io-reg.o: $(SRCROOT)/staden_config.h
+text-io-reg.o: $(PWD)/staden_config.h
 text-io-reg.o: IO.h
 text-io-reg.o: gap-dbstruct.h
 text-io-reg.o: gap-if.h
@@ -3247,7 +3247,7 @@ tk-io-reg.o: $(SRCROOT)/g/g-error.h
 tk-io-reg.o: $(SRCROOT)/g/g-filedefs.h
 tk-io-reg.o: $(SRCROOT)/g/g-os.h
 tk-io-reg.o: $(SRCROOT)/g/g-struct.h
-tk-io-reg.o: $(SRCROOT)/staden_config.h
+tk-io-reg.o: $(PWD)/staden_config.h
 tk-io-reg.o: $(SRCROOT)/tk_utils/canvas_box.h
 tk-io-reg.o: $(SRCROOT)/tk_utils/cli_arg.h
 tk-io-reg.o: $(SRCROOT)/tk_utils/tclXkeylist.h
@@ -3282,7 +3282,7 @@ tkEdNames.o: $(SRCROOT)/g/g-os.h
 tkEdNames.o: $(SRCROOT)/g/g-struct.h
 tkEdNames.o: $(SRCROOT)/primer3/src/dpal.h
 tkEdNames.o: $(SRCROOT)/primer3/src/primer3.h
-tkEdNames.o: $(SRCROOT)/staden_config.h
+tkEdNames.o: $(PWD)/staden_config.h
 tkEdNames.o: $(SRCROOT)/tk_utils/cli_arg.h
 tkEdNames.o: $(SRCROOT)/tk_utils/postscript.h
 tkEdNames.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3325,7 +3325,7 @@ tkEdUtils.o: $(SRCROOT)/primer3/src/dpal.h
 tkEdUtils.o: $(SRCROOT)/primer3/src/primer3.h
 tkEdUtils.o: $(SRCROOT)/seq_utils/dna_utils.h
 tkEdUtils.o: $(SRCROOT)/seq_utils/genetic_code.h
-tkEdUtils.o: $(SRCROOT)/staden_config.h
+tkEdUtils.o: $(PWD)/staden_config.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/cli_arg.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/postscript.h
 tkEdUtils.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3365,7 +3365,7 @@ tkEditor.o: $(SRCROOT)/g/g-os.h
 tkEditor.o: $(SRCROOT)/g/g-struct.h
 tkEditor.o: $(SRCROOT)/primer3/src/dpal.h
 tkEditor.o: $(SRCROOT)/primer3/src/primer3.h
-tkEditor.o: $(SRCROOT)/staden_config.h
+tkEditor.o: $(PWD)/staden_config.h
 tkEditor.o: $(SRCROOT)/tk_utils/cli_arg.h
 tkEditor.o: $(SRCROOT)/tk_utils/postscript.h
 tkEditor.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3410,7 +3410,7 @@ tman_cons.o: $(SRCROOT)/g/g-os.h
 tman_cons.o: $(SRCROOT)/g/g-struct.h
 tman_cons.o: $(SRCROOT)/primer3/src/dpal.h
 tman_cons.o: $(SRCROOT)/primer3/src/primer3.h
-tman_cons.o: $(SRCROOT)/staden_config.h
+tman_cons.o: $(PWD)/staden_config.h
 tman_cons.o: $(SRCROOT)/tk_utils/cli_arg.h
 tman_cons.o: $(SRCROOT)/tk_utils/postscript.h
 tman_cons.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3455,7 +3455,7 @@ tman_diff.o: $(SRCROOT)/mutlib/staden.h
 tman_diff.o: $(SRCROOT)/primer3/src/dpal.h
 tman_diff.o: $(SRCROOT)/primer3/src/primer3.h
 tman_diff.o: $(SRCROOT)/seq_utils/dna_utils.h
-tman_diff.o: $(SRCROOT)/staden_config.h
+tman_diff.o: $(PWD)/staden_config.h
 tman_diff.o: $(SRCROOT)/tk_utils/cli_arg.h
 tman_diff.o: $(SRCROOT)/tk_utils/postscript.h
 tman_diff.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3497,7 +3497,7 @@ tman_display.o: $(SRCROOT)/g/g-os.h
 tman_display.o: $(SRCROOT)/g/g-struct.h
 tman_display.o: $(SRCROOT)/primer3/src/dpal.h
 tman_display.o: $(SRCROOT)/primer3/src/primer3.h
-tman_display.o: $(SRCROOT)/staden_config.h
+tman_display.o: $(PWD)/staden_config.h
 tman_display.o: $(SRCROOT)/tk_utils/cli_arg.h
 tman_display.o: $(SRCROOT)/tk_utils/postscript.h
 tman_display.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3540,7 +3540,7 @@ tman_interface.o: $(SRCROOT)/g/g-os.h
 tman_interface.o: $(SRCROOT)/g/g-struct.h
 tman_interface.o: $(SRCROOT)/primer3/src/dpal.h
 tman_interface.o: $(SRCROOT)/primer3/src/primer3.h
-tman_interface.o: $(SRCROOT)/staden_config.h
+tman_interface.o: $(PWD)/staden_config.h
 tman_interface.o: $(SRCROOT)/tk_utils/cli_arg.h
 tman_interface.o: $(SRCROOT)/tk_utils/postscript.h
 tman_interface.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3583,7 +3583,7 @@ undo.o: $(SRCROOT)/g/g-os.h
 undo.o: $(SRCROOT)/g/g-struct.h
 undo.o: $(SRCROOT)/primer3/src/dpal.h
 undo.o: $(SRCROOT)/primer3/src/primer3.h
-undo.o: $(SRCROOT)/staden_config.h
+undo.o: $(PWD)/staden_config.h
 undo.o: $(SRCROOT)/tk_utils/cli_arg.h
 undo.o: $(SRCROOT)/tk_utils/postscript.h
 undo.o: $(SRCROOT)/tk_utils/sheet.h
@@ -3618,7 +3618,7 @@ vseqs.o: $(SRCROOT)/g/g-error.h
 vseqs.o: $(SRCROOT)/g/g-filedefs.h
 vseqs.o: $(SRCROOT)/g/g-os.h
 vseqs.o: $(SRCROOT)/g/g-struct.h
-vseqs.o: $(SRCROOT)/staden_config.h
+vseqs.o: $(PWD)/staden_config.h
 vseqs.o: $(SRCROOT)/tk_utils/text_output.h
 vseqs.o: IO.h
 vseqs.o: gap-dbstruct.h

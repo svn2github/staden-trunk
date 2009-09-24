@@ -107,7 +107,7 @@ caller.o: $(SRCROOT)/mutlib/matrix.hpp
 caller.o: $(SRCROOT)/mutlib/staden.h
 caller.o: $(SRCROOT)/mutlib/trace.hpp
 caller.o: $(SRCROOT)/seq_utils/dna_utils.h
-caller.o: $(SRCROOT)/staden_config.h
+caller.o: $(PWD)/staden_config.h
 caller_base.o: $(SRCROOT)/Misc/misc.h
 caller_base.o: $(SRCROOT)/Misc/os.h
 caller_base.o: $(SRCROOT)/Misc/xalloc.h
@@ -118,7 +118,7 @@ caller_base.o: $(SRCROOT)/mutlib/matrix.hpp
 caller_base.o: $(SRCROOT)/mutlib/staden.h
 caller_base.o: $(SRCROOT)/mutlib/trace.hpp
 caller_base.o: $(SRCROOT)/seq_utils/dna_utils.h
-caller_base.o: $(SRCROOT)/staden_config.h
+caller_base.o: $(PWD)/staden_config.h
 caller_level.o: $(SRCROOT)/Misc/misc.h
 caller_level.o: $(SRCROOT)/Misc/os.h
 caller_level.o: $(SRCROOT)/Misc/xalloc.h
@@ -129,7 +129,7 @@ caller_level.o: $(SRCROOT)/mutlib/matrix.hpp
 caller_level.o: $(SRCROOT)/mutlib/staden.h
 caller_level.o: $(SRCROOT)/mutlib/trace.hpp
 caller_level.o: $(SRCROOT)/seq_utils/dna_utils.h
-caller_level.o: $(SRCROOT)/staden_config.h
+caller_level.o: $(PWD)/staden_config.h
 caller_snr.o: $(SRCROOT)/Misc/misc.h
 caller_snr.o: $(SRCROOT)/Misc/os.h
 caller_snr.o: $(SRCROOT)/Misc/xalloc.h
@@ -139,7 +139,7 @@ caller_snr.o: $(SRCROOT)/mutlib/matrix.hpp
 caller_snr.o: $(SRCROOT)/mutlib/staden.h
 caller_snr.o: $(SRCROOT)/mutlib/trace.hpp
 caller_snr.o: $(SRCROOT)/seq_utils/dna_utils.h
-caller_snr.o: $(SRCROOT)/staden_config.h
+caller_snr.o: $(PWD)/staden_config.h
 dnatable.o: $(SRCROOT)/mutlib/dnatable.hpp
 mutationtag.o: $(SRCROOT)/Misc/misc.h
 mutationtag.o: $(SRCROOT)/Misc/os.h
@@ -149,7 +149,7 @@ mutationtag.o: $(SRCROOT)/mutlib/mutationtag.hpp
 mutationtag.o: $(SRCROOT)/mutlib/mutlib.h
 mutationtag.o: $(SRCROOT)/mutlib/staden.h
 mutationtag.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutationtag.o: $(SRCROOT)/staden_config.h
+mutationtag.o: $(PWD)/staden_config.h
 mutationtag_utils.o: $(SRCROOT)/Misc/misc.h
 mutationtag_utils.o: $(SRCROOT)/Misc/os.h
 mutationtag_utils.o: $(SRCROOT)/Misc/xalloc.h
@@ -161,7 +161,7 @@ mutationtag_utils.o: $(SRCROOT)/mutlib/mutationtag_utils.hpp
 mutationtag_utils.o: $(SRCROOT)/mutlib/mutlib.h
 mutationtag_utils.o: $(SRCROOT)/mutlib/staden.h
 mutationtag_utils.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutationtag_utils.o: $(SRCROOT)/staden_config.h
+mutationtag_utils.o: $(PWD)/staden_config.h
 mutscan.o: $(SRCROOT)/Misc/misc.h
 mutscan.o: $(SRCROOT)/Misc/os.h
 mutscan.o: $(SRCROOT)/Misc/xalloc.h
@@ -183,7 +183,7 @@ mutscan.o: $(SRCROOT)/mutlib/sp_alignment_structs.h
 mutscan.o: $(SRCROOT)/mutlib/staden.h
 mutscan.o: $(SRCROOT)/mutlib/trace.hpp
 mutscan.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan.o: $(SRCROOT)/staden_config.h
+mutscan.o: $(PWD)/staden_config.h
 mutscan_analysis.o: $(SRCROOT)/Misc/misc.h
 mutscan_analysis.o: $(SRCROOT)/Misc/os.h
 mutscan_analysis.o: $(SRCROOT)/Misc/xalloc.h
@@ -202,14 +202,14 @@ mutscan_analysis.o: $(SRCROOT)/mutlib/mutscan_preprocess.hpp
 mutscan_analysis.o: $(SRCROOT)/mutlib/staden.h
 mutscan_analysis.o: $(SRCROOT)/mutlib/trace.hpp
 mutscan_analysis.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan_analysis.o: $(SRCROOT)/staden_config.h
+mutscan_analysis.o: $(PWD)/staden_config.h
 mutscan_helper.o: $(SRCROOT)/Misc/misc.h
 mutscan_helper.o: $(SRCROOT)/Misc/os.h
 mutscan_helper.o: $(SRCROOT)/Misc/xalloc.h
 mutscan_helper.o: $(SRCROOT)/mutlib/mutlib.h
 mutscan_helper.o: $(SRCROOT)/mutlib/staden.h
 mutscan_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan_helper.o: $(SRCROOT)/staden_config.h
+mutscan_helper.o: $(PWD)/staden_config.h
 mutscan_parameters.o: $(SRCROOT)/Misc/misc.h
 mutscan_parameters.o: $(SRCROOT)/Misc/os.h
 mutscan_parameters.o: $(SRCROOT)/Misc/xalloc.h
@@ -218,7 +218,7 @@ mutscan_parameters.o: $(SRCROOT)/mutlib/mutscan_parameters.hpp
 mutscan_parameters.o: $(SRCROOT)/mutlib/parameter.hpp
 mutscan_parameters.o: $(SRCROOT)/mutlib/staden.h
 mutscan_parameters.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan_parameters.o: $(SRCROOT)/staden_config.h
+mutscan_parameters.o: $(PWD)/staden_config.h
 mutscan_preprocess.o: $(SRCROOT)/Misc/misc.h
 mutscan_preprocess.o: $(SRCROOT)/Misc/os.h
 mutscan_preprocess.o: $(SRCROOT)/Misc/xalloc.h
@@ -229,7 +229,7 @@ mutscan_preprocess.o: $(SRCROOT)/mutlib/mutscan_preprocess.hpp
 mutscan_preprocess.o: $(SRCROOT)/mutlib/staden.h
 mutscan_preprocess.o: $(SRCROOT)/mutlib/trace.hpp
 mutscan_preprocess.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan_preprocess.o: $(SRCROOT)/staden_config.h
+mutscan_preprocess.o: $(PWD)/staden_config.h
 mutscan_validate.o: $(SRCROOT)/Misc/misc.h
 mutscan_validate.o: $(SRCROOT)/Misc/os.h
 mutscan_validate.o: $(SRCROOT)/Misc/xalloc.h
@@ -239,7 +239,7 @@ mutscan_validate.o: $(SRCROOT)/mutlib/parameter.hpp
 mutscan_validate.o: $(SRCROOT)/mutlib/staden.h
 mutscan_validate.o: $(SRCROOT)/mutlib/validate.hpp
 mutscan_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-mutscan_validate.o: $(SRCROOT)/staden_config.h
+mutscan_validate.o: $(PWD)/staden_config.h
 muttag.o: $(SRCROOT)/Misc/misc.h
 muttag.o: $(SRCROOT)/Misc/os.h
 muttag.o: $(SRCROOT)/Misc/xalloc.h
@@ -248,13 +248,13 @@ muttag.o: $(SRCROOT)/mutlib/mutlib.h
 muttag.o: $(SRCROOT)/mutlib/muttag.hpp
 muttag.o: $(SRCROOT)/mutlib/staden.h
 muttag.o: $(SRCROOT)/seq_utils/dna_utils.h
-muttag.o: $(SRCROOT)/staden_config.h
+muttag.o: $(PWD)/staden_config.h
 peakcall.o: $(SRCROOT)/mutlib/listitem.hpp
 peakcall.o: $(SRCROOT)/mutlib/peakcall.hpp
 read_matrix.o: $(SRCROOT)/Misc/misc.h
 read_matrix.o: $(SRCROOT)/Misc/os.h
 read_matrix.o: $(SRCROOT)/Misc/xalloc.h
-read_matrix.o: $(SRCROOT)/staden_config.h
+read_matrix.o: $(PWD)/staden_config.h
 read_matrix.o: read_matrix.h
 sp_align_lib.o: $(SRCROOT)/Misc/misc.h
 sp_align_lib.o: $(SRCROOT)/Misc/os.h
@@ -264,7 +264,7 @@ sp_align_lib.o: $(SRCROOT)/mutlib/sp_alignment.h
 sp_align_lib.o: $(SRCROOT)/mutlib/sp_alignment_structs.h
 sp_align_lib.o: $(SRCROOT)/mutlib/staden.h
 sp_align_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
-sp_align_lib.o: $(SRCROOT)/staden_config.h
+sp_align_lib.o: $(PWD)/staden_config.h
 sp_align_lib.o: read_matrix.h
 sp_alignment.o: $(SRCROOT)/Misc/misc.h
 sp_alignment.o: $(SRCROOT)/Misc/os.h
@@ -275,7 +275,7 @@ sp_alignment.o: $(SRCROOT)/mutlib/sp_alignment_structs.h
 sp_alignment.o: $(SRCROOT)/mutlib/sp_hash_lib.h
 sp_alignment.o: $(SRCROOT)/mutlib/staden.h
 sp_alignment.o: $(SRCROOT)/seq_utils/dna_utils.h
-sp_alignment.o: $(SRCROOT)/staden_config.h
+sp_alignment.o: $(PWD)/staden_config.h
 sp_alignment.o: read_matrix.h
 sp_hash_lib.o: $(SRCROOT)/Misc/misc.h
 sp_hash_lib.o: $(SRCROOT)/Misc/os.h
@@ -286,12 +286,12 @@ sp_hash_lib.o: $(SRCROOT)/mutlib/sp_alignment_structs.h
 sp_hash_lib.o: $(SRCROOT)/mutlib/sp_hash_lib.h
 sp_hash_lib.o: $(SRCROOT)/mutlib/staden.h
 sp_hash_lib.o: $(SRCROOT)/seq_utils/dna_utils.h
-sp_hash_lib.o: $(SRCROOT)/staden_config.h
+sp_hash_lib.o: $(PWD)/staden_config.h
 sp_matrix.o: $(SRCROOT)/Misc/misc.h
 sp_matrix.o: $(SRCROOT)/Misc/os.h
 sp_matrix.o: $(SRCROOT)/Misc/xalloc.h
 sp_matrix.o: $(SRCROOT)/mutlib/sp_matrix.h
-sp_matrix.o: $(SRCROOT)/staden_config.h
+sp_matrix.o: $(PWD)/staden_config.h
 stringlist.o: $(SRCROOT)/mutlib/stringlist.hpp
 tagarray.o: $(SRCROOT)/Misc/misc.h
 tagarray.o: $(SRCROOT)/Misc/os.h
@@ -303,7 +303,7 @@ tagarray.o: $(SRCROOT)/mutlib/muttag.hpp
 tagarray.o: $(SRCROOT)/mutlib/staden.h
 tagarray.o: $(SRCROOT)/mutlib/tagarray.hpp
 tagarray.o: $(SRCROOT)/seq_utils/dna_utils.h
-tagarray.o: $(SRCROOT)/staden_config.h
+tagarray.o: $(PWD)/staden_config.h
 trace.o: $(SRCROOT)/Misc/misc.h
 trace.o: $(SRCROOT)/Misc/os.h
 trace.o: $(SRCROOT)/Misc/xalloc.h
@@ -311,7 +311,7 @@ trace.o: $(SRCROOT)/mutlib/array.hpp
 trace.o: $(SRCROOT)/mutlib/staden.h
 trace.o: $(SRCROOT)/mutlib/trace.hpp
 trace.o: $(SRCROOT)/seq_utils/dna_utils.h
-trace.o: $(SRCROOT)/staden_config.h
+trace.o: $(PWD)/staden_config.h
 tracealign.o: $(SRCROOT)/Misc/misc.h
 tracealign.o: $(SRCROOT)/Misc/os.h
 tracealign.o: $(SRCROOT)/Misc/xalloc.h
@@ -332,7 +332,7 @@ tracealign.o: $(SRCROOT)/mutlib/tracealign.hpp
 tracealign.o: $(SRCROOT)/mutlib/tracealign_cache.hpp
 tracealign.o: $(SRCROOT)/mutlib/tracealign_preprocess.hpp
 tracealign.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign.o: $(SRCROOT)/staden_config.h
+tracealign.o: $(PWD)/staden_config.h
 tracealign_cache.o: $(SRCROOT)/Misc/misc.h
 tracealign_cache.o: $(SRCROOT)/Misc/os.h
 tracealign_cache.o: $(SRCROOT)/Misc/xalloc.h
@@ -343,7 +343,7 @@ tracealign_cache.o: $(SRCROOT)/mutlib/trace.hpp
 tracealign_cache.o: $(SRCROOT)/mutlib/tracealign_cache.hpp
 tracealign_cache.o: $(SRCROOT)/mutlib/tracealign_preprocess.hpp
 tracealign_cache.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign_cache.o: $(SRCROOT)/staden_config.h
+tracealign_cache.o: $(PWD)/staden_config.h
 tracealign_helper.o: $(SRCROOT)/Misc/misc.h
 tracealign_helper.o: $(SRCROOT)/Misc/os.h
 tracealign_helper.o: $(SRCROOT)/Misc/xalloc.h
@@ -355,7 +355,7 @@ tracealign_helper.o: $(SRCROOT)/mutlib/trace.hpp
 tracealign_helper.o: $(SRCROOT)/mutlib/tracealign_cache.hpp
 tracealign_helper.o: $(SRCROOT)/mutlib/tracealign_preprocess.hpp
 tracealign_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign_helper.o: $(SRCROOT)/staden_config.h
+tracealign_helper.o: $(PWD)/staden_config.h
 tracealign_interpolate.o: $(SRCROOT)/Misc/misc.h
 tracealign_interpolate.o: $(SRCROOT)/Misc/os.h
 tracealign_interpolate.o: $(SRCROOT)/Misc/xalloc.h
@@ -367,7 +367,7 @@ tracealign_interpolate.o: $(SRCROOT)/mutlib/sp_alignment_structs.h
 tracealign_interpolate.o: $(SRCROOT)/mutlib/staden.h
 tracealign_interpolate.o: $(SRCROOT)/mutlib/trace.hpp
 tracealign_interpolate.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign_interpolate.o: $(SRCROOT)/staden_config.h
+tracealign_interpolate.o: $(PWD)/staden_config.h
 tracealign_preprocess.o: $(SRCROOT)/Misc/misc.h
 tracealign_preprocess.o: $(SRCROOT)/Misc/os.h
 tracealign_preprocess.o: $(SRCROOT)/Misc/xalloc.h
@@ -377,7 +377,7 @@ tracealign_preprocess.o: $(SRCROOT)/mutlib/staden.h
 tracealign_preprocess.o: $(SRCROOT)/mutlib/trace.hpp
 tracealign_preprocess.o: $(SRCROOT)/mutlib/tracealign_preprocess.hpp
 tracealign_preprocess.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign_preprocess.o: $(SRCROOT)/staden_config.h
+tracealign_preprocess.o: $(PWD)/staden_config.h
 tracealign_validate.o: $(SRCROOT)/Misc/misc.h
 tracealign_validate.o: $(SRCROOT)/Misc/os.h
 tracealign_validate.o: $(SRCROOT)/Misc/xalloc.h
@@ -385,7 +385,7 @@ tracealign_validate.o: $(SRCROOT)/mutlib/mutlib.h
 tracealign_validate.o: $(SRCROOT)/mutlib/staden.h
 tracealign_validate.o: $(SRCROOT)/mutlib/validate.hpp
 tracealign_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracealign_validate.o: $(SRCROOT)/staden_config.h
+tracealign_validate.o: $(PWD)/staden_config.h
 tracediff.o: $(SRCROOT)/Misc/misc.h
 tracediff.o: $(SRCROOT)/Misc/os.h
 tracediff.o: $(SRCROOT)/Misc/xalloc.h
@@ -406,7 +406,7 @@ tracediff.o: $(SRCROOT)/mutlib/tracealign.hpp
 tracediff.o: $(SRCROOT)/mutlib/tracediff.hpp
 tracediff.o: $(SRCROOT)/mutlib/tracediff_parameters.hpp
 tracediff.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracediff.o: $(SRCROOT)/staden_config.h
+tracediff.o: $(PWD)/staden_config.h
 tracediff_helper.o: $(SRCROOT)/Misc/misc.h
 tracediff_helper.o: $(SRCROOT)/Misc/os.h
 tracediff_helper.o: $(SRCROOT)/Misc/xalloc.h
@@ -422,7 +422,7 @@ tracediff_helper.o: $(SRCROOT)/mutlib/staden.h
 tracediff_helper.o: $(SRCROOT)/mutlib/trace.hpp
 tracediff_helper.o: $(SRCROOT)/mutlib/tracealign.hpp
 tracediff_helper.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracediff_helper.o: $(SRCROOT)/staden_config.h
+tracediff_helper.o: $(PWD)/staden_config.h
 tracediff_mutations.o: $(SRCROOT)/Misc/misc.h
 tracediff_mutations.o: $(SRCROOT)/Misc/os.h
 tracediff_mutations.o: $(SRCROOT)/Misc/xalloc.h
@@ -437,7 +437,7 @@ tracediff_mutations.o: $(SRCROOT)/mutlib/staden.h
 tracediff_mutations.o: $(SRCROOT)/mutlib/trace.hpp
 tracediff_mutations.o: $(SRCROOT)/mutlib/tracediff_parameters.hpp
 tracediff_mutations.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracediff_mutations.o: $(SRCROOT)/staden_config.h
+tracediff_mutations.o: $(PWD)/staden_config.h
 tracediff_parameters.o: $(SRCROOT)/Misc/misc.h
 tracediff_parameters.o: $(SRCROOT)/Misc/os.h
 tracediff_parameters.o: $(SRCROOT)/Misc/xalloc.h
@@ -446,7 +446,7 @@ tracediff_parameters.o: $(SRCROOT)/mutlib/parameter.hpp
 tracediff_parameters.o: $(SRCROOT)/mutlib/staden.h
 tracediff_parameters.o: $(SRCROOT)/mutlib/tracediff_parameters.hpp
 tracediff_parameters.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracediff_parameters.o: $(SRCROOT)/staden_config.h
+tracediff_parameters.o: $(PWD)/staden_config.h
 tracediff_validate.o: $(SRCROOT)/Misc/misc.h
 tracediff_validate.o: $(SRCROOT)/Misc/os.h
 tracediff_validate.o: $(SRCROOT)/Misc/xalloc.h
@@ -456,11 +456,11 @@ tracediff_validate.o: $(SRCROOT)/mutlib/staden.h
 tracediff_validate.o: $(SRCROOT)/mutlib/tracediff_parameters.hpp
 tracediff_validate.o: $(SRCROOT)/mutlib/validate.hpp
 tracediff_validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-tracediff_validate.o: $(SRCROOT)/staden_config.h
+tracediff_validate.o: $(PWD)/staden_config.h
 validate.o: $(SRCROOT)/Misc/misc.h
 validate.o: $(SRCROOT)/Misc/os.h
 validate.o: $(SRCROOT)/Misc/xalloc.h
 validate.o: $(SRCROOT)/mutlib/mutlib.h
 validate.o: $(SRCROOT)/mutlib/staden.h
 validate.o: $(SRCROOT)/seq_utils/dna_utils.h
-validate.o: $(SRCROOT)/staden_config.h
+validate.o: $(PWD)/staden_config.h
