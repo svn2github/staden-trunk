@@ -42,5 +42,5 @@ distsrc: distsrc_dirs
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)
 
-include dependencies
-# DO NOT DELETE
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+

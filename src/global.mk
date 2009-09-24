@@ -112,7 +112,7 @@ RANLIB		= ranlib
 
 # Default includes
 VPATH           = $(SRC)
-INCLUDES	= $(INCLUDES_S) -I$(SRC) -I$(BUILD) $(INCLUDES_E)
+INCLUDES	= $(INCLUDES_S) -I$(SRC) $(INCLUDES_E) -I$(BUILD)
 
 STADLIB		= ../../lib
 TCLBIN		= $(L)
@@ -450,21 +450,30 @@ distsrc: DIRNAME=$(DISTSRC)/$(SUBDIR)
 # We assume here that our object files are .c files. This is an ok assumption
 # as makedepend does not quit when it cannot read a file (just issues warnings)
 # and our fortran files do not use #include anyway (as that's non ANSI).
-#
-# -DNO_SRS is added so that the dependencies don't include SRS bits. This is
-# needed as we do no want people who build the source without srs to complain
-# about missing source files.
-# 
 
 depend:
+	@# Run makedepend on our sources
 	-DEPEND_SRC=`echo $(DEPEND_OBJ:.o=.c) $(DEPEND_OBJ:.o=.cpp) \
-	| sed 's/\.\//$(subst /,\/,$(VPATH))\//g'`; \
+	| sed 's/\([^ ]*\) */ $(subst /,\/,$(VPATH))\/\1/g'`; \
 	touch ./dependencies.tmp; \
 	makedepend -f ./dependencies.tmp -- $(CFLAGS) -- $$DEPEND_SRC 2>&-
+
+	@# Remove system paths and strip out local paths if they exist in
+	@# one of our -I<dir> locations
 	sort < ./dependencies.tmp | uniq | sed -e 's; /usr/[^ ]*;;g' | \
 	  sed -e 's;.*/\([^:]*\):;\1:;'  | \
-	  grep -v '^[^:]*:[     ]*$$' > ./dependencies
-	-rm ./dependencies.tmp*
+	  egrep -v '^[^:]*:[     ]*$$' | \
+	  sed -e 's#$(subst .,\.,$(SRCROOT))#$$(SRCROOT)#g' \
+	      -e 's/$(subst /,\/,$(PWD))/$$(PWD)/g' | \
+	  egrep -v ': /' > dependencies.tmp2
 
+	@# Copy the dependencies into the Makefile
+	l=`egrep -n 'DO NOT DELETE' Makefile | head -1 | sed 's/:.*//'`; \
+	([ "x$$l" != "x" ] && \
+	( mv Makefile Makefile.bak; \
+	  ( head -$$l Makefile.bak; \
+	    egrep -v '^#' dependencies.tmp2 ) > Makefile; ) \
+	) || echo 'No "# DO NOT DELETE" line found in Makefile'
 
-dependencies:
+	@# tidy up
+	rm ./dependencies.tmp*

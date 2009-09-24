@@ -1,3 +1,0 @@
-
-# DO NOT DELETE
-$O/get_scf_field.o: $(SRCROOT)/Misc/xalloc.h

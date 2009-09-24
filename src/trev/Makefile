@@ -12,8 +12,3 @@ install:
 	-mkdir $(INSTALLTCL)/trev
 	cp $(S)/trev.tcl $(INSTALLTCL)/trev
 	cp $(S)/trevrc $(INSTALLETC)
-
-DEPEND_OBJ =
-
-include dependencies
-# DO NOT DELETE THIS LINE -- make depend depends on it.

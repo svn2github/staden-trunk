@@ -45,5 +45,4 @@ install:
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
-include dependencies
-# DO NOT DELETE THIS LINE -- make depend depends on it.
+# DO NOT DELETE THIS LINE -- make depend depends on it

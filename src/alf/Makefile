@@ -25,10 +25,13 @@ RSOBJ = $(ALFBIN)/2rs.o
 
 DEPEND_OBJ = $(ALFOBJ) $(RSOBJ)
 
-include dependencies
-
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+alfsplit.o: $(SRCROOT)/Misc/os.h
+alfsplit.o: $(PWD)/staden_config.h

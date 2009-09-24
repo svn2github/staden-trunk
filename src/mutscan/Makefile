@@ -35,8 +35,4 @@ install:
 
 DEPEND_OBJ = $(OBJS) $(OBJS) $(OBJSA)
 
-include dependencies
-
-
-
-
+# DO NOT DELETE THIS LINE -- make depend depends on it

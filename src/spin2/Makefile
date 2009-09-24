@@ -111,6 +111,4 @@ install:
 	cp *.tcl *.itk tclIndex $(INSTALLLIB)/spin2
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
 
-include dependencies
-# DO NOT DELETE
-
+# DO NOT DELETE THIS LINE -- make depend depends on it.

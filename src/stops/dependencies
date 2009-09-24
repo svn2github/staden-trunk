@@ -1,7 +1,0 @@
-
-# DO NOT DELETE
-$O/stops.o: $(SRCROOT)/io_lib/include/array.h $(SRCROOT)/io_lib/include/compress.h
-$O/stops.o: $(SRCROOT)/io_lib/include/Read.h $(SRCROOT)/io_lib/include/os.h
-$O/stops.o: $(SRCROOT)/io_lib/include/scf.h $(SRCROOT)/io_lib/include/mFILE.h
-$O/stops.o: $(SRCROOT)/io_lib/include/translate.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/stops.o: $(SRCROOT)/Misc/misc.h $(SRCROOT)/Misc/xalloc.h

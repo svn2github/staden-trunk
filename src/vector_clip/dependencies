@@ -1,9 +1,0 @@
-
-# DO NOT DELETE
-$O/vector_clip.o: $(SRCROOT)/io_lib/include/array.h $(SRCROOT)/text_utils/licence.h
-$O/vector_clip.o: $(SRCROOT)/io_lib/include/mFILE.h $(SRCROOT)/io_lib/include/expFileIO.h
-$O/vector_clip.o: $(SRCROOT)/Misc/getfile.h
-$O/vector_clip.o: $(SRCROOT)/seq_utils/dna_utils.h $(SRCROOT)/io_lib/include/scf.h
-$O/vector_clip.o: $(SRCROOT)/Misc/misc.h
-$O/vector_clip.o: $(SRCROOT)/Misc/xalloc.h
-$O/vector_clip.o: $(SRCROOT)/Misc/os.h

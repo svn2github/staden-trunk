@@ -28,4 +28,5 @@ distsrc: distsrc_dirs
 install:
 	cp $(PROGS) $(INSTALLBIN)
 
-include dependencies
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+

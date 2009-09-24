@@ -33,10 +33,16 @@ getABIfield: $(OBJSFI)
 
 DEPEND_OBJ = $(OBJSSN) $(OBJSD) $(OBJSC) $(OBJSFI)
 
-include dependencies
-
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+abiIO.o: abiIO.h
+getABISampleName.o: abiIO.h
+getABIcomment.o: abiIO.h
+getABIdate.o: abiIO.h
+getABIfield.o: abiIO.h

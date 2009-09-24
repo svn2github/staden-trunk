@@ -45,8 +45,9 @@ install:
 
 DEPEND_OBJ = $(OBJSD)
 
-include dependencies
+# DO NOT DELETE THIS LINE -- make depend depends on it.
 
-
-
-
+main.o: $(SRCROOT)/mutlib/mutlib.h
+main.o: $(SRCROOT)/mutlib/pathutil.h
+main.o: $(SRCROOT)/mutlib/stringlist.hpp
+main.o: $(SRCROOT)/tracediff/staden.h

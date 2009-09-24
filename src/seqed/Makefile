@@ -74,6 +74,5 @@ install:
 	-mkdir $(INSTALLLIB)/seqed
 	cp *.itcl *.gif *.tcl *.itk tclIndex $(INSTALLLIB)/seqed
 	cp $(PROGLIBS) $(INSTALLLIB)/$(O)
-include dependencies
-# DO NOT DELETE
 
+# DO NOT DELETE THIS LINE -- make depend depends on it.

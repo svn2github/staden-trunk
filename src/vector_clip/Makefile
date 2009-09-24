@@ -36,4 +36,11 @@ distsrc: distsrc_dirs
 install:
 	cp $(PROGS) $(INSTALLBIN)
 
-include dependencies
+# DO NOT DELETE
+
+vector_clip.o: $(SRCROOT)/Misc/getfile.h
+vector_clip.o: $(SRCROOT)/Misc/misc.h
+vector_clip.o: $(SRCROOT)/Misc/os.h
+vector_clip.o: $(SRCROOT)/Misc/xalloc.h
+vector_clip.o: $(SRCROOT)/seq_utils/dna_utils.h
+vector_clip.o: $(PWD)/staden_config.h

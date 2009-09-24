@@ -33,4 +33,11 @@ distsrc: distsrc_dirs
 install:
 	cp $(PROGS) $(INSTALLBIN)
 
-include dependencies
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+screen_seq.o: $(SRCROOT)/Misc/getfile.h
+screen_seq.o: $(SRCROOT)/Misc/misc.h
+screen_seq.o: $(SRCROOT)/Misc/os.h
+screen_seq.o: $(SRCROOT)/Misc/xalloc.h
+screen_seq.o: $(SRCROOT)/seq_utils/dna_utils.h
+screen_seq.o: $(PWD)/staden_config.h

@@ -17,10 +17,13 @@ eba: $(EBAOBJS)
 
 DEPEND_OBJ = $(EBAOBJS) $(SNROBJS)
 
-include dependencies
-
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
+
+# DO NOT DELETE THIS LINE -- make depend depends on it.
+
+conf.o: conf.h
+qual.o: conf.h

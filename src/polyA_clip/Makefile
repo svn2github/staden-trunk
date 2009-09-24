@@ -30,10 +30,15 @@ polyA_clip: $(OBJ)
 
 DEPEND_OBJ = $(OBJ)
 
-include dependencies
-
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/Makefile $(DIRNAME)
 
 install:
 	cp $(PROGS) $(INSTALLBIN)
+
+# DO NOT DELETE THIS LINE -- make depend depends on it
+
+polyA_clip.o: $(SRCROOT)/Misc/xalloc.h
+polyA_clip.o: $(SRCROOT)/seq_utils/dna_utils.h
+polyA_clip.o: seqInfo.h
+seqInfo.o: seqInfo.h
