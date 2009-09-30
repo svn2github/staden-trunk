@@ -51,6 +51,9 @@ typedef struct GapIO {
 
     /* Minimum size for newly created bins */
     int min_bin_size;
+
+    /* Whether we opened in read-write or read-only */
+    int read_only;
 } GapIO;
 
 GapIO *gio_open(char *fn, int ro, int create);

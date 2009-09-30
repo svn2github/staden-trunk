@@ -41,6 +41,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
     if (NULL == (io->dbh = io->iface->connect(fn, ro)))
 	return NULL;
 
+    io->read_only = ro;
+
     if (create) {
 	io->iface->database.create(io->dbh, NULL);
     }
