@@ -65,7 +65,7 @@ int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
     e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
     e = cache_rw(io, e);
 
-    bin = bin_add_range(io, &c, &r, NULL);
+    bin = bin_add_range(io, &c, &r, NULL, NULL);
     e->bin = bin->rec;
 
     return r.rec;

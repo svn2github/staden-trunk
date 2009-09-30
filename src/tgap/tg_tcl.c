@@ -606,7 +606,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	r.start = pos;
 	r.end   = pos + (s->len > 0 ? s->len : -s->len) - 1;
 	r.rec   = rec;
-	bin = bin_add_range(tc->io, &tc->contig, &r, NULL);
+	bin = bin_add_range(tc->io, &tc->contig, &r, NULL, NULL);
 	if (s->bin != bin->rec) {
 	    /* Bin number changed - update seq too */
 	    s = cache_rw(tc->io, s);

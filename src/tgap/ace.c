@@ -546,7 +546,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    r.flags = 0;
 
 	    /* Add the range to a bin, and see which bin it was */
-	    bin = bin_add_range(io, &c, &r, &r_out);
+	    bin = bin_add_range(io, &c, &r, &r_out, NULL);
 
 	    /* Save sequence */
 	    seq.bin = bin->rec;

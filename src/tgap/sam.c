@@ -347,7 +347,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	r.flags |= GRANGE_FLAG_COMP1;
     }
 
-    bin = bin_add_range(io, &bio->c, &r, &r_out);
+    bin = bin_add_range(io, &bio->c, &r, &r_out, NULL);
 
     /* Add the sequence */
     s.bin = bin->rec;
@@ -381,7 +381,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	e = cache_rw(io, e);
 	
 	//bin_add_anno_range(io, &bio->c, &er, NULL);
-	bin_add_range(io, &bio->c, &er, NULL);
+	bin_add_range(io, &bio->c, &er, NULL, NULL);
     }
 #endif
 

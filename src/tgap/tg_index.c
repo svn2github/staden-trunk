@@ -266,7 +266,7 @@ int parse_file(GapIO *io, char *dat_fn, tg_args *a) {
 	    r.flags |= GRANGE_FLAG_COMP1;
 
 	/* Add the range to a bin, and see which bin it was */
-	bin = bin_add_range(io, &c, &r, &r_out);
+	bin = bin_add_range(io, &c, &r, &r_out, NULL);
 
 	/* Save sequence */
 	seq.bin = bin->rec;

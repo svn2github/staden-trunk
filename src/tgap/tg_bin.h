@@ -9,7 +9,7 @@
 
 int bin_new(GapIO *io, int pos, int sz, int parent, int parent_type);
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
-			   range_t **r_out);
+			   range_t **r_out, int *complemented);
 
 /*
  * A bit like bin_get_track, but this is designed to auto-generate and
@@ -57,12 +57,18 @@ void track_free(track_t *t);
  * When a bin is found the absolute offset of that bin is returned
  * in 'offset_r' (may be NULL).
  *
+ * The relative orientation of this bin to the contig may be returned in
+ * complemented, if non NULL. Note this is not the same as the
+ * BIN_COMPLEMENTED bit in bin->flags, as that is in indication of whether
+ * this bin is complemented relative to its parent. Instead complemented is
+ * an XORed product of all bins to this point.
+ *
  * Returns the bin pointer on success
  *         NULL on failure
  */
 bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 			   int start, int end, int extend,
-			   int *offset_r);
+			   int *offset_r, int *complemented);
 
 /*
  * Finds the contig number and position of the start of a bin.

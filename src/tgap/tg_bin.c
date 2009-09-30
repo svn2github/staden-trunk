@@ -199,17 +199,35 @@ static int next_range(bin_index_t *bin) {
  * Returns the bin pointer on success
  *         NULL on failure
  */
+#define NORM(x) (f_a * (x) + f_b)
+#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
+#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 			   int start, int end, int extend,
-			   int *offset_r) {
+			   int *offset_r,  int *comp_r) {
     int offset;
     bin_index_t *bin = get_bin(io, contig_get_bin(c));
+    int complement = 0;
+    int f_a, f_b;
 
     static int last_c = 0;
     static GapIO *last_io = NULL;
     static bin_index_t *last_bin = NULL;
     static int last_start = 0, last_end = 0;
-    static int last_offset;
+    static int last_offset, last_complement;
+
+    if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+    }
+
+    offset = bin->pos;
+    if (complement) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
 
     //cache_incr(io, bin);
 
@@ -248,13 +266,25 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 		/* leaf node, so we can return right now */
 		if (offset_r)
 		    *offset_r = last_offset;
+		if (comp_r)
+		    *comp_r = complement;
 		return last_bin;
 	    }
 
 	    /* Maybe a smaller bin, but start the search from here on */
 	    bin = last_bin;
 	    offset = last_offset;
+	    complement = last_complement;
 	    //cache_incr(io, bin);
+
+	    if (complement) {
+		f_a = -1;
+		f_b = offset + bin->size-1;
+	    } else {
+		f_a = +1;
+		f_b = offset;
+	    }
+
 	    goto jump;
 	}
     }
@@ -276,12 +306,26 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	    }
 
 	    ch = get_bin(io, bin->child[i]);
-	    if (start >= offset + ch->pos &&
-		end   <= offset + ch->pos + ch->size-1) {
+	    //	    if (start >= offset + ch->pos &&
+	    //		end   <= offset + ch->pos + ch->size-1) {
+	    if (start >= NMIN(ch->pos, ch->pos + ch->size-1) &&
+		end   <= NMAX(ch->pos, ch->pos + ch->size-1)) {
 		cache_decr(io, bin);
 		bin = ch;
 		cache_incr(io, ch);
-		offset += bin->pos;
+		offset = NMIN(ch->pos, ch->pos + ch->size-1);
+
+		if (bin->flags & BIN_COMPLEMENTED) {
+		    complement ^= 1;
+		}
+		if (complement) {
+		    f_a = -1;
+		    f_b = offset + bin->size-1;
+		} else {
+		    f_a = +1;
+		    f_b = offset;
+		}
+
 		i = 0; /* restart loop */
 	    } else {
 		i++;
@@ -291,6 +335,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	if (!extend) {
 	    if (offset_r)
 		*offset_r = offset;
+	    if (comp_r)
+		*comp_r = complement;
 	    return bin;
 	}
 
@@ -303,16 +349,30 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	    (!bin->child[0] || !bin->child[1])) {
 	    /* Construct left child if needed */
 	    if (!bin->child[0]) {
-		int pos = 0;
-		int sz = bin->size/2;
+		int pos;
+		int sz;
 
-		if (bin->child[1]) {
-		    ch = get_bin(io, bin->child[1]);
-		    sz = ch->pos;
+		if (complement) {
+		    pos = bin->size/2;
+		    
+		    if (bin->child[1]) {
+			ch = get_bin(io, bin->child[1]);
+			pos = ch->size;
+		    }
+		    sz = bin->size - pos;
+		} else {
+		    pos = 0;
+		    sz = bin->size/2;
+		    if (bin->child[1]) {
+			ch = get_bin(io, bin->child[1]);
+			sz = ch->pos;
+		    }
 		}
 
-		if (start >= offset + pos &&
-		    end   <= offset + pos + sz-1) {
+		//		if (start >= offset + pos &&
+		//		    end   <= offset + pos + sz-1) {
+		if (start >= NMIN(pos, pos+sz-1) &&
+		    end   <= NMAX(pos, pos+sz-1)) {
 		    /* It would fit - create it and continue recursing */
 
 		    if (!(bin = cache_rw(io, bin)))
@@ -330,17 +390,29 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
 	    /* Construct right child if needed */
 	    if (!bin->child[1]) {
-		int pos = bin->size/2;
+		int pos;
 		int sz;
 
-		if (bin->child[0]) {
-		    ch = get_bin(io, bin->child[0]);
-		    pos = ch->size;
+		if (complement) {
+		    pos = 0;
+		    sz = bin->size/2;
+		    if (bin->child[0]) {
+			ch = get_bin(io, bin->child[0]);
+			sz = ch->pos;
+		    }
+		} else {
+		    pos = bin->size/2;
+		    if (bin->child[0]) {
+			ch = get_bin(io, bin->child[0]);
+			pos = ch->size;
+		    }
+		    sz = bin->size - pos;
 		}
-		sz = bin->size - pos;
 
-		if (start >= offset + pos &&
-		    end   <= offset + pos + sz-1) {
+		//		if (start >= offset + pos &&
+		//		    end   <= offset + pos + sz-1) {
+		if (start >= NMIN(pos, pos+sz-1) &&
+		    end   <= NMAX(pos, pos+sz-1)) {
 		    /* It would fit - create it and continue recursing */
 
 		    if (!(bin = cache_rw(io, bin)))
@@ -363,6 +435,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 
     if (offset_r)
 	*offset_r = offset;
+    if (comp_r)
+	*comp_r = complement;
 
     last_io = io;
     last_c = (*c)->rec;
@@ -373,6 +447,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     last_start = offset;
     last_end = offset + bin->size-1;
     last_offset = offset;
+    last_complement = complement;
 
     cache_decr(io, bin);
     return bin;
@@ -408,18 +483,21 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
  *         NULL on failure
  */
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
-			   range_t **r_out) {
+			   range_t **r_out, int *complemented) {
     bin_index_t *bin;
     range_t *r2;
     int nr, offset;
 
-    if (contig_get_start(c) > r->start)
-	contig_set_start(io, c, r->start);
+    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	if (contig_get_start(c) > r->start)
+	    contig_set_start(io, c, r->start);
 
-    if (contig_get_end(c) < r->end)
-	contig_set_end(io, c, r->end);
+	if (contig_get_end(c) < r->end)
+	    contig_set_end(io, c, r->end);
+    }
 
-    if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset)))
+    if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset,
+			      complemented)))
 	return NULL;
 
     if (!(bin = cache_rw(io, bin)))
@@ -450,7 +528,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     if (r_out)
 	*r_out = r2;
 
-    if (!(r2->flags & GRANGE_FLAG_ISANNO))
+    if ((r2->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
 	bin_incr_nseq(io, bin, 1);
 
     return bin;
@@ -475,7 +553,7 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
     start = pos;
     end   = pos + (s->len > 0 ? s->len : -s->len) - 1;
 
-    if (!(bin = bin_for_range(io, c, start, end, 0, NULL)))
+    if (!(bin = bin_for_range(io, c, start, end, 0, NULL, NULL)))
 	return -1;
 
     if (!(bin = cache_rw(io, bin)))
@@ -496,7 +574,7 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 	bin->rng_free = i;
 	bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 
-	if (!(r->flags & GRANGE_FLAG_ISANNO))
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
 	    bin_incr_nseq(io, bin, -1);
 
 	break;

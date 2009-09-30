@@ -236,7 +236,7 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	if (seq.len < 0)
 	    r.flags |= GRANGE_FLAG_COMP1;
 
-	bin = bin_add_range(io, &c, &r, &r_out);
+	bin = bin_add_range(io, &c, &r, &r_out, NULL);
 
 	/* Save sequence */
 	seq.bin = bin->rec;

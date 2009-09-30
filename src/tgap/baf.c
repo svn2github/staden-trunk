@@ -416,7 +416,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		r.flags |= GRANGE_FLAG_COMP1;
 
 	    /* Add the range to a bin, and see which bin it was */
-	    bin = bin_add_range(io, &c, &r, &r_out);
+	    bin = bin_add_range(io, &c, &r, &r_out, NULL);
 
 	    /* Save sequence */
 	    seq.bin = bin->rec;
@@ -536,7 +536,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    e = (anno_ele_t *)cache_search(io, GT_AnnoEle, r.rec);
 	    e = cache_rw(io, e);
 	
-	    bin = bin_add_range(io, &c, &r, NULL);
+	    bin = bin_add_range(io, &c, &r, NULL, NULL);
 	    e->bin = bin->rec;
 
 	    ntags++;
