@@ -1,6 +1,8 @@
 #ifndef _TG_SEQUENCE_H_
 #define _TG_SEQUENCE_H_
 
+#define CONS_BIN_SIZE 100000
+
 /*
  * 'get' functions - simply returns the structure member.
  *

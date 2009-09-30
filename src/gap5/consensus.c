@@ -11,10 +11,14 @@
 
 #include "consensus.h"
 
-#define CONS_BLOCK_SIZE 1024
+#define CONS_BLOCK_SIZE 4096
 
 #define LOG10        2.30258509299404568401
 #define TENOVERLOG10 4.34294481903251827652
+
+#define NORM(x) (f_a * (x) + f_b)
+#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
+#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 
 /*
  * Empirically derived constants for various sequencing technologies, with
@@ -41,6 +45,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 				   consensus_t *cons);
 
 
+
 /*
  * The consensus calculation function - rewritten for tgap style
  * databases.
@@ -54,9 +59,9 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
  * Returns 0 on success,
  *        -1 on failure
  */
-#define Q_CUTOFF -4
-int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
-			       char *con, float *qual) {
+#define Q_CUTOFF -4 
+int calculate_consensus_simple2(GapIO *io, int contig, int start, int end,
+				char *con, float *qual) {
     int i, j;
     consensus_t q[CONS_BLOCK_SIZE];
     
@@ -95,6 +100,256 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
     return 0;
 }
 
+int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
+			       char *con, float *qual) {
+    int i, j, nr;
+    consensus_t q[CONS_BLOCK_SIZE];
+    rangec_t *r;
+    contig_t *c;
+    int left;
+    
+    printf("Calculate_consensus_simple(contig=%d, range=%d..%d)\n",
+	   contig, start, end);
+
+    /*
+     * We cache consensus in the first bin smaller than a specific size
+     * (CONS_BIN_SIZE), chosen to fall between two powers of two to allow
+     * a certain degree of editing without switching bins commonly.
+     */
+    c = (contig_t *)cache_search(io, GT_Contig, contig);
+    //contig_dump_ps(io, &c, "/tmp/tree.ps");
+    r = contig_bins_in_range(io, &c, start, end,
+			     CSIR_SORT_BY_X | CSIR_LEAVES_ONLY,
+			     CONS_BIN_SIZE, &nr);
+
+
+    /* Skip through spanning bins returned */
+    left = start;
+    for (i = 0; i < nr; i++) {
+	bin_index_t *bin;
+	int f_a, f_b;
+
+	/* Skip entirely overlapping bins */
+	if (r[i].end < left)
+	    continue;
+
+	printf("Bin %d: %d..%d (%d)\n", r[i].rec, r[i].start, r[i].end,
+	       r[i].end - r[i].start);
+	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
+
+	f_a = r[i].pair_start;
+	f_b = r[i].pair_end;
+
+	if (bin->rng /* && !(end < NMIN(bin->start_used, bin->end_used) ||
+		        start > NMAX(bin->start_used, bin->end_used)) */
+            ) {
+	    seq_t *s, *dup_s = NULL, seq;
+	    char *tmp_cons = NULL;
+	    range_t *cons_r = NULL;
+	    int n;
+	    int bstart, bend; /* consensus start/end in this bin */
+
+	    /*
+	     * Fetch cached consensus sequence, or recreate it if needed.
+	     * It may exist, but be invalidated too.
+	     */
+	    if (bin->flags & BIN_CONS_CACHED) {
+		for (n = 0; n < ArrayMax(bin->rng); n++) {
+		    range_t *l = arrp(range_t, bin->rng, n);
+
+		    if ((l->flags&GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS) {
+			cons_r = l;
+			break;
+		    }
+		}
+	    }
+
+	    bstart = r[i].start;
+	    bend   = r[i].end - 1;
+
+	    if (cons_r && (bin->flags & BIN_CONS_VALID)) {
+		printf("Valid cached cons from %d..%d +%d\n",
+		       cons_r->start, cons_r->end, r[i].start);
+		//bstart = cons_r->start;
+		//bend   = cons_r->end;
+		s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
+
+	    } else {
+		/* Not cached, or is cached but needs updating */
+		range_t r2, *r_out;
+		int recno, comp;
+		float *tmp_qual;
+
+		//bstart = MAX(r[i].start, c->start);
+		//bend   = MIN(r[i].end-1, c->end);
+
+		/* Load existing sequence, or fill out in-memory new struct */
+		if (cons_r && !io->read_only) {
+		    printf("Recomputing cached cons from %d..%d +%d\n",
+			   cons_r->start, cons_r->end, r[i].start);
+
+		    s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
+		    s = cache_rw(io, s);
+		    if (cons_r->start != bstart || cons_r->end   != bend) {
+			size_t extra_len =
+			    (s->name       ? strlen(s->name)       : 0) +
+			    (s->trace_name ? strlen(s->trace_name) : 0) +
+			    (s->alignment  ? strlen(s->alignment)  : 0) +
+			    (bend - bstart + 1)*2;
+			s = cache_item_resize(s, sizeof(*s) + extra_len);
+		    }
+
+		    if ((s->len < 0) ^ r[i].comp)
+			s->len = -s->len;
+
+		} else {
+		    printf("Creating new cached cons\n");
+		    memset(&seq, 0, sizeof(seq));
+		    seq.pos    = bstart;
+		    seq.len    = bend - bstart + 1;
+		    seq.seq    = calloc(bend - bstart + 1, 1);
+		    seq.conf   = calloc(seq.len, 1);
+		    seq.name   = "cons";
+		    seq.format = SEQ_FORMAT_CNF1;
+		    seq.flags  = 0;
+		    seq.left   = 0;
+		    seq.right  = bend - bstart + 1;
+
+		    seq.mapping_qual   = 0;
+		    seq.trace_name     = NULL;
+		    seq.trace_name_len = 0;
+		    seq.alignment      = NULL;
+		    seq.alignment_len  = 0;
+
+		    s = &seq;
+		}
+
+		/*
+		 * s is now either a cached seq_t object or the address of a
+		 * local variable, which may be used to create a new sequence
+		 * provided we're in read/write mode.
+		 */
+
+
+		/* Update consensus and quality */
+		tmp_qual = calloc(bend - bstart + 1, sizeof(float));
+
+		calculate_consensus_simple2(io, contig,
+					    bstart, bend,
+					    s->seq, tmp_qual);
+
+		for (n = 0; n < ABS(s->len); n++) {
+		    int q = rint(tmp_qual[n]);
+		    if (q < 0)
+			s->conf[n] = 0;
+		    else if (q > 127)
+			s->conf[n] = 127;
+		    else
+			s->conf[n] = q;
+		}			
+		free(tmp_qual);
+
+
+		/* If cached and range changed, move sequence */
+		if (cons_r) {
+		    //assert(cons_r->start == bstart);
+		    //assert(cons_r->end   == bend);
+		    // if (!io->read_only) { ... }
+		}
+		
+		/* If not cached, create a new range */
+		if (!io->read_only && !cons_r) {
+		    r2.start    = bstart;
+		    r2.end      = bend;
+		    r2.rec      = 0;
+		    r2.pair_rec = 0;
+		    r2.mqual    = 0;
+		    r2.flags    = GRANGE_FLAG_TYPE_SINGLE;
+		    r2.flags   |= GRANGE_FLAG_ISCONS;
+			
+		    bin = bin_add_range(io, &c, &r2, &r_out, &comp);
+		    /*
+		     * Not a valid assertion if we uncomment the bstart/bend
+		     * settings above.
+		     */
+		    assert(bin->rec == r[i].rec);
+
+		    s->bin       = bin->rec;
+		    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
+		    if (comp) {
+			s->len = -s->len;
+			s->flags |= SEQ_COMPLEMENTED;
+		    }
+		    recno = sequence_new_from(io, s);
+		    r_out->rec = recno;
+
+		    free(s->seq);
+		    free(s->conf);
+
+		    s = cache_search(io, GT_Seq, recno);
+		}
+
+		if (!io->read_only) {
+		    bin = cache_rw(io, bin);
+		    bin->flags |= BIN_CONS_VALID | BIN_CONS_CACHED |
+			BIN_BIN_UPDATED;
+		}
+	    }
+
+	    if ((s->len < 0) ^ r[i].comp) {
+		if (s != &seq)
+		    s = dup_s = dup_seq(s);
+		complement_seq_t(s);
+	    }
+
+	    /*
+	     * Copy the cached seq to our consensus/qual buffers.
+	     * Note, it may not span the entire bin if the contig is
+	     * short or this bin is at the beginning or end.
+	     */
+	    if (start < bstart) {
+		if (con) {
+		    memcpy(&con[bstart - start], s->seq,
+			   MIN(bend, end) - bstart + 1);
+		}
+		if (qual) {
+		    int en = MIN(bend, end) - bstart + 1;
+		    int N;
+		    for (n = bstart - start, N=0; N < en; n++, N++)
+			qual[n] = s->conf[N];
+		}
+	    } else {
+		if (con) {
+		    memcpy(con, &s->seq[start - bstart],
+			   MIN(bend, end) - start + 1);
+		}
+		if (qual) {
+		    int en = MIN(bend, end) - start + 1;
+		    int N;
+		    for (n=0, N = start-bstart; n < en; n++, N++)
+			qual[n] = s->conf[N];
+		}
+	    }
+
+	    if (s == &seq) {
+		/* read-only cheat, so free up some data now */
+		free(s->seq);
+		free(s->conf);
+	    }
+
+	    if (dup_s)
+		free(dup_s);
+	}
+
+	left = r[i].end;
+    }
+    if (r) free(r);
+
+    cache_flush(io);
+
+    return 0;
+}
+
 /*
  * The consensus calculation function - rewritten for tgap style
  * databases.
@@ -128,7 +383,6 @@ int calculate_consensus(GapIO *io, int contig, int start, int end,
     return 0;
 }
 
-
 typedef struct {
     double base_qual[4];
     double gap;
@@ -136,6 +390,7 @@ typedef struct {
     int depth;
 } cstat;
 
+#if 0
 /*
  * Like contig_seqs_in_range, but we also sum the values into the cvec array
  * at the same time.
@@ -144,9 +399,6 @@ typedef struct {
  * consensus data, meaning we only need to load bin tracks instead of
  * all the sequences themselves.
  */
-#define NORM(x) (f_a * (x) + f_b)
-#define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
-#define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
 static int contig_consensus_in_range2(GapIO *io, int brec, int start, int end,
 				      int offset, cstat *cv, int complement) {
     double slx_overcall_prob  = 1.0/4350000, lover,  lomover;
@@ -211,6 +463,7 @@ static int contig_consensus_in_range2(GapIO *io, int brec, int start, int end,
 
 		if (1 || (NMAX(l->start, l->end) >= start
 			  && NMIN(l->start, l->end) <= end)) {
+#if 0
 		    seq_t *s = (seq_t *)cache_search(io, GT_Seq, l->rec);
 		    seq_t *sorig = s;
 		    int p;
@@ -270,6 +523,7 @@ static int contig_consensus_in_range2(GapIO *io, int brec, int start, int end,
 
 		    if (s != sorig)
 			free(s);
+#endif
 		}
 	    }
 	}
@@ -328,6 +582,7 @@ int contig_consensus_in_range(GapIO *io, contig_t **c, int start, int end,
     return contig_consensus_in_range2(io, contig_get_bin(c), start, end,
 				      contig_offset(io, c), cv, 0);
 }
+#endif
 
 /*
  * The core of the consensus algorithm.
@@ -353,7 +608,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
     double (*pvec)[2]; /* pvec[0] = gap, pvec[1] = base */
     int *depth;
     cstat *cs;
-
+ 
     /* log overcall, log one minus overcall, etc */
     lover    = log(slx_overcall_prob);
     lomover  = log(1-slx_overcall_prob);

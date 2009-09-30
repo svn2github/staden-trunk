@@ -2,6 +2,8 @@
  * editor_join.c:
  * Contains functions for the Join Editor "align" and "join" buttons.
  */
+#include <tg_gio.h>
+
 #include "editor_view.h"
 #include "align_lib.h"
 #include "hash_lib.h"
@@ -488,6 +490,8 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     ret = align(xx2[0], left0, len0, xx2[1], left1, len1,
 		fixed_left, fixed_right);
 
+    printf("*** Alignment done\n");
+
     if (ret) {
 	/* Alignment failed - put back display positions before returning */
 	xx2[0]->displayPos = xx0_dp;
@@ -533,7 +537,7 @@ int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
     int complement = 0;
     int i, f_a, f_b;
     int start, end;
-    int bnum = lbin;
+    int bnum;
 
     binr = (bin_index_t *)cache_search(io, GT_Bin, rbin);
     binl = (bin_index_t *)cache_search(io, GT_Bin, lbin);
@@ -603,6 +607,48 @@ int find_join_bin(GapIO *io, int lbin, int rbin, int offset, int offsetr,
 }
 
 /*
+ * Invalidates cached tracks and consensus in the region covered by the
+ * contig overlap.
+ */
+int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
+		    int junction) {
+    rangec_t *r;
+    int i, j, nr, start, end;
+    contig_t *c;
+
+    /* Invalidate left contig */
+    start = junction;
+    end = leftc->end;
+    c = leftc;
+    for (j = 0; j < 2; j++) {
+	r = contig_bins_in_range(io, &c, start, end,
+				 CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
+	for (i = 0; i < nr; i++) {
+	    bin_index_t *bin = cache_search(io, GT_Bin, r[i].rec);
+
+	    if (bin->flags & BIN_CONS_VALID) {
+		bin = cache_rw(io, bin);
+		bin->flags |= BIN_BIN_UPDATED;
+		bin->flags &= ~BIN_CONS_VALID;
+	    }
+
+	    printf("Invalidating consensus in ctg %s, bin %d: %d..%d (%d)\n",
+		   j ? "right" : "left",
+		   r[i].rec, r[i].start, r[i].end, r[i].end - r[i].start);
+	}
+	free(r);
+
+	/* Invalidate right contig */
+	start = rightc->start;
+	end = junction;
+	c = rightc;
+    }
+
+
+    return 0;
+}
+
+/*
  * Perform the actual join process
  * Returns 0 for success
  *        -1 for failure
@@ -634,6 +680,9 @@ int edJoin(edview *xx) {
     /* Force joins at the top-level IO */
     while (io->base)
 	io = io->base;
+
+    /* Invalidate any cached data in the overlapping bins */
+    join_invalidate(io, cl, cr, offset);
 
     /* Find appropriate bin to insert our new contig above */
     above = find_join_bin(io, contig_get_bin(&cl), contig_get_bin(&cr),

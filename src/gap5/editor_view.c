@@ -783,7 +783,7 @@ int edview_visible_items(edview *xx, int start, int end) {
 	int key = xx->r[i].pair_rec; /* aka obj_rec */
 	HacheData hd;
 
-	if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
+	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 	    continue;
 
 	hd.i = i;
@@ -795,7 +795,7 @@ int edview_visible_items(edview *xx, int start, int end) {
     for (i = 0; i < xx->nr; i++) {
 	int rec;
 
-	if (xx->r[i].flags & GRANGE_FLAG_ISANNO) {
+	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    anno_ele_t *a = (anno_ele_t *)cache_search(xx->io, GT_AnnoEle,
 						       xx->r[i].rec);
 	    rec = a->rec;
@@ -807,8 +807,10 @@ int edview_visible_items(edview *xx, int start, int end) {
 	printf("%d\t%d\t%s%d/%d\t%d\t%s\t%d..%d\n",
 	       i, xx->r[i].y,
 	       xx->r[i].rec == rec ? "" : "*", xx->r[i].rec, rec,
-	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? xx->r[i].pair_rec : 0,
-	       xx->r[i].flags & GRANGE_FLAG_ISANNO ? "tag" : "seq",
+	       ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	           ? xx->r[i].pair_rec : 0,
+	       ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	           ? "tag" : "seq",
 	       xx->r[i].start, xx->r[i].end);
     }
 #endif
@@ -1024,7 +1026,7 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
 	    seq_t *s, *sorig;
 
-	    if (r[i].flags & GRANGE_FLAG_ISANNO) {
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 		i++;
 		continue;
 	    }
@@ -1732,7 +1734,7 @@ int edCursorUp(edview *xx) {
     /* Step up until we find something overlapping */
     for (j--; j >= 0; j--) {
 	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
-	    !(xx->r[j].flags & GRANGE_FLAG_ISANNO)) {
+	    ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -1782,7 +1784,7 @@ int edCursorDown(edview *xx) {
     /* Step up until we find something overlapping */
     for (j++; j < xx->nr; j++) {
 	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
-	    !(xx->r[j].flags & GRANGE_FLAG_ISANNO)) {
+	    ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -2068,7 +2070,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 	    if (xx->r[i].y != -1)
 		break;
 
-	    if (!(xx->r[i].flags & GRANGE_FLAG_ISANNO))
+	    if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		continue;
 
 	    if (col + xx->displayPos >= xx->r[i].start &&
@@ -2092,7 +2094,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
     /* Inefficient, but just a copy from tk_redisplaySeqSequences() */
     for (i = 0; i < xx->nr; i++) {
 	if ((xx->ed->hide_annos || seq_only || name) &&
-	    (xx->r[i].flags & GRANGE_FLAG_ISANNO))
+	    ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO))
 	    continue;
 
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
@@ -2129,7 +2131,8 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 		best_delta =  delta;
 		*rec = xx->r[i].rec;
 		*pos = col + xx->displayPos - xx->r[i].start;
-		type = xx->r[i].flags & GRANGE_FLAG_ISANNO
+                type = (xx->r[i].flags & GRANGE_FLAG_ISMASK)
+                       == GRANGE_FLAG_ISANNO
 		    ? GT_AnnoEle
 		    : GT_Seq;
 	    }

@@ -95,7 +95,7 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
 	if (r->flags & GRANGE_FLAG_UNUSED)
 	    continue;
 
-	if (r->flags & GRANGE_FLAG_ISANNO) {
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    anno_ele_t *a = (anno_ele_t *)cache_search(io, GT_AnnoEle, r->rec);
 	    if (a->bin != bin->rec) {
 		a = cache_rw(io, a);
@@ -156,7 +156,13 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
     bin = cache_rw(io, bin);
     nseqs = bin->nseqs;
     bin->nseqs = 0;
+
+    /* Invalidate any cached data */
     bin_invalidate_track(io, bin, TRACK_ALL);
+    if (bin->flags & BIN_CONS_VALID) {
+	bin->flags |= BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
+    }
 
     bin_min = bin->rng ? NMIN(bin->start_used, bin->end_used) : offset;
     bin_max = bin->rng ? NMAX(bin->start_used, bin->end_used) : offset;
@@ -317,7 +323,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		    HacheData hd; hd.i = 1;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
@@ -342,7 +348,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (r->flags & GRANGE_FLAG_UNUSED)
 		    continue;
 
-		if (!(r->flags & GRANGE_FLAG_ISANNO)) {
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
 		    HacheData hd; hd.i = 0;
 		    HacheTableAdd(h, (char *)&r->rec, sizeof(r->rec), hd,NULL);
 		    j++;
@@ -373,7 +379,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
 
-	    if (r->flags & GRANGE_FLAG_ISANNO)
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 		continue;
 
 	    s = (seq_t *)cache_search(io, GT_Seq, r->rec);
@@ -401,7 +407,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 	    if (r->flags & GRANGE_FLAG_UNUSED)
 		continue;
 
-	    if (r->flags & GRANGE_FLAG_ISANNO) {
+	    if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 		cstart = NMAX(r->start, r->end);
 	    } else {
 		seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
@@ -412,7 +418,8 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		}
 	    }
 	    
-	    if (cstart >= pos && r->flags & GRANGE_FLAG_ISANNO) {
+	    if (cstart >= pos &&
+		((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)) {
 		anno_ele_t *a = (anno_ele_t *)cache_search(io,
 							   GT_AnnoEle,
 							   r->rec);
@@ -438,7 +445,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		if (rmin > r->end)   rmin = r->end;
 		if (rmax < r->start) rmax = r->start;
 		if (rmax < r->end)   rmax = r->end;
-		if (!(r->flags & GRANGE_FLAG_ISANNO))
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
 		    nr++;
 	    } else {
 		if (lmin > r->start) lmin = r->start;
@@ -451,7 +458,7 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
 		    *r2 = *r;
 		}
 		j++;
-		if (!(r->flags & GRANGE_FLAG_ISANNO))
+		if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
 		    nl++;
 	    }
 	}

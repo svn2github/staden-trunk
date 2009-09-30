@@ -30,6 +30,7 @@
 #define GT_Anno         22
 #define GT_SeqBlock     23
 #define GT_AnnoEleBlock 24
+#define GT_SeqCons      25
 
 typedef struct {
     GCardinal pos;
@@ -58,7 +59,11 @@ typedef struct {
 } GRange; /* An element of the bin->rng record */
 
 
-#define GRANGE_FLAG_ISANNO     (1<<7) /* sequence vs tag */
+#define GRANGE_FLAG_ISMASK     (7<<7) /* Sequence, tag, cons, ref, etc */
+#define GRANGE_FLAG_ISSEQ      (0<<7)
+#define GRANGE_FLAG_ISANNO     (1<<7)
+#define GRANGE_FLAG_ISCONS     (2<<7)
+#define GRANGE_FLAG_ISREF      (3<<7)
 
 /* For annotation ranges: */
 #define GRANGE_FLAG_TAG_SEQ    (1<<1) /* 0=>contig, 1=>sequence */
@@ -79,7 +84,7 @@ typedef struct {
 #define GRANGE_FLAG_COMP1      (1<<4) /* true if complemented */
 #define GRANGE_FLAG_COMP2      (1<<5) /* true if complemented */
 
-#define GRANGE_FLAG_UNUSED     (1<<8) /* range has been deleted */
+#define GRANGE_FLAG_UNUSED     (1<<10) /* range has been deleted */
 
 typedef struct {
     GCardinal type;
@@ -236,6 +241,8 @@ typedef struct index {
 #define BIN_BIN_UPDATED   (1<<1)
 #define BIN_RANGE_UPDATED (1<<2)
 #define BIN_TRACK_UPDATED (1<<3)
+#define BIN_CONS_CACHED   (1<<4) /* a cached consensus is stored here */
+#define BIN_CONS_VALID    (1<<5) /* ... and is up to date */
 
 /*
  * We may also wish to hold in range:

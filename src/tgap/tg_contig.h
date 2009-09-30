@@ -54,8 +54,10 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
 rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
 rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
-			       int *count);
+			       int job, int min_size, int *count);
 rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
+			       int job, int *count);
+rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count);
 
 #define CSIR_PAIR                 (1<<0)
@@ -66,6 +68,7 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 #define CSIR_SORT_BY_X            (1<<3)
 #define CSIR_SORT_BY_Y            (1<<4)
 #define CSIR_COUNT_ONLY           (1<<5)
+#define CSIR_LEAVES_ONLY          (1<<6)
 
 
 

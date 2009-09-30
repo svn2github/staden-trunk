@@ -500,7 +500,7 @@ static int sort_range_by_y(const void *v1, const void *v2) {
         return r1->y - r2->y;
     if (r1->start != r2->start)
     	return r1->start - r2->start;
-    return (r1->flags & GRANGE_FLAG_ISANNO) - (r2->flags & GRANGE_FLAG_ISANNO);
+    return (r1->flags & GRANGE_FLAG_ISMASK) - (r2->flags & GRANGE_FLAG_ISMASK);
 }
 
 
@@ -542,10 +542,12 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = j = 0; i < nr; i++) {
-	    if (r[i].flags & GRANGE_FLAG_ISANNO)
-		r[i].y = 0;
-	    else
+	    // For debugging, allow cons too
+	    //if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 		r[i].y = j++;
+	    else
+		r[i].y = 0;
 	}
 	return 0;
     }
@@ -559,7 +561,7 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
-	if (r[i].flags & GRANGE_FLAG_ISANNO) {
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    r[i].y = 0;
 	    continue;
 	}
@@ -664,7 +666,7 @@ static int compute_ypos_tags(rangec_t *r, int nr) {
 
     /* Build an hash of sequence record numbers to Y coordinates. */
     for (i = 0; i < nr; i++) {
-	if (r[i].flags & GRANGE_FLAG_ISANNO)
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 	    continue;
 
 	key = r[i].rec;
@@ -676,7 +678,7 @@ static int compute_ypos_tags(rangec_t *r, int nr) {
     for (i = 0; i < nr; i++) {
 	HacheItem *hi;
 
-	if (!(r[i].flags & GRANGE_FLAG_ISANNO))
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
 	    continue;
 
 	key = r[i].pair_rec;
@@ -815,7 +817,7 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
-				   GRANGE_FLAG_ISANNO, 0);
+				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
 
     if (job & CSIR_PAIR)
 	pair_rangec(io, r, *count);
@@ -839,7 +841,7 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
-				   GRANGE_FLAG_ISANNO, GRANGE_FLAG_ISANNO);
+				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
 
     if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
 	qsort(r, *count, sizeof(*r), sort_range_by_x);
@@ -853,13 +855,142 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
     return r;
 }
 
-static int contig_bins_in_range2(GapIO *io, int bin_num,
+
+/*
+ * As per contig_seqs_in_range, but consensus sequences only.
+ */
+static int contig_cons_in_range2(GapIO *io, int bin_num,
 				 int start, int end, int offset,
 				 rangec_t **results, int *alloc, int used,
 				 int complement) {
     int count = used;
+    int i, n, f_a, f_b;
     bin_index_t *bin = get_bin(io, bin_num);
-    int i, f_a, f_b;
+    range_t *l;
+    int cst = INT_MIN, cend = INT_MIN;
+
+    cache_incr(io, bin);
+    if (bin->flags & BIN_COMPLEMENTED) {
+	complement ^= 1;
+    }
+
+    if (complement) {
+	f_a = -1;
+	f_b = offset + bin->size-1;
+    } else {
+	f_a = +1;
+	f_b = offset;
+    }
+
+    if (!(end < NMIN(bin->start_used, bin->end_used) ||
+	  start > NMAX(bin->start_used, bin->end_used))
+	&& bin->rng) {
+	for (n = 0; n < ArrayMax(bin->rng); n++) {
+	    l = arrp(range_t, bin->rng, n);
+
+	    if (l->flags & GRANGE_FLAG_UNUSED)
+		continue;
+
+	    if ((l->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
+		continue;
+
+	    if (NMAX(l->start, l->end) >= start
+		&& NMIN(l->start, l->end) <= end) {
+		int st, en;
+
+		if (count >= *alloc) {
+		    *alloc = *alloc ? *alloc * 2 : 16;
+		    *results = (rangec_t *)realloc(*results,
+						   *alloc * sizeof(rangec_t));
+		}
+		(*results)[count].rec   = l->rec;
+		st = NORM(l->start);
+		en = NORM(l->end);
+		if (st <= en) {
+		    (*results)[count].start = st;
+		    (*results)[count].end   = en;
+		} else {
+		    (*results)[count].start = en;
+		    (*results)[count].end   = st;
+		}
+		(*results)[count].comp  = complement;
+		(*results)[count].mqual = l->mqual;
+		(*results)[count].pair_rec   = l->pair_rec;
+		(*results)[count].pair_start = 0;
+		(*results)[count].pair_end   = 0;
+		(*results)[count].pair_mqual = 0;
+
+		(*results)[count].flags = l->flags;
+		(*results)[count].y = 0;
+
+		if ((*results)[count].start > cend) {
+		    cst  = (*results)[count].start;
+		    cend = (*results)[count].end;
+		} else if ((*results)[count].end > cend) {
+		    cend = (*results)[count].end;
+		}
+
+		count++;
+	    }
+	}
+    }
+
+    /* Recurse down bins */
+    for (i = 0; i < 2 > 0; i++) {
+	bin_index_t *ch;
+	if (!bin->child[i])
+	    continue;
+	ch = get_bin(io, bin->child[i]);
+	if (end   >= NMIN(ch->pos, ch->pos + ch->size-1) &&
+	    start <= NMAX(ch->pos, ch->pos + ch->size-1)) {
+
+	    /*
+	     * We don't care about overlapping consensus pieces, so skip
+	     * recursion if this portion is already accounted for.
+	     */
+	    if (NMIN(ch->pos, ch->pos + ch->size-1) >= cst &&
+		NMAX(ch->pos, ch->pos + ch->size-1) <= cend)
+		continue;
+
+	    count = contig_cons_in_range2(io, bin->child[i], start, end,
+					  NMIN(ch->pos, ch->pos + ch->size-1),
+					  results, alloc, count,
+					  complement);
+	}
+    }
+
+    cache_decr(io, bin);
+    return count;
+}
+
+/*
+ * As per contig_seqs_in_range, but consensus sequences only.
+ */
+rangec_t *contig_cons_in_range(GapIO *io, contig_t **c, int start, int end,
+			       int job, int *count) {
+    rangec_t *r = NULL;
+    int alloc = 0;
+
+    *count = contig_cons_in_range2(io, contig_get_bin(c), start, end,
+				   contig_offset(io, c), &r, &alloc, 0, 0);
+
+    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	qsort(r, *count, sizeof(*r), sort_range_by_x);
+
+    return r;
+}
+
+
+static int contig_bins_in_range2(GapIO *io, int bin_num,
+				 int start, int end, int offset,
+				 rangec_t **results, int *alloc, int used,
+				 int complement, int min_size,
+				 int leaves_only) {
+    int count = used;
+    bin_index_t *bin = get_bin(io, bin_num);
+    int i, f_a, f_b, leaf;
+
+    cache_incr(io, bin);
 
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
@@ -873,23 +1004,28 @@ static int contig_bins_in_range2(GapIO *io, int bin_num,
 	f_b = offset;
     }
 
-    if (!count) {
-	/* Add root bin */
-	if (count >= *alloc) {
-	    *alloc = *alloc ? *alloc * 2 : 16;
-	    *results = (rangec_t *)realloc(*results, *alloc *sizeof(rangec_t));
-	}
-
-
-	(*results)[count].rec   = bin_num;
-	(*results)[count].start = NMIN(bin->pos, bin->pos+bin->size-1);
-	(*results)[count].end   = NMAX(bin->pos, bin->pos+bin->size-1);
-	(*results)[count].comp  = complement;
-	count++;
+    /* Add bin */
+    if (count >= *alloc) {
+	*alloc = *alloc ? *alloc * 2 : 16;
+	*results = (rangec_t *)realloc(*results, *alloc *sizeof(rangec_t));
     }
 
+    (*results)[count].rec   = bin_num;
+    (*results)[count].start = offset;
+    (*results)[count].end   = offset + bin->size;
+    (*results)[count].comp  = complement;
+
+    /* To allow easy extraction of data from an individual bin */
+    (*results)[count].pair_start = f_a;
+    (*results)[count].pair_end   = f_b;
+
+    if (!leaves_only)
+	count++;
+
+
     /* Items in this case are child bins rather than sequences */
-    for (i = 0; i < 2; i++) {
+    leaf = 0;
+    for (i = 0; bin->size >= min_size && i < 2; i++) {
 	bin_index_t *ch;
 	if (!bin->child[i])
 	    continue;
@@ -902,32 +1038,37 @@ static int contig_bins_in_range2(GapIO *io, int bin_num,
 
 	if (end   >= NMIN(ch->pos, ch->pos + ch->size-1) &&
 	    start <= NMAX(ch->pos, ch->pos + ch->size-1)) {
-	    (*results)[count].rec   = bin->child[i];
-	    (*results)[count].start = NMIN(ch->pos, ch->pos+ch->size-1);
-	    (*results)[count].end   = NMAX(ch->pos, ch->pos+ch->size-1);
-	    (*results)[count].comp  = complement;
-	    count++;
 
 	    /* Recurse too */
+	    leaf++;
 	    count = contig_bins_in_range2(io, bin->child[i], start, end,
 					  NMIN(ch->pos, ch->pos + ch->size-1),
-					  results, alloc, count, complement);
+					  results, alloc, count, complement,
+					  min_size, leaves_only);
 	}
     }
+
+    cache_decr(io, bin);
+
+    if (leaves_only && !leaf)
+    	return ++count;
 
     return count;
 }
 
 rangec_t *contig_bins_in_range(GapIO *io, contig_t **c, int start, int end,
-			       int *count) {
+			       int job, int min_size, int *count) {
     rangec_t *r = NULL;
     int alloc = 0;
 
-    //    *count = contig_bins_in_range2(io, contig_get_bin(c), start, end,
-    //				   contig_offset(io, c), &r, &alloc, 0, 0);
     *count = contig_bins_in_range2(io, contig_get_bin(c), start, end,
-				   0, &r, &alloc, 0, 0);
+				   contig_offset(io, c),
+				   &r, &alloc, 0, 0, min_size,
+				   job & CSIR_LEAVES_ONLY);
     
+    if (job & CSIR_SORT_BY_X)
+	qsort(r, *count, sizeof(*r), sort_range_by_x);
+
     return r;
 }
 
@@ -1294,7 +1435,7 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
     t = track_create_fake(type, nele);
     data = ArrayBase(int, t->data);
 
-    start_bin = bin_for_range(io, c, start, end, 0, &bin_off);
+    start_bin = bin_for_range(io, c, start, end, 0, &bin_off, NULL);
     if (start_bin) {
 	start_bin_rec = start_bin->rec;
     } else {

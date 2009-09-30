@@ -1622,7 +1622,7 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 	    continue;
 	}
 
-	if (r.flags & GRANGE_FLAG_ISANNO) {
+	if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    r.end   -= r.start;
 	    r.start -= last_tag.start;
 	    r.rec   -= last_tag.rec;
@@ -1638,7 +1638,7 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 	cp[3] += int2u7(r.mqual, cp[3]);
 	cp[4] += int2u7(r.flags, cp[4]);
 
-	if (r.flags & GRANGE_FLAG_ISANNO) {
+	if ((r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    if (!(r.flags & GRANGE_FLAG_TYPE_SINGLE))
 		cp[5] += int2s7(r.pair_rec - last_tag.pair_rec, cp[5]);
 	    last_tag = rng[i];
@@ -1735,7 +1735,7 @@ static GRange *unpack_rng_array(unsigned char *packed, int packed_sz, int *nr) {
 	cp[0] += u72int(cp[0], (uint32_t *)&r[i].start);
 	cp[1] += u72int(cp[1], (uint32_t *)&r[i].end);
 	cp[3] += u72int(cp[3], (uint32_t *)&r[i].mqual);
-	if (r[i].flags & GRANGE_FLAG_ISANNO) {
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    if (!(r[i].flags & GRANGE_FLAG_TYPE_SINGLE)) {
 		int32_t pr;
 		cp[5] += s72int(cp[5], &pr);
@@ -1783,6 +1783,8 @@ static GRange *unpack_rng_array(unsigned char *packed, int packed_sz, int *nr) {
 #define BIN_SIZE_EQ_POS   (1<<5)
 #define BIN_POS_ZERO      (1<<6)
 #define BIN_ROOT_NODE     (1<<7)
+#define BIN_CONS_CACHED_  (1<<8)
+#define BIN_CONS_VALID_   (1<<9)
 
 static cached_item *io_bin_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
@@ -1826,6 +1828,10 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     cp += 2;
     cp += u72int(cp, &bflag);
     g.flags = (bflag & BIN_COMPLEMENTED) ? BIN_COMPLEMENTED : 0;
+    if (bflag & BIN_CONS_CACHED_)
+	g.flags |= BIN_CONS_CACHED;
+    if (bflag & BIN_CONS_VALID_)
+	g.flags |= BIN_CONS_VALID;
     g.parent_type = (bflag & BIN_ROOT_NODE) ? GT_Contig : GT_Bin;
 
     if (bflag & BIN_POS_ZERO)
@@ -2123,6 +2129,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	if (g.parent_type == GT_Contig) bflag |= BIN_ROOT_NODE;
 	if (g.pos == 0)                 bflag |= BIN_POS_ZERO;
 	if (g.size == g.pos)            bflag |= BIN_SIZE_EQ_POS;
+	if (g.flags & BIN_CONS_CACHED)  bflag |= BIN_CONS_CACHED_;
+	if (g.flags & BIN_CONS_VALID)   bflag |= BIN_CONS_VALID_;
 
 	*cp++ = GT_Bin;
 	*cp++ = g.rng_free == -1 ? 0 : 1; /* Format */

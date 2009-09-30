@@ -32,11 +32,22 @@ void sequence_reset_ptr(seq_t *s) {
  *        -1 on failure
  */
 int  sequence_copy(seq_t *s, seq_t *f) {
+    int rec, idx;
+    seq_block_t *block;
+
     if (!s || !f)
 	return -1;
 
+    /* Copy almost all */
+    rec   = s->rec;
+    block = s->block;
+    idx   = s->idx;
     *s = *f;
+    s->rec   = rec;
+    s->block = block;
+    s->idx   = idx;
 
+    /* Fix internal pointers */
     s->name = (char *)&s->data;
     strcpy(s->name, f->name ? f->name : "");
     s->name_len = strlen(s->name);
@@ -91,14 +102,14 @@ int sequence_new_from(GapIO *io, seq_t *s) {
     seq_t *n;
     size_t extra_len;
 
+    rec = cache_item_create(io, GT_Seq, s);
+
     extra_len =
 	(s->name       ? strlen(s->name)       : 0) +
 	(s->trace_name ? strlen(s->trace_name) : 0) +
 	(s->alignment  ? strlen(s->alignment)  : 0) +
 	ABS(s->len)*(1+sequence_conf_size(s));
 
-    //    rec = io->iface->seq.create(io->dbh, s);
-    rec = cache_item_create(io, GT_Seq, s);
     n = (seq_t *)cache_search(io, GT_Seq, rec);
     n = cache_rw(io, n);
     n = cache_item_resize(n, sizeof(*n) + extra_len);
@@ -629,6 +640,45 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
     return 0;
 }
 
+
+/*
+ * Invalidates the cached consensus for this sequence.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
+    int start, end, contig;
+    int i, nr;
+    rangec_t *r;
+    contig_t *c;
+
+    if (io->read_only)
+	return -1;
+
+    if (-1 == sequence_get_position(io, s->rec, &contig, &start, &end, NULL))
+	return -1;
+
+    if (NULL == (c = (contig_t *)cache_search(io, GT_Contig, contig)))
+	return -1;
+    
+    r = contig_bins_in_range(io, &c, start, end,
+			     CSIR_LEAVES_ONLY, CONS_BIN_SIZE, &nr);
+
+    for (i = 0; i < nr; i++) {
+	bin_index_t *bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
+	if (!bin)
+	    return -1;
+
+	bin = cache_rw(io, bin);
+	bin->flags |=  BIN_BIN_UPDATED;
+	bin->flags &= ~BIN_CONS_VALID;
+    }
+
+    return 0;
+}
+
+
 /*
  * Given the record number for a sequence this returns the record
  * number for the contig containing it.
@@ -1015,6 +1065,8 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
 
+    sequence_invalidate_consensus(io, n);
+
     if (contig_orient)
 	pos = sequence_orient_pos(io, s, pos, &comp);
 
@@ -1082,6 +1134,8 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+
+    sequence_invalidate_consensus(io, n);
 
     n = cache_item_resize(n, sizeof(*n) + 
 			  n->name_len+1 +
@@ -1182,6 +1236,8 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+
+    sequence_invalidate_consensus(io, n);
 
     if (n->len < 0)
 	n->len++;
