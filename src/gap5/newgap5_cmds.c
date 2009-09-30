@@ -1173,6 +1173,7 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
     }
 
     Tcl_SetObjResult(interp, Tcl_NewStringObj(out, j));
+    free(out);
 
     return TCL_OK;
 }
