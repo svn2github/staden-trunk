@@ -147,9 +147,11 @@ static int contig_insert_base2(GapIO *io, int bnum,
 	     */
 
 	    /* Insert */
-	    seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	    sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
-				 base, conf, 0);
+	    if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		seq_t *s = cache_search(io, GT_Seq, r->rec);
+		sequence_insert_base(io, &s, pos - MIN(r->start, r->end),
+				     base, conf, 0);
+	    }
 	    
 	    r->end++;
 	    bin->flags |= BIN_RANGE_UPDATED;
@@ -280,11 +282,9 @@ static int contig_delete_base2(GapIO *io, int bnum,
 	     * perform deletion in any bin system - to sequences in contigs,
 	     * contigs in super-contigs, or tags in a sequence/consensus.
 	     */
-	    seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-
 	    if (MIN(r->start, r->end) == MAX(r->start, r->end)) {
 		/* Remove object entirely */
-		fprintf(stderr, "Delete sequence %s\n", s->name);
+		fprintf(stderr, "Delete sequence/tag #%d\n", r->rec);
 		r->flags |= GRANGE_FLAG_UNUSED;
 		r->rec = bin->rng_free;
 
@@ -292,7 +292,12 @@ static int contig_delete_base2(GapIO *io, int bnum,
 		bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
 	    } else {
 		/* Delete */
-		sequence_delete_base(io, &s, pos - MIN(r->start, r->end), 0);
+		if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO) {
+		    seq_t *s = cache_search(io, GT_Seq, r->rec);
+		    sequence_delete_base(io, &s,
+					 pos - MIN(r->start, r->end),
+					 0);
+		}
 	    
 		r->end--;
 		bin->flags |= BIN_RANGE_UPDATED;
