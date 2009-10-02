@@ -33,6 +33,7 @@
 #include "break_contig.h"
 #include "template_display.h"
 #include "export_contigs.h"
+#include "find_oligo.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -1178,6 +1179,94 @@ tcl_reformat_sequence(ClientData clientData, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+int
+tcl_find_oligo(ClientData clientData,
+	       Tcl_Interp *interp,
+	       int objc,
+	       Tcl_Obj *CONST objv[])
+{
+    oligo_arg args;
+    contig_list_t *contig_array = NULL;
+    int num_contigs = 0;
+    Tcl_DString input_params;
+    char *name1;
+
+    cli_args a[] = {
+	{"-io",		ARG_IO,	  1, NULL,  offsetof(oligo_arg, io)},
+	{"-contigs",	ARG_STR,  1, NULL,  offsetof(oligo_arg, inlist)},
+	{"-min_pmatch",	ARG_FLOAT,1, "75.", offsetof(oligo_arg, mis_match)},
+	{"-tag_types",	ARG_STR,  1, "",    offsetof(oligo_arg, tag_list)},
+	{"-seq",	ARG_STR,  1, "",    offsetof(oligo_arg, seq)},
+	{"-consensus_only",
+	                ARG_INT,  1, "0",   offsetof(oligo_arg, consensus_only)},
+	{"-cutoffs",    ARG_INT,  1, "0",   offsetof(oligo_arg, cutoffs)},
+	{"-file",	ARG_STR,  1, "",    offsetof(oligo_arg, file)},
+	{NULL,		0,	  0, NULL,  0}
+    };
+
+    vfuncheader("sequence search");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    /* create contig name array */
+    active_list_contigs(args.io, args.inlist, &num_contigs, &contig_array);
+    if (num_contigs == 0) {
+	if (contig_array)
+	    free(contig_array);
+	return TCL_OK;
+    }
+
+    /* create inputs parameters */
+    Tcl_DStringInit(&input_params);
+    vTcl_DStringAppend(&input_params, "Contigs: %s\n", args.inlist);
+    name1 = get_default_string(interp, gap5_defs, "FINDOLIGO.MAXMIS.NAME");
+
+    vTcl_DStringAppend(&input_params, "%s: %f\n", name1, args.mis_match);
+
+    if (*args.seq) {
+	vTcl_DStringAppend(&input_params, "Sequence: %s\n", args.seq);
+    } else if (*args.file) {
+	vTcl_DStringAppend(&input_params, "File: %s\n", args.file);
+    } else {
+	vTcl_DStringAppend(&input_params, "Tags: %s\n", args.tag_list);
+    }
+    vfuncparams("%s", Tcl_DStringValue(&input_params));
+    Tcl_DStringFree(&input_params);
+
+    /* check that if using sequence to probe, then it is DNA */
+    /*
+     * if (strcmp(args.tag_list, "") == 0) {
+     *	 if (1 != get_seq_type (args.seq, strlen(args.seq))) {
+     *	    verror(ERR_WARN, "find oligos", "sequence is not DNA");
+     *	    return TCL_OK;
+     *	  }
+     * }
+     */
+
+    if (SetActiveTags(args.tag_list) == -1) {
+	return TCL_ERROR;
+    }
+
+    if (args.file && *args.file) {
+	if (-1 == find_oligo_file(args.io, num_contigs, contig_array,
+				  args.mis_match, args.file,
+				  args.consensus_only, args.cutoffs))
+	    verror(ERR_FATAL, "find oligos", "could not search");
+    } else {
+	if (-1 == find_oligos(args.io, num_contigs, contig_array,
+			      args.mis_match, args.seq,
+			      args.consensus_only, args.cutoffs))
+	    verror(ERR_FATAL, "find oligos", "out of memory");
+    }
+
+    SetActiveTags("");
+    if (contig_array)
+	xfree(contig_array);
+    return TCL_OK;
+}
+
+
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
 /*				   NewGap_Init				     */
@@ -1324,6 +1413,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "export_contigs",
 			 tcl_export_contigs,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "find_oligo",
+			 tcl_find_oligo,
 			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);
