@@ -58,7 +58,8 @@ TG_IO = \
 	tg_register.o \
 	tg_tracks.o \
 	tg_anno.o \
-	tg_library.o
+	tg_library.o \
+	tg_index_common.o
 
 TGSH_OBJ = \
 	$(TG_IO) \

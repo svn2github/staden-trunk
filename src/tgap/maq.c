@@ -8,16 +8,9 @@
 #include "array.h"
 #include "tg_gio.h"
 #include "tg_struct.h"
+#include "tg_index_common.h"
 #include "maqmap.h"
 #include "maq.h"
-
-typedef struct {
-    int rec;
-    int bin;
-    int idx;
-    int crec;
-    int pos;
-} pair_loc_t;
 
 /* lh3: an analogy of parse_line() */
 static int parse_maqmap_aux(seq_t *s,
@@ -132,11 +125,10 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
     while ((sz == 64 && gzread(dat_fp, &m64, sizeof(maqmap64_t)))
 	   || gzread(dat_fp, &m128, sizeof(maqmap128_t))) {
 	seq_t seq;
-	range_t r, *r_out;
-	int recno;
-	bin_index_t *bin;
+	int flags;
 	HacheItem *hi;
 	int paired;
+	int is_pair = 0;
 	library_t *lib = NULL;
 	const char *LB = dat_fn;
 	HacheData hd;
@@ -207,13 +199,9 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	    fprintf(stderr, "++ Processing contig %d\n", m128.seqid);
 	}
 
-	/* Create range */
-	r.start = seq.pos;
-	r.end = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
-	r.rec = 0;
-	r.pair_rec = 0;
-	r.mqual = seq.mapping_qual;
-	r.flags = GRANGE_FLAG_TYPE_SINGLE;
+
+	/* calc range, save sequence */	
+	flags = GRANGE_FLAG_TYPE_SINGLE;
 
 	/* Get direction from name possibly */
 	strcpy(tname, seq.name);
@@ -225,110 +213,20 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	}
 
 	if (paired)
-	    r.flags |= (seq.flags & SEQ_END_MASK) == SEQ_END_FWD
+	    flags |= (seq.flags & SEQ_END_MASK) == SEQ_END_FWD
 		? GRANGE_FLAG_END_FWD
 		: GRANGE_FLAG_END_REV;
 	else
 	    /* Guess work here. For now all <--- are rev, all ---> are fwd */
-	    r.flags |= seq.len > 0
+	    flags |= seq.len > 0
 		? GRANGE_FLAG_END_FWD
 		: GRANGE_FLAG_END_REV;
 	if (seq.len < 0)
-	    r.flags |= GRANGE_FLAG_COMP1;
-
-	bin = bin_add_range(io, &c, &r, &r_out, NULL);
-
-	/* Save sequence */
-	seq.bin = bin->rec;
-	seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
-	recno = sequence_new_from(io, &seq);
-
-	/* Find pair if requested and we thing the other end worked */
-	if (pair && !(m128.flag & PAIRFLAG_NOMATCH)) {
-	    int new = 0;
-	    HacheData hd;
-	    pair_loc_t *pl;
+	    flags |= GRANGE_FLAG_COMP1;
 	    
-	    /* Add data for this end */
-	    pl = (pair_loc_t *)malloc(sizeof(*pl));
-	    pl->rec  = recno;
-	    pl->bin  = bin->rec;
-	    pl->crec = c->rec;
-	    pl->pos  = seq.len >= 0 ? seq.pos : seq.pos - seq.len - 1;
-	    pl->idx  = seq.bin_index;
-	    hd.p = pl;
+	if (pair && !(m128.flag & PAIRFLAG_NOMATCH)) is_pair = 1;
 
-	    hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
-	    //if (new) printf("%s ADD %x\n", tname, m128.flag);
-
-	    /* Pair existed already */
-	    if (!new) {
-		pair_loc_t *po = (pair_loc_t *)hi->data.p;
-		bin_index_t *bo;
-		range_t *ro;
-
-		/* We found one so update r_out now, before flush */
-		r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		r_out->pair_rec = po->rec;
-
-		if (!a->fast_mode) {
-		    /* Link other end to 'us' too */
-		    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		    bo = cache_rw(io, bo);
-		    bo->flags |= BIN_RANGE_UPDATED;
-		    ro = arrp(range_t, bo->rng, po->idx);
-		    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		    ro->pair_rec = pl->rec;
-		}
-
-		/* Increment insert size in library */
-		if (po->crec == pl->crec) {
-		    int isize = pl->pos - po->pos;
-
-		    /*
-		     * We can get +ve isize via:
-		     * |------->     <-------|
-		     *
-		     * and -ve isize via:
-		     * <-------|
-		     *    |------->
-		     *
-		     * We know that 's' is the right-most sequence so
-		     * when this_pos as the input is sorted.
-		     * Therefore we can tell which case it is by the orientation
-		     * of this sequence, and negate isize for the 2nd case.
-		     */
-		    if (!(r_out->flags & GRANGE_FLAG_COMP1))
-			isize = -isize;
-
-		    lib = cache_rw(io, lib);
-		    if ((r_out->flags & GRANGE_FLAG_COMP1) != 
-			(ro->flags & GRANGE_FLAG_COMP1)) {
-			accumulate_library(io, lib,
-					   isize >= 0
-				           ? LIB_T_INWARD
-				           : LIB_T_OUTWARD,
-					   ABS(isize));
-		    } else {
-			accumulate_library(io, lib, LIB_T_SAME, ABS(isize));
-		    }
-		}
-
-		/* And, making an assumption, remove from hache */
-		HacheTableDel(pair, hi, 1);
-		//printf("%s DEL %x\n", tname, m128.flag);
-		free(pl);
-	    }
-	}
-
-	if (!a->no_tree)
-	    sequence_index_update(io, seq.name, seq.name_len, recno);
-	free(seq.data);
-	
-	/* Link bin back to sequence too before it gets flushed */
-	r_out->rec = recno;
+	save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname, c, a, flags, lib);
 
 	if (((j+1) & 0xffff) == 0) {
 	    static struct timeval last, curr;

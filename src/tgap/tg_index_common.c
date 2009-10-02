@@ -1,3 +1,11 @@
+/*
+ * tg_index_common.c - common functions for tg_index
+ *
+ * Andrew Whitwham, October 2009
+ * Wellcome Trust Sanger Institute
+ *
+ */
+
 #include <string.h>
 #include <stdio.h>
 

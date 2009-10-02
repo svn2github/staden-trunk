@@ -11,6 +11,7 @@
 #include <staden_config.h>
 
 #include "tg_gio.h"
+#include "tg_index_common.h"
 #include "hache_table.h"
 #include "baf.h"
 
@@ -315,13 +316,6 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     return 0;
 }
 
-typedef struct {
-    int rec;
-    int bin;
-    int idx;
-    int crec;
-} pair_loc_t;
-
 int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int nseqs = 0, nobj = 0, ntags = 0, ncontigs = 0;
     struct stat sb;
@@ -361,20 +355,15 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	case CO: {
 	    char *contig = baf_block_value(b, CO);
 
-	    if (c)
-		cache_decr(io, c);
 	    if (co)
 		baf_block_destroy(co);
+
 	    co = b;
 	    delay_destroy = 1;
 
 	    ncontigs++;
-	    if (!a->merge_contigs ||
-		NULL == (c = find_contig_by_name(io, contig))) {
-		c = contig_new(io, contig);
-		contig_index_update(io, contig, strlen(contig), c->rec);
-	    }
-	    cache_incr(io, c);
+	    
+	    create_new_contig(io, &c, contig, a->merge_contigs);
 
 	    /* For anno */
 	    last_obj_type = GT_Contig;
@@ -387,12 +376,10 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 
 	case RD: {
 	    seq_t seq;
-	    range_t r, *r_out;
-	    int recno;
-	    bin_index_t *bin;
-	    HacheItem *hi;
+	    int flags;
 	    char *tname;
-	    pair_loc_t *pl = NULL;
+	    int recno;
+	    int is_pair = 0;
 
 	    /* Construct seq struct */
 	    if (-1 == construct_seq_from_block(&seq, b, &tname)) {
@@ -401,27 +388,19 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		break;
 	    }
 
-	    /* Create range */
-	    r.start = seq.pos;
-	    r.end   = seq.pos + (seq.len > 0 ? seq.len : -seq.len) - 1;
-	    r.rec   = 0;
-	    r.pair_rec = 0;
-	    r.mqual = seq.mapping_qual;
-	    r.flags = GRANGE_FLAG_TYPE_SINGLE;
+	    /* Create range, save sequence */
+	    flags = GRANGE_FLAG_TYPE_SINGLE;
+	    
 	    if (seq.flags & SEQ_END_REV)
-		r.flags |= GRANGE_FLAG_END_REV;
+		flags |= GRANGE_FLAG_END_REV;
 	    else
-		r.flags |= GRANGE_FLAG_END_FWD;
+		flags |= GRANGE_FLAG_END_FWD;
 	    if (seq.len < 0)
-		r.flags |= GRANGE_FLAG_COMP1;
-
-	    /* Add the range to a bin, and see which bin it was */
-	    bin = bin_add_range(io, &c, &r, &r_out, NULL);
-
-	    /* Save sequence */
-	    seq.bin = bin->rec;
-	    seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
-	    recno = sequence_new_from(io, &seq);
+		flags |= GRANGE_FLAG_COMP1;
+		
+	    if (pair) is_pair = 1;
+		
+	    recno = save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname, c, a, flags, NULL);
 
 	    /* For anno */
 	    last_obj_type = GT_Seq;
@@ -434,62 +413,6 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		last_obj_orient = 1;
 	    }
 
-	    /* Find pair if appropriate */
-	    if (pair) {
-		int new = 0;
-		HacheData hd;
-
-		/* Add data for this end */
-		pl = (pair_loc_t *)malloc(sizeof(*pl));
-		pl->rec  = recno;
-		pl->bin  = bin->rec;
-		pl->crec = c->rec;
-		pl->idx  = seq.bin_index;
-		hd.p = pl;
-
-		hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
-
-		/* Pair existed already */
-		if (!new) {
-		    pair_loc_t *po = (pair_loc_t *)hi->data.p;
-		    bin_index_t *bo;
-		    range_t *ro;
-
-		    /* We found one so update r_out now, before flush */
-		    r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		    r_out->pair_rec = po->rec;
-
-		    if (!a->fast_mode) {
-			/* Link other end to 'us' too */
-			bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-			bo = cache_rw(io, bo);
-			bo->flags |= BIN_RANGE_UPDATED;
-			ro = arrp(range_t, bo->rng, po->idx);
-			ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-			ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-			ro->pair_rec = pl->rec;
-		    }
-
-#if 0
-		    if (c->rec == po->crec) {
-			ro->flags    |= GRANGE_FLAG_CONTIG;
-			r_out->flags |= GRANGE_FLAG_CONTIG;
-		    }
-#endif
-
-		    /* And, making an assumption, remove from hache */
-		    HacheTableDel(pair, hi, 1);
-		    free(pl);
-		}
-	    }
-
-	    if (!a->no_tree)
-		sequence_index_update(io, seq.name, seq.name_len, recno);
-	    free(seq.data);
-
-	    /* Link bin back to sequence too before it gets flushed */
-	    r_out->rec = recno;
 	    nseqs++;
 	    
 	    break;

@@ -7,6 +7,7 @@
 
 #include "tg_gio.h"
 #include "tg_struct.h"
+#include "tg_index_common.h"
 #include <sam.h>
 
 #include <staden_config.h>
@@ -42,14 +43,6 @@ typedef struct {
     bam_header_t *header;
     tg_args *a;
 } bam_io_t;
-
-typedef struct {
-    int rec;
-    int bin;
-    int idx;
-    int crec;
-    int pos;
-} pair_loc_t;
 
 int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
 
@@ -223,11 +216,10 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     bam_seq_t *bs;
     bam1_t *b;
     seq_t s;
-    bin_index_t *bin;
-    range_t r, *r_out;
     HacheItem *hi;
     int recno, i, paired;
-    GapIO *io = bio->io;
+    int is_pair = 0;
+    int flags;
     char tname[1024];
     library_t *lib = NULL;
     bam_aux_t val;
@@ -277,6 +269,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	int qual = bam1_qual(p->b)[i];
 	bio_extend_seq(bio, snum, base, qual);
     }
+    
     s.pos = bs->pos;
     s.len = bs->seq_len;
     s.seq_tech = STECH_SOLEXA;
@@ -308,22 +301,22 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	s.flags |= SEQ_COMPLEMENTED;
     }
 
-    /* Create the range */
-    r.start = s.pos;
-    r.end = s.pos + (s.len > 0 ? s.len : -s.len) - 1;
-    r.rec = 0;
-    r.pair_rec = 0;
-    r.mqual = s.mapping_qual;
-    r.flags = GRANGE_FLAG_TYPE_SINGLE;
+    /* Create the range, save the sequence */
 
+    flags = GRANGE_FLAG_TYPE_SINGLE;
     paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+
     if (b->core.flag & BAM_FREAD1)
 	s.flags |= SEQ_END_FWD;
+
     if (b->core.flag & BAM_FREAD2)
 	s.flags |= SEQ_END_REV;
+
     strcpy(tname, s.name);
+
     if (s.name_len >= 2 && s.name[s.name_len-2] == '/') {
 	tname[s.name_len-2] = 0;
+
 	/* Check validity of name vs bit-fields */
 	if ((s.name[s.name_len-1] == '1' &&
 	     (s.flags & SEQ_END_MASK) != SEQ_END_FWD) ||
@@ -335,144 +328,27 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     }
 
     if (paired)
-	r.flags |= (s.flags & SEQ_END_MASK) == SEQ_END_FWD
+	flags |= (s.flags & SEQ_END_MASK) == SEQ_END_FWD
 	    ? GRANGE_FLAG_END_FWD
 	    : GRANGE_FLAG_END_REV;
     else
 	/* Guess work here. For now all <--- are rev, all ---> are fwd */
-	r.flags |= bam1_strand(b)
+	flags |= bam1_strand(b)
 	    ? GRANGE_FLAG_END_FWD
 	    : GRANGE_FLAG_END_REV;
+
     if (bam1_strand(b)) {
-	r.flags |= GRANGE_FLAG_COMP1;
+	flags |= GRANGE_FLAG_COMP1;
     }
 
-    bin = bin_add_range(io, &bio->c, &r, &r_out, NULL);
+    if (bio->pair) is_pair = 1;
 
-    /* Add the sequence */
-    s.bin = bin->rec;
-    s.bin_index = r_out - ArrayBase(range_t, bin->rng);
-    recno = sequence_new_from(io, &s);
-
-    // Simulations of fetching sequence data from source file instead.
-    // recno = bio->count;
-
-#if 0
-    /* Demo code for tagging sequences */
-    if (memcmp(s.seq, "TAG", 3) == 0) {
-	range_t er;
-	anno_ele_t *e;
-	char comment[1024];
-
-	er.start = r.start;
-	er.end = er.start + 2;
-	if (random()%10) {
-	    er.mqual = GT_Seq;   /* obj_type */
-	    er.pair_rec = recno; /* obj_rec */
-	} else {
-	    er.mqual = GT_Contig;
-	    er.pair_rec = 0;
-	}
-	er.flags = GRANGE_FLAG_ISANNO; /* anno_rec, not supported yet */
-	sprintf(comment,":seq=%d,pos=%d..%d:", recno,r.start,r.end);
-	er.rec = anno_ele_new(io, bin->rec, GT_Seq, recno, 0, comment);
-
-	e = (anno_ele_t *)cache_search(io, GT_AnnoEle, er.rec);
-	e = cache_rw(io, e);
-	
-	//bin_add_anno_range(io, &bio->c, &er, NULL);
-	bin_add_range(io, &bio->c, &er, NULL, NULL);
-    }
-#endif
-
-    /* Find the read-pair if appropriate */
-    if (bio->pair /* && !(b->core.flag & (BAM_FMUNMAP | BAM_FUNMAP)) */) {
-	int new = 0;
-	HacheData hd;
-	pair_loc_t *pl;
-
-	/* Add data for this end */
-	pl = (pair_loc_t *)malloc(sizeof(*pl));
-	pl->rec  = recno;
-	pl->bin  = bin->rec;
-	pl->crec = bio->c->rec;
-	pl->pos  = s.len >= 0 ? s.pos : s.pos - s.len - 1;
-	pl->idx  = s.bin_index;
-	hd.p = pl;
-
-	hi = HacheTableAdd(bio->pair, tname, strlen(tname), hd, &new);
-
-	/* Pair existed already */
-	if (!new) {
-	    pair_loc_t *po = (pair_loc_t *)hi->data.p;
-	    bin_index_t *bo;
-	    range_t *ro;
-
-	    /* We found one so update r_out now, before flush */
-	    r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
-	    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-	    r_out->pair_rec = po->rec;
-
-	    if (!bio->a->fast_mode) {
-		/* Link other end to 'us' too */
-		bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-		bo = cache_rw(io, bo);
-		bo->flags |= BIN_RANGE_UPDATED;
-		ro = arrp(range_t, bo->rng, po->idx);
-		ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		ro->pair_rec = pl->rec;
-	    }
-
-	    /* Increment insert size in library */
-	    if (po->crec == pl->crec) {
-		//int pos = s.len >= 0 ? s.pos : s.pos - s.len - 1;
-		int isize = pl->pos - po->pos;
-
-		/*
-		 * We can get +ve isize via:
-		 * |------->     <-------|
-		 *
-		 * and -ve isize via:
-		 * <-------|
-		 *    |------->
-		 *
-		 * We know that 's' is the right-most sequence so
-		 * when this_pos as the input is sorted.
-		 * Therefore we can tell which case it is by the orientation
-		 * of this sequence, and negate isize for the 2nd case.
-		 */
-		if (!(r_out->flags & GRANGE_FLAG_COMP1))
-		    isize = -isize;
-
-		lib = cache_rw(bio->io, lib);
-		if (bio->a->fast_mode || 
-		    (r_out->flags & GRANGE_FLAG_COMP1) != 
-		    (ro->flags & GRANGE_FLAG_COMP1)) {
-		    accumulate_library(bio->io, lib,
-				       isize >= 0
-				           ? LIB_T_INWARD
-				           : LIB_T_OUTWARD,
-				       ABS(isize));
-		} else {
-		    accumulate_library(bio->io, lib, LIB_T_SAME, ABS(isize));
-		}
-	    }
-
-	    /* And, making an assumption, remove from hache */
-	    HacheTableDel(bio->pair, hi, 1);
-	    free(pl);
-	}
-    }
-
-    /* Link bin back to sequence too before it gets flushed */
-    r_out->rec = recno;
+    save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair, is_pair, tname, bio->c, bio->a, flags, lib);
 
     /* Tidy up */
     if (bs->seq)  free(bs->seq);
     if (bs->conf) free(bs->conf);
-    free(s.data);
-
+    
     if (snum+1 < bio->nseq)
 	memmove(bs, bs+1, (bio->nseq - (snum+1)) * sizeof(*bs));
 
@@ -539,17 +415,9 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 
 	/* header->target_name[b.core.tid] */
 	printf("\n++Processing contig %d / %s\n", tid, cname);
-	if (bio->c)
-	    cache_decr(io, bio->c);
-	if (!bio->a->merge_contigs ||
-	    (NULL == (bio->c = find_contig_by_name(io, cname)))) {
-	    bio->c = contig_new(io, cname);
-	    contig_index_update(io, cname, strlen(cname), bio->c->rec);
-	}
-	cache_incr(io, bio->c);
-
-	bio->n_inserts = 0;
-
+	
+	create_new_contig(io, &(bio->c), cname, bio->a->merge_contigs);
+	
 	last_tid = tid;
     }
 

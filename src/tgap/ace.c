@@ -6,6 +6,7 @@
 #include "tg_gio.h"
 #include "ace.h"
 #include "dna_utils.h"
+#include "tg_index_common.h"
 
 /*
  * Code for reading the new-ACE format as described at:
@@ -287,7 +288,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 	if (3 != sscanf(line+3, fmt, ai.af.rname, &dir, &ai.af.start))
 	    return NULL;
 	ai.af.dir = dir == 'U' ? 0 : 1;
-
+	
     } else if (strncmp(line, "BS", 2) == 0) {
 	ai.type = ACE_BS;
 	/* Unimplemented */
@@ -301,7 +302,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 	if (4 != sscanf(line+3, fmt, ai.rd.rname,
 			&ai.rd.nbases, &ai.rd.ninfo, &ai.rd.ntags))
 	    return NULL;
-
+	    
 	ai.rd.seq = (char *)malloc(ai.rd.nbases+1);
 	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
 	    size_t l = strlen(line);
@@ -417,13 +418,6 @@ typedef struct {
     int pos;
 } af_line;
 
-typedef struct {
-    int rec;
-    int bin;
-    int idx;
-    int crec;
-} pair_loc_t;
-
 /*
  * Parses a new ACE format file passed in.
  *
@@ -449,7 +443,6 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     }
 
     while (ai = next_ace_item(fp)) {
-	HacheItem *hi = NULL;
 	seq_t seq;
 	range_t r, *r_out;
 	int recno;
@@ -457,19 +450,9 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 
 	switch (ai->type) {
 	case ACE_CO:
-	    if (c)
-		cache_decr(io, c);
+	
+	    create_new_contig(io, &c, ai->co.cname, a->merge_contigs);
 
-	    /* Create a new contig */
-	    c = NULL;
-	    if (a->merge_contigs)
-		c = find_contig_by_name(io, ai->co.cname);
-	    if (!c) {
-		c = contig_new(io, ai->co.cname);
-		contig_index_update(io, ai->co.cname,
-				    strlen(ai->co.cname), c->rec);
-		cache_incr(io, c);
-	    }
 	    if (af)
 		free(af);
 	    af = (af_line *)calloc(ai->co.nreads, sizeof(*af));
@@ -492,6 +475,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 
 	case ACE_RD:
 	    /* Add readings, assumed in same order as AF lines */
+	    fprintf(stderr, "SC %d\n", seq_count);
 	    if (strcmp(ai->rd.rname, af[seq_count].name)) {
 		fprintf(stderr, "AF lines and RD lines not in same order\n");
 		fprintf(stderr, "%s\n%s\n",
@@ -537,73 +521,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 
 	case ACE_DS:
-	    /* Create range */
-	    r.start = seq.pos;
-	    r.end   = seq.pos + ABS(seq.len) - 1;
-	    r.rec   = 0;
-	    r.mqual = 0;
-	    r.pair_rec = 0;
-	    r.flags = 0;
-
-	    /* Add the range to a bin, and see which bin it was */
-	    bin = bin_add_range(io, &c, &r, &r_out, NULL);
-
-	    /* Save sequence */
-	    seq.bin = bin->rec;
-	    seq.bin_index = r_out - ArrayBase(range_t, bin->rng);
-	    recno = sequence_new_from(io, &seq);
-
-	    if (pair && *ai->ds.tname) {
-		int new = 0;
-		pair_loc_t *pl = NULL;
-		HacheData hd;
-	    
-		pl = (pair_loc_t *)malloc(sizeof(*pl));
-		pl->rec  = recno;
-		pl->bin  = bin->rec;
-		pl->crec = c->rec;
-		pl->idx  = seq.bin_index;
-		hd.p = pl;
-
-		/* Spot other uses of this template */
-		hi = HacheTableAdd(pair, ai->ds.tname, strlen(ai->ds.tname),
-				   hd, &new);
-
-		/* Pair existed already */
-		if (!new) {
-		    pair_loc_t *po = (pair_loc_t *)hi->data.p;
-		    bin_index_t *bo;
-		    range_t *ro;
-
-		    /* We found one so update r_out now, before flush */
-		    r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
-		    r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-		    r_out->pair_rec = po->rec;
-
-		    if (!a->fast_mode) {
-			/* Link other end to 'us' too */
-			bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
-			bo = cache_rw(io, bo);
-			bo->flags |= BIN_RANGE_UPDATED;
-			ro = arrp(range_t, bo->rng, po->idx);
-			ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
-			ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
-			ro->pair_rec = pl->rec;
-		    }
-
-		    /* And, making an assumption, remove from hache */
-		    HacheTableDel(pair, hi, 1);
-		    free(pl);
-		}
-	    }
-
-	    if (!a->no_tree)
-		sequence_index_update(io, seq.name, seq.name_len, recno);
-	    free(seq.data);
-
-	    /* Link bin back to sequence too before it gets flushed */
-	    r_out->rec = recno;
-
+	    save_range_sequence(io, &seq, 0, pair, (pair && *ai->ds.tname), ai->ds.tname, c, a, GRANGE_FLAG_TYPE_SINGLE,  NULL);
 	    seq_count++;
 	    nseqs++;
 

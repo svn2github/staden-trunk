@@ -74,7 +74,7 @@
 #define MIN_LEN 24
 
 //#define DEBUG
-//#define VALGRIND
+#define VALGRIND
 
 /* An allocated block on the heap */
 typedef struct {
