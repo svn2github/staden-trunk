@@ -516,6 +516,7 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 
     /* Update Range array */
     bin->flags |= BIN_RANGE_UPDATED | BIN_BIN_UPDATED;
+    bin->flags &= ~BIN_CONS_VALID;
     if (!bin->rng)
 	bin->rng = ArrayCreate(sizeof(range_t), 0);
 
