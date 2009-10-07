@@ -158,8 +158,9 @@
 	- splitting reads by type (sanger, solid, 454, solexa)
 
 *	Searching
-	- by sequence? slow
-	- by name/position (DONE)
+	- by sequence? (DONE)
+	- by position (DONE - padded only)
+	- by name (done, but needs a rewrite to speed it up)
 
 *	Fix reading name indexing.
 	- B+Tree is OK for searching and small updates, but updating
