@@ -81,6 +81,7 @@ GAP5=\
 	do_fij.o\
 	break_contig.o \
 	export_contigs.o \
+	find_oligo.o \
 	$(CEDITOR)
 
 GAP5_LIBS=\
