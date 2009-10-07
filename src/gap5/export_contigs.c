@@ -442,6 +442,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	if (q < 0) q = 0;
 	if (q > 97) q = 97;
 	fprintf(fp, " %d", q);
+
 	if (++j == 150) {
 	    j = 0;
 	    fprintf(fp, "\n");
@@ -471,7 +472,8 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	if (r->start + s->right-1 - first_base > last) {
 	    fprintf(fp, "BS %d %d %s.%c\n",
-		    last+1, r->start + s->right-1 - first_base, s->name,
+		    MAX(last+1, r->start + s->left-1 - first_base),
+		    r->start + s->right-1 - first_base, s->name,
 		    (r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD
 		        ?'f' :'r');
 	    last = r->start + s->right-1 - first_base;
@@ -524,7 +526,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	fprintf(fp, "\nQA %d %d %d %d\n",
 		s->left, s->right, s->left, s->right);
 
-	//fprintf(fp, "DS CHROMAT_FILE: %s PHD_FILE: %s.phd.1 TIME: Thu Jan 01 00:00:01 GMT 1970\n", s->name, s->name);
+	fprintf(fp, "DS CHROMAT_FILE: %s PHD_FILE: %s.phd.1 TIME: Thu Jan 01 00:00:01 GMT 1970\n", s->name, s->name);
 
 	if (s != origs)
 	    free(s);
