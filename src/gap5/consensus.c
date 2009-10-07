@@ -140,9 +140,10 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	f_a = r[i].pair_start;
 	f_b = r[i].pair_end;
 
-	if (bin->rng /* && !(end < NMIN(bin->start_used, bin->end_used) ||
-		        start > NMAX(bin->start_used, bin->end_used)) */
-            ) {
+	//	if (bin->rng /* && !(end < NMIN(bin->start_used, bin->end_used) ||
+	//		        start > NMAX(bin->start_used, bin->end_used)) */
+	//            ) {
+	if (1) {
 	    seq_t *s, *dup_s = NULL, seq;
 	    char *tmp_cons = NULL;
 	    range_t *cons_r = NULL;
@@ -154,7 +155,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	     * It may exist, but be invalidated too.
 	     */
 	    if (bin->flags & BIN_CONS_CACHED) {
-		for (n = 0; n < ArrayMax(bin->rng); n++) {
+		for (n = 0; bin->rng && n < ArrayMax(bin->rng); n++) {
 		    range_t *l = arrp(range_t, bin->rng, n);
 
 		    if ((l->flags&GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS) {
