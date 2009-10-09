@@ -18,6 +18,12 @@
 #include "faidx.h"
 #include "bam_maqcns.h"
 
+/*
+ * Uncomment this if you want sam auxillary tags to be added as tag in
+ * gap5.
+ */
+//#define SAM_AUX_AS_TAG
+
 typedef struct {
     bam1_t *b;
     char *seq;
@@ -43,6 +49,7 @@ typedef struct {
     bam_header_t *header;
     tg_args *a;
 } bam_io_t;
+
 
 int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
 
@@ -156,7 +163,7 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
 	    if (val) {
 		char tmp[4]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		val->i = *(uint16_t *)tmp;
+		val->i = *(uint32_t *)tmp;
 	    }
 	    s+=7;
 	    break;
@@ -166,7 +173,7 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
 	    if (val) {
 		char tmp[4]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		val->i = *(int16_t *)tmp;
+		val->i = *(int32_t *)tmp;
 	    }
 	    s+=7;
 	    break;
@@ -203,6 +210,98 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
     return -1;
 }
 
+char *bam_aux_stringify(bam1_t *b) {
+    static char str[8192];
+    char *s = bam1_aux(b), *cp = str;
+
+    while ((uint8_t *)s < b->data + b->data_len) {
+	switch (s[2]) {
+	case 'A':
+	    cp += sprintf(cp, "%c%c:A:%c ", s[0], s[1], *(s+3));
+	    s+=4;
+	    break;
+
+	case 'C':
+	    cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'c':
+	    cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'S':
+	    {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 's':
+	    {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	    {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'i':
+	    {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'f':
+	    {
+		float f;
+		memcpy(&f, s+3, 4);
+		cp += sprintf(cp, "%c%c:f:%f ", s[0], s[1], f);
+	    }
+	    s+=7;
+	    break;
+
+	case 'd':
+	    {
+		double d;
+		memcpy(&d, s+3, 8);
+		cp += sprintf(cp, "%c%c:d:%f ", s[0], s[1], d);
+	    }
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    cp += sprintf(cp, "%c%c:%c:%s ", s[0], s[1], s[2], s+3);
+	    s+=3;
+	    while (*s++);
+	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return NULL;
+	}
+    }
+
+    *cp = 0;
+
+    return str;
+}
+
 
 /*
  * Removes a sequence from the bam_io_t struct.
@@ -227,6 +326,9 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     const char *LB;
     HacheData hd;
     int new = 0;
+#ifdef SAM_AUX_AS_TAG
+    char *aux;
+#endif
 
     if (snum < 0 || snum >= bio->nseq)
 	return -1;
@@ -343,7 +445,30 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 
     if (bio->pair) is_pair = 1;
 
-    save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair, is_pair, tname, bio->c, bio->a, flags, lib);
+    recno = save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair,
+				is_pair, tname, bio->c, bio->a, flags, lib);
+
+#ifdef SAM_AUX_AS_TAG
+    /* Make an annotation out of the sam auxillary data */
+    aux = bam_aux_stringify(b);
+    if (aux && *aux) {
+	anno_ele_t *e;
+	bin_index_t *bin;
+	range_t r;
+
+	r.mqual = str2type("SAMX");
+	r.start = s.pos;
+	r.end = s.pos;
+	r.pair_rec = recno;
+	r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual, aux);
+	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
+	e = cache_rw(bio->io, e);
+	
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	e->bin = bin->rec;
+    }
+#endif
 
     /* Tidy up */
     if (bs->seq)  free(bs->seq);
