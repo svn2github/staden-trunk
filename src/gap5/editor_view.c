@@ -85,9 +85,9 @@ edview *edview_new(GapIO *io, int contig, int crec, int cpos,
     xx->names_xPos = 0;
 
     xx->cursor_pos  = cpos;
+    xx->cursor_rec  = crec ? crec : contig;
     xx->cursor_type = (xx->cursor_rec == 0 || xx->cursor_rec == contig)
 	? GT_Contig : GT_Seq;
-    xx->cursor_rec  = crec ? crec : contig;
 
     xx->trace_lock = 1;
     

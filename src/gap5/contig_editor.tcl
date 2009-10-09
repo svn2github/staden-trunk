@@ -220,7 +220,8 @@ proc JoinContig2 {io t id1 id2} {
 
     destroy $t
     join_contig -io $io \
-	-contig $crec1 -reading $read1 -pos 1 -contig2 $crec2 -pos2 1
+	-contig  $crec1 -reading  $read1 -pos  1 \
+	-contig2 $crec2 -reading2 $read2 -pos2 1
     SetContigGlobals $io $read1
 }
 
@@ -287,10 +288,13 @@ proc contig_editor {w args} {
     global gap5_defs
     upvar \#0 $w opt
 
+    puts [info level [info level]]
+
     # Initialise the $path global array - the instance data for this widget
     foreach {arg val} $args {
 	set opt($arg) $val
     }
+
     set opt(win) $w
     set opt(Disagreements) 0
     set opt(DisagreeMode)  1
@@ -304,16 +308,25 @@ proc contig_editor {w args} {
 
     set join [info exists opt(-contig2)]
 
-
     #set opt(contig) [contig_order_to_number -io $opt(-io) -order 0]
     set opt(contig) $opt(-contig)
-    if {![info exists opt(-reading)]} { set opt(-reading) 0 }
-    if {![info exists opt(-pos)]}     { set opt(-pos) 1 }
+    if {[info exists opt(-reading)]} {
+	set opt(-reading) [$opt(io) seq_name2rec $opt(-reading)]
+	if {$opt(-reading) == -1} { set opt(-reading) 0 }
+    } else {
+	set opt(-reading) 0
+    }
+    if {![info exists opt(-pos)]} { set opt(-pos) 0 }
     if {$join} {
 	set opt(contig2) $opt(-contig2)
 	set opt(io2) [io_child $opt(-io) $opt(-contig2)]
-	if {![info exists opt(-reading2)]} { set opt(-reading2) 0 }
-	if {![info exists opt(-pos2)]}     { set opt(-pos2) 1 }
+	if {[info exists opt(-reading2)]} {
+	    set opt(-reading2) [$opt(io) seq_name2rec $opt(-reading2)]
+	    if {$opt(-reading2) == -1} { set opt(-reading2) 0 }
+	} else {
+	    set opt(-reading2) 0
+	}
+	if {![info exists opt(-pos2)]}     { set opt(-pos2) 0 }
     }
 
     # Create the window layout
@@ -652,7 +665,7 @@ proc editor_pane {top w above ind arg_array} {
 			-contig $opt(contig$ind) \
 			-command "contig_register_callback $ed" \
 			-flags [list ALL GENERIC CHILD_EDIT]]
-    $ed init $opt(io$ind) $opt(contig$ind) 0 $opt(-pos$ind) $w.name.sheet
+    $ed init $opt(io$ind) $opt(contig$ind) $opt(-reading$ind) $opt(-pos$ind) $w.name.sheet
 
     if {$ind == 2} {
 	set ${ed}(side) top
