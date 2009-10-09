@@ -1,6 +1,13 @@
 #ifndef _TG_INDEX_H_
 #define _TG_INDEX_H_
 
+#include <stdio.h>
+
+typedef struct {
+    char name[L_tmpnam];
+    FILE *fp;
+} bttmp_t;
+
 typedef struct {
     int append;
     int no_tree;
@@ -10,6 +17,7 @@ typedef struct {
     int pair_reads;
     int min_bin_size;
     int fast_mode;
+    bttmp_t *tmp;
 } tg_args;
 
 #endif /* _TG_INDEX_H_ */

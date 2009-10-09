@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 #include "tg_gio.h"
 #include "tg_index_common.h"
@@ -20,6 +21,110 @@ typedef struct {
     int crec;
     int pos;
 } pair_loc_t;
+
+/* --------------------------------------------------------------------------
+ * Temporary file handling for storing name + record.
+ * This is used in the name B+Tree generation code as it's more efficient
+ * to delay generation of the B+Tree until after adding all the sequence
+ * records.
+ */
+
+bttmp_t *bttmp_file_open(void) {
+    bttmp_t *tmp = malloc(sizeof(*tmp));
+    int fd;
+
+    if (!tmp)
+	return NULL;
+
+    /*
+     * This emits a warning from gcc:
+     *     the use of `tmpnam' is dangerous, better use `mkstemp'
+     *
+     * The problem is, mkstemp isn't standard while tmpnam is. Instead
+     * we use tmpnam in a safe manner via open with O_CREAT|O_EXCL and then
+     * convert this to a FILE pointer. This is basically what tmpfile does, 
+     * but in our case we need to know the file name too so we can sort
+     * it later on.
+     */
+    if (NULL == tmpnam(tmp->name)) {
+	free(tmp);
+	return NULL;
+    }
+    
+    if (-1 == (fd = open(tmp->name, O_RDWR|O_CREAT|O_EXCL, 0666))) {
+	free(tmp);
+	return NULL;
+    }
+
+    tmp->fp = fdopen(fd, "wb+");
+
+    return tmp;
+}
+
+void bttmp_file_close(bttmp_t *tmp) {
+    if (tmp->fp) {
+	fclose(tmp->fp);
+	tmp->fp = NULL;
+    }
+
+    unlink(tmp->name);
+}
+
+/*
+ * Stores a name and record in a temporary file suitable for sorting and
+ * adding to the name index at a later stage.
+ */
+void bttmp_file_store(bttmp_t *tmp,  size_t name_len, char *name, int rec) {
+    fprintf(tmp->fp, "%.*s %d\n", name_len, name, rec);
+}
+
+/* Sort the temporary file, and rewind to start */
+void bttmp_file_sort(bttmp_t *tmp) {
+    char new_tmp[L_tmpnam];
+    char buf[100+2*L_tmpnam];
+
+    tmpnam(new_tmp);
+    sprintf(buf, "sort < %s > %s", tmp->name, new_tmp);
+    fclose(tmp->fp);
+
+    /* Use unix sort for now */
+    printf("buf=%s\n", buf);
+    system(buf);
+    printf("done\n");
+
+    unlink(tmp->name);
+    strcpy(tmp->name, new_tmp);
+    tmp->fp = fopen(tmp->name, "rb+");
+}
+
+/*
+ * Repeatedly fetch lines from the temp file.
+ * NB: non-reentrant. Value is valid only until the next call to this
+ * function.
+ *
+ * Return name on success and fills out rec.
+ *       NULL on EOF (*rec==0) or failure (*rec==1)
+ */
+char *bttmp_file_get(bttmp_t *tmp, int *rec) {
+    static char line[8192];
+    static int recno;
+
+    if (fscanf(tmp->fp, "%s %d\n", line, &recno) == 2) {
+	*rec = recno;
+	return line;
+    }
+
+    *rec = feof(tmp->fp) ? 0 : 1;
+	
+    return NULL;
+}
+
+
+
+/* --------------------------------------------------------------------------
+ * Read-pair and sequence storing functions. Common to all file format
+ * parsers.
+ */
 
 /* debugging functions */
 static void print_pair(pair_loc_t *p) {
@@ -125,8 +230,9 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
 }
 
 
-int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual, HacheTable *pair, int is_pair, char *tname, contig_t *c,
-                  	 tg_args *a, int flags, library_t *lib) {
+int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
+			HacheTable *pair, int is_pair, char *tname,
+			contig_t *c, tg_args *a, int flags, library_t *lib) {
     range_t r, *r_out;
     int recno;
     bin_index_t *bin;
@@ -150,9 +256,9 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual, HacheTable 
 	find_pair(io, pair, recno, tname, bin, c, seq, a, r_out, lib);
     }
 
-    if (!a->no_tree)
-	sequence_index_update(io, seq->name, seq->name_len, recno);
-	
+    if (a->tmp)
+	bttmp_file_store(a->tmp, seq->name_len, seq->name, recno);
+
     free(seq->data);
 
     /* Link bin back to sequence too before it gets flushed */
@@ -174,9 +280,4 @@ void create_new_contig(GapIO *io, contig_t **c, char *cname, int merge) {
     
     cache_incr(io, *c);
 }    
-
-
-
-
-
 

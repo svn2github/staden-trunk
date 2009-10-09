@@ -37,6 +37,7 @@
 #include "maq.h"
 #include "ace.h"
 #include "baf.h"
+#include "tg_index_common.h"
 
 #ifdef HAVE_SAMTOOLS
 #include "sam.h"
@@ -512,6 +513,11 @@ int main(int argc, char **argv) {
     }
     io->min_bin_size = a.min_bin_size;
 
+    
+    /* Open a temporary file for B+Tree indexing if needed */
+    a.tmp = a.no_tree ? NULL : bttmp_file_open();
+
+
     /* File processing loop */
     while (optind < argc) {
 	switch (a.fmt) {
@@ -538,6 +544,24 @@ int main(int argc, char **argv) {
 	    parse_file(io, argv[optind++], &a);
 	}
     }
+
+    
+    /* Add to our sequence name B+Tree */
+    if (a.tmp) {
+	char *name;
+	int rec;
+
+	puts("Sorting sequence name index");
+	bttmp_file_sort(a.tmp);
+
+	puts("Building index");
+	while (name = bttmp_file_get(a.tmp, &rec)) {
+	    sequence_index_update(io, name, strlen(name), rec);
+	}
+	
+	bttmp_file_close(a.tmp);
+    }
+
 
     /* system("ps lx"); */
 
