@@ -547,10 +547,11 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     cached_item *ci;
     GView v;
     size_t len;
-    char *buf;
+    char *buf, *buf2;
     btree_node_t *n;
     BTRec rec = *((BTRec *)key);
     static HacheData hd;
+    int fmt;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -561,13 +562,29 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     }
 
     assert(buf[0] == GT_BTree);
-    assert(buf[1] == 0); /* format number */
+    assert(buf[1] <= 1); /* format number */
+    fmt = buf[1];
+
+    if (fmt == 1) {
+	size_t ssz;
+	char *unpacked = mem_inflate(buf+2, len-2, &ssz);
+
+	free(buf);
+	buf2 = buf = unpacked;
+	len = ssz+2;
+    } else {
+	buf2 = buf+2;
+    }
 
     rdstats[GT_BTree] += len;
     rdcounts[GT_BTree]++;
 
     /* Decode the btree element */
-    n = btree_node_decode((unsigned char *)buf+2);
+    if (fmt == 1) {
+	n = btree_node_decode2((unsigned char *)buf2);
+    } else {
+	n = btree_node_decode((unsigned char *)buf2);
+    }
     n->rec = rec;
 
     ci = cache_new(GT_BTree, rec, v, NULL, sizeof(btree_node_t *));
@@ -602,17 +619,23 @@ static void btree_del_cache(void *clientdata, HacheData hd) {
 
 static int btree_write(g_io *io, btree_node_t *n) {
     int ret;
-    size_t len;
+    size_t len, part1, gzlen;
+    size_t parts[4];
     GView v;
-    char *data = (char *)btree_node_encode(n, &len);
+    char *data = (char *)btree_node_encode2(n, &len, parts);
     char fmt[2];
     GIOVec vec[2];
     cached_item *ci = n->cache;
+    char *gzout;
 
     /* Set up data type and version */
     fmt[0] = GT_BTree;
-    fmt[1] = 0;
+    fmt[1] = 1;
     vec[0].buf = fmt;  vec[0].len = 2;
+
+    gzout = mem_deflate_parts(data, parts, 4, &gzlen);
+    free(data); data = gzout; len = gzlen;
+
     vec[1].buf = data; vec[1].len = len;
 
     if (ci) {
@@ -965,7 +988,7 @@ static int io_database_disconnect(void *dbh) {
 
     free(io);
 
-    printf("\n*** I/O stats (type, read, write) ***\n");
+    printf("\n*** I/O stats (type, write count/size read count/size) ***\n");
     printf("GT_RecArray     \t%7d\t%14d\t%7d\t%14d\n",
 	   wrcounts[GT_RecArray],     wrstats[GT_RecArray],
 	   rdcounts[GT_RecArray],     rdstats[GT_RecArray]);

@@ -2,7 +2,8 @@
 #define _BTREE2_H_
 
 /* The order of the tree. Keep even for now */
-#define BTREE_MAX 100
+//#define BTREE_MAX 100
+#define BTREE_MAX 4000
 #define BTREE_MIN (BTREE_MAX/2)
 
 typedef int32_t BTRec;
@@ -36,6 +37,7 @@ void btree_del_node(btree_node_t *n);
  *         NULL on failure
  */
 unsigned char *btree_node_encode(btree_node_t *n, size_t *size);
+unsigned char *btree_node_encode2(btree_node_t *n, size_t *size, size_t *prts);
 
 /*
  * Decodes the on-disk btree format into an in-memory C struct.
@@ -44,6 +46,7 @@ unsigned char *btree_node_encode(btree_node_t *n, size_t *size);
  *         NULL on failure
  */
 btree_node_t *btree_node_decode(unsigned char *buf);
+btree_node_t *btree_node_decode2(unsigned char *buf);
 
 int btree_insert(btree_t *t, char *str, BTRec value);
 int btree_delete(btree_t *t, char *str);

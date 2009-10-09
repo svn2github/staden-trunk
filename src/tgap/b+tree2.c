@@ -246,6 +246,10 @@ int btree_insert(btree_t *t, char *str, BTRec value) {
 	return btree_insert_key(t, n, ind, str, value);
     /* else already existed */
 
+    //printf("Dup key %s\n", str);
+    return btree_insert_key(t, n, ind, str, value);
+    
+
     return 0;
 }
 
@@ -641,7 +645,7 @@ unsigned char *btree_node_encode(btree_node_t *n, size_t *size) {
     assert(n->used <= 255);
     buf[0] = n->leaf;
     buf[1] = n->used;
-    
+
     buf[2] = ((int)n->parent >> 24) & 0xff;
     buf[3] = ((int)n->parent >> 16) & 0xff;
     buf[4] = ((int)n->parent >>  8) & 0xff;
@@ -690,8 +694,196 @@ unsigned char *btree_node_encode(btree_node_t *n, size_t *size) {
 
     *size = bufp - buf;
 
-    //if (((*size  + 0xff) & 0xffffff00) < alloc)
-    //    *size = ((*size  + 0xff) & 0xffffff00);
+    return buf;
+}
+
+/*
+ * Decodes the on-disk btree format into an in-memory C struct.
+ *
+ * Returns allocated btree_node_t on success
+ *         NULL on failure
+ */
+btree_node_t *btree_node_decode2(unsigned char *buf) {
+    btree_node_t *n;
+    unsigned char *bufp, *bufp2, *bufp3;
+    int i;
+    char *last;
+
+    if (NULL == (n = btree_new_node()))
+	return NULL;
+
+    /* Static data */
+    n->leaf = buf[0];
+    n->used = (buf[1] << 8) | (buf[2] << 0);
+
+    n->parent =
+	(buf[4] << 24) |
+	(buf[5] << 16) |
+	(buf[6] <<  8) |
+	(buf[7] <<  0);
+
+    n->next =
+	(buf[8]  << 24) |
+	(buf[9]  << 16) |
+	(buf[10] <<  8) |
+	(buf[11] <<  0);
+
+    bufp = &buf[12];
+    for (i = 0; i < n->used; i++) {
+	bufp += u72int(bufp, &n->chld[i]);
+    }
+
+    /* And finally the variable sizes elements - the keys */
+    last = "";
+    bufp2 = bufp;
+    bufp3 = bufp2 + n->used;
+    bufp  = bufp3 + n->used;
+
+    for (i = 0; i < n->used; i++) {
+	int dist = *bufp2++;
+	size_t l = *bufp3++;
+	n->keys[i] = (char *)malloc(dist + l + 1);
+	if (dist)
+	    strncpy(n->keys[i], last, dist);
+	strncpy(n->keys[i]+dist, (char *)bufp, l);
+	*(n->keys[i]+dist+l) = 0;
+	bufp += l;
+
+	last = n->keys[i];
+    }
+
+    return n;
+}
+
+/*
+ * Converts an in-memory btree_node_t struct to a serialised character stream
+ * suitable for storing on disk.
+ *
+ * The encoded stream comes in several distinct parts with size
+ * returned in parts. These consist of:
+ *
+ * 1) A small 12-byte header + the child record numbers
+ * 2) The size of the common prefix between each key string.
+ * 3) The size of the key suffixes (bit that differs to previous key)
+ * 4) the key suffixes themselves.
+ *
+ * Returns malloced char* on success, also setting size & parts[0..3]
+ *         NULL on failure
+ */
+unsigned char *btree_node_encode2(btree_node_t *n, size_t *size,
+				  size_t *parts){
+    size_t alloc;
+    unsigned char *buf, *bufp, *bufp2, *bufp3;
+    int i;
+    char *last;
+
+    /* Build static component */
+    alloc = 1+2+1+4+4 + 4*n->used + 8*n->used /* guesstimate */;
+    if (NULL == (buf = (unsigned char *)malloc(alloc)))
+	return NULL;
+
+    /*
+    printf("Encode node %d used %d leaf %d\n",
+	   n->rec, n->used, n->leaf);
+    for (i = 0; i < n->used; i++) {
+	printf("   %4d %10d %s\n", i, n->chld[i],
+	       n->keys[i] ? n->keys[i] : "");
+    }
+    */
+
+    assert(n->used <= 65535);
+    buf[0] = n->leaf;
+    buf[1] = (n->used >> 8) & 0xff;
+    buf[2] = (n->used >> 0) & 0xff;
+    buf[3] = 0;
+    
+    buf[4] = ((int)n->parent >> 24) & 0xff;
+    buf[5] = ((int)n->parent >> 16) & 0xff;
+    buf[6] = ((int)n->parent >>  8) & 0xff;
+    buf[7] = ((int)n->parent >>  0) & 0xff;
+
+    buf[8] = ((int)n->next >> 24) & 0xff;
+    buf[9] = ((int)n->next >> 16) & 0xff;
+    buf[10]= ((int)n->next >>  8) & 0xff;
+    buf[11]= ((int)n->next >>  0) & 0xff;
+
+#if 0
+    for (i = 0; i < n->used; i++) {
+	buf[12+i*4] = ((int)n->chld[i] >> 24) & 0xff;
+	buf[13+i*4] = ((int)n->chld[i] >> 16) & 0xff;
+	buf[14+i*4] = ((int)n->chld[i] >>  8) & 0xff;
+	buf[15+i*4] = ((int)n->chld[i] >>  0) & 0xff;
+
+	/*
+	 * Better still is to encode all 1st bytes, all 2nd bytes, and
+	 * so on, applying each section as a new parts[] element to
+	 * compress separately. This seems to save another 7% of the
+	 * compressed btree, but the cost is it'll break when we move
+	 * to 64-bit record numbers.
+	 */
+	//buf[12+i+0*n->used] = ((int)n->chld[i] >> 24) & 0xff;
+	//buf[12+i+1*n->used] = ((int)n->chld[i] >> 16) & 0xff;
+	//buf[12+i+2*n->used] = ((int)n->chld[i] >>  8) & 0xff;
+	//buf[12+i+3*n->used] = ((int)n->chld[i] >>  0) & 0xff;
+    }
+    bufp = &buf[12 + n->used*8];
+#else
+    bufp = &buf[12];
+    for (i = 0; i < n->used; i++) {
+	bufp += int2u7((int)n->chld[i], bufp);
+    }
+#endif
+
+    /* And add in the variable sized element - key strings */
+
+    if (parts) {
+	parts[0] = bufp - buf;
+	parts[1] = n->used;
+	parts[2] = n->used;
+    }
+
+    last = "";
+    bufp2 = bufp;
+    bufp3 = bufp2 + n->used;
+    bufp  = bufp3 + n->used;
+
+    for (i = 0; i < n->used; i++) {
+	char *cp1, *cp2;
+	int len;
+
+	/* Determine the common prefix length with last key */
+	cp1 = n->keys[i];
+	cp2 = last;
+
+	while (*cp1 == *cp2 && *cp2)
+	    cp1++, cp2++;
+
+	/* Realloc buf as needed, ensuring bufp* updates too */
+	while (bufp + strlen(cp1) + 2 - buf >= alloc) {
+	    size_t diff  = bufp  - buf;
+	    size_t diff2 = bufp2 - buf;
+	    size_t diff3 = bufp3 - buf;
+	    alloc += 1000;
+	    buf = (unsigned char *)realloc(buf, alloc);
+	    bufp  = buf + diff;
+	    bufp2 = buf + diff2;
+	    bufp3 = buf + diff3;
+	}
+
+	/* Copy it over */
+	*bufp2++ = cp2-last;      /* prefix length */
+	len = 0;
+	while((*bufp++ = *cp1++)) /* suffix itself */
+	    len++;
+	bufp--;
+	*bufp3++ = len;           /* suffix length */
+
+	last = n->keys[i];
+    }
+
+    *size = bufp - buf;
+    if (parts)
+	parts[3] = bufp - buf - parts[0] - parts[1] - parts[2];
 
     return buf;
 }
