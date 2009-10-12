@@ -59,7 +59,8 @@ TG_IO = \
 	tg_tracks.o \
 	tg_anno.o \
 	tg_library.o \
-	tg_index_common.o
+	tg_index_common.o\
+	zfio.o
 
 TGSH_OBJ = \
 	$(TG_IO) \
@@ -82,7 +83,7 @@ TG_IND_OBJ = \
 	baf.o \
 	maq.o \
 	maqmap.o \
-	sam.o \
+	sam_index.o \
 	ace.o
 #	mapass2.o
 
@@ -312,31 +313,31 @@ maq.o: tg_track.h tg_anno.h
 maq.o: xalloc.h tg_utils.h
 maq.o: xerror.h tg_gio.h
 maqmap.o: maqmap.h
-sam.o: $(SRCROOT)/Misc/array.h
-sam.o: $(SRCROOT)/Misc/os.h
-sam.o: $(SRCROOT)/Misc/tree.h
-sam.o: $(SRCROOT)/tgap/g-connect.h
-sam.o: $(SRCROOT)/tgap/g-db.h
-sam.o: $(SRCROOT)/tgap/g-defs.h
-sam.o: $(SRCROOT)/tgap/g-error.h
-sam.o: $(SRCROOT)/tgap/g-io.h
-sam.o: $(SRCROOT)/tgap/g-misc.h
-sam.o: $(SRCROOT)/tgap/g-request.h
-sam.o: $(SRCROOT)/tgap/g-struct.h
-sam.o: $(SRCROOT)/tgap/tg_index.h
-sam.o: $(PWD)/staden_config.h
-sam.o: g-alloc.h
-sam.o: g-filedefs.h g-os.h
-sam.o: sam.h
-sam.o: tg_gio.h tg_struct.h g.h
-sam.o: tg_iface.h tg_cache_item.h
-sam.o: tg_library.h misc.h
-sam.o: tg_register.h tg_contig.h
-sam.o: tg_sequence.h tg_bin.h
-sam.o: tg_tcl.h
-sam.o: tg_track.h tg_anno.h
-sam.o: xalloc.h tg_utils.h
-sam.o: xerror.h hache_table.h
+sam_index.o: $(SRCROOT)/Misc/array.h
+sam_index.o: $(SRCROOT)/Misc/os.h
+sam_index.o: $(SRCROOT)/Misc/tree.h
+sam_index.o: $(SRCROOT)/tgap/g-connect.h
+sam_index.o: $(SRCROOT)/tgap/g-db.h
+sam_index.o: $(SRCROOT)/tgap/g-defs.h
+sam_index.o: $(SRCROOT)/tgap/g-error.h
+sam_index.o: $(SRCROOT)/tgap/g-io.h
+sam_index.o: $(SRCROOT)/tgap/g-misc.h
+sam_index.o: $(SRCROOT)/tgap/g-request.h
+sam_index.o: $(SRCROOT)/tgap/g-struct.h
+sam_index.o: $(SRCROOT)/tgap/tg_index.h
+sam_index.o: $(PWD)/staden_config.h
+sam_index.o: g-alloc.h
+sam_index.o: g-filedefs.h g-os.h
+sam_index.o: sam_index.h
+sam_index.o: tg_gio.h tg_struct.h g.h
+sam_index.o: tg_iface.h tg_cache_item.h
+sam_index.o: tg_library.h misc.h
+sam_index.o: tg_register.h tg_contig.h
+sam_index.o: tg_sequence.h tg_bin.h
+sam_index.o: tg_tcl.h
+sam_index.o: tg_track.h tg_anno.h
+sam_index.o: xalloc.h tg_utils.h
+sam_index.o: xerror.h hache_table.h
 tg_anno.o: $(SRCROOT)/Misc/array.h
 tg_anno.o: $(SRCROOT)/Misc/os.h
 tg_anno.o: $(SRCROOT)/Misc/tree.h
@@ -519,7 +520,7 @@ tg_index.o: $(SRCROOT)/tgap/g-request.h
 tg_index.o: $(SRCROOT)/tgap/g-struct.h
 tg_index.o: $(SRCROOT)/tgap/tg_index.h
 tg_index.o: $(PWD)/staden_config.h
-tg_index.o: ace.h baf.h sam.h
+tg_index.o: ace.h baf.h sam_index.h
 tg_index.o: g-alloc.h
 tg_index.o: g-filedefs.h g-os.h
 tg_index.o: hache_table.h

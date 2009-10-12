@@ -7,6 +7,7 @@
 #include "ace.h"
 #include "dna_utils.h"
 #include "tg_index_common.h"
+#include "zfio.h"
 
 /*
  * Code for reading the new-ACE format as described at:
@@ -150,7 +151,7 @@ typedef union {
  * Returns a pointer to a static ace_item_t struct. Do not free it.
  *         NULL on failure or EOF.
  */
-ace_item_t *next_ace_item(FILE *fp) {
+ace_item_t *next_ace_item(zfp *fp) {
     static ace_item_t ai = {0};
     char line[MAX_LINE_LEN];
     static int last_depadded_len = 0, i;
@@ -189,9 +190,8 @@ ace_item_t *next_ace_item(FILE *fp) {
     }
 
     /* Read in next item */
-    clearerr(fp);
     do {
-	if (NULL == fgets(line, MAX_LINE_LEN, fp)) {
+	if (NULL == zfgets(line, MAX_LINE_LEN, fp)) {
 	    return NULL;
 	}
     } while (line[0] == '\n');
@@ -213,7 +213,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 	ai.co.dir = dir == 'U' ? 0 : 1;
 	ai.co.seq = (char *)malloc(ai.co.nbases+1);
 	last_depadded_len = 0;
-	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
+	while (NULL != zfgets(line, MAX_LINE_LEN, fp)) {
 	    size_t l = strlen(line);
 	    if (line[l-1] == '\n')
 		l--;
@@ -252,7 +252,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 
 	ai.type = ACE_BQ;
 	ai.bq.qual = (unsigned char *)malloc(ai.bq.nqual);
-	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
+	while (NULL != zfgets(line, MAX_LINE_LEN, fp)) {
 	    char *cp1 = line, *cp2;
 	    long l;
 
@@ -304,7 +304,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 	    return NULL;
 	    
 	ai.rd.seq = (char *)malloc(ai.rd.nbases+1);
-	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
+	while (NULL != zfgets(line, MAX_LINE_LEN, fp)) {
 	    size_t l = strlen(line);
 	    if (line[l-1] == '\n')
 		l--;
@@ -389,7 +389,7 @@ ace_item_t *next_ace_item(FILE *fp) {
 	allocated = used = 0;
 
 	/* Consume up to the next "}" */
-	while (NULL != fgets(line, MAX_LINE_LEN, fp)) {
+	while (NULL != zfgets(line, MAX_LINE_LEN, fp)) {
 	    size_t l;
 	    if (line[0] == '}' && line[1] == '\n')
 		break;
@@ -426,15 +426,15 @@ typedef struct {
  */
 int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     ace_item_t *ai;
-    FILE *fp;
+    zfp *fp;
     af_line *af = NULL;
-    int af_count, seq_count, nseqs = 0, ncontigs = 0;
+    int af_count, seq_count, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
 
     set_dna_lookup(); /* initialise complement table */
 
-    if (NULL == (fp = fopen(ace_fn, "r")))
+    if (NULL == (fp = zfopen(ace_fn, "r")))
 	return -1;
 
     if (a->pair_reads) {
@@ -449,6 +449,10 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	bin_index_t *bin;
 
 	switch (ai->type) {
+	case ACE_AS:
+	    nseqs_tot = ai->as.nreads;
+	    break;
+
 	case ACE_CO:
 	
 	    create_new_contig(io, &c, ai->co.cname, a->merge_contigs);
@@ -475,7 +479,6 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 
 	case ACE_RD:
 	    /* Add readings, assumed in same order as AF lines */
-	    fprintf(stderr, "SC %d\n", seq_count);
 	    if (strcmp(ai->rd.rname, af[seq_count].name)) {
 		fprintf(stderr, "AF lines and RD lines not in same order\n");
 		fprintf(stderr, "%s\n%s\n",
@@ -528,7 +531,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    nseqs++;
 
 	    if ((nseqs & 0x3fff) == 0) {
-		printf("Nseqs=%d NContigs=%d\n", nseqs, ncontigs);
+		printf("\r%5.2f%%", (100.0 * nseqs) / nseqs_tot);
 		//HacheTableStats(io->cache, stdout);
 		fflush(stdout);
 		cache_flush(io);
@@ -536,107 +539,13 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 	    break;
 	}
     }
+    puts("");
 
     cache_flush(io);
-    fclose(fp);
+    zfclose(fp);
 
     if (pair)
 	HacheTableDestroy(pair, 0);
 
     return 0;
 }
-
-
-#ifdef TEST_MAIN
-/*
- * A little test program to use the above code.
- *
- * This implements a simple ace2aln format convertor, although not
- * necessarily a particularly robust and full featured one.
- *
- * You may wish to fix 454's renaming of reads to remove the left/right
- * component (or the .p1k and .q1k suffix) to make read-pairs have the same
- * name, thus allowing tg_index -p to match read-pairs.
- *
- *     awk '{gsub("(_(left|right)|\\.).*", "", $1);print}' o.aln > n.aln
- */
-
-print_wrap(char *str, int len, int wrap) {
-    int i;
-    for (i = 0; i < len; i += wrap) {
-	int wlen = len-i < wrap ? len-i : wrap;
-	printf("%.*s\n", wlen, &str[i]);
-    }
-}
-
-int main(int argc, char **argv) {
-    ace_item_t *ai;
-    FILE *fp = fopen(argv[1], "r");
-    af_line *af = NULL;
-    int af_count, seq_count, i;
-    char curr_contig[MAX_NAME];
-
-    while (ai = next_ace_item(fp)) {
-	//printf("ai->type = %d\n", ai->type);
-	switch (ai->type) {
-	case ACE_CO:
-	    if (af)
-		free(af);
-	    af = (af_line *)calloc(ai->co.nreads, sizeof(*af));
-	    seq_count = af_count = 0;
-	    if (NULL == af)
-		return 1;
-
-	    //fprintf(stderr, "Processing contig %s\n", ai->co.cname);
-	    strcpy(curr_contig, ai->co.cname);
-	    break;
-
-	case ACE_AF:
-	    strcpy(af[af_count].name, ai->af.rname);
-	    af[af_count].dir = ai->af.dir;
-	    af[af_count].pos = ai->af.start;
-	    af_count++;
-	    break;
-
-	case ACE_RD:
-	    if (strcmp(ai->rd.rname, af[seq_count].name)) {
-		fprintf(stderr, "AF lines and RD lines not in same order\n");
-		fprintf(stderr, "%s\n%s\n",
-			ai->rd.rname,
-			af[seq_count].name);
-		return 1;
-	    }
-	    printf("%s %s %d %d %d 1 %d 0 0 0 0 ",
-		   ai->rd.rname, curr_contig,
-		   af[seq_count].pos, af[seq_count].pos + ai->rd.nbases,
-		   af[seq_count].dir == 0 ? 1 : -1, ai->rd.nbases);
-	    if (af[seq_count].dir == 0) {
-		printf("%s", ai->rd.seq);
-	    } else {
-		static int map[256];
-		static int map_done = 0;
-		if (!map_done) {
-		    for (i = 0; i < 256; i++)
-			map[i] = i;
-		    map['A'] = 'T'; map['a'] = 't'; 
-		    map['C'] = 'G';	map['c'] = 'g';	
-		    map['G'] = 'C';	map['g'] = 'c';	
-		    map['T'] = 'A';	map['t'] = 'a';	
-		    map_done = 1;
-		}
-		for (i = 0; i < ai->rd.nbases; i++) {
-		    putchar(map[ai->rd.seq[ai->rd.nbases-1 - i]]);
-		}
-	    }
-	    for (i = 0; i < ai->rd.nbases; i++) {
-		printf(" 4", i);
-	    }
-	    putchar('\n');
-	    seq_count++;
-	    break;
-	}
-    }
-
-    return 0;
-}
-#endif

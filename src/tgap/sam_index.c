@@ -8,13 +8,14 @@
 #include "tg_gio.h"
 #include "tg_struct.h"
 #include "tg_index_common.h"
-#include <sam.h>
+#include "sam_index.h"
 
 #include <staden_config.h>
 #ifdef HAVE_SAMTOOLS
 
 #define _IOLIB 2
 #include "bam.h"
+#include "sam.h"
 #include "faidx.h"
 #include "bam_maqcns.h"
 
@@ -618,12 +619,12 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 }
 
 
-int parse_bam(GapIO *io, const char *fn, tg_args *a) {
+int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam1_t *b;
     int ret, count = 0;
     bam_plbuf_t *plbuf;
-    bamFile fp;
+    samfile_t *fp;
 
     /* Setup bam_io_t object and create our pileup interface */
     bio->io = io;
@@ -644,9 +645,9 @@ int parse_bam(GapIO *io, const char *fn, tg_args *a) {
 	bio->pair = NULL;
     }
 
-    fp = bam_open(fn, "r");
+    fp = samopen(fn, mode, NULL);
     assert(fp);
-    bio->header = bam_header_read(fp);
+    bio->header = fp->header;
     plbuf = bam_plbuf_init(bio_callback, bio);
     //bam_plbuf_set_mask(plbuf, BAM_DEF_MASK /* or BAM_FUNMAP? */);
     bam_plbuf_set_mask(plbuf, 0 /* or BAM_DEF_MASK, or BAM_FUNMAP? */);
@@ -656,7 +657,7 @@ int parse_bam(GapIO *io, const char *fn, tg_args *a) {
      * bio_callback function.
      */
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
-    while ((ret = bam_read1(fp, b)) >= 0) {
+    while ((ret = samread(fp, b)) >= 0) {
 	bam_plbuf_push(b, plbuf);
 	if ((++count & 0xffff) == 0) {
 	    putchar('.');
@@ -679,7 +680,7 @@ int parse_bam(GapIO *io, const char *fn, tg_args *a) {
     }
 
     if (fp)
-	bam_close(fp);
+	samclose(fp);
 
     if (bio) {
 	if (bio->pair)
@@ -688,15 +689,20 @@ int parse_bam(GapIO *io, const char *fn, tg_args *a) {
 	if (bio->libs)
 	    HacheTableDestroy(bio->libs, 0);
 
-	if (bio->header)
-	    bam_header_destroy(bio->header);
-
 	if (bio->seqs)
 	    free(bio->seqs);
 	free(bio);
     }
 
     return 0;
+}
+
+int parse_bam(GapIO *io, const char *fn, tg_args *a) {
+    return parse_sam_or_bam(io, fn, a, "rb");
+}
+
+int parse_sam(GapIO *io, const char *fn, tg_args *a) {
+    return parse_sam_or_bam(io, fn, a, "r");
 }
 
 #endif /* HAVE_SAMTOOLS */

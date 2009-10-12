@@ -14,6 +14,92 @@
 #include "tg_index_common.h"
 #include "hache_table.h"
 #include "baf.h"
+#include "zfio.h"
+
+#define CC2(a,b) ((((unsigned char)a)<<8) | ((unsigned char)b))
+
+enum line_type {
+    XX=0, /* Blank line */
+    CO=CC2('C','O'), /* Contig */
+    LN=CC2('L','N'), /*    Length */
+    SO=CC2('S','O'), /* DNA Source */
+    ST=CC2('S','T'), /*    Source type */
+    SI=CC2('S','I'), /*    Insert size mean */
+    SS=CC2('S','S'), /*    Insert size standard deviation */
+    SV=CC2('S','V'), /*    vector */
+    RD=CC2('R','D'), /* Reading */
+    SQ=CC2('S','Q'), /*    Sequence */
+    FQ=CC2('F','Q'), /*    Fastq quality */
+    AP=CC2('A','P'), /*    Contig position */
+    QL=CC2('Q','L'), /*    Left quality clip */
+    QR=CC2('Q','R'), /*    Right quality clip */
+    TN=CC2('T','N'), /*    Template name */
+    DR=CC2('D','R'), /*    Direction, 1=>uncomp, -1=>complemented */
+    PR=CC2('P','R'), /*    Primer type */
+    TR=CC2('T','R'), /*    Trace name */
+    MQ=CC2('M','Q'), /*    Mapping quality */
+    AL=CC2('A','L'), /* Alignment */
+    AN=CC2('A','N'), /*    Annotation */
+    LO=CC2('L','O'), /*    Location */
+    LL=CC2('L','L'), /*    Length */
+    AT=CC2('A','T'), /*    Anno. Type */
+    TX=CC2('T','X'), /*    Anno. Text */
+
+    /* Regexp versions of the above */
+    ln=CC2('l','n'),
+    st=CC2('s','t'),
+    si=CC2('s','i'),
+    ss=CC2('s','s'),
+    sv=CC2('s','v'),
+    pa=CC2('p','a'),
+    sq=CC2('s','q'),
+    fq=CC2('f','q'),
+    ap=CC2('a','p'),
+    ql=CC2('q','l'),
+    qr=CC2('q','r'),
+    tn=CC2('t','n'),
+    dr=CC2('d','r'),
+    pr=CC2('p','r'),
+    tr=CC2('t','r'),
+    mq=CC2('m','q'),
+    al=CC2('a','l'),
+    an=CC2('a','n'),
+    lo=CC2('l','o'),
+    at=CC2('a','t'),
+    tx=CC2('t','x'),
+};
+
+typedef struct {
+    /* Allocated memory and size */
+    char *str;
+    size_t len;
+
+    /* Key, value and assignment type, eg CO=contig#1 */
+    char *value;
+    enum line_type type;
+    int assign;  /* = or : */
+
+    /* Order so we can reconstruct the file exactly */
+    int order;
+} line_t;
+
+typedef struct {
+    int type;
+    HacheTable *h;
+} baf_block;
+
+/* The data attached to the hache */
+typedef struct {
+    char *value;
+    int assign;
+} baf_data;
+
+void free_line(line_t *l);
+char *linetype2str(int lt);
+line_t *get_line(zfp *fp, line_t *in);
+baf_block *baf_next_block(zfp *fp);
+void baf_block_destroy(baf_block *b);
+line_t *baf_line_for_type(baf_block *b, int type);
 
 /*
  * Deallocates aline_t struct.
@@ -53,7 +139,7 @@ char *linetype2str(int lt) {
  *           NULL on failure (check using feof/ferror for why).
  */
 #define BLKSZ 1024
-line_t *get_line(FILE *fp, line_t *in) {
+line_t *get_line(zfp *fp, line_t *in) {
     line_t *l = in;
 
     if (!l) {
@@ -74,7 +160,7 @@ line_t *get_line(FILE *fp, line_t *in) {
 		    return NULL;
 		}
 	    }
-	    if (NULL == fgets(&l->str[pos], BLKSZ, fp)) {
+	    if (NULL == zfgets(&l->str[pos], BLKSZ, fp)) {
 		if (!in) free_line(l);
 		return NULL;
 	    }
@@ -138,7 +224,7 @@ void unescape_line(char *txt) {
 }
 
 
-baf_block *baf_next_block(FILE *fp) {
+baf_block *baf_next_block(zfp *fp) {
     line_t *l;
     baf_block *b;
     int order = 0;
@@ -319,7 +405,7 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
 int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int nseqs = 0, nobj = 0, ntags = 0, ncontigs = 0;
     struct stat sb;
-    FILE *fp;
+    zfp *fp;
     off_t pos;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
@@ -331,7 +417,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	
     printf("Loading %s...\n", fn);
     if (-1 == stat(fn, &sb) ||
-	NULL == (fp = fopen(fn, "r"))) {
+	NULL == (fp = zfopen(fn, "r"))) {
 	perror(fn);
 	return -1;
     }
@@ -477,7 +563,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	if ((++nobj & 0xfff) == 0) {
 	    int perc = 0;
 
-	    pos = ftello(fp);
+	    pos = zftello(fp);
 	    perc = 100.0 * pos / sb.st_size;
 	    printf("\r%d%c", perc, (nobj & 0x3fff) ? '%' : '*');
 	    fflush(stdout);
@@ -521,7 +607,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	baf_block_destroy(co);
 
     cache_flush(io);
-    fclose(fp);
+    zfclose(fp);
 
     printf("\nLoaded %12d contigs\n",     ncontigs);
     printf("       %12d sequences\n",   nseqs);
@@ -532,65 +618,3 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 
     return 0;
 }
-
-
-#ifdef TEST_MAIN
-int baf2aln(char *fn) {
-    FILE *fp;
-    baf_block *b, *co = NULL;
-
-    if (!(fp = fopen(fn, "r"))) { 
-	perror(fn);
-	return -1;
-    }
-
-    while (b = baf_next_block(fp)) {
-	int delay_destroy = 0;
-
-	switch (b->type) {
-	case CO:
-	    if (co)
-		baf_block_destroy(co);
-	    co = b;
-	    delay_destroy = 1;
-	    break;
-
-	case RD: {
-	    int pos, len;
-	    char *seq, *qual;
-	    int i;
-
-	    seq = baf_block_value(b, SQ);
-	    qual = baf_block_value(b, FQ);
-	    pos = atoi(baf_block_value(b, AP));
-	    len = strlen(seq);
-			   
-	    printf("%s %s %d %d %s %s %s 0 0 0 0 %s",
-		   baf_block_value(b, RD),
-		   baf_block_value(co, CO),
-		   pos, len,
-		   baf_block_value(b, DR),
-		   baf_block_value(b, QL),
-		   baf_block_value(b, QR),
-		   seq);
-	    for (i = 0; i < len; i++) {
-		printf(" %d", qual ? qual[i] - 33 : 0);
-	    }
-	    printf("\n");
-	}
-	}
-
-	if (!delay_destroy)
-	    baf_block_destroy(b);
-    }
-
-    if (co)
-	baf_block_destroy(co);
-
-    return 0;
-}
-
-int main(int argc, char **argv) {
-    return baf2aln(argv[1]);
-}
-#endif

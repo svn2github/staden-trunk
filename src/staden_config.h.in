@@ -30,6 +30,9 @@
 /* Define if png is installed */
 #undef HAVE_PNG
 
+/* Define to 1 if you have the `popen' function. */
+#undef HAVE_POPEN
+
 /* Define if samtools is installed */
 #undef HAVE_SAMTOOLS
 

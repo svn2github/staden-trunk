@@ -50,6 +50,7 @@ AC_FUNC_FSEEKO
 
 dnl Checks for library functions.
 AC_SEARCH_LIBS(cos, m)
+AC_CHECK_FUNCS(popen)
 
 dnl X11
 AC_PATH_XTRA
