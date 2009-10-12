@@ -78,4 +78,5 @@ STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
 
-exec stash  $STADTCL/spin_emboss/create_emboss_files.tcl ${@+"$@"}
+cd $STADTCL/spin_emboss
+exec tclsh $STADTCL/spin_emboss/create_emboss_files.tcl ${@+"$@"}

@@ -4,7 +4,7 @@
 
 LIBS = tk_utils
 ifneq ($(MACHINE),windows)
-PROGS= $(LIBS) stash
+PROGS= $(LIBS)
 else
 PROGS= $(LIBS)
 endif
@@ -20,7 +20,7 @@ INCLUDES_E += $(MISC_INC) $(TKUTILS_INC) $(IOLIB_INC) $(TK_INC) \
 CFLAGS += $(SHLIB_CFLAGS) $(TK_UTILS_DLL)
 
 #DEFINES += -DCHECK_LICENCE -DTCL_LOCAL_APPINIT=Stash_AppInit
-DEFINES += -DTCL_LOCAL_APPINIT=Stash_AppInit
+#DEFINES += -DTCL_LOCAL_APPINIT=Stash_AppInit
 
 #
 # Objects
@@ -107,11 +107,10 @@ install:
 	-mkdir $(INSTALLTCL)/tk_utils
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/tk_utils
 ifneq ($(MACHINE),windows)
-	cp stash $(INSTALLBIN)
 endif
 	cp $(S)/2bars_*.bmp $(S)/help_config $(S)/tk_utilsrc $(INSTALLETC)
 
-DEPEND_OBJ = $(OBJS) $(STASH_OBJS)
+DEPEND_OBJ = $(OBJS)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 

@@ -10,10 +10,10 @@
 # widgets are temporarily created in order to query their pathnames.
 
 set acdtcl_dir acdtcl
-set menu_file  ../../tables/emboss_menu
+set menu_file  ../../etc/emboss_menu
 
-tkinit
-wm withdraw .
+#tkinit
+#wm withdraw .
 
 # Returns the directory holding the ACD files.
 #
@@ -50,7 +50,7 @@ proc process_files {acd_dir out_dir} {
 	puts "processing $name"
 	catch {file delete $tnam}
 	set errorCode NONE
-	catch {exec stash acd2tcl.tcl $file > $out_dir/$name} menu_line
+	catch {exec tclsh acd2tcl.tcl $file > $out_dir/$name} menu_line
 	if {$errorCode != "NONE"} {
 	    puts "ERROR: could not parse"
 	    puts $errorInfo

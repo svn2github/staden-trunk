@@ -23,9 +23,10 @@
 #    done
 #    stash create_menu.tcl > menu
 
-tkinit
+source $env(STADTABL)/shlib.conf
+#tkinit
 package require Iwidgets
-wm withdraw .
+#wm withdraw .
 
 #-----------------------------------------------------------------------------
 # The lexical analyser

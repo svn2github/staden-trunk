@@ -57,7 +57,7 @@ int Tk_utils_Init(Tcl_Interp *interp) {
 
     Container_Init(interp);
 
-    /* Tk_CreateItemType(&tkGraphType); */
+    Tk_CreateItemType(&tkGraphType);
     Tcl_GraphInit(interp);
 
     /* SeqReg_Init(interp); */

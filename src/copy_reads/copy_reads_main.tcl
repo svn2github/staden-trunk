@@ -57,7 +57,10 @@ if {$tcl_platform(os) == "Darwin"} {
     load $env(STADLIB)/libtk_utils.dylib
 }
 
+source $env(STADTABL)/shlib.conf
+load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
 load_package tk_utils
+tk_utils_init
 
 load_package gap
 load_package copy_reads
@@ -108,7 +111,7 @@ while {$argc > 0 && "[string index [lindex $argv 0] 0]" == "-"} {
 
     } elseif {$arg == "-w" || $arg == "-win"} {
 	set win 1
-	tkinit
+	package require Tk
 	tk_utils_init
 	wm title . "COPY_READS v$COPY_READS_VERSION"
 	wm iconname . "COPY_READS v$COPY_READS_VERSION"

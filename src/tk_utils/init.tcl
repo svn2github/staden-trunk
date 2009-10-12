@@ -192,13 +192,18 @@ proc fix_raise {} {
 
 proc tk_utils_init {} {
     global tk_utils_defs tcl_platform
-    global ::tk::MotifFilebrowser
     global tcl_pkgPath
     global env
 
     # Add STADLIB to package path
     lappend tcl_pkgPath $env(STADLIB)
 
+    # Abort now if we're being used in a non-graphical environment.
+    if {![namespace exists ::tk]} {
+	return
+    }
+
+    global ::tk::MotifFilebrowser
     set ::tk::MotifFilebrowser 1
 
     entry .e

@@ -78,4 +78,4 @@ STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
 
-exec stash "$STADTCL/trev/trev.tcl" ${@+"$@"}
+exec tclsh "$STADTCL/trev/trev.tcl" ${@+"$@"}
