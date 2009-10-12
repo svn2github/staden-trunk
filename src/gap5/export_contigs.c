@@ -65,6 +65,27 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
     return res == 0 ? TCL_OK : -1;
 }
 
+static int export_header_sam(GapIO *io, FILE *fp,
+			     int cc, contig_list_t *cv) {
+    int nreads = 0, i;
+
+    /* Inefficient as we have to loop twice - here and when outputting reads */
+    for (i = 0; i < cc; i++) {
+	contig_t *c;
+	int len;
+
+	if (NULL == (c = cache_search(io, GT_Contig, cv[i].contig)))
+	    return -1;
+
+	len = c->end;
+	if (c->start <= 0)
+	    len += 1-c->start;
+	fprintf(fp, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
+    }
+
+    return 0;
+}
+
 static int export_contig_sam(GapIO *io, FILE *fp,
 			     int crec, int start, int end) {
     contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
@@ -76,9 +97,15 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     int cg_alloc = 0;
     char *cigar = NULL;
     int insert_sizes = 0; /* set to 1 to also set MPOS/ISIZE */
+    int offset;
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
+
+    /* Sam can only have coordinates from 1 onwards, so shift if needed */
+    offset = c->start <= 0
+	? 1-c->start
+	: 0;
 
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
@@ -238,7 +265,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		tname_len, tname,
 		flag,
 		c->name,
-		pos,
+		pos+offset,
 		r->mqual,
 		cigar,
 		mate_ref,
@@ -588,6 +615,10 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
     switch (format) {
     case FORMAT_ACE:
 	export_header_ace(io, fp, cc, cv);
+	break;
+
+    case FORMAT_SAM:
+	export_header_sam(io, fp, cc, cv);
 	break;
     }
 
