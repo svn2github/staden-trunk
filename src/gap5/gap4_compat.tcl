@@ -7,7 +7,7 @@ proc ioh {io {val {}}} {
 }
 
 proc check_database {args} {
-    puts [info level [info level]]
+    #puts [info level [info level]]
     return 0
 }
 
