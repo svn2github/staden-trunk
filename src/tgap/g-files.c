@@ -477,7 +477,7 @@ int g_write_aux_index(GFile *gfile, GCardinal rec)
     int64_t recsize;
     Index *ind = g_read_index(gfile, rec);
 
-    assert(ind->aux_image >= -1 && ind->aux_image < 0x7effffffffffffff);
+    assert(ind->aux_image >= -1);
     
     idx.image[0] = ind->aux_image;
     idx.time [0] = ind->aux_time;
