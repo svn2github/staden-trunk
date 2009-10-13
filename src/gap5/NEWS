@@ -1,3 +1,61 @@
+Gap5 1.2.4,  October 13th 2009
+==============================
+
+Minor changes
+-------------
+
+*	Tags can be created and/or removed within the contig editor
+        now, rather than just imported.
+
+*	Gap4's "Sequence Search" function has been added to Gap5,
+        allowing for DNA string matches against either the consensus
+        and/or the sequences themselves.
+
+*	Name indexing (tg_index -t) now operates much faster
+        (sometimes 100x speed-ups). It also occupies far less space in
+        the gap5 database, but note that this comes at a cost of
+        incompatibility with older Gap5 formats. (This gap5 should be
+        able to load up old Gap5 databases, just not vice-versa.)
+
+*	(Experimental) The consensus algorithm can now cache the
+        consensus, when in read-write mode. This dramatically speeds
+        up computing the consensus for subsequent functions at a cost
+        of a bit more storage space.
+
+*	Improvements to the build system, especially on 64-bit
+        machines and RedHat derived systems. The --with-iwidgets=DIR
+        parameter now has more leeway too and works when given either
+        the parent directory or the iwidgets sub-directory.
+	"Make depend" is no longer mandatory either.
+
+*	Tg_index now attempts to automatically work out the file
+        format (eg sam, bam, ace, baf, etc). The old "aln" default
+        format has been removed.
+
+*	Tg_index now supports reading sam files. In addition to this
+        ace, baf and sam files may now be gzipped.
+
+*	Tags now interpret "\n" as newline within BAF files.
+
+Bug fixes
+---------
+
+*	Selecting a region in the contig editor that spans a tag no
+        longer crashes Gap5.
+
+*	Fixed a crash when highlighting reading some names in the
+        contig editor (buffer overrun).
+
+*	When exporting to ACE format we now write DS lines again, as
+        they're needed by consed. Also fixed generation of BS segments
+        when adjoining zero-depth regions.
+
+*	Export to SAM format should generate better behaved
+        flags. Additionally all positions should now be >= 1, even if
+        not positioned that way in gap5 itself. (A shift occurs to
+        ensure this is true.)
+
+
 Gap5 1.2.3,  August 7th 2009
 ============================
 

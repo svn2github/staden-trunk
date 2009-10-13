@@ -1,3 +1,841 @@
+2009-10-13  James Bonfield  <jkb@sanger.ac.uk>
+
+ 	* Gap5 VERSION 1.2.4 *
+
+2009-10-13  James Bonfield  <jkb@sanger.ac.uk>
+        * gap5/gap.tcl: Bumped version to 1.2.4
+
+	* gap5/gap4_compat.tcl: removal of debugging info
+
+	* gap5/editor_view.c, tgap/tg_contig.c, tgap/tg_contig.h:
+	#ifdef-ed out the code to allow cached consensus sequences to be
+	visible in the editor and/or template displays. See tg_contig.h
+	for the #define to reenable this if further debugging is required.
+	
+2009-10-12  James Bonfield  <jkb@sanger.ac.uk>
+
+        * tgap/zfio.c, tgap/zfio.h: Added the zfopen/zfgets/zfclose
+	 interface. This is required by the gzip support added a couple
+	 checkins ago, but was omitted through error.
+
+	 * copy_reads/copy_reads, copy_reads/copy_reads_main.tcl,
+	 gap4/gap4, gap5/gap5, pregap4/pregap4, spin/spin,
+	 spin_emboss/acd2tcl.tcl, spin_emboss/create_emboss_files,
+	 spin_emboss/create_emboss_files.tcl, tk_utils/Makefile,
+	 tk_utils/init.c, tk_utils/init.tcl, trev/trev: Replaced use of
+	 stash by tclsh. This means that the setting of TCL_LIBRARY is
+	 pushed over to the system install of Tcl rather than us having to
+	 work it out for stash instead.
+
+	 To facilitate this, the tkinit function is no more and the few
+	 bits it did have been moved into Tk_Utils_Init instead. Replaced
+	 the odd required use of tkinit with "package require Tk".
+
+	 Also fixed create_emboss_files to run in the correct
+	 directory.
+
+	* gap5/export_contigs.c: We now output @SQ header lines to SAM
+	  format, meaning it can be used to load in again via tg_index or
+	  converted to bam directly without using a .fai file.
+	  
+	  Also ensure that all contig coordinates are positive, shifting
+	  data if required, as SAM requires positions >= 1.
+
+	* tgap/tg_index.c: Removed the old "aln" format from tg_index.
+	  
+	  Tg_index now attempts to automatically work out the file type
+	  for the data files (eg sam vs ace etc).
+
+	* configure.in, staden_config.h.in, tgap/Makefile, tgap/ace.c,
+	  tgap/baf.c, tgap/baf.h, tgap/sam.c, tgap/sam.h, tgap/sam_index.c,
+	  tgap/sam_index.h: Renamed sam.[ch] to sam_index.[ch] to avoid
+	  header file clash with
+	  samtools.
+	  
+	  Added gzipped file support for ACE/BAF.
+	  
+	  Removed the old "aln" format from tg_index.
+	  
+	  Tg_index now attempts to automatically work out the file type
+	  for the data files (eg sam vs ace etc).
+
+2009-10-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/contig_editor.tcl, gap5/editor_view.c: The editor now
+	  starts up at the reading specified rather than base 1 of the
+	  contig.
+
+	* tgap/tg_tcl.c: Bug fixed the sequence object. Fetching the
+	  record from the sequence appears to have broken when we moved to
+	  SeqBlock structs.
+
+	* tgap/sam.c: Added code to generate SAMX type tags from the SAM
+	  auxillary tags.  For now this is #ifdefed out via
+	  SAM_AUX_AS_TAG, as it adds unnecessarily to file size.
+
+	* gap5/export_contigs.c: Improved SAM file generation, specifically
+	  the flags.
+	  
+	  Also added code to generate the insert size and position
+	  columns.  This majorly slows down the code so for now it's
+	  disabled, but I plan on making it an option at some stage.
+
+	* tgap/ace.c: Minor reformatting
+
+	* tgap/tg_index.c, tgap/tg_index.h, tgap/tg_index_common.c,
+	  tgap/tg_index_common.h: When using tg_index -t to index sequence
+	  names, the B+Tree index is now built at the end rather than
+	  while adding sequences. To do this is writes to a temporary
+	  file, sorts the result, and then adds the items in an already
+	  sorted fashion. This *dramatically* reduces the number of cache
+	  misses in btree nodes.
+	  
+	  Testing on a project with 24million sequences the wall-clock
+	  time dropped from ~126000 seconds to 750 seconds. Without name
+	  indexing it took 549 seconds, implying only a small overhead to
+	  index names now.
+
+	* tgap/b+tree2.c, tgap/b+tree2.h, tgap/tg_iface_g.c: Improved the
+	  encoding of B+Tree nodes. These are packed in a better
+	  manner now and compressed too. Gap5 can still read the old format
+	  data, but newer gap5 databases will not be readable by old gap5
+	  versions if name indexing is used.
+
+2009-10-07  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/docs/TODO:
+
+	* gap5/export_contigs.c: For ACE format output, added back the DS
+	  lines as they appear to be mandatory for consed, even if often
+	  pointless. Also adjusted the BS line generation to work better
+	  when contigs have holes.
+
+	* gap5/Makefile: Added find_oligo.o to objs list
+
+	* gap5/consensus.c: In calculate_consensus_simple we no longer
+	  skip bins with no range data as this prevented us from caching
+	  the consensus in a blank bin.
+
+2009-10-02  Andrew Whitwham
+
+	* tgap/Makefile, tgap/ace.c, tgap/baf.c, tgap/g-alloc.c,
+	  tgap/maq.c, tgap/sam.c, tgap/tg_index_common.c: Moved common
+	  functions to tg_index_common.
+
+	* tgap/tg_index_common.c, tgap/tg_index_common.h: Initial version.
+
+2009-10-02  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/newgap5_cmds.c: Added the Tcl interface to find_oligos
+	  (sequence search). Accidentally missed in earlier checkin.
+
+	* tgap/tg_bin.c: Now invalidate consensus cache when adding new
+	  sequences in bin_add_range()
+
+2009-10-01  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/find_oligo.c, gap5/find_oligo.h, gap5/find_oligo.tcl,
+	  gap5/gap5rc, gap5/gap5rc_menu_full: Added the Sequence Search
+	  option.
+	  
+	  Missing (compared to gap4) right now is the ability to search
+	  the sequence covered by a specific tag type to then find all
+	  other occurences of that sequence elsewhere. It's a bit specific
+	  and likely not of top most priority, so it's disabled for now.
+
+2009-09-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_contig.c: Fixed bug where inserting/deleting a base to
+	  the consensus crashed if
+	  we have an annotation at that position.
+
+	* gap5/break_contig.c, gap5/consensus.c, gap5/editor_join.c,
+	  gap5/editor_view.c, tgap/tg_contig.c, tgap/tg_contig.h,
+	  tgap/tg_iface_g.c, tgap/tg_sequence.c, tgap/tg_sequence.h,
+	  tgap/tg_struct.h: Added a new experimental consensus caching
+	  system. The consensus is stored as a fragmented sequence along
+	  with other sequences, breaking it into (approximately) 64k
+	  blocks to be stored in bins at the appropriate level.
+	  
+	  To achieve this, the range flags have been extended from seq vs
+	  "isanno" to a mask and a set of values, allowing for ISCONS and
+	  (unimplemented) ISREF too. Consequently a lot of code needed to
+	  be modified; more still does too including the contig editor,
+	  where cached consensus is currently visible purely for debugging
+	  purposes.
+	  
+	  Editing, breaking and joining contigs invalidates cached
+	  consensus.
+	  
+	  A new contig_bins_in_range function has been created to look for
+	  the candidate bins that may contain cached consensus data.
+	  
+	  Also fixed sequence_copy so that it didn't zero rec, block and
+	  idx subfields.
+
+	* gap5/newgap5_cmds.c: Fixed memory leak in tcl_reformat_sequence
+
+	* tgap/ace.c, tgap/baf.c, tgap/maq.c, tgap/sam.c, tgap/tg_anno.c,
+	  tgap/tg_bin.c, tgap/tg_bin.h, tgap/tg_index.c, tgap/tg_tcl.c:
+	  bin_add_range and bin_for_range functions now take an extra
+	  argument to return whether the bin in complemented relative to
+	  the contig.
+
+	* tgap/tg_gio.c, tgap/tg_gio.h: Added a read_only flag to GapIO so
+	  we can easily query if we can modify the database.
+
+2009-09-24  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_cache.c: Newly created sequences now get their seq->rec
+	  field set correctly.
+
+	* Makefile.in, gap4/Makefile, global.mk, mutlib/Makefile: More
+	  small tweaks regarding make depend.
+
+	* seqed/Makefile, spin2/Makefile, tracediff/Makefile: Futher
+	  dependency tweaks
+
+	* copy_reads/copy_reads, gap4/gap4, gap5/gap5, prefinish/prefinish,
+	  pregap4/pregap4, spin/spin, spin_emboss/create_emboss_files,
+	  trev/trev: Improvements to setting LD_LIBRARY_PATH.
+
+	* Misc/Makefile, Misc/dependencies, abi/Makefile,
+	  abi/dependencies, alf/Makefile, alf/dependencies,
+	  convert/Makefile, convert/dependencies, copy_reads/Makefile,
+	  copy_reads/dependencies, eba/Makefile, eba/dependencies,
+	  find_renz/Makefile, find_renz/dependencies, g/Makefile,
+	  g/dependencies, gap4/Makefile, gap4/dependencies, gap5/Makefile,
+	  get_scf_field/Makefile, get_scf_field/dependencies, global.mk,
+	  haplo/Makefile, haplo/dependencies, hetins/Makefile,
+	  hetins/dependencies, init_exp/Makefile, init_exp/dependencies,
+	  make_weights/Makefile, make_weights/dependencies,
+	  mutlib/Makefile, mutlib/dependencies, mutscan/Makefile,
+	  mutscan/dependencies, polyA_clip/Makefile,
+	  polyA_clip/dependencies, prefinish/Makefile,
+	  prefinish/dependencies, primer3/src/Makefile,
+	  primer3/src/dependencies, qclip/Makefile, qclip/dependencies,
+	  screen_seq/Makefile, screen_seq/dependencies,
+	  seq_utils/Makefile, seq_utils/dependencies, seqed/Makefile,
+	  seqed/dependencies, spin/Makefile, spin/dependencies,
+	  spin2/Makefile, spin2/dependencies, stops/Makefile,
+	  stops/dependencies, text_utils/Makefile,
+	  text_utils/dependencies, tgap/Makefile, tk_utils/Makefile,
+	  tk_utils/dependencies, tracediff/Makefile,
+	  tracediff/dependencies, trev/Makefile, vector_clip/Makefile,
+	  vector_clip/dependencies: Major overhaul of the "make depend"
+	  system. We no longer use the make include directive to load in a
+	  prebuilt dependencies file.  Instead this is appended to the
+	  Makefile itself. Furthermore the users can just do a direct make
+	  without having the auto-dependency code to run, removing the
+	  requirement on imake (for makedepend) to build.
+	  
+	  Developers will still want to use make depend from time to time.
+
+2009-09-18  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/tkEdNames.c: Fixed buffer overflow in the get_number
+	  method. (Previously fixed for the tkEditor widget.)
+
+2009-09-15  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/sam.c, tgap/tg_iface_g.c, tgap/tg_index.c,
+	  tk_utils/tkTrace.c: Added more #include <staden_config.h>
+	  statements, or in some cases moved them so they appear before
+	  sys/types.h gets included. This fixes some compilation issues on
+	  32-bit fedora.
+
+	* global.mk: Switched from using LD_RUN_PATH to LD_LIBRARY_PATH
+	  during linking.
+	  
+	  We need one of these so (for example) libmisc.so, referenced by
+	  libtk_utils.so, is found when we use only -ltk_utils (and no
+	  explicit -lmisc is used).
+	  
+	  LD_RUN_PATH however had the undesireable effect of forcing the
+	  build directory to be searched even after a make install.
+
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4,
+	  ac_stubs/ax_lib_iwidgets.m4, ac_stubs/ax_lib_tklib.m4,
+	  shlib.conf.in: Improvements for handling itcl/itk on Centos (and
+	  presmuably other OSes).
+
+2009-09-10  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/contig_editor.tcl: Improvements to undo for tag editing.
+
+	* gap5/consensus.c: Added code (currently "#if 0"ed out) to
+	  attempt to cache the consensus in tracks per bin. Specifically
+	  the plan was to store the A,C,G,T,* accumulated log(probability)
+	  values for data held within that bin as a track. It means we can
+	  compute the consensus without having to load all the invdividual
+	  sequences.
+	  
+	  In practice, it does speed up the consensus generation when
+	  cached (usually only barely, but occasionally by > 10x), but the
+	  downsides are considerable. It needs read-write access, and
+	  worst of all the space it takes up is very substantial - often
+	  far more than the rest of the database. The existing
+	  implementation also is only approximate as we store the floating
+	  point values in very low precision.
+	  
+	  Given the size problems I'm planning on reimplementing this via
+	  another means, but the code is checked in here (disabled) so I
+	  can revert or refer back to it at some stage if required.
+	  
+	  Also see the code changes to tg_iface_g.c.
+
+	* gap5/newgap5_cmds.c: Use ckfree instead of free to fix memory
+	  corruption, in tcl_calc_consensus()
+
+	* README.build: Fixed typo
+
+	* tgap/tg_bin.c, tgap/tg_bin.h, tgap/tg_cache.c,
+	  tgap/tg_iface_g.c, tgap/tg_struct.h: Added a bin_track_t struct
+	  to house the in-memory track data, instead of using the
+	  GBinTrack struct which should only be known by the "g" interface
+	  code.
+	  
+	  This has also allowed the addition of a track pointer to be
+	  cached within the bin_track_t struct, meaning we can add fake /
+	  temporary tracks to a bin structure (they're not written back to
+	  disk) and still query them back again without having to load
+	  from a record number.
+
+2009-09-07  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_iface_g.c: Removed debugging information.
+
+2009-09-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* convert/bapDB.h, gap4/gap-error.c, gap4/legacy_f2c.c,
+	  gap4/shuffle_pads.c, gap5/editor_view.c, gap5/gap-error.c,
+	  gap5/gap4_compat.c, gap5/newgap5_cmds.c, gap5/qualIO.c,
+	  polyA_clip/Makefile, polyA_clip/polyA_clip.c, qclip/Makefile,
+	  qclip/qclip.c, tgap/b+tree2.c, tgap/baf.c, tgap/g-request.c,
+	  tgap/tg_anno.h, tgap/tg_iface_g.c, tgap/tg_register.h,
+	  tgap/tg_view.c, tk_utils/capture.c, tk_utils/tkTraceIO.c:
+	  General warning tidyup to remove complaints from the SunStudio C
+	  compiler.
+
+	* configure.in, staden_config.h.in, system.mk.in: Use
+	  TEA_CONFIG_CFLAGS to override the predefined vars loaded by
+	  TEA_LOAD_TCLCONFIG. This means we can work out how to build
+	  shared libraries if we pick a different compiler than the one
+	  used to build the system tcl. Eg ./configure ... CC=foocc
+
+2009-09-03  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/docs/TODO:
+
+	* gap5/contig_editor.tcl, gap5/gap5rc_menu_full, gap5/tkEditor.c:
+	  The contig editor now has add/remove tags functionality.
+
+	* tgap/tg_cache.c: Fixed cache_item_create_anno_ele to initialise
+	  anno_ele_t->rec field.
+
+	* tgap/tg_anno.c, tgap/tg_anno.h, tgap/tg_tcl.c: Created a
+	  anno_ele_add and anno_ele_destroy function to make adding
+	  and removing tags easier. These can be called from the Tcl object
+	  interface too. The tcl obj interface also has other additional
+	  functions: new_contig/sequence/anno_ele (from $io),
+
+	* gap5/break_contig.c, tgap/tg_bin.c, tgap/tg_contig.c,
+	  tgap/tg_iface_g.c, tgap/tg_sequence.c, tgap/tg_struct.h: Allow
+	  for range items to be marked as unused (free). They form a
+	  linked list, with a new rng_free member of the bin_index_t
+	  structure pointing to the head of the list. (If this isn't
+	  present due to an older format database it'll automatically get
+	  created when it's next written to, although this will migrate
+	  the DB to be unusable by the old gap5.)
+
+2009-09-01  James Bonfield  <jkb@sanger.ac.uk>
+
+	* ac_stubs/ax_lib_iwidgets.m4: Allow the --with-iwidgets=DIR
+	  parameter to include the iwidgets package directory itself too,
+	  rather than just the prefix
+
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4: Adding
+	  /usr/lib64 to the search path, helping it to work out of the box
+	  on 64-bit fedora
+
+	* ac_stubs/ax_lib_tklib.m4: Fix cut and paste error - no means yes
+	  in some diagnostic output...
+
+	* ac_stubs/tcl.m4: Removed error output when /usr/include/tcl*
+	  doesn't match anything
+
+	* gap5/editor_view.c, gap5/editor_view.h, gap5/tkEdNames.c,
+	  gap5/tkEditor.c: Modified edview_item_at_pos to control whether
+	  we want only sequences returned or also tags. This allows
+	  selecting a region to work over a tag, which previously caused
+	  gap5 to crash.
+
+	* tgap/tg_anno.c, tgap/tg_anno.h, tgap/tg_tcl.c: Added various set
+	  methods to the anno_ele struct, both from C and also
+	  via the tcl interface.
+
+	* tgap/baf.c: Tags now interpret "\n" as a newline, enabling
+	  multi-line annotations.
+
+2009-08-25  James Bonfield  <jkb@sanger.ac.uk>
+
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4, ac_stubs/tcl.m4:
+	  Added /usr/lib64 to search paths.
+
+2009-08-12  Andrew Whitwham
+
+	* tgap/tg_struct.h: Added define to make build work.
+
+2009-08-07  James Bonfield  <jkb@sanger.ac.uk>
+
+ 	* Gap5 VERSION 1.2.3 *
+
+2009-08-07  James Bonfield  <jkb@sanger.ac.uk>
+
+	* staden/trunk/doc/Makefile, configure.in, gap5/NEWS: Minor tweaks
+	  to set version to 2.0.0b1
+
+	* tgap/ace.c, tgap/ace.h, tgap/baf.c, tgap/baf.h, tgap/maq.c,
+	  tgap/maq.h, tgap/sam.c, tgap/sam.h, tgap/tg_index.c,
+	  tgap/tg_index.h: Added a -f (fast mode) parameter to tg_index.
+	  When linking read-pairs this links A' to A but not A back to
+	  A'. This reverse link is desireable, but currently causes major
+	  I/O bottlenecks on very large data sets. I'll address this later
+	  in a better fix, so -f will probably be only a temporary option.
+
+	* gap5/contig_editor.tcl, gap5/editor_view.c, gap5/tkEdNames.c:
+	  Fixesd bugs with mouse-over events in the editor names panel. We
+	  now always display a name, rather than accidentally picking a
+	  tag. In one-per-line non-stacking mode we now also correctly
+	  display the name.
+
+	* gap5/docs/TODO:
+
+2009-08-06  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/break_contig.c, gap5/editor_join.c: Both breaking and
+	  joining contigs now track the number of sequences
+	  per bin correctly.
+	  
+	  For break contig only:
+	  - Fixed a common crash.
+	  - Annotations now get moved correctly too.
+
+	* gap5/editor_view.c: Minor debugging changes.
+
+	* tgap/tg_contig.c: Minor change to contig_dump_ps().
+
+	* gap5/docs/PLANS, gap5/docs/TODO:
+
+	* gap5/docs, gap5/docs/DESIGN, gap5/docs/IMPLEMENTATION,
+	  gap5/docs/TRACKS, gap5/docs/Tree_format: Added some gap5
+	  code/design documentation. A lot of it is out of date now or is
+	  information on how I thought things would go rather than how
+	  they ultimately got implemented, but hopefully it's of use to
+	  curious browsers still.
+
+2009-08-05  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_iface_g.c: Fixed bug in io_anno_ele_block_read. The sub
+	  cached_item records were all set to be type GT_Seq rather than
+	  type GT_AnnoEle meaning cache_rw would crash later.
+
+	* gap5/gap4_compat.c: Protect against contigs with zero sequences
+	  in io_clnbr and io_crnbr.
+
+2009-08-03  James Bonfield  <jkb@sanger.ac.uk>
+
+	* configure.in: typo fix
+
+2009-07-31  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/tkEditor.c: Fixed a buffer overrun in the editor get_number
+	  method.
+
+2009-07-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tk_utils/help_choose.tcl, tk_utils/help_config: Fixed paths for
+	  displaying help
+
+2009-07-28  James Bonfield  <jkb@sanger.ac.uk>
+
+	* Makefile.in, configure.in, io_lib: Removed io_lib stub directory
+	  and also removed the option of compiling
+	  using a local io_lib directory in the staden package Makefiles.
+
+	* io_lib/branches, io_lib/tags, io_lib/trunk, io_lib/trunk/CHANGES,
+	  io_lib/trunk/COPYRIGHT, io_lib/trunk/ChangeLog,
+	  io_lib/trunk/Makefile, io_lib/trunk/Makefile.am,
+	  io_lib/trunk/README, io_lib/trunk/acinclude.m4,
+	  io_lib/trunk/bootstrap, io_lib/trunk/configure.in,
+	  io_lib/trunk/dependencies, io_lib/trunk/docs,
+	  io_lib/trunk/include, io_lib/trunk/io_lib,
+	  io_lib/trunk/io_lib-config.in, io_lib/trunk/io_lib.m4,
+	  io_lib/trunk/man, io_lib/trunk/options.mk, io_lib/trunk/progs,
+	  io_lib/trunk/tests, io_lib/CHANGES, io_lib/COPYRIGHT,
+	  io_lib/ChangeLog, io_lib/Makefile, io_lib/Makefile.am,
+	  io_lib/README, io_lib/acinclude.m4, io_lib/bootstrap,
+	  io_lib/configure.in, io_lib/dependencies, io_lib/docs,
+	  io_lib/include, io_lib/io_lib, io_lib/io_lib-config.in,
+	  io_lib/io_lib.m4, io_lib/man, io_lib/options.mk, io_lib/progs,
+	  io_lib/tests: Moved io_lib from staden source tree into it's own
+	  top-level
+	  subversion directory, complete with tags, branches, and trunk.
+	  
+	  For now the old tagged copies of io_lib are still in the
+	  staden/tags/ directory with tag names io_lib-<version>, but that
+	  is perhaps right and proper (as it's where the code actually
+	  resided at that release number).
+
+	* io_lib/abi, io_lib/alf, io_lib/ctf, io_lib/exp_file,
+	  io_lib/plain, io_lib/read, io_lib/scf, io_lib/sff, io_lib/srf,
+	  io_lib/utils, io_lib/ztr: Remove old stub directories; these come
+	  from the earlier CVS tree when
+	  we had the library split into per-format directories.
+
+	* io_lib/progs/Makefile.am, io_lib/progs/solexa2srf.c,
+	  io_lib/progs/srf2solexa.c: Removed Illumina/Solexa specific
+	  programs. These are now out of date with respect to Illumina's
+	  own fork, plus I don't think they belong in the largely platform
+	  agnostic library.
+
+	* io_lib/CHANGES, io_lib/ChangeLog, io_lib/README,
+	  io_lib/configure.in, io_lib/io_lib/Makefile.am: Preparations for
+	  1.12.0 release.
+	  
+	  There is now proper versioning support for the library too. The
+	  soname used here is libstaden-read.so.1, to distinguish from any
+	  earlier dynamic libraries. (The ABI definitely has changed over
+	  the years in incompatible manners.)
+
+	* io_lib/tests/data/slx_out/both.info,
+	  io_lib/tests/data/slx_out/raw.info: Updated for new format
+	  srf_info output
+
+	* io_lib/tests/data/slx_out/proc.info: Updated with new format
+	  output.
+
+2009-07-27  James Bonfield  <jkb@sanger.ac.uk>
+
+	* io_lib/io_lib/vlen.c: Include os.h so we can pick up NEED_VA_COPY
+	  definition.
+
+	* io_lib/progs/srf_filter.c: Reorganisation to allow chunks to be
+	  added as well as removed. At present this only supports adding
+	  REGN chunks.
+	  
+	  (Patch supplied by Steven Leonard.)
+
+	* io_lib/progs/index_tar.c: Handle GNU tar extensions: LongLink
+	  notation.
+	  (Patch supplied by Steven Leonard).
+
+	* io_lib/progs/srf2fasta.c, io_lib/progs/srf2fastq.c,
+	  io_lib/progs/srf_extract_hash.c: Changed the maximum read length
+	  from 1024 to 10000. This allows for capillary traces to be
+	  stored in SRF.
+	  (Patch supplied by Steven Leonard)
+
+	* io_lib/progs/srf_info.c: Use int64_t instead of long for base
+	  counts and chunk sizes.
+	  (Supplied by Steven Leonard.)
+
+	* io_lib/man/man1/srf_info.1, io_lib/progs/srf_info.c: Added
+	  compressed chunk size to the per-chunk type output. This allows
+	  us to see what takes up the most storage in an SRF.
+
+	* io_lib/io_lib/ztr.c: removed C9Xism
+
+	* io_lib/configure.in, io_lib/io_lib/Makefile.am,
+	  io_lib/progs/Makefile.am: Re-enabled libtool, with a workaround
+	  to remove the infuriating rpath nonsense. (It's now 2x slower to
+	  configure, 3x slower to compile and 10x more anguish to debug,
+	  but at least I can sleep at night knowing rpath hasn't had it's
+	  wicked way with the code.)
+
+	* data/Makefile:
+
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4,
+	  ac_stubs/ax_lib_iwidgets.m4, ac_stubs/ax_lib_png.m4,
+	  configure.in, shlib.conf.in, staden_config.h.in, system.mk.in,
+	  tk_utils/tkTrace.c: More autoconf checks; for itcl, itk, and
+	  png.  In the case of png it's an optional --with and if not
+	  found we simply disable the one piece of code that relies on it.
+
+2009-07-24  James Bonfield  <jkb@sanger.ac.uk>
+
+	* ac_stubs/ax_func_va_copy.m4, ac_stubs/ax_lib_iwidgets.m4,
+	  ac_stubs/ax_lib_tklib.m4, shlib.conf.in: More autoconf checks.
+
+	* configure.in, global.mk: Removed the dependency on Fortran for
+	  building. For now we'll use the
+	  f2c converted code. It may not be quite as efficient (not tested
+	  that), but it's trivial to build everywhere and we're not
+	  modifying
+	  the code at all.
+
+	* Makefile.in, io_lib/io_lib/Makefile: Added a Makefile for
+	  io_lib/io_lib; so the library itself. This isn't expected to be
+	  used normally, but it allows me to test local copies of io_lib
+	  (under a different library name) in conjunction with the staden
+	  source tree before releasing either.
+
+	* tgap/tg_iface_g.c: Changed allocate() to take a data type
+	  argument too.  The plan for this (#ifed out at the moment) is to
+	  reserve different record-spaces for blocked data vs nonblocked
+	  data.
+	  
+	  Without this we hit problems when the number of records goes
+	  above 2 million, meaning the 10-bits of sub-record used for
+	  sequence indexing takes us over 31-bits record size. (Maybe
+	  long-term we should just use 64-bit record IDs; this is a
+	  temporary hack and commented out in the main source tree.)
+
+	* tgap/sam.c, tgap/tg_index.c: Fixed HAVE_SAMTOOLS macro name.
+
+2009-07-23  James Bonfield  <jkb@sanger.ac.uk>
+
+	* vector_clip/vector_clip.c: Removed rotate_seq() and use the
+	  identical copy in seq_utils.
+
+2009-07-22  James Bonfield  <jkb@sanger.ac.uk>
+
+	* prefinish/prefinish_lib.tcl, prefinish/prefinishrc,
+	  pregap4/modules/interactive_clip.p4m,
+	  pregap4/modules/screen_seq.p4m,
+	  pregap4/modules/sequence_vector_clip.p4m, pregap4/pregap4.tcl,
+	  pregap4/templates.tcl, spin_emboss/emboss_utils.tcl,
+	  tk_utils/help.tcl, tk_utils/help_macosx.tcl: Various pathname
+	  tweaks to use STADLIB and/or STADTCL variables
+	  correctly.
+
+	* gap4/acd2tag.tcl, gap4/gap_prefinish.tcl, gap5/gap5rc,
+	  prefinish/prefinish.tcl, spin_emboss/acd2tcl.tcl: Use package
+	  require instead of load_package for iwidgets.
+
+	* README.build: Minor update listing system specifics
+
+	* ac_stubs/ax_lib_staden_io_lib.m4,
+	  ac_stubs/libcurl_check_config.m4, configure.in: Improved output
+	  messages while running autoconf. Samtools is also now
+	  permitted to not exist, rather than aborting.
+
+	* ac_stubs/tcl.m4: Fixed --with-tcl/tk and --with-tkinclude to
+	  also search the default install locations used by Debian.
+
+	* tk_utils/xmclistbox.tcl: Fix tab stops so the code works with
+	  tk8.5
+
+	* tk_utils/sheet.c, tk_utils/sheet.h: Updated to work with Tk 8.5
+	  font methods.
+
+	* mutlib/staden.h: Work around problem in io_lib/compress.h on
+	  newer linux. The pipe2()
+	  function has been added and clashes.
+
+	* tgap/sam.c, tgap/tg_index.c: Check for HAVE_SAMTOOLS_H, so we can
+	  compile without samtools being
+	  installed.
+
+2009-07-20  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_tcl.c: Include staden_config.h so HAVE_UNISTD_H is
+	  defined prior to tcl includes. This prevents a conflict between
+	  Tcl's compat/unistd.h when building against Tcl 8.5.
+
+	* seq_utils/Makefile, spin/Makefile, spin_emboss/Makefile,
+	  trev/Makefile: Further tweaks to distsrc Makefile target
+
+	* spin/seq_reg_cmds.c: Removed remnant of licence checking
+
+	* pregap4/pregap4.tcl, spin/spinrc: Replaced our local load_package
+	  interface witht he standard package require => Iwidgets now found
+
+	* pregap4/pregap4rc: Fixed search path for pregap4 modules
+
+	* README.build, configure.in, system.mk.in: Added FORTRAN checks
+	  into autoconf.
+
+	* tk_utils/tkRaster.c: Removed debugging output
+
+	* Makefile.in, Misc/Makefile, README.build, abi/Makefile,
+	  alf/Makefile, configure.in, convert/Makefile,
+	  copy_reads/Makefile, eba/Makefile, find_renz/Makefile,
+	  g/Makefile, gap4/Makefile, gap4/fak2rc, gap4/gap4, gap5/Makefile,
+	  gap5/gap5, get_scf_field/Makefile, global.mk, haplo/Makefile,
+	  hetins/Makefile, init_exp/Makefile, make_weights/Makefile,
+	  mutlib/Makefile, mutscan/Makefile, polyA_clip/Makefile,
+	  prefinish/Makefile, pregap4/Makefile, primer3/Makefile,
+	  primer3/src/Makefile, qclip/Makefile, screen_seq/Makefile,
+	  scripts/Makefile, seq_utils/Makefile, shlib.conf.in,
+	  spin/Makefile, spin_emboss/Makefile, stops/Makefile,
+	  system.mk.in, text_utils/Makefile, tgap/Makefile,
+	  tk_utils/Makefile, tracediff/Makefile, trev/Makefile,
+	  vector_clip/Makefile: "make distsrc" should now work. It creates
+	  a subdirectory containing
+	  the files necessary for distribution. Note for now this isn't the
+	  entire tree as some programs are unfinished and unsupported
+	  (spin2,
+	  seqed).
+
+2009-07-17  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap4/newgap_cmds.c, gap4/tkEditor.c, gap5/newgap5_cmds.c,
+	  gap5/tkEditor.c, tk_utils/capture.c: Further changes to do with
+	  TCL_DYNAMIC and not using ckalloc. We now
+	  use TCL_VOLATILE where appropriate (or ckalloc).
+
+	* Makefile.in, Misc/Makefile, Misc/vlen.c, abi/Makefile,
+	  ac_stubs/ax_lib_samtools.m4, alf/Makefile, configure.in,
+	  convert/Makefile, copy_reads/Makefile, copy_reads/copy_reads,
+	  copy_reads/copy_reads_main.tcl, copy_reads/copy_readsrc, data,
+	  data/RENZYM.4, data/RENZYM.6, data/RENZYM.ALL, data/alus,
+	  data/blast_data, data/gcodes, data/m13mp18_primers, data/pam250,
+	  data/renzyme_bairoch, data/vector_primer, data/vectors,
+	  eba/Makefile, find_renz/Makefile, g/Makefile, gap4/GTAGDB,
+	  gap4/Makefile, gap4/NOTEDB, gap4/cap2rc, gap4/cap3rc,
+	  gap4/checked.gif, gap4/fak2rc, gap4/follow.bitmap,
+	  gap4/gap-tcl.c, gap4/gap.tcl, gap4/gap4, gap4/gap4_defs.mk,
+	  gap4/gap_prefinish.tcl, gap4/gaprc, gap4/gaprc_menu_demo,
+	  gap4/gaprc_menu_full, gap4/gaprc_menu_mito,
+	  gap4/gaprc_menu_viewer, gap4/list_contigs.tcl, gap4/phraprc,
+	  gap4/unchecked.gif, gap5/Makefile, gap5/depth.tcl, gap5/gap.tcl,
+	  gap5/gap5, gap5/gap5rc, gap5/gap5rc_menu_full,
+	  get_scf_field/Makefile, haplo/Makefile, haplo/haplorc,
+	  hetins/Makefile, init_exp/Makefile, make_weights/Makefile,
+	  mutlib/Makefile, mutscan/Makefile, polyA_clip/Makefile,
+	  prefinish/Makefile, prefinish/args.template,
+	  prefinish/config.prefinish, prefinish/finish_sanger,
+	  prefinish/prefinish, prefinish/prefinish.tcl,
+	  prefinish/prefinishrc, pregap4/Makefile, pregap4/pregap4,
+	  pregap4/pregap4.tcl, pregap4/pregap4rc, primer3/src/Makefile,
+	  qclip/Makefile, screen_seq/Makefile, scripts/Makefile,
+	  seq_utils/Makefile, seq_utils/align_lib_nuc_matrix,
+	  seq_utils/nuc_matrix, seqed/seqedrc, spin/Makefile, spin/eia.wts,
+	  spin/ied.wts, spin/niprc, spin/perceptron.wts,
+	  spin/prokprom_10.wts, spin/prokprom_35.wts, spin/siprc,
+	  spin/spin, spin/spin.tcl, spin/spinrc, spin2/FEATCOLDB,
+	  spin2/FEATQUALDB, spin2/FEATUREDB, spin2/spin2rc,
+	  spin2_emboss/spin2_embossrc, spin_emboss/Makefile,
+	  spin_emboss/create_emboss_files, spin_emboss/emboss_menu,
+	  spin_emboss/spin_embossrc, staden_config.h.in, stops/Makefile,
+	  system.mk.in, text_utils/Makefile, tgap/Makefile,
+	  tk_utils/2bars_h.bmp, tk_utils/2bars_v.bmp, tk_utils/Makefile,
+	  tk_utils/help_config, tk_utils/init.c, tk_utils/shlib.conf,
+	  tk_utils/stash.c, tk_utils/tk_utilsrc,
+	  tk_utils/user_defaults.tcl, tracediff/Makefile, trev/Makefile,
+	  trev/trev, trev/trev.tcl, trev/trevrc, vector_clip/Makefile:
+	  Further upheaval of build system:
+	  - Make install now works.
+	  
+	  - Removal of excessive $(O) (was $(machine)-binaries) and
+	  similarly unnecessary fluff in the makefiles.
+	  
+	  - Moved files from tables/* to appropriate src/*. There are a
+	  few exeptions (small blast databases, alu sequences, etc)
+	  which have been added to a src/data directory. Not technically
+	  source I guess, but it means the src tree contains everything
+	  necessary to obtain a run-time environment (minus
+	  documentation and test/training data).
+	  
+	  - Overhauled the directory layout to be more friendly to using a
+	  prefix of /usr, rather than something dedicated to the staden
+	  package.
+	  
+	  - Extra autoconf code to check for and utilise va_copy().
+	  
+	  - Fix to samtools autoconf.
+	  
+	  Other fixes:
+	  - Removed use of $(MACHINE)-binaries as it's no longer needed.
+	  
+	  - Fixed gap-tcl.c's io_read_text function to work with thread
+	  enabled Tcl. This is almost certainly the tip of the iceberg.
+	  When using threads Tcl must be given memory allocated using
+	  ckalloc rather than malloc. One trivial solution (used here)
+	  is simply to pass data over as TCL_VOLATILE instead of
+	  TCL_DYNAMIC which forces it to allocate it's own copy in
+	  whatever method it deems appropriate. Obviously we then have
+	  to free up our own copy.
+	  
+	  - Gap4's List Contigs feature has been updated to use reading
+	  numbers instead of reading names internally. This avoids
+	  issues when (corrupted) databases exist with duplicate read
+	  names. Not elegant, but defensive.
+
+2009-07-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* staden/trunk/README.build, abi/abiIO.h, abi/getABIfield.c,
+	  bootstrap, global.mk, tk_utils/tclAppInit.c, tracediff/Makefile:
+	  Fixes to new autoconf build. Now actually builds on Debian etch.
+
+	* Makefile, Makefile.in, Makefile.thirdparty, Misc/Makefile,
+	  Misc/os.h, abi/Makefile, ac_stubs, ac_stubs/ax_lib_samtools.m4,
+	  ac_stubs/ax_lib_staden_io_lib.m4, ac_stubs/ax_lib_zlib.m4,
+	  ac_stubs/libcurl_check_config.m4, ac_stubs/tcl.m4, alf/Makefile,
+	  configure.in, convert/Makefile, copy_reads/Makefile,
+	  copy_reads/copy_reads.c, eba/Makefile, eba/conf.c, eba/conf.h,
+	  eba/qual.c, find_renz/Makefile, g/Makefile, gap4/IO.c,
+	  gap4/IO2.c, gap4/Makefile, gap4/assemble_direct.c, gap4/consen.c,
+	  gap4/copy_db_main.c, gap4/extract.c, gap4/extract.h,
+	  gap4/gap4_defs.mk, gap4/newgap_cmds.c, gap4/preass.c,
+	  gap4/seqInfo.c, gap4/seqInfo.h, gap4/tagU2.c, gap4/tkEditor.c,
+	  gap4/tman_cons.c, gap4/tman_diff.c, gap4/tman_display.h,
+	  gap4/tman_interface.c, gap5/Makefile, gap5/consen.c,
+	  gap5/extract.h, gap5/tkEditor.c, gap5/tman_display.h,
+	  gap5/tman_interface.c, get_scf_field/Makefile,
+	  get_scf_field/get_scf_field.c, global.mk, haplo/Makefile,
+	  hetins/Makefile, hetins/hetins.c, init_exp/Makefile,
+	  init_exp/init_exp.c, licence, make_weights/Makefile,
+	  make_weights/make_weights.c, mk, mutlib/Makefile,
+	  mutscan/Makefile, mutscan/main.cpp, mutscan/staden.h,
+	  polyA_clip/Makefile, polyA_clip/polyA_clip.c,
+	  polyA_clip/seqInfo.c, polyA_clip/seqInfo.h, prefinish/Makefile,
+	  pregap4/Makefile, primer3/Makefile, primer3/src/Makefile,
+	  qclip/Makefile, qclip/consen.c, qclip/qclip.c, qclip/seqInfo.c,
+	  qclip/seqInfo.h, screen_seq/Makefile, screen_seq/screen_seq.c,
+	  scripts/Makefile, seq_utils/Makefile, spin/Makefile,
+	  spin/nip_cmds.c, spin/seq_reg_cmds.c, spin/sip_cmds.c,
+	  spin_emboss/Makefile, staden_config.h.in, stops/Makefile,
+	  stops/stops.c, system.mk.in, tcl8.4.0, text_utils/Makefile,
+	  tgap/Makefile, tk8.4.0, tk_utils/Makefile, tk_utils/init.c,
+	  tk_utils/misc.c, tk_utils/postscript.h, tk_utils/tkCanvGraph.c,
+	  tk_utils/tkTrace.c, tk_utils/tkTrace.h, tk_utils/tkTraceComp.c,
+	  tk_utils/tkTraceDisp.c, tk_utils/tkTraceIO.c,
+	  tk_utils/trace_print.c, tracediff/Makefile, tracediff/main.cpp,
+	  tracediff/staden.h, trev/Makefile, vector_clip/Makefile,
+	  vector_clip/vector_clip.c: Major tidyup of build system:
+	  
+	  * We now use autoconf to generate a system.mk tailored for this
+	  machine. This replaces the old mk/$(MACHINE).mk stubs.
+	  
+	  * We no longer have Makefile.thirdparty and the local copies of
+	  tcl, tk, itcl, itk, etc.
+	  
+	  * Removed the defunct licencing code.
+	  
+	  It is recommended when using this that you make a subdirectory
+	  and use ../configure. This keeps binaries and source code neatly
+	  separated.
+
+2009-06-26  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_cache.c: fix for copy-on-write of GT_SeqBlock and
+	  GT_AnnoEleBlock
+	  structs. This was causing save after edits in the contig editor
+	  to crash.
+
+	* gap5/editor_view.c: Fixed annotation viewing. Clicking on an
+	  annotation caused crashes and also display glitches due to not
+	  expected xx->cursor_type to be GT_AnnoEle.
+
+2009-06-25  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tk_utils/tclIndex, tk_utils/xscrolledlistbox.tcl,
+	  tk_utils/xscrolledtext.tcl: Added xscrolledtext and
+	  xscrolledlistbox widgets - to replace iwidget equivalents. (Not
+	  100%, but sufficient for our purposes.)
+
 2009-06-22  James Bonfield  <jkb@sanger.ac.uk>
 
  	* VERSION 1.2.2 *
