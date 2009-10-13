@@ -547,9 +547,12 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     /* Simple case */
     if (job & CSIR_ALLOCATE_Y_SINGLE) {
 	for (i = j = 0; i < nr; i++) {
-	    // For debugging, allow cons too
-	    //if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ)
+#ifdef CACHED_CONS_VISIBLE
 	    if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)
+#else
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO &&
+		(r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
+#endif
 		r[i].y = j++;
 	    else
 		r[i].y = 0;
@@ -566,7 +569,12 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
+#ifdef CACHED_CONS_VISIBLE
 	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+#else
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO ||
+	    (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS) {
+#endif
 	    r[i].y = 0;
 	    continue;
 	}

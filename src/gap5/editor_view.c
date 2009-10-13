@@ -1026,7 +1026,11 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 	while (i < nr && xx->r[i].y - xx->displayYPos <= j - xx->y_seq_start) {
 	    seq_t *s, *sorig;
 
-	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO
+#ifndef CACHED_CONS_VISIBLE
+		|| (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS
+#endif
+		) {
 		i++;
 		continue;
 	    }
@@ -1733,8 +1737,11 @@ int edCursorUp(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j--; j >= 0; j--) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
-	    ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos
+#ifndef CACHED_CONS_VISIBLE
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
+#endif
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -1783,8 +1790,11 @@ int edCursorDown(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j++; j < xx->nr; j++) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos &&
-	    ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
+	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos
+#ifndef CACHED_CONS_VISIBLE
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
+#endif
+	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -2096,6 +2106,11 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 	if ((xx->ed->hide_annos || seq_only || name) &&
 	    ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO))
 	    continue;
+
+#ifndef CACHED_CONS_VISIBLE
+	if ((xx->r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
+	    continue;
+#endif
 
 	if (xx->r[i].y + xx->y_seq_start - xx->displayYPos == row) {
 	    int delta;

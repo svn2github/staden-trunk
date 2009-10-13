@@ -5,6 +5,14 @@
 #include "tree.h"
 
 /*
+ * Define this to make the cached consensus visible within the views,
+ * by allocating it a Y coordinate.  This aids debugging of the
+ * caching algorithm, but should be disabled in production versions to
+ * avoid confusing the user.
+ */
+/* #define CACHED_CONS_VISIBLE */
+
+/*
  * 'get' functions - simply returns the structure member.
  *
  * <type> contig_get_XXX(contig_t **c)
