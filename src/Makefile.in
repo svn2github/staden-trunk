@@ -139,6 +139,7 @@ distsrc:
 #
 #	Recurse through sub-directories too
 	$(MAKE) $(FLAGS) DISTSRC=$(PWD)/$(DS) JOB=distsrc
+	chmod -R go-w $(DS)
 #
 #	 Windows compilation bits
 #	-mkdir $(S)/windows
