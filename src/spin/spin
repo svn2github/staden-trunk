@@ -74,5 +74,6 @@ STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH
 
 exec tclsh "$STADTCL/spin/spin.tcl" ${@+"$@"}
