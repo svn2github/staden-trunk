@@ -1,5 +1,7 @@
 /* ---- Implements importing from BAF (basic alignment format). ---- */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -7,8 +9,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
-
-#include <staden_config.h>
 
 #include "tg_gio.h"
 #include "tg_index_common.h"
@@ -514,7 +514,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    int pos;
 	    bin_index_t *bin;
 
-	    unescape_line(txt);
+	    if (txt)
+		unescape_line(txt);
 
 	    if (!loc) {
 		pos = last_obj_pos;
