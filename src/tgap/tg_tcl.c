@@ -1,5 +1,7 @@
 /* See end for discussion on this code */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -10,8 +12,6 @@
 #include <signal.h>
 #include <ctype.h>
 #include <string.h>
-
-#include "staden_config.h" /* Define HAVE_UNISTD_H before tcl includes */
 
 #include <tcl.h>
 #include <tclInt.h> /* Tcl_GetCommandFromObj */

@@ -1,4 +1,6 @@
 #include <staden_config.h>
+#include <stdlib.h>
+
 #include "zfio.h"
 
 /* ------------------------------------------------------------------------ */
