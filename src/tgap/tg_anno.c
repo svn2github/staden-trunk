@@ -196,6 +196,8 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
     }
 
     *e = ae;
+
+    return 0;
 }
 
 /*
