@@ -76,11 +76,11 @@
 
 *	Improve library displays and auto-sensing.
 
-*	Consensus caching
+*	Consensus caching (DONE)
 
 *	Improved depth caching (min/max as well as average)
 
-*	Finish tag editing.
+*	Finish tag editing (DONE?)
 
 *	Implement annotation links as well as annotation elements.
 
