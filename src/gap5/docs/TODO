@@ -1,3 +1,7 @@
+*	Fix sam output when a sequence is *AGCTA or AGCTAG*. We get
+        things like 1D10M or 10M1D which breaks samtools and
+        consequentially tg_index too.
+
 *	Investigate use of seq_t->bin_index field. This is primarily
         used for the sequence_get_pair function and or the
         read-pairing during tg_index (which needs a rewrite
