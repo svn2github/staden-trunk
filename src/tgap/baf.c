@@ -553,8 +553,12 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    break;
 	}
 
+	case 0:
+	    /* blank line */
+	    break;
+
 	default:
-	    printf("Unsupported block type %s\n",
+	    printf("Unsupported block type '%s'\n",
 		   linetype2str(b->type));
 	}
 
@@ -573,7 +577,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	}
 
 #if 1
-	if ((nobj & 0xffff) == 0) {
+	if ((nobj & 0x3fff) == 0) {
 	    static int perc = 0;
 	    if (perc < 100.0 * pos / sb.st_size) {
 		perc = 100.0 * pos / sb.st_size;
@@ -584,6 +588,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		    static struct timeval last, curr;
 		    static int first = 1;
 		    static int last_obj = 0;
+		    static int last_contigs = 0;
 		    long delta;
 
 		    gettimeofday(&curr, NULL);
@@ -594,10 +599,11 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 
 		    delta = (curr.tv_sec - last.tv_sec) * 1000000
 			+ (curr.tv_usec - last.tv_usec);
-		    printf(" - %g sec %d obj\n", delta/1000000.0,
-			   nobj - last_obj);
+		    printf(" - %g sec %d obj (%d contigs)\n", delta/1000000.0,
+			   nobj - last_obj, ncontigs - last_contigs);
 		    last = curr;
 		    last_obj = nobj;
+		    last_contigs = ncontigs;
 		}
 		fflush(stdout);
 	    }
