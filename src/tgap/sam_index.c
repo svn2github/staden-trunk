@@ -558,6 +558,12 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		/* New sequence */
 		//printf("^%c", p->b->core.qual+33);
 		i2 = bio_new_seq(bio, p, pos+1+bio->n_inserts);
+
+		/*
+		 * The following fails if we have a previous sequence that
+		 * ended on a deletion. Eg CIGAR string 36M1D. This causes
+		 * samtools tview to break too.
+		 */
 		assert(i == i2);
 	    }
 
