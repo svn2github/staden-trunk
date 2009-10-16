@@ -26,7 +26,12 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 			contig_t *c, tg_args *a, int flags, library_t *lib);
 					 
 void create_new_contig(GapIO *io, contig_t **c, char *cname, int merge);
-			 
+
+int open_tmp_file(void);
+void close_tmp_file(void);
+int sort_pair_file (void);
+void complete_pairs(GapIO *io);			 
+
 #endif
 
 

@@ -119,13 +119,6 @@ char *bttmp_file_get(bttmp_t *tmp, int *rec) {
     return NULL;
 }
 
-
-
-/* --------------------------------------------------------------------------
- * Read-pair and sequence storing functions. Common to all file format
- * parsers.
- */
-
 /* debugging functions */
 static void print_pair(pair_loc_t *p) {
     fprintf(stderr, "rec:%d bin:%d idx:%d crec:%d pos:%d\n", p->rec, p->bin, p->idx, p->crec, p->pos);
@@ -135,6 +128,27 @@ static void print_range(range_t *r) {
     fprintf(stderr, "start:%d end:%d rec:%d mqual:%d pair_rec:%d flags:%d\n", r->start, r->end, r->rec, r->mqual, r->pair_rec, r->flags);
 }
 
+
+
+/* temp file handling */
+static FILE *fp = NULL;
+static int max_bin = 0;
+
+int open_tmp_file(void) {
+    
+    fp = tmpfile();
+    
+    return fp ? 1 : 0;
+}
+
+void close_tmp_file(void) {
+    fclose(fp);
+}
+
+/* --------------------------------------------------------------------------
+ * Read-pair and sequence storing functions. Common to all file format
+ * parsers.
+ */
 
 /* save sequence, returns recno */
 int save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out) {
@@ -150,9 +164,9 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
                   seq_t *seq, tg_args *a, range_t *r_out, library_t *lib){		
     int new = 0;
     HacheData hd;
-    pair_loc_t *pl = NULL;
-    HacheItem *hi  = NULL;
-
+    pair_loc_t *pl  = NULL;
+    HacheItem *hi   = NULL;
+ 
     /* Add data for this end */
     pl = (pair_loc_t *)malloc(sizeof(*pl));
     pl->rec  = recno;
@@ -175,10 +189,16 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
 	r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	r_out->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	r_out->pair_rec = po->rec;
-
+	
 	if (!a->fast_mode) {
+	    /* TEMP - move later*/
+	    fprintf(fp, "%d %d %d\n", po->bin, po->idx, pl->rec);
+	
+	    if (po->bin > max_bin) max_bin = po->bin;
+	    
 	    /* fprintf(stderr, "Get other side\n"); */
 	    /* Link other end to 'us' too */
+	    /*
 	    bo = (bin_index_t *)cache_search(io, GT_Bin, po->bin);
 	    bo = cache_rw(io, bo);
 	    bo->flags |= BIN_RANGE_UPDATED;
@@ -186,6 +206,7 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
 	    ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
 	    ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
 	    ro->pair_rec = pl->rec;
+	    */
 	}
 	
 	if (lib) {
@@ -279,5 +300,127 @@ void create_new_contig(GapIO *io, contig_t **c, char *cname, int merge) {
     }
     
     cache_incr(io, *c);
-}    
+}
 
+static void sort_file (FILE *old_files[], int div) {
+    FILE *new_files[10];
+    char line[100];
+    int i;
+
+    memset(new_files, 0, sizeof(FILE *) * 10);
+    
+    for (i = 0; i < 10; i++) {
+	new_files[i] = tmpfile(); /* should auto-delete */
+    }
+    
+    for (i = 0; i < 10; i++) {
+    	if (old_files[i]) {
+    	    rewind(old_files[i]);
+
+	    while (fgets(line, 100, old_files[i])) {
+    		int bin;
+		int mod;
+
+		sscanf(line, "%d", &bin);
+
+		bin = bin / div;
+
+		if (bin) {
+	    	    mod = bin % 10;
+		} else {
+	    	    mod = 0;
+		}
+
+		fputs(line, new_files[mod]);
+	    }
+	    
+	    fclose(old_files[i]);
+	}
+	
+	old_files[i] = new_files[i];
+    }
+}
+
+
+int sort_pair_file (void) {
+    FILE  *old_files[11];
+    int div = 1;
+    int max_div = 10; /* temp, needs to be variable */
+    int i = 0;
+    FILE *final;
+    
+    memset(old_files, 0, sizeof(FILE *) * 11);
+
+    old_files[0] = fp;
+    
+    
+    while ((max_bin % max_div) != max_bin) {
+    	max_div *= 10;
+    }
+    
+    while (div < max_div) {
+    	sort_file(old_files, div);
+	div = div * 10;
+    }
+    
+    /* gather files together here */
+    
+    final = tmpfile();
+    
+    while (old_files[i]) {
+    	char line[100];
+     	rewind(old_files[i]);
+	
+	while (fgets(line, 100, old_files[i])) {
+  	    fputs(line, final);
+	}
+ 	
+     	fclose(old_files[i++]);
+    }
+    
+    fp = final;
+    
+    return 1;
+}
+
+
+void complete_pairs(GapIO *io) {
+    bin_index_t *bo;
+    range_t *ro;
+    int current_bin = -1;
+    char line[100];
+    int rec_count = 0;
+    int flush = 1;
+    
+    rewind(fp);
+    
+    while (fgets(line, 100, fp)) {
+    	int bin, idx, rec;
+	
+        sscanf(line, "%d %d %d", &bin, &idx, &rec);
+	
+	if (bin != current_bin) {
+
+	    if (rec_count > 50000) {
+	    	cache_flush(io);
+		rec_count = 0;
+	    }
+
+	    bo = (bin_index_t *)cache_search(io, GT_Bin, bin);
+	    bo = cache_rw(io, bo);
+	    bo->flags |= BIN_RANGE_UPDATED;
+    	    current_bin = bin;
+	}
+
+	ro = arrp(range_t, bo->rng, idx);
+	ro->flags &= ~GRANGE_FLAG_TYPE_MASK;
+	ro->flags |=  GRANGE_FLAG_TYPE_PAIRED;
+	ro->pair_rec = rec;
+	
+	rec_count++;
+
+    }
+    
+    cache_flush(io);
+    
+}
