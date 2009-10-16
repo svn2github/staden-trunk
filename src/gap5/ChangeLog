@@ -1,9 +1,97 @@
+2009-10-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* Tagged VERSION 2.0.0b2
+
+2009-10-16  James Bonfield  <jkb@sanger.ac.uk>
+
+        * tgap/tg_gio.h, tgap/tg_iface_g.c, tgap/tg_index.c,
+	tgap/tg_index.h: Added a "-r nseqs" option to tg_index to reserve
+	space in the aux file. This is an interim solution for the
+	internal record number
+        (ie not the actual index into the aux) not being a 64-bit number.
+
+	Problems currently arise due to packing 1024 sequences into a
+	SeqBlock record. We simulate individual sequence records by taking
+	the record number of the SeqBlock and multiplying by 1024, then
+	adding in the element number. However this means we have 2^21
+	instead of 2^31 records avaalable in total, meaning 2 million bins
+	is enough to make it impossible to allocate any sequences unless
+	we ensure that we reserve the lower record numbers for the
+	sequence/anno blocked structures.
+
+        The correct solution, to be implemented later, would be to use a
+	64-bit record type.
+
+2009-10-16  Andrew Whitwham
+
+        * tgap/tg_index_common.c, tgap/tg_index_common.h: Faster pair
+          indexing.
+
+        * tgap/ace.c, tgap/baf.c, tgap/maq.c, tgap/sam_index.c: Faster two
+	  directional pairing.
+
+2009-10-15  James Bonfield  <jkb@sanger.ac.uk>
+
+        * tgap/g-alloc.c: turned off VALGRIND mode
+
+        * tgap/sam_index.c: Added a comment
+
+        * gap5/docs/TODO:
+
+        * tgap/baf.c: Allow for extra blank lines in the baf file.  Report
+	  time %age more often, also listing the number of contigs created
+	  since last checkpoint as this has a significant impact on speed.
+
+2009-10-14  James Bonfield  <jkb@sanger.ac.uk>
+
+        * tgap/tg_anno.c: Fixed return value from anno_ele_set_type(),
+	  This sometimes caused saving a tag in the contig editor to fail
+	  with an error dialogue.
+
+        * configure.in: version change to 2.0.0b2
+
+        * gap5/docs/TODO:
+
+        * tgap/baf.c: Fix bug when processing annotations with no text
+          comment.
+
+        * tgap/ace.c, tgap/tg_tcl.c, tgap/zfio.c: Bug fix for zlib.h and
+	  LARGE_FILE support; move or add staden_config.h include
+
+        * copy_reads/copy_reads, gap4/gap4, gap5/gap5,
+	  prefinish/prefinish, pregap4/pregap4, spin/spin,
+	  spin_emboss/create_emboss_files, trev/trev: Bug fix for when
+	  LD_LIBRARY_PATH hasn't already been exported in user's
+	  environment
+
+        * Makefile.in: Small update to distsrc
+
+        * Misc/array_arith.h, Misc/find.c, Misc/usleep.c,
+          gap4/tman_cons.c,
+          pregap4/Makefile, scripts/Makefile,
+          seq_utils/sequence_formats.c,
+          spin/nip_cmds.h, spin/nip_structs.h,
+          spin/nip_translation.tcl,
+          spin/resource.h, spin/seq_id.tcl, spin/seq_results.h,
+          tk_utils/biolimsbox.tcl: Fixed rogue executable property
+
 2009-10-13  James Bonfield  <jkb@sanger.ac.uk>
 
  	* Gap5 VERSION 1.2.4 *
 
 2009-10-13  James Bonfield  <jkb@sanger.ac.uk>
-        * gap5/gap.tcl: Bumped version to 1.2.4
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4: Now detects the
+	default itcl/itk install on 32-bit fedora 11 systems.
+
+	* tgap/g-files.c: Removed the large integer constant from assert.
+	It just causes warnings as there's no real portable way to define
+	it as long long (eg 0x7fffLL).
+	
+        * gap5/gap5: Set execute property
+        
+	* gap5/ChangeLog, gap5/NEWS:
+
+	* gap5/gap.tcl: Bumped version to 1.2.4
 
 	* gap5/gap4_compat.tcl: removal of debugging info
 

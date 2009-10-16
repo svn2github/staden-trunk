@@ -1,8 +1,8 @@
-Gap5 1.2.4,  October 13th 2009
+Gap5 1.2.4,  October 16th 2009
 ==============================
 
-Minor changes
--------------
+Changes
+-------
 
 *	Tags can be created and/or removed within the contig editor
         now, rather than just imported.
@@ -32,8 +32,21 @@ Minor changes
         format (eg sam, bam, ace, baf, etc). The old "aln" default
         format has been removed.
 
-*	Tg_index now supports reading sam files. In addition to this
-        ace, baf and sam files may now be gzipped.
+*	Tg_index now supports reading sam files provided they have @SQ
+        header lines. In addition to this ace, baf and sam files may
+        now be gzipped.
+
+*	Tg_index now has faster read-pairing, using temporary files in
+        /tmp. The -f (fast mode) parameter still exists, but should
+        not be so significant an improvement now.
+
+*	Added a "-r nseqs" option to tg_index. This change, which has
+        been in the code for some time, but commented out, allows
+        tg_index to build gap5 databases in excess of 1 billion
+        reads. (The largest here so far was 1.9 billion.)
+	Do not use though unless tg_index fails or you are going to be
+        indexing a very large genome and need to reserve sequence
+        space. See ChangeLog for more discussion on this.
 
 *	Tags now interpret "\n" as newline within BAF files.
 
@@ -54,6 +67,10 @@ Bug fixes
         flags. Additionally all positions should now be >= 1, even if
         not positioned that way in gap5 itself. (A shift occurs to
         ensure this is true.)
+
+*	BAF files with blank annotations no longer crash tg_index.
+
+*	(Plus many minor fixes - see ChangeLog)
 
 
 Gap5 1.2.3,  August 7th 2009
