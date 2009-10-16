@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
     a.min_bin_size  = MIN_BIN_SIZE;
     a.fast_mode     = 0;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.3\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.4\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
