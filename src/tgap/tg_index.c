@@ -143,6 +143,8 @@ void usage(void) {
     fprintf(stderr, "      -T                   Do not index sequence names (default on)\n");
     fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
     fprintf(stderr, "      -f                   Fast mode: read-pair links are unidirectional\n");
+    fprintf(stderr, "      -r nseq              Reserve space. Only necessary for exceptionally\n");
+    fprintf(stderr, "                           large databases, eg n.seq > 100 million.\n");
 }
 
 #include <malloc.h>
@@ -161,6 +163,7 @@ int main(int argc, char **argv) {
     a.merge_contigs = -1;
     a.min_bin_size  = MIN_BIN_SIZE;
     a.fast_mode     = 0;
+    a.reserved_seqs = 0;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.4\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -170,9 +173,9 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:f")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:f")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:")) != -1) {
 #endif
 	switch(opt) {
 	case 'a':
@@ -228,6 +231,13 @@ int main(int argc, char **argv) {
 	case 'f':
 	    a.fast_mode = 1;
 	    break;
+
+	case 'r':
+	    a.reserved_seqs = strtol(optarg, &cp, 10);
+	    if (*cp == 'k' || *cp == 'K') a.reserved_seqs *= 1024;
+	    if (*cp == 'm' || *cp == 'M') a.reserved_seqs *= 1024*1024;
+	    if (*cp == 'g' || *cp == 'G') a.reserved_seqs *= 1024*1024*1024;
+	    break;
 	    
 	default:
 	    if (opt == ':')
@@ -240,6 +250,9 @@ int main(int argc, char **argv) {
     }
     if (a.merge_contigs == -1)
 	a.merge_contigs = 0;
+
+    if (a.reserved_seqs)
+	set_reserved_seqs(a.reserved_seqs);
 
     if (optind == argc) {
 	usage();

@@ -82,6 +82,9 @@ void cache_decr(GapIO *io, void *data);
 /* Creates a new item. */
 int cache_item_create(GapIO *io, int type, void *from);
 
+/* A temporary hack until GRec becomes 64-bit */
+void set_reserved_seqs(int rseqs);
+
 /* ------------------------------------------------------------------------- */
 /* And now the object specific defintions */
 #include "tg_register.h"

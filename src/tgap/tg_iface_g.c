@@ -279,13 +279,16 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
  */
 
 /* Hacky allocation scheme - always increment the record number */
-#if 0
+#if 1
+static int other_record = 0;
+static int other_record_start = 0;
+void set_reserved_seqs(int rseqs) {
+    other_record = rseqs / SEQ_BLOCK_SZ;
+    other_record_start = other_record;
+}
+
 static int allocate(g_io *io, int type) {
-    /* FIXME: we should track free records using a freerecs bitmap
-     * as is done in Gap4.
-     */
     static int record = -1;
-    static int other_record = 4000000;
     int r;
 
     if (record == -1)
@@ -298,23 +301,48 @@ static int allocate(g_io *io, int type) {
      *
      * FIXME: the correct solution is to enable record numbers to be 64-bit.
      */
-    switch (type) {
-    case GT_SeqBlock:
-    case GT_AnnoEleBlock:
-    case GT_Database:
-	r = record++;
-	break;
+    if (other_record) {
+	switch (type) {
+	case GT_SeqBlock:
+	case GT_AnnoEleBlock:
+	case GT_Database:
+	    r = record++;
+	    if (r == other_record_start) {
+		fprintf(stderr, "\n*** Ran out of seq/anno record numbers.\n");
+		fprintf(stderr, "*** Please use a higher value in the -r "
+			"option of tg_index.\n");
+		exit(1);
+	    }
+	    break;
 
-    default:
-	r = other_record++;
+	default:
+	    r = other_record++;
+	}
+    } else {
+	r = record++;
+	if (type == GT_SeqBlock && r >= (1<<(31-SEQ_BLOCK_BITS))) {
+	    fprintf(stderr, "\n*** Too many database records to cope with the"
+		    " sequence 'blocking factor'.");
+	    fprintf(stderr, "*** Please rerun tg_index using the -r option "
+		    "to reserve record space for\n    more sequences\n");
+	    exit(1);
+	} else if (type == GT_AnnoEleBlock &&
+		   r >= (1<<(31-ANNO_ELE_BLOCK_BITS))) {
+	    fprintf(stderr, "\n*** Too many database records to cope with the"
+		    " annotation 'blocking factor'.\n");
+	    fprintf(stderr, "*** Please rerun tg_index using the -r option "
+		    "to reserve record space for\n    more annotations\n");
+	    exit(1);
+	}
     }
 
     return r;
 }
 #else
 static int allocate(g_io *io, int type) {
-    /* FIXME: we should track free records using a freerecs bitmap
-     * as is done in Gap4.
+    /*
+     * FIXME, the header should point to a record free-list, to allow
+     * reclaiming of deallocated records.
      */
     static int record = -1;
 

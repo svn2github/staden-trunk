@@ -18,6 +18,7 @@ typedef struct {
     int min_bin_size;
     int fast_mode;
     bttmp_t *tmp;
+    int reserved_seqs;
 } tg_args;
 
 #endif /* _TG_INDEX_H_ */
