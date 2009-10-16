@@ -632,6 +632,9 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_plbuf_t *plbuf;
     samfile_t *fp;
 
+    /* for pair data */
+    open_tmp_file();
+
     /* Setup bam_io_t object and create our pileup interface */
     bio->io = io;
     bio->seqs = NULL;
@@ -678,6 +681,14 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     cache_flush(io);
     printf("Loaded %d sequences\n", bio->count);
 
+    if (bio->pair && !a->fast_mode) {    
+	sort_pair_file();
+	
+	complete_pairs(io);
+	
+	close_tmp_file();
+    }
+ 
     /* Tidy up */
     if (b) {
 	if (b->data)

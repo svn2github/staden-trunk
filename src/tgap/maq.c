@@ -99,6 +99,9 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
     int sz;
     int long_format = (a->fmt == 'M');
 
+    /* for pair data */
+    open_tmp_file();
+
     fprintf(stderr, "-- Loading %s...\n", dat_fn);
     if (NULL == (dat_fp = gzopen(dat_fn, "r")))
 	return -1;
@@ -259,6 +262,15 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
     cache_flush(io);
 
     fprintf(stderr, "-- %d reads were added.\n", k);
+    
+    if (!a->fast_mode) {    
+	sort_pair_file();
+	
+	complete_pairs(io);
+	
+	close_tmp_file();
+    }
+    
     gzclose(dat_fp);
     maq_delete_maqmap(mm);
 

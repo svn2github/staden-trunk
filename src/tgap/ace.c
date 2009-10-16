@@ -433,6 +433,9 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     int af_count, seq_count, nseqs = 0, nseqs_tot = 0, ncontigs = 0;
     contig_t *c = NULL;
     HacheTable *pair = NULL;
+    
+    /* for pair data */
+    open_tmp_file();
 
     set_dna_lookup(); /* initialise complement table */
 
@@ -543,6 +546,14 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     }
     puts("");
 
+    if (pair && !a->fast_mode) {    
+	sort_pair_file();
+	
+	complete_pairs(io);
+	
+	close_tmp_file();
+    }
+    
     cache_flush(io);
     zfclose(fp);
 

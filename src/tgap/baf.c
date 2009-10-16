@@ -414,6 +414,10 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int last_obj_pos = 0;
     int last_obj_rec = 0;
     int last_obj_orient = 0;
+    
+    
+    /* for pair data */
+    open_tmp_file();
 	
     printf("Loading %s...\n", fn);
     if (-1 == stat(fn, &sb) ||
@@ -610,6 +614,15 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	}
 #endif
     }
+    
+    if (pair && !a->fast_mode) {    
+	sort_pair_file();
+	
+	complete_pairs(io);
+	
+	close_tmp_file();
+    }
+    
     if (co)
 	baf_block_destroy(co);
 
