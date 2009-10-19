@@ -37,7 +37,7 @@ AC_DEFUN([AX_LIB_IWIDGETS],
 
   # Look in the place we requested and also in some standard best-guess
   # locations.
-  for i in $_iwidgets_with/iwidgets* $_iwidgets_with /usr/share/tcl*/iwidgets* /usr/share/iwidgets* /usr/local/tcl*/iwidgets*
+  for i in $_iwidgets_with/iwidgets* $_iwidgets_with /usr/share/tcl*/iwidgets* /usr/share/iwidgets* /usr/lib/iwidgets* /usr/lib64/iwidgets* /usr/local/tcl*/iwidgets*
   do
     if test -e "$i/pkgIndex.tcl"
     then
