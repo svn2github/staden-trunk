@@ -64,6 +64,7 @@ typedef struct {
 #define GRANGE_FLAG_ISANNO     (1<<7)
 #define GRANGE_FLAG_ISCONS     (2<<7)
 #define GRANGE_FLAG_ISREF      (3<<7)
+#define GRANGE_FLAG_ISANY      (7<<7)
 
 /* For annotation ranges: */
 #define GRANGE_FLAG_TAG_SEQ    (1<<1) /* 0=>contig, 1=>sequence */

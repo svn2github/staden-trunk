@@ -99,6 +99,7 @@ typedef struct {
     int cend;
     int auto_extend; /* whether to extend past cstart..cend */
     int first_r;     /* True if r[] is our first search */
+    int type;
 } contig_iterator;
 
 #define CITER_FIRST  0
@@ -121,11 +122,18 @@ int y_cmp(struct xy_pair *y1, struct xy_pair *y2);
 
 /*
  * Allocates and initialises a new contig_iterator struct.
+ *
  * 'whence' may be either CITER_FIRST or CITER_LAST and it controls whether
  * we start the iteration point from the beginning or end of the list.
+ *
  * The start and end parameters dictate the initial region to query. We
  * may specify them as either coordinates or use CITER_CSTART and CITER_CEND
  * as synonyms for the first and last coordinate in the contig.
+ *
+ * 'type' can be either GRANGE_FLAG_ISSEQ or GRANGE_FLAG_ISANNO to only
+ * iterate around data of that specific type, or GRANGE_FLAG_ISANY to
+ * iterate around all data.
+ *
  * Finally auto_extend controls whether the start..end range is just a
  * location to start iterating from (auto_extend == 1) or a hard limit
  * with no desire to iterate past that range (auto_extend == 0).
@@ -133,6 +141,9 @@ int y_cmp(struct xy_pair *y1, struct xy_pair *y2);
  * Returns contig_iterator pointer on success
  *         NULL on failure
  */
+contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
+					 int whence, int start, int end,
+					 int type);
 contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
 				 int whence, int start, int end);
 

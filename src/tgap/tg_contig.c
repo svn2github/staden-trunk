@@ -1154,8 +1154,15 @@ static int range_populate(GapIO *io, contig_iterator *ci,
     ci->cnum = cnum;
     ci->start = start;
     ci->end = end;
-    ci->r = contig_seqs_in_range(io, &c, start, end,
-				 CSIR_SORT_BY_X, &ci->nitems);
+    if (ci->type == GRANGE_FLAG_ISSEQ)
+	ci->r = contig_seqs_in_range(io, &c, start, end,
+				     CSIR_SORT_BY_X, &ci->nitems);
+    else if (ci->type == GRANGE_FLAG_ISANNO)
+	ci->r = contig_anno_in_range(io, &c, start, end,
+				     CSIR_SORT_BY_X, &ci->nitems);
+    else
+	ci->r = contig_items_in_range(io, &c, start, end,
+				      CSIR_SORT_BY_X, &ci->nitems);
 
     ci->index = 0;
     return 0;
@@ -1173,13 +1180,21 @@ void contig_iter_del(contig_iterator *ci) {
     free(ci);
 }
 
+
 /*
  * Allocates and initialises a new contig_iterator struct.
+ *
  * 'whence' may be either CITER_FIRST or CITER_LAST and it controls whether
  * we start the iteration point from the beginning or end of the list.
+ *
  * The start and end parameters dictate the initial region to query. We
  * may specify them as either coordinates or use CITER_CSTART and CITER_CEND
  * as synonyms for the first and last coordinate in the contig.
+ *
+ * 'type' can be either GRANGE_FLAG_ISSEQ or GRANGE_FLAG_ISANNO to only
+ * iterate around data of that specific type, or GRANGE_FLAG_ISANY to
+ * iterate around all data.
+ *
  * Finally auto_extend controls whether the start..end range is just a
  * location to start iterating from (auto_extend == 1) or a hard limit
  * with no desire to iterate past that range (auto_extend == 0).
@@ -1187,8 +1202,9 @@ void contig_iter_del(contig_iterator *ci) {
  * Returns contig_iterator pointer on success
  *         NULL on failure
  */
-contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
-				 int whence, int start, int end) {
+contig_iterator *contig_iter_new_by_type(GapIO *io, int cnum, int auto_extend,
+					 int whence, int start, int end,
+					 int type) {
     contig_iterator *ci = (contig_iterator *)malloc(sizeof(*ci));
     contig_t *c = (contig_t *)cache_search(io, GT_Contig, cnum);
     
@@ -1203,6 +1219,7 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
     ci->index = 0;
     ci->auto_extend = auto_extend;
     ci->first_r = 1;
+    ci->type = type;
 
     ci->cstart = start == CITER_CSTART ? c->start : start;
     ci->cend   =   end == CITER_CEND   ? c->end   : end;
@@ -1227,6 +1244,15 @@ contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
     return ci;
 }
 
+
+/*
+ * The old interface, which is hardcoded to only iterate through sequences.
+ */
+contig_iterator *contig_iter_new(GapIO *io, int cnum, int auto_extend,
+				 int whence, int start, int end) {
+    return contig_iter_new_by_type(io, cnum, auto_extend, whence,
+				   start, end, GRANGE_FLAG_ISSEQ);
+}
 
 /*
  * Returns seq range_t struct pointer on success
@@ -1293,6 +1319,10 @@ rangec_t *contig_iter_prev(GapIO *io, contig_iterator *ci) {
 	}
     }
 }
+
+/* ---------------------------------------------------------------------------
+ * Track implementation
+ */
 
 /* Track values prior to resolution resampling */
 typedef struct {
