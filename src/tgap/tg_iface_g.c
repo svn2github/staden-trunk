@@ -3185,6 +3185,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	/* flags & m.quality */
 	s->format = SEQ_FORMAT_CNF1;
 	*out[7]++ = (s->format << 6) | (s->flags << 3) | s->seq_tech;
+
+	/* Duplicated in range, but adds about 1% on test bam input */
 	*out[8]++ = s->mapping_qual;
 	
 	/* Name */
@@ -3381,7 +3383,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
 	if (!in[i].bin) continue;
 	cp += s72int(cp, &tmp);
 	in[i].obj_rec = last + tmp;
-	tmp = in[i].obj_rec;
+	last = in[i].obj_rec;
 	//cp += u72int(cp, (uint32_t *)&in[i].obj_rec);
     }
 
