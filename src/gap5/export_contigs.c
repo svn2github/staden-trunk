@@ -10,15 +10,25 @@
 #include "dna_utils.h"
 #include "consensus.h"
 
+/* Sequence formats */
 #define FORMAT_FASTA 0
 #define FORMAT_FASTQ 1
 #define FORMAT_SAM   2
 #define FORMAT_BAF   3
 #define FORMAT_ACE   4
 
+/* Annotation formats */
+#define FORMAT_GFF   5
+
+
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 			  char *fn);
+static int export_tags(GapIO *io, int cc, contig_list_t *cv, int format,
+		       int consensus, int unpadded, char *fn);
 
+/* ------------------------------------------------------------------------
+ * Tcl interfaces
+ */
 typedef struct {
     GapIO *io;
     char *inlist;
@@ -35,8 +45,8 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
     cli_args a[] = {
 	{"-io",		ARG_IO,  1, NULL,     offsetof(ec_arg, io)},
 	{"-contigs",	ARG_STR, 1, NULL,     offsetof(ec_arg, inlist)},
-	{"-format",	ARG_STR, 1, "fastq",  offsetof(ec_arg, format)},
-	{"-outfile",    ARG_STR, 1, "out.aln",offsetof(ec_arg, outfile)},
+	{"-format",	ARG_STR, 1, "baf",    offsetof(ec_arg, format)},
+	{"-outfile",    ARG_STR, 1, "out.baf",offsetof(ec_arg, outfile)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -64,6 +74,53 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 
     return res == 0 ? TCL_OK : -1;
 }
+
+typedef struct {
+    GapIO *io;
+    char *inlist;
+    char *format;
+    char *outfile;
+    int   consensus; /* map sequence tags to the consensus */
+    int   unpadded;
+} et_arg;
+
+int tcl_export_tags(ClientData clientData, Tcl_Interp *interp,
+		    int objc, Tcl_Obj *CONST objv[])
+{
+    int rargc, format_code, res;
+    contig_list_t *rargv;
+    et_arg args;
+    cli_args a[] = {
+	{"-io",		ARG_IO,  1, NULL,     offsetof(et_arg, io)},
+	{"-contigs",	ARG_STR, 1, NULL,     offsetof(et_arg, inlist)},
+	{"-format",	ARG_STR, 1, "gff",    offsetof(et_arg, format)},
+	{"-outfile",    ARG_STR, 1, "out.gff",offsetof(et_arg, outfile)},
+	{"-consensus",  ARG_INT, 1, "1",      offsetof(et_arg, consensus)},
+	{"-unpadded",   ARG_INT, 1, "1",      offsetof(et_arg, unpadded)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    if (0 == strcmp(args.format, "gff"))
+	format_code = FORMAT_GFF;
+    else
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.inlist, &rargc, &rargv);
+
+    res = export_tags(args.io, rargc, rargv, format_code,
+		      args.consensus, args.unpadded, args.outfile);
+
+    free(rargv);
+
+    return res == 0 ? TCL_OK : -1;
+}
+
+/* ------------------------------------------------------------------------
+ * export_contigs implementation
+ */
 
 static int export_header_sam(GapIO *io, FILE *fp,
 			     int cc, contig_list_t *cv) {
@@ -644,6 +701,254 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 	case FORMAT_ACE:
 	    export_contig_ace(io, fp, cv[i].contig, cv[i].start, cv[i].end);
 	    break;
+
+	default:
+	    verror(ERR_WARN, "export_contigs", "Unknown format code %d",
+		   format);
+	    fclose(fp);
+	    return 1;
+	}
+    }
+
+    fclose(fp);
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------
+ * export_tags implementation
+ */
+
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with backslashed versions of
+ * them in a C string style formatting.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+static char *escape_C_string(char *str) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static char type[256];
+    static int type_init = 0;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	int i;
+	
+	for (i = 0; i < 256; i++) {
+	    if (isprint(i) && i != '"' && i != '\\') {
+		/* directly printable */
+		type[i] = 0;
+	    } else {
+		switch(i) {
+		    /* backslash single-char */
+		case '"':
+		case '\\':
+		    type[i] = i;
+		    break;
+		case '\n':
+		    type[i] = 'n';
+		    break;
+		case '\r':
+		    type[i] = 'r';
+		    break;
+		case '\t':
+		    type[i] = 't';
+		    break;
+		case '\a':
+		    type[i] = 'a';
+		    break;
+
+		default:
+		    type[i] = 1; /* octal escape */
+		}
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 5 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	switch(type[(unsigned char)c]) {
+	case 0:
+	    new[ni++] = c;
+	    break;
+	    
+	case 1:
+	    sprintf(&new[ni], "%03o", c);
+	    ni+=3;
+	    break;
+
+	default:
+	    new[ni++] = '\\';
+	    new[ni++] = type[(unsigned char)c];
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+static int export_header_tags_gff(GapIO *io, FILE *fp,
+				  int cc, contig_list_t *cv) {
+    return 0;
+}
+
+/*
+ * Example gff output:
+ *
+ * (obj prog type start end  score strand frame attributes)
+ * seq1 gap5 COMM 100   200  .     .      .     arbitrary free text?
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+static int export_tags_gff(GapIO *io, FILE *fp,
+			   int crec, int start, int end,
+			   int consensus, int unpadded) {
+    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+						  start, end,
+						  GRANGE_FLAG_ISANNO);
+    rangec_t *r;
+    contig_t *c;
+    char *con = NULL;
+    int *map = NULL;
+
+    c = cache_search(io, GT_Contig, crec);
+    cache_incr(io, c);
+
+    /* Generate a padded to unpadded mapping table */
+    if (unpadded) {
+	int i, np;
+	if (NULL == (con = malloc(c->end - c->start + 2))) {
+	    return -1;
+	}
+	if (NULL == (map = malloc((c->end - c->start + 2) *
+				  sizeof(int)))) {
+	    free(con);
+	    return -1;
+	}
+	calculate_consensus_simple(io, crec, c->start, c->end, con, NULL);
+
+	for (np = 0, i = c->start; i <= c->end; i++) {
+	    map[i-c->start] = i - np;
+	    if (con[i-c->start] == '*')
+		np++;
+	}
+    }
+
+    /* Export */
+    while (r = contig_iter_next(io, ci)) {
+	anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
+	char type[5], type2[5];
+	char *name, *escaped;
+	int st, en;
+
+	cache_incr(io, a);
+
+	if (!consensus && (r->flags & GRANGE_FLAG_TAG_SEQ)) {
+	    int seq_start, seq_end;
+	    seq_t *s;
+
+	    sequence_get_position(io, r->pair_rec, NULL,
+				  &seq_start, &seq_end, NULL);
+
+	    st = r->start - seq_start;
+	    en = r->end - seq_start;
+
+	    s = cache_search(io, GT_Seq, r->pair_rec);
+	    name = s->name;
+	} else {
+	    name = c->name;
+
+	    st = r->start;
+	    en = r->end;
+
+	    /* Depad it too */
+	    if (unpadded) {
+		if (st >= c->start && st <= c->end)
+		    st = map[st - c->start];
+		if (en >= c->start && en <= c->end)
+		    en = map[en - c->start];
+	    }
+	}
+
+	assert(st <= en);
+
+	if (a->comment && *a->comment) {
+	    escaped = escape_C_string(a->comment);
+
+	    fprintf(fp, "%s\tgap5\t%s\t%d\t%d\t.\t.\t.\tAnno \"%s\"\n",
+		    name, type2str(r->mqual, type2),
+		    st, en,
+		    escaped);
+	    free(escaped);
+	} else {
+	    fprintf(fp, "%s\tgap5\t%s\t%d\t%d\t.\t.\t.\n",
+		    name, type2str(r->mqual, type2),
+		    st, en);
+	}
+
+	cache_decr(io, a);
+    }
+    contig_iter_del(ci);
+
+    if (con)
+	free(con);
+    if (map)
+	free(map);
+
+    cache_decr(io, c);
+
+    return 0;
+}
+
+static int export_tags(GapIO *io, int cc, contig_list_t *cv, int format,
+		       int consensus, int unpadded, char *fn) {
+    int i;
+    FILE *fp;
+    
+    if (NULL == (fp = fopen(fn, "w"))) {
+	perror(fn);
+	return -1;
+    }
+
+    /* Header */
+    switch (format) {
+    case FORMAT_GFF:
+	export_header_tags_gff(io, fp, cc, cv);
+	break;
+    }
+
+    /* Per contig */
+    for (i = 0; i < cc; i++) {
+	switch (format) {
+	case FORMAT_GFF:
+	    export_tags_gff(io, fp, cv[i].contig, cv[i].start, cv[i].end,
+			    consensus, unpadded);
+	    break;
+
+	default:
+	    verror(ERR_WARN, "export_tags", "Unknown format code %d",
+		   format);
+	    fclose(fp);
+	    return 1;
 	}
     }
 

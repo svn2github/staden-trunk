@@ -77,6 +77,7 @@ if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Export to BioLIMS}	 8 10 {ExportBiolims \$io}
 }
 add_command     {File.Export sequences}          8 10 {ExportSequences \$io} 
+add_command     {File.Export tags}               8 10 {ExportTags \$io} 
 add_cascade	{File.Save consensus}		 8 10
 add_command	{File.Extract readings}		 8 10 {ExtractReadings \$io} e
 add_separator	{File.S2}
