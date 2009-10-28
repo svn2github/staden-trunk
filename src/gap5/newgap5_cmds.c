@@ -1414,6 +1414,9 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "export_contigs",
 			 tcl_export_contigs,
 			 (ClientData) NULL, NULL);
+    Tcl_CreateObjCommand(interp, "export_tags",
+			 tcl_export_tags,
+			 (ClientData) NULL, NULL);
 
     Tcl_CreateObjCommand(interp, "find_oligo",
 			 tcl_find_oligo,
