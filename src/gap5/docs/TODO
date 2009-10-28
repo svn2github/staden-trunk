@@ -1,3 +1,20 @@
+*	We can save some minor storage by rearranging the GRANGE_FLAG_
+	variables. Currently we have in-memory and on-disk values
+	mixed together; eg the computed "pair held within the same
+	contig" value of 1<<3 and the stored "range has been deleted"
+	value of 1<<10. If we shuffle these arround and only store the
+	lower-bits then we can save space due to the way int2u7
+	works.
+
+*	Investigate order-1 range coding for the quality values. This
+        would appear to be a good 10-15% smaller than gzip, at least
+        when we haven't got a whole bunch of zeros to RLE.
+
+*	Unpadded coordinates. We could store per bin some data of how
+        many pads there are within it's boundaries. Even if we don't
+        store where, that one single value is sufficient to make
+        computing an unpadded coordinate a O(log(N)) computation.
+
 *	Fix sam output when a sequence is *AGCTA or AGCTAG*. We get
         things like 1D10M or 10M1D which breaks samtools and
         consequentially tg_index too.
