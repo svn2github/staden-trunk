@@ -13,7 +13,8 @@
 #include "maq.h"
 
 /* lh3: an analogy of parse_line() */
-static int parse_maqmap_aux(seq_t *s,
+static int parse_maqmap_aux(tg_args *a,
+			    seq_t *s,
 			    const int m_sz,
 			    const maqmap128_t *m,
 			    int k)
@@ -30,9 +31,16 @@ static int parse_maqmap_aux(seq_t *s,
     s->right = m->size;
     s->parent_type = 0;
     s->parent_rec = 0;
-    s->name_len = strlen(m->name);
-    s->data = (char*)malloc(s->name_len + 3+ 2*m->size);
-    s->name = s->data;
+    if (a->data_type & DATA_NAME) {
+	s->name_len = strlen(m->name);
+	s->name = s->data = (char*)malloc(s->name_len + 3+ 2*m->size);
+	strcpy(s->name, m->name);
+    } else {
+	char *n = "";
+	s->name_len = strlen(n);
+	s->name = s->data = (char *)malloc(s->name_len + 3 + 2*m->size);
+	strcpy(s->name, n);
+    }
     s->trace_name = s->name + s->name_len + 1;
     *s->trace_name = 0;
     s->trace_name_len = 0;
@@ -45,19 +53,18 @@ static int parse_maqmap_aux(seq_t *s,
     s->mapping_qual = m->seq[m_sz-1];
 
     /* fill seq_t::seq && seq_t::conf */
-    strcpy(s->name, m->name); /* lh3: read name */
     sz = m->size;
     for (i = 0; i != sz; ++i) {
 	if (m->pos&1) {
 	    /* reverse strand */
 	    bit8_t c = m->seq[m->size-1-i];
-	    s->seq[i] = "TGCA"[c>>6];
-	    s->conf[i] = (c&0x3f);
+	    s->seq[i]  = (a->data_type & DATA_SEQ)  ? "TGCA"[c>>6] : 'N';
+	    s->conf[i] = (a->data_type & DATA_QUAL) ? (c&0x3f)     :  0;
 	} else {
 	    /* forward strand */
 	    bit8_t c = m->seq[i];
-	    s->seq[i] = "ACGT"[c>>6];
-	    s->conf[i] = (c&0x3f);
+	    s->seq[i]  = (a->data_type & DATA_SEQ)  ? "ACGT"[c>>6] : 'N';
+	    s->conf[i] = (a->data_type & DATA_QUAL) ? (c&0x3f)     :  0;
 	}
     }
 
@@ -155,7 +162,7 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	    memcpy(m128.name, m64.name, MAX_NAMELEN);
 	}
 
-	parse_maqmap_aux(&seq, sz, &m128, k++);
+	parse_maqmap_aux(a, &seq, sz, &m128, k++);
 
 	/* Read is unmapped, but placed along side the pair in the file */
 	if (m128.flag == (PAIRFLAG_SW | PAIRFLAG_NOMATCH)) {
@@ -229,7 +236,8 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	    
 	if (pair && !(m128.flag & PAIRFLAG_NOMATCH)) is_pair = 1;
 
-	save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname, c, a, flags, lib);
+	save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname,
+			    c, a, flags, lib);
 
 	if (((j+1) & 0xffff) == 0) {
 	    static struct timeval last, curr;

@@ -20,6 +20,7 @@ typedef struct {
     int idx;
     int crec;
     int pos;
+    int orient;
 } pair_loc_t;
 
 /* --------------------------------------------------------------------------
@@ -160,8 +161,9 @@ int save_sequence(GapIO *io, seq_t *seq, bin_index_t *bin, range_t *r_out) {
 }
 
 
-void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t *bin, contig_t *c,
-                  seq_t *seq, tg_args *a, range_t *r_out, library_t *lib){		
+void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname,
+	       bin_index_t *bin, contig_t *c, seq_t *seq, tg_args *a,
+	       range_t *r_out, library_t *lib){		
     int new = 0;
     HacheData hd;
     pair_loc_t *pl  = NULL;
@@ -169,11 +171,12 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
  
     /* Add data for this end */
     pl = (pair_loc_t *)malloc(sizeof(*pl));
-    pl->rec  = recno;
-    pl->bin  = bin->rec;
-    pl->crec = c->rec;
-    pl->pos  = seq->len >= 0 ? seq->pos : seq->pos - seq->len - 1;
-    pl->idx  = seq->bin_index;
+    pl->rec    = recno;
+    pl->bin    = bin->rec;
+    pl->crec   = c->rec;
+    pl->pos    = seq->len >= 0 ? seq->pos : seq->pos - seq->len - 1;
+    pl->idx    = seq->bin_index;
+    pl->orient = seq->len < 0;
     hd.p = pl;
 
     hi = HacheTableAdd(pair, tname, strlen(tname), hd, &new);
@@ -183,7 +186,6 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
 	pair_loc_t *po = (pair_loc_t *)hi->data.p;
 	
 	bin_index_t *bo;
-	range_t *ro;
 	
 	/* We found one so update r_out now, before flush */
 	r_out->flags &= ~GRANGE_FLAG_TYPE_MASK;
@@ -213,34 +215,53 @@ void find_pair(GapIO *io, HacheTable *pair, int recno, char *tname, bin_index_t 
 	    /* Increment insert size in library */
 	    if (po->crec == pl->crec) {
 		int isize = pl->pos - po->pos;
+		int ltype;
+
 		/*
-		 * We can get +ve isize via:
-		 * |------->     <-------|
+		 * We know that 'seq' is the right-most sequence so
+		 * this position minus previous position gives us the
+		 * insert size and comparing this vs previous orient
+		 * we can work out the type of the library. Note although
+		 * this read is further right than the previous one, when
+		 * overlapping it's possible for the 5' of this minus the
+		 * 5' of previous to appear as a negative size.
 		 *
-		 * and -ve isize via:
-		 * <-------|
+		 * Types of pair orientations:
+		 *
+		 *                           isize   ltype
+		 * |------->     <-------|   +ve     IN
+		 *
+		 * <-------|                 -ve     IN
 		 *    |------->
 		 *
-		 * We know that 's' is the right-most sequence so
-		 * when this_pos as the input is sorted.
-		 * Therefore we can tell which case it is by the orientation
-		 * of this sequence, and negate isize for the 2nd case.
+		 * <-------|     |------->   +ve     OUT
+		 *
+		 * |------->                 +ve     OUT
+		 *    <-------|
+		 *
+		 * <-------|     <-------|   +ve     SAME
+		 *
+		 * |------->     |------->   +ve     SAME
+		 *
+		 * <-------|                 +ve     SAME
+		 *    <-------|
+		 *
+		 * |------->                 +ve     SAME
+		 *    |------->
 		 */
-		if (!(r_out->flags & GRANGE_FLAG_COMP1))
-		    isize = -isize;
-
+		if (pl->orient == po->orient) {
+		    ltype = LIB_T_SAME;
+		} else {
+		    if ((isize >= 0 && pl->orient == 1 /* <----| */) ||
+			(isize <  0 && pl->orient == 0 /* |----> */))
+			ltype = LIB_T_INWARD;
+		    else
+			ltype = LIB_T_OUTWARD;
+		}
+		
 		lib = cache_rw(io, lib);
 		
-		if (a->fast_mode || (r_out->flags & GRANGE_FLAG_COMP1) != 
-		    (ro->flags & GRANGE_FLAG_COMP1)) {
-		    accumulate_library(io, lib,
-				       isize >= 0
-				       ? LIB_T_INWARD
-				       : LIB_T_OUTWARD,
-				       ABS(isize));
-		} else {
-		    accumulate_library(io, lib, LIB_T_SAME, ABS(isize));
-		}
+		accumulate_library(io, lib, ltype, ABS(isize));
 	    }
 	}	    
 
@@ -257,6 +278,8 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     range_t r, *r_out;
     int recno;
     bin_index_t *bin;
+    HacheItem *hi;
+    static int fake_recno = 1;
 
     /* Create range */
     r.start = seq->pos;
@@ -269,15 +292,18 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     /* Add the range to a bin, and see which bin it was */
     bin = bin_add_range(io, &c, &r, &r_out, NULL);
 
-    /* Save sequence */
-    recno = save_sequence(io, seq, bin, r_out);
 
+    /* Save sequence */
+    if (a->data_type == DATA_BLANK)
+	recno = fake_recno++;
+    else
+	recno = save_sequence(io, seq, bin, r_out);
 
     if (is_pair) {
 	find_pair(io, pair, recno, tname, bin, c, seq, a, r_out, lib);
     }
 
-    if (a->tmp)
+    if (a->tmp && (a->data_type & DATA_NAME))
 	bttmp_file_store(a->tmp, seq->name_len, seq->name, recno);
 
     free(seq->data);

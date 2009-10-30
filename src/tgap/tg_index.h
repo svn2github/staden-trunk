@@ -19,6 +19,14 @@ typedef struct {
     int fast_mode;
     bttmp_t *tmp;
     int reserved_seqs;
+    int data_type;
 } tg_args;
+
+#define DATA_SEQ	1
+#define DATA_QUAL	2
+#define DATA_NAME	4
+#define DATA_ANNO	8
+#define DATA_ALL	15
+#define DATA_BLANK	0x100 /* not even dummy seqs */
 
 #endif /* _TG_INDEX_H_ */

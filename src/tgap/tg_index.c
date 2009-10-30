@@ -124,6 +124,40 @@ int file_type (char *fn) {
     return '?';
 }
 
+/*
+ * Turns a comma separated list of data types into a bit-field.
+ */
+int parse_data_type(char *type) {
+    char *cp;
+    int data_type = 0;
+
+    do {
+	cp = strchr(type, ',');
+
+	if (0 == strncmp(type, "seq", 3))
+	    data_type |= DATA_SEQ;
+	else if (0 == strncmp(type, "qual", 4))
+	    data_type |= DATA_QUAL;
+	else if (0 == strncmp(type, "name", 4))
+	    data_type |= DATA_NAME;
+	else if (0 == strncmp(type, "anno", 4))
+	    data_type |= DATA_ANNO;
+	else if (0 == strncmp(type, "all",  3))
+	    data_type = DATA_ALL;
+	else if (0 == strncmp(type, "none", 4))
+	    data_type = 0;
+	else if (0 == strncmp(type, "blank", 4))
+	    data_type = DATA_BLANK;
+	else
+	    fprintf(stderr, "Ignoring unknown data_type '%.*s'\n",
+		    cp ? cp-type : strlen(type), type);
+
+	type = cp ? cp+1 : NULL;
+    } while (type);
+
+    return data_type;
+}
+
 void usage(void) {
     fprintf(stderr, "Usage: g_index [options] [-m] [-T] data_file ...\n");
     fprintf(stderr, "      -o output            Specify ouput filename (g_db)\n");
@@ -145,6 +179,9 @@ void usage(void) {
     fprintf(stderr, "      -f                   Fast mode: read-pair links are unidirectional\n");
     fprintf(stderr, "      -r nseq              Reserve space. Only necessary for exceptionally\n");
     fprintf(stderr, "                           large databases, eg n.seq > 100 million.\n");
+    fprintf(stderr, "      -d data_types        Only copy over certain data types. This is a comma\n"
+	            "                           separated list containing one or more words from:\n"
+	            "                           seq, qual, anno, name, all or none\n");
 }
 
 #include <malloc.h>
@@ -164,6 +201,7 @@ int main(int argc, char **argv) {
     a.min_bin_size  = MIN_BIN_SIZE;
     a.fast_mode     = 0;
     a.reserved_seqs = 0;
+    a.data_type     = DATA_ALL;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.4\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -173,9 +211,9 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:")) != -1) {
 #endif
 	switch(opt) {
 	case 'a':
@@ -237,6 +275,10 @@ int main(int argc, char **argv) {
 	    if (*cp == 'k' || *cp == 'K') a.reserved_seqs *= 1024;
 	    if (*cp == 'm' || *cp == 'M') a.reserved_seqs *= 1024*1024;
 	    if (*cp == 'g' || *cp == 'G') a.reserved_seqs *= 1024*1024*1024;
+	    break;
+
+	case 'd':
+	    a.data_type = parse_data_type(optarg);
 	    break;
 	    
 	default:
@@ -321,7 +363,6 @@ int main(int argc, char **argv) {
 	}
     }
 
-    
     /* Add to our sequence name B+Tree */
     if (a.tmp) {
 	char *name;

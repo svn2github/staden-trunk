@@ -285,7 +285,7 @@ char *baf_block_value(baf_block *b, int type) {
 }
 
 
-int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
+int construct_seq_from_block(tg_args *a,seq_t *s, baf_block *b, char **tname) {
     int ap, dir, cleft, cright, i, qb, mq, end;
     size_t len;
     char *cp, *seq, *qual, *name, *trace_name, *alignment;
@@ -294,7 +294,7 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
     memset(s, 0, sizeof(*s));
 
     /* Extract various sections from the block */
-    name = baf_block_value(b, RD);
+    name = (a->data_type & DATA_NAME) ? baf_block_value(b, RD) : "";
     seq  = baf_block_value(b, SQ);
     qual = baf_block_value(b, FQ);
     if (NULL == (trace_name = baf_block_value(b, TR)))
@@ -341,16 +341,24 @@ int construct_seq_from_block(seq_t *s, baf_block *b, char **tname) {
 	mq = 50;
 
     /* From fastq to binary array */
-    for (i = 0; i < len; i++)
-	qual[i] -= 33;
+    if (a->data_type & DATA_QUAL) {
+	for (i = 0; i < len; i++)
+	    qual[i] -= 33;
+    } else {
+	memset(qual, 0, len);
+    }
 
     qb = 1;
     s->format = SEQ_FORMAT_CNF1; /* pack bytes */
-    for (i = 0; i < len; i++) {
-	if (seq[i] == '-')
-	    seq[i] = '*';
-	if (seq[i] == 'n' || seq[i] == 'N')
-	    seq[i] = '-';
+    if (a->data_type & DATA_SEQ) {
+	for (i = 0; i < len; i++) {
+	    if (seq[i] == '-')
+		seq[i] = '*';
+	    if (seq[i] == 'n' || seq[i] == 'N')
+		seq[i] = '-';
+	}
+    } else {
+	memset(seq, 'N', len);
     }
 
 #if 0
@@ -472,7 +480,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    int is_pair = 0;
 
 	    /* Construct seq struct */
-	    if (-1 == construct_seq_from_block(&seq, b, &tname)) {
+	    if (-1 == construct_seq_from_block(a, &seq, b, &tname)) {
 		fprintf(stderr, "Failed to parse read block for seq %d\n",
 			nseqs);
 		break;
@@ -490,7 +498,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		
 	    if (pair) is_pair = 1;
 		
-	    recno = save_range_sequence(io, &seq, seq.mapping_qual, pair, is_pair, tname, c, a, flags, NULL);
+	    recno = save_range_sequence(io, &seq, seq.mapping_qual, pair,
+					is_pair, tname, c, a, flags, NULL);
 
 	    /* For anno */
 	    last_obj_type = GT_Seq;
@@ -517,6 +526,9 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    char *txt = baf_block_value(b, TX);
 	    int pos;
 	    bin_index_t *bin;
+
+	    if (!(a->data_type & DATA_ANNO))
+		break;
 
 	    if (txt)
 		unescape_line(txt);
