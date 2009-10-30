@@ -303,7 +303,6 @@ char *bam_aux_stringify(bam1_t *b) {
     return str;
 }
 
-
 /*
  * Removes a sequence from the bam_io_t struct.
  * This actually performs the main work of adding a sequence to the gap5
@@ -327,6 +326,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     const char *LB;
     HacheData hd;
     int new = 0;
+    char *name;
+    int name_len;
 #ifdef SAM_AUX_AS_TAG
     char *aux;
 #endif
@@ -373,6 +374,9 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	bio_extend_seq(bio, snum, base, qual);
     }
     
+    name = bam1_qname(b);
+    name_len = strlen(name);
+
     s.pos = bs->pos;
     s.len = bs->seq_len;
     s.seq_tech = STECH_SOLEXA;
@@ -380,9 +384,16 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.left = bs->left+1;
     s.parent_type = 0;
     s.parent_rec = 0;
-    s.name_len = strlen(bam1_qname(b));
-    s.data = (char *)malloc(s.name_len + 3 + 2*s.len);
-    s.name = s.data;
+    if (bio->a->data_type & DATA_NAME) {
+	s.name_len = name_len;
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len);
+	strcpy(s.name, name);
+    } else {
+	char *n = "";
+	s.name_len = 0;
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len);
+	strcpy(s.name, n);
+    }
     s.trace_name = s.name + s.name_len + 1;
     *s.trace_name = 0;
     s.trace_name_len = 0;
@@ -395,9 +406,15 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
 
-    strcpy(s.name, bam1_qname(b));
-    memcpy(s.seq,  bs->seq,  s.len);
-    memcpy(s.conf, bs->conf, s.len);
+    if (bio->a->data_type & DATA_SEQ)
+	memcpy(s.seq,  bs->seq,  s.len);
+    else
+	memset(s.seq, 'N', s.len);
+
+    if (bio->a->data_type & DATA_QUAL)
+	memcpy(s.conf, bs->conf, s.len);
+    else
+	memset(s.conf, 0, s.len);
     
     if (bam1_strand(b)) {
 	complement_seq_t(&s);
@@ -415,18 +432,18 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     if (b->core.flag & BAM_FREAD2)
 	s.flags |= SEQ_END_REV;
 
-    strcpy(tname, s.name);
+    strcpy(tname, name);
 
-    if (s.name_len >= 2 && s.name[s.name_len-2] == '/') {
-	tname[s.name_len-2] = 0;
+    if (name_len >= 2 && name[name_len-2] == '/') {
+	tname[name_len-2] = 0;
 
 	/* Check validity of name vs bit-fields */
-	if ((s.name[s.name_len-1] == '1' &&
+	if ((name[name_len-1] == '1' &&
 	     (s.flags & SEQ_END_MASK) != SEQ_END_FWD) ||
-	    (s.name[s.name_len-1] == '2' &&
+	    (name[name_len-1] == '2' &&
 	     (s.flags & SEQ_END_MASK) != SEQ_END_REV)) {
 	    fprintf(stderr, "Inconsistent read name vs flags: %s vs 0x%02x\n",
-		    s.name, b->core.flag);
+		    name, b->core.flag);
 	}
     }
 
@@ -447,7 +464,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     if (bio->pair) is_pair = 1;
 
     recno = save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair,
-				is_pair, tname, bio->c, bio->a, flags, lib);
+    				is_pair, tname, bio->c, bio->a, flags, lib);
+
 
 #ifdef SAM_AUX_AS_TAG
     /* Make an annotation out of the sam auxillary data */
@@ -530,6 +548,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
     int i, j, insertions = 0;
     static int last_tid = -1;
 
+
     /*
      * tid is reference id - aka contig
      * n is number of sequences at this point (pos).
@@ -540,7 +559,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	char *cname = bio->header->target_name[tid];
 
 	/* header->target_name[b.core.tid] */
-	printf("\n++Processing contig %d / %s\n", tid, cname);
+	//	printf("\n++Processing contig %d / %s\n", tid, cname);
 	
 	create_new_contig(io, &(bio->c), cname, bio->a->merge_contigs);
 	
@@ -624,7 +643,6 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
     return 0;
 }
 
-
 int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_io_t *bio = (bam_io_t*)calloc(1, sizeof(*bio));
     bam1_t *b;
@@ -679,7 +697,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_plbuf_destroy(plbuf);
 
     cache_flush(io);
-    printf("Loaded %d sequences\n", bio->count);
+    printf("Loaded %d of %d sequences\n", bio->count, count);
 
     if (bio->pair && !a->fast_mode) {    
 	sort_pair_file();
