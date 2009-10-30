@@ -122,6 +122,115 @@ int tcl_export_tags(ClientData clientData, Tcl_Interp *interp,
  * export_contigs implementation
  */
 
+/*
+ * Allocates and returns an escaped version of str. This relaces quotes,
+ * newlines, and other non-printable characters with backslashed versions of
+ * them in a C string style formatting.
+ *
+ * Returns malloced string on success
+ *         NULL on failure.
+ */
+static char *escape_C_string(char *str) {
+    size_t l = strlen(str);
+    size_t new_l = l*1.1+10;
+    char *new = malloc(new_l);
+    size_t oi, ni;
+    static char type[256];
+    static int type_init = 0;
+
+    /* A once-only lookup table to speed up the loop below */
+    if (!type_init) {
+	int i;
+	
+	for (i = 0; i < 256; i++) {
+	    if (isprint(i) && i != '"' && i != '\\') {
+		/* directly printable */
+		type[i] = 0;
+	    } else {
+		switch(i) {
+		    /* backslash single-char */
+		case '"':
+		case '\\':
+		    type[i] = i;
+		    break;
+		case '\n':
+		    type[i] = 'n';
+		    break;
+		case '\r':
+		    type[i] = 'r';
+		    break;
+		case '\t':
+		    type[i] = 't';
+		    break;
+		case '\a':
+		    type[i] = 'a';
+		    break;
+
+		default:
+		    type[i] = 1; /* octal escape */
+		}
+	    }
+	}
+	type_init = 1;
+    }
+
+
+    if (!new)
+	return NULL;
+
+    for (oi = ni = 0; oi < l; oi++) {
+	char c = str[oi];
+
+	/* Make enough room */
+	if (ni + 5 >= new_l) {
+	    new_l = new_l * 1.2 + 10;
+	    if (NULL == (new = realloc(new, new_l)))
+		return NULL;
+	}
+
+	switch(type[(unsigned char)c]) {
+	case 0:
+	    new[ni++] = c;
+	    break;
+	    
+	case 1:
+	    sprintf(&new[ni], "%03o", c);
+	    ni+=3;
+	    break;
+
+	default:
+	    new[ni++] = '\\';
+	    new[ni++] = type[(unsigned char)c];
+	}
+    }
+    new[ni++] = 0;
+
+    return new;
+}
+
+/*
+ * Computes and returns a false name for when the sequence has no read name.
+ * This is just the record number of the sequence or it's pair (whatever is
+ * lowest), optionally with a suffix.
+ */
+static char *false_name(GapIO *io, seq_t *s, int suffix, int *name_len) {
+    static char false_name[1024];
+    int p = sequence_get_pair(io, s);
+
+    if (suffix)
+	sprintf(false_name, "seq_%d%s",
+		s->rec < p ? p : s->rec,
+		s->rec < p ? ".f" : ".r");
+    else
+	sprintf(false_name, "seq_%d",
+		s->rec < p ? p : s->rec);
+
+    if (name_len)
+	*name_len = strlen(false_name);
+
+    return false_name;
+}
+
 static int export_header_sam(GapIO *io, FILE *fp,
 			     int cc, contig_list_t *cv) {
     int nreads = 0, i;
@@ -188,6 +297,10 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	/* Best guess at template name */
 	tname = s->name;
 	tname_len = s->name_len;
+
+	if (tname_len == 0)
+	    tname = false_name(io, s, 0, &tname_len);
+
 	if (cp = strchr(s->name, '/'))
 	    tname_len = cp-s->name;
 
@@ -352,6 +465,8 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
     rangec_t *r;
     int qalloc = 0;
     char *q = NULL;
+    char *name;
+    int name_len;
     
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
@@ -377,15 +492,22 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 	    q[i] = v;
 	}
 
+	if (s->name_len) {
+	    name_len = s->name_len;
+	    name = s->name;
+	} else {
+	    name = false_name(io, s, 1, &name_len);
+	}
+
 #ifdef FASTQ_COMPLEMENTED
 	fprintf(fp, "@%.*s %d\n%.*s\n+\n%.*s\n",
-		s->name_len, s->name, s != origs, len, s->seq, len, q);
+		name_len, name, s != origs, len, s->seq, len, q);
 
 	if (s != origs)
 	    free(s);
 #else
 	fprintf(fp, "@%.*s\n%.*s\n+\n%.*s\n",
-		s->name_len, s->name, len, s->seq, len, q);
+		name_len, name, len, s->seq, len, q);
 #endif
     }
     contig_iter_del(ci);
@@ -401,79 +523,258 @@ static int export_contig_fasta(GapIO *io, FILE *fp,
     contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
 					  start, end);
     rangec_t *r;
+    char *name;
+    int name_len;
     
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	int len = s->len < 0 ? -s->len : s->len;
 
-	fprintf(fp, ">%.*s\n%.*s\n", s->name_len, s->name, len, s->seq);
+	if (s->name_len) {
+	    name_len = s->name_len;
+	    name = s->name;
+	} else {
+	    name = false_name(io, s, 1, &name_len);
+	}
+
+	fprintf(fp, ">%.*s\n%.*s\n", name_len, name, len, s->seq);
     }
     contig_iter_del(ci);
 
     return 0;
 }
 
+/*
+ * A FIFO queue. We stack up sequences in here until we have sufficient
+ * data to punt the entire thing out including all the annotations.
+ */
+typedef struct fifo {
+    struct fifo *next;
+    rangec_t r; /* Make this a generic payload? */
+} fifo_t;
+
+typedef struct {
+    fifo_t *head;
+    fifo_t *tail;
+} fifo_queue_t;
+
+static fifo_queue_t *fifo_queue_create(void) {
+    fifo_queue_t *f = malloc(sizeof(*f));
+
+    if (!f)
+	return NULL;
+
+    f->head = NULL;
+    f->tail = NULL;
+
+    return f;
+}
+
+static void fifo_queue_destroy(fifo_queue_t *f) {
+    fifo_t *i, *n;
+
+    if (!f)
+	return;
+
+    for (i = f->head; i; i = n) {
+	n = i->next;
+	free(i);
+    }
+    free(f);
+}
+
+static void fifo_queue_push(fifo_queue_t *f, rangec_t *r) {
+    fifo_t *i = malloc(sizeof(*i));
+
+    i->r    = *r;
+    i->next = NULL;
+
+    if (!f->head)
+	f->head = i;
+    if (f->tail)
+	f->tail->next = i;
+    f->tail = i;
+}
+
+static fifo_t *fifo_queue_head(fifo_queue_t *f) {
+    return f->head;
+}
+
+static fifo_t *fifo_queue_pop(fifo_queue_t *f) {
+    fifo_t *i;
+
+    i = f->head;
+
+    if (f->head)
+	f->head = f->head->next;
+
+    if (f->head == NULL)
+	f->tail = NULL;
+
+    return i;
+}
+
+static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
+    seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec);
+    int len = s->len < 0 ? -s->len : s->len;
+    int i;
+    static int qalloc = 0;
+    static char *q = NULL, *S = NULL;
+    char *name, *cp;
+    int name_len;
+    fifo_t *last, *ti;
+
+    printf("POP SEQ %d @ %d,%d\n", fi->r.rec, fi->r.start, fi->r.end);
+
+    /* Output the sequence */
+    if (len > qalloc) {
+	qalloc = len;
+	q = realloc(q, qalloc);
+	S = realloc(S, qalloc);
+    }
+    for (i = 0; i < len; i++) {
+	int v = '!' + s->conf[i];
+	if (v < '!') v = '!';
+	if (v > 255) v = 255;
+	q[i] = v;
+
+	if (s->seq[i] == '-')
+	    S[i] = 'n';
+	else if (s->seq[i] == '*')
+	    S[i] = '-';
+	else
+	    S[i] = s->seq[i];
+    }
+
+    if (s->name_len) {
+	name_len = s->name_len;
+	name = s->name;
+    } else {
+	name = false_name(io, s, 1, &name_len);
+    }
+    fprintf(fp, "RD=%.*s\n", name_len, name);
+    fprintf(fp, "DR=%d\n", s->len >= 0 ? 1 : -1);
+    fprintf(fp,"AP=%d\n", 
+	    s->len >= 0
+	    ? fi->r.start + s->left-1
+	    : fi->r.start + (-s->len - s->right));
+    fprintf(fp, "QL=%d\n", s->left);
+    fprintf(fp, "QR=%d\n", s->right);
+    fprintf(fp, "PR=%d\n",
+	    (s->flags & SEQ_END_MASK) == SEQ_END_FWD ? 0 : 1);
+    /* Best guess at template name */
+    if ((cp = strchr(name, '.')) ||
+	(cp = strchr(name, '/')))
+	fprintf(fp, "TN=%.*s\n", (int)(cp-name), name);
+    if (s->trace_name_len)
+	fprintf(fp,"TR=%.*s\n", s->trace_name_len, s->trace_name);
+    if (s->alignment_len)
+	fprintf(fp, "AL=%.*s\n", s->alignment_len, s->alignment);
+    if (fi->r.mqual != 255)
+	fprintf(fp, "MQ=%d\n", fi->r.mqual);
+    fprintf(fp, "SQ=%.*s\n", len, S);
+    fprintf(fp, "FQ=%.*s\n\n", len, q);
+
+
+    /* Find tags on this sequence too */
+    for (last = NULL, ti = fifo_queue_head(tq); ti;) {
+	anno_ele_t *a;
+	char type[5];
+
+	if (ti->r.start > fi->r.end)
+	    break;
+
+	if (ti->r.pair_rec != fi->r.rec) {
+	    last = ti;
+	    ti = ti->next;
+	    continue;
+	}
+
+	printf("pop TAG %d @ %d,%d\n", ti->r.rec, ti->r.start, ti->r.end);
+
+	/* Tag is for this seq. */
+	a = cache_search(io, GT_AnnoEle, ti->r.rec);
+	fprintf(fp, "AN=%s\n", type2str(ti->r.mqual, type));
+	if (s->len >= 0) {
+	    fprintf(fp, "LO=%d\n", ti->r.start - (fi->r.start-1));
+	} else {
+	    fprintf(fp, "LO=%d\n", -s->len+1 - (ti->r.end - (fi->r.start-1)));
+	}
+	fprintf(fp, "LL=%d\n", ti->r.end - ti->r.start+1);
+	if (a->comment && *a->comment) {
+	    char *escaped = escape_C_string(a->comment);
+	    fprintf(fp, "TX=%s\n", escaped);
+	}
+	fprintf(fp, "\n");
+
+	/* Remove ti from the list (NB fifo is wrong abstract type) */
+	if (last) {
+	    last->next = ti->next;
+	    if (tq->tail == ti)
+		tq->tail = last;
+	    free(ti);
+	    ti = last->next;
+	} else {
+	    fifo_queue_pop(tq);
+	    free(ti);
+	    ti = fifo_queue_head(tq);
+	}
+    }
+}
+
 static int export_contig_baf(GapIO *io, FILE *fp,
 			     int crec, int start, int end) {
-    contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
-					  start, end);
+    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+						  start, end,
+						  GRANGE_FLAG_ISANY);
     rangec_t *r;
     int qalloc = 0;
     char *q = NULL, *S = NULL, *cp;
     contig_t *c;
+    char *name;
+    int name_len;
+    fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
+    fifo_t *fi;
+    int last_start = 0;
 
     /* Contig record */
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     fprintf(fp, "CO=%s\nLN=%d\n\n", c->name, c->end-c->start+1);
 
-    /* Seq records */
+    /* Seq/tag records */
     while (r = contig_iter_next(io, ci)) {
-	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	int len = s->len < 0 ? -s->len : s->len;
-	int i;
-
-	if (len > qalloc) {
-	    qalloc = len;
-	    q = realloc(q, qalloc);
-	    S = realloc(S, qalloc);
-	}
-	for (i = 0; i < len; i++) {
-	    int v = '!' + s->conf[i];
-	    if (v < '!') v = '!';
-	    if (v > 255) v = 255;
-	    q[i] = v;
-
-	    if (s->seq[i] == '-')
-		S[i] = 'n';
-	    else if (s->seq[i] == '*')
-		S[i] = '-';
-	    else
-		S[i] = s->seq[i];
+	/* Add new items to fifo */
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    fifo_queue_push(fq, r);
+	    printf("push SEQ %d @ %d,%d\n", r->rec, r->start, r->end);
+	    last_start = r->start;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    /* Technically this should be a list and not a fifo */
+	    fifo_queue_push(tq, r);
+	    printf("push TAG %d @ %d,%d\n", r->rec, r->start, r->end);
 	}
 
-	fprintf(fp, "RD=%.*s\n", s->name_len, s->name);
-	fprintf(fp, "DR=%d\n", s->len >= 0 ? 1 : -1);
-	fprintf(fp,"AP=%d\n", 
-		s->len >= 0
-		? r->start + s->left-1
-		: r->start + (-s->len - s->right));
-	fprintf(fp, "QL=%d\n", s->left);
-	fprintf(fp, "QR=%d\n", s->right);
-	fprintf(fp, "PR=%d\n",
-		(s->flags & SEQ_END_MASK) == SEQ_END_FWD ? 0 : 1);
-	/* Best guess at template name */
-	if ((cp = strchr(s->name, '.')) ||
-	    (cp = strchr(s->name, '/')))
-	    fprintf(fp, "TN=%.*s\n", (int)(cp-s->name), s->name);
-	if (s->trace_name_len)
-	    fprintf(fp,"TR=%.*s\n", s->trace_name_len, s->trace_name);
-	if (s->alignment_len)
-	    fprintf(fp, "AL=%.*s\n", s->alignment_len, s->alignment);
-	if (r->mqual != 255)
-	    fprintf(fp, "MQ=%d\n", r->mqual);
-	fprintf(fp, "SQ=%.*s\n", len, S);
-	fprintf(fp, "FQ=%.*s\n\n", len, q);
+	/* And pop off when they're history */
+	while (fi = fifo_queue_head(fq)) {
+	    if (fi->r.end < last_start) {
+		fifo_queue_pop(fq);
+		baf_export_seq(io, fp, fi, tq);
+		free(fi);
+	    } else {
+		break;
+	    }
+	}
     }
+
+    /* Flush the rest of queues */
+    while (fi = fifo_queue_head(fq)) {
+	fifo_queue_pop(fq);
+	baf_export_seq(io, fp, fi, tq);
+	free(fi);
+    }
+
+    fifo_queue_destroy(fq);
+    fifo_queue_destroy(tq);
     contig_iter_del(ci);
 
     if (q) free(q);
@@ -718,92 +1019,6 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 /* ------------------------------------------------------------------------
  * export_tags implementation
  */
-
-/*
- * Allocates and returns an escaped version of str. This relaces quotes,
- * newlines, and other non-printable characters with backslashed versions of
- * them in a C string style formatting.
- *
- * Returns malloced string on success
- *         NULL on failure.
- */
-static char *escape_C_string(char *str) {
-    size_t l = strlen(str);
-    size_t new_l = l*1.1+10;
-    char *new = malloc(new_l);
-    size_t oi, ni;
-    static char type[256];
-    static int type_init = 0;
-
-    /* A once-only lookup table to speed up the loop below */
-    if (!type_init) {
-	int i;
-	
-	for (i = 0; i < 256; i++) {
-	    if (isprint(i) && i != '"' && i != '\\') {
-		/* directly printable */
-		type[i] = 0;
-	    } else {
-		switch(i) {
-		    /* backslash single-char */
-		case '"':
-		case '\\':
-		    type[i] = i;
-		    break;
-		case '\n':
-		    type[i] = 'n';
-		    break;
-		case '\r':
-		    type[i] = 'r';
-		    break;
-		case '\t':
-		    type[i] = 't';
-		    break;
-		case '\a':
-		    type[i] = 'a';
-		    break;
-
-		default:
-		    type[i] = 1; /* octal escape */
-		}
-	    }
-	}
-	type_init = 1;
-    }
-
-
-    if (!new)
-	return NULL;
-
-    for (oi = ni = 0; oi < l; oi++) {
-	char c = str[oi];
-
-	/* Make enough room */
-	if (ni + 5 >= new_l) {
-	    new_l = new_l * 1.2 + 10;
-	    if (NULL == (new = realloc(new, new_l)))
-		return NULL;
-	}
-
-	switch(type[(unsigned char)c]) {
-	case 0:
-	    new[ni++] = c;
-	    break;
-	    
-	case 1:
-	    sprintf(&new[ni], "%03o", c);
-	    ni+=3;
-	    break;
-
-	default:
-	    new[ni++] = '\\';
-	    new[ni++] = type[(unsigned char)c];
-	}
-    }
-    new[ni++] = 0;
-
-    return new;
-}
 
 static int export_header_tags_gff(GapIO *io, FILE *fp,
 				  int cc, contig_list_t *cv) {
