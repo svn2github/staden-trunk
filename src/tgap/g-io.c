@@ -365,7 +365,7 @@ int read_aux_index32_(int fd, void *recv, int num)
 	/* LOW LEVEL IO HERE */
 	errno = 0;
 	if (read(fd, &rec32, sizeof(rec32)) != (int)(sizeof(rec32)))
-	    return 1;
+	    return i;
 
 	/* Convert 32-bit struct to the 64-bit one used in memory */
 	idx[i].image[0] = rec32.image[0];
@@ -376,16 +376,19 @@ int read_aux_index32_(int fd, void *recv, int num)
 	idx[i].used[1] = rec32.used[1];
     }
 
-    return 0;
+    return num;
 }
 
 
 int read_aux_index64_(int fd, void *recv, int num)
 {
     AuxIndex *idx = recv;
+    int ret;
+    
     /* LOW LEVEL IO HERE */
     errno = 0;
-    return read(fd, idx, sizeof(*idx)*num) != (int)(sizeof(*idx)*num);
+    ret = read(fd, idx, sizeof(*idx)*num);
+    return (int)(ret / sizeof(*idx));
 }
 
 
@@ -403,7 +406,7 @@ int read_aux_index_swapped32_(int fd, void *idxv, int num)
 	/* LOW LEVEL IO HERE */
 	errno = 0;
 	if (read(fd, &rec32, sizeof(rec32)) != (int)(sizeof(rec32)))
-	    return 1;
+	    return i;
 
 	swap_int4(rec32.image[0], image);
 	idx->image[0] = image;
@@ -417,22 +420,21 @@ int read_aux_index_swapped32_(int fd, void *idxv, int num)
 	idx++;
     }
 
-    return 0;
-
+    return num;
 }
 
 
 int read_aux_index_swapped64_(int fd, void *idxv, int num)
 {
     AuxIndex *idx = idxv;
-    int err, i;
+    int err, i, ret;
     AuxIndex *swapped;
 
     /* LOW LEVEL IO HERE */
     errno = 0;
-    if ((err = (read(fd, idx, sizeof(*idx)*num) != (int)(sizeof(*idx)*num))))
-	return err;
-    
+    ret = read(fd, idx, sizeof(*idx)*num);
+    num = (int)(ret / sizeof(*idx));
+
     for (i = 0; i < num; i++) {
 	swapped = &idx[i];
 
@@ -444,8 +446,7 @@ int read_aux_index_swapped64_(int fd, void *idxv, int num)
 	swap_GCardinal(swapped->used[1],swapped->used[1]);
     }
 
-    return 0;
-
+    return num;
 }
 
 

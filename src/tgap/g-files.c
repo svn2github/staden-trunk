@@ -406,12 +406,13 @@ int g_write_aux_header(GFile *gfile)
  * We use a hash table instead and cache (or not, for now) records for
  * as long as needed.
  */
+#define AUX_BLOCK_SZ 256
 Index *g_read_index(GFile *gfile, GCardinal rec) {
     Index *idx;
     HacheItem *hi;
     HacheData hd;
-    AuxIndex aidx;
-    int toggle;
+    AuxIndex aidx[AUX_BLOCK_SZ];
+    int toggle, nrecs, i;
 
     hi = HacheTableSearch(gfile->idx_hash, (char *)&rec, sizeof(rec));
     if (hi) {
@@ -422,27 +423,31 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
     if (-1==gfile->low_level_vector[GOP_SEEK_AUX_INDEX](gfile->fdaux,NULL,rec))
 	return gerr_set(GERR_SEEK_ERROR), NULL;
     
-    if (g_read_aux_index(gfile, &aidx, 1))
+    nrecs = g_read_aux_index(gfile, &aidx[0], AUX_BLOCK_SZ);
+    if (nrecs <= 0)
 	return gerr_set(GERR_READ_ERROR), NULL;
 
-    toggle = g_toggle_state(gfile->header.last_time, &aidx);
+    rec += nrecs-1;
+    for (i = nrecs-1; i >= 0; i--, rec--) {
+	toggle = g_toggle_state(gfile->header.last_time, &aidx[i]);
 
-    idx = (Index *)xcalloc(1, sizeof(*idx));
-    if (toggle != G_NO_TOGGLE) {
-	idx->aux_allocated = aidx.used[toggle];
-	idx->aux_image = aidx.image[toggle];
-	idx->aux_time =  aidx.time[toggle];
-	idx->aux_used =  aidx.used[toggle];
+	idx = (Index *)xcalloc(1, sizeof(*idx));
+	if (toggle != G_NO_TOGGLE) {
+	    idx->aux_allocated = aidx[i].used[toggle];
+	    idx->aux_image = aidx[i].image[toggle];
+	    idx->aux_time =  aidx[i].time[toggle];
+	    idx->aux_used =  aidx[i].used[toggle];
 
-	if (idx->aux_image != G_NO_IMAGE) {
-	    idx->flags = G_INDEX_NONE;
+	    if (idx->aux_image != G_NO_IMAGE) {
+		idx->flags = G_INDEX_NONE;
+	    }
+	} else {
+	    printf("No toggle for record %d\n", rec);
 	}
-    } else {
-	printf("No toggle for record %d\n", rec);
-    }
 
-    hd.p = idx;
-    HacheTableAdd(gfile->idx_hash, (char *)&rec, sizeof(rec), hd, NULL);
+	hd.p = idx;
+	HacheTableAdd(gfile->idx_hash, (char *)&rec, sizeof(rec), hd, NULL);
+    }
 
     return idx;
 }
