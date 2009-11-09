@@ -314,6 +314,7 @@ void *cache_item_resize(void *item, size_t size) {
     case GT_Seq: {
 	seq_t *s = (seq_t *)&new->data;
 	s->block->seq[s->idx] = s;
+	sequence_reset_ptr(s);
 	break;
     }
 
