@@ -191,10 +191,13 @@ int align_contigs (OVERLAP *overlap, int fixed_left, int fixed_right) {
 
 /*
  * The guts of the join editor "align" function.
+ * *shift returns how much we move xx1@pos1 relative to xx0@pos0. If it's
+ * positive we move it right, if it's negative we move it left.
  */
 static int align(edview *xx0, int pos0, int len0,
 		 edview *xx1, int pos1, int len1,
-		 int fixed_left, int fixed_right)
+		 int fixed_left, int fixed_right,
+		 int *shift)
 {
 
     char *ol0,*ol1, *cons0, *cons1;
@@ -253,19 +256,20 @@ static int align(edview *xx0, int pos0, int len0,
 	    left0 = -*S; /* used for display only */
 	    depad_to_pad0 += -*S;
 	    off0 = depad_to_pad0[0];
-	    xx1->displayPos -= off0;
 	    pos0 += off0;
+	    *shift = -off0;
 	    len0 -= -*S;
 	} else {
 	    left1 = *S; /* used for display only */
 	    depad_to_pad1 += *S;
 	    off1 = depad_to_pad1[0];
-	    xx0->displayPos -= off1;
 	    pos1 += off1;
+	    *shift = off1;
 	    len1 -= *S;
 	}
 	S++;
-	xx0->link->lockOffset = xx1->displayPos - xx0->displayPos;
+    } else {
+	*shift = 0;
     }
 
     /* Clip right end */
@@ -384,7 +388,7 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     int offset, ret;
     int overlapLength;
     int len0,len1;
-    int xx0_dp, xx1_dp;
+    int shift = 0;
     edview **xx2;
 
     int l0, l1, r0, r1; /* contig used extents */
@@ -438,7 +442,7 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	right0 = length1-offset;
     }
     overlapLength = right0 - left0+1;
-    if (overlapLength <= 0) return -1;
+    if (overlapLength <= 0) return 0; /* nothing to do */
 
     len0 = len1 = overlapLength;
 
@@ -455,22 +459,14 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
 	len1  += (int)(overlapLength * XTRA_PERC);
     }
 
-    xx0_dp = xx2[0]->displayPos;
-    xx1_dp = xx2[1]->displayPos;
 
-    if (left0 < 1 && left1 < 1) {
-	xx2[0]->displayPos += MAX(left0, left1)-1;
-	xx2[1]->displayPos += MAX(left0, left1)-1;
-    }
     if (left0 < 1) {
 	len0 -= 1-left0;
-	xx2[0]->displayPos += 1-left0;
 	left0 = 1;
     }
 
     if (left1 < 1) {
 	len1 -= 1-left1;
-	xx2[1]->displayPos += 1-left1;
 	left1 = 1;
     }
 
@@ -482,29 +478,19 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     }
 
     if (len0 <= 0 || len1 <= 0)
-	return -1;
-
-    xx->link->lockOffset = xx2[1]->displayPos - xx2[0]->displayPos;
+	return 0;
 
     /* Do the actual alignment */
     ret = align(xx2[0], left0, len0, xx2[1], left1, len1,
-		fixed_left, fixed_right);
+		fixed_left, fixed_right, &shift);
 
     printf("*** Alignment done\n");
 
-    if (ret) {
-	/* Alignment failed - put back display positions before returning */
-	xx2[0]->displayPos = xx0_dp;
-	xx2[1]->displayPos = xx1_dp;
-    } else {
-	if (xx0_dp != xx2[0]->displayPos) {
-	    xx2[0]->displayPos = xx0_dp;
-	}
+    if (ret)
+	return ret;
 
-	if (xx1_dp != xx2[1]->displayPos) {
-	    xx2[1]->displayPos = xx1_dp;
-	}
-    }
+    xx2[1]->displayPos = left1+shift - left0 + 1 + (xx2[0]->displayPos-1);
+    xx2[0]->displayPos = 1                       + (xx2[0]->displayPos-1);
 
     xx->link->lockOffset = xx2[1]->displayPos - xx2[0]->displayPos;
 
@@ -672,8 +658,6 @@ int edJoin(edview *xx) {
 	cr = xx->link->xx[1]->contig;
 	offset = -xx->link->lockOffset;
     }
-
-    //offset += contig_offset(io, &cr) - contig_offset(io, &cl);
 
     cache_flush(io);
 
