@@ -506,14 +506,13 @@ int lget_contig_num(GapIO *io, int listArgc, char **listArgv, /* INPUT list  */
     /* Set ranges */
     for (j=0; j<listArgc; j++) {
 	int st, en;
-	if ((*rargv)[j].end == INT_MAX || (*rargv)[j].start == INT_MAX)
-	    consensus_valid_range(io, (*rargv)[j].contig,
-				  (*rargv)[j].start == INT_MAX ? &st : NULL,
-				  (*rargv)[j].end   == INT_MAX ? &en : NULL);
-	if ((*rargv)[j].start == INT_MAX)
+
+	consensus_valid_range(io, (*rargv)[j].contig, &st, &en);
+
+	if ((*rargv)[j].start == INT_MAX || (*rargv)[j].start < st)
 	    (*rargv)[j].start = st;
 
-	if ((*rargv)[j].end == INT_MAX)
+	if ((*rargv)[j].end == INT_MAX || (*rargv)[j].end > en)
 	    (*rargv)[j].end = en;
     }
 

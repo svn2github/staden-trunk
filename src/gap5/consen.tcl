@@ -560,6 +560,7 @@ proc get_consensus {args} {
     }
     fconfigure $fd -translation binary
 
+    set INT_MAX 2147483647
     foreach contig $opt(-contigs) {
 	foreach {id start end} $contig {
 	    set crec [cname2crec $io $id]
@@ -567,7 +568,7 @@ proc get_consensus {args} {
 	    if {$start == ""} {set start [$c get_start]}
 	    if {$end   == ""} {set end   [$c get_end]}
 
-	    set cons [calc_consensus -io $io -contigs =$crec]
+	    set cons [calc_consensus -io $io -contigs "{=$crec $start $end}"]
 	    set c60 [reformat_sequence -fold 60 -str $cons]
 	    switch $opt(-format) {
 		1 {
