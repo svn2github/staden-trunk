@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
     a.reserved_seqs = 0;
     a.data_type     = DATA_ALL;
 
-    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.4\n");
+    printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.5\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
