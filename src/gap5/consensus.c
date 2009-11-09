@@ -122,7 +122,6 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 			     CSIR_SORT_BY_X | CSIR_LEAVES_ONLY,
 			     CONS_BIN_SIZE, &nr);
 
-
     /* Skip through spanning bins returned */
     left = start;
     for (i = 0; i < nr; i++) {
@@ -136,6 +135,13 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	printf("Bin %d: %d..%d (%d)\n", r[i].rec, r[i].start, r[i].end,
 	       r[i].end - r[i].start);
 	bin = (bin_index_t *)cache_search(io, GT_Bin, r[i].rec);
+
+	if (r[i].start > left) {
+	    printf("Filling missing region %d..%d\n", left, r[i].start-1);
+	    calculate_consensus_simple2(io, contig, left, r[i].start-1,
+					con  ? &con[left-start]  : NULL,
+					qual ? &qual[left-start] : NULL); 
+	}
 
 	f_a = r[i].pair_start;
 	f_b = r[i].pair_end;
@@ -174,6 +180,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		//bstart = cons_r->start;
 		//bend   = cons_r->end;
 		s = (seq_t *)cache_search(io, GT_Seq, cons_r->rec);
+		cache_incr(io, s);
 
 	    } else {
 		/* Not cached, or is cached but needs updating */
@@ -202,7 +209,7 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 
 		    if ((s->len < 0) ^ r[i].comp)
 			s->len = -s->len;
-
+		    
 		} else {
 		    printf("Creating new cached cons\n");
 		    memset(&seq, 0, sizeof(seq));
@@ -231,6 +238,8 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		 * provided we're in read/write mode.
 		 */
 
+		if (s != &seq)
+		    cache_incr(io, s);
 
 		/* Update consensus and quality */
 		tmp_qual = calloc(bend - bstart + 1, sizeof(float));
@@ -287,7 +296,11 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		    free(s->seq);
 		    free(s->conf);
 
+		    if (s != &seq)
+			cache_decr(io, s);
+
 		    s = cache_search(io, GT_Seq, recno);
+		    cache_incr(io, s);
 		}
 
 		if (!io->read_only) {
@@ -336,6 +349,8 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		/* read-only cheat, so free up some data now */
 		free(s->seq);
 		free(s->conf);
+	    } else {
+		cache_decr(io, s);
 	    }
 
 	    if (dup_s)
@@ -893,7 +908,7 @@ int consensus_valid_range(GapIO *io, int contig, int *start, int *end) {
 		if (cons[i].depth)
 		    break;
 	    }
-	} while (i == 0 && pos >= c->start);
+	} while (i == -1 && pos >= c->start);
 
 	*end = pos;
     }
