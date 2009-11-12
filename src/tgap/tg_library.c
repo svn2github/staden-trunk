@@ -75,7 +75,7 @@ int ibin_width(int ibin) {
  * Returns record number on success
  *         -1 on failure
  */
-int library_new(GapIO *io) {
+int library_new(GapIO *io, char *name) {
     int rec;
     library_t *lib;
     int i;
@@ -86,10 +86,19 @@ int library_new(GapIO *io) {
 
     /* Initialise the values */
     lib = get_lib(io, rec);
+    lib = cache_rw(io, lib);
 
     lib->rec = rec;
     lib->machine = 0;
     lib->lib_type = 0;
+
+    if (name && *name) {
+	lib = cache_item_resize(lib, sizeof(*lib) + strlen(name) + 1);
+	lib->name = (char *)&lib->data;
+	strcpy(lib->name, name);
+    } else {
+	lib->name = NULL;
+    }
 
     for (i = 0; i < 3; i++) {
 	lib->insert_size[i] = 0;

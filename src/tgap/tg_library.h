@@ -12,7 +12,7 @@
  * Returns record number on success
  *         -1 on failure
  */
-int library_new(GapIO *io);
+int library_new(GapIO *io, char *name);
 
 int accumulate_library_rec(GapIO *io, int rec, int type, int size);
 void accumulate_library(GapIO *io, library_t *lib, int type, int size);

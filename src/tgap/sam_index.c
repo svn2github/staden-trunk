@@ -353,7 +353,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	int lrec;
 	printf("New library %s\n", LB);
 
-	lrec = library_new(bio->io);
+	lrec = library_new(bio->io, LB);
 	lib = get_lib(bio->io, lrec);
 	hi->data.p = lib;
 	cache_incr(bio->io, lib);

@@ -6,7 +6,7 @@ proc ListLibraries {io} {
 
     # Create our tablelist
     tablelist $t.list \
-	-columns {7 Index 8 "Name" 10 "Count" 8 "Type" 10 "Insert size" 6 "s.d." 15 "Orientation"} \
+	-columns {7 Index 15 "Name" 10 "Pair count" 8 "Type" 10 "Insert size" 6 "s.d." 15 "Orientation"} \
         -labelcommand tablelist::sortByColumn \
 	-exportselection 0 \
 	-stretch 0 \
@@ -41,7 +41,7 @@ proc ListLibraries {io} {
     set nc [$db get_num_libraries]
     for {set i 0} {$i < $nc} {incr i} {
 	set lib [$io get_library [$db get_library_rec $i]]
-	set name   "lib\#$i"
+	set name    [$lib get_name]
 	set orient  [$lib get_orient]
 	set type    [$lib get_machine]
 	set mean    [$lib get_insert_size]

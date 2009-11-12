@@ -429,7 +429,9 @@ typedef struct {
     
     /* A distribution summary, in 1s initially, and then 2s, 4s, 8s, etc */
     int size_hist[3][LIB_BINS];
-} library_t;
 
+    char *name;
+    char *data;
+} library_t;
 
 #endif /* _TG_STRUCT_H_ */

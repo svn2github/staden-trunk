@@ -177,7 +177,7 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	    int lrec;
 	    printf("New library %s\n", LB);
 
-	    lrec = library_new(io);
+	    lrec = library_new(io, LB);
 	    lib = get_lib(io, lrec);
 	    hi->data.p = lib;
 	    cache_incr(io, lib);

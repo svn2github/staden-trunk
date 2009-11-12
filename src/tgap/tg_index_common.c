@@ -281,6 +281,12 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     HacheItem *hi;
     static int fake_recno = 1;
 
+    /* Update sequence library, aka read-group */
+    if (lib && !seq->parent_type) {
+	seq->parent_type = GT_Library;
+	seq->parent_rec = lib->rec;
+    }
+
     /* Create range */
     r.start = seq->pos;
     r.end   = seq->pos + ABS(seq->len) - 1;

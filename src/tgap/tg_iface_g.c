@@ -1508,9 +1508,11 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     cached_item *ci;
     GView v;
-    library_t *lib;
+    library_t *lib, l;
     char *ch, *zpacked;
     size_t len, ssz;
+    int fmt = -1;
+    char *name = NULL;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -1520,7 +1522,8 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 
     if (ch && len) {
 	assert(ch[0] == GT_Library);
-	assert(ch[1] == 0); /* format */
+	fmt = ch[1];
+	assert(fmt >= 0 && fmt <= 1); /* format */
 
 	zpacked = mem_inflate(ch+2, len-2, &ssz);
 	free(ch);
@@ -1528,44 +1531,59 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 	ch = zpacked;
     }
 
-    /* Generate in-memory data structure */
-    if (!(ci = cache_new(GT_Library, rec, v, NULL, sizeof(*lib))))
-	return NULL;
-
-    lib = (library_t *)&ci->data;
-    lib->rec = rec;
+    /* Generate a static in-memory data structure */
     if (ch == NULL || len == 0) {
-	lib->insert_size[0] = 0;
-	lib->insert_size[1] = 0;
-	lib->insert_size[2] = 0;
-	lib->sd[0] = 0;
-	lib->sd[1] = 0;
-	lib->sd[2] = 0;
-	lib->machine = 0;
-	lib->lib_type = 0;
-	memset(lib->size_hist, 0, 3 * LIB_BINS * sizeof(lib->size_hist[0][0]));
+	l.insert_size[0] = 0;
+	l.insert_size[1] = 0;
+	l.insert_size[2] = 0;
+	l.sd[0] = 0;
+	l.sd[1] = 0;
+	l.sd[2] = 0;
+	l.machine = 0;
+	l.lib_type = 0;
+	l.name = NULL;
+	memset(l.size_hist, 0, 3 * LIB_BINS * sizeof(l.size_hist[0][0]));
     } else {
 	int i, j;
 	uint32_t tmp;
 	unsigned char *cp = (unsigned char *)ch;
 
-	cp += u72int(cp, (uint32_t *)&lib->insert_size[0]);
-	cp += u72int(cp, (uint32_t *)&lib->insert_size[1]);
-	cp += u72int(cp, (uint32_t *)&lib->insert_size[2]);
-	cp += u72int(cp, &tmp); lib->sd[0] = tmp/100.0;
-	cp += u72int(cp, &tmp); lib->sd[1] = tmp/100.0;
-	cp += u72int(cp, &tmp); lib->sd[2] = tmp/100.0;
-	cp += u72int(cp, (uint32_t *)&lib->machine);
-	cp += u72int(cp, (uint32_t *)&lib->lib_type);
+	cp += u72int(cp, (uint32_t *)&l.insert_size[0]);
+	cp += u72int(cp, (uint32_t *)&l.insert_size[1]);
+	cp += u72int(cp, (uint32_t *)&l.insert_size[2]);
+	cp += u72int(cp, &tmp); l.sd[0] = tmp/100.0;
+	cp += u72int(cp, &tmp); l.sd[1] = tmp/100.0;
+	cp += u72int(cp, &tmp); l.sd[2] = tmp/100.0;
+	cp += u72int(cp, (uint32_t *)&l.machine);
+	cp += u72int(cp, (uint32_t *)&l.lib_type);
 	
 	for (j = 0; j < 3; j++) {
 	    int last = 0;
 	    for (i = 0; i < LIB_BINS; i++) {
-		cp += s72int(cp, &lib->size_hist[j][i]);
-		lib->size_hist[j][i] += last;
-		last = lib->size_hist[j][i];
+		cp += s72int(cp, &l.size_hist[j][i]);
+		l.size_hist[j][i] += last;
+		last = l.size_hist[j][i];
 	    }
 	}
+
+	if (fmt && *cp) {
+	    name = cp;
+	}
+    }
+
+    /* Copy over to a dynamically allocated cache item */
+    if (!(ci = cache_new(GT_Library, rec, v, NULL, sizeof(*lib) +
+			 (name ? strlen(name)+1 : 0))))
+	return NULL;
+    lib = (library_t *)&ci->data;
+    memcpy(lib, &l, sizeof(l));
+    lib->rec = rec;
+
+    if (name) {
+	lib->name = (char *)&lib->data;
+	strcpy(lib->name, name);
+    } else {
+	lib->name = NULL;
     }
 
     if (ch)
@@ -1590,7 +1608,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
     assert(ci->lock_mode >= G_LOCK_RW);
 
     fmt[0] = GT_Library;
-    fmt[1] = 0; /* format */
+    fmt[1] = lib->name ? 1 : 0;
 
     cp += int2u7(lib->insert_size[0], cp);
     cp += int2u7(lib->insert_size[1], cp);
@@ -1607,6 +1625,10 @@ static int io_library_write(void *dbh, cached_item *ci) {
 	    cp += int2s7(lib->size_hist[j][i] - last, cp);
 	    last = lib->size_hist[j][i];
 	}
+    }
+    if (lib->name) {
+	strcpy(cp, lib->name);
+	cp += strlen(lib->name)+1;
     }
 
     /* Compress it */
