@@ -249,6 +249,19 @@ static int export_header_sam(GapIO *io, FILE *fp,
 	fprintf(fp, "@SQ\tSN:%s\tLN:%d\n",  c->name, len);
     }
 
+    /* Libraries - well read-groups in SAM. */
+    for (i = 0; i < io->db->Nlibraries; i++) {
+	int lrec = arr(GCardinal, io->library, i);
+	library_t *lib = cache_search(io, GT_Library, lrec);
+	if (lib->name) {
+	    fprintf(fp, "@RG\tID:%s\tLB:%s\n", lib->name, lib->name);
+	} else {
+	    char buf[100];
+	    sprintf(buf, "rg#%d", lib->rec);
+	    fprintf(fp, "@RG\tID:%s\tLB:%s\n", buf, buf);
+	}
+    }
+
     return 0;
 }
 
@@ -282,6 +295,8 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	int left, right, op, oplen, cglen;
 	int iend, isize;
 	char *mate_ref;
+	library_t *lib = NULL;
+	int last_lrec = -1;
 
 	if (s->len < 0) {
 	    s = dup_seq(s);
@@ -405,6 +420,15 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 
 	assert(cglen == len);
 
+	/* Sam cannot handle gaps at the end of sequences */
+	if (*(cp-1) == 'D') {
+	    cp-=2;
+	    while(*cp >= '0' && *cp <= '9')
+		cp--;
+	    cp++;
+	    *cp = 0;
+	}
+
 	/* Compute insert sizes */
 	if (insert_sizes && r->pair_rec) {
 	    int other_c, other_st, other_en, other_dir;
@@ -431,7 +455,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    mate_ref = r->pair_rec ? "=" : "*";
 	}
 
-	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s\n",
+	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s",
 		tname_len, tname,
 		flag,
 		c->name,
@@ -443,6 +467,19 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		isize,
 		len, S,
 		len, Q);
+
+	if (s->parent_type == GT_Library) {
+	    if (last_lrec != s->parent_rec) {
+		last_lrec  = s->parent_rec;
+		lib = cache_search(io, GT_Library, s->parent_rec);
+	    }
+	    if (lib->name)
+		fprintf(fp, "\tRG:Z:%s\n", lib->name);
+	    else
+		fprintf(fp, "\tRG:Z:rg#%d\n", lib->rec);
+	} else {
+	    fprintf(fp, "\n");
+	}
 
 	if (s != sorig)
 	    free(s);
