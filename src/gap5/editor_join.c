@@ -626,7 +626,7 @@ int join_invalidate(GapIO *io, contig_t *leftc, contig_t *rightc,
 
 	/* Invalidate right contig */
 	start = rightc->start;
-	end = junction;
+	end = leftc->end - junction;
 	c = rightc;
     }
 
