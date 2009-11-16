@@ -297,6 +297,14 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	int i;
 	bin_index_t *ch;
 
+	if (complement) {
+	    f_a = -1;
+	    f_b = offset + bin->size-1;
+	} else {
+	    f_a = +1;
+	    f_b = offset;
+	}
+
 	/* Find which child bin is most suitable */
 	cache_incr(io, bin);
 	for (i = 0; i < 2;) {
