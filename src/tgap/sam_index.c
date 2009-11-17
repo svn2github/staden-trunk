@@ -562,6 +562,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	//	printf("\n++Processing contig %d / %s\n", tid, cname);
 	
 	create_new_contig(io, &(bio->c), cname, bio->a->merge_contigs);
+	bio->n_inserts = 0;
 	
 	last_tid = tid;
     }
@@ -611,6 +612,8 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 			     (p->qpos < p->b->core.l_qseq-1
 			      ? bam1_qual(p->b)[p->qpos+1]
 			      : bam1_qual(p->b)[p->qpos])) / 2;
+			if (p->is_tail)
+			    continue;
 		    }
 		    bio_extend_seq(bio, i, c, q);
 		} else if (p->indel < 0 && j == 0) {
@@ -619,7 +622,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		     * However THIS base should still exist, I think.
 		     * It's all a little bit confusing if truth be known.
 		     */
-		    int c = tolower(bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), p->qpos)]);
+		    int c = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), p->qpos)];
 		    int q = bam1_qual(p->b)[p->qpos];
 		    bio_extend_seq(bio, i, c, q);
 		}
