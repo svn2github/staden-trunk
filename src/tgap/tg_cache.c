@@ -509,6 +509,8 @@ void cache_destroy(GapIO *io) {
     if (!h)
 	return;
 
+    HacheTableStats(h, stdout);
+
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
 	for (hi = h->bucket[i]; hi; hi = hi->next) {
