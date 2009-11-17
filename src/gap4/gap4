@@ -71,7 +71,10 @@ STADENROOT=`find_dir $0`/..;                  export STADENROOT
 STADLIB=$STADENROOT/lib/staden;               export STADLIB
 STADTABL=$STADENROOT/share/staden/etc;        export STADTABL
 STADTCL=$STADENROOT/share/staden/tcl;         export STADTCL
-GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
+if [ "x" = "x$GTAGDB" ]
+then
+    GTAGDB=GTAGDB:$HOME/GTAGDB:$STADTABL/GTAGDB;  export GTAGDB
+fi
 
 PATH=$STADENROOT/bin:$PATH
 LD_LIBRARY_PATH=$STADENROOT/lib:$STADENROOT/lib/staden:$LD_LIBRARY_PATH
