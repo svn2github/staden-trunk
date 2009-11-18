@@ -81,12 +81,10 @@ static integer c__20 = 20;
     static integer lreg, ilcr;
     extern /* Subroutine */ int info_(char *, ftnlen);
     static integer mask, leno, rreg, ilct, ierr, cnum, idim1, idim2, iladd[1];
-    extern /* Subroutine */ int swrt1_(char *, char *, integer *, ftnlen, 
-	    ftnlen), swrt2_(char *, char *, integer *, integer *, ftnlen, 
-	    ftnlen);
+    extern /* Subroutine */ int swrt1_(char *, char *, ...),
+	swrt2_(char *, char *, ...);
     static integer iradd[1], ifail[2];
-    extern /* Subroutine */ int swrt5_(char *, char *, integer *, char *, 
-	    real *, integer *, integer *, ftnlen, ftnlen, ftnlen);
+    extern /* Subroutine */ int swrt5_(char *, char *, ...);
     static integer idim22[2], kfail;
     extern /* Subroutine */ int aline_(char *, char *, char *, char *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
@@ -117,8 +115,7 @@ static integer c__20 = 20;
 	    *, integer *, integer *, integer *), abedin_(integer *, integer *,
 	     integer *, integer *, integer *, integer *, char *, integer *, 
 	    integer *, char *, integer *, integer *, integer *, integer *, 
-	    integer *, ftnlen, ftnlen), swrt2b_(char *, char *, integer *, 
-	    char *, ftnlen, ftnlen, ftnlen);
+	    integer *, ftnlen, ftnlen), swrt2b_(char *, char *, ...);
     extern integer gnread_(char *, ftnlen);
     extern /* Subroutine */ int delcon_(char *, integer *, integer *, integer 
 	    *, ftnlen), addtit_(char *, char *, integer *, integer *, ftnlen, 
@@ -1509,8 +1506,7 @@ L901:
     extern integer indb_(integer *, char *, char *, ftnlen, ftnlen);
     extern /* Subroutine */ int info_(char *, ftnlen);
     static integer itmp;
-    extern /* Subroutine */ int swrt1_(char *, char *, integer *, ftnlen, 
-	    ftnlen);
+    extern /* Subroutine */ int swrt1_(char *, char *, ...);
     static char namid[40], infod[80];
     extern /* Subroutine */ int sindb_(integer *, integer *, char *, char *, 
 	    integer *, ftnlen, ftnlen);
@@ -2731,9 +2727,8 @@ L50:
     /* Local variables */
     static integer i__, jlc[100];
     static char csen[1];
-    extern /* Subroutine */ int info_(char *, ftnlen), swrt1_(char *, char *, 
-	    integer *, ftnlen, ftnlen), swrt4_(char *, char *, integer *, 
-	    integer *, integer *, integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int info_(char *, ftnlen),
+	swrt1_(char *, char *, ...), swrt4_(char *, char *, ...);
     static integer jfail, jdim22;
     extern /* Subroutine */ int aline_(char *, char *, char *, char *, 
 	    integer *, integer *, integer *, integer *, integer *, integer *, 
@@ -3270,10 +3265,9 @@ L100:
     static integer kc, lg;
     extern /* Subroutine */ int info_(char *, ftnlen);
     static char name1[15], name2[15];
-    extern /* Subroutine */ int swrt0_(char *, char *, ftnlen, ftnlen);
+    extern /* Subroutine */ int swrt0_(char *, char *, ...);
     static integer iendc;
-    extern /* Subroutine */ int swrt3_(char *, char *, real *, integer *, 
-	    integer *, ftnlen, ftnlen);
+    extern /* Subroutine */ int swrt3_(char *, char *, ...);
     static integer iendg;
     static char infod[80];
     extern integer forta_(char *, char *, integer *, char *, char *, integer *
@@ -4645,9 +4639,8 @@ L10:
     static integer j, l;
     extern /* Subroutine */ int info_(char *, ftnlen);
     static char infod[60];
-    extern /* Subroutine */ int swrt2b_(char *, char *, integer *, char *, 
-	    ftnlen, ftnlen, ftnlen), swrt3b_(char *, char *, integer *, char *
-	    , integer *, ftnlen, ftnlen, ftnlen), erromf_(char *, ftnlen);
+    extern /* Subroutine */ int swrt2b_(char *, char *, ...),
+	swrt3b_(char *, char *, ...), erromf_(char *, ftnlen);
     static char errmsg[333];
     extern /* Subroutine */ int tolist_(char *, char *, ftnlen, ftnlen);
 
