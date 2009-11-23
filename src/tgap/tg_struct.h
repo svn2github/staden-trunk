@@ -428,7 +428,7 @@ typedef struct {
     int lib_type;        /* Primary LIB_T_ type expected */
     
     /* A distribution summary, in 1s initially, and then 2s, 4s, 8s, etc */
-    int size_hist[3][LIB_BINS];
+    int size_hist[3][LIB_BINS+1];
 
     char *name;
     char *data;
