@@ -221,8 +221,21 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
      *
      * Similarly the range_t array will either be left where it is, moved to
      * the right contig, or split in half (creating a new one for the right).
+     *
+     * FIXED: always need this. Eg:
+     *
+     * |-------------empty--------------|
+     * |----------------|---------------|
+     * |--------|-------|--------|------|
+     *             ^
+     *             |
+     *             break here
+     *
+     * In this case we need to duplicate the parent as it overlaps the left
+     * bin, which may (or may not) have data that needs to end up in the right
+     * hand contig. Just duplicate for now and free later on if needed.
      */
-    if (pright != cr->rec ||
+    if (1 /* always! */ || pright != cr->rec ||
 	(bin->rng && NMAX(bin->start_used, bin->end_used) >= pos)) {
 	//printf("NMAX=%d >= %d\n", NMAX(bin->start_used, bin->end_used), pos);
 
@@ -643,9 +656,6 @@ int break_contig(GapIO *io, int crec, int cpos) {
     remove_redundant_bins(io, cl);
     remove_redundant_bins(io, cr);
 
-    cache_decr(io, cl);
-    cache_decr(io, cr);
-
     printf("Final left bin = %d, right bin = %d\n", cl->bin, cr->bin);
 
     /* Empty contig? If so remove it completely */
@@ -664,6 +674,9 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     //if (cl->bin) contig_dump_ps(io, &cl, "/tmp/tree_l.ps");
     //if (cr->bin) contig_dump_ps(io, &cr, "/tmp/tree_r.ps");
+
+    cache_decr(io, cl);
+    cache_decr(io, cr);
 
     return 0;
 }
