@@ -51,6 +51,118 @@ typedef struct {
 } g_io;
 
 
+#if 0
+/*
+ * Dummy nul-compression functions. These do nothing except satisfy the internal
+ * API requirements. We use them simply to compute the base-line so we can
+ * estimate the overhead due to zlib vs overhead due to lzma.
+ */
+static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
+    char *out = malloc(size);
+    memcpy(out, data, size);
+    *cdata_size = size;
+    return out;
+}
+
+static char *mem_deflate_parts(char *data,
+			       size_t *part_size, int nparts,
+			       size_t *cdata_size) {
+    size_t tot_size = 0;
+    int i;
+    for (i = 0; i < nparts; i++)
+	tot_size += part_size[i];
+    return mem_deflate(data, tot_size, cdata_size);
+}
+
+static char *mem_deflate_lparts(char *data,
+				size_t *part_size, int *level, int nparts,
+				size_t *cdata_size) {
+    return mem_deflate_parts(data, part_size, nparts, cdata_size);
+}
+
+static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
+    char *out = malloc(csize);
+    memcpy(out, cdata, csize);
+    *size = csize;
+    return out;
+}
+#endif
+
+#if 0
+/* ------------------------------------------------------------------------ */
+/*
+ * Data compression routines using liblzma (xz)
+ *
+ * On a test set this shrunk the main db from 136157104 bytes to 114796168, but
+ * caused tg_index to grow from 2m43.707s to 15m3.961s. Exporting as bfastq
+ * went from 18.3s to 36.3s. So decompression suffers too, but not as bad
+ * as compression times.
+ *
+ * For now we disable this functionality. If it's to be reenabled make sure you
+ * improve the mem_inflate implementation as it's just a test hack at the moment.
+ */
+#include <lzma.h>
+static char *mem_lzma_encode(char *data, size_t size, size_t *cdata_size) {
+    char *out;
+    size_t out_size = lzma_stream_buffer_bound(size);
+    *cdata_size = 0;
+
+    out = malloc(out_size);
+
+    /* Single call compression */
+    if (LZMA_OK != lzma_easy_buffer_encode(3, LZMA_CHECK_CRC32, NULL, data, size, out, cdata_size, out_size))
+    	return NULL;
+
+    return out;
+}
+
+static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
+    return mem_lzma_encode(data, size, cdata_size);
+}
+
+static char *mem_deflate_parts(char *data,
+			       size_t *part_size, int nparts,
+			       size_t *cdata_size) {
+    size_t tot_size = 0;
+    int i;
+    for (i = 0; i < nparts; i++)
+	tot_size += part_size[i];
+    return mem_lzma_encode(data, tot_size, cdata_size);
+}
+
+static char *mem_deflate_lparts(char *data,
+				size_t *part_size, int *level, int nparts,
+				size_t *cdata_size) {
+    return mem_deflate_parts(data, part_size, nparts, cdata_size);
+}
+
+static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
+    uint64_t memlimit=100000000;
+    size_t inpos = 0, outpos = 0, outsize;
+    char *out;
+    int r;
+
+    /* quick hack */
+    outsize = 1000000;
+    out = malloc(outsize);
+
+    r = lzma_stream_buffer_decode(&memlimit, 0, NULL, cdata, &inpos, csize, out, &outpos, outsize);
+    if (LZMA_OK != r) {
+	outsize = 10000000;
+	inpos = outpos = 0;
+	out = realloc(out, outsize);
+	r = lzma_stream_buffer_decode(&memlimit, 0, NULL, cdata, &inpos, csize, out, &outpos, outsize);
+	return NULL;
+    }
+
+    *size = outpos;
+
+    out = realloc(out, outpos);
+    return out;
+}
+
+#else
+
 /* ------------------------------------------------------------------------ */
 /*
  * Data compression routines using zlib.
@@ -269,7 +381,7 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
     *size = s.total_out;
     return (char *)data;
 }
-
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*
@@ -3135,17 +3247,37 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     return ci;
 }
 
+/* #define REORDER_BY_READ_GROUP */
+/*
+ * Define REORDER_BY_READ_GROUP if you wish to experiment with sorting data
+ * by their read group. NOTE: this only has support in writing at the moment,
+ * for purposes of evaluating the impact on storage size.
+ *
+ * The theory (and practice) is that when using mixed libraries, such as
+ * many of the 1000Genomes project bam files, we have different profiles
+ * for read names and quality values. It reduced the space taken up in
+ * names by 17% and quality values in 5.6% - overall coming out at 6-7%.
+ * This is dramatically increased if we alter the SEQ_BLOCK_BITS parameter,
+ * with 8192 seqs stored in upto 1Mb chunks giving 14% savings (19% when
+ * using lzma which can make better use of larger blocks). Increasing
+ * SEQ_BLOCK_BITS has other, detrimental, effects though.
+ *
+ * It's disabled for now though as it would require another format change
+ * and also we don't have the reading code yet.
+ */
+
 static int io_seq_block_write(void *dbh, cached_item *ci) {
     int err;
     g_io *io = (g_io *)dbh;
     seq_block_t *b = (seq_block_t *)&ci->data;
-    int i, last_index;
+    int i, j, last_index;
     unsigned char *cp, *cp_start;
     unsigned char *out[17], *out_start[17];
     size_t out_size[17], total_size;
     int level[17];
     GIOVec vec[2];
     char fmt[2];
+    int nb = 0;
 
     set_dna_lookup();
 
@@ -3177,6 +3309,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[14]+= s->alignment_len;
 	out_size[15]+= ABS(s->len); /* seq */
 	out_size[16]+= ABS(s->len) * (s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
+	nb += ABS(s->len);
     }
     for (i = 0; i < 17; i++)
 	out_start[i] = out[i] = malloc(out_size[i]+1);
@@ -3211,10 +3344,12 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	/* Duplicated in range, but adds about 1% on test bam input */
 	*out[8]++ = s->mapping_qual;
 	
+#ifndef REORDER_BY_READ_GROUP
 	/* Name */
 	out[9] += int2u7(s->name_len, out[9]);
 	memcpy(out[12], s->name, s->name_len);
 	out[12] += s->name_len;
+#endif
 
 	/* Trace name */
 	if (s->trace_name_len == 0 ||
@@ -3257,9 +3392,72 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	 * saves a tiny amount of space, but it's only about 0.3% and costs
 	 * cpu
 	 */
+#ifndef REORDER_BY_READ_GROUP
 	memcpy(out[16], s->conf, ABS(s->len)); out[16] += ABS(s->len);
+#endif
     }
 
+#if 0
+    /* rotated quality */
+    /* Generally this isn't an improvement */
+    unsigned char *tmp = out[16];
+    for (j = 0; nb; j++) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    int delta;
+	    seq_t *s = b->seq[i];
+
+	    if (!s) {
+		continue;
+	    }
+
+	    if (j > ABS(s->len))
+		continue;
+
+	    *out[16]++ = s->conf[j];
+	    nb--;
+	}
+    }
+#endif
+
+#ifdef REORDER_BY_READ_GROUP
+    /* quality, name sorted by library */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	seq_t *s = b->seq[i];
+
+	if (!s) {
+	    continue;
+	}
+
+	if (s->parent_rec < 0) {
+	    s->parent_rec = -s->parent_rec;
+	    continue;
+	}
+
+	memcpy(out[16], s->conf, ABS(s->len)); out[16] += ABS(s->len);
+
+	out[9] += int2u7(s->name_len, out[9]);
+	memcpy(out[12], s->name, s->name_len);
+	out[12] += s->name_len;
+
+	for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+	    seq_t *s2 = b->seq[j];
+
+	    if (!s2)
+		continue;
+
+	    if (s2->parent_rec != s->parent_rec)
+		continue;
+
+	    memcpy(out[16], s2->conf, ABS(s2->len)); out[16] += ABS(s2->len);
+
+	    out[9] += int2u7(s2->name_len, out[9]);
+	    memcpy(out[12], s2->name, s2->name_len);
+	    out[12] += s2->name_len;
+
+	    s2->parent_rec = -s2->parent_rec;
+	}
+    }
+#endif
 
     /* Concatenate data types together and adjust out_size to actual usage */
     for (total_size = i = 0; i < 17; i++) {
