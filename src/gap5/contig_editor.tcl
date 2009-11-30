@@ -357,7 +357,8 @@ proc contig_editor {w args} {
 	-state [io_undo_state $opt(contig)]
     button $tool.redo    -text Redo -command "editor_redo $w" \
 	-state [io_redo_state $opt(contig)]
-    button $tool.search  -text Search
+    button $tool.search  -text Search \
+	-command "create_search_win $w.search \"editor_search $w\" 0"
     button $tool.save -text Save -command "editor_save $w"
     wm protocol $w WM_DELETE_WINDOW "editor_exit $w"
     pack $tool.undo $tool.redo $tool.search $tool.cutoffs $tool.quality \
@@ -468,6 +469,12 @@ proc contig_editor {w args} {
 
 
     $e redraw
+}
+
+proc editor_search {w args} {
+    global $w
+    set ed [set ${w}(curr_editor)]
+    eval $ed search $args
 }
 
 proc editor_lock {w} {

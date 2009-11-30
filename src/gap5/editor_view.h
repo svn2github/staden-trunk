@@ -246,4 +246,11 @@ int edSelectClear(edview *xx);
 void edSelectFrom(edview *xx, int pos);
 void edSelectTo(edview *xx, int pos);
 
+/*
+ * Searching - see edview_search.c
+ */
+int edview_search(edview *xx, int forwards, int strand,
+		  char *type, char *value);
+
+
 #endif /* _EDITOR_VIEW_H_ */

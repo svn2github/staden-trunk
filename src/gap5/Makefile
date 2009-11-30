@@ -27,6 +27,7 @@ TGAP_LIB=-ltgap
 CEDITOR = \
 	editor_view.o \
 	editor_join.o \
+	editor_search.o \
 	tkEdNames.o\
 	tkEditor.o\
 	tman_interface.o\

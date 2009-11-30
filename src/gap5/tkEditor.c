@@ -440,7 +440,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"read_start",    "read_start2",  "read_end",     "read_end2",
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join",          "select",	 "edit_annotation",
-	"cursor_id",     "get_cursor",
+	"cursor_id",     "get_cursor",	  "search",
 	NULL
     };
     enum options {
@@ -452,7 +452,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_READ_START,     _READ_START2,   _READ_END,      _READ_END2,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
 	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION,
-	_CURSOR_ID,      _GET_CURSOR,
+	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,
     };
 
     if (argc < 2) {
@@ -941,6 +941,27 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 					       ? xx->cursor->id
 					       : -1));
 	break;
+
+    case _SEARCH: {
+	char *value = "";
+	int found;
+
+	if (argc < 5 || argc > 6) {
+	    Tcl_AppendResult(interp, "wrong # args: should be \"",
+			     argv[0], " search direction strand type ?value?\"",
+			     (char *) NULL);
+	    goto fail;
+	}
+
+	if (argc == 6)
+	    value = argv[5];
+	
+	found = edview_search(ed->xx, (strcmp("backward", argv[2]) != 0),
+			      *argv[3], argv[4], value);
+	vTcl_SetResult(interp, "%d", found);
+
+	break;
+    }
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));
