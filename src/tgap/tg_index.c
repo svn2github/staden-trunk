@@ -182,9 +182,12 @@ void usage(void) {
     fprintf(stderr, "      -d data_types        Only copy over certain data types. This is a comma\n"
 	            "                           separated list containing one or more words from:\n"
 	            "                           seq, qual, anno, name, all or none\n");
+    fprintf(stderr, "      -c method            Specifies the compression method. This shold be\n");
+    fprintf(stderr, "                           one of 'none', 'zlib' or 'lzma'.\n");
+    fprintf(stderr, "                           Zlib is the default.\n");
 }
 
-#include <malloc.h>
+//#include <malloc.h>
 
 int main(int argc, char **argv) {
     tg_args a;
@@ -202,18 +205,20 @@ int main(int argc, char **argv) {
     a.fast_mode     = 0;
     a.reserved_seqs = 0;
     a.data_type     = DATA_ALL;
+    a.comp_mode     = COMP_MODE_ZLIB;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.5\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
     printf("\t        \t2007-2009, Wellcome Trust Sanger Institute\n\n");
 
+    //mallopt(M_TRIM_THRESHOLD, 100000);
     //mallopt(M_MMAP_MAX, 0);
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:")) != -1) {
 #endif
 	switch(opt) {
 	case 'a':
@@ -280,6 +285,20 @@ int main(int argc, char **argv) {
 	case 'd':
 	    a.data_type = parse_data_type(optarg);
 	    break;
+
+	case 'c':
+	    if (0 == strcmp(optarg, "none")) {
+		a.comp_mode = COMP_MODE_NONE;
+	    } else if (0 == strcmp(optarg, "zlib")) {
+		a.comp_mode = COMP_MODE_ZLIB;
+	    } else if (0 == strcmp(optarg, "lzma")) {
+		a.comp_mode = COMP_MODE_LZMA;
+	    } else {
+		fprintf(stderr, "Unknown compression mode '%s'\n", optarg);
+		usage();
+		return 1;
+	    }
+	    break;
 	    
 	default:
 	    if (opt == ':')
@@ -307,6 +326,8 @@ int main(int argc, char **argv) {
 	perror("gio_open");
 	return 1;
     }
+    io->iface->setopt(io->dbh, OPT_COMP_MODE, a.comp_mode);
+
     if (a.no_tree) {
 	io->db = cache_rw(io, io->db);
 	io->db->seq_name_index = 0;

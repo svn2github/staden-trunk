@@ -48,47 +48,47 @@ typedef struct {
     btree_t *seq_name_tree;
     HacheTable *contig_name_hash;
     btree_t *contig_name_tree;
+    int comp_mode;
 } g_io;
 
 
-#if 0
 /*
- * Dummy nul-compression functions. These do nothing except satisfy the internal
- * API requirements. We use them simply to compute the base-line so we can
- * estimate the overhead due to zlib vs overhead due to lzma.
+ * Dummy nul-compression functions. These do nothing except satisfy
+ * the internal API requirements. We use them simply to compute the
+ * base-line so we can estimate the overhead due to zlib vs overhead
+ * due to lzma.
  */
-static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
+static char *nul_mem_deflate(char *data, size_t size, size_t *cdata_size) {
     char *out = malloc(size);
     memcpy(out, data, size);
     *cdata_size = size;
     return out;
 }
 
-static char *mem_deflate_parts(char *data,
-			       size_t *part_size, int nparts,
-			       size_t *cdata_size) {
+static char *nul_mem_deflate_parts(char *data,
+				   size_t *part_size, int nparts,
+				   size_t *cdata_size) {
     size_t tot_size = 0;
     int i;
     for (i = 0; i < nparts; i++)
 	tot_size += part_size[i];
-    return mem_deflate(data, tot_size, cdata_size);
+    return nul_mem_deflate(data, tot_size, cdata_size);
 }
 
-static char *mem_deflate_lparts(char *data,
-				size_t *part_size, int *level, int nparts,
-				size_t *cdata_size) {
-    return mem_deflate_parts(data, part_size, nparts, cdata_size);
+static char *nul_mem_deflate_lparts(char *data,
+				    size_t *part_size, int *level, int nparts,
+				    size_t *cdata_size) {
+    return nul_mem_deflate_parts(data, part_size, nparts, cdata_size);
 }
 
-static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
+static char *nul_mem_inflate(char *cdata, size_t csize, size_t *size) {
     char *out = malloc(csize);
     memcpy(out, cdata, csize);
     *size = csize;
     return out;
 }
-#endif
 
-#if 0
+#ifdef HAVE_LIBLZMA
 /* ------------------------------------------------------------------------ */
 /*
  * Data compression routines using liblzma (xz)
@@ -99,10 +99,15 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
  * as compression times.
  *
  * For now we disable this functionality. If it's to be reenabled make sure you
- * improve the mem_inflate implementation as it's just a test hack at the moment.
+ * improve the mem_inflate implementation as it's just a test hack at the
+ * moment.
  */
 #include <lzma.h>
-static char *mem_lzma_encode(char *data, size_t size, size_t *cdata_size) {
+
+/* Fast mode, but not too bad on compression still */
+#define LZMA_LEVEL 3
+
+static char *lzma_mem_deflate(char *data, size_t size, size_t *cdata_size) {
     char *out;
     size_t out_size = lzma_stream_buffer_bound(size);
     *cdata_size = 0;
@@ -110,65 +115,88 @@ static char *mem_lzma_encode(char *data, size_t size, size_t *cdata_size) {
     out = malloc(out_size);
 
     /* Single call compression */
-    if (LZMA_OK != lzma_easy_buffer_encode(3, LZMA_CHECK_CRC32, NULL, data, size, out, cdata_size, out_size))
+    if (LZMA_OK != lzma_easy_buffer_encode(LZMA_LEVEL,
+					   LZMA_CHECK_CRC32, NULL, data,
+					   size, out, cdata_size, out_size))
     	return NULL;
 
     return out;
 }
 
-static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
-    return mem_lzma_encode(data, size, cdata_size);
-}
-
-static char *mem_deflate_parts(char *data,
-			       size_t *part_size, int nparts,
-			       size_t *cdata_size) {
+static char *lzma_mem_deflate_parts(char *data,
+				    size_t *part_size, int nparts,
+				    size_t *cdata_size) {
     size_t tot_size = 0;
     int i;
     for (i = 0; i < nparts; i++)
 	tot_size += part_size[i];
-    return mem_lzma_encode(data, tot_size, cdata_size);
+    return lzma_mem_deflate(data, tot_size, cdata_size);
 }
 
-static char *mem_deflate_lparts(char *data,
-				size_t *part_size, int *level, int nparts,
-				size_t *cdata_size) {
-    return mem_deflate_parts(data, part_size, nparts, cdata_size);
+static char *lzma_mem_deflate_lparts(char *data,
+				     size_t *part_size, int *level, int nparts,
+				     size_t *cdata_size) {
+    return lzma_mem_deflate_parts(data, part_size, nparts, cdata_size);
 }
 
-static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
-    uint64_t memlimit=100000000;
+static char *lzma_mem_inflate(char *cdata, size_t csize, size_t *size) {
     size_t inpos = 0, outpos = 0, outsize;
-    char *out;
+    lzma_stream strm = LZMA_STREAM_INIT;
+    size_t out_size = 0, out_pos = 0;
+    char *out = NULL;
     int r;
 
-    /* quick hack */
-    outsize = 1000000;
-    out = malloc(outsize);
+    /* Initiate the decoder */
+    if (LZMA_OK != lzma_stream_decoder(&strm, 50000000, 0))
+	return NULL;
 
-    r = lzma_stream_buffer_decode(&memlimit, 0, NULL, cdata, &inpos, csize, out, &outpos, outsize);
-    if (LZMA_OK != r) {
-	outsize = 10000000;
-	inpos = outpos = 0;
-	out = realloc(out, outsize);
-	r = lzma_stream_buffer_decode(&memlimit, 0, NULL, cdata, &inpos, csize, out, &outpos, outsize);
+    /* Decode loop */
+    strm.avail_in = csize;
+    strm.next_in = cdata;
+
+    for (;strm.avail_in;) {
+	if (strm.avail_in > out_size - out_pos) {
+	    out_size += strm.avail_in * 4 + 32768;
+	    out = realloc(out, out_size);
+	}
+	strm.avail_out = out_size - out_pos;
+	strm.next_out = &out[out_pos];
+
+	r = lzma_code(&strm, LZMA_RUN);
+	if (LZMA_OK != r && LZMA_STREAM_END != r) {
+	    fprintf(stderr, "r=%d\n", r);
+	    fprintf(stderr, "mem=%ld\n", lzma_memusage(&strm));
+	    return NULL;
+	}
+
+	out_pos = strm.total_out;
+
+	if (r == LZMA_STREAM_END)
+	    break;
+    }
+
+    /* finish up any unflushed data; necessary? */
+    r = lzma_code(&strm, LZMA_FINISH);
+    if (r != LZMA_OK && r != LZMA_STREAM_END) {
+	fprintf(stderr, "r=%d\n", r);
 	return NULL;
     }
 
-    *size = outpos;
+    out = realloc(out, strm.total_out);
+    *size = strm.total_out;
 
-    out = realloc(out, outpos);
+    lzma_end(&strm);
+
     return out;
 }
-
-#else
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*
  * Data compression routines using zlib.
  */
 #include <zlib.h>
-static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
+static char *zlib_mem_deflate(char *data, size_t size, size_t *cdata_size) {
     z_stream s;
     unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
@@ -219,9 +247,9 @@ static char *mem_deflate(char *data, size_t size, size_t *cdata_size) {
     return (char *)cdata;
 }
 
-static char *mem_deflate_parts(char *data,
-			       size_t *part_size, int nparts,
-			       size_t *cdata_size) {
+static char *zlib_mem_deflate_parts(char *data,
+				    size_t *part_size, int nparts,
+				    size_t *cdata_size) {
     z_stream s;
     unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
@@ -278,9 +306,9 @@ static char *mem_deflate_parts(char *data,
     return (char *)cdata;
 }
 
-static char *mem_deflate_lparts(char *data,
-				size_t *part_size, int *level, int nparts,
-				size_t *cdata_size) {
+static char *zlib_mem_deflate_lparts(char *data,
+				     size_t *part_size, int *level, int nparts,
+				     size_t *cdata_size) {
     z_stream s;
     unsigned char *cdata = NULL; /* Compressed output */
     int cdata_alloc = 0;
@@ -338,7 +366,7 @@ static char *mem_deflate_lparts(char *data,
     return (char *)cdata;
 }
 
-static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
+static char *zlib_mem_inflate(char *cdata, size_t csize, size_t *size) {
     z_stream s;
     unsigned char *data = NULL; /* Uncompressed output */
     int data_alloc = 0;
@@ -381,7 +409,72 @@ static char *mem_inflate(char *cdata, size_t csize, size_t *size) {
     *size = s.total_out;
     return (char *)data;
 }
-#endif
+
+static char *mem_deflate(int mode,
+			 char *data, size_t size, size_t *cdata_size) {
+    switch (mode) {
+    case COMP_MODE_NONE:
+	return nul_mem_deflate (data, size, cdata_size);
+    case COMP_MODE_ZLIB:
+	return zlib_mem_deflate(data, size, cdata_size);
+#ifdef HAVE_LIBLZMA
+    case COMP_MODE_LZMA:
+	return lzma_mem_deflate(data, size, cdata_size);
+#endif	
+    }
+    
+    return NULL;
+}
+
+static char *mem_deflate_parts(int mode, char *data,
+			       size_t *part_size, int nparts,
+			       size_t *cdata_size) {
+    switch (mode) {
+    case COMP_MODE_NONE:
+	return nul_mem_deflate_parts (data, part_size, nparts, cdata_size);
+    case COMP_MODE_ZLIB:
+	return zlib_mem_deflate_parts(data, part_size, nparts, cdata_size);
+#ifdef HAVE_LIBLZMA
+    case COMP_MODE_LZMA:
+	return lzma_mem_deflate_parts(data, part_size, nparts, cdata_size);
+#endif	
+    }
+    
+    return NULL;
+}
+
+static char *mem_deflate_lparts(int mode, char *data,
+				size_t *part_size, int *level, int nparts,
+				size_t *cdata_size) {
+    switch (mode) {
+    case COMP_MODE_NONE:
+	return nul_mem_deflate_lparts (data, part_size, level, nparts, cdata_size);
+    case COMP_MODE_ZLIB:
+	return zlib_mem_deflate_lparts(data, part_size, level, nparts, cdata_size);
+#ifdef HAVE_LIBLZMA
+    case COMP_MODE_LZMA:
+	return lzma_mem_deflate_lparts(data, part_size, level, nparts, cdata_size);
+#endif	
+    }
+    
+    return NULL;
+}
+
+static char *mem_inflate(int mode,
+			 char *cdata, size_t csize, size_t *size) {
+    switch (mode) {
+    case COMP_MODE_NONE:
+	return nul_mem_inflate (cdata, csize, size);
+    case COMP_MODE_ZLIB:
+	return zlib_mem_inflate(cdata, csize, size);
+#ifdef HAVE_LIBLZMA
+    case COMP_MODE_LZMA:
+	return lzma_mem_inflate(cdata, csize, size);
+#endif	
+    }
+    
+    return NULL;
+}
 
 /* ------------------------------------------------------------------------ */
 /*
@@ -565,7 +658,7 @@ static GCardinal *io_generic_read_i4(g_io *io, GView v, int type,
     }
 
     assert(cp[0] == type);
-    assert(cp[1] == 0); /* initial format */
+    assert((cp[1] & 0x3f) == 0); /* initial format */
     cp += 2;
     cp += u72int(cp, &ni);
     *nitems = ni;
@@ -601,7 +694,7 @@ static cached_item *io_generic_read(void *dbh, GRec rec, int type) {
 	return NULL;
 
     assert(cp[0] == type);
-    assert(cp[1] == 0); /* initial format */
+    assert((cp[1] & 0x3f) == 0); /* initial format */
     cp += 2;
     cp += u72int(cp, &nitems);
 
@@ -692,6 +785,7 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     BTRec rec = *((BTRec *)key);
     static HacheData hd;
     int fmt;
+    int comp_mode;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -702,12 +796,13 @@ static HacheData *btree_load_cache(void *clientdata, char *key, int key_len,
     }
 
     assert(buf[0] == GT_BTree);
-    assert(buf[1] <= 1); /* format number */
-    fmt = buf[1];
+    assert((buf[1] & 0x3f) <= 1); /* format number */
+    fmt = buf[1] & 0x3f;
+    comp_mode = ((unsigned char)buf[1]) >> 6;
 
     if (fmt == 1) {
 	size_t ssz;
-	char *unpacked = mem_inflate(buf+2, len-2, &ssz);
+	char *unpacked = mem_inflate(comp_mode, buf+2, len-2, &ssz);
 
 	free(buf);
 	buf2 = buf = unpacked;
@@ -770,10 +865,10 @@ static int btree_write(g_io *io, btree_node_t *n) {
 
     /* Set up data type and version */
     fmt[0] = GT_BTree;
-    fmt[1] = 1;
+    fmt[1] = 1 | (io->comp_mode << 6);
     vec[0].buf = fmt;  vec[0].len = 2;
 
-    gzout = mem_deflate_parts(data, parts, 4, &gzlen);
+    gzout = mem_deflate_parts(io->comp_mode, data, parts, 4, &gzlen);
     free(data); data = gzout; len = gzlen;
 
     vec[1].buf = data; vec[1].len = len;
@@ -1072,8 +1167,24 @@ static void *io_database_connect(char *dbname, int ro) {
 
     io->seq_name_tree = NULL; /* Initialised when reading GDatabase */
     io->contig_name_tree = NULL;
+    io->comp_mode = COMP_MODE_ZLIB;
 
     return io;
+}
+
+int io_database_setopt(void *dbh, io_opt opt, int val) {
+    g_io *io = (g_io *)dbh;
+
+    switch (opt) {
+    case OPT_COMP_MODE:
+	io->comp_mode = val;
+	return 0;
+
+    default:
+	fprintf(stderr, "Unknown io_option: %d\n", opt);
+    }
+
+    return -1;
 }
 
 int io_database_lock(void *dbh) {
@@ -1623,7 +1734,7 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
     library_t *lib, l;
     char *ch, *zpacked;
     size_t len, ssz;
-    int fmt = -1;
+    int fmt = -1, comp_mode;
     char *name = NULL;
 
     /* Load from disk */
@@ -1634,10 +1745,11 @@ static cached_item *io_library_read(void *dbh, GRec rec) {
 
     if (ch && len) {
 	assert(ch[0] == GT_Library);
-	fmt = ch[1];
+	fmt = ch[1] & 0x3f;
+	comp_mode = ((unsigned char)ch[1]) >> 6;
 	assert(fmt >= 0 && fmt <= 1); /* format */
 
-	zpacked = mem_inflate(ch+2, len-2, &ssz);
+	zpacked = mem_inflate(comp_mode, ch+2, len-2, &ssz);
 	free(ch);
 	len = ssz;
 	ch = zpacked;
@@ -1720,7 +1832,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
     assert(ci->lock_mode >= G_LOCK_RW);
 
     fmt[0] = GT_Library;
-    fmt[1] = lib->name ? 1 : 0;
+    fmt[1] = (lib->name ? 1 : 0) | (io->comp_mode << 6);
 
     cp += int2u7(lib->insert_size[0], cp);
     cp += int2u7(lib->insert_size[1], cp);
@@ -1744,7 +1856,7 @@ static int io_library_write(void *dbh, cached_item *ci) {
     }
 
     /* Compress it */
-    gzout = mem_deflate((char *)cpstart, cp-cpstart, &ssz);
+    gzout = mem_deflate(io->comp_mode, (char *)cpstart, cp-cpstart, &ssz);
     //err = g_write(io, ci->view, cpstart, cp-cpstart);
     vec[0].buf = fmt;   vec[0].len = 2;
     vec[1].buf = gzout; vec[1].len = ssz;
@@ -1781,7 +1893,7 @@ static cached_item *io_vector_read(void *dbh, GRec rec) {
 /* ------------------------------------------------------------------------
  * bin access methods
  */
-static char *pack_rng_array(GRange *rng, int nr, int *sz) {
+static char *pack_rng_array(int comp_mode, GRange *rng, int nr, int *sz) {
     int i;
     size_t part_sz[7];
     GRange last, last_tag;
@@ -1864,9 +1976,9 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
 	size_t ssz;
 
 	if (*sz < 512)
-	    gzout = mem_deflate(out_orig, *sz, &ssz);
+	    gzout = mem_deflate(comp_mode, out_orig, *sz, &ssz);
 	else
-	    gzout = mem_deflate_parts(out_orig, part_sz, 7, &ssz);
+	    gzout = mem_deflate_parts(comp_mode, out_orig, part_sz, 7, &ssz);
 	*sz = ssz;
 
     	free(out_orig);
@@ -1880,14 +1992,16 @@ static char *pack_rng_array(GRange *rng, int nr, int *sz) {
     return out_orig;
 }
 
-static GRange *unpack_rng_array(unsigned char *packed, int packed_sz, int *nr) {
+static GRange *unpack_rng_array(int comp_mode, unsigned char *packed,
+				int packed_sz, int *nr) {
     uint32_t i, off[6];
     unsigned char *cp[6], *zpacked = NULL;
     GRange last, *r, *ls = &last, *lt = &last;
     size_t ssz;
 
     /* First of all, inflate the compressed data */
-    zpacked = packed = (unsigned char *)mem_inflate((char *)packed,
+    zpacked = packed = (unsigned char *)mem_inflate(comp_mode,
+						    (char *)packed,
 						    packed_sz, &ssz);
     packed_sz = ssz;
 
@@ -1981,6 +2095,7 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     size_t buf_len;
     uint32_t bflag;
     int version;
+    int comp_mode;
 
     /* Load from disk */
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
@@ -2109,8 +2224,9 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
 	    buf = malloc(vi.used);
 	    g_read(io, v, buf, vi.used);
 	    assert(buf[0] == GT_Range);
-	    assert(buf[1] == 0);
-	    r = unpack_rng_array(buf+2, vi.used-2, &nranges);
+	    assert((buf[1] & 0x3f) == 0);
+	    comp_mode = ((unsigned char)buf[1]) >> 6;
+	    r = unpack_rng_array(comp_mode, buf+2, vi.used-2, &nranges);
 	    free(buf);
 
 	    rdstats[GT_Range] += vi.used;
@@ -2177,7 +2293,7 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	GIOVec vec[2];
 
 	fmt[0] = GT_Range;
-	fmt[1] = 0;
+	fmt[1] = 0 | (io->comp_mode << 6);
 
 	bin->flags &= ~BIN_RANGE_UPDATED;
 
@@ -2186,7 +2302,8 @@ static int io_bin_write_view(g_io *io, bin_index_t *bin, GView v) {
 	    bin->flags |= BIN_BIN_UPDATED;
 	}
 
-	cp = pack_rng_array(ArrayBase(GRange, bin->rng), ArrayMax(bin->rng),
+	cp = pack_rng_array(io->comp_mode, ArrayBase(GRange, bin->rng),
+			    ArrayMax(bin->rng),
 			    /* bin->start_used, */ &sz);
 	//printf("Packed %d ranges in %d bytes\n", ArrayMax(bin->rng), sz);
 
@@ -3035,6 +3152,25 @@ static int io_seq_index_add(void *dbh, char *name, GRec rec) {
 /* ------------------------------------------------------------------------
  * seq_block access methods
  */
+
+#define REORDER_BY_READ_GROUP
+/*
+ * Define REORDER_BY_READ_GROUP if you wish to experiment with sorting data
+ * by their read group.
+ *
+ * The theory (and practice) is that when using mixed libraries, such as
+ * many of the 1000Genomes project bam files, we have different profiles
+ * for read names and quality values. It reduced the space taken up in
+ * names by 17% and quality values in 5.6% - overall coming out at 6-7%.
+ * This is dramatically increased if we alter the SEQ_BLOCK_BITS parameter,
+ * with 8192 seqs stored in upto 1Mb chunks giving 14% savings (19% when
+ * using lzma which can make better use of larger blocks). Increasing
+ * SEQ_BLOCK_BITS has other, detrimental, effects though.
+ *
+ * Either way the reading code will handle it as the first format byte
+ * is adjusted to indicate whether reordering took place.
+ */
+
 static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     g_io *io = (g_io *)dbh;
     GView v;
@@ -3043,7 +3179,8 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     unsigned char *buf, *cp;
     size_t buf_len;
     seq_t in[SEQ_BLOCK_SZ];
-    int i, last;
+    int i, j, k, last;
+    int reorder_by_read_group = 0;
 
     set_dna_lookup();
 
@@ -3069,12 +3206,16 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     assert(buf[0] == GT_SeqBlock);
-    assert(buf[1] == 0); /* format */
+    assert((buf[1] & 0x3f) <= 1); /* format */
+    if ((buf[1] & 0x3f) >= 1)
+	reorder_by_read_group = 1;
 
     /* Ungzip it too */
     if (1) {
 	size_t ssz;
-	buf = (unsigned char *)mem_inflate((char *)buf+2, buf_len-2, &ssz);
+	int comp_mode = ((unsigned char)buf[1]) >> 6;
+	buf = (unsigned char *)mem_inflate(comp_mode, 
+					   (char *)buf+2, buf_len-2, &ssz);
 	free(cp);
 	cp = buf;
 	buf_len = ssz;
@@ -3192,12 +3333,47 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
     /* Decode variable sized components */
     /* Names */
-    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-	if (!b->seq[i]) continue;
-	b->seq[i]->name = (char *)&b->seq[i]->data;
-	memcpy(b->seq[i]->name, cp, b->seq[i]->name_len);
-	cp += b->seq[i]->name_len;
-	b->seq[i]->name[b->seq[i]->name_len] = 0;
+    if (reorder_by_read_group) {
+	for (i = k = 0; i < SEQ_BLOCK_SZ; i++) {
+	    seq_t *s = b->seq[i];
+	    if (!s) continue;
+
+	    if (s->parent_rec < 0) {
+		s->parent_rec = -s->parent_rec;
+		continue;
+	    }
+
+	    s->name = (char *)&s->data;
+	    s->name_len = in[k++].name_len;
+	    memcpy(s->name, cp, s->name_len);
+	    cp += s->name_len;
+	    s->name[s->name_len] = 0;
+
+	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+		seq_t *s2 = b->seq[j];
+
+		if (!s2) continue;
+
+		if (s2->parent_rec != s->parent_rec)
+		    continue;
+
+		s2->name = (char *)&s2->data;
+		s2->name_len = in[k++].name_len;
+		memcpy(s2->name, cp, s2->name_len);
+		cp += s2->name_len;
+		s2->name[s2->name_len] = 0;
+
+		s2->parent_rec = -s2->parent_rec;
+	    }
+	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!b->seq[i]) continue;
+	    b->seq[i]->name = (char *)&b->seq[i]->data;
+	    memcpy(b->seq[i]->name, cp, b->seq[i]->name_len);
+	    cp += b->seq[i]->name_len;
+	    b->seq[i]->name[b->seq[i]->name_len] = 0;
+	}
     }
 
     /* Trace names, delta from seq name */
@@ -3234,11 +3410,42 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     /* Quality */
-    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-	if (!b->seq[i]) continue;
-	b->seq[i]->conf = b->seq[i]->seq + ABS(b->seq[i]->len);
-	memcpy(b->seq[i]->conf, cp, ABS(b->seq[i]->len));
-	cp += ABS(b->seq[i]->len);
+    if (reorder_by_read_group) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    seq_t *s = b->seq[i];
+	    if (!s) continue;
+
+	    if (s->parent_rec < 0) {
+		s->parent_rec = -s->parent_rec;
+		continue;
+	    }
+
+	    s->conf = s->seq + ABS(s->len);
+	    memcpy(s->conf, cp, ABS(s->len));
+	    cp += ABS(s->len);
+
+	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+		seq_t *s2 = b->seq[j];
+
+		if (!s2) continue;
+
+		if (s2->parent_rec != s->parent_rec)
+		    continue;
+
+		s2->conf = s2->seq + ABS(s2->len);
+		memcpy(s2->conf, cp, ABS(s2->len));
+		cp += ABS(s2->len);
+
+		s2->parent_rec = -s2->parent_rec;
+	    }
+	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!b->seq[i]) continue;
+	    b->seq[i]->conf = b->seq[i]->seq + ABS(b->seq[i]->len);
+	    memcpy(b->seq[i]->conf, cp, ABS(b->seq[i]->len));
+	    cp += ABS(b->seq[i]->len);
+	}
     }
 
     assert(cp - buf == buf_len);
@@ -3246,25 +3453,6 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
     return ci;
 }
-
-/* #define REORDER_BY_READ_GROUP */
-/*
- * Define REORDER_BY_READ_GROUP if you wish to experiment with sorting data
- * by their read group. NOTE: this only has support in writing at the moment,
- * for purposes of evaluating the impact on storage size.
- *
- * The theory (and practice) is that when using mixed libraries, such as
- * many of the 1000Genomes project bam files, we have different profiles
- * for read names and quality values. It reduced the space taken up in
- * names by 17% and quality values in 5.6% - overall coming out at 6-7%.
- * This is dramatically increased if we alter the SEQ_BLOCK_BITS parameter,
- * with 8192 seqs stored in upto 1Mb chunks giving 14% savings (19% when
- * using lzma which can make better use of larger blocks). Increasing
- * SEQ_BLOCK_BITS has other, detrimental, effects though.
- *
- * It's disabled for now though as it would require another format change
- * and also we don't have the reading code yet.
- */
 
 static int io_seq_block_write(void *dbh, cached_item *ci) {
     int err;
@@ -3491,7 +3679,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	size_t ssz;
 
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
-	gzout = (unsigned char *)mem_deflate_lparts((char *)cp_start,
+	gzout = (unsigned char *)mem_deflate_lparts(io->comp_mode,
+						    (char *)cp_start,
 						    out_size, level, 17, &ssz);
 	free(cp_start);
 	cp_start = gzout;
@@ -3501,7 +3690,11 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 
     /* Finally write the serialised data block */
     fmt[0] = GT_SeqBlock;
-    fmt[1] = 0; /* format */
+#ifdef REORDER_BY_READ_GROUP
+    fmt[1] = 1 | (io->comp_mode << 6); /* format */
+#else
+    fmt[1] = 0 | (io->comp_mode << 6); /* format */
+#endif
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
     
@@ -3565,7 +3758,7 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     }
 
     assert(buf[0] == GT_AnnoEleBlock);
-    assert(buf[1] == 0); /* Format */
+    assert((buf[1] & 0x3f) == 0); /* Format */
 
     rdstats[GT_AnnoEleBlock] += buf_len;
     rdcounts[GT_AnnoEleBlock]++;
@@ -3573,7 +3766,9 @@ static cached_item *io_anno_ele_block_read(void *dbh, GRec rec) {
     /* Ungzip it too */
     if (1) {
 	size_t ssz;
-	buf = (unsigned char *)mem_inflate((char *)buf+2, buf_len-2, &ssz);
+	int comp_mode = ((unsigned char)buf[1]) >> 6;
+	buf = (unsigned char *)mem_inflate(comp_mode,
+					   (char *)buf+2, buf_len-2, &ssz);
 	free(cp);
 	cp = buf;
 	buf_len = ssz;
@@ -3754,7 +3949,8 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 	size_t ssz;
 
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
-	gzout = (unsigned char *)mem_deflate_lparts((char *)cp_start,
+	gzout = (unsigned char *)mem_deflate_lparts(io->comp_mode,
+						    (char *)cp_start,
 						    out_size, level, 7, &ssz);
 	free(cp_start);
 	cp_start = gzout;
@@ -3763,7 +3959,7 @@ static int io_anno_ele_block_write(void *dbh, cached_item *ci) {
 
     /* Finally write the serialised data block */
     fmt[0] = GT_AnnoEleBlock;
-    fmt[1] = 0; /* format */
+    fmt[1] = 0 | (io->comp_mode << 6); /* format */
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
 
@@ -3803,6 +3999,7 @@ static iface iface_g = {
     io_database_commit,
     io_database_lock,
     io_database_unlock,
+    io_database_setopt,
 
     {
 	/* Generic array */

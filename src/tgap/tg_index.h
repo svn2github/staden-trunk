@@ -20,6 +20,7 @@ typedef struct {
     bttmp_t *tmp;
     int reserved_seqs;
     int data_type;
+    int comp_mode;
 } tg_args;
 
 #define DATA_SEQ	1

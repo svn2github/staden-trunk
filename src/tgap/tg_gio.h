@@ -23,6 +23,10 @@
  * majority of queries through to the base cache instead.
  */
 
+#define COMP_MODE_ZLIB 0
+#define COMP_MODE_NONE 1
+#define COMP_MODE_LZMA 2
+
 /* GapIO itself */
 typedef struct GapIO {
     /* --- Valid always --- */

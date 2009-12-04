@@ -112,6 +112,8 @@ typedef struct {
     STANDARD_IFACE
 } io_anno_ele_block;
 
+typedef enum io_opt {OPT_COMP_MODE} io_opt;
+
 typedef struct {
     /* Higher level database-level functions */
     int (*create)(char *dbname);
@@ -120,6 +122,7 @@ typedef struct {
     int (*commit)(void *dbh);
     int (*lock)(void *dbh);
     int (*unlock)(void *dbh);
+    int (*setopt)(void *dbh, io_opt opt, int val);
 
     /* The objects themselves */
     io_array          array; /* generic array */

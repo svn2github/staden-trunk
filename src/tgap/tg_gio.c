@@ -63,6 +63,8 @@ GapIO *gio_open(char *fn, int ro, int create) {
     /* Initialise the contig and cursor registration hashes */
     contig_register_init(io);
 
+    io->iface->setopt(io->dbh, OPT_COMP_MODE, COMP_MODE_ZLIB);
+
     return io;
 }
 
