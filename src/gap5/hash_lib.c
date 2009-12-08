@@ -1628,6 +1628,21 @@ int compare_a(Hash *h,
     return 0;
 }
 
+
+/*
+ * NOTE - test sorting step in here.
+ * By sorting all hits by location we can spot blocks neighbouring hash
+ * key hits and find our blocks fast.
+ *
+ * Eg:
+ * 1st word matches positions a,b,c
+ * 2nd word matches positions d,e
+ * 3rd word matches positions f,g,h
+ *
+ * Store a-0, b-0, c-0, d-1, e-1, f-2, g-2, h-2.
+ * Sort and look for runs. Runs => consecutive query words matched
+ * consecutive subject words and we have a longer match.
+ */
 int compare_b(Hash *h,
 	    ALIGN_PARAMS *params, OVERLAP *overlap) {
     
@@ -1650,6 +1665,7 @@ int compare_b(Hash *h,
  	word = h->values2[pw2];
 	if ( -1 != word ) {
 	    if ( 0 != (ncw = h->counts[word]) ) {
+		//printf("pw2=%d, word=%x, firsthit=%d\n", pw2, word, h->last_word[word]);
 		for (j=0,pw1=h->last_word[word];j<ncw;j++) {
 		    diag_pos = h->seq1_len - pw1 + pw2 - 1;
 		    if ( h->diag[diag_pos] < pw2 ) {
