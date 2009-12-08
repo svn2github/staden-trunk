@@ -1,3 +1,30 @@
+*	BUG: cannot open a database we do not have write access to
+        unless we explicitly say -ro. Without it we get a cryptic
+        error that to the untrained user would imply the database does
+        not exist.
+
+*	Read clipping - cannot do right now.
+
+*	Add Copy Database dialogue.
+
+*	Sequence searching should underline the matching sequence,
+        rather than just setting the cursor to the start.
+
+*	User request: allow break contig from within the editor.
+
+*	BUG: Export consensus sometimes leaves pads in even when we
+        asked to remove them.
+
+*	BUG: Moving a sequence in the editor and then highting name
+        gives crash a crash (s->rec != r->rec).
+	Also it means up/down arrow skips lines or doesn't work correct.
+
+*	BUG: can join contig1 to contig1 and hit save. We then get no
+        contig1 at all.
+
+*	Add support for reference sequences. See also unpadded
+        coordinates. (I suspect the two are connected.)
+
 *	We can save some minor storage by rearranging the GRANGE_FLAG_
 	variables. Currently we have in-memory and on-disk values
 	mixed together; eg the computed "pair held within the same
@@ -15,9 +42,9 @@
         store where, that one single value is sufficient to make
         computing an unpadded coordinate a O(log(N)) computation.
 
-*	Fix sam output when a sequence is *AGCTA or AGCTAG*. We get
-        things like 1D10M or 10M1D which breaks samtools and
-        consequentially tg_index too.
+*	DONE? Fix sam output when a sequence is *AGCTA or AGCTAG*. We
+	get things like 1D10M or 10M1D which breaks samtools and
+	consequentially tg_index too.
 
 *	Investigate use of seq_t->bin_index field. This is primarily
         used for the sequence_get_pair function and or the
@@ -62,7 +89,7 @@
 	in bin A.
 
 	The reason for wanting both in the same bin is it makes some
-	bin manipulation algorithsm (eg break contig) easier if we
+	bin manipulation algorithms (eg break contig) easier if we
 	know items attached to each other share the same bin.
 
 	Suggest we create a bin_add_range_to() function that takes an
@@ -78,6 +105,7 @@
            from input data), do not edit 1st_read to point to
            2nd_read. Instead write the ID of 1st+2nd to a file. Use a
            2nd pass at end to relink all the 1st reads to their 2nd.
+	   (Part 1 DONE)
 
 	2) To reduce memory, perioidically purge the read name hash
            table and write out the purged data to a file too for
