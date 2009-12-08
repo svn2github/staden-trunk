@@ -311,8 +311,10 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 	    }
 
 	    if ((s->len < 0) ^ r[i].comp) {
-		if (s != &seq)
+		if (s != &seq) {
+		    cache_decr(io, s);
 		    s = dup_s = dup_seq(s);
+		}
 		complement_seq_t(s);
 	    }
 
@@ -349,12 +351,11 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		/* read-only cheat, so free up some data now */
 		free(s->seq);
 		free(s->conf);
+	    } else if (dup_s) {
+		free(dup_s);
 	    } else {
 		cache_decr(io, s);
 	    }
-
-	    if (dup_s)
-		free(dup_s);
 	}
 
 	left = r[i].end;
