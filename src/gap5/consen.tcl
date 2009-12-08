@@ -545,6 +545,22 @@ proc Quality_OK_Pressed {f io id infile format output} {
     destroy $f
 }
 
+proc Strip_Pads {cons qual new_cons_var new_qual_var} {
+    upvar $new_cons_var new_cons
+    upvar $new_qual_var new_qual
+
+    puts "Stripping pads"
+    set new_cons ""
+    set new_qual ""
+    set pos 0
+    foreach c [split $cons *] {
+        set length [string length $c]
+        append new_cons $c
+        append new_qual [string range $qual $pos [expr {$pos+$length-1}]]
+        incr pos [expr {$length+1}]
+    }
+}
+
 proc get_consensus {args} {
     foreach {key value} $args {
 	set opt($key) $value
@@ -569,12 +585,18 @@ proc get_consensus {args} {
 	    if {$end   == ""} {set end   [$c get_end]}
 
 	    set cons [calc_consensus -io $io -contigs "{=$crec $start $end}"]
-	    set c60 [reformat_sequence -fold 60 -str $cons]
 	    switch $opt(-format) {
 		1 {
 		    # Fastq
 		    set qual [calc_quality -io $io -contigs =$crec]
+		    if {$opt(-strip_pads)} {
+			Strip_Pads $cons $qual new_cons new_qual
+			set cons $new_cons; unset new_cons
+			set qual $new_qual; unset new_qual
+		    }
+		    
 		    puts $fd @$id
+		    set c60 [reformat_sequence -fold 60 -str $cons]
 		    puts $fd $c60
 		    puts $fd +
 		    set q60 [reformat_sequence \
@@ -589,6 +611,10 @@ proc get_consensus {args} {
 		2 {
 		    # Fasta
 		    puts $fd ">$id"
+		    if {$opt(-strip_pads)} {
+			set cons [join [split $cons *] {}]
+		    }
+		    set c60 [reformat_sequence -fold 60 -str $cons]
 		    puts $fd $c60
 		}
 
