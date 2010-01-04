@@ -214,7 +214,8 @@ proc InitListContigs {io parent {csh_win {}}} {
     set db [io_read_database $io]
     set ncontigs [keylget db num_contigs]
     for {set cnum 1} {$cnum <= $ncontigs} {incr cnum} {
-	set cstruct [io_read_contig $io $cnum]
+        set order [contig_order_to_number -io $io -order $cnum]
+        set cstruct [io_read_contig $io $order]
 	set clen [keylget cstruct length]
 	set num [keylget cstruct left]
 	set name [io_read_reading_name $io $num]
