@@ -3338,7 +3338,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
 
-	    if (s->parent_rec < 0) {
+	    if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
 		s->parent_rec = -s->parent_rec;
 		continue;
 	    }
@@ -3415,7 +3415,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
 
-	    if (s->parent_rec < 0) {
+	    if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
 		s->parent_rec = -s->parent_rec;
 		continue;
 	    }
@@ -3616,7 +3616,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
-	if (s->parent_rec < 0) {
+	if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
 	    s->parent_rec = -s->parent_rec;
 	    continue;
 	}
