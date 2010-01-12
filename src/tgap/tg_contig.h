@@ -186,4 +186,8 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn);
  */
 int contig_destroy(GapIO *io, int rec);
 
+/* temp */
+int plot_seqs_in_range(GapIO *io, contig_t **c, int start, int end, void *template, void *drawing, 
+			void (*plot_func)(void *, void *, void *));
+
 #endif /* _TG_CONTIG_H_ */

@@ -4,6 +4,8 @@
 #include <tcl.h>
 #include <tkRaster.h>
 #include "tg_gio.h"
+#include "template_draw.h"
+
 
 typedef struct {
     GapIO *io;
@@ -22,6 +24,7 @@ typedef struct {
     int fwd_col3;
     int rev_col3;
     int xhair_col;
+    int background;
     int logy;
     int cmode;
     int ymode;
@@ -42,6 +45,7 @@ typedef struct {
     double yhair_pos;
     int min_qual, max_qual; /* Filter parameters */
     int min_sz;  /* For stacking mode */
+	image_t *image;
 } template_disp_t;
 
 /* If bit set we filter our this data type */

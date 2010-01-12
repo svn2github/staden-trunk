@@ -432,49 +432,128 @@ int contig_index_update(GapIO *io, char *name, int name_len, GRec rec) {
     return 0;
 }
 
+
 /*
  * Compute read-pairs for rangec_t structs, where viable.
  * This means when we have both ends visible within our range, we link them
  * together. When we don't we leave the pair information as unknown.
  */
 static void pair_rangec(GapIO *io, rangec_t *r, int count) {
-    int i;
-    HacheTable *h;
-    HacheIter *iter;
-    HacheItem *hi;
-
-    /* Build a hash on record number */
-    h = HacheTableCreate(count, HASH_DYNAMIC_SIZE);
-    h->name = "pair_rangec()";
-    for (i = 0; i < count; i++) {
-	HacheData hd;
-	hd.i = i;
-	HacheTableAdd(h, (char *)&r[i].rec, sizeof(r[i].rec), hd, NULL);
+    int chunk = 5000; /* number of reads to deal with, 5k works well, not sure why */
+    int count_start = 0;
+    int count_end;
+    HacheTable *unpaired;
+    HacheIter *it;
+    HacheItem *rec;
+    int unpaired_count = 0;
+    
+    unpaired = HacheTableCreate(count, HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS);
+    unpaired->name = "pair_rangec unpaired";   
+    
+    if (count < chunk) {
+    	count_end = count;
+    } else {
+    	count_end = chunk;
     }
+    
+    while (count_start < count) {
+	int i;
+	HacheTable *h;
+	HacheIter *iter;
+	HacheItem *hi;
 
-    /* Iterate through hash linking the pairs together */
-    iter = HacheTableIterCreate();
-    while (hi = HacheTableIterNext(h, iter)) {
+	/* Build a hash on record number */
+	h = HacheTableCreate((count_end - count_start), HASH_NONVOLATILE_KEYS | HASH_POOL_ITEMS);
+	h->name = "pair_rangec()";
+
+	for (i = count_start; i < count_end; i++) {
+	    HacheData hd;
+	    hd.i = i;
+	    HacheTableAdd(h, (char *)&r[i].rec, sizeof(r[i].rec), hd, NULL);
+	}
+
+	/* Iterate through hash linking the pairs together */
+	iter = HacheTableIterCreate();
+
+	while (hi = HacheTableIterNext(h, iter)) {
+	    HacheItem *pair;
+	    int i = hi->data.i;
+	    int p;
+	    assert(i < count && i >= 0);
+
+	    pair = HacheTableSearch(h, (char *)&r[i].pair_rec, sizeof(r[i].rec));
+
+	    if (pair) {
+		p = pair->data.i;
+		assert(p < count && p >= 0);
+
+		r[i].pair_ind = p;
+		r[p].pair_ind = i;
+		r[i].pair_start = r[p].start;
+		r[i].pair_end   = r[p].end;
+		r[i].pair_mqual = r[p].mqual;
+
+		if (r[p].flags &  GRANGE_FLAG_COMP1)
+		    r[i].flags |= GRANGE_FLAG_COMP2;
+
+		r[i].flags |= GRANGE_FLAG_CONTIG;
+		r[p].flags |= GRANGE_FLAG_CONTIG;
+		r[i].flags &= ~GRANGE_FLAG_PEND_MASK;
+
+		if ((r[p].flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD)
+		    r[i].flags |= GRANGE_FLAG_PEND_FWD;
+		else
+		    r[i].flags |= GRANGE_FLAG_PEND_REV;
+	    } else {
+	    	HacheData hd;
+		hd.i = i;
+		HacheTableAdd(unpaired,(char *)&r[i].rec, sizeof(r[i].rec), hd, NULL); 
+		unpaired_count++;
+	    }
+	}
+
+       /* Tidy up */
+	HacheTableIterDestroy(iter);
+	HacheTableDestroy(h, 0);
+
+	count_start = count_end;
+
+	if ((count_end + chunk) > count) {
+	    count_end = count;
+	} else {
+	    count_end += chunk;
+	}
+    }
+    
+
+    /* do the remaining unpaired reads */
+    it = HacheTableIterCreate();
+
+    while (rec = HacheTableIterNext(unpaired, it)) {
 	HacheItem *pair;
-	int i = hi->data.i;
+	int i = rec->data.i;
 	int p;
 	assert(i < count && i >= 0);
 
-	pair = HacheTableSearch(h, (char *)&r[i].pair_rec, sizeof(r[i].rec));
+	pair = HacheTableSearch(unpaired, (char *)&r[i].pair_rec, sizeof(r[i].rec));
+
 	if (pair) {
 	    p = pair->data.i;
-	    assert(p < count && p >= 0);
+	    // assert(p < count && p >= 0);
 
 	    r[i].pair_ind = p;
 	    r[p].pair_ind = i;
 	    r[i].pair_start = r[p].start;
 	    r[i].pair_end   = r[p].end;
 	    r[i].pair_mqual = r[p].mqual;
+
 	    if (r[p].flags &  GRANGE_FLAG_COMP1)
 		r[i].flags |= GRANGE_FLAG_COMP2;
+
 	    r[i].flags |= GRANGE_FLAG_CONTIG;
 	    r[p].flags |= GRANGE_FLAG_CONTIG;
 	    r[i].flags &= ~GRANGE_FLAG_PEND_MASK;
+
 	    if ((r[p].flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD)
 		r[i].flags |= GRANGE_FLAG_PEND_FWD;
 	    else
@@ -485,8 +564,8 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
     }
 
     /* Tidy up */
-    HacheTableIterDestroy(iter);
-    HacheTableDestroy(h, 0);
+    HacheTableIterDestroy(it);
+    HacheTableDestroy(unpaired, 0);
 }
 
 
@@ -827,25 +906,30 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {
     rangec_t *r = NULL;
     int alloc = 0;
-
+    
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
-
-    if (job & CSIR_PAIR)
+    if (job & CSIR_PAIR) {
 	pair_rangec(io, r, *count);
+   }
 
-    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
 	qsort(r, *count, sizeof(*r), sort_range_by_x);
+    }
 
-    if (job & CSIR_ALLOCATE_Y)
+    if (job & CSIR_ALLOCATE_Y) {
 	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+    }
 
-    if (job & CSIR_SORT_BY_Y)
+    if (job & CSIR_SORT_BY_Y) {
 	qsort(r, *count, sizeof(*r), sort_range_by_y);
+    }
 
     return r;
 }
+
+
 
 rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 			       int job, int *count) {
@@ -1777,3 +1861,5 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
 		     contig_offset(io, c), 0, 0, 0.0, 0.0);
     //HacheTableRefInfo(io->cache, stdout);
 }
+
+

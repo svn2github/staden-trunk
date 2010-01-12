@@ -239,6 +239,7 @@ typedef struct {
     int cnum;
     char *raster_win;
 } tdisp_arg;
+
 static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
 				int objc, Tcl_Obj *CONST objv[]) {
     template_disp_t *td;
@@ -308,7 +309,6 @@ int TDisp_Init(Tcl_Interp *interp) {
 
 /* ------------------------------------------------------------------------ */
 /* And the C to actually implement it, minus the Tcl interface gubbins above */
-
 template_disp_t *template_new(GapIO *io, int cnum,
 			      Tcl_Interp *interp,
 			      Tk_Raster *raster) {
@@ -330,6 +330,8 @@ template_disp_t *template_new(GapIO *io, int cnum,
     t->raster = raster;
     t->tkwin = GetRasterTkWin(raster);
 
+    if (NULL == (t->image = initialise_image(GetRasterDisplay(t->raster)))) return NULL;
+
     opts[0] = "-fg";
     opts[1] = b;
     opts[2] = "-linewidth";
@@ -339,37 +341,16 @@ template_disp_t *template_new(GapIO *io, int cnum,
     opts[6] = NULL;
 
     for (i = 0; i < 32; i++) {
-	sprintf(b, "#%02x%02x%02x", 64+i*5, 64+i*5, 64+i*5);
-	t->map_col[i] = CreateDrawEnviron(interp, raster, 6, opts);
-	SetDrawEnviron(t->interp, t->raster, t->map_col[i]);
+	add_colour(t->image, 64+i*5, 64+i*5, 64+i*5);
     }
 
-    opts[1] = "orange";
-    t->span_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    opts[1] = "blue";
-    t->single_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    opts[1] = "red";
-    t->inconsistent_col = CreateDrawEnviron(interp, raster, 6, opts);
-
-    //    opts[3] = "2";
-    //    opts[6] = "-capstyle";
-    //    opts[7] = "projecting"; // but or round
-    //    opts[8] = NULL;
-
-    opts[1] = "green4";
-    t->fwd_col  = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "3";
-    t->fwd_col3 = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "0";
-
-    opts[1] = "magenta";
-    t->rev_col  = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "3";
-    t->rev_col3 = CreateDrawEnviron(interp, raster, 6, opts);
-    opts[3] = "0";
-
+    t->span_col         = add_colour(t->image, 255, 165, 0); // orange
+    t->single_col       = add_colour(t->image, 0, 0, 255);   // blue
+    t->inconsistent_col = add_colour(t->image, 255, 0, 0);   // red
+    t->fwd_col  = t->fwd_col3 = add_colour(t->image, 0, 139, 0);   // green4
+    t->rev_col  = t->rev_col3 = add_colour(t->image, 255, 0, 255); // magenta
+    t->background = add_colour(t->image, 0, 0, 0); // black
+    
     opts[1] = "green";
     opts[5] = "xor";
     t->xhair_col = CreateDrawEnviron(interp, raster, 6, opts);
@@ -379,7 +360,7 @@ template_disp_t *template_new(GapIO *io, int cnum,
     t->depth_width = 0;
     t->xhair_pos = DBL_MAX;
     t->yhair_pos = DBL_MAX;
-
+    
     return t;
 }
 
@@ -394,6 +375,10 @@ void template_destroy(template_disp_t *t) {
 	free(t->tdepth);
     if (t->sdepth)
 	free(t->sdepth);
+	
+    if (t->image) {	
+	image_destroy(t->image);
+    }
 
     /* Draw Environments automatically freed on raster destroy */
 
@@ -604,14 +589,15 @@ int template_replot(template_disp_t *t) {
     tk_RasterClear(t->raster);
     RasterWinSize(t->raster, &width, &height);
     height2 = height / 2;
-
+    
+    /* prepare image */
+    image_remove(t->image);
+    if(!create_image_buffer(t->image, width, height, t->background)) return -1;
+    
     GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-    //RasterToWorld(t->raster, 0, 0, &wx0, &wy0);
-    //RasterToWorld(t->raster, width, height, &wx1, &wy1);
 
     printf("templates %f to %f\n", wx0, wx1);
 
-    //xgap = (int)(10*yz*(wx1-wx0)/width);
     xgap = 100;
 
     wx0 -= tsize;
@@ -622,16 +608,17 @@ int template_replot(template_disp_t *t) {
 	t->sdepth = (int *)realloc(t->sdepth, width * sizeof(int));
 	t->tdepth = (int *)realloc(t->tdepth, width * sizeof(int));
     }
+    
     memset(t->sdepth, 0, t->depth_width * sizeof(int));
     memset(t->tdepth, 0, t->depth_width * sizeof(int));
 
     /* Find sequences on screen */
     gettimeofday(&tv1, NULL);
+    
     mode = t->reads_only ? 0 : CSIR_PAIR;
+    
     if (t->ymode == 1)
 	mode |= CSIR_SORT_BY_Y;
-
-    //mode = CSIR_SORT_BY_X | CSIR_PAIR | CSIR_ALLOCATE_Y_MULTIPLE;
 
     r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, mode, &nr);
 
@@ -642,9 +629,6 @@ int template_replot(template_disp_t *t) {
 
     gettimeofday(&tv2, NULL);
     t1 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
-
-    /* Sort data */
-    //qsort(r, nr, sizeof(*r), sort_by_mq);
 
     /*
      * Do this in multiple passes.
@@ -660,7 +644,6 @@ int template_replot(template_disp_t *t) {
 	int span = 0;
 	int single = 0;
 	int col;
-	int last_col = -1;
 	double mq;
 
 	sta = r[i].start;
@@ -764,7 +747,8 @@ int template_replot(template_disp_t *t) {
 	if (mq > 255) mq = 255;
 	tl[ntl].mq = mq;
 
-	col = t->map_col[(int)(mq/8)];
+	col = (int)(mq/8);
+	
 	if (single)
 	    col = t->single_col;
 	if (span)
@@ -787,8 +771,8 @@ int template_replot(template_disp_t *t) {
 	    continue;
 
 	if (t->plot_depth && !single && !span && col != t->inconsistent_col) {
-	    WorldToRaster (t->raster, sta, 0, &r_sta, &r_y);
-	    WorldToRaster (t->raster, end, 0, &r_end, &r_y);
+	    WorldToRaster(t->raster, sta, 0, &r_sta, &r_y);
+	    WorldToRaster(t->raster, end, 0, &r_end, &r_y);
 	    if (r_sta < 0) r_sta = 0;
 	    if (r_end >= width) r_end = width-1;
 	    for (j = r_sta; j <= r_end; j++) {
@@ -813,10 +797,8 @@ int template_replot(template_disp_t *t) {
 
 	/* Readings too? */
 	if (t->cmode == 3) {
-	    //col = (r[i].flags & GRANGE_FLAG_END_MASK
-	    //       == GRANGE_FLAG_END_FWD) ? t->fwd_col : t->rev_col;
 	    col = (r[i].flags & GRANGE_FLAG_COMP1)
-		? fwd_col : rev_col;
+		? t->fwd_col : t->rev_col;
 
 	    if (r[i].start == tl[ntl].x[0]) {
 		tl[ntl].x[1] = r[i].end;
@@ -829,10 +811,8 @@ int template_replot(template_disp_t *t) {
 	    }
 
 	    if (r[i].pair_rec && (r[i].pair_start || r[i].pair_end)) {
-		//col = (r[i].flags & GRANGE_FLAG_PEND_MASK
-		//	   == GRANGE_FLAG_PEND_FWD) ? t->fwd_col : t->rev_col;
 		col = (r[i].flags & GRANGE_FLAG_COMP2)
-		    ? fwd_col : rev_col;
+		    ? t->fwd_col : t->rev_col;
 
 		if (r[i].pair_start == tl[ntl].x[0]) {
 		    tl[ntl].x[1] = r[i].pair_end;
@@ -846,33 +826,22 @@ int template_replot(template_disp_t *t) {
 	    }
 	}
 
-	last_col = col;
 	ntl++;
     }
     free(r);
 
-    /* 2) Compute Y coordinates (part 1) */
+   /* 2) Compute Y coordinates (part 1) */
     if (t->ymode == 1) {
 	puts("Sorting");
 	qsort(tl, ntl, sizeof(*tl), sort_tline_by_x);
 	puts("computing ypos");
-    tv1 = tv2;
-    gettimeofday(&tv2, NULL);
-    t2 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 	compute_ypos(t, xgap, tl, ntl);
-    tv1 = tv2;
-    gettimeofday(&tv2, NULL);
-    t3 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 	puts("done");
     }
 
-
     /* 3) Plot the lines */
     for (i = 0; i < ntl; i++) {
-	int last_col = -1;
 	for (j = 0; j < 3; j++) {
-	    //	    printf("%d: %d..%d in %d\n",
-	    //		   i, tl[i].x[j], tl[i].x[j+1], tl[i].col[j]);
 	    if (tl[i].x[j] < tl[i].x[j+1]) {
 		double y;
 
@@ -903,17 +872,21 @@ int template_replot(template_disp_t *t) {
 
 		/* And plot if visible */
 		if (y >= wy0 && y <= wy1) {
-		    if (last_col != tl[i].col[j]) {
-			last_col  = tl[i].col[j];
-			SetDrawEnviron(t->interp, t->raster, last_col);
-		    }
-		    RasterDrawLine(t->raster, tl[i].x[j], y, tl[i].x[j+1], y);
+		    int rx1, rx2, ry;
+		
+		    WorldToRaster(t->raster, tl[i].x[j], y, &rx1, &ry);
+		    WorldToRaster(t->raster, tl[i].x[j + 1], y, &rx2, &ry);
+		    
+		    draw_line(t->image, rx1, rx2, ry, tl[i].col[j]);
 		}
 	    }
 	}
     }
     free(tl);
-
+    
+    /* Now to draw the show the image */
+    create_image_from_buffer(t->image);
+    XPutImage(rdisp, rdraw, rgc, t->image->img, 0, 0, 0, 0, t->image->width, t->image->height);
 
     /* Plot depth */
     if (t->plot_depth) {
@@ -945,8 +918,8 @@ int template_replot(template_disp_t *t) {
     gettimeofday(&tv2, NULL);
     t4 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
 
-    //    printf("Query range %d..%d => %d reads, %5.3fs + %5.3fs + %5.3fs + %5.3fs\n",
-    //    	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
+//    printf("Query range %d..%d => %d reads, E%5.3fs + X%5.3fs + Y%5.3fs + D%5.3fs\n",
+//        	   (int)wx0, (int)wx1, nr, t1, t2, t3, t4);
 
     ny0 = wy0; ny1 = wy1;
     if (t->yzoom != last_zoom) {

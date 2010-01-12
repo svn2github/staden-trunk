@@ -76,11 +76,19 @@ uint32_t HacheHsieh(uint8_t *data, int len) {
     }
 
     /* Force "avalanching" of final 127 bits */
+/*
     hash ^= hash << 3;
     hash += hash >> 5;
     hash ^= hash << 2;
     hash += hash >> 15;
     hash ^= hash << 10;
+*/
+    hash ^= hash << 3;
+    hash += hash >> 5;
+    hash ^= hash << 4;
+    hash += hash >> 17;
+    hash ^= hash << 25;
+    hash += hash >> 6;
 
     return hash;
 }
@@ -208,7 +216,7 @@ uint32_t HacheJenkins(uint8_t *k, int length /*, uint32_t initval */)
  * Returns:
  *    A 32-bit hash key, suitable for masking down to smaller bit sizes
  */
-uint32_t hash(int func, uint8_t *key, int key_len) {
+uint32_t hache(int func, uint8_t *key, int key_len) {
     switch (func) {
     case HASH_FUNC_HSIEH:
 	return HacheHsieh(key, key_len);
@@ -218,6 +226,9 @@ uint32_t hash(int func, uint8_t *key, int key_len) {
 	
     case HASH_FUNC_JENKINS:
 	return HacheJenkins(key, key_len);
+	
+    case HASH_FUNC_NULL:
+    	return *(int *)key;
     }
     
     return 0;
@@ -251,8 +262,10 @@ static char *hname(HacheTable *h) {
 static HacheItem *HacheItemCreate(HacheTable *h) {
     HacheItem *hi;
 
-    if (!(hi = (HacheItem *)malloc(sizeof(*hi))))
-	return NULL;
+    hi = (h->options & HASH_POOL_ITEMS ? 
+    	pool_alloc(h->hi_pool) : malloc(sizeof(*hi)));
+
+    if (NULL == hi) return NULL;
 
     hi->data.p    = NULL;
     hi->data.i    = 0;
@@ -300,7 +313,10 @@ static void HacheItemDestroy(HacheTable *h, HacheItem *hi, int deallocate_data) 
     if (h->in_use == hi)
 	h->in_use = hi->in_use_next;
 
-    if (hi)
+    
+    if (h->options & HASH_POOL_ITEMS) 
+    	pool_free(h->hi_pool, hi);
+    else if (hi)
 	free(hi);
 
     h->nused--;
@@ -325,6 +341,16 @@ HacheTable *HacheTableCreate(int size, int options) {
 
     if (!(h = (HacheTable *)malloc(sizeof(*h))))
 	return NULL;
+
+    if (options & HASH_POOL_ITEMS) {
+        h->hi_pool = pool_create(sizeof(HacheItem));
+	if (NULL == h->hi_pool) {
+	    free(h);
+	    return NULL;
+	}
+    } else {
+        h->hi_pool = NULL;
+    }
 
     if (size < 4)
 	size = 4; /* an inconsequential minimum size */
@@ -393,6 +419,8 @@ void HacheTableDestroy(HacheTable *h, int deallocate_data) {
 	    HacheItemDestroy(h, hi, deallocate_data);
 	}
     }
+    
+    if (h->hi_pool) pool_destroy(h->hi_pool);
 
     if (h->bucket)
 	free(h->bucket);
@@ -432,7 +460,7 @@ int HacheTableResize(HacheTable *h, int newsize) {
 	HacheItem *hi, *next;
 	for (hi = h->bucket[i]; hi; hi = next) {
 	    assert(hi->h == h);
-	    uint32_t hv = hash(h2->options & HASH_FUNC_MASK,
+	    uint32_t hv = hache(h2->options & HASH_FUNC_MASK,
 			       (uint8_t *)hi->key, hi->key_len) & h2->mask;
 	    next = hi->next;
 	    hi->next = h2->bucket[hv];
@@ -687,7 +715,7 @@ HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len, HacheData data,
     if (!key_len)
 	key_len = strlen(key);
 
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
 
     /* Already exists? */
     if (!(h->options & HASH_ALLOW_DUP_KEYS)) {
@@ -751,7 +779,7 @@ int HacheTableDel(HacheTable *h, HacheItem *hi, int deallocate_data) {
     printf("HacheTableDel %s %p\n", hname(h), hi->data.p);
 #endif
 
-    hv = hash(h->options & HASH_FUNC_MASK,
+    hv = hache(h->options & HASH_FUNC_MASK,
 	      (uint8_t *)hi->key, hi->key_len) & h->mask;
 
     for (last = NULL, next = h->bucket[hv]; next;
@@ -798,7 +826,7 @@ int HacheTableRemove(HacheTable *h, char *key, int key_len,
     if (!key_len)
 	key_len = strlen(key);
 
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
 
     last = NULL;
     next = h->bucket[hv];
@@ -850,7 +878,7 @@ HacheItem *HacheTableQuery(HacheTable *h, char *key, int key_len) {
 	key_len = strlen(key);
 
     /* Return if present */
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
     for (hi = h->bucket[hv]; hi; hi = hi->next) {
 	if (key_len == hi->key_len &&
 	    memcmp(key, hi->key, key_len) == 0) {
@@ -890,7 +918,7 @@ HacheItem *HacheTableSearch(HacheTable *h, char *key, int key_len) {
 	key_len = strlen(key);
 
     /* Return if present */
-    hv = hash(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
     for (hi = h->bucket[hv]; hi; hi = hi->next) {
 	if (key_len == hi->key_len &&
 	    memcmp(key, hi->key, key_len) == 0) {

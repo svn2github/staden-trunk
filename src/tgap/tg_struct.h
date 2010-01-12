@@ -434,4 +434,13 @@ typedef struct {
     char *data;
 } library_t;
 
+typedef struct {
+	double yz;   /* t->yzoom / 200.0 */
+	int ymin;
+	int ymax;
+	double wy0;
+	double wy1;
+} drawing_t;
+
+
 #endif /* _TG_STRUCT_H_ */

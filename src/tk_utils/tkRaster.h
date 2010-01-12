@@ -52,6 +52,7 @@ typedef struct {
    unsigned long valMask;
    XColor * fgColor, * bgColor;
    int index;
+   GC drawGC;
 } DrawEnvironment;
 
 /*---------------------------------------------------------------------------

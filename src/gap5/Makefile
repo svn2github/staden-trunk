@@ -78,6 +78,7 @@ GAP5=\
 	consensus.o\
 	read_depth.o\
 	template_display.o \
+	template_draw.o \
 	fij.o\
 	do_fij.o\
 	break_contig.o \

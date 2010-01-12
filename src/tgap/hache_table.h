@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "io_lib/pooled_alloc.h"
+
 /* The data referenced by the hash table */
 typedef union {
     uint64_t i;
@@ -31,12 +33,13 @@ typedef struct HacheOrderStruct {
 
 /* The main hash table structure itself */
 typedef struct HacheTableStruct {
-    int	      cache_size; /* Max size before purging cached entries */
-    int       options;  /* HASH_FUNC & HASH_OPT macros */
-    uint32_t  nbuckets; /* Number of hash buckets; power of 2 */
-    uint32_t  mask;	/* bit-mask equiv of nbuckets */
-    int       nused;    /* How many hash entries we're storing */
-    HacheItem **bucket;  /* The bucket "list heads" themselves */
+    int	         cache_size; /* Max size before purging cached entries */
+    int          options;    /* HASH_FUNC & HASH_OPT macros */
+    uint32_t     nbuckets;   /* Number of hash buckets; power of 2 */
+    uint32_t     mask;	     /* bit-mask equiv of nbuckets */
+    int          nused;      /* How many hash entries we're storing */
+    HacheItem    **bucket;   /* The bucket "list heads" themselves */
+    pool_alloc_t *hi_pool;   /* Pool of allocated HashItem structs */
 
     /* Cyclic cache array */
     HacheOrder *ordering; 
@@ -65,6 +68,7 @@ typedef struct {
 #define HASH_FUNC_HSIEH       0
 #define HASH_FUNC_TCL         1
 #define HASH_FUNC_JENKINS     2
+#define HASH_FUNC_NULL        3
 #define HASH_FUNC_MASK        7
 
 /* Other HacheTable.options values */
@@ -72,9 +76,10 @@ typedef struct {
 #define HASH_ALLOW_DUP_KEYS   (1<<4)
 #define HASH_DYNAMIC_SIZE     (1<<5)
 #define HASH_OWN_KEYS	      (1<<6)
+#define HASH_POOL_ITEMS       (1<<7)
 
 /* Hacheing prototypes */
-uint32_t hash(int func, uint8_t *key, int key_len);
+uint32_t hache(int func, uint8_t *key, int key_len);
 uint32_t HacheJenkins(uint8_t *k, int length);
 uint32_t HacheTcl(uint8_t *data, int len);
 uint32_t HacheHsieh(uint8_t *k, int length);

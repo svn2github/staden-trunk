@@ -2213,6 +2213,10 @@ static int ConfigDrawEnv (interp, RasterPtr, drawEnv, argc, argv)
       /* FillStyle was changed */
       drawEnv->valMask |= GCFillStyle;
    }
+   
+   drawEnv->drawGC = XCreateGC(RasterPtr->display, 
+	                      RootWindowOfScreen(Tk_Screen (RasterPtr->tkwin)),
+			              drawEnv->valMask, &(drawEnv->gcValues));
 
    if (drawEnv == RasterPtr->currentDrawEnv) {
       return SetDrawEnv (interp, RasterPtr, drawEnv);
@@ -2297,10 +2301,7 @@ int SetDrawEnv (interp, rasterptr, drawenvptr)
    DrawEnvironment* drawEnvPtr = (DrawEnvironment*) drawenvptr;
 
    if (drawEnvPtr->valMask != 0) {
-      XChangeGC (RasterPtr->display,
-		 RasterPtr->drawGC,
-		 drawEnvPtr->valMask,
-		 &(drawEnvPtr->gcValues));
+        RasterPtr->drawGC = drawEnvPtr->drawGC;
    }
 
    RasterPtr->currentDrawEnv = drawEnvPtr;
