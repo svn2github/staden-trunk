@@ -276,15 +276,26 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     int cg_alloc = 0;
     char *cigar = NULL;
     int insert_sizes = 0; /* set to 1 to also set MPOS/ISIZE */
-    int offset;
+    int offset_done = 0, offset;
+#if 0
+    char *cons;
+    int last_start;
+#endif
 
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
 
-    /* Sam can only have coordinates from 1 onwards, so shift if needed */
-    offset = c->start <= 0
-	? 1-c->start
-	: 0;
+#if 0
+    {
+	int first = c->start;
+	int last = c->end;
+	int len = last-first+1;
+	last_start = c->start;
+
+	cons = (char *)xmalloc(len);
+	calculate_consensus_simple(io, crec, first, last, cons, NULL);
+    }
+#endif
 
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
@@ -346,6 +357,16 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 
 	pos = r->start;
 
+	/* Sam can only have coordinates from 1 onwards, so shift if needed */
+	if (!offset_done) {
+	    offset = pos <= 0
+		? 1-pos
+		: 0;
+	    offset_done = 1;
+	}
+
+	//puts(s->name);
+
 	/* Generate cigar string. */
 	cp = cigar;
 	left  = s->left-1;
@@ -354,7 +375,9 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	
 	op = 'S'; oplen = 0;
 	cglen = 0;
+#if 1
 	for (i = j = 0; i < olen; i++) {
+	    //printf("%c %c\n", s->seq[i], cons[pos+i-c->start]);
 	    if (cp - cigar + 50 > cg_alloc) {
 		ptrdiff_t d = cp-cigar;
 		cg_alloc += 100;
@@ -417,6 +440,77 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	    cp += sprintf(cp, "%d%c", oplen, op);
 	    if (op != 'D') cglen += oplen;
 	}
+#endif
+
+#if 0
+	for (i = last_start; i<pos; i++) {
+	    if (cons[i-c->start] == '*')
+		offset--;
+	}
+	last_start = pos;
+	if (left) {
+	    cp += sprintf(cp, "%dS", left);
+	    cglen = left;
+	}
+	for (i = left; i < right; i++) {
+	    char cb = cons[pos+i-c->start];
+	    char sb = s->seq[i];
+
+	    if (cp - cigar + 50 > cg_alloc) {
+		ptrdiff_t d = cp-cigar;
+		cg_alloc += 100;
+		cigar = realloc(cigar, cg_alloc);
+		cp = cigar + d;
+	    }
+
+	    if (cb == '*' && sb == '*') {
+		continue;
+	    }
+
+	    if (cb == '*') {
+		if (op != 'I') {
+		    if (oplen > 0)
+			cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D')
+			cglen += oplen;
+		    oplen = 0;
+		    op = cglen ? 'I' : 'S';
+		}
+		oplen++;
+
+	    } else if (sb == '*') {
+		if (op != 'D') {
+		    if (oplen > 0)
+			cp += sprintf(cp, "%d%c", oplen, op);
+		    cglen += oplen;
+		    oplen = 0;
+		    op = 'D';
+		}
+		oplen++;
+
+	    } else {
+		if (op != 'M') {
+		    if (oplen > 0)
+			cp += sprintf(cp, "%d%c", oplen, op);
+		    if (op != 'D')
+			cglen += oplen;
+		    oplen = 0;
+		    op = 'M';
+		}
+		oplen++;
+	    }
+	}
+	if (oplen > 0) {
+	    if (op != 'D')
+		cp += sprintf(cp, "%d%c", oplen, op);
+	    cglen += oplen;
+	}
+	if (olen-right) {
+	    cp += sprintf(cp, "%dS", olen-right);
+	    cglen += olen-right;
+	}
+	//puts(cigar);
+#endif
 
 	assert(cglen == len);
 
