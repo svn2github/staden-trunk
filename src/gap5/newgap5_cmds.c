@@ -34,6 +34,7 @@
 #include "template_display.h"
 #include "export_contigs.h"
 #include "find_oligo.h"
+#include "tg_index_common.h"
 
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
@@ -1266,6 +1267,120 @@ tcl_find_oligo(ClientData clientData,
     return TCL_OK;
 }
 
+typedef struct import_reads_arg {
+    GapIO *io;
+    char *data_type;
+    char *comp_mode;
+    char *file;
+    char *fmt;
+    tg_args a;
+} ir_arg;
+
+int
+tcl_import_reads(ClientData clientData,
+	       Tcl_Interp *interp,
+	       int objc,
+	       Tcl_Obj *CONST objv[])
+{
+    ir_arg args;
+    contig_list_t *contig_array = NULL;
+    int num_contigs = 0;
+    Tcl_DString input_params;
+    char *name1;
+    int fmt;
+
+    /* Parse arguments */
+    cli_args a[] = {
+	{"-io",		   ARG_IO,  1, NULL,   offsetof(ir_arg, io)},
+	{"-file",          ARG_STR, 1, NULL,   offsetof(ir_arg, file)},
+	{"-data_type",     ARG_STR, 1, "all",  offsetof(ir_arg, data_type)},
+	{"-comp_mode",     ARG_STR, 1, "zlib", offsetof(ir_arg, comp_mode)},
+	{"-format",        ARG_STR, 1, "auto", offsetof(ir_arg, fmt)},
+	{"-append",        ARG_INT, 1, "1",    offsetof(ir_arg, a.append)},
+	{"-no_tree",       ARG_INT, 1, "1",    offsetof(ir_arg, a.no_tree)},
+	{"-merge_contigs", ARG_INT, 1, "-1",   offsetof(ir_arg, a.merge_contigs)},
+	{"-fast_mode",     ARG_INT, 1, "0",    offsetof(ir_arg, a.fast_mode)},
+	{"-reserved_seqs", ARG_INT, 1, "0",    offsetof(ir_arg, a.reserved_seqs)},
+	{"-repad",         ARG_INT, 1, "0",    offsetof(ir_arg, a.repad)},
+	{NULL,		   0,	    0, NULL,   0}
+    };
+
+    vfuncheader("sequence search");
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    args.a.data_type = parse_data_type(args.data_type);
+    if (0 == strcmp(args.comp_mode, "none")) {
+	args.a.comp_mode = COMP_MODE_NONE;
+    } else if (0 == strcmp(args.comp_mode, "zlib")) {
+	args.a.comp_mode = COMP_MODE_ZLIB;
+    } else if (0 == strcmp(args.comp_mode, "lzma")) {
+	args.a.comp_mode = COMP_MODE_LZMA;
+    } else {
+	fprintf(stderr, "Unknown compression mode '%s'\n", args.comp_mode);
+	return TCL_ERROR;
+    }
+
+
+    /* Initialise io */
+    args.io->iface->setopt(args.io->dbh, OPT_COMP_MODE, args.a.comp_mode);
+    args.a.tmp = args.a.no_tree ? NULL : bttmp_file_open();
+
+
+    /* Load data */
+    if ((fmt = *args.fmt) == 'a')
+	fmt = tg_index_file_type(args.file);
+
+    switch(fmt) {
+	case 'm':
+	case 'M':
+	    parse_maqmap(args.io, args.file, &args.a);
+	    break;
+
+	case 'A':
+	    parse_ace(args.io, args.file, &args.a);
+	    break;
+
+	case 'B':
+	    parse_baf(args.io, args.file, &args.a);
+	    break;
+
+#ifdef HAVE_SAMTOOLS
+	case 'b':
+	    parse_bam(args.io, args.file, &args.a);
+	    break;
+	case 's':	
+	    parse_sam(args.io, args.file, &args.a);
+	    break;
+#endif
+
+	default:
+	    fprintf(stderr, "Unknown file type for '%s' - skipping\n",
+		    args.file);
+	    return TCL_ERROR;
+    }
+
+
+    /* Add to our sequence name B+Tree */
+    if (args.a.tmp) {
+	char *name;
+	int rec;
+
+	puts("Sorting sequence name index");
+	bttmp_file_sort(args.a.tmp);
+
+	puts("Building index");
+	while (name = bttmp_file_get(args.a.tmp, &rec)) {
+	    sequence_index_update(args.io, name, strlen(name), rec);
+	}
+	
+	bttmp_file_close(args.a.tmp);
+    }
+
+    return TCL_OK;
+}
+
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -1420,6 +1535,10 @@ NewGap_Init(Tcl_Interp *interp) {
 
     Tcl_CreateObjCommand(interp, "find_oligo",
 			 tcl_find_oligo,
+			 (ClientData) NULL, NULL);
+
+    Tcl_CreateObjCommand(interp, "import_reads",
+			 tcl_import_reads,
 			 (ClientData) NULL, NULL);
 
     //Ced_Init(interp);
