@@ -690,6 +690,8 @@ proc new_trace_create2 {w e title allow_diff} {
     # columns does not change.
     after idle "catch {$w.traces.c.f configure -bd 0}"
 
+    reshape_trace_window $w $w.traces.c $w.traces.s $trace_columns
+
     return $tf_r
 }
 
