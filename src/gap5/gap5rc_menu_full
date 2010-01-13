@@ -46,7 +46,7 @@ add_menu View		1 2 left
 add_menu Options	1 2 left
 #add_menu Experiments	1 2 left
 add_menu Lists		1 2 left
-#add_menu Assembly	1 2 left
+add_menu Assembly	1 2 left
 add_menu Help		1 0 right
 
 # In the following commands \$io is the global io variable, to be expanded
@@ -176,6 +176,10 @@ if { $tcl_platform(platform) != "windows" } {
 #add_command {Lists.Search sequence names} 12 6 {SearchSeqDialog \$io} 
 #add_command {Lists.Search template names} 12 6 {SearchTemplateDialog \$io} 
 #add_command {Lists.Search annotation contents} 12 6 {SearchAnnoDialog \$io} 
+
+add_cascade	{Assembly.Map Reads}		8  10
+add_command	{Assembly.Map Reads.Bwa aln}    12 22 {MapReads_bwa_aln \$io}
+add_command	{Assembly.Map Reads.Bwa dbwtsw} 12 22 {MapReads_bwa_dbwtsw \$io}
 
 #add_command	{Assembly.Normal shotgun assembly} \
 #			12 22 {AutoAssemble \$io 1}

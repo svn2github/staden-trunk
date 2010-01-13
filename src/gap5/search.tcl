@@ -31,6 +31,11 @@ proc gap4_text_init {t} {
     $t tag bind TAGID <Any-Enter> "gap4_text_enter \$io %W TAGID"
     $t tag bind TAGID <Any-Motion> "gap4_text_motion \$io %W TAGID"
     $t tag bind TAGID <Any-Leave> "gap4_text_leave \$io %W TAGID"
+
+    # UNIX command data
+    $t tag configure CMD_NAME   -background "#b0d0ff"
+    #$t tag configure CMD_STDOUT -background "#80ff80"
+    $t tag configure CMD_STDERR -background "#ffc0c0"
 }
 
 ;proc gap4_text_enter {io w tag} {

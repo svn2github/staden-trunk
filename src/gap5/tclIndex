@@ -42,6 +42,7 @@ set auto_index(NormalDialog) [list source [file join $dir consen.tcl]]
 set auto_index(ExtendedDialog) [list source [file join $dir consen.tcl]]
 set auto_index(UnfinishedDialog) [list source [file join $dir consen.tcl]]
 set auto_index(QualityDialog) [list source [file join $dir consen.tcl]]
+set auto_index(get_consensus) [list source [file join $dir consen.tcl]]
 
 set auto_index(ConfidenceGraph) [list source [file join $dir confidence_graph.tcl]]
 set auto_index(CreateConfidenceGraph) [list source [file join $dir confidence_graph.tcl]]
@@ -264,3 +265,6 @@ set auto_index(ExportSequences) [list source [file join $dir export_contigs.tcl]
 set auto_index(ExportTags) [list source [file join $dir export_contigs.tcl]]
 
 set auto_index(ListLibraries) [list source [file join $dir libraries.tcl]]
+
+set auto_index(MapReads_bwa_aln) [list source [file join $dir map_reads.tcl]]
+set auto_index(MapReads_bwa_dbwtsw) [list source [file join $dir map_reads.tcl]]

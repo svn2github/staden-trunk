@@ -524,6 +524,9 @@ set_def READING_LIST.INFILE.WHICH.NAME		"Input readings from"
 set_def READING_LIST.INFILE.WHICH.BUTTONS	{list file }
 set_def READING_LIST.INFILE.WHICH.VALUE		1
 
+#Map Reads
+set_def MAP_READS.INFILE		$defs_c_in
+
 #find read pair
 set_def READPAIR.INFILE			$defs_c_in
 set_def READPAIR.INFILE.WHICH.BUTTONS	{list file {{all contigs}}}
@@ -708,6 +711,8 @@ set_def AUTO_ASSEMBLE.HIDDEN		$defs_hidden
 
 set_def AUTO_ASSEMBLE.PERMITJOINS.NAME	"Permit joins"
 set_def AUTO_ASSEMBLE.PERMITJOINS.VALUE	 1
+
+set_def AUTO_ASSEMBLE.ALIGNMENT_TOOL    3
 
 set_def AUTO_ASSEMBLE.FAILURE.NAME	"Select alignment failure mode"
 set_def AUTO_ASSEMBLE.FAILURE.BUTTON.1	"Reject failures"
