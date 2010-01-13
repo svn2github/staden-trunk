@@ -46,9 +46,13 @@ typedef struct {
     HacheTable *libs;
     contig_t *c;
     int n_inserts;
+    int npads;
     int count;
+    int skip;
     bam_header_t *header;
     tg_args *a;
+    struct PAD_COUNT *tree; /* re-padding */
+    int last_tid;
 } bam_io_t;
 
 
@@ -546,8 +550,9 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
     bam_io_t *bio = (bam_io_t *)data;
     GapIO *io = bio->io;
     int i, j, insertions = 0;
-    static int last_tid = -1;
+    int np;
 
+    //printf("\nCallback at pos=%d n=%d tid=%d\n", pos, n, tid);
 
     /*
      * tid is reference id - aka contig
@@ -555,29 +560,88 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
      * pl is the pileup info for these sequences.
      */
     /* Create new contig if appropriate */
-    if (tid != last_tid) {
+    if (tid != bio->last_tid) {
 	char *cname = bio->header->target_name[tid];
 
 	/* header->target_name[b.core.tid] */
-	//	printf("\n++Processing contig %d / %s\n", tid, cname);
+	//printf("\n++Processing contig %d / %s\n", tid, cname);
 	
 	create_new_contig(io, &(bio->c), cname, bio->a->merge_contigs);
 	bio->n_inserts = 0;
+	bio->npads = 0;
+	bio->skip = 0;
+
+	if (bio->a->repad) {
+	    bio->tree = depad_consensus(io, bio->c->rec);
+	    //padtree_dump(bio->tree);
+	}
 	
-	last_tid = tid;
+	bio->last_tid = tid;
+    }
+    
+    np = 0;
+    if (bio->a->repad) {
+	if ((np=padtree_pad_at(bio->tree, pos+1+bio->n_inserts-bio->npads))) {
+	    /* Add pads to match existing consensus gaps */
+	    for (j = 0; j < np; j++) {
+		if (bio->skip) {
+		    //printf("Skipping import of pads\n");
+		    bio->skip--;
+		    continue;
+		}
+
+		//printf("Import pads from existing consensus at %d\n",
+		//       pos+1+bio->n_inserts-bio->npads);
+		for (i = 0; i < n; i++) {
+		    const bam_pileup1_t *p = &pl[i];
+		
+		    bio_extend_seq(bio, i, '*', 0);
+		}
+	    }
+	}
     }
 
-    //    printf("Callback at pos=%d n=%d tid=%d\n", pos, n, tid);
     for (j = 0; j <= insertions; j++) {
 	//printf("%d pos: %6d.%d ", tid, pos+1+bio->n_inserts, j);
+
+//	printf("%5d: ", pos+1+bio->n_inserts);
+//	for (i = 0; i < n; i++) {
+//	    const bam_pileup1_t *p = &pl[i];
+//	    printf("%d%d ", p->indel, j);
+//	}
+//	printf("\n");
+
+	if (j && bio->a->repad /*&& j > np*/) {
+	    /* FIXME: And not already in the originally padded version */
+	    int np1, np2;
+	    np=padtree_pad_at(bio->tree, pos+2);
+
+	    //printf("Insert at %d: j=%d np=%d\n", pos+2+bio->n_inserts, j, np);
+	    //	    contig_insert_base(bio->io, &bio->c, pos+2+bio->n_inserts,
+	    //			       '*', 0);
+	    if (j > np) {
+		contig_insert_base(bio->io, &bio->c,
+				   get_padded_coord(bio->tree, pos+2)
+				   +bio->n_inserts,
+				   '*', 0);
+		bio->npads++;
+	    } else {
+		bio->n_inserts--;
+		bio->skip++;
+	    }
+	}
+
 	for (i = 0; i < n; i++) {
 	    const bam_pileup1_t *p = &pl[i];
 	    
 	    if (j == 0 && p->is_head) {
-		int i2;
+		int i2, ppos;
 		/* New sequence */
 		//printf("^%c", p->b->core.qual+33);
-		i2 = bio_new_seq(bio, p, pos+1+bio->n_inserts);
+		ppos = bio->npads
+		     + get_padded_coord(bio->tree,
+					pos + 1 + bio->n_inserts - bio->npads);
+		i2 = bio_new_seq(bio, p, ppos);
 
 		/*
 		 * The following fails if we have a previous sequence that
@@ -593,6 +657,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 			 (p->qpos < p->b->core.l_qseq-1
 			  ? bam1_qual(p->b)[p->qpos+1]
 			  : bam1_qual(p->b)[p->qpos])) / 2;
+		//printf("Undercall in seq %d\n", i);
 		bio_extend_seq(bio, i, '*', q);
 	    } else {
 		if (p->indel >= 0) {
@@ -616,14 +681,18 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 			    continue;
 		    }
 		    bio_extend_seq(bio, i, c, q);
-		} else if (p->indel < 0 && j == 0) {
+		} else if (p->indel < 0 /*&& j == 0*/) {
 		    /*
 		     * This occurs when the next base is an undercall.
 		     * However THIS base should still exist, I think.
 		     * It's all a little bit confusing if truth be known.
 		     */
-		    int c = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), p->qpos)];
+		    int c = j == 0
+		      ? bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), p->qpos)]
+		      : '*';
 		    int q = bam1_qual(p->b)[p->qpos];
+		    //printf("%s extend seq %d base %c\n",
+		    //       bam1_qname(p->b), i, c);
 		    bio_extend_seq(bio, i, c, q);
 		}
 	    }
@@ -667,6 +736,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bio->fn = fn;
     bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     bio->libs->name = "libs";
+    bio->last_tid = -1;
 
     if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);

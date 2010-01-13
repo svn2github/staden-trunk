@@ -1,5 +1,6 @@
 LIBS = gap5
-PROGS = $(LIBS)
+PROGS = $(LIBS) $(PROGBINS)
+PROGBINS= tg_index tg_view
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -10,14 +11,13 @@ TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
 INCLUDES_E += $(MISC_INC) $(TGAP_INC) $(TK_INC) \
-	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC)
+	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(SAMTOOLS_INC)
 	      
 CFLAGS += $(SHLIB_CFLAGS)
 FFLAGS += $(SHLIB_FFLAGS)
 
-
 TGAP_LIB=-ltgap
-
+GAP5_LIB=-lgap5
 
 #
 # Building the programs
@@ -53,6 +53,15 @@ CEDITOR_SCRAP=\
 	join.o\
 	oligo.o
 
+TG_INDEX=\
+	tg_index_common.o\
+	baf.o \
+	maq.o \
+	maqmap.o \
+	sam_index.o \
+	ace.o \
+	depad_seq_tree.o
+
 GAP5=\
 	newgap5_cmds.o \
 	gap4_compat.o \
@@ -84,7 +93,8 @@ GAP5=\
 	break_contig.o \
 	export_contigs.o \
 	find_oligo.o \
-	$(CEDITOR)
+	$(CEDITOR) \
+	$(TG_INDEX)
 
 GAP5_LIBS=\
 	$(IOLIB_LIB) \
@@ -92,7 +102,9 @@ GAP5_LIBS=\
 	$(TKUTILS_LIB) \
 	$(TK_LIB) \
 	$(TGAP_DEP) \
-	$(MISC_LIB)
+	$(MISC_LIB) \
+	$(SEQUTILS_LIB) \
+	$(SAMTOOLS_LIB)
 
 $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	-@
@@ -105,7 +117,36 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(GAP5)
 	$(MKDEFL) $@ $(GAP5)
 
 
-DEPEND_OBJ = $(GAP5)
+TG_IND_OBJ = \
+	$(TG_IO) \
+	tg_index.o \
+#	mapass2.o
+
+TGILIBS = \
+	$(TGAP_LIB) \
+	$(GAP5_LIB) \
+	$(MISC_LIB) \
+	$(ZLIB_LIB) \
+	$(TKUTILS_LIB) \
+	$(SEQUTILS_LIB) \
+	$(TCL_LIB) \
+	$(SAMTOOLS_LIB)
+
+tg_index: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
+
+TG_VIEW_OBJ = \
+	$(TG_IO) \
+	tg_view.o
+
+TGVLIBS = \
+	$(TGILIBS) \
+	-lcurses
+
+tg_view: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
+	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
+
+DEPEND_OBJ = $(GAP5) $(TG_IND_OBJ) $(TG_VIEW_OBJ)
 
 install:
 	cp $(S)/gap5 $(INSTALLBIN)
@@ -113,6 +154,7 @@ install:
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/gap5
 	cp $(S)/gap5rc $(S)/gap5rc_menu_full $(INSTALLETC)
 	cp $(PROGLIBS) $(INSTALLLIB)
+	cp $(PROGBINS) $(INSTALLBIN)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(S)/gap5 \

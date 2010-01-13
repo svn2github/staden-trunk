@@ -32,6 +32,13 @@ void close_tmp_file(void);
 int sort_pair_file (void);
 void complete_pairs(GapIO *io);			 
 
+/*
+ * Turns a comma separated list of data types into a bit-field.
+ */
+int parse_data_type(char *type);
+
+int tg_index_file_type (char *fn);
+
 #endif
 
 

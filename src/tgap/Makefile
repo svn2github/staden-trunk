@@ -1,6 +1,5 @@
 LIBS = tgap
-PROGS = $(LIBS) $(PROGBINS)
-PROGBINS= tg_index tg_view
+PROGS = $(LIBS)
 PROGLIBS= $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 
 SRCROOT=$(SRC)/..
@@ -10,7 +9,7 @@ include ../system.mk
 # Local comment: Comment out next line for remote compilation
 
 INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
-	$(IOLIB_INC) $(SAMTOOLS_INC)
+	$(IOLIB_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 
 # For gprof profiling
@@ -22,6 +21,11 @@ CFLAGS += $(SHLIB_CFLAGS)
 #CFLAGS += -D_FORTIFY_SOURCE=2 -fstack-protector
 
 TGAP_LIB = -L$(L) -ltgap
+
+CFLAGS += -I/nfs/team71/psg/jkb/sys/Linux_x86_64/include -DHAVE_LIBLZMA
+CLDFLAGS += -L/nfs/team71/psg/jkb/sys/Linux_x86_64/lib -llzma
+TGAP_LIBS = -L/nfs/team71/psg/jkb/sys/Linux_x86_64/lib -llzma
+TGAP_LIBS += $(SEQUTILS_LIB)
 
 #-----------------------------------------------------------------------------
 
@@ -59,7 +63,6 @@ TG_IO = \
 	tg_tracks.o \
 	tg_anno.o \
 	tg_library.o \
-	tg_index_common.o\
 	zfio.o
 
 TGSH_OBJ = \
@@ -77,46 +80,12 @@ $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(TGAPOBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(LINK_PATHFLAG)$(L) $(TGAPOBJS) $(TGAP_LIBS) $(SHLIB_DEP)
 
-TG_IND_OBJ = \
-	$(TG_IO) \
-	tg_index.o \
-	baf.o \
-	maq.o \
-	maqmap.o \
-	sam_index.o \
-	ace.o
-#	mapass2.o
-
-TGILIBS = \
-	$(TGAP_LIB) \
-	$(MISC_LIB) \
-	$(ZLIB_LIB) \
-	$(TKUTILS_LIB) \
-	$(SEQUTILS_LIB) \
-	$(TCL_LIB) \
-	$(SAMTOOLS_LIB)
-
-tg_index: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
-	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
-
-TG_VIEW_OBJ = \
-	$(TG_IO) \
-	tg_view.o
-
-TGVLIBS = \
-	$(TGILIBS) \
-	-lcurses
-
-tg_view: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
-	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)
-
 DEPEND_OBJ = $(TG_IND_OBJ) $(TG_VIEW_OBJ) $(TGAPOBJS)
 
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.pl $(S)/BAF $(S)/Makefile $(DIRNAME)
 
 install:
-	cp $(PROGBINS) $(INSTALLBIN)
 	cp $(PROGLIBS) $(INSTALLLIB)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.

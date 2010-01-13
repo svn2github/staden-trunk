@@ -21,6 +21,7 @@ typedef struct {
     int reserved_seqs;
     int data_type;
     int comp_mode;
+    int repad;
 } tg_args;
 
 #define DATA_SEQ	1

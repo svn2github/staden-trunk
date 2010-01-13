@@ -12,6 +12,7 @@
 
 #include "tg_gio.h"
 #include "tg_index_common.h"
+#include "zfio.h"
 
 
 typedef struct {
@@ -455,4 +456,117 @@ void complete_pairs(GapIO *io) {
     
     cache_flush(io);
     
+}
+
+/*
+ * Turns a comma separated list of data types into a bit-field.
+ */
+int parse_data_type(char *type) {
+    char *cp;
+    int data_type = 0;
+
+    do {
+	cp = strchr(type, ',');
+
+	if (0 == strncmp(type, "seq", 3))
+	    data_type |= DATA_SEQ;
+	else if (0 == strncmp(type, "qual", 4))
+	    data_type |= DATA_QUAL;
+	else if (0 == strncmp(type, "name", 4))
+	    data_type |= DATA_NAME;
+	else if (0 == strncmp(type, "anno", 4))
+	    data_type |= DATA_ANNO;
+	else if (0 == strncmp(type, "all",  3))
+	    data_type = DATA_ALL;
+	else if (0 == strncmp(type, "none", 4))
+	    data_type = 0;
+	else if (0 == strncmp(type, "blank", 4))
+	    data_type = DATA_BLANK;
+	else
+	    fprintf(stderr, "Ignoring unknown data_type '%.*s'\n",
+		    cp ? cp-type : strlen(type), type);
+
+	type = cp ? cp+1 : NULL;
+    } while (type);
+
+    return data_type;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Auto file type detection */
+int tg_index_file_type (char *fn) {
+    char *suffix = strrchr(fn, '.');
+    char data[11];
+    zfp *fp;
+
+    /* By standard suffix */
+    if (suffix) {
+	if (0 == strcmp(suffix, ".gz")) {
+	    char *suffix2, tmp;
+	    tmp = *suffix;
+	    *suffix = 0;
+	    suffix2 = strrchr(fn, '.');
+	    *suffix = tmp;
+	    if (suffix2)
+		suffix = suffix2;
+	}
+
+	suffix++;
+	if (0 == strcmp(suffix, "bam") ||
+	    0 == strcmp(suffix, "BAM"))
+	    return 'b';
+
+	if (0 == strcmp(suffix, "sam") ||
+	    0 == strcmp(suffix, "sam.gz") ||
+	    0 == strcmp(suffix, "SAM"))
+	    return 's';
+	
+	if (0 == strcmp(suffix, "ace") ||
+	    0 == strcmp(suffix, "ace.gz") ||
+	    0 == strcmp(suffix, "ACE"))
+	    return 'A';
+	
+	if (0 == strcmp(suffix, "baf") ||
+	    0 == strcmp(suffix, "baf.gz") ||
+	    0 == strcmp(suffix, "BAF"))
+	    return 'B';
+	
+	if (0 == strcmp(suffix, "map") ||
+	    0 == strcmp(suffix, "MAP") ||
+	    0 == strcmp(suffix, "maq"))
+	    return 'm';
+    }
+
+    /* By contents */
+    if (NULL == (fp = zfopen(fn, "rb"))) {
+	perror(fn);
+	return '?';
+    }
+
+    if (NULL == zfgets(data, 10, fp)) {
+	zfclose(fp);
+	return '?';
+    }
+    zfclose(fp);
+
+    if (0 == strncmp(data, "BAM\001", 4))
+	return 'b'; /* bam */
+
+    if (0 == strncmp(data, "AS ", 3))
+	return 'A'; /* ace */
+
+    /* Gets trickier to detect from here on */
+    if (0 == strncmp(data, "CO=", 3))
+	return 'B'; /* baf */
+
+    if (0 == strncmp(data, "@HD", 3) ||
+	0 == strncmp(data, "@SQ", 3))
+	return 's'; /* sam */
+
+    /*
+     * And if still not found, well it maybe maq, but is just as likely
+     * a differently formatting sam or baf. Give up at this point.
+     */
+
+    return '?';
 }
