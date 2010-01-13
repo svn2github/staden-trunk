@@ -1100,7 +1100,7 @@ static int cache_item_create_seq(GapIO *io, void *from) {
     b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
 
     /* Start new blocks if they contain too much data too */
-    if (b->est_size > 150000) {
+    if (b->est_size > 250000) {
 	//printf("New sub block after %d/%d seqs\n", sub_rec, SEQ_BLOCK_SZ);
 	sub_rec = 0;
 	brec = io->iface->seq_block.create(io->dbh, NULL);
@@ -1421,7 +1421,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 		break;
 	    }
 	    
-	    printf("Duplicate seq %d in block %d\n", sub_rec, ci->rec);
+	    //printf("Duplicate seq %d in block %d\n", sub_rec, ci->rec);
 
 	    sub_new = (cached_item *)malloc(sizeof(*ci) + sub_ci->data_size);
 	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
