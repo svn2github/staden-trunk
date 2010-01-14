@@ -126,13 +126,13 @@ AC_DEFUN([AX_LIB_SAMTOOLS],
       SAMTOOLS_VERSION=`$samtools_exe 2>&1 | sed -n 's/Version: *\(.*\)( *.*)/\1/p'`
 
       v1=`expr "$1" : '\([[0-9]]*\)'`
-      v2=`expr "$1" : '[[0-9]]*.\([[0-9]]*\)'`
-      v3=`expr "$1" : '[[0-9]]*.[[0-9*]].\([[0-9]]*\)'`
+      v2=`expr "$1" : '[[0-9]]*\.\([[0-9]]*\)'`
+      v3=`expr "$1" : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
       want_vers=`expr "${v1:-0}" "*" 1000000 + "${v2:-0}" "*" 1000 + "${v3:-0}"`
 
       v1=`expr "$SAMTOOLS_VERSION" : '\([[0-9]]*\)'`
-      v2=`expr "$SAMTOOLS_VERSION" : '[[0-9]]*.\([[0-9]]*\)'`
-      v3=`expr "$SAMTOOLS_VERSION" : '[[0-9]]*.[[0-9*]].\([[0-9]]*\)'`
+      v2=`expr "$SAMTOOLS_VERSION" : '[[0-9]]*\.\([[0-9]]*\)'`
+      v3=`expr "$SAMTOOLS_VERSION" : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
       have_vers=`expr "${v1:-0}" "*" 1000000 + "${v2:-0}" "*" 1000 + "${v3:-0}"`
       if test `expr "$have_vers" ">=" "$want_vers"` = "1"
       then

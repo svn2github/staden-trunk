@@ -12,7 +12,7 @@
 #
 #   The following output variables are set using AC_SUBST:
 #
-#     ZLIB_CPPFLAGS
+#     ZLIB_CFLAGS
 #     ZLIB_LDFLAGS
 #     ZLIB_VERSION (if MINIMUM-VERSION is not "")
 #
@@ -75,7 +75,7 @@ AC_DEFUN([AX_LIB_ZLIB],
   then
       AC_MSG_CHECKING([if zlib version >= $1])
 
-      for i in "$ZLIB_ROOT" "/usr/include" "/usr/share/include" "/usr/local/include"
+      for i in "$ZLIB_ROOT/include" "/usr/include" "/usr/share/include" "/usr/local/include"
       do
 	  if test -f "$i/zlib.h"
 	  then
@@ -85,13 +85,13 @@ AC_DEFUN([AX_LIB_ZLIB],
       done
 
       v1=`expr "$1" : '\([[0-9]]*\)'`
-      v2=`expr "$1" : '[[0-9]]*.\([[0-9]]*\)'`
-      v3=`expr "$1" : '[[0-9]]*.[[0-9*]].\([[0-9]]*\)'`
+      v2=`expr "$1" : '[[0-9]]*\.\([[0-9]]*\)'`
+      v3=`expr "$1" : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
       want_vers=`expr "${v1:-0}" "*" 1000000 + "${v2:-0}" "*" 1000 + "${v3:-0}"`
 
       v1=`expr "${ZLIB_VERSION:-}" : '\([[0-9]]*\)'`
-      v2=`expr "${ZLIB_VERSION:-}" : '[[0-9]]*.\([[0-9]]*\)'`
-      v3=`expr "${ZLIB_VERSION:-}" : '[[0-9]]*.[[0-9*]].\([[0-9]]*\)'`
+      v2=`expr "${ZLIB_VERSION:-}" : '[[0-9]]*\.\([[0-9]]*\)'`
+      v3=`expr "${ZLIB_VERSION:-}" : '[[0-9]]*\.[[0-9]]*\.\([[0-9]]*\)'`
       have_vers=`expr "${v1:-0}" "*" 1000000 + "${v2:-0}" "*" 1000 + "${v3:-0}"`
       if test `expr "$have_vers" ">=" "$want_vers"` = "1"
       then
