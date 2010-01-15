@@ -1302,6 +1302,7 @@ tcl_import_reads(ClientData clientData,
 	{"-fast_mode",     ARG_INT, 1, "0",    offsetof(ir_arg, a.fast_mode)},
 	{"-reserved_seqs", ARG_INT, 1, "0",    offsetof(ir_arg, a.reserved_seqs)},
 	{"-repad",         ARG_INT, 1, "0",    offsetof(ir_arg, a.repad)},
+	{"-pair_reads",    ARG_INT, 1, "1",    offsetof(ir_arg, a.pair_reads)},
 	{NULL,		   0,	    0, NULL,   0}
     };
 
