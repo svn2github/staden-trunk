@@ -737,6 +737,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bio->libs = HacheTableCreate(256, HASH_DYNAMIC_SIZE);
     bio->libs->name = "libs";
     bio->last_tid = -1;
+    bio->tree = NULL;
 
     if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
@@ -799,6 +800,10 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 
 	if (bio->seqs)
 	    free(bio->seqs);
+
+	if (bio->tree)
+	    depad_seq_tree_free(bio->tree);
+
 	free(bio);
     }
 

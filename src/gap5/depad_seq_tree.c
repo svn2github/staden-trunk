@@ -53,6 +53,24 @@ pad_count_t *depad_seq_tree(char *seq) {
 }
 
 /*
+ * Deallocates memory taken up by a pad_count tree.
+ */
+void depad_seq_tree_free(pad_count_t *tree) {
+    struct pad_count *node, *next;
+
+    if (!tree)
+	return;
+
+    for (node = RB_MIN(PAD_COUNT, tree); node; node = next) {
+	next = RB_NEXT(PAD_COUNT, tree, node);
+	RB_REMOVE(PAD_COUNT, tree, node);
+	free(node);
+    }
+
+    free(tree);
+}
+
+/*
  * Given an unpadded sequence and a pad tree this function puts back the
  * missing pads.
  *
