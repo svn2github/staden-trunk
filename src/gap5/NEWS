@@ -1,5 +1,104 @@
+Gap5 1.2.6,  January 15th 2010
+==============================
+
+(Main staden release 2.0.0b3)
+
+Gap5 Changes since 1.2.4
+------------------------
+
+*	Added support for lzma (via XZ Utils' liblzma library)
+	compression in addition to the existing zlib code. This is
+	about 14% smaller than zlib, although at a cost of 2-3x
+	slower. Use "tg_index -c lzma" to enable this.
+
+	Also reordered data somewhat for both lzma and libz
+	compression, reducing file size by another ~7% when dealing
+	data mixed from multiple read-groups.
+
+*	Added an Export Tags function to write GFF data. (Largely
+        untested and experimental.)
+
+*	Improved BAF output so it now contains tags.
+
+*	Tg_index now has the ability to select the types of data to
+        store using -d. These can one or more from seq, qual, anno or
+        name (or "all" - the default). This allows for more compact
+        databases at the cost of missing some data.
+
+*	Substantially rduced the amount of I/O operations needed when
+        reading the aux file. 
+
+*	Sam/Bam @RG records and the RG:Z:* auxillary tags are now
+        parsed. These are used to place sequences into libraries,
+        although we may wish to rename these as read-groups in gap5
+        too.
+
+*	Added some simple search tools within the contig editor: by
+        sequence, name (if indexed), consensus quality.
+
+*	The template display should now be substantially faster at
+        drawing large numbers of sequences.
+
+*	Gap5 has a simple mapped assembly menu, currently using bwa
+	(which must be installed). Behind the scenes this uses the
+	new tg_index -g option to append to the existing assembly.
+
+*	Tg_index -a -g (gapped) mode; this assumes that the sam/bam file
+        being added has been aligned against a ungapped copy of the
+        consensus from the gap5 database we are appending
+        too. Tg_index will add gaps to either the existing consensus
+        or the newly input data as appropriate, to merge the two
+        assemblies together.
+
+
+Gap5 Bug fixes
+--------------
+
+*	Various cached consensus fixes.
+
+*	Removed occasional memory corruptions while editing sequences.
+
+*	Fixes to the "align" button in the join editor.
+
+*	Improved saving the consensus, involving contig clip point
+        changes and pad stripping.
+
+*	Fixed cases of inserting to contigs formed by joining
+        complemented contigs together.
+
+*	Fixed several sam parsing bugs.
+
+*	Break contig should produce fewer (hopefully no) inconsistent
+        contigs.
+
+*	Export Sequences in SAM format no longer shifts the
+        coordinates by 1.
+
+*	Improved maq long/short format autodetection.
+
+
+Gap4
+----
+
+*	Fixed an issue with turning off undo in the "remove pad
+        columns" editor function.
+
+*	Fixed an ancient bug involving the C to Fortran interface.
+
+*	Fixed a problem with incorrectly sized trace windows.
+
+
+
+Gap5 1.2.5
+==========
+
+(Internal test only)
+
+
 Gap5 1.2.4,  October 16th 2009
 ==============================
+
+(Main staden release 2.0.0b2)
 
 Changes
 -------
