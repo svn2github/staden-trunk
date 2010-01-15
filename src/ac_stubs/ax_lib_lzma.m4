@@ -112,10 +112,10 @@ AC_DEFUN([AX_LIB_LZMA],
          [Define to 1 if you have a functional liblzma.])
       if test "$LZMA_ROOT" != ""
       then
-          LZMA_LDFLAGS="-L${LZMA_ROOT}/lib -lzma"
+          LZMA_LDFLAGS="-L${LZMA_ROOT}/lib -llzma"
 	  LZMA_CFLAGS="-I${LZMA_ROOT}/include"
       else
-          LZMA_LDFLAGS="-lzma"
+          LZMA_LDFLAGS="-llzma"
 	  LZMA_CFLAGS=
       fi
       AC_SUBST([LZMA_LDFLAGS])
