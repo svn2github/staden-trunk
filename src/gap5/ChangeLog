@@ -1,3 +1,333 @@
+2010-01-15  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/tg_index.c: Made the repad option public (was -x, not -g).
+	  
+	  Tidied up the usage message.
+
+	* gap5/depad_seq_tree.c, gap5/depad_seq_tree.h, gap5/sam_index.c:
+	  Fix memory leak - we can now deallocate the pad tree.
+
+	* ac_stubs/ax_lib_lzma.m4: Fixed link bug: -llzma and not -lzma
+
+	* gap5/newgap5_cmds.c: Also initialise a.pair_reads in
+	  tcl_import_reads interface.
+
+	* README.build, configure.in, staden_config.h.in, system.mk.in,
+	  tgap/Makefile: Added --with-lzma to specify the liblzma (xz
+	  utils) install root.
+	  Modified the makefiles and to support this.
+
+	* gap5/maq.c, gap5/maqmap.c: Improved short/long maq format
+	  autodetection
+
+2010-01-14  James Bonfield  <jkb@sanger.ac.uk>
+
+	* ac_stubs/ax_lib_itcl.m4, ac_stubs/ax_lib_itk.m4,
+	  ac_stubs/ax_lib_iwidgets.m4, ac_stubs/ax_lib_lzma.m4,
+	  ac_stubs/ax_lib_png.m4, ac_stubs/ax_lib_samtools.m4,
+	  ac_stubs/ax_lib_tklib.m4, ac_stubs/ax_lib_zlib.m4: Added a
+	  AX_LIB_LZMA configure option.
+	  
+	  Fixed many of the expr regexp matches for version checking. These
+	  used . instead of \., sometimes causing 4.12 to be interpreted as
+	  4,12,2 major,minor,patch levels.
+	  
+	  Also fixed the [0-9]* patterns which in a few cases was typo as
+	  [0-9*].
+
+2010-01-13  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/export_contigs.c: Fixed the offset so that output to sam
+	  does not shift the data by 1.
+	  
+	  Also (#ifdefed out) added some experimental code to shrink cigar
+	  strings, assuming the consensus to be the reference.
+
+	* gap5/gap5rc, gap5/gap5rc_menu_full, gap5/map_reads.tcl,
+	  gap5/search.tcl, gap5/tclIndex: Added an Assembly -> Map Reads
+	  menu. This allows running bwa
+	  externally to align data to our consensus sequences, and then
+	  importing them into Gap5.
+	  
+	  Experimental at the moment.
+
+	* gap5/newgap5_cmds.c: Added tcl_import_reads interface. This is
+	  effectively an interface to the guts of the tg_index command.
+
+	* tgap/tg_cache.c: Allow for 250k per seqblock instead of 150k.
+
+	* gap5/depad_seq_tree.c, gap5/depad_seq_tree.h: Newer depadding
+	  functions that represent the unpadded to padded coordinate
+	  mapping in a sorted red-black tree instead of the usual array
+	  method. It is hoped that this will be smaller than a full array,
+	  assuming the pad density is not too high.
+
+	* gap5/maq.c, gap5/maq.h: Moved tg_index and tg_view from tgap to
+	  gap5. This allows tg_index to start using gap5 functionality, eg
+	  calculating the consensus.  This is used in an experimental
+	  repad option where the alignment of incoming data is padded to
+	  match an existing consensus.
+
+	* gap5/Makefile, gap5/ace.c, gap5/ace.h, gap5/baf.c, gap5/baf.h,
+	  gap5/maqmap.c, gap5/maqmap.h, gap5/sam_index.c,
+	  gap5/sam_index.h, gap5/tg_index.c, gap5/tg_index.h,
+	  gap5/tg_index_common.c, gap5/tg_index_common.h, gap5/tg_view.c,
+	  tgap/Makefile, tgap/ace.c, tgap/ace.h, tgap/baf.c, tgap/baf.h,
+	  tgap/maq.c, tgap/maq.h, tgap/maqmap.c, tgap/maqmap.h,
+	  tgap/sam_index.c, tgap/sam_index.h, tgap/tg_index.c,
+	  tgap/tg_index.h, tgap/tg_index_common.c, tgap/tg_index_common.h,
+	  tgap/tg_view.c: Moved tg_index and tg_view from tgap to
+	  gap5. This allows tg_index to start using gap5 functionality, eg
+	  calculating the consensus.  This is used in an experimental
+	  repad option where the alignment of incoming data is padded to
+	  match an existing consensus.
+
+	* gap4/trace_display.tcl, gap5/trace_display.tcl: Fix a bug with
+	  poorly sized trace windows when initially brought up.
+	  
+	  This only happens sometimes, and only on some window managers.
+
+2010-01-12  awhitwham
+
+	* gap5/Makefile, gap5/template_display.c, gap5/template_display.h,
+	  gap5/template_draw.c, gap5/template_draw.h, tgap/hache_table.c,
+	  tgap/hache_table.h, tgap/tg_contig.c, tgap/tg_contig.h,
+	  tgap/tg_struct.h, tk_utils/tkRaster.c, tk_utils/tkRaster.h:
+	  Changes to speed up the template display showing large numbers of
+	  reads.
+
+2010-01-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_iface_g.c: Fixed bug in reorder_by_read_group mode while
+	  decoding.
+
+	* gap4/list_contigs.tcl: Honour the contig order
+
+2009-12-08  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/consensus.c: Fixed a memory corruption / cache counting
+	  problem when working on complemented contigs.
+
+	* gap5/consen.tcl: Honour the Strip Pads dialogue option.
+
+	* gap5/docs/TODO:
+
+	* gap5/hash_lib.c: Random musings in comments
+
+	* tgap/zfio.c: Added <unistd.h> so that R_OK is defined.
+
+2009-12-04  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_gio.c, tgap/tg_gio.h, tgap/tg_iface.h,
+	  tgap/tg_iface_g.c, tgap/tg_index.c, tgap/tg_index.h: Added a -c
+	  <compression_method> to tg_index. This in turn gets passed all
+	  the way down into tg_iface_g.c which now properly supports
+	  switching from zlib to either no compression or liblzma. The top
+	  bits of the format bytes now encode the compression method.
+	  
+	  This will still be disabled though unless -DHAVE_LIBLZMA is
+	  specified in CFLAGS of the Makefile, which currently there is no
+	  autoconf setting for.
+	  
+	  Also adjusted the format for GT_SeqBlocks to reorder quality and
+	  names by the read-group (parent_rec field). This improves
+	  compression of mixed assemblies.
+
+2009-11-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/Makefile, gap5/contig_editor.tcl, gap5/editor_search.c,
+	  gap5/editor_search.tcl, gap5/editor_view.h, gap5/tkEditor.c:
+	  Added some basic editor searching. It's not as complete as Gap4,
+	  but supports consensus sequences, read names and consensus
+	  quality scores.
+
+	* tgap/tg_gio.c: Bug fix to child IO: we now inherit the read-only
+	  flag too. This prevents the editor from crashing due to
+	  consensus caching when cutting and pasting out of the editor
+	  consensus line.
+
+2009-11-27  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_iface_g.c: Added experimental code to support liblzma
+	  instead of zlib for compression of data. The results vary based
+	  on input data, but appear to be around 15% smaller at a cost of
+	  2-4x CPU usage.
+	  
+	  Also added code to reorder quality values and names when writing
+	  a seq block so that sequences from the same library are adjacent
+	  to one another. This further improves compression ratio,
+	  depending on whether mixed libraries are in use: about 7%
+	  smaller on a 1000genomes mixed sample.
+	  
+	  Both of these changes are hidden behind #ifdefs and are currently
+	  disabled.
+
+2009-11-23  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_struct.h: Increased size_hist[] dimensions. The values
+	  can be 0 to 1792 inclusive, so it now reads [LIB_BINS+1]. This
+	  fixes a corruption when dealing with values over 1Mb in size.
+
+	* gap5/break_contig.c: Fixed a bug with break contig due to
+	  over-ambitious optimisation.
+
+2009-11-18  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap4/legacy_f2c.c: Fixed ancient bug involving elipses and
+	  function prototypes. I'm not sure why it's only surfaced now,
+	  but perhaps it's a compiler version thing.
+	  
+	  On AMD64 gcc generates different code when calling a function
+	  with ... args than when calling a function with specific types
+	  args, even when the types are the default C promotion
+	  rules. Fixed the various extern int declarations of swrt*_
+	  functions to use ... instead of the auto-generated full argument
+	  list. These now match those in f2c.c and so fixes an illegal
+	  instruction and crash.
+
+2009-11-17  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_cache.c: More minor stats on exit.
+
+	* gap4/edCommands.c: Fixed an issue with turning off undo in
+	  remove pad columns. It still turns it off in some cases, but it
+	  now clears the existing undo history and it reactivates it once
+	  all the pad insertions have happened.
+
+	* gap4/gap4: Allowed for GTAGDB to be set outside the wrapper
+	  script.
+
+	* tgap/sam_index.c: Fixed several sam parsing bugs.
+	  
+	  1) We now reset the number of insertions to zero for each new
+	  contig. This was causing data to be shifted in susbequent
+	  contigs.
+	  
+	  2) Pads can no longer get inserted at the end of a read.
+	  
+	  3) The lowercase letters immediately prior to a deletion are now
+	  uppercase again.
+
+2009-11-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/tg_bin.c: Fixed a bug in bin_for_range(). When recursing
+	  down bins it could only create one extra layer of bin on the
+	  right hand child of a bin.  This was because it didn't reset the
+	  f_a and f_b variables used by NORM/NMIN/NMAX macros. (Bug added
+	  when we fixed this code to handle inserting to complemented
+	  bins.)
+
+	* gap5/editor_join.c: Fixed a bug in join_invalidate(). It was
+	  invalidating all of the right hand contig rather than just the
+	  overlapping region.
+
+2009-11-12  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/export_contigs.c: Added @RG header lines and RG:Z:*
+	  auxillary sequence records, using the new name field from
+	  libraries.
+
+	* gap5/libraries.tcl, tgap/maq.c, tgap/sam_index.c,
+	  tgap/tg_iface_g.c, tgap/tg_index_common.c, tgap/tg_library.c,
+	  tgap/tg_library.h, tgap/tg_struct.h, tgap/tg_tcl.c: Added a name
+	  field to libraries, so we can track their original names
+	  in SAM.
+
+2009-11-09  James Bonfield  <jkb@sanger.ac.uk>
+
+	* configure.in, gap5/gap.tcl, tgap/tg_index.c, tgap/tg_view.c:
+	  Version updates - for a local 2.0.0b3 test release internal to
+	  Sanger (or those that wish to fish out the source from SVN).
+	  Primary changes are bug fixes.
+
+	* gap5/consen.tcl, gap5/gap4_compat.c: Fixed the lget_contig_num
+	  to always clip off cutoff data when interpreting the contig
+	  start/end values.
+	  
+	  This allows for consensus saving to always behave better now too.
+
+	* gap5/editor_join.c: Fixed bugs with the "align" join editor
+	  button.
+
+	* gap5/consensus.c: Fixed bug in consensus_valid_range where a
+	  right hand cutoff of > 1Kb was reported as 1Kb only.
+	  
+	  Fixed a bug with using cached consensus data from bins that
+	  don't quite butt up to one another. Why this happens I am unsure
+	  still (likely a bug in contig joining), but the defensive
+	  approach is to detect it and fall back to filling in the
+	  consensus gaps using the old technique.
+	  
+	  Also fixed a consensus algorithm bug where we could overflow the
+	  cache and break things. We use cache_incr/decr now to protect
+	  against this.
+
+	* tgap/tg_cache.c: Fix the internal seq_t pointers if we've had to
+	  realloc it during a resize request.
+
+2009-11-05  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/g-files.c, tgap/g-io.c: The read_aux_index_* functions now
+	  return the number of entries read, rather than just 0 or
+	  -1. This allows for us to ask to read 256 and only get back 200
+	  without being in error.
+	  
+	  This is now utilised in g_read_index() which reads blocks of
+	  index records rather than 1 at a time, vastly reducing the
+	  number of seek/read system calls needed.
+
+2009-10-30  James Bonfield  <jkb@sanger.ac.uk>
+
+	* tgap/sam_index.c: Added a "-d data_type_list" option to
+	  tg_index.  By default we store everything, but now we have the
+	  option of skipping the read names or qualities, or just storing
+	  nothing at all (except layout data).
+
+	* tgap/baf.c, tgap/maq.c, tgap/tg_index.c, tgap/tg_index.h,
+	  tgap/tg_index_common.c: Added a "-d data_type_list" option to
+	  tg_index. By default we store everything, but now we have the
+	  option of skipping the read names or qualities, or just storing
+	  nothing at all (except layout data).
+	  
+	  Also fixed the library size histograms generated in
+	  tg_index_common.c.
+
+	* gap5/export_contigs.c: Improved BAF output. It now contains
+	  tags, listed in the correct location with respect to their
+	  sequences. (This proved harder than expected.)
+
+2009-10-28  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/docs/TODO:
+
+	* gap5/newgap5_cmds.c: Added export_tags C-to-Tcl binding
+
+2009-10-26  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/export_contigs.c, gap5/export_contigs.h,
+	  gap5/export_contigs.tcl, gap5/gap5rc_menu_full, gap5/tclIndex:
+	  Added an Export Tags function. Currently it only outputs in GFF
+	  format and it requires testing yet to see whether it is fully GFF
+	  conformant.
+
+2009-10-22  James Bonfield  <jkb@sanger.ac.uk>
+
+	* gap5/result_manager.tcl: Added missing file - forgot to check
+	  this in!
+
+	* tgap/tg_contig.c, tgap/tg_contig.h, tgap/tg_struct.h: The contig
+	  iterators can now be given a type too to iterate sequences
+	  only (the previous mechanism), annotations only, or anything.
+
+	* tgap/tg_iface_g.c: Fixed a bug in AnnoEleBlock encoding where
+	  the obj_rec was invalid. (Typically this has no effect due to it
+	  being in the range array too.)
+
+2009-10-19  James Bonfield  <jkb@sanger.ac.uk>
+
+	* ac_stubs/ax_lib_iwidgets.m4: Added default install path as used
+	  by Debian.
+
 2009-10-16  James Bonfield  <jkb@sanger.ac.uk>
 
 	* Tagged VERSION 2.0.0b2
