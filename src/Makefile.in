@@ -133,7 +133,7 @@ distsrc:
 #	General souce. Works best from a clean svn checkout.
 	-mkdir $(DS)
 	cp $(S)/configure $(S)/*.in $(S)/bootstrap $(S)/README.build \
-	   $(S)/global.mk $(DS)
+	   $(S)/NEWS $(S)/ChangeLog $(S)/global.mk $(DS)
 	-mkdir $(DS)/ac_stubs
 	cp $(S)/ac_stubs/*.m4 $(DS)/ac_stubs
 #
