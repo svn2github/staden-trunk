@@ -20,7 +20,7 @@
 	Also it means up/down arrow skips lines or doesn't work correct.
 
 *	BUG: can join contig1 to contig1 and hit save. We then get no
-        contig1 at all.
+        contig1 at all. (DONE)
 
 *	Add support for reference sequences. See also unpadded
         coordinates. (I suspect the two are connected.)
