@@ -46,8 +46,9 @@
 
 
 void usage(void) {
-    fprintf(stderr, "Usage: g_index [options] [-m] [-T] data_file ...\n");
+    fprintf(stderr, "Usage: g_index [options] data_file ...\n");
     fprintf(stderr, "      -o output            Specify ouput filename (g_db)\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -m                   Input is MAQ format\n");
     fprintf(stderr, "      -M                   Input is MAQ-long format\n");
     fprintf(stderr, "      -A                   Input is ACE format\n");
@@ -56,19 +57,33 @@ void usage(void) {
     fprintf(stderr, "      -b                   Input is BAM format\n");
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
 #endif
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P                   Do not link read-pairs together\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -a                   Append to existing db\n");
     fprintf(stderr, "      -n                   New contigs always (relevant if appending)\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "      -g                   When appending to an existing db, assume the\n");
+    fprintf(stderr, "                           alignment was performed against an ungapped copy\n");
+    fprintf(stderr, "                           of the existing consensus. Add gaps back in to\n");
+    fprintf(stderr, "                           reads and/or consensus as needed.\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -t                   Index sequence names\n");
     fprintf(stderr, "      -T                   Do not index sequence names (default on)\n");
+
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -z value             Specify minimum bin size (default is '4k')\n"); 
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -f                   Fast mode: read-pair links are unidirectional\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -r nseq              Reserve space. Only necessary for exceptionally\n");
     fprintf(stderr, "                           large databases, eg n.seq > 100 million.\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -d data_types        Only copy over certain data types. This is a comma\n"
-	            "                           separated list containing one or more words from:\n"
-	            "                           seq, qual, anno, name, all or none\n");
+	            "                           separated list containing one or more words\n"
+	            "                           from: seq, qual, anno, name, all or none\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -c method            Specifies the compression method. This shold be\n");
     fprintf(stderr, "                           one of 'none', 'zlib' or 'lzma'.\n");
     fprintf(stderr, "                           Zlib is the default.\n");
@@ -104,14 +119,12 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:x")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:g")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:x")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:g")) != -1) {
 #endif
 	switch(opt) {
-	case 'x':
-	    /* Experimental */
-	    fprintf(stderr, "Experimental mode enabled\n\n");
+	case 'g':
 	    a.repad = 1;
 	    break;
 
