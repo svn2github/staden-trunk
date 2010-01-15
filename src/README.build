@@ -1,11 +1,11 @@
-		      Unix build - 14th July 2009
-		      ===========================
+		    Unix build - 14th January 2010
+		    ==============================
 
 
 External dependencies
 =====================
 
-In order to compile the Staden source tree we also need a few extra
+In order to compile the Staden source tree you also need a few extra
 libraries. Some of these may be considered as internal (eg io_lib),
 but they are not included within this source tree and need to be
 downloaded and installed before hand.
@@ -13,28 +13,32 @@ downloaded and installed before hand.
 Packages required (newer versions should work; older versions may work
 but are untested - please tell me if they work too).
 
-* staden-io_lib	>=1.11.x
+* staden-io_lib	>=1.12.2
 * samtools	>=0.1.3 (optional[1])
 * tcl		>=8.4
 * tk		>=8.4
 * zlib		>=1.2.x
+* xz utils	>=4.999 (optional[2], aka liblzma)
 * libpng	>=1.2.x
 * curl		>=7.x
 * tklib		>=0.3? (for tablelist widget)
-* itcl		>=3.2 (advisable, but optional[2])
-* itk		>=3.2 (advisable, but optional[2])
-* iwidgets	>=4.0 (advisable, but optional[2])
+* itcl		>=3.2 (advisable, but optional[3])
+* itk		>=3.2 (advisable, but optional[3])
+* iwidgets	>=4.0 (advisable, but optional[3])
 
 [1] Samtools is only needed by tg_index to build Gap5 databases from
 bam format files.
 
-[2] itcl/itk/iwidgets are needed by pregap4, spin and some parts of
-Gap4. However it is a run-time dependency and the package will build
-without these installed. Note that itcl/itk version 3.4 is required if
-you link against Tcl/Tk 8.5.
+[2] XZ utils includes a liblzma library. If present it may be used for
+Gap5 to perform better compression, but it is not mandatory.
 
-Note that if your operating system separates out run-time from
-development files, we'll need both. For example on Debian we need
+[3] itcl/itk/iwidgets are needed by pregap4, spin and some parts of
+Gap4. However it is a run-time dependency and the package will build
+without these installed. Note that if you link against Tcl/Tk 8.5 then
+the minimum version of itcl/itk is 3.4 and not 3.2.
+
+If your operating system separates out run-time from development files
+then you will need both installed. For example on Debian you need
 tcl8.5 and tcl8.5-dev packages.
 
 Other system prerequisites:
@@ -251,6 +255,3 @@ TODO
 *	Fix ./configure and make in top directory instead of
         subdir. gap5/gap5 script was removed. (Because it's target
         for library?)
-
-*	Figure out what to do with itcl/itk. We need them, but not as
-         a mandatory package.

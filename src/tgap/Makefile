@@ -22,10 +22,12 @@ CFLAGS += $(SHLIB_CFLAGS)
 
 TGAP_LIB = -L$(L) -ltgap
 
-CFLAGS += -I/nfs/team71/psg/jkb/sys/Linux_x86_64/include -DHAVE_LIBLZMA
-CLDFLAGS += -L/nfs/team71/psg/jkb/sys/Linux_x86_64/lib -llzma
-TGAP_LIBS = -L/nfs/team71/psg/jkb/sys/Linux_x86_64/lib -llzma
-TGAP_LIBS += $(SEQUTILS_LIB)
+INCLUDES_E += $(ZLIB_INC) $(LZMA_INC)
+
+TGAP_LIBS = \
+	$(SEQUTILS_LIB) \
+	$(ZLIB_LIB) \
+	$(LZMA_LIB)
 
 #-----------------------------------------------------------------------------
 

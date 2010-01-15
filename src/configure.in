@@ -1,5 +1,5 @@
 dnl Process this file with aclocal and autoconf to produce a configure script.
-AC_INIT([staden],[2.0.0b3])
+AC_INIT([staden],[2.0.0b4])
 
 # Check that we're running in a subdirectory. If not create one and rerun.
 # This ensures that the root directory does not get polluted with the
@@ -30,6 +30,7 @@ AC_PROG_CXX
 # Check for library dependencies
 LIBCURL_CHECK_CONFIG(,,[have_curl=yes], [have_curl=no])
 AX_LIB_ZLIB(,[have_zlib=yes], [AC_MSG_ERROR([Abort: no zlib. Please rerun configure using the --with-zlib=DIR option.])])
+AX_LIB_LZMA(,[have_lzma=yes], [AC_MSG_WARN([No liblzma detected. Gap5 may be able to read some database. To fix this please install liblzma and rerun configure using the --with-lzma=DIR option.])])
 AX_LIB_PNG(,[have_png=yes],[
     have_png=no;
     AC_MSG_WARN([No PNG library found. Gap4's Report Mutatations functionality will be absent.])])
@@ -134,6 +135,13 @@ then
 echo    "zlib:      DIR (system)"
 else
 echo    "zlib:      DIR $ZLIB_ROOT"
+fi
+
+if test "$have_lzma" = "yes"
+then
+echo    "liblzma:   DIR $LZMA_ROOT"
+else
+echo    'liblzma:   ***NOT FOUND***'
 fi
 
 if test "$have_bam" = "yes"
