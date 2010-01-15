@@ -127,9 +127,11 @@ int parse_maqmap(GapIO *io, const char *dat_fn, tg_args *a) {
 	sz = 128;
     } else {
 	sz = maq_detect_size(dat_fp);
-	printf("Auto-detected maq sequence size as %d.\n", sz);
-	if (sz == -1)
+	if (sz == -1) {
+	    fprintf(stderr, "Failed it identify whether max seq is 64 or 128\n");
 	    return -1;
+	}
+	printf("Auto-detected maq sequence size as %d.\n", sz);
     }
 
     while ((sz == 64 && gzread(dat_fp, &m64, sizeof(maqmap64_t)))
