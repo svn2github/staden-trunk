@@ -86,6 +86,10 @@ find certain third-party packages:
   --with-zlib=DIR
 	Specifies the prefix for a zlib install.
 
+  --with-lzma=DIR
+	Specifies the prefix for an XZ Utils install, containing the
+	lzma library.
+
   --with-libcurl=DIR
 	Specifies the prefix for a curl install.
 
@@ -131,17 +135,12 @@ cd src/build.etch
 Documentation / Course notes
 ============================
 
-These are not yet using autoconf, but are less system specific than
-source code compilations.  Both make heavy use of TeX and TeXInfo, but
-for general users just downloading the prebuilt documentation is
-sufficient as it is platform agnostic.
+These have now been moved to their own package named
+"staden_doc-2.0.0b1-src.tar.gz". (They haven't been updated since
+then.)
 
-Should you wish to build the documentation and/or course material
-yourself from scratch cd to the appropriate directory and type
-make. Eg:
-
-    (cd doc; make)
-    (cd course; make)
+Please download this from sourceforge and read the building and
+install documentation within there.
 
 
 =============================================================================

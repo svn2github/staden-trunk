@@ -1,7 +1,7 @@
-Gap5 1.2.6,  January 15th 2010
-==============================
+Staden 2.0.0b4,  January 15th 2010
+==================================
 
-(Main staden release 2.0.0b3)
+(Gap5 1.2.6)
 
 Gap5 Changes since 1.2.4
 ------------------------
@@ -89,19 +89,19 @@ Gap4
 
 
 
-Gap5 1.2.5
-==========
+Staden 2.0.0b3 
+==============
 
-(Internal test only)
+(internal test only of Gap5 1.2.5)
 
 
-Gap5 1.2.4,  October 16th 2009
-==============================
+Staden 2.0.0b2, October 16th 2009
+=================================
 
-(Main staden release 2.0.0b2)
+(Gap5 1.2.4)
 
-Changes
--------
+Gap5 Changes
+------------
 
 *	Tags can be created and/or removed within the contig editor
         now, rather than just imported.
@@ -149,8 +149,8 @@ Changes
 
 *	Tags now interpret "\n" as newline within BAF files.
 
-Bug fixes
----------
+Gap5 bug fixes
+--------------
 
 *	Selecting a region in the contig editor that spans a tag no
         longer crashes Gap5.
@@ -172,13 +172,13 @@ Bug fixes
 *	(Plus many minor fixes - see ChangeLog)
 
 
-Gap5 1.2.3,  August 7th 2009
-============================
+Staden 2.0.0b1, August 7th 2009
+===============================
 
-Now integrated into the staden package release system (2.0.0b1).
+(Gap5 1.2.3)
 
-Minor changes
--------------
+Gap5 Minor changes
+------------------
 
 *	Added a -f (fast mode) parameter to tg_index. When linking
         read-pairs this links A' to A but not A back to A'. This

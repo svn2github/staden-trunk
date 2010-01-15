@@ -1,3 +1,8 @@
+2010-01-16  James Bonfield  <jkb@sanger.ac.uk>
+
+	* Tagged rel-2-0-0-b4
+	* Tagged gap5-1-2-6
+
 2010-01-15  James Bonfield  <jkb@sanger.ac.uk>
 
 	* gap5/tg_index.c: Made the repad option public (was -x, not -g).
