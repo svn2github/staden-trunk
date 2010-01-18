@@ -79,6 +79,7 @@ install:
 	-mkdir -p $(INSTALLDOC)
 	-mkdir -p $(INSTALLMAN)
 	cp shlib.conf $(INSTALLETC)
+	cp @srcdir@/staden.profile $(INSTALLSHARE)
 	$(MAKE) $(FLAGS) JOB=install
 
 
@@ -133,7 +134,7 @@ distsrc:
 #	General souce. Works best from a clean svn checkout.
 	-mkdir $(DS)
 	cp $(S)/configure $(S)/*.in $(S)/bootstrap $(S)/README.build \
-	   $(S)/NEWS $(S)/ChangeLog $(S)/global.mk $(DS)
+	   $(S)/NEWS $(S)/ChangeLog $(S)/global.mk $(S)/staden.profile $(DS)
 	-mkdir $(DS)/ac_stubs
 	cp $(S)/ac_stubs/*.m4 $(DS)/ac_stubs
 #
@@ -179,6 +180,36 @@ $(DIRS): FORCE
 
 %/: %
 	#
+
+# dependencies so e.g. make -j4 works.
+tk_utils: Misc
+text_utils: Misc
+seq_utils: Misc text_utils tk_utils
+mutlib: Misc seq_utils
+abi: Misc
+alf: Misc
+eba: Misc
+get_scf_field: Misc
+hetins: Misc
+init_exp: Misc
+find_renz: seq_utils
+make_weights: seq_utils
+polyA_clip: seq_utils
+qclip: seq_utils
+screen_seq: seq_utils
+stops: seq_utils
+vector_clip: seq_utils
+mutscan: mutlib
+tracediff: mutlib
+spin: seq_utils
+g: Misc
+gap4: g seq_utils mutlib primer3/src
+convert: gap4
+copy_reads: gap4
+haplo: gap4
+prefinish: gap4
+tgap: seq_utils
+gap5: tgap
 
 FORCE:
 # DO NOT DELETE THIS LINE -- make depend depends on it.
