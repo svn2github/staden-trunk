@@ -32,7 +32,7 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(LIBOBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(LIBOBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(LIBOBJS) $(SHLIB_DEP)
 
-primer3_core: $(P3OBJS)
+primer3_core: $(P3OBJS) $(PROGLIBS)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(SUBSYSTEMCONSOLE) $(P3OBJS) $(P3LIBS) $(LIBSC)
 
 dpal_primer.o: dpal.c dpal.h primer3_release.h
