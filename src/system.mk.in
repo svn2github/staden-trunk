@@ -51,6 +51,16 @@ TK_LIB		  = @TK_LIB_SPEC@ $(TCL_LIB)
 #-----------------------------------------------------------------------------
 # Compiler/linking options
 
+# -rpath-link is passed to the linker here to avoid needing to set
+# LD_LIBRARY_PATH during linking, although it will still be needed to be set
+# at run-time unless we modify these to -rpath instead of -rpath-link.
+#
+# We only do this currently for the other libraries within this package and
+# for staden-io_lib.
+
+# How else do we get commas in a subst text or pattern?
+comma = ,
+
 CC		  = @CC@
 CFLAGS		  = @CFLAGS@ $(DEFINES) $(INCLUDES)
 CXX		  = @CXX@
@@ -58,6 +68,8 @@ CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
 LDFLAGS		  = -L$(L) @LDFLAGS@
+CLDFLAGS	  = -L$(L) -Wl,-rpath-link,$(L) $(subst -L,-Wl$(comma)-rpath-link$(comma),$(filter -L%,$(IOLIB_LIB)))
+CXXLDFLAGS	  = $(CLDFLAGS)
 F77		  = @F77@
 FFLAGS		  = @FFLAGS@
 
