@@ -362,6 +362,13 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
     }
     if (r) free(r);
 
+    if (end > left) {
+	printf("Filling missing region %d..%d\n", left, end);
+	calculate_consensus_simple2(io, contig, left, end,
+				    con  ? &con[left-start]  : NULL,
+				    qual ? &qual[left-start] : NULL); 
+    }
+
     cache_flush(io);
 
     return 0;
