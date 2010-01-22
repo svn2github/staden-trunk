@@ -97,6 +97,7 @@ proc NormalDialog { io } {
     set b1 [keylget fo FORMAT.BUTTON.1]
     set b2 [keylget fo FORMAT.BUTTON.2]
     set b3 [keylget fo FORMAT.BUTTON.3]
+    set b4 [keylget fo FORMAT.BUTTON.4]
  
     frame $f.format.dummy
     radiolist $f.format.main \
@@ -108,11 +109,14 @@ proc NormalDialog { io } {
 			   yes_no_configure %s -state disabled} } \
 	    { %s -command {radiolist_configure %s -state disabled;\
 			   yes_no_configure %s -state disabled} } \
+	    { %s -command {radiolist_configure %s -state disabled;\
+			   yes_no_configure %s -state disabled} } \
 	    { %s -command {radiolist_configure %s -state normal;\
 			   yes_no_configure %s -state normal} } }\
 	    [list $b1] [list $f.annos] [list $f.notes] \
 	    [list $b2] [list $f.annos] [list $f.notes] \
-	    [list $b3] [list $f.annos] [list $f.notes] ] 
+	    [list $b3] [list $f.annos] [list $f.notes] \
+	    [list $b4] [list $f.annos] [list $f.notes] ] 
 
     pack $f.format.main -fill x
     pack $f.format.dummy -fill x
@@ -183,7 +187,7 @@ proc Normal_OK_Pressed {f io infile id sel_mask strippads notes template annos f
     set strip [yes_no_get $strippads]
 
     #expt format chosen
-    if { $out_format == 3 } {
+    if { $out_format == 4 } {
 	set expt [radiolist_get $annos]
 	if {$expt == 1} {
 	    set gel_anno 1

@@ -478,7 +478,8 @@ set_defx defs_format	NAME		"Select format"
 set_defx defs_format	VALUE		2
 set_defx defs_format	BUTTON.1	staden
 set_defx defs_format	BUTTON.2	fasta
-set_defx defs_format	BUTTON.3	experiment
+set_defx defs_format	BUTTON.3	fastq
+set_defx defs_format	BUTTON.4	experiment
 
 # Globally used questions
 set_def GLOBAL.READING		$defs_rn

@@ -1582,6 +1582,51 @@ int fasta_fmt_output ( FILE *fp, char *seq, int seq_len, char *entry_name,
     return 0;
 }
 
+
+/* do fastq format output */
+int fastq_fmt_output ( FILE *fp, char *seq, float *qual,
+		       int seq_len, char *entry_name,
+		       int nopads, char *title) {
+    int i, j;
+
+    /* Seq */
+    fprintf(fp,"@%s %s\n",entry_name, title);
+    for (i = 0; i < seq_len; ) {
+	for (j = 0; j < LINELENGTH;) {
+	    if (seq[i] == '-' || seq[i] == '.')
+		seq[i] = 'N';
+	    if (nopads == 0 || seq[i] != '*') {
+		if (fprintf ( fp, "%c", seq[i]) < 0) return 1;
+		j++;
+	    }
+	    if (++i >= seq_len) {
+		break;
+	    }
+	}
+	if (fprintf ( fp, "\n") < 0) return 1;
+    }
+
+    /* Qual */
+    fprintf(fp, "+\n");
+    for (i = 0; i < seq_len; ) {
+	for (j = 0; j < LINELENGTH;) {
+	    if (nopads == 0 || seq[i] != '*') {
+		char q = qual ? qual[i] + 33 : 33;
+		if (q <  33) q = 33;
+		if (q > 126) q = 126;
+		if (fprintf ( fp, "%c", q) < 0) return 1;
+		j++;
+	    }
+	    if (++i >= seq_len) {
+		break;
+	    }
+	}
+	if (fprintf ( fp, "\n") < 0) return 1;
+    }
+
+    return 0;
+}
+
 /*
  * Creates a consensus experiment file containing tags
  * 'gel_anno' specifies whether to output annotations from gel readings.
@@ -1770,8 +1815,8 @@ int write_consensus (GapIO *io, FILE *fp,
 
 #define STADEN_FORMAT 1
 #define FASTA_FORMAT 2
-#define EXPT_FORMAT 3
-#define INTERNAL_FORMAT 4
+#define FASTQ_FORMAT 3
+#define EXPT_FORMAT 4
 
     int contig_index, number_of_contigs, *contig_ends, *contig_numbers;
     mFILE *mf = NULL;
@@ -1833,6 +1878,37 @@ int write_consensus (GapIO *io, FILE *fp,
 	    }
 	    if ( fasta_fmt_output (fp, 
 				   &seq[contig_ends[contig_index]+20], 
+				   contig_ends[contig_index+1] - 
+				   (contig_ends[contig_index]+20),
+				   entry_name_ptr, nopads, title))
+		goto error;
+
+	} else if ( output_format == FASTQ_FORMAT ) {
+	    char title[1024], *entry_name_ptr;
+	    char tname[DB_NAMELEN+1];
+
+	    sprintf(title, "%s.%d",
+		    io_name(io), contig_numbers[contig_index]);
+	    if (name_format == CONS_NAME_LREADING) {
+		entry_name_ptr = io_rname(io, contig_numbers[contig_index]);
+	    } else /* if (name_format == CONS_NAME_LTEMPLATE) */ { 
+		GReadings r;
+		GTemplates t;
+
+		gel_read(io, contig_numbers[contig_index], r);
+		if (r.template) {
+		    template_read(io, r.template, t);
+		    TextRead(io, t.name, tname, DB_NAMELEN);
+		    tname[DB_NAMELEN] = 0;
+		    entry_name_ptr = tname;
+		} else {
+		    entry_name_ptr = "?";
+		}
+	    }
+	    if ( fastq_fmt_output (fp, 
+				   &seq[contig_ends[contig_index]+20], 
+				   qual ? &qual[contig_ends[contig_index]+20]
+				        : NULL,
 				   contig_ends[contig_index+1] - 
 				   (contig_ends[contig_index]+20),
 				   entry_name_ptr, nopads, title))
@@ -2063,7 +2139,7 @@ consensus_dialog (GapIO *io,
     if ((seq1 = (char *)xmalloc(maxseq * sizeof(char)))==NULL){
 	return(-1);
     }
-    if (output_format == EXPT_FORMAT) {
+    if (output_format == EXPT_FORMAT || output_format == FASTQ_FORMAT) {
 	if ((qual = (float *)xmalloc(maxseq * sizeof(float)))==NULL) {
 	    xfree(seq1);
 	    return(-1);
