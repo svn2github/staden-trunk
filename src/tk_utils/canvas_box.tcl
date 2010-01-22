@@ -167,7 +167,7 @@ proc InitialSettings {f c obj type } {
 
     #check that obj is valid
     if {$fill == ""} {
-	return
+	set fill black
     }
     #set restoreCmd($f,$type) "$c itemconfig $obj -fill $fill; $c lower $obj"  
     set restoreCmd($f,$type) "RestoreCmd $c $obj $fill"
