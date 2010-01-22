@@ -394,6 +394,10 @@ proc contig_editor {w args} {
 
 	button $tool.join -text Join -command "editor_join $w"
 	pack $tool.join -side right
+
+	if {[$c get_rec] == [$c2 get_rec]} {
+	    $tool.join configure -state disabled
+	}
     }
 
     # The editor(s) itself
