@@ -9,6 +9,7 @@
 #include "xalloc.h"
 #include "dna_utils.h"
 #include "consensus.h"
+#include "sam_index.h"
 
 /* Sequence formats */
 #define FORMAT_FASTA 0
@@ -22,7 +23,7 @@
 
 
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
-			  char *fn);
+			  char *fn, int fixmates);
 static int export_tags(GapIO *io, int cc, contig_list_t *cv, int format,
 		       int consensus, int unpadded, char *fn);
 
@@ -31,9 +32,10 @@ static int export_tags(GapIO *io, int cc, contig_list_t *cv, int format,
  */
 typedef struct {
     GapIO *io;
-    char *inlist;
-    char *format;
-    char *outfile;
+    char  *inlist;
+    char  *format;
+    char  *outfile;
+    int    fixmates;
 } ec_arg;
 
 int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
@@ -47,6 +49,7 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 	{"-contigs",	ARG_STR, 1, NULL,     offsetof(ec_arg, inlist)},
 	{"-format",	ARG_STR, 1, "baf",    offsetof(ec_arg, format)},
 	{"-outfile",    ARG_STR, 1, "out.baf",offsetof(ec_arg, outfile)},
+	{"-fixmates",   ARG_INT, 1, "0",      offsetof(ec_arg, fixmates)},
 	{NULL,	    0,	     0, NULL, 0}
     };
 
@@ -68,7 +71,8 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 
     active_list_contigs(args.io, args.inlist, &rargc, &rargv);
 
-    res = export_contigs(args.io, rargc, rargv, format_code, args.outfile);
+    res = export_contigs(args.io, rargc, rargv, format_code, args.outfile,
+			 args.fixmates);
 
     free(rargv);
 
@@ -266,16 +270,17 @@ static int export_header_sam(GapIO *io, FILE *fp,
 }
 
 static int export_contig_sam(GapIO *io, FILE *fp,
-			     int crec, int start, int end) {
-    contig_iterator *ci = contig_iter_new(io, crec, 0, CITER_FIRST,
-					  start, end);
+			     int crec, int start, int end,
+			     int fixmates) {
+    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+						  start, end,
+						  GRANGE_FLAG_ISANY);
     rangec_t *r;
     contig_t *c;
     int qalloc = 0;
     char *Q = NULL, *S = NULL;
     int cg_alloc = 0;
     char *cigar = NULL;
-    int insert_sizes = 0; /* set to 1 to also set MPOS/ISIZE */
     int offset_done = 0, offset;
 #if 0
     char *cons;
@@ -298,16 +303,24 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 #endif
 
     while (r = contig_iter_next(io, ci)) {
-	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
-	seq_t *sorig = s;
+	seq_t *s, *sorig;
 	char *tname, *cp;
-	int len = s->len < 0 ? -s->len : s->len, olen = len;
+	int len, olen;
 	int i, j, flag, tname_len, pos;
 	int left, right, op, oplen, cglen;
 	int iend, isize;
 	char *mate_ref;
 	library_t *lib = NULL;
 	int last_lrec = -1;
+	int mqual;
+	char *cigar_tmp;
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ &&
+	    (r->flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISUMSEQ)
+	    continue;
+
+	sorig = s = (seq_t *)cache_search(io, GT_Seq, r->rec);
+	olen = len = s->len < 0 ? -s->len : s->len;
 
 	if (s->len < 0) {
 	    s = dup_seq(s);
@@ -346,13 +359,31 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	len = j;
 
 	flag = 0;
+	
+	/*
+	 * Is this correct? Does "mapped in a proper pair" mean they
+	 * are consistent, for whatever meaning "consistent" has in this
+	 * context?
+	 */
 	if (r->pair_rec) flag |= 0x03;
+
+	/* strand */
 	if (sorig->len < 0)  flag |= 0x10;
+
+	/*
+	 * 1st/2nd in pair. This is not quite the same as the fwd/rev flags
+	 * we store I think as we may have fwd/fwd pairs under some
+	 * protocols. Is this true?
+	 */
 	if (r->pair_rec) {
-	    if ((r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_REV)
-		flag |= 0x40;
-	    else
-		flag |= 0x80;
+	    if ((r->flags & GRANGE_FLAG_END_MASK) !=
+		(r->flags & GRANGE_FLAG_PEND_MASK)) {
+		/* Paired data with differing flags, so it's likely valid */
+		if ((r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_REV)
+		    flag |= 0x40;
+		else
+		    flag |= 0x80;
+	    }
 	}
 
 	pos = r->start;
@@ -524,11 +555,16 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	}
 
 	/* Compute insert sizes */
-	if (insert_sizes && r->pair_rec) {
-	    int other_c, other_st, other_en, other_dir;
+	if (fixmates && r->pair_rec) {
+	    int other_c, other_st, other_en, other_dir, comp;
+	    seq_t *pair_s;
+	    range_t pair_r;
 
-	    sequence_get_position(io, r->pair_rec, &other_c, &other_st,
-				  &other_en, &other_dir);
+	    sequence_get_position2(io, r->pair_rec, &other_c, &other_st,
+				   &other_en, &other_dir, &pair_r, &pair_s);
+
+	    comp = (pair_s->len >= 0) ^ other_dir;
+	    cache_decr(io, pair_s);
 	    
 	    iend = other_st < other_en ? other_st : other_en;
 
@@ -536,17 +572,36 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		int l, r;
 		mate_ref = "=";
 		l = (sorig->len >= 0) ? pos : pos - sorig->len - 1;
-		r = other_dir ? other_st : other_en;
-		isize = r-l+1;
+		r = comp ? other_st-1 : other_en+1;
+		isize = r-l;
 	    } else {
 		contig_t *oc = cache_search(io, GT_Contig, other_c);
 		mate_ref = oc->name;
 		isize = 0;
 	    }
+
+	    if (!comp)
+		flag |= 0x20; /* strand of mate */
+	    if ((pair_r.flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
+		flag |=  0x08; /* mate unmapped */
+		flag &= ~0x02; /* proper pair */
+		isize = 0;
+	    }
 	} else {
 	    iend = 0;
 	    isize = 0;
-	    mate_ref = r->pair_rec ? "=" : "*";
+	    mate_ref = "*";
+	}
+
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ) {
+	    flag |=  0x04; /* query unmapped */
+	    flag &= ~0x02; /* proper pair */
+	    mqual = 0;
+	    cigar_tmp = "*";
+	    isize = 0;
+	} else {
+	    mqual = r->mqual;
+	    cigar_tmp = cigar;
 	}
 
 	fprintf(fp, "%.*s\t%d\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%.*s\t%.*s",
@@ -554,8 +609,8 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		flag,
 		c->name,
 		pos+offset,
-		r->mqual,
-		cigar,
+		mqual,
+		cigar_tmp,
 		mate_ref,
 		iend,
 		isize,
@@ -568,12 +623,15 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 		lib = cache_search(io, GT_Library, s->parent_rec);
 	    }
 	    if (lib->name)
-		fprintf(fp, "\tRG:Z:%s\n", lib->name);
+		fprintf(fp, "\tRG:Z:%s", lib->name);
 	    else
-		fprintf(fp, "\tRG:Z:rg#%d\n", lib->rec);
-	} else {
-	    fprintf(fp, "\n");
+		fprintf(fp, "\tRG:Z:rg#%d", lib->rec);
 	}
+
+	if (s->aux_len)
+	    fprintf(fp, "\t%s", sam_aux_stringify(s->sam_aux, s->aux_len));
+
+	fprintf(fp, "\n");
 
 	if (s != sorig)
 	    free(s);
@@ -1091,7 +1149,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 }
 
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
-			  char *fn) {
+			  char *fn, int fixmates) {
     int i;
     FILE *fp;
     
@@ -1115,7 +1173,8 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
     for (i = 0; i < cc; i++) {
 	switch (format) {
 	case FORMAT_SAM:
-	    export_contig_sam(io, fp, cv[i].contig, cv[i].start, cv[i].end);
+	    export_contig_sam(io, fp, cv[i].contig, cv[i].start, cv[i].end,
+			      fixmates);
 	    break;
 
 	case FORMAT_FASTQ:

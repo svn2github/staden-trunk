@@ -573,7 +573,22 @@ static void pair_rangec(GapIO *io, rangec_t *r, int count) {
 static int sort_range_by_x(const void *v1, const void *v2) {
     const rangec_t *r1 = (const rangec_t *)v1;
     const rangec_t *r2 = (const rangec_t *)v2;
-    return r1->start - r2->start;
+    int d, m1, m2;
+
+    /* By X primarily */
+    if ((d = r1->start - r2->start))
+	return d;
+    
+#if 0
+    /* And then by unmapped first, mapped second */
+    m1 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
+    m2 = (r1->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISUMSEQ;
+    if (m1 != m2)
+	return m2 - m1;
+#endif
+
+    /* And finally by recno. */
+    return r1->rec - r2->rec;
 }
 
 /* Sort comparison function for range_t; sort by ascending position */

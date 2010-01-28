@@ -1087,6 +1087,31 @@ void *cache_search(GapIO *io, int type, GRec rec) {
 /*
  * Creates a new seq_t item.
  */
+static int cache_item_init_seq(GapIO *io, void *from, int rec) {
+    seq_t *s, *f = (seq_t *)from;
+    int slen = sizeof(seq_t) + sequence_extra_len(f);
+    cached_item *ci = cache_new(GT_Seq, 0, 0, NULL, slen);
+    int brec, sub_rec;
+    seq_block_t *b;
+
+    sub_rec = rec & (SEQ_BLOCK_SZ-1);
+    brec    = rec >> SEQ_BLOCK_BITS;
+
+    s = (seq_t *)&ci->data;
+    if (sequence_copy(s, f) == -1)
+	return -1;
+
+    b = (seq_block_t *)cache_search(io, GT_SeqBlock, brec);
+
+    s->rec = rec;
+    s->block = b;
+    s->idx = sub_rec;
+    b->seq[sub_rec] = s;
+    b->est_size += 15 + sequence_extra_len(s);
+
+    return 0;
+}
+
 static int cache_item_create_seq(GapIO *io, void *from) {
     static int brec = 0;
     static int sub_rec = SEQ_BLOCK_SZ;
@@ -1111,28 +1136,44 @@ static int cache_item_create_seq(GapIO *io, void *from) {
     b->rec[sub_rec] = (brec << SEQ_BLOCK_BITS) + sub_rec;
 
     /* FIXME: move this somewhere sensible */
-    {
-	seq_t *s, *f = (seq_t *)from;
-	int slen = sizeof(seq_t) + f->name_len+1 + f->trace_name_len+1 +
-	    f->alignment_len+1 +
-	    ABS(f->len) * (1 + (f->format == SEQ_FORMAT_CNF4 ? 4 : 1));
-	cached_item *ci = cache_new(GT_Seq, 0, 0, NULL, slen);
-
-	s = (seq_t *)&ci->data;
-	if (sequence_copy(s, f) == -1)
+    if (from) {
+	if (cache_item_init_seq(io, from, b->rec[sub_rec]))
 	    return -1;
-
-	s->rec = (brec << SEQ_BLOCK_BITS) + sub_rec;
-	s->block = b;
-	s->idx = sub_rec;
-	b->seq[sub_rec] = s;
-	b->est_size += 2*ABS(s->len) + s->name_len + s->alignment_len +
-	    s->trace_name_len + 15;
     }
 
     assert(brec < (1<<(31-SEQ_BLOCK_BITS)));
 
     return (brec << SEQ_BLOCK_BITS) + sub_rec++;
+}
+
+/*
+ * Creates a new seq_t item.
+ */
+static int cache_item_init_anno_ele(GapIO *io, void *from, int rec) {
+    anno_ele_t *t, *f = (anno_ele_t *)from;
+    int slen = sizeof(anno_ele_t) +
+	(f->comment ? strlen(f->comment) : 0)+1;
+    cached_item *ci = cache_new(GT_AnnoEle, 0, 0, NULL, slen);
+    int brec, sub_rec;
+    anno_ele_block_t *b;
+
+    sub_rec = rec & (SEQ_BLOCK_SZ-1);
+    brec    = rec >> SEQ_BLOCK_BITS;
+
+    t = (anno_ele_t *)&ci->data;
+    *t = *f;
+    t->comment = (char *)&t->data;
+    strcpy(t->comment, f->comment ? f->comment : "");
+
+    b = (anno_ele_block_t *)cache_search(io, GT_AnnoEleBlock, brec);
+
+    t->rec = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
+    t->block = b;
+    t->idx = sub_rec;
+    b->ae[sub_rec] = t;
+    b->est_size += strlen(t->comment) + 10;
+
+    return 0;
 }
 
 static int cache_item_create_anno_ele(GapIO *io, void *from) {
@@ -1157,23 +1198,9 @@ static int cache_item_create_anno_ele(GapIO *io, void *from) {
     b = cache_rw(io, b);
     b->rec[sub_rec] = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
 
-    /* FIXME: move this somewhere sensible */
-    {
-	anno_ele_t *t, *f = (anno_ele_t *)from;
-	int slen = sizeof(anno_ele_t) +
-	    (f->comment ? strlen(f->comment) : 0)+1;
-	cached_item *ci = cache_new(GT_AnnoEle, 0, 0, NULL, slen);
-
-	t = (anno_ele_t *)&ci->data;
-	*t = *f;
-	t->comment = (char *)&t->data;
-	strcpy(t->comment, f->comment ? f->comment : "");
-
-	t->rec = (brec << ANNO_ELE_BLOCK_BITS) + sub_rec;
-	t->block = b;
-	t->idx = sub_rec;
-	b->ae[sub_rec] = t;
-	b->est_size += strlen(t->comment) + 10;
+    if (from) {
+	if (cache_item_init_anno_ele(io, from, b->rec[sub_rec]))
+	    return -1;
     }
 
     assert(brec < (1<<(31-ANNO_ELE_BLOCK_BITS)));
@@ -1195,6 +1222,27 @@ int cache_item_create(GapIO *io, int type, void *from) {
     default:
 	fprintf(stderr,
 		"cache_item_create only implemented for GT_Seq/GT_AnnoEle right now\n");
+    }
+    
+    return -1;
+}
+
+/*
+ * Initialises an item, for use when cache_item_create was used with 
+ * from == NULL. This allows us to pre-allocate a record number and then
+ * initialise it once we know the full details.
+ */
+int cache_item_init(GapIO *io, int type, void *from, int rec) {
+    switch (type) {
+    case GT_Seq:
+	return cache_item_init_seq(io, from, rec);
+
+    case GT_AnnoEle:
+	return cache_item_init_anno_ele(io, from, rec);
+
+    default:
+	fprintf(stderr,
+		"cache_item_init only implemented for GT_Seq/GT_AnnoEle right now\n");
     }
     
     return -1;

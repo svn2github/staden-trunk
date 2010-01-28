@@ -22,6 +22,28 @@ void sequence_reset_ptr(seq_t *s) {
     s->alignment = s->trace_name + s->trace_name_len + 1;
     s->seq = s->alignment + s->alignment_len + 1;
     s->conf = s->seq + (s->len >= 0 ? s->len : -s->len);
+    if (s->aux_len)
+	s->sam_aux = s->conf + 
+	    (s->format == SEQ_FORMAT_CNF4 ? 4 : 1) *
+	    (s->len >= 0 ? s->len : -s->len);
+    else
+	s->sam_aux = NULL;
+}
+
+/*
+ * Returns the size needed to store confidence values in this sequence.
+ * Ie 1 or 4 per base.
+ */
+#define sequence_conf_size(s) ((s)->format == SEQ_FORMAT_CNF4 ? 4 : 1)
+
+size_t sequence_extra_len(seq_t *s) {
+    return
+	(s->name       ? strlen(s->name)       : 0) + 1 +
+	(s->trace_name ? strlen(s->trace_name) : 0) + 1 + 
+	(s->alignment  ? strlen(s->alignment)  : 0) + 1 + 
+	ABS(s->len)                                 + 
+	ABS(s->len) * sequence_conf_size(s)         +
+	s->aux_len;
 }
 
 /*
@@ -48,25 +70,26 @@ int  sequence_copy(seq_t *s, seq_t *f) {
     s->idx   = idx;
 
     /* Fix internal pointers */
-    s->name = (char *)&s->data;
+    sequence_reset_ptr(s);
+
+    /* Copy data */
     strcpy(s->name, f->name ? f->name : "");
     s->name_len = strlen(s->name);
 
-    s->trace_name = s->name + s->name_len + 1;
     strcpy(s->trace_name, f->trace_name ? f->trace_name : "");
     s->trace_name_len = strlen(s->trace_name);
 
-    s->alignment = s->trace_name + s->trace_name_len + 1;
     strcpy(s->alignment, f->alignment ? f->alignment : "");
     s->alignment_len = strlen(s->alignment);
 
-    s->seq = s->alignment + s->alignment_len + 1;
     memcpy(s->seq, f->seq, ABS(f->len));
 
-    s->conf = s->seq + ABS(s->len);
     memcpy(s->conf, f->conf, ABS(f->len)*
 	   (f->format == SEQ_FORMAT_CNF4 ? 4 : 1));
     
+    if (s->aux_len)
+	memcpy(s->sam_aux, f->sam_aux, s->aux_len);
+
     if (s->anno) {
 	s->anno = ArrayCreate(sizeof(int), ArrayMax(f->anno));
 	memcpy(ArrayBase(int, s->anno),
@@ -77,17 +100,14 @@ int  sequence_copy(seq_t *s, seq_t *f) {
     return 0;
 }
 
-/*
- * Returns the size needed to store confidence values in this sequence.
- * Ie 1 or 4 per base.
- */
-#define sequence_conf_size(s) ((s)->format == SEQ_FORMAT_CNF4 ? 4 : 1)
-
 
 /*
  * Given a seq_t struct this allocates a new sequence in the database
  * and copies the contents of 's' into it. If 's' is NULL it simply allocates
  * the new sequence and does nothing with it.
+ *
+ * Note if s->rec is non-zero it assumes that a record number has already
+ * been allocated for this sequence.
  *
  * Returns the record number on success
  *        -1 on failure
@@ -100,22 +120,24 @@ int sequence_new_from(GapIO *io, seq_t *s) {
 int sequence_new_from(GapIO *io, seq_t *s) {
     int rec;
     seq_t *n;
-    size_t extra_len;
 
-    rec = cache_item_create(io, GT_Seq, s);
+    if (s && s->rec) {
+	cache_item_init(io, GT_Seq, s, s->rec);
+	rec = s->rec;
+    } else { 
+	rec = cache_item_create(io, GT_Seq, s);
+    }
 
-    extra_len =
-	(s->name       ? strlen(s->name)       : 0) +
-	(s->trace_name ? strlen(s->trace_name) : 0) +
-	(s->alignment  ? strlen(s->alignment)  : 0) +
-	ABS(s->len)*(1+sequence_conf_size(s));
+    if (s) {
+	n = (seq_t *)cache_search(io, GT_Seq, rec);
+	n = cache_rw(io, n);
+	n = cache_item_resize(n, sizeof(*n) + sequence_extra_len(s));
 
-    n = (seq_t *)cache_search(io, GT_Seq, rec);
-    n = cache_rw(io, n);
-    n = cache_item_resize(n, sizeof(*n) + extra_len);
+	if (sequence_copy(n, s) == -1)
+	    return -1;
+    }
 
-    if (sequence_copy(n, s) == -1)
-	return -1;
+    //printf("%d -> %.*s\n", rec, s->name_len, s->name);
 
     return rec;
 }
@@ -301,23 +323,20 @@ int sequence_set_seq_tech(GapIO *io, seq_t **s, int value) {
 int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     size_t extra_len;
     seq_t *n;
-    char *tmp, *cp;
+    char *tmp,*cp;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
-    extra_len = strlen(name)+1 + n->trace_name_len+1 +
-	n->alignment_len+1 + ABS(n->len)*(1+sequence_conf_size(n));
+    extra_len = sequence_extra_len(*s);
+    extra_len += (name       ? strlen(name)       : 0) -
+	         ((*s)->name ? strlen((*s)->name) : 0);
     n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
 
-    n->name = (char *)&n->data;
     n->name_len = strlen(name);
-    n->trace_name = n->name + n->name_len + 1;
-    n->alignment = n->trace_name + n->trace_name_len + 1;
-    n->seq = n->alignment + n->alignment_len + 1;
-    n->conf = n->seq + ABS(n->len);
+    sequence_reset_ptr(n);
 
     /* Shift and insert name */
     cp = tmp = malloc(extra_len);
@@ -327,11 +346,15 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     cp += n->trace_name_len;
     strcpy(cp, n->alignment);
     cp += n->alignment_len;
-    memcpy(cp, n->seq, n->len);
-    memcpy(cp, n->conf, n->len * sequence_conf_size(n));
+    memcpy(cp, n->seq, ABS(n->len));
+    cp += ABS(n->len);
+    memcpy(cp, n->conf, ABS(n->len) * sequence_conf_size(n));
+    cp += ABS(n->len) * sequence_conf_size(n);
+    if (n->aux_len)
+	memcpy(cp, n->sam_aux, n->aux_len);
     memcpy(&n->data, tmp, extra_len);
     free(tmp);
-
+    
     *s = n;
     return 0;
 }
@@ -353,18 +376,16 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     if (!trace_name || 0 == strcmp(n->name, trace_name))
 	trace_name = "";
 
-    extra_len = n->name_len+1 + strlen(trace_name)+1 +
-	n->alignment_len+1 + ABS(n->len)*(1+sequence_conf_size(n));
+    extra_len = sequence_extra_len(*s);
+    extra_len += (trace_name       ? strlen(trace_name)       : 0) -
+	         ((*s)->trace_name ? strlen((*s)->trace_name) : 0);
+
     n = cache_item_resize(n, extra_len);
     if (NULL == n)
 	return -1;
 
-    n->name = (char *)&n->data;
-    n->trace_name = n->name + n->name_len + 1;
     n->trace_name_len = strlen(trace_name);
-    n->alignment = n->trace_name + n->trace_name_len + 1;
-    n->seq = n->alignment + n->alignment_len + 1;
-    n->conf = n->seq + ABS(n->len);
+    sequence_reset_ptr(n);
 
     /* Shift and insert name */
     cp = tmp = malloc(extra_len);
@@ -374,8 +395,12 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     cp += n->trace_name_len;
     strcpy(cp, n->alignment);
     cp += n->alignment_len;
-    memcpy(cp, n->seq, n->len);
-    memcpy(cp, n->conf, n->len * sequence_conf_size(n));
+    memcpy(cp, n->seq, ABS(n->len));
+    cp += ABS(n->len);
+    memcpy(cp, n->conf, ABS(n->len) * sequence_conf_size(n));
+    cp += ABS(n->len) * sequence_conf_size(n);
+    if (n->aux_len)
+	memcpy(cp, n->sam_aux, n->aux_len);
     memcpy(&n->data, tmp, extra_len);
     free(tmp);
 
@@ -520,17 +545,12 @@ void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf) {
 }
 
 seq_t *dup_seq(seq_t *s) {
-    size_t len = sizeof(seq_t) - sizeof(char *) + s->name_len+1 +
-	s->trace_name_len+1 + s->alignment_len+1 +
-	(ABS(s->len)+1)*(1+sequence_conf_size(s));
+    size_t len = sizeof(seq_t) - sizeof(char *) + sequence_extra_len(s);
     seq_t *d = (seq_t *)calloc(1, len);
 
+
     memcpy(d, s, len);
-    d->name = (char *)&d->data;
-    d->trace_name = d->name + d->name_len + 1;
-    d->alignment = d->trace_name + d->trace_name_len + 1;
-    d->seq = d->alignment + d->alignment_len + 1;
-    d->conf = d->seq + ABS(d->len);
+    sequence_reset_ptr(d);
 
     /* Dup the annotation */
     if (s->anno) {
@@ -581,14 +601,26 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 
 /*
  * Finds the contig number and position of a sequence record number.
+ *
+ * If non-NULL r_out is filled with the associated range_t struct.
+ *
+ * If non-NULL s_out is filled with a pointer to the seq_t struct.
+ * This will have had cache_incr() run on it, so the caller should
+ * use cache_decr() to permit deallocation.
  */
-int sequence_get_position(GapIO *io, GRec snum, int *contig,
-			  int *start, int *end, int *orient) {
+int sequence_get_position2(GapIO *io, GRec snum, int *contig,
+			   int *start, int *end, int *orient,
+			   range_t *r_out, seq_t **s_out) {
     bin_index_t *bin;
     int bnum, i;
     int offset1 = 0, offset2 = 0, found = 0;
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
     int comp = 0;
+
+    if (s_out) {
+	cache_incr(io, s);
+	*s_out = s;
+    }
 
     /* Find the position of this sequence within the bin */
     bnum = s->bin;
@@ -602,12 +634,18 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
 	    found = 1;
 	    offset1 = r->start;
 	    offset2 = r->end;
+
+	    if (r_out)
+		*r_out = *r;
 	    break;
 	}
     }
 
-    if (!found)
+    if (!found) {
+	if (s_out)
+	    *s_out = NULL;
 	return -1;
+    }
 
     /* Find the position of this bin relative to the contig itself */
     for (;;) {
@@ -640,6 +678,11 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
     return 0;
 }
 
+int sequence_get_position(GapIO *io, GRec snum, int *contig,
+			  int *start, int *end, int *orient) {
+    return sequence_get_position2(io, snum, contig, start, end, orient,
+				  NULL, NULL);
+}
 
 /*
  * Invalidates the cached consensus for this sequence.
@@ -905,154 +948,6 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
     return 0;
 }
 
-/*
- * Simulates Richard's 4-confidence value system.
- * This stores the top value as-is. The 3rd and 4th highest listed as a
- * fraction of the 2nd highest and the 2nd highest value is implicit (1 minus
- * the rest).
- */
-void richard_munge_conf(double *lp) {
-    double p1 = -100, p2 = -100, p3 = -100, p4 = -100;
-    int i1 = 0, i2 = 0, i3 = 0, i4 = 0;
-    int i;
-    double r3, r4;
-
-    /* Sort */
-    for (i = 0; i < 4; i++) {
-	if (p1 < lp[i]) {
-	    p4 = p3;
-	    i4 = i3;
-	    p3 = p2;
-	    i3 = i2;
-	    p2 = p1;
-	    i2 = i1;
-	    p1 = lp[i];
-	    i1 = i;
-	} else if (p2 < lp[i]) {
-	    p4 = p3;
-	    i4 = i3;
-	    p3 = p2;
-	    i3 = i2;
-	    p2 = lp[i];
-	    i2 = i;
-	} else if (p3 < lp[i]) {
-	    p4 = p3;
-	    i4 = i3;
-	    p3 = lp[i];
-	    i3 = i;
-	} else if (p4 < lp[i]) {
-	    p4 = lp[i];
-	    i4 = i;
-	}
-    }
-
-    /* Rescale */
-    p1 = exp(p1);
-    p2 = exp(p2);
-    p3 = exp(p3);
-    p4 = exp(p4);
-
-    /* Simulate truncation using 3 bits for ratios */
-    r3 = -10*log(p3/p2)/log(10);
-    if      (r3 <  1.5) r3 = 0;
-    else if (r3 <  4.5) r3 = 3;
-    else if (r3 <  8.0) r3 = 6;
-    else if (r3 < 12.5) r3 = 10;
-    else if (r3 < 17.5) r3 = 15;
-    else if (r3 < 25.5) r3 = 20;
-    else if (r3 < 40.0) r3 = 30;
-    else r3 = 50;
-    r3 = pow(10,r3/-10.0);
-
-    r4 = -10*log(p4/p2)/log(10);
-    if      (r4 <  1.5) r4 = 0;
-    else if (r4 <  4.5) r4 = 3;
-    else if (r4 <  8.0) r4 = 6;
-    else if (r4 < 12.5) r4 = 10;
-    else if (r4 < 17.5) r4 = 15;
-    else if (r4 < 25.5) r4 = 20;
-    else if (r4 < 40.0) r4 = 30;
-    else r4 = 50;
-    r4 = pow(10,r4/-10.0);
-
-    /*
-     * From ratio r3 and r4 recompute p2, p3, and p4 using:
-     *    1-p1 = p2 + r3*p2 + r4*p3
-     *
-     * => p2(1+r3+r4) = 1-p1
-     * => p2 = (1-p1)/(1+r3+r4)
-     */
-    p2 = (1-p1)/(1+r3+r4);
-    p3 = r3*p2;
-    p4 = r4*p2;
-
-    /*
-    printf("%5.1f %5.1f %5.1f %5.1f => ",
-	   10 * log(exp(lp[0]) / (1-exp(lp[0]))) / log(10),
-	   10 * log(exp(lp[1]) / (1-exp(lp[1]))) / log(10),
-	   10 * log(exp(lp[2]) / (1-exp(lp[2]))) / log(10),
-	   10 * log(exp(lp[3]) / (1-exp(lp[3]))) / log(10));
-    */
-
-    lp[i1] = log(p1);
-    lp[i2] = log(p2);
-    lp[i3] = log(p3);
-    lp[i4] = log(p4);
-
-    /*
-    printf("%5.1f %5.1f %5.1f %5.1f\n",
-	   10 * log(exp(lp[0]) / (1-exp(lp[0]))) / log(10),
-	   10 * log(exp(lp[1]) / (1-exp(lp[1]))) / log(10),
-	   10 * log(exp(lp[2]) / (1-exp(lp[2]))) / log(10),
-	   10 * log(exp(lp[3]) / (1-exp(lp[3]))) / log(10));
-    */
-}
-
-/*
- * Simulates Rob's 4-confidence value system.
- * This basically has top two values and the remaining two set to the average.
- */
-void rob_munge_conf(double *lp) {
-    double p1 = -100, p2 = -100, p3 = -100, p4 = -100, p34;
-    double i1 = 0, i2 = 0;
-    int i;
-
-    for (i = 0; i < 4; i++) {
-	if (p1 < lp[i]) {
-	    p4 = p3;
-	    p3 = p2;
-	    p2 = p1;
-	    i2 = i1;
-	    p1 = lp[i];
-	    i1 = i;
-	} else if (p2 < lp[i]) {
-	    p4 = p3;
-	    p3 = p2;
-	    p2 = lp[i];
-	    i2 = i;
-	} else if (p3 < lp[i]) {
-	    p4 = p3;
-	    p3 = lp[i];
-	} else if (p4 < lp[i]) {
-	    p4 = lp[i];
-	}
-    }
-
-    p34 = log((1-((exp(p1)+exp(p2))/(exp(p1)+exp(p2)+exp(p3)+exp(p4))))/2.0);
-
-    //printf("%f %f %f %f => ", lp[0], lp[1], lp[2], lp[3]);
-
-    for (i = 0; i < 4; i++) {
-	if (i == i1)
-	    lp[i] = p1;
-	else if (i == i2)
-	    lp[i] = p2;
-	else
-	    lp[i] = p34;
-    }
-
-    //printf("%f %f %f %f\n", lp[0], lp[1], lp[2], lp[3]);
-}
 
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 			  int contig_orient) {
@@ -1129,19 +1024,16 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 			 int contig_orient) {
     seq_t *n;
-    int alen;
     int comp = 0;
+    size_t extra_len = sequence_extra_len(*s) + 1 + sequence_conf_size(*s);
+    char *c_old;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
 
     sequence_invalidate_consensus(io, n);
 
-    n = cache_item_resize(n, sizeof(*n) + 
-			  n->name_len+1 +
-			  n->trace_name_len+1 +
-			  n->alignment_len+1 +
-			  (ABS(n->len)+1)*(1+sequence_conf_size(n)));
+    n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
 
@@ -1155,28 +1047,24 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 	    : pos;
     }
 
-    n->name = (char *)&n->data;
-    n->trace_name = n->name + n->name_len + 1;
-    n->alignment = n->trace_name + n->trace_name_len + 1;
-    n->seq = n->alignment + n->alignment_len + 1;
-    n->conf = n->seq + ABS(n->len);
-
-    alen = ABS(n->len);
-
-    /* Shift */
-    memmove(&n->seq[pos+1], &n->seq[pos], alen-pos+alen);
-    n->conf++;
-    if (n->format == SEQ_FORMAT_CNF4) {
-	memmove(&n->conf[(pos+1)*4], &n->conf[pos*4], (alen-pos)*4);
-    } else {
-	memmove(&n->conf[pos+1], &n->conf[pos], alen-pos);
-    }
-
+    /* Reset internal pointers assuming new length */
     if (n->len < 0)
 	n->len--;
     else
 	n->len++;
+    c_old = n->conf;
+    sequence_reset_ptr(n);
 
+    /* Shift */
+    memmove(&n->seq[pos+1], &n->seq[pos],
+	    extra_len - ((char *)&n->seq[pos] - (char *)&n->data));
+
+    c_old++;
+    memmove(&c_old[sequence_conf_size(n)*pos]+1,
+	    &n->conf[sequence_conf_size(n)*pos],
+	    extra_len - ((char *)&n->conf[sequence_conf_size(n)*(pos)]+1
+			 - (char *)&n->data));
+	    
     /* Set */
     n->seq[pos] = comp ? complementary_base[(unsigned char)base] : base;
     if (n->format == SEQ_FORMAT_CNF4) {
@@ -1233,6 +1121,10 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     seq_t *n;
     int alen;
     int comp = 0;
+    size_t extra_len = sequence_extra_len(*s);
+
+    if (pos >= ABS((*s)->len) || pos < 0)
+	return 0;
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
@@ -1253,7 +1145,6 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 	    ? -n->len - pos
 	    : pos;
     }
-    alen = ABS(n->len);
 
     if (pos < n->left)
 	n->left--;
@@ -1261,17 +1152,23 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     if (pos < n->right)
 	n->right--;
 
-    if (pos >= alen)
+    if (pos >= ABS((*s)->len) || pos < 0) {
+	sequence_reset_ptr(n);
 	return 0;
+    }
 
     /* Shift */
-    memmove(&n->seq[pos], &n->seq[pos+1], alen-pos+alen-1);
-    n->conf--;
-    if (n->format == SEQ_FORMAT_CNF4) {
-	memmove(&n->conf[pos*4], &n->conf[(pos+1)*4], (alen-1-pos)*4);
-    } else {
-	memmove(&n->conf[pos], &n->conf[pos+1], alen-1-pos);
-    }
+    memmove(&n->conf[sequence_conf_size(n) * pos],
+	    &n->conf[sequence_conf_size(n) * (pos+1)],
+	    extra_len -
+	    ((char *)&n->conf[sequence_conf_size(n)*(pos+1)]
+	             - (char *)&n->data));
+    extra_len -= sequence_conf_size(n);
+
+    memmove(&n->seq[pos], &n->seq[pos+1],
+	    extra_len - ((char *)&n->seq[pos+1] - (char *)&n->data));
+
+    sequence_reset_ptr(n);
 
     return 0;
 }

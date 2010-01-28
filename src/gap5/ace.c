@@ -498,6 +498,7 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
 
 	    /* Fill out a seq_t struct */
 	    memset(&seq, 0, sizeof(seq));
+	    seq.rec = 0;
 	    seq.pos = af[seq_count].pos;
 	    seq.len = af[seq_count].dir == 0 ? ai->rd.nbases : -ai->rd.nbases;
 	    seq.mapping_qual = 50;

@@ -22,6 +22,8 @@ typedef struct {
     int data_type;
     int comp_mode;
     int repad;
+    int store_unmapped;
+    int sam_aux;
 } tg_args;
 
 #define DATA_SEQ	1

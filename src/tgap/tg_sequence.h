@@ -23,6 +23,8 @@
 #define sequence_get_seq_tech(s)     ((*(s))->seq_tech)
 #define sequence_get_parent_type(s)  ((*(s))->parent_type)
 #define sequence_get_parent_rec(s)   ((*(s))->parent_rec)
+#define sequence_get_aux_len(s)      ((*(s))->aux_len)
+#define sequence_get_aux(s)          ((*(s))->sam_aux)
 
 
 /*
@@ -55,6 +57,9 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec);
 
 int sequence_get_position(GapIO *io, GRec snum, int *contig,
 			  int *start, int *end, int *orient);
+int sequence_get_position2(GapIO *io, GRec snum, int *contig,
+			   int *start, int *end, int *orient,
+			   range_t *r_out, seq_t **s_out);
 int sequence_get_contig(GapIO *io, GRec snum);
 int sequence_get_pair(GapIO *io, seq_t *s);
 
@@ -77,6 +82,7 @@ char *seq_conf(GapIO *io, int rec);
 void complement_seq_conf(char *seq, char *conf, int seq_len, int nconf);
 
 seq_t *dup_seq(seq_t *s);
+size_t sequence_extra_len(seq_t *s);
 
 void complement_seq_t(seq_t *s);
 

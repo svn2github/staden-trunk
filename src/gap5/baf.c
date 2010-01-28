@@ -372,6 +372,7 @@ int construct_seq_from_block(tg_args *a,seq_t *s, baf_block *b, char **tname) {
     }
 #endif
 
+    s->rec = 0;
     s->pos = ap;
     s->len = dir * len;
     s->flags = s->len < 0 ? SEQ_COMPLEMENTED : 0;

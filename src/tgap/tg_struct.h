@@ -59,12 +59,15 @@ typedef struct {
 } GRange; /* An element of the bin->rng record */
 
 
+#define MQUAL_UNKNOWN   255
+
 #define GRANGE_FLAG_ISMASK     (7<<7) /* Sequence, tag, cons, ref, etc */
 #define GRANGE_FLAG_ISSEQ      (0<<7)
 #define GRANGE_FLAG_ISANNO     (1<<7)
 #define GRANGE_FLAG_ISCONS     (2<<7)
 #define GRANGE_FLAG_ISREF      (3<<7)
-#define GRANGE_FLAG_ISANY      (7<<7)
+#define GRANGE_FLAG_ISUMSEQ    (4<<7) /* unmapped sequence */
+#define GRANGE_FLAG_ISANY      (7<<7) /* Any */
 
 /* For annotation ranges: */
 #define GRANGE_FLAG_TAG_SEQ    (1<<1) /* 0=>contig, 1=>sequence */
@@ -166,14 +169,16 @@ typedef struct {
     int name_len;
     int trace_name_len;
     int alignment_len;
+    int aux_len;
     Array anno;       /* Annotations; FIXME */
     char *name;       /* nul terminated name */
     char *trace_name; /* trace name; blank => same as name */
     char *alignment;  /* alignment; blank => obvious guess from pads */
     char *seq;        /* sequence in ASCII format */
     char *conf;       /* 1 or 4 values per base depending on flags */
+    char *sam_aux;    /* Auxillary records */
     struct seq_block *block; /* seq_block_t pointer and index into it */
-    int idx; 
+    int idx;
 
     char *data;       /* packed memory struct; names/al/seq/conf are here */
 } seq_t;

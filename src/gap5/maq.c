@@ -23,6 +23,7 @@ static int parse_maqmap_aux(tg_args *a,
 
     memset(s, 0, sizeof(*s));
 
+    s->rec = 0;
     s->pos = (m->pos>>1);
     s->len = (m->pos&1)? -m->size : m->size;
     s->seq_tech = STECH_SOLEXA;

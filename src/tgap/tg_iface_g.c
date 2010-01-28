@@ -2815,6 +2815,10 @@ static cached_item *seq_decode(unsigned char *buf, size_t len, int rec) {
     seq->seq = seq->alignment + seq->alignment_len + 1;
     seq->conf = seq->seq + seq_len;
 
+    /* SAM Aux - not supported in old single-seq mode */
+    seq->aux_len = 0;
+    seq->sam_aux = NULL;
+
     /* cp is now at the encoded seq/qual area */
     switch (seq->format) {
     case SEQ_FORMAT_MAQ:
@@ -3154,6 +3158,8 @@ static int io_seq_index_add(void *dbh, char *name, GRec rec) {
  */
 
 #define REORDER_BY_READ_GROUP
+/* NB: Do not undef now unless you remove sam_aux support too */
+
 /*
  * Define REORDER_BY_READ_GROUP if you wish to experiment with sorting data
  * by their read group.
@@ -3181,6 +3187,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     seq_t in[SEQ_BLOCK_SZ];
     int i, j, k, last;
     int reorder_by_read_group = 0;
+    int sam_aux = 0;
 
     set_dna_lookup();
 
@@ -3206,9 +3213,11 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     assert(buf[0] == GT_SeqBlock);
-    assert((buf[1] & 0x3f) <= 1); /* format */
+    assert((buf[1] & 0x3f) <= 2); /* format */
     if ((buf[1] & 0x3f) >= 1)
 	reorder_by_read_group = 1;
+    if ((buf[1] & 0x3f) >= 2)
+	sam_aux = 1;
 
     /* Ungzip it too */
     if (1) {
@@ -3301,6 +3310,14 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	cp += u72int(cp, (uint32_t *)&in[i].alignment_len);
     }
 
+    /* sam aux length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (!in[i].bin) continue;
+	if (sam_aux)
+	    cp += u72int(cp, (uint32_t *)&in[i].aux_len);
+	else
+	    in[i].aux_len = 0;
+    }
 
     /* Convert our static structs to cached_items */
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
@@ -3313,6 +3330,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 		in[i].name_len +
 		in[i].trace_name_len +
 		in[i].alignment_len + 
+		in[i].aux_len + 
 		ABS(in[i].len) +
 		ABS(in[i].len) * (in[i].format == SEQ_FORMAT_CNF4 ? 4 : 1);
 	    if (!(si = cache_new(GT_Seq, 0, 0, NULL, extra_len)))
@@ -3448,6 +3466,21 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	}
     }
 
+    /* Sam auxillary records */
+    if (sam_aux) {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!b->seq[i]) continue;
+	}
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!b->seq[i]) continue;
+	    b->seq[i]->sam_aux = b->seq[i]->conf + 
+		(b->seq[i]->format == SEQ_FORMAT_CNF4 ? 4 : 1)
+		* ABS(b->seq[i]->len);
+	    memcpy(b->seq[i]->sam_aux, cp, b->seq[i]->aux_len);
+	    cp += b->seq[i]->aux_len;
+	}
+    }
+
     assert(cp - buf == buf_len);
     free(buf);
 
@@ -3460,17 +3493,19 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     seq_block_t *b = (seq_block_t *)&ci->data;
     int i, j, last_index;
     unsigned char *cp, *cp_start;
-    unsigned char *out[17], *out_start[17];
-    size_t out_size[17], total_size;
-    int level[17];
+    unsigned char *out[19], *out_start[19];
+    size_t out_size[19], total_size;
+    int level[19];
     GIOVec vec[2];
     char fmt[2];
     int nb = 0;
+    int have_sam_aux = 0;
+    int nparts = 19;
 
     set_dna_lookup();
 
     /* Compute worst-case sizes, for memory allocation */
-    for (i = 0; i < 17; i++) {
+    for (i = 0; i < 19; i++) {
 	out_size[i] = 0;
     }
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
@@ -3497,9 +3532,11 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[14]+= s->alignment_len;
 	out_size[15]+= ABS(s->len); /* seq */
 	out_size[16]+= ABS(s->len) * (s->format == SEQ_FORMAT_CNF4 ? 4 : 1);
+	out_size[17]+= 5; /* aux_len - moved before [12] later */
+	out_size[18]+= s->aux_len;
 	nb += ABS(s->len);
     }
-    for (i = 0; i < 17; i++)
+    for (i = 0; i < 19; i++)
 	out_start[i] = out[i] = malloc(out_size[i]+1);
 
 
@@ -3565,6 +3602,14 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out[11] += int2u7(s->alignment_len, out[11]);
 	memcpy(out[14], s->alignment, s->alignment_len);
 	out[14] += s->alignment_len;
+
+	/* Sam auxillary records */
+	out[17] += int2u7(s->aux_len, out[17]);
+	if (s->aux_len) {
+	    memcpy(out[18], s->sam_aux, s->aux_len);
+	    out[18] += s->aux_len;
+	    have_sam_aux = 1;
+	}
 
 	/* Sequences - store in alignment orientation for better compression */
 	if (s->len < 0) {
@@ -3648,12 +3693,28 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 #endif
 
     /* Concatenate data types together and adjust out_size to actual usage */
-    for (total_size = i = 0; i < 17; i++) {
+    if (have_sam_aux) {
+	/* Reorder as we need aux_len before the variable sized portions */
+	int oz = out_size[17];
+	unsigned char *o = out[17], *os = out_start[17];
+	for (i = 16; i >= 12; i--) {
+	    out[i+1] = out[i];
+	    out_start[i+1] = out_start[i];
+	    out_size[i+1] = out_size[i];
+	}
+	out[12] = o;
+	out_size[12] = oz;
+	out_start[12] = os;
+    } else {
+	nparts = 17;
+    }
+    for (total_size = i = 0; i < nparts; i++) {
 	out_size[i] = out[i] - out_start[i];
 	total_size += out_size[i];
     }
+
     cp = cp_start = malloc(total_size+1);
-    for (i = 0; i < 17; i++) {
+    for (i = 0; i < nparts; i++) {
 	memcpy(cp, out_start[i], out_size[i]);
 	cp += out_size[i];
 	free(out_start[i]);
@@ -3664,6 +3725,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     level[12] = 7; /* name, 8 is approx 1% better, but 10% slower */
     level[13] = 7; /* trace name */
     level[16] = 6; /* conf */
+    level[18] = 7;
 
     /* NB: should name and trace name be compressed together? They're
      * probably the same or highly related?
@@ -3681,20 +3743,16 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	//gzout = mem_deflate(cp_start, cp-cp_start, &ssz);
 	gzout = (unsigned char *)mem_deflate_lparts(io->comp_mode,
 						    (char *)cp_start,
-						    out_size, level, 17, &ssz);
+						    out_size, level,
+						    nparts, &ssz);
 	free(cp_start);
 	cp_start = gzout;
 	cp = cp_start + ssz;
     }
-    //printf("%d\n", cp-cp_start);
 
     /* Finally write the serialised data block */
     fmt[0] = GT_SeqBlock;
-#ifdef REORDER_BY_READ_GROUP
-    fmt[1] = 1 | (io->comp_mode << 6); /* format */
-#else
-    fmt[1] = 0 | (io->comp_mode << 6); /* format */
-#endif
+    fmt[1] = (have_sam_aux ? 2 : 1) | (io->comp_mode << 6); /* format */
     vec[0].buf = fmt;      vec[0].len = 2;
     vec[1].buf = cp_start; vec[1].len = cp - cp_start;
     

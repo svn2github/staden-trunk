@@ -23,7 +23,7 @@
  * Uncomment this if you want sam auxillary tags to be added as tag in
  * gap5.
  */
-//#define SAM_AUX_AS_TAG
+/* #define SAM_AUX_AS_TAG */
 
 typedef struct {
     bam1_t *b;
@@ -34,6 +34,7 @@ typedef struct {
     int mqual;
     int pos;
     int left;
+    int rec;
 } bam_seq_t;
 
 typedef struct {
@@ -42,6 +43,9 @@ typedef struct {
     bam_seq_t *seqs;
     int nseq;
     int max_seq;
+    int *recnos;
+    int nrecnos;
+    int max_nrec;
     HacheTable *pair;
     HacheTable *libs;
     contig_t *c;
@@ -95,6 +99,21 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     s->pos = pos - i;
     s->b = p->b;
     s->left = i;
+
+    s->rec = bio->recnos[0];
+    memmove(&bio->recnos[0], &bio->recnos[1],
+	    (bio->nrecnos-1) * sizeof(bio->recnos[0]));
+    bio->nrecnos--;
+    assert(bio->nrecnos >= 0);
+
+#if 0
+    if (bio->a->data_type == DATA_BLANK) {
+	static int fake_recno = 1;
+	s->rec = fake_recno++;
+    } else {
+	s->rec = sequence_new_from(bio->io, NULL);
+    }
+#endif
 
     return bio->nseq++;
 }
@@ -215,24 +234,32 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
     return -1;
 }
 
-char *bam_aux_stringify(bam1_t *b) {
+char *sam_aux_stringify(char *s, int len) {
     static char str[8192];
-    char *s = bam1_aux(b), *cp = str;
+    char *cp = str, *s_end = s+len;
+    int first = 1;
 
-    while ((uint8_t *)s < b->data + b->data_len) {
+    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
+
+    while (s < s_end) {
+	if (first)
+	    first = 0;
+	else
+	    *cp++ = '\t';
+
 	switch (s[2]) {
 	case 'A':
-	    cp += sprintf(cp, "%c%c:A:%c ", s[0], s[1], *(s+3));
+	    cp += sprintf(cp, "%c%c:A:%c", s[0], s[1], *(s+3));
 	    s+=4;
 	    break;
 
 	case 'C':
-	    cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint8_t *)(s+3));
+	    cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint8_t *)(s+3));
 	    s+=4;
 	    break;
 
 	case 'c':
-	    cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int8_t *)(s+3));
+	    cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int8_t *)(s+3));
 	    s+=4;
 	    break;
 
@@ -240,7 +267,7 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		char tmp[2]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint16_t *)tmp);
+		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint16_t *)tmp);
 	    }
 	    s+=5;
 	    break;
@@ -249,7 +276,7 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		char tmp[2]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4];
-		cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int16_t *)tmp);
+		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int16_t *)tmp);
 	    }
 	    s+=5;
 	    break;
@@ -258,7 +285,7 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		char tmp[4]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%u ", s[0], s[1], *(uint32_t *)tmp);
+		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint32_t *)tmp);
 	    }
 	    s+=7;
 	    break;
@@ -267,7 +294,7 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		char tmp[4]; /* word aligned data */
 		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
-		cp += sprintf(cp, "%c%c:i:%d ", s[0], s[1], *(int32_t *)tmp);
+		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int32_t *)tmp);
 	    }
 	    s+=7;
 	    break;
@@ -276,7 +303,7 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		float f;
 		memcpy(&f, s+3, 4);
-		cp += sprintf(cp, "%c%c:f:%f ", s[0], s[1], f);
+		cp += sprintf(cp, "%c%c:f:%f", s[0], s[1], f);
 	    }
 	    s+=7;
 	    break;
@@ -285,13 +312,13 @@ char *bam_aux_stringify(bam1_t *b) {
 	    {
 		double d;
 		memcpy(&d, s+3, 8);
-		cp += sprintf(cp, "%c%c:d:%f ", s[0], s[1], d);
+		cp += sprintf(cp, "%c%c:d:%f", s[0], s[1], d);
 	    }
 	    s+=11;
 	    break;
 
 	case 'Z': case 'H':
-	    cp += sprintf(cp, "%c%c:%c:%s ", s[0], s[1], s[2], s+3);
+	    cp += sprintf(cp, "%c%c:%c:%s", s[0], s[1], s[2], s+3);
 	    s+=3;
 	    while (*s++);
 	    break;
@@ -305,6 +332,398 @@ char *bam_aux_stringify(bam1_t *b) {
     *cp = 0;
 
     return str;
+}
+
+char *bam_aux_stringify(bam1_t *b, int no_RG) {
+    static char str[8192];
+    char *s = bam1_aux(b), *cp = str;
+    int first = 1;
+    int keep;
+
+    no_RG = 1;
+
+    //write(2, s, (int)(b->data + b->data_len - (uint8_t *)s));
+
+    while ((uint8_t *)s < b->data + b->data_len) {
+
+	keep = (no_RG && s[0] == 'R' && s[1] == 'G') ? 0 : 1;
+	if (keep) {
+	    if (first)
+		first = 0;
+	    else
+		*cp++ = '\t';
+	}
+
+	switch (s[2]) {
+	case 'A':
+	    if (keep)
+		cp += sprintf(cp, "%c%c:A:%c", s[0], s[1], *(s+3));
+	    s+=4;
+	    break;
+
+	case 'C':
+	    if (keep)
+		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'c':
+	    if (keep)
+		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int8_t *)(s+3));
+	    s+=4;
+	    break;
+
+	case 'S':
+	    if (keep) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 's':
+	    if (keep) {
+		char tmp[2]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4];
+		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int16_t *)tmp);
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	    if (keep) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		cp += sprintf(cp, "%c%c:i:%u", s[0], s[1], *(uint32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'i':
+	    if (keep) {
+		char tmp[4]; /* word aligned data */
+		tmp[0] = s[3]; tmp[1] = s[4]; tmp[2] = s[5]; tmp[3] = s[6];
+		cp += sprintf(cp, "%c%c:i:%d", s[0], s[1], *(int32_t *)tmp);
+	    }
+	    s+=7;
+	    break;
+
+	case 'f':
+	    if (keep) {
+		float f;
+		memcpy(&f, s+3, 4);
+		cp += sprintf(cp, "%c%c:f:%f", s[0], s[1], f);
+	    }
+	    s+=7;
+	    break;
+
+	case 'd':
+	    if (keep) {
+		double d;
+		memcpy(&d, s+3, 8);
+		cp += sprintf(cp, "%c%c:d:%f", s[0], s[1], d);
+	    }
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    if (keep)
+		cp += sprintf(cp, "%c%c:%c:%s", s[0], s[1], s[2], s+3);
+	    s+=3;
+	    while (*s++);
+	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return NULL;
+	}
+    }
+
+    *cp = 0;
+
+    return str;
+}
+
+/*
+ * Filters out specific types from the sam aux records.
+ * Returns a new aux record, also in the compact binary form.
+ * 'len' holds the size of the returned string.
+ *
+ * Value returned is statically allocated. Do not free.
+ */
+char *bam_aux_filter(bam1_t *b, char **types, int ntypes, int *len) {
+    static char str[8192];
+    char *s = bam1_aux(b), *cp = str;
+    int keep, i;
+
+    while ((uint8_t *)s < b->data + b->data_len) {
+	keep = 1;
+	for (i = 0; i < ntypes; i++) {
+	    if (s[0] == types[i][0] &&
+		s[1] == types[i][1]) {
+		keep = 0;
+		break;
+	    }
+	}
+
+	if (keep) {
+	    *cp++ = s[0];
+	    *cp++ = s[1];
+	    *cp++ = s[2];
+	}
+
+	switch (s[2]) {
+	case 'A':
+	case 'C':
+	case 'c':
+	    if (keep)
+		*cp++ = s[3];
+	    s+=4;
+	    break;
+
+	case 'S':
+	case 's':
+	    if (keep) {
+		*cp++ = s[3];
+		*cp++ = s[4];
+	    }
+	    s+=5;
+	    break;
+
+	case 'I':
+	case 'i':
+	case 'f':
+	    if (keep) {
+		*cp++ = s[3];
+		*cp++ = s[4];
+		*cp++ = s[5];
+		*cp++ = s[6];
+	    }
+	    s+=7;
+	    break;
+
+	case 'd':
+	    if (keep) {
+		*cp++ = s[3];
+		*cp++ = s[4];
+		*cp++ = s[5];
+		*cp++ = s[6];
+		*cp++ = s[7];
+		*cp++ = s[8];
+		*cp++ = s[9];
+		*cp++ = s[10];
+	    }
+	    s+=11;
+	    break;
+
+	case 'Z': case 'H':
+	    s+=3;
+	    if (keep)
+		while ((*cp++ = *s++));
+	    else
+		while (*s++);
+	    break;
+
+	default:
+	    fprintf(stderr, "Unknown aux type '%c'\n", s[2]);
+	    return NULL;
+	}
+    }
+
+    *len = cp - str;
+
+    return str;
+}
+
+/*
+ * Samtools pileup won't iterate over unmapped reads. Therefore we have a
+ * separate function to add these to the database - this one.
+ * Although it shares much of the same code so is a candidate for merging
+ * at some stage.
+ */
+int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
+    char type;
+    const char *LB;
+    HacheItem *hi;
+    HacheData hd;
+    seq_t s;
+    char tname[1024];
+    library_t *lib = NULL;
+    bam_aux_t val;
+    int new = 0;
+    char *name;
+    int name_len;
+    char *aux;
+    int i, flags, recno;
+    int paired, is_pair = 0;
+    char *filter[] = {"RG"};
+
+    bio->count++;
+
+    /* Fetch read-group and pretend it's a library for now */
+    if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
+	LB = val.s;
+    } else {
+	LB = bio->fn;
+    }
+
+    hd.p = NULL;
+    hi = HacheTableAdd(bio->libs, (char *)LB, strlen(LB), hd, &new);
+    if (new) {
+	int lrec;
+	printf("New library %s\n", LB);
+
+	lrec = library_new(bio->io, (char *)LB);
+	lib = get_lib(bio->io, lrec);
+	hi->data.p = lib;
+	cache_incr(bio->io, lib);
+    }
+    lib = hi->data.p;
+
+    /* Construct a seq_t struct */
+    name = bam1_qname(b);
+    name_len = strlen(name);
+
+    /*
+     * Uncomment one of the two sections below if you wish to allow storing
+     * sam auxillary records in gap5.
+     * This is experimental and the format for these hasn't been finalised
+     * yet.
+     */
+    aux = NULL;
+    s.aux_len = 0;
+
+    if (bio->a->sam_aux)
+	aux = bam_aux_filter(b, filter, 1, &s.aux_len);
+
+    //aux = bam_aux_stringify(b, 1);
+    //s.aux_len = strlen(aux);
+    
+    //aux = bam1_aux(b);
+    //s.aux_len = (int)(b->data + b->data_len - (uint8_t *)aux);
+
+    s.pos = bio->npads +
+	get_padded_coord(bio->tree, b->core.pos + 1 + bio->n_inserts
+			 - bio->npads);
+    //s.pos = b->core.pos+1;
+    s.len = b->core.l_qseq;
+    s.rec = 0;
+    s.seq_tech = STECH_SOLEXA;
+    s.flags = 0;
+    s.left  = 1;
+    s.right = s.len;
+    s.parent_type = 0;
+    s.parent_rec = 0;
+    if (bio->a->data_type & DATA_NAME) {
+	s.name_len = name_len;
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	strcpy(s.name, name);
+    } else {
+	char *n = "";
+	s.name_len = 0;
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
+	strcpy(s.name, n);
+    }
+    s.trace_name = s.name + s.name_len + 1;
+    *s.trace_name = 0;
+    s.trace_name_len = 0;
+    s.alignment = s.trace_name + s.trace_name_len + 1;
+    *s.alignment = 0;
+    s.alignment_len = 0;
+    s.seq = s.alignment + s.alignment_len+1;
+    s.conf = s.seq+s.len;
+    s.mapping_qual = b->core.qual;
+    s.format = SEQ_FORMAT_MAQ; /* pack bytes */
+    s.anno = NULL;
+    s.sam_aux = s.conf + s.len;
+
+    for (i = 0; i < b->core.l_qseq; i++) {
+	s.seq[i] = bio->a->data_type & DATA_SEQ
+	    ? bam_nt16_rev_table[bam1_seqi(bam1_seq(b), i)]
+	    : 'N';
+	s.conf[i] = bio->a->data_type & DATA_QUAL
+	    ? bam1_qual(b)[i]
+	    : 0;
+    }
+
+    if (bam1_strand(b)) {
+	complement_seq_t(&s);
+	s.flags |= SEQ_COMPLEMENTED;
+    }
+
+    memcpy(s.sam_aux, aux, s.aux_len);
+
+    /* Create the range, save the sequence */
+    flags = GRANGE_FLAG_TYPE_SINGLE;
+    paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
+
+    if (b->core.flag & BAM_FREAD1)
+	s.flags |= SEQ_END_FWD;
+
+    if (b->core.flag & BAM_FREAD2)
+	s.flags |= SEQ_END_REV;
+
+    strcpy(tname, name);
+
+    if (name_len >= 2 && name[name_len-2] == '/') {
+	tname[name_len-2] = 0;
+
+	/* Check validity of name vs bit-fields */
+	if ((name[name_len-1] == '1' &&
+	     (s.flags & SEQ_END_MASK) != SEQ_END_FWD) ||
+	    (name[name_len-1] == '2' &&
+	     (s.flags & SEQ_END_MASK) != SEQ_END_REV)) {
+	    fprintf(stderr, "Inconsistent read name vs flags: %s vs 0x%02x\n",
+		    name, b->core.flag);
+	}
+    }
+
+    if (paired)
+	flags |= (s.flags & SEQ_END_MASK) == SEQ_END_FWD
+	    ? GRANGE_FLAG_END_FWD
+	    : GRANGE_FLAG_END_REV;
+    else
+	/* Guess work here. For now all <--- are rev, all ---> are fwd */
+	flags |= bam1_strand(b)
+	    ? GRANGE_FLAG_END_FWD
+	    : GRANGE_FLAG_END_REV;
+
+    if (bam1_strand(b)) {
+	flags |= GRANGE_FLAG_COMP1;
+    }
+
+    if (bio->pair) is_pair = 1;
+
+    flags |= GRANGE_FLAG_ISUMSEQ;
+
+    recno = save_range_sequence(bio->io, &s, s.mapping_qual, bio->pair,
+    				is_pair, tname, bio->c, bio->a, flags, lib);
+
+
+#ifdef SAM_AUX_AS_TAG
+    /* Make an annotation out of the sam auxillary data */
+    aux = bam_aux_stringify(b, 1);
+    if (aux && *aux) {
+	anno_ele_t *e;
+	bin_index_t *bin;
+	range_t r;
+
+	r.mqual = str2type("SAMX");
+	r.start = s.pos;
+	r.end = s.pos;
+	r.pair_rec = recno;
+	r.flags = GRANGE_FLAG_ISANNO | GRANGE_FLAG_TAG_SEQ;
+	r.rec = anno_ele_new(bio->io, 0, GT_Seq, recno, 0, r.mqual, aux);
+	e = (anno_ele_t *)cache_search(bio->io, GT_AnnoEle, r.rec);
+	e = cache_rw(bio->io, e);
+	
+	bin = bin_add_range(bio->io, &bio->c, &r, NULL, NULL);
+	e->bin = bin->rec;
+    }
+#endif
+
+    return 0;
 }
 
 /*
@@ -332,9 +751,8 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     int new = 0;
     char *name;
     int name_len;
-#ifdef SAM_AUX_AS_TAG
     char *aux;
-#endif
+    char *filter[] = {"RG"};
 
     if (snum < 0 || snum >= bio->nseq)
 	return -1;
@@ -357,7 +775,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	int lrec;
 	printf("New library %s\n", LB);
 
-	lrec = library_new(bio->io, LB);
+	lrec = library_new(bio->io, (char *)LB);
 	lib = get_lib(bio->io, lrec);
 	hi->data.p = lib;
 	cache_incr(bio->io, lib);
@@ -381,6 +799,25 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     name = bam1_qname(b);
     name_len = strlen(name);
 
+    /*
+     * Uncomment one of the two sections below if you wish to allow storing
+     * sam auxillary records in gap5.
+     * This is experimental and the format for these hasn't been finalised
+     * yet.
+     */
+    aux = NULL;
+    s.aux_len = 0;
+
+    if (bio->a->sam_aux)
+	aux = bam_aux_filter(b, filter, 1, &s.aux_len);
+    
+    //aux = bam_aux_stringify(b, 1);
+    //s.aux_len = strlen(aux);
+
+    //aux = bam1_aux(b);
+    //s.aux_len = (int)(b->data + b->data_len - (uint8_t *)aux);
+    
+    s.rec = bs->rec;
     s.pos = bs->pos;
     s.len = bs->seq_len;
     s.seq_tech = STECH_SOLEXA;
@@ -390,12 +827,12 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.parent_rec = 0;
     if (bio->a->data_type & DATA_NAME) {
 	s.name_len = name_len;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len);
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, name);
     } else {
 	char *n = "";
 	s.name_len = 0;
-	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len);
+	s.name = s.data = (char *)malloc(s.name_len + 3 + 2*s.len + s.aux_len);
 	strcpy(s.name, n);
     }
     s.trace_name = s.name + s.name_len + 1;
@@ -409,6 +846,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     s.mapping_qual = b->core.qual;
     s.format = SEQ_FORMAT_MAQ; /* pack bytes */
     s.anno = NULL;
+    s.sam_aux = s.conf + s.len;
 
     if (bio->a->data_type & DATA_SEQ)
 	memcpy(s.seq,  bs->seq,  s.len);
@@ -425,8 +863,9 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 	s.flags |= SEQ_COMPLEMENTED;
     }
 
-    /* Create the range, save the sequence */
+    memcpy(s.sam_aux, aux, s.aux_len);
 
+    /* Create the range, save the sequence */
     flags = GRANGE_FLAG_TYPE_SINGLE;
     paired = (b->core.flag & BAM_FPAIRED) ? 1 : 0;
 
@@ -473,7 +912,7 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
 
 #ifdef SAM_AUX_AS_TAG
     /* Make an annotation out of the sam auxillary data */
-    aux = bam_aux_stringify(b);
+    aux = bam_aux_stringify(b, 1);
     if (aux && *aux) {
 	anno_ele_t *e;
 	bin_index_t *bin;
@@ -699,6 +1138,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	}
     }
 
+#if 0
     for (i = n-1; i >= 0; i--) {
 	const bam_pileup1_t *p = &pl[i];
 	
@@ -706,6 +1146,17 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	    bio_del_seq(bio, p, i);
 	}
     }
+#else
+    for (i = j = 0; i < n; i++, j++) {
+	const bam_pileup1_t *p = &pl[j];
+	
+	if (p->is_tail) {
+	    bio_del_seq(bio, p, i);
+	    i--;
+	    n--;
+	}
+    }
+#endif
     
     bio->n_inserts += insertions;
     //    if (insertions) {
@@ -738,6 +1189,8 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bio->libs->name = "libs";
     bio->last_tid = -1;
     bio->tree = NULL;
+    bio->recnos = NULL;
+    bio->nrecnos = bio->max_nrec = 0;
 
     if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
@@ -759,6 +1212,33 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
      */
     b = (bam1_t*)calloc(1, sizeof(bam1_t));
     while ((ret = samread(fp, b)) >= 0) {
+	if (a->store_unmapped && b->core.flag & BAM_FUNMAP) {
+	    bio_add_unmapped(bio, b);
+	    if ((++count & 0xffff) == 0) {
+	        putchar('.');
+	        fflush(stdout);
+	        cache_flush(io);
+	    }
+	    continue;
+	}
+
+	//printf("push %s\n", bam1_qname(b));
+	/*
+	 * Allocate a record number now, so they're used in the same order
+	 * as the input data regardless of whether the read is mapped or
+	 * unmapped.
+	 */
+	if (bio->nrecnos >= bio->max_nrec) {
+	    bio->max_nrec += 100;
+	    bio->recnos = realloc(bio->recnos, bio->max_nrec * sizeof(int));
+	}
+	if (bio->a->data_type == DATA_BLANK) {
+	    static int fake_recno = 1;
+	    bio->recnos[bio->nrecnos++] = fake_recno++;
+	} else {
+	    bio->recnos[bio->nrecnos++] = sequence_new_from(bio->io, NULL);
+	}
+
 	bam_plbuf_push(b, plbuf);
 	if ((++count & 0xffff) == 0) {
 	    putchar('.');
@@ -803,6 +1283,9 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 
 	if (bio->tree)
 	    depad_seq_tree_free(bio->tree);
+
+	if (bio->recnos)
+	    free(bio->recnos);
 
 	free(bio);
     }

@@ -58,6 +58,9 @@ void usage(void) {
     fprintf(stderr, "      -s                   Input is SAM format (with @SQ headers)\n");
 #endif
     fprintf(stderr, "\n");
+    fprintf(stderr, "      -u                   Also store unmapped reads (from SAM/BAM only)\n");
+    fprintf(stderr, "      -x                   Also store auxillary records (from SAM/BAM only)\n");
+    fprintf(stderr, "\n");
     fprintf(stderr, "      -p                   Link read-pairs together (default on)\n");
     fprintf(stderr, "      -P                   Do not link read-pairs together\n");
     fprintf(stderr, "\n");
@@ -97,18 +100,20 @@ int main(int argc, char **argv) {
     int opt, err = 0;
     char *cp;
 
-    a.fmt           = 'a'; /* auto */
-    a.out_fn        = "g_db";
-    a.no_tree       = 1;
-    a.pair_reads    = 1;
-    a.append        = 0;
-    a.merge_contigs = -1;
-    a.min_bin_size  = MIN_BIN_SIZE;
-    a.fast_mode     = 0;
-    a.reserved_seqs = 0;
-    a.data_type     = DATA_ALL;
-    a.comp_mode     = COMP_MODE_ZLIB;
-    a.repad         = 0;
+    a.fmt            = 'a'; /* auto */
+    a.out_fn         = "g_db";
+    a.no_tree        = 1;
+    a.pair_reads     = 1;
+    a.append         = 0;
+    a.merge_contigs  = -1;
+    a.min_bin_size   = MIN_BIN_SIZE;
+    a.fast_mode      = 0;
+    a.reserved_seqs  = 0;
+    a.data_type      = DATA_ALL;
+    a.comp_mode      = COMP_MODE_ZLIB;
+    a.repad          = 0;
+    a.store_unmapped = 0;
+    a.sam_aux        = 0;
 
     printf("\n\tg_index:\tShort Read Alignment Indexer, version 1.2.6\n");
     printf("\n\tAuthor: \tJames Bonfield (jkb@sanger.ac.uk)\n");
@@ -119,9 +124,9 @@ int main(int argc, char **argv) {
 
     /* Arg parsing */
 #ifdef HAVE_SAMTOOLS
-    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:g")) != -1) {
+    while ((opt = getopt(argc, argv, "aBsbtThAmMo:pPnz:fr:d:c:gux")) != -1) {
 #else
-    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:g")) != -1) {
+    while ((opt = getopt(argc, argv, "aBstThAmMo:pPnz:fr:d:c:gux")) != -1) {
 #endif
 	switch(opt) {
 	case 'g':
@@ -205,6 +210,14 @@ int main(int argc, char **argv) {
 		usage();
 		return 1;
 	    }
+	    break;
+
+	case 'u':
+	    a.store_unmapped = 1;
+	    break;
+	    
+	case 'x':
+	    a.sam_aux = 1;
 	    break;
 	    
 	default:

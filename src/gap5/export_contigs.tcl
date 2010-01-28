@@ -28,6 +28,14 @@ proc ExportSequences {io} {
     #--- output filename
     getFname $f.outfile "Output filename" save {} aln.sam
 
+    #--- Output options
+    checkbutton $f.fixmates \
+	-text "Fix mate-pair information (SAM only)" \
+	-variable $f.FixMates \
+	-anchor w
+    global $f.FixMates
+    set $f.FixMates 0
+
     #--- OK/cancel/help
     okcancelhelp $f.ok \
 	-ok_command "ExportSequences2 $io $f" \
@@ -37,10 +45,13 @@ proc ExportSequences {io} {
 	-relief groove
 
     #--- Packing
-    pack $f.infile $f.id $f.format $f.outfile $f.ok -side top -fill both
+    pack $f.infile $f.id $f.format $f.outfile $f.fixmates $f.ok \
+	-side top -fill both
 }
 
 proc ExportSequences2 {io f} {
+    global $f.FixMates
+
     set format [lindex "x sam ace baf fastq fasta" [radiolist_get $f.format]]
     if {[lorf_in_get $f.infile] == 4} {
 	set gel_name [contig_id_gel $f.id]
@@ -60,7 +71,8 @@ proc ExportSequences2 {io f} {
 	return
     }
 
-    export_contigs -io $io -contigs $list -format $format -outfile $fn
+    export_contigs -io $io -contigs $list -format $format -outfile $fn \
+	-fixmates [set $f.FixMates]
     destroy $f
 }
 
