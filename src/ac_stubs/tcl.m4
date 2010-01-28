@@ -2850,10 +2850,10 @@ AC_DEFUN([TEA_TCL_EARLY_FLAGS],[
     tcl_flags=""
     TEA_TCL_EARLY_FLAG(_ISOC99_SOURCE,[#include <stdlib.h>],
 	[char *p = (char *)strtoll; char *q = (char *)strtoull;])
-    TEA_TCL_EARLY_FLAG(_LARGEFILE64_SOURCE,[#include <sys/stat.h>],
-	[struct stat64 buf; int i = stat64("/", &buf);])
-    TEA_TCL_EARLY_FLAG(_LARGEFILE_SOURCE64,[#include <sys/stat.h>],
-	[char *p = (char *)open64;])
+dnl    TEA_TCL_EARLY_FLAG(_LARGEFILE64_SOURCE,[#include <sys/stat.h>],
+dnl	[struct stat64 buf; int i = stat64("/", &buf);])
+dnl    TEA_TCL_EARLY_FLAG(_LARGEFILE_SOURCE64,[#include <sys/stat.h>],
+dnl	[char *p = (char *)open64;])
     if test "x${tcl_flags}" = "x" ; then
 	AC_MSG_RESULT([none])
     else
