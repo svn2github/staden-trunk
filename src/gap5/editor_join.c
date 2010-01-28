@@ -383,7 +383,7 @@ static int align(edview *xx0, int pos0, int len0,
  */
 int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     int left0,right0;
-    int left1/*,right1*/;
+    int left1,right1;
     int length0,length1;
     int offset, ret;
     int overlapLength;
@@ -404,79 +404,73 @@ int edJoinAlign(edview *xx, int fixed_left, int fixed_right) {
     length0 = r0-l0+1;
     length1 = r1-l1+1;
 
-    if (offset < 0) {
-	/* -------------
-	 *         |||||
-	 *         --------------
-	 */
-	left0 = l0-offset;
-	left1 = l1;
-	if (fixed_left) {
-	    int d = xx2[1]->cursor_apos - l0;
-	    left0 += d;
-	    left1 += d;
-	}
+    /*
+     * dash => actual sequence
+     * dots => contig range (start to end)
+     *
+     *                  l1\            /r1
+     * 1:            ......------------....
+     *                     ||||||||||||
+     * 0:  ......-------------------------------......
+     *        l0/                               \r0
+     *           <--------->
+     *            (-offset)
+     *
+     *  If l1 left of l0 then offset is +ve.
+     */
+
+    /* Set left0/left1 */
+    if (fixed_left) {
+	left0 = xx2[0]->cursor_apos;
+	left1 = xx2[1]->cursor_apos;
     } else {
-	/*         --------------
-	 *         |||||
-	 * -------------
-	 */
-	left0 = l0;
-	left1 = 11+offset;
-	if (fixed_left) {
-	    int d = xx2[0]->cursor_apos - l0;
-	    left0 += d;
-	    left1 += d;
+	if (offset < 0) {
+	    left0 = l0-offset+l1-1;
+	    left1 = l1;
+	} else {
+	    left0 = l0;
+	    left1 = 11+offset+l0-1;
 	}
     }
 
+    /* Set right0/right1 */
     if (fixed_right) {
-	length0 = xx2[0]->cursor_apos;
-	length1 = xx2[1]->cursor_apos;
-    }
-
-
-    if (offset+length0 < length1) {
-	right0 = length0;
+	right0 = xx2[0]->cursor_apos;
+	right1 = xx2[1]->cursor_apos;
     } else {
-	right0 = length1-offset;
+	if (offset + r0 > r1) {
+	    /* as in example above, r0 right of r1 */
+	    right0 = r1-offset;
+	    right1 = r1;
+	} else {
+	    right0 = r0;
+	    right1 = r0+offset;
+	}
     }
-    overlapLength = right0 - left0+1;
-    if (overlapLength <= 0) return 0; /* nothing to do */
-
-    len0 = len1 = overlapLength;
 
     /* Add on extra data either end to allow for padding */
 #define XTRA_PERC 0.30
+    overlapLength = right0 - left0+1;
+    if (overlapLength <= 0) return 0; /* nothing to do */
+
     if (!fixed_left) {
 	left0 -= (int)(overlapLength * XTRA_PERC);
 	left1 -= (int)(overlapLength * XTRA_PERC);
-	len0  += (int)(overlapLength * XTRA_PERC);
-	len1  += (int)(overlapLength * XTRA_PERC);
+
+	if (left0 < l0) left0 = l0;
+	if (left1 < l1) left1 = l1;
     }
+
     if (!fixed_right) {
-	len0  += (int)(overlapLength * XTRA_PERC);
-	len1  += (int)(overlapLength * XTRA_PERC);
+	right0  += (int)(overlapLength * XTRA_PERC);
+	right1  += (int)(overlapLength * XTRA_PERC);
+
+	if (right0 > r0) right0 = r0;
+	if (right1 > r1) right1 = r1;
     }
 
-
-    if (left0 < 1) {
-	len0 -= 1-left0;
-	left0 = 1;
-    }
-
-    if (left1 < 1) {
-	len1 -= 1-left1;
-	left1 = 1;
-    }
-
-    if (len0 > length0 - left0 + 1) {
-	len0 = length0 - left0 + 1;
-    }
-    if (len1 > length1 - left1 + 1) {
-	len1 = length1 - left1 + 1;
-    }
-
+    len0 = right0 - left0+1;
+    len1 = right1 - left1+1;
     if (len0 <= 0 || len1 <= 0)
 	return 0;
 
