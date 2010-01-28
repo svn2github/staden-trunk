@@ -1,3 +1,15 @@
+*	BUG: DEMO.0.baf: cannot scroll right on read velvet_read#171 unless
+        cutoffs shown. Also, can scroll left into cutoff data even
+        when cutoffs are not shown.
+
+*	BUG: FIJ with Contig6 with Contig4 in DEMO.0.baf, bring up
+        join editor, hit align, then quit (not join).
+	Bring up editor for second time and we see the edits have been
+        retained.
+
+*	BUG: editing sequences in the editor now fails, with
+        insert/deletion. Revert to old code?
+
 *	BUG: cannot open a database we do not have write access to
         unless we explicitly say -ro. Without it we get a cryptic
         error that to the untrained user would imply the database does
@@ -13,7 +25,7 @@
 *	User request: allow break contig from within the editor.
 
 *	BUG: Export consensus sometimes leaves pads in even when we
-        asked to remove them.
+        asked to remove them. (DONE)
 
 *	BUG: Moving a sequence in the editor and then highting name
         gives crash a crash (s->rec != r->rec).
