@@ -214,7 +214,8 @@ static int array_write(GapIO *io, cached_item *ci) {
 static void array_unload(GapIO *io, cached_item *ci) {
     Array ar = (Array)&ci->data;
     //ArrayDestroy(ar);
-    free(ar->base);
+    if (ar->base)
+	free(ar->base);
 
     io->iface->seq.unlock(io->dbh, ci->view);
     free(ci);

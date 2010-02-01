@@ -589,9 +589,12 @@ static void *g_read_alloc(g_io *io, GView v, size_t *len) {
     if (len)
 	*len = vi.used;
 
+    if (!vi.used)
+	return NULL;
+
     if (NULL == (buf = malloc(vi.used)))
 	return NULL;
-    
+
     if (g_read_(io->gdb, io->client, v, buf, vi.used) == 0)
 	return buf;
     else {
@@ -2101,7 +2104,8 @@ static cached_item *io_bin_read(void *dbh, GRec rec) {
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
 	return NULL;
 
-    if (NULL == (buf = g_read_alloc(io, v, &buf_len)))
+    buf = g_read_alloc(io, v, &buf_len);
+    if (!buf && buf_len)
 	return NULL;
     if (buf_len == 0) {
 	/* Blank bin */
@@ -2544,7 +2548,8 @@ static cached_item *io_track_read(void *dbh, GRec rec) {
     if (-1 == (v = lock(io, rec, G_LOCK_RO)))
 	return NULL;
 
-    if (NULL == (buf = g_read_alloc(io, v, &buf_len)))
+    buf = g_read_alloc(io, v, &buf_len);
+    if (!buf && buf_len)
 	return NULL;
     cp = buf;
 
@@ -3498,7 +3503,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     seq_block_t *b = (seq_block_t *)&ci->data;
     int i, j, last_index;
     unsigned char *cp, *cp_start;
-    unsigned char *out[19], *out_start[19];
+    unsigned char *out[19], *out_start[19], *out_malloc;
     size_t out_size[19], total_size;
     int level[19];
     GIOVec vec[2];
@@ -3541,9 +3546,13 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	out_size[18]+= s->aux_len;
 	nb += ABS(s->len);
     }
-    for (i = 0; i < 19; i++)
-	out_start[i] = out[i] = malloc(out_size[i]+1);
-
+    for (total_size = i = 0; i < 19; i++)
+	total_size += out_size[i]+1;
+    out_malloc = malloc(total_size);
+    for (total_size = i = 0; i < 19; i++) {
+	out_start[i] = out[i] = &out_malloc[total_size];
+	total_size += out_size[i]+1;
+    }
 
     /* serialised sequences, separated by type of data */
     last_index = 0;
@@ -3728,7 +3737,6 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     for (i = 0; i < nparts; i++) {
 	memcpy(cp, out_start[i], out_size[i]);
 	cp += out_size[i];
-	free(out_start[i]);
 	level[i] = 5; /* default gzip level */
     }
     assert(cp - cp_start == total_size);
@@ -3774,6 +3782,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     g_flush(io, ci->view);
    
     free(cp_start);
+    free(out_malloc);
 
     return err ? -1 : 0;
 }
