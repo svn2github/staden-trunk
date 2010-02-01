@@ -3361,6 +3361,8 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 		continue;
 	    }
 
+	    while (!b->seq[k]) k++;
+
 	    s->name = (char *)&s->data;
 	    s->name_len = in[k++].name_len;
 	    memcpy(s->name, cp, s->name_len);
@@ -3370,10 +3372,13 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
 		seq_t *s2 = b->seq[j];
 
-		if (!s2) continue;
+		if (!s2)
+		    continue;
 
 		if (s2->parent_rec != s->parent_rec)
 		    continue;
+
+		while (!b->seq[k]) k++;
 
 		s2->name = (char *)&s2->data;
 		s2->name_len = in[k++].name_len;
@@ -3661,6 +3666,12 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    continue;
 	}
 
+	/*
+	 * First time through, with i==0, we permit s->parent_rec == 0 to
+	 * be written out (mixed in with the true parent_rec of seq[0]).
+	 *
+	 * Subsequent times we only right out +ve parent_rec values.
+	 */
 	if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
 	    s->parent_rec = -s->parent_rec;
 	    continue;
