@@ -538,12 +538,10 @@ proc editor_exit {w} {
 	}
     }
 
-    io_detach [$ed contig_rec]
-
     foreach ed [set ${w}(all_editors)] {
 	global $ed
 	set id [set ${ed}(reg)]
-	puts "Deregister $id"
+	io_detach [$ed contig_rec]
 	contig_deregister -io [set ${w}(io_base)] -id $id
     }
 
