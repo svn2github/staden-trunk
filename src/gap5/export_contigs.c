@@ -813,8 +813,6 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
     int name_len;
     fifo_t *last, *ti;
 
-    printf("POP SEQ %d @ %d,%d\n", fi->r.rec, fi->r.start, fi->r.end);
-
     /* Output the sequence */
     if (len > qalloc) {
 	qalloc = len;
@@ -935,12 +933,10 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 	/* Add new items to fifo */
 	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
 	    fifo_queue_push(fq, r);
-	    printf("push SEQ %d @ %d,%d\n", r->rec, r->start, r->end);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
 	    /* Technically this should be a list and not a fifo */
 	    fifo_queue_push(tq, r);
-	    printf("push TAG %d @ %d,%d\n", r->rec, r->start, r->end);
 	}
 
 	/* And pop off when they're history */
