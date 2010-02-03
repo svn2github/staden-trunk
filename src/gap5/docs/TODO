@@ -5,10 +5,7 @@
 *	BUG: FIJ with Contig6 with Contig4 in DEMO.0.baf, bring up
         join editor, hit align, then quit (not join).
 	Bring up editor for second time and we see the edits have been
-        retained.
-
-*	BUG: editing sequences in the editor now fails, with
-        insert/deletion. Revert to old code?
+        retained. (DONE)
 
 *	BUG: cannot open a database we do not have write access to
         unless we explicitly say -ro. Without it we get a cryptic
@@ -24,15 +21,9 @@
 
 *	User request: allow break contig from within the editor.
 
-*	BUG: Export consensus sometimes leaves pads in even when we
-        asked to remove them. (DONE)
-
 *	BUG: Moving a sequence in the editor and then highting name
         gives crash a crash (s->rec != r->rec).
 	Also it means up/down arrow skips lines or doesn't work correct.
-
-*	BUG: can join contig1 to contig1 and hit save. We then get no
-        contig1 at all. (DONE)
 
 *	Add support for reference sequences. See also unpadded
         coordinates. (I suspect the two are connected.)
@@ -53,10 +44,6 @@
         many pads there are within it's boundaries. Even if we don't
         store where, that one single value is sufficient to make
         computing an unpadded coordinate a O(log(N)) computation.
-
-*	DONE? Fix sam output when a sequence is *AGCTA or AGCTAG*. We
-	get things like 1D10M or 10M1D which breaks samtools and
-	consequentially tg_index too.
 
 *	Investigate use of seq_t->bin_index field. This is primarily
         used for the sequence_get_pair function and or the
@@ -137,11 +124,7 @@
 
 *	Improve library displays and auto-sensing.
 
-*	Consensus caching (DONE)
-
 *	Improved depth caching (min/max as well as average)
-
-*	Finish tag editing (DONE?)
 
 *	Implement annotation links as well as annotation elements.
 
@@ -168,49 +151,8 @@
 
 * 	Fix editor UNDO. (Only works for Tcl controlled I/O atm)
 
-*	DONE: Sequence blocks.
-	The caching layer has 1 record per sequence. But rec>>10 gives
-	1024 sequences with the same record; pack 1024 in the same
-	block using tg_iface_g.c and use the bottom 10 bits as an
-	indicator to which sequence we wish to unpack.
-
-	This means some level of caching involved too so we don't keep
-	compressing and uncompressing the same sequence blocks
-	repeatedly. Which implies tg_cache.c is probably the correct
-	layer, perhaps using a new data type GT_SeqBlock?
-
-*	DONE: Add type/format to iface_g I/O
-	Every object should start with 3 bits type, 5 bits format.
-	- This means we can change the layout of a packed struct and
-	  support both old and new layout formats.
-	- It also means we can type check and spot stray reads of the
-	  wrong object type.
-
-*	DONE: Better formatting of bin range arrays.
-	- Try storing start + length instead of start + end.
-	- Replace start with delta from previous start.
-	- Encode final number series in int7 format instead to reduce
-	  size.
-
-*	DONE: Add a means to detect the number of sequences in a contig.
-	- Note contig breaking means maybe we need to know this at a
-	  bin level; how many sequences are in this bin and below.
-	- How to keep this information up to date without undue costs.
-	Idea: update the bin we add to + the root bin (or contig
-	struct). Add checks in most bin-walking algorithms that
-	automatically correct for incorrect bin->nseqs figures. (ie
-	parent = child[0] + child[1] counts.)
-	
-
-*	DONE: Contig joining
-
-*	DONE: Contig breaking
-
 *	Annotations
 	partially done.
-
-*	Improved input/output formats
-	(DONE: except for $variable expansion)
 
 *	Store alignments for trace displaying
 	(PARTIALLY DONE: needs better format and use of them)
@@ -218,29 +160,12 @@
 *	Mixed assemblies
 	- splitting reads by type (sanger, solid, 454, solexa)
 
-*	Searching
-	- by sequence? (DONE)
-	- by position (DONE - padded only)
-	- by name (done, but needs a rewrite to speed it up)
-
 *	Fix reading name indexing.
 	- B+Tree is OK for searching and small updates, but updating
 	serially for every read 1 at a time is Nlog(N) complexity and
 	becomes slow.
 	- Suggest binning names to temporary files as we read them and
 	then sorting within the bins and bulk uploading of the B+Tree.
-
-*	DONE: Improve template display speed. Maybe C code for rendering to
-        a pixmap instead.
-
-	- Store other_end / template info in the range_t array instead
-          of the seq struct. This avoids performing seq_t when drawing
-          data pictorially. (DONE)
-
-*	DONE: Implement Magnus' Y coordinate algorithm for templates - based
-        on size.  (DONE)
-
-*	DONE: Libraries / ligations
 
 *	DEBUG version:
 	Cache items should have an md5 sum for the data structure
