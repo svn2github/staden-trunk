@@ -718,6 +718,9 @@ int sequence_invalidate_consensus(GapIO *io, seq_t *s) {
 	bin->flags &= ~BIN_CONS_VALID;
     }
 
+    if (r)
+	free(r);
+
     return 0;
 }
 
@@ -1131,20 +1134,18 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 
     sequence_invalidate_consensus(io, n);
 
+    if (contig_orient) {
+	pos = sequence_orient_pos(io, &n, pos, &comp);
+    } else {
+	pos = n->len < 0
+	    ? -n->len - pos -1
+	    : pos;
+    }
+
     if (n->len < 0)
 	n->len++;
     else
 	n->len--;
-
-    if (contig_orient) {
-	pos = sequence_orient_pos(io, s, pos, &comp);
-	if (comp)
-	    pos++;
-    } else {
-	pos = n->len < 0
-	    ? -n->len - pos
-	    : pos;
-    }
 
     if (pos < n->left)
 	n->left--;
@@ -1152,7 +1153,7 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     if (pos < n->right)
 	n->right--;
 
-    if (pos >= ABS((*s)->len) || pos < 0) {
+    if (pos >= ABS(n->len) || pos < 0) {
 	sequence_reset_ptr(n);
 	return 0;
     }
