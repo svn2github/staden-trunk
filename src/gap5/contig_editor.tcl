@@ -83,6 +83,7 @@ proc io_detach {crec} {
     incr cio(ref) -1
 
     if {[set cio(ref)] == 0} {
+	$cio(io) close
 	unset cio
     }
 }

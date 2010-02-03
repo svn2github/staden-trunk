@@ -74,6 +74,12 @@ GapIO *gio_open(char *fn, int ro, int create) {
  * Also frees any associated memory.
  */
 void gio_close(GapIO *io) {
+    if (io->base) {
+	cache_destroy(io);
+	free(io);
+	return;
+    }
+
     cache_decr(io, io->db);
     cache_decr(io, io->contig_order);
     cache_decr(io, io->library);
