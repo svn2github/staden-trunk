@@ -960,6 +960,7 @@ static void cs_shutdown(GapIO *io, obj_cs *cs) {
     xfree(cs->world);
     if (cs->cursor.colour) free(cs->cursor.colour);
     if (cs->tick->colour) free(cs->tick->colour);
+    xfree(cs->tick);
     freeZoom(&cs->zoom);
     xfree(cs);
 }
