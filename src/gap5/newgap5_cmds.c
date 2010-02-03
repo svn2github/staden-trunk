@@ -36,6 +36,10 @@
 #include "find_oligo.h"
 #include "tg_index_common.h"
 
+#ifdef VALGRIND
+#    include <valgrind/memcheck.h>
+#endif
+
 int tcl_get_tag_array(ClientData clientData, Tcl_Interp *interp,
 		      int argc, char **argv) {
     Tcl_DString tags;
@@ -1382,6 +1386,15 @@ tcl_import_reads(ClientData clientData,
     return TCL_OK;
 }
 
+#ifdef VALGRIND
+tcl_leak_check(ClientData clientData,
+	       Tcl_Interp *interp,
+	       int objc,
+	       Tcl_Obj *CONST objv[])
+{
+    VALGRIND_DO_LEAK_CHECK
+}
+#endif
 
 /* set up tcl commands which call C procedures */
 /*****************************************************************************/
@@ -1541,6 +1554,12 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "import_reads",
 			 tcl_import_reads,
 			 (ClientData) NULL, NULL);
+
+#ifdef VALGRIND
+    Tcl_CreateObjCommand(interp, "leak_check",
+			 tcl_leak_check,
+			 (ClientData) NULL, NULL);
+#endif
 
     //Ced_Init(interp);
     Editor_Init(interp);
