@@ -42,6 +42,24 @@
 # IO/contig specific components. (child IOs, undo history)
 #-----------------------------------------------------------------------------
 
+# Conceptually each edit had an equal and opposite edit, although it may
+# require some compound edits to achieve these.
+#
+# When we make a change we store on the undo list the command(s) required
+# to reverse that change. (We actually just store an opcode & operands as
+# this is more space efficient - see io_undo_exec.) 
+#
+# Note that in order for undo to restore the editing cursor position we
+# typically store a cursor move event plus the edit event. These are grouped
+# as a tcl list so they can be undone with as a single event. Cursor
+# positioning is not a data-change, rather a view change. Hence the editor
+# that has the cursor moved is the editor the user clicked Undo in (while
+# the edit itself may have been made in another editor window on the same
+# contig).
+#
+# Redo, for now, has been disabled until we get a realiable undo
+# implementation fully tested.
+
 proc io_child {io crec} {
     upvar \#0 contigIO_$crec cio
 
@@ -69,6 +87,69 @@ proc io_detach {crec} {
     }
 }
 
+proc io_undo_exec {w crec cmdu} {
+    upvar \#0 contigIO_$crec cio
+
+    puts ""
+    puts [info level [info level]]
+    parray cio
+
+    set io [$w io]
+
+    foreach cmd $cmdu {
+	foreach {code op1 op2 op3 op4} $cmd break
+	switch -- $code {
+	    C_SET {
+		$w set_cursor $op1 $op2 $op3
+	    }
+
+	    B_REP {
+		set seq [$io get_sequence $op1]
+		$seq replace_base $op2 $op3 $op4
+		$seq delete
+	    }
+
+	    B_INS {
+		set seq [$io get_sequence $op1]
+		$seq insert_base $op2 $op3 $op4
+		$seq delete
+	    }
+
+	    B_DEL {
+		set seq [$io get_sequence $op1]
+		$seq delete_base $op2
+		$seq delete
+	    }
+
+	    B_MOVE {
+		$cio(c) remove_sequence $op1
+		$cio(c) add_sequence    $op1 $op2
+	    }
+
+	    C_INS {
+		set contig [$io get_contig $op1]
+		$contig insert_base $op2
+		foreach seq $op3 {
+		    foreach {rec pos base val} $seq break;
+		    set seq [$io get_sequence $rec]
+		    $seq replace_base $pos $base $val
+		    $seq delete
+		}
+	    }
+	    
+	    C_DEL {
+		set contig [$io get_contig $op1]
+		$contig delete_base $op2
+		$contig delete
+	    }
+	    
+	    default {
+		puts stderr "Unknown undo command: $cmd"
+	    }
+	}
+    }
+}
+
 proc io_store_undo {crec cmdu cmdr} {
     upvar \#0 contigIO_$crec cio
 
@@ -80,12 +161,13 @@ proc io_store_undo {crec cmdu cmdr} {
     contig_notify -io $cio(base) -cnum $crec -type CHILD_EDIT -args ""
 }
 
-proc io_undo {crec} {
+proc io_undo {ed crec} {
     upvar \#0 contigIO_$crec cio
     
     foreach {cmdu cmdr} [lindex [set cio(Undo)] end] break
-    eval $cmdu
-    lappend cio(Redo) [list $cmdu $cmdr]
+    io_undo_exec $ed $crec $cmdu
+    #eval $cmdu
+    #lappend cio(Redo) [list $cmdu $cmdr]
     set cio(Undo) [lrange $cio(Undo) 0 end-1]
 
     if {[llength $cio(Undo)] == 0} {
@@ -139,6 +221,8 @@ proc contig_register_callback {ed type id cdata args} {
     set w [set ${ed}(top)]
     global $w
 
+    puts [info level [info level]]
+
     switch $type {
 	QUERY_NAME {
 	    return "Contig Editor"
@@ -157,7 +241,7 @@ proc contig_register_callback {ed type id cdata args} {
 			$w.toolbar.undo configure -state $state
 		    }
 		    "redo" {
-			$w.toolbar.redo configure -state $state
+			#$w.toolbar.redo configure -state $state
 		    }
 		}
 	    }
@@ -171,8 +255,10 @@ proc contig_register_callback {ed type id cdata args} {
 
 	    # Only move the cursor if it's not sent by oursleves and
 	    # it's our primary cursor.
+	    # EDIT: Removed " || $arg(id) == 0"
 	    if {[set ${ed}(reg)] != $arg(sent_by) && \
-		    ($arg(id) == [$ed cursor_id] || $arg(id) == 0)} {
+		    ($arg(id) == [$ed cursor_id])} {
+		puts "ed \#[set ${ed}(reg)]/[$ed cursor_id] move"
 		$ed set_cursor 17 [set ${w}(contig)] $arg(abspos)
 	    }
 	}
@@ -355,13 +441,13 @@ proc contig_editor {w args} {
 	-command "editor_quality $w"
     button $tool.undo    -text Undo -command "editor_undo $w" \
 	-state [io_undo_state $opt(contig)]
-    button $tool.redo    -text Redo -command "editor_redo $w" \
+#    button $tool.redo    -text Redo -command "editor_redo $w" \
 	-state [io_redo_state $opt(contig)]
     button $tool.search  -text Search \
 	-command "create_search_win $w.search \"editor_search $w\" 0"
     button $tool.save -text Save -command "editor_save $w"
     wm protocol $w WM_DELETE_WINDOW "editor_exit $w"
-    pack $tool.undo $tool.redo $tool.search $tool.cutoffs $tool.quality \
+    pack $tool.undo $tool.search $tool.cutoffs $tool.quality \
 	-side left
     pack $tool.save -side right
 
@@ -369,8 +455,8 @@ proc contig_editor {w args} {
     # applies to.
     bind $tool.undo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
     bind $tool.undo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
-    bind $tool.redo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
-    bind $tool.redo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
+#    bind $tool.redo <Any-Enter> "editor_hl \[set ${w}(curr_editor)\] red"
+#    bind $tool.redo <Any-Leave> "editor_hl \[set ${w}(curr_editor)\] \#d9d9d9"
 
     if {$join} {
 	set opt(Lock) 1; # See default in tkEditor.c link_to command
@@ -541,8 +627,8 @@ proc editor_exit {w} {
     foreach ed [set ${w}(all_editors)] {
 	global $ed
 	set id [set ${ed}(reg)]
-	io_detach [$ed contig_rec]
 	contig_deregister -io [set ${w}(io_base)] -id $id
+	after idle "io_detach [$ed contig_rec]"
     }
 
     destroy $w
@@ -895,14 +981,14 @@ proc editor_undo {top} {
     upvar \#0 $top opt
     
     set w $opt(curr_editor)
-    io_undo [$w contig_rec]
+    io_undo $w [$w contig_rec]
 }
 
-proc editor_redo {top} {
-    upvar \#0 $top opt
-    set w $opt(curr_editor)
-    io_redo [$w contig_rec]
-} 
+# proc editor_redo {top} {
+#     upvar \#0 $top opt
+#     set w $opt(curr_editor)
+#     io_redo [$w contig_rec]
+# } 
 
 
 #-----------------------------------------------------------------------------
@@ -922,10 +1008,14 @@ proc editor_edit_base {w call where} {
 	set seq [$io get_sequence $rec]
 	foreach {old_call old_conf} [$seq get_base $pos] break
 	$seq replace_base $pos $call 30
+	$seq delete
+
+	foreach {type rec _pos} [$w get_cursor relative] break
 	$w cursor_right
 	store_undo $w \
-	    "$seq replace_base $pos $old_call $old_conf; $w cursor_left" \
-	    "$seq replace_base $pos $call 30; $w cursor_right"
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list B_REP $rec $pos $old_call $old_conf] ] {}
     }
 
     $w redraw
@@ -945,18 +1035,21 @@ proc editor_insert_gap {w where} {
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
 	$seq insert_base $pos * 20
+	$seq delete
 
 	store_undo $w \
-	    "$seq delete_base $pos; $w cursor_left" \
-	    "$seq insert_base $pos * 20; $w cursor_right"
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list B_DEL $rec $pos] ] {}
     } else {
 	set contig [$io get_contig $rec]
-
 	$contig insert_base $pos
+	$contig delete
 
 	store_undo $w \
-	    "$contig delete_base $pos; $w cursor_left" \
-	    "$contig insert_base $pos; $w cursor_right"
+	    [list \
+		 [list C_SET $type $rec $pos] \
+		 [list C_DEL $rec $pos] ] {}
     }
     $w cursor_right
     
@@ -980,19 +1073,28 @@ proc editor_delete_base {w where} {
 
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
+	foreach {old_base old_conf} [$seq get_base $pos] break
 	$seq delete_base $pos
+	$seq delete
 
 	store_undo $w \
-	    "$seq insert_base $pos * 20; $w cursor_right" \
-	    "$seq delete_base $pos; $w cursor_left"
+	    [list \
+		 [list C_SET $type $rec [expr {$pos+1}]] \
+		 [list B_INS $rec $pos $old_base $old_conf]] {}
     } else {
 	set contig [$io get_contig $rec]
 
+	# get pileup at consensus position so we can restore it
+	set pileup [$contig get_pileup $pos]
+	puts $pileup
+
 	$contig delete_base $pos
+	$contig delete
 
 	store_undo $w \
-	    "$contig insert_base $pos; $w cursor_right" \
-	    "$contig delete_base $pos; $w cursor_left"
+	    [list \
+		 [list C_SET $type $rec [expr {$pos+1}]] \
+		 [list C_INS $rec $pos $pileup]] {}
     }
     
     $w redraw
@@ -1019,11 +1121,15 @@ proc editor_move_seq {w where direction} {
     set cnum [$seq get_contig]
     set pos  [$seq get_position]
 
-    puts "Moving $rec in $pos@$cnum by $direction"
+    store_undo $w \
+	[list \
+	     [list B_MOVE $rec $pos] ] {}
+
     set c [$io get_contig $cnum]
     $c remove_sequence $rec
     incr pos $direction
     $c add_sequence $rec $pos
+    $c delete
 
     $w redraw
 }
@@ -1409,7 +1515,7 @@ bind Editor <<select>> {
     if {![string match [set ${w}(curr_editor)] %W]} {
 	set ${w}(curr_editor) %W
 	$w.toolbar.undo configure -state [io_undo_state [%W contig_rec]]
-	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
+#	$w.toolbar.redo configure -state [io_redo_state [%W contig_rec]]
     }
     set _sel [%W get_number @%x @%y 0 1]
     if {$_sel == ""} {

@@ -421,6 +421,60 @@ static int tcl_contig_anno_range(tcl_contig *tc, Tcl_Interp *interp,
     return TCL_OK;
 }
 
+static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[]) {
+    GapIO *io = tc->io;
+    contig_t *c = tc->contig;
+    int pos;
+    Tcl_Obj *items;
+    rangec_t *r;
+    int nr, i;
+
+    if (objc != 2) {
+	vTcl_SetResult(interp, "wrong # args: should be "
+		       "\"%s pos\"\n",
+		       Tcl_GetStringFromObj(objv[0], NULL));
+	return TCL_ERROR;
+    }
+
+    /* Fetch all sequences covering this point */
+    Tcl_GetIntFromObj(interp, objv[1], &pos);
+    r = (rangec_t *)contig_seqs_in_range(io, &c, pos, pos,
+					 CSIR_SORT_BY_X | CSIR_PAIR,
+					 &nr);
+    qsort(r, nr, sizeof(*r), sort_range);
+
+    /* Produce a tcl list of elements consisting of seq rec, pos, base, qual */
+    items = Tcl_NewListObj(0, NULL);
+    for (i = 0; i < nr; i++) {
+	Tcl_Obj *ele, *e4[4];
+	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
+	char base;
+	int conf, ret;
+
+	ret = sequence_get_base(io, &s, pos - r[i].start, &base, &conf, 1);
+	if (-1 == ret) {
+	    base = '?';
+	    conf = 1;
+	    fprintf(stderr, "ERROR: failed to read base at position %d "
+		    "in seq #%d\n", pos, r[i].rec);
+	}
+	e4[0] = Tcl_NewIntObj(r[i].rec);
+	e4[1] = Tcl_NewIntObj(pos - r[i].start);
+	e4[2] = Tcl_NewStringObj(&base, 1);
+	e4[3] = Tcl_NewIntObj(conf);
+
+	ele = Tcl_NewListObj(4, e4);
+
+	Tcl_ListObjAppendElement(interp, items, ele);
+    }
+
+    Tcl_SetObjResult(interp, items);
+
+    free(r);
+    return TCL_OK;
+}
+
 static int tcl_read_depth(tcl_contig *tc, Tcl_Interp *interp,
 			  int objc, Tcl_Obj *CONST objv[]) {
     GapIO *io = tc->io;
@@ -466,7 +520,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_start",    "get_end",      "get_len",      "get_length",
 	"get_name",     "seqs_in_range","get_rec",      "read_depth",
 	"insert_base",  "delete_base",  "remove_sequence","add_sequence",
-	"nseqs",	"anno_in_range",
+	"nseqs",	"anno_in_range","get_pileup",
 	(char *)NULL,
     };
 
@@ -475,7 +529,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_START,      GET_END,        GET_LEN,        GET_LENGTH,
 	GET_NAME,       SEQS_IN_RANGE,  GET_REC,        READ_DEPTH,
 	INSERT_BASE,    DELETE_BASE,    REMOVE_SEQUENCE,ADD_SEQUENCE,
-	NSEQS,          ANNO_IN_RANGE,
+	NSEQS,          ANNO_IN_RANGE,  GET_PILEUP,
     };
 
     if (objc < 2) {
@@ -544,14 +598,18 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     case INSERT_BASE: {
 	int pos, qual = 20;
 	char base = '*';
-	if (objc != 3) {
+	if (objc != 3 && objc != 5) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s insert_base position\"\n",
+			   "\"%s insert_base position ?base qual ...?\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
+	if (objc == 5) {
+	    base = *Tcl_GetStringFromObj(objv[3], NULL);
+	    Tcl_GetIntFromObj(interp, objv[4], &qual);
+	}
 	contig_insert_base(tc->io, &tc->contig, pos, base, qual);
 	break;
     }
@@ -627,7 +685,10 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(nseqs));
 	break;
-    }
+    } 
+    case GET_PILEUP: 
+	return tcl_contig_pileup(tc, interp, objc-1, objv+1);
+	break;
     }
 
     return TCL_OK;
@@ -760,7 +821,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_rec",      "get_len",      "get_length",   "get_pair",
 	"get_left",     "get_right",    "get_name",     "get_seq",
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
-	"get_mapping_qual",
+	"get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
 	(char *)NULL,
     };
@@ -770,7 +831,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_REC,        GET_LEN,        GET_LENGTH,     GET_PAIR,
 	GET_LEFT,	GET_RIGHT,      GET_NAME,       GET_SEQ,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
-	GET_MAPPING_QUAL,
+	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
     };
 
@@ -911,6 +972,17 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	int cnum, pos;
 	sequence_get_position(ts->io, rec, &cnum, &pos, NULL, NULL);
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), pos);
+	break;
+    }
+
+    case GET_ORIENT: {
+	int rec = ts->seq->rec;
+	int cnum, pos, dir;
+	range_t r;
+	seq_t *s;
+	sequence_get_position2(ts->io, rec, &cnum, &pos, NULL, &dir, &r, &s);
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), (s->len < 0) ^ dir);
+	cache_decr(ts->io, s);
 	break;
     }
 
