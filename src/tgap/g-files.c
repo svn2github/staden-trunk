@@ -406,29 +406,31 @@ int g_write_aux_header(GFile *gfile)
  * We use a hash table instead and cache (or not, for now) records for
  * as long as needed.
  */
-#define AUX_BLOCK_SZ 256
+#define AUX_BLOCK_SZ 256 /* must be a power of two */
 Index *g_read_index(GFile *gfile, GCardinal rec) {
-    Index *idx;
+    Index *idx, *idxr = NULL;
     HacheItem *hi;
     HacheData hd;
     AuxIndex aidx[AUX_BLOCK_SZ];
     int toggle, nrecs, i;
+    GCardinal r2;
 
     hi = HacheTableSearch(gfile->idx_hash, (char *)&rec, sizeof(rec));
     if (hi) {
 	return (Index *)hi->data.p;
     }
 
+    r2 = rec & ~(AUX_BLOCK_SZ-1);
+
     /* LOW LEVEL IO HERE */
-    if (-1==gfile->low_level_vector[GOP_SEEK_AUX_INDEX](gfile->fdaux,NULL,rec))
+    if (-1==gfile->low_level_vector[GOP_SEEK_AUX_INDEX](gfile->fdaux,NULL,r2))
 	return gerr_set(GERR_SEEK_ERROR), NULL;
     
     nrecs = g_read_aux_index(gfile, &aidx[0], AUX_BLOCK_SZ);
     if (nrecs <= 0)
 	return gerr_set(GERR_READ_ERROR), NULL;
 
-    rec += nrecs-1;
-    for (i = nrecs-1; i >= 0; i--, rec--) {
+    for (i = 0; i < nrecs; i++, r2++) {
 	toggle = g_toggle_state(gfile->header.last_time, &aidx[i]);
 
 	idx = (Index *)xcalloc(1, sizeof(*idx));
@@ -442,14 +444,19 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
 		idx->flags = G_INDEX_NONE;
 	    }
 	} else {
-	    printf("No toggle for record %d\n", rec);
+	    printf("No toggle for record %d\n", r2);
 	}
 
 	hd.p = idx;
-	HacheTableAdd(gfile->idx_hash, (char *)&rec, sizeof(rec), hd, NULL);
+	HacheTableAdd(gfile->idx_hash, (char *)&r2, sizeof(r2), hd, NULL);
+
+	if (r2 == rec)
+	    idxr = idx;
     }
 
-    return idx;
+    //assert(idxr);
+
+    return idxr;
 }
 
 void g_write_index(GFile *gfile, GCardinal rec, Index *idx) {
