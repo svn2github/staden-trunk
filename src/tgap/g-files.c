@@ -419,7 +419,7 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
     if (hi) {
 	return (Index *)hi->data.p;
     }
-
+    
     r2 = rec & ~(AUX_BLOCK_SZ-1);
 
     /* LOW LEVEL IO HERE */
@@ -430,10 +430,17 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
     if (nrecs <= 0)
 	return gerr_set(GERR_READ_ERROR), NULL;
 
-    for (i = 0; i < nrecs; i++, r2++) {
-	toggle = g_toggle_state(gfile->header.last_time, &aidx[i]);
+    for (i = 0; i < AUX_BLOCK_SZ; i++, r2++) {
+	toggle = i < nrecs
+	    ? g_toggle_state(gfile->header.last_time, &aidx[i])
+	    : G_NO_TOGGLE;
 
-	idx = (Index *)xcalloc(1, sizeof(*idx));
+	hi = HacheTableSearch(gfile->idx_hash, (char *)&r2, sizeof(r2));
+
+	idx = hi
+	    ? (Index *)hi->data.p
+	    : (Index *)xcalloc(1, sizeof(*idx));
+
 	if (toggle != G_NO_TOGGLE) {
 	    idx->aux_allocated = aidx[i].used[toggle];
 	    idx->aux_image = aidx[i].image[toggle];
@@ -444,7 +451,12 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
 		idx->flags = G_INDEX_NONE;
 	    }
 	} else {
-	    printf("No toggle for record %d\n", r2);
+	    /* To be allocated later */
+	    idx->aux_allocated = 0;
+	    idx->aux_image     = 0;
+	    idx->aux_time      = 0;
+	    idx->aux_used      = 0;
+	    idx->flags         = 0;
 	}
 
 	hd.p = idx;
@@ -454,7 +466,7 @@ Index *g_read_index(GFile *gfile, GCardinal rec) {
 	    idxr = idx;
     }
 
-    //assert(idxr);
+    assert(idxr);
 
     return idxr;
 }

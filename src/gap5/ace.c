@@ -561,5 +561,8 @@ int parse_ace(GapIO *io, char *ace_fn, tg_args *a) {
     if (pair)
 	HacheTableDestroy(pair, 0);
 
+    if (af)
+	free(af);
+
     return 0;
 }
