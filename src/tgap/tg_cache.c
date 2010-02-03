@@ -424,7 +424,7 @@ static void cache_unload(void *clientdata, HacheData hd) {
 
     //    printf("Cache unload %d\n", ci->rec);
 
-    assert(ci->updated == 0);
+    assert(io->base || ci->updated == 0);
 
     unload_counts[ci->type]++;
 
