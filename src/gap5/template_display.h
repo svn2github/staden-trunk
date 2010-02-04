@@ -6,6 +6,14 @@
 #include "tg_gio.h"
 #include "template_draw.h"
 
+typedef struct {
+    double y;          /* y coord */
+    int col[3];        /* colours */
+    int x[4];          /* coordinates */
+    int t_strand;      /* template strand */
+    int mq;            /* mapping qual */
+    int rec;	       /* used for yspread */
+} tline;
 
 typedef struct {
     GapIO *io;
@@ -45,7 +53,20 @@ typedef struct {
     double yhair_pos;
     int min_qual, max_qual; /* Filter parameters */
     int min_sz;  /* For stacking mode */
-	image_t *image;
+    image_t *image;
+    // remember the old parameters for reuse
+    double wx0; // the old x range
+    double wx1;
+    rangec_t *r; // range data
+    int nr;
+    int mode;
+    tline *tl;
+    int ntl;
+    int old_filter;
+    int old_min_qual, old_max_qual;
+    int old_cmode;
+    int old_accuracy;
+    
 } template_disp_t;
 
 /* If bit set we filter our this data type */

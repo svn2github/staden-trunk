@@ -648,6 +648,81 @@ proc compute_max_y {w lines} {
     return $ymax
 }
 
+proc template_dialog {w t} {
+    global $w $t
+    
+    set c [xtoplevel $w.coverage -resizable 0]
+    
+    if {$c != ""} {
+    	wm title $c "Template Track"
+    } else {
+    	return
+    }
+    
+    set cf [frame $c.sub -padx 5  -pady 3 -bd 2 -relief groove]
+
+    # auto
+    checkbutton $cf.auto \
+	-text "Auto update" \
+	-variable ${t}(FilterAutoUpdate) \
+	-command "seq_seqs_filter_update $w $t $c"
+    grid $cf.auto -row 0 -column 0 -columnspan 4 -sticky w
+    
+    # Y pos
+    set ${t}(_Y) [set ${t}(Y)]
+    set cfl [labelframe $cf.lf -text "Y Position"]
+    
+    radiobutton $cfl.y1 -text "Template size"   -variable ${t}(_Y) -value "Template Size"   -command "seq_seqs_filter_update $w $t $c"
+    radiobutton $cfl.y2 -text "Stacking"        -variable ${t}(_Y) -value "Stacking"        -command "seq_seqs_filter_update $w $t $c"
+    radiobutton $cfl.y3 -text "Mapping quality" -variable ${t}(_Y) -value "Mapping Quality" -command "seq_seqs_filter_update $w $t $c"
+
+    grid $cfl.y1 -row 0 -column 0 -stick w  
+    grid $cfl.y2 -row 1 -column 0 -stick w  
+    grid $cfl.y3 -row 2 -column 0 -stick w
+    
+    # colour
+    set ${t}(_Colour) [set ${t}(Colour)]
+    set cflc [labelframe $cf.lfc -text "Colour"]
+    
+    radiobutton $cflc.c1 -text "Combined mapping quality" -variable ${t}(_Colour) -value "Combined mapping quality" -command "seq_seqs_filter_update $w $t $c"
+    radiobutton $cflc.c2 -text "Minimum mapping quality" -variable ${t}(_Colour)  -value "Minimum mapping quality"  -command "seq_seqs_filter_update $w $t $c"
+    radiobutton $cflc.c3 -text "Maximum mapping quality" -variable ${t}(_Colour)  -value "Maximum mapping quality"  -command "seq_seqs_filter_update $w $t $c"
+    radiobutton $cflc.c4 -text "Reads" -variable ${t}(_Colour) -value "Reads" -command "seq_seqs_filter_update $w $t $c"
+   
+    grid $cflc.c1 -row 0 -column 0  -stick w  
+    grid $cflc.c2 -row 1 -column 0  -stick w  
+    grid $cflc.c3 -row 2 -column 0  -stick w
+    grid $cflc.c4 -row 3 -column 0  -stick w
+    
+    # view controls
+    set ${t}(_Accurate)        [set ${t}(Accurate)]
+    set ${t}(_ReadsOnly)       [set ${t}(ReadsOnly)]
+    set ${t}(_YLog)            [set ${t}(YLog)]
+    set ${t}(_SeparateStrands) [set ${t}(SeparateStrands)]
+    
+    checkbutton $cf.acc -text ">>Acc" -variable ${t}(_Accurate) -command "seq_seqs_filter_update $w $t $c"
+    checkbutton $cf.reads -text "Reads" -variable ${t}(_ReadsOnly) -command "seq_seqs_filter_update $w $t $c"
+    checkbutton $cf.log -text "Y-log scale" -variable ${t}(_YLog) -command "seq_seqs_filter_update $w $t $c"
+    checkbutton $cf.sep_strands -text "Separate strands" -variable ${t}(_SeparateStrands) -command "seq_seqs_filter_update $w $t $c"
+    
+    # main grid
+    grid $cfl  -row 1 -column 0 -columnspan 2 -stick n  
+    grid $cflc -row 1 -column 2 -columnspan 2 -stick n
+    grid $cf.acc         -row 2 -column 0 -stick w -pady {5 0}
+    grid $cf.reads       -row 2 -column 1 -stick w -pady {5 0}
+    grid $cf.log         -row 2 -column 2 -stick w -pady {5 0}
+    grid $cf.sep_strands -row 2 -column 3 -stick w -pady {5 0}
+    
+    # Ok for changes
+    okcancelhelp $c.ok -ok_command "seq_seqs_filter_ok $w $t $c" \
+    		       -apply_command "seq_seqs_filter_apply $w $t $c 1" \
+    		       -cancel_command "seq_seqs_filter_cancel $w $t $c" \
+		       -bd 2 \
+		       -relief groove
+
+    pack $cf $c.ok -side top -fill both -expand 1   
+}
+
 #
 # Initialises the template display window
 proc seq_seqs_init {w t} {
@@ -717,7 +792,25 @@ proc seq_seqs_init {w t} {
     bind $r <Any-Leave> "$td xhair; set ${w}(info) {}"
 
     # Add GUI elements
+    
+    # TEST SOME STUFF - menubar needs moving up into 1.5D
+    menu $w.menubar
+    $w configure -menu $w.menubar
+    set m $w.menubar
+    menu $m.file
+    menu $m.tracks
+    menu $m.help
+    $m add cascade -menu $m.file   -label File
+    $m add cascade -menu $m.tracks -label Tracks
+    $m add cascade -menu $m.help   -label Help
+    $m.file   add command -label "Exit" -command "1.5plot_exit $w"
+    $m.tracks add command -label "Template" -command "template_dialog $w $t"
+    # END TEST SOME STUFF    
+    
+    
+    
     set bc $w.bcontrol
+
     scale $bc.yzoom -from 1 -to 1000 -orient horiz -label "Y Magnification" \
 	-variable ${t}(YScale) -command "redraw_plot $w seq_seqs"
 
@@ -821,11 +914,15 @@ proc invoke_editor {w t x} {
 proc seq_seqs_filter {w t} {
     global $w $t
 
-    if {[winfo exists $w.filter_win]} {
-	return
-    }
     set f [xtoplevel $w.filter_win -resizable 0]
-    set f2 [frame $f.sub]
+
+    if {$f != ""} {
+    	wm title $f "Filter"
+    } else {
+    	return
+    }
+	 
+    set f2 [frame $f.sub -bd 2 -relief groove]
 
     # Initialise variable copies
     foreach v {FilterPair FilterConsistent FilterSpanning MinQual MaxQual} {
@@ -1269,6 +1366,7 @@ proc TemplateDisplay2 { io f id} {
     CreateTemplateDisplay $io $cnum
 }
 
+# THIS ONE
 proc CreateTemplateDisplay {io cnum} {
     set pwin .read_depth[counter]
     1.5Dplot $pwin $io 900 600 $cnum

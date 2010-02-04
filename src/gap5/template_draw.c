@@ -291,7 +291,7 @@ void image_remove(image_t *image) {
 
 
 /*
-   Destroy the image structure and frees all it's memory.
+   Destroy the image structure and frees all its memory.
 */
 void image_destroy(image_t *image) {
 
