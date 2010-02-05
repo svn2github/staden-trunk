@@ -570,6 +570,7 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 
     /* FIXME: we should check and update bin->start_used and bin->end_used */
 
+    /* FIXME: use s->bin_index here as a short-cut? */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 	if (r->flags & GRANGE_FLAG_UNUSED)
