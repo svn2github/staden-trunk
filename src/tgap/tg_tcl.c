@@ -12,6 +12,7 @@
 #include <signal.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 #include <tcl.h>
 #include <tclInt.h> /* Tcl_GetCommandFromObj */
@@ -630,6 +631,9 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case REMOVE_SEQUENCE: {
 	int rec;
+	seq_t *s;
+	bin_index_t *b;
+	range_t *r;
 
 	if (objc != 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
@@ -639,6 +643,15 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &rec);
+
+	/* Get old range and pair data */
+	s = cache_search(tc->io, GT_Seq, rec);
+	b = cache_search(tc->io, GT_Bin, s->bin);
+	r = arrp(range_t, b->rng, s->bin_index);
+	assert(r->rec == s->rec);
+
+	vTcl_SetResult(interp, "%d %d", r->pair_rec, r->flags);
+
 	bin_remove_item(tc->io, &tc->contig, rec);
 	break;
     }
@@ -646,13 +659,15 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
     case ADD_SEQUENCE: {
 	int rec;
 	int pos;
-	range_t r;
+	range_t r, *r_out;
 	seq_t *s;
 	bin_index_t *bin;
+	int pair_rec;
+	int flags;
 
-	if (objc != 4) {
+	if (objc < 4 || objc > 6) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
-			   "\"%s remove_sequence rec pos\"\n",
+			   "\"%s remove_sequence rec pos ?pair_rec ?flags??\"\n",
 			   Tcl_GetStringFromObj(objv[0], NULL));
 	    return TCL_ERROR;
 	}
@@ -661,14 +676,44 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_GetIntFromObj(interp, objv[3], &pos);
 
 	s = (seq_t *)cache_search(tc->io, GT_Seq, rec);
+	memset(&r, 0, sizeof(r));
 	r.start = pos;
 	r.end   = pos + (s->len > 0 ? s->len : -s->len) - 1;
 	r.rec   = rec;
-	bin = bin_add_range(tc->io, &tc->contig, &r, NULL, NULL);
+	r.mqual = s->mapping_qual;
+
+	if (objc >= 5) {
+	    Tcl_GetIntFromObj(interp, objv[4], &pair_rec);
+	    r.pair_rec = pair_rec;
+	} else {
+	    /* Insufficient in most cases, but we can override it */
+	    if (s->parent_type == GT_Seq)
+		r.pair_rec = s->parent_rec;
+	    else
+		r.pair_rec = 0;
+	}
+
+	
+	/* What about other flags? Can't guess */
+	if (objc >= 6) {
+	    Tcl_GetIntFromObj(interp, objv[5], &flags);
+	    r.flags = flags;
+	} else {
+	    r.flags = 0;
+	    if (s->flags & SEQ_END_REV)
+		r.flags |= GRANGE_FLAG_END_REV;
+	    if (s->flags & SEQ_END_FWD)
+		r.flags |= GRANGE_FLAG_END_FWD;
+	    if (s->len < 0)
+		r.flags |= GRANGE_FLAG_COMP1;
+	}
+
+	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL);
 	if (s->bin != bin->rec) {
 	    /* Bin number changed - update seq too */
 	    s = cache_rw(tc->io, s);
 	    s->bin = bin->rec;
+	    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
 	}
 	break;
     }
