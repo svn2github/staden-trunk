@@ -27,7 +27,8 @@ but are untested - please tell me if they work too).
 * iwidgets	>=4.0 (advisable, but optional[3])
 
 [1] Samtools is only needed by tg_index to build Gap5 databases from
-bam format files.
+bam format files. Note that if used it must be built as a relocatable library
+by adding -fPIC to the CFLAGS in the samtools Makefile.
 
 [2] XZ utils includes a liblzma library. If present it may be used for
 Gap5 to perform better compression, but it is not mandatory.
