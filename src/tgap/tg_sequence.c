@@ -327,6 +327,7 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+    *s = n;
 
     extra_len = sequence_extra_len(*s);
     extra_len += (name       ? strlen(name)       : 0) -
@@ -334,6 +335,7 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
+    *s = n;
 
     n->name_len = strlen(name);
     sequence_reset_ptr(n);
@@ -355,7 +357,6 @@ int sequence_set_name(GapIO *io, seq_t **s, char *name) {
     memcpy(&n->data, tmp, extra_len);
     free(tmp);
     
-    *s = n;
     return 0;
 }
 
@@ -372,6 +373,7 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+    *s = n;
 
     if (!trace_name || 0 == strcmp(n->name, trace_name))
 	trace_name = "";
@@ -383,6 +385,7 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     n = cache_item_resize(n, extra_len);
     if (NULL == n)
 	return -1;
+    *s = n;
 
     n->trace_name_len = strlen(trace_name);
     sequence_reset_ptr(n);
@@ -404,7 +407,6 @@ int sequence_set_trace_name(GapIO *io, seq_t **s, char *trace_name) {
     memcpy(&n->data, tmp, extra_len);
     free(tmp);
 
-    *s = n;
     return 0;
 }
 
@@ -959,6 +961,7 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+    *s = n;
 
     if (pos < 0 || pos >= ABS(n->len))
 	return -1;
@@ -1015,8 +1018,6 @@ int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 	}
     }
 
-    *s = n;
-
     return 0;
 }
 
@@ -1033,15 +1034,17 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+    *s = n;
 
     sequence_invalidate_consensus(io, n);
 
     n = cache_item_resize(n, sizeof(*n) + extra_len);
     if (NULL == n)
 	return -1;
+    *s = n;
 
     if (contig_orient) {
-	pos = sequence_orient_pos(io, s, pos, &comp);
+	pos = sequence_orient_pos(io, &n, pos, &comp);
 	if (comp)
 	    pos++;
     } else {
@@ -1131,6 +1134,7 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
 
     if (!(n = cache_rw(io, *s)))
 	return -1;
+    *s = n;
 
     sequence_invalidate_consensus(io, n);
 
