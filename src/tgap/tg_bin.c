@@ -202,6 +202,8 @@ static int next_range(bin_index_t *bin) {
 #define NORM(x) (f_a * (x) + f_b)
 #define NMIN(x,y) (MIN(NORM((x)),NORM((y))))
 #define NMAX(x,y) (MAX(NORM((x)),NORM((y))))
+
+#define CACHE_LAST_BIN
 bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 			   int start, int end, int extend,
 			   int *offset_r,  int *comp_r) {
@@ -210,11 +212,14 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     int complement = 0;
     int f_a, f_b;
 
+#ifdef CACHE_LAST_BIN
     static int last_c = 0;
     static GapIO *last_io = NULL;
-    static bin_index_t *last_bin = NULL;
+    bin_index_t *last_bin = NULL;
+    static int last_bin_rec = 0;
     static int last_start = 0, last_end = 0;
     static int last_offset, last_complement;
+#endif
 
     if (bin->flags & BIN_COMPLEMENTED) {
 	complement ^= 1;
@@ -259,8 +264,9 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
      * even returning it right here if it's the min bin size, saving about
      * 10% of our CPU time in this function
      */
-#if 1
-    if (last_bin && last_c == (*c)->rec && last_io == io) {
+#ifdef CACHE_LAST_BIN
+    if (last_bin_rec && last_c == (*c)->rec && last_io == io) {
+	last_bin = cache_search(io, GT_Bin, last_bin_rec);
 	if (start >= last_start && end <= last_end) {
 	    if (last_bin && last_bin->size == io->min_bin_size) {
 		/* leaf node, so we can return right now */
@@ -446,16 +452,15 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     if (comp_r)
 	*comp_r = complement;
 
+#ifdef CACHE_LAST_BIN
     last_io = io;
     last_c = (*c)->rec;
-    if (last_bin)
-	cache_decr(io, last_bin);
-    last_bin = bin;
-    cache_incr(io, last_bin);
+    last_bin_rec = bin->rec;
     last_start = offset;
     last_end = offset + bin->size-1;
     last_offset = offset;
     last_complement = complement;
+#endif
 
     cache_decr(io, bin);
     return bin;
