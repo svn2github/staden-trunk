@@ -1220,7 +1220,8 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	        cache_flush(io);
 	    }
 	    continue;
-	}
+	} else if (b->core.flag & BAM_FUNMAP)
+	    continue;
 
 	//printf("push %s\n", bam1_qname(b));
 	/*
