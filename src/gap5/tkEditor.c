@@ -441,6 +441,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	"get_template_seqs", "edits_made", "link_to",    "lock",
 	"join_align",	 "join",          "select",	 "edit_annotation",
 	"cursor_id",     "get_cursor",	  "search",
+	"decr_contig",   "incr_contig",
 	NULL
     };
     enum options {
@@ -453,6 +454,7 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	_GET_TEMPLATE_SEQS, _EDITS_MADE, _LINK_TO,       _LOCK,
 	_JOIN_ALIGN,     _JOIN,          _SELECT,	 _EDIT_ANNOTATION,
 	_CURSOR_ID,      _GET_CURSOR,	 _SEARCH,
+	_DECR_CONTIG,    _INCR_CONTIG,
     };
 
     if (argc < 2) {
@@ -962,6 +964,24 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
 	break;
     }
+
+    /*
+     * These two methods handle the caching of the xx->contig member. This
+     * may have been modified externally to the editor, so in order to ensure
+     * the editor copy is correctly in sync we have decr and incr methods.
+     *
+     * We MUST make sure that we decrement before doing the (potential)
+     * external edit, and then increment. Messy, but an easier solution than
+     * never caching it or having an intermediate pointer to pointer.
+     */
+    case _DECR_CONTIG:
+	cache_decr(ed->xx->io, ed->xx->contig);
+	break;
+    case _INCR_CONTIG:
+	ed->xx->contig = cache_search(ed->xx->io, GT_Contig, ed->xx->cnum);
+	cache_incr(ed->xx->io, ed->xx->contig);
+	break;
+
     }
 
     Tcl_Release((ClientData)TKSHEET(ed));

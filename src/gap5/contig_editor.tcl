@@ -21,7 +21,6 @@
 #        cio(Redo) = <commands>
 #        cio(io)   = io=0x69ec60
 #        cio(base) = io=0x68afa0
-#        cio(c)    = contig=0xd02348
 #        cio(crec) = 298459
 #        cio(ref)  = 2
 #
@@ -67,7 +66,6 @@ proc io_child {io crec} {
 	set cio(base) $io
 	set child     [$io child]
 	set cio(io)   $child
-	set cio(c)    [$child get_contig $crec]
 	set cio(crec) $crec
 	set cio(ref)  0
     }
@@ -123,8 +121,14 @@ proc io_undo_exec {w crec cmdu} {
 	    }
 
 	    B_MOVE {
-		$cio(c) remove_sequence $op1
-		$cio(c) add_sequence    $op1 $op2
+		$w decr_contig
+		set c [$io get_contig $cio(crec)]
+		foreach {p f} [$c remove_sequence $op1] break;
+		$c add_sequence $op1 $op2 $p $f
+		$c delete
+		$w incr_contig
+
+		eval $w set_cursor [$w get_cursor relative]
 	    }
 
 	    C_INS {
@@ -1111,7 +1115,7 @@ proc editor_move_seq {w where direction} {
 	return
     }
 
-    foreach {type rec pos} $where break;
+    foreach {type rec _pos} $where break;
     if {$type != 18} {
 	# sequences only
 	bell
@@ -1124,13 +1128,22 @@ proc editor_move_seq {w where direction} {
 
     store_undo $w \
 	[list \
+	     [list C_SET $type $rec $_pos] \
 	     [list B_MOVE $rec $pos] ] {}
 
+    $w decr_contig
+
     set c [$io get_contig $cnum]
-    $c remove_sequence $rec
+    foreach {pair_rec flags} [$c remove_sequence $rec] break;
     incr pos $direction
-    $c add_sequence $rec $pos
+    $c add_sequence $rec $pos $pair_rec $flags
     $c delete
+
+    $w incr_contig
+
+    # A bit obscure, but it ensures edSetApos() is called in C, keeping
+    # cached absolute and relative positions in sync after the move.
+    eval $w set_cursor [$w get_cursor relative]
 
     $w redraw
 }
@@ -1314,7 +1327,8 @@ proc tag_repopulate_menu {w} {
     $md configure -tearoff 0
 
     # Perhaps not the most efficient approach, but it works
-    foreach anno [$cio(c) anno_in_range $apos $apos] {
+    set c [$io get_contig $cio(crec)]
+    foreach anno [$c anno_in_range $apos $apos] {
 	if {$rrec == [lindex $anno 8]} {
 	    foreach {start end rec itype} $anno break
 	    set type ""
@@ -1329,7 +1343,7 @@ proc tag_repopulate_menu {w} {
 		-command "tag_editor_delete $w $rec"
 	}
     }
-
+    $c delete
 }
 
 proc tag_editor_launch {w where} {
