@@ -37,15 +37,19 @@ typedef struct {
     int rec;
 } bam_seq_t;
 
+typedef struct rec_list {
+    int rec;
+    struct rec_list *next;
+} rec_list_t;
+
 typedef struct {
     GapIO *io;
     const char *fn;
     bam_seq_t *seqs;
     int nseq;
     int max_seq;
-    int *recnos;
-    int nrecnos;
-    int max_nrec;
+    rec_list_t *rec_head;
+    rec_list_t *rec_tail;
     HacheTable *pair;
     HacheTable *libs;
     contig_t *c;
@@ -76,6 +80,7 @@ int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf);
 int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     int i;
     bam_seq_t *s;
+    rec_list_t *tmp;
 
     //printf("New seq %d at %d %s\n", bio->nseq, pos, bam1_qname(p->b));
 
@@ -89,8 +94,8 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     
     s = &bio->seqs[bio->nseq];
     s->alloc_len = p->b->core.l_qseq+10;
-    s->seq = (char *)malloc(s->alloc_len);
-    s->conf = (char *)malloc(s->alloc_len);
+    s->seq = (char *)malloc((int)(s->alloc_len * 1.2));
+    s->conf = (char *)malloc((int)(s->alloc_len * 1.2));
     for (i = 0; i < p->qpos; i++) {
 	s->seq[i] = bam_nt16_rev_table[bam1_seqi(bam1_seq(p->b), i)];
 	s->conf[i] = bam1_qual(p->b)[i];
@@ -100,20 +105,10 @@ int bio_new_seq(bam_io_t *bio, const bam_pileup1_t *p, int pos) {
     s->b = p->b;
     s->left = i;
 
-    s->rec = bio->recnos[0];
-    memmove(&bio->recnos[0], &bio->recnos[1],
-	    (bio->nrecnos-1) * sizeof(bio->recnos[0]));
-    bio->nrecnos--;
-    assert(bio->nrecnos >= 0);
-
-#if 0
-    if (bio->a->data_type == DATA_BLANK) {
-	static int fake_recno = 1;
-	s->rec = fake_recno++;
-    } else {
-	s->rec = sequence_new_from(bio->io, NULL);
-    }
-#endif
+    s->rec = bio->rec_head->rec;
+    tmp = bio->rec_head;
+    bio->rec_head = bio->rec_head->next;
+    xfree(tmp);
 
     return bio->nseq++;
 }
@@ -936,11 +931,6 @@ int bio_del_seq(bam_io_t *bio, const bam_pileup1_t *p, int snum) {
     if (bs->seq)  free(bs->seq);
     if (bs->conf) free(bs->conf);
     
-    if (snum+1 < bio->nseq)
-	memmove(bs, bs+1, (bio->nseq - (snum+1)) * sizeof(*bs));
-
-    bio->nseq--;
-	    
     return 0;
 }
 
@@ -959,7 +949,7 @@ int bio_extend_seq(bam_io_t *bio, int snum, char base, int conf) {
 
     /* Extend if appropriate */
     if (s->seq_len >= s->alloc_len) {
-	s->alloc_len += 100;
+	s->alloc_len = (s->alloc_len + 100)*1.5;
 	if (NULL == (s->seq  = (char *)realloc(s->seq,  s->alloc_len)))
 	    return -1;
 	if (NULL == (s->conf = (char *)realloc(s->conf, s->alloc_len)))
@@ -988,7 +978,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 		void *data) {
     bam_io_t *bio = (bam_io_t *)data;
     GapIO *io = bio->io;
-    int i, j, insertions = 0;
+    int i, j, k, insertions = 0;
     int np;
 
     //printf("\nCallback at pos=%d n=%d tid=%d\n", pos, n, tid);
@@ -1138,26 +1128,18 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
 	}
     }
 
-#if 0
-    for (i = n-1; i >= 0; i--) {
-	const bam_pileup1_t *p = &pl[i];
-	
-	if (p->is_tail) {
-	    bio_del_seq(bio, p, i);
-	}
-    }
-#else
-    for (i = j = 0; i < n; i++, j++) {
+    for (i = j = k = 0; i < n; i++, j++, k++) {
 	const bam_pileup1_t *p = &pl[j];
 	
+	bio->seqs[i] = bio->seqs[j];
 	if (p->is_tail) {
 	    bio_del_seq(bio, p, i);
 	    i--;
 	    n--;
+	    bio->nseq--;
 	}
     }
-#endif
-    
+
     bio->n_inserts += insertions;
     //    if (insertions) {
     //	printf("%d insertions (%d) at pos=%d\n", insertions, bio->n_inserts, pos);
@@ -1172,6 +1154,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     int ret, count = 0;
     bam_plbuf_t *plbuf;
     samfile_t *fp;
+    rec_list_t *tmp;
 
     /* for pair data */
     open_tmp_file();
@@ -1189,8 +1172,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bio->libs->name = "libs";
     bio->last_tid = -1;
     bio->tree = NULL;
-    bio->recnos = NULL;
-    bio->nrecnos = bio->max_nrec = 0;
+    bio->rec_head = bio->rec_tail = NULL;
 
     if (a->pair_reads) {
 	bio->pair = HacheTableCreate(32768, HASH_DYNAMIC_SIZE);
@@ -1229,15 +1211,21 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	 * as the input data regardless of whether the read is mapped or
 	 * unmapped.
 	 */
-	if (bio->nrecnos >= bio->max_nrec) {
-	    bio->max_nrec += 100;
-	    bio->recnos = realloc(bio->recnos, bio->max_nrec * sizeof(int));
+	if (NULL == (tmp = xmalloc(sizeof(*tmp))))
+	    return -1;
+
+	tmp->next = NULL;
+	if (bio->rec_head) {
+	    bio->rec_tail->next = tmp;
+	    bio->rec_tail = tmp;
+	} else {
+	    bio->rec_head = bio->rec_tail = tmp;
 	}
 	if (bio->a->data_type == DATA_BLANK) {
 	    static int fake_recno = 1;
-	    bio->recnos[bio->nrecnos++] = fake_recno++;
+	    tmp->rec = fake_recno++;
 	} else {
-	    bio->recnos[bio->nrecnos++] = sequence_new_from(bio->io, NULL);
+	    tmp->rec = sequence_new_from(bio->io, NULL);
 	}
 
 	bam_plbuf_push(b, plbuf);
@@ -1285,8 +1273,11 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
 	if (bio->tree)
 	    depad_seq_tree_free(bio->tree);
 
-	if (bio->recnos)
-	    free(bio->recnos);
+	while (bio->rec_head) {
+	    tmp = bio->rec_head->next;
+	    free(bio->rec_head);
+	    bio->rec_head = tmp;
+	}
 
 	free(bio);
     }
