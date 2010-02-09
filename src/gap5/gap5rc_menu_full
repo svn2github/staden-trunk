@@ -17,7 +17,7 @@ add_menu View				1 0 left
 #add_menu Search				1 0 left
 add_menu Help				1 0 right
 add_command {File.Exit}			1 0 {NoteSelectorExit $io $w}
-add_command {Edit.New}			1 18 {NewNote $io $w}
+#add_command {Edit.New}			1 18 {NewNote $io $w}
 add_command {Edit.Delete}		1 18 {DeleteNote $io $w}
 add_command {View.Reading Notes}	1 0 {SelectReadingNote $io $w}
 add_command {View.Contig Notes}		1 0 {SelectContigNote $io $w}
