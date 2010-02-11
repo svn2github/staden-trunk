@@ -322,7 +322,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	sorig = s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	olen = len = s->len < 0 ? -s->len : s->len;
 
-	if (s->len < 0) {
+	if ((s->len < 0) ^ r->comp) {
 	    s = dup_seq(s);
 	    complement_seq_t(s);
 	}
@@ -664,7 +664,7 @@ static int export_contig_fastq(GapIO *io, FILE *fp,
 
 #ifdef FASTQ_COMPLEMENTED
 	seq_t *origs = s;
-	if (s->len < 0) {
+	if ((s->len < 0) ^ r->comp) {
 	    s = dup_seq(s);
 	    complement_seq_t(s);
 	}
@@ -840,7 +840,7 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 	name = false_name(io, s, 1, &name_len);
     }
     fprintf(fp, "RD=%.*s\n", name_len, name);
-    fprintf(fp, "DR=%d\n", s->len >= 0 ? 1 : -1);
+    fprintf(fp, "DR=%d\n", (s->len >= 0) ^ fi->r.comp ? 1 : -1);
     fprintf(fp,"AP=%d\n", 
 	    s->len >= 0
 	    ? fi->r.start + s->left-1
@@ -1098,7 +1098,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	    S = realloc(S, qalloc);
 	}
 
-	if (s->len < 0) {
+	if ((s->len < 0) ^ r->comp) {
 	    s = dup_seq(s);
 	    complement_seq_t(s);
 	}
