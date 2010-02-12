@@ -21,7 +21,7 @@ OBJS = \
 	process.o \
 	flat_sd.o
 
-DEPS = $(GAP_LIB)
+DEPS = $(GAP_LIB) $(G_LIB)
 
 convert: $(OBJS)
 	$(CLD) -o $@ $(OBJS) $(LIBS) $(LIBSC) $(DEPS)
