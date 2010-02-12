@@ -601,9 +601,18 @@ int complement_contig(GapIO *io, int crec) {
     contig_t *c;
     bin_index_t *b;
     int len;
+    int ustart, uend, delta;
 
     if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
 	return -1;
+
+    /*
+     * Attempt to have symmetry in coordinates such that a contig
+     * with used (unclipped) data from position A to B will be
+     * complemented with the used portion of data still going from A to B.
+     */
+    consensus_valid_range(io, crec, &ustart, &uend);
+    delta = (ustart - c->start) - (c->end - uend);
 
     /* Empty contig is special case */
     if (!contig_get_bin(&c))
@@ -616,17 +625,17 @@ int complement_contig(GapIO *io, int crec) {
 	return -1;
     if (!(c = cache_rw(io, c)))
 	return -1;
-    
+
     b->flags ^= BIN_COMPLEMENTED;
     b->flags |= BIN_BIN_UPDATED;
 
     len = c->end - c->start + 1;
-    c->start = 2*b->pos + b->size - c->end;
-    c->end = c->start + len-1;
-    b->pos -= c->start-1;
-    c->start = 1;
-    c->end = len;
-    //b->pos = c->end - (b->pos + b->size);
+    b->pos -= b->size - ((c->start-b->pos)*2 + len);
+
+    /* Shift by the difference between clipped vs unclipped coords */
+    b->pos   += delta;
+    c->start += delta;
+    c->end   += delta;
 
     cache_flush(io);
 
