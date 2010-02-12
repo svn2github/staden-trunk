@@ -281,7 +281,7 @@ static int export_contig_sam(GapIO *io, FILE *fp,
     char *Q = NULL, *S = NULL;
     int cg_alloc = 0;
     char *cigar = NULL;
-    int offset_done = 0, offset;
+    int offset, ustart, uend;
 #if 0
     char *cons;
     int last_start;
@@ -301,6 +301,12 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	calculate_consensus_simple(io, crec, first, last, cons, NULL);
     }
 #endif
+
+    /* Sam can only have coordinates from 1 onwards, so shift if needed */
+    consensus_valid_range(io, crec, &ustart, &uend);
+    offset = ustart < 1
+	? 1-ustart
+	: 0;
 
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s, *sorig;
@@ -387,14 +393,6 @@ static int export_contig_sam(GapIO *io, FILE *fp,
 	}
 
 	pos = r->start;
-
-	/* Sam can only have coordinates from 1 onwards, so shift if needed */
-	if (!offset_done) {
-	    offset = pos <= 0
-		? 1-pos
-		: 0;
-	    offset_done = 1;
-	}
 
 	//puts(s->name);
 
@@ -842,9 +840,9 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
     fprintf(fp, "RD=%.*s\n", name_len, name);
     fprintf(fp, "DR=%d\n", (s->len >= 0) ^ fi->r.comp ? 1 : -1);
     fprintf(fp,"AP=%d\n", 
-	    s->len >= 0
+	    (s->len >= 0) ^ fi->r.comp
 	    ? fi->r.start + s->left-1
-	    : fi->r.start + (-s->len - s->right));
+	    : fi->r.start + (ABS(s->len) - s->right));
     fprintf(fp, "QL=%d\n", s->left);
     fprintf(fp, "QR=%d\n", s->right);
     fprintf(fp, "PR=%d\n",
@@ -882,10 +880,10 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 	/* Tag is for this seq. */
 	a = cache_search(io, GT_AnnoEle, ti->r.rec);
 	fprintf(fp, "AN=%s\n", type2str(ti->r.mqual, type));
-	if (s->len >= 0) {
+	if ((s->len >= 0) ^ fi->r.comp) {
 	    fprintf(fp, "LO=%d\n", ti->r.start - (fi->r.start-1));
 	} else {
-	    fprintf(fp, "LO=%d\n", -s->len+1 - (ti->r.end - (fi->r.start-1)));
+	    fprintf(fp, "LO=%d\n", ABS(s->len)+1 - (ti->r.end - (fi->r.start-1)));
 	}
 	fprintf(fp, "LL=%d\n", ti->r.end - ti->r.start+1);
 	if (a->comment && *a->comment) {
@@ -1003,11 +1001,11 @@ static int export_contig_ace(GapIO *io, FILE *fp,
     c = (contig_t *)cache_search(io, GT_Contig, crec);
     cache_incr(io, c);
 
+    consensus_valid_range(io, crec, &first_base, &last_base);
+
     ci = contig_iter_new(io, crec, 0, CITER_FIRST, c->start, c->end);
     last = 1;
     nBS = 0;
-    first_base = 999999;
-    last_base = -999999;
     while (r = contig_iter_next(io, ci)) {
 	seq_t *s = (seq_t *)cache_search(io, GT_Seq, r->rec);
 	nreads++;
@@ -1015,10 +1013,6 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 	    nBS++;
 	    last = r->start + s->right-1;
 	}
-	if (first_base > r->start + s->left-1)
-	    first_base = r->start + s->left-1;
-	if (last_base < r->start + s->right-1)
-	    last_base = r->start + s->right-1;
     }
     len = last_base - first_base + 1;
 
@@ -1064,7 +1058,7 @@ static int export_contig_ace(GapIO *io, FILE *fp,
 		s->name,
 		(r->flags & GRANGE_FLAG_END_MASK) == GRANGE_FLAG_END_FWD
 		    ?'f' :'r',
-		"UC"[s->len < 0], r->start - first_base);
+		"UC"[(s->len < 0) ^ r->comp], r->start - first_base);
     }
 
     /* Contig BS records - ignore for now? */
