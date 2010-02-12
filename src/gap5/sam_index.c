@@ -228,6 +228,7 @@ int bam_aux_find(bam1_t *b, char *key, char *type, bam_aux_t *val) {
 
     return -1;
 }
+#endif /* HAVE_SAMTOOLS */
 
 char *sam_aux_stringify(char *s, int len) {
     static char str[8192];
@@ -329,6 +330,7 @@ char *sam_aux_stringify(char *s, int len) {
     return str;
 }
 
+#ifdef HAVE_SAMTOOLS
 char *bam_aux_stringify(bam1_t *b, int no_RG) {
     static char str[8192];
     char *s = bam1_aux(b), *cp = str;
