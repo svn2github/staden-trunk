@@ -203,12 +203,12 @@ int anno_ele_set_type(GapIO *io, anno_ele_t **e, char *str) {
 /*
  * Returns the range_t element from the bin holding this annotation.
  * The start and end have been modified to be the absolute position
- * within the contig.
+ * within the contig, unless 'rel' is true.
  *
  * Returns a static range_t pointer on success (valid until next call)
  *         NULL on failure.
  */
-range_t *anno_get_range(GapIO *io, int anno_ele, int *contig) {
+range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel) {
     anno_ele_t *e = (anno_ele_t *)cache_search(io, GT_AnnoEle, anno_ele);
     bin_index_t *bin;
     int bnum, offset1, offset2, comp = 0, i;
@@ -263,6 +263,21 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig) {
 
     if (contig)
 	*contig = bin->parent;
+
+    if (rel && e->obj_type == GT_Seq) {
+	int st, en, orient;
+	sequence_get_position(io, e->obj_rec, NULL, &st, &en, &orient);
+	printf("\nanno %d..%d, seq %d..%d dir %d\n\n",
+	       r2.start, r2.end, st, en, orient);
+	r2.start -= st;
+	r2.end   -= st;
+    }
+
+    if (r2.start > r2.end) {
+	int tmp = r2.start;
+	r2.start = r2.end;
+	r2.end = tmp;
+    }
 
     return &r2;
 }

@@ -29,12 +29,12 @@ int anno_ele_add(GapIO *io, int obj_type, int obj_rec, int anno_rec,
 /*
  * Returns the range_t element from the bin holding this annotation.
  * The start and end have been modified to be the absolute position
- * within the contig.
+ * within the contig, unless 'rel' is true.
  *
  * Returns a static range_t pointer on success (valid until next call)
  *         NULL on failure.
  */
-range_t *anno_get_range(GapIO *io, int anno_ele, int *contig);
+range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel);
 
 /*
  * Sets the comment for an annotation element.

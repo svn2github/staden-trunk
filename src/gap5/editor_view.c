@@ -236,13 +236,13 @@ char *edGetBriefTag(edview *xx, int anno_ele, char *format) {
 	    break;
 
 	case 'p': { /* Position */
-	    range_t *r = anno_get_range(io, anno_ele, NULL);
+	    range_t *r = anno_get_range(io, anno_ele, NULL, 0);
 	    add_number(status_buf, &j, l1, l2, r->start);
 	    break;
 	}
 
 	case 'l': { /* Length */
-	    range_t *r = anno_get_range(io, anno_ele, NULL);
+	    range_t *r = anno_get_range(io, anno_ele, NULL, 0);
 	    add_number(status_buf, &j, l1, l2, r->end - r->start + 1);
 	    break;
 	}
@@ -1672,7 +1672,7 @@ void edSetApos(edview *xx) {
 
     case GT_AnnoEle: {
 	int cnum;
-	range_t *r = anno_get_range(xx->io, xx->cursor_rec, &cnum);
+	range_t *r = anno_get_range(xx->io, xx->cursor_rec, &cnum, 0);
 	xx->cursor_apos = r->start + xx->cursor_pos;
 	break;
     }

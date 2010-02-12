@@ -89,10 +89,6 @@ proc io_detach {crec} {
 proc io_undo_exec {w crec cmdu} {
     upvar \#0 contigIO_$crec cio
 
-    puts ""
-    puts [info level [info level]]
-    parray cio
-
     set io [$w io]
 
     foreach cmd $cmdu {
@@ -146,6 +142,23 @@ proc io_undo_exec {w crec cmdu} {
 		set contig [$io get_contig $op1]
 		$contig delete_base $op2
 		$contig delete
+	    }
+
+	    T_DEL {
+		set tag [$io get_anno_ele $op1]
+		$tag remove
+	    }
+
+	    T_NEW {
+		array set d $op1
+		set rec [$io new_anno_ele $d(otype) $d(orec) $d(start) $d(end)]
+		set t [$io get_anno_ele $rec]
+		$t set_comment $d(anno)
+		$t set_type $d(type)
+		$t delete
+	    }
+
+	    T_MOD {
 	    }
 	    
 	    default {
@@ -1259,8 +1272,7 @@ proc U_tag_change {w rec new_a} {
 	set tag [$io get_anno_ele $rec]
 	set d(strand)  0; # fixme
 	set d(type)    [$tag get_type]
-	FIXME: 	need set d(start) [$tag get_start]
-	FIXME: 	need set d(end)   [$tag get_end]
+	foreach {d(start) d(end)} [$tag get_position] break;
 	set d(otype)   [$tag get_obj_type]
 	set d(orec)    [$tag get_obj_rec]
 	set d(anno)    [$tag get_comment]
@@ -1278,7 +1290,10 @@ proc U_tag_change {w rec new_a} {
 	$tag remove
 
 	store_undo $w \
-	    [list U_tag_change $w -1 $old_a] \
+	    [list \
+		 [list T_NEW $old_a]] {}
+
+#	    [list U_tag_change $w -1 $old_a] \
 	    [list U_tag_change $w $rec ""]
 
     } elseif {$rec == -1} {
@@ -1290,8 +1305,8 @@ proc U_tag_change {w rec new_a} {
 	$t delete
 	
 	store_undo $w \
-	    [list U_tag_change $w $rec ""] \
-	    [list U_tag_change $w -1 $new_a] \
+	    [list \
+		 [list T_DEL $rec]] {}
 
     } else {
 	# Modify
@@ -1304,8 +1319,8 @@ proc U_tag_change {w rec new_a} {
 	$tag delete
 
 	store_undo $w \
-	    [list U_tag_change $w $rec $old_a] \
-	    [list U_tag_change $w $rec $new_a] \
+	    [list \
+		 [list T_MOD $rec $old_a]] {}
     }
 
     unset d
@@ -1327,7 +1342,7 @@ proc tag_repopulate_menu {w} {
     $md configure -tearoff 0
 
     # Perhaps not the most efficient approach, but it works
-    set c [$io get_contig $cio(crec)]
+    set c [$cio(io) get_contig $cio(crec)]
     foreach anno [$c anno_in_range $apos $apos] {
 	if {$rrec == [lindex $anno 8]} {
 	    foreach {start end rec itype} $anno break
@@ -1366,7 +1381,7 @@ proc tag_editor_launch {w where} {
     set d(orec)    [$tag get_obj_rec]
     set d(anno)    [$tag get_comment]
     set d(default) "?"
-
+    
     $tag delete
 
     create_tag_editor $w.tag_$rec "tag_editor_callback $w $rec" .Tag.$rec
@@ -1391,8 +1406,6 @@ proc tag_editor_create {w} {
     puts [info level [info level]]
 
     global $w
-    parray $w
-
     set rec -1
     
     foreach {otype orec start end} [$w select get] break;
@@ -1491,8 +1504,6 @@ proc show_trace {w loc} {
 	global $w
 	lappend ${w}(Traces) $t
     }
-
-    parray $w
 }
 
 #-----------------------------------------------------------------------------

@@ -1273,8 +1273,27 @@ static int anno_ele_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetIntObj(Tcl_GetObjResult(interp), te->anno->rec);
 	break;
 
-    case GET_CONTIG:
-    case GET_POSITION:
+    case GET_CONTIG: {
+	int contig;
+	if (NULL == anno_get_range(te->io, te->anno->rec, &contig, 0))
+	    return TCL_ERROR;
+
+	Tcl_SetIntObj(Tcl_GetObjResult(interp), contig);
+	
+	break;
+    }
+
+    case GET_POSITION: {
+	int contig;
+	range_t *r = anno_get_range(te->io, te->anno->rec, &contig, 1);
+	if (NULL == r)
+	    return TCL_ERROR;
+
+	vTcl_SetResult(interp, "%d %d %d", 
+		       r->start, r->end, contig);
+	break;
+    }
+
     case SET_CONTIG:
     case SET_POSITION:
 	puts("Unimplemented\n");
