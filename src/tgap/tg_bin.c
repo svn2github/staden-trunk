@@ -320,6 +320,7 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	    }
 
 	    ch = get_bin(io, bin->child[i]);
+
 	    //	    if (start >= offset + ch->pos &&
 	    //		end   <= offset + ch->pos + ch->size-1) {
 	    if (start >= NMIN(ch->pos, ch->pos + ch->size-1) &&
@@ -497,11 +498,16 @@ int bin_incr_nseq(GapIO *io, bin_index_t *bin, int n) {
  */
 bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 			   range_t **r_out, int *complemented) {
+
     bin_index_t *bin;
     range_t *r2;
-    int nr, offset;
+    int nr, offset, comp;
 
     if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	if (contig_get_start(c) == contig_get_end(c)) {
+	    contig_set_start(io, c, r->start);
+	    contig_set_end(io, c, r->end);
+	}
 	if (contig_get_start(c) > r->start)
 	    contig_set_start(io, c, r->start);
 
@@ -510,8 +516,10 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
     }
 
     if (!(bin = bin_for_range(io, c, r->start, r->end, 1, &offset,
-			      complemented)))
+			      &comp))) //complemented)))
 	return NULL;
+    if (complemented)
+	*complemented = comp;
 
     if (!(bin = cache_rw(io, bin)))
 	return NULL;
@@ -535,9 +543,16 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 
     nr = next_range(bin);
     r2 = arrp(range_t, bin->rng, nr);
+
     *r2 = *r; /* struct copy */
     r2->start -= offset;
     r2->end -= offset;
+
+    if (comp) {
+	int tmp = r2->start;
+	r2->start = bin->size-1 - r2->end;
+	r2->end   = bin->size-1 - tmp;
+    }
 
     if (r_out)
 	*r_out = r2;
