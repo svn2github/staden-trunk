@@ -281,6 +281,7 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
     bin_index_t *bin;
     HacheItem *hi;
     static int fake_recno = 1;
+    int comp;
 
     /* Update sequence library, aka read-group */
     if (lib && !seq->parent_type) {
@@ -290,21 +291,26 @@ int save_range_sequence(GapIO *io, seq_t *seq, uint8_t mapping_qual,
 
     /* Create range */
     r.start = seq->pos;
-    r.end   = seq->pos + ABS(seq->len) - 1;
+    r.end   = seq->pos + ABS(seq->len)-1;
     r.rec   = 0;
     r.mqual = mapping_qual;
     r.pair_rec = 0;
     r.flags = flags;
 
     /* Add the range to a bin, and see which bin it was */
-    bin = bin_add_range(io, &c, &r, &r_out, NULL);
-
+    bin = bin_add_range(io, &c, &r, &r_out, &comp);
 
     /* Save sequence */
-    if (a->data_type == DATA_BLANK)
+    if (a->data_type == DATA_BLANK) {
 	recno = fake_recno++;
-    else
+    } else {
+	if (comp) {
+	    complement_seq_t(seq);
+	    seq->len = -seq->len;
+	}
+
 	recno = save_sequence(io, seq, bin, r_out);
+    }
 
     if (is_pair) {
 	find_pair(io, pair, recno, tname, bin, c, seq, a, r_out, lib);
