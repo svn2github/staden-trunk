@@ -1,0 +1,83 @@
+*	BUG: Cut and paste from contig editor fails on complemented
+        contigs.
+
+*	BUG: Tag undo (and tag creation) fails on complemented
+        contigs.
+
+*	BUG: moving sequences fails on complemented contigs.
+
+*	BUG: move 1st sequence left such that it's in a negative
+        position and we lose all display. Why?
+
+*	BUG: Export consensus sometimes leaves pads in even when we
+        asked to remove them. (DONE)
+
+*	BUG: can join contig1 to contig1 and hit save. We then get no
+        contig1 at all. (DONE)
+
+*	DONE? Fix sam output when a sequence is *AGCTA or AGCTAG*. We
+	get things like 1D10M or 10M1D which breaks samtools and
+	consequentially tg_index too.
+
+*	Consensus caching (DONE)
+
+*	Finish tag editing (DONE?)
+
+*	DONE: Sequence blocks.
+	The caching layer has 1 record per sequence. But rec>>10 gives
+	1024 sequences with the same record; pack 1024 in the same
+	block using tg_iface_g.c and use the bottom 10 bits as an
+	indicator to which sequence we wish to unpack.
+
+	This means some level of caching involved too so we don't keep
+	compressing and uncompressing the same sequence blocks
+	repeatedly. Which implies tg_cache.c is probably the correct
+	layer, perhaps using a new data type GT_SeqBlock?
+
+*	DONE: Add type/format to iface_g I/O
+	Every object should start with 3 bits type, 5 bits format.
+	- This means we can change the layout of a packed struct and
+	  support both old and new layout formats.
+	- It also means we can type check and spot stray reads of the
+	  wrong object type.
+
+*	DONE: Better formatting of bin range arrays.
+	- Try storing start + length instead of start + end.
+	- Replace start with delta from previous start.
+	- Encode final number series in int7 format instead to reduce
+	  size.
+
+*	DONE: Add a means to detect the number of sequences in a contig.
+	- Note contig breaking means maybe we need to know this at a
+	  bin level; how many sequences are in this bin and below.
+	- How to keep this information up to date without undue costs.
+	Idea: update the bin we add to + the root bin (or contig
+	struct). Add checks in most bin-walking algorithms that
+	automatically correct for incorrect bin->nseqs figures. (ie
+	parent = child[0] + child[1] counts.)
+	
+
+*	DONE: Contig joining
+
+*	DONE: Contig breaking
+
+*	Improved input/output formats
+	(DONE: except for $variable expansion)
+
+*	Searching
+	- by sequence? (DONE)
+	- by position (DONE - padded only)
+	- by name (done, but needs a rewrite to speed it up)
+
+*	DONE: Improve template display speed. Maybe C code for rendering to
+        a pixmap instead.
+
+	- Store other_end / template info in the range_t array instead
+          of the seq struct. This avoids performing seq_t when drawing
+          data pictorially. (DONE)
+
+*	DONE: Implement Magnus' Y coordinate algorithm for templates - based
+        on size.  (DONE)
+
+*	DONE: Libraries / ligations
+

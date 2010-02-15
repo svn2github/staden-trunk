@@ -248,6 +248,13 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	else
 	    return NULL;
 	//cache_incr(io, bin);
+
+	complement = 0;
+	/*
+	 * But root has switched from complemented to uncomplemented, so the
+	 * range may need fixing too.
+	 * See tg_tcl.c for an example way of detecting and fixing this.
+	 */
     }
 
     while (start < bin->pos) {
@@ -257,6 +264,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 	else
 	    return NULL;
 	//cache_incr(io, bin);
+
+	complement = 0;
     }
 
     /*

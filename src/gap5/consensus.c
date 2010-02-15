@@ -211,7 +211,8 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 			s->len = -s->len;
 		    
 		} else {
-		    printf("Creating new cached cons\n");
+		    printf("Creating new cached cons %d..%d bin #%d\n",
+			   bstart, bend, bin->rec);
 		    memset(&seq, 0, sizeof(seq));
 		    seq.pos    = bstart;
 		    seq.len    = bend - bstart + 1;
@@ -220,9 +221,10 @@ int calculate_consensus_simple(GapIO *io, int contig, int start, int end,
 		    seq.name   = "cons";
 		    seq.format = SEQ_FORMAT_CNF1;
 		    seq.flags  = 0;
-		    seq.left   = 0;
+		    seq.left   = 1;
 		    seq.right  = bend - bstart + 1;
 
+		    seq.name_len       = 4;
 		    seq.mapping_qual   = 0;
 		    seq.trace_name     = NULL;
 		    seq.trace_name_len = 0;

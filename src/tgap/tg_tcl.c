@@ -710,10 +710,25 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL);
 	if (s->bin != bin->rec) {
+	    int new_comp, old_comp, old_bin = s->bin;
+
 	    /* Bin number changed - update seq too */
 	    s = cache_rw(tc->io, s);
 	    s->bin = bin->rec;
 	    s->bin_index = r_out - ArrayBase(range_t, bin->rng);
+
+	    /* Check if the new bin has a different complemented status too */
+	    new_comp = bin->flags & BIN_COMPLEMENTED;
+	    bin = cache_search(tc->io, GT_Bin, old_bin);
+	    old_comp = bin->flags & BIN_COMPLEMENTED;
+
+	    if (new_comp != old_comp) {
+		int tmp;
+		s->len *= -1;
+		tmp = s->left;
+		s->left  = ABS(s->len) - (s->right-1);
+		s->right = ABS(s->len) - (tmp-1);
+	    }
 	}
 	break;
     }

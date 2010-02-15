@@ -1,3 +1,16 @@
+*	BUG: Insert to consensus at pos -200 say (when only clipped
+        data there), followed by undo => crash
+
+*	Control-a and control-e should go to the start/end of clipped
+	region when cutoffs aren't visible. (Both seq + cons)
+
+*	BUG: Outputting to BAF doesn't save consensus tags
+
+*	BUG: Moving seqs doesn't move tags on them.
+
+*	Output P operators instead of D operators in sam. This should
+        fix the samtools consensus generation.
+
 *	BUG: DEMO.0.baf: cannot scroll right on read velvet_read#171 unless
         cutoffs shown. Also, can scroll left into cutoff data even
         when cutoffs are not shown.
