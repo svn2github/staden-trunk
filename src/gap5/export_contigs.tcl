@@ -13,20 +13,26 @@ proc ExportSequences {io} {
 
     lorf_in $f.infile [keylget gap5_defs CONSENSUS.INFILE] \
         "{contig_id_configure $f.id -state disabled}
-             {contig_id_configure $f.id -state disabled}
+         {contig_id_configure $f.id -state disabled}
          {contig_id_configure $f.id -state disabled}
          {contig_id_configure $f.id -state normal}
         " -bd 2 -relief groove
+
+    #--- output filename
+    getFname $f.outfile "Output filename" save {} [$io name].sam
 
     #--- formats
     radiolist $f.format \
 	-title "Select format" \
 	-default 1 \
 	-orient horizontal \
-	-buttons "sam ace baf fastq fasta"
-
-    #--- output filename
-    getFname $f.outfile "Output filename" save {} aln.sam
+	-buttons [list \
+	     [list sam   -command "ExportSequences_format $io $f"] \
+	     [list ace   -command "ExportSequences_format $io $f"] \
+	     [list baf   -command "ExportSequences_format $io $f"] \
+	     [list fastq -command "ExportSequences_format $io $f"] \
+	     [list fasta -command "ExportSequences_format $io $f"]]
+	
 
     #--- Output options
     checkbutton $f.fixmates \
@@ -47,6 +53,20 @@ proc ExportSequences {io} {
     #--- Packing
     pack $f.infile $f.id $f.format $f.outfile $f.fixmates $f.ok \
 	-side top -fill both
+}
+
+# Callback for when the output format is changed
+proc ExportSequences_format {io f} {
+    set format [lindex "x sam ace baf fastq fasta" [radiolist_get $f.format]]
+    set entry [entrybox_path $f.outfile.entry]
+    set fn [$entry get]
+    if {[regexp {(.*)\.(sam|fna|fa|fasta|fastq|baf|ace)$} $fn _ pfix sfix]} {
+	set fn $pfix.$format
+    } else {
+	set fn $fn.$format
+    }
+    $entry delete 0 end
+    $entry insert 0 $fn
 }
 
 proc ExportSequences2 {io f} {
