@@ -302,12 +302,13 @@ void *cache_item_resize(void *item, size_t size) {
     if (NULL == new)
 	return NULL;
 
+    new->data_size = size;
+
     if (ci == new)
 	return item;
 
     if (new->hi) {
 	assert(new->hi->data.p == ci);
-	new->data_size = size;
 	new->hi->data.p = new;
     }
 
@@ -1313,9 +1314,6 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
     hi_new = HacheTableQuery(io->cache, hi_old->key, hi_old->key_len);
     if (!hi_new) {
 	HacheData hd;
-
-	printf("Cache_dup ci type %d/%d, sub_ci type %d/%d\n", 
-	       ci->type, ci->rec, sub_ci->type, sub_ci->rec);
 
 	/* Duplicate the cached_item into this io, keeping the same view */
 	ci_new = (cached_item *)malloc(sizeof(*ci) + ci->data_size);
