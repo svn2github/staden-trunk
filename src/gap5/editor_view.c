@@ -1820,29 +1820,26 @@ int edCursorDown(edview *xx) {
 
 int edCursorLeft(edview *xx) {
     if (xx->cursor_type == GT_Seq) {
-	seq_t *s = get_seq(xx->io, xx->cursor_rec);
-	seq_t *sorig = s;
-
-	if (s->len < 0) {
-	    s = dup_seq(s);
-	    complement_seq_t(s);
-	}
-
 	if (xx->ed->display_cutoffs) {
 	    if (xx->cursor_pos > 0) {
 		xx->cursor_pos--;
 		xx->cursor_apos--;
 	    }
 	} else {
-	    if (xx->cursor_pos >= s->left) {
+	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
+	    int left = s->left;
+
+	    if (sequence_get_orient(xx->io, xx->cursor_rec)) {
+		s = get_seq(xx->io, xx->cursor_rec);
+		left = ABS(s->len) - (s->right-1);
+	    }
+
+	    if (xx->cursor_pos >= left) {
 		xx->cursor_pos--;
 		xx->cursor_apos--;
 	    }
 
 	}
-
-	if (s != sorig)
-	    free(s);
     } else {
 	xx->cursor_pos--;
 	xx->cursor_apos--;
@@ -1860,12 +1857,6 @@ int edCursorLeft(edview *xx) {
 int edCursorRight(edview *xx) {
     if (xx->cursor_type == GT_Seq) {
 	seq_t *s = get_seq(xx->io, xx->cursor_rec);
-	seq_t *sorig = s;
-
-	if (s->len < 0) {
-	    s = dup_seq(s);
-	    complement_seq_t(s);
-	}
 
 	if (xx->ed->display_cutoffs) {
 	    if (xx->cursor_pos < ABS(s->len)) {
@@ -1873,14 +1864,18 @@ int edCursorRight(edview *xx) {
 		xx->cursor_apos++;
 	    }
 	} else {
-	    if (xx->cursor_pos < s->right) {
+	    int right = s->right;
+
+	    if (sequence_get_orient(xx->io, xx->cursor_rec)) {
+		s = get_seq(xx->io, xx->cursor_rec);
+		right = ABS(s->len) - (s->left-1);
+	    }
+
+	    if (xx->cursor_pos < right) {
 		xx->cursor_pos++;
 		xx->cursor_apos++;
 	    }
 	}
-
-	if (s != sorig)
-	    free(s);
     } else {
 	xx->cursor_pos++;
 	xx->cursor_apos++;
@@ -1896,10 +1891,28 @@ int edCursorRight(edview *xx) {
 }
 
 int edReadStart(edview *xx) {
-    if (xx->cursor_type == GT_Seq) {
-	xx->cursor_pos = 0;
+    if (xx->ed->display_cutoffs) {
+	if (xx->cursor_type == GT_Seq) {
+	    xx->cursor_pos = 0;
+	} else {
+	    xx->cursor_pos = xx->contig->start;
+	}
     } else {
-	xx->cursor_pos = xx->contig->start;
+	if (xx->cursor_type == GT_Seq) {
+	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
+
+	    xx->cursor_pos = s->left-1;
+
+	    if (sequence_get_orient(xx->io, xx->cursor_rec)) {
+		s = get_seq(xx->io, xx->cursor_rec);
+		xx->cursor_pos = ABS(s->len) - (s->right-1) - 1;
+	    }
+	} else {
+	    int ustart, uend;
+	    consensus_valid_range(xx->io, xx->cursor_rec, &ustart, &uend);
+
+	    xx->cursor_pos = ustart;
+	}
     }
 
     edSetApos(xx);
@@ -1917,12 +1930,30 @@ int edReadStart2(edview *xx) {
 }
 
 int edReadEnd(edview *xx) {
-    if (xx->cursor_type == GT_Seq) {
-	seq_t *s = get_seq(xx->io, xx->cursor_rec);
-	xx->cursor_pos = ABS(s->len);
+    if (xx->ed->display_cutoffs) {
+	if (xx->cursor_type == GT_Seq) {
+	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
+	    xx->cursor_pos = ABS(s->len);
+	} else {
+	    xx->cursor_pos = xx->contig->end;
+	}
     } else {
-	xx->cursor_pos = xx->contig->end;
-    }
+	if (xx->cursor_type == GT_Seq) {
+	    seq_t *s = get_seq(xx->io, xx->cursor_rec);
+
+	    xx->cursor_pos = s->right;
+
+	    if (sequence_get_orient(xx->io, xx->cursor_rec)) {
+		s = get_seq(xx->io, xx->cursor_rec);
+		xx->cursor_pos = ABS(s->len) - (s->left-1);
+	    }
+	} else {
+	    int ustart, uend;
+	    consensus_valid_range(xx->io, xx->cursor_rec, &ustart, &uend);
+
+	    xx->cursor_pos = uend+1;
+	}
+    } 
 
     edSetApos(xx);
 

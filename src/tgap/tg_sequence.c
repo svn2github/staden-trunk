@@ -748,6 +748,29 @@ int sequence_get_contig(GapIO *io, GRec snum) {
 }
 
 /*
+ * As per sequence_get_contig, but returns only the relative orientation of
+ * this sequence vs the contig.
+ */
+int sequence_get_orient(GapIO *io, GRec snum) {
+    bin_index_t *bin;
+    int bnum;
+    seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
+    int comp = s->len < 0;
+
+    /* Bubble up bins until we hit the root */
+    for (bnum = s->bin; bnum; bnum = bin->parent) {
+	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+	if (bin->flags & BIN_COMPLEMENTED)
+	    comp ^= 1;
+	if (bin->parent_type != GT_Bin)
+	    break;
+    }
+
+    assert(bin->parent_type == GT_Contig);
+    return comp;
+}
+
+/*
  * Given a sequence struct, this returns the record number for other end,
  * if paired, or zero if not.
  * Returns -1 on failure.

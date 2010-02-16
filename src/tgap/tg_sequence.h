@@ -60,6 +60,7 @@ int sequence_get_position(GapIO *io, GRec snum, int *contig,
 int sequence_get_position2(GapIO *io, GRec snum, int *contig,
 			   int *start, int *end, int *orient,
 			   range_t *r_out, seq_t **s_out);
+int sequence_get_orient(GapIO *io, GRec snum);
 int sequence_get_contig(GapIO *io, GRec snum);
 int sequence_get_pair(GapIO *io, seq_t *s);
 
