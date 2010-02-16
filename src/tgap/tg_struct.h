@@ -112,6 +112,18 @@ typedef struct {
     /* + L bytes name            */
 } GContig_header;
 
+
+/*
+ * A global version number used to indicate the maximum version number of
+ * any contents in this database.
+ *
+ * This can be used to indicate to a gap5 version whether it is capable
+ * of completely handling this database or not. Possibly we could also use
+ * it to force a newer gap5 release to keep writing data in an older
+ * backwards compatible manner when editing an old DB.
+ */
+#define DB_VERSION 1 /* 1.2.6 */
+
 /* Copied from gap4 - mostly unused at present */
 typedef struct { 
     GCardinal version;

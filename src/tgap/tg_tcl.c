@@ -134,7 +134,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	"flush",       "close",
 	"get_contig",  "get_sequence", "get_database", "get_anno_ele",
 	"contig_order","num_contigs",  "seq_name2rec", "child",
-	"get_library",
+	"get_library", "db_version",   "name",         "read_only",
 	"new_contig",  "new_sequence", "new_anno_ele",
 	(char *)NULL,
     };
@@ -143,7 +143,7 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 	IO_FLUSH,     IO_CLOSE,
 	IO_CONTIG,    IO_SEQUENCE,    IO_DATABASE,    IO_ANNO_ELE,
 	IO_CORDER,    NUM_CONTIGS,    SEQ_NAME2REC,   IO_CHILD,
-	IO_LIBRARY,
+	IO_LIBRARY,   IO_DB_VERSION,  IO_NAME,        IO_READ_ONLY,
 	NEW_CONTIG,   NEW_SEQUENCE,   NEW_ANNO_ELE,
     };
 
@@ -191,6 +191,18 @@ static int io_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case NUM_CONTIGS:
 	vTcl_SetResult(interp, "%d", io->db->Ncontigs);
+	break;
+
+    case IO_DB_VERSION:
+	vTcl_SetResult(interp, "%d", io->db->version);
+	break;
+
+    case IO_NAME:
+	vTcl_SetResult(interp, "%s", io->name);
+	break;
+
+    case IO_READ_ONLY:
+	vTcl_SetResult(interp, "%d", io->read_only);
 	break;
 
     case SEQ_NAME2REC: {

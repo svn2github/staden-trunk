@@ -690,6 +690,7 @@ CreateMain
 
 #display contig selector and menus if opened database on command line
 if {$io != ""} {
+    set read_only [$io read_only]
     if {$read_only} {
 	set extras "     *READ-ONLY*"
     } else {

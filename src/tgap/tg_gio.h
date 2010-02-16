@@ -58,6 +58,9 @@ typedef struct GapIO {
 
     /* Whether we opened in read-write or read-only */
     int read_only;
+
+    /* DB name */
+    char *name;
 } GapIO;
 
 GapIO *gio_open(char *fn, int ro, int create);

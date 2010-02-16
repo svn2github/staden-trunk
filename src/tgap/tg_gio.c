@@ -26,6 +26,7 @@
  */
 GapIO *gio_open(char *fn, int ro, int create) {
     GapIO *io = (GapIO *)calloc(1, sizeof(*io));
+    char *cp;
 
     io->iface = get_iface_g();
     if (create) {
@@ -52,6 +53,13 @@ GapIO *gio_open(char *fn, int ro, int create) {
 	return NULL;
     cache_incr(io, io->db);
 
+    if (io->db->version > DB_VERSION) {
+	verror(ERR_WARN, "Open Database",
+	       "Database version %d is too new for this version of gap5",
+	       io->db->version);
+	return NULL;
+    }
+
     /* Load the contigs array */
     io->contig_order = cache_search(io, GT_RecArray, io->db->contig_order);
     cache_incr(io, io->contig_order);
@@ -64,6 +72,11 @@ GapIO *gio_open(char *fn, int ro, int create) {
     contig_register_init(io);
 
     io->iface->setopt(io->dbh, OPT_COMP_MODE, COMP_MODE_ZLIB);
+
+    /* Copy the name */
+    if (NULL == (cp = strrchr(fn, '/')))
+	cp = fn;
+    io->name = strdup(cp);
 
     return io;
 }
@@ -91,6 +104,9 @@ void gio_close(GapIO *io) {
 
     io->iface->commit(io->dbh);
     io->iface->disconnect(io->dbh);
+
+    if (io->name)
+	free(io->name);
 
     free(io);
 }

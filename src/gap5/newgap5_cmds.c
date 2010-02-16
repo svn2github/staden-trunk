@@ -203,8 +203,7 @@ int db_info(ClientData clientData,
     }
 
     if (strcmp(cmd, "db_name") == 0) {
-	//vTcl_SetResult(interp, "%s", io_name(io));
-	vTcl_SetResult(interp, "???");
+	vTcl_SetResult(interp, "%s", io->name);
 	return TCL_OK;
     }
 

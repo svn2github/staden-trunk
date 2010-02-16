@@ -1290,7 +1290,7 @@ static GRec io_database_create(void *dbh, void *from) {
     assert(db_rec == 0);
 
     db.Ncontigs = 0;
-    db.version = 0;
+    db.version = DB_VERSION;
 
     /* Contig order */
     db.contig_order = allocate(io, GT_RecArray); /* contig array */
