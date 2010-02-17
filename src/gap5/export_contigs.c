@@ -875,8 +875,6 @@ static int baf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq) {
 	    continue;
 	}
 
-	printf("pop TAG %d @ %d,%d\n", ti->r.rec, ti->r.start, ti->r.end);
-
 	/* Tag is for this seq. */
 	a = cache_search(io, GT_AnnoEle, ti->r.rec);
 	fprintf(fp, "AN=%s\n", type2str(ti->r.mqual, type));
@@ -933,8 +931,27 @@ static int export_contig_baf(GapIO *io, FILE *fp,
 	    fifo_queue_push(fq, r);
 	    last_start = r->start;
 	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
-	    /* Technically this should be a list and not a fifo */
-	    fifo_queue_push(tq, r);
+	    if (r->pair_rec == crec) {
+		/* Contig tag */
+		anno_ele_t *a = cache_search(io, GT_AnnoEle, r->rec);
+		char type[5];
+
+		fprintf(fp, "AN=%s\nAT=C\n", type2str(r->mqual, type));
+		fprintf(fp, "LO=@%d\n", r->start);
+		if (r->start != r->end)
+		    fprintf(fp, "LL=%d\n", r->end - r->start + 1);
+		fprintf(fp, "AN=%s\n", type2str(r->mqual, type));
+
+		if (a->comment && *a->comment) {
+		    char *escaped = escape_C_string(a->comment);
+		    fprintf(fp, "TX=%s\n", escaped);
+		}
+		fprintf(fp, "\n");
+
+	    } else {
+		/* Technically this should be a list and not a fifo */
+		fifo_queue_push(tq, r);
+	    }
 	}
 
 	/* And pop off when they're history */

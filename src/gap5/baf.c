@@ -422,6 +422,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
     int last_obj_type = 0;
     int last_obj_pos = 0;
     int last_obj_rec = 0;
+    int last_cnt_rec = 0;
+    int last_cnt_pos = 0;
     int last_obj_orient = 0;
     
     
@@ -468,6 +470,8 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    last_obj_type = GT_Contig;
 	    last_obj_rec = c->rec;
 	    last_obj_pos = c->start + 1;
+	    last_cnt_rec = c->rec;
+	    last_cnt_pos = c->start + 1;
 	    last_obj_orient = 0;
 
 	    break;
@@ -525,6 +529,7 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 	    char *loc = baf_block_value(b, LO);
 	    char *len = baf_block_value(b, LL);
 	    char *txt = baf_block_value(b, TX);
+	    char *at  = baf_block_value(b, AT);
 	    int pos;
 	    bin_index_t *bin;
 
@@ -538,13 +543,21 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 		pos = last_obj_pos;
 	    } else {
 		if (*loc == '@') {
-		    pos = atoi(loc+1)-1;
+		    pos = atoi(loc+1);
 		} else {
-		    if (last_obj_orient == 0)
-			pos = last_obj_pos + atoi(loc)-1;
-		    else
-			pos = last_obj_pos - (atoi(loc)-1)
-			    - (len ? atoi(len)-1 : 0);
+		    if (at && *at == 'C') {
+			if (last_obj_orient == 0)
+			    pos = last_cnt_pos + atoi(loc)-1;
+			else
+			    pos = last_cnt_pos - (atoi(loc)-1)
+				- (len ? atoi(len)-1 : 0);
+		    } else {
+			if (last_obj_orient == 0)
+			    pos = last_obj_pos + atoi(loc)-1;
+			else
+			    pos = last_obj_pos - (atoi(loc)-1)
+				- (len ? atoi(len)-1 : 0);
+		    }
 		}
 	    }
 
@@ -553,7 +566,9 @@ int parse_baf(GapIO *io, char *fn, tg_args *a) {
 
 	    //r.mqual    = last_obj_type;  /* obj_type */
 	    r.mqual = str2type(typ);
-	    r.pair_rec = last_obj_rec;   /* obj_rec */
+	    r.pair_rec = (at && *at == 'C')
+		? last_cnt_rec
+		: last_obj_rec;
 
 	    r.flags = GRANGE_FLAG_ISANNO;
 	    if (GT_Seq == last_obj_type)

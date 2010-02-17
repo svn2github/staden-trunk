@@ -225,7 +225,17 @@ CO=<contig name>
 	assumed to be the location, or if no reads have been specified
 	yet for this contig then the last contig is used.
 
-	NB: for now these aren't fully implemented - it's ALWAYS last one.
+	NB: for now these aren't fully implemented - it's ALWAYS last
+	one.
+
+AT=<C or R>
+	Indicates whether the annotation is bound to the current
+	contig "C" or the current reading "R" (the default case).
+
+	With AT=R we may output all annotations and readings mixed
+	together (say sorted by position) rather than all contig
+	annotations followed by all sequences and sequence
+	annotations.
 
 LO=<location>
 	Optional - see below.
