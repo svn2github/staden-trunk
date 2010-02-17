@@ -17,7 +17,7 @@ add_menu View				1 0 left
 #add_menu Search				1 0 left
 add_menu Help				1 0 right
 add_command {File.Exit}			1 0 {NoteSelectorExit $io $w}
-#add_command {Edit.New}			1 18 {NewNote $io $w}
+add_command {Edit.New}			1 18 {NewNote $io $w}
 add_command {Edit.Delete}		1 18 {DeleteNote $io $w}
 add_command {View.Reading Notes}	1 0 {SelectReadingNote $io $w}
 add_command {View.Contig Notes}		1 0 {SelectContigNote $io $w}
@@ -60,7 +60,7 @@ add_menu Help		1 0 right
 # Bit 3: ...which contains data			(on/off)
 # Bit 4: Read only				(off)
 
-add_command	{File.New}			 1 2 {NewFile}
+#add_command	{File.New}			 1 2 {NewFile}
 add_command	{File.Open}			 1 2 {Gap_Open \$io}
 if ![catch {set tmptmp $env(BIOLIMS_CONF)}] {
     add_command     {File.Import from BioLIMS}	12 22 {ImportBiolims \$io}
