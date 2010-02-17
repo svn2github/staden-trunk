@@ -895,6 +895,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
 	"get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
+	"get_clips",    "set_clips",
 	(char *)NULL,
     };
 
@@ -905,6 +906,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
 	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
+	GET_CLIPS,      SET_CLIPS,
     };
 
     if (objc < 2) {
@@ -1132,6 +1134,30 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	base = *Tcl_GetString(objv[3]);
 	Tcl_GetIntFromObj(interp, objv[4], &conf);	
 	sequence_replace_base(ts->io, &ts->seq, pos, base, conf, 1);
+	break;
+    }
+
+    case GET_CLIPS:
+	vTcl_SetResult(interp, "%d %d",
+		       sequence_get_left(&ts->seq),
+		       sequence_get_right(&ts->seq));
+	break;
+
+    case SET_CLIPS: {
+	int left, right;
+
+	if (objc != 4) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s set_clips left right\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &left);
+	Tcl_GetIntFromObj(interp, objv[3], &right);
+	sequence_set_left (ts->io, &ts->seq, left);
+	sequence_set_right(ts->io, &ts->seq, right);
+
 	break;
     }
     }

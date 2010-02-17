@@ -127,6 +127,12 @@ proc io_undo_exec {w crec cmdu} {
 		eval $w set_cursor [$w get_cursor relative]
 	    }
 
+	    B_CUT {
+		set seq [$io get_sequence $op1]
+		$seq set_clips $op2 $op3
+		$seq delete
+	    }
+
 	    C_INS {
 		set contig [$io get_contig $op1]
 		$contig insert_base $op2
@@ -1138,6 +1144,7 @@ proc editor_move_seq {w where direction} {
     set seq  [$io get_sequence $rec]
     set cnum [$seq get_contig]
     set pos  [$seq get_position]
+    $seq delete
 
     store_undo $w \
 	[list \
@@ -1157,6 +1164,59 @@ proc editor_move_seq {w where direction} {
     # A bit obscure, but it ensures edSetApos() is called in C, keeping
     # cached absolute and relative positions in sync after the move.
     eval $w set_cursor [$w get_cursor relative]
+
+    $w redraw
+}
+
+proc editor_clip_seq {w where end} {
+    upvar $w opt
+
+    set io [$w io]
+
+    if {$where == ""} {
+	bell
+	return
+    }
+
+    foreach {type rec pos} $where break;
+    if {$type != 18} {
+	# sequences only
+	bell
+	return
+    }
+
+    set seq  [$io get_sequence $rec]
+    set orient [$seq get_orient]
+
+    foreach {l r} [$seq get_clips] break;
+    store_undo $w \
+	[list \
+	     [list C_SET $type $rec $pos] \
+	     [list B_CUT $rec $l $r]] {}
+
+    switch $end {
+	l {
+	    if {$orient} {
+		set r [expr {abs([$seq get_length])-$pos}]
+	    } else {
+		set l [expr {$pos+1}]
+	    }
+	}
+	r {
+	    if {$orient} {
+		set l [expr {abs([$seq get_length])-$pos+1}]
+	    } else {
+		set r $pos
+	    }
+	}
+    }
+
+    if {$l <= $r} {
+	$seq set_clips $l $r
+    } else {
+	bell
+    }
+    $seq delete
 
     $w redraw
 }
@@ -1608,7 +1668,10 @@ bind Editor <Key-BackSpace> {editor_delete_base %W [%W get_number]}
 bind Editor <Control-Key-Left>  {editor_move_seq %W [%W get_number] -1}
 bind Editor <Control-Key-Right> {editor_move_seq %W [%W get_number]  1}
 
-bind Editor <Control-Key-q> {editor_toggle_annos %W}
+bind Editor <Control-Key-q>     {editor_toggle_annos %W}
+
+bind Editor <Key-less>          {editor_clip_seq %W [%W get_number] l}
+bind Editor <Key-greater>       {editor_clip_seq %W [%W get_number] r}
 
 # MouseWheel scrolling
 bind Editor  <MouseWheel> {%W yview scroll [expr {-(%D)}] units}

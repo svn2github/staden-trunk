@@ -191,6 +191,8 @@ int sequence_set_left(GapIO *io, seq_t **s, int value) {
     n->left = value;
     *s = n;
 
+    sequence_invalidate_consensus(io, n);
+
     return 0;
 }
 
@@ -207,6 +209,8 @@ int sequence_set_right(GapIO *io, seq_t **s, int value) {
 
     n->right = value;
     *s = n;
+
+    sequence_invalidate_consensus(io, n);
 
     return 0;
 }
