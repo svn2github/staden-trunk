@@ -1,31 +1,12 @@
+*	BUG: Can create tags off the ends of contigs.
+
 *	BUG: Insert to consensus at pos -200 say (when only clipped
-        data there), followed by undo => crash
-
-*	Control-a and control-e should go to the start/end of clipped
-	region when cutoffs aren't visible. (Both seq + cons)
-
-*	BUG: Outputting to BAF doesn't save consensus tags
+        data there), followed by undo => crash. (Cannot repeat)
 
 *	BUG: Moving seqs doesn't move tags on them.
 
 *	Output P operators instead of D operators in sam. This should
         fix the samtools consensus generation.
-
-*	BUG: DEMO.0.baf: cannot scroll right on read velvet_read#171 unless
-        cutoffs shown. Also, can scroll left into cutoff data even
-        when cutoffs are not shown.
-
-*	BUG: FIJ with Contig6 with Contig4 in DEMO.0.baf, bring up
-        join editor, hit align, then quit (not join).
-	Bring up editor for second time and we see the edits have been
-        retained. (DONE)
-
-*	BUG: cannot open a database we do not have write access to
-        unless we explicitly say -ro. Without it we get a cryptic
-        error that to the untrained user would imply the database does
-        not exist.
-
-*	Read clipping - cannot do right now.
 
 *	Add Copy Database dialogue.
 
@@ -33,10 +14,6 @@
         rather than just setting the cursor to the start.
 
 *	User request: allow break contig from within the editor.
-
-*	BUG: Moving a sequence in the editor and then highting name
-        gives crash a crash (s->rec != r->rec).
-	Also it means up/down arrow skips lines or doesn't work correct.
 
 *	Add support for reference sequences. See also unpadded
         coordinates. (I suspect the two are connected.)

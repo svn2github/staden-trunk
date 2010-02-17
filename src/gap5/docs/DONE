@@ -1,3 +1,28 @@
+*	BUG: cannot open a database we do not have write access to
+        unless we explicitly say -ro. Without it we get a cryptic
+        error that to the untrained user would imply the database does
+        not exist.
+
+*	Read clipping - cannot do right now.
+
+*	BUG: Outputting to BAF doesn't save consensus tags
+
+*	BUG: DEMO.0.baf: cannot scroll right on read velvet_read#171 unless
+        cutoffs shown. Also, can scroll left into cutoff data even
+        when cutoffs are not shown.
+
+*	BUG: FIJ with Contig6 with Contig4 in DEMO.0.baf, bring up
+        join editor, hit align, then quit (not join).
+	Bring up editor for second time and we see the edits have been
+        retained. (DONE)
+
+*	BUG: Moving a sequence in the editor and then highting name
+        gives crash a crash (s->rec != r->rec).
+	Also it means up/down arrow skips lines or doesn't work correct.
+
+*	Control-a and control-e should go to the start/end of clipped
+	region when cutoffs aren't visible. (Both seq + cons)
+
 *	BUG: Cut and paste from contig editor fails on complemented
         contigs.
 
