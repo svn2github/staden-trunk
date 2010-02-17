@@ -444,11 +444,16 @@ proc contig_editor {w args} {
 	toplevel $w
 	set c [$opt(io) get_contig $opt(contig)]
 	#$c dump_ps /tmp/tree.ps
+	if {[$opt(io) read_only]} {
+	    set extra "   *** READ-ONLY ***"
+	} else {
+	    set extra ""
+	}
 	if {$join} {
 	    set c2 [$opt(io2) get_contig $opt(contig2)]
-	    wm title $w "Join: [$c get_name] / [$c2 get_name]"
+	    wm title $w "Join: [$c get_name] / [$c2 get_name]$extra"
 	} else {
-	    wm title $w "Edit: [$c get_name]"
+	    wm title $w "Edit: [$c get_name]$extra"
 	}
     }
     wm resizable $w 1 1
@@ -508,6 +513,11 @@ proc contig_editor {w args} {
 	if {[$c get_rec] == [$c2 get_rec]} {
 	    $tool.join configure -state disabled
 	}
+    }
+
+    if {[$opt(io) read_only]} {
+	$tool.save configure -state disabled
+	catch {$tool.join configure -state disabled}
     }
 
     # The editor(s) itself
@@ -631,7 +641,7 @@ proc editor_join {w} {
 proc editor_exit {w} {
     global $w
     set ed [set ${w}(curr_editor)]
-    if {[$ed edits_made]} {
+    if {![[set ${w}(io)] read_only] && [$ed edits_made]} {
 	set ret [tk_messageBox \
 		     -icon question \
 		     -title "Save changes" \
@@ -1022,7 +1032,7 @@ proc editor_edit_base {w call where} {
 
     set io [$w io]
 
-    if {$where == ""} {
+    if {$where == "" || [$io read_only]} {
 	bell
 	return
     }
@@ -1050,7 +1060,7 @@ proc editor_insert_gap {w where} {
 
     set io [$w io]
 
-    if {$where == ""} {
+    if {$where == "" || [$io read_only]} {
 	bell
 	return
     }
@@ -1085,7 +1095,7 @@ proc editor_delete_base {w where} {
 
     set io [$w io]
 
-    if {$where == ""} {
+    if {$where == "" || [$io read_only]} {
 	bell
 	return
     }
@@ -1129,7 +1139,7 @@ proc editor_move_seq {w where direction} {
 
     set io [$w io]
 
-    if {$where == ""} {
+    if {$where == "" || [$io read_only]} {
 	bell
 	return
     }
@@ -1173,7 +1183,7 @@ proc editor_clip_seq {w where end} {
 
     set io [$w io]
 
-    if {$where == ""} {
+    if {$where == "" || [$io read_only]} {
 	bell
 	return
     }

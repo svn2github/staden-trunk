@@ -39,8 +39,13 @@ GapIO *gio_open(char *fn, int ro, int create) {
     /* Initialise the cache */
     cache_create(io);
 
-    if (NULL == (io->dbh = io->iface->connect(fn, ro)))
-	return NULL;
+    if (NULL == (io->dbh = io->iface->connect(fn, ro))) {
+	if (!ro) {
+	    ro = 1;
+	    if (NULL == (io->dbh = io->iface->connect(fn, ro)))
+		return NULL;
+	}
+    }
 
     io->read_only = ro;
 

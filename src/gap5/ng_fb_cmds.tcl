@@ -175,9 +175,6 @@ proc DB_Load { file } {
 
     set db_name $filename
 
-    #FIXME - how to reset Busy if there is an error in opening the db
-    global read_only
-
     #remove any remaining displays
     if {![InitOpenAnotherDB] } {
 	Gap_Exit $io
@@ -188,29 +185,15 @@ proc DB_Load { file } {
     set new_io [g5::open_database -name "$db_name" -access $access]
 
     if {$new_io == ""} {
-	if {$licence(type) == "d"} {
-	    tk_messageBox \
-		    -icon error \
-		    -title "Invalid database" \
-		    -message "Demonstration mode may not open this database.\
-			      Try \"gap4viewer\" for a read-only viewer instead." \
-		    -type ok
-	} else {
-	    tk_messageBox \
-		    -icon error \
-		    -title "Invalid database" \
-		    -message "This database could not be opened." \
-		    -type ok
-	}
+	tk_messageBox \
+	    -icon error \
+	    -title "Invalid database" \
+	    -message "This database could not be opened." \
+	    -type ok
 	return
     }
 
-    # If licence type has changed from demo to viewer, rebuild the menus
-    if {$orig_type == "d" && $licence(type) == "v"} {
-	viewer_mode
-    }
-
-    if {$read_only == 1 && $access == "rw" && $licence(type) != "v"} {
+    if {[$new_io read_only] == 1 && $access == "rw"} {
 	set ret [tk_messageBox \
 		-icon warning \
 		-title "Database open" \
@@ -224,7 +207,7 @@ proc DB_Load { file } {
 
     set io $new_io
 
-    if {$read_only} {
+    if {[$io read_only]} {
 	set extras "     *READ-ONLY*"
     } else {
 	set extras ""
@@ -276,59 +259,4 @@ proc DB_Load { file } {
     Menu_Check_RO
     InitLists
     #UpdateListContigs $io [keylget gap5_defs CONTIG_SEL.WIN]
-}
-
-# Enables viewer mode from demo mode. This regenerates the menus and changes
-# the title bar.
-proc viewer_mode {} {
-    global gap5_defs env GAP_VERSION read_only
-
-    tk_messageBox \
-	-icon info \
-	-title "Gap4 Viewer" \
-	-message "This database may not be used in demonstration mode.\
-		  Gap4 will now switch to a \"view-only\" mode with\
-		  restricted functionality." \
-	-type ok
-
-    # Force read-only mode
-    set read_only 1
-    
-    # Udpate title bar
-    regsub {\(DEMO\)} $GAP_VERSION {(VIEWER)} GAP_VERSION
-    wm title . "GAP v$GAP_VERSION"
-    wm iconname . "GAP v$GAP_VERSION"
-
-    # Clear old menus
-    foreach mname {gap select_notes edit_note contig_editor_editmodes \
-		       contig_editor_commands contig_editor_settings \
-		       contig_editor_help template selector consistency} {
-	global ${mname}_menu
-	set ${mname}_menu ""
-    }
-
-    # Reload the menus specs
-    set_defs gap
-    load_menus
-
-    if {![winfo exists .mainwin.menus]} {
-	return
-    }
-
-    # Destroy current menu widgets
-    set mpath .mainwin.menus
-    $mpath delete 0 end
-    foreach child [winfo children $mpath] {
-	destroy $child
-    }
-
-    # Recreate the menus
-    create_menus $gap_menu $mpath [keylget gap5_defs MENU_LEVEL]
-    reset_menu_state gap_menu .mainwin.menus
-
-    foreach child [winfo children .] {
-	if {[winfo toplevel $child] == $child} {
-	    destroy $child
-	}
-    }
 }
