@@ -147,7 +147,7 @@ int edview_search_sequence(edview *xx, int dir, int strand, char *value) {
 
     if (found) {
 	edSetCursorPos(xx, fseq == xx->contig->rec ? GT_Contig : GT_Seq,
-		       fseq, fpos);
+		       fseq, fpos, 1);
     }
 
     free(uppert);
@@ -214,7 +214,7 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
     } while (!at_end);
 
     if (found) {
-	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos);
+	edSetCursorPos(xx, GT_Contig, xx->contig->rec, fpos, 1);
 	return 0;
     }
 
@@ -229,7 +229,7 @@ int edview_search_name(edview *xx, int dir, int strand, char *value)
     if (rec <= 0)
 	return -1;
 
-    edSetCursorPos(xx, GT_Seq, rec, 0);
+    edSetCursorPos(xx, GT_Seq, rec, 0, 1);
     return 0;
 }
 

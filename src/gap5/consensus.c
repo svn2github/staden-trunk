@@ -509,7 +509,7 @@ static int contig_consensus_in_range2(GapIO *io, int brec, int start, int end,
 			double q[4];
 			int j, k;
 
-			sequence_get_base4(io, &s, p, &base, q, 0);
+			sequence_get_base4(io, &s, p, &base, q, NULL, 0);
 			/*
 			  printf("  %5d+%3d %2d %c %f %f %f %f\n",
 			  offset, p + l->start, p,
@@ -732,7 +732,7 @@ static int calculate_consensus_bit(GapIO *io, int contig, int start, int end,
 	    if (sp+j > end)
 		continue;
 	    
-	    sequence_get_base4(io, &s, j+off, &base, q, 0);
+	    sequence_get_base4(io, &s, j+off, &base, q, NULL, 0);
 
 	    switch (lookup[base]) {
 	    case 0: case 1: case 2: case 3: /* ACGT */

@@ -432,8 +432,13 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'b':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		char base[2];
-		sequence_get_base(xx->io, &s, pos, &base[0], NULL, 1);
+		int cut;
+		sequence_get_base(xx->io, &s, pos, &base[0], NULL, &cut, 1);
 		base[1] = 0;
+		if (cut)
+		    base[0] = tolower(base[0]);
+		else
+		    base[0] = toupper(base[0]);
 		add_string(status_buf, &j, l1, l2, base);
 	    } else {
 		add_string(status_buf, &j, l1, l2, "-");
@@ -443,7 +448,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'c':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		int q;
-		sequence_get_base(xx->io, &s, pos, NULL, &q, 1);
+		sequence_get_base(xx->io, &s, pos, NULL, &q, NULL, 1);
 		if (raw) {
 		    add_double(status_buf, &j, l1, l2, 1 - pow(10, q/-10.0));
 		} else {
@@ -457,7 +462,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'A':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, NULL, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[0]));
 		else {
@@ -472,7 +477,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'C':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, NULL, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[1]));
 		else {
@@ -487,7 +492,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'G':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, NULL, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[2]));
 		else {
@@ -502,7 +507,7 @@ char *edGetBriefSeq(edview *xx, int seq, int pos, char *format) {
 	case 'T':
 	    if (pos >= 0 && pos < ABS(s->len)) {
 		double q[4];
-		sequence_get_base4(xx->io, &s, pos, NULL, q, 1);
+		sequence_get_base4(xx->io, &s, pos, NULL, q, NULL, 1);
 		if (raw)
 		    add_double(status_buf, &j, l1, l2, exp(q[3]));
 		else {
@@ -1089,7 +1094,8 @@ static void tk_redisplaySeqSequences(edview *xx, rangec_t *r, int nr) {
 		    int qual;
 
 		    if (p+seq_p >= 0 && p+seq_p < ABS(s->len)) {
-			sequence_get_base(xx->io, &s, p+seq_p, &base, &qual,0);
+			sequence_get_base(xx->io, &s, p+seq_p, &base, &qual,
+					  NULL, 0);
 			//ink[p2].sh &= ~sh_bg;
 		    } else {
 			base = ' ';
@@ -1686,17 +1692,60 @@ void edSetApos(edview *xx) {
     cursor_notify(xx);
 }
 
-int edSetCursorPos(edview *xx, int type, int rec, int pos) {
+int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible) {
     if (!xx)
 	return 0;
 
     if (type == GT_Seq) {
 	seq_t *s = get_seq(xx->io, rec);
+	int left = s->left-1;
+	int right = s->right;
 
-	if (pos < 0)
-	    pos = 0;
-	if (pos > ABS(s->len))
-	    pos = ABS(s->len);
+	if (xx->ed->display_cutoffs) {
+	    left = 0;
+	    right = ABS(s->len);
+	} else {
+	    if (sequence_get_orient(xx->io, rec)) {
+		s = get_seq(xx->io, rec);
+		left  = ABS(s->len) - (s->right-1) -1;
+		right = ABS(s->len) - (s->left-1);
+	    }
+	}
+
+	/* If out of bounds, punt it to the consensus */
+	if (pos < left || pos > right) {
+	    if (visible) {
+		/*
+		int cpos;
+		sequence_get_position(xx->io, rec, NULL, &cpos, NULL, NULL);
+		type = GT_Contig;
+		pos += cpos;
+		rec = xx->contig->rec;
+		*/
+		if (pos < 0 || pos > ABS(s->len))
+		    return 0;
+		xx->ed->display_cutoffs = 1;
+	    } else {
+		return 0;
+	    }
+	}
+    }
+
+    if (type != GT_Seq) {
+	int ustart, uend;
+
+	if (xx->ed->display_cutoffs) {
+	    ustart = xx->contig->start;
+	    uend   = xx->contig->end;
+	} else {
+	    consensus_valid_range(xx->io, xx->contig->rec, &ustart, &uend);
+	}
+
+	uend++;
+	if (pos < ustart)
+	    pos = ustart;
+	if (pos > uend)
+	    pos = uend;
     }
 
     xx->cursor_type = type;
@@ -1705,7 +1754,10 @@ int edSetCursorPos(edview *xx, int type, int rec, int pos) {
 
     edSetApos(xx);
 
-    if (!showCursor(xx, 0, 0)) {
+    if (visible && !showCursor(xx, 0, 0)) {
+	xx->refresh_flags = ED_DISP_CURSOR;
+	edview_redraw(xx);
+    } else {
 	xx->refresh_flags = ED_DISP_CURSOR;
 	edview_redraw(xx);
     }
@@ -1737,11 +1789,24 @@ int edCursorUp(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j--; j >= 0; j--) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos
+	if (xx->r[j].start <= cpos && xx->r[j].end+1 >= cpos
 #ifndef CACHED_CONS_VISIBLE
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
 #endif
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
+	    if (!xx->ed->display_cutoffs) {
+		seq_t *s = get_seq(xx->io, xx->r[j].rec);
+		int left = s->left;
+		int right = s->right;
+		if (sequence_get_orient(xx->io, xx->r[j].rec)) {
+		    s = get_seq(xx->io, xx->r[j].rec);
+		    left  = ABS(s->len) - (s->right-1);
+		    right = ABS(s->len) - (s->left-1);
+		}
+		if (cpos - xx->r[j].start < left-1 ||
+		    cpos - xx->r[j].start > right)
+		    continue; /* Sequence present, but hidden */
+	    }
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -1790,11 +1855,24 @@ int edCursorDown(edview *xx) {
 
     /* Step up until we find something overlapping */
     for (j++; j < xx->nr; j++) {
-	if (xx->r[j].start <= cpos && xx->r[j].end >= cpos
+	if (xx->r[j].start <= cpos && xx->r[j].end+1 >= cpos
 #ifndef CACHED_CONS_VISIBLE
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISCONS)
 #endif
 	    && ((xx->r[j].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISANNO)) {
+	    if (!xx->ed->display_cutoffs) {
+		seq_t *s = get_seq(xx->io, xx->r[j].rec);
+		int left = s->left;
+		int right = s->right;
+		if (sequence_get_orient(xx->io, xx->r[j].rec)) {
+		    s = get_seq(xx->io, xx->r[j].rec);
+		    left  = ABS(s->len) - (s->right-1);
+		    right = ABS(s->len) - (s->left-1);
+		}
+		if (cpos - xx->r[j].start < left-1 ||
+		    cpos - xx->r[j].start > right)
+		    continue; /* Sequence present, but hidden */
+	    }
 	    xx->cursor_type = GT_Seq;
 	    xx->cursor_pos = cpos - xx->r[j].start;
 	    xx->cursor_rec = xx->r[j].rec;
@@ -2377,15 +2455,33 @@ void edSelectFrom(edview *xx, int pos) {
     pos += xx->displayPos;
     if (xx->select_seq != xx->cnum) {
 	int cnum, cpos;
+	int left, right, orient;
 	seq_t *s = get_seq(xx->io, xx->select_seq);
 
+	cache_incr(xx->io, s);
 	sequence_get_position(xx->io, xx->select_seq,
-			      &cnum, &cpos, NULL, NULL);
+			      &cnum, &cpos, NULL, &orient);
 	pos -= cpos;
-	if (pos < 0)
-	    pos = 0;
-	if (pos >= ABS(s->len))
-	    pos = ABS(s->len)-1;
+
+	if (xx->ed->display_cutoffs) {
+	    left  = 0;
+	    right = ABS(s->len);
+	} else {
+	    if ((s->len < 0) ^ orient) {
+		left  = ABS(s->len) - (s->right-1) - 1;
+		right = ABS(s->len) - (s->left-1);
+	    } else {
+		left  = s->left - 1;
+		right = s->right;
+	    }
+	}
+
+	if (pos < left)
+	    pos = left;
+	if (pos > right+1)
+	    pos = right+1;
+
+	cache_decr(xx->io, s);
     }
     xx->select_start = xx->select_end = pos;
 
@@ -2408,15 +2504,33 @@ void edSelectTo(edview *xx, int pos) {
     pos += xx->displayPos;
     if (xx->select_seq != xx->cnum) {
 	int cnum, cpos;
+	int left, right, orient;
 	seq_t *s = get_seq(xx->io, xx->select_seq);
 
+	cache_incr(xx->io, s);
 	sequence_get_position(xx->io, xx->select_seq,
-			      &cnum, &cpos, NULL, NULL);
+			      &cnum, &cpos, NULL, &orient);
 	pos -= cpos;
-	if (pos < 0)
-	    pos = 0;
-	if (pos >= ABS(s->len))
-	    pos = ABS(s->len)-1;
+
+	if (xx->ed->display_cutoffs) {
+	    left  = 0;
+	    right = ABS(s->len);
+	} else {
+	    if ((s->len < 0) ^ orient) {
+		left  = ABS(s->len) - (s->right-1) - 1;
+		right = ABS(s->len) - (s->left-1);
+	    } else {
+		left  = s->left - 1;
+		right = s->right;
+	    }
+	}
+
+	if (pos < left)
+	    pos = left;
+	if (pos > right-1)
+	    pos = right-1;
+
+	cache_decr(xx->io, s);
     }
     xx->select_end = pos;
 

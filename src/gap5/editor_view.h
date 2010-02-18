@@ -191,7 +191,7 @@ int edview_item_at_pos(edview *xx, int row, int col, int name, int exact,
 
 /* Cursor movement control */
 void edSetApos(edview *xx);
-int edSetCursorPos(edview *xx, int type, int rec, int pos);
+int edSetCursorPos(edview *xx, int type, int rec, int pos, int visible);
 int edCursorUp(edview *xx);
 int edCursorDown(edview *xx);
 int edCursorLeft(edview *xx);

@@ -88,9 +88,9 @@ size_t sequence_extra_len(seq_t *s);
 void complement_seq_t(seq_t *s);
 
 int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf,
-		      int contig_orient);
+		      int *cutoff, int contig_orient);
 int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
-		       int contig_orient);
+		       int *cutoff, int contig_orient);
 int sequence_replace_base(GapIO *io, seq_t **s, int pos, char base, int conf,
 			  int contig_orient);
 int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,

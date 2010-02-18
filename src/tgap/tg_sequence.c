@@ -845,7 +845,7 @@ int sequence_orient_pos(GapIO *io, seq_t **s, int pos, int *comp) {
  * stored orientation.
  */
 int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf,
-		      int contig_orient) {
+		      int *cutoff, int contig_orient) {
     seq_t *n = *s;
     int comp = 0;
 
@@ -867,6 +867,12 @@ int sequence_get_base(GapIO *io, seq_t **s, int pos, char *base, int *conf,
 	} else {
 	    *conf = MAX4(&n->conf[pos*4]);
 	}
+    }
+    if (cutoff) {
+	if (pos < n->left-1 || pos >= n->right)
+	    *cutoff = 1;
+	else
+	    *cutoff = 0;
     }
 
     return 0;
@@ -894,7 +900,7 @@ static int lookup_init = 0;
  * scores instead.
  */
 int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
-		       int contig_orient) {
+		       int *cutoff, int contig_orient) {
     seq_t *n = *s;
     int comp = 0;
 
@@ -975,6 +981,13 @@ int sequence_get_base4(GapIO *io, seq_t **s, int pos, char *base, double *conf,
 	    tmp = conf[0]; conf[0] = conf[3]; conf[3] = tmp;
 	    tmp = conf[1]; conf[1] = conf[2]; conf[2] = tmp;
 	}
+    }
+
+    if (cutoff) {
+	if (pos < n->left || pos > n->right)
+	    *cutoff = 1;
+	else
+	    *cutoff = 0;
     }
 
     return 0;
@@ -1138,10 +1151,10 @@ int sequence_insert_base(GapIO *io, seq_t **s, int pos, char base, char conf,
 	n->conf[pos] = conf;
     }
 
-    if (pos < n->left)
+    if (pos < n->left-1)
 	n->left++;
 
-    if (pos < n->right)
+    if (pos <= n->right)
 	n->right++;
 
     return 0;
@@ -1178,7 +1191,7 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     else
 	n->len--;
 
-    if (pos < n->left)
+    if (pos < n->left-1)
 	n->left--;
 
     if (pos < n->right)

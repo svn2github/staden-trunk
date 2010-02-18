@@ -1244,7 +1244,7 @@ void edScrollTraces(edview *xx, char *path, char *command) {
 #endif
 
 
-    edSetCursorPos(xx, GT_Seq, seq, i + pos);
+    edSetCursorPos(xx, GT_Seq, seq, i + pos, 1);
     tman_reposition_traces(xx, xx->cursor_apos, 0);
 }
 

@@ -460,24 +460,26 @@ static int tcl_contig_pileup(tcl_contig *tc, Tcl_Interp *interp,
     /* Produce a tcl list of elements consisting of seq rec, pos, base, qual */
     items = Tcl_NewListObj(0, NULL);
     for (i = 0; i < nr; i++) {
-	Tcl_Obj *ele, *e4[4];
+	Tcl_Obj *ele, *e5[5];
 	seq_t *s = cache_search(io, GT_Seq, r[i].rec);
 	char base;
-	int conf, ret;
+	int conf, ret, cut;
 
-	ret = sequence_get_base(io, &s, pos - r[i].start, &base, &conf, 1);
+	ret = sequence_get_base(io, &s, pos - r[i].start, &base, &conf,
+				&cut, 1);
 	if (-1 == ret) {
 	    base = '?';
 	    conf = 1;
 	    fprintf(stderr, "ERROR: failed to read base at position %d "
 		    "in seq #%d\n", pos, r[i].rec);
 	}
-	e4[0] = Tcl_NewIntObj(r[i].rec);
-	e4[1] = Tcl_NewIntObj(pos - r[i].start);
-	e4[2] = Tcl_NewStringObj(&base, 1);
-	e4[3] = Tcl_NewIntObj(conf);
+	e5[0] = Tcl_NewIntObj(r[i].rec);
+	e5[1] = Tcl_NewIntObj(pos - r[i].start);
+	e5[2] = Tcl_NewStringObj(&base, 1);
+	e5[3] = Tcl_NewIntObj(conf);
+	e5[4] = Tcl_NewIntObj(cut);
 
-	ele = Tcl_NewListObj(4, e4);
+	ele = Tcl_NewListObj(5, e5);
 
 	Tcl_ListObjAppendElement(interp, items, ele);
     }
@@ -1071,7 +1073,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case GET_BASE: {
 	char base;
-	int pos, conf;
+	int pos, conf, cutoff;
 
 	if (objc != 3) {
 	    vTcl_SetResult(interp, "wrong # args: should be "
@@ -1081,8 +1083,8 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	}
 
 	Tcl_GetIntFromObj(interp, objv[2], &pos);
-	sequence_get_base(ts->io, &ts->seq, pos, &base, &conf, 1);
-	vTcl_SetResult(interp, "%c %d", base, conf);
+	sequence_get_base(ts->io, &ts->seq, pos, &base, &conf, &cutoff, 1);
+	vTcl_SetResult(interp, "%c %d %d", base, conf, cutoff);
 	break;
     }
 

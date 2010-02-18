@@ -637,14 +637,19 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     /* Sets the editor cursor position */
     case _SET_CURSOR: {
-	if (argc != 5) {
+	int visible = 1;
+	if (argc != 5 && argc != 6) {
 	    Tcl_AppendResult(interp, "wrong # args: should be \"",
-			     argv[0], " set_cursor rec_type rec_no position\"",
+			     argv[0], " set_cursor rec_type rec_no position"
+			     " ?make_visible?\"",
 			     (char *) NULL);
 	    goto fail;
 	}
 
-	edSetCursorPos(ed->xx, atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
+	if (argc >= 6)
+	    Tcl_GetInt(interp, argv[5], &visible);
+	edSetCursorPos(ed->xx, atoi(argv[2]), atoi(argv[3]), atoi(argv[4]),
+		       visible);
 	break;
     }
 

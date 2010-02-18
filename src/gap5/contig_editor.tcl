@@ -88,6 +88,7 @@ proc io_detach {crec} {
 
 proc io_undo_exec {w crec cmdu} {
     upvar \#0 contigIO_$crec cio
+    global $w
 
     set io [$w io]
 
@@ -95,7 +96,11 @@ proc io_undo_exec {w crec cmdu} {
 	foreach {code op1 op2 op3 op4} $cmd break
 	switch -- $code {
 	    C_SET {
-		$w set_cursor $op1 $op2 $op3
+		$w set_cursor $op1 $op2 $op3 1
+		# This may change the Cutoffs status, so update button
+		set top [set ${w}(top)]
+		global $top
+		set ${top}(Cutoffs) [lindex [$w configure -display_cutoffs] 4]
 	    }
 
 	    B_REP {
@@ -137,9 +142,28 @@ proc io_undo_exec {w crec cmdu} {
 		set contig [$io get_contig $op1]
 		$contig insert_base $op2
 		foreach seq $op3 {
-		    foreach {rec pos base val} $seq break;
+		    foreach {rec pos base val cut} $seq break;
 		    set seq [$io get_sequence $rec]
 		    $seq replace_base $pos $base $val
+		    foreach {b q c} [$seq get_base $pos] break
+		    if {$c != $cut} {
+			# Base was deleted from cutoff, but now in
+			# used portion. Adjust clips to compensate
+			set orient [$seq get_orient]
+			set len [$seq get_length]
+			foreach {l r} [$seq get_clips] break;
+			if {$orient != 0} {
+			    set pos [expr {abs($len)-$pos-1}]
+			}
+
+			if {$pos == [expr {$l-1}]} {
+			    incr l
+			} elseif {$pos == [expr {$r-1}]} {
+			    incr r -1
+			}
+
+			$seq set_clips $l $r
+		    }
 		    $seq delete
 		}
 	    }
@@ -895,8 +919,17 @@ proc editor_goto {ed w} {
 proc editor_cutoffs {w} {
     upvar \#0 $w opt
 
+    puts [info level [info level]]
+
     foreach ed $opt(all_editors) {
 	$ed configure -display_cutoffs $opt(Cutoffs)
+	# Move cursor to the consensus if disabling the cutoffs has now
+	# hidden it.
+	if {$opt(Cutoffs) == 0} {
+	    set curr [$ed get_cursor relative]
+	    eval $ed set_cursor [$ed get_cursor absolute] 0
+	    eval $ed set_cursor $curr 0
+	}
 	$ed redraw
     }
 }
@@ -1108,13 +1141,33 @@ proc editor_delete_base {w where} {
     if {$type == 18} {
 	set seq [$io get_sequence $rec]
 	foreach {old_base old_conf} [$seq get_base $pos] break
+	foreach {l0 r0} [$seq get_clips] break;
 	$seq delete_base $pos
+
+	# Identify if we're in a situation where we need to undo the clip
+	# points too. This occurs when, for example, we delete the last base
+	# of the left-cutoff data. Undoing this would be an insertion to the
+	# start of the used portion, making that base now visible instead.
+	# We use a belt and braces method by temporarily adding a base back
+	# to check our clip points are consistent
+	$seq insert_base $pos A 0
+	foreach {l1 r1} [$seq get_clips] break;
+	$seq delete_base $pos
+
 	$seq delete
 
-	store_undo $w \
-	    [list \
-		 [list C_SET $type $rec [expr {$pos+1}]] \
-		 [list B_INS $rec $pos $old_base $old_conf]] {}
+	if {$l0 != $l1 || $r0 != $r1} {
+	    store_undo $w \
+		[list \
+		     [list C_SET $type $rec [expr {$pos+1}]] \
+		     [list B_INS $rec $pos $old_base $old_conf] \
+		     [list B_CUT $rec $l0 $r0]] {}
+	} else {
+	    store_undo $w \
+		[list \
+		     [list C_SET $type $rec [expr {$pos+1}]] \
+		     [list B_INS $rec $pos $old_base $old_conf]] {}
+	}
     } else {
 	set contig [$io get_contig $rec]
 
@@ -1201,8 +1254,8 @@ proc editor_clip_seq {w where end} {
     foreach {l r} [$seq get_clips] break;
     store_undo $w \
 	[list \
-	     [list C_SET $type $rec $pos] \
-	     [list B_CUT $rec $l $r]] {}
+	     [list B_CUT $rec $l $r] \
+	     [list C_SET $type $rec $pos]] {}
 
     switch $end {
 	l {
@@ -1618,7 +1671,7 @@ bind Editor <<select>> {
 	unset _sel
 	return
     } else {
-	eval %W set_cursor $_sel
+	eval %W set_cursor $_sel 0
     }
     unset _sel
     %W select clear
