@@ -72,10 +72,11 @@ int contig_set_name(GapIO *io, contig_t **c, char *name) {
 
     if (!(n = cache_rw(io, *c)))
 	return -1;
-    *c = n;
 
     if (NULL == (n = cache_item_resize(n, sizeof(*n) + strlen(name)+1)))
 	return -1;
+
+    *c = n;
 
     n->name   = (char *)(&n->name+1);
     strcpy(n->name, name);
