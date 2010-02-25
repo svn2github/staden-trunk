@@ -303,21 +303,27 @@ void csmatch_join_to(GapIO *io, int contig, reg_join *j, mobj_repeat *r,
 void csmatch_complement(GapIO *io, int contig, mobj_repeat *r,
 			HTablePtr T[], char *cs_plot) {
     int n, i;
-    int clen = io_clength(io, contig);
+    int clen;
+    int ustart, uend, delta;
+
+    /*
+     * The contig pivots around used (clipped) start..end, rather than
+     * the extended cutoff start to end.
+     */
+    consensus_valid_range(io, contig, &ustart, &uend);
+    clen = uend - ustart+1;
 
     n = r->num_match;
     for (i = 0; i < n; i++) {
 	if (abs(r->match[i].c1) == contig) {
-	    r->match[i].pos1 = clen+1 - (r->match[i].pos1 +
-					 r->match[i].length - 1);
-
+	    r->match[i].pos1 = ustart + uend - (r->match[i].pos1 +
+						r->match[i].length - 1);
 	    r->match[i].c1 = -r->match[i].c1;
 	}
 
 	if (abs(r->match[i].c2) == contig) {
-	    r->match[i].pos2 = clen+1 - (r->match[i].pos2 +
-					 r->match[i].length - 1);
-
+	    r->match[i].pos2 = ustart + uend - (r->match[i].pos2 +
+						r->match[i].length - 1);
 	    r->match[i].c2 = -r->match[i].c2;
 	}
     }

@@ -442,16 +442,26 @@ fij(GapIO *io,
 
     for (i = 0; i < counter; i++){
 	obj_fij *match = &FIJMatch->match[i];
+	int ustart, uend, last_c = 0;
 
+	/* FIXME: Inefficient - try caching this data */
 	if (match->c1 < 0) {
 	    match->c1 =  rnumtocnum(io, ABS(match->c1)) * -1;
-	    match->pos1 = io_clength(io, -match->c1) - match->pos1 + 1;
+	    if (last_c != -match->c1) {
+		consensus_valid_range(io, -match->c1, &ustart, &uend);
+		last_c = -match->c1;
+	    }
+	    match->pos1 = ustart + uend - match->pos1 - 1;
 	} else {
 	    match->c1 =  rnumtocnum(io, ABS(match->c1));
 	}
 	if (match->c2 < 0) {
 	    match->c2 =  rnumtocnum(io, ABS(match->c2)) * -1;
-	    match->pos2 = io_clength(io, -match->c2) - match->pos2 + 1;
+	    if (last_c != -match->c2) {
+		consensus_valid_range(io, -match->c2, &ustart, &uend);
+		last_c = -match->c2;
+	    }
+	    match->pos2 = ustart + uend - match->pos2 - 1;
 	} else {
 	    match->c2 =  rnumtocnum(io, ABS(match->c2));
 	}
@@ -469,11 +479,9 @@ fij(GapIO *io,
      */
     if (counter) {
 	id = register_id();
-	for (i = 1; i <= NumContigs(io); i++) {
-	    contig_register(io, i, fij_callback, (void *)FIJMatch, id,
-			    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
-			    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_FIJ);
-	}
+	contig_register(io, 0, fij_callback, (void *)FIJMatch, id,
+			REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
+			REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_FIJ);
     }
 
     xfree(contig_list);
