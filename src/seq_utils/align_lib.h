@@ -324,10 +324,19 @@ typedef struct Overlap {
 #define RETURN_EDIT_BUFFER  4
 #define RETURN_NEW_PADS 8
 
+/* Score gaps at the start of seqs */
 #define EDGE_GAPS_COUNT   1
+
+/* No edge gaps for start.  *Must* set _COUNT or _ZERO, despite bit field */
 #define EDGE_GAPS_ZERO    2
+
+/* Whether to only go from (0,0)-(N,M) or end at any point on edges */
 #define FULL_LENGTH_TRACE 4
+
+/* Don't score gaps at seq ends */
 #define BEST_EDGE_TRACE   8
+
+/* Penalise in Y, but not in X */
 #define EDGE_GAPS_ZEROX   16
 
 typedef struct Align_params {
