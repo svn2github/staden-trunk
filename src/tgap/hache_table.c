@@ -986,7 +986,26 @@ void HacheTableDump(HacheTable *h, FILE *fp) {
     for (i = 0; i < h->nbuckets; i++) {
 	HacheItem *hi;
 	for (hi = h->bucket[i]; hi; hi = hi->next) {
-	    fprintf(fp, "%.*s\n", hi->key_len, hi->key);
+	    int j, printable=1;
+	    for (j = 0; j < hi->key_len; j++) {
+		if (!isprint(hi->key[j])) {
+		    printable=0;
+		    break;
+		}
+	    }
+
+	    if (printable) {
+		fprintf(fp, "%.*s\n", hi->key_len, hi->key);
+	    } else {
+		if (hi->key_len == 4) {
+		    fprintf(fp, "%d\n", *(int *)(hi->key));
+		} else {
+		    fprintf(fp, "%p ", hi->key);
+		    for (j = 0; j < hi->key_len; j++)
+			fprintf(fp, "%02x ", (unsigned char)(hi->key[j]));
+		    fprintf(fp, "\n");
+		}
+	    }
 	}
     }
 }
