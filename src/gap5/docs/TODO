@@ -1,3 +1,15 @@
+*	BUG: Contig selector shows full cutoff lengths and not clipped
+        lengths. However right-click and edit contig adds left-clip point on
+	so we can appear to want to edit outside the contig range.
+
+*	BUG: Inserting into the consensus also inserts to cutoff sequences.
+
+*	BUG: Searching by read name should point editor on the first
+        used base, not the first base.
+
+*	BUG: No libpng causes compilation errors still, rather than
+        ignoring it as configure implies. (It's still in global.mk)
+
 *	BUG: Can create tags off the ends of contigs.
 
 *	BUG: Insert to consensus at pos -200 say (when only clipped

@@ -602,6 +602,7 @@ int complement_contig(GapIO *io, int crec) {
     bin_index_t *b;
     int len;
     int ustart, uend, delta;
+    reg_complement rc;
 
     if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
 	return -1;
@@ -638,6 +639,9 @@ int complement_contig(GapIO *io, int crec) {
     c->end   += delta;
 
     cache_flush(io);
+    
+    rc.job = REG_COMPLEMENT;
+    contig_notify(io, crec, (reg_data *)&rc);
 
     return 0;
 }

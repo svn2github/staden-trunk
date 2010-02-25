@@ -365,6 +365,13 @@ int contig_register_join(GapIO *io, int cfrom, int cto);
 
 
 /*
+ * Event handling for destroying a contig.
+ * Call this just after we delete it. It sends out notification events and
+ * updated the contig_reg hash tables.
+ */
+void contig_register_delete(GapIO *io, int contig);
+
+/*
  * Iterates through all contigs_reg_t registered with 'contig' and having
  * a id of 'id'. start_from maybe NULL, but if not then it's used to
  * store the last hache table position to facilitate iteration.

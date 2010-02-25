@@ -455,11 +455,9 @@ RegFindOligo(GapIO *io,
      * Currently we assume that this is all.
      */
     id = register_id();
-    for (i = 1; i <= NumContigs(io); i++) {
-	contig_register(io, i, find_oligo_callback, (void *)find_oligo, id,
-			REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
-			REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_OLIGO);
-    }
+    contig_register(io, 0, find_oligo_callback, (void *)find_oligo, id,
+		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
+		    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_OLIGO);
     return 0;
 }
 

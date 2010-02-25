@@ -1,3 +1,8 @@
+*	FIJ - don't clear plot after a join.
+
+*	BUG - delete last visible base in a seq and undo => base gets added
+	back as hidden data.
+
 *	BUG: cannot open a database we do not have write access to
         unless we explicitly say -ro. Without it we get a cryptic
         error that to the untrained user would imply the database does

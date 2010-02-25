@@ -1688,6 +1688,7 @@ track_t *contig_get_track(GapIO *io, contig_t **c, int start, int end,
  */
 int contig_destroy(GapIO *io, int rec) {
     int i, j;
+    reg_delete rd;
 
     printf("Destroy contig rec %d\n", rec);
     io->contig_order = cache_rw(io, io->contig_order);
@@ -1709,6 +1710,9 @@ int contig_destroy(GapIO *io, int rec) {
     }
 
     io->db->Ncontigs--;
+
+    contig_register_delete(io, rec);
+
     return 0;
 }
 

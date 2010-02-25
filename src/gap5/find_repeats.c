@@ -335,11 +335,9 @@ plot_rpt(GapIO *io,
      * Currently we assume that this is all.
      */
     id = register_id();
-    for (i = 1; i <= NumContigs(io); i++) {
-	contig_register(io, i, repeat_callback, (void *)repeat, id,
-			REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
-			REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_REPEAT);
-    }
+    contig_register(io, 0, repeat_callback, (void *)repeat, id,
+		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
+		    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_REPEAT);
 }
 
 

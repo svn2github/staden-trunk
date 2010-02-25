@@ -646,20 +646,14 @@ proc editor_join {w} {
 
     foreach ed $opt(all_editors) {
 	if {[$ed save] != 0} {
+	    puts ERROR
 	    bell
 	    return
 	}
     }
 
-    # Restart the contig selector.
-    # This is a temporary fix for now as we don't send over the proper
-    # events to force it to update the data structures.
-    quit_displays -io $opt(io_base) -msg "join contig"
-
     $ed join
     destroy $w
-
-    ContigSelector $opt(io_base)
 }
 
 proc editor_exit {w} {

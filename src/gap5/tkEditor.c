@@ -500,10 +500,17 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	break;
 
     /* Save contig */
-    case _SAVE:
+    case _SAVE: {
+	reg_length rl;
 	result = cache_flush(xx->io);
+
+	rl.job = REG_LENGTH;
+	rl.length = xx->contig->end - xx->contig->start + 1;
+	contig_notify(xx->io->base, xx->contig->rec, (reg_data *)&rl);
+
 	vTcl_SetResult(interp, "%d", result);
 	break;
+    }
 
     /* Query: have we been editing? */
     case _EDITS_MADE:

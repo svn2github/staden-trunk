@@ -237,6 +237,9 @@ void broadcast_event(GapIO *io, HacheTable *h,
  * This is typically the window that's generating the event in the first
  * place. Set except to -1 to send to all registered functions.
  *
+ * If contig is negative it implies send to item registered with contig 0,
+ * but claiming to be for contig '-contig' instead.
+ *
  * We need to be particularly careful here about what happens if the
  * callback function triggers new items to be registered or removed.
  */
@@ -244,9 +247,15 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
 		       reg_data *msg, int except) {
     HacheItem *hi;
     int bitcheck = msg->job;
+    int ocontig = contig;
 
     if (!h)
 	return;
+
+    if (contig < 0) {
+	ocontig = -contig;
+	contig = 0;
+    }
 
     /* Incr ref counts to ensure they're not removed */
     hi = HacheTableSearch(h, (char *)&contig, sizeof(contig));
@@ -271,7 +280,7 @@ static void send_event(GapIO *io, HacheTable *h, int contig,
 	    continue;
 
 	if (cr->flags & bitcheck && cr->id != except)
-	    cr->func(io, contig, cr->fdata, msg);
+	    cr->func(io, ocontig, cr->fdata, msg);
     }
 
     /* Decr ref counts and remove if appropriate */
@@ -373,8 +382,8 @@ int contig_register(GapIO *io, int contig,
     reg.contig = contig;
     reg.id = id;
     reg.type = type;
-    send_event(io, io_contig_reg(io), contig, (reg_data *)&reg, -1);
-    send_event(io, io_contig_reg(io), 0,      (reg_data *)&reg, -1);
+    send_event(io, io_contig_reg(io),  contig, (reg_data *)&reg, -1);
+    send_event(io, io_contig_reg(io), -contig, (reg_data *)&reg, -1);
     return 0;
 }
 
@@ -438,8 +447,8 @@ int contig_deregister(GapIO *io, int contig,
 	 * We may need to delay these until after removal incase we generate
 	 * more removals.
 	 */
-	send_event(io, io_contig_reg(io), contig, (reg_data *)&reg, -1);
-	send_event(io, io_contig_reg(io), 0,      (reg_data *)&reg, -1);
+	send_event(io, io_contig_reg(io),  contig, (reg_data *)&reg, -1);
+	send_event(io, io_contig_reg(io), -contig, (reg_data *)&reg, -1);
    
 	if (--r->ref_count == 0)
 	    contig_reg_remove(io, r, iter, &next);
@@ -452,6 +461,36 @@ int contig_deregister(GapIO *io, int contig,
     return 0;
 }
 
+/*
+ * Event handling for destroying a contig.
+ * Call this just after we delete it. It sends out notification events and
+ * updated the contig_reg hash tables.
+ */
+void contig_register_delete(GapIO *io, int contig) {
+    HacheTable *h = io_contig_reg(io);
+    HacheItem *hi;
+    reg_delete rd;
+
+    while (io->base)
+	io = io->base;
+
+    /* Send the event */
+    rd.job = REG_DELETE;
+    contig_notify(io, contig, (reg_data *)&rd);
+
+    /*
+     * Remove items from the hash table incase the objects registered with
+     * the contig haven't done this themselves.
+     */
+    hi = HacheTableSearch(h, (char *)&contig, sizeof(contig));
+    while (hi) {
+	contig_reg_t *cr = (contig_reg_t *)hi->data.p;
+	hi = HacheTableNext(hi, (char *)&contig, sizeof(contig));
+
+	if (--cr->ref_count == 0)
+	    contig_reg_remove(io, cr, NULL, NULL);
+    }
+}
 
 /*
  *-----------------------------------------------------------------------------
@@ -639,15 +678,21 @@ void delete_contig_cursor(GapIO *io, int contig, int id, int private)
  * all contigs, so we always duplicate data there too.
  */
 void contig_notify(GapIO *io, int contig, reg_data *jdata) {
+    while (io->base)
+	io = io->base;
+
     send_event(io, io_contig_reg(io), contig, jdata, -1);
     if (contig)
-	send_event(io, io_contig_reg(io), 0, jdata, -1);
+	send_event(io, io_contig_reg(io), -contig, jdata, -1);
 }
 
 void contig_notify_except(GapIO *io, int contig, reg_data *jdata, int id) {
+    while (io->base)
+	io = io->base;
+
     send_event(io, io_contig_reg(io), contig, jdata, id);
     if (contig)
-	send_event(io, io_contig_reg(io), 0, jdata, id);
+	send_event(io, io_contig_reg(io), -contig, jdata, id);
 }
 
 /*
@@ -716,7 +761,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	io_cursor_set(io, cto, io_cursor_get(io, cfrom));
     }
     for (gc = io_cursor_get(io, cfrom); gc; gc = gc->next) {
-	if (gc->seq == 0) {
+	if (gc->seq == cfrom || gc->seq == 0) {
 	    gc->pos += offset;
 	    gc->abspos = gc->pos;
 	} else {

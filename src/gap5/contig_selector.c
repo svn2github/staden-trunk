@@ -1207,19 +1207,17 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 		/* HACK - never used */
 		int i, id = register_id();
 
-		for (i = 1; i <= NumContigs(io); i++) {
-		    contig_deregister(io, i, cs_callback, fdata);
-		    contig_register(io, i, cs_callback, fdata, id,
-				    REG_REQUIRED |
-				    REG_DATA_CHANGE |
-				    REG_OPS |
-				    REG_NUMBER_CHANGE |
-				    REG_ANNO |
-				    REG_GENERIC |
-				    REG_FLAG_INVIS |
-				    REG_BUFFER,
-				    REG_TYPE_CONTIGSEL);
-		}
+		contig_deregister(io, 0, cs_callback, fdata);
+		contig_register(io, 0, cs_callback, fdata, id,
+				REG_REQUIRED |
+				REG_DATA_CHANGE |
+				REG_OPS |
+				REG_NUMBER_CHANGE |
+				REG_ANNO |
+				REG_GENERIC |
+				REG_FLAG_INVIS |
+				REG_BUFFER,
+				REG_TYPE_CONTIGSEL);
 		break;
 	    }
 #endif

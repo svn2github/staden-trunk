@@ -639,6 +639,8 @@ int edJoin(edview *xx) {
     GapIO *io = xx->io;
     bin_index_t *binp, *binl, *binr;
     int offset, binp_id, above;
+    reg_length rl;
+    reg_join rj;
 
     if (!xx->link)
 	return -1;
@@ -780,8 +782,35 @@ int edJoin(edview *xx) {
     cache_decr(io, cl);
     cache_decr(io, cr);
 
+    /*
+     * The order of notifications here is crucial.
+     *
+     * We need to firstly notify the right contig that it's been joined to
+     * the left contig.
+     *
+     * Merge the contig registration lists (copy right into left).
+     *
+     * Then we delete the right contig.
+     *
+     * Finally we then tell the left contig that it's length has changed.
+     */
+    
+    /* Notify right of join */
+    rj.job = REG_JOIN_TO;
+    rj.contig = cr->rec;
+    rj.offset = offset;
+    contig_notify(io, cr->rec, (reg_data *)&rj);
+
+    /* Merge lists */
+    contig_register_join(io, cr->rec, cl->rec);
+
     /* Destroy the old right contig */
     contig_destroy(io, cr->rec);
+
+    /* Notify left of join */
+    rl.job = REG_LENGTH;
+    rl.length = cl->end - cl->start + 1;
+    contig_notify(io, cl->rec, (reg_data *)&rl);
 
     cache_flush(io);
 
