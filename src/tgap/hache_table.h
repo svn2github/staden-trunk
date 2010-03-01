@@ -98,6 +98,7 @@ HacheItem *HacheTableSearch(HacheTable *h, char *key, int key_len);
 HacheItem *HacheTableNext(HacheItem *hi, char *key, int key_len);
 void HacheTableIncRef(HacheTable *h, HacheItem *hi);
 void HacheTableDecRef(HacheTable *h, HacheItem *hi);
+int HacheTableRehash(HacheTable *h, HacheItem *hi, char *key, int key_len);
 
 void HacheTablePurge(HacheTable *h);
 void HacheTableStats(HacheTable *h, FILE *fp);

@@ -105,13 +105,15 @@ static void contig_register_dump(GapIO *io) {
     iter = HacheTableIterCreate();
     while (hi = HacheTableIterNext(h, iter)) {
 	contig_reg_t *r = (contig_reg_t *)hi->data.p;
-	assert(h == hi->h);
-	printf("%p %p %2d %d*fn %p/%p {%p,%p}\n",
-	       hi, r,
+	printf("%p(%p) %p %2d %d*fn %p/%p {%p,%p}\n",
+	       hi, hi->h, r,
 	       *(int *)hi->key,
 	       r->ref_count,
 	       r->func, r->fdata,
 	       r->hi[0], r->hi[1]);
+
+	assert(h == hi->h);
+	assert(hi == r->hi[0] || hi == r->hi[1]);
     }
     puts("");
 }
@@ -168,7 +170,7 @@ static int contig_reg_remove(GapIO *io, contig_reg_t *r,
 
 	if (HacheTableDel(io_contig_reg(io), r->hi[i], 0) != 0)
 	    return -1;
-   }
+    }
 
     free(r);
 
@@ -712,14 +714,13 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
     HacheTable *h = io_contig_reg(io);
     HacheItem *hif, *hit;
     contig_reg_t *rf, *rt;
-
     cursor_t *gc;
     int offset = 0; /* HACK for now */
     
     /* Copy lists */
     hif = HacheTableSearch(h, (char *)&cfrom, sizeof(cfrom));
     while (hif) {
-	HacheItem *tmp;
+	HacheItem *next;
 
 	rf = (contig_reg_t *)hif->data.p;
 
@@ -732,21 +733,21 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	    hit = HacheTableNext(hit, (char *)&cfrom, sizeof(cto));
 	}
 
+	next = HacheTableNext(hif, (char *)&cfrom, sizeof(cfrom));
+
 	if (!hit) {
-	    /* Not found, so reregister with the new contig */
-	    (void)contig_register(io, cto, rf->func, rf->fdata, rf->id,
-				  rf->flags, rf->type);
+	    /* Id not found, so move hif to new contig */
+	    if (!HacheTableRehash(h, hif, (char *)&cto, sizeof(cto))) {
+		fprintf(stderr, "Failed to rehash hi=%p\n", hif);
+	    }
+	} else {
+	    /* Dup, so silently deregister from the cfrom list */
+	    HacheTableDel(h, hif, 0);
 	}
 
-	/* Silently deregister from the cfrom list */
-	tmp = HacheTableNext(hif, (char *)&cfrom, sizeof(cfrom));
-	HacheTableDel(h, hif, 0);
-	hif = tmp;
-
-	/* FIXME: do we need to remove table(-nid) too? */
+	hif = next;
     }
 
-    
     /*
      * Update cursor lists.
      * This basically just concatenates the two cursors together.
@@ -761,7 +762,7 @@ int contig_register_join(GapIO *io, int cfrom, int cto) {
 	io_cursor_set(io, cto, io_cursor_get(io, cfrom));
     }
     for (gc = io_cursor_get(io, cfrom); gc; gc = gc->next) {
-	if (gc->seq == cfrom || gc->seq == 0) {
+	if (gc->seq == cfrom || gc->seq == cto || gc->seq == 0) {
 	    gc->pos += offset;
 	    gc->abspos = gc->pos;
 	} else {
@@ -888,7 +889,6 @@ contig_reg_t **result_to_regs(GapIO *io, int id) {
 	    size *= 2;
 	    rl = (contig_reg_t **)xrealloc(rl, size * sizeof(contig_reg_t *));
 	    if (NULL == rl) {
-		xfree(rl);
 		return NULL;
 	    }
 	}

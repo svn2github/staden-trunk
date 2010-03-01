@@ -753,6 +753,65 @@ HacheItem *HacheTableAdd(HacheTable *h, char *key, int key_len, HacheData data,
     return hi;
 }
 
+/*
+ * Given a new key this rehashes an existing item in the hash table.
+ * This is unlikely to fail except in low memory conditions or if the
+ * new key already exists and we have disallowed duplicate keys.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int HacheTableRehash(HacheTable *h, HacheItem *hi, char *key, int key_len) {
+    uint32_t hv, hv_old;
+    HacheItem *ti, *last, *next;
+
+    assert(hi->h == h);
+
+    hv = hache(h->options & HASH_FUNC_MASK, (uint8_t *)key, key_len) & h->mask;
+    hv_old = hache(h->options & HASH_FUNC_MASK,
+		   (uint8_t *)hi->key, hi->key_len) & h->mask;
+
+    /* Already exists? */
+    if (!(h->options & HASH_ALLOW_DUP_KEYS)) {
+	for (ti = h->bucket[hv]; ti; ti = ti->next) {
+	    if (key_len == ti->key_len &&
+		memcmp(key, ti->key, key_len) == 0) {
+		return -1;
+	    }
+	}
+    }    
+
+    /* Re-key the item */
+    if (h->options & HASH_NONVOLATILE_KEYS) {
+	hi->key = key;
+    } else {
+	char *cp = (char *)malloc(key_len+1);
+	if (!cp)
+	    return -1;
+	free(hi->key);
+	hi->key = cp;
+	memcpy(hi->key, key, key_len);
+	hi->key[key_len] = 0; /* null terminate incase others print keys */
+    }
+    hi->key_len = key_len;
+
+    /* Remove from old loc */
+    for (last = NULL, next = h->bucket[hv_old]; next;
+	 last = next, next = next->next) {
+	if (next == hi) {
+	    /* Link last to hi->next */
+	    if (last)
+		last->next = hi->next;
+	    else
+		h->bucket[hv_old] = hi->next;
+	}
+    }
+
+    /* Add to new loc */
+    hi->next = h->bucket[hv];
+    h->bucket[hv] = hi;
+}
+
 
 /*
  * Removes a specified HacheItem from the HacheTable. (To perform this it needs
@@ -785,11 +844,11 @@ int HacheTableDel(HacheTable *h, HacheItem *hi, int deallocate_data) {
     for (last = NULL, next = h->bucket[hv]; next;
 	 last = next, next = next->next) {
 	if (next == hi) {
-	    /* Link last to next->next */
+	    /* Link last to hi->next */
 	    if (last)
-		last->next = next->next;
+		last->next = hi->next;
 	    else
-		h->bucket[hv] = next->next;
+		h->bucket[hv] = hi->next;
 
 	    HacheOrderRemove(h, hi);
 	    HacheItemDestroy(h, hi, deallocate_data);
