@@ -38,7 +38,7 @@ add_command {Help.Selecting Notes}	1 0 {show_help gap4 {Notes-Selector}}
 add_command {Help.Editing Notes}	1 0 {show_help gap4 {Notes-Editor}}
 add_command {Help.Special Note Types}	1 0 {show_help gap4 {Notes-Special}}
 
-# Main Gap4 menus
+# Main Gap5 menus
 set_menu gap_menu
 add_menu File		1 2 left
 add_menu Edit		1 2 left
@@ -113,8 +113,8 @@ add_command	{Edit.Complement a contig}	 8 26 {ComplementContig \$io}
 add_command	{View.Contig selector}		 8 10 {ContigSelector \$io}
 add_command     {View.Contig list}		 8 10 {InitListContigs \$io ""}
 add_separator	{View.S1}
-add_command	{View.Results manager}		 8 10 {ListResults \$io} e
-add_separator	{View.S2} e
+add_command	{View.Results manager}		 8 10 {ListResults \$io}
+add_separator	{View.S2}
 add_command	{View.Find internal joins}	 8 10 {FindInternalJoins \$io}
 #add_command	{View.Find read pairs}		 8 10 {FindReadPairs \$io}
 add_command	{View.Find repeats}		 8 10 {FindRepeats \$io}
