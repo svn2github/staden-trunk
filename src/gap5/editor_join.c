@@ -797,7 +797,7 @@ int edJoin(edview *xx) {
     
     /* Notify right of join */
     rj.job = REG_JOIN_TO;
-    rj.contig = cr->rec;
+    rj.contig = cl->rec;
     rj.offset = offset;
     contig_notify(io, cr->rec, (reg_data *)&rj);
 
