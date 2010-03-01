@@ -1,3 +1,34 @@
+*	On REG_JOIN_TO, the [$ed io] needs updating to a valid io for
+        the contig we're joining to. Rerun "$ed init"? Not quite as we
+        don't want to destroy the edview, just update io. Maybe
+        overload [$ed io $new_io]. (CHECK: done?)
+
+*	The contig editor needs to handle REG_COMPLEMENT. Either shut
+        down or refresh. The complement function also needs to check
+        for write access on the root bin & contig struct.
+
+*	BUG: FIJ, launch main, hit align, kill window ('x'), say no,
+	launch main again, hit align, press save => "error -1".
+
+	Cause is that the view is invalid - we're attempting to write
+	a view that has already been freed. Presumably free in the
+	base_io, but still cached so we didn't request a new view?
+
+	Is the problem that the gdb client is the same for io child and
+	io_base, so when we gio_close of io child we can end up
+	freeing views that are still in use of io base?
+
+	(DONE: problem was base and child both having a reference to
+	the same locked view, so do not unlock from child.)
+
+*	$w(io) is top io, eg .e1(io), but we may have two editors as
+        in a join editor:
+
+  w:.e1.ed0.pane.seq.sheet     io:io=0xe5cd40/io=0xe10770    base:io=0x89aa50
+  w:.e1.ed1.pane.seq.sheet     io:io=0xe10770/io=0xe10770    base:io=0x89aa50
+
+*	After joining, we need to purge the undo history.
+
 *	FIJ - don't clear plot after a join.
 
 *	BUG - delete last visible base in a seq and undo => base gets added
