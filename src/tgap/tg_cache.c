@@ -83,9 +83,10 @@ cached_item *cache_new(int type, GRec rec, GView v,
  * data into. It will only be called on objects with a zero reference count,
  * which in the context of this code means they have not been locked R/W.
  */
-static void seq_unload(GapIO *io, cached_item *ci) {
+static void seq_unload(GapIO *io, cached_item *ci, int unlock) {
     seq_t *s = (seq_t *)&ci->data;
-    io->iface->seq.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->seq.unlock(io->dbh, ci->view);
 
     if (s->anno)
 	ArrayDestroy(s->anno);
@@ -111,11 +112,12 @@ static int seq_write(GapIO *io, cached_item *ci) {
  * data into. It will only be called on objects with a zero reference count,
  * which in the context of this code means they have not been locked R/W.
  */
-static void seq_block_unload(GapIO *io, cached_item *ci) {
+static void seq_block_unload(GapIO *io, cached_item *ci, int unlock) {
     int i;
     seq_block_t *b = (seq_block_t *)&ci->data;
 
-    io->iface->seq_block.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->seq_block.unlock(io->dbh, ci->view);
 
     for (i = 0; i < SEQ_BLOCK_SZ; i++) {
 	seq_t *s = b->seq[i];
@@ -145,10 +147,11 @@ static int seq_block_write(GapIO *io, cached_item *ci) {
 /*
  * A forced unload of a track.
  */
-static void track_unload(GapIO *io, cached_item *ci) {
+static void track_unload(GapIO *io, cached_item *ci, int unlock) {
     track_t *track = (track_t *)&ci->data;
 
-    io->iface->track.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->track.unlock(io->dbh, ci->view);
 
     if (track->data)
 	ArrayDestroy(track->data);
@@ -169,10 +172,11 @@ static int track_write(GapIO *io, cached_item *ci) {
 /*
  * A forced unload of a bin.
  */
-static void bin_unload(GapIO *io, cached_item *ci) {
+static void bin_unload(GapIO *io, cached_item *ci, int unlock) {
     bin_index_t *bin = (bin_index_t *)&ci->data;
 
-    io->iface->bin.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->bin.unlock(io->dbh, ci->view);
 
     if (bin->rng)
 	ArrayDestroy(bin->rng);
@@ -192,8 +196,9 @@ static int bin_write(GapIO *io, cached_item *ci) {
 }
 
 
-static void contig_unload(GapIO *io, cached_item *ci) {
-    io->iface->seq.unlock(io->dbh, ci->view);
+static void contig_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (unlock)
+	io->iface->seq.unlock(io->dbh, ci->view);
     free(ci);
 }
 
@@ -211,18 +216,20 @@ static int array_write(GapIO *io, cached_item *ci) {
     return io->iface->array.write(io->dbh, ci);
 }
 
-static void array_unload(GapIO *io, cached_item *ci) {
+static void array_unload(GapIO *io, cached_item *ci, int unlock) {
     Array ar = (Array)&ci->data;
     //ArrayDestroy(ar);
     if (ar->base)
 	free(ar->base);
 
-    io->iface->seq.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->seq.unlock(io->dbh, ci->view);
     free(ci);
 }
 
-static void database_unload(GapIO *io, cached_item *ci) {
-    io->iface->database.unlock(io->dbh, ci->view);
+static void database_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (unlock)
+	io->iface->database.unlock(io->dbh, ci->view);
     free(ci);
 }
 
@@ -242,19 +249,22 @@ static int anno_ele_block_write(GapIO *io, cached_item *ci) {
     return io->iface->anno_ele_block.write(io->dbh, ci);
 }
 
-static void anno_ele_unload(GapIO *io, cached_item *ci) {
-    io->iface->anno_ele.unlock(io->dbh, ci->view);
+static void anno_ele_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (unlock)
+	io->iface->anno_ele.unlock(io->dbh, ci->view);
     free(ci);
 }
-static void anno_unload(GapIO *io, cached_item *ci) {
-    io->iface->anno.unlock(io->dbh, ci->view);
+static void anno_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (unlock)
+	io->iface->anno.unlock(io->dbh, ci->view);
     free(ci);
 }
-static void anno_ele_block_unload(GapIO *io, cached_item *ci) {
+static void anno_ele_block_unload(GapIO *io, cached_item *ci, int unlock) {
     int i;
     anno_ele_block_t *b = (anno_ele_block_t *)&ci->data;
 
-    io->iface->anno_ele_block.unlock(io->dbh, ci->view);
+    if (unlock)
+	io->iface->anno_ele_block.unlock(io->dbh, ci->view);
 
     for (i = 0; i < ANNO_ELE_BLOCK_SZ; i++) {
 	if (b->ae[i]) {
@@ -277,8 +287,9 @@ static int library_write(GapIO *io, cached_item *ci) {
     return io->iface->library.write(io->dbh, ci);
 }
 
-static void library_unload(GapIO *io, cached_item *ci) {
-    io->iface->library.unlock(io->dbh, ci->view);
+static void library_unload(GapIO *io, cached_item *ci, int unlock) {
+    if (unlock)
+	io->iface->library.unlock(io->dbh, ci->view);
     free(ci);
 }
 
@@ -418,60 +429,88 @@ static HacheData *cache_load(void *clientdata, char *key, int key_len,
     return &hd;
 }
 
+/*
+ * Ensure key is initialised correctly, making sure that it is blank
+ * in the gaps between structure elements and the padding at the end.
+ */
+cache_key_t construct_key(GRec rec, int type) {
+    cache_key_t k;
+    memset(&k, 0, sizeof(k));
+    k.rec = rec;
+    k.type = type;
+    return k;
+}
+
 /* Callback from Hache */
 static void cache_unload(void *clientdata, HacheData hd) {
     GapIO *io = (GapIO *)clientdata;
     cached_item *ci = hd.p;
+    int unlock = 1;
 
     //    printf("Cache unload %d\n", ci->rec);
 
     assert(io->base || ci->updated == 0);
 
+    /*
+     * If we're a child I/O, do not unlock the view of this item if the
+     * base I/O also has a view open on it.
+     */
+    if (io->base) {
+	HacheItem *hi_base;
+	cache_key_t k;
+
+	k = construct_key(ci->rec, ci->type);
+	hi_base = HacheTableQuery(io->base->cache, (char *)&k, sizeof(k));
+
+	if (hi_base)
+	    unlock = 0;
+    }
+
     unload_counts[ci->type]++;
 
     switch (ci->type) {
     case GT_Seq:
-	seq_unload(io, ci);
+	seq_unload(io, ci, unlock);
 	break;
 
     case GT_SeqBlock:
-	seq_block_unload(io, ci);
+	seq_block_unload(io, ci, unlock);
 	break;
 
     case GT_Bin:
-	bin_unload(io, ci);
+	bin_unload(io, ci, unlock);
 	break;
 
     case GT_Track:
-	track_unload(io, ci);
+	track_unload(io, ci, unlock);
 	break;
 
     case GT_Contig:
-	contig_unload(io, ci);
+	contig_unload(io, ci, unlock);
 	break;
 
     case GT_RecArray:
-	array_unload(io, ci);
+	array_unload(io, ci, unlock);
 	break;
 
     case GT_Database:
-	database_unload(io, ci);
+	database_unload(io, ci, unlock);
 	break;
 
     case GT_AnnoEle:
-	anno_ele_unload(io, ci);
+	anno_ele_unload(io, ci, unlock);
 	break;
 
     case GT_AnnoEleBlock:
-	anno_ele_block_unload(io, ci);
+	anno_ele_block_unload(io, ci, unlock);
 	break;
 
     case GT_Anno:
-	anno_unload(io, ci);
+	anno_unload(io, ci, unlock);
 	break;
 
     case GT_Library:
-	library_unload(io, ci);
+	library_unload(io, ci, unlock);
 	break;
     }
 }
@@ -522,19 +561,6 @@ void cache_destroy(GapIO *io) {
 
     HacheTableDestroy(io->cache, 0);
 }
-
-/*
- * Ensure key is initialised correctly, making sure that it is blank
- * in the gaps between structure elements and the padding at the end.
- */
-cache_key_t construct_key(GRec rec, int type) {
-    cache_key_t k;
-    memset(&k, 0, sizeof(k));
-    k.rec = rec;
-    k.type = type;
-    return k;
-}
-
 
 /*
  * Upgrades a lock on a view to a higher level, eg from read-only to
