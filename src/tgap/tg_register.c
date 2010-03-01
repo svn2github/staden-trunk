@@ -1056,6 +1056,20 @@ int type_to_result(GapIO *io, int type, int contig) {
  *-----------------------------------------------------------------------------
  */
 
+void busy_dialog(GapIO *io, int contig) {
+    char buf[1024];
+
+    sprintf(buf, "tk_messageBox \
+			-icon warning \
+			-title {Contig is busy} \
+			-message {The contig is busy, probably due to an "
+	                         "editor in use for this contig. Changes will "
+	                         "not be made for this contig.} \
+                        -type ok");
+
+    Tcl_Eval(GetInterp(), buf);
+}
+
 /*
  * Attempts to lock a contig for exclusive write access.
  * No record of the lock is kept; that's done implicitly by registration.
@@ -1088,7 +1102,6 @@ int contig_lock_write(GapIO *io, int contig) {
 	return 0;
     }
 
-    puts("FIXME: busy_dialog(io, contig);");
-    //busy_dialog(io, contig);
+    busy_dialog(io, contig);
     return -1;
 }

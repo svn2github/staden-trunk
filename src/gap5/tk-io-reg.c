@@ -217,21 +217,6 @@ void update_results(GapIO *io) {
     }
 }
 
-void busy_dialog(GapIO *io, int contig) {
-    char buf[1024];
-
-    sprintf(buf, "tk_messageBox \
-			-icon warning \
-			-title {Contig is busy} \
-			-message {The contig %s is busy, probably due to an "
-	    "editor in use for this contig. Changes will not be made for "
-	    "this contig.} \
-			-type ok",
-	    get_contig_name(io, contig));
-
-    Tcl_Eval(GetInterp(), buf);
-}
-
 typedef struct {
     char *result;
     char *colour;
