@@ -491,9 +491,21 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 
     /* GapIO */
     case _IO:
+	if (argc == 3) {
+	    /* Update the io we're using, eg due to a contig join */
+	    Tcl_Obj *io_str;
+	    GapIO *io;
+
+	    io_str = Tcl_NewStringObj(argv[2], -1);
+	    io = io_from_obj(io_str);
+	    Tcl_DecrRefCount(io_str);
+	    if (!io)
+		return TCL_ERROR;
+	    xx->io = io;
+	}
 	Tcl_SetResult(interp, io_obj_as_string(xx->io) , TCL_VOLATILE);
 	break;
-
+	
     /* Contig record number */
     case _CONTIG_REC:
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(xx->cnum));
@@ -990,6 +1002,8 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	cache_decr(ed->xx->io, ed->xx->contig);
 	break;
     case _INCR_CONTIG:
+	if (argc == 3)
+	    ed->xx->cnum = atoi(argv[2]);
 	ed->xx->contig = cache_search(ed->xx->io, GT_Contig, ed->xx->cnum);
 	cache_incr(ed->xx->io, ed->xx->contig);
 	break;

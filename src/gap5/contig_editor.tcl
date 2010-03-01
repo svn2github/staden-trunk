@@ -78,6 +78,8 @@ proc io_child {io crec} {
 proc io_detach {crec} {
     upvar \#0 contigIO_$crec cio
 
+    if {![info exists cio]} return
+
     incr cio(ref) -1
 
     if {[set cio(ref)] == 0} {
@@ -264,12 +266,12 @@ proc io_redo_state {crec} {
 # Contig registration hookups. This data is obviously held per view rather
 # than per contig or per io.
 #-----------------------------------------------------------------------------
-proc contig_register_callback {ed type id cdata args} {
+proc contig_register_callback {ed type id args} {
     global $ed
     set w [set ${ed}(top)]
     global $w
 
-    puts [info level [info level]]
+    #puts [info level [info level]]
 
     switch $type {
 	QUERY_NAME {
@@ -282,8 +284,8 @@ proc contig_register_callback {ed type id cdata args} {
 	}
 
 	GENERIC {
-	    if {$ed != [set ${w}(curr_editor)]} break
-	    foreach {component state} [lindex $args 1] {
+	    if {$ed != [set ${w}(curr_editor)]} return
+	    foreach {component state} [lindex $args 2] {
 		switch $component {
 		    "undo" {
 			$w.toolbar.undo configure -state $state
@@ -306,13 +308,76 @@ proc contig_register_callback {ed type id cdata args} {
 	    # EDIT: Removed " || $arg(id) == 0"
 	    if {[set ${ed}(reg)] != $arg(sent_by) && \
 		    ($arg(id) == [$ed cursor_id])} {
-		puts "ed \#[set ${ed}(reg)]/[$ed cursor_id] move"
 		$ed set_cursor 17 [set ${w}(contig)] $arg(abspos)
 	    }
 	}
+
+	JOIN_TO {
+	    foreach a $args {
+		foreach {k v} $a break;
+		set arg($k) $v
+	    }
+
+	    # NB: What happens when we have contig 1 and contig 2 open, plus
+	    # a join editor on 1+2 which we then join. We end up with two
+	    # $io objects both for the same contig.
+	    #
+	    # We can ignore this whole problem as we can only join
+	    # after saving.
+	    #io_detach $arg(contig_num)
+	    set ${w}(io) [io_child [set ${w}(io_base)] $arg(contig)]
+	    $ed io [set ${w}(io)]
+
+	    # Update the editor cached contig record details
+	    set ${w}(-contig) $arg(contig)
+	    $ed incr_contig $arg(contig)
+	    upvar \#0 contigIO_$arg(contig) cio
+	    set cio(Undo) ""
+	    set cio(Redo) ""
+	    set cio(io) [$ed io]
+	    set cio(crec) $arg(contig)
+	    incr cio(ref)
+	    
+	    # If cursor was on the old contig record, move it to the
+	    # new contig instead.
+	    foreach {type rec pos} [$ed get_cursor relative] break
+	    if {$rec == $arg(contig_num)} {
+		set rec $arg(contig)
+		incr pos $arg(offset)
+		$ed set_cursor $type $rec $pos 0
+	    }
+
+	    # Finally adjust the display.
+	    set pos [$ed xview]
+	    incr pos $arg(offset)
+	    $ed xview $pos
+	}
+
+	GET_LOCK {
+	    foreach a $args {
+		foreach {k v} $a break;
+		set arg($k) $v
+	    }
+
+	    # Check for lock 2 => WRITE
+	    if {[expr {$arg(lock)&2}] == 2} {
+		# Attempt to exit => save dialogue box
+		if {[info exists ${w}(-contig2)] || ![editor_exit $w 1]} {
+		    return [expr {$arg(lock) & ~2}]  ;# Disallow lock
+		}
+		update idletask                      ;# Ensure it's flushed
+	    }
+
+	    return $arg(lock)                        ;# Permit lock
+	}
+
+	REGISTER -
+	DEREGISTER {
+	    # nothing to do
+	}
 	
 	default {
-	    puts "Event '$type $args' not handled"
+	    puts "Event '$type $id $args' not handled"
 	}
     }
 
@@ -327,7 +392,7 @@ proc EditContig2 {io t id} {
     if {[set crec [contig_id_rec $id]] == ""} return
 
     destroy $t
-    edit_contig -io $io -contig $crec -reading $reading
+    catch {edit_contig -io $io -contig $crec -reading $reading}
     SetContigGlobals $io $reading
 }
 
@@ -421,8 +486,6 @@ proc next_editor {} {
 proc contig_editor {w args} {
     global gap5_defs
     upvar \#0 $w opt
-
-    puts [info level [info level]]
 
     # Initialise the $path global array - the instance data for this widget
     foreach {arg val} $args {
@@ -576,7 +639,6 @@ proc contig_editor {w args} {
     menu $w.menubar 
     create_menus $contig_editor_main_menu $w.menubar
     bind  $w.menubar <ButtonPress> "tag_repopulate_menu \[set ${w}(curr_editor)\]"
-    bind  $w.menubar <Down> "+puts down"
 
     # Packing
     grid rowconfigure $w 3 -weight 1
@@ -646,44 +708,73 @@ proc editor_join {w} {
 
     foreach ed $opt(all_editors) {
 	if {[$ed save] != 0} {
-	    puts ERROR
 	    bell
 	    return
 	}
     }
 
     $ed join
-    destroy $w
+    editor_exit $w
 }
 
-proc editor_exit {w} {
+# Returns true if we really want to exit
+#         false if we cannot exit (user hit cancel, or failed to save).
+proc editor_exit {w {get_lock 0}} {
     global $w
     set ed [set ${w}(curr_editor)]
+
+    if {[winfo exists $w.save_dialog]} return
+
+    # Two styles of exit dialog depending on whether we arrived here with
+    # $get_lock true, indicating this wasn't a user controlled exit but rather
+    # a request originating in another window due to the requirement of
+    # taking write-access to this contig.
     if {![[set ${w}(io)] read_only] && [$ed edits_made]} {
-	set ret [tk_messageBox \
-		     -icon question \
-		     -title "Save changes" \
-		     -message "Edits have been made. Save changes?" \
-		     -type yesnocancel \
-		     -parent $w]
+	if {$get_lock} {
+	    set ret [tk_dialog \
+			 $w.save_dialog \
+			 "Quit editor?" \
+			 "Another window wishes to modify this contig, shutting down the editor in the process.\n\nTo deny this hit Cancel.\n\nOtherwise the editor will exit. You can choose whether to save changes when this happens." \
+			 "" \
+			 2 \
+			 Save {Don't Save} Cancel]
+
+	    set ret [lindex {yes no cancel} $ret]
+	} else {
+	    set ret [tk_messageBox \
+			 -icon question \
+			 -title "Save changes" \
+			 -message "Edits have been made. Save changes?" \
+			 -default yes \
+			 -type yesnocancel \
+			 -parent $w]
+	}
+	
 	if {$ret == "cancel"} {
-	    return
+	    return 0
 	} elseif {$ret == "yes"} {
 	    if {[$ed save] != 0} {
 		bell
-		return
+		return 0
 	    }
 	}
     }
 
+    set detach ""
     foreach ed [set ${w}(all_editors)] {
 	global $ed
 	set id [set ${ed}(reg)]
 	contig_deregister -io [set ${w}(io_base)] -id $id
-	after idle "io_detach [$ed contig_rec]"
+	lappend detach [$ed contig_rec]
     }
 
     destroy $w
+
+    foreach crec $detach {
+	io_detach $crec
+    }
+
+    return 1
 }
 
 proc display_pos_set {ed pos} {
@@ -804,7 +895,6 @@ proc editor_pane {top w above ind arg_array} {
 
     # Initialise with an IO and link name/seq panel together
     global $ed $edname
-    puts "register with $ed"
     set ${ed}(parent) $w
     set ${ed}(top) $top
     set ${ed}(reg) [contig_register \
@@ -912,8 +1002,6 @@ proc editor_goto {ed w} {
 # Callback for cutoffs button
 proc editor_cutoffs {w} {
     upvar \#0 $w opt
-
-    puts [info level [info level]]
 
     foreach ed $opt(all_editors) {
 	$ed configure -display_cutoffs $opt(Cutoffs)
@@ -1058,7 +1146,8 @@ proc editor_edit_base {w call where} {
     upvar $w opt
 
     set io [$w io]
-
+    upvar $opt(top) top
+    
     if {$where == "" || [$io read_only]} {
 	bell
 	return
@@ -1167,7 +1256,6 @@ proc editor_delete_base {w where} {
 
 	# get pileup at consensus position so we can restore it
 	set pileup [$contig get_pileup $pos]
-	puts $pileup
 
 	$contig delete_base $pos
 	$contig delete
@@ -1378,9 +1466,6 @@ proc editor_name_select {w where} {
 
 # Functions to make tag edits or to be called by the undo/redo stack.
 proc U_tag_change {w rec new_a} {
-
-    puts [info level [info level]]
-
     set io [$w io]
 
     #-- Get existing tag
@@ -1468,7 +1553,6 @@ proc tag_repopulate_menu {w} {
 		set type "[format "%c" [expr {$itype & 0xff}]]$type"
 		set itype [expr {$itype >> 8}]
 	    }
-	    puts "$type $rec"
 	    $me add command -label "$type $start..$end \#$rec" \
 		-command "tag_editor_launch $w $rec"
 	    $md add command -label "$type $start..$end \#$rec" \
@@ -1479,8 +1563,6 @@ proc tag_repopulate_menu {w} {
 }
 
 proc tag_editor_launch {w where} {
-    puts [info level [info level]]
-
     if {[llength $where] != 1} {
 	foreach {type rec pos} $where break;
 	if {$type != 21} return
@@ -1520,8 +1602,6 @@ proc tag_editor_delete {w where} {
 }
 
 proc tag_editor_create {w} {
-    puts [info level [info level]]
-
     global $w
     set rec -1
     
@@ -1547,7 +1627,6 @@ proc tag_editor_callback {w rec cmd args} {
     set f $w.tag_$rec
     set io [$w io]
 
-    puts [info level [info level]]
     switch $cmd {
 	"save" {
 #	    if {$rec == -1} {
@@ -1611,7 +1690,6 @@ proc show_trace {w loc} {
     if {$loc == ""} return
     foreach {type rec pos} $loc break;
 
-    puts $rec/$pos
     if {$type == 18} {
 	set s [$io get_seq $rec]
 	set name [$s get_name]
@@ -1645,7 +1723,6 @@ bind EdNames <3> {
 
     if {$type == 18} {
 	set other_end [$ed get_template_seqs $rec]
-	puts rec=$rec,other_end=$other_end
 	if {[llength $other_end] != 1} return
 	set s [[$ed io] get_seq $other_end]
 	$ed set_cursor 18 $other_end 1

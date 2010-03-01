@@ -202,7 +202,8 @@ char *get_contig_name(GapIO *io, int number) {
     contig_t *c;
 
     c = (contig_t *)cache_search(io, GT_Contig, number);
-    strcpy(name, contig_get_name(&c));
+    strncpy(name, contig_get_name(&c), DB_NAMELEN);
+    name[DB_NAMELEN] = 0;
 
     return name;
 }
@@ -603,6 +604,11 @@ int complement_contig(GapIO *io, int crec) {
     int len;
     int ustart, uend, delta;
     reg_complement rc;
+
+    if (contig_lock_write(io, crec) == -1) {
+	verror(ERR_WARN, "complement_contig", "Contig is busy");
+	return -1;
+    }
 
     if (!(c = (contig_t *)cache_search(io, GT_Contig, crec)))
 	return -1;
