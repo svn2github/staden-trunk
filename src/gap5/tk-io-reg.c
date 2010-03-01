@@ -425,6 +425,7 @@ typedef struct {
     Tcl_Interp *interp;
     char *command;
     int id;
+    int ref;
 } cr_type;
 
 static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
@@ -777,6 +778,7 @@ int tk_contig_register(ClientData clientData, Tcl_Interp *interp,
     crt->interp = interp;
     crt->command = strdup(args.command);
     crt->id = register_id();
+    crt->ref = 1;
     flags = reg_str2flags(interp, args.flags);
     type = REG_TYPE_UNKNOWN; /* FIXME */
 
@@ -838,13 +840,19 @@ int tk_contig_deregister(ClientData clientData, Tcl_Interp *interp,
 		ret |= contig_deregister(args.io, -args.id,
 					 ptr->func, ptr->fdata);
 		xfree(crt->command);
-		xfree(crt);
+		crt->command = NULL;
+		if (--crt->ref == 0) {
+		    xfree(crt);
+		}
 	    }
 	}
 
 	xfree(uids);
     }
     vTcl_SetResult(interp, "%d", ret);
+
+    if (regs)
+	memset(regs, 0, sizeof(contig_t));
     xfree(regs);
 
     return TCL_OK;
@@ -992,6 +1000,7 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	break;
     }
 
+    crt->ref++;
     sprintf(buf, "%d", crt->id);
     if (Tcl_VarEval(crt->interp, crt->command, " ", type, " ", buf, " ",
 		    Tcl_DStringValue(&ds), NULL) != TCL_OK) {
@@ -1013,24 +1022,31 @@ static void tk_contig_register_cmd(GapIO *io, int contig, void *fdata,
 	    char **largv;
 
 	    if (Tcl_SplitList(crt->interp, Tcl_GetStringResult(crt->interp),
-			      &largc, &largv) != TCL_OK)
-		return;
+			      &largc, &largv) == TCL_OK) {
+		for (p=i=0; i<largc; i++) {
+		    strcpy(&buf[p], largv[i]);
+		    p += strlen(largv[i])+1;
+		}
+		buf[p] = buf[p+1] = 0;
+		jdata->get_ops.ops = buf;
 
-	    for (p=i=0; i<largc; i++) {
-		strcpy(&buf[p], largv[i]);
-		p += strlen(largv[i])+1;
+		Tcl_Free((char *)largv);
+		break;
 	    }
-	    buf[p] = buf[p+1] = 0;
-	    jdata->get_ops.ops = buf;
-
-	    Tcl_Free((char *)largv);
-	    break;
 	}
+
+    case REG_GET_LOCK:
+	jdata->glock.lock = atoi(Tcl_GetStringResult(crt->interp));
+	break;
 
     case REG_PARAMS:
 	sprintf(buf, "%.1024s", Tcl_GetStringResult(crt->interp));
 	jdata->params.string = buf;
 	break;
+    }
+
+    if (--crt->ref == 0) {
+	xfree(crt);
     }
 
     Tcl_DStringFree(&ds);
