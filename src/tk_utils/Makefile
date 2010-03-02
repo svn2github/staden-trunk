@@ -106,6 +106,7 @@ install:
 	cp $(PROGLIBS) $(INSTALLLIB)
 	-mkdir $(INSTALLTCL)/tk_utils
 	cp $(S)/*.tcl $(S)/tclIndex $(INSTALLTCL)/tk_utils
+	cp $(S)/stash $(INSTALLBIN)
 ifneq ($(MACHINE),windows)
 endif
 	cp $(S)/2bars_*.bmp $(S)/help_config $(S)/tk_utilsrc $(INSTALLETC)

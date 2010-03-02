@@ -1,0 +1,21 @@
+#!/bin/sh
+#\
+exec tclsh $0 ${@+"$@"}
+
+source $env(STADTABL)/shlib.conf
+load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
+load_package tk_utils
+tk_utils_init
+
+if {[llength $argv]} {
+    set argv0 [lindex $argv 0]
+    set argv [lrange $argv 1 end]
+    source $argv0
+} else {
+    set cmd ""
+    while {[gets stdin line] != -1} {
+	append cmd "$line\n"
+    }
+    eval $cmd
+}
+
