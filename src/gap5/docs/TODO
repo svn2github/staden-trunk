@@ -7,9 +7,6 @@
 *	BUG: Searching by read name should point editor on the first
         used base, not the first base.
 
-*	BUG: No libpng causes compilation errors still, rather than
-        ignoring it as configure implies. (It's still in global.mk)
-
 *	BUG: Can create tags off the ends of contigs.
 
 *	BUG: Insert to consensus at pos -200 say (when only clipped

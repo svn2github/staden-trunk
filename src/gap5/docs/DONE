@@ -1,3 +1,6 @@
+*	BUG: No libpng-devel causes compilation errors still, rather than
+        ignoring it as configure implies. (It's still in global.mk)
+
 *	On REG_JOIN_TO, the [$ed io] needs updating to a valid io for
         the contig we're joining to. Rerun "$ed init"? Not quite as we
         don't want to destroy the edview, just update io. Maybe

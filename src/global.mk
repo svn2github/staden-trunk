@@ -171,7 +171,6 @@ SCFEXPIO_LIB = $(SCFEXPIO_LIB_S) $(LINK_PATHFLAG)$(SRCROOT)/fakii/scf_exp_io/$(O
 ZLIB_LIB     = $(ZLIB_LIB_S) $(LINK_LIBFLAG)z$(LIB_EXT) $(ZLIB_LIB_E)
 MUT_LIB      = $(MUT_LIB_S) $(LINK_LIBFLAG)mutlib$(LIB_EXT) $(MUT_LIB_E)
 P3_LIB	     = $(P3_LIB_S)  $(LINK_LIBFLAG)primer3$(LIB_EXT) $(P3_LIB_E)
-PNG_LIB	     = $(PNG_LIB_S) $(LINK_LIBFLAG)png12$(LIB_EXT) $(PNG_LIB_E)
 
 
 # Standard chunks to add to the compile line
@@ -196,7 +195,6 @@ SPIN_INC	= -I$(SPINSRC)
 COPYREADS_INC	= -I$(COPYREADSSRC)
 MUT_INC		= -I$(SRCROOT) -I$(MUTSRC)
 P3_INC		= -I$(SRCROOT)/primer3/src
-PNG_INC	        = -I$(SRCROOT)/libpng
 
 #
 # Where the objects are relative to this makefile and vice versa.
