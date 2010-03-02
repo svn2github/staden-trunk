@@ -819,7 +819,6 @@ proc UpdateContigId { io cs_h current } {
     set cnum [GetContigNum $cs_h $current]
     set c [$io get_contig $cnum]
     set c_id_contig [$c get_name]
-    puts "c_id_contig = $c_id_contig \#[$c get_rec]"
 }
 
 ##############################################################################
@@ -1403,7 +1402,6 @@ proc resize_canvas {args} {
 }
 
 proc scroll_canvas {args} {
-    puts [info level [info level]]
     foreach {key val} $args {
 	set a($key) $val
     }
