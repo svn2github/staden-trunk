@@ -1,6 +1,6 @@
 #!/bin/ksh
 #\
-STADENROOT=/usr/local/badger/gap4_test; export STADENROOT; . $STADENROOT/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
+STADENROOT=${STADENROOT:-${0%/*/*/*/*}}; export STADENROOT; . $STADENROOT/share/staden/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
 
 proc finishing_rules {bits} {
     # Problem 0: Extend contig leftwards

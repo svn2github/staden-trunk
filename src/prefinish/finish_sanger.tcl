@@ -1,3 +1,7 @@
+#!/bin/sh
+#\
+STADENROOT=${STADENROOT:-${0%/*/*/*/*}}; export STADENROOT; . $STADENROOT/share/staden/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
+
 load_package gap
 #load_package finish
 load libprefinish.so

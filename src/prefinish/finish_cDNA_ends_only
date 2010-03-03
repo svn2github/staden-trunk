@@ -1,6 +1,6 @@
-#!/bin/ksh
+#!/bin/sh
 #\
-STADENROOT=/usr/local/badger/gap4_test; export STADENROOT; . $STADENROOT/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
+STADENROOT=${STADENROOT:-${0%/*/*/*/*}}; export STADENROOT; . $STADENROOT/share/staden/staden.profile; exec stash "$0" ${@+"$@"} || exit 1
 
 proc finishing_rules {bits} {
     # Problem 0: Extend contig leftwards
@@ -195,7 +195,7 @@ proc usage {argv0} {
 # Main entry point
 
 source $env(STADTABL)/shlib.conf
-load $env(STADLIB)/$env(MACHINE)-binaries/${lib_prefix}tk_utils${lib_suffix}
+load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
 load_package gap
 load_package prefinish
 
