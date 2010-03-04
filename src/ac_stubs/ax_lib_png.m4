@@ -34,9 +34,9 @@
 AC_DEFUN([AX_LIB_PNG],
 [
   AC_ARG_WITH(png,
-  	    AC_HELP_STRING([--with-png], [Look for png inc/lib in DIR]))
+  	    AC_HELP_STRING([--with-png], [Look for png inc/lib in DIR]),
+	    [PNG_ROOT="$withval"], [PNG_ROOT=""])
   
-  PNG_ROOT="$withval"
   png_ok=no
   if test "$xPNG_ROOT" != "x"
   then
@@ -106,7 +106,7 @@ AC_DEFUN([AX_LIB_PNG],
           PNG_LDFLAGS="-L${PNG_ROOT}/lib -lpng"
 	  PNG_CFLAGS="-I${PNG_ROOT}/include"
       else
-          PNG_LDFLAGS="-lz"
+          PNG_LDFLAGS="-lpng"
 	  PNG_CFLAGS=
       fi
       AC_SUBST([PNG_LDFLAGS])
