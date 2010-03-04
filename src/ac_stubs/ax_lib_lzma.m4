@@ -53,7 +53,7 @@ AC_DEFUN([AX_LIB_LZMA],
     _ldflags=$LDFLAGS
     LDFLAGS="$LFDLAGS -L${LZMA_ROOT}/lib"
     AC_LANG_PUSH([C])
-    AC_CHECK_LIB(z, inflateEnd,
+    AC_CHECK_LIB(lzma, lzma_easy_buffer_encode,
 	[AC_CHECK_HEADER(lzma.h, lzma_ok=yes, lzma_ok=no)])
     AC_LANG_POP([C])
     if test "$lzma_ok" != "yes"
