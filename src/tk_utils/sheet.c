@@ -101,7 +101,7 @@ void sheet_resize(Sheet *sw, int rows, int columns) {
 					  sw->height_in_pixels,
 					  Tk_Depth(sw->tkwin));
 	else
-	    sw->dbl_buffer = NULL;
+	    sw->dbl_buffer = (Pixmap)NULL;
     }
 }
 

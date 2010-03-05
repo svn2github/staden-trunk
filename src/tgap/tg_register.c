@@ -35,6 +35,7 @@
 #include "tg_gio.h"
 #include "hache_table.h"
 #include "xalloc.h"
+#include "tcl_utils.h"
 
 /*
  *-----------------------------------------------------------------------------

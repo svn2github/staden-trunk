@@ -18,6 +18,7 @@
 #include "sam.h"
 #include "faidx.h"
 #include "bam_maqcns.h"
+#include "depad_seq_tree.h"
 
 /*
  * Uncomment this if you want sam auxillary tags to be added as tag in

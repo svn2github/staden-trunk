@@ -294,7 +294,7 @@ int anno_get_position2(GapIO *io, GRec anum, int *contig,
 		       range_t *r_out, seq_t **a_out) {
     return bin_get_item_position(io, GT_AnnoEle, anum,
 				 contig, start, end, orient, NULL,
-				 r_out, a_out);
+				 r_out, (void **)a_out);
 }
 
 int anno_get_position(GapIO *io, GRec anum, int *contig,

@@ -65,7 +65,7 @@ int maq_detect_size(gzFile fp) {
     gzseek(fp, curr, SEEK_SET);
 
     /* We know the sequence size should >= 0 and <= 128 */
-    if (m.size >= 0 && m.size <= 128) {
+    if (/*m.size >= 0 &&*/ m.size <= 128) {
 	/* The sequence struct from m.size onwards should be nul padded. */
 	for (i = m.size; i < 127; i++) {
 	    if (m.seq[i] != 0) {
@@ -94,7 +94,7 @@ int maq_detect_size(gzFile fp) {
 	    return -1;
 
 	gzseek(fp, curr, SEEK_SET);
-	if (m64.size < 0 || m64.size > 64)
+	if (/*m64.size < 0 || */ m64.size > 64)
 	    return -1;
 
 	for (i = m64.size; i < 63; i++) {

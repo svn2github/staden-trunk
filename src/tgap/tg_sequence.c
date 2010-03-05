@@ -619,7 +619,7 @@ int sequence_get_position2(GapIO *io, GRec snum, int *contig,
 			   range_t *r_out, seq_t **s_out) {
     return bin_get_item_position(io, GT_Seq, snum,
 				 contig, start, end, orient, NULL,
-				 r_out, s_out);
+				 r_out, (void **)s_out);
 }
 
 int sequence_get_position(GapIO *io, GRec snum, int *contig,
