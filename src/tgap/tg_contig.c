@@ -1724,13 +1724,14 @@ int contig_destroy(GapIO *io, int rec) {
  * pright	The parent bin/-contig in the right new contig
  * child_no     0 or 1 - whether this bin is the left/right child of its parent
  */
-#define H 20
+#define H 40
 #define G 20
 static int bin_dump_recurse(GapIO *io, contig_t **c,
 			    char *fn, int child,
 			    int bin_num, int offset,
 			    int level, int complement,
-			    double rootx, double rooty) {
+			    double rootx, double rooty,
+			    int do_seqs) {
     int i, f_a, f_b;
     bin_index_t *bin = get_bin(io, bin_num);
     static FILE *gv = NULL;
@@ -1761,7 +1762,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	scale = 800.0 / bin->size;
 	o -= offset * scale;
 	fprintf(gv, "%%!\n/Times-Roman findfont\n5 scalefont\nsetfont\n"
-		"90 %d translate\n90 rotate\nnewpath\n", o);
+		"%d %d translate\n90 rotate\nnewpath\n", 90+H, o);
 
 	for (i = 0; i < 100; i++) {
 	    level_end[i] = -1e10;
@@ -1818,6 +1819,26 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 		scale * offset, level*(H+G)-7, offset);
     }
 
+    /* Sequence lines */
+    if (do_seqs) {
+	int n;
+
+	cache_incr(io, bin);
+	for (n = 0; bin->rng && n < ArrayMax(bin->rng); n++) {
+	    range_t *r = arrp(range_t, bin->rng, n);
+	    int start = NORM(r->start), end = NORM(r->end);
+
+	    fprintf(gv, "%f setgray\n",
+		    (r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ
+		    ? 0 : 0.5);
+	    fprintf(gv, "%f %f moveto %f 0 rlineto\n",
+		    scale * MIN(start, end),
+		    level*(H+G)+3 + ((double)n/(ArrayMax(bin->rng)+1))*(H-6),
+		    scale * abs(end-start));
+	}
+	cache_decr(io, bin);
+    }
+
     /* Outer bin bounding box */
     g = complement ? 0.5 : 0;
     fprintf(gv, "%f setgray %f %d moveto %f 0 rlineto 0 %d rlineto -%f 0 rlineto 0 -%d rlineto stroke\n",
@@ -1857,7 +1878,8 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
 	ch = get_bin(io, bin->child[i]);
 	if (0 != bin_dump_recurse(io, c, fn, i, bin->child[i],
 				  NMIN(ch->pos, ch->pos + ch->size-1),
-				  level-1, complement, rootx, rooty))
+				  level-1, complement, rootx, rooty,
+				  do_seqs))
 	    return -1;
     }
 
@@ -1877,8 +1899,10 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
  */
 void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
     //HacheTableRefInfo(io->cache, stdout);
+    cache_incr(io, *c);
     bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
-		     contig_offset(io, c), 0, 0, 0.0, 0.0);
+		     contig_offset(io, c), 0, 0, 0.0, 0.0, 1);
+    cache_decr(io, *c);
     //HacheTableRefInfo(io->cache, stdout);
 }
 
