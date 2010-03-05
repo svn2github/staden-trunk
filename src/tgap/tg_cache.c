@@ -1528,7 +1528,7 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 		break;
 	    }
 	    
-	    printf("Duplicate anno %d in block %d\n", sub_rec, ci->rec);
+	    //printf("Duplicate anno %d in block %d\n", sub_rec, ci->rec);
 
 	    sub_new = (cached_item *)malloc(sizeof(*ci) + sub_ci->data_size);
 	    memcpy(sub_new, sub_ci, sizeof(*ci) + sub_ci->data_size);
@@ -1560,6 +1560,11 @@ cached_item *cache_dup(GapIO *io, cached_item *sub_ci) {
 void *cache_rw(GapIO *io, void *data) {
     cached_item *ci = ci_ptr(data);
     cached_item *mi = cache_master(ci);
+
+    if (mi->lock_mode >= G_LOCK_RW) {
+	/* Already locked */
+	return data;
+    }
 
     if (io->base) {
 	ci = cache_dup(io, ci);
