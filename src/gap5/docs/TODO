@@ -1,3 +1,7 @@
+*	BUG: Inserting/deleting from an individual sequence doesn't
+        update the tags. This may mean moving annotations,
+        growing/shrinking them or even deleting them entirely.
+
 *	BUG: Contig selector shows full cutoff lengths and not clipped
         lengths. However right-click and edit contig adds left-clip point on
 	so we can appear to want to edit outside the contig range.
@@ -11,8 +15,6 @@
 
 *	BUG: Insert to consensus at pos -200 say (when only clipped
         data there), followed by undo => crash. (Cannot repeat)
-
-*	BUG: Moving seqs doesn't move tags on them.
 
 *	Output P operators instead of D operators in sam. This should
         fix the samtools consensus generation.

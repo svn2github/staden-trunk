@@ -267,8 +267,6 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel) {
     if (rel && e->obj_type == GT_Seq) {
 	int st, en, orient;
 	sequence_get_position(io, e->obj_rec, NULL, &st, &en, &orient);
-	printf("\nanno %d..%d, seq %d..%d dir %d\n\n",
-	       r2.start, r2.end, st, en, orient);
 	r2.start -= st;
 	r2.end   -= st;
     }
@@ -281,3 +279,28 @@ range_t *anno_get_range(GapIO *io, int anno_ele, int *contig, int rel) {
 
     return &r2;
 }
+
+/*
+ * Finds the contig number and position of an anno_ele record number.
+ *
+ * If non-NULL r_out is filled with the associated range_t struct.
+ *
+ * If non-NULL a_out is filled with a pointer to the anno_ele_t struct.
+ * This will have had cache_incr() run on it, so the caller should
+ * use cache_decr() to permit deallocation.
+ */
+int anno_get_position2(GapIO *io, GRec anum, int *contig,
+		       int *start, int *end, int *orient,
+		       range_t *r_out, seq_t **a_out) {
+    return bin_get_item_position(io, GT_AnnoEle, anum,
+				 contig, start, end, orient, NULL,
+				 r_out, a_out);
+}
+
+int anno_get_position(GapIO *io, GRec anum, int *contig,
+		      int *start, int *end, int *orient) {
+    return bin_get_item_position(io, GT_AnnoEle, anum,
+				 contig, start, end, orient, NULL,
+				 NULL, NULL);
+}
+

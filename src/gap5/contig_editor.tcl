@@ -190,7 +190,22 @@ proc io_undo_exec {w crec cmdu} {
 		$t delete
 	    }
 
+	    T_MOVE {
+		set s [$io get_sequence $op1]
+		$s move_annos $op2
+		$s delete
+	    }
+
 	    T_MOD {
+		array set d $op2
+		set tag [$io get_anno_ele $op1]
+		if {[$tag get_comment] != $d(anno)} {
+		    $tag set_comment $d(anno)
+		}
+		if {[$tag get_type] != $d(type)} {
+		    $tag set_type $d(type)
+		}
+		$tag delete
 	    }
 	    
 	    default {
@@ -1294,6 +1309,7 @@ proc editor_move_seq {w where direction} {
     store_undo $w \
 	[list \
 	     [list C_SET $type $rec $_pos] \
+	     [list T_MOVE $rec [expr {-$direction}]] \
 	     [list B_MOVE $rec $pos] ] {}
 
     $w decr_contig
@@ -1303,6 +1319,10 @@ proc editor_move_seq {w where direction} {
     incr pos $direction
     $c add_sequence $rec $pos $pair_rec $flags
     $c delete
+
+    set seq [$io get_sequence $rec]
+    $seq move_annos $direction
+    $seq delete
 
     $w incr_contig
 
@@ -1605,6 +1625,7 @@ proc tag_editor_create {w} {
     global $w
     set rec -1
     
+    puts [$w select get]
     foreach {otype orec start end} [$w select get] break;
 
     global .Tag.$rec

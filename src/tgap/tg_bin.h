@@ -81,11 +81,38 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
 int bin_get_position(GapIO *io, bin_index_t *bin, int *contig, int *pos);
 
 /*
- * Removes a record referenced from a bin.
+ * Removes a record referenced from a known bin
  *
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_remove_item(GapIO *io, contig_t **c, int rec);
+int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
+			     int type, int rec);
+
+/*
+ * Removes a record referenced from a bin. As above but we only know the
+ * record and not which bin it's part of
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_item(GapIO *io, contig_t **c, int type, int rec);
+
+/*
+ * Finds the contig number and position of a record number.
+ *
+ * If non-NULL r_out is filled with the associated range_t struct.
+ *
+ * If non-NULL i_out is filled with a pointer to the object referred to
+ * by type/rec. (This is just for minor optimisations.) If returned it
+ * will have had cache_incr() run on it, so the caller should
+ * use cache_decr() to permit deallocation.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_get_item_position(GapIO *io, int type, GRec rec,
+			  int *contig, int *start, int *end, int *orient,
+			  int *bin, range_t *r_out, void **i_out);
 
 #endif /* _TG_CONTIG_H_ */

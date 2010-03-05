@@ -1,3 +1,7 @@
+*	BUG: Undo doesn't fix edits to tag type / comment.
+
+*	BUG: Moving seqs doesn't move tags on them.
+
 *	BUG: No libpng-devel causes compilation errors still, rather than
         ignoring it as configure implies. (It's still in global.mk)
 

@@ -666,7 +666,7 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 
 	vTcl_SetResult(interp, "%d %d", r->pair_rec, r->flags);
 
-	bin_remove_item(tc->io, &tc->contig, rec);
+	bin_remove_item(tc->io, &tc->contig, GT_Seq, rec);
 	break;
     }
 
@@ -725,6 +725,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 	bin = bin_add_range(tc->io, &tc->contig, &r, &r_out, NULL);
 	if (s->bin != bin->rec) {
 	    int new_comp, old_comp, old_bin = s->bin;
+
+	    //printf("New seq bin %d->%d\n", s->bin, bin->rec);
 
 	    /* Bin number changed - update seq too */
 	    s = cache_rw(tc->io, s);
@@ -897,7 +899,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	"get_conf",	"get_conf4",    "get_contig",   "get_position",
 	"get_orient",   "get_mapping_qual",
 	"get_base",     "insert_base",  "delete_base",  "replace_base",
-	"get_clips",    "set_clips",
+	"get_clips",    "set_clips",    "move_annos",
 	(char *)NULL,
     };
 
@@ -908,7 +910,7 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	GET_CONF,       GET_CONF4,      GET_CONTIG,     GET_POSITION,
 	GET_ORIENT,     GET_MAPPING_QUAL,
 	GET_BASE,       INSERT_BASE,    DELETE_BASE,    REPLACE_BASE,
-	GET_CLIPS,      SET_CLIPS,
+	GET_CLIPS,      SET_CLIPS,      MOVE_ANNOS,
     };
 
     if (objc < 2) {
@@ -1159,6 +1161,22 @@ static int sequence_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_GetIntFromObj(interp, objv[3], &right);
 	sequence_set_left (ts->io, &ts->seq, left);
 	sequence_set_right(ts->io, &ts->seq, right);
+
+	break;
+    }
+
+    case MOVE_ANNOS: {
+	int dist;
+
+	if (objc != 3) {
+	    vTcl_SetResult(interp, "wrong # args: should be "
+			   "\"%s move_annos dist\"\n",
+			   Tcl_GetStringFromObj(objv[0], NULL));
+	    return TCL_ERROR;
+	}
+
+	Tcl_GetIntFromObj(interp, objv[2], &dist);
+	sequence_move_annos(ts->io, &ts->seq, dist);
 
 	break;
     }

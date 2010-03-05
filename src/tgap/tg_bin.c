@@ -277,7 +277,8 @@ bin_index_t *bin_for_range(GapIO *io, contig_t **c,
     if (last_bin_rec && last_c == (*c)->rec && last_io == io) {
 	last_bin = cache_search(io, GT_Bin, last_bin_rec);
 	if (start >= last_start && end <= last_end) {
-	    if (last_bin && last_bin->size == io->min_bin_size) {
+	    if (last_bin && last_bin->size <= io->min_bin_size &&
+		!last_bin->child[0] && !last_bin->child[1]) {
 		/* leaf node, so we can return right now */
 		if (offset_r)
 		    *offset_r = last_offset;
@@ -573,33 +574,122 @@ bin_index_t *bin_add_range(GapIO *io, contig_t **c, range_t *r,
 }
 
 /*
- * Removes a record referenced from a bin.
+ * Finds the contig number and position of a record number.
+ *
+ * If non-NULL r_out is filled with the associated range_t struct.
+ *
+ * If non-NULL i_out is filled with a pointer to the object referred to
+ * by type/rec. (This is just for minor optimisations.) If returned it
+ * will have had cache_incr() run on it, so the caller should
+ * use cache_decr() to permit deallocation.
  *
  * Returns 0 on success
  *        -1 on failure
  */
-int bin_remove_item(GapIO *io, contig_t **c, int rec) {
+int bin_get_item_position(GapIO *io, int type, GRec rec,
+			  int *contig, int *start, int *end, int *orient,
+			  int *brec, range_t *r_out, void **i_out) {
     bin_index_t *bin;
-    int i, start, end;
-    int cnum, pos;
-    seq_t *s;
+    int bnum, i;
+    int offset1 = 0, offset2 = 0, found = 0;
+    int comp = 0;
 
-    s = (seq_t *)cache_search(io, GT_Seq, rec);
-    if (-1 == sequence_get_position(io, rec, &cnum, &pos, NULL, NULL))
+    if (type == GT_AnnoEle) {
+	anno_ele_t *a = cache_search(io, GT_AnnoEle, rec);
+	if (i_out) {
+	    cache_incr(io, a);
+	    *i_out = a;
+	}
+	bnum = a->bin;
+    } else if (type == GT_Seq) {
+	seq_t *s = (seq_t *)cache_search(io, GT_Seq, rec);
+
+	if (i_out) {
+	    cache_incr(io, s);
+	    *i_out = s;
+	}
+	bnum = s->bin;
+    } else {
+	fprintf(stderr, "Unsupported record type %d in bin_get_item_position\n",
+		type);
+    }
+    
+    if (brec)
+	*brec = bnum;
+
+    /* Find the position of this anno within the bin */
+    bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
+        range_t *r = arrp(range_t, bin->rng, i);
+	if (r->flags & GRANGE_FLAG_UNUSED)
+	    continue;
+
+	if (r->rec == rec) {
+	    found = 1;
+	    offset1 = r->start;
+	    offset2 = r->end;
+
+	    if (r_out)
+		*r_out = *r;
+	    break;
+	}
+    }
+
+    if (!found) {
+	if (i_out)
+	    *i_out = NULL;
 	return -1;
+    }
 
-    start = pos;
-    end   = pos + (s->len > 0 ? s->len : -s->len) - 1;
+    /* Find the position of this bin relative to the contig itself */
+    for (;;) {
+	if (bin->flags & BIN_COMPLEMENTED) {
+	    offset1 = bin->size-1 - offset1;
+	    offset2 = bin->size-1 - offset2;
+	    comp ^= 1;
+	}
+	offset1 += bin->pos;
+	offset2 += bin->pos;
 
-    if (!(bin = bin_for_range(io, c, start, end, 0, NULL, NULL)))
+	if (bin->parent_type != GT_Bin)
+	    break;
+
+	bnum = bin->parent;
+	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
+    }
+
+    assert(bin->parent_type == GT_Contig);
+
+    if (contig)
+	*contig = bin->parent;
+    if (start)
+	*start = offset1 < offset2 ? offset1 : offset2;
+    if (end)
+	*end = offset1 > offset2 ? offset1 : offset2;
+    if (orient)
+	*orient = comp;
+
+    return 0;
+}
+
+/*
+ * Removes a record referenced from a known bin
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_item_from_bin(GapIO *io, contig_t **c, bin_index_t **binp,
+			     int type, int rec) {
+    bin_index_t *bin;
+    int i;
+
+    if (!(bin = cache_rw(io, *binp)))
 	return -1;
-
-    if (!(bin = cache_rw(io, bin)))
-	return -1;
+    *binp = bin;
 
     /* FIXME: we should check and update bin->start_used and bin->end_used */
 
-    /* FIXME: use s->bin_index here as a short-cut? */
+    /* FIXME: use seq->bin_index or anno_ele->idx here as a short-cut? */
     for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
 	range_t *r = arrp(range_t, bin->rng, i);
 	if (r->flags & GRANGE_FLAG_UNUSED)
@@ -621,6 +711,31 @@ int bin_remove_item(GapIO *io, contig_t **c, int rec) {
 
     return 0;
 }
+
+/*
+ * Removes a record referenced from a bin. As above but we only know the
+ * record and not which bin it's part of
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int bin_remove_item(GapIO *io, contig_t **c, int type, int rec) {
+    bin_index_t *bin;
+    int i, start, end;
+    int cnum, bnum;
+
+    if (-1 == bin_get_item_position(io, type, rec, &cnum, &start, &end,
+				    NULL, &bnum, NULL, NULL))
+	return -1;
+
+
+    //if (!(bin = bin_for_range(io, c, start, end, 0, NULL, NULL)))
+    //    return -1;
+    bin = cache_search(io, GT_Bin, bnum);
+
+    return bin_remove_item_from_bin(io, c, &bin, type, rec);
+}
+
 
 /*
  * Finds the contig number and position of the start of a bin.

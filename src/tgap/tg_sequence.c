@@ -617,77 +617,16 @@ int sequence_index_update(GapIO *io, char *name, int name_len, GRec rec) {
 int sequence_get_position2(GapIO *io, GRec snum, int *contig,
 			   int *start, int *end, int *orient,
 			   range_t *r_out, seq_t **s_out) {
-    bin_index_t *bin;
-    int bnum, i;
-    int offset1 = 0, offset2 = 0, found = 0;
-    seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
-    int comp = 0;
-
-    if (s_out) {
-	cache_incr(io, s);
-	*s_out = s;
-    }
-
-    /* Find the position of this sequence within the bin */
-    bnum = s->bin;
-    bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-    for (i = 0; bin->rng && i < ArrayMax(bin->rng); i++) {
-        range_t *r = arrp(range_t, bin->rng, i);
-	if (r->flags & GRANGE_FLAG_UNUSED)
-	    continue;
-
-	if (r->rec == snum) {
-	    found = 1;
-	    offset1 = r->start;
-	    offset2 = r->end;
-
-	    if (r_out)
-		*r_out = *r;
-	    break;
-	}
-    }
-
-    if (!found) {
-	if (s_out)
-	    *s_out = NULL;
-	return -1;
-    }
-
-    /* Find the position of this bin relative to the contig itself */
-    for (;;) {
-	if (bin->flags & BIN_COMPLEMENTED) {
-	    offset1 = bin->size-1 - offset1;
-	    offset2 = bin->size-1 - offset2;
-	    comp ^= 1;
-	}
-	offset1 += bin->pos;
-	offset2 += bin->pos;
-
-	if (bin->parent_type != GT_Bin)
-	    break;
-
-	bnum = bin->parent;
-	bin = (bin_index_t *)cache_search(io, GT_Bin, bnum);
-    }
-
-    assert(bin->parent_type == GT_Contig);
-
-    if (contig)
-	*contig = bin->parent;
-    if (start)
-	*start = offset1 < offset2 ? offset1 : offset2;
-    if (end)
-	*end = offset1 > offset2 ? offset1 : offset2;
-    if (orient)
-	*orient = comp;
-
-    return 0;
+    return bin_get_item_position(io, GT_Seq, snum,
+				 contig, start, end, orient, NULL,
+				 r_out, s_out);
 }
 
 int sequence_get_position(GapIO *io, GRec snum, int *contig,
 			  int *start, int *end, int *orient) {
-    return sequence_get_position2(io, snum, contig, start, end, orient,
-				  NULL, NULL);
+    return bin_get_item_position(io, GT_Seq, snum,
+				 contig, start, end, orient, NULL,
+				 NULL, NULL);
 }
 
 /*
@@ -1216,4 +1155,89 @@ int sequence_delete_base(GapIO *io, seq_t **s, int pos, int contig_orient) {
     sequence_reset_ptr(n);
 
     return 0;
+}
+
+/*
+ * Moves all annotations attached to a sequence left or right by a certain
+ * amount 'dist'. If dist is negative the annotations move left, otherwise
+ * they move right.
+ *
+ * This is used when moving sequences within the editor, just prior to the
+ * move itself as we only look for annotations covering the current
+ * coordinates.
+ *
+ * Returns 0 on success
+ *        -1 on failure
+ */
+int sequence_move_annos(GapIO *io, seq_t **s, int dist) {
+    contig_t *c;
+    int start, end, orient, contig;
+    rangec_t *r;
+    int nr, i;
+
+    /* Find the position and contig this sequence currently covers */
+    cache_incr(io, *s);
+    if (0 != sequence_get_position(io, (*s)->rec,
+				   &contig, &start, &end, &orient))
+	return -1;
+
+
+    /*
+     * Identify annotations spanning this region.
+     *
+     * NB: We may want a specialist function for this if we attempt moving
+     * a really long sequence or a sequence in a really deep region.
+     *
+     * The way to implement this would be along the lines of
+     * contig_seqs_in_range2(). We could then keep track of whether the
+     * moved item would still be within the same bin and if so we just
+     * update the coordinate, otherwise we fall back on the extract and
+     * reinsert method (taking care to note we don't then move the same
+     * record multiple times due to it now being in a bin we're about to
+     * visit). Alternatively we could store bin record and bin_index in
+     * the generated rangec_t struct so we can call anno_in_range and
+     * take short cuts here if we can get away with it.
+     */
+    c = cache_search(io, GT_Contig, contig);
+    r = (rangec_t *)contig_anno_in_range(io, &c, start-1, end+1, 0, &nr);
+
+    /* Figure out what to move */
+    for (i = 0; i < nr; i++) {
+	range_t R, *R_out;
+	anno_ele_t *a;
+	bin_index_t *bin;
+
+	assert((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO);
+
+	if (r[i].pair_rec != (*s)->rec)
+	    continue;
+
+	/* A tag for this seq, so create a new range_t and del/add it */
+	bin_remove_item(io, &c, GT_AnnoEle, r[i].rec);
+	R.start    = r[i].start + dist;
+	R.end      = r[i].end   + dist;
+	R.rec      = r[i].rec;
+	R.mqual    = r[i].mqual;
+	R.pair_rec = r[i].pair_rec;
+	R.flags    = r[i].flags;
+	bin = bin_add_range(io, &c, &R, &R_out, NULL);
+	cache_incr(io, bin);
+
+	/* With luck the bin & index into bin haven't changed */
+	a = cache_search(io, GT_AnnoEle, r[i].rec);
+	if (a->bin != bin->rec ||
+	    a->idx != R_out - ArrayBase(range_t, bin->rng)) {
+	    //printf("New tag bin %d->%d %d->%d\n", a->bin, bin->rec,
+	    //	   a->idx, R_out - ArrayBase(range_t, bin->rng));
+	    a = cache_rw(io, a);
+	    a->bin = bin->rec;
+	    a->idx = R_out - ArrayBase(range_t, bin->rng);
+	}
+
+	cache_decr(io, bin);
+    }
+
+    free(r);
+
+    cache_decr(io, *s);
 }
