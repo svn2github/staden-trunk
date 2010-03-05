@@ -1,5 +1,7 @@
-		    Unix build - 14th January 2010
-		    ==============================
+		    Unix build - 5th March 2010
+		    ===========================
+
+See NEWS and/or ChangeLog for version updates.
 
 
 External dependencies
@@ -19,7 +21,7 @@ but are untested - please tell me if they work too).
 * tk		>=8.4
 * zlib		>=1.2.x
 * xz utils	>=4.999 (optional[2], aka liblzma)
-* libpng	>=1.2.x
+* libpng	>=1.2.x (optional[4])
 * curl		>=7.x
 * tklib		>=0.3? (for tablelist widget)
 * itcl		>=3.2 (advisable, but optional[3])
@@ -37,6 +39,9 @@ Gap5 to perform better compression, but it is not mandatory.
 Gap4. However it is a run-time dependency and the package will build
 without these installed. Note that if you link against Tcl/Tk 8.5 then
 the minimum version of itcl/itk is 3.4 and not 3.2.
+
+[4] Libpng development packages are only needed for some obscure
+outputs from Gap4: the editor Report Mutations function.
 
 If your operating system separates out run-time from development files
 then you will need both installed. For example on Debian you need

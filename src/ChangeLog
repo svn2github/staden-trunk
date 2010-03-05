@@ -1,3 +1,580 @@
+2010-03-05  James Bonfield
+
+	* Tagged rel-2-0-0-b5
+	* Tagged gap5-1-2-7
+
+2010-03-05  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/docs/DONE, gap5/docs/TODO,
+	  tgap/tg_anno.c, tgap/tg_anno.h, tgap/tg_bin.c, tgap/tg_bin.h,
+	  tgap/tg_sequence.c, tgap/tg_tcl.c: Added anno_get_position and
+	  anno_get_position2 functions, analogous to
+	  the sequence_get_position* funcs. The two share common code so
+	  internally they now call the same function,
+	  bin_get_item_position(),
+	  that takes a type field.
+	  
+	  Added a move_annos method of the tcl seq object. This calls the
+	  C sequence_move_annos() function. It's used within the contig
+	  editor to ensure that annotations are moved with a
+	  sequence. Still to do: allow partial moves, in the case of
+	  inserting or deleting with a sequence.
+	  
+	  Fixed a bug with the bin_for_range function where the database
+	  had smaller bins than the current default minimum bin
+	  size. Sometimes we were putting things in larger bins than we
+	  need to.
+	  
+	  The Contig Editor Undo command now undoes changes to tag type
+	  and tag comment.
+
+	* gap5/tkEditor.c: The "select get" editor method now returns the
+	  base under the editing cursor when no selection has been
+	  made. This prevents a crash when attempting to create a tag
+	  without marking a region.
+
+	* tgap/tg_cache.c: Prevented excessive item duplications when we
+	  attempt to cache_rw the same object multiple times within the
+	  editor.
+
+	* tgap/tg_contig.c: Extended contig_dump_ps to output sequence
+	  lines too
+
+	* gap4/gap.tcl: Moved the -menu_file code to after the
+	  load_package section (to fix a problem with Sanger's
+	  exoseq_make_gapdb).
+
+2010-03-04  jkbonfield
+
+	* ac_stubs/ax_lib_png.m4: Fixed bug where PNG_LDFLAGS defaults to
+	  -lz when no --with-png is used.
+	  
+	  Also fixed an issue where --with-png was assumed to be used even
+	  when not explicitly specified, by virtue of picking up the
+	  previous $withval used within the --with-lzma section.
+
+	* ac_stubs/ax_lib_lzma.m4: Fixed AC_CHECK_LIB test
+
+2010-03-03  jkbonfield
+
+	* prefinish/finish_cDNA, prefinish/finish_cDNA_ends_only,
+	  prefinish/finish_sanger.tcl: Fixed the scripts so that when run
+	  as an executable rather than from tclsh the auto-restarting code
+	  computes STADENROOT based on the assumption of $0 being in the
+	  share/staden/scripts/$0 location.
+
+	* tk_utils/stash: Fixed argc
+
+2010-03-02  jkbonfield
+
+	* tk_utils/Makefile, tk_utils/stash: Added a new stash script to
+	  the installed bin directory. This pretends to be the old stash
+	  executable, by virtue of running the system tclsh and running a
+	  little bit of startup code.
+	  
+	  It's not a recommended route, but will be kept for backwards
+	  compatibility for old scripts.
+
+	* gap4/gap.tcl, gap5/gap.tcl, gap5/tg_index.c: Bumped some version
+	  numbers:
+	  
+	  gap4 2.11.2
+	  gap5 1.2.7
+	  tg_index 1.2.7
+
+	* gap5/contig_selector.tcl: Removed excessing debugging output
+
+	* gap5/docs/DONE, gap5/docs/TODO, global.mk, system.mk.in: Fixed
+	  compilation when no libpng is found.
+
+2010-03-01  jkbonfield
+
+	* gap5/docs/DONE:
+
+	* gap5/contig_editor.tcl, gap5/gap4_compat.c, gap5/tkEditor.c:
+	  Further event handling.
+	  
+	  Complement contig now requests contig_lock_write() access. This
+	  in turn is now handled by the editor, bringing up a dialogue box
+	  as appropriate.
+	  
+	  The editor also handles JOIN_TO requests better now. For this to
+	  happen it may need to change the contig we're associated with,
+	  which in turn means updating the $ed io and contig_rec
+	  values. These methods are now set/get rather than pure get,
+	  allowing them to be updated after "$ed init".
+
+	* gap5/tk-io-reg.c, tgap/tg_register.c: Moved busy_dialog() from
+	  tk-io-reg.c to tg_register.c and also make
+	  use of it in the locking code.
+
+	* gap5/tk-io-reg.c: Improved calling of tcl-registered contig_reg
+	  items. To protect against memory corruptions when a function is
+	  contig_deregister()ed while processing an event, we now do some
+	  basic reference counting in the cr_type object.
+	  
+	  Also added code for handling the return value for REG_GET_LOCK
+	  queries.
+
+	* gap5/gap5rc_menu_full, gap5/tclIndex: Reenabled the Results
+	  Manager window - it's no longer hidden behind the expert mode
+	  flag.
+
+	* gap5/editor_join.c: Fixed the REG_JOIN_TO event we send out to
+	  include the correct contig number (was right, now left).
+
+	* tgap/hache_table.c, tgap/hache_table.h, tgap/tg_register.c: -
+	  Added a HacheTableRehash function. This allows an item to be
+	  assigned to a new key without needing to remove and reinsert it.
+	  
+	  - Fixed contig_register_join to use HashTableRehash instead of
+	  remove/insert. This means that the hacheItem doesn't change and
+	  hence we fixed a bug with incorrect tracking this. Also added
+	  asserts to better protect against similar bugs.
+
+	* tgap/tg_cache.c: When unloading items from the cache we no
+	  longer also unlock the record if this is a child i/o and the
+	  record is still in the base i/o.
+	  
+	  Previously by doing this we could end up attempting to write to
+	  already-freed views, leading to cryptic "Error: -1" from save
+	  contig.
+
+2010-02-25  jkbonfield
+
+	* seq_utils/align_lib.h: Added comments so I can remember what the
+	  cryptic edge_mode values mean in the future.
+
+	* gap5/cs-object.c, gap5/fij.c: Fixed issues with complementing
+	  match objects. These used to just use "contig_length - pos", but
+	  the contig length includes cutoff data now. Calling
+	  consensus_valid_range cures this, although we may want to cache
+	  that data to speed up the process.
+
+	* tgap/hache_table.c: Minor improvements to the hache dump debug
+	  code.
+
+	* gap5/contig_editor.tcl, gap5/contig_selector.c, gap5/docs/DONE,
+	  gap5/docs/TODO, gap5/editor_join.c, gap5/find_oligo.c,
+	  gap5/find_repeats.c, gap5/gap4_compat.c, gap5/tkEditor.c,
+	  tgap/tg_contig.c, tgap/tg_register.c, tgap/tg_register.h: Fixed
+	  missing contig notifications on events like complementing a
+	  contig, joining contigs or simply just saving from the editor.
+	  Now we handle these the clearing of the FIJ plot has been
+	  removed as it updates correctly.
+	  
+	  Plots that used to register with all contigs in a verbatim
+	  manner now register with contig 0. (And indeed in many case they
+	  were incorrect anyway as they registered with contig 1..Ncontigs
+	  rather than the actual contig record numbers.)
+	  
+	  To facilitate this the send_event function has been improved so
+	  that sending to contig -N will send the message to all plots
+	  registered against contig zero, but claiming to been an event
+	  sent to contig N rather than 0 so that the receiver knows the
+	  request. This change is internal to how tg_register works and
+	  not something that is visible outside of that file.
+
+	* gap4/hash_lib.c, gap5/hash_lib.c: Fixed a bug introduced in svn
+	  rev 919 (Dec 9 2005) when I changed
+	  (amongst other things) the edge_mode parameter from fixed
+	  constants to symbolic names.
+	  
+	  The edge_mode parameter was incorrectly set for the first block,
+	  meaning that left-end pads were penalised for. We now explicitly
+	  mask off the bit requesting this and consequentially our
+	  alignments now improve. Impressive it lasted this long without
+	  anyone complaining about broken alignments when using FIJ in
+	  fast-mode.
+
+2010-02-19  jkbonfield
+
+	* tgap/tg_contig.c: Fixed bug in contig_set_name(). It reset *c
+	  too early, but now sets it after cache_item_resize call.
+
+2010-02-18  jkbonfield
+
+	* gap5/consensus.c, gap5/contig_editor.tcl, gap5/editor_search.c,
+	  gap5/editor_view.c, gap5/editor_view.h, gap5/tkEditor.c,
+	  gap5/tman_interface.c, tgap/tg_sequence.c, tgap/tg_sequence.h,
+	  tgap/tg_tcl.c: 1) More work on undo, especially when undoing a
+	  base deletion that is the first/last base in hidden data, at the
+	  junction of clipped vs used.  Normally when we manually insert
+	  here we want the base to be in the used visible portion, but if
+	  we're inserting as a result of undoing a deletion then it's
+	  probably cutoff data we're adding back instead.
+	  
+	  This involved changing sequence_get_base to return whether a
+	  base is in used or cutoff data, along with everything that calls
+	  it.
+	  
+	  Lots of cursor work involving cutoff data. When we turn off
+	  cutoffs and our cursor is in the cutoff region of a sequence the
+	  cursor now gets moved to the consensus. Moving around with arrow
+	  keys will also skip cutoff data when cutoffs are not shown,
+	  similarly for making selections. Finally when undoing changes
+	  that occured in the cutoff data we now automatically make the
+	  cutoffs visible again if they were not already.
+	  
+	  This also involved modifying the parameters to edSetCursorPos.
+
+2010-02-17  jkbonfield
+
+	* gap5/docs/DONE, gap5/docs/TODO:
+
+	* gap5/contig_editor.tcl, gap5/ng_fb_cmds.tcl, tgap/tg_gio.c:
+	  Better handling of read-only databases. We now open them instead
+	  of just aborting requiring the user to re-run using -ro. We also
+	  check the read-only status in the contig editor to block
+	  attempted edits and saves.
+
+	* gap5/gap5rc_menu_full: Fixed the File->New removal (previously
+	  accidentally removed the "note" menu part, which isn't visible
+	  anyway).
+
+	* gap5/contig_editor.tcl, tgap/tg_sequence.c, tgap/tg_tcl.c: Added
+	  methods to adjust the sequence left/right clip points in the
+	  contig editor. These are bound to the < and > keys, as in gap4.
+
+	* gap5/baf.c, gap5/export_contigs.c, tgap/BAF: Added consensus tags
+	  to input/output via BAF.
+
+2010-02-16  jkbonfield
+
+	* gap5/export_contigs.tcl: Change the output file name based on
+	  file format, and automatically pick something appropriate based
+	  on the DB name too.
+
+	* gap5/gap.tcl, gap5/newgap5_cmds.c, tgap/tg_gio.c, tgap/tg_gio.h,
+	  tgap/tg_iface_g.c, tgap/tg_struct.h, tgap/tg_tcl.c: The main
+	  database record now has a version number (starting with 1 for
+	  v1.2.6). This relates to the global version of the database
+	  format.
+	  
+	  Also added $io methods to query the version, the database name
+	  and read-only status. These are now used to update the main
+	  title bar.
+
+	* gap5/editor_view.c, tgap/tg_sequence.c, tgap/tg_sequence.h:
+	  Control-a and control-e now look at the cutoffs editor parameter
+	  to determine whether they should jump to the visible start/end
+	  of the sequence/contig or the hidden start/end.
+	  
+	  In a similar vein, the left/right arrow keys no longer scroll
+	  past the visible end either unless cutoffs are shown even when
+	  complemented
+	  (previously this was bugged).
+	  
+	  To simplify the implementation of this, I added a new function
+	  sequence_get_orient() which returns the relative orientation of
+	  this sequence vs the contig. This is more than just "s->len < 0"
+	  now considering the complemented status of bins en-route to the
+	  root node and so fixes a bug the bug in scrolling along
+	  sequences in a complemented contig.
+
+	* tgap/tg_cache.c: Fixed a memory corruption involved with
+	  cache_item_resize(). We now always update the data_size pointer,
+	  rather than only when realloc moves the memory.
+
+2010-02-15  jkbonfield
+
+	* gap5/consensus.c, gap5/docs/DONE, gap5/docs/TODO, tgap/tg_bin.c,
+	  tgap/tg_tcl.c: Fixed issues with consensus caching in
+	  complemented contigs.
+	  
+	  Related to this is the issue of moving sequences in complemented
+	  contigs too, which may cause creation of a new root bin which
+	  itself will not be complemented. (Also fixed)
+
+2010-02-12  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/editor_view.c, tgap/tg_anno.c,
+	  tgap/tg_anno.h, tgap/tg_tcl.c: Further editor undo fixes - this
+	  time annotations.
+	  
+	  This involved adding an extra option to anno_get_range to allow
+	  returning the relative location instead of absolute, and adding a
+	  method to the tcl $tag object to query this.
+
+	* convert/Makefile: Added an explicit -lg to the convert link
+	  line.  Some systems didn't automatically follow the dependency
+	  from -lgap.
+
+	* gap5/tg_index_common.c: We now complement data correctly when
+	  using tg_index -a to append to an existing contig and that
+	  contig has been complemented.
+
+	* gap5/export_contigs.c: Further fixes to ace, baf and sam output
+	  when exporting a complemented contig.
+
+	* tgap/tg_bin.c: Allow for adding to a complement contig.
+
+	* gap5/gap4_compat.c: complement_contig() now maintains the same
+	  clipped start/end position, so a contig with used (uncutoff)
+	  portion of data from A to B and total coverage including hidden
+	  data from A' to B' will now flip around the midpoint of A to B,
+	  such that the complemented contig covers the same range of
+	  visible data.
+	  
+	  This is now equivalent to Gap4 for contigs starting at base 1.
+
+	* gap5/sam_index.c: Compile bam_aux_stringify even when
+	  HAVE_SAMTOOLS isn't set so we can export to sam format still.
+
+2010-02-11  jkbonfield
+
+	* gap5/export_contigs.c: Fixed export contigs when running on
+	  complemented contigs.
+
+2010-02-09  jkbonfield
+
+	* gap5/gap5rc_menu_full: Remove the unimplemented File->New menu
+	  option
+
+	* gap5/sam_index.c: Major speed up when dealing with very deep
+	  data.
+	  
+	  We replaced the array of recnos with a linked list, for faster
+	  adding/removal. Removed the memmove call from bio_del_seq and
+	  instead do an in-situ copy while iterating over the items. This
+	  essentially means one array copy per column instead of one per
+	  sequencing ending per column.
+	  
+	  Estimations are about 27x speed up on a contig of ~50000 depth.
+
+2010-02-08  jkbonfield
+
+	* gap5/contig_editor.tcl, gap5/tkEditor.c: Fixed display and undo
+	  issues relating to moving sequences, especially moving them left
+	  from the start of the contig into negative coorindates.
+	  
+	  We're now more careful about caching of data which may change,
+	  such as the contig struct and the root bin it points to. In Tcl
+	  we resolve this largely by not caching the object, but only the
+	  record number. In C we resolved it by implementing a manual way
+	  to repopulate cached contig struct on demand (the decr_contig
+	  and incr_contig editor methods), although it may be preferable
+	  to replace these by record number caching instead at some stage.
+
+	* tgap/tg_contig.c, tgap/tg_sequence.c: sequence_insert_base() now
+	  updates *s with the new seq_t struct. Previously this didn't
+	  happen so if it moved via cache_item_resize the caller kept a
+	  broken pointer.
+	  
+	  Also moved the location of these updates in various other
+	  related functions, to better handle the error cases.
+
+	* tgap/tg_bin.c: Fixed the last_bin caching in bin_for_range(). It
+	  now caches the bin record number and not the pointer. While
+	  perhaps not quite as efficient, this works even when the pointer
+	  changes due to a realloc or cache_rw change (eg moving from
+	  base-io to child-io in the case of contig editor handling).
+	  
+	  This fixes a bug with undo in the editor.
+
+	* gap5/sam_index.c: Fixed an efficiency bug when not storing
+	  unmapped data. We allocated a record number for these reads and
+	  didn't use it, nor remove from the pending record number
+	  list. The DB was correct, but we gradually got slower and
+	  slower.
+
+2010-02-05  jkbonfield
+
+	* tgap/tg_bin.c: Comment for later
+
+	* tgap/tg_tcl.c: The remove_sequence and add_sequence seq methods
+	  now return and accept range pair-record and range flags, so a
+	  sequence can be moved while retaining all data about it.
+	  
+	  Also fixed a bug where reinserting a sequence did not correct
+	  update the seq->bin_index field.
+
+	* tgap/tg_gio.c: Set min_bin_size for child io so bin based edits
+	  on the contig editor work properly. (Ideally the min_bin_size
+	  should be remembered from tg_index, stored in the database
+	  record.)
+
+	* README.build: Added note about -fPIC and Samtools
+
+2010-02-04  awhitwham
+
+	* gap5/depth.tcl, gap5/template_display.c, gap5/template_display.h,
+	  gap5/template_draw.c: Intermediate Template Display changes.
+
+2010-02-03  jkbonfield
+
+	* staden.profile: Resurrected (and majorly rewrote, hence no real
+	  history) the old staden.profile script.
+	  
+	  It's not required to source this, but some programs tightly
+	  linking with the staden package or people wishing to run the
+	  smaller tools rather than the main GUI apps will need to get
+	  their environment set up properly: LD_LIBRARY_PATH, MANPATH,
+	  etc.
+	  
+	  This script does that and so should be sourced from a
+	  bourne-shell syntax login script as desired.
+
+	* gap5/ace.c, tgap/g-files.c: Further memory leak fixes
+
+	* gap5/docs/TODO:
+
+	* tgap/tg_cache.c: Allow for child io to have the cache destroyed.
+	  In this case, such as quitting an editor and not saving changes,
+	  we relax the assert to allow for updated records to be thrown
+	  away without saving first.
+
+	* tgap/g-files.c: When preloading neighbouring index records from
+	  the aux file we now do so for the block the requested record
+	  resides in, rather than for the record we request and the next
+	  256. This means we generally load the data in fewer requests and
+	  also don't attempt to load the same records multiple times
+	  (which lead to a memory leak).
+
+	* gap5/contig_editor.tcl, tgap/tg_gio.c: Removed a memory leak -
+	  the editor now deallocates the child io and any cached data held
+	  within it upon exit.
+
+	* gap5/contig_editor.tcl, tgap/tg_tcl.c: Substantial improvements
+	  to undo:
+	  
+	  Removed the Redo functionality for now. I may add this back when
+	  undo itself is finished.
+	  
+	  Deleting an entire column of data in the consensus now remembers
+	  the old data so undo works (previously it just added pads). To
+	  implement this a new contig obj method was added, pileup, to
+	  return a column of data.
+
+	* gap5/contig_selector.c: Removed a minor memory leak
+
+	* gap5/newgap5_cmds.c: Extra debugging and a leak_check command if
+	  VALGRIND is defined
+
+	* tgap/tg_sequence.c: Removed a memory leak in
+	  sequence_invalidate_consensus().
+	  
+	  Fixed sequence_delete_base() - it sometimes used the old
+	  pre-cache_rw copy of the seq_t struct leading to undefined
+	  behaviour.
+
+2010-02-01  jkbonfield
+
+	* gap5/contig_editor.tcl: Fixed a bug whereby the child IO of a
+	  top editor in a join editor was not detached properly.
+	  
+	  This meant that exiting editing (eg pressing "align") and then
+	  cancelling the join and closing the window would still have the
+	  edits cached. Subsequent invocations of an editor for that
+	  contig would see these edits still.
+
+	* tgap/tg_cache.c, tgap/tg_iface_g.c: Removed a recently added
+	  memory leak in reading sequence blocks. Also worked around a
+	  malloc(0) size issue which while technically not incorrect,
+	  caused valgrind to whinge a bit.
+
+	* tgap/tg_iface_g.c: Fixed a bug with the new code to reorder read
+	  names by their read group. Happened when a seq block contained
+	  blank entries.
+
+	* gap5/export_contigs.c: Removal of debugging output
+
+2010-01-28  jkbonfield
+
+	* gap5/ace.c, gap5/baf.c, gap5/export_contigs.c,
+	  gap5/export_contigs.tcl, gap5/maq.c, gap5/sam_index.c,
+	  gap5/sam_index.h, gap5/tg_index.c, gap5/tg_index.h,
+	  tgap/tg_cache.c, tgap/tg_contig.c, tgap/tg_iface_g.c,
+	  tgap/tg_sequence.c, tgap/tg_sequence.h, tgap/tg_struct.h:
+	  Multiple improvements in input/output of SAM/BAM format.
+	  
+	  - We now support storing SAM auxillary records (other than the
+	  old RG: tag). This is disabled by default, but enabled using
+	  tg_index -x.
+	  
+	  - We can now also store unmapped data, although at present it is
+	  still visible in the contig editor. This is enabled with
+	  tg_index -u.
+	  
+	  - Fixed the ordering of adding reads to the database. Previously
+	  reads were added as their right hand end went past the sam
+	  'pileup' position hence we sorted by right end. Now we create
+	  records in the same order they appear in the input file, meaning
+	  export contigs should output in the correct order too.  To do
+	  this cache_item_create has been split into creation and
+	  initialisation stages, allowing for record numbers to be
+	  allocated and then filled out later.
+	  
+	  - When querying and sorting sequences by X, we now disambiguate
+	  matches by secondary sorting on record number. This also allows
+	  for the editor or output functions to match the input sam order.
+	  
+	  - Export contig now allows for "fixmates" sam output, similar to
+	  the samtools sub-command. Warning: this is substantially
+	  slower. Also improved flags with respect to unmapped data.
+
+	* gap5/editor_join.c: Fixed joining of contigs where the start
+	  position is not 1.
+
+	* ac_stubs/tcl.m4, staden_config.h.in: Removed the tcl
+	  LARGEFILE_SOURCE64 and LARGEFILE64_SOURCE defines.
+	  These confused autoconf on Ubuntu 9 and aren't needed by the
+	  Staden
+	  Package.
+
+	* gap5/docs/TODO:
+
+2010-01-25  jkbonfield
+
+	* configure.in: Fixed io_lib version we require (to >= 1.12.2).
+
+2010-01-22  jkbonfield
+
+	* gap5/contig_editor.tcl: Prevent attempts to join a contig to
+	  itself.
+
+	* tk_utils/canvas_box.tcl: Better handling in error conditions,
+	  when highling/unhighlighting matches
+
+	* gap4/consen.c, gap4/consen.tcl, gap4/gaprc: Added fastq output
+	  for consensus.
+
+	* gap5/consensus.c: Fixed bug in consensus generation. Very long
+	  sequences (>64Kb), meaning no small leaf nodes in the bin tree,
+	  could omit filling out the final portion of the consensus in the
+	  calculate_consensus_simple function.
+	  
+	  This manifested itself as FIJ failing when given sequences that
+	  were consensus seqs from another DB.
+
+2010-01-21  jkbonfield
+
+	* global.mk, system.mk.in: Removed the LD_LIBRARY_PATH definitions
+	  in global.mk (they wouldn't work on MacOS X anyway) and added
+	  -Wl,-rpath-link,$(L) to the linker flags instead.
+	  
+	  Similarly added -rpath-link for io_lib's install directory. This
+	  is because typically it may be built along side the staden
+	  package with neither yet installed or without the user yet
+	  setting LD_LIBRARY_PATH up.
+	  
+	  This also has provision to switching to -rpath later if desired,
+	  although rpath is - of course - evil.
+
+2010-01-19  jkbonfield
+
+	* tk_utils/sheet.c: Fixed a crash when resizing a sheet widget to
+	  zero width and back again. The problem was that zero width
+	  widgets are classified as unmapped by Tk_IsMapped, causing
+	  reallocation failures.
+
+2010-01-18  jkbonfield
+
+	* primer3/src/Makefile: Fix to permit parallel makes
+
+	* Makefile.in: Added dependencies between directories so parallel
+	  makes work.
+
 2010-01-16  James Bonfield  <jkb@sanger.ac.uk>
 
 	* Tagged rel-2-0-0-b4

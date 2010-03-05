@@ -1,5 +1,5 @@
 dnl Process this file with aclocal and autoconf to produce a configure script.
-AC_INIT([staden],[2.0.0b4])
+AC_INIT([staden],[2.0.0b5])
 
 # Check that we're running in a subdirectory. If not create one and rerun.
 # This ensures that the root directory does not get polluted with the

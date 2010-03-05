@@ -1,3 +1,112 @@
+Staden 2.0.0b5,  March 5th 2010
+===============================
+
+Gap5 1.2.7
+Gap4 4.11.2
+
+This release requires io_lib 1.12.2 or newer.
+
+
+Gap5 changes since 1.2.6
+------------------------
+
+*	Numerous contig editor bug fixes:
+	- Major undo overhaul. It should work far better now.
+	- Moving sequences moves tags with them
+	- Issues with saving giving "error -1" resolved.
+	- We can now adjust the read clip points using < and > keys.
+	- Fixed an editing-cache problem where cancelling a join and
+          reopening the join editor sometimes had the old edits
+          retained in memory (but not saved on disk).
+	
+*	Joining and complementing contigs is now handled better by
+        various plots. For example joining two contigs no longer
+        clears the contig selector window and plots, but updates them
+        correctly instead.
+
+*	Fixed some compilation issues.
+	- libpng problems resolved.
+	- helped compilation when linking against io_lib releases that
+	  aren't yet in your LD_LIBRARY_PATH.
+	- LARGEFILE_SOURCE64 definitions removed, which caused
+	  problems on Ubuntu 9 (and others?).
+
+*	Opening a database we do not have write access to (but read
+        access) now works. Read-only mode is more obvious in the title
+        bar too.
+
+*	BAF export now includes consensus tags.
+
+*	The consensus can now be saved in fastq format.
+
+*	Tg_index gained the option to store SAM/BAM auxillary records
+        with "-x". This is experimental at the moment.
+
+*	Tg_index can now stored unmapped data with the "-u" option,
+        although it is still visible within the contig editor. This is
+        experimental and a work in progress.
+
+*	Improved SAM output - the data is now written in the same
+        order it was read (assuming no edits). There is also an option
+        to try and fix the flags and mate-pair data when writing out
+        SAM, but be warned this is information substantially slower to
+        compute and output.
+
+*	Put back the old staden.profile script, but it's now in
+        $STADENROOT/share/staden instead of the main root. Also added
+        a stash binary to wrap up tclsh so old stash scripts should
+        work again.
+
+*	Various speed ups to the template display.
+
+*	The editor control-a and control-e keys (beginning and end of
+        sequence) now take heed of whether cutoff data is shown.
+
+*	Export Contigs now picks sensible filenames when changing
+        format.
+
+
+Other Gap5 Bug fixes
+--------------------
+
+*	Very long sequences (>64kb) could sometimes cause the cached
+        consensus to omit some regions, giving problems for find
+        internal joins and save consensus.
+
+*	Block attempts to join a contig to itself.
+
+*	Removed various minor memory leaks.
+
+*	Inserting bases to sequences could previously rarely cause memory
+        corruptions.
+
+*	Complement contig no longer moves the used (unclipped)
+        start/end positions of a contig.
+
+*	Exporting complementing contigs in ace/sam/baf fixes.
+
+*	Using tg_index -a to add data to an existing database now
+        works when the existing contigs have been complemented.
+
+*	Reenabled the Results Manager window in normal mode, rather
+        than hiding it for experts only.
+
+*	Gap5's File->New menu item has been removed, use tg_index to
+        create databases.
+
+*	Creating a 1bp long annotation in the editor no longer crashes
+        if you haven't dragged a selection to cover 1bp.
+
+
+Gap4
+----
+
+*	Alignments in find internal joins fast-mode should have their
+        5' end aligned better. (Also true for gap5)
+
+
+
+
 Staden 2.0.0b4,  January 15th 2010
 ==================================
 
