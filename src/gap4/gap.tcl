@@ -490,16 +490,17 @@ if {[info exists env(STADEN_AUTO_PATH)]} {
     set auto_path "$env(STADEN_AUTO_PATH) $auto_path"
 }
 
+source $env(STADTABL)/shlib.conf
+load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
+load_package tk_utils
+tk_utils_init
+
 if {$argc >= 2 && [lindex $argv 0] == "-menu_file"} {
     keylset gap_defs MENU_FILE [lindex $argv 1]
     set argv [lrange $argv 2 $argc]
     incr argc -2
 }
 
-source $env(STADTABL)/shlib.conf
-load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
-load_package tk_utils
-tk_utils_init
 load_package gap
 
 if {[keylget gap_defs BACKGROUNDS] != ""} {
