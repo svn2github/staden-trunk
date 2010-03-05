@@ -941,13 +941,24 @@ static int EditorWidgetCmd(ClientData clientData, Tcl_Interp *interp,
 	    }
 	    
 	} else if (index == GET) {
-	    vTcl_SetResult(interp, "%d %d %d %d",
-			   ed->xx->select_seq == ed->xx->cnum
+	    if (ed->xx->select_seq) {
+		vTcl_SetResult(interp, "%d %d %d %d",
+			       ed->xx->select_seq == ed->xx->cnum
 			       ? GT_Contig
 			       : GT_Seq,
-			   ed->xx->select_seq,
-			   ed->xx->select_start,
-			   ed->xx->select_end);
+			       ed->xx->select_seq,
+			       ed->xx->select_start,
+			       ed->xx->select_end);
+	    } else {
+		/* The base under the editing cursor */
+		vTcl_SetResult(interp, "%d %d %d %d",
+			       ed->xx->cursor_rec == ed->xx->cnum
+			       ? GT_Contig
+			       : GT_Seq,
+			       ed->xx->cursor_rec,
+			       ed->xx->cursor_pos,
+			       ed->xx->cursor_pos);
+	    }
 
 	} else {
 	    Tcl_AppendResult(interp, "wrong sub-command: should be "
