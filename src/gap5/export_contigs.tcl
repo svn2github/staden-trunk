@@ -29,6 +29,7 @@ proc ExportSequences {io} {
 	-buttons [list \
 	     [list sam   -command "ExportSequences_format $io $f"] \
 	     [list ace   -command "ExportSequences_format $io $f"] \
+	     [list caf   -command "ExportSequences_format $io $f"] \
 	     [list baf   -command "ExportSequences_format $io $f"] \
 	     [list fastq -command "ExportSequences_format $io $f"] \
 	     [list fasta -command "ExportSequences_format $io $f"]]
@@ -57,10 +58,10 @@ proc ExportSequences {io} {
 
 # Callback for when the output format is changed
 proc ExportSequences_format {io f} {
-    set format [lindex "x sam ace baf fastq fasta" [radiolist_get $f.format]]
+    set format [lindex "x sam ace caf baf fastq fasta" [radiolist_get $f.format]]
     set entry [entrybox_path $f.outfile.entry]
     set fn [$entry get]
-    if {[regexp {(.*)\.(sam|fna|fa|fasta|fastq|baf|ace)$} $fn _ pfix sfix]} {
+    if {[regexp {(.*)\.(sam|fna|fa|fasta|fastq|baf|ace|caf)$} $fn _ pfix sfix]} {
 	set fn $pfix.$format
     } else {
 	set fn $fn.$format
@@ -72,7 +73,7 @@ proc ExportSequences_format {io f} {
 proc ExportSequences2 {io f} {
     global $f.FixMates
 
-    set format [lindex "x sam ace baf fastq fasta" [radiolist_get $f.format]]
+    set format [lindex "x sam ace caf baf fastq fasta" [radiolist_get $f.format]]
     if {[lorf_in_get $f.infile] == 4} {
 	set gel_name [contig_id_gel $f.id]
 	set lreg [contig_id_lreg $f.id]

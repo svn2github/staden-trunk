@@ -10,6 +10,7 @@
 #include "dna_utils.h"
 #include "consensus.h"
 #include "sam_index.h"
+#include "dstring.h"
 
 /* Sequence formats */
 #define FORMAT_FASTA 0
@@ -17,9 +18,10 @@
 #define FORMAT_SAM   2
 #define FORMAT_BAF   3
 #define FORMAT_ACE   4
+#define FORMAT_CAF   5
 
 /* Annotation formats */
-#define FORMAT_GFF   5
+#define FORMAT_GFF   10
 
 
 static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
@@ -66,6 +68,8 @@ int tcl_export_contigs(ClientData clientData, Tcl_Interp *interp,
 	format_code = FORMAT_BAF;
     else if( 0 == strcmp(args.format, "ace"))
 	format_code = FORMAT_ACE;
+    else if( 0 == strcmp(args.format, "caf"))
+	format_code = FORMAT_CAF;
     else
 	return TCL_ERROR;
 
@@ -983,6 +987,221 @@ static int export_contig_baf(GapIO *io, FILE *fp,
     return 0;
 }
 
+static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
+			  dstring_t *ds) {
+    seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec);
+    int len = s->len < 0 ? -s->len : s->len;
+    int i, wrap;
+    char *name, *cp;
+    int name_len;
+    fifo_t *last, *ti;
+
+    /* Output the Sequence record */
+    if (s->name_len) {
+	name_len = s->name_len;
+	name = s->name;
+    } else {
+	name = false_name(io, s, 1, &name_len);
+    }
+    if ((s->len >= 0) ^ fi->r.comp) {
+	dstring_appendf(ds, "Assembled_from %.*s %d %d %d %d\n",
+			name_len, name,
+			fi->r.start + s->left-1,
+			fi->r.start + s->right-1,
+			s->left, s->right);
+    } else {
+	dstring_appendf(ds, "Assembled_from %.*s %d %d %d %d\n",
+			name_len, name,
+			fi->r.start + (ABS(s->len) - s->left),
+			fi->r.start + (ABS(s->len) - s->right),
+			s->left, s->right);
+    }
+
+    fprintf(fp, "Sequence : %.*s\nIs_read\nPadded\n", name_len, name);
+    fprintf(fp, "Clipping QUAL %d %d\n", s->left, s->right);
+    fprintf(fp, "Strand %s\n", 
+	    (s->flags & SEQ_END_MASK) == SEQ_END_FWD ? "Forward" : "Reverse");
+
+    fprintf(fp, "SCF_File %.*s\n", 
+	    s->trace_name_len ? s->trace_name_len : name_len,
+	    s->trace_name_len ? s->trace_name     : name);
+
+    //fprintf(fp, "Insert_size %d %d\n", fixme, fixme);
+
+    /* Best guess at template name */
+    if ((cp = strchr(name, '.')) ||
+	(cp = strchr(name, '/')))
+	fprintf(fp, "Template %.*s\n", (int)(cp-name), name);
+
+    //fprintf(fp, "Seq_vec SVEC %d %d\n", fixme, fixme);
+
+
+    /* Find tags on this sequence too */
+    for (last = NULL, ti = fifo_queue_head(tq); ti;) {
+	anno_ele_t *a;
+	char type[5];
+	int tpos; 
+
+	if (ti->r.start > fi->r.end)
+	    break;
+
+	if (ti->r.pair_rec != fi->r.rec) {
+	    last = ti;
+	    ti = ti->next;
+	    continue;
+	}
+
+	/* Tag is for this seq. */
+	a = cache_search(io, GT_AnnoEle, ti->r.rec);
+	tpos = (s->len >= 0) ^ fi->r.comp
+	    ? ti->r.start - (fi->r.start-1)
+	    : ABS(s->len)+1 - (ti->r.end - (fi->r.start-1));
+
+	fprintf(fp, "Tag %s %d %d",
+		type2str(ti->r.mqual, type),
+		tpos,
+		tpos + ti->r.end - ti->r.start);
+	if (a->comment && *a->comment) {
+	    char *escaped = escape_C_string(a->comment);
+	    fprintf(fp, " \"%s\"\n", escaped);
+	} else {
+	    fprintf(fp, "\n");
+	}
+
+	/* Remove ti from the list (NB fifo is wrong abstract type) */
+	if (last) {
+	    last->next = ti->next;
+	    if (tq->tail == ti)
+		tq->tail = last;
+	    free(ti);
+	    ti = last->next;
+	} else {
+	    fifo_queue_pop(tq);
+	    free(ti);
+	    ti = fifo_queue_head(tq);
+	}
+    }
+
+    /* And finally sequence / quality records */
+    fprintf(fp, "\nDNA : %.*s\n", name_len, name);
+    for (i = 0; i < len; i += 60) {
+	fprintf(fp, "%.*s\n", MIN(60, len-i), &s->seq[i]);
+    }
+    fprintf(fp, "\nBaseQuality : %.*s\n", name_len, name);
+    for (wrap = i = 0; i < len; i++) {
+	wrap += fprintf(fp, "%d ", s->conf[i]);
+	if (wrap > 60) {
+	    wrap = 0;
+	    fprintf(fp, "\n");
+	}
+    }
+    if (wrap)
+	fprintf(fp, "\n");
+    fprintf(fp, "\n");
+}
+
+static int export_contig_caf(GapIO *io, FILE *fp,
+			     int crec, int start, int end) {
+    contig_iterator *ci = contig_iter_new_by_type(io, crec, 0, CITER_FIRST,
+						  start, end,
+						  GRANGE_FLAG_ISANY);
+    rangec_t *r;
+    int qalloc = 0;
+    char *q = NULL, *S = NULL, *cp;
+    contig_t *c;
+    char *name;
+    int name_len;
+    fifo_queue_t *fq = fifo_queue_create(), *tq = fifo_queue_create();
+    fifo_t *fi;
+    int last_start = 0;
+    dstring_t *ds = dstring_create(NULL);
+    int first_base, last_base, len;
+    char *cons;
+    float *qual;
+    int i, wrap;
+
+    /* Seq/tag records */
+    while (r = contig_iter_next(io, ci)) {
+	/* Add new items to fifo */
+	if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISSEQ) {
+	    fifo_queue_push(fq, r);
+	    last_start = r->start;
+	} else if ((r->flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	    if (r->pair_rec == crec) {
+		/* Contig tag */
+		/* FIXME: to do still */
+	    } else {
+		/* Technically this should be a list and not a fifo */
+		fifo_queue_push(tq, r);
+	    }
+	}
+
+	/* And pop off when they're history */
+	while (fi = fifo_queue_head(fq)) {
+	    if (fi->r.end < last_start) {
+		fifo_queue_pop(fq);
+		caf_export_seq(io, fp, fi, tq, ds);
+		free(fi);
+	    } else {
+		break;
+	    }
+	}
+    }
+
+    /* Flush the rest of queues */
+    while (fi = fifo_queue_head(fq)) {
+	fifo_queue_pop(fq);
+	caf_export_seq(io, fp, fi, tq, ds);
+	free(fi);
+    }
+
+    fifo_queue_destroy(fq);
+    fifo_queue_destroy(tq);
+    contig_iter_del(ci);
+
+    
+    /* Now also write out the contig record */
+    c = (contig_t *)cache_search(io, GT_Contig, crec);
+    cache_incr(io, c);
+    fprintf(fp, "Sequence : %s\nIs_contig\nPadded\n", c->name);
+    fputs(dstring_str(ds), fp);
+    fprintf(fp, "\n");
+
+    consensus_valid_range(io, crec, &first_base, &last_base);
+    len = last_base - first_base + 1;
+    cons = (char *)xmalloc(len);
+    qual = (float *)xmalloc(len * sizeof(*qual));
+    calculate_consensus_simple(io, crec, first_base, last_base, cons, qual);
+
+    fprintf(fp, "DNA : %s\n", c->name);
+    for (i = 0; i < len; i += 60) {
+	fprintf(fp, "%.*s\n", len-i > 60 ? 60 : len-i, &cons[i]);
+    }
+
+    fprintf(fp, "\nBaseQuality : %s\n", c->name);
+    for (wrap = i = 0; i < len; i++) {
+	int q = qual[i]+.5;
+	wrap += fprintf(fp, "%d ", q);
+	if (wrap > 60) {
+	    wrap = 0;
+	    fprintf(fp, "\n");
+	}
+    }
+    if (wrap)
+	fprintf(fp, "\n");
+    fprintf(fp, "\n");
+
+    free(cons);
+    free(qual);
+
+    cache_decr(io, c);
+    if (q) free(q);
+    if (S) free(S);
+    dstring_destroy(ds);
+
+    return 0;
+}
+
 static int export_header_ace(GapIO *io, FILE *fp,
 			     int cc, contig_list_t *cv) {
     int nreads = 0, i;
@@ -1198,6 +1417,10 @@ static int export_contigs(GapIO *io, int cc, contig_list_t *cv, int format,
 
 	case FORMAT_ACE:
 	    export_contig_ace(io, fp, cv[i].contig, cv[i].start, cv[i].end);
+	    break;
+
+	case FORMAT_CAF:
+	    export_contig_caf(io, fp, cv[i].contig, cv[i].start, cv[i].end);
 	    break;
 
 	default:
