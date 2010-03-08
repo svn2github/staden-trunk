@@ -1,4 +1,4 @@
-Staden 2.0.0b5,  March 5th 2010
+Staden 2.0.0b5,  March 8th 2010
 ===============================
 
 Gap5 1.2.7
@@ -35,7 +35,8 @@ Gap5 changes since 1.2.6
         access) now works. Read-only mode is more obvious in the title
         bar too.
 
-*	BAF export now includes consensus tags.
+*	BAF export now includes consensus tags. We can also export in
+        CAF too (although it's not a recommended output format).
 
 *	The consensus can now be saved in fastq format.
 

@@ -101,6 +101,7 @@ endif
 distsrc: distsrc_dirs
 	cp $(S)/*.[ch] $(S)/*.tcl $(S)/tclIndex $(S)/Makefile $(DIRNAME)
 	cp $(S)/*.bmp $(S)/help_config $(S)/tk_utilsrc $(DIRNAME)
+	cp $(S)/stash $(DIRNAME)
 
 install:
 	cp $(PROGLIBS) $(INSTALLLIB)
