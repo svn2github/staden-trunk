@@ -12,7 +12,6 @@ proc check_database {args} {
 }
 
 proc io_read_database {io} {
-    puts [info level [info level]]
     keylset db num_contigs 1
     keylset db num_readings 1
     keylset db max_gel_len 32768

@@ -70,8 +70,6 @@ AC_DEFUN([AX_LIB_LZMA],
 	[AC_CHECK_HEADER(lzma.h, lzma_ok=yes, lzma_ok=no)])
   fi
 
-	echo x1=x$1
-
   # Check version
   if test "x$1" != "x" && test "$lzma_ok" = "yes"
   then

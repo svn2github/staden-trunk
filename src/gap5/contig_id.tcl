@@ -83,8 +83,6 @@ proc contig_id {path args} {
 	    InitContigGlobals $io
             set c_num [db_info get_contig_num $io $CurContig]
         }
-	puts c_num=$c_num
-	puts CurContig=$CurContig
         set length [c_length $io $c_num]
 	entrybox $path.ent \
 		-title "Contig identifier" \
