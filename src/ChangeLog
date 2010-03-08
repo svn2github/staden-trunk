@@ -1,9 +1,31 @@
-2010-03-05  James Bonfield
+2010-03-08  James Bonfield
 
 	* Tagged rel-2-0-0-b5
 	* Tagged gap5-1-2-7
 
+2010-03-08  jkbonfield
+
+        * gap5/export_contigs.c, gap5/export_contigs.tcl: Added CAF format
+          to the export contigs dialogue. Not a recommended
+          format, but users are requesting it still.
+
+        * tgap/tg_cache.c: Bug fixed an earlier fix to cache_rw(). If we
+	  lock, flush and attempt to relock a record the change to the
+	  function meant we failed to set the updated flag. (An example of
+	  it causing a problem is crashing when computing the consensus
+	  after exiting the database and reopening it.)
+
+          This perhaps needs a fix elsewhere too. Should roll back the
+	  lock to RO after a flush?
+
 2010-03-05  jkbonfield
+
+        * gap5/maqmap.c, gap5/sam_index.c, tgap/tg_anno.c,
+          tgap/tg_register.c, tgap/tg_sequence.c, tk_utils/sheet.c: Fixed
+          various compilation warnings
+
+        * ChangeLog, NEWS, README.build, configure.in: Updates to prepare
+          for 2.0.0b5
 
 	* gap5/contig_editor.tcl, gap5/docs/DONE, gap5/docs/TODO,
 	  tgap/tg_anno.c, tgap/tg_anno.h, tgap/tg_bin.c, tgap/tg_bin.h,
