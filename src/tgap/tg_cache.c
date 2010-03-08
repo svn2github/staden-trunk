@@ -1561,12 +1561,7 @@ void *cache_rw(GapIO *io, void *data) {
     cached_item *ci = ci_ptr(data);
     cached_item *mi = cache_master(ci);
 
-    if (mi->lock_mode >= G_LOCK_RW) {
-	/* Already locked */
-	return data;
-    }
-
-    if (io->base) {
+    if (io->base && mi->lock_mode < G_LOCK_RW) {
 	ci = cache_dup(io, ci);
 	mi = cache_master(ci);
 	data = &ci->data;
