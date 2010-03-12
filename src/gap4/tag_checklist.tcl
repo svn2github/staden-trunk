@@ -20,7 +20,7 @@ proc TagDialog {name path command {version {}}} {
     wm title $path "Active tags"
 
     set arr [array get NGTag_$name$version]
-    tag_checklist $path.check $arr -selectmode extended2 -width 40 -height 20
+    tag_checklist $path.check $arr -selectmode extended -width 40 -height 20
 
     ###########################################################################
     #OK and Cancel buttons
