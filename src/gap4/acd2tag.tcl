@@ -570,7 +570,7 @@ proc generate_var_trace {dname name} {
 
     regsub -all {%W} $data($name.depend) $name data($name.depend)
 
-    append cstr "    set vars(\${namespace}::$name.orig) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name.orig) \$vars(\${namespace}::$name)\n"
 
     append cstr "    set vars(\${namespace}::$name.expr) \"[quote_str $data($name.default)]\"\n"
     foreach var $data($name.depend) {
@@ -591,7 +591,7 @@ proc generate_list_trace {dname name procname {default ""}} {
 
     regsub -all {%W} $data($name$default.depend) $name data($name$default.depend)
 
-    append cstr "    set vars(\${namespace}::$name.orig) \$vars($name)\n"
+    append cstr "    set vars(\${namespace}::$name.orig) \$vars(\${namespace}::$name)\n"
 
     append cstr "    set vars(\${namespace}::$name.expr) \"[quote_str $data($name$default)]\"\n"
     foreach var $data($name$default.depend) {
@@ -699,6 +699,12 @@ proc generate_end {dname} {
     append cstr "	    \$w.ns_book view 0\n"
     append cstr "	}\n"
     append cstr "	acd2tag::resizebook \$w.ns_book\n"
+    append cstr "    } else {\n"
+    append cstr "	if {\[info exists book\]} {\n"
+    append cstr "	    foreach b \[array names book\] {\n"
+    append cstr "	        acd2tag::resizebook \$w.\$b\n"
+    append cstr "           }\n"
+    append cstr "        }\n"
     append cstr "    }\n"
     append cstr "\}\n"
     return 1
