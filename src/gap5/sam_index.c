@@ -535,6 +535,28 @@ char *bam_aux_filter(bam1_t *b, char **types, int ntypes, int *len) {
 }
 
 /*
+ * Creates a new contig and updates the bam_io_t struct.
+ */
+void bio_new_contig(bam_io_t *bio, int tid) {
+    char *cname = bio->header->target_name[tid];
+
+    /* header->target_name[b.core.tid] */
+    printf("\n++Processing contig %d / %s\n", tid, cname);
+	
+    create_new_contig(bio->io, &(bio->c), cname, bio->a->merge_contigs);
+    bio->n_inserts = 0;
+    bio->npads = 0;
+    bio->skip = 0;
+
+    if (bio->a->repad) {
+	bio->tree = depad_consensus(bio->io, bio->c->rec);
+	//padtree_dump(bio->tree);
+    }
+	
+    bio->last_tid = tid;
+}
+
+/*
  * Samtools pileup won't iterate over unmapped reads. Therefore we have a
  * separate function to add these to the database - this one.
  * Although it shares much of the same code so is a candidate for merging
@@ -558,6 +580,11 @@ int bio_add_unmapped(bam_io_t *bio, bam1_t *b) {
     char *filter[] = {"RG"};
 
     bio->count++;
+
+    /* Check if it's a new contig, create if so */
+    if (b->core.tid != bio->last_tid) {
+	bio_new_contig(bio, b->core.tid);
+    }
 
     /* Fetch read-group and pretend it's a library for now */
     if (0 == bam_aux_find(b, "RG", &type, &val) && type == 'Z') {
@@ -993,22 +1020,7 @@ int bio_callback(uint32_t tid, uint32_t pos, int n, const bam_pileup1_t *pl,
      */
     /* Create new contig if appropriate */
     if (tid != bio->last_tid) {
-	char *cname = bio->header->target_name[tid];
-
-	/* header->target_name[b.core.tid] */
-	//printf("\n++Processing contig %d / %s\n", tid, cname);
-	
-	create_new_contig(io, &(bio->c), cname, bio->a->merge_contigs);
-	bio->n_inserts = 0;
-	bio->npads = 0;
-	bio->skip = 0;
-
-	if (bio->a->repad) {
-	    bio->tree = depad_consensus(io, bio->c->rec);
-	    //padtree_dump(bio->tree);
-	}
-	
-	bio->last_tid = tid;
+	bio_new_contig(bio, tid);
     }
     
     np = 0;
