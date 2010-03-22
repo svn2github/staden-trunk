@@ -665,11 +665,12 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
     /* Compute Y coords */
     for (i = 0; i < nr; i++) {
 #ifdef CACHED_CONS_VISIBLE
-	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO) {
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
 #else
 	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO ||
-	    (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS) {
+	    (r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISCONS)
 #endif
+	{
 	    r[i].y = 0;
 	    continue;
 	}
@@ -689,28 +690,26 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
 		/* Apparently not, what about smaller (in y) in XTREE? */
 		curr = SPLAY_NEXT(XTREE, &xtree, node);
 		while (curr && r[i].start >= curr->x) {
-		    if (node->y > curr->y)
-			node = curr;
-		    curr = SPLAY_NEXT(XTREE, &xtree, curr);
-		}
-	    
-		/* Shift non-smallest y (but < x) to Y-tree */
-		curr = SPLAY_MIN(XTREE, &xtree);
-		while (curr && r[i].start >= curr->x) {
 		    next = SPLAY_NEXT(XTREE, &xtree, curr);
-		    if (curr != node) {
+		    if (node->y > curr->y) {
+			SPLAY_REMOVE(XTREE, &xtree, node);
+			SPLAY_INSERT(YTREE, &ytree, node);
+			try_cull = 1;
+			node = curr;
+		    } else {
 			SPLAY_REMOVE(XTREE, &xtree, curr);
 			SPLAY_INSERT(YTREE, &ytree, curr);
 			try_cull = 1;
 		    }
 		    curr = next;
 		}
-		
+
 		r[i].y = node->y;
 		SPLAY_REMOVE(XTREE, &xtree, node);
 		node->x = r[i].end + xgap;
 		SPLAY_INSERT(XTREE, &xtree, node);
 	    }
+
 #if 0
 	    /* Cull Y tree if appropriate to remove excess rows */
 	    if (try_cull) {
@@ -766,13 +765,36 @@ static int compute_ypos(rangec_t *r, int nr, int job) {
  */
 static int compute_ypos_tags(rangec_t *r, int nr) {
     int i, key;
-    HacheTable *h = HacheTableCreate(8192, HASH_DYNAMIC_SIZE);
+    HacheTable *h;
     HacheData hd;
 
+    /* Check for at least one visible tag */
+    for (i = 0; i < nr; i++) {
+	if ((r[i].flags & GRANGE_FLAG_ISMASK) == GRANGE_FLAG_ISANNO)
+	    break;
+    }
+
+    if (i == nr)
+	return 0;
+
+    /*
+     * FIXME:
+     *
+     * A more optimal approach for this, given large numbers of seqs and
+     * small numbers of tags, is to hash the tag ids by record (contents
+     * being the r[index] index value) and then iterate through seqs
+     * (assuming >= 1 tag found) matching them with the tag record id.
+     * That way our hash table is of the size Ntags and not Nseqs.
+     */
+
+
+    /* Build an hash of sequence record numbers to Y coordinates. */
+    h = HacheTableCreate(nr/3+1, HASH_DYNAMIC_SIZE);
     if (!h)
 	return -1;
 
-    /* Build an hash of sequence record numbers to Y coordinates. */
+    h->name = "compute_ypos_tags()";
+
     for (i = 0; i < nr; i++) {
 	if ((r[i].flags & GRANGE_FLAG_ISMASK) != GRANGE_FLAG_ISSEQ)
 	    continue;
@@ -1724,7 +1746,7 @@ int contig_destroy(GapIO *io, int rec) {
  * pright	The parent bin/-contig in the right new contig
  * child_no     0 or 1 - whether this bin is the left/right child of its parent
  */
-#define H 40
+#define H 10
 #define G 20
 static int bin_dump_recurse(GapIO *io, contig_t **c,
 			    char *fn, int child,
@@ -1789,7 +1811,7 @@ static int bin_dump_recurse(GapIO *io, contig_t **c,
     }
     level = -i;
 
-    if (level < -12)
+    if (level < -20)
 	goto skip;
 
     /* linking lines */
@@ -1901,7 +1923,7 @@ void contig_dump_ps(GapIO *io, contig_t **c, char *fn) {
     //HacheTableRefInfo(io->cache, stdout);
     cache_incr(io, *c);
     bin_dump_recurse(io, c, fn, 0, contig_get_bin(c),
-		     contig_offset(io, c), 0, 0, 0.0, 0.0, 1);
+		     contig_offset(io, c), 0, 0, 0.0, 0.0, 0 /*1*/);
     cache_decr(io, *c);
     //HacheTableRefInfo(io->cache, stdout);
 }
