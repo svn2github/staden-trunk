@@ -1,9 +1,63 @@
-2010-03-08  James Bonfield
+2010-03-22  James Bonfield
 
 	* Tagged rel-2-0-0-b5
 	* Tagged gap5-1-2-7
 
+2010-03-22  jkbonfield
+
+	* gap5/docs/TODO:
+
+	* gap5/gap_utils.tcl, gap5/tclIndex: Updated c_length proc to use
+	  the contig get_length method. This avoids the old io_read_contig
+	  emulation, which spends a lot of time and I/O needlessly
+	  figuring out the first and last reading in the contig.
+
+	* gap5/export_contigs.c: Improvements to CAF export.
+	  - We use - instead of * now for pads.
+	  - We generate new names using the record ID. This avoids the
+	    problem of duplicate read names in gap5.
+
+	* gap5/map_reads.tcl: We now enable B+Tree indexing of finishing
+	  read sequence names.
+
+	* gap5/tg_view.c: Minor change to tg_view -l to deal with *DEEP*
+	  data
+
+	* tgap/tg_contig.c: Minor speed improvement to the y-layout
+	  algorithm.
+	  
+	  compute_ypos_tags() now checks whether any tags are visible and
+	  short-cuts the hash table building step if it's not
+	  needed. Still not optimal, but a step in the right direction.
+
+2010-03-12  jkbonfield
+
+	* gap5/sam_index.c: Fixed a crash that occured when adding
+	  unaligned data and the unaligned read was the first read to be
+	  added to a contig.
+
+	* gap4/tag_checklist.tcl, gap5/tag_checklist.tcl: Used "extended"
+	  mode of the listbox instead of our old local hack of
+	  extended2. This difference is in how it handles toggling and
+	  whether we can select multiples without using control, but at
+	  least it's now functional again when using a native Tk instead
+	  of a locally hacked one.
+
+	* gap4/acd2tag.tcl: Fixed some issues with incorrectly resizing
+	  notebooks.
+	  
+	  Also fixed using variables with acd dependencies.
+
 2010-03-08  jkbonfield
+
+	* ChangeLog:
+
+	* NEWS, tk_utils/Makefile:
+
+	* ac_stubs/ax_lib_lzma.m4, gap5/contig_id.tcl,
+	  gap5/gap4_compat.tcl: Remove debugging chatter
+
+	* gap5/tclIndex: Added io_read_contig
 
         * gap5/export_contigs.c, gap5/export_contigs.tcl: Added CAF format
           to the export contigs dialogue. Not a recommended
