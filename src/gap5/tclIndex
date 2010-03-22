@@ -251,6 +251,7 @@ set auto_index(ViewNavigationData) [list source [file join $dir gap_nav.tcl]]
 
 set auto_index(check_database) [list source [file join $dir gap4_compat.tcl]]
 set auto_index(io_read_contig) [list source [file join $dir gap4_compat.tcl]]
+set auto_index(cname2crec) [list source [file join $dir gap4_compat.tcl]]
 
 set auto_index(jog) [list source [file join $dir jog.tcl]]
 

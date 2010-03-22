@@ -24,10 +24,12 @@ proc c_length { io contig_num } {
        	return 0
     }
 
-    set c [io_read_contig $io $contig_num]
-    return [keylget c length]
-
+    set c [$io get_contig $contig_num]
+    set len [$c get_length]
+    $c delete
+    return $len
 }
+
 ##############################################################################
 #returns the length of a reading
 proc r_length { io r_num } {
