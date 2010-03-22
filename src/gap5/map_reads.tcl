@@ -302,7 +302,8 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 	-merge_contigs 1 \
 	-repad 1 \
 	-file $prefix.srt.bam \
-	-format bam
+	-format bam \
+	-no_tree 0
 
     vmessage "Flushing"
     $io flush
