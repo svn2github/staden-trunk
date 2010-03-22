@@ -727,7 +727,7 @@ void curses_loop(GapIO *io, contig_t **cp, int xpos, int mode) {
  */
 void print_output(GapIO *io, contig_t **c, int xpos, int width, int mode) {
     //complement_store(io, contig_get_bin(c));
-    display_gap(io, c, xpos, 0, 100000, width, mode, 0, 0);
+    display_gap(io, c, xpos, 0, 1000000, width, mode, 0, 0);
     return;
 }
 
