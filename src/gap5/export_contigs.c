@@ -992,38 +992,42 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     seq_t *s = (seq_t *)cache_search(io, GT_Seq, fi->r.rec);
     int len = s->len < 0 ? -s->len : s->len;
     int i, wrap;
-    char *name, *cp;
-    int name_len;
+    char *name, *cp, name_buf[1024];
     fifo_t *last, *ti;
 
     /* Output the Sequence record */
     if (s->name_len) {
-	name_len = s->name_len;
-	name = s->name;
+	memcpy(name_buf, s->name, s->name_len);
+	name = name_buf;
+	name[s->name_len] = 0;
+	/* Best guess - not sure what else we can do atm. */
+	if ((cp = strchr(name, '.')) == NULL) {
+	    sprintf(name+strlen(name), ".%d", s->rec);
+	}
     } else {
-	name = false_name(io, s, 1, &name_len);
+	name = false_name(io, s, 1, NULL);
     }
     if ((s->len >= 0) ^ fi->r.comp) {
-	dstring_appendf(ds, "Assembled_from %.*s %d %d %d %d\n",
-			name_len, name,
+	dstring_appendf(ds, "Assembled_from %s %d %d %d %d\n",
+			name,
 			fi->r.start + s->left-1,
 			fi->r.start + s->right-1,
 			s->left, s->right);
     } else {
-	dstring_appendf(ds, "Assembled_from %.*s %d %d %d %d\n",
-			name_len, name,
+	dstring_appendf(ds, "Assembled_from %s %d %d %d %d\n",
+			name,
 			fi->r.start + (ABS(s->len) - s->left),
 			fi->r.start + (ABS(s->len) - s->right),
 			s->left, s->right);
     }
 
-    fprintf(fp, "Sequence : %.*s\nIs_read\nPadded\n", name_len, name);
+    fprintf(fp, "Sequence : %s\nIs_read\nPadded\n", name);
     fprintf(fp, "Clipping QUAL %d %d\n", s->left, s->right);
     fprintf(fp, "Strand %s\n", 
 	    (s->flags & SEQ_END_MASK) == SEQ_END_FWD ? "Forward" : "Reverse");
 
     fprintf(fp, "SCF_File %.*s\n", 
-	    s->trace_name_len ? s->trace_name_len : name_len,
+	    s->trace_name_len ? s->trace_name_len : strlen(name),
 	    s->trace_name_len ? s->trace_name     : name);
 
     //fprintf(fp, "Insert_size %d %d\n", fixme, fixme);
@@ -1083,11 +1087,15 @@ static int caf_export_seq(GapIO *io, FILE *fp, fifo_t *fi, fifo_queue_t *tq,
     }
 
     /* And finally sequence / quality records */
-    fprintf(fp, "\nDNA : %.*s\n", name_len, name);
+    fprintf(fp, "\nDNA : %s\n", name);
     for (i = 0; i < len; i += 60) {
-	fprintf(fp, "%.*s\n", MIN(60, len-i), &s->seq[i]);
+	int j,l = MIN(60, len-i);
+	for (j=0; j<l; j++) {
+	    fputc(s->seq[i+j] != '*' ? s->seq[i+j] : '-', fp);
+	}
+	fputc('\n', fp);
     }
-    fprintf(fp, "\nBaseQuality : %.*s\n", name_len, name);
+    fprintf(fp, "\nBaseQuality : %s\n", name);
     for (wrap = i = 0; i < len; i++) {
 	wrap += fprintf(fp, "%d ", s->conf[i]);
 	if (wrap > 60) {
@@ -1175,7 +1183,11 @@ static int export_contig_caf(GapIO *io, FILE *fp,
 
     fprintf(fp, "DNA : %s\n", c->name);
     for (i = 0; i < len; i += 60) {
-	fprintf(fp, "%.*s\n", len-i > 60 ? 60 : len-i, &cons[i]);
+	int j,l = MIN(60, len-i);
+	for (j=0; j<l; j++) {
+	    fputc(cons[i+j] != '*' ? cons[i+j] : '-', fp);
+	}
+	fputc('\n', fp);
     }
 
     fprintf(fp, "\nBaseQuality : %s\n", c->name);
