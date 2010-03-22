@@ -1,3 +1,17 @@
+*       Bins currently hold their position, size and left/right child
+	numbers. Instead they could hold the left/right child record,
+	position and sizes. This means we don't need to load the
+	left/right child just to work out where it resides. Currently
+	because of the possibility of overlapping bins we load twices
+	as many as we actually need to (including the range array).
+
+*	A binary tree of bins means lots of layers, say 15 for Chr1.
+        With an 8-way or more tree we'd only need at most 6 layers
+        (and in general approx 1/3rd the layers). This is 2-3x less
+        I/O when joining, breaking, querying, etc.
+	The optimal system may be an b-tree with a variable number of
+        children per bin. This is a big change though.
+
 *	BUG: Inserting/deleting from an individual sequence doesn't
         update the tags. This may mean moving annotations,
         growing/shrinking them or even deleting them entirely.
