@@ -824,6 +824,7 @@ void joinDB(EdStruct *xx[2], GapIO *io) {
     int relx;
     int i;
     int cl, cr;
+    int st[2];
 
     cl = DBI_contigNum(xx[0]);
     cr = DBI_contigNum(xx[1]);
@@ -837,11 +838,17 @@ void joinDB(EdStruct *xx[2], GapIO *io) {
     relx = editorLockedPos(xx, 1/*force*/);
 
 
+    st[0] = xx[0]->editorState; xx[0]->editorState = StateDown;
+    st[1] = xx[1]->editorState; xx[1]->editorState = StateDown;
+
     if (relx<0) {
 	dojoin(io, cl, cr, -relx);
     } else {
 	dojoin(io, cr, cl, relx);
     }
+
+    xx[0]->editorState = st[0];
+    xx[1]->editorState = st[1];
 }
 
 
