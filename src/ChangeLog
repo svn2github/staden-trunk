@@ -1,7 +1,25 @@
-2010-03-22  James Bonfield
+2010-03-24  James Bonfield
 
 	* Tagged rel-2-0-0-b5
 	* Tagged gap5-1-2-7
+
+2010-03-24  jkbonfield
+
+	* gap5/docs/ChangeLog:
+
+        * gap4/join.c: We now temporarily set the two editor panels in
+          the join editor to be "StateDown" during the dojoin()
+          call. This prevents them from receiving the REG_LENGTH event
+          and therefore from reloading the entire contig into memory
+          (unless another display exists for the same contig in
+          another window).
+
+          This substantially reduces the amount of I/O when performing
+          a join.
+
+        * gap5/break_contig.c: Fixed a bug where seq->bin_index wasn't
+          updated when moving sequences from one bin to another during
+          break contig.
 
 2010-03-22  jkbonfield
 
