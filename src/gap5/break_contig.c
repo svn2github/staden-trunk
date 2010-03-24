@@ -106,6 +106,7 @@ static int break_contig_reparent_seqs(GapIO *io, bin_index_t *bin) {
 	    if (seq->bin != bin->rec) {
 		seq = cache_rw(io, seq);
 		seq->bin = bin->rec;
+		seq->bin_index = i;
 	    }
 	}
     }
