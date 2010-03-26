@@ -1,3 +1,20 @@
+2010-03-26  jkbonfield
+	* rel-2-0-0-b6
+	  gap5-1-2-8
+
+	* NEWS, configure.in: 2.0.0b6 updates.
+
+	* gap5/gap.tcl, gap5/tg_index.c, gap5/tg_view.c: Bumped g5 versions
+	  to 1.2.8
+
+	* tk_utils/tk_utilsrc: Use a smaller font for the contig editor on
+	  unix
+
+	* tgap/tg_iface_g.c: Fixed memory allocation error (causing
+	  crashes) when dealing with
+	  multiple read-groups and read-names with substantially different
+	  lengths.
+
 2010-03-24  James Bonfield
 
 	* Tagged rel-2-0-0-b5
