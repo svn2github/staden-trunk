@@ -1,5 +1,21 @@
-Staden 2.0.0b5,  March 8th 2010
-===============================
+Staden 2.0.0b6,  March 26th 2010
+================================
+
+Gap5/tg_index v1.2.8.
+
+This is just a bug-fix release to spot a major problem that slipped
+through into 1.2.7.
+
+Gap5 bug fixes since 1.2.7
+--------------------------
+
+*	Fixed an error causing crashes when decoding sequence names of
+	varying lengths coming from multiple read-groups.
+
+
+
+Staden 2.0.0b5,  March 22nd 2010
+================================
 
 Gap5 1.2.7
 Gap4 4.11.2
