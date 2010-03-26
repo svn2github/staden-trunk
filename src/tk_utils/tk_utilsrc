@@ -42,7 +42,7 @@ if {"$tcl_platform(platform)" == "windows"} {
   set_def FONT.BUTTON	{-family Helvetica -weight bold -size -12}
   set_def FONT.LISTBOX	{-family Helvetica -weight bold -size -12}
   set_def FONT.TITLE	{-family Helvetica -size -16 -weight bold}
-  set_def FONT.SHEET	{-family Fixed -size -20}
+  set_def FONT.SHEET	{-family Fixed -size -15}
   set_def FONT.TRACE	{-family Helvetica -size -12}
   set_def FONT.ENZYME	{-family Helvetica -size -11}
   set_def FONT.TRACE_CONF {-family Helvetica -size -9}
