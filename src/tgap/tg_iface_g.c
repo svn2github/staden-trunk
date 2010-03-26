@@ -3298,9 +3298,40 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     /* name length */
-    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
-	if (!in[i].bin) continue;
-	cp += u72int(cp, (uint32_t *)&in[i].name_len);
+    if (reorder_by_read_group) {
+	int p1 = 1;
+
+	for (i = k = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    
+	    /*
+	     * If this is one we've already processed, then continue.
+	     * We mark "already processed" by negating the parent_rec.
+	     * For parent_rec == 0 this obviously doesn't work, so we
+	     * always deal with those in the first pass.
+	     */
+	    if (in[i].parent_rec < 0 || (in[i].parent_rec == 0 && !p1)) {
+		in[i].parent_rec = -in[i].parent_rec;
+		continue;
+	    }
+
+	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
+		if (!in[j].bin) continue;
+		if (in[j].parent_rec != in[i].parent_rec)
+		    continue;
+		
+		cp += u72int(cp, (uint32_t *)&in[j].name_len);
+		in[j].parent_rec = -in[j].parent_rec;
+	    }
+
+	    p1 = 0;
+	}
+    } else {
+	for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	    if (!in[i].bin) continue;
+	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
+	}
     }
 
     /* trace name length */
@@ -3332,10 +3363,10 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
 	    extra_len =
 		sizeof(seq_t) + 
-		in[i].name_len +
-		in[i].trace_name_len +
-		in[i].alignment_len + 
-		in[i].aux_len + 
+		in[i].name_len + 1 +
+		in[i].trace_name_len + 1 + 
+		in[i].alignment_len + 1 + 
+		in[i].aux_len + 1 + 
 		ABS(in[i].len) +
 		ABS(in[i].len) * (in[i].format == SEQ_FORMAT_CNF4 ? 4 : 1);
 	    if (!(si = cache_new(GT_Seq, 0, 0, NULL, extra_len)))
@@ -3369,7 +3400,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    while (!b->seq[k]) k++;
 
 	    s->name = (char *)&s->data;
-	    s->name_len = in[k++].name_len;
+	    //s->name_len = in[k++].name_len;
 	    memcpy(s->name, cp, s->name_len);
 	    cp += s->name_len;
 	    s->name[s->name_len] = 0;
@@ -3386,7 +3417,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 		while (!b->seq[k]) k++;
 
 		s2->name = (char *)&s2->data;
-		s2->name_len = in[k++].name_len;
+		//s2->name_len = in[k++].name_len;
 		memcpy(s2->name, cp, s2->name_len);
 		cp += s2->name_len;
 		s2->name[s2->name_len] = 0;
@@ -3680,6 +3711,9 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	 * be written out (mixed in with the true parent_rec of seq[0]).
 	 *
 	 * Subsequent times we only right out +ve parent_rec values.
+	 *
+	 * FIXME: we may disassemble seq b->seq[0].
+	 * In this case i>0 check below is invalid?
 	 */
 	if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
 	    s->parent_rec = -s->parent_rec;
