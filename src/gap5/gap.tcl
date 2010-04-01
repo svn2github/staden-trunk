@@ -501,7 +501,7 @@ load $env(STADLIB)/${lib_prefix}tk_utils${lib_suffix}
 load_package tk_utils
 tk_utils_init
 load_package gap5
-load libtgap.so g5
+load $env(STADLIB)/${lib_prefix}tgap${lib_suffix} g5
 
 #db_info foo
 

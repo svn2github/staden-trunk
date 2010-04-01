@@ -68,7 +68,7 @@ find_dir() {
 }
 
 STADENROOT=`find_dir $0`/..;            export STADENROOT
-STADLIB=$STADENROOT/lib/staden;         export STADLIB
+STADLIB=$STADENROOT/lib/staden/;        export STADLIB
 STADTABL=$STADENROOT/share/staden/etc;  export STADTABL
 STADTCL=$STADENROOT/share/staden/tcl;   export STADTCL
 

@@ -27,7 +27,11 @@ INCLUDES_E += $(ZLIB_INC) $(LZMA_INC)
 TGAP_LIBS = \
 	$(SEQUTILS_LIB) \
 	$(ZLIB_LIB) \
-	$(LZMA_LIB)
+	$(LZMA_LIB) \
+	$(TKUTILS_LIB) \
+	$(TK_LIB) \
+	$(IOLIB_LIB) \
+	$(MISC_LIB)
 
 #-----------------------------------------------------------------------------
 

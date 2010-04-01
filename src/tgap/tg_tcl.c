@@ -15,7 +15,7 @@
 #include <assert.h>
 
 #include <tcl.h>
-#include <tclInt.h> /* Tcl_GetCommandFromObj */
+/* #include <tclInt.h> *//* Tcl_GetCommandFromObj */
 #include <tcl_utils.h>
 
 #include "array.h"

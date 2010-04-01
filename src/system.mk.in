@@ -41,13 +41,13 @@ INCLUDES         += @X_CFLAGS@
 #-- Tcl/Tk
 #TCL_INC	  = @TCL_INCLUDE_SPEC@
 TCL_INC		  = @TCL_INCLUDES@
-TCL_LIB		  = @TCL_LIB_SPEC@
-#TCL_LIB	  = @TCL_LIB_SPEC@ @TCL_LIBS@
+#TCL_LIB		  = @TCL_LIB_SPEC@
+TCL_LIB	  = @TCL_LIB_SPEC@ @TCL_LIBS@
 
 #TK_INC		  = @TK_INCLUDE_SPEC@ $(TCL_INC)
 TK_INC		  = @TK_INCLUDES@ $(TCL_INC)
-TK_LIB		  = @TK_LIB_SPEC@ $(TCL_LIB)
-#TK_LIB		  = @TK_LIB_SPEC@ @TK_LIBS@ $(TCL_LIB)
+#TK_LIB		  = @TK_LIB_SPEC@ $(TCL_LIB)
+TK_LIB		  = @TK_LIB_SPEC@ @TK_LIBS@ $(TCL_LIB)
 
 
 
@@ -72,7 +72,8 @@ CXXFLAGS	  = @CXXFLAGS@ $(DEFINES) $(INCLUDES)
 CPP		  = @CPP@
 CPPFLAGS	  = @CPPFLAGS@
 LDFLAGS		  = -L$(L) @LDFLAGS@
-CLDFLAGS	  = -L$(L) -Wl,-rpath-link,$(L) $(subst -L,-Wl$(comma)-rpath-link$(comma),$(filter -L%,$(IOLIB_LIB)))
+#CLDFLAGS	  = -L$(L) -Wl,-rpath-link,$(L) $(subst -L,-Wl$(comma)-rpath-link$(comma),$(filter -L%,$(IOLIB_LIB)))
+CLDFLAGS	  = -L$(L)
 CXXLDFLAGS	  = $(CLDFLAGS)
 F77		  = @F77@
 FFLAGS		  = @FFLAGS@

@@ -5,7 +5,7 @@
 #include "user_defaults.h"
 #include "tclXkeylist.h"
 #include "tclCanvGraph.h"
-#include "tkCanvGraph.h"
+/* #include "tkCanvGraph.h" */
 
 extern int TclXKeylist_Init(Tcl_Interp *);
 extern int Raster_Init(Tcl_Interp *);
@@ -55,10 +55,13 @@ int Tk_utils_Init(Tcl_Interp *interp) {
     Trace_Init(interp);
     Sheet_Init(interp);
 
+    /* Used only by spin2; not currently supported */
+    /*
     Container_Init(interp);
 
     Tk_CreateItemType(&tkGraphType);
     Tcl_GraphInit(interp);
+    */
 
     /* SeqReg_Init(interp); */
 

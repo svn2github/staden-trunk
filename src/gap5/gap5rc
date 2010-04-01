@@ -2,9 +2,9 @@
 # Packages required
 #-----------------------------------------------------------------------------
 load_package tk_utils
-if {[info commands tk] != ""} {
-   package require Iwidgets
-}
+#if {[info commands tk] != ""} {
+#   package require Iwidgets
+#}
 
 # Next line can be removed when using the updated newgap_top.tcl
 # load_package %L/gap		{}	gap		1

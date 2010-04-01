@@ -50,14 +50,18 @@ OBJS = \
 	canvas_box.o \
 	ruler_tick.o \
 	restriction_enzyme_map.o \
-	container_cmds.o\
+	element_canvas.o\
 	container.o\
 	container_ruler.o\
-	element_canvas.o\
-	tclCanvGraph.o\
-	tkCanvGraph.o\
-	matrix.o\
 	$(TKUTILS_EXTRAS)
+
+# Spin2 only objects, which currently isn't compiled and has compilation
+# issues on some systems.
+#
+#	tkCanvGraph.o\
+#	container_cmds.o\
+#	tclCanvGraph.o\
+#	matrix.o
 
 #
 # Main dependency
