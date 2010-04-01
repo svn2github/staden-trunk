@@ -36,16 +36,85 @@
 #define PRIu8  "u"
 #endif
 
+
 /*
- * FIXME: most of this should be replaced by autoconf now.
- * Still a work in progress.
+ * First guess via autoconf. This is here as endianness can only be computed
+ * by autoconf for the machine we're building on. Hence cross-compilations
+ * or MacOSX "fat binaries" cannot work via autoconf in this manner.
+ *
+ * These provide a default for when the machine specific ifdefs below do you
+ * catch your system type.
  */
-#ifdef WORDS_BIGENDIAN
-#    define SP_BIG_ENDIAN
-#else
+/* #ifdef HAVE_CONFIG_H */
+#    if defined(WORDS_BIGENDIAN)
+#        ifdef SP_LITTLE_ENDIAN
+#            undef SP_LITTLE_ENDIAN
+#        endif
+#        define SP_BIG_ENDIAN
+#    else
+#        ifdef SP_BIG_ENDIAN
+#            undef SP_BIG_ENDIAN
+#        endif
+#        define SP_LITTLE_ENDIAN
+#    endif
+/* #endif */
+
+/*
+ * x86 equivalents
+ */
+#if defined(__i386__) || defined(__i386) || defined(__amd64__) || defined(__amd64)
+#  if defined(SP_BIG_ENDIAN)
+#    undef SP_BIG_ENDIAN
+#  endif
+#  define SP_LITTLE_ENDIAN
+#endif
+
+/*
+ * DEC Alpha
+ */
+#if defined(__alpha__) || defined(__alpha)
+#  if defined(SP_LITTLE_ENDIAN)
+#    undef SP_LITTLE_ENDIAN
+#  endif
+#  define SP_BIG_ENDIAN
+#endif
+
+/*
+ * SUN Sparc
+ */
+#if defined(__sparc__) || defined(__sparc)
+#  if defined(SP_LITTLE_ENDIAN)
+#    undef SP_LITTLE_ENDIAN
+#  endif
+#  define SP_BIG_ENDIAN
+#endif
+
+/*
+ * PowerPC
+ */
+#if defined(__ppc__) || defined(__ppc)
+#  if defined(SP_LITTLE_ENDIAN)
+#    undef SP_LITTLE_ENDIAN
+#  endif
+#  define SP_BIG_ENDIAN
+#endif
+
+/* Some catch-alls */
+#if defined(__LITTLE_ENDIAN__) || defined(__LITTLEENDIAN__)
 #    define SP_LITTLE_ENDIAN
 #endif
 
+#if defined(__BIG_ENDIAN__) || defined(__BIGENDIAN__)
+#    define SP_BIG_ENDIAN
+#endif
+
+#if defined(SP_BIG_ENDIAN) && defined(SP_LITTLE_ENDIAN)
+#    error Both BIG and LITTLE endian defined. Fix os.h and/or Makefile
+#endif
+
+#if !defined(SP_BIG_ENDIAN) && !defined(SP_LITTLE_ENDIAN)
+#    error Neither BIG nor LITTLE endian defined. Fix os.h and/or Makefile
+#endif
 
 /*
  *-----------------------------------------------------------------------------
@@ -63,7 +132,6 @@
 #define SEEK_END 2
 #define FOPEN_MAX 64
 #define FILENAME_MAX 1024
-#define SP_BIG_ENDIAN
 
 /* Missing functions, defined in strings.c */
 #define NOMEMMOVE
@@ -75,11 +143,6 @@
  * SunOS 5.x - gcc or Sun's cc 
  */ 
 #if (defined(__sun__) || defined(__sun)) && (defined(__svr4__) || defined(__SVR4))
-#  if defined(__sparc__) || defined(__sparc) 
-#    define SP_BIG_ENDIAN 
-#  else 
-#    define SP_LITTLE_ENDIAN 
-#  endif 
 #  define IMAGEDISPLAY 
 #  define NOSTRDUP 
 #endif 
@@ -95,11 +158,11 @@
 typedef int mode_t;
 #define ftruncate(fd,len) _chsize(fd,len)
 #define sysconf(x) 512
-#define SP_LITTLE_ENDIAN
 #define NOPIPE
 #define NOLOCKF
 #define NOSTRCASECMP
 #define NO_STRPTIME
+#undef HAVE_SYS_WAIT_H
 #endif
 
 
@@ -107,24 +170,31 @@ typedef int mode_t;
  * Microsoft Windows running MinGW
  */
 #if defined(__MINGW32__)
-#define SP_LITTLE_ENDIAN
-#define mkdir(filename,mode) mkdir((filename))
+/* #define mkdir(filename,mode) mkdir((filename)) */
 #define NOPIPE
 #define NOLOCKF
 #define NO_STRPTIME
 #define sysconf(x) 512
 #define ftruncate(fd,len) _chsize(fd,len)
+#undef HAVE_SYS_WAIT_H
 #endif
 
-/*
- * Linux on Intel platforms
- */
-#if defined(__linux__)
-#  if defined(SP_BIG_ENDIAN)
-#    undef SP_BIG_ENDIAN
-#  endif
-#  define SP_LITTLE_ENDIAN
-#endif
+/* Generic WIN32 API issues */
+#ifdef _WIN32
+#  ifndef HAVE_FSEEKO
+#    if __MSVCRT_VERSION__ >= 0x800
+       /* if you have MSVCR80 installed then you can use these definitions: */
+#      define off_t __int64
+#      define fseeko _fseeki64
+#      define ftello _ftelli64
+#    else
+       /* otherwise we're stuck with 32-bit file support */
+#      define off_t long
+#      define fseeko fseek
+#      define ftello ftell
+#    endif
+#  endif /* !HAVE_FSEEKO */
+#endif /* _WIN32 */
 
 /*
  * Linux on AMD64 also needs to use va_copy()
@@ -136,22 +206,9 @@ typedef int mode_t;
 #endif
 
 /*
- * DEC Alpha's running Digital UNIX
- */
-#if defined(__alpha)
-#  if defined(SP_BIG_ENDIAN)
-#    undef SP_BIG_ENDIAN
-#  endif
-#  if !defined(SP_LITTLE_ENDIAN)
-#    define SP_LITTLE_ENDIAN
-#  endif
-#endif
-
-/*
  * Silicon Graphics - Irix
  */
 #if defined(__sgi)
-#define SP_BIG_ENDIAN
 #define NOSTRDUP
 #define NO_STRPTIME
 #endif
@@ -160,14 +217,16 @@ typedef int mode_t;
  * Macs (<= OS 9) - yuk!
  */
 #if defined(MAC)
-#define SP_BIG_ENDIAN
 #define NOSTRDUP
 #endif
 
-#if defined(__APPLE__)
-#define SP_BIG_ENDIAN
+#if defined(__APPLE__) && defined(__ppc__)
 #define NO_STRPTIME
 #define NOLOCKF
+#endif
+
+#if defined(__APPLE__) && defined(__i386__)
+/* nothing untoward as yet */
 #endif
 
 /*
@@ -343,18 +402,6 @@ typedef int4 int_fl;		/* f_implicit */
 #define le_int4(x) (x)
 #define le_int2(x) (x)
 #define le_int1(x) (x)
-#endif
-
-#ifndef SP_BIG_ENDIAN
-#ifndef SP_LITTLE_ENDIAN
-#error Must define SP_BIG_ENDIAN or SP_LITTLE_ENDIAN in Makefile
-#endif
-#endif
-
-#ifdef SP_BIG_ENDIAN
-#ifdef SP_LITTLE_ENDIAN
-#error Must only define one of SP_BIG_ENDIAN and SP_LITTLE_ENDIAN in Makefile
-#endif
 #endif
 
 #endif /*_OS_H_*/
