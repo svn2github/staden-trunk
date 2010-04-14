@@ -10,6 +10,7 @@
 
 #include "editor_view.h"
 #include "consensus.h"
+#include "reg_exp.h"
 
 #define WIN_WIDTH 65536
 
@@ -223,16 +224,142 @@ int edview_search_consquality(edview *xx, int dir, int strand, char *value) {
 
 int edview_search_name(edview *xx, int dir, int strand, char *value)
 {
-    int rec;
+    int rec, cnum;
     
     rec = sequence_index_query(xx->io, value);
     if (rec <= 0)
+	return -1;
+
+    /* Is this sequence in this contig? */
+    sequence_get_position(xx->io, rec, &cnum, NULL, NULL, NULL);
+    if (cnum != xx->cnum)
 	return -1;
 
     edSetCursorPos(xx, GT_Seq, rec, 0, 1);
     return 0;
 }
 
+int edview_search_tag_type(edview *xx, int dir, int strand, char *value) {
+    contig_iterator *iter;
+    int start, end;
+    rangec_t *r;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    int type = str2type(value);
+
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = xx->contig->end;
+	ifunc = contig_iter_next;
+    } else {
+	start = xx->contig->start;
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	ifunc = contig_iter_prev;
+    }
+
+    iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
+				   dir == 1 ? CITER_FIRST : CITER_LAST,
+				   start, end, GRANGE_FLAG_ISANNO);
+
+    while (r = ifunc(xx->io, iter)) {
+	if ((dir  && r->start < start) ||
+	    (!dir && r->start > end))
+	    continue;
+
+	if (r->mqual == type) 
+	    break;
+    }
+
+    if (r) {
+	if (r->flags & GRANGE_FLAG_TAG_SEQ) {
+	    int pos;
+	    sequence_get_position(xx->io, r->pair_rec, NULL, &pos, NULL, NULL);
+	    pos = r->start - pos;
+	    edSetCursorPos(xx, GT_Seq, r->pair_rec, pos, 1);
+	} else {
+	    edSetCursorPos(xx, GT_Contig, xx->cnum, r->start, 1);
+	}
+	contig_iter_del(iter);
+	return 0;
+    }
+
+    contig_iter_del(iter);
+    return -1;
+}
+
+int edview_search_tag_anno(edview *xx, int dir, int strand, char *value) {
+    contig_iterator *iter;
+    int start, end;
+    rangec_t *r;
+    rangec_t *(*ifunc)(GapIO *io, contig_iterator *ci);
+    char *r_exp = NULL;
+
+    if (value) {
+	if (NULL == (r_exp = REGCMP(xx->interp, value))) {
+	    verror(ERR_WARN, "Search by anno", "invalid regular expression");
+	    return -1;
+	}
+    }
+
+    if (dir) {
+	start = xx->cursor_apos + (dir ? 1 : -1);
+	end   = xx->contig->end;
+	ifunc = contig_iter_next;
+    } else {
+	start = xx->contig->start;
+	end   = xx->cursor_apos + (dir ? 1 : -1);
+	ifunc = contig_iter_prev;
+    }
+
+    iter = contig_iter_new_by_type(xx->io, xx->cnum, 1,
+				   dir == 1 ? CITER_FIRST : CITER_LAST,
+				   start, end, GRANGE_FLAG_ISANNO);
+
+    while (r = ifunc(xx->io, iter)) {
+	anno_ele_t *ae;
+
+	if ((dir  && r->start < start) ||
+	    (!dir && r->start > end))
+	    continue;
+
+	if (!r_exp)
+	    break; /* blank expr => match all */
+
+	ae = cache_search(xx->io, GT_AnnoEle, r->rec);
+	if (!ae->comment)
+	    continue;
+
+	if (REGEX(xx->interp, ae->comment, r_exp))
+	    break;
+    }
+
+    REGFREE(xx->interp, r_exp);
+
+    if (r) {
+	if (r->flags & GRANGE_FLAG_TAG_SEQ) {
+	    int pos;
+	    sequence_get_position(xx->io, r->pair_rec, NULL, &pos, NULL, NULL);
+	    pos = r->start - pos;
+	    edSetCursorPos(xx, GT_Seq, r->pair_rec, pos, 1);
+	} else {
+	    edSetCursorPos(xx, GT_Contig, xx->cnum, r->start, 1);
+	}
+	contig_iter_del(iter);
+	return 0;
+    }
+
+    contig_iter_del(iter);
+    return -1;
+}
+
+/*
+ * Performs a search within the editor.
+ * type   is a string indicating the search type - name, tag, sequence, ...
+ * dir    is 1 for forward, 0 for reverse.
+ * strand is '+', '-' or '=' but only applicable for some search types.
+ *
+ * Returns 0 on success (and moves the editor cursor)
+ *        -1 on failure / not found.
+ */
 int edview_search(edview *xx, int dir, int strand,
 		  char *type, char *value) {
     struct {
@@ -244,6 +371,8 @@ int edview_search(edview *xx, int dir, int strand,
 	{"sequence",     edview_search_sequence},
 	{"consquality",  edview_search_consquality},
 	{"name",         edview_search_name},
+	{"tag",          edview_search_tag_type},
+	{"annotation",   edview_search_tag_anno},
     };
     int i;
 
@@ -251,6 +380,8 @@ int edview_search(edview *xx, int dir, int strand,
 	if (0 == strcmp(types[i].name, type))
 	    return types[i].func(xx, dir, strand, value);
     }
+
+    fprintf(stderr, "Unrecognised search type '%s'\n", type);
 
     return -1;
 }

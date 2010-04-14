@@ -13,7 +13,7 @@
 set search_setup(position)		"0 0 0 0 {padded position}"
 set search_setup(uposition)		"0 0 0 0 {unpadded position}"
 set search_setup(problem)		"0 0 0 0"
-set search_setup(anno)			"0 0 0 0 string"
+set search_setup(annotation)		"0 0 0 0 string"
 #set search_setup(sequence)		"0 1 0 1 sequence {num. mismatches}"
 set search_setup(sequence)		"0 1 0 0 sequence {num. mismatches}"
 set search_setup(quality)		"0 0 0 0"
@@ -126,19 +126,19 @@ proc create_search_win {w com {dir 0} {raise 1}} {
 
     # Search terms
     set terms {
+	{l annotation                annotation}
 #	{l {padded position}         position}
 #	{l problem                   problem}
-#	{l annotation                annotation}
 	{l sequence                  sequence}
 #	{l quality                   quality}
 	{l {consensus quality}       consquality}
 #	{l {from file}               file}
+	{r {tag type}                tag}
 #	{r {unpadded position}       uposition}
 	{r {reading name}            name}
 #	{r edit                      edit}
 #	{r {evidence for edits (1)}  verifyand}
 #	{r {evidence for edits (2)}  verifyor}
-#	{r {tag type}                tag}
 #	{r discrepancies             discrepancy}
 #	{r {consensus discrepancies} consdiscrepancy}
     }
@@ -304,7 +304,7 @@ proc do_search {w com args} {
     global gap5_defs 
     keylset gap5_defs CONTIG_EDITOR.SEARCH.DEFAULT_DIRECTION 	$dir
     keylset gap5_defs CONTIG_EDITOR.SEARCH.DEFAULT_STRAND 	$strand
-    keylset gap5_defs CONTIG_EDITOR.SEARCH.DEFAULT_TYPE 		$type
+    keylset gap5_defs CONTIG_EDITOR.SEARCH.DEFAULT_TYPE 	$type
     keylset gap5_defs CONTIG_EDITOR.SEARCH.TAG_DEF 		$tag
 
     set value1 [entrybox_get $w.option_frame.val1]
@@ -314,7 +314,7 @@ proc do_search {w com args} {
     set .cedit.Defaults(${type}2) $value2
 
     if {$type == "position" \
-	    || $type == "anno" \
+	    || $type == "annotation" \
 	    || $type == "name" \
 	    || $type == "consquality" \
 	    || $type == "discrepancy"
