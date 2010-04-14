@@ -1046,7 +1046,7 @@ int tcl_io_read_data(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, obj);
     }
 
-    xfree(buf);
+    Tcl_Free(buf);
 
     return TCL_OK;
 }
