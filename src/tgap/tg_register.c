@@ -986,10 +986,6 @@ void result_notify(GapIO *io, int id, reg_data *jdata, int all) {
     contig_reg_t *r;
     HacheItem *hi = NULL;
 
-    if (jdata->job != REG_GENERIC)
-	printf("result_notify(id=%d, jdata->job=%d)\n",
-	       id, jdata->job);
-
     while ((r = get_reg_by_id(io, id, &hi))) {
 	if ((r->flags & jdata->job) && !(r->flags & REG_FLAG_INACTIVE)) {
 	    r->func(io, 0, r->fdata, jdata);
