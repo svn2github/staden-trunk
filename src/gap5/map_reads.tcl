@@ -57,7 +57,7 @@ proc MapReads_bwa_aln {io} {
 
     set w .map_reads
     if {[xtoplevel $w -resizable 0] == ""} return
-    wm title $w "Mapped assembly"
+    wm title $w "Mapped assembly - bwa aln"
 
     # Sequences to map against
     contig_id $w.id -io $io 
@@ -79,6 +79,11 @@ proc MapReads_bwa_aln {io} {
     entrybox $w.aln_opt   -title "'bam aln' options"
     entrybox $w.sampe_opt -title "'bam sampe' options"
 
+    xyn $w.index_names \
+	-label "Index sequence names" \
+	-orient horiz \
+	-default [keylget gap5_defs MAP_READS.INDEX_SEQUENCE_NAMES]
+
     #OK and Cancel buttons
     okcancelhelp $w.ok_cancel \
 	    -ok_command "MapReads_bwa_aln2 $io $w" \
@@ -87,8 +92,8 @@ proc MapReads_bwa_aln {io} {
 	    -bd 2 \
 	    -relief groove
 
-    pack $w.contigs $w.id $w.fwd $w.rev $w.aln_opt $w.sampe_opt $w.ok_cancel \
-	-side top -fill both
+    pack $w.contigs $w.id $w.index_names $w.fwd $w.rev \
+	$w.aln_opt $w.sampe_opt $w.ok_cancel -side top -fill both
 }
 
 proc MapReads_bwa_aln2 {io w} {
@@ -105,6 +110,8 @@ proc MapReads_bwa_aln2 {io w} {
     } else {
 	set contigs [lorf_get_list $w.contigs]
     }
+
+    set no_tree [$w.index_names get]
 
     # and its input sequences
     set fwd [entrybox_get $w.fwd.entry]
@@ -179,7 +186,8 @@ proc MapReads_bwa_aln2 {io w} {
 	-merge_contigs 1 \
 	-repad 1 \
 	-file $prefix.srt.bam \
-	-format bam
+	-format bam \
+	-index_names $no_tree
 
     vmessage "Flushing"
     $io flush
@@ -199,9 +207,9 @@ proc MapReads_bwa_aln2 {io w} {
 proc MapReads_bwa_dbwtsw {io} {
     global gap5_defs
 
-    set w .map_reads
+    set w .map_reads2
     if {[xtoplevel $w -resizable 0] == ""} return
-    wm title $w "Mapped assembly"
+    wm title $w "Mapped assembly - bwa dbwtsw"
 
     # Sequences to map against
     contig_id $w.id -io $io 
@@ -221,6 +229,11 @@ proc MapReads_bwa_dbwtsw {io} {
 
     entrybox $w.dbwtsw_opt   -title "'bam dbwtsw' options"
 
+    xyn $w.index_names \
+	-label "Index sequence names" \
+	-orient horiz \
+	-default [keylget gap5_defs MAP_READS.INDEX_SEQUENCE_NAMES]
+
     #OK and Cancel buttons
     okcancelhelp $w.ok_cancel \
 	    -ok_command "MapReads_bwa_dbwtsw2 $io $w" \
@@ -229,7 +242,7 @@ proc MapReads_bwa_dbwtsw {io} {
 	    -bd 2 \
 	    -relief groove
 
-    pack $w.contigs $w.id $w.fwd $w.dbwtsw_opt $w.ok_cancel \
+    pack $w.contigs $w.id $w.index_names $w.fwd $w.dbwtsw_opt $w.ok_cancel \
 	-side top -fill both
 }
 
@@ -247,6 +260,8 @@ proc MapReads_bwa_dbwtsw2 {io w} {
     } else {
 	set contigs [lorf_get_list $w.contigs]
     }
+
+    set no_tree [$w.index_names get]
 
     # and its input sequences
     set fwd [entrybox_get $w.fwd.entry]
@@ -303,7 +318,7 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 	-repad 1 \
 	-file $prefix.srt.bam \
 	-format bam \
-	-no_tree 0
+	-index_names $no_tree
 
     vmessage "Flushing"
     $io flush

@@ -16,7 +16,7 @@ RB_GENERATE(PAD_COUNT, pad_count, link, pad_count_cmp);
  * a tree with one node per gap removed. The nodes are sorted on the padded
  * position, but also contain the orginal padded coordinate.
  */
-pad_count_t *depad_seq_tree(char *seq) {
+pad_count_t *depad_seq_tree(char *seq, int offset) {
     pad_count_t *tree = malloc(sizeof(*tree));
     struct pad_count *node, *n;
     int p;
@@ -34,8 +34,8 @@ pad_count_t *depad_seq_tree(char *seq) {
 
 	/* Pad, so add to the tree */
 	node = (struct pad_count *)malloc(sizeof(*node));
-	node->pos = p;
-	node->ppos = p + ++count;
+	node->pos = p + offset;
+	node->ppos = p + offset + ++count;
 	node->count = 1;
 	n = RB_INSERT(PAD_COUNT, tree, node);
 	if (n) {
@@ -171,7 +171,7 @@ pad_count_t *depad_consensus(GapIO *io, int crec) {
     calculate_consensus_simple(io, crec, first, last, cons, NULL);
     cons[len] = 0;
 
-    tree = depad_seq_tree(cons);
+    tree = depad_seq_tree(cons, first);
 
     free(cons);
 

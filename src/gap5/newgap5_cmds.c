@@ -1277,6 +1277,7 @@ typedef struct import_reads_arg {
     char *file;
     char *fmt;
     tg_args a;
+    int index_names;
 } ir_arg;
 
 int
@@ -1300,7 +1301,7 @@ tcl_import_reads(ClientData clientData,
 	{"-comp_mode",     ARG_STR, 1, "zlib", offsetof(ir_arg, comp_mode)},
 	{"-format",        ARG_STR, 1, "auto", offsetof(ir_arg, fmt)},
 	{"-append",        ARG_INT, 1, "1",    offsetof(ir_arg, a.append)},
-	{"-no_tree",       ARG_INT, 1, "1",    offsetof(ir_arg, a.no_tree)},
+	{"-index_names",   ARG_INT, 1, "0",    offsetof(ir_arg, index_names)},
 	{"-merge_contigs", ARG_INT, 1, "-1",   offsetof(ir_arg, a.merge_contigs)},
 	{"-fast_mode",     ARG_INT, 1, "0",    offsetof(ir_arg, a.fast_mode)},
 	{"-reserved_seqs", ARG_INT, 1, "0",    offsetof(ir_arg, a.reserved_seqs)},
@@ -1314,6 +1315,7 @@ tcl_import_reads(ClientData clientData,
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
 
+    args.a.no_tree = args.index_names ? 0 : 1;
     args.a.data_type = parse_data_type(args.data_type);
     if (0 == strcmp(args.comp_mode, "none")) {
 	args.a.comp_mode = COMP_MODE_NONE;
