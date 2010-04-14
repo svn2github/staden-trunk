@@ -482,6 +482,7 @@ fij(GapIO *io,
 	contig_register(io, 0, fij_callback, (void *)FIJMatch, id,
 			REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
 			REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_FIJ);
+	update_results(io);
     }
 
     xfree(contig_list);

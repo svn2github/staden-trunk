@@ -56,7 +56,7 @@ void
 update_contig_order(Tcl_Interp *interp,
 		    GapIO *io,
 		    int cs_id,
-		    int *order_array,
+		    contig_list_t *order_array,
 		    int num_contigs,
 		    int64_t cx);
 
@@ -89,5 +89,8 @@ contig_comparator_reg(Tcl_Interp *interp,
 		      obj_cs *cs,
 		      char *csp_win,
 		      char *csv_win);
+
+int tk_clear_cp(ClientData clientData, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST argv[]);
 
 #endif

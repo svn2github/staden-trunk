@@ -518,6 +518,7 @@ proc DisplayDiagonal {f plot io} {
     }
 }
 
+
 ##############################################################################
 #display the contig selector crosshair
 proc AddCSHCrossHair {io id f cs_win x} {
@@ -1452,8 +1453,12 @@ proc remove_contig_duplicates {args} {
 	set a($key) $val
     }
 
-    puts "FIXME: remove_contig_duplicates unimplemented"
-    return $a(-contigs)
+    #puts "FIXME: remove_contig_duplicates unimplemented"
+    array set dedup ""
+    foreach c $a(-contigs) {
+	set dedup($c) ""
+    }
+    return [array names dedup]
 }
 
 #############################################################################

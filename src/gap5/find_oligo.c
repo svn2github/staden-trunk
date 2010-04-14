@@ -458,6 +458,8 @@ RegFindOligo(GapIO *io,
     contig_register(io, 0, find_oligo_callback, (void *)find_oligo, id,
 		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
 		    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_OLIGO);
+    update_results(io);
+
     return 0;
 }
 

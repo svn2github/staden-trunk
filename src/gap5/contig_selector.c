@@ -20,6 +20,7 @@
 #include "tcl_utils.h"
 #include "tclXkeylist.h"
 #include "gap4_compat.h"
+#include "gap_cli_arg.h"
 
 /* FIXME - we'll only allow one CSPlot currently */
 /* It'll be initialised as NULL anyway due to it's static global nature */
@@ -265,7 +266,7 @@ void
 update_contig_order(Tcl_Interp *interp,
 		    GapIO *io,
 		    int cs_id,
-		    int *contig_array,
+		    contig_list_t *contig_array,
 		    int num_contigs,
 		    int64_t cx)
 {
@@ -291,7 +292,7 @@ update_contig_order(Tcl_Interp *interp,
     left_position = find_left_position(io, order, wx);
 
     for (i = 0; i < NumContigs(io); i++) {
-	if (order[i] == contig_array[0]) {
+	if (order[i] == contig_array[0].contig) {
 	    orig_pos = i+1;
 	    break;
 	}
@@ -301,7 +302,7 @@ update_contig_order(Tcl_Interp *interp,
     for (i = 0; i < num_contigs; i++) {
 
 	for (j = 0; j < NumContigs(io); j++) {
-	    if (order[j] == contig_array[i])
+	    if (order[j] == contig_array[i].contig)
 		break;
 	}
 	ReOrder(io, order, j, left_position);
@@ -325,19 +326,19 @@ update_contig_order(Tcl_Interp *interp,
     /* Notify of the start of the flurry of updates */
     rs.job = REG_BUFFER_START;
     for (i = 0; i < num_contigs; i++) {
-	contig_notify(io, contig_array[i], (reg_data *)&rs);
+	contig_notify(io, contig_array[i].contig, (reg_data *)&rs);
     }
 
     ro.job = REG_ORDER;
     ro.pos = left_position;
 
     for (i = 0; i< num_contigs; i++)
-	contig_notify(io, contig_array[i], (reg_data *)&ro);
+	contig_notify(io, contig_array[i].contig, (reg_data *)&ro);
 
     /* Notify the end of our updates */
     re.job = REG_BUFFER_END;
     for (i = 0; i < num_contigs; i++) {
-	contig_notify(io, contig_array[i], (reg_data *)&re);
+	contig_notify(io, contig_array[i].contig, (reg_data *)&re);
     }
 
     /* draw larger separator tick to show where contig was moved from */
@@ -1251,4 +1252,43 @@ cs_callback(GapIO *io, int contig, void *fdata, reg_data *jdata) {
 #endif
 	break;
     }
+}
+
+
+/*
+ * Delete all contig comparator displays.
+ */
+typedef struct {
+    GapIO *io;
+    int id;
+} rd_arg;
+
+int tk_clear_cp(ClientData clientData, Tcl_Interp *interp,
+		int objc, Tcl_Obj *CONST objv[]) {
+    obj_cs *cs;
+    rd_arg args;
+    cli_args a[] = {
+        {"-io",       ARG_IO,  1, NULL, offsetof(rd_arg, io)},
+	{"-id",	      ARG_INT, 1, NULL, offsetof(rd_arg, id)},
+        {NULL,        0,       0, NULL, 0}
+    };
+    reg_quit rq;
+
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    rq.job = REG_QUIT;
+    rq.lock = REG_LOCK_WRITE;
+
+    type_notify(args.io, REG_TYPE_FIJ,      (reg_data *)&rq);
+    type_notify(args.io, REG_TYPE_READPAIR, (reg_data *)&rq);
+    type_notify(args.io, REG_TYPE_REPEAT,   (reg_data *)&rq);
+    type_notify(args.io, REG_TYPE_CHECKASS, (reg_data *)&rq);
+    type_notify(args.io, REG_TYPE_OLIGO,    (reg_data *)&rq);
+
+    cs = result_data(args.io, args.id);
+    strcpy(cs->window, cs->hori);
+    cs->vert[0] = '\0';
+    return TCL_OK;
 }

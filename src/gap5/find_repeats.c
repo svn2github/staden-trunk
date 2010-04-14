@@ -338,6 +338,7 @@ plot_rpt(GapIO *io,
     contig_register(io, 0, repeat_callback, (void *)repeat, id,
 		    REG_REQUIRED | REG_DATA_CHANGE | REG_OPS |
 		    REG_NUMBER_CHANGE | REG_ORDER, REG_TYPE_REPEAT);
+    update_results(io);
 }
 
 

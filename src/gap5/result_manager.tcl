@@ -76,25 +76,25 @@ proc result_list_update {io} {
     set t .results; # toplevel window name
 
     # Grab the registration list. Of format:
-    # {contig regnum id string} ?{contig regnum id string}? ...
+    # {contig id string} ?{contig id string}? ...
     set results [result_names -io $io]
 
     # Sort list by id to a format of:
-    # {id name {{contig reg} ?{contig reg}? ...}}
+    # {id name contig contig ...}
     set list ""
     set done "0"; #Ignore number 1
     foreach i $results {
-	set id [lindex $i 2]
+	set id [lindex $i 1]
 	if {[lsearch -exact $done $id] == -1} {
 	    lappend done $id
 	    set clist ""
        	    foreach j $results {
-	        if {[lindex $j 2] == $id} {
-		    lappend clist [list [lindex $j 0] [lindex $j 1]]
+	        if {[lindex $j 1] == $id} {
+		    lappend clist [lindex $j 0]
 	        }
 	    }
 
-	    lappend list [list $id $clist]
+	    lappend list [list $id [lindex $i 2] $clist]
 	}
     }
 
@@ -114,24 +114,24 @@ proc result_list_update {io} {
     # Add items to the list
     foreach i $list {
 	set cl ""
-	foreach cn [lindex $i 1] {
+	foreach cn [lindex $i 2] {
 	    lappend cl "\#[lindex $cn 0]"
 	}
-        set ti [result_time -io $io -id [lindex [lindex [lindex $i 1] 0] 0]]
-        set n "$ti : [lindex $i 0] ($cl)"
+        set ti [result_time -io $io -id [lindex $i 0]]
+        set n "$ti : [lindex $i 1] ($cl)"
         if $x {$t.l insert end $n}
 
-#         if {$cse} {
-#             if {[result_is_2d -io $io -id [lindex $i 0]]} {
-#                 $csmenu add cascade -label $n -menu $csmenu.m$count
-#                 menu $csmenu.m$count -tearoff 0 
-#                 result_list_popup_single $io [lindex $i 0] \
-#     	            [reg_get_ops -io $io -id [lindex $i 0]] \
-#     	            $csmenu.m$count
-# 
-#                 incr count
-#             }
-# 	}
+         if {$cse} {
+             if {[result_is_2d -io $io -id [lindex $i 0]]} {
+                 $csmenu add cascade -label $n -menu $csmenu.m$count
+                 menu $csmenu.m$count -tearoff 0 
+                 result_list_popup_single $io [lindex $i 0] \
+     	            [reg_get_ops -io $io -id [lindex $i 0]] \
+     	            $csmenu.m$count
+ 
+                 incr count
+             }
+ 	}
     }
 
     # Reenable our binding with our new list.
@@ -155,7 +155,7 @@ proc result_list_popup_single {io id ops m} {
 	    if {$i != "PLACEHOLDER"} {
 	        $m add command \
 	            -label $i \
-	            -command "reg_invoke_op -io $io -id $id -option $count"
+	            -command [list reg_invoke_op -io $io -id $id -option $count]
 	    }
 	    incr count
 	}
@@ -181,7 +181,7 @@ proc result_list_popup {io list lbox index x y} {
 	        $m add command \
 	            -label $i \
 	            -command "destroy $m; \
-			      reg_invoke_op -io $io -id $id -option $count"
+			      [list reg_invoke_op -io $io -id $id -option $count]"
 	    }
 	    incr count
 	}

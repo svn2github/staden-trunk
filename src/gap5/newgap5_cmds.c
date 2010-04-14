@@ -395,11 +395,9 @@ tcl_save_contig_order(ClientData clientData,
 		      int objc,
 		      Tcl_Obj *CONST objv[])
 {
-#ifdef TO_PORT
     list2_arg args;
     contig_list_t *contig_array = NULL;
     int num_contigs = 0;
-    int *contigs;
     int i;
     GapIO *io;
     GCardinal *order;
@@ -425,17 +423,16 @@ tcl_save_contig_order(ClientData clientData,
 	    xfree(contig_array);
 	return TCL_OK;
     }
-    contigs = to_contigs_only(num_contigs, contig_array);
 
     /* Update the IO structure with the new contig and save it */
+    io->contig_order = cache_rw(io, io->contig_order);
     order = ArrayBase(GCardinal, io->contig_order);
     for (i = 0; i < num_contigs; i++) {
 	order[i] = contig_array[i].contig;
     }
     xfree(contig_array);
 
-    ArrayDelay(io, io->db.contig_order, io->db.Ncontigs, io->contig_order);
-    flush2t(io);
+    cache_flush(io);
 
     /* Notify other displays of the change */
     /* Notify of the start of the flurry of updates */
@@ -454,9 +451,32 @@ tcl_save_contig_order(ClientData clientData,
     re.job = REG_BUFFER_END;
     for (i = 1; i <= NumContigs(io); i++)
 	contig_notify(io, 1, (reg_data *)&re);
-#endif
+
     return TCL_OK;
 }
+
+
+int
+tcl_flush_contig_order(ClientData clientData,
+		      Tcl_Interp *interp,
+		      int objc,
+		      Tcl_Obj *CONST objv[])
+{
+    io_arg args;
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(io_arg, io)},
+	{NULL,	    0,	     0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    args.io->contig_order = cache_rw(args.io, args.io->contig_order);
+    cache_flush(args.io);
+
+    return TCL_OK;
+}
+
 
 /*
  * contig selector commands
@@ -502,6 +522,43 @@ DisplayContigSelector(ClientData clientData,
 				       args.window, tag, cursor, tick));
 
     return TCL_OK;
+}
+
+int
+UpdateContigOrder(ClientData clientData,
+		  Tcl_Interp *interp,
+		  int objc,
+		  Tcl_Obj *CONST objv[])
+{
+    contig_list_t *contig_array = NULL;
+    int num_contigs = 0;
+    int *contigs;
+
+    update_order_arg args;
+    cli_args a[] = {
+	{"-io",	     ARG_IO,  1, NULL, offsetof(update_order_arg, io)},
+	{"-id",	     ARG_INT, 1, NULL, offsetof(update_order_arg, id)},
+	{"-contigs", ARG_STR, 1, NULL, offsetof(update_order_arg, contigs)},
+	{"-x",       ARG_INT, 1, NULL, offsetof(update_order_arg, x)},
+	{NULL,	     0,	      0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    active_list_contigs(args.io, args.contigs, &num_contigs, &contig_array);
+    if (num_contigs == 0) {
+	if (contig_array)
+	    xfree(contig_array);
+	return TCL_OK;
+    }
+
+    update_contig_order(interp, args.io, args.id, contig_array, num_contigs,
+			args.x);
+
+    xfree(contig_array);
+    return TCL_OK;
+
 }
 
 int
@@ -561,6 +618,37 @@ ZoomCanvas(ClientData clientData,
 
 }
 
+
+int
+DeleteWindow(ClientData clientData,
+	     Tcl_Interp *interp,
+	     int objc,
+	     Tcl_Obj *CONST objv[])
+{
+    reg_generic gen;
+    delete_arg args;
+
+    cli_args a[] = {
+	{"-io",	    ARG_IO,  1, NULL, offsetof(delete_arg, io)},
+	{"-id",     ARG_INT, 1, NULL, offsetof(delete_arg, id)},
+	{"-window", ARG_STR, 1, NULL, offsetof(delete_arg, window)},
+	{NULL,	0,	0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    gen.job = REG_GENERIC;
+    gen.task = TASK_WINDOW_DELETE;
+    gen.data = (void *)args.window;
+
+    result_notify(args.io, args.id, (reg_data *)&gen, 0);
+
+    return TCL_OK;
+
+}
+
+
 int
 DisplayContigComparator(ClientData clientData,
 			Tcl_Interp *interp,
@@ -589,6 +677,39 @@ DisplayContigComparator(ClientData clientData,
 
     return TCL_OK;
 }
+
+
+int
+DisplayCSDiagonal(ClientData clientData,
+		  Tcl_Interp *interp,
+		  int objc,
+		  Tcl_Obj *CONST objv[])
+{
+    cs_tags_arg args;
+    obj_cs *cs;
+    char cmd[1024];
+    int t_contig_length;
+    cli_args a[] = {
+	{"-io",	ARG_IO,  1, NULL, offsetof(cs_tags_arg, io)},
+	{"-id", ARG_INT, 1, NULL, offsetof(cs_tags_arg, id)},
+	{NULL,	0,	 0, NULL, 0}
+    };
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+	return TCL_ERROR;
+
+    cs = result_data(args.io, args.id);
+
+    t_contig_length = CalcTotalContigLen(args.io);
+    sprintf(cmd, "%s create line 1 1 %d %d -tag diagonal",
+	    cs->window, t_contig_length, t_contig_length);
+    Tcl_Eval(interp, cmd);
+
+    scaleSingleCanvas(interp, cs->world, cs->canvas, cs->window, 'b',
+		      "diagonal");
+    return TCL_OK;
+}
+
 
 int
 FindRepeats(ClientData clientData,
@@ -1411,6 +1532,8 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "db_info", db_info,
 			 (ClientData) NULL,
 			 (Tcl_CmdDeleteProc *) NULL);
+
+    /* Contig registration commands, see tk-io-reg.c */
     Tcl_CreateObjCommand(interp, "result_names", tk_result_names,
 			 (ClientData) NULL,
 			 NULL);
@@ -1454,6 +1577,9 @@ NewGap_Init(Tcl_Interp *interp) {
 			 tk_reg_notify_highlight,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "result_is_2d", tk_result_is_2d,
+			 (ClientData) NULL,
+			 NULL);
     Tcl_CreateCommand(interp, "obj_get_ops", ObjGetOps,
 			 (ClientData) NULL,
 			 NULL);
@@ -1469,6 +1595,7 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateCommand(interp, "obj_get_brief", ObjGetBrief,
 			 (ClientData) NULL,
 			 NULL);
+
     Tcl_CreateObjCommand(interp, "complement_contig", tcl_complement_contig,
 			 (ClientData) NULL,
 			 NULL);
@@ -1500,7 +1627,11 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "save_contig_order", tcl_save_contig_order,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "flush_contig_order", tcl_flush_contig_order,
+			 (ClientData) NULL,
+			 NULL);
 
+    /* Contig selector window */
     Tcl_CreateObjCommand(interp, "display_contig_selector",
 			 DisplayContigSelector,
 			 (ClientData) NULL,
@@ -1509,8 +1640,20 @@ NewGap_Init(Tcl_Interp *interp) {
 			 DisplayContigComparator,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "update_contig_order", UpdateContigOrder,
+			 (ClientData) NULL,
+			 NULL);
     Tcl_CreateObjCommand(interp, "zoom_canvas", ZoomCanvas,
 			 (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "delete_window", DeleteWindow,
+			 (ClientData)NULL, NULL);
+    Tcl_CreateObjCommand(interp, "clear_cp", tk_clear_cp,
+			 (ClientData) NULL,
+			 NULL);
+    Tcl_CreateObjCommand(interp, "display_cs_diagonal", DisplayCSDiagonal,
+			 (ClientData) NULL,
+			 NULL);
+
     Tcl_CreateObjCommand(interp, "find_repeats", FindRepeats,
 			 (ClientData) NULL,
 			 NULL);

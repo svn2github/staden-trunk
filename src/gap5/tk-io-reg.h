@@ -89,24 +89,6 @@ int tk_result_quit(ClientData clientData, Tcl_Interp *interp,
 		   int objc, Tcl_Obj *CONST objv[]);
 
 /*
- * Delete all contig comparator displays.
- */
-int tk_clear_cp(ClientData clientData, Tcl_Interp *interp,
-		int objc, Tcl_Obj *CONST objv[]);
-
-/*
- * Delete all template plot displays.
- */
-int tk_clear_template(ClientData clientData, Tcl_Interp *interp,
-		      int objc, Tcl_Obj *CONST objv[]);
-
-/*
- * Delete all consistency displays.
- */
-int tk_clear_consistency(ClientData clientData, Tcl_Interp *interp,
-			 int objc, Tcl_Obj *CONST objv[]);
-
-/*
  * Determines whether a result is a component of the 2D contig comparator
  * display. Returns 1 or 0.
  */

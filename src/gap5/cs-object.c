@@ -386,6 +386,8 @@ void csmatch_remove(GapIO *io, char *cs_plot,
     /* Inform contig selector next button */
     Tcl_VarEval(GetInterp(), "CSLastUsedFree ", CPtr2Tcl(reg_dat), NULL);
 
+    update_results(reg_dat->io);
+
     /* Free memory */
     if (reg_dat->match)
 	xfree(reg_dat->match);
