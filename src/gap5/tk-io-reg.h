@@ -65,12 +65,6 @@ void busy_dialog(GapIO *io, int contig);
 
 
 /*
- * Configures a result.
- */
-int tk_matchresult_configure(ClientData clientData, Tcl_Interp *interp,
-			     int objc, Tcl_Obj *CONST objv[]);
-
-/*
  * Attempts to shut down all active displays.
  * As used by alter relationships, assembly, etc.
  */

@@ -1292,3 +1292,46 @@ int tk_clear_cp(ClientData clientData, Tcl_Interp *interp,
     cs->vert[0] = '\0';
     return TCL_OK;
 }
+
+typedef struct {
+    char *result;
+    char *colour;
+    char *csplot;
+    int width;
+} conf_arg;
+
+/*
+ * Configures a result.
+ */
+int tk_matchresult_configure(ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST objv[]) {
+    conf_arg args;
+    cli_args a[] = {
+	{"-result",  ARG_STR, 1, NULL, offsetof(conf_arg, result)},
+	{"-colour",   ARG_STR, 1, "",   offsetof(conf_arg, colour)},
+	{"-width",    ARG_INT, 1, "-1", offsetof(conf_arg, width)},
+	{"-csplot",   ARG_STR, 1, NULL, offsetof(conf_arg, csplot)},
+        {NULL,        0,       0, NULL, 0}
+    };
+    mobj_repeat *r;
+
+    if (-1 == gap_parse_obj_args(a, &args, objc, objv))
+        return TCL_ERROR;
+
+    /*
+     * Find the result associated with this tag. 'result' is a C pointer
+     * held in an implementation defined manner as a tcl string.
+     */
+    r = (mobj_repeat *)TclPtr2C(args.result);
+
+    /* Adjust configurations */
+    if (*args.colour) {
+	strncpy(r->colour, args.colour, COLOUR_LEN-1);
+    }
+
+    if (args.width != -1) {
+	r->linewidth = args.width;
+    }
+
+    return TCL_OK;
+}

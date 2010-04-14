@@ -1650,6 +1650,10 @@ NewGap_Init(Tcl_Interp *interp) {
     Tcl_CreateObjCommand(interp, "clear_cp", tk_clear_cp,
 			 (ClientData) NULL,
 			 NULL);
+    Tcl_CreateObjCommand(interp, "matchresult_configure",
+			 tk_matchresult_configure,
+			 (ClientData) NULL,
+			 NULL);
     Tcl_CreateObjCommand(interp, "display_cs_diagonal", DisplayCSDiagonal,
 			 (ClientData) NULL,
 			 NULL);

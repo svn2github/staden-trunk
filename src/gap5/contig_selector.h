@@ -93,4 +93,7 @@ contig_comparator_reg(Tcl_Interp *interp,
 int tk_clear_cp(ClientData clientData, Tcl_Interp *interp,
 		int objc, Tcl_Obj *CONST argv[]);
 
+int tk_matchresult_configure(ClientData clientData, Tcl_Interp *interp,
+			     int objc, Tcl_Obj *CONST argv[]);
+
 #endif
