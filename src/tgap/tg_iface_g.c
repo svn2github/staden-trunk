@@ -3193,6 +3193,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     int i, j, k, last;
     int reorder_by_read_group = 0;
     int sam_aux = 0;
+    int first_seq = 0;
 
     set_dna_lookup();
 
@@ -3298,6 +3299,13 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
     }
 
     /* name length */
+    for (i = 0; i < SEQ_BLOCK_SZ; i++) {
+	if (in[i].bin) {
+	    first_seq = i;
+	    break;
+	}
+    }
+
     if (reorder_by_read_group) {
 	int p1 = 1;
 
@@ -3318,7 +3326,8 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    cp += u72int(cp, (uint32_t *)&in[i].name_len);
 	    for (j = i+1; j < SEQ_BLOCK_SZ; j++) {
 		if (!in[j].bin) continue;
-		if (in[j].parent_rec != in[i].parent_rec)
+		if ((in[j].parent_rec && in[j].parent_rec != in[i].parent_rec)
+		    || (!p1 && !in[j].parent_rec))
 		    continue;
 		
 		cp += u72int(cp, (uint32_t *)&in[j].name_len);
@@ -3392,7 +3401,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
 
-	    if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
+	    if (s->parent_rec < 0 || (i > first_seq && !s->parent_rec)) {
 		s->parent_rec = -s->parent_rec;
 		continue;
 	    }
@@ -3411,7 +3420,8 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 		if (!s2)
 		    continue;
 
-		if (s2->parent_rec != s->parent_rec)
+		if ((s2->parent_rec && s2->parent_rec != s->parent_rec) ||
+		    (i > first_seq && !s2->parent_rec))
 		    continue;
 
 		while (!b->seq[k]) k++;
@@ -3474,7 +3484,7 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 	    seq_t *s = b->seq[i];
 	    if (!s) continue;
 
-	    if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
+	    if (s->parent_rec < 0 || (i > first_seq && !s->parent_rec)) {
 		s->parent_rec = -s->parent_rec;
 		continue;
 	    }
@@ -3488,7 +3498,8 @@ static cached_item *io_seq_block_read(void *dbh, GRec rec) {
 
 		if (!s2) continue;
 
-		if (s2->parent_rec != s->parent_rec)
+		if ((s2->parent_rec && s2->parent_rec != s->parent_rec) ||
+		    (i > first_seq && !s2->parent_rec))
 		    continue;
 
 		s2->conf = s2->seq + ABS(s2->len);
@@ -3542,6 +3553,7 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
     int nb = 0;
     int have_sam_aux = 0;
     int nparts = 19;
+    int first_seq = 0;
 
     set_dna_lookup();
 
@@ -3712,10 +3724,11 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	 *
 	 * Subsequent times we only right out +ve parent_rec values.
 	 *
-	 * FIXME: we may disassemble seq b->seq[0].
-	 * In this case i>0 check below is invalid?
+	 * FIXME: Use qsort instead, as per sam_comp2.c. It's faster
+	 * and less confusing to understand, although a *different*
+	 * format due to the order changing.
 	 */
-	if (s->parent_rec < 0 || (i > 0 && !s->parent_rec)) {
+	if (s->parent_rec < 0 || (i > first_seq && !s->parent_rec)) {
 	    s->parent_rec = -s->parent_rec;
 	    continue;
 	}
@@ -3732,7 +3745,8 @@ static int io_seq_block_write(void *dbh, cached_item *ci) {
 	    if (!s2)
 		continue;
 
-	    if (s2->parent_rec != s->parent_rec)
+	    if ((s2->parent_rec && s2->parent_rec != s->parent_rec) ||
+		(i > first_seq && !s2->parent_rec))
 		continue;
 
 	    memcpy(out[16], s2->conf, ABS(s2->len)); out[16] += ABS(s2->len);
