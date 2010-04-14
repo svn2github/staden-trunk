@@ -180,6 +180,10 @@ int do_it_fij ( char seq[], int seq_len,
 	    for ( contig2_num = contig1_num+1; contig2_num < number_of_contigs; 
 		 contig2_num++ ) {
 
+		if (contig_list[contig2_num].contig_number ==
+		    contig_list[contig1_num].contig_number)
+		    continue;
+
 		seq2_len = contig_list[contig2_num].contig_end_offset 
 		    - contig_list[contig2_num].contig_start_offset + 1;
 
