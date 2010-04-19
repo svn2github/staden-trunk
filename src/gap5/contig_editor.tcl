@@ -1722,6 +1722,49 @@ proc show_trace {w loc} {
     }
 }
 
+
+#-----------------------------------------------------------------------------
+# Auto-scrolling when dragging selections to outside the editor window.
+proc editor_select_scroll {e x} {
+    global $e.AutoScroll
+    set wid [winfo width $e]
+    set dist 0
+    if {$x < 0} {
+	set dist [expr {$x / 10}]
+    } elseif {$x > $wid} {
+	set dist [expr {($x-$wid)/10}]
+    }
+
+    if {$dist} {
+	if {![info exists $e.AutoScroll]} {
+	    set $e.AutoScroll $dist
+	    editor_autoscroll $e
+	} else {
+	    set $e.AutoScroll $dist
+	}
+    } else {
+	catch {unset $e.AutoScroll}
+    }
+}
+
+proc editor_autoscroll {e} {
+    global $e.AutoScroll $e.AutoScrollEvent
+    if {[catch {jog_editor $e [set $e.AutoScroll]}] == 0} {
+	if {[set $e.AutoScroll] > 0} {
+	    $e select to [lindex [$e configure -width] end]
+	} else {
+	    $e select to 0
+	}
+	set $e.AutoScrollEvent [after 50 "editor_autoscroll $e"]
+    }
+}
+
+proc editor_autoscroll_cancel {e} {
+    global $e.AutoScrollEvent
+    catch {after cancel [set $e.AutoScrollEvent]; unset $e.AutoScrollEvent}
+}
+
+
 #-----------------------------------------------------------------------------
 # Generic bindings
 bind Editor <Any-Enter> {
@@ -1855,9 +1898,9 @@ bind Editor <Key-Page_Down> {%W xview scroll  +1000 units}
 bind Editor <Key-Page_Up>   {%W xview scroll  -1000 units}
 
 # Selection control for adding tags
-bind Editor <<select-drag>> {%W select to @%x}
-#bind Editor <<select-release>> {puts "select release"}
-
+bind Editor <<select-drag>> {%W select to @%x; editor_select_scroll %W %x}
+bind Editor <<select-to>>   {%W select to @%x}
+bind Editor <<select-release>>	{editor_autoscroll_cancel %W}
 bind EdNames <<select-drag>> {editor_name_select %W [%W get_number @%x @%y]}
 
 # Tag editing
