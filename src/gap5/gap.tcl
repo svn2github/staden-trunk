@@ -89,38 +89,27 @@ proc splash_screen {} {
 proc DatabaseInfo {io} {
     global maxseq
 
-    set db [io_read_database $io]
-    set nc [keylget db num_contigs]
-    set nr [keylget db num_readings]
-    set tcl [db_info t_contig_length $io]
-    set trl [db_info t_read_length $io]
-    set maxgel [keylget db max_gel_len]
+    set db [$io get_database]
+    set nc [$db get_num_contigs]
+    set nl [$db get_num_libraries]
+
+    set tcl 0
+    set nr  0
+    for {set i 0} {$i < $nc} {incr i} {
+	set cnum [$io contig_order $i]
+	set c [$io get_contig $cnum]
+	incr tcl [$c get_len]
+	incr nr  [$c nseqs]
+	$c delete
+    }
 
     set i ""
-    append i [format "Database size       %10d       Max reading length %10d\n" \
-		 [keylget db actual_db_size] $maxgel]
-    append i [format "No. Readings        %10d       No. Contigs        %10d\n" \
-	         $nr $nc]
-    append i [format "No. Annotations     %10d       No. Templates      %10d\n" \
-		 [keylget db Nannotations] [keylget db Ntemplates]]
-    append i [format "No. Clones          %10d       No. Vectors        %10d\n" \
-		 [keylget db Nclones]      [keylget db Nvectors]]
-    append i [format "Total contig length %10ld       Average length      %11.1f\n"\
-		 $tcl [expr double($tcl)/$nc]]
-    append i [format "Total characters in readings                       %15ld\n" \
-		 $trl]
-    append i [format "Average reading characters per consensus character    %15.2f\n" \
-	        [expr double($trl)/$tcl]]
-    append i [format "Average used length of reading                        %15.2f\n" \
-		[expr double($trl) / $nr]]
-
-    set maxgel 1024; # minor space saving
-    if {[expr {($tcl + (2 * $maxgel + 20)*$nc)*1.1}] > $maxseq} {
-	set maxseq [expr {round(($tcl + (2 * $maxgel + 20)*$nc)*1.1)}]
-	verror ERR_WARN gap "increasing maxseq parameter to $maxseq"
-    }
-    
-    append i "Current maximum consensus length is $maxseq\n"
+    append i [format "No. Contigs         %12d\n" $nc]
+    append i [format "No. Sequences       %12d\n" $nr]
+    append i [format "No. Read-groups     %12d\n" $nl]
+    append i "\n"
+    append i [format "Total contig length %12d\n" $tcl]
+    append i [format "Avg. contig length  %14.1f\n" [expr double($tcl)/$nc]]
 
     return $i
 }
