@@ -258,6 +258,7 @@ set auto_index(jog) [list source [file join $dir jog.tcl]]
 set auto_index(ReadingCoverage) [list source [file join $dir depth.tcl]]
 set auto_index(TemplateDisplay) [list source [file join $dir depth.tcl]]
 set auto_index(CreateTemplateDisplay) [list source [file join $dir depth.tcl]]
+set auto_index(nice_num) [list source [file join $dir depth.tcl]]
 
 set auto_index(ListResults) [list source [file join $dir result_manager.tcl]]
 set auto_index(result_list_update) [list source [file join $dir result_manager.tcl]]
