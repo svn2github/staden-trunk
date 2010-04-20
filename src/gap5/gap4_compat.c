@@ -246,7 +246,13 @@ int read_name_to_number(GapIO *io, char *gel_name) {
  *     0 for failure
  */
 int contig_name_to_number(GapIO *io, char *name) {
-    int n = contig_index_query(io, name);
+    int n;
+    
+    if (*name == '=') {
+	n = atoi(name+1);
+    } else {
+	n = contig_index_query(io, name);
+    }
     return n > 0 ? n : 0;
 }
 
@@ -321,7 +327,7 @@ int get_contig_num(GapIO *io, char *gel_name, int is_name) {
 
     /* Otherwise we assume it is a reading name */
     gel = get_gel_num(io, gel_name, is_name);
-    if (gel == -1)
+    if (gel <= 0)
 	return -1;
     
     /* And return it's contig number */
