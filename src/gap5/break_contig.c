@@ -545,6 +545,9 @@ static int break_contig_recurse(GapIO *io, HacheTable *h,
  * Looks for redundant bins at the root containing no data and just a single
  * child.
  *
+ * FIXME: We need to compensate for bin position here. Hence this function
+ * is not called for now.
+ *
  * Returns 0 on success
  *        -1 on failure
  */
@@ -610,6 +613,7 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     if (!(cr = contig_new(io, cname)))
 	return -1;
+    cl = cache_rw(io, cl);
     cr = cache_rw(io, cr);
     if (0 != contig_index_update(io, cname, strlen(cname), cr->rec))
 	return -1;
@@ -654,8 +658,8 @@ int break_contig(GapIO *io, int crec, int cpos) {
 
     cl->end = left_end;
 
-    remove_redundant_bins(io, cl);
-    remove_redundant_bins(io, cr);
+    //    remove_redundant_bins(io, cl);
+    //    remove_redundant_bins(io, cr);
 
     printf("Final left bin = %d, right bin = %d\n", cl->bin, cr->bin);
 
