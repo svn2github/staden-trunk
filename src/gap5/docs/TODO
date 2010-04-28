@@ -1,3 +1,16 @@
+*	BUG:
+	tg_index DEMO.1.baf
+	gap5 g_db
+
+	Break Contig
+	    Highlight (selecting) Contig6
+	    Base pos: 2000
+	    OK
+
+	Seems Break Contig doesn't correctly move the 16 reads to the
+	new contig?
+	
+
 *       Bins currently hold their position, size and left/right child
 	numbers. Instead they could hold the left/right child record,
 	position and sizes. This means we don't need to load the

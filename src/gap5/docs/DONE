@@ -1,3 +1,37 @@
+*	BUG:
+	tg_index DEMO.1.baf
+	gap5 g_db
+
+	Break Contig
+	    Highlight (selecting) Contig6
+	    Base pos: 2000
+	    OK
+
+	Seems Break Contig doesn't correctly move the 16 reads to the
+	new contig?
+	
+*	BUG: ContigParams "[db_info get_contig_num $io $CurContig]"
+        crashes sometimes after joining. This appears to be because
+	CurContig is a contig id that's been removed?
+
+	Level 4: ContigParams io=0x7aaf40
+	Level 3: SetContigGlobals io=0x7aaf40 =1785673
+	Level 2: contig_id_rec .jedialog.id2
+	Level 1: JoinContig2 io=0x7aaf40 .jedialog .jedialog.id1 .jedialog.id2
+
+	#6  0x00002aaaad6b4ab4 in cache_search (io=0x7aaf40, type=23, rec=0)
+	    at /nfs/users/nfs_j/jkb/staden/trunk/src/build.seq1q/../tgap/tg_cache.c:1074
+	1074            hi = HacheTableSearch(io->cache, (char *)&k, sizeof(k));
+	(gdb)
+	#7  0x00002aaaad6bdf9f in sequence_get_contig (io=0x7aaf40, snum=0)
+	    at /nfs/users/nfs_j/jkb/staden/trunk/src/build.seq1q/../tgap/tg_sequence.c:680
+	680         seq_t *s = (seq_t *)cache_search(io, GT_Seq, snum);
+	(gdb)
+	#8  0x00002aaaacefd9bf in db_info (clientData=0x0, interp=0x50e000, objc=4, objv=0x522a58)
+	    at /nfs/users/nfs_j/jkb/staden/trunk/src/build.seq1q/../gap5/newgap5_cmds.c:146
+	146             vTcl_SetResult(interp, "%d", get_contig_num(io, a3, GGN_ID));
+
+
 *	BUG: Undo doesn't fix edits to tag type / comment.
 
 *	BUG: Moving seqs doesn't move tags on them.
