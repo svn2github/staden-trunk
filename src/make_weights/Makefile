@@ -40,5 +40,5 @@ install:
 make_weights.o: $(SRCROOT)/Misc/misc.h
 make_weights.o: $(SRCROOT)/Misc/os.h
 make_weights.o: $(SRCROOT)/Misc/xalloc.h
-make_weights.o: $(SRCROOT)/seq_utils/dna_utils.h
 make_weights.o: $(PWD)/staden_config.h
+make_weights.o: $(SRCROOT)/seq_utils/dna_utils.h

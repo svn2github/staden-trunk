@@ -25,5 +25,5 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
-conf.o: conf.h
-qual.o: conf.h
+conf.o: $(SRCROOT)/eba/conf.h
+qual.o: $(SRCROOT)/eba/conf.h

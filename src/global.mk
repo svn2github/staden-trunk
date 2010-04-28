@@ -462,15 +462,16 @@ depend:
 	  sed -e 's;.*/\([^:]*\):;\1:;'  | \
 	  egrep -v '^[^:]*:[     ]*$$' | \
 	  sed -e 's#$(subst .,\.,$(SRCROOT))#$$(SRCROOT)#g' \
+	      -e "s#`echo $(subst .,\.,$(SRCROOT)) | sed 's#[^/]*/\.\.##'`#\$$(SRCROOT)/#g" \
 	      -e 's#: .*/staden_config.h#: $$(PWD)/staden_config.h#g' | \
 	  egrep -v ': /' > dependencies.tmp2
 
 	@# Copy the dependencies into the Makefile
-	l=`egrep -n 'DO NOT DELETE' Makefile | head -1 | sed 's/:.*//'`; \
+	l=`egrep -n 'DO NOT DELETE' $(VPATH)/Makefile | head -1 | sed 's/:.*//'`; \
 	([ "x$$l" != "x" ] && \
-	( mv Makefile Makefile.bak; \
-	  ( head -$$l Makefile.bak; \
-	    egrep -v '^#' dependencies.tmp2 ) > Makefile; ) \
+	( mv $(VPATH)/Makefile $(VPATH)/Makefile.bak; \
+	  ( head -$$l $(VPATH)/Makefile.bak; \
+	    egrep -v '^#' dependencies.tmp2 ) > $(VPATH)/Makefile; ) \
 	) || echo 'No "# DO NOT DELETE" line found in Makefile'
 
 	@# tidy up

@@ -47,6 +47,7 @@ DEPEND_OBJ = $(OBJSD)
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+main.o: $(PWD)/staden_config.h
 main.o: $(SRCROOT)/mutlib/mutlib.h
 main.o: $(SRCROOT)/mutlib/pathutil.h
 main.o: $(SRCROOT)/mutlib/stringlist.hpp

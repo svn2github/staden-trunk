@@ -30,3 +30,4 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+stops.o: $(PWD)/staden_config.h

@@ -64,58 +64,66 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
+FtoC.o: $(SRCROOT)/Misc/os.h
 FtoC.o: $(PWD)/staden_config.h
-FtoC.o: os.h
-array.o: array.h xerror.h
-array.o: xalloc.h
+array.o: $(SRCROOT)/Misc/array.h
+array.o: $(SRCROOT)/Misc/xalloc.h
+array.o: $(SRCROOT)/Misc/xerror.h
+array_arith.o: $(SRCROOT)/Misc/misc.h
+array_arith.o: $(SRCROOT)/Misc/os.h
+array_arith.o: $(SRCROOT)/Misc/xalloc.h
 array_arith.o: $(PWD)/staden_config.h
-array_arith.o: misc.h
-array_arith.o: os.h
-array_arith.o: xalloc.h
+bitmap.o: $(SRCROOT)/Misc/bitmap.h
+bitmap.o: $(SRCROOT)/Misc/os.h
+bitmap.o: $(SRCROOT)/Misc/xalloc.h
+bitmap.o: $(SRCROOT)/Misc/xerror.h
 bitmap.o: $(PWD)/staden_config.h
-bitmap.o: bitmap.h os.h
-bitmap.o: xerror.h xalloc.h
+crash.o: $(SRCROOT)/Misc/misc.h
+crash.o: $(SRCROOT)/Misc/os.h
+crash.o: $(SRCROOT)/Misc/xalloc.h
 crash.o: $(PWD)/staden_config.h
-crash.o: misc.h
-crash.o: os.h
-crash.o: xalloc.h
+date.o: $(SRCROOT)/Misc/misc.h
+date.o: $(SRCROOT)/Misc/os.h
+date.o: $(SRCROOT)/Misc/xalloc.h
 date.o: $(PWD)/staden_config.h
-date.o: misc.h
-date.o: os.h
-date.o: xalloc.h
 dstring.o: $(SRCROOT)/Misc/dstring.h
-dstring.o: vlen.h
+dstring.o: $(SRCROOT)/Misc/vlen.h
+filenames.o: $(SRCROOT)/Misc/misc.h
+filenames.o: $(SRCROOT)/Misc/os.h
+filenames.o: $(SRCROOT)/Misc/xalloc.h
 filenames.o: $(PWD)/staden_config.h
-filenames.o: misc.h
-filenames.o: os.h
-filenames.o: xalloc.h
+files.o: $(SRCROOT)/Misc/misc.h
+files.o: $(SRCROOT)/Misc/os.h
+files.o: $(SRCROOT)/Misc/xalloc.h
 files.o: $(PWD)/staden_config.h
-files.o: misc.h
-files.o: os.h
-files.o: xalloc.h
+find.o: $(SRCROOT)/Misc/misc.h
+find.o: $(SRCROOT)/Misc/os.h
+find.o: $(SRCROOT)/Misc/xalloc.h
 find.o: $(PWD)/staden_config.h
-find.o: misc.h
-find.o: os.h
-find.o: xalloc.h
+getfile.o: $(SRCROOT)/Misc/getfile.h
+getfile.o: $(SRCROOT)/Misc/misc.h
+getfile.o: $(SRCROOT)/Misc/os.h
+getfile.o: $(SRCROOT)/Misc/xalloc.h
 getfile.o: $(PWD)/staden_config.h
-getfile.o: misc.h os.h
-getfile.o: xalloc.h getfile.h
-locks.o: locks.h
+locks.o: $(SRCROOT)/Misc/locks.h
+parse_db.o: $(SRCROOT)/Misc/misc.h
+parse_db.o: $(SRCROOT)/Misc/os.h
+parse_db.o: $(SRCROOT)/Misc/parse_db.h
+parse_db.o: $(SRCROOT)/Misc/xalloc.h
 parse_db.o: $(PWD)/staden_config.h
-parse_db.o: misc.h os.h
-parse_db.o: xalloc.h parse_db.h
+shell.o: $(SRCROOT)/Misc/misc.h
+shell.o: $(SRCROOT)/Misc/os.h
+shell.o: $(SRCROOT)/Misc/xalloc.h
 shell.o: $(PWD)/staden_config.h
-shell.o: misc.h
-shell.o: os.h
-shell.o: xalloc.h
+strings.o: $(SRCROOT)/Misc/misc.h
+strings.o: $(SRCROOT)/Misc/os.h
+strings.o: $(SRCROOT)/Misc/xalloc.h
 strings.o: $(PWD)/staden_config.h
-strings.o: misc.h
-strings.o: os.h
-strings.o: xalloc.h
+vlen.o: $(SRCROOT)/Misc/vlen.h
 vlen.o: $(PWD)/staden_config.h
-vlen.o: vlen.h
-xalloc.o: error.h
+xalloc.o: $(SRCROOT)/Misc/error.h
+xerror.o: $(SRCROOT)/Misc/misc.h
+xerror.o: $(SRCROOT)/Misc/os.h
+xerror.o: $(SRCROOT)/Misc/xalloc.h
+xerror.o: $(SRCROOT)/Misc/xerror.h
 xerror.o: $(PWD)/staden_config.h
-xerror.o: os.h
-xerror.o: xalloc.h
-xerror.o: xerror.h misc.h

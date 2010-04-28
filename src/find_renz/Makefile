@@ -35,8 +35,8 @@ find_renz.o: $(SRCROOT)/Misc/getfile.h
 find_renz.o: $(SRCROOT)/Misc/misc.h
 find_renz.o: $(SRCROOT)/Misc/os.h
 find_renz.o: $(SRCROOT)/Misc/xalloc.h
+find_renz.o: $(PWD)/staden_config.h
 find_renz.o: $(SRCROOT)/seq_utils/dna_utils.h
 find_renz.o: $(SRCROOT)/seq_utils/genetic_code.h
 find_renz.o: $(SRCROOT)/seq_utils/renz_utils.h
 find_renz.o: $(SRCROOT)/seq_utils/sequence_formats.h
-find_renz.o: $(PWD)/staden_config.h

@@ -57,6 +57,9 @@ copy_reads.o: $(SRCROOT)/Misc/misc.h
 copy_reads.o: $(SRCROOT)/Misc/os.h
 copy_reads.o: $(SRCROOT)/Misc/xalloc.h
 copy_reads.o: $(SRCROOT)/Misc/xerror.h
+copy_reads.o: $(PWD)/staden_config.h
+copy_reads.o: $(SRCROOT)/copy_reads/copy_reads.h
+copy_reads.o: $(SRCROOT)/copy_reads/copy_reads_globals.h
 copy_reads.o: $(SRCROOT)/g/freetree.h
 copy_reads.o: $(SRCROOT)/g/g-defs.h
 copy_reads.o: $(SRCROOT)/g/g-error.h
@@ -108,6 +111,3 @@ copy_reads.o: $(SRCROOT)/tk_utils/tkSheet.h
 copy_reads.o: $(SRCROOT)/tk_utils/tkSheet_common.h
 copy_reads.o: $(SRCROOT)/tk_utils/tkSheet_struct.h
 copy_reads.o: $(SRCROOT)/tk_utils/tkTrace.h
-copy_reads.o: $(PWD)/staden_config.h
-copy_reads.o: copy_reads.h
-copy_reads.o: copy_reads_globals.h

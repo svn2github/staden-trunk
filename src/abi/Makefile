@@ -41,8 +41,10 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
-abiIO.o: abiIO.h
-getABISampleName.o: abiIO.h
-getABIcomment.o: abiIO.h
-getABIdate.o: abiIO.h
-getABIfield.o: abiIO.h
+abiIO.o: $(SRCROOT)/abi/abiIO.h
+abiIO.o: $(PWD)/staden_config.h
+getABISampleName.o: $(SRCROOT)/abi/abiIO.h
+getABIcomment.o: $(SRCROOT)/abi/abiIO.h
+getABIdate.o: $(SRCROOT)/abi/abiIO.h
+getABIfield.o: $(SRCROOT)/abi/abiIO.h
+getABIfield.o: $(PWD)/staden_config.h

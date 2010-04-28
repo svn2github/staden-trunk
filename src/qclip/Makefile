@@ -33,8 +33,9 @@ install:
 
 # DO NOT DELETE THIS LINE -- make depend depends on it.
 
-consen.o: consen.h
+consen.o: $(SRCROOT)/qclip/consen.h
 qclip.o: $(SRCROOT)/Misc/xalloc.h
-qclip.o: consen.h
-qclip.o: seqInfo.h
-seqInfo.o: seqInfo.h
+qclip.o: $(PWD)/staden_config.h
+qclip.o: $(SRCROOT)/qclip/consen.h
+qclip.o: $(SRCROOT)/qclip/seqInfo.h
+seqInfo.o: $(SRCROOT)/qclip/seqInfo.h
