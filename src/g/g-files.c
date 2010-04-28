@@ -14,6 +14,8 @@
  *
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <unistd.h> /* IMPORT: lseek */
 #include <fcntl.h> /* IMPORT: O_RDWR */
@@ -325,7 +327,7 @@ GFile *g_open_file(char *fn, int read_only)
 		 * would have to set the allocated space to equal the used
 		 * space. It is not necessary to modify index records in file.
 		 */
-		if (!tree_init) {
+		if (!tree_init && !read_only) {
 		    err = freetree_register(gfile->freetree, image,
 					    arr(Index,gfile->idx,i)
 					       .aux_allocated);
