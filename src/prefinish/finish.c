@@ -1,5 +1,7 @@
 #define FINISH_VERSION "1.32"
 
+#include <staden_config.h>
+
 #include <tcl.h>
 #include <limits.h>
 #include <ctype.h>

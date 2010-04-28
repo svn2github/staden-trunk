@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <tk.h>
 #include <X11/Xlib.h>
 

@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <ctype.h>
 
 #include "edUtils.h"

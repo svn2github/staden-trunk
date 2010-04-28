@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,7 +13,7 @@
 void dap_read_tg(DapIO *io, int rec, dap_tg_file_rec *t)
 {
     FILE *f = io->tg_fp;
-    if ( fseek(f,(off_t)dap_tg_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_tg_byte_index(io,rec),0) )
 	crash("Seek failure on tag file, record %d\n",rec);
 
     if ( fread(t, sizeof(dap_tg_file_rec), 1, f) != 1)
@@ -21,7 +23,7 @@ void dap_read_tg(DapIO *io, int rec, dap_tg_file_rec *t)
 void dap_write_tg(DapIO *io, int rec, dap_tg_file_rec *t)
 {
     FILE *f = io->tg_fp;
-    if ( fseek(f,(off_t)dap_tg_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_tg_byte_index(io,rec),0) )
 	crash("Seek failure on tag file, record %d\n",rec);
 
     if ( fwrite(t, sizeof(dap_tg_file_rec), 1, f) != 1)
@@ -36,7 +38,7 @@ void dap_write_tg(DapIO *io, int rec, dap_tg_file_rec *t)
 void dap_read_ar(DapIO *io, int rec, dap_ar_file_rec *t)
 {
     FILE *f = io->ar_fp;
-    if ( fseek(f,(off_t)dap_ar_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_ar_byte_index(io,rec),0) )
 	crash("Seek failure on archive file, record %d\n",rec);
 
     if ( fread(t, sizeof(dap_ar_file_rec), 1, f) != 1)
@@ -46,7 +48,7 @@ void dap_read_ar(DapIO *io, int rec, dap_ar_file_rec *t)
 void dap_write_ar(DapIO *io, int rec, dap_ar_file_rec *t)
 {
     FILE *f = io->ar_fp;
-    if ( fseek(f,(off_t)dap_ar_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_ar_byte_index(io,rec),0) )
 	crash("Seek failure on archive file, record %d\n",rec);
 
     if ( fwrite(t, sizeof(dap_ar_file_rec), 1, f) != 1)
@@ -62,7 +64,7 @@ void dap_write_ar(DapIO *io, int rec, dap_ar_file_rec *t)
 void dap_read_rl(DapIO *io, int rec, dap_rl_file_rec *t)
 {
     FILE *f = io->rl_fp;
-    if ( fseek(f,(off_t)dap_rl_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_rl_byte_index(io,rec),0) )
 	crash("Seek failure on relationships file, record %d\n",rec);
 
     if ( fread(t, sizeof(dap_rl_file_rec), 1, f) != 1)
@@ -72,7 +74,7 @@ void dap_read_rl(DapIO *io, int rec, dap_rl_file_rec *t)
 void dap_write_rl(DapIO *io, int rec, dap_rl_file_rec *t)
 {
     FILE *f = io->rl_fp;
-    if ( fseek(f,(off_t)dap_rl_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_rl_byte_index(io,rec),0) )
 	crash("Seek failure on relationships file, record %d\n",rec);
 
     if ( fwrite(t, sizeof(dap_rl_file_rec), 1, f) != 1)
@@ -89,7 +91,7 @@ void dap_write_rl(DapIO *io, int rec, dap_rl_file_rec *t)
 void dap_read_cc(DapIO *io, int rec, dap_cc_file_rec *t)
 {
     FILE *f = io->cc_fp;
-    if ( fseek(f,(off_t)dap_cc_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_cc_byte_index(io,rec),0) )
 	crash("Seek failure on comment file, record %d\n",rec);
 
     if ( fread(t, sizeof(dap_cc_file_rec), 1, f) != 1)
@@ -99,7 +101,7 @@ void dap_read_cc(DapIO *io, int rec, dap_cc_file_rec *t)
 void dap_write_cc(DapIO *io, int rec, dap_cc_file_rec *t)
 {
     FILE *f = io->cc_fp;
-    if ( fseek(f,(off_t)dap_cc_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_cc_byte_index(io,rec),0) )
 	crash("Seek failure on comment file, record %d\n",rec);
 
     if ( fwrite(t, sizeof(dap_cc_file_rec), 1, f) != 1)
@@ -114,7 +116,7 @@ void dap_write_cc(DapIO *io, int rec, dap_cc_file_rec *t)
 void dap_read_sq(DapIO *io, int rec, dap_sq_file_rec t)
 {
     FILE *f = io->sq_fp;
-    if ( fseek(f,(off_t)dap_sq_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_sq_byte_index(io,rec),0) )
 	crash("Seek failure on sequence file, record %d\n",rec);
 
     if ( fread(t, io->max_gel_length, 1, f) != 1)
@@ -124,7 +126,7 @@ void dap_read_sq(DapIO *io, int rec, dap_sq_file_rec t)
 void dap_write_sq(DapIO *io, int rec, dap_sq_file_rec t)
 {
     FILE *f = io->sq_fp;
-    if ( fseek(f,(off_t)dap_sq_byte_index(io,rec),0) )
+    if ( fseeko(f,(off_t)dap_sq_byte_index(io,rec),0) )
 	crash("Seek failure on sequence file, record %d\n",rec);
 
     if ( fwrite(t, io->max_gel_length, 1, f) != 1)

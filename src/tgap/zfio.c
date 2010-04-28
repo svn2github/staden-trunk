@@ -1,4 +1,5 @@
 #include <staden_config.h>
+
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -53,7 +54,7 @@ zfp *zfopen(const char *path, const char *mode) {
 	fread(magic, 1, 2, zf->fp);
 	if (!(magic[0] == 0x1f &&
 	      magic[1] == 0x8b)) {
-	    fseek(zf->fp, 0, SEEK_SET);
+	    fseeko(zf->fp, 0, SEEK_SET);
 	    return zf;
 	}
 

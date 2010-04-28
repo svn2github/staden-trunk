@@ -14,6 +14,8 @@
  *
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>		/* IMPORT: NULL */
 /*#include <malloc.h>*/
 #include <unistd.h>		/* IMPORT: lseek */

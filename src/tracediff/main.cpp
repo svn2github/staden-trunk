@@ -12,7 +12,7 @@
  *
  */
 
-
+#include <staden_config.h>
 
 #include <cassert>
 #include <new>              // For bad_alloc

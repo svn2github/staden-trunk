@@ -4,6 +4,8 @@
  * This is a lash-up designed to work specifically with the DNA matrices.
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

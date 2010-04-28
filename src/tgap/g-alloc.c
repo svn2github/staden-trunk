@@ -56,6 +56,8 @@
  * the linear searching through it.
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>

@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <tcl.h>
 #include <assert.h>
 

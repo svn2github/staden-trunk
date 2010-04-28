@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <tcl.h>
 #include <fcntl.h>
 #include <sys/types.h>

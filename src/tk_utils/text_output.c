@@ -3,6 +3,8 @@
  * in a tk window.
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -135,7 +137,7 @@ void log_file(char *fn, char *message) {
 	if (fn && *fn == 0) {
 	    if (fp) {
 		if (message) {
-		    fseek(fp, 0, SEEK_END);
+		    fseeko(fp, 0, SEEK_END);
 		    fprintf(fp, "%s [%d@%s] %s\n",
 			    tbuf, (int)getpid(), hname, message);
 		}
@@ -150,7 +152,7 @@ void log_file(char *fn, char *message) {
     }
 
     if (fp && message) {
-	fseek(fp, 0, SEEK_END);
+	fseeko(fp, 0, SEEK_END);
 	fprintf(fp, "%s [%d@%s] %s\n", tbuf, (int)getpid(), hname, message);
 	fflush(fp);
     }

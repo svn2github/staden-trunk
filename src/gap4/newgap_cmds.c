@@ -1,4 +1,5 @@
-/*  Last edited: Jan  7 11:56 2004 (mng) */
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <tcl.h>

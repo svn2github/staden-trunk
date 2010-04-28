@@ -25,6 +25,8 @@
    Tidy up of output - only display index entries that contain data
    */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -209,7 +211,7 @@ int main (int argc, char* *argv)
     
     ent = (IndexEntry) malloc (sizeof (struct IndexEntryStruct)) ;
     EN = (IndexEntry) malloc (sizeof (struct IndexEntryStruct)) ;
-    if (fseek (inEnt,(off_t)512,0))
+    if (fseeko (inEnt,(off_t)512,0))
 	crash ("Could not seek to index in raw file\n") ;
     while (TRUE)
 	{ if (!readIndexEntry (inEnt,EN))
@@ -218,7 +220,7 @@ int main (int argc, char* *argv)
 	      break ;
       }
     
-    if (fseek (inData,(off_t)EN->offset,0))
+    if (fseeko (inData,(off_t)EN->offset,0))
 	crash ("Can't seek to Experimental notes\n") ;
     for (i = 0 ; i < 4 ; ++i)
 	readLine (inData,expLine[i]) ;
@@ -267,7 +269,7 @@ int main (int argc, char* *argv)
 	seqOffset[i] = dataOffset[i] = 0;
 
     /* gather offset information */
-    fseek (inEnt,(off_t)512,0) ;
+    fseeko (inEnt,(off_t)512,0) ;
     while (readIndexEntry (inEnt,ent)) {
 	if (!ent->valid)
 	    continue;
@@ -324,7 +326,7 @@ int main (int argc, char* *argv)
 	    /* now write the index entry */
 	    if (!(outEnt[i] = fopen (fname,"a")))
 		crash ("Couldn't open output file %s\n",fname) ;
-	    fseek (outEnt[i],(off_t)512,0) ;
+	    fseeko (outEnt[i],(off_t)512,0) ;
 	    EN->offset = 1024 ;
 	    EN->dataLen = len ;
 	    writeIndexEntry (outEnt[i],EN) ;
@@ -339,7 +341,7 @@ int main (int argc, char* *argv)
 	    ent->blockLen = dataBlockLen[i];
 	    ent->dataLen = dataDataLen[i];
 	    
-	    fseek (inData,dataOffset[i],0) ;
+	    fseeko (inData,dataOffset[i],0) ;
 	    len = ent->blockLen/512 ;
 	    for (j = 0 ; j < len ; ++j) {
 		fread (buf,512,1,inData) ;
@@ -355,7 +357,7 @@ int main (int argc, char* *argv)
 	    ent->blockLen = seqBlockLen[i];
 	    ent->dataLen = seqDataLen[i];
 
-	    fseek (inData,seqOffset[i],0) ;
+	    fseeko (inData,seqOffset[i],0) ;
 	    len = ent->blockLen/512 ;
 	    for (j = 0 ; j < len ; ++j) {
 		fread (buf,512,1,inData) ;

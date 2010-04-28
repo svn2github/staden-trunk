@@ -6,6 +6,8 @@
  *
  */
 
+#include <staden_config.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <fcntl.h>

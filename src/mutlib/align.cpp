@@ -12,7 +12,7 @@
  *
  */
 
-
+#include <staden_config.h>
 
 #include <new>                // For std::bad_alloc()
 #include <cstdio>             // For fprintf(), fputc()

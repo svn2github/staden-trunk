@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -988,7 +990,7 @@ int get_seq ( char **seq, int max_len, int *seq_len, char *file_name, char *entr
 
 	if ( fmt = seq_file_format ( file_ptr ) ) {
 
-	    if (fseek ( file_ptr, 0, SEEK_SET ) ) return 4;
+	    if (fseeko ( file_ptr, 0, SEEK_SET ) ) return 4;
 
 	    if ( STADEN == fmt ) {
 		(void) get_staden_format_seq (seq, max_len, seq_len, file_ptr );
@@ -1072,7 +1074,7 @@ int get_seq_ft (Featcds **key_index,  char **seq, int max_len, int *seq_len, cha
 
 
     /* Go to start of file */
-    if( fseek(file_ptr, 0, SEEK_SET) )
+    if( fseeko(file_ptr, 0, SEEK_SET) )
     {
         fclose( file_ptr );
 	return 4;
@@ -1217,7 +1219,7 @@ int get_identifiers (char *file_name,
     
     if ( fmt = seq_file_format ( file_ptr ) ) {
 	
-	if (fseek ( file_ptr, 0, SEEK_SET ) ) return 4;
+	if (fseeko ( file_ptr, 0, SEEK_SET ) ) return 4;
 
 	if ( EMBL == fmt ) {
 	    while ( fgets( line, sizeof(line), file_ptr ) != NULL ) {

@@ -5,6 +5,8 @@
  * This is more analogous to how it'd work in practice on disk.
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>

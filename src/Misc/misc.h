@@ -1,11 +1,12 @@
 #ifndef _misc_h
 #define _misc_h
 
+#include "os.h"
+
 #include <stdio.h>
 #include <stdarg.h>  /* varargs needed for v*printf() prototypes */
 #include <sys/types.h>
 
-#include "os.h"
 #include "xalloc.h"
 
 #ifdef _MSC_VER

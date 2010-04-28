@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <string.h>
 #include <ctype.h>
 #include "misc.h"

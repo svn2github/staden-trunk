@@ -22,6 +22,8 @@
    and not looking for the 5' end if PR = 0,3,4
 
 */
+#include <staden_config.h>
+
 #include <math.h>
 #include <stdlib.h>
 #include <errno.h>

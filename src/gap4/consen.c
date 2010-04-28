@@ -24,6 +24,8 @@
 
 */
 
+#include <staden_config.h>
+
 #include <errno.h>
 #include <ctype.h>
 #include <string.h>

@@ -1,6 +1,8 @@
 /* make_weights: reads a set of aligned motifs, creates weights and writes
                  a weight matrix file */
 
+#include <staden_config.h>
+
 #include <float.h>
 #include <math.h>
 #include <stdlib.h>

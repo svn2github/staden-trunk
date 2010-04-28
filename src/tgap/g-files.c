@@ -14,6 +14,8 @@
  *
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <unistd.h> /* IMPORT: lseek */
 #include <fcntl.h> /* IMPORT: O_RDWR */

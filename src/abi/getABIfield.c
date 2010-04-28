@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>

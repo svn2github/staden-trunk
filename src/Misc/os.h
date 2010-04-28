@@ -14,9 +14,9 @@
 #ifndef _OS_H_
 #define _OS_H_
 
+#include <staden_config.h>
 #include <limits.h>
 #include <inttypes.h>
-#include <staden_config.h>
 
 
 /*

@@ -8,6 +8,8 @@
 
 	The genetic code is written tcag order, our lookups are acgt.
 */
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

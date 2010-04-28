@@ -1,3 +1,5 @@
+#include <staden_config.h>
+
 #include <tcl.h>
 #include <tk.h>
 #include <string.h>
