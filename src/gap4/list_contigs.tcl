@@ -12,7 +12,7 @@
 # csh_win	unused (and optional) - will be removed later
 
 proc InitListContigs {io parent {csh_win {}}} {
-    global NGList
+    global NGList read_only
 
     set t $parent.list_contigs
     if {[xtoplevel $t] == ""} return
@@ -37,6 +37,9 @@ proc InitListContigs {io parent {csh_win {}}} {
     button $t.buttons.save \
     	-text "Save order" \
 	-command "ListContigsSave $io $t.list"
+    if {$read_only} {
+	$t.buttons.save configure -state disabled
+    }
 
     button $t.buttons.copy \
     	-text Copy \

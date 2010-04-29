@@ -256,7 +256,7 @@ proc DB_Load { file } {
 
 	ActivateMenu_Open 
     }
-    Menu_Check_RO
+    Menu_Check_RO $io
     InitLists
     #UpdateListContigs $io [keylget gap5_defs CONTIG_SEL.WIN]
 }

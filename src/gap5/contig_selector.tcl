@@ -897,7 +897,7 @@ proc popup_cs_contig_cnotes {io canvas obj} {
 }
 
 proc PopUpCSContigMenu {io canvas current X Y x y} {
-    global read_only gap5_defs
+    global gap5_defs
     if {[winfo exists $canvas.m]} {destroy $canvas.m}
 
     set cnum [GetContigNum $canvas $current]
@@ -922,7 +922,7 @@ proc PopUpCSContigMenu {io canvas current X Y x y} {
 	    -command "popup_cs_contig_1 $io $canvas $current $cpos"
     $canvas.m add command -label "Template display" \
 	    -command "popup_cs_contig_2 $io $canvas $current"
-    if {!$read_only} {
+    if {![$io read_only]} {
 	$canvas.m add command -label "Complement contig" \
 	    -command "popup_cs_contig_3 $io $canvas $current"
     }
@@ -1178,6 +1178,7 @@ proc CreateCSMenu {io f csh_win csp_win csv_win} {
 
     menu_state_set selector_menu 12 $f.menubar
     ActivateCSMenu $f.menubar.view disabled
+    Menu_Check_RO $io
 }
 
 ##############################################################################

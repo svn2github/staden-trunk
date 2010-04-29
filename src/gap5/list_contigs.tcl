@@ -37,6 +37,9 @@ proc InitListContigs {io parent {csh_win {}}} {
     button $t.buttons.save \
     	-text "Save order" \
 	-command "ListContigsSave $io $t.list"
+    if {[$io read_only]} {
+	$t.buttons.save configure -state disabled
+    }
 
     button $t.buttons.copy \
     	-text Copy \

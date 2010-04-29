@@ -195,11 +195,10 @@ proc ActivateMenu_New { } {
 
 ##############################################################################
 #checks for read-only mode and disasbles menus accordingly
-proc Menu_Check_RO { } {
-    global read_only
-
-    if {$read_only} {
-        menu_state_set gap_menu -16 .mainwin.menus
+proc Menu_Check_RO { io } {
+    if {[$io read_only]} {
+        menu_state_set gap_menu      -16 .mainwin.menus
+        menu_state_set selector_menu -16 .contig_sel.menubar
     }
 }
 
@@ -718,7 +717,7 @@ if {$io != ""} {
     }
 }
 
-Menu_Check_RO
+Menu_Check_RO $io
 update
 wm deiconify .
 
