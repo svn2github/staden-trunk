@@ -8,7 +8,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <curses.h>
 #include <signal.h>
 #include <ctype.h>
 #include <string.h>
@@ -773,7 +772,8 @@ static int contig_cmd(ClientData clientData, Tcl_Interp *interp,
 static void _cmd_delete(ClientData clientData) {
     /* Could be any of the types in this file as they're compatible structs */
     tcl_contig *tc = (tcl_contig *)clientData;
-    cache_decr(tc->io, tc->contig);
+    if (tc->contig)
+	cache_decr(tc->io, tc->contig);
 }
 
 static int tcl_contig_read(GapIO *io, Tcl_Interp *interp,
