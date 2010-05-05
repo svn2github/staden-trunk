@@ -39,11 +39,8 @@ OBJS = \
 
 SU_LIBS = \
 	$(TKUTILS_LIB) \
-	$(MISC_LIB)
-
-ifeq ($(MACHINE),macosx)
-SU_LIBS += $(TK_LIB)
-endif
+	$(MISC_LIB) \
+	$(TK_LIB)
 
 #
 # Main dependency

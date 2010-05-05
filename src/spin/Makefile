@@ -71,8 +71,7 @@ OBJS = \
 lib$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
-DEPS = $(TCL_LIB)\
-       $(TK_LIB) \
+DEPS = $(TK_LIB) \
        $(IOUTILS_LIB) \
        $(TKUTILS_LIB) \
        $(SEQUTILS_LIB) \

@@ -15,7 +15,9 @@ INCLUDES_E += $(IOLIB_INC) $(MUT_INC)
 HLIBS=\
 	$(TEXTUTILS_LIB) \
 	$(MUT_LIB) \
-	$(IOLIB_LIB)
+	$(IOLIB_LIB) \
+	$(SEQUTILS_LIB) \
+	$(MISC_LIB)	
 
 OBJSD	= main.o
 

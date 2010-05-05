@@ -72,7 +72,6 @@ $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 TKU_LIBS = \
 	$(IOLIB_LIB) \
 	$(TK_LIB) \
-	$(TCL_LIB) \
 	$(MISC_LIB) \
 	$(PNG_LIB) \
 	$(ZLIB_LIB) \

@@ -15,7 +15,9 @@ HLIBS=\
 	$(TEXTUTILS_LIB) \
 	$(MUT_LIB) \
 	$(IOLIB_LIB) \
-	$(TK_LIB)
+	$(TK_LIB) \
+	$(SEQUTILS_LIB) \
+	$(MISC_LIB)
 
 OBJSD	= \
 	main.o \

@@ -64,11 +64,8 @@ MUT_DEP=\
 	$(TKUTILS_LIB) \
 	$(IOLIB_LIB) \
 	$(MISC_LIB) \
-	$(MATH_LIB)
-
-ifeq ($(MACHINE),macosx)
-MUT_DEP += $(TK_LIB)
-endif
+	$(MATH_LIB) \
+	$(TK_LIB)
 
 #ifeq ($(MACHINE),alpha)
 #MUT_DEP += -Bstatic -lgcc

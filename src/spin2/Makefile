@@ -82,9 +82,8 @@ SPIN2OBJS2=\
 lib$(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	@
 
-DEPS = $(TCL_LIB)\
-       $(TK_LIB) \
-	$(ITCL_LIB)\
+DEPS = $(TK_LIB) \
+       $(ITCL_LIB)\
        $(ITK_LIB) \
        $(IOUTILS_LIB) \
        $(TKUTILS_LIB) \

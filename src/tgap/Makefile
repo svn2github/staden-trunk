@@ -8,7 +8,7 @@ include ../system.mk
 
 # Local comment: Comment out next line for remote compilation
 
-INCLUDES_E += $(MISC_INC) $(TCL_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
+INCLUDES_E += $(MISC_INC) $(TK_INC) $(TKUTILS_INC) $(SEQUTILS_INC) \
 	$(IOLIB_INC)
 CFLAGS += $(SHLIB_CFLAGS)
 

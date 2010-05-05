@@ -41,10 +41,14 @@ $(L)/$(SHLIB_PREFIX)$(LIBS).def: $(OBJS)
 $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX): $(OBJS) $(DEF_FILE)
 	$(SHLIB_LD) $(SHLIB_LDFLAGS) $(SHLIB_OUTFLAG)$@ $(SHLIB_SONAME) $(OBJS) $(FIN_DEP) $(SHLIB_DEP)
 
+# Most of these are only needed because GAP_LIB has a dependency
 ISLIBS=\
 	$(G_LIB) \
 	$(GAP_LIB) \
-	$(TEXTUTILS_LIB) \
+	$(TKUTILS_LIB) \
+	$(P3_LIB) \
+	$(MUT_LIB) \
+	$(SEQUTILS_LIB) \
 	$(MISC_LIB) \
 	$(TCL_LIB)
 

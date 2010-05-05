@@ -2,7 +2,7 @@
 # Makefile for convert (Alpha version)
 #
 
-PROGS = convert
+PROGS = staden_convert
 
 SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
@@ -21,9 +21,15 @@ OBJS = \
 	process.o \
 	flat_sd.o
 
-DEPS = $(GAP_LIB) $(G_LIB) $(MISC_LIB)
+DEPS =  $(GAP_LIB) \
+	$(G_LIB) \
+	$(P3_LIB) \
+	$(MUT_LIB) \
+	$(TKUTILS_LIB) \
+	$(SEQUTILS_LIB) \
+	$(MISC_LIB)
 
-convert: $(OBJS)
+staden_convert: $(OBJS)
 	$(CLD) -o $@ $(OBJS) $(LIBS) $(LIBSC) $(DEPS)
 
 DEPEND_OBJ = $(OBJS)

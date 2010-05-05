@@ -2,8 +2,6 @@ SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
 
-INCLUDES_E += $(MISC_INC) $(IOLIB_INC) $(TK_INC)
-
 distsrc: distsrc_dirs
 	cp $(S)/*.tcl $(S)/trevrc $(S)/trev $(S)/trev.bat $(S)/Makefile $(DIRNAME)
 
