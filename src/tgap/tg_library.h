@@ -55,4 +55,13 @@ int ibin_width(int ibin);
 #  define BIN_SZ(i,y) (y=ABS((i)-1792)/128-1,y+=(y<0),y=1<<y)
 #endif
 
+/*
+ * Computes the mean and standard deviation of a library along with which
+ * type. See LIB_T_* macros in tg_struct.h.
+ *
+ * Returns 0 on success,
+ *        -1 on failure
+ */
+int library_stats(GapIO *io, int rec, double *mean, double *sd, int *type);
+
 #endif /* _TG_LIBRARY_ */
