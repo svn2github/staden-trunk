@@ -5,7 +5,7 @@
 # DESCRIPTION
 #
 #   This macro will check for the existence of lzma library.
-#   It does this by checking for the header file lzma.h and the z library
+#   It does this by checking for the header file lzma.h and the lzma library
 #   object file. The location of these may be specified using the
 #   --with-lzma=DIR command line option (eg --with-lzma=/usr/local),
 #   using $DIR/include and $DIR/lib for the search path.
@@ -17,7 +17,7 @@
 #     LZMA_VERSION (if MINIMUM-VERSION is not "")
 #
 #   The C preprocessor symbol HAVE_LIBLZMA will be also defined with
-#   AC_DEFINE if a functioning samtools is available.
+#   AC_DEFINE if a functioning liblzma is available.
 #
 # LICENSE
 #
@@ -66,7 +66,7 @@ AC_DEFUN([AX_LIB_LZMA],
 
   else
     # Maybe it works "out of the box"?
-    AC_CHECK_LIB(z, inflateEnd,
+    AC_CHECK_LIB(lzma, lzma_easy_buffer_encode,
 	[AC_CHECK_HEADER(lzma.h, lzma_ok=yes, lzma_ok=no)])
   fi
 
