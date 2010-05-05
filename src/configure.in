@@ -39,6 +39,8 @@ AX_LIB_SAMTOOLS(0.1.3,[have_bam=yes],[AC_MSG_WARN([Gap5/tg_index will have reduc
 AX_LIB_IO_LIB(1.12.2,[have_io_lib=yes], [AC_MSG_ERROR([Abort: no compatible io_lib release found.
 Please rerun configure using the --with-io_lib=DIR option.])])
 
+AX_LIB_CURSES
+
 dnl Checks for header files.
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
@@ -135,6 +137,16 @@ then
 echo    "zlib:      DIR (system)"
 else
 echo    "zlib:      DIR $ZLIB_ROOT"
+fi
+
+if test "$have_curses" = "yes"
+then
+echo    "curses:    DIR ${CURSES_ROOT:-(system)}"
+elif test "$have_ncurses" = "yes"
+then
+echo    "ncurses:   DIR ${CURSES_ROOT:-(system)}"
+else
+echo    'curses:    ***NOT FOUND***'
 fi
 
 if test "$have_lzma" = "yes"

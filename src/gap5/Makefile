@@ -11,7 +11,8 @@ TGAP_INC=-I$(SRCROOT)/tgap
 TGAP_DEP=-ltgap
 
 INCLUDES_E += $(MISC_INC) $(TGAP_INC) $(TK_INC) \
-	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(SAMTOOLS_INC)
+	      $(IOLIB_INC) $(TKUTILS_INC) $(SEQUTILS_INC) $(SAMTOOLS_INC) \
+	      $(P3_INC) $(CURSES_INC)
 	      
 CFLAGS += $(SHLIB_CFLAGS)
 FFLAGS += $(SHLIB_FFLAGS)
@@ -31,7 +32,9 @@ CEDITOR = \
 	tkEdNames.o\
 	tkEditor.o\
 	tman_interface.o\
-	tman_display.o
+	tman_display.o\
+	primlib.o\
+	editor_oligo.o
 
 CEDITOR_SCRAP=\
 	contigEditor.o\
@@ -102,9 +105,10 @@ GAP5_LIBS=\
 	$(TKUTILS_LIB) \
 	$(TK_LIB) \
 	$(TGAP_DEP) \
-	$(MISC_LIB) \
 	$(SEQUTILS_LIB) \
-	$(SAMTOOLS_LIB)
+	$(SAMTOOLS_LIB) \
+	$(P3_LIB) \
+	$(MISC_LIB)
 
 $(LIBS) : $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	-@
@@ -125,12 +129,13 @@ TG_IND_OBJ = \
 TGILIBS = \
 	$(TGAP_LIB) \
 	$(GAP5_LIB) \
-	$(MISC_LIB) \
+	$(P3_LIB) \
 	$(ZLIB_LIB) \
 	$(TKUTILS_LIB) \
 	$(SEQUTILS_LIB) \
-	$(TCL_LIB) \
-	$(SAMTOOLS_LIB)
+	$(TK_LIB) \
+	$(SAMTOOLS_LIB) \
+	$(MISC_LIB)
 
 tg_index: $(TG_IND_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_IND_OBJ) $(TGILIBS) $(LIBSC)
@@ -141,7 +146,7 @@ TG_VIEW_OBJ = \
 
 TGVLIBS = \
 	$(TGILIBS) \
-	-lcurses
+	$(CURSES_LIB)
 
 tg_view: $(TG_VIEW_OBJ) $(L)/$(SHLIB_PREFIX)$(LIBS)$(SHLIB_SUFFIX)
 	$(CLD) $(LDEXEFLAG)$@$(EXE_SUFFIX) $(TG_VIEW_OBJ) $(TGVLIBS) $(LIBSC)

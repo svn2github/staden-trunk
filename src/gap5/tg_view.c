@@ -8,13 +8,21 @@
  * by the g_index application.
  */
 
+#include <staden_config.h>
+
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <curses.h>
+#ifdef HAVE_CURSES_H
+#  include <curses.h>
+#else
+#  ifdef HAVE_NCURSES_H
+#    include <ncurses.h>
+#  endif
+#endif
 #include <signal.h>
 #include <ctype.h>
 #include <string.h>

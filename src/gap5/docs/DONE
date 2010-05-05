@@ -1,3 +1,35 @@
+*	BUILD: Remove -lcurses and use $(CURSES_LIB). This can be set
+	up by autoconf:
+	http://www.gnu.org/software/autoconf-archive/ax_with_curses.html
+
+*	BUILD: using -lieee twice causes link errors on opensuse-11.2?
+	gcc -shared -g -O2  -I/include
+	...
+	sheet.o tkSheet.o tkSheet_common.o trace_print.o
+	postscript.o split.o tkTrace.o tkTraceComp.o tkTraceIO.o
+	tkTraceDisp.o capture.o canvas_box.o ruler_tick.o
+	restriction_enzyme_map.o element_canvas.o container.o
+	container_ruler.o -L/usr/local/lib -lstaden-read -lm -lcurl
+	-lz -L/usr/lib -ltk8.5 -lX11 -lXss -lXext -lXft -lX11
+	-lfreetype -lfontconfig -lXrender -lX11 -lpthread -ldl
+	-lieee -lm -L/usr/lib -ltcl8.5 - ldl -lieee -lm -L/usr/lib
+	-ltcl8.5 -ldl -lieee -lm -lmisc -lpng -lz
+	/usr/lib/libieee.a:(.data+0x0): multiple definition of
+	`_LIB_VERSION' /usr/lib/libieee.a:(.data+0x0): first defined
+	here /usr/lib/libieee.a:(.data+0x0): multiple definition of
+	`_LIB_VERSION' /usr/lib/libieee.a:(.data+0x0): first defined
+	here collect2: ld returned 1 exit status
+
+	Note libieee is a static archive. Maybe this is the problem.
+	I suspect this comes from TK_LIB including TCL_LIB definition
+	in system.mk.in:
+
+	TCL_LIB   = @TCL_LIB_SPEC@ @TCL_LIBS@
+	TK_LIB    = @TK_LIB_SPEC@ @TK_LIBS@ $(TCL_LIB)
+
+	Remove this, or make all code that uses $(TK_LIB) only more
+	explicit by also adding $(TCL_LIB).
+
 *	BUG:
 	tg_index DEMO.1.baf
 	gap5 g_db

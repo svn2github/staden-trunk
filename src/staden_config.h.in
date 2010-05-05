@@ -1,5 +1,8 @@
 /* staden_config.h.in.  Generated from configure.in by autoheader.  */
 
+/* Define if you have <curses.h> include file */
+#undef HAVE_CURSES_H
+
 /* Define to 1 if you have the <fcntl.h> header file. */
 #undef HAVE_FCNTL_H
 
@@ -15,6 +18,9 @@
 /* Define to 1 if you have a functional curl library. */
 #undef HAVE_LIBCURL
 
+/* Define to 1 if you have a working curses/ncurses library. */
+#undef HAVE_LIBCURSES
+
 /* Define if liblzma is installed */
 #undef HAVE_LIBLZMA
 
@@ -26,6 +32,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define if you have <ncurses.h> include file */
+#undef HAVE_NCURSES_H
 
 /* Define to 1 if you have the `open64' function. */
 #undef HAVE_OPEN64

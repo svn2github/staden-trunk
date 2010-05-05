@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <math.h>
 
 #include "tg_library.h"
 #include "tg_gio.h"
@@ -133,3 +134,48 @@ void accumulate_library(GapIO *io, library_t *lib, int type, int size) {
     lib->size_hist[type][isize2ibin(size)]++;
 }
 
+/*
+ * Computes the mean and standard deviation of a library along with which
+ * type. See LIB_T_* macros in tg_struct.h.
+ *
+ * Returns 0 on success,
+ *        -1 on failure
+ */
+int library_stats(GapIO *io, int rec, double *mean, double *sd, int *type) {
+    library_t *lib = cache_search(io, GT_Library, rec);
+    int i, j;
+    double sum[3]    = {0, 0, 0};
+    double sum_sq[3] = {0, 0, 0};
+    int N[3];
+    double m, s;
+
+    if (!lib)
+	return -1;
+
+    for (i = 0; i < LIB_BINS; i++) {
+	int bsize = ibin2isize(i+1);
+	for (j = 0; j < 3; j++) {
+	    double d = (double)lib->size_hist[j][i];
+	    sum[j]    += bsize * d;
+	    sum_sq[j] += bsize * bsize * d;
+	    N[j] += d;
+	}
+    }
+
+    if (sum[0] > sum[1]) {
+	j = sum[0] > sum[2] ? 0 : 2;
+    } else {
+	j = sum[1] > sum[2] ? 1 : 2;
+    }
+
+    m = sum[j] / N[j];
+    s = sqrt((sum_sq[j]/N[j] - m*m));
+
+    if (type) *type = j;
+    if (mean) *mean = m;
+    if (sd)   *sd   = s;
+
+    /* FIXME: write these back into lib too? */
+
+    return 0;
+}
