@@ -886,7 +886,8 @@ set_def UNATTACHED_READINGS.OUTFILE		$defs_f_or_l_out
 set_def UNATTACHED_READINGS.OUTFILE.WHICH.NAME	"Save output in"
 
 # Contig editor select oligos command
-set_def SELECT_OLIGOS.DIRECTION		0
+# dir 1=fwd 2=rev
+set_def SELECT_OLIGOS.DIRECTION		1
 set_def SELECT_OLIGOS.SEARCH_AHEAD	40
 set_def SELECT_OLIGOS.SEARCH_BACK	40
 set_def SELECT_OLIGOS.READ_LENGTH	500

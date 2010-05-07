@@ -234,7 +234,8 @@ add_command {File.Exit} 1 0 {editor_exit $w}
 add_command	{Commands.Create Tag}		3 2 {tag_editor_create $e}
 add_cascade	{Commands.Edit Tag}		1 0
 add_cascade	{Commands.Delete Tag}		3 2
-#add_separator	{Commands.S2}
+add_separator	{Commands.S2}
+add_command     {Commands.Find primer-walk}	3 2 {editor_oligo_dialog $e}
 #add_command	{Commands.Save Contig}		3 2 {$e save}
 #add_command	{Commands.Dump Contig to File}	1 0 {dump_contig_dialog $e}
 #add_command	{Commands.Save Consensus Trace}	1 0 {consensus_trace_dialog $e} e

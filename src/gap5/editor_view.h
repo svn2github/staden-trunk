@@ -245,6 +245,7 @@ int edview_visible_items(edview *xx, int start, int end);
 int edSelectClear(edview *xx);
 void edSelectFrom(edview *xx, int pos);
 void edSelectTo(edview *xx, int pos);
+void edSelectSet(edview *xx, int rec, int start, int end);
 
 /*
  * Searching - see edview_search.c

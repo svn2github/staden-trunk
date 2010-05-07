@@ -2416,7 +2416,7 @@ static void toggle_select(edview *xx, int seq, int from_pos, int to_pos) {
 			  sh_select, HOP_TOG);
 }
 
-static void redisplaySelection(edview *xx) {
+void redisplaySelection(edview *xx) {
     toggle_select(xx, xx->select_seq, xx->select_start, xx->select_end);
 }
 
@@ -2536,6 +2536,40 @@ void edSelectTo(edview *xx, int pos) {
 
     /* Display new selection */
     redisplaySelection(xx);
+}
+
+void edSelectSet(edview *xx, int rec, int start, int end) {
+    int do_x = 0;
+
+    /* Undisplay an old selection */
+    if (xx->select_made)
+	redisplaySelection(xx);
+
+    xx->select_made = 0;
+
+
+    xx->select_seq   = rec;
+    xx->select_start = start;
+    xx->select_end   = end;
+    xx->select_made  = 1;
+
+    /* Scroll and redraw if appropriate */
+    if (xx->select_end+2 >= xx->displayPos + xx->displayWidth) {
+	set_displayPos(xx, xx->select_end+2 - xx->displayWidth);
+	do_x = 1;
+    }
+    if (xx->select_start-1 <= xx->displayPos) {
+	set_displayPos(xx, xx->select_start-1);
+	do_x = 1;
+    }
+
+    if (do_x) {
+	xx->refresh_flags = ED_DISP_ALL;
+	ed_set_xslider_pos(xx, xx->displayPos);
+    }
+
+    xx->refresh_flags |= ED_DISP_SELECTION;
+    edview_redraw(xx);
 }
 
 /*

@@ -37,6 +37,9 @@
 # toplevel window with settings that govern both visible editors.
 # $opt(all_editors) is a list of editors visible for window.
 
+catch {package require tablelist}
+catch {namespace import tablelist::tablelist}
+
 #-----------------------------------------------------------------------------
 # IO/contig specific components. (child IOs, undo history)
 #-----------------------------------------------------------------------------
@@ -1766,6 +1769,241 @@ proc editor_autoscroll_cancel {e} {
 
 
 #-----------------------------------------------------------------------------
+# Oligo selection
+
+# Creates the Find Primer dialogue window.
+proc editor_oligo_dialog {ed} {
+    global gap5_defs
+
+    set direction    [keylget gap5_defs SELECT_OLIGOS.DIRECTION]
+    set search_ahead [keylget gap5_defs SELECT_OLIGOS.SEARCH_AHEAD]
+    set search_back  [keylget gap5_defs SELECT_OLIGOS.SEARCH_BACK]
+    set read_length  [keylget gap5_defs SELECT_OLIGOS.READ_LENGTH]
+
+    set t $ed.oligo_dialog
+    if {[xtoplevel $t] == ""} return
+    wm title $t "Find Primer-Walk"
+
+    # Positional parameters
+    frame $t.pos -bd 1 -relief groove
+    radiolist $t.pos.dir \
+	-title Direction \
+	-bd 0 \
+	-orient horizontal \
+	-default [expr {3-$direction}] \
+	-buttons {Backwards Forwards}
+
+    entrybox $t.pos.e1 \
+	-title "Search window bases ahead" \
+	-default $search_ahead \
+	-width 5 \
+	-type {CheckIntRange 0 1000}
+
+    entrybox $t.pos.e2 \
+	-title "Search window bases back" \
+	-default $search_back \
+	-width 5 \
+	-type {CheckIntRange 0 1000}
+
+    entrybox $t.pos.e4 \
+	-title "Average read length" \
+	-default $read_length \
+	-width 5 \
+	-type {CheckIntRange 1 5000}
+    pack $t.pos.e4 $t.pos.e2 $t.pos.e1 $t.pos.dir -side bottom -fill x
+
+    # Primer3 parameters
+    foreach i [keylget gap5_defs PRIMER] {
+	set pdefs([lindex $i 0]) [lindex $i 1]
+    }
+
+    frame $t.p3 -bd 1 -relief groove
+    frame $t.p3.tm -bd 0 -relief groove
+    label $t.p3.tm.label -text "Melting temperature"
+    entrybox $t.p3.tm.min \
+	-default $pdefs(min_tm) \
+	-title "Min" \
+	-width 5 \
+	-type {CheckFloatRange 0 100}
+
+    entrybox $t.p3.tm.opt \
+	-default $pdefs(opt_tm) \
+	-title "Opt" \
+	-width 5 \
+	-type {CheckFloatRange 0 100}
+
+    entrybox $t.p3.tm.max \
+	-default $pdefs(max_tm) \
+	-title "Max" \
+	-width 5 \
+	-type {CheckFloatRange 0 100}
+
+    pack $t.p3.tm.label -side left 
+    pack $t.p3.tm.max $t.p3.tm.opt $t.p3.tm.min -side right 
+
+    frame $t.p3.length -bd 0 -relief groove
+    label $t.p3.length.label -text "Primer length"
+    entrybox $t.p3.length.min \
+	-default $pdefs(min_len) \
+	-title "Min"\
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    entrybox $t.p3.length.opt \
+	-default $pdefs(opt_len) \
+	-title "Opt"\
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    entrybox $t.p3.length.max \
+	-default $pdefs(max_len) \
+	-title "Max" \
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    pack $t.p3.length.label -side left
+    pack $t.p3.length.max $t.p3.length.opt $t.p3.length.min -side right 
+
+    frame $t.p3.gc -bd 0 -relief groove
+    label $t.p3.gc.label -text "GC content (%)"
+    entrybox $t.p3.gc.min \
+	-default $pdefs(min_gc) \
+	-title "Min"\
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    entrybox $t.p3.gc.opt \
+	-default $pdefs(opt_gc) \
+	-title "Opt"\
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    entrybox $t.p3.gc.max \
+	-default $pdefs(max_gc) \
+	-title "Max" \
+	-width 5 \
+	-type {CheckIntRange 1 100}
+
+    yes_no $t.p3.gc_clamp \
+    	    -title "GC Clamp" \
+	    -orient horizontal \
+	    -bd 0 \
+	    -default $pdefs(gc_clamp)
+
+    pack $t.p3.gc.label -side left 
+    pack $t.p3.gc.max $t.p3.gc.opt $t.p3.gc.min -side right 
+    pack $t.p3.tm $t.p3.length $t.p3.gc $t.p3.gc_clamp -side bottom -fill x
+
+    okcancelhelp $t.but \
+	-bd 2 -relief groove \
+	-ok_command "if {\[editor_oligo_report $ed $t\] == 0} {destroy $t}" \
+	-cancel_command "destroy $t" \
+	-help_command "show_help gap5 {Editor-Primer Selection}"
+
+    pack $t.but $t.p3 $t.pos -side bottom -fill x
+}
+
+# Called from the Find Primer dialogue.
+# Returns 0 on success
+#        -1 on failure (eg invalid parameters)
+proc editor_oligo_report {ed t} {
+    global gap5_defs
+
+    # First convert the dialogue params into a P3 format string.
+    foreach i [keylget gap5_defs PRIMER] {
+	set pdefs([lindex $i 0]) [lindex $i 1]
+    }
+
+    set pdefs(min_tm) [entrybox_get $t.p3.tm.min] 
+    set pdefs(opt_tm) [entrybox_get $t.p3.tm.opt]
+    set pdefs(max_tm) [entrybox_get $t.p3.tm.max]
+    
+    set pdefs(min_len) [entrybox_get $t.p3.length.min]
+    set pdefs(opt_len) [entrybox_get $t.p3.length.opt]
+    set pdefs(max_len) [entrybox_get $t.p3.length.max]
+    
+    set pdefs(min_gc) [entrybox_get $t.p3.gc.min]
+    set pdefs(opt_gc) [entrybox_get $t.p3.gc.opt]
+    set pdefs(max_gc) [entrybox_get $t.p3.gc.max]
+
+    set pdefs(gc_clamp) [yes_no_get $t.p3.gc_clamp]
+
+    set p3_params [array get pdefs]
+    eval keylset primer_defs $p3_params
+    keylset gap5_defs PRIMER $primer_defs
+
+
+    # Other params too
+    if {[set search_ahead_val [entrybox_get $t.pos.e1]] == ""} {
+	entrybox_focus $t.pos.e1; return -1
+    }
+
+    if {[set search_back_val [entrybox_get $t.pos.e2]] == ""} {
+	entrybox_focus $t.pos.e2; return -1
+    }
+
+    if {[set read_length_val [entrybox_get $t.pos.e4]] == ""} {
+	entrybox_focus $t.pos.e4; return -1
+    }
+    set direction [expr {[radiolist_get $t.pos.dir]-1}]
+
+    keylset gap5_defs SELECT_OLIGOS.SEARCH_AHEAD $search_ahead_val
+    keylset gap5_defs SELECT_OLIGOS.SEARCH_BACK  $search_back_val
+    keylset gap5_defs SELECT_OLIGOS.READ_LENGTH  $read_length_val
+
+
+    # Now actually do-it
+    set w $ed.oligos
+    xtoplevel $w
+    if {![winfo exists $w.list]} {
+	wm geometry $w 640x400
+	wm title $w "Oligos"
+	tablelist $w.list \
+	    -columns { 8 "Score" \
+		      10 "Start" \
+		      10 "End" \
+		       8 "GC %" \
+		       8 "Temperature" \
+		      50 "Sequence"} \
+	    -labelcommand tablelist::sortByColumn \
+	    -exportselection 0 \
+	    -stretch 0 \
+	    -yscrollcommand [list $w.yscroll set]
+	scrollbar $w.yscroll -command "$w.list yview"
+
+	grid rowconfigure $w 0 -weight 1
+	grid columnconfigure $w 0 -weight 1
+	grid $w.list $w.yscroll -sticky nsew
+    } else {
+	$w.list delete 1 end
+    }
+
+    puts $direction
+    set oligos [$ed select_oligo $direction \
+		    $search_ahead_val $search_back_val \
+		    $read_length_val $p3_params]
+
+    foreach oligo $oligos {
+	foreach {st en seq qual gc temp} $oligo break;
+	$w.list insert end [list [format %6.2f $qual] $st $en \
+				 [format %5.1f $gc] \
+				 [format %5.1f $temp] $seq]
+    }
+
+    bind $w.list <<TablelistSelect>> "+editor_oligo_select $ed %W"
+
+    return 0
+}
+
+proc editor_oligo_select {ed tl} {
+    set line [$tl get [$tl curselection]]
+    foreach {score start end gc temp seq} $line {}
+
+    $ed select set $start $end
+}
+
+
+#-----------------------------------------------------------------------------
 # Generic bindings
 bind Editor <Any-Enter> {
     focus %W
@@ -1920,3 +2158,6 @@ bind Editor <<menu>> {
     tag_repopulate_menu %W
     editor_menu %W %x %y
 }
+
+bind Editor <Key-F9> {editor_oligo_dialog %W}
+
