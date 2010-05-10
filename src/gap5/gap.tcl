@@ -196,7 +196,7 @@ proc ActivateMenu_New { } {
 ##############################################################################
 #checks for read-only mode and disasbles menus accordingly
 proc Menu_Check_RO { io } {
-    if {[$io read_only]} {
+    if {$io != "" && [$io read_only]} {
         menu_state_set gap_menu      -16 .mainwin.menus
         menu_state_set selector_menu -16 .contig_sel.menubar
     }
