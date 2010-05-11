@@ -36,6 +36,8 @@
 #include "export_contigs.h"
 #include "find_oligo.h"
 #include "tg_index_common.h"
+#include "gap_range.h"
+#include "depth_track.h"
 
 #ifdef VALGRIND
 #    include <valgrind/memcheck.h>
@@ -1714,6 +1716,8 @@ NewGap_Init(Tcl_Interp *interp) {
     Editor_Init(interp);
     EdNames_Init(interp);
     TDisp_Init(interp);
+    GRange_Init(interp);
+    DTrack_Init(interp);
 
     return TCL_OK;
 

@@ -597,3 +597,16 @@ add_command {Help.Reading coverage histogram} 	1 0 {show_help gap4 {Consistency-
 add_command {Help.Readpair coverage histogram} 	1 0 {show_help gap4 {Consistency-ReadPairCov}}
 add_command {Help.Strand coverage} 	1 0 {show_help gap4 {Consistency-Strand}}
 
+# new gap5 template display
+set_menu new_template_menu
+add_menu File			1 0 left
+add_menu Tracks			1 0 left
+add_menu Help			1 0 right
+
+add_command {File.Exit}		1 0 {1.5plot_exit $w}
+
+add_check {Tracks.Template}     1 0 {${w}(template)} \
+    	    	    	    	{show_track $w seq_seqs -200 \[set ${w}(template)\]}
+add_check {Tracks.Depth}    	1 0 {${w}(depth)} \
+    	    	    	    	{show_track $w depth_track -50 \[set ${w}(depth)\]}
+

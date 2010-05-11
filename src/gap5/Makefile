@@ -89,7 +89,9 @@ GAP5=\
 	find_repeats.o\
 	consensus.o\
 	read_depth.o\
+	gap_range.o \
 	template_display.o \
+	depth_track.o \
 	template_draw.o \
 	fij.o\
 	do_fij.o\

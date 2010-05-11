@@ -103,13 +103,13 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 
     static char *options[] = {
 	"delete",       "io",           "cget",    "configure", "replot",
-	"ymin",         "ymax",         "yrange",  "xhair",
+	"ymin",         "ymax",         "yrange",  "xhair", "yz",
 	(char *)NULL,
     };
 
     enum options {
 	DELETE,         IO,     	CGET,      CONFIGURE,   REPLOT,
-	YMIN,           YMAX,           YRANGE,    XHAIR
+	YMIN,           YMAX,           YRANGE,    XHAIR,   	YZ
     };
 
     if (objc < 2) {
@@ -173,13 +173,42 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	Tcl_SetObjResult(interp, Tcl_NewIntObj(t->ymax));
 	break;
 
+    case YZ:
+	Tcl_SetObjResult(interp, Tcl_NewDoubleObj(t->yz));
+	break;
+
     case YRANGE: {
 	char buf[1024];
 	double wx0, wy0, wx1, wy1;
+    	int width, height;
+	double top, bottom;
+
 	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-	sprintf(buf, "%f %f",
-		(wy0-t->ymin-10)/(t->ymax-t->ymin+20),
-		(wy1-t->ymin-10)/(t->ymax-t->ymin+20));
+   	RasterWinSize(t->raster, &width, &height);
+
+//    	printf("TD Raster wx0 %f wx1 %f wy0 %f wy1 %f\n", wx0, wx1, wy0, wy1);
+//	printf("TD Y min %d Y max %d\n", t->ymin, t->ymax);
+//	printf("TD width %d height %d\n", width, height);
+	
+//	top    = (wy0 - t->ymin - 10) / (t->ymax - t->ymin + 20);
+//	bottom = (wy1 - t->ymin - 10) / (t->ymax - t->ymin + 20); 
+
+	if (t->ymax == 0 || wy1 == 0) {
+	    top = 0;
+	    bottom = 1;
+	} else {
+	    top = wy0 / (t->ymax + 10); // +10 to give a margin at the bottom
+	    bottom = wy1 / (t->ymax + 10) ;
+	    
+	    if (bottom > 1) {
+	    	bottom = 1;
+	    }
+	}
+    	
+	
+//	printf("TD top %f bottom %f\n", top, bottom);
+	
+	sprintf(buf, "%f %f", top, bottom);
 	Tcl_SetObjResult(interp, Tcl_NewStringObj(buf, -1));
 	break;
     }
@@ -197,7 +226,7 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 	    Tcl_GetIntFromObj(interp, objv[2], &x);
 	    Tcl_GetIntFromObj(interp, objv[3], &y);
 	    tdisp_move_xhair(t, x, y, &rx, &ry);
-
+	    
 	    if (t->sep_by_strand) {
 		if (ry > height2)
 		    ry = ry-height2;
@@ -213,7 +242,7 @@ static int tdisp_cmd(ClientData clientData, Tcl_Interp *interp,
 		ry = exp(ry/50.0)-1;
 	    }
 	    ry++;
-
+	    
 	    obj[0] = Tcl_NewDoubleObj(rx);
 	    obj[1] = Tcl_NewDoubleObj(ry);
 	    Tcl_SetObjResult(interp, Tcl_NewListObj(2, obj));
@@ -238,8 +267,19 @@ typedef struct {
     GapIO *io;
     int cnum;
     char *raster_win;
+    char *range_obj;
 } tdisp_arg;
 
+
+static void td_event_proc(ClientData clientData, XEvent *eventPtr) {
+    template_disp_t *td = (template_disp_t *)clientData;
+    
+    if (eventPtr->type == DestroyNotify) {
+    	template_destroy(td);
+    }
+}
+    
+    
 static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
 				int objc, Tcl_Obj *CONST objv[]) {
     template_disp_t *td;
@@ -252,12 +292,14 @@ static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
 	{"-io",     ARG_IO,  1, NULL, offsetof(tdisp_arg, io)},
 	{"-cnum",   ARG_INT, 1, NULL, offsetof(tdisp_arg, cnum)},
 	{"-raster", ARG_STR, 1, NULL, offsetof(tdisp_arg, raster_win)},
+	{"-range",  ARG_STR, 1, NULL, offsetof(tdisp_arg, range_obj)},
 	{NULL,	     0,	      0, NULL, 0}
     };
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
-
+	
+	
     if (!Tcl_GetCommandInfo(interp, args.raster_win, &info))
 	return TCL_ERROR;
 
@@ -266,6 +308,12 @@ static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
     if (NULL == (td = template_new(args.io, args.cnum, interp, raster)))
 	return TCL_ERROR;
 
+    if (!Tcl_GetCommandInfo(interp, args.range_obj, &info))
+	return TCL_ERROR;
+
+    td->gr = (gap_range_t*)info.objClientData; // N.B. different from rasta
+    gap_range_test(td->gr);
+	
     if (NULL == (tobj = Tcl_NewObj())) {
 	free(td);
 	return TCL_ERROR;
@@ -287,6 +335,10 @@ static int tcl_template_display(ClientData clientData, Tcl_Interp *interp,
 				     (ClientData)td,
 				     (Tcl_CmdDeleteProc *)tdisp_cmd_delete))
 	return TCL_ERROR;
+	
+    Tk_CreateEventHandler(td->tkwin,
+    	    	    	     StructureNotifyMask,
+			     td_event_proc, (ClientData) td);
 
     Tcl_SetObjResult(interp, tobj);
     
@@ -360,7 +412,6 @@ template_disp_t *template_new(GapIO *io, int cnum,
     t->depth_width = 0;
     t->xhair_pos = DBL_MAX;
     t->yhair_pos = DBL_MAX;
-    t->r = NULL;
     t->wx0 = 0;
     t->wx1 = 0;
     
@@ -379,14 +430,10 @@ void template_destroy(template_disp_t *t) {
     if (t->sdepth)
 	free(t->sdepth);
 	
-    if (t->r) {
-    	free(t->r);
-    }
-	
     if (t->image) {	
 	image_destroy(t->image);
     }
-
+    
     /* Draw Environments automatically freed on raster destroy */
 
     free(t);
@@ -551,23 +598,21 @@ int sort_tline_by_x(const void *p1, const void *p2) {
 }
 
 int template_replot(template_disp_t *t) {
-    double wx0, wy0, wx1, wy1, ny0, ny1, y;
+    double wx0, wy0, wx1, wy1, ny0, ny1, y, ax, ay, bx, by;
     int nr, i, j, mode;
     struct timeval tv1, tv2;
     double t1, t2 = 0, t3, t4;
     double tsize = 1000;
-    double yz;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     int width, height, height2;
     static int last_zoom = 0;
-    tline *tl = NULL;
     int fwd_col, rev_col;
-    rangec_t *r;
     Display *rdisp;
     Drawable rdraw;
     GC rgc;
     int xchanged = 0;
+    int force_change = 0;
     
     if (!t)
 	return -1;
@@ -578,8 +623,11 @@ int template_replot(template_disp_t *t) {
     RasterWinSize(t->raster, &width, &height);
     GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
 
-    printf("templates %f to %f\n", wx0, wx1);
-
+    // printf("templates %f to %f\n", wx0, wx1);
+/*
+    printf("TD Height %f to %f height %d\n", wy0, wy1, height);
+    printf("TD Width  %f to %f width  %d\n", wx0, wx1, width);
+*/
     wx0 -= tsize; /* we use some of the reads beyond the window size */
     wx1 += tsize;
 
@@ -592,62 +640,17 @@ int template_replot(template_disp_t *t) {
     if (t->ymode == 1)
 	mode |= CSIR_SORT_BY_Y;
 	
-    /* if range has changed (or no range) recalculate */
-    if (t->r == NULL || wx0 != t->wx0 || wx1 != t->wx1 || mode != t->mode ||
-    	t->depth_width != width || t->accuracy != t->old_accuracy) {
+    set_filter(t->gr, t->filter, t->min_qual, t->max_qual, t->cmode, t->accuracy);
     
-    	if (t->r) {
-	    free(t->r);
-	}
+    if (gap_range_recalculate(t->gr, width, wx0, wx1, mode, force_change)) {
     
-    	t->r = contig_seqs_in_range(t->io, &t->contig, wx0, wx1, mode, &t->nr);
-
-	if (t->r) {
-	    t->wx0 = wx0;
-	    t->wx1 = wx1;
-	} else {
+	if (t->gr->r == NULL) {
 	    return 0;
 	}
 	
-	/* for depth plot */
-	if (t->depth_width != width) {
-	    t->depth_width  = width;
-	    t->sdepth = (int *)realloc(t->sdepth, width * sizeof(int));
-	    t->tdepth = (int *)realloc(t->tdepth, width * sizeof(int));
-	}
-	
-   	memset(t->sdepth, 0, t->depth_width * sizeof(int));
-    	memset(t->tdepth, 0, t->depth_width * sizeof(int));
-	
- 	if (t->tl) {
-	    free(t->tl);
-	}
-	
-    	t->tl = (tline *)malloc(t->nr * sizeof(*tl));
-	t->old_filter = t->filter;
-	t->old_min_qual = t->min_qual;
-	t->old_max_qual = t->max_qual;
-	t->old_cmode    = t->cmode;
-	t->old_accuracy = t->accuracy;
-	xchanged = 1;	
+	force_change = 1;
     }
     
-    /* initialise local variables */
-    r  = t->r;
-    nr = t->nr;
-    t->mode = mode; 
-    tl = t->tl;
-    
-    if (t->filter != t->old_filter || t->min_qual != t->old_min_qual ||  
-    	t->max_qual != t->old_max_qual || t->cmode != t->old_cmode) {
-    	printf("FILTER: GOT HERE\n");
-    	t->old_filter   = t->filter;
-	t->old_min_qual = t->min_qual;
-	t->old_max_qual = t->max_qual;
-	t->old_cmode    = t->cmode;
-	xchanged = 1;
-    }
-
     /* more timing */
     gettimeofday(&tv2, NULL);
     t1 = tv2.tv_sec - tv1.tv_sec + (tv2.tv_usec - tv1.tv_usec)/1e6;
@@ -662,212 +665,21 @@ int template_replot(template_disp_t *t) {
     fwd_col = t->yzoom >= 150 ? t->fwd_col3 : t->fwd_col;
     rev_col = t->yzoom >= 150 ? t->rev_col3 : t->rev_col;
 
-    if (xchanged) {
-	t->ntl = 0;
+    /* 1) Compute X */
+    GetWorldToRasterConversion(t->raster, &ax, &ay, &bx, &by);
 
-	/* 1) Compute X */
-
-	for (i = 0; i < nr; i++) {
-	    int sta, end;
-	    int r_sta, r_end, r_y;
-	    int span = 0;
-	    int single = 0;
-	    int col;
-	    double mq;
-
-	    sta = r[i].start;
-	    end = r[i].end;
-	    mq  = r[i].mqual;
-
-	    if (t->plot_depth) {
-		WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
-		WorldToRaster (t->raster, end, y, &r_end, &r_y);
-		if (r_sta < 0) r_sta = 0;
-		if (r_end >= width) r_end = width-1;
-		for (j = r_sta; j <= r_end; j++) {
-		    t->sdepth[j]++;
-		}
-	    }
-
-	    if (t->filter & (FILTER_PAIRED | FILTER_SPANNING) && !r[i].pair_rec)
-		continue;
-
-	    if (t->filter & FILTER_SINGLE && r[i].pair_rec)
-		continue;
-
-	    tl[t->ntl].t_strand = ((r[i].flags & GRANGE_FLAG_END_REV) != 0)
-		== ((r[i].flags & GRANGE_FLAG_COMP1) != 0);
-	    tl[t->ntl].rec = r[i].rec;
-
-	    if (!t->reads_only && r[i].pair_rec) {
-		/* Only draw once */
-		if (!r[i].rec)
-		    continue;
-
-		if (r[i].pair_ind != -1) {
-		    r[r[i].pair_ind].rec = 0;
-		}
-
-		if (t->accuracy && !(r[i].pair_start || r[i].pair_end)) {
-		    /* Pair was off-screen, so get the results */
-		    seq_t *s;
-		    int crec;
-		    sequence_get_position(t->io, r[i].pair_rec, &crec,
-					  &r[i].pair_start, &r[i].pair_end, NULL);
-
-		    s = (seq_t *)cache_search(t->io, GT_Seq, r[i].pair_rec);
-		    r[i].pair_mqual = s->mapping_qual;
-		    if (t->crec != crec) {
-			span = 1;
-		    }
-		}
-
-		if (!t->accuracy && !(r[i].pair_start || r[i].pair_end)) {
-		    span = 1;
-		}
-
-		if (t->filter & FILTER_SPANNING && !span)
-		    continue;
-		if (t->filter & FILTER_NONSPANNING && span)
-		    continue;
-
-		if (!span) {
-		    sta = r[i].start < r[i].pair_start
-			? r[i].start : r[i].pair_start;
-		    end = r[i].end > r[i].pair_end
-			? r[i].end : r[i].pair_end;
-		    r[i].flags |= GRANGE_FLAG_CONTIG;
-
-		    switch (t->cmode) {
-		    case 0:
-		    case 3:
-			mq = (r[i].mqual + r[i].pair_mqual)/2.0;
-			break;
-		    case 1:
-			mq = r[i].mqual < r[i].pair_mqual
-			    ? r[i].mqual
-			    : r[i].pair_mqual;
-			break;
-		    case 2:
-			mq = r[i].mqual < r[i].pair_mqual
-			    ? r[i].pair_mqual
-			    : r[i].mqual;
-			break;
-		    }
-
-		    if (t->plot_depth) {
-			WorldToRaster (t->raster, sta, y, &r_sta, &r_y);
-			WorldToRaster (t->raster, end, y, &r_end, &r_y);
-			if (r_sta < 0) r_sta = 0;
-			if (r_end >= width) r_end = width-1;
-			for (j = r_sta; j <= r_end; j++) {
-			    t->sdepth[j]++;
-			}
-		    }
-		}
-	    } else {
-		mq = r[i].mqual;
-		if (!t->reads_only)
-		    single = 1;
-	    }
-
-	    mq *= 3;
-	    if (mq < 0) mq = 0;
-	    if (mq > 255) mq = 255;
-	    
-	    tl[t->ntl].mq = mq;
-	    col = (int)(mq/8);
-
-	    if (single)
-		col = t->single_col;
-	    if (span)
-		col = t->span_col;
-
-	    /* Check consistency */
-	    if (r[i].pair_rec && r[i].flags & GRANGE_FLAG_CONTIG) {
-		if (!((r[i].start < r[i].pair_start &&
-		       (r[i].flags & GRANGE_FLAG_COMP1) == 0 &&
-		       (r[i].flags & GRANGE_FLAG_COMP2) != 0) ||
-		      (r[i].pair_start < r[i].start &&
-		       (r[i].flags & GRANGE_FLAG_COMP1) != 0 &&
-		       (r[i].flags & GRANGE_FLAG_COMP2) == 0)))
-		    col = t->inconsistent_col;
-	    }
-
-	    if (t->filter & FILTER_CONSISTENT && col == t->inconsistent_col)
-		continue;
-	    if (t->filter & FILTER_INCONSISTENT && col != t->inconsistent_col)
-		continue;
-
-	    if (t->plot_depth && !single && !span && col != t->inconsistent_col) {
-		WorldToRaster(t->raster, sta, 0, &r_sta, &r_y);
-		WorldToRaster(t->raster, end, 0, &r_end, &r_y);
-		if (r_sta < 0) r_sta = 0;
-		if (r_end >= width) r_end = width-1;
-		for (j = r_sta; j <= r_end; j++) {
-		    t->tdepth[j]++;
-		}
-	    }
-
-	    /* Filter */
-	    if (tl[t->ntl].mq < t->min_qual || tl[t->ntl].mq > t->max_qual)
-		continue;
-
-	    /* Generate line data */
-	    tl[t->ntl].col[1] = col;
-	    tl[t->ntl].x[0]   = sta;
-	    /* range in col 0 */
-	    tl[t->ntl].x[1]   = sta;
-	    /* range in col 1 */
-	    tl[t->ntl].x[2]   = end; 
-	    /* range in col 3 */
-	    tl[t->ntl].x[3]   = end;
-
-	    /* Readings too? */
-	    if (t->cmode == 3) {
-		col = (r[i].flags & GRANGE_FLAG_COMP1)
-		    ? t->fwd_col : t->rev_col;
-
-		if (r[i].start == tl[t->ntl].x[0]) {
-		    tl[t->ntl].x[1] = r[i].end;
-		    tl[t->ntl].col[0] = col;
-		} else if (r[i].end == tl[t->ntl].x[3]) {
-		    tl[t->ntl].x[2] = r[i].start;
-		    tl[t->ntl].col[2] = col;
-		} else {
-		    printf("error, start/end do not match template pos (single)\n");
-		    printf("start %f/%f end %f/%f\n", r[i].start, tl[t->ntl].x[0], r[i].end, tl[t->ntl].x[3]); 
-		}
-
-		if (r[i].pair_rec && (r[i].pair_start || r[i].pair_end)) {
-		    col = (r[i].flags & GRANGE_FLAG_COMP2)
-			? t->fwd_col : t->rev_col;
-
-		    if (r[i].pair_start == tl[t->ntl].x[0]) {
-			tl[t->ntl].x[1] = r[i].pair_end;
-			tl[t->ntl].col[0] = col;
-		    } else if (r[i].pair_end == tl[t->ntl].x[3]) {
-			tl[t->ntl].x[2] = r[i].pair_start;
-			tl[t->ntl].col[2] = col;
-		    } else {
-			printf("error, start/end do not match template pos (pair)\n");
-			printf("start %f/%f end %f/%f\n", r[i].pair_start, tl[t->ntl].x[0], r[i].pair_end, tl[t->ntl].x[3]); 
-		    }
-		}
-	    }
-
-	    t->ntl++;
-	}
-    }
-    
+    t->ntl = gap_range_x(t->gr, ax, bx, fwd_col, rev_col, 
+    	    	    	    t->single_col, t->span_col, t->inconsistent_col,
+		    	    force_change, t->reads_only);
+			    
    /* 2) Compute Y coordinates (part 1) */
     if (t->ymode == 1) {
     	double xgap = 100;
     
 	puts("Sorting");
-	qsort(tl, t->ntl, sizeof(*tl), sort_tline_by_x);
+	qsort(t->gr->tl, t->ntl, sizeof(tline), sort_tline_by_x);
 	puts("computing ypos");
-	compute_ypos(t, xgap, tl, t->ntl);
+	compute_ypos(t, xgap, t->gr->tl, t->ntl);
 	puts("done");
     }
 
@@ -877,38 +689,43 @@ int template_replot(template_disp_t *t) {
 
     /* prepare image */
     image_remove(t->image);
-
     if(!create_image_buffer(t->image, width, height, t->background)) return -1;
 
     height2 = height / 2;
-    yz = t->yzoom / 200.0;
+    t->yz = t->yzoom / 200.0;
 
     for (i = 0; i < t->ntl; i++) {
+    	tline *tl = &t->gr->tl[i];
+    
 	for (j = 0; j < 3; j++) {
-	    if (tl[i].x[j] < tl[i].x[j+1]) {
+	
+	    if (tl->x[j] < tl->x[j+1]) {
 		double y;
 
 		/* Compute the Y coordinates (part 2) */
 		/* See XHAIR sub-command code too; keep it in sync */
 		if (t->ymode == 1) {
-		    y = tl[i].y*10;
+		    y = tl->y * 10;
 		} else {
 		    if (t->ymode == 0)
-			y = tl[i].x[3] - tl[i].x[0];
+			y = tl->x[3] - tl->x[0];
 		    else
-			y = tl[i].mq*4;
+			y = tl->mq * 4;
+			
 		    if (t->logy) {
 			if (y < 0) y = 0;
-			y = 50*log(y+1);
+			
+			y = 50 * log(y + 1);
 		    }
 		}
-		y = (y + 50 - t->yoffset) * yz;
+		
+		y = (y + 50 - t->yoffset) * t->yz;
 
 		if (t->spread)
-		    y = y-t->spread/2+((tl[i].x[0]+tl[i].rec)%(t->spread));
+		    y = y - t->spread / 2 + ((tl->x[0] + tl->rec) % (t->spread));
 
 		if (t->sep_by_strand)
-		    y = tl[i].t_strand ? height2 - y : height2 + y;
+		    y = tl->t_strand ? height2 - y : height2 + y;
 
 		if (ymin > y) ymin = y;
 		if (ymax < y) ymax = y;
@@ -916,12 +733,15 @@ int template_replot(template_disp_t *t) {
 		/* And plot if visible */
 		if (y >= wy0 && y <= wy1) {
 		    int rx1, rx2, ry;
-		
-		    WorldToRaster(t->raster, tl[i].x[j], y, &rx1, &ry);
-		    WorldToRaster(t->raster, tl[i].x[j + 1], y, &rx2, &ry);
 		    
-		    draw_line(t->image, rx1, rx2, ry, tl[i].col[j]);
+		    rx1 = (tl->x[j] - bx) * ax; // world to raster conversion
+		    rx2 = (tl->x[j + 1] - bx) * ax;
+		    ry  = (y - by) * ay;
+		    
+		    draw_line(t->image, rx1, rx2, ry, tl->col[j]);
 		}
+		
+		
 	    }
 	}
     }
@@ -933,28 +753,6 @@ int template_replot(template_disp_t *t) {
     rgc   = GetRasterGC      (t->raster);
 
     XPutImage(rdisp, rdraw, rgc, t->image->img, 0, 0, 0, 0, t->image->width, t->image->height);
-
-    /* Plot depth */
-    if (t->plot_depth) {
-	XPoint *sp, *tp;
-	sp = (XPoint *)calloc(width, sizeof(*sp));
-	tp = (XPoint *)calloc(width, sizeof(*tp));
-	for (j = 0; j < width; j++) {
-	    sp[j].x = j;
-	    sp[j].y = height-5 - t->sdepth[j] * yz;
-	    tp[j].x = j;
-	    tp[j].y = height-5 - t->tdepth[j] * yz;
-	} 
-	if (!(t->filter & FILTER_PAIRED)) {
-	    SetDrawEnviron(t->interp, t->raster, t->fwd_col);
-	    XDrawLines(rdisp, rdraw, rgc, sp, width, CoordModeOrigin);
-	}
-	SetDrawEnviron(t->interp, t->raster, t->rev_col);
-	XDrawLines(rdisp, rdraw, rgc, tp, width, CoordModeOrigin);
-	free(sp);
-	free(tp);
-   }
-
 
     /* Compute scrollbar and bounding box locations */
     t->ymin = ymin != INT_MAX ? ymin : 0;
@@ -980,8 +778,8 @@ int template_replot(template_disp_t *t) {
     last_zoom = t->yzoom;
     if (ny0 > 0) ny0 = 0;
     if (ny1 < 400) ny1 = 400;
-    wx0 = contig_get_start(&t->contig)-10;
-    wx1 = contig_get_end(&t->contig)+10;
+    wx0 = contig_get_start(&t->contig) - 10;
+    wx1 = contig_get_end(&t->contig) + 10;
     RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);
 
     t->xhair_pos = DBL_MAX;

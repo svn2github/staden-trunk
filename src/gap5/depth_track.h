@@ -1,16 +1,13 @@
-#ifndef _TEMPLATE_DISPLAY_H_
-#define _TEMPLATE_DISPLAY_H_
+#ifndef _DEPTH_TRACK_H_
+#define _DEPTH_TRACK_H_
 
 #include <tcl.h>
 #include <tkRaster.h>
 #include "tg_gio.h"
-#include "template_draw.h"
 #include "gap_range.h"
+#include "template_display.h"
 
 typedef struct {
-    GapIO *io;
-    contig_t *contig;
-    int crec;
     Tk_Raster *raster;
     Tk_Window tkwin;
     Tcl_Interp *interp;
@@ -58,15 +55,12 @@ typedef struct {
     int old_cmode;
     int old_accuracy;
     
-} template_disp_t;
+} depth_track_t;
 
+int DTrack_Init(Tcl_Interp *interp);
 
-int TDisp_Init(Tcl_Interp *interp);
+depth_track_t *depth_track_new(Tcl_Interp *interp, Tk_Raster *raster);
+void depth_track_destroy(depth_track_t *t);
+int depth_track_replot(depth_track_t *t);
 
-template_disp_t *template_new(GapIO *io, int cnum,
-			      Tcl_Interp *interp,
-			      Tk_Raster *raster);
-void template_destroy(template_disp_t *t);
-int template_replot(template_disp_t *t);
-
-#endif /* _TEMPLATE_DISPLAY_H_ */
+#endif /* _DEPTH_TRACK_H_ */
