@@ -8,6 +8,7 @@
 #include "tkWinport.h"
 #endif
 
+#include <os.h>
 #include <io_lib/Read.h>
 
 #include "tkTrace.h"

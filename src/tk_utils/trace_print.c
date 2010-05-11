@@ -1,5 +1,6 @@
 #include <limits.h>
 #include <string.h>
+#include <os.h>
 #include <io_lib/Read.h>
 
 #include "trace_print.h"

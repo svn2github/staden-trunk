@@ -5,6 +5,7 @@
 #include <string.h>
 #include <math.h>
 
+#include <os.h>
 #include <io_lib/Read.h>
 #include <io_lib/open_trace_file.h>
 #include <io_lib/misc.h>

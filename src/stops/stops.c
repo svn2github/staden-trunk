@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <string.h>
 
+#include <os.h>
 #include <io_lib/Read.h>
 #include <io_lib/misc.h>
 

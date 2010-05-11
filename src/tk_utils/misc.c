@@ -2,6 +2,7 @@
 #include <tk.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <os.h>
 #include <io_lib/traceType.h>
 
 #include "misc.h"

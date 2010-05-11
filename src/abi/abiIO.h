@@ -1,6 +1,7 @@
 #ifndef _ABI_H_
 #define _ABI_H_
 
+#include <os.h>
 #include <io_lib/os.h>
 #include <io_lib/fpoint.h>
 

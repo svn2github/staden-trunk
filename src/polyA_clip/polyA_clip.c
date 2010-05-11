@@ -6,6 +6,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <os.h>
 #include "seqInfo.h"
 #include "dna_utils.h"
 #include "xalloc.h"

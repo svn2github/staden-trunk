@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <os.h>
 #include <io_lib/Read.h>
 #include <io_lib/expFileIO.h>
 #include <io_lib/misc.h>

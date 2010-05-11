@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <io_lib/misc.h>
+#include <os.h>
+#include <misc.h>
 #include "assert.h"
 #include "consen.h"
 

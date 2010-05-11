@@ -18,9 +18,9 @@
 #include <stdio.h>
 #include <string.h> /* IMPORT: strchr, strdup */
 
+#include <os.h>
 #include <io_lib/expFileIO.h>
 #include <io_lib/traceType.h>
-#include "os.h"
 
 #include "seqInfo.h"
 #include "array.h"

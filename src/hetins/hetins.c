@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 
+#include <os.h>
 #include <io_lib/misc.h>
 #include <io_lib/Read.h>
 #include <io_lib/traceType.h>

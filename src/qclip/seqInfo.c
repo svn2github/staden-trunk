@@ -27,6 +27,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 
+#include <os.h>
 #include <io_lib/expFileIO.h>
 #include <io_lib/scf_extras.h>
 #include <io_lib/misc.h>

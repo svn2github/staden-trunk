@@ -8,7 +8,7 @@ SRCROOT=$(SRC)/..
 include $(SRCROOT)/global.mk
 include ../system.mk
 
-INCLUDES_E += $(IOLIB_INC)
+INCLUDES_E += $(MISC_INC) $(IOLIB_INC)
 
 EBAOBJS	= qual.o conf.o
 

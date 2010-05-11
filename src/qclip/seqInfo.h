@@ -16,6 +16,7 @@
 #ifndef _SEQINFO_H_
 #define _SEQINFO_H_
 
+#include <os.h>
 #include <io_lib/array.h>
 #include <io_lib/expFileIO.h>
 

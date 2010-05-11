@@ -62,7 +62,7 @@
 /*
  * x86 equivalents
  */
-#if defined(__i386__) || defined(__i386) || defined(__amd64__) || defined(__amd64)
+#if defined(__i386__) || defined(__i386) || defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(__i686__) || defined(__i686)
 #  if defined(SP_BIG_ENDIAN)
 #    undef SP_BIG_ENDIAN
 #  endif

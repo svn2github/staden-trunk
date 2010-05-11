@@ -14,6 +14,7 @@
 #ifdef HAVE_PNG
 #    include <png.h>
 #endif
+#include <os.h>
 #include <io_lib/Read.h>
 #include <io_lib/traceType.h>
 

@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <string.h>
 
+#include <os.h>
 #include <io_lib/mFILE.h>
 #include <io_lib/scf.h>
 #include <io_lib/xalloc.h>

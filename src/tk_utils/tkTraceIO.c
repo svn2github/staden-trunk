@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <os.h>
 #include <io_lib/Read.h>
 #include <io_lib/traceType.h>
 #include <io_lib/expFileIO.h>
@@ -159,7 +160,7 @@ void trace_init_pos(DNATrace *t) {
  * with a DC offset which is inappropriate for each trace as a whole.
  * Here we re-encode using the minimum range needed.
  */
-int trace_recalc_baseline(DNATrace *t) {
+void trace_recalc_baseline(DNATrace *t) {
     Read *r = t->read;
     int i;
     int min_val = INT_MAX, max_val = 0;
