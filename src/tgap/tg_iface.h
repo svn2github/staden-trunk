@@ -64,8 +64,14 @@ typedef struct {
     STANDARD_IFACE
 } io_array;
 
+
+/* index_create type fields */
+#define DB_INDEX_NAME   0
+#define DB_INDEX_CONTIG 1
+
 typedef struct {
     STANDARD_IFACE
+    int (*index_create)(void *dbh, cached_item *ci, int type);
 } io_database;
 
 typedef struct {

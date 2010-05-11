@@ -310,7 +310,6 @@ proc MapReads_bwa_dbwtsw2 {io w} {
     }
     
     # Import
-    vmessage "Importing reads..."
     import_reads \
 	-io $io \
 	-append 1 \
@@ -322,8 +321,6 @@ proc MapReads_bwa_dbwtsw2 {io w} {
 
     vmessage "Flushing"
     $io flush
-
-    vmessage "(done)"
 
     MapReads_tidyup $prefix
     ClearBusy

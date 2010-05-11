@@ -1431,10 +1431,12 @@ tcl_import_reads(ClientData clientData,
 	{"-reserved_seqs", ARG_INT, 1, "0",    offsetof(ir_arg, a.reserved_seqs)},
 	{"-repad",         ARG_INT, 1, "0",    offsetof(ir_arg, a.repad)},
 	{"-pair_reads",    ARG_INT, 1, "1",    offsetof(ir_arg, a.pair_reads)},
+	{"-store_unmapped",ARG_INT, 1, "0",    offsetof(ir_arg, a.store_unmapped)},
+	{"-sam_aux",       ARG_INT, 1, "0",    offsetof(ir_arg, a.sam_aux)},
 	{NULL,		   0,	    0, NULL,   0}
     };
 
-    vfuncheader("sequence search");
+    vfuncheader("import reads");
 
     if (-1 == gap_parse_obj_args(a, &args, objc, objv))
 	return TCL_ERROR;
@@ -1497,10 +1499,16 @@ tcl_import_reads(ClientData clientData,
 	char *name;
 	int rec;
 
-	puts("Sorting sequence name index");
+	vmessage("Sorting sequence name index\n");
 	bttmp_file_sort(args.a.tmp);
 
-	puts("Building index");
+	vmessage("Adding to name index\n");
+	if (!args.io->db->seq_name_index) {
+	    args.io->db = cache_rw(args.io, args.io->db);
+	    args.io->iface->database.index_create(args.io->dbh,
+						  ci_ptr(args.io->db),
+						  DB_INDEX_NAME);
+	}
 	while (name = bttmp_file_get(args.a.tmp, &rec)) {
 	    sequence_index_update(args.io, name, strlen(name), rec);
 	}

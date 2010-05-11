@@ -1224,7 +1224,6 @@ static int io_database_disconnect(void *dbh) {
     if (io->seq_name_hash) {
 	btree_destroy(io, io->seq_name_hash);
 	if (io->seq_name_tree) {
-	    free(io->seq_name_tree->cd);
 	    free(io->seq_name_tree);
 	}
     }
@@ -1232,7 +1231,6 @@ static int io_database_disconnect(void *dbh) {
     if (io->contig_name_hash) {
 	btree_destroy(io, io->contig_name_hash);
 	if (io->contig_name_tree) {
-	    free(io->contig_name_tree->cd);
 	    free(io->contig_name_tree);
 	}
     }
@@ -1346,7 +1344,7 @@ static cached_item *io_database_read(void *dbh, GRec rec) {
 
     /* Read the root */
     if (db->seq_name_index) {
-	btree_query_t *bt = (btree_query_t *)malloc(sizeof(*bt));
+	btree_query_t *bt = (btree_query_t *)io->seq_name_hash->clientdata;
 	bt->io = io;
 	bt->h = io->seq_name_hash;
 	io->seq_name_tree = btree_new(bt, db->seq_name_index);
@@ -1358,7 +1356,7 @@ static cached_item *io_database_read(void *dbh, GRec rec) {
 #endif
 
     if (db->contig_name_index) {
-	btree_query_t *bt = (btree_query_t *)malloc(sizeof(*bt));
+	btree_query_t *bt = (btree_query_t *)io->contig_name_hash->clientdata;
 	bt->io = io;
 	bt->h = io->contig_name_hash;
 	io->contig_name_tree = btree_new(bt, db->contig_name_index);
@@ -1368,6 +1366,61 @@ static cached_item *io_database_read(void *dbh, GRec rec) {
 
     return ci;
 
+}
+
+/*
+ * Creates an B+Tree index, but does not attach it to a specific object.
+ */
+int io_database_create_index(void *dbh, cached_item *ci, int type) {
+    g_io *io = (g_io *)dbh;
+    HacheTable *h = HacheTableCreate(1024, HASH_DYNAMIC_SIZE | HASH_OWN_KEYS);
+    btree_query_t *bt;
+    GDatabase *db = (GDatabase *)&ci->data;
+
+    if (NULL == (bt = (btree_query_t *)malloc(sizeof(*bt))))
+	return -1;
+
+    bt->io = io;
+    bt->h  = h;
+
+    h->clientdata = bt;
+    h->load       = btree_load_cache;
+    h->del        = btree_del_cache;
+
+    switch(type) {
+    case DB_INDEX_NAME:
+	if (db->seq_name_index)
+	    return -1; /* already exists */
+
+	io->seq_name_hash = h;
+	h->name = "io->seq_name_hash";
+	db->seq_name_index = btree_node_create(io, h);
+	io->seq_name_tree = btree_new(bt, db->seq_name_index);
+
+	assert(io->seq_name_tree);
+	assert(io->seq_name_tree->root);
+	break;
+	
+    case DB_INDEX_CONTIG:
+	if (db->contig_name_index)
+	    return -1; /* already exists */
+
+	io->contig_name_hash = h;
+	h->name = "io->contig_name_hash";
+	db->contig_name_index = btree_node_create(io, h);
+	io->contig_name_tree = btree_new(bt, db->contig_name_index);
+
+	assert(io->contig_name_tree);
+	assert(io->contig_name_tree->root);
+	break;
+
+    default:
+	return -1;
+    }
+
+    io_database_commit(io);
+
+    return 0;
 }
 
 /* ------------------------------------------------------------------------
@@ -4151,6 +4204,7 @@ static iface iface_g = {
 	io_database_read,
 	io_generic_write,
 	io_generic_info,
+	io_database_create_index,
     },
 
     {

@@ -1255,7 +1255,7 @@ int parse_sam_or_bam(GapIO *io, const char *fn, tg_args *a, char *mode) {
     bam_plbuf_destroy(plbuf);
 
     cache_flush(io);
-    printf("Loaded %d of %d sequences\n", bio->count, count);
+    vmessage("Loaded %d of %d sequences\n", bio->count, count);
 
     if (bio->pair && !a->fast_mode) {    
 	sort_pair_file();
