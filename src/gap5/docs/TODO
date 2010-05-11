@@ -1,3 +1,13 @@
+*	Improve tg_index and read-name indices (see template index
+        too). We need the option of doing this for only certain
+        read-groups - ie illumina data.
+
+*	Improve template handling. We may need to have a template
+        index, so we can quickly find templates by name? This is
+        needed for spotting when we have a 3rd read for a template.
+
+	Only create this for capillary data.
+
 *       Bins currently hold their position, size and left/right child
 	numbers. Instead they could hold the left/right child record,
 	position and sizes. This means we don't need to load the
