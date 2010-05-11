@@ -1,3 +1,7 @@
+*	The vertical editor-cursor shown in the template display jumps
+        a pixel to the right (but only on the top panel - templates)
+        when we first change Y magnification or Y spread.
+
 *	Improve tg_index and read-name indices (see template index
         too). We need the option of doing this for only certain
         read-groups - ie illumina data.
