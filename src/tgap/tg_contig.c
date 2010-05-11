@@ -869,10 +869,23 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 		int st, en;
 
 		if (count >= *alloc) {
+		    int old_alloc = *alloc;
+		    rangec_t *new_range;
+		
 		    *alloc = *alloc ? *alloc * 2 : 16;
-		    *results = (rangec_t *)realloc(*results,
+		    new_range = (rangec_t *)realloc(*results,
 						   *alloc * sizeof(rangec_t));
+						   
+		    if (new_range == NULL) {
+		    	if (*results) free(*results);
+			*results = NULL;
+			*alloc = 0;
+			return -1;
+		    } else {
+		    	*results = new_range;
+		    }
 		}
+		
 		(*results)[count].rec   = l->rec;
 		st = NORM(l->start);
 		en = NORM(l->end);
@@ -909,6 +922,7 @@ static int contig_seqs_in_range2(GapIO *io, int bin_num,
 					  NMIN(ch->pos, ch->pos + ch->size-1),
 					  results, alloc, count,
 					  complement, mask, val);
+	    if (count == -1) return -1;
 	}
     }
 
@@ -924,20 +938,21 @@ rangec_t *contig_items_in_range(GapIO *io, contig_t **c, int start, int end,
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   0, 0);
+    if (r) {
+	if (job & CSIR_PAIR)
+	    pair_rangec(io, r, *count);
 
-    if (job & CSIR_PAIR)
-	pair_rangec(io, r, *count);
+	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	    qsort(r, *count, sizeof(*r), sort_range_by_x);
 
-    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
-	qsort(r, *count, sizeof(*r), sort_range_by_x);
+	if (job & CSIR_ALLOCATE_Y) {
+	    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+	    compute_ypos_tags(r, *count);
+	}
 
-    if (job & CSIR_ALLOCATE_Y) {
-	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
-	compute_ypos_tags(r, *count);
+	if (job & CSIR_SORT_BY_Y)
+	    qsort(r, *count, sizeof(*r), sort_range_by_y);
     }
-
-    if (job & CSIR_SORT_BY_Y)
-	qsort(r, *count, sizeof(*r), sort_range_by_y);
 
     return r;
 }
@@ -950,20 +965,28 @@ rangec_t *contig_seqs_in_range(GapIO *io, contig_t **c, int start, int end,
     *count = contig_seqs_in_range2(io, contig_get_bin(c), start, end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISSEQ);
-    if (job & CSIR_PAIR) {
-	pair_rangec(io, r, *count);
-   }
+				   
+    if (r) {
+	if (job & CSIR_PAIR) {
+	    pair_rangec(io, r, *count);
+	}
 
-    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
-	qsort(r, *count, sizeof(*r), sort_range_by_x);
-    }
+	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y)) {
+	    qsort(r, *count, sizeof(*r), sort_range_by_x);
+	}
 
-    if (job & CSIR_ALLOCATE_Y) {
-	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
-    }
+	if (job & CSIR_ALLOCATE_Y) {
+	    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+	}
 
-    if (job & CSIR_SORT_BY_Y) {
-	qsort(r, *count, sizeof(*r), sort_range_by_y);
+	if (job & CSIR_SORT_BY_Y) {
+	    qsort(r, *count, sizeof(*r), sort_range_by_y);
+	}
+    } else {
+    	// count -1 on memory error
+    	if (*count == -1) {
+    	    verror(ERR_WARN, "tg_contig", "Out of memory - unable to get sequences\n");
+	}
     }
 
     return r;
@@ -980,14 +1003,16 @@ rangec_t *contig_anno_in_range(GapIO *io, contig_t **c, int start, int end,
 				   contig_offset(io, c), &r, &alloc, 0, 0,
 				   GRANGE_FLAG_ISMASK, GRANGE_FLAG_ISANNO);
 
-    if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
-	qsort(r, *count, sizeof(*r), sort_range_by_x);
+    if (r) {
+	if (job & (CSIR_SORT_BY_X | CSIR_SORT_BY_Y))
+	    qsort(r, *count, sizeof(*r), sort_range_by_x);
 
-    if (job & CSIR_ALLOCATE_Y)
-	compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
+	if (job & CSIR_ALLOCATE_Y)
+	    compute_ypos(r, *count, job & CSIR_ALLOCATE_Y);
 
-    if (job & CSIR_SORT_BY_Y)
-	qsort(r, *count, sizeof(*r), sort_range_by_y);
+	if (job & CSIR_SORT_BY_Y)
+	    qsort(r, *count, sizeof(*r), sort_range_by_y);
+    }
 
     return r;
 }

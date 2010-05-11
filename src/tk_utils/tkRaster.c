@@ -842,19 +842,19 @@ RasterWidgetCmd(clientData, interp, argc, argv)
 		    RasterPtr->new_y += count * .1 *
 			(Tk_Height(RasterPtr->tkwin));
 		}
-#ifdef DEBUG
 		printf("SCROLL %d y %d new %d ry0 %d ry1 %d height %d\n",
 		       count*RasterPtr->scrollIncrement,
 		       RasterPtr->y, RasterPtr->new_y, ry0, ry1,
 		       win_height);
 		printf("wy0 %f wy1 %f\n", RasterPtr->wy0, RasterPtr->wy1);
-#endif
 		if (ry0 - (count*RasterPtr->scrollIncrement) >= 0) {
 		    RasterPtr->new_y += ry0-(count*RasterPtr->scrollIncrement);
+		    printf("NEW_Y1 %d\n", RasterPtr->new_y);
 		}
 
 		if (ry1-(count*RasterPtr->scrollIncrement) <= win_height) {
 		    RasterPtr->new_y += (ry1 - (count*RasterPtr->scrollIncrement) - win_height);
+		    printf("NEW_Y2 %d\n", RasterPtr->new_y);
 		}
 
 		break;
@@ -2500,6 +2500,19 @@ void SetRasterCoords (Tk_Raster* raster,
    printf("set to *%f+%f\n", RasterPtr->ay, RasterPtr->by);
 #endif
 }
+
+void GetWorldToRasterConversion(Tk_Raster *raster, double *ax, double *ay, double *bx, double *by) {
+/*
+ * get the conversion factors for use outside
+ * for speed rather than anything else
+ */
+    Raster* RasterPtr = (Raster*) raster;
+    *ax = RasterPtr->ax;
+    *ay = RasterPtr->ay;
+    *bx = RasterPtr->bx;
+    *by = RasterPtr->by;
+}     
+
 
 void WorldToRaster (raster, wx, wy, rx, ry)
 /*

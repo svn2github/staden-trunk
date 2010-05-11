@@ -151,6 +151,14 @@ extern void SetRasterCoords _ANSI_ARGS_((Tk_Raster*,
  *  (x1,y1) are the coordinates of the lower-right corner
  */
 
+extern void GetWorldToRasterConversion(Tk_Raster *raster, double *ax, double *ay, 
+    	    	    	    	    	double *bx, double *by);
+
+/*
+ * get the conversion factors for use outside
+ * for speed rather than anything else
+ */
+
 extern void WorldToRaster _ANSI_ARGS_ ((Tk_Raster*, double wx, double wy,
 					int* rx, int* ry));
 /*
