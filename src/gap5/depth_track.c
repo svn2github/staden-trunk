@@ -177,24 +177,8 @@ static int dtrack_cmd(ClientData clientData, Tcl_Interp *interp,
 
     case YRANGE: {
 	char buf[1024];
-	double wx0, wy0, wx1, wy1;
 	double top, bottom;
-/*	
-	GetRasterCoords(t->raster, &wx0, &wy0, &wx1, &wy1);
-	printf("wy0 %f ymin %d wy1 %f ymax %d\n", wy0, t->ymin, wy1, t->ymax);
-	
-	if (t->ymax == 0 || wy1 == 0) {
-	    top = 0;
-	    bottom = 1;
-	} else {
-	    top = wy0 / t->ymax;
-	    bottom = wy1 / t->ymax;
-	    
-	    if (bottom > 1) {
-	    	bottom = 1;
-	    }
-	}
-*/
+
     	/* Line adjusts to raster size, so no scolling needed for the moment.
 	   There may be value in having an adustable size, but not yet.
 	*/
@@ -413,19 +397,15 @@ void depth_track_destroy(depth_track_t *t) {
 
 
 int depth_track_replot(depth_track_t *t) {
-    double wx0, wy0, wx1, wy1, ny0, ny1, y, ax, ay, bx, by;
-    int nr, i, j;
+    double wx0, wy0, wx1, wy1, ax, ay, bx, by;
+    int j;
     double tsize = 1000;
     int ymin = INT_MAX;
     int ymax = INT_MIN;
     int width, height, height2;
-    static int last_zoom = 0;
-    tline *tl = NULL;
-    rangec_t *r;
     Display *rdisp;
     Drawable rdraw;
     GC rgc;
-    int xchanged = 0;
     int force_change = 0;
     XPoint *sp, *tp;
     

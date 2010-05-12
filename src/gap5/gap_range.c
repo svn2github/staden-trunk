@@ -118,7 +118,7 @@ void gap_range_destroy(gap_range_t *gr) {
 }
 
 int gap_range_test(gap_range_t *gr) {
-    printf("GR - TEST\n");
+//    printf("GR - TEST\n");
     printf("r %p wx0 %f wx1 %f nr %d\n", gr->r, gr->wx0, gr->wx1, gr->nr);
     
     return 1;
@@ -224,7 +224,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 	
 	for (i = 0; i < gr->nr; i++) {
 	    int sta, end;
-	    int r_sta, r_end, r_y;
+	    int r_sta, r_end;
 	    int span   = 0;
 	    int single = 0;
 	    int col;
@@ -386,7 +386,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 		    tl->col[2] = col;
 		} else {
 		    printf("error, start/end do not match template pos (single)\n");
-		    printf("start %f/%f end %f/%f\n", r->start, tl->x[0], r->end, tl->x[3]); 
+		    printf("start %d/%d end %d/%d\n", r->start, tl->x[0], r->end, tl->x[3]); 
 		}
 		
 		if (r->pair_rec && (r->pair_start || r->pair_end)) {
@@ -401,7 +401,7 @@ int gap_range_x(gap_range_t *gr, double ax_conv, double bx_conv,
 			tl->col[2] = col;
 		    } else {
 			printf("error, start/end do not match template pos (pair)\n");
-			printf("start %f/%f end %f/%f\n", r->pair_start, tl->x[0], r->pair_end, tl->x[3]); 
+			printf("start %d/%d end %d/%d\n", r->pair_start, tl->x[0], r->pair_end, tl->x[3]); 
 		    }
 		}
 		

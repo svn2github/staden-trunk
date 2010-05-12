@@ -598,8 +598,8 @@ int sort_tline_by_x(const void *p1, const void *p2) {
 }
 
 int template_replot(template_disp_t *t) {
-    double wx0, wy0, wx1, wy1, ny0, ny1, y, ax, ay, bx, by;
-    int nr, i, j, mode;
+    double wx0, wy0, wx1, wy1, ny0, ny1, ax, ay, bx, by;
+    int i, j, mode;
     struct timeval tv1, tv2;
     double t1, t2 = 0, t3, t4;
     double tsize = 1000;
@@ -611,7 +611,6 @@ int template_replot(template_disp_t *t) {
     Display *rdisp;
     Drawable rdraw;
     GC rgc;
-    int xchanged = 0;
     int force_change = 0;
     
     if (!t)
@@ -767,17 +766,17 @@ int template_replot(template_disp_t *t) {
 
     ny0 = wy0; ny1 = wy1;
     if (t->yzoom != last_zoom) {
-	ny0 = t->ymin-10;
-	ny1 = t->ymax+10;
+	ny0 = t->ymin - 10;
+	ny1 = t->ymax + 10;
     } else {
-	if (ny0 > t->ymin-10)
-	    ny0 = t->ymin-10;
-	if (ny1 < t->ymax+10)
-	    ny1 = t->ymax+10;
+	if (ny0 > t->ymin - 10)
+	    ny0 = t->ymin - 10;
+	if (ny1 < t->ymax + 10)
+	    ny1 = t->ymax + 10;
     }
     last_zoom = t->yzoom;
-    if (ny0 > 0) ny0 = 0;
-    if (ny1 < 400) ny1 = 400;
+    //if (ny0 > 0) ny0 = 0;
+    //if (ny1 < 400) ny1 = 400;
     wx0 = contig_get_start(&t->contig) - 10;
     wx1 = contig_get_end(&t->contig) + 10;
     RasterSetWorldScroll(t->raster,  wx0,  ny0,  wx1,  ny1);
